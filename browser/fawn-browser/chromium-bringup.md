@@ -213,6 +213,9 @@ A small Playwright harness now exists for real-browser WebGPU smoke + mini bench
   - adapter features + selected limits capture
   - compute correctness smoke (`[1,2,3,4] -> [2,3,4,5]`)
   - render smoke (triangle draw + center pixel validation)
+  - explicit `requestAdapter({ xrCompatible: false })` forwarding on the package-browser path
+  - `queue.copyExternalImageToTexture` end-to-end readback using browser image sources plus `flipY`/origin dictionaries
+  - `device.importExternalTexture` plus `externalTexture` bind-group layout/resource sampling from a `VideoFrame`
   - mini timing probes (`queue.writeBuffer` 64KB and compute dispatch us/op)
 - output metadata now includes invocation + environment fields (`argv`, `cwd`, node/platform), browser/user-agent evidence, and hash-chain traceability over mode results.
 

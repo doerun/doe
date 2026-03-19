@@ -83,6 +83,8 @@ const TIMING_SOURCE = "performance.now";
 const HASH_ALGORITHM = "sha256";
 const UPLOAD_WARMUP_ITERS = 50;
 const DISPATCH_WARMUP_ITERS = 20;
+const COPY_BYTES_PER_ROW_ALIGNMENT = 256;
+const TEXTURE_BYTES_PER_PIXEL = 4;
 const ADAPTER_LIMIT_KEYS = [
   "maxTextureDimension1D",
   "maxTextureDimension2D",
@@ -182,6 +184,25 @@ function makeFailedResult(mode, args, launchArgs, browserVersion, startMs, error
     smoke: {
       computeIncrement: { pass: false, actual: null, expected: [2, 3, 4, 5], error: errorText },
       renderTriangle: { pass: false, centerRgba: null, error: errorText },
+      requestAdapterXrCompatible: {
+        pass: false,
+        returnedAdapter: false,
+        forwarded: null,
+        observedOptions: null,
+        error: errorText,
+      },
+      copyExternalImageToTexture: {
+        pass: false,
+        topLeftRgba: null,
+        sourceType: null,
+        attempts: [],
+        error: errorText,
+      },
+      importExternalTexture: {
+        pass: false,
+        centerRgba: null,
+        error: errorText,
+      },
     },
     benches: {
       writeBuffer64kbUsPerOp: null,
@@ -483,10 +504,29 @@ async function runMode(chromium, mode, args, localUrl, localPort) {
           apiSurface,
           browserModuleUrl,
         }) => {
+          const copyBytesPerRowAlignment = 256;
+          const textureBytesPerPixel = 4;
+          const forwardedRequestAdapterOptions = [];
+          const instrumentedGpu = apiSurface === "package-browser"
+            ? {
+              async requestAdapter(options) {
+                forwardedRequestAdapterOptions.push(options == null ? null : structuredClone(options));
+                return navigator.gpu.requestAdapter(options);
+              },
+              getPreferredCanvasFormat() {
+                return navigator.gpu.getPreferredCanvasFormat();
+              },
+              get wgslLanguageFeatures() {
+                return navigator.gpu.wgslLanguageFeatures;
+              },
+            }
+            : null;
           const browserSurface = apiSurface === "package-browser"
             ? await import(browserModuleUrl)
             : null;
-          const browserRuntime = browserSurface?.createBrowserRuntime?.() ?? null;
+          const browserRuntime = browserSurface?.createBrowserRuntime?.(
+            instrumentedGpu ? { gpu: instrumentedGpu } : {},
+          ) ?? null;
           const gpu = browserRuntime?.gpu ?? navigator.gpu;
           const getCanvasContext = (canvas) =>
             browserRuntime ? browserRuntime.createCanvasContext(canvas) : canvas.getContext("webgpu");
@@ -508,6 +548,41 @@ async function runMode(chromium, mode, args, localUrl, localPort) {
               }
             }
           };
+          const alignTo = (value, alignment) =>
+            Math.ceil(value / alignment) * alignment;
+          const readTextureRgba = async (readDevice, texture, width, height, label) => {
+            const bytesPerRow = alignTo(width * textureBytesPerPixel, copyBytesPerRowAlignment);
+            const readback = readDevice.createBuffer({
+              size: bytesPerRow * height,
+              usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+            });
+            const encoder = readDevice.createCommandEncoder();
+            encoder.copyTextureToBuffer(
+              { texture },
+              { buffer: readback, bytesPerRow, rowsPerImage: height },
+              { width, height, depthOrArrayLayers: 1 },
+            );
+            readDevice.queue.submit([encoder.finish()]);
+            await withOpTimeout(`${label} mapAsync`, () => readback.mapAsync(GPUMapMode.READ));
+            const bytes = new Uint8Array(readback.getMappedRange()).slice(0);
+            readback.unmap();
+            readback.destroy();
+            return { bytes, bytesPerRow };
+          };
+          const sampleRgba = (bytes, bytesPerRow, x, y) => {
+            const offset = y * bytesPerRow + x * textureBytesPerPixel;
+            return Array.from(bytes.slice(offset, offset + textureBytesPerPixel));
+          };
+          const isGreenDominant = (rgba) =>
+            Array.isArray(rgba)
+            && rgba[1] > 100
+            && rgba[1] > rgba[0] + 20
+            && rgba[1] > rgba[2] + 20;
+          const isRedDominant = (rgba) =>
+            Array.isArray(rgba)
+            && rgba[0] > 100
+            && rgba[0] > rgba[1] + 20
+            && rgba[0] > rgba[2] + 20;
 
         const result = {
           apiSurface,
@@ -521,6 +596,25 @@ async function runMode(chromium, mode, args, localUrl, localPort) {
           smoke: {
             computeIncrement: { pass: false, actual: null, expected: [2, 3, 4, 5], error: null },
             renderTriangle: { pass: false, centerRgba: null, error: null },
+            requestAdapterXrCompatible: {
+              pass: false,
+              returnedAdapter: false,
+              forwarded: null,
+              observedOptions: null,
+              error: null,
+            },
+            copyExternalImageToTexture: {
+              pass: false,
+              topLeftRgba: null,
+              sourceType: null,
+              attempts: [],
+              error: null,
+            },
+            importExternalTexture: {
+              pass: false,
+              centerRgba: null,
+              error: null,
+            },
           },
           webgpuCanvasApi: {
             offscreenCanvasAvailable: false,
@@ -551,6 +645,32 @@ async function runMode(chromium, mode, args, localUrl, localPort) {
         let adapter = null;
         let device = null;
         try {
+          try {
+            const xrAdapter = await withOpTimeout("requestAdapter xrCompatible", () =>
+              gpu.requestAdapter({ xrCompatible: false }),
+            );
+            result.smoke.requestAdapterXrCompatible.returnedAdapter = Boolean(xrAdapter);
+            result.smoke.requestAdapterXrCompatible.observedOptions =
+              forwardedRequestAdapterOptions.find((options) => options?.xrCompatible === false)
+              ?? forwardedRequestAdapterOptions.at(-1)
+              ?? null;
+            if (typeof xrAdapter?.destroy === "function") {
+              xrAdapter.destroy();
+            }
+            if (apiSurface === "package-browser") {
+              result.smoke.requestAdapterXrCompatible.forwarded =
+                result.smoke.requestAdapterXrCompatible.observedOptions?.xrCompatible === false;
+              result.smoke.requestAdapterXrCompatible.pass =
+                result.smoke.requestAdapterXrCompatible.returnedAdapter
+                && result.smoke.requestAdapterXrCompatible.forwarded === true;
+            } else {
+              result.smoke.requestAdapterXrCompatible.pass =
+                result.smoke.requestAdapterXrCompatible.returnedAdapter;
+            }
+          } catch (error) {
+            result.smoke.requestAdapterXrCompatible.error = String(error);
+          }
+
           adapter = await withOpTimeout("requestAdapter", () => gpu.requestAdapter());
           if (!adapter) {
             result.errors.push("requestAdapter returned null");
@@ -741,6 +861,224 @@ async function runMode(chromium, mode, args, localUrl, localPort) {
           result.smoke.renderTriangle.error = String(error);
         }
 
+        try {
+          const width = 2;
+          const height = 2;
+          const sourceCanvas = new OffscreenCanvas(width, height);
+          const sourceContext = sourceCanvas.getContext("2d");
+          if (!sourceContext) {
+            throw new Error("OffscreenCanvas 2D context is unavailable");
+          }
+          sourceContext.fillStyle = "rgba(255, 0, 0, 1)";
+          sourceContext.fillRect(0, 0, width, 1);
+          sourceContext.fillStyle = "rgba(0, 255, 0, 1)";
+          sourceContext.fillRect(0, 1, width, 1);
+          const copyAttempts = [];
+          const tryCopyExternalSource = async (sourceType, sourceValue) => {
+            const texture = device.createTexture({
+              size: { width, height, depthOrArrayLayers: 1 },
+              format: "rgba8unorm",
+              usage:
+                GPUTextureUsage.COPY_DST |
+                GPUTextureUsage.COPY_SRC |
+                GPUTextureUsage.TEXTURE_BINDING |
+                GPUTextureUsage.RENDER_ATTACHMENT,
+            });
+            try {
+              device.queue.copyExternalImageToTexture(
+                {
+                  source: sourceValue,
+                  origin: { x: 0, y: 0 },
+                  flipY: true,
+                },
+                {
+                  texture,
+                  aspect: "all",
+                  colorSpace: "srgb",
+                  mipLevel: 0,
+                  origin: { x: 0, y: 0, z: 0 },
+                  premultipliedAlpha: false,
+                },
+                { width, height, depthOrArrayLayers: 1 },
+              );
+              await withOpTimeout(
+                `copyExternalImageToTexture ${sourceType} onSubmittedWorkDone`,
+                () => device.queue.onSubmittedWorkDone(),
+              );
+              const readback = await readTextureRgba(
+                device,
+                texture,
+                width,
+                height,
+                `copyExternalImageToTexture ${sourceType} readback`,
+              );
+              const topLeftRgba = sampleRgba(readback.bytes, readback.bytesPerRow, 0, 0);
+              copyAttempts.push({ sourceType, topLeftRgba });
+              return topLeftRgba;
+            } finally {
+              texture.destroy();
+            }
+          };
+
+          if (typeof createImageBitmap === "function") {
+            const imageBitmap = await createImageBitmap(sourceCanvas);
+            try {
+              const topLeftRgba = await tryCopyExternalSource("ImageBitmap", imageBitmap);
+              result.smoke.copyExternalImageToTexture.topLeftRgba = topLeftRgba;
+              result.smoke.copyExternalImageToTexture.sourceType = "ImageBitmap";
+              result.smoke.copyExternalImageToTexture.pass = isGreenDominant(topLeftRgba);
+            } finally {
+              imageBitmap.close?.();
+            }
+          } else {
+            copyAttempts.push({ sourceType: "ImageBitmap", skipped: "createImageBitmap unavailable" });
+          }
+
+          if (!result.smoke.copyExternalImageToTexture.pass) {
+            const topLeftRgba = await tryCopyExternalSource("OffscreenCanvas", sourceCanvas);
+            result.smoke.copyExternalImageToTexture.topLeftRgba = topLeftRgba;
+            result.smoke.copyExternalImageToTexture.sourceType = "OffscreenCanvas";
+            result.smoke.copyExternalImageToTexture.pass = isGreenDominant(topLeftRgba);
+          }
+          result.smoke.copyExternalImageToTexture.attempts = copyAttempts;
+        } catch (error) {
+          result.smoke.copyExternalImageToTexture.error = String(error);
+        }
+
+        try {
+          if (typeof VideoFrame !== "function") {
+            throw new Error("VideoFrame is unavailable");
+          }
+          const sourceCanvas = new OffscreenCanvas(2, 2);
+          const sourceContext = sourceCanvas.getContext("2d");
+          if (!sourceContext) {
+            throw new Error("OffscreenCanvas 2D context is unavailable");
+          }
+          sourceContext.fillStyle = "rgba(255, 0, 0, 1)";
+          sourceContext.fillRect(0, 0, 2, 2);
+          const videoFrame = new VideoFrame(sourceCanvas, { timestamp: 0 });
+          const externalTexture = device.importExternalTexture({
+            source: videoFrame,
+            colorSpace: "srgb",
+            label: "playwright-smoke-external-texture",
+          });
+          const sampler = device.createSampler({
+            minFilter: "linear",
+            magFilter: "linear",
+          });
+          const bindGroupLayout = device.createBindGroupLayout({
+            entries: [
+              {
+                binding: 0,
+                visibility: GPUShaderStage.FRAGMENT,
+                sampler: { type: "filtering" },
+              },
+              {
+                binding: 1,
+                visibility: GPUShaderStage.FRAGMENT,
+                externalTexture: {},
+              },
+            ],
+          });
+          const pipelineLayout = device.createPipelineLayout({
+            bindGroupLayouts: [bindGroupLayout],
+          });
+          const shader = device.createShaderModule({
+            code: `
+              struct VertexOutput {
+                @builtin(position) position : vec4<f32>,
+                @location(0) fragUV : vec2<f32>,
+              };
+
+              @vertex
+              fn vs(@builtin(vertex_index) index : u32) -> VertexOutput {
+                var pos = array<vec2<f32>, 6>(
+                  vec2<f32>(-1.0, -1.0),
+                  vec2<f32>( 1.0, -1.0),
+                  vec2<f32>(-1.0,  1.0),
+                  vec2<f32>(-1.0,  1.0),
+                  vec2<f32>( 1.0, -1.0),
+                  vec2<f32>( 1.0,  1.0),
+                );
+                var uv = array<vec2<f32>, 6>(
+                  vec2<f32>(0.0, 1.0),
+                  vec2<f32>(1.0, 1.0),
+                  vec2<f32>(0.0, 0.0),
+                  vec2<f32>(0.0, 0.0),
+                  vec2<f32>(1.0, 1.0),
+                  vec2<f32>(1.0, 0.0),
+                );
+
+                var output : VertexOutput;
+                output.position = vec4<f32>(pos[index], 0.0, 1.0);
+                output.fragUV = uv[index];
+                return output;
+              }
+
+              @group(0) @binding(0) var mySampler : sampler;
+              @group(0) @binding(1) var myTexture : texture_external;
+
+              @fragment
+              fn fs(@location(0) fragUV : vec2<f32>) -> @location(0) vec4<f32> {
+                return textureSampleBaseClampToEdge(myTexture, mySampler, fragUV);
+              }
+            `,
+          });
+          const pipeline = device.createRenderPipeline({
+            layout: pipelineLayout,
+            vertex: { module: shader, entryPoint: "vs" },
+            fragment: {
+              module: shader,
+              entryPoint: "fs",
+              targets: [{ format: "rgba8unorm" }],
+            },
+            primitive: { topology: "triangle-list" },
+          });
+          const bindGroup = device.createBindGroup({
+            layout: bindGroupLayout,
+            entries: [
+              { binding: 0, resource: sampler },
+              { binding: 1, resource: externalTexture },
+            ],
+          });
+          const renderTarget = device.createTexture({
+            size: { width: 4, height: 4, depthOrArrayLayers: 1 },
+            format: "rgba8unorm",
+            usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
+          });
+          const encoder = device.createCommandEncoder();
+          const pass = encoder.beginRenderPass({
+            colorAttachments: [
+              {
+                view: renderTarget.createView(),
+                clearValue: { r: 0, g: 0, b: 0, a: 1 },
+                loadOp: "clear",
+                storeOp: "store",
+              },
+            ],
+          });
+          pass.setPipeline(pipeline);
+          pass.setBindGroup(0, bindGroup);
+          pass.draw(6);
+          pass.end();
+          device.queue.submit([encoder.finish()]);
+          const readback = await readTextureRgba(
+            device,
+            renderTarget,
+            4,
+            4,
+            "importExternalTexture readback",
+          );
+          const centerRgba = sampleRgba(readback.bytes, readback.bytesPerRow, 2, 2);
+          result.smoke.importExternalTexture.centerRgba = centerRgba;
+          result.smoke.importExternalTexture.pass = isRedDominant(centerRgba);
+          externalTexture.destroy?.();
+          renderTarget.destroy();
+          videoFrame.close();
+        } catch (error) {
+          result.smoke.importExternalTexture.error = String(error);
+        }
+
         let benchDevice = device;
         if (!result.smoke.renderTriangle.pass) {
           try {
@@ -891,6 +1229,9 @@ function hasFailure(result) {
   if (!result.webgpuAvailable || !result.adapterAvailable) return true;
   if (!result.smoke.computeIncrement.pass) return true;
   if (!result.smoke.renderTriangle.pass) return true;
+  if (!result.smoke.requestAdapterXrCompatible.pass) return true;
+  if (!result.smoke.copyExternalImageToTexture.pass) return true;
+  if (!result.smoke.importExternalTexture.pass) return true;
   return false;
 }
 
@@ -909,7 +1250,7 @@ async function main() {
       modeResults.push(result);
       const status = hasFailure(result) ? "FAIL" : "PASS";
       console.log(
-        `[${status}] ${mode}: webgpu=${result.webgpuAvailable} adapter=${result.adapterAvailable} compute=${result.smoke.computeIncrement.pass} render=${result.smoke.renderTriangle.pass} canvas=${result.webgpuCanvasApi.webgpuContextAvailable} importExternalTexture=${result.webgpuDeviceApi.hasImportExternalTexture} upload64kb_us=${result.benches.writeBuffer64kbUsPerOp?.toFixed(3) ?? "n/a"} dispatch_us=${result.benches.computeDispatchUsPerOp?.toFixed(3) ?? "n/a"}`,
+        `[${status}] ${mode}: webgpu=${result.webgpuAvailable} adapter=${result.adapterAvailable} compute=${result.smoke.computeIncrement.pass} render=${result.smoke.renderTriangle.pass} xrCompatible=${result.smoke.requestAdapterXrCompatible.pass} copyExternal=${result.smoke.copyExternalImageToTexture.pass} importExternal=${result.smoke.importExternalTexture.pass} canvas=${result.webgpuCanvasApi.webgpuContextAvailable} upload64kb_us=${result.benches.writeBuffer64kbUsPerOp?.toFixed(3) ?? "n/a"} dispatch_us=${result.benches.computeDispatchUsPerOp?.toFixed(3) ?? "n/a"}`,
       );
       if (hasFailure(result)) {
         failed = true;

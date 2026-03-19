@@ -6,6 +6,7 @@
 
 const std = @import("std");
 const mod = @import("mod.zig");
+const msl_maps = @import("emit_msl_maps.zig");
 const translateToMsl = mod.translateToMsl;
 const translateToHlsl = mod.translateToHlsl;
 const translateToSpirv = mod.translateToSpirv;
@@ -18,6 +19,48 @@ const ir = mod.ir;
 
 fn contains(haystack: []const u8, needle: []const u8) bool {
     return std.mem.indexOf(u8, haystack, needle) != null;
+}
+
+test "msl builtin map covers the current IR builtin surface" {
+    inline for (std.meta.fields(ir.Builtin)) |field| {
+        const builtin: ir.Builtin = @enumFromInt(field.value);
+        if (builtin == .none) continue;
+        try std.testing.expect(!std.mem.eql(u8, msl_maps.msl_builtin_name(builtin), "unsupported_builtin"));
+    }
+}
+
+test "declarations: fixed-size array parameter through MSL HLSL and SPIR-V" {
+    const source =
+        \\fn sum4(values: array<u32, 4>) -> u32 {
+        \\    return values[0] + values[1] + values[2] + values[3];
+        \\}
+        \\
+        \\@group(0) @binding(0) var<storage, read_write> data: array<u32>;
+        \\
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    var values: array<u32, 4>;
+        \\    values[0] = 1u;
+        \\    values[1] = 2u;
+        \\    values[2] = 3u;
+        \\    values[3] = 4u;
+        \\    data[id.x] = sum4(values);
+        \\}
+    ;
+
+    var msl_out: [MAX_OUTPUT]u8 = undefined;
+    const msl_len = try translateToMsl(std.testing.allocator, source, &msl_out);
+    try std.testing.expect(msl_len > 0);
+    try std.testing.expect(contains(msl_out[0..msl_len], "sum4("));
+
+    var hlsl_out: [MAX_HLSL_OUTPUT]u8 = undefined;
+    const hlsl_len = try translateToHlsl(std.testing.allocator, source, &hlsl_out);
+    try std.testing.expect(hlsl_len > 0);
+    try std.testing.expect(contains(hlsl_out[0..hlsl_len], "sum4("));
+
+    var spirv_out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const spirv_len = try translateToSpirv(std.testing.allocator, source, &spirv_out);
+    try std.testing.expect(spirv_len > 0);
 }
 
 // ============================================================

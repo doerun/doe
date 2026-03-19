@@ -18,6 +18,7 @@ pub const emit_msl_shared = @import("emit_msl_shared.zig");
 pub const emit_msl_vertex = @import("emit_msl_vertex.zig");
 pub const emit_msl_fragment = @import("emit_msl_fragment.zig");
 pub const emit_hlsl = @import("emit_hlsl.zig");
+pub const hlsl_dispatch_contract = @import("hlsl_dispatch_contract.zig");
 pub const emit_hlsl_texture = @import("emit_hlsl_texture.zig");
 pub const emit_spirv = @import("emit_spirv.zig");
 pub const emit_spirv_fn = @import("emit_spirv_fn.zig");
@@ -402,6 +403,7 @@ pub fn translateToDxil(allocator: std.mem.Allocator, wgsl: []const u8, out: []u8
         const detail = emit_dxil.lastErrorMessage();
         const kind = switch (err) {
             error.OutputTooLarge => TranslateError.OutputTooLarge,
+            error.UnsupportedBuiltin => TranslateError.UnsupportedBuiltin,
             error.UnsupportedConstruct => TranslateError.UnsupportedConstruct,
             error.InvalidIr => TranslateError.InvalidIr,
             error.OutOfMemory => TranslateError.OutOfMemory,
@@ -428,6 +430,7 @@ pub fn translateToDxilWithToolchainConfig(
         const detail = emit_dxil.lastErrorMessage();
         const kind = switch (err) {
             error.OutputTooLarge => TranslateError.OutputTooLarge,
+            error.UnsupportedBuiltin => TranslateError.UnsupportedBuiltin,
             error.UnsupportedConstruct => TranslateError.UnsupportedConstruct,
             error.InvalidIr => TranslateError.InvalidIr,
             error.OutOfMemory => TranslateError.OutOfMemory,

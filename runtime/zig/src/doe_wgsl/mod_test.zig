@@ -636,6 +636,24 @@ test "semantic unsupported builtin preserves specific error contract" {
     try std.testing.expect(std.mem.indexOf(u8, lastErrorMessage(), "UnsupportedBuiltin") != null);
 }
 
+test "hlsl emit num_workgroups lowers through dispatch info contract" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> data: array<u32, 1>;
+        \\
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(num_workgroups) nwg: vec3u) {
+        \\    data[0] = nwg.x;
+        \\}
+    ;
+
+    var out: [MAX_HLSL_OUTPUT]u8 = undefined;
+    const len = try translateToHlsl(std.testing.allocator, source, &out);
+    try std.testing.expect(len > 0);
+    const hlsl = out[0..len];
+    try std.testing.expect(std.mem.indexOf(u8, hlsl, "cbuffer DoeDispatchInfo") != null);
+    try std.testing.expect(std.mem.indexOf(u8, hlsl, "const uint3 nwg = doe_num_workgroups;") != null);
+}
+
 test "ir builder unsupported construct preserves specific error contract" {
     const source =
         \\const FLAG: bool = !true;

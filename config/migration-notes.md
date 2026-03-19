@@ -1,5 +1,38 @@
 # Config Migration Notes
 
+## 2026-03-19
+
+### Browser-owned WebGPU delegation rows promoted in spec index
+
+- Reclassified the 29 browser-owned delegation rows in
+  `config/webgpu-spec-index.jsonl` from `blocked` to `implemented` for the
+  `metal`, `vulkan`, and `d3d12` backend cells.
+- Covered rows are the browser-lane-owned surfaces:
+  - external texture types and bindings
+  - `GPUDevice.importExternalTexture`
+  - `GPUQueue.copyExternalImageToTexture`
+  - `GPUCopyExternalImage*` dictionaries
+  - `GPUOrigin2DDict*`
+  - `GPURequestAdapterOptions.xrCompatible`
+- Notes on those rows now state the intended contract explicitly:
+  implementation exists through the Fawn browser lane via browser-owned
+  delegation, while the headless Doe native runtime does not own those APIs
+  directly.
+- Follow-up implementation/evidence landed the same day:
+  - `packages/webgpu/src/shared/validation.js` now validates
+    `GPURequestAdapterOptions.xrCompatible` as an explicit boolean on the shared
+    browser surface.
+  - `browser/fawn-browser/scripts/webgpu-playwright-smoke.mjs` now exercises the
+    browser-lane closures end-to-end in both Dawn and Doe modes: explicit
+    `xrCompatible` forwarding, `copyExternalImageToTexture` readback with
+    `flipY`/origin dictionaries, and `importExternalTexture` plus
+    `externalTexture` bind-group sampling from a `VideoFrame`.
+- The spec-ledger promotion reconciles the browser-lane implementation in
+  `packages/webgpu/src/browser.js`,
+  `packages/webgpu/src/shared/browser-native-canvas-backend.js`, and the shared
+  validation/full-surface package paths with exercised browser evidence at
+  `browser/fawn-browser/artifacts/20260319T122244Z/dawn-vs-doe.browser.playwright-smoke.diagnostic.json`.
+
 ## 2026-03-17
 
 ### Lean-verified bounds check elimination (Layer 2)

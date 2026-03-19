@@ -53,6 +53,7 @@ const LAST_ERROR_CAP: usize = 1024;
 pub const Error = error{
     OutputTooLarge,
     InvalidIr,
+    UnsupportedBuiltin,
     UnsupportedConstruct,
     OutOfMemory,
     ShaderToolchainUnavailable,
@@ -146,6 +147,7 @@ pub fn emitWithToolchainConfig(module: *const ir.Module, out: []u8, config: Tool
     const hlsl_len = emit_hlsl.emit(module, &hlsl_buf) catch |err| switch (err) {
         error.OutputTooLarge => return error.OutputTooLarge,
         error.InvalidIr => return error.InvalidIr,
+        error.UnsupportedBuiltin => return error.UnsupportedBuiltin,
     };
 
     const alloc = std.heap.page_allocator;

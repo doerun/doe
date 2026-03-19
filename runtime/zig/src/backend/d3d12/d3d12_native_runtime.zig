@@ -6,6 +6,7 @@ const path_utils = @import("../common/path_utils.zig");
 const webgpu = @import("../../webgpu_ffi.zig");
 const model = @import("../../model.zig");
 const doe_wgsl = @import("../../doe_wgsl/mod.zig");
+const hlsl_dispatch_contract = @import("../../doe_wgsl/hlsl_dispatch_contract.zig");
 
 const d3d12_texture = @import("resources/d3d12_texture.zig");
 const d3d12_sampler = @import("resources/d3d12_sampler.zig");
@@ -46,13 +47,26 @@ extern fn d3d12_bridge_command_list_close(cmd_list: ?*anyopaque) callconv(.c) vo
 extern fn d3d12_bridge_queue_execute_command_list(queue: ?*anyopaque, cmd_list: ?*anyopaque) callconv(.c) void;
 extern fn d3d12_bridge_queue_signal(queue: ?*anyopaque, fence: ?*anyopaque, value: u64) callconv(.c) void;
 extern fn d3d12_bridge_fence_wait(fence: ?*anyopaque, value: u64) callconv(.c) void;
-extern fn d3d12_bridge_device_create_root_signature_empty(device: ?*anyopaque) callconv(.c) ?*anyopaque;
 extern fn d3d12_bridge_device_create_compute_pipeline(device: ?*anyopaque, root_sig: ?*anyopaque, bytecode: [*]const u8, bytecode_size: usize) callconv(.c) ?*anyopaque;
 extern fn d3d12_bridge_command_list_set_compute_root_signature(cmd_list: ?*anyopaque, root_sig: ?*anyopaque) callconv(.c) void;
 extern fn d3d12_bridge_command_list_set_pipeline_state(cmd_list: ?*anyopaque, pipeline: ?*anyopaque) callconv(.c) void;
 extern fn d3d12_bridge_command_list_dispatch(cmd_list: ?*anyopaque, x: u32, y: u32, z: u32) callconv(.c) void;
+extern fn d3d12_bridge_command_list_set_descriptor_heaps(cmd_list: ?*anyopaque, cbv_srv_uav_heap: ?*anyopaque, sampler_heap: ?*anyopaque) callconv(.c) void;
+extern fn d3d12_bridge_command_list_set_compute_root_descriptor_table(cmd_list: ?*anyopaque, root_parameter_index: u32, heap: ?*anyopaque, base_descriptor_index: u32) callconv(.c) void;
+extern fn d3d12_bridge_resource_map(resource: ?*anyopaque) callconv(.c) ?*anyopaque;
+extern fn d3d12_bridge_resource_unmap(resource: ?*anyopaque) callconv(.c) void;
+extern fn d3d12_bridge_device_create_root_signature_with_tables(device: ?*anyopaque, ranges: [*]const d3d12_descriptors.DescriptorRangeDesc, range_count: u32, flags: u32) callconv(.c) ?*anyopaque;
 extern fn d3d12_bridge_command_allocator_reset(allocator_h: ?*anyopaque) callconv(.c) c_int;
 extern fn d3d12_bridge_command_list_reset(cmd_list: ?*anyopaque, allocator_h: ?*anyopaque) callconv(.c) c_int;
+
+const D3D12_DESCRIPTOR_RANGE_TYPE_CBV: u32 = 2;
+
+const DispatchInfoWords = extern struct {
+    x: u32,
+    y: u32,
+    z: u32,
+    _pad: u32,
+};
 
 pub const PendingUpload = struct {
     cmd_allocator: ?*anyopaque,
@@ -91,6 +105,9 @@ pub const NativeD3D12Runtime = struct {
     compute_pipeline: ?*anyopaque = null,
     compute_allocator: ?*anyopaque = null,
     compute_cmd_list: ?*anyopaque = null,
+    dispatch_info_buffer: ?*anyopaque = null,
+    dispatch_info_cbv_index: u32 = 0,
+    has_dispatch_info_cbv: bool = false,
     current_shader_hash: u64 = 0,
     has_root_signature: bool = false,
     has_compute_pipeline: bool = false,
@@ -134,6 +151,11 @@ pub const NativeD3D12Runtime = struct {
         self.depth_stencil_state.deinit();
         self.texture_view_state.deinit(self.allocator);
         self.descriptor_state.deinit();
+        if (self.dispatch_info_buffer) |buffer| {
+            d3d12_bridge_release(buffer);
+            self.dispatch_info_buffer = null;
+            self.has_dispatch_info_cbv = false;
+        }
         d3d12_texture.release_all(&self.texture_map);
         if (self.fence) |f| {
             d3d12_bridge_release(f);
@@ -291,6 +313,7 @@ pub const NativeD3D12Runtime = struct {
 
         d3d12_bridge_command_list_set_compute_root_signature(self.compute_cmd_list, self.root_signature);
         d3d12_bridge_command_list_set_pipeline_state(self.compute_cmd_list, self.compute_pipeline);
+        try self.bind_dispatch_info(x, y, z);
 
         var i: u32 = 0;
         while (i < run_count) : (i += 1) {
@@ -491,7 +514,13 @@ pub const NativeD3D12Runtime = struct {
 
     fn build_compute_pipeline(self: *NativeD3D12Runtime, bytecode: []const u8, shader_hash: u64) !void {
         if (!self.has_root_signature) {
-            self.root_signature = d3d12_bridge_device_create_root_signature_empty(self.device) orelse return error.InvalidState;
+            const range = d3d12_descriptors.DescriptorRangeDesc{
+                .range_type = D3D12_DESCRIPTOR_RANGE_TYPE_CBV,
+                .num_descriptors = 1,
+                .base_shader_register = hlsl_dispatch_contract.DISPATCH_INFO_REGISTER_SLOT,
+                .register_space = hlsl_dispatch_contract.DISPATCH_INFO_REGISTER_SPACE,
+            };
+            self.root_signature = d3d12_bridge_device_create_root_signature_with_tables(self.device, @ptrCast(&range), 1, 0) orelse return error.InvalidState;
             self.has_root_signature = true;
         }
 
@@ -515,6 +544,44 @@ pub const NativeD3D12Runtime = struct {
             self.compute_cmd_list = d3d12_bridge_device_create_command_list(self.device, self.compute_allocator) orelse return error.InvalidState;
             d3d12_bridge_command_list_close(self.compute_cmd_list);
             self.has_compute_cmd = true;
+        }
+    }
+
+    fn bind_dispatch_info(self: *NativeD3D12Runtime, x: u32, y: u32, z: u32) !void {
+        try self.ensure_dispatch_info_cbv();
+        const mapped = d3d12_bridge_resource_map(self.dispatch_info_buffer) orelse return error.InvalidState;
+        const words: *DispatchInfoWords = @ptrCast(@alignCast(mapped));
+        words.* = .{ .x = x, .y = y, .z = z, ._pad = 0 };
+        d3d12_bridge_resource_unmap(self.dispatch_info_buffer);
+
+        d3d12_bridge_command_list_set_descriptor_heaps(
+            self.compute_cmd_list,
+            self.descriptor_state.cbv_srv_uav_heap,
+            self.descriptor_state.sampler_heap,
+        );
+        d3d12_bridge_command_list_set_compute_root_descriptor_table(
+            self.compute_cmd_list,
+            hlsl_dispatch_contract.DISPATCH_INFO_ROOT_PARAMETER_INDEX,
+            self.descriptor_state.cbv_srv_uav_heap,
+            self.dispatch_info_cbv_index,
+        );
+    }
+
+    fn ensure_dispatch_info_cbv(self: *NativeD3D12Runtime) !void {
+        if (self.dispatch_info_buffer == null) {
+            self.dispatch_info_buffer = d3d12_bridge_device_create_buffer(
+                self.device,
+                @intCast(hlsl_dispatch_contract.DISPATCH_INFO_BUFFER_BYTES),
+                dc.HEAP_TYPE_UPLOAD,
+            ) orelse return error.InvalidState;
+        }
+        if (!self.has_dispatch_info_cbv) {
+            self.dispatch_info_cbv_index = try self.descriptor_state.allocate_cbv(
+                self.device,
+                self.dispatch_info_buffer,
+                hlsl_dispatch_contract.DISPATCH_INFO_BUFFER_BYTES,
+            );
+            self.has_dispatch_info_cbv = true;
         }
     }
 

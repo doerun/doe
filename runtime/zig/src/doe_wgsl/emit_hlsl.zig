@@ -1,6 +1,7 @@
 const std = @import("std");
 const ir = @import("ir.zig");
 const maps = @import("emit_hlsl_maps.zig");
+const dispatch_contract = @import("hlsl_dispatch_contract.zig");
 const builtins = @import("emit_hlsl_builtins.zig");
 const stage_render = @import("emit_hlsl_stage.zig");
 const texture = @import("emit_hlsl_texture.zig");
@@ -54,10 +55,34 @@ const Emitter = struct {
         try self.write("float4 doe_unpack4x8snorm(uint v) { int4 s = int4(int(v << 24u) >> 24, int(v << 16u) >> 24, int(v << 8u) >> 24, int(v) >> 24); return clamp(float4(s) / 127.0, -1.0, 1.0); }\n");
         try self.write("uint doe_pack4x8unorm(float4 v) { uint4 c = uint4(round(saturate(v) * 255.0)); return c.x | (c.y << 8u) | (c.z << 16u) | (c.w << 24u); }\n");
         try self.write("uint doe_pack4x8snorm(float4 v) { int4 c = int4(round(clamp(v, -1.0, 1.0) * 127.0)); uint4 b = uint4(c) & 0xFFu; return b.x | (b.y << 8u) | (b.z << 16u) | (b.w << 24u); }\n");
+        if (module_uses_num_workgroups(self.module)) {
+            try self.emit_dispatch_info_contract();
+        }
         try self.emit_structs();
         try self.emit_globals();
         try self.emit_global_helpers();
         try self.emit_functions();
+    }
+
+    fn emit_dispatch_info_contract(self: *Emitter) EmitError!void {
+        try self.write("\ncbuffer ");
+        try self.write(dispatch_contract.DISPATCH_INFO_CBUFFER_NAME);
+        try self.write(" : register(b");
+        try self.write_u32(dispatch_contract.DISPATCH_INFO_REGISTER_SLOT);
+        try self.write(", space");
+        try self.write_u32(dispatch_contract.DISPATCH_INFO_REGISTER_SPACE);
+        try self.write(") {\n");
+        self.indent += 4;
+        try self.write_indent();
+        try self.write("uint3 ");
+        try self.write(dispatch_contract.DISPATCH_INFO_FIELD_NAME);
+        try self.write(";\n");
+        try self.write_indent();
+        try self.write("uint ");
+        try self.write(dispatch_contract.DISPATCH_INFO_PAD_FIELD_NAME);
+        try self.write(";\n");
+        self.indent -= 4;
+        try self.write("};\n");
     }
 
     fn emit_structs(self: *Emitter) EmitError!void {
@@ -303,7 +328,7 @@ const Emitter = struct {
         for (function.params.items) |param| {
             // Builtins that map to HLSL intrinsic calls are not entry-point parameters
             if (param.io) |io_attr| {
-                if (maps.hlsl_intrinsic_builtin(io_attr.builtin) != null) continue;
+                if (maps.hlsl_intrinsic_builtin(io_attr.builtin) != null or io_attr.builtin == .num_workgroups) continue;
             }
             if (!first_param) try self.write(", ");
             try self.emit_param(param);
@@ -311,6 +336,16 @@ const Emitter = struct {
         }
         try self.write(") {\n");
         self.indent += 4;
+        for (function.params.items) |param| {
+            const io_attr = param.io orelse continue;
+            if (io_attr.builtin != .num_workgroups) continue;
+            try self.write_indent();
+            try self.write("const uint3 ");
+            try self.write(param.name);
+            try self.write(" = ");
+            try self.write(dispatch_contract.DISPATCH_INFO_FIELD_NAME);
+            try self.write(";\n");
+        }
         try self.emit_stmt(function, function.root_stmt);
         self.indent -= 4;
         try self.write("}\n");
@@ -690,3 +725,13 @@ const Emitter = struct {
         }
     }
 };
+
+fn module_uses_num_workgroups(module: *const ir.Module) bool {
+    for (module.functions.items) |function| {
+        for (function.params.items) |param| {
+            const io_attr = param.io orelse continue;
+            if (io_attr.builtin == .num_workgroups) return true;
+        }
+    }
+    return false;
+}

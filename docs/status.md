@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-Date: 2026-03-18
+Date: 2026-03-19
 
 Doe is in active implementation phase. Runtime behavior is operational for dispatch decisions and replay-aware tracing, but several product and release-flow gaps remain before v1-grade stability claims.
 The execution platform strategy is full native Zig+WebGPU/FFI runtime execution.
@@ -11,6 +11,8 @@ Shader/compiler state improved materially since the earlier strategic notes:
 - the IR robustness transform in `runtime/zig/src/doe_wgsl/ir_transform_robustness.zig` covers sized arrays/vectors/matrices, runtime-sized arrays (with broadened base-expression whitelist: global_ref, member, load, local_ref, param_ref, index, call), and texture coordinate clamping for textureLoad/textureStore (2D/3D/cube/depth/multisampled/storage). Tests in `ir_transform_robustness_test.zig` (12 tests). Full CTS/security-surface hardening for remaining edge cases (e.g. texture_1d, textureSampleLevel integer coords) is follow-up work
 - SPIR-V texture/sampler lowering advanced materially in `runtime/zig/src/doe_wgsl/emit_spirv_texture.zig`, but Vulkan graphics-path promotion is still incomplete
 - `runtime/zig/src/doe_wgsl/bench_compilation.zig` now provides a local compilation benchmark harness; public published benchmark evidence is still pending
+- HLSL/DXIL `@builtin(num_workgroups)` no longer aliases `SV_GroupID`; it now lowers through a reserved dispatch-info constant-buffer contract (`runtime/zig/src/doe_wgsl/hlsl_dispatch_contract.zig`) that the D3D12 runtime binds before compute dispatch
+- WGSL compiler hardening now includes backend builtin-surface coverage for current IR builtins, an explicit HLSL emit contract around `num_workgroups`, and fixed-size array helper-parameter translation regression coverage across MSL/HLSL/SPIR-V
 - shader-side Lean bounds proofs in `pipeline/lean/Fawn/Shader/ComputeBounds.lean` are now integrated with the runtime: `lean_proof.zig` validates all five theorem names at comptime, `ir_transform_robustness.zig` pattern-matches `buf[gid.{x,y,z}]` on storage buffers and elides the clamp when `-Dlean-verified=true`, recording dispatch preconditions for host-side enforcement
 Track A (browser) diagnostics are now governed by a promoted macOS browser gate
 (`bench/browser/browser_gate.py`) that runs lane preflight, fresh Playwright
@@ -26,6 +28,19 @@ enum/value unions used by browser-owned adapters and textures
 (`GPUFeatureName`, `GPUTextureFormat`, texture/view/sample/layout enums, and
 render-pipeline primitive/vertex state), and preserves native browser
 `GPUPipelineError.reason` through async pipeline creation.
+The WebGPU spec index now treats the 29 browser-owned delegation rows
+(`externalTexture`, `importExternalTexture`, `copyExternalImageToTexture`,
+`GPUOrigin2DDict*`, and `xrCompatible`) as implemented product-surface closure
+rather than native-backend backlog: `config/webgpu-spec-index.jsonl` now marks
+those Metal/Vulkan/D3D12 cells as implemented with explicit notes that the
+implementation lives on the Fawn browser lane and delegates to browser-owned
+WebGPU objects, while the headless Doe runtime still does not own those APIs
+directly. Playwright browser smoke now exercises those closures end-to-end on
+the package-browser path in both Dawn and Doe modes: explicit
+`requestAdapter({ xrCompatible: false })` forwarding, two-tone
+`copyExternalImageToTexture` readback with `flipY`/origin dictionaries, and
+`importExternalTexture` plus `externalTexture` binding/layout sampling from a
+`VideoFrame` source.
 Vulkan package/runtime state closure advanced for the headless `@simulatte/webgpu`
 surface:
 - native bind-group layouts now retain `GPUTextureBindingLayout` texture semantics
@@ -256,7 +271,7 @@ Benchmark contract coverage snapshot (2026-02-25 update):
   - package now also exports a concrete browser-owned canvas provider helper in `packages/webgpu/src/shared/browser-native-canvas-backend.js` (`createNativeBrowserCanvasBackend`), which delegates `GPUCanvasContext.configure/getCurrentTexture/unconfigure` plus browser-native `importExternalTexture` / `copyExternalImageToTexture` calls onto real browser WebGPU objects for Track A/offscreen adapter use.
   - bind-group validation now recognizes `GPUExternalTexture` resources and `externalTexture` layout entries on the shared JS surface, but the headless Doe runtime package surface still fails fast for those bindings without an explicit browser canvas backend provider.
   - package now exposes an explicit browser composition subpath at `@simulatte/webgpu/browser` (`packages/webgpu/src/browser.js`), which assembles the shared full surface, encoder surface, browser surface classes, and native browser canvas backend into a browser-owned wrapper for `navigator.gpu`, `GPUAdapter`, `GPUDevice`, and `GPUCanvasContext` without changing the default headless package contract.
-  - `GPUDevice.importExternalTexture` and `GPUQueue.copyExternalImageToTexture` are now repo-local browser-package surfaces on `@simulatte/webgpu/browser`; Playwright smoke reports both methods present on the package-browser path. Native Doe Metal/Vulkan/D3D12 backends still do not own OS-level media interop themselves.
+  - `GPUDevice.importExternalTexture` and `GPUQueue.copyExternalImageToTexture` are now repo-local browser-package surfaces on `@simulatte/webgpu/browser`; Playwright smoke now executes both paths end-to-end on the package-browser surface, including `GPUExternalTexture` bind-group layout/resource wiring and readback validation. Native Doe Metal/Vulkan/D3D12 backends still do not own OS-level media interop themselves.
   - `doe.runCompute()` now infers binding access from Doe helper-created buffer usage and fails fast when a bare binding lacks Doe helper metadata or resolves to non-bindable/ambiguous usage.
     - prebuild infrastructure for self-contained installs:
       - `scripts/install.js`: uses prebuilt binaries when present, falls back to node-gyp
@@ -645,7 +660,7 @@ Browser integration (`browser/fawn-browser`):
 - the browser lane has a concrete plan, contracts, smoke/bench harnesses, and bring-up scripts
 - Track A (browser) M1-M3 governance is now wired through `bench/browser/browser_gate.py` with explicit ownership and cross-owner promotion approvals
 - Track B (modules) M4-M6 promotion governance is now wired for all five modules, but browser-lane rollout remains an active bring-up track rather than a finished product surface
-- package-browser validation on Linux/Chrome now passes smoke in both Dawn and Doe modes, including compute, render, `preferredCanvasFormat`, `importExternalTexture`, and `queue.copyExternalImageToTexture`. The layered bench now runs on the package-browser path with `62/68` required L1 scenarios and `3/4` required L2 workflows passing per mode; it remains diagnostic with `14` required failures left overall.
+- package-browser validation now passes smoke in both Dawn and Doe modes for compute, render, `preferredCanvasFormat`, explicit `xrCompatible` requestAdapter forwarding, `queue.copyExternalImageToTexture` readback, and `importExternalTexture` plus `GPUExternalTexture` binding/layout sampling. Current macOS evidence lives at `browser/fawn-browser/artifacts/20260319T122244Z/dawn-vs-doe.browser.playwright-smoke.diagnostic.json`. The layered bench now runs on the package-browser path with `62/68` required L1 scenarios and `3/4` required L2 workflows passing per mode; it remains diagnostic with `14` required failures left overall.
 
 Performance substantiation:
 - the broad Metal lane remains under timing-scope audit and is not citable as broad claim evidence

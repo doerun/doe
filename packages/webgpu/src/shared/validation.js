@@ -549,6 +549,9 @@ function normalizeRequestAdapterOptions(options, path = 'GPU.requestAdapter') {
   if (normalized.forceFallbackAdapter !== undefined) {
     result.forceFallbackAdapter = assertBoolean(normalized.forceFallbackAdapter, path, 'options.forceFallbackAdapter');
   }
+  if (normalized.xrCompatible !== undefined) {
+    result.xrCompatible = assertBoolean(normalized.xrCompatible, path, 'options.xrCompatible');
+  }
   return result;
 }
 

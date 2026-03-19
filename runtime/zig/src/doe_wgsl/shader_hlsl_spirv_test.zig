@@ -10,6 +10,7 @@ const emit_hlsl = @import("emit_hlsl.zig");
 const emit_spirv = @import("emit_spirv.zig");
 const spirv = @import("spirv_builder.zig");
 const mod = @import("mod.zig");
+const dispatch_contract = @import("hlsl_dispatch_contract.zig");
 const maps = @import("emit_hlsl_maps.zig");
 
 const testing = std.testing;
@@ -26,6 +27,30 @@ const translateToSpirv = mod.translateToSpirv;
 
 fn contains(haystack: []const u8, needle: []const u8) bool {
     return std.mem.indexOf(u8, haystack, needle) != null;
+}
+
+fn expected_hlsl_builtin_has_semantic(builtin: ir.Builtin) bool {
+    return switch (builtin) {
+        .none => false,
+        .position,
+        .frag_depth,
+        .front_facing,
+        .global_invocation_id,
+        .local_invocation_id,
+        .local_invocation_index,
+        .workgroup_id,
+        .sample_index,
+        .sample_mask,
+        .vertex_index,
+        .instance_index,
+        .clip_distances,
+        .primitive_index,
+        => true,
+        .num_workgroups,
+        .subgroup_size,
+        .subgroup_invocation_id,
+        => false,
+    };
 }
 
 fn read_u32_le(bytes: []const u8, offset: usize) u32 {
@@ -210,6 +235,13 @@ test "hlsl builtin map: sample_index maps to SV_SampleIndex" {
     try testing.expectEqualStrings("SV_SampleIndex", maps.hlsl_builtin_name(.sample_index));
 }
 
+test "hlsl builtin map covers the current IR builtin surface" {
+    inline for (std.meta.fields(ir.Builtin)) |field| {
+        const builtin: ir.Builtin = @enumFromInt(field.value);
+        try testing.expectEqual(expected_hlsl_builtin_has_semantic(builtin), maps.hlsl_builtin_has_semantic(builtin));
+    }
+}
+
 test "hlsl intrinsic: subgroup_size maps to WaveGetLaneCount()" {
     try testing.expectEqualStrings("WaveGetLaneCount()", maps.hlsl_intrinsic_builtin(.subgroup_size).?);
 }
@@ -276,7 +308,7 @@ test "hlsl compute: simple shader emits numthreads and SV_DispatchThreadID" {
     try testing.expect(contains(hlsl, "void main"));
 }
 
-test "hlsl compute: num_workgroups builtin is rejected until lowered correctly" {
+test "hlsl compute: num_workgroups builtin lowers via dispatch info contract" {
     const source =
         \\@group(0) @binding(0) var<storage, read_write> data: array<u32, 1>;
         \\
@@ -286,7 +318,13 @@ test "hlsl compute: num_workgroups builtin is rejected until lowered correctly" 
         \\}
     ;
     var out: [MAX_HLSL_OUTPUT]u8 = undefined;
-    try testing.expectError(TranslateError.UnsupportedBuiltin, translateToHlsl(allocator, source, &out));
+    const len = try translateToHlsl(allocator, source, &out);
+    try testing.expect(len > 0);
+    const hlsl = out[0..len];
+    try testing.expect(contains(hlsl, dispatch_contract.DISPATCH_INFO_CBUFFER_NAME));
+    try testing.expect(contains(hlsl, "register(b0, space7)"));
+    try testing.expect(contains(hlsl, dispatch_contract.DISPATCH_INFO_FIELD_NAME));
+    try testing.expect(contains(hlsl, "const uint3 nwg = doe_num_workgroups;"));
 }
 
 test "hlsl compute: multi-dimensional workgroup size" {
