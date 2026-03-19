@@ -445,7 +445,7 @@ test "align_cbv_size rounds up to 256" {
     try std.testing.expectEqual(@as(u64, 256), align_cbv_size(256));
     try std.testing.expectEqual(@as(u64, 512), align_cbv_size(257));
     try std.testing.expectEqual(@as(u64, 512), align_cbv_size(512));
-    try std.testing.expectEqual(@as(u64, 1024), align_cbv_size(768));
+    try std.testing.expectEqual(@as(u64, 768), align_cbv_size(768));
 }
 
 test "DescriptorHeapState starts zeroed" {

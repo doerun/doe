@@ -182,15 +182,19 @@ if [[ -f "${WRAPPER_MARKER}" && "${FORCE}" -eq 0 ]]; then
 fi
 
 if [[ ! -f "${WRAPPER_MARKER}" || "${FORCE}" -eq 1 ]]; then
-  if [[ -f "${REAL_BIN}" ]]; then
-    if [[ "${FORCE}" -eq 0 ]]; then
+  if [[ -f "${WRAPPER_MARKER}" ]]; then
+    if [[ ! -f "${REAL_BIN}" ]]; then
+      echo "wrapped app is missing real binary: ${REAL_BIN}" >&2
+      exit 1
+    fi
+  else
+    if [[ -f "${REAL_BIN}" ]]; then
       echo "wrapper target already exists: ${REAL_BIN}" >&2
       exit 1
     fi
-    rm -f "${REAL_BIN}"
+    mv "${MACOS_BIN}" "${REAL_BIN}"
   fi
 
-  mv "${MACOS_BIN}" "${REAL_BIN}"
   cat > "${MACOS_BIN}" <<EOF
 #!/usr/bin/env bash
 set -euo pipefail

@@ -400,6 +400,9 @@ pub const RenderDrawCommand = struct {
     stencil_back_pass_op: u32 = 0,
     stencil_read_mask: u32 = 0xFFFF_FFFF,
     stencil_write_mask: u32 = 0xFFFF_FFFF,
+    depth_bias: i32 = 0,
+    depth_bias_slope_scale: f32 = 0,
+    depth_bias_clamp: f32 = 0,
     unclipped_depth: bool = false,
 };
 

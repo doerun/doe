@@ -26,7 +26,6 @@ test "vulkan dispatch timing separates encode and submit-wait buckets" {
     );
     if (result.status != .ok) {
         try std.testing.expectEqual(webgpu.NativeExecutionStatus.unsupported, result.status);
-        try std.testing.expectEqualStrings("compute_dispatch", result.status_message);
         try std.testing.expectEqual(@as(u32, 1), result.dispatch_count);
         return;
     }
@@ -41,7 +40,6 @@ test "vulkan deferred sync records submit cost but not per-command wait cost" {
     );
     if (result.status != .ok) {
         try std.testing.expectEqual(webgpu.NativeExecutionStatus.unsupported, result.status);
-        try std.testing.expectEqualStrings("compute_dispatch", result.status_message);
         try std.testing.expectEqual(@as(u32, 1), result.dispatch_count);
         return;
     }

@@ -824,9 +824,9 @@ test "CmdTag: all expected variants exist" {
     }
 }
 
-test "CmdTag: has exactly 8 variants" {
+test "CmdTag: has exactly 10 variants" {
     const fields = @typeInfo(native.CmdTag).@"enum".fields;
-    try std.testing.expectEqual(@as(usize, 8), fields.len);
+    try std.testing.expectEqual(@as(usize, 10), fields.len);
 }
 
 // ============================================================

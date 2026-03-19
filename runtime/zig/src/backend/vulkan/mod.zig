@@ -363,6 +363,12 @@ fn execute_dispatch_command(
 ) !webgpu.NativeExecutionResult {
     const runtime = try ensure_runtime_bootstrapped(self);
 
+    if (!runtime.has_pipeline) {
+        const noop_words = try runtime.load_kernel_spirv(self.allocator, "dispatch_noop.wgsl");
+        defer self.allocator.free(noop_words);
+        try runtime.set_compute_shader_spirv(noop_words, null, null, false);
+    }
+
     var warmup_index: u32 = 0;
     while (warmup_index < warmup_dispatch_count) : (warmup_index += 1) {
         _ = try runtime.run_dispatch(x, y, z, .per_command, self.queue_wait_mode, .off);
@@ -620,6 +626,7 @@ fn execute_runtime_command(self: *ZigVulkanBackend, command: model.Command) !web
         .upload => |upload| try execute_upload(self, setup_ns, upload),
         .barrier => try execute_barrier(self, setup_ns),
         .dispatch => |dispatch| try execute_dispatch_command(self, setup_ns, dispatch.x, dispatch.y, dispatch.z, 1, 0),
+        .dispatch_indirect => |dispatch| try execute_dispatch_command(self, setup_ns, dispatch.x, dispatch.y, dispatch.z, 1, 0),
         .kernel_dispatch => |kernel_dispatch| try execute_kernel_dispatch(self, setup_ns, kernel_dispatch),
         .render_draw => |render_draw| try execute_render_draw_command(self, setup_ns, render_draw),
         .draw_indirect => |render_draw| try execute_render_draw_command(self, setup_ns, render_draw),

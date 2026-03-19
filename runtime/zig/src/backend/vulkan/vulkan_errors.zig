@@ -8,6 +8,7 @@ const common_errors = @import("../common/errors.zig");
 const vk = @import("vulkan_types.zig");
 
 pub const VkResult = vk.VkResult;
+pub const VulkanError = common_errors.BackendNativeError;
 
 // --- VkResult error codes (named for fail-fast error mapping) ---
 pub const VK_ERROR_TOO_MANY_OBJECTS: VkResult = -7;

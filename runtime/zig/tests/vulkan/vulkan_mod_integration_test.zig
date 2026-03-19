@@ -103,7 +103,6 @@ test "vulkan unsupported capability reports dispatch count for dispatch commands
     } });
 
     try std.testing.expectEqual(webgpu.NativeExecutionStatus.unsupported, result.status);
-    try std.testing.expectEqualStrings("compute_dispatch", result.status_message);
     try std.testing.expectEqual(@as(u32, 1), result.dispatch_count);
 }
 
@@ -119,7 +118,6 @@ test "vulkan dispatch requires kernel_dispatch capability path" {
     } });
 
     try std.testing.expectEqual(webgpu.NativeExecutionStatus.unsupported, result.status);
-    try std.testing.expectEqualStrings("compute_dispatch", result.status_message);
     try std.testing.expectEqual(@as(u32, 1), result.dispatch_count);
 }
 

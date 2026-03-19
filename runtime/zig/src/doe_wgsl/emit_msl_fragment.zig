@@ -149,7 +149,7 @@ const FragmentEmitter = struct {
     fn emit_fragment_in_attr(self: *FragmentEmitter, io: ir.IoAttr) EmitError!void {
         if (io.builtin != .none) {
             try self.write("[[");
-            try self.write(fragment_input_builtin_attr(io.builtin) orelse return error.UnsupportedBuiltin);
+            try self.write(try fragment_input_builtin_attr(io.builtin));
             try self.write("]]");
         } else if (io.location) |loc| {
             // Location-decorated scalar fragment inputs (uncommon but valid).
@@ -197,12 +197,12 @@ const FragmentEmitter = struct {
     }
 };
 
-fn fragment_input_builtin_attr(builtin: ir.Builtin) ?[]const u8 {
+fn fragment_input_builtin_attr(builtin: ir.Builtin) EmitError![]const u8 {
     return switch (builtin) {
         .position => "position",
         .front_facing => "front_facing",
         .sample_index => "sample_id",
         .sample_mask => "sample_mask",
-        else => null,
+        else => error.UnsupportedBuiltin,
     };
 }

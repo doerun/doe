@@ -125,6 +125,7 @@ fn ensure_texture(self: anytype, resource: model.CopyTextureResource, required_u
         max_dim(resource.height),
         resource.depth_or_array_layers,
         mip_levels,
+        resource.sample_count,
         resource.format,
         @intCast(usage),
         resource.dimension,

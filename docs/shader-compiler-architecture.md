@@ -251,7 +251,7 @@ Currently blocked by availability: nir_to_dxil is internal to Mesa's Vulkan ICD 
 | IR → SPIR-V | emit_spirv, emit_spirv_builtins, emit_spirv_fn, emit_spirv_stages, spirv_builder | 2,843 | Working, compute + vertex/fragment (struct I/O, builtins, MRT, frag_depth, interpolation); samplers/graphics incomplete |
 | IR → DXIL | emit_dxil | 383 | Stub |
 | Legacy MSL | doe_wgsl_msl | 641 | Legacy regex-based path |
-| Public API + tests | mod.zig, mod_test.zig | 1,920 | All four translateTo* wired |
+| Public API + tests | mod.zig, mod_*_test.zig, emit_*_test.zig, coverage_*_test.zig | Sharded | All four translateTo* wired; tests split by backend, coverage, and integration concern |
 | **Total** | **33 files** | **13,711** | |
 
 ## Remaining work (current reality)

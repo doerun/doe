@@ -99,6 +99,10 @@ pub fn build(b: *std.Build) void {
         });
     } else {
         dropin_lib.linkSystemLibrary("dl");
+        dropin_lib.addCSourceFile(.{
+            .file = b.path("src/backend/d3d12/d3d12_bridge_stubs.c"),
+            .flags = &.{},
+        });
         if (target.result.os.tag == .linux or target.result.os.tag == .macos) {
             if (target.result.os.tag == .macos) {
                 dropin_lib.addLibraryPath(.{ .cwd_relative = "/opt/homebrew/lib" });
@@ -227,7 +231,14 @@ pub fn build(b: *std.Build) void {
         });
     } else {
         exe.linkSystemLibrary("dl");
+        exe.addCSourceFile(.{
+            .file = b.path("src/backend/d3d12/d3d12_bridge_stubs.c"),
+            .flags = &.{},
+        });
         if (target.result.os.tag == .linux or target.result.os.tag == .macos) {
+            if (target.result.os.tag == .macos) {
+                exe.addLibraryPath(.{ .cwd_relative = "/opt/homebrew/lib" });
+            }
             exe.linkSystemLibrary("vulkan");
         }
         if (target.result.os.tag == .macos) {
@@ -351,7 +362,14 @@ pub fn build(b: *std.Build) void {
         });
     } else {
         module_runner.linkSystemLibrary("dl");
+        module_runner.addCSourceFile(.{
+            .file = b.path("src/backend/d3d12/d3d12_bridge_stubs.c"),
+            .flags = &.{},
+        });
         if (target.result.os.tag == .linux or target.result.os.tag == .macos) {
+            if (target.result.os.tag == .macos) {
+                module_runner.addLibraryPath(.{ .cwd_relative = "/opt/homebrew/lib" });
+            }
             module_runner.linkSystemLibrary("vulkan");
         }
         if (target.result.os.tag == .macos) {
@@ -414,7 +432,14 @@ pub fn build(b: *std.Build) void {
         });
     } else {
         core_dropin_lib.linkSystemLibrary("dl");
+        core_dropin_lib.addCSourceFile(.{
+            .file = b.path("src/backend/d3d12/d3d12_bridge_stubs.c"),
+            .flags = &.{},
+        });
         if (target.result.os.tag == .linux or target.result.os.tag == .macos) {
+            if (target.result.os.tag == .macos) {
+                core_dropin_lib.addLibraryPath(.{ .cwd_relative = "/opt/homebrew/lib" });
+            }
             core_dropin_lib.linkSystemLibrary("vulkan");
         }
         if (target.result.os.tag == .macos) {
@@ -462,7 +487,14 @@ pub fn build(b: *std.Build) void {
         });
     } else {
         test_exec.linkSystemLibrary("dl");
+        test_exec.addCSourceFile(.{
+            .file = b.path("src/backend/d3d12/d3d12_bridge_stubs.c"),
+            .flags = &.{},
+        });
         if (target.result.os.tag == .linux or target.result.os.tag == .macos) {
+            if (target.result.os.tag == .macos) {
+                test_exec.addLibraryPath(.{ .cwd_relative = "/opt/homebrew/lib" });
+            }
             test_exec.linkSystemLibrary("vulkan");
         }
         if (target.result.os.tag == .macos) {
@@ -510,7 +542,14 @@ pub fn build(b: *std.Build) void {
         });
     } else {
         core_test_exec.linkSystemLibrary("dl");
+        core_test_exec.addCSourceFile(.{
+            .file = b.path("src/backend/d3d12/d3d12_bridge_stubs.c"),
+            .flags = &.{},
+        });
         if (target.result.os.tag == .linux or target.result.os.tag == .macos) {
+            if (target.result.os.tag == .macos) {
+                core_test_exec.addLibraryPath(.{ .cwd_relative = "/opt/homebrew/lib" });
+            }
             core_test_exec.linkSystemLibrary("vulkan");
         }
         if (target.result.os.tag == .macos) {
@@ -558,7 +597,14 @@ pub fn build(b: *std.Build) void {
         });
     } else {
         full_test_exec.linkSystemLibrary("dl");
+        full_test_exec.addCSourceFile(.{
+            .file = b.path("src/backend/d3d12/d3d12_bridge_stubs.c"),
+            .flags = &.{},
+        });
         if (target.result.os.tag == .linux or target.result.os.tag == .macos) {
+            if (target.result.os.tag == .macos) {
+                full_test_exec.addLibraryPath(.{ .cwd_relative = "/opt/homebrew/lib" });
+            }
             full_test_exec.linkSystemLibrary("vulkan");
         }
         if (target.result.os.tag == .macos) {
@@ -606,7 +652,14 @@ pub fn build(b: *std.Build) void {
         });
     } else {
         d3d12_test_exec.linkSystemLibrary("dl");
+        d3d12_test_exec.addCSourceFile(.{
+            .file = b.path("src/backend/d3d12/d3d12_bridge_stubs.c"),
+            .flags = &.{},
+        });
         if (target.result.os.tag == .linux or target.result.os.tag == .macos) {
+            if (target.result.os.tag == .macos) {
+                d3d12_test_exec.addLibraryPath(.{ .cwd_relative = "/opt/homebrew/lib" });
+            }
             d3d12_test_exec.linkSystemLibrary("vulkan");
         }
     }

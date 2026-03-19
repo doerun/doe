@@ -152,7 +152,7 @@ const VertexEmitter = struct {
     fn emit_vertex_in_attr(self: *VertexEmitter, io: ir.IoAttr) EmitError!void {
         if (io.builtin != .none) {
             try self.write("[[");
-            try self.write(vertex_input_builtin_attr(io.builtin) orelse return error.UnsupportedBuiltin);
+            try self.write(try vertex_input_builtin_attr(io.builtin));
             try self.write("]]");
         } else if (io.location) |loc| {
             try self.write("[[attribute(");
@@ -209,10 +209,10 @@ const VertexEmitter = struct {
     }
 };
 
-fn vertex_input_builtin_attr(builtin: ir.Builtin) ?[]const u8 {
+fn vertex_input_builtin_attr(builtin: ir.Builtin) EmitError![]const u8 {
     return switch (builtin) {
         .vertex_index => "vertex_id",
         .instance_index => "instance_id",
-        else => null,
+        else => error.UnsupportedBuiltin,
     };
 }

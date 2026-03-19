@@ -479,6 +479,7 @@ pub const NativeMetalRuntime = struct {
                 t.height,
                 t.depth_or_array_layers,
                 mip_count,
+                t.sample_count,
                 t.format,
                 @intCast(t.usage),
                 t.dimension,

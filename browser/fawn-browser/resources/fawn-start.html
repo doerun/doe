@@ -128,13 +128,9 @@ fn hexGrid(uv: vec2<f32>, scale: f32) -> HexCell {
 
 struct FlipResult { foreshorten: f32, glitter: f32, tilt: f32, }
 
-fn calcFlip(click: vec4<f32>, co: vec2<f32>, asp: f32, r3: f32) -> FlipResult {
+fn calcFlip(click: vec4<f32>) -> FlipResult {
   if (click.w < 0.5) { return FlipResult(1.0, 0.0, 0.0); }
-  let cc = vec2<f32>((click.x - 0.5) * asp, click.y - 0.5);
-  let delta = co - cc;
-  let wd = length(delta) + (delta.x + delta.y) * 0.15;
-  let delay = wd * 1.333;
-  let t = clamp((click.z - delay) / 0.8, 0.0, 1.0);
+  let t = clamp(click.z / 0.8, 0.0, 1.0);
   let e = t * (2.0 - t);
   let ang = e * 3.14159;
   let rawFS = cos(ang);
@@ -167,10 +163,10 @@ fn fs(@builtin(position) fc: vec4<f32>) -> @location(0) vec4<f32> {
   let r3 = hash(id + vec2<f32>(213.0, 47.0));
 
   // Accumulate 3D flip from all active clicks
-  let f0 = calcFlip(u.c0, co, asp, r3);
-  let f1 = calcFlip(u.c1, co, asp, r3);
-  let f2 = calcFlip(u.c2, co, asp, r3);
-  let f3 = calcFlip(u.c3, co, asp, r3);
+  let f0 = calcFlip(u.c0);
+  let f1 = calcFlip(u.c1);
+  let f2 = calcFlip(u.c2);
+  let f3 = calcFlip(u.c3);
   let totalFS = f0.foreshorten * f1.foreshorten * f2.foreshorten * f3.foreshorten;
   let glitter = max(max(f0.glitter, f1.glitter), max(f2.glitter, f3.glitter));
   let totalTilt = max(max(f0.tilt, f1.tilt), max(f2.tilt, f3.tilt));
@@ -299,8 +295,6 @@ fn fs(@builtin(position) fc: vec4<f32>) -> @location(0) vec4<f32> {
 
     document.body.addEventListener('click', function(e) {
       clicks.push({
-        x: e.clientX / window.innerWidth,
-        y: e.clientY / window.innerHeight,
         t: performance.now() * 0.001
       });
       if (clicks.length > MAX_CLICKS) clicks.shift();
@@ -341,12 +335,12 @@ fn fs(@builtin(position) fc: vec4<f32>) -> @location(0) vec4<f32> {
     data[1] = overlay.height;
     data[2] = elapsed;
     data[3] = phase;
-    // c0..c3 at offsets 4,8,12,16 — each is (clickX_norm, clickY_norm, elapsed_since_click, active)
+    // c0..c3 at offsets 4,8,12,16 — each is (reserved, reserved, elapsed_since_click, active)
     for (var i = 0; i < 4; i++) {
       var base = 4 + i * 4;
       if (i < clicks.length) {
-        data[base]     = clicks[i].x;
-        data[base + 1] = clicks[i].y;
+        data[base]     = 0.0;
+        data[base + 1] = 0.0;
         data[base + 2] = now - clicks[i].t;
         data[base + 3] = 1.0;
       } else {
