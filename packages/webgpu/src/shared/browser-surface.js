@@ -81,6 +81,9 @@ function createBrowserSurfaceClasses({ canvasBackend, fullClasses }) {
 
     configure(configuration) {
       const config = assertObject(configuration, 'GPUCanvasContext.configure', 'configuration');
+      if (this._currentTexture && !this._currentTexture._destroyed) {
+        destroyResource(this._currentTexture, (native) => native.destroy?.());
+      }
       this._configuration = normalizeCanvasConfiguration(config, 'GPUCanvasContext.configure');
       this._currentTexture = null;
       canvasBackend.canvasContextConfigure(this, this._configuration);
@@ -104,6 +107,9 @@ function createBrowserSurfaceClasses({ canvasBackend, fullClasses }) {
       if (!this._configuration) {
         failValidation('GPUCanvasContext.getCurrentTexture', 'context is not configured');
       }
+      if (this._currentTexture && !this._currentTexture._destroyed) {
+        destroyResource(this._currentTexture, (native) => native.destroy?.());
+      }
       this._currentTexture = canvasBackend.canvasContextGetCurrentTexture(
         this, this._configuration, fullClasses,
       );
@@ -111,6 +117,9 @@ function createBrowserSurfaceClasses({ canvasBackend, fullClasses }) {
     }
 
     unconfigure() {
+      if (this._currentTexture && !this._currentTexture._destroyed) {
+        destroyResource(this._currentTexture, (native) => native.destroy?.());
+      }
       if (this._configuration) {
         canvasBackend.canvasContextUnconfigure(this);
       }

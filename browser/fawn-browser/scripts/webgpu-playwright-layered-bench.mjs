@@ -874,17 +874,22 @@ async function runScenario(page, template, iterations, browserSurfaceArgs) {
       }
 
       async function runRenderBundleReplay(device) {
+        let stage = "init";
+        try {
         const iterations = runIterations.render;
         const width = 64;
         const height = 64;
         const canvas = new OffscreenCanvas(width, height);
+        stage = "getContext";
         const context = getCanvasContext(canvas);
         if (!context) {
           throw new Error("OffscreenCanvas.getContext('webgpu') returned null");
         }
         const format = gpu.getPreferredCanvasFormat();
+        stage = "configure";
         context.configure({ device, format, alphaMode: "opaque" });
 
+        stage = "shaderModule";
         const shader = device.createShaderModule({
           code: `
             @vertex
@@ -911,6 +916,7 @@ async function runScenario(page, template, iterations, browserSurfaceArgs) {
           primitive: { topology: "triangle-list" },
         });
 
+        stage = "bundleEncoder";
         const bundleEncoder = device.createRenderBundleEncoder({
           colorFormats: [format],
         });
@@ -919,6 +925,7 @@ async function runScenario(page, template, iterations, browserSurfaceArgs) {
         const bundle = bundleEncoder.finish();
 
         for (let i = 0; i < 10; i += 1) {
+          stage = `warmup.frame:${i}`;
           const encoder = device.createCommandEncoder();
           const pass = encoder.beginRenderPass({
             colorAttachments: [
@@ -938,6 +945,7 @@ async function runScenario(page, template, iterations, browserSurfaceArgs) {
 
         const t0 = nowMs();
         for (let i = 0; i < iterations; i += 1) {
+          stage = `timed.frame:${i}`;
           const encoder = device.createCommandEncoder();
           const pass = encoder.beginRenderPass({
             colorAttachments: [
@@ -957,6 +965,9 @@ async function runScenario(page, template, iterations, browserSurfaceArgs) {
         const t1 = nowMs();
         result.metrics.iterations = iterations;
         result.metrics.usPerOp = ((t1 - t0) * 1000) / iterations;
+        } catch (error) {
+          throw new Error(`${stage}: ${String(error)}`);
+        }
       }
 
       async function runTextureSampleRaster(device) {
@@ -1150,17 +1161,22 @@ async function runScenario(page, template, iterations, browserSurfaceArgs) {
       }
 
       async function runSurfacePresent(device) {
+        let stage = "init";
+        try {
         const iterations = runIterations.render;
         const canvas = new OffscreenCanvas(128, 128);
+        stage = "getContext";
         const context = getCanvasContext(canvas);
         if (!context) {
           throw new Error("OffscreenCanvas.getContext('webgpu') returned null");
         }
         const format = gpu.getPreferredCanvasFormat();
+        stage = "configure";
         context.configure({ device, format, alphaMode: "opaque" });
 
         const t0 = nowMs();
         for (let i = 0; i < iterations; i += 1) {
+          stage = `frame:${i}`;
           const encoder = device.createCommandEncoder();
           const pass = encoder.beginRenderPass({
             colorAttachments: [
@@ -1179,11 +1195,17 @@ async function runScenario(page, template, iterations, browserSurfaceArgs) {
         const t1 = nowMs();
         result.metrics.iterations = iterations;
         result.metrics.usPerFrame = ((t1 - t0) * 1000) / iterations;
+        } catch (error) {
+          throw new Error(`${stage}: ${String(error)}`);
+        }
       }
 
       async function runCanvasReconfigureResize(device) {
+        let stage = "init";
+        try {
         const sizes = [64, 96, 128, 160, 192, 256];
         const canvas = new OffscreenCanvas(sizes[0], sizes[0]);
+        stage = "getContext";
         const context = getCanvasContext(canvas);
         if (!context) {
           throw new Error("OffscreenCanvas.getContext('webgpu') returned null");
@@ -1191,6 +1213,7 @@ async function runScenario(page, template, iterations, browserSurfaceArgs) {
         const format = gpu.getPreferredCanvasFormat();
         const t0 = nowMs();
         for (const size of sizes) {
+          stage = `resize:${size}`;
           canvas.width = size;
           canvas.height = size;
           context.configure({ device, format, alphaMode: "opaque" });
@@ -1213,6 +1236,9 @@ async function runScenario(page, template, iterations, browserSurfaceArgs) {
         result.metrics.resizeCount = sizes.length;
         result.metrics.totalMs = t1 - t0;
         result.metrics.msPerResize = result.metrics.totalMs / sizes.length;
+        } catch (error) {
+          throw new Error(`${stage}: ${String(error)}`);
+        }
       }
 
       async function runQueueSubmitBurst(device) {
