@@ -174,6 +174,8 @@ fn native_capability_set() capabilities.CapabilitySet {
     var set = capabilities.CapabilitySet{};
     set.declare_all(&.{
         .kernel_dispatch,
+        .compute_dispatch,
+        .compute_dispatch_indirect,
         .buffer_upload,
         .buffer_copy,
         .barrier_sync,

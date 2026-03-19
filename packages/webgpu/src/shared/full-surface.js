@@ -426,6 +426,7 @@ function createFullSurfaceClasses({
       this.usage = meta?.usage ?? 0;
       this.textureBindingViewDimension = meta?.textureBindingViewDimension;
       this.viewFormats = Array.isArray(meta?.viewFormats) ? meta.viewFormats : [];
+      this._externallyOwned = meta?.externallyOwned === true;
       this.label = '';
       initResource(this, 'GPUTexture', owner);
     }

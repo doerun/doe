@@ -7,6 +7,7 @@ const layout = @import("layout_utils.zig");
 pub const EmitError = error{
     OutputTooLarge,
     InvalidIr,
+    UnsupportedBuiltin,
 };
 
 /// Attempt to emit a builtin call.  Returns true if the call was handled,

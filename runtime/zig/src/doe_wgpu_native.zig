@@ -167,7 +167,7 @@ pub const MAX_SHADER_BINDINGS: usize = wgsl_compiler.MAX_BINDINGS;
 
 pub const CompilationMessageKind = enum(u8) {
     none,
-    error,
+    @"error",
     warning,
     info,
 };

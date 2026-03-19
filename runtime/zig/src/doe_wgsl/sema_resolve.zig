@@ -2,8 +2,10 @@ const std = @import("std");
 const ast_mod = @import("ast.zig");
 const ir = @import("ir.zig");
 const sema_helpers = @import("sema_helpers.zig");
+const sema_types = @import("sema_types.zig");
 
 const Node = ast_mod.Node;
+const AnalyzeError = sema_types.AnalyzeError;
 
 const parse_access = sema_helpers.parse_access;
 const parse_address_space = sema_helpers.parse_address_space;
@@ -31,9 +33,7 @@ pub fn resolve_type_parameterized(self: anytype, node: Node) !ir.TypeId {
         const elem = try self.resolve_type_node(self.module.tree.extra_data.items[params_start]);
         var len: ?u32 = null;
         if (params_len == 2) {
-            const len_node = self.module.tree.nodes.items[self.module.tree.extra_data.items[params_start + 1]];
-            if (len_node.tag != .int_literal) return error.InvalidType;
-            len = parse_wgsl_int_literal(u32, self.module.tree.tokenSlice(len_node.main_token)) catch return error.InvalidType;
+            len = try resolve_array_length_expr(self, self.module.tree.extra_data.items[params_start + 1], 0);
         }
         return try self.module.types.intern(.{ .array = .{ .elem = elem, .len = len } });
     }
@@ -84,4 +84,46 @@ pub fn resolve_type_parameterized(self: anytype, node: Node) !ir.TypeId {
         return try self.module.types.intern(.{ .ref = .{ .elem = elem, .addr_space = addr_space, .access = access } });
     }
     return error.UnknownType;
+}
+
+const MAX_ARRAY_LENGTH_CONST_DEPTH: u8 = 32;
+
+fn resolve_array_length_expr(self: anytype, node_idx: u32, depth: u8) AnalyzeError!u32 {
+    if (depth >= MAX_ARRAY_LENGTH_CONST_DEPTH) return error.InvalidType;
+    const tree = self.module.tree;
+    const node = tree.nodes.items[node_idx];
+    return switch (node.tag) {
+        .int_literal => parse_wgsl_int_literal(u32, tree.tokenSlice(node.main_token)) catch error.InvalidType,
+        .ident_expr, .type_name => resolve_named_array_length_const(self, tree.tokenSlice(node.main_token), depth + 1),
+        .binary_expr => resolve_array_length_binary(self, node, depth + 1),
+        else => error.InvalidType,
+    };
+}
+
+fn resolve_named_array_length_const(self: anytype, name: []const u8, depth: u8) AnalyzeError!u32 {
+    const global_index = self.module.global_map.get(name) orelse return error.InvalidType;
+    const global_info = self.module.globals.items[global_index];
+    if (global_info.class != .const_) return error.InvalidType;
+    const global_node = self.module.tree.nodes.items[global_info.node_idx];
+    if (global_node.tag != .const_decl or global_node.data.rhs == ast_mod.NULL_NODE) return error.InvalidType;
+    return resolve_array_length_expr(self, global_node.data.rhs, depth);
+}
+
+fn resolve_array_length_binary(self: anytype, node: Node, depth: u8) AnalyzeError!u32 {
+    const lhs = try resolve_array_length_expr(self, node.data.lhs, depth);
+    const rhs = try resolve_array_length_expr(self, node.data.rhs, depth);
+    const op = self.module.tree.tokens.items[node.main_token].tag;
+    return switch (op) {
+        .@"+" => std.math.add(u32, lhs, rhs) catch error.InvalidType,
+        .@"-" => std.math.sub(u32, lhs, rhs) catch error.InvalidType,
+        .@"*" => std.math.mul(u32, lhs, rhs) catch error.InvalidType,
+        .@"/" => if (rhs == 0) error.InvalidType else @divTrunc(lhs, rhs),
+        .@"%" => if (rhs == 0) error.InvalidType else @mod(lhs, rhs),
+        .shift_left => if (rhs >= @bitSizeOf(u32)) error.InvalidType else lhs << @as(std.math.Log2Int(u32), @intCast(rhs)),
+        .shift_right => if (rhs >= @bitSizeOf(u32)) error.InvalidType else lhs >> @as(std.math.Log2Int(u32), @intCast(rhs)),
+        .@"&" => lhs & rhs,
+        .@"|" => lhs | rhs,
+        .@"^" => lhs ^ rhs,
+        else => error.InvalidType,
+    };
 }

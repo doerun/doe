@@ -2440,7 +2440,10 @@ const fullSurfaceBackend = {
         void _refs;
         return view;
     },
-    textureDestroy(native) {
+    textureDestroy(native, texture) {
+        if (texture?._externallyOwned) {
+            return;
+        }
         wgpu.symbols.wgpuTextureRelease(native);
     },
     shaderModuleDestroy(native) {

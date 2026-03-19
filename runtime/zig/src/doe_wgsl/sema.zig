@@ -514,7 +514,14 @@ const Analyzer = struct {
 
     fn resolve_ident_expr(self: *Analyzer, node: Node, body: ?*BodyAnalyzer, out: *NodeInfo) !ir.TypeId {
         const name = self.module.tree.tokenSlice(node.main_token);
-        const symbol = if (body) |ctx| ctx.resolve_name(name) else null;
+        const symbol = if (body) |ctx|
+            ctx.resolve_name(name)
+        else if (self.module.global_map.get(name)) |global_index|
+            SymbolRef{ .global = global_index }
+        else if (self.module.function_map.get(name)) |fn_index|
+            SymbolRef{ .function = fn_index }
+        else
+            null;
         if (symbol == null) return error.UnknownIdentifier;
         out.symbol = symbol.?;
         return switch (symbol.?) {

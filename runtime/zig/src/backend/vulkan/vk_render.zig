@@ -114,8 +114,6 @@ const RENDER_SHADER_WGSL =
 
 const VERTEX_ENTRY_POINT: [*:0]const u8 = "vs_main";
 const FRAGMENT_ENTRY_POINT: [*:0]const u8 = "fs_main";
-const VK_VERTEX_INPUT_RATE_VERTEX: u32 = 0;
-const VK_VERTEX_INPUT_RATE_INSTANCE: u32 = 1;
 
 pub const RenderState = struct {
     render_pass: c.VkRenderPass = VK_NULL_U64,
@@ -407,7 +405,6 @@ fn create_render_pass(
     has_depth_stencil: bool,
     depth_stencil_vk_format: u32,
 ) !void {
-    _ = state;
     var attachments = [_]c.VkAttachmentDescription{
         .{
             .flags = 0,
@@ -831,8 +828,6 @@ fn sample_count_to_vk(sample_count: u32) u32 {
         4 => c.VK_SAMPLE_COUNT_4_BIT,
         8 => c.VK_SAMPLE_COUNT_8_BIT,
         16 => c.VK_SAMPLE_COUNT_16_BIT,
-        32 => c.VK_SAMPLE_COUNT_32_BIT,
-        64 => c.VK_SAMPLE_COUNT_64_BIT,
         else => c.VK_SAMPLE_COUNT_1_BIT,
     };
 }
@@ -1048,7 +1043,8 @@ fn record_indexed_draws(
 ) !void {
     if (cmd.index_binding) |ib| {
         const vk_buf = resolve_vk_buffer_handle(self, ib.handle) orelse return error.InvalidArgument;
-        c.vkCmdBindIndexBuffer(self.primary_command_buffer, vk_buf, ib.offset, wgpu_index_format_to_vk(ib.format));
+        const vk_index_type = if (ib.format == WGPU_INDEX_FORMAT_UINT16) VK_INDEX_TYPE_UINT16 else VK_INDEX_TYPE_UINT32;
+        c.vkCmdBindIndexBuffer(self.primary_command_buffer, vk_buf, ib.offset, vk_index_type);
         var draw_index: u32 = 0;
         while (draw_index < draw_count) : (draw_index += 1) {
             c.vkCmdDrawIndexed(

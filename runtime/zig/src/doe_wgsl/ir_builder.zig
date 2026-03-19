@@ -66,14 +66,14 @@ fn copy_globals(allocator: std.mem.Allocator, tree: *const Ast, module: *ir.Modu
         switch (node.tag) {
             .global_var => {
                 const init_node = tree.extra_data.items[node.data.rhs + 3];
-                if (init_node != NULL_NODE) initializer = try scalar_constant_from_node(tree, init_node);
+                if (init_node != NULL_NODE) initializer = try scalar_constant_from_node(tree, semantic, init_node, 0);
             },
             .const_decl => {
-                if (node.data.rhs != NULL_NODE) initializer = try scalar_constant_from_node(tree, node.data.rhs);
+                if (node.data.rhs != NULL_NODE) initializer = try scalar_constant_from_node(tree, semantic, node.data.rhs, 0);
             },
             .override_decl => {
                 const init_node = tree.extra_data.items[node.data.lhs + 2];
-                if (init_node != NULL_NODE) initializer = try scalar_constant_from_node(tree, init_node);
+                if (init_node != NULL_NODE) initializer = try scalar_constant_from_node(tree, semantic, init_node, 0);
             },
             else => {},
         }
@@ -534,16 +534,36 @@ fn map_assign_op(tag: Tag) ir.AssignOp {
     };
 }
 
-fn scalar_constant_from_node(tree: *const Ast, node_idx: u32) BuildError!?ir.ConstantValue {
+fn scalar_constant_from_node(
+    tree: *const Ast,
+    semantic: *const sema.SemanticModule,
+    node_idx: u32,
+    depth: u8,
+) BuildError!?ir.ConstantValue {
     captureFailureNode(tree, node_idx);
+    if (depth >= 16) return error.UnsupportedConstruct;
     const node = tree.nodes.items[node_idx];
     return switch (node.tag) {
         .bool_literal => ir.ConstantValue{ .bool = std.mem.eql(u8, tree.tokenSlice(node.main_token), "true") },
         .int_literal => ir.ConstantValue{ .int = sema_helpers.parse_wgsl_int_literal(u64, tree.tokenSlice(node.main_token)) catch return error.InvalidIr },
         .float_literal => ir.ConstantValue{ .float = sema_helpers.parse_wgsl_float_literal(tree.tokenSlice(node.main_token)) catch return error.InvalidIr },
+        .ident_expr => blk: {
+            const name = tree.tokenSlice(node.main_token);
+            const global_index = semantic.global_map.get(name) orelse break :blk null;
+            const global_info = semantic.globals.items[global_index];
+            const global_node = tree.nodes.items[global_info.node_idx];
+            const init_node = switch (global_node.tag) {
+                .const_decl => global_node.data.rhs,
+                .override_decl => tree.extra_data.items[global_node.data.lhs + 2],
+                .global_var => tree.extra_data.items[global_node.data.rhs + 3],
+                else => NULL_NODE,
+            };
+            if (init_node == NULL_NODE) break :blk null;
+            break :blk try scalar_constant_from_node(tree, semantic, init_node, depth + 1);
+        },
         .unary_expr => switch (tree.tokens.items[node.main_token].tag) {
             .@"-" => blk: {
-                const inner = try scalar_constant_from_node(tree, node.data.lhs) orelse return error.UnsupportedConstruct;
+                const inner = try scalar_constant_from_node(tree, semantic, node.data.lhs, depth + 1) orelse return error.UnsupportedConstruct;
                 switch (inner) {
                     .int => |value| break :blk ir.ConstantValue{ .int = (~value) +% 1 },
                     .float => |value| break :blk ir.ConstantValue{ .float = -value },
@@ -553,8 +573,8 @@ fn scalar_constant_from_node(tree: *const Ast, node_idx: u32) BuildError!?ir.Con
             else => error.UnsupportedConstruct,
         },
         .binary_expr => blk: {
-            const lhs = try scalar_constant_from_node(tree, node.data.lhs) orelse return error.UnsupportedConstruct;
-            const rhs = try scalar_constant_from_node(tree, node.data.rhs) orelse return error.UnsupportedConstruct;
+            const lhs = try scalar_constant_from_node(tree, semantic, node.data.lhs, depth + 1) orelse return error.UnsupportedConstruct;
+            const rhs = try scalar_constant_from_node(tree, semantic, node.data.rhs, depth + 1) orelse return error.UnsupportedConstruct;
             break :blk try fold_scalar_binary(map_binary_op(tree.tokens.items[node.main_token].tag), lhs, rhs);
         },
         else => null,

@@ -2046,7 +2046,8 @@ Backend-specific emitters for all three backends:
 ### Browser spec index population
 
 - `scripts/update_browser_spec_index.py`: populates browser cells from Playwright evidence
-- `config/webgpu-spec-index.jsonl`: 173 implemented + 92 partial (was 887 unreviewed)
+- `config/webgpu-spec-index.jsonl`: browser cells currently stand at 456 implemented + 62 partial + 369 unreviewed.
+- `config/webgpu-spec-index.jsonl`: implementation cells are now normalized to code-shaped states only; browser-owned external-image / external-texture rows are `out_of_scope` on native `metal` / `vulkan` / `d3d12`, and stale D3D12 `blocked` cells were reset to `unreviewed` pending row-by-row reassessment.
 
 ### Metal spec index audit
 

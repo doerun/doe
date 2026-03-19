@@ -2,8 +2,10 @@ const std = @import("std");
 const ast_mod = @import("ast.zig");
 const ir = @import("ir.zig");
 const sema_helpers = @import("sema_helpers.zig");
+const sema_types = @import("sema_types.zig");
 
 const Ast = ast_mod.Ast;
+const AnalyzeError = sema_types.AnalyzeError;
 
 pub fn parse_stage(self: anytype, attrs_start: u32, attrs_len: u32) !?ir.ShaderStage {
     var stage: ?ir.ShaderStage = null;
@@ -25,12 +27,52 @@ pub fn parse_workgroup_size(self: anytype, attrs_start: u32, attrs_len: u32) ![3
         const span = decode_packed_span(attr.data.rhs);
         var i: usize = 0;
         while (i < span.len and i < result.len) : (i += 1) {
-            const arg_node = self.module.tree.nodes.items[self.module.tree.extra_data.items[span.start + i]];
-            if (arg_node.tag != .int_literal) return error.InvalidAttribute;
-            result[i] = try sema_helpers.parse_wgsl_int_literal(u32, self.module.tree.tokenSlice(arg_node.main_token));
+            result[i] = try resolve_attr_u32_const(self, self.module.tree.extra_data.items[span.start + i], 0);
         }
     }
     return result;
+}
+
+const MAX_ATTR_CONST_DEPTH: u8 = 32;
+
+fn resolve_attr_u32_const(self: anytype, node_idx: u32, depth: u8) AnalyzeError!u32 {
+    if (depth >= MAX_ATTR_CONST_DEPTH) return error.InvalidAttribute;
+    const tree = self.module.tree;
+    const node = tree.nodes.items[node_idx];
+    return switch (node.tag) {
+        .int_literal => sema_helpers.parse_wgsl_int_literal(u32, tree.tokenSlice(node.main_token)) catch error.InvalidAttribute,
+        .ident_expr => resolve_named_attr_u32_const(self, tree.tokenSlice(node.main_token), depth + 1),
+        .binary_expr => resolve_attr_u32_binary(self, node, depth + 1),
+        else => error.InvalidAttribute,
+    };
+}
+
+fn resolve_named_attr_u32_const(self: anytype, name: []const u8, depth: u8) AnalyzeError!u32 {
+    const global_index = self.module.global_map.get(name) orelse return error.InvalidAttribute;
+    const global_info = self.module.globals.items[global_index];
+    if (global_info.class != .const_) return error.InvalidAttribute;
+    const global_node = self.module.tree.nodes.items[global_info.node_idx];
+    if (global_node.tag != .const_decl or global_node.data.rhs == ast_mod.NULL_NODE) return error.InvalidAttribute;
+    return resolve_attr_u32_const(self, global_node.data.rhs, depth);
+}
+
+fn resolve_attr_u32_binary(self: anytype, node: ast_mod.Node, depth: u8) AnalyzeError!u32 {
+    const lhs = try resolve_attr_u32_const(self, node.data.lhs, depth);
+    const rhs = try resolve_attr_u32_const(self, node.data.rhs, depth);
+    const op = self.module.tree.tokens.items[node.main_token].tag;
+    return switch (op) {
+        .@"+" => std.math.add(u32, lhs, rhs) catch error.InvalidAttribute,
+        .@"-" => std.math.sub(u32, lhs, rhs) catch error.InvalidAttribute,
+        .@"*" => std.math.mul(u32, lhs, rhs) catch error.InvalidAttribute,
+        .@"/" => if (rhs == 0) error.InvalidAttribute else @divTrunc(lhs, rhs),
+        .@"%" => if (rhs == 0) error.InvalidAttribute else @mod(lhs, rhs),
+        .shift_left => if (rhs >= @bitSizeOf(u32)) error.InvalidAttribute else lhs << @as(std.math.Log2Int(u32), @intCast(rhs)),
+        .shift_right => if (rhs >= @bitSizeOf(u32)) error.InvalidAttribute else lhs >> @as(std.math.Log2Int(u32), @intCast(rhs)),
+        .@"&" => lhs & rhs,
+        .@"|" => lhs | rhs,
+        .@"^" => lhs ^ rhs,
+        else => error.InvalidAttribute,
+    };
 }
 
 pub fn parse_binding(self: anytype, attrs_start: u32, attrs_len: u32) !?ir.BindingPoint {

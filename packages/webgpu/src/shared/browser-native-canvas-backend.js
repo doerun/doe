@@ -35,6 +35,7 @@ function texture_meta(native_texture) {
     dimension: native_texture?.dimension ?? '2d',
     format: native_texture?.format ?? 'bgra8unorm',
     usage: native_texture?.usage ?? 0,
+    externallyOwned: true,
   };
 }
 

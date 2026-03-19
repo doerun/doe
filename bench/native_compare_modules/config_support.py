@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import shlex
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -80,7 +81,7 @@ HOST_ALLOWED_GPU_BACKENDS = {
     "windows": {"vulkan", "d3d12", "webgpu"},
 }
 
-
+@dataclass(frozen=True)
 class Workload:
     id: str
     name: str
@@ -344,6 +345,8 @@ def apply_config_defaults(args: argparse.Namespace) -> argparse.Namespace:
     if not args.config:
         return args
 
+    cli_args = set(sys.argv[1:])
+
     config_path = Path(args.config)
     payload = load_json(config_path)
     if not isinstance(payload, dict):
@@ -490,7 +493,7 @@ def apply_config_defaults(args: argparse.Namespace) -> argparse.Namespace:
                 value,
                 field="run.workloadCooldownMs",
             )
-    if args.claimability == DEFAULT_CLAIMABILITY_MODE:
+    if args.claimability == DEFAULT_CLAIMABILITY_MODE and "--claimability" not in cli_args:
         value = first_config_value(
             payload,
             ["claimability.mode", "claimabilityMode"],

@@ -445,6 +445,10 @@ fn createRenderAttachmentTextureView(
         .arrayLayerCount = 1,
         .aspect = types.WGPUTextureAspect_All,
         .usage = types.WGPUTextureUsage_RenderAttachment,
+        .swizzleR = types.WGPUTextureComponentSwizzle_Red,
+        .swizzleG = types.WGPUTextureComponentSwizzle_Green,
+        .swizzleB = types.WGPUTextureComponentSwizzle_Blue,
+        .swizzleA = types.WGPUTextureComponentSwizzle_Alpha,
     });
     if (view == null) return error.TextureViewCreationFailed;
     return view;
@@ -466,6 +470,10 @@ fn createStorageAttachmentTextureView(
         .arrayLayerCount = 1,
         .aspect = types.WGPUTextureAspect_All,
         .usage = types.WGPUTextureUsage_RenderAttachment | types.WGPUTextureUsage_StorageAttachment,
+        .swizzleR = types.WGPUTextureComponentSwizzle_Red,
+        .swizzleG = types.WGPUTextureComponentSwizzle_Green,
+        .swizzleB = types.WGPUTextureComponentSwizzle_Blue,
+        .swizzleA = types.WGPUTextureComponentSwizzle_Alpha,
     });
     if (view == null) return error.TextureViewCreationFailed;
     return view;

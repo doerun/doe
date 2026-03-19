@@ -91,6 +91,8 @@ pub const GroupOperation = struct {
 
 pub const MemorySemantics = struct {
     pub const None: u32 = 0x00000000;
+    pub const Acquire: u32 = 0x00000002;
+    pub const Release: u32 = 0x00000004;
     pub const AcquireRelease: u32 = 0x00000008;
     pub const SequentiallyConsistent: u32 = 0x00000010;
     pub const UniformMemory: u32 = 0x00000040;

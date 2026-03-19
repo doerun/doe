@@ -340,6 +340,10 @@ pub fn createTextureViewForBinding(self: *Backend, texture: types.WGPUTexture, b
         .arrayLayerCount = types.WGPU_ARRAY_LAYER_COUNT_UNDEFINED,
         .aspect = loader.normalizeTextureAspect(binding.texture_aspect),
         .usage = 0,
+        .swizzleR = types.WGPUTextureComponentSwizzle_Red,
+        .swizzleG = types.WGPUTextureComponentSwizzle_Green,
+        .swizzleB = types.WGPUTextureComponentSwizzle_Blue,
+        .swizzleA = types.WGPUTextureComponentSwizzle_Alpha,
     };
 
     const view = procs.wgpuTextureCreateView(texture, &descriptor);

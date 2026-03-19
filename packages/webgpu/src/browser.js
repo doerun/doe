@@ -571,8 +571,11 @@ function create_browser_backend({ native_gpu, canvasBackend }) {
       return native.createView(descriptor);
     },
 
-    textureDestroy(native) {
-      native.destroy();
+    textureDestroy(native, texture) {
+      if (texture?._externallyOwned) {
+        return;
+      }
+      native.destroy?.();
     },
 
     commandEncoderAssertOpen(encoder, path) {

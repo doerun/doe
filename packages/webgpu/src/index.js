@@ -1189,7 +1189,10 @@ const fullSurfaceBackend = {
     }
     return addon.textureCreateView(native, viewDescriptor);
   },
-  textureDestroy(native) {
+  textureDestroy(native, texture) {
+    if (texture?._externallyOwned) {
+      return;
+    }
     addon.textureRelease(native);
   },
   shaderModuleDestroy(native) {

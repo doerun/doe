@@ -10,6 +10,8 @@ from typing import Any, Callable
 from native_compare_modules.comparability import (
     DAWN_OPERATION_TIMING_SOURCES,
     DOE_OPERATION_TIMING_SOURCES,
+    NATIVE_EXECUTION_OPERATION_TIMING_SOURCES,
+    OBLIGATION_SCHEMA_VERSION,
     _PHASE_ASYMMETRY_THRESHOLD,
     _TIMING_PHASE_FIELDS,
     _normalized_domain,

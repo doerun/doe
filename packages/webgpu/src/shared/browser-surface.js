@@ -34,7 +34,7 @@ function invalidate_current_texture(context) {
     }
     texture._childViews.clear();
   }
-  destroyResource(texture, (native) => native.destroy?.());
+  texture.destroy();
 }
 
 function normalizeOrigin2D(origin, path) {

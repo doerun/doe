@@ -655,7 +655,7 @@ fn parseParameterizedType(self: anytype) @TypeOf(self.*).Error!u32 {
     const scratch_top = self.scratch.items.len;
     defer self.scratch.shrinkRetainingCapacity(scratch_top);
 
-    while (self.peekTag() != .@">" and self.peekTag() != .eof) {
+    while (self.peekTag() != .@">" and self.peekTag() != .shift_right and self.peekTag() != .eof) {
         if (self.peekTag() == .int_literal) {
             const tok = self.token_idx;
             self.advance();
@@ -671,7 +671,11 @@ fn parseParameterizedType(self: anytype) @TypeOf(self.*).Error!u32 {
         }
         if (self.peekTag() == .@",") self.advance();
     }
-    _ = try self.expect(.@">");
+    if (self.peekTag() == .shift_right) {
+        self.tree.tokens.items[self.token_idx].tag = .@">";
+    } else {
+        _ = try self.expect(.@">");
+    }
 
     const params = self.scratch.items[scratch_top..];
     const extra_start = try self.tree.addExtraSlice(params);

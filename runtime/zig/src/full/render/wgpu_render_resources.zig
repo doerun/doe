@@ -316,6 +316,10 @@ pub fn getOrCreateCachedRenderTextureView(
         .arrayLayerCount = 1,
         .aspect = types.WGPUTextureAspect_All,
         .usage = usage,
+        .swizzleR = types.WGPUTextureComponentSwizzle_Red,
+        .swizzleG = types.WGPUTextureComponentSwizzle_Green,
+        .swizzleB = types.WGPUTextureComponentSwizzle_Blue,
+        .swizzleA = types.WGPUTextureComponentSwizzle_Alpha,
     });
     if (view == null) return error.TextureViewCreationFailed;
     cache.put(key, .{
