@@ -47,6 +47,19 @@ napi_value create_limits_object(napi_env env, const WGPULimits* limits) {
 #undef SET_U32
 #undef SET_U64
 
+    napi_value max_storage_buffers_in_vertex_stage;
+    napi_value max_storage_buffers_in_fragment_stage;
+    napi_value max_storage_textures_in_vertex_stage;
+    napi_value max_storage_textures_in_fragment_stage;
+    napi_create_uint32(env, limits->maxStorageBuffersPerShaderStage, &max_storage_buffers_in_vertex_stage);
+    napi_create_uint32(env, limits->maxStorageBuffersPerShaderStage, &max_storage_buffers_in_fragment_stage);
+    napi_create_uint32(env, limits->maxStorageTexturesPerShaderStage, &max_storage_textures_in_vertex_stage);
+    napi_create_uint32(env, limits->maxStorageTexturesPerShaderStage, &max_storage_textures_in_fragment_stage);
+    napi_set_named_property(env, obj, "maxStorageBuffersInVertexStage", max_storage_buffers_in_vertex_stage);
+    napi_set_named_property(env, obj, "maxStorageBuffersInFragmentStage", max_storage_buffers_in_fragment_stage);
+    napi_set_named_property(env, obj, "maxStorageTexturesInVertexStage", max_storage_textures_in_vertex_stage);
+    napi_set_named_property(env, obj, "maxStorageTexturesInFragmentStage", max_storage_textures_in_fragment_stage);
+
     return obj;
 }
 
@@ -433,6 +446,12 @@ napi_value doe_create_sampler(napi_env env, napi_callback_info info) {
             desc.addressModeV = address_mode_from_string(env, get_prop(env, _args[1], "addressModeV"));
         if (has_prop(env, _args[1], "addressModeW"))
             desc.addressModeW = address_mode_from_string(env, get_prop(env, _args[1], "addressModeW"));
+        if (has_prop(env, _args[1], "lodMinClamp"))
+            desc.lodMinClamp = (float)get_double_prop(env, _args[1], "lodMinClamp");
+        if (has_prop(env, _args[1], "lodMaxClamp"))
+            desc.lodMaxClamp = (float)get_double_prop(env, _args[1], "lodMaxClamp");
+        if (has_prop(env, _args[1], "compare"))
+            desc.compare = compare_func_from_value(env, get_prop(env, _args[1], "compare"));
         if (has_prop(env, _args[1], "maxAnisotropy"))
             desc.maxAnisotropy = (uint16_t)get_uint32_prop(env, _args[1], "maxAnisotropy");
     }

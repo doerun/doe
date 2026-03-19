@@ -6,8 +6,10 @@ This plan defines a detailed, contract-first rollout for:
 
 1. Track A:
    - Fawn as an optional Dawn replacement for Chromium `navigator.gpu`.
-2. Track B:
-   - Optional internal Chromium GPU modules executed through WebGPU via Fawn.
+
+Track B (optional internal Chromium GPU modules) was archived 2026-03-19.
+See the Track B sections below (marked archived) and `docs/status.md` for
+the strategic rationale.
 
 This is a planning artifact only. No production behavior is changed by this file.
 
@@ -137,7 +139,7 @@ Demonstrate claimable or diagnostic-labeled performance behavior without methodo
 2. No unsupported/mixed timing claims are published.
 3. Release claim gate passes for intended claim lanes.
 
-## M4: Track B module 1 (`fawn_2d_sdf_renderer`) incubation
+## M4: Track B module 1 (`fawn_2d_sdf_renderer`) incubation — archived
 
 ### Goal
 
@@ -177,7 +179,7 @@ Prototype the highest-ROI optional module while preserving CPU-owned semantics.
 2. Explicit fallback behavior for unsupported/low-quality cases.
 3. No hidden semantic ownership creep into layout/accessibility logic.
 
-## M5: Track B additional modules (one-by-one)
+## M5: Track B additional modules (one-by-one) — archived
 
 ### Goal
 
@@ -205,7 +207,7 @@ Add optional modules incrementally with independent kill switches and gates.
 2. Fallback behavior is deterministic and tested.
 3. Performance classification is explicit (`claimable` or `diagnostic`).
 
-## M6: Promotion and maintenance
+## M6: Promotion and maintenance — archived
 
 ### Goal
 
@@ -275,7 +277,7 @@ KPIs:
 1. Zero claim reports with methodology violations.
 2. Clear classification for all performance reports.
 
-## Track B detailed workstreams
+## Track B detailed workstreams — archived
 
 ## B1. `fawn_2d_sdf_renderer`
 
@@ -343,16 +345,16 @@ Initial acceptance:
 1. Config-driven behavior only.
 2. No hidden heuristics in scheduling decisions.
 
-## Module contract matrix (initial draft)
+## Module contract matrix
 
-| Module | Inputs | Outputs | Blocking Gates | Advisory Gates | Rollback Trigger |
-|---|---|---|---|---|---|
-| Track A runtime seam | runtime selector + workload stream | pipeline/trace/meta + behavior report | schema, correctness, trace, drop-in | performance | fallback instability |
-| fawn_2d_sdf_renderer | text_runs, path_ops, paint_state | render stats + quality flags | schema, correctness, trace | performance | visual parity regressions |
-| fawn_path_engine | path/stroke command stream | geometry/raster stats | schema, correctness, trace | performance | path correctness failures |
-| fawn_effects_pipeline | effect graph + resources | pass stats + output hashes | schema, correctness, trace | performance | effect mismatch or instability |
-| fawn_compute_services | kernel request contracts | execution stats + failure taxonomy | schema, correctness, trace | performance | unsupported/failure rate growth |
-| fawn_resource_scheduler | resource usage + cadence policy | pool/submit metrics | schema, correctness, trace | performance | nondeterministic scheduling |
+| Module | Inputs | Outputs | Blocking Gates | Advisory Gates | Rollback Trigger | Status |
+|---|---|---|---|---|---|---|
+| Track A runtime seam | runtime selector + workload stream | pipeline/trace/meta + behavior report | schema, correctness, trace, drop-in | performance | fallback instability | active |
+| fawn_2d_sdf_renderer | text_runs, path_ops, paint_state | render stats + quality flags | schema, correctness, trace | performance | visual parity regressions | archived |
+| fawn_path_engine | path/stroke command stream | geometry/raster stats | schema, correctness, trace | performance | path correctness failures | archived |
+| fawn_effects_pipeline | effect graph + resources | pass stats + output hashes | schema, correctness, trace | performance | effect mismatch or instability | archived |
+| fawn_compute_services | kernel request contracts | execution stats + failure taxonomy | schema, correctness, trace | performance | unsupported/failure rate growth | archived |
+| fawn_resource_scheduler | resource usage + cadence policy | pool/submit metrics | schema, correctness, trace | performance | nondeterministic scheduling | archived |
 
 ## Gate mapping
 
@@ -426,18 +428,16 @@ If any assumption fails, keep feature in nursery and do not promote.
 
 1. Exact Chromium flag names and user-facing policy.
 2. Minimum target adapter matrix for promotion from M2 to M3.
-3. SDF quality acceptance thresholds for module promotion.
-4. Required CTS/browser suite subsets for each milestone.
-5. Long-term ownership split across runtime, quality, and module teams.
+3. Required CTS/browser suite subsets for each milestone.
+4. Long-term ownership split across runtime and quality teams.
 
 ## Immediate next actions
 
 1. Finalize runtime seam and fallback contract document.
 2. Define first adapter/workload matrix for M1 and M2.
-3. Draft candidate input/output schemas for `fawn_2d_sdf_renderer`.
-4. Draft kill-switch and denylist policy with explicit reasons.
-5. Define initial KPI baselines and reporting templates.
-6. Start local Chromium bring-up using `chromium-bringup.md` with lane-local, gitignored build directories.
+3. Draft kill-switch and denylist policy with explicit reasons.
+4. Define initial KPI baselines and reporting templates.
+5. Start local Chromium bring-up using `chromium-bringup.md` with lane-local, gitignored build directories.
 
 ## Promotion checklist
 

@@ -471,66 +471,34 @@ Acceptance required before production claims:
 - backend selection and submission failures are deterministic and actionable
 - deterministic execution timing captured from real backend execution spans
 
-## Track B (modules)
+## Track B (modules) — archived
 
-- `fawn_2d_sdf_renderer` (Track B 2D SDF Renderer)
-  - promotion date: 2026-03-09
-  - gate status: schema ✓, correctness ✓, trace ✓
-  - owner: `fawn-core`
-  - core schema: `config/sdf-renderer.schema.json`
-  - Zig implementation: `runtime/zig/src/full/modules/rendering/sdf_renderer.zig`
-  - deterministic SDF render planning/result artifacts with typed fallback telemetry.
-- Promoted Track B (modules) gate coverage now includes explicit edge-case fixtures in
-  addition to the original happy-path requests:
-  - `fawn_compute_services`: input-contract overflow
-  - `fawn_resource_scheduler`: invalid cadence mode
-  - `fawn_effects_pipeline`: unsupported effect op
-  - `fawn_path_engine`: disallowed dash pattern
-  - `fawn_2d_sdf_renderer`: unsupported sample count
-  - `bench/module_gate.py` now validates request/policy hash integrity and
-    builds `module-core-runner` once per gate invocation instead of once per
-    case.
+**Archived 2026-03-19.** All five Track B modules are archived by strategic
+decision. The infrastructure dominance strategy
+(`ouroboros/docs/strategy/doe-infrastructure-dominance.md`) determined that
+building parallel browser subsystem replacements (SDF renderer, path engine,
+effects pipeline, compute services, resource scheduler) duplicates work that
+arrives for free once Track A ships: Chromium is already routing Skia Graphite,
+WebGL, and compositor through WebGPU on its own timeline. When Doe replaces
+Dawn at the WebGPU seam (Track A), those subsystems automatically run on Doe
+without any Doe-side plumbing.
 
-- `fawn_compute_services` (Track B Compute Services)
-  - promotion date: 2026-03-08
-  - gate status: schema ✓, correctness ✓, trace ✓
-  - owner: `fawn-core`
-  - core schema: `config/compute-services.schema.json`
-  - Zig implementation: `runtime/zig/src/full/modules/services/compute_services.zig`
-  - deterministic compute-service planning/result artifacts over schema-backed dispatch contracts.
+The correct strategy is: let browser vendors build the roads to WebGPU, build
+the fastest engine at the destination.
 
-- `fawn_effects_pipeline` (Track B Effects Pipeline)
-  - promotion date: 2026-03-09
-  - gate status: schema ✓, correctness ✓, trace ✓
-  - owner: `fawn-core`
-  - core schema: `config/effects-pipeline.schema.json`
-  - Zig implementation: `runtime/zig/src/full/modules/rendering/effects_pipeline.zig`
-  - deterministic effects planning/result artifacts with explicit effect/fallback telemetry.
+Archived modules:
+- `fawn_2d_sdf_renderer` — previously promoted 2026-03-09
+- `fawn_path_engine` — previously promoted 2026-03-09
+- `fawn_effects_pipeline` — previously promoted 2026-03-09
+- `fawn_compute_services` — previously promoted 2026-03-08
+- `fawn_resource_scheduler` — previously promoted 2026-03-08
 
-- `fawn_path_engine` (Track B Path Engine)
-  - promotion date: 2026-03-09
-  - gate status: schema ✓, correctness ✓, trace ✓
-  - owner: `fawn-core`
-  - core schema: `config/path-engine.schema.json`
-  - Zig implementation: `runtime/zig/src/full/modules/rendering/path_engine.zig`
-  - deterministic path tessellation/raster execution with core fallback taxonomy.
-
-- `fawn_resource_scheduler` (Track B Resource Scheduler)
-  - promotion date: 2026-03-08
-  - gate status: schema ✓, correctness ✓, trace ✓
-  - owner: `fawn-core`
-  - core schema: `config/resource-scheduler.schema.json`
-  - Zig implementation: `runtime/zig/src/full/modules/services/resource_scheduler.zig`
-  - deterministic resource scheduling over pool/cadence contracts with trace-linked allocation decisions.
-
-Planned implementation slices:
-1. `runtime/zig/src/webgpu_ffi.zig` loader contract and typed handle wrappers.
-2. `runtime/zig/src/webgpu_runtime.zig` (new) for instance, adapter, device, and queue lifecycle.
-3. `runtime/zig/src/command_ir.zig` (new) for canonical IR and replayable command serialization.
-4. `runtime/zig/src/resource_pool.zig` (new) for buffers, textures, pipelines, and staging aliases.
-5. `runtime/zig/src/command_encoder.zig` (new) for upload/copy/barrier/dispatch translation.
-6. `runtime/zig/src/execution.zig` native scheduler integration and status taxonomy.
-7. `runtime/zig/src/main.zig` release execution defaults and replay-linked hard failure mode.
+Artifacts preserved (not deleted):
+- Zig implementations remain at `runtime/zig/src/full/modules/` (experimental, inactive)
+- Core schemas/policies remain at `config/{sdf-renderer,path-engine,effects-pipeline,compute-services,resource-scheduler}.{schema,policy}.json` (inactive)
+- Nursery contracts remain at `browser/fawn-browser/contracts/` (archived)
+- Milestone governance demoted in `browser/fawn-browser/bench/workflows/browser-milestones.json`
+- Module ownership manifest updated at `config/module-ownership.json`
 8. parity harness updates for execution results and benchmark artifacts.
 
 Estimated remaining effort is tracked by explicit capability/gate gaps below instead of LOC placeholders.
@@ -659,7 +627,7 @@ D3D12:
 Browser integration (`browser/fawn-browser`):
 - the browser lane has a concrete plan, contracts, smoke/bench harnesses, and bring-up scripts
 - Track A (browser) M1-M3 governance is now wired through `bench/browser/browser_gate.py` with explicit ownership and cross-owner promotion approvals
-- Track B (modules) M4-M6 promotion governance is now wired for all five modules, but browser-lane rollout remains an active bring-up track rather than a finished product surface
+- Track B (modules) M4-M6 archived 2026-03-19 by strategic decision; see "Track B (modules) — archived" section above
 - package-browser validation now passes smoke in both Dawn and Doe modes for compute, render, `preferredCanvasFormat`, explicit `xrCompatible` requestAdapter forwarding, `queue.copyExternalImageToTexture` readback, and `importExternalTexture` plus `GPUExternalTexture` binding/layout sampling. Current macOS evidence lives at `browser/fawn-browser/artifacts/20260319T122244Z/dawn-vs-doe.browser.playwright-smoke.diagnostic.json`. The layered bench now runs on the package-browser path with `62/68` required L1 scenarios and `3/4` required L2 workflows passing per mode; it remains diagnostic with `14` required failures left overall.
 
 Performance substantiation:
@@ -2047,7 +2015,7 @@ Backend-specific emitters for all three backends:
 
 - `scripts/update_browser_spec_index.py`: populates browser cells from Playwright evidence
 - `config/webgpu-spec-index.jsonl`: browser cells currently stand at 456 implemented + 62 partial + 369 unreviewed.
-- `config/webgpu-spec-index.jsonl`: implementation cells are now normalized to code-shaped states only; browser-owned external-image / external-texture rows are `out_of_scope` on native `metal` / `vulkan` / `d3d12`, and stale D3D12 `blocked` cells were reset to `unreviewed` pending row-by-row reassessment.
+- `config/webgpu-spec-index.jsonl`: implementation cells are now normalized to code-shaped states only; browser-owned external-image / external-texture / XR rows are marked implemented on `metal` / `vulkan` / `d3d12` when satisfied by the Fawn browser lane through `@simulatte/webgpu/browser` delegation to browser-owned WebGPU objects, while stale D3D12 `blocked` cells were reset to `unreviewed` pending row-by-row reassessment.
 
 ### Metal spec index audit
 
@@ -2122,6 +2090,24 @@ Backend-specific emitters for all three backends:
   `requestDevice`, `wgslLanguageFeatures`, and the package-owned
   `getPreferredCanvasFormat()` helper, so those tracker rows now count as
   implemented.
+- D3D12 native-direct buffer creation no longer falls through the Metal path:
+  `GPUBufferUsage.*` now maps to real D3D12 buffer allocation / map / unmap /
+  getMappedRange behavior on the package-native surface.
+- D3D12 limits publication is now end-to-end on package surfaces:
+  `GPUSupportedLimits.*` comes from the D3D12 capability export and the
+  stage-scoped storage aliases are published on Node/addon, native-direct,
+  and Bun.
+- D3D12 native-direct texture and sampler creation now consume the real
+  package descriptors instead of stopping at wrapper plumbing:
+  `GPUSamplerDescriptor.*`, `GPUDepthStencilState.*`, BC6H texture formats,
+  and the implemented `GPUTextureDescriptor` / `GPUTextureViewDescriptor`
+  member subset are now backed by D3D12 runtime code.
+- Remaining D3D12 texture/view ledger gaps are explicit rather than hidden:
+  `textureBindingViewDimension`, non-trivial `viewFormats`, non-identity
+  swizzle, and 1D texture/view coverage still remain incomplete, as do
+  ETC2/EAC/ASTC publication and higher-order feature rows such as
+  `float32-blendable`, `texture-formats-tier1`, `texture-formats-tier2`,
+  `primitive-index`, and `texture-component-swizzle`.
 - Metal `GPUSupportedLimits.maxImmediateSize` and
   `GPUTextureViewDescriptor.swizzle` were stale tracker rows; both were
   already implemented through the existing runtime and package plumbing.

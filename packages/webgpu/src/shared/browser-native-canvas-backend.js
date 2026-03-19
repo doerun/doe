@@ -15,6 +15,20 @@ function normalize_origin2d(origin) {
   };
 }
 
+function normalize_origin3d(origin) {
+  if (origin === undefined || origin === null) {
+    return { x: 0, y: 0, z: 0 };
+  }
+  if (Array.isArray(origin)) {
+    return { x: origin[0] ?? 0, y: origin[1] ?? 0, z: origin[2] ?? 0 };
+  }
+  return {
+    x: origin.x ?? 0,
+    y: origin.y ?? 0,
+    z: origin.z ?? 0,
+  };
+}
+
 function default_context_factory(canvas) {
   if (!canvas || typeof canvas.getContext !== 'function') {
     failValidation(
@@ -123,7 +137,7 @@ function createNativeBrowserCanvasBackend({ contextFactory = default_context_fac
         {
           ...destination,
           texture: destination.texture?._native ?? destination.texture,
-          origin: normalize_origin2d(destination.origin),
+          origin: normalize_origin3d(destination.origin),
         },
         copySize,
       );

@@ -188,14 +188,14 @@ Still in progress:
 
 Fawn is organized as a platform pipeline, not just a source tree:
 
-`pipeline/agent` -> `config` -> `pipeline/lean` -> `runtime/zig` -> packages/browser -> `pipeline/trace` + `bench`
+`pipeline/agent` -> `config` -> `pipeline/lean` -> `runtime/zig` -> `packages/webgpu` -> `pipeline/trace` + `bench`
 
 - `pipeline/agent/`: mines and normalizes upstream quirk and compatibility signals
 - `config/`: owns schemas, gates, workload contracts, and migration-visible policy
 - `pipeline/lean/`: proves eliminations and emits artifacts that can remove runtime checks
 - `runtime/zig/`: implements Doe, the runtime and compiler stack that executes WebGPU work
-- `packages/webgpu/`: packages Doe for Node.js and Bun
-- `browser/fawn-browser/`: carries the Chromium integration lane
+- `packages/webgpu/`: packages Doe for Node.js, Bun, and browser environments (see stack diagram below for the two runtime paths)
+- `browser/fawn-browser/`: plans the future Chromium integration lane (Track A — embedding Doe inside Chromium to replace Dawn; see `docs/browser-lane.md`)
 - `pipeline/trace/` and `bench/`: replay work, validate comparability, and produce benchmark evidence
 
 Supporting docs in `docs/` define the operating contract:
@@ -226,58 +226,66 @@ Read this top to bottom:
 
 ```text
 Application code
-┌──────────────────────────────────────────────────────────────────────┐
-│ Your app / script / CLI / worker                                    │
-│ imports from @simulatte/webgpu or @simulatte/webgpu/compute         │
-└──────────────────────────────────────────────────────────────────────┘
-                                  │
-                                  ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ Your app / script / CLI / worker / web page                     │
+│ imports from @simulatte/webgpu                                  │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
 @simulatte/webgpu package boundary
-┌──────────────────────────────────────────────────────────────────────┐
-│ Package exports                                                     │
-│ requestAdapter · requestDevice · create · globals                   │
-│ preflightShaderSource · providerInfo · createDoeRuntime             │
-│ plus the exported `doe` helper namespace and subpath entrypoints    │
-├──────────────────────────────────────────────────────────────────────┤
-│ Doe API helper layer                                                │
-│ exposed here as `doe.*` and also published as the transport-free    │
-│ helper package family `@simulatte/webgpu-doe`                       │
-│ doe.requestDevice · doe.bind · gpu.buffer.* · gpu.kernel.*          │
-│ gpu.compute                                                         │
-├──────────────────────────────────────────────────────────────────────┤
-│ Shared WebGPU JS object model and validation                        │
-│ shared/full-surface.js · shared/encoder-surface.js                  │
-│ GPUDevice · GPUBuffer · GPUQueue · encoders · pipelines             │
-│ This is the raw WebGPU package surface, not the Doe helper API.     │
-└──────────────────────────────────────────────────────────────────────┘
-                                  │
-                                  ▼
-Native transport boundary
-┌──────────────────────────────────────────────────────────────────────┐
-│ Node: N-API addon (`doe_napi.node`)                                 │
-│ Bun: bun-ffi.js flat symbol bridge                                  │
-│ Different transports, same package-facing JS contract               │
-└──────────────────────────────────────────────────────────────────────┘
-                                  │
-                                  ▼
-Doe runtime boundary
-┌──────────────────────────────────────────────────────────────────────┐
-│ Zig drop-in ABI and native exports                                  │
-│ runtime/zig/src/doe_*.zig                                           │
-│ instance / adapter / device / queue / shader / pipeline / render    │
-├──────────────────────────────────────────────────────────────────────┤
-│ WGSL compiler and runtime partitions                                │
-│ doe_wgsl: lexer → parser → sema → IR → MSL/SPIR-V/HLSL/DXIL         │
-│ core/: compute, queue, resource, trace                              │
-│ full/: render, surface, lifecycle, modules                          │
-├──────────────────────────────────────────────────────────────────────┤
-│ Backend abstraction and concrete backends                           │
-│ backend_iface → Metal / Vulkan / D3D12                              │
-└──────────────────────────────────────────────────────────────────────┘
-                                  │
-                                  ▼
-OS GPU APIs and physical GPU
+┌─────────────────────────────────────────────────────────────────┐
+│ Package exports                                                 │
+│ create · requestAdapter · requestDevice · doe · globals         │
+├─────────────────────────────────────────────────────────────────┤
+│ Doe API helpers  (@simulatte/webgpu-doe)                        │
+│ doe.requestDevice · doe.bind · gpu.buffer.* · gpu.kernel.*      │
+├─────────────────────────────────────────────────────────────────┤
+│ Shared WebGPU JS object model and validation                    │
+│ full-surface.js · encoder-surface.js · validation.js            │
+└─────────────────────────┬───────────────────────────────────────┘
+                          │
+            ┌─────────────┴──────────────┐
+            │                            │
+            ▼                            ▼
+ Headless native path           Browser wrapper path
+ (Node.js / Bun)                (web page)
+┌──────────────────────┐   ┌──────────────────────────────┐
+│ N-API addon          │   │ src/browser.js               │
+│ (doe_napi.node)      │   │ JS shim that delegates every │
+│ or Bun FFI           │   │ WebGPU call to the browser's │
+│ (bun-ffi.js)         │   │ own navigator.gpu            │
+└──────────┬───────────┘   └──────────────┬───────────────┘
+           │                              │
+           ▼                              ▼
+ Doe Zig runtime              Browser-native WebGPU
+┌──────────────────────┐   ┌──────────────────────────────┐
+│ doe_*.zig native ABI │   │ The browser's built-in       │
+│ WGSL compiler        │   │ WebGPU implementation         │
+│ (doe_wgsl)           │   │ (Dawn in Chrome, wgpu in     │
+│ Metal / Vulkan /     │   │ Firefox, etc.)               │
+│ D3D12 backends       │   │ No Doe code runs here.       │
+└──────────┬───────────┘   └──────────────┬───────────────┘
+           │                              │
+           ▼                              ▼
+    OS GPU APIs                   Browser GPU sandbox
+    + physical GPU                + physical GPU
 ```
+
+The two paths share the same JS object model and validation layer but diverge
+at the transport boundary:
+
+- **Headless native** — N-API or Bun FFI calls into the Doe Zig runtime, which
+  drives Metal/Vulkan/D3D12 directly. This is where Doe's WGSL compiler,
+  backend execution, and proof-aware branch elimination run.
+- **Browser wrapper** — `src/browser.js` wraps the browser's own
+  `navigator.gpu` behind the same `@simulatte/webgpu` JS classes. No Zig code
+  runs; the browser's WebGPU implementation (typically Dawn) handles GPU work.
+  The wrapper exists so that code written against `@simulatte/webgpu` can run
+  in a browser without modification.
+
+These are both packaging paths inside `packages/webgpu/`. Neither is related to
+Chromium Track A (`browser/fawn-browser/`), which is a separate future effort
+to embed the Doe Zig runtime inside Chromium itself as a Dawn replacement.
 
 Boundary notes:
 

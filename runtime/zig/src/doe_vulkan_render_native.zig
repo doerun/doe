@@ -517,9 +517,6 @@ pub fn vulkan_render_pass_draw(
         .stencil_reference = pass.stencil_reference,
         .occlusion_query_pool = if (occlusion_qs) |qs| qs.vk_query_pool else 0,
         .occlusion_query_index = if (occlusion_qs != null) pass.occlusion_query_index else null,
-        .topology = if (pass.pipeline) |pip| pip.topology else 0x00000004,
-        .front_face = if (pass.pipeline) |pip| pip.front_face else 0x00000001,
-        .cull_mode = if (pass.pipeline) |pip| pip.cull_mode else 0x00000001,
         .depth_stencil_format = if (pass.pipeline) |pip| pip.depth_stencil_format else 0,
         .depth_compare = if (pass.pipeline) |pip| pip.depth_compare else pass.depth_compare,
         .depth_write_enabled = if (pass.pipeline) |pip| pip.depth_write_enabled else pass.depth_write_enabled,
@@ -546,12 +543,12 @@ pub fn vulkan_render_pass_draw(
         cmd.vertex_attribute_buffer_slots = pip.vertex_attribute_buffer_slots;
     }
     var bound_vertex_count: u32 = 0;
-    var slot: usize = 0;
-    while (slot < native.MAX_VERTEX_BUFFERS) : (slot += 1) {
-        if (pass.vertex_buffers[slot]) |buffer| {
-            cmd.vertex_buffer_handles[slot] = buffer.vk_id;
-            cmd.vertex_buffer_offsets[slot] = pass.vertex_buffer_offsets[slot];
-            bound_vertex_count = @intCast(slot + 1);
+    var bound_slot: usize = 0;
+    while (bound_slot < native.MAX_VERTEX_BUFFERS) : (bound_slot += 1) {
+        if (pass.vertex_buffers[bound_slot]) |buffer| {
+            cmd.vertex_buffer_handles[bound_slot] = buffer.vk_id;
+            cmd.vertex_buffer_offsets[bound_slot] = pass.vertex_buffer_offsets[bound_slot];
+            bound_vertex_count = @intCast(bound_slot + 1);
         }
     }
     cmd.vertex_buffer_count = bound_vertex_count;
@@ -645,9 +642,6 @@ pub fn vulkan_render_pass_draw_indexed(
         .stencil_reference = pass.stencil_reference,
         .occlusion_query_pool = if (occlusion_qs) |qs| qs.vk_query_pool else 0,
         .occlusion_query_index = if (occlusion_qs != null) pass.occlusion_query_index else null,
-        .topology = if (pass.pipeline) |pip| pip.topology else 0x00000004,
-        .front_face = if (pass.pipeline) |pip| pip.front_face else 0x00000001,
-        .cull_mode = if (pass.pipeline) |pip| pip.cull_mode else 0x00000001,
         .depth_stencil_format = if (pass.pipeline) |pip| pip.depth_stencil_format else 0,
         .depth_compare = if (pass.pipeline) |pip| pip.depth_compare else pass.depth_compare,
         .depth_write_enabled = if (pass.pipeline) |pip| pip.depth_write_enabled else pass.depth_write_enabled,
@@ -674,12 +668,12 @@ pub fn vulkan_render_pass_draw_indexed(
         cmd.vertex_attribute_buffer_slots = pip.vertex_attribute_buffer_slots;
     }
     var bound_vertex_count: u32 = 0;
-    var slot: usize = 0;
-    while (slot < native.MAX_VERTEX_BUFFERS) : (slot += 1) {
-        if (pass.vertex_buffers[slot]) |buffer| {
-            cmd.vertex_buffer_handles[slot] = buffer.vk_id;
-            cmd.vertex_buffer_offsets[slot] = pass.vertex_buffer_offsets[slot];
-            bound_vertex_count = @intCast(slot + 1);
+    var bound_slot: usize = 0;
+    while (bound_slot < native.MAX_VERTEX_BUFFERS) : (bound_slot += 1) {
+        if (pass.vertex_buffers[bound_slot]) |buffer| {
+            cmd.vertex_buffer_handles[bound_slot] = buffer.vk_id;
+            cmd.vertex_buffer_offsets[bound_slot] = pass.vertex_buffer_offsets[bound_slot];
+            bound_vertex_count = @intCast(bound_slot + 1);
         }
     }
     cmd.vertex_buffer_count = bound_vertex_count;

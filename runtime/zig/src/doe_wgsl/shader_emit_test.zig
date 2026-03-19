@@ -409,6 +409,34 @@ test "vertex emitter: output too large returns error" {
     try testing.expectError(error.OutputTooLarge, err);
 }
 
+test "vertex emitter: invalid builtin parameter returns UnsupportedBuiltin" {
+    var module = make_module_with_types();
+    defer module.deinit();
+
+    const f32_type = try module.types.intern(.{ .scalar = .f32 });
+    const u32_type = try module.types.intern(.{ .scalar = .u32 });
+    const vec4f_type = try module.types.intern(.{ .vector = .{ .elem = f32_type, .len = 4 } });
+
+    var function = try build_vertex_module(
+        &module,
+        "BadBuiltinOut",
+        &.{
+            .{ .name = "pos", .ty = vec4f_type, .io = .{ .builtin = .position } },
+        },
+        &.{
+            .{ .name = "fragpos", .ty = u32_type, .io = .{ .builtin = .sample_index } },
+        },
+        "vs_bad_builtin",
+    );
+    defer cleanup_function(&function);
+
+    var buf: [4096]u8 = undefined;
+    var pos: usize = 0;
+    var indent: usize = 0;
+    const err = emit_msl_vertex.emit_vertex_function(&module, function, &buf, &pos, &indent);
+    try testing.expectError(emit_msl_vertex.EmitError.UnsupportedBuiltin, err);
+}
+
 test "vertex emitter: main function name is renamed to main_vertex" {
     var module = make_module_with_types();
     defer module.deinit();
@@ -662,6 +690,34 @@ test "fragment emitter: void return type is rejected as InvalidIr" {
     var indent: usize = 0;
     const err = emit_msl_fragment.emit_fragment_function(&module, function, &buf, &pos, &indent);
     try testing.expectError(error.InvalidIr, err);
+}
+
+test "fragment emitter: invalid builtin parameter returns UnsupportedBuiltin" {
+    var module = make_module_with_types();
+    defer module.deinit();
+
+    const f32_type = try module.types.intern(.{ .scalar = .f32 });
+    const u32_type = try module.types.intern(.{ .scalar = .u32 });
+    const vec4f_type = try module.types.intern(.{ .vector = .{ .elem = f32_type, .len = 4 } });
+
+    var function = try build_fragment_module(
+        &module,
+        "BadFragOut",
+        &.{
+            .{ .name = "color", .ty = vec4f_type, .io = .{ .location = 0 } },
+        },
+        &.{
+            .{ .name = "vid", .ty = u32_type, .io = .{ .builtin = .vertex_index } },
+        },
+        "fs_bad_builtin",
+    );
+    defer cleanup_function(&function);
+
+    var buf: [4096]u8 = undefined;
+    var pos: usize = 0;
+    var indent: usize = 0;
+    const err = emit_msl_fragment.emit_fragment_function(&module, function, &buf, &pos, &indent);
+    try testing.expectError(emit_msl_fragment.EmitError.UnsupportedBuiltin, err);
 }
 
 test "fragment emitter: main function name is renamed to main_fragment" {

@@ -162,6 +162,9 @@ const PipelineKey = struct {
     stencil_back_pass_op: u32 = 0,
     stencil_read_mask: u32 = 0xFFFF_FFFF,
     stencil_write_mask: u32 = 0xFFFF_FFFF,
+    depth_bias: i32 = 0,
+    depth_bias_slope_scale: f32 = 0,
+    depth_bias_clamp: f32 = 0,
     unclipped_depth: bool = false,
     vertex_buffer_count: u32 = 0,
     vertex_buffer_strides: [model.MAX_VERTEX_BUFFERS]u64 = [_]u64{0} ** model.MAX_VERTEX_BUFFERS,
@@ -332,9 +335,9 @@ pub const RenderState = struct {
             .stencil_back_pass_op = key.stencil_back_pass_op,
             .stencil_read_mask = key.stencil_read_mask,
             .stencil_write_mask = key.stencil_write_mask,
-            .depth_bias = 0,
-            .depth_bias_slope_scale = 0,
-            .depth_bias_clamp = 0,
+            .depth_bias = key.depth_bias,
+            .depth_bias_slope_scale = key.depth_bias_slope_scale,
+            .depth_bias_clamp = key.depth_bias_clamp,
             .unclipped_depth = if (key.unclipped_depth) 1 else 0,
         };
         self.graphics_pipeline = d3d12_bridge_device_create_graphics_pipeline_hlsl(
@@ -427,7 +430,7 @@ pub const RenderState = struct {
         self.depth_stencil.deinit();
         self.* = .{};
     }
-    
+
     fn bind_vertex_and_index_buffers(self: *RenderState, cmd: model.RenderDrawCommand) !void {
         const vb_count = resolve_vertex_buffer_count(cmd);
         var slot: u32 = 0;
@@ -491,6 +494,9 @@ fn build_pipeline_key(cmd: model.RenderDrawCommand) PipelineKey {
         .stencil_back_pass_op = cmd.stencil_back_pass_op,
         .stencil_read_mask = cmd.stencil_read_mask,
         .stencil_write_mask = cmd.stencil_write_mask,
+        .depth_bias = cmd.depth_bias,
+        .depth_bias_slope_scale = cmd.depth_bias_slope_scale,
+        .depth_bias_clamp = cmd.depth_bias_clamp,
         .unclipped_depth = cmd.unclipped_depth,
         .vertex_buffer_count = resolve_vertex_buffer_count(cmd),
         .vertex_attribute_count = resolve_vertex_attribute_count(cmd),

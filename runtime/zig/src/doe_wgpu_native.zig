@@ -1,4 +1,4 @@
-// doe_wgpu_native.zig — Native wgpu* C ABI implementations backed by Metal or Vulkan.
+// doe_wgpu_native.zig — Native wgpu* C ABI implementations backed by Metal, Vulkan, or D3D12.
 // Implements the ~40 functions needed by doe_napi.c without Dawn.
 //
 // Limitations (v0.1):
@@ -12,6 +12,7 @@ const wgsl_compiler = @import("doe_wgsl/mod.zig");
 const error_scope = @import("error_scope.zig");
 const gpu_timeline = @import("gpu_timeline.zig");
 const bridge = @import("backend/metal/metal_bridge_decls.zig");
+const d3d12_constants = @import("backend/d3d12/d3d12_constants.zig");
 const metal_bridge_buffer_contents = bridge.metal_bridge_buffer_contents;
 const metal_bridge_device_new_buffer_shared = bridge.metal_bridge_device_new_buffer_shared;
 const metal_bridge_release = bridge.metal_bridge_release;
@@ -43,11 +44,12 @@ const MAGIC_SAMPLER: u32 = 0xD0E1_0010;
 const MAGIC_RENDER_PIPE: u32 = 0xD0E1_0011;
 const MAGIC_RENDER_PASS: u32 = 0xD0E1_0012;
 
-// Backend discriminant — selects Metal or Vulkan execution paths at device level.
-pub const BackendKind = enum(u8) { metal = 0, vulkan = 1 };
+// Backend discriminant — selects Metal, Vulkan, or D3D12 execution paths at device level.
+pub const BackendKind = enum(u8) { metal = 0, vulkan = 1, d3d12 = 2 };
 
 // NativeVulkanRuntime import — used by buffer create/release and device lifecycle.
 pub const NativeVulkanRuntime = @import("backend/vulkan/native_runtime.zig").NativeVulkanRuntime;
+pub const NativeD3D12Runtime = @import("backend/d3d12/d3d12_native_runtime.zig").NativeD3D12Runtime;
 
 pub const MAX_BIND: usize = 16;
 pub const MAX_RENDER_BIND_GROUPS: usize = 4;
@@ -60,6 +62,8 @@ pub const ERR_CAP: usize = 512;
 
 // WebGPU status constants — must match doe_napi.c definitions.
 const WGPU_MAP_ASYNC_STATUS_SUCCESS: u32 = 1;
+const WGPU_MAP_ASYNC_STATUS_VALIDATION_ERROR: u32 = 4;
+const D3D12_HEAP_TYPE_DEFAULT: c_int = 1;
 
 pub const DoeInstance = struct {
     const TYPE_MAGIC = MAGIC_INSTANCE;
@@ -84,6 +88,8 @@ pub const DoeDevice = struct {
     backend: BackendKind = .metal,
     // Heap-allocated NativeVulkanRuntime; non-null only when backend == .vulkan.
     vk_runtime: ?*anyopaque = null,
+    // Heap-allocated NativeD3D12Runtime; non-null only when backend == .d3d12.
+    d3d12_runtime: ?*anyopaque = null,
 };
 
 pub const DeferredCopy = struct {
@@ -120,10 +126,13 @@ pub const DoeQueue = struct {
 pub const DoeBuffer = struct {
     pub const TYPE_MAGIC = MAGIC_BUFFER;
     magic: u32 = TYPE_MAGIC,
+    backend: BackendKind = .metal,
     mtl: ?*anyopaque = null,
     size: u64 = 0,
     usage: u64 = 0,
     mapped: bool = false,
+    d3d12_heap_type: c_int = 0,
+    d3d12_mapped_ptr: ?*anyopaque = null,
     // Vulkan-only fields: key in NativeVulkanRuntime.compute_buffers and
     // back-reference to the runtime for cleanup on release.
     vk_id: u64 = 0,
@@ -365,6 +374,7 @@ pub const DoeCommandBuffer = struct {
 pub const DoeTexture = struct {
     const TYPE_MAGIC = MAGIC_TEXTURE;
     magic: u32 = TYPE_MAGIC,
+    backend: BackendKind = .metal,
     mtl: ?*anyopaque = null,
     format: u32 = 0,
     width: u32 = 0,
@@ -385,6 +395,7 @@ pub const DoeTexture = struct {
 pub const DoeTextureView = struct {
     const TYPE_MAGIC = MAGIC_TEXTURE_VIEW;
     magic: u32 = TYPE_MAGIC,
+    backend: BackendKind = .metal,
     tex: *DoeTexture,
     handle: ?*anyopaque = null,
     format: u32 = 0,
@@ -400,6 +411,7 @@ pub const DoeTextureView = struct {
 pub const DoeSampler = struct {
     const TYPE_MAGIC = MAGIC_SAMPLER;
     magic: u32 = TYPE_MAGIC,
+    backend: BackendKind = .metal,
     mtl: ?*anyopaque = null,
     // Vulkan-only: back-reference to the runtime for vkDestroySampler on release.
     vk_runtime_ref: ?*anyopaque = null,
@@ -512,6 +524,50 @@ pub fn device_vk_runtime(dev: *DoeDevice) ?*NativeVulkanRuntime {
     return @as(*NativeVulkanRuntime, @ptrCast(@alignCast(ptr)));
 }
 
+pub fn device_d3d12_runtime(dev: *DoeDevice) ?*NativeD3D12Runtime {
+    const ptr = dev.d3d12_runtime orelse return null;
+    return @as(*NativeD3D12Runtime, @ptrCast(@alignCast(ptr)));
+}
+
+fn d3d12_buffer_bounds_ok(buf: *const DoeBuffer, offset: usize, size: usize) bool {
+    const offset_u64: u64 = @intCast(offset);
+    const size_u64: u64 = @intCast(size);
+    if (offset_u64 > buf.size) return false;
+    if (size_u64 > buf.size - offset_u64) return false;
+    return true;
+}
+
+fn d3d12_upload_heap_usage_supported(usage: u64) bool {
+    const disallowed =
+        types.WGPUBufferUsage_MapRead |
+        types.WGPUBufferUsage_CopyDst |
+        types.WGPUBufferUsage_Storage |
+        types.WGPUBufferUsage_QueryResolve;
+    return (usage & disallowed) == 0;
+}
+
+fn d3d12_buffer_heap_type(desc: *const types.WGPUBufferDescriptor) ?c_int {
+    const usage = desc.usage;
+    const wants_map_read = (usage & types.WGPUBufferUsage_MapRead) != 0;
+    const wants_map_write = (usage & types.WGPUBufferUsage_MapWrite) != 0;
+    if (wants_map_read and wants_map_write) return null;
+    if (wants_map_read) {
+        if (desc.mappedAtCreation != 0) return null;
+        return d3d12_constants.HEAP_TYPE_READBACK;
+    }
+    if (wants_map_write) return d3d12_constants.HEAP_TYPE_UPLOAD;
+    if (desc.mappedAtCreation != 0) {
+        if (!d3d12_upload_heap_usage_supported(usage)) return null;
+        return d3d12_constants.HEAP_TYPE_UPLOAD;
+    }
+    return D3D12_HEAP_TYPE_DEFAULT;
+}
+
+extern fn d3d12_bridge_device_create_buffer(device: ?*anyopaque, size: usize, heap_type: c_int) callconv(.c) ?*anyopaque;
+extern fn d3d12_bridge_resource_map(resource: ?*anyopaque) callconv(.c) ?*anyopaque;
+extern fn d3d12_bridge_resource_unmap(resource: ?*anyopaque) callconv(.c) void;
+extern fn d3d12_bridge_release(obj: ?*anyopaque) callconv(.c) void;
+
 // ============================================================
 // Buffer
 // ============================================================
@@ -520,10 +576,13 @@ pub export fn doeNativeDeviceCreateBuffer(dev_raw: ?*anyopaque, desc: ?*const ty
     const dev = cast(DoeDevice, dev_raw) orelse return null;
     const d = desc orelse return null;
     const buf = make(DoeBuffer) orelse return null;
-    buf.* = .{ .size = d.size, .usage = d.usage };
+    buf.* = .{ .backend = dev.backend, .size = d.size, .usage = d.usage };
 
     if (dev.backend == .vulkan) {
-        const rt = device_vk_runtime(dev) orelse { alloc.destroy(buf); return null; };
+        const rt = device_vk_runtime(dev) orelse {
+            alloc.destroy(buf);
+            return null;
+        };
         // Use the buffer's heap address as a stable, unique key in the runtime map.
         const id: u64 = @intFromPtr(buf);
         buf.vk_id = id;
@@ -544,6 +603,34 @@ pub export fn doeNativeDeviceCreateBuffer(dev_raw: ?*anyopaque, desc: ?*const ty
         return result;
     }
 
+    if (dev.backend == .d3d12) {
+        const rt = device_d3d12_runtime(dev) orelse {
+            alloc.destroy(buf);
+            return null;
+        };
+        const heap_type = d3d12_buffer_heap_type(d) orelse {
+            alloc.destroy(buf);
+            return null;
+        };
+        buf.mtl = d3d12_bridge_device_create_buffer(rt.device, @intCast(d.size), heap_type);
+        if (buf.mtl == null) {
+            alloc.destroy(buf);
+            return null;
+        }
+        buf.d3d12_heap_type = heap_type;
+        if (d.mappedAtCreation != 0) {
+            buf.d3d12_mapped_ptr = d3d12_bridge_resource_map(buf.mtl) orelse {
+                d3d12_bridge_release(buf.mtl);
+                alloc.destroy(buf);
+                return null;
+            };
+            buf.mapped = true;
+        }
+        const result = toOpaque(buf);
+        label_store.set(result, d.label.data, d.label.length);
+        return result;
+    }
+
     // Metal path: all buffers use shared (unified) memory on Apple Silicon.
     buf.mtl = metal_bridge_device_new_buffer_shared(dev.mtl_device, @intCast(d.size));
     if (buf.mtl == null) {
@@ -559,7 +646,7 @@ pub export fn doeNativeDeviceCreateBuffer(dev_raw: ?*anyopaque, desc: ?*const ty
 pub export fn doeNativeBufferRelease(raw: ?*anyopaque) callconv(.c) void {
     if (cast(DoeBuffer, raw)) |b| {
         label_store.remove(raw);
-        if (b.vk_id != 0) {
+        if (b.backend == .vulkan and b.vk_id != 0) {
             // Destroy the VkBuffer explicitly rather than waiting for device deinit.
             if (b.vk_runtime_ref) |rt_ptr| {
                 const rt: *NativeVulkanRuntime = @ptrCast(@alignCast(rt_ptr));
@@ -571,13 +658,28 @@ pub export fn doeNativeBufferRelease(raw: ?*anyopaque) callconv(.c) void {
             alloc.destroy(b);
             return;
         }
+        if (b.backend == .d3d12) {
+            if (b.d3d12_mapped_ptr != null and b.mtl != null) {
+                d3d12_bridge_resource_unmap(b.mtl);
+                b.d3d12_mapped_ptr = null;
+            }
+            if (b.mtl) |handle| d3d12_bridge_release(handle);
+            alloc.destroy(b);
+            return;
+        }
         if (b.mtl) |m| metal_bridge_release(m);
         alloc.destroy(b);
     }
 }
 
 pub export fn doeNativeBufferUnmap(raw: ?*anyopaque) callconv(.c) void {
-    if (cast(DoeBuffer, raw)) |b| b.mapped = false;
+    if (cast(DoeBuffer, raw)) |b| {
+        if (b.backend == .d3d12 and b.d3d12_mapped_ptr != null and b.mtl != null) {
+            d3d12_bridge_resource_unmap(b.mtl);
+            b.d3d12_mapped_ptr = null;
+        }
+        b.mapped = false;
+    }
 }
 
 pub export fn doeNativeBufferMapAsync(
@@ -587,19 +689,48 @@ pub export fn doeNativeBufferMapAsync(
     size: usize,
     cb_info: types.WGPUBufferMapCallbackInfo,
 ) callconv(.c) types.WGPUFuture {
-    _ = mode;
-    _ = offset;
-    _ = size;
-    if (cast(DoeBuffer, buf_raw)) |b| b.mapped = true;
+    const b = cast(DoeBuffer, buf_raw) orelse {
+        cb_info.callback(WGPU_MAP_ASYNC_STATUS_VALIDATION_ERROR, .{ .data = null, .length = 0 }, cb_info.userdata1, cb_info.userdata2);
+        return .{ .id = 3 };
+    };
+    if (!d3d12_buffer_bounds_ok(b, offset, size)) {
+        cb_info.callback(WGPU_MAP_ASYNC_STATUS_VALIDATION_ERROR, .{ .data = null, .length = 0 }, cb_info.userdata1, cb_info.userdata2);
+        return .{ .id = 3 };
+    }
+    if (b.backend == .d3d12) {
+        const wants_read = (mode & types.WGPUMapMode_Read) != 0;
+        const wants_write = (mode & types.WGPUMapMode_Write) != 0;
+        const expect_heap: c_int = if (wants_read and !wants_write)
+            d3d12_constants.HEAP_TYPE_READBACK
+        else if (wants_write and !wants_read)
+            d3d12_constants.HEAP_TYPE_UPLOAD
+        else
+            0;
+        if (expect_heap == 0 or b.d3d12_heap_type != expect_heap or b.mtl == null) {
+            cb_info.callback(WGPU_MAP_ASYNC_STATUS_VALIDATION_ERROR, .{ .data = null, .length = 0 }, cb_info.userdata1, cb_info.userdata2);
+            return .{ .id = 3 };
+        }
+        if (b.d3d12_mapped_ptr == null) {
+            b.d3d12_mapped_ptr = d3d12_bridge_resource_map(b.mtl);
+        }
+        if (b.d3d12_mapped_ptr == null) {
+            cb_info.callback(WGPU_MAP_ASYNC_STATUS_VALIDATION_ERROR, .{ .data = null, .length = 0 }, cb_info.userdata1, cb_info.userdata2);
+            return .{ .id = 3 };
+        }
+        b.mapped = true;
+        cb_info.callback(WGPU_MAP_ASYNC_STATUS_SUCCESS, .{ .data = null, .length = 0 }, cb_info.userdata1, cb_info.userdata2);
+        return .{ .id = 3 };
+    }
+    b.mapped = true;
     cb_info.callback(WGPU_MAP_ASYNC_STATUS_SUCCESS, .{ .data = null, .length = 0 }, cb_info.userdata1, cb_info.userdata2);
     return .{ .id = 3 };
 }
 
 pub export fn doeNativeBufferGetConstMappedRange(buf_raw: ?*anyopaque, offset: usize, size: usize) callconv(.c) ?*anyopaque {
-    _ = size;
     const buf = cast(DoeBuffer, buf_raw) orelse return null;
+    if (!buf.mapped or !d3d12_buffer_bounds_ok(buf, offset, size)) return null;
 
-    if (buf.vk_id != 0) {
+    if (buf.backend == .vulkan and buf.vk_id != 0) {
         // Return a pointer into the persistently-mapped Vulkan host-visible allocation.
         if (buf.vk_runtime_ref) |rt_ptr| {
             const rt: *NativeVulkanRuntime = @ptrCast(@alignCast(rt_ptr));
@@ -608,6 +739,12 @@ pub export fn doeNativeBufferGetConstMappedRange(buf_raw: ?*anyopaque, offset: u
             return @ptrCast(base + offset);
         }
         return null;
+    }
+
+    if (buf.backend == .d3d12) {
+        const mapped = buf.d3d12_mapped_ptr orelse return null;
+        const base: [*]u8 = @ptrCast(mapped);
+        return @ptrCast(base + offset);
     }
 
     const contents = metal_bridge_buffer_contents(buf.mtl) orelse return null;

@@ -1372,6 +1372,13 @@ const fullSurfaceBackend = {
             format: descriptor.depthStencil.format,
             depthWriteEnabled: descriptor.depthStencil.depthWriteEnabled ?? false,
             depthCompare: descriptor.depthStencil.depthCompare ?? 'always',
+            stencilFront: descriptor.depthStencil.stencilFront ?? undefined,
+            stencilBack: descriptor.depthStencil.stencilBack ?? undefined,
+            stencilReadMask: descriptor.depthStencil.stencilReadMask ?? 0xFFFF_FFFF,
+            stencilWriteMask: descriptor.depthStencil.stencilWriteMask ?? 0xFFFF_FFFF,
+            depthBias: descriptor.depthStencil.depthBias ?? 0,
+            depthBiasSlopeScale: descriptor.depthStencil.depthBiasSlopeScale ?? 0,
+            depthBiasClamp: descriptor.depthStencil.depthBiasClamp ?? 0,
           } : undefined,
         },
       );

@@ -82,10 +82,37 @@ int d3d12_bridge_command_list_reset(D3D12Handle cmd_list, D3D12Handle allocator)
 /* Texture support */
 D3D12Handle d3d12_bridge_device_create_texture_2d(D3D12Handle device, uint32_t width, uint32_t height,
                                                     uint32_t mip_levels, uint32_t format, uint32_t usage_flags);
+D3D12Handle d3d12_bridge_device_create_texture_2d_layered(
+    D3D12Handle device,
+    uint32_t width,
+    uint32_t height,
+    uint32_t array_layers,
+    uint32_t mip_levels,
+    uint32_t sample_count,
+    uint32_t format,
+    uint32_t usage_flags);
+D3D12Handle d3d12_bridge_device_create_texture_3d(D3D12Handle device, uint32_t width, uint32_t height,
+                                                    uint32_t depth, uint32_t mip_levels,
+                                                    uint32_t format, uint32_t usage_flags);
+D3D12Handle d3d12_bridge_texture_create_view(D3D12Handle texture, uint32_t format, uint32_t dimension,
+                                               uint32_t aspect, uint32_t base_mip, uint32_t mip_count,
+                                               uint32_t base_array_layer, uint32_t array_layer_count,
+                                               uint64_t usage_flags);
 void d3d12_bridge_command_list_copy_texture_region(D3D12Handle cmd_list, D3D12Handle dst_texture,
                                                      D3D12Handle src_buffer, uint64_t src_offset,
                                                      uint32_t width, uint32_t height, uint32_t bytes_per_row,
                                                      uint32_t format);
+void d3d12_bridge_command_list_copy_texture_region_subresource(
+    D3D12Handle cmd_list,
+    D3D12Handle dst_texture,
+    uint32_t subresource_index,
+    D3D12Handle src_buffer,
+    uint64_t src_offset,
+    uint32_t width,
+    uint32_t height,
+    uint32_t depth,
+    uint32_t bytes_per_row,
+    uint32_t format);
 
 /* Resource barrier */
 void d3d12_bridge_command_list_resource_barrier_transition(D3D12Handle cmd_list, D3D12Handle resource,
@@ -93,6 +120,17 @@ void d3d12_bridge_command_list_resource_barrier_transition(D3D12Handle cmd_list,
 
 /* Sampler descriptor heap */
 D3D12Handle d3d12_bridge_device_create_sampler_heap(D3D12Handle device, uint32_t num_descriptors);
+D3D12Handle d3d12_bridge_device_create_sampler(D3D12Handle device,
+                                                 uint32_t min_filter,
+                                                 uint32_t mag_filter,
+                                                 uint32_t mipmap_filter,
+                                                 uint32_t address_mode_u,
+                                                 uint32_t address_mode_v,
+                                                 uint32_t address_mode_w,
+                                                 float lod_min_clamp,
+                                                 float lod_max_clamp,
+                                                 uint32_t compare,
+                                                 uint16_t max_anisotropy);
 
 /* RTV descriptor heap and render target views */
 D3D12Handle d3d12_bridge_device_create_rtv_heap(D3D12Handle device, uint32_t num_descriptors);
@@ -193,10 +231,12 @@ void d3d12_bridge_device_create_srv_texture(D3D12Handle device, D3D12Handle heap
                                              D3D12Handle texture, uint32_t format);
 void d3d12_bridge_device_create_srv_texture_2d(D3D12Handle device, D3D12Handle resource,
                                                 D3D12Handle heap, uint32_t index, uint32_t format,
-                                                uint32_t aspect, uint32_t base_mip, uint32_t mip_count);
+                                                uint32_t aspect, uint32_t base_mip, uint32_t mip_count,
+                                                uint32_t base_array_layer, uint32_t array_layer_count);
 void d3d12_bridge_device_create_srv_texture_cube(D3D12Handle device, D3D12Handle resource,
                                                   D3D12Handle heap, uint32_t index, uint32_t format,
-                                                  uint32_t aspect, uint32_t base_mip, uint32_t mip_count);
+                                                  uint32_t aspect, uint32_t base_mip, uint32_t mip_count,
+                                                  uint32_t base_array_layer, uint32_t array_layer_count);
 void d3d12_bridge_device_create_srv_texture_3d(D3D12Handle device, D3D12Handle resource,
                                                 D3D12Handle heap, uint32_t index, uint32_t format,
                                                 uint32_t aspect, uint32_t base_mip, uint32_t mip_count);

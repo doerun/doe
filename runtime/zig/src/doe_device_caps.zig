@@ -7,6 +7,7 @@
 const builtin = @import("builtin");
 const types = @import("core/abi/wgpu_types.zig");
 const native = @import("doe_wgpu_native.zig");
+const d3d12_device_caps = @import("backend/d3d12/d3d12_device_caps.zig");
 const vk_feature_caps = @import("backend/vulkan/vk_feature_caps.zig");
 const vulkan_feature_cache = @import("doe_vulkan_feature_cache.zig");
 const DoeDevice = native.DoeDevice;
@@ -234,11 +235,22 @@ fn is_vulkan_feature_supported(feature: u32, caps: ?vk_feature_caps.VulkanFeatur
     };
 }
 
+fn d3d12_runtime(device: *DoeDevice) ?*native.NativeD3D12Runtime {
+    const ptr = device.d3d12_runtime orelse return null;
+    return @ptrCast(@alignCast(ptr));
+}
+
 pub export fn doeNativeAdapterHasFeature(raw: ?*anyopaque, feature: u32) callconv(.c) u32 {
     if (native.cast(DoeAdapter, raw)) |a| {
         if (a.backend == .vulkan) {
             const caps = vulkan_feature_cache.get_adapter(raw);
             return if (is_vulkan_feature_supported(feature, caps)) 1 else 0;
+        }
+        if (a.backend == .d3d12) {
+            if (d3d12_device_caps.get_adapter_caps(raw)) |caps| {
+                return if (d3d12_device_caps.d3d12_adapter_has_feature_with_caps(feature, caps)) 1 else 0;
+            }
+            return if (d3d12_device_caps.d3d12_adapter_has_feature(feature)) 1 else 0;
         }
     }
     return if (is_metal_feature_supported(feature)) 1 else 0;
@@ -249,6 +261,12 @@ pub export fn doeNativeDeviceHasFeature(raw: ?*anyopaque, feature: u32) callconv
         if (d.backend == .vulkan) {
             const caps = vulkan_feature_cache.get_device(raw);
             return if (is_vulkan_feature_supported(feature, caps)) 1 else 0;
+        }
+        if (d.backend == .d3d12) {
+            if (d3d12_runtime(d)) |rt| {
+                return if (rt.has_feature(feature)) 1 else 0;
+            }
+            return if (d3d12_device_caps.d3d12_device_has_feature(feature)) 1 else 0;
         }
     }
     return if (is_metal_feature_supported(feature)) 1 else 0;
@@ -265,6 +283,16 @@ pub export fn doeNativeDeviceGetLimits(raw: ?*anyopaque, limits: ?*types.WGPULim
             if (limits) |l| l.* = VULKAN_LIMITS_STATIC;
             return types.WGPUStatus_Success;
         }
+        if (d.backend == .d3d12) {
+            if (limits) |l| {
+                if (d3d12_runtime(d)) |rt| {
+                    rt.get_limits(l);
+                } else {
+                    d3d12_device_caps.d3d12_device_get_limits(l);
+                }
+            }
+            return types.WGPUStatus_Success;
+        }
     }
     if (limits) |l| l.* = build_limits(null);
     return types.WGPUStatus_Success;
@@ -274,6 +302,10 @@ pub export fn doeNativeAdapterGetLimits(raw: ?*anyopaque, limits: ?*types.WGPULi
     if (native.cast(DoeAdapter, raw)) |a| {
         if (a.backend == .vulkan) {
             if (limits) |l| l.* = VULKAN_LIMITS_STATIC;
+            return types.WGPUStatus_Success;
+        }
+        if (a.backend == .d3d12) {
+            if (limits) |l| d3d12_device_caps.d3d12_adapter_get_limits(l);
             return types.WGPUStatus_Success;
         }
     }
@@ -293,7 +325,14 @@ pub export fn doeNativeDeviceGetLimitsFromMtl(mtl_device: ?*anyopaque, limits: ?
 // ============================================================
 
 pub export fn doeNativeDeviceSubgroupSize(raw: ?*anyopaque) callconv(.c) u32 {
-    _ = raw;
+    if (native.cast(DoeDevice, raw)) |d| {
+        if (d.backend == .d3d12) {
+            if (d3d12_runtime(d)) |rt| {
+                return d3d12_device_caps.d3d12_device_subgroup_size_from_caps(rt.device_caps);
+            }
+            return d3d12_device_caps.d3d12_device_subgroup_size();
+        }
+    }
     // Metal SIMD-group size is 32 on all Apple Silicon variants known at time
     // of writing.  Report 0 when Metal is unavailable (non-macOS).
     return if (BRIDGE_AVAILABLE) METAL_SIMD_GROUP_SIZE else 0;

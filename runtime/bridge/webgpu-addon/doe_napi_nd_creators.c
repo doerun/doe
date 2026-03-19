@@ -268,6 +268,82 @@ static napi_value native_direct_adapter_destroy(napi_env env, napi_callback_info
  * Object constructors
  * ================================================================ */
 
+typedef struct {
+    const char* name;
+    uint32_t value;
+} NativeDirectFeatureEntry;
+
+static napi_value native_direct_create_feature_set(
+    napi_env env,
+    bool (*has_feature_fn)(void* handle, uint32_t feature),
+    void* handle
+) {
+    static const NativeDirectFeatureEntry feature_entries[] = {
+        { "depth-clip-control", 0x00000001 },
+        { "depth32float-stencil8", 0x00000002 },
+        { "texture-compression-bc", 0x00000003 },
+        { "texture-compression-bc-sliced-3d", 0x00000004 },
+        { "texture-compression-etc2", 0x00000005 },
+        { "texture-compression-astc", 0x00000006 },
+        { "texture-compression-astc-sliced-3d", 0x00000007 },
+        { "rg11b10ufloat-renderable", 0x00000008 },
+        { "timestamp-query", 0x00000009 },
+        { "bgra8unorm-storage", 0x0000000A },
+        { "shader-f16", 0x0000000B },
+        { "indirect-first-instance", 0x0000000C },
+        { "float32-filterable", 0x0000000D },
+        { "subgroups", 0x0000000E },
+        { "subgroups-f16", 0x0000000F },
+        { "float32-blendable", 0x00000010 },
+        { "clip-distances", 0x00000011 },
+        { "dual-source-blending", 0x00000012 },
+        { "core-features-and-limits", 0x00000013 },
+        { "texture-formats-tier1", 0x00000014 },
+        { "texture-formats-tier2", 0x00000015 },
+        { "primitive-index", 0x00000016 },
+        { "texture-component-swizzle", 0x00000017 },
+    };
+    napi_value set = native_direct_create_empty_set(env);
+    if (!has_feature_fn || !handle) {
+        return set;
+    }
+
+    napi_value add_fn;
+    napi_get_named_property(env, set, "add", &add_fn);
+    for (size_t i = 0; i < sizeof(feature_entries) / sizeof(feature_entries[0]); i += 1) {
+        if (!has_feature_fn(handle, feature_entries[i].value)) {
+            continue;
+        }
+        napi_value name_value;
+        napi_create_string_utf8(env, feature_entries[i].name, NAPI_AUTO_LENGTH, &name_value);
+        napi_value argv[] = { name_value };
+        napi_call_function(env, set, add_fn, 1, argv, NULL);
+    }
+    return set;
+}
+
+static bool native_direct_adapter_has_feature_value(void* handle, uint32_t feature) {
+    if (!handle) return false;
+    if (pfn_doeNativeAdapterHasFeature) {
+        return pfn_doeNativeAdapterHasFeature(handle, feature) != 0;
+    }
+    if (pfn_wgpuAdapterHasFeature) {
+        return pfn_wgpuAdapterHasFeature(handle, feature) != 0;
+    }
+    return false;
+}
+
+static bool native_direct_device_has_feature_value(void* handle, uint32_t feature) {
+    if (!handle) return false;
+    if (pfn_doeNativeDeviceHasFeature) {
+        return pfn_doeNativeDeviceHasFeature(handle, feature) != 0;
+    }
+    if (pfn_wgpuDeviceHasFeature) {
+        return pfn_wgpuDeviceHasFeature(handle, feature) != 0;
+    }
+    return false;
+}
+
 napi_value create_native_direct_gpu_object(napi_env env, WGPUInstance instance) {
     napi_value obj;
     napi_create_object(env, &obj);
@@ -286,7 +362,7 @@ napi_value create_native_direct_adapter_object(napi_env env, WGPUInstance instan
     bool limits_ok = false;
     WGPULimits limits = native_direct_query_adapter_limits(adapter, &limits_ok);
     native_direct_set_object_prop(env, obj, "limits", limits_ok ? create_limits_object(env, &limits) : native_direct_create_empty_object(env));
-    native_direct_set_object_prop(env, obj, "features", native_direct_create_empty_set(env));
+    native_direct_set_object_prop(env, obj, "features", native_direct_create_feature_set(env, native_direct_adapter_has_feature_value, adapter));
     native_direct_add_cached_method(env, obj, "requestDevice", native_direct_adapter_request_device, &native_direct_method_adapter_request_device_ref);
     native_direct_add_cached_method(env, obj, "destroy", native_direct_adapter_destroy, &native_direct_method_adapter_destroy_ref);
     native_direct_add_cached_method(env, obj, "getPreferredCanvasFormat", native_direct_adapter_get_preferred_canvas_format, &native_direct_method_adapter_get_preferred_canvas_format_ref);
@@ -323,7 +399,7 @@ napi_value create_native_direct_device_object(napi_env env, WGPUInstance instanc
     bool limits_ok = false;
     WGPULimits limits = native_direct_query_device_limits(device, &limits_ok);
     native_direct_set_object_prop(env, obj, "limits", limits_ok ? create_limits_object(env, &limits) : native_direct_create_empty_object(env));
-    native_direct_set_object_prop(env, obj, "features", native_direct_create_empty_set(env));
+    native_direct_set_object_prop(env, obj, "features", native_direct_create_feature_set(env, native_direct_device_has_feature_value, device));
     native_direct_set_object_prop(env, obj, "queue", create_native_direct_queue_object(env, instance, queue));
     native_direct_add_cached_method(env, obj, "createBuffer", native_direct_device_create_buffer, &native_direct_method_device_create_buffer_ref);
     native_direct_add_cached_method(env, obj, "createShaderModule", native_direct_device_create_shader_module, &native_direct_method_device_create_shader_module_ref);

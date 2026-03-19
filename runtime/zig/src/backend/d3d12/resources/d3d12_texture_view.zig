@@ -5,8 +5,8 @@ const common_timing = @import("../../common/timing.zig");
 // --- Bridge externs ---
 
 extern fn d3d12_bridge_release(obj: ?*anyopaque) callconv(.c) void;
-extern fn d3d12_bridge_device_create_srv_texture_2d(device: ?*anyopaque, resource: ?*anyopaque, heap: ?*anyopaque, index: u32, format: u32, aspect: u32, base_mip: u32, mip_count: u32) callconv(.c) void;
-extern fn d3d12_bridge_device_create_srv_texture_cube(device: ?*anyopaque, resource: ?*anyopaque, heap: ?*anyopaque, index: u32, format: u32, aspect: u32, base_mip: u32, mip_count: u32) callconv(.c) void;
+extern fn d3d12_bridge_device_create_srv_texture_2d(device: ?*anyopaque, resource: ?*anyopaque, heap: ?*anyopaque, index: u32, format: u32, aspect: u32, base_mip: u32, mip_count: u32, base_array_layer: u32, array_layer_count: u32) callconv(.c) void;
+extern fn d3d12_bridge_device_create_srv_texture_cube(device: ?*anyopaque, resource: ?*anyopaque, heap: ?*anyopaque, index: u32, format: u32, aspect: u32, base_mip: u32, mip_count: u32, base_array_layer: u32, array_layer_count: u32) callconv(.c) void;
 extern fn d3d12_bridge_device_create_srv_texture_3d(device: ?*anyopaque, resource: ?*anyopaque, heap: ?*anyopaque, index: u32, format: u32, aspect: u32, base_mip: u32, mip_count: u32) callconv(.c) void;
 extern fn d3d12_bridge_device_create_uav_texture_2d(device: ?*anyopaque, resource: ?*anyopaque, heap: ?*anyopaque, index: u32, format: u32, mip_slice: u32) callconv(.c) void;
 
@@ -40,17 +40,11 @@ fn texture_aspect_supported(format: u32, aspect: u32) bool {
         TEXTURE_ASPECT_ALL => true,
         TEXTURE_ASPECT_DEPTH_ONLY => switch (format) {
             model.WGPUTextureFormat_Stencil8 => false,
-            model.WGPUTextureFormat_Depth16Unorm,
-            model.WGPUTextureFormat_Depth24Plus,
-            model.WGPUTextureFormat_Depth24PlusStencil8,
-            model.WGPUTextureFormat_Depth32Float,
-            model.WGPUTextureFormat_Depth32FloatStencil8 => true,
+            model.WGPUTextureFormat_Depth16Unorm, model.WGPUTextureFormat_Depth24Plus, model.WGPUTextureFormat_Depth24PlusStencil8, model.WGPUTextureFormat_Depth32Float, model.WGPUTextureFormat_Depth32FloatStencil8 => true,
             else => false,
         },
         TEXTURE_ASPECT_STENCIL_ONLY => switch (format) {
-            model.WGPUTextureFormat_Stencil8,
-            model.WGPUTextureFormat_Depth24PlusStencil8,
-            model.WGPUTextureFormat_Depth32FloatStencil8 => true,
+            model.WGPUTextureFormat_Stencil8, model.WGPUTextureFormat_Depth24PlusStencil8, model.WGPUTextureFormat_Depth32FloatStencil8 => true,
             else => false,
         },
         else => false,
@@ -59,50 +53,8 @@ fn texture_aspect_supported(format: u32, aspect: u32) bool {
 
 fn texture_supports_storage_binding(format: u32) bool {
     return switch (format) {
-        model.WGPUTextureFormat_Stencil8,
-        model.WGPUTextureFormat_Depth16Unorm,
-        model.WGPUTextureFormat_Depth24Plus,
-        model.WGPUTextureFormat_Depth24PlusStencil8,
-        model.WGPUTextureFormat_Depth32Float,
-        model.WGPUTextureFormat_Depth32FloatStencil8,
-        model.WGPUTextureFormat_BGRA8Unorm,
-        model.WGPUTextureFormat_BGRA8UnormSrgb,
-        model.WGPUTextureFormat_RGB10A2Uint,
-        model.WGPUTextureFormat_RGB10A2Unorm,
-        model.WGPUTextureFormat_RG11B10Ufloat,
-        model.WGPUTextureFormat_RGB9E5Ufloat,
-        model.WGPUTextureFormat_BC1RGBAUnorm,
-        model.WGPUTextureFormat_BC1RGBAUnormSrgb,
-        model.WGPUTextureFormat_BC2RGBAUnorm,
-        model.WGPUTextureFormat_BC2RGBAUnormSrgb,
-        model.WGPUTextureFormat_BC3RGBAUnorm,
-        model.WGPUTextureFormat_BC3RGBAUnormSrgb,
-        model.WGPUTextureFormat_BC4RUnorm,
-        model.WGPUTextureFormat_BC4RSnorm,
-        model.WGPUTextureFormat_BC5RGUnorm,
-        model.WGPUTextureFormat_BC5RGSnorm,
-        model.WGPUTextureFormat_BC6HRGBUfloat,
-        model.WGPUTextureFormat_BC6HRGBFloat,
-        model.WGPUTextureFormat_BC7RGBAUnorm,
-        model.WGPUTextureFormat_BC7RGBAUnormSrgb,
-        model.WGPUTextureFormat_ETC2RGB8Unorm,
-        model.WGPUTextureFormat_ETC2RGB8UnormSrgb,
-        model.WGPUTextureFormat_ETC2RGB8A1Unorm,
-        model.WGPUTextureFormat_ETC2RGB8A1UnormSrgb,
-        model.WGPUTextureFormat_ETC2RGBA8Unorm,
-        model.WGPUTextureFormat_ETC2RGBA8UnormSrgb,
-        model.WGPUTextureFormat_EACR11Unorm,
-        model.WGPUTextureFormat_EACR11Snorm,
-        model.WGPUTextureFormat_EACRG11Unorm,
-        model.WGPUTextureFormat_EACRG11Snorm,
-        model.WGPUTextureFormat_ASTC4x4Unorm,
-        model.WGPUTextureFormat_ASTC4x4UnormSrgb,
-        model.WGPUTextureFormat_ASTC5x4Unorm,
-        model.WGPUTextureFormat_ASTC5x4UnormSrgb,
-        model.WGPUTextureFormat_ASTC5x5Unorm,
-        model.WGPUTextureFormat_ASTC5x5UnormSrgb,
-        model.WGPUTextureFormat_ASTC6x5Unorm,
-        model.WGPUTextureFormat_ASTC6x5UnormSrgb => false,
+        model.WGPUTextureFormat_Stencil8, model.WGPUTextureFormat_Depth16Unorm, model.WGPUTextureFormat_Depth24Plus, model.WGPUTextureFormat_Depth24PlusStencil8, model.WGPUTextureFormat_Depth32Float, model.WGPUTextureFormat_Depth32FloatStencil8, model.WGPUTextureFormat_BGRA8Unorm, model.WGPUTextureFormat_BGRA8UnormSrgb, model.WGPUTextureFormat_RGB10A2Uint, model.WGPUTextureFormat_RGB10A2Unorm, model.WGPUTextureFormat_RG11B10Ufloat, model.WGPUTextureFormat_RGB9E5Ufloat, model.WGPUTextureFormat_BC1RGBAUnorm, model.WGPUTextureFormat_BC1RGBAUnormSrgb, model.WGPUTextureFormat_BC2RGBAUnorm, model.WGPUTextureFormat_BC2RGBAUnormSrgb, model.WGPUTextureFormat_BC3RGBAUnorm, model.WGPUTextureFormat_BC3RGBAUnormSrgb, model.WGPUTextureFormat_BC4RUnorm, model.WGPUTextureFormat_BC4RSnorm, model.WGPUTextureFormat_BC5RGUnorm, model.WGPUTextureFormat_BC5RGSnorm, model.WGPUTextureFormat_BC6HRGBUfloat, model.WGPUTextureFormat_BC6HRGBFloat, model.WGPUTextureFormat_BC7RGBAUnorm, model.WGPUTextureFormat_BC7RGBAUnormSrgb, model.WGPUTextureFormat_ETC2RGB8Unorm, model.WGPUTextureFormat_ETC2RGB8UnormSrgb, model.WGPUTextureFormat_ETC2RGB8A1Unorm, model.WGPUTextureFormat_ETC2RGB8A1UnormSrgb, model.WGPUTextureFormat_ETC2RGBA8Unorm, model.WGPUTextureFormat_ETC2RGBA8UnormSrgb, model.WGPUTextureFormat_EACR11Unorm, model.WGPUTextureFormat_EACR11Snorm, model.WGPUTextureFormat_EACRG11Unorm, model.WGPUTextureFormat_EACRG11Snorm, model.WGPUTextureFormat_ASTC4x4Unorm, model.WGPUTextureFormat_ASTC4x4UnormSrgb, model.WGPUTextureFormat_ASTC5x4Unorm, model.WGPUTextureFormat_ASTC5x4UnormSrgb, model.WGPUTextureFormat_ASTC5x5Unorm, model.WGPUTextureFormat_ASTC5x5UnormSrgb, model.WGPUTextureFormat_ASTC6x5Unorm, model.WGPUTextureFormat_ASTC6x5UnormSrgb => false,
+        model.WGPUTextureFormat_ASTC6x6Unorm, model.WGPUTextureFormat_ASTC6x6UnormSrgb, model.WGPUTextureFormat_ASTC8x5Unorm, model.WGPUTextureFormat_ASTC8x5UnormSrgb, model.WGPUTextureFormat_ASTC8x6Unorm, model.WGPUTextureFormat_ASTC8x6UnormSrgb, model.WGPUTextureFormat_ASTC8x8Unorm, model.WGPUTextureFormat_ASTC8x8UnormSrgb, model.WGPUTextureFormat_ASTC10x5Unorm, model.WGPUTextureFormat_ASTC10x5UnormSrgb, model.WGPUTextureFormat_ASTC10x6Unorm, model.WGPUTextureFormat_ASTC10x6UnormSrgb, model.WGPUTextureFormat_ASTC10x8Unorm, model.WGPUTextureFormat_ASTC10x8UnormSrgb, model.WGPUTextureFormat_ASTC10x10Unorm, model.WGPUTextureFormat_ASTC10x10UnormSrgb, model.WGPUTextureFormat_ASTC12x10Unorm, model.WGPUTextureFormat_ASTC12x10UnormSrgb, model.WGPUTextureFormat_ASTC12x12Unorm, model.WGPUTextureFormat_ASTC12x12UnormSrgb => false,
         else => true,
     };
 }
@@ -187,9 +139,12 @@ pub const TextureViewState = struct {
                     aspect,
                     base_mip,
                     mip_count,
+                    base_layer,
+                    layer_count,
                 );
             },
             VIEW_DIMENSION_CUBE, VIEW_DIMENSION_CUBE_ARRAY => {
+                if ((layer_count % 6) != 0) return error.UnsupportedFeature;
                 d3d12_bridge_device_create_srv_texture_cube(
                     device,
                     texture_resource,
@@ -199,6 +154,8 @@ pub const TextureViewState = struct {
                     aspect,
                     base_mip,
                     mip_count,
+                    base_layer,
+                    layer_count,
                 );
             },
             VIEW_DIMENSION_3D => {

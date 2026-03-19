@@ -15,11 +15,13 @@ const ERR_CAP = native.ERR_CAP;
 const label_store = native.label_store;
 
 const DoeDevice = native.DoeDevice;
+const DoeBuffer = native.DoeBuffer;
 const DoeTexture = native.DoeTexture;
 const DoeTextureView = native.DoeTextureView;
 const DoeSampler = native.DoeSampler;
 const DoeShaderModule = native.DoeShaderModule;
 const DoePipelineLayout = native.DoePipelineLayout;
+const DoeBindGroup = native.DoeBindGroup;
 const DoeRenderPipeline = native.DoeRenderPipeline;
 const DoeRenderPass = native.DoeRenderPass;
 const DoeCommandEncoder = native.DoeCommandEncoder;
@@ -28,6 +30,49 @@ const DoeCommandEncoder = native.DoeCommandEncoder;
 extern fn metal_bridge_release(obj: ?*anyopaque) callconv(.c) void;
 extern fn d3d12_bridge_release(obj: ?*anyopaque) callconv(.c) void;
 extern fn d3d12_bridge_device_create_root_signature_empty(device: ?*anyopaque) callconv(.c) ?*anyopaque;
+extern fn d3d12_bridge_device_create_texture_2d_layered(
+    device: ?*anyopaque,
+    width: u32,
+    height: u32,
+    array_layers: u32,
+    mip_levels: u32,
+    sample_count: u32,
+    format: u32,
+    usage_flags: u32,
+) callconv(.c) ?*anyopaque;
+extern fn d3d12_bridge_device_create_texture_3d(
+    device: ?*anyopaque,
+    width: u32,
+    height: u32,
+    depth: u32,
+    mip_levels: u32,
+    format: u32,
+    usage_flags: u32,
+) callconv(.c) ?*anyopaque;
+extern fn d3d12_bridge_texture_create_view(
+    texture: ?*anyopaque,
+    format: u32,
+    dimension: u32,
+    aspect: u32,
+    base_mip: u32,
+    mip_count: u32,
+    base_array_layer: u32,
+    array_layer_count: u32,
+    usage_flags: u64,
+) callconv(.c) ?*anyopaque;
+extern fn d3d12_bridge_device_create_sampler(
+    device: ?*anyopaque,
+    min_filter: u32,
+    mag_filter: u32,
+    mipmap_filter: u32,
+    address_mode_u: u32,
+    address_mode_v: u32,
+    address_mode_w: u32,
+    lod_min_clamp: f32,
+    lod_max_clamp: f32,
+    compare: u32,
+    max_anisotropy: u16,
+) callconv(.c) ?*anyopaque;
 extern fn metal_bridge_device_new_texture(device: ?*anyopaque, width: u32, height: u32, depth_or_array_layers: u32, mip_levels: u32, sample_count: u32, pixel_format: u32, usage: u32, dimension: u32) callconv(.c) ?*anyopaque;
 extern fn metal_bridge_texture_new_view(texture: ?*anyopaque, pixel_format: u32, dimension: u32, base_mip_level: u32, mip_level_count: u32, base_array_layer: u32, array_layer_count: u32, swizzle_r: u32, swizzle_g: u32, swizzle_b: u32, swizzle_a: u32) callconv(.c) ?*anyopaque;
 extern fn metal_bridge_device_new_sampler(device: ?*anyopaque, min_f: u32, mag_f: u32, mip_f: u32, addr_u: u32, addr_v: u32, addr_w: u32, lod_min: f32, lod_max: f32, max_aniso: u16) callconv(.c) ?*anyopaque;
@@ -104,10 +149,19 @@ const MtlVertexAttributeDesc = extern struct {
 // Mirror of the C structs passed by doe_napi.c for WGPURenderPipelineDescriptor.
 // Must match the C layout exactly (extern struct, same field order and types).
 const RenderStringView = extern struct { data: ?[*]const u8, length: usize };
+const RenderBlendComponent = extern struct {
+    operation: u32,
+    srcFactor: u32,
+    dstFactor: u32,
+};
+const RenderBlendState = extern struct {
+    color: RenderBlendComponent,
+    alpha: RenderBlendComponent,
+};
 const RenderColorTargetState = extern struct {
     nextInChain: ?*anyopaque,
     format: u32,
-    blend: ?*anyopaque,
+    blend: ?*const RenderBlendState,
     writeMask: u64,
 };
 const RenderVertexState = extern struct {
@@ -193,6 +247,36 @@ const DEFAULT_MAX_DRAW_COUNT: u64 = 50_000_000;
 const D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA: u32 = 0;
 const D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA: u32 = 1;
 
+const OpaqueRegistry = struct {
+    map: std.AutoHashMapUnmanaged(usize, void) = .{},
+    mutex: std.Thread.Mutex = .{},
+
+    fn insert(self: *OpaqueRegistry, raw: ?*anyopaque) !void {
+        const key = @intFromPtr(raw orelse return error.InvalidState);
+        self.mutex.lock();
+        defer self.mutex.unlock();
+        try self.map.put(alloc, key, {});
+    }
+
+    fn contains(self: *OpaqueRegistry, raw: ?*anyopaque) bool {
+        const key = @intFromPtr(raw orelse return false);
+        self.mutex.lock();
+        defer self.mutex.unlock();
+        return self.map.contains(key);
+    }
+
+    fn remove(self: *OpaqueRegistry, raw: ?*anyopaque) void {
+        const key = @intFromPtr(raw orelse return);
+        self.mutex.lock();
+        defer self.mutex.unlock();
+        _ = self.map.remove(key);
+    }
+};
+
+var d3d12_texture_registry: OpaqueRegistry = .{};
+var d3d12_texture_view_registry: OpaqueRegistry = .{};
+var d3d12_sampler_registry: OpaqueRegistry = .{};
+
 const d3d12_passthrough_vs_source =
     \\struct VSOutput {
     \\    float4 position : SV_Position;
@@ -216,6 +300,123 @@ const d3d12_passthrough_ps_source =
     \\    return color;
     \\}
 ;
+
+fn default_texture_view_dimension(tex: *const DoeTexture) u32 {
+    if (tex.texture_binding_view_dimension != 0) return tex.texture_binding_view_dimension;
+    return switch (tex.dimension) {
+        types.WGPUTextureDimension_1D => types.WGPUTextureViewDimension_1D,
+        types.WGPUTextureDimension_3D => types.WGPUTextureViewDimension_3D,
+        else => if (tex.depth_or_array_layers > 1)
+            types.WGPUTextureViewDimension_2DArray
+        else
+            types.WGPUTextureViewDimension_2D,
+    };
+}
+
+fn is_depth_format(format: u32) bool {
+    return switch (format) {
+        types.WGPUTextureFormat_Stencil8,
+        types.WGPUTextureFormat_Depth16Unorm,
+        types.WGPUTextureFormat_Depth24Plus,
+        types.WGPUTextureFormat_Depth24PlusStencil8,
+        types.WGPUTextureFormat_Depth32Float,
+        types.WGPUTextureFormat_Depth32FloatStencil8,
+        => true,
+        else => false,
+    };
+}
+
+fn is_combined_depth_stencil_format(format: u32) bool {
+    return switch (format) {
+        types.WGPUTextureFormat_Depth24PlusStencil8,
+        types.WGPUTextureFormat_Depth32FloatStencil8,
+        => true,
+        else => false,
+    };
+}
+
+fn view_aspect_supported(format: u32, aspect: u32) bool {
+    const resolved_aspect = if (aspect == 0) types.WGPUTextureAspect_All else aspect;
+    return switch (resolved_aspect) {
+        types.WGPUTextureAspect_All => true,
+        types.WGPUTextureAspect_DepthOnly => switch (format) {
+            types.WGPUTextureFormat_Depth16Unorm, types.WGPUTextureFormat_Depth24Plus, types.WGPUTextureFormat_Depth24PlusStencil8, types.WGPUTextureFormat_Depth32Float, types.WGPUTextureFormat_Depth32FloatStencil8 => true,
+            else => false,
+        },
+        types.WGPUTextureAspect_StencilOnly => switch (format) {
+            types.WGPUTextureFormat_Stencil8, types.WGPUTextureFormat_Depth24PlusStencil8, types.WGPUTextureFormat_Depth32FloatStencil8 => true,
+            else => false,
+        },
+        else => false,
+    };
+}
+
+fn d3d12_sampled_aspect(format: u32, aspect: u32) u32 {
+    const resolved_aspect = if (aspect == 0) types.WGPUTextureAspect_All else aspect;
+    if (is_combined_depth_stencil_format(format)) {
+        return if (resolved_aspect == types.WGPUTextureAspect_StencilOnly)
+            types.WGPUTextureAspect_StencilOnly
+        else
+            types.WGPUTextureAspect_DepthOnly;
+    }
+    if (format == types.WGPUTextureFormat_Stencil8) return types.WGPUTextureAspect_StencilOnly;
+    return resolved_aspect;
+}
+
+fn identity_swizzle(swizzle_r: u32, swizzle_g: u32, swizzle_b: u32, swizzle_a: u32) bool {
+    return swizzle_r == types.WGPUTextureComponentSwizzle_Red and
+        swizzle_g == types.WGPUTextureComponentSwizzle_Green and
+        swizzle_b == types.WGPUTextureComponentSwizzle_Blue and
+        swizzle_a == types.WGPUTextureComponentSwizzle_Alpha;
+}
+
+fn d3d12_texture_descriptor_supported(desc: *const types.WGPUTextureDescriptor) bool {
+    if ((desc.usage & (types.WGPUTextureUsage_TransientAttachment | types.WGPUTextureUsage_StorageAttachment)) != 0) return false;
+    if (desc.dimension == types.WGPUTextureDimension_1D) return false;
+    if (desc.dimension == types.WGPUTextureDimension_3D and desc.sampleCount > 1) return false;
+    if (desc.viewFormatCount > 0) {
+        const view_formats = desc.viewFormats orelse return false;
+        var i: usize = 0;
+        while (i < desc.viewFormatCount) : (i += 1) {
+            if (view_formats[i] != desc.format) return false;
+        }
+    }
+    return true;
+}
+
+fn d3d12_view_dimension_supported(tex: *const DoeTexture, view_dimension: u32) bool {
+    return switch (tex.dimension) {
+        types.WGPUTextureDimension_3D => view_dimension == types.WGPUTextureViewDimension_3D,
+        types.WGPUTextureDimension_2D => switch (view_dimension) {
+            types.WGPUTextureViewDimension_2D,
+            types.WGPUTextureViewDimension_2DArray,
+            => true,
+            types.WGPUTextureViewDimension_2DDepth,
+            types.WGPUTextureViewDimension_2DArrayDepth,
+            => is_depth_format(tex.format),
+            types.WGPUTextureViewDimension_Cube,
+            types.WGPUTextureViewDimension_CubeArray,
+            => tex.depth_or_array_layers >= 6 and (tex.depth_or_array_layers % 6) == 0,
+            else => false,
+        },
+        else => false,
+    };
+}
+
+fn d3d12_register_texture(raw: ?*anyopaque) bool {
+    d3d12_texture_registry.insert(raw) catch return false;
+    return true;
+}
+
+fn d3d12_register_texture_view(raw: ?*anyopaque) bool {
+    d3d12_texture_view_registry.insert(raw) catch return false;
+    return true;
+}
+
+fn d3d12_register_sampler(raw: ?*anyopaque) bool {
+    d3d12_sampler_registry.insert(raw) catch return false;
+    return true;
+}
 
 fn reserve_render_draw(pass: *DoeRenderPass) bool {
     if (pass.recorded_draw_count >= pass.max_draw_count) {
@@ -243,7 +444,7 @@ pub export fn doeNativeDeviceCreateTexture(dev_raw: ?*anyopaque, desc: ?*const t
         .mip_level_count = d.mipLevelCount,
         .sample_count = d.sampleCount,
         .usage = d.usage,
-        .texture_binding_view_dimension = d.textureBindingViewDimension,
+        .texture_binding_view_dimension = 0,
         .view_format_count = d.viewFormatCount,
     };
     if (dev.backend == .vulkan) {
@@ -253,6 +454,46 @@ pub export fn doeNativeDeviceCreateTexture(dev_raw: ?*anyopaque, desc: ?*const t
             return null;
         }
         const result = toOpaque(tex);
+        label_store.set(result, d.label.data, d.label.length);
+        return result;
+    }
+    if (dev.backend == .d3d12) {
+        if (!d3d12_texture_descriptor_supported(d)) {
+            alloc.destroy(tex);
+            return null;
+        }
+        const d3d12_texture = switch (d.dimension) {
+            types.WGPUTextureDimension_2D => d3d12_bridge_device_create_texture_2d_layered(
+                dev.mtl_device,
+                d.size.width,
+                d.size.height,
+                d.size.depthOrArrayLayers,
+                d.mipLevelCount,
+                d.sampleCount,
+                d.format,
+                @intCast(d.usage),
+            ),
+            types.WGPUTextureDimension_3D => d3d12_bridge_device_create_texture_3d(
+                dev.mtl_device,
+                d.size.width,
+                d.size.height,
+                d.size.depthOrArrayLayers,
+                d.mipLevelCount,
+                d.format,
+                @intCast(d.usage),
+            ),
+            else => null,
+        } orelse {
+            alloc.destroy(tex);
+            return null;
+        };
+        tex.mtl = d3d12_texture;
+        const result = toOpaque(tex);
+        if (!d3d12_register_texture(result)) {
+            d3d12_bridge_release(d3d12_texture);
+            alloc.destroy(tex);
+            return null;
+        }
         label_store.set(result, d.label.data, d.label.length);
         return result;
     }
@@ -274,11 +515,11 @@ pub export fn doeNativeTextureCreateView(tex_raw: ?*anyopaque, desc: ?*const typ
         .nextInChain = null,
         .label = .{ .data = null, .length = 0 },
         .format = tex.format,
-        .dimension = if (tex.texture_binding_view_dimension != 0) tex.texture_binding_view_dimension else tex.dimension,
+        .dimension = default_texture_view_dimension(tex),
         .baseMipLevel = 0,
         .mipLevelCount = tex.mip_level_count,
         .baseArrayLayer = 0,
-        .arrayLayerCount = tex.depth_or_array_layers,
+        .arrayLayerCount = if (tex.dimension == types.WGPUTextureDimension_3D) 1 else tex.depth_or_array_layers,
         .aspect = types.WGPUTextureAspect_All,
         .usage = tex.usage,
         .swizzleR = types.WGPUTextureComponentSwizzle_Red,
@@ -287,7 +528,7 @@ pub export fn doeNativeTextureCreateView(tex_raw: ?*anyopaque, desc: ?*const typ
         .swizzleA = types.WGPUTextureComponentSwizzle_Alpha,
     };
     const resolved_format = if (d.format != 0) d.format else tex.format;
-    const resolved_dimension = if (d.dimension != 0) d.dimension else if (tex.texture_binding_view_dimension != 0) tex.texture_binding_view_dimension else tex.dimension;
+    const resolved_dimension = if (d.dimension != 0) d.dimension else default_texture_view_dimension(tex);
     const resolved_mip_level_count = if (d.mipLevelCount != 0) d.mipLevelCount else tex.mip_level_count - d.baseMipLevel;
     const resolved_array_layer_count = if (d.arrayLayerCount != 0) d.arrayLayerCount else if (tex.dimension == types.WGPUTextureDimension_3D) 1 else tex.depth_or_array_layers - d.baseArrayLayer;
     const resolved_usage = if (d.usage != 0) d.usage else tex.usage;
@@ -302,8 +543,71 @@ pub export fn doeNativeTextureCreateView(tex_raw: ?*anyopaque, desc: ?*const typ
             return null;
         }
     }
-    const view_handle = if (tex.mtl != null)
-        metal_bridge_texture_new_view(
+    const is_d3d12_texture = d3d12_texture_registry.contains(tex_raw);
+    var view_handle: ?*anyopaque = tv.handle;
+    if (is_d3d12_texture) {
+        const resolved_aspect = if (d.aspect != 0) d.aspect else types.WGPUTextureAspect_All;
+        const wants_storage_only =
+            (resolved_usage & types.WGPUTextureUsage_StorageBinding) != 0 and
+            (resolved_usage & types.WGPUTextureUsage_TextureBinding) == 0;
+
+        if (resolved_format != tex.format or
+            !identity_swizzle(resolved_swizzle_r, resolved_swizzle_g, resolved_swizzle_b, resolved_swizzle_a) or
+            !d3d12_view_dimension_supported(tex, resolved_dimension) or
+            !view_aspect_supported(tex.format, resolved_aspect))
+        {
+            alloc.destroy(tv);
+            return null;
+        }
+        if ((resolved_dimension == types.WGPUTextureViewDimension_Cube or
+            resolved_dimension == types.WGPUTextureViewDimension_CubeArray) and
+            ((d.baseArrayLayer % 6) != 0 or (resolved_array_layer_count % 6) != 0))
+        {
+            alloc.destroy(tv);
+            return null;
+        }
+        if ((resolved_usage & types.WGPUTextureUsage_StorageBinding) != 0 and
+            (resolved_usage & types.WGPUTextureUsage_TextureBinding) != 0)
+        {
+            alloc.destroy(tv);
+            return null;
+        }
+        if (wants_storage_only) {
+            if (tex.sample_count > 1 or is_depth_format(tex.format) or resolved_mip_level_count != 1) {
+                alloc.destroy(tv);
+                return null;
+            }
+            view_handle = d3d12_bridge_texture_create_view(
+                tex.mtl,
+                resolved_format,
+                resolved_dimension,
+                resolved_aspect,
+                d.baseMipLevel,
+                resolved_mip_level_count,
+                d.baseArrayLayer,
+                resolved_array_layer_count,
+                types.WGPUTextureUsage_StorageBinding,
+            ) orelse {
+                alloc.destroy(tv);
+                return null;
+            };
+        } else if (tex.sample_count == 1) {
+            view_handle = d3d12_bridge_texture_create_view(
+                tex.mtl,
+                resolved_format,
+                resolved_dimension,
+                d3d12_sampled_aspect(tex.format, resolved_aspect),
+                d.baseMipLevel,
+                resolved_mip_level_count,
+                d.baseArrayLayer,
+                resolved_array_layer_count,
+                types.WGPUTextureUsage_TextureBinding,
+            );
+        } else {
+            view_handle = null;
+        }
+    } else if (tex.mtl != null) {
+        view_handle = metal_bridge_texture_new_view(
             tex.mtl,
             resolved_format,
             resolved_dimension,
@@ -315,12 +619,11 @@ pub export fn doeNativeTextureCreateView(tex_raw: ?*anyopaque, desc: ?*const typ
             resolved_swizzle_g,
             resolved_swizzle_b,
             resolved_swizzle_a,
-        )
-    else
-        tv.handle;
+        );
+    }
     tv.* = .{
         .tex = tex,
-        .handle = if (view_handle) |handle| handle else tex.mtl,
+        .handle = view_handle,
         .format = resolved_format,
         .dimension = resolved_dimension,
         .base_mip_level = d.baseMipLevel,
@@ -331,6 +634,11 @@ pub export fn doeNativeTextureCreateView(tex_raw: ?*anyopaque, desc: ?*const typ
         .usage = resolved_usage,
     };
     const result = toOpaque(tv);
+    if (is_d3d12_texture and !d3d12_register_texture_view(result)) {
+        if (view_handle) |handle| d3d12_bridge_release(handle);
+        alloc.destroy(tv);
+        return null;
+    }
     label_store.set(result, d.label.data, d.label.length);
     return result;
 }
@@ -338,6 +646,12 @@ pub export fn doeNativeTextureCreateView(tex_raw: ?*anyopaque, desc: ?*const typ
 pub export fn doeNativeTextureRelease(raw: ?*anyopaque) callconv(.c) void {
     if (cast(DoeTexture, raw)) |t| {
         label_store.remove(raw);
+        if (d3d12_texture_registry.contains(raw)) {
+            d3d12_texture_registry.remove(raw);
+            if (t.mtl) |m| d3d12_bridge_release(m);
+            alloc.destroy(t);
+            return;
+        }
         if (t.vk_id != 0) {
             const vk_render = @import("doe_vulkan_render_native.zig");
             vk_render.vulkan_destroy_texture(t);
@@ -352,6 +666,12 @@ pub export fn doeNativeTextureRelease(raw: ?*anyopaque) callconv(.c) void {
 pub export fn doeNativeTextureViewRelease(raw: ?*anyopaque) callconv(.c) void {
     if (cast(DoeTextureView, raw)) |tv| {
         label_store.remove(raw);
+        if (d3d12_texture_view_registry.contains(raw)) {
+            d3d12_texture_view_registry.remove(raw);
+            if (tv.handle) |handle| d3d12_bridge_release(handle);
+            alloc.destroy(tv);
+            return;
+        }
         if (tv.tex.vk_id != 0) {
             const vk_render = @import("doe_vulkan_render_native.zig");
             vk_render.vulkan_destroy_texture_view(tv);
@@ -384,6 +704,33 @@ pub export fn doeNativeDeviceCreateSampler(dev_raw: ?*anyopaque, desc: ?*const t
         label_store.set(result, d.label.data, d.label.length);
         return result;
     }
+    if (dev.backend == .d3d12) {
+        const sampler = d3d12_bridge_device_create_sampler(
+            dev.mtl_device,
+            d.minFilter,
+            d.magFilter,
+            d.mipmapFilter,
+            d.addressModeU,
+            d.addressModeV,
+            d.addressModeW,
+            d.lodMinClamp,
+            d.lodMaxClamp,
+            d.compare,
+            d.maxAnisotropy,
+        ) orelse {
+            alloc.destroy(s);
+            return null;
+        };
+        s.* = .{ .mtl = sampler };
+        const result = toOpaque(s);
+        if (!d3d12_register_sampler(result)) {
+            d3d12_bridge_release(sampler);
+            alloc.destroy(s);
+            return null;
+        }
+        label_store.set(result, d.label.data, d.label.length);
+        return result;
+    }
     // Metal path.
     const mtl = metal_bridge_device_new_sampler(dev.mtl_device, d.minFilter, d.magFilter, d.mipmapFilter, d.addressModeU, d.addressModeV, d.addressModeW, d.lodMinClamp, d.lodMaxClamp, d.maxAnisotropy) orelse {
         alloc.destroy(s);
@@ -398,6 +745,12 @@ pub export fn doeNativeDeviceCreateSampler(dev_raw: ?*anyopaque, desc: ?*const t
 pub export fn doeNativeSamplerRelease(raw: ?*anyopaque) callconv(.c) void {
     if (cast(DoeSampler, raw)) |s| {
         label_store.remove(raw);
+        if (d3d12_sampler_registry.contains(raw)) {
+            d3d12_sampler_registry.remove(raw);
+            if (s.mtl) |m| d3d12_bridge_release(m);
+            alloc.destroy(s);
+            return;
+        }
         if (s.vk_runtime_ref) |rt_ptr| {
             const NativeVulkanRuntime = native.NativeVulkanRuntime;
             const rt: *NativeVulkanRuntime = @ptrCast(@alignCast(rt_ptr));
@@ -504,9 +857,18 @@ pub export fn doeNativeDeviceCreateRenderPipeline(dev_raw: ?*anyopaque, desc_raw
         return toOpaque(pip);
     }
     var err_buf: [ERR_CAP]u8 = undefined;
-    const frag = d.fragment orelse { alloc.destroy(pip); return null; };
-    const vert_mod = cast(DoeShaderModule, d.vertex.module) orelse { alloc.destroy(pip); return null; };
-    const frag_mod = cast(DoeShaderModule, frag.module) orelse { alloc.destroy(pip); return null; };
+    const frag = d.fragment orelse {
+        alloc.destroy(pip);
+        return null;
+    };
+    const vert_mod = cast(DoeShaderModule, d.vertex.module) orelse {
+        alloc.destroy(pip);
+        return null;
+    };
+    const frag_mod = cast(DoeShaderModule, frag.module) orelse {
+        alloc.destroy(pip);
+        return null;
+    };
 
     // Pixel format from the first fragment target (default rgba8unorm).
     const pixel_format: u32 = if (frag.targetCount > 0)
@@ -540,8 +902,14 @@ pub export fn doeNativeDeviceCreateRenderPipeline(dev_raw: ?*anyopaque, desc_raw
         null;
 
     if (dev.backend == .d3d12) {
-        const vertex_hlsl = vert_mod.hlsl_source orelse { alloc.destroy(pip); return null; };
-        const fragment_hlsl = frag_mod.hlsl_source orelse { alloc.destroy(pip); return null; };
+        const vertex_hlsl = vert_mod.hlsl_source orelse {
+            alloc.destroy(pip);
+            return null;
+        };
+        const fragment_hlsl = frag_mod.hlsl_source orelse {
+            alloc.destroy(pip);
+            return null;
+        };
         const root_sig = d3d12_bridge_device_create_root_signature_empty(dev.mtl_device) orelse {
             alloc.destroy(pip);
             return null;
@@ -700,12 +1068,12 @@ pub export fn doeNativeDeviceCreateRenderPipeline(dev_raw: ?*anyopaque, desc_raw
     var layout_count: u32 = 0;
     var attr_count: u32 = 0;
 
-    const buf_count = @min(d.vertex.bufferCount, 8);
-    if (buf_count > 0) {
+    const metal_buf_count = @min(d.vertex.bufferCount, 8);
+    if (metal_buf_count > 0) {
         const bufs = @as(?[*]const RenderVertexBufferLayout, @ptrCast(@alignCast(d.vertex.buffers)));
         if (bufs) |layouts| {
             var i: usize = 0;
-            while (i < buf_count) : (i += 1) {
+            while (i < metal_buf_count) : (i += 1) {
                 const layout = layouts[i];
                 mtl_layouts[layout_count] = .{
                     .array_stride = layout.arrayStride,
@@ -732,15 +1100,26 @@ pub export fn doeNativeDeviceCreateRenderPipeline(dev_raw: ?*anyopaque, desc_raw
     }
 
     const pso = metal_bridge_device_new_render_pipeline_full(
-        dev.mtl_device, vfn, ffn,
-        pixel_format, depth_format, sample_count,
+        dev.mtl_device,
+        vfn,
+        ffn,
+        pixel_format,
+        depth_format,
+        sample_count,
         blend_enabled,
-        color_operation, color_src_factor, color_dst_factor,
-        alpha_operation, alpha_src_factor, alpha_dst_factor,
+        color_operation,
+        color_src_factor,
+        color_dst_factor,
+        alpha_operation,
+        alpha_src_factor,
+        alpha_dst_factor,
         @intCast(target0.writeMask),
-        if (layout_count > 0) &mtl_layouts else null, layout_count,
-        if (attr_count > 0) &mtl_attrs else null, attr_count,
-        &err_buf, ERR_CAP,
+        if (layout_count > 0) &mtl_layouts else null,
+        layout_count,
+        if (attr_count > 0) &mtl_attrs else null,
+        attr_count,
+        &err_buf,
+        ERR_CAP,
     ) orelse {
         if (vfn) |f| metal_bridge_release(f);
         if (ffn) |f| metal_bridge_release(f);
@@ -796,7 +1175,14 @@ pub export fn doeNativeCommandEncoderBeginRenderPass(enc_raw: ?*anyopaque, desc:
             if (d.colorAttachments) |attachments| {
                 const att = attachments[0];
                 const tv = cast(DoeTextureView, att.view);
-                if (tv) |v| pass.target = if (v.handle) |handle| handle else v.tex.mtl;
+                if (tv) |v| {
+                    pass.target = if (d3d12_texture_view_registry.contains(att.view))
+                        v.tex.mtl
+                    else if (v.handle) |handle|
+                        handle
+                    else
+                        v.tex.mtl;
+                }
                 pass.clear_r = att.clearValue.r;
                 pass.clear_g = att.clearValue.g;
                 pass.clear_b = att.clearValue.b;
@@ -805,7 +1191,12 @@ pub export fn doeNativeCommandEncoderBeginRenderPass(enc_raw: ?*anyopaque, desc:
         }
         if (d.depthStencilAttachment) |depth_att| {
             if (cast(DoeTextureView, depth_att.view)) |v| {
-                pass.depth_target = if (v.handle) |handle| handle else v.tex.mtl;
+                pass.depth_target = if (d3d12_texture_view_registry.contains(depth_att.view))
+                    v.tex.mtl
+                else if (v.handle) |handle|
+                    handle
+                else
+                    v.tex.mtl;
             }
         }
     }
@@ -924,7 +1315,7 @@ pub export fn doeNativeRenderPassDraw(pass_raw: ?*anyopaque, vertex_count: u32, 
 
 pub export fn doeNativeRenderPassSetVertexBuffer(pass_raw: ?*anyopaque, slot: u32, buffer_raw: ?*anyopaque, offset: u64, size: u64) callconv(.c) void {
     const pass = cast(DoeRenderPass, pass_raw) orelse return;
-    if (slot >= MAX_VERTEX_BUFFERS) return;
+    if (slot >= native.MAX_VERTEX_BUFFERS) return;
     pass.vertex_buffers[slot] = cast(DoeBuffer, buffer_raw);
     pass.vertex_buffer_offsets[slot] = offset;
     pass.vertex_buffer_sizes[slot] = size;
@@ -940,7 +1331,7 @@ pub export fn doeNativeRenderPassSetIndexBuffer(pass_raw: ?*anyopaque, buffer_ra
 
 pub export fn doeNativeRenderPassSetBindGroup(pass_raw: ?*anyopaque, group_index: u32, group_raw: ?*anyopaque, dynamic_offset_count: usize, dynamic_offsets: ?[*]const u32) callconv(.c) void {
     const pass = cast(DoeRenderPass, pass_raw) orelse return;
-    if (group_index >= MAX_RENDER_BIND_GROUPS) return;
+    if (group_index >= native.MAX_RENDER_BIND_GROUPS) return;
     pass.bind_groups[group_index] = cast(DoeBindGroup, group_raw);
     _ = dynamic_offset_count;
     _ = dynamic_offsets;

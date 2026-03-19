@@ -19,6 +19,9 @@ const DoeAdapter = native.DoeAdapter;
 const DoeDevice = native.DoeDevice;
 const DoeQueue = native.DoeQueue;
 const NativeVulkanRuntime = native.NativeVulkanRuntime;
+const NativeD3D12Runtime = native.NativeD3D12Runtime;
+const d3d12_device_caps = @import("backend/d3d12/d3d12_device_caps.zig");
+const vk_feature_caps = @import("backend/vulkan/vk_feature_caps.zig");
 const vulkan_feature_cache = @import("doe_vulkan_feature_cache.zig");
 const vk_device = @import("backend/vulkan/vk_device.zig");
 
@@ -38,6 +41,7 @@ const MSG_INVALID_ADAPTER = "invalid adapter handle";
 const MSG_QUEUE_UNAVAILABLE = "metal command queue unavailable";
 const MSG_DEVICE_ALLOCATION_FAILED = "device allocation failed";
 const MSG_VK_RUNTIME_INIT_FAILED = "vulkan runtime init failed";
+const MSG_D3D12_RUNTIME_INIT_FAILED = "d3d12 runtime init failed";
 
 // Check the DOE_BACKEND environment variable. Returns true when "vulkan" is set.
 // Uses the GPA allocator for the temporary env string.
@@ -45,6 +49,18 @@ fn env_requests_vulkan() bool {
     const env = std.process.getEnvVarOwned(alloc, "DOE_BACKEND") catch return false;
     defer alloc.free(env);
     return std.mem.eql(u8, env, "vulkan");
+}
+
+fn env_requests_d3d12() bool {
+    const env = std.process.getEnvVarOwned(alloc, "DOE_BACKEND") catch return false;
+    defer alloc.free(env);
+    return std.mem.eql(u8, env, "d3d12");
+}
+
+fn probe_d3d12_adapter_caps() d3d12_device_caps.D3D12DeviceCaps {
+    var rt = NativeD3D12Runtime.init(alloc, null) catch return .{};
+    defer rt.deinit();
+    return rt.device_caps;
 }
 
 fn stringView(comptime message: []const u8) types.WGPUStringView {
@@ -91,8 +107,20 @@ pub export fn doeNativeRequestAdapterFlat(
 ) callconv(.c) types.WGPUFuture {
     _ = inst;
 
+    if (env_requests_d3d12()) {
+        const adapter = make(DoeAdapter) orelse {
+            if (callback) |cb| cb(WGPU_REQUEST_STATUS_ERROR, null, stringView(MSG_ADAPTER_ALLOCATION_FAILED), userdata1, userdata2);
+            return .{ .id = 1 };
+        };
+        adapter.* = .{ .backend = .d3d12 };
+        d3d12_device_caps.set_adapter_caps(toOpaque(adapter), probe_d3d12_adapter_caps());
+        if (callback) |cb| cb(WGPU_REQUEST_STATUS_SUCCESS, toOpaque(adapter), stringView(""), userdata1, userdata2);
+        return .{ .id = 1 };
+    }
+
     if (env_requests_vulkan()) {
-        const feature_caps = vk_device.probe_default_feature_caps(alloc) catch .{};
+        const feature_caps: vk_feature_caps.VulkanFeatureCaps =
+            vk_device.probe_default_feature_caps(alloc) catch .{};
         const adapter = make(DoeAdapter) orelse {
             if (callback) |cb| cb(WGPU_REQUEST_STATUS_ERROR, null, stringView(MSG_ADAPTER_ALLOCATION_FAILED), userdata1, userdata2);
             return .{ .id = 1 };
@@ -127,8 +155,20 @@ pub export fn doeNativeInstanceRequestAdapter(
     _ = options;
     _ = inst;
 
+    if (env_requests_d3d12()) {
+        const adapter = make(DoeAdapter) orelse {
+            info.callback(.@"error", null, stringView(MSG_ADAPTER_ALLOCATION_FAILED), info.userdata1, info.userdata2);
+            return .{ .id = 1 };
+        };
+        adapter.* = .{ .backend = .d3d12 };
+        d3d12_device_caps.set_adapter_caps(toOpaque(adapter), probe_d3d12_adapter_caps());
+        info.callback(.success, toOpaque(adapter), stringView(""), info.userdata1, info.userdata2);
+        return .{ .id = 1 };
+    }
+
     if (env_requests_vulkan()) {
-        const feature_caps = vk_device.probe_default_feature_caps(alloc) catch .{};
+        const feature_caps: vk_feature_caps.VulkanFeatureCaps =
+            vk_device.probe_default_feature_caps(alloc) catch .{};
         const adapter = make(DoeAdapter) orelse {
             info.callback(.@"error", null, stringView(MSG_ADAPTER_ALLOCATION_FAILED), info.userdata1, info.userdata2);
             return .{ .id = 1 };
@@ -159,6 +199,7 @@ pub export fn doeNativeAdapterRelease(raw: ?*anyopaque) callconv(.c) void {
     if (cast(DoeAdapter, raw)) |a| {
         label_store.remove(raw);
         if (a.backend == .vulkan) vulkan_feature_cache.remove_adapter(raw);
+        if (a.backend == .d3d12) d3d12_device_caps.remove_adapter_caps(raw);
         alloc.destroy(a);
     }
 }
@@ -179,7 +220,8 @@ pub export fn doeNativeAdapterRequestDevice(
     };
 
     if (adapter.backend == .vulkan) {
-        const feature_caps = vulkan_feature_cache.get_adapter(adapter_raw) orelse .{};
+        const feature_caps: vk_feature_caps.VulkanFeatureCaps =
+            vulkan_feature_cache.get_adapter(adapter_raw) orelse .{};
         const dev = make(DoeDevice) orelse {
             info.callback(.@"error", null, stringView(MSG_DEVICE_ALLOCATION_FAILED), info.userdata1, info.userdata2);
             return .{ .id = 2 };
@@ -197,6 +239,32 @@ pub export fn doeNativeAdapterRequestDevice(
         };
         dev.* = .{ .backend = .vulkan, .vk_runtime = @ptrCast(rt) };
         vulkan_feature_cache.set_device(toOpaque(dev), feature_caps);
+        info.callback(.success, toOpaque(dev), stringView(""), info.userdata1, info.userdata2);
+        return .{ .id = 2 };
+    }
+
+    if (adapter.backend == .d3d12) {
+        const dev = make(DoeDevice) orelse {
+            info.callback(.@"error", null, stringView(MSG_DEVICE_ALLOCATION_FAILED), info.userdata1, info.userdata2);
+            return .{ .id = 2 };
+        };
+        const rt = alloc.create(NativeD3D12Runtime) catch {
+            alloc.destroy(dev);
+            info.callback(.@"error", null, stringView(MSG_DEVICE_ALLOCATION_FAILED), info.userdata1, info.userdata2);
+            return .{ .id = 2 };
+        };
+        rt.* = NativeD3D12Runtime.init(alloc, null) catch {
+            alloc.destroy(rt);
+            alloc.destroy(dev);
+            info.callback(.@"error", null, stringView(MSG_D3D12_RUNTIME_INIT_FAILED), info.userdata1, info.userdata2);
+            return .{ .id = 2 };
+        };
+        dev.* = .{
+            .backend = .d3d12,
+            .mtl_device = rt.device,
+            .mtl_queue = rt.queue,
+            .d3d12_runtime = @ptrCast(rt),
+        };
         info.callback(.success, toOpaque(dev), stringView(""), info.userdata1, info.userdata2);
         return .{ .id = 2 };
     }
@@ -231,7 +299,8 @@ pub export fn doeNativeRequestDeviceFlat(
     };
 
     if (adapter.backend == .vulkan) {
-        const feature_caps = vulkan_feature_cache.get_adapter(adapter_raw) orelse .{};
+        const feature_caps: vk_feature_caps.VulkanFeatureCaps =
+            vulkan_feature_cache.get_adapter(adapter_raw) orelse .{};
         const dev = make(DoeDevice) orelse {
             if (callback) |cb| cb(WGPU_REQUEST_STATUS_ERROR, null, stringView(MSG_DEVICE_ALLOCATION_FAILED), userdata1, userdata2);
             return .{ .id = 2 };
@@ -249,6 +318,32 @@ pub export fn doeNativeRequestDeviceFlat(
         };
         dev.* = .{ .backend = .vulkan, .vk_runtime = @ptrCast(rt) };
         vulkan_feature_cache.set_device(toOpaque(dev), feature_caps);
+        if (callback) |cb| cb(WGPU_REQUEST_STATUS_SUCCESS, toOpaque(dev), stringView(""), userdata1, userdata2);
+        return .{ .id = 2 };
+    }
+
+    if (adapter.backend == .d3d12) {
+        const dev = make(DoeDevice) orelse {
+            if (callback) |cb| cb(WGPU_REQUEST_STATUS_ERROR, null, stringView(MSG_DEVICE_ALLOCATION_FAILED), userdata1, userdata2);
+            return .{ .id = 2 };
+        };
+        const rt = alloc.create(NativeD3D12Runtime) catch {
+            alloc.destroy(dev);
+            if (callback) |cb| cb(WGPU_REQUEST_STATUS_ERROR, null, stringView(MSG_DEVICE_ALLOCATION_FAILED), userdata1, userdata2);
+            return .{ .id = 2 };
+        };
+        rt.* = NativeD3D12Runtime.init(alloc, null) catch {
+            alloc.destroy(rt);
+            alloc.destroy(dev);
+            if (callback) |cb| cb(WGPU_REQUEST_STATUS_ERROR, null, stringView(MSG_D3D12_RUNTIME_INIT_FAILED), userdata1, userdata2);
+            return .{ .id = 2 };
+        };
+        dev.* = .{
+            .backend = .d3d12,
+            .mtl_device = rt.device,
+            .mtl_queue = rt.queue,
+            .d3d12_runtime = @ptrCast(rt),
+        };
         if (callback) |cb| cb(WGPU_REQUEST_STATUS_SUCCESS, toOpaque(dev), stringView(""), userdata1, userdata2);
         return .{ .id = 2 };
     }
@@ -284,6 +379,13 @@ pub export fn doeNativeDeviceRelease(raw: ?*anyopaque) callconv(.c) void {
                 rt.deinit();
                 alloc.destroy(rt);
             }
+        } else if (d.backend == .d3d12) {
+            if (d.queue) |q| alloc.destroy(q);
+            if (d.d3d12_runtime) |ptr| {
+                const rt: *NativeD3D12Runtime = @ptrCast(@alignCast(ptr));
+                rt.deinit();
+                alloc.destroy(rt);
+            }
         } else {
             if (d.queue) |q| alloc.destroy(q);
             if (d.mtl_queue) |q| metal_bridge_release(q);
@@ -299,7 +401,7 @@ pub export fn doeNativeDeviceGetQueue(raw: ?*anyopaque) callconv(.c) ?*anyopaque
     const q = make(DoeQueue) orelse return null;
     q.* = .{ .dev = dev };
     // MTLSharedEvent is only used for Metal GPU-CPU synchronization.
-    if (dev.backend != .vulkan) {
+    if (dev.backend == .metal) {
         q.mtl_event = metal_bridge_device_new_shared_event(dev.mtl_device);
     }
     dev.queue = q;

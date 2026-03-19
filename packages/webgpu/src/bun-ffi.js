@@ -469,6 +469,8 @@ function copyLastErrorMessage() {
 
 function decodeLimits(raw) {
     const view = new DataView(raw);
+    const maxStorageBuffersPerShaderStage = view.getUint32(LIMIT_OFFSETS.maxStorageBuffersPerShaderStage, true);
+    const maxStorageTexturesPerShaderStage = view.getUint32(LIMIT_OFFSETS.maxStorageTexturesPerShaderStage, true);
     return Object.freeze({
         maxTextureDimension1D: view.getUint32(LIMIT_OFFSETS.maxTextureDimension1D, true),
         maxTextureDimension2D: view.getUint32(LIMIT_OFFSETS.maxTextureDimension2D, true),
@@ -481,8 +483,8 @@ function decodeLimits(raw) {
         maxDynamicStorageBuffersPerPipelineLayout: view.getUint32(LIMIT_OFFSETS.maxDynamicStorageBuffersPerPipelineLayout, true),
         maxSampledTexturesPerShaderStage: view.getUint32(LIMIT_OFFSETS.maxSampledTexturesPerShaderStage, true),
         maxSamplersPerShaderStage: view.getUint32(LIMIT_OFFSETS.maxSamplersPerShaderStage, true),
-        maxStorageBuffersPerShaderStage: view.getUint32(LIMIT_OFFSETS.maxStorageBuffersPerShaderStage, true),
-        maxStorageTexturesPerShaderStage: view.getUint32(LIMIT_OFFSETS.maxStorageTexturesPerShaderStage, true),
+        maxStorageBuffersPerShaderStage,
+        maxStorageTexturesPerShaderStage,
         maxUniformBuffersPerShaderStage: view.getUint32(LIMIT_OFFSETS.maxUniformBuffersPerShaderStage, true),
         maxUniformBufferBindingSize: Number(view.getBigUint64(LIMIT_OFFSETS.maxUniformBufferBindingSize, true)),
         maxStorageBufferBindingSize: Number(view.getBigUint64(LIMIT_OFFSETS.maxStorageBufferBindingSize, true)),
@@ -502,6 +504,10 @@ function decodeLimits(raw) {
         maxComputeWorkgroupSizeZ: view.getUint32(LIMIT_OFFSETS.maxComputeWorkgroupSizeZ, true),
         maxComputeWorkgroupsPerDimension: view.getUint32(LIMIT_OFFSETS.maxComputeWorkgroupsPerDimension, true),
         maxImmediateSize: view.getUint32(LIMIT_OFFSETS.maxImmediateSize, true),
+        maxStorageBuffersInVertexStage: maxStorageBuffersPerShaderStage,
+        maxStorageBuffersInFragmentStage: maxStorageBuffersPerShaderStage,
+        maxStorageTexturesInVertexStage: maxStorageTexturesPerShaderStage,
+        maxStorageTexturesInFragmentStage: maxStorageTexturesPerShaderStage,
     });
 }
 
@@ -765,14 +771,27 @@ function buildRenderPipelineDescriptor(descriptor) {
 
     let depthStencilArr = null;
     if (descriptor.depthStencil) {
+        const stencilFront = descriptor.depthStencil.stencilFront ?? {};
+        const stencilBack = descriptor.depthStencil.stencilBack ?? {};
         const depthStencilBuf = new ArrayBuffer(WGPU_DEPTH_STENCIL_STATE_SIZE);
         const depthStencilView = new DataView(depthStencilBuf);
         writePtr(depthStencilView, 0, null);
         depthStencilView.setUint32(8, TEXTURE_FORMAT_MAP[descriptor.depthStencil.format] ?? TEXTURE_FORMAT_MAP.depth32float, true);
         depthStencilView.setUint32(12, descriptor.depthStencil.depthWriteEnabled ? 1 : 0, true);
         depthStencilView.setUint32(16, COMPARE_FUNC_MAP[descriptor.depthStencil.depthCompare ?? "always"] ?? COMPARE_FUNC_MAP.always, true);
-        depthStencilView.setUint32(48, 0xFFFFFFFF, true);
-        depthStencilView.setUint32(52, 0xFFFFFFFF, true);
+        depthStencilView.setUint32(20, COMPARE_FUNC_MAP[stencilFront.compare ?? "always"] ?? COMPARE_FUNC_MAP.always, true);
+        depthStencilView.setUint32(24, STENCIL_OPERATION_MAP[stencilFront.failOp ?? "keep"] ?? STENCIL_OPERATION_MAP.keep, true);
+        depthStencilView.setUint32(28, STENCIL_OPERATION_MAP[stencilFront.depthFailOp ?? "keep"] ?? STENCIL_OPERATION_MAP.keep, true);
+        depthStencilView.setUint32(32, STENCIL_OPERATION_MAP[stencilFront.passOp ?? "keep"] ?? STENCIL_OPERATION_MAP.keep, true);
+        depthStencilView.setUint32(36, COMPARE_FUNC_MAP[stencilBack.compare ?? "always"] ?? COMPARE_FUNC_MAP.always, true);
+        depthStencilView.setUint32(40, STENCIL_OPERATION_MAP[stencilBack.failOp ?? "keep"] ?? STENCIL_OPERATION_MAP.keep, true);
+        depthStencilView.setUint32(44, STENCIL_OPERATION_MAP[stencilBack.depthFailOp ?? "keep"] ?? STENCIL_OPERATION_MAP.keep, true);
+        depthStencilView.setUint32(48, STENCIL_OPERATION_MAP[stencilBack.passOp ?? "keep"] ?? STENCIL_OPERATION_MAP.keep, true);
+        depthStencilView.setUint32(52, descriptor.depthStencil.stencilReadMask ?? 0xFFFFFFFF, true);
+        depthStencilView.setUint32(56, descriptor.depthStencil.stencilWriteMask ?? 0xFFFFFFFF, true);
+        depthStencilView.setInt32(60, descriptor.depthStencil.depthBias ?? 0, true);
+        depthStencilView.setFloat32(64, descriptor.depthStencil.depthBiasSlopeScale ?? 0, true);
+        depthStencilView.setFloat32(68, descriptor.depthStencil.depthBiasClamp ?? 0, true);
         depthStencilArr = new Uint8Array(depthStencilBuf);
     }
 
@@ -1064,6 +1083,28 @@ const COMPARE_FUNC_MAP = {
     always: 0x00000008,
 };
 
+const STENCIL_OPERATION_MAP = {
+    keep: 0x00000001,
+    zero: 0x00000002,
+    replace: 0x00000003,
+    invert: 0x00000004,
+    "increment-clamp": 0x00000005,
+    "decrement-clamp": 0x00000006,
+    "increment-wrap": 0x00000007,
+    "decrement-wrap": 0x00000008,
+};
+
+const FILTER_MODE_MAP = {
+    nearest: 0,
+    linear: 1,
+};
+
+const ADDRESS_MODE_MAP = {
+    repeat: 1,
+    "mirror-repeat": 2,
+    "clamp-to-edge": 3,
+};
+
 const POWER_PREFERENCE_MAP = {
     "low-power": 1,
     "high-performance": 2,
@@ -1217,20 +1258,22 @@ const PASS_TIMESTAMP_WRITES_SIZE = 24;
 function buildSamplerDescriptor(descriptor) {
     const buf = new ArrayBuffer(SAMPLER_DESC_SIZE);
     const v = new DataView(buf);
+    const refs = [];
     writePtr(v, 0, null);
-    writeStringView(v, 8, null);
-    // defaults: clamp-to-edge=2, nearest=0
-    v.setUint32(24, 2, true); // addressModeU
-    v.setUint32(28, 2, true); // addressModeV
-    v.setUint32(32, 2, true); // addressModeW
-    v.setUint32(36, 0, true); // magFilter = nearest
-    v.setUint32(40, 0, true); // minFilter = nearest
-    v.setUint32(44, 0, true); // mipmapFilter = nearest
-    v.setFloat32(48, 0.0, true);
-    v.setFloat32(52, 32.0, true);
+    const labelBytes = descriptor.label ? encoder.encode(descriptor.label) : null;
+    if (labelBytes) refs.push(labelBytes);
+    writeStringView(v, 8, labelBytes);
+    v.setUint32(24, ADDRESS_MODE_MAP[descriptor.addressModeU ?? "clamp-to-edge"] ?? ADDRESS_MODE_MAP["clamp-to-edge"], true);
+    v.setUint32(28, ADDRESS_MODE_MAP[descriptor.addressModeV ?? "clamp-to-edge"] ?? ADDRESS_MODE_MAP["clamp-to-edge"], true);
+    v.setUint32(32, ADDRESS_MODE_MAP[descriptor.addressModeW ?? "clamp-to-edge"] ?? ADDRESS_MODE_MAP["clamp-to-edge"], true);
+    v.setUint32(36, FILTER_MODE_MAP[descriptor.magFilter ?? "nearest"] ?? FILTER_MODE_MAP.nearest, true);
+    v.setUint32(40, FILTER_MODE_MAP[descriptor.minFilter ?? "nearest"] ?? FILTER_MODE_MAP.nearest, true);
+    v.setUint32(44, FILTER_MODE_MAP[descriptor.mipmapFilter ?? "nearest"] ?? FILTER_MODE_MAP.nearest, true);
+    v.setFloat32(48, descriptor.lodMinClamp ?? 0.0, true);
+    v.setFloat32(52, descriptor.lodMaxClamp ?? 32.0, true);
     v.setUint32(56, descriptor.compare ? (COMPARE_FUNC_MAP[descriptor.compare] ?? 0) : 0, true);
-    v.setUint16(60, 1, true); // maxAnisotropy
-    return new Uint8Array(buf);
+    v.setUint16(60, descriptor.maxAnisotropy ?? 1, true);
+    return { desc: new Uint8Array(buf), _refs: refs };
 }
 
 function buildRequestAdapterOptions(options) {
@@ -2567,8 +2610,10 @@ const fullSurfaceBackend = {
         return native;
     },
     deviceCreateSampler(device, descriptor) {
-        const descBytes = buildSamplerDescriptor(descriptor);
-        return wgpu.symbols.wgpuDeviceCreateSampler(assertLiveResource(device, "GPUDevice.createSampler", "GPUDevice"), descBytes);
+        const { desc, _refs } = buildSamplerDescriptor(descriptor);
+        const native = wgpu.symbols.wgpuDeviceCreateSampler(assertLiveResource(device, "GPUDevice.createSampler", "GPUDevice"), desc);
+        void _refs;
+        return native;
     },
     deviceCreateRenderPipeline(device, descriptor) {
         const { desc, _refs } = buildRenderPipelineDescriptor({

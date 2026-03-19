@@ -5,6 +5,7 @@
 // queries via bridge functions refine feature detection when a device handle is
 // available (ShaderF16, Subgroups, SubgroupsF16, wave lane counts).
 
+const std = @import("std");
 const builtin = @import("builtin");
 const types = @import("../../core/abi/wgpu_types.zig");
 
@@ -15,13 +16,23 @@ const D3D12_AVAILABLE = builtin.os.tag == .windows;
 const FEATURE_DEPTH_CLIP_CONTROL: u32 = types.WGPUFeatureName_DepthClipControl;
 const FEATURE_DEPTH32FLOAT_STENCIL8: u32 = types.WGPUFeatureName_Depth32FloatStencil8;
 const FEATURE_TEXTURE_COMPRESSION_BC: u32 = types.WGPUFeatureName_TextureCompressionBC;
+const FEATURE_TEXTURE_COMPRESSION_BC_SLICED_3D: u32 = types.WGPUFeatureName_TextureCompressionBCSliced3D;
+const FEATURE_TEXTURE_COMPRESSION_ETC2: u32 = types.WGPUFeatureName_TextureCompressionETC2;
+const FEATURE_TEXTURE_COMPRESSION_ASTC: u32 = types.WGPUFeatureName_TextureCompressionASTC;
+const FEATURE_TEXTURE_COMPRESSION_ASTC_SLICED_3D: u32 = types.WGPUFeatureName_TextureCompressionASTCSliced3D;
 const FEATURE_BGRA8UNORM_STORAGE: u32 = types.WGPUFeatureName_BGRA8UnormStorage;
 const FEATURE_INDIRECT_FIRST_INSTANCE: u32 = types.WGPUFeatureName_IndirectFirstInstance;
 const FEATURE_FLOAT32_FILTERABLE: u32 = types.WGPUFeatureName_Float32Filterable;
+const FEATURE_FLOAT32_BLENDABLE: u32 = types.WGPUFeatureName_Float32Blendable;
 const FEATURE_TIMESTAMP_QUERY: u32 = types.WGPUFeatureName_TimestampQuery;
 const FEATURE_RG11B10UFLOAT_RENDERABLE: u32 = types.WGPUFeatureName_RG11B10UfloatRenderable;
 const FEATURE_CLIP_DISTANCES: u32 = types.WGPUFeatureName_ClipDistances;
 const FEATURE_DUAL_SOURCE_BLENDING: u32 = types.WGPUFeatureName_DualSourceBlending;
+const FEATURE_CORE_FEATURES_AND_LIMITS: u32 = types.WGPUFeatureName_CoreFeaturesAndLimits;
+const FEATURE_TEXTURE_FORMATS_TIER1: u32 = types.WGPUFeatureName_TextureFormatsTier1;
+const FEATURE_TEXTURE_FORMATS_TIER2: u32 = types.WGPUFeatureName_TextureFormatsTier2;
+const FEATURE_PRIMITIVE_INDEX: u32 = types.WGPUFeatureName_PrimitiveIndex;
+const FEATURE_TEXTURE_COMPONENT_SWIZZLE: u32 = types.WGPUFeatureName_TextureComponentSwizzle;
 const FEATURE_SHADER_F16: u32 = types.WGPUFeatureName_ShaderF16;
 const FEATURE_SUBGROUPS: u32 = types.WGPUFeatureName_Subgroups;
 const FEATURE_SUBGROUPS_F16: u32 = types.WGPUFeatureName_SubgroupsF16;
@@ -106,6 +117,8 @@ pub const D3D12DeviceCaps = struct {
 
 // Conservative static defaults when no device handle is available.
 const D3D12_CAPS_STATIC = D3D12DeviceCaps{};
+var adapter_caps_cache: std.AutoHashMapUnmanaged(usize, D3D12DeviceCaps) = .{};
+const CACHE_ALLOCATOR = std.heap.page_allocator;
 
 pub fn query_device_caps(device: ?*anyopaque) D3D12DeviceCaps {
     if (device == null) return D3D12_CAPS_STATIC;
@@ -157,6 +170,7 @@ fn is_feature_supported_static(feature: u32) bool {
         FEATURE_RG11B10UFLOAT_RENDERABLE,
         FEATURE_CLIP_DISTANCES,
         FEATURE_DUAL_SOURCE_BLENDING,
+        FEATURE_CORE_FEATURES_AND_LIMITS,
         => D3D12_AVAILABLE,
         else => false,
     };
@@ -168,12 +182,26 @@ fn is_feature_supported_with_caps(feature: u32, caps: D3D12DeviceCaps) bool {
         FEATURE_SUBGROUPS => D3D12_AVAILABLE and caps.has_subgroups,
         FEATURE_SUBGROUPS_F16 => D3D12_AVAILABLE and caps.has_subgroups_f16,
         FEATURE_TEXTURE_COMPRESSION_BC => D3D12_AVAILABLE,
+        FEATURE_TEXTURE_COMPRESSION_BC_SLICED_3D,
+        FEATURE_TEXTURE_COMPRESSION_ETC2,
+        FEATURE_TEXTURE_COMPRESSION_ASTC,
+        FEATURE_TEXTURE_COMPRESSION_ASTC_SLICED_3D,
+        FEATURE_FLOAT32_BLENDABLE,
+        FEATURE_TEXTURE_FORMATS_TIER1,
+        FEATURE_TEXTURE_FORMATS_TIER2,
+        FEATURE_PRIMITIVE_INDEX,
+        FEATURE_TEXTURE_COMPONENT_SWIZZLE,
+        => false,
         else => is_feature_supported_static(feature),
     };
 }
 
 pub fn d3d12_adapter_has_feature(feature: u32) bool {
     return is_feature_supported_static(feature);
+}
+
+pub fn d3d12_adapter_has_feature_with_caps(feature: u32, caps: D3D12DeviceCaps) bool {
+    return is_feature_supported_with_caps(feature, caps);
 }
 
 pub fn d3d12_device_has_feature(feature: u32) bool {
@@ -204,4 +232,40 @@ pub fn d3d12_device_subgroup_size() u32 {
 pub fn d3d12_device_subgroup_size_from_caps(caps: D3D12DeviceCaps) u32 {
     if (!D3D12_AVAILABLE) return 0;
     return caps.wave_lane_count_min;
+}
+
+pub fn set_adapter_caps(raw: ?*anyopaque, caps: D3D12DeviceCaps) void {
+    const ptr = raw orelse return;
+    adapter_caps_cache.put(CACHE_ALLOCATOR, @intFromPtr(ptr), caps) catch {};
+}
+
+pub fn get_adapter_caps(raw: ?*anyopaque) ?D3D12DeviceCaps {
+    const ptr = raw orelse return null;
+    return adapter_caps_cache.get(@intFromPtr(ptr));
+}
+
+pub fn remove_adapter_caps(raw: ?*anyopaque) void {
+    const ptr = raw orelse return;
+    _ = adapter_caps_cache.remove(@intFromPtr(ptr));
+}
+
+test "d3d12 disputed feature publication stays explicit" {
+    try std.testing.expectEqual(D3D12_AVAILABLE, is_feature_supported_static(FEATURE_CORE_FEATURES_AND_LIMITS));
+    try std.testing.expect(!is_feature_supported_with_caps(FEATURE_TEXTURE_COMPRESSION_BC_SLICED_3D, .{}));
+    try std.testing.expect(!is_feature_supported_with_caps(FEATURE_FLOAT32_BLENDABLE, .{}));
+    try std.testing.expect(!is_feature_supported_with_caps(FEATURE_TEXTURE_FORMATS_TIER1, .{}));
+    try std.testing.expect(!is_feature_supported_with_caps(FEATURE_TEXTURE_FORMATS_TIER2, .{}));
+    try std.testing.expect(!is_feature_supported_with_caps(FEATURE_PRIMITIVE_INDEX, .{}));
+    try std.testing.expect(!is_feature_supported_with_caps(FEATURE_TEXTURE_COMPONENT_SWIZZLE, .{}));
+}
+
+test "d3d12 runtime-probed subgroup and f16 features publish when caps allow" {
+    const caps = D3D12DeviceCaps{
+        .has_subgroups = true,
+        .has_shader_f16 = true,
+        .has_subgroups_f16 = true,
+    };
+    try std.testing.expectEqual(D3D12_AVAILABLE, is_feature_supported_with_caps(FEATURE_SUBGROUPS, caps));
+    try std.testing.expectEqual(D3D12_AVAILABLE, is_feature_supported_with_caps(FEATURE_SHADER_F16, caps));
+    try std.testing.expectEqual(D3D12_AVAILABLE, is_feature_supported_with_caps(FEATURE_SUBGROUPS_F16, caps));
 }

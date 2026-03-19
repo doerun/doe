@@ -88,14 +88,9 @@ Terminology used in this directory:
 
 ## Program shape
 
-Use a two-track model to control risk:
+Track A (browser): Dawn replacement path for `navigator.gpu` via Fawn.
 
-1. Track A (browser):
-   - Dawn replacement path for `navigator.gpu` via Fawn.
-2. Track B (modules):
-   - Optional Chromium-internal modules using WebGPU through Fawn.
-
-Track B (modules) is additive and cannot block Track A (browser) readiness.
+Track B (modules) was archived 2026-03-19. See "Track B" section below.
 
 ## Track A (browser): Dawn replacement lane
 
@@ -127,32 +122,27 @@ Before moving beyond experiment flags:
 4. Crash/hang rate parity with fallback lane is established.
 5. Performance claimability gates pass for any "faster" statement.
 
-## Track B (modules): optional Chromium-internal modules
+## Track B (modules) — archived
 
-Track B (modules) are explicitly optional and must preserve CPU ownership for engine semantics.
+**Archived 2026-03-19.** Track B proposed five optional Chromium-internal
+modules (`fawn_2d_sdf_renderer`, `fawn_path_engine`, `fawn_effects_pipeline`,
+`fawn_compute_services`, `fawn_resource_scheduler`) that would use WebGPU
+through Doe for internal browser GPU work.
 
-### Candidate modules
+This was superseded by the infrastructure dominance strategy: Chromium is
+already routing Skia Graphite, WebGL, and compositor through WebGPU on its own
+timeline. When Track A lands (Doe replaces Dawn), those subsystems
+automatically run on Doe without any Doe-side plumbing. Building parallel
+replacements duplicates work Google has 100+ GPU engineers doing and creates
+fork divergence on every Chromium update.
 
-1. `fawn_2d_sdf_renderer`
-   - GPU paint/raster path for vector/text primitives via SDF/MSDF.
-   - Inputs: shaped runs, path commands, paint state.
-   - Outputs: render targets or composited textures.
-2. `fawn_path_engine`
-   - Hybrid tessellation + SDF path for fills/strokes/clip masks.
-   - Includes explicit fallback for pathological geometry.
-3. `fawn_effects_pipeline`
-   - Compute/render effects (blur, color transforms, mask composition, filter chains).
-4. `fawn_compute_services`
-   - Shared compute kernels for selected internal tasks.
-5. `fawn_resource_scheduler`
-   - Shared resource pooling and submission cadence controls.
+The correct strategy: let browser vendors build the roads to WebGPU, build the
+fastest engine at the destination.
 
-### Non-goals for Track B (modules)
-
-1. Replacing Blink layout/style/DOM semantics.
-2. Replacing V8 execution.
-3. Replacing OS compositor/scanout responsibilities.
-4. Replacing hardware codec control paths.
+Artifacts (contracts, schemas, policies, Zig implementations) are preserved but
+inactive. Milestone governance (M4-M6) is demoted to `archived` in
+`bench/workflows/browser-milestones.json`. Module ownership is marked archived
+in `config/module-ownership.json`.
 
 ## What WebGPU/Fawn can and cannot replace
 

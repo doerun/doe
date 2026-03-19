@@ -24,6 +24,23 @@ const FILTER_MODES = Object.freeze({
   linear: 'linear',
 });
 
+const ADDRESS_MODES = Object.freeze({
+  'clamp-to-edge': 'clamp-to-edge',
+  repeat: 'repeat',
+  'mirror-repeat': 'mirror-repeat',
+});
+
+const COMPARE_FUNCTIONS = Object.freeze({
+  never: 'never',
+  less: 'less',
+  equal: 'equal',
+  'less-equal': 'less-equal',
+  greater: 'greater',
+  'not-equal': 'not-equal',
+  'greater-equal': 'greater-equal',
+  always: 'always',
+});
+
 const FRONT_FACES = Object.freeze({
   ccw: 'ccw',
   cw: 'cw',
@@ -440,6 +457,22 @@ function normalizeMipmapFilterMode(value, path, label = 'descriptor.mipmapFilter
   return normalizeKnownEnum(value, 'nearest', MIPMAP_FILTER_MODES, path, label);
 }
 
+function normalizeAddressMode(value, path, label) {
+  return normalizeKnownEnum(value, 'clamp-to-edge', ADDRESS_MODES, path, label);
+}
+
+function normalizeCompareFunction(value, path, label) {
+  return normalizeKnownEnum(value, 'always', COMPARE_FUNCTIONS, path, label);
+}
+
+function normalizeFiniteNumber(value, path, label) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) {
+    failValidation(path, `${label} must be a finite number`);
+  }
+  return number;
+}
+
 function normalizeStencilOperation(value, path, label) {
   return normalizeKnownEnum(value, 'keep', STENCIL_OPERATIONS, path, label);
 }
@@ -577,6 +610,15 @@ function normalizeRequestDeviceDescriptor(descriptor, path = 'GPUAdapter.request
 function normalizeSamplerDescriptor(descriptor, path = 'GPUDevice.createSampler') {
   const normalized = assertObject(descriptor, path, 'descriptor');
   const result = { ...normalized };
+  if (normalized.addressModeU !== undefined) {
+    result.addressModeU = normalizeAddressMode(normalized.addressModeU, path, 'descriptor.addressModeU');
+  }
+  if (normalized.addressModeV !== undefined) {
+    result.addressModeV = normalizeAddressMode(normalized.addressModeV, path, 'descriptor.addressModeV');
+  }
+  if (normalized.addressModeW !== undefined) {
+    result.addressModeW = normalizeAddressMode(normalized.addressModeW, path, 'descriptor.addressModeW');
+  }
   if (normalized.magFilter !== undefined) {
     result.magFilter = normalizeKnownEnum(normalized.magFilter, 'nearest', FILTER_MODES, path, 'descriptor.magFilter');
   }
@@ -585,6 +627,30 @@ function normalizeSamplerDescriptor(descriptor, path = 'GPUDevice.createSampler'
   }
   if (normalized.mipmapFilter !== undefined) {
     result.mipmapFilter = normalizeMipmapFilterMode(normalized.mipmapFilter, path, 'descriptor.mipmapFilter');
+  }
+  if (normalized.lodMinClamp !== undefined) {
+    result.lodMinClamp = normalizeFiniteNumber(normalized.lodMinClamp, path, 'descriptor.lodMinClamp');
+  }
+  if (normalized.lodMaxClamp !== undefined) {
+    result.lodMaxClamp = normalizeFiniteNumber(normalized.lodMaxClamp, path, 'descriptor.lodMaxClamp');
+  }
+  if (normalized.compare !== undefined) {
+    result.compare = normalizeCompareFunction(normalized.compare, path, 'descriptor.compare');
+  }
+  if (normalized.maxAnisotropy !== undefined) {
+    result.maxAnisotropy = assertIntegerInRange(
+      normalized.maxAnisotropy,
+      path,
+      'descriptor.maxAnisotropy',
+      { min: 1, max: 65535 },
+    );
+  }
+  if (
+    result.lodMinClamp !== undefined
+    && result.lodMaxClamp !== undefined
+    && result.lodMinClamp > result.lodMaxClamp
+  ) {
+    failValidation(path, 'descriptor.lodMinClamp must be less than or equal to descriptor.lodMaxClamp');
   }
   return result;
 }
@@ -602,6 +668,9 @@ function normalizeTextureViewDescriptor(descriptor, texture, features, path = 'G
     result.format = normalizeTextureFormat(normalized.format, path, 'descriptor.format', features);
   } else if (texture?.format) {
     result.format = normalizeTextureFormat(texture.format, path, 'descriptor.format', features);
+  }
+  if (normalized.swizzle !== undefined && !hasFeature(features, 'texture-component-swizzle')) {
+    failValidation(path, 'descriptor.swizzle requires the texture-component-swizzle feature');
   }
   return result;
 }
@@ -656,6 +725,9 @@ function normalizeStencilFaceState(face, path, label) {
   }
   const normalized = assertObject(face, path, label);
   const result = { ...normalized };
+  if (normalized.compare !== undefined) {
+    result.compare = normalizeCompareFunction(normalized.compare, path, `${label}.compare`);
+  }
   if (normalized.failOp !== undefined) {
     result.failOp = normalizeStencilOperation(normalized.failOp, path, `${label}.failOp`);
   }
@@ -677,6 +749,47 @@ function normalizeDepthStencilState(depthStencil, features, path = 'GPUDevice.cr
     ...normalized,
     format: normalizeTextureFormat(normalized.format, path, 'descriptor.depthStencil.format', features),
   };
+  if (normalized.depthCompare !== undefined) {
+    result.depthCompare = normalizeCompareFunction(normalized.depthCompare, path, 'descriptor.depthStencil.depthCompare');
+  }
+  if (normalized.stencilReadMask !== undefined) {
+    result.stencilReadMask = assertIntegerInRange(
+      normalized.stencilReadMask,
+      path,
+      'descriptor.depthStencil.stencilReadMask',
+      { min: 0, max: UINT32_MAX },
+    );
+  }
+  if (normalized.stencilWriteMask !== undefined) {
+    result.stencilWriteMask = assertIntegerInRange(
+      normalized.stencilWriteMask,
+      path,
+      'descriptor.depthStencil.stencilWriteMask',
+      { min: 0, max: UINT32_MAX },
+    );
+  }
+  if (normalized.depthBias !== undefined) {
+    result.depthBias = assertIntegerInRange(
+      normalized.depthBias,
+      path,
+      'descriptor.depthStencil.depthBias',
+      { min: -2147483648, max: 2147483647 },
+    );
+  }
+  if (normalized.depthBiasSlopeScale !== undefined) {
+    result.depthBiasSlopeScale = normalizeFiniteNumber(
+      normalized.depthBiasSlopeScale,
+      path,
+      'descriptor.depthStencil.depthBiasSlopeScale',
+    );
+  }
+  if (normalized.depthBiasClamp !== undefined) {
+    result.depthBiasClamp = normalizeFiniteNumber(
+      normalized.depthBiasClamp,
+      path,
+      'descriptor.depthStencil.depthBiasClamp',
+    );
+  }
   if (normalized.stencilFront !== undefined) {
     result.stencilFront = normalizeStencilFaceState(
       normalized.stencilFront,

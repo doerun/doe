@@ -29,6 +29,20 @@ function unwrap_native(value) {
   return value && typeof value === 'object' && '_native' in value ? value._native : value;
 }
 
+function normalize_origin3d(origin) {
+  if (origin === undefined || origin === null) {
+    return { x: 0, y: 0, z: 0 };
+  }
+  if (Array.isArray(origin)) {
+    return { x: origin[0] ?? 0, y: origin[1] ?? 0, z: origin[2] ?? 0 };
+  }
+  return {
+    x: origin.x ?? 0,
+    y: origin.y ?? 0,
+    z: origin.z ?? 0,
+  };
+}
+
 function assert_browser_object(value, path, label, method) {
   if (!value || typeof value !== 'object' || (method && typeof value[method] !== 'function')) {
     failValidation(path, `${label} must be a native browser WebGPU object`);
@@ -374,7 +388,7 @@ function create_browser_backend({ native_gpu, canvasBackend }) {
         },
         {
           ...destination,
-          origin: normalizeOrigin2D(destination.origin, 'GPUQueue.copyExternalImageToTexture(destination.origin)'),
+          origin: normalize_origin3d(destination.origin),
         },
         copySize,
       );

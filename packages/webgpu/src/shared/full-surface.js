@@ -4,6 +4,7 @@ import {
   initResource,
   assertObject,
   assertArray,
+  assertBoolean,
   assertNonEmptyString,
   assertIntegerInRange,
   assertLiveResource,
@@ -57,6 +58,35 @@ function validateWriteBufferInput(data, dataOffset, size, path) {
 
 function escapeRegexLiteral(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function normalizeOrigin2DForExternalCopy(origin, path) {
+  if (origin === undefined || origin === null) {
+    return { x: 0, y: 0 };
+  }
+  if (Array.isArray(origin)) {
+    return { x: origin[0] ?? 0, y: origin[1] ?? 0 };
+  }
+  const object = assertObject(origin, path, 'origin');
+  return {
+    x: object.x ?? 0,
+    y: object.y ?? 0,
+  };
+}
+
+function normalizeOrigin3DForExternalCopy(origin, path) {
+  if (origin === undefined || origin === null) {
+    return { x: 0, y: 0, z: 0 };
+  }
+  if (Array.isArray(origin)) {
+    return { x: origin[0] ?? 0, y: origin[1] ?? 0, z: origin[2] ?? 0 };
+  }
+  const object = assertObject(origin, path, 'origin');
+  return {
+    x: object.x ?? 0,
+    y: object.y ?? 0,
+    z: object.z ?? 0,
+  };
 }
 
 function assertShaderEntryPoint(shader, entryPoint, path) {
@@ -409,7 +439,73 @@ function createFullSurfaceClasses({
           'copyExternalImageToTexture is not supported on this package surface',
         );
       }
-      return backend.queueCopyExternalImageToTexture(this, native, sourceObject, destinationObject, sizeObject);
+      if (sourceObject.source == null) {
+        failValidation('GPUQueue.copyExternalImageToTexture', 'source.source is required');
+      }
+      const texture = assertLiveResource(
+        destinationObject.texture,
+        'GPUQueue.copyExternalImageToTexture',
+        'GPUTexture',
+      );
+      const normalizedSource = {
+        ...sourceObject,
+        origin: normalizeOrigin2DForExternalCopy(
+          sourceObject.origin,
+          'GPUQueue.copyExternalImageToTexture(source.origin)',
+        ),
+      };
+      const normalizedDestination = {
+        ...destinationObject,
+        texture,
+        mipLevel: assertIntegerInRange(
+          destinationObject.mipLevel ?? 0,
+          'GPUQueue.copyExternalImageToTexture',
+          'destination.mipLevel',
+          { min: 0, max: UINT32_MAX },
+        ),
+        origin: normalizeOrigin3DForExternalCopy(
+          destinationObject.origin,
+          'GPUQueue.copyExternalImageToTexture(destination.origin)',
+        ),
+      };
+      if (sourceObject.flipY !== undefined) {
+        normalizedSource.flipY = assertBoolean(
+          sourceObject.flipY,
+          'GPUQueue.copyExternalImageToTexture',
+          'source.flipY',
+        );
+      }
+      if (destinationObject.premultipliedAlpha !== undefined) {
+        normalizedDestination.premultipliedAlpha = assertBoolean(
+          destinationObject.premultipliedAlpha,
+          'GPUQueue.copyExternalImageToTexture',
+          'destination.premultipliedAlpha',
+        );
+      }
+      if (destinationObject.colorSpace !== undefined) {
+        assertNonEmptyString(
+          destinationObject.colorSpace,
+          'GPUQueue.copyExternalImageToTexture',
+          'destination.colorSpace',
+        );
+      }
+      const normalizedSize = {
+        width: assertIntegerInRange(sizeObject.width, 'GPUQueue.copyExternalImageToTexture', 'copySize.width', { min: 1, max: UINT32_MAX }),
+        height: assertIntegerInRange(sizeObject.height, 'GPUQueue.copyExternalImageToTexture', 'copySize.height', { min: 1, max: UINT32_MAX }),
+        depthOrArrayLayers: assertIntegerInRange(
+          sizeObject.depthOrArrayLayers ?? 1,
+          'GPUQueue.copyExternalImageToTexture',
+          'copySize.depthOrArrayLayers',
+          { min: 1, max: UINT32_MAX },
+        ),
+      };
+      return backend.queueCopyExternalImageToTexture(
+        this,
+        native,
+        normalizedSource,
+        normalizedDestination,
+        normalizedSize,
+      );
     }
   }
 
@@ -990,6 +1086,19 @@ function createFullSurfaceClasses({
           'GPUDevice.importExternalTexture',
           'importExternalTexture is not supported on this package surface',
         );
+      }
+      if (textureDescriptor.source == null) {
+        failValidation('GPUDevice.importExternalTexture', 'descriptor.source is required');
+      }
+      if (textureDescriptor.colorSpace !== undefined) {
+        assertNonEmptyString(
+          textureDescriptor.colorSpace,
+          'GPUDevice.importExternalTexture',
+          'descriptor.colorSpace',
+        );
+      }
+      if (textureDescriptor.label !== undefined && typeof textureDescriptor.label !== 'string') {
+        failValidation('GPUDevice.importExternalTexture', 'descriptor.label must be a string');
       }
       return backend.deviceImportExternalTexture(this, native, textureDescriptor, classes);
     }

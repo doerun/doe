@@ -75,147 +75,112 @@ The stack below is the package-local inventory view of the same layers.
 └──────────────────────────────────────────────────────────┘
 ```
 
-## Full runtime funnel with JS and Lean boundaries
+## Full runtime funnel with JS, browser, and Lean boundaries
 
 This diagram is the canonical boundary map for the full stack. `core/` and
 `full/` are runtime-layer Zig partitions below the JS/package surface, while
 Lean lives beside the runtime as a proof/artifact input to build-time and
 runtime obligation checks, not as a top-level package surface.
 
-```mermaid
-flowchart TB
-  subgraph "Package and JS surface"
-    P0["@simulatte/webgpu exports\nindex.js / full.js / compute.js / node-runtime.js"]
-    P1["@simulatte/webgpu-doe helper package\ndoe.requestDevice / doe.bind / gpu helpers"]
-    P2["shared/full-surface.js\nshared/encoder-surface.js\n+helpers + validation"]
-    P3["src/bun.js\nBun transport entrypoint"]
-  end
+The package has two runtime paths that diverge at the transport boundary:
 
-  subgraph Transport
-    Tn["runtime/bridge/webgpu-addon/doe_napi.c\n61 functions"]
-    Tb["src/bun-ffi.js\ndlopen + flat symbol ABI"]
-    DR["runtime/zig/src/wgpu_dropin_lib.zig\nsymbol routing + metadata + diagnostics"]
-  end
+- **Headless native** (Node.js / Bun) — calls through N-API or Bun FFI into
+  the Doe Zig runtime, which drives Metal/Vulkan/D3D12 directly.
+- **Browser wrapper** (`src/browser.js`) — a JS shim that delegates every
+  WebGPU call to the browser's own `navigator.gpu`. No Doe Zig code runs.
 
-  subgraph "Zig orchestration and public runtime funnel"
-    R0["runtime/zig/src/webgpu_ffi.zig\nbackend facade + command submission"]
-    R1["runtime/zig/src/execution.zig\nbackend selection + mode routing"]
-    R2["runtime/zig/src/quirk/runtime.zig\nquirk match + obligation routing"]
-    R3["runtime/zig/src/command_parse_helpers.zig\ncommand_json*.zig\ncommand_set definitions"]
-    R4["runtime/zig/src/main.zig / module_runner.zig\nCLI + artifact + process control"]
-    R5["runtime/zig/src/trace.zig / replay.zig\ntrace + replay contracts"]
-    subgraph "Core runtime partition"
-      C0["runtime/zig/src/core/mod.zig"]
-      C1["core/abi / core/resource / core/compute"]
-      C2["core/queue / core/surface / core/trace"]
-    end
-    subgraph "Full runtime partition"
-      F0["runtime/zig/src/full/mod.zig"]
-      F1["full/render\nfull/surface\nfull/lifecycle\nfull/modules"]
-      F2["runtime/zig/src/full/command_dispatch.zig"]
-    end
-  end
-
-  subgraph "Root compatibility facades"
-    K0["runtime/zig/src/wgpu_*.zig\nlegacy root exports still being retired"]
-    K1["runtime/zig/src/model.zig\nshared contract + partition ledger"]
-  end
-
-  subgraph "Compile-time proof and policy"
-    L0["pipeline/lean/Fawn/Core/*.lean\npolicy + model / matching / dispatch"]
-    L1["pipeline/lean/Fawn/Full/*.lean\ncomparability / workload geometry"]
-    L2["pipeline/lean/extract.sh\nartifacts/proven-conditions.json + generated outputs"]
-    LP["runtime/zig/src/lean_proof.zig\n-Dlean-verified build gate"]
-  end
-
-  subgraph Native API exports
-    N0["runtime/zig/src/doe_wgpu_native.zig\ninstance / adapter / device / buffer / queue entrypoints"]
-    N1["doe_shader_native.zig + doe_compute_ext_native.zig\ndoe_bind_group_native.zig + doe_device_caps.zig\ndoe_query_native.zig"]
-    N2["runtime/zig/src/doe_render_native.zig\nrender / texture / sampler entrypoints"]
-    NW["runtime/zig/src/doe_wgsl/mod.zig\nlexer/parser/sema/emit"]
-  end
-
-  subgraph Backends and platform bridges
-    B0["backend/backend_iface.zig\nbackend_selection\nbackend_policy"]
-    B1["backend/common artifacts\ncapabilities\ncommand requirements\ntiming\ntelemetry"]
-    B2["backend/vulkan/*"]
-    B3["backend/metal/*"]
-    B4["backend/d3d12/*"]
-  end
-
-  subgraph Builds and artifacts
-    G0["runtime/zig/build.zig\ndropin / dropin-core / import-fence / coverage-gate"]
-    G1["config/ dropin-abi-behavior\nquirk-toggle-registry\ncomparability-obligations"]
-  end
-
-  P0 -->|uses| P2
-  P1 -->|uses helpers on top of same exported device\nfacades| P0
-  P2 --> Tn
-  P2 --> Tb
-  P3 --> Tb
-  Tn --> DR
-  Tb --> DR
-
-  DR --> R0
-  DR --> R1
-  DR -->|route / ownership| R5
-
-  R0 --> R2
-  R0 --> R3
-  R0 --> R1
-  R0 --> R4
-  R0 --> K1
-  R1 --> K0
-  K0 --> C2
-  K0 --> F2
-  C2 --> C0
-  F2 --> F0
-  C0 --> C1
-  C0 --> C2
-  F0 --> C0
-
-  R2 --> LP
-  LP --> R2
-  LP --> G0
-  L2 --> LP
-  L0 --> L2
-  L1 --> L2
-  G0 --> LP
-  G0 --> G1
-
-  C0 --> N0
-  C0 --> N1
-  F0 --> N2
-  N0 --> N1
-  N1 --> NW
-  N0 --> B0
-  N1 --> B0
-  N2 --> B0
-  NW --> B0
-
-  B0 --> B1
-  B0 --> B2
-  B0 --> B3
-  B0 --> B4
-
-  subgraph "Bottom platform boundary"
-    V2["system APIs + platform bridge files\nlibvulkan loader / Metal ObjC bridge / D3D12 C bridge"]
-  end
-
-  B2 --> V2
-  B3 --> V2
-  B4 --> V2
+```text
+Package and JS surface
+┌─────────────────────────────────────────────────────────────┐
+│ @simulatte/webgpu exports                                   │
+│ index.js / full.js / compute.js / node-runtime.js           │
+├─────────────────────────────────────────────────────────────┤
+│ @simulatte/webgpu-doe helpers                               │
+│ doe.requestDevice · doe.bind · gpu.buffer/kernel/compute    │
+├─────────────────────────────────────────────────────────────┤
+│ Shared JS object model + validation                         │
+│ full-surface.js · encoder-surface.js                        │
+└────────────────────────┬────────────────────────────────────┘
+                         │
+           ┌─────────────┴──────────────┐
+           │                            │
+           ▼                            ▼
+Headless native transport      Browser wrapper
+┌────────────────────────┐   ┌────────────────────────────────┐
+│ doe_napi.c (61 fn)     │   │ src/browser.js                 │
+│ bun-ffi.js (78 sym)    │   │ JS shim → browser navigator.gpu│
+│       │                │   │ No Zig code runs.              │
+│       ▼                │   │       │                        │
+│ wgpu_dropin_lib.zig    │   │       ▼                        │
+│ (symbol routing)       │   │ Browser-native WebGPU          │
+└────────────┬───────────┘   │ (Dawn / wgpu / etc.)           │
+             │               └────────────────┬───────────────┘
+             │                                │
+             ▼                                ▼
+Zig runtime funnel                   Browser GPU sandbox
+┌──────────────────────────────┐     + physical GPU
+│ webgpu_ffi.zig (facade)      │
+│ execution.zig (routing)      │
+│ quirk/runtime.zig (matching) │
+│ trace.zig / replay.zig       │
+├──────────────────────────────┤
+│ core/ partition              │
+│   abi · resource · compute   │
+│   queue · surface · trace    │
+├──────────────────────────────┤
+│ full/ partition              │
+│   render · surface           │
+│   lifecycle · modules        │
+└──────────────┬───────────────┘
+               │
+               ▼
+Native API exports (76 pub export fn)
+┌──────────────────────────────┐
+│ doe_wgpu_native.zig (29)     │
+│ doe_shader_native.zig (11)   │
+│ doe_compute_ext_native (7)   │
+│ doe_bind_group_native (6)    │
+│ doe_render_native.zig (17)   │
+│ doe_device_caps.zig (4)      │
+│ doe_query_native.zig (4)     │
+├──────────────────────────────┤
+│ WGSL compiler (doe_wgsl/)    │
+│ lexer → parser → sema → IR  │
+│ → MSL / SPIR-V / HLSL / DXIL│
+└──────────────┬───────────────┘
+               │
+               ▼
+Backends and platform bridges
+┌──────────────────────────────┐        Lean (compile-time)
+│ backend_iface.zig            │     ┌─────────────────────┐
+│ ├─ Metal    (backend/metal/) │     │ Fawn/Core/*.lean    │
+│ ├─ Vulkan   (backend/vulkan/)│     │ Fawn/Full/*.lean    │
+│ └─ D3D12    (backend/d3d12/) │     │ extract.sh →        │
+└──────────────┬───────────────┘     │ proven-conditions   │
+               │                     │ .json               │
+               ▼                     │       │             │
+System APIs + platform bridges      │       ▼             │
+(libvulkan / Metal ObjC /           │ lean_proof.zig      │
+ D3D12 C bridge)                    │ (-Dlean-verified)   │
+               │                     └─────────────────────┘
+               ▼
+        Physical GPU
 ```
 
 Read this diagram top to bottom:
 
 - JS/package boundaries stop at the transport layer (`doe_napi.c` or Bun FFI).
+  The browser wrapper forks at the same boundary and never enters Zig.
 - The runtime funnel starts at `wgpu_dropin_lib.zig`, `webgpu_ffi.zig`, and the
   root `wgpu_*.zig` compatibility facades.
 - `core/` and `full/` live entirely inside the Zig runtime layer and are
   enforced by `zig build import-fence` plus the separate `dropin-core` build.
 - Lean is a sibling proof/policy lane that emits artifacts consumed by
   `lean_proof.zig` and `quirk/runtime.zig`; it is not a JS-facing runtime tier.
+- The browser wrapper (`src/browser.js`) shares the JS object model with the
+  native path but delegates all GPU work to the browser's own WebGPU. It is
+  unrelated to Chromium Track A (`browser/fawn-browser/`), which is the future
+  effort to embed Doe inside Chromium.
 
 ## Layer details
 
@@ -393,7 +358,7 @@ split.
 1. `full` composes `core`; it does not toggle `core`.
 2. `core` must never import `full`.
 3. `full` may depend on `core` Zig modules, Lean modules, build outputs, and JS helpers.
-4. Chromium Track A depends on the full runtime artifact and browser-specific gates, not on npm package layout.
+4. Chromium Track A (`browser/fawn-browser/`) depends on the full runtime artifact and browser-specific gates, not on npm package layout. It is unrelated to the browser wrapper path (`src/browser.js`) inside this package.
 
 Anti-bleed:
 

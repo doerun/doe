@@ -6,35 +6,45 @@
       "qualityOwner": "fawn-core",
       "benchmarkMethodologyOwner": "fawn-core",
       "promotedAt": "2026-03-09",
-      "nurseryExitApproved": true
+      "nurseryExitApproved": false,
+      "archivedAt": "2026-03-19",
+      "archiveReason": "Strategic decision: browser vendors are routing subsystems through WebGPU; building parallel replacements duplicates that work."
     },
     "fawn_compute_services": {
       "runtimeIntegrationOwner": "fawn-core",
       "qualityOwner": "fawn-core",
       "benchmarkMethodologyOwner": "fawn-core",
       "promotedAt": "2026-03-08",
-      "nurseryExitApproved": true
+      "nurseryExitApproved": false,
+      "archivedAt": "2026-03-19",
+      "archiveReason": "Strategic decision: browser vendors are routing subsystems through WebGPU; building parallel replacements duplicates that work."
     },
     "fawn_effects_pipeline": {
       "runtimeIntegrationOwner": "fawn-core",
       "qualityOwner": "fawn-core",
       "benchmarkMethodologyOwner": "fawn-core",
       "promotedAt": "2026-03-09",
-      "nurseryExitApproved": true
+      "nurseryExitApproved": false,
+      "archivedAt": "2026-03-19",
+      "archiveReason": "Strategic decision: browser vendors are routing subsystems through WebGPU; building parallel replacements duplicates that work."
     },
     "fawn_path_engine": {
       "runtimeIntegrationOwner": "fawn-core",
       "qualityOwner": "fawn-core",
       "benchmarkMethodologyOwner": "fawn-core",
       "promotedAt": "2026-03-09",
-      "nurseryExitApproved": true
+      "nurseryExitApproved": false,
+      "archivedAt": "2026-03-19",
+      "archiveReason": "Strategic decision: browser vendors are routing subsystems through WebGPU; building parallel replacements duplicates that work."
     },
     "fawn_resource_scheduler": {
       "runtimeIntegrationOwner": "fawn-core",
       "qualityOwner": "fawn-core",
       "benchmarkMethodologyOwner": "fawn-core",
       "promotedAt": "2026-03-08",
-      "nurseryExitApproved": true
+      "nurseryExitApproved": false,
+      "archivedAt": "2026-03-19",
+      "archiveReason": "Strategic decision: browser vendors are routing subsystems through WebGPU; building parallel replacements duplicates that work."
     }
   }
 }

@@ -1,13 +1,14 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-03-09T01:16:00Z",
+  "updatedAt": "2026-03-19T00:00:00Z",
   "statuses": [
     "planned",
     "in_progress",
     "local_evidence",
     "ready_for_promotion",
     "promoted",
-    "blocked"
+    "blocked",
+    "archived"
   ],
   "milestones": [
     {
@@ -308,8 +309,8 @@
       "id": "M4",
       "title": "Track B module 1 (fawn_2d_sdf_renderer) incubation",
       "track": "modules",
-      "status": "promoted",
-      "summary": "The first Track B module now has both the nursery prototype lane and a promoted core Zig implementation with canonical config, ownership, and blocking gate coverage.",
+      "status": "archived",
+      "summary": "Archived 2026-03-19. Track B modules archived by strategic decision: browser vendors are routing subsystems through WebGPU on their own timeline; building parallel replacements duplicates that work. See ouroboros/docs/strategy/doe-infrastructure-dominance.md.",
       "dependencies": [
         "M0"
       ],
@@ -402,8 +403,8 @@
       "id": "M5",
       "title": "Track B additional modules (one-by-one)",
       "track": "modules",
-      "status": "promoted",
-      "summary": "All additional Track B modules now have schema-backed deterministic prototype fixtures plus promoted core schemas, policies, ownership, and blocking gate coverage.",
+      "status": "archived",
+      "summary": "Archived 2026-03-19. See M4 summary for rationale.",
       "dependencies": [
         "M4"
       ],
@@ -608,8 +609,8 @@
       "id": "M6",
       "title": "Promotion and maintenance",
       "track": "promotion",
-      "status": "promoted",
-      "summary": "All five Track B modules now have promoted core schemas and policies, explicit ownership, deterministic tests, blocking gate coverage, and explicit promotion approvals.",
+      "status": "archived",
+      "summary": "Archived 2026-03-19. Track B module governance archived. Artifacts preserved but inactive. See M4 summary for rationale.",
       "dependencies": [
         "M2",
         "M3",
