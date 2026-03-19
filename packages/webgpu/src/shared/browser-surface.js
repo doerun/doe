@@ -21,6 +21,22 @@ const CANVAS_COLOR_SPACES = Object.freeze({
   'display-p3': 'display-p3',
 });
 
+function invalidate_current_texture(context) {
+  const texture = context._currentTexture;
+  if (!texture || texture._destroyed) {
+    return;
+  }
+  if (texture._childViews) {
+    for (const view of texture._childViews) {
+      if (view && !view._destroyed) {
+        destroyResource(view, () => {});
+      }
+    }
+    texture._childViews.clear();
+  }
+  destroyResource(texture, (native) => native.destroy?.());
+}
+
 function normalizeOrigin2D(origin, path) {
   if (origin === undefined || origin === null) return { x: 0, y: 0 };
   if (Array.isArray(origin)) {
@@ -81,9 +97,7 @@ function createBrowserSurfaceClasses({ canvasBackend, fullClasses }) {
 
     configure(configuration) {
       const config = assertObject(configuration, 'GPUCanvasContext.configure', 'configuration');
-      if (this._currentTexture && !this._currentTexture._destroyed) {
-        destroyResource(this._currentTexture, (native) => native.destroy?.());
-      }
+      invalidate_current_texture(this);
       this._configuration = normalizeCanvasConfiguration(config, 'GPUCanvasContext.configure');
       this._currentTexture = null;
       canvasBackend.canvasContextConfigure(this, this._configuration);
@@ -107,9 +121,7 @@ function createBrowserSurfaceClasses({ canvasBackend, fullClasses }) {
       if (!this._configuration) {
         failValidation('GPUCanvasContext.getCurrentTexture', 'context is not configured');
       }
-      if (this._currentTexture && !this._currentTexture._destroyed) {
-        destroyResource(this._currentTexture, (native) => native.destroy?.());
-      }
+      invalidate_current_texture(this);
       this._currentTexture = canvasBackend.canvasContextGetCurrentTexture(
         this, this._configuration, fullClasses,
       );
@@ -117,9 +129,7 @@ function createBrowserSurfaceClasses({ canvasBackend, fullClasses }) {
     }
 
     unconfigure() {
-      if (this._currentTexture && !this._currentTexture._destroyed) {
-        destroyResource(this._currentTexture, (native) => native.destroy?.());
-      }
+      invalidate_current_texture(this);
       if (this._configuration) {
         canvasBackend.canvasContextUnconfigure(this);
       }

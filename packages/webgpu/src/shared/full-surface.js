@@ -458,6 +458,10 @@ function createFullSurfaceClasses({
       }, this, features, 'GPUTexture.createView');
       const view = backend.textureCreateView(this, texture, normalizedDescriptor);
       const tv = new DoeGPUTextureView(view, this);
+      if (!this._childViews) {
+        this._childViews = new Set();
+      }
+      this._childViews.add(tv);
       tv.label = normalizedDescriptor.label ?? '';
       return tv;
     }
