@@ -104,17 +104,11 @@ fn texture_aspect_matches(tex: *DoeTexture, view: *DoeTextureView) bool {
         types.WGPUTextureAspect_All => true,
         types.WGPUTextureAspect_DepthOnly => switch (tex.format) {
             types.WGPUTextureFormat_Stencil8 => false,
-            types.WGPUTextureFormat_Depth16Unorm,
-            types.WGPUTextureFormat_Depth24Plus,
-            types.WGPUTextureFormat_Depth24PlusStencil8,
-            types.WGPUTextureFormat_Depth32Float,
-            types.WGPUTextureFormat_Depth32FloatStencil8 => true,
+            types.WGPUTextureFormat_Depth16Unorm, types.WGPUTextureFormat_Depth24Plus, types.WGPUTextureFormat_Depth24PlusStencil8, types.WGPUTextureFormat_Depth32Float, types.WGPUTextureFormat_Depth32FloatStencil8 => true,
             else => false,
         },
         types.WGPUTextureAspect_StencilOnly => switch (tex.format) {
-            types.WGPUTextureFormat_Stencil8,
-            types.WGPUTextureFormat_Depth24PlusStencil8,
-            types.WGPUTextureFormat_Depth32FloatStencil8 => true,
+            types.WGPUTextureFormat_Stencil8, types.WGPUTextureFormat_Depth24PlusStencil8, types.WGPUTextureFormat_Depth32FloatStencil8 => true,
             else => false,
         },
         else => false,
@@ -123,10 +117,7 @@ fn texture_aspect_matches(tex: *DoeTexture, view: *DoeTextureView) bool {
 
 fn storage_texture_access_supported(access: u32) bool {
     return switch (access) {
-        types.WGPUStorageTextureAccess_Undefined,
-        types.WGPUStorageTextureAccess_WriteOnly,
-        types.WGPUStorageTextureAccess_ReadOnly,
-        types.WGPUStorageTextureAccess_ReadWrite => true,
+        types.WGPUStorageTextureAccess_Undefined, types.WGPUStorageTextureAccess_WriteOnly, types.WGPUStorageTextureAccess_ReadOnly, types.WGPUStorageTextureAccess_ReadWrite => true,
         else => false,
     };
 }
@@ -146,12 +137,7 @@ fn texture_view_matches_layout(layout_entry: DoeBindGroupLayoutEntry, view: *Doe
 
 fn storage_texture_matches_layout(layout_entry: DoeBindGroupLayoutEntry, view: *DoeTextureView) bool {
     switch (view.tex.format) {
-        types.WGPUTextureFormat_Stencil8,
-        types.WGPUTextureFormat_Depth16Unorm,
-        types.WGPUTextureFormat_Depth24Plus,
-        types.WGPUTextureFormat_Depth24PlusStencil8,
-        types.WGPUTextureFormat_Depth32Float,
-        types.WGPUTextureFormat_Depth32FloatStencil8 => return false,
+        types.WGPUTextureFormat_Stencil8, types.WGPUTextureFormat_Depth16Unorm, types.WGPUTextureFormat_Depth24Plus, types.WGPUTextureFormat_Depth24PlusStencil8, types.WGPUTextureFormat_Depth32Float, types.WGPUTextureFormat_Depth32FloatStencil8 => return false,
         else => {},
     }
     const usage = view.usage | view.tex.usage;
@@ -178,6 +164,9 @@ fn find_layout_entry(layout: *DoeBindGroupLayout, binding: u32) ?DoeBindGroupLay
 pub export fn doeNativeDeviceCreateBindGroupLayout(dev_raw: ?*anyopaque, desc: ?*const types.WGPUBindGroupLayoutDescriptor) callconv(.c) ?*anyopaque {
     _ = dev_raw;
     const d = desc orelse return null;
+    if (d.entryCount > 0 and d.entries == null) {
+        return null;
+    }
     const bgl = make(DoeBindGroupLayout) orelse return null;
     var stored_entries: ?[]DoeBindGroupLayoutEntry = null;
     if (d.entryCount > 0) {

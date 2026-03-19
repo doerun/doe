@@ -2,6 +2,28 @@
 
 ## 2026-03-19
 
+### macOS package adapter-info ABI repair
+
+- The Node/addon bridge now prefers Doe-native adapter-info publication on
+  macOS package paths, with `wgpuAdapterGetInfo` retained only as a fallback.
+- This restores safe `GPUAdapter.info` / `GPUDevice.adapterInfo` publication on
+  the current drop-in provider path, which had been faulting through Dawn's
+  standard adapter-info call.
+- `GPUDevice.popErrorScope()` on the Node/addon package surface now returns a
+  `GPUError`-shaped object or `null`, missing render-pass indirect draw
+  entrypoints fail explicitly, and adapter `requestDevice()` now returns a real
+  `DoeGPUDevice` instance instead of a prototype-copied plain object.
+- Node/addon write-mapped buffers now flush every staged `getMappedRange()`
+  slice on `unmap()` rather than only the most recent range, the lazy
+  compute-pass promotion path is shared across the remaining Node wrapper
+  callsites, and render-bundle indirect draw wrappers now fail explicitly when
+  the addon lacks those entrypoints.
+- Package command buffers are now wrapped as first-class JS resources with
+  explicit ownership: `queue.submit()` rejects resubmission of an already
+  consumed command buffer, successful submits release the native command-buffer
+  handle immediately, and dropped unsubmitted buffers are finalizer-cleaned
+  when the active backend exposes a release hook.
+
 ### Browser-owned WebGPU delegation rows promoted in spec index
 
 - Reclassified the 29 browser-owned delegation rows in
@@ -1043,6 +1065,9 @@
 ### Apples-to-apples enforcement hardening
 
 - `bench/workloads.amd.vulkan.extended.json` now reclassifies directional/proxy mappings as non-comparable (`comparable=false`, `benchmarkClass=directional`) for strict claim lanes.
+- AMD Vulkan macro rows that still declared `benchmarkClass=comparable` while remaining `comparable=false`
+  (`render_pixel_local_storage_barrier_500`, `resource_table_immediates_500`) are now corrected to `benchmarkClass=directional` across the affected AMD extended / Doe-vs-Doe lanes.
+- `bench/generate_backend_workloads.py` now validates `benchmarkClass`/`comparable` consistency at the catalog layer so generated workload files cannot drift into compare-loader rejection again.
 - `bench/native-compare/compare_dawn_vs_doe.py` now rejects workload contract entries that set `comparable=true` while:
   - description is directional (`description` starts with `Directional`)
   - comparability notes explicitly declare closest-proxy mapping (`closest draw-call throughput proxy`)

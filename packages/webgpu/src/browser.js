@@ -408,7 +408,19 @@ function create_browser_backend({ native_gpu, canvasBackend }) {
 
     queueSubmit(queue, native, commandBuffers) {
       queue._pendingSubmissions += 1;
-      return native.submit(commandBuffers.map(unwrap_native));
+      const submitted = native.submit(commandBuffers.map((commandBuffer, index) => {
+        if (commandBuffer?._submitted) {
+          failValidation('GPUQueue.submit', `commandBuffers[${index}] was already submitted`);
+        }
+        return unwrap_native(commandBuffer);
+      }));
+      for (const commandBuffer of commandBuffers) {
+        if (commandBuffer && typeof commandBuffer === 'object') {
+          commandBuffer._submitted = true;
+          commandBuffer.destroy?.();
+        }
+      }
+      return submitted;
     },
 
     queueWriteBuffer(_queue, native, buffer_native, bufferOffset, view) {
@@ -642,7 +654,7 @@ function create_browser_backend({ native_gpu, canvasBackend }) {
     commandEncoderFinish(encoder) {
       const command_buffer = encoder._native.finish();
       encoder._open = false;
-      return command_buffer;
+      return { _native: command_buffer, _batched: false };
     },
 
     commandEncoderInit(encoder, native) {

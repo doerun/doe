@@ -8,6 +8,8 @@ from native_compare_modules import timing_sanity
 from native_compare_modules.reporting import safe_float, safe_int
 from native_compare_modules.timing_selection import canonical_timing_source
 
+END_TO_END_CLAIM_UNDERCOVERAGE_RATIO = 0.5
+
 
 def coverage_ratio(measured_ms: float | None, wall_ms: float | None) -> float | None:
     if measured_ms is None or wall_ms is None or wall_ms <= 0.0:
@@ -252,6 +254,26 @@ def _headline_percentiles_positive(
     return True
 
 
+def should_prefer_headline_for_end_to_end_claim(
+    *,
+    workload_domain: str,
+    selected_scope_class: str,
+    headline_delta: dict[str, Any] | None,
+    left_selected_wall_coverage: float | None,
+    right_selected_wall_coverage: float | None,
+    required_percentiles: list[str],
+) -> bool:
+    if workload_domain not in {"copy", "surface"}:
+        return False
+    if selected_scope_class != "operation-total":
+        return False
+    if left_selected_wall_coverage is None or right_selected_wall_coverage is None:
+        return False
+    if max(left_selected_wall_coverage, right_selected_wall_coverage) >= END_TO_END_CLAIM_UNDERCOVERAGE_RATIO:
+        return False
+    return _headline_percentiles_positive(headline_delta, required_percentiles)
+
+
 def assess_claimability(
     *,
     mode: str,
@@ -352,6 +374,27 @@ def assess_claimability(
             claim_right_stats = headline_right
             left_p50_ms = headline_left_p50_ms
             right_p50_ms = headline_right_p50_ms
+    if (
+        claim_metric_scope == "selectedTiming"
+        and isinstance(headline_delta, dict)
+        and isinstance(headline_left, dict)
+        and isinstance(headline_right, dict)
+        and should_prefer_headline_for_end_to_end_claim(
+            workload_domain=workload.domain,
+            selected_scope_class=str(selected_timing.get("scopeClass", "")),
+            headline_delta=headline_delta,
+            left_selected_wall_coverage=left_selected_wall_coverage,
+            right_selected_wall_coverage=right_selected_wall_coverage,
+            required_percentiles=required_percentiles,
+        )
+    ):
+        claim_metric_field = "timingInterpretation.headlineProcessWall.deltaPercent"
+        claim_metric_scope = "headlineProcessWall"
+        claim_delta = headline_delta
+        claim_left_stats = headline_left
+        claim_right_stats = headline_right
+        left_p50_ms = headline_left_p50_ms
+        right_p50_ms = headline_right_p50_ms
     if (
         workload.domain == "upload"
         and claim_metric_scope == "selectedTiming"

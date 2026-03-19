@@ -26,6 +26,7 @@ pub extern fn vkEndCommandBuffer(commandBuffer: vk.VkCommandBuffer) callconv(.c)
 pub extern fn vkResetCommandBuffer(commandBuffer: vk.VkCommandBuffer, flags: vk.VkFlags) callconv(.c) vk.VkResult;
 pub extern fn vkCmdBindPipeline(commandBuffer: vk.VkCommandBuffer, pipelineBindPoint: i32, pipeline: vk.VkPipeline) callconv(.c) void;
 pub extern fn vkCmdDispatch(commandBuffer: vk.VkCommandBuffer, groupCountX: u32, groupCountY: u32, groupCountZ: u32) callconv(.c) void;
+pub extern fn vkCmdDispatchIndirect(commandBuffer: vk.VkCommandBuffer, buffer: vk.VkBuffer, offset: vk.VkDeviceSize) callconv(.c) void;
 pub extern fn vkCmdCopyBuffer(commandBuffer: vk.VkCommandBuffer, srcBuffer: vk.VkBuffer, dstBuffer: vk.VkBuffer, regionCount: u32, pRegions: [*]const structs.VkBufferCopy) callconv(.c) void;
 pub extern fn vkCmdCopyBufferToImage(commandBuffer: vk.VkCommandBuffer, srcBuffer: vk.VkBuffer, dstImage: vk.VkImage, dstImageLayout: u32, regionCount: u32, pRegions: [*]const structs.VkBufferImageCopy) callconv(.c) void;
 pub extern fn vkCmdCopyImageToBuffer(commandBuffer: vk.VkCommandBuffer, srcImage: vk.VkImage, srcImageLayout: u32, dstBuffer: vk.VkBuffer, regionCount: u32, pRegions: [*]const structs.VkBufferImageCopy) callconv(.c) void;

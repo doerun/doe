@@ -6714,21 +6714,21 @@
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Doe-vs-Doe comparability uses direct timing (left/right divisors fixed to 1.0).",
-          "benchmarkClass": "comparable"
+          "benchmarkClass": "directional"
         },
         "amd_vulkan_extended": {
           "comparabilityNotes": "Dawn delegate does not execute this workload (0 dispatches, 0 encode); comparable: false until Dawn-side implementation is verified.",
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-          "benchmarkClass": "comparable"
+          "benchmarkClass": "directional"
         },
         "amd_vulkan_extended_strict": {
           "comparabilityNotes": "Dawn delegate does not execute this workload (0 dispatches, 0 encode); comparable: false until Dawn-side implementation is verified.",
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-          "benchmarkClass": "comparable"
+          "benchmarkClass": "directional"
         },
         "apple_metal_extended": {
           "comparabilityNotes": "Dawn delegate does not execute this workload (0 dispatches, 0 encode); comparable: false until Dawn-side implementation is verified.",
@@ -7433,7 +7433,7 @@
           "default": false,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
           "rightCommandRepeat": 500,
-          "benchmarkClass": "comparable"
+          "benchmarkClass": "directional"
         },
         "amd_vulkan_superset_native_supported": {
           "description": "Directional-only macro ResourceTable workload for the AMD native Vulkan subset. Doe now executes this through an explicit native emulation path when `featurePolicy=emulate_when_unavailable`.",
@@ -7452,7 +7452,7 @@
           "default": false,
           "timingNormalizationNote": "Strict Doe-vs-Doe comparability uses direct timing (left/right divisors fixed to 1.0).",
           "rightCommandRepeat": 500,
-          "benchmarkClass": "comparable"
+          "benchmarkClass": "directional"
         },
         "amd_vulkan_app_claim": {
           "description": "Apples-to-apples macro ResourceTable workload repeating resource-table/immediates path 500 times inside one command.",
@@ -7460,7 +7460,7 @@
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
           "default": true,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-          "benchmarkClass": "comparable"
+          "benchmarkClass": "directional"
         },
         "amd_vulkan_extended": {
           "description": "Apples-to-apples macro ResourceTable workload repeating resource-table/immediates path 500 times inside one command.",
@@ -7468,7 +7468,7 @@
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
           "default": false,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-          "benchmarkClass": "comparable"
+          "benchmarkClass": "directional"
         },
         "amd_vulkan_extended_strict": {
           "description": "Apples-to-apples macro ResourceTable workload repeating resource-table/immediates path 500 times inside one command.",
@@ -7476,7 +7476,7 @@
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
           "default": false,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-          "benchmarkClass": "comparable"
+          "benchmarkClass": "directional"
         },
         "apple_metal_extended": {
           "description": "Apples-to-apples macro ResourceTable workload repeating resource-table/immediates path 500 times inside one command.",

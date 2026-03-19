@@ -118,6 +118,31 @@ def validate_catalog_semantics(catalog: dict[str, Any]) -> None:
     for item in catalog["workloads"]:
         for lane_id in item["lanes"]:
             comparable = effective_field(item, lane_id, "comparable", False)
+            benchmark_class = effective_field(item, lane_id, "benchmarkClass", None)
+            if benchmark_class is None:
+                benchmark_class = "comparable" if comparable else "directional"
+            elif isinstance(benchmark_class, str):
+                benchmark_class = benchmark_class.strip().lower()
+            else:
+                problems.append(
+                    f"{item['id']} lane={lane_id}: benchmarkClass must be a string when present"
+                )
+                continue
+            if benchmark_class not in {"comparable", "directional"}:
+                problems.append(
+                    f"{item['id']} lane={lane_id}: invalid benchmarkClass={benchmark_class!r}"
+                )
+                continue
+            if benchmark_class == "comparable" and not comparable:
+                problems.append(
+                    f"{item['id']} lane={lane_id}: benchmarkClass=comparable requires comparable=true"
+                )
+                continue
+            if benchmark_class == "directional" and comparable:
+                problems.append(
+                    f"{item['id']} lane={lane_id}: benchmarkClass=directional requires comparable=false"
+                )
+                continue
             if not comparable:
                 continue
             for left_key, right_key, default in symmetry_fields:

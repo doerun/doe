@@ -69,6 +69,9 @@ let adapter;
 try {
   adapter = await gpu.requestAdapter();
   check('requestAdapter()', adapter != null);
+  const adapterInfo = adapter?.info;
+  check('adapter.info exists', adapterInfo != null);
+  check('adapter.info.device string', typeof adapterInfo?.device === 'string', `got ${typeof adapterInfo?.device}`);
 } catch (err) {
   check('requestAdapter()', false, err.message);
   console.log(`\nResults: ${passed} passed, ${failed} failed`);
@@ -82,6 +85,7 @@ try {
   device = await adapter.requestDevice();
   check('requestDevice()', device != null);
   check('device.queue exists', device.queue != null);
+  check('device prototype intact', device?.constructor?.name === 'DoeGPUDevice', `got ${device?.constructor?.name}`);
 } catch (err) {
   check('requestDevice()', false, err.message);
 }

@@ -498,6 +498,59 @@ try {
 }
 
 // ---------------------------------------------------------------------------
+// i2. mappedAtCreation with multiple write ranges
+// ---------------------------------------------------------------------------
+
+console.log("\n--- i2. mappedAtCreation with multiple write ranges ---");
+try {
+  const rawUsage = compute.globals.GPUBufferUsage.STORAGE
+    | compute.globals.GPUBufferUsage.COPY_DST
+    | compute.globals.GPUBufferUsage.COPY_SRC;
+
+  const mappedBuf = gpu.buffer.create({
+    size: 8 * Float32Array.BYTES_PER_ELEMENT,
+    usage: rawUsage,
+    mappedAtCreation: true,
+  });
+  const firstHalf = new Float32Array(mappedBuf.getMappedRange(0, 4 * Float32Array.BYTES_PER_ELEMENT));
+  const secondHalf = new Float32Array(mappedBuf.getMappedRange(4 * Float32Array.BYTES_PER_ELEMENT, 4 * Float32Array.BYTES_PER_ELEMENT));
+  firstHalf.set([1, 2, 3, 4]);
+  secondHalf.set([5, 6, 7, 8]);
+  mappedBuf.unmap();
+
+  const dstBuf = gpu.buffer.create({
+    size: 8 * Float32Array.BYTES_PER_ELEMENT,
+    usage: "storageReadWrite",
+  });
+  await gpu.kernel.run({
+    code: `
+      @group(0) @binding(0) var<storage, read> src: array<f32>;
+      @group(0) @binding(1) var<storage, read_write> dst: array<f32>;
+      @compute @workgroup_size(8)
+      fn main(@builtin(global_invocation_id) gid: vec3u) {
+        dst[gid.x] = src[gid.x];
+      }
+    `,
+    bindings: [
+      { buffer: mappedBuf, access: "storageRead" },
+      dstBuf,
+    ],
+    workgroups: 1,
+  });
+
+  const result = await gpu.buffer.read({ buffer: dstBuf, type: Float32Array });
+  assert(result.length === 8, "multiple mapped ranges: readback has 8 elements");
+  assert(result[0] === 1 && result[3] === 4, "multiple mapped ranges: first half flushed");
+  assert(result[4] === 5 && result[7] === 8, "multiple mapped ranges: second half flushed");
+
+  if (typeof mappedBuf.destroy === "function") mappedBuf.destroy();
+  if (typeof dstBuf.destroy === "function") dstBuf.destroy();
+} catch (err) {
+  failed++;
+  console.error(`  FAIL (unexpected error): ${err?.message ?? err}`);
+}
+
+// ---------------------------------------------------------------------------
 // j. buffer.read with offset and size
 // ---------------------------------------------------------------------------
 

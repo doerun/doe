@@ -963,6 +963,17 @@ test "doeNativeDeviceCreateBindGroupLayout: null device returns null" {
     try std.testing.expectEqual(@as(?*anyopaque, null), result);
 }
 
+test "doeNativeDeviceCreateBindGroupLayout: missing entries returns null" {
+    const descriptor = types.WGPUBindGroupLayoutDescriptor{
+        .nextInChain = null,
+        .label = .{ .data = null, .length = 0 },
+        .entryCount = 1,
+        .entries = null,
+    };
+    const result = native.doeNativeDeviceCreateBindGroupLayout(null, &descriptor);
+    try std.testing.expectEqual(@as(?*anyopaque, null), result);
+}
+
 test "doeNativeBindGroupLayoutRelease: null input is safe" {
     native.doeNativeBindGroupLayoutRelease(null);
 }

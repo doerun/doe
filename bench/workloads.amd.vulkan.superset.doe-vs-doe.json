@@ -902,7 +902,7 @@
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Doe-vs-Doe comparability uses direct timing (left/right divisors fixed to 1.0).",
-      "benchmarkClass": "comparable"
+      "benchmarkClass": "directional"
     },
     {
       "id": "render_uniform_buffer_update_writebuffer_partial_single",
@@ -991,7 +991,7 @@
       "default": false,
       "timingNormalizationNote": "Strict Doe-vs-Doe comparability uses direct timing (left/right divisors fixed to 1.0).",
       "rightCommandRepeat": 500,
-      "benchmarkClass": "comparable"
+      "benchmarkClass": "directional"
     }
   ]
 }

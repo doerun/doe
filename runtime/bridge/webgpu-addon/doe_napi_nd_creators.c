@@ -106,14 +106,49 @@ static napi_value native_direct_adapter_get_info(napi_env env, napi_callback_inf
     void* adapter = cache ? cache->native
                           : native_direct_unwrap_external_prop(env, this_arg, DOE_DIRECT_NATIVE);
 
-    bool used_standard_info = false;
-    WGPUAdapterInfo info_view;
-    memset(&info_view, 0, sizeof(info_view));
-    if (pfn_wgpuAdapterGetInfo) {
-        used_standard_info = pfn_wgpuAdapterGetInfo(adapter, &info_view) == WGPU_STATUS_SUCCESS;
+    const char* vendor = "";
+    const char* arch   = "";
+    const char* device = "";
+    const char* desc   = "";
+    char* block = NULL;
+
+    if (pfn_doeNativeAdapterGetInfo && pfn_doeNativeAdapterFreeInfo) {
+        pfn_doeNativeAdapterGetInfo(adapter, &vendor, &arch, &device, &desc, &block);
+        if (!vendor) vendor = "";
+        if (!arch)   arch   = "";
+        if (!device) device = "";
+        if (!desc)   desc   = "";
     }
 
-    if (used_standard_info) {
+    if (block && pfn_doeNativeAdapterFreeInfo) {
+        napi_value v_vendor, v_arch, v_device, v_desc, v_is_fallback;
+        napi_create_string_utf8(env, vendor, NAPI_AUTO_LENGTH, &v_vendor);
+        napi_create_string_utf8(env, arch,   NAPI_AUTO_LENGTH, &v_arch);
+        napi_create_string_utf8(env, device, NAPI_AUTO_LENGTH, &v_device);
+        napi_create_string_utf8(env, desc,   NAPI_AUTO_LENGTH, &v_desc);
+        napi_get_boolean(env, false, &v_is_fallback);
+        napi_set_named_property(env, obj, "vendor",       v_vendor);
+        napi_set_named_property(env, obj, "architecture", v_arch);
+        napi_set_named_property(env, obj, "device",       v_device);
+        napi_set_named_property(env, obj, "description",  v_desc);
+        napi_set_named_property(env, obj, "isFallbackAdapter", v_is_fallback);
+
+        napi_value v_sg_min, v_sg_max;
+        napi_create_uint32(env, 32, &v_sg_min);
+        napi_create_uint32(env, 32, &v_sg_max);
+        napi_set_named_property(env, obj, "subgroupMinSize", v_sg_min);
+        napi_set_named_property(env, obj, "subgroupMaxSize", v_sg_max);
+        pfn_doeNativeAdapterFreeInfo(block);
+        return obj;
+    }
+
+    WGPUAdapterInfo info_view;
+    memset(&info_view, 0, sizeof(info_view));
+    info_view.vendor.length = WGPU_STRLEN;
+    info_view.architecture.length = WGPU_STRLEN;
+    info_view.device.length = WGPU_STRLEN;
+    info_view.description.length = WGPU_STRLEN;
+    if (pfn_wgpuAdapterGetInfo && pfn_wgpuAdapterGetInfo(adapter, &info_view) == WGPU_STATUS_SUCCESS) {
         native_direct_set_adapter_info_string_prop(env, obj, "vendor", info_view.vendor);
         native_direct_set_adapter_info_string_prop(env, obj, "architecture", info_view.architecture);
         native_direct_set_adapter_info_string_prop(env, obj, "device", info_view.device);
@@ -130,43 +165,6 @@ static napi_value native_direct_adapter_get_info(napi_env env, napi_callback_inf
         if (pfn_wgpuAdapterInfoFreeMembers) {
             pfn_wgpuAdapterInfoFreeMembers(info_view);
         }
-        return obj;
-    }
-
-    const char* vendor = "";
-    const char* arch   = "";
-    const char* device = "";
-    const char* desc   = "";
-    char* block = NULL;
-
-    if (pfn_doeNativeAdapterGetInfo && pfn_doeNativeAdapterFreeInfo) {
-        pfn_doeNativeAdapterGetInfo(adapter, &vendor, &arch, &device, &desc, &block);
-        if (!vendor) vendor = "";
-        if (!arch)   arch   = "";
-        if (!device) device = "";
-        if (!desc)   desc   = "";
-    }
-
-    napi_value v_vendor, v_arch, v_device, v_desc, v_is_fallback;
-    napi_create_string_utf8(env, vendor, NAPI_AUTO_LENGTH, &v_vendor);
-    napi_create_string_utf8(env, arch,   NAPI_AUTO_LENGTH, &v_arch);
-    napi_create_string_utf8(env, device, NAPI_AUTO_LENGTH, &v_device);
-    napi_create_string_utf8(env, desc,   NAPI_AUTO_LENGTH, &v_desc);
-    napi_get_boolean(env, false, &v_is_fallback);
-    napi_set_named_property(env, obj, "vendor",       v_vendor);
-    napi_set_named_property(env, obj, "architecture", v_arch);
-    napi_set_named_property(env, obj, "device",       v_device);
-    napi_set_named_property(env, obj, "description",  v_desc);
-    napi_set_named_property(env, obj, "isFallbackAdapter", v_is_fallback);
-
-    napi_value v_sg_min, v_sg_max;
-    napi_create_uint32(env, 32, &v_sg_min);
-    napi_create_uint32(env, 32, &v_sg_max);
-    napi_set_named_property(env, obj, "subgroupMinSize", v_sg_min);
-    napi_set_named_property(env, obj, "subgroupMaxSize", v_sg_max);
-
-    if (block && pfn_doeNativeAdapterFreeInfo) {
-        pfn_doeNativeAdapterFreeInfo(block);
     }
     return obj;
 }

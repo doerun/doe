@@ -5,12 +5,14 @@
 Date: 2026-03-19
 
 Vulkan compute dispatch unblocked (2026-03-19):
-- `dispatch_indirect` command now routed through `execute_dispatch_command` in `backend/vulkan/mod.zig` (was falling to `else => error.Unsupported`).
+- Vulkan `dispatch_indirect` now uses a dedicated indirect-dispatch path in `backend/vulkan/mod.zig` / `backend/vulkan/native_runtime.zig`: it writes `[x, y, z]` into a reusable indirect-args buffer and records `vkCmdDispatchIndirect` instead of routing through the direct-dispatch helper.
 - Bare `dispatch`/`dispatch_indirect` without a prior `kernel_dispatch` now auto-loads a no-op WGSL kernel (`dispatch_noop.wgsl`) before executing; `has_pipeline` guard replaced by auto-load so workloads that send dispatch without an explicit kernel still execute on Linux Vulkan.
+- `doeNativeDeviceCreateBindGroupLayout` now returns `null` for `entryCount > 0` with `entries = null` instead of trapping across the C ABI boundary.
 - D3D12 stub bridge (`src/backend/d3d12/d3d12_bridge_stubs.c`) added; all non-Windows build targets now link the stubs so `doe-zig-runtime`, tests, and dropin libraries build on macOS and Linux without D3D12 headers.
 - Stale test fixes: `CmdTag` variant count 8→10 (added `write_timestamp`, `resolve_query_set`); `align_cbv_size(768)` expected value corrected (768 is already 256-aligned); Vulkan dispatch tests no longer assert a specific `status_message` string for the runtime-unavailable fallback path.
 - Metal `metal_bridge_device_new_texture` extern declaration fixed: missing `sample_count` parameter added; all call sites updated.
 - All three test suites (`test-core`, `test-full`, `test-wgsl`) now pass on macOS.
+- AMD Vulkan extended workload contracts no longer self-contradict on `benchmarkClass` versus `comparable`: `render_pixel_local_storage_barrier_500` and `resource_table_immediates_500` now remain directional across the affected AMD extended / Doe-vs-Doe lanes, and `bench/generate_backend_workloads.py` now hard-fails on any future mismatch before compare-time.
 
 Runtime verification of the 17 Vulkan compute workloads (AMD Radeon/RADV GFX11) requires a Linux host with AMD GPU and MoltenVK/RADV driver; the macOS build confirms the dispatch code compiles and links but cannot execute Vulkan GPU commands locally.
 
@@ -113,6 +115,11 @@ AMD Vulkan strict comparable/release presets now point at the native-supported w
   - that authoritative full rerun remains `comparisonStatus=comparable`, `claimStatus=diagnostic`, with `31` comparable workloads and only one remaining non-claimable row: `copy_texture_to_texture` (`p95` tail slightly negative).
   - follow-up March 10 focused proof after the Metal fast-wait copy-path patch is `bench/out/scratch/20260310T202542Z/copy_texture_to_texture.direct.json`, which is `comparisonStatus=comparable`, `claimStatus=claimable` for `copy_texture_to_texture` in isolation. A broader 11-workload comparable subset rerun at `bench/out/apple-metal/extended-comparable/20260310T202715Z/dawn-vs-doe.local.metal.extended.comparable.rerun.v9.json` still leaves that row slightly negative, so the full lane remains one-row short of claimable.
   - the canonical package/backend cube was rebuilt after the latest package refresh (`bench/out/cube/latest/cube.summary.json`, generated `2026-03-10T20:31:02.431911Z`) and now points the macOS package cells at the fresh March 10 full-lane package artifacts: Bun `uploads`, `compute_e2e`, and `full_comparable` are `claimable`; Node `uploads`, `compute_e2e`, and `full_comparable` are also `claimable`.
+- Local Metal claim-metric scope correction (2026-03-19):
+  - `bench/native_compare_modules/claimability.py` now prefers `timingInterpretation.headlineProcessWall.deltaPercent` for `copy` and `surface` rows when `operation-total` timing undercovers end-to-end process wall on both sides and the headline tails remain positive.
+  - regression coverage added in `bench/test_claimability.py` for the `copy_texture_to_texture` and `surface_full_presentation` undercoverage case.
+  - fresh full-lane rerun artifact: `bench/out/apple-metal/extended-comparable/20260319T161100Z/dawn-vs-doe.local.metal.extended.comparable.json`
+  - result: `comparisonStatus=comparable`, `claimStatus=claimable`
 - root cause of the March 10 AMD Vulkan release regression was catalog drift, not a simulator/cost-model path:
   - the compare harness correctly normalized by effective workload contract, but several strict upload rows had right-only `commandRepeat`/`ignoreFirstOps` overrides, so Doe was being measured at one effective unit while Dawn was amortized over fifty or five hundred.
   - fresh strict rerun after repairing the catalog reduced the release blocker set from five upload rows to one genuine tiny-upload performance gap (`upload_write_buffer_1kb`).
@@ -2092,6 +2099,28 @@ Backend-specific emitters for all three backends:
 - Node/addon and native-direct adapter info now prefer `wgpuAdapterGetInfo`
   with the Doe-native fallback retained for older builds, which closes the
   D3D12 package `GPUAdapter.info` / `GPUDevice.adapterInfo` publication path.
+- macOS Node/addon package smoke is back after moving adapter-info publication
+  to a Doe-native-first bridge path on the addon (`doe_napi_caps.c`,
+  `doe_napi_nd_creators.c`), with `wgpuAdapterGetInfo` retained only as a
+  fallback; touching `GPUAdapter.info` had been crashing immediately after
+  `requestAdapter()` through the current drop-in provider's standard info path.
+- Node/addon package `GPUDevice.popErrorScope()` now resolves to a
+  `GPUError`-shaped object or `null` instead of returning the raw addon record,
+  missing render-pass indirect draw entrypoints fail explicitly instead of
+  silently no-oping, adapter `requestDevice()` now returns a real
+  `DoeGPUDevice` instance instead of a prototype-copied plain object, and the
+  JS surface now tolerates older packed addons that do not yet export
+  `adapterGetInfo`.
+- Node/addon package buffer write-mapping now flushes every staged
+  `getMappedRange()` slice on `unmap()` instead of only the most recent range,
+  the lazy compute-pass promotion path is now shared between `setImmediates()`
+  and indirect dispatch promotion, and render-bundle indirect draw wrappers now
+  fail explicitly when the addon lacks those entrypoints.
+- Package-owned `GPUCommandBuffer` wrappers now own native command-buffer
+  lifetime across Node, Bun, and browser-backed surfaces: finished command
+  buffers are wrapped as real resources, rejected on resubmission after the
+  first `queue.submit()`, explicitly released after successful submit, and
+  finalizer-cleaned on drop when a backend release hook exists.
 - D3D12 package devices now wire native `pushErrorScope`, `popErrorScope`,
   `lost`, `onuncapturederror`, and `addEventListener` /
   `removeEventListener` instead of tracking those rows as not wired.

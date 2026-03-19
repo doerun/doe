@@ -1848,7 +1848,7 @@
       "default": false,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "rightCommandRepeat": 500,
-      "benchmarkClass": "comparable"
+      "benchmarkClass": "directional"
     },
     {
       "id": "surface_full_presentation",

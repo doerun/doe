@@ -418,6 +418,42 @@ fn execute_dispatch_command(
     };
 }
 
+fn execute_dispatch_indirect_command(
+    self: *ZigVulkanBackend,
+    setup_ns: u64,
+    x: u32,
+    y: u32,
+    z: u32,
+) !webgpu.NativeExecutionResult {
+    const runtime = try ensure_runtime_bootstrapped(self);
+
+    if (!runtime.has_pipeline) {
+        const noop_words = try runtime.load_kernel_spirv(self.allocator, "dispatch_noop.wgsl");
+        defer self.allocator.free(noop_words);
+        try runtime.set_compute_shader_spirv(noop_words, null, null, false);
+    }
+
+    const metrics = try runtime.run_dispatch_indirect(
+        x,
+        y,
+        z,
+        self.queue_sync_mode,
+        self.queue_wait_mode,
+    );
+
+    return .{
+        .status = .ok,
+        .status_message = "",
+        .setup_ns = setup_ns,
+        .encode_ns = metrics.encode_ns,
+        .submit_wait_ns = metrics.submit_wait_ns,
+        .dispatch_count = 1,
+        .gpu_timestamp_ns = metrics.gpu_timestamp_ns,
+        .gpu_timestamp_attempted = metrics.gpu_timestamp_attempted,
+        .gpu_timestamp_valid = metrics.gpu_timestamp_valid,
+    };
+}
+
 fn execute_kernel_dispatch(self: *ZigVulkanBackend, setup_ns: u64, kernel_dispatch: model.KernelDispatchCommand) !webgpu.NativeExecutionResult {
     const runtime = try ensure_runtime_bootstrapped(self);
     const spirv_words = runtime.load_kernel_spirv(self.allocator, kernel_dispatch.kernel) catch |err| {
@@ -626,7 +662,7 @@ fn execute_runtime_command(self: *ZigVulkanBackend, command: model.Command) !web
         .upload => |upload| try execute_upload(self, setup_ns, upload),
         .barrier => try execute_barrier(self, setup_ns),
         .dispatch => |dispatch| try execute_dispatch_command(self, setup_ns, dispatch.x, dispatch.y, dispatch.z, 1, 0),
-        .dispatch_indirect => |dispatch| try execute_dispatch_command(self, setup_ns, dispatch.x, dispatch.y, dispatch.z, 1, 0),
+        .dispatch_indirect => |dispatch| try execute_dispatch_indirect_command(self, setup_ns, dispatch.x, dispatch.y, dispatch.z),
         .kernel_dispatch => |kernel_dispatch| try execute_kernel_dispatch(self, setup_ns, kernel_dispatch),
         .render_draw => |render_draw| try execute_render_draw_command(self, setup_ns, render_draw),
         .draw_indirect => |render_draw| try execute_render_draw_command(self, setup_ns, render_draw),

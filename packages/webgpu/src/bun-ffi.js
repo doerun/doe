@@ -2308,6 +2308,9 @@ const bunEncoderBackend = {
         }
         return { _commands: encoder._commands, _batched: true };
     },
+    commandBufferDestroy(native) {
+        wgpu.symbols.wgpuCommandBufferRelease(native);
+    },
 };
 
 const {
@@ -2388,6 +2391,11 @@ const fullSurfaceBackend = {
     queueSubmit(queue, queueNative, buffers) {
         const deviceNative = assertLiveResource(queue._device, "GPUQueue.submit", "GPUDevice");
         queue._pendingSubmissions += 1;
+        for (let index = 0; index < buffers.length; index += 1) {
+            if (buffers[index]?._submitted) {
+                failValidation("GPUQueue.submit", `commandBuffers[${index}] was already submitted`);
+            }
+        }
         const dispatchFlush = wgpu.symbols.doeNativeComputeDispatchFlush;
         if (dispatchFlush && buffers.length === 1 && buffers[0]?._batched) {
             const cmds = buffers[0]._commands;
@@ -2405,6 +2413,10 @@ const fullSurfaceBackend = {
                     cmd1?.d ?? null, BigInt(cmd1?.do ?? 0), BigInt(cmd1?.sz ?? 0));
                 if (cmd1) queue.markSubmittedWorkDone();
                 fastPathStats.dispatchFlush += 1;
+                for (const commandBuffer of buffers) {
+                    commandBuffer._submitted = true;
+                    commandBuffer.destroy?.();
+                }
                 return;
             }
         }
@@ -2440,6 +2452,10 @@ const fullSurfaceBackend = {
             wgpu.symbols.wgpuQueueSubmit(queueNative, BigInt(1), ptrs);
             wgpu.symbols.wgpuCommandBufferRelease(cmdBuf);
             wgpu.symbols.wgpuCommandEncoderRelease(encoder);
+            for (const commandBuffer of buffers) {
+                commandBuffer._submitted = true;
+                commandBuffer.destroy?.();
+            }
             return;
         }
         const ptrs = new BigUint64Array(buffers.length);
@@ -2447,6 +2463,10 @@ const fullSurfaceBackend = {
             ptrs[index] = BigInt(assertLiveResource(buffers[index], "GPUQueue.submit", "GPUCommandBuffer"));
         }
         wgpu.symbols.wgpuQueueSubmit(queueNative, BigInt(buffers.length), ptrs);
+        for (const commandBuffer of buffers) {
+            commandBuffer._submitted = true;
+            commandBuffer.destroy?.();
+        }
     },
     queueWriteBuffer(_queue, native, bufferNative, bufferOffset, view) {
         wgpu.symbols.wgpuQueueWriteBuffer(native, bufferNative, BigInt(bufferOffset), view, BigInt(view.byteLength));

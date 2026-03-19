@@ -32,6 +32,28 @@ function createEncoderClasses(backend) {
   let classes = null;
 
   const _hasComputePassAssertOpen = typeof backend.computePassAssertOpen === 'function';
+  const commandBufferFinalizer = typeof FinalizationRegistry === 'function' && typeof backend.commandBufferDestroy === 'function'
+    ? new FinalizationRegistry((native) => {
+      backend.commandBufferDestroy(native);
+    })
+    : null;
+
+  function releaseCommandBuffer(commandBuffer) {
+    if (commandBuffer._destroyed) {
+      return;
+    }
+    if (commandBuffer._finalizerToken && commandBufferFinalizer) {
+      commandBufferFinalizer.unregister(commandBuffer._finalizerToken);
+      commandBuffer._finalizerToken = null;
+    }
+    commandBuffer._commands = [];
+    const native = commandBuffer._native;
+    commandBuffer._native = null;
+    commandBuffer._destroyed = true;
+    if (native != null && typeof backend.commandBufferDestroy === 'function') {
+      backend.commandBufferDestroy(native);
+    }
+  }
 
   class DoeGPUComputePassEncoder {
     constructor(state, encoder) {
@@ -439,6 +461,26 @@ function createEncoderClasses(backend) {
     }
   }
 
+  class DoeGPUCommandBuffer {
+    constructor(state, owner) {
+      this._batched = state?._batched === true;
+      this._commands = this._batched ? [...(state?._commands ?? [])] : [];
+      this._native = this._batched ? null : (state?._native ?? null);
+      this._submitted = false;
+      this._finalizerToken = null;
+      this.label = '';
+      initResource(this, 'GPUCommandBuffer', owner);
+      if (this._native != null && commandBufferFinalizer) {
+        this._finalizerToken = {};
+        commandBufferFinalizer.register(this, this._native, this._finalizerToken);
+      }
+    }
+
+    destroy() {
+      releaseCommandBuffer(this);
+    }
+  }
+
   class DoeGPUCommandEncoder {
     constructor(state, device) {
       this._device = device;
@@ -649,7 +691,10 @@ function createEncoderClasses(backend) {
 
     finish(descriptor) {
       this._assertOpen('GPUCommandEncoder.finish');
-      const cmdBuf = backend.commandEncoderFinish(this);
+      const cmdBuf = new classes.DoeGPUCommandBuffer(
+        backend.commandEncoderFinish(this),
+        this._device,
+      );
       cmdBuf.label = descriptor?.label ?? '';
       return cmdBuf;
     }
@@ -660,6 +705,7 @@ function createEncoderClasses(backend) {
     DoeGPURenderPassEncoder,
     DoeGPURenderBundle,
     DoeGPURenderBundleEncoder,
+    DoeGPUCommandBuffer,
     DoeGPUCommandEncoder,
   };
   return classes;

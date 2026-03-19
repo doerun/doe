@@ -77,6 +77,7 @@ pub const NativeVulkanRuntime = struct {
     fast_upload_memory: c.VkDeviceMemory = VK_NULL_U64,
     fast_upload_capacity: u64 = 0,
     fast_upload_mapped: ?*anyopaque = null,
+    dispatch_indirect_args_buffer: ?vk_resources.ComputeBuffer = null,
 
     pending_uploads: std.ArrayListUnmanaged(vk_upload.PendingUpload) = .{},
     surfaces: std.AutoHashMapUnmanaged(u64, vulkan_surface.VulkanSurface) = .{},
@@ -131,6 +132,10 @@ pub const NativeVulkanRuntime = struct {
         vk_upload.vk_release_pool(&self.dst_pool, self.allocator, self.device);
         vk_upload.vk_release_pool(&self.direct_upload_pool, self.allocator, self.device);
         vk_upload.release_fast_upload_buffer(self);
+        if (self.dispatch_indirect_args_buffer) |buffer| {
+            vk_resources.destroy_host_visible_buffer(self, buffer);
+            self.dispatch_indirect_args_buffer = null;
+        }
         vk_pipeline.destroy_pipeline_objects(self);
         vk_pipeline.destroy_descriptor_state(self);
         vk_resources.release_compute_buffers(self);
@@ -357,6 +362,101 @@ pub const NativeVulkanRuntime = struct {
             .gpu_timestamp_ns = gpu_timestamp_ns,
             .gpu_timestamp_attempted = gpu_timestamp_attempted,
             .gpu_timestamp_valid = gpu_timestamp_valid,
+        };
+    }
+
+    pub fn run_dispatch_indirect(
+        self: *NativeVulkanRuntime,
+        x: u32,
+        y: u32,
+        z: u32,
+        queue_sync_mode: webgpu.QueueSyncMode,
+        queue_wait_mode: webgpu.QueueWaitMode,
+    ) !DispatchMetrics {
+        if (x == 0 or y == 0 or z == 0) return error.InvalidArgument;
+        if (!self.has_pipeline) return error.Unsupported;
+
+        const indirect_args = try ensure_dispatch_indirect_args_buffer(self);
+        const encode_start = common_timing.now_ns();
+        try write_dispatch_indirect_args(indirect_args, x, y, z);
+
+        var command_buffer: c.VkCommandBuffer = null;
+        if (queue_sync_mode == .per_command) {
+            if (self.has_deferred_submissions) _ = try self.flush_queue();
+            try c.check_vk(c.vkResetCommandPool(self.device, self.command_pool, 0));
+            command_buffer = self.primary_command_buffer;
+        } else {
+            var alloc_info = c.VkCommandBufferAllocateInfo{
+                .sType = c.VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+                .pNext = null,
+                .commandPool = self.command_pool,
+                .level = c.VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+                .commandBufferCount = 1,
+            };
+            try c.check_vk(c.vkAllocateCommandBuffers(self.device, &alloc_info, @ptrCast(&command_buffer)));
+        }
+
+        var begin_info = c.VkCommandBufferBeginInfo{
+            .sType = c.VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+            .pNext = null,
+            .flags = c.VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+            .pInheritanceInfo = null,
+        };
+        try c.check_vk(c.vkBeginCommandBuffer(command_buffer, &begin_info));
+        c.vkCmdBindPipeline(command_buffer, c.VK_PIPELINE_BIND_POINT_COMPUTE, self.pipeline);
+        vk_pipeline.bind_descriptor_sets(self, command_buffer);
+        c.vkCmdDispatchIndirect(command_buffer, indirect_args.buffer, 0);
+        try c.check_vk(c.vkEndCommandBuffer(command_buffer));
+
+        const encode_end = common_timing.now_ns();
+        const encode_ns = common_timing.ns_delta(encode_end, encode_start);
+
+        var submit_info = c.VkSubmitInfo{
+            .sType = c.VK_STRUCTURE_TYPE_SUBMIT_INFO,
+            .pNext = null,
+            .waitSemaphoreCount = 0,
+            .pWaitSemaphores = null,
+            .pWaitDstStageMask = null,
+            .commandBufferCount = 1,
+            .pCommandBuffers = @ptrCast(&command_buffer),
+            .signalSemaphoreCount = 0,
+            .pSignalSemaphores = null,
+        };
+
+        const submit_start = common_timing.now_ns();
+        if (self.has_timeline_semaphore) {
+            var tsi = vk_sync.TimelineSubmitHelper.prepare(&self.timeline_semaphore);
+            tsi.patch();
+            submit_info.pNext = @ptrCast(&tsi.timeline_info);
+            submit_info.signalSemaphoreCount = 1;
+            submit_info.pSignalSemaphores = @ptrCast(&tsi.semaphore);
+            try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), VK_NULL_U64));
+            if (queue_sync_mode == .per_command) {
+                try self.timeline_semaphore.wait(self.device, tsi.signal_value);
+            } else {
+                self.has_deferred_submissions = true;
+            }
+        } else if (queue_sync_mode == .per_command) {
+            try c.check_vk(c.vkResetFences(self.device, 1, @ptrCast(&self.fence)));
+            try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), self.fence));
+            const wait_all: c.VkBool32 = if (queue_wait_mode == .wait_any) c.VK_FALSE else c.VK_TRUE;
+            try c.check_vk(c.vkWaitForFences(self.device, 1, @ptrCast(&self.fence), wait_all, vk_upload.WAIT_TIMEOUT_NS));
+        } else {
+            const deferred_fence = if (self.has_fence_pool)
+                try self.fence_pool_state.acquire(self.device)
+            else
+                VK_NULL_U64;
+            try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), deferred_fence));
+            self.has_deferred_submissions = true;
+        }
+        const submit_end = common_timing.now_ns();
+
+        return .{
+            .encode_ns = encode_ns,
+            .submit_wait_ns = common_timing.ns_delta(submit_end, submit_start),
+            .gpu_timestamp_ns = 0,
+            .gpu_timestamp_attempted = false,
+            .gpu_timestamp_valid = false,
         };
     }
 
@@ -1063,3 +1163,23 @@ pub const NativeVulkanRuntime = struct {
         return results[1] - results[0];
     }
 };
+
+const DISPATCH_INDIRECT_ARGS_BYTES = @sizeOf([3]u32);
+
+fn ensure_dispatch_indirect_args_buffer(self: *NativeVulkanRuntime) !vk_resources.ComputeBuffer {
+    if (self.dispatch_indirect_args_buffer == null) {
+        self.dispatch_indirect_args_buffer = try vk_resources.create_host_visible_buffer(
+            self,
+            DISPATCH_INDIRECT_ARGS_BYTES,
+            c.VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT,
+        );
+    }
+    return self.dispatch_indirect_args_buffer.?;
+}
+
+fn write_dispatch_indirect_args(buffer: vk_resources.ComputeBuffer, x: u32, y: u32, z: u32) !void {
+    const mapped = buffer.mapped orelse return error.InvalidState;
+    const dispatch_args = [3]u32{ x, y, z };
+    const dispatch_arg_bytes = std.mem.asBytes(&dispatch_args);
+    @memcpy(@as([*]u8, @ptrCast(mapped))[0..dispatch_arg_bytes.len], dispatch_arg_bytes);
+}

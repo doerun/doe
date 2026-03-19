@@ -1043,7 +1043,7 @@
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-      "benchmarkClass": "comparable"
+      "benchmarkClass": "directional"
     },
     {
       "id": "render_uniform_buffer_update_writebuffer_partial_single",
@@ -1131,7 +1131,7 @@
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "default": false,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-      "benchmarkClass": "comparable"
+      "benchmarkClass": "directional"
     },
     {
       "id": "surface_full_presentation",

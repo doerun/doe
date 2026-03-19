@@ -158,6 +158,33 @@ section("commandEncoderFinish: dispatch-only encoder is not batched");
     storage.destroy();
 }
 
+section("submitted command buffer cannot be resubmitted");
+{
+    const { storage } = makeStoragePair();
+    const bg = device.createBindGroup({
+        layout: bgl,
+        entries: [{ binding: 0, resource: { buffer: storage } }],
+    });
+    const enc = device.createCommandEncoder();
+    const pass = enc.beginComputePass();
+    pass.setPipeline(pipeline);
+    pass.setBindGroup(0, bg);
+    pass.dispatchWorkgroups(4);
+    pass.end();
+    const cmdBuf = enc.finish();
+    device.queue.submit([cmdBuf]);
+    await device.queue.onSubmittedWorkDone();
+
+    let threw = false;
+    try {
+        device.queue.submit([cmdBuf]);
+    } catch (error) {
+        threw = /already submitted|destroyed/i.test(error?.message ?? String(error));
+    }
+    assert(threw, "resubmitting the same command buffer throws");
+    storage.destroy();
+}
+
 // --- synchronous submit path marks serial done ---
 // After queue.submit() with a batched compute+copy buffer, hasPendingSubmissions() must
 // return false. The submitComputeDispatchCopy path is synchronous (spin-polls until GPU

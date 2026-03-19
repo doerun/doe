@@ -141,6 +141,7 @@ pub const vkEndCommandBuffer = functions.vkEndCommandBuffer;
 pub const vkResetCommandBuffer = functions.vkResetCommandBuffer;
 pub const vkCmdBindPipeline = functions.vkCmdBindPipeline;
 pub const vkCmdDispatch = functions.vkCmdDispatch;
+pub const vkCmdDispatchIndirect = functions.vkCmdDispatchIndirect;
 pub const vkCmdCopyBuffer = functions.vkCmdCopyBuffer;
 pub const vkCmdCopyBufferToImage = functions.vkCmdCopyBufferToImage;
 pub const vkCmdCopyImageToBuffer = functions.vkCmdCopyImageToBuffer;
@@ -280,6 +281,7 @@ pub const VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT: u32 = 0x00000010;
 pub const VK_BUFFER_USAGE_STORAGE_BUFFER_BIT: u32 = 0x00000020;
 pub const VK_BUFFER_USAGE_INDEX_BUFFER_BIT: u32 = 0x00000040;
 pub const VK_BUFFER_USAGE_VERTEX_BUFFER_BIT: u32 = 0x00000080;
+pub const VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT: u32 = 0x00000100;
 
 // --- Image usage ---
 pub const VK_IMAGE_USAGE_TRANSFER_SRC_BIT: u32 = 0x00000001;
