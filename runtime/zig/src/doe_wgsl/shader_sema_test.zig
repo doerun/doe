@@ -6,7 +6,9 @@
 
 const std = @import("std");
 const ir = @import("ir.zig");
+const emit_msl_maps = @import("emit_msl_maps.zig");
 const emit_msl_subgroups = @import("emit_msl_subgroups.zig");
+const emit_spirv = @import("emit_spirv.zig");
 const sema_typeutils = @import("sema_typeutils.zig");
 const sema_types = @import("sema_types.zig");
 const sema_helpers = @import("sema_helpers.zig");
@@ -17,6 +19,32 @@ const allocator = testing.allocator;
 // ============================================================
 // emit_msl_subgroups tests
 // ============================================================
+
+const shared_io_builtins = [_]ir.Builtin{
+    .position,
+    .frag_depth,
+    .front_facing,
+    .global_invocation_id,
+    .local_invocation_id,
+    .local_invocation_index,
+    .workgroup_id,
+    .num_workgroups,
+    .sample_index,
+    .sample_mask,
+    .vertex_index,
+    .instance_index,
+    .subgroup_size,
+    .subgroup_invocation_id,
+    .clip_distances,
+    .primitive_index,
+};
+
+test "builtin parity: shared IO builtins have MSL and SPIR-V lowering" {
+    for (shared_io_builtins) |builtin| {
+        try testing.expect(!std.mem.eql(u8, emit_msl_maps.msl_builtin_name(builtin), "unsupported_builtin"));
+        _ = try emit_spirv.builtin_to_spirv(builtin);
+    }
+}
 
 test "subgroup mapping: all 18 WGSL subgroup builtins have MSL mappings" {
     const expected = [_]struct { wgsl: []const u8, msl: []const u8 }{

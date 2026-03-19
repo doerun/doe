@@ -1503,6 +1503,7 @@ async function runMode(chromium, mode, args, pageTarget, l1Rows, l2Rows, chromeP
         rowResultsById.set(row.sourceWorkloadId, makeModeRowResult("l0_only", "l0_only"));
         continue;
       }
+      await page.goto(pageTarget.url, { waitUntil: "load", timeout: 120000 });
       const scenarioResult = await runScenario(
         page,
         row.scenarioTemplate,
@@ -1521,6 +1522,7 @@ async function runMode(chromium, mode, args, pageTarget, l1Rows, l2Rows, chromeP
     }
 
     for (const workflow of l2Rows) {
+      await page.goto(pageTarget.url, { waitUntil: "load", timeout: 120000 });
       const scenarioResult = await runScenario(
         page,
         workflow.scenarioTemplate,
