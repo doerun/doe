@@ -194,6 +194,10 @@ test "hlsl builtin map: workgroup_id maps to SV_GroupID" {
     try testing.expectEqualStrings("SV_GroupID", maps.hlsl_builtin_name(.workgroup_id));
 }
 
+test "hlsl builtin map: num_workgroups has no direct semantic" {
+    try testing.expect(!maps.hlsl_builtin_has_semantic(.num_workgroups));
+}
+
 test "hlsl builtin map: frag_depth maps to SV_Depth" {
     try testing.expectEqualStrings("SV_Depth", maps.hlsl_builtin_name(.frag_depth));
 }
@@ -270,6 +274,19 @@ test "hlsl compute: simple shader emits numthreads and SV_DispatchThreadID" {
     try testing.expect(contains(hlsl, "[numthreads(64, 1, 1)]"));
     try testing.expect(contains(hlsl, "SV_DispatchThreadID"));
     try testing.expect(contains(hlsl, "void main"));
+}
+
+test "hlsl compute: num_workgroups builtin is rejected until lowered correctly" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> data: array<u32, 1>;
+        \\
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(num_workgroups) nwg: vec3u) {
+        \\    data[0] = nwg.x;
+        \\}
+    ;
+    var out: [MAX_HLSL_OUTPUT]u8 = undefined;
+    try testing.expectError(TranslateError.UnsupportedBuiltin, translateToHlsl(allocator, source, &out));
 }
 
 test "hlsl compute: multi-dimensional workgroup size" {

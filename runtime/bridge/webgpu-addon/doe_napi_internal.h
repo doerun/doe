@@ -299,13 +299,18 @@ typedef struct {
     void* userdata1; void* userdata2;
 } WGPUPopErrorScopeCallbackInfo2;
 
+/* WGPUFeatureLevel values (matching wgpu_types.zig WGPUFeatureLevel enum). */
+#define WGPU_FEATURE_LEVEL_UNDEFINED     0
+#define WGPU_FEATURE_LEVEL_COMPATIBILITY 1
+#define WGPU_FEATURE_LEVEL_CORE          2
+
 typedef struct {
     void* nextInChain;
-    uint32_t featureLevel;
+    uint32_t featureLevel;       /* WGPU_FEATURE_LEVEL_* */
     uint32_t powerPreference;
     WGPUBool forceFallbackAdapter;
-    uint32_t backendType;
-    void* compatibleSurface;  /* NULL for headless */
+    uint32_t backendType;        /* ignored by Doe; 0 = undefined */
+    void* compatibleSurface;     /* NULL for headless */
 } WGPURequestAdapterOptions;
 
 typedef struct {

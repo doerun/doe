@@ -80,6 +80,22 @@ napi_value doe_request_adapter(napi_env env, napi_callback_info info) {
                     opts.powerPreference = WGPU_POWER_PREFERENCE_HIGH_PERFORMANCE;
                 }
             }
+            /* featureLevel */
+            napi_value fl_val;
+            napi_valuetype fl_type = napi_undefined;
+            if (napi_get_named_property(env, args[1], "featureLevel", &fl_val) == napi_ok) {
+                napi_typeof(env, fl_val, &fl_type);
+            }
+            if (fl_type == napi_string) {
+                char fl_str[32];
+                size_t fl_len = 0;
+                napi_get_value_string_utf8(env, fl_val, fl_str, sizeof(fl_str), &fl_len);
+                if (strcmp(fl_str, "compatibility") == 0) {
+                    opts.featureLevel = WGPU_FEATURE_LEVEL_COMPATIBILITY;
+                } else if (strcmp(fl_str, "core") == 0) {
+                    opts.featureLevel = WGPU_FEATURE_LEVEL_CORE;
+                }
+            }
             /* forceFallbackAdapter */
             napi_value ffa_val;
             napi_valuetype ffa_type = napi_undefined;

@@ -455,6 +455,7 @@ const LIMIT_OFFSETS = Object.freeze({
     maxComputeWorkgroupSizeY: 136,
     maxComputeWorkgroupSizeZ: 140,
     maxComputeWorkgroupsPerDimension: 144,
+    maxImmediateSize: 148,
 });
 
 function copyLastErrorMessage() {
@@ -500,6 +501,7 @@ function decodeLimits(raw) {
         maxComputeWorkgroupSizeY: view.getUint32(LIMIT_OFFSETS.maxComputeWorkgroupSizeY, true),
         maxComputeWorkgroupSizeZ: view.getUint32(LIMIT_OFFSETS.maxComputeWorkgroupSizeZ, true),
         maxComputeWorkgroupsPerDimension: view.getUint32(LIMIT_OFFSETS.maxComputeWorkgroupsPerDimension, true),
+        maxImmediateSize: view.getUint32(LIMIT_OFFSETS.maxImmediateSize, true),
     });
 }
 

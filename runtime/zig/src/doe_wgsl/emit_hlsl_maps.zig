@@ -55,7 +55,7 @@ pub fn hlsl_builtin_name(builtin: ir.Builtin) []const u8 {
         .local_invocation_id => "SV_GroupThreadID",
         .local_invocation_index => "SV_GroupIndex",
         .workgroup_id => "SV_GroupID",
-        .num_workgroups => "SV_GroupID",
+        .num_workgroups => "UNSUPPORTED_BUILTIN",
         .sample_index => "SV_SampleIndex",
         .sample_mask => "SV_Coverage",
         .vertex_index => "SV_VertexID",
@@ -75,6 +75,10 @@ pub fn hlsl_intrinsic_builtin(builtin: ir.Builtin) ?[]const u8 {
         .subgroup_invocation_id => "WaveGetLaneIndex()",
         else => null,
     };
+}
+
+pub fn hlsl_builtin_has_semantic(builtin: ir.Builtin) bool {
+    return !std.mem.eql(u8, hlsl_builtin_name(builtin), "UNSUPPORTED_BUILTIN");
 }
 
 pub fn texture_component(sample_ty: ir.TypeId) []const u8 {

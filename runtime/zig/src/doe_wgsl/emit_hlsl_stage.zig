@@ -397,6 +397,7 @@ fn write_input_semantic(self: anytype, io: ir.IoAttr) !void {
         try self.write_u32(loc);
         return;
     }
+    if (!maps.hlsl_builtin_has_semantic(io.builtin)) return error.UnsupportedBuiltin;
     try self.write(maps.hlsl_builtin_name(io.builtin));
 }
 
@@ -412,5 +413,6 @@ fn write_output_semantic(self: anytype, stage: ir.ShaderStage, io: ir.IoAttr) !v
         try self.write_u32(loc);
         return;
     }
+    if (!maps.hlsl_builtin_has_semantic(io.builtin)) return error.UnsupportedBuiltin;
     try self.write(maps.hlsl_builtin_name(io.builtin));
 }

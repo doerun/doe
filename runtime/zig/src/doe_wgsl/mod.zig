@@ -371,6 +371,7 @@ pub fn translateToHlsl(allocator: std.mem.Allocator, wgsl: []const u8, out: []u8
         const kind = switch (err) {
             error.OutputTooLarge => TranslateError.OutputTooLarge,
             error.InvalidIr => TranslateError.InvalidIr,
+            error.UnsupportedBuiltin => TranslateError.UnsupportedBuiltin,
         };
         setLastError(.hlsl_emit, kind, null, null);
         return kind;

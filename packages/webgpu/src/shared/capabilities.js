@@ -82,6 +82,7 @@ const DOE_LIMITS = Object.freeze({
   maxComputeWorkgroupSizeY: 1024,
   maxComputeWorkgroupSizeZ: 64,
   maxComputeWorkgroupsPerDimension: 65535,
+  maxImmediateSize: 64,
   maxStorageBuffersInVertexStage: 8,
   maxStorageBuffersInFragmentStage: 8,
   maxStorageTexturesInVertexStage: 4,

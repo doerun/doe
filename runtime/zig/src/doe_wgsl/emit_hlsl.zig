@@ -9,6 +9,7 @@ const layout = @import("layout_utils.zig");
 pub const EmitError = error{
     OutputTooLarge,
     InvalidIr,
+    UnsupportedBuiltin,
 };
 
 pub const MAX_OUTPUT: usize = 256 * 1024;
@@ -329,6 +330,7 @@ const Emitter = struct {
         }
         if (param.io) |io_attr| {
             if (io_attr.builtin != .none) {
+                if (!maps.hlsl_builtin_has_semantic(io_attr.builtin)) return error.UnsupportedBuiltin;
                 try self.write(" : ");
                 try self.write(maps.hlsl_builtin_name(io_attr.builtin));
             } else if (io_attr.location != null) {
