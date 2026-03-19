@@ -163,8 +163,8 @@ pub const LoopControl = struct {
 
 pub const Opcode = struct {
     pub const Name: u16 = 5;
-    pub const ExtInstImport: u16 = 11;
-    pub const ExtInst: u16 = 12;
+    pub const ExtInstImport: u16 = 10;
+    pub const ExtInst: u16 = 11;
     pub const EntryPoint: u16 = 15;
     pub const ExecutionMode: u16 = 16;
     pub const Capability: u16 = 17;

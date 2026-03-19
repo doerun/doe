@@ -117,13 +117,15 @@ pub const FunctionState = struct {
 
                 try self.emitter.builder.append_function_inst(spirv.Opcode.Branch, &.{header_label});
                 try self.emit_label(header_label);
-                try self.emitter.builder.append_function_inst(spirv.Opcode.LoopMerge, &.{ merge_label, continue_label, spirv.LoopControl.None });
                 if (loop_stmt.cond) |cond| {
+                    const cond_id = try self.emit_value_expr(cond);
+                    try self.emitter.builder.append_function_inst(spirv.Opcode.LoopMerge, &.{ merge_label, continue_label, spirv.LoopControl.None });
                     try self.emitter.builder.append_function_inst(
                         spirv.Opcode.BranchConditional,
-                        &.{ try self.emit_value_expr(cond), body_label, merge_label },
+                        &.{ cond_id, body_label, merge_label },
                     );
                 } else {
+                    try self.emitter.builder.append_function_inst(spirv.Opcode.LoopMerge, &.{ merge_label, continue_label, spirv.LoopControl.None });
                     try self.emitter.builder.append_function_inst(spirv.Opcode.Branch, &.{body_label});
                 }
 

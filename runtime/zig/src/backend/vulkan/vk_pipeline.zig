@@ -20,6 +20,28 @@ const VK_NULL_U64 = c.VK_NULL_U64;
 const MAX_KERNEL_SOURCE_BYTES: usize = 2 * 1024 * 1024;
 const SPIRV_MAGIC: u32 = 0x07230203;
 const DEFAULT_KERNEL_ROOT = "bench/kernels";
+
+// SPIR-V opcode/decoration constants for binding detection.
+const SPIRV_OP_DECORATE: u16 = 71;
+const SPIRV_DECORATION_BINDING: u32 = 33;
+
+/// Scan SPIR-V words for any OpDecorate ... Binding instructions.
+/// Returns true if the shader declares at least one descriptor binding.
+fn spirv_has_descriptor_bindings(words: []const u32) bool {
+    if (words.len < 5) return false;
+    var i: usize = 5; // skip SPIR-V header (5 words)
+    while (i < words.len) {
+        const word = words[i];
+        const opcode: u16 = @truncate(word & 0xFFFF);
+        const word_count: u16 = @truncate((word >> 16) & 0xFFFF);
+        if (word_count == 0) break;
+        if (opcode == SPIRV_OP_DECORATE and word_count >= 4 and i + 2 < words.len) {
+            if (words[i + 2] == SPIRV_DECORATION_BINDING) return true;
+        }
+        i += word_count;
+    }
+    return false;
+}
 const MAIN_ENTRY: [*:0]const u8 = "main";
 
 pub const DescriptorInfoKind = enum {
@@ -101,6 +123,12 @@ pub fn build_pipeline_for_words(
 ) !void {
     if (self.has_deferred_submissions or self.pending_uploads.items.len > 0) {
         _ = try vk_upload.flush_queue(self);
+    }
+    // Guard: if no bindings were provided but SPIR-V declares descriptor bindings,
+    // refuse to create the pipeline rather than letting the driver crash (RADV segfaults
+    // when pipeline layout is empty but shader references descriptors).
+    if (bindings == null and spirv_has_descriptor_bindings(words)) {
+        return error.InvalidArgument;
     }
     try ensure_pipeline_layout(self, bindings);
     destroy_pipeline_objects(self);
