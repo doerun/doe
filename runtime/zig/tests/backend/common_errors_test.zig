@@ -39,12 +39,12 @@ test "error_code returns error name" {
 }
 
 test "per-backend error aliases resolve to common set" {
-    const vulkan_errors = @import("../../src/backend/vulkan/vulkan_errors.zig");
     const metal_errors = @import("../../src/backend/metal/metal_errors.zig");
     const d3d12_errors = @import("../../src/backend/d3d12/d3d12_errors.zig");
 
+    // Vulkan no longer defines a separate VulkanError; it uses BackendNativeError directly.
     try std.testing.expectEqual(
-        @as(vulkan_errors.VulkanError, error.Unsupported),
+        @as(common_errors.BackendNativeError, error.Unsupported),
         @as(common_errors.BackendNativeError, error.Unsupported),
     );
     try std.testing.expectEqual(

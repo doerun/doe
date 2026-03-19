@@ -185,7 +185,12 @@ pub export fn doeNativeDeviceCreateBindGroupLayout(dev_raw: ?*anyopaque, desc: ?
             alloc.destroy(bgl);
             return null;
         };
-        for (d.entries[0..d.entryCount], 0..) |entry, i| {
+        const entries_ptr = d.entries orelse {
+            alloc.free(stored_entries.?);
+            alloc.destroy(bgl);
+            return null;
+        };
+        for (entries_ptr[0..d.entryCount], 0..) |entry, i| {
             stored_entries.?[i] = classify_layout_entry(entry);
         }
     }

@@ -92,7 +92,7 @@ test "push multiple commands preserves order" {
     push_draw(&enc, 6, 1);
     rb.bundle_encoder_push(&enc, BundleCmd{ .set_vertex_buffer = .{
         .slot = 0,
-        .handle = null,
+        .buffer_handle = null,
         .offset = 0,
     } });
     push_draw(&enc, 12, 2);
@@ -166,7 +166,7 @@ test "set_index_buffer records format and offset" {
 
     rb.bundle_encoder_push(&enc, BundleCmd{
         .set_index_buffer = .{
-            .handle = null,
+            .buffer_handle = null,
             .format = 0x1, // uint16
             .offset = 128,
             .size = 2048,
@@ -260,12 +260,12 @@ test "replay produces correct command sequence for mixed commands" {
     rb.bundle_encoder_push(&enc, BundleCmd{ .set_pipeline = .{ .pipeline_handle = null } });
     rb.bundle_encoder_push(&enc, BundleCmd{ .set_vertex_buffer = .{
         .slot = 0,
-        .handle = null,
+        .buffer_handle = null,
         .offset = 0,
     } });
     push_draw(&enc, 6, 1);
     rb.bundle_encoder_push(&enc, BundleCmd{ .set_index_buffer = .{
-        .handle = null,
+        .buffer_handle = null,
         .format = 0x2,
         .offset = 0,
         .size = 1024,
@@ -311,14 +311,14 @@ test "executeBundles replays indexed indirect bundles with fresh replay state" {
 
     var bundle_a_enc = make_test_encoder(std.testing.allocator);
     defer bundle_a_enc.cmds.deinit(bundle_a_enc.allocator);
-    rb.bundle_encoder_push(&bundle_a_enc, BundleCmd{ .set_pipeline = .{ .mtl_pso = @ptrCast(&pipeline_token_a) } });
+    rb.bundle_encoder_push(&bundle_a_enc, BundleCmd{ .set_pipeline = .{ .pipeline_handle = @ptrCast(&pipeline_token_a) } });
     rb.bundle_encoder_push(&bundle_a_enc, BundleCmd{ .set_vertex_buffer = .{
         .slot = 0,
-        .mtl_buffer = @ptrCast(&vertex_token_a),
+        .buffer_handle = @ptrCast(&vertex_token_a),
         .offset = 16,
     } });
     rb.bundle_encoder_push(&bundle_a_enc, BundleCmd{ .set_index_buffer = .{
-        .mtl_buffer = @ptrCast(&index_token_a),
+        .buffer_handle = @ptrCast(&index_token_a),
         .format = 0x1,
         .offset = 24,
         .size = 128,
@@ -337,12 +337,12 @@ test "executeBundles replays indexed indirect bundles with fresh replay state" {
     var bundle_b_enc = make_test_encoder(std.testing.allocator);
     defer bundle_b_enc.cmds.deinit(bundle_b_enc.allocator);
     rb.bundle_encoder_push(&bundle_b_enc, BundleCmd{ .set_index_buffer = .{
-        .mtl_buffer = @ptrCast(&index_token_b),
+        .buffer_handle = @ptrCast(&index_token_b),
         .format = 0x2,
         .offset = 8,
         .size = 256,
     } });
-    rb.bundle_encoder_push(&bundle_b_enc, BundleCmd{ .set_pipeline = .{ .mtl_pso = @ptrCast(&pipeline_token_b) } });
+    rb.bundle_encoder_push(&bundle_b_enc, BundleCmd{ .set_pipeline = .{ .pipeline_handle = @ptrCast(&pipeline_token_b) } });
     rb.bundle_encoder_push(&bundle_b_enc, BundleCmd{ .draw_indexed_indirect = .{
         .indirect_buffer = @ptrCast(&indirect_token_b),
         .indirect_offset = 32,
@@ -599,11 +599,11 @@ test "all BundleCmdTag variants can be pushed and recovered" {
     } });
     rb.bundle_encoder_push(&enc, BundleCmd{ .set_vertex_buffer = .{
         .slot = 0,
-        .handle = null,
+        .buffer_handle = null,
         .offset = 0,
     } });
     rb.bundle_encoder_push(&enc, BundleCmd{ .set_index_buffer = .{
-        .handle = null,
+        .buffer_handle = null,
         .format = 0x2,
         .offset = 0,
         .size = 0,
@@ -691,7 +691,7 @@ test "replay sequence: all command types recorded and data preserved" {
     // 3. set_vertex_buffer (slot 0)
     rb.bundle_encoder_push(enc, BundleCmd{ .set_vertex_buffer = .{
         .slot = 0,
-        .handle = null,
+        .buffer_handle = null,
         .offset = 0,
     } });
 
@@ -705,7 +705,7 @@ test "replay sequence: all command types recorded and data preserved" {
 
     // 5. set_index_buffer
     rb.bundle_encoder_push(enc, BundleCmd{ .set_index_buffer = .{
-        .handle = null,
+        .buffer_handle = null,
         .format = 0x2,
         .offset = 0,
         .size = 4096,
@@ -864,7 +864,7 @@ test "replay sequence: multiple vertex buffer slots" {
     while (slot < rb.MAX_VTX_BUFS) : (slot += 1) {
         rb.bundle_encoder_push(enc, BundleCmd{ .set_vertex_buffer = .{
             .slot = slot,
-            .handle = null,
+            .buffer_handle = null,
             .offset = @as(u64, slot) * 128,
         } });
     }
