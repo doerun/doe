@@ -56,6 +56,19 @@ pub fn probe_default_feature_caps(allocator: std.mem.Allocator) !vk_feature_caps
 
 pub fn create_instance(self: *Runtime) !void {
     const surface_exts = vulkan_surface.required_instance_extensions();
+    var enabled_exts: [4][*:0]const u8 = undefined;
+    var enabled_ext_count: usize = 0;
+    const surface_extension_available = detect_instance_extension(vulkan_surface.INSTANCE_SURFACE_EXTENSION);
+    if (surface_extension_available) {
+        enabled_exts[enabled_ext_count] = vulkan_surface.INSTANCE_SURFACE_EXTENSION;
+        enabled_ext_count += 1;
+        for (surface_exts) |ext| {
+            if (std.mem.eql(u8, std.mem.span(ext), std.mem.span(vulkan_surface.INSTANCE_SURFACE_EXTENSION))) continue;
+            if (!detect_instance_extension(ext)) continue;
+            enabled_exts[enabled_ext_count] = ext;
+            enabled_ext_count += 1;
+        }
+    }
     var app_info = c.VkApplicationInfo{
         .sType = c.VK_STRUCTURE_TYPE_APPLICATION_INFO,
         .pNext = null,
@@ -72,8 +85,8 @@ pub fn create_instance(self: *Runtime) !void {
         .pApplicationInfo = &app_info,
         .enabledLayerCount = 0,
         .ppEnabledLayerNames = null,
-        .enabledExtensionCount = @intCast(surface_exts.len),
-        .ppEnabledExtensionNames = if (surface_exts.len > 0) surface_exts.ptr else null,
+        .enabledExtensionCount = @intCast(enabled_ext_count),
+        .ppEnabledExtensionNames = if (enabled_ext_count > 0) enabled_exts[0..enabled_ext_count].ptr else null,
     };
     try c.check_vk(c.vkCreateInstance(&create_info, null, &self.instance));
     self.has_instance = true;
@@ -96,22 +109,23 @@ pub fn select_physical_device(self: *Runtime) !void {
 }
 
 pub fn create_device_and_queue(self: *Runtime) !void {
-    const device_exts = vulkan_surface.required_device_extensions();
+    const requested_device_exts = vulkan_surface.required_device_extensions();
     const depth_clip_available = detect_device_extension(
         self.physical_device,
         c.VK_EXT_DEPTH_CLIP_ENABLE_EXTENSION_NAME,
     );
     const feature_query = vk_feature_caps.query(self.physical_device);
 
-    // Build combined extension list: surface extensions + depth_clip_enable if available.
-    const extra_ext_count: usize = if (depth_clip_available) 1 else 0;
-    const total_ext_count = device_exts.len + extra_ext_count;
     var all_exts: [8][*:0]const u8 = undefined;
-    for (device_exts, 0..) |ext, i| {
-        all_exts[i] = ext;
+    var total_ext_count: usize = 0;
+    for (requested_device_exts) |ext| {
+        if (!detect_device_extension(self.physical_device, ext)) continue;
+        all_exts[total_ext_count] = ext;
+        total_ext_count += 1;
     }
     if (depth_clip_available) {
-        all_exts[device_exts.len] = c.VK_EXT_DEPTH_CLIP_ENABLE_EXTENSION_NAME;
+        all_exts[total_ext_count] = c.VK_EXT_DEPTH_CLIP_ENABLE_EXTENSION_NAME;
+        total_ext_count += 1;
     }
 
     var priority: f32 = 1.0;
@@ -262,6 +276,29 @@ pub fn create_timeline_semaphore(self: *Runtime) void {
 }
 
 const MAX_DEVICE_EXTENSIONS: u32 = 512;
+const MAX_INSTANCE_EXTENSIONS: u32 = 512;
+
+fn detect_instance_extension(target_name: [*:0]const u8) bool {
+    var count: u32 = 0;
+    const count_result = c.vkEnumerateInstanceExtensionProperties(null, &count, null);
+    if (count_result != c.VK_SUCCESS or count == 0) return false;
+    if (count > MAX_INSTANCE_EXTENSIONS) count = MAX_INSTANCE_EXTENSIONS;
+
+    var props: [MAX_INSTANCE_EXTENSIONS]c.VkExtensionProperties = undefined;
+    const enum_result = c.vkEnumerateInstanceExtensionProperties(null, &count, &props);
+    if (enum_result != c.VK_SUCCESS) return false;
+
+    const target_len = std.mem.len(target_name);
+    var i: u32 = 0;
+    while (i < count) : (i += 1) {
+        const name_bytes = &props[i].extensionName;
+        const ext_len = std.mem.indexOfScalar(u8, name_bytes, 0) orelse name_bytes.len;
+        if (ext_len == target_len and std.mem.eql(u8, name_bytes[0..ext_len], target_name[0..target_len])) {
+            return true;
+        }
+    }
+    return false;
+}
 
 /// Check whether a physical device advertises a given extension by name.
 fn detect_device_extension(physical_device: VkPhysicalDevice, target_name: [*:0]const u8) bool {

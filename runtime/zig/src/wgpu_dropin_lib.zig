@@ -28,13 +28,10 @@ comptime {
     _ = dropin_router;
     _ = dropin_diagnostics;
     _ = dropin_build_info;
-    // Native Metal backend — exports doeNative* C ABI symbols on macOS.
+    _ = @import("doe_wgpu_native.zig");
     if (@import("builtin").os.tag == .macos) {
-        _ = @import("doe_wgpu_native.zig");
         // Multi-queue management: doeNativeMultiQueueDevice*, doeNativeQueueSubmit, etc.
         _ = @import("multi_queue.zig");
-    } else {
-        _ = @import("doe_dropin_optional_linux_exports.zig");
     }
 }
 

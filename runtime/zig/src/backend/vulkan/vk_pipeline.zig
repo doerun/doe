@@ -537,7 +537,7 @@ fn resolve_kernel_path(self: *const Runtime, allocator: std.mem.Allocator, kerne
         if (path_utils.file_exists(with_suffix)) return with_suffix;
         allocator.free(with_suffix);
     }
-    return error.ShaderCompileFailed;
+    return error.ShaderToolchainUnavailable;
 }
 
 fn resolve_kernel_spirv_path(self: *const Runtime, allocator: std.mem.Allocator, kernel_name: []const u8) ![]u8 {

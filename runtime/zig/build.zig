@@ -21,6 +21,43 @@ fn sha256HexAlloc(allocator: std.mem.Allocator, input: []const u8) []u8 {
     return hex;
 }
 
+fn configure_non_windows_graphics(artifact: *std.Build.Step.Compile, b: *std.Build, target: std.Build.ResolvedTarget) void {
+    artifact.linkSystemLibrary("dl");
+    artifact.addCSourceFile(.{
+        .file = b.path("src/backend/d3d12/d3d12_bridge_stubs.c"),
+        .flags = &.{},
+    });
+    if (target.result.os.tag == .linux or target.result.os.tag == .macos) {
+        if (target.result.os.tag == .macos) {
+            artifact.addLibraryPath(.{ .cwd_relative = "/opt/homebrew/lib" });
+        }
+        artifact.linkSystemLibrary("vulkan");
+    }
+    if (target.result.os.tag == .macos) {
+        artifact.linkFramework("Metal");
+        artifact.linkFramework("Foundation");
+        artifact.linkFramework("QuartzCore");
+        artifact.linkFramework("AppKit");
+        artifact.addCSourceFile(.{
+            .file = b.path("src/backend/metal/metal_bridge.m"),
+            .flags = &.{"-fobjc-arc"},
+        });
+        artifact.addCSourceFile(.{
+            .file = b.path("src/backend/metal/metal_render_state_bridge.m"),
+            .flags = &.{"-fobjc-arc"},
+        });
+        artifact.addCSourceFile(.{
+            .file = b.path("src/backend/metal/metal_surface_bridge.m"),
+            .flags = &.{"-fobjc-arc"},
+        });
+    } else {
+        artifact.addCSourceFile(.{
+            .file = b.path("src/backend/metal/metal_bridge_stubs.c"),
+            .flags = &.{},
+        });
+    }
+}
+
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
@@ -98,35 +135,7 @@ pub fn build(b: *std.Build) void {
             .flags = &.{},
         });
     } else {
-        dropin_lib.linkSystemLibrary("dl");
-        dropin_lib.addCSourceFile(.{
-            .file = b.path("src/backend/d3d12/d3d12_bridge_stubs.c"),
-            .flags = &.{},
-        });
-        if (target.result.os.tag == .linux or target.result.os.tag == .macos) {
-            if (target.result.os.tag == .macos) {
-                dropin_lib.addLibraryPath(.{ .cwd_relative = "/opt/homebrew/lib" });
-            }
-            dropin_lib.linkSystemLibrary("vulkan");
-        }
-        if (target.result.os.tag == .macos) {
-            dropin_lib.linkFramework("Metal");
-            dropin_lib.linkFramework("Foundation");
-            dropin_lib.linkFramework("QuartzCore");
-            dropin_lib.linkFramework("AppKit");
-            dropin_lib.addCSourceFile(.{
-                .file = b.path("src/backend/metal/metal_bridge.m"),
-                .flags = &.{"-fobjc-arc"},
-            });
-            dropin_lib.addCSourceFile(.{
-                .file = b.path("src/backend/metal/metal_render_state_bridge.m"),
-                .flags = &.{"-fobjc-arc"},
-            });
-            dropin_lib.addCSourceFile(.{
-                .file = b.path("src/backend/metal/metal_surface_bridge.m"),
-                .flags = &.{"-fobjc-arc"},
-            });
-        }
+        configure_non_windows_graphics(dropin_lib, b, target);
     }
     const install_dropin = b.addInstallArtifact(dropin_lib, .{});
 
@@ -230,35 +239,7 @@ pub fn build(b: *std.Build) void {
             .flags = &.{},
         });
     } else {
-        exe.linkSystemLibrary("dl");
-        exe.addCSourceFile(.{
-            .file = b.path("src/backend/d3d12/d3d12_bridge_stubs.c"),
-            .flags = &.{},
-        });
-        if (target.result.os.tag == .linux or target.result.os.tag == .macos) {
-            if (target.result.os.tag == .macos) {
-                exe.addLibraryPath(.{ .cwd_relative = "/opt/homebrew/lib" });
-            }
-            exe.linkSystemLibrary("vulkan");
-        }
-        if (target.result.os.tag == .macos) {
-            exe.linkFramework("Metal");
-            exe.linkFramework("Foundation");
-            exe.linkFramework("QuartzCore");
-            exe.linkFramework("AppKit");
-            exe.addCSourceFile(.{
-                .file = b.path("src/backend/metal/metal_bridge.m"),
-                .flags = &.{"-fobjc-arc"},
-            });
-            exe.addCSourceFile(.{
-                .file = b.path("src/backend/metal/metal_render_state_bridge.m"),
-                .flags = &.{"-fobjc-arc"},
-            });
-            exe.addCSourceFile(.{
-                .file = b.path("src/backend/metal/metal_surface_bridge.m"),
-                .flags = &.{"-fobjc-arc"},
-            });
-        }
+        configure_non_windows_graphics(exe, b, target);
     }
 
     b.installArtifact(exe);
@@ -361,35 +342,7 @@ pub fn build(b: *std.Build) void {
             .flags = &.{},
         });
     } else {
-        module_runner.linkSystemLibrary("dl");
-        module_runner.addCSourceFile(.{
-            .file = b.path("src/backend/d3d12/d3d12_bridge_stubs.c"),
-            .flags = &.{},
-        });
-        if (target.result.os.tag == .linux or target.result.os.tag == .macos) {
-            if (target.result.os.tag == .macos) {
-                module_runner.addLibraryPath(.{ .cwd_relative = "/opt/homebrew/lib" });
-            }
-            module_runner.linkSystemLibrary("vulkan");
-        }
-        if (target.result.os.tag == .macos) {
-            module_runner.linkFramework("Metal");
-            module_runner.linkFramework("Foundation");
-            module_runner.linkFramework("QuartzCore");
-            module_runner.linkFramework("AppKit");
-            module_runner.addCSourceFile(.{
-                .file = b.path("src/backend/metal/metal_bridge.m"),
-                .flags = &.{"-fobjc-arc"},
-            });
-            module_runner.addCSourceFile(.{
-                .file = b.path("src/backend/metal/metal_render_state_bridge.m"),
-                .flags = &.{"-fobjc-arc"},
-            });
-            module_runner.addCSourceFile(.{
-                .file = b.path("src/backend/metal/metal_surface_bridge.m"),
-                .flags = &.{"-fobjc-arc"},
-            });
-        }
+        configure_non_windows_graphics(module_runner, b, target);
     }
     const install_module_runner = b.addInstallArtifact(module_runner, .{});
     const module_runner_step = b.step("module-core-runner", "Build the module core runner");
@@ -431,35 +384,7 @@ pub fn build(b: *std.Build) void {
             .flags = &.{},
         });
     } else {
-        core_dropin_lib.linkSystemLibrary("dl");
-        core_dropin_lib.addCSourceFile(.{
-            .file = b.path("src/backend/d3d12/d3d12_bridge_stubs.c"),
-            .flags = &.{},
-        });
-        if (target.result.os.tag == .linux or target.result.os.tag == .macos) {
-            if (target.result.os.tag == .macos) {
-                core_dropin_lib.addLibraryPath(.{ .cwd_relative = "/opt/homebrew/lib" });
-            }
-            core_dropin_lib.linkSystemLibrary("vulkan");
-        }
-        if (target.result.os.tag == .macos) {
-            core_dropin_lib.linkFramework("Metal");
-            core_dropin_lib.linkFramework("Foundation");
-            core_dropin_lib.linkFramework("QuartzCore");
-            core_dropin_lib.linkFramework("AppKit");
-            core_dropin_lib.addCSourceFile(.{
-                .file = b.path("src/backend/metal/metal_bridge.m"),
-                .flags = &.{"-fobjc-arc"},
-            });
-            core_dropin_lib.addCSourceFile(.{
-                .file = b.path("src/backend/metal/metal_render_state_bridge.m"),
-                .flags = &.{"-fobjc-arc"},
-            });
-            core_dropin_lib.addCSourceFile(.{
-                .file = b.path("src/backend/metal/metal_surface_bridge.m"),
-                .flags = &.{"-fobjc-arc"},
-            });
-        }
+        configure_non_windows_graphics(core_dropin_lib, b, target);
     }
     const install_core_dropin = b.addInstallArtifact(core_dropin_lib, .{});
     const core_dropin_step = b.step("dropin-core", "Build the core-only drop-in WebGPU shared library");
@@ -486,35 +411,7 @@ pub fn build(b: *std.Build) void {
             .flags = &.{},
         });
     } else {
-        test_exec.linkSystemLibrary("dl");
-        test_exec.addCSourceFile(.{
-            .file = b.path("src/backend/d3d12/d3d12_bridge_stubs.c"),
-            .flags = &.{},
-        });
-        if (target.result.os.tag == .linux or target.result.os.tag == .macos) {
-            if (target.result.os.tag == .macos) {
-                test_exec.addLibraryPath(.{ .cwd_relative = "/opt/homebrew/lib" });
-            }
-            test_exec.linkSystemLibrary("vulkan");
-        }
-        if (target.result.os.tag == .macos) {
-            test_exec.linkFramework("Metal");
-            test_exec.linkFramework("Foundation");
-            test_exec.linkFramework("QuartzCore");
-            test_exec.linkFramework("AppKit");
-            test_exec.addCSourceFile(.{
-                .file = b.path("src/backend/metal/metal_bridge.m"),
-                .flags = &.{"-fobjc-arc"},
-            });
-            test_exec.addCSourceFile(.{
-                .file = b.path("src/backend/metal/metal_render_state_bridge.m"),
-                .flags = &.{"-fobjc-arc"},
-            });
-            test_exec.addCSourceFile(.{
-                .file = b.path("src/backend/metal/metal_surface_bridge.m"),
-                .flags = &.{"-fobjc-arc"},
-            });
-        }
+        configure_non_windows_graphics(test_exec, b, target);
     }
     const run_tests = b.addRunArtifact(test_exec);
     test_step.dependOn(&import_fence_check.step);
@@ -541,35 +438,7 @@ pub fn build(b: *std.Build) void {
             .flags = &.{},
         });
     } else {
-        core_test_exec.linkSystemLibrary("dl");
-        core_test_exec.addCSourceFile(.{
-            .file = b.path("src/backend/d3d12/d3d12_bridge_stubs.c"),
-            .flags = &.{},
-        });
-        if (target.result.os.tag == .linux or target.result.os.tag == .macos) {
-            if (target.result.os.tag == .macos) {
-                core_test_exec.addLibraryPath(.{ .cwd_relative = "/opt/homebrew/lib" });
-            }
-            core_test_exec.linkSystemLibrary("vulkan");
-        }
-        if (target.result.os.tag == .macos) {
-            core_test_exec.linkFramework("Metal");
-            core_test_exec.linkFramework("Foundation");
-            core_test_exec.linkFramework("QuartzCore");
-            core_test_exec.linkFramework("AppKit");
-            core_test_exec.addCSourceFile(.{
-                .file = b.path("src/backend/metal/metal_bridge.m"),
-                .flags = &.{"-fobjc-arc"},
-            });
-            core_test_exec.addCSourceFile(.{
-                .file = b.path("src/backend/metal/metal_render_state_bridge.m"),
-                .flags = &.{"-fobjc-arc"},
-            });
-            core_test_exec.addCSourceFile(.{
-                .file = b.path("src/backend/metal/metal_surface_bridge.m"),
-                .flags = &.{"-fobjc-arc"},
-            });
-        }
+        configure_non_windows_graphics(core_test_exec, b, target);
     }
     const run_core_tests = b.addRunArtifact(core_test_exec);
     core_test_step.dependOn(&import_fence_check.step);
@@ -596,35 +465,7 @@ pub fn build(b: *std.Build) void {
             .flags = &.{},
         });
     } else {
-        full_test_exec.linkSystemLibrary("dl");
-        full_test_exec.addCSourceFile(.{
-            .file = b.path("src/backend/d3d12/d3d12_bridge_stubs.c"),
-            .flags = &.{},
-        });
-        if (target.result.os.tag == .linux or target.result.os.tag == .macos) {
-            if (target.result.os.tag == .macos) {
-                full_test_exec.addLibraryPath(.{ .cwd_relative = "/opt/homebrew/lib" });
-            }
-            full_test_exec.linkSystemLibrary("vulkan");
-        }
-        if (target.result.os.tag == .macos) {
-            full_test_exec.linkFramework("Metal");
-            full_test_exec.linkFramework("Foundation");
-            full_test_exec.linkFramework("QuartzCore");
-            full_test_exec.linkFramework("AppKit");
-            full_test_exec.addCSourceFile(.{
-                .file = b.path("src/backend/metal/metal_bridge.m"),
-                .flags = &.{"-fobjc-arc"},
-            });
-            full_test_exec.addCSourceFile(.{
-                .file = b.path("src/backend/metal/metal_render_state_bridge.m"),
-                .flags = &.{"-fobjc-arc"},
-            });
-            full_test_exec.addCSourceFile(.{
-                .file = b.path("src/backend/metal/metal_surface_bridge.m"),
-                .flags = &.{"-fobjc-arc"},
-            });
-        }
+        configure_non_windows_graphics(full_test_exec, b, target);
     }
     const run_full_tests = b.addRunArtifact(full_test_exec);
     full_test_step.dependOn(&import_fence_check.step);
@@ -651,17 +492,7 @@ pub fn build(b: *std.Build) void {
             .flags = &.{},
         });
     } else {
-        d3d12_test_exec.linkSystemLibrary("dl");
-        d3d12_test_exec.addCSourceFile(.{
-            .file = b.path("src/backend/d3d12/d3d12_bridge_stubs.c"),
-            .flags = &.{},
-        });
-        if (target.result.os.tag == .linux or target.result.os.tag == .macos) {
-            if (target.result.os.tag == .macos) {
-                d3d12_test_exec.addLibraryPath(.{ .cwd_relative = "/opt/homebrew/lib" });
-            }
-            d3d12_test_exec.linkSystemLibrary("vulkan");
-        }
+        configure_non_windows_graphics(d3d12_test_exec, b, target);
     }
     const run_d3d12_tests = b.addRunArtifact(d3d12_test_exec);
     d3d12_test_step.dependOn(&import_fence_check.step);

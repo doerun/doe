@@ -11,10 +11,13 @@ pub const VkResult = vk.VkResult;
 pub const VulkanError = common_errors.BackendNativeError;
 
 // --- VkResult error codes (named for fail-fast error mapping) ---
-pub const VK_ERROR_TOO_MANY_OBJECTS: VkResult = -7;
-pub const VK_ERROR_FORMAT_NOT_SUPPORTED: VkResult = -9;
-pub const VK_ERROR_FRAGMENTED_POOL: VkResult = -10;
-pub const VK_ERROR_UNKNOWN: VkResult = -11;
+pub const VK_ERROR_EXTENSION_NOT_PRESENT: VkResult = -7;
+pub const VK_ERROR_FEATURE_NOT_PRESENT: VkResult = -8;
+pub const VK_ERROR_INCOMPATIBLE_DRIVER: VkResult = -9;
+pub const VK_ERROR_TOO_MANY_OBJECTS: VkResult = -10;
+pub const VK_ERROR_FORMAT_NOT_SUPPORTED: VkResult = -11;
+pub const VK_ERROR_FRAGMENTED_POOL: VkResult = -12;
+pub const VK_ERROR_UNKNOWN: VkResult = -13;
 pub const VK_ERROR_OUT_OF_DATE_KHR: VkResult = -1000001004;
 
 /// Check a VkResult and return a Zig error on failure, or void on VK_SUCCESS.
@@ -26,6 +29,9 @@ pub fn check_vk(result: VkResult) common_errors.BackendNativeError!void {
 /// Map a raw VkResult (i32) to a BackendNativeError. Called for non-success codes.
 pub fn map_vk_result(result: VkResult) common_errors.BackendNativeError {
     return switch (result) {
+        VK_ERROR_EXTENSION_NOT_PRESENT,
+        VK_ERROR_FEATURE_NOT_PRESENT,
+        VK_ERROR_INCOMPATIBLE_DRIVER,
         VK_ERROR_TOO_MANY_OBJECTS,
         VK_ERROR_FORMAT_NOT_SUPPORTED,
         VK_ERROR_FRAGMENTED_POOL,
@@ -52,8 +58,10 @@ pub fn vulkanResultName(result: VkResult) []const u8 {
         -4 => "VK_ERROR_DEVICE_LOST",
         -5 => "VK_ERROR_MEMORY_MAP_FAILED",
         -6 => "VK_ERROR_LAYER_NOT_PRESENT",
+        VK_ERROR_EXTENSION_NOT_PRESENT => "VK_ERROR_EXTENSION_NOT_PRESENT",
+        VK_ERROR_FEATURE_NOT_PRESENT => "VK_ERROR_FEATURE_NOT_PRESENT",
+        VK_ERROR_INCOMPATIBLE_DRIVER => "VK_ERROR_INCOMPATIBLE_DRIVER",
         VK_ERROR_TOO_MANY_OBJECTS => "VK_ERROR_TOO_MANY_OBJECTS",
-        -8 => "VK_ERROR_FEATURE_NOT_PRESENT",
         VK_ERROR_FORMAT_NOT_SUPPORTED => "VK_ERROR_FORMAT_NOT_SUPPORTED",
         VK_ERROR_FRAGMENTED_POOL => "VK_ERROR_FRAGMENTED_POOL",
         VK_ERROR_UNKNOWN => "VK_ERROR_UNKNOWN",
@@ -70,8 +78,20 @@ test "check_vk succeeds on VK_SUCCESS" {
 }
 
 test "check_vk returns error on failure code" {
-    const result = check_vk(VK_ERROR_TOO_MANY_OBJECTS);
+    const result = check_vk(VK_ERROR_EXTENSION_NOT_PRESENT);
     try std.testing.expectEqual(error.UnsupportedFeature, result);
+}
+
+test "map_vk_result maps EXTENSION_NOT_PRESENT to UnsupportedFeature" {
+    try std.testing.expectEqual(error.UnsupportedFeature, map_vk_result(VK_ERROR_EXTENSION_NOT_PRESENT));
+}
+
+test "map_vk_result maps FEATURE_NOT_PRESENT to UnsupportedFeature" {
+    try std.testing.expectEqual(error.UnsupportedFeature, map_vk_result(VK_ERROR_FEATURE_NOT_PRESENT));
+}
+
+test "map_vk_result maps INCOMPATIBLE_DRIVER to UnsupportedFeature" {
+    try std.testing.expectEqual(error.UnsupportedFeature, map_vk_result(VK_ERROR_INCOMPATIBLE_DRIVER));
 }
 
 test "map_vk_result maps TOO_MANY_OBJECTS to UnsupportedFeature" {

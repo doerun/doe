@@ -120,6 +120,7 @@ pub const VkPhysicalDeviceVulkan12Features = capability_structs.VkPhysicalDevice
 
 pub const vkCreateInstance = functions.vkCreateInstance;
 pub const vkDestroyInstance = functions.vkDestroyInstance;
+pub const vkEnumerateInstanceExtensionProperties = functions.vkEnumerateInstanceExtensionProperties;
 pub const vkEnumeratePhysicalDevices = functions.vkEnumeratePhysicalDevices;
 pub const vkGetPhysicalDeviceQueueFamilyProperties = functions.vkGetPhysicalDeviceQueueFamilyProperties;
 pub const vkCreateDevice = functions.vkCreateDevice;

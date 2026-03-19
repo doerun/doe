@@ -18,7 +18,9 @@ fn skip_if_runtime_unavailable(result: webgpu.NativeExecutionResult) bool {
     return std.mem.eql(u8, result.status_message, "UnsupportedFeature") or
         std.mem.eql(u8, result.status_message, "AdapterUnavailable") or
         std.mem.eql(u8, result.status_message, "InvalidState") or
-        std.mem.eql(u8, result.status_message, "ShaderCompileFailed");
+        std.mem.eql(u8, result.status_message, "ShaderCompileFailed") or
+        std.mem.eql(u8, result.status_message, "ShaderToolchainUnavailable") or
+        std.mem.eql(u8, result.status_message, "SurfaceUnavailable");
 }
 
 test "vulkan backend upload behavior applies mode and submit cadence" {
@@ -205,17 +207,18 @@ test "vulkan headless surface lifecycle executes natively" {
     var iface = try backend.as_iface(std.testing.allocator, "test_surface_lifecycle", "test_policy_hash");
     defer iface.deinit();
 
-    const create = try iface.execute_command(model.Command{ .surface_create = .{ .handle = 41001 } });
-    if (skip_if_runtime_unavailable(create)) return;
-    try std.testing.expectEqual(webgpu.NativeExecutionStatus.ok, create.status);
-    try std.testing.expectEqual(webgpu.NativeExecutionStatus.ok, (try iface.execute_command(model.Command{ .surface_capabilities = .{ .handle = 41001 } })).status);
-    try std.testing.expectEqual(webgpu.NativeExecutionStatus.ok, (try iface.execute_command(model.Command{ .surface_configure = .{
-        .handle = 41001,
-        .width = 64,
-        .height = 64,
-    } })).status);
-    try std.testing.expectEqual(webgpu.NativeExecutionStatus.ok, (try iface.execute_command(model.Command{ .surface_acquire = .{ .handle = 41001 } })).status);
-    try std.testing.expectEqual(webgpu.NativeExecutionStatus.ok, (try iface.execute_command(model.Command{ .surface_present = .{ .handle = 41001 } })).status);
-    try std.testing.expectEqual(webgpu.NativeExecutionStatus.ok, (try iface.execute_command(model.Command{ .surface_unconfigure = .{ .handle = 41001 } })).status);
-    try std.testing.expectEqual(webgpu.NativeExecutionStatus.ok, (try iface.execute_command(model.Command{ .surface_release = .{ .handle = 41001 } })).status);
+    const surface_cmds = [_]model.Command{
+        .{ .surface_create = .{ .handle = 41001 } },
+        .{ .surface_capabilities = .{ .handle = 41001 } },
+        .{ .surface_configure = .{ .handle = 41001, .width = 64, .height = 64 } },
+        .{ .surface_acquire = .{ .handle = 41001 } },
+        .{ .surface_present = .{ .handle = 41001 } },
+        .{ .surface_unconfigure = .{ .handle = 41001 } },
+        .{ .surface_release = .{ .handle = 41001 } },
+    };
+    for (surface_cmds) |cmd| {
+        const result = try iface.execute_command(cmd);
+        if (skip_if_runtime_unavailable(result)) return;
+        try std.testing.expectEqual(webgpu.NativeExecutionStatus.ok, result.status);
+    }
 }

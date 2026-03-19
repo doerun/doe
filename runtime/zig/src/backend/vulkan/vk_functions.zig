@@ -5,6 +5,7 @@ const capability_structs = @import("vk_capability_structs.zig");
 
 pub extern fn vkCreateInstance(pCreateInfo: *const structs.VkInstanceCreateInfo, pAllocator: ?*const vk.VkAllocationCallbacks, pInstance: *vk.VkInstance) callconv(.c) vk.VkResult;
 pub extern fn vkDestroyInstance(instance: vk.VkInstance, pAllocator: ?*const vk.VkAllocationCallbacks) callconv(.c) void;
+pub extern fn vkEnumerateInstanceExtensionProperties(pLayerName: ?[*:0]const u8, pPropertyCount: *u32, pProperties: ?[*]structs.VkExtensionProperties) callconv(.c) vk.VkResult;
 pub extern fn vkEnumeratePhysicalDevices(instance: vk.VkInstance, pPhysicalDeviceCount: *u32, pPhysicalDevices: ?[*]vk.VkPhysicalDevice) callconv(.c) vk.VkResult;
 pub extern fn vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice: vk.VkPhysicalDevice, pQueueFamilyPropertyCount: *u32, pQueueFamilyProperties: ?[*]structs.VkQueueFamilyProperties) callconv(.c) void;
 pub extern fn vkCreateDevice(physicalDevice: vk.VkPhysicalDevice, pCreateInfo: *const structs.VkDeviceCreateInfo, pAllocator: ?*const vk.VkAllocationCallbacks, pDevice: *vk.VkDevice) callconv(.c) vk.VkResult;

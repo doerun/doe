@@ -17,6 +17,7 @@ pub fn map_error_status(err: anyerror) wgpu_types.NativeExecutionStatus {
     return switch (err) {
         error.Unsupported,
         error.UnsupportedFeature,
+        error.ShaderToolchainUnavailable,
         error.SyncUnavailable,
         error.TimingPolicyMismatch,
         error.SurfaceUnavailable,
