@@ -7,6 +7,12 @@ retrofitted from package version history and package-surface commits so the npm
 package has a conventional release history alongside the broader Fawn status
 and process documents.
 
+## [0.3.3] - 2026-03-19
+
+### Changed
+
+- Bumped `@simulatte/webgpu-doe` dependency to `^0.3.3`.
+
 ## [0.3.2] - 2026-03-15
 
 ### Changed

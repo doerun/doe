@@ -1,6 +1,6 @@
 {
   "name": "@simulatte/webgpu-doe",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "JavaScript Doe helper layer for WebGPU-compatible runtimes",
   "type": "module",
   "sideEffects": false,

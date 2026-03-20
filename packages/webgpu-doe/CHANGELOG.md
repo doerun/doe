@@ -2,7 +2,7 @@
 
 All notable changes to `@simulatte/webgpu-doe` are documented in this file.
 
-## [Unreleased]
+## [0.3.3] - 2026-03-19
 
 ### Added
 

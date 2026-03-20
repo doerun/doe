@@ -1,6 +1,6 @@
 {
   "name": "@simulatte/webgpu",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Headless WebGPU for Node.js, Bun, and Deno, with the Doe runtime and Doe API",
   "type": "module",
   "main": "./src/node-runtime.js",
@@ -49,7 +49,7 @@
     "node": ">=18"
   },
   "dependencies": {
-    "@simulatte/webgpu-doe": "^0.3.2"
+    "@simulatte/webgpu-doe": "^0.3.3"
   },
   "files": [
     "assets/",
