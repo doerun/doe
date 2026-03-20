@@ -66,6 +66,7 @@ Build:
 - `zig build dropin-core` — core-only drop-in shared library (`libwebgpu_doe_core.so`).
 - `zig build coverage-gate` — validate split coverage ledgers against Zig command partitions.
 - `zig build import-fence` — validate core/full one-way import boundaries.
+- benchmark/claim runs should use `zig build -Doptimize=ReleaseFast` so `zig-out/bin/doe-zig-runtime` is built with optimized codegen before compare lanes are executed.
 
 ## How to run (toolchain must be available)
 

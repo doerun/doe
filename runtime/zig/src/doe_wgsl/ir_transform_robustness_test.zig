@@ -515,14 +515,19 @@ test "robustness: textureLoad 2D coords are clamped" {
     const clamp_first = module.functions.items[0].expr_args.items[clamp_expr.data.call.args.start];
     try testing.expectEqual(coord_id, clamp_first);
 
-    // Third arg (max) should be a sub(textureDimensions, vec(1))
+    // Third arg (max) should be a sub(vec(textureDimensions), vec(1))
     const clamp_max_id = module.functions.items[0].expr_args.items[clamp_expr.data.call.args.start + 2];
     const max_expr = module.functions.items[0].exprs.items[clamp_max_id];
     try testing.expect(max_expr.data == .binary);
     try testing.expectEqual(ir.BinaryOp.sub, max_expr.data.binary.op);
 
-    // lhs of the sub should be a textureDimensions call
-    const td_expr = module.functions.items[0].exprs.items[max_expr.data.binary.lhs];
+    // lhs of the sub should be a constructor that casts textureDimensions to the coord type.
+    const td_cast_expr = module.functions.items[0].exprs.items[max_expr.data.binary.lhs];
+    try testing.expect(td_cast_expr.data == .construct);
+    try testing.expectEqual(vec2u_ty, td_cast_expr.ty);
+    try testing.expectEqual(@as(u32, 1), td_cast_expr.data.construct.args.len);
+
+    const td_expr = module.functions.items[0].exprs.items[module.functions.items[0].expr_args.items[td_cast_expr.data.construct.args.start]];
     try testing.expect(td_expr.data == .call);
     try testing.expectEqualStrings("textureDimensions", td_expr.data.call.name);
     // textureDimensions should get 2 args for textureLoad (tex + level)
@@ -578,12 +583,161 @@ test "robustness: textureStore 2D coords are clamped" {
     try testing.expect(clamp_expr.data == .call);
     try testing.expectEqualStrings("clamp", clamp_expr.data.call.name);
 
-    // For textureStore, textureDimensions should get 1 arg (no level)
+    // For textureStore, textureDimensions should get 1 arg (no level), then be cast to coord type.
     const clamp_max_id = module.functions.items[0].expr_args.items[clamp_expr.data.call.args.start + 2];
     const max_expr = module.functions.items[0].exprs.items[clamp_max_id];
-    const td_expr = module.functions.items[0].exprs.items[max_expr.data.binary.lhs];
+    const td_cast_expr = module.functions.items[0].exprs.items[max_expr.data.binary.lhs];
+    try testing.expect(td_cast_expr.data == .construct);
+    try testing.expectEqual(vec2u_ty, td_cast_expr.ty);
+    const td_expr = module.functions.items[0].exprs.items[module.functions.items[0].expr_args.items[td_cast_expr.data.construct.args.start]];
     try testing.expectEqualStrings("textureDimensions", td_expr.data.call.name);
     try testing.expectEqual(@as(u32, 1), td_expr.data.call.args.len);
+}
+
+test "robustness: textureLoad i32 coords remain signed" {
+    const allocator = testing.allocator;
+    var module = try make_test_module(allocator);
+    defer module.deinit();
+
+    const f32_ty = f32_type(&module);
+    const i32_ty = try module.types.intern(.{ .scalar = .i32 });
+    const u32_ty = u32_type(&module);
+    const vec4f_ty = try module.types.intern(.{ .vector = .{ .elem = f32_ty, .len = 4 } });
+    const vec2i_ty = try module.types.intern(.{ .vector = .{ .elem = i32_ty, .len = 2 } });
+    const tex_ty = try module.types.intern(.{ .texture_2d = f32_ty });
+
+    try module.globals.append(allocator, .{
+        .name = try ir.dup_string(allocator, "tex"),
+        .ty = tex_ty,
+        .class = .var_,
+        .addr_space = .handle,
+        .binding = .{ .group = 0, .binding = 0 },
+    });
+
+    var function = ir.Function{ .name = try ir.dup_string(allocator, "main"), .return_type = ir.INVALID_TYPE };
+    errdefer function.deinit(allocator);
+
+    const tex_id = try function.append_expr(allocator, .{ .ty = tex_ty, .category = .value, .data = .{ .global_ref = 0 } });
+    const coord_id = try function.append_expr(allocator, .{ .ty = vec2i_ty, .category = .value, .data = .{ .int_lit = 7 } });
+    const level_id = try function.append_expr(allocator, .{ .ty = u32_ty, .category = .value, .data = .{ .int_lit = 0 } });
+    const call_args = try function.append_expr_args(allocator, &.{ tex_id, coord_id, level_id });
+    _ = try function.append_expr(allocator, .{
+        .ty = vec4f_ty,
+        .category = .value,
+        .data = .{ .call = .{
+            .name = try ir.dup_string(allocator, "textureLoad"),
+            .kind = .builtin,
+            .args = call_args,
+        } },
+    });
+
+    try module.functions.append(allocator, function);
+    try apply(allocator, &module, .{});
+
+    const new_coord_id = module.functions.items[0].expr_args.items[call_args.start + 1];
+    const clamp_expr = module.functions.items[0].exprs.items[new_coord_id];
+    try testing.expectEqual(vec2i_ty, clamp_expr.ty);
+
+    const clamp_max_id = module.functions.items[0].expr_args.items[clamp_expr.data.call.args.start + 2];
+    const max_expr = module.functions.items[0].exprs.items[clamp_max_id];
+    const td_cast_expr = module.functions.items[0].exprs.items[max_expr.data.binary.lhs];
+    try testing.expect(td_cast_expr.data == .construct);
+    try testing.expectEqual(vec2i_ty, td_cast_expr.ty);
+}
+
+test "robustness: guarded gid textureLoad skips injected clamp" {
+    const allocator = testing.allocator;
+    var module = try make_test_module(allocator);
+    defer module.deinit();
+
+    const f32_ty = f32_type(&module);
+    const u32_ty = u32_type(&module);
+    const bool_ty = try module.types.intern(.{ .scalar = .bool });
+    const void_ty = try module.types.intern(.{ .scalar = .void });
+    const vec2u_ty = try module.types.intern(.{ .vector = .{ .elem = u32_ty, .len = 2 } });
+    const vec3u_ty = try module.types.intern(.{ .vector = .{ .elem = u32_ty, .len = 3 } });
+    const vec4f_ty = try module.types.intern(.{ .vector = .{ .elem = f32_ty, .len = 4 } });
+    const tex_ty = try module.types.intern(.{ .texture_2d = f32_ty });
+
+    try module.globals.append(allocator, .{
+        .name = try ir.dup_string(allocator, "limit"),
+        .ty = u32_ty,
+        .class = .const_,
+        .initializer = .{ .int = 64 },
+    });
+    try module.globals.append(allocator, .{
+        .name = try ir.dup_string(allocator, "tex"),
+        .ty = tex_ty,
+        .class = .var_,
+        .addr_space = .handle,
+        .binding = .{ .group = 0, .binding = 0 },
+    });
+
+    var function = ir.Function{
+        .name = try ir.dup_string(allocator, "main"),
+        .return_type = void_ty,
+    };
+    errdefer function.deinit(allocator);
+
+    try function.params.append(allocator, .{
+        .name = try ir.dup_string(allocator, "gid"),
+        .ty = vec3u_ty,
+        .io = .{ .builtin = .global_invocation_id },
+    });
+
+    const gid_param_x = try function.append_expr(allocator, .{ .ty = vec3u_ty, .category = .ref, .data = .{ .param_ref = 0 } });
+    const gid_member_x = try function.append_expr(allocator, .{ .ty = u32_ty, .category = .ref, .data = .{ .member = .{ .base = gid_param_x, .field_name = try ir.dup_string(allocator, "x"), .field_index = 0 } } });
+    const gid_load_x = try function.append_expr(allocator, .{ .ty = u32_ty, .category = .value, .data = .{ .load = gid_member_x } });
+    const limit_ref_x = try function.append_expr(allocator, .{ .ty = u32_ty, .category = .ref, .data = .{ .global_ref = 0 } });
+    const limit_load_x = try function.append_expr(allocator, .{ .ty = u32_ty, .category = .value, .data = .{ .load = limit_ref_x } });
+    const guard_x = try function.append_expr(allocator, .{ .ty = bool_ty, .category = .value, .data = .{ .binary = .{ .op = .greater_equal, .lhs = gid_load_x, .rhs = limit_load_x } } });
+
+    const gid_param_y = try function.append_expr(allocator, .{ .ty = vec3u_ty, .category = .ref, .data = .{ .param_ref = 0 } });
+    const gid_member_y = try function.append_expr(allocator, .{ .ty = u32_ty, .category = .ref, .data = .{ .member = .{ .base = gid_param_y, .field_name = try ir.dup_string(allocator, "y"), .field_index = 1 } } });
+    const gid_load_y = try function.append_expr(allocator, .{ .ty = u32_ty, .category = .value, .data = .{ .load = gid_member_y } });
+    const limit_ref_y = try function.append_expr(allocator, .{ .ty = u32_ty, .category = .ref, .data = .{ .global_ref = 0 } });
+    const limit_load_y = try function.append_expr(allocator, .{ .ty = u32_ty, .category = .value, .data = .{ .load = limit_ref_y } });
+    const guard_y = try function.append_expr(allocator, .{ .ty = bool_ty, .category = .value, .data = .{ .binary = .{ .op = .greater_equal, .lhs = gid_load_y, .rhs = limit_load_y } } });
+    const guard_or = try function.append_expr(allocator, .{ .ty = bool_ty, .category = .value, .data = .{ .binary = .{ .op = .logical_or, .lhs = guard_x, .rhs = guard_y } } });
+
+    const return_stmt = try function.append_stmt(allocator, .{ .return_ = null });
+    const then_children = try function.append_stmt_children(allocator, &.{return_stmt});
+    const then_block = try function.append_stmt(allocator, .{ .block = then_children });
+    const if_stmt = try function.append_stmt(allocator, .{ .if_ = .{ .cond = guard_or, .then_block = then_block, .else_block = null } });
+
+    const tex_ref = try function.append_expr(allocator, .{ .ty = tex_ty, .category = .value, .data = .{ .global_ref = 1 } });
+    const gid_param_coord_x = try function.append_expr(allocator, .{ .ty = vec3u_ty, .category = .ref, .data = .{ .param_ref = 0 } });
+    const gid_member_coord_x = try function.append_expr(allocator, .{ .ty = u32_ty, .category = .ref, .data = .{ .member = .{ .base = gid_param_coord_x, .field_name = try ir.dup_string(allocator, "x"), .field_index = 0 } } });
+    const gid_load_coord_x = try function.append_expr(allocator, .{ .ty = u32_ty, .category = .value, .data = .{ .load = gid_member_coord_x } });
+    const gid_param_coord_y = try function.append_expr(allocator, .{ .ty = vec3u_ty, .category = .ref, .data = .{ .param_ref = 0 } });
+    const gid_member_coord_y = try function.append_expr(allocator, .{ .ty = u32_ty, .category = .ref, .data = .{ .member = .{ .base = gid_param_coord_y, .field_name = try ir.dup_string(allocator, "y"), .field_index = 1 } } });
+    const gid_load_coord_y = try function.append_expr(allocator, .{ .ty = u32_ty, .category = .value, .data = .{ .load = gid_member_coord_y } });
+    const coord_args = try function.append_expr_args(allocator, &.{ gid_load_coord_x, gid_load_coord_y });
+    const coord_id = try function.append_expr(allocator, .{ .ty = vec2u_ty, .category = .value, .data = .{ .construct = .{ .ty = vec2u_ty, .args = coord_args } } });
+    const level_id = try function.append_expr(allocator, .{ .ty = u32_ty, .category = .value, .data = .{ .int_lit = 0 } });
+    const call_args = try function.append_expr_args(allocator, &.{ tex_ref, coord_id, level_id });
+    const call_id = try function.append_expr(allocator, .{
+        .ty = vec4f_ty,
+        .category = .value,
+        .data = .{ .call = .{
+            .name = try ir.dup_string(allocator, "textureLoad"),
+            .kind = .builtin,
+            .args = call_args,
+        } },
+    });
+    const expr_stmt = try function.append_stmt(allocator, .{ .expr = call_id });
+
+    const root_children = try function.append_stmt_children(allocator, &.{ if_stmt, expr_stmt });
+    function.root_stmt = try function.append_stmt(allocator, .{ .block = root_children });
+
+    try module.functions.append(allocator, function);
+    const original_count = module.functions.items[0].exprs.items.len;
+    try apply(allocator, &module, .{});
+
+    const transformed_call = module.functions.items[0].exprs.items[call_id];
+    const new_coord_id = module.functions.items[0].expr_args.items[transformed_call.data.call.args.start + 1];
+    try testing.expectEqual(coord_id, new_coord_id);
+    try testing.expectEqual(original_count, module.functions.items[0].exprs.items.len);
 }
 
 test "robustness: textureLoad 3D coords produce vec3 clamp" {

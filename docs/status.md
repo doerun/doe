@@ -7,6 +7,12 @@ Date: 2026-03-19
 Vulkan compute dispatch unblocked (2026-03-19):
 - Vulkan `dispatch_indirect` now uses a dedicated indirect-dispatch path in `backend/vulkan/mod.zig` / `backend/vulkan/native_runtime.zig`: it writes `[x, y, z]` into a reusable indirect-args buffer and records `vkCmdDispatchIndirect` instead of routing through the direct-dispatch helper.
 - Bare `dispatch`/`dispatch_indirect` without a prior `kernel_dispatch` now auto-loads a no-op WGSL kernel (`dispatch_noop.wgsl`) before executing; `has_pipeline` guard replaced by auto-load so workloads that send dispatch without an explicit kernel still execute on Linux Vulkan.
+- AMD Vulkan compare presets now pass `--kernel-root bench/kernels` symmetrically to Doe-native and Dawn-delegate templates, fixing directional `dispatch` / `dispatch_indirect` lanes that depended on `dispatch_noop.wgsl` but previously failed on the delegate side with `MissingKernelSource`.
+- Governed `doe-advantage` compare lanes now exist for both AMD Vulkan and local Metal. The compare harness now supports `--workload-cohort doe-advantage`, report artifacts carry `benchmarkIntent`, `benchmarkClass`, and `directionalReason`, and directional summaries count why a workload is outside strict apples-to-apples lanes.
+- `bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.extended.comparable.json` is now a backward-compatible alias of the governed strict extended contract (`bench/workloads.amd.vulkan.extended.strict.json`) instead of the obsolete legacy `bench/workloads.amd.vulkan.extended.json` workload file that still carried upload `pathAsymmetry` flags on comparable rows.
+- Compare-run manifests now distinguish claimability misses from execution failures: claim-enabled compare runs still exit non-zero on non-claimable results, but `run_manifest.json` records `status=diagnostic` when the report is comparable yet non-claimable.
+- AMD Vulkan strict staged uploads now prefer the existing fence wait path for immediate upload flushes in `runtime/zig/src/backend/vulkan/vk_upload.zig` instead of the timeline-semaphore wait path; this reduced the focused `upload_write_buffer_1kb` gap on this host from roughly `p50 -4.42% / p95 -6.21%` to `p50 -3.74% / p95 -1.40%` under the same workload contract.
+- Performance evidence on this host now requires an optimized Zig runtime build: `zig build -Doptimize=ReleaseFast` materially improves AMD Vulkan `upload_write_buffer_1kb`, but the latest focused rerun (`bench/out/amd-vulkan/20260320T171548Z/dawn-vs-doe.amd.vulkan.release.json`) and the full governed release lane (`bench/out/amd-vulkan/20260320T171011Z/dawn-vs-doe.amd.vulkan.release.json`) both remain diagnostically blocked by that row.
 - `doeNativeDeviceCreateBindGroupLayout` now returns `null` for `entryCount > 0` with `entries = null` instead of trapping across the C ABI boundary.
 - D3D12 stub bridge (`src/backend/d3d12/d3d12_bridge_stubs.c`) added; all non-Windows build targets now link the stubs so `doe-zig-runtime`, tests, and dropin libraries build on macOS and Linux without D3D12 headers.
 - Stale test fixes: `CmdTag` variant count 8→10 (added `write_timestamp`, `resolve_query_set`); `align_cbv_size(768)` expected value corrected (768 is already 256-aligned); Vulkan dispatch tests no longer assert a specific `status_message` string for the runtime-unavailable fallback path.
@@ -82,12 +88,16 @@ Strict Dawn-vs-Doe operation comparability now uses direct per-side timing norma
 - comparable workloads in `bench/workloads*.json` use `leftTimingDivisor=1.0` and `rightTimingDivisor=1.0`.
 - strict compare fails fast if comparable Dawn-vs-Doe workloads attempt side-specific divisor scaling.
 AMD Vulkan strict comparable/release presets now point at the native-supported workload contract, not the broader aspirational extended matrix.
+- the 256 MB AMD Vulkan matvec rows (`compute_matvec_32768x2048_f32`, `_swizzle1`, `_workgroupshared_swizzle1`) now match the existing local Metal policy: they are directional-only `doe-advantage` rows because Dawn rejects the storage binding size on this host, so they no longer belong to the strict apples-to-apples contract until the workload is split or the incumbent limit surface changes.
 - Linux package/drop-in integration is now corrected for workspace-local Doe loads:
   - `runtime/zig/src/wgpu_dropin_lib.zig` now opens a target WebGPU provider via `openDropinTargetLibrary()` instead of re-opening `libwebgpu_doe.so`, which had been causing recursive proc resolution and package smoke crashes on Linux.
   - latest Linux Vulkan package validation now passes from `packages/webgpu/`: `npm run build:addon`, `npm run smoke`, `npm test`, `npm run prebuild -- --skip-addon-build`, and `npm run test:bun`.
 - Vulkan graphics/resource promotion advanced locally:
   - `vk_render.zig` now consumes render-pipeline primitive front-face/topology state and depth/stencil operation state instead of hardcoding triangle-list / counter-clockwise / null depth-stencil.
   - Vulkan sampler creation now honors comparison samplers, sampled/storage texture binding validation now accepts depth/sint/uint and read-only/read-write modes, and Vulkan format mapping now covers `rgba16{u,s}norm` plus BC / ETC2-EAC / ASTC texture families.
+  - focused March 20, 2026 strict comparable artifact `bench/out/scratch/20260320T175741Z/vulkan.promote.render_texture_resource.no_raster_sampling.json` is `comparisonStatus=comparable`, `claimStatus=diagnostic` across 13 Vulkan render/texture/resource workloads on this AMD host.
+  - follow-up March 20, 2026 fixes closed that remaining `texture_sampling_raster_baseline` blocker: the Vulkan SPIR-V path now elides redundant gid-guarded texture robustness clamps, and `examples/texture_raster_proxy_commands.json` now creates/queries/destroys its textures explicitly via zero-init `texture_write` commands before `kernel_dispatch`. Focused artifact `bench/out/scratch/20260320T210000Z/vulkan.texture_sampling_raster_baseline.fixed2.json` is now `comparisonStatus=comparable` (still `claimStatus=diagnostic` due a real negative delta).
+  - the March 20, 2026 strict preflight evidence showed the next blocker was the 256 MB matvec contract: Dawn rejects `compute_matvec_32768x2048_f32` with `kernel_dispatch_storage_binding_exceeds_maxstoragebufferbindingsize`. Those three large matvec rows are now tracked as governed `doe-advantage` directional workloads instead of remaining in the strict apples-to-apples AMD Vulkan lane.
 - latest AMD Vulkan strict release rerun on this host remains non-claimable for upload-heavy release evidence:
   - artifact: `bench/out/amd-vulkan/20260310T153903Z/dawn-vs-doe.amd.vulkan.release.json`
   - status: `comparisonStatus=comparable`, `claimStatus=diagnostic`
@@ -149,10 +159,10 @@ AMD Vulkan strict comparable/release presets now point at the native-supported w
   - `doe_encoder_native.zig`: `copyBufferToBuffer` (immediate CPU memcpy via mapped Vulkan buffers), `copyBufferToTexture` (immediate `rt.texture_write()`), `copyTextureToBuffer` (explicit unsupported warn).
   - `doe_command_texture_native.zig`: `clearBuffer` (`@memset` on mapped Vulkan buffer), `copyTextureToTexture` (explicit unsupported warn), `writeTexture` (`rt.texture_write()`).
   - `doe_queue_submit_native.zig`: `writeBuffer` (mapped buffer memcpy), `flush` (`rt.flush_queue()`), `release` (flush + destroy), `submit` (early return — Vulkan commands execute immediately during recording).
-  - `doe_query_native.zig`: `createQuerySet` returns null with log for Vulkan (`VkQueryPool` not yet implemented).
+  - `doe_query_native.zig`: `createQuerySet`, `writeTimestamp`, `resolveQuerySet`, and render-pass occlusion query controls are wired on Vulkan through `VkQueryPool`; tracker/evidence remain unit-scoped rather than broadly governed.
   - `doe_surface_native.zig` (new file): full surface/swapchain C ABI with 8 functions — `create`, `configure`, `getCurrentTexture`/`acquire`, `present`, `unconfigure`, `release`, plus platform handle setters for XCB and Wayland windowed rendering.
   - `doe_wgpu_native.zig`: wired all 8 surface exports + comptime reference.
-  - explicitly unsupported on Vulkan: `copyTextureToTexture`, `copyTextureToBuffer`, `createQuerySet` (timestamp queries).
+  - explicitly unsupported on Vulkan: `copyTextureToTexture`, `copyTextureToBuffer`.
 - Runtime backend selection is strict no-fallback across all lanes:
   - `runtime/zig/src/backend/backend_runtime.zig` initializes the selected backend directly and does not auto-route to `dawn_delegate`.
   - `config/backend-runtime-policy.json` enforces `allowFallback=false` and `strictNoFallback=true` for every lane.
@@ -548,7 +558,7 @@ Legend: ● implemented ◐ partial ○ missing
 | Shader translation (WGSL) | ● WGSL→IR→MSL (native Zig, compute-focused) | ○ expects .metal | ◐ WGSL→IR→SPIR-V (native Zig, compute-focused subset); `.spv` load supported | ◐ WGSL→IR→HLSL→DXC bytecode; `.cso`/`.dxbc` load supported; native DXIL pending |
 | Compute pipeline create | ● | ● | ◐ Linux only | ● |
 | Compute dispatch | ● | ● | ◐ Linux only | ● |
-| dispatchWorkgroupsIndirect | ● | ○ | ○ | ● d3d12_dispatch.zig |
+| dispatchWorkgroupsIndirect | ● | ○ | ◐ Linux only | ● d3d12_dispatch.zig |
 | Bind groups | ● groups 0-3 | ○ telemetry only | ○ | ◐ d3d12_descriptors.zig (descriptor tables) |
 
 ### Resources
@@ -587,16 +597,16 @@ Legend: ● implemented ◐ partial ○ missing
 AST-based WGSL compiler replacing the old regex-based line translator. Architecture: lexer → parser → AST → backend emitter.
 
 - **MSL emitter**: Production. Covers the current AI-workload compute feature set — structs, helpers, multiple entry points, override constants, var\<workgroup\>, enable f16/subgroups, subgroup ops, barriers, builtins.
-- **Robustness transform**: IR transform pass in `runtime/zig/src/doe_wgsl/ir_transform_robustness.zig`, wired through `analyzeToIr()`. Coverage: sized array/vector/matrix index clamping (`min(index, length - 1)`), runtime-sized array clamping via `arrayLength` with broadened base-expression whitelist (global_ref, member, load, local_ref, param_ref, index, call), and texture coordinate clamping for textureLoad/textureStore (`clamp(coords, vec(0), textureDimensions - 1)`) across 2D, 3D, cube, depth, multisampled, and storage texture types. 12 unit tests in `ir_transform_robustness_test.zig`. Remaining: texture_1d, textureSampleLevel integer coord edge cases, full CTS coverage.
-- **SPIR-V emitter**: Native Zig IR→SPIR-V binary emitter for parser-supported compute kernels. Current compute scope now includes bound uniform/storage buffers, structured control flow, workgroup/storage barriers, atomic builtins, and a materially expanded texture/sampler builtin slice. Vulkan graphics-path promotion still has remaining texture/storage-texture and broader non-compute WGSL gaps.
+- **Robustness transform**: IR transform pass in `runtime/zig/src/doe_wgsl/ir_transform_robustness.zig`, wired through `analyzeToIr()`. Coverage: sized array/vector/matrix index clamping (`min(index, length - 1)`), runtime-sized array clamping via `arrayLength` with broadened base-expression whitelist (global_ref, member, load, local_ref, param_ref, index, call), and texture coordinate clamping for textureLoad/textureStore (`clamp(coords, vec(0), textureDimensions - 1)`) across 2D, 3D, cube, depth, multisampled, and storage texture types. March 20, 2026 also added guarded gid-based texture-load/store elision so explicit early-return bounds guards no longer force redundant `textureDimensions` queries on the Vulkan path. 13 unit tests in `ir_transform_robustness_test.zig`. Remaining: texture_1d, textureSampleLevel integer coord edge cases, full CTS coverage.
+- **SPIR-V emitter**: Native Zig IR→SPIR-V binary emitter for parser-supported compute kernels. Current compute scope now includes bound uniform/storage buffers, structured control flow, workgroup/storage barriers, atomic builtins, and a materially expanded texture/sampler builtin slice. March 20, 2026 fixes corrected scalar/vector constructor lowering, signed texture-coordinate robustness casts, function-local variable ordering, compute entry-point interface emission, and the guarded samplerless texture path, so the `texture_sample_to_storage_64` kernel now validates under `spirv-val --target-env vulkan1.1` and the governed `texture_sampling_raster_baseline` workload is comparable again on this AMD Vulkan host. Broader non-compute WGSL coverage is still incomplete, and the next extended-comparable Vulkan blocker is now the large 256 MB matvec contract on the Dawn side rather than image-backed compute pipeline creation.
 - **HLSL emitter**: Production path for parser-supported compute kernels, feeding DXC bytecode generation for D3D12 only.
 
 ### Key gaps for doe-runtime promotion
 
-1. Vulkan now has partial native texture/resource/render support on Linux, but full end-to-end texture/sampler lifecycle, render-pipeline promotion, render-pass closure, and broad graphics-path coverage still remain open.
+1. Vulkan now has governed local evidence for native render-pass, render-pipeline, render-bundle replay, basic texture/sampler lifecycle, and the samplerless texture-raster proxy path on Linux, but full strict comparable lane closure is still incomplete: the next blocker is the 256 MB matvec workload contract (`compute_matvec_32768x2048_f32` and siblings), which the Dawn side currently rejects at strict preflight with `kernel_dispatch_storage_binding_exceeds_maxstoragebufferbindingsize`; broader non-compute WGSL lowering remains open, and surface completeness is still partial.
 2. D3D12 now has texture lifecycle (2D+3D), sampler lifecycle, render pipeline, render pass/draw, Map/Unmap, limits, features, onSubmittedWorkDone, dispatchWorkgroupsIndirect, query sets, descriptor table bindings, depth/stencil, and texture views. Remaining D3D12 gaps: native DXIL emission (deferred), fresh Windows evidence.
 3. WGSL live translation is now compute-focused and parser-limited on Vulkan/D3D12; broader WGSL front-end coverage and non-compute lowering still remain open.
-4. Surface/swapchain is headless-only on D3D12, partial on Linux Vulkan, and still not product-complete on the remaining backends.
+4. Surface/swapchain is headless-only on D3D12 and partial on Linux Vulkan. Local Metal comparable surface evidence is closed, while broader cross-host and package/browser surface substantiation still varies by lane.
 
 ### Cross-workstream remaining work (corrected 2026-03-17)
 
@@ -648,7 +658,7 @@ Browser integration (`browser/fawn-browser`):
 - package-browser validation now passes smoke in both Dawn and Doe modes for compute, render, `preferredCanvasFormat`, explicit `xrCompatible` requestAdapter forwarding, `queue.copyExternalImageToTexture` readback, and `importExternalTexture` plus `GPUExternalTexture` binding/layout sampling. Current macOS evidence lives at `browser/fawn-browser/artifacts/20260319T122244Z/dawn-vs-doe.browser.playwright-smoke.diagnostic.json`. The layered bench now runs on the package-browser path with `62/68` required L1 scenarios and `3/4` required L2 workflows passing per mode; it remains diagnostic with `14` required failures left overall.
 
 Performance substantiation:
-- the broad Metal lane remains under timing-scope audit and is not citable as broad claim evidence
+- the latest local-Metal strict comparable lane is now citable broad claim evidence on this host class: `bench/out/apple-metal/extended-comparable/20260319T161100Z/dawn-vs-doe.local.metal.extended.comparable.json` is `comparisonStatus=comparable`, `claimStatus=claimable`
 - broader host diversity and fleet-level substantiation remain open
 
 Config and CI:

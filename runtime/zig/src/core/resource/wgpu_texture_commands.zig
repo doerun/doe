@@ -10,6 +10,11 @@ const Backend = ffi.WebGPUBackend;
 pub fn executeTextureWrite(self: *Backend, texture_cmd: model.TextureWriteCommand) !types.NativeExecutionResult {
     const texture_procs = texture_procs_mod.loadTextureProcs(self.core.dyn_lib) orelse return error.TextureProcUnavailable;
     const required_usage = types.WGPUTextureUsage_CopyDst;
+    if (texture_cmd.data.len == 0) {
+        _ = try resources.getOrCreateTextureInitialized(self, texture_cmd.texture, required_usage);
+        return .{ .status = .ok, .status_message = "texture created and zero initialized" };
+    }
+
     const texture = try resources.getOrCreateTexture(self, texture_cmd.texture, required_usage);
 
     const bytes_per_texel = try textureBytesPerTexel(texture_cmd.texture.format);

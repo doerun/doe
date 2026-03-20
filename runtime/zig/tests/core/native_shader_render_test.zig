@@ -7,12 +7,15 @@
 
 const std = @import("std");
 
+const WGPU_QUERY_TYPE_OCCLUSION: u32 = 0x00000001;
+
 const shader = @import("../../src/doe_shader_native.zig");
 const render = @import("../../src/doe_render_native.zig");
 const query = @import("../../src/doe_query_native.zig");
 const instance_device = @import("../../src/doe_instance_device_native.zig");
 const native = @import("../../src/doe_wgpu_native.zig");
 const types = @import("../../src/core/abi/wgpu_types.zig");
+const vk = @import("../../src/backend/vulkan/vk_constants.zig");
 const wgsl_compiler = @import("../../src/doe_wgsl/mod.zig");
 const caps = @import("../../src/doe_device_caps.zig");
 
@@ -61,6 +64,8 @@ test "query native exports exist as callable C ABI functions" {
         _ = @as(*const fn (?*anyopaque, ?*anyopaque, u32) callconv(.c) void, &query.doeNativeCommandEncoderWriteTimestamp);
         _ = @as(*const fn (?*anyopaque, ?*anyopaque, u32, u32, ?*anyopaque, u64) callconv(.c) void, &query.doeNativeCommandEncoderResolveQuerySet);
         _ = @as(*const fn (?*anyopaque) callconv(.c) void, &query.doeNativeQuerySetDestroy);
+        _ = @as(*const fn (?*anyopaque, u32) callconv(.c) void, &query.doeNativeRenderPassBeginOcclusionQuery);
+        _ = @as(*const fn (?*anyopaque) callconv(.c) void, &query.doeNativeRenderPassEndOcclusionQuery);
     }
 }
 
@@ -170,6 +175,28 @@ test "doeNativeCheckShaderSource with valid WGSL returns 1 and clears error" {
     // After successful check, error line/column should be cleared.
     try std.testing.expectEqual(@as(u32, 0), shader.doeNativeGetLastErrorLine());
     try std.testing.expectEqual(@as(u32, 0), shader.doeNativeGetLastErrorColumn());
+}
+
+test "wgsl compiler translates minimal native Vulkan render benchmark shaders to SPIR-V" {
+    const vertex_wgsl =
+        \\@vertex fn vs_main(@builtin(vertex_index) vi: u32) -> @builtin(position) vec4f {
+        \\    return vec4f(0.0, 0.0, 0.0, 1.0);
+        \\}
+    ;
+    const fragment_wgsl =
+        \\@fragment fn fs_main() -> @location(0) vec4f {
+        \\    return vec4f(0.0, 0.0, 0.0, 0.0);
+        \\}
+    ;
+
+    var vertex_spirv: [wgsl_compiler.MAX_SPIRV_OUTPUT]u8 = undefined;
+    var fragment_spirv: [wgsl_compiler.MAX_SPIRV_OUTPUT]u8 = undefined;
+
+    const vertex_len = try wgsl_compiler.translateToSpirv(std.testing.allocator, vertex_wgsl, &vertex_spirv);
+    const fragment_len = try wgsl_compiler.translateToSpirv(std.testing.allocator, fragment_wgsl, &fragment_spirv);
+
+    try std.testing.expect(vertex_len > 0);
+    try std.testing.expect(fragment_len > 0);
 }
 
 test "doeNativeDeviceCreateShaderModule with null device returns null" {
@@ -325,6 +352,68 @@ test "doeNativeCommandEncoderResolveQuerySet with null encoder does not crash" {
     query.doeNativeCommandEncoderResolveQuerySet(null, null, 0, 2, null, 0);
 }
 
+test "doeNativeCommandEncoderWriteTimestamp records a metal timestamp command" {
+    var dev = native.DoeDevice{};
+    var enc = native.DoeCommandEncoder{ .dev = &dev };
+    defer enc.cmds.deinit(native.alloc);
+
+    var qs = query.DoeQuerySet{
+        .count = 4,
+        .query_type = types.WGPUQueryType_Timestamp,
+        .backend = .metal,
+        .counter_sample_buffer = @ptrFromInt(0x1),
+    };
+
+    query.doeNativeCommandEncoderWriteTimestamp(native.toOpaque(&enc), native.toOpaque(&qs), 2);
+
+    try std.testing.expectEqual(@as(usize, 1), enc.cmds.items.len);
+    switch (enc.cmds.items[0]) {
+        .write_timestamp => |cmd| {
+            try std.testing.expectEqual(@as(?*anyopaque, @ptrFromInt(0x1)), cmd.counter_buffer);
+            try std.testing.expectEqual(@as(u32, 2), cmd.query_index);
+        },
+        else => return error.UnexpectedCommandTag,
+    }
+}
+
+test "doeNativeCommandEncoderResolveQuerySet records a metal resolve command" {
+    var dev = native.DoeDevice{};
+    var enc = native.DoeCommandEncoder{ .dev = &dev };
+    defer enc.cmds.deinit(native.alloc);
+
+    var qs = query.DoeQuerySet{
+        .count = 4,
+        .query_type = types.WGPUQueryType_Timestamp,
+        .backend = .metal,
+        .counter_sample_buffer = @ptrFromInt(0x2),
+    };
+    var dst = native.DoeBuffer{
+        .mtl = @ptrFromInt(0x3),
+        .size = 64,
+    };
+
+    query.doeNativeCommandEncoderResolveQuerySet(
+        native.toOpaque(&enc),
+        native.toOpaque(&qs),
+        1,
+        2,
+        native.toOpaque(&dst),
+        8,
+    );
+
+    try std.testing.expectEqual(@as(usize, 1), enc.cmds.items.len);
+    switch (enc.cmds.items[0]) {
+        .resolve_query_set => |cmd| {
+            try std.testing.expectEqual(@as(?*anyopaque, @ptrFromInt(0x2)), cmd.counter_buffer);
+            try std.testing.expectEqual(@as(u32, 1), cmd.first_query);
+            try std.testing.expectEqual(@as(u32, 2), cmd.query_count);
+            try std.testing.expectEqual(@as(?*anyopaque, @ptrFromInt(0x3)), cmd.dst_mtl);
+            try std.testing.expectEqual(@as(u64, 8), cmd.dst_offset);
+        },
+        else => return error.UnexpectedCommandTag,
+    }
+}
+
 test "doeNativeQuerySetDestroy with null does not crash" {
     query.doeNativeQuerySetDestroy(null);
 }
@@ -386,11 +475,64 @@ test "DoeQuerySet default initialization has correct defaults" {
     const qs = query.DoeQuerySet{};
     try std.testing.expectEqual(@as(u32, 0xD0E1_0020), qs.magic);
     try std.testing.expectEqual(@as(u32, 0), qs.count);
+    try std.testing.expectEqual(@as(u32, types.WGPUQueryType_Timestamp), qs.query_type);
+    try std.testing.expectEqual(native.BackendKind.metal, qs.backend);
     try std.testing.expect(qs.counter_sample_buffer == null);
+    try std.testing.expectEqual(@as(vk.VkQueryPool, vk.VK_NULL_U64), qs.vk_query_pool);
+    try std.testing.expect(qs.vk_device == null);
+    try std.testing.expect(qs.vk_runtime_ref == null);
 }
 
 test "timestamp query type constant matches spec" {
     try std.testing.expectEqual(@as(u32, 0x00000002), types.WGPUQueryType_Timestamp);
+}
+
+test "doeNativeQuerySetGetCount and GetType expose stored query metadata" {
+    var qs = query.DoeQuerySet{
+        .count = 7,
+        .query_type = WGPU_QUERY_TYPE_OCCLUSION,
+        .backend = .vulkan,
+    };
+
+    try std.testing.expectEqual(@as(u32, 7), query.doeNativeQuerySetGetCount(native.toOpaque(&qs)));
+    try std.testing.expectEqual(@as(u32, WGPU_QUERY_TYPE_OCCLUSION), query.doeNativeQuerySetGetType(native.toOpaque(&qs)));
+    try std.testing.expectEqual(@as(u32, 0), query.doeNativeQuerySetGetCount(null));
+    try std.testing.expectEqual(@as(u32, 0), query.doeNativeQuerySetGetType(null));
+}
+
+test "doeNativeRenderPass occlusion query toggles pass state for occlusion query sets" {
+    var dev = native.DoeDevice{};
+    var enc = native.DoeCommandEncoder{ .dev = &dev };
+    var pass = native.DoeRenderPass{ .enc = &enc };
+    var qs = query.DoeQuerySet{
+        .count = 3,
+        .query_type = WGPU_QUERY_TYPE_OCCLUSION,
+        .backend = .vulkan,
+    };
+    pass.occlusion_query_set = native.toOpaque(&qs);
+
+    query.doeNativeRenderPassBeginOcclusionQuery(native.toOpaque(&pass), 2);
+    try std.testing.expect(pass.occlusion_query_active);
+    try std.testing.expectEqual(@as(u32, 2), pass.occlusion_query_index);
+
+    query.doeNativeRenderPassEndOcclusionQuery(native.toOpaque(&pass));
+    try std.testing.expect(!pass.occlusion_query_active);
+}
+
+test "doeNativeRenderPassBeginOcclusionQuery ignores non-occlusion query sets" {
+    var dev = native.DoeDevice{};
+    var enc = native.DoeCommandEncoder{ .dev = &dev };
+    var pass = native.DoeRenderPass{ .enc = &enc };
+    var qs = query.DoeQuerySet{
+        .count = 3,
+        .query_type = types.WGPUQueryType_Timestamp,
+        .backend = .vulkan,
+    };
+    pass.occlusion_query_set = native.toOpaque(&qs);
+
+    query.doeNativeRenderPassBeginOcclusionQuery(native.toOpaque(&pass), 1);
+    try std.testing.expect(!pass.occlusion_query_active);
+    try std.testing.expectEqual(@as(u32, 0), pass.occlusion_query_index);
 }
 
 // ============================================================

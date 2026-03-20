@@ -1,5 +1,47 @@
 [
   {
+    "kind": "texture_write",
+    "textureHandle": 7101,
+    "width": 64,
+    "height": 64,
+    "format": "rgba8unorm",
+    "bytesPerRow": 256,
+    "rowsPerImage": 64,
+    "usage": 6
+  },
+  {
+    "kind": "texture_query",
+    "handle": 7101,
+    "width": 64,
+    "height": 64,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 6
+  },
+  {
+    "kind": "texture_write",
+    "textureHandle": 7102,
+    "width": 64,
+    "height": 64,
+    "format": "rgba8unorm",
+    "bytesPerRow": 256,
+    "rowsPerImage": 64,
+    "usage": 10
+  },
+  {
+    "kind": "texture_query",
+    "handle": 7102,
+    "width": 64,
+    "height": 64,
+    "depthOrArrayLayers": 1,
+    "format": "rgba8unorm",
+    "dimension": "2d",
+    "sampleCount": 1,
+    "usage": 10
+  },
+  {
     "kind": "kernel_dispatch",
     "kernel": "texture_sample_to_storage_64",
     "x": 1,
@@ -38,5 +80,13 @@
     "targetWidth": 64,
     "targetHeight": 64,
     "targetFormat": "rgba8unorm"
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 7101
+  },
+  {
+    "kind": "texture_destroy",
+    "handle": 7102
   }
 ]

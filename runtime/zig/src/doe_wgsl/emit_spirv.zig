@@ -218,7 +218,6 @@ pub const Emitter = struct {
                     const ptr_id = try self.builder.variable_function(ptr_type);
                     state.param_ptr_ids[param_index] = ptr_id;
                     try self.builder.emit_name(ptr_id, param.name);
-                    try self.emit_store(ptr_id, param_value_ids[param_index]);
                 },
             }
         }
@@ -228,6 +227,13 @@ pub const Emitter = struct {
             const ptr_id = try self.builder.variable_function(ptr_type);
             state.local_ptr_ids[local_index] = ptr_id;
             try self.builder.emit_name(ptr_id, local.name);
+        }
+
+        for (function.params.items, 0..) |param, param_index| {
+            switch (self.module.types.get(param.ty)) {
+                .ref => {},
+                else => try self.emit_store(state.param_ptr_ids[param_index], param_value_ids[param_index]),
+            }
         }
 
         const terminated = try state.emit_stmt(function.root_stmt);
@@ -271,7 +277,7 @@ pub const Emitter = struct {
         const param_interface_len = interface_ids.items.len;
 
         for (self.module.globals.items, 0..) |global, index| {
-            if (global.binding == null and global.class != .input and global.class != .output) continue;
+            if (global.class != .input and global.class != .output) continue;
             const global_id = self.global_ids[index];
             if (global_id == 0) return error.InvalidIr;
             try interface_ids.append(self.alloc, global_id);

@@ -172,11 +172,11 @@ def main() -> int:
             "--config with right.commandTemplate"
         )
     if (
-        args.workload_cohort == "comparability-candidates"
+        args.workload_cohort in {"comparability-candidates", "doe-advantage"}
         and (not args.include_noncomparable_workloads)
     ):
         raise ValueError(
-            "workload cohort comparability-candidates requires "
+            f"workload cohort {args.workload_cohort} requires "
             "--include-noncomparable-workloads (or run.includeNoncomparableWorkloads=true)"
         )
     benchmark_policy = load_benchmark_methodology_policy(args.benchmark_policy)
@@ -200,6 +200,11 @@ def main() -> int:
             hint += (
                 " (workload cohort comparability-candidates requires "
                 "comparabilityCandidate.enabled=true entries)"
+            )
+        if args.workload_cohort == "doe-advantage":
+            hint += (
+                " (workload cohort doe-advantage requires "
+                "benchmarkClass=directional entries)"
             )
         print(f"FAIL: no workloads selected{hint}")
         return 1

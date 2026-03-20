@@ -60,7 +60,7 @@
   runs without `--with-claim-gate` validate blocking quality gates but are not release-claim readiness evidence; use `--require-claim-gate` to enforce this contract in local automation.
 - canonical CI/script entrypoint for full release pipeline (preflight + compare + gates):
   `python3 bench/run_release_pipeline.py --config bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.release.json --strict-amd-vulkan --trace-semantic-parity-mode auto --with-dropin-gate --dropin-artifact runtime/zig/zig-out/lib/libwebgpu_doe.so --with-claim-gate`
-  the release config now targets the AMD Vulkan extended comparable matrix (all comparable workload contracts), not only the default 7-workload subset.
+  the release config now targets the governed AMD Vulkan native-supported comparable contract, not the older default-only file and not the broader aspirational extended matrix.
   when `--with-claim-gate` is enabled, the pipeline now emits claim rehearsal artifacts by default:
   claim gate result, tail-health table, timing-invariant audit, and contract-hash manifest
   (disable only for diagnostics via `--no-with-claim-rehearsal-artifacts`).
@@ -249,6 +249,7 @@ AMD Vulkan extended lanes are additive and must not weaken the governed AMD Vulk
 2. compare
 - use AMD Vulkan extended config presets:
   - `bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.extended.comparable.json`
+    legacy compatibility alias for the strict extended comparable contract
   - `bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.extended.strict.directional.json`
   - `bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.extended.strict.comparable.json`
   - `bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.extended.strict.release.json`

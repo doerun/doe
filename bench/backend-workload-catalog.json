@@ -100,6 +100,8 @@
         "driver",
         "extraArgs",
         "comparable",
+        "benchmarkClass",
+        "directionalReason",
         "timingNormalizationNote"
       ],
       "shared": {
@@ -188,7 +190,7 @@
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
         },
         "amd_vulkan_extended_strict": {
-          "comparabilityNotes": "Apples-to-apples matrix-vector contract aligned to Dawn MatrixVectorMultiplyPerf variant geometry and per-dispatch normalization.",
+          "comparabilityNotes": "Directional-only on current AMD Vulkan host lane: Dawn delegate rejects the 256MB storage binding for this matrix dimension with maxStorageBufferBindingSize validation failure during strict preflight, so the apples-to-apples lane must exclude it until the workload is split or the Dawn-side limit surface changes.",
           "commandsPath": "examples/matrix_vector_mul_32768x2048_commands.json",
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
           "vendor": "amd",
@@ -199,7 +201,9 @@
             "--kernel-root",
             "bench/kernels"
           ],
-          "comparable": true,
+          "comparable": false,
+          "benchmarkClass": "directional",
+          "directionalReason": "dawn_limit",
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
         },
         "apple_metal_extended": {
@@ -215,6 +219,8 @@
             "bench/kernels"
           ],
           "comparable": false,
+          "benchmarkClass": "directional",
+          "directionalReason": "dawn_limit",
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
         }
       }
@@ -238,6 +244,8 @@
         "driver",
         "extraArgs",
         "comparable",
+        "benchmarkClass",
+        "directionalReason",
         "timingNormalizationNote"
       ],
       "shared": {
@@ -326,7 +334,7 @@
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
         },
         "amd_vulkan_extended_strict": {
-          "comparabilityNotes": "Apples-to-apples matrix-vector contract aligned to Dawn MatrixVectorMultiplyPerf variant geometry and per-dispatch normalization.",
+          "comparabilityNotes": "Directional-only on current AMD Vulkan host lane: Dawn delegate rejects the 256MB storage binding for this matrix dimension with maxStorageBufferBindingSize validation failure during strict preflight, so the apples-to-apples lane must exclude it until the workload is split or the Dawn-side limit surface changes.",
           "commandsPath": "examples/matrix_vector_mul_32768x2048_swizzle1_commands.json",
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
           "vendor": "amd",
@@ -337,7 +345,9 @@
             "--kernel-root",
             "bench/kernels"
           ],
-          "comparable": true,
+          "comparable": false,
+          "benchmarkClass": "directional",
+          "directionalReason": "dawn_limit",
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
         },
         "apple_metal_extended": {
@@ -353,6 +363,8 @@
             "bench/kernels"
           ],
           "comparable": false,
+          "benchmarkClass": "directional",
+          "directionalReason": "dawn_limit",
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
         }
       }
@@ -376,6 +388,8 @@
         "driver",
         "extraArgs",
         "comparable",
+        "benchmarkClass",
+        "directionalReason",
         "timingNormalizationNote"
       ],
       "shared": {
@@ -464,7 +478,7 @@
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
         },
         "amd_vulkan_extended_strict": {
-          "comparabilityNotes": "Apples-to-apples matrix-vector contract aligned to Dawn MatrixVectorMultiplyPerf variant geometry and per-dispatch normalization.",
+          "comparabilityNotes": "Directional-only on current AMD Vulkan host lane: Dawn delegate rejects the 256MB storage binding for this matrix dimension with maxStorageBufferBindingSize validation failure during strict preflight, so the apples-to-apples lane must exclude it until the workload is split or the Dawn-side limit surface changes.",
           "commandsPath": "examples/matrix_vector_mul_32768x2048_workgroupshared_swizzle1_commands.json",
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
           "vendor": "amd",
@@ -475,7 +489,9 @@
             "--kernel-root",
             "bench/kernels"
           ],
-          "comparable": true,
+          "comparable": false,
+          "benchmarkClass": "directional",
+          "directionalReason": "dawn_limit",
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
         },
         "apple_metal_extended": {
@@ -493,6 +509,8 @@
             "per-command"
           ],
           "comparable": false,
+          "benchmarkClass": "directional",
+          "directionalReason": "dawn_limit",
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
         }
       }

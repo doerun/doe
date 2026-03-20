@@ -55,12 +55,21 @@ def build_report_header(
     out: Path,
     workspace: Path,
 ) -> dict[str, Any]:
+    if args.workload_cohort == "doe-advantage":
+        benchmark_intent = "doe-advantage"
+    elif args.workload_cohort == "comparability-candidates":
+        benchmark_intent = "comparability-candidates"
+    elif not args.include_noncomparable_workloads:
+        benchmark_intent = "apples-to-apples"
+    else:
+        benchmark_intent = "mixed"
     report: dict[str, Any] = {
         "schemaVersion": 4,
         "generatedAt": datetime.now(timezone.utc).isoformat(),
         "outputTimestamp": output_timestamp,
         "outPath": str(out),
         "workspacePath": str(workspace),
+        "benchmarkIntent": benchmark_intent,
         "runParameters": {
             "iterations": args.iterations,
             "warmup": args.warmup,
@@ -197,6 +206,8 @@ def build_workload_report_entry(
             "note": workload.timing_normalization_note,
         },
         "workloadComparable": workload.comparable,
+        "benchmarkClass": workload.benchmark_class,
+        "directionalReason": workload.directional_reason or None,
         "pathAsymmetry": workload.path_asymmetry,
         "pathAsymmetryNote": workload.path_asymmetry_note,
         "comparabilityCandidate": {
@@ -246,6 +257,8 @@ def build_claim_row_context(
         "benchmarkPolicySha256": report["benchmarkPolicy"]["sha256"],
         "leftTraceMetaSha256": [entry["sha256"] for entry in left_trace_meta_hashes],
         "rightTraceMetaSha256": [entry["sha256"] for entry in right_trace_meta_hashes],
+        "benchmarkClass": workload.benchmark_class,
+        "directionalReason": workload.directional_reason,
         "workloadPathAsymmetry": workload.path_asymmetry,
         "workloadPathAsymmetryNote": workload.path_asymmetry_note,
         "deltaPercent": delta,
@@ -321,6 +334,18 @@ def build_report_summaries(
     claimability_mode: str,
 ) -> None:
     obligation_failure_counts: dict[str, int] = {}
+    benchmark_class_counts: dict[str, int] = {}
+    directional_reason_counts: dict[str, int] = {}
+    for workload in workloads:
+        benchmark_class_counts[workload.benchmark_class] = (
+            benchmark_class_counts.get(workload.benchmark_class, 0) + 1
+        )
+        if workload.benchmark_class != "directional":
+            continue
+        directional_reason = workload.directional_reason or "other"
+        directional_reason_counts[directional_reason] = (
+            directional_reason_counts.get(directional_reason, 0) + 1
+        )
     for failure in comparability_failures:
         failed_obligations = failure.get("failedBlockingObligations", [])
         if not isinstance(failed_obligations, list):
@@ -334,6 +359,9 @@ def build_report_summaries(
 
     report["comparabilitySummary"] = {
         "workloadCount": len(workloads),
+        "benchmarkIntent": report.get("benchmarkIntent", "mixed"),
+        "benchmarkClassCounts": dict(sorted(benchmark_class_counts.items())),
+        "directionalReasonCounts": dict(sorted(directional_reason_counts.items())),
         "nonComparableCount": len(comparability_failures),
         "nonComparableWorkloads": comparability_failures,
         "failedBlockingObligationCounts": dict(sorted(obligation_failure_counts.items())),
@@ -372,7 +400,9 @@ def write_report_and_determine_status(
     if comparability_failures and args.comparability == "strict":
         run_status = "failed"
     elif args.claimability != "off" and claimability_failures:
-        run_status = "failed"
+        # Preserve non-zero exit for claim gates, but keep manifests explicit
+        # that the compare run completed and produced diagnostic evidence.
+        run_status = "diagnostic"
     elif comparability_failures and args.comparability == "warn":
         run_status = "diagnostic"
     output_paths.write_run_manifest_for_outputs(
@@ -396,6 +426,7 @@ def write_report_and_determine_status(
         summary = {
             "out": str(out),
             "workloadCount": workload_count,
+            "benchmarkIntent": report.get("benchmarkIntent", "mixed"),
             "comparisonStatus": report["comparisonStatus"],
             "nonComparableCount": len(comparability_failures),
             "nonComparableWorkloads": comparability_failures,
@@ -410,6 +441,7 @@ def write_report_and_determine_status(
         summary = {
             "out": str(out),
             "workloadCount": workload_count,
+            "benchmarkIntent": report.get("benchmarkIntent", "mixed"),
             "comparisonStatus": report["comparisonStatus"],
             "claimStatus": report["claimStatus"],
             "nonClaimableCount": len(claimability_failures),
@@ -423,6 +455,7 @@ def write_report_and_determine_status(
             {
                 "out": str(out),
                 "workloadCount": workload_count,
+                "benchmarkIntent": report.get("benchmarkIntent", "mixed"),
                 "comparisonStatus": report["comparisonStatus"],
                 "claimStatus": report["claimStatus"],
             },

@@ -1430,6 +1430,28 @@ Contract updates in this change:
   - `doe-advantage` (directional optimized lanes)
   while keeping the same timing basis rule for fairness.
 
+### First-class Doe-advantage workload cohort (2026-03-20)
+
+- `compare_dawn_vs_doe.py` now accepts `--workload-cohort doe-advantage`.
+- `doe-advantage` selects workload contracts with `benchmarkClass=directional` and requires `includeNoncomparableWorkloads=true`.
+- compare artifacts now surface:
+  - top-level `benchmarkIntent`
+  - per-row `benchmarkClass`
+  - per-row `directionalReason`
+  - summary `benchmarkClassCounts` and `directionalReasonCounts`
+- workload contracts may now declare `directionalReason` to distinguish:
+  - `dawn_limit`
+  - `dawn_missing_contract`
+  - `dawn_no_execution`
+  - `path_asymmetry`
+  - `host_instability`
+  - `methodology_gap`
+  - `other`
+- new first-class backend presets now exist:
+  - `bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.doe-advantage.json`
+  - `bench/native-compare/compare_dawn_vs_doe.config.local.metal.doe-advantage.json`
+- AMD Vulkan large matvec rows (`compute_matvec_32768x2048_f32`, `_swizzle1`, `_workgroupshared_swizzle1`) are no longer strict comparable on the current host contract. They now live in the governed `doe-advantage` cohort because Dawn strict preflight rejects their 256 MB storage binding.
+
 ### Comparability obligation contract externalization (2026-03-14)
 
 - `config/comparability-obligations.json` moved from `schemaVersion=1` ID-only format to `schemaVersion=2` semantic contract format.

@@ -172,9 +172,10 @@ pub fn parseTextureWriteCommand(allocator: std.mem.Allocator, raw: anytype) Pars
     const bytes_per_row = raw.bytesPerRow orelse 0;
     const rows_per_image = raw.rows_per_image orelse raw.rowsPerImage orelse 0;
     const offset = raw.offset orelse 0;
-    const data_values = raw.data orelse return ParseError.InvalidCommandPayload;
-    if (data_values.len == 0) return ParseError.InvalidCommandPayload;
-    const data = try parseBytesU32ToU8(allocator, data_values);
+    const data = if (raw.data) |data_values|
+        try parseBytesU32ToU8(allocator, data_values)
+    else
+        try allocator.alloc(u8, 0);
 
     return .{
         .texture = .{

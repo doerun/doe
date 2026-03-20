@@ -457,6 +457,16 @@ pub const FunctionState = struct {
     }
 
     fn emit_construct(self: *FunctionState, ty: ir.TypeId, range: ir.Range) EmitError!u32 {
+        switch (self.emitter.module.types.get(ty)) {
+            .scalar => {
+                if (range.len != 1) return error.UnsupportedConstruct;
+                const expr_id = self.function.expr_args.items[range.start];
+                return try self.emit_scalar_construct(ty, expr_id, try self.emit_value_expr(expr_id));
+            },
+            .vector => return try self.emit_vector_construct(ty, range),
+            else => {},
+        }
+
         var operands = std.ArrayListUnmanaged(u32){};
         defer operands.deinit(self.emitter.alloc);
         var i: u32 = 0;
@@ -476,6 +486,96 @@ pub const FunctionState = struct {
         try full.appendSlice(self.emitter.alloc, operands);
         try self.emitter.builder.append_function_inst(spirv.Opcode.CompositeConstruct, full.items);
         return result_id;
+    }
+
+    fn emit_scalar_construct(self: *FunctionState, target_ty: ir.TypeId, source_expr_id: ir.ExprId, source_id: u32) EmitError!u32 {
+        return try self.emit_scalar_construct_from_type(target_ty, self.function.exprs.items[source_expr_id].ty, source_id);
+    }
+
+    fn emit_scalar_construct_from_type(self: *FunctionState, target_ty: ir.TypeId, source_ty: ir.TypeId, source_id: u32) EmitError!u32 {
+        const target_type = self.emitter.module.types.get(target_ty);
+        const source_type = self.emitter.module.types.get(source_ty);
+        if (target_ty == source_ty or try self.emitter.lower_type(target_ty) == try self.emitter.lower_type(source_ty)) {
+            return source_id;
+        }
+
+        const target_scalar = switch (target_type) {
+            .scalar => |scalar| scalar,
+            else => return error.UnsupportedConstruct,
+        };
+        const source_scalar = switch (source_type) {
+            .scalar => |scalar| scalar,
+            else => return error.UnsupportedConstruct,
+        };
+
+        const opcode: u16 = switch (scalar_construct_kind(target_scalar)) {
+            .bool => return error.UnsupportedConstruct,
+            .signed => switch (scalar_construct_kind(source_scalar)) {
+                .signed => return source_id,
+                .unsigned => spirv.Opcode.Bitcast,
+                .float => spirv.Opcode.ConvertFToS,
+                .bool => return error.UnsupportedConstruct,
+            },
+            .unsigned => switch (scalar_construct_kind(source_scalar)) {
+                .signed => spirv.Opcode.Bitcast,
+                .unsigned => return source_id,
+                .float => spirv.Opcode.ConvertFToU,
+                .bool => return error.UnsupportedConstruct,
+            },
+            .float => switch (scalar_construct_kind(source_scalar)) {
+                .signed => spirv.Opcode.ConvertSToF,
+                .unsigned => spirv.Opcode.ConvertUToF,
+                .float => spirv.Opcode.FConvert,
+                .bool => return error.UnsupportedConstruct,
+            },
+        };
+        return try self.emit_result_inst(opcode, try self.emitter.lower_type(target_ty), &.{source_id});
+    }
+
+    fn emit_vector_construct(self: *FunctionState, target_ty: ir.TypeId, range: ir.Range) EmitError!u32 {
+        const target_vec = switch (self.emitter.module.types.get(target_ty)) {
+            .vector => |vec| vec,
+            else => return error.UnsupportedConstruct,
+        };
+        if (range.len == 1) {
+            const only_expr_id = self.function.expr_args.items[range.start];
+            if (self.function.exprs.items[only_expr_id].ty == target_ty) {
+                return try self.emit_value_expr(only_expr_id);
+            }
+        }
+
+        var components = std.ArrayListUnmanaged(u32){};
+        defer components.deinit(self.emitter.alloc);
+
+        var arg_index: u32 = 0;
+        while (arg_index < range.len) : (arg_index += 1) {
+            const expr_id = self.function.expr_args.items[range.start + arg_index];
+            const expr_ty = self.function.exprs.items[expr_id].ty;
+            switch (self.emitter.module.types.get(expr_ty)) {
+                .scalar => {
+                    const scalar_id = try self.emit_scalar_construct(target_vec.elem, expr_id, try self.emit_value_expr(expr_id));
+                    try components.append(self.emitter.alloc, scalar_id);
+                },
+                .vector => |source_vec| {
+                    const vector_id = try self.emit_value_expr(expr_id);
+                    var component_index: u32 = 0;
+                    while (component_index < source_vec.len) : (component_index += 1) {
+                        const component_id = try self.emit_composite_extract(vector_id, source_vec.elem, component_index);
+                        try components.append(self.emitter.alloc, try self.emit_scalar_construct_from_type(target_vec.elem, source_vec.elem, component_id));
+                    }
+                },
+                else => return error.UnsupportedConstruct,
+            }
+        }
+
+        if (components.items.len == 1 and target_vec.len > 1) {
+            const splat_id = components.items[0];
+            while (components.items.len < target_vec.len) {
+                try components.append(self.emitter.alloc, splat_id);
+            }
+        }
+        if (components.items.len != target_vec.len) return error.UnsupportedConstruct;
+        return try self.emit_construct_from_operands(target_ty, components.items);
     }
 
     pub fn emit_composite_extract(self: *FunctionState, composite_id: u32, result_ty: ir.TypeId, index: u32) EmitError!u32 {
@@ -555,6 +655,15 @@ pub const FunctionState = struct {
         };
     }
 };
+
+fn scalar_construct_kind(scalar: ir.ScalarType) FunctionState.ScalarKind {
+    return switch (scalar) {
+        .bool => .bool,
+        .u32 => .unsigned,
+        .f16, .f32, .abstract_float => .float,
+        else => .signed,
+    };
+}
 
 fn assign_op_to_binary(op: ir.AssignOp) ir.BinaryOp {
     return switch (op) {

@@ -90,25 +90,18 @@ const VkPipelineDepthStencilStateCreateInfo = extern struct {
     maxDepthBounds: f32,
 };
 
-// Passthrough vertex+fragment WGSL: vertex_index generates a fullscreen triangle,
-// fragment outputs a UV-gradient color. Single combined source for both entry points.
-const RENDER_SHADER_WGSL =
-    \\struct VertexOutput {
-    \\    @builtin(position) position: vec4f,
-    \\    @location(0) uv: vec2f,
-    \\};
-    \\
-    \\@vertex fn vs_main(@builtin(vertex_index) vi: u32) -> VertexOutput {
-    \\    var out: VertexOutput;
-    \\    let x = f32(i32(vi & 1u) * 4 - 1);
-    \\    let y = f32(i32(vi >> 1u & 1u) * 4 - 1);
-    \\    out.position = vec4f(x, y, 0.0, 1.0);
-    \\    out.uv = vec2f(x * 0.5 + 0.5, y * 0.5 + 0.5);
-    \\    return out;
+// Use minimal single-stage noop shaders for native draw-call benchmarks. This keeps
+// Vulkan aligned with the benchmark intent and avoids multi-entry render shader
+// compilation complexity on the strict comparable lane.
+const RENDER_VERTEX_SHADER_WGSL =
+    \\@vertex fn vs_main(@builtin(vertex_index) vi: u32) -> @builtin(position) vec4f {
+    \\    return vec4f(0.0, 0.0, 0.0, 1.0);
     \\}
-    \\
-    \\@fragment fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
-    \\    return vec4f(uv.x, uv.y, 0.5, 1.0);
+;
+
+const RENDER_FRAGMENT_SHADER_WGSL =
+    \\@fragment fn fs_main() -> @location(0) vec4f {
+    \\    return vec4f(0.0, 0.0, 0.0, 0.0);
     \\}
 ;
 
@@ -520,24 +513,37 @@ fn create_graphics_pipeline(
 ) !void {
     _ = vk_format;
 
-    // Compile WGSL to SPIR-V
-    var spirv_buf = try self.allocator.alloc(u8, doe_wgsl.MAX_SPIRV_OUTPUT);
-    defer self.allocator.free(spirv_buf);
-    const spirv_len = doe_wgsl.translateToSpirv(self.allocator, RENDER_SHADER_WGSL, spirv_buf) catch
+    var vertex_spirv_buf = try self.allocator.alloc(u8, doe_wgsl.MAX_SPIRV_OUTPUT);
+    defer self.allocator.free(vertex_spirv_buf);
+    const vertex_spirv_len = doe_wgsl.translateToSpirv(self.allocator, RENDER_VERTEX_SHADER_WGSL, vertex_spirv_buf) catch
         return error.ShaderCompileFailed;
-    const spirv_words = try vk_pipeline.words_from_spirv_bytes(self.allocator, spirv_buf[0..spirv_len]);
-    defer self.allocator.free(spirv_words);
+    const vertex_spirv_words = try vk_pipeline.words_from_spirv_bytes(self.allocator, vertex_spirv_buf[0..vertex_spirv_len]);
+    defer self.allocator.free(vertex_spirv_words);
 
-    // Create shader modules (single module with both entry points)
-    var shader_info = c.VkShaderModuleCreateInfo{
+    var fragment_spirv_buf = try self.allocator.alloc(u8, doe_wgsl.MAX_SPIRV_OUTPUT);
+    defer self.allocator.free(fragment_spirv_buf);
+    const fragment_spirv_len = doe_wgsl.translateToSpirv(self.allocator, RENDER_FRAGMENT_SHADER_WGSL, fragment_spirv_buf) catch
+        return error.ShaderCompileFailed;
+    const fragment_spirv_words = try vk_pipeline.words_from_spirv_bytes(self.allocator, fragment_spirv_buf[0..fragment_spirv_len]);
+    defer self.allocator.free(fragment_spirv_words);
+
+    var vertex_shader_info = c.VkShaderModuleCreateInfo{
         .sType = c.VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
         .pNext = null,
         .flags = 0,
-        .codeSize = spirv_words.len * @sizeOf(u32),
-        .pCode = spirv_words.ptr,
+        .codeSize = vertex_spirv_words.len * @sizeOf(u32),
+        .pCode = vertex_spirv_words.ptr,
     };
-    try c.check_vk(c.vkCreateShaderModule(self.device, &shader_info, null, &state.vertex_shader));
-    try c.check_vk(c.vkCreateShaderModule(self.device, &shader_info, null, &state.fragment_shader));
+    try c.check_vk(c.vkCreateShaderModule(self.device, &vertex_shader_info, null, &state.vertex_shader));
+
+    var fragment_shader_info = c.VkShaderModuleCreateInfo{
+        .sType = c.VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+        .pNext = null,
+        .flags = 0,
+        .codeSize = fragment_spirv_words.len * @sizeOf(u32),
+        .pCode = fragment_spirv_words.ptr,
+    };
+    try c.check_vk(c.vkCreateShaderModule(self.device, &fragment_shader_info, null, &state.fragment_shader));
 
     // Pipeline layout (no descriptors needed for passthrough)
     var layout_info = c.VkPipelineLayoutCreateInfo{

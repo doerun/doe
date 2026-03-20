@@ -22,6 +22,8 @@
         "bench/kernels"
       ],
       "comparable": false,
+      "benchmarkClass": "directional",
+      "directionalReason": "dawn_limit",
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
     },
     {
@@ -45,6 +47,8 @@
         "bench/kernels"
       ],
       "comparable": false,
+      "benchmarkClass": "directional",
+      "directionalReason": "dawn_limit",
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
     },
     {
@@ -70,6 +74,8 @@
         "per-command"
       ],
       "comparable": false,
+      "benchmarkClass": "directional",
+      "directionalReason": "dawn_limit",
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
     },
     {

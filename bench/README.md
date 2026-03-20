@@ -190,6 +190,8 @@ Template placeholders:
 Benchmark/report-producing scripts now timestamp outputs by default (`YYYYMMDDTHHMMSSZ`) and write artifacts under grouped per-run folders (`bench/out/<group>/<timestamp>/...`) to avoid clobbering, keep related runs together, and preserve chronological history inside each group. Use `--no-timestamp-output` when you intentionally need an exact fixed output path.
 
 Each timestamped run folder now includes `run_manifest.json` with run metadata (`runType`, `config`, `fullRun`, `claimGateRan`, `dropinGateRan`, status fields).
+Compare runs that finish but miss claimability now record `status=diagnostic` in the manifest while still exiting non-zero when claimability mode is enabled.
+For performance/claim benchmarking, build `runtime/zig/zig-out/bin/doe-zig-runtime` with `zig build -Doptimize=ReleaseFast` before running compare lanes; the optimized build materially reduces the AMD Vulkan `upload_write_buffer_1kb` gap on this host, but the governed release lane still remains performance-bound on that row.
 
 Ad-hoc/manual artifact names (for example `*layoutcheck*`, `*contractcheck*`, `tmp.*`) are routed to `bench/out/scratch/<timestamp>/...` so canonical runs stay clean.
 
@@ -236,11 +238,13 @@ python3 bench/cleanup_out.py --retention-days 14
 - workload IDs must follow the immutable naming contract from `bench/benchmark-writing-guide.md`:
   `domain_subject_shape_variant` (status-free, no lifecycle/maturity prefixes).
 - each workload includes `comparable` to declare whether mapping quality is apples-to-apples (`true`) or directional (`false`).
+- directional workloads may include `directionalReason` to distinguish incumbent limits (`dawn_limit`, `dawn_missing_contract`, `dawn_no_execution`) from transferability or host-only issues (`path_asymmetry`, `host_instability`, `methodology_gap`).
 - workloads may set `allowLeftNoExecution: true` to allow strict comparability for deterministic feature-gated paths when left runtime reports unsupported/skipped execution evidence and zero execution errors.
 - each workload can include `default: false`; these extended workloads are skipped unless `--include-extended-workloads` or explicit `--workload-filter` is provided.
 - workloads are tagged with `domain` and `comparabilityNotes` for report transparency.
 - directional workloads that are likely parity-promotion targets can declare `comparabilityCandidate` metadata.
 - use `--workload-cohort comparability-candidates` to isolate that candidate set for directional parity work (requires `--include-noncomparable-workloads`).
+- use `--workload-cohort doe-advantage` to isolate governed directional Doe-vs-Dawn rows; this keeps the same strict operation timing basis but reports non-claimable incumbent-limited evidence separately from apples-to-apples lanes.
 - canonical cross-surface workload identity now lives in `bench/workload-registry.json`.
   - backend-native execution contracts still live in `bench/workloads*.json`.
   - backend-native workload source of truth now lives in `bench/backend-workload-catalog.json`, and `python3 bench/generate_backend_workloads.py` materializes the lane-specific `bench/workloads*.json` files from that catalog.
@@ -325,6 +329,7 @@ python3 bench/native-compare/compare_dawn_vs_doe.py \
 - non-comparable workload mappings are excluded by default using `workloads.json` `comparable: false`.
 - use `--include-noncomparable-workloads` only for directional investigation runs.
 - `--workload-cohort comparability-candidates` filters to workloads with `comparabilityCandidate.enabled=true`; this does not promote those workloads to strict comparable lanes.
+- `--workload-cohort doe-advantage` filters to workloads with `benchmarkClass=directional`; these runs are governed Doe-vs-Dawn diagnostics and must not be presented as strict comparable claims.
 - non-default workload entries are excluded unless `--include-extended-workloads` is set.
 - strict mode now rejects contract-domain workloads as comparable unless explicitly promoted by contract policy.
   for guarded contract domains (`pipeline-async`, `p0-resource`, `p0-compute`, `p0-render`, `p1-capability`,
@@ -729,11 +734,12 @@ A ready-to-run AMD Vulkan preset is now included:
 Additional AMD Vulkan presets:
 
 - release claim mode on the AMD native-supported strict comparable matrix (release sample floor): `bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.release.json`
-- AMD Vulkan extended local-claim preset for the broader 40-row matrix: `bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.extended.comparable.json`
+- AMD Vulkan extended local-claim compatibility alias for the governed strict extended comparable matrix: `bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.extended.comparable.json`
 - directional diagnostics (remaining non-claim macro set): `bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.directional.json`
 - directional macro diagnostics (focused non-claim macro subset): `bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.macro.directional.json`
+- governed Doe-vs-Dawn directional lane: `bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.doe-advantage.json`
 - strict AMD smoke + GPU probe preset (16MB upload): `bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.smoke.gpu.json`
-- AMD Vulkan extended comparable matrix (same host family, broader contract): `bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.extended.comparable.json`
+- AMD Vulkan extended comparable matrix alias (same host family, backward-compatible name for the strict extended contract): `bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.extended.comparable.json`
 - AMD Vulkan extended strict directional diagnostics: `bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.extended.strict.directional.json`
 - AMD Vulkan extended strict comparable matrix: `bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.extended.strict.comparable.json`
 - AMD Vulkan extended strict release claim mode: `bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.extended.strict.release.json`
@@ -760,10 +766,10 @@ python3 bench/native-compare/compare_dawn_vs_doe.py --config bench/native-compar
 Extended AMD Vulkan runs:
 
 ```bash
-# comparable extended matrix local-claim preset (upload + compute + render + texture + render-bundle + async)
+# comparable extended matrix local-claim alias (backward-compatible name for the strict extended contract)
 python3 bench/native-compare/compare_dawn_vs_doe.py --config bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.extended.comparable.json
 
-# release claim gate matrix (extended comparable set, 15 timed samples)
+# release claim gate matrix (native-supported governed comparable set, 15 timed samples)
 python3 bench/native-compare/compare_dawn_vs_doe.py --config bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.release.json
 
 # diagnostic slice (workload-filter driven; same strict comparable matrix contract)
@@ -775,6 +781,9 @@ python3 bench/native-compare/compare_dawn_vs_doe.py --config bench/native-compar
 # directional comparability-candidate cohort (8 targeted Dawn parity candidates)
 python3 bench/native-compare/compare_dawn_vs_doe.py --config bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.comparability-candidates.directional.json
 
+# governed Doe-vs-Dawn directional lane (incumbent-limited or non-claimable rows)
+python3 bench/native-compare/compare_dawn_vs_doe.py --config bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.doe-advantage.json
+
 # strict AMD smoke + GPU probe evidence check
 python3 bench/native-compare/compare_dawn_vs_doe.py --config bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.smoke.gpu.json
 python3 bench/verify_smoke_gpu_usage.py --report bench/out/dawn-vs-doe.amd.vulkan.smoke.gpu.16mb.json --require-comparable
@@ -785,13 +794,16 @@ python3 bench/run_release_pipeline.py --config bench/native-compare/compare_dawn
 # disable compare HTML generation when you only want JSON/workspace artifacts:
 python3 bench/run_release_pipeline.py --config bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.release.json --no-compare-html-output
 
-# AMD Vulkan extended comparable matrix
+# AMD Vulkan extended comparable matrix alias
 python3 bench/native-compare/compare_dawn_vs_doe.py --config bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.extended.comparable.json
 
 # AMD Vulkan extended strict lanes
 python3 bench/native-compare/compare_dawn_vs_doe.py --config bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.extended.strict.directional.json
 python3 bench/native-compare/compare_dawn_vs_doe.py --config bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.extended.strict.comparable.json
 python3 bench/native-compare/compare_dawn_vs_doe.py --config bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.extended.strict.release.json
+
+# local Metal governed Doe-vs-Dawn directional lane
+python3 bench/native-compare/compare_dawn_vs_doe.py --config bench/native-compare/compare_dawn_vs_doe.config.local.metal.doe-advantage.json
 ```
 
 If Dawn cannot access an AMD Vulkan adapter on the host (for example, missing `/dev/dri` access),

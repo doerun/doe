@@ -321,6 +321,117 @@ fn texture_has_level(tex_type: ir.Type) bool {
     };
 }
 
+fn classify_gid_scalar(function: *const ir.Function, expr_id: ir.ExprId) ?u8 {
+    const expr = function.exprs.items[expr_id];
+    switch (expr.data) {
+        .load => |base_id| return classify_gid_scalar(function, base_id),
+        .construct => |construct| {
+            if (construct.args.len != 1) return null;
+            return classify_gid_scalar(function, function.expr_args.items[construct.args.start]);
+        },
+        .member => |member_data| {
+            const base_expr = function.exprs.items[member_data.base];
+            switch (base_expr.data) {
+                .param_ref => |param_idx| {
+                    if (param_idx >= function.params.items.len) return null;
+                    const param = function.params.items[param_idx];
+                    const io = param.io orelse return null;
+                    if (io.builtin != .global_invocation_id) return null;
+                    if (std.mem.eql(u8, member_data.field_name, "x")) return 0;
+                    if (std.mem.eql(u8, member_data.field_name, "y")) return 1;
+                    if (std.mem.eql(u8, member_data.field_name, "z")) return 2;
+                    return null;
+                },
+                else => return null,
+            }
+        },
+        else => return null,
+    }
+}
+
+fn classify_gid_coord_axes(function: *const ir.Function, expr_id: ir.ExprId, dim: u8) ?[3]bool {
+    const expr = function.exprs.items[expr_id];
+    const construct = switch (expr.data) {
+        .construct => |value| value,
+        else => return null,
+    };
+    if (construct.args.len != dim) return null;
+
+    var axes = [_]bool{ false, false, false };
+    var arg_index: u32 = 0;
+    while (arg_index < construct.args.len) : (arg_index += 1) {
+        const axis = classify_gid_scalar(function, function.expr_args.items[construct.args.start + arg_index]) orelse return null;
+        axes[axis] = true;
+    }
+    return axes;
+}
+
+fn collect_guarded_gid_axes(function: *const ir.Function, expr_id: ir.ExprId, axes: *[3]bool) bool {
+    const expr = function.exprs.items[expr_id];
+    switch (expr.data) {
+        .binary => |binary| switch (binary.op) {
+            .logical_or => {
+                const lhs_ok = collect_guarded_gid_axes(function, binary.lhs, axes);
+                const rhs_ok = collect_guarded_gid_axes(function, binary.rhs, axes);
+                return lhs_ok and rhs_ok;
+            },
+            .greater_equal => {
+                const axis = classify_gid_scalar(function, binary.lhs) orelse return false;
+                axes[axis] = true;
+                return true;
+            },
+            else => return false,
+        },
+        else => return false,
+    }
+}
+
+fn stmt_is_return_only(function: *const ir.Function, stmt_id: ir.StmtId) bool {
+    const stmt = function.stmts.items[stmt_id];
+    switch (stmt) {
+        .return_ => return true,
+        .block => |range| {
+            if (range.len != 1) return false;
+            return stmt_is_return_only(function, function.stmt_children.items[range.start]);
+        },
+        else => return false,
+    }
+}
+
+fn function_has_root_gid_guard(function: *const ir.Function, required_axes: [3]bool) bool {
+    const root = function.stmts.items[function.root_stmt];
+    const root_range = switch (root) {
+        .block => |range| range,
+        else => return false,
+    };
+
+    for (function.stmt_children.items[root_range.start .. root_range.start + root_range.len]) |child_id| {
+        const child = function.stmts.items[child_id];
+        const branch = switch (child) {
+            .if_ => |value| value,
+            else => continue,
+        };
+        if (branch.else_block != null) continue;
+        if (!stmt_is_return_only(function, branch.then_block)) continue;
+
+        var guarded_axes = [_]bool{ false, false, false };
+        if (!collect_guarded_gid_axes(function, branch.cond, &guarded_axes)) continue;
+
+        var axis_index: usize = 0;
+        while (axis_index < required_axes.len) : (axis_index += 1) {
+            if (required_axes[axis_index] and !guarded_axes[axis_index]) break;
+        } else {
+            return true;
+        }
+    }
+    return false;
+}
+
+fn texture_coord_is_explicitly_guarded(function: *const ir.Function, coord_arg: ir.ExprId, dim: u8) bool {
+    const required_axes = classify_gid_coord_axes(function, coord_arg, dim) orelse return false;
+    return function_has_root_gid_guard(function, required_axes);
+}
+
 /// Clamp coordinate arguments of textureLoad/textureStore to valid ranges.
 ///
 /// For textureLoad(tex, coords, level):
@@ -341,12 +452,16 @@ fn clamp_texture_coords(
     const coord_arg = function.expr_args.items[call_data.args.start + 1];
     const tex_ty = resolve_texture_type(&module.types, function.exprs.items[texture_arg].ty);
     const dim = texture_coord_dim(tex_ty) orelse return;
+    if (texture_coord_is_explicitly_guarded(function, coord_arg, dim)) return;
 
-    const u32_ty = try ensure_u32_type(module);
-    const coord_vec_ty = module.types.intern(.{
-        .vector = .{ .elem = u32_ty, .len = dim },
-    }) catch return error.OutOfMemory;
-
+    const coord_vec_ty = function.exprs.items[coord_arg].ty;
+    const coord_elem_ty = switch (module.types.get(coord_vec_ty)) {
+        .vector => |vec| blk: {
+            if (vec.len != dim) return;
+            break :blk vec.elem;
+        },
+        else => return,
+    };
     // Build textureDimensions(tex) or textureDimensions(tex, level)
     const td_id = blk: {
         const is_load = std.mem.eql(u8, call_data.name, TEXTURE_LOAD_NAME);
@@ -375,10 +490,16 @@ fn clamp_texture_coords(
             });
         }
     };
+    const td_cast_args = try function.append_expr_args(allocator, &.{td_id});
+    const td_coord_id = try function.append_expr(allocator, .{
+        .ty = coord_vec_ty,
+        .category = .value,
+        .data = .{ .construct = .{ .ty = coord_vec_ty, .args = td_cast_args } },
+    });
 
-    // vec<u32, dim>(1)
+    // vec<T, dim>(1), where T matches the original coordinate element type.
     const one_scalar = try function.append_expr(allocator, .{
-        .ty = u32_ty, .category = .value, .data = .{ .int_lit = 1 },
+        .ty = coord_elem_ty, .category = .value, .data = .{ .int_lit = 1 },
     });
     const splat_one_args = try function.append_expr_args(allocator, &.{one_scalar});
     const one_vec = try function.append_expr(allocator, .{
@@ -391,12 +512,12 @@ fn clamp_texture_coords(
     const max_coord = try function.append_expr(allocator, .{
         .ty = coord_vec_ty,
         .category = .value,
-        .data = .{ .binary = .{ .op = .sub, .lhs = td_id, .rhs = one_vec } },
+        .data = .{ .binary = .{ .op = .sub, .lhs = td_coord_id, .rhs = one_vec } },
     });
 
-    // vec<u32, dim>(0)
+    // vec<T, dim>(0), where T matches the original coordinate element type.
     const zero_scalar = try function.append_expr(allocator, .{
-        .ty = u32_ty, .category = .value, .data = .{ .int_lit = 0 },
+        .ty = coord_elem_ty, .category = .value, .data = .{ .int_lit = 0 },
     });
     const splat_zero_args = try function.append_expr_args(allocator, &.{zero_scalar});
     const zero_vec = try function.append_expr(allocator, .{

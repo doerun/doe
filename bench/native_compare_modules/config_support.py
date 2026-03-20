@@ -44,7 +44,16 @@ VALID_REQUIRED_TIMING_CLASSES = {"any", "operation", "process-wall"}
 VALID_RESOURCE_PROBES = {"none", "rocm-smi"}
 VALID_CLAIMABILITY_MODES = {"off", "local", "release"}
 VALID_UPLOAD_BUFFER_USAGES = {"copy-dst-copy-src", "copy-dst"}
-VALID_WORKLOAD_COHORTS = {"all", "comparability-candidates"}
+VALID_WORKLOAD_COHORTS = {"all", "comparability-candidates", "doe-advantage"}
+VALID_DIRECTIONAL_REASONS = {
+    "dawn_limit",
+    "dawn_missing_contract",
+    "dawn_no_execution",
+    "path_asymmetry",
+    "host_instability",
+    "methodology_gap",
+    "other",
+}
 NON_APPLES_TO_APPLES_DOMAINS = {
     "pipeline-async",
     "p1-capability",
@@ -106,6 +115,7 @@ class Workload:
     dawn_filter: str
     comparable: bool
     benchmark_class: str
+    directional_reason: str
     allow_left_no_execution: bool
     include_by_default: bool
     left_timing_divisor: float
@@ -180,12 +190,14 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--workload-cohort",
-        choices=("all", "comparability-candidates"),
+        choices=("all", "comparability-candidates", "doe-advantage"),
         default=DEFAULT_WORKLOAD_COHORT,
         help=(
             "Optional workload cohort selector. "
             "'comparability-candidates' keeps workloads marked "
-            "comparabilityCandidate.enabled=true."
+            "comparabilityCandidate.enabled=true. "
+            "'doe-advantage' keeps directional workloads for governed "
+            "Doe-vs-Dawn non-claim evidence."
         ),
     )
     parser.add_argument(
@@ -686,6 +698,83 @@ def parse_comparability_candidate(
     return enabled, tier, notes
 
 
+def infer_directional_reason(
+    *,
+    comparability_notes: str,
+    path_asymmetry: bool,
+) -> str:
+    notes = comparability_notes.strip().lower()
+    if path_asymmetry:
+        return "path_asymmetry"
+    if "maxstoragebufferbindingsize" in notes:
+        return "dawn_limit"
+    if "does not execute this workload" in notes or "0 dispatches, 0 encode" in notes:
+        return "dawn_no_execution"
+    if (
+        "nearest proxy" in notes
+        or "not strict apples-to-apples" in notes
+        or "does not expose a matching" in notes
+        or "diagnostic and excluded" in notes
+        or "parity path" in notes
+        or "parity lane" in notes
+        or "filter autodiscover has no" in notes
+    ):
+        return "dawn_missing_contract"
+    if (
+        "host lane for now" in notes
+        or "execution errors" in notes
+        or "waittimedout" in notes
+        or "intermittent timeout" in notes
+    ):
+        return "host_instability"
+    if "timing" in notes and "directional" in notes:
+        return "methodology_gap"
+    return "other"
+
+
+def parse_directional_reason(
+    value: Any,
+    *,
+    workload_id: str,
+    benchmark_class: str,
+    comparability_notes: str,
+    path_asymmetry: bool,
+) -> str:
+    if value is None:
+        return (
+            infer_directional_reason(
+                comparability_notes=comparability_notes,
+                path_asymmetry=path_asymmetry,
+            )
+            if benchmark_class == "directional"
+            else ""
+        )
+    if not isinstance(value, str):
+        raise ValueError(
+            f"invalid workload {workload_id}: directionalReason must be a string"
+        )
+    reason = value.strip().lower()
+    if not reason:
+        return (
+            infer_directional_reason(
+                comparability_notes=comparability_notes,
+                path_asymmetry=path_asymmetry,
+            )
+            if benchmark_class == "directional"
+            else ""
+        )
+    if benchmark_class != "directional":
+        raise ValueError(
+            f"invalid workload {workload_id}: directionalReason requires benchmarkClass=directional"
+        )
+    if reason not in VALID_DIRECTIONAL_REASONS:
+        raise ValueError(
+            f"invalid workload {workload_id}: directionalReason must be one of "
+            f"{sorted(VALID_DIRECTIONAL_REASONS)}"
+        )
+    return reason
+
+
 def safe_float(value: Any) -> float | None:
     return runner_mod.safe_float(value)
 
@@ -873,6 +962,7 @@ def load_workloads(
         )
         right_upload_submit_every_raw = parse_int(item.get("rightUploadSubmitEvery"))
         comparable = bool(item.get("comparable", False))
+        path_asymmetry = bool(item.get("pathAsymmetry", False))
         benchmark_class_raw = item.get("benchmarkClass")
         if benchmark_class_raw is None:
             benchmark_class = "comparable" if comparable else "directional"
@@ -891,6 +981,13 @@ def load_workloads(
             raise ValueError(
                 f"invalid workload {workload_id}: benchmarkClass=directional requires comparable=false"
             )
+        directional_reason = parse_directional_reason(
+            item.get("directionalReason"),
+            workload_id=workload_id,
+            benchmark_class=benchmark_class,
+            comparability_notes=str(item.get("comparabilityNotes", "")),
+            path_asymmetry=path_asymmetry,
+        )
         workload = Workload(
             id=workload_id,
             name=item.get("name", workload_id),
@@ -921,6 +1018,7 @@ def load_workloads(
             dawn_filter=item.get("dawnFilter", ""),
             comparable=comparable,
             benchmark_class=benchmark_class,
+            directional_reason=directional_reason,
             allow_left_no_execution=bool(item.get("allowLeftNoExecution", False)),
             include_by_default=bool(item.get("default", True)),
             left_timing_divisor=left_timing_divisor,
@@ -930,7 +1028,7 @@ def load_workloads(
             comparability_candidate=comparability_candidate,
             comparability_candidate_tier=comparability_candidate_tier,
             comparability_candidate_notes=comparability_candidate_notes,
-            path_asymmetry=bool(item.get("pathAsymmetry", False)),
+            path_asymmetry=path_asymmetry,
             path_asymmetry_note=str(item.get("pathAsymmetryNote", "")),
             strict_normalization_unit=str(item.get("strictNormalizationUnit", "")).strip().lower(),
         )
@@ -1029,6 +1127,8 @@ def load_workloads(
         if not selected and (not include_extended) and (not workload.include_by_default):
             continue
         if workload_cohort == "comparability-candidates" and (not workload.comparability_candidate):
+            continue
+        if workload_cohort == "doe-advantage" and workload.benchmark_class != "directional":
             continue
         if (not include_noncomparable) and (not workload.comparable):
             continue

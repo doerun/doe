@@ -72,24 +72,14 @@ pub fn flush_queue(self: *Runtime) !u64 {
             .pSignalSemaphores = null,
         };
 
-        // Timeline semaphore path: signal the timeline and wait on it
-        // instead of fence reset/wait. Falls back to fence when unavailable.
-        if (self.has_timeline_semaphore) {
-            var tsi = vk_sync.TimelineSubmitHelper.prepare(&self.timeline_semaphore);
-            tsi.patch();
-            submit.pNext = @ptrCast(&tsi.timeline_info);
-            submit.signalSemaphoreCount = 1;
-            submit.pSignalSemaphores = @ptrCast(&tsi.semaphore);
-            try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit), VK_NULL_U64));
-            try self.timeline_semaphore.wait(self.device, tsi.signal_value);
-        } else {
-            // Fence-based wait targets only this submission; vkQueueWaitIdle
-            // synchronizes the entire queue and carries higher driver overhead
-            // on RADV, which dominates tiny-upload latency.
-            try c.check_vk(c.vkResetFences(self.device, 1, @ptrCast(&self.fence)));
-            try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit), self.fence));
-            try c.check_vk(c.vkWaitForFences(self.device, 1, @ptrCast(&self.fence), c.VK_TRUE, WAIT_TIMEOUT_NS));
-        }
+        // Fence-based wait targets only this submission; vkQueueWaitIdle
+        // synchronizes the entire queue and carries higher driver overhead
+        // on RADV, which dominates tiny-upload latency. Keep timeline
+        // semaphores for deferred drain paths, but prefer the direct fence
+        // fast path for immediate upload flushes.
+        try c.check_vk(c.vkResetFences(self.device, 1, @ptrCast(&self.fence)));
+        try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit), self.fence));
+        try c.check_vk(c.vkWaitForFences(self.device, 1, @ptrCast(&self.fence), c.VK_TRUE, WAIT_TIMEOUT_NS));
         self.has_deferred_submissions = false;
     } else if (self.has_deferred_submissions) {
         // No pending uploads but earlier deferred work exists; drain via
@@ -535,7 +525,7 @@ pub fn flush_streaming_copy(self: *Runtime, wait: bool) !void {
         .pSignalSemaphores = null,
     };
 
-    if (self.has_timeline_semaphore) {
+    if (self.has_timeline_semaphore and !wait) {
         // Timeline path: signal the semaphore on every submission.
         // For immediate-wait, follow with a CPU wait on the signaled value.
         var tsi = vk_sync.TimelineSubmitHelper.prepare(&self.timeline_semaphore);
