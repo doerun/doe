@@ -181,6 +181,14 @@ function makeFailedResult(mode, args, launchArgs, browserVersion, startMs, error
     features: [],
     limits: {},
     wgslLanguageFeatures: [],
+    webgpuCanvasApi: {
+      offscreenCanvasAvailable: false,
+      webgpuContextAvailable: false,
+      webgpuContextHasConfigure: false,
+      webgpuContextHasGetCurrentTexture: false,
+      preferredCanvasFormatSupported: false,
+      preferredCanvasFormat: null,
+    },
     smoke: {
       computeIncrement: { pass: false, actual: null, expected: [2, 3, 4, 5], error: errorText },
       renderTriangle: { pass: false, centerRgba: null, error: errorText },
@@ -435,7 +443,7 @@ function startLocalServer() {
 }
 
 function baseLaunchArgs(port) {
-  return [
+  const args = [
     "--no-sandbox",
     "--disable-setuid-sandbox",
     "--disable-dev-shm-usage",
@@ -443,6 +451,10 @@ function baseLaunchArgs(port) {
     "--enable-unsafe-webgpu",
     `--unsafely-treat-insecure-origin-as-secure=http://127.0.0.1:${port}`,
   ];
+  if (process.platform === "linux") {
+    args.push("--use-angle=vulkan");
+  }
+  return args;
 }
 
 function runtimeArgs(mode, doeLibPath) {
@@ -949,6 +961,15 @@ async function runMode(chromium, mode, args, localUrl, localPort) {
           if (typeof VideoFrame !== "function") {
             throw new Error("VideoFrame is unavailable");
           }
+          const importAdapter = await withOpTimeout("importExternalTexture requestAdapter", () =>
+            gpu.requestAdapter(),
+          );
+          if (!importAdapter) {
+            throw new Error("importExternalTexture requestAdapter returned null");
+          }
+          const importDevice = await withOpTimeout("importExternalTexture requestDevice", () =>
+            importAdapter.requestDevice(),
+          );
           const sourceCanvas = new OffscreenCanvas(2, 2);
           const sourceContext = sourceCanvas.getContext("2d");
           if (!sourceContext) {
@@ -956,131 +977,141 @@ async function runMode(chromium, mode, args, localUrl, localPort) {
           }
           sourceContext.fillStyle = "rgba(255, 0, 0, 1)";
           sourceContext.fillRect(0, 0, 2, 2);
-          const videoFrame = new VideoFrame(sourceCanvas, { timestamp: 0 });
-          const externalTexture = device.importExternalTexture({
-            source: videoFrame,
-            colorSpace: "srgb",
-            label: "playwright-smoke-external-texture",
-          });
-          const sampler = device.createSampler({
-            minFilter: "linear",
-            magFilter: "linear",
-          });
-          const bindGroupLayout = device.createBindGroupLayout({
-            entries: [
-              {
-                binding: 0,
-                visibility: GPUShaderStage.FRAGMENT,
-                sampler: { type: "filtering" },
+
+          let videoFrame = null;
+          let externalTexture = null;
+          let renderTarget = null;
+          try {
+            videoFrame = new VideoFrame(sourceCanvas, { timestamp: 0 });
+            externalTexture = importDevice.importExternalTexture({
+              source: videoFrame,
+              colorSpace: "srgb",
+              label: "playwright-smoke-external-texture",
+            });
+            const sampler = importDevice.createSampler({
+              minFilter: "linear",
+              magFilter: "linear",
+            });
+            const bindGroupLayout = importDevice.createBindGroupLayout({
+              entries: [
+                {
+                  binding: 0,
+                  visibility: GPUShaderStage.FRAGMENT,
+                  sampler: { type: "filtering" },
+                },
+                {
+                  binding: 1,
+                  visibility: GPUShaderStage.FRAGMENT,
+                  externalTexture: {},
+                },
+              ],
+            });
+            const pipelineLayout = importDevice.createPipelineLayout({
+              bindGroupLayouts: [bindGroupLayout],
+            });
+            const shader = importDevice.createShaderModule({
+              code: `
+                struct VertexOutput {
+                  @builtin(position) position : vec4<f32>,
+                  @location(0) fragUV : vec2<f32>,
+                };
+
+                @vertex
+                fn vs(@builtin(vertex_index) index : u32) -> VertexOutput {
+                  var pos = array<vec2<f32>, 6>(
+                    vec2<f32>(-1.0, -1.0),
+                    vec2<f32>( 1.0, -1.0),
+                    vec2<f32>(-1.0,  1.0),
+                    vec2<f32>(-1.0,  1.0),
+                    vec2<f32>( 1.0, -1.0),
+                    vec2<f32>( 1.0,  1.0),
+                  );
+                  var uv = array<vec2<f32>, 6>(
+                    vec2<f32>(0.0, 1.0),
+                    vec2<f32>(1.0, 1.0),
+                    vec2<f32>(0.0, 0.0),
+                    vec2<f32>(0.0, 0.0),
+                    vec2<f32>(1.0, 1.0),
+                    vec2<f32>(1.0, 0.0),
+                  );
+
+                  var output : VertexOutput;
+                  output.position = vec4<f32>(pos[index], 0.0, 1.0);
+                  output.fragUV = uv[index];
+                  return output;
+                }
+
+                @group(0) @binding(0) var mySampler : sampler;
+                @group(0) @binding(1) var myTexture : texture_external;
+
+                @fragment
+                fn fs(@location(0) fragUV : vec2<f32>) -> @location(0) vec4<f32> {
+                  return textureSampleBaseClampToEdge(myTexture, mySampler, fragUV);
+                }
+              `,
+            });
+            const pipeline = importDevice.createRenderPipeline({
+              layout: pipelineLayout,
+              vertex: { module: shader, entryPoint: "vs" },
+              fragment: {
+                module: shader,
+                entryPoint: "fs",
+                targets: [{ format: "rgba8unorm" }],
               },
-              {
-                binding: 1,
-                visibility: GPUShaderStage.FRAGMENT,
-                externalTexture: {},
-              },
-            ],
-          });
-          const pipelineLayout = device.createPipelineLayout({
-            bindGroupLayouts: [bindGroupLayout],
-          });
-          const shader = device.createShaderModule({
-            code: `
-              struct VertexOutput {
-                @builtin(position) position : vec4<f32>,
-                @location(0) fragUV : vec2<f32>,
-              };
-
-              @vertex
-              fn vs(@builtin(vertex_index) index : u32) -> VertexOutput {
-                var pos = array<vec2<f32>, 6>(
-                  vec2<f32>(-1.0, -1.0),
-                  vec2<f32>( 1.0, -1.0),
-                  vec2<f32>(-1.0,  1.0),
-                  vec2<f32>(-1.0,  1.0),
-                  vec2<f32>( 1.0, -1.0),
-                  vec2<f32>( 1.0,  1.0),
-                );
-                var uv = array<vec2<f32>, 6>(
-                  vec2<f32>(0.0, 1.0),
-                  vec2<f32>(1.0, 1.0),
-                  vec2<f32>(0.0, 0.0),
-                  vec2<f32>(0.0, 0.0),
-                  vec2<f32>(1.0, 1.0),
-                  vec2<f32>(1.0, 0.0),
-                );
-
-                var output : VertexOutput;
-                output.position = vec4<f32>(pos[index], 0.0, 1.0);
-                output.fragUV = uv[index];
-                return output;
-              }
-
-              @group(0) @binding(0) var mySampler : sampler;
-              @group(0) @binding(1) var myTexture : texture_external;
-
-              @fragment
-              fn fs(@location(0) fragUV : vec2<f32>) -> @location(0) vec4<f32> {
-                return textureSampleBaseClampToEdge(myTexture, mySampler, fragUV);
-              }
-            `,
-          });
-          const pipeline = device.createRenderPipeline({
-            layout: pipelineLayout,
-            vertex: { module: shader, entryPoint: "vs" },
-            fragment: {
-              module: shader,
-              entryPoint: "fs",
-              targets: [{ format: "rgba8unorm" }],
-            },
-            primitive: { topology: "triangle-list" },
-          });
-          const bindGroup = device.createBindGroup({
-            layout: bindGroupLayout,
-            entries: [
-              { binding: 0, resource: sampler },
-              { binding: 1, resource: externalTexture },
-            ],
-          });
-          const renderTarget = device.createTexture({
-            size: { width: 4, height: 4, depthOrArrayLayers: 1 },
-            format: "rgba8unorm",
-            usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
-          });
-          const encoder = device.createCommandEncoder();
-          const pass = encoder.beginRenderPass({
-            colorAttachments: [
-              {
-                view: renderTarget.createView(),
-                clearValue: { r: 0, g: 0, b: 0, a: 1 },
-                loadOp: "clear",
-                storeOp: "store",
-              },
-            ],
-          });
-          pass.setPipeline(pipeline);
-          pass.setBindGroup(0, bindGroup);
-          pass.draw(6);
-          pass.end();
-          device.queue.submit([encoder.finish()]);
-          const readback = await readTextureRgba(
-            device,
-            renderTarget,
-            4,
-            4,
-            "importExternalTexture readback",
-          );
-          const centerRgba = sampleRgba(readback.bytes, readback.bytesPerRow, 2, 2);
-          result.smoke.importExternalTexture.centerRgba = centerRgba;
-          result.smoke.importExternalTexture.pass = isRedDominant(centerRgba);
-          externalTexture.destroy?.();
-          renderTarget.destroy();
-          videoFrame.close();
+              primitive: { topology: "triangle-list" },
+            });
+            const bindGroup = importDevice.createBindGroup({
+              layout: bindGroupLayout,
+              entries: [
+                { binding: 0, resource: sampler },
+                { binding: 1, resource: externalTexture },
+              ],
+            });
+            renderTarget = importDevice.createTexture({
+              size: { width: 4, height: 4, depthOrArrayLayers: 1 },
+              format: "rgba8unorm",
+              usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
+            });
+            const encoder = importDevice.createCommandEncoder();
+            const pass = encoder.beginRenderPass({
+              colorAttachments: [
+                {
+                  view: renderTarget.createView(),
+                  clearValue: { r: 0, g: 0, b: 0, a: 1 },
+                  loadOp: "clear",
+                  storeOp: "store",
+                },
+              ],
+            });
+            pass.setPipeline(pipeline);
+            pass.setBindGroup(0, bindGroup);
+            pass.draw(6);
+            pass.end();
+            importDevice.queue.submit([encoder.finish()]);
+            await withOpTimeout("importExternalTexture onSubmittedWorkDone", () =>
+              importDevice.queue.onSubmittedWorkDone(),
+            );
+            const readback = await readTextureRgba(
+              importDevice,
+              renderTarget,
+              4,
+              4,
+              "importExternalTexture readback",
+            );
+            const centerRgba = sampleRgba(readback.bytes, readback.bytesPerRow, 2, 2);
+            result.smoke.importExternalTexture.centerRgba = centerRgba;
+            result.smoke.importExternalTexture.pass = isRedDominant(centerRgba);
+          } finally {
+            externalTexture?.destroy?.();
+            renderTarget?.destroy();
+            videoFrame?.close();
+          }
         } catch (error) {
           result.smoke.importExternalTexture.error = String(error);
         }
 
         let benchDevice = device;
-        if (!result.smoke.renderTriangle.pass) {
+        if (!result.smoke.renderTriangle.pass || !result.smoke.importExternalTexture.pass) {
           try {
             const benchAdapter = await withOpTimeout("bench fallback requestAdapter", () =>
               gpu.requestAdapter(),
@@ -1250,7 +1281,7 @@ async function main() {
       modeResults.push(result);
       const status = hasFailure(result) ? "FAIL" : "PASS";
       console.log(
-        `[${status}] ${mode}: webgpu=${result.webgpuAvailable} adapter=${result.adapterAvailable} compute=${result.smoke.computeIncrement.pass} render=${result.smoke.renderTriangle.pass} xrCompatible=${result.smoke.requestAdapterXrCompatible.pass} copyExternal=${result.smoke.copyExternalImageToTexture.pass} importExternal=${result.smoke.importExternalTexture.pass} canvas=${result.webgpuCanvasApi.webgpuContextAvailable} upload64kb_us=${result.benches.writeBuffer64kbUsPerOp?.toFixed(3) ?? "n/a"} dispatch_us=${result.benches.computeDispatchUsPerOp?.toFixed(3) ?? "n/a"}`,
+        `[${status}] ${mode}: webgpu=${result.webgpuAvailable} adapter=${result.adapterAvailable} compute=${result.smoke.computeIncrement.pass} render=${result.smoke.renderTriangle.pass} xrCompatible=${result.smoke.requestAdapterXrCompatible.pass} copyExternal=${result.smoke.copyExternalImageToTexture.pass} importExternal=${result.smoke.importExternalTexture.pass} canvas=${result.webgpuCanvasApi?.webgpuContextAvailable ?? false} upload64kb_us=${result.benches.writeBuffer64kbUsPerOp?.toFixed(3) ?? "n/a"} dispatch_us=${result.benches.computeDispatchUsPerOp?.toFixed(3) ?? "n/a"}`,
       );
       if (hasFailure(result)) {
         failed = true;

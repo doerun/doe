@@ -133,6 +133,13 @@ AMD Vulkan strict comparable/release presets now point at the native-supported w
 - root cause of the March 10 AMD Vulkan release regression was catalog drift, not a simulator/cost-model path:
   - the compare harness correctly normalized by effective workload contract, but several strict upload rows had right-only `commandRepeat`/`ignoreFirstOps` overrides, so Doe was being measured at one effective unit while Dawn was amortized over fifty or five hundred.
   - fresh strict rerun after repairing the catalog reduced the release blocker set from five upload rows to one genuine tiny-upload performance gap (`upload_write_buffer_1kb`).
+- Linux browser runtime selector bring-up is now operational in the local Chromium tree (2026-03-20):
+  - `browser/fawn-browser/src/out/fawn_release/chrome` now honors `--use-webgpu-runtime=dawn|doe`, `--disable-webgpu-doe`, and `--doe-webgpu-library-path`.
+  - the Linux Playwright smoke harness now defaults Chromium launches to `--use-angle=vulkan`, which makes the local forced-Dawn lane pass compute, render, `xrCompatible`, `copyExternalImageToTexture`, `importExternalTexture`, and the mini timing probes.
+  - the Doe browser path now passes the local headless compute, render, `xrCompatible`, and `copyExternalImageToTexture` smoke checks; the key fix was GPU-thread polling that ticks each live Doe device before `instanceProcessEvents`, so submit-driven callbacks no longer stall after `queue.submit()`.
+  - Doe custom mailbox commands now enter the selected runtime's per-thread proc scope, which keeps decoder-side mailbox handling on the selected runtime instead of falling back to Dawn-global procs.
+  - forced `--use-webgpu-runtime=doe` with a fake shared-library path now leaves `requestAdapter()` unavailable instead of silently substituting Dawn.
+  - remaining browser-lane gap on this host is now Doe-only: `importExternalTexture` and the mini timing probes still fail under Doe on Linux with `A valid external Instance reference no longer exists.`, which is consistent with Doe's still-incomplete native media/shared-texture interop path.
 - Backend naming cutover is complete for runtime-visible surfaces: Doe is now the only backend identity (`doe-zig-runtime`, `libwebgpu_doe.so`, Chromium `--use-webgpu-runtime=doe`, `--disable-webgpu-doe`, `--doe-webgpu-library-path`).
 - Doe identity cleanup for runtime-visible diagnostics is complete:
   - drop-in helper exports are now `doeWgpuDropinLastErrorCode` / `doeWgpuDropinClearLastError`

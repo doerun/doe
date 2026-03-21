@@ -177,17 +177,22 @@ Initial criterion is deterministic compatibility and observability, not performa
 5. `I4`:
    - run strict comparability benchmark lanes for claimable paths.
 
-## Current snapshot (2026-02-24)
+## Current snapshot (2026-03-20)
 
-1. `I0` and selector/fallback plumbing milestones are complete locally.
-2. Decoder/proc-dispatch seam has a concrete partial Doe execution path:
-   - runtime enum threaded into decoder creation,
-   - Doe proc table initialized from `wgpuGetProcAddress`,
-   - Doe `WGPUInstance` created/injected into wire server,
-   - thread-proc scoping active in execution/polling path.
-3. Forced-Doe in this host's headless profile currently rejects with `profile_denylisted`; treat as environment gating signal.
-4. Strict 3-workload comparison subset report exists and is marked comparable + claimable:
-   - `bench/out/20260224T140709Z/dawn-vs-doe.browser.smoke3.json`
+1. Selector/fallback plumbing is now live in the local Chromium tree:
+   - `--use-webgpu-runtime=dawn|doe`,
+   - `--disable-webgpu-doe`,
+   - `--doe-webgpu-library-path=...`.
+2. Local Linux `out/fawn_release/chrome` now executes real browser WebGPU work in both selector modes:
+   - the Playwright smoke harness now defaults Linux launches to `--use-angle=vulkan`, which makes the local forced-Dawn lane pass compute, render, `requestAdapter({ xrCompatible: false })`, `copyExternalImageToTexture`, `importExternalTexture`, and the mini timing probes,
+   - Doe required GPU-thread polling to tick each live Doe device before `instanceProcessEvents`; without that, submit-driven callbacks stalled after `queue.submit()`,
+   - Doe custom mailbox commands now also enter the selected runtime's per-thread proc scope, which was necessary to keep Doe mailbox handling inside the selected runtime path instead of dropping back to Dawn-global procs.
+3. Negative-control validation now behaves correctly:
+   - forced `--use-webgpu-runtime=doe` with a fake shared-library path leaves `navigator.gpu` present but `requestAdapter()` returns `null`,
+   - there is no silent substitution back to Dawn in forced-Doe mode.
+4. Remaining browser-lane issue on this host is now Doe-only:
+   - with Linux Vulkan ANGLE enabled, Doe still fails `importExternalTexture` and the mini timing probes with `A valid external Instance reference no longer exists.`,
+   - this is downstream of Doe's still-incomplete native media/shared-texture interop path, not selector fallback or fake-Dawn substitution.
 
 ## Common wrapper scripts
 
@@ -228,8 +233,7 @@ npm install --prefix browser/fawn-browser playwright-core
 # compare Dawn vs Doe in one diagnostic report (positive delta => Doe faster, diagnostic only)
 ./browser/fawn-browser/scripts/run-smoke.sh \
   --mode both \
-  --out browser/fawn-browser/artifacts/dawn-vs-doe.browser.playwright-smoke.diagnostic.json \
-  --chrome-arg=--ozone-platform=x11
+  --out browser/fawn-browser/artifacts/dawn-vs-doe.browser.playwright-smoke.diagnostic.json
 ```
 
 By default the harness writes to timestamped lane-local artifacts:
