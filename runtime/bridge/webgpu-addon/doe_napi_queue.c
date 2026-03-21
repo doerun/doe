@@ -82,12 +82,13 @@ napi_value doe_command_encoder_copy_buffer_to_texture(napi_env env, napi_callbac
     napi_get_value_uint32(env, _args[11], &size.width);
     napi_get_value_uint32(env, _args[12], &size.height);
     napi_get_value_uint32(env, _args[13], &size.depthOrArrayLayers);
-    if (pfn_doeNativeCommandEncoderCopyBufferToTexture) {
+    if (pfn_wgpuCommandEncoderCopyBufferToTexture) {
+        pfn_wgpuCommandEncoderCopyBufferToTexture(enc, &src, &dst, &size);
+    } else if (pfn_doeNativeCommandEncoderCopyBufferToTexture) {
         pfn_doeNativeCommandEncoderCopyBufferToTexture(enc, src.buffer,
             src.layout.offset, src.layout.bytesPerRow, src.layout.rowsPerImage,
-            dst.texture, dst.mipLevel, size.width, size.height, size.depthOrArrayLayers);
-    } else if (pfn_wgpuCommandEncoderCopyBufferToTexture) {
-        pfn_wgpuCommandEncoderCopyBufferToTexture(enc, &src, &dst, &size);
+            dst.texture, dst.mipLevel, dst.origin.x, dst.origin.y, dst.origin.z, dst.aspect,
+            size.width, size.height, size.depthOrArrayLayers);
     } else {
         NAPI_THROW(env, "commandEncoderCopyBufferToTexture: no implementation available in loaded library");
     }
@@ -118,12 +119,13 @@ napi_value doe_command_encoder_copy_texture_to_buffer(napi_env env, napi_callbac
     napi_get_value_uint32(env, _args[11], &size.width);
     napi_get_value_uint32(env, _args[12], &size.height);
     napi_get_value_uint32(env, _args[13], &size.depthOrArrayLayers);
-    if (pfn_doeNativeCommandEncoderCopyTextureToBuffer) {
+    if (pfn_wgpuCommandEncoderCopyTextureToBuffer) {
+        pfn_wgpuCommandEncoderCopyTextureToBuffer(enc, &src, &dst, &size);
+    } else if (pfn_doeNativeCommandEncoderCopyTextureToBuffer) {
         pfn_doeNativeCommandEncoderCopyTextureToBuffer(enc, src.texture, src.mipLevel,
+            src.origin.x, src.origin.y, src.origin.z, src.aspect,
             dst.buffer, dst.layout.offset, dst.layout.bytesPerRow, dst.layout.rowsPerImage,
             size.width, size.height, size.depthOrArrayLayers);
-    } else if (pfn_wgpuCommandEncoderCopyTextureToBuffer) {
-        pfn_wgpuCommandEncoderCopyTextureToBuffer(enc, &src, &dst, &size);
     } else {
         NAPI_THROW(env, "commandEncoderCopyTextureToBuffer: no implementation available in loaded library");
     }
@@ -163,46 +165,50 @@ napi_value doe_command_encoder_clear_buffer(napi_env env, napi_callback_info inf
 }
 
 napi_value doe_command_encoder_copy_texture_to_texture(napi_env env, napi_callback_info info) {
-    size_t argc = 15;
-    napi_value argv[15];
+    size_t argc = 16;
+    napi_value argv[16];
     napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
     CHECK_LIB_LOADED(env);
-    if (argc != 14 && argc != 15)
-        NAPI_THROW(env, "commandEncoderCopyTextureToTexture requires 14 or 15 arguments");
+    if (argc != 16)
+        NAPI_THROW(env, "commandEncoderCopyTextureToTexture requires 16 arguments");
     if (!pfn_doeNativeCommandEncoderCopyTextureToTexture && !pfn_wgpuCommandEncoderCopyTextureToTexture)
         NAPI_THROW(env, "commandEncoderCopyTextureToTexture: no implementation available in loaded library");
-    const size_t di = argc == 15 ? 7 : 6;
     WGPUCommandEncoder enc    = unwrap_ptr(env, argv[0]);
     WGPUTexture src_texture   = unwrap_ptr(env, argv[1]);
-    WGPUTexture dst_texture   = unwrap_ptr(env, argv[di]);
+    WGPUTexture dst_texture   = unwrap_ptr(env, argv[7]);
     if (!enc || !src_texture || !dst_texture)
         NAPI_THROW(env, "commandEncoderCopyTextureToTexture requires encoder and textures");
     uint32_t src_mip = 0, src_x = 0, src_y = 0, src_z = 0;
     uint32_t dst_mip = 0, dst_x = 0, dst_y = 0, dst_z = 0;
+    uint32_t src_aspect = 0, dst_aspect = 0;
     uint32_t width = 1, height = 1, depth_or_layers = 1;
     napi_get_value_uint32(env, argv[2], &src_mip);
     napi_get_value_uint32(env, argv[3], &src_x);
     napi_get_value_uint32(env, argv[4], &src_y);
     napi_get_value_uint32(env, argv[5], &src_z);
-    napi_get_value_uint32(env, argv[di + 1], &dst_mip);
-    napi_get_value_uint32(env, argv[di + 2], &dst_x);
-    napi_get_value_uint32(env, argv[di + 3], &dst_y);
-    napi_get_value_uint32(env, argv[di + 4], &dst_z);
-    napi_get_value_uint32(env, argv[di + 5], &width);
-    napi_get_value_uint32(env, argv[di + 6], &height);
-    napi_get_value_uint32(env, argv[di + 7], &depth_or_layers);
+    napi_get_value_uint32(env, argv[6], &src_aspect);
+    napi_get_value_uint32(env, argv[8], &dst_mip);
+    napi_get_value_uint32(env, argv[9], &dst_x);
+    napi_get_value_uint32(env, argv[10], &dst_y);
+    napi_get_value_uint32(env, argv[11], &dst_z);
+    napi_get_value_uint32(env, argv[12], &dst_aspect);
+    napi_get_value_uint32(env, argv[13], &width);
+    napi_get_value_uint32(env, argv[14], &height);
+    napi_get_value_uint32(env, argv[15], &depth_or_layers);
     if (pfn_doeNativeCommandEncoderCopyTextureToTexture) {
         pfn_doeNativeCommandEncoderCopyTextureToTexture(enc,
-            src_texture, src_mip, 0, src_x, src_y, src_z,
-            dst_texture, dst_mip, 0, dst_x, dst_y, dst_z,
+            src_texture, src_mip, 0, src_x, src_y, src_z, src_aspect,
+            dst_texture, dst_mip, 0, dst_x, dst_y, dst_z, dst_aspect,
             width, height, depth_or_layers);
     } else if (pfn_wgpuCommandEncoderCopyTextureToTexture) {
         WGPUTexelCopyTextureInfo s, d; WGPUExtent3D sz;
         memset(&s, 0, sizeof(s)); memset(&d, 0, sizeof(d));
         s.texture = src_texture; s.mipLevel = src_mip;
         s.origin.x = src_x; s.origin.y = src_y; s.origin.z = src_z;
+        s.aspect = src_aspect;
         d.texture = dst_texture; d.mipLevel = dst_mip;
         d.origin.x = dst_x; d.origin.y = dst_y; d.origin.z = dst_z;
+        d.aspect = dst_aspect;
         sz.width = width; sz.height = height; sz.depthOrArrayLayers = depth_or_layers;
         pfn_wgpuCommandEncoderCopyTextureToTexture(enc, &s, &d, &sz);
     } else {
@@ -224,26 +230,34 @@ napi_value doe_begin_compute_pass(napi_env env, napi_callback_info info) {
     WGPUCommandEncoder enc = unwrap_ptr(env, argv[0]);
     if (!enc) NAPI_THROW(env, "Invalid encoder");
 
+    char* label = NULL;
+    size_t label_len = 0;
     WGPUComputePassTimestampWrites ts_writes = {0};
     WGPUComputePassTimestampWrites* ts_writes_ptr = NULL;
     if (argc > 1) {
         napi_valuetype desc_vt; napi_typeof(env, argv[1], &desc_vt);
-        if (desc_vt == napi_object &&
-            has_prop(env, argv[1], "timestampWrites") &&
-            prop_type(env, argv[1], "timestampWrites") == napi_object) {
-            napi_value tw = get_prop(env, argv[1], "timestampWrites");
-            ts_writes.querySet = unwrap_ptr(env, get_prop(env, tw, "querySet"));
-            ts_writes.beginningOfPassWriteIndex = get_uint32_prop(env, tw, "beginningOfPassWriteIndex");
-            ts_writes.endOfPassWriteIndex = get_uint32_prop(env, tw, "endOfPassWriteIndex");
-            ts_writes_ptr = &ts_writes;
+        if (desc_vt == napi_object) {
+            if (has_prop(env, argv[1], "label") && prop_type(env, argv[1], "label") == napi_string) {
+                label = dup_string_value(env, get_prop(env, argv[1], "label"), &label_len);
+                if (!label) NAPI_THROW(env, "beginComputePass: out of memory while reading label");
+            }
+            if (has_prop(env, argv[1], "timestampWrites") &&
+                prop_type(env, argv[1], "timestampWrites") == napi_object) {
+                napi_value tw = get_prop(env, argv[1], "timestampWrites");
+                ts_writes.querySet = unwrap_ptr(env, get_prop(env, tw, "querySet"));
+                ts_writes.beginningOfPassWriteIndex = get_uint32_prop(env, tw, "beginningOfPassWriteIndex");
+                ts_writes.endOfPassWriteIndex = get_uint32_prop(env, tw, "endOfPassWriteIndex");
+                ts_writes_ptr = &ts_writes;
+            }
         }
     }
 
     WGPUComputePassDescriptor desc = {
-        .nextInChain = NULL, .label = { .data = NULL, .length = 0 },
+        .nextInChain = NULL, .label = { .data = label, .length = label ? label_len : 0 },
         .timestampWrites = ts_writes_ptr,
     };
     WGPUComputePassEncoder pass = pfn_wgpuCommandEncoderBeginComputePass(enc, &desc);
+    free(label);
     if (!pass) NAPI_THROW(env, "beginComputePass failed");
     return wrap_ptr(env, pass);
 }
@@ -606,18 +620,20 @@ napi_value doe_compute_dispatch_flush_and_map_sync(napi_env env, napi_callback_i
         .nextInChain = NULL, .mode = WGPU_CALLBACK_MODE_ALLOW_PROCESS_EVENTS,
         .callback = buffer_map_callback, .userdata1 = &result, .userdata2 = NULL,
     };
-    if (pfn_doeNativeBufferMapAsync && pfn_doeNativeQueueFlush) {
-        WGPUFuture future = pfn_doeNativeBufferMapAsync(buf, (uint64_t)mode, (size_t)offset_i, (size_t)size_i, cb_info);
-        if (future.id == 0 || !result.done) NAPI_THROW(env, "flushAndMapSync: doeNativeBufferMapAsync unavailable");
-        if (result.status != WGPU_MAP_ASYNC_STATUS_SUCCESS)
-            return throw_status_error(env, "DOE_BUFFER_MAP_ERROR", "flushAndMapSync: doeNativeBufferMapAsync failed", result.status, result.message);
-    } else {
+    if (pfn_wgpuBufferMapAsync2) {
         WGPUFuture future = pfn_wgpuBufferMapAsync2(buf, (uint64_t)mode, (size_t)offset_i, (size_t)size_i, cb_info);
         if (future.id == 0) NAPI_THROW(env, "flushAndMapSync: bufferMapAsync future unavailable");
         if (!process_events_until(inst, &result.done, current_timeout_ns()))
             return throw_status_error(env, "DOE_BUFFER_MAP_TIMEOUT", "flushAndMapSync: bufferMapAsync timed out", result.status, result.message);
         if (result.status != WGPU_MAP_ASYNC_STATUS_SUCCESS)
             return throw_status_error(env, "DOE_BUFFER_MAP_ERROR", "flushAndMapSync: bufferMapAsync failed", result.status, result.message);
+    } else if (pfn_doeNativeBufferMapAsync && pfn_doeNativeQueueFlush) {
+        WGPUFuture future = pfn_doeNativeBufferMapAsync(buf, (uint64_t)mode, (size_t)offset_i, (size_t)size_i, cb_info);
+        if (future.id == 0 || !result.done) NAPI_THROW(env, "flushAndMapSync: doeNativeBufferMapAsync unavailable");
+        if (result.status != WGPU_MAP_ASYNC_STATUS_SUCCESS)
+            return throw_status_error(env, "DOE_BUFFER_MAP_ERROR", "flushAndMapSync: doeNativeBufferMapAsync failed", result.status, result.message);
+    } else {
+        NAPI_THROW(env, "flushAndMapSync: bufferMapAsync unavailable");
     }
     napi_value ok; napi_get_boolean(env, true, &ok);
     return ok;

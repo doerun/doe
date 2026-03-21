@@ -5,39 +5,51 @@
  * ================================================================ */
 
 napi_value doe_create_shader_module(napi_env env, napi_callback_info info) {
-    NAPI_ASSERT_ARGC(env, info, 3);
+    size_t argc = 4;
+    napi_value argv[4];
+    if (napi_get_cb_info(env, info, &argc, argv, NULL, NULL) != napi_ok) {
+        NAPI_THROW(env, "napi_get_cb_info failed");
+    }
+    if (argc < 2) NAPI_THROW(env, "createShaderModule requires a device and WGSL source");
     CHECK_LIB_LOADED(env);
-    WGPUDevice device = unwrap_ptr(env, _args[0]);
+    WGPUDevice device = unwrap_ptr(env, argv[0]);
     if (!device) NAPI_THROW(env, "Invalid device");
 
-    /* _args[1] is the WGSL source code string */
+    /* argv[1] is the WGSL source code string */
     size_t code_len = 0;
-    napi_get_value_string_utf8(env, _args[1], NULL, 0, &code_len);
+    napi_get_value_string_utf8(env, argv[1], NULL, 0, &code_len);
     char* code = (char*)malloc(code_len + 1);
-    napi_get_value_string_utf8(env, _args[1], code, code_len + 1, &code_len);
+    if (!code) NAPI_THROW(env, "createShaderModule: out of memory");
+    napi_get_value_string_utf8(env, argv[1], code, code_len + 1, &code_len);
 
-    /* _args[2] is the optional compilationHints array */
+    /* argv[2] is the optional compilationHints array */
     WGPUShaderModuleCompilationHint* hints = NULL;
     char** hint_entry_points = NULL;
     size_t hint_count = 0;
 
-    if (_argc > 2) {
+    if (argc > 2) {
         napi_valuetype hints_type;
-        napi_typeof(env, _args[2], &hints_type);
+        napi_typeof(env, argv[2], &hints_type);
         bool is_array = false;
         if (hints_type == napi_object) {
-            napi_is_array(env, _args[2], &is_array);
+            napi_is_array(env, argv[2], &is_array);
         }
         if (is_array) {
             uint32_t arr_len = 0;
-            napi_get_array_length(env, _args[2], &arr_len);
+            napi_get_array_length(env, argv[2], &arr_len);
             if (arr_len > 0) {
                 hint_count = arr_len;
                 hints = (WGPUShaderModuleCompilationHint*)calloc(hint_count, sizeof(WGPUShaderModuleCompilationHint));
                 hint_entry_points = (char**)calloc(hint_count, sizeof(char*));
+                if (!hints || !hint_entry_points) {
+                    free(code);
+                    free(hints);
+                    free(hint_entry_points);
+                    NAPI_THROW(env, "createShaderModule: out of memory while parsing compilationHints");
+                }
                 for (uint32_t i = 0; i < arr_len; i++) {
                     napi_value hint_obj;
-                    napi_get_element(env, _args[2], i, &hint_obj);
+                    napi_get_element(env, argv[2], i, &hint_obj);
 
                     /* Read entryPoint string */
                     napi_value ep_val;
@@ -48,6 +60,13 @@ napi_value doe_create_shader_module(napi_env env, napi_callback_info info) {
                             size_t ep_len = 0;
                             napi_get_value_string_utf8(env, ep_val, NULL, 0, &ep_len);
                             hint_entry_points[i] = (char*)malloc(ep_len + 1);
+                            if (!hint_entry_points[i]) {
+                                free(code);
+                                for (uint32_t j = 0; j < i; j++) free(hint_entry_points[j]);
+                                free(hint_entry_points);
+                                free(hints);
+                                NAPI_THROW(env, "createShaderModule: out of memory while parsing compilationHints");
+                            }
                             napi_get_value_string_utf8(env, ep_val, hint_entry_points[i], ep_len + 1, &ep_len);
                             hints[i].entryPoint.data = hint_entry_points[i];
                             hints[i].entryPoint.length = ep_len;
@@ -75,14 +94,30 @@ napi_value doe_create_shader_module(napi_env env, napi_callback_info info) {
         .chain = { .next = NULL, .sType = WGPU_STYPE_SHADER_SOURCE_WGSL },
         .code = { .data = code, .length = code_len },
     };
+    char* label_str = NULL;
+    size_t label_len = 0;
+    if (argc > 3) {
+        napi_valuetype label_type = napi_undefined;
+        if (napi_typeof(env, argv[3], &label_type) == napi_ok && label_type == napi_string) {
+            label_str = dup_string_value(env, argv[3], &label_len);
+            if (!label_str) {
+                free(code);
+                for (size_t i = 0; i < hint_count; i++) free(hint_entry_points[i]);
+                free(hint_entry_points);
+                free(hints);
+                NAPI_THROW(env, "createShaderModule: out of memory while parsing label");
+            }
+        }
+    }
     WGPUShaderModuleDescriptor desc = {
         .nextInChain = (void*)&wgsl_source,
-        .label = { .data = NULL, .length = 0 },
+        .label = { .data = label_str, .length = label_str ? label_len : 0 },
         .compilationHintCount = hint_count,
         .compilationHints = hints,
     };
 
     WGPUShaderModule mod = pfn_wgpuDeviceCreateShaderModule(device, &desc);
+    free(label_str);
     free(code);
     for (size_t i = 0; i < hint_count; i++) {
         free(hint_entry_points[i]);

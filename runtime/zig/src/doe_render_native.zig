@@ -1182,7 +1182,15 @@ pub export fn doeNativeCommandEncoderBeginRenderPass(enc_raw: ?*anyopaque, desc:
                         handle
                     else
                         v.tex.mtl;
+                    pass.target_view_handle = @intFromPtr(v);
+                    pass.target_format = if (v.format != 0) v.format else v.tex.format;
+                    pass.sample_count = if (v.tex.sample_count != 0) v.tex.sample_count else 1;
                 }
+                if (cast(DoeTextureView, att.resolveTarget)) |resolve_view| {
+                    pass.resolve_target = resolve_view.tex.mtl;
+                    pass.resolve_target_view_handle = @intFromPtr(resolve_view);
+                }
+                pass.depth_slice = att.depthSlice;
                 pass.clear_r = att.clearValue.r;
                 pass.clear_g = att.clearValue.g;
                 pass.clear_b = att.clearValue.b;
@@ -1197,7 +1205,11 @@ pub export fn doeNativeCommandEncoderBeginRenderPass(enc_raw: ?*anyopaque, desc:
                     handle
                 else
                     v.tex.mtl;
+                pass.depth_target_view_handle = @intFromPtr(v);
+                pass.depth_stencil_format = if (v.format != 0) v.format else v.tex.format;
             }
+            pass.depth_read_only = depth_att.depthReadOnly != 0;
+            pass.stencil_read_only = depth_att.stencilReadOnly != 0;
         }
     }
     return toOpaque(pass);
@@ -1282,7 +1294,17 @@ pub export fn doeNativeRenderPassDraw(pass_raw: ?*anyopaque, vertex_count: u32, 
         .root_signature = pip.backend_root_signature,
         .depth_state = pip.depth_state,
         .target = pass.target,
+        .resolve_target = pass.resolve_target,
         .depth_target = pass.depth_target,
+        .target_view_handle = pass.target_view_handle,
+        .resolve_target_view_handle = pass.resolve_target_view_handle,
+        .depth_target_view_handle = pass.depth_target_view_handle,
+        .target_format = pass.target_format,
+        .depth_stencil_format = pass.depth_stencil_format,
+        .sample_count = if (pass.sample_count != 0) pass.sample_count else pip.sample_count,
+        .depth_slice = pass.depth_slice,
+        .depth_read_only = pass.depth_read_only,
+        .stencil_read_only = pass.stencil_read_only,
         .topology = pip.topology,
         .front_face = pip.front_face,
         .cull_mode = pip.cull_mode,
@@ -1351,7 +1373,17 @@ pub export fn doeNativeRenderPassDrawIndexed(pass_raw: ?*anyopaque, index_count:
         .root_signature = pip.backend_root_signature,
         .depth_state = pip.depth_state,
         .target = pass.target,
+        .resolve_target = pass.resolve_target,
         .depth_target = pass.depth_target,
+        .target_view_handle = pass.target_view_handle,
+        .resolve_target_view_handle = pass.resolve_target_view_handle,
+        .depth_target_view_handle = pass.depth_target_view_handle,
+        .target_format = pass.target_format,
+        .depth_stencil_format = pass.depth_stencil_format,
+        .sample_count = if (pass.sample_count != 0) pass.sample_count else pip.sample_count,
+        .depth_slice = pass.depth_slice,
+        .depth_read_only = pass.depth_read_only,
+        .stencil_read_only = pass.stencil_read_only,
         .topology = pip.topology,
         .front_face = pip.front_face,
         .cull_mode = pip.cull_mode,

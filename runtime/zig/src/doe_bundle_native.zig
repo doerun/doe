@@ -288,14 +288,26 @@ fn bundleRenderPassCmd(
     state: *const BundleReplayState,
     pass: *const DoeRenderPass,
 ) native.RecordedCmd {
+    const pipeline = pass.pipeline;
     return .{ .render_pass = .{
         .pso = state.pso,
-        .depth_state = null,
+        .root_signature = if (pipeline) |p| p.backend_root_signature else null,
+        .depth_state = if (pipeline) |p| p.depth_state else null,
         .target = pass.target,
+        .resolve_target = pass.resolve_target,
         .depth_target = pass.depth_target,
-        .topology = 0,
-        .front_face = 0,
-        .cull_mode = 0,
+        .target_view_handle = pass.target_view_handle,
+        .resolve_target_view_handle = pass.resolve_target_view_handle,
+        .depth_target_view_handle = pass.depth_target_view_handle,
+        .target_format = pass.target_format,
+        .depth_stencil_format = pass.depth_stencil_format,
+        .sample_count = pass.sample_count,
+        .depth_slice = pass.depth_slice,
+        .depth_read_only = pass.depth_read_only,
+        .stencil_read_only = pass.stencil_read_only,
+        .topology = if (pipeline) |p| p.topology else 0,
+        .front_face = if (pipeline) |p| p.front_face else 0,
+        .cull_mode = if (pipeline) |p| p.cull_mode else 0,
         .draw_count = 1,
         .vertex_count = 0,
         .instance_count = 1,
@@ -305,6 +317,11 @@ fn bundleRenderPassCmd(
         .bind_buffer_offsets = state.bind_buffer_offsets,
         .vertex_buffers = state.vertex_buffers,
         .vertex_buffer_offsets = state.vertex_buffer_offsets,
+        .blend_constant = pass.blend_constant,
+        .stencil_reference = pass.stencil_reference,
+        .depth_compare = pass.depth_compare,
+        .depth_write_enabled = pass.depth_write_enabled,
+        .unclipped_depth = if (pipeline) |p| p.unclipped_depth else false,
         .clear_r = pass.clear_r,
         .clear_g = pass.clear_g,
         .clear_b = pass.clear_b,
@@ -313,9 +330,8 @@ fn bundleRenderPassCmd(
 }
 
 fn require_index_buffer_for_bundle_draw(state: *const BundleReplayState, kind: []const u8) bool {
-    if (state.index_buffer != null) return true;
-    std.debug.print("doe: executeBundles: {s} missing index buffer; skipping\n", .{kind});
-    return false;
+    _ = kind;
+    return state.index_buffer != null;
 }
 
 pub export fn doeNativeRenderPassExecuteBundles(

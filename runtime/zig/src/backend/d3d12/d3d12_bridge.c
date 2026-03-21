@@ -457,6 +457,21 @@ void d3d12_bridge_command_list_resource_barrier_transition(D3D12Handle cmd_list_
     cmd->lpVtbl->ResourceBarrier(cmd, 1, &barrier);
 }
 
+void d3d12_bridge_command_list_resolve_subresource(D3D12Handle cmd_list_h, D3D12Handle dst_texture_h,
+                                                    uint32_t dst_subresource, D3D12Handle src_texture_h,
+                                                    uint32_t src_subresource, uint32_t format) {
+    ID3D12GraphicsCommandList* cmd = (ID3D12GraphicsCommandList*)cmd_list_h;
+    ID3D12Resource* dst = (ID3D12Resource*)dst_texture_h;
+    ID3D12Resource* src = (ID3D12Resource*)src_texture_h;
+    cmd->lpVtbl->ResolveSubresource(
+        cmd,
+        dst,
+        dst_subresource,
+        src,
+        src_subresource,
+        map_wgpu_format_to_dxgi(format));
+}
+
 /* --- Sampler descriptor heap --- */
 
 D3D12Handle d3d12_bridge_device_create_sampler_heap(D3D12Handle device_h, uint32_t num_descriptors) {
@@ -578,9 +593,27 @@ D3D12Handle d3d12_bridge_device_create_rtv_heap(D3D12Handle device_h, uint32_t n
 
 void d3d12_bridge_device_create_rtv(D3D12Handle device_h, D3D12Handle resource_h, D3D12Handle rtv_heap_h,
                                      uint32_t index, uint32_t format) {
+    d3d12_bridge_device_create_rtv_view(
+        device_h,
+        resource_h,
+        rtv_heap_h,
+        index,
+        format,
+        0x00000002,
+        0,
+        0,
+        1,
+        0);
+}
+
+void d3d12_bridge_device_create_rtv_view(D3D12Handle device_h, D3D12Handle resource_h, D3D12Handle rtv_heap_h,
+                                          uint32_t index, uint32_t format, uint32_t dimension,
+                                          uint32_t base_mip_level, uint32_t base_array_layer,
+                                          uint32_t array_layer_count, uint32_t depth_slice) {
     ID3D12Device* device = (ID3D12Device*)device_h;
     ID3D12Resource* resource = (ID3D12Resource*)resource_h;
     ID3D12DescriptorHeap* heap = (ID3D12DescriptorHeap*)rtv_heap_h;
+    const UINT resolved_layers = array_layer_count == 0 ? 1 : array_layer_count;
 
     UINT rtv_size = device->lpVtbl->GetDescriptorHandleIncrementSize(device, D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
     D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle;
@@ -588,10 +621,30 @@ void d3d12_bridge_device_create_rtv(D3D12Handle device_h, D3D12Handle resource_h
     cpu_handle.ptr += (SIZE_T)(rtv_size * index);
 
     D3D12_RENDER_TARGET_VIEW_DESC rtv_desc;
+    memset(&rtv_desc, 0, sizeof(rtv_desc));
     rtv_desc.Format               = map_wgpu_format_to_dxgi(format);
-    rtv_desc.ViewDimension        = D3D12_RTV_DIMENSION_TEXTURE2D;
-    rtv_desc.Texture2D.MipSlice   = 0;
-    rtv_desc.Texture2D.PlaneSlice = 0;
+    switch (dimension) {
+        case 0x00000003: /* 2DArray */
+        case 0x00000005: /* CubeArray */
+        case 0x00000008: /* 2DArrayDepth */
+            rtv_desc.ViewDimension                  = D3D12_RTV_DIMENSION_TEXTURE2DARRAY;
+            rtv_desc.Texture2DArray.MipSlice        = base_mip_level;
+            rtv_desc.Texture2DArray.FirstArraySlice = base_array_layer;
+            rtv_desc.Texture2DArray.ArraySize       = resolved_layers;
+            rtv_desc.Texture2DArray.PlaneSlice      = 0;
+            break;
+        case 0x00000006: /* 3D */
+            rtv_desc.ViewDimension         = D3D12_RTV_DIMENSION_TEXTURE3D;
+            rtv_desc.Texture3D.MipSlice    = base_mip_level;
+            rtv_desc.Texture3D.FirstWSlice = depth_slice;
+            rtv_desc.Texture3D.WSize       = 1;
+            break;
+        default:
+            rtv_desc.ViewDimension        = D3D12_RTV_DIMENSION_TEXTURE2D;
+            rtv_desc.Texture2D.MipSlice   = base_mip_level;
+            rtv_desc.Texture2D.PlaneSlice = 0;
+            break;
+    }
 
     device->lpVtbl->CreateRenderTargetView(device, resource, &rtv_desc, cpu_handle);
 }
@@ -1211,9 +1264,29 @@ static DXGI_FORMAT map_depth_format(uint32_t format) {
 
 void d3d12_bridge_device_create_dsv(D3D12Handle device_h, D3D12Handle resource_h, D3D12Handle dsv_heap_h,
                                      uint32_t index, uint32_t format) {
+    d3d12_bridge_device_create_dsv_view(
+        device_h,
+        resource_h,
+        dsv_heap_h,
+        index,
+        format,
+        0x00000007,
+        0,
+        0,
+        1,
+        0,
+        0);
+}
+
+void d3d12_bridge_device_create_dsv_view(D3D12Handle device_h, D3D12Handle resource_h, D3D12Handle dsv_heap_h,
+                                          uint32_t index, uint32_t format, uint32_t dimension,
+                                          uint32_t base_mip_level, uint32_t base_array_layer,
+                                          uint32_t array_layer_count, uint32_t read_only_depth,
+                                          uint32_t read_only_stencil) {
     ID3D12Device* device = (ID3D12Device*)device_h;
     ID3D12Resource* resource = (ID3D12Resource*)resource_h;
     ID3D12DescriptorHeap* heap = (ID3D12DescriptorHeap*)dsv_heap_h;
+    const UINT resolved_layers = array_layer_count == 0 ? 1 : array_layer_count;
 
     UINT dsv_size = device->lpVtbl->GetDescriptorHandleIncrementSize(device, D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
     D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle;
@@ -1223,8 +1296,22 @@ void d3d12_bridge_device_create_dsv(D3D12Handle device_h, D3D12Handle resource_h
     D3D12_DEPTH_STENCIL_VIEW_DESC dsv_desc;
     memset(&dsv_desc, 0, sizeof(dsv_desc));
     dsv_desc.Format               = map_depth_format(format);
-    dsv_desc.ViewDimension        = D3D12_DSV_DIMENSION_TEXTURE2D;
-    dsv_desc.Texture2D.MipSlice   = 0;
+    dsv_desc.Flags                =
+        (read_only_depth ? D3D12_DSV_FLAG_READ_ONLY_DEPTH : D3D12_DSV_FLAG_NONE) |
+        (read_only_stencil ? D3D12_DSV_FLAG_READ_ONLY_STENCIL : D3D12_DSV_FLAG_NONE);
+    switch (dimension) {
+        case 0x00000003: /* 2DArray */
+        case 0x00000008: /* 2DArrayDepth */
+            dsv_desc.ViewDimension                  = D3D12_DSV_DIMENSION_TEXTURE2DARRAY;
+            dsv_desc.Texture2DArray.MipSlice        = base_mip_level;
+            dsv_desc.Texture2DArray.FirstArraySlice = base_array_layer;
+            dsv_desc.Texture2DArray.ArraySize       = resolved_layers;
+            break;
+        default:
+            dsv_desc.ViewDimension      = D3D12_DSV_DIMENSION_TEXTURE2D;
+            dsv_desc.Texture2D.MipSlice = base_mip_level;
+            break;
+    }
 
     device->lpVtbl->CreateDepthStencilView(device, resource, &dsv_desc, cpu_handle);
 }

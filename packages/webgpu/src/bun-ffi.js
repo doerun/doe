@@ -21,6 +21,7 @@ import {
   validatePositiveInteger,
 } from "./shared/resource-lifecycle.js";
 import {
+  KNOWN_FEATURES,
   publishLimits,
   publishFeatures,
 } from "./shared/capabilities.js";
@@ -156,6 +157,9 @@ const WGPU_BIND_GROUP_DESCRIPTOR_SIZE = 48;
 const WGPU_PIPELINE_LAYOUT_DESCRIPTOR_SIZE = 48;
 const WGPU_RENDER_PASS_DESCRIPTOR_SIZE = 72;
 const WGPU_LIMITS_SIZE = 152;
+const WGPU_QUEUE_DESCRIPTOR_SIZE = 24;
+const WGPU_DEVICE_DESCRIPTOR_SIZE = 144;
+const WGPU_DEVICE_DEFAULT_QUEUE_LABEL_OFFSET = 56;
 const WGPU_RENDER_VERTEX_STATE_SIZE = 64;
 const WGPU_RENDER_COLOR_TARGET_STATE_SIZE = 32;
 const WGPU_RENDER_FRAGMENT_STATE_SIZE = 64;
@@ -1254,6 +1258,43 @@ function buildConstantEntries(constants) {
 const SAMPLER_DESC_SIZE = 64;
 const REQUEST_ADAPTER_OPTIONS_SIZE = 32;
 const PASS_TIMESTAMP_WRITES_SIZE = 24;
+const FEATURE_NAME_MAP = new Map(KNOWN_FEATURES);
+const LIMIT_U32_FIELDS = Object.freeze([
+    ["maxTextureDimension1D", 8],
+    ["maxTextureDimension2D", 12],
+    ["maxTextureDimension3D", 16],
+    ["maxTextureArrayLayers", 20],
+    ["maxBindGroups", 24],
+    ["maxBindGroupsPlusVertexBuffers", 28],
+    ["maxBindingsPerBindGroup", 32],
+    ["maxDynamicUniformBuffersPerPipelineLayout", 36],
+    ["maxDynamicStorageBuffersPerPipelineLayout", 40],
+    ["maxSampledTexturesPerShaderStage", 44],
+    ["maxSamplersPerShaderStage", 48],
+    ["maxStorageBuffersPerShaderStage", 52],
+    ["maxStorageTexturesPerShaderStage", 56],
+    ["maxUniformBuffersPerShaderStage", 60],
+    ["minUniformBufferOffsetAlignment", 80],
+    ["minStorageBufferOffsetAlignment", 84],
+    ["maxVertexBuffers", 88],
+    ["maxVertexAttributes", 100],
+    ["maxVertexBufferArrayStride", 104],
+    ["maxInterStageShaderVariables", 108],
+    ["maxColorAttachments", 112],
+    ["maxColorAttachmentBytesPerSample", 116],
+    ["maxComputeWorkgroupStorageSize", 120],
+    ["maxComputeInvocationsPerWorkgroup", 124],
+    ["maxComputeWorkgroupSizeX", 128],
+    ["maxComputeWorkgroupSizeY", 132],
+    ["maxComputeWorkgroupSizeZ", 136],
+    ["maxComputeWorkgroupsPerDimension", 140],
+    ["maxImmediateSize", 144],
+]);
+const LIMIT_U64_FIELDS = Object.freeze([
+    ["maxUniformBufferBindingSize", 64],
+    ["maxStorageBufferBindingSize", 72],
+    ["maxBufferSize", 92],
+]);
 
 function buildSamplerDescriptor(descriptor) {
     const buf = new ArrayBuffer(SAMPLER_DESC_SIZE);
@@ -1287,6 +1328,76 @@ function buildRequestAdapterOptions(options) {
     v.setUint32(20, 0, true); // backendType = undefined
     writePtr(v, 24, null); // compatibleSurface
     return new Uint8Array(buf);
+}
+
+function buildRequiredLimits(requiredLimits) {
+    if (!requiredLimits || typeof requiredLimits !== "object") {
+        return null;
+    }
+    const buf = new ArrayBuffer(WGPU_LIMITS_SIZE);
+    const view = new DataView(buf);
+    writePtr(view, 0, null);
+    for (const [name, offset] of LIMIT_U32_FIELDS) {
+        const value = requiredLimits[name];
+        if (value !== undefined) {
+            view.setUint32(offset, Number(value), true);
+        }
+    }
+    for (const [name, offset] of LIMIT_U64_FIELDS) {
+        const value = requiredLimits[name];
+        if (value !== undefined) {
+            view.setBigUint64(offset, BigInt(value), true);
+        }
+    }
+    return new Uint8Array(buf);
+}
+
+function buildDeviceDescriptor(descriptor) {
+    if (!descriptor) {
+        return { desc: null, _refs: [] };
+    }
+    const refs = [];
+    const labelBytes = descriptor.label ? encoder.encode(descriptor.label) : null;
+    if (labelBytes) refs.push(labelBytes);
+
+    const requiredFeatures = Array.isArray(descriptor.requiredFeatures)
+        ? descriptor.requiredFeatures
+        : descriptor.requiredFeatures ? Array.from(descriptor.requiredFeatures) : [];
+    let featureBytes = null;
+    if (requiredFeatures.length > 0) {
+        const featureBuf = new ArrayBuffer(requiredFeatures.length * 4);
+        const featureView = new DataView(featureBuf);
+        for (let index = 0; index < requiredFeatures.length; index += 1) {
+            const featureName = requiredFeatures[index];
+            const featureCode = FEATURE_NAME_MAP.get(featureName);
+            if (featureCode === undefined) {
+                throw new Error(`[fawn-webgpu] requestDevice requiredFeatures contains an unknown feature: ${featureName}`);
+            }
+            featureView.setUint32(index * 4, featureCode, true);
+        }
+        featureBytes = new Uint8Array(featureBuf);
+        refs.push(featureBytes);
+    }
+
+    const limitsBytes = buildRequiredLimits(descriptor.requiredLimits);
+    if (limitsBytes) refs.push(limitsBytes);
+
+    const queueLabelBytes = descriptor.defaultQueue?.label ? encoder.encode(descriptor.defaultQueue.label) : null;
+    if (queueLabelBytes) refs.push(queueLabelBytes);
+
+    const descBuf = new ArrayBuffer(WGPU_DEVICE_DESCRIPTOR_SIZE);
+    const descView = new DataView(descBuf);
+    writePtr(descView, 0, null);
+    writeStringView(descView, 8, labelBytes);
+    descView.setBigUint64(24, BigInt(requiredFeatures.length), true);
+    writePtr(descView, 32, featureBytes ? bunPtr(featureBytes) : null);
+    writePtr(descView, 40, limitsBytes ? bunPtr(limitsBytes) : null);
+    writePtr(descView, WGPU_DEVICE_DEFAULT_QUEUE_LABEL_OFFSET - 8, null);
+    writeStringView(descView, WGPU_DEVICE_DEFAULT_QUEUE_LABEL_OFFSET, queueLabelBytes);
+
+    const desc = new Uint8Array(descBuf);
+    refs.push(desc);
+    return { desc, _refs: refs };
 }
 
 function buildPassTimestampWrites(timestampWrites) {
@@ -1780,10 +1891,11 @@ function requestAdapterSync(instancePtr, options) {
     }
 }
 
-function requestDeviceSync(instancePtr, adapterPtr) {
+function requestDeviceSync(instancePtr, adapterPtr, descriptor) {
     let resolvedDevice = null;
     let resolvedStatus = null;
     let done = false;
+    const descriptorBytes = buildDeviceDescriptor(descriptor);
     const cb = new JSCallback(
         (status, device, _msgData, _msgLen, _ud1, _ud2) => {
             resolvedStatus = status;
@@ -1794,7 +1906,13 @@ function requestDeviceSync(instancePtr, adapterPtr) {
     );
     try {
         const futureId = wgpu.symbols.doeRequestDeviceFlat(
-            adapterPtr, null, CALLBACK_MODE_ALLOW_PROCESS_EVENTS, cb.ptr, null, null);
+            adapterPtr,
+            descriptorBytes.desc ? bunPtr(descriptorBytes.desc) : null,
+            CALLBACK_MODE_ALLOW_PROCESS_EVENTS,
+            cb.ptr,
+            null,
+            null,
+        );
         if (futureId === 0 || futureId === 0n) throw new Error("[fawn-webgpu] requestDevice future unavailable");
         processEventsUntilDone(instancePtr, () => done);
         if (resolvedStatus !== REQUEST_DEVICE_STATUS_SUCCESS || !resolvedDevice) {
@@ -2245,6 +2363,19 @@ const bunEncoderBackend = {
     },
     commandEncoderCopyBufferToTexture(encoder, source, destination, copySize) {
         ensureBunCommandEncoderNative(encoder);
+        const { desc: srcDesc } = buildTexelCopyBufferInfo({
+            ...source,
+            buffer: source.buffer,
+        });
+        const { desc: dstDesc } = buildTexelCopyTextureInfo({
+            ...destination,
+            texture: destination.texture,
+        });
+        const extent = buildExtent3D(copySize);
+        if (typeof wgpu.symbols.wgpuCommandEncoderCopyBufferToTexture === "function") {
+            wgpu.symbols.wgpuCommandEncoderCopyBufferToTexture(encoder._native, srcDesc, dstDesc, extent);
+            return;
+        }
         if (typeof wgpu.symbols.doeNativeCommandEncoderCopyBufferToTexture === "function") {
             wgpu.symbols.doeNativeCommandEncoderCopyBufferToTexture(
                 encoder._native,
@@ -2260,19 +2391,23 @@ const bunEncoderBackend = {
             );
             return;
         }
-        const { desc: srcDesc } = buildTexelCopyBufferInfo({
-            ...source,
-            buffer: source.buffer,
-        });
-        const { desc: dstDesc } = buildTexelCopyTextureInfo({
-            ...destination,
-            texture: destination.texture,
-        });
-        const extent = buildExtent3D(copySize);
-        wgpu.symbols.wgpuCommandEncoderCopyBufferToTexture(encoder._native, srcDesc, dstDesc, extent);
+        throw new Error("[fawn-webgpu] copyBufferToTexture is unavailable in the loaded library");
     },
     commandEncoderCopyTextureToBuffer(encoder, source, destination, copySize) {
         ensureBunCommandEncoderNative(encoder);
+        const { desc: srcDesc } = buildTexelCopyTextureInfo({
+            ...source,
+            texture: source.texture,
+        });
+        const { desc: dstDesc } = buildTexelCopyBufferInfo({
+            ...destination,
+            buffer: destination.buffer,
+        });
+        const extent = buildExtent3D(copySize);
+        if (typeof wgpu.symbols.wgpuCommandEncoderCopyTextureToBuffer === "function") {
+            wgpu.symbols.wgpuCommandEncoderCopyTextureToBuffer(encoder._native, srcDesc, dstDesc, extent);
+            return;
+        }
         if (typeof wgpu.symbols.doeNativeCommandEncoderCopyTextureToBuffer === "function") {
             wgpu.symbols.doeNativeCommandEncoderCopyTextureToBuffer(
                 encoder._native,
@@ -2288,16 +2423,7 @@ const bunEncoderBackend = {
             );
             return;
         }
-        const { desc: srcDesc } = buildTexelCopyTextureInfo({
-            ...source,
-            texture: source.texture,
-        });
-        const { desc: dstDesc } = buildTexelCopyBufferInfo({
-            ...destination,
-            buffer: destination.buffer,
-        });
-        const extent = buildExtent3D(copySize);
-        wgpu.symbols.wgpuCommandEncoderCopyTextureToBuffer(encoder._native, srcDesc, dstDesc, extent);
+        throw new Error("[fawn-webgpu] copyTextureToBuffer is unavailable in the loaded library");
     },
     commandEncoderFinish(encoder) {
         encoder._finished = true;
@@ -2742,7 +2868,12 @@ const fullSurfaceBackend = {
         return readAdapterInfo(native);
     },
     adapterRequestDevice(adapter, _descriptor, classes) {
-        const native = requestDeviceSync(adapter._instance, assertLiveResource(adapter, "GPUAdapter.requestDevice", "GPUAdapter"));
+        const descriptor = _descriptor ?? undefined;
+        const native = requestDeviceSync(
+            adapter._instance,
+            assertLiveResource(adapter, "GPUAdapter.requestDevice", "GPUAdapter"),
+            descriptor,
+        );
         const device = {
             _destroyed: false,
             _resourceLabel: "GPUDevice",
@@ -2780,6 +2911,7 @@ const fullSurfaceBackend = {
         device._uncapturedErrorCallback = null;
         device.limits = deviceLimits(native);
         device.features = deviceFeatures(native);
+        device.label = descriptor?.label ?? "";
         Object.defineProperties(device, {
             lost: Object.getOwnPropertyDescriptor(classes.DoeGPUDevice.prototype, "lost"),
             adapterInfo: Object.getOwnPropertyDescriptor(classes.DoeGPUDevice.prototype, "adapterInfo"),
@@ -2799,6 +2931,7 @@ const fullSurfaceBackend = {
         queue._native = this.deviceGetQueue(native);
         queue._instance = adapter._instance;
         queue._device = device;
+        queue.label = descriptor?.defaultQueue?.label ?? "";
         this.initQueueState(queue);
         device.queue = queue;
         return device;

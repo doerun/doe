@@ -4,6 +4,8 @@
 
 const std = @import("std");
 const doe_wgsl = @import("doe_wgsl/mod.zig");
+const runtime_compile = @import("doe_wgsl/runtime_compile.zig");
+const compute_preconditions = @import("doe_compute_preconditions_native.zig");
 const native = @import("doe_wgpu_native.zig");
 const model = @import("model.zig");
 
@@ -36,17 +38,24 @@ pub fn vulkan_create_shader_module(
     var spirv_buf = alloc.alloc(u8, doe_wgsl.MAX_SPIRV_OUTPUT) catch return error.OutOfMemory;
     defer alloc.free(spirv_buf);
 
-    const spirv_len = doe_wgsl.translateToSpirv(alloc, wgsl, spirv_buf) catch {
+    var translation = runtime_compile.translateToSpirvForComputeRuntime(alloc, wgsl, spirv_buf) catch {
         std.log.err("doe_vulkan_compute: WGSL→SPIR-V translation failed: {s}", .{doe_wgsl.lastErrorMessage()});
         return error.ShaderCompileFailed;
     };
+    errdefer translation.info.deinit(alloc);
+    shader.needs_sizes_buf = translation.info.needs_sizes_buf;
+    shader.dispatch_preconditions = translation.info.dispatch_preconditions;
+    translation.info.dispatch_preconditions = &.{};
+    shader.wg_x = translation.info.workgroup_size[0];
+    shader.wg_y = translation.info.workgroup_size[1];
+    shader.wg_z = translation.info.workgroup_size[2];
 
-    if (spirv_len == 0 or (spirv_len % 4) != 0) {
-        std.log.err("doe_vulkan_compute: SPIR-V output length invalid: {}", .{spirv_len});
+    if (translation.len == 0 or (translation.len % 4) != 0) {
+        std.log.err("doe_vulkan_compute: SPIR-V output length invalid: {}", .{translation.len});
         return error.ShaderCompileFailed;
     }
 
-    const word_count = spirv_len / 4;
+    const word_count = translation.len / 4;
     const words = alloc.alloc(u32, word_count) catch return error.OutOfMemory;
     errdefer alloc.free(words);
 
@@ -135,6 +144,15 @@ pub fn vulkan_compute_pass_dispatch(pass: *DoeComputePass, x: u32, y: u32, z: u3
         std.log.err("doe_vulkan_compute: dispatch failed: pipeline has no SPIR-V data", .{});
         return;
     };
+    compute_preconditions.validate_bind_groups(
+        pip.dispatch_preconditions,
+        pass.bind_groups[0..],
+        .{ x, y, z },
+        .{ pip.wg_x, pip.wg_y, pip.wg_z },
+    ) catch {
+        std.log.err("doe_vulkan_compute: dispatch precondition failed for proof-elided shader", .{});
+        return;
+    };
 
     var binding_storage: [MAX_KERNEL_BINDINGS]model.KernelBinding = undefined;
     const binding_count = collect_bindings(pass, &binding_storage);
@@ -202,6 +220,15 @@ pub fn vulkan_compute_pass_dispatch_indirect(
     const dispatch_x: u32 = if (x > 0) x else 1;
     const dispatch_y: u32 = if (y > 0) y else 1;
     const dispatch_z: u32 = if (z > 0) z else 1;
+    compute_preconditions.validate_bind_groups(
+        pip.dispatch_preconditions,
+        pass.bind_groups[0..],
+        .{ dispatch_x, dispatch_y, dispatch_z },
+        .{ pip.wg_x, pip.wg_y, pip.wg_z },
+    ) catch {
+        std.log.err("doe_vulkan_compute: indirect dispatch precondition failed for proof-elided shader", .{});
+        return;
+    };
 
     const webgpu = @import("webgpu_ffi.zig");
     _ = rt.run_dispatch(

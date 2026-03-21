@@ -3,12 +3,15 @@
 
 const std = @import("std");
 const native = @import("doe_wgpu_native.zig");
+const compute_preconditions = @import("doe_compute_preconditions_native.zig");
+const bridge = @import("backend/metal/metal_bridge_decls.zig");
 
 const alloc = native.alloc;
 const make = native.make;
 const cast = native.cast;
 const toOpaque = native.toOpaque;
 const MAX_BIND = native.MAX_BIND;
+const metal_bridge_buffer_contents = bridge.metal_bridge_buffer_contents;
 
 const DoeComputePipeline = native.DoeComputePipeline;
 const DoeComputePass = native.DoeComputePass;
@@ -18,6 +21,29 @@ const DoeBindGroupLayout = native.DoeBindGroupLayout;
 const RecordedCmd = native.RecordedCmd;
 const MAX_COMPUTE_BIND_GROUPS = native.MAX_COMPUTE_BIND_GROUPS;
 const MAX_FLAT_BIND = native.MAX_FLAT_BIND;
+
+fn validate_dispatch_preconditions(pass: *const DoeComputePass, pip: *const DoeComputePipeline, dispatch: [3]u32) bool {
+    compute_preconditions.validate_bind_groups(
+        pip.dispatch_preconditions,
+        pass.bind_groups[0..],
+        dispatch,
+        .{ pip.wg_x, pip.wg_y, pip.wg_z },
+    ) catch {
+        std.log.err("doe_compute_ext_native: dispatch precondition failed for proof-elided shader", .{});
+        return false;
+    };
+    return true;
+}
+
+fn read_indirect_dispatch_counts(buffer: *const DoeBuffer, offset: u64) ?[3]u32 {
+    const byte_offset: usize = @intCast(offset);
+    const counts_bytes = 3 * @sizeOf(u32);
+    if (byte_offset + counts_bytes > buffer.size) return null;
+    const contents = metal_bridge_buffer_contents(buffer.mtl) orelse return null;
+    const base = contents + byte_offset;
+    const ints: *align(1) const [3]u32 = @ptrCast(base);
+    return ints.*;
+}
 
 // ============================================================
 // Compute Pass operations
@@ -43,14 +69,19 @@ pub export fn doeNativeComputePassDispatch(pass_raw: ?*anyopaque, x: u32, y: u32
         return;
     }
     const pip = pass.pipeline orelse return;
+    if (!validate_dispatch_preconditions(pass, pip, .{ x, y, z })) return;
     var cmd = RecordedCmd{ .dispatch = .{
         .pso = pip.mtl_pso,
         .needs_sizes_buf = pip.needs_sizes_buf,
         .bufs = [_]?*anyopaque{null} ** MAX_FLAT_BIND,
         .buf_sizes = [_]u64{0} ** MAX_FLAT_BIND,
         .buf_count = 0,
-        .x = x, .y = y, .z = z,
-        .wg_x = pip.wg_x, .wg_y = pip.wg_y, .wg_z = pip.wg_z,
+        .x = x,
+        .y = y,
+        .z = z,
+        .wg_x = pip.wg_x,
+        .wg_y = pip.wg_y,
+        .wg_z = pip.wg_z,
     } };
     var total: u32 = 0;
     for (pass.bind_groups, 0..) |maybe_bg, group_index| {
@@ -128,6 +159,13 @@ pub export fn doeNativeComputePassDispatchIndirect(pass_raw: ?*anyopaque, buf_ra
     }
     const pip = pass.pipeline orelse return;
     const indirect_buf = cast(DoeBuffer, buf_raw) orelse return;
+    if (pip.dispatch_preconditions.len > 0) {
+        const counts = read_indirect_dispatch_counts(indirect_buf, offset) orelse {
+            std.log.err("doe_compute_ext_native: indirect dispatch preconditions require readable counts", .{});
+            return;
+        };
+        if (!validate_dispatch_preconditions(pass, pip, counts)) return;
+    }
     var cmd = RecordedCmd{ .dispatch_indirect = .{
         .pso = pip.mtl_pso,
         .needs_sizes_buf = pip.needs_sizes_buf,

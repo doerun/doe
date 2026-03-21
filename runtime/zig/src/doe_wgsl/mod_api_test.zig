@@ -2,10 +2,12 @@
 
 const std = @import("std");
 const mod = @import("mod.zig");
+const lean_proof = @import("../lean_proof.zig");
 const translateToMsl = mod.translateToMsl;
 const translateToHlsl = mod.translateToHlsl;
 const translateToSpirv = mod.translateToSpirv;
 const analyzeToIr = mod.analyzeToIr;
+const analyzeToIrWithConfig = mod.analyzeToIrWithConfig;
 const ir = mod.ir;
 const MAX_OUTPUT = mod.MAX_OUTPUT;
 const MAX_HLSL_OUTPUT = mod.MAX_HLSL_OUTPUT;
@@ -603,4 +605,80 @@ test "analyze WGSL folds scalar const binary expressions" {
     try std.testing.expectEqual(@as(usize, 2), module_ir.globals.items.len);
     try std.testing.expect(module_ir.globals.items[0].initializer != null);
     try std.testing.expectEqual(ir.ConstantValue{ .int = 0x0F }, module_ir.globals.items[0].initializer.?);
+}
+
+test "analyzeToIrWithConfig records byte-aware gid dispatch preconditions" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> data: array<f32>;
+        \\@compute @workgroup_size(4)
+        \\fn main(@builtin(global_invocation_id) gid: vec3u) {
+        \\    data[gid.x] = 1.0;
+        \\}
+    ;
+
+    var module_ir = try analyzeToIrWithConfig(std.testing.allocator, source, .{
+        .elide_proven_bounds = true,
+    });
+    defer module_ir.deinit();
+
+    if (!lean_proof.boundsProven(.gid_1d_storage_buffer)) {
+        try std.testing.expectEqual(@as(usize, 0), module_ir.dispatch_preconditions.items.len);
+        return;
+    }
+
+    try std.testing.expectEqual(@as(usize, 1), module_ir.dispatch_preconditions.items.len);
+    const precondition = module_ir.dispatch_preconditions.items[0];
+    try std.testing.expectEqual(ir.DispatchPreconditionKind.gid_component, precondition.kind);
+    try std.testing.expectEqual(@as(u8, 0), precondition.gid_axis);
+    try std.testing.expectEqual(@as(u64, 4), precondition.element_stride_bytes);
+}
+
+test "analyzeToIrWithConfig elides flat 2d dispatch-x indexing" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> data: array<u32>;
+        \\@compute @workgroup_size(8, 2, 1)
+        \\fn main(
+        \\    @builtin(global_invocation_id) gid: vec3u,
+        \\    @builtin(num_workgroups) num_wg: vec3u,
+        \\) {
+        \\    let width = num_wg.x * 8u;
+        \\    let idx = gid.y * width + gid.x;
+        \\    data[idx] = 1u;
+        \\}
+    ;
+
+    var baseline_ir = try analyzeToIrWithConfig(std.testing.allocator, source, .{});
+    defer baseline_ir.deinit();
+    var baseline_has_min = false;
+    for (baseline_ir.functions.items[0].exprs.items) |expr| {
+        if (expr.data == .call and std.mem.eql(u8, expr.data.call.name, "min")) {
+            baseline_has_min = true;
+            break;
+        }
+    }
+    try std.testing.expect(baseline_has_min);
+
+    var elided_ir = try analyzeToIrWithConfig(std.testing.allocator, source, .{
+        .elide_proven_bounds = true,
+    });
+    defer elided_ir.deinit();
+
+    if (!lean_proof.boundsProven(.gid_2d_flat_storage_buffer)) {
+        try std.testing.expectEqual(@as(usize, 0), elided_ir.dispatch_preconditions.items.len);
+        return;
+    }
+
+    try std.testing.expectEqual(@as(usize, 1), elided_ir.dispatch_preconditions.items.len);
+    const precondition = elided_ir.dispatch_preconditions.items[0];
+    try std.testing.expectEqual(ir.DispatchPreconditionKind.flat_index_2d_dispatch_x, precondition.kind);
+    try std.testing.expectEqual(@as(u64, 4), precondition.element_stride_bytes);
+
+    var elided_has_min = false;
+    for (elided_ir.functions.items[0].exprs.items) |expr| {
+        if (expr.data == .call and std.mem.eql(u8, expr.data.call.name, "min")) {
+            elided_has_min = true;
+            break;
+        }
+    }
+    try std.testing.expect(!elided_has_min);
 }

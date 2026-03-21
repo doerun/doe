@@ -783,7 +783,7 @@ function createFullSurfaceClasses({
         shaderCheckFailure('GPUDevice.createShaderModule', preflight);
       }
       const hints = objectDescriptor.compilationHints ?? null;
-      const native = backend.deviceCreateShaderModule(this, code, hints);
+      const native = backend.deviceCreateShaderModule(this, code, hints, objectDescriptor.label ?? null);
       const module = new DoeGPUShaderModule(native, code, this);
       module.label = objectDescriptor.label ?? '';
       return module;

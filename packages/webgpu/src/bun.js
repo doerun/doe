@@ -9,6 +9,7 @@ export const doe = createDoeNamespace({
 });
 
 export const create = runtime.create;
+export const createCanvasContext = runtime.createCanvasContext ?? full.createCanvasContext;
 export const createInstance = runtime.createInstance;
 export const globals = runtime.globals;
 export const setupGlobals = runtime.setupGlobals;
@@ -34,6 +35,7 @@ export default {
   CANVAS_COLOR_SPACES,
   normalizeOrigin2D,
   normalizeCanvasConfiguration,
+  createCanvasContext,
   createBrowserSurfaceClasses,
   createNativeBrowserCanvasBackend,
   preflightShaderSource,

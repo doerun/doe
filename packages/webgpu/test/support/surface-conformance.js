@@ -40,6 +40,37 @@ export async function runSurfaceConformance(api, label = "surface") {
         }
     }
 
+    async function readCenterPixel(device, globals, texture, width, height) {
+        const bytesPerRow = width * 4;
+        const readback = device.createBuffer({
+            size: bytesPerRow * height,
+            usage: globals.GPUBufferUsage.COPY_DST | globals.GPUBufferUsage.MAP_READ,
+        });
+        const encoder = device.createCommandEncoder();
+        encoder.copyTextureToBuffer(
+            { texture, origin: { x: 0, y: 0, z: 0 } },
+            { buffer: readback, offset: 0, bytesPerRow, rowsPerImage: height },
+            { width, height, depthOrArrayLayers: 1 },
+        );
+        device.queue.submit([encoder.finish()]);
+        await device.queue.onSubmittedWorkDone();
+
+        const centerRow = Math.floor(height / 2);
+        const centerCol = Math.floor(width / 2);
+        const centerOffset = centerRow * bytesPerRow + centerCol * 4;
+        await readback.mapAsync(globals.GPUMapMode.READ, centerOffset, 4);
+        const pixel = Uint8Array.from(new Uint8Array(readback.getMappedRange(centerOffset, 4)));
+        readback.unmap();
+        readback.destroy();
+        return pixel;
+    }
+
+    function assertGreenPixel(pixel, path) {
+        assert(pixel[0] <= 10, `${path} red channel remains low`);
+        assert(pixel[1] >= 200, `${path} green channel is high`);
+        assert(pixel[2] <= 10, `${path} blue channel remains low`);
+    }
+
     const { create, globals, setupGlobals, requestAdapter, requestDevice, providerInfo, preflightShaderSource } = api;
 
     section("providerInfo");
@@ -258,6 +289,145 @@ fn main(@location(0) uv: vec2f) -> @location(0) vec4f {
     assert(result[2] === 60.0, "compute result[2] === 60.0");
     assert(result[3] === 80.0, "compute result[3] === 80.0");
     resultBuf.unmap();
+
+    section("render pipeline + indexed draw readback");
+    const renderWidth = 64;
+    const renderHeight = 64;
+    const renderBytesPerRow = renderWidth * 4;
+    const renderTexture = device.createTexture({
+        size: { width: renderWidth, height: renderHeight, depthOrArrayLayers: 1 },
+        format: "rgba8unorm",
+        usage: globals.GPUTextureUsage.RENDER_ATTACHMENT | globals.GPUTextureUsage.COPY_SRC,
+    });
+    const renderReadback = device.createBuffer({
+        size: renderBytesPerRow * renderHeight,
+        usage: globals.GPUBufferUsage.COPY_DST | globals.GPUBufferUsage.MAP_READ,
+    });
+    const renderVertices = new Float32Array([
+        -0.5, -0.5, 0.0, 1.0, 0.0, 1.0,
+         0.5, -0.5, 0.0, 1.0, 0.0, 1.0,
+         0.5,  0.5, 0.0, 1.0, 0.0, 1.0,
+        -0.5,  0.5, 0.0, 1.0, 0.0, 1.0,
+    ]);
+    const renderIndices = new Uint16Array([0, 1, 2, 0, 2, 3]);
+    const renderVertexBuffer = device.createBuffer({
+        size: renderVertices.byteLength,
+        usage: globals.GPUBufferUsage.VERTEX | globals.GPUBufferUsage.COPY_DST,
+    });
+    const renderIndexBuffer = device.createBuffer({
+        size: renderIndices.byteLength,
+        usage: globals.GPUBufferUsage.INDEX | globals.GPUBufferUsage.COPY_DST,
+    });
+    device.queue.writeBuffer(renderVertexBuffer, 0, renderVertices);
+    device.queue.writeBuffer(renderIndexBuffer, 0, renderIndices);
+    const renderShader = device.createShaderModule({
+        code: `struct VertexOutput {
+    @builtin(position) pos: vec4f,
+    @location(0) color: vec4f,
+};
+
+@vertex
+fn vs_main(@location(0) position: vec2f, @location(1) color: vec4f) -> VertexOutput {
+    var out: VertexOutput;
+    out.pos = vec4f(position, 0.0, 1.0);
+    out.color = color;
+    return out;
+}
+
+@fragment
+fn fs_main(@location(0) color: vec4f) -> @location(0) vec4f {
+    return color;
+}`,
+    });
+    const renderPipeline = device.createRenderPipeline({
+        layout: "auto",
+        vertex: {
+            module: renderShader,
+            entryPoint: "vs_main",
+            buffers: [{
+                arrayStride: 24,
+                attributes: [
+                    { shaderLocation: 0, offset: 0, format: "float32x2" },
+                    { shaderLocation: 1, offset: 8, format: "float32x4" },
+                ],
+            }],
+        },
+        fragment: {
+            module: renderShader,
+            entryPoint: "fs_main",
+            targets: [{ format: "rgba8unorm" }],
+        },
+        primitive: { topology: "triangle-list" },
+    });
+    assert(renderPipeline != null, "createRenderPipeline succeeds for inter-stage render shader");
+    const renderEncoder = device.createCommandEncoder();
+    const renderPass = renderEncoder.beginRenderPass({
+        colorAttachments: [{
+            view: renderTexture.createView(),
+            clearValue: { r: 0, g: 0, b: 0, a: 1 },
+            loadOp: "clear",
+            storeOp: "store",
+        }],
+    });
+    renderPass.setPipeline(renderPipeline);
+    renderPass.setVertexBuffer(0, renderVertexBuffer);
+    renderPass.setIndexBuffer(renderIndexBuffer, "uint16");
+    renderPass.drawIndexed(6);
+    renderPass.end();
+    renderEncoder.copyTextureToBuffer(
+        { texture: renderTexture, origin: { x: 0, y: 0, z: 0 } },
+        { buffer: renderReadback, offset: 0, bytesPerRow: renderBytesPerRow, rowsPerImage: renderHeight },
+        { width: renderWidth, height: renderHeight, depthOrArrayLayers: 1 },
+    );
+    device.queue.submit([renderEncoder.finish()]);
+    await device.queue.onSubmittedWorkDone();
+    const centerRow = Math.floor(renderHeight / 2);
+    const centerCol = Math.floor(renderWidth / 2);
+    const centerOffset = centerRow * renderBytesPerRow + centerCol * 4;
+    await renderReadback.mapAsync(globals.GPUMapMode.READ, centerOffset, 4);
+    const centerPixel = Uint8Array.from(new Uint8Array(renderReadback.getMappedRange(centerOffset, 4)));
+    assertGreenPixel(centerPixel, "render center pixel");
+    renderReadback.unmap();
+
+    section("render bundle replay readback");
+    const bundleTexture = device.createTexture({
+        size: { width: renderWidth, height: renderHeight, depthOrArrayLayers: 1 },
+        format: "rgba8unorm",
+        usage: globals.GPUTextureUsage.RENDER_ATTACHMENT | globals.GPUTextureUsage.COPY_SRC,
+    });
+    const bundleEncoder = device.createRenderBundleEncoder({
+        colorFormats: ["rgba8unorm"],
+    });
+    assert(bundleEncoder != null, "createRenderBundleEncoder succeeds");
+    bundleEncoder.setPipeline(renderPipeline);
+    bundleEncoder.setVertexBuffer(0, renderVertexBuffer);
+    bundleEncoder.setIndexBuffer(renderIndexBuffer, "uint16");
+    bundleEncoder.drawIndexed(6);
+    const renderBundle = bundleEncoder.finish();
+    assert(renderBundle != null, "render bundle finish succeeds");
+    const bundleCommandEncoder = device.createCommandEncoder();
+    const bundlePass = bundleCommandEncoder.beginRenderPass({
+        colorAttachments: [{
+            view: bundleTexture.createView(),
+            clearValue: { r: 0, g: 0, b: 0, a: 1 },
+            loadOp: "clear",
+            storeOp: "store",
+        }],
+    });
+    assert(typeof bundlePass.executeBundles === "function", "render pass executeBundles exists");
+    bundlePass.executeBundles([renderBundle]);
+    bundlePass.end();
+    device.queue.submit([bundleCommandEncoder.finish()]);
+    await device.queue.onSubmittedWorkDone();
+    const bundleCenterPixel = await readCenterPixel(device, globals, bundleTexture, renderWidth, renderHeight);
+    assertGreenPixel(bundleCenterPixel, "render bundle center pixel");
+
+    renderShader.destroy?.();
+    renderVertexBuffer.destroy();
+    renderIndexBuffer.destroy();
+    renderReadback.destroy();
+    renderTexture.destroy();
+    bundleTexture.destroy();
 
     section("copyBufferToBuffer");
     const srcBuf = device.createBuffer({

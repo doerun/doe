@@ -50,6 +50,7 @@ typedef void* WGPUTexture;
 typedef void* WGPUTextureView;
 typedef void* WGPUSampler;
 typedef void* WGPURenderPassEncoder;
+typedef void* WGPUSurface;
 typedef uint64_t WGPUFlags;
 typedef uint32_t WGPUBool;
 
@@ -75,6 +76,9 @@ typedef struct { uint64_t id; } WGPUFuture;
 typedef struct { const char* data; size_t length; } WGPUStringView;
 typedef struct { WGPUFuture future; WGPUBool completed; } WGPUFutureWaitInfo;
 typedef struct { void* next; uint32_t sType; } WGPUChainedStruct;
+typedef uint32_t WGPUFeatureName;
+typedef uint32_t WGPUDeviceLostReason;
+typedef uint32_t WGPUErrorType;
 
 typedef struct {
     void* nextInChain;
@@ -283,6 +287,8 @@ typedef struct {
     uint32_t maxImmediateSize;
 } WGPULimits;
 
+typedef struct { void* nextInChain; WGPUStringView label; } WGPUQueueDescriptor;
+
 /* Callback types */
 typedef void (*WGPURequestAdapterCallback)(uint32_t status, WGPUAdapter adapter, WGPUStringView message, void* userdata1, void* userdata2);
 typedef void (*WGPURequestDeviceCallback)(uint32_t status, WGPUDevice device, WGPUStringView message, void* userdata1, void* userdata2);
@@ -292,6 +298,21 @@ typedef void (*WGPUBufferMapCallback)(uint32_t status, WGPUStringView message, v
 typedef void (*WGPUQueueWorkDoneCallback)(uint32_t status, WGPUStringView message, void* userdata1, void* userdata2);
 typedef struct { void* nextInChain; uint32_t mode; WGPUQueueWorkDoneCallback callback; void* userdata1; void* userdata2; } WGPUQueueWorkDoneCallbackInfo;
 typedef struct { void* nextInChain; uint32_t mode; WGPUBufferMapCallback callback; void* userdata1; void* userdata2; } WGPUBufferMapCallbackInfo;
+typedef void (*WGPUDeviceLostCallback)(const void* device, WGPUDeviceLostReason reason, WGPUStringView message, void* userdata1, void* userdata2);
+typedef void (*WGPUUncapturedErrorCallback)(const void* device, WGPUErrorType type, WGPUStringView message, void* userdata1, void* userdata2);
+typedef struct { void* nextInChain; uint32_t mode; WGPUDeviceLostCallback callback; void* userdata1; void* userdata2; } WGPUDeviceLostCallbackInfo;
+typedef struct { void* nextInChain; WGPUUncapturedErrorCallback callback; void* userdata1; void* userdata2; } WGPUUncapturedErrorCallbackInfo;
+
+typedef struct {
+    void* nextInChain;
+    WGPUStringView label;
+    size_t requiredFeatureCount;
+    const WGPUFeatureName* requiredFeatures;
+    const WGPULimits* requiredLimits;
+    WGPUQueueDescriptor defaultQueue;
+    WGPUDeviceLostCallbackInfo deviceLostCallbackInfo;
+    WGPUUncapturedErrorCallbackInfo uncapturedErrorCallbackInfo;
+} WGPUDeviceDescriptor;
 
 typedef struct {
     void* next_in_chain; uint32_t mode;
@@ -327,6 +348,58 @@ typedef struct {
     uint32_t subgroupMaxSize;
 } WGPUAdapterInfo;
 
+typedef struct {
+    const WGPUChainedStruct* nextInChain;
+    WGPUStringView label;
+} WGPUSurfaceDescriptor;
+
+typedef struct {
+    WGPUChainedStruct chain;
+    void* layer;
+} WGPUSurfaceSourceMetalLayer;
+
+typedef struct {
+    void* nextInChain;
+    uint64_t usages;
+    size_t formatCount;
+    const uint32_t* formats;
+    size_t presentModeCount;
+    const uint32_t* presentModes;
+    size_t alphaModeCount;
+    const uint32_t* alphaModes;
+} WGPUSurfaceCapabilities;
+
+typedef struct {
+    void* nextInChain;
+    WGPUDevice device;
+    uint32_t format;
+    uint64_t usage;
+    uint32_t width;
+    uint32_t height;
+    size_t viewFormatCount;
+    const uint32_t* viewFormats;
+    uint32_t alphaMode;
+    uint32_t presentMode;
+} WGPUSurfaceConfiguration;
+
+typedef struct {
+    void* nextInChain;
+    WGPUTexture texture;
+    uint32_t status;
+} WGPUSurfaceTexture;
+
+#define WGPU_SURFACE_SOURCE_METAL_LAYER_STYPE 0x00000004
+#define WGPU_SURFACE_TEXTURE_STATUS_SUCCESS_OPTIMAL 0x00000001
+#define WGPU_SURFACE_TEXTURE_STATUS_SUCCESS_SUBOPTIMAL 0x00000002
+#define WGPU_PRESENT_MODE_FIFO 0x00000001
+#define WGPU_PRESENT_MODE_FIFO_RELAXED 0x00000002
+#define WGPU_PRESENT_MODE_IMMEDIATE 0x00000003
+#define WGPU_PRESENT_MODE_MAILBOX 0x00000004
+#define WGPU_CANVAS_ALPHA_MODE_AUTO 0x00000000
+#define WGPU_CANVAS_ALPHA_MODE_OPAQUE 0x00000001
+#define WGPU_CANVAS_ALPHA_MODE_PREMULTIPLIED 0x00000002
+#define WGPU_CANVAS_TONE_MAPPING_MODE_STANDARD 0x00000001
+
 /* ================================================================
  * Function pointer types — DECL_PFN creates typedef + extern decl
  * ================================================================ */
@@ -348,6 +421,14 @@ DECL_PFN(void, wgpuDeviceRelease, (WGPUDevice));
 DECL_PFN(WGPUBool, wgpuDeviceHasFeature, (WGPUDevice, uint32_t));
 DECL_PFN(uint32_t, wgpuDeviceGetLimits, (WGPUDevice, void*));
 DECL_PFN(WGPUQueue, wgpuDeviceGetQueue, (WGPUDevice));
+DECL_PFN(WGPUSurface, wgpuInstanceCreateSurface, (WGPUInstance, const WGPUSurfaceDescriptor*));
+DECL_PFN(uint32_t, wgpuSurfaceGetCapabilities, (WGPUSurface, WGPUAdapter, WGPUSurfaceCapabilities*));
+DECL_PFN(void, wgpuSurfaceConfigure, (WGPUSurface, const WGPUSurfaceConfiguration*));
+DECL_PFN(void, wgpuSurfaceGetCurrentTexture, (WGPUSurface, WGPUSurfaceTexture*));
+DECL_PFN(uint32_t, wgpuSurfacePresent, (WGPUSurface));
+DECL_PFN(void, wgpuSurfaceUnconfigure, (WGPUSurface));
+DECL_PFN(void, wgpuSurfaceRelease, (WGPUSurface));
+DECL_PFN(void, wgpuSurfaceCapabilitiesFreeMembers, (WGPUSurfaceCapabilities));
 DECL_PFN(WGPUBuffer, wgpuDeviceCreateBuffer, (WGPUDevice, const WGPUBufferDescriptor*));
 DECL_PFN(WGPUShaderModule, wgpuDeviceCreateShaderModule, (WGPUDevice, const WGPUShaderModuleDescriptor*));
 DECL_PFN(void, wgpuShaderModuleRelease, (WGPUShaderModule));
@@ -366,8 +447,8 @@ DECL_PFN(WGPUComputePassEncoder, wgpuCommandEncoderBeginComputePass, (WGPUComman
 DECL_PFN(void, wgpuCommandEncoderCopyBufferToBuffer, (WGPUCommandEncoder, WGPUBuffer, uint64_t, WGPUBuffer, uint64_t, uint64_t));
 DECL_PFN(void, wgpuCommandEncoderCopyBufferToTexture, (WGPUCommandEncoder, const WGPUTexelCopyBufferInfo*, const WGPUTexelCopyTextureInfo*, const WGPUExtent3D*));
 DECL_PFN(void, wgpuCommandEncoderCopyTextureToBuffer, (WGPUCommandEncoder, const WGPUTexelCopyTextureInfo*, const WGPUTexelCopyBufferInfo*, const WGPUExtent3D*));
-DECL_PFN(void, doeNativeCommandEncoderCopyBufferToTexture, (WGPUCommandEncoder, WGPUBuffer, uint64_t, uint32_t, uint32_t, WGPUTexture, uint32_t, uint32_t, uint32_t, uint32_t));
-DECL_PFN(void, doeNativeCommandEncoderCopyTextureToBuffer, (WGPUCommandEncoder, WGPUTexture, uint32_t, WGPUBuffer, uint64_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t));
+DECL_PFN(void, doeNativeCommandEncoderCopyBufferToTexture, (WGPUCommandEncoder, WGPUBuffer, uint64_t, uint32_t, uint32_t, WGPUTexture, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t));
+DECL_PFN(void, doeNativeCommandEncoderCopyTextureToBuffer, (WGPUCommandEncoder, WGPUTexture, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, WGPUBuffer, uint64_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t));
 DECL_PFN(WGPUCommandBuffer, wgpuCommandEncoderFinish, (WGPUCommandEncoder, const WGPUCommandBufferDescriptor*));
 DECL_PFN(void, wgpuComputePassEncoderSetPipeline, (WGPUComputePassEncoder, WGPUComputePipeline));
 DECL_PFN(void, wgpuComputePassEncoderSetBindGroup, (WGPUComputePassEncoder, uint32_t, WGPUBindGroup, size_t, const uint32_t*));
@@ -459,7 +540,7 @@ typedef void (*FnDeviceSetUncapturedErrorCallback)(void* device, void (*callback
 typedef void (*FnDeviceRegisterLostCallback)(void* device, void (*callback)(uint32_t, const char*, size_t, void*), void* userdata);
 typedef void* (*FnRenderPipelineGetBindGroupLayout)(void* pipeline, uint32_t group_index);
 typedef void (*FnCommandEncoderClearBuffer)(void* encoder, void* buffer, uint64_t offset, uint64_t size);
-typedef void (*FnCommandEncoderCopyTextureToTexture)(void* encoder, void* src_texture, uint32_t src_mip, uint32_t src_slice, uint32_t src_x, uint32_t src_y, uint32_t src_z, void* dst_texture, uint32_t dst_mip, uint32_t dst_slice, uint32_t dst_x, uint32_t dst_y, uint32_t dst_z, uint32_t width, uint32_t height, uint32_t depth_or_layers);
+typedef void (*FnCommandEncoderCopyTextureToTexture)(void* encoder, void* src_texture, uint32_t src_mip, uint32_t src_slice, uint32_t src_x, uint32_t src_y, uint32_t src_z, uint32_t src_aspect, void* dst_texture, uint32_t dst_mip, uint32_t dst_slice, uint32_t dst_x, uint32_t dst_y, uint32_t dst_z, uint32_t dst_aspect, uint32_t width, uint32_t height, uint32_t depth_or_layers);
 typedef void (*FnWgpuCommandEncoderCopyTextureToTexture)(WGPUCommandEncoder encoder, const WGPUTexelCopyTextureInfo* source, const WGPUTexelCopyTextureInfo* destination, const WGPUExtent3D* copy_size);
 typedef void (*FnQueueWriteTexture)(void* queue, void* texture, const void* data, size_t data_len, uint32_t bytes_per_row, uint32_t rows_per_image, uint32_t dst_x, uint32_t dst_y, uint32_t dst_z, uint32_t dst_mip, uint32_t dst_slice, uint32_t width, uint32_t height, uint32_t depth_or_layers);
 typedef void* (*FnDeviceCreateRenderBundleEncoder)(void* device, const void* desc);
@@ -472,6 +553,9 @@ typedef void  (*FnRenderBundleEncoderDraw)(void* encoder, uint32_t vertex_count,
 typedef void  (*FnRenderBundleEncoderDrawIndexed)(void* encoder, uint32_t index_count, uint32_t instance_count, uint32_t first_index, int32_t base_vertex, uint32_t first_instance);
 typedef void* (*FnRenderBundleEncoderFinish)(void* encoder, const void* desc);
 typedef void  (*FnRenderBundleRelease)(void* bundle);
+typedef void* (*FnMetalBridgeCreateSurfaceHost)(void** layer_out);
+typedef void  (*FnMetalBridgeConfigureSurfaceHost)(void* host, uint32_t width, uint32_t height);
+typedef void  (*FnMetalBridgeRelease)(void* handle);
 
 /* Extern declarations for manual function pointers */
 extern FnAdapterGetPreferredCanvasFormat pfn_doeNativeAdapterGetPreferredCanvasFormat;
@@ -519,6 +603,9 @@ extern FnRenderBundleEncoderDraw pfn_doeNativeRenderBundleEncoderDraw;
 extern FnRenderBundleEncoderDrawIndexed pfn_doeNativeRenderBundleEncoderDrawIndexed;
 extern FnRenderBundleEncoderFinish pfn_doeNativeRenderBundleEncoderFinish;
 extern FnRenderBundleRelease pfn_doeNativeRenderBundleRelease;
+extern FnMetalBridgeCreateSurfaceHost pfn_metalBridgeCreateSurfaceHost;
+extern FnMetalBridgeConfigureSurfaceHost pfn_metalBridgeConfigureSurfaceHost;
+extern FnMetalBridgeRelease pfn_metalBridgeRelease;
 
 /* ================================================================
  * Shared structs and globals
@@ -596,6 +683,9 @@ extern napi_ref native_direct_method_compute_pass_dispatch_workgroups_ref;
 extern napi_ref native_direct_method_compute_pass_dispatch_workgroups_indirect_ref;
 extern napi_ref native_direct_method_compute_pass_end_ref;
 extern napi_ref native_direct_method_compute_pass_set_immediates_ref;
+extern napi_ref native_direct_method_compute_pass_push_debug_group_ref;
+extern napi_ref native_direct_method_compute_pass_pop_debug_group_ref;
+extern napi_ref native_direct_method_compute_pass_insert_debug_marker_ref;
 extern napi_ref native_direct_method_render_pass_set_immediates_ref;
 extern napi_ref native_direct_method_render_pass_set_viewport_ref;
 extern napi_ref native_direct_method_render_pass_set_scissor_rect_ref;
@@ -604,7 +694,11 @@ extern napi_ref native_direct_method_render_pass_set_stencil_reference_ref;
 extern napi_ref native_direct_method_render_pass_push_debug_group_ref;
 extern napi_ref native_direct_method_render_pass_pop_debug_group_ref;
 extern napi_ref native_direct_method_render_pass_insert_debug_marker_ref;
+extern napi_ref native_direct_method_render_pass_draw_indirect_ref;
+extern napi_ref native_direct_method_render_pass_draw_indexed_indirect_ref;
 extern napi_ref native_direct_method_render_bundle_encoder_set_immediates_ref;
+extern napi_ref native_direct_method_render_bundle_encoder_draw_indirect_ref;
+extern napi_ref native_direct_method_render_bundle_encoder_draw_indexed_indirect_ref;
 extern napi_ref native_direct_method_adapter_get_preferred_canvas_format_ref;
 extern napi_ref native_direct_method_device_add_event_listener_ref;
 extern napi_ref native_direct_method_device_remove_event_listener_ref;
@@ -713,6 +807,12 @@ void ensure_compilation_message_fields(napi_env env, napi_value msg);
 /* Device label stubs */
 napi_value doe_device_get_label(napi_env env, napi_callback_info info);
 napi_value doe_device_set_label(napi_env env, napi_callback_info info);
+napi_value doe_canvas_surface_create(napi_env env, napi_callback_info info);
+napi_value doe_canvas_surface_configure(napi_env env, napi_callback_info info);
+napi_value doe_canvas_surface_get_current_texture(napi_env env, napi_callback_info info);
+napi_value doe_canvas_surface_present(napi_env env, napi_callback_info info);
+napi_value doe_canvas_surface_unconfigure(napi_env env, napi_callback_info info);
+napi_value doe_canvas_surface_release(napi_env env, napi_callback_info info);
 
 /* Limits helper */
 napi_value create_limits_object(napi_env env, const WGPULimits* limits);

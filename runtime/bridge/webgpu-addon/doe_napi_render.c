@@ -22,6 +22,26 @@ static uint32_t stencil_operation_from_string(napi_env env, napi_value val) {
     napi_throw_error(env, "DOE_ERROR", "Unsupported stencil operation"); return 0;
 }
 
+static uint32_t load_op_from_value(napi_env env, napi_value val) {
+    napi_valuetype vt; napi_typeof(env, val, &vt);
+    if (vt == napi_number) { uint32_t out = 0; napi_get_value_uint32(env, val, &out); return out; }
+    char buf[16] = {0}; size_t len = 0;
+    napi_get_value_string_utf8(env, val, buf, sizeof(buf), &len);
+    if (strcmp(buf, "load") == 0)  return 0x00000001;
+    if (strcmp(buf, "clear") == 0) return 0x00000002;
+    napi_throw_error(env, "DOE_ERROR", "Unsupported loadOp"); return 0;
+}
+
+static uint32_t store_op_from_value(napi_env env, napi_value val) {
+    napi_valuetype vt; napi_typeof(env, val, &vt);
+    if (vt == napi_number) { uint32_t out = 0; napi_get_value_uint32(env, val, &out); return out; }
+    char buf[16] = {0}; size_t len = 0;
+    napi_get_value_string_utf8(env, val, buf, sizeof(buf), &len);
+    if (strcmp(buf, "store") == 0)   return 0x00000001;
+    if (strcmp(buf, "discard") == 0) return 0x00000002;
+    napi_throw_error(env, "DOE_ERROR", "Unsupported storeOp"); return 0;
+}
+
 /* Parse a GPUStencilFaceState object into a WGPURenderStencilFaceState.
    Defaults per WebGPU spec: compare=always, failOp/depthFailOp/passOp=keep. */
 static WGPURenderStencilFaceState parse_stencil_face(napi_env env, napi_value obj) {
@@ -44,6 +64,95 @@ static WGPUBlendComponent parse_blend_component(napi_env env, napi_value obj) {
     comp.dstFactor = has_prop(env, obj, "dstFactor")
         ? blend_factor_from_string(env, get_prop(env, obj, "dstFactor")) : 1; /* zero */
     return comp;
+}
+
+typedef void (*FnWgpuComputePassEncoderPushDebugGroup)(WGPUComputePassEncoder, WGPUStringView);
+typedef void (*FnWgpuComputePassEncoderPopDebugGroup)(WGPUComputePassEncoder);
+typedef void (*FnWgpuComputePassEncoderInsertDebugMarker)(WGPUComputePassEncoder, WGPUStringView);
+typedef void (*FnWgpuRenderPassEncoderDrawIndirect)(WGPURenderPassEncoder, WGPUBuffer, uint64_t);
+typedef void (*FnWgpuRenderPassEncoderDrawIndexedIndirect)(WGPURenderPassEncoder, WGPUBuffer, uint64_t);
+typedef void (*FnDoeNativeRenderPassExecuteBundles)(void*, size_t, void* const*);
+typedef void (*FnWgpuRenderBundleEncoderDrawIndirect)(void*, WGPUBuffer, uint64_t);
+typedef void (*FnWgpuRenderBundleEncoderDrawIndexedIndirect)(void*, WGPUBuffer, uint64_t);
+
+static FnWgpuComputePassEncoderPushDebugGroup resolve_wgpu_compute_pass_push_debug_group(void) {
+    static FnWgpuComputePassEncoderPushDebugGroup fn = NULL;
+    static bool resolved = false;
+    if (!resolved) {
+        fn = (FnWgpuComputePassEncoderPushDebugGroup)LIB_SYM(g_lib, "wgpuComputePassEncoderPushDebugGroup");
+        resolved = true;
+    }
+    return fn;
+}
+
+static FnWgpuComputePassEncoderPopDebugGroup resolve_wgpu_compute_pass_pop_debug_group(void) {
+    static FnWgpuComputePassEncoderPopDebugGroup fn = NULL;
+    static bool resolved = false;
+    if (!resolved) {
+        fn = (FnWgpuComputePassEncoderPopDebugGroup)LIB_SYM(g_lib, "wgpuComputePassEncoderPopDebugGroup");
+        resolved = true;
+    }
+    return fn;
+}
+
+static FnWgpuComputePassEncoderInsertDebugMarker resolve_wgpu_compute_pass_insert_debug_marker(void) {
+    static FnWgpuComputePassEncoderInsertDebugMarker fn = NULL;
+    static bool resolved = false;
+    if (!resolved) {
+        fn = (FnWgpuComputePassEncoderInsertDebugMarker)LIB_SYM(g_lib, "wgpuComputePassEncoderInsertDebugMarker");
+        resolved = true;
+    }
+    return fn;
+}
+
+static FnWgpuRenderPassEncoderDrawIndirect resolve_wgpu_render_pass_draw_indirect(void) {
+    static FnWgpuRenderPassEncoderDrawIndirect fn = NULL;
+    static bool resolved = false;
+    if (!resolved) {
+        fn = (FnWgpuRenderPassEncoderDrawIndirect)LIB_SYM(g_lib, "wgpuRenderPassEncoderDrawIndirect");
+        resolved = true;
+    }
+    return fn;
+}
+
+static FnWgpuRenderPassEncoderDrawIndexedIndirect resolve_wgpu_render_pass_draw_indexed_indirect(void) {
+    static FnWgpuRenderPassEncoderDrawIndexedIndirect fn = NULL;
+    static bool resolved = false;
+    if (!resolved) {
+        fn = (FnWgpuRenderPassEncoderDrawIndexedIndirect)LIB_SYM(g_lib, "wgpuRenderPassEncoderDrawIndexedIndirect");
+        resolved = true;
+    }
+    return fn;
+}
+
+static FnDoeNativeRenderPassExecuteBundles resolve_doe_native_render_pass_execute_bundles(void) {
+    static FnDoeNativeRenderPassExecuteBundles fn = NULL;
+    static bool resolved = false;
+    if (!resolved) {
+        fn = (FnDoeNativeRenderPassExecuteBundles)LIB_SYM(g_lib, "doeNativeRenderPassExecuteBundles");
+        resolved = true;
+    }
+    return fn;
+}
+
+static FnWgpuRenderBundleEncoderDrawIndirect resolve_wgpu_render_bundle_encoder_draw_indirect(void) {
+    static FnWgpuRenderBundleEncoderDrawIndirect fn = NULL;
+    static bool resolved = false;
+    if (!resolved) {
+        fn = (FnWgpuRenderBundleEncoderDrawIndirect)LIB_SYM(g_lib, "wgpuRenderBundleEncoderDrawIndirect");
+        resolved = true;
+    }
+    return fn;
+}
+
+static FnWgpuRenderBundleEncoderDrawIndexedIndirect resolve_wgpu_render_bundle_encoder_draw_indexed_indirect(void) {
+    static FnWgpuRenderBundleEncoderDrawIndexedIndirect fn = NULL;
+    static bool resolved = false;
+    if (!resolved) {
+        fn = (FnWgpuRenderBundleEncoderDrawIndexedIndirect)LIB_SYM(g_lib, "wgpuRenderBundleEncoderDrawIndexedIndirect");
+        resolved = true;
+    }
+    return fn;
 }
 
 /* Render Pipeline */
@@ -323,7 +432,12 @@ napi_value doe_begin_render_pass(napi_env env, napi_callback_info info) {
             atts[i].resolveTarget = unwrap_ptr(env, get_prop(env, elem, "resolveTarget"));
         atts[i].depthSlice = has_prop(env, elem, "depthSlice")
             ? get_uint32_prop(env, elem, "depthSlice") : UINT32_MAX;
-        atts[i].loadOp = 1; atts[i].storeOp = 1;
+        atts[i].loadOp = has_prop(env, elem, "loadOp")
+            ? load_op_from_value(env, get_prop(env, elem, "loadOp"))
+            : 0x00000001;
+        atts[i].storeOp = has_prop(env, elem, "storeOp")
+            ? store_op_from_value(env, get_prop(env, elem, "storeOp"))
+            : 0x00000001;
         if (has_prop(env, elem, "clearValue") && prop_type(env, elem, "clearValue") == napi_object) {
             napi_value cv = get_prop(env, elem, "clearValue");
             double r = 0, g = 0, b = 0, a = 1; napi_value tmp;
@@ -337,12 +451,22 @@ napi_value doe_begin_render_pass(napi_env env, napi_callback_info info) {
     if (has_prop(env, _args[1], "depthStencilAttachment") && prop_type(env, _args[1], "depthStencilAttachment") == napi_object) {
         napi_value depth_obj = get_prop(env, _args[1], "depthStencilAttachment");
         depth_att.view = unwrap_ptr(env, get_prop(env, depth_obj, "view"));
-        depth_att.depthLoadOp = 1; depth_att.depthStoreOp = 1;
+        depth_att.depthLoadOp = has_prop(env, depth_obj, "depthLoadOp")
+            ? load_op_from_value(env, get_prop(env, depth_obj, "depthLoadOp"))
+            : 0x00000001;
+        depth_att.depthStoreOp = has_prop(env, depth_obj, "depthStoreOp")
+            ? store_op_from_value(env, get_prop(env, depth_obj, "depthStoreOp"))
+            : 0x00000001;
         depth_att.depthClearValue = has_prop(env, depth_obj, "depthClearValue")
             ? (float)get_double_prop(env, depth_obj, "depthClearValue") : 1.0f;
         depth_att.depthReadOnly = has_prop(env, depth_obj, "depthReadOnly")
             ? (get_bool_prop(env, depth_obj, "depthReadOnly") ? 1 : 0) : 0;
-        depth_att.stencilLoadOp = 1; depth_att.stencilStoreOp = 1;
+        depth_att.stencilLoadOp = has_prop(env, depth_obj, "stencilLoadOp")
+            ? load_op_from_value(env, get_prop(env, depth_obj, "stencilLoadOp"))
+            : 0x00000001;
+        depth_att.stencilStoreOp = has_prop(env, depth_obj, "stencilStoreOp")
+            ? store_op_from_value(env, get_prop(env, depth_obj, "stencilStoreOp"))
+            : 0x00000001;
         depth_att.stencilClearValue = has_prop(env, depth_obj, "stencilClearValue")
             ? get_uint32_prop(env, depth_obj, "stencilClearValue") : 0;
         depth_att.stencilReadOnly = has_prop(env, depth_obj, "stencilReadOnly")
@@ -360,7 +484,14 @@ napi_value doe_begin_render_pass(napi_env env, napi_callback_info info) {
         ts_writes_ptr = &ts_writes;
     }
 
+    char* label_str = NULL;
+    size_t label_len = 0;
+    if (has_prop(env, _args[1], "label")) {
+        label_str = dup_string_value(env, get_prop(env, _args[1], "label"), &label_len);
+    }
     WGPURenderPassDescriptor desc; memset(&desc, 0, sizeof(desc));
+    desc.label.data = label_str;
+    desc.label.length = label_str ? label_len : 0;
     desc.colorAttachmentCount = att_count; desc.colorAttachments = atts;
     desc.depthStencilAttachment = has_depth_att ? &depth_att : NULL;
     if (has_prop(env, _args[1], "occlusionQuerySet") && prop_type(env, _args[1], "occlusionQuerySet") == napi_external)
@@ -370,6 +501,7 @@ napi_value doe_begin_render_pass(napi_env env, napi_callback_info info) {
         ? (uint64_t)get_uint32_prop(env, _args[1], "maxDrawCount") : 50000000;
     WGPURenderPassEncoder pass = pfn_wgpuCommandEncoderBeginRenderPass(enc, &desc);
     free(atts);
+    free(label_str);
     if (!pass) NAPI_THROW(env, "beginRenderPass failed");
     return wrap_ptr(env, pass);
 }
@@ -442,6 +574,31 @@ napi_value doe_render_pass_draw_indexed(napi_env env, napi_callback_info info) {
     napi_get_value_uint32(env, _args[3], &first_index); napi_get_value_int32(env, _args[4], &base_vertex);
     napi_get_value_uint32(env, _args[5], &first_instance);
     pfn_wgpuRenderPassEncoderDrawIndexed(pass, index_count, instance_count, first_index, base_vertex, first_instance);
+    return NULL;
+}
+
+napi_value doe_render_pass_execute_bundles(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 2);
+    void* pass = unwrap_ptr(env, _args[0]);
+    FnDoeNativeRenderPassExecuteBundles fn = resolve_doe_native_render_pass_execute_bundles();
+    if (!pass || !fn) NAPI_THROW(env, "renderPassExecuteBundles not available");
+    bool is_array = false;
+    napi_is_array(env, _args[1], &is_array);
+    if (!is_array) NAPI_THROW(env, "renderPassExecuteBundles requires an array of bundles");
+
+    uint32_t bundle_count = 0;
+    napi_get_array_length(env, _args[1], &bundle_count);
+    void** bundles = bundle_count ? (void**)calloc(bundle_count, sizeof(void*)) : NULL;
+    if (bundle_count && !bundles) NAPI_THROW(env, "renderPassExecuteBundles: out of memory");
+
+    for (uint32_t i = 0; i < bundle_count; i++) {
+        napi_value bundle_value;
+        napi_get_element(env, _args[1], i, &bundle_value);
+        bundles[i] = unwrap_ptr(env, bundle_value);
+    }
+
+    fn(pass, (size_t)bundle_count, bundles);
+    free(bundles);
     return NULL;
 }
 
@@ -535,6 +692,89 @@ napi_value doe_render_pass_insert_debug_marker(napi_env env, napi_callback_info 
     free(label); return NULL;
 }
 
+napi_value doe_compute_pass_push_debug_group(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 2);
+    WGPUComputePassEncoder pass = unwrap_ptr(env, _args[0]);
+    FnWgpuComputePassEncoderPushDebugGroup fn = resolve_wgpu_compute_pass_push_debug_group();
+    if (!pass || !fn) NAPI_THROW(env, "computePassPushDebugGroup not available");
+    size_t label_len = 0;
+    napi_get_value_string_utf8(env, _args[1], NULL, 0, &label_len);
+    char* label = (char*)malloc(label_len + 1);
+    if (!label) NAPI_THROW(env, "computePassPushDebugGroup: out of memory");
+    napi_get_value_string_utf8(env, _args[1], label, label_len + 1, &label_len);
+    fn(pass, (WGPUStringView){ .data = label, .length = label_len });
+    free(label);
+    return NULL;
+}
+
+napi_value doe_compute_pass_pop_debug_group(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 1);
+    WGPUComputePassEncoder pass = unwrap_ptr(env, _args[0]);
+    FnWgpuComputePassEncoderPopDebugGroup fn = resolve_wgpu_compute_pass_pop_debug_group();
+    if (!pass || !fn) NAPI_THROW(env, "computePassPopDebugGroup not available");
+    fn(pass);
+    return NULL;
+}
+
+napi_value doe_compute_pass_insert_debug_marker(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 2);
+    WGPUComputePassEncoder pass = unwrap_ptr(env, _args[0]);
+    FnWgpuComputePassEncoderInsertDebugMarker fn = resolve_wgpu_compute_pass_insert_debug_marker();
+    if (!pass || !fn) NAPI_THROW(env, "computePassInsertDebugMarker not available");
+    size_t label_len = 0;
+    napi_get_value_string_utf8(env, _args[1], NULL, 0, &label_len);
+    char* label = (char*)malloc(label_len + 1);
+    if (!label) NAPI_THROW(env, "computePassInsertDebugMarker: out of memory");
+    napi_get_value_string_utf8(env, _args[1], label, label_len + 1, &label_len);
+    fn(pass, (WGPUStringView){ .data = label, .length = label_len });
+    free(label);
+    return NULL;
+}
+
+napi_value doe_render_pass_draw_indirect(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 3);
+    WGPURenderPassEncoder pass = unwrap_ptr(env, _args[0]);
+    WGPUBuffer buffer = unwrap_ptr(env, _args[1]);
+    FnWgpuRenderPassEncoderDrawIndirect fn = resolve_wgpu_render_pass_draw_indirect();
+    if (!pass || !buffer || !fn) NAPI_THROW(env, "renderPassDrawIndirect not available");
+    uint64_t offset = (uint64_t)get_int64_value(env, _args[2]);
+    fn(pass, buffer, offset);
+    return NULL;
+}
+
+napi_value doe_render_pass_draw_indexed_indirect(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 3);
+    WGPURenderPassEncoder pass = unwrap_ptr(env, _args[0]);
+    WGPUBuffer buffer = unwrap_ptr(env, _args[1]);
+    FnWgpuRenderPassEncoderDrawIndexedIndirect fn = resolve_wgpu_render_pass_draw_indexed_indirect();
+    if (!pass || !buffer || !fn) NAPI_THROW(env, "renderPassDrawIndexedIndirect not available");
+    uint64_t offset = (uint64_t)get_int64_value(env, _args[2]);
+    fn(pass, buffer, offset);
+    return NULL;
+}
+
+napi_value doe_render_bundle_encoder_draw_indirect(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 3);
+    void* enc = unwrap_ptr(env, _args[0]);
+    WGPUBuffer buffer = unwrap_ptr(env, _args[1]);
+    FnWgpuRenderBundleEncoderDrawIndirect fn = resolve_wgpu_render_bundle_encoder_draw_indirect();
+    if (!enc || !buffer || !fn) NAPI_THROW(env, "renderBundleEncoderDrawIndirect not available");
+    uint64_t offset = (uint64_t)get_int64_value(env, _args[2]);
+    fn(enc, buffer, offset);
+    return NULL;
+}
+
+napi_value doe_render_bundle_encoder_draw_indexed_indirect(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 3);
+    void* enc = unwrap_ptr(env, _args[0]);
+    WGPUBuffer buffer = unwrap_ptr(env, _args[1]);
+    FnWgpuRenderBundleEncoderDrawIndexedIndirect fn = resolve_wgpu_render_bundle_encoder_draw_indexed_indirect();
+    if (!enc || !buffer || !fn) NAPI_THROW(env, "renderBundleEncoderDrawIndexedIndirect not available");
+    uint64_t offset = (uint64_t)get_int64_value(env, _args[2]);
+    fn(enc, buffer, offset);
+    return NULL;
+}
+
 /* Render Bundle Encoder */
 
 /* RenderBundleEncoderDescriptor layout matching wgpu_render_types.zig. */
@@ -551,25 +791,42 @@ typedef struct {
 } BundleEncoderDescC;
 
 napi_value doe_create_render_bundle_encoder(napi_env env, napi_callback_info info) {
-    NAPI_ASSERT_ARGC(env, info, 6);
+    size_t argc = 7;
+    napi_value argv[7];
+    if (napi_get_cb_info(env, info, &argc, argv, NULL, NULL) != napi_ok) {
+        NAPI_THROW(env, "napi_get_cb_info failed");
+    }
+    if (argc < 6) NAPI_THROW(env, "createRenderBundleEncoder requires device, formats, depth format, sample count, and read-only flags");
     CHECK_LIB_LOADED(env);
     if (!pfn_doeNativeDeviceCreateRenderBundleEncoder) NAPI_THROW(env, "doeNativeDeviceCreateRenderBundleEncoder not available");
-    void* device = unwrap_ptr(env, _args[0]);
+    void* device = unwrap_ptr(env, argv[0]);
     if (!device) NAPI_THROW(env, "createRenderBundleEncoder: invalid device");
     uint32_t fmt_count = 0; bool is_array = false;
-    napi_is_array(env, _args[1], &is_array);
-    if (is_array) napi_get_array_length(env, _args[1], &fmt_count);
+    napi_is_array(env, argv[1], &is_array);
+    if (is_array) napi_get_array_length(env, argv[1], &fmt_count);
     uint32_t* fmts = fmt_count > 0 ? (uint32_t*)malloc(fmt_count * sizeof(uint32_t)) : NULL;
     for (uint32_t i = 0; i < fmt_count; i++) {
-        napi_value elem; napi_get_element(env, _args[1], i, &elem);
+        napi_value elem; napi_get_element(env, argv[1], i, &elem);
         napi_get_value_uint32(env, elem, &fmts[i]);
     }
-    uint32_t depth_stencil_format = 0; napi_get_value_uint32(env, _args[2], &depth_stencil_format);
-    uint32_t sample_count = 1;         napi_get_value_uint32(env, _args[3], &sample_count);
-    bool depth_read_only = false;      napi_get_value_bool(env, _args[4], &depth_read_only);
-    bool stencil_read_only = false;    napi_get_value_bool(env, _args[5], &stencil_read_only);
+    uint32_t depth_stencil_format = 0; napi_get_value_uint32(env, argv[2], &depth_stencil_format);
+    uint32_t sample_count = 1;         napi_get_value_uint32(env, argv[3], &sample_count);
+    bool depth_read_only = false;      napi_get_value_bool(env, argv[4], &depth_read_only);
+    bool stencil_read_only = false;    napi_get_value_bool(env, argv[5], &stencil_read_only);
+    char* label = NULL;
+    size_t label_len = 0;
+    if (argc >= 7) {
+        napi_valuetype label_type = napi_undefined;
+        if (napi_typeof(env, argv[6], &label_type) == napi_ok && label_type == napi_string) {
+            label = dup_string_value(env, argv[6], &label_len);
+            if (!label) {
+                free(fmts);
+                NAPI_THROW(env, "createRenderBundleEncoder: out of memory while parsing label");
+            }
+        }
+    }
     BundleEncoderDescC desc = {
-        .nextInChain = NULL, .label_data = NULL, .label_len = 0,
+        .nextInChain = NULL, .label_data = label, .label_len = label_len,
         .colorFormatCount   = (size_t)fmt_count, .colorFormats = fmts,
         .depthStencilFormat = depth_stencil_format,
         .sampleCount        = sample_count == 0 ? 1 : sample_count,
@@ -577,6 +834,7 @@ napi_value doe_create_render_bundle_encoder(napi_env env, napi_callback_info inf
         .stencilReadOnly    = stencil_read_only ? 1 : 0,
     };
     void* enc = pfn_doeNativeDeviceCreateRenderBundleEncoder(device, &desc);
+    free(label);
     free(fmts);
     if (!enc) NAPI_THROW(env, "createRenderBundleEncoder failed");
     return wrap_ptr(env, enc);
@@ -627,7 +885,7 @@ napi_value doe_render_bundle_encoder_set_index_buffer(napi_env env, napi_callbac
     NAPI_ASSERT_ARGC(env, info, 5);
     void* enc = unwrap_ptr(env, _args[0]); if (!enc) return NULL;
     void* buf = unwrap_ptr(env, _args[1]); if (!buf) return NULL;
-    uint32_t format = 0; napi_get_value_uint32(env, _args[2], &format);
+    uint32_t format = index_format_from_value(env, _args[2]);
     int64_t offset = 0; napi_get_value_int64(env, _args[3], &offset);
     int64_t size   = 0; napi_get_value_int64(env, _args[4], &size);
     if (pfn_doeNativeRenderBundleEncoderSetIndexBuffer)

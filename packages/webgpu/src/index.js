@@ -67,6 +67,9 @@ import {
 import {
   createNativeBrowserCanvasBackend as createNativeBrowserCanvasBackendImpl,
 } from './shared/browser-native-canvas-backend.js';
+import {
+  createNativeMetalCanvasBackend as createNativeMetalCanvasBackendImpl,
+} from './shared/native-metal-canvas-backend.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
@@ -96,6 +99,7 @@ const TEXTURE_SWIZZLE_COMPONENT_MAP = Object.freeze({
   b: 5,
   a: 6,
 });
+const WHOLE_SIZE_SENTINEL = -1;
 
 const addon = loadAddon();
 const DOE_LIB_PATH = resolveDoeLibraryPath();
@@ -104,6 +108,7 @@ const DOE_BUILD_METADATA = loadDoeBuildMetadata({
   libraryPath: DOE_LIB_PATH ?? '',
 });
 let libraryLoaded = false;
+let nativeMetalCanvasBackend = null;
 
 export {
   globals,
@@ -167,6 +172,12 @@ function ensureLibrary() {
 
 function validateBufferDescriptor(descriptor) {
   return assertBufferDescriptor(descriptor, 'GPUDevice.createBuffer');
+}
+
+function presentPendingCanvasContexts(queue) {
+  if (nativeMetalCanvasBackend && typeof nativeMetalCanvasBackend.queuePresentPendingCanvasContexts === 'function') {
+    nativeMetalCanvasBackend.queuePresentPendingCanvasContexts(queue);
+  }
 }
 
 /**
@@ -490,7 +501,7 @@ function ensureNodeCommandEncoderNative(encoder) {
   encoder._native = addon.createCommandEncoder(assertLiveResource(encoder._device, 'GPUCommandEncoder', 'GPUDevice'), encoder.label || undefined);
   for (const cmd of encoder._commands ?? []) {
     if (cmd.t === 0) {
-      const pass = addon.beginComputePass(encoder._native);
+      const pass = addon.beginComputePass(encoder._native, cmd.d ?? undefined);
       addon.computePassSetPipeline(pass, cmd.p);
       for (let index = 0; index < cmd.bg.length; index += 1) {
         if (cmd.bg[index]) {
@@ -513,7 +524,7 @@ function materializeLazyComputePass(pass) {
   }
   ensureNodeCommandEncoderNative(pass._encoder);
   pass._lazy = false;
-  pass._native = addon.beginComputePass(pass._encoder._native);
+  pass._native = addon.beginComputePass(pass._encoder._native, pass._descriptor ?? undefined);
   if (pass._pipeline != null) {
     addon.computePassSetPipeline(pass._native, pass._pipeline);
   }
@@ -551,6 +562,7 @@ const nodeEncoderBackend = {
       pass._native = native;
       pass._lazy = false;
     }
+    pass._descriptor = undefined;
     pass._ended = false;
   },
   computePassAssertOpen(pass, path) {
@@ -595,7 +607,7 @@ const nodeEncoderBackend = {
       if (pass._pipeline == null) {
         failValidation('GPUComputePassEncoder.dispatchWorkgroups', 'setPipeline() must be called before dispatch');
       }
-      pass._encoder._commands.push({ t: 0, p: pass._pipeline, bg: [...pass._bindGroups], x, y, z });
+      pass._encoder._commands.push({ t: 0, p: pass._pipeline, bg: [...pass._bindGroups], x, y, z, d: pass._descriptor ?? undefined });
       return;
     }
     addon.computePassDispatchWorkgroups(
@@ -664,7 +676,7 @@ const nodeEncoderBackend = {
       slot,
       bufferNative,
       offset,
-      size ?? 0,
+      size ?? WHOLE_SIZE_SENTINEL,
     );
   },
   renderPassSetIndexBuffer(pass, bufferNative, format, offset, size) {
@@ -673,7 +685,7 @@ const nodeEncoderBackend = {
       bufferNative,
       format,
       offset,
-      size ?? 0,
+      size ?? WHOLE_SIZE_SENTINEL,
     );
   },
   renderPassDraw(pass, vertexCount, instanceCount, firstVertex, firstInstance) {
@@ -773,10 +785,10 @@ const nodeEncoderBackend = {
     );
   },
   renderBundleEncoderSetVertexBuffer(enc, slot, bufferNative, offset, size) {
-    addon.renderBundleEncoderSetVertexBuffer(enc._native, slot, bufferNative, offset, size ?? 0);
+    addon.renderBundleEncoderSetVertexBuffer(enc._native, slot, bufferNative, offset, size ?? WHOLE_SIZE_SENTINEL);
   },
   renderBundleEncoderSetIndexBuffer(enc, bufferNative, format, offset, size) {
-    addon.renderBundleEncoderSetIndexBuffer(enc._native, bufferNative, format, offset, size ?? 0);
+    addon.renderBundleEncoderSetIndexBuffer(enc._native, bufferNative, format, offset, size ?? WHOLE_SIZE_SENTINEL);
   },
   renderBundleEncoderDraw(enc, vertexCount, instanceCount, firstVertex, firstInstance) {
     addon.renderBundleEncoderDraw(enc._native, vertexCount, instanceCount, firstVertex, firstInstance);
@@ -837,13 +849,36 @@ const nodeEncoderBackend = {
     }
   },
   commandEncoderBeginComputePass(encoder, _descriptor, classes) {
-    if (encoder._native === null) {
-      return new classes.DoeGPUComputePassEncoder(null, encoder);
+    let passDescriptor = undefined;
+    if (_descriptor !== undefined && _descriptor !== null) {
+      const descriptor = assertObject(_descriptor, 'GPUCommandEncoder.beginComputePass', 'descriptor');
+      passDescriptor = {};
+      if (descriptor.label !== undefined) {
+        passDescriptor.label = descriptor.label;
+      }
+      if (descriptor.timestampWrites !== undefined && descriptor.timestampWrites !== null) {
+        const writes = assertObject(descriptor.timestampWrites, 'GPUCommandEncoder.beginComputePass', 'descriptor.timestampWrites');
+        passDescriptor.timestampWrites = {
+          querySet: assertLiveResource(writes.querySet, 'GPUCommandEncoder.beginComputePass', 'GPUQuerySet'),
+          beginningOfPassWriteIndex: writes.beginningOfPassWriteIndex ?? 0xFFFFFFFF,
+          endOfPassWriteIndex: writes.endOfPassWriteIndex ?? 0xFFFFFFFF,
+        };
+      }
+      if (Object.keys(passDescriptor).length === 0) {
+        passDescriptor = undefined;
+      }
     }
-    return new classes.DoeGPUComputePassEncoder(
-      addon.beginComputePass(encoder._native),
+    if (encoder._native === null) {
+      const pass = new classes.DoeGPUComputePassEncoder(null, encoder);
+      pass._descriptor = passDescriptor;
+      return pass;
+    }
+    const pass = new classes.DoeGPUComputePassEncoder(
+      addon.beginComputePass(encoder._native, passDescriptor),
       encoder,
     );
+    pass._descriptor = passDescriptor;
+    return pass;
   },
   commandEncoderBeginRenderPass(encoder, passDescriptor, classes) {
     const attachments = assertArray(passDescriptor.colorAttachments ?? [], 'GPUCommandEncoder.beginRenderPass', 'descriptor.colorAttachments');
@@ -853,18 +888,31 @@ const nodeEncoderBackend = {
     ensureNodeCommandEncoderNative(encoder);
     const colorAttachments = attachments.map((attachment, index) => {
       const entry = assertObject(attachment, 'GPUCommandEncoder.beginRenderPass', `descriptor.colorAttachments[${index}]`);
-      return {
+      const normalized = {
         view: assertLiveResource(entry.view, 'GPUCommandEncoder.beginRenderPass', 'GPUTextureView'),
         clearValue: entry.clearValue || { r: 0, g: 0, b: 0, a: 1 },
+        loadOp: entry.loadOp ?? 'clear',
+        storeOp: entry.storeOp ?? 'store',
       };
+      if (entry.resolveTarget !== undefined && entry.resolveTarget !== null) {
+        normalized.resolveTarget = assertLiveResource(entry.resolveTarget, 'GPUCommandEncoder.beginRenderPass', 'GPUTextureView');
+      }
+      if (entry.depthSlice !== undefined) {
+        normalized.depthSlice = entry.depthSlice;
+      }
+      return normalized;
     });
     let depthStencilAttachment = undefined;
     if (passDescriptor.depthStencilAttachment !== undefined) {
       const depthAttachment = assertObject(passDescriptor.depthStencilAttachment, 'GPUCommandEncoder.beginRenderPass', 'descriptor.depthStencilAttachment');
       depthStencilAttachment = {
         view: assertLiveResource(depthAttachment.view, 'GPUCommandEncoder.beginRenderPass', 'GPUTextureView'),
+        depthLoadOp: depthAttachment.depthLoadOp ?? 'clear',
+        depthStoreOp: depthAttachment.depthStoreOp ?? 'store',
         depthClearValue: depthAttachment.depthClearValue ?? 1,
         depthReadOnly: depthAttachment.depthReadOnly ?? false,
+        stencilLoadOp: depthAttachment.stencilLoadOp ?? 'clear',
+        stencilStoreOp: depthAttachment.stencilStoreOp ?? 'store',
         stencilClearValue: depthAttachment.stencilClearValue ?? 0,
         stencilReadOnly: depthAttachment.stencilReadOnly ?? false,
       };
@@ -882,13 +930,15 @@ const nodeEncoderBackend = {
         endOfPassWriteIndex: writes.endOfPassWriteIndex ?? 0xFFFFFFFF,
       };
     }
-    const pass = addon.beginRenderPass(encoder._native, {
+    const normalizedDescriptor = {
+      label: passDescriptor.label,
       colorAttachments,
       depthStencilAttachment,
       occlusionQuerySet,
       timestampWrites,
       maxDrawCount: passDescriptor.maxDrawCount ?? 50_000_000,
-    });
+    };
+    const pass = addon.beginRenderPass(encoder._native, normalizedDescriptor);
     return new classes.DoeGPURenderPassEncoder(pass, encoder);
   },
   commandEncoderCopyBufferToBuffer(encoder, srcNative, srcOffset, dstNative, dstOffset, size) {
@@ -991,7 +1041,8 @@ const nodeEncoderBackend = {
   commandEncoderFinish(encoder) {
     const cmds = encoder._commands;
     if (
-      encoder._native === null
+      process.platform === 'darwin'
+      && encoder._native === null
       && cmds.length === 2
       && cmds[0].t === 0
       && cmds[1].t === 1
@@ -999,7 +1050,11 @@ const nodeEncoderBackend = {
       encoder._finished = true;
       return { _commands: cmds, _batched: true };
     }
-    ensureNodeCommandEncoderNative(encoder);
+    if (
+      encoder._native === null
+    ) {
+      ensureNodeCommandEncoderNative(encoder);
+    }
     encoder._finished = true;
     const cmd = addon.commandEncoderFinish(encoder._native);
     encoder._native = null;
@@ -1143,6 +1198,7 @@ const fullSurfaceBackend = {
         // Mark done so onSubmittedWorkDone() short-circuits rather than calling queueFlush.
         queue.markSubmittedWorkDone();
         consumeSubmittedCommandBuffers(buffers);
+        presentPendingCanvasContexts(queue);
         return;
       }
     }
@@ -1163,6 +1219,7 @@ const fullSurfaceBackend = {
         queue.markSubmittedWorkDone();
       }
       consumeSubmittedCommandBuffers(buffers);
+      presentPendingCanvasContexts(queue);
       return;
     }
     const natives = buffers.map((commandBuffer, index) => {
@@ -1174,6 +1231,7 @@ const fullSurfaceBackend = {
     });
     addon.queueSubmit(queueNative, natives);
     consumeSubmittedCommandBuffers(buffers);
+    presentPendingCanvasContexts(queue);
   },
   queueWriteBuffer(_queue, queueNative, bufferNative, bufferOffset, view) {
     addon.queueWriteBuffer(queueNative, bufferNative, bufferOffset, view);
@@ -1232,6 +1290,9 @@ const fullSurfaceBackend = {
   },
   textureDestroy(native, texture) {
     if (texture?._externallyOwned) {
+      if (typeof texture?._nativeCanvasRelease === 'function') {
+        texture._nativeCanvasRelease(native, texture);
+      }
       return;
     }
     addon.textureRelease(native);
@@ -1243,7 +1304,7 @@ const fullSurfaceBackend = {
     return addon.shaderModuleGetCompilationInfo(native);
   },
   computePipelineGetBindGroupLayout(pipeline, index, classes) {
-    if (pipeline._autoLayoutEntriesByGroup && process.platform === 'darwin') {
+    if (pipeline._autoLayoutEntriesByGroup) {
       const entries = pipeline._autoLayoutEntriesByGroup.get(index) ?? [];
       return pipeline._device.createBindGroupLayout({ entries });
     }
@@ -1277,6 +1338,7 @@ const fullSurfaceBackend = {
       descriptor.sampleCount ?? 1,
       descriptor.depthReadOnly ?? false,
       descriptor.stencilReadOnly ?? false,
+      descriptor.label ?? null,
     );
     return new encoderClasses.DoeGPURenderBundleEncoder(native, device);
   },
@@ -1298,13 +1360,18 @@ const fullSurfaceBackend = {
   deviceCreateBuffer(device, validated) {
     return addon.createBuffer(assertLiveResource(device, 'GPUDevice.createBuffer', 'GPUDevice'), validated);
   },
-  deviceCreateShaderModule(device, code, compilationHints) {
+  deviceCreateShaderModule(device, code, compilationHints, label = null) {
     const preflight = preflightShaderSource(code);
     if (preflight.ok === false) {
       shaderCheckFailure('GPUDevice.createShaderModule', preflight);
     }
     try {
-      return addon.createShaderModule(assertLiveResource(device, 'GPUDevice.createShaderModule', 'GPUDevice'), code, compilationHints ?? null);
+      return addon.createShaderModule(
+        assertLiveResource(device, 'GPUDevice.createShaderModule', 'GPUDevice'),
+        code,
+        compilationHints ?? null,
+        label,
+      );
     } catch (error) {
       throw enrichNativeCompilerError(error, 'GPUDevice.createShaderModule', readLastErrorFields());
     }
@@ -1430,11 +1497,15 @@ const fullSurfaceBackend = {
   deviceCreateQuerySet(device, descriptor) {
     const QUERY_TYPE_OCCLUSION = 1;
     const QUERY_TYPE_TIMESTAMP = 2;
-    return addon.createQuerySet(
+    const querySet = addon.createQuerySet(
       assertLiveResource(device, 'GPUDevice.createQuerySet', 'GPUDevice'),
       descriptor.type === 'occlusion' ? QUERY_TYPE_OCCLUSION : QUERY_TYPE_TIMESTAMP,
       descriptor.count,
     );
+    if (descriptor.label && typeof addon.objectSetLabel === 'function') {
+      addon.objectSetLabel(querySet, descriptor.label);
+    }
+    return querySet;
   },
   querySetDestroy(native) {
     addon.querySetDestroy(native);
@@ -1453,16 +1524,17 @@ const fullSurfaceBackend = {
   },
   adapterRequestDevice(adapter, _descriptor, classes) {
     assertLiveResource(adapter, 'GPUAdapter.requestDevice', 'GPUAdapter');
+    const descriptor = _descriptor ?? undefined;
     let native;
     try {
-      native = addon.requestDevice(adapter._instance, adapter._native);
+      native = addon.requestDevice(adapter._instance, adapter._native, descriptor);
     } catch (error) {
       const message = String(error?.message ?? '');
       if (!message.includes('adapter is "consumed"')) {
         throw error;
       }
       adapter._native = addon.requestAdapter(adapter._instance, adapter._requestOptions ?? null);
-      native = addon.requestDevice(adapter._instance, adapter._native);
+      native = addon.requestDevice(adapter._instance, adapter._native, descriptor);
     }
     const device = new classes.DoeGPUDevice(
       native,
@@ -1470,6 +1542,10 @@ const fullSurfaceBackend = {
       deviceLimits(native),
       deviceFeatures(native),
     );
+    device.label = descriptor?.label ?? '';
+    if (device.queue) {
+      device.queue.label = descriptor?.defaultQueue?.label ?? '';
+    }
     device._adapterInfo = adapter.info;
     installNodeDeviceCallbacks(device);
     return device;
@@ -1482,6 +1558,10 @@ const fullSurfaceBackend = {
     return new classes.DoeGPUAdapter(adapter, gpu._instance, options);
   },
 };
+
+nativeMetalCanvasBackend = process.platform === 'darwin'
+  ? createNativeMetalCanvasBackendImpl({ addon })
+  : null;
 
 const {
   DoeGPUBuffer,
@@ -1498,11 +1578,21 @@ const {
   DoeGPUDevice,
   DoeGPUAdapter,
   DoeGPU,
-} = createFullSurfaceClasses({
-  globals,
-  backend: fullSurfaceBackend,
-  encoderClasses: { DoeGPURenderBundleEncoder, DoeGPURenderBundle },
-});
+  DoeGPUCanvasContext,
+} = (nativeMetalCanvasBackend
+  ? createBrowserSurfaceClasses({
+    canvasBackend: nativeMetalCanvasBackend,
+    fullClasses: createFullSurfaceClasses({
+      globals,
+      backend: fullSurfaceBackend,
+      encoderClasses: { DoeGPURenderBundleEncoder, DoeGPURenderBundle },
+    }),
+  })
+  : createFullSurfaceClasses({
+    globals,
+    backend: fullSurfaceBackend,
+    encoderClasses: { DoeGPURenderBundleEncoder, DoeGPURenderBundle },
+  }));
 
 /**
  * Create a package-local `GPU` object backed by the Doe native runtime.
@@ -1530,6 +1620,16 @@ export function create(createArgs = null) {
 
 export function createInstance(createArgs = null) {
   return create(createArgs);
+}
+
+export function createCanvasContext(canvas) {
+  if (!nativeMetalCanvasBackend || typeof DoeGPUCanvasContext !== 'function') {
+    failValidation(
+      'createCanvasContext',
+      'native Metal GPUCanvasContext is unavailable on this host/runtime',
+    );
+  }
+  return new DoeGPUCanvasContext(canvas);
 }
 
 export function setNativeTimeoutMs(timeoutMs) {
@@ -1694,6 +1794,7 @@ export default {
   CANVAS_TONE_MAPPING_MODES,
   CANVAS_COLOR_SPACES,
   create,
+  createCanvasContext,
   createInstance,
   createBrowserSurfaceClasses,
   createNativeBrowserCanvasBackend: createNativeBrowserCanvasBackendImpl,

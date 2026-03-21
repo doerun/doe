@@ -604,6 +604,9 @@ function normalizeRequestDeviceDescriptor(descriptor, path = 'GPUAdapter.request
       `descriptor.requiredFeatures[${index}]`,
     ));
   }
+  if (normalized.requiredLimits !== undefined && process.platform !== 'win32') {
+    delete result.requiredLimits;
+  }
   return result;
 }
 
@@ -881,9 +884,9 @@ function assertTextureSize(size, path) {
     width: assertIntegerInRange(objectSize.width ?? 1, path, 'descriptor.size.width', { min: 1, max: UINT32_MAX }),
     height: assertIntegerInRange(objectSize.height ?? 1, path, 'descriptor.size.height', { min: 1, max: UINT32_MAX }),
     depthOrArrayLayers: assertIntegerInRange(
-      objectSize.depthOrArrayLayers ?? 1,
+      objectSize.depthOrArrayLayers ?? objectSize.depth ?? 1,
       path,
-      'descriptor.size.depthOrArrayLayers',
+      objectSize.depthOrArrayLayers !== undefined ? 'descriptor.size.depthOrArrayLayers' : 'descriptor.size.depth',
       { min: 1, max: UINT32_MAX },
     ),
   };

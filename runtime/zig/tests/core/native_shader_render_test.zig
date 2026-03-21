@@ -308,6 +308,155 @@ test "doeNativeCommandEncoderBeginRenderPass with null encoder returns null" {
     try std.testing.expect(result == null);
 }
 
+test "doeNativeCommandEncoderBeginRenderPass preserves D3D12 attachment extras" {
+    var dev = native.DoeDevice{ .backend = .d3d12 };
+    var enc = native.DoeCommandEncoder{ .dev = &dev };
+    defer enc.cmds.deinit(native.alloc);
+
+    var color_texture = native.DoeTexture{
+        .backend = .d3d12,
+        .mtl = @ptrFromInt(0x1010),
+        .format = types.WGPUTextureFormat_RGBA8Unorm,
+        .sample_count = 4,
+    };
+    var color_view = native.DoeTextureView{
+        .backend = .d3d12,
+        .tex = &color_texture,
+        .format = types.WGPUTextureFormat_RGBA8Unorm,
+        .dimension = types.WGPUTextureViewDimension_3D,
+        .base_mip_level = 2,
+    };
+
+    var resolve_texture = native.DoeTexture{
+        .backend = .d3d12,
+        .mtl = @ptrFromInt(0x2020),
+        .format = types.WGPUTextureFormat_RGBA8Unorm,
+    };
+    var resolve_view = native.DoeTextureView{
+        .backend = .d3d12,
+        .tex = &resolve_texture,
+        .format = types.WGPUTextureFormat_RGBA8Unorm,
+    };
+
+    var depth_texture = native.DoeTexture{
+        .backend = .d3d12,
+        .mtl = @ptrFromInt(0x3030),
+        .format = types.WGPUTextureFormat_Depth24PlusStencil8,
+    };
+    var depth_view = native.DoeTextureView{
+        .backend = .d3d12,
+        .tex = &depth_texture,
+        .format = types.WGPUTextureFormat_Depth24PlusStencil8,
+        .dimension = types.WGPUTextureViewDimension_2DArrayDepth,
+        .base_array_layer = 1,
+        .array_layer_count = 2,
+    };
+
+    const color_attachment = types.WGPURenderPassColorAttachment{
+        .nextInChain = null,
+        .view = native.toOpaque(&color_view),
+        .depthSlice = 7,
+        .resolveTarget = native.toOpaque(&resolve_view),
+        .loadOp = 0,
+        .storeOp = 0,
+        .clearValue = .{ .r = 0.1, .g = 0.2, .b = 0.3, .a = 0.4 },
+    };
+    const color_attachments = [_]types.WGPURenderPassColorAttachment{color_attachment};
+    const depth_attachment = types.WGPURenderPassDepthStencilAttachment{
+        .view = native.toOpaque(&depth_view),
+        .depthLoadOp = 0,
+        .depthStoreOp = 0,
+        .depthClearValue = 1,
+        .depthReadOnly = 1,
+        .stencilLoadOp = 0,
+        .stencilStoreOp = 0,
+        .stencilClearValue = 0,
+        .stencilReadOnly = 1,
+    };
+    const desc = types.WGPURenderPassDescriptor{
+        .nextInChain = null,
+        .label = .{ .data = null, .length = 0 },
+        .colorAttachmentCount = 1,
+        .colorAttachments = &color_attachments,
+        .depthStencilAttachment = &depth_attachment,
+        .occlusionQuerySet = null,
+        .timestampWrites = null,
+        .maxDrawCount = 0,
+    };
+
+    const pass_raw = render.doeNativeCommandEncoderBeginRenderPass(native.toOpaque(&enc), &desc) orelse return error.UnexpectedNull;
+    defer render.doeNativeRenderPassRelease(pass_raw);
+    const pass = native.cast(native.DoeRenderPass, pass_raw) orelse return error.UnexpectedNull;
+
+    try std.testing.expectEqual(@as(?*anyopaque, @ptrFromInt(0x1010)), pass.target);
+    try std.testing.expectEqual(@as(?*anyopaque, @ptrFromInt(0x2020)), pass.resolve_target);
+    try std.testing.expectEqual(@as(?*anyopaque, @ptrFromInt(0x3030)), pass.depth_target);
+    try std.testing.expectEqual(@intFromPtr(&color_view), pass.target_view_handle);
+    try std.testing.expectEqual(@intFromPtr(&resolve_view), pass.resolve_target_view_handle);
+    try std.testing.expectEqual(@intFromPtr(&depth_view), pass.depth_target_view_handle);
+    try std.testing.expectEqual(types.WGPUTextureFormat_RGBA8Unorm, pass.target_format);
+    try std.testing.expectEqual(types.WGPUTextureFormat_Depth24PlusStencil8, pass.depth_stencil_format);
+    try std.testing.expectEqual(@as(u32, 4), pass.sample_count);
+    try std.testing.expectEqual(@as(u32, 7), pass.depth_slice);
+    try std.testing.expect(pass.depth_read_only);
+    try std.testing.expect(pass.stencil_read_only);
+}
+
+test "doeNativeRenderPassDraw records D3D12 attachment view metadata" {
+    var dev = native.DoeDevice{ .backend = .d3d12 };
+    var enc = native.DoeCommandEncoder{ .dev = &dev };
+    defer enc.cmds.deinit(native.alloc);
+
+    var pipeline = native.DoeRenderPipeline{
+        .mtl_pso = @ptrFromInt(0x1111),
+        .backend_root_signature = @ptrFromInt(0x2222),
+        .topology = 0x00000004,
+        .sample_count = 4,
+        .depth_stencil_format = types.WGPUTextureFormat_Depth24PlusStencil8,
+    };
+    var pass = native.DoeRenderPass{
+        .enc = &enc,
+        .pipeline = &pipeline,
+        .target = @ptrFromInt(0x3333),
+        .resolve_target = @ptrFromInt(0x4444),
+        .depth_target = @ptrFromInt(0x5555),
+        .target_view_handle = 0x6666,
+        .resolve_target_view_handle = 0x7777,
+        .depth_target_view_handle = 0x8888,
+        .target_format = types.WGPUTextureFormat_RGBA8Unorm,
+        .depth_stencil_format = types.WGPUTextureFormat_Depth24PlusStencil8,
+        .sample_count = 4,
+        .depth_slice = 3,
+        .depth_read_only = true,
+        .stencil_read_only = true,
+        .blend_constant = .{ 0.1, 0.2, 0.3, 0.4 },
+        .stencil_reference = 9,
+    };
+
+    render.doeNativeRenderPassDraw(native.toOpaque(&pass), 6, 2, 1, 0);
+
+    try std.testing.expectEqual(@as(usize, 1), enc.cmds.items.len);
+    switch (enc.cmds.items[0]) {
+        .render_pass => |cmd| {
+            try std.testing.expectEqual(@as(?*anyopaque, @ptrFromInt(0x3333)), cmd.target);
+            try std.testing.expectEqual(@as(?*anyopaque, @ptrFromInt(0x4444)), cmd.resolve_target);
+            try std.testing.expectEqual(@as(?*anyopaque, @ptrFromInt(0x5555)), cmd.depth_target);
+            try std.testing.expectEqual(@as(u64, 0x6666), cmd.target_view_handle);
+            try std.testing.expectEqual(@as(u64, 0x7777), cmd.resolve_target_view_handle);
+            try std.testing.expectEqual(@as(u64, 0x8888), cmd.depth_target_view_handle);
+            try std.testing.expectEqual(types.WGPUTextureFormat_RGBA8Unorm, cmd.target_format);
+            try std.testing.expectEqual(types.WGPUTextureFormat_Depth24PlusStencil8, cmd.depth_stencil_format);
+            try std.testing.expectEqual(@as(u32, 4), cmd.sample_count);
+            try std.testing.expectEqual(@as(u32, 3), cmd.depth_slice);
+            try std.testing.expect(cmd.depth_read_only);
+            try std.testing.expect(cmd.stencil_read_only);
+            try std.testing.expectEqual(@as(u32, 6), cmd.vertex_count);
+            try std.testing.expectEqual(@as(u32, 2), cmd.instance_count);
+        },
+        else => return error.UnexpectedCommandTag,
+    }
+}
+
 test "doeNativeRenderPassSetPipeline with null pass does not crash" {
     render.doeNativeRenderPassSetPipeline(null, null);
 }
@@ -559,10 +708,10 @@ test "handle magic constants are distinct for types with pub TYPE_MAGIC or defau
     const qs_magic = query.DoeQuerySet.TYPE_MAGIC;
 
     const magics = [_]u32{
-        inst_magic,    adapter_magic, dev_magic,   queue_magic,
-        buf_magic,     shader_magic,  compute_magic, bgl_magic,
-        pl_magic,      bg_magic,      tex_magic,   samp_magic,
-        rp_magic,      qs_magic,
+        inst_magic, adapter_magic, dev_magic,     queue_magic,
+        buf_magic,  shader_magic,  compute_magic, bgl_magic,
+        pl_magic,   bg_magic,      tex_magic,     samp_magic,
+        rp_magic,   qs_magic,
     };
     // Every pair of magics must differ.
     for (magics, 0..) |a, i| {

@@ -12,6 +12,7 @@
         "../../runtime/bridge/webgpu-addon/doe_napi_queue.c",
         "../../runtime/bridge/webgpu-addon/doe_napi_formats.c",
         "../../runtime/bridge/webgpu-addon/doe_napi_render.c",
+        "../../runtime/bridge/webgpu-addon/doe_napi_surface.c",
         "../../runtime/bridge/webgpu-addon/doe_napi_caps.c",
         "../../runtime/bridge/webgpu-addon/doe_napi_nd_infra.c",
         "../../runtime/bridge/webgpu-addon/doe_napi_nd_stubs.c",

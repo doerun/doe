@@ -16,6 +16,7 @@ const MAX_DEFERRED_COPIES = native.MAX_DEFERRED_COPIES;
 const MAX_DEFERRED_RESOLVES = native.MAX_DEFERRED_RESOLVES;
 const VERTEX_BUFFER_SLOT_BASE = native.VERTEX_BUFFER_SLOT_BASE;
 const MAX_FLAT_BIND = native.MAX_FLAT_BIND;
+const d3d12_native_render_pass = @import("backend/d3d12/commands/d3d12_native_render_pass.zig");
 
 const emit_msl = @import("doe_wgsl/emit_msl_ir.zig");
 // Metal buffer slot where _doe_sizes is bound — must match MSL_SIZES_SLOT in emit_msl_ir.zig.
@@ -57,6 +58,13 @@ const metal_bridge_render_encoder_end = bridge.metal_bridge_render_encoder_end;
 const metal_bridge_render_encoder_set_vertex_buffer = bridge.metal_bridge_render_encoder_set_vertex_buffer;
 const metal_bridge_sample_timestamp = bridge.metal_bridge_sample_timestamp;
 const metal_bridge_resolve_timestamps = bridge.metal_bridge_resolve_timestamps;
+extern fn d3d12_bridge_device_create_command_allocator(device: ?*anyopaque) callconv(.c) ?*anyopaque;
+extern fn d3d12_bridge_device_create_command_list(device: ?*anyopaque, allocator_h: ?*anyopaque) callconv(.c) ?*anyopaque;
+extern fn d3d12_bridge_command_list_close(cmd_list: ?*anyopaque) callconv(.c) void;
+extern fn d3d12_bridge_queue_execute_command_list(queue: ?*anyopaque, cmd_list: ?*anyopaque) callconv(.c) void;
+extern fn d3d12_bridge_queue_signal(queue: ?*anyopaque, fence: ?*anyopaque, value: u64) callconv(.c) void;
+extern fn d3d12_bridge_fence_wait(fence: ?*anyopaque, value: u64) callconv(.c) void;
+extern fn d3d12_bridge_release(obj: ?*anyopaque) callconv(.c) void;
 
 const WGPU_MAP_ASYNC_STATUS_SUCCESS: u32 = 1;
 
@@ -109,6 +117,53 @@ fn read_indirect_dispatch_counts(buffer_raw: ?*anyopaque, offset: u64) ?struct {
     return .{ .x = ints[0], .y = ints[1], .z = ints[2] };
 }
 
+fn submit_d3d12_commands(q: *DoeQueue, count: usize, cmd_bufs: [*]const ?*anyopaque) void {
+    const rt = native.device_d3d12_runtime(q.dev) orelse return;
+    _ = rt.flush_queue() catch return;
+
+    const cmd_allocator = d3d12_bridge_device_create_command_allocator(rt.device) orelse return;
+    defer d3d12_bridge_release(cmd_allocator);
+
+    const cmd_list = d3d12_bridge_device_create_command_list(rt.device, cmd_allocator) orelse return;
+    defer d3d12_bridge_release(cmd_list);
+
+    var retained_handles: std.ArrayListUnmanaged(?*anyopaque) = .{};
+    defer {
+        for (retained_handles.items) |maybe_handle| {
+            if (maybe_handle) |handle| d3d12_bridge_release(handle);
+        }
+        retained_handles.deinit(alloc);
+    }
+
+    var has_gpu_work = false;
+    for (cmd_bufs[0..count]) |raw| {
+        const cb = cast(DoeCommandBuffer, raw) orelse continue;
+        for (cb.cmds.items) |cmd| {
+            switch (cmd) {
+                .render_pass => |render_pass_cmd| {
+                    d3d12_native_render_pass.record_render_pass_command(
+                        alloc,
+                        &retained_handles,
+                        rt.device,
+                        cmd_list,
+                        render_pass_cmd,
+                    ) catch continue;
+                    has_gpu_work = true;
+                },
+                else => {},
+            }
+        }
+    }
+
+    if (!has_gpu_work) return;
+
+    d3d12_bridge_command_list_close(cmd_list);
+    d3d12_bridge_queue_execute_command_list(rt.queue, cmd_list);
+    rt.fence_value +|= 1;
+    d3d12_bridge_queue_signal(rt.queue, rt.fence, rt.fence_value);
+    d3d12_bridge_fence_wait(rt.fence, rt.fence_value);
+}
+
 pub fn try_schedule_deferred_copy(
     q: *DoeQueue,
     src_raw: ?*anyopaque,
@@ -153,6 +208,11 @@ pub export fn doeNativeQueueSubmit(q_raw: ?*anyopaque, count: usize, cmd_bufs: [
                 alloc.destroy(buf);
             }
         }
+        return;
+    }
+
+    if (q.dev.backend == .d3d12) {
+        submit_d3d12_commands(q, count, cmd_bufs);
         return;
     }
 

@@ -6,6 +6,7 @@ trap 'rm -rf "${BUILD_DIR}"' EXIT
 mkdir -p "${BUILD_DIR}/Fawn/Core"
 mkdir -p "${BUILD_DIR}/Fawn/Full"
 mkdir -p "${BUILD_DIR}/Fawn/Generated"
+mkdir -p "${BUILD_DIR}/Fawn/Shader"
 
 # shellcheck source=lean_build_common.sh
 python3 "$(dirname "${BASH_SOURCE[0]}")/generate_comparability_contract.py"
@@ -16,7 +17,7 @@ ARTIFACT_PATH="${ARTIFACT_DIR}/proven-conditions.json"
 mkdir -p "${ARTIFACT_DIR}"
 
 # Run extraction: compile Extract.lean and execute its main to produce the artifact.
-LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/lean" \
+LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \
   "${LEAN_BIN}" "+${TOOLCHAIN_REF}" --run "${ROOT_DIR}/pipeline/lean/Fawn/Extract.lean" > "${ARTIFACT_PATH}"
 
 echo "lean-extract: artifact written to ${ARTIFACT_PATH} (${TOOLCHAIN_REF})"

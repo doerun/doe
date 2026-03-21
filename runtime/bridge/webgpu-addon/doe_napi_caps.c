@@ -347,13 +347,32 @@ napi_value doe_adapter_get_info(napi_env env, napi_callback_info info) {
     napi_value obj;
     napi_create_object(env, &obj);
 
+    napi_value v_vendor, v_arch, v_device, v_desc, v_is_fallback, v_sg_min, v_sg_max;
+    napi_create_string_utf8(env, "", NAPI_AUTO_LENGTH, &v_vendor);
+    napi_create_string_utf8(env, "", NAPI_AUTO_LENGTH, &v_arch);
+    napi_create_string_utf8(env, "", NAPI_AUTO_LENGTH, &v_device);
+    napi_create_string_utf8(env, "", NAPI_AUTO_LENGTH, &v_desc);
+    napi_get_boolean(env, false, &v_is_fallback);
+    napi_create_uint32(env, 0, &v_sg_min);
+    napi_create_uint32(env, 0, &v_sg_max);
+    napi_set_named_property(env, obj, "vendor", v_vendor);
+    napi_set_named_property(env, obj, "architecture", v_arch);
+    napi_set_named_property(env, obj, "device", v_device);
+    napi_set_named_property(env, obj, "description", v_desc);
+    napi_set_named_property(env, obj, "isFallbackAdapter", v_is_fallback);
+    napi_set_named_property(env, obj, "subgroupMinSize", v_sg_min);
+    napi_set_named_property(env, obj, "subgroupMaxSize", v_sg_max);
+
     const char* vendor = "";
     const char* arch = "";
     const char* device = "";
     const char* desc = "";
     char* block = NULL;
 
-    if (pfn_doeNativeAdapterGetInfo && pfn_doeNativeAdapterFreeInfo) {
+    const bool tried_native_adapter_info =
+        pfn_doeNativeAdapterGetInfo && pfn_doeNativeAdapterFreeInfo;
+
+    if (tried_native_adapter_info) {
         pfn_doeNativeAdapterGetInfo(adapter, &vendor, &arch, &device, &desc, &block);
         if (!vendor) vendor = "";
         if (!arch) arch = "";
@@ -362,7 +381,6 @@ napi_value doe_adapter_get_info(napi_env env, napi_callback_info info) {
     }
 
     if (block && pfn_doeNativeAdapterFreeInfo) {
-        napi_value v_vendor, v_arch, v_device, v_desc, v_is_fallback, v_sg_min, v_sg_max;
         napi_create_string_utf8(env, vendor, NAPI_AUTO_LENGTH, &v_vendor);
         napi_create_string_utf8(env, arch, NAPI_AUTO_LENGTH, &v_arch);
         napi_create_string_utf8(env, device, NAPI_AUTO_LENGTH, &v_device);
@@ -381,6 +399,10 @@ napi_value doe_adapter_get_info(napi_env env, napi_callback_info info) {
         return obj;
     }
 
+    if (tried_native_adapter_info) {
+        return obj;
+    }
+
     WGPUAdapterInfo info_view;
     memset(&info_view, 0, sizeof(info_view));
     info_view.vendor.length = WGPU_STRLEN;
@@ -392,8 +414,6 @@ napi_value doe_adapter_get_info(napi_env env, napi_callback_info info) {
         set_adapter_info_string_prop(env, obj, "architecture", info_view.architecture);
         set_adapter_info_string_prop(env, obj, "device", info_view.device);
         set_adapter_info_string_prop(env, obj, "description", info_view.description);
-
-        napi_value v_is_fallback, v_sg_min, v_sg_max;
         napi_get_boolean(env, false, &v_is_fallback);
         napi_create_uint32(env, info_view.subgroupMinSize, &v_sg_min);
         napi_create_uint32(env, info_view.subgroupMaxSize, &v_sg_max);

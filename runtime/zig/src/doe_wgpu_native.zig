@@ -192,6 +192,7 @@ pub const DoeShaderModule = struct {
     wg_z: u32 = 0,
     // True when the WGSL source uses arrayLength() — dispatch must pass _doe_sizes buffer.
     needs_sizes_buf: bool = false,
+    dispatch_preconditions: []const wgsl_compiler.ir.DispatchPrecondition = &.{},
     // Precompiled shader storage for non-Metal backends.
     // SPIR-V binary (heap-allocated copy, owned by this module).
     spirv_data: ?[]const u32 = null,
@@ -217,6 +218,7 @@ pub const DoeComputePipeline = struct {
     wg_y: u32 = 0,
     wg_z: u32 = 0,
     needs_sizes_buf: bool = false,
+    dispatch_preconditions: []const wgsl_compiler.ir.DispatchPrecondition = &.{},
     // Vulkan-only: heap-allocated SPIR-V words, duplicated from the shader module.
     spirv_data: ?[]const u32 = null,
 };
@@ -308,7 +310,17 @@ pub const RecordedCmd = union(CmdTag) {
         root_signature: ?*anyopaque = null,
         depth_state: ?*anyopaque,
         target: ?*anyopaque,
+        resolve_target: ?*anyopaque = null,
         depth_target: ?*anyopaque,
+        target_view_handle: u64 = 0,
+        resolve_target_view_handle: u64 = 0,
+        depth_target_view_handle: u64 = 0,
+        target_format: u32 = 0,
+        depth_stencil_format: u32 = 0,
+        sample_count: u32 = 1,
+        depth_slice: u32 = 0,
+        depth_read_only: bool = false,
+        stencil_read_only: bool = false,
         topology: u32,
         front_face: u32,
         cull_mode: u32,
@@ -470,7 +482,17 @@ pub const DoeRenderPass = struct {
     max_draw_count: u64 = 50_000_000,
     recorded_draw_count: u64 = 0,
     target: ?*anyopaque = null, // MTLTexture for the render target
+    resolve_target: ?*anyopaque = null,
     depth_target: ?*anyopaque = null,
+    target_view_handle: u64 = 0,
+    resolve_target_view_handle: u64 = 0,
+    depth_target_view_handle: u64 = 0,
+    target_format: u32 = 0,
+    depth_stencil_format: u32 = 0,
+    sample_count: u32 = 1,
+    depth_slice: u32 = 0,
+    depth_read_only: bool = false,
+    stencil_read_only: bool = false,
     depth_compare: u32 = 0,
     depth_write_enabled: bool = false,
     clear_r: f64 = 0,

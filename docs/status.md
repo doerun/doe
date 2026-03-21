@@ -2,7 +2,36 @@
 
 ## Snapshot
 
-Date: 2026-03-19
+Date: 2026-03-21
+
+External texture runtime implementation (2026-03-21):
+- `DoeExternalTexture` handle with ref-counted lifecycle (create, addref, release,
+  destroy, expire, refresh) in `runtime/zig/src/doe_external_texture_native.zig`.
+- WGSL `texture_external` type support across all emitters (MSL, SPIR-V, HLSL).
+- `textureSampleBaseClampToEdge` builtin lowered to `sample(level(0))` on all backends.
+- Dropin proc table wires `wgpuDeviceCreateExternalTexture` to Doe via `resolveLocalProc`.
+- Browser smoke: adapter, compute, render, canvas, xrCompatible, copyExternal all pass
+  under `--use-webgpu-runtime=doe`. `importExternalTexture` remains blocked on Chromium
+  wire client Instance validation (`dawn/wire/client/Device.cpp:129`); next step is
+  Chromium-side wire bypass for external texture operations when Doe is active.
+
+Upload performance optimizations (2026-03-21):
+- Removed explicit `vkResetCommandBuffer` from `flush_queue`; implicit reset via
+  `VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT` saves one Vulkan call per flush.
+- Fast staging path: uploads within 1MB reuse the persistent `fast_upload_buffer` as
+  staging source, eliminating per-upload src buffer pool management.
+- Pending benchmark run with `zig build -Doptimize=ReleaseFast` to measure improvement.
+
+Redundant runtime checks removed (2026-03-21):
+- Removed redundant sample_count, width/height/depth, texture view dimension, and
+  group bounds normalization in `wgpu_resources.zig` and `zeroInitializeTexture`.
+
+Lean proof integration fixes (2026-03-21):
+- `analyzeToIr` now uses `default_translation_robustness_config()` to respect
+  `-Dlean-verified=true` for bounds elision.
+- `classify_gid_component` handles `.load` nodes (matching `classify_gid_scalar`).
+
+Previous: 2026-03-19
 
 Vulkan compute dispatch unblocked (2026-03-19):
 - Vulkan `dispatch_indirect` now uses a dedicated indirect-dispatch path in `backend/vulkan/mod.zig` / `backend/vulkan/native_runtime.zig`: it writes `[x, y, z]` into a reusable indirect-args buffer and records `vkCmdDispatchIndirect` instead of routing through the direct-dispatch helper.
@@ -641,7 +670,7 @@ Tests and proofs:
 - `runtime/zig/tests/core/` and `runtime/zig/tests/full/` now contain command-partition tests and surface API tests, with dedicated `zig build test-core` / `zig build test-full` lanes; surface tests validate typed API boundaries, coverage ledgers, domain classification, and superset invariants
 - `pipeline/lean/Fawn/Core/` contains canonical core theorem pack (Model, Runtime, Dispatch, Bridge) matching `runtime/zig/src/core/` boundary
 - `pipeline/lean/Fawn/Full/` contains canonical full theorem pack (Comparability, ComparabilityFixtures) matching `runtime/zig/src/full/` boundary
-- `pipeline/lean/Fawn/Shader/ComputeBounds.lean` shader-side bounds theorems are now fully integrated: `lean_proof.zig` validates all five theorem names (`gid_component_lt_total`, `gid_inbounds_when_dispatch_fits`, `clamp_noop_when_inbounds`, `gid_2d_inbounds`, `flat_index_2d_inbounds`) at comptime and exposes `bounds_elimination_available`; `ir_transform_robustness.zig` consumes this to elide `min()` clamps for `buf[gid.{x,y,z}]` patterns on storage buffers when `-Dlean-verified=true`; `proven-conditions.json` includes `boundsEliminations` entries and the five shader theorems; `proof-artifact.schema.json` updated with `boundsEliminations` array; remaining follow-up: host-side dispatch precondition enforcement in `doeNativeComputeDispatchFlush`, 2D flat index pattern recognition
+- `pipeline/lean/Fawn/Shader/ComputeBounds.lean` shader-side bounds theorems are now fully integrated: `lean_proof.zig` validates all five theorem names (`gid_component_lt_total`, `gid_inbounds_when_dispatch_fits`, `clamp_noop_when_inbounds`, `gid_2d_inbounds`, `flat_index_2d_inbounds`) at comptime and exposes `bounds_elimination_available`; `ir_transform_robustness.zig` consumes this to elide `min()` clamps for both `buf[gid.{x,y,z}]` and `buf[gid.y * dispatch_width + gid.x]` storage-buffer patterns when `-Dlean-verified=true`; native compute runtime paths now enforce the recorded dispatch preconditions before dispatch; `proven-conditions.json` includes `boundsEliminations` entries and the five shader theorems; `proof-artifact.schema.json` updated with `boundsEliminations` array; remaining follow-up: dispatch-fit texture precondition enforcement and deciding whether generic/public WGSL translation should also consume the proof-backed path
 - original `pipeline/lean/Fawn/*.lean` files are re-export shims for backward compatibility
 - `check.sh` and `extract.sh` compile Core/Full canonical sources then re-export shims
 - Lean CI and proof artifact validation are blocking at the repo level; the proof split is complete
@@ -653,6 +682,7 @@ D3D12:
   - `d3d12_device_caps.zig` and `d3d12_formats.zig` now publish the real BC/shader-f16/subgroups feature/format baseline instead of leaving those rows as ledger debt
   - `d3d12_render.zig` now builds real graphics PSOs, consumes vertex layouts/attributes/formats/step modes, and carries topology/front-face/cull/blend/depth-stencil state through native render execution
   - `d3d12_texture.zig`, `d3d12_texture_view.zig`, and `d3d12_surface.zig` now make texture aspect/storage access/canvas alpha+tone-mapping settings real backend behavior instead of validation-only surface claims
+  - ordered D3D12 queue submission now consumes render-pass attachment-view metadata end-to-end: `depthSlice`, `resolveTarget`, `depthReadOnly`, and `stencilReadOnly` are recorded on native render passes, replayed through per-view RTV/DSV creation, and resolved on the execution path instead of being preserved only on wrapper state
   - `doe_buffer_native.zig` now makes `GPUBuffer.mapState` truthful on D3D12 package paths
 - remaining D3D12 gaps are narrower and explicit: strip-index-format parity, deeper render-bundle replay/resource-table render submission parity, ETC2/EAC/ASTC publication, and fresh Windows evidence
 - the first governed benchmark lane is now explicitly scoped to compute, upload, pipeline, and p0-resource contracts only
@@ -2020,9 +2050,9 @@ Backend-specific emitters for all three backends:
 
 ### Lean proof-driven clamp elision
 
-- `ir_transform_robustness.zig`: `Config.elide_proven_bounds` parameter, `classify_gid_component()`, `resolve_storage_binding()`, `try_elide_gid_clamp()`
-- `ir.zig`: `DispatchPrecondition` struct, `dispatch_preconditions` list on Module
-- pattern: `buf[gid.{x,y,z}]` on storage buffers elides clamp when `-Dlean-verified=true`, records dispatch precondition for host-side enforcement
+- `ir_transform_robustness.zig` + `dispatch_proof_match.zig`: `Config.elide_proven_bounds` now covers both `buf[gid.{x,y,z}]` and `buf[gid.y * dispatch_width + gid.x]`
+- `ir.zig`: `DispatchPrecondition` now records pattern kind plus element stride bytes, and `dispatch_preconditions` stays attached to the analyzed module
+- native compute shader creation now uses proof-aware runtime translation (`runtime_compile.zig`), and Metal/Vulkan dispatch paths validate the recorded buffer-size preconditions before dispatch
 - 15 test call sites in `ir_transform_robustness_test.zig` updated for config parameter
 
 ### WGSL vertex/fragment support
@@ -2167,8 +2197,9 @@ Backend-specific emitters for all three backends:
   `textureBindingViewDimension`, non-trivial `viewFormats`, non-identity
   swizzle, and 1D texture/view coverage still remain incomplete, as do
   ETC2/EAC/ASTC publication and higher-order feature rows such as
-  `float32-blendable`, `texture-formats-tier1`, `texture-formats-tier2`,
-  `primitive-index`, and `texture-component-swizzle`.
+  `texture-compression-bc-sliced-3d`, `float32-blendable`,
+  `texture-formats-tier1`, `texture-formats-tier2`, and
+  `texture-component-swizzle`.
 - Metal `GPUSupportedLimits.maxImmediateSize` and
   `GPUTextureViewDescriptor.swizzle` were stale tracker rows; both were
   already implemented through the existing runtime and package plumbing.

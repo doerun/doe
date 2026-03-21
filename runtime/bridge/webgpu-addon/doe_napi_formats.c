@@ -262,27 +262,27 @@ uint32_t vertex_format_from_value(napi_env env, napi_value val) {
     if (strcmp(buf, "snorm16") == 0)   return 0x00000016;
     if (strcmp(buf, "snorm16x2") == 0) return 0x00000017;
     if (strcmp(buf, "snorm16x4") == 0) return 0x00000018;
-    /* 32-bit float formats */
-    if (strcmp(buf, "float32") == 0)   return 0x00000019;
-    if (strcmp(buf, "float32x2") == 0) return 0x0000001A;
-    if (strcmp(buf, "float32x3") == 0) return 0x0000001B;
-    if (strcmp(buf, "float32x4") == 0) return 0x0000001C;
     /* 16-bit float formats */
-    if (strcmp(buf, "float16") == 0)   return 0x0000001D;
-    if (strcmp(buf, "float16x2") == 0) return 0x0000001E;
-    if (strcmp(buf, "float16x4") == 0) return 0x0000001F;
+    if (strcmp(buf, "float16") == 0)   return 0x00000019;
+    if (strcmp(buf, "float16x2") == 0) return 0x0000001A;
+    if (strcmp(buf, "float16x4") == 0) return 0x0000001B;
+    /* 32-bit float formats */
+    if (strcmp(buf, "float32") == 0)   return 0x0000001C;
+    if (strcmp(buf, "float32x2") == 0) return 0x0000001D;
+    if (strcmp(buf, "float32x3") == 0) return 0x0000001E;
+    if (strcmp(buf, "float32x4") == 0) return 0x0000001F;
     /* 32-bit integer formats */
-    if (strcmp(buf, "uint32") == 0)    return 0x00000021;
-    if (strcmp(buf, "uint32x2") == 0)  return 0x00000022;
-    if (strcmp(buf, "uint32x3") == 0)  return 0x00000023;
-    if (strcmp(buf, "uint32x4") == 0)  return 0x00000024;
-    if (strcmp(buf, "sint32") == 0)    return 0x00000025;
-    if (strcmp(buf, "sint32x2") == 0)  return 0x00000026;
-    if (strcmp(buf, "sint32x3") == 0)  return 0x00000027;
-    if (strcmp(buf, "sint32x4") == 0)  return 0x00000028;
+    if (strcmp(buf, "uint32") == 0)    return 0x00000020;
+    if (strcmp(buf, "uint32x2") == 0)  return 0x00000021;
+    if (strcmp(buf, "uint32x3") == 0)  return 0x00000022;
+    if (strcmp(buf, "uint32x4") == 0)  return 0x00000023;
+    if (strcmp(buf, "sint32") == 0)    return 0x00000024;
+    if (strcmp(buf, "sint32x2") == 0)  return 0x00000025;
+    if (strcmp(buf, "sint32x3") == 0)  return 0x00000026;
+    if (strcmp(buf, "sint32x4") == 0)  return 0x00000027;
     /* packed formats */
-    if (strcmp(buf, "unorm10-10-10-2") == 0) return 0x00000029;
-    if (strcmp(buf, "unorm8x4-bgra") == 0)   return 0x0000002A;
+    if (strcmp(buf, "unorm10-10-10-2") == 0) return 0x00000028;
+    if (strcmp(buf, "unorm8x4-bgra") == 0)   return 0x00000029;
     napi_throw_error(env, "DOE_ERROR", "Unsupported vertex format"); return 0;
 }
 

@@ -116,8 +116,15 @@ export interface BrowserSurfaceFactoryOptions {
   fullClasses: Record<string, unknown>;
 }
 
+export interface CanvasLike {
+  width: number;
+  height: number;
+  [key: string]: unknown;
+}
+
 export const globals: Record<string, unknown>;
 export function create(createArgs?: string[] | null): GPU;
+export function createCanvasContext(canvas: CanvasLike): GPUCanvasContext;
 export function createInstance(createArgs?: string[] | null): GPU;
 export function createBrowserSurfaceClasses(
   options: BrowserSurfaceFactoryOptions
@@ -171,6 +178,7 @@ declare const _default: {
   CANVAS_TONE_MAPPING_MODES: typeof CANVAS_TONE_MAPPING_MODES;
   CANVAS_COLOR_SPACES: typeof CANVAS_COLOR_SPACES;
   create: typeof create;
+  createCanvasContext: typeof createCanvasContext;
   createInstance: typeof createInstance;
   createBrowserSurfaceClasses: typeof createBrowserSurfaceClasses;
   createNativeBrowserCanvasBackend: typeof createNativeBrowserCanvasBackend;

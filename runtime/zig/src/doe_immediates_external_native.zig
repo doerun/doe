@@ -106,28 +106,4 @@ pub export fn doeNativeRenderBundleEncoderSetImmediates(
     }
 }
 
-// ============================================================
-// importExternalTexture — OS-level video frame / shared texture import
-// ============================================================
-
-// importExternalTexture requires OS-level video frame integration:
-//   - Metal: CVPixelBuffer / IOSurface shared-texture import via MTLTexture descriptors
-//   - Vulkan: DMABUF external memory import (VK_EXT_external_memory_dmabuf)
-//   - D3D12: shared handle import (DXGI shared resource)
-// None of these import paths are bootstrapped in any Doe backend.
-// Returns null to signal failure — the caller must check for null and handle it.
-pub export fn doeNativeDeviceImportExternalTexture(
-    dev_raw: ?*anyopaque,
-    descriptor: ?*const anyopaque,
-) callconv(.c) ?*anyopaque {
-    _ = dev_raw;
-    _ = descriptor;
-    // importExternalTexture is not implemented in any Doe backend.
-    // Requires OS-level video frame / shared texture import:
-    //   Metal: CVPixelBuffer / IOSurface via MTLTexture
-    //   Vulkan: DMABUF external memory (VK_EXT_external_memory_dmabuf)
-    //   D3D12: DXGI shared resource handle
-    std.log.err("doe: doeNativeDeviceImportExternalTexture: unsupported — " ++
-        "video frame / shared texture import path not bootstrapped in any backend", .{});
-    return null;
-}
+// importExternalTexture / createExternalTexture moved to doe_external_texture_native.zig.

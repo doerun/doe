@@ -5,6 +5,7 @@ const std = @import("std");
 const types = @import("core/abi/wgpu_types.zig");
 const wgsl_compiler = @import("doe_wgsl/mod.zig");
 const wgsl_ir = @import("doe_wgsl/ir.zig");
+const wgsl_runtime_compile = @import("doe_wgsl/runtime_compile.zig");
 const native = @import("doe_wgpu_native.zig");
 const bridge = @import("backend/metal/metal_bridge_decls.zig");
 const metal_bridge_device_new_compute_pipeline = bridge.metal_bridge_device_new_compute_pipeline;
@@ -260,9 +261,14 @@ fn createFromWGSL(dev: *DoeDevice, chain: *const types.WGPUChainedStruct) ?*anyo
 
     if (dev.backend == .vulkan) return createFromWGSLVulkan(dev, wgsl);
 
-    // Translate WGSL → MSL.
     var msl_buf: [wgsl_compiler.MAX_OUTPUT]u8 = undefined;
-    const msl_len = wgsl_compiler.translateToMsl(alloc, wgsl, &msl_buf) catch |err| {
+    var translation = wgsl_runtime_compile.translateToMslForComputeRuntime(
+        alloc,
+        wgsl,
+        &msl_buf,
+        null,
+        0,
+    ) catch |err| {
         set_last_error_stage(wgsl_compiler.lastErrorStage());
         set_last_error_kind(@errorName(err));
         capture_wgsl_error_location();
@@ -275,22 +281,24 @@ fn createFromWGSL(dev: *DoeDevice, chain: *const types.WGPUChainedStruct) ?*anyo
         std.log.err("doe: createShaderModule failed: {s}", .{last_error_buf[0..last_error_len]});
         return null;
     };
+    errdefer translation.info.deinit(alloc);
 
-    // Compile MSL → MTLLibrary.
     var err_buf: [ERR_CAP]u8 = undefined;
-    const lib = compileMslToLibrary(dev, &msl_buf, msl_len, &err_buf) orelse return null;
+    const lib = compileMslToLibrary(dev, &msl_buf, translation.len, &err_buf) orelse return null;
 
     const sm = make(DoeShaderModule) orelse {
+        translation.info.deinit(alloc);
         metal_bridge_release(lib);
         return null;
     };
     sm.* = .{ .mtl_library = lib };
     set_module_info_from_diagnostic_directive(sm, wgsl);
-    sm.needs_sizes_buf = std.mem.indexOf(u8, wgsl, "arrayLength") != null;
-    const wg = native.extractWorkgroupSize(wgsl);
-    sm.wg_x = wg.x;
-    sm.wg_y = wg.y;
-    sm.wg_z = wg.z;
+    sm.needs_sizes_buf = translation.info.needs_sizes_buf;
+    sm.dispatch_preconditions = translation.info.dispatch_preconditions;
+    translation.info.dispatch_preconditions = &.{};
+    sm.wg_x = translation.info.workgroup_size[0];
+    sm.wg_y = translation.info.workgroup_size[1];
+    sm.wg_z = translation.info.workgroup_size[2];
     // Retain WGSL source for re-translation with pipeline override constants.
     sm.wgsl_source = alloc.dupe(u8, wgsl) catch null;
     // Extract binding metadata (non-fatal on failure).
@@ -331,11 +339,6 @@ fn createFromWGSLVulkan(dev: *DoeDevice, wgsl: []const u8) ?*anyopaque {
     const sm = make(DoeShaderModule) orelse return null;
     sm.* = .{};
     set_module_info_from_diagnostic_directive(sm, wgsl);
-    sm.needs_sizes_buf = std.mem.indexOf(u8, wgsl, "arrayLength") != null;
-    const wg = native.extractWorkgroupSize(wgsl);
-    sm.wg_x = wg.x;
-    sm.wg_y = wg.y;
-    sm.wg_z = wg.z;
     sm.binding_count = 0;
 
     const vk_compute = @import("doe_vulkan_compute_native.zig");
@@ -344,6 +347,7 @@ fn createFromWGSLVulkan(dev: *DoeDevice, wgsl: []const u8) ?*anyopaque {
         set_last_error_kind(@errorName(err));
         set_last_error_fmt("Vulkan WGSL→SPIR-V compilation failed: {s}", .{@errorName(err)});
         std.log.err("doe: createShaderModule (Vulkan) failed: {s}", .{@errorName(err)});
+        if (sm.dispatch_preconditions.len > 0) alloc.free(sm.dispatch_preconditions);
         alloc.destroy(sm);
         return null;
     };
@@ -520,6 +524,7 @@ pub export fn doeNativeShaderModuleRelease(raw: ?*anyopaque) callconv(.c) void {
     if (cast(DoeShaderModule, raw)) |sm| {
         label_store.remove(raw);
         if (sm.mtl_library) |l| metal_bridge_release(l);
+        if (sm.dispatch_preconditions.len > 0) alloc.free(sm.dispatch_preconditions);
         if (sm.spirv_data) |s| alloc.free(s);
         if (sm.hlsl_source) |h| alloc.free(h);
         if (sm.wgsl_source) |w| alloc.free(w);
@@ -540,6 +545,10 @@ fn createComputePipelineVulkan(sm: *DoeShaderModule, layout: ?*DoePipelineLayout
     cp.wg_y = sm.wg_y;
     cp.wg_z = sm.wg_z;
     cp.needs_sizes_buf = sm.needs_sizes_buf;
+    cp.dispatch_preconditions = alloc.dupe(wgsl_ir.DispatchPrecondition, sm.dispatch_preconditions) catch {
+        alloc.destroy(cp);
+        return null;
+    };
     cp.binding_count = sm.binding_count;
     for (0..sm.binding_count) |i| cp.bindings[i] = sm.bindings[i];
 
@@ -549,6 +558,7 @@ fn createComputePipelineVulkan(sm: *DoeShaderModule, layout: ?*DoePipelineLayout
         set_last_error_kind("OutOfMemory");
         set_last_error("Vulkan compute pipeline creation failed: OOM duplicating SPIR-V");
         std.log.err("doe: createComputePipeline (Vulkan) failed: OOM duplicating SPIR-V", .{});
+        if (cp.dispatch_preconditions.len > 0) alloc.free(cp.dispatch_preconditions);
         alloc.destroy(cp);
         return null;
     };
@@ -608,7 +618,7 @@ fn recompileWithOverrides(
     };
 
     var msl_buf: [wgsl_compiler.MAX_OUTPUT]u8 = undefined;
-    const msl_len = wgsl_compiler.translateToMslWithOverrides(
+    var translation = wgsl_runtime_compile.translateToMslForComputeRuntime(
         alloc,
         wgsl,
         &msl_buf,
@@ -626,9 +636,10 @@ fn recompileWithOverrides(
         }
         return null;
     };
+    defer translation.info.deinit(alloc);
 
     var err_buf: [ERR_CAP]u8 = undefined;
-    return compileMslToLibrary(dev, &msl_buf, msl_len, &err_buf);
+    return compileMslToLibrary(dev, &msl_buf, translation.len, &err_buf);
 }
 
 pub export fn doeNativeDeviceCreateComputePipeline(dev_raw: ?*anyopaque, desc: ?*const types.WGPUComputePipelineDescriptor) callconv(.c) ?*anyopaque {
@@ -708,6 +719,11 @@ pub export fn doeNativeDeviceCreateComputePipeline(dev_raw: ?*anyopaque, desc: ?
     cp.wg_y = sm.wg_y;
     cp.wg_z = sm.wg_z;
     cp.needs_sizes_buf = sm.needs_sizes_buf;
+    cp.dispatch_preconditions = alloc.dupe(wgsl_ir.DispatchPrecondition, sm.dispatch_preconditions) catch {
+        metal_bridge_release(pso);
+        alloc.destroy(cp);
+        return null;
+    };
     // Transfer binding metadata from shader module for getBindGroupLayout.
     cp.binding_count = sm.binding_count;
     for (0..sm.binding_count) |i| cp.bindings[i] = sm.bindings[i];
@@ -720,6 +736,7 @@ pub export fn doeNativeComputePipelineRelease(raw: ?*anyopaque) callconv(.c) voi
     if (cast(DoeComputePipeline, raw)) |p| {
         label_store.remove(raw);
         if (p.mtl_pso) |pso| metal_bridge_release(pso);
+        if (p.dispatch_preconditions.len > 0) alloc.free(p.dispatch_preconditions);
         // Free Vulkan SPIR-V words if present (Vulkan path only; no-op on Metal).
         const vk_compute = @import("doe_vulkan_compute_native.zig");
         vk_compute.vulkan_release_compute_pipeline(p);

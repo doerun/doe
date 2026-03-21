@@ -6,6 +6,7 @@ trap 'rm -rf "${BUILD_DIR}"' EXIT
 mkdir -p "${BUILD_DIR}/Fawn/Core"
 mkdir -p "${BUILD_DIR}/Fawn/Full"
 mkdir -p "${BUILD_DIR}/Fawn/Generated"
+mkdir -p "${BUILD_DIR}/Fawn/Shader"
 
 # shellcheck source=lean_build_common.sh
 python3 "$(dirname "${BASH_SOURCE[0]}")/generate_comparability_contract.py"

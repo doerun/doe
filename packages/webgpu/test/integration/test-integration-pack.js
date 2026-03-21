@@ -227,6 +227,17 @@ async function main() {
       assert.deepEqual(Array.from(oneShot), [3, 6, 9, 12]);
 
       const directDevice = await nativeDirect.requestDevice();
+      const labeledDirectDevice = await nativeDirect.requestDevice({
+        deviceDescriptor: {
+          label: "native-direct-device-label",
+          defaultQueue: { label: "native-direct-queue-label" },
+          requiredFeatures: [],
+          requiredLimits: { maxBindGroups: directDevice.limits.maxBindGroups },
+        },
+      });
+      assert.equal(labeledDirectDevice.label, "native-direct-device-label");
+      assert.equal(labeledDirectDevice.queue.label, "native-direct-queue-label");
+      labeledDirectDevice.destroy();
       const directSrc = directDevice.createBuffer({
         size: 16,
         usage: nativeDirect.globals.GPUBufferUsage.STORAGE | nativeDirect.globals.GPUBufferUsage.COPY_DST,
@@ -304,6 +315,17 @@ async function main() {
 
       const fullDevice = await full.requestDevice();
       assert.ok(fullDevice.limits.maxComputeInvocationsPerWorkgroup > 0);
+      const labeledFullDevice = await full.requestDevice({
+        deviceDescriptor: {
+          label: "full-device-label",
+          defaultQueue: { label: "full-queue-label" },
+          requiredFeatures: [],
+          requiredLimits: { maxBindGroups: fullDevice.limits.maxBindGroups },
+        },
+      });
+      assert.equal(labeledFullDevice.label, "full-device-label");
+      assert.equal(labeledFullDevice.queue.label, "full-queue-label");
+      labeledFullDevice.destroy();
       const preflightAccepted = full.preflightShaderSource(\`
         @fragment
         fn main(@location(0) uv: vec2f) -> @location(0) vec4f {

@@ -49,7 +49,11 @@
     { "name": "gid_inbounds_when_dispatch_fits", "module": "Fawn.Shader.ComputeBounds", "category": "lean_verified" },
     { "name": "clamp_noop_when_inbounds", "module": "Fawn.Shader.ComputeBounds", "category": "lean_verified" },
     { "name": "gid_2d_inbounds", "module": "Fawn.Shader.ComputeBounds", "category": "lean_verified" },
-    { "name": "flat_index_2d_inbounds", "module": "Fawn.Shader.ComputeBounds", "category": "lean_verified" }
+    { "name": "flat_index_2d_inbounds", "module": "Fawn.Shader.ComputeBounds", "category": "lean_verified" },
+    { "name": "gid_texture_coords_2d_inbounds_when_dispatch_fits", "module": "Fawn.Shader.ComputeBounds", "category": "lean_verified" },
+    { "name": "guarded_gid_texture_coords_2d_inbounds", "module": "Fawn.Shader.ComputeBounds", "category": "lean_verified" },
+    { "name": "gid_texture_coords_3d_inbounds_when_dispatch_fits", "module": "Fawn.Shader.ComputeBounds", "category": "lean_verified" },
+    { "name": "guarded_gid_texture_coords_3d_inbounds", "module": "Fawn.Shader.ComputeBounds", "category": "lean_verified" }
   ],
   "evaluatedConditions": {
     "comparability.strictHappyPath.comparable": true,
@@ -75,6 +79,62 @@
     "bufferLifecycle.doeAllowsDispatch_mapped": true,
     "bufferLifecycle.specAllowsDispatch_mapped": false
   },
+  "boundsEliminations": [
+    {
+      "theorem": "gid_inbounds_when_dispatch_fits",
+      "module": "Fawn.Shader.ComputeBounds",
+      "category": "lean_verified",
+      "pattern": "global_invocation_id.{component} indexes storage buffer",
+      "precondition": "workgroup_size.{component} * num_workgroups.{component} <= buffer_element_count",
+      "eliminates": "min(gid.{component}, arrayLength(&buf) - 1) -> gid.{component}",
+      "runtimePath": "runtime/zig/src/doe_wgsl/ir_transform_robustness.zig:clamp_runtime_sized"
+    },
+    {
+      "theorem": "flat_index_2d_inbounds",
+      "module": "Fawn.Shader.ComputeBounds",
+      "category": "lean_verified",
+      "pattern": "gid.y * width + gid.x indexes storage buffer",
+      "precondition": "ws.x * nwg.x <= width AND ws.y * nwg.y <= height AND width * height <= buffer_element_count",
+      "eliminates": "min(flat_index, arrayLength(&buf) - 1) -> flat_index",
+      "runtimePath": "runtime/zig/src/doe_wgsl/ir_transform_robustness.zig:clamp_runtime_sized"
+    },
+    {
+      "theorem": "guarded_gid_texture_coords_2d_inbounds",
+      "module": "Fawn.Shader.ComputeBounds",
+      "category": "lean_verified",
+      "pattern": "global_invocation_id.xy texture coords guarded by root early-return against textureDimensions(tex[,level]).xy",
+      "precondition": "if gid.x >= textureDimensions(...).x || gid.y >= textureDimensions(...).y { return; }",
+      "eliminates": "clamp(coords, vec(0), textureDimensions(tex[,level]) - 1) -> coords",
+      "runtimePath": "runtime/zig/src/doe_wgsl/ir_transform_robustness.zig:clamp_texture_coords"
+    },
+    {
+      "theorem": "gid_texture_coords_2d_inbounds_when_dispatch_fits",
+      "module": "Fawn.Shader.ComputeBounds",
+      "category": "lean_verified",
+      "pattern": "global_invocation_id.xy texture coords on a bound 2D texture",
+      "precondition": "workgroup_size.x * num_workgroups.x <= textureDimensions(tex,0).x AND workgroup_size.y * num_workgroups.y <= textureDimensions(tex,0).y",
+      "eliminates": "clamp(coords, vec(0), textureDimensions(tex[,level]) - 1) -> coords",
+      "runtimePath": "runtime/zig/src/doe_wgsl/ir_transform_robustness.zig:clamp_texture_coords"
+    },
+    {
+      "theorem": "guarded_gid_texture_coords_3d_inbounds",
+      "module": "Fawn.Shader.ComputeBounds",
+      "category": "lean_verified",
+      "pattern": "global_invocation_id.xyz texture coords guarded by root early-return against textureDimensions(tex[,level]).xyz",
+      "precondition": "if gid.x >= textureDimensions(...).x || gid.y >= textureDimensions(...).y || gid.z >= textureDimensions(...).z { return; }",
+      "eliminates": "clamp(coords, vec(0), textureDimensions(tex[,level]) - 1) -> coords",
+      "runtimePath": "runtime/zig/src/doe_wgsl/ir_transform_robustness.zig:clamp_texture_coords"
+    },
+    {
+      "theorem": "gid_texture_coords_3d_inbounds_when_dispatch_fits",
+      "module": "Fawn.Shader.ComputeBounds",
+      "category": "lean_verified",
+      "pattern": "global_invocation_id.xyz texture coords on a bound 3D texture",
+      "precondition": "workgroup_size.x * num_workgroups.x <= textureDimensions(tex,0).x AND workgroup_size.y * num_workgroups.y <= textureDimensions(tex,0).y AND workgroup_size.z * num_workgroups.z <= textureDimensions(tex,0).z",
+      "eliminates": "clamp(coords, vec(0), textureDimensions(tex[,level]) - 1) -> coords",
+      "runtimePath": "runtime/zig/src/doe_wgsl/ir_transform_robustness.zig:clamp_texture_coords"
+    }
+  ],
   "eliminationTargets": [
     {
       "theorem": "toggleAlwaysSupported",
@@ -109,43 +169,27 @@
     {
       "theorem": "equalGeometrySetsExecutionShapeFacts",
       "condition": "matching buffer size and dispatch geometry force execution-shape comparability facts true for arbitrary Nat-valued workloads",
-      "runtimePath": "bench/native-compare/modules/comparability.py:evaluate_comparability_from_facts"
+      "runtimePath": "bench/native_compare_modules/comparability.py:evaluate_comparability_from_facts"
     },
     {
       "theorem": "mslBindingSlot_injective_across_groups",
       "condition": "group*16+binding is injective for binding<16; flat buffer array has no collisions",
-      "runtimePath": "runtime/runtime/zig/src/doe_wgsl/emit_msl_ir.zig:msl_binding_slot,doe_compute_ext_native.zig:flattenBindGroups"
+      "runtimePath": "runtime/zig/src/doe_wgsl/emit_msl_ir.zig:msl_binding_slot,runtime/zig/src/doe_compute_ext_native.zig:flattenBindGroups"
     },
     {
       "theorem": "mslBindingSlot_in_bounds",
       "condition": "valid group and binding produce slot < 64; bounds check can be elided at comptime",
-      "runtimePath": "runtime/runtime/zig/src/doe_compute_ext_native.zig:flattenBindGroups"
+      "runtimePath": "runtime/zig/src/doe_compute_ext_native.zig:flattenBindGroups"
     },
     {
       "theorem": "doe_getMappedRange_superset",
       "condition": "Doe permits all spec-valid getMappedRange calls; no false rejections",
-      "runtimePath": "runtime/runtime/zig/src/doe_wgpu_native.zig:doeBufferGetMappedRange"
+      "runtimePath": "runtime/zig/src/doe_wgpu_native.zig:doeBufferGetMappedRange"
     },
     {
       "theorem": "doe_dispatch_superset",
       "condition": "Doe permits all spec-valid dispatch calls; no false rejections",
-      "runtimePath": "runtime/runtime/zig/src/doe_wgpu_native.zig:doeBufferRelease"
-    }
-  ],
-  "boundsEliminations": [
-    {
-      "theorem": "gid_inbounds_when_dispatch_fits",
-      "pattern": "global_invocation_id.{component} indexes storage buffer",
-      "precondition": "workgroup_size.{component} * num_workgroups.{component} <= buffer_element_count",
-      "eliminates": "min(gid.{component}, arrayLength(&buf) - 1) -> gid.{component}",
-      "runtimePath": "runtime/zig/src/doe_wgsl/ir_transform_robustness.zig:clamp_runtime_sized"
-    },
-    {
-      "theorem": "flat_index_2d_inbounds",
-      "pattern": "gid.y * width + gid.x indexes storage buffer",
-      "precondition": "ws.x * nwg.x <= width AND ws.y * nwg.y <= height AND width * height <= buffer_element_count",
-      "eliminates": "min(flat_index, arrayLength(&buf) - 1) -> flat_index",
-      "runtimePath": "runtime/zig/src/doe_wgsl/ir_transform_robustness.zig:clamp_runtime_sized"
+      "runtimePath": "runtime/zig/src/doe_wgpu_native.zig:doeBufferRelease"
     }
   ]
 }

@@ -85,6 +85,9 @@ napi_value doe_compute_pass_set_bind_group(napi_env env, napi_callback_info info
 napi_value doe_compute_pass_set_immediates(napi_env env, napi_callback_info info);
 napi_value doe_compute_pass_dispatch(napi_env env, napi_callback_info info);
 napi_value doe_compute_pass_dispatch_indirect(napi_env env, napi_callback_info info);
+napi_value doe_compute_pass_push_debug_group(napi_env env, napi_callback_info info);
+napi_value doe_compute_pass_pop_debug_group(napi_env env, napi_callback_info info);
+napi_value doe_compute_pass_insert_debug_marker(napi_env env, napi_callback_info info);
 napi_value doe_compute_pass_end(napi_env env, napi_callback_info info);
 napi_value doe_compute_pass_release(napi_env env, napi_callback_info info);
 
@@ -111,6 +114,14 @@ napi_value doe_create_render_pipeline(napi_env env, napi_callback_info info);
 napi_value doe_render_pipeline_release(napi_env env, napi_callback_info info);
 napi_value doe_render_pipeline_get_bind_group_layout(napi_env env, napi_callback_info info);
 
+/* Canvas surface */
+napi_value doe_canvas_surface_create(napi_env env, napi_callback_info info);
+napi_value doe_canvas_surface_configure(napi_env env, napi_callback_info info);
+napi_value doe_canvas_surface_get_current_texture(napi_env env, napi_callback_info info);
+napi_value doe_canvas_surface_present(napi_env env, napi_callback_info info);
+napi_value doe_canvas_surface_unconfigure(napi_env env, napi_callback_info info);
+napi_value doe_canvas_surface_release(napi_env env, napi_callback_info info);
+
 /* Render pass */
 napi_value doe_begin_render_pass(napi_env env, napi_callback_info info);
 napi_value doe_render_pass_set_pipeline(napi_env env, napi_callback_info info);
@@ -120,6 +131,9 @@ napi_value doe_render_pass_set_vertex_buffer(napi_env env, napi_callback_info in
 napi_value doe_render_pass_set_index_buffer(napi_env env, napi_callback_info info);
 napi_value doe_render_pass_draw(napi_env env, napi_callback_info info);
 napi_value doe_render_pass_draw_indexed(napi_env env, napi_callback_info info);
+napi_value doe_render_pass_execute_bundles(napi_env env, napi_callback_info info);
+napi_value doe_render_pass_draw_indirect(napi_env env, napi_callback_info info);
+napi_value doe_render_pass_draw_indexed_indirect(napi_env env, napi_callback_info info);
 napi_value doe_render_pass_end(napi_env env, napi_callback_info info);
 napi_value doe_render_pass_release(napi_env env, napi_callback_info info);
 napi_value doe_render_pass_set_viewport(napi_env env, napi_callback_info info);
@@ -142,6 +156,8 @@ napi_value doe_render_bundle_encoder_pop_debug_group(napi_env env, napi_callback
 napi_value doe_render_bundle_encoder_insert_debug_marker(napi_env env, napi_callback_info info);
 napi_value doe_render_bundle_encoder_draw(napi_env env, napi_callback_info info);
 napi_value doe_render_bundle_encoder_draw_indexed(napi_env env, napi_callback_info info);
+napi_value doe_render_bundle_encoder_draw_indirect(napi_env env, napi_callback_info info);
+napi_value doe_render_bundle_encoder_draw_indexed_indirect(napi_env env, napi_callback_info info);
 napi_value doe_render_bundle_encoder_finish(napi_env env, napi_callback_info info);
 napi_value doe_render_bundle_encoder_release(napi_env env, napi_callback_info info);
 napi_value doe_render_bundle_release(napi_env env, napi_callback_info info);
@@ -153,6 +169,7 @@ napi_value doe_device_get_limits(napi_env env, napi_callback_info info);
 napi_value doe_device_has_feature(napi_env env, napi_callback_info info);
 napi_value doe_device_get_label(napi_env env, napi_callback_info info);
 napi_value doe_device_set_label(napi_env env, napi_callback_info info);
+napi_value doe_object_set_label(napi_env env, napi_callback_info info);
 
 /* Query set */
 napi_value doe_device_create_query_set(napi_env env, napi_callback_info info);
@@ -219,6 +236,9 @@ napi_value doe_module_init(napi_env env, napi_value exports) {
         EXPORT_FN("computePassSetImmediates",                 doe_compute_pass_set_immediates),
         EXPORT_FN("computePassDispatchWorkgroups",            doe_compute_pass_dispatch),
         EXPORT_FN("computePassDispatchWorkgroupsIndirect",    doe_compute_pass_dispatch_indirect),
+        EXPORT_FN("computePassPushDebugGroup",                doe_compute_pass_push_debug_group),
+        EXPORT_FN("computePassPopDebugGroup",                 doe_compute_pass_pop_debug_group),
+        EXPORT_FN("computePassInsertDebugMarker",             doe_compute_pass_insert_debug_marker),
         EXPORT_FN("computePassEnd",                           doe_compute_pass_end),
         EXPORT_FN("computePassRelease",                       doe_compute_pass_release),
         EXPORT_FN("queueSubmit",                              doe_queue_submit),
@@ -235,6 +255,12 @@ napi_value doe_module_init(napi_env env, napi_value exports) {
         EXPORT_FN("textureViewRelease",                       doe_texture_view_release),
         EXPORT_FN("createSampler",                            doe_create_sampler),
         EXPORT_FN("samplerRelease",                           doe_sampler_release),
+        EXPORT_FN("canvasSurfaceCreate",                      doe_canvas_surface_create),
+        EXPORT_FN("canvasSurfaceConfigure",                   doe_canvas_surface_configure),
+        EXPORT_FN("canvasSurfaceGetCurrentTexture",           doe_canvas_surface_get_current_texture),
+        EXPORT_FN("canvasSurfacePresent",                     doe_canvas_surface_present),
+        EXPORT_FN("canvasSurfaceUnconfigure",                 doe_canvas_surface_unconfigure),
+        EXPORT_FN("canvasSurfaceRelease",                     doe_canvas_surface_release),
         EXPORT_FN("createRenderPipeline",                     doe_create_render_pipeline),
         EXPORT_FN("renderPipelineRelease",                    doe_render_pipeline_release),
         EXPORT_FN("renderPipelineGetBindGroupLayout",         doe_render_pipeline_get_bind_group_layout),
@@ -246,6 +272,9 @@ napi_value doe_module_init(napi_env env, napi_value exports) {
         EXPORT_FN("renderPassSetIndexBuffer",                 doe_render_pass_set_index_buffer),
         EXPORT_FN("renderPassDraw",                           doe_render_pass_draw),
         EXPORT_FN("renderPassDrawIndexed",                    doe_render_pass_draw_indexed),
+        EXPORT_FN("renderPassExecuteBundles",                 doe_render_pass_execute_bundles),
+        EXPORT_FN("renderPassDrawIndirect",                   doe_render_pass_draw_indirect),
+        EXPORT_FN("renderPassDrawIndexedIndirect",            doe_render_pass_draw_indexed_indirect),
         EXPORT_FN("renderPassEnd",                            doe_render_pass_end),
         EXPORT_FN("renderPassRelease",                        doe_render_pass_release),
         EXPORT_FN("renderPassSetViewport",                    doe_render_pass_set_viewport),
@@ -263,6 +292,8 @@ napi_value doe_module_init(napi_env env, napi_value exports) {
         EXPORT_FN("renderBundleEncoderSetIndexBuffer",        doe_render_bundle_encoder_set_index_buffer),
         EXPORT_FN("renderBundleEncoderDraw",                  doe_render_bundle_encoder_draw),
         EXPORT_FN("renderBundleEncoderDrawIndexed",           doe_render_bundle_encoder_draw_indexed),
+        EXPORT_FN("renderBundleEncoderDrawIndirect",          doe_render_bundle_encoder_draw_indirect),
+        EXPORT_FN("renderBundleEncoderDrawIndexedIndirect",   doe_render_bundle_encoder_draw_indexed_indirect),
         EXPORT_FN("renderBundleEncoderPushDebugGroup",        doe_render_bundle_encoder_push_debug_group),
         EXPORT_FN("renderBundleEncoderPopDebugGroup",         doe_render_bundle_encoder_pop_debug_group),
         EXPORT_FN("renderBundleEncoderInsertDebugMarker",     doe_render_bundle_encoder_insert_debug_marker),
@@ -275,6 +306,7 @@ napi_value doe_module_init(napi_env env, napi_value exports) {
         EXPORT_FN("deviceHasFeature",                         doe_device_has_feature),
         EXPORT_FN("deviceGetLabel",                           doe_device_get_label),
         EXPORT_FN("deviceSetLabel",                           doe_device_set_label),
+        EXPORT_FN("objectSetLabel",                           doe_object_set_label),
         EXPORT_FN("createQuerySet",                           doe_device_create_query_set),
         EXPORT_FN("commandEncoderWriteTimestamp",             doe_command_encoder_write_timestamp),
         EXPORT_FN("commandEncoderResolveQuerySet",            doe_command_encoder_resolve_query_set),

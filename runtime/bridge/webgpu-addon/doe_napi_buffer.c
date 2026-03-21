@@ -66,7 +66,15 @@ napi_value doe_buffer_map_sync(napi_env env, napi_callback_info info) {
         .userdata2 = NULL,
     };
 
-    if (pfn_doeNativeBufferMapAsync && pfn_doeNativeQueueFlush) {
+    if (pfn_wgpuBufferMapAsync2) {
+        WGPUFuture future = pfn_wgpuBufferMapAsync2(buf, (uint64_t)mode,
+            (size_t)offset_i, (size_t)size_i, cb_info);
+        if (future.id == 0) NAPI_THROW(env, "bufferMapAsync future unavailable");
+        if (!process_events_until(inst, &result.done, current_timeout_ns()))
+            return throw_status_error(env, "DOE_BUFFER_MAP_TIMEOUT", "bufferMapAsync timed out", result.status, result.message);
+        if (result.status != WGPU_MAP_ASYNC_STATUS_SUCCESS)
+            return throw_status_error(env, "DOE_BUFFER_MAP_ERROR", "bufferMapAsync failed", result.status, result.message);
+    } else if (pfn_doeNativeBufferMapAsync && pfn_doeNativeQueueFlush) {
         WGPUFuture future = pfn_doeNativeBufferMapAsync(
             buf,
             (uint64_t)mode,
@@ -78,13 +86,7 @@ napi_value doe_buffer_map_sync(napi_env env, napi_callback_info info) {
         if (result.status != WGPU_MAP_ASYNC_STATUS_SUCCESS)
             return throw_status_error(env, "DOE_BUFFER_MAP_ERROR", "doeNativeBufferMapAsync failed", result.status, result.message);
     } else {
-        WGPUFuture future = pfn_wgpuBufferMapAsync2(buf, (uint64_t)mode,
-            (size_t)offset_i, (size_t)size_i, cb_info);
-        if (future.id == 0) NAPI_THROW(env, "bufferMapAsync future unavailable");
-        if (!process_events_until(inst, &result.done, current_timeout_ns()))
-            return throw_status_error(env, "DOE_BUFFER_MAP_TIMEOUT", "bufferMapAsync timed out", result.status, result.message);
-        if (result.status != WGPU_MAP_ASYNC_STATUS_SUCCESS)
-            return throw_status_error(env, "DOE_BUFFER_MAP_ERROR", "bufferMapAsync failed", result.status, result.message);
+        NAPI_THROW(env, "bufferMapAsync unavailable");
     }
 
     napi_value ok;

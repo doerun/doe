@@ -531,11 +531,19 @@ pub const OverrideEntry = struct {
 
 /// Dispatch precondition recorded when a proven bounds elimination elides a
 /// runtime clamp. The host must verify this condition before dispatching.
+pub const DispatchPreconditionKind = enum {
+    gid_component,
+    flat_index_2d_dispatch_x,
+};
+
 pub const DispatchPrecondition = struct {
+    kind: DispatchPreconditionKind = .gid_component,
     /// Global invocation ID component axis (0=x, 1=y, 2=z).
     gid_axis: u8,
     /// Binding point of the storage buffer whose bounds were elided.
     storage_binding: BindingPoint,
+    /// Runtime-sized array element stride in bytes.
+    element_stride_bytes: u64,
 };
 
 pub const Module = struct {
@@ -546,9 +554,8 @@ pub const Module = struct {
     functions: std.ArrayListUnmanaged(Function) = .{},
     entry_points: std.ArrayListUnmanaged(EntryPoint) = .{},
     /// Preconditions recorded by the robustness transform when Lean-proven
-    /// bounds eliminations elide runtime clamps. The host must check
-    /// workgroup_size.{axis} * num_workgroups.{axis} <= arrayLength(&buf)
-    /// for each entry before dispatching.
+    /// bounds eliminations elide runtime clamps. The host must validate the
+    /// required byte coverage for each bound storage buffer before dispatching.
     dispatch_preconditions: std.ArrayListUnmanaged(DispatchPrecondition) = .{},
 
     pub fn init(allocator: std.mem.Allocator) Module {

@@ -37,6 +37,38 @@ try {
 }
 
 const { GPUTextureUsage, GPUBufferUsage, GPUShaderStage } = full.globals;
+const RENDER_TARGET_SIZE = 64;
+const RENDER_BYTES_PER_ROW = RENDER_TARGET_SIZE * 4;
+
+async function readTextureCenterPixel(texture) {
+  const readback = device.createBuffer({
+    size: RENDER_BYTES_PER_ROW * RENDER_TARGET_SIZE,
+    usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+  });
+  const encoder = device.createCommandEncoder();
+  encoder.copyTextureToBuffer(
+    { texture, origin: { x: 0, y: 0, z: 0 } },
+    { buffer: readback, offset: 0, bytesPerRow: RENDER_BYTES_PER_ROW, rowsPerImage: RENDER_TARGET_SIZE },
+    { width: RENDER_TARGET_SIZE, height: RENDER_TARGET_SIZE, depthOrArrayLayers: 1 },
+  );
+  device.queue.submit([encoder.finish()]);
+  await device.queue.onSubmittedWorkDone();
+
+  const centerRow = Math.floor(RENDER_TARGET_SIZE / 2);
+  const centerCol = Math.floor(RENDER_TARGET_SIZE / 2);
+  const centerOffset = centerRow * RENDER_BYTES_PER_ROW + centerCol * 4;
+  await readback.mapAsync(full.globals.GPUMapMode.READ, centerOffset, 4);
+  const pixel = Uint8Array.from(new Uint8Array(readback.getMappedRange(centerOffset, 4)));
+  readback.unmap();
+  readback.destroy();
+  return pixel;
+}
+
+function assertGreenPixel(pixel, label) {
+  assert(pixel[0] <= 10, `${label} red channel remains low`);
+  assert(pixel[1] >= 200, `${label} green channel is high`);
+  assert(pixel[2] <= 10, `${label} blue channel remains low`);
+}
 
 // ---------------------------------------------------------------------------
 // a. createShaderModule with vertex WGSL
@@ -125,7 +157,7 @@ console.log("\n--- d. createTexture for render target ---");
 let renderTarget = null;
 try {
   renderTarget = device.createTexture({
-    size: [64, 64, 1],
+    size: [RENDER_TARGET_SIZE, RENDER_TARGET_SIZE, 1],
     format: "rgba8unorm",
     usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
   });
@@ -278,7 +310,8 @@ try {
     const commandBuffer = encoder.finish();
     device.queue.submit([commandBuffer]);
     await device.queue.onSubmittedWorkDone();
-    assert(true, "render pass with pipeline + draw completed without error");
+    const centerPixel = await readTextureCenterPixel(renderTarget);
+    assertGreenPixel(centerPixel, "direct render draw center pixel");
   }
 } catch (err) {
   failed++;
@@ -422,6 +455,49 @@ try {
   });
   assert(pipeline != null, "render pipeline with vertex buffer layout created");
   vbShader.destroy();
+} catch (err) {
+  failed++;
+  console.error(`  FAIL (unexpected error): ${err?.message ?? err}`);
+}
+
+// ---------------------------------------------------------------------------
+// n. Render bundle replay executes and writes pixels
+// ---------------------------------------------------------------------------
+
+console.log("\n--- n. Render bundle replay executes and writes pixels ---");
+try {
+  if (!renderPipeline || !renderTargetView) {
+    skip("render pipeline or target view not available");
+  } else {
+    const bundleEncoder = device.createRenderBundleEncoder({
+      colorFormats: ["rgba8unorm"],
+    });
+    assert(bundleEncoder != null, "render bundle encoder created");
+    bundleEncoder.setPipeline(renderPipeline);
+    bundleEncoder.draw(3);
+    const bundle = bundleEncoder.finish();
+    assert(bundle != null, "render bundle finished");
+
+    const encoder = device.createCommandEncoder();
+    const pass = encoder.beginRenderPass({
+      colorAttachments: [
+        {
+          view: renderTargetView,
+          clearValue: { r: 0, g: 0, b: 0, a: 1 },
+          loadOp: "clear",
+          storeOp: "store",
+        },
+      ],
+    });
+    assert(typeof pass.executeBundles === "function", "render pass has executeBundles");
+    pass.executeBundles([bundle]);
+    pass.end();
+    device.queue.submit([encoder.finish()]);
+    await device.queue.onSubmittedWorkDone();
+
+    const centerPixel = await readTextureCenterPixel(renderTarget);
+    assertGreenPixel(centerPixel, "render bundle replay center pixel");
+  }
 } catch (err) {
   failed++;
   console.error(`  FAIL (unexpected error): ${err?.message ?? err}`);

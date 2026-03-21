@@ -12,6 +12,7 @@
 // IR building and validation, before emission to any backend (MSL, HLSL, SPIR-V).
 
 const std = @import("std");
+const dispatch_proof_match = @import("dispatch_proof_match.zig");
 const ir = @import("ir.zig");
 
 pub const TransformError = error{
@@ -30,14 +31,15 @@ pub const Config = struct {
 /// When config.elide_proven_bounds is true, proven gid-indexed storage buffer
 /// accesses skip the clamp and record dispatch preconditions on the module.
 pub fn apply(allocator: std.mem.Allocator, module: *ir.Module, config: Config) TransformError!void {
-    for (module.functions.items) |*function| {
-        try transform_function(allocator, module, function, config);
+    for (module.functions.items, 0..) |*function, function_index| {
+        try transform_function(allocator, module, @intCast(function_index), function, config);
     }
 }
 
 fn transform_function(
     allocator: std.mem.Allocator,
     module: *ir.Module,
+    function_id: ir.FunctionId,
     function: *ir.Function,
     config: Config,
 ) TransformError!void {
@@ -56,9 +58,8 @@ fn transform_function(
                         if (arr.len) |len| {
                             if (len > 0) try clamp_sized(allocator, module, function, i, len);
                         } else {
-                            // Runtime-sized array — try Lean elision first.
                             if (config.elide_proven_bounds) {
-                                if (try_elide_gid_clamp(module, function, index_data)) |precondition| {
+                                if (dispatch_proof_match.try_elide_storage_index(module, function, function_id, index_data)) |precondition| {
                                     module.dispatch_preconditions.append(
                                         module.allocator,
                                         precondition,
@@ -214,68 +215,6 @@ fn clamp_runtime_sized(
         .base = base_ref,
         .index = min_id,
     } };
-}
-
-// ---- Lean proof-driven clamp elision ----
-
-/// Classify whether an expression is a global_invocation_id component access.
-/// Returns the axis index (0=x, 1=y, 2=z) or null if not a gid component.
-fn classify_gid_component(function: *const ir.Function, expr_id: ir.ExprId) ?u8 {
-    const expr = function.exprs.items[expr_id];
-    switch (expr.data) {
-        .member => |member_data| {
-            // Check if the base is a parameter with the global_invocation_id builtin.
-            const base = function.exprs.items[member_data.base];
-            switch (base.data) {
-                .param_ref => |param_idx| {
-                    if (param_idx >= function.params.items.len) return null;
-                    const param = function.params.items[param_idx];
-                    const io = param.io orelse return null;
-                    if (io.builtin != .global_invocation_id) return null;
-
-                    if (std.mem.eql(u8, member_data.field_name, "x")) return 0;
-                    if (std.mem.eql(u8, member_data.field_name, "y")) return 1;
-                    if (std.mem.eql(u8, member_data.field_name, "z")) return 2;
-                    return null;
-                },
-                else => return null,
-            }
-        },
-        else => return null,
-    }
-}
-
-/// Resolve the storage buffer binding point for a base expression.
-/// Returns the binding point if the base is a global_ref to a storage buffer
-/// with a runtime-sized array, otherwise null.
-fn resolve_storage_binding(module: *const ir.Module, function: *const ir.Function, base_id: ir.ExprId) ?ir.BindingPoint {
-    const base_expr = function.exprs.items[base_id];
-    switch (base_expr.data) {
-        .global_ref => |global_idx| {
-            if (global_idx >= module.globals.items.len) return null;
-            const global = module.globals.items[global_idx];
-            if (global.addr_space != .storage) return null;
-            return global.binding;
-        },
-        else => return null,
-    }
-}
-
-/// Attempt to elide a gid-indexed storage buffer clamp using Lean proof.
-/// Pattern: buf[gid.{x,y,z}] where buf is a storage-address-space global.
-/// Returns a DispatchPrecondition if elision succeeds, null otherwise.
-fn try_elide_gid_clamp(
-    module: *const ir.Module,
-    function: *const ir.Function,
-    index_data: @FieldType(ir.Expr, "index"),
-) ?ir.DispatchPrecondition {
-    const gid_axis = classify_gid_component(function, index_data.index) orelse return null;
-    const binding = resolve_storage_binding(module, function, index_data.base) orelse return null;
-
-    return .{
-        .gid_axis = gid_axis,
-        .storage_binding = binding,
-    };
 }
 
 // ---- Texture coordinate clamping ----
@@ -499,7 +438,9 @@ fn clamp_texture_coords(
 
     // vec<T, dim>(1), where T matches the original coordinate element type.
     const one_scalar = try function.append_expr(allocator, .{
-        .ty = coord_elem_ty, .category = .value, .data = .{ .int_lit = 1 },
+        .ty = coord_elem_ty,
+        .category = .value,
+        .data = .{ .int_lit = 1 },
     });
     const splat_one_args = try function.append_expr_args(allocator, &.{one_scalar});
     const one_vec = try function.append_expr(allocator, .{
@@ -517,7 +458,9 @@ fn clamp_texture_coords(
 
     // vec<T, dim>(0), where T matches the original coordinate element type.
     const zero_scalar = try function.append_expr(allocator, .{
-        .ty = coord_elem_ty, .category = .value, .data = .{ .int_lit = 0 },
+        .ty = coord_elem_ty,
+        .category = .value,
+        .data = .{ .int_lit = 0 },
     });
     const splat_zero_args = try function.append_expr_args(allocator, &.{zero_scalar});
     const zero_vec = try function.append_expr(allocator, .{

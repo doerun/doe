@@ -1,4 +1,6 @@
+const std = @import("std");
 const native = @import("doe_wgpu_native.zig");
+const compute_preconditions = @import("doe_compute_preconditions_native.zig");
 const bridge = @import("backend/metal/metal_bridge_decls.zig");
 const emit_msl = @import("doe_wgsl/emit_msl_ir.zig");
 const metal_bridge_compute_dispatch_copy_signal_commit = bridge.metal_bridge_compute_dispatch_copy_signal_commit;
@@ -6,6 +8,7 @@ const metal_bridge_buffer_contents = bridge.metal_bridge_buffer_contents;
 const metal_bridge_device_new_buffer_shared = bridge.metal_bridge_device_new_buffer_shared;
 const metal_bridge_release = bridge.metal_bridge_release;
 const MAX_BIND = native.MAX_BIND;
+const MAX_COMPUTE_BIND_GROUPS = native.MAX_COMPUTE_BIND_GROUPS;
 const MSL_SIZES_SLOT: u32 = emit_msl.MSL_SIZES_SLOT;
 const SIZES_BUF_BYTES: usize = (MSL_SIZES_SLOT + 1) * @sizeOf(u32);
 
@@ -31,12 +34,25 @@ pub export fn doeNativeComputeDispatchFlush(
     const pipe = native.cast(native.DoeComputePipeline, pipe_raw) orelse return;
     native.flush_pending_work(q);
 
-    // Flatten bind groups into linear Metal buffer array.
+    var bind_groups: [MAX_COMPUTE_BIND_GROUPS]?*native.DoeBindGroup = [_]?*native.DoeBindGroup{null} ** MAX_COMPUTE_BIND_GROUPS;
+    for (0..@min(bg_count, MAX_COMPUTE_BIND_GROUPS)) |i| {
+        bind_groups[i] = native.cast(native.DoeBindGroup, bg_ptrs[i]);
+    }
+    compute_preconditions.validate_bind_groups(
+        pipe.dispatch_preconditions,
+        bind_groups[0..],
+        .{ dx, dy, dz },
+        .{ pipe.wg_x, pipe.wg_y, pipe.wg_z },
+    ) catch {
+        std.log.err("doe_compute_fast: dispatch precondition failed for proof-elided shader", .{});
+        return;
+    };
+
     var bufs: [MAX_BIND * 4]?*anyopaque = [_]?*anyopaque{null} ** (MAX_BIND * 4);
     var buf_sizes: [MAX_BIND * 4]u64 = [_]u64{0} ** (MAX_BIND * 4);
     var buf_total: u32 = 0;
-    for (0..@min(bg_count, 4)) |i| {
-        const bg = native.cast(native.DoeBindGroup, bg_ptrs[i]) orelse continue;
+    for (bind_groups, 0..) |maybe_bg, i| {
+        const bg = maybe_bg orelse continue;
         for (0..bg.count) |j| {
             const idx = i * MAX_BIND + j;
             if (idx < bufs.len) {

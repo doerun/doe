@@ -309,6 +309,28 @@ function wrapCommandEncoder(raw) {
       );
     },
     /**
+     * Clear a buffer range to zero bytes.
+     *
+     * This keeps GPU-side buffer zeroing available on the compute facade while
+     * still failing explicitly if the underlying runtime does not expose the
+     * command.
+     *
+     * This example shows the API in its basic form.
+     *
+     * ```js
+     * encoder.clearBuffer(buffer, 0, buffer.size);
+     * ```
+     *
+     * - The wrapped buffer is unwrapped before forwarding.
+     * - This throws when buffer clearing is unsupported by the underlying runtime.
+     */
+    clearBuffer(buffer, offset = 0, size) {
+      if (typeof raw.clearBuffer !== 'function') {
+        throw new Error('buffer clearing is unsupported on the compute surface');
+      }
+      return raw.clearBuffer(unwrap(buffer), offset, size);
+    },
+    /**
      * Resolve a query set into a destination buffer.
      *
      * This keeps the query-resolution API available on the facade only when
@@ -442,6 +464,9 @@ function wrapDevice(raw) {
     queue: wrapQueue(raw.queue),
     limits: raw.limits,
     features: raw.features,
+    get lost() {
+      return raw.lost;
+    },
     /**
      * Create a buffer on the compute-only device facade.
      *
@@ -632,6 +657,48 @@ function wrapDevice(raw) {
         throw new Error('query sets are unsupported on the compute surface');
       }
       return wrapQuerySet(raw.createQuerySet(descriptor));
+    },
+    /**
+     * Push an error scope on the wrapped device.
+     *
+     * This preserves the full-surface validation/debug lifecycle behavior on
+     * the compute facade without widening it into render APIs.
+     *
+     * This example shows the API in its basic form.
+     *
+     * ```js
+     * device.pushErrorScope('validation');
+     * ```
+     *
+     * - This forwards directly to the underlying device.
+     * - This throws when error scopes are unsupported by the underlying runtime.
+     */
+    pushErrorScope(filter) {
+      if (typeof raw.pushErrorScope !== 'function') {
+        throw new Error('error scopes are unsupported on the compute surface');
+      }
+      return raw.pushErrorScope(filter);
+    },
+    /**
+     * Pop the most recent error scope from the wrapped device.
+     *
+     * This keeps the full-surface error-capture flow available to compute-only
+     * consumers when the runtime supports it.
+     *
+     * This example shows the API in its basic form.
+     *
+     * ```js
+     * const error = await device.popErrorScope();
+     * ```
+     *
+     * - Resolves with the underlying runtime's `GPUError`-shaped result or `null`.
+     * - This throws when error scopes are unsupported by the underlying runtime.
+     */
+    popErrorScope() {
+      if (typeof raw.popErrorScope !== 'function') {
+        throw new Error('error scopes are unsupported on the compute surface');
+      }
+      return raw.popErrorScope();
     },
     /**
      * Release the wrapped device.

@@ -545,6 +545,9 @@ fn resolveLocalProc(name: types.WGPUStringView) p1_capability_procs.WGPUProc {
     if (symbolViewEq(name, "wgpuBufferUnmap")) return fnPtr(&P.wgpuBufferUnmap);
     if (symbolViewEq(name, "wgpuDeviceCreateSampler")) return fnPtr(&P.wgpuDeviceCreateSampler);
     if (symbolViewEq(name, "wgpuSamplerRelease")) return fnPtr(&P.wgpuSamplerRelease);
+    // ExternalTexture: let Dawn's sidecar handle creation since the device
+    // handle is a Dawn device. Overriding here would create a Doe handle that
+    // Dawn's lifecycle procs (AddRef/Release) can't manage.
     return null;
 }
 

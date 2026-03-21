@@ -332,13 +332,7 @@ napi_value native_direct_buffer_map_async(napi_env env, napi_callback_info info)
         .userdata2 = NULL,
     };
     const uint64_t map_started_ns = monotonic_now_ns();
-    if (pfn_doeNativeBufferMapAsync && pfn_doeNativeQueueFlush) {
-        WGPUFuture future = pfn_doeNativeBufferMapAsync(buffer, (uint64_t)mode, (size_t)offset, (size_t)size, cb_info);
-        if (future.id == 0 || !result.done) NAPI_THROW(env, "doeNativeBufferMapAsync unavailable");
-        if (result.status != WGPU_MAP_ASYNC_STATUS_SUCCESS) {
-            return throw_status_error(env, "DOE_BUFFER_MAP_ERROR", "doeNativeBufferMapAsync failed", result.status, result.message);
-        }
-    } else {
+    if (pfn_wgpuBufferMapAsync2) {
         WGPUFuture future = pfn_wgpuBufferMapAsync2(buffer, (uint64_t)mode, (size_t)offset, (size_t)size, cb_info);
         if (future.id == 0) NAPI_THROW(env, "bufferMapAsync future unavailable");
         if (!process_events_until(inst, &result.done, current_timeout_ns())) {
@@ -347,6 +341,14 @@ napi_value native_direct_buffer_map_async(napi_env env, napi_callback_info info)
         if (result.status != WGPU_MAP_ASYNC_STATUS_SUCCESS) {
             return throw_status_error(env, "DOE_BUFFER_MAP_ERROR", "bufferMapAsync failed", result.status, result.message);
         }
+    } else if (pfn_doeNativeBufferMapAsync && pfn_doeNativeQueueFlush) {
+        WGPUFuture future = pfn_doeNativeBufferMapAsync(buffer, (uint64_t)mode, (size_t)offset, (size_t)size, cb_info);
+        if (future.id == 0 || !result.done) NAPI_THROW(env, "doeNativeBufferMapAsync unavailable");
+        if (result.status != WGPU_MAP_ASYNC_STATUS_SUCCESS) {
+            return throw_status_error(env, "DOE_BUFFER_MAP_ERROR", "doeNativeBufferMapAsync failed", result.status, result.message);
+        }
+    } else {
+        NAPI_THROW(env, "bufferMapAsync unavailable");
     }
     native_direct_set_double_prop(env, this_arg, DOE_DIRECT_DIAG_MAP_QUEUE_FLUSH_MS, map_queue_flush_ms);
     native_direct_set_double_prop(env, this_arg, DOE_DIRECT_DIAG_MAP_ASYNC_MS, native_direct_elapsed_ms(map_started_ns));
@@ -473,15 +475,17 @@ napi_value native_direct_buffer_map_read_copy_unmap(napi_env env, napi_callback_
         .userdata1 = &result,
         .userdata2 = NULL,
     };
-    if (pfn_doeNativeBufferMapAsync && pfn_doeNativeQueueFlush) {
-        WGPUFuture future = pfn_doeNativeBufferMapAsync(buffer, (uint64_t)mode, (size_t)offset, (size_t)size, cb_info);
-        if (future.id == 0 || !result.done) NAPI_THROW(env, "mapReadCopyUnmap: map failed");
-    } else {
+    if (pfn_wgpuBufferMapAsync2) {
         WGPUFuture future = pfn_wgpuBufferMapAsync2(buffer, (uint64_t)mode, (size_t)offset, (size_t)size, cb_info);
         if (future.id == 0) NAPI_THROW(env, "mapReadCopyUnmap: map future unavailable");
         if (!process_events_until(inst, &result.done, current_timeout_ns())) {
             NAPI_THROW(env, "mapReadCopyUnmap: map timed out");
         }
+    } else if (pfn_doeNativeBufferMapAsync && pfn_doeNativeQueueFlush) {
+        WGPUFuture future = pfn_doeNativeBufferMapAsync(buffer, (uint64_t)mode, (size_t)offset, (size_t)size, cb_info);
+        if (future.id == 0 || !result.done) NAPI_THROW(env, "mapReadCopyUnmap: map failed");
+    } else {
+        NAPI_THROW(env, "mapReadCopyUnmap: map unavailable");
     }
     if (result.status != WGPU_MAP_ASYNC_STATUS_SUCCESS) {
         NAPI_THROW(env, "mapReadCopyUnmap: map failed");

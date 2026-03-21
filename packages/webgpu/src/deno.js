@@ -17,6 +17,7 @@ export const doe = createDoeNamespace({
 });
 
 export const create = full.create;
+export const createCanvasContext = full.createCanvasContext;
 export const globals = full.globals;
 export const setupGlobals = full.setupGlobals;
 export const requestAdapter = full.requestAdapter;
@@ -29,5 +30,6 @@ export const runDawnVsDoeCompare = full.runDawnVsDoeCompare;
 
 export default {
   ...full,
+  createCanvasContext,
   doe,
 };

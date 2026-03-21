@@ -27,6 +27,7 @@ pub const emit_spirv_texture = @import("emit_spirv_texture.zig");
 pub const emit_dxil = @import("emit_dxil.zig");
 pub const layout_utils = @import("layout_utils.zig");
 const legacy_msl = @import("doe_wgsl_msl.zig");
+const lean_proof = @import("../lean_proof.zig");
 
 const std = @import("std");
 
@@ -241,14 +242,27 @@ pub fn lastErrorColumn() u32 {
     return last_error_column;
 }
 
+fn default_translation_robustness_config() ir_transform_robustness.Config {
+    return .{
+        .elide_proven_bounds = lean_proof.bounds_elimination_available,
+    };
+}
+
 pub fn analyzeToIr(allocator: std.mem.Allocator, wgsl: []const u8) TranslateError!ir.Module {
+    return analyzeToIrWithConfig(allocator, wgsl, default_translation_robustness_config());
+}
+
+pub fn analyzeToIrWithConfig(
+    allocator: std.mem.Allocator,
+    wgsl: []const u8,
+    config: ir_transform_robustness.Config,
+) TranslateError!ir.Module {
     clearLastError();
     var tree = parser.parseSource(allocator, wgsl) catch |err| {
         const kind = switch (err) {
             error.OutOfMemory => TranslateError.OutOfMemory,
             error.UnexpectedToken => TranslateError.UnexpectedToken,
         };
-        // Recover the byte-offset span saved by the parser before the Ast was freed.
         const fail_loc = parser.lastFailureContext().loc;
         setLastError(.parser, kind, wgsl, fail_loc);
         return kind;
@@ -272,7 +286,7 @@ pub fn analyzeToIr(allocator: std.mem.Allocator, wgsl: []const u8) TranslateErro
         setLastError(.ir_validate, TranslateError.InvalidIr, null, null);
         return TranslateError.InvalidIr;
     };
-    ir_transform_robustness.apply(allocator, &module, .{}) catch {
+    ir_transform_robustness.apply(allocator, &module, config) catch {
         return TranslateError.OutOfMemory;
     };
     return module;
@@ -621,10 +635,9 @@ test "robustness: runtime-sized array index emits arrayLength in MSL output" {
     var out: [MAX_OUTPUT]u8 = undefined;
     const len = try translateToMsl(std.testing.allocator, source, &out);
     const msl = out[0..len];
-    // The robustness pass should have injected min(idx, arrayLength - 1).
-    // In MSL, arrayLength emits through the runtime sizes buffer.
-    try std.testing.expect(std.mem.indexOf(u8, msl, "min(") != null);
-    try std.testing.expect(std.mem.indexOf(u8, msl, "_doe_sizes") != null);
+    const expect_elided = lean_proof.boundsProven(.gid_1d_storage_buffer);
+    try std.testing.expectEqual(!expect_elided, std.mem.indexOf(u8, msl, "min(") != null);
+    try std.testing.expectEqual(!expect_elided, std.mem.indexOf(u8, msl, "_doe_sizes") != null);
 }
 
 test "arrayLength(&buf) in comparison compiles" {

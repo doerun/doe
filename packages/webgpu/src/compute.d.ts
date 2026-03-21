@@ -45,6 +45,11 @@ export interface ComputePassEncoder {
 
 export interface ComputeCommandEncoder {
   beginComputePass(descriptor?: GPUComputePassDescriptor): ComputePassEncoder;
+  clearBuffer(
+    buffer: ComputeGPUBuffer,
+    offset?: number,
+    size?: number
+  ): void;
   copyBufferToBuffer(
     source: ComputeGPUBuffer,
     sourceOffset: number,
@@ -78,6 +83,7 @@ export interface ComputeGPUDevice {
   readonly queue: ComputeQueue;
   readonly limits: GPUSupportedLimits;
   readonly features: GPUSupportedFeatures;
+  readonly lost: Promise<GPUDeviceLostInfo>;
   createBuffer(descriptor: GPUBufferDescriptor): ComputeGPUBuffer;
   createShaderModule(descriptor: GPUShaderModuleDescriptor): GPUShaderModule;
   createComputePipeline(descriptor: GPUComputePipelineDescriptor): ComputeComputePipeline;
@@ -87,6 +93,8 @@ export interface ComputeGPUDevice {
   createPipelineLayout(descriptor: GPUPipelineLayoutDescriptor): ComputePipelineLayout;
   createCommandEncoder(descriptor?: GPUCommandEncoderDescriptor): ComputeCommandEncoder;
   createQuerySet?(descriptor: GPUQuerySetDescriptor): ComputeQuerySet;
+  pushErrorScope(filter: GPUErrorFilter): void;
+  popErrorScope(): Promise<GPUError | null>;
   destroy(): void;
 }
 

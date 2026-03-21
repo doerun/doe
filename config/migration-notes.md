@@ -1,5 +1,96 @@
 # Config Migration Notes
 
+## 2026-03-21
+
+### External texture native implementation
+
+- Metal and Vulkan external texture rows in `webgpu-spec-index.jsonl` promoted
+  from `out_of_scope` to `implemented`: `GPUExternalTexture`,
+  `GPUExternalTextureDescriptor` (source, colorSpace, label),
+  `GPUExternalTextureBindingLayout`, `GPUBindGroupLayoutEntry.externalTexture`,
+  `GPUDevice.importExternalTexture`.
+- New runtime file: `doe_external_texture_native.zig` with `DoeExternalTexture`
+  handle, ref-counted lifecycle, and C ABI descriptor parsing.
+- WGSL `texture_external` type added to IR, sema, and all emitters (MSL, SPIR-V, HLSL).
+- `textureSampleBaseClampToEdge` builtin recognized in sema and lowered across backends.
+- Dropin proc table routes `wgpuDeviceCreateExternalTexture` to Doe via `resolveLocalProc`.
+
+## 2026-03-20
+
+### D3D12 spec index reconciliation pass
+
+- Promoted the D3D12 render-pass attachment-extra rows that are now
+  source-backed in the checked-in native execution path:
+  `GPURenderPassColorAttachment.depthSlice`,
+  `GPURenderPassColorAttachment.resolveTarget`,
+  `GPURenderPassDepthStencilAttachment.depthReadOnly`, and
+  `GPURenderPassDepthStencilAttachment.stencilReadOnly` now track as
+  `implemented`.
+- Ordered D3D12 queue submission now consumes render-pass attachment-view
+  metadata instead of preserving those fields only on the native handle:
+  `doe_queue_submit_native.zig` imports the D3D12 render-pass recorder, the
+  recorder creates per-view RTV/DSV descriptors, applies read-only depth /
+  stencil DSV flags, and emits MSAA resolves through
+  `ResolveSubresource`.
+- The D3D12 ledger currently stands at 520 `implemented`, 39 `partial`,
+  264 `unreviewed`, 8 `blocked`, and 57 rows with no explicit D3D12 cell yet.
+- The eight blocked D3D12 feature-publication rows remain explicit and
+  intentional: `texture-compression-bc-sliced-3d`,
+  `texture-compression-etc2`, `texture-compression-astc`,
+  `texture-compression-astc-sliced-3d`, `float32-blendable`,
+  `texture-formats-tier1`, `texture-formats-tier2`, and
+  `texture-component-swizzle`. The current D3D12 caps / format code does not
+  source-back those rows repo-locally, so they remain blocked rather than
+  silently promoted.
+
+### macOS package GPUCanvasContext closure
+
+- `packages/webgpu/src/index.js` now exposes `createCanvasContext(canvas)` on
+  the full/package surface when running on macOS, using the repo-local
+  `GPUCanvasContext` wrapper instead of leaving Metal canvas support browser-
+  only.
+- `runtime/bridge/webgpu-addon/` now loads WebGPU surface proc entrypoints and
+  exports a hosted Metal canvas bridge (`canvasSurfaceCreate`,
+  `canvasSurfaceConfigure`, `canvasSurfaceGetCurrentTexture`,
+  `canvasSurfacePresent`, `canvasSurfaceUnconfigure`, `canvasSurfaceRelease`)
+  backed by `metal_bridge_create_surface_host` /
+  `metal_bridge_configure_surface_host`.
+- `packages/webgpu/src/shared/native-metal-canvas-backend.js` now manages the
+  hosted `CAMetalLayer` surface lifecycle for the package path and presents
+  pending canvas contexts after successful queue submits.
+- The package-side Metal canvas closure is intentionally narrower than the
+  current Vulkan surface path: `colorSpace="srgb"` and
+  `toneMapping.mode="standard"` are supported now, while extended tone mapping
+  / HDR colorspace selection remains explicit follow-up work.
+- Reconciled `config/webgpu-spec-index.jsonl` with the browser-lane policy:
+  the 29 browser-owned delegation rows (`externalTexture`,
+  `importExternalTexture`, `copyExternalImageToTexture`, `GPUOrigin2DDict*`,
+  and `xrCompatible`) are again marked `implemented` for Metal/Vulkan product
+  cells with explicit notes that the behavior lives on the Fawn browser lane,
+  not in the headless Doe native backends themselves.
+- `config/webgpu-spec-index.jsonl` now promotes the Metal `GPUCanvasContext`,
+  `GPUCanvasConfiguration`, and `GPUCanvasAlphaMode` rows out of
+  `out_of_scope`; `GPUCanvasToneMappingMode.extended` remains blocked rather
+  than silently accepted.
+- `packages/webgpu/test/integration/test-integration-canvas-node.js` adds the
+  focused macOS integration smoke for configure / acquire / clear / present /
+  unconfigure.
+
+### Compute package surface closes Doppler lifecycle and clear-buffer gaps
+
+- `packages/webgpu/src/compute.js` now forwards `GPUCommandEncoder.clearBuffer`
+  through the compute facade instead of omitting it, so compute-surface callers
+  can do GPU-side zeroing without dropping to the full package surface.
+- The compute facade now also forwards `GPUDevice.pushErrorScope()`,
+  `GPUDevice.popErrorScope()`, and `GPUDevice.lost`, matching the underlying
+  headless package lifecycle/debug contract closely enough for Doppler's kernel
+  and device-management paths.
+- `packages/webgpu/src/compute.d.ts` now advertises those methods/properties on
+  the compute-only device and command-encoder types.
+- `packages/webgpu/test/integration/test-integration-compute-surface.js` adds
+  focused regression coverage for compute-surface `getCompilationInfo()`,
+  `clearBuffer()`, error scopes, and `device.lost`.
+
 ## 2026-03-19
 
 ### macOS package adapter-info ABI repair

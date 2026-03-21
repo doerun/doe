@@ -117,6 +117,9 @@ void d3d12_bridge_command_list_copy_texture_region_subresource(
 /* Resource barrier */
 void d3d12_bridge_command_list_resource_barrier_transition(D3D12Handle cmd_list, D3D12Handle resource,
                                                             int state_before, int state_after);
+void d3d12_bridge_command_list_resolve_subresource(D3D12Handle cmd_list, D3D12Handle dst_texture,
+                                                    uint32_t dst_subresource, D3D12Handle src_texture,
+                                                    uint32_t src_subresource, uint32_t format);
 
 /* Sampler descriptor heap */
 D3D12Handle d3d12_bridge_device_create_sampler_heap(D3D12Handle device, uint32_t num_descriptors);
@@ -136,6 +139,10 @@ D3D12Handle d3d12_bridge_device_create_sampler(D3D12Handle device,
 D3D12Handle d3d12_bridge_device_create_rtv_heap(D3D12Handle device, uint32_t num_descriptors);
 void d3d12_bridge_device_create_rtv(D3D12Handle device, D3D12Handle resource, D3D12Handle rtv_heap,
                                      uint32_t index, uint32_t format);
+void d3d12_bridge_device_create_rtv_view(D3D12Handle device, D3D12Handle resource, D3D12Handle rtv_heap,
+                                          uint32_t index, uint32_t format, uint32_t dimension,
+                                          uint32_t base_mip_level, uint32_t base_array_layer,
+                                          uint32_t array_layer_count, uint32_t depth_slice);
 
 /* Graphics pipeline */
 D3D12Handle d3d12_bridge_device_create_graphics_pipeline(D3D12Handle device, D3D12Handle root_sig,
@@ -216,6 +223,11 @@ void d3d12_bridge_device_get_adapter_desc(D3D12Handle device, char* desc_out, si
 D3D12Handle d3d12_bridge_device_create_dsv_heap(D3D12Handle device, uint32_t num_descriptors);
 void d3d12_bridge_device_create_dsv(D3D12Handle device, D3D12Handle resource, D3D12Handle dsv_heap,
                                      uint32_t index, uint32_t format);
+void d3d12_bridge_device_create_dsv_view(D3D12Handle device, D3D12Handle resource, D3D12Handle dsv_heap,
+                                          uint32_t index, uint32_t format, uint32_t dimension,
+                                          uint32_t base_mip_level, uint32_t base_array_layer,
+                                          uint32_t array_layer_count, uint32_t read_only_depth,
+                                          uint32_t read_only_stencil);
 D3D12Handle d3d12_bridge_device_create_depth_texture(D3D12Handle device, uint32_t width,
                                                        uint32_t height, uint32_t format);
 

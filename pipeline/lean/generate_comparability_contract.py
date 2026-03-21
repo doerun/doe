@@ -178,7 +178,7 @@ def emit_lean(facts: list[str], obligations: list[dict[str, Any]], sha256: str) 
 
 def main() -> int:
     args = parse_args()
-    root = Path(__file__).resolve().parents[1]
+    root = Path(__file__).resolve().parents[2]
     contract_path = (root / args.contract).resolve()
     out_path = (root / args.out).resolve()
 

@@ -39,7 +39,7 @@ Finite-enum properties that require checking all cases. Zig `comptime` inline-fo
 | `strongerSafetyRaisesProofDemand` | Critical safety demands `.proven` proof | 3 enum values |
 | `identityActionComplete` | Exactly which actions are identity (iff) | 4 action variants × sub-cases |
 
-### `lean_verified` (14 theorems, ~100 lines)
+### `lean_verified` (18 theorems, ~130 lines)
 
 Quantified over arbitrary `List Obligation` or arbitrary `Nat` — unbounded domain, cannot enumerate.
 
@@ -59,6 +59,10 @@ Quantified over arbitrary `List Obligation` or arbitrary `Nat` — unbounded dom
 | `clamp_noop_when_inbounds` | min(gid, len-1) = gid when gid < len (connects proof to transform) |
 | `gid_2d_inbounds` | Both components bounded independently for 2D dispatch |
 | `flat_index_2d_inbounds` | gid.y * width + gid.x < width * height when components bounded |
+| `gid_texture_coords_2d_inbounds_when_dispatch_fits` | Dispatch-fit precondition implies 2D gid texture coords are in bounds |
+| `guarded_gid_texture_coords_2d_inbounds` | Root early-return guard against `textureDimensions(...).xy` implies 2D gid coords are in bounds |
+| `gid_texture_coords_3d_inbounds_when_dispatch_fits` | Dispatch-fit precondition implies 3D gid texture coords are in bounds |
+| `guarded_gid_texture_coords_3d_inbounds` | Root early-return guard against `textureDimensions(...).xyz` implies 3D gid coords are in bounds |
 
 ### `lean_fixture` (10 theorems, ~35 lines)
 

@@ -5,8 +5,15 @@
 Design approved. Layer 1 (unconditional clamping) is implemented in
 `ir_transform_robustness.zig`. Layer 2 (Lean-verified elimination) has
 theorem proofs in `pipeline/lean/Fawn/Shader/ComputeBounds.lean` and
-requires Zig-side pattern recognition and dispatch-time precondition
-enforcement to activate.
+now covers both storage-buffer gid indexing and textureLoad/textureStore
+gid-coordinate guards, plus dispatch-fit texture extent proofs for 2D/3D
+gid coordinates. The proof-backed pattern recognizers and IR metadata are
+implemented. Storage-buffer elimination is now active on native compute
+runtime translation with dispatch-time precondition enforcement, including
+the existing `flat_index_2d_inbounds` theorem for `gid.y * dispatch_width +
+gid.x`. Default/public WGSL translation still stays conservative; the
+remaining activation blocker is dispatch-fit texture precondition
+enforcement for non-runtime consumers.
 
 ## Problem
 
@@ -34,7 +41,7 @@ bounds elimination, not heuristic.
 Layer 1: Unconditional clamp (always present)
   ir_transform_robustness.zig → min(index, length-1) for every index
 
-Layer 2: Lean-verified elimination (opt-in, -Dlean-verified=true)
+Layer 2: Lean-verified elimination (opt-in, explicit transform config)
   ComputeBounds.lean proves conditions → proven-conditions.json artifact
   → ir_transform_robustness.zig pattern-matches and skips clamp when
   proof conditions are met AND host-side dispatch enforces preconditions
@@ -67,12 +74,12 @@ This is formalized as `gid_inbounds_when_dispatch_fits` in
 
 ### Proof artifact integration
 
-The proof artifact (`proven-conditions.json`) schema version 2 adds a
+The proof artifact (`proven-conditions.json`) schema version 1 includes a
 `boundsEliminations` array:
 
 ```json
 {
-  "schemaVersion": 2,
+  "schemaVersion": 1,
   "boundsEliminations": [
     {
       "theorem": "gid_inbounds_when_dispatch_fits",
@@ -87,6 +94,13 @@ The proof artifact (`proven-conditions.json`) schema version 2 adds a
       "precondition": "ws.x * nwg.x <= width AND ws.y * nwg.y <= height AND width * height <= buffer_element_count",
       "eliminates": "min(flat_index, arrayLength(&buf) - 1) → flat_index",
       "runtimePath": "runtime/zig/src/doe_wgsl/ir_transform_robustness.zig:clamp_runtime_sized"
+    },
+    {
+      "theorem": "guarded_gid_texture_coords_2d_inbounds",
+      "pattern": "global_invocation_id.xy texture coords guarded by root early-return against textureDimensions(tex[,level]).xy",
+      "precondition": "if gid.x >= textureDimensions(...).x || gid.y >= textureDimensions(...).y { return; }",
+      "eliminates": "clamp(coords, vec(0), textureDimensions(tex[,level]) - 1) → coords",
+      "runtimePath": "runtime/zig/src/doe_wgsl/ir_transform_robustness.zig:clamp_texture_coords"
     }
   ]
 }
@@ -125,6 +139,20 @@ The proof artifact (`proven-conditions.json`) schema version 2 adds a
      guaranteed by the proof — the condition failing means the shader
      would access out-of-bounds, which is a user error regardless).
    - Optional: emit a validation warning when precondition fails.
+
+Texture guard elimination follows a separate proof-backed path with no
+host-side table:
+- pattern-match root early-return guard against `textureDimensions(tex[,level])`
+- prove that surviving executions have componentwise in-bounds gid coords
+- skip the later `clamp(coords, 0, textureDimensions - 1)` insertion entirely
+
+Texture dispatch-fit elimination uses the same theorem style as storage
+bounds elimination:
+- pattern-match `textureLoad` / `textureStore` coords built directly from
+  `global_invocation_id`
+- record a texture binding + gid-axis precondition table on the IR module
+- elide the later `clamp(coords, 0, textureDimensions - 1)` insertion when
+  `workgroup_size * num_workgroups <= textureDimensions(tex, 0)` is assumed
 ```
 
 ### Pattern recognizer (Zig-side, future implementation)
@@ -172,6 +200,10 @@ correctness of the analysis itself.
 | `clamp_noop_when_inbounds` | `lean_verified` | min(gid, len-1) = gid when gid < len (connects proof to transform) |
 | `gid_2d_inbounds` | `lean_verified` | Both components bounded independently for 2D dispatch |
 | `flat_index_2d_inbounds` | `lean_verified` | gid.y * width + gid.x < width * height when components bounded |
+| `gid_texture_coords_2d_inbounds_when_dispatch_fits` | `lean_verified` | Dispatch-fit precondition implies in-bounds 2D gid texture coords |
+| `guarded_gid_texture_coords_2d_inbounds` | `lean_verified` | Root early-return guard against `textureDimensions(...).xy` implies in-bounds 2D gid coords |
+| `gid_texture_coords_3d_inbounds_when_dispatch_fits` | `lean_verified` | Dispatch-fit precondition implies in-bounds 3D gid texture coords |
+| `guarded_gid_texture_coords_3d_inbounds` | `lean_verified` | Root early-return guard against `textureDimensions(...).xyz` implies in-bounds 3D gid coords |
 
 ### Why `lean_verified`
 
@@ -185,11 +217,12 @@ exactly matching the criterion established in `pipeline/lean/README.md`.
 1. **Done**: `ir_transform_robustness.zig` — unconditional clamping (Layer 1)
 2. **Done**: `Fawn/Shader/ComputeBounds.lean` — formal proofs
 3. **Done**: `Extract.lean` updated to import Shader module and emit `boundsEliminations`
-4. **Next**: Pattern recognizer in `ir_transform_robustness.zig` — match gid access patterns
-5. **Next**: `lean_proof.zig` — read `boundsEliminations` from artifact, expose at comptime
-6. **Next**: Dispatch precondition table in `DoeShaderModule`
-7. **Next**: Host-side precondition check in `doeNativeComputeDispatchFlush`
-8. **Future**: 2D flat index pattern, loop-carried access patterns
+4. **Done**: Pattern recognizer in `ir_transform_robustness.zig` — matches gid storage-buffer access patterns, guarded gid texture coordinate patterns, and dispatch-fit gid texture coordinate patterns
+5. **Done**: `lean_proof.zig` — validates shader theorem/artifact coverage and exposes the comptime availability flags
+6. **Done/Partial**: explicit proof-aware analysis path now powers native compute runtime translation; default/public translation remains conservative
+7. **Done**: `_doe_sizes` requirement now derives from surviving IR `arrayLength` use instead of raw WGSL string search
+8. **Done**: host-side storage-buffer dispatch precondition checks in native compute dispatch paths (`doeNativeComputeDispatchFlush`, `doe_compute_ext_native.zig`, `doe_vulkan_compute_native.zig`)
+9. **Future**: dispatch-fit texture enforcement, loop-carried access patterns, broader guarded texture patterns
 
 ## File map
 

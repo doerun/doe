@@ -28,6 +28,14 @@ PFN_wgpuDeviceRelease pfn_wgpuDeviceRelease = NULL;
 PFN_wgpuDeviceHasFeature pfn_wgpuDeviceHasFeature = NULL;
 PFN_wgpuDeviceGetLimits pfn_wgpuDeviceGetLimits = NULL;
 PFN_wgpuDeviceGetQueue pfn_wgpuDeviceGetQueue = NULL;
+PFN_wgpuInstanceCreateSurface pfn_wgpuInstanceCreateSurface = NULL;
+PFN_wgpuSurfaceGetCapabilities pfn_wgpuSurfaceGetCapabilities = NULL;
+PFN_wgpuSurfaceConfigure pfn_wgpuSurfaceConfigure = NULL;
+PFN_wgpuSurfaceGetCurrentTexture pfn_wgpuSurfaceGetCurrentTexture = NULL;
+PFN_wgpuSurfacePresent pfn_wgpuSurfacePresent = NULL;
+PFN_wgpuSurfaceUnconfigure pfn_wgpuSurfaceUnconfigure = NULL;
+PFN_wgpuSurfaceRelease pfn_wgpuSurfaceRelease = NULL;
+PFN_wgpuSurfaceCapabilitiesFreeMembers pfn_wgpuSurfaceCapabilitiesFreeMembers = NULL;
 PFN_wgpuDeviceCreateBuffer pfn_wgpuDeviceCreateBuffer = NULL;
 PFN_wgpuDeviceCreateShaderModule pfn_wgpuDeviceCreateShaderModule = NULL;
 PFN_wgpuShaderModuleRelease pfn_wgpuShaderModuleRelease = NULL;
@@ -153,6 +161,9 @@ FnRenderBundleEncoderDraw pfn_doeNativeRenderBundleEncoderDraw = NULL;
 FnRenderBundleEncoderDrawIndexed pfn_doeNativeRenderBundleEncoderDrawIndexed = NULL;
 FnRenderBundleEncoderFinish pfn_doeNativeRenderBundleEncoderFinish = NULL;
 FnRenderBundleRelease pfn_doeNativeRenderBundleRelease = NULL;
+FnMetalBridgeCreateSurfaceHost pfn_metalBridgeCreateSurfaceHost = NULL;
+FnMetalBridgeConfigureSurfaceHost pfn_metalBridgeConfigureSurfaceHost = NULL;
+FnMetalBridgeRelease pfn_metalBridgeRelease = NULL;
 
 /* ================================================================
  * Shared state globals
@@ -197,6 +208,9 @@ napi_ref native_direct_method_compute_pass_dispatch_workgroups_ref = NULL;
 napi_ref native_direct_method_compute_pass_dispatch_workgroups_indirect_ref = NULL;
 napi_ref native_direct_method_compute_pass_end_ref = NULL;
 napi_ref native_direct_method_compute_pass_set_immediates_ref = NULL;
+napi_ref native_direct_method_compute_pass_push_debug_group_ref = NULL;
+napi_ref native_direct_method_compute_pass_pop_debug_group_ref = NULL;
+napi_ref native_direct_method_compute_pass_insert_debug_marker_ref = NULL;
 napi_ref native_direct_method_render_pass_set_immediates_ref = NULL;
 napi_ref native_direct_method_render_pass_set_viewport_ref = NULL;
 napi_ref native_direct_method_render_pass_set_scissor_rect_ref = NULL;
@@ -205,6 +219,8 @@ napi_ref native_direct_method_render_pass_set_stencil_reference_ref = NULL;
 napi_ref native_direct_method_render_pass_push_debug_group_ref = NULL;
 napi_ref native_direct_method_render_pass_pop_debug_group_ref = NULL;
 napi_ref native_direct_method_render_pass_insert_debug_marker_ref = NULL;
+napi_ref native_direct_method_render_pass_draw_indirect_ref = NULL;
+napi_ref native_direct_method_render_pass_draw_indexed_indirect_ref = NULL;
 napi_ref native_direct_method_render_bundle_encoder_set_immediates_ref = NULL;
 napi_ref native_direct_method_adapter_get_preferred_canvas_format_ref = NULL;
 napi_ref native_direct_method_device_add_event_listener_ref = NULL;
@@ -254,6 +270,14 @@ napi_value doe_load_library(napi_env env, napi_callback_info info) {
     LOAD_SYM(wgpuDeviceRelease);
     LOAD_SYM(wgpuDeviceHasFeature);
     LOAD_SYM(wgpuDeviceGetQueue);
+    pfn_wgpuInstanceCreateSurface = (PFN_wgpuInstanceCreateSurface)LIB_SYM(g_lib, "wgpuInstanceCreateSurface");
+    pfn_wgpuSurfaceGetCapabilities = (PFN_wgpuSurfaceGetCapabilities)LIB_SYM(g_lib, "wgpuSurfaceGetCapabilities");
+    pfn_wgpuSurfaceConfigure = (PFN_wgpuSurfaceConfigure)LIB_SYM(g_lib, "wgpuSurfaceConfigure");
+    pfn_wgpuSurfaceGetCurrentTexture = (PFN_wgpuSurfaceGetCurrentTexture)LIB_SYM(g_lib, "wgpuSurfaceGetCurrentTexture");
+    pfn_wgpuSurfacePresent = (PFN_wgpuSurfacePresent)LIB_SYM(g_lib, "wgpuSurfacePresent");
+    pfn_wgpuSurfaceUnconfigure = (PFN_wgpuSurfaceUnconfigure)LIB_SYM(g_lib, "wgpuSurfaceUnconfigure");
+    pfn_wgpuSurfaceRelease = (PFN_wgpuSurfaceRelease)LIB_SYM(g_lib, "wgpuSurfaceRelease");
+    pfn_wgpuSurfaceCapabilitiesFreeMembers = (PFN_wgpuSurfaceCapabilitiesFreeMembers)LIB_SYM(g_lib, "wgpuSurfaceCapabilitiesFreeMembers");
     LOAD_SYM(wgpuDeviceCreateBuffer);
     LOAD_SYM(wgpuDeviceCreateShaderModule);
     LOAD_SYM(wgpuShaderModuleRelease);
@@ -327,6 +351,9 @@ napi_value doe_load_library(napi_env env, napi_callback_info info) {
     pfn_doeNativeBufferMapAsync = (PFN_doeNativeBufferMapAsync)LIB_SYM(g_lib, "doeNativeBufferMapAsync");
     pfn_doeNativeBufferGetMapState = (PFN_doeNativeBufferGetMapState)LIB_SYM(g_lib, "doeNativeBufferGetMapState");
     pfn_doeRequestAdapterFlat = (PFN_doeRequestAdapterFlat)LIB_SYM(g_lib, "doeRequestAdapterFlat");
+    if (!pfn_doeRequestAdapterFlat) {
+        pfn_doeRequestAdapterFlat = (PFN_doeRequestAdapterFlat)LIB_SYM(g_lib, "doeNativeRequestAdapterFlat");
+    }
     pfn_doeRequestDeviceFlat = (PFN_doeRequestDeviceFlat)LIB_SYM(g_lib, "doeRequestDeviceFlat");
     pfn_wgpuBufferMapAsync2 = (PFN_wgpuBufferMapAsync2)LIB_SYM(g_lib, "wgpuBufferMapAsync");
     pfn_doeNativeQueueFlush = (PFN_doeNativeQueueFlush)LIB_SYM(g_lib, "doeNativeQueueFlush");
@@ -394,6 +421,9 @@ napi_value doe_load_library(napi_env env, napi_callback_info info) {
     pfn_doeNativeRenderBundleEncoderInsertDebugMarker = (FnRenderBundleEncoderInsertDebugMarker)LIB_SYM(g_lib, "doeNativeRenderBundleEncoderInsertDebugMarker");
     pfn_doeNativeRenderBundleEncoderFinish         = (FnRenderBundleEncoderFinish)LIB_SYM(g_lib, "doeNativeRenderBundleEncoderFinish");
     pfn_doeNativeRenderBundleRelease               = (FnRenderBundleRelease)LIB_SYM(g_lib, "doeNativeRenderBundleRelease");
+    pfn_metalBridgeCreateSurfaceHost = (FnMetalBridgeCreateSurfaceHost)LIB_SYM(g_lib, "metal_bridge_create_surface_host");
+    pfn_metalBridgeConfigureSurfaceHost = (FnMetalBridgeConfigureSurfaceHost)LIB_SYM(g_lib, "metal_bridge_configure_surface_host");
+    pfn_metalBridgeRelease = (FnMetalBridgeRelease)LIB_SYM(g_lib, "metal_bridge_release");
 
     /* Validate all critical function pointers were resolved. */
     if (!pfn_wgpuCreateInstance || !pfn_wgpuInstanceRelease || !pfn_wgpuInstanceRequestAdapter ||

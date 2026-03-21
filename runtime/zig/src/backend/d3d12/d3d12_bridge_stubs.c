@@ -49,6 +49,7 @@ void d3d12_bridge_command_list_copy_texture_region_subresource(D3D12Handle cmd_l
 
 /* Resource barrier */
 void d3d12_bridge_command_list_resource_barrier_transition(D3D12Handle cmd_list, D3D12Handle resource, int state_before, int state_after) { (void)cmd_list; (void)resource; (void)state_before; (void)state_after; }
+void d3d12_bridge_command_list_resolve_subresource(D3D12Handle cmd_list, D3D12Handle dst_texture, uint32_t dst_subresource, D3D12Handle src_texture, uint32_t src_subresource, uint32_t format) { (void)cmd_list; (void)dst_texture; (void)dst_subresource; (void)src_texture; (void)src_subresource; (void)format; }
 
 /* Sampler descriptor heap */
 D3D12Handle d3d12_bridge_device_create_sampler_heap(D3D12Handle device, uint32_t num_descriptors) { (void)device; (void)num_descriptors; return NULL; }
@@ -57,6 +58,7 @@ D3D12Handle d3d12_bridge_device_create_sampler(D3D12Handle device, uint32_t min_
 /* RTV descriptor heap and render target views */
 D3D12Handle d3d12_bridge_device_create_rtv_heap(D3D12Handle device, uint32_t num_descriptors) { (void)device; (void)num_descriptors; return NULL; }
 void d3d12_bridge_device_create_rtv(D3D12Handle device, D3D12Handle resource, D3D12Handle rtv_heap, uint32_t index, uint32_t format) { (void)device; (void)resource; (void)rtv_heap; (void)index; (void)format; }
+void d3d12_bridge_device_create_rtv_view(D3D12Handle device, D3D12Handle resource, D3D12Handle rtv_heap, uint32_t index, uint32_t format, uint32_t dimension, uint32_t base_mip_level, uint32_t base_array_layer, uint32_t array_layer_count, uint32_t depth_slice) { (void)device; (void)resource; (void)rtv_heap; (void)index; (void)format; (void)dimension; (void)base_mip_level; (void)base_array_layer; (void)array_layer_count; (void)depth_slice; }
 
 /* Graphics pipeline */
 D3D12Handle d3d12_bridge_device_create_graphics_pipeline(D3D12Handle device, D3D12Handle root_sig, const void* vs_bytecode, size_t vs_size, const void* ps_bytecode, size_t ps_size, uint32_t target_format) { (void)device; (void)root_sig; (void)vs_bytecode; (void)vs_size; (void)ps_bytecode; (void)ps_size; (void)target_format; return NULL; }
@@ -100,6 +102,7 @@ void d3d12_bridge_device_get_adapter_desc(D3D12Handle device, char* desc_out, si
 /* Depth/stencil views */
 D3D12Handle d3d12_bridge_device_create_dsv_heap(D3D12Handle device, uint32_t num_descriptors) { (void)device; (void)num_descriptors; return NULL; }
 void d3d12_bridge_device_create_dsv(D3D12Handle device, D3D12Handle resource, D3D12Handle dsv_heap, uint32_t index, uint32_t format) { (void)device; (void)resource; (void)dsv_heap; (void)index; (void)format; }
+void d3d12_bridge_device_create_dsv_view(D3D12Handle device, D3D12Handle resource, D3D12Handle dsv_heap, uint32_t index, uint32_t format, uint32_t dimension, uint32_t base_mip_level, uint32_t base_array_layer, uint32_t array_layer_count, uint32_t read_only_depth, uint32_t read_only_stencil) { (void)device; (void)resource; (void)dsv_heap; (void)index; (void)format; (void)dimension; (void)base_mip_level; (void)base_array_layer; (void)array_layer_count; (void)read_only_depth; (void)read_only_stencil; }
 D3D12Handle d3d12_bridge_device_create_depth_texture(D3D12Handle device, uint32_t width, uint32_t height, uint32_t format) { (void)device; (void)width; (void)height; (void)format; return NULL; }
 
 /* CBV/SRV/UAV descriptor heap */
