@@ -1,0 +1,15 @@
+{
+  "claimGateRan": false,
+  "config": "bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.release.json",
+  "createdAtUtc": "2026-03-20T17:11:39.236574Z",
+  "dropinGateRan": false,
+  "fullRun": true,
+  "outputTimestamp": "20260320T171108Z",
+  "reportPath": "bench/out/amd-vulkan/20260320T171108Z/dawn-vs-doe.amd.vulkan.release.json",
+  "runFolder": "bench/out/amd-vulkan/20260320T171108Z",
+  "runType": "compare_dawn_vs_doe",
+  "schemaVersion": 1,
+  "status": "diagnostic",
+  "updatedAtUtc": "2026-03-20T17:11:39.236574Z",
+  "workspacePath": "bench/out/amd-vulkan/20260320T171108Z/runtime-comparisons.amd.vulkan.release"
+}
