@@ -1,14 +1,5 @@
-// Render pass, graphics pipeline, draw call execution, and render bundle
-// replay for the Vulkan backend.
-//
-// Handles:
-//   - VkRenderPass creation for offscreen color attachments
-//   - VkGraphicsPipeline creation (vertex + fragment stages, dynamic viewport/scissor)
-//   - VkFramebuffer creation bound to a render target image view
-//   - Vertex buffer upload and binding
-//   - Draw call recording (non-indexed and indexed)
-//   - Render bundle replay into active render passes
-//   - Render state cleanup
+// Render pass creation, draw call execution, and render bundle replay
+// for the Vulkan backend. Pipeline creation in vk_render_pipeline.zig.
 
 const std = @import("std");
 const c = @import("vk_constants.zig");
@@ -19,94 +10,27 @@ const vk_formats = @import("vk_formats.zig");
 const VK_QUERY_CONTROL_NONE: u32 = 0;
 const vk_upload = @import("vk_upload.zig");
 const vk_resources = @import("vk_resources.zig");
-const vk_pipeline = @import("vk_pipeline.zig");
 const model = @import("../../model.zig");
-const doe_wgsl = @import("../../doe_wgsl/mod.zig");
 const common_timing = @import("../common/timing.zig");
 const render_bundle = @import("../../render_bundle.zig");
+const vk_render_pipeline = @import("vk_render_pipeline.zig");
 
 const VK_NULL_U64 = c.VK_NULL_U64;
 const native_runtime = @import("native_runtime.zig");
 const Runtime = native_runtime.NativeVulkanRuntime;
 const DispatchMetrics = native_runtime.DispatchMetrics;
 const VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT: u32 = 0x00000020;
+const VK_DRAW_INDIRECT_STRIDE: u32 = 16;
+const VK_DRAW_INDEXED_INDIRECT_STRIDE: u32 = 20;
 const VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL: u32 = 3;
 const VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT: u32 = 0x00000100;
 const VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT: u32 = 0x00000200;
 const VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT: u32 = 0x00000200;
 const VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT: u32 = 0x00000400;
-const VK_PRIMITIVE_TOPOLOGY_POINT_LIST: u32 = 0;
-const VK_PRIMITIVE_TOPOLOGY_LINE_LIST: u32 = 1;
-const VK_PRIMITIVE_TOPOLOGY_LINE_STRIP: u32 = 2;
-const VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP: u32 = 4;
-const VK_CULL_MODE_FRONT_BIT: u32 = 0x00000001;
-const VK_CULL_MODE_BACK_BIT: u32 = 0x00000002;
-const VK_FRONT_FACE_CLOCKWISE: u32 = 1;
-const VK_COMPARE_OP_LESS: u32 = 1;
-const VK_COMPARE_OP_EQUAL: u32 = 2;
-const VK_COMPARE_OP_LESS_OR_EQUAL: u32 = 3;
-const VK_COMPARE_OP_GREATER: u32 = 4;
-const VK_COMPARE_OP_NOT_EQUAL: u32 = 5;
-const VK_COMPARE_OP_GREATER_OR_EQUAL: u32 = 6;
-const VK_COMPARE_OP_ALWAYS: u32 = 7;
-const VK_STENCIL_OP_KEEP: u32 = 0;
-const VK_STENCIL_OP_ZERO: u32 = 1;
-const VK_STENCIL_OP_REPLACE: u32 = 2;
-const VK_STENCIL_OP_INCREMENT_AND_CLAMP: u32 = 3;
-const VK_STENCIL_OP_DECREMENT_AND_CLAMP: u32 = 4;
-const VK_STENCIL_OP_INVERT: u32 = 5;
-const VK_STENCIL_OP_INCREMENT_AND_WRAP: u32 = 6;
-const VK_STENCIL_OP_DECREMENT_AND_WRAP: u32 = 7;
-const VK_VERTEX_INPUT_RATE_VERTEX: u32 = 0;
-const VK_VERTEX_INPUT_RATE_INSTANCE: u32 = 1;
 const VK_INDEX_TYPE_UINT16: u32 = 0;
 const VK_INDEX_TYPE_UINT32: u32 = 1;
-const WGPU_VERTEX_STEP_MODE_INSTANCE: u32 = 0x00000002;
 const WGPU_INDEX_FORMAT_UINT16: u32 = 0x00000001;
 const WGPU_INDEX_FORMAT_UINT32: u32 = 0x00000002;
-
-const VkStencilOpState = extern struct {
-    failOp: u32,
-    passOp: u32,
-    depthFailOp: u32,
-    compareOp: u32,
-    compareMask: u32,
-    writeMask: u32,
-    reference: u32,
-};
-
-const VkPipelineDepthStencilStateCreateInfo = extern struct {
-    sType: i32,
-    pNext: ?*const anyopaque,
-    flags: u32,
-    depthTestEnable: u32,
-    depthWriteEnable: u32,
-    depthCompareOp: u32,
-    depthBoundsTestEnable: u32,
-    stencilTestEnable: u32,
-    front: VkStencilOpState,
-    back: VkStencilOpState,
-    minDepthBounds: f32,
-    maxDepthBounds: f32,
-};
-
-// Use minimal single-stage noop shaders for native draw-call benchmarks. This keeps
-// Vulkan aligned with the benchmark intent and avoids multi-entry render shader
-// compilation complexity on the strict comparable lane.
-const RENDER_VERTEX_SHADER_WGSL =
-    \\@vertex fn vs_main(@builtin(vertex_index) vi: u32) -> @builtin(position) vec4f {
-    \\    return vec4f(0.0, 0.0, 0.0, 1.0);
-    \\}
-;
-
-const RENDER_FRAGMENT_SHADER_WGSL =
-    \\@fragment fn fs_main() -> @location(0) vec4f {
-    \\    return vec4f(0.0, 0.0, 0.0, 0.0);
-    \\}
-;
-
-const VERTEX_ENTRY_POINT: [*:0]const u8 = "vs_main";
-const FRAGMENT_ENTRY_POINT: [*:0]const u8 = "fs_main";
 
 pub const RenderState = struct {
     render_pass: c.VkRenderPass = VK_NULL_U64,
@@ -118,9 +42,12 @@ pub const RenderState = struct {
     render_target: ?vk_resources.TextureResource = null,
     depth_stencil_target: ?vk_resources.TextureResource = null,
     render_target_handle: u64 = 0,
+    render_target_view_handle: u64 = 0,
     target_width: u32 = 0,
     target_height: u32 = 0,
     target_format: u32 = 0,
+    owns_render_target: bool = false,
+    owns_depth_stencil_target: bool = false,
 };
 
 pub fn release_render_state(device: c.VkDevice, state: *RenderState) void {
@@ -148,74 +75,19 @@ pub fn release_render_state(device: c.VkDevice, state: *RenderState) void {
         c.vkDestroyRenderPass(device, state.render_pass, null);
         state.render_pass = VK_NULL_U64;
     }
-    if (state.render_target) |target| {
-        vk_resources.release_texture_resource_with_device(device, target);
-        state.render_target = null;
+    if (state.owns_render_target) {
+        if (state.render_target) |target| {
+            vk_resources.release_texture_resource_with_device(device, target);
+        }
     }
-    if (state.depth_stencil_target) |target| {
-        vk_resources.release_texture_resource_with_device(device, target);
-        state.depth_stencil_target = null;
+    state.render_target = null;
+    if (state.owns_depth_stencil_target) {
+        if (state.depth_stencil_target) |target| {
+            vk_resources.release_texture_resource_with_device(device, target);
+        }
     }
+    state.depth_stencil_target = null;
 }
-
-fn wgpu_primitive_topology_to_vk(topology: u32) u32 {
-    return switch (topology) {
-        0x00000001 => VK_PRIMITIVE_TOPOLOGY_POINT_LIST,
-        0x00000002 => VK_PRIMITIVE_TOPOLOGY_LINE_LIST,
-        0x00000003 => VK_PRIMITIVE_TOPOLOGY_LINE_STRIP,
-        0x00000005 => VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,
-        else => c.VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
-    };
-}
-
-fn wgpu_front_face_to_vk(front_face: u32) u32 {
-    return if (front_face == 0x00000002) VK_FRONT_FACE_CLOCKWISE else c.VK_FRONT_FACE_COUNTER_CLOCKWISE;
-}
-
-fn wgpu_cull_mode_to_vk(cull_mode: u32) u32 {
-    return switch (cull_mode) {
-        0x00000002 => VK_CULL_MODE_FRONT_BIT,
-        0x00000003 => VK_CULL_MODE_BACK_BIT,
-        else => c.VK_CULL_MODE_NONE,
-    };
-}
-
-fn wgpu_compare_to_vk(compare: u32) u32 {
-    return switch (compare) {
-        0x00000002 => VK_COMPARE_OP_LESS,
-        0x00000003 => VK_COMPARE_OP_EQUAL,
-        0x00000004 => VK_COMPARE_OP_LESS_OR_EQUAL,
-        0x00000005 => VK_COMPARE_OP_GREATER,
-        0x00000006 => VK_COMPARE_OP_NOT_EQUAL,
-        0x00000007 => VK_COMPARE_OP_GREATER_OR_EQUAL,
-        0x00000008 => VK_COMPARE_OP_ALWAYS,
-        else => c.VK_COMPARE_OP_NEVER,
-    };
-}
-
-fn wgpu_stencil_op_to_vk(op: u32) u32 {
-    return switch (op) {
-        0x00000001 => VK_STENCIL_OP_ZERO,
-        0x00000002 => VK_STENCIL_OP_REPLACE,
-        0x00000003 => VK_STENCIL_OP_INVERT,
-        0x00000004 => VK_STENCIL_OP_INCREMENT_AND_CLAMP,
-        0x00000005 => VK_STENCIL_OP_DECREMENT_AND_CLAMP,
-        0x00000006 => VK_STENCIL_OP_INCREMENT_AND_WRAP,
-        0x00000007 => VK_STENCIL_OP_DECREMENT_AND_WRAP,
-        else => VK_STENCIL_OP_KEEP,
-    };
-}
-
-fn format_has_stencil(format: model.WGPUTextureFormat) bool {
-    return switch (format) {
-        model.WGPUTextureFormat_Stencil8,
-        model.WGPUTextureFormat_Depth24PlusStencil8,
-        model.WGPUTextureFormat_Depth32FloatStencil8,
-        => true,
-        else => false,
-    };
-}
-
 pub fn execute_render_draw(
     self: *Runtime,
     cmd: model.RenderDrawCommand,
@@ -231,33 +103,18 @@ pub fn execute_render_draw(
 
     var render_state = RenderState{};
     defer release_render_state(self.device, &render_state);
-
-    // Phase 1: create render target texture
     const encode_start = common_timing.now_ns();
-
-    try ensure_render_target(self, &render_state, target_width, target_height, cmd.target_format, cmd.depth_stencil_format);
-
-    // Phase 2: create render pass
+    try ensure_render_target(self, &render_state, cmd, target_width, target_height, cmd.target_format, cmd.depth_stencil_format);
     const has_depth_stencil = cmd.depth_stencil_format != model.WGPUTextureFormat_Undefined;
     const depth_stencil_vk_format = if (has_depth_stencil) try vk_resources.texture_format_to_vk(cmd.depth_stencil_format) else 0;
     try create_render_pass(self, &render_state, vk_format, has_depth_stencil, depth_stencil_vk_format);
-
-    // Phase 3: create framebuffer
     try create_framebuffer(self, &render_state, target_width, target_height);
-
-    // Phase 4: compile shaders and create graphics pipeline
     try create_graphics_pipeline(self, &render_state, vk_format, cmd);
-
     const encode_end = common_timing.now_ns();
     const setup_ns = common_timing.ns_delta(encode_end, encode_start);
-
-    // Phase 5: record and submit draw commands
     const draw_start = common_timing.now_ns();
-
     try record_and_submit_draws(self, &render_state, cmd, draw_count, target_width, target_height);
-
     const draw_end = common_timing.now_ns();
-
     return .{
         .encode_ns = setup_ns,
         .submit_wait_ns = common_timing.ns_delta(draw_end, draw_start),
@@ -270,11 +127,32 @@ pub fn execute_render_draw(
 fn ensure_render_target(
     self: *Runtime,
     state: *RenderState,
+    cmd: model.RenderDrawCommand,
     width: u32,
     height: u32,
     format: model.WGPUTextureFormat,
     depth_stencil_format: model.WGPUTextureFormat,
 ) !void {
+    if (try bind_existing_render_target(self, state, cmd, width, height, format)) {
+        if (depth_stencil_format != model.WGPUTextureFormat_Undefined) {
+            const depth_texture_spec = model.CopyTextureResource{
+                .handle = 0,
+                .width = width,
+                .height = height,
+                .format = depth_stencil_format,
+                .usage = model.WGPUTextureUsage_RenderAttachment,
+                .mip_level = 0,
+                .bytes_per_row = 0,
+                .rows_per_image = 0,
+            };
+            state.depth_stencil_target = try create_render_target_texture(self, depth_texture_spec);
+            state.owns_depth_stencil_target = true;
+        }
+        state.target_width = width;
+        state.target_height = height;
+        return;
+    }
+
     const usage = model.WGPUTextureUsage_RenderAttachment | model.WGPUTextureUsage_CopyDst;
     const texture_spec = model.CopyTextureResource{
         .handle = 0,
@@ -287,6 +165,7 @@ fn ensure_render_target(
         .rows_per_image = 0,
     };
     state.render_target = try create_render_target_texture(self, texture_spec);
+    state.owns_render_target = true;
     if (depth_stencil_format != model.WGPUTextureFormat_Undefined) {
         const depth_texture_spec = model.CopyTextureResource{
             .handle = 0,
@@ -299,9 +178,40 @@ fn ensure_render_target(
             .rows_per_image = 0,
         };
         state.depth_stencil_target = try create_render_target_texture(self, depth_texture_spec);
+        state.owns_depth_stencil_target = true;
     }
     state.target_width = width;
     state.target_height = height;
+}
+
+fn bind_existing_render_target(
+    self: *Runtime,
+    state: *RenderState,
+    cmd: model.RenderDrawCommand,
+    width: u32,
+    height: u32,
+    format: model.WGPUTextureFormat,
+) !bool {
+    if (cmd.target_handle == 0 or cmd.target_handle == model.DEFAULT_RENDER_TARGET_HANDLE) return false;
+    const texture = self.textures.get(cmd.target_handle) orelse return error.InvalidState;
+    const view_resource = if (cmd.target_view_handle != 0)
+        self.textures.get(cmd.target_view_handle) orelse return error.InvalidState
+    else
+        texture;
+    state.render_target = .{
+        .image = texture.image,
+        .memory = texture.memory,
+        .view = view_resource.view,
+        .width = if (width > 0) width else texture.width,
+        .height = if (height > 0) height else texture.height,
+        .mip_levels = texture.mip_levels,
+        .format = if (format != 0) format else texture.format,
+        .usage = texture.usage,
+        .layout = texture.layout,
+    };
+    state.render_target_handle = cmd.target_handle;
+    state.render_target_view_handle = cmd.target_view_handle;
+    return true;
 }
 
 fn create_render_target_texture(
@@ -398,6 +308,8 @@ fn create_render_pass(
     has_depth_stencil: bool,
     depth_stencil_vk_format: u32,
 ) !void {
+    const color_initial_layout = if (state.render_target) |target| target.layout else c.VK_IMAGE_LAYOUT_UNDEFINED;
+    const depth_initial_layout = if (state.depth_stencil_target) |target| target.layout else c.VK_IMAGE_LAYOUT_UNDEFINED;
     var attachments = [_]c.VkAttachmentDescription{
         .{
             .flags = 0,
@@ -407,7 +319,7 @@ fn create_render_pass(
             .storeOp = c.VK_ATTACHMENT_STORE_OP_STORE,
             .stencilLoadOp = c.VK_ATTACHMENT_LOAD_OP_DONT_CARE,
             .stencilStoreOp = c.VK_ATTACHMENT_STORE_OP_DONT_CARE,
-            .initialLayout = c.VK_IMAGE_LAYOUT_UNDEFINED,
+            .initialLayout = color_initial_layout,
             .finalLayout = c.VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
         },
         .{
@@ -418,7 +330,7 @@ fn create_render_pass(
             .storeOp = c.VK_ATTACHMENT_STORE_OP_DONT_CARE,
             .stencilLoadOp = c.VK_ATTACHMENT_LOAD_OP_CLEAR,
             .stencilStoreOp = c.VK_ATTACHMENT_STORE_OP_DONT_CARE,
-            .initialLayout = c.VK_IMAGE_LAYOUT_UNDEFINED,
+            .initialLayout = depth_initial_layout,
             .finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
         },
     };
@@ -511,373 +423,15 @@ fn create_graphics_pipeline(
     vk_format: u32,
     cmd: model.RenderDrawCommand,
 ) !void {
-    _ = vk_format;
-
-    var vertex_spirv_buf = try self.allocator.alloc(u8, doe_wgsl.MAX_SPIRV_OUTPUT);
-    defer self.allocator.free(vertex_spirv_buf);
-    const vertex_spirv_len = doe_wgsl.translateToSpirv(self.allocator, RENDER_VERTEX_SHADER_WGSL, vertex_spirv_buf) catch
-        return error.ShaderCompileFailed;
-    const vertex_spirv_words = try vk_pipeline.words_from_spirv_bytes(self.allocator, vertex_spirv_buf[0..vertex_spirv_len]);
-    defer self.allocator.free(vertex_spirv_words);
-
-    var fragment_spirv_buf = try self.allocator.alloc(u8, doe_wgsl.MAX_SPIRV_OUTPUT);
-    defer self.allocator.free(fragment_spirv_buf);
-    const fragment_spirv_len = doe_wgsl.translateToSpirv(self.allocator, RENDER_FRAGMENT_SHADER_WGSL, fragment_spirv_buf) catch
-        return error.ShaderCompileFailed;
-    const fragment_spirv_words = try vk_pipeline.words_from_spirv_bytes(self.allocator, fragment_spirv_buf[0..fragment_spirv_len]);
-    defer self.allocator.free(fragment_spirv_words);
-
-    var vertex_shader_info = c.VkShaderModuleCreateInfo{
-        .sType = c.VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
-        .pNext = null,
-        .flags = 0,
-        .codeSize = vertex_spirv_words.len * @sizeOf(u32),
-        .pCode = vertex_spirv_words.ptr,
-    };
-    try c.check_vk(c.vkCreateShaderModule(self.device, &vertex_shader_info, null, &state.vertex_shader));
-
-    var fragment_shader_info = c.VkShaderModuleCreateInfo{
-        .sType = c.VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
-        .pNext = null,
-        .flags = 0,
-        .codeSize = fragment_spirv_words.len * @sizeOf(u32),
-        .pCode = fragment_spirv_words.ptr,
-    };
-    try c.check_vk(c.vkCreateShaderModule(self.device, &fragment_shader_info, null, &state.fragment_shader));
-
-    // Pipeline layout (no descriptors needed for passthrough)
-    var layout_info = c.VkPipelineLayoutCreateInfo{
-        .sType = c.VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-        .pNext = null,
-        .flags = 0,
-        .setLayoutCount = 0,
-        .pSetLayouts = null,
-        .pushConstantRangeCount = 0,
-        .pPushConstantRanges = null,
-    };
-    try c.check_vk(c.vkCreatePipelineLayout(self.device, &layout_info, null, &state.graphics_pipeline_layout));
-
-    // Shader stages
-    const stages = [2]c.VkPipelineShaderStageCreateInfo{
-        .{
-            .sType = c.VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-            .pNext = null,
-            .flags = 0,
-            .stage = c.VK_SHADER_STAGE_VERTEX_BIT,
-            .module = state.vertex_shader,
-            .pName = VERTEX_ENTRY_POINT,
-            .pSpecializationInfo = null,
-        },
-        .{
-            .sType = c.VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-            .pNext = null,
-            .flags = 0,
-            .stage = c.VK_SHADER_STAGE_FRAGMENT_BIT,
-            .module = state.fragment_shader,
-            .pName = FRAGMENT_ENTRY_POINT,
-            .pSpecializationInfo = null,
-        },
-    };
-
-    var vertex_binding_descriptions: [model.MAX_VERTEX_BUFFERS]c.VkVertexInputBindingDescription = undefined;
-    var vertex_attribute_descriptions: [model.MAX_VERTEX_BUFFERS * model.MAX_VERTEX_ATTRIBUTES]c.VkVertexInputAttributeDescription = undefined;
-    var vertex_binding_count: usize = 0;
-    var vertex_attribute_count: usize = 0;
-    if (cmd.vertex_layouts) |layouts| {
-        const layout_count = @min(layouts.len, model.MAX_VERTEX_BUFFERS);
-        var layout_index: usize = 0;
-        while (layout_index < layout_count) : (layout_index += 1) {
-            const layout = layouts[layout_index];
-            vertex_binding_descriptions[vertex_binding_count] = .{
-                .binding = @intCast(layout_index),
-                .stride = @intCast(@min(layout.array_stride, @as(u64, std.math.maxInt(u32)))),
-                .inputRate = vertex_step_mode_to_vk(layout.step_mode),
-            };
-            vertex_binding_count += 1;
-
-            const attr_count = @min(@as(usize, layout.attribute_count), model.MAX_VERTEX_ATTRIBUTES);
-            var attr_index: usize = 0;
-            while (attr_index < attr_count and vertex_attribute_count < vertex_attribute_descriptions.len) : (attr_index += 1) {
-                const attr = layout.attributes[attr_index];
-                vertex_attribute_descriptions[vertex_attribute_count] = .{
-                    .location = attr.shader_location,
-                    .binding = @intCast(layout_index),
-                    .format = try vk_formats.wgpu_vertex_format_to_vk(attr.format),
-                    .offset = @intCast(@min(attr.offset, @as(u64, std.math.maxInt(u32)))),
-                };
-                vertex_attribute_count += 1;
-            }
-        }
-    }
-
-    var vertex_input = c.VkPipelineVertexInputStateCreateInfo{
-        .sType = c.VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-        .pNext = null,
-        .flags = 0,
-        .vertexBindingDescriptionCount = @intCast(vertex_binding_count),
-        .pVertexBindingDescriptions = if (vertex_binding_count > 0) vertex_binding_descriptions[0..vertex_binding_count].ptr else null,
-        .vertexAttributeDescriptionCount = @intCast(vertex_attribute_count),
-        .pVertexAttributeDescriptions = if (vertex_attribute_count > 0) vertex_attribute_descriptions[0..vertex_attribute_count].ptr else null,
-    };
-
-    var input_assembly = c.VkPipelineInputAssemblyStateCreateInfo{
-        .sType = c.VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
-        .pNext = null,
-        .flags = 0,
-        .topology = topology_to_vk(cmd.topology),
-        .primitiveRestartEnable = c.VK_FALSE,
-    };
-
-    // Dynamic viewport and scissor
-    var viewport_state = c.VkPipelineViewportStateCreateInfo{
-        .sType = c.VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
-        .pNext = null,
-        .flags = 0,
-        .viewportCount = 1,
-        .pViewports = null,
-        .scissorCount = 1,
-        .pScissors = null,
-    };
-
-    // When unclippedDepth is requested and VK_EXT_depth_clip_enable is available,
-    // enable depth clamping and chain the depth clip disable struct. Without the
-    // extension, fall back to standard depth clipping and log a warning.
-    const use_unclipped = cmd.unclipped_depth and self.has_depth_clip_enable_ext;
-    if (cmd.unclipped_depth and !self.has_depth_clip_enable_ext) {
-        std.debug.print("vk_render: unclippedDepth requested but VK_EXT_depth_clip_enable unavailable; falling back to standard clipping\n", .{});
-    }
-
-    var depth_clip_state = c.VkPipelineRasterizationDepthClipStateCreateInfoEXT{
-        .sType = c.VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_DEPTH_CLIP_STATE_CREATE_INFO_EXT,
-        .pNext = null,
-        .flags = 0,
-        .depthClipEnable = c.VK_FALSE,
-    };
-    var rasterization = c.VkPipelineRasterizationStateCreateInfo{
-        .sType = c.VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
-        .pNext = if (use_unclipped) @ptrCast(&depth_clip_state) else null,
-        .flags = 0,
-        .depthClampEnable = if (use_unclipped) c.VK_TRUE else c.VK_FALSE,
-        .rasterizerDiscardEnable = c.VK_FALSE,
-        .polygonMode = c.VK_POLYGON_MODE_FILL,
-        .cullMode = cull_mode_to_vk(cmd.cull_mode),
-        .frontFace = front_face_to_vk(cmd.front_face),
-        .depthBiasEnable = c.VK_FALSE,
-        .depthBiasConstantFactor = 0.0,
-        .depthBiasClamp = 0.0,
-        .depthBiasSlopeFactor = 0.0,
-        .lineWidth = 1.0,
-    };
-
-    var multisample = c.VkPipelineMultisampleStateCreateInfo{
-        .sType = c.VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
-        .pNext = null,
-        .flags = 0,
-        .rasterizationSamples = sample_count_to_vk(cmd.sample_count),
-        .sampleShadingEnable = c.VK_FALSE,
-        .minSampleShading = 1.0,
-        .pSampleMask = null,
-        .alphaToCoverageEnable = c.VK_FALSE,
-        .alphaToOneEnable = c.VK_FALSE,
-    };
-
-    const COLOR_WRITE_ALL = c.VK_COLOR_COMPONENT_R_BIT |
-        c.VK_COLOR_COMPONENT_G_BIT |
-        c.VK_COLOR_COMPONENT_B_BIT |
-        c.VK_COLOR_COMPONENT_A_BIT;
-
-    var blend_attachment = c.VkPipelineColorBlendAttachmentState{
-        .blendEnable = if (cmd.blend_enabled) c.VK_TRUE else c.VK_FALSE,
-        .srcColorBlendFactor = blend_factor_to_vk(cmd.color_src_factor),
-        .dstColorBlendFactor = blend_factor_to_vk(cmd.color_dst_factor),
-        .colorBlendOp = blend_operation_to_vk(cmd.color_operation),
-        .srcAlphaBlendFactor = blend_factor_to_vk(cmd.alpha_src_factor),
-        .dstAlphaBlendFactor = blend_factor_to_vk(cmd.alpha_dst_factor),
-        .alphaBlendOp = blend_operation_to_vk(cmd.alpha_operation),
-        .colorWriteMask = color_write_mask_to_vk(cmd.color_write_mask, COLOR_WRITE_ALL),
-    };
-
-    var color_blend = c.VkPipelineColorBlendStateCreateInfo{
-        .sType = c.VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
-        .pNext = null,
-        .flags = 0,
-        .logicOpEnable = c.VK_FALSE,
-        .logicOp = c.VK_LOGIC_OP_CLEAR,
-        .attachmentCount = 1,
-        .pAttachments = @ptrCast(&blend_attachment),
-        .blendConstants = cmd.blend_constant,
-    };
-
-    const dynamic_states = [_]u32{
-        c.VK_DYNAMIC_STATE_VIEWPORT,
-        c.VK_DYNAMIC_STATE_SCISSOR,
-    };
-    var dynamic_state = c.VkPipelineDynamicStateCreateInfo{
-        .sType = c.VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
-        .pNext = null,
-        .flags = 0,
-        .dynamicStateCount = dynamic_states.len,
-        .pDynamicStates = &dynamic_states,
-    };
-    const has_depth_stencil = cmd.depth_stencil_format != model.WGPUTextureFormat_Undefined;
-    const has_stencil = has_depth_stencil and format_has_stencil(cmd.depth_stencil_format);
-    var depth_stencil_state = VkPipelineDepthStencilStateCreateInfo{
-        .sType = c.VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
-        .pNext = null,
-        .flags = 0,
-        .depthTestEnable = if (cmd.depth_compare != 0) c.VK_TRUE else c.VK_FALSE,
-        .depthWriteEnable = if (cmd.depth_write_enabled) c.VK_TRUE else c.VK_FALSE,
-        .depthCompareOp = wgpu_compare_to_vk(cmd.depth_compare),
-        .depthBoundsTestEnable = c.VK_FALSE,
-        .stencilTestEnable = if (has_stencil) c.VK_TRUE else c.VK_FALSE,
-        .front = .{
-            .failOp = wgpu_stencil_op_to_vk(cmd.stencil_front_fail_op),
-            .passOp = wgpu_stencil_op_to_vk(cmd.stencil_front_pass_op),
-            .depthFailOp = wgpu_stencil_op_to_vk(cmd.stencil_front_depth_fail_op),
-            .compareOp = wgpu_compare_to_vk(cmd.stencil_front_compare),
-            .compareMask = cmd.stencil_read_mask,
-            .writeMask = cmd.stencil_write_mask,
-            .reference = cmd.stencil_reference,
-        },
-        .back = .{
-            .failOp = wgpu_stencil_op_to_vk(cmd.stencil_back_fail_op),
-            .passOp = wgpu_stencil_op_to_vk(cmd.stencil_back_pass_op),
-            .depthFailOp = wgpu_stencil_op_to_vk(cmd.stencil_back_depth_fail_op),
-            .compareOp = wgpu_compare_to_vk(cmd.stencil_back_compare),
-            .compareMask = cmd.stencil_read_mask,
-            .writeMask = cmd.stencil_write_mask,
-            .reference = cmd.stencil_reference,
-        },
-        .minDepthBounds = 0.0,
-        .maxDepthBounds = 1.0,
-    };
-
-    var pipeline_info = c.VkGraphicsPipelineCreateInfo{
-        .sType = c.VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
-        .pNext = null,
-        .flags = 0,
-        .stageCount = 2,
-        .pStages = &stages,
-        .pVertexInputState = &vertex_input,
-        .pInputAssemblyState = &input_assembly,
-        .pTessellationState = null,
-        .pViewportState = &viewport_state,
-        .pRasterizationState = &rasterization,
-        .pMultisampleState = &multisample,
-        .pDepthStencilState = if (has_depth_stencil) @ptrCast(&depth_stencil_state) else null,
-        .pColorBlendState = &color_blend,
-        .pDynamicState = &dynamic_state,
-        .layout = state.graphics_pipeline_layout,
-        .renderPass = state.render_pass,
-        .subpass = 0,
-        .basePipelineHandle = VK_NULL_U64,
-        .basePipelineIndex = -1,
-    };
-    try c.check_vk(c.vkCreateGraphicsPipelines(
-        self.device,
-        VK_NULL_U64,
-        1,
-        @ptrCast(&pipeline_info),
-        null,
-        @ptrCast(&state.graphics_pipeline),
-    ));
+    return vk_render_pipeline.create_graphics_pipeline(self, state, vk_format, cmd);
 }
 
-fn topology_to_vk(topology: u32) u32 {
-    return switch (topology) {
-        0x00000001 => c.VK_PRIMITIVE_TOPOLOGY_POINT_LIST,
-        0x00000002 => c.VK_PRIMITIVE_TOPOLOGY_LINE_LIST,
-        0x00000003 => c.VK_PRIMITIVE_TOPOLOGY_LINE_STRIP,
-        0x00000005 => c.VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,
-        else => c.VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
-    };
-}
-
-fn vertex_step_mode_to_vk(step_mode: u32) u32 {
-    return if (step_mode == model.WGPUVertexStepMode_Instance) VK_VERTEX_INPUT_RATE_INSTANCE else VK_VERTEX_INPUT_RATE_VERTEX;
-}
-
-fn front_face_to_vk(front_face: u32) u32 {
-    return switch (front_face) {
-        0x00000002 => c.VK_FRONT_FACE_CLOCKWISE,
-        else => c.VK_FRONT_FACE_COUNTER_CLOCKWISE,
-    };
-}
+// Draw execution helper: resolve VkBuffer from opaque handle.
 
 fn resolve_vk_buffer_handle(self: *Runtime, handle: ?*anyopaque) ?c.VkBuffer {
     const ptr = handle orelse return null;
     const cb = self.compute_buffers.get(@intFromPtr(ptr)) orelse return null;
     return cb.buffer;
-}
-
-fn bind_vertex_buffers(self: *Runtime, bindings: ?[]const model.RenderVertexBinding) void {
-    const bs = bindings orelse return;
-    for (bs) |binding| {
-        const vk_buffer = resolve_vk_buffer_handle(self, binding.handle) orelse continue;
-        const buffers = [1]c.VkBuffer{vk_buffer};
-        const offsets = [1]u64{binding.offset};
-        c.vkCmdBindVertexBuffers(self.primary_command_buffer, binding.slot, 1, &buffers, &offsets);
-    }
-}
-
-fn cull_mode_to_vk(cull_mode: u32) u32 {
-    return switch (cull_mode) {
-        0x00000002 => c.VK_CULL_MODE_FRONT_BIT,
-        0x00000003 => c.VK_CULL_MODE_BACK_BIT,
-        else => c.VK_CULL_MODE_NONE,
-    };
-}
-
-fn sample_count_to_vk(sample_count: u32) u32 {
-    return switch (sample_count) {
-        2 => c.VK_SAMPLE_COUNT_2_BIT,
-        4 => c.VK_SAMPLE_COUNT_4_BIT,
-        8 => c.VK_SAMPLE_COUNT_8_BIT,
-        16 => c.VK_SAMPLE_COUNT_16_BIT,
-        else => c.VK_SAMPLE_COUNT_1_BIT,
-    };
-}
-
-fn blend_factor_to_vk(factor: u32) u32 {
-    return switch (factor) {
-        1 => c.VK_BLEND_FACTOR_ZERO,
-        2 => c.VK_BLEND_FACTOR_ONE,
-        3 => c.VK_BLEND_FACTOR_SRC_COLOR,
-        4 => c.VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR,
-        5 => c.VK_BLEND_FACTOR_SRC_ALPHA,
-        6 => c.VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
-        7 => c.VK_BLEND_FACTOR_DST_COLOR,
-        8 => c.VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR,
-        9 => c.VK_BLEND_FACTOR_DST_ALPHA,
-        10 => c.VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA,
-        11 => c.VK_BLEND_FACTOR_SRC_ALPHA_SATURATE,
-        12 => c.VK_BLEND_FACTOR_CONSTANT_COLOR,
-        13 => c.VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_COLOR,
-        14 => c.VK_BLEND_FACTOR_SRC1_COLOR,
-        15 => c.VK_BLEND_FACTOR_ONE_MINUS_SRC1_COLOR,
-        16 => c.VK_BLEND_FACTOR_SRC1_ALPHA,
-        17 => c.VK_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA,
-        else => c.VK_BLEND_FACTOR_ONE,
-    };
-}
-
-fn blend_operation_to_vk(operation: u32) u32 {
-    return switch (operation) {
-        2 => c.VK_BLEND_OP_SUBTRACT,
-        3 => c.VK_BLEND_OP_REVERSE_SUBTRACT,
-        4 => c.VK_BLEND_OP_MIN,
-        5 => c.VK_BLEND_OP_MAX,
-        else => c.VK_BLEND_OP_ADD,
-    };
-}
-
-fn color_write_mask_to_vk(write_mask: u32, fallback: u32) u32 {
-    var mask: u32 = 0;
-    if ((write_mask & 0x1) != 0) mask |= c.VK_COLOR_COMPONENT_R_BIT;
-    if ((write_mask & 0x2) != 0) mask |= c.VK_COLOR_COMPONENT_G_BIT;
-    if ((write_mask & 0x4) != 0) mask |= c.VK_COLOR_COMPONENT_B_BIT;
-    if ((write_mask & 0x8) != 0) mask |= c.VK_COLOR_COMPONENT_A_BIT;
-    return if (mask == 0) fallback else mask;
 }
 
 fn record_and_submit_draws(
@@ -892,7 +446,7 @@ fn record_and_submit_draws(
 
     var clear_values = [_]c.VkClearValue{
         .{
-        .color = .{ .float32 = .{ 0.0, 0.0, 0.0, 1.0 } },
+            .color = .{ .float32 = cmd.clear_color },
         },
         .{
             .depthStencil = .{ .depth = 1.0, .stencil = 0 },
@@ -919,8 +473,14 @@ fn record_and_submit_draws(
         }
     }
 
-    bind_vertex_buffers(self, cmd.vertex_bindings);
-
+    if (cmd.vertex_bindings) |bs| {
+        for (bs) |binding| {
+            const vk_buffer = resolve_vk_buffer_handle(self, binding.handle) orelse continue;
+            const buffers_arr = [1]c.VkBuffer{vk_buffer};
+            const offsets_arr = [1]u64{binding.offset};
+            c.vkCmdBindVertexBuffers(self.primary_command_buffer, binding.slot, 1, &buffers_arr, &offsets_arr);
+        }
+    }
     // Set dynamic viewport
     const vp_width = cmd.viewport_width orelse @as(f32, @floatFromInt(target_width));
     const vp_height = cmd.viewport_height orelse @as(f32, @floatFromInt(target_height));
@@ -977,7 +537,31 @@ fn record_and_submit_draws(
     const first_vertex = cmd.first_vertex;
     const first_instance = cmd.first_instance;
 
-    if (cmd.index_data != null or cmd.index_binding != null or cmd.index_count != null) {
+    if (cmd.indirect_buffer_handle != 0) {
+        // Indirect draw path: resolve buffer and issue vkCmdDrawIndirect or vkCmdDrawIndexedIndirect
+        const indirect_vk_buf = blk: {
+            const cb = self.compute_buffers.get(cmd.indirect_buffer_handle) orelse return error.InvalidArgument;
+            break :blk cb.buffer;
+        };
+        if (cmd.index_data != null or cmd.index_binding != null or cmd.index_count != null) {
+            // Bind the index buffer first, then issue indirect indexed draw
+            if (cmd.index_binding) |ib| {
+                const vk_buf = resolve_vk_buffer_handle(self, ib.handle) orelse return error.InvalidArgument;
+                const vk_index_type = if (ib.format == WGPU_INDEX_FORMAT_UINT16) VK_INDEX_TYPE_UINT16 else VK_INDEX_TYPE_UINT32;
+                c.vkCmdBindIndexBuffer(self.primary_command_buffer, vk_buf, ib.offset, vk_index_type);
+            } else if (cmd.index_buffer_handle != 0) {
+                const vk_buf = blk2: {
+                    const cb2 = self.compute_buffers.get(cmd.index_buffer_handle) orelse return error.InvalidArgument;
+                    break :blk2 cb2.buffer;
+                };
+                const vk_index_type = if (cmd.index_format == WGPU_INDEX_FORMAT_UINT16) VK_INDEX_TYPE_UINT16 else VK_INDEX_TYPE_UINT32;
+                c.vkCmdBindIndexBuffer(self.primary_command_buffer, vk_buf, cmd.index_buffer_offset, vk_index_type);
+            }
+            c.vkCmdDrawIndexedIndirect(self.primary_command_buffer, indirect_vk_buf, cmd.indirect_offset, 1, VK_DRAW_INDEXED_INDIRECT_STRIDE);
+        } else {
+            c.vkCmdDrawIndirect(self.primary_command_buffer, indirect_vk_buf, cmd.indirect_offset, 1, VK_DRAW_INDIRECT_STRIDE);
+        }
+    } else if (cmd.index_data != null or cmd.index_binding != null or cmd.index_count != null) {
         try record_indexed_draws(self, cmd, draw_count);
     } else {
         var draw_index: u32 = 0;
@@ -1001,6 +585,16 @@ fn record_and_submit_draws(
     c.vkCmdEndRenderPass(self.primary_command_buffer);
     try c.check_vk(c.vkEndCommandBuffer(self.primary_command_buffer));
     try submit_and_wait(self);
+    if (state.render_target_handle != 0) {
+        if (self.textures.getPtr(state.render_target_handle)) |texture| {
+            texture.layout = c.VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        }
+        if (state.render_target_view_handle != 0) {
+            if (self.textures.getPtr(state.render_target_view_handle)) |view| {
+                view.layout = c.VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+            }
+        }
+    }
 }
 
 // Reset the command pool and begin recording on the primary command buffer.
@@ -1131,8 +725,13 @@ pub fn execute_render_bundles(
     var state = RenderState{};
     defer release_render_state(self.device, &state);
     const encode_start = common_timing.now_ns();
-    try ensure_render_target(self, &state, width, height, color_format);
-    try create_render_pass(self, &state, vk_format);
+    const bundle_cmd = model.RenderDrawCommand{
+        .target_width = width,
+        .target_height = height,
+        .target_format = @intCast(color_format),
+    };
+    try ensure_render_target(self, &state, bundle_cmd, width, height, @intCast(color_format), model.WGPUTextureFormat_Undefined);
+    try create_render_pass(self, &state, vk_format, false, 0);
     try create_framebuffer(self, &state, width, height);
     const encode_end = common_timing.now_ns();
     const draw_start = common_timing.now_ns();

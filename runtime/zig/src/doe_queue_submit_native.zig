@@ -147,6 +147,9 @@ fn submit_d3d12_commands(q: *DoeQueue, count: usize, cmd_bufs: [*]const ?*anyopa
                         rt.device,
                         cmd_list,
                         render_pass_cmd,
+                        &rt.descriptor_state,
+                        &rt.texture_view_state,
+                        &rt.sampler_state,
                     ) catch continue;
                     has_gpu_work = true;
                 },
@@ -200,14 +203,9 @@ pub export fn doeNativeQueueSubmit(q_raw: ?*anyopaque, count: usize, cmd_bufs: [
     // For the Vulkan C ABI path, commands are executed immediately during
     // recording (e.g. via doeNativeComputePassDispatch issuing vkCmdDispatch
     // synchronously). Queue submit therefore only needs to drain the recorded
-    // command buffer handles without re-executing them.
+    // command buffer handles without re-executing them. Ownership stays with
+    // the command buffer object until the explicit release proc runs.
     if (q.dev.backend == .vulkan) {
-        for (cmd_bufs[0..count]) |raw| {
-            if (cast(DoeCommandBuffer, raw)) |buf| {
-                buf.cmds.deinit(alloc);
-                alloc.destroy(buf);
-            }
-        }
         return;
     }
 
@@ -530,23 +528,117 @@ pub export fn doeNativeQueueWriteBuffer(q_raw: ?*anyopaque, buf_raw: ?*anyopaque
 
 pub export fn doeNativeQueueRelease(raw: ?*anyopaque) callconv(.c) void {
     if (cast(DoeQueue, raw)) |q| {
+        if (q.ref_count > 1) {
+            q.ref_count -= 1;
+            return;
+        }
         native.label_store.remove(raw);
+        if (q.dev.queue == q) {
+            q.dev.queue = null;
+        }
         if (q.dev.backend == .vulkan) {
             if (native.device_vk_runtime(q.dev)) |rt| {
                 _ = rt.flush_queue() catch {};
             }
+            const dev = q.dev;
             alloc.destroy(q);
+            native.doeNativeDeviceRelease(toOpaque(dev));
             return;
         }
         flush_pending_work(q);
         if (q.mtl_event) |ev| metal_bridge_release(ev);
+        const dev = q.dev;
         alloc.destroy(q);
+        native.doeNativeDeviceRelease(toOpaque(dev));
     }
 }
 
-/// Doe is synchronous — call back immediately on submitted work done.
+pub export fn doeNativeQueueAddRef(raw: ?*anyopaque) callconv(.c) void {
+    const q = cast(DoeQueue, raw) orelse return;
+    q.ref_count +|= 1;
+}
+
+// ============================================================
+// Deferred work-done — drained by doeNativeInstanceProcessEvents
+// ============================================================
+//
+// Chromium calls queueOnSubmittedWorkDone and expects the callback to fire
+// during a subsequent instanceProcessEvents tick, not synchronously inside
+// the C proc call. Firing synchronously corrupts Chromium's state machine
+// (e.g. importExternalTexture lifetime tracking).
+//
+// All backends are synchronous at the GPU level (Vulkan executes inline,
+// Metal flushes before mapAsync), so work is always complete by the time
+// processEvents is called. We just need to defer the callback delivery.
+
+const MAX_GLOBAL_WORK_DONE: usize = 128;
+
+const WorkDoneEntry = struct {
+    cb: ?*const fn (types.WGPUQueueWorkDoneStatus, types.WGPUStringView, ?*anyopaque, ?*anyopaque) callconv(.c) void,
+    userdata1: ?*anyopaque,
+    userdata2: ?*anyopaque,
+};
+
+var global_work_done_buf: [MAX_GLOBAL_WORK_DONE]WorkDoneEntry = undefined;
+var global_work_done_count: usize = 0;
+
+/// Fire all deferred work-done callbacks. Called by doeNativeInstanceProcessEvents.
+pub fn drain_global_work_done() void {
+    const n = global_work_done_count;
+    global_work_done_count = 0;
+    for (global_work_done_buf[0..n]) |entry| {
+        if (entry.cb) |f| {
+            f(.success, .{ .data = null, .length = 0 }, entry.userdata1, entry.userdata2);
+        }
+    }
+}
+
+/// Defer the work-done callback to the next instanceProcessEvents drain.
 pub export fn doeNativeQueueOnSubmittedWorkDone(q_raw: ?*anyopaque, info: types.WGPUQueueWorkDoneCallbackInfo) callconv(.c) types.WGPUFuture {
     _ = q_raw;
-    info.callback(.success, .{ .data = null, .length = 0 }, info.userdata1, info.userdata2);
+    if (info.callback == null) return .{ .id = 4 };
+    if (global_work_done_count >= MAX_GLOBAL_WORK_DONE) {
+        // Overflow: fire immediately to avoid dropping the callback.
+        info.callback.?(.success, .{ .data = null, .length = 0 }, info.userdata1, info.userdata2);
+        return .{ .id = 4 };
+    }
+    global_work_done_buf[global_work_done_count] = .{
+        .cb = info.callback,
+        .userdata1 = info.userdata1,
+        .userdata2 = info.userdata2,
+    };
+    global_work_done_count += 1;
     return .{ .id = 4 };
+}
+
+// ============================================================
+// copyExternalImageToTexture — stub
+// ============================================================
+//
+// External image copy requires OS-level media interop (DMABUF on Linux,
+// IOSurface on macOS, DXGI on Windows) which is not yet implemented.
+// This stub prevents the crash path through Dawn's wire server when
+// Chromium calls wgpuQueueCopyExternalImageToTexture.
+
+pub export fn doeNativeQueueCopyExternalImageToTexture(
+    queue_raw: ?*anyopaque,
+    source_raw: ?*const anyopaque,
+    destination_raw: ?*const anyopaque,
+    copy_size_raw: ?*const anyopaque,
+) callconv(.c) void {
+    _ = queue_raw;
+    _ = source_raw;
+    _ = destination_raw;
+    _ = copy_size_raw;
+}
+
+pub export fn doeNativeQueueCopyExternalTextureForBrowser(
+    queue_raw: ?*anyopaque,
+    source_raw: ?*const anyopaque,
+    destination_raw: ?*const anyopaque,
+    copy_size_raw: ?*const anyopaque,
+    options_raw: ?*const anyopaque,
+) callconv(.c) void {
+    _ = options_raw;
+    doeNativeQueueCopyExternalImageToTexture(queue_raw, source_raw, destination_raw, copy_size_raw);
 }

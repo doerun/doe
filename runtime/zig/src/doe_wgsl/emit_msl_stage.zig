@@ -110,6 +110,31 @@ fn emit_output_io_attr(self: anytype, io: ir.IoAttr, stage: ir.ShaderStage) !voi
     try self.write(buf[0..pos]);
 }
 
+/// Emit a separate MSL interpolation attribute (e.g. ` [[flat]]`) for a vertex
+/// output field. Emits nothing for perspective/center (the MSL default).
+fn emit_msl_interp_attr(self: anytype, io: ir.IoAttr) !void {
+    const interp = io.interpolation orelse return;
+    switch (interp) {
+        .flat => try self.write(" [[flat]]"),
+        .linear => {
+            const sampling = io.sampling orelse .center;
+            try self.write(switch (sampling) {
+                .center => " [[center_no_perspective]]",
+                .centroid => " [[centroid_no_perspective]]",
+                .sample => " [[sample_no_perspective]]",
+            });
+        },
+        .perspective => {
+            const sampling = io.sampling orelse .center;
+            switch (sampling) {
+                .center => {},
+                .centroid => try self.write(" [[centroid_perspective]]"),
+                .sample => try self.write(" [[sample_perspective]]"),
+            }
+        },
+    }
+}
+
 fn emit_stage_in_struct(self: anytype, function: ir.Function, stage: ir.ShaderStage) !void {
     if (!needs_stage_in(self, function)) return;
     try self.write("\nstruct ");
@@ -175,7 +200,11 @@ fn emit_stage_out_struct(self: anytype, function: ir.Function, stage: ir.ShaderS
             try self.write(field.name);
             try self.write(" [[");
             try emit_output_io_attr(self, io, stage);
-            try self.write("]];\n");
+            try self.write("]]");
+            if (stage == .vertex and io.location != null) {
+                try emit_msl_interp_attr(self, io);
+            }
+            try self.write(";\n");
         }
     }
     self.indent -= 4;

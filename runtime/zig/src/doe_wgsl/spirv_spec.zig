@@ -14,6 +14,7 @@ pub const Capability = struct {
     pub const Shader: u32 = 1;
     pub const ClipDistance: u32 = 5;
     pub const Float16: u32 = 9;
+    pub const SampleRateShading: u32 = 35;
     pub const GroupNonUniform: u32 = 61;
     pub const GroupNonUniformArithmetic: u32 = 63;
     pub const GroupNonUniformShuffle: u32 = 65;
@@ -23,8 +24,12 @@ pub const Capability = struct {
     pub const ImageQuery: u32 = 50;
 };
 
-pub const AddressingModel = struct { pub const Logical: u32 = 0; };
-pub const MemoryModel = struct { pub const GLSL450: u32 = 1; };
+pub const AddressingModel = struct {
+    pub const Logical: u32 = 0;
+};
+pub const MemoryModel = struct {
+    pub const GLSL450: u32 = 1;
+};
 pub const Dim = struct {
     pub const _1D: u32 = 0;
     pub const _2D: u32 = 1;
@@ -120,6 +125,8 @@ pub const Decoration = struct {
     pub const BuiltIn: u32 = 11;
     pub const NoPerspective: u32 = 13;
     pub const Flat: u32 = 14;
+    pub const Centroid: u32 = 16;
+    pub const Sample: u32 = 17;
     pub const NonWritable: u32 = 24;
     pub const NonReadable: u32 = 25;
     pub const Location: u32 = 30;

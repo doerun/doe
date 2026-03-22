@@ -45,7 +45,9 @@ pub fn vulkan_create_shader_module(
     errdefer translation.info.deinit(alloc);
     shader.needs_sizes_buf = translation.info.needs_sizes_buf;
     shader.dispatch_preconditions = translation.info.dispatch_preconditions;
+    shader.texture_dispatch_preconditions = translation.info.texture_dispatch_preconditions;
     translation.info.dispatch_preconditions = &.{};
+    translation.info.texture_dispatch_preconditions = &.{};
     shader.wg_x = translation.info.workgroup_size[0];
     shader.wg_y = translation.info.workgroup_size[1];
     shader.wg_z = translation.info.workgroup_size[2];
@@ -146,6 +148,7 @@ pub fn vulkan_compute_pass_dispatch(pass: *DoeComputePass, x: u32, y: u32, z: u3
     };
     compute_preconditions.validate_bind_groups(
         pip.dispatch_preconditions,
+        pip.texture_dispatch_preconditions,
         pass.bind_groups[0..],
         .{ x, y, z },
         .{ pip.wg_x, pip.wg_y, pip.wg_z },
@@ -176,6 +179,7 @@ pub fn vulkan_compute_pass_dispatch(pass: *DoeComputePass, x: u32, y: u32, z: u3
         webgpu.GpuTimestampMode.off,
     ) catch |err| {
         std.log.err("doe_vulkan_compute: run_dispatch({},{},{}) failed: {s}", .{ x, y, z, @errorName(err) });
+        return;
     };
 }
 
@@ -222,6 +226,7 @@ pub fn vulkan_compute_pass_dispatch_indirect(
     const dispatch_z: u32 = if (z > 0) z else 1;
     compute_preconditions.validate_bind_groups(
         pip.dispatch_preconditions,
+        pip.texture_dispatch_preconditions,
         pass.bind_groups[0..],
         .{ dispatch_x, dispatch_y, dispatch_z },
         .{ pip.wg_x, pip.wg_y, pip.wg_z },

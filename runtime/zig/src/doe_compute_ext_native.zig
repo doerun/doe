@@ -4,6 +4,7 @@
 const std = @import("std");
 const native = @import("doe_wgpu_native.zig");
 const compute_preconditions = @import("doe_compute_preconditions_native.zig");
+const wgsl_compiler = @import("doe_wgsl/mod.zig");
 const bridge = @import("backend/metal/metal_bridge_decls.zig");
 
 const alloc = native.alloc;
@@ -18,13 +19,22 @@ const DoeComputePass = native.DoeComputePass;
 const DoeBuffer = native.DoeBuffer;
 const DoeBindGroup = native.DoeBindGroup;
 const DoeBindGroupLayout = native.DoeBindGroupLayout;
+const DoeBindGroupLayoutEntry = native.DoeBindGroupLayoutEntry;
 const RecordedCmd = native.RecordedCmd;
 const MAX_COMPUTE_BIND_GROUPS = native.MAX_COMPUTE_BIND_GROUPS;
 const MAX_FLAT_BIND = native.MAX_FLAT_BIND;
+const MAX_SHADER_BINDINGS = native.MAX_SHADER_BINDINGS;
+
+const RESOURCE_KIND_NONE: u32 = 0;
+const RESOURCE_KIND_BUFFER: u32 = 1;
+const RESOURCE_KIND_SAMPLER: u32 = 2;
+const RESOURCE_KIND_TEXTURE: u32 = 3;
+const RESOURCE_KIND_STORAGE_TEXTURE: u32 = 4;
 
 fn validate_dispatch_preconditions(pass: *const DoeComputePass, pip: *const DoeComputePipeline, dispatch: [3]u32) bool {
     compute_preconditions.validate_bind_groups(
         pip.dispatch_preconditions,
+        pip.texture_dispatch_preconditions,
         pass.bind_groups[0..],
         dispatch,
         .{ pip.wg_x, pip.wg_y, pip.wg_z },
@@ -43,6 +53,45 @@ fn read_indirect_dispatch_counts(buffer: *const DoeBuffer, offset: u64) ?[3]u32 
     const base = contents + byte_offset;
     const ints: *align(1) const [3]u32 = @ptrCast(base);
     return ints.*;
+}
+
+fn clamped_binding_count(pip: *const DoeComputePipeline) usize {
+    const count: usize = @intCast(pip.binding_count);
+    if (count <= MAX_SHADER_BINDINGS) return count;
+    std.log.err(
+        "doe_compute_ext_native: invalid compute pipeline binding_count={} max={} - clamping",
+        .{ pip.binding_count, MAX_SHADER_BINDINGS },
+    );
+    return MAX_SHADER_BINDINGS;
+}
+
+fn synthesize_layout_entry(binding: native.BindingInfo) DoeBindGroupLayoutEntry {
+    var entry = DoeBindGroupLayoutEntry{
+        .binding = binding.binding,
+        .resource_kind = RESOURCE_KIND_NONE,
+    };
+    switch (binding.kind) {
+        @intFromEnum(wgsl_compiler.BindingKind.buffer) => {
+            entry.resource_kind = RESOURCE_KIND_BUFFER;
+        },
+        @intFromEnum(wgsl_compiler.BindingKind.sampler) => {
+            entry.resource_kind = RESOURCE_KIND_SAMPLER;
+        },
+        @intFromEnum(wgsl_compiler.BindingKind.texture) => {
+            entry.resource_kind = RESOURCE_KIND_TEXTURE;
+        },
+        @intFromEnum(wgsl_compiler.BindingKind.storage_texture) => {
+            entry.resource_kind = RESOURCE_KIND_STORAGE_TEXTURE;
+            entry.texture_sample_type = binding.access;
+        },
+        else => {
+            std.log.err(
+                "doe_compute_ext_native: invalid binding kind={} for binding={} - leaving layout entry empty",
+                .{ binding.kind, binding.binding },
+            );
+        },
+    }
+    return entry;
 }
 
 // ============================================================
@@ -126,6 +175,7 @@ pub export fn doeNativeComputePassPopDebugGroup(
 
 pub export fn doeNativeComputePassRelease(raw: ?*anyopaque) callconv(.c) void {
     if (cast(DoeComputePass, raw)) |p| {
+        if (!native.object_should_destroy(p)) return;
         native.label_store.remove(raw);
         alloc.destroy(p);
     }
@@ -137,12 +187,29 @@ pub export fn doeNativeComputePassRelease(raw: ?*anyopaque) callconv(.c) void {
 
 pub export fn doeNativeComputePipelineGetBindGroupLayout(pip_raw: ?*anyopaque, group_index: u32) callconv(.c) ?*anyopaque {
     const pip = cast(DoeComputePipeline, pip_raw) orelse return null;
-    var entry_count: u32 = 0;
-    for (pip.bindings[0..pip.binding_count]) |b| {
+    const binding_count = clamped_binding_count(pip);
+    var entry_count: usize = 0;
+    for (pip.bindings[0..binding_count]) |b| {
         if (b.group == group_index) entry_count += 1;
     }
     const bgl = make(DoeBindGroupLayout) orelse return null;
-    bgl.* = .{ .entry_count = entry_count };
+    var entries: ?[]DoeBindGroupLayoutEntry = null;
+    if (entry_count > 0) {
+        entries = alloc.alloc(DoeBindGroupLayoutEntry, entry_count) catch {
+            alloc.destroy(bgl);
+            return null;
+        };
+        var write_index: usize = 0;
+        for (pip.bindings[0..binding_count]) |binding| {
+            if (binding.group != group_index) continue;
+            entries.?[write_index] = synthesize_layout_entry(binding);
+            write_index += 1;
+        }
+    }
+    bgl.* = .{
+        .entry_count = @intCast(entry_count),
+        .entries = entries,
+    };
     return toOpaque(bgl);
 }
 

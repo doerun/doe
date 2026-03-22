@@ -1,14 +1,14 @@
-# Fawn code agent
+# Doe code agent
 
 ## Scope
 
-This file is the source of truth for Fawn work only.  
+This file is the source of truth for Doe work only.
 Do not apply `dream/AGENTS.md` or `doppler/AGENTS.md` as process for this project.
 It is acceptable to reuse selected technical principles from those files, as listed here, when directly useful.
 
 ## Prime directive
 
-Fawn is a Chromium fork that replaces Dawn with Doe as its WebGPU implementation.
+Doe is the WebGPU runtime you embed when you can't ship Dawn.
 
 Doe is the Zig WebGPU runtime (`doe-zig-runtime`, `libwebgpu_doe.so`) built in this workspace. The objective is a full, performance-first, maintainable replacement for Dawn: Lean correctness proof support, Zig runtime execution, lighter binaries, easier development, and materially better per-command performance without sacrificing stage discipline.
 
@@ -21,7 +21,7 @@ This repo drives Doe development: quirk ingestion, verification, specialization,
 
 ## Mandatory reading
 
-Before changing Fawn behavior, read:
+Before changing Doe behavior, read:
 
 - `docs/thesis.md`
 - `docs/architecture.md`

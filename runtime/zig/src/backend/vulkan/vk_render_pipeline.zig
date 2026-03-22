@@ -1,0 +1,449 @@
+// vk_render_pipeline.zig — Graphics pipeline creation and state conversion helpers
+// for the Vulkan backend. Sharded from vk_render.zig.
+
+const std = @import("std");
+const c = @import("vk_constants.zig");
+const vk_formats = @import("vk_formats.zig");
+const vk_resources = @import("vk_resources.zig");
+const model = @import("../../model.zig");
+
+const VK_NULL_U64 = c.VK_NULL_U64;
+
+const VK_PRIMITIVE_TOPOLOGY_POINT_LIST: u32 = 0;
+const VK_PRIMITIVE_TOPOLOGY_LINE_LIST: u32 = 1;
+const VK_PRIMITIVE_TOPOLOGY_LINE_STRIP: u32 = 2;
+const VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP: u32 = 4;
+const VK_CULL_MODE_FRONT_BIT: u32 = 0x00000001;
+const VK_CULL_MODE_BACK_BIT: u32 = 0x00000002;
+const VK_FRONT_FACE_CLOCKWISE: u32 = 1;
+const VK_COMPARE_OP_LESS: u32 = 1;
+const VK_COMPARE_OP_EQUAL: u32 = 2;
+const VK_COMPARE_OP_LESS_OR_EQUAL: u32 = 3;
+const VK_COMPARE_OP_GREATER: u32 = 4;
+const VK_COMPARE_OP_NOT_EQUAL: u32 = 5;
+const VK_COMPARE_OP_GREATER_OR_EQUAL: u32 = 6;
+const VK_COMPARE_OP_ALWAYS: u32 = 7;
+const VK_STENCIL_OP_KEEP: u32 = 0;
+const VK_STENCIL_OP_ZERO: u32 = 1;
+const VK_STENCIL_OP_REPLACE: u32 = 2;
+const VK_STENCIL_OP_INCREMENT_AND_CLAMP: u32 = 3;
+const VK_STENCIL_OP_DECREMENT_AND_CLAMP: u32 = 4;
+const VK_STENCIL_OP_INVERT: u32 = 5;
+const VK_STENCIL_OP_INCREMENT_AND_WRAP: u32 = 6;
+const VK_STENCIL_OP_DECREMENT_AND_WRAP: u32 = 7;
+const VK_VERTEX_INPUT_RATE_VERTEX: u32 = 0;
+const VK_VERTEX_INPUT_RATE_INSTANCE: u32 = 1;
+
+const VkStencilOpState = extern struct {
+    failOp: u32,
+    passOp: u32,
+    depthFailOp: u32,
+    compareOp: u32,
+    compareMask: u32,
+    writeMask: u32,
+    reference: u32,
+};
+
+pub const VkPipelineDepthStencilStateCreateInfo = extern struct {
+    sType: i32,
+    pNext: ?*const anyopaque,
+    flags: u32,
+    depthTestEnable: u32,
+    depthWriteEnable: u32,
+    depthCompareOp: u32,
+    depthBoundsTestEnable: u32,
+    stencilTestEnable: u32,
+    front: VkStencilOpState,
+    back: VkStencilOpState,
+    minDepthBounds: f32,
+    maxDepthBounds: f32,
+};
+
+pub fn wgpu_compare_to_vk(compare: u32) u32 {
+    return switch (compare) {
+        0x00000002 => VK_COMPARE_OP_LESS,
+        0x00000003 => VK_COMPARE_OP_EQUAL,
+        0x00000004 => VK_COMPARE_OP_LESS_OR_EQUAL,
+        0x00000005 => VK_COMPARE_OP_GREATER,
+        0x00000006 => VK_COMPARE_OP_NOT_EQUAL,
+        0x00000007 => VK_COMPARE_OP_GREATER_OR_EQUAL,
+        0x00000008 => VK_COMPARE_OP_ALWAYS,
+        else => c.VK_COMPARE_OP_NEVER,
+    };
+}
+
+pub fn wgpu_stencil_op_to_vk(op: u32) u32 {
+    return switch (op) {
+        0x00000001 => VK_STENCIL_OP_ZERO,
+        0x00000002 => VK_STENCIL_OP_REPLACE,
+        0x00000003 => VK_STENCIL_OP_INVERT,
+        0x00000004 => VK_STENCIL_OP_INCREMENT_AND_CLAMP,
+        0x00000005 => VK_STENCIL_OP_DECREMENT_AND_CLAMP,
+        0x00000006 => VK_STENCIL_OP_INCREMENT_AND_WRAP,
+        0x00000007 => VK_STENCIL_OP_DECREMENT_AND_WRAP,
+        else => VK_STENCIL_OP_KEEP,
+    };
+}
+
+pub fn format_has_stencil(format: model.WGPUTextureFormat) bool {
+    return switch (format) {
+        model.WGPUTextureFormat_Stencil8,
+        model.WGPUTextureFormat_Depth24PlusStencil8,
+        model.WGPUTextureFormat_Depth32FloatStencil8,
+        => true,
+        else => false,
+    };
+}
+
+pub fn resolve_entry_point_name(entry_point: ?[]const u8, fallback: []const u8, buf: []u8) [*:0]const u8 {
+    const name = entry_point orelse fallback;
+    const len = @min(name.len, buf.len - 1);
+    @memcpy(buf[0..len], name[0..len]);
+    buf[len] = 0;
+    return buf[0..len :0];
+}
+
+pub fn topology_to_vk(topology: u32) u32 {
+    return switch (topology) {
+        0x00000001 => c.VK_PRIMITIVE_TOPOLOGY_POINT_LIST,
+        0x00000002 => c.VK_PRIMITIVE_TOPOLOGY_LINE_LIST,
+        0x00000003 => c.VK_PRIMITIVE_TOPOLOGY_LINE_STRIP,
+        0x00000005 => c.VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,
+        else => c.VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+    };
+}
+
+pub fn vertex_step_mode_to_vk(step_mode: u32) u32 {
+    return if (step_mode == model.WGPUVertexStepMode_Instance) VK_VERTEX_INPUT_RATE_INSTANCE else VK_VERTEX_INPUT_RATE_VERTEX;
+}
+
+pub fn front_face_to_vk(front_face: u32) u32 {
+    return switch (front_face) {
+        0x00000002 => c.VK_FRONT_FACE_CLOCKWISE,
+        else => c.VK_FRONT_FACE_COUNTER_CLOCKWISE,
+    };
+}
+
+pub fn cull_mode_to_vk(cull_mode: u32) u32 {
+    return switch (cull_mode) {
+        0x00000002 => c.VK_CULL_MODE_FRONT_BIT,
+        0x00000003 => c.VK_CULL_MODE_BACK_BIT,
+        else => c.VK_CULL_MODE_NONE,
+    };
+}
+
+pub fn sample_count_to_vk(sample_count: u32) u32 {
+    return switch (sample_count) {
+        2 => c.VK_SAMPLE_COUNT_2_BIT,
+        4 => c.VK_SAMPLE_COUNT_4_BIT,
+        8 => c.VK_SAMPLE_COUNT_8_BIT,
+        16 => c.VK_SAMPLE_COUNT_16_BIT,
+        else => c.VK_SAMPLE_COUNT_1_BIT,
+    };
+}
+
+pub fn blend_factor_to_vk(factor: u32) u32 {
+    return switch (factor) {
+        1 => c.VK_BLEND_FACTOR_ZERO,
+        2 => c.VK_BLEND_FACTOR_ONE,
+        3 => c.VK_BLEND_FACTOR_SRC_COLOR,
+        4 => c.VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR,
+        5 => c.VK_BLEND_FACTOR_SRC_ALPHA,
+        6 => c.VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
+        7 => c.VK_BLEND_FACTOR_DST_COLOR,
+        8 => c.VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR,
+        9 => c.VK_BLEND_FACTOR_DST_ALPHA,
+        10 => c.VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA,
+        11 => c.VK_BLEND_FACTOR_SRC_ALPHA_SATURATE,
+        12 => c.VK_BLEND_FACTOR_CONSTANT_COLOR,
+        13 => c.VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_COLOR,
+        14 => c.VK_BLEND_FACTOR_SRC1_COLOR,
+        15 => c.VK_BLEND_FACTOR_ONE_MINUS_SRC1_COLOR,
+        16 => c.VK_BLEND_FACTOR_SRC1_ALPHA,
+        17 => c.VK_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA,
+        else => c.VK_BLEND_FACTOR_ONE,
+    };
+}
+
+pub fn blend_operation_to_vk(operation: u32) u32 {
+    return switch (operation) {
+        2 => c.VK_BLEND_OP_SUBTRACT,
+        3 => c.VK_BLEND_OP_REVERSE_SUBTRACT,
+        4 => c.VK_BLEND_OP_MIN,
+        5 => c.VK_BLEND_OP_MAX,
+        else => c.VK_BLEND_OP_ADD,
+    };
+}
+
+pub fn color_write_mask_to_vk(write_mask: u32, fallback: u32) u32 {
+    var mask: u32 = 0;
+    if ((write_mask & 0x1) != 0) mask |= c.VK_COLOR_COMPONENT_R_BIT;
+    if ((write_mask & 0x2) != 0) mask |= c.VK_COLOR_COMPONENT_G_BIT;
+    if ((write_mask & 0x4) != 0) mask |= c.VK_COLOR_COMPONENT_B_BIT;
+    if ((write_mask & 0x8) != 0) mask |= c.VK_COLOR_COMPONENT_A_BIT;
+    return if (mask == 0) fallback else mask;
+}
+
+pub fn create_graphics_pipeline(
+    self: anytype,
+    state: anytype,
+    vk_format: u32,
+    cmd: model.RenderDrawCommand,
+) !void {
+    _ = vk_format;
+    const vertex_spirv_words = cmd.vertex_spirv orelse return error.ShaderCompileFailed;
+    const fragment_spirv_words = cmd.fragment_spirv orelse return error.ShaderCompileFailed;
+    var vertex_entry_buf: [64]u8 = undefined;
+    var fragment_entry_buf: [64]u8 = undefined;
+    const vertex_entry = resolve_entry_point_name(cmd.vertex_entry_point, "main", &vertex_entry_buf);
+    const fragment_entry = resolve_entry_point_name(cmd.fragment_entry_point, "main", &fragment_entry_buf);
+
+    var vertex_shader_info = c.VkShaderModuleCreateInfo{
+        .sType = c.VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+        .pNext = null,
+        .flags = 0,
+        .codeSize = vertex_spirv_words.len * @sizeOf(u32),
+        .pCode = vertex_spirv_words.ptr,
+    };
+    try c.check_vk(c.vkCreateShaderModule(self.device, &vertex_shader_info, null, &state.vertex_shader));
+
+    var fragment_shader_info = c.VkShaderModuleCreateInfo{
+        .sType = c.VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+        .pNext = null,
+        .flags = 0,
+        .codeSize = fragment_spirv_words.len * @sizeOf(u32),
+        .pCode = fragment_spirv_words.ptr,
+    };
+    try c.check_vk(c.vkCreateShaderModule(self.device, &fragment_shader_info, null, &state.fragment_shader));
+
+    var layout_info = c.VkPipelineLayoutCreateInfo{
+        .sType = c.VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+        .pNext = null,
+        .flags = 0,
+        .setLayoutCount = 0,
+        .pSetLayouts = null,
+        .pushConstantRangeCount = 0,
+        .pPushConstantRanges = null,
+    };
+    try c.check_vk(c.vkCreatePipelineLayout(self.device, &layout_info, null, &state.graphics_pipeline_layout));
+
+    const stages = [2]c.VkPipelineShaderStageCreateInfo{
+        .{
+            .sType = c.VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+            .pNext = null,
+            .flags = 0,
+            .stage = c.VK_SHADER_STAGE_VERTEX_BIT,
+            .module = state.vertex_shader,
+            .pName = vertex_entry,
+            .pSpecializationInfo = null,
+        },
+        .{
+            .sType = c.VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+            .pNext = null,
+            .flags = 0,
+            .stage = c.VK_SHADER_STAGE_FRAGMENT_BIT,
+            .module = state.fragment_shader,
+            .pName = fragment_entry,
+            .pSpecializationInfo = null,
+        },
+    };
+
+    var vertex_binding_descriptions: [model.MAX_VERTEX_BUFFERS]c.VkVertexInputBindingDescription = undefined;
+    var vertex_attribute_descriptions: [model.MAX_VERTEX_BUFFERS * model.MAX_VERTEX_ATTRIBUTES]c.VkVertexInputAttributeDescription = undefined;
+    var vertex_binding_count: usize = 0;
+    var vertex_attribute_count: usize = 0;
+    if (cmd.vertex_layouts) |layouts| {
+        const layout_count = @min(layouts.len, model.MAX_VERTEX_BUFFERS);
+        var layout_index: usize = 0;
+        while (layout_index < layout_count) : (layout_index += 1) {
+            const layout = layouts[layout_index];
+            vertex_binding_descriptions[vertex_binding_count] = .{
+                .binding = @intCast(layout_index),
+                .stride = @intCast(@min(layout.array_stride, @as(u64, std.math.maxInt(u32)))),
+                .inputRate = vertex_step_mode_to_vk(layout.step_mode),
+            };
+            vertex_binding_count += 1;
+
+            const attr_count = @min(@as(usize, layout.attribute_count), model.MAX_VERTEX_ATTRIBUTES);
+            var attr_index: usize = 0;
+            while (attr_index < attr_count and vertex_attribute_count < vertex_attribute_descriptions.len) : (attr_index += 1) {
+                const attr = layout.attributes[attr_index];
+                vertex_attribute_descriptions[vertex_attribute_count] = .{
+                    .location = attr.shader_location,
+                    .binding = @intCast(layout_index),
+                    .format = try vk_formats.wgpu_vertex_format_to_vk(attr.format),
+                    .offset = @intCast(@min(attr.offset, @as(u64, std.math.maxInt(u32)))),
+                };
+                vertex_attribute_count += 1;
+            }
+        }
+    }
+
+    var vertex_input = c.VkPipelineVertexInputStateCreateInfo{
+        .sType = c.VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+        .pNext = null,
+        .flags = 0,
+        .vertexBindingDescriptionCount = @intCast(vertex_binding_count),
+        .pVertexBindingDescriptions = if (vertex_binding_count > 0) vertex_binding_descriptions[0..vertex_binding_count].ptr else null,
+        .vertexAttributeDescriptionCount = @intCast(vertex_attribute_count),
+        .pVertexAttributeDescriptions = if (vertex_attribute_count > 0) vertex_attribute_descriptions[0..vertex_attribute_count].ptr else null,
+    };
+
+    var input_assembly = c.VkPipelineInputAssemblyStateCreateInfo{
+        .sType = c.VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
+        .pNext = null,
+        .flags = 0,
+        .topology = topology_to_vk(cmd.topology),
+        .primitiveRestartEnable = c.VK_FALSE,
+    };
+
+    var viewport_state = c.VkPipelineViewportStateCreateInfo{
+        .sType = c.VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+        .pNext = null,
+        .flags = 0,
+        .viewportCount = 1,
+        .pViewports = null,
+        .scissorCount = 1,
+        .pScissors = null,
+    };
+
+    const use_unclipped = cmd.unclipped_depth and self.has_depth_clip_enable_ext;
+    if (cmd.unclipped_depth and !self.has_depth_clip_enable_ext) {
+        std.debug.print("vk_render: unclippedDepth requested but VK_EXT_depth_clip_enable unavailable; falling back to standard clipping\n", .{});
+    }
+
+    var depth_clip_state = c.VkPipelineRasterizationDepthClipStateCreateInfoEXT{
+        .sType = c.VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_DEPTH_CLIP_STATE_CREATE_INFO_EXT,
+        .pNext = null,
+        .flags = 0,
+        .depthClipEnable = c.VK_FALSE,
+    };
+    var rasterization = c.VkPipelineRasterizationStateCreateInfo{
+        .sType = c.VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
+        .pNext = if (use_unclipped) @ptrCast(&depth_clip_state) else null,
+        .flags = 0,
+        .depthClampEnable = if (use_unclipped) c.VK_TRUE else c.VK_FALSE,
+        .rasterizerDiscardEnable = c.VK_FALSE,
+        .polygonMode = c.VK_POLYGON_MODE_FILL,
+        .cullMode = cull_mode_to_vk(cmd.cull_mode),
+        .frontFace = front_face_to_vk(cmd.front_face),
+        .depthBiasEnable = c.VK_FALSE,
+        .depthBiasConstantFactor = 0.0,
+        .depthBiasClamp = 0.0,
+        .depthBiasSlopeFactor = 0.0,
+        .lineWidth = 1.0,
+    };
+
+    var multisample = c.VkPipelineMultisampleStateCreateInfo{
+        .sType = c.VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+        .pNext = null,
+        .flags = 0,
+        .rasterizationSamples = sample_count_to_vk(cmd.sample_count),
+        .sampleShadingEnable = c.VK_FALSE,
+        .minSampleShading = 1.0,
+        .pSampleMask = null,
+        .alphaToCoverageEnable = c.VK_FALSE,
+        .alphaToOneEnable = c.VK_FALSE,
+    };
+
+    const COLOR_WRITE_ALL = c.VK_COLOR_COMPONENT_R_BIT |
+        c.VK_COLOR_COMPONENT_G_BIT |
+        c.VK_COLOR_COMPONENT_B_BIT |
+        c.VK_COLOR_COMPONENT_A_BIT;
+
+    var blend_attachment = c.VkPipelineColorBlendAttachmentState{
+        .blendEnable = if (cmd.blend_enabled) c.VK_TRUE else c.VK_FALSE,
+        .srcColorBlendFactor = blend_factor_to_vk(cmd.color_src_factor),
+        .dstColorBlendFactor = blend_factor_to_vk(cmd.color_dst_factor),
+        .colorBlendOp = blend_operation_to_vk(cmd.color_operation),
+        .srcAlphaBlendFactor = blend_factor_to_vk(cmd.alpha_src_factor),
+        .dstAlphaBlendFactor = blend_factor_to_vk(cmd.alpha_dst_factor),
+        .alphaBlendOp = blend_operation_to_vk(cmd.alpha_operation),
+        .colorWriteMask = color_write_mask_to_vk(cmd.color_write_mask, COLOR_WRITE_ALL),
+    };
+
+    var color_blend = c.VkPipelineColorBlendStateCreateInfo{
+        .sType = c.VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+        .pNext = null,
+        .flags = 0,
+        .logicOpEnable = c.VK_FALSE,
+        .logicOp = c.VK_LOGIC_OP_CLEAR,
+        .attachmentCount = 1,
+        .pAttachments = @ptrCast(&blend_attachment),
+        .blendConstants = cmd.blend_constant,
+    };
+
+    const dynamic_states = [_]u32{
+        c.VK_DYNAMIC_STATE_VIEWPORT,
+        c.VK_DYNAMIC_STATE_SCISSOR,
+    };
+    var dynamic_state = c.VkPipelineDynamicStateCreateInfo{
+        .sType = c.VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+        .pNext = null,
+        .flags = 0,
+        .dynamicStateCount = dynamic_states.len,
+        .pDynamicStates = &dynamic_states,
+    };
+    const has_depth_stencil = cmd.depth_stencil_format != model.WGPUTextureFormat_Undefined;
+    const has_stencil = has_depth_stencil and format_has_stencil(cmd.depth_stencil_format);
+    var depth_stencil_state = VkPipelineDepthStencilStateCreateInfo{
+        .sType = c.VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
+        .pNext = null,
+        .flags = 0,
+        .depthTestEnable = if (cmd.depth_compare != 0) c.VK_TRUE else c.VK_FALSE,
+        .depthWriteEnable = if (cmd.depth_write_enabled) c.VK_TRUE else c.VK_FALSE,
+        .depthCompareOp = wgpu_compare_to_vk(cmd.depth_compare),
+        .depthBoundsTestEnable = c.VK_FALSE,
+        .stencilTestEnable = if (has_stencil) c.VK_TRUE else c.VK_FALSE,
+        .front = .{
+            .failOp = wgpu_stencil_op_to_vk(cmd.stencil_front_fail_op),
+            .passOp = wgpu_stencil_op_to_vk(cmd.stencil_front_pass_op),
+            .depthFailOp = wgpu_stencil_op_to_vk(cmd.stencil_front_depth_fail_op),
+            .compareOp = wgpu_compare_to_vk(cmd.stencil_front_compare),
+            .compareMask = cmd.stencil_read_mask,
+            .writeMask = cmd.stencil_write_mask,
+            .reference = cmd.stencil_reference,
+        },
+        .back = .{
+            .failOp = wgpu_stencil_op_to_vk(cmd.stencil_back_fail_op),
+            .passOp = wgpu_stencil_op_to_vk(cmd.stencil_back_pass_op),
+            .depthFailOp = wgpu_stencil_op_to_vk(cmd.stencil_back_depth_fail_op),
+            .compareOp = wgpu_compare_to_vk(cmd.stencil_back_compare),
+            .compareMask = cmd.stencil_read_mask,
+            .writeMask = cmd.stencil_write_mask,
+            .reference = cmd.stencil_reference,
+        },
+        .minDepthBounds = 0.0,
+        .maxDepthBounds = 1.0,
+    };
+
+    var pipeline_info = c.VkGraphicsPipelineCreateInfo{
+        .sType = c.VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+        .pNext = null,
+        .flags = 0,
+        .stageCount = 2,
+        .pStages = &stages,
+        .pVertexInputState = &vertex_input,
+        .pInputAssemblyState = &input_assembly,
+        .pTessellationState = null,
+        .pViewportState = &viewport_state,
+        .pRasterizationState = &rasterization,
+        .pMultisampleState = &multisample,
+        .pDepthStencilState = if (has_depth_stencil) @ptrCast(&depth_stencil_state) else null,
+        .pColorBlendState = &color_blend,
+        .pDynamicState = &dynamic_state,
+        .layout = state.graphics_pipeline_layout,
+        .renderPass = state.render_pass,
+        .subpass = 0,
+        .basePipelineHandle = VK_NULL_U64,
+        .basePipelineIndex = -1,
+    };
+    try c.check_vk(c.vkCreateGraphicsPipelines(
+        self.device,
+        VK_NULL_U64,
+        1,
+        @ptrCast(&pipeline_info),
+        null,
+        @ptrCast(&state.graphics_pipeline),
+    ));
+}

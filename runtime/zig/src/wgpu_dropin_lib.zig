@@ -14,6 +14,8 @@ const dropin_abi_procs = @import("dropin/dropin_abi_procs.zig");
 const dropin_build_info = @import("dropin/dropin_build_info.zig");
 
 const build_options = @import("build_options");
+pub const BuildTier = @TypeOf(build_options.build_tier);
+pub const TIER = build_options.build_tier;
 const DROPIN_BEHAVIOR_CONFIG_JSON = build_options.dropin_behavior_config_json;
 const DROPIN_SYMBOL_OWNERSHIP_CONFIG_JSON = build_options.dropin_symbol_ownership_config_json;
 const DROPIN_BEHAVIOR_DEFAULT_MODE: dropin_behavior_policy.BehaviorMode = .dawn_ownership;
@@ -279,17 +281,21 @@ fn nativeFromSymbol(comptime FnType: type, comptime symbol_name: [:0]const u8) ?
 /// Resolve a standard wgpu* symbol to the corresponding doeNative* implementation.
 /// Returns null for symbols not yet implemented natively.
 fn resolveDoeNativeProc(comptime FnType: type, comptime symbol_name: [:0]const u8) ?FnType {
-    if (comptime @import("builtin").os.tag != .macos) return null;
     const N = @import("doe_wgpu_native.zig");
     // Instance / Adapter / Device lifecycle
     if (comptime std.mem.eql(u8, symbol_name, "wgpuCreateInstance")) return @ptrCast(&N.doeNativeCreateInstance);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuInstanceAddRef")) return @ptrCast(&N.doeNativeInstanceAddRef);
     if (comptime std.mem.eql(u8, symbol_name, "wgpuInstanceRelease")) return @ptrCast(&N.doeNativeInstanceRelease);
     if (comptime std.mem.eql(u8, symbol_name, "wgpuInstanceWaitAny")) return @ptrCast(&N.doeNativeInstanceWaitAny);
     if (comptime std.mem.eql(u8, symbol_name, "wgpuInstanceProcessEvents")) return @ptrCast(&N.doeNativeInstanceProcessEvents);
     if (comptime std.mem.eql(u8, symbol_name, "wgpuInstanceRequestAdapter")) return @ptrCast(&N.doeNativeInstanceRequestAdapter);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuAdapterAddRef")) return @ptrCast(&N.doeNativeAdapterAddRef);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuAdapterGetInstance")) return @ptrCast(&N.doeNativeAdapterGetInstance);
     if (comptime std.mem.eql(u8, symbol_name, "wgpuAdapterRequestDevice")) return @ptrCast(&N.doeNativeAdapterRequestDevice);
     if (comptime std.mem.eql(u8, symbol_name, "wgpuAdapterRelease")) return @ptrCast(&N.doeNativeAdapterRelease);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuDeviceAddRef")) return @ptrCast(&N.doeNativeDeviceAddRef);
     if (comptime std.mem.eql(u8, symbol_name, "wgpuDeviceRelease")) return @ptrCast(&N.doeNativeDeviceRelease);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuDeviceGetAdapter")) return @ptrCast(&N.doeNativeDeviceGetAdapter);
     if (comptime std.mem.eql(u8, symbol_name, "wgpuDeviceGetQueue")) return @ptrCast(&N.doeNativeDeviceGetQueue);
     // Buffer
     if (comptime std.mem.eql(u8, symbol_name, "wgpuDeviceCreateBuffer")) return @ptrCast(&N.doeNativeDeviceCreateBuffer);
@@ -297,6 +303,7 @@ fn resolveDoeNativeProc(comptime FnType: type, comptime symbol_name: [:0]const u
     if (comptime std.mem.eql(u8, symbol_name, "wgpuBufferUnmap")) return @ptrCast(&N.doeNativeBufferUnmap);
     if (comptime std.mem.eql(u8, symbol_name, "wgpuBufferMapAsync")) return @ptrCast(&N.doeNativeBufferMapAsync);
     if (comptime std.mem.eql(u8, symbol_name, "wgpuBufferGetConstMappedRange")) return @ptrCast(&N.doeNativeBufferGetConstMappedRange);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuBufferGetMappedRange")) return @ptrCast(&N.doeNativeBufferGetMappedRange);
     // Shader / Compute Pipeline
     if (comptime std.mem.eql(u8, symbol_name, "wgpuDeviceCreateShaderModule")) return @ptrCast(&N.doeNativeDeviceCreateShaderModule);
     if (comptime std.mem.eql(u8, symbol_name, "wgpuShaderModuleRelease")) return @ptrCast(&N.doeNativeShaderModuleRelease);
@@ -319,39 +326,92 @@ fn resolveDoeNativeProc(comptime FnType: type, comptime symbol_name: [:0]const u
     if (comptime std.mem.eql(u8, symbol_name, "wgpuComputePassEncoderDispatchWorkgroups")) return @ptrCast(&N.doeNativeComputePassDispatch);
     if (comptime std.mem.eql(u8, symbol_name, "wgpuComputePassEncoderEnd")) return @ptrCast(&N.doeNativeComputePassEnd);
     if (comptime std.mem.eql(u8, symbol_name, "wgpuComputePassEncoderRelease")) return @ptrCast(&N.doeNativeComputePassRelease);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuComputePassEncoderDispatchWorkgroupsIndirect")) return @ptrCast(&N.doeNativeComputePassDispatchIndirect);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuComputePassEncoderInsertDebugMarker")) return @ptrCast(&N.doeNativeComputePassInsertDebugMarker);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuComputePassEncoderPushDebugGroup")) return @ptrCast(&N.doeNativeComputePassPushDebugGroup);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuComputePassEncoderPopDebugGroup")) return @ptrCast(&N.doeNativeComputePassPopDebugGroup);
     if (comptime std.mem.eql(u8, symbol_name, "wgpuCommandEncoderCopyBufferToBuffer")) return @ptrCast(&N.doeNativeCopyBufferToBuffer);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuCommandEncoderCopyBufferToTexture")) return @ptrCast(&dropin_ext_b.doeAbiBridgeCopyBufferToTexture);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuCommandEncoderCopyTextureToBuffer")) return @ptrCast(&dropin_ext_b.doeAbiBridgeCopyTextureToBuffer);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuCommandEncoderCopyTextureToTexture")) return @ptrCast(&dropin_ext_b.doeAbiBridgeCopyTextureToTexture);
     if (comptime std.mem.eql(u8, symbol_name, "wgpuCommandEncoderFinish")) return @ptrCast(&N.doeNativeCommandEncoderFinish);
     if (comptime std.mem.eql(u8, symbol_name, "wgpuCommandBufferRelease")) return @ptrCast(&N.doeNativeCommandBufferRelease);
     // Queue
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuQueueAddRef")) return @ptrCast(&N.doeNativeQueueAddRef);
     if (comptime std.mem.eql(u8, symbol_name, "wgpuQueueSubmit")) return @ptrCast(&N.doeNativeQueueSubmit);
     if (comptime std.mem.eql(u8, symbol_name, "wgpuQueueWriteBuffer")) return @ptrCast(&N.doeNativeQueueWriteBuffer);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuQueueWriteTexture")) return @ptrCast(&dropin_ext_c.doeAbiBridgeQueueWriteTexture);
     if (comptime std.mem.eql(u8, symbol_name, "wgpuQueueRelease")) return @ptrCast(&N.doeNativeQueueRelease);
     if (comptime std.mem.eql(u8, symbol_name, "wgpuQueueOnSubmittedWorkDone")) return @ptrCast(&N.doeNativeQueueOnSubmittedWorkDone);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuQueueCopyExternalImageToTexture")) return @ptrCast(&N.doeNativeQueueCopyExternalImageToTexture);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuQueueCopyExternalTextureForBrowser")) return @ptrCast(&dropin_ext_c.wgpuQueueCopyExternalTextureForBrowser);
     // Feature queries
     if (comptime std.mem.eql(u8, symbol_name, "wgpuAdapterHasFeature")) return @ptrCast(&N.doeNativeAdapterHasFeature);
     if (comptime std.mem.eql(u8, symbol_name, "wgpuDeviceHasFeature")) return @ptrCast(&N.doeNativeDeviceHasFeature);
     // Limits
     if (comptime std.mem.eql(u8, symbol_name, "wgpuDeviceGetLimits")) return @ptrCast(&N.doeNativeDeviceGetLimits);
     if (comptime std.mem.eql(u8, symbol_name, "wgpuAdapterGetLimits")) return @ptrCast(&N.doeNativeAdapterGetLimits);
-    // Texture / Render (v0.2)
-    if (comptime std.mem.eql(u8, symbol_name, "wgpuDeviceCreateTexture")) return @ptrCast(&N.doeNativeDeviceCreateTexture);
-    if (comptime std.mem.eql(u8, symbol_name, "wgpuTextureCreateView")) return @ptrCast(&N.doeNativeTextureCreateView);
-    if (comptime std.mem.eql(u8, symbol_name, "wgpuTextureRelease")) return @ptrCast(&N.doeNativeTextureRelease);
-    if (comptime std.mem.eql(u8, symbol_name, "wgpuTextureViewRelease")) return @ptrCast(&N.doeNativeTextureViewRelease);
-    if (comptime std.mem.eql(u8, symbol_name, "wgpuDeviceCreateRenderPipeline")) return @ptrCast(&N.doeNativeDeviceCreateRenderPipeline);
-    if (comptime std.mem.eql(u8, symbol_name, "wgpuRenderPipelineRelease")) return @ptrCast(&N.doeNativeRenderPipelineRelease);
-    if (comptime std.mem.eql(u8, symbol_name, "wgpuCommandEncoderBeginRenderPass")) return @ptrCast(&N.doeNativeCommandEncoderBeginRenderPass);
-    if (comptime std.mem.eql(u8, symbol_name, "wgpuRenderPassEncoderSetPipeline")) return @ptrCast(&N.doeNativeRenderPassSetPipeline);
-    if (comptime std.mem.eql(u8, symbol_name, "wgpuRenderPassEncoderSetBindGroup")) return @ptrCast(&N.doeNativeRenderPassSetBindGroup);
-    if (comptime std.mem.eql(u8, symbol_name, "wgpuRenderPassEncoderSetVertexBuffer")) return @ptrCast(&N.doeNativeRenderPassSetVertexBuffer);
-    if (comptime std.mem.eql(u8, symbol_name, "wgpuRenderPassEncoderSetIndexBuffer")) return @ptrCast(&N.doeNativeRenderPassSetIndexBuffer);
-    if (comptime std.mem.eql(u8, symbol_name, "wgpuRenderPassEncoderDraw")) return @ptrCast(&N.doeNativeRenderPassDraw);
-    if (comptime std.mem.eql(u8, symbol_name, "wgpuRenderPassEncoderDrawIndexed")) return @ptrCast(&N.doeNativeRenderPassDrawIndexed);
-    if (comptime std.mem.eql(u8, symbol_name, "wgpuRenderPassEncoderEnd")) return @ptrCast(&N.doeNativeRenderPassEnd);
-    if (comptime std.mem.eql(u8, symbol_name, "wgpuRenderPassEncoderRelease")) return @ptrCast(&N.doeNativeRenderPassRelease);
-    // Sampler
-    if (comptime std.mem.eql(u8, symbol_name, "wgpuDeviceCreateSampler")) return @ptrCast(&N.doeNativeDeviceCreateSampler);
-    if (comptime std.mem.eql(u8, symbol_name, "wgpuSamplerRelease")) return @ptrCast(&N.doeNativeSamplerRelease);
+    // Query set
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuQuerySetDestroy")) return @ptrCast(&N.doeNativeQuerySetDestroy);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuQuerySetRelease")) return @ptrCast(&N.doeNativeQuerySetRelease);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuQuerySetGetCount")) return @ptrCast(&N.doeNativeQuerySetGetCount);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuQuerySetGetType")) return @ptrCast(&N.doeNativeQuerySetGetType);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuCommandEncoderWriteTimestamp")) return @ptrCast(&N.doeNativeCommandEncoderWriteTimestamp);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuCommandEncoderResolveQuerySet")) return @ptrCast(&N.doeNativeCommandEncoderResolveQuerySet);
+    // Error scopes
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuDevicePushErrorScope")) return @ptrCast(&N.doeNativeDevicePushErrorScope);
+    // Texture / Render — gated to headless and full tiers.
+    if (comptime TIER != .compute) {
+        if (comptime std.mem.eql(u8, symbol_name, "wgpuDeviceCreateTexture")) return @ptrCast(&N.doeNativeDeviceCreateTexture);
+        if (comptime std.mem.eql(u8, symbol_name, "wgpuTextureCreateView")) return @ptrCast(&N.doeNativeTextureCreateView);
+        if (comptime std.mem.eql(u8, symbol_name, "wgpuTextureDestroy")) return @ptrCast(&N.doeNativeTextureDestroy);
+        if (comptime std.mem.eql(u8, symbol_name, "wgpuTextureRelease")) return @ptrCast(&N.doeNativeTextureRelease);
+        if (comptime std.mem.eql(u8, symbol_name, "wgpuTextureViewRelease")) return @ptrCast(&N.doeNativeTextureViewRelease);
+        if (comptime std.mem.eql(u8, symbol_name, "wgpuDeviceCreateRenderPipeline")) return @ptrCast(&N.doeNativeDeviceCreateRenderPipeline);
+        if (comptime std.mem.eql(u8, symbol_name, "wgpuRenderPipelineGetBindGroupLayout")) return @ptrCast(&N.doeNativeRenderPipelineGetBindGroupLayout);
+        if (comptime std.mem.eql(u8, symbol_name, "wgpuRenderPipelineRelease")) return @ptrCast(&N.doeNativeRenderPipelineRelease);
+        if (comptime std.mem.eql(u8, symbol_name, "wgpuCommandEncoderBeginRenderPass")) return @ptrCast(&N.doeNativeCommandEncoderBeginRenderPass);
+        if (comptime std.mem.eql(u8, symbol_name, "wgpuRenderPassEncoderSetPipeline")) return @ptrCast(&N.doeNativeRenderPassSetPipeline);
+        if (comptime std.mem.eql(u8, symbol_name, "wgpuRenderPassEncoderSetBindGroup")) return @ptrCast(&N.doeNativeRenderPassSetBindGroup);
+        if (comptime std.mem.eql(u8, symbol_name, "wgpuRenderPassEncoderSetVertexBuffer")) return @ptrCast(&N.doeNativeRenderPassSetVertexBuffer);
+        if (comptime std.mem.eql(u8, symbol_name, "wgpuRenderPassEncoderSetIndexBuffer")) return @ptrCast(&N.doeNativeRenderPassSetIndexBuffer);
+        if (comptime std.mem.eql(u8, symbol_name, "wgpuRenderPassEncoderDraw")) return @ptrCast(&N.doeNativeRenderPassDraw);
+        if (comptime std.mem.eql(u8, symbol_name, "wgpuRenderPassEncoderDrawIndexed")) return @ptrCast(&N.doeNativeRenderPassDrawIndexed);
+        if (comptime std.mem.eql(u8, symbol_name, "wgpuRenderPassEncoderDrawIndirect")) return @ptrCast(&N.doeNativeRenderPassDrawIndirect);
+        if (comptime std.mem.eql(u8, symbol_name, "wgpuRenderPassEncoderDrawIndexedIndirect")) return @ptrCast(&N.doeNativeRenderPassDrawIndexedIndirect);
+        if (comptime std.mem.eql(u8, symbol_name, "wgpuRenderPassEncoderEnd")) return @ptrCast(&N.doeNativeRenderPassEnd);
+        if (comptime std.mem.eql(u8, symbol_name, "wgpuRenderPassEncoderRelease")) return @ptrCast(&N.doeNativeRenderPassRelease);
+        if (comptime std.mem.eql(u8, symbol_name, "wgpuDeviceCreateSampler")) return @ptrCast(&N.doeNativeDeviceCreateSampler);
+        if (comptime std.mem.eql(u8, symbol_name, "wgpuSamplerRelease")) return @ptrCast(&N.doeNativeSamplerRelease);
+        // Render bundle
+        if (comptime std.mem.eql(u8, symbol_name, "wgpuDeviceCreateRenderBundleEncoder")) return @ptrCast(&N.doeNativeDeviceCreateRenderBundleEncoder);
+        if (comptime std.mem.eql(u8, symbol_name, "wgpuRenderBundleEncoderFinish")) return @ptrCast(&N.doeNativeRenderBundleEncoderFinish);
+        if (comptime std.mem.eql(u8, symbol_name, "wgpuRenderBundleRelease")) return @ptrCast(&N.doeNativeRenderBundleRelease);
+        if (comptime std.mem.eql(u8, symbol_name, "wgpuRenderBundleEncoderRelease")) return @ptrCast(&N.doeNativeRenderBundleEncoderRelease);
+        if (comptime std.mem.eql(u8, symbol_name, "wgpuRenderBundleEncoderSetPipeline")) return @ptrCast(&N.doeNativeRenderBundleEncoderSetPipeline);
+        if (comptime std.mem.eql(u8, symbol_name, "wgpuRenderBundleEncoderSetBindGroup")) return @ptrCast(&N.doeNativeRenderBundleEncoderSetBindGroup);
+        if (comptime std.mem.eql(u8, symbol_name, "wgpuRenderBundleEncoderSetVertexBuffer")) return @ptrCast(&N.doeNativeRenderBundleEncoderSetVertexBuffer);
+        if (comptime std.mem.eql(u8, symbol_name, "wgpuRenderBundleEncoderSetIndexBuffer")) return @ptrCast(&N.doeNativeRenderBundleEncoderSetIndexBuffer);
+        if (comptime std.mem.eql(u8, symbol_name, "wgpuRenderBundleEncoderDraw")) return @ptrCast(&N.doeNativeRenderBundleEncoderDraw);
+        if (comptime std.mem.eql(u8, symbol_name, "wgpuRenderBundleEncoderDrawIndexed")) return @ptrCast(&N.doeNativeRenderBundleEncoderDrawIndexed);
+        if (comptime std.mem.eql(u8, symbol_name, "wgpuRenderBundleEncoderDrawIndirect")) return @ptrCast(&N.doeNativeRenderBundleEncoderDrawIndirect);
+        if (comptime std.mem.eql(u8, symbol_name, "wgpuRenderBundleEncoderDrawIndexedIndirect")) return @ptrCast(&N.doeNativeRenderBundleEncoderDrawIndexedIndirect);
+        if (comptime std.mem.eql(u8, symbol_name, "wgpuRenderPassEncoderExecuteBundles")) return @ptrCast(&N.doeNativeRenderPassExecuteBundles);
+        // Occlusion queries
+        if (comptime std.mem.eql(u8, symbol_name, "wgpuRenderPassEncoderBeginOcclusionQuery")) return @ptrCast(&N.doeNativeRenderPassBeginOcclusionQuery);
+        if (comptime std.mem.eql(u8, symbol_name, "wgpuRenderPassEncoderEndOcclusionQuery")) return @ptrCast(&N.doeNativeRenderPassEndOcclusionQuery);
+    }
+    // Surface — full tier only (presentation requires windowing).
+    if (comptime TIER == .full) {
+        if (comptime std.mem.eql(u8, symbol_name, "wgpuInstanceCreateSurface")) return @ptrCast(&N.doeAbiBridgeInstanceCreateSurface);
+        if (comptime std.mem.eql(u8, symbol_name, "wgpuSurfaceConfigure")) return @ptrCast(&N.doeAbiBridgeSurfaceConfigure);
+        if (comptime std.mem.eql(u8, symbol_name, "wgpuSurfaceGetCurrentTexture")) return @ptrCast(&N.doeAbiBridgeSurfaceGetCurrentTexture);
+        if (comptime std.mem.eql(u8, symbol_name, "wgpuSurfacePresent")) return @ptrCast(&N.doeAbiBridgeSurfacePresent);
+        if (comptime std.mem.eql(u8, symbol_name, "wgpuSurfaceUnconfigure")) return @ptrCast(&N.doeNativeSurfaceUnconfigure);
+        if (comptime std.mem.eql(u8, symbol_name, "wgpuSurfaceRelease")) return @ptrCast(&N.doeNativeSurfaceRelease);
+        if (comptime std.mem.eql(u8, symbol_name, "wgpuSurfaceGetCapabilities")) return @ptrCast(&N.doeNativeSurfaceGetCapabilities);
+        if (comptime std.mem.eql(u8, symbol_name, "wgpuSurfaceCapabilitiesFreeMembers")) return @ptrCast(&N.doeNativeSurfaceCapabilitiesFreeMembers);
+    }
     return null;
 }
 
@@ -479,30 +539,65 @@ fn resolveLocalProc(name: types.WGPUStringView) p1_capability_procs.WGPUProc {
     const P = dropin_abi_procs;
     if (symbolViewEq(name, "wgpuGetProcAddress")) return fnPtr(&wgpuGetProcAddress);
     if (symbolViewEq(name, "wgpuCreateInstance")) return fnPtr(&P.wgpuCreateInstance);
+    if (symbolViewEq(name, "wgpuInstanceAddRef")) return fnPtr(&dropin_ext_a.wgpuInstanceAddRef);
     if (symbolViewEq(name, "wgpuInstanceRequestAdapter")) return fnPtr(&P.wgpuInstanceRequestAdapter);
     if (symbolViewEq(name, "wgpuInstanceWaitAny")) return fnPtr(&P.wgpuInstanceWaitAny);
     if (symbolViewEq(name, "wgpuInstanceProcessEvents")) return fnPtr(&P.wgpuInstanceProcessEvents);
+    if (symbolViewEq(name, "wgpuAdapterAddRef")) return fnPtr(&dropin_ext_a.wgpuAdapterAddRef);
+    if (symbolViewEq(name, "wgpuAdapterCreateDevice")) return fnPtr(&P.wgpuAdapterCreateDevice);
+    if (symbolViewEq(name, "wgpuAdapterGetFeatures")) return fnPtr(&dropin_ext_a.wgpuAdapterGetFeatures);
+    if (symbolViewEq(name, "wgpuAdapterGetInfo")) return fnPtr(&dropin_ext_a.wgpuAdapterGetInfo);
+    if (symbolViewEq(name, "wgpuAdapterGetInstance")) return fnPtr(&dropin_ext_a.wgpuAdapterGetInstance);
+    if (symbolViewEq(name, "wgpuAdapterGetLimits")) return fnPtr(&dropin_ext_a.wgpuAdapterGetLimits);
+    if (symbolViewEq(name, "wgpuAdapterInfoFreeMembers")) return fnPtr(&dropin_ext_a.wgpuAdapterInfoFreeMembers);
     if (symbolViewEq(name, "wgpuAdapterRequestDevice")) return fnPtr(&P.wgpuAdapterRequestDevice);
+    if (symbolViewEq(name, "wgpuBindGroupAddRef")) return fnPtr(&dropin_ext_a.wgpuBindGroupAddRef);
+    if (symbolViewEq(name, "wgpuBindGroupLayoutAddRef")) return fnPtr(&dropin_ext_a.wgpuBindGroupLayoutAddRef);
+    if (symbolViewEq(name, "wgpuBindGroupLayoutSetLabel")) return fnPtr(&dropin_ext_c.wgpuBindGroupLayoutSetLabel);
+    if (symbolViewEq(name, "wgpuBindGroupSetLabel")) return fnPtr(&dropin_ext_c.wgpuBindGroupSetLabel);
+    if (symbolViewEq(name, "wgpuBufferAddRef")) return fnPtr(&dropin_ext_a.wgpuBufferAddRef);
+    if (symbolViewEq(name, "wgpuBufferGetMappedRange")) return fnPtr(&@import("doe_wgpu_native.zig").doeNativeBufferGetMappedRange);
+    if (symbolViewEq(name, "wgpuBufferSetLabel")) return fnPtr(&dropin_ext_c.wgpuBufferSetLabel);
+    if (symbolViewEq(name, "wgpuDeviceAddRef")) return fnPtr(&dropin_ext_a.wgpuDeviceAddRef);
     if (symbolViewEq(name, "wgpuDeviceCreateBuffer")) return fnPtr(&P.wgpuDeviceCreateBuffer);
     if (symbolViewEq(name, "wgpuDeviceCreateShaderModule")) return fnPtr(&P.wgpuDeviceCreateShaderModule);
+    if (symbolViewEq(name, "wgpuCommandBufferAddRef")) return fnPtr(&dropin_ext_a.wgpuCommandBufferAddRef);
+    if (symbolViewEq(name, "wgpuCommandBufferSetLabel")) return fnPtr(&dropin_ext_c.wgpuCommandBufferSetLabel);
+    if (symbolViewEq(name, "wgpuCommandEncoderAddRef")) return fnPtr(&dropin_ext_a.wgpuCommandEncoderAddRef);
     if (symbolViewEq(name, "wgpuShaderModuleRelease")) return fnPtr(&P.wgpuShaderModuleRelease);
+    if (symbolViewEq(name, "wgpuCommandEncoderSetLabel")) return fnPtr(&dropin_ext_c.wgpuCommandEncoderSetLabel);
+    if (symbolViewEq(name, "wgpuComputePassEncoderAddRef")) return fnPtr(&dropin_ext_a.wgpuComputePassEncoderAddRef);
+    if (symbolViewEq(name, "wgpuComputePassEncoderSetLabel")) return fnPtr(&dropin_ext_c.wgpuComputePassEncoderSetLabel);
     if (symbolViewEq(name, "wgpuDeviceCreateComputePipeline")) return fnPtr(&P.wgpuDeviceCreateComputePipeline);
+    if (symbolViewEq(name, "wgpuComputePipelineAddRef")) return fnPtr(&dropin_ext_a.wgpuComputePipelineAddRef);
+    if (symbolViewEq(name, "wgpuComputePipelineGetBindGroupLayout")) return fnPtr(&@import("doe_wgpu_native.zig").doeNativeComputePipelineGetBindGroupLayout);
+    if (symbolViewEq(name, "wgpuComputePipelineSetLabel")) return fnPtr(&dropin_ext_c.wgpuComputePipelineSetLabel);
     if (symbolViewEq(name, "wgpuComputePipelineRelease")) return fnPtr(&P.wgpuComputePipelineRelease);
     if (symbolViewEq(name, "wgpuRenderPipelineRelease")) return fnPtr(&P.wgpuRenderPipelineRelease);
+    if (symbolViewEq(name, "wgpuDeviceDestroy")) return fnPtr(&dropin_ext_a.wgpuDeviceDestroy);
     if (symbolViewEq(name, "wgpuDeviceCreateCommandEncoder")) return fnPtr(&P.wgpuDeviceCreateCommandEncoder);
+    if (symbolViewEq(name, "wgpuDevicePopErrorScope")) return fnPtr(&dropin_ext_a.wgpuDevicePopErrorScope);
+    if (symbolViewEq(name, "wgpuDevicePushErrorScope")) return fnPtr(&dropin_ext_a.wgpuDevicePushErrorScope);
+    if (symbolViewEq(name, "wgpuDeviceSetLabel")) return fnPtr(&dropin_ext_c.wgpuDeviceSetLabel);
+    if (symbolViewEq(name, "wgpuDeviceSetLoggingCallback")) return fnPtr(&dropin_ext_a.wgpuDeviceSetLoggingCallback);
+    if (symbolViewEq(name, "wgpuDeviceTick")) return fnPtr(&dropin_ext_a.wgpuDeviceTick);
     if (symbolViewEq(name, "wgpuCommandEncoderBeginComputePass")) return fnPtr(&P.wgpuCommandEncoderBeginComputePass);
     if (symbolViewEq(name, "wgpuDeviceCreateRenderPipeline")) return fnPtr(&P.wgpuDeviceCreateRenderPipeline);
     if (symbolViewEq(name, "wgpuCommandEncoderBeginRenderPass")) return fnPtr(&P.wgpuCommandEncoderBeginRenderPass);
     if (symbolViewEq(name, "wgpuCommandEncoderWriteTimestamp")) return fnPtr(&P.wgpuCommandEncoderWriteTimestamp);
     if (symbolViewEq(name, "wgpuCommandEncoderCopyBufferToBuffer")) return fnPtr(&P.wgpuCommandEncoderCopyBufferToBuffer);
-    if (symbolViewEq(name, "wgpuCommandEncoderCopyBufferToTexture")) return fnPtr(&P.wgpuCommandEncoderCopyBufferToTexture);
-    if (symbolViewEq(name, "wgpuCommandEncoderCopyTextureToBuffer")) return fnPtr(&P.wgpuCommandEncoderCopyTextureToBuffer);
-    if (symbolViewEq(name, "wgpuCommandEncoderCopyTextureToTexture")) return fnPtr(&P.wgpuCommandEncoderCopyTextureToTexture);
+    if (symbolViewEq(name, "wgpuCommandEncoderCopyBufferToTexture")) return fnPtr(&dropin_ext_b.doeAbiBridgeCopyBufferToTexture);
+    if (symbolViewEq(name, "wgpuCommandEncoderCopyTextureToBuffer")) return fnPtr(&dropin_ext_b.doeAbiBridgeCopyTextureToBuffer);
+    if (symbolViewEq(name, "wgpuCommandEncoderCopyTextureToTexture")) return fnPtr(&dropin_ext_b.doeAbiBridgeCopyTextureToTexture);
     if (symbolViewEq(name, "wgpuComputePassEncoderSetPipeline")) return fnPtr(&P.wgpuComputePassEncoderSetPipeline);
     if (symbolViewEq(name, "wgpuComputePassEncoderSetBindGroup")) return fnPtr(&P.wgpuComputePassEncoderSetBindGroup);
     if (symbolViewEq(name, "wgpuComputePassEncoderDispatchWorkgroups")) return fnPtr(&P.wgpuComputePassEncoderDispatchWorkgroups);
     if (symbolViewEq(name, "wgpuComputePassEncoderEnd")) return fnPtr(&P.wgpuComputePassEncoderEnd);
     if (symbolViewEq(name, "wgpuComputePassEncoderRelease")) return fnPtr(&P.wgpuComputePassEncoderRelease);
+    if (symbolViewEq(name, "wgpuComputePassEncoderDispatchWorkgroupsIndirect")) return fnPtr(&dropin_ext_a.wgpuComputePassEncoderDispatchWorkgroupsIndirect);
+    if (symbolViewEq(name, "wgpuComputePassEncoderInsertDebugMarker")) return fnPtr(&dropin_ext_c.wgpuComputePassEncoderInsertDebugMarker);
+    if (symbolViewEq(name, "wgpuComputePassEncoderPushDebugGroup")) return fnPtr(&dropin_ext_c.wgpuComputePassEncoderPushDebugGroup);
+    if (symbolViewEq(name, "wgpuComputePassEncoderPopDebugGroup")) return fnPtr(&dropin_ext_c.wgpuComputePassEncoderPopDebugGroup);
     if (symbolViewEq(name, "wgpuRenderPassEncoderSetPipeline")) return fnPtr(&P.wgpuRenderPassEncoderSetPipeline);
     if (symbolViewEq(name, "wgpuRenderPassEncoderSetVertexBuffer")) return fnPtr(&P.wgpuRenderPassEncoderSetVertexBuffer);
     if (symbolViewEq(name, "wgpuRenderPassEncoderSetIndexBuffer")) return fnPtr(&P.wgpuRenderPassEncoderSetIndexBuffer);
@@ -514,19 +609,46 @@ fn resolveLocalProc(name: types.WGPUStringView) p1_capability_procs.WGPUProc {
     if (symbolViewEq(name, "wgpuRenderPassEncoderEnd")) return fnPtr(&P.wgpuRenderPassEncoderEnd);
     if (symbolViewEq(name, "wgpuRenderPassEncoderRelease")) return fnPtr(&P.wgpuRenderPassEncoderRelease);
     if (symbolViewEq(name, "wgpuCommandEncoderFinish")) return fnPtr(&P.wgpuCommandEncoderFinish);
+    if (symbolViewEq(name, "wgpuDeviceGetAdapter")) return fnPtr(&dropin_ext_a.wgpuDeviceGetAdapter);
+    if (symbolViewEq(name, "wgpuDeviceGetAdapterInfo")) return fnPtr(&dropin_ext_a.wgpuDeviceGetAdapterInfo);
+    if (symbolViewEq(name, "wgpuDeviceGetFeatures")) return fnPtr(&dropin_ext_a.wgpuDeviceGetFeatures);
+    if (symbolViewEq(name, "wgpuDeviceGetLimits")) return fnPtr(&dropin_ext_a.wgpuDeviceGetLimits);
     if (symbolViewEq(name, "wgpuDeviceGetQueue")) return fnPtr(&P.wgpuDeviceGetQueue);
+    if (symbolViewEq(name, "wgpuPipelineLayoutAddRef")) return fnPtr(&dropin_ext_a.wgpuPipelineLayoutAddRef);
+    if (symbolViewEq(name, "wgpuPipelineLayoutSetLabel")) return fnPtr(&dropin_ext_c.wgpuPipelineLayoutSetLabel);
+    if (symbolViewEq(name, "wgpuQuerySetAddRef")) return fnPtr(&dropin_ext_a.wgpuQuerySetAddRef);
+    if (symbolViewEq(name, "wgpuQuerySetSetLabel")) return fnPtr(&dropin_ext_c.wgpuQuerySetSetLabel);
+    if (symbolViewEq(name, "wgpuQueueAddRef")) return fnPtr(&dropin_ext_a.wgpuQueueAddRef);
+    if (symbolViewEq(name, "wgpuQueueSetLabel")) return fnPtr(&dropin_ext_c.wgpuQueueSetLabel);
     if (symbolViewEq(name, "wgpuQueueSubmit")) return fnPtr(&P.wgpuQueueSubmit);
     if (symbolViewEq(name, "wgpuQueueOnSubmittedWorkDone")) return fnPtr(&P.wgpuQueueOnSubmittedWorkDone);
     if (symbolViewEq(name, "wgpuQueueWriteBuffer")) return fnPtr(&P.wgpuQueueWriteBuffer);
+    if (symbolViewEq(name, "wgpuQueueWriteTexture")) return fnPtr(&dropin_ext_c.wgpuQueueWriteTexture);
+    if (symbolViewEq(name, "wgpuQueueCopyExternalImageToTexture")) return fnPtr(&@import("doe_wgpu_native.zig").doeNativeQueueCopyExternalImageToTexture);
+    if (symbolViewEq(name, "wgpuQueueCopyExternalTextureForBrowser")) return fnPtr(&dropin_ext_c.wgpuQueueCopyExternalTextureForBrowser);
     if (symbolViewEq(name, "wgpuDeviceCreateTexture")) return fnPtr(&P.wgpuDeviceCreateTexture);
     if (symbolViewEq(name, "wgpuTextureCreateView")) return fnPtr(&P.wgpuTextureCreateView);
+    if (symbolViewEq(name, "wgpuRenderPassEncoderAddRef")) return fnPtr(&dropin_ext_b.wgpuRenderPassEncoderAddRef);
+    if (symbolViewEq(name, "wgpuRenderPassEncoderSetLabel")) return fnPtr(&dropin_ext_c.wgpuRenderPassEncoderSetLabel);
+    if (symbolViewEq(name, "wgpuRenderPipelineAddRef")) return fnPtr(&dropin_ext_b.wgpuRenderPipelineAddRef);
+    if (symbolViewEq(name, "wgpuRenderPipelineGetBindGroupLayout")) return fnPtr(&@import("doe_wgpu_native.zig").doeNativeRenderPipelineGetBindGroupLayout);
+    if (symbolViewEq(name, "wgpuRenderPipelineSetLabel")) return fnPtr(&dropin_ext_c.wgpuRenderPipelineSetLabel);
+    if (symbolViewEq(name, "wgpuSamplerAddRef")) return fnPtr(&dropin_ext_b.wgpuSamplerAddRef);
     if (symbolViewEq(name, "wgpuDeviceCreateBindGroupLayout")) return fnPtr(&P.wgpuDeviceCreateBindGroupLayout);
     if (symbolViewEq(name, "wgpuBindGroupLayoutRelease")) return fnPtr(&P.wgpuBindGroupLayoutRelease);
     if (symbolViewEq(name, "wgpuDeviceCreateBindGroup")) return fnPtr(&P.wgpuDeviceCreateBindGroup);
     if (symbolViewEq(name, "wgpuBindGroupRelease")) return fnPtr(&P.wgpuBindGroupRelease);
     if (symbolViewEq(name, "wgpuDeviceCreatePipelineLayout")) return fnPtr(&P.wgpuDeviceCreatePipelineLayout);
     if (symbolViewEq(name, "wgpuPipelineLayoutRelease")) return fnPtr(&P.wgpuPipelineLayoutRelease);
+    if (symbolViewEq(name, "wgpuSamplerSetLabel")) return fnPtr(&dropin_ext_c.wgpuSamplerSetLabel);
+    if (symbolViewEq(name, "wgpuShaderModuleAddRef")) return fnPtr(&dropin_ext_b.wgpuShaderModuleAddRef);
+    if (symbolViewEq(name, "wgpuShaderModuleSetLabel")) return fnPtr(&dropin_ext_c.wgpuShaderModuleSetLabel);
+    if (symbolViewEq(name, "wgpuTextureAddRef")) return fnPtr(&dropin_ext_b.wgpuTextureAddRef);
+    if (symbolViewEq(name, "wgpuTextureSetLabel")) return fnPtr(&dropin_ext_c.wgpuTextureSetLabel);
+    if (symbolViewEq(name, "wgpuTextureDestroy")) return fnPtr(&@import("doe_wgpu_native.zig").doeNativeTextureDestroy);
     if (symbolViewEq(name, "wgpuTextureRelease")) return fnPtr(&P.wgpuTextureRelease);
+    if (symbolViewEq(name, "wgpuTextureViewAddRef")) return fnPtr(&dropin_ext_b.wgpuTextureViewAddRef);
+    if (symbolViewEq(name, "wgpuTextureViewSetLabel")) return fnPtr(&dropin_ext_c.wgpuTextureViewSetLabel);
     if (symbolViewEq(name, "wgpuTextureViewRelease")) return fnPtr(&P.wgpuTextureViewRelease);
     if (symbolViewEq(name, "wgpuInstanceRelease")) return fnPtr(&P.wgpuInstanceRelease);
     if (symbolViewEq(name, "wgpuAdapterRelease")) return fnPtr(&P.wgpuAdapterRelease);
@@ -538,16 +660,63 @@ fn resolveLocalProc(name: types.WGPUStringView) p1_capability_procs.WGPUProc {
     if (symbolViewEq(name, "wgpuAdapterHasFeature")) return fnPtr(&P.wgpuAdapterHasFeature);
     if (symbolViewEq(name, "wgpuDeviceHasFeature")) return fnPtr(&P.wgpuDeviceHasFeature);
     if (symbolViewEq(name, "wgpuDeviceCreateQuerySet")) return fnPtr(&P.wgpuDeviceCreateQuerySet);
+    if (symbolViewEq(name, "wgpuQuerySetDestroy")) return fnPtr(&dropin_ext_a.wgpuQuerySetDestroy);
+    if (symbolViewEq(name, "wgpuQuerySetGetCount")) return fnPtr(&dropin_ext_a.wgpuQuerySetGetCount);
+    if (symbolViewEq(name, "wgpuQuerySetGetType")) return fnPtr(&dropin_ext_a.wgpuQuerySetGetType);
     if (symbolViewEq(name, "wgpuCommandEncoderResolveQuerySet")) return fnPtr(&P.wgpuCommandEncoderResolveQuerySet);
     if (symbolViewEq(name, "wgpuQuerySetRelease")) return fnPtr(&P.wgpuQuerySetRelease);
+    if (symbolViewEq(name, "wgpuRenderPassEncoderBeginOcclusionQuery")) return fnPtr(&dropin_ext_b.wgpuRenderPassEncoderBeginOcclusionQuery);
+    if (symbolViewEq(name, "wgpuRenderPassEncoderEndOcclusionQuery")) return fnPtr(&dropin_ext_b.wgpuRenderPassEncoderEndOcclusionQuery);
     if (symbolViewEq(name, "wgpuBufferMapAsync")) return fnPtr(&P.wgpuBufferMapAsync);
     if (symbolViewEq(name, "wgpuBufferGetConstMappedRange")) return fnPtr(&P.wgpuBufferGetConstMappedRange);
     if (symbolViewEq(name, "wgpuBufferUnmap")) return fnPtr(&P.wgpuBufferUnmap);
     if (symbolViewEq(name, "wgpuDeviceCreateSampler")) return fnPtr(&P.wgpuDeviceCreateSampler);
     if (symbolViewEq(name, "wgpuSamplerRelease")) return fnPtr(&P.wgpuSamplerRelease);
-    // ExternalTexture: let Dawn's sidecar handle creation since the device
-    // handle is a Dawn device. Overriding here would create a Doe handle that
-    // Dawn's lifecycle procs (AddRef/Release) can't manage.
+    if (symbolViewEq(name, "wgpuSupportedFeaturesFreeMembers")) return fnPtr(&dropin_ext_b.wgpuSupportedFeaturesFreeMembers);
+    if (symbolViewEq(name, "wgpuDeviceCreateExternalTexture")) return fnPtr(&dropin_ext_a.wgpuDeviceCreateExternalTexture);
+    if (symbolViewEq(name, "wgpuExternalTextureAddRef")) return fnPtr(&dropin_ext_a.wgpuExternalTextureAddRef);
+    if (symbolViewEq(name, "wgpuExternalTextureDestroy")) return fnPtr(&dropin_ext_c.wgpuExternalTextureDestroy);
+    if (symbolViewEq(name, "wgpuExternalTextureExpire")) return fnPtr(&dropin_ext_c.wgpuExternalTextureExpire);
+    if (symbolViewEq(name, "wgpuExternalTextureRefresh")) return fnPtr(&dropin_ext_c.wgpuExternalTextureRefresh);
+    if (symbolViewEq(name, "wgpuExternalTextureRelease")) return fnPtr(&dropin_ext_c.wgpuExternalTextureRelease);
+    if (symbolViewEq(name, "wgpuExternalTextureSetLabel")) return fnPtr(&dropin_ext_c.wgpuExternalTextureSetLabel);
+    // Render bundle operations
+    if (symbolViewEq(name, "wgpuDeviceCreateRenderBundleEncoder")) return fnPtr(&dropin_ext_a.wgpuDeviceCreateRenderBundleEncoder);
+    if (symbolViewEq(name, "wgpuRenderBundleAddRef")) return fnPtr(&dropin_ext_a.wgpuRenderBundleAddRef);
+    if (symbolViewEq(name, "wgpuRenderBundleEncoderAddRef")) return fnPtr(&dropin_ext_a.wgpuRenderBundleEncoderAddRef);
+    if (symbolViewEq(name, "wgpuRenderBundleEncoderDraw")) return fnPtr(&dropin_ext_a.wgpuRenderBundleEncoderDraw);
+    if (symbolViewEq(name, "wgpuRenderBundleEncoderDrawIndexed")) return fnPtr(&dropin_ext_a.wgpuRenderBundleEncoderDrawIndexed);
+    if (symbolViewEq(name, "wgpuRenderBundleEncoderDrawIndexedIndirect")) return fnPtr(&dropin_ext_a.wgpuRenderBundleEncoderDrawIndexedIndirect);
+    if (symbolViewEq(name, "wgpuRenderBundleEncoderDrawIndirect")) return fnPtr(&dropin_ext_a.wgpuRenderBundleEncoderDrawIndirect);
+    if (symbolViewEq(name, "wgpuRenderBundleEncoderFinish")) return fnPtr(&dropin_ext_a.wgpuRenderBundleEncoderFinish);
+    if (symbolViewEq(name, "wgpuRenderBundleEncoderInsertDebugMarker")) return fnPtr(&dropin_ext_a.wgpuRenderBundleEncoderInsertDebugMarker);
+    if (symbolViewEq(name, "wgpuRenderBundleEncoderPopDebugGroup")) return fnPtr(&dropin_ext_a.wgpuRenderBundleEncoderPopDebugGroup);
+    if (symbolViewEq(name, "wgpuRenderBundleEncoderPushDebugGroup")) return fnPtr(&dropin_ext_a.wgpuRenderBundleEncoderPushDebugGroup);
+    if (symbolViewEq(name, "wgpuRenderBundleEncoderRelease")) return fnPtr(&dropin_ext_a.wgpuRenderBundleEncoderRelease);
+    if (symbolViewEq(name, "wgpuRenderBundleEncoderSetBindGroup")) return fnPtr(&dropin_ext_a.wgpuRenderBundleEncoderSetBindGroup);
+    if (symbolViewEq(name, "wgpuRenderBundleEncoderSetIndexBuffer")) return fnPtr(&dropin_ext_b.wgpuRenderBundleEncoderSetIndexBuffer);
+    if (symbolViewEq(name, "wgpuRenderBundleEncoderSetPipeline")) return fnPtr(&dropin_ext_b.wgpuRenderBundleEncoderSetPipeline);
+    if (symbolViewEq(name, "wgpuRenderBundleEncoderSetVertexBuffer")) return fnPtr(&dropin_ext_b.wgpuRenderBundleEncoderSetVertexBuffer);
+    if (symbolViewEq(name, "wgpuRenderBundleRelease")) return fnPtr(&dropin_ext_b.wgpuRenderBundleRelease);
+    if (symbolViewEq(name, "wgpuRenderPassEncoderExecuteBundles")) return fnPtr(&dropin_ext_b.wgpuRenderPassEncoderExecuteBundles);
+    // Async pipeline creation
+    if (symbolViewEq(name, "wgpuDeviceCreateComputePipelineAsync")) return fnPtr(&dropin_ext_a.wgpuDeviceCreateComputePipelineAsync);
+    if (symbolViewEq(name, "wgpuDeviceCreateRenderPipelineAsync")) return fnPtr(&dropin_ext_a.wgpuDeviceCreateRenderPipelineAsync);
+    // Error scope and device lost
+    if (symbolViewEq(name, "wgpuDeviceSetUncapturedErrorCallback")) return fnPtr(&dropin_ext_a.wgpuDeviceSetUncapturedErrorCallback);
+    if (symbolViewEq(name, "wgpuDeviceGetLostFuture")) return fnPtr(&dropin_ext_c.wgpuDeviceGetLostFuture);
+    if (symbolViewEq(name, "wgpuDeviceSetDeviceLostCallback")) return fnPtr(&dropin_ext_c.wgpuDeviceSetDeviceLostCallback);
+    // Surface procs
+    if (symbolViewEq(name, "wgpuInstanceCreateSurface")) return fnPtr(&dropin_ext_a.wgpuInstanceCreateSurface);
+    if (symbolViewEq(name, "wgpuSurfaceConfigure")) return fnPtr(&dropin_ext_b.wgpuSurfaceConfigure);
+    if (symbolViewEq(name, "wgpuSurfaceGetCapabilities")) return fnPtr(&dropin_ext_b.wgpuSurfaceGetCapabilities);
+    if (symbolViewEq(name, "wgpuSurfaceGetCurrentTexture")) return fnPtr(&dropin_ext_b.wgpuSurfaceGetCurrentTexture);
+    if (symbolViewEq(name, "wgpuSurfacePresent")) return fnPtr(&dropin_ext_b.wgpuSurfacePresent);
+    if (symbolViewEq(name, "wgpuSurfaceRelease")) return fnPtr(&dropin_ext_b.wgpuSurfaceRelease);
+    if (symbolViewEq(name, "wgpuSurfaceUnconfigure")) return fnPtr(&dropin_ext_b.wgpuSurfaceUnconfigure);
+    if (symbolViewEq(name, "wgpuSurfaceCapabilitiesFreeMembers")) return fnPtr(&dropin_ext_b.wgpuSurfaceCapabilitiesFreeMembers);
+    if (symbolViewEq(name, "wgpuSurfaceAddRef")) return fnPtr(&dropin_ext_b.wgpuSurfaceAddRef);
+    if (symbolViewEq(name, "wgpuSurfaceSetLabel")) return fnPtr(&dropin_ext_c.wgpuSurfaceSetLabel);
     return null;
 }
 

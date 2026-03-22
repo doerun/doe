@@ -86,6 +86,68 @@ class BackendWorkloadCatalogTests(unittest.TestCase):
             ],
         )
 
+    def test_d3d12_comparable_generated_view_matches_catalog(self) -> None:
+        comparable = self.generator.materialize_lane(self.catalog, "d3d12_comparable")
+        self.assertEqual(
+            comparable,
+            load_json(REPO_ROOT / "bench" / "workloads.d3d12.comparable.json"),
+        )
+
+    def test_expected_d3d12_comparable_workload_id_set(self) -> None:
+        comparable = self.generator.materialize_lane(self.catalog, "d3d12_comparable")
+        self.assertEqual(
+            [row["id"] for row in comparable["workloads"]],
+            [
+                "compute_workgroup_atomic_1024",
+                "compute_workgroup_non_atomic_1024",
+                "pipeline_compile_stress",
+                "upload_write_buffer_16mb",
+                "upload_write_buffer_1kb",
+                "upload_write_buffer_1mb",
+                "upload_write_buffer_4mb",
+                "upload_write_buffer_64kb",
+                "compute_concurrent_execution_single",
+                "compute_zero_initialize_workgroup_memory_256",
+                "resource_lifecycle",
+            ],
+        )
+
+    def test_d3d12_comparable_all_workloads_are_comparable_and_default(self) -> None:
+        comparable = self.generator.materialize_lane(self.catalog, "d3d12_comparable")
+        for row in comparable["workloads"]:
+            self.assertTrue(
+                row.get("comparable"),
+                msg=f"{row['id']} must be comparable in d3d12_comparable lane",
+            )
+            self.assertTrue(
+                row.get("default", False),
+                msg=f"{row['id']} must be default in d3d12_comparable lane",
+            )
+            self.assertEqual(
+                row.get("benchmarkClass", "comparable"),
+                "comparable",
+                msg=f"{row['id']} must have benchmarkClass=comparable in d3d12_comparable lane",
+            )
+
+    def test_d3d12_comparable_config_invariants(self) -> None:
+        config_path = (
+            REPO_ROOT
+            / "bench"
+            / "native-compare"
+            / "compare_dawn_vs_doe.config.d3d12.comparable.json"
+        )
+        if not config_path.exists():
+            self.skipTest("governed D3D12 comparable config is not present")
+        config = load_json(config_path)
+        self.assertEqual(config["workloads"], "bench/workloads.d3d12.comparable.json")
+        self.assertEqual(config["comparability"]["mode"], "strict")
+        self.assertEqual(config["comparability"]["requireTimingClass"], "operation")
+        self.assertFalse(config["comparability"]["allowLeftNoExecution"])
+        self.assertIn("--backend-lane d3d12_doe_comparable", config["left"]["commandTemplate"])
+        self.assertIn("--backend-lane d3d12_dawn_release", config["right"]["commandTemplate"])
+        self.assertEqual(config["claimability"]["mode"], "local")
+        self.assertGreaterEqual(config["claimability"]["minTimedSamples"], 7)
+
     def test_expected_apple_metal_additional_directional_ids(self) -> None:
         metal = self.generator.materialize_lane(self.catalog, "apple_metal_extended")
         workload_ids = [row["id"] for row in metal["workloads"]]

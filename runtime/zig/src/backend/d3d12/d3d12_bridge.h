@@ -98,6 +98,12 @@ D3D12Handle d3d12_bridge_texture_create_view(D3D12Handle texture, uint32_t forma
                                                uint32_t aspect, uint32_t base_mip, uint32_t mip_count,
                                                uint32_t base_array_layer, uint32_t array_layer_count,
                                                uint64_t usage_flags);
+D3D12Handle d3d12_bridge_texture_create_view_swizzled(D3D12Handle texture, uint32_t format, uint32_t dimension,
+                                                       uint32_t aspect, uint32_t base_mip, uint32_t mip_count,
+                                                       uint32_t base_array_layer, uint32_t array_layer_count,
+                                                       uint64_t usage_flags,
+                                                       uint32_t swizzle_r, uint32_t swizzle_g,
+                                                       uint32_t swizzle_b, uint32_t swizzle_a);
 void d3d12_bridge_command_list_copy_texture_region(D3D12Handle cmd_list, D3D12Handle dst_texture,
                                                      D3D12Handle src_buffer, uint64_t src_offset,
                                                      uint32_t width, uint32_t height, uint32_t bytes_per_row,
@@ -307,6 +313,28 @@ int  d3d12_bridge_device_get_shader_model(D3D12Handle device);
 int  d3d12_bridge_device_get_wave_lane_count_min(D3D12Handle device);
 int  d3d12_bridge_device_get_wave_lane_count_max(D3D12Handle device);
 int  d3d12_bridge_device_supports_native_16bit(D3D12Handle device);
+int  d3d12_bridge_device_supports_color_attachment_blend(D3D12Handle device, uint32_t format);
+int  d3d12_bridge_device_supports_storage_binding(D3D12Handle device, uint32_t format);
+int  d3d12_bridge_device_supports_storage_read_write(D3D12Handle device, uint32_t format);
+int  d3d12_bridge_device_supports_render_target(D3D12Handle device, uint32_t format);
+int  d3d12_bridge_device_supports_texture_component_swizzle(D3D12Handle device);
+int  d3d12_bridge_device_supports_bc_sliced_3d(D3D12Handle device);
+
+/* Write a sampler descriptor into an existing sampler heap at a specific index */
+void d3d12_bridge_device_create_sampler_in_heap(D3D12Handle device, D3D12Handle sampler_heap,
+                                                 uint32_t heap_index,
+                                                 uint32_t min_filter, uint32_t mag_filter,
+                                                 uint32_t mipmap_filter,
+                                                 uint32_t address_mode_u, uint32_t address_mode_v,
+                                                 uint32_t address_mode_w,
+                                                 float lod_min_clamp, float lod_max_clamp,
+                                                 uint32_t compare, uint16_t max_anisotropy);
+
+/* Set graphics root descriptor table from sampler heap (uses sampler increment size) */
+void d3d12_bridge_command_list_set_graphics_root_sampler_table(D3D12Handle cmd_list,
+                                                                uint32_t root_parameter_index,
+                                                                D3D12Handle sampler_heap,
+                                                                uint32_t base_descriptor_index);
 
 /* DXGI swap chain (surface) */
 D3D12Handle d3d12_bridge_create_swap_chain(D3D12Handle queue, uint32_t width, uint32_t height, uint32_t format, uint32_t alpha_mode, uint32_t tone_mapping_mode);

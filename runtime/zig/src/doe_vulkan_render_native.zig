@@ -1,8 +1,5 @@
-// doe_vulkan_render_native.zig — Vulkan-specific texture, sampler, render pipeline,
-// and render pass operations for the Doe WebGPU C ABI.
-//
-// Commands execute immediately (no deferred queue). Render pass draws dispatch
-// synchronously via NativeVulkanRuntime.run_render_draw.
+// doe_vulkan_render_native.zig — Vulkan texture, sampler, render pipeline, and
+// render pass ops for the Doe WebGPU C ABI. Executes synchronously.
 
 const std = @import("std");
 const native = @import("doe_wgpu_native.zig");
@@ -11,9 +8,12 @@ const model = @import("model.zig");
 const query_native = @import("doe_query_native.zig");
 const c = @import("backend/vulkan/vk_constants.zig");
 const vk_resources = @import("backend/vulkan/vk_resources.zig");
+const doe_wgsl = @import("doe_wgsl/mod.zig");
+const runtime_compile = @import("doe_wgsl/runtime_compile.zig");
 const NativeVulkanRuntime = native.NativeVulkanRuntime;
 
 const DoeDevice = native.DoeDevice;
+const DoeShaderModule = native.DoeShaderModule;
 const DoeTexture = native.DoeTexture;
 const DoeTextureView = native.DoeTextureView;
 const DoeSampler = native.DoeSampler;
@@ -45,14 +45,9 @@ const VK_COMPARE_OP_NOT_EQUAL: u32 = 5;
 const VK_COMPARE_OP_GREATER_OR_EQUAL: u32 = 6;
 const VK_COMPARE_OP_ALWAYS: u32 = 7;
 
-// ============================================================
-// Internal helpers
-// ============================================================
-
 fn get_runtime(dev: *DoeDevice) ?*NativeVulkanRuntime {
     return native.device_vk_runtime(dev);
 }
-
 fn wgpu_filter_to_vk(filter: u32) u32 {
     return if (filter == WGPU_FILTER_LINEAR) VK_FILTER_LINEAR else c.VK_FILTER_NEAREST;
 }
@@ -438,9 +433,66 @@ pub fn vulkan_create_render_pipeline(
         }
     }
 
+    // Copy per-stage SPIR-V from shader modules onto the pipeline so the Vulkan
+    // render path can create VkShaderModules from user-provided WGSL shaders.
+    if (native.cast(DoeShaderModule, d.vertex_module)) |vert_sm| {
+        if (vert_sm.vertex_spirv_data) |vs| {
+            pip.vertex_spirv_data = native.alloc.dupe(u32, vs) catch null;
+        }
+    }
+    if (d.fragment) |frag| {
+        if (native.cast(DoeShaderModule, frag.module)) |frag_sm| {
+            if (frag_sm.fragment_spirv_data) |fs| {
+                pip.fragment_spirv_data = native.alloc.dupe(u32, fs) catch null;
+            }
+        }
+    }
+
     // mtl_pso intentionally left null: Vulkan draw is routed through run_render_draw.
     pip.mtl_pso = null;
     return true;
+}
+
+// ============================================================
+// Graphics shader module — WGSL → per-stage SPIR-V
+// ============================================================
+
+/// Detect whether WGSL source contains @vertex or @fragment entry points.
+/// Uses a fast text scan; false positives in comments/strings are acceptable
+/// because the actual IR compilation is the authority.
+pub fn probe_has_graphics_entry_points(wgsl: []const u8) bool {
+    return std.mem.indexOf(u8, wgsl, "@vertex") != null or
+        std.mem.indexOf(u8, wgsl, "@fragment") != null;
+}
+
+/// Translate WGSL containing vertex/fragment entry points to per-stage SPIR-V
+/// and store them on the shader module.
+pub fn vulkan_create_graphics_shader_module(
+    sm: *DoeShaderModule,
+    wgsl: []const u8,
+) error{ OutOfMemory, ShaderCompileFailed }!void {
+    const alloc = native.alloc;
+    var result = runtime_compile.translateToSpirvForGraphicsRuntime(alloc, wgsl) catch {
+        std.log.err("doe_vulkan_render: WGSL→SPIR-V graphics translation failed: {s}", .{doe_wgsl.lastErrorMessage()});
+        return error.ShaderCompileFailed;
+    };
+    errdefer result.deinit(alloc);
+
+    if (result.vertex_spirv) |v| {
+        sm.vertex_spirv_data = alloc.dupe(u32, v) catch return error.OutOfMemory;
+    }
+    if (result.fragment_spirv) |f| {
+        sm.fragment_spirv_data = alloc.dupe(u32, f) catch return error.OutOfMemory;
+    }
+
+    sm.wg_x = 0;
+    sm.wg_y = 0;
+    sm.wg_z = 0;
+    sm.needs_sizes_buf = false;
+
+    // Transfer ownership so deinit does not double-free.
+    result.vertex_spirv = null;
+    result.fragment_spirv = null;
 }
 
 // ============================================================
@@ -686,6 +738,36 @@ pub fn vulkan_render_pass_draw_indexed(
     _ = rt.run_render_draw(cmd) catch |err| {
         std.debug.print("doe_vulkan_render_native: run_render_draw (indexed) failed: {}\n", .{err});
     };
+}
+
+pub fn vulkan_render_pass_draw_indirect(pass: *DoeRenderPass, indirect_buffer_raw: ?*anyopaque, indirect_offset: u64) void {
+    // Indirect draw reads draw parameters from a GPU buffer. For Vulkan native
+    // path, read the parameters from the host-visible buffer and issue a direct draw.
+    const indirect_buf = native.cast(DoeBuffer, indirect_buffer_raw) orelse return;
+    if (indirect_buf.vk_id == 0) return;
+    const rt = get_runtime(pass.enc.dev) orelse return;
+    if (rt.compute_buffers.get(indirect_buf.vk_id)) |cb| {
+        if (cb.mapped) |ptr| {
+            const base: [*]const u8 = @ptrCast(ptr);
+            const off: usize = @intCast(indirect_offset);
+            const args: *const [4]u32 = @ptrCast(@alignCast(base + off));
+            vulkan_render_pass_draw(pass, args[0], args[1], args[2], args[3]);
+        }
+    }
+}
+
+pub fn vulkan_render_pass_draw_indexed_indirect(pass: *DoeRenderPass, indirect_buffer_raw: ?*anyopaque, indirect_offset: u64) void {
+    const indirect_buf = native.cast(DoeBuffer, indirect_buffer_raw) orelse return;
+    if (indirect_buf.vk_id == 0) return;
+    const rt = get_runtime(pass.enc.dev) orelse return;
+    if (rt.compute_buffers.get(indirect_buf.vk_id)) |cb| {
+        if (cb.mapped) |ptr| {
+            const base: [*]const u8 = @ptrCast(ptr);
+            const off: usize = @intCast(indirect_offset);
+            const args: *const [5]u32 = @ptrCast(@alignCast(base + off));
+            vulkan_render_pass_draw_indexed(pass, args[0], args[1], args[2], @bitCast(args[3]), args[4]);
+        }
+    }
 }
 
 // Render pass end is a no-op for the Vulkan path: each draw executes

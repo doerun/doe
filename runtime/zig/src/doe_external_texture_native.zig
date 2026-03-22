@@ -21,6 +21,9 @@ pub const DoeExternalTexture = struct {
     is_single_plane: bool = true,
     width: u32 = 0,
     height: u32 = 0,
+    // Backref to Instance — prevents Instance from being freed while external
+    // textures referencing it are still alive.
+    instance: ?*native.DoeInstance = null,
 };
 
 pub fn cast(raw: ?*anyopaque) ?*DoeExternalTexture {
@@ -45,21 +48,37 @@ const PLANE0_OFFSET = 24;
 const PLANE1_OFFSET = 32;
 const MIN_DESCRIPTOR_SIZE = 40;
 
+fn resolve_device_instance(dev_raw: ?*anyopaque) ?*native.DoeInstance {
+    const dev = native.cast(native.DoeDevice, dev_raw) orelse return null;
+    const adapter = dev.adapter orelse return null;
+    return adapter.instance;
+}
+
 pub export fn doeNativeDeviceCreateExternalTexture(
     dev_raw: ?*anyopaque,
     descriptor: ?*const anyopaque,
 ) callconv(.c) ?*anyopaque {
-    _ = dev_raw;
     const desc = descriptor orelse return null;
     const desc_ptr: [*]const u8 = @ptrCast(desc);
     const plane0 = @as(*const ?*anyopaque, @ptrCast(@alignCast(desc_ptr + PLANE0_OFFSET))).*;
     const plane1 = @as(*const ?*anyopaque, @ptrCast(@alignCast(desc_ptr + PLANE1_OFFSET))).*;
 
-    const ext = std.heap.c_allocator.create(DoeExternalTexture) catch return null;
+    const instance_ref = resolve_device_instance(dev_raw);
+    // Add-ref the Instance so it stays alive while the external texture exists.
+    if (instance_ref) |inst| inst.ref_count +|= 1;
+
+    const ext = std.heap.c_allocator.create(DoeExternalTexture) catch {
+        // Roll back the add-ref on allocation failure.
+        if (instance_ref) |inst| {
+            if (inst.ref_count > 1) inst.ref_count -= 1;
+        }
+        return null;
+    };
     ext.* = .{
         .plane0 = plane0,
         .plane1 = plane1,
         .is_single_plane = plane1 == null,
+        .instance = instance_ref,
     };
     return @ptrCast(ext);
 }
@@ -74,7 +93,12 @@ pub export fn doeNativeExternalTextureAddRef(raw: ?*anyopaque) callconv(.c) void
 pub export fn doeNativeExternalTextureRelease(raw: ?*anyopaque) callconv(.c) void {
     const ext = cast(raw) orelse return;
     if (ext.ref_count <= 1) {
+        const instance_ref = ext.instance;
         std.heap.c_allocator.destroy(ext);
+        // Release the Instance backref after freeing the external texture.
+        if (instance_ref) |inst| {
+            @import("doe_instance_device_native.zig").doeNativeInstanceRelease(native.toOpaque(inst));
+        }
         return;
     }
     ext.ref_count -= 1;

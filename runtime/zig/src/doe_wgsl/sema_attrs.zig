@@ -109,7 +109,9 @@ pub fn parse_io_attr(self: anytype, attrs_start: u32, attrs_len: u32) !?ir.IoAtt
             result.interpolation = .flat;
             seen = true;
         } else if (std.mem.eql(u8, name, "interpolate")) {
-            result.interpolation = try parse_interpolation_attr(self.module.tree, attr_idx);
+            const interp_result = try parse_interpolation_attr(self.module.tree, attr_idx);
+            result.interpolation = interp_result.interpolation;
+            result.sampling = interp_result.sampling;
             seen = true;
         } else if (std.mem.eql(u8, name, "invariant")) {
             result.invariant = true;
@@ -126,6 +128,7 @@ pub fn infer_builtin_call(self: anytype, name: []const u8, arg_types: []const ir
     if (std.mem.eql(u8, name, "textureSample") or std.mem.eql(u8, name, "textureSampleLevel") or std.mem.eql(u8, name, "textureSampleGrad") or std.mem.eql(u8, name, "textureSampleOffset") or std.mem.eql(u8, name, "textureSampleLevelOffset")) {
         if (arg_types.len == 0) return error.UnsupportedBuiltin;
         return switch (self.module.types.get(arg_types[0])) {
+            .texture_1d => |sample_ty| try self.module.types.intern(.{ .vector = .{ .elem = sample_ty, .len = 4 } }),
             .texture_2d => |sample_ty| try self.module.types.intern(.{ .vector = .{ .elem = sample_ty, .len = 4 } }),
             .texture_3d => |sample_ty| try self.module.types.intern(.{ .vector = .{ .elem = sample_ty, .len = 4 } }),
             .texture_cube => |sample_ty| try self.module.types.intern(.{ .vector = .{ .elem = sample_ty, .len = 4 } }),
@@ -140,6 +143,7 @@ pub fn infer_builtin_call(self: anytype, name: []const u8, arg_types: []const ir
         if (arg_types.len < 2) return error.UnsupportedBuiltin;
         // textureGather(component, texture, sampler, coords) — first arg is component u32
         return switch (self.module.types.get(arg_types[1])) {
+            .texture_1d => |sample_ty| try self.module.types.intern(.{ .vector = .{ .elem = sample_ty, .len = 4 } }),
             .texture_2d => |sample_ty| try self.module.types.intern(.{ .vector = .{ .elem = sample_ty, .len = 4 } }),
             .texture_cube => |sample_ty| try self.module.types.intern(.{ .vector = .{ .elem = sample_ty, .len = 4 } }),
             .texture_2d_array => |sample_ty| try self.module.types.intern(.{ .vector = .{ .elem = sample_ty, .len = 4 } }),
@@ -152,6 +156,7 @@ pub fn infer_builtin_call(self: anytype, name: []const u8, arg_types: []const ir
     if (std.mem.eql(u8, name, "textureDimensions")) {
         if (arg_types.len == 0) return error.UnsupportedBuiltin;
         return switch (self.module.types.get(arg_types[0])) {
+            .texture_1d => try self.module.types.intern(.{ .scalar = .u32 }),
             .texture_2d, .texture_2d_array, .texture_depth_2d, .texture_multisampled_2d, .storage_texture_2d => blk: {
                 const u32_ty = try self.module.types.intern(.{ .scalar = .u32 });
                 break :blk try self.module.types.intern(.{ .vector = .{ .elem = u32_ty, .len = 2 } });
@@ -175,7 +180,7 @@ pub fn infer_builtin_call(self: anytype, name: []const u8, arg_types: []const ir
         if (arg_types.len == 0) return error.UnsupportedBuiltin;
         const first = self.module.types.get(arg_types[0]);
         return switch (first) {
-            .texture_2d, .texture_3d, .texture_2d_array => |sample_ty| try self.module.types.intern(.{ .vector = .{ .elem = sample_ty, .len = 4 } }),
+            .texture_1d, .texture_2d, .texture_3d, .texture_2d_array => |sample_ty| try self.module.types.intern(.{ .vector = .{ .elem = sample_ty, .len = 4 } }),
             .texture_multisampled_2d => |sample_ty| try self.module.types.intern(.{ .vector = .{ .elem = sample_ty, .len = 4 } }),
             .storage_texture_2d => |storage| {
                 const elem_scalar = storage_format_scalar(storage.format);
@@ -262,17 +267,17 @@ fn is_subgroup_value_op(name: []const u8) bool {
 /// Math/comparison builtins that return the same type as their first argument.
 fn is_passthrough_math(name: []const u8) bool {
     const ops = [_][]const u8{
-        "min",               "max",              "clamp",             "select",          "abs",
-        "sqrt",              "sin",              "cos",               "normalize",       "length",
-        "distance",          "fract",            "mix",               "inverseSqrt",     "degrees",
-        "radians",           "atan2",            "ldexp",             "fma",             "smoothstep",
-        "sign",              "floor",            "ceil",              "round",           "trunc",
-        "exp",               "exp2",             "log",               "log2",            "pow",
-        "step",              "tan",              "asin",              "acos",            "atan",
-        "sinh",              "cosh",             "tanh",              "saturate",        "dot",
-        "cross",             "reflect",          "refract",           "modf",            "frexp",
-        "countOneBits",      "reverseBits",      "extractBits",       "insertBits",
-        "countLeadingZeros", "countTrailingZeros", "firstLeadingBit", "firstTrailingBit",
+        "min",                "max",             "clamp",            "select",      "abs",
+        "sqrt",               "sin",             "cos",              "normalize",   "length",
+        "distance",           "fract",           "mix",              "inverseSqrt", "degrees",
+        "radians",            "atan2",           "ldexp",            "fma",         "smoothstep",
+        "sign",               "floor",           "ceil",             "round",       "trunc",
+        "exp",                "exp2",            "log",              "log2",        "pow",
+        "step",               "tan",             "asin",             "acos",        "atan",
+        "sinh",               "cosh",            "tanh",             "saturate",    "dot",
+        "cross",              "reflect",         "refract",          "modf",        "frexp",
+        "countOneBits",       "reverseBits",     "extractBits",      "insertBits",  "countLeadingZeros",
+        "countTrailingZeros", "firstLeadingBit", "firstTrailingBit",
     };
     for (ops) |op| {
         if (std.mem.eql(u8, name, op)) return true;
@@ -352,17 +357,44 @@ fn parse_single_int_attr(tree: *const Ast, attr_idx: u32) !u32 {
     return try sema_helpers.parse_wgsl_int_literal(u32, tree.tokenSlice(arg.main_token));
 }
 
-fn parse_interpolation_attr(tree: *const Ast, attr_idx: u32) !ir.Interpolation {
+const InterpolationResult = struct {
+    interpolation: ir.Interpolation,
+    sampling: ?ir.InterpolationSampling,
+};
+
+fn parse_interpolation_attr(tree: *const Ast, attr_idx: u32) !InterpolationResult {
     const attr = tree.nodes.items[attr_idx];
     const span = decode_packed_span(attr.data.rhs);
     if (span.len == 0) return error.InvalidAttribute;
     const arg = tree.nodes.items[tree.extra_data.items[span.start]];
     if (arg.tag != .ident_expr) return error.InvalidAttribute;
     const name = tree.tokenSlice(arg.main_token);
-    if (std.mem.eql(u8, name, "flat")) return .flat;
-    if (std.mem.eql(u8, name, "linear")) return .linear;
-    if (std.mem.eql(u8, name, "perspective")) return .perspective;
-    return error.InvalidAttribute;
+    const interp: ir.Interpolation = if (std.mem.eql(u8, name, "flat"))
+        .flat
+    else if (std.mem.eql(u8, name, "linear"))
+        .linear
+    else if (std.mem.eql(u8, name, "perspective"))
+        .perspective
+    else
+        return error.InvalidAttribute;
+
+    var sampling: ?ir.InterpolationSampling = null;
+    if (span.len >= 2) {
+        const sampling_arg = tree.nodes.items[tree.extra_data.items[span.start + 1]];
+        if (sampling_arg.tag != .ident_expr) return error.InvalidAttribute;
+        const sampling_name = tree.tokenSlice(sampling_arg.main_token);
+        if (std.mem.eql(u8, sampling_name, "center")) {
+            sampling = .center;
+        } else if (std.mem.eql(u8, sampling_name, "centroid")) {
+            sampling = .centroid;
+        } else if (std.mem.eql(u8, sampling_name, "sample")) {
+            sampling = .sample;
+        } else {
+            return error.InvalidAttribute;
+        }
+    }
+
+    return .{ .interpolation = interp, .sampling = sampling };
 }
 
 fn parse_builtin_attr(tree: *const Ast, attr_idx: u32) !ir.Builtin {

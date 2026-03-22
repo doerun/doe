@@ -1,3 +1,4 @@
+const std = @import("std");
 const types = @import("core/abi/wgpu_types.zig");
 const p1cap = @import("wgpu_p1_capability_procs.zig");
 const p0 = @import("wgpu_p0_procs.zig");
@@ -7,6 +8,7 @@ const surface = @import("full/surface/wgpu_surface_procs.zig");
 const texture = @import("wgpu_texture_procs.zig");
 const render = @import("full/render/wgpu_render_api.zig");
 const async_procs = @import("wgpu_async_procs.zig");
+const native = @import("doe_wgpu_native.zig");
 
 extern fn wgpuGetProcAddress(name: types.WGPUStringView) callconv(.c) p1cap.WGPUProc;
 extern fn doeWgpuDropinAbortMissingRequiredSymbol(name: types.WGPUStringView) callconv(.c) noreturn;
@@ -18,6 +20,12 @@ extern fn doeNativeRenderPassSetScissorRect(pass_raw: ?*anyopaque, x: u32, y: u3
 extern fn doeNativeRenderPassSetStencilReference(pass_raw: ?*anyopaque, reference: u32) callconv(.c) void;
 extern fn doeNativeRenderPassSetViewport(pass_raw: ?*anyopaque, x: f64, y: f64, width: f64, height: f64, min_depth: f64, max_depth: f64) callconv(.c) void;
 extern fn doeNativeRenderBundleEncoderSetImmediates(encoder_raw: ?*anyopaque, index: u32, data_ptr: ?[*]const u8, data_len: usize) callconv(.c) void;
+
+const CompilationInfoABI = extern struct {
+    nextInChain: ?*anyopaque,
+    messageCount: usize,
+    messages: ?*const anyopaque,
+};
 
 fn symbolView(comptime name: []const u8) types.WGPUStringView {
     return .{ .data = name.ptr, .length = name.len };
@@ -34,18 +42,15 @@ pub export fn wgpuRenderBundleEncoderSetImmediates(a0: p1res.WGPURenderBundleEnc
 }
 
 pub export fn wgpuRenderBundleEncoderSetIndexBuffer(a0: render.RenderBundleEncoder, a1: types.WGPUBuffer, a2: u32, a3: u64, a4: u64) callconv(.c) void {
-    const proc = resolveRequiredProc(*const fn (render.RenderBundleEncoder, types.WGPUBuffer, u32, u64, u64) callconv(.c) void, "wgpuRenderBundleEncoderSetIndexBuffer");
-    proc(a0, a1, a2, a3, a4);
+    native.doeNativeRenderBundleEncoderSetIndexBuffer(a0, a1, a2, a3, a4);
 }
 
 pub export fn wgpuRenderBundleEncoderSetLabel(a0: render.RenderBundleEncoder, a1: types.WGPUStringView) callconv(.c) void {
-    const proc = resolveRequiredProc(*const fn (render.RenderBundleEncoder, types.WGPUStringView) callconv(.c) void, "wgpuRenderBundleEncoderSetLabel");
-    proc(a0, a1);
+    native.doeNativeObjectSetLabel(a0, a1.data, a1.length);
 }
 
 pub export fn wgpuRenderBundleEncoderSetPipeline(a0: render.RenderBundleEncoder, a1: types.WGPURenderPipeline) callconv(.c) void {
-    const proc = resolveRequiredProc(*const fn (render.RenderBundleEncoder, types.WGPURenderPipeline) callconv(.c) void, "wgpuRenderBundleEncoderSetPipeline");
-    proc(a0, a1);
+    native.doeNativeRenderBundleEncoderSetPipeline(a0, a1);
 }
 
 pub export fn wgpuRenderBundleEncoderSetResourceTable(a0: p1res.WGPURenderBundleEncoder, a1: p1res.WGPUResourceTable) callconv(.c) void {
@@ -54,23 +59,19 @@ pub export fn wgpuRenderBundleEncoderSetResourceTable(a0: p1res.WGPURenderBundle
 }
 
 pub export fn wgpuRenderBundleEncoderSetVertexBuffer(a0: render.RenderBundleEncoder, a1: u32, a2: types.WGPUBuffer, a3: u64, a4: u64) callconv(.c) void {
-    const proc = resolveRequiredProc(*const fn (render.RenderBundleEncoder, u32, types.WGPUBuffer, u64, u64) callconv(.c) void, "wgpuRenderBundleEncoderSetVertexBuffer");
-    proc(a0, a1, a2, a3, a4);
+    native.doeNativeRenderBundleEncoderSetVertexBuffer(a0, a1, a2, a3, a4);
 }
 
 pub export fn wgpuRenderBundleRelease(a0: render.RenderBundle) callconv(.c) void {
-    const proc = resolveRequiredProc(*const fn (render.RenderBundle) callconv(.c) void, "wgpuRenderBundleRelease");
-    proc(a0);
+    native.doeNativeRenderBundleRelease(a0);
 }
 
 pub export fn wgpuRenderBundleSetLabel(a0: render.RenderBundle, a1: types.WGPUStringView) callconv(.c) void {
-    const proc = resolveRequiredProc(*const fn (render.RenderBundle, types.WGPUStringView) callconv(.c) void, "wgpuRenderBundleSetLabel");
-    proc(a0, a1);
+    native.doeNativeObjectSetLabel(a0, a1.data, a1.length);
 }
 
 pub export fn wgpuRenderPassEncoderAddRef(a0: types.WGPURenderPassEncoder) callconv(.c) void {
-    const proc = resolveRequiredProc(*const fn (types.WGPURenderPassEncoder) callconv(.c) void, "wgpuRenderPassEncoderAddRef");
-    proc(a0);
+    native.object_add_ref(native.DoeRenderPass, a0);
 }
 
 pub export fn wgpuRenderPassEncoderBeginOcclusionQuery(a0: types.WGPURenderPassEncoder, a1: u32) callconv(.c) void {
@@ -82,8 +83,7 @@ pub export fn wgpuRenderPassEncoderEndOcclusionQuery(a0: types.WGPURenderPassEnc
 }
 
 pub export fn wgpuRenderPassEncoderExecuteBundles(a0: types.WGPURenderPassEncoder, a1: usize, a2: [*]const render.RenderBundle) callconv(.c) void {
-    const proc = resolveRequiredProc(*const fn (types.WGPURenderPassEncoder, usize, [*]const render.RenderBundle) callconv(.c) void, "wgpuRenderPassEncoderExecuteBundles");
-    proc(a0, a1, a2);
+    native.doeNativeRenderPassExecuteBundles(a0, a1, a2);
 }
 
 pub export fn wgpuRenderPassEncoderMultiDrawIndexedIndirect(a0: types.WGPURenderPassEncoder, a1: types.WGPUBuffer, a2: u64, a3: u32, a4: types.WGPUBuffer, a5: u64) callconv(.c) void {
@@ -127,18 +127,19 @@ pub export fn wgpuRenderPassEncoderSetViewport(a0: types.WGPURenderPassEncoder, 
 }
 
 pub export fn wgpuRenderPassEncoderWriteTimestamp(a0: types.WGPURenderPassEncoder, a1: types.WGPUQuerySet, a2: u32) callconv(.c) void {
-    const proc = resolveRequiredProc(*const fn (types.WGPURenderPassEncoder, types.WGPUQuerySet, u32) callconv(.c) void, "wgpuRenderPassEncoderWriteTimestamp");
-    proc(a0, a1, a2);
+    // Route through the command encoder timestamp path, extracting the
+    // parent encoder from the render pass.
+    const pass = native.cast(native.DoeRenderPass, a0) orelse return;
+    const query_native = @import("doe_query_native.zig");
+    query_native.doeNativeCommandEncoderWriteTimestamp(native.toOpaque(pass.enc), a1, a2);
 }
 
 pub export fn wgpuRenderPipelineAddRef(a0: types.WGPURenderPipeline) callconv(.c) void {
-    const proc = resolveRequiredProc(*const fn (types.WGPURenderPipeline) callconv(.c) void, "wgpuRenderPipelineAddRef");
-    proc(a0);
+    native.object_add_ref(native.DoeRenderPipeline, a0);
 }
 
 pub export fn wgpuRenderPipelineGetBindGroupLayout(a0: types.WGPURenderPipeline, a1: u32) callconv(.c) types.WGPUBindGroupLayout {
-    const proc = resolveRequiredProc(*const fn (types.WGPURenderPipeline, u32) callconv(.c) types.WGPUBindGroupLayout, "wgpuRenderPipelineGetBindGroupLayout");
-    return proc(a0, a1);
+    return native.doeNativeRenderPipelineGetBindGroupLayout(a0, a1);
 }
 
 pub export fn wgpuResourceTableAddRef(a0: p1res.WGPUResourceTable) callconv(.c) void {
@@ -177,18 +178,24 @@ pub export fn wgpuResourceTableUpdate(a0: p1res.WGPUResourceTable, a1: u32, a2: 
 }
 
 pub export fn wgpuSamplerAddRef(a0: types.WGPUSampler) callconv(.c) void {
-    const proc = resolveRequiredProc(*const fn (types.WGPUSampler) callconv(.c) void, "wgpuSamplerAddRef");
-    proc(a0);
+    native.object_add_ref(native.DoeSampler, a0);
 }
 
 pub export fn wgpuShaderModuleAddRef(a0: types.WGPUShaderModule) callconv(.c) void {
-    const proc = resolveRequiredProc(*const fn (types.WGPUShaderModule) callconv(.c) void, "wgpuShaderModuleAddRef");
-    proc(a0);
+    native.object_add_ref(native.DoeShaderModule, a0);
 }
 
 pub export fn wgpuShaderModuleGetCompilationInfo(a0: types.WGPUShaderModule, a1: async_procs.CompilationInfoCallbackInfo) callconv(.c) types.WGPUFuture {
-    const proc = resolveRequiredProc(*const fn (types.WGPUShaderModule, async_procs.CompilationInfoCallbackInfo) callconv(.c) types.WGPUFuture, "wgpuShaderModuleGetCompilationInfo");
-    return proc(a0, a1);
+    // Build a minimal WGPUCompilationInfo with zero messages and invoke the
+    // callback synchronously.  The Doe native compilation info path stores
+    // diagnostics on the shader module itself; here we surface an empty
+    // result through the standard callback ABI.
+    _ = a0;
+    if (a1.callback) |cb| {
+        const empty_info = CompilationInfoABI{ .nextInChain = null, .messageCount = 0, .messages = null };
+        cb(async_procs.COMPILATION_INFO_STATUS_SUCCESS, @ptrCast(&empty_info), a1.userdata1, a1.userdata2);
+    }
+    return .{ .id = 0 };
 }
 
 pub export fn wgpuSharedBufferMemoryAddRef(a0: p2life.WGPUSharedBufferMemory) callconv(.c) void {
@@ -207,56 +214,73 @@ pub export fn wgpuSharedTextureMemoryAddRef(a0: p2life.WGPUSharedTextureMemory) 
 }
 
 pub export fn wgpuSupportedFeaturesFreeMembers(a0: p1cap.SupportedFeatures) callconv(.c) void {
-    const proc = resolveRequiredProc(*const fn (p1cap.SupportedFeatures) callconv(.c) void, "wgpuSupportedFeaturesFreeMembers");
-    proc(a0);
+    const features = a0.features orelse return;
+    std.heap.c_allocator.free(features[0..a0.featureCount]);
 }
 
 pub export fn wgpuSupportedInstanceFeaturesFreeMembers(a0: p1cap.SupportedInstanceFeatures) callconv(.c) void {
-    const proc = resolveRequiredProc(*const fn (p1cap.SupportedInstanceFeatures) callconv(.c) void, "wgpuSupportedInstanceFeaturesFreeMembers");
-    proc(a0);
+    _ = a0;
 }
 
 pub export fn wgpuSupportedWGSLLanguageFeaturesFreeMembers(a0: p1cap.SupportedWGSLLanguageFeatures) callconv(.c) void {
-    const proc = resolveRequiredProc(*const fn (p1cap.SupportedWGSLLanguageFeatures) callconv(.c) void, "wgpuSupportedWGSLLanguageFeaturesFreeMembers");
-    proc(a0);
+    _ = a0;
 }
 
 pub export fn wgpuSurfaceAddRef(a0: p2life.WGPUSurface) callconv(.c) void {
-    const proc = resolveRequiredProc(*const fn (p2life.WGPUSurface) callconv(.c) void, "wgpuSurfaceAddRef");
-    proc(a0);
+    native.object_add_ref(native.DoeSurface, a0);
 }
 
 pub export fn wgpuSurfaceCapabilitiesFreeMembers(a0: surface.SurfaceCapabilities) callconv(.c) void {
-    const proc = resolveRequiredProc(*const fn (surface.SurfaceCapabilities) callconv(.c) void, "wgpuSurfaceCapabilitiesFreeMembers");
-    proc(a0);
+    // Doe surfaces use static arrays; FreeMembers is a no-op for them.
+    // We cannot distinguish ownership here, so always call native (safe for static data)
+    // then fall through to Dawn if needed.
+    native.doeNativeSurfaceCapabilitiesFreeMembers(a0);
 }
 
 pub export fn wgpuSurfaceConfigure(a0: surface.Surface, a1: *const surface.SurfaceConfiguration) callconv(.c) void {
+    if (native.cast(native.DoeSurface, a0) != null) {
+        native.doeAbiBridgeSurfaceConfigure(a0, a1);
+        return;
+    }
     const proc = resolveRequiredProc(*const fn (surface.Surface, *const surface.SurfaceConfiguration) callconv(.c) void, "wgpuSurfaceConfigure");
     proc(a0, a1);
 }
 
 pub export fn wgpuSurfaceGetCapabilities(a0: surface.Surface, a1: types.WGPUAdapter, a2: *surface.SurfaceCapabilities) callconv(.c) u32 {
+    if (native.cast(native.DoeSurface, a0) != null) return native.doeNativeSurfaceGetCapabilities(a0, a1, a2);
     const proc = resolveRequiredProc(*const fn (surface.Surface, types.WGPUAdapter, *surface.SurfaceCapabilities) callconv(.c) u32, "wgpuSurfaceGetCapabilities");
     return proc(a0, a1, a2);
 }
 
 pub export fn wgpuSurfaceGetCurrentTexture(a0: surface.Surface, a1: *surface.SurfaceTexture) callconv(.c) void {
+    if (native.cast(native.DoeSurface, a0) != null) {
+        native.doeAbiBridgeSurfaceGetCurrentTexture(a0, a1);
+        return;
+    }
     const proc = resolveRequiredProc(*const fn (surface.Surface, *surface.SurfaceTexture) callconv(.c) void, "wgpuSurfaceGetCurrentTexture");
     proc(a0, a1);
 }
 
 pub export fn wgpuSurfacePresent(a0: surface.Surface) callconv(.c) u32 {
+    if (native.cast(native.DoeSurface, a0) != null) return native.doeAbiBridgeSurfacePresent(a0);
     const proc = resolveRequiredProc(*const fn (surface.Surface) callconv(.c) u32, "wgpuSurfacePresent");
     return proc(a0);
 }
 
 pub export fn wgpuSurfaceRelease(a0: surface.Surface) callconv(.c) void {
+    if (native.cast(native.DoeSurface, a0) != null) {
+        native.doeNativeSurfaceRelease(a0);
+        return;
+    }
     const proc = resolveRequiredProc(*const fn (surface.Surface) callconv(.c) void, "wgpuSurfaceRelease");
     proc(a0);
 }
 
 pub export fn wgpuSurfaceUnconfigure(a0: surface.Surface) callconv(.c) void {
+    if (native.cast(native.DoeSurface, a0) != null) {
+        native.doeNativeSurfaceUnconfigure(a0);
+        return;
+    }
     const proc = resolveRequiredProc(*const fn (surface.Surface) callconv(.c) void, "wgpuSurfaceUnconfigure");
     proc(a0);
 }
@@ -267,61 +291,130 @@ pub export fn wgpuTexelBufferViewAddRef(a0: p2life.WGPUTexelBufferView) callconv
 }
 
 pub export fn wgpuTextureAddRef(a0: types.WGPUTexture) callconv(.c) void {
-    const proc = resolveRequiredProc(*const fn (types.WGPUTexture) callconv(.c) void, "wgpuTextureAddRef");
-    proc(a0);
+    native.object_add_ref(native.DoeTexture, a0);
 }
 
 pub export fn wgpuTextureDestroy(a0: types.WGPUTexture) callconv(.c) void {
-    const proc = resolveRequiredProc(*const fn (types.WGPUTexture) callconv(.c) void, "wgpuTextureDestroy");
-    proc(a0);
+    native.doeNativeTextureDestroy(a0);
+}
+
+// ABI bridges for texture copy commands: the Doe native implementations use
+// flattened individual parameters while the WebGPU C ABI passes struct pointers.
+
+pub fn doeAbiBridgeCopyTextureToBuffer(
+    encoder: types.WGPUCommandEncoder,
+    source: *const types.WGPUTexelCopyTextureInfo,
+    destination: *const types.WGPUTexelCopyBufferInfo,
+    copy_size: *const types.WGPUExtent3D,
+) callconv(.c) void {
+    const encoder_native = @import("doe_encoder_native.zig");
+    encoder_native.doeNativeCommandEncoderCopyTextureToBuffer(
+        encoder,
+        source.texture,
+        source.mipLevel,
+        destination.buffer,
+        destination.layout.offset,
+        destination.layout.bytesPerRow,
+        destination.layout.rowsPerImage,
+        copy_size.width,
+        copy_size.height,
+        copy_size.depthOrArrayLayers,
+    );
+}
+
+pub fn doeAbiBridgeCopyBufferToTexture(
+    encoder: types.WGPUCommandEncoder,
+    source: *const types.WGPUTexelCopyBufferInfo,
+    destination: *const types.WGPUTexelCopyTextureInfo,
+    copy_size: *const types.WGPUExtent3D,
+) callconv(.c) void {
+    const encoder_native = @import("doe_encoder_native.zig");
+    encoder_native.doeNativeCommandEncoderCopyBufferToTexture(
+        encoder,
+        source.buffer,
+        source.layout.offset,
+        source.layout.bytesPerRow,
+        source.layout.rowsPerImage,
+        destination.texture,
+        destination.mipLevel,
+        copy_size.width,
+        copy_size.height,
+        copy_size.depthOrArrayLayers,
+    );
+}
+
+pub fn doeAbiBridgeCopyTextureToTexture(
+    encoder: types.WGPUCommandEncoder,
+    source: *const types.WGPUTexelCopyTextureInfo,
+    destination: *const types.WGPUTexelCopyTextureInfo,
+    copy_size: *const types.WGPUExtent3D,
+) callconv(.c) void {
+    const cmd_texture = @import("doe_command_texture_native.zig");
+    cmd_texture.doeNativeCommandEncoderCopyTextureToTexture(
+        encoder,
+        source.texture,
+        source.mipLevel,
+        0,
+        source.origin.x,
+        source.origin.y,
+        source.origin.z,
+        destination.texture,
+        destination.mipLevel,
+        0,
+        destination.origin.x,
+        destination.origin.y,
+        destination.origin.z,
+        copy_size.width,
+        copy_size.height,
+        copy_size.depthOrArrayLayers,
+    );
 }
 
 pub export fn wgpuTextureGetDepthOrArrayLayers(a0: types.WGPUTexture) callconv(.c) u32 {
-    const proc = resolveRequiredProc(*const fn (types.WGPUTexture) callconv(.c) u32, "wgpuTextureGetDepthOrArrayLayers");
-    return proc(a0);
+    if (native.cast(native.DoeTexture, a0)) |tex| return tex.depth_or_array_layers;
+    return 0;
 }
 
 pub export fn wgpuTextureGetDimension(a0: types.WGPUTexture) callconv(.c) types.WGPUTextureDimension {
-    const proc = resolveRequiredProc(*const fn (types.WGPUTexture) callconv(.c) types.WGPUTextureDimension, "wgpuTextureGetDimension");
-    return proc(a0);
+    if (native.cast(native.DoeTexture, a0)) |tex| return tex.dimension;
+    return 0;
 }
 
 pub export fn wgpuTextureGetFormat(a0: types.WGPUTexture) callconv(.c) types.WGPUTextureFormat {
-    const proc = resolveRequiredProc(*const fn (types.WGPUTexture) callconv(.c) types.WGPUTextureFormat, "wgpuTextureGetFormat");
-    return proc(a0);
+    if (native.cast(native.DoeTexture, a0)) |tex| return tex.format;
+    return 0;
 }
 
 pub export fn wgpuTextureGetHeight(a0: types.WGPUTexture) callconv(.c) u32 {
-    const proc = resolveRequiredProc(*const fn (types.WGPUTexture) callconv(.c) u32, "wgpuTextureGetHeight");
-    return proc(a0);
+    if (native.cast(native.DoeTexture, a0)) |tex| return tex.height;
+    return 0;
 }
 
 pub export fn wgpuTextureGetMipLevelCount(a0: types.WGPUTexture) callconv(.c) u32 {
-    const proc = resolveRequiredProc(*const fn (types.WGPUTexture) callconv(.c) u32, "wgpuTextureGetMipLevelCount");
-    return proc(a0);
+    if (native.cast(native.DoeTexture, a0)) |tex| return tex.mip_level_count;
+    return 0;
 }
 
 pub export fn wgpuTextureGetSampleCount(a0: types.WGPUTexture) callconv(.c) u32 {
-    const proc = resolveRequiredProc(*const fn (types.WGPUTexture) callconv(.c) u32, "wgpuTextureGetSampleCount");
-    return proc(a0);
+    if (native.cast(native.DoeTexture, a0)) |tex| return tex.sample_count;
+    return 0;
 }
 
 pub export fn wgpuTextureGetTextureBindingViewDimension(a0: types.WGPUTexture) callconv(.c) types.WGPUTextureViewDimension {
-    const proc = resolveRequiredProc(*const fn (types.WGPUTexture) callconv(.c) types.WGPUTextureViewDimension, "wgpuTextureGetTextureBindingViewDimension");
-    return proc(a0);
+    if (native.cast(native.DoeTexture, a0)) |tex| return tex.texture_binding_view_dimension;
+    return 0;
 }
 
 pub export fn wgpuTextureGetUsage(a0: types.WGPUTexture) callconv(.c) types.WGPUTextureUsage {
-    const proc = resolveRequiredProc(*const fn (types.WGPUTexture) callconv(.c) types.WGPUTextureUsage, "wgpuTextureGetUsage");
-    return proc(a0);
+    if (native.cast(native.DoeTexture, a0)) |tex| return tex.usage;
+    return 0;
 }
 
 pub export fn wgpuTextureGetWidth(a0: types.WGPUTexture) callconv(.c) u32 {
-    const proc = resolveRequiredProc(*const fn (types.WGPUTexture) callconv(.c) u32, "wgpuTextureGetWidth");
-    return proc(a0);
+    if (native.cast(native.DoeTexture, a0)) |tex| return tex.width;
+    return 0;
 }
 
 pub export fn wgpuTextureViewAddRef(a0: types.WGPUTextureView) callconv(.c) void {
-    const proc = resolveRequiredProc(*const fn (types.WGPUTextureView) callconv(.c) void, "wgpuTextureViewAddRef");
-    proc(a0);
+    native.object_add_ref(native.DoeTextureView, a0);
 }

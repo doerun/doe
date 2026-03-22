@@ -38,6 +38,20 @@ LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \
   "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Fawn/Core/BindGroupSlot.olean" "${ROOT_DIR}/pipeline/lean/Fawn/Core/BindGroupSlot.lean"
 LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \
   "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Fawn/Core/BufferLifecycle.olean" "${ROOT_DIR}/pipeline/lean/Fawn/Core/BufferLifecycle.lean"
+LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \
+  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Fawn/Core/IrBuilderSoundness.olean" "${ROOT_DIR}/pipeline/lean/Fawn/Core/IrBuilderSoundness.lean"
+LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \
+  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Fawn/Core/IrSemanticContract.olean" "${ROOT_DIR}/pipeline/lean/Fawn/Core/IrSemanticContract.lean"
+LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \
+  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Fawn/Core/IrValidatorRedundancy.olean" "${ROOT_DIR}/pipeline/lean/Fawn/Core/IrValidatorRedundancy.lean"
+LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \
+  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Fawn/Core/RenderPassStateMachine.olean" "${ROOT_DIR}/pipeline/lean/Fawn/Core/RenderPassStateMachine.lean"
+LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \
+  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Fawn/Core/MslAddressSpace.olean" "${ROOT_DIR}/pipeline/lean/Fawn/Core/MslAddressSpace.lean"
+LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \
+  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Fawn/Core/BufferDispatchPrecondition.olean" "${ROOT_DIR}/pipeline/lean/Fawn/Core/BufferDispatchPrecondition.lean"
+LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \
+  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Fawn/Core/IrTypePreserved.olean" "${ROOT_DIR}/pipeline/lean/Fawn/Core/IrTypePreserved.lean"
 
 # Full layer (canonical sources).
 LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \

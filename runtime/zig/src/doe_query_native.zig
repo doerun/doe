@@ -20,6 +20,7 @@ const VK_QUERY_TYPE_OCCLUSION: u32 = 1;
 pub const DoeQuerySet = struct {
     pub const TYPE_MAGIC = MAGIC_QUERY_SET;
     magic: u32 = TYPE_MAGIC,
+    ref_count: u32 = 1,
     count: u32 = 0,
     query_type: u32 = WGPU_QUERY_TYPE_TIMESTAMP,
     backend: native.BackendKind = .metal,
@@ -136,6 +137,7 @@ pub export fn doeNativeCommandEncoderResolveQuerySet(
 
 pub export fn doeNativeQuerySetDestroy(qs_raw: ?*anyopaque) callconv(.c) void {
     const qs = native.cast(DoeQuerySet, qs_raw) orelse return;
+    if (!native.object_should_destroy(qs)) return;
     native.label_store.remove(qs_raw);
 
     if (qs.backend == .vulkan) {
@@ -149,6 +151,10 @@ pub export fn doeNativeQuerySetDestroy(qs_raw: ?*anyopaque) callconv(.c) void {
     // Metal path.
     if (qs.counter_sample_buffer) |csb| bridge.metal_bridge_destroy_counter_sample_buffer(csb);
     native.alloc.destroy(qs);
+}
+
+pub export fn doeNativeQuerySetRelease(qs_raw: ?*anyopaque) callconv(.c) void {
+    doeNativeQuerySetDestroy(qs_raw);
 }
 
 pub export fn doeNativeQuerySetGetCount(qs_raw: ?*anyopaque) callconv(.c) u32 {

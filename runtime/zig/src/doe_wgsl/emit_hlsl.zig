@@ -271,7 +271,7 @@ const Emitter = struct {
                 try self.write_u32(binding.group);
                 try self.write(");\n");
             },
-            .texture_2d, .texture_2d_array, .texture_cube, .texture_multisampled_2d, .texture_depth_2d, .texture_depth_cube, .texture_3d => {
+            .texture_1d, .texture_2d, .texture_2d_array, .texture_cube, .texture_multisampled_2d, .texture_depth_2d, .texture_depth_cube, .texture_3d => {
                 try self.write("\n");
                 try self.emit_type_only(global.ty);
                 try self.write(" ");
@@ -656,6 +656,11 @@ const Emitter = struct {
             },
             .struct_ => |struct_id| try self.write(self.module.structs.items[struct_id].name),
             .sampler, .sampler_comparison => try self.write("SamplerState"),
+            .texture_1d => |sample_ty| {
+                try self.write("Texture1D<");
+                try self.write(maps.texture_component(sample_ty));
+                try self.write("4>");
+            },
             .texture_2d => |sample_ty| {
                 try self.write("Texture2D<");
                 try self.write(maps.texture_component(sample_ty));

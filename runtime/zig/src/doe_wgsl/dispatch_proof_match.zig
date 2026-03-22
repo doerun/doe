@@ -1,4 +1,5 @@
 const ir = @import("ir.zig");
+const loop_match = @import("dispatch_proof_loop_match.zig");
 const layout_utils = @import("layout_utils.zig");
 const lean_proof = @import("../lean_proof.zig");
 
@@ -6,6 +7,7 @@ pub fn try_elide_storage_index(
     module: *const ir.Module,
     function: *const ir.Function,
     function_id: ir.FunctionId,
+    expr_id: ir.ExprId,
     index_data: @FieldType(ir.Expr, "index"),
 ) ?ir.DispatchPrecondition {
     const binding = resolve_storage_binding(module, function, index_data.base) orelse return null;
@@ -17,20 +19,109 @@ pub fn try_elide_storage_index(
                 .kind = .gid_component,
                 .gid_axis = gid_axis,
                 .storage_binding = binding,
+                .element_multiplier = 1,
                 .element_stride_bytes = element_stride_bytes,
+                .element_offset = 0,
             };
         }
     }
 
-    if (lean_proof.boundsProven(.gid_2d_flat_storage_buffer) and
-        match_flat_index_2d_dispatch_x(module, function, function_id, index_data.index))
-    {
-        return .{
-            .kind = .flat_index_2d_dispatch_x,
-            .gid_axis = 0,
-            .storage_binding = binding,
-            .element_stride_bytes = element_stride_bytes,
-        };
+    if (lean_proof.boundsProven(.gid_1d_storage_buffer_offset)) {
+        if (match_gid_component_plus_offset(function, index_data.index, .global_invocation_id)) |match| {
+            return .{
+                .kind = .gid_component,
+                .gid_axis = match.axis,
+                .storage_binding = binding,
+                .element_multiplier = 1,
+                .element_stride_bytes = element_stride_bytes,
+                .element_offset = match.offset,
+            };
+        }
+    }
+
+    if (lean_proof.boundsProven(.gid_1d_storage_buffer_stride)) {
+        if (match_gid_component_times_stride_plus_offset(function, index_data.index, .global_invocation_id)) |match| {
+            return .{
+                .kind = .gid_component,
+                .gid_axis = match.axis,
+                .storage_binding = binding,
+                .element_multiplier = match.multiplier,
+                .element_stride_bytes = element_stride_bytes,
+                .element_offset = match.offset,
+            };
+        }
+    }
+
+    if (lean_proof.boundsProven(.gid_1d_storage_buffer_loop_affine)) {
+        if (match_gid_component_loop_affine_plus_offset(function, index_data.index, .global_invocation_id)) |match| {
+            if (loop_match.find_bounded_loop_limit(function, expr_id, match.local_idx)) |loop_limit| {
+                return .{
+                    .kind = .gid_component,
+                    .gid_axis = match.axis,
+                    .storage_binding = binding,
+                    .element_multiplier = match.gid_multiplier,
+                    .loop_limit = loop_limit,
+                    .loop_limit_multiplier = match.loop_multiplier,
+                    .element_stride_bytes = element_stride_bytes,
+                    .element_offset = match.offset,
+                };
+            }
+        }
+    } else if (lean_proof.boundsProven(.gid_1d_storage_buffer_loop_offset)) {
+        if (match_gid_component_loop_affine_plus_offset(function, index_data.index, .global_invocation_id)) |match| {
+            if (match.gid_multiplier == 1 and match.loop_multiplier == 1) {
+                if (loop_match.find_bounded_loop_limit(function, expr_id, match.local_idx)) |loop_limit| {
+                    return .{
+                        .kind = .gid_component,
+                        .gid_axis = match.axis,
+                        .storage_binding = binding,
+                        .element_multiplier = 1,
+                        .loop_limit = loop_limit,
+                        .loop_limit_multiplier = 1,
+                        .element_stride_bytes = element_stride_bytes,
+                        .element_offset = match.offset,
+                    };
+                }
+            }
+        }
+    }
+
+    if (lean_proof.boundsProven(.gid_1d_storage_buffer_tiled)) {
+        if (match_gid_component_tiled_plus_offset(function, index_data.index, .global_invocation_id)) |match| {
+            return .{
+                .kind = .gid_component_tiled,
+                .gid_axis = match.axis,
+                .storage_binding = binding,
+                .element_multiplier = match.tile_stride,
+                .tile_width = match.tile_width,
+                .element_stride_bytes = element_stride_bytes,
+                .element_offset = match.offset,
+            };
+        }
+    }
+
+    if (lean_proof.boundsProven(.gid_2d_flat_storage_buffer_offset)) {
+        if (match_flat_index_2d_dispatch_x(module, function, function_id, index_data.index)) |offset| {
+            return .{
+                .kind = .flat_index_2d_dispatch_x,
+                .gid_axis = 0,
+                .storage_binding = binding,
+                .element_multiplier = 1,
+                .element_stride_bytes = element_stride_bytes,
+                .element_offset = offset,
+            };
+        }
+    } else if (lean_proof.boundsProven(.gid_2d_flat_storage_buffer)) {
+        if (match_flat_index_2d_dispatch_x_base(module, function, function_id, index_data.index)) {
+            return .{
+                .kind = .flat_index_2d_dispatch_x,
+                .gid_axis = 0,
+                .storage_binding = binding,
+                .element_multiplier = 1,
+                .element_stride_bytes = element_stride_bytes,
+                .element_offset = 0,
+            };
+        }
     }
 
     return null;
@@ -83,6 +174,31 @@ fn resolve_storage_binding(
 }
 
 fn match_flat_index_2d_dispatch_x(
+    module: *const ir.Module,
+    function: *const ir.Function,
+    function_id: ir.FunctionId,
+    expr_id: ir.ExprId,
+) ?u64 {
+    if (match_flat_index_2d_dispatch_x_base(module, function, function_id, expr_id)) return 0;
+
+    const canonical = resolve_value_alias(function, expr_id);
+    const expr = function.exprs.items[canonical];
+    const binary = switch (expr.data) {
+        .binary => |value| value,
+        else => return null,
+    };
+    if (binary.op != .add) return null;
+
+    if (match_u32_literal_value(function, binary.lhs)) |offset| {
+        if (match_flat_index_2d_dispatch_x_base(module, function, function_id, binary.rhs)) return offset;
+    }
+    if (match_u32_literal_value(function, binary.rhs)) |offset| {
+        if (match_flat_index_2d_dispatch_x_base(module, function, function_id, binary.lhs)) return offset;
+    }
+    return null;
+}
+
+fn match_flat_index_2d_dispatch_x_base(
     module: *const ir.Module,
     function: *const ir.Function,
     function_id: ir.FunctionId,
@@ -160,6 +276,360 @@ fn match_u32_literal(function: *const ir.Function, expr_id: ir.ExprId, expected:
         .int_lit => |value| value == expected,
         else => false,
     };
+}
+
+fn match_u32_literal_value(function: *const ir.Function, expr_id: ir.ExprId) ?u64 {
+    const expr = function.exprs.items[resolve_value_alias(function, expr_id)];
+    return switch (expr.data) {
+        .int_lit => |value| value,
+        else => null,
+    };
+}
+
+fn match_gid_component_plus_offset(
+    function: *const ir.Function,
+    expr_id: ir.ExprId,
+    builtin: ir.Builtin,
+) ?struct { axis: u8, offset: u64 } {
+    const expr = function.exprs.items[resolve_value_alias(function, expr_id)];
+    const binary = switch (expr.data) {
+        .binary => |value| value,
+        else => return null,
+    };
+    if (binary.op != .add) return null;
+
+    if (classify_builtin_component(function, binary.lhs, builtin)) |axis| {
+        if (match_u32_literal_value(function, binary.rhs)) |offset| {
+            return .{ .axis = axis, .offset = offset };
+        }
+    }
+    if (classify_builtin_component(function, binary.rhs, builtin)) |axis| {
+        if (match_u32_literal_value(function, binary.lhs)) |offset| {
+            return .{ .axis = axis, .offset = offset };
+        }
+    }
+    return null;
+}
+
+fn match_gid_component_times_stride(
+    function: *const ir.Function,
+    expr_id: ir.ExprId,
+    builtin: ir.Builtin,
+) ?struct { axis: u8, multiplier: u64 } {
+    const expr = function.exprs.items[resolve_value_alias(function, expr_id)];
+    const binary = switch (expr.data) {
+        .binary => |value| value,
+        else => return null,
+    };
+    if (binary.op != .mul) return null;
+
+    if (classify_builtin_component(function, binary.lhs, builtin)) |axis| {
+        if (match_u32_literal_value(function, binary.rhs)) |multiplier| {
+            if (multiplier > 0) return .{ .axis = axis, .multiplier = multiplier };
+        }
+    }
+    if (classify_builtin_component(function, binary.rhs, builtin)) |axis| {
+        if (match_u32_literal_value(function, binary.lhs)) |multiplier| {
+            if (multiplier > 0) return .{ .axis = axis, .multiplier = multiplier };
+        }
+    }
+    return null;
+}
+
+fn match_gid_component_times_stride_plus_offset(
+    function: *const ir.Function,
+    expr_id: ir.ExprId,
+    builtin: ir.Builtin,
+) ?struct { axis: u8, multiplier: u64, offset: u64 } {
+    if (match_gid_component_times_stride(function, expr_id, builtin)) |match| {
+        return .{ .axis = match.axis, .multiplier = match.multiplier, .offset = 0 };
+    }
+
+    const expr = function.exprs.items[resolve_value_alias(function, expr_id)];
+    const binary = switch (expr.data) {
+        .binary => |value| value,
+        else => return null,
+    };
+    if (binary.op != .add) return null;
+
+    if (match_u32_literal_value(function, binary.lhs)) |offset| {
+        if (match_gid_component_times_stride(function, binary.rhs, builtin)) |match| {
+            return .{ .axis = match.axis, .multiplier = match.multiplier, .offset = offset };
+        }
+    }
+    if (match_u32_literal_value(function, binary.rhs)) |offset| {
+        if (match_gid_component_times_stride(function, binary.lhs, builtin)) |match| {
+            return .{ .axis = match.axis, .multiplier = match.multiplier, .offset = offset };
+        }
+    }
+    return null;
+}
+
+fn match_gid_component_tiled_plus_offset(
+    function: *const ir.Function,
+    expr_id: ir.ExprId,
+    builtin: ir.Builtin,
+) ?struct { axis: u8, tile_width: u64, tile_stride: u64, offset: u64 } {
+    if (match_gid_component_tiled(function, expr_id, builtin)) |match| {
+        return .{
+            .axis = match.axis,
+            .tile_width = match.tile_width,
+            .tile_stride = match.tile_stride,
+            .offset = 0,
+        };
+    }
+
+    const expr = function.exprs.items[resolve_value_alias(function, expr_id)];
+    const binary = switch (expr.data) {
+        .binary => |value| value,
+        else => return null,
+    };
+    if (binary.op != .add) return null;
+
+    if (match_u32_literal_value(function, binary.lhs)) |offset| {
+        if (match_gid_component_tiled(function, binary.rhs, builtin)) |match| {
+            return .{
+                .axis = match.axis,
+                .tile_width = match.tile_width,
+                .tile_stride = match.tile_stride,
+                .offset = offset,
+            };
+        }
+    }
+    if (match_u32_literal_value(function, binary.rhs)) |offset| {
+        if (match_gid_component_tiled(function, binary.lhs, builtin)) |match| {
+            return .{
+                .axis = match.axis,
+                .tile_width = match.tile_width,
+                .tile_stride = match.tile_stride,
+                .offset = offset,
+            };
+        }
+    }
+    return null;
+}
+
+fn match_gid_component_loop_affine_plus_offset(
+    function: *const ir.Function,
+    expr_id: ir.ExprId,
+    builtin: ir.Builtin,
+) ?struct { axis: u8, local_idx: u32, gid_multiplier: u64, loop_multiplier: u64, offset: u64 } {
+    var state = AdditiveLoopIndexState{};
+    if (!collect_additive_loop_terms(function, expr_id, builtin, &state)) return null;
+    if (state.gid_multiplier == 0 or state.loop_multiplier == 0) return null;
+    return .{
+        .axis = state.axis orelse return null,
+        .local_idx = state.local_idx orelse return null,
+        .gid_multiplier = state.gid_multiplier,
+        .loop_multiplier = state.loop_multiplier,
+        .offset = state.offset,
+    };
+}
+
+const AdditiveLoopIndexState = struct {
+    axis: ?u8 = null,
+    local_idx: ?u32 = null,
+    gid_multiplier: u64 = 0,
+    loop_multiplier: u64 = 0,
+    offset: u64 = 0,
+};
+
+fn collect_additive_loop_terms(
+    function: *const ir.Function,
+    expr_id: ir.ExprId,
+    builtin: ir.Builtin,
+    state: *AdditiveLoopIndexState,
+) bool {
+    const canonical = resolve_value_alias(function, expr_id);
+    const expr = function.exprs.items[canonical];
+    switch (expr.data) {
+        .binary => |binary| {
+            if (binary.op == .add) {
+                return collect_additive_loop_terms(function, binary.lhs, builtin, state) and
+                    collect_additive_loop_terms(function, binary.rhs, builtin, state);
+            }
+            if (binary.op == .mul) {
+                return collect_scaled_loop_term(function, binary.lhs, binary.rhs, builtin, state) or
+                    collect_scaled_loop_term(function, binary.rhs, binary.lhs, builtin, state);
+            }
+            return false;
+        },
+        .int_lit => |value| {
+            state.offset = std.math.add(u64, state.offset, value) catch return false;
+            return true;
+        },
+        .local_ref => |local_idx| {
+            if (state.local_idx) |existing| {
+                if (existing != local_idx) return false;
+            } else {
+                state.local_idx = local_idx;
+            }
+            state.loop_multiplier = std.math.add(u64, state.loop_multiplier, 1) catch return false;
+            return true;
+        },
+        else => {
+            if (classify_builtin_component(function, canonical, builtin)) |axis| {
+                if (state.axis) |existing| {
+                    if (existing != axis) return false;
+                } else {
+                    state.axis = axis;
+                }
+                state.gid_multiplier = std.math.add(u64, state.gid_multiplier, 1) catch return false;
+                return true;
+            }
+            return false;
+        },
+    }
+}
+
+fn collect_scaled_loop_term(
+    function: *const ir.Function,
+    lhs: ir.ExprId,
+    rhs: ir.ExprId,
+    builtin: ir.Builtin,
+    state: *AdditiveLoopIndexState,
+) bool {
+    const scale = match_u32_literal_value(function, rhs) orelse return false;
+    if (scale == 0) return true;
+
+    const lhs_expr = function.exprs.items[resolve_value_alias(function, lhs)];
+    switch (lhs_expr.data) {
+        .local_ref => |local_idx| {
+            if (state.local_idx) |existing| {
+                if (existing != local_idx) return false;
+            } else {
+                state.local_idx = local_idx;
+            }
+            state.loop_multiplier = std.math.add(u64, state.loop_multiplier, scale) catch return false;
+            return true;
+        },
+        else => {
+            if (classify_builtin_component(function, lhs, builtin)) |axis| {
+                if (state.axis) |existing| {
+                    if (existing != axis) return false;
+                } else {
+                    state.axis = axis;
+                }
+                state.gid_multiplier = std.math.add(u64, state.gid_multiplier, scale) catch return false;
+                return true;
+            }
+            return false;
+        },
+    }
+}
+
+fn match_gid_component_tiled(
+    function: *const ir.Function,
+    expr_id: ir.ExprId,
+    builtin: ir.Builtin,
+) ?struct { axis: u8, tile_width: u64, tile_stride: u64 } {
+    const expr = function.exprs.items[resolve_value_alias(function, expr_id)];
+    const binary = switch (expr.data) {
+        .binary => |value| value,
+        else => return null,
+    };
+    if (binary.op != .add) return null;
+
+    if (match_gid_component_div_stride(function, binary.lhs, builtin)) |div_match| {
+        if (match_gid_component_mod_tile(function, binary.rhs, builtin)) |mod_match| {
+            if (div_match.axis == mod_match.axis and div_match.tile_width == mod_match.tile_width) {
+                return .{
+                    .axis = div_match.axis,
+                    .tile_width = div_match.tile_width,
+                    .tile_stride = div_match.tile_stride,
+                };
+            }
+        }
+    }
+    if (match_gid_component_div_stride(function, binary.rhs, builtin)) |div_match| {
+        if (match_gid_component_mod_tile(function, binary.lhs, builtin)) |mod_match| {
+            if (div_match.axis == mod_match.axis and div_match.tile_width == mod_match.tile_width) {
+                return .{
+                    .axis = div_match.axis,
+                    .tile_width = div_match.tile_width,
+                    .tile_stride = div_match.tile_stride,
+                };
+            }
+        }
+    }
+    return null;
+}
+
+fn match_gid_component_div_stride(
+    function: *const ir.Function,
+    expr_id: ir.ExprId,
+    builtin: ir.Builtin,
+) ?struct { axis: u8, tile_width: u64, tile_stride: u64 } {
+    const expr = function.exprs.items[resolve_value_alias(function, expr_id)];
+    const binary = switch (expr.data) {
+        .binary => |value| value,
+        else => return null,
+    };
+    if (binary.op != .mul) return null;
+
+    if (match_gid_component_div_tile(function, binary.lhs, builtin)) |div_match| {
+        if (match_u32_literal_value(function, binary.rhs)) |tile_stride| {
+            if (tile_stride >= div_match.tile_width) {
+                return .{
+                    .axis = div_match.axis,
+                    .tile_width = div_match.tile_width,
+                    .tile_stride = tile_stride,
+                };
+            }
+        }
+    }
+    if (match_gid_component_div_tile(function, binary.rhs, builtin)) |div_match| {
+        if (match_u32_literal_value(function, binary.lhs)) |tile_stride| {
+            if (tile_stride >= div_match.tile_width) {
+                return .{
+                    .axis = div_match.axis,
+                    .tile_width = div_match.tile_width,
+                    .tile_stride = tile_stride,
+                };
+            }
+        }
+    }
+    return null;
+}
+
+fn match_gid_component_div_tile(
+    function: *const ir.Function,
+    expr_id: ir.ExprId,
+    builtin: ir.Builtin,
+) ?struct { axis: u8, tile_width: u64 } {
+    const expr = function.exprs.items[resolve_value_alias(function, expr_id)];
+    const binary = switch (expr.data) {
+        .binary => |value| value,
+        else => return null,
+    };
+    if (binary.op != .div) return null;
+
+    if (classify_builtin_component(function, binary.lhs, builtin)) |axis| {
+        if (match_u32_literal_value(function, binary.rhs)) |tile_width| {
+            if (tile_width > 0) return .{ .axis = axis, .tile_width = tile_width };
+        }
+    }
+    return null;
+}
+
+fn match_gid_component_mod_tile(
+    function: *const ir.Function,
+    expr_id: ir.ExprId,
+    builtin: ir.Builtin,
+) ?struct { axis: u8, tile_width: u64 } {
+    const expr = function.exprs.items[resolve_value_alias(function, expr_id)];
+    const binary = switch (expr.data) {
+        .binary => |value| value,
+        else => return null,
+    };
+    if (binary.op != .rem) return null;
+
+    if (classify_builtin_component(function, binary.lhs, builtin)) |axis| {
+        if (match_u32_literal_value(function, binary.rhs)) |tile_width| {
+            if (tile_width > 0) return .{ .axis = axis, .tile_width = tile_width };
+        }
+    }
+    return null;
 }
 
 fn classify_builtin_component(

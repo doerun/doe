@@ -2,9 +2,12 @@
 
 const std = @import("std");
 const mod = @import("mod.zig");
+const translateToHlsl = mod.translateToHlsl;
+const translateToHlslWithOverrides = mod.translateToHlslWithOverrides;
 const translateToMsl = mod.translateToMsl;
 const translateToMslWithOverrides = mod.translateToMslWithOverrides;
 const analyzeToIr = mod.analyzeToIr;
+const MAX_HLSL_OUTPUT = mod.MAX_HLSL_OUTPUT;
 const MAX_OUTPUT = mod.MAX_OUTPUT;
 const ir = mod.ir;
 const applyOverrides = mod.applyOverrides;
@@ -117,4 +120,34 @@ test "translateToMslWithOverrides emits overridden constant values" {
     try std.testing.expect(std.mem.indexOf(u8, msl_overridden, "256") != null);
     // Should not contain the old default.
     try std.testing.expect(std.mem.indexOf(u8, msl_overridden, "constant uint BLOCK_SIZE = 64") == null);
+}
+
+test "translateToHlslWithOverrides emits overridden render-stage constant values" {
+    const source =
+        \\@id(0) override SCALE: f32 = 1.0;
+        \\@vertex
+        \\fn vs_main(@builtin(vertex_index) index: u32) -> @builtin(position) vec4f {
+        \\    let x = f32(index) * SCALE;
+        \\    return vec4f(x, 0.0, 0.0, 1.0);
+        \\}
+    ;
+    var out: [MAX_HLSL_OUTPUT]u8 = undefined;
+
+    const len_default = try translateToHlsl(std.testing.allocator, source, &out);
+    const hlsl_default = out[0..len_default];
+    try std.testing.expect(std.mem.indexOf(u8, hlsl_default, "SCALE = 1") != null);
+
+    const overrides = [_]ir.OverrideEntry{
+        .{ .key = "0", .value = 4.0 },
+    };
+    const len_overridden = try translateToHlslWithOverrides(
+        std.testing.allocator,
+        source,
+        &out,
+        &overrides,
+        overrides.len,
+    );
+    const hlsl_overridden = out[0..len_overridden];
+    try std.testing.expect(std.mem.indexOf(u8, hlsl_overridden, "SCALE = 4") != null);
+    try std.testing.expect(std.mem.indexOf(u8, hlsl_overridden, "SCALE = 1") == null);
 }

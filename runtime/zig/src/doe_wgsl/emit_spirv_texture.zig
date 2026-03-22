@@ -206,7 +206,7 @@ pub fn emit_texture_load(self: anytype, call: anytype, result_ty: ir.TypeId) !u3
 
     const tex_ty = self.emitter.module.types.get(self.function.exprs.items[texture_expr].ty);
     switch (tex_ty) {
-        .texture_2d, .texture_3d, .texture_2d_array, .texture_multisampled_2d => {},
+        .texture_1d, .texture_2d, .texture_3d, .texture_2d_array, .texture_multisampled_2d => {},
         .storage_texture_2d => {},
         else => return error.UnsupportedConstruct,
     }

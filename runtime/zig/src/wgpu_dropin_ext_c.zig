@@ -1,207 +1,246 @@
 const types = @import("core/abi/wgpu_types.zig");
-const p1cap = @import("wgpu_p1_capability_procs.zig");
 const p2life = @import("wgpu_p2_lifecycle_procs.zig");
 const surface = @import("full/surface/wgpu_surface_procs.zig");
+const native = @import("doe_wgpu_native.zig");
 
-extern fn wgpuGetProcAddress(name: types.WGPUStringView) callconv(.c) p1cap.WGPUProc;
-extern fn doeWgpuDropinAbortMissingRequiredSymbol(name: types.WGPUStringView) callconv(.c) noreturn;
+extern fn doeNativeBufferGetMapState(raw: ?*anyopaque) callconv(.c) u32;
 
-fn symbolView(comptime name: []const u8) types.WGPUStringView {
-    return .{ .data = name.ptr, .length = name.len };
-}
-
-fn resolveRequiredProc(comptime FnType: type, comptime symbol_name: []const u8) FnType {
-    const proc = wgpuGetProcAddress(symbolView(symbol_name)) orelse
-        doeWgpuDropinAbortMissingRequiredSymbol(symbolView(symbol_name));
-    return @as(FnType, @ptrCast(proc));
+fn set_local_label(handle: ?*anyopaque, label: types.WGPUStringView) void {
+    native.doeNativeObjectSetLabel(handle, label.data, label.length);
 }
 
 pub export fn wgpuBindGroupLayoutSetLabel(a0: types.WGPUBindGroupLayout, a1: types.WGPUStringView) callconv(.c) void {
-    const proc = resolveRequiredProc(*const fn (types.WGPUBindGroupLayout, types.WGPUStringView) callconv(.c) void, "wgpuBindGroupLayoutSetLabel");
-    proc(a0, a1);
+    set_local_label(a0, a1);
 }
 
 pub export fn wgpuBindGroupSetLabel(a0: types.WGPUBindGroup, a1: types.WGPUStringView) callconv(.c) void {
-    const proc = resolveRequiredProc(*const fn (types.WGPUBindGroup, types.WGPUStringView) callconv(.c) void, "wgpuBindGroupSetLabel");
-    proc(a0, a1);
+    set_local_label(a0, a1);
 }
 
 pub export fn wgpuBufferGetMapState(a0: types.WGPUBuffer) callconv(.c) u32 {
-    const proc = resolveRequiredProc(*const fn (types.WGPUBuffer) callconv(.c) u32, "wgpuBufferGetMapState");
-    return proc(a0);
+    if (native.cast(native.DoeBuffer, a0) != null) return doeNativeBufferGetMapState(a0);
+    return 0;
 }
 
 pub export fn wgpuBufferGetMappedRange(a0: types.WGPUBuffer, a1: usize, a2: usize) callconv(.c) ?*anyopaque {
-    const proc = resolveRequiredProc(*const fn (types.WGPUBuffer, usize, usize) callconv(.c) ?*anyopaque, "wgpuBufferGetMappedRange");
-    return proc(a0, a1, a2);
+    if (native.cast(native.DoeBuffer, a0) != null) return native.doeNativeBufferGetMappedRange(a0, a1, a2);
+    return null;
 }
 
 pub export fn wgpuBufferGetSize(a0: types.WGPUBuffer) callconv(.c) u64 {
-    const proc = resolveRequiredProc(*const fn (types.WGPUBuffer) callconv(.c) u64, "wgpuBufferGetSize");
-    return proc(a0);
+    if (native.cast(native.DoeBuffer, a0)) |buf| return buf.size;
+    return 0;
 }
 
 pub export fn wgpuBufferGetUsage(a0: types.WGPUBuffer) callconv(.c) types.WGPUBufferUsage {
-    const proc = resolveRequiredProc(*const fn (types.WGPUBuffer) callconv(.c) types.WGPUBufferUsage, "wgpuBufferGetUsage");
-    return proc(a0);
+    if (native.cast(native.DoeBuffer, a0)) |buf| return buf.usage;
+    return 0;
 }
 
 pub export fn wgpuBufferReadMappedRange(a0: types.WGPUBuffer, a1: usize, a2: ?*anyopaque, a3: usize) callconv(.c) types.WGPUStatus {
-    const proc = resolveRequiredProc(*const fn (types.WGPUBuffer, usize, ?*anyopaque, usize) callconv(.c) types.WGPUStatus, "wgpuBufferReadMappedRange");
-    return proc(a0, a1, a2, a3);
+    const src_ptr = native.doeNativeBufferGetMappedRange(a0, a1, a3) orelse return 0;
+    const dst: [*]u8 = @ptrCast(@alignCast(a2 orelse return 0));
+    const src: [*]const u8 = @ptrCast(src_ptr);
+    @memcpy(dst[0..a3], src[0..a3]);
+    return types.WGPUStatus_Success;
 }
 
 pub export fn wgpuBufferSetLabel(a0: types.WGPUBuffer, a1: types.WGPUStringView) callconv(.c) void {
-    const proc = resolveRequiredProc(*const fn (types.WGPUBuffer, types.WGPUStringView) callconv(.c) void, "wgpuBufferSetLabel");
-    proc(a0, a1);
+    set_local_label(a0, a1);
 }
 
 pub export fn wgpuBufferWriteMappedRange(a0: types.WGPUBuffer, a1: usize, a2: ?*const anyopaque, a3: usize) callconv(.c) types.WGPUStatus {
-    const proc = resolveRequiredProc(*const fn (types.WGPUBuffer, usize, ?*const anyopaque, usize) callconv(.c) types.WGPUStatus, "wgpuBufferWriteMappedRange");
-    return proc(a0, a1, a2, a3);
+    const dst_ptr = native.doeNativeBufferGetMappedRange(a0, a1, a3) orelse return 0;
+    const src: [*]const u8 = @ptrCast(@alignCast(a2 orelse return 0));
+    const dst: [*]u8 = @ptrCast(dst_ptr);
+    @memcpy(dst[0..a3], src[0..a3]);
+    return types.WGPUStatus_Success;
 }
 
 pub export fn wgpuCommandBufferSetLabel(a0: types.WGPUCommandBuffer, a1: types.WGPUStringView) callconv(.c) void {
-    const proc = resolveRequiredProc(*const fn (types.WGPUCommandBuffer, types.WGPUStringView) callconv(.c) void, "wgpuCommandBufferSetLabel");
-    proc(a0, a1);
+    set_local_label(a0, a1);
 }
 
 pub export fn wgpuCommandEncoderInsertDebugMarker(a0: types.WGPUCommandEncoder, a1: types.WGPUStringView) callconv(.c) void {
-    const proc = resolveRequiredProc(*const fn (types.WGPUCommandEncoder, types.WGPUStringView) callconv(.c) void, "wgpuCommandEncoderInsertDebugMarker");
-    proc(a0, a1);
+    _ = a0;
+    _ = a1;
 }
 
 pub export fn wgpuCommandEncoderPopDebugGroup(a0: types.WGPUCommandEncoder) callconv(.c) void {
-    const proc = resolveRequiredProc(*const fn (types.WGPUCommandEncoder) callconv(.c) void, "wgpuCommandEncoderPopDebugGroup");
-    proc(a0);
+    _ = a0;
 }
 
 pub export fn wgpuCommandEncoderPushDebugGroup(a0: types.WGPUCommandEncoder, a1: types.WGPUStringView) callconv(.c) void {
-    const proc = resolveRequiredProc(*const fn (types.WGPUCommandEncoder, types.WGPUStringView) callconv(.c) void, "wgpuCommandEncoderPushDebugGroup");
-    proc(a0, a1);
+    _ = a0;
+    _ = a1;
 }
 
 pub export fn wgpuCommandEncoderSetLabel(a0: types.WGPUCommandEncoder, a1: types.WGPUStringView) callconv(.c) void {
-    const proc = resolveRequiredProc(*const fn (types.WGPUCommandEncoder, types.WGPUStringView) callconv(.c) void, "wgpuCommandEncoderSetLabel");
-    proc(a0, a1);
+    set_local_label(a0, a1);
 }
 
 pub export fn wgpuComputePassEncoderInsertDebugMarker(a0: types.WGPUComputePassEncoder, a1: types.WGPUStringView) callconv(.c) void {
-    const proc = resolveRequiredProc(*const fn (types.WGPUComputePassEncoder, types.WGPUStringView) callconv(.c) void, "wgpuComputePassEncoderInsertDebugMarker");
-    proc(a0, a1);
+    native.doeNativeComputePassInsertDebugMarker(a0, if (a1.data) |d| d else null, a1.length);
 }
 
 pub export fn wgpuComputePassEncoderPopDebugGroup(a0: types.WGPUComputePassEncoder) callconv(.c) void {
-    const proc = resolveRequiredProc(*const fn (types.WGPUComputePassEncoder) callconv(.c) void, "wgpuComputePassEncoderPopDebugGroup");
-    proc(a0);
+    native.doeNativeComputePassPopDebugGroup(a0);
 }
 
 pub export fn wgpuComputePassEncoderPushDebugGroup(a0: types.WGPUComputePassEncoder, a1: types.WGPUStringView) callconv(.c) void {
-    const proc = resolveRequiredProc(*const fn (types.WGPUComputePassEncoder, types.WGPUStringView) callconv(.c) void, "wgpuComputePassEncoderPushDebugGroup");
-    proc(a0, a1);
+    native.doeNativeComputePassPushDebugGroup(a0, if (a1.data) |d| d else null, a1.length);
 }
 
 pub export fn wgpuComputePassEncoderSetLabel(a0: types.WGPUComputePassEncoder, a1: types.WGPUStringView) callconv(.c) void {
-    const proc = resolveRequiredProc(*const fn (types.WGPUComputePassEncoder, types.WGPUStringView) callconv(.c) void, "wgpuComputePassEncoderSetLabel");
-    proc(a0, a1);
+    set_local_label(a0, a1);
 }
 
 pub export fn wgpuComputePipelineGetBindGroupLayout(a0: types.WGPUComputePipeline, a1: u32) callconv(.c) types.WGPUBindGroupLayout {
-    const proc = resolveRequiredProc(*const fn (types.WGPUComputePipeline, u32) callconv(.c) types.WGPUBindGroupLayout, "wgpuComputePipelineGetBindGroupLayout");
-    return proc(a0, a1);
+    return native.doeNativeComputePipelineGetBindGroupLayout(a0, a1);
 }
 
 pub export fn wgpuComputePipelineSetLabel(a0: types.WGPUComputePipeline, a1: types.WGPUStringView) callconv(.c) void {
-    const proc = resolveRequiredProc(*const fn (types.WGPUComputePipeline, types.WGPUStringView) callconv(.c) void, "wgpuComputePipelineSetLabel");
-    proc(a0, a1);
+    set_local_label(a0, a1);
 }
 
 pub export fn wgpuDeviceGetLostFuture(a0: types.WGPUDevice) callconv(.c) types.WGPUFuture {
-    const proc = resolveRequiredProc(*const fn (types.WGPUDevice) callconv(.c) types.WGPUFuture, "wgpuDeviceGetLostFuture");
-    return proc(a0);
+    _ = a0;
+    // Return a sentinel future ID; device-lost is stored but not
+    // yet auto-fired, so no real future tracking is needed.
+    return .{ .id = 6 };
+}
+
+pub export fn wgpuDeviceSetDeviceLostCallback(
+    dev_raw: types.WGPUDevice,
+    callback: ?types.WGPUDeviceLostCallback,
+    userdata1: ?*anyopaque,
+    userdata2: ?*anyopaque,
+) callconv(.c) void {
+    const dev = native.cast(native.DoeDevice, dev_raw) orelse return;
+    dev.device_lost_callback = callback;
+    dev.device_lost_userdata1 = userdata1;
+    dev.device_lost_userdata2 = userdata2;
 }
 
 pub export fn wgpuDeviceSetLabel(a0: types.WGPUDevice, a1: types.WGPUStringView) callconv(.c) void {
-    const proc = resolveRequiredProc(*const fn (types.WGPUDevice, types.WGPUStringView) callconv(.c) void, "wgpuDeviceSetLabel");
-    proc(a0, a1);
+    set_local_label(a0, a1);
+}
+
+pub export fn wgpuExternalTextureDestroy(a0: p2life.WGPUExternalTexture) callconv(.c) void {
+    native.doeNativeExternalTextureDestroy(a0);
+}
+
+pub export fn wgpuExternalTextureExpire(a0: p2life.WGPUExternalTexture) callconv(.c) void {
+    native.doeNativeExternalTextureExpire(a0);
+}
+
+pub export fn wgpuExternalTextureRefresh(a0: p2life.WGPUExternalTexture) callconv(.c) void {
+    native.doeNativeExternalTextureRefresh(a0);
 }
 
 pub export fn wgpuExternalTextureRelease(a0: p2life.WGPUExternalTexture) callconv(.c) void {
-    const proc = resolveRequiredProc(*const fn (p2life.WGPUExternalTexture) callconv(.c) void, "wgpuExternalTextureRelease");
-    proc(a0);
+    native.doeNativeExternalTextureRelease(a0);
 }
 
 pub export fn wgpuExternalTextureSetLabel(a0: p2life.WGPUExternalTexture, a1: types.WGPUStringView) callconv(.c) void {
-    const proc = resolveRequiredProc(*const fn (p2life.WGPUExternalTexture, types.WGPUStringView) callconv(.c) void, "wgpuExternalTextureSetLabel");
-    proc(a0, a1);
+    const data = a1.data orelse return;
+    native.doeNativeExternalTextureSetLabel(a0, data, a1.length);
 }
 
 pub export fn wgpuPipelineLayoutSetLabel(a0: types.WGPUPipelineLayout, a1: types.WGPUStringView) callconv(.c) void {
-    const proc = resolveRequiredProc(*const fn (types.WGPUPipelineLayout, types.WGPUStringView) callconv(.c) void, "wgpuPipelineLayoutSetLabel");
-    proc(a0, a1);
+    set_local_label(a0, a1);
 }
 
 pub export fn wgpuQuerySetSetLabel(a0: types.WGPUQuerySet, a1: types.WGPUStringView) callconv(.c) void {
-    const proc = resolveRequiredProc(*const fn (types.WGPUQuerySet, types.WGPUStringView) callconv(.c) void, "wgpuQuerySetSetLabel");
-    proc(a0, a1);
+    set_local_label(a0, a1);
 }
 
 pub export fn wgpuQueueSetLabel(a0: types.WGPUQueue, a1: types.WGPUStringView) callconv(.c) void {
-    const proc = resolveRequiredProc(*const fn (types.WGPUQueue, types.WGPUStringView) callconv(.c) void, "wgpuQueueSetLabel");
-    proc(a0, a1);
+    set_local_label(a0, a1);
 }
 
 pub export fn wgpuQueueWriteTexture(a0: types.WGPUQueue, a1: *const types.WGPUTexelCopyTextureInfo, a2: ?*const anyopaque, a3: usize, a4: *const types.WGPUTexelCopyBufferLayout, a5: *const types.WGPUExtent3D) callconv(.c) void {
-    const proc = resolveRequiredProc(*const fn (types.WGPUQueue, *const types.WGPUTexelCopyTextureInfo, ?*const anyopaque, usize, *const types.WGPUTexelCopyBufferLayout, *const types.WGPUExtent3D) callconv(.c) void, "wgpuQueueWriteTexture");
-    proc(a0, a1, a2, a3, a4, a5);
+    doeAbiBridgeQueueWriteTexture(a0, a1, a2, a3, a4, a5);
+}
+
+pub export fn wgpuQueueCopyExternalTextureForBrowser(
+    a0: types.WGPUQueue,
+    a1: ?*const anyopaque,
+    a2: ?*const anyopaque,
+    a3: ?*const anyopaque,
+    a4: ?*const anyopaque,
+) callconv(.c) void {
+    native.doeNativeQueueCopyExternalTextureForBrowser(a0, a1, a2, a3, a4);
+}
+
+/// ABI bridge for wgpuQueueWriteTexture: unpacks struct pointers into the
+/// flattened parameter list expected by doeNativeQueueWriteTexture.
+pub fn doeAbiBridgeQueueWriteTexture(
+    queue: types.WGPUQueue,
+    destination: *const types.WGPUTexelCopyTextureInfo,
+    data: ?*const anyopaque,
+    data_size: usize,
+    data_layout: *const types.WGPUTexelCopyBufferLayout,
+    write_size: *const types.WGPUExtent3D,
+) callconv(.c) void {
+    const cmd_texture = @import("doe_command_texture_native.zig");
+    const data_ptr: [*]const u8 = if (data) |d| @ptrCast(d) else return;
+    cmd_texture.doeNativeQueueWriteTexture(
+        queue,
+        destination.texture,
+        data_ptr,
+        data_size,
+        data_layout.bytesPerRow,
+        data_layout.rowsPerImage,
+        destination.origin.x,
+        destination.origin.y,
+        destination.origin.z,
+        destination.mipLevel,
+        0, // slice (derived from origin.z for 2D arrays; 0 for simple cases)
+        write_size.width,
+        write_size.height,
+        write_size.depthOrArrayLayers,
+    );
 }
 
 pub export fn wgpuRenderPassEncoderInsertDebugMarker(a0: types.WGPURenderPassEncoder, a1: types.WGPUStringView) callconv(.c) void {
-    const proc = resolveRequiredProc(*const fn (types.WGPURenderPassEncoder, types.WGPUStringView) callconv(.c) void, "wgpuRenderPassEncoderInsertDebugMarker");
-    proc(a0, a1);
+    _ = a0;
+    _ = a1;
 }
 
 pub export fn wgpuRenderPassEncoderPopDebugGroup(a0: types.WGPURenderPassEncoder) callconv(.c) void {
-    const proc = resolveRequiredProc(*const fn (types.WGPURenderPassEncoder) callconv(.c) void, "wgpuRenderPassEncoderPopDebugGroup");
-    proc(a0);
+    _ = a0;
 }
 
 pub export fn wgpuRenderPassEncoderPushDebugGroup(a0: types.WGPURenderPassEncoder, a1: types.WGPUStringView) callconv(.c) void {
-    const proc = resolveRequiredProc(*const fn (types.WGPURenderPassEncoder, types.WGPUStringView) callconv(.c) void, "wgpuRenderPassEncoderPushDebugGroup");
-    proc(a0, a1);
+    _ = a0;
+    _ = a1;
 }
 
 pub export fn wgpuRenderPassEncoderSetLabel(a0: types.WGPURenderPassEncoder, a1: types.WGPUStringView) callconv(.c) void {
-    const proc = resolveRequiredProc(*const fn (types.WGPURenderPassEncoder, types.WGPUStringView) callconv(.c) void, "wgpuRenderPassEncoderSetLabel");
-    proc(a0, a1);
+    set_local_label(a0, a1);
 }
 
 pub export fn wgpuRenderPipelineSetLabel(a0: types.WGPURenderPipeline, a1: types.WGPUStringView) callconv(.c) void {
-    const proc = resolveRequiredProc(*const fn (types.WGPURenderPipeline, types.WGPUStringView) callconv(.c) void, "wgpuRenderPipelineSetLabel");
-    proc(a0, a1);
+    set_local_label(a0, a1);
 }
 
 pub export fn wgpuSamplerSetLabel(a0: types.WGPUSampler, a1: types.WGPUStringView) callconv(.c) void {
-    const proc = resolveRequiredProc(*const fn (types.WGPUSampler, types.WGPUStringView) callconv(.c) void, "wgpuSamplerSetLabel");
-    proc(a0, a1);
+    set_local_label(a0, a1);
 }
 
 pub export fn wgpuShaderModuleSetLabel(a0: types.WGPUShaderModule, a1: types.WGPUStringView) callconv(.c) void {
-    const proc = resolveRequiredProc(*const fn (types.WGPUShaderModule, types.WGPUStringView) callconv(.c) void, "wgpuShaderModuleSetLabel");
-    proc(a0, a1);
+    set_local_label(a0, a1);
 }
 
 pub export fn wgpuSurfaceSetLabel(a0: surface.Surface, a1: types.WGPUStringView) callconv(.c) void {
-    const proc = resolveRequiredProc(*const fn (surface.Surface, types.WGPUStringView) callconv(.c) void, "wgpuSurfaceSetLabel");
-    proc(a0, a1);
+    set_local_label(a0, a1);
 }
 
 pub export fn wgpuTextureSetLabel(a0: types.WGPUTexture, a1: types.WGPUStringView) callconv(.c) void {
-    const proc = resolveRequiredProc(*const fn (types.WGPUTexture, types.WGPUStringView) callconv(.c) void, "wgpuTextureSetLabel");
-    proc(a0, a1);
+    set_local_label(a0, a1);
 }
 
 pub export fn wgpuTextureViewSetLabel(a0: types.WGPUTextureView, a1: types.WGPUStringView) callconv(.c) void {
-    const proc = resolveRequiredProc(*const fn (types.WGPUTextureView, types.WGPUStringView) callconv(.c) void, "wgpuTextureViewSetLabel");
-    proc(a0, a1);
+    set_local_label(a0, a1);
 }

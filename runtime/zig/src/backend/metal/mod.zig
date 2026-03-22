@@ -296,6 +296,12 @@ fn execute_dispatch(self: *ZigMetalBackend, dispatch: model.DispatchCommand) !we
     return ok_result(0, metrics.encode_ns, metrics.submit_wait_ns, metrics.dispatch_count);
 }
 
+fn execute_dispatch_indirect(self: *ZigMetalBackend, dispatch: model.DispatchIndirectCommand) !webgpu.NativeExecutionResult {
+    const rt = get_runtime(self);
+    const metrics = try rt.run_dispatch_indirect(dispatch.x, dispatch.y, dispatch.z, self.queue_sync_mode);
+    return ok_result(0, metrics.encode_ns, metrics.submit_wait_ns, metrics.dispatch_count);
+}
+
 fn execute_kernel_dispatch(self: *ZigMetalBackend, kd: model.KernelDispatchCommand) !webgpu.NativeExecutionResult {
     const rt = get_runtime(self);
     const want_ts = gpu_timestamps_wanted(self);
@@ -438,6 +444,12 @@ fn execute_async_diagnostics(self: *ZigMetalBackend, cmd: model.AsyncDiagnostics
     }
 }
 
+fn execute_map_async(self: *ZigMetalBackend, cmd: model.MapAsyncCommand) !webgpu.NativeExecutionResult {
+    const rt = get_runtime(self);
+    const encode_ns = try rt.execute_map_async(cmd);
+    return ok_result(0, encode_ns, 0, 0);
+}
+
 fn prewarm_kernel_dispatch(ctx: *anyopaque, kernel: []const u8, bindings: ?[]const model.KernelBinding) anyerror!void {
     const self = cast(ctx);
     const rt = get_runtime(self);
@@ -491,8 +503,7 @@ fn execute_native_command(self: *ZigMetalBackend, command: model.Command) !webgp
         .copy_buffer_to_texture => |copy| try execute_copy(self, copy),
         .barrier => try execute_barrier(self),
         .dispatch => |dispatch| try execute_dispatch(self, dispatch),
-        // TODO: implement Metal indirect dispatch via dispatchThreadgroupsWithIndirectBuffer:.
-        .dispatch_indirect => return error.Unsupported,
+        .dispatch_indirect => |dispatch| try execute_dispatch_indirect(self, dispatch),
         .kernel_dispatch => |kd| try execute_kernel_dispatch(self, kd),
         .sampler_create => |cmd| try execute_sampler_create(self, cmd),
         .sampler_destroy => |cmd| try execute_sampler_destroy(self, cmd),
@@ -511,8 +522,7 @@ fn execute_native_command(self: *ZigMetalBackend, command: model.Command) !webgp
         .draw_indexed_indirect => |cmd| try execute_render_draw(self, cmd),
         .render_pass => |cmd| try execute_render_draw(self, cmd),
         .async_diagnostics => |cmd| try execute_async_diagnostics(self, cmd),
-        // TODO: implement Metal map_async via synchronous MTLBuffer contents access.
-        .map_async => return error.Unsupported,
+        .map_async => |cmd| try execute_map_async(self, cmd),
     };
     result.setup_ns +|= flush_setup_ns;
     result.submit_wait_ns +|= pending_submit_wait_ns;

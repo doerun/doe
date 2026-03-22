@@ -247,8 +247,16 @@ pub export fn doeNativeDeviceCreateShaderModule(dev_raw: ?*anyopaque, desc: ?*co
             return null;
         },
     };
-    if (result != null) label_store.set(result, d.label.data, d.label.length);
-    return result;
+    // Return a valid error-flagged module when compilation fails so Dawn's
+    // wire server never gets null (which causes SIGSEGV in the GPU process).
+    const handle = result orelse blk: {
+        const err_sm = make(DoeShaderModule) orelse return null;
+        err_sm.* = .{};
+        err_sm.compilation_message_kind = .@"error";
+        break :blk toOpaque(err_sm);
+    };
+    label_store.set(handle, d.label.data, d.label.length);
+    return handle;
 }
 
 // ============================================================
@@ -341,16 +349,33 @@ fn createFromWGSLVulkan(dev: *DoeDevice, wgsl: []const u8) ?*anyopaque {
     set_module_info_from_diagnostic_directive(sm, wgsl);
     sm.binding_count = 0;
 
-    const vk_compute = @import("doe_vulkan_compute_native.zig");
-    vk_compute.vulkan_create_shader_module(sm, wgsl) catch |err| {
-        set_last_error_stage_name("native_shader_create");
-        set_last_error_kind(@errorName(err));
-        set_last_error_fmt("Vulkan WGSL→SPIR-V compilation failed: {s}", .{@errorName(err)});
-        std.log.err("doe: createShaderModule (Vulkan) failed: {s}", .{@errorName(err)});
-        if (sm.dispatch_preconditions.len > 0) alloc.free(sm.dispatch_preconditions);
-        alloc.destroy(sm);
-        return null;
-    };
+    // Probe entry point stages to decide compute vs graphics compilation path.
+    const vk_render = @import("doe_vulkan_render_native.zig");
+    const has_graphics = vk_render.probe_has_graphics_entry_points(wgsl);
+
+    if (has_graphics) {
+        vk_render.vulkan_create_graphics_shader_module(sm, wgsl) catch |err| {
+            set_last_error_stage_name("native_shader_create");
+            set_last_error_kind(@errorName(err));
+            set_last_error_fmt("Vulkan WGSL→SPIR-V graphics compilation failed: {s}", .{@errorName(err)});
+            std.log.err("doe: createShaderModule (Vulkan graphics) failed: {s}", .{@errorName(err)});
+            if (sm.vertex_spirv_data) |s| alloc.free(s);
+            if (sm.fragment_spirv_data) |s| alloc.free(s);
+            alloc.destroy(sm);
+            return null;
+        };
+    } else {
+        const vk_compute = @import("doe_vulkan_compute_native.zig");
+        vk_compute.vulkan_create_shader_module(sm, wgsl) catch |err| {
+            set_last_error_stage_name("native_shader_create");
+            set_last_error_kind(@errorName(err));
+            set_last_error_fmt("Vulkan WGSL→SPIR-V compilation failed: {s}", .{@errorName(err)});
+            std.log.err("doe: createShaderModule (Vulkan) failed: {s}", .{@errorName(err)});
+            if (sm.dispatch_preconditions.len > 0) alloc.free(sm.dispatch_preconditions);
+            alloc.destroy(sm);
+            return null;
+        };
+    }
     sm.wgsl_source = alloc.dupe(u8, wgsl) catch null;
 
     // Extract binding metadata for getBindGroupLayout (non-fatal on failure).
@@ -372,6 +397,7 @@ fn createFromWGSLVulkan(dev: *DoeDevice, wgsl: []const u8) ?*anyopaque {
     sm.binding_count = @intCast(bind_count);
     return toOpaque(sm);
 }
+
 
 // ============================================================
 // MSL path — pre-translated Metal Shading Language source
@@ -526,6 +552,8 @@ pub export fn doeNativeShaderModuleRelease(raw: ?*anyopaque) callconv(.c) void {
         if (sm.mtl_library) |l| metal_bridge_release(l);
         if (sm.dispatch_preconditions.len > 0) alloc.free(sm.dispatch_preconditions);
         if (sm.spirv_data) |s| alloc.free(s);
+        if (sm.vertex_spirv_data) |s| alloc.free(s);
+        if (sm.fragment_spirv_data) |s| alloc.free(s);
         if (sm.hlsl_source) |h| alloc.free(h);
         if (sm.wgsl_source) |w| alloc.free(w);
         if (sm.compilation_message) |message| alloc.free(message);

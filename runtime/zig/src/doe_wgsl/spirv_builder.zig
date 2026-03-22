@@ -451,6 +451,14 @@ pub const Builder = struct {
         try self.append_inst(&self.annotations, Opcode.Decorate, &.{ target_id, Decoration.NoPerspective });
     }
 
+    pub fn emit_centroid_decoration(self: *Builder, target_id: u32) EmitError!void {
+        try self.append_inst(&self.annotations, Opcode.Decorate, &.{ target_id, Decoration.Centroid });
+    }
+
+    pub fn emit_sample_decoration(self: *Builder, target_id: u32) EmitError!void {
+        try self.append_inst(&self.annotations, Opcode.Decorate, &.{ target_id, Decoration.Sample });
+    }
+
     pub fn emit_index_decoration(self: *Builder, target_id: u32, index: u32) EmitError!void {
         try self.append_inst(&self.annotations, Opcode.Decorate, &.{ target_id, Decoration.Index, index });
     }

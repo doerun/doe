@@ -185,6 +185,14 @@ pub fn emit_builtin(self: anytype, function: ir.Function, call: @FieldType(ir.Ex
             .global_ref => |index| {
                 const global = self.module.globals.items[index];
                 switch (self.module.types.get(global.ty)) {
+                    .texture_1d => {
+                        if (call.args.len != 2) return error.InvalidIr;
+                        try self.write(global.name);
+                        try self.write(".get_width(uint(");
+                        try self.emit_expr(function, function.expr_args.items[call.args.start + 1]);
+                        try self.write("))");
+                        return true;
+                    },
                     .texture_2d => {
                         if (call.args.len != 2) return error.InvalidIr;
                         try self.write("uint2(");

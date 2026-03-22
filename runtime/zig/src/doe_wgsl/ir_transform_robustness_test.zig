@@ -790,6 +790,93 @@ test "robustness: textureLoad 3D coords produce vec3 clamp" {
     try testing.expectEqual(@as(u8, 3), clamp_ty.vector.len);
 }
 
+test "robustness: textureSample float coords are not clamped" {
+    const allocator = testing.allocator;
+    var module = try make_test_module(allocator);
+    defer module.deinit();
+
+    const f32_ty = f32_type(&module);
+    const vec4f_ty = try module.types.intern(.{ .vector = .{ .elem = f32_ty, .len = 4 } });
+    const vec2f_ty = try module.types.intern(.{ .vector = .{ .elem = f32_ty, .len = 2 } });
+    const tex_ty = try module.types.intern(.{ .texture_2d = f32_ty });
+    const sampler_ty = try module.types.intern(.{ .sampler = {} });
+
+    try module.globals.append(allocator, .{
+        .name = try ir.dup_string(allocator, "tex"),
+        .ty = tex_ty,
+        .class = .var_,
+        .addr_space = .handle,
+        .binding = .{ .group = 0, .binding = 0 },
+    });
+    try module.globals.append(allocator, .{
+        .name = try ir.dup_string(allocator, "samp"),
+        .ty = sampler_ty,
+        .class = .var_,
+        .addr_space = .handle,
+        .binding = .{ .group = 0, .binding = 1 },
+    });
+
+    var function = ir.Function{ .name = try ir.dup_string(allocator, "main"), .return_type = ir.INVALID_TYPE };
+    errdefer function.deinit(allocator);
+
+    // textureSample(tex, samp, uv) — float coords, should not be clamped
+    const tex_id = try function.append_expr(allocator, .{ .ty = tex_ty, .category = .value, .data = .{ .global_ref = 0 } });
+    const samp_id = try function.append_expr(allocator, .{ .ty = sampler_ty, .category = .value, .data = .{ .global_ref = 1 } });
+    const uv_id = try function.append_expr(allocator, .{ .ty = vec2f_ty, .category = .value, .data = .{ .float_lit = 0.5 } });
+    const sample_args = try function.append_expr_args(allocator, &.{ tex_id, samp_id, uv_id });
+    _ = try function.append_expr(allocator, .{
+        .ty = vec4f_ty,
+        .category = .value,
+        .data = .{ .call = .{
+            .name = try ir.dup_string(allocator, "textureSample"),
+            .kind = .builtin,
+            .args = sample_args,
+        } },
+    });
+
+    // textureSampleLevel(tex, samp, uv, level) — float coords, should not be clamped
+    const tex_id2 = try function.append_expr(allocator, .{ .ty = tex_ty, .category = .value, .data = .{ .global_ref = 0 } });
+    const samp_id2 = try function.append_expr(allocator, .{ .ty = sampler_ty, .category = .value, .data = .{ .global_ref = 1 } });
+    const uv_id2 = try function.append_expr(allocator, .{ .ty = vec2f_ty, .category = .value, .data = .{ .float_lit = 0.5 } });
+    const level_id = try function.append_expr(allocator, .{ .ty = f32_ty, .category = .value, .data = .{ .float_lit = 0.0 } });
+    const sample_level_args = try function.append_expr_args(allocator, &.{ tex_id2, samp_id2, uv_id2, level_id });
+    _ = try function.append_expr(allocator, .{
+        .ty = vec4f_ty,
+        .category = .value,
+        .data = .{ .call = .{
+            .name = try ir.dup_string(allocator, "textureSampleLevel"),
+            .kind = .builtin,
+            .args = sample_level_args,
+        } },
+    });
+
+    // textureSampleOffset(tex, samp, uv, offset) — float coords + const int offset
+    const tex_id3 = try function.append_expr(allocator, .{ .ty = tex_ty, .category = .value, .data = .{ .global_ref = 0 } });
+    const samp_id3 = try function.append_expr(allocator, .{ .ty = sampler_ty, .category = .value, .data = .{ .global_ref = 1 } });
+    const uv_id3 = try function.append_expr(allocator, .{ .ty = vec2f_ty, .category = .value, .data = .{ .float_lit = 0.5 } });
+    const i32_ty = try module.types.intern(.{ .scalar = .i32 });
+    const vec2i_ty = try module.types.intern(.{ .vector = .{ .elem = i32_ty, .len = 2 } });
+    const offset_id = try function.append_expr(allocator, .{ .ty = vec2i_ty, .category = .value, .data = .{ .int_lit = 1 } });
+    const sample_offset_args = try function.append_expr_args(allocator, &.{ tex_id3, samp_id3, uv_id3, offset_id });
+    _ = try function.append_expr(allocator, .{
+        .ty = vec4f_ty,
+        .category = .value,
+        .data = .{ .call = .{
+            .name = try ir.dup_string(allocator, "textureSampleOffset"),
+            .kind = .builtin,
+            .args = sample_offset_args,
+        } },
+    });
+
+    try module.functions.append(allocator, function);
+
+    const original_count = module.functions.items[0].exprs.items.len;
+    try apply(allocator, &module, .{});
+
+    // No new expressions should have been appended — none of these use integer coords.
+    try testing.expectEqual(original_count, module.functions.items[0].exprs.items.len);
+}
+
 test "robustness: non-texture builtins are not clamped" {
     const allocator = testing.allocator;
     var module = try make_test_module(allocator);

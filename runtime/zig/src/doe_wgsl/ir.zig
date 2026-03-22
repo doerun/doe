@@ -60,10 +60,17 @@ pub const Interpolation = enum {
     flat,
 };
 
+pub const InterpolationSampling = enum {
+    center,
+    centroid,
+    sample,
+};
+
 pub const IoAttr = struct {
     builtin: Builtin = .none,
     location: ?u32 = null,
     interpolation: ?Interpolation = null,
+    sampling: ?InterpolationSampling = null,
     invariant: bool = false,
     blend_src: ?u32 = null,
 };
@@ -130,6 +137,7 @@ pub const Type = union(enum) {
     struct_: StructId,
     sampler: void,
     sampler_comparison: void,
+    texture_1d: TypeId,
     texture_2d: TypeId,
     texture_2d_array: TypeId,
     texture_cube: TypeId,
@@ -206,6 +214,10 @@ fn type_eql(lhs: Type, rhs: Type) bool {
         },
         .sampler_comparison => switch (rhs) {
             .sampler_comparison => true,
+            else => false,
+        },
+        .texture_1d => |lhs_sample| switch (rhs) {
+            .texture_1d => |rhs_sample| lhs_sample == rhs_sample,
             else => false,
         },
         .texture_2d => |lhs_sample| switch (rhs) {
@@ -533,6 +545,7 @@ pub const OverrideEntry = struct {
 /// runtime clamp. The host must verify this condition before dispatching.
 pub const DispatchPreconditionKind = enum {
     gid_component,
+    gid_component_tiled,
     flat_index_2d_dispatch_x,
 };
 
@@ -542,8 +555,34 @@ pub const DispatchPrecondition = struct {
     gid_axis: u8,
     /// Binding point of the storage buffer whose bounds were elided.
     storage_binding: BindingPoint,
+    /// Element multiplier for affine gid * constant access patterns.
+    element_multiplier: u64 = 1,
+    /// Tile width for proof-covered tiled gid access patterns.
+    tile_width: u64 = 1,
+    /// Exclusive upper bound for a loop-carried local index term when the
+    /// bounds proof consumes a counted-loop induction variable.
+    loop_limit: u64 = 0,
+    /// Multiplier applied to the loop limit contribution for affine
+    /// gid + local*scale + offset patterns.
+    loop_limit_multiplier: u64 = 0,
     /// Runtime-sized array element stride in bytes.
     element_stride_bytes: u64,
+    /// Additional element offset for affine gid + constant access patterns.
+    element_offset: u64 = 0,
+};
+
+pub const TextureDispatchPreconditionKind = enum {
+    gid_coords_2d,
+    gid_coords_3d,
+};
+
+pub const TextureDispatchPrecondition = struct {
+    kind: TextureDispatchPreconditionKind = .gid_coords_2d,
+    /// Binding point of the sampled/storage texture whose clamp was elided.
+    texture_binding: BindingPoint,
+    /// Mip level validated by the host. Dispatch-fit proof-backed elision
+    /// currently records only base-level accesses.
+    mip_level: u32 = 0,
 };
 
 pub const Module = struct {
@@ -557,6 +596,9 @@ pub const Module = struct {
     /// bounds eliminations elide runtime clamps. The host must validate the
     /// required byte coverage for each bound storage buffer before dispatching.
     dispatch_preconditions: std.ArrayListUnmanaged(DispatchPrecondition) = .{},
+    /// Texture extent preconditions recorded when proof-backed texture
+    /// coordinate clamp elimination relies on dispatch-fit assumptions.
+    texture_dispatch_preconditions: std.ArrayListUnmanaged(TextureDispatchPrecondition) = .{},
 
     pub fn init(allocator: std.mem.Allocator) Module {
         return .{
@@ -574,6 +616,7 @@ pub const Module = struct {
         self.functions.deinit(self.allocator);
         self.entry_points.deinit(self.allocator);
         self.dispatch_preconditions.deinit(self.allocator);
+        self.texture_dispatch_preconditions.deinit(self.allocator);
         self.types.deinit();
     }
 };

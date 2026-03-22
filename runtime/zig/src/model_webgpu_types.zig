@@ -288,6 +288,7 @@ pub const RenderIndexFormat = enum {
 
 pub const MAX_VERTEX_BUFFERS: usize = 8;
 pub const MAX_VERTEX_ATTRIBUTES: usize = 16;
+pub const MAX_RENDER_BIND_ENTRIES: usize = 16;
 
 pub const WGPUVertexStepMode_Vertex: u32 = 0x00000001;
 pub const WGPUVertexStepMode_Instance: u32 = 0x00000002;
@@ -334,6 +335,7 @@ pub const RenderDrawCommand = struct {
     base_vertex: i32 = 0,
     index_data: ?RenderIndexData = null,
     target_handle: u64 = DEFAULT_RENDER_TARGET_HANDLE,
+    target_view_handle: u64 = 0,
     target_width: u32 = DEFAULT_RENDER_TARGET_WIDTH,
     target_height: u32 = DEFAULT_RENDER_TARGET_HEIGHT,
     target_format: WGPUTextureFormat = DEFAULT_RENDER_TARGET_FORMAT,
@@ -370,6 +372,7 @@ pub const RenderDrawCommand = struct {
     color_write_mask: u32 = 0xF,
     sample_count: u32 = 1,
     blend_constant: [4]f32 = .{ 0, 0, 0, 0 },
+    clear_color: [4]f32 = .{ 0, 0, 0, 1 },
     stencil_reference: u32 = 0,
     occlusion_query_pool: u64 = 0,
     occlusion_query_index: ?u32 = null,
@@ -404,6 +407,18 @@ pub const RenderDrawCommand = struct {
     depth_bias_slope_scale: f32 = 0,
     depth_bias_clamp: f32 = 0,
     unclipped_depth: bool = false,
+    indirect_buffer_handle: u64 = 0,
+    indirect_offset: u64 = 0,
+    vertex_spirv: ?[]const u32 = null,
+    fragment_spirv: ?[]const u32 = null,
+    vertex_entry_point: ?[]const u8 = null,
+    fragment_entry_point: ?[]const u8 = null,
+    // Bind group texture/sampler handles for render pass descriptor binding.
+    // Each entry is an opaque D3D12/Vulkan texture view resource handle.
+    bind_texture_count: u32 = 0,
+    bind_texture_handles: [MAX_RENDER_BIND_ENTRIES]u64 = [_]u64{0} ** MAX_RENDER_BIND_ENTRIES,
+    bind_sampler_count: u32 = 0,
+    bind_sampler_handles: [MAX_RENDER_BIND_ENTRIES]u64 = [_]u64{0} ** MAX_RENDER_BIND_ENTRIES,
 };
 
 pub const DrawIndirectCommand = RenderDrawCommand;

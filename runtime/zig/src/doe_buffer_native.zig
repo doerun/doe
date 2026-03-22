@@ -111,7 +111,9 @@ pub export fn doeNativeBufferMapAsync(
     cb_info: types.WGPUBufferMapCallbackInfo,
 ) callconv(.c) types.WGPUFuture {
     const buf = cast(DoeBuffer, buf_raw) orelse {
-        cb_info.callback(WGPU_MAP_ASYNC_STATUS_VALIDATION_ERROR, .{ .data = null, .length = 0 }, cb_info.userdata1, cb_info.userdata2);
+        if (cb_info.callback) |callback| {
+            callback(WGPU_MAP_ASYNC_STATUS_VALIDATION_ERROR, .{ .data = null, .length = 0 }, cb_info.userdata1, cb_info.userdata2);
+        }
         return .{ .id = 3 };
     };
     _ = mode;
@@ -129,7 +131,9 @@ pub export fn doeNativeBufferMapAsync(
     // signals. We do not need an additional readback copy.
     buffer_map_states.put(alloc, @intFromPtr(buf), DOE_BUFFER_MAP_STATE_PENDING) catch {};
     buf.mapped = true;
-    cb_info.callback(WGPU_MAP_ASYNC_STATUS_SUCCESS, .{ .data = null, .length = 0 }, cb_info.userdata1, cb_info.userdata2);
+    if (cb_info.callback) |callback| {
+        callback(WGPU_MAP_ASYNC_STATUS_SUCCESS, .{ .data = null, .length = 0 }, cb_info.userdata1, cb_info.userdata2);
+    }
     buffer_map_states.put(alloc, @intFromPtr(buf), DOE_BUFFER_MAP_STATE_MAPPED) catch {};
     return .{ .id = 3 };
 }

@@ -14,6 +14,7 @@ const artifact_policy = @import("../common/artifact_policy.zig");
 const hash_utils = @import("../common/hash_utils.zig");
 const artifact_emit = @import("artifact_emit.zig");
 const native_runtime = @import("native_runtime.zig");
+const vk_async_dispatch = @import("vk_async_dispatch.zig");
 
 const MANIFEST_PATH_CAPACITY: usize = 256;
 const HASH_HEX_SIZE: usize = hash_utils.SHA256_HEX_SIZE;
@@ -518,61 +519,7 @@ fn execute_async_diagnostics(
     diagnostics: model.AsyncDiagnosticsCommand,
 ) !webgpu.NativeExecutionResult {
     const runtime = try ensure_runtime_bootstrapped(self);
-    const iterations = if (diagnostics.iterations > 0) diagnostics.iterations else 1;
-
-    switch (diagnostics.mode) {
-        .capability_introspection => {
-            const encode_start = common_timing.now_ns();
-            _ = runtime.adapter_ordinal();
-            _ = runtime.queue_family_index_value();
-            _ = runtime.present_capable();
-            const encode_ns = common_timing.ns_delta(common_timing.now_ns(), encode_start);
-            return result_without_gpu_timestamps(setup_ns, encode_ns, 0, iterations);
-        },
-        .lifecycle_refcount => {
-            const encode_ns = try runtime.lifecycle_probe(iterations);
-            return result_without_gpu_timestamps(setup_ns, encode_ns, 0, iterations);
-        },
-        .pipeline_async => return result_without_gpu_timestamps(setup_ns, try runtime.pipeline_async_probe(self.allocator, "shader_compile_pipeline_stress.spv", iterations), 0, iterations),
-        .resource_table_immediates => switch (diagnostics.feature_policy) {
-            .strict => return .{ .status = .unsupported, .status_message = "async_resource_table_immediates", .setup_ns = setup_ns, .dispatch_count = iterations },
-            .emulate_when_unavailable => return result_without_gpu_timestamps(
-                setup_ns,
-                try runtime.resource_table_immediates_emulation_probe(iterations, self.upload_path_policy),
-                0,
-                iterations,
-            ),
-        },
-        .pixel_local_storage => switch (diagnostics.feature_policy) {
-            .strict => return .{ .status = .unsupported, .status_message = "async_pixel_local_storage", .setup_ns = setup_ns, .dispatch_count = iterations },
-            .emulate_when_unavailable => return result_without_gpu_timestamps(
-                setup_ns,
-                try runtime.pixel_local_storage_emulation_probe(iterations, self.upload_path_policy),
-                0,
-                iterations,
-            ),
-        },
-        .full => {
-            const capability_ns = blk: {
-                const encode_start = common_timing.now_ns();
-                _ = runtime.adapter_ordinal();
-                _ = runtime.queue_family_index_value();
-                _ = runtime.present_capable();
-                break :blk common_timing.ns_delta(common_timing.now_ns(), encode_start);
-            };
-            var encode_ns = capability_ns;
-            encode_ns +|= try runtime.pipeline_async_probe(self.allocator, "shader_compile_pipeline_stress.spv", iterations);
-            encode_ns +|= try runtime.lifecycle_probe(iterations);
-            switch (diagnostics.feature_policy) {
-                .strict => return .{ .status = .unsupported, .status_message = "async_diagnostics_full", .setup_ns = setup_ns, .dispatch_count = iterations },
-                .emulate_when_unavailable => {
-                    encode_ns +|= try runtime.resource_table_immediates_emulation_probe(iterations, self.upload_path_policy);
-                    encode_ns +|= try runtime.pixel_local_storage_emulation_probe(iterations, self.upload_path_policy);
-                },
-            }
-            return result_without_gpu_timestamps(setup_ns, encode_ns, 0, iterations);
-        },
-    }
+    return vk_async_dispatch.execute(runtime, self.allocator, setup_ns, diagnostics, self.upload_path_policy);
 }
 
 fn execute_surface_command(self: *ZigVulkanBackend, setup_ns: u64, command: model.Command) !webgpu.NativeExecutionResult {

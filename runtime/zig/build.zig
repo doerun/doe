@@ -62,9 +62,13 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
+    const BuildTier = enum { compute, headless, full };
+    const build_tier = b.option(BuildTier, "tier", "Build tier: compute (dispatch+buffer only), headless (full WebGPU sans presentation), full (Dawn drop-in)") orelse .headless;
+
     const lean_verified = b.option(bool, "lean-verified", "Embed Lean proof artifact and validate at comptime") orelse false;
     const build_options = b.addOptions();
     build_options.addOption(bool, "lean_verified", lean_verified);
+    build_options.addOption(BuildTier, "build_tier", build_tier);
     {
         const f = std.fs.cwd().openFile("../../config/comparability-obligations.json", .{}) catch
             @panic("config/comparability-obligations.json not found");
@@ -362,15 +366,45 @@ pub fn build(b: *std.Build) void {
     const spirv_val_step = b.step("spirv-val", "Validate SPIR-V artifacts with spirv-val (skips gracefully if not installed)");
     spirv_val_step.dependOn(&spirv_val_check.step);
 
+    // Tiered build variants: compute-only and full Dawn drop-in.
+    // The default `dropin` step uses the --tier option (default: headless).
+    // These named steps override tier for convenience.
+    const compute_build_options = b.addOptions();
+    compute_build_options.addOption(bool, "lean_verified", lean_verified);
+    compute_build_options.addOption(BuildTier, "build_tier", .compute);
+    // Re-embed required config for the compute variant.
+    {
+        const f = std.fs.cwd().openFile("../../config/comparability-obligations.json", .{}) catch @panic("config/comparability-obligations.json not found");
+        defer f.close();
+        const json = f.readToEndAlloc(b.allocator, 128 * 1024) catch @panic("failed to read comparability-obligations.json");
+        compute_build_options.addOption([]const u8, "comparability_obligations_json", json);
+        compute_build_options.addOption([]const u8, "comparability_obligations_sha256", sha256HexAlloc(b.allocator, json));
+    }
+    {
+        const f = std.fs.cwd().openFile("../../config/dropin-abi-behavior.json", .{}) catch @panic("config/dropin-abi-behavior.json not found");
+        defer f.close();
+        compute_build_options.addOption([]const u8, "dropin_behavior_config_json", f.readToEndAlloc(b.allocator, 64 * 1024) catch @panic("failed to read dropin-abi-behavior.json"));
+    }
+    {
+        const f = std.fs.cwd().openFile("../../config/dropin-symbol-ownership.json", .{}) catch @panic("config/dropin-symbol-ownership.json not found");
+        defer f.close();
+        compute_build_options.addOption([]const u8, "dropin_symbol_ownership_config_json", f.readToEndAlloc(b.allocator, 64 * 1024) catch @panic("failed to read dropin-symbol-ownership.json"));
+    }
+    {
+        const f = std.fs.cwd().openFile("../../config/quirk-toggle-registry.json", .{}) catch @panic("config/quirk-toggle-registry.json not found");
+        defer f.close();
+        compute_build_options.addOption([]const u8, "quirk_toggle_registry_json", f.readToEndAlloc(b.allocator, 64 * 1024) catch @panic("failed to read quirk-toggle-registry.json"));
+    }
+
     const core_dropin_lib = b.addLibrary(.{
-        .name = "webgpu_doe_core",
+        .name = "webgpu_doe_compute",
         .linkage = .dynamic,
         .root_module = b.createModule(.{
             .root_source_file = b.path("src/wgpu_dropin_lib.zig"),
             .target = target,
             .optimize = optimize,
             .imports = &.{
-                .{ .name = "build_options", .module = build_options_module },
+                .{ .name = "build_options", .module = compute_build_options.createModule() },
             },
         }),
     });
@@ -387,8 +421,67 @@ pub fn build(b: *std.Build) void {
         configure_non_windows_graphics(core_dropin_lib, b, target);
     }
     const install_core_dropin = b.addInstallArtifact(core_dropin_lib, .{});
-    const core_dropin_step = b.step("dropin-core", "Build the core-only drop-in WebGPU shared library");
+    const core_dropin_step = b.step("dropin-compute", "Build compute-only drop-in library (dispatch + buffer, no render)");
     core_dropin_step.dependOn(&install_core_dropin.step);
+
+    // Alias the old name for backwards compatibility.
+    const core_dropin_compat_step = b.step("dropin-core", "Alias for dropin-compute");
+    core_dropin_compat_step.dependOn(&install_core_dropin.step);
+
+    // Full Dawn drop-in variant (tier=full).
+    const full_build_options = b.addOptions();
+    full_build_options.addOption(bool, "lean_verified", lean_verified);
+    full_build_options.addOption(BuildTier, "build_tier", .full);
+    {
+        const f = std.fs.cwd().openFile("../../config/comparability-obligations.json", .{}) catch @panic("config/comparability-obligations.json not found");
+        defer f.close();
+        const json = f.readToEndAlloc(b.allocator, 128 * 1024) catch @panic("failed to read comparability-obligations.json");
+        full_build_options.addOption([]const u8, "comparability_obligations_json", json);
+        full_build_options.addOption([]const u8, "comparability_obligations_sha256", sha256HexAlloc(b.allocator, json));
+    }
+    {
+        const f = std.fs.cwd().openFile("../../config/dropin-abi-behavior.json", .{}) catch @panic("config/dropin-abi-behavior.json not found");
+        defer f.close();
+        full_build_options.addOption([]const u8, "dropin_behavior_config_json", f.readToEndAlloc(b.allocator, 64 * 1024) catch @panic("failed to read dropin-abi-behavior.json"));
+    }
+    {
+        const f = std.fs.cwd().openFile("../../config/dropin-symbol-ownership.json", .{}) catch @panic("config/dropin-symbol-ownership.json not found");
+        defer f.close();
+        full_build_options.addOption([]const u8, "dropin_symbol_ownership_config_json", f.readToEndAlloc(b.allocator, 64 * 1024) catch @panic("failed to read dropin-symbol-ownership.json"));
+    }
+    {
+        const f = std.fs.cwd().openFile("../../config/quirk-toggle-registry.json", .{}) catch @panic("config/quirk-toggle-registry.json not found");
+        defer f.close();
+        full_build_options.addOption([]const u8, "quirk_toggle_registry_json", f.readToEndAlloc(b.allocator, 64 * 1024) catch @panic("failed to read quirk-toggle-registry.json"));
+    }
+
+    const full_dropin_lib = b.addLibrary(.{
+        .name = "webgpu_doe_full",
+        .linkage = .dynamic,
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/wgpu_dropin_lib.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{
+                .{ .name = "build_options", .module = full_build_options.createModule() },
+            },
+        }),
+    });
+    full_dropin_lib.linkLibC();
+    if (target.result.os.tag == .windows) {
+        full_dropin_lib.linkSystemLibrary("d3d12");
+        full_dropin_lib.linkSystemLibrary("dxgi");
+        full_dropin_lib.linkSystemLibrary("dxguid");
+        full_dropin_lib.addCSourceFile(.{
+            .file = b.path("src/backend/d3d12/d3d12_bridge.c"),
+            .flags = &.{},
+        });
+    } else {
+        configure_non_windows_graphics(full_dropin_lib, b, target);
+    }
+    const install_full_dropin = b.addInstallArtifact(full_dropin_lib, .{});
+    const full_dropin_step = b.step("dropin-full", "Build full Dawn drop-in library (all procs, surface, external textures)");
+    full_dropin_step.dependOn(&install_full_dropin.step);
 
     const test_step = b.step("test", "Run Zig unit tests");
     const test_exec = b.addTest(.{

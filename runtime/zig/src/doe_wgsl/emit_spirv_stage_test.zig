@@ -302,3 +302,221 @@ test "spirv vertex: interpolation decorations on outputs" {
     try testing.expect(found_flat);
     try testing.expect(found_noperspective);
 }
+
+test "spirv vertex: centroid interpolation sampling decoration" {
+    const source =
+        \\struct VsOut {
+        \\    @builtin(position) pos: vec4f,
+        \\    @location(0) @interpolate(perspective, centroid) centroid_val: vec2f,
+        \\    @location(1) @interpolate(linear, centroid) linear_centroid_val: f32,
+        \\}
+        \\@vertex
+        \\fn vs_main(@builtin(vertex_index) vid: u32) -> VsOut {
+        \\    var out: VsOut;
+        \\    return out;
+        \\}
+    ;
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(allocator, source, &out);
+    const binary = out[0..len];
+
+    try testing.expect(len >= 20);
+    try testing.expectEqual(spirv.MAGIC, read_u32_le(binary, 0));
+
+    // Verify Centroid (16) and NoPerspective (13) decorations
+    var centroid_count: u32 = 0;
+    var found_noperspective = false;
+    const word_count = len / 4;
+    var i: usize = 5;
+    while (i < word_count) {
+        const w = read_u32_le(binary, i * 4);
+        const op = w & 0xFFFF;
+        const wc = w >> 16;
+        if (op == 71 and wc >= 3) { // OpDecorate
+            const decoration = read_u32_le(binary, (i + 2) * 4);
+            if (decoration == 16) centroid_count += 1; // Centroid
+            if (decoration == 13) found_noperspective = true; // NoPerspective
+        }
+        i += wc;
+    }
+    // Both outputs have centroid sampling
+    try testing.expect(centroid_count >= 2);
+    // linear, centroid output has NoPerspective
+    try testing.expect(found_noperspective);
+}
+
+test "spirv vertex: sample interpolation sampling decoration" {
+    const source =
+        \\struct VsOut {
+        \\    @builtin(position) pos: vec4f,
+        \\    @location(0) @interpolate(perspective, sample) sample_val: vec2f,
+        \\}
+        \\@vertex
+        \\fn vs_main(@builtin(vertex_index) vid: u32) -> VsOut {
+        \\    var out: VsOut;
+        \\    return out;
+        \\}
+    ;
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(allocator, source, &out);
+    const binary = out[0..len];
+
+    try testing.expect(len >= 20);
+    try testing.expectEqual(spirv.MAGIC, read_u32_le(binary, 0));
+
+    // Verify Sample (17) decoration and SampleRateShading capability (35)
+    var found_sample_decoration = false;
+    var found_sample_rate_cap = false;
+    const word_count = len / 4;
+    var i: usize = 5;
+    while (i < word_count) {
+        const w = read_u32_le(binary, i * 4);
+        const op = w & 0xFFFF;
+        const wc = w >> 16;
+        if (op == 71 and wc >= 3) { // OpDecorate
+            const decoration = read_u32_le(binary, (i + 2) * 4);
+            if (decoration == 17) found_sample_decoration = true; // Sample
+        }
+        if (op == 17 and wc >= 2) { // OpCapability
+            const cap = read_u32_le(binary, (i + 1) * 4);
+            if (cap == 35) found_sample_rate_cap = true; // SampleRateShading
+        }
+        i += wc;
+    }
+    try testing.expect(found_sample_decoration);
+    try testing.expect(found_sample_rate_cap);
+}
+
+test "spirv fragment: inter-stage variables with multiple locations" {
+    const source =
+        \\struct FsIn {
+        \\    @location(0) uv: vec2f,
+        \\    @location(1) normal: vec3f,
+        \\    @location(2) @interpolate(flat) flat_id: u32,
+        \\    @location(3) color: vec4f,
+        \\}
+        \\@fragment
+        \\fn fs_main(input: FsIn) -> @location(0) vec4f {
+        \\    return input.color;
+        \\}
+    ;
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(allocator, source, &out);
+    const binary = out[0..len];
+
+    try testing.expect(len >= 20);
+    try testing.expectEqual(spirv.MAGIC, read_u32_le(binary, 0));
+
+    // Verify at least 4 input + 1 output Location decorations
+    var location_count: u32 = 0;
+    var found_flat = false;
+    const word_count = len / 4;
+    var i: usize = 5;
+    while (i < word_count) {
+        const w = read_u32_le(binary, i * 4);
+        const op = w & 0xFFFF;
+        const wc = w >> 16;
+        if (op == 71 and wc >= 3) { // OpDecorate
+            const decoration = read_u32_le(binary, (i + 2) * 4);
+            if (decoration == 30) location_count += 1; // Location
+            if (decoration == 14) found_flat = true; // Flat
+        }
+        i += wc;
+    }
+    try testing.expect(location_count >= 5);
+    try testing.expect(found_flat);
+}
+
+test "spirv fragment: MRT struct output with three targets" {
+    const source =
+        \\struct MrtOut {
+        \\    @location(0) albedo: vec4f,
+        \\    @location(1) normal: vec4f,
+        \\    @location(2) emission: vec4f,
+        \\}
+        \\@fragment
+        \\fn fs_main(@location(0) uv: vec2f) -> MrtOut {
+        \\    var out: MrtOut;
+        \\    out.albedo = vec4f(uv, 0.0, 1.0);
+        \\    out.normal = vec4f(0.0, 0.0, 1.0, 0.0);
+        \\    out.emission = vec4f(0.0);
+        \\    return out;
+        \\}
+    ;
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(allocator, source, &out);
+    const binary = out[0..len];
+
+    try testing.expect(len >= 20);
+    try testing.expectEqual(spirv.MAGIC, read_u32_le(binary, 0));
+
+    // Count output Location decorations: at least 3 for MRT + 1 for input
+    var location_count: u32 = 0;
+    const word_count = len / 4;
+    var i: usize = 5;
+    while (i < word_count) {
+        const w = read_u32_le(binary, i * 4);
+        const op = w & 0xFFFF;
+        const wc = w >> 16;
+        if (op == 71 and wc >= 4) { // OpDecorate with operand
+            const decoration = read_u32_le(binary, (i + 2) * 4);
+            if (decoration == 30) location_count += 1; // Location
+        }
+        i += wc;
+    }
+    try testing.expect(location_count >= 4);
+}
+
+test "spirv fragment: texture sampling with separate texture and sampler" {
+    const source =
+        \\@group(0) @binding(0) var t: texture_2d<f32>;
+        \\@group(0) @binding(1) var s: sampler;
+        \\
+        \\@fragment
+        \\fn main(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
+        \\  return textureSample(t, s, uv);
+        \\}
+    ;
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(allocator, source, &out);
+    const binary = out[0..len];
+
+    try testing.expect(len >= 20);
+    try testing.expectEqual(spirv.MAGIC, read_u32_le(binary, 0));
+
+    // Verify Fragment execution model (4), OriginUpperLeft mode (7),
+    // DescriptorSet (34) and Binding (33) decorations for the texture/sampler,
+    // and at least one Location decoration for I/O.
+    var found_fragment = false;
+    var found_origin = false;
+    var found_descriptor_set = false;
+    var found_binding = false;
+    var found_location = false;
+    const word_count = len / 4;
+    var i: usize = 5;
+    while (i < word_count) {
+        const w = read_u32_le(binary, i * 4);
+        const op = w & 0xFFFF;
+        const wc = w >> 16;
+        if (op == 15 and wc >= 3) { // OpEntryPoint
+            const exec_model = read_u32_le(binary, (i + 1) * 4);
+            if (exec_model == 4) found_fragment = true;
+        }
+        if (op == 16 and wc >= 3) { // OpExecutionMode
+            const mode = read_u32_le(binary, (i + 2) * 4);
+            if (mode == 7) found_origin = true;
+        }
+        if (op == 71 and wc >= 4) { // OpDecorate
+            const decoration = read_u32_le(binary, (i + 2) * 4);
+            if (decoration == 34) found_descriptor_set = true; // DescriptorSet
+            if (decoration == 33) found_binding = true; // Binding
+            if (decoration == 30) found_location = true; // Location
+        }
+        i += wc;
+    }
+    try testing.expect(found_fragment);
+    try testing.expect(found_origin);
+    try testing.expect(found_descriptor_set);
+    try testing.expect(found_binding);
+    try testing.expect(found_location);
+}

@@ -89,6 +89,11 @@ pub fn write_type(module: *const ir.Module, ty: ir.TypeId, buf: []u8, pos: *usiz
         .struct_ => |struct_id| try write_str(buf, pos, module.structs.items[struct_id].name),
         .sampler => try write_str(buf, pos, "sampler"),
         .sampler_comparison => try write_str(buf, pos, "sampler"),
+        .texture_1d => |sample_ty| {
+            try write_str(buf, pos, "texture1d<");
+            try write_type(module, sample_ty, buf, pos);
+            try write_str(buf, pos, ">");
+        },
         .texture_2d => |sample_ty| {
             try write_str(buf, pos, "texture2d<");
             try write_type(module, sample_ty, buf, pos);
@@ -191,7 +196,7 @@ pub fn write_bound_global_param(module: *const ir.Module, global: ir.Global, buf
             try write_u32(buf, pos, binding.binding);
             try write_str(buf, pos, ")]]");
         },
-        .texture_2d, .texture_2d_array, .texture_cube, .texture_multisampled_2d, .texture_depth_2d, .texture_depth_cube, .texture_3d => {
+        .texture_1d, .texture_2d, .texture_2d_array, .texture_cube, .texture_multisampled_2d, .texture_depth_2d, .texture_depth_cube, .texture_3d => {
             try write_type(module, global.ty, buf, pos);
             try write_str(buf, pos, " ");
             try write_str(buf, pos, global.name);

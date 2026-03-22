@@ -90,6 +90,39 @@ test "device caps native exports exist as callable C ABI functions" {
     }
 }
 
+test "d3d12 texture view swizzle mode separates sampled and storage-only views" {
+    try std.testing.expectEqual(
+        render.D3D12TextureViewSwizzleMode.identity,
+        render.d3d12TextureViewSwizzleMode(
+            types.WGPUTextureUsage_TextureBinding,
+            types.WGPUTextureComponentSwizzle_Red,
+            types.WGPUTextureComponentSwizzle_Green,
+            types.WGPUTextureComponentSwizzle_Blue,
+            types.WGPUTextureComponentSwizzle_Alpha,
+        ),
+    );
+    try std.testing.expectEqual(
+        render.D3D12TextureViewSwizzleMode.swizzled_sampled,
+        render.d3d12TextureViewSwizzleMode(
+            types.WGPUTextureUsage_TextureBinding,
+            types.WGPUTextureComponentSwizzle_Red,
+            types.WGPUTextureComponentSwizzle_Blue,
+            types.WGPUTextureComponentSwizzle_Green,
+            types.WGPUTextureComponentSwizzle_Alpha,
+        ),
+    );
+    try std.testing.expectEqual(
+        render.D3D12TextureViewSwizzleMode.unsupported_storage,
+        render.d3d12TextureViewSwizzleMode(
+            types.WGPUTextureUsage_StorageBinding,
+            types.WGPUTextureComponentSwizzle_Red,
+            types.WGPUTextureComponentSwizzle_Blue,
+            types.WGPUTextureComponentSwizzle_Green,
+            types.WGPUTextureComponentSwizzle_Alpha,
+        ),
+    );
+}
+
 // ============================================================
 // Null-pointer safety: shader native
 // ============================================================

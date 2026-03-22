@@ -18,7 +18,7 @@ import {
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
 const addon = loadAddon();
-const DOE_LIB_PATH = resolveDoeLibraryPath();
+const DOE_LIB_PATH = resolveDoeLibraryPath(process.env.DOE_BUILD_TIER);
 const DOE_BUILD_METADATA = loadDoeBuildMetadata({
   packageRoot: resolve(__dirname, '..'),
   libraryPath: DOE_LIB_PATH ?? '',
@@ -42,15 +42,21 @@ function loadAddon() {
   }
 }
 
-function resolveDoeLibraryPath() {
+function resolveDoeLibraryPath(tier) {
   const ext = process.platform === 'darwin' ? 'dylib'
     : process.platform === 'win32' ? 'dll' : 'so';
+  const libName = tier === 'compute' ? `libwebgpu_doe_compute.${ext}`
+    : tier === 'full' ? `libwebgpu_doe_full.${ext}`
+    : `libwebgpu_doe.${ext}`;
+  const zigOut = (base) => resolve(base, 'runtime', 'zig', 'zig-out', 'lib');
   const candidates = [
     process.env.DOE_WEBGPU_LIB,
     process.env.FAWN_DOE_LIB,
+    resolve(zigOut(resolve(__dirname, '..', '..', '..')), libName),
     resolve(__dirname, '..', '..', '..', 'runtime', 'zig', 'zig-out', 'lib', `libwebgpu_doe.${ext}`),
     resolve(__dirname, '..', '..', '..', 'zig', 'zig-out', 'lib', `libwebgpu_doe.${ext}`),
     resolve(__dirname, '..', 'prebuilds', `${process.platform}-${process.arch}`, `libwebgpu_doe.${ext}`),
+    resolve(zigOut(process.cwd()), libName),
     resolve(process.cwd(), 'runtime', 'zig', 'zig-out', 'lib', `libwebgpu_doe.${ext}`),
     resolve(process.cwd(), 'zig', 'zig-out', 'lib', `libwebgpu_doe.${ext}`),
   ];

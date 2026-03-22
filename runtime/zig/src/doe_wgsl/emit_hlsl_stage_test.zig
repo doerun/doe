@@ -481,3 +481,68 @@ test "hlsl texture: textureNumLayers emits helper call for 2d array" {
     try testing.expect(contains(hlsl, "uint doe_textureNumLayers_tex()"));
     try testing.expect(contains(hlsl, "return elems;"));
 }
+
+test "hlsl vertex: interpolation modifiers on output struct" {
+    const source =
+        \\struct VsOut {
+        \\    @builtin(position) pos: vec4f,
+        \\    @location(0) @interpolate(flat) flat_val: f32,
+        \\    @location(1) @interpolate(linear) linear_val: vec2f,
+        \\    @location(2) @interpolate(perspective, centroid) centroid_val: vec2f,
+        \\}
+        \\@vertex
+        \\fn vs_main(@builtin(vertex_index) vid: u32) -> VsOut {
+        \\    var out: VsOut;
+        \\    return out;
+        \\}
+    ;
+    var out: [MAX_HLSL_OUTPUT]u8 = undefined;
+    const len = try translateToHlsl(allocator, source, &out);
+    const hlsl = out[0..len];
+    try testing.expect(contains(hlsl, "nointerpolation float flat_val"));
+    try testing.expect(contains(hlsl, "noperspective float2 linear_val"));
+    try testing.expect(contains(hlsl, "centroid float2 centroid_val"));
+}
+
+test "hlsl fragment: interpolation modifiers on input params" {
+    const source =
+        \\struct FsIn {
+        \\    @location(0) @interpolate(flat) flat_val: f32,
+        \\    @location(1) @interpolate(linear, centroid) linear_centroid_val: vec2f,
+        \\}
+        \\@fragment
+        \\fn fs_main(input: FsIn) -> @location(0) vec4f {
+        \\    return vec4f(input.flat_val, input.linear_centroid_val, 1.0);
+        \\}
+    ;
+    var out: [MAX_HLSL_OUTPUT]u8 = undefined;
+    const len = try translateToHlsl(allocator, source, &out);
+    const hlsl = out[0..len];
+    try testing.expect(contains(hlsl, "nointerpolation float flat_val"));
+    try testing.expect(contains(hlsl, "noperspective centroid float2 linear_centroid_val"));
+}
+
+test "hlsl fragment: MRT output with three render targets" {
+    const source =
+        \\struct MrtOut {
+        \\    @location(0) albedo: vec4f,
+        \\    @location(1) normal: vec4f,
+        \\    @location(2) emission: vec4f,
+        \\}
+        \\@fragment
+        \\fn fs_main(@location(0) uv: vec2f) -> MrtOut {
+        \\    var out: MrtOut;
+        \\    out.albedo = vec4f(uv, 0.0, 1.0);
+        \\    out.normal = vec4f(0.0, 0.0, 1.0, 0.0);
+        \\    out.emission = vec4f(0.0);
+        \\    return out;
+        \\}
+    ;
+    var out: [MAX_HLSL_OUTPUT]u8 = undefined;
+    const len = try translateToHlsl(allocator, source, &out);
+    const hlsl = out[0..len];
+    try testing.expect(contains(hlsl, "SV_Target0"));
+    try testing.expect(contains(hlsl, "SV_Target1"));
+    try testing.expect(contains(hlsl, "SV_Target2"));
+    try testing.expect(contains(hlsl, "fs_main_stage_out"));
+}

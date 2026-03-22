@@ -17,6 +17,7 @@ const VkDeviceMemory = c.VkDeviceMemory;
 const VkImage = c.VkImage;
 const VkImageView = c.VkImageView;
 const VK_NULL_U64 = c.VK_NULL_U64;
+const VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT: u32 = 0x00000020;
 
 pub const DEFAULT_RUNTIME_TEXTURE_USAGE: model.WGPUFlags =
     model.WGPUTextureUsage_TextureBinding |
@@ -418,7 +419,7 @@ pub fn create_texture_resource_full(
         .arrayLayers = image_array_layers,
         .samples = sample_count_vk,
         .tiling = c.VK_IMAGE_TILING_OPTIMAL,
-        .usage = image_usage_for_texture(effective_usage),
+        .usage = image_usage_for_texture(effective_usage, format),
         .sharingMode = c.VK_SHARING_MODE_EXCLUSIVE,
         .queueFamilyIndexCount = 0,
         .pQueueFamilyIndices = null,
@@ -628,12 +629,18 @@ pub fn texture_format_to_vk(format: model.WGPUTextureFormat) !u32 {
     return vk_formats.wgpu_format_to_vk_format(format);
 }
 
-pub fn image_usage_for_texture(usage: model.WGPUFlags) u32 {
+pub fn image_usage_for_texture(usage: model.WGPUFlags, format: model.WGPUTextureFormat) u32 {
     var out: u32 = c.VK_IMAGE_USAGE_TRANSFER_DST_BIT;
     if ((usage & model.WGPUTextureUsage_TextureBinding) != 0) out |= c.VK_IMAGE_USAGE_SAMPLED_BIT;
     if ((usage & model.WGPUTextureUsage_StorageBinding) != 0) out |= c.VK_IMAGE_USAGE_STORAGE_BIT;
     if ((usage & model.WGPUTextureUsage_CopySrc) != 0) out |= c.VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
     if ((usage & model.WGPUTextureUsage_CopyDst) != 0) out |= c.VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    if ((usage & model.WGPUTextureUsage_RenderAttachment) != 0) {
+        out |= if (vk_formats.is_depth_stencil(format))
+            VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
+        else
+            c.VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    }
     return out;
 }
 

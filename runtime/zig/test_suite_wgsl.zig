@@ -12,6 +12,8 @@ const coverage_builtin_test = @import("src/doe_wgsl/coverage_builtin_test.zig");
 const coverage_resource_test = @import("src/doe_wgsl/coverage_resource_test.zig");
 const coverage_stage_texture_test = @import("src/doe_wgsl/coverage_stage_texture_test.zig");
 const mod_api_test = @import("src/doe_wgsl/mod_api_test.zig");
+const mod_bounds_loop_test = @import("src/doe_wgsl/mod_bounds_loop_test.zig");
+const mod_bounds_tiled_test = @import("src/doe_wgsl/mod_bounds_tiled_test.zig");
 const mod_error_contract_test = @import("src/doe_wgsl/mod_error_contract_test.zig");
 const mod_backend_translation_test = @import("src/doe_wgsl/mod_backend_translation_test.zig");
 const mod_dxil_test = @import("src/doe_wgsl/mod_dxil_test.zig");
@@ -33,6 +35,8 @@ comptime {
     _ = coverage_resource_test;
     _ = coverage_stage_texture_test;
     _ = mod_api_test;
+    _ = mod_bounds_loop_test;
+    _ = mod_bounds_tiled_test;
     _ = mod_error_contract_test;
     _ = mod_backend_translation_test;
     _ = mod_dxil_test;

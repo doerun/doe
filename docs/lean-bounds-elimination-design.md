@@ -11,9 +11,18 @@ gid coordinates. The proof-backed pattern recognizers and IR metadata are
 implemented. Storage-buffer elimination is now active on native compute
 runtime translation with dispatch-time precondition enforcement, including
 the existing `flat_index_2d_inbounds` theorem for `gid.y * dispatch_width +
-gid.x`. Default/public WGSL translation still stays conservative; the
-remaining activation blocker is dispatch-fit texture precondition
-enforcement for non-runtime consumers.
+gid.x`, plus the broader affine `gid + constant`, `gid * constant +
+offset`, canonical counted-loop `gid + i + constant`, `flat_index_2d +
+constant`, and 1D tiled
+`(gid / tile_width) * tile_stride + (gid % tile_width) + offset`
+families. Dispatch-fit texture
+precondition enforcement is now active on native compute runtime
+translation as well, and `_doe_sizes` is only retained when a real
+runtime `arrayLength` query survives proof-backed clamp elimination.
+Default/public WGSL translation still stays conservative for the
+dispatch-fit texture path; the remaining activation blocker is whether
+non-runtime/public consumers should opt into host-validated proof
+contracts at all.
 
 ## Problem
 
@@ -168,9 +177,17 @@ The pattern recognizer in `ir_transform_robustness.zig` will match:
    - Index expression is `binary(add, binary(mul, member(gid, y), const), member(gid, x))`
    - Both gid components have independent proofs; width is a pipeline constant
 
-3. **Loop-carried access**: `buf[gid.x + i]` where `i < stride`
+3. **Affine 1D strided access**: `buf[gid.x * stride + offset]`
+   - `stride` and `offset` must be positive/known compile-time constants
+   - Host-side precondition validates `ws.x * nwg.x * stride + offset <= buf.length`
+
+4. **Affine flat 2D access**: `buf[gid.y * width + gid.x + offset]`
+   - Same width matching as flat 2D access
+   - Host-side precondition validates `width * height + offset <= buf.length`
+
+5. **Loop-carried access**: `buf[gid.x + i]` where `i < stride`
    - Requires compound precondition: `ws.x * nwg.x + stride <= buf.length`
-   - Future extension, not in initial implementation
+   - Future extension, not in the current implementation
 
 ### Comparison with Tint
 
@@ -197,9 +214,15 @@ correctness of the analysis itself.
 |---|---|---|
 | `gid_component_lt_total` | `lean_verified` | Single-dimension gid < array_length when dispatch fits |
 | `gid_inbounds_when_dispatch_fits` | `lean_verified` | 1D dispatch: gid.x < buf.length when ws.x * nwg.x ≤ buf.length |
+| `gid_plus_offset_inbounds_when_dispatch_fits` | `lean_verified` | 1D affine dispatch: gid.x + offset < buf.length when ws.x * nwg.x + offset ≤ buf.length |
+| `gid_times_stride_plus_offset_inbounds_when_dispatch_fits` | `lean_verified` | 1D strided affine dispatch: gid.x * stride + offset < buf.length when ws.x * nwg.x * stride + offset ≤ buf.length |
+| `gid_plus_bounded_loop_index_inbounds_when_dispatch_fits` | `lean_verified` | Constant-bounded counted loops (`for`, `while`, and guarded `loop`, ascending or descending) give `gid.x + i + offset < buf.length` when ws.x * nwg.x + limit + offset fits |
+| `gid_affine_plus_scaled_loop_index_inbounds_when_dispatch_fits` | `lean_verified` | Constant-bounded counted loops (including descending forms) give `gid.x * gid_stride + i * loop_stride + offset < buf.length` when the scaled dispatch and loop limits fit |
+| `gid_tiled_index_plus_offset_inbounds_when_dispatch_fits` | `lean_verified` | `(gid.x / tile_width) * tile_stride + (gid.x % tile_width) + offset < buf.length` when host-validated tiled groups fit |
 | `clamp_noop_when_inbounds` | `lean_verified` | min(gid, len-1) = gid when gid < len (connects proof to transform) |
 | `gid_2d_inbounds` | `lean_verified` | Both components bounded independently for 2D dispatch |
 | `flat_index_2d_inbounds` | `lean_verified` | gid.y * width + gid.x < width * height when components bounded |
+| `flat_index_2d_plus_offset_inbounds` | `lean_verified` | gid.y * width + gid.x + offset < buf.length when width * height + offset fits |
 | `gid_texture_coords_2d_inbounds_when_dispatch_fits` | `lean_verified` | Dispatch-fit precondition implies in-bounds 2D gid texture coords |
 | `guarded_gid_texture_coords_2d_inbounds` | `lean_verified` | Root early-return guard against `textureDimensions(...).xy` implies in-bounds 2D gid coords |
 | `gid_texture_coords_3d_inbounds_when_dispatch_fits` | `lean_verified` | Dispatch-fit precondition implies in-bounds 3D gid texture coords |
@@ -220,9 +243,9 @@ exactly matching the criterion established in `pipeline/lean/README.md`.
 4. **Done**: Pattern recognizer in `ir_transform_robustness.zig` — matches gid storage-buffer access patterns, guarded gid texture coordinate patterns, and dispatch-fit gid texture coordinate patterns
 5. **Done**: `lean_proof.zig` — validates shader theorem/artifact coverage and exposes the comptime availability flags
 6. **Done/Partial**: explicit proof-aware analysis path now powers native compute runtime translation; default/public translation remains conservative
-7. **Done**: `_doe_sizes` requirement now derives from surviving IR `arrayLength` use instead of raw WGSL string search
-8. **Done**: host-side storage-buffer dispatch precondition checks in native compute dispatch paths (`doeNativeComputeDispatchFlush`, `doe_compute_ext_native.zig`, `doe_vulkan_compute_native.zig`)
-9. **Future**: dispatch-fit texture enforcement, loop-carried access patterns, broader guarded texture patterns
+7. **Done**: `_doe_sizes` requirement now derives from surviving IR `arrayLength` use, and proof-covered robustness clamps no longer keep `_doe_sizes` alive on Metal
+8. **Done**: host-side storage-buffer and texture dispatch precondition checks in native compute dispatch paths (`doeNativeComputeDispatchFlush`, `doe_compute_ext_native.zig`, `doe_vulkan_compute_native.zig`)
+9. **Future**: broader guarded texture patterns, a policy decision for public/non-runtime proof consumption, and optional non-counted/data-dependent loop range analysis beyond the current counted-loop proof contract
 
 ## File map
 

@@ -189,6 +189,7 @@ pub export fn doeNativeDeviceCreateBindGroupLayout(dev_raw: ?*anyopaque, desc: ?
 
 pub export fn doeNativeBindGroupLayoutRelease(raw: ?*anyopaque) callconv(.c) void {
     if (cast(DoeBindGroupLayout, raw)) |l| {
+        if (!native.object_should_destroy(l)) return;
         label_store.remove(raw);
         if (l.entries) |entries| alloc.free(entries);
         alloc.destroy(l);
@@ -241,6 +242,7 @@ pub export fn doeNativeDeviceCreateBindGroup(dev_raw: ?*anyopaque, desc: ?*const
                 bg.buffer_sizes[e.binding] = doe_buf.size;
             } else if (cast(DoeTextureView, e.textureView)) |view| {
                 bg.textures[e.binding] = if (view.handle) |handle| handle else view.tex.mtl;
+                bg.texture_views[e.binding] = toOpaque(view);
             } else if (cast(DoeSampler, e.sampler)) |sampler| {
                 bg.samplers[e.binding] = sampler.mtl;
             } else continue;
@@ -254,6 +256,7 @@ pub export fn doeNativeDeviceCreateBindGroup(dev_raw: ?*anyopaque, desc: ?*const
 
 pub export fn doeNativeBindGroupRelease(raw: ?*anyopaque) callconv(.c) void {
     if (cast(DoeBindGroup, raw)) |g| {
+        if (!native.object_should_destroy(g)) return;
         label_store.remove(raw);
         alloc.destroy(g);
     }
@@ -273,6 +276,7 @@ pub export fn doeNativeDeviceCreatePipelineLayout(dev_raw: ?*anyopaque, desc: ?*
 
 pub export fn doeNativePipelineLayoutRelease(raw: ?*anyopaque) callconv(.c) void {
     if (cast(DoePipelineLayout, raw)) |l| {
+        if (!native.object_should_destroy(l)) return;
         label_store.remove(raw);
         alloc.destroy(l);
     }

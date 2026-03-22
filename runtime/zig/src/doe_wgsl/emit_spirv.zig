@@ -11,9 +11,19 @@ pub const EmitError = spirv.EmitError || error{
 pub const MAX_OUTPUT: usize = 256 * 1024;
 
 pub fn emit(module: *const ir.Module, out: []u8) EmitError!usize {
+    return emitImpl(module, null, out);
+}
+
+/// Emit SPIR-V for a single shader stage. Globals and helper functions are
+/// emitted in full; only the specified stage's entry wrapper is included.
+pub fn emitForStage(module: *const ir.Module, stage: ir.ShaderStage, out: []u8) EmitError!usize {
+    return emitImpl(module, stage, out);
+}
+
+fn emitImpl(module: *const ir.Module, stage_filter: ?ir.ShaderStage, out: []u8) EmitError!usize {
     var emitter = try Emitter.init(module);
     defer emitter.deinit();
-    try emitter.emit_module();
+    try emitter.emit_module_impl(stage_filter);
     return emitter.builder.write_binary(out);
 }
 
@@ -77,7 +87,9 @@ pub const Emitter = struct {
         self.builder.deinit();
     }
 
-    fn emit_module(self: *Emitter) EmitError!void {
+    /// Emit globals, functions, and entry point wrappers. When stage_filter is
+    /// non-null, only entry points matching that stage are wrapped.
+    fn emit_module_impl(self: *Emitter, stage_filter: ?ir.ShaderStage) EmitError!void {
         for (self.function_ids) |*slot| slot.* = self.builder.reserve_id();
         for (self.module.entry_points.items) |entry| {
             self.entry_wrapper_ids[entry.function] = self.builder.reserve_id();
@@ -91,6 +103,9 @@ pub const Emitter = struct {
         }
 
         for (self.module.entry_points.items) |entry| {
+            if (stage_filter) |filter| {
+                if (entry.stage != filter) continue;
+            }
             switch (entry.stage) {
                 .compute => try self.emit_compute_entry_wrapper(entry),
                 .vertex, .fragment => try emit_spirv_stages.emit_stage_entry_wrapper(self, entry),
@@ -321,107 +336,20 @@ pub const Emitter = struct {
                 try self.builder.type_array(try self.lower_type(arr.elem), try self.builder.const_u32(len))
             else
                 try self.builder.type_runtime_array(try self.lower_type(arr.elem)),
-            .texture_2d => |sample_ty| blk: {
-                switch (self.module.types.get(sample_ty)) {
-                    .scalar => |scalar| {
-                        if (scalar != .f32) return error.UnsupportedConstruct;
-                    },
-                    else => return error.UnsupportedConstruct,
-                }
-                break :blk try self.builder.type_image(
-                    try self.lower_type(sample_ty),
-                    spirv.Dim._2D,
-                    0,
-                    0,
-                    0,
-                    1,
-                    spirv.ImageFormat.Unknown,
-                );
-            },
+            .texture_1d => |sample_ty| try self.lower_sampled_texture_type(sample_ty, spirv.Dim._1D, 0, 0),
+            .texture_2d => |sample_ty| try self.lower_sampled_texture_type(sample_ty, spirv.Dim._2D, 0, 0),
             .storage_texture_2d => |storage_tex| blk: {
                 const sampled_type = try storage_texture_sampled_type(self, storage_tex.format);
                 const image_format = storage_texture_format_to_spirv(storage_tex.format);
                 if (image_format != spirv.ImageFormat.Rgba8) {
                     try self.builder.emit_capability(spirv.Capability.StorageImageExtendedFormats);
                 }
-                break :blk try self.builder.type_image(
-                    sampled_type,
-                    spirv.Dim._2D,
-                    0,
-                    0,
-                    0,
-                    2,
-                    image_format,
-                );
+                break :blk try self.builder.type_image(sampled_type, spirv.Dim._2D, 0, 0, 0, 2, image_format);
             },
-            .texture_3d => |sample_ty| blk: {
-                switch (self.module.types.get(sample_ty)) {
-                    .scalar => |scalar| {
-                        if (scalar != .f32) return error.UnsupportedConstruct;
-                    },
-                    else => return error.UnsupportedConstruct,
-                }
-                break :blk try self.builder.type_image(
-                    try self.lower_type(sample_ty),
-                    spirv.Dim._3D,
-                    0,
-                    0,
-                    0,
-                    1,
-                    spirv.ImageFormat.Unknown,
-                );
-            },
-            .texture_2d_array => |sample_ty| blk: {
-                switch (self.module.types.get(sample_ty)) {
-                    .scalar => |scalar| {
-                        if (scalar != .f32) return error.UnsupportedConstruct;
-                    },
-                    else => return error.UnsupportedConstruct,
-                }
-                break :blk try self.builder.type_image(
-                    try self.lower_type(sample_ty),
-                    spirv.Dim._2D,
-                    0,
-                    1,
-                    0,
-                    1,
-                    spirv.ImageFormat.Unknown,
-                );
-            },
-            .texture_cube => |sample_ty| blk: {
-                switch (self.module.types.get(sample_ty)) {
-                    .scalar => |scalar| {
-                        if (scalar != .f32) return error.UnsupportedConstruct;
-                    },
-                    else => return error.UnsupportedConstruct,
-                }
-                break :blk try self.builder.type_image(
-                    try self.lower_type(sample_ty),
-                    spirv.Dim.Cube,
-                    0,
-                    0,
-                    0,
-                    1,
-                    spirv.ImageFormat.Unknown,
-                );
-            },
-            .texture_multisampled_2d => |sample_ty| blk: {
-                switch (self.module.types.get(sample_ty)) {
-                    .scalar => |scalar| {
-                        if (scalar != .f32) return error.UnsupportedConstruct;
-                    },
-                    else => return error.UnsupportedConstruct,
-                }
-                break :blk try self.builder.type_image(
-                    try self.lower_type(sample_ty),
-                    spirv.Dim._2D,
-                    0,
-                    0,
-                    1,
-                    1,
-                    spirv.ImageFormat.Unknown,
-                );
-            },
+            .texture_3d => |sample_ty| try self.lower_sampled_texture_type(sample_ty, spirv.Dim._3D, 0, 0),
+            .texture_2d_array => |sample_ty| try self.lower_sampled_texture_type(sample_ty, spirv.Dim._2D, 1, 0),
+            .texture_cube => |sample_ty| try self.lower_sampled_texture_type(sample_ty, spirv.Dim.Cube, 0, 0),
+            .texture_multisampled_2d => |sample_ty| try self.lower_sampled_texture_type(sample_ty, spirv.Dim._2D, 0, 1),
             .texture_depth_2d => blk: {
                 break :blk try self.builder.type_image(
                     try self.builder.type_f32(),
@@ -472,6 +400,14 @@ pub const Emitter = struct {
             ),
             else => try self.lower_type(ty),
         };
+    }
+
+    fn lower_sampled_texture_type(self: *Emitter, sample_ty: ir.TypeId, dim: u32, arrayed: u32, ms: u32) EmitError!u32 {
+        switch (self.module.types.get(sample_ty)) {
+            .scalar => |scalar| if (scalar != .f32) return error.UnsupportedConstruct,
+            else => return error.UnsupportedConstruct,
+        }
+        return try self.builder.type_image(try self.lower_type(sample_ty), dim, 0, arrayed, ms, 1, spirv.ImageFormat.Unknown);
     }
 
     pub fn lower_sampler_type(self: *Emitter) EmitError!u32 {
@@ -541,7 +477,7 @@ pub const Emitter = struct {
         const addr_space = global.addr_space orelse return false;
         if (addr_space != .handle) return false;
         return switch (self.module.types.get(global.ty)) {
-            .sampler, .sampler_comparison, .texture_2d, .texture_2d_array, .texture_cube, .texture_multisampled_2d, .texture_depth_2d, .texture_depth_cube, .texture_3d, .storage_texture_2d => true,
+            .sampler, .sampler_comparison, .texture_1d, .texture_2d, .texture_2d_array, .texture_cube, .texture_multisampled_2d, .texture_depth_2d, .texture_depth_cube, .texture_3d, .storage_texture_2d => true,
             else => false,
         };
     }
@@ -628,7 +564,7 @@ pub const Emitter = struct {
                 };
             },
             .atomic => |inner| try self.decorate_memory_type(inner, addr_space),
-            .sampler, .sampler_comparison, .texture_2d, .texture_2d_array, .texture_cube, .texture_multisampled_2d, .texture_depth_2d, .texture_depth_cube, .texture_3d, .storage_texture_2d, .ref => return error.UnsupportedConstruct,
+            .sampler, .sampler_comparison, .texture_1d, .texture_2d, .texture_2d_array, .texture_cube, .texture_multisampled_2d, .texture_depth_2d, .texture_depth_cube, .texture_3d, .storage_texture_2d, .ref => return error.UnsupportedConstruct,
         };
     }
 

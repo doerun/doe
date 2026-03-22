@@ -24,6 +24,20 @@ fn requireTheorem(comptime json: []const u8, comptime theorem: []const u8) void 
     }
 }
 
+/// Validator elimination is available when -Dlean-verified=true AND the proof
+/// artifact contains both the builder soundness theorem (builder_soundness)
+/// and the combined redundancy theorem (ValidatorRedundant). These together
+/// prove that ir_validate.validate() always returns Ok on any IR produced by
+/// a sema-Ok + build-Ok pipeline, so the validate() call is a no-op and can
+/// be removed from the hot path.
+pub const validator_elimination_available: bool = blk: {
+    if (!build_options.lean_verified) break :blk false;
+    @setEvalBranchQuota(400_000);
+    const json = proof_json.?;
+    break :blk comptimeContains(json, "\"builder_soundness\"") and
+        comptimeContains(json, "\"ValidatorRedundant\"");
+};
+
 /// Bounds elimination is available when -Dlean-verified=true AND the proof
 /// artifact contains both the core theorem (gid_inbounds_when_dispatch_fits)
 /// and the connecting theorem (clamp_noop_when_inbounds). These together
@@ -31,7 +45,7 @@ fn requireTheorem(comptime json: []const u8, comptime theorem: []const u8) void 
 /// no-op and can be elided.
 pub const bounds_elimination_available: bool = blk: {
     if (!build_options.lean_verified) break :blk false;
-    @setEvalBranchQuota(100_000);
+    @setEvalBranchQuota(400_000);
     const json = proof_json.?;
     break :blk comptimeContains(json, "\"gid_inbounds_when_dispatch_fits\"") and
         comptimeContains(json, "\"clamp_noop_when_inbounds\"") and
@@ -45,11 +59,61 @@ pub const BoundsPattern = enum {
     /// Precondition: workgroup_size.x * num_workgroups.x <= arrayLength(&buf)
     gid_1d_storage_buffer,
 
+    /// buf[global_invocation_id.x + k] on a runtime-sized storage buffer.
+    /// Theorem: gid_plus_offset_inbounds_when_dispatch_fits
+    /// Precondition: workgroup_size.x * num_workgroups.x + k <= arrayLength(&buf)
+    gid_1d_storage_buffer_offset,
+
+    /// buf[global_invocation_id.x * stride + offset] on a runtime-sized
+    /// storage buffer, where stride is a positive compile-time constant.
+    /// Theorem: gid_times_stride_plus_offset_inbounds_when_dispatch_fits
+    /// Precondition: workgroup_size.x * num_workgroups.x * stride + offset <= arrayLength(&buf)
+    gid_1d_storage_buffer_stride,
+
+    /// buf[global_invocation_id.x + i + offset] on a runtime-sized storage
+    /// buffer, where `i` is the induction variable of a canonical
+    /// `for (var i = 0; i < limit; i = i + 1)` loop.
+    /// Theorem: gid_plus_bounded_loop_index_inbounds_when_dispatch_fits
+    /// Precondition: workgroup_size.x * num_workgroups.x + limit + offset <= arrayLength(&buf)
+    gid_1d_storage_buffer_loop_offset,
+
+    /// buf[global_invocation_id.x * gid_stride + i * loop_stride + offset]
+    /// on a runtime-sized storage buffer, where `i` is the induction variable
+    /// of a supported counted loop and both scales are positive compile-time
+    /// constants.
+    /// Theorem: gid_affine_plus_scaled_loop_index_inbounds_when_dispatch_fits
+    /// Precondition: workgroup_size.x * num_workgroups.x * gid_stride +
+    ///               limit * loop_stride + offset <= arrayLength(&buf)
+    gid_1d_storage_buffer_loop_affine,
+
+    /// buf[(global_invocation_id.x / tile_width) * tile_stride +
+    ///     (global_invocation_id.x % tile_width) + offset] on a runtime-sized
+    /// storage buffer, where tile_width and tile_stride are positive
+    /// compile-time constants and tile_width <= tile_stride.
+    /// Theorem: gid_tiled_index_plus_offset_inbounds_when_dispatch_fits
+    /// Precondition: (((workgroup_size.x * num_workgroups.x - 1) / tile_width) + 1) *
+    ///               tile_stride + offset <= arrayLength(&buf)
+    gid_1d_storage_buffer_tiled,
+
     /// buf[gid.y * width + gid.x] on a runtime-sized storage buffer.
     /// Theorem: flat_index_2d_inbounds
     /// Precondition: ws.x * nwg.x <= width AND ws.y * nwg.y <= height
     ///               AND width * height <= arrayLength(&buf)
     gid_2d_flat_storage_buffer,
+
+    /// buf[gid.y * width + gid.x + offset] on a runtime-sized storage buffer.
+    /// Theorem: flat_index_2d_plus_offset_inbounds
+    /// Precondition: ws.x * nwg.x <= width AND ws.y * nwg.y <= height
+    ///               AND width * height + offset <= arrayLength(&buf)
+    gid_2d_flat_storage_buffer_offset,
+
+    /// textureLoad/textureStore with global_invocation_id.xy coords on a bound
+    /// 2D texture when dispatch extents fit the validated mip level.
+    gid_texture_2d_dispatch_fit,
+
+    /// textureLoad with global_invocation_id.xyz coords on a bound 3D texture
+    /// when dispatch extents fit the validated mip level.
+    gid_texture_3d_dispatch_fit,
 };
 
 /// Check whether a specific bounds pattern has a proven elimination.
@@ -59,15 +123,47 @@ pub fn boundsProven(comptime pattern: BoundsPattern) bool {
     if (!bounds_elimination_available) return false;
     return switch (pattern) {
         .gid_1d_storage_buffer => true,
+        .gid_1d_storage_buffer_offset => comptime blk: {
+            @setEvalBranchQuota(400_000);
+            break :blk comptimeContains(proof_json.?, "\"gid_plus_offset_inbounds_when_dispatch_fits\"");
+        },
+        .gid_1d_storage_buffer_stride => comptime blk: {
+            @setEvalBranchQuota(400_000);
+            break :blk comptimeContains(proof_json.?, "\"gid_times_stride_plus_offset_inbounds_when_dispatch_fits\"");
+        },
+        .gid_1d_storage_buffer_loop_offset => comptime blk: {
+            @setEvalBranchQuota(400_000);
+            break :blk comptimeContains(proof_json.?, "\"gid_plus_bounded_loop_index_inbounds_when_dispatch_fits\"");
+        },
+        .gid_1d_storage_buffer_loop_affine => comptime blk: {
+            @setEvalBranchQuota(400_000);
+            break :blk comptimeContains(proof_json.?, "\"gid_affine_plus_scaled_loop_index_inbounds_when_dispatch_fits\"");
+        },
+        .gid_1d_storage_buffer_tiled => comptime blk: {
+            @setEvalBranchQuota(400_000);
+            break :blk comptimeContains(proof_json.?, "\"gid_tiled_index_plus_offset_inbounds_when_dispatch_fits\"");
+        },
         .gid_2d_flat_storage_buffer => comptime blk: {
-            @setEvalBranchQuota(100_000);
+            @setEvalBranchQuota(400_000);
             break :blk comptimeContains(proof_json.?, "\"flat_index_2d_inbounds\"");
+        },
+        .gid_2d_flat_storage_buffer_offset => comptime blk: {
+            @setEvalBranchQuota(400_000);
+            break :blk comptimeContains(proof_json.?, "\"flat_index_2d_plus_offset_inbounds\"");
+        },
+        .gid_texture_2d_dispatch_fit => comptime blk: {
+            @setEvalBranchQuota(400_000);
+            break :blk comptimeContains(proof_json.?, "\"gid_texture_coords_2d_inbounds_when_dispatch_fits\"");
+        },
+        .gid_texture_3d_dispatch_fit => comptime blk: {
+            @setEvalBranchQuota(400_000);
+            break :blk comptimeContains(proof_json.?, "\"gid_texture_coords_3d_inbounds_when_dispatch_fits\"");
         },
     };
 }
 
 comptime {
-    @setEvalBranchQuota(100_000);
+    @setEvalBranchQuota(400_000);
     if (build_options.lean_verified) {
         const json = proof_json.?;
 
@@ -100,13 +196,36 @@ comptime {
 
         requireTheorem(json, "\"gid_component_lt_total\"");
         requireTheorem(json, "\"gid_inbounds_when_dispatch_fits\"");
+        requireTheorem(json, "\"gid_plus_offset_inbounds_when_dispatch_fits\"");
+        requireTheorem(json, "\"gid_times_stride_plus_offset_inbounds_when_dispatch_fits\"");
+        requireTheorem(json, "\"gid_plus_bounded_loop_index_inbounds_when_dispatch_fits\"");
+        requireTheorem(json, "\"gid_affine_plus_scaled_loop_index_inbounds_when_dispatch_fits\"");
+        requireTheorem(json, "\"gid_tiled_index_plus_offset_inbounds_when_dispatch_fits\"");
         requireTheorem(json, "\"clamp_noop_when_inbounds\"");
         requireTheorem(json, "\"gid_2d_inbounds\"");
         requireTheorem(json, "\"flat_index_2d_inbounds\"");
+        requireTheorem(json, "\"flat_index_2d_plus_offset_inbounds\"");
+        requireTheorem(json, "\"gid_texture_coords_2d_inbounds_when_dispatch_fits\"");
+        requireTheorem(json, "\"gid_texture_coords_3d_inbounds_when_dispatch_fits\"");
 
         // Validate that bounds eliminations section is present when shader
         // bounds theorems are listed.
         if (!comptimeContains(json, "\"boundsEliminations\""))
             @compileError("lean proof artifact: shader bounds theorems present but boundsEliminations section missing");
+
+        // IR builder soundness trilogy.
+        requireTheorem(json, "\"ExprIdValid_mono\"");
+        requireTheorem(json, "\"ExprArgRangeValid_mono\"");
+        requireTheorem(json, "\"StmtIdValid_mono\"");
+        requireTheorem(json, "\"StmtChildRangeValid_mono\"");
+        requireTheorem(json, "\"SwitchCaseRangeValid_mono\"");
+        requireTheorem(json, "\"builder_soundness\"");
+        requireTheorem(json, "\"TypesCompatible_refl\"");
+        requireTheorem(json, "\"IsBoolType_not_integer\"");
+        requireTheorem(json, "\"builder_load_inner_is_ref\"");
+        requireTheorem(json, "\"builder_assign_lhs_is_ref\"");
+        requireTheorem(json, "\"bounds_checks_pre_satisfied\"");
+        requireTheorem(json, "\"semantic_checks_pre_satisfied\"");
+        requireTheorem(json, "\"ValidatorRedundant\"");
     }
 }

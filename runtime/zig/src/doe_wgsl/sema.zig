@@ -36,11 +36,9 @@ var last_failure_context = FailureContext{};
 pub fn resetLastFailureContext() void {
     last_failure_context = .{};
 }
-
 pub fn lastFailureContext() FailureContext {
     return last_failure_context;
 }
-
 pub fn analyze(allocator: std.mem.Allocator, tree: *const Ast) !SemanticModule {
     resetLastFailureContext();
     var module = SemanticModule{
@@ -58,7 +56,6 @@ pub fn analyze(allocator: std.mem.Allocator, tree: *const Ast) !SemanticModule {
     try analyzer.run();
     return module;
 }
-
 const Scope = struct {
     bindings: std.StringHashMapUnmanaged(SymbolRef) = .{},
 
@@ -78,15 +75,12 @@ const BodyAnalyzer = struct {
         for (self.scopes.items) |*scope| scope.deinit(self.parent.module.allocator);
         self.scopes.deinit(self.parent.module.allocator);
     }
-
     fn function(self: *BodyAnalyzer) *FunctionInfo {
         return &self.parent.module.functions.items[self.function_index];
     }
-
     fn push_scope(self: *BodyAnalyzer) !void {
         try self.scopes.append(self.parent.module.allocator, .{});
     }
-
     fn pop_scope(self: *BodyAnalyzer) void {
         var scope = self.scopes.pop().?;
         scope.deinit(self.parent.module.allocator);
@@ -637,7 +631,6 @@ const Analyzer = struct {
 
         return target_ty;
     }
-
     fn analyze_member(self: *Analyzer, node: Node, body: ?*BodyAnalyzer, out: *NodeInfo) AnalyzeError!ir.TypeId {
         const base_ty = try self.analyze_expr(node.data.lhs, body);
         const field_name = self.module.tree.tokenSlice(node.data.rhs);
@@ -703,6 +696,7 @@ const Analyzer = struct {
         if (std.mem.eql(u8, name, "f16")) return self.module.f16_type;
         if (std.mem.eql(u8, name, "sampler")) return self.module.sampler_type;
         if (std.mem.eql(u8, name, "sampler_comparison")) return self.module.sampler_comparison_type;
+        if (std.mem.eql(u8, name, "texture_1d")) return try self.module.types.intern(.{ .texture_1d = self.module.f32_type });
         if (std.mem.eql(u8, name, "texture_2d")) return try self.module.types.intern(.{ .texture_2d = self.module.f32_type });
         if (std.mem.eql(u8, name, "texture_3d")) return try self.module.types.intern(.{ .texture_3d = self.module.f32_type });
         if (std.mem.eql(u8, name, "texture_depth_2d")) return try self.module.types.intern(.{ .texture_depth_2d = {} });

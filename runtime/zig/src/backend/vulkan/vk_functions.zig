@@ -81,6 +81,7 @@ pub extern fn vkCreateSampler(device: vk.VkDevice, pCreateInfo: *const structs.V
 pub extern fn vkDestroySampler(device: vk.VkDevice, sampler: vk.VkSampler, pAllocator: ?*const vk.VkAllocationCallbacks) callconv(.c) void;
 pub extern fn vkCmdBeginRenderPass(commandBuffer: vk.VkCommandBuffer, pRenderPassBegin: *const structs.VkRenderPassBeginInfo, contents: u32) callconv(.c) void;
 pub extern fn vkCmdEndRenderPass(commandBuffer: vk.VkCommandBuffer) callconv(.c) void;
+pub extern fn vkCmdNextSubpass(commandBuffer: vk.VkCommandBuffer, contents: u32) callconv(.c) void;
 pub extern fn vkCmdSetViewport(commandBuffer: vk.VkCommandBuffer, firstViewport: u32, viewportCount: u32, pViewports: [*]const structs.VkViewport) callconv(.c) void;
 pub extern fn vkCmdSetScissor(commandBuffer: vk.VkCommandBuffer, firstScissor: u32, scissorCount: u32, pScissors: [*]const structs.VkRect2D) callconv(.c) void;
 pub extern fn vkCmdBindVertexBuffers(commandBuffer: vk.VkCommandBuffer, firstBinding: u32, bindingCount: u32, pBuffers: [*]const vk.VkBuffer, pOffsets: [*]const vk.VkDeviceSize) callconv(.c) void;

@@ -3,6 +3,10 @@ const model = @import("../../../model.zig");
 const types = @import("../../../core/abi/wgpu_types.zig");
 const native = @import("../../../doe_wgpu_native.zig");
 const dc = @import("../d3d12_constants.zig");
+const d3d12_descriptors = @import("../d3d12_descriptors.zig");
+const d3d12_texture_view = @import("../resources/d3d12_texture_view.zig");
+const d3d12_sampler = @import("../resources/d3d12_sampler.zig");
+const d3d12_render_bind_groups = @import("d3d12_render_bind_groups.zig");
 
 const RecordedRenderPass = std.meta.TagPayload(native.RecordedCmd, .render_pass);
 const DoeTextureView = native.DoeTextureView;
@@ -56,6 +60,9 @@ pub fn record_render_pass_command(
     device: ?*anyopaque,
     cmd_list: ?*anyopaque,
     cmd: RecordedRenderPass,
+    descriptor_state: *d3d12_descriptors.DescriptorHeapState,
+    texture_view_state: *const d3d12_texture_view.TextureViewState,
+    sampler_state: *const d3d12_sampler.SamplerState,
 ) !void {
     const target_view = texture_view_from_handle(cmd.target_view_handle) orelse return error.InvalidArgument;
     const target_texture = target_view.tex;
@@ -96,9 +103,33 @@ pub fn record_render_pass_command(
         );
     }
 
-    d3d12_bridge_command_list_set_graphics_root_signature(cmd_list, cmd.root_signature);
+    // Bind texture and sampler descriptors if present
+    const bind_result = try bind_textures_and_samplers(
+        device,
+        descriptor_state,
+        texture_view_state,
+        sampler_state,
+        &cmd.bind_textures,
+        &cmd.bind_samplers,
+    );
+
+    // Use the bind group root signature if textures/samplers are bound,
+    // otherwise fall back to the pipeline root signature.
+    const active_root_sig = bind_result.root_signature orelse cmd.root_signature;
+    d3d12_bridge_command_list_set_graphics_root_signature(cmd_list, active_root_sig);
+    if (bind_result.root_signature) |rs| {
+        try retained_handles.append(allocator, rs);
+    }
+
     d3d12_bridge_command_list_set_pipeline_state(cmd_list, cmd.pso);
     d3d12_bridge_command_list_set_render_targets(cmd_list, rtv_heap, 0, dsv_heap, 0);
+
+    // Set descriptor tables for texture/sampler bindings
+    d3d12_render_bind_groups.set_render_pass_descriptor_tables(
+        cmd_list,
+        descriptor_state,
+        bind_result,
+    );
 
     const vp_width: f32 = @floatFromInt(view_mip_extent(target_texture.width, target_view.base_mip_level));
     const vp_height: f32 = @floatFromInt(view_mip_extent(target_texture.height, target_view.base_mip_level));
@@ -140,6 +171,24 @@ pub fn record_render_pass_command(
     }
 
     try maybe_record_resolve(cmd_list, cmd, target_view);
+}
+
+fn bind_textures_and_samplers(
+    device: ?*anyopaque,
+    descriptor_state: *d3d12_descriptors.DescriptorHeapState,
+    texture_view_state: *const d3d12_texture_view.TextureViewState,
+    sampler_state: *const d3d12_sampler.SamplerState,
+    bind_textures: []const ?*anyopaque,
+    bind_samplers: []const ?*anyopaque,
+) !d3d12_render_bind_groups.RenderBindResult {
+    return d3d12_render_bind_groups.bind_render_pass_textures_and_samplers(
+        device,
+        descriptor_state,
+        texture_view_state,
+        sampler_state,
+        bind_textures,
+        bind_samplers,
+    );
 }
 
 fn maybe_record_resolve(

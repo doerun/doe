@@ -40,6 +40,7 @@ pub export fn doeNativeComputeDispatchFlush(
     }
     compute_preconditions.validate_bind_groups(
         pipe.dispatch_preconditions,
+        pipe.texture_dispatch_preconditions,
         bind_groups[0..],
         .{ dx, dy, dz },
         .{ pipe.wg_x, pipe.wg_y, pipe.wg_z },

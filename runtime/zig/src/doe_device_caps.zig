@@ -9,6 +9,7 @@ const types = @import("core/abi/wgpu_types.zig");
 const native = @import("doe_wgpu_native.zig");
 const d3d12_device_caps = @import("backend/d3d12/d3d12_device_caps.zig");
 const vk_feature_caps = @import("backend/vulkan/vk_feature_caps.zig");
+const vk_device_caps = @import("backend/vulkan/vk_device_caps.zig");
 const vulkan_feature_cache = @import("doe_vulkan_feature_cache.zig");
 const DoeDevice = native.DoeDevice;
 const DoeAdapter = native.DoeAdapter;
@@ -108,7 +109,7 @@ const VULKAN_MAX_STORAGE_BUFFER_BINDING_SIZE: u64 = 134_217_728; // 128 MB
 const VULKAN_MAX_BUFFER_SIZE: u64 = 268_435_456; // 256 MB
 const VULKAN_MIN_STORAGE_BUFFER_OFFSET_ALIGNMENT: u32 = 64;
 
-const VULKAN_LIMITS_STATIC = types.WGPULimits{
+pub const VULKAN_LIMITS_STATIC = types.WGPULimits{
     .nextInChain = null,
     .maxTextureDimension1D = 16384,
     .maxTextureDimension2D = 16384,
@@ -202,11 +203,16 @@ fn is_metal_feature_supported(feature: u32) bool {
     };
 }
 
-// Vulkan feature support combines the static baseline already used across the
-// runtime with per-adapter/device probes for features that depend on native
-// feature or format-capability publication.
-fn is_vulkan_feature_supported(feature: u32, caps: ?vk_feature_caps.VulkanFeatureCaps) bool {
+// Vulkan feature support combines dynamic probes (vk_feature_caps) with
+// hardware-queried device caps (vk_device_caps) for features that depend
+// on native VkPhysicalDeviceFeatures or format-capability publication.
+fn is_vulkan_feature_supported(
+    feature: u32,
+    caps: ?vk_feature_caps.VulkanFeatureCaps,
+    hw_caps: ?vk_device_caps.VulkanDeviceCaps,
+) bool {
     return switch (feature) {
+        // Dynamic features probed via vk_feature_caps (format queries, subgroups, etc.).
         FEATURE_SHADER_F16,
         FEATURE_FLOAT32_BLENDABLE,
         FEATURE_SUBGROUPS,
@@ -214,18 +220,19 @@ fn is_vulkan_feature_supported(feature: u32, caps: ?vk_feature_caps.VulkanFeatur
         FEATURE_TEXTURE_FORMATS_TIER1,
         FEATURE_TEXTURE_FORMATS_TIER2,
         => if (caps) |resolved| vk_feature_caps.dynamic_feature_supported(feature, resolved) else false,
-        // Vulkan 1.0 mandatory or Vulkan 1.1+ widely available features.
-        FEATURE_DEPTH_CLIP_CONTROL,
-        FEATURE_DEPTH32FLOAT_STENCIL8,
-        FEATURE_TEXTURE_COMPRESSION_BC,
-        FEATURE_TEXTURE_COMPRESSION_ETC2,
-        FEATURE_TEXTURE_COMPRESSION_ASTC,
+        // Hardware-queried features: use actual VkPhysicalDeviceFeatures when available.
+        FEATURE_DEPTH_CLIP_CONTROL => if (hw_caps) |hc| hc.has_depth_clip_control else true,
+        FEATURE_DEPTH32FLOAT_STENCIL8 => true,
+        FEATURE_TEXTURE_COMPRESSION_BC => if (hw_caps) |hc| hc.has_texture_compression_bc else true,
+        FEATURE_TEXTURE_COMPRESSION_ETC2 => if (hw_caps) |hc| hc.has_texture_compression_etc2 else true,
+        FEATURE_TEXTURE_COMPRESSION_ASTC => if (hw_caps) |hc| hc.has_texture_compression_astc else true,
+        FEATURE_INDIRECT_FIRST_INSTANCE => if (hw_caps) |hc| hc.has_draw_indirect_first_instance else true,
+        FEATURE_FLOAT32_FILTERABLE => if (hw_caps) |hc| hc.has_float32_filterable else true,
+        FEATURE_TIMESTAMP_QUERY => if (hw_caps) |hc| hc.has_timestamp_query else true,
+        // Features that remain unconditional on Vulkan.
         FEATURE_TEXTURE_COMPRESSION_BC_SLICED_3D,
         FEATURE_TEXTURE_COMPRESSION_ASTC_SLICED_3D,
         FEATURE_BGRA8UNORM_STORAGE,
-        FEATURE_INDIRECT_FIRST_INSTANCE,
-        FEATURE_FLOAT32_FILTERABLE,
-        FEATURE_TIMESTAMP_QUERY,
         FEATURE_RG11B10UFLOAT_RENDERABLE,
         FEATURE_CLIP_DISTANCES,
         FEATURE_PRIMITIVE_INDEX,
@@ -244,7 +251,8 @@ pub export fn doeNativeAdapterHasFeature(raw: ?*anyopaque, feature: u32) callcon
     if (native.cast(DoeAdapter, raw)) |a| {
         if (a.backend == .vulkan) {
             const caps = vulkan_feature_cache.get_adapter(raw);
-            return if (is_vulkan_feature_supported(feature, caps)) 1 else 0;
+            const hw_caps = vulkan_feature_cache.get_adapter_device_caps(raw);
+            return if (is_vulkan_feature_supported(feature, caps, hw_caps)) 1 else 0;
         }
         if (a.backend == .d3d12) {
             if (d3d12_device_caps.get_adapter_caps(raw)) |caps| {
@@ -260,7 +268,8 @@ pub export fn doeNativeDeviceHasFeature(raw: ?*anyopaque, feature: u32) callconv
     if (native.cast(DoeDevice, raw)) |d| {
         if (d.backend == .vulkan) {
             const caps = vulkan_feature_cache.get_device(raw);
-            return if (is_vulkan_feature_supported(feature, caps)) 1 else 0;
+            const hw_caps = vulkan_feature_cache.get_device_device_caps(raw);
+            return if (is_vulkan_feature_supported(feature, caps, hw_caps)) 1 else 0;
         }
         if (d.backend == .d3d12) {
             if (d3d12_runtime(d)) |rt| {
@@ -277,10 +286,18 @@ pub export fn doeNativeDeviceHasFeature(raw: ?*anyopaque, feature: u32) callconv
 // ============================================================
 
 // doeNativeDeviceGetLimits — dispatches to Vulkan or Metal limits based on backend.
+// Vulkan limits are hardware-queried at adapter/device creation and cached; falls
+// back to conservative static limits when the cache entry is absent.
 pub export fn doeNativeDeviceGetLimits(raw: ?*anyopaque, limits: ?*types.WGPULimits) callconv(.c) types.WGPUStatus {
     if (native.cast(DoeDevice, raw)) |d| {
         if (d.backend == .vulkan) {
-            if (limits) |l| l.* = VULKAN_LIMITS_STATIC;
+            if (limits) |l| {
+                if (vulkan_feature_cache.get_device_device_caps(raw)) |hw_caps| {
+                    l.* = hw_caps.limits;
+                } else {
+                    l.* = VULKAN_LIMITS_STATIC;
+                }
+            }
             return types.WGPUStatus_Success;
         }
         if (d.backend == .d3d12) {
@@ -301,7 +318,13 @@ pub export fn doeNativeDeviceGetLimits(raw: ?*anyopaque, limits: ?*types.WGPULim
 pub export fn doeNativeAdapterGetLimits(raw: ?*anyopaque, limits: ?*types.WGPULimits) callconv(.c) types.WGPUStatus {
     if (native.cast(DoeAdapter, raw)) |a| {
         if (a.backend == .vulkan) {
-            if (limits) |l| l.* = VULKAN_LIMITS_STATIC;
+            if (limits) |l| {
+                if (vulkan_feature_cache.get_adapter_device_caps(raw)) |hw_caps| {
+                    l.* = hw_caps.limits;
+                } else {
+                    l.* = VULKAN_LIMITS_STATIC;
+                }
+            }
             return types.WGPUStatus_Success;
         }
         if (a.backend == .d3d12) {

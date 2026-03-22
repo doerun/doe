@@ -4,7 +4,24 @@ const common_timing = @import("../../common/timing.zig");
 const dc = @import("../d3d12_constants.zig");
 const d3d12_formats = @import("../d3d12_formats.zig");
 const d3d12_depth_stencil = @import("../resources/d3d12_depth_stencil.zig");
+const d3d12_descriptors = @import("../d3d12_descriptors.zig");
+const d3d12_render_vertex = @import("d3d12_render_vertex.zig");
 const render_bundle = @import("../../../render_bundle.zig");
+
+const PipelineKey = d3d12_render_vertex.PipelineKey;
+const build_pipeline_key = d3d12_render_vertex.build_pipeline_key;
+const resolve_vertex_buffer_count = d3d12_render_vertex.resolve_vertex_buffer_count;
+const resolve_vertex_attribute_count = d3d12_render_vertex.resolve_vertex_attribute_count;
+const resolve_vertex_buffer_handle = d3d12_render_vertex.resolve_vertex_buffer_handle;
+const resolve_vertex_buffer_offset = d3d12_render_vertex.resolve_vertex_buffer_offset;
+const resolve_vertex_buffer_stride = d3d12_render_vertex.resolve_vertex_buffer_stride;
+const resolve_vertex_buffer_stride_fallback = d3d12_render_vertex.resolve_vertex_buffer_stride_fallback;
+const resolve_vertex_step_mode = d3d12_render_vertex.resolve_vertex_step_mode;
+const resolve_vertex_attribute = d3d12_render_vertex.resolve_vertex_attribute;
+const resolve_index_buffer_handle = d3d12_render_vertex.resolve_index_buffer_handle;
+const resolve_index_buffer_offset = d3d12_render_vertex.resolve_index_buffer_offset;
+const resolve_index_format = d3d12_render_vertex.resolve_index_format;
+const vertex_format_size = d3d12_render_vertex.vertex_format_size;
 
 extern fn d3d12_bridge_device_create_root_signature_empty(device: ?*anyopaque) callconv(.c) ?*anyopaque;
 const D3D12InputElementDesc = extern struct {
@@ -135,47 +152,6 @@ pub const RenderMetrics = struct {
     draw_count: u32 = 0,
 };
 
-const PipelineKey = struct {
-    target_format: u32 = 0,
-    depth_stencil_format: u32 = 0,
-    sample_count: u32 = 1,
-    topology: u32 = 0x00000004,
-    front_face: u32 = 0x00000001,
-    cull_mode: u32 = 0x00000001,
-    blend_enabled: bool = false,
-    color_operation: u32 = 1,
-    color_src_factor: u32 = 2,
-    color_dst_factor: u32 = 1,
-    alpha_operation: u32 = 1,
-    alpha_src_factor: u32 = 2,
-    alpha_dst_factor: u32 = 1,
-    color_write_mask: u32 = 0xF,
-    depth_compare: u32 = 0x00000008,
-    depth_write_enabled: bool = false,
-    stencil_front_compare: u32 = 0x00000008,
-    stencil_front_fail_op: u32 = 0,
-    stencil_front_depth_fail_op: u32 = 0,
-    stencil_front_pass_op: u32 = 0,
-    stencil_back_compare: u32 = 0x00000008,
-    stencil_back_fail_op: u32 = 0,
-    stencil_back_depth_fail_op: u32 = 0,
-    stencil_back_pass_op: u32 = 0,
-    stencil_read_mask: u32 = 0xFFFF_FFFF,
-    stencil_write_mask: u32 = 0xFFFF_FFFF,
-    depth_bias: i32 = 0,
-    depth_bias_slope_scale: f32 = 0,
-    depth_bias_clamp: f32 = 0,
-    unclipped_depth: bool = false,
-    vertex_buffer_count: u32 = 0,
-    vertex_buffer_strides: [model.MAX_VERTEX_BUFFERS]u64 = [_]u64{0} ** model.MAX_VERTEX_BUFFERS,
-    vertex_step_modes: [model.MAX_VERTEX_BUFFERS]u32 = [_]u32{0} ** model.MAX_VERTEX_BUFFERS,
-    vertex_attribute_count: u32 = 0,
-    vertex_attribute_formats: [model.MAX_VERTEX_ATTRIBUTES]u32 = [_]u32{0} ** model.MAX_VERTEX_ATTRIBUTES,
-    vertex_attribute_offsets: [model.MAX_VERTEX_ATTRIBUTES]u64 = [_]u64{0} ** model.MAX_VERTEX_ATTRIBUTES,
-    vertex_attribute_locations: [model.MAX_VERTEX_ATTRIBUTES]u32 = [_]u32{0} ** model.MAX_VERTEX_ATTRIBUTES,
-    vertex_attribute_buffer_slots: [model.MAX_VERTEX_ATTRIBUTES]u32 = [_]u32{0} ** model.MAX_VERTEX_ATTRIBUTES,
-};
-
 pub const RenderState = struct {
     root_signature: ?*anyopaque = null,
     graphics_pipeline: ?*anyopaque = null,
@@ -203,10 +179,12 @@ pub const RenderState = struct {
         cmd: model.RenderDrawCommand,
         is_indirect: bool,
         is_indexed_indirect: bool,
+        descriptor_state: *d3d12_descriptors.DescriptorHeapState,
     ) !RenderMetrics {
         const setup_start = common_timing.now_ns();
 
-        try self.ensure_pipeline(device, cmd);
+        const has_bind_groups = cmd.bind_texture_count > 0 or cmd.bind_sampler_count > 0;
+        try self.ensure_pipeline_with_bindings(device, cmd, has_bind_groups);
 
         const setup_ns = common_timing.ns_delta(common_timing.now_ns(), setup_start);
         const encode_start = common_timing.now_ns();
@@ -224,6 +202,11 @@ pub const RenderState = struct {
             if (has_depth_attachment(cmd)) self.depth_stencil.get_dsv_heap() else null,
             0,
         );
+
+        // Bind texture/sampler descriptor tables if bind groups are active
+        if (has_bind_groups) {
+            try bind_model_descriptor_tables(self.cmd_list, device, descriptor_state, cmd);
+        }
 
         const vp_w: f32 = cmd.viewport_width orelse @floatFromInt(cmd.target_width);
         const vp_h: f32 = cmd.viewport_height orelse @floatFromInt(cmd.target_height);
@@ -285,12 +268,20 @@ pub const RenderState = struct {
         return .{ .setup_ns = setup_ns, .encode_ns = encode_ns, .submit_wait_ns = submit_wait_ns, .draw_count = draw_count };
     }
 
-    fn ensure_pipeline(self: *RenderState, device: ?*anyopaque, cmd: model.RenderDrawCommand) !void {
+    fn ensure_pipeline_with_bindings(self: *RenderState, device: ?*anyopaque, cmd: model.RenderDrawCommand, has_bind_groups: bool) !void {
+        return self.ensure_pipeline(device, cmd, has_bind_groups);
+    }
+
+    fn ensure_pipeline(self: *RenderState, device: ?*anyopaque, cmd: model.RenderDrawCommand, has_bind_groups: bool) !void {
         const width = cmd.target_width;
         const height = cmd.target_height;
         const format = cmd.target_format;
         if (self.root_signature == null) {
-            self.root_signature = d3d12_bridge_device_create_root_signature_empty(device) orelse return error.InvalidState;
+            if (has_bind_groups) {
+                self.root_signature = try create_render_root_signature(device, cmd);
+            } else {
+                self.root_signature = d3d12_bridge_device_create_root_signature_empty(device) orelse return error.InvalidState;
+            }
         }
 
         const key = build_pipeline_key(cmd);
@@ -466,51 +457,6 @@ pub const RenderState = struct {
     }
 };
 
-fn build_pipeline_key(cmd: model.RenderDrawCommand) PipelineKey {
-    var key = PipelineKey{
-        .target_format = cmd.target_format,
-        .depth_stencil_format = cmd.depth_stencil_format,
-        .sample_count = if (cmd.sample_count == 0) 1 else cmd.sample_count,
-        .topology = cmd.topology,
-        .front_face = cmd.front_face,
-        .cull_mode = cmd.cull_mode,
-        .blend_enabled = cmd.blend_enabled,
-        .color_operation = cmd.color_operation,
-        .color_src_factor = cmd.color_src_factor,
-        .color_dst_factor = cmd.color_dst_factor,
-        .alpha_operation = cmd.alpha_operation,
-        .alpha_src_factor = cmd.alpha_src_factor,
-        .alpha_dst_factor = cmd.alpha_dst_factor,
-        .color_write_mask = cmd.color_write_mask,
-        .depth_compare = cmd.depth_compare,
-        .depth_write_enabled = cmd.depth_write_enabled,
-        .stencil_front_compare = cmd.stencil_front_compare,
-        .stencil_front_fail_op = cmd.stencil_front_fail_op,
-        .stencil_front_depth_fail_op = cmd.stencil_front_depth_fail_op,
-        .stencil_front_pass_op = cmd.stencil_front_pass_op,
-        .stencil_back_compare = cmd.stencil_back_compare,
-        .stencil_back_fail_op = cmd.stencil_back_fail_op,
-        .stencil_back_depth_fail_op = cmd.stencil_back_depth_fail_op,
-        .stencil_back_pass_op = cmd.stencil_back_pass_op,
-        .stencil_read_mask = cmd.stencil_read_mask,
-        .stencil_write_mask = cmd.stencil_write_mask,
-        .depth_bias = cmd.depth_bias,
-        .depth_bias_slope_scale = cmd.depth_bias_slope_scale,
-        .depth_bias_clamp = cmd.depth_bias_clamp,
-        .unclipped_depth = cmd.unclipped_depth,
-        .vertex_buffer_count = resolve_vertex_buffer_count(cmd),
-        .vertex_attribute_count = resolve_vertex_attribute_count(cmd),
-    };
-
-    var slot: u32 = 0;
-    while (slot < key.vertex_buffer_count and slot < @as(u32, model.MAX_VERTEX_BUFFERS)) : (slot += 1) {
-        key.vertex_buffer_strides[slot] = resolve_vertex_buffer_stride_fallback(cmd, slot);
-        key.vertex_step_modes[slot] = resolve_vertex_step_mode(cmd, slot);
-    }
-    fill_vertex_attributes_into_key(cmd, &key);
-    return key;
-}
-
 fn build_input_elements(cmd: model.RenderDrawCommand, out: *[model.MAX_VERTEX_ATTRIBUTES]D3D12InputElementDesc) !u32 {
     const attribute_count = resolve_vertex_attribute_count(cmd);
     var i: u32 = 0;
@@ -532,166 +478,6 @@ fn build_input_elements(cmd: model.RenderDrawCommand, out: *[model.MAX_VERTEX_AT
     return @min(attribute_count, @as(u32, model.MAX_VERTEX_ATTRIBUTES));
 }
 
-const ResolvedVertexAttribute = struct {
-    format: u32,
-    offset: u64,
-    shader_location: u32,
-    buffer_slot: u32,
-};
-
-fn resolve_vertex_attribute(cmd: model.RenderDrawCommand, index: u32) ?ResolvedVertexAttribute {
-    if (index < cmd.vertex_attribute_count) {
-        return .{
-            .format = cmd.vertex_attribute_formats[index],
-            .offset = cmd.vertex_attribute_offsets[index],
-            .shader_location = cmd.vertex_attribute_locations[index],
-            .buffer_slot = cmd.vertex_attribute_buffer_slots[index],
-        };
-    }
-    if (cmd.vertex_layouts) |layouts| {
-        var base: u32 = 0;
-        var slot: usize = 0;
-        while (slot < @min(layouts.len, model.MAX_VERTEX_BUFFERS)) : (slot += 1) {
-            const layout = layouts[slot];
-            if (index < base + layout.attribute_count) {
-                const attr = layout.attributes[index - base];
-                return .{
-                    .format = attr.format,
-                    .offset = attr.offset,
-                    .shader_location = attr.shader_location,
-                    .buffer_slot = @intCast(slot),
-                };
-            }
-            base += layout.attribute_count;
-        }
-    }
-    return null;
-}
-
-fn fill_vertex_attributes_into_key(cmd: model.RenderDrawCommand, key: *PipelineKey) void {
-    var i: u32 = 0;
-    while (i < key.vertex_attribute_count and i < @as(u32, model.MAX_VERTEX_ATTRIBUTES)) : (i += 1) {
-        const attr = resolve_vertex_attribute(cmd, i) orelse break;
-        key.vertex_attribute_formats[i] = attr.format;
-        key.vertex_attribute_offsets[i] = attr.offset;
-        key.vertex_attribute_locations[i] = attr.shader_location;
-        key.vertex_attribute_buffer_slots[i] = attr.buffer_slot;
-    }
-}
-
-fn resolve_vertex_buffer_count(cmd: model.RenderDrawCommand) u32 {
-    if (cmd.vertex_buffer_count != 0) return @min(cmd.vertex_buffer_count, @as(u32, model.MAX_VERTEX_BUFFERS));
-    if (cmd.vertex_binding_count != 0) return @min(cmd.vertex_binding_count, @as(u32, model.MAX_VERTEX_BUFFERS));
-    if (cmd.vertex_layout_count != 0) return @min(cmd.vertex_layout_count, @as(u32, model.MAX_VERTEX_BUFFERS));
-    if (cmd.vertex_layouts) |layouts| return @min(@as(u32, @intCast(layouts.len)), @as(u32, model.MAX_VERTEX_BUFFERS));
-    return 0;
-}
-
-fn resolve_vertex_attribute_count(cmd: model.RenderDrawCommand) u32 {
-    if (cmd.vertex_attribute_count != 0) return @min(cmd.vertex_attribute_count, @as(u32, model.MAX_VERTEX_ATTRIBUTES));
-    if (cmd.vertex_layouts) |layouts| {
-        var total: u32 = 0;
-        var i: usize = 0;
-        while (i < @min(layouts.len, model.MAX_VERTEX_BUFFERS)) : (i += 1) total += layouts[i].attribute_count;
-        return @min(total, @as(u32, model.MAX_VERTEX_ATTRIBUTES));
-    }
-    return 0;
-}
-
-fn resolve_vertex_buffer_handle(cmd: model.RenderDrawCommand, slot: u32) ?*anyopaque {
-    if (slot < cmd.vertex_buffer_count and cmd.vertex_buffer_handles[slot] != 0) {
-        return @ptrFromInt(cmd.vertex_buffer_handles[slot]);
-    }
-    if (cmd.vertex_bindings) |bindings| {
-        for (bindings) |binding| {
-            if (binding.slot == slot) return binding.handle;
-        }
-    }
-    return null;
-}
-
-fn resolve_vertex_buffer_offset(cmd: model.RenderDrawCommand, slot: u32) u64 {
-    if (slot < cmd.vertex_buffer_count and cmd.vertex_buffer_handles[slot] != 0) {
-        return cmd.vertex_buffer_offsets[slot];
-    }
-    if (cmd.vertex_bindings) |bindings| {
-        for (bindings) |binding| {
-            if (binding.slot == slot) return binding.offset;
-        }
-    }
-    return 0;
-}
-
-fn resolve_vertex_step_mode(cmd: model.RenderDrawCommand, slot: u32) u32 {
-    const fallback = resolve_vertex_step_mode_fallback(cmd, slot);
-    return if (fallback != 0) fallback else model.WGPUVertexStepMode_Vertex;
-}
-
-fn resolve_vertex_step_mode_fallback(cmd: model.RenderDrawCommand, slot: u32) u32 {
-    if (slot < cmd.vertex_layout_count and cmd.vertex_step_modes[slot] != 0) {
-        return cmd.vertex_step_modes[slot];
-    }
-    if (cmd.vertex_layouts) |layouts| {
-        if (slot < layouts.len) return layouts[slot].step_mode;
-    }
-    return 0;
-}
-
-fn resolve_vertex_buffer_stride_fallback(cmd: model.RenderDrawCommand, slot: u32) u64 {
-    if (slot < cmd.vertex_layout_count and cmd.vertex_buffer_strides[slot] != 0) {
-        return cmd.vertex_buffer_strides[slot];
-    }
-    if (cmd.vertex_layouts) |layouts| {
-        if (slot < layouts.len) return layouts[slot].array_stride;
-    }
-    return 0;
-}
-
-fn resolve_vertex_buffer_stride(cmd: model.RenderDrawCommand, slot: u32) !u32 {
-    var stride = resolve_vertex_buffer_stride_fallback(cmd, slot);
-    if (stride == 0) {
-        const attribute_count = resolve_vertex_attribute_count(cmd);
-        var i: u32 = 0;
-        while (i < attribute_count) : (i += 1) {
-            const attr = resolve_vertex_attribute(cmd, i) orelse continue;
-            if (attr.buffer_slot != slot) continue;
-            stride = @max(stride, attr.offset + try vertex_format_size(attr.format));
-        }
-    }
-    if (stride == 0 or stride > std.math.maxInt(u32)) return error.UnsupportedFeature;
-    return @intCast(stride);
-}
-
-fn resolve_index_buffer_handle(cmd: model.RenderDrawCommand) ?*anyopaque {
-    if (cmd.index_buffer_handle != 0) return @ptrFromInt(cmd.index_buffer_handle);
-    if (cmd.index_binding) |binding| return binding.handle;
-    return null;
-}
-
-fn resolve_index_buffer_offset(cmd: model.RenderDrawCommand) u64 {
-    if (cmd.index_buffer_handle != 0) return cmd.index_buffer_offset;
-    if (cmd.index_binding) |binding| return binding.offset;
-    return 0;
-}
-
-fn resolve_index_format(cmd: model.RenderDrawCommand) ?u32 {
-    if (cmd.index_format != 0) return cmd.index_format;
-    if (cmd.index_binding) |binding| return binding.format;
-    return null;
-}
-
-fn vertex_format_size(format: u32) !u64 {
-    return switch (format) {
-        0x00000001, 0x00000004, 0x00000007, 0x0000000A => 1,
-        0x00000002, 0x00000005, 0x00000008, 0x0000000B, 0x0000000D, 0x00000010, 0x00000013, 0x00000016, 0x0000001D, 0x00000021, 0x00000025 => 2,
-        0x00000003, 0x00000006, 0x00000009, 0x0000000C, 0x0000000E, 0x00000011, 0x00000014, 0x00000017, 0x00000019, 0x00000029, 0x0000002A => 4,
-        0x0000000F, 0x00000012, 0x00000015, 0x00000018, 0x0000001A, 0x0000001E, 0x00000022, 0x00000026 => 8,
-        0x0000001B, 0x00000023, 0x00000027 => 12,
-        0x0000001C, 0x0000001F, 0x00000024, 0x00000028 => 16,
-        else => error.UnsupportedFeature,
-    };
-}
-
 fn has_depth_attachment(cmd: model.RenderDrawCommand) bool {
     return cmd.depth_stencil_format != 0;
 }
@@ -704,6 +490,115 @@ fn map_topology(topology: u32) c_int {
         0x00000005 => dc.D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP,
         else => dc.D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST,
     };
+}
+
+/// Root parameter indices for render pass descriptor tables.
+const ROOT_PARAM_SRV_TABLE: u32 = 0;
+const ROOT_PARAM_SAMPLER_TABLE: u32 = 1;
+
+/// Create a root signature with SRV and sampler descriptor table slots matching
+/// the bind group entries in the render draw command.
+fn create_render_root_signature(device: ?*anyopaque, cmd: model.RenderDrawCommand) !?*anyopaque {
+    var layout = d3d12_descriptors.RootSignatureLayout{
+        .allow_input_assembler = true,
+    };
+    const max_entries = model.MAX_RENDER_BIND_ENTRIES * 2;
+    var entries_buf: [max_entries]d3d12_descriptors.BindingEntry = undefined;
+    var entry_count: usize = 0;
+
+    var tex_i: u32 = 0;
+    while (tex_i < cmd.bind_texture_count) : (tex_i += 1) {
+        entries_buf[entry_count] = .{
+            .binding = tex_i,
+            .binding_type = .sampled_texture,
+        };
+        entry_count += 1;
+    }
+
+    var smp_i: u32 = 0;
+    while (smp_i < cmd.bind_sampler_count) : (smp_i += 1) {
+        entries_buf[entry_count] = .{
+            .binding = smp_i,
+            .binding_type = .sampler,
+        };
+        entry_count += 1;
+    }
+
+    if (entry_count == 0) {
+        return d3d12_bridge_device_create_root_signature_empty(device);
+    }
+
+    layout.groups[0] = .{ .entries = entries_buf[0..entry_count] };
+    return try d3d12_descriptors.create_root_signature_with_bindings(device, layout);
+}
+
+/// Allocate SRV and sampler descriptors for model-path bind groups and set
+/// the descriptor tables on the command list.
+fn bind_model_descriptor_tables(
+    cmd_list: ?*anyopaque,
+    device: ?*anyopaque,
+    descriptor_state: *d3d12_descriptors.DescriptorHeapState,
+    cmd: model.RenderDrawCommand,
+) !void {
+    try descriptor_state.ensure_heaps(device);
+    const srv_base = descriptor_state.cbv_srv_uav_next;
+    const sampler_base = descriptor_state.sampler_next;
+
+    // Allocate SRV descriptors for each bound texture handle
+    var tex_i: u32 = 0;
+    while (tex_i < cmd.bind_texture_count) : (tex_i += 1) {
+        const handle = cmd.bind_texture_handles[tex_i];
+        if (handle == 0) continue;
+        const RGBA8_UNORM_FORMAT: u32 = 0x00000012;
+        _ = try descriptor_state.allocate_srv_texture(
+            device,
+            @ptrFromInt(handle),
+            RGBA8_UNORM_FORMAT,
+        );
+    }
+
+    // Allocate sampler descriptors for each bound sampler handle
+    var smp_i: u32 = 0;
+    while (smp_i < cmd.bind_sampler_count) : (smp_i += 1) {
+        // Default linear wrap sampler for model-path bindings
+        _ = try descriptor_state.allocate_sampler_descriptor(
+            device,
+            0x00000002, // linear min
+            0x00000002, // linear mag
+            0x00000002, // linear mip
+            0x00000002, // wrap U
+            0x00000002, // wrap V
+            0x00000002, // wrap W
+            0.0, // lod min
+            32.0, // lod max
+            0, // no compare
+            1, // no anisotropy
+        );
+    }
+
+    // Bind both heaps and set descriptor tables
+    descriptor_state.bind_heaps(cmd_list);
+
+    if (cmd.bind_texture_count > 0) {
+        d3d12_descriptors.set_graphics_descriptor_table(
+            cmd_list,
+            ROOT_PARAM_SRV_TABLE,
+            descriptor_state.cbv_srv_uav_heap,
+            srv_base,
+        );
+    }
+    if (cmd.bind_sampler_count > 0) {
+        const sampler_root_param = if (cmd.bind_texture_count > 0)
+            ROOT_PARAM_SAMPLER_TABLE
+        else
+            ROOT_PARAM_SRV_TABLE;
+        d3d12_descriptors.set_graphics_sampler_table(
+            cmd_list,
+            sampler_root_param,
+            descriptor_state.sampler_heap,
+            sampler_base,
+        );
+    }
 }
 
 // Replay render bundles into a standalone render pass. Creates render target,
@@ -735,7 +630,7 @@ pub fn execute_render_bundles(
     };
 
     const setup_start = common_timing.now_ns();
-    try self.ensure_pipeline(device, pipeline_cmd);
+    try self.ensure_pipeline(device, pipeline_cmd, false);
     try self.ensure_draw_indirect(device);
     try self.ensure_indexed_indirect(device);
     const setup_ns = common_timing.ns_delta(common_timing.now_ns(), setup_start);

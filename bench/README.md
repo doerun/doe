@@ -255,6 +255,7 @@ python3 bench/cleanup_out.py --retention-days 14
     - `bench/workloads.local.d3d12.smoke.json`
     - `bench/workloads.local.d3d12.extended.json`
   - the first governed D3D12 comparable config is `bench/native-compare/compare_dawn_vs_doe.config.local.d3d12.extended.comparable.json`.
+  - the governed strict comparable D3D12 lane now has a dedicated workload contract (`bench/workloads.d3d12.comparable.json`, 11 workloads, all comparable+default) and compare config (`bench/native-compare/compare_dawn_vs_doe.config.d3d12.comparable.json`).
   - D3D12 release-lane scaffolding now also exists at `bench/native-compare/compare_dawn_vs_doe.config.local.d3d12.release.json`, but it remains unevidenced until a Windows host runs it.
   - run `python3 bench/preflight_d3d12_host.py --json` on a Windows x64 host before D3D12 compare runs.
   - `python3 bench/run_local_d3d12_lane.py` is the Windows handoff runner for preflight -> smoke -> extended comparable -> blocking gates -> cube rebuild.

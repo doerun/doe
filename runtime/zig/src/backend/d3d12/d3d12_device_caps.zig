@@ -95,6 +95,12 @@ extern fn d3d12_bridge_device_get_shader_model(device: ?*anyopaque) callconv(.c)
 extern fn d3d12_bridge_device_get_wave_lane_count_min(device: ?*anyopaque) callconv(.c) c_int;
 extern fn d3d12_bridge_device_get_wave_lane_count_max(device: ?*anyopaque) callconv(.c) c_int;
 extern fn d3d12_bridge_device_supports_native_16bit(device: ?*anyopaque) callconv(.c) c_int;
+extern fn d3d12_bridge_device_supports_color_attachment_blend(device: ?*anyopaque, format: u32) callconv(.c) c_int;
+extern fn d3d12_bridge_device_supports_storage_binding(device: ?*anyopaque, format: u32) callconv(.c) c_int;
+extern fn d3d12_bridge_device_supports_storage_read_write(device: ?*anyopaque, format: u32) callconv(.c) c_int;
+extern fn d3d12_bridge_device_supports_render_target(device: ?*anyopaque, format: u32) callconv(.c) c_int;
+extern fn d3d12_bridge_device_supports_texture_component_swizzle(device: ?*anyopaque) callconv(.c) c_int;
+extern fn d3d12_bridge_device_supports_bc_sliced_3d(device: ?*anyopaque) callconv(.c) c_int;
 
 // ============================================================
 // D3D12DeviceCaps — runtime-queried hardware capabilities.
@@ -113,12 +119,97 @@ pub const D3D12DeviceCaps = struct {
     has_subgroups: bool = false,
     has_shader_f16: bool = false,
     has_subgroups_f16: bool = false,
+    supports_bc_sliced_3d: bool = false,
+    supports_etc2: bool = false,
+    supports_astc: bool = false,
+    supports_astc_sliced_3d: bool = false,
+    supports_float32_blendable: bool = false,
+    supports_texture_formats_tier1: bool = false,
+    supports_texture_formats_tier2: bool = false,
+    supports_texture_component_swizzle: bool = false,
+};
+
+const TIER1_STORAGE_FORMATS = [_]u32{
+    types.WGPUTextureFormat_R8Unorm,
+    types.WGPUTextureFormat_R8Snorm,
+    types.WGPUTextureFormat_R8Uint,
+    types.WGPUTextureFormat_R8Sint,
+    types.WGPUTextureFormat_R16Unorm,
+    types.WGPUTextureFormat_R16Snorm,
+    types.WGPUTextureFormat_R16Uint,
+    types.WGPUTextureFormat_R16Sint,
+    types.WGPUTextureFormat_R16Float,
+    types.WGPUTextureFormat_RG8Unorm,
+    types.WGPUTextureFormat_RG8Snorm,
+    types.WGPUTextureFormat_RG8Uint,
+    types.WGPUTextureFormat_RG8Sint,
+    types.WGPUTextureFormat_RG16Unorm,
+    types.WGPUTextureFormat_RG16Snorm,
+    types.WGPUTextureFormat_RG16Uint,
+    types.WGPUTextureFormat_RG16Sint,
+    types.WGPUTextureFormat_RG16Float,
+    types.WGPUTextureFormat_RGBA16Unorm,
+    types.WGPUTextureFormat_RGBA16Snorm,
+    types.WGPUTextureFormat_RGB10A2Uint,
+    types.WGPUTextureFormat_RGB10A2Unorm,
+    types.WGPUTextureFormat_RG11B10Ufloat,
+};
+
+const TIER2_READ_WRITE_FORMATS = [_]u32{
+    types.WGPUTextureFormat_R8Unorm,
+    types.WGPUTextureFormat_R8Uint,
+    types.WGPUTextureFormat_R8Sint,
+    types.WGPUTextureFormat_RGBA8Unorm,
+    types.WGPUTextureFormat_RGBA8Uint,
+    types.WGPUTextureFormat_RGBA8Sint,
+    types.WGPUTextureFormat_R16Uint,
+    types.WGPUTextureFormat_R16Sint,
+    types.WGPUTextureFormat_R16Float,
+    types.WGPUTextureFormat_RGBA16Uint,
+    types.WGPUTextureFormat_RGBA16Sint,
+    types.WGPUTextureFormat_RGBA16Float,
+    types.WGPUTextureFormat_R32Uint,
+    types.WGPUTextureFormat_R32Sint,
+    types.WGPUTextureFormat_R32Float,
+    types.WGPUTextureFormat_RG32Uint,
+    types.WGPUTextureFormat_RG32Sint,
+    types.WGPUTextureFormat_RG32Float,
+    types.WGPUTextureFormat_RGBA32Uint,
+    types.WGPUTextureFormat_RGBA32Sint,
+    types.WGPUTextureFormat_RGBA32Float,
+};
+
+const FLOAT32_BLENDABLE_FORMATS = [_]u32{
+    types.WGPUTextureFormat_R32Float,
+    types.WGPUTextureFormat_RG32Float,
+    types.WGPUTextureFormat_RGBA32Float,
 };
 
 // Conservative static defaults when no device handle is available.
 const D3D12_CAPS_STATIC = D3D12DeviceCaps{};
 var adapter_caps_cache: std.AutoHashMapUnmanaged(usize, D3D12DeviceCaps) = .{};
 const CACHE_ALLOCATOR = std.heap.page_allocator;
+
+fn supports_all_storage_formats(device: ?*anyopaque, formats: []const u32) bool {
+    for (formats) |format| {
+        if (d3d12_bridge_device_supports_storage_binding(device, format) != 1) return false;
+    }
+    return true;
+}
+
+fn supports_all_storage_read_write_formats(device: ?*anyopaque, formats: []const u32) bool {
+    for (formats) |format| {
+        if (d3d12_bridge_device_supports_storage_read_write(device, format) != 1) return false;
+    }
+    return true;
+}
+
+fn supports_all_color_attachment_blend_formats(device: ?*anyopaque, formats: []const u32) bool {
+    for (formats) |format| {
+        if (d3d12_bridge_device_supports_color_attachment_blend(device, format) != 1) return false;
+    }
+    return true;
+}
 
 pub fn query_device_caps(device: ?*anyopaque) D3D12DeviceCaps {
     if (device == null) return D3D12_CAPS_STATIC;
@@ -138,6 +229,13 @@ pub fn query_device_caps(device: ?*anyopaque) D3D12DeviceCaps {
     const shader_f16 = sm >= SM_6_2 and native_16 == 1;
     // SubgroupsF16 requires both ShaderF16 and Subgroups.
     const sub_f16 = subgroups and shader_f16;
+    const bc_sliced_3d = d3d12_bridge_device_supports_bc_sliced_3d(device) == 1;
+    const float32_blendable = supports_all_color_attachment_blend_formats(device, &FLOAT32_BLENDABLE_FORMATS);
+    const tier1 = supports_all_storage_formats(device, &TIER1_STORAGE_FORMATS);
+    const tier2 = tier1 and
+        supports_all_storage_read_write_formats(device, &TIER2_READ_WRITE_FORMATS) and
+        d3d12_bridge_device_supports_render_target(device, types.WGPUTextureFormat_RG11B10Ufloat) == 1;
+    const texture_component_swizzle = d3d12_bridge_device_supports_texture_component_swizzle(device) == 1;
 
     return .{
         .shader_model = sm,
@@ -147,6 +245,14 @@ pub fn query_device_caps(device: ?*anyopaque) D3D12DeviceCaps {
         .has_subgroups = subgroups,
         .has_shader_f16 = shader_f16,
         .has_subgroups_f16 = sub_f16,
+        .supports_bc_sliced_3d = bc_sliced_3d,
+        .supports_etc2 = false,
+        .supports_astc = false,
+        .supports_astc_sliced_3d = false,
+        .supports_float32_blendable = float32_blendable,
+        .supports_texture_formats_tier1 = tier1,
+        .supports_texture_formats_tier2 = tier2,
+        .supports_texture_component_swizzle = texture_component_swizzle,
     };
 }
 
@@ -182,16 +288,16 @@ fn is_feature_supported_with_caps(feature: u32, caps: D3D12DeviceCaps) bool {
         FEATURE_SUBGROUPS => D3D12_AVAILABLE and caps.has_subgroups,
         FEATURE_SUBGROUPS_F16 => D3D12_AVAILABLE and caps.has_subgroups_f16,
         FEATURE_TEXTURE_COMPRESSION_BC => D3D12_AVAILABLE,
-        FEATURE_TEXTURE_COMPRESSION_BC_SLICED_3D,
-        FEATURE_TEXTURE_COMPRESSION_ETC2,
-        FEATURE_TEXTURE_COMPRESSION_ASTC,
-        FEATURE_TEXTURE_COMPRESSION_ASTC_SLICED_3D,
-        FEATURE_FLOAT32_BLENDABLE,
-        FEATURE_TEXTURE_FORMATS_TIER1,
-        FEATURE_TEXTURE_FORMATS_TIER2,
+        FEATURE_TEXTURE_COMPRESSION_BC_SLICED_3D => D3D12_AVAILABLE and caps.supports_bc_sliced_3d,
+        FEATURE_TEXTURE_COMPRESSION_ETC2 => D3D12_AVAILABLE and caps.supports_etc2,
+        FEATURE_TEXTURE_COMPRESSION_ASTC => D3D12_AVAILABLE and caps.supports_astc,
+        FEATURE_TEXTURE_COMPRESSION_ASTC_SLICED_3D => D3D12_AVAILABLE and caps.supports_astc_sliced_3d,
+        FEATURE_FLOAT32_BLENDABLE => D3D12_AVAILABLE and caps.supports_float32_blendable,
+        FEATURE_TEXTURE_FORMATS_TIER1 => D3D12_AVAILABLE and caps.supports_texture_formats_tier1,
+        FEATURE_TEXTURE_FORMATS_TIER2 => D3D12_AVAILABLE and caps.supports_texture_formats_tier2,
         FEATURE_PRIMITIVE_INDEX,
-        FEATURE_TEXTURE_COMPONENT_SWIZZLE,
         => false,
+        FEATURE_TEXTURE_COMPONENT_SWIZZLE => D3D12_AVAILABLE and caps.supports_texture_component_swizzle,
         else => is_feature_supported_static(feature),
     };
 }
@@ -249,14 +355,27 @@ pub fn remove_adapter_caps(raw: ?*anyopaque) void {
     _ = adapter_caps_cache.remove(@intFromPtr(ptr));
 }
 
-test "d3d12 disputed feature publication stays explicit" {
+test "d3d12 source-backed feature publication follows queried caps" {
     try std.testing.expectEqual(D3D12_AVAILABLE, is_feature_supported_static(FEATURE_CORE_FEATURES_AND_LIMITS));
-    try std.testing.expect(!is_feature_supported_with_caps(FEATURE_TEXTURE_COMPRESSION_BC_SLICED_3D, .{}));
-    try std.testing.expect(!is_feature_supported_with_caps(FEATURE_FLOAT32_BLENDABLE, .{}));
-    try std.testing.expect(!is_feature_supported_with_caps(FEATURE_TEXTURE_FORMATS_TIER1, .{}));
-    try std.testing.expect(!is_feature_supported_with_caps(FEATURE_TEXTURE_FORMATS_TIER2, .{}));
+    const caps = D3D12DeviceCaps{
+        .supports_bc_sliced_3d = true,
+        .supports_float32_blendable = true,
+        .supports_texture_formats_tier1 = true,
+        .supports_texture_formats_tier2 = true,
+        .supports_texture_component_swizzle = true,
+    };
+    try std.testing.expectEqual(D3D12_AVAILABLE, is_feature_supported_with_caps(FEATURE_TEXTURE_COMPRESSION_BC_SLICED_3D, caps));
+    try std.testing.expectEqual(D3D12_AVAILABLE, is_feature_supported_with_caps(FEATURE_FLOAT32_BLENDABLE, caps));
+    try std.testing.expectEqual(D3D12_AVAILABLE, is_feature_supported_with_caps(FEATURE_TEXTURE_FORMATS_TIER1, caps));
+    try std.testing.expectEqual(D3D12_AVAILABLE, is_feature_supported_with_caps(FEATURE_TEXTURE_FORMATS_TIER2, caps));
+    try std.testing.expectEqual(D3D12_AVAILABLE, is_feature_supported_with_caps(FEATURE_TEXTURE_COMPONENT_SWIZZLE, caps));
+}
+
+test "d3d12 unsupported compressed feature families stay explicit false" {
+    try std.testing.expect(!is_feature_supported_with_caps(FEATURE_TEXTURE_COMPRESSION_ETC2, .{}));
+    try std.testing.expect(!is_feature_supported_with_caps(FEATURE_TEXTURE_COMPRESSION_ASTC, .{}));
+    try std.testing.expect(!is_feature_supported_with_caps(FEATURE_TEXTURE_COMPRESSION_ASTC_SLICED_3D, .{}));
     try std.testing.expect(!is_feature_supported_with_caps(FEATURE_PRIMITIVE_INDEX, .{}));
-    try std.testing.expect(!is_feature_supported_with_caps(FEATURE_TEXTURE_COMPONENT_SWIZZLE, .{}));
 }
 
 test "d3d12 runtime-probed subgroup and f16 features publish when caps allow" {

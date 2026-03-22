@@ -43,6 +43,7 @@ pub export fn doeNativeDeviceCreateCommandEncoder(dev_raw: ?*anyopaque, desc: ?*
 
 pub export fn doeNativeCommandEncoderRelease(raw: ?*anyopaque) callconv(.c) void {
     if (cast(DoeCommandEncoder, raw)) |e| {
+        if (!native.object_should_destroy(e)) return;
         label_store.remove(raw);
         e.cmds.deinit(alloc);
         alloc.destroy(e);
@@ -171,7 +172,7 @@ pub export fn doeNativeCommandEncoderCopyTextureToBuffer(
                         .width = width,
                         .height = height,
                         .format = src_texture.format,
-                        .dst_buffer = @ptrCast(mapped_ptr),
+                        .dst_buffer = @as(*anyopaque, @ptrCast(mapped_ptr)),
                         .dst_offset = dst_offset,
                         .dst_bytes_per_row = dst_bytes_per_row,
                         .dst_rows_per_image = dst_rows_per_image,
@@ -208,6 +209,7 @@ pub export fn doeNativeCommandEncoderFinish(enc_raw: ?*anyopaque, desc: ?*const 
 
 pub export fn doeNativeCommandBufferRelease(raw: ?*anyopaque) callconv(.c) void {
     if (cast(DoeCommandBuffer, raw)) |cb| {
+        if (!native.object_should_destroy(cb)) return;
         label_store.remove(raw);
         cb.cmds.deinit(alloc);
         alloc.destroy(cb);

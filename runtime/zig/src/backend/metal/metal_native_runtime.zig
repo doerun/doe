@@ -3,6 +3,7 @@ const std = @import("std");
 const common_timing = @import("../common/timing.zig");
 const model = @import("../../model.zig");
 const webgpu = @import("../../webgpu_ffi.zig");
+const async_runtime = @import("metal_async_runtime.zig");
 const copy_runtime = @import("metal_copy_runtime.zig");
 const dispatch_runtime = @import("metal_dispatch_runtime.zig");
 const metal_buffer_pool = @import("metal_buffer_pool.zig");
@@ -121,6 +122,7 @@ pub const NativeMetalRuntime = struct {
     kernel_pipelines: std.StringHashMapUnmanaged(KernelPipeline) = .{},
 
     compute_buffers: std.AutoHashMapUnmanaged(u64, ?*anyopaque) = .{},
+    dispatch_indirect_args_buffer: ?*anyopaque = null,
 
     textures: std.AutoHashMapUnmanaged(u64, ?*anyopaque) = .{},
 
@@ -179,6 +181,7 @@ pub const NativeMetalRuntime = struct {
         self.staging_src_zeroed = false;
         self.release_kernel_pipelines();
         self.release_compute_buffers();
+        release_ref(&self.dispatch_indirect_args_buffer);
         self.release_textures();
         self.release_samplers();
         self.release_surfaces();
@@ -441,6 +444,15 @@ pub const NativeMetalRuntime = struct {
     pub fn run_dispatch(self: *NativeMetalRuntime, x: u32, y: u32, z: u32, queue_sync_mode: webgpu.QueueSyncMode) !DispatchMetrics {
         const metrics = try dispatch_runtime.run_dispatch(self, x, y, z, queue_sync_mode);
         return .{ .setup_ns = 0, .encode_ns = metrics.encode_ns, .submit_wait_ns = metrics.submit_wait_ns, .dispatch_count = metrics.dispatch_count };
+    }
+
+    pub fn run_dispatch_indirect(self: *NativeMetalRuntime, x: u32, y: u32, z: u32, queue_sync_mode: webgpu.QueueSyncMode) !DispatchMetrics {
+        const metrics = try dispatch_runtime.run_dispatch_indirect(self, x, y, z, queue_sync_mode);
+        return .{ .setup_ns = 0, .encode_ns = metrics.encode_ns, .submit_wait_ns = metrics.submit_wait_ns, .dispatch_count = metrics.dispatch_count };
+    }
+
+    pub fn execute_map_async(self: *NativeMetalRuntime, cmd: model.MapAsyncCommand) !u64 {
+        return async_runtime.execute_map_async(self, cmd);
     }
 
     pub fn sampler_create(self: *NativeMetalRuntime, cmd: model.SamplerCreateCommand) !void {

@@ -40,11 +40,11 @@ pub fn parse_symbol_ownership_config(
     raw_json: []const u8,
 ) ![]const SymbolOwnership {
     const parsed = try std.json.parseFromSlice(SymbolOwnershipConfig, allocator, raw_json, .{
-        .ignore_unknown_fields = false,
+        .ignore_unknown_fields = true,
     });
     defer parsed.deinit();
 
-    if (parsed.value.schemaVersion != 2) return ParseError.InvalidSchemaVersion;
+    if (parsed.value.schemaVersion != 2 and parsed.value.schemaVersion != 3) return ParseError.InvalidSchemaVersion;
 
     var entries = try allocator.alloc(SymbolOwnership, parsed.value.symbols.len);
     for (entries) |*entry| {

@@ -85,6 +85,7 @@ fn emit_output_struct(self: anytype, function: ir.Function, stage: ir.ShaderStag
         for (struct_def.fields.items) |field| {
             const io = field.io orelse continue;
             try self.write_indent();
+            try emit_hlsl_interp_modifier(self, io);
             try self.emit_typed_name(field.ty, field.name);
             try self.write(" : ");
             try write_output_semantic(self, stage, io);
@@ -116,6 +117,7 @@ fn emit_wrapper_function(self: anytype, function_index: ir.FunctionId, stage: ir
                 const io = field.io orelse continue;
                 if (maps.hlsl_intrinsic_builtin(io.builtin) != null) continue;
                 if (!first_param) try self.write(", ");
+                try emit_hlsl_interp_modifier(self, io);
                 try self.emit_typed_name(field.ty, field.name);
                 try self.write(" : ");
                 try write_input_semantic(self, io);
@@ -123,6 +125,9 @@ fn emit_wrapper_function(self: anytype, function_index: ir.FunctionId, stage: ir
             }
         } else {
             if (!first_param) try self.write(", ");
+            if (param.io) |io_attr| {
+                try emit_hlsl_interp_modifier(self, io_attr);
+            }
             try self.emit_typed_name(param.ty, param.name);
             try self.write(" : ");
             try write_input_semantic(self, param.io.?);
@@ -387,6 +392,32 @@ fn emit_clip_distance_element_expr(self: anytype, function: ir.Function, expr_id
             try self.write("[");
             try self.write_u32(index);
             try self.write("]");
+        },
+    }
+}
+
+/// Emit HLSL interpolation modifier prefix for an IO field. Emits nothing for
+/// the default (perspective, center). Builtins skip interpolation modifiers.
+fn emit_hlsl_interp_modifier(self: anytype, io: ir.IoAttr) !void {
+    if (io.builtin != .none) return;
+    const interp = io.interpolation orelse return;
+    switch (interp) {
+        .flat => try self.write("nointerpolation "),
+        .linear => {
+            const sampling = io.sampling orelse .center;
+            switch (sampling) {
+                .center => try self.write("noperspective "),
+                .centroid => try self.write("noperspective centroid "),
+                .sample => try self.write("noperspective sample "),
+            }
+        },
+        .perspective => {
+            const sampling = io.sampling orelse .center;
+            switch (sampling) {
+                .center => {},
+                .centroid => try self.write("centroid "),
+                .sample => try self.write("sample "),
+            }
         },
     }
 }

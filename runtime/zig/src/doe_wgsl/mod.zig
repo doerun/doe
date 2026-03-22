@@ -282,10 +282,16 @@ pub fn analyzeToIrWithConfig(
         return kind;
     };
     errdefer module.deinit();
-    ir_validate.validate(&module) catch {
-        setLastError(.ir_validate, TranslateError.InvalidIr, null, null);
-        return TranslateError.InvalidIr;
-    };
+    // validator_elimination_available is true when -Dlean-verified=true and the
+    // proof artifact contains both builder_soundness and ValidatorRedundant.
+    // Together they prove that every sema-Ok + build-Ok IR already satisfies all
+    // ir_validate.validate() checks, so the call is a proven no-op and is elided.
+    if (!lean_proof.validator_elimination_available) {
+        ir_validate.validate(&module) catch {
+            setLastError(.ir_validate, TranslateError.InvalidIr, null, null);
+            return TranslateError.InvalidIr;
+        };
+    }
     ir_transform_robustness.apply(allocator, &module, config) catch {
         return TranslateError.OutOfMemory;
     };
@@ -379,8 +385,22 @@ pub fn applyOverrides(module: *ir.Module, overrides: []const ir.OverrideEntry) v
 }
 
 pub fn translateToHlsl(allocator: std.mem.Allocator, wgsl: []const u8, out: []u8) TranslateError!usize {
+    return translateToHlslWithOverrides(allocator, wgsl, out, null, 0);
+}
+
+pub fn translateToHlslWithOverrides(
+    allocator: std.mem.Allocator,
+    wgsl: []const u8,
+    out: []u8,
+    overrides: ?[*]const ir.OverrideEntry,
+    override_count: usize,
+) TranslateError!usize {
     var module_ir = try analyzeToIr(allocator, wgsl);
     defer module_ir.deinit();
+
+    if (overrides != null and override_count > 0) {
+        applyOverrides(&module_ir, overrides.?[0..override_count]);
+    }
 
     return emit_hlsl.emit(&module_ir, out) catch |err| {
         const kind = switch (err) {

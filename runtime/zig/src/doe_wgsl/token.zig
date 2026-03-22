@@ -51,23 +51,23 @@ pub const Tag = enum(u8) {
     @"=",
 
     // Compound operators.
-    arrow,       // ->
-    plus_eq,     // +=
-    minus_eq,    // -=
-    star_eq,     // *=
-    slash_eq,    // /=
-    percent_eq,  // %=
-    amp_eq,      // &=
-    pipe_eq,     // |=
-    caret_eq,    // ^=
-    shift_left,  // <<
+    arrow, // ->
+    plus_eq, // +=
+    minus_eq, // -=
+    star_eq, // *=
+    slash_eq, // /=
+    percent_eq, // %=
+    amp_eq, // &=
+    pipe_eq, // |=
+    caret_eq, // ^=
+    shift_left, // <<
     shift_right, // >>
-    lte,         // <=
-    gte,         // >=
-    eq_eq,       // ==
-    not_eq,      // !=
-    and_and,     // &&
-    or_or,       // ||
+    lte, // <=
+    gte, // >=
+    eq_eq, // ==
+    not_eq, // !=
+    and_and, // &&
+    or_or, // ||
 
     // Keywords.
     kw_fn,
@@ -118,6 +118,7 @@ pub const Tag = enum(u8) {
     kw_atomic,
     kw_ptr,
     kw_sampler,
+    kw_texture_1d,
     kw_texture_2d,
 
     // Address-space / access keywords (contextual).
@@ -206,6 +207,7 @@ const KEYWORDS = [_]KW{
     .{ "storage", .kw_storage },
     .{ "struct", .kw_struct },
     .{ "switch", .kw_switch },
+    .{ "texture_1d", .kw_texture_1d },
     .{ "texture_2d", .kw_texture_2d },
     .{ "true", .kw_true },
     .{ "u32", .kw_u32 },

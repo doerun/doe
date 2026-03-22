@@ -167,6 +167,7 @@ pub const RenderDrawEncodeMode = model_webgpu_types.RenderDrawEncodeMode;
 pub const RenderIndexFormat = model_webgpu_types.RenderIndexFormat;
 pub const MAX_VERTEX_BUFFERS = model_webgpu_types.MAX_VERTEX_BUFFERS;
 pub const MAX_VERTEX_ATTRIBUTES = model_webgpu_types.MAX_VERTEX_ATTRIBUTES;
+pub const MAX_RENDER_BIND_ENTRIES = model_webgpu_types.MAX_RENDER_BIND_ENTRIES;
 pub const WGPUVertexStepMode_Vertex = model_webgpu_types.WGPUVertexStepMode_Vertex;
 pub const WGPUVertexStepMode_Instance = model_webgpu_types.WGPUVertexStepMode_Instance;
 pub const RenderVertexAttribute = model_webgpu_types.RenderVertexAttribute;
@@ -199,27 +200,22 @@ pub const MapAsyncMode = model_webgpu_types.MapAsyncMode;
 pub const MapAsyncCommand = model_webgpu_types.MapAsyncCommand;
 const core_partition = @import("core/command_partition.zig");
 const full_partition = @import("full/command_partition.zig");
-
 /// Core command kind — authoritative definition in core/command_partition.zig.
 pub const CoreCommandKind = core_partition.CommandKind;
 /// Full-only command kind — authoritative definition in full/command_partition.zig.
 pub const FullCommandKind = full_partition.CommandKind;
-
 /// Core command union — authoritative definition in core/command_partition.zig.
 pub const CoreCommand = core_partition.Command;
 /// Full-only command union — authoritative definition in full/command_partition.zig.
 pub const FullCommand = full_partition.Command;
-
 pub const SchemaVersion = u8;
 pub const CURRENT_SCHEMA_VERSION: SchemaVersion = 2;
-
 pub const Api = enum(u8) {
     vulkan,
     metal,
     d3d12,
     webgpu,
 };
-
 pub const Scope = enum(u8) {
     alignment,
     barrier,
@@ -227,26 +223,22 @@ pub const Scope = enum(u8) {
     driver_toggle,
     memory,
 };
-
 pub const SafetyClass = enum(u8) {
     low,
     moderate,
     high,
     critical,
 };
-
 pub const VerificationMode = enum(u8) {
     guard_only,
     lean_preferred,
     lean_required,
 };
-
 pub const ProofLevel = enum(u8) {
     proven,
     guarded,
     rejected,
 };
-
 /// Combined command kind — composed from CoreCommandKind + FullCommandKind.
 /// Core variants come first (ordinals 0..N-1), full variants follow (N..N+M-1).
 pub const CommandKind = enum(u8) {
@@ -275,7 +267,6 @@ pub const CommandKind = enum(u8) {
     async_diagnostics,
     map_async,
 };
-
 /// Combined command union — composes CoreCommand and FullCommand payload types.
 /// Payload types are defined authoritatively in the partition modules;
 /// this union references them to avoid duplicate definitions.
@@ -311,7 +302,6 @@ pub const Command = union(CommandKind) {
     // Core queue-sync commands
     map_async: MapAsyncCommand,
 };
-
 // Comptime check: every CoreCommand variant has a matching Command variant,
 // and every FullCommand variant has a matching Command variant, and the
 // combined Command has no extra variants beyond core + full.
@@ -319,12 +309,10 @@ comptime {
     const core_fields = @typeInfo(CoreCommand).@"union".fields;
     const full_fields = @typeInfo(FullCommand).@"union".fields;
     const combined_fields = @typeInfo(Command).@"union".fields;
-
     // Combined must equal core + full
     if (combined_fields.len != core_fields.len + full_fields.len) {
         @compileError("Command variant count does not equal CoreCommand + FullCommand");
     }
-
     // Every core variant must exist in combined with the same payload type
     for (core_fields) |core_field| {
         var found = false;
@@ -341,7 +329,6 @@ comptime {
             @compileError("CoreCommand." ++ core_field.name ++ " missing from Command");
         }
     }
-
     // Every full variant must exist in combined with the same payload type
     for (full_fields) |full_field| {
         var found = false;
@@ -359,40 +346,33 @@ comptime {
         }
     }
 }
-
 pub const UseTemporaryBufferAction = struct {
     alignment_bytes: u32,
 };
-
 pub const UseTemporaryRenderTextureAction = struct {
     min_mip_level: u32,
 };
-
 pub const ToggleAction = struct {
     toggle_name: []const u8,
 };
-
 pub const QuirkAction = union(enum) {
     use_temporary_buffer: UseTemporaryBufferAction,
     use_temporary_render_texture: UseTemporaryRenderTextureAction,
     toggle: ToggleAction,
     no_op: void,
 };
-
 pub const MatchSpec = struct {
     vendor: []const u8,
     api: Api,
     device_family: ?[]const u8 = null,
     driver_range: ?[]const u8 = null,
 };
-
 pub const Provenance = struct {
     source_repo: []const u8,
     source_path: []const u8,
     source_commit: []const u8,
     observed_at: []const u8,
 };
-
 pub const Quirk = struct {
     schema_version: SchemaVersion,
     quirk_id: []const u8,
@@ -405,25 +385,21 @@ pub const Quirk = struct {
     provenance: Provenance,
     priority: u32 = 0,
 };
-
 pub const DeviceProfile = struct {
     vendor: []const u8,
     api: Api,
     device_family: ?[]const u8 = null,
     driver_version: SemVer,
 };
-
 pub const SemVer = struct {
     major: u32,
     minor: u32,
     patch: u32,
-
     pub fn parse(text: []const u8) !SemVer {
         var major: u32 = 0;
         var minor: u32 = 0;
         var patch: u32 = 0;
         var numbers_seen: u32 = 0;
-
         var it = std.mem.splitScalar(u8, text, '.');
         while (it.next()) |part| {
             if (part.len == 0) return error.InvalidVersion;
@@ -439,7 +415,6 @@ pub const SemVer = struct {
 
         return SemVer{ .major = major, .minor = minor, .patch = patch };
     }
-
     pub fn cmp(self: SemVer, other: SemVer) std.math.Order {
         if (self.major > other.major) return .gt;
         if (self.major < other.major) return .lt;
@@ -449,24 +424,19 @@ pub const SemVer = struct {
         if (self.patch < other.patch) return .lt;
         return .eq;
     }
-
     pub fn equals(self: SemVer, other: SemVer) bool {
         return self.cmp(other) == .eq;
     }
-
     pub fn ge(self: SemVer, other: SemVer) bool {
         return self.cmp(other) != .lt;
     }
-
     pub fn gt(self: SemVer, other: SemVer) bool {
         return self.cmp(other) == .gt;
     }
-
     pub fn lt(self: SemVer, other: SemVer) bool {
         return self.cmp(other) == .lt;
     }
 };
-
 pub fn parse_api(raw: []const u8) !Api {
     if (std.ascii.eqlIgnoreCase(raw, "vulkan")) return .vulkan;
     if (std.ascii.eqlIgnoreCase(raw, "metal")) return .metal;
@@ -474,7 +444,6 @@ pub fn parse_api(raw: []const u8) !Api {
     if (std.ascii.eqlIgnoreCase(raw, "webgpu")) return .webgpu;
     return error.InvalidApi;
 }
-
 pub fn parse_scope(raw: []const u8) !Scope {
     if (std.ascii.eqlIgnoreCase(raw, "alignment")) return .alignment;
     if (std.ascii.eqlIgnoreCase(raw, "barrier")) return .barrier;
@@ -483,7 +452,6 @@ pub fn parse_scope(raw: []const u8) !Scope {
     if (std.ascii.eqlIgnoreCase(raw, "memory")) return .memory;
     return error.InvalidScope;
 }
-
 pub fn parse_safety(raw: []const u8) !SafetyClass {
     if (std.ascii.eqlIgnoreCase(raw, "low")) return .low;
     if (std.ascii.eqlIgnoreCase(raw, "moderate")) return .moderate;
@@ -491,14 +459,12 @@ pub fn parse_safety(raw: []const u8) !SafetyClass {
     if (std.ascii.eqlIgnoreCase(raw, "critical")) return .critical;
     return error.InvalidSafetyClass;
 }
-
 pub fn parse_verification_mode(raw: []const u8) !VerificationMode {
     if (std.ascii.eqlIgnoreCase(raw, "guard_only")) return .guard_only;
     if (std.ascii.eqlIgnoreCase(raw, "lean_preferred")) return .lean_preferred;
     if (std.ascii.eqlIgnoreCase(raw, "lean_required")) return .lean_required;
     return error.InvalidVerificationMode;
 }
-
 pub fn parse_proof_level(raw: []const u8) !ProofLevel {
     if (std.ascii.eqlIgnoreCase(raw, "proven")) return .proven;
     if (std.ascii.eqlIgnoreCase(raw, "guarded")) return .guarded;

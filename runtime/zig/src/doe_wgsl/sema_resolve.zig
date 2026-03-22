@@ -41,6 +41,10 @@ pub fn resolve_type_parameterized(self: anytype, node: Node) !ir.TypeId {
         if (params_len != 1) return error.InvalidType;
         return try self.module.types.intern(.{ .atomic = try self.resolve_type_node(self.module.tree.extra_data.items[params_start]) });
     }
+    if (std.mem.eql(u8, name, "texture_1d")) {
+        if (params_len != 1) return error.InvalidType;
+        return try self.module.types.intern(.{ .texture_1d = try self.resolve_type_node(self.module.tree.extra_data.items[params_start]) });
+    }
     if (std.mem.eql(u8, name, "texture_2d")) {
         if (params_len != 1) return error.InvalidType;
         return try self.module.types.intern(.{ .texture_2d = try self.resolve_type_node(self.module.tree.extra_data.items[params_start]) });

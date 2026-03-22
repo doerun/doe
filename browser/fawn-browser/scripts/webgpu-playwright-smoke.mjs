@@ -957,6 +957,7 @@ async function runMode(chromium, mode, args, localUrl, localPort) {
           result.smoke.copyExternalImageToTexture.error = String(error);
         }
 
+        let importStage = "requestAdapter";
         try {
           if (typeof VideoFrame !== "function") {
             throw new Error("VideoFrame is unavailable");
@@ -967,9 +968,11 @@ async function runMode(chromium, mode, args, localUrl, localPort) {
           if (!importAdapter) {
             throw new Error("importExternalTexture requestAdapter returned null");
           }
+          importStage = "requestDevice";
           const importDevice = await withOpTimeout("importExternalTexture requestDevice", () =>
             importAdapter.requestDevice(),
           );
+          importStage = "createSourceCanvas";
           const sourceCanvas = new OffscreenCanvas(2, 2);
           const sourceContext = sourceCanvas.getContext("2d");
           if (!sourceContext) {
@@ -982,16 +985,20 @@ async function runMode(chromium, mode, args, localUrl, localPort) {
           let externalTexture = null;
           let renderTarget = null;
           try {
+            importStage = "createVideoFrame";
             videoFrame = new VideoFrame(sourceCanvas, { timestamp: 0 });
+            importStage = "importExternalTexture";
             externalTexture = importDevice.importExternalTexture({
               source: videoFrame,
               colorSpace: "srgb",
               label: "playwright-smoke-external-texture",
             });
+            importStage = "createSampler";
             const sampler = importDevice.createSampler({
               minFilter: "linear",
               magFilter: "linear",
             });
+            importStage = "createBindGroupLayout";
             const bindGroupLayout = importDevice.createBindGroupLayout({
               entries: [
                 {
@@ -1006,9 +1013,11 @@ async function runMode(chromium, mode, args, localUrl, localPort) {
                 },
               ],
             });
+            importStage = "createPipelineLayout";
             const pipelineLayout = importDevice.createPipelineLayout({
               bindGroupLayouts: [bindGroupLayout],
             });
+            importStage = "createShaderModule";
             const shader = importDevice.createShaderModule({
               code: `
                 struct VertexOutput {
@@ -1050,6 +1059,7 @@ async function runMode(chromium, mode, args, localUrl, localPort) {
                 }
               `,
             });
+            importStage = "createRenderPipeline";
             const pipeline = importDevice.createRenderPipeline({
               layout: pipelineLayout,
               vertex: { module: shader, entryPoint: "vs" },
@@ -1060,6 +1070,7 @@ async function runMode(chromium, mode, args, localUrl, localPort) {
               },
               primitive: { topology: "triangle-list" },
             });
+            importStage = "createBindGroup";
             const bindGroup = importDevice.createBindGroup({
               layout: bindGroupLayout,
               entries: [
@@ -1067,11 +1078,13 @@ async function runMode(chromium, mode, args, localUrl, localPort) {
                 { binding: 1, resource: externalTexture },
               ],
             });
+            importStage = "createRenderTarget";
             renderTarget = importDevice.createTexture({
               size: { width: 4, height: 4, depthOrArrayLayers: 1 },
               format: "rgba8unorm",
               usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
             });
+            importStage = "encodeRenderPass";
             const encoder = importDevice.createCommandEncoder();
             const pass = encoder.beginRenderPass({
               colorAttachments: [
@@ -1087,10 +1100,13 @@ async function runMode(chromium, mode, args, localUrl, localPort) {
             pass.setBindGroup(0, bindGroup);
             pass.draw(6);
             pass.end();
+            importStage = "submit";
             importDevice.queue.submit([encoder.finish()]);
+            importStage = "onSubmittedWorkDone";
             await withOpTimeout("importExternalTexture onSubmittedWorkDone", () =>
               importDevice.queue.onSubmittedWorkDone(),
             );
+            importStage = "readback";
             const readback = await readTextureRgba(
               importDevice,
               renderTarget,
@@ -1107,7 +1123,7 @@ async function runMode(chromium, mode, args, localUrl, localPort) {
             videoFrame?.close();
           }
         } catch (error) {
-          result.smoke.importExternalTexture.error = String(error);
+          result.smoke.importExternalTexture.error = `${importStage}: ${String(error)}`;
         }
 
         let benchDevice = device;

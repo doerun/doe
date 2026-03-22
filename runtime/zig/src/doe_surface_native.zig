@@ -31,6 +31,7 @@ const WGPU_SURFACE_GET_CURRENT_TEXTURE_STATUS_TIMEOUT: u32 = 0x00000002;
 pub const DoeSurface = struct {
     pub const TYPE_MAGIC = MAGIC_SURFACE;
     magic: u32 = TYPE_MAGIC,
+    ref_count: u32 = 1,
     backend: native.BackendKind = .metal,
     handle: u64 = 0,
     vk_runtime_ref: ?*anyopaque = null,
@@ -222,6 +223,7 @@ pub export fn doeNativeSurfaceUnconfigure(surf_raw: ?*anyopaque) callconv(.c) vo
 
 pub export fn doeNativeSurfaceRelease(surf_raw: ?*anyopaque) callconv(.c) void {
     const surf = cast(DoeSurface, surf_raw) orelse return;
+    if (!native.object_should_destroy(surf)) return;
     if (surf.backend == .vulkan) {
         if (surf.vk_runtime_ref) |rt_ptr| {
             const rt: *NativeVulkanRuntime = @ptrCast(@alignCast(rt_ptr));
@@ -230,4 +232,103 @@ pub export fn doeNativeSurfaceRelease(surf_raw: ?*anyopaque) callconv(.c) void {
     }
     if (surf.current_tex) |tex| alloc.destroy(tex);
     alloc.destroy(surf);
+}
+
+// ============================================================
+// Capabilities query
+// ============================================================
+
+const surface_procs = @import("full/surface/wgpu_surface_procs.zig");
+
+// Default surface format for Doe Vulkan surfaces.
+const DOE_SURFACE_DEFAULT_FORMAT: u32 = model.WGPUTextureFormat_BGRA8Unorm;
+
+// Present mode constants matching WGPUPresentMode values.
+const DOE_PRESENT_MODE_FIFO: u32 = 0x00000003;
+
+// Composite alpha mode constants matching WGPUCompositeAlphaMode values.
+const DOE_COMPOSITE_ALPHA_MODE_OPAQUE: u32 = 0x00000002;
+
+// Static capability arrays — returned by pointer, never freed.
+const DEFAULT_FORMATS = [_]u32{DOE_SURFACE_DEFAULT_FORMAT};
+const DEFAULT_PRESENT_MODES = [_]u32{DOE_PRESENT_MODE_FIFO};
+const DEFAULT_ALPHA_MODES = [_]u32{DOE_COMPOSITE_ALPHA_MODE_OPAQUE};
+
+/// Minimal capabilities query: reports BGRA8Unorm, Fifo, Opaque.
+pub export fn doeNativeSurfaceGetCapabilities(
+    surf_raw: ?*anyopaque,
+    _: ?*anyopaque,
+    out: ?*surface_procs.SurfaceCapabilities,
+) callconv(.c) u32 {
+    const surf = cast(DoeSurface, surf_raw) orelse return 0;
+    _ = surf;
+    const caps = out orelse return 0;
+    caps.nextInChain = null;
+    caps.usages = 0x00000010; // WGPUTextureUsage_RenderAttachment
+    caps.formatCount = DEFAULT_FORMATS.len;
+    caps.formats = &DEFAULT_FORMATS;
+    caps.presentModeCount = DEFAULT_PRESENT_MODES.len;
+    caps.presentModes = &DEFAULT_PRESENT_MODES;
+    caps.alphaModeCount = DEFAULT_ALPHA_MODES.len;
+    caps.alphaModes = &DEFAULT_ALPHA_MODES;
+    return 1; // WGPUStatus_Success
+}
+
+/// Free members from a capabilities query. Static arrays need no deallocation.
+pub export fn doeNativeSurfaceCapabilitiesFreeMembers(_: surface_procs.SurfaceCapabilities) callconv(.c) void {
+    // Static arrays — nothing to free.
+}
+
+// ============================================================
+// ABI bridges: translate WebGPU C ABI struct signatures to
+// the flattened parameter signatures used by native functions.
+// ============================================================
+
+/// ABI bridge for wgpuInstanceCreateSurface.
+/// The native implementation takes an extra dev_raw parameter; the C ABI does not.
+/// We pass null for dev_raw (device association happens at configure time).
+pub fn doeAbiBridgeInstanceCreateSurface(
+    inst_raw: ?*anyopaque,
+    desc_raw: *const surface_procs.SurfaceDescriptor,
+) callconv(.c) ?*anyopaque {
+    return doeNativeInstanceCreateSurface(inst_raw, @ptrCast(@constCast(desc_raw)), null);
+}
+
+/// ABI bridge for wgpuSurfaceConfigure.
+/// Unpacks SurfaceConfiguration fields into the flattened native call.
+pub fn doeAbiBridgeSurfaceConfigure(
+    surf_raw: ?*anyopaque,
+    config: *const surface_procs.SurfaceConfiguration,
+) callconv(.c) void {
+    doeNativeSurfaceConfigure(
+        surf_raw,
+        config.width,
+        config.height,
+        config.format,
+        @truncate(config.usage), // WGPUTextureUsage is u64; native uses u32
+        config.alphaMode,
+        config.presentMode,
+        0, // tone_mapping_mode — not in C ABI struct; default to standard
+    );
+}
+
+/// ABI bridge for wgpuSurfaceGetCurrentTexture.
+/// Unpacks the SurfaceTexture output struct from the flattened native outputs.
+pub fn doeAbiBridgeSurfaceGetCurrentTexture(
+    surf_raw: ?*anyopaque,
+    out: *surface_procs.SurfaceTexture,
+) callconv(.c) void {
+    var tex_ptr: ?*anyopaque = null;
+    var suboptimal: u32 = 0;
+    var status: u32 = 0;
+    doeNativeSurfaceGetCurrentTexture(surf_raw, &tex_ptr, &suboptimal, &status);
+    out.texture = tex_ptr;
+    out.status = status;
+}
+
+/// ABI bridge for wgpuSurfacePresent.
+/// Native returns void; C ABI expects u32 (WGPUStatus).
+pub fn doeAbiBridgeSurfacePresent(surf_raw: ?*anyopaque) callconv(.c) u32 {
+    doeNativeSurfacePresent(surf_raw);
+    return 1; // WGPUStatus_Success
 }

@@ -87,6 +87,27 @@ extern fn d3d12_bridge_command_list_set_graphics_root_descriptor_table(
     heap: ?*anyopaque,
     base_descriptor_index: u32,
 ) callconv(.c) void;
+extern fn d3d12_bridge_device_create_sampler_in_heap(
+    device: ?*anyopaque,
+    sampler_heap: ?*anyopaque,
+    heap_index: u32,
+    min_filter: u32,
+    mag_filter: u32,
+    mipmap_filter: u32,
+    address_mode_u: u32,
+    address_mode_v: u32,
+    address_mode_w: u32,
+    lod_min_clamp: f32,
+    lod_max_clamp: f32,
+    compare: u32,
+    max_anisotropy: u16,
+) callconv(.c) void;
+extern fn d3d12_bridge_command_list_set_graphics_root_sampler_table(
+    cmd_list: ?*anyopaque,
+    root_parameter_index: u32,
+    sampler_heap: ?*anyopaque,
+    base_descriptor_index: u32,
+) callconv(.c) void;
 
 /// Passed to the bridge to describe one descriptor range within a root parameter.
 /// Layout must match the C struct consumed by `d3d12_bridge_device_create_root_signature_with_tables`.
@@ -252,6 +273,41 @@ pub const DescriptorHeapState = struct {
         if (self.sampler_next >= self.sampler_capacity) return error.UnsupportedFeature;
         const index = self.sampler_next;
         self.sampler_next += 1;
+        return index;
+    }
+
+    /// Allocate a sampler descriptor slot and write the sampler parameters
+    /// into the sampler heap at that index. Returns the descriptor index.
+    pub fn allocate_sampler_descriptor(
+        self: *DescriptorHeapState,
+        device: ?*anyopaque,
+        min_filter: u32,
+        mag_filter: u32,
+        mipmap_filter: u32,
+        address_mode_u: u32,
+        address_mode_v: u32,
+        address_mode_w: u32,
+        lod_min_clamp: f32,
+        lod_max_clamp: f32,
+        compare: u32,
+        max_anisotropy: u16,
+    ) !u32 {
+        const index = try self.allocate_sampler(device);
+        d3d12_bridge_device_create_sampler_in_heap(
+            device,
+            self.sampler_heap,
+            index,
+            min_filter,
+            mag_filter,
+            mipmap_filter,
+            address_mode_u,
+            address_mode_v,
+            address_mode_w,
+            lod_min_clamp,
+            lod_max_clamp,
+            compare,
+            max_anisotropy,
+        );
         return index;
     }
 
@@ -424,6 +480,23 @@ pub fn set_graphics_descriptor_table(
         cmd_list,
         root_parameter_index,
         heap,
+        base_descriptor_index,
+    );
+}
+
+/// Set a graphics root descriptor table on a command list, pointing into the
+/// sampler heap at `base_descriptor_index`. Uses the sampler descriptor
+/// increment size, which differs from CBV/SRV/UAV.
+pub fn set_graphics_sampler_table(
+    cmd_list: ?*anyopaque,
+    root_parameter_index: u32,
+    sampler_heap: ?*anyopaque,
+    base_descriptor_index: u32,
+) void {
+    d3d12_bridge_command_list_set_graphics_root_sampler_table(
+        cmd_list,
+        root_parameter_index,
+        sampler_heap,
         base_descriptor_index,
     );
 }

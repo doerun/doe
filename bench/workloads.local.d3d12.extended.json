@@ -275,10 +275,10 @@
       "comparabilityNotes": "Strict D3D12 upload-plus-barrier lifecycle contract with adapter-autodiscovered Dawn mapping and direct timing normalization.",
       "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
       "comparable": true,
+      "rightCommandRepeat": 100,
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-      "benchmarkClass": "comparable",
-      "rightCommandRepeat": 100
+      "benchmarkClass": "comparable"
     }
   ]
 }

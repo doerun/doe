@@ -14,6 +14,7 @@
 const std = @import("std");
 const dispatch_proof_match = @import("dispatch_proof_match.zig");
 const ir = @import("ir.zig");
+const lean_proof = @import("../lean_proof.zig");
 
 pub const TransformError = error{
     OutOfMemory,
@@ -25,6 +26,11 @@ pub const Config = struct {
     /// the runtime clamp when the access pattern is covered by a Lean proof.
     /// The caller should set this to lean_proof.bounds_elimination_available.
     elide_proven_bounds: bool = false,
+
+    /// When true, pattern-match direct global_invocation_id texture coords on
+    /// supported compute texture builtins and record host-side texture extent
+    /// preconditions instead of injecting a coordinate clamp.
+    elide_proven_texture_bounds: bool = false,
 };
 
 /// Apply robustness clamping to all index and texture expressions in the module.
@@ -59,7 +65,7 @@ fn transform_function(
                             if (len > 0) try clamp_sized(allocator, module, function, i, len);
                         } else {
                             if (config.elide_proven_bounds) {
-                                if (dispatch_proof_match.try_elide_storage_index(module, function, function_id, index_data)) |precondition| {
+                                if (dispatch_proof_match.try_elide_storage_index(module, function, function_id, i, index_data)) |precondition| {
                                     module.dispatch_preconditions.append(
                                         module.allocator,
                                         precondition,
@@ -81,6 +87,15 @@ fn transform_function(
             },
             .call => |call_data| {
                 if (call_data.kind != .builtin) continue;
+                if (config.elide_proven_texture_bounds) {
+                    if (try_elide_dispatch_fit_texture_coords(module, function, call_data)) |precondition| {
+                        module.texture_dispatch_preconditions.append(
+                            module.allocator,
+                            precondition,
+                        ) catch return error.OutOfMemory;
+                        continue;
+                    }
+                }
                 try clamp_texture_coords(allocator, module, function, call_data);
             },
             else => {},
@@ -224,6 +239,16 @@ const TEXTURE_STORE_NAME = "textureStore";
 
 /// Returns true if the name is a texture builtin whose integer coordinate
 /// argument requires robustness clamping.
+///
+/// Per the WGSL specification, only textureLoad and textureStore accept integer
+/// coordinates that require runtime clamping. All textureSample* variants
+/// (textureSample, textureSampleLevel, textureSampleOffset,
+/// textureSampleLevelOffset, textureSampleGrad, textureSampleCompare,
+/// textureSampleCompareLevel) use float coordinates; the GPU hardware samples
+/// with clamp-to-edge or wrap semantics, so integer clamping does not apply.
+/// textureGather and textureGatherCompare also use float coordinates.
+/// The "offset" parameter in textureSampleOffset / textureSampleLevelOffset is
+/// a compile-time constant integer, not a runtime coordinate.
 fn is_clamped_texture_builtin(name: []const u8) bool {
     return std.mem.eql(u8, name, TEXTURE_LOAD_NAME) or
         std.mem.eql(u8, name, TEXTURE_STORE_NAME);
@@ -244,6 +269,7 @@ fn resolve_texture_type(types: *const ir.TypeStore, ty: ir.TypeId) ir.Type {
 /// Return the coordinate vector dimensionality for a given texture type.
 fn texture_coord_dim(tex_type: ir.Type) ?u8 {
     return switch (tex_type) {
+        .texture_1d => 1,
         .texture_2d, .texture_depth_2d, .texture_multisampled_2d, .storage_texture_2d => 2,
         .texture_3d, .texture_cube, .texture_depth_cube => 3,
         .texture_2d_array => 2,
@@ -254,22 +280,59 @@ fn texture_coord_dim(tex_type: ir.Type) ?u8 {
 /// Returns true if this texture type variant has a mip level parameter.
 fn texture_has_level(tex_type: ir.Type) bool {
     return switch (tex_type) {
-        .texture_2d, .texture_depth_2d => true,
+        .texture_1d, .texture_2d, .texture_depth_2d => true,
         .texture_3d, .texture_cube, .texture_depth_cube => true,
         else => false,
     };
 }
 
+fn dispatch_fit_texture_coord_dim(tex_type: ir.Type) ?u8 {
+    return switch (tex_type) {
+        .texture_2d, .texture_depth_2d, .texture_multisampled_2d, .storage_texture_2d => 2,
+        .texture_3d => 3,
+        else => null,
+    };
+}
+
+fn resolve_value_alias(function: *const ir.Function, expr_id: ir.ExprId) ir.ExprId {
+    var current = expr_id;
+    while (true) {
+        const expr = function.exprs.items[current];
+        switch (expr.data) {
+            .load => |inner| current = inner,
+            .construct => |construct| {
+                if (construct.args.len != 1) return current;
+                current = function.expr_args.items[construct.args.start];
+            },
+            .local_ref => |local_idx| {
+                current = resolve_const_local_initializer(function, local_idx) orelse return current;
+            },
+            else => return current,
+        }
+    }
+}
+
+fn resolve_const_local_initializer(function: *const ir.Function, local_idx: u32) ?ir.ExprId {
+    for (function.stmts.items) |stmt| {
+        switch (stmt) {
+            .local_decl => |decl| {
+                if (decl.local == local_idx and decl.is_const) return decl.initializer;
+            },
+            else => {},
+        }
+    }
+    return null;
+}
+
 fn classify_gid_scalar(function: *const ir.Function, expr_id: ir.ExprId) ?u8 {
-    const expr = function.exprs.items[expr_id];
+    const expr = function.exprs.items[resolve_value_alias(function, expr_id)];
     switch (expr.data) {
-        .load => |base_id| return classify_gid_scalar(function, base_id),
         .construct => |construct| {
             if (construct.args.len != 1) return null;
             return classify_gid_scalar(function, function.expr_args.items[construct.args.start]);
         },
         .member => |member_data| {
-            const base_expr = function.exprs.items[member_data.base];
+            const base_expr = function.exprs.items[resolve_value_alias(function, member_data.base)];
             switch (base_expr.data) {
                 .param_ref => |param_idx| {
                     if (param_idx >= function.params.items.len) return null;
@@ -286,6 +349,117 @@ fn classify_gid_scalar(function: *const ir.Function, expr_id: ir.ExprId) ?u8 {
         },
         else => return null,
     }
+}
+
+fn match_u32_literal(function: *const ir.Function, expr_id: ir.ExprId, expected: u32) bool {
+    const expr = function.exprs.items[resolve_value_alias(function, expr_id)];
+    return switch (expr.data) {
+        .int_lit => |value| value == expected,
+        else => false,
+    };
+}
+
+fn resolve_texture_binding(
+    module: *const ir.Module,
+    function: *const ir.Function,
+    expr_id: ir.ExprId,
+) ?ir.BindingPoint {
+    const expr = function.exprs.items[resolve_value_alias(function, expr_id)];
+    switch (expr.data) {
+        .global_ref => |global_idx| {
+            if (global_idx >= module.globals.items.len) return null;
+            const global = module.globals.items[global_idx];
+            const binding = global.binding orelse return null;
+            return switch (resolve_texture_type(&module.types, global.ty)) {
+                .texture_2d,
+                .texture_depth_2d,
+                .texture_multisampled_2d,
+                .storage_texture_2d,
+                .texture_3d,
+                => binding,
+                else => null,
+            };
+        },
+        .member => |member| return resolve_texture_binding(module, function, member.base),
+        .index => |index| return resolve_texture_binding(module, function, index.base),
+        else => return null,
+    }
+}
+
+fn is_identity_gid_coord(function: *const ir.Function, expr_id: ir.ExprId, dim: u8) bool {
+    const expr = function.exprs.items[resolve_value_alias(function, expr_id)];
+    switch (expr.data) {
+        .member => |member| {
+            const base_expr = function.exprs.items[resolve_value_alias(function, member.base)];
+            const param_idx = switch (base_expr.data) {
+                .param_ref => |value| value,
+                else => return false,
+            };
+            if (param_idx >= function.params.items.len) return false;
+            const io = function.params.items[param_idx].io orelse return false;
+            if (io.builtin != .global_invocation_id) return false;
+            return switch (dim) {
+                2 => std.mem.eql(u8, member.field_name, "xy"),
+                3 => std.mem.eql(u8, member.field_name, "xyz"),
+                else => false,
+            };
+        },
+        .construct => |construct| {
+            if (construct.args.len == 1) {
+                return is_identity_gid_coord(function, function.expr_args.items[construct.args.start], dim);
+            }
+            if (construct.args.len != dim) return false;
+            var arg_index: u32 = 0;
+            while (arg_index < construct.args.len) : (arg_index += 1) {
+                const expected_axis: u8 = @intCast(arg_index);
+                if (classify_gid_scalar(function, function.expr_args.items[construct.args.start + arg_index]) != expected_axis) {
+                    return false;
+                }
+            }
+            return true;
+        },
+        else => return false,
+    }
+}
+
+fn texture_level_is_dispatch_fit_supported(
+    function: *const ir.Function,
+    tex_ty: ir.Type,
+    call_data: @FieldType(ir.Expr, "call"),
+) bool {
+    if (!std.mem.eql(u8, call_data.name, TEXTURE_LOAD_NAME)) return !texture_has_level(tex_ty);
+    if (!texture_has_level(tex_ty)) return true;
+    if (call_data.args.len < 3) return false;
+    const level_arg = function.expr_args.items[call_data.args.start + 2];
+    return match_u32_literal(function, level_arg, 0);
+}
+
+fn try_elide_dispatch_fit_texture_coords(
+    module: *const ir.Module,
+    function: *const ir.Function,
+    call_data: @FieldType(ir.Expr, "call"),
+) ?ir.TextureDispatchPrecondition {
+    if (!is_clamped_texture_builtin(call_data.name) or call_data.args.len < 2) return null;
+
+    const texture_arg = function.expr_args.items[call_data.args.start];
+    const coord_arg = function.expr_args.items[call_data.args.start + 1];
+    const tex_ty = resolve_texture_type(&module.types, function.exprs.items[texture_arg].ty);
+    const dim = dispatch_fit_texture_coord_dim(tex_ty) orelse return null;
+    if (texture_coord_is_explicitly_guarded(function, coord_arg, dim)) return null;
+    if (!texture_level_is_dispatch_fit_supported(function, tex_ty, call_data)) return null;
+    if (!is_identity_gid_coord(function, coord_arg, dim)) return null;
+
+    const binding = resolve_texture_binding(module, function, texture_arg) orelse return null;
+    switch (dim) {
+        2 => if (!lean_proof.boundsProven(.gid_texture_2d_dispatch_fit)) return null,
+        3 => if (!lean_proof.boundsProven(.gid_texture_3d_dispatch_fit)) return null,
+        else => return null,
+    }
+    return .{
+        .kind = if (dim == 2) .gid_coords_2d else .gid_coords_3d,
+        .texture_binding = binding,
+        .mip_level = 0,
+    };
 }
 
 fn classify_gid_coord_axes(function: *const ir.Function, expr_id: ir.ExprId, dim: u8) ?[3]bool {

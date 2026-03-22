@@ -1,46 +1,21 @@
-//! DXIL emission requires an external DirectX Shader Compiler (DXC) binary.
-//! This module generates HLSL via `emit_hlsl`, writes it to a temporary file,
-//! spawns DXC to compile it to DXIL, reads the output, and returns the bytes.
-//! When DXC is unavailable the caller receives `error.ShaderToolchainUnavailable`
-//! and a human-readable explanation is accessible via `lastErrorMessage()`.
+//! DXIL emission: native Zig DXIL bytecode generation with optional DXC fallback.
 //!
-//! DXC discovery order (highest priority first):
-//!
-//!   1. explicit_config  — caller passes `ToolchainConfig{ .executable = "/path/to/dxc" }`
-//!                         directly to `emitWithToolchainConfig`.
-//!
-//!   2. env_path         — `DOE_WGSL_DXC` is set to an absolute or workspace-relative
-//!                         path, e.g. `DOE_WGSL_DXC=/usr/local/bin/dxc`.
-//!                         The value is used verbatim; PATH is not searched.
-//!
-//!   3. env_path_lookup  — `DOE_WGSL_DXC=PATH` (case-insensitive sentinel).
-//!                         Opts into explicit system PATH lookup; the platform
-//!                         default name (`dxc` / `dxc.exe`) is searched on PATH.
-//!
-//!   4. implicit_path_lookup — `DOE_WGSL_DXC` is unset.
-//!                         Falls back to searching the platform default name on PATH.
-//!                         This is the zero-config path and will return
-//!                         `ShaderToolchainUnavailable` on machines without DXC.
+//! The primary path generates DXIL bytecode natively from the Doe IR using the
+//! dxil_builder/dxil_serialize/dxil_container modules. No external toolchain is
+//! required. The DXC fallback path remains available via `emitWithToolchainConfig`
+//! for validation against the reference compiler.
 //!
 //! Environment variable: `DOE_WGSL_DXC`
-//!   - Unset or absent  → strategy 4 (implicit PATH lookup)
-//!   - Set to `PATH`    → strategy 3 (explicit PATH lookup)
-//!   - Set to a path    → strategy 2 (use path verbatim)
-//!   - Set but empty    → `ShaderToolchainUnavailable` (explicit misconfiguration error)
-//!
-//! Examples:
-//!   DOE_WGSL_DXC=/usr/local/bin/dxc          # absolute path
-//!   DOE_WGSL_DXC=vendor/dxc/bin/dxc          # workspace-relative path
-//!   DOE_WGSL_DXC=PATH                         # explicit system PATH lookup
-//!
-//! This toolchain dependency is intentional: DXIL is a binary format produced
-//! only by Microsoft's DXC.  Unlike MSL, SPIR-V, and HLSL, DXIL emission cannot
-//! be made self-contained without embedding or reimplementing DXC.
+//!   - Unset or absent  → native emission (no external tool needed)
+//!   - Set to `PATH`    → explicit system PATH lookup for DXC fallback
+//!   - Set to a path    → use that DXC binary for fallback compilation
+//!   - Set but empty    → `ShaderToolchainUnavailable` (explicit misconfiguration)
 
 const builtin = @import("builtin");
 const std = @import("std");
 const ir = @import("ir.zig");
 const emit_hlsl = @import("emit_hlsl.zig");
+const emit_dxil_native = @import("emit_dxil_native.zig");
 
 pub const MAX_OUTPUT: usize = 256 * 1024;
 pub const DXC_ENV_VAR: []const u8 = "DOE_WGSL_DXC";
@@ -125,13 +100,19 @@ pub fn lower(module: *const ir.Module) Error!Module {
     };
 }
 
+/// Primary DXIL emission path: generates DXIL natively from the Doe IR.
 pub fn emit(module: *const ir.Module, out: []u8) Error!usize {
-    const alloc = std.heap.page_allocator;
-    var config = try loadToolchainConfig(alloc);
-    defer config.deinit(alloc);
-    return emitWithToolchainConfig(module, out, config);
+    clearLastError();
+    return emit_dxil_native.emit(module, out) catch |err| switch (err) {
+        error.OutputTooLarge => error.OutputTooLarge,
+        error.InvalidIr => error.InvalidIr,
+        error.UnsupportedBuiltin => error.UnsupportedBuiltin,
+        error.UnsupportedConstruct => error.UnsupportedConstruct,
+        error.OutOfMemory => error.OutOfMemory,
+    };
 }
 
+/// DXC fallback path: generates HLSL, then invokes DXC to compile to DXIL.
 pub fn emitWithToolchainConfig(module: *const ir.Module, out: []u8, config: ToolchainConfig) Error!usize {
     clearLastError();
     if (config.executable.len == 0) {

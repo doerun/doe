@@ -22,6 +22,14 @@ pub fn emit(module: *const ir.Module, out: []u8) EmitError!usize {
     return emitter.pos;
 }
 
+pub fn moduleNeedsSizesParam(module: *const ir.Module) bool {
+    var emitter = Emitter{
+        .module = module,
+        .buf = &.{},
+    };
+    return emitter.module_needs_sizes_param();
+}
+
 const Emitter = struct {
     module: *const ir.Module,
     buf: []u8,
@@ -260,7 +268,7 @@ const Emitter = struct {
                 try self.write_u32(self.msl_binding_slot(binding));
                 try self.write(")]]");
             },
-            .texture_2d, .texture_2d_array, .texture_cube, .texture_multisampled_2d, .texture_depth_2d, .texture_depth_cube, .texture_3d, .storage_texture_2d => {
+            .texture_1d, .texture_2d, .texture_2d_array, .texture_cube, .texture_multisampled_2d, .texture_depth_2d, .texture_depth_cube, .texture_3d, .storage_texture_2d => {
                 try self.emit_type(global.ty);
                 try self.write(" ");
                 try self.write(global.name);
@@ -603,6 +611,11 @@ const Emitter = struct {
             .struct_ => |struct_id| try self.write(self.module.structs.items[struct_id].name),
             .sampler => try self.write("sampler"),
             .sampler_comparison => try self.write("sampler"),
+            .texture_1d => |sample_ty| {
+                try self.write("texture1d<");
+                try self.emit_type(sample_ty);
+                try self.write(">");
+            },
             .texture_2d => |sample_ty| {
                 try self.write("texture2d<");
                 try self.emit_type(sample_ty);

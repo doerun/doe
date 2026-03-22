@@ -40,6 +40,7 @@ DEFAULT_LANE_OUTPUTS = OrderedDict(
         ("apple_metal_extended", {"outputPath": "bench/workloads.apple.metal.extended.json"}),
         ("local_d3d12_smoke", {"outputPath": "bench/workloads.local.d3d12.smoke.json"}),
         ("local_d3d12_extended", {"outputPath": "bench/workloads.local.d3d12.extended.json"}),
+        ("d3d12_comparable", {"outputPath": "bench/workloads.d3d12.comparable.json"}),
     ]
 )
 

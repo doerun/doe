@@ -113,6 +113,7 @@ pub const VkExtensionProperties = structs.VkExtensionProperties;
 pub const VkFormatProperties = capability_structs.VkFormatProperties;
 pub const VkPhysicalDeviceFeatures = capability_structs.VkPhysicalDeviceFeatures;
 pub const VkPhysicalDeviceFeatures2 = capability_structs.VkPhysicalDeviceFeatures2;
+pub const VkPhysicalDeviceLimits = capability_structs.VkPhysicalDeviceLimits;
 pub const VkPhysicalDeviceProperties = capability_structs.VkPhysicalDeviceProperties;
 pub const VkPhysicalDeviceProperties2 = capability_structs.VkPhysicalDeviceProperties2;
 pub const VkPhysicalDeviceSubgroupProperties = capability_structs.VkPhysicalDeviceSubgroupProperties;
@@ -196,6 +197,7 @@ pub const vkCreateSampler = functions.vkCreateSampler;
 pub const vkDestroySampler = functions.vkDestroySampler;
 pub const vkCmdBeginRenderPass = functions.vkCmdBeginRenderPass;
 pub const vkCmdEndRenderPass = functions.vkCmdEndRenderPass;
+pub const vkCmdNextSubpass = functions.vkCmdNextSubpass;
 pub const vkCmdSetViewport = functions.vkCmdSetViewport;
 pub const vkCmdSetScissor = functions.vkCmdSetScissor;
 pub const vkCmdBindVertexBuffers = functions.vkCmdBindVertexBuffers;
@@ -362,13 +364,20 @@ pub const VK_PRESENT_MODE_FIFO_KHR: u32 = 0x00000002;
 pub const DEFAULT_SURFACE_MAX_FRAME_LATENCY: u32 = 2;
 
 // --- Render pass constants ---
+pub const VK_ATTACHMENT_LOAD_OP_LOAD: u32 = 0;
 pub const VK_ATTACHMENT_LOAD_OP_CLEAR: u32 = 1;
 pub const VK_ATTACHMENT_LOAD_OP_DONT_CARE: u32 = 2;
 pub const VK_ATTACHMENT_STORE_OP_STORE: u32 = 0;
 pub const VK_ATTACHMENT_STORE_OP_DONT_CARE: u32 = 1;
 pub const VK_SUBPASS_EXTERNAL: u32 = std.math.maxInt(u32);
+pub const VK_DEPENDENCY_BY_REGION_BIT: u32 = 0x00000001;
+pub const VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT: u32 = 0x00000080;
 pub const VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT: u32 = 0x00002000;
 pub const VK_PIPELINE_STAGE_ALL_COMMANDS_BIT: u32 = 0x00010000;
+pub const VK_ACCESS_INPUT_ATTACHMENT_READ_BIT: u32 = 0x00000010;
+pub const VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT: u32 = 0x00000080;
+pub const VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL: u32 = 5;
+pub const VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT: u32 = 10;
 
 // --- Graphics pipeline structure type IDs ---
 pub const VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO: i32 = 38;

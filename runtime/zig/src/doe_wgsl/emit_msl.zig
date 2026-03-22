@@ -16,13 +16,5 @@ pub fn emit(module: *const ir.Module, out: []u8) EmitError!usize {
 }
 
 pub fn moduleNeedsSizesParam(module_ir: *const ir.Module) bool {
-    const std = @import("std");
-    for (module_ir.globals.items) |global| {
-        switch (module_ir.types.get(global.ty)) {
-            .array => |arr| if (arr.len == null) return true,
-            else => {},
-        }
-    }
-    _ = std;
-    return false;
+    return emit_msl_ir.moduleNeedsSizesParam(module_ir);
 }

@@ -1547,10 +1547,30 @@ void d3d12_bridge_device_create_uav_texture_2d(D3D12Handle device_h, D3D12Handle
     device->lpVtbl->CreateUnorderedAccessView(device, resource, NULL, &uav_desc, handle);
 }
 
-D3D12Handle d3d12_bridge_texture_create_view(D3D12Handle texture_h, uint32_t format, uint32_t dimension,
-                                               uint32_t aspect, uint32_t base_mip, uint32_t mip_count,
-                                               uint32_t base_array_layer, uint32_t array_layer_count,
-                                               uint64_t usage_flags) {
+static UINT map_texture_component_swizzle(uint32_t swizzle) {
+    switch (swizzle) {
+        case 1: return D3D12_SHADER_COMPONENT_MAPPING_FORCE_VALUE_0;
+        case 2: return D3D12_SHADER_COMPONENT_MAPPING_FORCE_VALUE_1;
+        case 3: return D3D12_SHADER_COMPONENT_MAPPING_FROM_MEMORY_COMPONENT_0;
+        case 4: return D3D12_SHADER_COMPONENT_MAPPING_FROM_MEMORY_COMPONENT_1;
+        case 5: return D3D12_SHADER_COMPONENT_MAPPING_FROM_MEMORY_COMPONENT_2;
+        case 6: return D3D12_SHADER_COMPONENT_MAPPING_FROM_MEMORY_COMPONENT_3;
+        default: return D3D12_SHADER_COMPONENT_MAPPING_FROM_MEMORY_COMPONENT_0;
+    }
+}
+
+static UINT encode_texture_swizzle(uint32_t swizzle_r, uint32_t swizzle_g, uint32_t swizzle_b, uint32_t swizzle_a) {
+    return D3D12_ENCODE_SHADER_4_COMPONENT_MAPPING(
+        map_texture_component_swizzle(swizzle_r),
+        map_texture_component_swizzle(swizzle_g),
+        map_texture_component_swizzle(swizzle_b),
+        map_texture_component_swizzle(swizzle_a));
+}
+
+static D3D12Handle create_texture_view_internal(D3D12Handle texture_h, uint32_t format, uint32_t dimension,
+                                                uint32_t aspect, uint32_t base_mip, uint32_t mip_count,
+                                                uint32_t base_array_layer, uint32_t array_layer_count,
+                                                uint64_t usage_flags, UINT component_mapping) {
     ID3D12Resource* resource = (ID3D12Resource*)texture_h;
     if (resource == NULL) return NULL;
 
@@ -1610,9 +1630,9 @@ D3D12Handle d3d12_bridge_texture_create_view(D3D12Handle texture_h, uint32_t for
                 break;
             }
             default:
-                d3d12_bridge_release(heap_h);
-                device->lpVtbl->Release(device);
-                return NULL;
+            d3d12_bridge_release(heap_h);
+            device->lpVtbl->Release(device);
+            return NULL;
         }
 
         device->lpVtbl->CreateUnorderedAccessView(device, resource, NULL, &uav_desc, handle);
@@ -1625,14 +1645,83 @@ D3D12Handle d3d12_bridge_texture_create_view(D3D12Handle texture_h, uint32_t for
         case 0x00000003: /* 2DArray */
         case 0x00000007: /* 2DDepth */
         case 0x00000008: /* 2DArrayDepth */
-            d3d12_bridge_device_create_srv_texture_2d((D3D12Handle)device, texture_h, heap_h, 0, format, aspect, base_mip, mip_count, base_array_layer, array_layer_count);
+            {
+                D3D12_CPU_DESCRIPTOR_HANDLE handle;
+                ID3D12DescriptorHeap* heap = (ID3D12DescriptorHeap*)heap_h;
+                UINT incr = device->lpVtbl->GetDescriptorHandleIncrementSize(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+                heap->lpVtbl->GetCPUDescriptorHandleForHeapStart(heap, &handle);
+                handle.ptr += (SIZE_T)(incr * 0);
+
+                D3D12_SHADER_RESOURCE_VIEW_DESC srv_desc;
+                memset(&srv_desc, 0, sizeof(srv_desc));
+                srv_desc.Format                        = map_wgpu_format_to_dxgi_view(format, aspect);
+                srv_desc.Shader4ComponentMapping       = component_mapping;
+                if (base_array_layer > 0 || array_layer_count > 1) {
+                    srv_desc.ViewDimension                     = D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
+                    srv_desc.Texture2DArray.MostDetailedMip   = base_mip;
+                    srv_desc.Texture2DArray.MipLevels         = mip_count == 0 ? (UINT)-1 : mip_count;
+                    srv_desc.Texture2DArray.FirstArraySlice   = base_array_layer;
+                    srv_desc.Texture2DArray.ArraySize         = array_layer_count == 0 ? 1 : array_layer_count;
+                    srv_desc.Texture2DArray.PlaneSlice        = 0;
+                    srv_desc.Texture2DArray.ResourceMinLODClamp = 0.0f;
+                } else {
+                    srv_desc.ViewDimension                 = D3D12_SRV_DIMENSION_TEXTURE2D;
+                    srv_desc.Texture2D.MostDetailedMip     = base_mip;
+                    srv_desc.Texture2D.MipLevels           = mip_count == 0 ? (UINT)-1 : mip_count;
+                    srv_desc.Texture2D.PlaneSlice          = 0;
+                    srv_desc.Texture2D.ResourceMinLODClamp = 0.0f;
+                }
+                device->lpVtbl->CreateShaderResourceView(device, resource, &srv_desc, handle);
+            }
             break;
         case 0x00000004: /* Cube */
         case 0x00000005: /* CubeArray */
-            d3d12_bridge_device_create_srv_texture_cube((D3D12Handle)device, texture_h, heap_h, 0, format, aspect, base_mip, mip_count, base_array_layer, array_layer_count);
+            {
+                const uint32_t resolved_layers = array_layer_count == 0 ? 6 : array_layer_count;
+                const uint32_t resolved_cube_count = resolved_layers / 6;
+                D3D12_CPU_DESCRIPTOR_HANDLE handle;
+                ID3D12DescriptorHeap* heap = (ID3D12DescriptorHeap*)heap_h;
+                UINT incr = device->lpVtbl->GetDescriptorHandleIncrementSize(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+                heap->lpVtbl->GetCPUDescriptorHandleForHeapStart(heap, &handle);
+                handle.ptr += (SIZE_T)(incr * 0);
+
+                D3D12_SHADER_RESOURCE_VIEW_DESC srv_desc;
+                memset(&srv_desc, 0, sizeof(srv_desc));
+                srv_desc.Format                           = map_wgpu_format_to_dxgi_view(format, aspect);
+                srv_desc.Shader4ComponentMapping          = component_mapping;
+                if (base_array_layer > 0 || resolved_layers > 6) {
+                    srv_desc.ViewDimension                            = D3D12_SRV_DIMENSION_TEXTURECUBEARRAY;
+                    srv_desc.TextureCubeArray.MostDetailedMip         = base_mip;
+                    srv_desc.TextureCubeArray.MipLevels               = mip_count == 0 ? (UINT)-1 : mip_count;
+                    srv_desc.TextureCubeArray.First2DArrayFace        = base_array_layer;
+                    srv_desc.TextureCubeArray.NumCubes                = resolved_cube_count == 0 ? 1 : resolved_cube_count;
+                    srv_desc.TextureCubeArray.ResourceMinLODClamp     = 0.0f;
+                } else {
+                    srv_desc.ViewDimension                    = D3D12_SRV_DIMENSION_TEXTURECUBE;
+                    srv_desc.TextureCube.MostDetailedMip      = base_mip;
+                    srv_desc.TextureCube.MipLevels            = mip_count == 0 ? (UINT)-1 : mip_count;
+                    srv_desc.TextureCube.ResourceMinLODClamp  = 0.0f;
+                }
+                device->lpVtbl->CreateShaderResourceView(device, resource, &srv_desc, handle);
+            }
             break;
         case 0x00000006: /* 3D */
-            d3d12_bridge_device_create_srv_texture_3d((D3D12Handle)device, texture_h, heap_h, 0, format, aspect, base_mip, mip_count);
+            {
+                D3D12_CPU_DESCRIPTOR_HANDLE handle;
+                ID3D12DescriptorHeap* heap = (ID3D12DescriptorHeap*)heap_h;
+                UINT incr = device->lpVtbl->GetDescriptorHandleIncrementSize(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+                heap->lpVtbl->GetCPUDescriptorHandleForHeapStart(heap, &handle);
+                handle.ptr += (SIZE_T)(incr * 0);
+
+                D3D12_SHADER_RESOURCE_VIEW_DESC srv_desc;
+                memset(&srv_desc, 0, sizeof(srv_desc));
+                srv_desc.Format                          = map_wgpu_format_to_dxgi_view(format, aspect);
+                srv_desc.ViewDimension                   = D3D12_SRV_DIMENSION_TEXTURE3D;
+                srv_desc.Shader4ComponentMapping         = component_mapping;
+                srv_desc.Texture3D.MostDetailedMip       = base_mip;
+                srv_desc.Texture3D.MipLevels             = mip_count == 0 ? (UINT)-1 : mip_count;
+                device->lpVtbl->CreateShaderResourceView(device, resource, &srv_desc, handle);
+            }
             break;
         default:
             d3d12_bridge_release(heap_h);
@@ -1642,6 +1731,46 @@ D3D12Handle d3d12_bridge_texture_create_view(D3D12Handle texture_h, uint32_t for
 
     device->lpVtbl->Release(device);
     return heap_h;
+}
+
+D3D12Handle d3d12_bridge_texture_create_view(D3D12Handle texture_h, uint32_t format, uint32_t dimension,
+                                               uint32_t aspect, uint32_t base_mip, uint32_t mip_count,
+                                               uint32_t base_array_layer, uint32_t array_layer_count,
+                                               uint64_t usage_flags) {
+    return create_texture_view_internal(
+        texture_h,
+        format,
+        dimension,
+        aspect,
+        base_mip,
+        mip_count,
+        base_array_layer,
+        array_layer_count,
+        usage_flags,
+        D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING);
+}
+
+D3D12Handle d3d12_bridge_texture_create_view_swizzled(D3D12Handle texture_h, uint32_t format, uint32_t dimension,
+                                                       uint32_t aspect, uint32_t base_mip, uint32_t mip_count,
+                                                       uint32_t base_array_layer, uint32_t array_layer_count,
+                                                       uint64_t usage_flags,
+                                                       uint32_t swizzle_r, uint32_t swizzle_g,
+                                                       uint32_t swizzle_b, uint32_t swizzle_a) {
+    const int storage_only =
+        (usage_flags & 0x0000000000000008ull) != 0 &&
+        (usage_flags & 0x0000000000000004ull) == 0;
+    if (storage_only) return NULL;
+    return create_texture_view_internal(
+        texture_h,
+        format,
+        dimension,
+        aspect,
+        base_mip,
+        mip_count,
+        base_array_layer,
+        array_layer_count,
+        usage_flags,
+        encode_texture_swizzle(swizzle_r, swizzle_g, swizzle_b, swizzle_a));
 }
 
 void d3d12_bridge_command_list_set_descriptor_heaps(D3D12Handle cmd_list_h,
@@ -1847,6 +1976,93 @@ int d3d12_bridge_device_supports_native_16bit(D3D12Handle device) {
     (void)device;
     /* Conservative: 0 (false). Native 16-bit ops require SM6.2+ and hardware support. */
     return 0;
+}
+
+static int query_format_support(ID3D12Device* device, uint32_t format, D3D12_FEATURE_DATA_FORMAT_SUPPORT* support) {
+    const DXGI_FORMAT dxgi_format = map_wgpu_format_to_dxgi(format);
+    if (device == NULL || dxgi_format == DXGI_FORMAT_UNKNOWN || support == NULL) return 0;
+    memset(support, 0, sizeof(*support));
+    support->Format = dxgi_format;
+    return SUCCEEDED(device->lpVtbl->CheckFeatureSupport(
+        device,
+        D3D12_FEATURE_FORMAT_SUPPORT,
+        support,
+        (UINT)sizeof(*support)));
+}
+
+int d3d12_bridge_device_supports_color_attachment_blend(D3D12Handle device_h, uint32_t format) {
+    ID3D12Device* device = (ID3D12Device*)device_h;
+    D3D12_FEATURE_DATA_FORMAT_SUPPORT support;
+    if (!query_format_support(device, format, &support)) return 0;
+    return (support.Support1 & D3D12_FORMAT_SUPPORT1_RENDER_TARGET) != 0 &&
+        (support.Support1 & D3D12_FORMAT_SUPPORT1_BLENDABLE) != 0;
+}
+
+int d3d12_bridge_device_supports_storage_binding(D3D12Handle device_h, uint32_t format) {
+    ID3D12Device* device = (ID3D12Device*)device_h;
+    D3D12_FEATURE_DATA_FORMAT_SUPPORT support;
+    if (!query_format_support(device, format, &support)) return 0;
+    return (support.Support1 & D3D12_FORMAT_SUPPORT1_TYPED_UNORDERED_ACCESS_VIEW) != 0;
+}
+
+int d3d12_bridge_device_supports_storage_read_write(D3D12Handle device_h, uint32_t format) {
+    ID3D12Device* device = (ID3D12Device*)device_h;
+    D3D12_FEATURE_DATA_FORMAT_SUPPORT support;
+    if (!query_format_support(device, format, &support)) return 0;
+    return (support.Support1 & D3D12_FORMAT_SUPPORT1_TYPED_UNORDERED_ACCESS_VIEW) != 0 &&
+        (support.Support2 & D3D12_FORMAT_SUPPORT2_UAV_TYPED_LOAD) != 0 &&
+        (support.Support2 & D3D12_FORMAT_SUPPORT2_UAV_TYPED_STORE) != 0;
+}
+
+int d3d12_bridge_device_supports_render_target(D3D12Handle device_h, uint32_t format) {
+    ID3D12Device* device = (ID3D12Device*)device_h;
+    D3D12_FEATURE_DATA_FORMAT_SUPPORT support;
+    if (!query_format_support(device, format, &support)) return 0;
+    return (support.Support1 & D3D12_FORMAT_SUPPORT1_RENDER_TARGET) != 0;
+}
+
+int d3d12_bridge_device_supports_texture_component_swizzle(D3D12Handle device_h) {
+    return device_h != NULL ? 1 : 0;
+}
+
+int d3d12_bridge_device_supports_bc_sliced_3d(D3D12Handle device_h) {
+    ID3D12Device* device = (ID3D12Device*)device_h;
+    if (device == NULL) return 0;
+
+    D3D12_HEAP_PROPERTIES heap_props;
+    heap_props.Type                 = D3D12_HEAP_TYPE_DEFAULT;
+    heap_props.CPUPageProperty      = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+    heap_props.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+    heap_props.CreationNodeMask     = 1;
+    heap_props.VisibleNodeMask      = 1;
+
+    D3D12_RESOURCE_DESC desc;
+    memset(&desc, 0, sizeof(desc));
+    desc.Dimension          = D3D12_RESOURCE_DIMENSION_TEXTURE3D;
+    desc.Alignment          = 0;
+    desc.Width              = 4;
+    desc.Height             = 4;
+    desc.DepthOrArraySize   = 4;
+    desc.MipLevels          = 1;
+    desc.Format             = DXGI_FORMAT_BC1_UNORM;
+    desc.SampleDesc.Count   = 1;
+    desc.SampleDesc.Quality = 0;
+    desc.Layout             = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+    desc.Flags              = D3D12_RESOURCE_FLAG_NONE;
+
+    ID3D12Resource* resource = NULL;
+    const HRESULT hr = device->lpVtbl->CreateCommittedResource(
+        device,
+        &heap_props,
+        D3D12_HEAP_FLAG_NONE,
+        &desc,
+        D3D12_RESOURCE_STATE_COMMON,
+        NULL,
+        &IID_ID3D12Resource,
+        (void**)&resource);
+    if (FAILED(hr) || resource == NULL) return 0;
+    resource->lpVtbl->Release(resource);
+    return 1;
 }
 
 /* --- DXGI swap chain (surface) --- */
@@ -2064,6 +2280,68 @@ void d3d12_bridge_command_list_set_graphics_root_descriptor_table(D3D12Handle cm
         HRESULT hr = cmd->lpVtbl->GetDevice(cmd, &IID_ID3D12Device, (void**)&device);
         if (SUCCEEDED(hr) && device) {
             incr = device->lpVtbl->GetDescriptorHandleIncrementSize(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+            device->lpVtbl->Release(device);
+        }
+    }
+
+    D3D12_GPU_DESCRIPTOR_HANDLE gpu_handle;
+    heap->lpVtbl->GetGPUDescriptorHandleForHeapStart(heap, &gpu_handle);
+    gpu_handle.ptr += (UINT64)(incr * base_descriptor_index);
+
+    cmd->lpVtbl->SetGraphicsRootDescriptorTable(cmd, root_parameter_index, gpu_handle);
+}
+
+/* --- Write sampler descriptor into existing heap at index --- */
+void d3d12_bridge_device_create_sampler_in_heap(D3D12Handle device_h, D3D12Handle sampler_heap_h,
+                                                 uint32_t heap_index,
+                                                 uint32_t min_filter, uint32_t mag_filter,
+                                                 uint32_t mipmap_filter,
+                                                 uint32_t address_mode_u, uint32_t address_mode_v,
+                                                 uint32_t address_mode_w,
+                                                 float lod_min_clamp, float lod_max_clamp,
+                                                 uint32_t compare, uint16_t max_anisotropy) {
+    ID3D12Device* device = (ID3D12Device*)device_h;
+    ID3D12DescriptorHeap* heap = (ID3D12DescriptorHeap*)sampler_heap_h;
+    if (device == NULL || heap == NULL) return;
+
+    UINT incr = device->lpVtbl->GetDescriptorHandleIncrementSize(device, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
+    D3D12_CPU_DESCRIPTOR_HANDLE handle;
+    heap->lpVtbl->GetCPUDescriptorHandleForHeapStart(heap, &handle);
+    handle.ptr += (SIZE_T)(incr * heap_index);
+
+    D3D12_SAMPLER_DESC desc;
+    memset(&desc, 0, sizeof(desc));
+    desc.Filter       = map_wgpu_sampler_filter(min_filter, mag_filter, mipmap_filter, compare, max_anisotropy);
+    desc.AddressU     = map_wgpu_address_mode(address_mode_u);
+    desc.AddressV     = map_wgpu_address_mode(address_mode_v);
+    desc.AddressW     = map_wgpu_address_mode(address_mode_w);
+    desc.MipLODBias   = 0.0f;
+    desc.MaxAnisotropy = max_anisotropy > 1 ? (UINT)(max_anisotropy > 16 ? 16 : max_anisotropy) : 1;
+    desc.ComparisonFunc = compare != 0 ? map_wgpu_compare(compare) : D3D12_COMPARISON_FUNC_ALWAYS;
+    desc.BorderColor[0] = 0.0f;
+    desc.BorderColor[1] = 0.0f;
+    desc.BorderColor[2] = 0.0f;
+    desc.BorderColor[3] = 0.0f;
+    desc.MinLOD       = lod_min_clamp;
+    desc.MaxLOD       = lod_max_clamp;
+
+    device->lpVtbl->CreateSampler(device, &desc, handle);
+}
+
+/* --- Graphics root sampler descriptor table binding (uses sampler heap increment) --- */
+void d3d12_bridge_command_list_set_graphics_root_sampler_table(D3D12Handle cmd_list_h,
+                                                                uint32_t root_parameter_index,
+                                                                D3D12Handle sampler_heap_h,
+                                                                uint32_t base_descriptor_index) {
+    ID3D12GraphicsCommandList* cmd = (ID3D12GraphicsCommandList*)cmd_list_h;
+    ID3D12DescriptorHeap* heap = (ID3D12DescriptorHeap*)sampler_heap_h;
+
+    UINT incr = 0;
+    {
+        ID3D12Device* device = NULL;
+        HRESULT hr = cmd->lpVtbl->GetDevice(cmd, &IID_ID3D12Device, (void**)&device);
+        if (SUCCEEDED(hr) && device) {
+            incr = device->lpVtbl->GetDescriptorHandleIncrementSize(device, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
             device->lpVtbl->Release(device);
         }
     }

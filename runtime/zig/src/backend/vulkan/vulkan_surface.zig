@@ -12,81 +12,66 @@ const common_errors = @import("../common/errors.zig");
 const common_timing = @import("../common/timing.zig");
 const vk = @import("vulkan_types.zig");
 const vulkan_errors = @import("vulkan_errors.zig");
-
 const VkResult = vk.VkResult;
 const VkBool32 = vk.VkBool32;
 const VkFlags = vk.VkFlags;
-
 const VkInstance = vk.VkInstance;
 const VkPhysicalDevice = vk.VkPhysicalDevice;
 const VkDevice = vk.VkDevice;
 const VkQueue = vk.VkQueue;
 const VkAllocationCallbacks = vk.VkAllocationCallbacks;
-
 const VkSurfaceKHR = vk.VkSurfaceKHR;
 const VkSwapchainKHR = vk.VkSwapchainKHR;
 const VkImage = vk.VkImage;
 const VkSemaphore = vk.VkSemaphore;
 const VkFence = vk.VkFence;
-
 const VkStructureType = vk.VkStructureType;
-
 const VK_SUCCESS = vk.VK_SUCCESS;
 const VK_SUBOPTIMAL_KHR: i32 = 1000001003;
 const VK_ERROR_OUT_OF_DATE_KHR = vulkan_errors.VK_ERROR_OUT_OF_DATE_KHR;
 const VK_NULL_U64 = vk.VK_NULL_U64;
 const VK_TRUE = vk.VK_TRUE;
 const VK_FALSE = vk.VK_FALSE;
-
 // VkStructureType values for surface/swapchain extensions
 const VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR: i32 = 1000001000;
 const VK_STRUCTURE_TYPE_PRESENT_INFO_KHR: i32 = 1000001001;
 const VK_STRUCTURE_TYPE_WAYLAND_SURFACE_CREATE_INFO_KHR: i32 = 1000006000;
 const VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR: i32 = 1000005000;
 const VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO: i32 = 9;
-
 // VkFormat for swapchain
 const VK_FORMAT_B8G8R8A8_SRGB: u32 = 50;
 const VK_FORMAT_B8G8R8A8_UNORM: u32 = 44;
 const VK_FORMAT_R8G8B8A8_UNORM: u32 = 37;
 const VK_FORMAT_R16G16B16A16_SFLOAT: u32 = 97;
-
 // VkColorSpaceKHR
 const VK_COLOR_SPACE_SRGB_NONLINEAR_KHR: u32 = 0;
 const VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT: u32 = 1000104002;
-
 // VkPresentModeKHR
 const VK_PRESENT_MODE_FIFO_KHR: u32 = 2;
 const VK_PRESENT_MODE_MAILBOX_KHR: u32 = 3;
 const VK_PRESENT_MODE_IMMEDIATE_KHR: u32 = 0;
-
 // VkCompositeAlphaFlagBitsKHR
 const VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR: u32 = 0x00000001;
 const VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR: u32 = 0x00000002;
 const VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR: u32 = 0x00000004;
 const VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR: u32 = 0x00000008;
-
 // VkImageUsageFlagBitsKHR
 const VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT: u32 = 0x00000010;
 const VK_IMAGE_USAGE_SAMPLED_BIT: u32 = 0x00000004;
 const VK_IMAGE_USAGE_TRANSFER_SRC_BIT: u32 = 0x00000001;
 const VK_IMAGE_USAGE_TRANSFER_DST_BIT: u32 = 0x00000002;
-
 // VkSharingMode
 const VK_SHARING_MODE_EXCLUSIVE: u32 = 0;
-
 // Limits
 const DEFAULT_SURFACE_MAX_FRAME_LATENCY: u32 = 2;
 const MAX_SWAPCHAIN_IMAGES: usize = 8;
 const MAX_SURFACE_FORMATS: usize = 32;
 const MAX_PRESENT_MODES: usize = 8;
 const ACQUIRE_TIMEOUT_NS: u64 = std.math.maxInt(u64);
-
 // Present mode mapping from WebGPU to Vulkan
 const WGPU_PRESENT_MODE_FIFO: u32 = 0x00000002;
 const WGPU_PRESENT_MODE_MAILBOX: u32 = 0x00000003;
 const WGPU_PRESENT_MODE_IMMEDIATE: u32 = 0x00000004;
-
 const VkSurfaceCapabilitiesKHR = extern struct {
     minImageCount: u32,
     maxImageCount: u32,
@@ -99,17 +84,14 @@ const VkSurfaceCapabilitiesKHR = extern struct {
     supportedCompositeAlpha: VkFlags,
     supportedUsageFlags: VkFlags,
 };
-
 const VkSurfaceFormatKHR = extern struct {
     format: u32,
     colorSpace: u32,
 };
-
 const VkExtent2D = extern struct {
     width: u32,
     height: u32,
 };
-
 const VkSwapchainCreateInfoKHR = extern struct {
     sType: VkStructureType,
     pNext: ?*const anyopaque,
@@ -130,7 +112,6 @@ const VkSwapchainCreateInfoKHR = extern struct {
     clipped: VkBool32,
     oldSwapchain: VkSwapchainKHR,
 };
-
 const VkPresentInfoKHR = extern struct {
     sType: VkStructureType,
     pNext: ?*const anyopaque,
@@ -141,13 +122,11 @@ const VkPresentInfoKHR = extern struct {
     pImageIndices: [*]const u32,
     pResults: ?[*]VkResult,
 };
-
 const VkSemaphoreCreateInfo = extern struct {
     sType: VkStructureType,
     pNext: ?*const anyopaque,
     flags: VkFlags,
 };
-
 const VkWaylandSurfaceCreateInfoKHR = extern struct {
     sType: VkStructureType,
     pNext: ?*const anyopaque,
@@ -155,7 +134,6 @@ const VkWaylandSurfaceCreateInfoKHR = extern struct {
     display: ?*anyopaque,
     surface: ?*anyopaque,
 };
-
 const VkXcbSurfaceCreateInfoKHR = extern struct {
     sType: VkStructureType,
     pNext: ?*const anyopaque,
@@ -163,7 +141,6 @@ const VkXcbSurfaceCreateInfoKHR = extern struct {
     connection: ?*anyopaque,
     window: u32,
 };
-
 // Vulkan KHR extension function externs (loaded from libvulkan at link time)
 extern fn vkDestroySurfaceKHR(instance: VkInstance, surface: VkSurfaceKHR, pAllocator: ?*const VkAllocationCallbacks) callconv(.c) void;
 extern fn vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice: VkPhysicalDevice, queueFamilyIndex: u32, surface: VkSurfaceKHR, pSupported: *VkBool32) callconv(.c) VkResult;
@@ -178,19 +155,16 @@ extern fn vkQueuePresentKHR(queue: VkQueue, pPresentInfo: *const VkPresentInfoKH
 extern fn vkCreateSemaphore(device: VkDevice, pCreateInfo: *const VkSemaphoreCreateInfo, pAllocator: ?*const VkAllocationCallbacks, pSemaphore: *VkSemaphore) callconv(.c) VkResult;
 extern fn vkDestroySemaphore(device: VkDevice, semaphore: VkSemaphore, pAllocator: ?*const VkAllocationCallbacks) callconv(.c) void;
 extern fn vkQueueWaitIdle(queue: VkQueue) callconv(.c) VkResult;
-
 // Platform-conditional surface creation externs (Wayland/XCB only on linux)
 const is_linux = builtin.os.tag == .linux;
 
 extern fn vkCreateWaylandSurfaceKHR(instance: VkInstance, pCreateInfo: *const VkWaylandSurfaceCreateInfoKHR, pAllocator: ?*const VkAllocationCallbacks, pSurface: *VkSurfaceKHR) callconv(.c) VkResult;
 extern fn vkCreateXcbSurfaceKHR(instance: VkInstance, pCreateInfo: *const VkXcbSurfaceCreateInfoKHR, pAllocator: ?*const VkAllocationCallbacks, pSurface: *VkSurfaceKHR) callconv(.c) VkResult;
-
 pub const SurfacePlatform = enum {
     headless,
     wayland,
     xcb,
 };
-
 pub const SurfaceCapabilities = struct {
     min_image_count: u32 = 0,
     max_image_count: u32 = 0,
@@ -207,23 +181,19 @@ pub const SurfaceCapabilities = struct {
     present_modes: [MAX_PRESENT_MODES]u32 = std.mem.zeroes([MAX_PRESENT_MODES]u32),
     present_supported: bool = false,
 };
-
 pub const VulkanSurface = struct {
     // Vulkan surface object
     vk_surface: VkSurfaceKHR = VK_NULL_U64,
     platform: SurfacePlatform = .headless,
-
     // Swapchain state
     swapchain: VkSwapchainKHR = VK_NULL_U64,
     swapchain_images: [MAX_SWAPCHAIN_IMAGES]VkImage = [_]VkImage{VK_NULL_U64} ** MAX_SWAPCHAIN_IMAGES,
     swapchain_image_count: u32 = 0,
     swapchain_format: u32 = VK_FORMAT_B8G8R8A8_SRGB,
     swapchain_extent: VkExtent2D = .{ .width = 0, .height = 0 },
-
     // Synchronization
     image_available_semaphore: VkSemaphore = VK_NULL_U64,
     render_finished_semaphore: VkSemaphore = VK_NULL_U64,
-
     // Configuration state (mirrors WebGPU surface semantics)
     configured: bool = false,
     acquired: bool = false,
@@ -239,22 +209,18 @@ pub const VulkanSurface = struct {
     desired_maximum_frame_latency: u32 = DEFAULT_SURFACE_MAX_FRAME_LATENCY,
     last_acquire_suboptimal: bool = false,
     last_present_suboptimal: bool = false,
-
     // Cached capabilities
     capabilities_queried: bool = false,
     cached_capabilities: SurfaceCapabilities = .{},
 };
-
 // -- Instance extension names required for surface creation --
 
 pub const INSTANCE_SURFACE_EXTENSION: [*:0]const u8 = "VK_KHR_surface";
 pub const INSTANCE_WAYLAND_EXTENSION: [*:0]const u8 = "VK_KHR_wayland_surface";
 pub const INSTANCE_XCB_EXTENSION: [*:0]const u8 = "VK_KHR_xcb_surface";
-
 pub const DEVICE_SWAPCHAIN_EXTENSION: [*:0]const u8 = "VK_KHR_swapchain";
 pub const WGPU_CANVAS_TONE_MAPPING_MODE_STANDARD: u32 = 0x00000001;
 pub const WGPU_CANVAS_TONE_MAPPING_MODE_EXTENDED: u32 = 0x00000002;
-
 /// Returns instance extensions needed for surface support on this platform.
 pub fn required_instance_extensions() []const [*:0]const u8 {
     if (!is_linux) return &[_][*:0]const u8{};
@@ -266,7 +232,6 @@ pub fn required_instance_extensions() []const [*:0]const u8 {
         INSTANCE_XCB_EXTENSION,
     };
 }
-
 /// Returns device extensions needed for swapchain support.
 pub fn required_device_extensions() []const [*:0]const u8 {
     if (!is_linux) return &[_][*:0]const u8{};
@@ -274,7 +239,6 @@ pub fn required_device_extensions() []const [*:0]const u8 {
         DEVICE_SWAPCHAIN_EXTENSION,
     };
 }
-
 /// Create a VkSurfaceKHR from a Wayland display+surface pair.
 pub fn create_wayland_surface(
     instance: VkInstance,
@@ -283,7 +247,6 @@ pub fn create_wayland_surface(
 ) common_errors.BackendNativeError!VkSurfaceKHR {
     if (!is_linux) return error.UnsupportedFeature;
     if (wl_display == null or wl_surface == null) return error.InvalidArgument;
-
     var surface: VkSurfaceKHR = VK_NULL_U64;
     const create_info = VkWaylandSurfaceCreateInfoKHR{
         .sType = VK_STRUCTURE_TYPE_WAYLAND_SURFACE_CREATE_INFO_KHR,

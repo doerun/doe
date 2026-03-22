@@ -76,6 +76,210 @@ theorem gid_inbounds_when_dispatch_fits
   gid_component_lt_total workgroup_id_x local_id_x workgroup_size_x num_workgroups_x array_length
     h_wid h_lid h_fit
 
+/-- Affine 1D extension. If the shader indexes `buf[gid.x + offset]`, the
+    access is still in bounds when the dispatch extent plus that constant
+    offset fits the runtime-sized array length. -/
+theorem gid_plus_offset_inbounds_when_dispatch_fits
+    (workgroup_id_x local_id_x workgroup_size_x num_workgroups_x array_length offset : Nat)
+    (h_wid : workgroup_id_x < num_workgroups_x)
+    (h_lid : local_id_x < workgroup_size_x)
+    (h_fit : workgroup_size_x * num_workgroups_x + offset ≤ array_length) :
+    globalInvocationId workgroup_id_x local_id_x workgroup_size_x + offset < array_length := by
+  have h_gid_lt_total :
+      globalInvocationId workgroup_id_x local_id_x workgroup_size_x <
+      workgroup_size_x * num_workgroups_x := by
+    have h_self_fit : workgroup_size_x * num_workgroups_x ≤ workgroup_size_x * num_workgroups_x := by
+      exact Nat.le_refl _
+    exact gid_component_lt_total
+      workgroup_id_x local_id_x workgroup_size_x num_workgroups_x
+      (workgroup_size_x * num_workgroups_x)
+      h_wid h_lid h_self_fit
+  have h_offset_lt :
+      globalInvocationId workgroup_id_x local_id_x workgroup_size_x + offset <
+      workgroup_size_x * num_workgroups_x + offset := by
+    exact Nat.add_lt_add_right h_gid_lt_total offset
+  calc
+    globalInvocationId workgroup_id_x local_id_x workgroup_size_x + offset <
+        workgroup_size_x * num_workgroups_x + offset := h_offset_lt
+    _ ≤ array_length := h_fit
+
+/-- Strided affine 1D extension. If the shader indexes
+    `buf[gid.x * stride + offset]`, the access is in bounds when the dispatch
+    extent scaled by that positive constant stride still fits the array. -/
+theorem gid_times_stride_plus_offset_inbounds_when_dispatch_fits
+    (workgroup_id_x local_id_x workgroup_size_x num_workgroups_x array_length stride offset : Nat)
+    (h_stride : 0 < stride)
+    (h_wid : workgroup_id_x < num_workgroups_x)
+    (h_lid : local_id_x < workgroup_size_x)
+    (h_fit : (workgroup_size_x * num_workgroups_x) * stride + offset ≤ array_length) :
+    globalInvocationId workgroup_id_x local_id_x workgroup_size_x * stride + offset < array_length := by
+  have h_gid_lt_total :
+      globalInvocationId workgroup_id_x local_id_x workgroup_size_x <
+      workgroup_size_x * num_workgroups_x := by
+    have h_self_fit : workgroup_size_x * num_workgroups_x ≤ workgroup_size_x * num_workgroups_x := by
+      exact Nat.le_refl _
+    exact gid_component_lt_total
+      workgroup_id_x local_id_x workgroup_size_x num_workgroups_x
+      (workgroup_size_x * num_workgroups_x)
+      h_wid h_lid h_self_fit
+  have h_mul_lt :
+      globalInvocationId workgroup_id_x local_id_x workgroup_size_x * stride <
+      (workgroup_size_x * num_workgroups_x) * stride := by
+    exact Nat.mul_lt_mul_of_pos_right h_gid_lt_total h_stride
+  have h_offset_lt :
+      globalInvocationId workgroup_id_x local_id_x workgroup_size_x * stride + offset <
+      (workgroup_size_x * num_workgroups_x) * stride + offset := by
+    exact Nat.add_lt_add_right h_mul_lt offset
+  calc
+    globalInvocationId workgroup_id_x local_id_x workgroup_size_x * stride + offset <
+        (workgroup_size_x * num_workgroups_x) * stride + offset := h_offset_lt
+    _ ≤ array_length := h_fit
+
+/-- Canonical loop-carried 1D extension. If a shader executes a loop-local
+    index `gid.x + i + offset`, and the loop body only runs while `i < limit`,
+    then the access is in bounds when the dispatch extent plus that exclusive
+    loop limit and constant offset fits the runtime-sized array length. This
+    uses a conservative host-side precondition `... + limit + offset ≤ len`
+    because the runtime validates only the loop's exclusive upper bound, not
+    the exact `limit - 1` maximum iteration value. -/
+theorem gid_plus_bounded_loop_index_inbounds_when_dispatch_fits
+    (workgroup_id_x local_id_x workgroup_size_x num_workgroups_x array_length limit i offset : Nat)
+    (h_i : i < limit)
+    (h_wid : workgroup_id_x < num_workgroups_x)
+    (h_lid : local_id_x < workgroup_size_x)
+    (h_fit : workgroup_size_x * num_workgroups_x + limit + offset ≤ array_length) :
+    globalInvocationId workgroup_id_x local_id_x workgroup_size_x + i + offset < array_length := by
+  let gid := globalInvocationId workgroup_id_x local_id_x workgroup_size_x
+  let total := workgroup_size_x * num_workgroups_x
+  have h_gid_lt_total : gid < total := by
+    dsimp [gid, total]
+    exact gid_component_lt_total
+      workgroup_id_x local_id_x workgroup_size_x num_workgroups_x
+      (workgroup_size_x * num_workgroups_x)
+      h_wid h_lid (Nat.le_refl _)
+  have h_i_offset_lt : i + offset < limit + offset := by
+    exact Nat.add_lt_add_right h_i offset
+  have h_sum_lt : gid + (i + offset) < total + (limit + offset) := by
+    exact Nat.add_lt_add h_gid_lt_total h_i_offset_lt
+  calc
+    gid + i + offset = gid + (i + offset) := by simp [Nat.add_assoc]
+    _ < total + (limit + offset) := h_sum_lt
+    _ = total + limit + offset := by simp [Nat.add_assoc]
+    _ ≤ array_length := h_fit
+
+/-- Affine counted-loop extension. If a shader indexes
+    `buf[gid.x * gid_stride + i * loop_stride + offset]`, and the loop body
+    executes only while `i < limit`, then the access is in bounds when the
+    dispatched gid range and the exclusive loop limit both fit after scaling. -/
+theorem gid_affine_plus_scaled_loop_index_inbounds_when_dispatch_fits
+    (workgroup_id_x local_id_x workgroup_size_x num_workgroups_x array_length : Nat)
+    (gid_stride limit i loop_stride offset : Nat)
+    (h_gid_stride : 0 < gid_stride)
+    (h_loop_stride : 0 < loop_stride)
+    (h_i : i < limit)
+    (h_wid : workgroup_id_x < num_workgroups_x)
+    (h_lid : local_id_x < workgroup_size_x)
+    (h_fit : workgroup_size_x * num_workgroups_x * gid_stride + limit * loop_stride + offset ≤ array_length) :
+    globalInvocationId workgroup_id_x local_id_x workgroup_size_x * gid_stride + i * loop_stride + offset < array_length := by
+  let gid := globalInvocationId workgroup_id_x local_id_x workgroup_size_x
+  let total := workgroup_size_x * num_workgroups_x
+  have h_gid_lt_total : gid < total := by
+    dsimp [gid, total]
+    exact gid_component_lt_total
+      workgroup_id_x local_id_x workgroup_size_x num_workgroups_x
+      (workgroup_size_x * num_workgroups_x)
+      h_wid h_lid (Nat.le_refl _)
+  have h_gid_scaled_lt :
+      gid * gid_stride < total * gid_stride := by
+    exact Nat.mul_lt_mul_of_pos_right h_gid_lt_total h_gid_stride
+  have h_loop_scaled_lt :
+      i * loop_stride < limit * loop_stride := by
+    exact Nat.mul_lt_mul_of_pos_right h_i h_loop_stride
+  have h_sum_lt :
+      gid * gid_stride + i * loop_stride <
+      total * gid_stride + limit * loop_stride := by
+    exact Nat.add_lt_add h_gid_scaled_lt h_loop_scaled_lt
+  have h_offset_lt :
+      gid * gid_stride + i * loop_stride + offset <
+      (total * gid_stride + limit * loop_stride) + offset := by
+    exact Nat.add_lt_add_right h_sum_lt offset
+  calc
+    gid * gid_stride + i * loop_stride + offset <
+        (total * gid_stride + limit * loop_stride) + offset := h_offset_lt
+    _ ≤ array_length := h_fit
+
+/-- 1D tiled index from a global invocation ID. Common pattern:
+    `(gid / tile_width) * tile_stride + (gid % tile_width)`. -/
+def tiledIndex1D (gid tile_width tile_stride : Nat) : Nat :=
+  (gid / tile_width) * tile_stride + (gid % tile_width)
+
+/-- Tiled 1D extension. If the shader indexes
+    `buf[(gid.x / tile_width) * tile_stride + (gid.x % tile_width) + offset]`,
+    the access is in bounds when each tile-wide group lands within a stride-wide
+    segment and the host validates enough tiled groups for the dispatched extent. -/
+theorem gid_tiled_index_plus_offset_inbounds_when_dispatch_fits
+    (workgroup_id_x local_id_x workgroup_size_x num_workgroups_x array_length tile_width tile_stride offset : Nat)
+    (h_tile_pos : 0 < tile_width)
+    (h_tile_stride : tile_width ≤ tile_stride)
+    (h_wid : workgroup_id_x < num_workgroups_x)
+    (h_lid : local_id_x < workgroup_size_x)
+    (h_fit : (((workgroup_size_x * num_workgroups_x - 1) / tile_width) + 1) * tile_stride + offset ≤ array_length) :
+    tiledIndex1D (globalInvocationId workgroup_id_x local_id_x workgroup_size_x) tile_width tile_stride + offset < array_length := by
+  let gid := globalInvocationId workgroup_id_x local_id_x workgroup_size_x
+  let total := workgroup_size_x * num_workgroups_x
+  have h_gid_lt_total : gid < total := by
+    dsimp [gid, total]
+    exact gid_component_lt_total
+      workgroup_id_x local_id_x workgroup_size_x num_workgroups_x
+      (workgroup_size_x * num_workgroups_x)
+      h_wid h_lid (Nat.le_refl _)
+  have h_gid_le_pred : gid ≤ total - 1 := by
+    exact Nat.le_pred_of_lt h_gid_lt_total
+  have h_total_pred_bound :
+      total - 1 ≤ ((total - 1) / tile_width) * tile_width + tile_width - 1 := by
+    exact (Nat.div_le_iff_le_mul h_tile_pos).1 (Nat.le_refl _)
+  have h_div_le : gid / tile_width ≤ (total - 1) / tile_width := by
+    exact (Nat.div_le_iff_le_mul h_tile_pos).2 (Nat.le_trans h_gid_le_pred h_total_pred_bound)
+  have h_mod_lt_tile : gid % tile_width < tile_width := by
+    exact Nat.mod_lt gid h_tile_pos
+  have h_mod_lt_stride : gid % tile_width < tile_stride := by
+    exact Nat.lt_of_lt_of_le h_mod_lt_tile h_tile_stride
+  have h_body_lt :
+      tiledIndex1D gid tile_width tile_stride <
+      ((gid / tile_width) + 1) * tile_stride := by
+    unfold tiledIndex1D
+    have h_row :
+        (gid / tile_width) * tile_stride + gid % tile_width <
+        (gid / tile_width) * tile_stride + tile_stride := by
+      exact Nat.add_lt_add_left h_mod_lt_stride ((gid / tile_width) * tile_stride)
+    have h_step :
+        (gid / tile_width) * tile_stride + tile_stride =
+        ((gid / tile_width) + 1) * tile_stride := by
+      simpa using (Nat.succ_mul (gid / tile_width) tile_stride).symm
+    calc
+      (gid / tile_width) * tile_stride + gid % tile_width <
+          (gid / tile_width) * tile_stride + tile_stride := h_row
+      _ = ((gid / tile_width) + 1) * tile_stride := h_step
+  have h_div_succ_le :
+      (gid / tile_width + 1) ≤ ((total - 1) / tile_width + 1) := by
+    exact Nat.succ_le_succ h_div_le
+  have h_scaled_le :
+      ((gid / tile_width) + 1) * tile_stride ≤
+      (((total - 1) / tile_width) + 1) * tile_stride := by
+    exact Nat.mul_le_mul_right tile_stride h_div_succ_le
+  have h_base_lt :
+      tiledIndex1D gid tile_width tile_stride <
+      (((total - 1) / tile_width) + 1) * tile_stride := by
+    exact Nat.lt_of_lt_of_le h_body_lt h_scaled_le
+  have h_offset_lt :
+      tiledIndex1D gid tile_width tile_stride + offset <
+      (((total - 1) / tile_width) + 1) * tile_stride + offset := by
+    exact Nat.add_lt_add_right h_base_lt offset
+  calc
+    tiledIndex1D gid tile_width tile_stride + offset <
+        (((total - 1) / tile_width) + 1) * tile_stride + offset := h_offset_lt
+    _ ≤ array_length := h_fit
+
 /-- The clamp min(gid, len-1) is a no-op when gid < len.
     This connects the proof to the transform: if the condition holds,
     min(gid, len-1) = gid, so the injected code has no runtime effect
@@ -144,6 +348,23 @@ theorem flat_index_2d_inbounds
     _ = (gid_y + 1) * width := h_step
     _ ≤ height * width := h_height
     _ = width * height := by simp [Nat.mul_comm]
+
+/-- Flat 2D index with an additional constant offset. This captures row-major
+    kernels that reserve a prefix region before the dispatch-visible window. -/
+theorem flat_index_2d_plus_offset_inbounds
+    (gid_x gid_y width height offset array_length : Nat)
+    (h_x : gid_x < width)
+    (h_y : gid_y < height)
+    (h_fit : width * height + offset ≤ array_length) :
+    flatIndex2D gid_x gid_y width + offset < array_length := by
+  have h_flat_lt : flatIndex2D gid_x gid_y width < width * height := by
+    exact flat_index_2d_inbounds gid_x gid_y width height h_x h_y
+  have h_offset_lt :
+      flatIndex2D gid_x gid_y width + offset < width * height + offset := by
+    exact Nat.add_lt_add_right h_flat_lt offset
+  calc
+    flatIndex2D gid_x gid_y width + offset < width * height + offset := h_offset_lt
+    _ ≤ array_length := h_fit
 
 /-- Early-return texture guard for 2D gid coordinates. If the shader exits when
     either coordinate is out of range, any surviving execution has both

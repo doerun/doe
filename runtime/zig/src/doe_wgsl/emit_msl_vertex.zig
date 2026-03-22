@@ -175,8 +175,22 @@ const VertexEmitter = struct {
             if (io.interpolation) |interp| {
                 switch (interp) {
                     .flat => try self.write(" [[flat]]"),
-                    .linear => try self.write(" [[center_no_perspective]]"),
-                    .perspective => {},
+                    .linear => {
+                        const sampling = io.sampling orelse .center;
+                        try self.write(switch (sampling) {
+                            .center => " [[center_no_perspective]]",
+                            .centroid => " [[centroid_no_perspective]]",
+                            .sample => " [[sample_no_perspective]]",
+                        });
+                    },
+                    .perspective => {
+                        const sampling = io.sampling orelse .center;
+                        switch (sampling) {
+                            .center => {},
+                            .centroid => try self.write(" [[centroid_perspective]]"),
+                            .sample => try self.write(" [[sample_perspective]]"),
+                        }
+                    },
                 }
             }
         }

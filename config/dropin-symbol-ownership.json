@@ -1,25 +1,100 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
+  "tiers": {
+    "compute": "Dispatch, buffer, shader, bind group, command encoder, queue. No render, no textures-as-attachments.",
+    "headless": "Full WebGPU sans windowed presentation. Includes compute + render + textures + samplers + queries.",
+    "full": "Dawn drop-in. Includes headless + surface presentation + external textures + browser interop."
+  },
   "symbols": [
     {
       "symbol": "wgpuGetProcAddress",
-      "owner": "shared"
+      "owner": "shared",
+      "tier": "compute"
     },
     {
       "symbol": "wgpuCreateInstance",
-      "owner": "shared"
+      "owner": "shared",
+      "tier": "compute"
     },
     {
       "symbol": "wgpuCommandEncoderCopyBufferToBuffer",
-      "owner": "shared"
+      "owner": "shared",
+      "tier": "compute"
     },
     {
       "symbol": "wgpuComputePassEncoderDispatchWorkgroups",
-      "owner": "shared"
+      "owner": "shared",
+      "tier": "compute"
+    },
+    {
+      "symbol": "wgpuDeviceCreateBuffer",
+      "owner": "shared",
+      "tier": "compute"
+    },
+    {
+      "symbol": "wgpuDeviceCreateShaderModule",
+      "owner": "shared",
+      "tier": "compute"
+    },
+    {
+      "symbol": "wgpuDeviceCreateComputePipeline",
+      "owner": "shared",
+      "tier": "compute"
+    },
+    {
+      "symbol": "wgpuQueueSubmit",
+      "owner": "shared",
+      "tier": "compute"
     },
     {
       "symbol": "wgpuRenderPassEncoderDraw",
-      "owner": "shared"
+      "owner": "shared",
+      "tier": "headless"
+    },
+    {
+      "symbol": "wgpuRenderPassEncoderDrawIndexed",
+      "owner": "shared",
+      "tier": "headless"
+    },
+    {
+      "symbol": "wgpuDeviceCreateRenderPipeline",
+      "owner": "shared",
+      "tier": "headless"
+    },
+    {
+      "symbol": "wgpuDeviceCreateTexture",
+      "owner": "shared",
+      "tier": "headless"
+    },
+    {
+      "symbol": "wgpuDeviceCreateSampler",
+      "owner": "shared",
+      "tier": "headless"
+    },
+    {
+      "symbol": "wgpuCommandEncoderCopyTextureToBuffer",
+      "owner": "shared",
+      "tier": "headless"
+    },
+    {
+      "symbol": "wgpuDeviceCreateExternalTexture",
+      "owner": "shared",
+      "tier": "full"
+    },
+    {
+      "symbol": "wgpuSurfaceConfigure",
+      "owner": "shared",
+      "tier": "full"
+    },
+    {
+      "symbol": "wgpuSurfaceGetCurrentTexture",
+      "owner": "shared",
+      "tier": "full"
+    },
+    {
+      "symbol": "wgpuSurfacePresent",
+      "owner": "shared",
+      "tier": "full"
     }
   ]
 }

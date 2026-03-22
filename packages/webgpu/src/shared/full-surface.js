@@ -228,6 +228,94 @@ function createFullSurfaceClasses({
     return encoded;
   }
 
+  function autoLayoutEntryKind(entry) {
+    if (entry.buffer) return 'buffer';
+    if (entry.sampler) return 'sampler';
+    if (entry.texture) return 'texture';
+    if (entry.storageTexture) return 'storageTexture';
+    if (entry.externalTexture) return 'externalTexture';
+    return 'unknown';
+  }
+
+  function autoLayoutEntriesCompatible(left, right) {
+    const kind = autoLayoutEntryKind(left);
+    if (kind !== autoLayoutEntryKind(right)) {
+      return false;
+    }
+    switch (kind) {
+      case 'buffer':
+        return left.buffer.type === right.buffer.type;
+      case 'sampler':
+        return left.sampler.type === right.sampler.type;
+      case 'texture':
+        return left.texture.sampleType === right.texture.sampleType
+          && left.texture.viewDimension === right.texture.viewDimension
+          && left.texture.multisampled === right.texture.multisampled;
+      case 'storageTexture':
+        return left.storageTexture.access === right.storageTexture.access
+          && left.storageTexture.format === right.storageTexture.format
+          && left.storageTexture.viewDimension === right.storageTexture.viewDimension;
+      case 'externalTexture':
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  function mergeAutoLayoutEntriesByGroup(target, source, path) {
+    if (!(source instanceof Map)) {
+      return target;
+    }
+    for (const [group, entries] of source) {
+      const merged = target.get(group) ?? [];
+      const bindingToIndex = new Map(merged.map((entry, index) => [entry.binding, index]));
+      for (const entry of entries) {
+        const existingIndex = bindingToIndex.get(entry.binding);
+        if (existingIndex === undefined) {
+          const copy = { ...entry };
+          merged.push(copy);
+          bindingToIndex.set(copy.binding, merged.length - 1);
+          continue;
+        }
+        const existing = merged[existingIndex];
+        if (!autoLayoutEntriesCompatible(existing, entry)) {
+          failValidation(path, `layout: "auto" resolves binding ${entry.binding} in group ${group} to incompatible declarations across shader stages`);
+        }
+        existing.visibility |= entry.visibility;
+      }
+      merged.sort((left, right) => left.binding - right.binding);
+      target.set(group, merged);
+    }
+    return target;
+  }
+
+  function renderAutoLayoutEntriesByGroup(renderDescriptor, path) {
+    if (typeof backend.requireAutoLayoutEntriesFromNative !== 'function') {
+      return null;
+    }
+    const layout = renderDescriptor.layout;
+    if (layout !== 'auto' && layout !== undefined && layout !== null) {
+      return null;
+    }
+    const vertexEntries = backend.requireAutoLayoutEntriesFromNative(
+      renderDescriptor.vertexModule,
+      globals.GPUShaderStage.VERTEX,
+      path,
+    );
+    const fragmentEntries = backend.requireAutoLayoutEntriesFromNative(
+      renderDescriptor.fragmentModule,
+      globals.GPUShaderStage.FRAGMENT,
+      path,
+    );
+    if (!vertexEntries && !fragmentEntries) {
+      return null;
+    }
+    const merged = new Map();
+    mergeAutoLayoutEntriesByGroup(merged, vertexEntries, path);
+    mergeAutoLayoutEntriesByGroup(merged, fragmentEntries, path);
+    return merged;
+  }
+
   class DoeGPUBuffer {
     constructor(native, instance, size, usage, queue, owner) {
       this._native = native;
@@ -585,8 +673,12 @@ function createFullSurfaceClasses({
   }
 
   class DoeGPURenderPipeline {
-    constructor(native, owner) {
+    constructor(native, owner, explicitLayout, autoLayoutEntriesByGroup) {
       this._native = native;
+      this._device = owner;
+      this._explicitLayout = explicitLayout;
+      this._autoLayoutEntriesByGroup = autoLayoutEntriesByGroup;
+      this._cachedLayouts = new Map();
       this.label = '';
       initResource(this, 'GPURenderPipeline', owner);
     }
@@ -594,7 +686,21 @@ function createFullSurfaceClasses({
     getBindGroupLayout(index) {
       assertLiveResource(this, 'GPURenderPipeline.getBindGroupLayout', 'GPURenderPipeline');
       assertIntegerInRange(index, 'GPURenderPipeline.getBindGroupLayout', 'index', { min: 0, max: UINT32_MAX });
-      return backend.renderPipelineGetBindGroupLayout(this, index, classes);
+      if (this._explicitLayout) {
+        return this._explicitLayout;
+      }
+      if (this._cachedLayouts.has(index)) {
+        return this._cachedLayouts.get(index);
+      }
+      if (this._autoLayoutEntriesByGroup) {
+        const entries = this._autoLayoutEntriesByGroup.get(index) ?? [];
+        const layout = this._device.createBindGroupLayout({ entries });
+        this._cachedLayouts.set(index, layout);
+        return layout;
+      }
+      const layout = backend.renderPipelineGetBindGroupLayout(this, index, classes);
+      this._cachedLayouts.set(index, layout);
+      return layout;
     }
   }
 
@@ -960,9 +1066,9 @@ function createFullSurfaceClasses({
         const vertexBuffers = vertex.buffers === undefined
           ? []
           : normalizeVertexBufferLayouts(vertex.buffers, 'GPUDevice.createRenderPipeline');
-        const layout = renderDescriptor.layout && renderDescriptor.layout !== 'auto'
-          ? assertLiveResource(renderDescriptor.layout, 'GPUDevice.createRenderPipeline', 'GPUPipelineLayout')
-          : null;
+        const layout = renderDescriptor.layout === 'auto' || renderDescriptor.layout === undefined
+          ? null
+          : assertLiveResource(renderDescriptor.layout, 'GPUDevice.createRenderPipeline', 'GPUPipelineLayout');
         const pipelineDescriptor = {
           layout,
           vertexModule,
@@ -986,7 +1092,14 @@ function createFullSurfaceClasses({
           multisample: renderDescriptor.multisample ?? null,
         };
         const native = backend.deviceCreateRenderPipeline(this, pipelineDescriptor);
-        const rp = new DoeGPURenderPipeline(native, this);
+        const autoLayoutEntriesByGroup = layout
+          ? null
+          : renderAutoLayoutEntriesByGroup({
+            layout: renderDescriptor.layout,
+            vertexModule: vertex.module,
+            fragmentModule: fragment.module,
+          }, 'GPUDevice.createRenderPipeline');
+        const rp = new DoeGPURenderPipeline(native, this, layout, autoLayoutEntriesByGroup);
         rp.label = renderDescriptor.label ?? '';
         return rp;
       } catch (error) {
@@ -1008,9 +1121,9 @@ function createFullSurfaceClasses({
         const vertexBuffers = vertex.buffers === undefined
           ? []
           : normalizeVertexBufferLayouts(vertex.buffers, 'GPUDevice.createRenderPipelineAsync');
-        const layout = renderDescriptor.layout && renderDescriptor.layout !== 'auto'
-          ? assertLiveResource(renderDescriptor.layout, 'GPUDevice.createRenderPipelineAsync', 'GPUPipelineLayout')
-          : null;
+        const layout = renderDescriptor.layout === 'auto' || renderDescriptor.layout === undefined
+          ? null
+          : assertLiveResource(renderDescriptor.layout, 'GPUDevice.createRenderPipelineAsync', 'GPUPipelineLayout');
         const pipelineDescriptor = {
           layout,
           vertexModule,
@@ -1036,7 +1149,14 @@ function createFullSurfaceClasses({
         const native = typeof backend.deviceCreateRenderPipelineAsync === 'function'
           ? await backend.deviceCreateRenderPipelineAsync(this, pipelineDescriptor)
           : backend.deviceCreateRenderPipeline(this, pipelineDescriptor);
-        const rp = new DoeGPURenderPipeline(native, this);
+        const autoLayoutEntriesByGroup = layout
+          ? null
+          : renderAutoLayoutEntriesByGroup({
+            layout: renderDescriptor.layout,
+            vertexModule: vertex.module,
+            fragmentModule: fragment.module,
+          }, 'GPUDevice.createRenderPipelineAsync');
+        const rp = new DoeGPURenderPipeline(native, this, layout, autoLayoutEntriesByGroup);
         rp.label = renderDescriptor.label ?? '';
         return rp;
       } catch (error) {

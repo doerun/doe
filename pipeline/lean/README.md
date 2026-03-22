@@ -13,7 +13,7 @@ The tier is recorded in the `category` field of the proof artifact (`config/proo
 
 ## Theorem inventory by tier
 
-### `tautological` (8 theorems, ~27 lines)
+### `tautological` (current artifact: 10 theorems; representative selection below)
 
 Nothing to verify. These restate definitions or are correct by construction.
 
@@ -39,7 +39,7 @@ Finite-enum properties that require checking all cases. Zig `comptime` inline-fo
 | `strongerSafetyRaisesProofDemand` | Critical safety demands `.proven` proof | 3 enum values |
 | `identityActionComplete` | Exactly which actions are identity (iff) | 4 action variants × sub-cases |
 
-### `lean_verified` (18 theorems, ~130 lines)
+### `lean_verified` (current artifact: 35 theorems; main unbounded families below)
 
 Quantified over arbitrary `List Obligation` or arbitrary `Nat` — unbounded domain, cannot enumerate.
 
@@ -56,15 +56,21 @@ Quantified over arbitrary `List Obligation` or arbitrary `Nat` — unbounded dom
 | `equalGeometrySetsExecutionShapeFacts` | Equal Nat-valued geometry forces execution-shape comparability facts true |
 | `gid_component_lt_total` | Single-dimension gid < array_length when dispatch fits |
 | `gid_inbounds_when_dispatch_fits` | 1D dispatch: gid.x < buf.length when ws.x * nwg.x ≤ buf.length |
+| `gid_plus_offset_inbounds_when_dispatch_fits` | 1D affine dispatch: gid.x + offset < buf.length when ws.x * nwg.x + offset ≤ buf.length |
+| `gid_times_stride_plus_offset_inbounds_when_dispatch_fits` | 1D strided affine dispatch: gid.x * stride + offset < buf.length when ws.x * nwg.x * stride + offset ≤ buf.length |
+| `gid_plus_bounded_loop_index_inbounds_when_dispatch_fits` | Constant-bounded counted-loop dispatch: gid.x + i + offset < buf.length for supported ascending or descending `for`/`while`/guarded-`loop` forms when ws.x * nwg.x + limit + offset ≤ buf.length |
+| `gid_affine_plus_scaled_loop_index_inbounds_when_dispatch_fits` | Constant-bounded affine counted-loop dispatch: gid.x * gid_stride + i * loop_stride + offset < buf.length for supported ascending or descending loop forms when the scaled dispatch and loop limits fit |
+| `gid_tiled_index_plus_offset_inbounds_when_dispatch_fits` | 1D tiled dispatch: `(gid.x / tile_width) * tile_stride + (gid.x % tile_width) + offset` < buf.length when host-validated tiled groups fit |
 | `clamp_noop_when_inbounds` | min(gid, len-1) = gid when gid < len (connects proof to transform) |
 | `gid_2d_inbounds` | Both components bounded independently for 2D dispatch |
 | `flat_index_2d_inbounds` | gid.y * width + gid.x < width * height when components bounded |
+| `flat_index_2d_plus_offset_inbounds` | 2D flat index plus constant offset stays in bounds when width * height + offset fits |
 | `gid_texture_coords_2d_inbounds_when_dispatch_fits` | Dispatch-fit precondition implies 2D gid texture coords are in bounds |
 | `guarded_gid_texture_coords_2d_inbounds` | Root early-return guard against `textureDimensions(...).xy` implies 2D gid coords are in bounds |
 | `gid_texture_coords_3d_inbounds_when_dispatch_fits` | Dispatch-fit precondition implies 3D gid texture coords are in bounds |
 | `guarded_gid_texture_coords_3d_inbounds` | Root early-return guard against `textureDimensions(...).xyz` implies 3D gid coords are in bounds |
 
-### `lean_fixture` (10 theorems, ~35 lines)
+### `lean_fixture` (current artifact: 6 theorems)
 
 Specific obligation sets verified against the `lean_verified` theorems.
 
