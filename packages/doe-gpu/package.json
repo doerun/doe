@@ -1,0 +1,78 @@
+{
+  "name": "doe-gpu",
+  "version": "0.3.3",
+  "description": "WebGPU runtime you embed when you can't ship Dawn",
+  "type": "module",
+  "main": "./src/index.js",
+  "types": "./src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "bun": "./src/bun.js",
+      "deno": "./src/deno.js",
+      "default": "./src/index.js"
+    },
+    "./compute": {
+      "types": "./src/compute.d.ts",
+      "default": "./src/compute.js"
+    },
+    "./browser": {
+      "types": "./src/browser.d.ts",
+      "default": "./src/browser.js"
+    }
+  },
+  "bin": {
+    "doe-gpu-bench": "./bin/doe-gpu-bench.js",
+    "doe-gpu-compare": "./bin/doe-gpu-compare.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    "assets/",
+    "bin/",
+    "docs/",
+    "examples/",
+    "src/",
+    "scripts/",
+    "prebuilds/",
+    "binding.gyp",
+    "LICENSE",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "test": "npm run test:smoke && npm run test:integration",
+    "test:smoke": "node test/smoke/test-smoke-load.js",
+    "test:integration": "node test/integration/run-integration.js --runtime node",
+    "test:integration:bun": "bun test/integration/run-integration.js --runtime bun",
+    "test:integration:deno": "deno run --allow-all test/integration/run-integration.js --runtime deno"
+  },
+  "keywords": [
+    "webgpu",
+    "doe",
+    "gpu",
+    "headless",
+    "compute",
+    "ai",
+    "ml",
+    "wgsl",
+    "ci",
+    "bun",
+    "deno"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/doe-gpu/doe.git",
+    "directory": "packages/doe-gpu"
+  },
+  "homepage": "https://github.com/doe-gpu/doe/tree/main/packages/doe-gpu",
+  "bugs": {
+    "url": "https://github.com/doe-gpu/doe/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "author": "Doe",
+  "license": "Apache-2.0"
+}

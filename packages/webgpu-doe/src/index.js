@@ -1,3 +1,12 @@
+if (!globalThis.__SIMULATTE_WEBGPU_DOE_DEPRECATION_WARNED) {
+  globalThis.__SIMULATTE_WEBGPU_DOE_DEPRECATION_WARNED = true;
+  console.warn(
+    '[@simulatte/webgpu-doe] This package is deprecated and merged into "doe-gpu":\n' +
+    '  npm install doe-gpu\n' +
+    '  import { gpu } from "doe-gpu";\n'
+  );
+}
+
 const DOE_GPU_BUFFER_USAGE = {
   MAP_READ: 0x0001,
   COPY_SRC: 0x0004,

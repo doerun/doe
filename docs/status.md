@@ -1,8 +1,35 @@
-# Fawn Status
+# Doe status
 
 ## Snapshot
 
-Date: 2026-03-21
+Date: 2026-03-22
+
+Doe rebrand (2026-03-22):
+- `packages/doe-gpu/` created as the merged replacement for `@simulatte/webgpu`
+  and `@simulatte/webgpu-doe`. Primary export is `gpu` (not `doe`).
+  `createGpuNamespace` is the new alias for `createDoeNamespace`.
+- `@simulatte/webgpu` and `@simulatte/webgpu-doe` deprecated with runtime
+  console warnings and `"deprecated"` field in `package.json`.
+- README.md and CLAUDE.md rebranded from Fawn to Doe.
+- Pending: `packages/doe-gpu/src/*.js` imports helper code via relative paths
+  into `../../webgpu-doe/src/`. Before npm publish, the helper layer must be
+  vendored into `packages/doe-gpu/` so the package is self-contained. This is
+  a publish-time concern, not a development concern.
+- Pending: `browser/fawn-browser/` rename to `browser/chromium/` (deferred).
+- Pending: npm `doe` package dispute (contact jkup, 4-week wait, then npm
+  support).
+- Pending: `doe-gpu` GitHub org creation.
+
+Metal backend command parity (2026-03-22):
+- Metal native backend no longer returns `Unsupported` for `dispatch_indirect`:
+  `runtime/zig/src/backend/metal/mod.zig` now routes the command into a native
+  indirect-dispatch path backed by `dispatchThreadgroupsWithIndirectBuffer:`,
+  with a reusable shared indirect-args buffer in
+  `runtime/zig/src/backend/metal/metal_dispatch_runtime.zig`.
+- Metal `map_async` is now implemented via synchronous shared-buffer contents
+  access in `runtime/zig/src/backend/metal/metal_async_runtime.zig` /
+  `runtime/zig/src/backend/metal/mod.zig`; command-mode validation matches the
+  existing D3D12 path (`bytes > 0`, explicit max-size guard, no hidden fallback).
 
 External texture runtime implementation (2026-03-21):
 - `DoeExternalTexture` handle with ref-counted lifecycle (create, addref, release,
@@ -10,10 +37,20 @@ External texture runtime implementation (2026-03-21):
 - WGSL `texture_external` type support across all emitters (MSL, SPIR-V, HLSL).
 - `textureSampleBaseClampToEdge` builtin lowered to `sample(level(0))` on all backends.
 - Dropin proc table wires `wgpuDeviceCreateExternalTexture` to Doe via `resolveLocalProc`.
-- Browser smoke: adapter, compute, render, canvas, xrCompatible, copyExternal all pass
-  under `--use-webgpu-runtime=doe`. `importExternalTexture` remains blocked on Chromium
-  wire client Instance validation (`dawn/wire/client/Device.cpp:129`); next step is
-  Chromium-side wire bypass for external texture operations when Doe is active.
+- Chromium-side external-texture lifetime tracking now pins a real wire
+  `wgpu::Instance` through `DawnControlClientHolder`, so mailbox/external-texture
+  resource lifetimes keep an external Instance reference alive instead of
+  tripping the wire-client shutdown path with
+  `A valid external Instance reference no longer exists.`.
+- Doe now exports `wgpuQueueCopyExternalTextureForBrowser`; the current runtime
+  implementation is an explicit bridge stub that preserves Chromium proc loading
+  and status plumbing while native OS media/shared-texture interop remains
+  tracked work.
+- This change-set was validated at compile/symbol level (`zig build dropin`,
+  Chromium object rebuilds for `dawn_control_client_holder.cc` and
+  `webgpu_mailbox_texture.cc`, exported symbol check in `libwebgpu_doe.so`);
+  a fresh Doe browser smoke rerun is still pending before upgrading host-level
+  claim status.
 
 Upload performance optimizations (2026-03-21):
 - Removed explicit `vkResetCommandBuffer` from `flush_queue`; implicit reset via

@@ -1,7 +1,8 @@
 {
   "name": "@simulatte/webgpu",
   "version": "0.3.3",
-  "description": "Headless WebGPU for Node.js, Bun, and Deno, with the Doe runtime and Doe API",
+  "description": "DEPRECATED: Use doe-gpu instead. Headless WebGPU for Node.js, Bun, and Deno, with the Doe runtime and Doe API",
+  "deprecated": "This package has been renamed to doe-gpu. Install doe-gpu instead.",
   "type": "module",
   "main": "./src/node-runtime.js",
   "types": "./src/full.d.ts",

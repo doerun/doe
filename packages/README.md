@@ -1,12 +1,14 @@
 # Packages
 
-`packages/` contains Fawn's public JavaScript package families:
+`packages/` contains Doe's public JavaScript package:
 
-- `packages/webgpu/`
-  - `@simulatte/webgpu`, the main runtime package family
-- `packages/webgpu-doe/`
-  - `@simulatte/webgpu-doe`, the transport-free helper package family
+- `packages/doe-gpu/`
+  - `doe-gpu`, the merged runtime and helper package
 
-Within `@simulatte/webgpu`, subpaths such as `node`, `bun`, `compute`, `full`,
-and `native-direct` are subpath entrypoints of one package family, not separate
-products.
+Within `doe-gpu`, subpaths such as `compute` and `browser` are subpath
+entrypoints of one package, not separate products.
+
+## Deprecated
+
+- `packages/webgpu/` — `@simulatte/webgpu`, deprecated in favor of `doe-gpu`
+- `packages/webgpu-doe/` — `@simulatte/webgpu-doe`, merged into `doe-gpu`

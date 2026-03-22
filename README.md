@@ -1,348 +1,122 @@
-# Fawn
+# Doe
 
-> **Using the package?** This README is for contributors and developers working
-> on Fawn itself. If you installed `@simulatte/webgpu` from npm and want
-> quickstart, smoke tests, and API examples, see the
-> [package README](packages/webgpu/README.md).
+Doe is a Zig-first WebGPU runtime built as an explicit, performance-oriented
+alternative to Dawn.
 
-Fawn is the development platform for Doe, a Zig-first WebGPU runtime centered
-on a core technical move: separate hoistable validation from truly dynamic
-runtime behavior, keep hot paths explicit, and use Lean only where proofs can
-remove runtime branches.
+If you want to use the published package:
 
-Around that core, Doe follows a broader operating discipline: config as code,
-explicit fail-fast behavior, deterministic traceability, and artifact-backed
-benchmarking. Fawn develops, verifies, benchmarks, packages, and integrates
-Doe across headless execution, Node/Bun package surfaces, and Chromium
-bring-up.
+- [`doe-gpu`](packages/doe-gpu/README.md): WebGPU for Node.js, Bun, and Deno,
+  with the Doe runtime and Doe helper API
 
-Simulatte is the parent organization, Fawn is the development platform and
-repo, Doe is the WebGPU runtime, and `@simulatte/webgpu` is the packaged
-distribution surface.
+```js
+import { gpu } from 'doe-gpu';           // full (default)
+import { gpu } from 'doe-gpu/compute';   // compute-only
+import { gpu } from 'doe-gpu/browser';   // browser shim
+```
 
-Terminology note:
+If you are working on the runtime itself, this repo carries the runtime, package
+surfaces, browser bring-up, proof artifacts, tracing, and benchmarking.
 
-- `Doe runtime` refers to the Zig/native WebGPU implementation
-- `Doe API` and `Doe routines` refer to the JS convenience surface exposed by
-  `@simulatte/webgpu`
-- the exported `doe` object belongs to that JS surface; it is not a separate
-  runtime from the Doe runtime underneath
+## What this repo contains
 
-Doe (`doe-webgpu`, `libwebgpu_doe.so`) is Fawn's execution engine. It combines
-startup-time profile and quirk binding, a native WGSL pipeline (`lexer ->
-parser -> semantic analysis -> IR -> backend emitters`), and explicit
-Vulkan/Metal/D3D12 execution paths in one system.
+- [`runtime/zig`](runtime/zig/README.md): the Doe runtime, WGSL pipeline, and
+  native backend execution paths
+- [`packages/doe-gpu`](packages/doe-gpu/README.md): the npm package for
+  headless WebGPU
+- [`browser/fawn-browser`](browser/fawn-browser/README.md): browser-owned and
+  Chromium-oriented integration work
+- [`pipeline/agent`](pipeline/agent/README.md): quirk mining and normalization
+- [`pipeline/lean`](pipeline/lean/README.md): proof artifacts that can remove
+  runtime checks ahead of time
+- [`pipeline/trace`](pipeline/trace/README.md): reproducible trace and replay
+  tooling
+- [`bench`](bench/README.md): Dawn-vs-Doe comparison harnesses and artifacts
 
-Dawn is the incumbent WebGPU implementation in Chromium and the primary
-baseline Fawn measures against. Doe is the replacement runtime Fawn is
-building: a Zig-first engine with explicit execution paths, selective
-Lean-based branch elimination, and benchmark results that are only cited from
-reproducible artifacts.
+## Why Doe
 
-Fawn currently targets Vulkan, Metal, and D3D12. It does not currently pursue
-older compatibility backends such as OpenGL or OpenGL ES: the project is
-biased toward modern GPU APIs, modern hardware, and modern workloads, and that
-narrower target is an advantage because it avoids inheriting legacy backend
-complexity just to preserve incumbent-style compatibility breadth.
+Doe is built around a simple split: checks that can be resolved ahead of time
+should move out of the hot path, and the checks that must stay live should stay
+explicit in the runtime.
 
-Lean is additive here, not foundational: it proves and removes specific
-hot-path conditions when possible. Zig owns dynamic execution, explicit
-fail-fast paths, and the runtime behavior that must remain live.
+That shows up in a few project-wide choices:
 
-Doe is the engine. Fawn is everything required to make that engine real,
-measurable, and shippable.
-
-![Fawn logo](packages/webgpu/assets/fawn-icon-main-256.png)
-
-## Benchmark snapshot
-
-Performance claims in Fawn are earned, not asserted. Citable results come
-from reproducible artifacts with explicit workload contracts, explicit
-comparison modes, and enough timing evidence to satisfy the claim gates in
-`docs/process.md` and the Dawn-vs-Doe methodology in `docs/performance-strategy.md`.
-
-For tier compatibility and escalation rules, see `docs/doe-support-matrix.md`.
-For command-stream example coverage and status, see `examples/README.md`.
-
-Backend-native strict lanes and package-surface comparison lanes are tracked
-separately. The evolving ground truth lives in `docs/status.md` and `bench/out/`;
-the summary below is only the current top-line read.
-
-### AMD Vulkan (RADV, GFX11)
-
-Latest local strict release artifact:
-`bench/out/amd-vulkan/20260310T153903Z/dawn-vs-doe.amd.vulkan.release.json`
-
-- top-level result: `comparisonStatus=comparable`, `claimStatus=diagnostic`
-- current strict release lane workload count: 7
-- current claimables in the release lane:
-  - uploads: `64 KB`, `1 MB`, `4 MB`, `16 MB`, `256 MB`, `1 GB`
-- current non-claimable workload/example:
-  `upload_write_buffer_1kb` / `examples/upload_1kb_commands.json`
-- current release read: strict upload comparability is fixed; the remaining
-  blocker is a real tiny-upload gap, not a structural mismatch
-
-This lane is now a workload-specific strict comparable AMD Vulkan evidence
-lane. It is not a broad "Doe Vulkan is faster than Dawn" claim.
-
-### Apple Metal (M3)
-
-Current Apple Metal comparable contract:
-`bench/workloads.apple.metal.extended.json`
-
-- workload entries in contract: 50
-- unique command examples in contract: 47
-- latest full artifact:
-  `bench/out/apple-metal/extended-comparable/20260310T171918Z/dawn-vs-doe.local.metal.extended.comparable.json`
-- workloads in latest comparable artifact: 31
-- claimable workloads in latest comparable artifact: 30
-- current non-claimable workload/example:
-  `upload_write_buffer_1mb` / `examples/upload_1mb_commands.json`
-- current diagnostic reason in the latest artifact: selected-timing
-  `p95Percent` is negative for the 1 MB upload row, so the lane stays
-  diagnostic until that row is rerun or fixed
-
-An earlier March 10, 2026 run at
-`bench/out/apple-metal/extended-comparable/20260310T165649Z/dawn-vs-doe.local.metal.extended.comparable.json`
-was fully claimable, but the latest inventory read is the conservative one:
-31 comparable workloads with a single diagnostic upload row.
-
-This lane is not currently a broad "Doe Metal is faster than Dawn" claim. A
-fresh rerun is still required before treating the full 31-workload matrix as
-clean claim evidence again.
-
-### Package surfaces
-
-Package-level Node/Bun evidence is tracked separately from backend-native
-strict lanes. Read it through the package README, package-specific compare
-reports, and the benchmark cube outputs under `bench/out/cube/latest/`; do not
-use those package rows as substitutes for strict backend claim substantiation.
-
-## How it works
-
-The architecture splits validation into two categories.
-
-Hoistable checks are resolvable from known state at init, build, or proof time: static compatibility constraints, structural command validity, device limit and profile compatibility. Dynamic checks must stay in the runtime regardless: device loss, async lifecycle, queue synchronization, memory residency pressure.
-
-For hoistable checks:
-1. Mine driver quirks from upstream Dawn/wgpu source automatically
-2. Normalize them into a schema-first dataset
-3. Pre-filter once at startup by device profile, bucket by command kind
-4. When Lean proofs are available: delete runtime branches entirely via comptime gates
-
-The runtime binds a device profile at startup, filters the quirk set once, and buckets by command kind. Command dispatch uses pre-resolved actions without per-command quirk matching in hot loops.
-
-### Zig runtime
-
-Zig keeps allocation and backend control explicit in source. Backend calls go through native Vulkan/Metal C ABIs, and profile/quirk resolution happens once at startup rather than via per-command matching in hot loops.
-
-### Lean proof elimination
-
-Lean 4 provides an optional second tier. When the runtime is built with `-Dlean-verified=true`, proved conditions can remove specific Zig branches from the quirk dispatch path.
-
-"Leaning out" means removing runtime code because a proof made it unnecessary.
-
-## Proof-driven branch elimination
-
-When Doe is built with `-Dlean-verified=true`, four Lean theorems currently eliminate runtime branches in the dispatch path. Proofs run at build time. The compiled binary has fewer branches. There is no runtime proof interpreter.
-
-| Theorem | What it eliminates | Scope |
-|---------|-------------------|-------|
-| `toggleAlwaysSupported` | 20 `supportsCommand` switch evaluations per `driver_toggle` quirk | init |
-| `requiredProof_forbidden_reject_from_rank` | `requires_lean` check for rejected proof levels | init |
-| `strongerSafetyRaisesProofDemand` | `requires_lean` check for critical safety class | init |
-| `identityActionComplete` | entire `applyAction` call and 12-entry toggle registry scan | per-command |
-
-The per-command elimination (`identityActionComplete`) hoists the toggle registry linear scan from per-command to init time. Saves ~100-180ns per dispatched command matched by an informational toggle quirk. At 10,000 commands (autoregressive decode or diffusion step loops), this is 1-2ms saved from proof alone.
-
-Build chain: Lean typecheck, `extract.sh` emits `proven-conditions.json`, `build.zig` reads artifact, `lean_proof.zig` validates at comptime, `runtime.zig` uses comptime gate, compiler eliminates unreachable branches.
-
-Build without the flag produces identical code to before.
-
-## Measurement methodology
-
-- Delta: `((dawn_ms - doe_ms) / dawn_ms) * 100`, positive means Doe is faster
-- Timing: operation-level from execution trace metadata, not wall-clock
-- Comparability: strict mode with fail-fast on mismatched workload contracts
-- Claimability: positive deltas required at p50, p95, and p99 for release claims
-- Replay: every sample validated via deterministic hash-chain trace
-- Workloads: matched command shape, repeat count, buffer usage flags, submit cadence, and normalization divisors
+- explicit native backend paths instead of opaque bridge layers
+- config-first policy and schema-backed behavior
+- optional Lean-backed proof elimination at build time, not a runtime proof
+  interpreter
+- benchmark claims grounded in replayable artifacts instead of prose summaries
 
 ## Current status
 
-Working, with one narrow AMD Vulkan release lane still short of claimability,
-one broader Metal comparable lane carrying a single diagnostic upload row in
-the latest artifact, and one separate package-surface evidence lane:
-- AMD Vulkan: `comparisonStatus=comparable`, `claimStatus=diagnostic` for the local 7-workload release matrix. Only remaining blocker in the latest full artifact is `upload_write_buffer_1kb` / `examples/upload_1kb_commands.json`. This is a narrow workload set, not a broad WebGPU replacement claim.
-- Apple Metal M3: the latest local extended comparable artifact covers 31 workloads and stays `comparisonStatus=comparable`, but `upload_write_buffer_1mb` / `examples/upload_1mb_commands.json` is currently diagnostic on selected-timing `p95`, so the overall lane remains diagnostic pending rerun or fix.
-- Node package surface: host-local package/runtime evidence lives in the package README and package compare artifacts, not in the strict backend claim lane.
+Doe currently targets Vulkan, Metal, and D3D12. It is intentionally focused on
+modern GPU APIs and modern workloads rather than broad legacy-backend coverage.
 
-Still in progress:
-- render draw path with native render-pass submission, vertex buffers, depth/stencil, pipeline caching, and bind groups; remaining work is about broader coverage and stronger margins outside the current local strict comparable claim snapshot
-- texture/raster path with compute texture sampling plus render-draw raster step; broader texture-heavy and raster-heavy matrices still need more evidence than the current local strict claim set
-- GPU timestamp readback (returns zero on some adapter/driver combinations)
-- broader device/driver coverage for substantiated comparison claims
-- upstream quirk mining automation (prototype works; nightly drift ingest is not running)
+Benchmarking and claim discipline are important here, but the repo README is not
+the right place for artifact-by-artifact inventory. The current ground truth
+lives in:
 
-## Platform flow
+- [`docs/status.md`](docs/status.md)
+- [`docs/process.md`](docs/process.md)
+- [`docs/performance-strategy.md`](docs/performance-strategy.md)
+- [`bench/out/`](bench/out/)
 
-Fawn is organized as a platform pipeline, not just a source tree:
+One distinction matters up front: package-surface results are not treated as a
+substitute for backend-native Dawn-vs-Doe evidence. Those lanes are tracked
+separately.
 
-`pipeline/agent` -> `config` -> `pipeline/lean` -> `runtime/zig` -> `packages/webgpu` -> `pipeline/trace` + `bench`
+## Working in the repo
 
-- `pipeline/agent/`: mines and normalizes upstream quirk and compatibility signals
-- `config/`: owns schemas, gates, workload contracts, and migration-visible policy
-- `pipeline/lean/`: proves eliminations and emits artifacts that can remove runtime checks
-- `runtime/zig/`: implements Doe, the runtime and compiler stack that executes WebGPU work
-- `packages/webgpu/`: packages Doe for Node.js, Bun, and browser environments (see stack diagram below for the two runtime paths)
-- `browser/fawn-browser/`: plans the future Chromium integration lane (Track A — embedding Doe inside Chromium to replace Dawn; see `docs/browser-lane.md`)
-- `pipeline/trace/` and `bench/`: replay work, validate comparability, and produce benchmark evidence
+Pick the README that matches the surface you are touching.
 
-Supporting docs in `docs/` define the operating contract:
-`docs/thesis.md`, `docs/architecture.md`, `docs/process.md`, `docs/status.md`,
-`docs/upgrade-policy.md`, and `docs/licensing.md`.
+For package consumers:
 
-## Package
+- use [`packages/doe-gpu/README.md`](packages/doe-gpu/README.md)
 
-The canonical npm package is `@simulatte/webgpu`, rooted in `packages/webgpu/`.
-It packages the Doe runtime for Node.js and Bun, exposes raw WebGPU entry
-points plus the Doe API / Doe routines JS surface, and includes CLI tools for
-benchmarking and CI workflows. Bun currently uses a platform-split bridge path
-(FFI on Linux, full/addon-backed on macOS).
+For runtime contributors:
 
-Node is the primary supported package surface. Bun has API parity (61/61
-contract tests) through the package surface; the bridge layer is platform-
-dependent, but the intended package semantics stay the same. Cube maturity
-remains prototype until cells are populated by comparable benchmark artifacts.
+- start with [`runtime/zig/README.md`](runtime/zig/README.md)
+- then read [`bench/README.md`](bench/README.md) if your change affects
+  performance or comparability
 
-### Package layer stack
+## Quick start
 
-Read this top to bottom:
-
-- application code sits above the package surface
-- `@simulatte/webgpu` is the main runtime package family
-- `@simulatte/webgpu-doe` is the transport-free helper package family, not a second runtime
-- the Doe runtime starts at the native transport and Zig drop-in layers below the JS object model
-
-```text
-Application code
-┌─────────────────────────────────────────────────────────────────┐
-│ Your app / script / CLI / worker / web page                     │
-│ imports from @simulatte/webgpu                                  │
-└─────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-@simulatte/webgpu package boundary
-┌─────────────────────────────────────────────────────────────────┐
-│ Package exports                                                 │
-│ create · requestAdapter · requestDevice · doe · globals         │
-├─────────────────────────────────────────────────────────────────┤
-│ Doe API helpers  (@simulatte/webgpu-doe)                        │
-│ doe.requestDevice · doe.bind · gpu.buffer.* · gpu.kernel.*      │
-├─────────────────────────────────────────────────────────────────┤
-│ Shared WebGPU JS object model and validation                    │
-│ full-surface.js · encoder-surface.js · validation.js            │
-└─────────────────────────┬───────────────────────────────────────┘
-                          │
-            ┌─────────────┴──────────────┐
-            │                            │
-            ▼                            ▼
- Headless native path           Browser wrapper path
- (Node.js / Bun)                (web page)
-┌──────────────────────┐   ┌──────────────────────────────┐
-│ N-API addon          │   │ src/browser.js               │
-│ (doe_napi.node)      │   │ JS shim that delegates every │
-│ or Bun FFI           │   │ WebGPU call to the browser's │
-│ (bun-ffi.js)         │   │ own navigator.gpu            │
-└──────────┬───────────┘   └──────────────┬───────────────┘
-           │                              │
-           ▼                              ▼
- Doe Zig runtime              Browser-native WebGPU
-┌──────────────────────┐   ┌──────────────────────────────┐
-│ doe_*.zig native ABI │   │ The browser's built-in       │
-│ WGSL compiler        │   │ WebGPU implementation         │
-│ (doe_wgsl)           │   │ (Dawn in Chrome, wgpu in     │
-│ Metal / Vulkan /     │   │ Firefox, etc.)               │
-│ D3D12 backends       │   │ No Doe code runs here.       │
-└──────────┬───────────┘   └──────────────┬───────────────┘
-           │                              │
-           ▼                              ▼
-    OS GPU APIs                   Browser GPU sandbox
-    + physical GPU                + physical GPU
-```
-
-The two paths share the same JS object model and validation layer but diverge
-at the transport boundary:
-
-- **Headless native** — N-API or Bun FFI calls into the Doe Zig runtime, which
-  drives Metal/Vulkan/D3D12 directly. This is where Doe's WGSL compiler,
-  backend execution, and proof-aware branch elimination run.
-- **Browser wrapper** — `src/browser.js` wraps the browser's own
-  `navigator.gpu` behind the same `@simulatte/webgpu` JS classes. No Zig code
-  runs; the browser's WebGPU implementation (typically Dawn) handles GPU work.
-  The wrapper exists so that code written against `@simulatte/webgpu` can run
-  in a browser without modification.
-
-These are both packaging paths inside `packages/webgpu/`. Neither is related to
-Chromium Track A (`browser/fawn-browser/`), which is a separate future effort
-to embed the Doe Zig runtime inside Chromium itself as a Dawn replacement.
-
-Boundary notes:
-
-- `@simulatte/webgpu` is the main runtime package family most users install. It owns the raw WebGPU surface and re-exports the Doe API helper layer.
-- `@simulatte/webgpu-doe` is the transport-free helper package family. It sits above the same underlying device and runtime; it does not introduce a separate backend or separate native engine.
-- The WebGPU vs Doe API boundary is inside the JS package layer:
-  raw `requestDevice()` / `device.*` on one side, `doe.*` and `gpu.*` helpers on the other.
-- Subpaths such as `compute`, `full`, `node`, `bun`, and `native-direct` are subpath entrypoints of `@simulatte/webgpu`, not separate products.
-- The JS vs native runtime boundary is the transport layer:
-  N-API on Node, Bun FFI on Bun, then the Zig drop-in runtime underneath.
+Published package:
 
 ```bash
-# install from npm
-npm install @simulatte/webgpu
-
-# build the drop-in library
-cd runtime/zig && zig build dropin
-
-# publish
-cd packages/webgpu && npm publish --access public
+npm install doe-gpu
 ```
 
-## Building and running
-
-Requires Zig 0.15.2 (see `config/toolchains.json`). From `runtime/zig/`:
+Local runtime work:
 
 ```bash
-# run with trace output
-zig build run -- --commands path/to/commands.json --backend native --execute --trace
-
-# build with Lean proof elimination
-zig build -Dlean-verified=true
-
-# run tests
+cd runtime/zig
 zig build test
-
-# build drop-in shared library
 zig build dropin
-
-# build macOS app bundle
-zig build app
 ```
 
-Run Dawn-vs-Doe comparison (requires Dawn build, see `bench/README.md`):
+Doe currently requires Zig 0.15.2. See
+[`config/toolchains.json`](config/toolchains.json).
 
-```bash
-python3 bench/native-compare/compare_dawn_vs_doe.py \
-  --config bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.json
-```
+If you are working on Dawn-vs-Doe comparisons, use the benchmark tooling in
+[`bench/README.md`](bench/README.md) rather than treating this README as the
+operational guide.
 
-## Verification gates
+## Deprecated packages
 
-Blocking in v0: schema, correctness, trace, verification, and drop-in
-compatibility for artifact lanes.
-Advisory in v0: performance.
+The following packages are deprecated and replaced by `doe-gpu`:
 
-Release requires all blocking gates green. See `docs/process.md` for gate policy and `config/gates.json` for thresholds.
+- `@simulatte/webgpu` — use `doe-gpu` instead
+- `@simulatte/webgpu-doe` — merged into `doe-gpu`
+
+## Documentation
+
+- [`docs/architecture.md`](docs/architecture.md): system overview
+- [`docs/process.md`](docs/process.md): stage order, gates, and release policy
+- [`docs/status.md`](docs/status.md): current status and tracked follow-ups
+- [`docs/thesis.md`](docs/thesis.md): project thesis and framing
+- [`runtime/zig/README.md`](runtime/zig/README.md): runtime development guide
+- [`bench/README.md`](bench/README.md): benchmark workflows and evidence lanes
+- [`packages/doe-gpu/README.md`](packages/doe-gpu/README.md): npm package
 
 ## License
 
