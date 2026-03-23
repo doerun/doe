@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Fawn WebGPU Spec Coverage",
+  "title": "Fawn WebGPU capability inventory",
   "type": "object",
   "additionalProperties": false,
   "required": ["schemaVersion", "lastUpdated", "coverage"],

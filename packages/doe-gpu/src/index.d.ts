@@ -14,7 +14,7 @@ import type {
   DoeComputeBatch,
   DoeComputePass,
   DoeCommandEncoder,
-} from "../../webgpu-doe/src/index.js";
+} from "./vendor/doe-namespace.js";
 
 export type {
   BoundDoeNamespace,

@@ -22,7 +22,12 @@
         "bench/kernels"
       ],
       "comparable": true,
-      "timingNormalizationNote": "Strict Doe-vs-Doe comparability uses direct timing (left/right divisors fixed to 1.0)."
+      "timingNormalizationNote": "Strict Doe-vs-Doe comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "compute_matvec_32768x2048_f32_swizzle1",
@@ -45,7 +50,12 @@
         "bench/kernels"
       ],
       "comparable": true,
-      "timingNormalizationNote": "Strict Doe-vs-Doe comparability uses direct timing (left/right divisors fixed to 1.0)."
+      "timingNormalizationNote": "Strict Doe-vs-Doe comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "compute_matvec_32768x2048_f32_workgroupshared_swizzle1",
@@ -68,7 +78,12 @@
         "bench/kernels"
       ],
       "comparable": true,
-      "timingNormalizationNote": "Strict Doe-vs-Doe comparability uses direct timing (left/right divisors fixed to 1.0)."
+      "timingNormalizationNote": "Strict Doe-vs-Doe comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "compute_workgroup_atomic_1024",
@@ -91,7 +106,11 @@
       "comparable": true,
       "default": true,
       "timingNormalizationNote": "Strict Doe-vs-Doe comparability uses direct timing (left/right divisors fixed to 1.0).",
-      "dawnFilter": "WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeAtomic"
+      "dawnFilter": "WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeAtomic",
+      "suiteTags": [
+        "release"
+      ],
+      "claimEligible": true
     },
     {
       "id": "compute_workgroup_non_atomic_1024",
@@ -114,7 +133,11 @@
       ],
       "comparable": true,
       "default": true,
-      "timingNormalizationNote": "Strict Doe-vs-Doe comparability uses direct timing (left/right divisors fixed to 1.0)."
+      "timingNormalizationNote": "Strict Doe-vs-Doe comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "suiteTags": [
+        "release"
+      ],
+      "claimEligible": true
     },
     {
       "id": "pipeline_async_diagnostics",
@@ -134,7 +157,12 @@
       "driver": "24.0.0",
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Doe-vs-Doe comparability uses direct timing (left/right divisors fixed to 1.0).",
-      "rightTimingDivisor": 1.0
+      "rightTimingDivisor": 1.0,
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "pipeline_compile_stress",
@@ -157,7 +185,12 @@
         "bench/kernels"
       ],
       "comparable": true,
-      "timingNormalizationNote": "Strict Doe-vs-Doe comparability uses direct timing (left/right divisors fixed to 1.0)."
+      "timingNormalizationNote": "Strict Doe-vs-Doe comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "render_bundle_dynamic_bindings",
@@ -176,7 +209,12 @@
       "comparable": true,
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Doe-vs-Doe comparability uses direct timing (left/right divisors fixed to 1.0).",
-      "rightTimingDivisor": 1.0
+      "rightTimingDivisor": 1.0,
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "render_bundle_dynamic_pipeline_bindings",
@@ -196,6 +234,11 @@
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Doe-vs-Doe comparability uses direct timing (left/right divisors fixed to 1.0).",
       "rightTimingDivisor": 1.0,
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true,
       "leftCommandRepeat": 10,
       "rightCommandRepeat": 10
     },
@@ -219,7 +262,12 @@
       "vendor": "amd",
       "family": "gfx11",
       "driver": "24.0.0",
-      "timingNormalizationNote": "Directional-only: Apples-to-apples macro workload: normalize to per-draw units over 200k indexed draws with deferred queue sync. Doe-vs-Doe strict parity: right normalization mirrors left."
+      "timingNormalizationNote": "Directional-only: Apples-to-apples macro workload: normalize to per-draw units over 200k indexed draws with deferred queue sync. Doe-vs-Doe strict parity: right normalization mirrors left.",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "render_draw_indexed_baseline",
@@ -243,7 +291,12 @@
       "comparable": false,
       "leftTimingDivisor": 20000,
       "timingNormalizationNote": "Directional-only: Both sides report per-draw throughput units; Fawn issues indexed draws and Dawn uses the closest draw-call throughput proxy variant. Repeat=10 plus deferred queue sync reduces per-sample setup/sync overhead while preserving per-draw normalization. Doe-vs-Doe strict parity: right normalization mirrors left.",
-      "rightTimingDivisor": 20000.0
+      "rightTimingDivisor": 20000.0,
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "render_draw_redundant_pipeline_bindings",
@@ -263,6 +316,11 @@
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Doe-vs-Doe comparability uses direct timing (left/right divisors fixed to 1.0).",
       "rightTimingDivisor": 1.0,
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true,
       "leftCommandRepeat": 10,
       "rightCommandRepeat": 10
     },
@@ -283,7 +341,12 @@
       "comparable": true,
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Doe-vs-Doe comparability uses direct timing (left/right divisors fixed to 1.0).",
-      "rightTimingDivisor": 1.0
+      "rightTimingDivisor": 1.0,
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "render_draw_throughput_200k",
@@ -301,7 +364,12 @@
       "driver": "24.0.0",
       "comparable": true,
       "leftTimingDivisor": 1.0,
-      "timingNormalizationNote": "Strict Doe-vs-Doe comparability uses direct timing (left/right divisors fixed to 1.0)."
+      "timingNormalizationNote": "Strict Doe-vs-Doe comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "render_draw_throughput_baseline",
@@ -320,7 +388,12 @@
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Doe-vs-Doe comparability uses direct timing (left/right divisors fixed to 1.0).",
       "dawnFilter": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151",
-      "rightTimingDivisor": 1.0
+      "rightTimingDivisor": 1.0,
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "surface_presentation",
@@ -337,7 +410,12 @@
       "family": "gfx11",
       "driver": "24.0.0",
       "comparable": false,
-      "timingNormalizationNote": "Directional proxy only: normalize per create/release operation pair. Doe-vs-Doe strict parity: right normalization mirrors left."
+      "timingNormalizationNote": "Directional proxy only: normalize per create/release operation pair. Doe-vs-Doe strict parity: right normalization mirrors left.",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "texture_sampler_write_query_destroy",
@@ -358,6 +436,11 @@
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Doe-vs-Doe comparability uses direct timing (left/right divisors fixed to 1.0).",
       "rightTimingDivisor": 1.0,
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true,
       "rightCommandRepeat": 10
     },
     {
@@ -376,7 +459,12 @@
       "driver": "24.0.0",
       "comparable": true,
       "leftTimingDivisor": 1.0,
-      "timingNormalizationNote": "Strict Doe-vs-Doe comparability uses direct timing (left/right divisors fixed to 1.0)."
+      "timingNormalizationNote": "Strict Doe-vs-Doe comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "texture_sampler_write_query_destroy_mip8",
@@ -397,6 +485,11 @@
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Doe-vs-Doe comparability uses direct timing (left/right divisors fixed to 1.0).",
       "rightTimingDivisor": 1.0,
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true,
       "rightCommandRepeat": 10
     },
     {
@@ -424,6 +517,11 @@
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Doe-vs-Doe comparability uses direct timing (left/right divisors fixed to 1.0).",
       "rightTimingDivisor": 1.0,
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true,
       "rightCommandRepeat": 500
     },
     {
@@ -454,7 +552,12 @@
       "rightIgnoreFirstOps": 1,
       "timingNormalizationNote": "Strict Doe-vs-Doe comparability uses direct timing (left/right divisors fixed to 1.0).",
       "pathAsymmetry": true,
-      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
+      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored.",
+      "suiteTags": [
+        "release",
+        "regression"
+      ],
+      "claimEligible": true
     },
     {
       "id": "upload_write_buffer_1gb",
@@ -485,7 +588,13 @@
       "family": "gfx11",
       "driver": "24.0.0",
       "pathAsymmetry": true,
-      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
+      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored.",
+      "suiteTags": [
+        "release",
+        "regression",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "upload_write_buffer_1kb",
@@ -515,7 +624,12 @@
       "rightIgnoreFirstOps": 1,
       "timingNormalizationNote": "Strict Doe-vs-Doe comparability uses direct timing (left/right divisors fixed to 1.0).",
       "pathAsymmetry": true,
-      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
+      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored.",
+      "suiteTags": [
+        "release",
+        "regression"
+      ],
+      "claimEligible": true
     },
     {
       "id": "upload_write_buffer_1mb",
@@ -545,7 +659,12 @@
       "rightIgnoreFirstOps": 1,
       "timingNormalizationNote": "Strict Doe-vs-Doe comparability uses direct timing (left/right divisors fixed to 1.0).",
       "pathAsymmetry": true,
-      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
+      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored.",
+      "suiteTags": [
+        "release",
+        "regression"
+      ],
+      "claimEligible": true
     },
     {
       "id": "upload_write_buffer_256mb",
@@ -576,7 +695,13 @@
       "family": "gfx11",
       "driver": "24.0.0",
       "pathAsymmetry": true,
-      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
+      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored.",
+      "suiteTags": [
+        "release",
+        "regression",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "upload_write_buffer_4gb",
@@ -607,7 +732,12 @@
       "comparable": true,
       "benchmarkClass": "comparable",
       "pathAsymmetry": true,
-      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
+      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored.",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "upload_write_buffer_4mb",
@@ -637,7 +767,12 @@
       "rightIgnoreFirstOps": 1,
       "timingNormalizationNote": "Strict Doe-vs-Doe comparability uses direct timing (left/right divisors fixed to 1.0).",
       "pathAsymmetry": true,
-      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
+      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored.",
+      "suiteTags": [
+        "release",
+        "regression"
+      ],
+      "claimEligible": true
     },
     {
       "id": "upload_write_buffer_64kb",
@@ -667,7 +802,12 @@
       "rightIgnoreFirstOps": 0,
       "timingNormalizationNote": "Strict Doe-vs-Doe comparability uses direct timing (left/right divisors fixed to 1.0).",
       "pathAsymmetry": true,
-      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
+      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored.",
+      "suiteTags": [
+        "release",
+        "regression"
+      ],
+      "claimEligible": true
     },
     {
       "id": "capability_introspection",
@@ -687,7 +827,12 @@
       "name": "p1 capability introspection contract",
       "vendor": "amd",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
-      "timingNormalizationNote": "Directional-only: Apples-to-apples P1 capability contract: normalize as a per-command introspection sequence. Doe-vs-Doe strict parity: right normalization mirrors left."
+      "timingNormalizationNote": "Directional-only: Apples-to-apples P1 capability contract: normalize as a per-command introspection sequence. Doe-vs-Doe strict parity: right normalization mirrors left.",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "capability_introspection_500",
@@ -707,7 +852,12 @@
       "name": "p1 capability introspection macro (500)",
       "vendor": "amd",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
-      "timingNormalizationNote": "Directional-only: Apples-to-apples macro capability contract: normalize per internal introspection iteration. Doe-vs-Doe strict parity: right normalization mirrors left."
+      "timingNormalizationNote": "Directional-only: Apples-to-apples macro capability contract: normalize per internal introspection iteration. Doe-vs-Doe strict parity: right normalization mirrors left.",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "compute_concurrent_execution_single",
@@ -730,7 +880,12 @@
       "comparabilityNotes": "Apples-to-apples contract: command shape and Dawn filter mapping both exercise one long-running compute dispatch per benchmark step.",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "comparable": true,
-      "timingNormalizationNote": "Strict Doe-vs-Doe comparability uses direct timing (left/right divisors fixed to 1.0)."
+      "timingNormalizationNote": "Strict Doe-vs-Doe comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "compute_indirect_timestamp",
@@ -752,6 +907,11 @@
       "timingNormalizationNote": "Strict Doe-vs-Doe comparability uses direct timing (left/right divisors fixed to 1.0).",
       "applesToApplesVetted": true,
       "benchmarkClass": "comparable",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true,
       "rightCommandRepeat": 20
     },
     {
@@ -776,6 +936,11 @@
       "comparable": true,
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Doe-vs-Doe comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true,
       "leftCommandRepeat": 100,
       "rightCommandRepeat": 100
     },
@@ -798,7 +963,12 @@
       "name": "p2 lifecycle/refcount contract",
       "vendor": "amd",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
-      "timingNormalizationNote": "Directional-only: Apples-to-apples P2 lifecycle contract: normalize by addref/release touch count within the lifecycle sequence. Doe-vs-Doe strict parity: right normalization mirrors left."
+      "timingNormalizationNote": "Directional-only: Apples-to-apples P2 lifecycle contract: normalize by addref/release touch count within the lifecycle sequence. Doe-vs-Doe strict parity: right normalization mirrors left.",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "lifecycle_refcount_200",
@@ -818,7 +988,12 @@
       "name": "p2 lifecycle/refcount macro (200)",
       "vendor": "amd",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
-      "timingNormalizationNote": "Directional-only: Apples-to-apples macro lifecycle contract: normalize per internal addref/release touch operations across macro iterations. Doe-vs-Doe strict parity: right normalization mirrors left."
+      "timingNormalizationNote": "Directional-only: Apples-to-apples macro lifecycle contract: normalize per internal addref/release touch operations across macro iterations. Doe-vs-Doe strict parity: right normalization mirrors left.",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "render_multidraw",
@@ -838,7 +1013,12 @@
       "comparable": true,
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Doe-vs-Doe comparability uses direct timing (left/right divisors fixed to 1.0).",
-      "benchmarkClass": "comparable"
+      "benchmarkClass": "comparable",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "render_multidraw_indexed",
@@ -858,7 +1038,12 @@
       "comparable": true,
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Doe-vs-Doe comparability uses direct timing (left/right divisors fixed to 1.0).",
-      "benchmarkClass": "comparable"
+      "benchmarkClass": "comparable",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "render_pixel_local_storage_barrier",
@@ -880,7 +1065,12 @@
       "name": "p0 render pixel-local-storage barrier contract",
       "vendor": "amd",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
-      "timingNormalizationNote": "Directional-only: Apples-to-apples PLS contract: normalize per barrier-sequencing sub-steps over repeated non-coherent diagnostic iterations. Doe-vs-Doe strict parity: right normalization mirrors left."
+      "timingNormalizationNote": "Directional-only: Apples-to-apples PLS contract: normalize per barrier-sequencing sub-steps over repeated non-coherent diagnostic iterations. Doe-vs-Doe strict parity: right normalization mirrors left.",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "render_pixel_local_storage_barrier_500",
@@ -902,7 +1092,12 @@
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Doe-vs-Doe comparability uses direct timing (left/right divisors fixed to 1.0).",
-      "benchmarkClass": "directional"
+      "benchmarkClass": "directional",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "render_uniform_buffer_update_writebuffer_partial_single",
@@ -923,6 +1118,11 @@
       "comparable": true,
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Doe-vs-Doe comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true,
       "rightCommandRepeat": 100
     },
     {
@@ -945,7 +1145,12 @@
       "rightCommandRepeat": 100,
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Doe-vs-Doe comparability uses direct timing (left/right divisors fixed to 1.0).",
-      "benchmarkClass": "comparable"
+      "benchmarkClass": "comparable",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "resource_table_immediates",
@@ -967,7 +1172,12 @@
       "name": "p1 resource-table/immediates contract",
       "vendor": "amd",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
-      "timingNormalizationNote": "Directional-only: Apples-to-apples P1 resource-table contract: normalize by command-sequence sub-steps with deterministic feature-gating parity support. Doe-vs-Doe strict parity: right normalization mirrors left."
+      "timingNormalizationNote": "Directional-only: Apples-to-apples P1 resource-table contract: normalize by command-sequence sub-steps with deterministic feature-gating parity support. Doe-vs-Doe strict parity: right normalization mirrors left.",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "resource_table_immediates_500",
@@ -991,7 +1201,11 @@
       "default": false,
       "timingNormalizationNote": "Strict Doe-vs-Doe comparability uses direct timing (left/right divisors fixed to 1.0).",
       "rightCommandRepeat": 500,
-      "benchmarkClass": "directional"
+      "benchmarkClass": "directional",
+      "suiteTags": [
+        "exploration"
+      ],
+      "claimEligible": false
     }
   ]
 }

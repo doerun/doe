@@ -5,6 +5,7 @@ const backend_runtime = @import("backend/backend_runtime.zig");
 const backend_ids = @import("backend/backend_ids.zig");
 const backend_policy = @import("backend/backend_policy.zig");
 const backend_telemetry = @import("backend/backend_telemetry.zig");
+const semantic_trace = @import("semantic_trace.zig");
 
 pub const BackendMode = enum {
     trace,
@@ -39,6 +40,7 @@ pub const ExecutionResult = struct {
     adapter_ordinal: ?u32,
     queue_family_index: ?u32,
     present_capable: ?bool,
+    semantic: semantic_trace.SemanticContext = .{},
 };
 
 pub const ExecutionContext = struct {
@@ -91,6 +93,14 @@ pub const ExecutionContext = struct {
     }
 
     pub fn execute(self: *ExecutionContext, command: model.Command) !ExecutionResult {
+        return try self.execute_with_semantic(command, .{});
+    }
+
+    pub fn execute_with_semantic(
+        self: *ExecutionContext,
+        command: model.Command,
+        semantic: semantic_trace.SemanticContext,
+    ) !ExecutionResult {
         const mode_name = executionModeName(self.mode);
         const mode_result = ExecutionResult{
             .backend = mode_name,
@@ -113,6 +123,7 @@ pub const ExecutionContext = struct {
             .adapter_ordinal = null,
             .queue_family_index = null,
             .present_capable = null,
+            .semantic = semantic,
         };
 
         if (self.mode == .trace) return mode_result;
@@ -138,6 +149,7 @@ pub const ExecutionContext = struct {
                 .adapter_ordinal = null,
                 .queue_family_index = null,
                 .present_capable = null,
+                .semantic = semantic,
             };
         }
 
@@ -172,6 +184,7 @@ pub const ExecutionContext = struct {
                     .adapter_ordinal = command_telemetry.adapter_ordinal,
                     .queue_family_index = command_telemetry.queue_family_index,
                     .present_capable = command_telemetry.present_capable,
+                    .semantic = semantic,
                 };
             };
             const command_end = std.time.nanoTimestamp();
@@ -202,6 +215,7 @@ pub const ExecutionContext = struct {
                 .adapter_ordinal = command_telemetry.adapter_ordinal,
                 .queue_family_index = command_telemetry.queue_family_index,
                 .present_capable = command_telemetry.present_capable,
+                .semantic = semantic,
             };
         }
 
@@ -226,6 +240,7 @@ pub const ExecutionContext = struct {
             .adapter_ordinal = null,
             .queue_family_index = null,
             .present_capable = null,
+            .semantic = semantic,
         };
     }
 
@@ -297,6 +312,20 @@ pub const ExecutionContext = struct {
         if (self.backend) |*backend| {
             try backend.prewarm_kernel_dispatch(kernel, bindings);
         }
+    }
+
+    pub fn captureBuffer(
+        self: *ExecutionContext,
+        allocator: std.mem.Allocator,
+        handle: u64,
+        offset: u64,
+        size: u64,
+    ) ![]u8 {
+        if (self.mode != .native) return error.UnsupportedFeature;
+        if (self.backend) |*backend| {
+            return try backend.capture_buffer(allocator, handle, offset, size);
+        }
+        return error.UnsupportedFeature;
     }
 };
 

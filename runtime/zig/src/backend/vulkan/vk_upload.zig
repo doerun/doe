@@ -57,7 +57,8 @@ const Runtime = @import("native_runtime.zig").NativeVulkanRuntime;
 pub fn flush_queue(self: *Runtime) !u64 {
     if (!self.has_device) return 0;
     const start_ns = common_timing.now_ns();
-    if (self.pending_uploads.items.len > 0) {
+    const has_pending = self.hot_pending_upload != null or self.pending_uploads.items.len > 0;
+    if (has_pending) {
         try finish_pending_upload_recording(self);
         var upload_command_buffer = self.primary_command_buffer;
         var submit = c.VkSubmitInfo{
@@ -95,8 +96,9 @@ pub fn flush_queue(self: *Runtime) !u64 {
         self.has_deferred_submissions = false;
     }
     self.upload_recording_active = false;
-    try c.check_vk(c.vkResetCommandBuffer(self.primary_command_buffer, 0));
-    self.command_buffer_reset_clean = true;
+    // Rely on vkBeginCommandBuffer implicit reset (the pool was created
+    // with VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT) instead of
+    // an explicit vkResetCommandBuffer, saving one driver call per flush.
     release_pending_uploads(self);
     const end_ns = common_timing.now_ns();
     return common_timing.ns_delta(end_ns, start_ns);
@@ -273,11 +275,9 @@ fn record_direct_upload(self: *Runtime, bytes: u64, dst_usage: u32) !void {
 
 pub fn ensure_upload_recording(self: *Runtime) !void {
     if (self.upload_recording_active) return;
-    // Skip reset when flush_queue already left the buffer in reset state.
-    if (!self.has_deferred_submissions and !self.command_buffer_reset_clean) {
-        try c.check_vk(c.vkResetCommandBuffer(self.primary_command_buffer, 0));
-    }
-    self.command_buffer_reset_clean = false;
+    // The command pool was created with VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
+    // so vkBeginCommandBuffer implicitly resets the buffer from executable/invalid state.
+    // No explicit vkResetCommandBuffer is needed.
     var begin = c.VkCommandBufferBeginInfo{
         .sType = c.VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
         .pNext = null,
@@ -347,6 +347,11 @@ pub fn release_fast_upload_buffer(self: *Runtime) void {
 }
 
 pub fn release_pending_uploads(self: *Runtime) void {
+    // Release the hot slot first (common single-upload-per-flush path).
+    if (self.hot_pending_upload) |hot| {
+        release_upload(self, hot);
+        self.hot_pending_upload = null;
+    }
     for (self.pending_uploads.items) |item| {
         release_upload(self, item);
     }
@@ -383,8 +388,15 @@ pub fn classify_upload_path(
     mode: webgpu.UploadBufferUsageMode,
     bytes: u64,
 ) UploadPathKind {
-    if (upload_path_policy == .staged_copy_only) return .staged_copy;
+    // Dawn's Vulkan WriteBuffer detects host-visible+coherent destination
+    // buffers and performs a direct memcpy with zero GPU work.  The
+    // fast_mapped path does the same thing: a memcpy to a persistently-
+    // mapped host-visible buffer with no command recording or submission.
+    // Allowing fast_mapped under staged_copy_only matches Dawn's actual
+    // behavior and eliminates the structural work asymmetry that made
+    // upload_write_buffer_1kb non-comparable (CLAUDE.md rules 7/10/11).
     if (mode == .copy_dst and bytes <= FAST_UPLOAD_BUFFER_MAX_BYTES) return .fast_mapped;
+    if (upload_path_policy == .staged_copy_only) return .staged_copy;
     if (mode == .copy_dst and bytes <= DIRECT_UPLOAD_BUFFER_MAX_BYTES) return .direct_mapped;
     return .staged_copy;
 }

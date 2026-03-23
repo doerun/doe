@@ -18,7 +18,9 @@ fn cache_key(handle: ?*anyopaque) ?usize {
 
 pub fn set_adapter(handle: ?*anyopaque, caps: vk_feature_caps.VulkanFeatureCaps) void {
     const key = cache_key(handle) orelse return;
-    adapter_caps.put(alloc, key, caps) catch {};
+    adapter_caps.put(alloc, key, caps) catch |err| {
+        std.debug.print("warn: doe_vulkan_feature_cache: set_adapter: {s}\n", .{@errorName(err)});
+    };
 }
 
 pub fn get_adapter(handle: ?*anyopaque) ?vk_feature_caps.VulkanFeatureCaps {
@@ -34,7 +36,9 @@ pub fn remove_adapter(handle: ?*anyopaque) void {
 
 pub fn set_device(handle: ?*anyopaque, caps: vk_feature_caps.VulkanFeatureCaps) void {
     const key = cache_key(handle) orelse return;
-    device_caps.put(alloc, key, caps) catch {};
+    device_caps.put(alloc, key, caps) catch |err| {
+        std.debug.print("warn: doe_vulkan_feature_cache: set_device: {s}\n", .{@errorName(err)});
+    };
 }
 
 pub fn get_device(handle: ?*anyopaque) ?vk_feature_caps.VulkanFeatureCaps {
@@ -52,7 +56,9 @@ pub fn remove_device(handle: ?*anyopaque) void {
 
 pub fn set_adapter_device_caps(handle: ?*anyopaque, caps: vk_device_caps.VulkanDeviceCaps) void {
     const key = cache_key(handle) orelse return;
-    adapter_device_caps.put(alloc, key, caps) catch {};
+    adapter_device_caps.put(alloc, key, caps) catch |err| {
+        std.debug.print("warn: doe_vulkan_feature_cache: set_adapter_device_caps: {s}\n", .{@errorName(err)});
+    };
 }
 
 pub fn get_adapter_device_caps(handle: ?*anyopaque) ?vk_device_caps.VulkanDeviceCaps {
@@ -62,7 +68,9 @@ pub fn get_adapter_device_caps(handle: ?*anyopaque) ?vk_device_caps.VulkanDevice
 
 pub fn set_device_device_caps(handle: ?*anyopaque, caps: vk_device_caps.VulkanDeviceCaps) void {
     const key = cache_key(handle) orelse return;
-    device_device_caps.put(alloc, key, caps) catch {};
+    device_device_caps.put(alloc, key, caps) catch |err| {
+        std.debug.print("warn: doe_vulkan_feature_cache: set_device_device_caps: {s}\n", .{@errorName(err)});
+    };
 }
 
 pub fn get_device_device_caps(handle: ?*anyopaque) ?vk_device_caps.VulkanDeviceCaps {

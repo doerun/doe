@@ -33,7 +33,7 @@ That document defines:
 - `check_correctness.py`
   - runs deterministic contract-level correctness checks
 - `schema_gate.py`
-  - validates schema-backed benchmark/config contracts as blocking release checks (`claim-cycle`, `webgpu-spec-coverage`, benchmark methodology thresholds, substantiation policy, comparability obligation contracts, and all quirk examples).
+  - validates schema-backed benchmark/config contracts as blocking release checks (`claim-cycle`, `webgpu-capability-inventory`, command coverage ledgers, Chromium integration overlay, benchmark methodology thresholds, substantiation policy, comparability obligation contracts, and all quirk examples).
 - `run_blocking_gates.py`
   - canonical entrypoint for blocking gate order: schema -> correctness -> trace -> optional drop-in -> optional claim gate.
   - release-claim readiness evidence requires claim gate enabled (`--with-claim-gate`), and can be enforced with `--require-claim-gate`.
@@ -178,8 +178,8 @@ That document defines:
 - `run_full39_evidence_bundle.sh`
   - post-run orchestrator for claim-grade artifacts: readiness check -> blocking gates (pipeline/trace/correctness/schema + drop-in + claim) -> repeated claim windows + substantiation -> inventory and baseline refresh.
 - `generate_feature_benchmark_table.py`
-  - builds a markdown table joining `config/webgpu-spec-coverage.json`, workload contracts, and Dawn filter mappings for Dawn-vs-Doe feature/benchmark coverage auditing.
-  - emits both overall comparable-coverage and eligible-only comparable-coverage metrics; eligibility is config-driven via `benchmarkClass` (`comparable` vs `directional`) in `config/webgpu-spec-coverage.json`.
+  - builds a markdown table joining `config/webgpu-capability-inventory.json`, workload contracts, and Dawn filter mappings for Dawn-vs-Doe feature/benchmark coverage auditing.
+  - emits both overall comparable-coverage and eligible-only comparable-coverage metrics; eligibility is config-driven via `benchmarkClass` (`comparable` vs `directional`) in `config/webgpu-capability-inventory.json`.
   - treats coverage `status=tracked` as spec-inventory-complete (audited/contracted) but not runtime-semantic implementation.
 - `verify_smoke_gpu_usage.py`
   - validates AMD Vulkan smoke reports include explicit GPU probe evidence (`gpuMemoryProbeAvailable`, sample counts, and VRAM peak fields) on both sides.
@@ -231,6 +231,14 @@ python3 bench/list_out_runs.py --limit 25
 # additionally prune timestamped artifacts older than 14 days
 python3 bench/cleanup_out.py --retention-days 14
 ```
+
+### Retention policy
+
+- `bench/out/scratch/` directories are ephemeral and can be cleaned at any time.
+- Timestamped directories under `bench/out/{backend}/` (e.g. `bench/out/amd-vulkan/`, `bench/out/apple-metal/`) are evidence artifacts and should be retained for audit and trend analysis.
+- The latest artifact per lane is authoritative; older timestamped runs in the same lane are historical evidence and should not be deleted without explicit retention-window pruning via `cleanup_out.py --retention-days`.
+- Ad-hoc directories (e.g. `bench/out/node-doe-vs-dawn-*`) follow the same evidence retention rules as backend lanes.
+- Do not manually delete benchmark outputs outside of `bench/out/scratch/` without running `cleanup_out.py` to preserve manifest and inventory consistency.
 
 ## Workload presets
 

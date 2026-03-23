@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Split coverage gate: validates core and full coverage ledgers against
+"""Split coverage gate: validates core and full command-coverage ledgers against
 the Zig runtime command partitions and surface schemas.
 
 Checks:
@@ -173,23 +173,23 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--core-ledger",
-        default="config/webgpu-core-coverage.json",
-        help="Core coverage ledger path.",
+        default="config/webgpu-command-coverage-core.json",
+        help="Core command-coverage ledger path.",
     )
     parser.add_argument(
         "--full-ledger",
-        default="config/webgpu-full-coverage.json",
-        help="Full coverage ledger path.",
+        default="config/webgpu-command-coverage-full.json",
+        help="Full command-coverage ledger path.",
     )
     parser.add_argument(
         "--core-schema",
-        default="config/webgpu-core-coverage.schema.json",
-        help="Core coverage schema path.",
+        default="config/webgpu-command-coverage-core.schema.json",
+        help="Core command-coverage schema path.",
     )
     parser.add_argument(
         "--full-schema",
-        default="config/webgpu-full-coverage.schema.json",
-        help="Full coverage schema path.",
+        default="config/webgpu-command-coverage-full.schema.json",
+        help="Full command-coverage schema path.",
     )
     parser.add_argument(
         "--core-partition",

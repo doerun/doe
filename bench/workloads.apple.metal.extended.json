@@ -24,7 +24,12 @@
       "comparable": false,
       "benchmarkClass": "directional",
       "directionalReason": "dawn_limit",
-      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "compute_matvec_32768x2048_f32_swizzle1",
@@ -49,7 +54,12 @@
       "comparable": false,
       "benchmarkClass": "directional",
       "directionalReason": "dawn_limit",
-      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "compute_matvec_32768x2048_f32_workgroupshared_swizzle1",
@@ -76,7 +86,12 @@
       "comparable": false,
       "benchmarkClass": "directional",
       "directionalReason": "dawn_limit",
-      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "compute_workgroup_atomic_1024",
@@ -99,7 +114,11 @@
       "comparable": true,
       "default": true,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-      "dawnFilter": "WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeAtomic"
+      "dawnFilter": "WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeAtomic",
+      "suiteTags": [
+        "release"
+      ],
+      "claimEligible": true
     },
     {
       "id": "compute_workgroup_non_atomic_1024",
@@ -122,7 +141,11 @@
       ],
       "comparable": true,
       "default": true,
-      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "suiteTags": [
+        "release"
+      ],
+      "claimEligible": true
     },
     {
       "id": "pipeline_async_diagnostics",
@@ -142,7 +165,12 @@
       "driver": "24.0.0",
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-      "rightTimingDivisor": 1.0
+      "rightTimingDivisor": 1.0,
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "pipeline_compile_stress",
@@ -165,7 +193,12 @@
         "bench/kernels"
       ],
       "comparable": true,
-      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "render_bundle_dynamic_bindings",
@@ -184,7 +217,12 @@
       "comparable": true,
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-      "rightTimingDivisor": 1.0
+      "rightTimingDivisor": 1.0,
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "render_bundle_dynamic_pipeline_bindings",
@@ -204,6 +242,11 @@
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "rightTimingDivisor": 1.0,
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true,
       "leftCommandRepeat": 10,
       "rightCommandRepeat": 10
     },
@@ -227,7 +270,12 @@
       "vendor": "amd",
       "family": "gfx11",
       "driver": "24.0.0",
-      "timingNormalizationNote": "Directional-only: Apples-to-apples macro workload: normalize to per-draw units over 200k indexed draws with deferred queue sync."
+      "timingNormalizationNote": "Directional-only: Apples-to-apples macro workload: normalize to per-draw units over 200k indexed draws with deferred queue sync.",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "render_draw_indexed_baseline",
@@ -250,7 +298,12 @@
       "driver": "24.0.0",
       "comparable": false,
       "leftTimingDivisor": 20000,
-      "timingNormalizationNote": "Directional-only: Both sides report per-draw throughput units; Fawn issues indexed draws and Dawn uses the closest draw-call throughput proxy variant. Repeat=10 plus deferred queue sync reduces per-sample setup/sync overhead while preserving per-draw normalization."
+      "timingNormalizationNote": "Directional-only: Both sides report per-draw throughput units; Fawn issues indexed draws and Dawn uses the closest draw-call throughput proxy variant. Repeat=10 plus deferred queue sync reduces per-sample setup/sync overhead while preserving per-draw normalization.",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "render_draw_redundant_pipeline_bindings",
@@ -270,6 +323,11 @@
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "rightTimingDivisor": 1.0,
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true,
       "leftCommandRepeat": 10,
       "rightCommandRepeat": 10
     },
@@ -290,7 +348,12 @@
       "comparable": true,
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-      "rightTimingDivisor": 1.0
+      "rightTimingDivisor": 1.0,
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "render_draw_throughput_200k",
@@ -308,7 +371,12 @@
       "driver": "24.0.0",
       "comparable": true,
       "leftTimingDivisor": 1.0,
-      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "render_draw_throughput_baseline",
@@ -327,7 +395,12 @@
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "dawnFilter": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151",
-      "rightTimingDivisor": 1.0
+      "rightTimingDivisor": 1.0,
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "surface_presentation",
@@ -344,7 +417,12 @@
       "family": "gfx11",
       "driver": "24.0.0",
       "comparable": false,
-      "timingNormalizationNote": "Directional proxy only: normalize per create/release operation pair."
+      "timingNormalizationNote": "Directional proxy only: normalize per create/release operation pair.",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "texture_sampler_write_query_destroy",
@@ -369,6 +447,11 @@
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "rightTimingDivisor": 1.0,
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true,
       "rightCommandRepeat": 10
     },
     {
@@ -387,7 +470,12 @@
       "driver": "24.0.0",
       "comparable": true,
       "leftTimingDivisor": 1.0,
-      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "texture_sampler_write_query_destroy_mip8",
@@ -412,6 +500,11 @@
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "rightTimingDivisor": 1.0,
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true,
       "rightCommandRepeat": 10
     },
     {
@@ -438,7 +531,12 @@
       "leftCommandRepeat": 500,
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-      "rightTimingDivisor": 1.0
+      "rightTimingDivisor": 1.0,
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "upload_write_buffer_16mb",
@@ -465,7 +563,12 @@
       "driver": "24.0.0",
       "rightCommandRepeat": 50,
       "rightIgnoreFirstOps": 0,
-      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "suiteTags": [
+        "release",
+        "regression"
+      ],
+      "claimEligible": true
     },
     {
       "id": "upload_write_buffer_1gb",
@@ -494,7 +597,13 @@
       "quirksPath": "examples/quirks/apple_m3_noop_list.json",
       "vendor": "amd",
       "family": "gfx11",
-      "driver": "24.0.0"
+      "driver": "24.0.0",
+      "suiteTags": [
+        "release",
+        "regression",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "upload_write_buffer_1kb",
@@ -521,7 +630,12 @@
       "driver": "24.0.0",
       "rightCommandRepeat": 1000,
       "rightIgnoreFirstOps": 0,
-      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "suiteTags": [
+        "release",
+        "regression"
+      ],
+      "claimEligible": true
     },
     {
       "id": "upload_write_buffer_1mb",
@@ -548,7 +662,12 @@
       "driver": "24.0.0",
       "rightCommandRepeat": 100,
       "rightIgnoreFirstOps": 0,
-      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "suiteTags": [
+        "release",
+        "regression"
+      ],
+      "claimEligible": true
     },
     {
       "id": "upload_write_buffer_256mb",
@@ -577,7 +696,13 @@
       "quirksPath": "examples/quirks/apple_m3_noop_list.json",
       "vendor": "amd",
       "family": "gfx11",
-      "driver": "24.0.0"
+      "driver": "24.0.0",
+      "suiteTags": [
+        "release",
+        "regression",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "upload_write_buffer_4gb",
@@ -606,7 +731,12 @@
       "family": "gfx11",
       "driver": "24.0.0",
       "comparable": true,
-      "benchmarkClass": "comparable"
+      "benchmarkClass": "comparable",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "upload_write_buffer_4mb",
@@ -633,7 +763,12 @@
       "driver": "24.0.0",
       "rightCommandRepeat": 50,
       "rightIgnoreFirstOps": 0,
-      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "suiteTags": [
+        "release",
+        "regression"
+      ],
+      "claimEligible": true
     },
     {
       "id": "upload_write_buffer_64kb",
@@ -660,7 +795,12 @@
       "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_64KB",
       "rightCommandRepeat": 500,
       "rightIgnoreFirstOps": 0,
-      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "suiteTags": [
+        "release",
+        "regression"
+      ],
+      "claimEligible": true
     },
     {
       "id": "capability_introspection",
@@ -680,7 +820,12 @@
       "name": "p1 capability introspection contract",
       "vendor": "amd",
       "quirksPath": "examples/quirks/apple_m3_noop_list.json",
-      "timingNormalizationNote": "Directional-only: Apples-to-apples P1 capability contract: normalize as a per-command introspection sequence."
+      "timingNormalizationNote": "Directional-only: Apples-to-apples P1 capability contract: normalize as a per-command introspection sequence.",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "capability_introspection_500",
@@ -700,7 +845,12 @@
       "name": "p1 capability introspection macro (500)",
       "vendor": "amd",
       "quirksPath": "examples/quirks/apple_m3_noop_list.json",
-      "timingNormalizationNote": "Directional-only: Apples-to-apples macro capability contract: normalize per internal introspection iteration."
+      "timingNormalizationNote": "Directional-only: Apples-to-apples macro capability contract: normalize per internal introspection iteration.",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "compute_concurrent_execution_single",
@@ -724,7 +874,12 @@
       "quirksPath": "examples/quirks/apple_m3_noop_list.json",
       "comparable": true,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-      "benchmarkClass": "comparable"
+      "benchmarkClass": "comparable",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "compute_dispatch_fallback",
@@ -752,7 +907,12 @@
       "rightCommandRepeat": 500,
       "rightTimingDivisor": 500,
       "timingNormalizationNote": "Strict comparable Apple-Metal dispatch contract: normalize per fallback dispatch operation at 500 repeats.",
-      "vendor": "apple"
+      "vendor": "apple",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "compute_dispatch_grid",
@@ -781,7 +941,12 @@
       "rightTimingDivisor": 600,
       "strictNormalizationUnit": "dispatch",
       "timingNormalizationNote": "Strict comparable Apple-Metal dispatch grid contract: normalize across 600 repeated dispatch operations.",
-      "vendor": "apple"
+      "vendor": "apple",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "compute_indirect_timestamp",
@@ -802,7 +967,12 @@
       "leftTimingDivisor": 5120,
       "timingNormalizationNote": "Directional compute contract: command repeat=20 and kernel repeat=256 are normalized to per-dispatch units (20*256).",
       "applesToApplesVetted": false,
-      "benchmarkClass": "directional"
+      "benchmarkClass": "directional",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "compute_zero_initialize_workgroup_memory_256",
@@ -826,7 +996,12 @@
       "comparable": true,
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Both sides run repeat=50 dispatches per sample via the kernel_dispatch command repeat field. Divisors are symmetric at 1.0; per-dispatch timing is implicit in the repeat count.",
-      "benchmarkClass": "comparable"
+      "benchmarkClass": "comparable",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "copy_buffer_to_texture",
@@ -854,7 +1029,12 @@
       "rightCommandRepeat": 400,
       "rightTimingDivisor": 400,
       "timingNormalizationNote": "Strict comparable Apple-Metal copy contract: normalize per buffer-to-texture copy command sequence across 400 repeated copies.",
-      "vendor": "apple"
+      "vendor": "apple",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "copy_protocol",
@@ -881,6 +1061,11 @@
       "quirksPath": "examples/quirks/apple_m3_noop_list.json",
       "timingNormalizationNote": "Strict comparable Apple-Metal mixed protocol contract: normalize across one full protocol cycle.",
       "vendor": "apple",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false,
       "rightCommandRepeat": 100,
       "rightTimingDivisor": 100,
       "strictNormalizationUnit": "cycle"
@@ -910,6 +1095,11 @@
       "quirksPath": "examples/quirks/apple_m3_noop_list.json",
       "timingNormalizationNote": "Strict comparable Apple-Metal copy contract: normalize per texture-to-buffer copy command sequence at 2000 repeats to stabilize headline process wall claimability.",
       "vendor": "apple",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false,
       "rightCommandRepeat": 2000,
       "rightTimingDivisor": 2000
     },
@@ -938,6 +1128,11 @@
       "quirksPath": "examples/quirks/apple_m3_noop_list.json",
       "timingNormalizationNote": "Strict comparable Apple-Metal copy contract: normalize per texture-to-texture copy command sequence at 400 repeats to reduce headline process wall tail volatility.",
       "vendor": "apple",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false,
       "rightCommandRepeat": 400,
       "rightTimingDivisor": 400
     },
@@ -960,7 +1155,12 @@
       "name": "p2 lifecycle/refcount contract",
       "vendor": "amd",
       "quirksPath": "examples/quirks/apple_m3_noop_list.json",
-      "timingNormalizationNote": "Directional-only: Apples-to-apples P2 lifecycle contract: normalize by addref/release touch count within the lifecycle sequence."
+      "timingNormalizationNote": "Directional-only: Apples-to-apples P2 lifecycle contract: normalize by addref/release touch count within the lifecycle sequence.",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "lifecycle_refcount_200",
@@ -980,7 +1180,12 @@
       "name": "p2 lifecycle/refcount macro (200)",
       "vendor": "amd",
       "quirksPath": "examples/quirks/apple_m3_noop_list.json",
-      "timingNormalizationNote": "Directional-only: Apples-to-apples macro lifecycle contract: normalize per internal addref/release touch operations across macro iterations."
+      "timingNormalizationNote": "Directional-only: Apples-to-apples macro lifecycle contract: normalize per internal addref/release touch operations across macro iterations.",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "render_multidraw",
@@ -1000,7 +1205,12 @@
       "comparable": false,
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-      "benchmarkClass": "directional"
+      "benchmarkClass": "directional",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "render_multidraw_indexed",
@@ -1020,7 +1230,12 @@
       "comparable": false,
       "leftTimingDivisor": 2000,
       "timingNormalizationNote": "Apples-to-apples indexed render contract: normalize per draw with explicit setup amortization over indexed draw stream.",
-      "benchmarkClass": "directional"
+      "benchmarkClass": "directional",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "render_pixel_local_storage_barrier",
@@ -1042,7 +1257,12 @@
       "name": "p0 render pixel-local-storage barrier contract",
       "vendor": "amd",
       "quirksPath": "examples/quirks/apple_m3_noop_list.json",
-      "timingNormalizationNote": "Directional-only: Apples-to-apples PLS contract: normalize per barrier-sequencing sub-steps over repeated non-coherent diagnostic iterations."
+      "timingNormalizationNote": "Directional-only: Apples-to-apples PLS contract: normalize per barrier-sequencing sub-steps over repeated non-coherent diagnostic iterations.",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "render_pixel_local_storage_barrier_500",
@@ -1064,7 +1284,12 @@
       "quirksPath": "examples/quirks/apple_m3_noop_list.json",
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-      "benchmarkClass": "directional"
+      "benchmarkClass": "directional",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "render_uniform_buffer_update_writebuffer_partial_single",
@@ -1085,6 +1310,11 @@
       "comparable": true,
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true,
       "rightCommandRepeat": 100
     },
     {
@@ -1107,7 +1337,12 @@
       "rightCommandRepeat": 100,
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-      "benchmarkClass": "comparable"
+      "benchmarkClass": "comparable",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "resource_table_immediates",
@@ -1129,7 +1364,12 @@
       "name": "p1 resource-table/immediates contract",
       "vendor": "amd",
       "quirksPath": "examples/quirks/apple_m3_noop_list.json",
-      "timingNormalizationNote": "Directional-only: Apples-to-apples P1 resource-table contract: normalize by command-sequence sub-steps with deterministic feature-gating parity support."
+      "timingNormalizationNote": "Directional-only: Apples-to-apples P1 resource-table contract: normalize by command-sequence sub-steps with deterministic feature-gating parity support.",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "resource_table_immediates_500",
@@ -1153,7 +1393,11 @@
       "default": false,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "rightCommandRepeat": 500,
-      "benchmarkClass": "directional"
+      "benchmarkClass": "directional",
+      "suiteTags": [
+        "exploration"
+      ],
+      "claimEligible": false
     },
     {
       "id": "surface_full_presentation",
@@ -1180,6 +1424,11 @@
       "quirksPath": "examples/quirks/apple_m3_noop_list.json",
       "timingNormalizationNote": "Strict comparable Apple-Metal surface contract: normalize per full presentation cycle across 100 repeated cycles.",
       "vendor": "apple",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false,
       "rightCommandRepeat": 100,
       "rightTimingDivisor": 100
     }

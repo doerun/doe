@@ -1,6 +1,6 @@
 import type {
   DoeNamespace,
-} from "../../webgpu-doe/src/index.js";
+} from "./vendor/doe-namespace.js";
 import type {
   ProviderInfo,
 } from "./index.js";
@@ -101,7 +101,7 @@ export function createNativeBrowserCanvasBackend(options?: {
 }): NativeBrowserCanvasBackend;
 
 export const gpu: DoeNamespace<GPUDevice, unknown, BrowserRequestDeviceOptions>;
-export const createGpuNamespace: typeof import("../../webgpu-doe/src/index.js").createDoeNamespace;
+export const createGpuNamespace: typeof import("./vendor/doe-namespace.js").createDoeNamespace;
 export { createGpuNamespace as createDoeNamespace };
 
 declare const _default: {

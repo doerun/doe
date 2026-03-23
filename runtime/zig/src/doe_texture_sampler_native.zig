@@ -300,6 +300,7 @@ pub export fn doeNativeDeviceCreateTexture(dev_raw: ?*anyopaque, desc: ?*const t
 pub export fn doeNativeTextureCreateView(tex_raw: ?*anyopaque, desc: ?*const types.WGPUTextureViewDescriptor) callconv(.c) ?*anyopaque {
     const tex = cast(DoeTexture, tex_raw) orelse return null;
     const tv = make(DoeTextureView) orelse return null;
+    native.object_add_ref(DoeTexture, tex_raw);
     const d = desc orelse &types.WGPUTextureViewDescriptor{
         .nextInChain = null,
         .label = .{ .data = null, .length = 0 },
@@ -328,6 +329,7 @@ pub export fn doeNativeTextureCreateView(tex_raw: ?*anyopaque, desc: ?*const typ
     if (tex.mtl == null and tex.vk_id != 0) {
         const vk_render = @import("doe_vulkan_render_native.zig");
         if (!vk_render.vulkan_create_texture_view(tex, tv, d)) {
+            native.doeNativeTextureRelease(tex_raw);
             alloc.destroy(tv);
             return null;
         }
@@ -345,6 +347,7 @@ pub export fn doeNativeTextureCreateView(tex_raw: ?*anyopaque, desc: ?*const typ
             !d3d12_view_dimension_supported(tex, resolved_dimension) or
             !view_aspect_supported(tex.format, resolved_aspect))
         {
+            native.doeNativeTextureRelease(tex_raw);
             alloc.destroy(tv);
             return null;
         }
@@ -352,17 +355,20 @@ pub export fn doeNativeTextureCreateView(tex_raw: ?*anyopaque, desc: ?*const typ
             resolved_dimension == types.WGPUTextureViewDimension_CubeArray) and
             ((d.baseArrayLayer % 6) != 0 or (resolved_array_layer_count % 6) != 0))
         {
+            native.doeNativeTextureRelease(tex_raw);
             alloc.destroy(tv);
             return null;
         }
         if ((resolved_usage & types.WGPUTextureUsage_StorageBinding) != 0 and
             (resolved_usage & types.WGPUTextureUsage_TextureBinding) != 0)
         {
+            native.doeNativeTextureRelease(tex_raw);
             alloc.destroy(tv);
             return null;
         }
         if (wants_storage_only) {
             if (tex.sample_count > 1 or is_depth_format(tex.format) or resolved_mip_level_count != 1) {
+                native.doeNativeTextureRelease(tex_raw);
                 alloc.destroy(tv);
                 return null;
             }
@@ -377,6 +383,7 @@ pub export fn doeNativeTextureCreateView(tex_raw: ?*anyopaque, desc: ?*const typ
                 resolved_array_layer_count,
                 types.WGPUTextureUsage_StorageBinding,
             ) orelse {
+                native.doeNativeTextureRelease(tex_raw);
                 alloc.destroy(tv);
                 return null;
             };
@@ -425,6 +432,7 @@ pub export fn doeNativeTextureCreateView(tex_raw: ?*anyopaque, desc: ?*const typ
     const result = toOpaque(tv);
     if (is_d3d12_texture and !d3d12_register_texture_view(result)) {
         if (view_handle) |handle| d3d12_bridge_release(handle);
+        native.doeNativeTextureRelease(tex_raw);
         alloc.destroy(tv);
         return null;
     }
@@ -438,6 +446,7 @@ pub export fn doeNativeTextureDestroy(raw: ?*anyopaque) callconv(.c) void {
 
 pub export fn doeNativeTextureRelease(raw: ?*anyopaque) callconv(.c) void {
     if (cast(DoeTexture, raw)) |t| {
+        if (!native.object_should_destroy(t)) return;
         label_store.remove(raw);
         if (d3d12_texture_registry.contains(raw)) {
             d3d12_texture_registry.remove(raw);
@@ -458,23 +467,28 @@ pub export fn doeNativeTextureRelease(raw: ?*anyopaque) callconv(.c) void {
 
 pub export fn doeNativeTextureViewRelease(raw: ?*anyopaque) callconv(.c) void {
     if (cast(DoeTextureView, raw)) |tv| {
+        if (!native.object_should_destroy(tv)) return;
+        const texture = tv.tex;
         label_store.remove(raw);
         if (d3d12_texture_view_registry.contains(raw)) {
             d3d12_texture_view_registry.remove(raw);
             if (tv.handle) |handle| d3d12_bridge_release(handle);
             alloc.destroy(tv);
+            native.doeNativeTextureRelease(toOpaque(texture));
             return;
         }
         if (tv.tex.vk_id != 0) {
             const vk_render = @import("doe_vulkan_render_native.zig");
             vk_render.vulkan_destroy_texture_view(tv);
             alloc.destroy(tv);
+            native.doeNativeTextureRelease(toOpaque(texture));
             return;
         }
         if (tv.handle) |handle| {
             if (tv.tex.mtl == null or handle != tv.tex.mtl) metal_bridge_release(handle);
         }
         alloc.destroy(tv);
+        native.doeNativeTextureRelease(toOpaque(texture));
     }
 }
 
@@ -537,6 +551,7 @@ pub export fn doeNativeDeviceCreateSampler(dev_raw: ?*anyopaque, desc: ?*const t
 
 pub export fn doeNativeSamplerRelease(raw: ?*anyopaque) callconv(.c) void {
     if (cast(DoeSampler, raw)) |s| {
+        if (!native.object_should_destroy(s)) return;
         label_store.remove(raw);
         if (d3d12_sampler_registry.contains(raw)) {
             d3d12_sampler_registry.remove(raw);

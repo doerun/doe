@@ -31,5 +31,22 @@
     "probe": "none",
     "sampleMs": 100,
     "sampleTargetCount": 0
+  },
+  "selector": {
+    "suite": [
+      "release",
+      "regression",
+      "extended"
+    ],
+    "comparability": [
+      "comparable"
+    ],
+    "claimEligibleOnly": false,
+    "domains": [],
+    "ids": [
+      "buffer_upload_64kb",
+      "workgroup_atomic_1024"
+    ],
+    "excludeIds": []
   }
 }

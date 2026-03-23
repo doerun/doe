@@ -8,25 +8,15 @@ import json
 from pathlib import Path
 from typing import Any
 
+from bench_utils import canonical, load_json_object as load_json
+from config_validation import load_validated_config
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--report", default="bench/out/dawn-vs-doe.json")
     parser.add_argument("--timing-policy", default="config/backend-timing-policy.json")
     return parser.parse_args()
-
-
-def load_json(path: Path) -> dict[str, Any]:
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(payload, dict):
-        raise ValueError(f"invalid JSON object: {path}")
-    return payload
-
-
-def canonical(source: str) -> str:
-    if not source:
-        return ""
-    return source.split("+", 1)[0]
 
 
 def domain_policy(policy: dict[str, Any], domain: str) -> dict[str, Any]:
@@ -71,7 +61,7 @@ def backend_allowed_sources(policy_entry: dict[str, Any], backend_id: str) -> se
 def main() -> int:
     args = parse_args()
     report = load_json(Path(args.report))
-    policy = load_json(Path(args.timing_policy))
+    policy = load_validated_config(Path(args.timing_policy))
 
     failures: list[str] = []
     workloads = report.get("workloads")

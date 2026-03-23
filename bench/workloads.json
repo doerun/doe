@@ -16,7 +16,12 @@
       "family": "gen12",
       "name": "kernel-dispatch stress",
       "quirksPath": "examples/quirks/intel_gen12_temp_buffer_list.json",
-      "vendor": "intel"
+      "vendor": "intel",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "compute_matvec_32768x2048_f32",
@@ -39,7 +44,12 @@
         "bench/kernels"
       ],
       "comparable": true,
-      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "compute_matvec_32768x2048_f32_swizzle1",
@@ -62,7 +72,12 @@
         "bench/kernels"
       ],
       "comparable": true,
-      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "compute_matvec_32768x2048_f32_workgroupshared_swizzle1",
@@ -85,7 +100,12 @@
         "bench/kernels"
       ],
       "comparable": true,
-      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "compute_workgroup_atomic_1024",
@@ -108,7 +128,11 @@
       "comparable": true,
       "default": true,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-      "dawnFilter": "WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeAtomic"
+      "dawnFilter": "WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeAtomic",
+      "suiteTags": [
+        "release"
+      ],
+      "claimEligible": true
     },
     {
       "id": "compute_workgroup_non_atomic_1024",
@@ -131,7 +155,11 @@
       ],
       "comparable": true,
       "default": true,
-      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "suiteTags": [
+        "release"
+      ],
+      "claimEligible": true
     },
     {
       "id": "pipeline_async_diagnostics",
@@ -152,7 +180,12 @@
       "extraArgs": [],
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-      "rightTimingDivisor": 1.0
+      "rightTimingDivisor": 1.0,
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "pipeline_compile_stress",
@@ -175,7 +208,12 @@
         "bench/kernels"
       ],
       "comparable": true,
-      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "render_bundle_dynamic_bindings",
@@ -196,6 +234,11 @@
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "rightTimingDivisor": 1.0,
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true,
       "leftCommandRepeat": 10,
       "rightCommandRepeat": 10
     },
@@ -218,6 +261,11 @@
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "rightTimingDivisor": 1.0,
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true,
       "leftCommandRepeat": 10,
       "rightCommandRepeat": 10
     },
@@ -241,7 +289,12 @@
       "vendor": "intel",
       "family": "gen12",
       "driver": "31.0.101",
-      "timingNormalizationNote": "Directional macro workload: normalize to per-draw units over 200k indexed draws with deferred queue sync."
+      "timingNormalizationNote": "Directional macro workload: normalize to per-draw units over 200k indexed draws with deferred queue sync.",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "render_draw_indexed_baseline",
@@ -266,6 +319,11 @@
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "rightTimingDivisor": 1.0,
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true,
       "rightCommandRepeat": 10
     },
     {
@@ -286,7 +344,12 @@
       "comparable": true,
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-      "rightTimingDivisor": 1.0
+      "rightTimingDivisor": 1.0,
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "render_draw_state_bindings",
@@ -306,7 +369,12 @@
       "comparable": true,
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-      "rightTimingDivisor": 1.0
+      "rightTimingDivisor": 1.0,
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "render_draw_throughput_200k",
@@ -325,7 +393,12 @@
       "extraArgs": [],
       "comparable": false,
       "leftTimingDivisor": 200000,
-      "timingNormalizationNote": "Directional macro workload: normalize to per-draw units over 200k draws."
+      "timingNormalizationNote": "Directional macro workload: normalize to per-draw units over 200k draws.",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "render_draw_throughput_baseline",
@@ -344,7 +417,12 @@
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "dawnFilter": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151",
-      "rightTimingDivisor": 1.0
+      "rightTimingDivisor": 1.0,
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "surface_presentation",
@@ -362,7 +440,12 @@
       "driver": "31.0.101",
       "extraArgs": [],
       "comparable": false,
-      "timingNormalizationNote": "Directional lifecycle-only contract workload."
+      "timingNormalizationNote": "Directional lifecycle-only contract workload.",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "texture_sampler_write_query_destroy",
@@ -384,6 +467,11 @@
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "rightTimingDivisor": 1.0,
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true,
       "rightCommandRepeat": 10
     },
     {
@@ -403,7 +491,12 @@
       "extraArgs": [],
       "comparable": false,
       "leftTimingDivisor": 500,
-      "timingNormalizationNote": "Directional macro workload: normalize to per-iteration units over a 500-draw texture lifecycle command stream."
+      "timingNormalizationNote": "Directional macro workload: normalize to per-iteration units over a 500-draw texture lifecycle command stream.",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "texture_sampler_write_query_destroy_mip8",
@@ -425,6 +518,11 @@
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "rightTimingDivisor": 1.0,
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true,
       "rightCommandRepeat": 10
     },
     {
@@ -450,6 +548,11 @@
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "rightTimingDivisor": 1.0,
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true,
       "rightCommandRepeat": 50
     },
     {
@@ -478,7 +581,12 @@
       "rightIgnoreFirstOps": 0,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "pathAsymmetry": true,
-      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
+      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored.",
+      "suiteTags": [
+        "release",
+        "regression"
+      ],
+      "claimEligible": true
     },
     {
       "id": "upload_write_buffer_1gb",
@@ -509,7 +617,13 @@
       "family": "gen12",
       "driver": "31.0.101",
       "pathAsymmetry": true,
-      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
+      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored.",
+      "suiteTags": [
+        "release",
+        "regression",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "upload_write_buffer_1kb",
@@ -537,7 +651,12 @@
       "rightIgnoreFirstOps": 0,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "pathAsymmetry": true,
-      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
+      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored.",
+      "suiteTags": [
+        "release",
+        "regression"
+      ],
+      "claimEligible": true
     },
     {
       "id": "upload_write_buffer_1mb",
@@ -565,7 +684,12 @@
       "rightIgnoreFirstOps": 0,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "pathAsymmetry": true,
-      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
+      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored.",
+      "suiteTags": [
+        "release",
+        "regression"
+      ],
+      "claimEligible": true
     },
     {
       "id": "upload_write_buffer_256mb",
@@ -596,7 +720,13 @@
       "family": "gen12",
       "driver": "31.0.101",
       "pathAsymmetry": true,
-      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
+      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored.",
+      "suiteTags": [
+        "release",
+        "regression",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "upload_write_buffer_4gb",
@@ -627,7 +757,12 @@
       "comparable": true,
       "benchmarkClass": "comparable",
       "pathAsymmetry": true,
-      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
+      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored.",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "upload_write_buffer_4mb",
@@ -655,7 +790,12 @@
       "rightIgnoreFirstOps": 0,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "pathAsymmetry": true,
-      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
+      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored.",
+      "suiteTags": [
+        "release",
+        "regression"
+      ],
+      "claimEligible": true
     },
     {
       "id": "upload_write_buffer_64kb",
@@ -683,7 +823,12 @@
       "rightIgnoreFirstOps": 0,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "pathAsymmetry": true,
-      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
+      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored.",
+      "suiteTags": [
+        "release",
+        "regression"
+      ],
+      "claimEligible": true
     }
   ]
 }

@@ -18,6 +18,7 @@ if str(BENCH_ROOT) not in sys.path:
     sys.path.insert(0, str(BENCH_ROOT))
 
 import output_paths
+from config_validation import load_validated_config
 
 
 def repo_root() -> Path:
@@ -119,7 +120,7 @@ def percent_delta(left: float | None, right: float | None) -> float | None:
 
 
 def parse_policy(path: Path) -> dict[str, Any]:
-    payload = load_json(path)
+    payload = load_validated_config(path)
     if payload.get("schemaVersion") != 1:
         raise ValueError("browser claim policy schemaVersion must be 1")
     mode = payload.get("mode")

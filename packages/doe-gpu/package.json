@@ -46,7 +46,8 @@
     "test:smoke": "node test/smoke/test-smoke-load.js",
     "test:integration": "node test/integration/run-integration.js --runtime node",
     "test:integration:bun": "bun test/integration/run-integration.js --runtime bun",
-    "test:integration:deno": "deno run --allow-all test/integration/run-integration.js --runtime deno"
+    "test:integration:deno": "deno run --allow-all test/integration/run-integration.js --runtime deno",
+    "sync-vendor": "node scripts/sync-vendor.js"
   },
   "keywords": [
     "webgpu",

@@ -1,3 +1,4 @@
+const std = @import("std");
 const model = @import("../model.zig");
 const webgpu = @import("../webgpu_ffi.zig");
 const backend_ids = @import("backend_ids.zig");
@@ -13,6 +14,7 @@ pub const BackendVTable = struct {
     flush_queue: *const fn (ctx: *anyopaque) anyerror!u64,
     prewarm_upload_path: *const fn (ctx: *anyopaque, max_upload_bytes: u64) anyerror!void,
     prewarm_kernel_dispatch: *const fn (ctx: *anyopaque, kernel: []const u8, bindings: ?[]const model.KernelBinding) anyerror!void,
+    capture_buffer: *const fn (ctx: *anyopaque, allocator: std.mem.Allocator, handle: u64, offset: u64, size: u64) anyerror![]u8,
 };
 
 pub const BackendIface = struct {
@@ -55,5 +57,9 @@ pub const BackendIface = struct {
 
     pub fn prewarm_kernel_dispatch(self: *BackendIface, kernel: []const u8, bindings: ?[]const model.KernelBinding) !void {
         try self.vtable.prewarm_kernel_dispatch(self.context, kernel, bindings);
+    }
+
+    pub fn capture_buffer(self: *BackendIface, allocator: std.mem.Allocator, handle: u64, offset: u64, size: u64) ![]u8 {
+        return try self.vtable.capture_buffer(self.context, allocator, handle, offset, size);
     }
 };

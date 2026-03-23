@@ -19,6 +19,12 @@ const mod_backend_translation_test = @import("src/doe_wgsl/mod_backend_translati
 const mod_dxil_test = @import("src/doe_wgsl/mod_dxil_test.zig");
 const mod_feature_translation_test = @import("src/doe_wgsl/mod_feature_translation_test.zig");
 const mod_override_test = @import("src/doe_wgsl/mod_override_test.zig");
+const wgsl_cross_backend_test = @import("tests/core/wgsl_cross_backend_test.zig");
+const msl_subsystem_test = @import("tests/core/msl_subsystem_test.zig");
+const hlsl_subsystem_test = @import("tests/core/hlsl_subsystem_test.zig");
+const spirv_subsystem_test = @import("tests/core/spirv_subsystem_test.zig");
+const wgsl_parser_ir_test = @import("tests/core/wgsl_parser_ir_test.zig");
+const proof_matching_test = @import("tests/core/proof_matching_test.zig");
 
 comptime {
     _ = emit_hlsl_map_test;
@@ -42,4 +48,10 @@ comptime {
     _ = mod_dxil_test;
     _ = mod_feature_translation_test;
     _ = mod_override_test;
+    _ = wgsl_cross_backend_test;
+    _ = msl_subsystem_test;
+    _ = hlsl_subsystem_test;
+    _ = spirv_subsystem_test;
+    _ = wgsl_parser_ir_test;
+    _ = proof_matching_test;
 }

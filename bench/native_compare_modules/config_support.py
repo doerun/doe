@@ -6,7 +6,7 @@ import argparse
 import json
 import shlex
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -128,6 +128,8 @@ class Workload:
     path_asymmetry: bool
     path_asymmetry_note: str
     strict_normalization_unit: str
+    suite_tags: list[str] = field(default_factory=lambda: ["release"])
+    claim_eligible: bool = True
 
 
 @dataclass(frozen=True)
@@ -540,6 +542,11 @@ def apply_config_defaults(args: argparse.Namespace) -> argparse.Namespace:
         if value is not None:
             args.emit_shell = as_bool(value, field="run.emitShell")
 
+    if not getattr(args, "selector", None):
+        value = first_config_value(payload, ["selector"])
+        if isinstance(value, dict):
+            args.selector = value
+
     return args
 
 
@@ -901,12 +908,57 @@ def run_workload(
     )
 
 
+def resolve_selector(
+    selector_config: dict[str, Any],
+    workloads: list[Workload],
+) -> list[Workload]:
+    """Filter workloads using a selector config object.
+
+    Selector fields:
+      suite        -- workload must have at least one matching suite tag
+      comparability -- maps to existing comparable boolean
+      claimEligibleOnly -- if true, only workloads with claim_eligible=true
+      domains      -- if non-empty, workload domain must be in list
+      ids          -- if non-empty, workload ID must be in list
+      excludeIds   -- exclude these IDs
+    """
+    suite_filter = selector_config.get("suite", [])
+    comparability_filter = selector_config.get("comparability", [])
+    claim_eligible_only = selector_config.get("claimEligibleOnly", False)
+    domain_filter = selector_config.get("domains", [])
+    id_filter = selector_config.get("ids", [])
+    exclude_ids = set(selector_config.get("excludeIds", []))
+
+    result: list[Workload] = []
+    for workload in workloads:
+        if exclude_ids and workload.id in exclude_ids:
+            continue
+        if id_filter:
+            if workload.id not in id_filter:
+                continue
+        if suite_filter:
+            if not any(tag in suite_filter for tag in workload.suite_tags):
+                continue
+        if comparability_filter:
+            workload_comparability = "comparable" if workload.comparable else "non_comparable"
+            if workload_comparability not in comparability_filter:
+                continue
+        if claim_eligible_only and not workload.claim_eligible:
+            continue
+        if domain_filter:
+            if workload.domain not in domain_filter:
+                continue
+        result.append(workload)
+    return result
+
+
 def load_workloads(
     path: Path,
     workload_filter: str,
     include_noncomparable: bool,
     include_extended: bool,
     workload_cohort: str,
+    selector: dict[str, Any] | None = None,
 ) -> list[Workload]:
     if workload_cohort not in VALID_WORKLOAD_COHORTS:
         raise ValueError(
@@ -1031,6 +1083,8 @@ def load_workloads(
             path_asymmetry=path_asymmetry,
             path_asymmetry_note=str(item.get("pathAsymmetryNote", "")),
             strict_normalization_unit=str(item.get("strictNormalizationUnit", "")).strip().lower(),
+            suite_tags=item.get("suiteTags", ["release"]),
+            claim_eligible=bool(item.get("claimEligible", True)),
         )
         if workload.strict_normalization_unit not in {"", "command", "dispatch", "cycle"}:
             raise ValueError(
@@ -1122,6 +1176,13 @@ def load_workloads(
                 f"invalid workload {workload.id}: comparabilityCandidate.enabled=true "
                 "requires comparable=false until parity promotion is complete"
             )
+        result.append(workload)
+
+    if selector is not None:
+        return resolve_selector(selector, result)
+
+    filtered: list[Workload] = []
+    for workload in result:
         if selected and workload.id not in selected:
             continue
         if not selected and (not include_extended) and (not workload.include_by_default):
@@ -1132,6 +1193,6 @@ def load_workloads(
             continue
         if (not include_noncomparable) and (not workload.comparable):
             continue
-        result.append(workload)
+        filtered.append(workload)
 
-    return result
+    return filtered

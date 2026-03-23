@@ -16,8 +16,8 @@ Core decision/runtime lane:
 
 - `runtime/zig/src/model.zig`
   - typed contract enums/structs for quirks, commands, and runtime status
-- `runtime/zig/src/quirk_json.zig`
-  - strict quirk JSON ingestion
+- `runtime/zig/src/quirk/quirk_json.zig`
+  - strict quirk JSON ingestion (accessed via `quirk/mod.zig`)
 - `runtime/zig/src/command_json.zig`
   - strict command JSON ingestion
 - `runtime/zig/src/runtime.zig`

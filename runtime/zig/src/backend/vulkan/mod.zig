@@ -736,6 +736,18 @@ fn prewarm_kernel_dispatch(ctx: *anyopaque, kernel: []const u8, bindings: ?[]con
     try runtime.set_compute_shader_spirv(spirv_words, null, bindings, false);
 }
 
+fn capture_buffer(ctx: *anyopaque, allocator: std.mem.Allocator, handle: u64, offset: u64, size: u64) anyerror![]u8 {
+    const self = cast(ctx);
+    const runtime = try ensure_runtime_bootstrapped(self);
+    if (size == 0) return error.InvalidArgument;
+    const buffer = runtime.compute_buffers.get(handle) orelse return error.InvalidArgument;
+    const end = std.math.add(u64, offset, size) catch return error.InvalidArgument;
+    if (end > buffer.size) return error.InvalidArgument;
+    const mapped = buffer.mapped orelse return error.InvalidState;
+    const source = @as([*]u8, @ptrCast(mapped))[@intCast(offset)..@intCast(end)];
+    return try allocator.dupe(u8, source);
+}
+
 const VTABLE = backend_iface.BackendVTable{
     .deinit = deinit,
     .execute_command = execute_command,
@@ -746,4 +758,5 @@ const VTABLE = backend_iface.BackendVTable{
     .flush_queue = flush_queue,
     .prewarm_upload_path = prewarm_upload_path,
     .prewarm_kernel_dispatch = prewarm_kernel_dispatch,
+    .capture_buffer = capture_buffer,
 };

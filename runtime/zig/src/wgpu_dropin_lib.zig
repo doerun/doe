@@ -344,6 +344,7 @@ fn resolveDoeNativeProc(comptime FnType: type, comptime symbol_name: [:0]const u
     if (comptime std.mem.eql(u8, symbol_name, "wgpuQueueRelease")) return @ptrCast(&N.doeNativeQueueRelease);
     if (comptime std.mem.eql(u8, symbol_name, "wgpuQueueOnSubmittedWorkDone")) return @ptrCast(&N.doeNativeQueueOnSubmittedWorkDone);
     if (comptime std.mem.eql(u8, symbol_name, "wgpuQueueCopyExternalImageToTexture")) return @ptrCast(&N.doeNativeQueueCopyExternalImageToTexture);
+    if (comptime std.mem.eql(u8, symbol_name, "wgpuQueueCopyTextureForBrowser")) return @ptrCast(&dropin_ext_c.wgpuQueueCopyTextureForBrowser);
     if (comptime std.mem.eql(u8, symbol_name, "wgpuQueueCopyExternalTextureForBrowser")) return @ptrCast(&dropin_ext_c.wgpuQueueCopyExternalTextureForBrowser);
     // Feature queries
     if (comptime std.mem.eql(u8, symbol_name, "wgpuAdapterHasFeature")) return @ptrCast(&N.doeNativeAdapterHasFeature);
@@ -625,6 +626,7 @@ fn resolveLocalProc(name: types.WGPUStringView) p1_capability_procs.WGPUProc {
     if (symbolViewEq(name, "wgpuQueueWriteBuffer")) return fnPtr(&P.wgpuQueueWriteBuffer);
     if (symbolViewEq(name, "wgpuQueueWriteTexture")) return fnPtr(&dropin_ext_c.wgpuQueueWriteTexture);
     if (symbolViewEq(name, "wgpuQueueCopyExternalImageToTexture")) return fnPtr(&@import("doe_wgpu_native.zig").doeNativeQueueCopyExternalImageToTexture);
+    if (symbolViewEq(name, "wgpuQueueCopyTextureForBrowser")) return fnPtr(&dropin_ext_c.wgpuQueueCopyTextureForBrowser);
     if (symbolViewEq(name, "wgpuQueueCopyExternalTextureForBrowser")) return fnPtr(&dropin_ext_c.wgpuQueueCopyExternalTextureForBrowser);
     if (symbolViewEq(name, "wgpuDeviceCreateTexture")) return fnPtr(&P.wgpuDeviceCreateTexture);
     if (symbolViewEq(name, "wgpuTextureCreateView")) return fnPtr(&P.wgpuTextureCreateView);
@@ -772,7 +774,4 @@ pub export fn wgpuGetProcAddress(name: types.WGPUStringView) callconv(.c) p1_cap
     setLastError(.symbol_missing);
     return null;
 }
-
-comptime {
-    _ = @import("dropin/dropin_abi_procs.zig");
-}
+comptime { _ = @import("dropin/dropin_abi_procs.zig"); }

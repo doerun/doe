@@ -190,7 +190,9 @@ pub const PipelineCache = struct {
             try resolve_default_cache_dir(allocator);
         errdefer allocator.free(dir);
 
-        std.fs.cwd().makePath(dir) catch {};
+        std.fs.cwd().makePath(dir) catch |err| {
+            std.debug.print("warn: pipeline_cache: makePath: {s}\n", .{@errorName(err)});
+        };
 
         const cache = try allocator.create(PipelineCache);
         cache.* = .{

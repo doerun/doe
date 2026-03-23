@@ -21,6 +21,15 @@ const native_api_core_test = @import("tests/core/native_api_core_test.zig");
 const capability_runtime_test = @import("tests/core/capability_runtime_test.zig");
 const handle_safety_test = @import("tests/core/handle_safety_test.zig");
 const precompiled_shader_test = @import("tests/core/precompiled_shader_test.zig");
+const command_json_extended_test = @import("tests/core/command_json_test.zig");
+const webgpu_ffi_test = @import("tests/core/webgpu_ffi_test.zig");
+const trace_extended_test = @import("tests/core/trace_test.zig");
+const doe_shader_native_test = @import("tests/core/doe_shader_native_test.zig");
+const model_test = @import("tests/core/model_test.zig");
+const lean_proof_test = @import("tests/core/lean_proof_test.zig");
+const dispatch_preconditions_test = @import("tests/core/dispatch_preconditions_test.zig");
+const runtime_integration_test = @import("tests/core/runtime_integration_test.zig");
+const remaining_modules_test = @import("tests/core/remaining_modules_test.zig");
 
 comptime {
     _ = common_artifact_meta_test;
@@ -46,4 +55,13 @@ comptime {
     _ = capability_runtime_test;
     _ = handle_safety_test;
     _ = precompiled_shader_test;
+    _ = command_json_extended_test;
+    _ = webgpu_ffi_test;
+    _ = trace_extended_test;
+    _ = doe_shader_native_test;
+    _ = model_test;
+    _ = lean_proof_test;
+    _ = dispatch_preconditions_test;
+    _ = runtime_integration_test;
+    _ = remaining_modules_test;
 }

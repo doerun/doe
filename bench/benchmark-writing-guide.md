@@ -11,7 +11,7 @@ Applies to:
 - `bench/native-compare/compare_dawn_vs_doe.config.*.json`
 - `config/comparability-obligations.json`
 - `config/backend-timing-policy.json`
-- `config/webgpu-spec-coverage.json`
+- `config/webgpu-capability-inventory.json`
 - `config/dropin_abi.symbols.txt`
 
 ## 1) Non-negotiables
@@ -38,7 +38,7 @@ Applies to:
   - `config/backend-timing-policy.json`
   - `bench/vulkan_timing_policy_gate.py`
 - Coverage artifacts:
-  - `config/webgpu-spec-coverage.json`
+  - `config/webgpu-capability-inventory.json`
   - `config/dropin_abi.symbols.txt`
 
 Required checkpoints for benchmark contract changes:
@@ -292,7 +292,7 @@ Authoring rules:
 ## 10) Coverage workflow (ABI, capability, feature mapping)
 
 For new benchmark capabilities:
-- map capability/feature coverage in `config/webgpu-spec-coverage.json`
+- map capability/feature coverage in `config/webgpu-capability-inventory.json`
 - keep ABI surface contract in `config/dropin_abi.symbols.txt`
 - regenerate feature benchmark table:
   - `python3 bench/generate_feature_benchmark_table.py`

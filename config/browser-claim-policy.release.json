@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "mode": "release",
+  "minWindows": 7,
+  "requiredPositivePercentiles": [
+    "p50Percent",
+    "p95Percent",
+    "p99Percent"
+  ],
+  "requireModes": [
+    "dawn",
+    "doe"
+  ],
+  "requireClaimScopes": [
+    "l1_strict_candidate"
+  ],
+  "expectedStrictCandidateRows": 26,
+  "promotionApprovalsRequired": true,
+  "requireStrictRun": true,
+  "requireHeadless": true,
+  "allowDataUrlFallback": false,
+  "maxFlakePercent": 5.0,
+  "promotedAt": "2026-03-22"
+}

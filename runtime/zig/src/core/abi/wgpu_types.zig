@@ -23,6 +23,7 @@ pub const WGPUQueue = ?*anyopaque;
 pub const WGPUBuffer = ?*anyopaque;
 pub const WGPUTexture = ?*anyopaque;
 pub const WGPUTextureView = ?*anyopaque;
+pub const WGPUExternalTexture = ?*anyopaque;
 pub const WGPUShaderModule = ?*anyopaque;
 pub const WGPUSampler = ?*anyopaque;
 pub const WGPUComputePipeline = ?*anyopaque;
@@ -51,12 +52,15 @@ pub const WGPUTextureDimension = u32;
 pub const WGPUTextureAspect = u32;
 pub const WGPUTextureComponentSwizzle = u32;
 pub const WGPUTextureViewDimension = u32;
+pub const WGPUAlphaMode = u32;
 pub const WGPUBool = u32;
 pub const WGPUSType = u32;
 pub const WGPUSType_ShaderSourceWGSL: WGPUSType = 0x00000002;
 pub const WGPUSType_ShaderSourceMSL: WGPUSType = 0x00000003;
 pub const WGPUSType_ShaderSourceSPIRV: WGPUSType = 0x00000004;
 pub const WGPUSType_ShaderSourceHLSL: WGPUSType = 0x00000005;
+pub const WGPUSType_ExternalTextureBindingLayout: WGPUSType = 0x0000000D;
+pub const WGPUSType_ExternalTextureBindingEntry: WGPUSType = 0x0000000E;
 pub const WGPU_STRLEN = std.math.maxInt(usize);
 pub const WGPU_FALSE: WGPUBool = 0;
 pub const WGPU_TRUE: WGPUBool = 1;
@@ -290,6 +294,10 @@ pub const WGPUExtent3D = extern struct {
     height: u32,
     depthOrArrayLayers: u32,
 };
+pub const WGPUExtent2D = extern struct {
+    width: u32,
+    height: u32,
+};
 pub const WGPUOrigin3D = extern struct {
     x: u32,
     y: u32,
@@ -379,6 +387,30 @@ pub const WGPUBindGroupEntry = extern struct {
     sampler: WGPUSampler,
     textureView: WGPUTextureView,
 };
+pub const WGPUExternalTextureBindingLayout = extern struct {
+    chain: WGPUChainedStruct,
+};
+pub const WGPUExternalTextureBindingEntry = extern struct {
+    chain: WGPUChainedStruct,
+    externalTexture: WGPUExternalTexture,
+};
+pub const WGPUCopyTextureForBrowserOptions = extern struct {
+    nextInChain: ?*WGPUChainedStruct,
+    flipY: WGPUBool,
+    needsColorSpaceConversion: WGPUBool,
+    srcAlphaMode: WGPUAlphaMode,
+    srcTransferFunctionParameters: ?[*]const f32,
+    conversionMatrix: ?[*]const f32,
+    dstTransferFunctionParameters: ?[*]const f32,
+    dstAlphaMode: WGPUAlphaMode,
+    internalUsage: WGPUBool,
+};
+pub const WGPUImageCopyExternalTexture = extern struct {
+    nextInChain: ?*WGPUChainedStruct,
+    externalTexture: WGPUExternalTexture,
+    origin: WGPUOrigin3D,
+    naturalSize: WGPUExtent2D,
+};
 pub const WGPUBindGroupLayoutDescriptor = extern struct {
     nextInChain: ?*anyopaque,
     label: WGPUStringView,
@@ -399,134 +431,32 @@ pub const WGPUPipelineLayoutDescriptor = extern struct {
     bindGroupLayouts: [*]const WGPUBindGroupLayout,
     immediateSize: u32,
 };
-pub const WGPUCallbackMode = u32;
-pub const WGPUCallbackMode_WaitAnyOnly: WGPUCallbackMode = 0x00000001;
-pub const WGPUCallbackMode_AllowProcessEvents: WGPUCallbackMode = 0x00000002;
-pub const WGPUCallbackMode_AllowSpontaneous: WGPUCallbackMode = 0x00000003;
-pub const WGPUWaitStatus = enum(u32) {
-    success = 1,
-    timedOut = 2,
-    @"error" = 3,
-    _,
-};
-pub const WGPURequestAdapterStatus = enum(u32) {
-    success = 1,
-    callbackCancelled = 2,
-    unavailable = 3,
-    @"error" = 4,
-    _,
-};
-pub const WGPURequestDeviceStatus = enum(u32) {
-    success = 1,
-    callbackCancelled = 2,
-    @"error" = 3,
-    _,
-};
-pub const WGPUQueueWorkDoneStatus = enum(u32) {
-    success = 1,
-    callbackCancelled = 2,
-    @"error" = 3,
-    _,
-};
-pub const WGPUPowerPreference = enum(u32) { undefined = 0, lowPower = 1, highPerformance = 2, _ };
-pub const WGPUFeatureLevel = enum(u32) { undefined = 0, compatibility = 1, core = 2, _ };
-pub const WGPUBackendType = enum(u32) {
-    undefined = 0,
-    nullBackend = 1,
-    webgpu = 2,
-    d3d11 = 3,
-    d3d12 = 4,
-    metal = 5,
-    vulkan = 6,
-    openGl = 7,
-    openGLES = 8,
-    _,
-};
-pub const WGPURequestAdapterCallback = *const fn (
-    status: WGPURequestAdapterStatus,
-    adapter: WGPUAdapter,
-    message: WGPUStringView,
-    userdata1: ?*anyopaque,
-    userdata2: ?*anyopaque,
-) callconv(.c) void;
-pub const WGPURequestDeviceCallback = *const fn (
-    status: WGPURequestDeviceStatus,
-    device: WGPUDevice,
-    message: WGPUStringView,
-    userdata1: ?*anyopaque,
-    userdata2: ?*anyopaque,
-) callconv(.c) void;
-pub const WGPUQueueWorkDoneCallback = *const fn (
-    status: WGPUQueueWorkDoneStatus,
-    message: WGPUStringView,
-    userdata1: ?*anyopaque,
-    userdata2: ?*anyopaque,
-) callconv(.c) void;
-pub const WGPUDeviceLostReason = enum(u32) {
-    unknown = 1,
-    destroyed = 2,
-    callbackCancelled = 3,
-    failedCreation = 4,
-    _,
-};
-pub const WGPUErrorType = enum(u32) {
-    noError = 1,
-    validation = 2,
-    outOfMemory = 3,
-    internal = 4,
-    unknown = 5,
-    _,
-};
-pub const WGPUDeviceLostCallback = *const fn (
-    device: ?*const anyopaque,
-    reason: WGPUDeviceLostReason,
-    message: WGPUStringView,
-    userdata1: ?*anyopaque,
-    userdata2: ?*anyopaque,
-) callconv(.c) void;
-pub const WGPUUncapturedErrorCallback = *const fn (
-    device: ?*const anyopaque,
-    @"type": WGPUErrorType,
-    message: WGPUStringView,
-    userdata1: ?*anyopaque,
-    userdata2: ?*anyopaque,
-) callconv(.c) void;
-pub const WGPURequestAdapterCallbackInfo = extern struct {
-    nextInChain: ?*anyopaque,
-    mode: WGPUCallbackMode,
-    callback: ?WGPURequestAdapterCallback,
-    userdata1: ?*anyopaque,
-    userdata2: ?*anyopaque,
-};
-pub const WGPURequestDeviceCallbackInfo = extern struct {
-    nextInChain: ?*anyopaque,
-    mode: WGPUCallbackMode,
-    callback: ?WGPURequestDeviceCallback,
-    userdata1: ?*anyopaque,
-    userdata2: ?*anyopaque,
-};
-pub const WGPUQueueWorkDoneCallbackInfo = extern struct {
-    nextInChain: ?*anyopaque,
-    mode: WGPUCallbackMode,
-    callback: ?WGPUQueueWorkDoneCallback,
-    userdata1: ?*anyopaque,
-    userdata2: ?*anyopaque,
-};
-pub const WGPUDeviceLostCallbackInfo = extern struct {
-    nextInChain: ?*anyopaque,
-    mode: WGPUCallbackMode,
-    callback: ?WGPUDeviceLostCallback,
-    userdata1: ?*anyopaque,
-    userdata2: ?*anyopaque,
-};
-pub const WGPUUncapturedErrorCallbackInfo = extern struct {
-    nextInChain: ?*anyopaque,
-    callback: ?WGPUUncapturedErrorCallback,
-    userdata1: ?*anyopaque,
-    userdata2: ?*anyopaque,
-};
+const callback_types = @import("wgpu_type_callbacks.zig").definitions(@This());
+pub const WGPUCallbackMode = callback_types.WGPUCallbackMode;
+pub const WGPUCallbackMode_WaitAnyOnly = callback_types.WGPUCallbackMode_WaitAnyOnly;
+pub const WGPUCallbackMode_AllowProcessEvents = callback_types.WGPUCallbackMode_AllowProcessEvents;
+pub const WGPUCallbackMode_AllowSpontaneous = callback_types.WGPUCallbackMode_AllowSpontaneous;
+pub const WGPUWaitStatus = callback_types.WGPUWaitStatus;
+pub const WGPURequestAdapterStatus = callback_types.WGPURequestAdapterStatus;
+pub const WGPURequestDeviceStatus = callback_types.WGPURequestDeviceStatus;
+pub const WGPUQueueWorkDoneStatus = callback_types.WGPUQueueWorkDoneStatus;
+pub const WGPUPowerPreference = callback_types.WGPUPowerPreference;
+pub const WGPUFeatureLevel = callback_types.WGPUFeatureLevel;
+pub const WGPUBackendType = callback_types.WGPUBackendType;
+pub const WGPURequestAdapterCallback = callback_types.WGPURequestAdapterCallback;
+pub const WGPURequestDeviceCallback = callback_types.WGPURequestDeviceCallback;
+pub const WGPUQueueWorkDoneCallback = callback_types.WGPUQueueWorkDoneCallback;
+pub const WGPUDeviceLostReason = callback_types.WGPUDeviceLostReason;
+pub const WGPUErrorType = callback_types.WGPUErrorType;
+pub const WGPUDeviceLostCallback = callback_types.WGPUDeviceLostCallback;
+pub const WGPUUncapturedErrorCallback = callback_types.WGPUUncapturedErrorCallback;
+pub const WGPURequestAdapterCallbackInfo = callback_types.WGPURequestAdapterCallbackInfo;
+pub const WGPURequestDeviceCallbackInfo = callback_types.WGPURequestDeviceCallbackInfo;
+pub const WGPUQueueWorkDoneCallbackInfo = callback_types.WGPUQueueWorkDoneCallbackInfo;
+pub const WGPUDeviceLostCallbackInfo = callback_types.WGPUDeviceLostCallbackInfo;
+pub const WGPUUncapturedErrorCallbackInfo = callback_types.WGPUUncapturedErrorCallbackInfo;
 pub const WGPUChainedStruct = extern struct {
-    next: ?*anyopaque,
+    next: ?*WGPUChainedStruct,
     sType: WGPUSType,
 };
 pub const WGPURequestAdapterOptions = extern struct {
@@ -739,6 +669,75 @@ pub fn initLimits() WGPULimits {
     return limits;
 }
 const proc_aliases = @import("wgpu_type_proc_aliases.zig");
+pub const FnWgpuCreateInstance = proc_aliases.FnWgpuCreateInstance;
+pub const FnWgpuInstanceRequestAdapter = proc_aliases.FnWgpuInstanceRequestAdapter;
+pub const FnWgpuInstanceWaitAny = proc_aliases.FnWgpuInstanceWaitAny;
+pub const FnWgpuInstanceProcessEvents = proc_aliases.FnWgpuInstanceProcessEvents;
+pub const FnWgpuAdapterRequestDevice = proc_aliases.FnWgpuAdapterRequestDevice;
+pub const FnWgpuDeviceCreateBuffer = proc_aliases.FnWgpuDeviceCreateBuffer;
+pub const FnWgpuDeviceCreateShaderModule = proc_aliases.FnWgpuDeviceCreateShaderModule;
+pub const FnWgpuShaderModuleRelease = proc_aliases.FnWgpuShaderModuleRelease;
+pub const FnWgpuDeviceCreateComputePipeline = proc_aliases.FnWgpuDeviceCreateComputePipeline;
+pub const FnWgpuComputePipelineRelease = proc_aliases.FnWgpuComputePipelineRelease;
+pub const FnWgpuRenderPipelineRelease = proc_aliases.FnWgpuRenderPipelineRelease;
+pub const FnWgpuDeviceCreateCommandEncoder = proc_aliases.FnWgpuDeviceCreateCommandEncoder;
+pub const FnWgpuCommandEncoderBeginComputePass = proc_aliases.FnWgpuCommandEncoderBeginComputePass;
+pub const FnWgpuDeviceCreateRenderPipeline = proc_aliases.FnWgpuDeviceCreateRenderPipeline;
+pub const FnWgpuCommandEncoderBeginRenderPass = proc_aliases.FnWgpuCommandEncoderBeginRenderPass;
+pub const FnWgpuCommandEncoderWriteTimestamp = proc_aliases.FnWgpuCommandEncoderWriteTimestamp;
+pub const FnWgpuCommandEncoderCopyBufferToBuffer = proc_aliases.FnWgpuCommandEncoderCopyBufferToBuffer;
+pub const FnWgpuCommandEncoderCopyBufferToTexture = proc_aliases.FnWgpuCommandEncoderCopyBufferToTexture;
+pub const FnWgpuCommandEncoderCopyTextureToBuffer = proc_aliases.FnWgpuCommandEncoderCopyTextureToBuffer;
+pub const FnWgpuCommandEncoderCopyTextureToTexture = proc_aliases.FnWgpuCommandEncoderCopyTextureToTexture;
+pub const FnWgpuComputePassEncoderSetPipeline = proc_aliases.FnWgpuComputePassEncoderSetPipeline;
+pub const FnWgpuComputePassEncoderSetBindGroup = proc_aliases.FnWgpuComputePassEncoderSetBindGroup;
+pub const FnWgpuComputePassEncoderDispatchWorkgroups = proc_aliases.FnWgpuComputePassEncoderDispatchWorkgroups;
+pub const FnWgpuComputePassEncoderEnd = proc_aliases.FnWgpuComputePassEncoderEnd;
+pub const FnWgpuComputePassEncoderRelease = proc_aliases.FnWgpuComputePassEncoderRelease;
+pub const FnWgpuRenderPassEncoderSetPipeline = proc_aliases.FnWgpuRenderPassEncoderSetPipeline;
+pub const FnWgpuRenderPassEncoderSetVertexBuffer = proc_aliases.FnWgpuRenderPassEncoderSetVertexBuffer;
+pub const FnWgpuRenderPassEncoderSetIndexBuffer = proc_aliases.FnWgpuRenderPassEncoderSetIndexBuffer;
+pub const FnWgpuRenderPassEncoderSetBindGroup = proc_aliases.FnWgpuRenderPassEncoderSetBindGroup;
+pub const FnWgpuRenderPassEncoderDraw = proc_aliases.FnWgpuRenderPassEncoderDraw;
+pub const FnWgpuRenderPassEncoderDrawIndexed = proc_aliases.FnWgpuRenderPassEncoderDrawIndexed;
+pub const FnWgpuRenderPassEncoderDrawIndirect = proc_aliases.FnWgpuRenderPassEncoderDrawIndirect;
+pub const FnWgpuRenderPassEncoderDrawIndexedIndirect = proc_aliases.FnWgpuRenderPassEncoderDrawIndexedIndirect;
+pub const FnWgpuRenderPassEncoderEnd = proc_aliases.FnWgpuRenderPassEncoderEnd;
+pub const FnWgpuRenderPassEncoderRelease = proc_aliases.FnWgpuRenderPassEncoderRelease;
+pub const FnWgpuCommandEncoderFinish = proc_aliases.FnWgpuCommandEncoderFinish;
+pub const FnWgpuDeviceGetQueue = proc_aliases.FnWgpuDeviceGetQueue;
+pub const FnWgpuQueueSubmit = proc_aliases.FnWgpuQueueSubmit;
+pub const FnWgpuQueueOnSubmittedWorkDone = proc_aliases.FnWgpuQueueOnSubmittedWorkDone;
+pub const FnWgpuQueueWriteBuffer = proc_aliases.FnWgpuQueueWriteBuffer;
+pub const FnWgpuDeviceCreateTexture = proc_aliases.FnWgpuDeviceCreateTexture;
+pub const FnWgpuTextureCreateView = proc_aliases.FnWgpuTextureCreateView;
+pub const FnWgpuDeviceCreateBindGroupLayout = proc_aliases.FnWgpuDeviceCreateBindGroupLayout;
+pub const FnWgpuBindGroupLayoutRelease = proc_aliases.FnWgpuBindGroupLayoutRelease;
+pub const FnWgpuDeviceCreateBindGroup = proc_aliases.FnWgpuDeviceCreateBindGroup;
+pub const FnWgpuBindGroupRelease = proc_aliases.FnWgpuBindGroupRelease;
+pub const FnWgpuDeviceCreatePipelineLayout = proc_aliases.FnWgpuDeviceCreatePipelineLayout;
+pub const FnWgpuPipelineLayoutRelease = proc_aliases.FnWgpuPipelineLayoutRelease;
+pub const FnWgpuTextureRelease = proc_aliases.FnWgpuTextureRelease;
+pub const FnWgpuTextureViewRelease = proc_aliases.FnWgpuTextureViewRelease;
+pub const FnWgpuInstanceRelease = proc_aliases.FnWgpuInstanceRelease;
+pub const FnWgpuAdapterRelease = proc_aliases.FnWgpuAdapterRelease;
+pub const FnWgpuDeviceRelease = proc_aliases.FnWgpuDeviceRelease;
+pub const FnWgpuQueueRelease = proc_aliases.FnWgpuQueueRelease;
+pub const FnWgpuCommandEncoderRelease = proc_aliases.FnWgpuCommandEncoderRelease;
+pub const FnWgpuCommandBufferRelease = proc_aliases.FnWgpuCommandBufferRelease;
+pub const FnWgpuBufferRelease = proc_aliases.FnWgpuBufferRelease;
+pub const FnWgpuAdapterHasFeature = proc_aliases.FnWgpuAdapterHasFeature;
+pub const FnWgpuDeviceHasFeature = proc_aliases.FnWgpuDeviceHasFeature;
+pub const FnWgpuDeviceCreateQuerySet = proc_aliases.FnWgpuDeviceCreateQuerySet;
+pub const FnWgpuCommandEncoderResolveQuerySet = proc_aliases.FnWgpuCommandEncoderResolveQuerySet;
+pub const FnWgpuQuerySetRelease = proc_aliases.FnWgpuQuerySetRelease;
+pub const FnWgpuBufferMapAsync = proc_aliases.FnWgpuBufferMapAsync;
+pub const FnWgpuBufferGetConstMappedRange = proc_aliases.FnWgpuBufferGetConstMappedRange;
+pub const FnWgpuBufferGetMappedRange = proc_aliases.FnWgpuBufferGetMappedRange;
+pub const FnWgpuBufferUnmap = proc_aliases.FnWgpuBufferUnmap;
+pub const FnWgpuDeviceCreateSampler = proc_aliases.FnWgpuDeviceCreateSampler;
+pub const FnWgpuSamplerRelease = proc_aliases.FnWgpuSamplerRelease;
+pub const Procs = proc_aliases.Procs;
 const records = @import("wgpu_type_records.zig").definitions(@This());
 pub const BufferRecord = records.BufferRecord;
 pub const TextureRecord = records.TextureRecord;

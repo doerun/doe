@@ -31,5 +31,38 @@
     "probe": "none",
     "sampleMs": 100,
     "sampleTargetCount": 0
+  },
+  "selector": {
+    "suite": [
+      "release",
+      "exploration",
+      "extended"
+    ],
+    "comparability": [
+      "comparable",
+      "non_comparable"
+    ],
+    "claimEligibleOnly": false,
+    "domains": [],
+    "ids": [
+      "compute_matvec_32768x2048_f32",
+      "compute_matvec_32768x2048_f32_swizzle1",
+      "compute_matvec_32768x2048_f32_workgroupshared_swizzle1",
+      "compute_workgroup_atomic_1024",
+      "compute_workgroup_non_atomic_1024",
+      "compute_concurrent_execution_single",
+      "compute_dispatch_fallback",
+      "compute_dispatch_grid",
+      "compute_dispatch_indirect_large_args",
+      "compute_dispatch_indirect_live_args",
+      "compute_dispatch_indirect_single",
+      "compute_dispatch_workgroups_2d_sweep",
+      "compute_dispatch_workgroups_3d_sweep",
+      "compute_dispatch_workgroups_indirect_pipeline_switch",
+      "compute_indirect_timestamp",
+      "compute_kernel_dispatch_1000",
+      "compute_zero_initialize_workgroup_memory_256"
+    ],
+    "excludeIds": []
   }
 }

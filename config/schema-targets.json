@@ -18,12 +18,24 @@
       "data": "config/claim-cycle.active.json"
     },
     {
-      "schema": "config/webgpu-spec-coverage.schema.json",
-      "data": "config/webgpu-spec-coverage.json"
+      "schema": "config/webgpu-command-coverage-core.schema.json",
+      "data": "config/webgpu-command-coverage-core.json"
+    },
+    {
+      "schema": "config/webgpu-command-coverage-full.schema.json",
+      "data": "config/webgpu-command-coverage-full.json"
+    },
+    {
+      "schema": "config/webgpu-capability-inventory.schema.json",
+      "data": "config/webgpu-capability-inventory.json"
+    },
+    {
+      "schema": "config/webgpu-integration-chromium.schema.json",
+      "data": "config/webgpu-integration-chromium.json"
     },
     {
       "schema": "config/webgpu-spec-index.schema.json",
-      "data": "config/webgpu-spec-index.json"
+      "data": "config/webgpu-spec-index.jsonl"
     },
     {
       "schema": "config/webgpu-cts-evidence.schema.json",

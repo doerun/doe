@@ -17,7 +17,12 @@
       "comparable": false,
       "leftTimingDivisor": 4,
       "timingNormalizationNote": "Directional render proxy only",
-      "dawnFilter": "@autodiscover"
+      "dawnFilter": "@autodiscover",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "resource_table_immediates_500",
@@ -40,7 +45,11 @@
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "default": true,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-      "benchmarkClass": "directional"
+      "benchmarkClass": "directional",
+      "suiteTags": [
+        "exploration"
+      ],
+      "claimEligible": false
     }
   ]
 }

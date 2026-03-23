@@ -131,6 +131,168 @@ class ClaimabilityMetricScopeTests(unittest.TestCase):
         self.assertTrue(claimability["claimable"])
         self.assertEqual(claimability["claimMetricScope"], "headlineProcessWall")
 
+    def test_upload_headline_claim_not_blocked_by_operation_scope_asymmetry(self) -> None:
+        """When an upload workload's claim has been promoted to headlineProcessWall
+        due to operation-timing coverage asymmetry (e.g. Doe deferred-queue-sync
+        memcpy vs Dawn callback-loop timing), the operation-scope sanity check
+        must not re-reject the already-promoted claim."""
+        workload = SimpleNamespace(
+            id="upload_write_buffer_1kb",
+            domain="upload",
+            path_asymmetry=False,
+            path_asymmetry_note="",
+        )
+        # Left (Doe): operation timing ~0.00017ms, wall ~100ms/500 = 0.2ms
+        # coverage = 0.00085 (far below 0.05 threshold)
+        left_samples = [
+            {
+                "runIndex": i,
+                "elapsedMs": 100.0,
+                "measuredRawMs": 0.00017,
+                "measuredMs": 0.00017,
+                "timingSource": "doe-execution-row-total-ns+ignore-first-ops",
+                "timing": {
+                    "timingRawMs": 0.00017,
+                    "timingNormalizationDivisor": 1.0,
+                    "commandRepeat": 500,
+                    "uploadIgnoreFirstApplied": True,
+                    "uploadIgnoreFirstBaseTimingSource": "doe-execution-row-total-ns",
+                    "uploadIgnoreFirstAdjustedTimingSource": "doe-execution-row-total-ns",
+                    "uploadTimingRawMsAfterIgnore": 0.00017,
+                },
+                "commandRepeat": 500,
+                "timingNormalizationDivisor": 1.0,
+            }
+            for i in range(19)
+        ]
+        # Right (Dawn): operation timing ~0.076ms, wall ~116ms/500 = 0.232ms
+        # coverage = 0.328 (above 0.05)
+        right_samples = [
+            {
+                "runIndex": i,
+                "elapsedMs": 116.0,
+                "measuredRawMs": 0.076,
+                "measuredMs": 0.076,
+                "timingSource": "doe-execution-row-total-ns+ignore-first-ops",
+                "timing": {
+                    "timingRawMs": 0.076,
+                    "timingNormalizationDivisor": 1.0,
+                    "commandRepeat": 500,
+                    "uploadIgnoreFirstApplied": True,
+                    "uploadIgnoreFirstBaseTimingSource": "doe-execution-row-total-ns",
+                    "uploadIgnoreFirstAdjustedTimingSource": "doe-execution-row-total-ns",
+                    "uploadTimingRawMsAfterIgnore": 0.076,
+                },
+                "commandRepeat": 500,
+                "timingNormalizationDivisor": 1.0,
+            }
+            for i in range(19)
+        ]
+        left = {"stats": make_stats(0.00017, 0.00019), "commandSamples": left_samples}
+        right = {"stats": make_stats(0.076, 0.080), "commandSamples": right_samples}
+        timing_interpretation = make_timing_interpretation(
+            headline_p50=0.200,
+            headline_p95=0.210,
+            headline_delta_p50=15.0,
+            headline_delta_p95=12.0,
+        )
+
+        claimability = assess_claimability(
+            mode="local",
+            min_timed_samples=19,
+            workload=workload,
+            left=left,
+            right=right,
+            delta={"p50Percent": 44600.0, "p95Percent": 42000.0, "p99Percent": 42000.0},
+            timing_interpretation=timing_interpretation,
+            comparability={"comparable": True},
+            benchmark_policy=BENCHMARK_POLICY,
+        )
+
+        self.assertTrue(claimability["claimable"], f"reasons: {claimability['reasons']}")
+        self.assertEqual(claimability["claimMetricScope"], "headlineProcessWall")
+
+    def test_operation_scope_asymmetry_blocks_when_claim_is_selected_timing(self) -> None:
+        """When the claim metric is still selectedTiming (headline not available),
+        operation-scope asymmetry must still block claimability."""
+        workload = SimpleNamespace(
+            id="upload_write_buffer_1kb",
+            domain="upload",
+            path_asymmetry=False,
+            path_asymmetry_note="",
+        )
+        left_samples = [
+            {
+                "runIndex": i,
+                "elapsedMs": 100.0,
+                "measuredRawMs": 0.00017,
+                "measuredMs": 0.00017,
+                "timingSource": "doe-execution-row-total-ns+ignore-first-ops",
+                "timing": {
+                    "timingRawMs": 0.00017,
+                    "timingNormalizationDivisor": 1.0,
+                    "commandRepeat": 500,
+                    "uploadIgnoreFirstApplied": True,
+                    "uploadIgnoreFirstBaseTimingSource": "doe-execution-row-total-ns",
+                    "uploadIgnoreFirstAdjustedTimingSource": "doe-execution-row-total-ns",
+                    "uploadTimingRawMsAfterIgnore": 0.00017,
+                },
+                "commandRepeat": 500,
+                "timingNormalizationDivisor": 1.0,
+            }
+            for i in range(19)
+        ]
+        right_samples = [
+            {
+                "runIndex": i,
+                "elapsedMs": 116.0,
+                "measuredRawMs": 0.076,
+                "measuredMs": 0.076,
+                "timingSource": "doe-execution-row-total-ns+ignore-first-ops",
+                "timing": {
+                    "timingRawMs": 0.076,
+                    "timingNormalizationDivisor": 1.0,
+                    "commandRepeat": 500,
+                    "uploadIgnoreFirstApplied": True,
+                    "uploadIgnoreFirstBaseTimingSource": "doe-execution-row-total-ns",
+                    "uploadIgnoreFirstAdjustedTimingSource": "doe-execution-row-total-ns",
+                    "uploadTimingRawMsAfterIgnore": 0.076,
+                },
+                "commandRepeat": 500,
+                "timingNormalizationDivisor": 1.0,
+            }
+            for i in range(19)
+        ]
+        left = {"stats": make_stats(0.00017, 0.00019), "commandSamples": left_samples}
+        right = {"stats": make_stats(0.076, 0.080), "commandSamples": right_samples}
+        # No headline available -- claim stays on selectedTiming
+        timing_interpretation = {
+            "selectedTiming": {
+                "scope": "operation-total",
+                "scopeClass": "operation-total",
+            },
+            "headlineProcessWall": {"available": False},
+        }
+
+        claimability = assess_claimability(
+            mode="local",
+            min_timed_samples=19,
+            workload=workload,
+            left=left,
+            right=right,
+            delta={"p50Percent": 44600.0, "p95Percent": 42000.0, "p99Percent": 42000.0},
+            timing_interpretation=timing_interpretation,
+            comparability={"comparable": True},
+            benchmark_policy=BENCHMARK_POLICY,
+        )
+
+        self.assertFalse(claimability["claimable"])
+        self.assertEqual(claimability["claimMetricScope"], "selectedTiming")
+        self.assertTrue(
+            any("asymmetric versus process wall" in r for r in claimability["reasons"]),
+            f"expected operation-scope asymmetry reason, got: {claimability['reasons']}",
+        )
+
     def test_does_not_switch_when_headline_tail_is_not_positive(self) -> None:
         workload = SimpleNamespace(
             id="copy_texture_to_texture",

@@ -9,8 +9,8 @@ import {
   providerInfo,
   createDoeRuntime,
   runDawnVsDoeCompare,
-} from '../../webgpu/src/compute.js';
-import { createDoeNamespace } from '../../webgpu-doe/src/index.js';
+} from './vendor/webgpu/compute.js';
+import { createDoeNamespace } from './vendor/doe-namespace.js';
 
 export const createGpuNamespace = createDoeNamespace;
 
@@ -28,7 +28,7 @@ export {
   createDoeRuntime,
   runDawnVsDoeCompare,
 };
-export { createDoeNamespace } from '../../webgpu-doe/src/index.js';
+export { createDoeNamespace } from './vendor/doe-namespace.js';
 
 export default {
   create,

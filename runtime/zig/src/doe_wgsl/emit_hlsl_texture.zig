@@ -26,28 +26,56 @@ pub fn emit_texture_builtin(
         const coord_expr = function.expr_args.items[args.start + 1];
         const level_expr = function.expr_args.items[args.start + 2];
         if (texture_global_name(module, function, texture_expr)) |global_name| {
-            try ctx.write("((all(int2(");
-            try ctx.emit_expr(function, coord_expr);
-            try ctx.write(") >= int2(0, 0)) && all(uint2(int2(");
-            try ctx.emit_expr(function, coord_expr);
-            try ctx.write(")) < doe_textureDimensions_");
-            try ctx.write(global_name);
-            try ctx.write("(uint(");
-            try ctx.emit_expr(function, level_expr);
-            try ctx.write(")))) ? ");
-            try ctx.emit_expr(function, texture_expr);
-            try ctx.write(".Load(int3(int2(");
-            try ctx.emit_expr(function, coord_expr);
-            try ctx.write("), int(");
-            try ctx.emit_expr(function, level_expr);
-            try ctx.write("))) : float4(0.0, 0.0, 0.0, 0.0))");
+            if (is_texture_1d(module, function, texture_expr)) {
+                // 1D texture: scalar coord, Load takes int2(coord, level)
+                try ctx.write("((int(");
+                try ctx.emit_expr(function, coord_expr);
+                try ctx.write(") >= 0 && uint(int(");
+                try ctx.emit_expr(function, coord_expr);
+                try ctx.write(")) < doe_textureDimensions_");
+                try ctx.write(global_name);
+                try ctx.write("(uint(");
+                try ctx.emit_expr(function, level_expr);
+                try ctx.write("))) ? ");
+                try ctx.emit_expr(function, texture_expr);
+                try ctx.write(".Load(int2(int(");
+                try ctx.emit_expr(function, coord_expr);
+                try ctx.write("), int(");
+                try ctx.emit_expr(function, level_expr);
+                try ctx.write("))) : float4(0.0, 0.0, 0.0, 0.0))");
+            } else {
+                try ctx.write("((all(int2(");
+                try ctx.emit_expr(function, coord_expr);
+                try ctx.write(") >= int2(0, 0)) && all(uint2(int2(");
+                try ctx.emit_expr(function, coord_expr);
+                try ctx.write(")) < doe_textureDimensions_");
+                try ctx.write(global_name);
+                try ctx.write("(uint(");
+                try ctx.emit_expr(function, level_expr);
+                try ctx.write(")))) ? ");
+                try ctx.emit_expr(function, texture_expr);
+                try ctx.write(".Load(int3(int2(");
+                try ctx.emit_expr(function, coord_expr);
+                try ctx.write("), int(");
+                try ctx.emit_expr(function, level_expr);
+                try ctx.write("))) : float4(0.0, 0.0, 0.0, 0.0))");
+            }
         } else {
-            try ctx.emit_expr(function, texture_expr);
-            try ctx.write(".Load(int3(");
-            try ctx.emit_expr(function, coord_expr);
-            try ctx.write(", ");
-            try ctx.emit_expr(function, level_expr);
-            try ctx.write("))");
+            if (is_texture_1d(module, function, texture_expr)) {
+                try ctx.emit_expr(function, texture_expr);
+                try ctx.write(".Load(int2(");
+                try ctx.emit_expr(function, coord_expr);
+                try ctx.write(", ");
+                try ctx.emit_expr(function, level_expr);
+                try ctx.write("))");
+            } else {
+                try ctx.emit_expr(function, texture_expr);
+                try ctx.write(".Load(int3(");
+                try ctx.emit_expr(function, coord_expr);
+                try ctx.write(", ");
+                try ctx.emit_expr(function, level_expr);
+                try ctx.write("))");
+            }
         }
         return true;
     }
@@ -358,6 +386,13 @@ fn texture_global_name(module: *const ir.Module, function: ir.Function, expr_id:
     };
 }
 
+fn is_texture_1d(module: *const ir.Module, function: ir.Function, expr_id: ir.ExprId) bool {
+    return switch (module.types.get(function.exprs.items[expr_id].ty)) {
+        .texture_1d => true,
+        else => false,
+    };
+}
+
 /// Emit HLSL helper functions for texture metadata intrinsics (GetDimensions,
 /// numLevels, numLayers) for all bound texture globals.
 pub fn emit_texture_global_helpers(
@@ -371,20 +406,20 @@ pub fn emit_texture_global_helpers(
         switch (module.types.get(global.ty)) {
             .texture_1d => {
                 try ctx.emit_dims_1d(global.name);
-                try ctx.emit_num_levels(global.name, false, false);
+                try ctx.emit_num_levels(global.name, false, false, true);
             },
             .texture_2d, .texture_cube, .texture_depth_cube => {
                 try ctx.emit_dims_2d(global.name);
-                try ctx.emit_num_levels(global.name, false, false);
+                try ctx.emit_num_levels(global.name, false, false, false);
             },
             .texture_2d_array => {
                 try ctx.emit_dims_2d_array(global.name);
-                try ctx.emit_num_levels(global.name, true, false);
+                try ctx.emit_num_levels(global.name, true, false, false);
                 try ctx.emit_num_layers(global.name);
             },
             .texture_3d => {
                 try ctx.emit_dims_3d(global.name);
-                try ctx.emit_num_levels(global.name, false, true);
+                try ctx.emit_num_levels(global.name, false, true, false);
             },
             .storage_texture_2d => {
                 try ctx.emit_dims_storage(global.name);
@@ -444,7 +479,7 @@ const HelperCtx = struct {
         try self.w(".GetDimensions(w, h);\n    return uint2(w, h);\n}\n");
     }
 
-    fn emit_num_levels(self: *HelperCtx, name: []const u8, is_array: bool, is_3d: bool) EmitError!void {
+    fn emit_num_levels(self: *HelperCtx, name: []const u8, is_array: bool, is_3d: bool, is_1d: bool) EmitError!void {
         try self.w("\nuint doe_textureNumLevels_");
         try self.w(name);
         if (is_3d) {
@@ -455,6 +490,10 @@ const HelperCtx = struct {
             try self.w("() {\n    uint w = 0u; uint h = 0u; uint elems = 0u; uint lvls = 0u;\n    ");
             try self.w(name);
             try self.w(".GetDimensions(0, w, h, elems, lvls);\n");
+        } else if (is_1d) {
+            try self.w("() {\n    uint w = 0u; uint lvls = 0u;\n    ");
+            try self.w(name);
+            try self.w(".GetDimensions(0, w, lvls);\n");
         } else {
             try self.w("() {\n    uint w = 0u; uint h = 0u; uint lvls = 0u;\n    ");
             try self.w(name);

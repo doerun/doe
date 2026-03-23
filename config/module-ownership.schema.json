@@ -34,7 +34,9 @@
         "qualityOwner": { "type": "string", "minLength": 1 },
         "benchmarkMethodologyOwner": { "type": "string", "minLength": 1 },
         "promotedAt": { "type": "string", "format": "date" },
-        "nurseryExitApproved": { "type": "boolean" }
+        "nurseryExitApproved": { "type": "boolean" },
+        "archivedAt": { "type": "string", "format": "date" },
+        "archiveReason": { "type": "string", "minLength": 1 }
       }
     }
   }

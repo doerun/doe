@@ -9,7 +9,52 @@
 const std = @import("std");
 const native = @import("doe_wgpu_native.zig");
 
+const DoeTextureView = native.DoeTextureView;
+
 const MAGIC_EXTERNAL_TEXTURE: u32 = 0xD0E1_0013;
+
+// ============================================================
+// Instance-level external texture registry
+// ============================================================
+//
+// Tracks the number of live (non-released) external textures per
+// DoeInstance pointer. This allows the instance to know whether
+// external resources still reference it, preventing premature
+// teardown while video frame textures are in flight.
+
+var instance_ext_counts: std.AutoHashMapUnmanaged(usize, u32) = .{};
+
+fn registry_key(inst: *native.DoeInstance) usize {
+    return @intFromPtr(inst);
+}
+
+/// Register an external texture with its owning instance.
+fn instance_register(inst: *native.DoeInstance) void {
+    const key = registry_key(inst);
+    if (instance_ext_counts.getPtr(key)) |slot| {
+        slot.* +|= 1;
+    } else {
+        instance_ext_counts.put(std.heap.c_allocator, key, 1) catch {};
+    }
+}
+
+/// Deregister an external texture from its owning instance.
+fn instance_deregister(inst: *native.DoeInstance) void {
+    const key = registry_key(inst);
+    if (instance_ext_counts.getPtr(key)) |slot| {
+        if (slot.* <= 1) {
+            _ = instance_ext_counts.remove(key);
+        } else {
+            slot.* -= 1;
+        }
+    }
+}
+
+/// Query how many external textures are alive for the given instance.
+pub fn instance_external_texture_count(inst_raw: ?*anyopaque) u32 {
+    const inst = native.cast(native.DoeInstance, inst_raw) orelse return 0;
+    return instance_ext_counts.get(registry_key(inst)) orelse 0;
+}
 
 pub const DoeExternalTexture = struct {
     pub const TYPE_MAGIC = MAGIC_EXTERNAL_TEXTURE;
@@ -62,16 +107,22 @@ pub export fn doeNativeDeviceCreateExternalTexture(
     const desc_ptr: [*]const u8 = @ptrCast(desc);
     const plane0 = @as(*const ?*anyopaque, @ptrCast(@alignCast(desc_ptr + PLANE0_OFFSET))).*;
     const plane1 = @as(*const ?*anyopaque, @ptrCast(@alignCast(desc_ptr + PLANE1_OFFSET))).*;
+    const plane0_view = native.cast(DoeTextureView, plane0) orelse return null;
+    const plane1_view = native.cast(DoeTextureView, plane1);
 
     const instance_ref = resolve_device_instance(dev_raw);
     // Add-ref the Instance so it stays alive while the external texture exists.
     if (instance_ref) |inst| inst.ref_count +|= 1;
+    native.object_add_ref(DoeTextureView, native.toOpaque(plane0_view));
+    if (plane1_view) |view| native.object_add_ref(DoeTextureView, native.toOpaque(view));
 
     const ext = std.heap.c_allocator.create(DoeExternalTexture) catch {
         // Roll back the add-ref on allocation failure.
         if (instance_ref) |inst| {
             if (inst.ref_count > 1) inst.ref_count -= 1;
         }
+        native.doeNativeTextureViewRelease(native.toOpaque(plane0_view));
+        if (plane1_view) |view| native.doeNativeTextureViewRelease(native.toOpaque(view));
         return null;
     };
     ext.* = .{
@@ -80,6 +131,7 @@ pub export fn doeNativeDeviceCreateExternalTexture(
         .is_single_plane = plane1 == null,
         .instance = instance_ref,
     };
+    if (instance_ref) |inst| instance_register(inst);
     return @ptrCast(ext);
 }
 
@@ -94,7 +146,13 @@ pub export fn doeNativeExternalTextureRelease(raw: ?*anyopaque) callconv(.c) voi
     const ext = cast(raw) orelse return;
     if (ext.ref_count <= 1) {
         const instance_ref = ext.instance;
+        const plane0 = ext.plane0;
+        const plane1 = ext.plane1;
+        // Deregister from the instance registry before releasing the backref.
+        if (instance_ref) |inst| instance_deregister(inst);
         std.heap.c_allocator.destroy(ext);
+        if (plane0 != null) native.doeNativeTextureViewRelease(plane0);
+        if (plane1 != null) native.doeNativeTextureViewRelease(plane1);
         // Release the Instance backref after freeing the external texture.
         if (instance_ref) |inst| {
             @import("doe_instance_device_native.zig").doeNativeInstanceRelease(native.toOpaque(inst));

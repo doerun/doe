@@ -565,6 +565,8 @@ pub export fn doeNativeRenderPipelineRelease(raw: ?*anyopaque) callconv(.c) void
         }
         if (p.vertex_spirv_data) |s| alloc.free(s);
         if (p.fragment_spirv_data) |s| alloc.free(s);
+        if (p.vertex_entry_point) |ep| alloc.free(ep);
+        if (p.fragment_entry_point) |ep| alloc.free(ep);
         alloc.destroy(p);
     }
 }

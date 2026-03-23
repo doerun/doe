@@ -225,7 +225,9 @@ fn vk_reset_query_pool(
     first_query: u32,
     query_count: u32,
 ) !void {
-    _ = rt.flush_queue() catch {};
+    _ = rt.flush_queue() catch |err| {
+        std.debug.print("warn: doe_query_native: flush before reset_query_pool: {s}\n", .{@errorName(err)});
+    };
     const command_buffer = try begin_one_shot_command_buffer(rt);
     c.vkCmdResetQueryPool(command_buffer, query_pool, first_query, query_count);
     try submit_one_shot_command_buffer(rt, command_buffer);
@@ -238,7 +240,9 @@ fn vulkan_write_timestamp(qs: *DoeQuerySet, query_index: u32) void {
     if (!rt.has_command_pool or !rt.has_fence) return;
 
     // Flush any pending work to avoid command pool conflicts.
-    _ = rt.flush_queue() catch {};
+    _ = rt.flush_queue() catch |err| {
+        std.debug.print("warn: doe_query_native: flush before write_timestamp: {s}\n", .{@errorName(err)});
+    };
     const command_buffer = begin_one_shot_command_buffer(rt) catch |err| {
         std.log.err("doe_query_native: begin one-shot query command buffer failed: {s}", .{@errorName(err)});
         return;
@@ -273,7 +277,9 @@ fn vulkan_resolve_query_set(
     };
 
     // Flush any pending work to avoid command pool conflicts.
-    _ = rt.flush_queue() catch {};
+    _ = rt.flush_queue() catch |err| {
+        std.debug.print("warn: doe_query_native: flush before resolve_query_set: {s}\n", .{@errorName(err)});
+    };
 
     const command_buffer = begin_one_shot_command_buffer(rt) catch |err| {
         std.log.err("doe_query_native: begin one-shot query command buffer failed: {s}", .{@errorName(err)});

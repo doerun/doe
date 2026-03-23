@@ -22,7 +22,11 @@
       "comparable": true,
       "default": true,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-      "dawnFilter": "WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeAtomic"
+      "dawnFilter": "WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeAtomic",
+      "suiteTags": [
+        "release"
+      ],
+      "claimEligible": true
     },
     {
       "id": "compute_workgroup_non_atomic_1024",
@@ -45,7 +49,11 @@
       ],
       "comparable": true,
       "default": true,
-      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "suiteTags": [
+        "release"
+      ],
+      "claimEligible": true
     },
     {
       "id": "upload_write_buffer_16mb",
@@ -73,7 +81,12 @@
       "driver": "24.0.0",
       "rightCommandRepeat": 50,
       "rightIgnoreFirstOps": 1,
-      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "suiteTags": [
+        "release",
+        "regression"
+      ],
+      "claimEligible": true
     },
     {
       "id": "upload_write_buffer_1gb",
@@ -102,7 +115,13 @@
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "vendor": "amd",
       "family": "gfx11",
-      "driver": "24.0.0"
+      "driver": "24.0.0",
+      "suiteTags": [
+        "release",
+        "regression",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "upload_write_buffer_1kb",
@@ -130,7 +149,12 @@
       "driver": "24.0.0",
       "rightCommandRepeat": 500,
       "rightIgnoreFirstOps": 1,
-      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "suiteTags": [
+        "release",
+        "regression"
+      ],
+      "claimEligible": true
     },
     {
       "id": "upload_write_buffer_1mb",
@@ -158,7 +182,12 @@
       "driver": "24.0.0",
       "rightCommandRepeat": 50,
       "rightIgnoreFirstOps": 1,
-      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "suiteTags": [
+        "release",
+        "regression"
+      ],
+      "claimEligible": true
     },
     {
       "id": "upload_write_buffer_256mb",
@@ -187,7 +216,13 @@
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "vendor": "amd",
       "family": "gfx11",
-      "driver": "24.0.0"
+      "driver": "24.0.0",
+      "suiteTags": [
+        "release",
+        "regression",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "upload_write_buffer_4gb",
@@ -218,7 +253,12 @@
       "comparable": false,
       "benchmarkClass": "directional",
       "pathAsymmetry": true,
-      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
+      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored.",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "upload_write_buffer_4mb",
@@ -246,7 +286,12 @@
       "driver": "24.0.0",
       "rightCommandRepeat": 50,
       "rightIgnoreFirstOps": 1,
-      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "suiteTags": [
+        "release",
+        "regression"
+      ],
+      "claimEligible": true
     },
     {
       "id": "upload_write_buffer_64kb",
@@ -274,7 +319,12 @@
       "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_64KB",
       "rightCommandRepeat": 500,
       "rightIgnoreFirstOps": 0,
-      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "suiteTags": [
+        "release",
+        "regression"
+      ],
+      "claimEligible": true
     }
   ]
 }

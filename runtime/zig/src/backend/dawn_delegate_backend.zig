@@ -95,6 +95,15 @@ fn prewarm_kernel_dispatch(ctx: *anyopaque, kernel: []const u8, bindings: ?[]con
     _ = bindings;
 }
 
+fn capture_buffer(ctx: *anyopaque, allocator: std.mem.Allocator, handle: u64, offset: u64, size: u64) anyerror![]u8 {
+    _ = ctx;
+    _ = allocator;
+    _ = handle;
+    _ = offset;
+    _ = size;
+    return error.UnsupportedFeature;
+}
+
 const VTABLE = backend_iface.BackendVTable{
     .deinit = deinit,
     .execute_command = execute_command,
@@ -105,4 +114,5 @@ const VTABLE = backend_iface.BackendVTable{
     .flush_queue = flush_queue,
     .prewarm_upload_path = prewarm_upload_path,
     .prewarm_kernel_dispatch = prewarm_kernel_dispatch,
+    .capture_buffer = capture_buffer,
 };

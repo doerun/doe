@@ -60,6 +60,36 @@ test "fragment: solid color output through MSL HLSL SPIR-V" {
     try std.testing.expect(spirv_len > 0);
 }
 
+test "texture_1d textureLoad compiles across MSL HLSL SPIR-V" {
+    const source =
+        \\@group(0) @binding(0) var t: texture_1d<f32>;
+        \\@group(0) @binding(1) var<storage, read_write> out: array<f32>;
+        \\
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    let val = textureLoad(t, id.x, 0);
+        \\    out[id.x] = val.x;
+        \\}
+    ;
+
+    var msl_out: [MAX_OUTPUT]u8 = undefined;
+    const msl_len = try translateToMsl(std.testing.allocator, source, &msl_out);
+    try std.testing.expect(msl_len > 0);
+    try std.testing.expect(contains(msl_out[0..msl_len], "texture1d"));
+    try std.testing.expect(contains(msl_out[0..msl_len], ".get_width("));
+    try std.testing.expect(contains(msl_out[0..msl_len], ".read("));
+
+    var hlsl_out: [MAX_HLSL_OUTPUT]u8 = undefined;
+    const hlsl_len = try translateToHlsl(std.testing.allocator, source, &hlsl_out);
+    try std.testing.expect(hlsl_len > 0);
+    try std.testing.expect(contains(hlsl_out[0..hlsl_len], "Texture1D"));
+    try std.testing.expect(contains(hlsl_out[0..hlsl_len], ".Load(int2("));
+
+    var spirv_out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const spirv_len = try translateToSpirv(std.testing.allocator, source, &spirv_out);
+    try std.testing.expect(spirv_len > 0);
+}
+
 test "texture_cube compiles to MSL" {
     const source =
         \\@group(0) @binding(0) var t: texture_cube<f32>;

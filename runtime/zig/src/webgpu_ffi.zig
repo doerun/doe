@@ -535,12 +535,16 @@ pub const WebGPUBackend = struct {
             procs.wgpuShaderModuleRelease(shader_module);
             return;
         };
-        self.core.pipeline_cache.put(cache_key, .{ .shader_module = shader_module, .pipeline = pipeline }) catch {};
+        self.core.pipeline_cache.put(cache_key, .{ .shader_module = shader_module, .pipeline = pipeline }) catch |err| {
+            std.debug.print("warn: webgpu_ffi: pipeline cache put: {s}\n", .{@errorName(err)});
+        };
         if (bindings) |bs| {
             for (bs) |b| {
                 if (b.resource_kind != .buffer) continue;
                 const usage = types.WGPUBufferUsage_Storage | types.WGPUBufferUsage_CopyDst | types.WGPUBufferUsage_CopySrc;
-                _ = resources.getOrCreateBuffer(self, b.resource_handle, b.buffer_size, usage) catch {};
+                _ = resources.getOrCreateBuffer(self, b.resource_handle, b.buffer_size, usage) catch |err| {
+                    std.debug.print("warn: webgpu_ffi: buffer prewarm: {s}\n", .{@errorName(err)});
+                };
             }
         }
     }

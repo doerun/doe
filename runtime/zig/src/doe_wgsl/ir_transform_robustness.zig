@@ -567,8 +567,15 @@ fn clamp_texture_coords(
     const dim = texture_coord_dim(tex_ty) orelse return;
     if (texture_coord_is_explicitly_guarded(function, coord_arg, dim)) return;
 
-    const coord_vec_ty = function.exprs.items[coord_arg].ty;
-    const coord_elem_ty = switch (module.types.get(coord_vec_ty)) {
+    const coord_ty = function.exprs.items[coord_arg].ty;
+
+    // 1D textures use a scalar u32 coordinate, not a vector.
+    if (dim == 1) {
+        try clamp_texture_coords_scalar(allocator, module, function, call_data, texture_arg, coord_arg, coord_ty, tex_ty);
+        return;
+    }
+
+    const coord_elem_ty = switch (module.types.get(coord_ty)) {
         .vector => |vec| blk: {
             if (vec.len != dim) return;
             break :blk vec.elem;
@@ -582,7 +589,7 @@ fn clamp_texture_coords(
             const level_arg = function.expr_args.items[call_data.args.start + 2];
             const td_args = try function.append_expr_args(allocator, &.{ texture_arg, level_arg });
             break :blk try function.append_expr(allocator, .{
-                .ty = coord_vec_ty,
+                .ty = coord_ty,
                 .category = .value,
                 .data = .{ .call = .{
                     .name = try ir.dup_string(allocator, "textureDimensions"),
@@ -593,7 +600,7 @@ fn clamp_texture_coords(
         } else {
             const td_args = try function.append_expr_args(allocator, &.{texture_arg});
             break :blk try function.append_expr(allocator, .{
-                .ty = coord_vec_ty,
+                .ty = coord_ty,
                 .category = .value,
                 .data = .{ .call = .{
                     .name = try ir.dup_string(allocator, "textureDimensions"),
@@ -605,9 +612,9 @@ fn clamp_texture_coords(
     };
     const td_cast_args = try function.append_expr_args(allocator, &.{td_id});
     const td_coord_id = try function.append_expr(allocator, .{
-        .ty = coord_vec_ty,
+        .ty = coord_ty,
         .category = .value,
-        .data = .{ .construct = .{ .ty = coord_vec_ty, .args = td_cast_args } },
+        .data = .{ .construct = .{ .ty = coord_ty, .args = td_cast_args } },
     });
 
     // vec<T, dim>(1), where T matches the original coordinate element type.
@@ -618,14 +625,14 @@ fn clamp_texture_coords(
     });
     const splat_one_args = try function.append_expr_args(allocator, &.{one_scalar});
     const one_vec = try function.append_expr(allocator, .{
-        .ty = coord_vec_ty,
+        .ty = coord_ty,
         .category = .value,
-        .data = .{ .construct = .{ .ty = coord_vec_ty, .args = splat_one_args } },
+        .data = .{ .construct = .{ .ty = coord_ty, .args = splat_one_args } },
     });
 
     // textureDimensions - vec(1)
     const max_coord = try function.append_expr(allocator, .{
-        .ty = coord_vec_ty,
+        .ty = coord_ty,
         .category = .value,
         .data = .{ .binary = .{ .op = .sub, .lhs = td_coord_id, .rhs = one_vec } },
     });
@@ -638,20 +645,90 @@ fn clamp_texture_coords(
     });
     const splat_zero_args = try function.append_expr_args(allocator, &.{zero_scalar});
     const zero_vec = try function.append_expr(allocator, .{
-        .ty = coord_vec_ty,
+        .ty = coord_ty,
         .category = .value,
-        .data = .{ .construct = .{ .ty = coord_vec_ty, .args = splat_zero_args } },
+        .data = .{ .construct = .{ .ty = coord_ty, .args = splat_zero_args } },
     });
 
     // clamp(coords, vec(0), textureDimensions - 1)
     const clamp_args = try function.append_expr_args(allocator, &.{ coord_arg, zero_vec, max_coord });
     const clamped_coord = try function.append_expr(allocator, .{
-        .ty = coord_vec_ty,
+        .ty = coord_ty,
         .category = .value,
         .data = .{ .call = .{
             .name = try ir.dup_string(allocator, "clamp"),
             .kind = .builtin,
             .args = clamp_args,
+        } },
+    });
+
+    // Replace the coordinate argument in the original call's arg list.
+    function.expr_args.items[call_data.args.start + 1] = clamped_coord;
+}
+
+/// Clamp a scalar (1D) texture coordinate: min(coord, textureDimensions(tex, level) - 1)
+fn clamp_texture_coords_scalar(
+    allocator: std.mem.Allocator,
+    module: *ir.Module,
+    function: *ir.Function,
+    call_data: @FieldType(ir.Expr, "call"),
+    texture_arg: ir.ExprId,
+    coord_arg: ir.ExprId,
+    coord_ty: ir.TypeId,
+    tex_ty: ir.Type,
+) TransformError!void {
+    const u32_ty = try ensure_u32_type(module);
+
+    // Build textureDimensions(tex) or textureDimensions(tex, level)
+    const td_id = blk: {
+        const is_load = std.mem.eql(u8, call_data.name, TEXTURE_LOAD_NAME);
+        if (is_load and texture_has_level(tex_ty) and call_data.args.len >= 3) {
+            const level_arg = function.expr_args.items[call_data.args.start + 2];
+            const td_args = try function.append_expr_args(allocator, &.{ texture_arg, level_arg });
+            break :blk try function.append_expr(allocator, .{
+                .ty = u32_ty,
+                .category = .value,
+                .data = .{ .call = .{
+                    .name = try ir.dup_string(allocator, "textureDimensions"),
+                    .kind = .builtin,
+                    .args = td_args,
+                } },
+            });
+        } else {
+            const td_args = try function.append_expr_args(allocator, &.{texture_arg});
+            break :blk try function.append_expr(allocator, .{
+                .ty = u32_ty,
+                .category = .value,
+                .data = .{ .call = .{
+                    .name = try ir.dup_string(allocator, "textureDimensions"),
+                    .kind = .builtin,
+                    .args = td_args,
+                } },
+            });
+        }
+    };
+
+    // textureDimensions - 1
+    const one_lit = try function.append_expr(allocator, .{
+        .ty = u32_ty,
+        .category = .value,
+        .data = .{ .int_lit = 1 },
+    });
+    const max_coord = try function.append_expr(allocator, .{
+        .ty = u32_ty,
+        .category = .value,
+        .data = .{ .binary = .{ .op = .sub, .lhs = td_id, .rhs = one_lit } },
+    });
+
+    // min(coord, textureDimensions - 1)
+    const min_args = try function.append_expr_args(allocator, &.{ coord_arg, max_coord });
+    const clamped_coord = try function.append_expr(allocator, .{
+        .ty = coord_ty,
+        .category = .value,
+        .data = .{ .call = .{
+            .name = try ir.dup_string(allocator, "min"),
+            .kind = .builtin,
+            .args = min_args,
         } },
     });
 

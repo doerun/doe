@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Fawn Tracing Configuration",
+  "description": "Controls trace ring-buffer settings, required event fields, focus-mode filtering, crash artifact paths, and WASM trace bridge options.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "traceVersion",
+    "hashAlg",
+    "ringBufferBytes",
+    "eventFormat",
+    "requiredFields",
+    "focusMode",
+    "crashArtifacts",
+    "wasm"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "traceVersion": { "type": "string", "enum": ["v1"] },
+    "hashAlg": { "type": "string", "enum": ["sha256", "sha512", "blake3"] },
+    "ringBufferBytes": { "type": "integer", "minimum": 1 },
+    "eventFormat": { "type": "string", "enum": ["binary", "json"] },
+    "requiredFields": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "minItems": 1
+    },
+    "focusMode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["enabled", "includeModules", "excludeModules"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "includeModules": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "excludeModules": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "crashArtifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["traceBin", "traceMeta", "requiredMetaFields"],
+      "properties": {
+        "traceBin": { "type": "string", "minLength": 1 },
+        "traceMeta": { "type": "string", "minLength": 1 },
+        "requiredMetaFields": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "minItems": 1
+        }
+      }
+    },
+    "wasm": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["exportMode", "requireDeterministicSeq", "useMonotonicCounterFallback"],
+      "properties": {
+        "exportMode": {
+          "type": "string",
+          "enum": ["host_bridge", "standalone"]
+        },
+        "requireDeterministicSeq": { "type": "boolean" },
+        "useMonotonicCounterFallback": { "type": "boolean" }
+      }
+    }
+  }
+}

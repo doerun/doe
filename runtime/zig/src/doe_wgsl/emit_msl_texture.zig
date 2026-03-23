@@ -7,7 +7,24 @@ pub fn emit_builtin(self: anytype, function: ir.Function, call: @FieldType(ir.Ex
         const texture_expr = function.expr_args.items[call.args.start];
         const coord_expr = function.expr_args.items[call.args.start + 1];
         const level_expr = function.expr_args.items[call.args.start + 2];
-        if (is_texture_2d(self.module, function, texture_expr)) {
+        if (is_texture_1d(self.module, function, texture_expr)) {
+            // 1D texture: scalar coord bounds check
+            try self.write("((int(");
+            try self.emit_expr(function, coord_expr);
+            try self.write(") >= 0 && uint(int(");
+            try self.emit_expr(function, coord_expr);
+            try self.write(")) < ");
+            try self.emit_expr(function, texture_expr);
+            try self.write(".get_width(uint(");
+            try self.emit_expr(function, level_expr);
+            try self.write("))) ? ");
+            try self.emit_expr(function, texture_expr);
+            try self.write(".read(uint(int(");
+            try self.emit_expr(function, coord_expr);
+            try self.write(")), uint(");
+            try self.emit_expr(function, level_expr);
+            try self.write(")) : float4(0.0))");
+        } else if (is_texture_2d(self.module, function, texture_expr)) {
             try self.write("((all(int2(");
             try self.emit_expr(function, coord_expr);
             try self.write(") >= int2(0)) && all(uint2(int2(");
@@ -265,6 +282,13 @@ pub fn emit_builtin(self: anytype, function: ir.Function, call: @FieldType(ir.Ex
         }
     }
     return false;
+}
+
+fn is_texture_1d(module: *const ir.Module, function: ir.Function, expr_id: ir.ExprId) bool {
+    return switch (module.types.get(function.exprs.items[expr_id].ty)) {
+        .texture_1d => true,
+        else => false,
+    };
 }
 
 fn is_texture_2d(module: *const ir.Module, function: ir.Function, expr_id: ir.ExprId) bool {

@@ -1,8 +1,9 @@
 const std = @import("std");
 const model = @import("model.zig");
 const quirk = @import("quirk/mod.zig");
-const command_parser = @import("command_json.zig");
+const command_stream = @import("command_stream.zig");
 const execution = @import("execution.zig");
+const operator_artifacts = @import("operator_artifacts.zig");
 const trace = @import("trace.zig");
 const replay = @import("replay.zig");
 const main_print = @import("main_print.zig");
@@ -159,11 +160,17 @@ fn maxUploadBytes(commands: []const model.Command) u64 {
     return max_bytes;
 }
 
+fn operator_artifact_anchor(trace_meta_path: ?[]const u8, trace_jsonl_path: ?[]const u8) ?[]const u8 {
+    return trace_meta_path orelse trace_jsonl_path;
+}
+
 fn prewarmKernelDispatches(ctx: *execution.ExecutionContext, commands: []const model.Command) void {
     for (commands) |command| {
         switch (command) {
             .kernel_dispatch => |kd| {
-                ctx.prewarmKernelDispatch(kd.kernel, kd.bindings) catch {};
+                ctx.prewarmKernelDispatch(kd.kernel, kd.bindings) catch |err| {
+                    std.debug.print("warn: main: kernel dispatch prewarm: {s}\n", .{@errorName(err)});
+                };
             },
             else => {},
         }
@@ -351,16 +358,25 @@ pub fn main() !void {
     }
     defer if (replay_expectations) |expectations| replay.freeReplayExpectations(allocator, expectations);
     var commands: []const model.Command = default_commands[0..];
-    var owned_commands: ?[]model.Command = null;
+    var command_metadata: []command_stream.CommandMetadata = try command_stream.metadata_for_slice(allocator, commands);
+    var owned_stream: ?command_stream.ParsedCommandStream = null;
 
     if (commands_text) |commands_path| {
         const commands_bytes = try readFileAlloc(allocator, commands_path);
         defer allocator.free(commands_bytes);
-        const parsed_commands = try command_parser.parseCommands(allocator, commands_bytes);
-        commands = parsed_commands;
-        owned_commands = parsed_commands;
+        const parsed_stream = try command_stream.parse_command_stream(allocator, commands_bytes);
+        commands = parsed_stream.commands;
+        allocator.free(command_metadata);
+        command_metadata = parsed_stream.metadata;
+        owned_stream = parsed_stream;
     }
-    defer if (owned_commands) |parsed_commands| command_parser.freeCommands(allocator, parsed_commands);
+    defer {
+        if (owned_stream) |parsed_stream| {
+            parsed_stream.deinit(allocator);
+        } else {
+            allocator.free(command_metadata);
+        }
+    }
 
     const profile = model.DeviceProfile{
         .vendor = profile_vendor,
@@ -421,6 +437,12 @@ pub fn main() !void {
     }
     defer if (trace_jsonl_file) |trace_file| trace_file.close();
 
+    var artifact_recorder = try operator_artifacts.Recorder.init(
+        allocator,
+        operator_artifact_anchor(trace_meta_path, emit_trace_jsonl),
+    );
+    defer artifact_recorder.deinit();
+
     var trace_summary = trace.TraceRunSummary{
         .trace_version = 1,
         .module_name = "doe-zig-runtime",
@@ -456,6 +478,12 @@ pub fn main() !void {
         .selection_policy_hash = null,
         .shader_artifact_manifest_path = null,
         .shader_artifact_manifest_hash = null,
+        .semantic_tracing_enabled = false,
+        .semantic_op_row_count = 0,
+        .semantic_capture_count = 0,
+        .semantic_repro_count = 0,
+        .operator_record_manifest_path = null,
+        .operator_record_manifest_hash = null,
         .backend_lane = execution.backendLaneName(backend_lane),
         .adapter_ordinal = null,
         .queue_family_index = null,
@@ -484,6 +512,10 @@ pub fn main() !void {
     var idx: usize = 0;
     while (idx < commands.len) : (idx += 1) {
         const command = commands[idx];
+        const metadata = command_metadata[idx];
+        if (metadata.semantic.present()) {
+            trace_summary.semantic_tracing_enabled = true;
+        }
         const result = quirk.dispatchWithMode(quirk_mode, profile, dispatch_context, command);
         const target = result.command;
         const kernel_name = main_print.commandKernel(target);
@@ -493,7 +525,7 @@ pub fn main() !void {
         const emit_trace_payload = emit_trace or (trace_jsonl_file != null) or (trace_meta_path != null) or (replay_expectations != null);
 
         if (execution_context) |*ctx| {
-            const executed = try ctx.execute(target);
+            const executed = try ctx.execute_with_semantic(target, metadata.semantic);
             execute_result = executed;
             trace_summary.execution_row_count += 1;
             trace_summary.execution_total_ns += executed.duration_ns;
@@ -533,12 +565,13 @@ pub fn main() !void {
 
         if (emit_trace_payload) {
             const previous_hash = trace_state.previous_hash;
-            const current_hash = trace.tracePayloadHash(
+            const semantic_hash = trace.tracePayloadHashWithSemantic(
                 trace_state,
                 idx,
                 command_label,
                 target,
                 kernel_name,
+                metadata.semantic,
                 result,
             );
             if (replay_expectations) |expectations| {
@@ -548,40 +581,61 @@ pub fn main() !void {
                 if (!std.mem.eql(u8, expected.command, command_label)) return replay.ReplayValidationError.ReplayCommandMismatch;
                 if (!replay.matchOptionalText(expected.kernel, kernel_name)) return replay.ReplayValidationError.ReplayKernelMismatch;
                 if (expected.previous_hash != previous_hash) return replay.ReplayValidationError.ReplayPreviousHashMismatch;
-                if (expected.hash != current_hash) return replay.ReplayValidationError.ReplayHashMismatch;
+                if (expected.hash != semantic_hash) return replay.ReplayValidationError.ReplayHashMismatch;
             }
             if (emit_trace) {
-                try trace.printTraceLine(
+                try trace.printTraceLineWithSemantic(
                     stdout,
                     idx,
                     command_label,
                     kernel_name,
+                    metadata.semantic,
                     result,
                     @intCast(timestamp_ns),
-                    current_hash,
+                    semantic_hash,
                     trace_state.previous_hash,
                     execute_result,
                 );
             }
             if (trace_jsonl_file) |*file| {
                 const trace_writer = file.deprecatedWriter();
-                try trace.printTraceLine(
+                try trace.printTraceLineWithSemantic(
                     trace_writer,
                     idx,
                     command_label,
                     kernel_name,
+                    metadata.semantic,
                     result,
                     @intCast(timestamp_ns),
-                    current_hash,
+                    semantic_hash,
                     trace_state.previous_hash,
                     execute_result,
                 );
             }
+            try artifact_recorder.record(
+                if (execution_context) |*ctx| ctx else null,
+                .{
+                    .source_index = idx,
+                    .command = target,
+                    .command_label = command_label,
+                    .kernel_name = kernel_name,
+                    .semantic = metadata.semantic,
+                    .capture = metadata.capture,
+                    .execution_result = execute_result,
+                    .profile_vendor = profile_vendor,
+                    .profile_api = trace.apiName(profile.api),
+                    .profile_family = profile_family,
+                    .profile_driver = profile_driver,
+                    .trace_hash = semantic_hash,
+                    .trace_previous_hash = trace_state.previous_hash,
+                    .trace_meta_path = trace_meta_path,
+                },
+            );
             trace_summary.seq_max = @intCast(idx);
             trace_summary.row_count += 1;
             trace_summary.final_previous_hash = trace_state.previous_hash;
-            trace_summary.final_hash = current_hash;
-            trace_state.previous_hash = current_hash;
+            trace_summary.final_hash = semantic_hash;
+            trace_state.previous_hash = semantic_hash;
         } else if (result.decision.matched_quirk_id) |id| {
             try stdout.print(
                 "cmd[{d}] matched={s} verification={s} proof={s} requiresLean={} blocking={} score={} matched_count={d}\\n",
@@ -608,6 +662,13 @@ pub fn main() !void {
             trace_summary.execution_submit_wait_total_ns += flush_ns;
         }
     }
+
+    const artifact_summary = try artifact_recorder.finalize();
+    trace_summary.semantic_op_row_count = artifact_summary.row_count;
+    trace_summary.semantic_capture_count = artifact_summary.capture_count;
+    trace_summary.semantic_repro_count = artifact_summary.repro_count;
+    trace_summary.operator_record_manifest_path = artifact_summary.manifest_path;
+    trace_summary.operator_record_manifest_hash = artifact_summary.manifest_hash;
 
     if (trace_meta_path) |path| {
         try trace.writeTraceMeta(path, trace_summary);

@@ -165,12 +165,22 @@ pub export fn wgpuQueueWriteTexture(a0: types.WGPUQueue, a1: *const types.WGPUTe
 
 pub export fn wgpuQueueCopyExternalTextureForBrowser(
     a0: types.WGPUQueue,
-    a1: ?*const anyopaque,
-    a2: ?*const anyopaque,
-    a3: ?*const anyopaque,
-    a4: ?*const anyopaque,
+    a1: ?*const types.WGPUImageCopyExternalTexture,
+    a2: ?*const types.WGPUTexelCopyTextureInfo,
+    a3: ?*const types.WGPUExtent3D,
+    a4: ?*const types.WGPUCopyTextureForBrowserOptions,
 ) callconv(.c) void {
     native.doeNativeQueueCopyExternalTextureForBrowser(a0, a1, a2, a3, a4);
+}
+
+pub export fn wgpuQueueCopyTextureForBrowser(
+    a0: types.WGPUQueue,
+    a1: ?*const types.WGPUTexelCopyTextureInfo,
+    a2: ?*const types.WGPUTexelCopyTextureInfo,
+    a3: ?*const types.WGPUExtent3D,
+    a4: ?*const types.WGPUCopyTextureForBrowserOptions,
+) callconv(.c) void {
+    native.doeNativeQueueCopyTextureForBrowser(a0, a1, a2, a3, a4);
 }
 
 /// ABI bridge for wgpuQueueWriteTexture: unpacks struct pointers into the

@@ -156,7 +156,9 @@ pub fn executeSurfaceRelease(self: *Backend, surface_cmd: model.SurfaceReleaseCo
         self.core.procs.?.wgpuTextureRelease(removed.value.acquired_texture);
     }
     if (removed.value.configured) {
-        _ = self.unconfigureSurface(removed.value.surface) catch {};
+        _ = self.unconfigureSurface(removed.value.surface) catch |err| {
+            std.debug.print("warn: wgpu_surface_commands: surface unconfigure during release: {s}\n", .{@errorName(err)});
+        };
     }
     self.releaseSurface(removed.value.surface);
     surface_macos_mod.releasePlatformSurface(removed.value.platform_surface);

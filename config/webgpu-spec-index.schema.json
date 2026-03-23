@@ -24,8 +24,13 @@
         "correct": { "$ref": "#/$defs/correctnessStatus" },
         "perf": { "$ref": "#/$defs/performanceStatus" },
         "notes": {
-          "type": "array",
-          "items": { "type": "string" }
+          "oneOf": [
+            { "type": "string" },
+            {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          ]
         }
       }
     },

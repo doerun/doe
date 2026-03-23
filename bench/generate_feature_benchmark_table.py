@@ -119,8 +119,8 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--coverage",
-        default="config/webgpu-spec-coverage.json",
-        help="Coverage config JSON path.",
+        default="config/webgpu-capability-inventory.json",
+        help="Capability inventory JSON path.",
     )
     parser.add_argument(
         "--workloads",
@@ -129,7 +129,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--dawn-map",
-        default="bench/dawn_workload_map.amd.extended.json",
+        default="bench/native-compare/dawn_workload_map.amd.extended.json",
         help="Dawn workload map JSON path.",
     )
     parser.add_argument(
@@ -276,12 +276,12 @@ def main() -> int:
         "",
         "| Metric | % | How it was measured |",
         "|---|---:|---|",
-        "| Spec-universe inventory tracking completion | {percent:.1f}% ({done}/{total}) | `config/webgpu-spec-coverage.json` entries not in `planned` state |".format(
+        "| Spec-universe inventory tracking completion | {percent:.1f}% ({done}/{total}) | `config/webgpu-capability-inventory.json` entries not in `planned` state |".format(
             percent=tracked_inventory_percent,
             done=tracked_inventory_count,
             total=total_capabilities,
         ),
-        "| Runtime-implemented capability completion | {percent:.1f}% ({done}/{total}) | `config/webgpu-spec-coverage.json` entries with `status=implemented` |".format(
+        "| Runtime-implemented capability completion | {percent:.1f}% ({done}/{total}) | `config/webgpu-capability-inventory.json` entries with `status=implemented` |".format(
             percent=implemented_completion_percent,
             done=implemented,
             total=total_capabilities,
@@ -301,12 +301,12 @@ def main() -> int:
             done=comparable_mapped_capability_count,
             total=total_capabilities,
         ),
-        "| Comparable capability benchmark coverage (eligible-only) | {percent:.2f}% ({done}/{total}) | Excludes capability entries with `benchmarkClass=directional` in `config/webgpu-spec-coverage.json` |".format(
+        "| Comparable capability benchmark coverage (eligible-only) | {percent:.2f}% ({done}/{total}) | Excludes capability entries with `benchmarkClass=directional` in `config/webgpu-capability-inventory.json` |".format(
             percent=comparable_eligible_mapped_capability_percent,
             done=comparable_eligible_mapped_capability_count,
             total=comparable_eligible_capability_count,
         ),
-        "| Directional-only capability domains | {percent:.2f}% ({done}/{total}) | Capability entries with `benchmarkClass=directional` in `config/webgpu-spec-coverage.json` |".format(
+        "| Directional-only capability domains | {percent:.2f}% ({done}/{total}) | Capability entries with `benchmarkClass=directional` in `config/webgpu-capability-inventory.json` |".format(
             percent=directional_capability_percent,
             done=directional_capability_count,
             total=total_capabilities,

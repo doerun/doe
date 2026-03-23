@@ -22,7 +22,12 @@
         "bench/kernels"
       ],
       "comparable": false,
-      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "compute_matvec_32768x2048_f32_swizzle1",
@@ -45,7 +50,12 @@
         "bench/kernels"
       ],
       "comparable": false,
-      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "compute_matvec_32768x2048_f32_workgroupshared_swizzle1",
@@ -68,7 +78,12 @@
         "bench/kernels"
       ],
       "comparable": false,
-      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "compute_workgroup_atomic_1024",
@@ -91,7 +106,11 @@
       "comparable": false,
       "default": false,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-      "dawnFilter": "WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeAtomic"
+      "dawnFilter": "WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeAtomic",
+      "suiteTags": [
+        "release"
+      ],
+      "claimEligible": true
     },
     {
       "id": "compute_workgroup_non_atomic_1024",
@@ -114,7 +133,11 @@
       ],
       "comparable": false,
       "default": false,
-      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "suiteTags": [
+        "release"
+      ],
+      "claimEligible": true
     },
     {
       "id": "pipeline_async_diagnostics",
@@ -133,7 +156,12 @@
       "family": "gfx11",
       "driver": "24.0.0",
       "leftTimingDivisor": 500,
-      "timingNormalizationNote": "Apples-to-apples only: Fawn repeats async diagnostics command and normalizes by async sub-steps to reduce fixed process/setup skew."
+      "timingNormalizationNote": "Apples-to-apples only: Fawn repeats async diagnostics command and normalizes by async sub-steps to reduce fixed process/setup skew.",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "pipeline_compile_stress",
@@ -156,7 +184,12 @@
         "bench/kernels"
       ],
       "comparable": false,
-      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "render_bundle_dynamic_bindings",
@@ -174,7 +207,12 @@
       "driver": "24.0.0",
       "comparable": false,
       "leftTimingDivisor": 2000,
-      "timingNormalizationNote": "Dawn DrawCallPerf render-bundle variant reports per draw (iterationsPerStep=2000); Fawn normalizes to per-draw units."
+      "timingNormalizationNote": "Dawn DrawCallPerf render-bundle variant reports per draw (iterationsPerStep=2000); Fawn normalizes to per-draw units.",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "render_bundle_dynamic_pipeline_bindings",
@@ -192,7 +230,12 @@
       "driver": "24.0.0",
       "comparable": false,
       "leftTimingDivisor": 2000,
-      "timingNormalizationNote": "Dawn DrawCallPerf dynamic-pipeline render-bundle variant reports per draw (iterationsPerStep=2000); Fawn normalizes to per-draw units."
+      "timingNormalizationNote": "Dawn DrawCallPerf dynamic-pipeline render-bundle variant reports per draw (iterationsPerStep=2000); Fawn normalizes to per-draw units.",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "render_draw_indexed_200k",
@@ -214,7 +257,12 @@
       "vendor": "amd",
       "family": "gfx11",
       "driver": "24.0.0",
-      "timingNormalizationNote": "Directional-only: Apples-to-apples macro workload: normalize to per-draw units over 200k indexed draws with deferred queue sync."
+      "timingNormalizationNote": "Directional-only: Apples-to-apples macro workload: normalize to per-draw units over 200k indexed draws with deferred queue sync.",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "render_draw_indexed_baseline",
@@ -237,7 +285,12 @@
       "driver": "24.0.0",
       "comparable": false,
       "leftTimingDivisor": 20000,
-      "timingNormalizationNote": "Directional-only: Both sides report per-draw throughput units; Fawn issues indexed draws and Dawn uses the closest draw-call throughput proxy variant. Repeat=10 plus deferred queue sync reduces per-sample setup/sync overhead while preserving per-draw normalization."
+      "timingNormalizationNote": "Directional-only: Both sides report per-draw throughput units; Fawn issues indexed draws and Dawn uses the closest draw-call throughput proxy variant. Repeat=10 plus deferred queue sync reduces per-sample setup/sync overhead while preserving per-draw normalization.",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "render_draw_redundant_pipeline_bindings",
@@ -255,7 +308,12 @@
       "driver": "24.0.0",
       "comparable": false,
       "leftTimingDivisor": 20000,
-      "timingNormalizationNote": "Dawn DrawCallPerf redundant-pipeline variant reports per draw (iterationsPerStep=2000); Fawn repeats the redundant-pipeline command stream 10x and normalizes to per-draw units to reduce sample-tail setup jitter."
+      "timingNormalizationNote": "Dawn DrawCallPerf redundant-pipeline variant reports per draw (iterationsPerStep=2000); Fawn repeats the redundant-pipeline command stream 10x and normalizes to per-draw units to reduce sample-tail setup jitter.",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "render_draw_state_bindings",
@@ -273,7 +331,12 @@
       "driver": "24.0.0",
       "comparable": false,
       "leftTimingDivisor": 2000,
-      "timingNormalizationNote": "Dawn DrawCallPerf DynamicBindGroup reports per draw (iterationsPerStep=2000); Fawn command stream normalizes to per-draw units."
+      "timingNormalizationNote": "Dawn DrawCallPerf DynamicBindGroup reports per draw (iterationsPerStep=2000); Fawn command stream normalizes to per-draw units.",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "render_draw_throughput_200k",
@@ -291,7 +354,12 @@
       "driver": "24.0.0",
       "comparable": false,
       "leftTimingDivisor": 575000,
-      "timingNormalizationNote": "Apples-to-apples macro workload: normalize to per-draw units with fixed setup amortization over the 200k draw stream."
+      "timingNormalizationNote": "Apples-to-apples macro workload: normalize to per-draw units with fixed setup amortization over the 200k draw stream.",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "render_draw_throughput_baseline",
@@ -309,7 +377,12 @@
       "comparable": false,
       "leftTimingDivisor": 2000,
       "timingNormalizationNote": "Dawn DrawCallPerf reports per draw (iterationsPerStep=2000); Fawn render_draw normalizes to per-draw units.",
-      "dawnFilter": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151"
+      "dawnFilter": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "surface_presentation",
@@ -326,7 +399,12 @@
       "family": "gfx11",
       "driver": "24.0.0",
       "comparable": false,
-      "timingNormalizationNote": "Directional-only in the AMD native Vulkan subset. Native Doe headless surface lifecycle now executes the contract, but timing remains diagnostic until the benchmark contract itself is apples-to-apples."
+      "timingNormalizationNote": "Directional-only in the AMD native Vulkan subset. Native Doe headless surface lifecycle now executes the contract, but timing remains diagnostic until the benchmark contract itself is apples-to-apples.",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "texture_sampler_write_query_destroy",
@@ -345,7 +423,12 @@
       "driver": "24.0.0",
       "comparable": false,
       "leftTimingDivisor": 500,
-      "timingNormalizationNote": "Fawn command stream executes sampler/texture lifecycle calls plus render draws; repeat=10 and per-iteration normalization reduce fixed setup/sync skew while keeping SubresourceTrackingPerf-oriented units."
+      "timingNormalizationNote": "Fawn command stream executes sampler/texture lifecycle calls plus render draws; repeat=10 and per-iteration normalization reduce fixed setup/sync skew while keeping SubresourceTrackingPerf-oriented units.",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "texture_sampler_write_query_destroy_500",
@@ -363,7 +446,12 @@
       "driver": "24.0.0",
       "comparable": false,
       "leftTimingDivisor": 500,
-      "timingNormalizationNote": "Apples-to-apples macro workload: normalize to per-iteration units over a 500-draw texture lifecycle command stream."
+      "timingNormalizationNote": "Apples-to-apples macro workload: normalize to per-iteration units over a 500-draw texture lifecycle command stream.",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "texture_sampler_write_query_destroy_mip8",
@@ -382,7 +470,12 @@
       "driver": "24.0.0",
       "comparable": false,
       "leftTimingDivisor": 500,
-      "timingNormalizationNote": "Normalized per iteration against the SubresourceTrackingPerf mipLevel=8 variant with repeat=10 to amortize fixed setup/sync overhead."
+      "timingNormalizationNote": "Normalized per iteration against the SubresourceTrackingPerf mipLevel=8 variant with repeat=10 to amortize fixed setup/sync overhead.",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "texture_sampling_raster_baseline",
@@ -407,7 +500,12 @@
       "comparable": false,
       "leftCommandRepeat": 500,
       "leftTimingDivisor": 500,
-      "timingNormalizationNote": "Dawn SubresourceTrackingPerf reports per iteration (iterationsPerStep=50); Fawn repeats the combined compute+render path 500 times, disables kernel GPU timestamp queries for this lane (`--gpu-timestamp-mode off`), and normalizes to per-iteration units."
+      "timingNormalizationNote": "Dawn SubresourceTrackingPerf reports per iteration (iterationsPerStep=50); Fawn repeats the combined compute+render path 500 times, disables kernel GPU timestamp queries for this lane (`--gpu-timestamp-mode off`), and normalizes to per-iteration units.",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "upload_write_buffer_16mb",
@@ -435,7 +533,12 @@
       "driver": "24.0.0",
       "rightCommandRepeat": 50,
       "rightIgnoreFirstOps": 1,
-      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "suiteTags": [
+        "release",
+        "regression"
+      ],
+      "claimEligible": true
     },
     {
       "id": "upload_write_buffer_1gb",
@@ -464,7 +567,13 @@
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "vendor": "amd",
       "family": "gfx11",
-      "driver": "24.0.0"
+      "driver": "24.0.0",
+      "suiteTags": [
+        "release",
+        "regression",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "upload_write_buffer_1kb",
@@ -492,7 +601,12 @@
       "driver": "24.0.0",
       "rightCommandRepeat": 500,
       "rightIgnoreFirstOps": 1,
-      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "suiteTags": [
+        "release",
+        "regression"
+      ],
+      "claimEligible": true
     },
     {
       "id": "upload_write_buffer_1mb",
@@ -520,7 +634,12 @@
       "driver": "24.0.0",
       "rightCommandRepeat": 50,
       "rightIgnoreFirstOps": 1,
-      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "suiteTags": [
+        "release",
+        "regression"
+      ],
+      "claimEligible": true
     },
     {
       "id": "upload_write_buffer_256mb",
@@ -549,7 +668,13 @@
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "vendor": "amd",
       "family": "gfx11",
-      "driver": "24.0.0"
+      "driver": "24.0.0",
+      "suiteTags": [
+        "release",
+        "regression",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "upload_write_buffer_4gb",
@@ -580,7 +705,12 @@
       "comparable": false,
       "benchmarkClass": "directional",
       "pathAsymmetry": true,
-      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored."
+      "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored.",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "upload_write_buffer_4mb",
@@ -608,7 +738,12 @@
       "driver": "24.0.0",
       "rightCommandRepeat": 50,
       "rightIgnoreFirstOps": 1,
-      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "suiteTags": [
+        "release",
+        "regression"
+      ],
+      "claimEligible": true
     },
     {
       "id": "upload_write_buffer_64kb",
@@ -636,7 +771,12 @@
       "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_64KB",
       "rightCommandRepeat": 500,
       "rightIgnoreFirstOps": 0,
-      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "suiteTags": [
+        "release",
+        "regression"
+      ],
+      "claimEligible": true
     },
     {
       "id": "capability_introspection",
@@ -657,7 +797,12 @@
       "vendor": "amd",
       "asyncDiagnosticsMode": "capability_introspection",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
-      "timingNormalizationNote": "Directional-only: Apples-to-apples P1 capability contract: normalize as a per-command introspection sequence."
+      "timingNormalizationNote": "Directional-only: Apples-to-apples P1 capability contract: normalize as a per-command introspection sequence.",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "capability_introspection_500",
@@ -678,7 +823,12 @@
       "vendor": "amd",
       "asyncDiagnosticsMode": "capability_introspection",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
-      "timingNormalizationNote": "Directional-only: Apples-to-apples macro capability contract: normalize per internal introspection iteration."
+      "timingNormalizationNote": "Directional-only: Apples-to-apples macro capability contract: normalize per internal introspection iteration.",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "compute_concurrent_execution_single",
@@ -702,7 +852,12 @@
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "comparable": false,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-      "benchmarkClass": "directional"
+      "benchmarkClass": "directional",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "compute_dispatch_fallback",
@@ -728,7 +883,12 @@
       "name": "dispatch fallback contract",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "timingNormalizationNote": "Directional dispatch contract only: normalize per fallback dispatch operation.",
-      "vendor": "amd"
+      "vendor": "amd",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "compute_dispatch_grid",
@@ -754,7 +914,12 @@
       "name": "dispatch grid contract",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "timingNormalizationNote": "Directional dispatch grid contract only: normalize across both-dispatch-sequence workload steps.",
-      "vendor": "amd"
+      "vendor": "amd",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "compute_dispatch_indirect_large_args",
@@ -781,7 +946,12 @@
       "name": "dispatch indirect large args",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "timingNormalizationNote": "Directional large-arg contract normalized per dispatch operation with explicit argument range checks.",
-      "vendor": "amd"
+      "vendor": "amd",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "compute_dispatch_indirect_live_args",
@@ -808,7 +978,12 @@
       "name": "dispatch indirect live args",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "timingNormalizationNote": "Directional live-arg lane with per-dispatch normalization and per-iteration arg updates.",
-      "vendor": "amd"
+      "vendor": "amd",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "compute_dispatch_indirect_single",
@@ -829,7 +1004,12 @@
       "name": "dispatch indirect 1",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "timingNormalizationNote": "Comparable indirect-dispatch baseline normalized to one dispatch per mapped arg update.",
-      "vendor": "amd"
+      "vendor": "amd",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "compute_dispatch_workgroups_2d_sweep",
@@ -850,7 +1030,12 @@
       "name": "dispatch workgroups 2D sweep",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "timingNormalizationNote": "Comparable dispatch-sweep lane with fixed total-work normalization across 2D shape variants.",
-      "vendor": "amd"
+      "vendor": "amd",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "compute_dispatch_workgroups_3d_sweep",
@@ -877,7 +1062,12 @@
       "name": "dispatch workgroups 3D sweep",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "timingNormalizationNote": "Directional 3D sweep lane normalized per dispatch step with fixed total work normalization.",
-      "vendor": "amd"
+      "vendor": "amd",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "compute_dispatch_workgroups_indirect_pipeline_switch",
@@ -904,7 +1094,12 @@
       "name": "dispatch indirect pipeline switch",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "timingNormalizationNote": "Directional pipeline-switch indirect lane normalized per dispatch with fixed indirect arg state.",
-      "vendor": "amd"
+      "vendor": "amd",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "compute_indirect_timestamp",
@@ -925,7 +1120,12 @@
       "leftTimingDivisor": 5120,
       "timingNormalizationNote": "Apples-to-apples compute contract: command repeat=20 and kernel repeat=256 are normalized to per-dispatch units (20*256).",
       "applesToApplesVetted": true,
-      "benchmarkClass": "directional"
+      "benchmarkClass": "directional",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "compute_kernel_dispatch_1000",
@@ -952,7 +1152,12 @@
       "name": "kernel dispatch macro 1000",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "timingNormalizationNote": "Directional macro lane normalizing to per-dispatch operation across a 20x1000 inner repeat.",
-      "vendor": "amd"
+      "vendor": "amd",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "compute_zero_initialize_workgroup_memory_256",
@@ -976,7 +1181,12 @@
       "comparable": false,
       "leftTimingDivisor": 2400,
       "timingNormalizationNote": "Dawn VulkanZeroInitializeWorkgroupMemoryExtensionTest already reports per-iteration metrics (iterationsPerStep=50 internal normalization). Fawn repeats dispatch 50 times and applies leftTimingDivisor normalization only.",
-      "benchmarkClass": "directional"
+      "benchmarkClass": "directional",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "copy_buffer_to_buffer_4kb",
@@ -997,7 +1207,12 @@
       "name": "copy buffer to buffer 4kb",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "timingNormalizationNote": "Comparable buffer copy lane normalizing to one direct buffer-to-buffer copy op.",
-      "vendor": "amd"
+      "vendor": "amd",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "copy_buffer_to_buffer_overlap",
@@ -1024,7 +1239,12 @@
       "name": "copy buffer to buffer overlap",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "timingNormalizationNote": "Directional overlap contract normalized per overlapping copy op.",
-      "vendor": "amd"
+      "vendor": "amd",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "copy_buffer_to_texture",
@@ -1050,7 +1270,12 @@
       "name": "copy buffer-to-texture contract",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "timingNormalizationNote": "Directional copy contract only: normalize per copy command sequence.",
-      "vendor": "amd"
+      "vendor": "amd",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "copy_buffer_to_texture_tight_pitch",
@@ -1071,7 +1296,12 @@
       "name": "copy buffer to texture tight pitch",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "timingNormalizationNote": "Comparable copy layout lane normalizing to one buffer-to-texture transfer.",
-      "vendor": "amd"
+      "vendor": "amd",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "copy_protocol",
@@ -1097,7 +1327,12 @@
       "name": "copy protocol contract",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "timingNormalizationNote": "Directional mixed protocol contract only: normalize across one full mixed API sequence.",
-      "vendor": "amd"
+      "vendor": "amd",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "copy_texture_to_buffer",
@@ -1123,7 +1358,12 @@
       "name": "copy texture-to-buffer contract",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "timingNormalizationNote": "Directional texture-to-buffer copy contract only: normalize per copy command sequence.",
-      "vendor": "amd"
+      "vendor": "amd",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "copy_texture_to_buffer_padded",
@@ -1144,7 +1384,12 @@
       "name": "copy texture to buffer padded",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "timingNormalizationNote": "Comparable copy layout lane normalized to one texture-to-buffer transfer.",
-      "vendor": "amd"
+      "vendor": "amd",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "copy_texture_to_texture",
@@ -1170,7 +1415,12 @@
       "name": "copy texture-to-texture contract",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "timingNormalizationNote": "Directional texture-to-texture copy contract only: normalize per copy command sequence.",
-      "vendor": "amd"
+      "vendor": "amd",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "copy_texture_to_texture_stress",
@@ -1197,7 +1447,12 @@
       "name": "copy texture to texture stress macro",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "timingNormalizationNote": "Directional copy stress macro normalized to 60x100 effective copy ops per step.",
-      "vendor": "amd"
+      "vendor": "amd",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "copy_texture_to_texture_subresource",
@@ -1224,7 +1479,12 @@
       "name": "copy texture to texture subresource",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "timingNormalizationNote": "Directional subresource lane normalized per texture-to-texture copy op.",
-      "vendor": "amd"
+      "vendor": "amd",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "lifecycle_refcount",
@@ -1246,7 +1506,12 @@
       "vendor": "amd",
       "asyncDiagnosticsMode": "lifecycle_refcount",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
-      "timingNormalizationNote": "Directional-only: Apples-to-apples P2 lifecycle contract: normalize by addref/release touch count within the lifecycle sequence."
+      "timingNormalizationNote": "Directional-only: Apples-to-apples P2 lifecycle contract: normalize by addref/release touch count within the lifecycle sequence.",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "lifecycle_refcount_200",
@@ -1267,7 +1532,12 @@
       "vendor": "amd",
       "asyncDiagnosticsMode": "lifecycle_refcount",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
-      "timingNormalizationNote": "Directional-only: Apples-to-apples macro lifecycle contract: normalize per internal addref/release touch operations across macro iterations."
+      "timingNormalizationNote": "Directional-only: Apples-to-apples macro lifecycle contract: normalize per internal addref/release touch operations across macro iterations.",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "render_draw_indexed_indirect_u16",
@@ -1288,7 +1558,12 @@
       "name": "draw indexed indirect u16",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "timingNormalizationNote": "Comparable indexed-indirect lane normalizing to one indirect indexed draw per sample.",
-      "vendor": "amd"
+      "vendor": "amd",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "render_draw_indexed_indirect_u32",
@@ -1309,7 +1584,12 @@
       "name": "draw indexed indirect u32",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "timingNormalizationNote": "Comparable indexed-indirect lane normalizing to one indirect indexed draw per sample.",
-      "vendor": "amd"
+      "vendor": "amd",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "render_draw_indirect_legacy_equivalent",
@@ -1336,7 +1616,12 @@
       "name": "draw indirect legacy equivalent",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "timingNormalizationNote": "Directional legacy draw proxy normalized per indirect draw command.",
-      "vendor": "amd"
+      "vendor": "amd",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "render_multidraw",
@@ -1356,7 +1641,12 @@
       "comparable": false,
       "leftTimingDivisor": 15000,
       "timingNormalizationNote": "Apples-to-apples render contract: normalize per draw with explicit setup amortization over the render-pass draw stream.",
-      "benchmarkClass": "directional"
+      "benchmarkClass": "directional",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "render_multidraw_indexed",
@@ -1376,7 +1666,12 @@
       "comparable": false,
       "leftTimingDivisor": 10000,
       "timingNormalizationNote": "Apples-to-apples indexed render contract: normalize per draw with explicit setup amortization over indexed draw stream.",
-      "benchmarkClass": "directional"
+      "benchmarkClass": "directional",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "render_pass_depth_stencil",
@@ -1403,7 +1698,12 @@
       "name": "render pass depth stencil",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "timingNormalizationNote": "Directional depth/stencil contract normalized by one pass operation.",
-      "vendor": "amd"
+      "vendor": "amd",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "render_pass_dynamic_viewport_scissor",
@@ -1430,7 +1730,12 @@
       "name": "render pass dynamic viewport scissor",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "timingNormalizationNote": "Directional dynamic-state lane normalized per viewport/scissor command pair.",
-      "vendor": "amd"
+      "vendor": "amd",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "render_pass_loadops_clear_load",
@@ -1451,7 +1756,12 @@
       "name": "render pass loadOps clear/load",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "timingNormalizationNote": "Comparable render-pass lane normalized per pass operation across clear/load boundaries.",
-      "vendor": "amd"
+      "vendor": "amd",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "render_pass_multisample_resolve",
@@ -1478,7 +1788,12 @@
       "name": "render pass multisample resolve",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "timingNormalizationNote": "Directional MSAA resolve lane normalized per render pass resolution.",
-      "vendor": "amd"
+      "vendor": "amd",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "render_pass_stencil_ref_sweep",
@@ -1505,7 +1820,12 @@
       "name": "render pass stencil ref sweep",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "timingNormalizationNote": "Directional state-sweep lane normalized per state-change boundary.",
-      "vendor": "amd"
+      "vendor": "amd",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "render_pass_storeops_discard",
@@ -1526,7 +1846,12 @@
       "name": "render pass storeOps discard",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "timingNormalizationNote": "Comparable render-pass lane normalized per pass operation across storeOp toggles.",
-      "vendor": "amd"
+      "vendor": "amd",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "render_pixel_local_storage_barrier",
@@ -1548,7 +1873,12 @@
       "name": "p0 render pixel-local-storage barrier contract",
       "vendor": "amd",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
-      "timingNormalizationNote": "Directional-only: Apples-to-apples PLS contract: normalize per barrier-sequencing sub-steps over repeated non-coherent diagnostic iterations."
+      "timingNormalizationNote": "Directional-only: Apples-to-apples PLS contract: normalize per barrier-sequencing sub-steps over repeated non-coherent diagnostic iterations.",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "render_pixel_local_storage_barrier_500",
@@ -1570,7 +1900,12 @@
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "leftTimingDivisor": 3270,
       "timingNormalizationNote": "Apples-to-apples macro PLS contract: command-repeat=500 with per-iteration barrier-sequencing normalization and explicit feature-gating parity support.",
-      "benchmarkClass": "directional"
+      "benchmarkClass": "directional",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "render_uniform_buffer_update_writebuffer_partial_single",
@@ -1591,7 +1926,12 @@
       "comparable": false,
       "leftTimingDivisor": 4400,
       "timingNormalizationNote": "Dawn UniformBufferUpdatePerf already reports per-iteration metrics (iterationsPerStep=100 internal normalization). Fawn repeats upload+draw 100 times and applies leftTimingDivisor normalization only.",
-      "benchmarkClass": "directional"
+      "benchmarkClass": "directional",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "resource_buffer_map_double_request_guard",
@@ -1618,7 +1958,12 @@
       "name": "buffer map double request guard",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "timingNormalizationNote": "Directional error-path contract: validate deterministic map-error behavior and unmap recovery in paired map attempts.",
-      "vendor": "amd"
+      "vendor": "amd",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "resource_buffer_map_partial_read_4kb",
@@ -1639,7 +1984,12 @@
       "name": "buffer map partial read 4kb",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "timingNormalizationNote": "Comparable partial-range lane normalizing to per-op partial read mapping.",
-      "vendor": "amd"
+      "vendor": "amd",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "resource_buffer_map_partial_write_64kb",
@@ -1660,7 +2010,12 @@
       "name": "buffer map partial write 64kb",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "timingNormalizationNote": "Comparable partial-range lane normalizing to per-op partial write mapping at 64KB subrange.",
-      "vendor": "amd"
+      "vendor": "amd",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "resource_buffer_map_readback_1kb",
@@ -1681,7 +2036,12 @@
       "name": "buffer map readback 1kb",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "timingNormalizationNote": "Dawn map-readback parity is tracked as per-op map-read-unmap units with one ignore-first warmup path.",
-      "vendor": "amd"
+      "vendor": "amd",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "resource_buffer_map_readback_64kb",
@@ -1702,7 +2062,12 @@
       "name": "buffer map readback 64kb",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "timingNormalizationNote": "Comparable readback lane normalizing to per-op map-read-unmap units over a 64KB transfer size.",
-      "vendor": "amd"
+      "vendor": "amd",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "resource_buffer_map_unmap_storm",
@@ -1723,7 +2088,12 @@
       "name": "buffer map unmap storm macro",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "timingNormalizationNote": "Comparable macro lane with two mapping operations per iteration; divisor accounts for per-op normalization.",
-      "vendor": "amd"
+      "vendor": "amd",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "resource_buffer_map_write_1kb",
@@ -1744,7 +2114,12 @@
       "name": "buffer map write 1kb",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "timingNormalizationNote": "Comparable writeback lane normalizing to per-op map-write-unmap units at 1KB.",
-      "vendor": "amd"
+      "vendor": "amd",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "resource_buffer_map_write_64kb",
@@ -1765,7 +2140,12 @@
       "name": "buffer map write 64kb",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "timingNormalizationNote": "Comparable writeback lane normalizing to per-op map-write-unmap units at 64KB.",
-      "vendor": "amd"
+      "vendor": "amd",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "resource_lifecycle",
@@ -1786,7 +2166,12 @@
       "comparable": false,
       "leftTimingDivisor": 100,
       "timingNormalizationNote": "Apples-to-apples lifecycle contract: normalize per command-sequence iteration over upload resize + barrier operations.",
-      "benchmarkClass": "directional"
+      "benchmarkClass": "directional",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "resource_table_immediates",
@@ -1809,7 +2194,12 @@
       "vendor": "amd",
       "asyncDiagnosticsMode": "resource_table_immediates",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
-      "timingNormalizationNote": "Directional-only: Apples-to-apples P1 resource-table contract: normalize by command-sequence sub-steps with deterministic feature-gating parity support."
+      "timingNormalizationNote": "Directional-only: Apples-to-apples P1 resource-table contract: normalize by command-sequence sub-steps with deterministic feature-gating parity support.",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     },
     {
       "id": "resource_table_immediates_500",
@@ -1834,7 +2224,11 @@
       "default": false,
       "timingNormalizationNote": "Directional-only in the AMD native Vulkan subset. Native Doe emulation now executes the contract, but normalization remains diagnostic until strict apples-to-apples evidence exists.",
       "rightCommandRepeat": 500,
-      "benchmarkClass": "directional"
+      "benchmarkClass": "directional",
+      "suiteTags": [
+        "exploration"
+      ],
+      "claimEligible": false
     },
     {
       "id": "surface_full_presentation",
@@ -1860,7 +2254,12 @@
       "name": "surface full presentation contract",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "timingNormalizationNote": "Directional full-surface contract only: normalize per full presentation cycle.",
-      "vendor": "amd"
+      "vendor": "amd",
+      "suiteTags": [
+        "exploration",
+        "extended"
+      ],
+      "claimEligible": false
     }
   ]
 }

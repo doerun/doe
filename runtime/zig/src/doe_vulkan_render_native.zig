@@ -448,6 +448,29 @@ pub fn vulkan_create_render_pipeline(
         }
     }
 
+    // Copy entry point names from the descriptor so the Vulkan pipeline
+    // creation uses the correct SPIR-V entry point (not always "main").
+    if (d.vertex_ep_data) |ep_data| {
+        const ep_len = if (d.vertex_ep_length == types.WGPU_STRLEN)
+            std.mem.len(@as([*:0]const u8, @ptrCast(ep_data)))
+        else
+            d.vertex_ep_length;
+        if (ep_len > 0) {
+            pip.vertex_entry_point = native.alloc.dupe(u8, ep_data[0..ep_len]) catch null;
+        }
+    }
+    if (d.fragment) |frag| {
+        if (frag.entryPoint.data) |ep_data| {
+            const ep_len = if (frag.entryPoint.length == types.WGPU_STRLEN)
+                std.mem.len(@as([*:0]const u8, @ptrCast(ep_data)))
+            else
+                frag.entryPoint.length;
+            if (ep_len > 0) {
+                pip.fragment_entry_point = native.alloc.dupe(u8, ep_data[0..ep_len]) catch null;
+            }
+        }
+    }
+
     // mtl_pso intentionally left null: Vulkan draw is routed through run_render_draw.
     pip.mtl_pso = null;
     return true;
@@ -496,48 +519,103 @@ pub fn vulkan_create_graphics_shader_module(
 }
 
 // ============================================================
-// Render pass draw operations
+// Render pass draw helpers
 // ============================================================
 
-pub fn vulkan_render_pass_draw(
-    pass: *DoeRenderPass,
-    vertex_count: u32,
-    instance_count: u32,
-    first_vertex: u32,
-    first_instance: u32,
-) void {
-    const rt = get_runtime(pass.enc.dev) orelse {
-        std.debug.print("doe_vulkan_render_native: render pass draw: no Vulkan runtime\n", .{});
-        return;
+/// Populate SPIR-V, render target, clear color, vertex attributes, vertex
+/// buffer handles, index buffer, and bind group texture/sampler handles on a
+/// RenderDrawCommand from the current pass and pipeline state.
+fn populate_draw_cmd_from_pass(cmd: *model.RenderDrawCommand, pass: *DoeRenderPass) void {
+    // SPIR-V from pipeline for Vulkan graphics pipeline creation.
+    if (pass.pipeline) |pip| {
+        cmd.vertex_spirv = pip.vertex_spirv_data;
+        cmd.fragment_spirv = pip.fragment_spirv_data;
+        cmd.vertex_entry_point = pip.vertex_entry_point;
+        cmd.fragment_entry_point = pip.fragment_entry_point;
+
+        cmd.vertex_layout_count = pip.vertex_buffer_count;
+        cmd.vertex_buffer_strides = pip.vertex_buffer_strides;
+        cmd.vertex_step_modes = pip.vertex_step_modes;
+        cmd.vertex_attribute_count = pip.vertex_attribute_count;
+        cmd.vertex_attribute_formats = pip.vertex_attribute_formats;
+        cmd.vertex_attribute_offsets = pip.vertex_attribute_offsets;
+        cmd.vertex_attribute_locations = pip.vertex_attribute_locations;
+        cmd.vertex_attribute_buffer_slots = pip.vertex_attribute_buffer_slots;
+    }
+
+    // Render target: resolve vk_id from pass texture view chain.
+    if (pass.target_view_handle != 0) {
+        if (native.cast(DoeTextureView, @ptrFromInt(pass.target_view_handle))) |tv| {
+            cmd.target_handle = tv.tex.vk_id;
+            cmd.target_view_handle = if (tv.handle) |h| @intFromPtr(h) else tv.tex.vk_id;
+        }
+    }
+    cmd.target_format = pass.target_format;
+    cmd.sample_count = if (pass.sample_count != 0) pass.sample_count else cmd.sample_count;
+    cmd.clear_color = .{
+        @floatCast(pass.clear_r),
+        @floatCast(pass.clear_g),
+        @floatCast(pass.clear_b),
+        @floatCast(pass.clear_a),
     };
+
+    // Vertex buffer handles from pass state.
+    var bound_vertex_count: u32 = 0;
+    var bound_slot: usize = 0;
+    while (bound_slot < native.MAX_VERTEX_BUFFERS) : (bound_slot += 1) {
+        if (pass.vertex_buffers[bound_slot]) |buffer| {
+            cmd.vertex_buffer_handles[bound_slot] = buffer.vk_id;
+            cmd.vertex_buffer_offsets[bound_slot] = pass.vertex_buffer_offsets[bound_slot];
+            bound_vertex_count = @intCast(bound_slot + 1);
+        }
+    }
+    cmd.vertex_buffer_count = bound_vertex_count;
+
+    // Index buffer handle from pass state.
+    if (pass.index_buffer) |buffer| {
+        cmd.index_buffer_handle = buffer.vk_id;
+        cmd.index_buffer_offset = pass.index_offset;
+        cmd.index_format = pass.index_format;
+    }
+
+    // Bind group texture/sampler handles for descriptor binding.
+    var tex_count: u32 = 0;
+    var samp_count: u32 = 0;
+    for (pass.bind_groups) |maybe_bg| {
+        const bg = maybe_bg orelse continue;
+        for (bg.texture_views) |maybe_tv| {
+            if (maybe_tv == null) continue;
+            if (tex_count < model.MAX_RENDER_BIND_ENTRIES) {
+                cmd.bind_texture_handles[tex_count] = @intFromPtr(maybe_tv.?);
+                tex_count += 1;
+            }
+        }
+        for (bg.samplers) |maybe_s| {
+            if (maybe_s == null) continue;
+            if (samp_count < model.MAX_RENDER_BIND_ENTRIES) {
+                cmd.bind_sampler_handles[samp_count] = @intFromPtr(maybe_s.?);
+                samp_count += 1;
+            }
+        }
+    }
+    cmd.bind_texture_count = tex_count;
+    cmd.bind_sampler_count = samp_count;
+}
+
+/// Build the base RenderDrawCommand from current pass pipeline state
+/// (everything except per-draw geometry and indirect parameters).
+fn base_vulkan_render_cmd(pass: *DoeRenderPass) model.RenderDrawCommand {
     const occlusion_qs = if (pass.occlusion_query_active and pass.occlusion_query_set != null)
         native.cast(query_native.DoeQuerySet, pass.occlusion_query_set)
     else
         null;
-
     const pip_unclipped = if (pass.pipeline) |pip| pip.unclipped_depth else false;
-    var vertex_bindings: [model.MAX_VERTEX_BUFFERS]model.RenderVertexBinding = undefined;
-    var vertex_binding_count: usize = 0;
-    var slot: usize = 0;
-    while (slot < pass.vertex_buffers.len) : (slot += 1) {
-        if (pass.vertex_buffers[slot]) |buf| {
-            if (buf.vk_id != 0) {
-                vertex_bindings[vertex_binding_count] = .{
-                    .slot = @intCast(slot),
-                    .handle = @ptrCast(buf),
-                    .offset = pass.vertex_buffer_offsets[slot],
-                };
-                vertex_binding_count += 1;
-            }
-        }
-    }
-
-    var cmd = model.RenderDrawCommand{
+    return .{
         .draw_count = 1,
-        .vertex_count = vertex_count,
-        .instance_count = instance_count,
-        .first_vertex = first_vertex,
-        .first_instance = first_instance,
+        .vertex_count = 0,
+        .instance_count = 1,
+        .first_vertex = 0,
+        .first_instance = 0,
         .viewport_x = pass.viewport_x,
         .viewport_y = pass.viewport_y,
         .viewport_width = pass.viewport_width,
@@ -550,9 +628,6 @@ pub fn vulkan_render_pass_draw(
         .scissor_height = pass.scissor_height,
         .vertex_layout_count = if (pass.pipeline) |pip| pip.vertex_layout_count else 0,
         .vertex_layouts = if (pass.pipeline) |pip| if (pip.vertex_layout_count > 0) pip.vertex_layouts[0..@intCast(pip.vertex_layout_count)] else null else null,
-        .vertex_binding_count = @intCast(vertex_binding_count),
-        .vertex_bindings = if (vertex_binding_count > 0) vertex_bindings[0..vertex_binding_count] else null,
-        .index_binding = null,
         .topology = if (pass.pipeline) |pip| pip.topology else 0x00000004,
         .front_face = if (pass.pipeline) |pip| pip.front_face else 0x00000001,
         .cull_mode = if (pass.pipeline) |pip| pip.cull_mode else 0x00000001,
@@ -584,31 +659,30 @@ pub fn vulkan_render_pass_draw(
         .stencil_write_mask = if (pass.pipeline) |pip| pip.stencil_write_mask else 0xFFFF_FFFF,
         .unclipped_depth = pip_unclipped,
     };
-    if (pass.pipeline) |pip| {
-        cmd.vertex_layout_count = pip.vertex_buffer_count;
-        cmd.vertex_buffer_strides = pip.vertex_buffer_strides;
-        cmd.vertex_step_modes = pip.vertex_step_modes;
-        cmd.vertex_attribute_count = pip.vertex_attribute_count;
-        cmd.vertex_attribute_formats = pip.vertex_attribute_formats;
-        cmd.vertex_attribute_offsets = pip.vertex_attribute_offsets;
-        cmd.vertex_attribute_locations = pip.vertex_attribute_locations;
-        cmd.vertex_attribute_buffer_slots = pip.vertex_attribute_buffer_slots;
-    }
-    var bound_vertex_count: u32 = 0;
-    var bound_slot: usize = 0;
-    while (bound_slot < native.MAX_VERTEX_BUFFERS) : (bound_slot += 1) {
-        if (pass.vertex_buffers[bound_slot]) |buffer| {
-            cmd.vertex_buffer_handles[bound_slot] = buffer.vk_id;
-            cmd.vertex_buffer_offsets[bound_slot] = pass.vertex_buffer_offsets[bound_slot];
-            bound_vertex_count = @intCast(bound_slot + 1);
-        }
-    }
-    cmd.vertex_buffer_count = bound_vertex_count;
-    if (pass.index_buffer) |buffer| {
-        cmd.index_buffer_handle = buffer.vk_id;
-        cmd.index_buffer_offset = pass.index_offset;
-        cmd.index_format = pass.index_format;
-    }
+}
+
+// ============================================================
+// Render pass draw operations
+// ============================================================
+
+pub fn vulkan_render_pass_draw(
+    pass: *DoeRenderPass,
+    vertex_count: u32,
+    instance_count: u32,
+    first_vertex: u32,
+    first_instance: u32,
+) void {
+    const rt = get_runtime(pass.enc.dev) orelse {
+        std.debug.print("doe_vulkan_render_native: render pass draw: no Vulkan runtime\n", .{});
+        return;
+    };
+
+    var cmd = base_vulkan_render_cmd(pass);
+    cmd.vertex_count = vertex_count;
+    cmd.instance_count = instance_count;
+    cmd.first_vertex = first_vertex;
+    cmd.first_instance = first_instance;
+    populate_draw_cmd_from_pass(&cmd, pass);
 
     _ = rt.run_render_draw(cmd) catch |err| {
         std.debug.print("doe_vulkan_render_native: run_render_draw failed: {}\n", .{err});
@@ -627,113 +701,20 @@ pub fn vulkan_render_pass_draw_indexed(
         std.debug.print("doe_vulkan_render_native: render pass draw_indexed: no Vulkan runtime\n", .{});
         return;
     };
-    const occlusion_qs = if (pass.occlusion_query_active and pass.occlusion_query_set != null)
-        native.cast(query_native.DoeQuerySet, pass.occlusion_query_set)
-    else
-        null;
 
-    const pip_unclipped = if (pass.pipeline) |pip| pip.unclipped_depth else false;
-    var vertex_bindings: [model.MAX_VERTEX_BUFFERS]model.RenderVertexBinding = undefined;
-    var vertex_binding_count: usize = 0;
-    var slot: usize = 0;
-    while (slot < pass.vertex_buffers.len) : (slot += 1) {
-        if (pass.vertex_buffers[slot]) |buf| {
-            if (buf.vk_id != 0) {
-                vertex_bindings[vertex_binding_count] = .{
-                    .slot = @intCast(slot),
-                    .handle = @ptrCast(buf),
-                    .offset = pass.vertex_buffer_offsets[slot],
-                };
-                vertex_binding_count += 1;
-            }
-        }
-    }
-
-    var cmd = model.RenderDrawCommand{
-        .draw_count = 1,
-        .vertex_count = 0,
-        .instance_count = instance_count,
-        .first_vertex = 0,
-        .first_instance = first_instance,
-        .index_count = index_count,
-        .first_index = first_index,
-        .base_vertex = base_vertex,
-        .viewport_x = pass.viewport_x,
-        .viewport_y = pass.viewport_y,
-        .viewport_width = pass.viewport_width,
-        .viewport_height = pass.viewport_height,
-        .viewport_min_depth = pass.viewport_min_depth,
-        .viewport_max_depth = pass.viewport_max_depth,
-        .scissor_x = pass.scissor_x,
-        .scissor_y = pass.scissor_y,
-        .scissor_width = pass.scissor_width,
-        .scissor_height = pass.scissor_height,
-        .vertex_layout_count = if (pass.pipeline) |pip| pip.vertex_layout_count else 0,
-        .vertex_layouts = if (pass.pipeline) |pip| if (pip.vertex_layout_count > 0) pip.vertex_layouts[0..@intCast(pip.vertex_layout_count)] else null else null,
-        .vertex_binding_count = @intCast(vertex_binding_count),
-        .vertex_bindings = if (vertex_binding_count > 0) vertex_bindings[0..vertex_binding_count] else null,
-        .index_binding = if (pass.index_buffer) |idx_buf| .{
-            .handle = @ptrCast(idx_buf),
-            .offset = pass.index_offset,
-            .size = pass.index_buffer_size,
-            .format = pass.index_format,
-        } else null,
-        .topology = if (pass.pipeline) |pip| pip.topology else 0x00000004,
-        .front_face = if (pass.pipeline) |pip| pip.front_face else 0x00000001,
-        .cull_mode = if (pass.pipeline) |pip| pip.cull_mode else 0x00000001,
-        .blend_enabled = if (pass.pipeline) |pip| pip.blend_enabled else false,
-        .color_operation = if (pass.pipeline) |pip| pip.color_operation else 1,
-        .color_src_factor = if (pass.pipeline) |pip| pip.color_src_factor else 2,
-        .color_dst_factor = if (pass.pipeline) |pip| pip.color_dst_factor else 1,
-        .alpha_operation = if (pass.pipeline) |pip| pip.alpha_operation else 1,
-        .alpha_src_factor = if (pass.pipeline) |pip| pip.alpha_src_factor else 2,
-        .alpha_dst_factor = if (pass.pipeline) |pip| pip.alpha_dst_factor else 1,
-        .color_write_mask = if (pass.pipeline) |pip| pip.color_write_mask else 0xF,
-        .sample_count = if (pass.pipeline) |pip| pip.sample_count else 1,
-        .blend_constant = pass.blend_constant,
-        .stencil_reference = pass.stencil_reference,
-        .occlusion_query_pool = if (occlusion_qs) |qs| qs.vk_query_pool else 0,
-        .occlusion_query_index = if (occlusion_qs != null) pass.occlusion_query_index else null,
-        .depth_stencil_format = if (pass.pipeline) |pip| pip.depth_stencil_format else 0,
-        .depth_compare = if (pass.pipeline) |pip| pip.depth_compare else pass.depth_compare,
-        .depth_write_enabled = if (pass.pipeline) |pip| pip.depth_write_enabled else pass.depth_write_enabled,
-        .stencil_front_compare = if (pass.pipeline) |pip| pip.stencil_front_compare else 0x00000008,
-        .stencil_front_fail_op = if (pass.pipeline) |pip| pip.stencil_front_fail_op else 0,
-        .stencil_front_depth_fail_op = if (pass.pipeline) |pip| pip.stencil_front_depth_fail_op else 0,
-        .stencil_front_pass_op = if (pass.pipeline) |pip| pip.stencil_front_pass_op else 0,
-        .stencil_back_compare = if (pass.pipeline) |pip| pip.stencil_back_compare else 0x00000008,
-        .stencil_back_fail_op = if (pass.pipeline) |pip| pip.stencil_back_fail_op else 0,
-        .stencil_back_depth_fail_op = if (pass.pipeline) |pip| pip.stencil_back_depth_fail_op else 0,
-        .stencil_back_pass_op = if (pass.pipeline) |pip| pip.stencil_back_pass_op else 0,
-        .stencil_read_mask = if (pass.pipeline) |pip| pip.stencil_read_mask else 0xFFFF_FFFF,
-        .stencil_write_mask = if (pass.pipeline) |pip| pip.stencil_write_mask else 0xFFFF_FFFF,
-        .unclipped_depth = pip_unclipped,
-    };
-    if (pass.pipeline) |pip| {
-        cmd.vertex_layout_count = pip.vertex_buffer_count;
-        cmd.vertex_buffer_strides = pip.vertex_buffer_strides;
-        cmd.vertex_step_modes = pip.vertex_step_modes;
-        cmd.vertex_attribute_count = pip.vertex_attribute_count;
-        cmd.vertex_attribute_formats = pip.vertex_attribute_formats;
-        cmd.vertex_attribute_offsets = pip.vertex_attribute_offsets;
-        cmd.vertex_attribute_locations = pip.vertex_attribute_locations;
-        cmd.vertex_attribute_buffer_slots = pip.vertex_attribute_buffer_slots;
-    }
-    var bound_vertex_count: u32 = 0;
-    var bound_slot: usize = 0;
-    while (bound_slot < native.MAX_VERTEX_BUFFERS) : (bound_slot += 1) {
-        if (pass.vertex_buffers[bound_slot]) |buffer| {
-            cmd.vertex_buffer_handles[bound_slot] = buffer.vk_id;
-            cmd.vertex_buffer_offsets[bound_slot] = pass.vertex_buffer_offsets[bound_slot];
-            bound_vertex_count = @intCast(bound_slot + 1);
-        }
-    }
-    cmd.vertex_buffer_count = bound_vertex_count;
-    if (pass.index_buffer) |buffer| {
-        cmd.index_buffer_handle = buffer.vk_id;
-        cmd.index_buffer_offset = pass.index_offset;
-        cmd.index_format = pass.index_format;
-    }
+    var cmd = base_vulkan_render_cmd(pass);
+    cmd.instance_count = instance_count;
+    cmd.first_instance = first_instance;
+    cmd.index_count = index_count;
+    cmd.first_index = first_index;
+    cmd.base_vertex = base_vertex;
+    cmd.index_binding = if (pass.index_buffer) |idx_buf| .{
+        .handle = @ptrCast(idx_buf),
+        .offset = pass.index_offset,
+        .size = pass.index_buffer_size,
+        .format = pass.index_format,
+    } else null;
+    populate_draw_cmd_from_pass(&cmd, pass);
 
     _ = rt.run_render_draw(cmd) catch |err| {
         std.debug.print("doe_vulkan_render_native: run_render_draw (indexed) failed: {}\n", .{err});
@@ -741,33 +722,39 @@ pub fn vulkan_render_pass_draw_indexed(
 }
 
 pub fn vulkan_render_pass_draw_indirect(pass: *DoeRenderPass, indirect_buffer_raw: ?*anyopaque, indirect_offset: u64) void {
-    // Indirect draw reads draw parameters from a GPU buffer. For Vulkan native
-    // path, read the parameters from the host-visible buffer and issue a direct draw.
     const indirect_buf = native.cast(DoeBuffer, indirect_buffer_raw) orelse return;
     if (indirect_buf.vk_id == 0) return;
     const rt = get_runtime(pass.enc.dev) orelse return;
-    if (rt.compute_buffers.get(indirect_buf.vk_id)) |cb| {
-        if (cb.mapped) |ptr| {
-            const base: [*]const u8 = @ptrCast(ptr);
-            const off: usize = @intCast(indirect_offset);
-            const args: *const [4]u32 = @ptrCast(@alignCast(base + off));
-            vulkan_render_pass_draw(pass, args[0], args[1], args[2], args[3]);
-        }
-    }
+
+    var cmd = base_vulkan_render_cmd(pass);
+    cmd.indirect_buffer_handle = indirect_buf.vk_id;
+    cmd.indirect_offset = indirect_offset;
+    populate_draw_cmd_from_pass(&cmd, pass);
+
+    _ = rt.run_render_draw(cmd) catch |err| {
+        std.debug.print("doe_vulkan_render_native: run_render_draw (indirect) failed: {}\n", .{err});
+    };
 }
 
 pub fn vulkan_render_pass_draw_indexed_indirect(pass: *DoeRenderPass, indirect_buffer_raw: ?*anyopaque, indirect_offset: u64) void {
     const indirect_buf = native.cast(DoeBuffer, indirect_buffer_raw) orelse return;
     if (indirect_buf.vk_id == 0) return;
     const rt = get_runtime(pass.enc.dev) orelse return;
-    if (rt.compute_buffers.get(indirect_buf.vk_id)) |cb| {
-        if (cb.mapped) |ptr| {
-            const base: [*]const u8 = @ptrCast(ptr);
-            const off: usize = @intCast(indirect_offset);
-            const args: *const [5]u32 = @ptrCast(@alignCast(base + off));
-            vulkan_render_pass_draw_indexed(pass, args[0], args[1], args[2], @bitCast(args[3]), args[4]);
-        }
-    }
+
+    var cmd = base_vulkan_render_cmd(pass);
+    cmd.indirect_buffer_handle = indirect_buf.vk_id;
+    cmd.indirect_offset = indirect_offset;
+    cmd.index_binding = if (pass.index_buffer) |idx_buf| .{
+        .handle = @ptrCast(idx_buf),
+        .offset = pass.index_offset,
+        .size = pass.index_buffer_size,
+        .format = pass.index_format,
+    } else null;
+    populate_draw_cmd_from_pass(&cmd, pass);
+
+    _ = rt.run_render_draw(cmd) catch |err| {
+        std.debug.print("doe_vulkan_render_native: run_render_draw (indexed indirect) failed: {}\n", .{err});
+    };
 }
 
 // Render pass end is a no-op for the Vulkan path: each draw executes

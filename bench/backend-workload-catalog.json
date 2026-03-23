@@ -77,7 +77,12 @@
         "family": "gen12",
         "name": "kernel-dispatch stress",
         "quirksPath": "examples/quirks/intel_gen12_temp_buffer_list.json",
-        "vendor": "intel"
+        "vendor": "intel",
+        "suiteTags": [
+          "exploration",
+          "extended"
+        ],
+        "claimEligible": false
       },
       "lanes": {
         "generic": {}
@@ -114,7 +119,12 @@
         "domain": "compute",
         "leftTimingDivisor": 1.0,
         "name": "matrix-vector multiply 32768x2048 f32 (naive swizzle0)",
-        "rightTimingDivisor": 1
+        "rightTimingDivisor": 1,
+        "suiteTags": [
+          "release",
+          "extended"
+        ],
+        "claimEligible": true
       },
       "lanes": {
         "generic": {
@@ -258,7 +268,12 @@
         "domain": "compute",
         "leftTimingDivisor": 1.0,
         "name": "matrix-vector multiply 32768x2048 f32 (naive swizzle1)",
-        "rightTimingDivisor": 1
+        "rightTimingDivisor": 1,
+        "suiteTags": [
+          "release",
+          "extended"
+        ],
+        "claimEligible": true
       },
       "lanes": {
         "generic": {
@@ -402,7 +417,12 @@
         "domain": "compute",
         "leftTimingDivisor": 1.0,
         "name": "matrix-vector multiply 32768x2048 f32 (workgroupshared swizzle1)",
-        "rightTimingDivisor": 1
+        "rightTimingDivisor": 1,
+        "suiteTags": [
+          "release",
+          "extended"
+        ],
+        "claimEligible": true
       },
       "lanes": {
         "generic": {
@@ -542,7 +562,11 @@
       "shared": {
         "domain": "compute",
         "leftTimingDivisor": 1.0,
-        "rightTimingDivisor": 1.0
+        "rightTimingDivisor": 1.0,
+        "suiteTags": [
+          "release"
+        ],
+        "claimEligible": true
       },
       "lanes": {
         "generic": {
@@ -821,7 +845,11 @@
         "domain": "compute",
         "leftTimingDivisor": 1.0,
         "name": "workgroup-non-atomic 1024",
-        "rightTimingDivisor": 1.0
+        "rightTimingDivisor": 1.0,
+        "suiteTags": [
+          "release"
+        ],
+        "claimEligible": true
       },
       "lanes": {
         "generic": {
@@ -1019,7 +1047,12 @@
         "description": "Async diagnostics benchmark covering async render pipeline creation, error scopes, and shader compilation info.",
         "domain": "pipeline-async",
         "leftCommandRepeat": 50,
-        "name": "async pipeline diagnostics contract"
+        "name": "async pipeline diagnostics contract",
+        "suiteTags": [
+          "exploration",
+          "extended"
+        ],
+        "claimEligible": false
       },
       "lanes": {
         "generic": {
@@ -1128,7 +1161,12 @@
         "domain": "pipeline",
         "leftTimingDivisor": 1.0,
         "name": "shader-compile pipeline stress",
-        "rightTimingDivisor": 1.0
+        "rightTimingDivisor": 1.0,
+        "suiteTags": [
+          "release",
+          "extended"
+        ],
+        "claimEligible": true
       },
       "lanes": {
         "generic": {
@@ -1315,7 +1353,12 @@
         "default": false,
         "description": "Render-bundle workload with dynamic bind-group offsets.",
         "domain": "render-bundle",
-        "name": "render bundle dynamic bindings"
+        "name": "render bundle dynamic bindings",
+        "suiteTags": [
+          "release",
+          "extended"
+        ],
+        "claimEligible": true
       },
       "lanes": {
         "generic": {
@@ -1432,7 +1475,12 @@
         "default": false,
         "description": "Render-bundle workload with dynamic pipeline and dynamic bind-group updates.",
         "domain": "render-bundle",
-        "name": "render bundle dynamic pipeline+bindings"
+        "name": "render bundle dynamic pipeline+bindings",
+        "suiteTags": [
+          "release",
+          "extended"
+        ],
+        "claimEligible": true
       },
       "lanes": {
         "generic": {
@@ -1562,7 +1610,12 @@
           "deferred"
         ],
         "leftTimingDivisor": 200000,
-        "name": "draw indexed macro (200k draws)"
+        "name": "draw indexed macro (200k draws)",
+        "suiteTags": [
+          "exploration",
+          "extended"
+        ],
+        "claimEligible": false
       },
       "lanes": {
         "generic": {
@@ -1663,7 +1716,12 @@
           "deferred"
         ],
         "leftCommandRepeat": 10,
-        "name": "draw indexed render proxy"
+        "name": "draw indexed render proxy",
+        "suiteTags": [
+          "release",
+          "extended"
+        ],
+        "claimEligible": true
       },
       "lanes": {
         "generic": {
@@ -1775,7 +1833,12 @@
         "default": false,
         "description": "Render workload that intentionally rebinds pipeline and bind groups every draw.",
         "domain": "render",
-        "name": "render redundant pipeline/bindings"
+        "name": "render redundant pipeline/bindings",
+        "suiteTags": [
+          "release",
+          "extended"
+        ],
+        "claimEligible": true
       },
       "lanes": {
         "generic": {
@@ -1898,7 +1961,12 @@
         "default": false,
         "description": "Render-pass state and bind-group benchmark using explicit viewport/scissor/blend/stencil + dynamic bind offsets.",
         "domain": "render",
-        "name": "render draw state/bindings"
+        "name": "render draw state/bindings",
+        "suiteTags": [
+          "release",
+          "extended"
+        ],
+        "claimEligible": true
       },
       "lanes": {
         "generic": {
@@ -2011,7 +2079,12 @@
         "dawnFilter": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151",
         "default": false,
         "domain": "render-macro",
-        "name": "render draw throughput macro (200k draws)"
+        "name": "render draw throughput macro (200k draws)",
+        "suiteTags": [
+          "release",
+          "extended"
+        ],
+        "claimEligible": true
       },
       "lanes": {
         "generic": {
@@ -2123,7 +2196,12 @@
       ],
       "shared": {
         "default": false,
-        "domain": "render"
+        "domain": "render",
+        "suiteTags": [
+          "release",
+          "extended"
+        ],
+        "claimEligible": true
       },
       "lanes": {
         "generic": {
@@ -2307,7 +2385,12 @@
         "dawnFilter": "ConcurrentExecutionTest.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__ConcurrentExecutionType_RunSingle",
         "default": false,
         "domain": "surface",
-        "name": "surface presentation contract"
+        "name": "surface presentation contract",
+        "suiteTags": [
+          "release",
+          "extended"
+        ],
+        "claimEligible": true
       },
       "lanes": {
         "generic": {
@@ -2419,7 +2502,12 @@
         "description": "Texture API contract benchmark covering sampler creation, queue write texture, texture query assertions, and resource destroy lifecycle.",
         "domain": "texture-contract",
         "leftCommandRepeat": 10,
-        "name": "texture sampler/write/query/destroy contract"
+        "name": "texture sampler/write/query/destroy contract",
+        "suiteTags": [
+          "release",
+          "extended"
+        ],
+        "claimEligible": true
       },
       "lanes": {
         "generic": {
@@ -2541,7 +2629,12 @@
         "dawnFilter": "SubresourceTrackingPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__arrayLayer_16_mipLevel_3",
         "default": false,
         "domain": "texture-macro",
-        "name": "texture contract macro (500 draws)"
+        "name": "texture contract macro (500 draws)",
+        "suiteTags": [
+          "release",
+          "extended"
+        ],
+        "claimEligible": true
       },
       "lanes": {
         "generic": {
@@ -2660,7 +2753,12 @@
         "description": "Texture API contract benchmark aligned to SubresourceTrackingPerf mipLevel=8 variant.",
         "domain": "texture-contract",
         "leftCommandRepeat": 10,
-        "name": "texture sampler/write/query/destroy contract (mip8)"
+        "name": "texture sampler/write/query/destroy contract (mip8)",
+        "suiteTags": [
+          "release",
+          "extended"
+        ],
+        "claimEligible": true
       },
       "lanes": {
         "generic": {
@@ -2785,7 +2883,12 @@
         "default": false,
         "description": "Texture/raster workload combining texture-sampling compute with a native render_draw raster step.",
         "domain": "texture-raster",
-        "name": "texture sampling/raster"
+        "name": "texture sampling/raster",
+        "suiteTags": [
+          "release",
+          "extended"
+        ],
+        "claimEligible": true
       },
       "lanes": {
         "generic": {
@@ -2968,7 +3071,12 @@
         "name": "buffer-upload 16MB",
         "rightTimingDivisor": 1.0,
         "rightUploadBufferUsage": "copy-dst",
-        "rightUploadSubmitEvery": 1
+        "rightUploadSubmitEvery": 1,
+        "suiteTags": [
+          "release",
+          "regression"
+        ],
+        "claimEligible": true
       },
       "lanes": {
         "generic": {
@@ -3165,7 +3273,13 @@
         "rightTimingDivisor": 1.0,
         "rightUploadBufferUsage": "copy-dst",
         "rightUploadSubmitEvery": 1,
-        "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+        "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+        "suiteTags": [
+          "release",
+          "regression",
+          "extended"
+        ],
+        "claimEligible": true
       },
       "lanes": {
         "generic": {
@@ -3289,7 +3403,12 @@
         "name": "buffer-upload 1KB",
         "rightTimingDivisor": 1.0,
         "rightUploadBufferUsage": "copy-dst",
-        "rightUploadSubmitEvery": 1
+        "rightUploadSubmitEvery": 1,
+        "suiteTags": [
+          "release",
+          "regression"
+        ],
+        "claimEligible": true
       },
       "lanes": {
         "generic": {
@@ -3479,7 +3598,12 @@
         "name": "buffer-upload 1MB",
         "rightTimingDivisor": 1.0,
         "rightUploadBufferUsage": "copy-dst",
-        "rightUploadSubmitEvery": 1
+        "rightUploadSubmitEvery": 1,
+        "suiteTags": [
+          "release",
+          "regression"
+        ],
+        "claimEligible": true
       },
       "lanes": {
         "generic": {
@@ -3676,7 +3800,13 @@
         "rightTimingDivisor": 1.0,
         "rightUploadBufferUsage": "copy-dst",
         "rightUploadSubmitEvery": 1,
-        "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+        "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+        "suiteTags": [
+          "release",
+          "regression",
+          "extended"
+        ],
+        "claimEligible": true
       },
       "lanes": {
         "generic": {
@@ -3803,7 +3933,12 @@
         "rightTimingDivisor": 1.0,
         "rightUploadBufferUsage": "copy-dst",
         "rightUploadSubmitEvery": 1,
-        "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+        "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+        "suiteTags": [
+          "release",
+          "extended"
+        ],
+        "claimEligible": true
       },
       "lanes": {
         "generic": {
@@ -3949,7 +4084,12 @@
         "name": "buffer-upload 4MB",
         "rightTimingDivisor": 1.0,
         "rightUploadBufferUsage": "copy-dst",
-        "rightUploadSubmitEvery": 1
+        "rightUploadSubmitEvery": 1,
+        "suiteTags": [
+          "release",
+          "regression"
+        ],
+        "claimEligible": true
       },
       "lanes": {
         "generic": {
@@ -4134,7 +4274,12 @@
         "leftUploadSubmitEvery": 1,
         "rightTimingDivisor": 1.0,
         "rightUploadBufferUsage": "copy-dst",
-        "rightUploadSubmitEvery": 1
+        "rightUploadSubmitEvery": 1,
+        "suiteTags": [
+          "release",
+          "regression"
+        ],
+        "claimEligible": true
       },
       "lanes": {
         "generic": {
@@ -4421,7 +4566,12 @@
         "family": "gfx11",
         "leftTimingDivisor": 1,
         "name": "p1 capability introspection contract",
-        "vendor": "amd"
+        "vendor": "amd",
+        "suiteTags": [
+          "exploration",
+          "extended"
+        ],
+        "claimEligible": false
       },
       "lanes": {
         "amd_vulkan_superset": {
@@ -4489,7 +4639,12 @@
         "family": "gfx11",
         "leftTimingDivisor": 500,
         "name": "p1 capability introspection macro (500)",
-        "vendor": "amd"
+        "vendor": "amd",
+        "suiteTags": [
+          "exploration",
+          "extended"
+        ],
+        "claimEligible": false
       },
       "lanes": {
         "amd_vulkan_superset": {
@@ -4558,7 +4713,12 @@
         "leftTimingDivisor": 1,
         "name": "concurrent execution single-dispatch contract",
         "rightTimingDivisor": 1.0,
-        "vendor": "amd"
+        "vendor": "amd",
+        "suiteTags": [
+          "release",
+          "extended"
+        ],
+        "claimEligible": true
       },
       "lanes": {
         "amd_vulkan_superset": {
@@ -4677,7 +4837,12 @@
         "name": "dispatch fallback contract",
         "quirksPath": "examples/quirks/amd_radv_noop_list.json",
         "timingNormalizationNote": "Directional dispatch contract only: normalize per fallback dispatch operation.",
-        "vendor": "amd"
+        "vendor": "amd",
+        "suiteTags": [
+          "exploration",
+          "extended"
+        ],
+        "claimEligible": false
       },
       "lanes": {
         "amd_vulkan_superset": {},
@@ -4757,7 +4922,12 @@
         "name": "dispatch grid contract",
         "quirksPath": "examples/quirks/amd_radv_noop_list.json",
         "timingNormalizationNote": "Directional dispatch grid contract only: normalize across both-dispatch-sequence workload steps.",
-        "vendor": "amd"
+        "vendor": "amd",
+        "suiteTags": [
+          "exploration",
+          "extended"
+        ],
+        "claimEligible": false
       },
       "lanes": {
         "amd_vulkan_superset": {},
@@ -4836,7 +5006,12 @@
         "name": "dispatch indirect large args",
         "quirksPath": "examples/quirks/amd_radv_noop_list.json",
         "timingNormalizationNote": "Directional large-arg contract normalized per dispatch operation with explicit argument range checks.",
-        "vendor": "amd"
+        "vendor": "amd",
+        "suiteTags": [
+          "exploration",
+          "extended"
+        ],
+        "claimEligible": false
       },
       "lanes": {
         "amd_vulkan_superset": {},
@@ -4891,7 +5066,12 @@
         "name": "dispatch indirect live args",
         "quirksPath": "examples/quirks/amd_radv_noop_list.json",
         "timingNormalizationNote": "Directional live-arg lane with per-dispatch normalization and per-iteration arg updates.",
-        "vendor": "amd"
+        "vendor": "amd",
+        "suiteTags": [
+          "exploration",
+          "extended"
+        ],
+        "claimEligible": false
       },
       "lanes": {
         "amd_vulkan_superset": {},
@@ -4938,7 +5118,12 @@
         "name": "dispatch indirect 1",
         "quirksPath": "examples/quirks/amd_radv_noop_list.json",
         "timingNormalizationNote": "Comparable indirect-dispatch baseline normalized to one dispatch per mapped arg update.",
-        "vendor": "amd"
+        "vendor": "amd",
+        "suiteTags": [
+          "exploration",
+          "extended"
+        ],
+        "claimEligible": false
       },
       "lanes": {
         "amd_vulkan_superset": {},
@@ -4985,7 +5170,12 @@
         "name": "dispatch workgroups 2D sweep",
         "quirksPath": "examples/quirks/amd_radv_noop_list.json",
         "timingNormalizationNote": "Comparable dispatch-sweep lane with fixed total-work normalization across 2D shape variants.",
-        "vendor": "amd"
+        "vendor": "amd",
+        "suiteTags": [
+          "exploration",
+          "extended"
+        ],
+        "claimEligible": false
       },
       "lanes": {
         "amd_vulkan_superset": {},
@@ -5040,7 +5230,12 @@
         "name": "dispatch workgroups 3D sweep",
         "quirksPath": "examples/quirks/amd_radv_noop_list.json",
         "timingNormalizationNote": "Directional 3D sweep lane normalized per dispatch step with fixed total work normalization.",
-        "vendor": "amd"
+        "vendor": "amd",
+        "suiteTags": [
+          "exploration",
+          "extended"
+        ],
+        "claimEligible": false
       },
       "lanes": {
         "amd_vulkan_superset": {},
@@ -5095,7 +5290,12 @@
         "name": "dispatch indirect pipeline switch",
         "quirksPath": "examples/quirks/amd_radv_noop_list.json",
         "timingNormalizationNote": "Directional pipeline-switch indirect lane normalized per dispatch with fixed indirect arg state.",
-        "vendor": "amd"
+        "vendor": "amd",
+        "suiteTags": [
+          "exploration",
+          "extended"
+        ],
+        "claimEligible": false
       },
       "lanes": {
         "amd_vulkan_superset": {},
@@ -5136,7 +5336,12 @@
         "family": "gfx11",
         "leftCommandRepeat": 20,
         "name": "p0 compute indirect/timestamp contract",
-        "vendor": "amd"
+        "vendor": "amd",
+        "suiteTags": [
+          "release",
+          "extended"
+        ],
+        "claimEligible": true
       },
       "lanes": {
         "amd_vulkan_superset": {
@@ -5240,7 +5445,12 @@
         "name": "kernel dispatch macro 1000",
         "quirksPath": "examples/quirks/amd_radv_noop_list.json",
         "timingNormalizationNote": "Directional macro lane normalizing to per-dispatch operation across a 20x1000 inner repeat.",
-        "vendor": "amd"
+        "vendor": "amd",
+        "suiteTags": [
+          "exploration",
+          "extended"
+        ],
+        "claimEligible": false
       },
       "lanes": {
         "amd_vulkan_superset": {},
@@ -5280,7 +5490,12 @@
           "bench/kernels"
         ],
         "name": "zero-initialize workgroup memory (256)",
-        "rightTimingDivisor": 1
+        "rightTimingDivisor": 1,
+        "suiteTags": [
+          "release",
+          "extended"
+        ],
+        "claimEligible": true
       },
       "lanes": {
         "amd_vulkan_superset": {
@@ -5428,7 +5643,12 @@
         "name": "copy buffer to buffer 4kb",
         "quirksPath": "examples/quirks/amd_radv_noop_list.json",
         "timingNormalizationNote": "Comparable buffer copy lane normalizing to one direct buffer-to-buffer copy op.",
-        "vendor": "amd"
+        "vendor": "amd",
+        "suiteTags": [
+          "exploration",
+          "extended"
+        ],
+        "claimEligible": false
       },
       "lanes": {
         "amd_vulkan_superset": {},
@@ -5483,7 +5703,12 @@
         "name": "copy buffer to buffer overlap",
         "quirksPath": "examples/quirks/amd_radv_noop_list.json",
         "timingNormalizationNote": "Directional overlap contract normalized per overlapping copy op.",
-        "vendor": "amd"
+        "vendor": "amd",
+        "suiteTags": [
+          "exploration",
+          "extended"
+        ],
+        "claimEligible": false
       },
       "lanes": {
         "amd_vulkan_superset": {},
@@ -5539,7 +5764,12 @@
         "name": "copy buffer-to-texture contract",
         "quirksPath": "examples/quirks/amd_radv_noop_list.json",
         "timingNormalizationNote": "Directional copy contract only: normalize per copy command sequence.",
-        "vendor": "amd"
+        "vendor": "amd",
+        "suiteTags": [
+          "exploration",
+          "extended"
+        ],
+        "claimEligible": false
       },
       "lanes": {
         "amd_vulkan_superset": {},
@@ -5610,7 +5840,12 @@
         "name": "copy buffer to texture tight pitch",
         "quirksPath": "examples/quirks/amd_radv_noop_list.json",
         "timingNormalizationNote": "Comparable copy layout lane normalizing to one buffer-to-texture transfer.",
-        "vendor": "amd"
+        "vendor": "amd",
+        "suiteTags": [
+          "exploration",
+          "extended"
+        ],
+        "claimEligible": false
       },
       "lanes": {
         "amd_vulkan_superset": {},
@@ -5663,7 +5898,12 @@
         "name": "copy protocol contract",
         "quirksPath": "examples/quirks/amd_radv_noop_list.json",
         "timingNormalizationNote": "Directional mixed protocol contract only: normalize across one full mixed API sequence.",
-        "vendor": "amd"
+        "vendor": "amd",
+        "suiteTags": [
+          "exploration",
+          "extended"
+        ],
+        "claimEligible": false
       },
       "lanes": {
         "amd_vulkan_superset": {},
@@ -5739,7 +5979,12 @@
         "name": "copy texture-to-buffer contract",
         "quirksPath": "examples/quirks/amd_radv_noop_list.json",
         "timingNormalizationNote": "Directional texture-to-buffer copy contract only: normalize per copy command sequence.",
-        "vendor": "amd"
+        "vendor": "amd",
+        "suiteTags": [
+          "exploration",
+          "extended"
+        ],
+        "claimEligible": false
       },
       "lanes": {
         "amd_vulkan_superset": {},
@@ -5810,7 +6055,12 @@
         "name": "copy texture to buffer padded",
         "quirksPath": "examples/quirks/amd_radv_noop_list.json",
         "timingNormalizationNote": "Comparable copy layout lane normalized to one texture-to-buffer transfer.",
-        "vendor": "amd"
+        "vendor": "amd",
+        "suiteTags": [
+          "exploration",
+          "extended"
+        ],
+        "claimEligible": false
       },
       "lanes": {
         "amd_vulkan_superset": {},
@@ -5863,7 +6113,12 @@
         "name": "copy texture-to-texture contract",
         "quirksPath": "examples/quirks/amd_radv_noop_list.json",
         "timingNormalizationNote": "Directional texture-to-texture copy contract only: normalize per copy command sequence.",
-        "vendor": "amd"
+        "vendor": "amd",
+        "suiteTags": [
+          "exploration",
+          "extended"
+        ],
+        "claimEligible": false
       },
       "lanes": {
         "amd_vulkan_superset": {},
@@ -5942,7 +6197,12 @@
         "name": "copy texture to texture stress macro",
         "quirksPath": "examples/quirks/amd_radv_noop_list.json",
         "timingNormalizationNote": "Directional copy stress macro normalized to 60x100 effective copy ops per step.",
-        "vendor": "amd"
+        "vendor": "amd",
+        "suiteTags": [
+          "exploration",
+          "extended"
+        ],
+        "claimEligible": false
       },
       "lanes": {
         "amd_vulkan_superset": {},
@@ -5997,7 +6257,12 @@
         "name": "copy texture to texture subresource",
         "quirksPath": "examples/quirks/amd_radv_noop_list.json",
         "timingNormalizationNote": "Directional subresource lane normalized per texture-to-texture copy op.",
-        "vendor": "amd"
+        "vendor": "amd",
+        "suiteTags": [
+          "exploration",
+          "extended"
+        ],
+        "claimEligible": false
       },
       "lanes": {
         "amd_vulkan_superset": {},
@@ -6043,7 +6308,12 @@
         "leftCommandRepeat": 4,
         "leftTimingDivisor": 148,
         "name": "p2 lifecycle/refcount contract",
-        "vendor": "amd"
+        "vendor": "amd",
+        "suiteTags": [
+          "exploration",
+          "extended"
+        ],
+        "claimEligible": false
       },
       "lanes": {
         "amd_vulkan_superset": {
@@ -6111,7 +6381,12 @@
         "family": "gfx11",
         "leftTimingDivisor": 2600,
         "name": "p2 lifecycle/refcount macro (200)",
-        "vendor": "amd"
+        "vendor": "amd",
+        "suiteTags": [
+          "exploration",
+          "extended"
+        ],
+        "claimEligible": false
       },
       "lanes": {
         "amd_vulkan_superset": {
@@ -6182,7 +6457,12 @@
         "name": "draw indexed indirect u16",
         "quirksPath": "examples/quirks/amd_radv_noop_list.json",
         "timingNormalizationNote": "Comparable indexed-indirect lane normalizing to one indirect indexed draw per sample.",
-        "vendor": "amd"
+        "vendor": "amd",
+        "suiteTags": [
+          "exploration",
+          "extended"
+        ],
+        "claimEligible": false
       },
       "lanes": {
         "amd_vulkan_superset": {},
@@ -6229,7 +6509,12 @@
         "name": "draw indexed indirect u32",
         "quirksPath": "examples/quirks/amd_radv_noop_list.json",
         "timingNormalizationNote": "Comparable indexed-indirect lane normalizing to one indirect indexed draw per sample.",
-        "vendor": "amd"
+        "vendor": "amd",
+        "suiteTags": [
+          "exploration",
+          "extended"
+        ],
+        "claimEligible": false
       },
       "lanes": {
         "amd_vulkan_superset": {},
@@ -6284,7 +6569,12 @@
         "name": "draw indirect legacy equivalent",
         "quirksPath": "examples/quirks/amd_radv_noop_list.json",
         "timingNormalizationNote": "Directional legacy draw proxy normalized per indirect draw command.",
-        "vendor": "amd"
+        "vendor": "amd",
+        "suiteTags": [
+          "exploration",
+          "extended"
+        ],
+        "claimEligible": false
       },
       "lanes": {
         "amd_vulkan_superset": {},
@@ -6323,7 +6613,12 @@
         "driver": "24.0.0",
         "family": "gfx11",
         "name": "p0 render multidraw contract",
-        "vendor": "amd"
+        "vendor": "amd",
+        "suiteTags": [
+          "release",
+          "extended"
+        ],
+        "claimEligible": true
       },
       "lanes": {
         "amd_vulkan_superset": {
@@ -6408,7 +6703,12 @@
         "driver": "24.0.0",
         "family": "gfx11",
         "name": "p0 render multidraw indexed contract",
-        "vendor": "amd"
+        "vendor": "amd",
+        "suiteTags": [
+          "release",
+          "extended"
+        ],
+        "claimEligible": true
       },
       "lanes": {
         "amd_vulkan_superset": {
@@ -6509,7 +6809,12 @@
         "name": "render pass depth stencil",
         "quirksPath": "examples/quirks/amd_radv_noop_list.json",
         "timingNormalizationNote": "Directional depth/stencil contract normalized by one pass operation.",
-        "vendor": "amd"
+        "vendor": "amd",
+        "suiteTags": [
+          "exploration",
+          "extended"
+        ],
+        "claimEligible": false
       },
       "lanes": {
         "amd_vulkan_superset": {},
@@ -6564,7 +6869,12 @@
         "name": "render pass dynamic viewport scissor",
         "quirksPath": "examples/quirks/amd_radv_noop_list.json",
         "timingNormalizationNote": "Directional dynamic-state lane normalized per viewport/scissor command pair.",
-        "vendor": "amd"
+        "vendor": "amd",
+        "suiteTags": [
+          "exploration",
+          "extended"
+        ],
+        "claimEligible": false
       },
       "lanes": {
         "amd_vulkan_superset": {},
@@ -6611,7 +6921,12 @@
         "name": "render pass loadOps clear/load",
         "quirksPath": "examples/quirks/amd_radv_noop_list.json",
         "timingNormalizationNote": "Comparable render-pass lane normalized per pass operation across clear/load boundaries.",
-        "vendor": "amd"
+        "vendor": "amd",
+        "suiteTags": [
+          "exploration",
+          "extended"
+        ],
+        "claimEligible": false
       },
       "lanes": {
         "amd_vulkan_superset": {},
@@ -6666,7 +6981,12 @@
         "name": "render pass multisample resolve",
         "quirksPath": "examples/quirks/amd_radv_noop_list.json",
         "timingNormalizationNote": "Directional MSAA resolve lane normalized per render pass resolution.",
-        "vendor": "amd"
+        "vendor": "amd",
+        "suiteTags": [
+          "exploration",
+          "extended"
+        ],
+        "claimEligible": false
       },
       "lanes": {
         "amd_vulkan_superset": {},
@@ -6721,7 +7041,12 @@
         "name": "render pass stencil ref sweep",
         "quirksPath": "examples/quirks/amd_radv_noop_list.json",
         "timingNormalizationNote": "Directional state-sweep lane normalized per state-change boundary.",
-        "vendor": "amd"
+        "vendor": "amd",
+        "suiteTags": [
+          "exploration",
+          "extended"
+        ],
+        "claimEligible": false
       },
       "lanes": {
         "amd_vulkan_superset": {},
@@ -6768,7 +7093,12 @@
         "name": "render pass storeOps discard",
         "quirksPath": "examples/quirks/amd_radv_noop_list.json",
         "timingNormalizationNote": "Comparable render-pass lane normalized per pass operation across storeOp toggles.",
-        "vendor": "amd"
+        "vendor": "amd",
+        "suiteTags": [
+          "exploration",
+          "extended"
+        ],
+        "claimEligible": false
       },
       "lanes": {
         "amd_vulkan_superset": {},
@@ -6815,7 +7145,12 @@
         "leftCommandRepeat": 100,
         "leftTimingDivisor": 720,
         "name": "p0 render pixel-local-storage barrier contract",
-        "vendor": "amd"
+        "vendor": "amd",
+        "suiteTags": [
+          "exploration",
+          "extended"
+        ],
+        "claimEligible": false
       },
       "lanes": {
         "amd_vulkan_superset": {
@@ -6881,7 +7216,12 @@
         "family": "gfx11",
         "leftCommandRepeat": 500,
         "name": "p0 render pixel-local-storage barrier macro (500)",
-        "vendor": "amd"
+        "vendor": "amd",
+        "suiteTags": [
+          "exploration",
+          "extended"
+        ],
+        "claimEligible": false
       },
       "lanes": {
         "amd_vulkan_superset": {
@@ -6963,7 +7303,12 @@
         "leftCommandRepeat": 100,
         "name": "uniform buffer update (WriteBuffer partial single)",
         "rightTimingDivisor": 1,
-        "vendor": "amd"
+        "vendor": "amd",
+        "suiteTags": [
+          "release",
+          "extended"
+        ],
+        "claimEligible": true
       },
       "lanes": {
         "amd_vulkan_superset": {
@@ -7058,7 +7403,12 @@
         "name": "buffer map double request guard",
         "quirksPath": "examples/quirks/amd_radv_noop_list.json",
         "timingNormalizationNote": "Directional error-path contract: validate deterministic map-error behavior and unmap recovery in paired map attempts.",
-        "vendor": "amd"
+        "vendor": "amd",
+        "suiteTags": [
+          "exploration",
+          "extended"
+        ],
+        "claimEligible": false
       },
       "lanes": {
         "amd_vulkan_superset": {},
@@ -7105,7 +7455,12 @@
         "name": "buffer map partial read 4kb",
         "quirksPath": "examples/quirks/amd_radv_noop_list.json",
         "timingNormalizationNote": "Comparable partial-range lane normalizing to per-op partial read mapping.",
-        "vendor": "amd"
+        "vendor": "amd",
+        "suiteTags": [
+          "exploration",
+          "extended"
+        ],
+        "claimEligible": false
       },
       "lanes": {
         "amd_vulkan_superset": {},
@@ -7152,7 +7507,12 @@
         "name": "buffer map partial write 64kb",
         "quirksPath": "examples/quirks/amd_radv_noop_list.json",
         "timingNormalizationNote": "Comparable partial-range lane normalizing to per-op partial write mapping at 64KB subrange.",
-        "vendor": "amd"
+        "vendor": "amd",
+        "suiteTags": [
+          "exploration",
+          "extended"
+        ],
+        "claimEligible": false
       },
       "lanes": {
         "amd_vulkan_superset": {},
@@ -7199,7 +7559,12 @@
         "name": "buffer map readback 1kb",
         "quirksPath": "examples/quirks/amd_radv_noop_list.json",
         "timingNormalizationNote": "Dawn map-readback parity is tracked as per-op map-read-unmap units with one ignore-first warmup path.",
-        "vendor": "amd"
+        "vendor": "amd",
+        "suiteTags": [
+          "exploration",
+          "extended"
+        ],
+        "claimEligible": false
       },
       "lanes": {
         "amd_vulkan_superset": {},
@@ -7246,7 +7611,12 @@
         "name": "buffer map readback 64kb",
         "quirksPath": "examples/quirks/amd_radv_noop_list.json",
         "timingNormalizationNote": "Comparable readback lane normalizing to per-op map-read-unmap units over a 64KB transfer size.",
-        "vendor": "amd"
+        "vendor": "amd",
+        "suiteTags": [
+          "exploration",
+          "extended"
+        ],
+        "claimEligible": false
       },
       "lanes": {
         "amd_vulkan_superset": {},
@@ -7293,7 +7663,12 @@
         "name": "buffer map unmap storm macro",
         "quirksPath": "examples/quirks/amd_radv_noop_list.json",
         "timingNormalizationNote": "Comparable macro lane with two mapping operations per iteration; divisor accounts for per-op normalization.",
-        "vendor": "amd"
+        "vendor": "amd",
+        "suiteTags": [
+          "exploration",
+          "extended"
+        ],
+        "claimEligible": false
       },
       "lanes": {
         "amd_vulkan_superset": {},
@@ -7340,7 +7715,12 @@
         "name": "buffer map write 1kb",
         "quirksPath": "examples/quirks/amd_radv_noop_list.json",
         "timingNormalizationNote": "Comparable writeback lane normalizing to per-op map-write-unmap units at 1KB.",
-        "vendor": "amd"
+        "vendor": "amd",
+        "suiteTags": [
+          "exploration",
+          "extended"
+        ],
+        "claimEligible": false
       },
       "lanes": {
         "amd_vulkan_superset": {},
@@ -7387,7 +7767,12 @@
         "name": "buffer map write 64kb",
         "quirksPath": "examples/quirks/amd_radv_noop_list.json",
         "timingNormalizationNote": "Comparable writeback lane normalizing to per-op map-write-unmap units at 64KB.",
-        "vendor": "amd"
+        "vendor": "amd",
+        "suiteTags": [
+          "exploration",
+          "extended"
+        ],
+        "claimEligible": false
       },
       "lanes": {
         "amd_vulkan_superset": {},
@@ -7430,7 +7815,12 @@
         "family": "gfx11",
         "leftCommandRepeat": 100,
         "name": "p0 resource lifecycle contract",
-        "vendor": "amd"
+        "vendor": "amd",
+        "suiteTags": [
+          "release",
+          "extended"
+        ],
+        "claimEligible": true
       },
       "lanes": {
         "amd_vulkan_superset": {
@@ -7558,7 +7948,12 @@
         "leftCommandRepeat": 10,
         "leftTimingDivisor": 20,
         "name": "p1 resource-table/immediates contract",
-        "vendor": "amd"
+        "vendor": "amd",
+        "suiteTags": [
+          "exploration",
+          "extended"
+        ],
+        "claimEligible": false
       },
       "lanes": {
         "amd_vulkan_superset": {
@@ -7629,7 +8024,11 @@
         "leftTimingDivisor": 1.0,
         "name": "p1 resource-table/immediates macro (500)",
         "rightTimingDivisor": 1.0,
-        "vendor": "amd"
+        "vendor": "amd",
+        "suiteTags": [
+          "exploration"
+        ],
+        "claimEligible": false
       },
       "lanes": {
         "amd_vulkan_superset": {
@@ -7742,7 +8141,12 @@
         "name": "surface full presentation contract",
         "quirksPath": "examples/quirks/amd_radv_noop_list.json",
         "timingNormalizationNote": "Directional full-surface contract only: normalize per full presentation cycle.",
-        "vendor": "amd"
+        "vendor": "amd",
+        "suiteTags": [
+          "exploration",
+          "extended"
+        ],
+        "claimEligible": false
       },
       "lanes": {
         "amd_vulkan_superset": {},

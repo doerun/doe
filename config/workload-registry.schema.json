@@ -35,7 +35,8 @@
           "enum": [
             "backend_native",
             "node_package",
-            "bun_package"
+            "bun_package",
+            "deno_package"
           ]
         },
         "workloadIds": {

@@ -13,6 +13,7 @@ const artifact_policy = @import("../common/artifact_policy.zig");
 const hash_utils = @import("../common/hash_utils.zig");
 const artifact_emit = @import("artifact_emit.zig");
 const native_runtime = @import("metal_native_runtime.zig");
+extern fn metal_bridge_buffer_contents(buffer: ?*anyopaque) callconv(.c) ?[*]u8;
 
 const MANIFEST_PATH_CAPACITY: usize = 256;
 const HASH_HEX_SIZE: usize = hash_utils.SHA256_HEX_SIZE;
@@ -618,6 +619,17 @@ pub fn run_contract_path_for_test(command: model.Command, queue_sync_mode: webgp
     _ = try iface.execute_command(command);
 }
 
+fn capture_buffer(ctx: *anyopaque, allocator: std.mem.Allocator, handle: u64, offset: u64, size: u64) anyerror![]u8 {
+    const self = cast(ctx);
+    const runtime = get_runtime(self);
+    if (size == 0) return error.InvalidArgument;
+    const end = std.math.add(u64, offset, size) catch return error.InvalidArgument;
+    const buffer = runtime.compute_buffers.get(handle) orelse return error.InvalidArgument;
+    const mapped = metal_bridge_buffer_contents(buffer) orelse return error.InvalidState;
+    const source = mapped[@intCast(offset)..@intCast(end)];
+    return try allocator.dupe(u8, source);
+}
+
 fn is_runtime_unavailable_for_test(err: anyerror) bool {
     return switch (err) {
         error.LibraryOpenFailed,
@@ -645,4 +657,5 @@ const VTABLE = backend_iface.BackendVTable{
     .flush_queue = flush_queue,
     .prewarm_upload_path = prewarm_upload_path,
     .prewarm_kernel_dispatch = prewarm_kernel_dispatch,
+    .capture_buffer = capture_buffer,
 };

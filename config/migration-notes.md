@@ -1,5 +1,86 @@
 # Config Migration Notes
 
+## 2026-03-22
+
+### Semantic operator trace rows, operator manifests, and structural repro bundles
+
+- `config/trace.schema.json` now accepts optional semantic operator fields on
+  runtime trace rows:
+  - `semanticOpId`
+  - `semanticStage`
+  - `semanticPhase`
+  - `semanticTokenIndex`
+  - `semanticLayerIndex`
+  - `semanticExecutionPlanHash`
+- `config/trace.schema.json` also now accepts the execution-side provenance
+  fields required to join a semantic operator to Doe runtime facts:
+  - `executionBackendLane`
+  - `executionSelectionPolicyHash`
+  - `executionShaderArtifactManifestPath`
+  - `executionShaderArtifactManifestHash`
+  - `executionAdapterOrdinal`
+  - `executionQueueFamilyIndex`
+  - `executionPresentCapable`
+- `config/trace-meta.schema.json` now records semantic/operator artifact summary
+  state:
+  - `semanticTracingEnabled`
+  - `semanticOpRowCount`
+  - `semanticCaptureCount`
+  - `semanticReproCount`
+  - `operatorRecordManifestPath`
+  - `operatorRecordManifestHash`
+- New artifact schemas define the Doe-native operator debugging contracts:
+  - `config/operator-execution-record.schema.json`
+  - `config/operator-repro-bundle.schema.json`
+- `runtime/zig/src/main.zig` now accepts semantic and capture metadata in the
+  command stream, emits semantic trace rows when present, writes a per-run
+  operator manifest adjacent to the trace anchor (`<trace-meta-or-jsonl>.operators.json`),
+  and emits one-command structural repro bundles
+  (`.opNNNN.repro.commands.json` / `.opNNNN.repro.meta.json`).
+- Buffer capture is Doe-native only. Vulkan and Metal support targeted
+  `captureBufferHandle` / `captureOffset` / `captureSize` readback today;
+  D3D12 and Dawn-delegate paths fail explicitly as `UnsupportedFeature`.
+
+### Coverage ledger axis rename and generated surface views
+
+- Renamed the canonical coverage ledgers to make their axes explicit:
+  - `config/webgpu-core-coverage.json` ->
+    `config/webgpu-command-coverage-core.json`
+  - `config/webgpu-full-coverage.json` ->
+    `config/webgpu-command-coverage-full.json`
+  - `config/webgpu-spec-coverage.json` ->
+    `config/webgpu-capability-inventory.json`
+  - `config/webgpu-chromium-coverage.json` ->
+    `config/webgpu-integration-chromium.json`
+- Matching schema files were renamed in lockstep and `config/schema-targets.json`
+  now validates the new canonical names.
+- `bench/schema_gate.py` now accepts JSONL data targets directly, so
+  `config/webgpu-spec-index.jsonl` is validated through the registry instead of
+  pointing at the stale non-existent `.json` path.
+- Added generated per-surface convenience reports under `config/generated/`:
+  - `webgpu-surface-compute.json`
+  - `webgpu-surface-headless.json`
+  - `webgpu-surface-chromium.json`
+- These generated surface reports are views only. The canonical source of truth
+  remains axis-based: command coverage, capability inventory, spec index, and
+  Chromium integration overlay stay separate.
+
+### Upload path policy: allow fast_mapped under staged_copy_only
+
+- `staged_copy_only` previously forced all uploads through the staged-copy
+  path (host-visible src buffer, device-local dst buffer, vkCmdCopyBuffer,
+  submit+fence wait). Dawn's Vulkan `WriteBuffer` detects host-visible+coherent
+  destination buffers and performs a direct memcpy with zero GPU work.
+- The `classify_upload_path` function in `vk_upload.zig` now allows the
+  `fast_mapped` path (direct memcpy to a persistently-mapped host-visible
+  buffer) even under `staged_copy_only`, matching Dawn's actual behavior.
+- This eliminates the structural work asymmetry on `upload_write_buffer_1kb`
+  that violated CLAUDE.md rules 7 (Dawn apples-to-apples), 10 (structural
+  work equivalence), and 11 (timing-scope completeness).
+- No schema version bump required: the `uploadPathPolicy` enum values are
+  unchanged; only the runtime classification semantics are corrected.
+- Config lane notes updated to reflect the corrected semantics.
+
 ## 2026-03-21
 
 ### External texture native implementation

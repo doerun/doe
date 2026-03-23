@@ -19,7 +19,11 @@
       "comparable": true,
       "default": true,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-      "dawnFilter": "@autodiscover"
+      "dawnFilter": "@autodiscover",
+      "suiteTags": [
+        "release"
+      ],
+      "claimEligible": true
     },
     {
       "id": "render_draw_throughput_baseline",
@@ -37,7 +41,12 @@
       "comparable": false,
       "leftTimingDivisor": 4,
       "timingNormalizationNote": "Directional render proxy only",
-      "dawnFilter": "@autodiscover"
+      "dawnFilter": "@autodiscover",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "upload_write_buffer_64kb",
@@ -65,7 +74,12 @@
       "dawnFilter": "@autodiscover",
       "rightCommandRepeat": 16,
       "rightIgnoreFirstOps": 1,
-      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+      "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "suiteTags": [
+        "release",
+        "regression"
+      ],
+      "claimEligible": true
     }
   ]
 }

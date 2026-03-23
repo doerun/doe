@@ -31,5 +31,39 @@
     "probe": "none",
     "sampleMs": 100,
     "sampleTargetCount": 0
+  },
+  "selector": {
+    "suite": [
+      "release"
+    ],
+    "comparability": [
+      "comparable",
+      "non_comparable"
+    ],
+    "claimEligibleOnly": true,
+    "domains": [],
+    "ids": [
+      "upload_write_buffer_4gb",
+      "render_draw_indexed_baseline",
+      "pipeline_async_diagnostics",
+      "capability_introspection",
+      "resource_table_immediates",
+      "lifecycle_refcount",
+      "capability_introspection_500",
+      "resource_table_immediates_500",
+      "lifecycle_refcount_200",
+      "render_draw_indexed_200k",
+      "render_pixel_local_storage_barrier",
+      "render_pixel_local_storage_barrier_500",
+      "surface_presentation",
+      "copy_buffer_to_texture",
+      "copy_texture_to_buffer",
+      "compute_dispatch_fallback",
+      "copy_protocol",
+      "copy_texture_to_texture",
+      "compute_dispatch_grid",
+      "surface_full_presentation"
+    ],
+    "excludeIds": []
   }
 }

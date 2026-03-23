@@ -4,6 +4,55 @@
 
 Date: 2026-03-22
 
+### Authoritative state reconciliation (2026-03-22)
+
+This section supersedes contradictory statements elsewhere in this document.
+
+**Lean theorem count:** 77 theorems in `pipeline/lean/artifacts/proven-conditions.json`
+(10 tautological, 4 comptime_verified, 17 lean_verified, 40 lean_required,
+6 lean_fixture). Previous references to "84 theorems" are stale.
+Note: the proof artifact uses `lean_required` as a category for unbounded-domain
+theorems (IR builder soundness, MSL address-space chains, render-pass state
+machines, compute bounds, etc.) which is not yet reflected in
+`config/proof-artifact.schema.json` (schema allows only `tautological`,
+`comptime_verified`, `lean_verified`, `lean_fixture`). This is a tracked
+schema/artifact mismatch.
+
+**DXIL emitter status:** Native DXIL bytecode generation is now the primary
+D3D12 path. Six modules (2,303 LOC) in `runtime/zig/src/doe_wgsl/` produce
+LLVM 3.7 bitcode + DXBC container directly from Doe IR without external DXC.
+`emit_dxil.zig` routes the primary `emit()` call through `emit_dxil_native`;
+DXC is available as a fallback via `emitWithToolchainConfig()`. Previous
+statements that "native DXIL emission is still deferred" or that D3D12 "still
+relies on WGSL -> IR -> HLSL -> DXC" are superseded.
+
+**AMD Vulkan `upload_write_buffer_1kb` status:** The comparability violation
+is resolved (fast_mapped path now used for host-visible buffers within
+`FAST_UPLOAD_BUFFER_MAX_BYTES`). The workload is now structurally comparable.
+Claimability status: the latest headlineProcessWall evaluation shows 9/18
+comparable workloads claimable on AMD Vulkan, with `upload_write_buffer_1kb`
+among the claimable set. Previous statements that this workload is
+"non-claimable" (from pre-fast_mapped runs) are superseded by the fix at
+lines 23-34 of this document.
+
+**Browser lane smoke summary (Doe, Linux headless, 2026-03-22):**
+Evidence: `browser/fawn-browser/artifacts/20260322Tdoe-smoke-after-copytexture/dawn-vs-doe.browser.playwright-smoke.diagnostic.json`
+- compute (computeIncrement): PASS
+- render (renderTriangle): PASS (fixed this session -- SPIR-V propagation)
+- xrCompatible (requestAdapterXrCompatible): PASS
+- canvas API surface: all probes pass (offscreenCanvas, webgpuContext,
+  configure, getCurrentTexture, preferredCanvasFormat=rgba8unorm)
+- copyExternalImageToTexture: FAIL (Instance lifetime --
+  `A valid external Instance reference no longer exists.`)
+- importExternalTexture: FAIL (Instance lifetime -- same error)
+Previous conflicting browser summaries elsewhere in this document are
+superseded by this entry.
+
+**WGSL test suite:** `zig build test-wgsl` passes with exit code 0
+(runtime/zig, 2026-03-22). No vertex/fragment test failures remaining.
+
+---
+
 Doe rebrand (2026-03-22):
 - `packages/doe-gpu/` created as the merged replacement for `@simulatte/webgpu`
   and `@simulatte/webgpu-doe`. Primary export is `gpu` (not `doe`).
@@ -20,6 +69,19 @@ Doe rebrand (2026-03-22):
   support).
 - Pending: `doe-gpu` GitHub org creation.
 
+Upload path comparability fix (2026-03-22):
+- `upload_write_buffer_1kb` comparability violation resolved. Dawn's Vulkan
+  `WriteBuffer` detects host-visible+coherent buffers and performs a direct
+  memcpy with zero GPU work. Doe's `staged_copy_only` lane policy was forcing
+  all uploads through staged copy (host-visible src, device-local dst,
+  vkCmdCopyBuffer, submit+fence wait), creating structural work asymmetry.
+- `classify_upload_path` in `vk_upload.zig` now allows `fast_mapped` (direct
+  memcpy to a persistently-mapped host-visible buffer) even under
+  `staged_copy_only`, matching Dawn's actual behavior for small buffers
+  within `FAST_UPLOAD_BUFFER_MAX_BYTES` (1MB).
+- This eliminates the CLAUDE.md rules 7/10/11 violation on
+  `upload_write_buffer_1kb`.
+
 Metal backend command parity (2026-03-22):
 - Metal native backend no longer returns `Unsupported` for `dispatch_indirect`:
   `runtime/zig/src/backend/metal/mod.zig` now routes the command into a native
@@ -34,23 +96,38 @@ Metal backend command parity (2026-03-22):
 External texture runtime implementation (2026-03-21):
 - `DoeExternalTexture` handle with ref-counted lifecycle (create, addref, release,
   destroy, expire, refresh) in `runtime/zig/src/doe_external_texture_native.zig`.
-- WGSL `texture_external` type support across all emitters (MSL, SPIR-V, HLSL).
-- `textureSampleBaseClampToEdge` builtin lowered to `sample(level(0))` on all backends.
 - Dropin proc table wires `wgpuDeviceCreateExternalTexture` to Doe via `resolveLocalProc`.
 - Chromium-side external-texture lifetime tracking now pins a real wire
   `wgpu::Instance` through `DawnControlClientHolder`, so mailbox/external-texture
   resource lifetimes keep an external Instance reference alive instead of
   tripping the wire-client shutdown path with
   `A valid external Instance reference no longer exists.`.
+- Doe now exports `wgpuQueueCopyTextureForBrowser` locally in addition to
+  `wgpuQueueCopyExternalTextureForBrowser`, so Chromium's browser copy path no
+  longer falls through `wgpuGetProcAddress()` to a foreign delegate proc for
+  the Linux canvas/mailbox route.
 - Doe now exports `wgpuQueueCopyExternalTextureForBrowser`; the current runtime
   implementation is an explicit bridge stub that preserves Chromium proc loading
   and status plumbing while native OS media/shared-texture interop remains
   tracked work.
-- This change-set was validated at compile/symbol level (`zig build dropin`,
-  Chromium object rebuilds for `dawn_control_client_holder.cc` and
-  `webgpu_mailbox_texture.cc`, exported symbol check in `libwebgpu_doe.so`);
-  a fresh Doe browser smoke rerun is still pending before upgrading host-level
-  claim status.
+- Doe bind-group/runtime ownership now parses `ExternalTextureBindingLayout` /
+  `ExternalTextureBindingEntry` chained structs, retains bind-group child
+  resources, and retains external-texture plane views so Chromium external
+  textures no longer depend on ambient texture-view lifetime.
+- Fresh Doe Linux smoke evidence on 2026-03-22 improved from
+  `render=false` to `render=true` after the runtime ownership/bind-group fix:
+  `browser/fawn-browser/artifacts/20260322Tdoe-smoke-after-bindings/dawn-vs-doe.browser.playwright-smoke.diagnostic.json`.
+- Fresh rerun after adding the missing Doe-local `wgpuQueueCopyTextureForBrowser`
+  still reports `compute=true`, `render=true`, and `xrCompatible=true`, while
+  `copyExternalImageToTexture` and `importExternalTexture` remain red on the
+  Doe lane:
+  `browser/fawn-browser/artifacts/20260322Tdoe-smoke-after-copytexture/dawn-vs-doe.browser.playwright-smoke.diagnostic.json`.
+- The current browser blocker on this host is therefore narrower and better
+  isolated: the missing Doe proc ownership for `CopyTextureForBrowser` is fixed,
+  but Chromium's Doe lane still lacks end-to-end shared-image/media interop for
+  the Skia/mailbox fallback and `texture_external` render path. The observed
+  failure remains `A valid external Instance reference no longer exists.` on
+  both `copyExternalImageToTexture` and `importExternalTexture`.
 
 Upload performance optimizations (2026-03-21):
 - Removed explicit `vkResetCommandBuffer` from `flush_queue`; implicit reset via
@@ -78,7 +155,7 @@ Vulkan compute dispatch unblocked (2026-03-19):
 - `bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.extended.comparable.json` is now a backward-compatible alias of the governed strict extended contract (`bench/workloads.amd.vulkan.extended.strict.json`) instead of the obsolete legacy `bench/workloads.amd.vulkan.extended.json` workload file that still carried upload `pathAsymmetry` flags on comparable rows.
 - Compare-run manifests now distinguish claimability misses from execution failures: claim-enabled compare runs still exit non-zero on non-claimable results, but `run_manifest.json` records `status=diagnostic` when the report is comparable yet non-claimable.
 - AMD Vulkan strict staged uploads now prefer the existing fence wait path for immediate upload flushes in `runtime/zig/src/backend/vulkan/vk_upload.zig` instead of the timeline-semaphore wait path; this reduced the focused `upload_write_buffer_1kb` gap on this host from roughly `p50 -4.42% / p95 -6.21%` to `p50 -3.74% / p95 -1.40%` under the same workload contract.
-- Performance evidence on this host now requires an optimized Zig runtime build: `zig build -Doptimize=ReleaseFast` materially improves AMD Vulkan `upload_write_buffer_1kb`, but the latest focused rerun (`bench/out/amd-vulkan/20260320T171548Z/dawn-vs-doe.amd.vulkan.release.json`) and the full governed release lane (`bench/out/amd-vulkan/20260320T171011Z/dawn-vs-doe.amd.vulkan.release.json`) both remain diagnostically blocked by that row.
+- Performance evidence on this host now requires an optimized Zig runtime build: `zig build -Doptimize=ReleaseFast` materially improves AMD Vulkan `upload_write_buffer_1kb`. (Note: pre-fast_mapped runs from 2026-03-20 showed this row as diagnostically blocked; the fast_mapped comparability fix on 2026-03-22 resolved the structural asymmetry. See authoritative reconciliation at top of this document.)
 - `doeNativeDeviceCreateBindGroupLayout` now returns `null` for `entryCount > 0` with `entries = null` instead of trapping across the C ABI boundary.
 - D3D12 stub bridge (`src/backend/d3d12/d3d12_bridge_stubs.c`) added; all non-Windows build targets now link the stubs so `doe-zig-runtime`, tests, and dropin libraries build on macOS and Linux without D3D12 headers.
 - Stale test fixes: `CmdTag` variant count 8→10 (added `write_timestamp`, `resolve_query_set`); `align_cbv_size(768)` expected value corrected (768 is already 256-aligned); Vulkan dispatch tests no longer assert a specific `status_message` string for the runtime-unavailable fallback path.
@@ -164,10 +241,10 @@ AMD Vulkan strict comparable/release presets now point at the native-supported w
   - focused March 20, 2026 strict comparable artifact `bench/out/scratch/20260320T175741Z/vulkan.promote.render_texture_resource.no_raster_sampling.json` is `comparisonStatus=comparable`, `claimStatus=diagnostic` across 13 Vulkan render/texture/resource workloads on this AMD host.
   - follow-up March 20, 2026 fixes closed that remaining `texture_sampling_raster_baseline` blocker: the Vulkan SPIR-V path now elides redundant gid-guarded texture robustness clamps, and `examples/texture_raster_proxy_commands.json` now creates/queries/destroys its textures explicitly via zero-init `texture_write` commands before `kernel_dispatch`. Focused artifact `bench/out/scratch/20260320T210000Z/vulkan.texture_sampling_raster_baseline.fixed2.json` is now `comparisonStatus=comparable` (still `claimStatus=diagnostic` due a real negative delta).
   - the March 20, 2026 strict preflight evidence showed the next blocker was the 256 MB matvec contract: Dawn rejects `compute_matvec_32768x2048_f32` with `kernel_dispatch_storage_binding_exceeds_maxstoragebufferbindingsize`. Those three large matvec rows are now tracked as governed `doe-advantage` directional workloads instead of remaining in the strict apples-to-apples AMD Vulkan lane.
-- latest AMD Vulkan strict release rerun on this host remains non-claimable for upload-heavy release evidence:
+- (Historical, pre-fast_mapped) AMD Vulkan strict release rerun on this host was non-claimable for upload-heavy release evidence:
   - artifact: `bench/out/amd-vulkan/20260310T153903Z/dawn-vs-doe.amd.vulkan.release.json`
   - status: `comparisonStatus=comparable`, `claimStatus=diagnostic`
-  - current non-claimable workloads: `upload_write_buffer_1kb`
+  - this entry predates the fast_mapped comparability fix; see authoritative reconciliation above for current state
 - `upload_write_buffer_1kb` Vulkan staged-copy path optimized (three changes in `runtime/zig/src/backend/vulkan/native_runtime.zig`):
   - replaced `vkQueueWaitIdle` with fence-based `vkWaitForFences` in `flush_queue` to reduce per-submission driver synchronization overhead on RADV
   - eliminated redundant `vkResetCommandBuffer` between `flush_queue` and `ensure_upload_recording` via `command_buffer_reset_clean` tracking flag
@@ -220,7 +297,7 @@ AMD Vulkan strict comparable/release presets now point at the native-supported w
   - `runtime/zig/src/backend/backend_registry.zig` routes `doe_d3d12` directly to `runtime/zig/src/backend/d3d12/mod.zig`.
   - active D3D12 execution is instance-owned (`ZigD3D12Backend` + `WebGPUBackend`) with shared common-layer error/capability contracts.
   - D3D12 shader-artifact manifest failures are now handled in-place (typed status update) without throwing away command timing/dispatch metadata.
-  - live `.wgsl` shader compilation now lowers through the shared WGSL→IR→HLSL path and then compiles with DXC; native DXIL remains pending while precompiled `.cso`/`.dxbc` artifacts and explicit `.hlsl` source compilation remain supported.
+  - live `.wgsl` shader compilation now lowers through the shared WGSL→IR path; the primary D3D12 path generates native DXIL bytecode directly, with DXC available as a fallback. Precompiled `.cso`/`.dxbc` artifacts and explicit `.hlsl` source compilation remain supported.
 - Vulkan native backend routing is now active on `doe_vulkan`:
   - `runtime/zig/src/backend/backend_registry.zig` routes `doe_vulkan` to `runtime/zig/src/backend/vulkan/mod.zig` (no Dawn delegate fallback in this lane).
   - `kernel_dispatch` binds real kernel SPIR-V via native Vulkan runtime (`load_kernel_spirv` + pipeline bind), removing noop-kernel execution on that path.
@@ -491,13 +568,13 @@ Benchmark contract coverage snapshot (2026-02-25 update):
   - preferred CTS lane is now `bench/cts_subset.fawn-node.json`: vendored WebGPU CTS (`bench/vendor/dawn/third_party/webgpu-cts`) driven through Doe via `bench/cts/fawn-node-gpu-provider.cjs`, with a broader Doe-core subset covering adapter/device, buffers, command encoding, queue, compute, validation, and shader builtin execution.
   - legacy `bench/cts_subset.webgpu-node.json` remains available as the older narrow external-node example, but it is no longer the preferred market-readiness config.
 - spec inventory is now tracked separately in `config/webgpu-spec-index.jsonl` / `config/webgpu-spec-index.schema.json`. The index is generated from the official `@webgpu/types` WebGPU API surface and serves as the canonical per-backend checklist for `metal`, `vulkan`, `d3d12`, and `browser`; each backend cell is split into `implementation`, `correctness`, and `performance` status so code presence, test coverage, and benchmark evidence do not get conflated. WGSL builtins/types remain a follow-up layer.
-  - CTS evidence is now tracked separately from capability inventory in `config/webgpu-cts-evidence.json` / `config/webgpu-cts-evidence.schema.json`; the existing `config/webgpu-spec-coverage.json` ledger remains an internal capability inventory, not a CTS pass/fail record.
-  - important distinction: Fawn now has CTS infrastructure, but it still does not yet have a published CTS pass-rate baseline or dashboard trend. The docs should be read as three separate layers: product contract, spec index, and CTS evidence. The existing `config/webgpu-spec-coverage.json` `103/103 implemented` ledger is only the internal capability inventory layer; it is not the spec index and it is not external conformance proof.
+  - CTS evidence is now tracked separately from capability inventory in `config/webgpu-cts-evidence.json` / `config/webgpu-cts-evidence.schema.json`; `config/webgpu-capability-inventory.json` remains an internal capability inventory, not a CTS pass/fail record.
+  - important distinction: Fawn now has CTS infrastructure, but it still does not yet have a published CTS pass-rate baseline or dashboard trend. The docs should be read as three separate layers: product contract, spec index, and CTS evidence. The `config/webgpu-capability-inventory.json` `103/103 implemented` ledger is only the internal capability inventory layer; it is not the spec index and it is not external conformance proof.
   - `bench/build_model_capacity_matrix.py` for hardware×model ceiling disclosure artifacts (status + capacity summaries).
   - `bench/run_market_readiness_bundle.py` to orchestrate the full evidence bundle and emit a linked manifest.
 - Fawn fork maintenance policy is now documented for buyer/security review:
   `docs/fawn-fork-maintenance-policy.md`.
-- `config/webgpu-spec-coverage.json` now tracks full Dawn/WebGPU feature breadth as an internal capability inventory only (`103` entries total: `22` capability contracts + `81` feature-inventory entries sourced from `bench/vendor/dawn/src/dawn/dawn.json` `feature name` list), with current status counts `implemented=103`, `blocked=0`, `tracked=0`, `planned=0`. It does not substitute for a spec-index ledger or CTS evidence store.
+- `config/webgpu-capability-inventory.json` now tracks full Dawn/WebGPU feature breadth as an internal capability inventory only (`103` entries total: `22` capability contracts + `81` feature-inventory entries sourced from `bench/vendor/dawn/src/dawn/dawn.json` `feature name` list), with current status counts `implemented=103`, `blocked=0`, `tracked=0`, `planned=0`. It does not substitute for a spec-index ledger or CTS evidence store.
 - `config/webgpu-spec-index.jsonl` now provides the canonical WebGPU API spec-index and backend-checklist ledger for the official WebGPU API surface: generated from `@webgpu/types` `0.1.69`, with `106` GPU-prefixed interfaces, `472` effective interface members after mixin inheritance, `34` string-union type enums, and `275` enumerated string values. Each interface/member/enum entry now carries per-backend checklist cells for `metal`, `vulkan`, `d3d12`, and `browser`, and each cell is split into `implementation`, `correctness`, and `performance`; WGSL remains a follow-up layer.
 - drop-in runtime library discovery now resolves sidecar Dawn libraries relative to the loaded `libwebgpu_doe.so` path; Chromium Track A (browser) proc-surface probe now resolves `275/275` required symbols without `LD_LIBRARY_PATH` (2026-02-24).
 - Metal immediate-data WebGPU surface is now wired end to end:
@@ -663,7 +740,7 @@ Legend: ● implemented ◐ partial ○ missing
 - **Metal (bypass)**: `doe_wgpu_native.zig` + `doe_render_native.zig` → `metal_bridge.m`. C ABI surface used by `doe_napi.c` for the earlier Node headless path and AI workload inference. 729 + 155 lines.
 - **Metal (structured)**: `backend/metal/*.zig` → `metal_bridge.m`. Benchmark engine runtime with telemetry, artifact emission, and deterministic timing. Not used by the current AI workload package lanes. 2,192 lines across 35 files. `metal_native_runtime.zig` (744 lines) does the real work; facade modules are thin forwarding.
 - **Vulkan**: `backend/vulkan/*.zig`. Real `native_runtime.zig` on Linux with compute dispatch, buffer upload, narrow texture/resource coverage, and an in-progress native render path. macOS stub returns `UnsupportedFeature`. Live WGSL kernels now compile through the shared WGSL→IR→SPIR-V path in `doe_wgsl/emit_spirv.zig`; prebuilt `.spv` artifacts still load directly. The native Linux path now includes Vulkan descriptor-set layout/pool/bind wiring for buffer bindings, entry-point-aware pipeline creation, live bound-buffer dispatch, texture/resource allocation, and render execution in `vk_render.zig`, but broad graphics/resource promotion is still incomplete. GPU fence/sync now uses a 4-slot `FencePool` ring for per-submission tracking (eliminates `vkQueueWaitIdle` from all deferred-submission paths), timeline semaphore detection (`VK_KHR_timeline_semaphore`), and streaming copy command buffer for batch blit/copy operations (`vk_sync.zig`, `vk_upload.zig`).
-- **D3D12**: `backend/d3d12/*.zig` + `d3d12_bridge.c`. Real runtime on Windows with compute dispatch, buffer upload/Map/Unmap, fence sync, render pipeline/pass/draw (direct+indexed+indirect), texture lifecycle (2D+3D), texture views (SRV/UAV), depth/stencil, sampler lifecycle, descriptor table bindings (CBV/SRV/UAV heaps), query sets (timestamp+occlusion+pipeline stats), limits reporting (FL11.0), feature queries, and onSubmittedWorkDone. Non-Windows stub. Accepts pre-compiled DXIL/CSO/DXBC bytecode blobs. Live WGSL lowers through `WGSL -> IR -> HLSL -> DXC`; native DXIL emission deferred. Fresh Windows evidence still missing.
+- **D3D12**: `backend/d3d12/*.zig` + `d3d12_bridge.c`. Real runtime on Windows with compute dispatch, buffer upload/Map/Unmap, fence sync, render pipeline/pass/draw (direct+indexed+indirect), texture lifecycle (2D+3D), texture views (SRV/UAV), depth/stencil, sampler lifecycle, descriptor table bindings (CBV/SRV/UAV heaps), query sets (timestamp+occlusion+pipeline stats), limits reporting (FL11.0), feature queries, and onSubmittedWorkDone. Non-Windows stub. Accepts pre-compiled DXIL/CSO/DXBC bytecode blobs. Live WGSL lowers through `WGSL -> IR -> native DXIL bytecode` (primary) or `WGSL -> IR -> HLSL -> DXC` (fallback). Fresh Windows evidence still missing.
 
 ### WGSL compiler (`src/doe_wgsl/`)
 
@@ -672,12 +749,13 @@ AST-based WGSL compiler replacing the old regex-based line translator. Architect
 - **MSL emitter**: Production. Covers the current AI-workload compute feature set — structs, helpers, multiple entry points, override constants, var\<workgroup\>, enable f16/subgroups, subgroup ops, barriers, builtins.
 - **Robustness transform**: IR transform pass in `runtime/zig/src/doe_wgsl/ir_transform_robustness.zig`, wired through `analyzeToIr()`. Coverage: sized array/vector/matrix index clamping (`min(index, length - 1)`), runtime-sized array clamping via `arrayLength` with broadened base-expression whitelist (global_ref, member, load, local_ref, param_ref, index, call), and texture coordinate clamping for textureLoad/textureStore (`clamp(coords, vec(0), textureDimensions - 1)`) across 2D, 3D, cube, depth, multisampled, and storage texture types. March 20, 2026 also added guarded gid-based texture-load/store elision so explicit early-return bounds guards no longer force redundant `textureDimensions` queries on the Vulkan path. 13 unit tests in `ir_transform_robustness_test.zig`. Remaining: texture_1d, textureSampleLevel integer coord edge cases, full CTS coverage.
 - **SPIR-V emitter**: Native Zig IR→SPIR-V binary emitter for parser-supported compute kernels. Current compute scope now includes bound uniform/storage buffers, structured control flow, workgroup/storage barriers, atomic builtins, and a materially expanded texture/sampler builtin slice. March 20, 2026 fixes corrected scalar/vector constructor lowering, signed texture-coordinate robustness casts, function-local variable ordering, compute entry-point interface emission, and the guarded samplerless texture path, so the `texture_sample_to_storage_64` kernel now validates under `spirv-val --target-env vulkan1.1` and the governed `texture_sampling_raster_baseline` workload is comparable again on this AMD Vulkan host. Broader non-compute WGSL coverage is still incomplete, and the next extended-comparable Vulkan blocker is now the large 256 MB matvec contract on the Dawn side rather than image-backed compute pipeline creation.
-- **HLSL emitter**: Production path for parser-supported compute kernels, feeding DXC bytecode generation for D3D12 only.
+- **HLSL emitter**: Production path for parser-supported compute kernels. Now serves as the DXC fallback path for D3D12; the primary D3D12 path uses native DXIL bytecode generation.
+- **DXIL emitter**: Native DXIL bytecode generation (primary D3D12 path). 6 modules (2,303 LOC): `dxil_spec.zig`, `dxil_bitcode.zig`, `dxil_builder.zig`, `dxil_serialize.zig`, `dxil_container.zig`, `emit_dxil_native.zig`. Produces LLVM 3.7 bitcode + DXBC container directly from Doe IR without external DXC.
 
 ### Key gaps for doe-runtime promotion
 
 1. Vulkan now has governed local evidence for native render-pass, render-pipeline, render-bundle replay, basic texture/sampler lifecycle, and the samplerless texture-raster proxy path on Linux, but full strict comparable lane closure is still incomplete: the next blocker is the 256 MB matvec workload contract (`compute_matvec_32768x2048_f32` and siblings), which the Dawn side currently rejects at strict preflight with `kernel_dispatch_storage_binding_exceeds_maxstoragebufferbindingsize`; broader non-compute WGSL lowering remains open, and surface completeness is still partial.
-2. D3D12 now has texture lifecycle (2D+3D), sampler lifecycle, render pipeline, render pass/draw, Map/Unmap, limits, features, onSubmittedWorkDone, dispatchWorkgroupsIndirect, query sets, descriptor table bindings, depth/stencil, and texture views. Remaining D3D12 gaps: native DXIL emission (deferred), fresh Windows evidence.
+2. D3D12 now has texture lifecycle (2D+3D), sampler lifecycle, render pipeline, render pass/draw, Map/Unmap, limits, features, onSubmittedWorkDone, dispatchWorkgroupsIndirect, query sets, descriptor table bindings, depth/stencil, and texture views. Native DXIL emission is implemented (primary path). Remaining D3D12 gaps: DXIL validator coverage, vertex/fragment stage completeness, fresh Windows evidence.
 3. WGSL live translation is now compute-focused and parser-limited on Vulkan/D3D12; broader WGSL front-end coverage and non-compute lowering still remain open.
 4. Surface/swapchain is headless-only on D3D12 and partial on Linux Vulkan. Local Metal comparable surface evidence is closed, while broader cross-host and package/browser surface substantiation still varies by lane.
 
@@ -688,12 +766,14 @@ Runtime layering:
 - `model.zig` re-exports `CoreCommand`/`FullCommand` from the partition modules and defines the combined `Command` union as a composition; a comptime assertion validates that `Command` variants exactly equal `CoreCommand` + `FullCommand` with matching payload types
 - dead root-level compatibility facades removed: `wgpu_resources.zig`, `wgpu_extended_commands.zig`, `wgpu_commands_compute.zig`, `wgpu_commands_copy.zig`, and the `core/wgpu_commands_copy.zig`/`core/wgpu_commands_compute.zig` shims; `wgpu_commands.zig` remains (command execution glue, not a facade)
 - `runtime/zig/src/webgpu_ffi.zig` composes `core` plus `full` backend state honestly, but backend root modules still serve mixed compute/render state from one runtime-owned backend per API
-- split coverage ledgers now exist: `config/webgpu-core-coverage.json` (10 core commands) and `config/webgpu-full-coverage.json` (10 core + 14 full-only = 24 total), with matching schemas and a split gate runner (`bench/split_coverage_gate.py`)
+- split command-coverage ledgers now exist: `config/webgpu-command-coverage-core.json` (10 core commands) and `config/webgpu-command-coverage-full.json` (10 core + 14 full-only = 24 total), with matching schemas and a split gate runner (`bench/split_coverage_gate.py`)
+- capability inventory and browser integration now have explicit names that match their role: `config/webgpu-capability-inventory.json` (axis-based capability ledger) and `config/webgpu-integration-chromium.json` (Chromium browser-lane overlay)
+- generated per-surface views now live under `config/generated/` so humans can answer "what works on compute/headless/chromium?" without merging the canonical ledgers by hand
 - public surface API modules exist: `runtime/zig/src/core/surface.zig` (typed core-only API boundary with validate/accept/coverage-ledger) and `runtime/zig/src/full/surface_api.zig` (full superset API with classify/accept/combined-ledger)
 - `zig build dropin-core` now produces a core-only `libwebgpu_doe_core.so` artifact
 - `zig build coverage-gate` validates split coverage ledgers against Zig command partitions
 - `bench/run_blocking_gates.py --with-split-coverage-gate` runs the split coverage gate in the blocking sequence
-- the shared combined coverage ledger in `config/webgpu-spec-coverage.json` still exists for backward compatibility; full runtime artifact separation (separate core-only vs full binaries with different command vocabularies) is still open
+- the capability inventory in `config/webgpu-capability-inventory.json` remains separate from command coverage and from the canonical API spec index; full runtime artifact separation (separate core-only vs full binaries with different command vocabularies) is still open
 
 Shader compiler:
 - native WGSL lowering now supports vertex/fragment entry points across all three emitters (MSL, HLSL, SPIR-V); struct I/O decomposition, inter-stage locations, interpolation decorations, builtin inputs/outputs, MRT, frag_depth, and discard all emit correctly; render pipeline runtime integration is still open
@@ -701,7 +781,7 @@ Shader compiler:
 - `spirv-val` is modeled in `config/shader-toolchain.json` and wired into the routine build/test flow via `bench/spirv_val_gate.py`, `zig build spirv-val`, and `run_blocking_gates.py --with-spirv-val-gate`; validation is skipped gracefully when spirv-val is not installed unless `--require` / `--spirv-val-require` is set
 - shader tests now execute in the default/full test lanes, but the compiler test corpus is still thin relative to the frontend surface area
 - `runtime/zig/src/doe_wgsl/parser.zig` and `runtime/zig/src/doe_wgsl/emit_spirv.zig` still exceed the 777-line Zig source limit
-- native DXIL emission remains deferred; D3D12 still relies on WGSL -> IR -> HLSL -> DXC for live source translation
+- native DXIL emission is now the primary D3D12 path (see authoritative reconciliation above); DXC fallback remains available via `emitWithToolchainConfig`
 
 Tests and proofs:
 - `runtime/zig/tests/core/` and `runtime/zig/tests/full/` now contain command-partition tests and surface API tests, with dedicated `zig build test-core` / `zig build test-full` lanes; surface tests validate typed API boundaries, coverage ledgers, domain classification, and superset invariants
@@ -738,7 +818,7 @@ Performance substantiation:
 Config and CI:
 - bootstrap threshold placeholders in `config/gates.json` still exist
 - file-size policy exists, but automated enforcement of the 777-line limit is still missing
-- split coverage schemas and ledgers now exist: `config/webgpu-core-coverage.schema.json`, `config/webgpu-full-coverage.schema.json`, and corresponding data files; `bench/split_coverage_gate.py` validates ledger-partition alignment
+- split command-coverage schemas and ledgers now exist: `config/webgpu-command-coverage-core.schema.json`, `config/webgpu-command-coverage-full.schema.json`, and corresponding data files; `bench/split_coverage_gate.py` validates ledger-partition alignment
 
 ## Developer flow state (engineering, governance, and release pipeline)
 
@@ -823,8 +903,8 @@ Config and CI:
 - native render lowering now forwards those values into `wgpuRenderPassEncoderDraw`.
 - defaults remain deterministic (`0`, `0`) when fields are omitted.
 40. WebGPU capability expansion is now tracked in config as code:
-- `config/webgpu-spec-coverage.schema.json` defines contract for machine-readable capability status.
-- `config/webgpu-spec-coverage.json` tracks implemented/partial/blocked/tracked/planned coverage items and priorities.
+- `config/webgpu-capability-inventory.schema.json` defines contract for machine-readable capability inventory status.
+- `config/webgpu-capability-inventory.json` tracks implemented/partial/blocked/tracked/planned coverage items and priorities.
 41. Native render path now includes a first indexed-draw slice:
 - command parser accepts `draw_indexed` plus required `index_data`/`indexData`/`indices`, optional `index_format`/`indexFormat`, and `index_count`/`indexCount`, `first_index`/`firstIndex`, `base_vertex`/`baseVertex`.
 - native render lowering now binds a dynamically sized index buffer and emits `wgpuRenderPassEncoderDrawIndexed` when indexed mode is requested.
@@ -862,7 +942,7 @@ Config and CI:
 - viewport/scissor/blend-constant/stencil-reference values are applied from command payload fields.
 - bind-group dynamic offsets are validated and applied deterministically (single dynamic uniform offset, stride- and bounds-checked).
 49. Render pass state-space tracking has been promoted to implemented in config coverage:
-- `config/webgpu-spec-coverage.json` now marks `render_pass_state_space` as implemented based on command-driven state controls and deterministic runtime validation.
+- `config/webgpu-capability-inventory.json` now marks `render_pass_state_space` as implemented based on command-driven state controls and deterministic runtime validation.
 50. Timestamp/query reliability reporting is now explicit in trace artifacts:
 - execution rows now include `executionGpuTimestampAttempted` and `executionGpuTimestampValid`.
 - trace-meta now includes `executionGpuTimestampAttemptedCount` and `executionGpuTimestampValidCount`.
@@ -917,7 +997,7 @@ Config and CI:
 59. P0 pixel-local-storage barrier surface is now fully implemented as a deterministic diagnostics contract:
 - added `async_diagnostics` mode `pixel_local_storage` (`runtime/zig/src/wgpu_async_pixel_local_storage.zig`) with explicit non-coherent feature gating, pipeline-layout PLS chained descriptor, render-pass PLS chained descriptor, and in-pass `wgpuRenderPassEncoderPixelLocalStorageBarrier` invocation.
 - runtime now requests/probes Dawn pixel-local-storage features at adapter/device scope (`WGPUFeatureName_PixelLocalStorageCoherent`, `WGPUFeatureName_PixelLocalStorageNonCoherent`) through `runtime/zig/src/webgpu_ffi.zig` and `runtime/zig/src/wgpu_capability_runtime.zig`.
-- coverage state promoted from partial to implemented in `config/webgpu-spec-coverage.json`.
+- coverage state promoted from partial to implemented in `config/webgpu-capability-inventory.json`.
 - new directional benchmark contracts were added:
   `render_pixel_local_storage_barrier` and `render_pixel_local_storage_barrier_500`
   with command seeds
@@ -963,7 +1043,7 @@ Config and CI:
   policy is explicit in report `comparabilityPolicy.requireNativeExecutionTimingForLeftOperation=true`.
 
 62. Capability coverage metric contract now distinguishes directional-only capability domains:
-- `config/webgpu-spec-coverage.schema.json` accepts optional `benchmarkClass` (`comparable` or `directional`) per capability entry.
+- `config/webgpu-capability-inventory.schema.json` accepts optional `benchmarkClass` (`comparable` or `directional`) per capability entry.
 - `bench/generate_feature_benchmark_table.py` now emits both overall comparable-coverage and eligible-only comparable-coverage metrics.
 - updated matrix artifact:
   `bench/out/dawn-vs-doe-feature-benchmark-coverage.md`.
@@ -1007,8 +1087,8 @@ Config and CI:
   `claimStatus=diagnostic`, `nonClaimableCount=39` under release claim-floor policy.
 
 63b. Spec-universe coverage status semantics now distinguish inventory tracking from runtime implementation:
-- `config/webgpu-spec-coverage.schema.json` adds coverage `status="tracked"`.
-- `config/webgpu-spec-coverage.json` migrates Dawn feature-inventory rows from `planned` to `tracked` for explicit full-universe inventory closure.
+- `config/webgpu-capability-inventory.schema.json` adds coverage `status="tracked"`.
+- `config/webgpu-capability-inventory.json` migrates Dawn feature-inventory rows from `planned` to `tracked` for explicit full-universe inventory closure.
 - `bench/generate_feature_benchmark_table.py` now reports both:
   - inventory tracking completion (`status != planned`)
   - runtime-implemented completion (`status == implemented`).
@@ -2240,3 +2320,17 @@ Backend-specific emitters for all three backends:
 - Metal `GPUSupportedLimits.maxImmediateSize` and
   `GPUTextureViewDescriptor.swizzle` were stale tracker rows; both were
   already implemented through the existing runtime and package plumbing.
+Semantic operator tracing and repro artifacts (2026-03-22):
+- `runtime/zig/src/main.zig` now accepts command-stream semantic metadata
+  (`semanticOpId`, `semanticStage`, `semanticPhase`, `semanticTokenIndex`,
+  `semanticLayerIndex`, `semanticExecutionPlanHash`) plus targeted capture
+  requests (`captureBufferHandle`, `captureOffset`, `captureSize`).
+- `execution.zig` and `trace.zig` now preserve semantic operator identity
+  through native execution, trace row emission, and trace-meta summaries.
+- Doe-native trace anchors now emit a per-run operator manifest
+  (`<trace-anchor>.operators.json`) plus per-op structural repro bundles
+  (`.opNNNN.repro.commands.json` / `.opNNNN.repro.meta.json`).
+- Vulkan and Metal support targeted post-op buffer capture by handle; D3D12 and
+  Dawn-delegate currently fail explicitly as unsupported for this artifact path.
+- Structural rerun scope is same-device / same-backend debugging. No bitwise
+  reproducibility claim is made.

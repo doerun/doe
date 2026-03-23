@@ -20,18 +20,47 @@ const DoeBindGroupLayout = native.DoeBindGroupLayout;
 const DoeBindGroup = native.DoeBindGroup;
 const DoePipelineLayout = native.DoePipelineLayout;
 const DoeTextureView = native.DoeTextureView;
+const DoeExternalTexture = @import("doe_external_texture_native.zig").DoeExternalTexture;
 
 const RESOURCE_KIND_NONE: u32 = 0;
 const RESOURCE_KIND_BUFFER: u32 = 1;
 const RESOURCE_KIND_SAMPLER: u32 = 2;
 const RESOURCE_KIND_TEXTURE: u32 = 3;
 const RESOURCE_KIND_STORAGE_TEXTURE: u32 = 4;
+const RESOURCE_KIND_EXTERNAL_TEXTURE: u32 = 5;
+
+fn chained_struct(raw: ?*anyopaque) ?*const types.WGPUChainedStruct {
+    const ptr = raw orelse return null;
+    return @ptrCast(@alignCast(ptr));
+}
+
+fn has_chain_type(raw: ?*anyopaque, s_type: types.WGPUSType) bool {
+    const chain = chained_struct(raw) orelse return false;
+    return chain.sType == s_type;
+}
+
+fn external_texture_layout_chain(raw: ?*anyopaque) ?*const types.WGPUExternalTextureBindingLayout {
+    if (!has_chain_type(raw, types.WGPUSType_ExternalTextureBindingLayout)) return null;
+    const ptr = raw orelse return null;
+    return @ptrCast(@alignCast(ptr));
+}
+
+fn external_texture_entry_chain(raw: ?*anyopaque) ?*const types.WGPUExternalTextureBindingEntry {
+    if (!has_chain_type(raw, types.WGPUSType_ExternalTextureBindingEntry)) return null;
+    const ptr = raw orelse return null;
+    return @ptrCast(@alignCast(ptr));
+}
 
 fn classify_layout_entry(entry: types.WGPUBindGroupLayoutEntry) DoeBindGroupLayoutEntry {
     var out = DoeBindGroupLayoutEntry{
         .binding = entry.binding,
         .resource_kind = RESOURCE_KIND_NONE,
+        .binding_array_size = entry.bindingArraySize,
     };
+    if (external_texture_layout_chain(entry.nextInChain) != null) {
+        out.resource_kind = RESOURCE_KIND_EXTERNAL_TEXTURE;
+        return out;
+    }
     if (entry.storageTexture.access != 0 or entry.storageTexture.format != 0 or entry.storageTexture.viewDimension != 0) {
         out.resource_kind = RESOURCE_KIND_STORAGE_TEXTURE;
         out.texture_sample_type = entry.storageTexture.access;
@@ -157,6 +186,33 @@ fn find_layout_entry(layout: *DoeBindGroupLayout, binding: u32) ?DoeBindGroupLay
     return null;
 }
 
+fn retain_buffer(bg: *DoeBindGroup, binding: usize, buffer: *DoeBuffer) void {
+    native.object_add_ref(DoeBuffer, toOpaque(buffer));
+    bg.retained_buffers[binding] = buffer;
+}
+
+fn retain_texture_view(bg: *DoeBindGroup, binding: usize, view: *DoeTextureView) void {
+    native.object_add_ref(DoeTextureView, toOpaque(view));
+    bg.retained_texture_views[binding] = view;
+}
+
+fn retain_sampler(bg: *DoeBindGroup, binding: usize, sampler: *DoeSampler) void {
+    native.object_add_ref(DoeSampler, toOpaque(sampler));
+    bg.retained_samplers[binding] = sampler;
+}
+
+fn retain_external_texture(bg: *DoeBindGroup, binding: usize, external_texture: types.WGPUExternalTexture) void {
+    native.object_add_ref(DoeExternalTexture, external_texture);
+    bg.retained_external_textures[binding] = external_texture;
+}
+
+fn resolve_external_texture(entry: types.WGPUBindGroupEntry) ?types.WGPUExternalTexture {
+    if (external_texture_entry_chain(entry.nextInChain)) |chain| {
+        return chain.externalTexture;
+    }
+    return null;
+}
+
 // ============================================================
 // Bind Group Layout / Bind Group / Pipeline Layout
 // ============================================================
@@ -227,6 +283,19 @@ pub export fn doeNativeDeviceCreateBindGroup(dev_raw: ?*anyopaque, desc: ?*const
                         alloc.destroy(bg);
                         return null;
                     }
+                } else if (layout_entry.resource_kind == RESOURCE_KIND_EXTERNAL_TEXTURE) {
+                    const external_texture = resolve_external_texture(e) orelse {
+                        alloc.destroy(bg);
+                        return null;
+                    };
+                    const ext = native.cast(DoeExternalTexture, external_texture) orelse {
+                        alloc.destroy(bg);
+                        return null;
+                    };
+                    if (ext.expired or ext.plane0 == null) {
+                        alloc.destroy(bg);
+                        return null;
+                    }
                 }
             }
         }
@@ -240,11 +309,19 @@ pub export fn doeNativeDeviceCreateBindGroup(dev_raw: ?*anyopaque, desc: ?*const
                 }
                 bg.offsets[e.binding] = e.offset;
                 bg.buffer_sizes[e.binding] = doe_buf.size;
+                retain_buffer(bg, e.binding, doe_buf);
             } else if (cast(DoeTextureView, e.textureView)) |view| {
                 bg.textures[e.binding] = if (view.handle) |handle| handle else view.tex.mtl;
                 bg.texture_views[e.binding] = toOpaque(view);
+                retain_texture_view(bg, e.binding, view);
             } else if (cast(DoeSampler, e.sampler)) |sampler| {
                 bg.samplers[e.binding] = sampler.mtl;
+                retain_sampler(bg, e.binding, sampler);
+            } else if (resolve_external_texture(e)) |external_texture| {
+                const ext = native.cast(DoeExternalTexture, external_texture) orelse continue;
+                bg.textures[e.binding] = ext.plane0;
+                bg.texture_views[e.binding] = ext.plane0;
+                retain_external_texture(bg, e.binding, external_texture);
             } else continue;
             if (e.binding + 1 > bg.count) bg.count = e.binding + 1;
         }
@@ -258,6 +335,18 @@ pub export fn doeNativeBindGroupRelease(raw: ?*anyopaque) callconv(.c) void {
     if (cast(DoeBindGroup, raw)) |g| {
         if (!native.object_should_destroy(g)) return;
         label_store.remove(raw);
+        for (g.retained_buffers) |maybe_buffer| {
+            if (maybe_buffer) |buffer| native.doeNativeBufferRelease(toOpaque(buffer));
+        }
+        for (g.retained_texture_views) |maybe_view| {
+            if (maybe_view) |view| native.doeNativeTextureViewRelease(toOpaque(view));
+        }
+        for (g.retained_samplers) |maybe_sampler| {
+            if (maybe_sampler) |sampler| native.doeNativeSamplerRelease(toOpaque(sampler));
+        }
+        for (g.retained_external_textures) |external_texture| {
+            if (external_texture != null) native.doeNativeExternalTextureRelease(external_texture);
+        }
         alloc.destroy(g);
     }
 }

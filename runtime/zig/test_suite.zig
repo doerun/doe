@@ -10,6 +10,8 @@ const common_capabilities_test = @import("tests/backend/common_capabilities_test
 const common_command_info_test = @import("tests/backend/common_command_info_test.zig");
 const common_errors_test = @import("tests/backend/common_errors_test.zig");
 const common_timing_test = @import("tests/backend/common_timing_test.zig");
+const vulkan_upload_test = @import("tests/backend/vulkan_upload_test.zig");
+const metal_pipeline_cache_test = @import("tests/backend/metal_pipeline_cache_test.zig");
 const d3d12_mod_integration_test = @import("tests/d3d12/d3d12_mod_integration_test.zig");
 const d3d12_timing_semantics_test = @import("tests/d3d12/d3d12_timing_semantics_test.zig");
 const dropin_loader_test = @import("tests/dropin/dropin_loader_test.zig");
@@ -38,6 +40,15 @@ const native_api_core_test = @import("tests/core/native_api_core_test.zig");
 const capability_runtime_test = @import("tests/core/capability_runtime_test.zig");
 const handle_safety_test = @import("tests/core/handle_safety_test.zig");
 const precompiled_shader_test = @import("tests/core/precompiled_shader_test.zig");
+const command_json_extended_test = @import("tests/core/command_json_test.zig");
+const trace_extended_test = @import("tests/core/trace_test.zig");
+const doe_shader_native_test = @import("tests/core/doe_shader_native_test.zig");
+const model_test = @import("tests/core/model_test.zig");
+const lean_proof_test = @import("tests/core/lean_proof_test.zig");
+const dispatch_preconditions_test = @import("tests/core/dispatch_preconditions_test.zig");
+const runtime_integration_test = @import("tests/core/runtime_integration_test.zig");
+const d3d12_descriptors_formats_test = @import("tests/backend/d3d12_descriptors_formats_test.zig");
+const wgpu_resources_test = @import("tests/core/wgpu_resources_test.zig");
 
 comptime {
     _ = metal_mod_integration_test;
@@ -53,6 +64,8 @@ comptime {
     _ = common_command_info_test;
     _ = common_errors_test;
     _ = common_timing_test;
+    _ = vulkan_upload_test;
+    _ = metal_pipeline_cache_test;
     _ = d3d12_mod_integration_test;
     _ = d3d12_timing_semantics_test;
     _ = dropin_loader_test;
@@ -80,4 +93,13 @@ comptime {
     _ = capability_runtime_test;
     _ = handle_safety_test;
     _ = precompiled_shader_test;
+    _ = command_json_extended_test;
+    _ = trace_extended_test;
+    _ = doe_shader_native_test;
+    _ = model_test;
+    _ = lean_proof_test;
+    _ = dispatch_preconditions_test;
+    _ = runtime_integration_test;
+    _ = d3d12_descriptors_formats_test;
+    _ = wgpu_resources_test;
 }

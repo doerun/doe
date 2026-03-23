@@ -45,14 +45,14 @@
       "allowFallback": false,
       "strictNoFallback": true,
       "uploadPathPolicy": "staged_copy_only",
-      "notes": "Strict comparable Vulkan lane with staged-copy-only uploads"
+      "notes": "Strict comparable Vulkan lane: staged copy for device-local dst, direct memcpy for host-visible dst (matches Dawn WriteBuffer behavior)"
     },
     "vulkan_doe_release": {
       "defaultBackend": "doe_vulkan",
       "allowFallback": false,
       "strictNoFallback": true,
       "uploadPathPolicy": "staged_copy_only",
-      "notes": "Strict AMD Vulkan extended release lane with staged-copy-only uploads"
+      "notes": "Strict AMD Vulkan extended release lane: staged copy for device-local dst, direct memcpy for host-visible dst (matches Dawn WriteBuffer behavior)"
     },
     "vulkan_dawn_release": {
       "defaultBackend": "dawn_delegate",

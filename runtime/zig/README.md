@@ -28,9 +28,14 @@ Core:
 - `src/quirk/quirk_json.zig` — deterministic JSON parser for quirk records with strict schema checks.
 - `src/quirk/toggle_registry.zig` — toggle behavioral classification (`behavioral`/`informational`/`unhandled`) for known Dawn toggles.
 - `src/runtime.zig` — re-export shim for `quirk/runtime.zig` (backwards compatibility).
-- `src/quirk_json.zig` — re-export shim for `quirk/quirk_json.zig` (backwards compatibility).
 - `src/main.zig` — CLI, arg parsing, dispatch loop, `--trace`/`--replay`/`--trace-meta` orchestration.
 - `src/execution.zig` — execution mode switching (`trace` and `native`) and run result envelope.
+- `src/command_stream.zig` — command stream parser that preserves optional
+  semantic operator metadata and targeted capture requests alongside
+  `model.Command` values.
+- `src/semantic_trace.zig` — shared semantic operator context and capture-request types.
+- `src/operator_artifacts.zig` — per-op manifest writer, targeted capture
+  emission, and structural repro bundle generation.
 
 Parsing:
 - `src/command_json.zig` — JSON command stream parser for replay-style inputs.
@@ -94,19 +99,31 @@ Quirk records now use schemaVersion `2` with strict action payloads:
 
 ### DXIL toolchain contract
 
-WGSL-to-DXIL currently remains `IR -> HLSL -> DXC`. Native DXIL emission is
-still deferred.
+WGSL-to-DXIL now uses native Zig DXIL bytecode generation as the primary path.
+The native emitter translates Doe IR directly to LLVM 3.7 bitcode, serializes
+it, and wraps it in a DXBC container -- no external DXC dependency required.
+DXC remains available as a fallback path for validation against the reference
+compiler.
 
+Native DXIL modules (2,303 LOC total):
+- `runtime/zig/src/doe_wgsl/dxil_spec.zig` -- DXIL opcodes, types, and constants
+- `runtime/zig/src/doe_wgsl/dxil_bitcode.zig` -- LLVM 3.7 bitcode encoding
+- `runtime/zig/src/doe_wgsl/dxil_builder.zig` -- IR-to-DXIL instruction builder
+- `runtime/zig/src/doe_wgsl/dxil_serialize.zig` -- bitcode serialization
+- `runtime/zig/src/doe_wgsl/dxil_container.zig` -- DXBC container wrapping
+- `runtime/zig/src/doe_wgsl/emit_dxil_native.zig` -- top-level native emitter
+
+`runtime/zig/src/doe_wgsl/emit_dxil.zig` routes the primary `emit()` call
+through `emit_dxil_native`, with `emitWithToolchainConfig()` as the DXC
+fallback path.
+
+DXC fallback configuration (for validation or legacy use):
 - `runtime/zig/src/doe_wgsl/mod.zig` exports `translateToDxilWithToolchainConfig(...)`
   plus `DxilToolchainConfig` for explicit callers.
-- `runtime/zig/src/doe_wgsl/emit_dxil.zig` resolves DXC from `DOE_WGSL_DXC`.
 - Set `DOE_WGSL_DXC=/absolute/or/workspace-relative/path/to/dxc(.exe)` to pin
-  the exact compiler binary.
+  the exact compiler binary for the fallback path.
 - Set `DOE_WGSL_DXC=PATH` to opt into PATH lookup explicitly.
-- If `DOE_WGSL_DXC` is unset, Doe keeps a legacy PATH fallback for now, but
-  governed runs should pin `DOE_WGSL_DXC` so the toolchain is reproducible.
-- DXIL emission still depends on an external DXC executable; Doe does not emit
-  native DXIL bitcode/container output yet.
+- If `DOE_WGSL_DXC` is unset, the native path is used; no external tool needed.
 
 ### Quirk pipeline (automated)
 
@@ -169,11 +186,29 @@ This emits timestamp-path diagnostics to stderr, including adapter/device featur
 - `--trace` now emits trace rows conforming to `config/trace.schema.json`.
 - trace rows include `traceVersion`, `module`, `opCode`, deterministic `hash` and `previousHash`,
   and the full decision envelope used by Lean parity checks.
+- when command JSON includes semantic fields (`semanticOpId`, `semanticStage`,
+  `semanticPhase`, `semanticTokenIndex`, `semanticLayerIndex`,
+  `semanticExecutionPlanHash`), trace rows preserve those fields and fold them
+  into the hash chain.
 - execution rows now include both human and machine status fields:
   `executionStatusMessage` (raw detail) and `executionStatusCode` (normalized stable token).
+- execution-backed semantic rows now also include runtime provenance required for
+  operator-level debugging: backend lane, selection policy hash, shader-artifact
+  manifest references, adapter ordinal, queue family index, and present-capable
+  state when available.
 - `--trace-meta` execution timing now includes split fields:
   `executionSetupTotalNs`, `executionEncodeTotalNs`, `executionSubmitWaitTotalNs`, `executionDispatchCount`.
   Native execution metadata also records `queueSyncMode` when `--execute` is enabled.
+- when a trace anchor is present (`--trace-meta` or `--trace-jsonl`), Doe-native
+  runs also emit operator artifacts adjacent to that anchor:
+  - `.operators.json` manifest
+  - optional `.capture.bin` files for commands with capture requests
+  - `.repro.commands.json` + `.repro.meta.json` structural rerun bundles
+- command JSON accepts optional semantic/capture fields without changing command
+  semantics:
+  - `semanticOpId`, `semanticStage`, `semanticPhase`
+  - `semanticTokenIndex`, `semanticLayerIndex`, `semanticExecutionPlanHash`
+  - `captureBufferHandle`, `captureOffset`, `captureSize`
 - GPU timestamp reliability fields are emitted when execution is enabled:
   per-row `executionGpuTimestampAttempted` / `executionGpuTimestampValid`,
   and trace-meta counters `executionGpuTimestampAttemptedCount` / `executionGpuTimestampValidCount`.

@@ -12,6 +12,7 @@ const toOpaque = native.toOpaque;
 const DoeQueue = native.DoeQueue;
 const DoeBuffer = native.DoeBuffer;
 const DoeCommandBuffer = native.DoeCommandBuffer;
+const DoeTexture = native.DoeTexture;
 const MAX_DEFERRED_COPIES = native.MAX_DEFERRED_COPIES;
 const MAX_DEFERRED_RESOLVES = native.MAX_DEFERRED_RESOLVES;
 const VERTEX_BUFFER_SLOT_BASE = native.VERTEX_BUFFER_SLOT_BASE;
@@ -499,7 +500,9 @@ pub export fn doeNativeQueueFlush(q_raw: ?*anyopaque) callconv(.c) void {
     const q = cast(DoeQueue, q_raw) orelse return;
     if (q.dev.backend == .vulkan) {
         const rt = native.device_vk_runtime(q.dev) orelse return;
-        _ = rt.flush_queue() catch {};
+        _ = rt.flush_queue() catch |err| {
+            std.debug.print("warn: doe_queue_submit: queue flush: {s}\n", .{@errorName(err)});
+        };
         return;
     }
     flush_pending_work(q);
@@ -509,6 +512,13 @@ pub export fn doeNativeQueueWriteBuffer(q_raw: ?*anyopaque, buf_raw: ?*anyopaque
     const q = cast(DoeQueue, q_raw) orelse return;
     const buf = cast(DoeBuffer, buf_raw) orelse return;
     if (q.dev.backend == .vulkan) {
+        // Fast path: use cached mapped pointer to avoid HashMap lookup per write.
+        if (buf.vk_mapped_ptr) |base| {
+            const o: usize = @intCast(offset);
+            @memcpy(base[o .. o + size], data[0..size]);
+            return;
+        }
+        // Fallback: HashMap lookup for buffers created before cached-pointer support.
         if (buf.vk_id != 0) {
             const rt = native.device_vk_runtime(q.dev) orelse return;
             if (rt.compute_buffers.get(buf.vk_id)) |cb| {
@@ -526,6 +536,81 @@ pub export fn doeNativeQueueWriteBuffer(q_raw: ?*anyopaque, buf_raw: ?*anyopaque
     @memcpy(dst, data[0..size]);
 }
 
+fn copy_texture_for_browser_passthrough(
+    q: *DoeQueue,
+    source: *const types.WGPUTexelCopyTextureInfo,
+    destination: *const types.WGPUTexelCopyTextureInfo,
+    copy_size: *const types.WGPUExtent3D,
+) void {
+    const src_texture = cast(DoeTexture, source.texture) orelse return;
+    const dst_texture = cast(DoeTexture, destination.texture) orelse return;
+
+    if (q.dev.backend == .vulkan) {
+        const rt = native.device_vk_runtime(q.dev) orelse return;
+        if (src_texture.vk_id == 0 or dst_texture.vk_id == 0) return;
+        rt.texture_copy(.{
+            .src_handle = src_texture.vk_id,
+            .src_mip = source.mipLevel,
+            .src_x = source.origin.x,
+            .src_y = source.origin.y,
+            .src_z = source.origin.z,
+            .dst_handle = dst_texture.vk_id,
+            .dst_mip = destination.mipLevel,
+            .dst_x = destination.origin.x,
+            .dst_y = destination.origin.y,
+            .dst_z = destination.origin.z,
+            .width = copy_size.width,
+            .height = copy_size.height,
+            .depth_or_layers = copy_size.depthOrArrayLayers,
+        }) catch |err| {
+            std.debug.print("warn: doe_queue_submit: texture copy: {s}\n", .{@errorName(err)});
+        };
+        return;
+    }
+
+    const encoder = native.doeNativeDeviceCreateCommandEncoder(toOpaque(q.dev), null) orelse return;
+    defer native.doeNativeCommandEncoderRelease(encoder);
+
+    @import("doe_command_texture_native.zig").doeNativeCommandEncoderCopyTextureToTexture(
+        encoder,
+        source.texture,
+        source.mipLevel,
+        source.origin.z,
+        source.origin.x,
+        source.origin.y,
+        source.origin.z,
+        destination.texture,
+        destination.mipLevel,
+        destination.origin.z,
+        destination.origin.x,
+        destination.origin.y,
+        destination.origin.z,
+        copy_size.width,
+        copy_size.height,
+        copy_size.depthOrArrayLayers,
+    );
+
+    const command_buffer = native.doeNativeCommandEncoderFinish(encoder, null) orelse return;
+    defer native.doeNativeCommandBufferRelease(command_buffer);
+    var command_buffers = [1]?*anyopaque{command_buffer};
+    doeNativeQueueSubmit(toOpaque(q), command_buffers.len, &command_buffers);
+}
+
+pub export fn doeNativeQueueCopyTextureForBrowser(
+    queue_raw: ?*anyopaque,
+    source_raw: ?*const types.WGPUTexelCopyTextureInfo,
+    destination_raw: ?*const types.WGPUTexelCopyTextureInfo,
+    copy_size_raw: ?*const types.WGPUExtent3D,
+    options_raw: ?*const types.WGPUCopyTextureForBrowserOptions,
+) callconv(.c) void {
+    _ = options_raw;
+    const queue = cast(DoeQueue, queue_raw) orelse return;
+    const source = source_raw orelse return;
+    const destination = destination_raw orelse return;
+    const copy_size = copy_size_raw orelse return;
+    copy_texture_for_browser_passthrough(queue, source, destination, copy_size);
+}
+
 pub export fn doeNativeQueueRelease(raw: ?*anyopaque) callconv(.c) void {
     if (cast(DoeQueue, raw)) |q| {
         if (q.ref_count > 1) {
@@ -538,7 +623,9 @@ pub export fn doeNativeQueueRelease(raw: ?*anyopaque) callconv(.c) void {
         }
         if (q.dev.backend == .vulkan) {
             if (native.device_vk_runtime(q.dev)) |rt| {
-                _ = rt.flush_queue() catch {};
+                _ = rt.flush_queue() catch |err| {
+                    std.debug.print("warn: doe_queue_submit: flush on queue release: {s}\n", .{@errorName(err)});
+                };
             }
             const dev = q.dev;
             alloc.destroy(q);
@@ -593,52 +680,74 @@ pub fn drain_global_work_done() void {
     }
 }
 
-/// Defer the work-done callback to the next instanceProcessEvents drain.
+/// Doe's execution is synchronous — by the time queueSubmit returns, all GPU
+/// work is complete. Fire the callback immediately instead of deferring to
+/// instanceProcessEvents. Deferring causes Dawn's wire client to call
+/// instance.WaitAny() which fails with "A valid external Instance reference
+/// no longer exists" because the wire client's Instance tracking diverges
+/// from Doe's.
 pub export fn doeNativeQueueOnSubmittedWorkDone(q_raw: ?*anyopaque, info: types.WGPUQueueWorkDoneCallbackInfo) callconv(.c) types.WGPUFuture {
     _ = q_raw;
-    if (info.callback == null) return .{ .id = 4 };
-    if (global_work_done_count >= MAX_GLOBAL_WORK_DONE) {
-        // Overflow: fire immediately to avoid dropping the callback.
-        info.callback.?(.success, .{ .data = null, .length = 0 }, info.userdata1, info.userdata2);
-        return .{ .id = 4 };
+    if (info.callback) |cb| {
+        cb(.success, .{ .data = null, .length = 0 }, info.userdata1, info.userdata2);
     }
-    global_work_done_buf[global_work_done_count] = .{
-        .cb = info.callback,
-        .userdata1 = info.userdata1,
-        .userdata2 = info.userdata2,
-    };
-    global_work_done_count += 1;
     return .{ .id = 4 };
 }
 
 // ============================================================
-// copyExternalImageToTexture — stub
+// copyExternalImageToTexture — plane0 blit from external texture
 // ============================================================
 //
-// External image copy requires OS-level media interop (DMABUF on Linux,
-// IOSurface on macOS, DXGI on Windows) which is not yet implemented.
-// This stub prevents the crash path through Dawn's wire server when
-// Chromium calls wgpuQueueCopyExternalImageToTexture.
+// Chromium calls wgpuQueueCopyExternalImageToTexture with an
+// WGPUImageCopyExternalTexture source, WGPUTexelCopyTextureInfo
+// destination, and WGPUExtent3D copy size. The implementation
+// extracts plane0 from the external texture and delegates to
+// the existing texture-to-texture copy path.
 
 pub export fn doeNativeQueueCopyExternalImageToTexture(
     queue_raw: ?*anyopaque,
-    source_raw: ?*const anyopaque,
-    destination_raw: ?*const anyopaque,
-    copy_size_raw: ?*const anyopaque,
+    source_raw: ?*const types.WGPUImageCopyExternalTexture,
+    destination_raw: ?*const types.WGPUTexelCopyTextureInfo,
+    copy_size_raw: ?*const types.WGPUExtent3D,
 ) callconv(.c) void {
-    _ = queue_raw;
-    _ = source_raw;
-    _ = destination_raw;
-    _ = copy_size_raw;
+    const source = source_raw orelse return;
+    const destination = destination_raw orelse return;
+    const copy_size = copy_size_raw orelse return;
+    const ext_mod = @import("doe_external_texture_native.zig");
+    const external_texture = ext_mod.cast(source.externalTexture) orelse return;
+    if (external_texture.expired) return;
+    const plane0_view = cast(native.DoeTextureView, external_texture.plane0) orelse return;
+    const source_texture = plane0_view.tex;
+    const source_copy = types.WGPUTexelCopyTextureInfo{
+        .texture = native.toOpaque(source_texture),
+        .mipLevel = 0,
+        .origin = source.origin,
+        .aspect = types.WGPUTextureAspect_All,
+    };
+    const queue = cast(DoeQueue, queue_raw) orelse return;
+    copy_texture_for_browser_passthrough(queue, &source_copy, destination, copy_size);
 }
 
 pub export fn doeNativeQueueCopyExternalTextureForBrowser(
     queue_raw: ?*anyopaque,
-    source_raw: ?*const anyopaque,
-    destination_raw: ?*const anyopaque,
-    copy_size_raw: ?*const anyopaque,
-    options_raw: ?*const anyopaque,
+    source_raw: ?*const types.WGPUImageCopyExternalTexture,
+    destination_raw: ?*const types.WGPUTexelCopyTextureInfo,
+    copy_size_raw: ?*const types.WGPUExtent3D,
+    options_raw: ?*const types.WGPUCopyTextureForBrowserOptions,
 ) callconv(.c) void {
     _ = options_raw;
-    doeNativeQueueCopyExternalImageToTexture(queue_raw, source_raw, destination_raw, copy_size_raw);
+    const source = source_raw orelse return;
+    const destination = destination_raw orelse return;
+    const copy_size = copy_size_raw orelse return;
+    const external_texture = @import("doe_external_texture_native.zig").cast(source.externalTexture) orelse return;
+    const plane0_view = cast(native.DoeTextureView, external_texture.plane0) orelse return;
+    const source_texture = plane0_view.tex;
+    const source_copy = types.WGPUTexelCopyTextureInfo{
+        .texture = native.toOpaque(source_texture),
+        .mipLevel = 0,
+        .origin = source.origin,
+        .aspect = types.WGPUTextureAspect_All,
+    };
+    const queue = cast(DoeQueue, queue_raw) orelse return;
+    copy_texture_for_browser_passthrough(queue, &source_copy, destination, copy_size);
 }

@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Fawn Toolchain Configuration",
+  "description": "Declares pinned toolchain versions and the upgrade policy governing toolchain bumps.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "toolchains", "upgradePolicy"],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "toolchains": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["version", "channel"],
+        "properties": {
+          "version": { "type": "string", "minLength": 1 },
+          "channel": {
+            "type": "string",
+            "enum": ["stable", "nightly", "beta"]
+          },
+          "lockfile": { "type": "string", "minLength": 1 },
+          "contract": { "type": "string", "minLength": 1 }
+        }
+      },
+      "minProperties": 1
+    },
+    "upgradePolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "cadenceDays",
+        "requireBlockingGates",
+        "requireAdvisoryGateReports",
+        "blockOnCorrectnessRegression",
+        "blockOnPerfRegression"
+      ],
+      "properties": {
+        "cadenceDays": { "type": "integer", "minimum": 1 },
+        "requireBlockingGates": { "type": "boolean" },
+        "requireAdvisoryGateReports": { "type": "boolean" },
+        "blockOnCorrectnessRegression": { "type": "boolean" },
+        "blockOnPerfRegression": { "type": "boolean" }
+      }
+    }
+  }
+}

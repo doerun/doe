@@ -44,8 +44,8 @@
           },
           "category": {
             "type": "string",
-            "enum": ["tautological", "comptime_verified", "lean_verified", "lean_fixture"],
-            "description": "Verification tier. tautological: correct by construction or definitional (nothing to verify). comptime_verified: finite-enum property verifiable by Zig comptime exhaustion. lean_verified: quantified over unbounded domains (Lean is necessary). lean_fixture: specific test case exercising a lean_verified theorem."
+            "enum": ["tautological", "comptime_verified", "lean_verified", "lean_fixture", "lean_required"],
+            "description": "Verification tier. tautological: correct by construction or definitional (nothing to verify). comptime_verified: finite-enum property verifiable by Zig comptime exhaustion. lean_verified: quantified over unbounded domains (Lean is necessary). lean_fixture: specific test case exercising a lean_verified theorem. lean_required: theorem that requires Lean proof and blocks release gates."
           }
         }
       }
@@ -85,12 +85,21 @@
       "description": "Proven bounds conditions that allow the robustness transform to elide clamps. Each entry maps a Lean theorem to an index access pattern that is provably safe under stated preconditions.",
       "items": {
         "type": "object",
-        "required": ["theorem", "pattern", "precondition", "eliminates", "runtimePath"],
+        "required": ["theorem", "module", "category", "pattern", "precondition", "eliminates", "runtimePath"],
         "additionalProperties": false,
         "properties": {
           "theorem": {
             "type": "string",
             "description": "Lean theorem name proving the bounds condition."
+          },
+          "module": {
+            "type": "string",
+            "description": "Lean module containing the theorem."
+          },
+          "category": {
+            "type": "string",
+            "enum": ["tautological", "comptime_verified", "lean_verified", "lean_fixture", "lean_required"],
+            "description": "Verification tier for this bounds elimination theorem."
           },
           "pattern": {
             "type": "string",

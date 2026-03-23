@@ -11,6 +11,8 @@ from typing import Any
 
 import jsonschema
 
+from bench_utils import detect_repo_root, load_json
+
 
 @dataclass(frozen=True)
 class ValidationTarget:
@@ -26,31 +28,6 @@ def parse_args() -> argparse.Namespace:
         help="Repository root. Auto-detected when omitted.",
     )
     return parser.parse_args()
-
-
-def detect_repo_root(explicit_root: str) -> Path:
-    if explicit_root:
-        root = Path(explicit_root)
-        if not root.exists():
-            raise ValueError(f"invalid --root path: {root}")
-        return root.resolve()
-
-    cwd = Path.cwd()
-    direct_root = cwd
-    nested_root = cwd / "fawn"
-
-    if (direct_root / "config").is_dir() and (direct_root / "bench").is_dir():
-        return direct_root.resolve()
-    if (nested_root / "config").is_dir() and (nested_root / "bench").is_dir():
-        return nested_root.resolve()
-
-    raise ValueError(
-        "unable to auto-detect repository root; pass --root with a path containing config/ and bench/"
-    )
-
-
-def load_json(path: Path) -> Any:
-    return json.loads(path.read_text(encoding="utf-8"))
 
 
 def format_error_path(error: jsonschema.ValidationError) -> str:

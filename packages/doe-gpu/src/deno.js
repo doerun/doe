@@ -1,7 +1,7 @@
 // doe-gpu — Deno entry
 
-import * as full from '../../webgpu/src/index.js';
-import { createDoeNamespace } from '../../webgpu-doe/src/index.js';
+import * as full from './vendor/webgpu/index.js';
+import { createDoeNamespace } from './vendor/doe-namespace.js';
 
 export const createGpuNamespace = createDoeNamespace;
 

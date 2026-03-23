@@ -33,7 +33,9 @@ pub fn textureFormatFromString(value: []const u8) RenderRuntimeError!model.WGPUT
 }
 
 pub fn execute(allocator: std.mem.Allocator, config: RenderExecutionConfig) !types.NativeExecutionResult {
-    common.ensureLocalLibrarySearchPath(allocator) catch {};
+    common.ensureLocalLibrarySearchPath(allocator) catch |err| {
+        std.debug.print("warn: render_runtime: library search path: {s}\n", .{@errorName(err)});
+    };
     const profile = common.hostProfile() catch return RenderRuntimeError.RuntimeUnavailable;
 
     var backend = webgpu.WebGPUBackend.init(allocator, profile, null) catch {

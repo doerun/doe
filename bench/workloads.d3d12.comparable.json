@@ -23,6 +23,10 @@
       "default": true,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "dawnFilter": "@autodiscover",
+      "suiteTags": [
+        "release"
+      ],
+      "claimEligible": true,
       "benchmarkClass": "comparable"
     },
     {
@@ -47,6 +51,10 @@
       "comparable": true,
       "default": true,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "suiteTags": [
+        "release"
+      ],
+      "claimEligible": true,
       "benchmarkClass": "comparable"
     },
     {
@@ -71,6 +79,11 @@
       ],
       "comparable": true,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true,
       "benchmarkClass": "comparable"
     },
     {
@@ -100,6 +113,11 @@
       "rightCommandRepeat": 50,
       "rightIgnoreFirstOps": 1,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "suiteTags": [
+        "release",
+        "regression"
+      ],
+      "claimEligible": true,
       "benchmarkClass": "comparable"
     },
     {
@@ -129,6 +147,11 @@
       "rightCommandRepeat": 500,
       "rightIgnoreFirstOps": 1,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "suiteTags": [
+        "release",
+        "regression"
+      ],
+      "claimEligible": true,
       "benchmarkClass": "comparable"
     },
     {
@@ -158,6 +181,11 @@
       "rightCommandRepeat": 50,
       "rightIgnoreFirstOps": 1,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "suiteTags": [
+        "release",
+        "regression"
+      ],
+      "claimEligible": true,
       "benchmarkClass": "comparable"
     },
     {
@@ -187,6 +215,11 @@
       "rightCommandRepeat": 50,
       "rightIgnoreFirstOps": 1,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "suiteTags": [
+        "release",
+        "regression"
+      ],
+      "claimEligible": true,
       "benchmarkClass": "comparable"
     },
     {
@@ -216,6 +249,11 @@
       "rightCommandRepeat": 500,
       "rightIgnoreFirstOps": 0,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "suiteTags": [
+        "release",
+        "regression"
+      ],
+      "claimEligible": true,
       "benchmarkClass": "comparable"
     },
     {
@@ -240,7 +278,12 @@
       "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
       "comparable": true,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-      "benchmarkClass": "comparable"
+      "benchmarkClass": "comparable",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "compute_zero_initialize_workgroup_memory_256",
@@ -264,7 +307,12 @@
       "comparable": true,
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-      "benchmarkClass": "comparable"
+      "benchmarkClass": "comparable",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     },
     {
       "id": "resource_lifecycle",
@@ -287,7 +335,12 @@
       "leftTimingDivisor": 1.0,
       "rightTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-      "benchmarkClass": "comparable"
+      "benchmarkClass": "comparable",
+      "suiteTags": [
+        "release",
+        "extended"
+      ],
+      "claimEligible": true
     }
   ]
 }

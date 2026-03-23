@@ -12,7 +12,7 @@ This guide is the Zig style contract for `zig`.
 ## Repository conventions
 
 - Put shared command/profile contracts in `model.zig`.
-- Put quirk parsing in `quirk_json.zig` and command parsing in `command_json.zig`.
+- Put quirk parsing in `quirk/quirk_json.zig` and command parsing in `command_json.zig`.
 - Keep deterministic selection logic in `runtime.zig`.
 - Keep execution orchestration in `execution.zig`.
 - Keep pipeline/trace/replay behavior in `trace.zig` and `replay.zig`.

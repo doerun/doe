@@ -156,6 +156,20 @@ Do not bypass earlier stages to satisfy later-stage outcomes.
 - minimize inline commentary; use field names and namespaced constants for intent
 - if adding selection logic, prefer rule-map data over branching ladders
 
+## Documentation drift prevention
+
+- never embed counts, percentages, or benchmark results in prose; reference the artifact path
+- structural claims ("Doe has a native DXIL emitter") are validated by CI against file existence
+- when a doc needs a specific number, use the pattern: "See `path/to/artifact.json` for current count."
+- `docs/status.md` is an append-only log with dated sections; new state goes at the top; old state is never edited, only superseded by a newer dated section
+- artifacts are the source of truth, not docs:
+  - theorem count/categories: `pipeline/lean/artifacts/proven-conditions.json`
+  - benchmark results: `bench/out/*/dawn-vs-doe.*.json`
+  - browser smoke: `browser/fawn-browser/artifacts/*/dawn-vs-doe.browser.playwright-smoke.diagnostic.json`
+  - backends: `runtime/zig/src/backend/*/`
+  - test status: `zig build test-wgsl` exit code
+- prose describes what kind of thing exists, not how many; the artifact has the count
+
 ## Documentation style
 
 - Markdown document titles and section headings use sentence case
@@ -189,10 +203,11 @@ Do not bypass earlier stages to satisfy later-stage outcomes.
 
 ## Naming (Zig)
 
-- snake_case for functions, variables, fields
+- camelCase for functions (matches official Zig style guide and std library)
+- snake_case for variables, fields, and non-callable identifiers
 - PascalCase for types and structs
 - UPPER_SNAKE_CASE for comptime constants
-- file names: snake_case.zig
+- file names: snake_case.zig (TitleCase.zig for files that define a top-level struct with fields)
 
 ## Naming (JavaScript)
 

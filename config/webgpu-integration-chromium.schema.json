@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Fawn WebGPU Chromium integration overlay",
+  "description": "Browser-lane integration overlay for Doe running inside Chromium via the Dawn wire transport seam.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "surfaceId",
+    "surfaceVersion",
+    "lastUpdated",
+    "description",
+    "smokeTestArtifact",
+    "coverage",
+    "wireProtocolNotes"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "surfaceId": { "type": "string", "const": "doe-chromium" },
+    "surfaceVersion": { "type": "integer" },
+    "lastUpdated": { "type": "string" },
+    "description": { "type": "string" },
+    "smokeTestArtifact": { "type": "string" },
+    "coverage": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["capability", "status", "domain", "notes"],
+        "properties": {
+          "capability": { "type": "string", "minLength": 1 },
+          "status": {
+            "type": "string",
+            "enum": ["passing", "not_supported", "implemented_untested_in_browser"]
+          },
+          "domain": { "type": "string", "minLength": 1 },
+          "blockedBy": { "type": "string" },
+          "notes": { "type": "string" }
+        }
+      }
+    },
+    "wireProtocolNotes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["architecture", "instanceLifetime", "externalTextureGap"],
+      "properties": {
+        "architecture": { "type": "string" },
+        "instanceLifetime": { "type": "string" },
+        "externalTextureGap": { "type": "string" }
+      }
+    }
+  }
+}

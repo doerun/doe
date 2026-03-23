@@ -13,6 +13,27 @@ const cast = native.cast;
 const toOpaque = native.toOpaque;
 const label_store = native.label_store;
 
+// D3D12 texture view swizzle classification for descriptor binding.
+pub const D3D12TextureViewSwizzleMode = enum { identity, swizzled_sampled, unsupported_storage };
+
+pub fn d3d12TextureViewSwizzleMode(
+    usage: u64,
+    swizzle_r: u32,
+    swizzle_g: u32,
+    swizzle_b: u32,
+    swizzle_a: u32,
+) D3D12TextureViewSwizzleMode {
+    const is_identity = (swizzle_r == types.WGPUTextureComponentSwizzle_Red or swizzle_r == 0) and
+        (swizzle_g == types.WGPUTextureComponentSwizzle_Green or swizzle_g == 0) and
+        (swizzle_b == types.WGPUTextureComponentSwizzle_Blue or swizzle_b == 0) and
+        (swizzle_a == types.WGPUTextureComponentSwizzle_Alpha or swizzle_a == 0);
+    const wants_storage = (usage & types.WGPUTextureUsage_StorageBinding) != 0 and
+        (usage & types.WGPUTextureUsage_TextureBinding) == 0;
+    if (wants_storage and !is_identity) return .unsupported_storage;
+    if (is_identity) return .identity;
+    return .swizzled_sampled;
+}
+
 const DoeDevice = native.DoeDevice;
 const DoeBuffer = native.DoeBuffer;
 const DoeTexture = native.DoeTexture;

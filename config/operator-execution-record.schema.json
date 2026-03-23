@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Doe operator execution record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "sourceIndex",
+    "command",
+    "semanticOpId",
+    "trace",
+    "profile",
+    "execution",
+    "commandShape",
+    "shaderArtifacts",
+    "repro"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "sourceIndex": { "type": "integer", "minimum": 0 },
+    "command": { "type": "string" },
+    "kernel": { "type": "string" },
+    "semanticOpId": { "type": "string" },
+    "semanticStage": { "type": "string" },
+    "semanticPhase": { "type": "string" },
+    "semanticTokenIndex": { "type": "integer", "minimum": 0 },
+    "semanticLayerIndex": { "type": "integer", "minimum": 0 },
+    "semanticExecutionPlanHash": { "type": "string" },
+    "trace": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "hash": { "type": "string" },
+        "previousHash": { "type": "string" },
+        "traceMetaPath": { "type": "string" }
+      }
+    },
+    "profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["vendor", "api", "driver"],
+      "properties": {
+        "vendor": { "type": "string" },
+        "api": { "type": "string" },
+        "deviceFamily": { "type": ["string", "null"] },
+        "driver": { "type": "string" }
+      }
+    },
+    "execution": {
+      "type": ["object", "null"]
+    },
+    "commandShape": {
+      "type": "object"
+    },
+    "shaderArtifacts": {
+      "type": "object"
+    },
+    "capture": {
+      "type": ["object", "null"]
+    },
+    "repro": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["commandsPath", "metaPath", "rerunMode", "bitwise"],
+      "properties": {
+        "commandsPath": { "type": "string" },
+        "metaPath": { "type": "string" },
+        "rerunMode": { "type": "string", "const": "structural_same_device_backend" },
+        "bitwise": { "type": "boolean", "const": false }
+      }
+    }
+  }
+}
+

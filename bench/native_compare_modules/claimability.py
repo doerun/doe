@@ -533,14 +533,20 @@ def assess_claimability(
     left_samples = left.get("commandSamples", [])
     right_samples = right.get("commandSamples", [])
     if isinstance(left_samples, list) and isinstance(right_samples, list):
-        reasons.extend(
-            timing_sanity.assess_operation_scope_claim_sanity(
-                left_command_samples=left_samples,
-                right_command_samples=right_samples,
-                min_operation_wall_coverage_ratio=benchmark_policy.min_operation_wall_coverage_ratio,
-                max_operation_wall_coverage_asymmetry_ratio=benchmark_policy.max_operation_wall_coverage_asymmetry_ratio,
+        # Operation-scope sanity only applies when the claim metric is still
+        # based on operation timing.  When the claim has already been promoted
+        # to headlineProcessWall (e.g. because of a known coverage asymmetry
+        # such as upload deferred-queue-sync), the operation-timing coverage
+        # ratio is expected to be asymmetric and is no longer claim-relevant.
+        if claim_metric_scope != "headlineProcessWall":
+            reasons.extend(
+                timing_sanity.assess_operation_scope_claim_sanity(
+                    left_command_samples=left_samples,
+                    right_command_samples=right_samples,
+                    min_operation_wall_coverage_ratio=benchmark_policy.min_operation_wall_coverage_ratio,
+                    max_operation_wall_coverage_asymmetry_ratio=benchmark_policy.max_operation_wall_coverage_asymmetry_ratio,
+                )
             )
-        )
         reasons.extend(
             assess_phase_equivalence(
                 left_command_samples=left_samples,

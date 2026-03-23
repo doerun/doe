@@ -122,6 +122,10 @@ pub const BackendRuntime = struct {
         try self.backend.prewarm_kernel_dispatch(kernel, bindings);
     }
 
+    pub fn capture_buffer(self: *BackendRuntime, allocator: std.mem.Allocator, handle: u64, offset: u64, size: u64) ![]u8 {
+        return try self.backend.capture_buffer(allocator, handle, offset, size);
+    }
+
     pub fn telemetry(self: *BackendRuntime) backend_telemetry.BackendTelemetry {
         self.refreshBackendTelemetry();
         return self.backend.telemetry;

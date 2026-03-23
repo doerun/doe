@@ -21,7 +21,7 @@ import { resolve, dirname, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import { parseArgs } from 'node:util';
-import { readDoeBuildMetadataFile } from '../src/build_metadata.js';
+import { readDoeBuildMetadataFile } from '../src/build-metadata.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = resolve(__dirname, '..');

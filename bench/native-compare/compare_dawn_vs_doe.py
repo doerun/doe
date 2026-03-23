@@ -188,6 +188,7 @@ def main() -> int:
         include_noncomparable=bool(args.include_noncomparable_workloads),
         include_extended=bool(args.include_extended_workloads),
         workload_cohort=args.workload_cohort,
+        selector=getattr(args, "selector", None),
     )
     if not workloads:
         hint = ""

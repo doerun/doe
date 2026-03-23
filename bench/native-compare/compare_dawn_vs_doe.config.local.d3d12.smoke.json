@@ -31,5 +31,18 @@
     "probe": "none",
     "sampleMs": 100,
     "sampleTargetCount": 0
+  },
+  "selector": {
+    "suite": [
+      "release",
+      "regression"
+    ],
+    "comparability": [
+      "comparable"
+    ],
+    "claimEligibleOnly": false,
+    "domains": [],
+    "ids": [],
+    "excludeIds": []
   }
 }

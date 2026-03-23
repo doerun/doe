@@ -82,6 +82,9 @@ pub const NativeVulkanRuntime = struct {
     dispatch_indirect_args_buffer: ?vk_resources.ComputeBuffer = null,
 
     pending_uploads: std.ArrayListUnmanaged(vk_upload.PendingUpload) = .{},
+    // Single-entry fast slot for the common case of one upload between flushes.
+    // Avoids ArrayList append/iterate/clear overhead on the hot path.
+    hot_pending_upload: ?vk_upload.PendingUpload = null,
     surfaces: std.AutoHashMapUnmanaged(u64, vulkan_surface.VulkanSurface) = .{},
 
     src_pool: vk_upload.VkPool = .{},
@@ -110,9 +113,6 @@ pub const NativeVulkanRuntime = struct {
     has_deferred_submissions: bool = false,
     has_depth_clip_enable_ext: bool = false,
     upload_recording_active: bool = false,
-    // Tracks whether flush_queue left the command buffer in reset state,
-    // avoiding a redundant vkResetCommandBuffer in ensure_upload_recording.
-    command_buffer_reset_clean: bool = false,
 
     pub fn init(allocator: std.mem.Allocator, kernel_root: ?[]const u8) !NativeVulkanRuntime {
         var self = NativeVulkanRuntime{ .allocator = allocator, .kernel_root = kernel_root };
@@ -235,7 +235,17 @@ pub const NativeVulkanRuntime = struct {
 
         const upload = try vk_upload.record_upload_copy(self, bytes, dst_usage);
         errdefer vk_upload.release_upload(self, upload);
-        try self.pending_uploads.append(self.allocator, upload);
+        // Fast slot for the common single-upload-per-flush case: avoids
+        // ArrayList append/iterate/clear overhead on the tiny-buffer hot path.
+        if (self.hot_pending_upload == null and self.pending_uploads.items.len == 0) {
+            self.hot_pending_upload = upload;
+        } else {
+            if (self.hot_pending_upload) |hot| {
+                try self.pending_uploads.append(self.allocator, hot);
+                self.hot_pending_upload = null;
+            }
+            try self.pending_uploads.append(self.allocator, upload);
+        }
         self.has_deferred_submissions = true;
     }
 
@@ -243,7 +253,7 @@ pub const NativeVulkanRuntime = struct {
         const start_ns = common_timing.now_ns();
         switch (queue_wait_mode) {
             .process_events, .wait_any => {
-                if (self.has_deferred_submissions or self.pending_uploads.items.len > 0) {
+                if (self.has_deferred_submissions or self.hot_pending_upload != null or self.pending_uploads.items.len > 0) {
                     _ = try self.flush_queue();
                 }
             },

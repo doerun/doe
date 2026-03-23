@@ -48,6 +48,7 @@
               "backend_native",
               "node_package",
               "bun_package",
+              "deno_package",
               "browser"
             ]
           },
@@ -75,6 +76,7 @@
                 "backend_compare_report",
                 "node_package_compare_report",
                 "bun_package_compare_report",
+                "deno_package_compare_report",
                 "browser_gate_report",
                 "browser_claim_report"
               ]

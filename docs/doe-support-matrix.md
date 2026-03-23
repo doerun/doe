@@ -8,7 +8,7 @@ Every tier has: a deployment surface, a supported API set, required gates, confo
 
 Tier names are tied to deployment surface and guarantees, not vague quality labels.
 
-This document is the product-contract layer of a larger tracking model. Spec inventory and CTS evidence are separate layers. `config/webgpu-spec-index.jsonl` is the canonical WebGPU API spec index and per-backend checklist generated from the official `@webgpu/types` surface; `config/webgpu-cts-evidence.json` is the CTS evidence ledger; the existing `config/webgpu-spec-coverage.json` file remains an internal capability inventory only.
+This document is the product-contract layer of a larger tracking model. Spec inventory and CTS evidence are separate layers. `config/webgpu-spec-index.jsonl` is the canonical WebGPU API spec index and per-backend checklist generated from the official `@webgpu/types` surface; `config/webgpu-cts-evidence.json` is the CTS evidence ledger; `config/webgpu-capability-inventory.json` remains the internal capability inventory only.
 
 ## Tiers
 
@@ -135,7 +135,9 @@ Cells not listed separately are intentionally folded into one of those rows:
 - Product contract: this document and the package contract docs define what each surface is allowed to promise.
 - Spec index and backend checklist: `config/webgpu-spec-index.jsonl` tracks the WebGPU API surface by official interface/member and string-union enum from `@webgpu/types`, and now carries per-backend checklist cells for `metal`, `vulkan`, `d3d12`, and `browser`, each split into `implementation`, `correctness`, and `performance` evidence. WGSL builtins/types remain a follow-up layer.
 - CTS evidence: `config/webgpu-cts-evidence.json` tracks actual CTS runs, query buckets, pass/fail results, and artifact paths.
-- Internal capability inventory: `config/webgpu-spec-coverage.json` remains useful for Doe implementation tracking, but it is not the spec index and it is not CTS evidence.
+- Internal capability inventory: `config/webgpu-capability-inventory.json` remains useful for Doe implementation tracking, but it is not the spec index and it is not CTS evidence.
+- Chromium integration overlay: `config/webgpu-integration-chromium.json` records what changes when the browser lane runs through the wire protocol and browser-owned media/image paths.
+- Generated surface views: `config/generated/webgpu-surface-{compute,headless,chromium}.json` are convenience reports derived from the canonical ledgers above; they are not source-of-truth files.
 
 ---
 

@@ -316,5 +316,7 @@ pub export fn doeNativeQueueWaitFence(
     if (raw == null) return;
     const h: *MQDHandle = @ptrCast(@alignCast(raw));
     if (h.magic != MAGIC_MQD) return;
-    h.mqd.wait_fence(.{ .queue_id = queue_id, .epoch = epoch }) catch {};
+    h.mqd.wait_fence(.{ .queue_id = queue_id, .epoch = epoch }) catch |err| {
+        std.debug.print("warn: multi_queue: fence wait: {s}\n", .{@errorName(err)});
+    };
 }

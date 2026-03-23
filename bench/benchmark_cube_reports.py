@@ -10,17 +10,8 @@ from typing import Any
 import jsonschema
 
 import report_conformance
+from bench_utils import load_json, load_json_object
 from native_compare_modules import timing_sanity
-
-def load_json(path: Path) -> Any:
-    return json.loads(path.read_text(encoding="utf-8"))
-
-
-def load_json_object(path: Path) -> dict[str, Any]:
-    payload = load_json(path)
-    if not isinstance(payload, dict):
-        raise ValueError(f"invalid JSON object: {path}")
-    return payload
 
 
 def parse_utc_iso(value: Any) -> datetime | None:

@@ -1,1 +1,1 @@
-export { createDoeRuntime, runDawnVsDoeCompare } from "./runtime_cli.js";
+export { createDoeRuntime, runDawnVsDoeCompare } from "./runtime-cli.js";

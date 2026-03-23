@@ -1,0 +1,156 @@
+{
+  "schemaVersion": 1,
+  "reportKind": "webgpu-surface-report",
+  "surfaceId": "doe-chromium",
+  "generatedAt": "2026-03-22T22:33:03.836865+00:00",
+  "derivedFrom": {
+    "commandCoverage": "config/webgpu-command-coverage-full.json",
+    "capabilityInventory": "config/webgpu-capability-inventory.json",
+    "integrationOverlay": "config/webgpu-integration-chromium.json",
+    "specIndex": "config/webgpu-spec-index.jsonl"
+  },
+  "notes": [
+    "Chromium view is a browser integration overlay on top of Doe's native command and capability surfaces.",
+    "Browser-specific constraints come from the wire transport seam and browser-owned media/image paths."
+  ],
+  "commandCoverage": {
+    "sourceSurfaceId": "doe-full",
+    "totalCommandCount": 24,
+    "statusSummary": {
+      "implemented": 24
+    }
+  },
+  "capabilityInventory": {
+    "entryCount": 101,
+    "statusSummary": {
+      "implemented": 101
+    }
+  },
+  "integrationOverlay": {
+    "schemaVersion": 1,
+    "surfaceId": "doe-chromium",
+    "surfaceVersion": 1,
+    "lastUpdated": "2026-03-22",
+    "description": "Integration overlay when Doe runs inside Chromium via --use-webgpu-runtime=doe. The wire protocol and browser-owned media paths add constraints beyond Doe's native command and capability surfaces.",
+    "smokeTestArtifact": "browser/fawn-browser/artifacts/20260322T220335Z/dawn-vs-doe.browser.playwright-smoke.diagnostic.json",
+    "coverage": [
+      {
+        "capability": "requestAdapter",
+        "status": "passing",
+        "domain": "device",
+        "notes": "Adapter creation works. Vulkan backend selected via --use-angle=vulkan."
+      },
+      {
+        "capability": "requestDevice",
+        "status": "passing",
+        "domain": "device",
+        "notes": "Device creation works. Doe proc table injected via DoeCommandDecoder."
+      },
+      {
+        "capability": "requestAdapter_xrCompatible",
+        "status": "passing",
+        "domain": "device",
+        "notes": "requestAdapter({ xrCompatible: true }) returns a valid adapter."
+      },
+      {
+        "capability": "computeDispatch",
+        "status": "passing",
+        "domain": "compute",
+        "notes": "Full compute pipeline: createShaderModule, createComputePipeline, dispatch, readback. Verified via computeIncrement smoke test."
+      },
+      {
+        "capability": "renderDraw",
+        "status": "passing",
+        "domain": "render",
+        "notes": "Render pipeline with vertex+fragment shaders, draw, copyTextureToBuffer readback. Verified via renderTriangle smoke test returning [255,0,0,255]."
+      },
+      {
+        "capability": "canvasContext",
+        "status": "passing",
+        "domain": "surface",
+        "notes": "Canvas WebGPU context creation works."
+      },
+      {
+        "capability": "bufferMapAsync",
+        "status": "passing",
+        "domain": "buffer",
+        "notes": "Buffer mapping for readback works. Used by compute and render smoke tests."
+      },
+      {
+        "capability": "copyTextureToBuffer",
+        "status": "passing",
+        "domain": "copy",
+        "notes": "ABI bridge unpacks struct args. Verified via render readback."
+      },
+      {
+        "capability": "copyBufferToBuffer",
+        "status": "passing",
+        "domain": "copy",
+        "notes": "Direct signature match, no bridge needed."
+      },
+      {
+        "capability": "queueWriteBuffer",
+        "status": "passing",
+        "domain": "queue",
+        "notes": "Buffer uploads work. Upload benchmark reports timing."
+      },
+      {
+        "capability": "queueOnSubmittedWorkDone",
+        "status": "passing",
+        "domain": "queue",
+        "notes": "Fires synchronously. Works for compute and render workloads."
+      },
+      {
+        "capability": "copyExternalImageToTexture",
+        "status": "not_supported",
+        "domain": "external_texture",
+        "blockedBy": "chromium-shared-image-interop",
+        "notes": "Requires Chromium SharedImage/mailbox media interop that Doe does not implement. Dawn wire client reports 'A valid external Instance reference no longer exists.' Not a Doe runtime bug \u2014 Doe genuinely does not support OS-level media texture import (DMABUF/IOSurface/DXGI)."
+      },
+      {
+        "capability": "importExternalTexture",
+        "status": "not_supported",
+        "domain": "external_texture",
+        "blockedBy": "chromium-shared-image-interop",
+        "notes": "Same root cause as copyExternalImageToTexture. Requires native video frame import via platform APIs. The DoeExternalTexture handle wrapper exists but does not perform actual media import."
+      },
+      {
+        "capability": "textureDestroy",
+        "status": "passing",
+        "domain": "resource",
+        "notes": "Routed to doeNativeTextureDestroy. No longer crashes via Dawn wire DoTextureDestroy."
+      },
+      {
+        "capability": "querySetTimestamp",
+        "status": "passing",
+        "domain": "query",
+        "notes": "writeTimestamp and resolveQuerySet routed to native."
+      },
+      {
+        "capability": "renderPassIndirectDraw",
+        "status": "implemented_untested_in_browser",
+        "domain": "render",
+        "notes": "Native implementation exists for Vulkan/Metal/D3D12. Not exercised by current smoke test."
+      },
+      {
+        "capability": "renderBundles",
+        "status": "implemented_untested_in_browser",
+        "domain": "render",
+        "notes": "17 render bundle procs routed to native. Not exercised by current smoke test."
+      }
+    ],
+    "wireProtocolNotes": {
+      "architecture": "DoeCommandDecoder Phase 1 \u2014 all wire commands delegate to Dawn's WireServer with Doe proc table. Progressive native decoding planned (Phase 2-5).",
+      "instanceLifetime": "Dawn wire client maintains its own Instance reference tracking. Doe's Instance lifecycle diverges from Dawn's expectations. Destructor ordering fixed to prevent GPU process SIGSEGV. onSubmittedWorkDone fires synchronously to avoid wire client EventManager mismatch.",
+      "externalTextureGap": "External texture operations flow through Dawn wire \u2192 Chromium SharedImage \u2192 mailbox association \u2192 Skia fallback. Doe devices use AssociateMailboxUsingSkiaFallback which creates textures via Doe procs but the wire client's Instance validation fails because Doe's Instance doesn't maintain Dawn's EventManager state. Fixing requires either DoeCommandDecoder Phase 2+ wire interception or native Doe shared-image import."
+    }
+  },
+  "specIndexSummary": {
+    "note": "Browser cells come from the canonical spec index; the Chromium integration overlay records additional wire/browser-specific constraints.",
+    "browser": {
+      "implemented": 456,
+      "partial": 62,
+      "unreviewed": 369
+    }
+  }
+}

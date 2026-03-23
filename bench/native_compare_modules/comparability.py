@@ -8,6 +8,7 @@ import subprocess
 from pathlib import Path
 from typing import Any, Callable
 
+from config_validation import load_validated_config
 from native_compare_modules.timing_selection import (
     canonical_timing_source,
     classify_timing_source,
@@ -256,12 +257,7 @@ def _validate_fact_names(payload: dict[str, Any]) -> tuple[str, ...]:
 
 
 def _load_comparability_contract() -> tuple[int, tuple[str, ...], tuple[dict[str, Any], ...]]:
-    payload = json.loads(_COMPARABILITY_OBLIGATIONS_PATH.read_text(encoding="utf-8"))
-    if not isinstance(payload, dict):
-        raise ValueError(
-            "invalid comparability obligation contract: expected object at "
-            f"{_COMPARABILITY_OBLIGATIONS_PATH}"
-        )
+    payload = load_validated_config(_COMPARABILITY_OBLIGATIONS_PATH)
     schema_version = payload.get("schemaVersion")
     if schema_version != OBLIGATION_SCHEMA_VERSION:
         raise ValueError(

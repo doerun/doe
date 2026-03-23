@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Fawn Module Registry",
+  "description": "Declares pipeline modules, their ownership, data-flow inputs/outputs, and contract bindings.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "modules"],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 3 },
+    "modules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["moduleId", "modulePath", "status", "owner", "inputs", "outputs", "contracts"],
+        "properties": {
+          "moduleId": { "type": "string", "minLength": 1 },
+          "modulePath": { "type": "string", "minLength": 1 },
+          "status": {
+            "type": "string",
+            "enum": ["active", "deprecated", "planned"]
+          },
+          "owner": {
+            "type": "string",
+            "enum": [
+              "runtime-automation",
+              "verification",
+              "runtime-core",
+              "performance",
+              "observability"
+            ]
+          },
+          "inputs": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 }
+          },
+          "outputs": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 },
+            "minItems": 1
+          },
+          "contracts": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 }
+          }
+        }
+      },
+      "minItems": 1
+    }
+  }
+}

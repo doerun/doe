@@ -10,6 +10,7 @@ const common_errors_test = @import("tests/backend/common_errors_test.zig");
 const common_timing_test = @import("tests/backend/common_timing_test.zig");
 const d3d12_mod_integration_test = @import("tests/d3d12/d3d12_mod_integration_test.zig");
 const d3d12_timing_semantics_test = @import("tests/d3d12/d3d12_timing_semantics_test.zig");
+const d3d12_descriptors_formats_test = @import("tests/backend/d3d12_descriptors_formats_test.zig");
 
 comptime {
     _ = backend_registry_test;
@@ -24,4 +25,5 @@ comptime {
     _ = common_timing_test;
     _ = d3d12_mod_integration_test;
     _ = d3d12_timing_semantics_test;
+    _ = d3d12_descriptors_formats_test;
 }

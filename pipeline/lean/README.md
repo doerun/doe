@@ -39,9 +39,11 @@ Finite-enum properties that require checking all cases. Zig `comptime` inline-fo
 | `strongerSafetyRaisesProofDemand` | Critical safety demands `.proven` proof | 3 enum values |
 | `identityActionComplete` | Exactly which actions are identity (iff) | 4 action variants × sub-cases |
 
-### `lean_verified` (current artifact: 35 theorems; main unbounded families below)
+### `lean_verified` (current artifact: 17 theorems) and `lean_required` (current artifact: 40 theorems)
 
-Quantified over arbitrary `List Obligation` or arbitrary `Nat` — unbounded domain, cannot enumerate.
+`lean_verified` theorems are quantified over arbitrary `List Obligation` or arbitrary `Nat` — unbounded domain, cannot enumerate. `lean_required` theorems also require Lean (induction over unbounded structures: lists, IR node counts, ref chains, render-pass state machines) and are classified separately in the proof artifact.
+
+Combined unbounded-domain theorems (57 total). Representative `lean_verified` selection below; full `lean_required` list includes IR builder soundness, IR semantic/validator contracts, MSL address-space chains, render-pass state machines, buffer dispatch preconditions, and compute bounds theorems.
 
 | Theorem | What it proves |
 |---------|---------------|
@@ -72,20 +74,20 @@ Quantified over arbitrary `List Obligation` or arbitrary `Nat` — unbounded dom
 
 ### `lean_fixture` (current artifact: 6 theorems)
 
-Specific obligation sets verified against the `lean_verified` theorems.
+Specific obligation sets verified against the `lean_verified` theorems. The artifact contains 6 fixture theorems; 4 additional fixture candidates (timing-phase, hardware-path) are defined in Lean source but not yet extracted to the proof artifact.
 
-| Theorem | Fixture |
-|---------|---------|
-| `strictHappyPathExpectedBlocking_exact` | Happy-path facts produce expected blocking list |
-| `strictHappyPathComparable` | Happy-path facts are comparable |
-| `strictMissingLeftSamplesExpectedBlocking_exact` | Missing-left facts produce expected blocking |
-| `strictMissingLeftSamplesComparable` | Missing-left facts are comparable |
-| `allowLeftNoExecutionDensityFailureExpectedBlocking_exact` | Density-failure facts produce expected blocking |
-| `allowLeftNoExecutionDensityFailureComparable` | Density-failure facts are comparable |
-| `strictTimingPhaseFailureExpectedBlocking_exact` | Timing-phase failure blocking |
-| `strictTimingPhaseFailureComparable` | Timing-phase failure comparability |
-| `strictHardwarePathFailureExpectedBlocking_exact` | Hardware-path failure blocking |
-| `strictHardwarePathFailureComparable` | Hardware-path failure comparability |
+| Theorem | Fixture | In artifact |
+|---------|---------|-------------|
+| `strictHappyPathExpectedBlocking_exact` | Happy-path facts produce expected blocking list | yes |
+| `strictHappyPathComparable` | Happy-path facts are comparable | yes |
+| `strictMissingLeftSamplesExpectedBlocking_exact` | Missing-left facts produce expected blocking | yes |
+| `strictMissingLeftSamplesComparable` | Missing-left facts are comparable | yes |
+| `allowLeftNoExecutionDensityFailureExpectedBlocking_exact` | Density-failure facts produce expected blocking | yes |
+| `allowLeftNoExecutionDensityFailureComparable` | Density-failure facts are comparable | yes |
+| `strictTimingPhaseFailureExpectedBlocking_exact` | Timing-phase failure blocking | no (source only) |
+| `strictTimingPhaseFailureComparable` | Timing-phase failure comparability | no (source only) |
+| `strictHardwarePathFailureExpectedBlocking_exact` | Hardware-path failure blocking | no (source only) |
+| `strictHardwarePathFailureComparable` | Hardware-path failure comparability | no (source only) |
 
 ## Policy
 

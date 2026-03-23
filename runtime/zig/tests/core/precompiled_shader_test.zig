@@ -154,7 +154,12 @@ test "SPIR-V shader module: invalid code_size (not multiple of 4) is rejected" {
         .label = .{ .data = null, .length = 0 },
     };
     const result = native.doeNativeDeviceCreateShaderModule(@ptrCast(&dev), &desc);
-    try std.testing.expectEqual(@as(?*anyopaque, null), result);
+    // Error inputs return an error-flagged module (not null) to prevent
+    // GPU process crashes when Dawn's wire server receives a null handle.
+    try std.testing.expect(result != null);
+    if (native.cast(native.DoeShaderModule, result)) |sm| {
+        try std.testing.expectEqual(native.CompilationMessageKind.@"error", sm.compilation_message_kind);
+    }
 }
 
 test "SPIR-V shader module: zero code_size is rejected" {
@@ -173,7 +178,10 @@ test "SPIR-V shader module: zero code_size is rejected" {
         .label = .{ .data = null, .length = 0 },
     };
     const result = native.doeNativeDeviceCreateShaderModule(@ptrCast(&dev), &desc);
-    try std.testing.expectEqual(@as(?*anyopaque, null), result);
+    try std.testing.expect(result != null);
+    if (native.cast(native.DoeShaderModule, result)) |sm| {
+        try std.testing.expectEqual(native.CompilationMessageKind.@"error", sm.compilation_message_kind);
+    }
 }
 
 test "SPIR-V shader module: valid input creates module with stored binary" {
@@ -257,7 +265,10 @@ test "HLSL shader module: null code pointer is rejected" {
         .label = .{ .data = null, .length = 0 },
     };
     const result = native.doeNativeDeviceCreateShaderModule(@ptrCast(&dev), &desc);
-    try std.testing.expectEqual(@as(?*anyopaque, null), result);
+    try std.testing.expect(result != null);
+    if (native.cast(native.DoeShaderModule, result)) |sm| {
+        try std.testing.expectEqual(native.CompilationMessageKind.@"error", sm.compilation_message_kind);
+    }
 }
 
 test "HLSL shader module: valid input creates module with stored source" {
@@ -308,7 +319,10 @@ test "MSL shader module: null code pointer is rejected" {
         .label = .{ .data = null, .length = 0 },
     };
     const result = native.doeNativeDeviceCreateShaderModule(@ptrCast(&dev), &desc);
-    try std.testing.expectEqual(@as(?*anyopaque, null), result);
+    try std.testing.expect(result != null);
+    if (native.cast(native.DoeShaderModule, result)) |sm| {
+        try std.testing.expectEqual(native.CompilationMessageKind.@"error", sm.compilation_message_kind);
+    }
 }
 
 // The following tests require a real Metal device and are skipped on non-macOS.

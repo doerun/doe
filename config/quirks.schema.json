@@ -1,125 +1,136 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Fawn Driver Quirk Record",
-  "type": "object",
-  "additionalProperties": false,
-  "required": [
-    "schemaVersion",
-    "quirkId",
-    "scope",
-    "match",
-    "action",
-    "safetyClass",
-    "verificationMode",
-    "proofLevel",
-    "provenance"
+  "oneOf": [
+    { "$ref": "#/$defs/quirkRecord" },
+    {
+      "type": "array",
+      "items": { "$ref": "#/$defs/quirkRecord" }
+    }
   ],
-  "properties": {
-    "schemaVersion": { "type": "integer", "const": 2 },
-    "quirkId": { "type": "string", "minLength": 3 },
-    "scope": {
-      "type": "string",
-      "enum": ["alignment", "barrier", "layout", "driver_toggle", "memory"]
-    },
-    "match": {
+  "$defs": {
+    "quirkRecord": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["vendor", "api"],
+      "required": [
+        "schemaVersion",
+        "quirkId",
+        "scope",
+        "match",
+        "action",
+        "safetyClass",
+        "verificationMode",
+        "proofLevel",
+        "provenance"
+      ],
       "properties": {
-        "vendor": { "type": "string" },
-        "deviceFamily": { "type": "string" },
-        "driverRange": { "type": "string" },
-        "api": { "type": "string", "enum": ["vulkan", "metal", "d3d12", "webgpu"] }
-      }
-    },
-    "action": {
-      "oneOf": [
-        {
+        "schemaVersion": { "type": "integer", "const": 2 },
+        "quirkId": { "type": "string", "minLength": 3 },
+        "scope": {
+          "type": "string",
+          "enum": ["alignment", "barrier", "layout", "driver_toggle", "memory"]
+        },
+        "match": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["kind", "params"],
+          "required": ["vendor", "api"],
           "properties": {
-            "kind": { "const": "use_temporary_buffer" },
-            "params": {
-              "type": "object",
-              "additionalProperties": false,
-              "required": ["bufferAlignmentBytes"],
-              "properties": {
-                "bufferAlignmentBytes": { "type": "integer", "minimum": 1 },
-                "reason": { "type": "string" }
-              }
-            }
+            "vendor": { "type": "string" },
+            "deviceFamily": { "type": "string" },
+            "driverRange": { "type": "string" },
+            "api": { "type": "string", "enum": ["vulkan", "metal", "d3d12", "webgpu"] }
           }
         },
-        {
-          "type": "object",
-          "additionalProperties": false,
-          "required": ["kind", "params"],
-          "properties": {
-            "kind": { "const": "toggle" },
-            "params": {
+        "action": {
+          "oneOf": [
+            {
               "type": "object",
               "additionalProperties": false,
-              "required": ["toggle"],
+              "required": ["kind", "params"],
               "properties": {
-                "toggle": { "type": "string", "minLength": 1 }
+                "kind": { "const": "use_temporary_buffer" },
+                "params": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["bufferAlignmentBytes"],
+                  "properties": {
+                    "bufferAlignmentBytes": { "type": "integer", "minimum": 1 },
+                    "reason": { "type": "string" }
+                  }
+                }
               }
-            }
-          }
-        },
-        {
-          "type": "object",
-          "additionalProperties": false,
-          "required": ["kind", "params"],
-          "properties": {
-            "kind": { "const": "use_temporary_render_texture" },
-            "params": {
+            },
+            {
               "type": "object",
               "additionalProperties": false,
-              "required": ["minMipLevel", "formats"],
+              "required": ["kind", "params"],
               "properties": {
-                "minMipLevel": { "type": "integer", "minimum": 0 },
-                "formats": {
-                  "type": "array",
-                  "items": { "type": "string" },
-                  "minItems": 1
-                },
-                "reason": { "type": "string" }
+                "kind": { "const": "toggle" },
+                "params": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["toggle"],
+                  "properties": {
+                    "toggle": { "type": "string", "minLength": 1 }
+                  }
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["kind", "params"],
+              "properties": {
+                "kind": { "const": "use_temporary_render_texture" },
+                "params": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["minMipLevel", "formats"],
+                  "properties": {
+                    "minMipLevel": { "type": "integer", "minimum": 0 },
+                    "formats": {
+                      "type": "array",
+                      "items": { "type": "string" },
+                      "minItems": 1
+                    },
+                    "reason": { "type": "string" }
+                  }
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["kind"],
+              "properties": {
+                "kind": { "const": "no_op" }
               }
             }
-          }
+          ]
         },
-        {
+        "safetyClass": {
+          "type": "string",
+          "enum": ["low", "moderate", "high", "critical"]
+        },
+        "verificationMode": {
+          "type": "string",
+          "enum": ["guard_only", "lean_preferred", "lean_required"]
+        },
+        "proofLevel": {
+          "type": "string",
+          "enum": ["proven", "guarded", "rejected"]
+        },
+        "provenance": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["kind"],
+          "required": ["sourceRepo", "sourcePath", "sourceCommit", "observedAt"],
           "properties": {
-            "kind": { "const": "no_op" }
+            "sourceRepo": { "type": "string" },
+            "sourcePath": { "type": "string" },
+            "sourceCommit": { "type": "string" },
+            "observedAt": { "type": "string", "format": "date-time" }
           }
         }
-      ]
-    },
-    "safetyClass": {
-      "type": "string",
-      "enum": ["low", "moderate", "high", "critical"]
-    },
-    "verificationMode": {
-      "type": "string",
-      "enum": ["guard_only", "lean_preferred", "lean_required"]
-    },
-    "proofLevel": {
-      "type": "string",
-      "enum": ["proven", "guarded", "rejected"]
-    },
-    "provenance": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["sourceRepo", "sourcePath", "sourceCommit", "observedAt"],
-      "properties": {
-        "sourceRepo": { "type": "string" },
-        "sourcePath": { "type": "string" },
-        "sourceCommit": { "type": "string" },
-        "observedAt": { "type": "string", "format": "date-time" }
       }
     }
   }

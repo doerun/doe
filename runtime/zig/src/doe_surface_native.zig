@@ -227,7 +227,9 @@ pub export fn doeNativeSurfaceRelease(surf_raw: ?*anyopaque) callconv(.c) void {
     if (surf.backend == .vulkan) {
         if (surf.vk_runtime_ref) |rt_ptr| {
             const rt: *NativeVulkanRuntime = @ptrCast(@alignCast(rt_ptr));
-            rt.release_surface(surf.handle) catch {};
+            rt.release_surface(surf.handle) catch |err| {
+                std.debug.print("warn: doe_surface_native: surface release: {s}\n", .{@errorName(err)});
+            };
         }
     }
     if (surf.current_tex) |tex| alloc.destroy(tex);

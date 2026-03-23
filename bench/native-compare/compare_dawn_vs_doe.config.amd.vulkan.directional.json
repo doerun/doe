@@ -31,5 +31,24 @@
     "probe": "none",
     "sampleMs": 100,
     "sampleTargetCount": 0
+  },
+  "selector": {
+    "suite": [
+      "release",
+      "exploration",
+      "extended"
+    ],
+    "comparability": [
+      "comparable",
+      "non_comparable"
+    ],
+    "claimEligibleOnly": false,
+    "domains": [],
+    "ids": [
+      "render_draw_indexed_200k",
+      "capability_introspection_500",
+      "lifecycle_refcount_200"
+    ],
+    "excludeIds": []
   }
 }

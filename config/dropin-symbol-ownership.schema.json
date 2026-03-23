@@ -5,7 +5,15 @@
   "additionalProperties": false,
   "required": ["schemaVersion", "symbols"],
   "properties": {
-    "schemaVersion": { "type": "integer", "const": 2 },
+    "schemaVersion": { "type": "integer", "const": 3 },
+    "tiers": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minProperties": 1
+    },
     "symbols": {
       "type": "array",
       "items": {
@@ -14,7 +22,8 @@
         "required": ["symbol", "owner"],
         "properties": {
           "symbol": { "type": "string", "pattern": "^wgpu[A-Za-z0-9_]+$" },
-          "owner": { "type": "string", "enum": ["dawn_delegate", "doe_metal", "doe_vulkan", "doe_d3d12", "shared"] }
+          "owner": { "type": "string", "enum": ["dawn_delegate", "doe_metal", "doe_vulkan", "doe_d3d12", "shared"] },
+          "tier": { "type": "string", "enum": ["compute", "headless", "full"] }
         }
       }
     }

@@ -407,8 +407,8 @@ public boundary.
 
 ### Coverage split
 
-- `config/webgpu-core-coverage.json` — 10 core commands
-- `config/webgpu-full-coverage.json` — 24 commands (core + full)
+- `config/webgpu-command-coverage-core.json` — 10 core commands
+- `config/webgpu-command-coverage-full.json` — 24 commands (core + full)
 - `zig build test-core` and `zig build test-full` exist; split test coverage is thin
 
 ### Remaining extraction work
@@ -417,7 +417,7 @@ public boundary.
 2. Shrink public facade files: `model.zig`, `webgpu_ffi.zig`, `main.zig`, `execution.zig`
 3. Retire root compatibility facades: `wgpu_commands.zig`, `wgpu_resources.zig`, `wgpu_extended_commands.zig`
 4. Split backend roots (still own mixed compute/render/surface state): `backend/metal/mod.zig`, `backend/vulkan/mod.zig`, `backend/d3d12/mod.zig`
-5. Retire legacy unified `config/webgpu-spec-coverage.json`
+5. Continue shrinking the capability inventory / spec index overlap; `config/webgpu-capability-inventory.json` remains internal inventory, not the canonical API checklist
 6. Build separate `libwebgpu_doe_core.so` and `libwebgpu_doe_full.so`
 
 ### Extraction hotspots

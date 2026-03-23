@@ -153,6 +153,30 @@ def validate_catalog_semantics(catalog: dict[str, Any]) -> None:
                     problems.append(
                         f"{item['id']} lane={lane_id}: {left_key}={left_value!r} != {right_key}={right_value!r}"
                     )
+    for item in catalog["workloads"]:
+        shared = item.get("shared", {})
+        shared_bc = shared.get("benchmarkClass")
+        shared_comparable = shared.get("comparable")
+        claim_eligible = shared.get("claimEligible")
+        if claim_eligible is not None and shared_bc is not None:
+            eff_bc = str(shared_bc).strip().lower()
+            if eff_bc == "comparable" and not claim_eligible:
+                problems.append(
+                    f"{item['id']}: shared benchmarkClass=comparable requires claimEligible=true"
+                )
+            if eff_bc == "directional" and claim_eligible:
+                problems.append(
+                    f"{item['id']}: shared benchmarkClass=directional requires claimEligible=false"
+                )
+        elif claim_eligible is not None and shared_comparable is not None and shared_bc is None:
+            if shared_comparable and not claim_eligible:
+                problems.append(
+                    f"{item['id']}: shared comparable=true requires claimEligible=true"
+                )
+            if not shared_comparable and claim_eligible:
+                problems.append(
+                    f"{item['id']}: shared comparable=false requires claimEligible=false"
+                )
     if problems:
         raise ValueError(
             "comparable workload contract asymmetry detected:\n" + "\n".join(problems)

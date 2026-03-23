@@ -8,18 +8,13 @@ import json
 from pathlib import Path
 from typing import Any
 
+from bench_utils import canonical_source, load_json_object as load_json
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--report", default="bench/out/dawn-vs-doe.json")
     return parser.parse_args()
-
-
-def load_json(path: Path) -> dict[str, Any]:
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(payload, dict):
-        raise ValueError(f"invalid JSON object: {path}")
-    return payload
 
 
 def parse_int(value: Any, fallback: int = 0) -> int:
@@ -28,12 +23,6 @@ def parse_int(value: Any, fallback: int = 0) -> int:
     if isinstance(value, int):
         return value
     return fallback
-
-
-def canonical_source(source: Any) -> str:
-    if not isinstance(source, str) or not source:
-        return ""
-    return source.split("+", 1)[0]
 
 
 def main() -> int:

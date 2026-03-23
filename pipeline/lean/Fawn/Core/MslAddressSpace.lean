@@ -117,11 +117,11 @@ theorem chain_msl_qualifier_invariant (space : WgslAddressSpace)
     Formal basis for "storage buffers always emit as `device T*`". -/
 theorem storage_ref_chain_emits_device (chain : List RefChainStep) :
     wgslToMsl (chainBaseAddrSpace .storage chain) = .device := by
-  rw [chain_preserves_addr_space]
+  rw [chain_preserves_addr_space]; rfl
 
 /-- lean_required: Any load/member chain on a uniform-address-space ref
     emits the MSL "constant" qualifier, regardless of chain depth.
     Formal basis for "uniform buffers always emit as `constant T*`". -/
 theorem uniform_ref_chain_emits_constant (chain : List RefChainStep) :
     wgslToMsl (chainBaseAddrSpace .uniform chain) = .constant := by
-  rw [chain_preserves_addr_space]
+  rw [chain_preserves_addr_space]; rfl

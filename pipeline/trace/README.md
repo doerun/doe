@@ -31,3 +31,15 @@ Modes:
 - `config/trace-meta.schema.json` (run-level summary artifact)
   - canonical runtime trace row shape
   - includes hash chain fields and decision metadata used by replay parity checks
+- semantic operator tracing extends the same trace row/meta contracts with:
+  - `semanticOpId`, `semanticStage`, `semanticPhase`
+  - semantic token/layer coordinates
+  - execution-side backend lane / shader manifest references
+  - operator-manifest summary fields on trace-meta
+- Doe-native operator debugging artifacts live next to the trace anchor:
+  - `<trace-meta-or-jsonl>.operators.json`
+  - `<trace-meta-or-jsonl>.opNNNN.capture.bin`
+  - `<trace-meta-or-jsonl>.opNNNN.repro.commands.json`
+  - `<trace-meta-or-jsonl>.opNNNN.repro.meta.json`
+- replay remains structural, not bitwise. Repro bundles are intended for same
+  backend / same device debugging with trusted command + artifact provenance.

@@ -29,8 +29,9 @@ bench/compare_dawn_vs_doe.config.local.*.json
 !bench/compare_dawn_vs_doe.config.local.vulkan.comparable.json
 !bench/compare_dawn_vs_doe.config.local.vulkan.release.json
 !bench/compare_dawn_vs_doe.config.local.vulkan.directional.json
-bench/out/20??????T??????Z
-bench/out/20??????T??????Z/
+# Bench artifacts — use `./scripts/prune-bench-out.sh` to keep latest 3 runs per lane.
+# Force-add specific runs with `git add -f bench/out/...` when needed.
+bench/out/**/20??????T??????Z/
 bench/out/scratch/
 bench/out/**/tmp.*
 bench/out/**/tmp.*/

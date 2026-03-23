@@ -46,28 +46,25 @@ WGSL source text
 ┌────────────┐  ┌─────────────┐  ┌─────────────┐
 │  Metal     │  │   Vulkan    │  │    D3D12    │
 │            │  │             │  │             │
-│ emit_msl   │  │ emit_spirv  │  │ emit_hlsl   │
-│ emit_msl_ir│  │ spirv_builder│  │ (→ DXC)    │
+│ emit_msl   │  │ emit_spirv  │  │ emit_dxil   │
+│ emit_msl_ir│  │ spirv_builder│  │ (native)   │
 │            │  │             │  │             │
-│ IR → MSL   │  │ IR → SPIR-V │  │ IR → HLSL  │
-│ (text)     │  │ (binary)    │  │ (text)     │
+│ IR → MSL   │  │ IR → SPIR-V │  │ IR → DXIL  │
+│ (text)     │  │ (binary)    │  │ (binary)   │
 └─────┬──────┘  └──────┬──────┘  └──────┬──────┘
       │                │                │
       ▼                ▼                ▼
-  MSL text        SPIR-V words     HLSL text
+  MSL text        SPIR-V words     DXIL bytecode
       │                │                │
       ▼                ▼                ▼
- xcrun metal      VkCreateShader    DXC (dxcompiler.dll)
- (platform)       Module (driver)   (platform compiler)
-      │                                 │
-      ▼                                 ▼
- MTLLibrary                         DXIL bytecode
-                                        │
-                                        ▼
-                                   D3D12 driver
+ xcrun metal      VkCreateShader    D3D12 driver
+ (platform)       Module (driver)
+      │
+      ▼
+ MTLLibrary
 ```
 
-Key invariant: every backend enters at `ir.Module`. No backend reads AST directly. External tools (xcrun, DXC) are platform compilers, not translation hosts.
+Key invariant: every backend enters at `ir.Module`. No backend reads AST directly. The only external tool in the default pipeline is xcrun metal on macOS; Vulkan (SPIR-V) and D3D12 (DXIL) are fully native.
 
 ## WebGPU integration
 
@@ -104,7 +101,7 @@ JS / C application
   doe_wgsl compiler (shared)
     │       │             │
     ▼       ▼             ▼
-  MSL    SPIR-V      HLSL→DXC
+  MSL    SPIR-V      DXIL (native)
     │       │             │
     ▼       ▼             ▼
   Metal   Vulkan       D3D12
@@ -132,14 +129,14 @@ Dawn is Google's WebGPU implementation. Tint is Dawn's shader compiler.
 | IR | Mature SSA with transforms and optimization | Minimal typed IR, no optimization passes |
 | Metal target | MSL text (same) | MSL text (same) |
 | Vulkan target | Native SPIR-V writer (mature) | Native SPIR-V writer (new, compute-only) |
-| D3D12 target | HLSL text → DXC (permanent) | HLSL text → DXC (default; native DXIL as future option) |
+| D3D12 target | HLSL text → DXC (permanent) | Native DXIL bytecode (primary); HLSL text → DXC (fallback) |
 | GLSL | Has a GLSL writer for compat | Not a target |
 | Shader stages | Compute + vertex + fragment + full graphics | Compute + vertex + fragment |
 | Optimization | Dead code elimination, constant folding, binding remapping, robustness injection | None yet |
-| Robustness | Bounds checks, null guards per spec | Not implemented |
+| Robustness | Bounds checks, null guards per spec | IR robustness transform for arrays/vectors/matrices, runtime-sized arrays, and texture coordinates; Lean-proven bounds elimination for dispatch-fit patterns |
 | Polyfills | Emulates missing features per driver | Explicit unsupported errors |
 
-Structural similarity: both follow WGSL → AST → semantic analysis → typed IR → per-backend emission. Doe is ~15x smaller and does not yet have optimization or robustness injection.
+Structural similarity: both follow WGSL → AST → semantic analysis → typed IR → per-backend emission. Doe is ~15x smaller and does not yet have optimization passes, but does have robustness injection (bounds checks on arrays, runtime-sized arrays, vectors, matrices, and texture coordinates, with Lean-proven bounds elimination for dispatch-fit patterns).
 
 ## Why custom Zig IR (not SPIR-V as universal IR)
 
@@ -175,23 +172,29 @@ D3D12 driver       ← consumes DXIL, compiles to GPU ISA
 
 This is analogous to Metal (driver eats AIR, not MSL) and unlike Vulkan (driver eats SPIR-V directly, no intermediate compiler needed).
 
-### Default architecture: IR → HLSL → DXC
+### Current architecture: native DXIL (primary), IR → HLSL → DXC (fallback)
 
-DXC on Windows is the same pattern as xcrun metal on macOS: a platform-provided compiler that turns text into the binary the driver consumes.
+The primary D3D12 path now generates DXIL bytecode natively in Zig. The native
+emitter translates Doe IR to LLVM 3.7 bitcode via `dxil_builder`, serializes
+it via `dxil_serialize`, and wraps it in a DXBC container via
+`dxil_container`. No external toolchain is required.
 
-| Platform | Text format | Platform compiler | Binary format |
-|----------|------------|-------------------|---------------|
-| macOS | MSL | xcrun metal (on system) | metallib/AIR |
-| Windows | HLSL | DXC (on system or downloaded) | DXIL |
-| Linux | — | — (native SPIR-V) | SPIR-V |
+DXC remains available as a fallback path for validation against the reference
+compiler. The fallback generates HLSL text from the IR and invokes DXC to
+produce DXIL, the same pattern as xcrun metal on macOS.
 
-For the npm package, DXC is conditionally downloaded on Windows only:
+| Platform | Primary path | External tool needed | Binary format |
+|----------|-------------|---------------------|---------------|
+| macOS | IR → MSL text → xcrun metal | xcrun metal (on system) | metallib/AIR |
+| Windows | IR → DXIL bytecode (native) | None | DXIL |
+| Linux | IR → SPIR-V (native) | None | SPIR-V |
+
+For the npm package, no external compiler download is needed on any platform:
 - macOS: ~2MB (xcrun metal already on system)
 - Linux: ~2MB (native SPIR-V, no external tool)
-- Windows with SDK: ~2MB (DXC already on system)
-- Windows without SDK: ~2MB + ~20MB DXC download
+- Windows: ~2MB (native DXIL, no external tool)
 
-Current Doe DXC contract:
+DXC fallback contract (for validation or legacy use):
 
 - explicit pin: `DOE_WGSL_DXC=/absolute/or/workspace-relative/path/to/dxc(.exe)`
 - explicit PATH opt-in: `DOE_WGSL_DXC=PATH`
@@ -199,23 +202,24 @@ Current Doe DXC contract:
   .executable = ...,
   .discovery = .explicit_config,
 })`
-- unset `DOE_WGSL_DXC` still falls back to PATH for backward compatibility, but
-  that mode is not the reproducible contract Doe wants for governed runs
-- native DXIL emission is still not implemented; the final DXIL container still
-  comes from an external DXC process
+- if `DOE_WGSL_DXC` is unset, the native path is used (no external tool needed)
 
-### Future options (not blocking, neither foreclosed)
+### Native DXIL emission (implemented)
 
-**Option A: Native DXIL emission.** Write an LLVM 3.7 bitcode encoder + DXIL container builder in Zig. Eliminates DXC dependency entirely. Same pattern as native SPIR-V for Vulkan.
+Native DXIL emission is now the primary D3D12 path. The implementation consists
+of 6 modules (2,303 LOC total) that encode LLVM 3.7 bitcode, build DXIL
+instructions from the Doe IR, serialize the bitcode, and wrap it in a DXBC
+container.
 
 | Pro | Con |
 |-----|-----|
-| Zero external dependencies | LLVM bitcode encoding is an order of magnitude harder than SPIR-V |
-| Potentially much faster compilation (skip LLVM optimization) | Must independently pass Microsoft's DXIL validator |
-| Full auditability for Lean verification | No optimization — driver must compensate |
-| Tiny binary | Must track DXIL spec revisions manually |
+| Zero external dependencies | Must independently pass Microsoft's DXIL validator |
+| Much faster compilation (skip LLVM optimization) | No optimization — driver must compensate |
+| Full auditability for Lean verification | Must track DXIL spec revisions manually |
+| Tiny binary | |
 
-Only justified if compilation latency or binary size becomes a measured bottleneck.
+Remaining work: broader DXIL validator coverage, vertex/fragment stage
+completeness, and production Windows evidence.
 
 **Option B: SPIR-V → Mesa nir_to_dxil.** Mesa's Dozen driver (Microsoft-contributed, ships in WSL2) translates SPIR-V → NIR → DXIL in production. Since Doe already produces SPIR-V, this would cost zero new translation code.
 
@@ -249,10 +253,10 @@ Currently blocked by availability: nir_to_dxil is internal to Mesa's Vulkan ICD 
 | IR → MSL | emit_msl, emit_msl_ir, emit_msl_maps, emit_msl_stage, emit_msl_texture | 1,206 | Production, compute + vertex/fragment |
 | IR → HLSL | emit_hlsl, emit_hlsl_maps, emit_hlsl_stage | 1,059 | Production, compute + vertex/fragment (struct I/O, builtins, MRT, frag_depth, interpolation) |
 | IR → SPIR-V | emit_spirv, emit_spirv_builtins, emit_spirv_fn, emit_spirv_stages, spirv_builder | 2,843 | Working, compute + vertex/fragment (struct I/O, builtins, MRT, frag_depth, interpolation); samplers/graphics incomplete |
-| IR → DXIL | emit_dxil | 383 | Stub |
+| IR → DXIL (native) | dxil_spec, dxil_bitcode, dxil_builder, dxil_serialize, dxil_container, emit_dxil_native, emit_dxil | 2,670 | Primary path; native LLVM 3.7 bitcode + DXBC container, DXC fallback available |
 | Legacy MSL | doe_wgsl_msl | 641 | Legacy regex-based path |
 | Public API + tests | mod.zig, mod_*_test.zig, emit_*_test.zig, coverage_*_test.zig | Sharded | All four translateTo* wired; tests split by backend, coverage, and integration concern |
-| **Total** | **33 files** | **13,711** | |
+| **Total** | **~80 files** | **~16,000+** | Approximate; file/line counts are approximate and have grown since the original audit |
 
 ## Remaining work (current reality)
 
@@ -278,6 +282,7 @@ Currently blocked by availability: nir_to_dxil is internal to Mesa's Vulkan ICD 
    - `sema.zig` was already sharded and should not be listed as the original blocker anymore.
    - `parser.zig` and likely `emit_spirv.zig` still need sharding to stay aligned with the 777-line policy.
 
-6. **Native DXIL remains deferred.**
-   - The architecture is still `IR -> HLSL -> DXC` for D3D12 by default.
-   - Native DXIL is still a future option, not a current requirement for the documented architecture.
+6. **Native DXIL is implemented but needs broader validation.**
+   - The primary D3D12 path is now `IR -> native DXIL bytecode` (no external DXC).
+   - DXC fallback remains available via `emitWithToolchainConfig`.
+   - Remaining: DXIL validator coverage, vertex/fragment completeness, production Windows evidence.

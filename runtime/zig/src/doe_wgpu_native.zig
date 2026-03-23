@@ -1,8 +1,6 @@
 // doe_wgpu_native.zig — Native wgpu* C ABI implementations backed by Metal, Vulkan, or D3D12.
 // Implements the ~40 functions needed by doe_napi.c without Dawn.
-//
-// Limitations (v0.1):
-// - Vulkan path executes commands immediately (no deferred batching).
+// Limitations (v0.1): Vulkan path executes commands immediately (no deferred batching).
 const std = @import("std");
 const model = @import("model.zig");
 const types = @import("core/abi/wgpu_types.zig");
@@ -131,29 +129,11 @@ pub const DoeBuffer = struct {
     // back-reference to the runtime for cleanup on release.
     vk_id: u64 = 0,
     vk_runtime_ref: ?*anyopaque = null,
+    // Cached host-visible mapped pointer for Vulkan buffers. Avoids HashMap
+    // lookup on the writeBuffer hot path (same pattern as d3d12_mapped_ptr).
+    vk_mapped_ptr: ?[*]u8 = null,
 };
-// Extract @workgroup_size(x[,y[,z]]) from WGSL source via string search.
-pub fn extractWorkgroupSize(wgsl: []const u8) struct { x: u32, y: u32, z: u32 } {
-    const needle = "@workgroup_size(";
-    const idx = std.mem.indexOf(u8, wgsl, needle) orelse return .{ .x = 0, .y = 0, .z = 0 };
-    const start = idx + needle.len;
-    const end = std.mem.indexOfPos(u8, wgsl, start, ")") orelse return .{ .x = 0, .y = 0, .z = 0 };
-    const args = wgsl[start..end];
-    var vals = [3]u32{ 0, 0, 0 };
-    var vi: usize = 0;
-    for (args) |c| {
-        if (c >= '0' and c <= '9') {
-            vals[vi] = vals[vi] * 10 + @as(u32, c - '0');
-        } else if (c == ',' and vi < 2) {
-            vi += 1;
-        }
-    }
-    return .{
-        .x = if (vals[0] > 0) vals[0] else 1,
-        .y = if (vals[1] > 0) vals[1] else 1,
-        .z = if (vals[2] > 0) vals[2] else 1,
-    };
-}
+pub const extractWorkgroupSize = @import("doe_wgsl/shader_info.zig").extractWorkgroupSize;
 // Binding metadata extracted from WGSL source during shader compilation.
 // Stored on shader module and transferred to pipeline for getBindGroupLayout.
 pub const BindingInfo = struct {
@@ -230,6 +210,7 @@ pub const DoeBindGroupLayoutEntry = struct {
     texture_sample_type: u32 = types.WGPUTextureSampleType_Undefined,
     texture_view_dimension: u32 = types.WGPUTextureViewDimension_Undefined,
     texture_multisampled: bool = false,
+    binding_array_size: u32 = 0,
 };
 pub const DoePipelineLayout = struct {
     const TYPE_MAGIC = MAGIC_PIPE_LAYOUT;
@@ -245,6 +226,10 @@ pub const DoeBindGroup = struct {
     textures: [MAX_BIND]?*anyopaque = [_]?*anyopaque{null} ** MAX_BIND,
     texture_views: [MAX_BIND]?*anyopaque = [_]?*anyopaque{null} ** MAX_BIND,
     samplers: [MAX_BIND]?*anyopaque = [_]?*anyopaque{null} ** MAX_BIND,
+    retained_buffers: [MAX_BIND]?*DoeBuffer = [_]?*DoeBuffer{null} ** MAX_BIND,
+    retained_texture_views: [MAX_BIND]?*DoeTextureView = [_]?*DoeTextureView{null} ** MAX_BIND,
+    retained_samplers: [MAX_BIND]?*DoeSampler = [_]?*DoeSampler{null} ** MAX_BIND,
+    retained_external_textures: [MAX_BIND]types.WGPUExternalTexture = [_]types.WGPUExternalTexture{null} ** MAX_BIND,
     offsets: [MAX_BIND]u64 = [_]u64{0} ** MAX_BIND,
     // Byte size of each buffer — used to fill _doe_sizes for arrayLength.
     buffer_sizes: [MAX_BIND]u64 = [_]u64{0} ** MAX_BIND,
@@ -560,7 +545,6 @@ pub fn device_d3d12_runtime(dev: *DoeDevice) ?*NativeD3D12Runtime {
     return @as(*NativeD3D12Runtime, @ptrCast(@alignCast(ptr)));
 }
 
-
 const buffer_ops = @import("doe_buffer_ops_native.zig");
 pub const doeNativeDeviceCreateBuffer = buffer_ops.doeNativeDeviceCreateBuffer;
 pub const doeNativeBufferRelease = buffer_ops.doeNativeBufferRelease;
@@ -569,7 +553,6 @@ pub const doeNativeBufferGetMapState = buffer_ops.doeNativeBufferGetMapState;
 pub const doeNativeBufferMapAsync = buffer_ops.doeNativeBufferMapAsync;
 pub const doeNativeBufferGetConstMappedRange = buffer_ops.doeNativeBufferGetConstMappedRange;
 pub const doeNativeBufferGetMappedRange = buffer_ops.doeNativeBufferGetMappedRange;
-
 
 // ============================================================
 // Shard re-exports
@@ -622,6 +605,7 @@ pub const try_schedule_deferred_copy = queue_submit.try_schedule_deferred_copy;
 pub const doeNativeQueueSubmit = queue_submit.doeNativeQueueSubmit;
 pub const doeNativeQueueFlush = queue_submit.doeNativeQueueFlush;
 pub const doeNativeQueueWriteBuffer = queue_submit.doeNativeQueueWriteBuffer;
+pub const doeNativeQueueCopyTextureForBrowser = queue_submit.doeNativeQueueCopyTextureForBrowser;
 pub const doeNativeQueueAddRef = queue_submit.doeNativeQueueAddRef;
 pub const doeNativeQueueRelease = queue_submit.doeNativeQueueRelease;
 pub const doeNativeQueueOnSubmittedWorkDone = queue_submit.doeNativeQueueOnSubmittedWorkDone;
@@ -759,13 +743,28 @@ pub const doeNativeObjectGetLabel = label_store.doeNativeObjectGetLabel;
 pub const doeNativeObjectRemoveLabel = label_store.doeNativeObjectRemoveLabel;
 
 comptime {
-    _ = instance_device; _ = shader; _ = bind_group; _ = encoder;
-    _ = queue_submit; _ = render; _ = compute_ext; _ = caps;
-    _ = query; _ = canvas_event; _ = error_scope_native; _ = cache_adapter;
-    _ = immediates_external; _ = render_pass_controls; _ = adapter_info;
-    _ = shader_compilation_info; _ = command_texture; _ = surface_native;
-    _ = @import("doe_compute_fast.zig"); _ = @import("doe_bundle_native.zig");
-    _ = label_store; _ = buffer_ops;
+    _ = instance_device;
+    _ = shader;
+    _ = bind_group;
+    _ = encoder;
+    _ = queue_submit;
+    _ = render;
+    _ = compute_ext;
+    _ = caps;
+    _ = query;
+    _ = canvas_event;
+    _ = error_scope_native;
+    _ = cache_adapter;
+    _ = immediates_external;
+    _ = render_pass_controls;
+    _ = adapter_info;
+    _ = shader_compilation_info;
+    _ = command_texture;
+    _ = surface_native;
+    _ = @import("doe_compute_fast.zig");
+    _ = @import("doe_bundle_native.zig");
+    _ = label_store;
+    _ = buffer_ops;
 }
 
 // Instance process events — drain deferred work-done callbacks.

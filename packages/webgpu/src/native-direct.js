@@ -2,8 +2,8 @@ import { createRequire } from 'node:module';
 import { existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { globals } from './webgpu_constants.js';
-import { loadDoeBuildMetadata } from './build_metadata.js';
+import { globals } from './webgpu-constants.js';
+import { loadDoeBuildMetadata } from './build-metadata.js';
 import {
   setupGlobalsOnTarget,
   requestAdapterFromCreate,

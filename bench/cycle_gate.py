@@ -11,6 +11,7 @@ from typing import Any
 
 import output_paths
 import report_conformance
+from config_validation import load_validated_config
 
 
 def parse_args() -> argparse.Namespace:
@@ -143,7 +144,7 @@ def parse_cycle_contract(repo_root: Path, path: Path) -> tuple[dict[str, Any], l
         "milestones": {},
     }
 
-    payload = load_json(path)
+    payload = load_validated_config(path)
     if parse_int(payload.get("schemaVersion")) != 1:
         failures.append("cycle schemaVersion must be 1")
 

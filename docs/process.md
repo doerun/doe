@@ -178,6 +178,10 @@ Tracing is binary and deterministic:
 - required event fields: `module`, `opCode`, `seq`, `timestampMonoNs`, `hashes`
 - crash artifact: binary dump + metadata JSON
 - replay tool must reproduce module sequence and hash chain
+- semantic operator debugging extends the same deterministic contract:
+  semantic IDs must be explicit command-stream inputs, trace rows must preserve
+  them verbatim, and any capture/repro artifact emitted from a trace run must be
+  hash-linked back to the originating trace anchor and shader manifest.
 
 ## 6. Thresholds and Placeholder Policy
 

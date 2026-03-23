@@ -3,7 +3,7 @@ import type {
   DoeKernelDispatchOptions,
   DoeKernelCreateOptions,
   DoeNamespace,
-} from "../../webgpu-doe/src/index.js";
+} from "./vendor/doe-namespace.js";
 import type {
   DoeRuntime,
   DoeRuntimeRunResult,
@@ -147,7 +147,7 @@ export function createDoeRuntime(options?: {
 export function runDawnVsDoeCompare(options: Record<string, unknown>): DoeRuntimeRunResult;
 
 export const gpu: ComputeDoeNamespace;
-export const createGpuNamespace: typeof import("../../webgpu-doe/src/index.js").createDoeNamespace;
+export const createGpuNamespace: typeof import("./vendor/doe-namespace.js").createDoeNamespace;
 export { createGpuNamespace as createDoeNamespace };
 
 declare const _default: {

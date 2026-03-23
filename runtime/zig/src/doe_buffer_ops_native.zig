@@ -78,6 +78,8 @@ pub export fn doeNativeDeviceCreateBuffer(dev_raw: ?*anyopaque, desc: ?*const ty
         const vk_resources = @import("backend/vulkan/vk_resources.zig");
         const cb = vk_resources.create_compute_buffer(rt, d.size, false) catch { alloc.destroy(buf); return null; };
         rt.compute_buffers.put(rt.allocator, id, cb) catch { vk_resources.release_compute_buffer(rt, cb); alloc.destroy(buf); return null; };
+        // Cache host-visible mapped pointer to skip HashMap lookup on writeBuffer.
+        if (cb.mapped) |m| buf.vk_mapped_ptr = @ptrCast(m);
         if (d.mappedAtCreation != 0) buf.mapped = true;
         const result = toOpaque(buf);
         label_store.set(result, d.label.data, d.label.length);
@@ -180,12 +182,17 @@ pub export fn doeNativeBufferGetConstMappedRange(buf_raw: ?*anyopaque, offset: u
     if (!buf.mapped) return null;
     const range_size = resolve_buffer_map_range(buf, offset, size) orelse return null;
     _ = range_size;
-    if (buf.backend == .vulkan and buf.vk_id != 0) {
-        if (buf.vk_runtime_ref) |rt_ptr| {
-            const rt: *NativeVulkanRuntime = @ptrCast(@alignCast(rt_ptr));
-            const cb = rt.compute_buffers.get(buf.vk_id) orelse return null;
-            const base: [*]u8 = @ptrCast(cb.mapped orelse return null);
-            return @ptrCast(base + offset);
+    if (buf.backend == .vulkan) {
+        // Fast path: use cached mapped pointer to avoid HashMap lookup.
+        if (buf.vk_mapped_ptr) |base| return @ptrCast(base + offset);
+        // Fallback: HashMap lookup for buffers without a cached pointer.
+        if (buf.vk_id != 0) {
+            if (buf.vk_runtime_ref) |rt_ptr| {
+                const rt: *NativeVulkanRuntime = @ptrCast(@alignCast(rt_ptr));
+                const cb = rt.compute_buffers.get(buf.vk_id) orelse return null;
+                const base: [*]u8 = @ptrCast(cb.mapped orelse return null);
+                return @ptrCast(base + offset);
+            }
         }
         return null;
     }

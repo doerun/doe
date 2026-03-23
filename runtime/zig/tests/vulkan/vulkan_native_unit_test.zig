@@ -49,13 +49,13 @@ test "vulkan: classify_upload_path returns staged_copy for copy_dst_copy_src reg
     try std.testing.expectEqual(vk_upload.UploadPathKind.staged_copy, large);
 }
 
-test "vulkan: classify_upload_path with staged_copy_only forces staged_copy always" {
+test "vulkan: classify_upload_path with staged_copy_only allows fast_mapped for small, forces staged for rest" {
+    // Small host-visible buffers use fast_mapped to match Dawn's WriteBuffer
+    // behavior (direct memcpy, no GPU submit).
     const tiny = vk_upload.classify_upload_path(.staged_copy_only, .copy_dst, 64);
-    try std.testing.expectEqual(vk_upload.UploadPathKind.staged_copy, tiny);
+    try std.testing.expectEqual(vk_upload.UploadPathKind.fast_mapped, tiny);
 
-    const medium = vk_upload.classify_upload_path(.staged_copy_only, .copy_dst, vk_upload.FAST_UPLOAD_BUFFER_MAX_BYTES);
-    try std.testing.expectEqual(vk_upload.UploadPathKind.staged_copy, medium);
-
+    // Medium and large still go through staged copy under strict policy.
     const large = vk_upload.classify_upload_path(.staged_copy_only, .copy_dst, vk_upload.DIRECT_UPLOAD_BUFFER_MAX_BYTES);
     try std.testing.expectEqual(vk_upload.UploadPathKind.staged_copy, large);
 
@@ -576,7 +576,7 @@ test "vulkan: NativeVulkanRuntime default state is uninitialized" {
     try std.testing.expect(!rt.has_descriptor_pool);
     try std.testing.expect(!rt.has_deferred_submissions);
     try std.testing.expect(!rt.upload_recording_active);
-    try std.testing.expect(!rt.command_buffer_reset_clean);
+    try std.testing.expectEqual(@as(?vk_upload.PendingUpload, null), rt.hot_pending_upload);
 }
 
 test "vulkan: NativeVulkanRuntime default queue_family_index is zero" {

@@ -19,8 +19,8 @@ import {
   normalizeCanvasConfiguration,
   createBrowserSurfaceClasses,
   createNativeBrowserCanvasBackend,
-} from '../../webgpu/src/bun.js';
-import { createDoeNamespace } from '../../webgpu-doe/src/index.js';
+} from './vendor/webgpu/bun.js';
+import { createDoeNamespace } from './vendor/doe-namespace.js';
 
 export const createGpuNamespace = createDoeNamespace;
 
@@ -48,4 +48,4 @@ export {
   createBrowserSurfaceClasses,
   createNativeBrowserCanvasBackend,
 };
-export { createDoeNamespace } from '../../webgpu-doe/src/index.js';
+export { createDoeNamespace } from './vendor/doe-namespace.js';

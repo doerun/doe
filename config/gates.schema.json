@@ -1,0 +1,121 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Fawn Gate Configuration",
+  "description": "Defines gate modes and per-gate requirements for the Fawn release pipeline.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "gateMode", "gates"],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 2 },
+    "gateMode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "verification", "correctness", "performance", "trace"],
+      "properties": {
+        "schema": { "type": "string", "enum": ["blocking", "advisory"] },
+        "verification": { "type": "string", "enum": ["blocking", "advisory"] },
+        "correctness": { "type": "string", "enum": ["blocking", "advisory"] },
+        "performance": { "type": "string", "enum": ["blocking", "advisory"] },
+        "trace": { "type": "string", "enum": ["blocking", "advisory"] }
+      }
+    },
+    "gates": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "verification", "correctness", "performance", "trace"],
+      "properties": {
+        "schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["requireValidPercent"],
+          "properties": {
+            "requireValidPercent": { "type": "number", "minimum": 0, "maximum": 100 }
+          }
+        },
+        "verification": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "maxRejected",
+            "maxGuardedPercent",
+            "requireLeanForSafetyClass",
+            "requireProofLevelForSafetyClass",
+            "requireLeanForVerificationMode",
+            "requireProofLevelForVerificationMode"
+          ],
+          "properties": {
+            "maxRejected": { "type": "integer", "minimum": 0 },
+            "maxGuardedPercent": { "type": "number", "minimum": 0, "maximum": 100 },
+            "requireLeanForSafetyClass": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": ["low", "moderate", "high", "critical"]
+              }
+            },
+            "requireProofLevelForSafetyClass": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string",
+                "enum": ["proven", "guarded", "rejected"]
+              }
+            },
+            "requireLeanForVerificationMode": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": ["guard_only", "lean_preferred", "lean_required"]
+              }
+            },
+            "requireProofLevelForVerificationMode": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string",
+                "enum": ["proven", "guarded", "rejected"]
+              }
+            },
+            "modeSelectionRule": { "type": "string" },
+            "notes": { "type": "string" }
+          }
+        },
+        "correctness": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["requireReplayDeterminism", "requireInvariantPass"],
+          "properties": {
+            "requireReplayDeterminism": { "type": "boolean" },
+            "requireInvariantPass": { "type": "boolean" }
+          }
+        },
+        "performance": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["metric", "maxRegressionPercent", "thresholdStatus", "baselineRefs"],
+          "properties": {
+            "metric": { "type": "string", "minLength": 1 },
+            "maxRegressionPercent": { "type": "number", "minimum": 0 },
+            "thresholdStatus": {
+              "type": "string",
+              "enum": ["active", "placeholder", "disabled"]
+            },
+            "baselineRefs": {
+              "type": "array",
+              "items": { "type": "string", "minLength": 1 },
+              "minItems": 1
+            },
+            "notes": { "type": "string" }
+          }
+        },
+        "trace": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["requireTraceArtifact", "requireReplayArtifact"],
+          "properties": {
+            "requireTraceArtifact": { "type": "boolean" },
+            "requireReplayArtifact": { "type": "boolean" }
+          }
+        }
+      }
+    }
+  }
+}

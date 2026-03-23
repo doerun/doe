@@ -619,9 +619,10 @@ fn createRenderPipelineForDiagnostics(self: *Backend, target_format: types.WGPUT
         self.core.device.?,
         @ptrCast(&pipeline_desc),
     ) catch {
-        _ = async_procs_mod.popErrorScopeAndWait(async_procs, self.core.instance.?, procs, self.core.device.?) catch {};
-        _ = async_procs_mod.popErrorScopeAndWait(async_procs, self.core.instance.?, procs, self.core.device.?) catch {};
-        _ = async_procs_mod.popErrorScopeAndWait(async_procs, self.core.instance.?, procs, self.core.device.?) catch {};
+        inline for (0..3) |i| {
+            _ = async_procs_mod.popErrorScopeAndWait(async_procs, self.core.instance.?, procs, self.core.device.?) catch |err|
+                std.debug.print("warn: wgpu_async_diagnostics: popErrorScope[{d}] cleanup: {s}\n", .{ i, @errorName(err) });
+        }
         return error.DiagnosticPipelineCreationFailed;
     };
 
@@ -704,7 +705,6 @@ fn normalizeDiagnosticFormat(raw: types.WGPUTextureFormat) types.WGPUTextureForm
     const normalized = resources.normalizeTextureFormat(raw);
     return if (normalized == types.WGPUTextureFormat_Undefined) model.WGPUTextureFormat_RGBA8Unorm else normalized;
 }
-
 fn requireResourceTableFeature(procs: types.Procs, device: types.WGPUDevice) !void {
     const has_feature = procs.wgpuDeviceHasFeature orelse return error.ResourceTableFeatureUnavailable;
     if (has_feature(device, WGPUFeatureName_ChromiumExperimentalSamplingResourceTable) == types.WGPU_FALSE) {

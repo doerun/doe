@@ -149,10 +149,22 @@ pub const Parser = struct {
                 };
                 return ParseError.UnexpectedToken;
             },
-            else => {
-                // Skip unknown token to avoid infinite loop.
+            .@";" => {
+                // Tolerate stray semicolons between declarations (e.g. `};` after struct).
                 self.advance();
                 return NULL_NODE;
+            },
+            else => {
+                // Reject unexpected tokens at the top level; valid WGSL
+                // top-level constructs always start with a keyword or attribute.
+                last_failure_context = .{
+                    .token_idx = self.token_idx,
+                    .loc = if (self.token_idx < self.tree.tokens.items.len)
+                        self.tree.tokens.items[self.token_idx].loc
+                    else
+                        null,
+                };
+                return ParseError.UnexpectedToken;
             },
         };
     }

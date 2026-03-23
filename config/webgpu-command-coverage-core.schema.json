@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Fawn WebGPU core surface coverage",
-  "description": "Coverage ledger for the core (compute/copy/resource/queue) command surface only.",
+  "title": "Fawn WebGPU command coverage: core surface",
+  "description": "Canonical command/workload coverage ledger for the core (compute/copy/resource/queue) surface only.",
   "type": "object",
   "additionalProperties": false,
   "required": ["schemaVersion", "surfaceId", "surfaceVersion", "lastUpdated", "commandCount", "coverage"],

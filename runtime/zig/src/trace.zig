@@ -1,6 +1,7 @@
 const std = @import("std");
 const model = @import("model.zig");
 const execution = @import("execution.zig");
+const semantic_trace = @import("semantic_trace.zig");
 
 pub const TraceState = struct {
     previous_hash: u64 = 0x9e3779b97f4a7c15,
@@ -35,6 +36,12 @@ pub const TraceRunSummary = struct {
     selection_policy_hash: ?[]const u8,
     shader_artifact_manifest_path: ?[]const u8,
     shader_artifact_manifest_hash: ?[]const u8,
+    semantic_tracing_enabled: bool = false,
+    semantic_op_row_count: u64 = 0,
+    semantic_capture_count: u64 = 0,
+    semantic_repro_count: u64 = 0,
+    operator_record_manifest_path: ?[]const u8 = null,
+    operator_record_manifest_hash: ?[]const u8 = null,
     backend_lane: ?[]const u8,
     adapter_ordinal: ?u32 = null,
     queue_family_index: ?u32 = null,
@@ -175,6 +182,13 @@ fn traceHashStr(value: u64, input: ?[]const u8) u64 {
     return traceHashByte(value, 0);
 }
 
+fn traceHashOptionalU32(value: u64, input: ?u32) u64 {
+    if (input) |number| {
+        return traceHashU64(value, number);
+    }
+    return traceHashByte(value, 0);
+}
+
 pub fn commandToTag(command: model.Command) []const u8 {
     return switch (command) {
         .upload => "upload",
@@ -208,6 +222,18 @@ pub fn tracePayloadHash(
     kernel_name: ?[]const u8,
     result: anytype,
 ) u64 {
+    return tracePayloadHashWithSemantic(state, seq, command_label, command, kernel_name, .{}, result);
+}
+
+pub fn tracePayloadHashWithSemantic(
+    state: TraceState,
+    seq: usize,
+    command_label: []const u8,
+    command: model.Command,
+    kernel_name: ?[]const u8,
+    semantic: semantic_trace.SemanticContext,
+    result: anytype,
+) u64 {
     var next = state.previous_hash;
     next = traceHashU64(next, @as(u64, seq));
     next = traceHashStr(next, command_label);
@@ -220,6 +246,12 @@ pub fn tracePayloadHash(
     next = traceHashStr(next, verificationModeName(result.decision.verification_mode));
     next = traceHashStr(next, proofLevelName(result.decision.proof_level));
     next = traceHashStr(next, actionName(result.decision.action));
+    next = traceHashStr(next, semantic.op_id);
+    next = traceHashStr(next, semantic.stage);
+    next = traceHashStr(next, semantic.phase);
+    next = traceHashOptionalU32(next, semantic.token_index);
+    next = traceHashOptionalU32(next, semantic.layer_index);
+    next = traceHashStr(next, semantic.execution_plan_hash);
     next = traceHashU64(next, result.decision.score);
     next = traceHashU64(next, result.decision.matched_count);
     next = traceHashBool(next, result.decision.requires_lean);
@@ -232,6 +264,21 @@ pub fn printTraceLine(
     seq: usize,
     command_label: []const u8,
     kernel_name: ?[]const u8,
+    result: anytype,
+    timestamp_ns: u64,
+    hash: u64,
+    previous_hash: u64,
+    maybe_execution: ?execution.ExecutionResult,
+) !void {
+    return printTraceLineWithSemantic(stdout, seq, command_label, kernel_name, .{}, result, timestamp_ns, hash, previous_hash, maybe_execution);
+}
+
+pub fn printTraceLineWithSemantic(
+    stdout: anytype,
+    seq: usize,
+    command_label: []const u8,
+    kernel_name: ?[]const u8,
+    semantic: semantic_trace.SemanticContext,
     result: anytype,
     timestamp_ns: u64,
     hash: u64,
@@ -254,6 +301,33 @@ pub fn printTraceLine(
     if (kernel_name) |kernel| {
         try stdout.writeAll("\"kernel\":");
         try writeJsonString(stdout, kernel);
+        try stdout.writeByte(',');
+    }
+
+    if (semantic.op_id) |value| {
+        try stdout.writeAll("\"semanticOpId\":");
+        try writeJsonString(stdout, value);
+        try stdout.writeByte(',');
+    }
+    if (semantic.stage) |value| {
+        try stdout.writeAll("\"semanticStage\":");
+        try writeJsonString(stdout, value);
+        try stdout.writeByte(',');
+    }
+    if (semantic.phase) |value| {
+        try stdout.writeAll("\"semanticPhase\":");
+        try writeJsonString(stdout, value);
+        try stdout.writeByte(',');
+    }
+    if (semantic.token_index) |value| {
+        try writef(stdout, "\"semanticTokenIndex\":{},", .{value});
+    }
+    if (semantic.layer_index) |value| {
+        try writef(stdout, "\"semanticLayerIndex\":{},", .{value});
+    }
+    if (semantic.execution_plan_hash) |value| {
+        try stdout.writeAll("\"semanticExecutionPlanHash\":");
+        try writeJsonString(stdout, value);
         try stdout.writeByte(',');
     }
 
@@ -299,6 +373,10 @@ pub fn printTraceLine(
         try writeJsonString(stdout, exec.backend);
         try stdout.writeAll(",\"backendId\":");
         try writeJsonString(stdout, exec.backend);
+        if (exec.backend_lane) |value| {
+            try stdout.writeAll(",\"executionBackendLane\":");
+            try writeJsonString(stdout, value);
+        }
         try stdout.writeAll(",\"executionStatus\":");
         try writeJsonString(stdout, status_name);
         try stdout.writeAll(",\"executionStatusCode\":");
@@ -319,6 +397,27 @@ pub fn printTraceLine(
                 exec.gpu_timestamp_valid,
             },
         );
+        if (exec.selection_policy_hash) |value| {
+            try stdout.writeAll(",\"executionSelectionPolicyHash\":");
+            try writeJsonString(stdout, value);
+        }
+        if (exec.shader_artifact_manifest_path) |value| {
+            try stdout.writeAll(",\"executionShaderArtifactManifestPath\":");
+            try writeJsonString(stdout, value);
+        }
+        if (exec.shader_artifact_manifest_hash) |value| {
+            try stdout.writeAll(",\"executionShaderArtifactManifestHash\":");
+            try writeJsonString(stdout, value);
+        }
+        if (exec.adapter_ordinal) |value| {
+            try writef(stdout, ",\"executionAdapterOrdinal\":{}", .{value});
+        }
+        if (exec.queue_family_index) |value| {
+            try writef(stdout, ",\"executionQueueFamilyIndex\":{}", .{value});
+        }
+        if (exec.present_capable) |value| {
+            try writef(stdout, ",\"executionPresentCapable\":{}", .{value});
+        }
     }
 
     try writef(stdout, "}}\n", .{});
@@ -480,7 +579,7 @@ pub fn writeTraceMeta(path: []const u8, summary: TraceRunSummary) !void {
 
     try writef(writer, "{{\"traceVersion\":{},\"module\":", .{summary.trace_version});
     try writeJsonString(&writer, summary.module_name);
-    try writef(writer, ",\"seqMax\":{},\"rowCount\":{},\"commandCount\":{},\"matchedCount\":{},\"blockingCount\":{},\"requiresLeanCount\":{},\"leanRequiredCount\":{},\"executionRowCount\":{},\"executionSuccessCount\":{},\"executionErrorCount\":{},\"executionSkippedCount\":{},\"executionUnsupportedCount\":{},\"executionTotalNs\":{},\"executionSetupTotalNs\":{},\"executionEncodeTotalNs\":{},\"executionSubmitWaitTotalNs\":{},\"executionDispatchCount\":{},\"executionGpuTimestampTotalNs\":{},\"executionGpuTimestampAttemptedCount\":{},\"executionGpuTimestampValidCount\":{},\"hash\":\"0x{x}\",\"previousHash\":\"0x{x}\",", .{
+    try writef(writer, ",\"seqMax\":{},\"rowCount\":{},\"commandCount\":{},\"matchedCount\":{},\"blockingCount\":{},\"requiresLeanCount\":{},\"leanRequiredCount\":{},\"executionRowCount\":{},\"executionSuccessCount\":{},\"executionErrorCount\":{},\"executionSkippedCount\":{},\"executionUnsupportedCount\":{},\"executionTotalNs\":{},\"executionSetupTotalNs\":{},\"executionEncodeTotalNs\":{},\"executionSubmitWaitTotalNs\":{},\"executionDispatchCount\":{},\"executionGpuTimestampTotalNs\":{},\"executionGpuTimestampAttemptedCount\":{},\"executionGpuTimestampValidCount\":{},\"semanticTracingEnabled\":{},\"semanticOpRowCount\":{},\"semanticCaptureCount\":{},\"semanticReproCount\":{},\"hash\":\"0x{x}\",\"previousHash\":\"0x{x}\",", .{
         summary.seq_max,
         summary.row_count,
         summary.command_count,
@@ -501,6 +600,10 @@ pub fn writeTraceMeta(path: []const u8, summary: TraceRunSummary) !void {
         summary.execution_gpu_timestamp_total_ns,
         summary.execution_gpu_timestamp_attempted_count,
         summary.execution_gpu_timestamp_valid_count,
+        summary.semantic_tracing_enabled,
+        summary.semantic_op_row_count,
+        summary.semantic_capture_count,
+        summary.semantic_repro_count,
         summary.final_hash,
         summary.final_previous_hash,
     });
@@ -532,6 +635,16 @@ pub fn writeTraceMeta(path: []const u8, summary: TraceRunSummary) !void {
     }
     if (summary.shader_artifact_manifest_hash) |hash| {
         try writer.writeAll("\"shaderArtifactManifestHash\":");
+        try writeJsonString(&writer, hash);
+        try writer.writeAll(",");
+    }
+    if (summary.operator_record_manifest_path) |manifest_path| {
+        try writer.writeAll("\"operatorRecordManifestPath\":");
+        try writeJsonString(&writer, manifest_path);
+        try writer.writeAll(",");
+    }
+    if (summary.operator_record_manifest_hash) |hash| {
+        try writer.writeAll("\"operatorRecordManifestHash\":");
         try writeJsonString(&writer, hash);
         try writer.writeAll(",");
     }
