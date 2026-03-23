@@ -132,6 +132,9 @@ That document defines:
   - current repo compare configs default to command-stream Dawn delegate lanes (`dawn_delegate`) for apples-to-apples strict workloads; `dawn_benchmark_adapter.py` remains available for gtest-filter diagnostics.
   - core logic is now split into dedicated helper modules under `bench/native_compare_modules/`:
     `timing_selection.py`, `comparability.py`, `claimability.py`, `reporting.py`.
+  - see `bench/operator-diff-demo-runbook.md` for the currently validated
+    scratch-harness proof path covering structural match, semantic identity
+    mismatch, and capture digest mismatch.
 - `cleanup_out.py`
   - prunes legacy untimestamped artifacts from `bench/out` and can optionally prune old timestamped run folders by retention window.
 - `organize_out_by_timestamp.py`
