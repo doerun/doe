@@ -16,6 +16,7 @@ from typing import Any
 import output_paths
 from native_compare_modules import comparability as comparability_mod
 from native_compare_modules import claimability as claimability_mod
+from native_compare_modules import operator_diff as operator_diff_mod
 from native_compare_modules import reporting as reporting_mod
 from native_compare_modules.config_support import (
     Workload,
@@ -184,6 +185,7 @@ def build_workload_report_entry(
     claim_row_hash: str,
     previous_claim_row_hash: str,
     claim_row_context: dict[str, Any],
+    operator_diff: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     return {
         "id": workload.id,
@@ -233,6 +235,7 @@ def build_workload_report_entry(
             "hash": claim_row_hash,
             "context": claim_row_context,
         },
+        "operatorDiff": operator_diff if isinstance(operator_diff, dict) else None,
     }
 
 
@@ -372,6 +375,44 @@ def build_report_summaries(
         "nonClaimableCount": len(claimability_failures),
         "nonClaimableWorkloads": claimability_failures,
     }
+    operator_diff_available_count = 0
+    operator_diff_diverged_count = 0
+    operator_diff_matched_count = 0
+    operator_diff_missing_count = 0
+    operator_diff_workloads: list[dict[str, Any]] = []
+    for workload_entry in report.get("workloads", []):
+        if not isinstance(workload_entry, dict):
+            continue
+        summary = workload_entry.get("operatorDiff")
+        if not isinstance(summary, dict):
+            continue
+        status = str(summary.get("status", ""))
+        if summary.get("available") is True:
+            operator_diff_available_count += 1
+            if status == "diverged":
+                operator_diff_diverged_count += 1
+            elif status == "matched":
+                operator_diff_matched_count += 1
+        else:
+            operator_diff_missing_count += 1
+        operator_diff_workloads.append(
+            {
+                "workloadId": workload_entry.get("id", "unknown"),
+                "status": status,
+                "available": summary.get("available") is True,
+                "eligibleSamplePairCount": summary.get("eligibleSamplePairCount", 0),
+                "comparedSamplePairCount": summary.get("comparedSamplePairCount", 0),
+                "firstDivergence": summary.get("firstDivergence"),
+            }
+        )
+    report["operatorDiffSummary"] = {
+        "workloadCount": len(workloads),
+        "availableCount": operator_diff_available_count,
+        "matchedCount": operator_diff_matched_count,
+        "divergedCount": operator_diff_diverged_count,
+        "missingCount": operator_diff_missing_count,
+        "workloads": operator_diff_workloads,
+    }
     report["claimRowHashChain"] = {
         "algorithm": "sha256",
         "count": len(claim_row_hashes),
@@ -463,3 +504,10 @@ def write_report_and_determine_status(
         )
     )
     return 0
+
+
+def summarize_operator_diff(
+    left: dict[str, Any],
+    right: dict[str, Any],
+) -> dict[str, Any]:
+    return operator_diff_mod.summarize_workload_operator_diff(left, right)

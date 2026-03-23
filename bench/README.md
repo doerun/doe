@@ -127,6 +127,7 @@ That document defines:
 - `compare_dawn_vs_doe.py`
   - executes shared workload files against two explicit command templates (default Doe backend runtime on the left side + configurable Dawn/competitor runtime).
   - outputs per-run trace artifacts (`--trace-jsonl` and `--trace-meta` when templates provide these placeholders) plus workload-level and overall quantile summaries.
+  - when both sides emit Doe-native semantic operator manifests, the compare report now also includes per-workload `operatorDiff` summaries and a top-level `operatorDiffSummary` that point at the first structural divergence (or structural match) from `.operators.json` artifacts.
   - enforces host/backend compatibility before execution and fails fast on unsupported OS/backend mixes (for example: Vulkan on macOS, Metal on Linux/Windows, D3D12 on Linux/macOS).
   - current repo compare configs default to command-stream Dawn delegate lanes (`dawn_delegate`) for apples-to-apples strict workloads; `dawn_benchmark_adapter.py` remains available for gtest-filter diagnostics.
   - core logic is now split into dedicated helper modules under `bench/native_compare_modules/`:

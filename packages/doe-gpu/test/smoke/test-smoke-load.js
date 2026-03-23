@@ -46,6 +46,8 @@ check('exports requestDevice', typeof mod.requestDevice === 'function');
 check('exports requestAdapter', typeof mod.requestAdapter === 'function');
 check('exports providerInfo', typeof mod.providerInfo === 'function');
 check('exports globals', mod.globals != null && typeof mod.globals === 'object');
+check('exports writeSemanticOperatorBundle', typeof mod.writeSemanticOperatorBundle === 'function');
+check('exports createDoeRuntime', typeof mod.createDoeRuntime === 'function');
 
 // ── 3. gpu namespace shape ──────────────────────────────────────────────
 
@@ -95,6 +97,14 @@ if (compute) {
   check('compute.gpu.requestDevice', typeof compute.gpu?.requestDevice === 'function');
   check('compute.gpu.bind', typeof compute.gpu?.bind === 'function');
 }
+
+// ── 7. Doe runtime tooling surface ──────────────────────────────────────
+
+console.log('\ndoe runtime tooling surface:');
+const runtime = mod.createDoeRuntime();
+check('createDoeRuntime() returns object', typeof runtime === 'object' && runtime != null);
+check('runtime.runBench is a function', typeof runtime.runBench === 'function');
+check('runtime.writeSemanticOperatorBundle is a function', typeof runtime.writeSemanticOperatorBundle === 'function');
 
 // ── Results ─────────────────────────────────────────────────────────────
 

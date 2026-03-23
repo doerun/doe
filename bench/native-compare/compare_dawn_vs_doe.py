@@ -144,6 +144,7 @@ build_workload_report_entry = report_assembly_mod.build_workload_report_entry
 build_claim_row_context = report_assembly_mod.build_claim_row_context
 build_overall_stats = report_assembly_mod.build_overall_stats
 build_report_summaries = report_assembly_mod.build_report_summaries
+summarize_operator_diff = report_assembly_mod.summarize_operator_diff
 write_report_and_determine_status = report_assembly_mod.write_report_and_determine_status
 
 # Re-exports from runner
@@ -435,6 +436,7 @@ def main() -> int:
                 "context": claim_row_context,
             }
         )
+        operator_diff = summarize_operator_diff(left, right)
 
         report["workloads"].append(
             build_workload_report_entry(
@@ -450,6 +452,7 @@ def main() -> int:
                 claim_row_hash=claim_row_hash,
                 previous_claim_row_hash=previous_claim_row_hash,
                 claim_row_context=claim_row_context,
+                operator_diff=operator_diff,
             )
         )
         claim_row_hashes.append(claim_row_hash)

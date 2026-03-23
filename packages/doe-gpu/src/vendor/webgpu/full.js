@@ -1,5 +1,5 @@
 import * as full from './index.js';
-import { createDoeNamespace } from '../../webgpu-doe/src/index.js';
+import { createDoeNamespace } from '../doe-namespace.js';
 
 /**
  * Shared Doe API namespace for the full package surface.

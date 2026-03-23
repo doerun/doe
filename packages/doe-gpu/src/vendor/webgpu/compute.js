@@ -1,5 +1,5 @@
 import * as full from './index.js';
-import { createDoeNamespace } from '../../webgpu-doe/src/index.js';
+import { createDoeNamespace } from '../doe-namespace.js';
 
 function unwrap(value) {
   return value && typeof value === 'object' && '_raw' in value ? value._raw : value;

@@ -42,6 +42,10 @@
       "data": "config/webgpu-cts-evidence.json"
     },
     {
+      "schema": "config/semantic-operator-bundle.schema.json",
+      "data": "examples/semantic-operator-bundle.sample.json"
+    },
+    {
       "schema": "config/benchmark-methodology-thresholds.schema.json",
       "data": "config/benchmark-methodology-thresholds.json"
     },

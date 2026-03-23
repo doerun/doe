@@ -113,10 +113,12 @@ function main() {
 
   let ok = true;
 
-  // 1. Sync webgpu top-level .js files.
+  // 1. Sync webgpu top-level .js files, rewriting stale webgpu-doe imports.
+  const rewriteDoeImport = (content) => content
+    .replace(/from ['"]\.\.\/\.\.\/webgpu-doe\/src\/index\.js['"]/g, "from '../doe-namespace.js'");
   console.log('webgpu/src/ -> vendor/webgpu/');
   for (const file of WEBGPU_TOP_LEVEL_FILES) {
-    if (!syncFile(resolve(WEBGPU_SRC, file), resolve(VENDOR_WEBGPU, file))) {
+    if (!syncFile(resolve(WEBGPU_SRC, file), resolve(VENDOR_WEBGPU, file), rewriteDoeImport)) {
       ok = false;
     }
   }

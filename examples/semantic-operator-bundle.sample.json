@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "source": "doe-gpu",
+  "mode": "operator_diff",
+  "createdAt": "2026-03-22T00:00:00.000Z",
+  "anchorPath": "reports/example/2026-03-22T00-00-00.000Z.json",
+  "provider": "@simulatte/webgpu",
+  "providerInfo": {
+    "module": "@simulatte/webgpu",
+    "doeNative": true
+  },
+  "reportInfo": {
+    "backend": "node-fs",
+    "path": "reports/example/2026-03-22T00-00-00.000Z.json"
+  },
+  "divergence": {
+    "found": true,
+    "type": "drift",
+    "opId": "prefill.layer0.softmax"
+  },
+  "summary": {
+    "label": "observed",
+    "provider": "@simulatte/webgpu",
+    "modelId": "example-model",
+    "timing": {
+      "totalMs": 12.5
+    },
+    "deviceInfo": {
+      "vendor": "example"
+    },
+    "metrics": {
+      "firstTokenMs": 4.2
+    }
+  },
+  "recordCount": 1,
+  "timeline": [
+    {
+      "opId": "prefill.layer0.softmax",
+      "opType": "softmax",
+      "layerIndex": 0
+    }
+  ]
+}

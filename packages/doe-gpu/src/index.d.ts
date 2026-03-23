@@ -80,11 +80,31 @@ export interface DoeRuntimeBenchOptions {
   cwd?: string;
 }
 
+export interface DoeSemanticOperatorBundleOptions {
+  anchorPath?: string;
+  outPath?: string;
+  mode?: string;
+  provider?: string | null;
+  providerInfo?: Record<string, unknown> | null;
+  reportInfo?: Record<string, unknown> | null;
+  divergence?: Record<string, unknown> | null;
+  summary?: Record<string, unknown> | null;
+  timeline: Record<string, unknown>[];
+}
+
+export interface DoeSemanticOperatorBundleResult {
+  path: string;
+  bundle: Record<string, unknown>;
+}
+
 export interface DoeRuntime {
   binPath: string;
   libPath: string | null;
   runRaw(args: string[], spawnOptions?: Record<string, unknown>): DoeRuntimeRunResult;
   runBench(options: DoeRuntimeBenchOptions): DoeRuntimeBenchResult;
+  writeSemanticOperatorBundle(
+    options: DoeSemanticOperatorBundleOptions
+  ): Promise<DoeSemanticOperatorBundleResult>;
 }
 
 export interface RequestDeviceOptions {
@@ -134,6 +154,9 @@ export function createDoeRuntime(options?: {
   binPath?: string;
   libPath?: string;
 }): DoeRuntime;
+export function writeSemanticOperatorBundle(
+  options: DoeSemanticOperatorBundleOptions
+): Promise<DoeSemanticOperatorBundleResult>;
 export function runDawnVsDoeCompare(options: Record<string, unknown>): DoeRuntimeRunResult;
 export function preflightShaderSource(code: string): {
   ok: boolean;
@@ -195,6 +218,7 @@ declare const _default: {
   requestDevice: typeof requestDevice;
   providerInfo: typeof providerInfo;
   createDoeRuntime: typeof createDoeRuntime;
+  writeSemanticOperatorBundle: typeof writeSemanticOperatorBundle;
   runDawnVsDoeCompare: typeof runDawnVsDoeCompare;
   preflightShaderSource: typeof preflightShaderSource;
   setNativeTimeoutMs: typeof setNativeTimeoutMs;

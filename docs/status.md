@@ -2334,3 +2334,13 @@ Semantic operator tracing and repro artifacts (2026-03-22):
   Dawn-delegate currently fail explicitly as unsupported for this artifact path.
 - Structural rerun scope is same-device / same-backend debugging. No bitwise
   reproducibility claim is made.
+- `packages/doe-gpu` now exposes `writeSemanticOperatorBundle(...)` on the
+  tooling/runtime surface so higher-level clients can attach a schema-backed
+  semantic operator bundle to Doe-observed diagnose runs without depending on
+  the live in-process `navigator.gpu` path to carry semantic-op injection.
+- `bench/native-compare/compare_dawn_vs_doe.py` now ingests Doe-native
+  `.operators.json` manifests when both sides emit them and records
+  per-workload `operatorDiff` summaries plus a top-level `operatorDiffSummary`
+  in the compare report. Current scope is structural first-divergence reporting
+  (semantic identity, command shape, execution status, capture status/digest),
+  not full tensor-value drift analysis.

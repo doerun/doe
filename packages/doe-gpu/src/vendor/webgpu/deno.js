@@ -10,7 +10,7 @@ import * as full from './index.js';
 // requires Node-style node_modules resolution that Deno does not support without
 // explicit import maps. This relative path resolves via the monorepo symlink in
 // development and works as a direct path for all Deno contexts.
-import { createDoeNamespace } from '../../webgpu-doe/src/index.js';
+import { createDoeNamespace } from '../doe-namespace.js';
 
 export const doe = createDoeNamespace({
   requestDevice: full.requestDevice,

@@ -2,6 +2,21 @@
 
 ## 2026-03-22
 
+### doe-gpu semantic operator bundle contract
+
+- `packages/doe-gpu/src/vendor/webgpu/runtime-cli.js` exposes
+  `writeSemanticOperatorBundle(options)`, and `createDoeRuntime()` forwards the
+  same helper on the package/runtime tooling surface.
+- New schema: `config/semantic-operator-bundle.schema.json`
+- New sample payload: `examples/semantic-operator-bundle.sample.json`
+- The bundle is a package-side artifact contract for Doe-native diagnose flows:
+  it links a semantic operator timeline to provider identity, report anchor,
+  divergence summary, and lightweight run summary metadata.
+- This contract is distinct from the lower-level Doe-native runtime artifacts in
+  `operator-execution-record.schema.json` and `operator-repro-bundle.schema.json`.
+  The package bundle is the join-layer that higher-level tools can attach to a
+  user-facing diagnose result.
+
 ### Semantic operator trace rows, operator manifests, and structural repro bundles
 
 - `config/trace.schema.json` now accepts optional semantic operator fields on
