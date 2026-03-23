@@ -164,6 +164,9 @@ That document defines:
 - `measure_runtime_footprint.py`
   - measures Doe-vs-Dawn runtime artifact footprint (`rawSizeBytes`, optional stripped size, dependency counts/list) and optional build wall times.
   - emits JSON + markdown reports suitable for embedded/runtime sizing evidence.
+- `pipeline-concurrency-bench.py`
+  - runs a repeated pipeline/concurrency command under configurable parallelism and emits p50/p95/max timing artifacts.
+  - intended as the first evidence harness for async pipeline creation throughput, cold-start contention, and future single-flight/cache wins.
 - `run_cts_subset.py`
   - executes a configured WebGPU CTS query subset and emits per-query pass/fail + wall-time artifacts (JSON + markdown).
   - query configs can now carry structured query metadata (`id`, `bucket`, `notes`) plus preflight requirements, so reports include per-bucket pass/fail counts instead of a flat raw-query list.

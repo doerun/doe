@@ -32,7 +32,7 @@ pub fn ensure_kernel_pipeline(self: anytype, kernel: []const u8) !?*anyopaque {
     defer self.allocator.free(path);
 
     const source = std.fs.cwd().readFileAlloc(self.allocator, path, MAX_KERNEL_SOURCE_BYTES) catch {
-        return error.ShaderToolchainUnavailable;
+        return error.ShaderCompileFailed;
     };
     defer self.allocator.free(source);
 

@@ -45,10 +45,46 @@ pub const QueueType = enum {
     transfer,
 };
 
+pub const QueueRole = enum {
+    graphics,
+    compute,
+    transfer,
+    readback,
+};
+
+pub const SubmitIntent = enum {
+    interactive,
+    model_load,
+    steady_state_inference,
+};
+
 pub const QueueDescriptor = struct {
     queue_type: QueueType,
     label: ?[]const u8,
 };
+
+pub const QueuePlan = struct {
+    role: QueueRole,
+    queue_type: QueueType,
+    intent: SubmitIntent,
+};
+
+pub fn queue_type_for_role(role: QueueRole) QueueType {
+    return switch (role) {
+        .graphics => .graphics,
+        .compute => .compute,
+        .transfer => .transfer,
+        .readback => .transfer,
+    };
+}
+
+pub fn default_queue_plan(role: QueueRole, intent: SubmitIntent) QueuePlan {
+    return .{
+        .role = role,
+        .queue_type = queue_type_for_role(role),
+        .intent = intent,
+    };
+}
 
 // FencePoint names a specific signal on a specific queue that another
 // queue's submit can wait before executing commands.

@@ -239,12 +239,12 @@ pub export fn doeNativeDeviceCreateShaderModule(dev_raw: ?*anyopaque, desc: ?*co
         types.WGPUSType_ShaderSourceMSL => createFromMSL(dev, chain),
         types.WGPUSType_ShaderSourceSPIRV => createFromSPIRV(chain),
         types.WGPUSType_ShaderSourceHLSL => createFromHLSL(chain),
-        else => {
+        else => blk: {
             set_last_error_stage_name("native_shader_create");
             set_last_error_kind("UnsupportedShaderFormat");
             set_last_error_fmt("unsupported shader source sType: 0x{x:0>8}", .{chain.sType});
-            std.log.err("doe: createShaderModule failed: unsupported sType 0x{x:0>8}", .{chain.sType});
-            return null;
+            std.log.warn("doe: createShaderModule failed: unsupported sType 0x{x:0>8}", .{chain.sType});
+            break :blk null;
         },
     };
     // Return a valid error-flagged module when compilation fails so Dawn's
@@ -286,7 +286,7 @@ fn createFromWGSL(dev: *DoeDevice, chain: *const types.WGPUChainedStruct) ?*anyo
         } else {
             set_last_error_fmt("WGSL→MSL translation failed: {s}", .{@errorName(err)});
         }
-        std.log.err("doe: createShaderModule failed: {s}", .{last_error_buf[0..last_error_len]});
+        std.log.warn("doe: createShaderModule failed: {s}", .{last_error_buf[0..last_error_len]});
         return null;
     };
     errdefer translation.info.deinit(alloc);
@@ -537,10 +537,10 @@ fn compileMslToLibrary(dev: *DoeDevice, msl_buf: [*]const u8, msl_len: usize, er
         set_last_error_kind("MSLCompilationFailed");
         if (err_msg.len > 0) {
             set_last_error_fmt("MSL compilation failed: {s}", .{err_msg});
-            std.log.err("doe: createShaderModule failed: MSL compilation error: {s}", .{err_msg});
+            std.log.warn("doe: createShaderModule failed: MSL compilation error: {s}", .{err_msg});
         } else {
             set_last_error("MSL compilation failed: MTLLibrary creation returned null");
-            std.log.err("doe: createShaderModule failed: MTLLibrary creation returned null", .{});
+            std.log.warn("doe: createShaderModule failed: MTLLibrary creation returned null", .{});
         }
         return null;
     };
@@ -678,7 +678,7 @@ pub export fn doeNativeDeviceCreateComputePipeline(dev_raw: ?*anyopaque, desc: ?
         set_last_error_stage_name("native_compile");
         set_last_error_kind("InvalidShaderModule");
         set_last_error("compute pipeline creation failed: shader module is null or invalid");
-        std.log.err("doe: createComputePipeline failed: shader module is null or invalid. " ++
+        std.log.warn("doe: createComputePipeline failed: shader module is null or invalid. " ++
             "Ensure createShaderModule succeeded (check stderr for WGSL translation errors).", .{});
         return null;
     };

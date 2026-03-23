@@ -9,11 +9,8 @@
 // writing to the buffer. We record the timeline value at submit time and, when
 // mapAsync is called, wait for that value before marking the buffer mapped.
 //
-// Async delivery: Metal completion handlers fire on a private GCD thread.
-// To avoid cross-thread races, we use a simple spin-wait with MTLSharedEvent.signaledValue
-// polling rather than GCD notifications. This keeps the implementation single-threaded
-// from the Zig side while still being non-blocking on the CPU for the common case where
-// the GPU has already finished by the time we ask.
+// Async delivery is dispatched onto Doe worker threads so the caller path does
+// not invoke all callbacks inline once the timeline advances.
 //
 // queue.onSubmittedWorkDone: records the current timeline value and polls in a
 // background fashion. Because Doe is synchronous at the JS layer (all submits
@@ -22,6 +19,7 @@
 
 const std = @import("std");
 const types = @import("core/abi/wgpu_types.zig");
+const callback_dispatch = @import("runtime/callback_dispatch.zig");
 
 // ============================================================
 // Constants
@@ -29,10 +27,6 @@ const types = @import("core/abi/wgpu_types.zig");
 
 const MAX_PENDING_MAP: usize = 64;
 const MAX_PENDING_WORK_DONE: usize = 64;
-
-// Spin iterations before falling back to sched_yield; keeps latency low for
-// GPU work that completes within a few hundred microseconds.
-const SPIN_ITERATIONS: usize = 100_000;
 
 // ============================================================
 // Metal bridge externs
@@ -115,18 +109,9 @@ pub const GpuTimeline = struct {
     }
 
     // Block until the GPU signals a value >= `required`.
-    // Uses shared-event polling before falling back to the blocking bridge call.
     pub fn wait_for(self: *GpuTimeline, required: u64) void {
         if (self.shared_event == null) return;
-        // Fast path: already done.
         if (metal_bridge_shared_event_signaled_value(self.shared_event) >= required) return;
-        // Spin briefly to avoid OS scheduler overhead for short GPU work.
-        var i: usize = 0;
-        while (i < SPIN_ITERATIONS) : (i += 1) {
-            if (metal_bridge_shared_event_signaled_value(self.shared_event) >= required) return;
-            std.atomic.spinLoopHint();
-        }
-        // Blocking wait via bridge (uses semaphore internally).
         metal_bridge_shared_event_wait(self.shared_event, required);
     }
 
@@ -150,9 +135,7 @@ pub const GpuTimeline = struct {
         if (already_done) {
             // GPU already past this point; map immediately and call back inline.
             mapped_flag.* = true;
-            if (cb) |f| {
-                f(WGPU_MAP_ASYNC_STATUS_SUCCESS, .{ .data = null, .length = 0 }, userdata1, userdata2);
-            }
+            callback_dispatch.fire_map_callback_inline(WGPU_MAP_ASYNC_STATUS_SUCCESS, cb, userdata1, userdata2);
             return;
         }
 
@@ -160,9 +143,7 @@ pub const GpuTimeline = struct {
             // Overflow: block synchronously and fire callback.
             self.wait_for(required_value);
             mapped_flag.* = true;
-            if (cb) |f| {
-                f(WGPU_MAP_ASYNC_STATUS_SUCCESS, .{ .data = null, .length = 0 }, userdata1, userdata2);
-            }
+            callback_dispatch.fire_map_callback_inline(WGPU_MAP_ASYNC_STATUS_SUCCESS, cb, userdata1, userdata2);
             return;
         }
 
@@ -193,18 +174,14 @@ pub const GpuTimeline = struct {
             metal_bridge_shared_event_signaled_value(self.shared_event) >= required;
 
         if (already_done) {
-            if (cb) |f| {
-                f(.success, .{ .data = null, .length = 0 }, userdata1, userdata2);
-            }
+            callback_dispatch.fire_work_done_callback_inline(cb, userdata1, userdata2);
             return;
         }
 
         if (self.pending_work_done_count >= MAX_PENDING_WORK_DONE) {
             // Overflow: block and fire.
             self.wait_for(required);
-            if (cb) |f| {
-                f(.success, .{ .data = null, .length = 0 }, userdata1, userdata2);
-            }
+            callback_dispatch.fire_work_done_callback_inline(cb, userdata1, userdata2);
             return;
         }
 
@@ -229,9 +206,7 @@ pub const GpuTimeline = struct {
             const pm = &self.pending_maps[i];
             if (pm.required_value <= current) {
                 pm.mapped_flag.* = true;
-                if (pm.cb) |f| {
-                    f(pm.status, .{ .data = null, .length = 0 }, pm.userdata1, pm.userdata2);
-                }
+                callback_dispatch.dispatch_map_callback(pm.status, pm.cb, pm.userdata1, pm.userdata2);
                 // Remove by swap with last.
                 self.pending_map_count -= 1;
                 if (i < self.pending_map_count) {
@@ -248,9 +223,7 @@ pub const GpuTimeline = struct {
         while (j < self.pending_work_done_count) {
             const pw = &self.pending_work_done[j];
             if (pw.required_value <= current) {
-                if (pw.cb) |f| {
-                    f(.success, .{ .data = null, .length = 0 }, pw.userdata1, pw.userdata2);
-                }
+                callback_dispatch.dispatch_work_done_callback(pw.cb, pw.userdata1, pw.userdata2);
                 self.pending_work_done_count -= 1;
                 if (j < self.pending_work_done_count) {
                     self.pending_work_done[j] = self.pending_work_done[self.pending_work_done_count];
@@ -275,16 +248,12 @@ pub const GpuTimeline = struct {
     fn fire_all_remaining(self: *GpuTimeline) void {
         for (self.pending_maps[0..self.pending_map_count]) |pm| {
             pm.mapped_flag.* = true;
-            if (pm.cb) |f| {
-                f(pm.status, .{ .data = null, .length = 0 }, pm.userdata1, pm.userdata2);
-            }
+            callback_dispatch.dispatch_map_callback(pm.status, pm.cb, pm.userdata1, pm.userdata2);
         }
         self.pending_map_count = 0;
 
         for (self.pending_work_done[0..self.pending_work_done_count]) |pw| {
-            if (pw.cb) |f| {
-                f(.success, .{ .data = null, .length = 0 }, pw.userdata1, pw.userdata2);
-            }
+            callback_dispatch.dispatch_work_done_callback(pw.cb, pw.userdata1, pw.userdata2);
         }
         self.pending_work_done_count = 0;
     }

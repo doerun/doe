@@ -4,6 +4,20 @@
 
 Date: 2026-03-22
 
+### Concurrency foundation first cut (2026-03-23)
+
+- Added a bounded worker-pool foundation in `runtime/zig/src/runtime/task_pool.zig`.
+- `wgpuDeviceCreateComputePipelineAsync` is now backed by real background work rather than immediate synchronous creation plus inline callback.
+- `wgpuDeviceCreateRenderPipelineAsync` is now also backed by real background work with explicit descriptor copying.
+- Duplicate in-flight async pipeline requests now collapse through shared runtime single-flight coordination in `runtime/zig/src/runtime/pipeline_singleflight.zig`.
+- GPU timeline callback delivery now routes through shared worker-dispatch helpers in `runtime/zig/src/runtime/callback_dispatch.zig` instead of invoking all ready callbacks inline on the caller path.
+- Timeline waits no longer use a spin-first path before blocking.
+- Added an explicit runtime threading contract in `runtime/zig/src/runtime/threading_contract.zig` covering thread-safe objects vs thread-confined encoders.
+- Added queue-role / submit-intent policy types in `runtime/zig/src/multi_queue.zig` so AI-oriented queue scheduling can become explicit instead of ad hoc.
+- Added a concurrency program doc in `docs/concurrency-strategy.md`.
+- Added benchmark harness skeleton `bench/pipeline-concurrency-bench.py` for pipeline throughput / cold-start / contention evidence.
+- Not yet complete: async single-flight is shared, but not yet integrated with persistent pipeline-cache telemetry or background warmup policy.
+
 ### Authoritative state reconciliation (2026-03-22)
 
 This section supersedes contradictory statements elsewhere in this document.
