@@ -1,4 +1,4 @@
--- Fawn/Core/MslAddressSpace.lean
+-- Doe/Core/MslAddressSpace.lean
 --
 -- Formal proof that the WGSL → MSL address space mapping is total and
 -- that ref-type address spaces are preserved through arbitrary load/member

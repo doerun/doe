@@ -1,4 +1,4 @@
-import Fawn.Generated.ComparabilityContract
+import Doe.Generated.ComparabilityContract
 
 theorem comparableFromObligations_eq_noFailed (items : List ComparabilityObligation) :
     comparableFromObligations items = (failedBlockingObligations items).isEmpty := by

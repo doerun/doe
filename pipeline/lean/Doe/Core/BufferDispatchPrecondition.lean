@@ -1,12 +1,12 @@
-import Fawn.Core.BufferLifecycle
+import Doe.Core.BufferLifecycle
 
--- Fawn/Core/BufferDispatchPrecondition.lean
+-- Doe/Core/BufferDispatchPrecondition.lean
 --
 -- Proves that a buffer which starts live and is only operated on by
 -- non-release operations remains dispatch-ready after any finite sequence
 -- of such operations.
 --
--- Extends: Fawn.Core.BufferLifecycle
+-- Extends: Doe.Core.BufferLifecycle
 -- Connects to: runtime/zig/src/doe_wgpu_native.zig DoeBuffer lifecycle,
 --              dispatch precondition checks in doe_compute_preconditions_native.zig.
 --

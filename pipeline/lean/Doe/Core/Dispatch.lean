@@ -1,4 +1,4 @@
-import Fawn.Core.Runtime
+import Doe.Core.Runtime
 
 -- Dispatch-level theorems proven against the Runtime model.
 -- Classification: tautological (rfl, by-construction, or trivial corollary) or

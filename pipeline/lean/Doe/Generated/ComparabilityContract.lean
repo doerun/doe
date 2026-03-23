@@ -1,4 +1,4 @@
-import Fawn.Core.Model
+import Doe.Core.Model
 
 def comparabilityContractSha256 : String := "68598321d000d069f8d95eef213dcfe0dc2559a24a35275d06d2c4dda4b9d10c"
 

@@ -19,7 +19,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--out",
-        default="pipeline/lean/Fawn/Generated/ComparabilityContract.lean",
+        default="pipeline/lean/Doe/Generated/ComparabilityContract.lean",
         help="Generated Lean output path relative to repo root.",
     )
     return parser.parse_args()
@@ -129,7 +129,7 @@ def lean_expr(expr: dict[str, Any]) -> str:
 
 def emit_lean(facts: list[str], obligations: list[dict[str, Any]], sha256: str) -> str:
     lines: list[str] = []
-    lines.append("import Fawn.Core.Model")
+    lines.append("import Doe.Core.Model")
     lines.append("")
     lines.append(f'def comparabilityContractSha256 : String := "{sha256}"')
     lines.append("")

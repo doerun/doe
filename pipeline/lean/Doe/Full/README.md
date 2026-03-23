@@ -1,4 +1,4 @@
-# Fawn full proofs
+# Doe full proofs
 
 Theorem packs for the full runtime layer (`runtime/zig/src/full/`), covering extended operations beyond core: render, surface, lifecycle, and benchmark comparability methodology.
 
@@ -10,10 +10,10 @@ Theorem packs for the full runtime layer (`runtime/zig/src/full/`), covering ext
 ## Dependency order
 
 ```
-Fawn.Core.Model -> Comparability -> ComparabilityFixtures
+Doe.Core.Model -> Comparability -> ComparabilityFixtures
 ```
 
-Full proofs depend on `Fawn.Core.Model` for shared types but do not depend on `Fawn.Core.Runtime`, `Fawn.Core.Dispatch`, or `Fawn.Core.Bridge`.
+Full proofs depend on `Doe.Core.Model` for shared types but do not depend on `Doe.Core.Runtime`, `Doe.Core.Dispatch`, or `Doe.Core.Bridge`.
 
 ## Scope
 

@@ -1,4 +1,4 @@
-import Fawn.Core.Model
+import Doe.Core.Model
 
 structure DeviceProfile where
   vendor : String

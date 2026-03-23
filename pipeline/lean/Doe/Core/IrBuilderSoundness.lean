@@ -1,4 +1,4 @@
--- Fawn/Core/IrBuilderSoundness.lean
+-- Doe/Core/IrBuilderSoundness.lean
 --
 -- Abstract soundness proof for the Doe WGSL IR builder (ir_builder.zig).
 --

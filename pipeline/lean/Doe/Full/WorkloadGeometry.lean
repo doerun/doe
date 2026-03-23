@@ -1,4 +1,4 @@
-import Fawn.Full.Comparability
+import Doe.Full.Comparability
 
 structure DispatchGeometry where
   x : Nat

@@ -1,7 +1,7 @@
 """End-to-end tests for the Lean proof pipeline artifact.
 
 Pipeline flow:
-  1. Lean source in pipeline/lean/Fawn/*.lean
+  1. Lean source in pipeline/lean/Doe/*.lean
   2. Extract script: pipeline/lean/extract.sh
   3. Produces: pipeline/lean/artifacts/proven-conditions.json
   4. Schema: config/proof-artifact.schema.json
@@ -18,7 +18,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 ARTIFACT_PATH = REPO_ROOT / "pipeline" / "lean" / "artifacts" / "proven-conditions.json"
 SCHEMA_PATH = REPO_ROOT / "config" / "proof-artifact.schema.json"
 EXTRACT_SCRIPT = REPO_ROOT / "pipeline" / "lean" / "extract.sh"
-LEAN_SOURCE_DIR = REPO_ROOT / "pipeline" / "lean" / "Fawn"
+LEAN_SOURCE_DIR = REPO_ROOT / "pipeline" / "lean" / "Doe"
 
 # Categories defined in the schema enum.
 SCHEMA_CATEGORIES = {
@@ -363,8 +363,8 @@ class TestLeanSourceFilesExist(unittest.TestCase):
         missing = []
         for thm in artifact["theorems"]:
             module = thm["module"]
-            # Convert Lean module path (Fawn.Core.Model) to file path
-            # (pipeline/lean/Fawn/Core/Model.lean)
+            # Convert Lean module path (Doe.Core.Model) to file path
+            # (pipeline/lean/Doe/Core/Model.lean)
             rel_path = module.replace(".", "/") + ".lean"
             full_path = REPO_ROOT / "pipeline" / "lean" / rel_path
             if not full_path.exists():

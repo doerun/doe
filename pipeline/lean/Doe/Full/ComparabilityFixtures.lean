@@ -1,4 +1,4 @@
-import Fawn.Full.Comparability
+import Doe.Full.Comparability
 
 def strictHappyPathFacts : ComparabilityFacts :=
   { workloadMarkedComparable := true

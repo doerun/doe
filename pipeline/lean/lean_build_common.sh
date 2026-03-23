@@ -27,54 +27,54 @@ fi
 
 # Core layer (canonical sources).
 LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \
-  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Fawn/Core/Model.olean" "${ROOT_DIR}/pipeline/lean/Fawn/Core/Model.lean"
+  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Doe/Core/Model.olean" "${ROOT_DIR}/pipeline/lean/Doe/Core/Model.lean"
 LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \
-  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Fawn/Core/Runtime.olean" "${ROOT_DIR}/pipeline/lean/Fawn/Core/Runtime.lean"
+  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Doe/Core/Runtime.olean" "${ROOT_DIR}/pipeline/lean/Doe/Core/Runtime.lean"
 LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \
-  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Fawn/Core/Dispatch.olean" "${ROOT_DIR}/pipeline/lean/Fawn/Core/Dispatch.lean"
+  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Doe/Core/Dispatch.olean" "${ROOT_DIR}/pipeline/lean/Doe/Core/Dispatch.lean"
 LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \
-  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Fawn/Core/Bridge.olean" "${ROOT_DIR}/pipeline/lean/Fawn/Core/Bridge.lean"
+  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Doe/Core/Bridge.olean" "${ROOT_DIR}/pipeline/lean/Doe/Core/Bridge.lean"
 LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \
-  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Fawn/Core/BindGroupSlot.olean" "${ROOT_DIR}/pipeline/lean/Fawn/Core/BindGroupSlot.lean"
+  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Doe/Core/BindGroupSlot.olean" "${ROOT_DIR}/pipeline/lean/Doe/Core/BindGroupSlot.lean"
 LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \
-  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Fawn/Core/BufferLifecycle.olean" "${ROOT_DIR}/pipeline/lean/Fawn/Core/BufferLifecycle.lean"
+  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Doe/Core/BufferLifecycle.olean" "${ROOT_DIR}/pipeline/lean/Doe/Core/BufferLifecycle.lean"
 LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \
-  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Fawn/Core/IrBuilderSoundness.olean" "${ROOT_DIR}/pipeline/lean/Fawn/Core/IrBuilderSoundness.lean"
+  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Doe/Core/IrBuilderSoundness.olean" "${ROOT_DIR}/pipeline/lean/Doe/Core/IrBuilderSoundness.lean"
 LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \
-  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Fawn/Core/IrSemanticContract.olean" "${ROOT_DIR}/pipeline/lean/Fawn/Core/IrSemanticContract.lean"
+  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Doe/Core/IrSemanticContract.olean" "${ROOT_DIR}/pipeline/lean/Doe/Core/IrSemanticContract.lean"
 LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \
-  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Fawn/Core/IrValidatorRedundancy.olean" "${ROOT_DIR}/pipeline/lean/Fawn/Core/IrValidatorRedundancy.lean"
+  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Doe/Core/IrValidatorRedundancy.olean" "${ROOT_DIR}/pipeline/lean/Doe/Core/IrValidatorRedundancy.lean"
 LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \
-  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Fawn/Core/RenderPassStateMachine.olean" "${ROOT_DIR}/pipeline/lean/Fawn/Core/RenderPassStateMachine.lean"
+  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Doe/Core/RenderPassStateMachine.olean" "${ROOT_DIR}/pipeline/lean/Doe/Core/RenderPassStateMachine.lean"
 LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \
-  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Fawn/Core/MslAddressSpace.olean" "${ROOT_DIR}/pipeline/lean/Fawn/Core/MslAddressSpace.lean"
+  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Doe/Core/MslAddressSpace.olean" "${ROOT_DIR}/pipeline/lean/Doe/Core/MslAddressSpace.lean"
 LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \
-  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Fawn/Core/BufferDispatchPrecondition.olean" "${ROOT_DIR}/pipeline/lean/Fawn/Core/BufferDispatchPrecondition.lean"
+  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Doe/Core/BufferDispatchPrecondition.olean" "${ROOT_DIR}/pipeline/lean/Doe/Core/BufferDispatchPrecondition.lean"
 LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \
-  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Fawn/Core/IrTypePreserved.olean" "${ROOT_DIR}/pipeline/lean/Fawn/Core/IrTypePreserved.lean"
+  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Doe/Core/IrTypePreserved.olean" "${ROOT_DIR}/pipeline/lean/Doe/Core/IrTypePreserved.lean"
 
 # Full layer (canonical sources).
 LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \
-  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Fawn/Generated/ComparabilityContract.olean" "${ROOT_DIR}/pipeline/lean/Fawn/Generated/ComparabilityContract.lean"
+  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Doe/Generated/ComparabilityContract.olean" "${ROOT_DIR}/pipeline/lean/Doe/Generated/ComparabilityContract.lean"
 LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \
-  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Fawn/Full/Comparability.olean" "${ROOT_DIR}/pipeline/lean/Fawn/Full/Comparability.lean"
+  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Doe/Full/Comparability.olean" "${ROOT_DIR}/pipeline/lean/Doe/Full/Comparability.lean"
 LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \
-  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Fawn/Full/ComparabilityFixtures.olean" "${ROOT_DIR}/pipeline/lean/Fawn/Full/ComparabilityFixtures.lean"
+  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Doe/Full/ComparabilityFixtures.olean" "${ROOT_DIR}/pipeline/lean/Doe/Full/ComparabilityFixtures.lean"
 LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \
-  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Fawn/Full/WorkloadGeometry.olean" "${ROOT_DIR}/pipeline/lean/Fawn/Full/WorkloadGeometry.lean"
+  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Doe/Full/WorkloadGeometry.olean" "${ROOT_DIR}/pipeline/lean/Doe/Full/WorkloadGeometry.lean"
 LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \
-  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Fawn/Shader/ComputeBounds.olean" "${ROOT_DIR}/pipeline/lean/Fawn/Shader/ComputeBounds.lean"
+  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Doe/Shader/ComputeBounds.olean" "${ROOT_DIR}/pipeline/lean/Doe/Shader/ComputeBounds.lean"
 
 # Re-export shims (backward compatibility).
 LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \
-  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Fawn/Model.olean" "${ROOT_DIR}/pipeline/lean/Fawn/Model.lean"
+  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Doe/Model.olean" "${ROOT_DIR}/pipeline/lean/Doe/Model.lean"
 LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \
-  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Fawn/Runtime.olean" "${ROOT_DIR}/pipeline/lean/Fawn/Runtime.lean"
+  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Doe/Runtime.olean" "${ROOT_DIR}/pipeline/lean/Doe/Runtime.lean"
 LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \
-  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Fawn/Dispatch.olean" "${ROOT_DIR}/pipeline/lean/Fawn/Dispatch.lean"
+  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Doe/Dispatch.olean" "${ROOT_DIR}/pipeline/lean/Doe/Dispatch.lean"
 LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \
-  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Fawn/Comparability.olean" "${ROOT_DIR}/pipeline/lean/Fawn/Comparability.lean"
+  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Doe/Comparability.olean" "${ROOT_DIR}/pipeline/lean/Doe/Comparability.lean"
 LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \
-  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Fawn/ComparabilityFixtures.olean" "${ROOT_DIR}/pipeline/lean/Fawn/ComparabilityFixtures.lean"
+  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Doe/ComparabilityFixtures.olean" "${ROOT_DIR}/pipeline/lean/Doe/ComparabilityFixtures.lean"
 LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \
-  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Fawn/Bridge.olean" "${ROOT_DIR}/pipeline/lean/Fawn/Bridge.lean"
+  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Doe/Bridge.olean" "${ROOT_DIR}/pipeline/lean/Doe/Bridge.lean"

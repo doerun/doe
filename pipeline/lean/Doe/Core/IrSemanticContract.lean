@@ -1,4 +1,4 @@
--- Fawn/Core/IrSemanticContract.lean
+-- Doe/Core/IrSemanticContract.lean
 --
 -- Formal model of the sema output contract and proof that it covers
 -- all semantic checks in ir_validate.zig.

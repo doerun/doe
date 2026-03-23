@@ -1,4 +1,4 @@
--- Fawn/Core/IrTypePreserved.lean
+-- Doe/Core/IrTypePreserved.lean
 --
 -- Abstract proof that the WGSL IR robustness transform is type-preserving:
 -- it appends new helper expressions but does not mutate the type of any

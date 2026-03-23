@@ -1,4 +1,4 @@
--- Fawn/Core/IrValidatorRedundancy.lean
+-- Doe/Core/IrValidatorRedundancy.lean
 --
 -- The complete validator redundancy argument.
 --
@@ -38,8 +38,8 @@
 --   builder_load_inner_is_ref  lower_value_expr only emits .load for .ref
 --   builder_assign_lhs_is_ref  lower_ref_expr only succeeds for .ref
 
-import Fawn.Core.IrBuilderSoundness
-import Fawn.Core.IrSemanticContract
+import Doe.Core.IrBuilderSoundness
+import Doe.Core.IrSemanticContract
 
 -- ---------------------------------------------------------------------------
 -- CLASS A: Bounds checks — all covered by IrBuilderSoundness

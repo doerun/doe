@@ -80,7 +80,7 @@ Subpath reminder (the `@simulatte/*` scope is deprecated; use `doe-gpu`):
 | Node | `@simulatte/webgpu` / `@simulatte/webgpu/node` | `webgpu` (Dawn) | product + governed compare lane | `verified` | Main headless Node package niche. Canonical package compare lane with fresh claimable rows in `docs/status.md`. |
 | Bun | `@simulatte/webgpu` / `@simulatte/webgpu/bun` | `bun-webgpu` (Dawn) | product + governed compare lane | `verified` | Main Bun package niche. Canonical package compare lane with fresh claimable rows in `docs/status.md`. |
 | Deno | `@simulatte/webgpu` via `packages/webgpu/src/deno.js` | built-in Deno WebGPU (`navigator.gpu`, wgpu-backed) | product + governed compare lane | `verified` | Deno package lane now exists in-repo and is registered as `deno_package_compare`; still newer than Node/Bun and should be read lane-specifically. |
-| CLI | `fawn-webgpu-bench`, `fawn-webgpu-compare`, `createDoeRuntime()` | no package-surface incumbent | product surface | `supported` | Real public Doe-core surface, but not a JS package head-to-head cell. |
+| CLI | `doe-gpu-bench`, `doe-gpu-compare`, `createDoeRuntime()` | no package-surface incumbent | product surface | `supported` | Real public Doe-core surface, but not a JS package head-to-head cell. |
 | Node | `@simulatte/webgpu/native-direct` | raw competitor device surfaces in ad hoc four-way compares | diagnostic subpath | `diagnostic` | Useful for stripping wrapper noise out of Node package attribution. Not a public replacement promise by itself. |
 | Browser | `@simulatte/webgpu` package family | browser `navigator.gpu` | package cell | `not meaningful` | Browser ownership lives in `fawn-browser`, not in the npm runtime package family. |
 
@@ -173,8 +173,8 @@ CLI tools:
 
 | Tool | Status |
 |------|--------|
-| `fawn-webgpu-bench` | Required |
-| `fawn-webgpu-compare` | Required |
+| `doe-gpu-bench` | Required |
+| `doe-gpu-compare` | Required |
 
 ### Not supported
 

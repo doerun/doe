@@ -20,7 +20,7 @@
 -- lean_proof.zig validates at comptime, ir_transform_robustness.zig consults
 -- the proof status to skip clamping for matched patterns.
 
-import Fawn.Shader.ComputeBounds
+import Doe.Shader.ComputeBounds
 
 /-- Integer texture coordinate for a single axis, derived from global_invocation_id.
     This is the identity case: the coordinate is exactly the gid component. -/

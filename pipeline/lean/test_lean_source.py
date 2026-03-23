@@ -1,4 +1,4 @@
-"""Tests for Lean source files in pipeline/lean/Fawn/.
+"""Tests for Lean source files in pipeline/lean/Doe/.
 
 Validates:
   - All .lean files exist and are non-empty
@@ -17,7 +17,7 @@ from collections import defaultdict
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
-LEAN_DIR = REPO_ROOT / "pipeline" / "lean" / "Fawn"
+LEAN_DIR = REPO_ROOT / "pipeline" / "lean" / "Doe"
 
 
 def _find_lean_files():
@@ -28,7 +28,7 @@ def _find_lean_files():
 def _file_to_module(lean_file):
     """Convert a .lean file path to its Lean module name.
 
-    e.g. .../Fawn/Core/Model.lean -> Fawn.Core.Model
+    e.g. .../Doe/Core/Model.lean -> Doe.Core.Model
     """
     rel = lean_file.relative_to(LEAN_DIR.parent)
     parts = rel.with_suffix("").parts
@@ -38,7 +38,7 @@ def _file_to_module(lean_file):
 def _parse_imports(lean_file):
     """Extract import statements from a .lean file.
 
-    Returns a list of module names (e.g. ['Fawn.Core.Model']).
+    Returns a list of module names (e.g. ['Doe.Core.Model']).
     """
     imports = []
     import_pattern = re.compile(r"^\s*import\s+([\w.]+)")
@@ -53,13 +53,13 @@ def _parse_imports(lean_file):
 def _build_import_graph():
     """Build a directed graph: module -> list of imported modules.
 
-    Only includes imports within the Fawn namespace.
+    Only includes imports within the Doe namespace.
     """
     graph = defaultdict(list)
     for lean_file in _find_lean_files():
         module = _file_to_module(lean_file)
         for imp in _parse_imports(lean_file):
-            if imp.startswith("Fawn."):
+            if imp.startswith("Doe."):
                 graph[module].append(imp)
     return graph
 
@@ -171,7 +171,7 @@ class TestImportConsistency(unittest.TestCase):
         for lean_file in _find_lean_files():
             module = _file_to_module(lean_file)
             for imp in _parse_imports(lean_file):
-                if not imp.startswith("Fawn."):
+                if not imp.startswith("Doe."):
                     # Skip non-project imports (e.g. Mathlib, Init)
                     continue
                 imp_path = imp.replace(".", "/") + ".lean"
@@ -201,7 +201,7 @@ class TestImportConsistency(unittest.TestCase):
 
 
 class TestGeneratedContractFile(unittest.TestCase):
-    """Fawn/Generated/ComparabilityContract.lean exists and is non-empty."""
+    """Doe/Generated/ComparabilityContract.lean exists and is non-empty."""
 
     def test_file_exists(self):
         contract = LEAN_DIR / "Generated" / "ComparabilityContract.lean"
@@ -271,16 +271,16 @@ class TestModuleCoverage(unittest.TestCase):
     """Cross-check that key modules exist as files."""
 
     EXPECTED_MODULES = [
-        "Fawn.Core.Model",
-        "Fawn.Core.Runtime",
-        "Fawn.Core.Dispatch",
-        "Fawn.Core.Bridge",
-        "Fawn.Full.Comparability",
-        "Fawn.Full.ComparabilityFixtures",
-        "Fawn.Full.WorkloadGeometry",
-        "Fawn.Shader.ComputeBounds",
-        "Fawn.Generated.ComparabilityContract",
-        "Fawn.Extract",
+        "Doe.Core.Model",
+        "Doe.Core.Runtime",
+        "Doe.Core.Dispatch",
+        "Doe.Core.Bridge",
+        "Doe.Full.Comparability",
+        "Doe.Full.ComparabilityFixtures",
+        "Doe.Full.WorkloadGeometry",
+        "Doe.Shader.ComputeBounds",
+        "Doe.Generated.ComparabilityContract",
+        "Doe.Extract",
     ]
 
     def test_expected_modules_exist(self):

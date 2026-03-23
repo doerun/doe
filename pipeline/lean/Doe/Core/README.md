@@ -1,4 +1,4 @@
-# Fawn core proofs
+# Doe core proofs
 
 Theorem packs for the core runtime layer (`runtime/zig/src/core/`).
 

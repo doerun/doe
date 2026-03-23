@@ -441,8 +441,8 @@ Benchmark contract coverage snapshot (2026-02-25 update):
   - runs repeated `compare_dawn_vs_doe.py` invocations for one workload and emits per-run + aggregate (`medianDeltaP50Percent`, `medianDeltaP95Percent`) summary artifacts under a timestamped scratch folder.
 - experimental npm bridge package now provides practical headless integration paths under `@simulatte/webgpu`, rooted in `packages/webgpu/`:
 - Node provider source lives in `packages/webgpu/` (`src/index.js`, `binding.gyp`) with the addon bridge in `runtime/bridge/webgpu-addon/doe_napi.c`. Linux Node Doe-native path is now wired end-to-end (Linux guard removed).
-  - package CLI entrypoint `fawn-webgpu-bench` for command-stream benchmark execution and trace artifact emission from Node environments.
-  - package CLI entrypoint `fawn-webgpu-compare` wraps `bench/native-compare/compare_dawn_vs_doe.py` from Node with one command for Dawn-vs-Doe report generation.
+  - package CLI entrypoint `doe-gpu-bench` (formerly `fawn-webgpu-bench`) for command-stream benchmark execution and trace artifact emission from Node environments.
+  - package CLI entrypoint `doe-gpu-compare` (formerly `fawn-webgpu-compare`) wraps `bench/native-compare/compare_dawn_vs_doe.py` from Node with one command for Dawn-vs-Doe report generation.
   - package now exposes minimal in-process provider compatibility APIs for Node consumers (`create`, `globals`, `setupGlobals`, `requestAdapter`, `requestDevice`).
   - package browser-helper exports now expose the shared browser-surface factory and normalization helpers from `packages/webgpu/src/shared/browser-surface.js` through the public package entrypoints (`createBrowserSurfaceClasses`, `normalizeOrigin2D`, `normalizeCanvasConfiguration`, `CANVAS_*` maps).
   - package now also exports a concrete browser-owned canvas provider helper in `packages/webgpu/src/shared/browser-native-canvas-backend.js` (`createNativeBrowserCanvasBackend`), which delegates `GPUCanvasContext.configure/getCurrentTexture/unconfigure` plus browser-native `importExternalTexture` / `copyExternalImageToTexture` calls onto real browser WebGPU objects for Track A/offscreen adapter use.

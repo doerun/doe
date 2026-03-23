@@ -1,6 +1,6 @@
--- Re-export from Fawn.Core.Model for backward compatibility.
--- Canonical source: Fawn/Core/Model.lean
-import Fawn.Core.Model
+-- Re-export from Doe.Core.Model for backward compatibility.
+-- Canonical source: Doe/Core/Model.lean
+import Doe.Core.Model
 export Api (vulkan metal d3d12 webgpu)
 export Scope (alignment barrier layout driver_toggle memory)
 export SafetyClass (low moderate high critical)

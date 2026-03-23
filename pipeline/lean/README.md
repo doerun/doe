@@ -1,4 +1,4 @@
-# Fawn Lean module
+# Doe Lean module
 
 ## Verification tier classification
 
@@ -101,35 +101,35 @@ Specific obligation sets verified against the `lean_verified` theorems. The arti
 
 ## Current integration boundary (v0)
 
-- Lean files in `pipeline/lean/Fawn` are the formal contract/model source for verification semantics.
+- Lean files in `pipeline/lean/Doe` are the formal contract/model source for verification semantics.
 - Blocking CI gates are currently schema/correctness/trace (and claim when enabled) through `bench` scripts.
 - Zig/Python runtime/gate logic mirrors Lean obligation fields and policy (`verificationMode`, `proofLevel`, blocking/advisory outcomes).
 - Manual Lean typecheck/build is available through `./pipeline/lean/check.sh` (uses pinned toolchain version from `config/toolchains.json`).
 
 ## File layout
 
-Core theorem pack (`Fawn/Core/`, maps to `runtime/zig/src/core/`):
-- `Fawn/Core/Model.lean` — foundational enums, precedence lattice, requirement predicates
-- `Fawn/Core/Runtime.lean` — deterministic matching, scoring, selector, driver-range matching
-- `Fawn/Core/Dispatch.lean` — dispatch-level theorems (`tautological` and `comptime_verified`)
-- `Fawn/Core/Bridge.lean` — obligation gate evaluation from dispatch decisions
+Core theorem pack (`Doe/Core/`, maps to `runtime/zig/src/core/`):
+- `Doe/Core/Model.lean` — foundational enums, precedence lattice, requirement predicates
+- `Doe/Core/Runtime.lean` — deterministic matching, scoring, selector, driver-range matching
+- `Doe/Core/Dispatch.lean` — dispatch-level theorems (`tautological` and `comptime_verified`)
+- `Doe/Core/Bridge.lean` — obligation gate evaluation from dispatch decisions
 
-Full theorem pack (`Fawn/Full/`, maps to `runtime/zig/src/full/`):
-- `Fawn/Full/Comparability.lean` — comparability obligation model (`lean_verified`)
-- `Fawn/Full/ComparabilityFixtures.lean` — parity fixtures (`lean_fixture`)
-- `Fawn/Full/WorkloadGeometry.lean` — arbitrary-`Nat` workload-geometry theorems feeding execution-shape comparability
+Full theorem pack (`Doe/Full/`, maps to `runtime/zig/src/full/`):
+- `Doe/Full/Comparability.lean` — comparability obligation model (`lean_verified`)
+- `Doe/Full/ComparabilityFixtures.lean` — parity fixtures (`lean_fixture`)
+- `Doe/Full/WorkloadGeometry.lean` — arbitrary-`Nat` workload-geometry theorems feeding execution-shape comparability
 
-Shader theorem pack (`Fawn/Shader/`, maps to `runtime/zig/src/doe_wgsl/`):
-- `Fawn/Shader/ComputeBounds.lean` — compute dispatch bounds safety, proving global_invocation_id < array_length under dispatch-fit preconditions. Enables bounds-check elimination in `ir_transform_robustness.zig`.
+Shader theorem pack (`Doe/Shader/`, maps to `runtime/zig/src/doe_wgsl/`):
+- `Doe/Shader/ComputeBounds.lean` — compute dispatch bounds safety, proving global_invocation_id < array_length under dispatch-fit preconditions. Enables bounds-check elimination in `ir_transform_robustness.zig`.
 
 Generated theorem contract:
-- `Fawn/Generated/ComparabilityContract.lean` — generated from `config/comparability-obligations.json`; provides the canonical obligation IDs, fact record, and `obligationsFromFacts`
+- `Doe/Generated/ComparabilityContract.lean` — generated from `config/comparability-obligations.json`; provides the canonical obligation IDs, fact record, and `obligationsFromFacts`
 
 Re-export shims (backward compatibility):
-- `Fawn/Model.lean`, `Fawn/Runtime.lean`, `Fawn/Dispatch.lean`, `Fawn/Bridge.lean`, `Fawn/Comparability.lean`, `Fawn/ComparabilityFixtures.lean` re-export from `Fawn.Core.*` / `Fawn.Full.*`.
+- `Doe/Model.lean`, `Doe/Runtime.lean`, `Doe/Dispatch.lean`, `Doe/Bridge.lean`, `Doe/Comparability.lean`, `Doe/ComparabilityFixtures.lean` re-export from `Doe.Core.*` / `Doe.Full.*`.
 
 Extraction:
-- `Fawn/Extract.lean` — proof artifact extraction program, imports from both Core and Full
+- `Doe/Extract.lean` — proof artifact extraction program, imports from both Core and Full
 
 ## Bridge layer contract
 
@@ -149,8 +149,8 @@ Extraction:
 
 ## Proof artifact extraction
 
-- `./pipeline/lean/generate_comparability_contract.py` regenerates `Fawn/Generated/ComparabilityContract.lean` from `config/comparability-obligations.json` before typecheck/extraction.
-- `./pipeline/lean/extract.sh` compiles all Lean modules and runs `Fawn/Extract.lean` to produce `pipeline/lean/artifacts/proven-conditions.json`.
+- `./pipeline/lean/generate_comparability_contract.py` regenerates `Doe/Generated/ComparabilityContract.lean` from `config/comparability-obligations.json` before typecheck/extraction.
+- `./pipeline/lean/extract.sh` compiles all Lean modules and runs `Doe/Extract.lean` to produce `pipeline/lean/artifacts/proven-conditions.json`.
 - The artifact lists all verified theorems with their tier classification, records the active comparability contract hash, evaluates decidable propositions, and maps theorems to Zig runtime elimination targets.
 - Artifact schema: `config/proof-artifact.schema.json`.
 - CI runs extraction after typecheck and uploads the artifact (see `.github/workflows/lean-check.yml`).

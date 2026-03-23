@@ -1,5 +1,5 @@
-import Fawn.Core.Model
-import Fawn.Core.Runtime
+import Doe.Core.Model
+import Doe.Core.Runtime
 
 -- A single-source Lean gate check for a selected quirk.
 def SafetyProofOverride := SafetyClass → Option ProofLevel

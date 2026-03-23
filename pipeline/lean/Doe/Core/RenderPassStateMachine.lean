@@ -1,4 +1,4 @@
--- Fawn/Core/RenderPassStateMachine.lean
+-- Doe/Core/RenderPassStateMachine.lean
 --
 -- Abstract state machine proof for the Doe render pass encoder.
 -- Mirrors: runtime/zig/src/doe_render_native.zig DoeRenderPass + DoeCommandEncoder.
