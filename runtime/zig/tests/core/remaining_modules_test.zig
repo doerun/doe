@@ -629,8 +629,8 @@ test "parseReplayLine rejects missing seq" {
 
 test "ReplayValidationError has expected variant count" {
     const fields = @typeInfo(replay.ReplayValidationError).error_set.?;
-    // 13 error variants defined.
-    try testing.expectEqual(@as(usize, 13), fields.len);
+    // 14 error variants defined.
+    try testing.expectEqual(@as(usize, 14), fields.len);
 }
 
 // ============================================================

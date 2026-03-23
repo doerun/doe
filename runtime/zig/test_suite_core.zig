@@ -30,6 +30,7 @@ const lean_proof_test = @import("tests/core/lean_proof_test.zig");
 const dispatch_preconditions_test = @import("tests/core/dispatch_preconditions_test.zig");
 const runtime_integration_test = @import("tests/core/runtime_integration_test.zig");
 const remaining_modules_test = @import("tests/core/remaining_modules_test.zig");
+const wgpu_resources_test = @import("tests/core/wgpu_resources_test.zig");
 
 comptime {
     _ = common_artifact_meta_test;
@@ -64,4 +65,5 @@ comptime {
     _ = dispatch_preconditions_test;
     _ = runtime_integration_test;
     _ = remaining_modules_test;
+    _ = wgpu_resources_test;
 }

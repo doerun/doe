@@ -47,7 +47,9 @@ fn paramRef(idx: u32) ir.ExprNode {
 }
 
 fn memberExpr(base: ir.ExprId, name: []const u8) ir.ExprNode {
-    return makeExpr(.{ .member = .{ .base = base, .field_name = name, .field_index = 0 } });
+    // Heap-allocate the field name so Function.deinit can free it.
+    const duped = alloc.dupe(u8, name) catch @panic("test alloc failed");
+    return makeExpr(.{ .member = .{ .base = base, .field_name = duped, .field_index = 0 } });
 }
 
 fn localRef(idx: u32) ir.ExprNode {
@@ -69,21 +71,19 @@ fn indexExpr(base: ir.ExprId, index: ir.ExprId) ir.ExprNode {
 // Build a param with a builtin IoAttr.
 fn builtinParam(builtin: ir.Builtin) ir.Param {
     return .{
-        .name = "p",
+        .name = alloc.dupe(u8, "p") catch @panic("test alloc failed"),
         .ty = DUMMY_TYPE,
         .io = .{ .builtin = builtin },
     };
 }
 
-// Build a minimal function with the given expressions, params, stmts.
-const FnFixture = struct {
-    fn_val: ir.Function,
-
-    fn deinit(self: *FnFixture) void {
-        // We do NOT deinit because we used slice literals, not heap allocs.
-        _ = self;
-    }
-};
+// Build a minimal IR function with heap-allocated name for safe deinit.
+fn makeFunction() ir.Function {
+    return ir.Function{
+        .name = alloc.dupe(u8, "main") catch @panic("test alloc failed"),
+        .return_type = DUMMY_TYPE,
+    };
+}
 
 // ============================================================
 // layout_utils.round_up tests
@@ -261,7 +261,7 @@ test "struct_field_offset computes correct offsets with padding" {
 // Pattern: param_ref(0).x -> axis 0 for global_invocation_id
 test "classify builtin component recognizes gid.x as axis 0" {
     // Build: expr[0] = param_ref(0), expr[1] = member(0, "x")
-    var fn_val = ir.Function{ .name = "main", .return_type = DUMMY_TYPE };
+    var fn_val = makeFunction();
     defer fn_val.deinit(alloc);
     _ = try fn_val.append_expr(alloc, paramRef(0));
     _ = try fn_val.append_expr(alloc, memberExpr(0, "x"));
@@ -294,7 +294,7 @@ test "classify builtin component recognizes gid.x as axis 0" {
 }
 
 test "classify builtin component recognizes gid.y as axis 1" {
-    var fn_val = ir.Function{ .name = "main", .return_type = DUMMY_TYPE };
+    var fn_val = makeFunction();
     defer fn_val.deinit(alloc);
     _ = try fn_val.append_expr(alloc, paramRef(0));
     _ = try fn_val.append_expr(alloc, memberExpr(0, "y"));
@@ -308,7 +308,7 @@ test "classify builtin component recognizes gid.y as axis 1" {
 }
 
 test "classify builtin component recognizes gid.z as axis 2" {
-    var fn_val = ir.Function{ .name = "main", .return_type = DUMMY_TYPE };
+    var fn_val = makeFunction();
     defer fn_val.deinit(alloc);
     _ = try fn_val.append_expr(alloc, paramRef(0));
     _ = try fn_val.append_expr(alloc, memberExpr(0, "z"));
@@ -323,7 +323,7 @@ test "classify builtin component recognizes gid.z as axis 2" {
 
 // Pattern that looks like gid access but has wrong builtin.
 test "member access on non-gid builtin does not match gid pattern" {
-    var fn_val = ir.Function{ .name = "main", .return_type = DUMMY_TYPE };
+    var fn_val = makeFunction();
     defer fn_val.deinit(alloc);
     _ = try fn_val.append_expr(alloc, paramRef(0));
     _ = try fn_val.append_expr(alloc, memberExpr(0, "x"));
@@ -336,7 +336,7 @@ test "member access on non-gid builtin does not match gid pattern" {
 
 // Verify that a non-member expression fails the member pattern.
 test "non-member expression does not match builtin component" {
-    var fn_val = ir.Function{ .name = "main", .return_type = DUMMY_TYPE };
+    var fn_val = makeFunction();
     defer fn_val.deinit(alloc);
     _ = try fn_val.append_expr(alloc, intLit(42));
 
@@ -354,7 +354,7 @@ test "non-member expression does not match builtin component" {
 
 test "gid times stride pattern has mul at top" {
     // Pattern: gid.x * 4 => binary(mul, member(param_ref(0), "x"), int_lit(4))
-    var fn_val = ir.Function{ .name = "main", .return_type = DUMMY_TYPE };
+    var fn_val = makeFunction();
     defer fn_val.deinit(alloc);
     _ = try fn_val.append_expr(alloc, paramRef(0)); // 0
     _ = try fn_val.append_expr(alloc, memberExpr(0, "x")); // 1: gid.x
@@ -373,7 +373,7 @@ test "gid times stride pattern has mul at top" {
 
 test "gid times stride plus offset has add at top" {
     // Pattern: gid.x * 4 + 10
-    var fn_val = ir.Function{ .name = "main", .return_type = DUMMY_TYPE };
+    var fn_val = makeFunction();
     defer fn_val.deinit(alloc);
     _ = try fn_val.append_expr(alloc, paramRef(0)); // 0
     _ = try fn_val.append_expr(alloc, memberExpr(0, "x")); // 1
@@ -396,7 +396,7 @@ test "gid times stride plus offset has add at top" {
 
 test "tiled access pattern has add of div*stride and mod terms" {
     // Pattern: (gid.x / 4) * 8 + (gid.x % 4)
-    var fn_val = ir.Function{ .name = "main", .return_type = DUMMY_TYPE };
+    var fn_val = makeFunction();
     defer fn_val.deinit(alloc);
     _ = try fn_val.append_expr(alloc, paramRef(0)); // 0
     _ = try fn_val.append_expr(alloc, memberExpr(0, "x")); // 1: gid.x
@@ -436,7 +436,7 @@ test "tiled access pattern has add of div*stride and mod terms" {
 
 test "loop affine pattern adds gid term and local_ref term" {
     // Pattern: gid.x + i (where i is local_ref(0))
-    var fn_val = ir.Function{ .name = "main", .return_type = DUMMY_TYPE };
+    var fn_val = makeFunction();
     defer fn_val.deinit(alloc);
     _ = try fn_val.append_expr(alloc, paramRef(0)); // 0
     _ = try fn_val.append_expr(alloc, memberExpr(0, "x")); // 1: gid.x
@@ -466,7 +466,7 @@ test "loop affine pattern adds gid term and local_ref term" {
 }
 
 test "loop affine pattern with scaling: gid.x * 4 + i * 2 + 5" {
-    var fn_val = ir.Function{ .name = "main", .return_type = DUMMY_TYPE };
+    var fn_val = makeFunction();
     defer fn_val.deinit(alloc);
     _ = try fn_val.append_expr(alloc, paramRef(0)); // 0
     _ = try fn_val.append_expr(alloc, memberExpr(0, "x")); // 1: gid.x
@@ -492,7 +492,7 @@ test "loop affine pattern with scaling: gid.x * 4 + i * 2 + 5" {
 // ============================================================
 
 test "sub operation at top level is not an add pattern" {
-    var fn_val = ir.Function{ .name = "main", .return_type = DUMMY_TYPE };
+    var fn_val = makeFunction();
     defer fn_val.deinit(alloc);
     _ = try fn_val.append_expr(alloc, paramRef(0)); // 0
     _ = try fn_val.append_expr(alloc, memberExpr(0, "x")); // 1
@@ -513,7 +513,7 @@ test "sub operation at top level is not an add pattern" {
 // ============================================================
 
 test "member access on a global_ref is not a builtin param pattern" {
-    var fn_val = ir.Function{ .name = "main", .return_type = DUMMY_TYPE };
+    var fn_val = makeFunction();
     defer fn_val.deinit(alloc);
     _ = try fn_val.append_expr(alloc, globalRefExpr(0)); // 0: global
     _ = try fn_val.append_expr(alloc, memberExpr(0, "x")); // 1: global.x
@@ -531,7 +531,7 @@ test "member access on a global_ref is not a builtin param pattern" {
 // ============================================================
 
 test "load expression wraps inner expression id" {
-    var fn_val = ir.Function{ .name = "main", .return_type = DUMMY_TYPE };
+    var fn_val = makeFunction();
     defer fn_val.deinit(alloc);
     _ = try fn_val.append_expr(alloc, intLit(42)); // 0
     _ = try fn_val.append_expr(alloc, loadExpr(0)); // 1: load(0)
@@ -549,7 +549,7 @@ test "load expression wraps inner expression id" {
 // ============================================================
 
 test "const local decl provides initializer for alias resolution" {
-    var fn_val = ir.Function{ .name = "main", .return_type = DUMMY_TYPE };
+    var fn_val = makeFunction();
     defer fn_val.deinit(alloc);
     _ = try fn_val.append_expr(alloc, intLit(99)); // 0: initializer
     _ = try fn_val.append_expr(alloc, localRef(0)); // 1: local_ref(0)
@@ -576,7 +576,7 @@ test "const local decl provides initializer for alias resolution" {
 // ============================================================
 
 test "flat 2d index pattern has add of gid.x and gid.y * width" {
-    var fn_val = ir.Function{ .name = "main", .return_type = DUMMY_TYPE };
+    var fn_val = makeFunction();
     defer fn_val.deinit(alloc);
     _ = try fn_val.append_expr(alloc, paramRef(0)); // 0
     _ = try fn_val.append_expr(alloc, memberExpr(0, "x")); // 1: gid.x
