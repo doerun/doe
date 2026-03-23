@@ -1,5 +1,7 @@
 # @simulatte/webgpu-doe
 
+> **Deprecated:** This package is deprecated and has been merged into [`doe-gpu`](https://github.com/doe-gpu/doe).
+
 The standalone Doe JavaScript helper layer for WebGPU-compatible runtimes.
 
 This package does not ship a runtime, native addon, or raw WebGPU

@@ -1,9 +1,11 @@
 # @simulatte/webgpu
 
+> **Deprecated:** This package is deprecated. Use [`doe-gpu`](https://github.com/doe-gpu/doe) instead.
+
 <table>
   <tr>
     <td valign="middle">
-      <strong>Run real WebGPU workloads in Node.js and Bun with Doe, the WebGPU runtime from Fawn.</strong>
+      <strong>Run real WebGPU workloads in Node.js and Bun with Doe, the WebGPU runtime.</strong>
     </td>
     <td valign="middle">
       <img src="assets/fawn-icon-main.svg" alt="Fawn logo" width="88" />
@@ -11,7 +13,7 @@
   </tr>
 </table>
 
-`@simulatte/webgpu` is Fawn's headless WebGPU package for Node.js and Bun: use
+`@simulatte/webgpu` is Doe's headless WebGPU package for Node.js and Bun: use
 the raw WebGPU API through `requestDevice()` and `device.*`, or move up to the
 Doe API when you want the same runtime with less setup. Browser DOM/canvas
 ownership lives in the separate `browser/fawn-browser` lane.
@@ -209,7 +211,7 @@ console.log(result.subarray(0, 8)); // Float32Array(8) [ ... ]
 
 ### Benchmark snapshot
 
-This package is the headless package surface of the Doe runtime, Fawn's
+This package is the headless package surface of the Doe runtime, Doe's
 Zig-first WebGPU implementation, and it is benchmarked through separate
 Node and Bun package lanes.
 
@@ -218,7 +220,7 @@ Node and Bun package lanes.
 </p>
 
 `@simulatte/webgpu` is the headless package surface of the broader
-[Fawn](https://github.com/clocksmith/fawn) project. The same repository also
+[Doe](https://github.com/doe-gpu/doe) project. The same repository also
 carries the Doe runtime itself, benchmarking and verification tooling, and the
 separate `browser/fawn-browser` Chromium/browser integration lane.
 
@@ -238,7 +240,7 @@ The install ships platform-specific prebuilds for macOS arm64 (Metal) and
 Linux x64 (Vulkan). If no prebuild matches your platform, the installer falls
 back to building the native addon with `node-gyp` only; it does not build or
 bundle `libwebgpu_doe` and the required Dawn sidecar for you. On unsupported
-platforms, use a local Fawn workspace build for those runtime libraries.
+platforms, use a local Doe workspace build for those runtime libraries.
 
 ## Public packages
 
@@ -364,7 +366,7 @@ through the package FFI surface, while macOS currently uses the full
 addon-backed path for correctness parity. Current builds still ship a Dawn
 sidecar where proc resolution requires it.
 
-The Doe runtime is Fawn's Zig-first WebGPU implementation with explicit profile
+The Doe runtime is Doe's Zig-first WebGPU implementation with explicit profile
 and quirk binding, a native WGSL pipeline (`lexer -> parser -> semantic
 analysis -> IR -> backend emitters`), and explicit Vulkan/Metal/D3D12
 execution paths in one system.

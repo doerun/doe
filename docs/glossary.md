@@ -8,8 +8,10 @@
   - the JavaScript helper surface exposed by Doe helper packages
 - `@simulatte/webgpu`
   - the main runtime package family for Node.js and Bun
+  - Deprecated — use `doe-gpu` instead
 - `@simulatte/webgpu-doe`
   - the transport-free helper package family for compatible WebGPU surfaces
+  - Deprecated — use `doe-gpu` instead
 - `subpath entrypoint`
   - an alternate export of one package family, not a separate product
 - `browser lane`

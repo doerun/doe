@@ -1,4 +1,4 @@
-# Fawn Architecture
+# Doe Architecture
 
 ## 1. System Shape
 
@@ -26,7 +26,7 @@ Doe is split into five modules with hard interfaces. In v0 these interfaces are 
 
 ### Product surfaces
 
-Fawn is platform-shaped as well as module-shaped.
+Doe is platform-shaped as well as module-shaped.
 
 ```text
 ┌─────────────────────────────────────────────────────────────────┐
@@ -39,7 +39,9 @@ Fawn is platform-shaped as well as module-shaped.
            ▼                              ▼
 ┌─────────────────────────┐  ┌────────────────────────────────────┐
 │ @simulatte/webgpu       │  │ Chromium Track A                   │
-│ (headless package)      │  │ (future Chromium integration)      │
+│ (headless package;      │  │ (future Chromium integration)      │
+│  deprecated, use        │  │                                    │
+│  doe-gpu)               │  │                                    │
 │                         │  │                                    │
 │ Two runtime paths:      │  │ Embed the Doe runtime inside       │
 │                         │  │ Chromium to replace Dawn at the    │
@@ -60,7 +62,7 @@ Fawn is platform-shaped as well as module-shaped.
 - the Zig-first execution engine and compiler stack
 - owns explicit runtime behavior, backend execution, and proof-aware branch elimination
 
-2. `@simulatte/webgpu` (headless package)
+2. `@simulatte/webgpu` (headless package) *(deprecated — use `doe-gpu`)*
 - the canonical package surface for Node.js, Bun, and browser environments
 - exposes Doe for compute, offscreen execution, benchmarking, and CI workflows
 - contains two distinct runtime paths:
@@ -74,7 +76,7 @@ Fawn is platform-shaped as well as module-shaped.
 - plans and contracts live in `browser/fawn-browser/`; no production runtime behavior is enabled from that directory today
 
 Note: the browser wrapper (surface 2) and Chromium Track A (surface 3) serve
-different purposes. The wrapper lets existing `@simulatte/webgpu` code run in
+different purposes. The wrapper lets existing `@simulatte/webgpu` (now `doe-gpu`) code run in
 a browser today by forwarding to the browser's WebGPU. Track A is the future
 effort to make the browser's WebGPU _be_ Doe.
 

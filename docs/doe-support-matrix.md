@@ -24,7 +24,7 @@ Each tier is additive: doe-runtime includes all doe-core commitments; fawn-brows
 
 ## Compatibility matrix snapshot (2026-03-10)
 
-This is the current evidence-backed compatibility read for Fawn's active lanes.
+This is the current evidence-backed compatibility read for Doe's active lanes.
 Use it as the fast answer to "what is actually covered today?" and then follow
 the tier contracts below for promotion requirements.
 
@@ -47,9 +47,9 @@ The detailed file-level breakdown lives in `examples/README.md`.
 
 ## Surface and competitor matrix snapshot (2026-03-17)
 
-The tier table above answers "what can Fawn honestly claim today?".
+The tier table above answers "what can Doe honestly claim today?".
 This section answers the adjacent product question:
-"which Doe/Simulatte surface exists on which host, against which competitor or
+"which Doe surface exists on which host, against which competitor or
 reference surface, and what is that cell for?"
 
 Status vocabulary used below:
@@ -65,7 +65,7 @@ Status vocabulary used below:
   governed today
 - `not meaningful`: not a product cell we should try to fill
 
-Subpath reminder:
+Subpath reminder (the `@simulatte/*` scope is deprecated; use `doe-gpu`):
 
 - `compute`, `full`, `node`, and `bun` are subpath entrypoints of
   `@simulatte/webgpu`, not separate products
@@ -73,7 +73,7 @@ Subpath reminder:
   enough to list separately because it creates a diagnostic comparison mode
 - `@simulatte/webgpu-doe` is a helper package family, not a second runtime
 
-### Runtime package family: `@simulatte/webgpu`
+### Runtime package family: `@simulatte/webgpu` *(deprecated — use `doe-gpu`)*
 
 | Host / platform | Left surface | Right / reference surface | Kind | Current state | Value / note |
 |------|------|------|------|------|------|
@@ -84,7 +84,7 @@ Subpath reminder:
 | Node | `@simulatte/webgpu/native-direct` | raw competitor device surfaces in ad hoc four-way compares | diagnostic subpath | `diagnostic` | Useful for stripping wrapper noise out of Node package attribution. Not a public replacement promise by itself. |
 | Browser | `@simulatte/webgpu` package family | browser `navigator.gpu` | package cell | `not meaningful` | Browser ownership lives in `fawn-browser`, not in the npm runtime package family. |
 
-### Helper package family: `@simulatte/webgpu-doe`
+### Helper package family: `@simulatte/webgpu-doe` *(deprecated — merged into `doe-gpu`)*
 
 | Host / platform | Left surface | Right / reference surface | Kind | Current state | Value / note |
 |------|------|------|------|------|------|
@@ -122,11 +122,11 @@ exist in the repo today:
 Cells not listed separately are intentionally folded into one of those rows:
 
 - `@simulatte/webgpu/compute` and `@simulatte/webgpu/full` are API-shape
-  entrypoints inside the same runtime package family, not separate competitive
-  surfaces
+  entrypoints inside the same runtime package family (deprecated; use `doe-gpu`),
+  not separate competitive surfaces
 - `@simulatte/webgpu/node` and `@simulatte/webgpu/bun` are host-specific
-  subpaths of the same package family and inherit the same lane status as their
-  parent Node/Bun rows
+  subpaths of the same package family (deprecated; use `doe-gpu`) and inherit
+  the same lane status as their parent Node/Bun rows
 - browser competitors are represented at the browser tier, not duplicated under
   the npm package family
 
@@ -149,14 +149,14 @@ Headless compute, benchmarking, and evidence infrastructure via Node/Bun/CLI.
 
 ### Deployment surface
 
-- `@simulatte/webgpu` (Node runtime, Bun FFI, CLI)
+- `@simulatte/webgpu` *(deprecated — use `doe-gpu`)* (Node runtime, Bun FFI, CLI)
 - `doe-zig-runtime` CLI binary
 - `libwebgpu_doe.{dylib,so,dll}` via FFI (compute-focused paths)
 - browser/runtime replacement packaging beyond the headless package name belongs to the `doe-runtime` tier, not a separate public package name today
 
 ### Supported API
 
-From `@simulatte/webgpu` API contract v1:
+From `@simulatte/webgpu` (now `doe-gpu`) API contract v1:
 
 | API | Status | Notes |
 |-----|--------|-------|
@@ -206,7 +206,7 @@ CLI tools:
 
 - Artifact reproducibility: any published benchmark artifact must be reproducible from the same inputs, config, and runtime version.
 - Gate stability: blocking gates must not regress (pass→fail) without a tracked config or code change.
-- API stability: `@simulatte/webgpu` API contract v1 surface is stable; breaking changes require version bump.
+- API stability: `@simulatte/webgpu` (now `doe-gpu`) API contract v1 surface is stable; breaking changes require version bump.
 - No uptime/availability SLA (headless tooling, not a service).
 
 ### Allowed marketing claims
