@@ -23,7 +23,7 @@ surfaces, browser bring-up, proof artifacts, tracing, and benchmarking.
   native backend execution paths
 - [`packages/doe-gpu`](packages/doe-gpu/README.md): the npm package for
   headless WebGPU
-- [`browser/fawn-browser`](browser/fawn-browser/README.md): browser-owned and
+- [`browser/chromium`](browser/chromium/README.md): browser-owned and
   Chromium-oriented integration work
 - [`pipeline/agent`](pipeline/agent/README.md): quirk mining and normalization
 - [`pipeline/lean`](pipeline/lean/README.md): proof artifacts that can remove

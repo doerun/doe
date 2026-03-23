@@ -360,7 +360,7 @@ For `doe` and nested namespaces:
 7. Keep docs package-accurate:
    `@simulatte/webgpu` is headless full surface;
    `@simulatte/webgpu/compute` is compute-only;
-   browser ownership belongs to `browser/fawn-browser`.
+   browser ownership belongs to `browser/chromium`.
 
 ## Anti-patterns
 

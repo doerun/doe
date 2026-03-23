@@ -21,7 +21,7 @@ PROMOTED_MODULES = {
         "cases": [
             {
                 "id": "happy_path",
-                "fixture": "browser/fawn-browser/module-incubation/fixtures/fawn-2d-sdf-renderer.request.json",
+                "fixture": "browser/chromium/module-incubation/fixtures/fawn-2d-sdf-renderer.request.json",
                 "expectEquals": {
                     "qualityStats.fallbackCount": 0,
                     "renderStats.passCount": 1,
@@ -29,7 +29,7 @@ PROMOTED_MODULES = {
             },
             {
                 "id": "unsupported_sample_count",
-                "fixture": "browser/fawn-browser/module-incubation/fixtures/fawn-2d-sdf-renderer.edge.unsupported-sample-count.request.json",
+                "fixture": "browser/chromium/module-incubation/fixtures/fawn-2d-sdf-renderer.edge.unsupported-sample-count.request.json",
                 "expectEquals": {
                     "qualityStats.fallbackCount": 1,
                     "qualityStats.fallbackReasonHistogram.required_capability_missing": 1,
@@ -44,7 +44,7 @@ PROMOTED_MODULES = {
         "cases": [
             {
                 "id": "happy_path",
-                "fixture": "browser/fawn-browser/module-incubation/fixtures/fawn-compute-services.request.json",
+                "fixture": "browser/chromium/module-incubation/fixtures/fawn-compute-services.request.json",
                 "expectEquals": {
                     "serviceResult.status": "ok",
                     "failureDetails.code": "none",
@@ -52,7 +52,7 @@ PROMOTED_MODULES = {
             },
             {
                 "id": "input_contract_invalid",
-                "fixture": "browser/fawn-browser/module-incubation/fixtures/fawn-compute-services.edge.input-contract-invalid.request.json",
+                "fixture": "browser/chromium/module-incubation/fixtures/fawn-compute-services.edge.input-contract-invalid.request.json",
                 "expectEquals": {
                     "serviceResult.status": "fallback",
                     "failureDetails.code": "input_contract_invalid",
@@ -66,7 +66,7 @@ PROMOTED_MODULES = {
         "cases": [
             {
                 "id": "happy_path",
-                "fixture": "browser/fawn-browser/module-incubation/fixtures/fawn-effects-pipeline.request.json",
+                "fixture": "browser/chromium/module-incubation/fixtures/fawn-effects-pipeline.request.json",
                 "expectEquals": {
                     "fallbackStats.fallbackCount": 0,
                     "executionStats.passCount": 2,
@@ -74,7 +74,7 @@ PROMOTED_MODULES = {
             },
             {
                 "id": "unsupported_op",
-                "fixture": "browser/fawn-browser/module-incubation/fixtures/fawn-effects-pipeline.edge.unsupported-op.request.json",
+                "fixture": "browser/chromium/module-incubation/fixtures/fawn-effects-pipeline.edge.unsupported-op.request.json",
                 "expectEquals": {
                     "fallbackStats.fallbackCount": 1,
                     "fallbackStats.fallbackReasonHistogram.effect_op_unsupported": 1,
@@ -89,7 +89,7 @@ PROMOTED_MODULES = {
         "cases": [
             {
                 "id": "happy_path",
-                "fixture": "browser/fawn-browser/module-incubation/fixtures/fawn-path-engine.request.json",
+                "fixture": "browser/chromium/module-incubation/fixtures/fawn-path-engine.request.json",
                 "expectEquals": {
                     "fallbackStats.fallbackCount": 0,
                     "rasterStats.passCount": 1,
@@ -97,7 +97,7 @@ PROMOTED_MODULES = {
             },
             {
                 "id": "dash_pattern_unsupported",
-                "fixture": "browser/fawn-browser/module-incubation/fixtures/fawn-path-engine.edge.dash-pattern.request.json",
+                "fixture": "browser/chromium/module-incubation/fixtures/fawn-path-engine.edge.dash-pattern.request.json",
                 "expectEquals": {
                     "fallbackStats.fallbackCount": 1,
                     "fallbackStats.fallbackReasonHistogram.dash_pattern_unsupported": 1,
@@ -112,7 +112,7 @@ PROMOTED_MODULES = {
         "cases": [
             {
                 "id": "happy_path",
-                "fixture": "browser/fawn-browser/module-incubation/fixtures/fawn-resource-scheduler.request.json",
+                "fixture": "browser/chromium/module-incubation/fixtures/fawn-resource-scheduler.request.json",
                 "expectEquals": {
                     "fallbackStats.fallbackCount": 0,
                     "submitStats.cadenceModeUsed": "deferred",
@@ -120,7 +120,7 @@ PROMOTED_MODULES = {
             },
             {
                 "id": "invalid_cadence",
-                "fixture": "browser/fawn-browser/module-incubation/fixtures/fawn-resource-scheduler.edge.invalid-cadence.request.json",
+                "fixture": "browser/chromium/module-incubation/fixtures/fawn-resource-scheduler.edge.invalid-cadence.request.json",
                 "expectEquals": {
                     "fallbackStats.fallbackCount": 1,
                     "fallbackStats.fallbackReasonHistogram.cadence_policy_invalid": 1,

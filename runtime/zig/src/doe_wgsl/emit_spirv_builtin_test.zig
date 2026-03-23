@@ -611,3 +611,108 @@ test "spirv builtin: textureNumLayers produces valid SPIR-V" {
     try testing.expect(len >= 20);
     try testing.expectEqual(spirv.MAGIC, read_u32_le(&out, 0));
 }
+
+test "spirv builtin: textureBarrier produces valid SPIR-V" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> buf: array<f32>;
+        \\@compute @workgroup_size(64)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    buf[id.x] = 1.0;
+        \\    textureBarrier();
+        \\    buf[id.x] = 2.0;
+        \\}
+    ;
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(allocator, source, &out);
+    try testing.expect(len >= 20);
+    try testing.expectEqual(spirv.MAGIC, read_u32_le(&out, 0));
+}
+
+test "spirv builtin: subgroupElect produces valid SPIR-V" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> buf: array<u32>;
+        \\@compute @workgroup_size(64)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    if subgroupElect() {
+        \\        buf[0u] = 1u;
+        \\    }
+        \\}
+    ;
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(allocator, source, &out);
+    try testing.expect(len >= 20);
+    try testing.expectEqual(spirv.MAGIC, read_u32_le(&out, 0));
+}
+
+test "spirv builtin: subgroupBroadcastFirst produces valid SPIR-V" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> buf: array<f32>;
+        \\@compute @workgroup_size(64)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    buf[id.x] = subgroupBroadcastFirst(buf[id.x]);
+        \\}
+    ;
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(allocator, source, &out);
+    try testing.expect(len >= 20);
+    try testing.expectEqual(spirv.MAGIC, read_u32_le(&out, 0));
+}
+
+test "spirv builtin: subgroupShuffleDown produces valid SPIR-V" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> buf: array<f32>;
+        \\@compute @workgroup_size(64)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    buf[id.x] = subgroupShuffleDown(buf[id.x], 1u);
+        \\}
+    ;
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(allocator, source, &out);
+    try testing.expect(len >= 20);
+    try testing.expectEqual(spirv.MAGIC, read_u32_le(&out, 0));
+}
+
+test "spirv builtin: subgroupInclusiveAdd produces valid SPIR-V" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> buf: array<f32>;
+        \\@compute @workgroup_size(64)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    buf[id.x] = subgroupInclusiveAdd(buf[id.x]);
+        \\}
+    ;
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(allocator, source, &out);
+    try testing.expect(len >= 20);
+    try testing.expectEqual(spirv.MAGIC, read_u32_le(&out, 0));
+}
+
+test "spirv builtin: subgroupMul produces valid SPIR-V" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> buf: array<f32>;
+        \\@compute @workgroup_size(64)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    buf[id.x] = subgroupMul(buf[id.x]);
+        \\}
+    ;
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(allocator, source, &out);
+    try testing.expect(len >= 20);
+    try testing.expectEqual(spirv.MAGIC, read_u32_le(&out, 0));
+}
+
+test "spirv builtin: subgroup bitwise ops produce valid SPIR-V" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> buf: array<u32>;
+        \\@compute @workgroup_size(64)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    let a = subgroupAnd(buf[id.x]);
+        \\    let o = subgroupOr(buf[id.x]);
+        \\    let x = subgroupXor(buf[id.x]);
+        \\    buf[id.x] = a + o + x;
+        \\}
+    ;
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(allocator, source, &out);
+    try testing.expect(len >= 20);
+    try testing.expectEqual(spirv.MAGIC, read_u32_le(&out, 0));
+}

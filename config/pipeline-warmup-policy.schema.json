@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Doe pipeline warmup policy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "enableBackgroundWarmup",
+    "maxWarmupPipelines",
+    "warmupWorkerCount",
+    "knownModelGraphs"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "enableBackgroundWarmup": {
+      "type": "boolean",
+      "description": "When true, pipelines from knownModelGraphs are pre-compiled on background threads at cache init."
+    },
+    "maxWarmupPipelines": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Maximum number of pipelines to warm up in a single session."
+    },
+    "warmupWorkerCount": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Number of background threads used for pipeline warmup."
+    },
+    "knownModelGraphs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["graphId", "pipelineKeys"],
+        "properties": {
+          "graphId": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Stable identifier for a model graph whose pipelines should be warmed."
+          },
+          "pipelineKeys": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Hex cache keys of pipelines belonging to this graph."
+          }
+        }
+      },
+      "description": "Model graphs whose pipelines are candidates for background warmup."
+    }
+  }
+}

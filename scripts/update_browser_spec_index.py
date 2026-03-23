@@ -6,9 +6,9 @@ implementation.  The browser runtime routes through the Doe Zig runtime exposed
 via Chromium WebGPU bindings.
 
 Evidence sources:
-  - browser/fawn-browser/scripts/webgpu-playwright-smoke.mjs
-  - browser/fawn-browser/scripts/webgpu-playwright-layered-bench.mjs
-  - browser/fawn-browser/artifacts/ (passing Doe mode results)
+  - browser/chromium/scripts/webgpu-playwright-smoke.mjs
+  - browser/chromium/scripts/webgpu-playwright-layered-bench.mjs
+  - browser/chromium/artifacts/ (passing Doe mode results)
 
 Classification rules:
   - "implemented"  = API exercised and verified in browser Playwright tests

@@ -4,7 +4,7 @@
   "surfaceVersion": 1,
   "lastUpdated": "2026-03-22",
   "description": "Integration overlay when Doe runs inside Chromium via --use-webgpu-runtime=doe. The wire protocol and browser-owned media paths add constraints beyond Doe's native command and capability surfaces.",
-  "smokeTestArtifact": "browser/fawn-browser/artifacts/20260322T220335Z/dawn-vs-doe.browser.playwright-smoke.diagnostic.json",
+  "smokeTestArtifact": "browser/chromium/artifacts/20260322T220335Z/dawn-vs-doe.browser.playwright-smoke.diagnostic.json",
   "coverage": [
     {
       "capability": "requestAdapter",

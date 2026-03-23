@@ -12,6 +12,10 @@ pub fn emit_builtin(self: anytype, call: anytype, result_ty: ir.TypeId) !?u32 {
         try emit_control_barrier(self, spirv.MemorySemantics.AcquireRelease | spirv.MemorySemantics.UniformMemory | spirv.MemorySemantics.ImageMemory);
         return 0;
     }
+    if (std.mem.eql(u8, call.name, "textureBarrier")) {
+        try emit_control_barrier(self, spirv.MemorySemantics.AcquireRelease | spirv.MemorySemantics.ImageMemory);
+        return 0;
+    }
     if (std.mem.startsWith(u8, call.name, "atomic")) {
         return try emit_atomic_call(self, call, result_ty);
     }
@@ -221,6 +225,45 @@ pub fn emit_builtin(self: anytype, call: anytype, result_ty: ir.TypeId) !?u32 {
             try self.emit_value_expr(self.function.expr_args.items[call.args.start]),
         });
     }
+    if (std.mem.eql(u8, call.name, "subgroupMul")) {
+        return try emit_subgroup_reduce(self, call, result_ty, subgroup_arithmetic_opcode(self.scalar_kind(result_ty), .mul) orelse return error.UnsupportedConstruct);
+    }
+    if (std.mem.eql(u8, call.name, "subgroupInclusiveAdd")) {
+        return try emit_subgroup_inclusive_scan(self, call, result_ty, subgroup_arithmetic_opcode(self.scalar_kind(result_ty), .add) orelse return error.UnsupportedConstruct);
+    }
+    if (std.mem.eql(u8, call.name, "subgroupAnd")) {
+        return try emit_subgroup_reduce(self, call, result_ty, spirv.Opcode.GroupNonUniformBitwiseAnd);
+    }
+    if (std.mem.eql(u8, call.name, "subgroupOr")) {
+        return try emit_subgroup_reduce(self, call, result_ty, spirv.Opcode.GroupNonUniformBitwiseOr);
+    }
+    if (std.mem.eql(u8, call.name, "subgroupXor")) {
+        return try emit_subgroup_reduce(self, call, result_ty, spirv.Opcode.GroupNonUniformBitwiseXor);
+    }
+    if (std.mem.eql(u8, call.name, "subgroupShuffleDown")) {
+        return try emit_subgroup_shuffle_like(self, call, result_ty, spirv.Opcode.GroupNonUniformShuffleDown);
+    }
+    if (std.mem.eql(u8, call.name, "subgroupShuffleUp")) {
+        return try emit_subgroup_shuffle_like(self, call, result_ty, spirv.Opcode.GroupNonUniformShuffleUp);
+    }
+    if (std.mem.eql(u8, call.name, "subgroupBroadcastFirst")) {
+        if (call.args.len != 1) return error.InvalidIr;
+        try self.emitter.builder.emit_capability(spirv.Capability.GroupNonUniform);
+        try self.emitter.builder.emit_capability(spirv.Capability.GroupNonUniformBallot);
+        const scope_id = try self.emitter.builder.const_u32(spirv.Scope.Subgroup);
+        return try emit_result_inst(self, spirv.Opcode.GroupNonUniformBroadcastFirst, try self.emitter.lower_type(result_ty), &.{
+            scope_id,
+            try self.emit_value_expr(self.function.expr_args.items[call.args.start]),
+        });
+    }
+    if (std.mem.eql(u8, call.name, "subgroupElect")) {
+        if (call.args.len != 0) return error.InvalidIr;
+        try self.emitter.builder.emit_capability(spirv.Capability.GroupNonUniform);
+        const scope_id = try self.emitter.builder.const_u32(spirv.Scope.Subgroup);
+        return try emit_result_inst(self, spirv.Opcode.GroupNonUniformElect, try self.emitter.lower_type(result_ty), &.{
+            scope_id,
+        });
+    }
 
     if (builtin_inst_1(call.name, self.scalar_kind(result_ty))) |inst| {
         return try emit_glsl_ext_inst_args(self, call, result_ty, inst);
@@ -276,7 +319,7 @@ pub fn emit_builtin(self: anytype, call: anytype, result_ty: ir.TypeId) !?u32 {
     return null;
 }
 
-const SubgroupArithmeticOp = enum { add, min, max };
+const SubgroupArithmeticOp = enum { add, mul, min, max };
 
 fn emit_glsl_ext_inst_args(self: anytype, call: anytype, result_ty: ir.TypeId, inst: u32) !u32 {
     const result_type = try self.emitter.lower_type(result_ty);
@@ -352,11 +395,34 @@ fn emit_subgroup_shuffle_like(self: anytype, call: anytype, result_ty: ir.TypeId
     );
 }
 
+fn emit_subgroup_inclusive_scan(self: anytype, call: anytype, result_ty: ir.TypeId, opcode: u16) !u32 {
+    if (call.args.len != 1) return error.InvalidIr;
+    try self.emitter.builder.emit_capability(spirv.Capability.GroupNonUniform);
+    try self.emitter.builder.emit_capability(spirv.Capability.GroupNonUniformArithmetic);
+    const scope_id = try self.emitter.builder.const_u32(spirv.Scope.Subgroup);
+    const op_id = try self.emitter.builder.const_u32(spirv.GroupOperation.InclusiveScan);
+    return try emit_result_inst(
+        self,
+        opcode,
+        try self.emitter.lower_type(result_ty),
+        &.{
+            scope_id,
+            op_id,
+            try self.emit_value_expr(self.function.expr_args.items[call.args.start]),
+        },
+    );
+}
+
 fn subgroup_arithmetic_opcode(kind: anytype, op: SubgroupArithmeticOp) ?u16 {
     return switch (op) {
         .add => switch (kind) {
             .float => spirv.Opcode.GroupNonUniformFAdd,
             .signed, .unsigned => spirv.Opcode.GroupNonUniformIAdd,
+            else => null,
+        },
+        .mul => switch (kind) {
+            .float => spirv.Opcode.GroupNonUniformFMul,
+            .signed, .unsigned => spirv.Opcode.GroupNonUniformIMul,
             else => null,
         },
         .min => switch (kind) {

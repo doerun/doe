@@ -32,7 +32,7 @@ while [[ $# -gt 0 ]]; do
     --help|-h)
       cat <<'EOF'
 Usage:
-  ./scripts/fawn-browser.sh [--chrome PATH] [--doe-lib PATH] [-- ...chrome args]
+  ./scripts/chromium.sh [--chrome PATH] [--doe-lib PATH] [-- ...chrome args]
 
 Launch the Fawn browser binary (or app bundle) with Doe runtime enabled
 using lane-resolved defaults.

@@ -4,7 +4,7 @@ Purpose:
 - define how Fawn keeps Chromium security/currentness while carrying Doe integration deltas.
 
 Scope:
-- this document governs `browser/fawn-browser` operational maintenance.
+- this document governs `browser/chromium` operational maintenance.
 - it does not relax runtime or benchmark gate policy in `docs/process.md`.
 
 ## 1. Integration boundary

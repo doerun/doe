@@ -13,7 +13,7 @@ from jsonschema import Draft202012Validator
 
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-MODULE_INCUBATION_ROOT = REPO_ROOT / "browser/fawn-browser/module-incubation"
+MODULE_INCUBATION_ROOT = REPO_ROOT / "browser/chromium/module-incubation"
 SCHEMA_DIR = MODULE_INCUBATION_ROOT / "schemas"
 POLICY_PATH = MODULE_INCUBATION_ROOT / "policy.json"
 SCHEMA_PATHS = {

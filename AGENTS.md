@@ -165,7 +165,7 @@ Do not bypass earlier stages to satisfy later-stage outcomes.
 - artifacts are the source of truth, not docs:
   - theorem count/categories: `pipeline/lean/artifacts/proven-conditions.json`
   - benchmark results: `bench/out/*/dawn-vs-doe.*.json`
-  - browser smoke: `browser/fawn-browser/artifacts/*/dawn-vs-doe.browser.playwright-smoke.diagnostic.json`
+  - browser smoke: `browser/chromium/artifacts/*/dawn-vs-doe.browser.playwright-smoke.diagnostic.json`
   - backends: `runtime/zig/src/backend/*/`
   - test status: `zig build test-wgsl` exit code
 - prose describes what kind of thing exists, not how many; the artifact has the count

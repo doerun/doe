@@ -179,7 +179,7 @@ Read this diagram top to bottom:
   `lean_proof.zig` and `quirk/runtime.zig`; it is not a JS-facing runtime tier.
 - The browser wrapper (`src/browser.js`) shares the JS object model with the
   native path but delegates all GPU work to the browser's own WebGPU. It is
-  unrelated to Chromium Track A (`browser/fawn-browser/`), which is the future
+  unrelated to Chromium Track A (`browser/chromium/`), which is the future
   effort to embed Doe inside Chromium.
 
 ## Layer details
@@ -358,7 +358,7 @@ split.
 1. `full` composes `core`; it does not toggle `core`.
 2. `core` must never import `full`.
 3. `full` may depend on `core` Zig modules, Lean modules, build outputs, and JS helpers.
-4. Chromium Track A (`browser/fawn-browser/`) depends on the full runtime artifact and browser-specific gates, not on npm package layout. It is unrelated to the browser wrapper path (`src/browser.js`) inside this package.
+4. Chromium Track A (`browser/chromium/`) depends on the full runtime artifact and browser-specific gates, not on npm package layout. It is unrelated to the browser wrapper path (`src/browser.js`) inside this package.
 
 Anti-bleed:
 

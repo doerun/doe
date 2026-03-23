@@ -15,16 +15,16 @@ from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_WORKLOADS = REPO_ROOT / "bench/workloads.amd.vulkan.superset.json"
-DEFAULT_RULES = REPO_ROOT / "browser/fawn-browser/bench/projection-rules.json"
+DEFAULT_RULES = REPO_ROOT / "browser/chromium/bench/projection-rules.json"
 DEFAULT_MANIFEST = (
-    REPO_ROOT / "browser/fawn-browser/bench/generated/browser_projection_manifest.json"
+    REPO_ROOT / "browser/chromium/bench/generated/browser_projection_manifest.json"
 )
 DEFAULT_WORKFLOWS = (
-    REPO_ROOT / "browser/fawn-browser/bench/workflows/browser-workflow-manifest.json"
+    REPO_ROOT / "browser/chromium/bench/workflows/browser-workflow-manifest.json"
 )
 BENCH_OUT_ROOT = REPO_ROOT / "bench/out"
 BENCH_OUT_SCRATCH_ROOT = REPO_ROOT / "bench/out/scratch"
-ARTIFACTS_ROOT = REPO_ROOT / "browser/fawn-browser/artifacts"
+ARTIFACTS_ROOT = REPO_ROOT / "browser/chromium/artifacts"
 DEFAULT_REPORT_FILE = "dawn-vs-doe.browser-layered.superset.diagnostic.json"
 DEFAULT_SUMMARY_FILE = "dawn-vs-doe.browser-layered.superset.summary.json"
 DEFAULT_CHECK_FILE = "dawn-vs-doe.browser-layered.superset.check.json"
@@ -62,7 +62,7 @@ def default_chrome_binary() -> Path:
     release_local_out = Path(
         os.getenv(
             "FAWN_CHROMIUM_RELEASE_LOCAL_OUT",
-            str(REPO_ROOT / "browser/fawn-browser/out/fawn_release_local"),
+            str(REPO_ROOT / "browser/chromium/out/fawn_release_local"),
         )
     )
     chromium_lane_out = REPO_ROOT / "browser/chromium_webgpu_lane/out/fawn_release_local"
@@ -80,15 +80,15 @@ def default_chrome_binary() -> Path:
             chromium_lane_out / "Fawn.app/Contents/MacOS/Chromium",
             chromium_lane_out / "Chromium.app/Contents/MacOS/Chromium",
             host_fawn_app,
-            REPO_ROOT / "browser/fawn-browser/src/out/fawn_release/chrome",
-            REPO_ROOT / "browser/fawn-browser/src/out/fawn_release/Fawn.app/Contents/MacOS/Chromium",
-            REPO_ROOT / "browser/fawn-browser/src/out/fawn_release/Chromium.app/Contents/MacOS/Chromium",
+            REPO_ROOT / "browser/chromium/src/out/fawn_release/chrome",
+            REPO_ROOT / "browser/chromium/src/out/fawn_release/Fawn.app/Contents/MacOS/Chromium",
+            REPO_ROOT / "browser/chromium/src/out/fawn_release/Chromium.app/Contents/MacOS/Chromium",
             REPO_ROOT / "browser/chromium_webgpu_lane/src/out/fawn_release/chrome",
             REPO_ROOT / "browser/chromium_webgpu_lane/src/out/fawn_release/Fawn.app/Contents/MacOS/Chromium",
             REPO_ROOT / "browser/chromium_webgpu_lane/src/out/fawn_release/Chromium.app/Contents/MacOS/Chromium",
-            REPO_ROOT / "browser/fawn-browser/src/out/fawn_debug/chrome",
-            REPO_ROOT / "browser/fawn-browser/src/out/fawn_debug/Fawn.app/Contents/MacOS/Chromium",
-            REPO_ROOT / "browser/fawn-browser/src/out/fawn_debug/Chromium.app/Contents/MacOS/Chromium",
+            REPO_ROOT / "browser/chromium/src/out/fawn_debug/chrome",
+            REPO_ROOT / "browser/chromium/src/out/fawn_debug/Fawn.app/Contents/MacOS/Chromium",
+            REPO_ROOT / "browser/chromium/src/out/fawn_debug/Chromium.app/Contents/MacOS/Chromium",
             REPO_ROOT / "browser/chromium_webgpu_lane/src/out/fawn_debug/chrome",
             REPO_ROOT / "browser/chromium_webgpu_lane/src/out/fawn_debug/Fawn.app/Contents/MacOS/Chromium",
             REPO_ROOT / "browser/chromium_webgpu_lane/src/out/fawn_debug/Chromium.app/Contents/MacOS/Chromium",
@@ -131,7 +131,7 @@ def parse_args() -> argparse.Namespace:
         default="",
         help=(
             "Layered report output path. Defaults to "
-            "browser/fawn-browser/artifacts/<timestamp>/"
+            "browser/chromium/artifacts/<timestamp>/"
             f"{DEFAULT_REPORT_FILE}."
         ),
     )
@@ -140,7 +140,7 @@ def parse_args() -> argparse.Namespace:
         default="",
         help=(
             "Superset summary output path. Defaults to "
-            "browser/fawn-browser/artifacts/<timestamp>/"
+            "browser/chromium/artifacts/<timestamp>/"
             f"{DEFAULT_SUMMARY_FILE}."
         ),
     )
@@ -149,7 +149,7 @@ def parse_args() -> argparse.Namespace:
         default="",
         help=(
             "Coverage checker output path. Defaults to "
-            "browser/fawn-browser/artifacts/<timestamp>/"
+            "browser/chromium/artifacts/<timestamp>/"
             f"{DEFAULT_CHECK_FILE}."
         ),
     )
@@ -172,7 +172,7 @@ def parse_args() -> argparse.Namespace:
         "--promotion-approvals",
         default=str(
             REPO_ROOT
-            / "browser/fawn-browser/bench/workflows/browser-promotion-approvals.json"
+            / "browser/chromium/bench/workflows/browser-promotion-approvals.json"
         ),
         help="Path to promotion approvals JSON passed to checker.",
     )
@@ -398,7 +398,7 @@ def main() -> int:
 
     generate_command = [
         sys.executable,
-        str(REPO_ROOT / "browser/fawn-browser/scripts/generate-browser-projection-manifest.py"),
+        str(REPO_ROOT / "browser/chromium/scripts/generate-browser-projection-manifest.py"),
         "--workloads",
         str(workloads),
         "--rules",
@@ -412,7 +412,7 @@ def main() -> int:
     if not args.skip_run:
         run_command = [
             "node",
-            str(REPO_ROOT / "browser/fawn-browser/scripts/webgpu-playwright-layered-bench.mjs"),
+            str(REPO_ROOT / "browser/chromium/scripts/webgpu-playwright-layered-bench.mjs"),
             "--mode",
             args.mode,
             "--chrome",
@@ -447,7 +447,7 @@ def main() -> int:
 
     check_command = [
         sys.executable,
-        str(REPO_ROOT / "browser/fawn-browser/scripts/check-browser-benchmark-superset.py"),
+        str(REPO_ROOT / "browser/chromium/scripts/check-browser-benchmark-superset.py"),
         "--workloads",
         str(workloads),
         "--manifest",

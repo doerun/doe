@@ -34,7 +34,7 @@ def default_report_path(root: Path) -> Path:
 
 
 def default_artifact_root(root: Path) -> Path:
-    return root / "browser/fawn-browser/artifacts" / utc_stamp() / "browser-claim"
+    return root / "browser/chromium/artifacts" / utc_stamp() / "browser-claim"
 
 
 def parse_args() -> argparse.Namespace:
@@ -47,7 +47,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--promotion-approvals",
-        default=str(root / "browser/fawn-browser/bench/workflows/browser-promotion-approvals.json"),
+        default=str(root / "browser/chromium/bench/workflows/browser-promotion-approvals.json"),
     )
     parser.add_argument(
         "--ownership",

@@ -102,8 +102,8 @@ Do not collapse these harnesses into one generic runner. That would blur evidenc
 ### 7. Browser smoke correctness
 
 - Primary entrypoints:
-  - `browser/fawn-browser/scripts/run-smoke.sh`
-  - `browser/fawn-browser/scripts/webgpu-playwright-smoke.mjs`
+  - `browser/chromium/scripts/run-smoke.sh`
+  - `browser/chromium/scripts/webgpu-playwright-smoke.mjs`
 - Question: "Does WebGPU work correctly in a real Chromium browser process?"
 - Contract:
   - Playwright-driven real browser execution
@@ -116,9 +116,9 @@ Do not collapse these harnesses into one generic runner. That would blur evidenc
 ### 8. Browser benchmark projection
 
 - Primary entrypoints:
-  - `browser/fawn-browser/scripts/run-bench.sh`
-  - `browser/fawn-browser/scripts/run-browser-benchmark-superset.py`
-  - `browser/fawn-browser/scripts/webgpu-playwright-layered-bench.mjs`
+  - `browser/chromium/scripts/run-bench.sh`
+  - `browser/chromium/scripts/run-browser-benchmark-superset.py`
+  - `browser/chromium/scripts/webgpu-playwright-layered-bench.mjs`
 - Question: "How do browser-layer projections of core workloads behave in real Chromium execution?"
 - Contract:
   - generated projections from core workloads

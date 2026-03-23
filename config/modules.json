@@ -48,7 +48,7 @@
     },
     {
       "moduleId": "browser_integration",
-      "modulePath": "browser/fawn-browser",
+      "modulePath": "browser/chromium",
       "status": "active",
       "owner": "runtime-core",
       "inputs": ["browser-workflow-manifest", "browser-promotion-approvals", "browser-ownership"],

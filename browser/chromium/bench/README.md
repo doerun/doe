@@ -57,24 +57,24 @@ This module implements a layered browser benchmark superset for Chromium Track A
 From `` root:
 
 ```bash
-npm install --prefix browser/fawn-browser playwright-core
-./browser/fawn-browser/scripts/run-bench.sh
+npm install --prefix browser/chromium playwright-core
+./browser/chromium/scripts/run-bench.sh
 ```
 
 To run dawn/doe against different browser executables in one benchmark run:
 
 ```bash
-./browser/fawn-browser/scripts/run-bench.sh \
+./browser/chromium/scripts/run-bench.sh \
   --mode both \
   --dawn-chrome /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome \
-  --doe-chrome browser/fawn-browser/out/fawn_release_local/Fawn.app/Contents/MacOS/Chromium
+  --doe-chrome browser/chromium/out/fawn_release_local/Fawn.app/Contents/MacOS/Chromium
 ```
 
 Default outputs are lane-local diagnostic artifacts under:
 
-- `browser/fawn-browser/artifacts/<timestamp>/dawn-vs-doe.browser-layered.superset.diagnostic.json`
-- `browser/fawn-browser/artifacts/<timestamp>/dawn-vs-doe.browser-layered.superset.check.json`
-- `browser/fawn-browser/artifacts/<timestamp>/dawn-vs-doe.browser-layered.superset.summary.json`
+- `browser/chromium/artifacts/<timestamp>/dawn-vs-doe.browser-layered.superset.diagnostic.json`
+- `browser/chromium/artifacts/<timestamp>/dawn-vs-doe.browser-layered.superset.check.json`
+- `browser/chromium/artifacts/<timestamp>/dawn-vs-doe.browser-layered.superset.summary.json`
 
 If you intentionally need `bench/out`, pass `--allow-bench-out` explicitly.
 Diagnostic outputs under `bench/out` are restricted to `bench/out/scratch`.

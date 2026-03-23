@@ -2,7 +2,7 @@
 
 `browser/` contains Chromium-facing integration surfaces:
 
-- `browser/fawn-browser/`
+- `browser/chromium/`
   - docs, contracts, scripts, and browser diagnostics
 - `browser/chromium_webgpu_lane/`
   - the Chromium checkout/build workspace when kept in-tree

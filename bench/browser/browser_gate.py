@@ -31,7 +31,7 @@ def default_gate_report_path(root: Path) -> Path:
 
 def default_artifact_root(root: Path) -> Path:
     stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
-    return root / "browser/fawn-browser/artifacts" / stamp
+    return root / "browser/chromium/artifacts" / stamp
 
 
 def parse_args() -> argparse.Namespace:
@@ -40,7 +40,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--root", default=str(root))
     parser.add_argument(
         "--promotion-approvals",
-        default=str(root / "browser/fawn-browser/bench/workflows/browser-promotion-approvals.json"),
+        default=str(root / "browser/chromium/bench/workflows/browser-promotion-approvals.json"),
     )
     parser.add_argument(
         "--ownership",
@@ -232,14 +232,14 @@ def main() -> int:
     ownership_path = Path(args.ownership).resolve()
 
     preflight = [
-        "./browser/fawn-browser/scripts/preflight.sh",
+        "./browser/chromium/scripts/preflight.sh",
         "--mode",
         "bench",
     ]
     run_step("preflight", preflight, root)
 
     smoke_command = [
-        "./browser/fawn-browser/scripts/run-smoke.sh",
+        "./browser/chromium/scripts/run-smoke.sh",
         "--mode",
         "both",
         "--strict",
@@ -253,7 +253,7 @@ def main() -> int:
     run_step("smoke", smoke_command, root)
 
     bench_command = [
-        "./browser/fawn-browser/scripts/run-bench.sh",
+        "./browser/chromium/scripts/run-bench.sh",
         "--mode",
         "both",
         "--strict-run",

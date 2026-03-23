@@ -26,7 +26,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--manifest",
-        default=str(REPO_ROOT / "browser/fawn-browser/bench/workflows/browser-milestones.json"),
+        default=str(REPO_ROOT / "browser/chromium/bench/workflows/browser-milestones.json"),
         help="Path to browser milestone manifest JSON.",
     )
     parser.add_argument(

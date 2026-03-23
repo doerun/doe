@@ -31,7 +31,7 @@ products.
 
 ### Browser
 
-- `browser/fawn-browser`
+- `browser/chromium`
   - the repo-local Chromium integration layer
 - `browser/chromium_webgpu_lane`
   - the Chromium checkout/build workspace when kept in-tree

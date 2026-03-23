@@ -1,7 +1,7 @@
 const std = @import("std");
 const APP_BUNDLE_NAME = "Doe Runtime.app";
 const APP_ICON_BASENAME = "DoeRuntime";
-const APP_ICON_SOURCE_SVG = "../../browser/fawn-browser/assets/fawn-icon-main.svg";
+const APP_ICON_SOURCE_SVG = "../../browser/chromium/assets/fawn-icon-main.svg";
 
 fn fileExists(path: []const u8) bool {
     std.fs.cwd().access(path, .{}) catch return false;

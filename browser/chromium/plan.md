@@ -15,15 +15,15 @@ This is a planning artifact only. No production behavior is changed by this file
 
 Current milestone status is tracked separately in:
 
-1. `browser/fawn-browser/bench/workflows/browser-milestones.json`
-2. validated by `browser/fawn-browser/scripts/check-browser-milestones.py`
+1. `browser/chromium/bench/workflows/browser-milestones.json`
+2. validated by `browser/chromium/scripts/check-browser-milestones.py`
 
 This file remains the acceptance and rollout contract; the manifest records live
 state and local evidence.
 
 ## Guiding constraints
 
-1. Keep this layer isolated in `browser/fawn-browser/`.
+1. Keep this layer isolated in `browser/chromium/`.
 2. Do not modify core runtime behavior implicitly.
 3. Preserve Fawn stage discipline and gate precedence.
 4. Require deterministic artifacts for all quality decisions.

@@ -10,15 +10,15 @@ Start Chromium bring-up for the browser integration layer quickly while keeping:
 
 Current milestone state is tracked in:
 
-1. `browser/fawn-browser/bench/workflows/browser-milestones.json`
-2. validate with `python3 browser/fawn-browser/scripts/check-browser-milestones.py`
+1. `browser/chromium/bench/workflows/browser-milestones.json`
+2. validate with `python3 browser/chromium/scripts/check-browser-milestones.py`
 
 ## Layout options
 
 Two layouts are supported:
 
 1. Repo-local integration layer:
-   - `browser/fawn-browser/`
+   - `browser/chromium/`
    - docs, scripts, contracts, and diagnostic artifacts
 2. Chromium checkout/build lane:
    - `browser/chromium_webgpu_lane/` for in-tree use, or an external path
@@ -26,7 +26,7 @@ Two layouts are supported:
    - Chromium source, `depot_tools`, `out/`, and large build artifacts
 
 For a small self-contained setup, you can keep everything under
-`browser/fawn-browser`:
+`browser/chromium`:
 
 1. `depot_tools/`
 2. `src/` (Chromium checkout)
@@ -51,14 +51,14 @@ Use lane-local scripts so bring-up does not depend on system package installs:
 2. `scripts/env.sh`
    - prepends `depot_tools` and cached host-tool binaries to `PATH`.
 
-This keeps a self-contained setup isolated inside `browser/fawn-browser/`.
+This keeps a self-contained setup isolated inside `browser/chromium/`.
 
 ## Bring-up steps (machine commands)
 
 Example flow from `` root:
 
 ```bash
-cd browser/fawn-browser
+cd browser/chromium
 git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git depot_tools
 ./scripts/bootstrap-host-tools.sh
 source ./scripts/env.sh
@@ -79,7 +79,7 @@ external volume and sync only release artifacts back to local disk.
 From `` root:
 
 ```bash
-cd browser/fawn-browser
+cd browser/chromium
 ./scripts/setup-macos-external-lane.sh /Volumes/fawn
 source ./scripts/env.sh
 
@@ -99,7 +99,7 @@ cd ..
 For incremental rebuilds after initial setup:
 
 ```bash
-cd browser/fawn-browser
+cd browser/chromium
 ./scripts/build-release-external.sh
 ```
 
@@ -111,7 +111,7 @@ external path and sync only release artifacts back locally:
 From `` root:
 
 ```bash
-cd browser/fawn-browser
+cd browser/chromium
 ./scripts/setup-linux-external-lane.sh /mnt/fawn
 source ./scripts/env.sh
 
@@ -131,13 +131,13 @@ cd ..
 For incremental rebuilds after initial setup:
 
 ```bash
-cd browser/fawn-browser
+cd browser/chromium
 ./scripts/build-release-external.sh
 ```
 
 Default local release artifact path:
 
-- `browser/fawn-browser/out/fawn_release_local`
+- `browser/chromium/out/fawn_release_local`
 - local app bundle is synchronized as canonical `Fawn.app`
 - if upstream still emits `Chromium.app`, sync maps it into local `Fawn.app` during artifact copy
 
@@ -196,7 +196,7 @@ Initial criterion is deterministic compatibility and observability, not performa
 
 ## Common wrapper scripts
 
-Use wrappers under `browser/fawn-browser/scripts` to avoid hardcoded paths:
+Use wrappers under `browser/chromium/scripts` to avoid hardcoded paths:
 
 1. `scripts/preflight.sh`
    - checks host dependencies and resolves default Chrome + Doe library paths.
@@ -211,7 +211,7 @@ Use wrappers under `browser/fawn-browser/scripts` to avoid hardcoded paths:
 
 A small Playwright harness now exists for real-browser WebGPU smoke + mini bench comparison:
 
-- `browser/fawn-browser/scripts/webgpu-playwright-smoke.mjs`
+- `browser/chromium/scripts/webgpu-playwright-smoke.mjs`
 - classification: diagnostic browser evidence (`L1`), not a strict `L0` claim artifact
 - checks:
   - `navigator.gpu` + adapter/device availability
@@ -228,17 +228,17 @@ Run from repo root:
 
 ```bash
 # install runtime dependency once (uses your Chromium binary, no Playwright browser download required)
-npm install --prefix browser/fawn-browser playwright-core
+npm install --prefix browser/chromium playwright-core
 
 # compare Dawn vs Doe in one diagnostic report (positive delta => Doe faster, diagnostic only)
-./browser/fawn-browser/scripts/run-smoke.sh \
+./browser/chromium/scripts/run-smoke.sh \
   --mode both \
-  --out browser/fawn-browser/artifacts/dawn-vs-doe.browser.playwright-smoke.diagnostic.json
+  --out browser/chromium/artifacts/dawn-vs-doe.browser.playwright-smoke.diagnostic.json
 ```
 
 By default the harness writes to timestamped lane-local artifacts:
 
-- `browser/fawn-browser/artifacts/<YYYYMMDDTHHMMSSZ>/dawn-vs-doe.browser.playwright-smoke.diagnostic.json`
+- `browser/chromium/artifacts/<YYYYMMDDTHHMMSSZ>/dawn-vs-doe.browser.playwright-smoke.diagnostic.json`
 
 Optional browser-surface seam:
 
@@ -266,35 +266,35 @@ Only publish to canonical `bench/out/` flows after converting results into stric
 
 The nursery lane now also includes a contract-driven layered harness (`L1` + `L2`) that is generated from the core workload source-of-truth:
 
-- generator: `browser/fawn-browser/scripts/generate-browser-projection-manifest.py`
-- runner: `browser/fawn-browser/scripts/webgpu-playwright-layered-bench.mjs`
-- checker: `browser/fawn-browser/scripts/check-browser-benchmark-superset.py`
-- orchestrator: `browser/fawn-browser/scripts/run-browser-benchmark-superset.py`
+- generator: `browser/chromium/scripts/generate-browser-projection-manifest.py`
+- runner: `browser/chromium/scripts/webgpu-playwright-layered-bench.mjs`
+- checker: `browser/chromium/scripts/check-browser-benchmark-superset.py`
+- orchestrator: `browser/chromium/scripts/run-browser-benchmark-superset.py`
 
 Artifacts and contracts:
 
-- `browser/fawn-browser/contracts/browser-benchmark-superset.contract.md`
-- `browser/fawn-browser/bench/projection-rules.json`
-- `browser/fawn-browser/bench/generated/browser_projection_manifest.json`
-- `browser/fawn-browser/bench/workflows/browser-workflow-manifest.json`
+- `browser/chromium/contracts/browser-benchmark-superset.contract.md`
+- `browser/chromium/bench/projection-rules.json`
+- `browser/chromium/bench/generated/browser_projection_manifest.json`
+- `browser/chromium/bench/workflows/browser-workflow-manifest.json`
 
 Run from repo root:
 
 ```bash
-./browser/fawn-browser/scripts/run-bench.sh --mode both
+./browser/chromium/scripts/run-bench.sh --mode both
 ```
 
 To exercise the package browser surface explicitly:
 
 ```bash
-./browser/fawn-browser/scripts/run-bench.sh --mode both --api-surface package-browser
+./browser/chromium/scripts/run-bench.sh --mode both --api-surface package-browser
 ```
 
 Environment note:
 
 - in restricted sandboxes where socket operations are blocked, browser launch can fail before tests run; in that case, run this command directly on the host session where Chromium normally runs.
 
-Default outputs are lane-local diagnostic artifacts under `browser/fawn-browser/artifacts/<timestamp>/...`.
+Default outputs are lane-local diagnostic artifacts under `browser/chromium/artifacts/<timestamp>/...`.
 This includes:
 
 - layered report JSON,
@@ -350,7 +350,7 @@ Rollback triggers:
    `m4`) and root install is unavailable, run:
 
 ```bash
-cd browser/fawn-browser
+cd browser/chromium
 ./scripts/bootstrap-host-tools.sh
 source ./scripts/env.sh
 ```

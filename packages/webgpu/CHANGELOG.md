@@ -59,7 +59,7 @@ and process documents.
 - Updated the package README, API contract, and JSDoc guide to standardize the
   `Direct WebGPU` and `Doe API` model, including the more opinionated
   `gpu.compute(...)` helper within the Doe API, and the boundary between
-  the headless package lane and `browser/fawn-browser`.
+  the headless package lane and `browser/chromium`.
 
 ## [0.2.4] - 2026-03-11
 

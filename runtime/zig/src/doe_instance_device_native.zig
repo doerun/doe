@@ -247,6 +247,15 @@ pub export fn doeNativeInstanceAddRef(raw: ?*anyopaque) callconv(.c) void {
 
 pub export fn doeNativeInstanceRelease(raw: ?*anyopaque) callconv(.c) void {
     if (cast(DoeInstance, raw)) |inst| {
+        // Guard: prevent destruction while external textures still reference this
+        // Instance. The Chromium wire client may release its Instance handle before
+        // external textures are freed; the external-texture backref path will call
+        // InstanceRelease again when the last external texture is destroyed.
+        const ext_tex = @import("doe_external_texture_native.zig");
+        if (ext_tex.instance_external_texture_count(raw) > 0) {
+            if (inst.ref_count > 1) inst.ref_count -= 1;
+            return;
+        }
         if (!native.object_should_destroy(inst)) return;
         native.label_store.remove(raw);
         alloc.destroy(inst);

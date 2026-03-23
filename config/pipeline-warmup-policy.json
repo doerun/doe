@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "enableBackgroundWarmup": false,
+  "maxWarmupPipelines": 64,
+  "warmupWorkerCount": 2,
+  "knownModelGraphs": []
+}

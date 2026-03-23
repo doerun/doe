@@ -33,8 +33,8 @@ STRUCTURAL_CLAIMS = [
     ("runtime/zig/src/backend/d3d12/d3d12_native_runtime.zig", "D3D12 backend"),
 
     # Chromium integration
-    ("browser/fawn-browser/src/gpu/command_buffer/service/doe_command_decoder.h", "DoeCommandDecoder header"),
-    ("browser/fawn-browser/src/gpu/command_buffer/service/doe_command_decoder.cc", "DoeCommandDecoder implementation"),
+    ("browser/chromium/src/gpu/command_buffer/service/doe_command_decoder.h", "DoeCommandDecoder header"),
+    ("browser/chromium/src/gpu/command_buffer/service/doe_command_decoder.cc", "DoeCommandDecoder implementation"),
 
     # Core runtime
     ("runtime/zig/src/doe_wgpu_native.zig", "Doe WebGPU native runtime"),

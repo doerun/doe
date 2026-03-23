@@ -2,7 +2,81 @@
 
 ## Snapshot
 
-Date: 2026-03-22
+Date: 2026-03-23
+
+### SPIR-V emission parity with MSL (2026-03-23)
+
+- SPIR-V emitter now has full parity with the MSL emitter for all WGSL builtins.
+  Added 11 missing builtins to `emit_spirv_builtins.zig`:
+  - `textureBarrier` — OpControlBarrier with ImageMemory semantics
+  - `subgroupMul` — GroupNonUniformFMul / GroupNonUniformIMul
+  - `subgroupInclusiveAdd` — GroupNonUniformFAdd/IAdd with InclusiveScan
+  - `subgroupShuffleDown` / `subgroupShuffleUp` — GroupNonUniformShuffleDown/Up
+  - `subgroupBroadcastFirst` — GroupNonUniformBroadcastFirst
+  - `subgroupElect` — GroupNonUniformElect
+  - `subgroupAnd` / `subgroupOr` / `subgroupXor` — GroupNonUniformBitwiseAnd/Or/Xor
+- Added corresponding opcodes to `spirv_spec.zig`: GroupNonUniformElect,
+  BroadcastFirst, ShuffleUp, ShuffleDown, IMul, FMul, BitwiseAnd/Or/Xor.
+- 8 new tests in `emit_spirv_builtin_test.zig` covering all added builtins.
+- `emit_spirv_builtins.zig` is 758 lines (under 777 limit).
+- The SPIR-V backend is fully wired end-to-end: WGSL source → parser → IR →
+  emit_spirv → u32 words → vkCreateShaderModule for both compute and graphics
+  pipelines via `doe_vulkan_compute_native.zig` and `doe_vulkan_render_native.zig`.
+
+### Browser lane hardening and rename (2026-03-23)
+
+- Instance lifetime hardening: `doeNativeInstanceRelease` in `doe_instance_device_native.zig`
+  now checks the external texture registry (`instance_external_texture_count`) before
+  destroying the Instance. If live external textures still reference it, the Instance
+  survives with ref_count clamped to 1. This prevents the Chromium wire client's
+  independent Instance lifetime from causing premature destruction while external
+  textures are in flight. The external texture backref path calls InstanceRelease
+  again when the last external texture is freed, allowing normal destruction.
+- Layered browser bench failure analysis: 12 of 14 remaining failures are L0-only
+  non-projectable rows (runtime contract lanes with no browser-layer equivalent;
+  classified as `non_projectable` / `l0_only` in `browser/chromium/bench/projection-rules.json`).
+  These are by design, not bugs. The remaining 2 are external texture Instance lifetime
+  failures addressed by the hardening above.
+- Renamed `browser/fawn-browser/` to `browser/chromium/`. Updated all non-artifact path
+  references across docs, configs, scripts, CI workflows, and `.gitignore`. Renamed
+  `fawn-browser.sh` to `chromium.sh`. Historical artifact JSON files retain their
+  original paths as they are timestamped records.
+
+### Pipeline cache integration, DXIL validation, Vulkan render descriptors (2026-03-23)
+
+- Pipeline cache Phase 2 integration in `runtime/zig/src/runtime/pipeline_cache_integration.zig`:
+  lazily-initialized global `PipelineCache` singleton, atomic telemetry counters
+  (hits/misses/stores), and `recordComputePipelineCreation`/`recordRenderPipelineCreation`
+  hooks wired into the async pipeline creation paths in `wgpu_dropin_ext_a.zig`.
+- Background warmup policy config added: `config/pipeline-warmup-policy.json` and
+  `config/pipeline-warmup-policy.schema.json` (warmup disabled by default, 64 max pipelines,
+  2 worker threads, empty known model graphs).
+- Not yet complete: actual cache-backed compilation skip (Phase 2 stores telemetry markers,
+  not compiled blobs), background warmup scheduler, and worker-pool sizing tuning.
+- DXIL structural validation module in `runtime/zig/src/doe_wgsl/dxil_validate.zig` (286 lines):
+  validates DXBC container header, version, part table bounds, DXIL program sub-header
+  (shader model kind, major/minor version, bitcode offset/size), and LLVM bitcode magic.
+  Six test cases. No external toolchain dependency.
+- Vulkan render pipeline descriptor set integration:
+  `vk_render_pipeline.zig` now creates descriptor set layouts and descriptor pools when
+  `bind_texture_count > 0` or `bind_sampler_count > 0`, with combined-image-sampler
+  bindings for textures and sampler-only bindings for standalone samplers. Descriptor sets
+  are allocated, written with resolved texture views and samplers from the runtime resource
+  maps, and bound via `vkCmdBindDescriptorSets` at `VK_PIPELINE_BIND_POINT_GRAPHICS`
+  before draw calls. The no-binding path (empty pipeline layout) is preserved.
+  `RenderState` now carries `descriptor_set_layout`, `descriptor_pool`, and `descriptor_set`
+  handles, cleaned up in `release_render_state`.
+- D3D12 ETC2/EAC/ASTC format classification: `d3d12_formats.zig` now has explicit
+  `is_etc2_compressed`, `is_astc_compressed`, and `is_any_compressed` helpers. The
+  `wgpu_format_to_dxgi` function documents that ETC2/ASTC formats are intentionally
+  unsupported (DXGI has no native constants). Device caps already correctly report
+  `supports_etc2 = false` and `supports_astc = false`.
+- Proof-artifact schema mismatch resolved: `config/proof-artifact.schema.json` already
+  includes `lean_required` in the category enum at both theorem and boundsElimination
+  levels. The status.md note claiming the schema lacked this value was stale.
+- WGSL parser/emitter file sizes within limits: `parser.zig` is 342 lines, `emit_spirv.zig`
+  is 698 lines, both under the 777-line Zig source limit. The status.md note claiming
+  these files exceeded the limit was stale.
 
 ### Concurrency foundation first cut (2026-03-23)
 
@@ -27,10 +101,8 @@ This section supersedes contradictory statements elsewhere in this document.
 6 lean_fixture). Previous references to "84 theorems" are stale.
 Note: the proof artifact uses `lean_required` as a category for unbounded-domain
 theorems (IR builder soundness, MSL address-space chains, render-pass state
-machines, compute bounds, etc.) which is not yet reflected in
-`config/proof-artifact.schema.json` (schema allows only `tautological`,
-`comptime_verified`, `lean_verified`, `lean_fixture`). This is a tracked
-schema/artifact mismatch.
+machines, compute bounds, etc.). The schema now includes `lean_required` in both
+the theorem and boundsElimination category enums (resolved 2026-03-23).
 
 **DXIL emitter status:** Native DXIL bytecode generation is now the primary
 D3D12 path. Six modules (2,303 LOC) in `runtime/zig/src/doe_wgsl/` produce
@@ -50,7 +122,7 @@ among the claimable set. Previous statements that this workload is
 lines 23-34 of this document.
 
 **Browser lane smoke summary (Doe, Linux headless, 2026-03-22):**
-Evidence: `browser/fawn-browser/artifacts/20260322Tdoe-smoke-after-copytexture/dawn-vs-doe.browser.playwright-smoke.diagnostic.json`
+Evidence: `browser/chromium/artifacts/20260322Tdoe-smoke-after-copytexture/dawn-vs-doe.browser.playwright-smoke.diagnostic.json`
 - compute (computeIncrement): PASS
 - render (renderTriangle): PASS (fixed this session -- SPIR-V propagation)
 - xrCompatible (requestAdapterXrCompatible): PASS
@@ -78,7 +150,7 @@ Doe rebrand (2026-03-22):
   into `../../webgpu-doe/src/`. Before npm publish, the helper layer must be
   vendored into `packages/doe-gpu/` so the package is self-contained. This is
   a publish-time concern, not a development concern.
-- Pending: `browser/fawn-browser/` rename to `browser/chromium/` (deferred).
+- Pending: `browser/chromium/` rename to `browser/chromium/` (deferred).
 - Pending: npm `doe` package dispute (contact jkup, 4-week wait, then npm
   support).
 - Pending: `doe-gpu` GitHub org creation.
@@ -130,12 +202,12 @@ External texture runtime implementation (2026-03-21):
   textures no longer depend on ambient texture-view lifetime.
 - Fresh Doe Linux smoke evidence on 2026-03-22 improved from
   `render=false` to `render=true` after the runtime ownership/bind-group fix:
-  `browser/fawn-browser/artifacts/20260322Tdoe-smoke-after-bindings/dawn-vs-doe.browser.playwright-smoke.diagnostic.json`.
+  `browser/chromium/artifacts/20260322Tdoe-smoke-after-bindings/dawn-vs-doe.browser.playwright-smoke.diagnostic.json`.
 - Fresh rerun after adding the missing Doe-local `wgpuQueueCopyTextureForBrowser`
   still reports `compute=true`, `render=true`, and `xrCompatible=true`, while
   `copyExternalImageToTexture` and `importExternalTexture` remain red on the
   Doe lane:
-  `browser/fawn-browser/artifacts/20260322Tdoe-smoke-after-copytexture/dawn-vs-doe.browser.playwright-smoke.diagnostic.json`.
+  `browser/chromium/artifacts/20260322Tdoe-smoke-after-copytexture/dawn-vs-doe.browser.playwright-smoke.diagnostic.json`.
 - The current browser blocker on this host is therefore narrower and better
   isolated: the missing Doe proc ownership for `CopyTextureForBrowser` is fixed,
   but Chromium's Doe lane still lacks end-to-end shared-image/media interop for
@@ -238,7 +310,7 @@ surface:
   compilation-message severities are all reflected in source and ledger state
 macOS browser maintenance now has scheduled workflow and retention wiring:
 - `.github/workflows/macos-browser-refresh.yml`
-- `browser/fawn-browser/scripts/cleanup-browser-artifacts.py`
+- `browser/chromium/scripts/cleanup-browser-artifacts.py`
 Runtime command semantics are now first-class for indirect/render-pass benchmark lanes:
 - `dispatch_indirect`, `draw_indirect`, `draw_indexed_indirect`, and `render_pass` are explicit command kinds in model/parser/runtime/backend routing (no alias-only semantics).
 Strict Dawn-vs-Doe operation comparability now uses direct per-side timing normalization only:
@@ -291,7 +363,7 @@ AMD Vulkan strict comparable/release presets now point at the native-supported w
   - the compare harness correctly normalized by effective workload contract, but several strict upload rows had right-only `commandRepeat`/`ignoreFirstOps` overrides, so Doe was being measured at one effective unit while Dawn was amortized over fifty or five hundred.
   - fresh strict rerun after repairing the catalog reduced the release blocker set from five upload rows to one genuine tiny-upload performance gap (`upload_write_buffer_1kb`).
 - Linux browser runtime selector bring-up is now operational in the local Chromium tree (2026-03-20):
-  - `browser/fawn-browser/src/out/fawn_release/chrome` now honors `--use-webgpu-runtime=dawn|doe`, `--disable-webgpu-doe`, and `--doe-webgpu-library-path`.
+  - `browser/chromium/src/out/fawn_release/chrome` now honors `--use-webgpu-runtime=dawn|doe`, `--disable-webgpu-doe`, and `--doe-webgpu-library-path`.
   - the Linux Playwright smoke harness now defaults Chromium launches to `--use-angle=vulkan`, which makes the local forced-Dawn lane pass compute, render, `xrCompatible`, `copyExternalImageToTexture`, `importExternalTexture`, and the mini timing probes.
   - the Doe browser path now passes the local headless compute, render, `xrCompatible`, and `copyExternalImageToTexture` smoke checks; the key fix was GPU-thread polling that ticks each live Doe device before `instanceProcessEvents`, so submit-driven callbacks no longer stall after `queue.submit()`.
   - Doe custom mailbox commands now enter the selected runtime's per-thread proc scope, which keeps decoder-side mailbox handling on the selected runtime instead of falling back to Dawn-global procs.
@@ -426,7 +498,7 @@ Benchmark contract coverage snapshot (2026-02-25 update):
 - Chromium lane release/build defaults now force non-CfT branding args at `gn gen` time (`is_chrome_for_testing=false`, `is_chrome_for_testing_branded=false`, `is_chrome_branded=false`) so stale `args.gn` does not reintroduce Chrome-for-Testing UI branding.
 - Chromium lane browser layered benchmark harness now supports per-mode browser executables (`--dawn-chrome`, `--doe-chrome`) so one run can compare Doe runtime path in `Fawn.app` against a separate Dawn/Chrome binary without mixing launch binaries.
 - Browser layered render readback scenario hardening (2026-03-04):
-  - `browser/fawn-browser/scripts/webgpu-playwright-layered-bench.mjs` `render_triangle_readback` now renders into an explicit `rgba8unorm` texture (`RENDER_ATTACHMENT|COPY_SRC`) and performs an explicit queue completion before map/readback.
+  - `browser/chromium/scripts/webgpu-playwright-layered-bench.mjs` `render_triangle_readback` now renders into an explicit `rgba8unorm` texture (`RENDER_ATTACHMENT|COPY_SRC`) and performs an explicit queue completion before map/readback.
   - this removes swapchain/current-texture readback nondeterminism that could produce `unexpected render readback color` failures on both Dawn and Doe in headless runs.
 - macOS local-build unblock for `doe-zig-runtime` (2026-03-04):
   - `runtime/zig/src/backend/vulkan/mod.zig` now selects a macOS-only stub runtime import (`native_runtime_stub.zig`) so local Metal-focused builds do not fail link on unresolved Vulkan symbols when no Vulkan loader is present.
@@ -687,8 +759,8 @@ Archived modules:
 Artifacts preserved (not deleted):
 - Zig implementations remain at `runtime/zig/src/full/modules/` (experimental, inactive)
 - Core schemas/policies remain at `config/{sdf-renderer,path-engine,effects-pipeline,compute-services,resource-scheduler}.{schema,policy}.json` (inactive)
-- Nursery contracts remain at `browser/fawn-browser/contracts/` (archived)
-- Milestone governance demoted in `browser/fawn-browser/bench/workflows/browser-milestones.json`
+- Nursery contracts remain at `browser/chromium/contracts/` (archived)
+- Milestone governance demoted in `browser/chromium/bench/workflows/browser-milestones.json`
 - Module ownership manifest updated at `config/module-ownership.json`
 8. parity harness updates for execution results and benchmark artifacts.
 
@@ -794,7 +866,7 @@ Shader compiler:
 - Vulkan sampled/storage texture support has advanced materially but remains partial; broader graphics-path and non-compute texture builtin coverage is still open
 - `spirv-val` is modeled in `config/shader-toolchain.json` and wired into the routine build/test flow via `bench/spirv_val_gate.py`, `zig build spirv-val`, and `run_blocking_gates.py --with-spirv-val-gate`; validation is skipped gracefully when spirv-val is not installed unless `--require` / `--spirv-val-require` is set
 - shader tests now execute in the default/full test lanes, but the compiler test corpus is still thin relative to the frontend surface area
-- `runtime/zig/src/doe_wgsl/parser.zig` and `runtime/zig/src/doe_wgsl/emit_spirv.zig` still exceed the 777-line Zig source limit
+- `runtime/zig/src/doe_wgsl/parser.zig` (342 lines) and `runtime/zig/src/doe_wgsl/emit_spirv.zig` (698 lines) are within the 777-line limit; earlier delegation to `parser_decl.zig`, `parser_stmt.zig`, `parser_expr.zig`, `emit_spirv_fn.zig`, `emit_spirv_stages.zig`, `emit_spirv_texture.zig`, and `emit_spirv_builtins.zig` keeps them compliant
 - native DXIL emission is now the primary D3D12 path (see authoritative reconciliation above); DXC fallback remains available via `emitWithToolchainConfig`
 
 Tests and proofs:
@@ -815,15 +887,15 @@ D3D12:
   - `d3d12_texture.zig`, `d3d12_texture_view.zig`, and `d3d12_surface.zig` now make texture aspect/storage access/canvas alpha+tone-mapping settings real backend behavior instead of validation-only surface claims
   - ordered D3D12 queue submission now consumes render-pass attachment-view metadata end-to-end: `depthSlice`, `resolveTarget`, `depthReadOnly`, and `stencilReadOnly` are recorded on native render passes, replayed through per-view RTV/DSV creation, and resolved on the execution path instead of being preserved only on wrapper state
   - `doe_buffer_native.zig` now makes `GPUBuffer.mapState` truthful on D3D12 package paths
-- remaining D3D12 gaps are narrower and explicit: strip-index-format parity, deeper render-bundle replay/resource-table render submission parity, ETC2/EAC/ASTC publication, and fresh Windows evidence
+- remaining D3D12 gaps are narrower and explicit: DXIL validator integration into CI gates (structural validator implemented in `dxil_validate.zig`, not yet wired into gate scripts), strip-index-format parity, deeper render-bundle replay/resource-table render submission parity, and fresh Windows evidence. ETC2/EAC/ASTC format classification is now explicit in `d3d12_formats.zig`; device caps correctly report no support on standard D3D12
 - the first governed benchmark lane is now explicitly scoped to compute, upload, pipeline, and p0-resource contracts only
 - no live D3D12 compare artifact was produced in this macOS session; Windows-host preflight/config/gate plumbing is ready, the release lane is scaffolded, and cube publication now reports `contract exists, evidence missing` until a real Windows run lands
 
-Browser integration (`browser/fawn-browser`):
+Browser integration (`browser/chromium`):
 - the browser lane has a concrete plan, contracts, smoke/bench harnesses, and bring-up scripts
 - Track A (browser) M1-M3 governance is now wired through `bench/browser/browser_gate.py` with explicit ownership and cross-owner promotion approvals
 - Track B (modules) M4-M6 archived 2026-03-19 by strategic decision; see "Track B (modules) — archived" section above
-- package-browser validation now passes smoke in both Dawn and Doe modes for compute, render, `preferredCanvasFormat`, explicit `xrCompatible` requestAdapter forwarding, `queue.copyExternalImageToTexture` readback, and `importExternalTexture` plus `GPUExternalTexture` binding/layout sampling. Current macOS evidence lives at `browser/fawn-browser/artifacts/20260319T122244Z/dawn-vs-doe.browser.playwright-smoke.diagnostic.json`. The layered bench now runs on the package-browser path with `62/68` required L1 scenarios and `3/4` required L2 workflows passing per mode; it remains diagnostic with `14` required failures left overall.
+- package-browser validation now passes smoke in both Dawn and Doe modes for compute, render, `preferredCanvasFormat`, explicit `xrCompatible` requestAdapter forwarding, `queue.copyExternalImageToTexture` readback, and `importExternalTexture` plus `GPUExternalTexture` binding/layout sampling. Current macOS evidence lives at `browser/chromium/artifacts/20260319T122244Z/dawn-vs-doe.browser.playwright-smoke.diagnostic.json`. The layered bench now runs on the package-browser path with `62/68` required L1 scenarios and `3/4` required L2 workflows passing per mode; it remains diagnostic with `14` required failures left overall.
 
 Performance substantiation:
 - the latest local-Metal strict comparable lane is now citable broad claim evidence on this host class: `bench/out/apple-metal/extended-comparable/20260319T161100Z/dawn-vs-doe.local.metal.extended.comparable.json` is `comparisonStatus=comparable`, `claimStatus=claimable`

@@ -231,7 +231,7 @@
   - `packages/webgpu/src/shared/validation.js` now validates
     `GPURequestAdapterOptions.xrCompatible` as an explicit boolean on the shared
     browser surface.
-  - `browser/fawn-browser/scripts/webgpu-playwright-smoke.mjs` now exercises the
+  - `browser/chromium/scripts/webgpu-playwright-smoke.mjs` now exercises the
     browser-lane closures end-to-end in both Dawn and Doe modes: explicit
     `xrCompatible` forwarding, `copyExternalImageToTexture` readback with
     `flipY`/origin dictionaries, and `importExternalTexture` plus
@@ -240,7 +240,7 @@
   `packages/webgpu/src/browser.js`,
   `packages/webgpu/src/shared/browser-native-canvas-backend.js`, and the shared
   validation/full-surface package paths with exercised browser evidence at
-  `browser/fawn-browser/artifacts/20260319T122244Z/dawn-vs-doe.browser.playwright-smoke.diagnostic.json`.
+  `browser/chromium/artifacts/20260319T122244Z/dawn-vs-doe.browser.playwright-smoke.diagnostic.json`.
 
 ## 2026-03-17
 
@@ -523,7 +523,7 @@
   - `python3 bench/run_blocking_gates.py --with-browser-claim-gate`
 - Added scheduled macOS browser refresh wiring and browser-artifact retention cleanup:
   - `.github/workflows/macos-browser-refresh.yml`
-  - `browser/fawn-browser/scripts/cleanup-browser-artifacts.py`
+  - `browser/chromium/scripts/cleanup-browser-artifacts.py`
 - Behavioral difference versus the prior promoted-browser state:
   browser diagnostics are no longer limited to a single smoke + layered
   snapshot. The repo now supports repeated-window local claim evidence and
@@ -542,10 +542,10 @@
   - `config/browser-ownership.json`
 - Browser workflow and approval contracts were promoted from Track B (modules)-only
   approval assumptions to explicit Track A (browser) cross-owner signoff:
-  - `browser/fawn-browser/bench/workflows/browser-workflow-manifest.json`
-  - `browser/fawn-browser/bench/workflows/browser-workflow-manifest.schema.json`
-  - `browser/fawn-browser/bench/workflows/browser-promotion-approvals.json`
-  - `browser/fawn-browser/bench/workflows/browser-promotion-approvals.schema.json`
+  - `browser/chromium/bench/workflows/browser-workflow-manifest.json`
+  - `browser/chromium/bench/workflows/browser-workflow-manifest.schema.json`
+  - `browser/chromium/bench/workflows/browser-promotion-approvals.json`
+  - `browser/chromium/bench/workflows/browser-promotion-approvals.schema.json`
 - Behavioral difference versus the prior nursery-only state:
   browser smoke and strict layered superset validation are now executable from
   the canonical blocking gate runner with required ownership/approval checks,
@@ -554,13 +554,13 @@
 ### Track B (modules) 2D SDF renderer promotion
 
 - `fawn_2d_sdf_renderer` moved from the nursery Python prototype in
-  `browser/fawn-browser/scripts/module_prototype.py` to a core Zig
+  `browser/chromium/scripts/module_prototype.py` to a core Zig
   implementation in `runtime/zig/src/full/modules/rendering/sdf_renderer.zig`.
 - The canonical schema/policy contract is now:
   - `config/sdf-renderer.schema.json`
   - `config/sdf-renderer.policy.json`
 - The nursery schema remains present only as a deprecated incubation reference:
-  - `browser/fawn-browser/module-incubation/schemas/fawn-2d-sdf-renderer.schema.json`
+  - `browser/chromium/module-incubation/schemas/fawn-2d-sdf-renderer.schema.json`
 - Behavioral difference versus the nursery prototype:
   the promoted path now executes through the shared render runtime and emits
   deterministic trace-linked render artifacts instead of prototype-only policy
@@ -569,13 +569,13 @@
 ### Track B (modules) path engine promotion
 
 - `fawn_path_engine` moved from the nursery Python prototype in
-  `browser/fawn-browser/scripts/module_prototype.py` to a core Zig
+  `browser/chromium/scripts/module_prototype.py` to a core Zig
   implementation in `runtime/zig/src/full/modules/rendering/path_engine.zig`.
 - The canonical schema/policy contract is now:
   - `config/path-engine.schema.json`
   - `config/path-engine.policy.json`
 - The nursery schema remains present only as a deprecated incubation reference:
-  - `browser/fawn-browser/module-incubation/schemas/fawn-path-engine.schema.json`
+  - `browser/chromium/module-incubation/schemas/fawn-path-engine.schema.json`
 - Behavioral difference versus the nursery prototype:
   the promoted path now executes through the shared render runtime and emits
   deterministic geometry/raster telemetry instead of prototype-only counters.
@@ -583,13 +583,13 @@
 ### Track B (modules) effects pipeline promotion
 
 - `fawn_effects_pipeline` moved from the nursery Python prototype in
-  `browser/fawn-browser/scripts/module_prototype.py` to a core Zig
+  `browser/chromium/scripts/module_prototype.py` to a core Zig
   implementation in `runtime/zig/src/full/modules/rendering/effects_pipeline.zig`.
 - The canonical schema/policy contract is now:
   - `config/effects-pipeline.schema.json`
   - `config/effects-pipeline.policy.json`
 - The nursery schema remains present only as a deprecated incubation reference:
-  - `browser/fawn-browser/module-incubation/schemas/fawn-effects-pipeline.schema.json`
+  - `browser/chromium/module-incubation/schemas/fawn-effects-pipeline.schema.json`
 - Behavioral difference versus the nursery prototype:
   the promoted path now executes through the shared render runtime and emits
   deterministic effect-pass timing and fallback telemetry under the canonical
@@ -600,13 +600,13 @@
 ### Track B (modules) compute services promotion
 
 - `fawn_compute_services` moved from the nursery Python prototype in
-  `browser/fawn-browser/scripts/module_prototype.py` to a core Zig
+  `browser/chromium/scripts/module_prototype.py` to a core Zig
   implementation in `runtime/zig/src/full/modules/services/compute_services.zig`.
 - The canonical schema/policy contract is now:
   - `config/compute-services.schema.json`
   - `config/compute-services.policy.json`
 - The nursery schema remains present only as a deprecated incubation reference:
-  - `browser/fawn-browser/module-incubation/schemas/fawn-compute-services.schema.json`
+  - `browser/chromium/module-incubation/schemas/fawn-compute-services.schema.json`
 - Behavioral difference versus the nursery prototype:
   real GPU `kernel_dispatch` execution now runs through the core WebGPU compute
   path, while returned timing fields are deterministic contract values rather
@@ -615,13 +615,13 @@
 ### Track B (modules) resource scheduler promotion
 
 - `fawn_resource_scheduler` moved from the nursery Python prototype in
-  `browser/fawn-browser/scripts/module_prototype.py` to a core Zig
+  `browser/chromium/scripts/module_prototype.py` to a core Zig
   implementation in `runtime/zig/src/full/modules/services/resource_scheduler.zig`.
 - The canonical schema/policy contract is now:
   - `config/resource-scheduler.schema.json`
   - `config/resource-scheduler.policy.json`
 - The nursery schema remains present only as a deprecated incubation reference:
-  - `browser/fawn-browser/module-incubation/schemas/fawn-resource-scheduler.schema.json`
+  - `browser/chromium/module-incubation/schemas/fawn-resource-scheduler.schema.json`
 - Behavioral difference versus the nursery prototype:
   real buffer/texture allocation now happens through `WebGPUBackend` resource
   helpers, and pool statistics are emitted from the promoted scheduler contract
@@ -1125,7 +1125,7 @@
   The `@simulatte/*` scope is now deprecated in favor of `doe-gpu`.
 - Canonical runtime/headless package was `@simulatte/webgpu`; use `doe-gpu` instead.
 - Canonical `@simulatte/webgpu` package root now lives entirely under `packages/webgpu/`.
-- Browser package naming is reserved as `@simulatte/fawn-browser`.
+- Browser package naming is reserved as `@simulatte/chromium`.
 - Doe remains the backend/runtime family name for:
   - backend IDs (`doe_vulkan`, `doe_metal`, `doe_d3d12`)
   - compare/report families (`doe-vs-dawn`)

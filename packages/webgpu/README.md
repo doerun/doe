@@ -16,7 +16,7 @@
 `@simulatte/webgpu` is Doe's headless WebGPU package for Node.js and Bun: use
 the raw WebGPU API through `requestDevice()` and `device.*`, or move up to the
 Doe API when you want the same runtime with less setup. Browser DOM/canvas
-ownership lives in the separate `browser/fawn-browser` lane.
+ownership lives in the separate `browser/chromium` lane.
 
 When you are integrating against a real browser-owned `navigator.gpu`
 implementation (for example Chromium Track A or offscreen browser tests), use
@@ -222,7 +222,7 @@ Node and Bun package lanes.
 `@simulatte/webgpu` is the headless package surface of the broader
 [Doe](https://github.com/doe-gpu/doe) project. The same repository also
 carries the Doe runtime itself, benchmarking and verification tooling, and the
-separate `browser/fawn-browser` Chromium/browser integration lane.
+separate `browser/chromium` Chromium/browser integration lane.
 
 ## Install
 

@@ -48,7 +48,7 @@ Doe is platform-shaped as well as module-shaped.
 │ • Native (Node/Bun)     │  │ navigator.gpu seam.                │
 │   N-API/FFI → Zig → GPU │  │                                    │
 │                         │  │ Plans and contracts only today.     │
-│ • Browser wrapper       │  │ browser/fawn-browser/              │
+│ • Browser wrapper       │  │ browser/chromium/              │
 │   JS shim → browser's   │  │                                    │
 │   own navigator.gpu     │  │ Depends on full runtime artifact   │
 │   (no Doe code runs)    │  │ plus browser-specific gates.       │
@@ -73,7 +73,7 @@ Doe is platform-shaped as well as module-shaped.
 - the future browser integration lane: embed the Doe Zig runtime inside Chromium to replace Dawn at `navigator.gpu`
 - depends on the full runtime artifact plus browser-specific gates
 - is one deployment surface, not the whole identity of the project
-- plans and contracts live in `browser/fawn-browser/`; no production runtime behavior is enabled from that directory today
+- plans and contracts live in `browser/chromium/`; no production runtime behavior is enabled from that directory today
 
 Note: the browser wrapper (surface 2) and Chromium Track A (surface 3) serve
 different purposes. The wrapper lets existing `@simulatte/webgpu` (now `doe-gpu`) code run in

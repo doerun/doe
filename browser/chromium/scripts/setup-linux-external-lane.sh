@@ -3,24 +3,23 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LANE_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
-DEFAULT_VOLUME="/Volumes/fawn"
+DEFAULT_VOLUME="/mnt/fawn"
 VOLUME_PATH="${1:-${FAWN_EXTERNAL_VOLUME:-${DEFAULT_VOLUME}}}"
-EXTERNAL_ROOT="${FAWN_EXTERNAL_LANE_ROOT:-${VOLUME_PATH}/fawn-browser}"
+EXTERNAL_ROOT="${FAWN_EXTERNAL_LANE_ROOT:-${VOLUME_PATH}/chromium}"
 EXTERNAL_DEPOT_TOOLS="${EXTERNAL_ROOT}/depot_tools"
 EXTERNAL_SRC="${EXTERNAL_ROOT}/src"
 EXTERNAL_CACHE="${EXTERNAL_ROOT}/cache"
 LOCAL_RELEASE_OUT="${LANE_DIR}/out/fawn_release_local"
 EXTERNAL_ENV_FILE="${LANE_DIR}/.external-lane.env"
-EXTERNAL_ENV_FILE_LEGACY="${LANE_DIR}/.external-macos.env"
 
 if [[ ! -d "${VOLUME_PATH}" ]]; then
-  echo "missing external volume path: ${VOLUME_PATH}" >&2
-  echo "finish formatting/mounting, then re-run this script." >&2
+  echo "missing external path: ${VOLUME_PATH}" >&2
+  echo "mount and format your external path, then re-run this script." >&2
   exit 1
 fi
 
 if [[ ! -w "${VOLUME_PATH}" ]]; then
-  echo "external volume is not writable: ${VOLUME_PATH}" >&2
+  echo "external path is not writable: ${VOLUME_PATH}" >&2
   exit 1
 fi
 
@@ -53,24 +52,22 @@ link_lane_path "${LANE_DIR}/src" "${EXTERNAL_SRC}"
 link_lane_path "${LANE_DIR}/depot_tools" "${EXTERNAL_DEPOT_TOOLS}"
 link_lane_path "${LANE_DIR}/cache" "${EXTERNAL_CACHE}"
 
-for env_file in "${EXTERNAL_ENV_FILE}" "${EXTERNAL_ENV_FILE_LEGACY}"; do
-cat > "${env_file}" <<EOF
+cat > "${EXTERNAL_ENV_FILE}" <<EOF
 export FAWN_CHROMIUM_EXTERNAL_VOLUME="${VOLUME_PATH}"
 export FAWN_CHROMIUM_EXTERNAL_ROOT="${EXTERNAL_ROOT}"
 export FAWN_CHROMIUM_EXTERNAL_SRC="${EXTERNAL_SRC}"
 export FAWN_CHROMIUM_EXTERNAL_CACHE="${EXTERNAL_CACHE}"
 export FAWN_CHROMIUM_RELEASE_LOCAL_OUT="${LOCAL_RELEASE_OUT}"
 EOF
-done
 
 echo "external lane configured:"
-echo "  volume: ${VOLUME_PATH}"
+echo "  path: ${VOLUME_PATH}"
 echo "  external root: ${EXTERNAL_ROOT}"
 echo "  lane src -> ${EXTERNAL_SRC}"
 echo "  lane depot_tools -> ${EXTERNAL_DEPOT_TOOLS}"
 echo "  lane cache -> ${EXTERNAL_CACHE}"
 echo "  local release artifacts: ${LOCAL_RELEASE_OUT}"
-echo "  env files: ${EXTERNAL_ENV_FILE} and ${EXTERNAL_ENV_FILE_LEGACY}"
+echo "  env file: ${EXTERNAL_ENV_FILE}"
 
 if [[ ! -d "${EXTERNAL_DEPOT_TOOLS}/.git" ]]; then
   echo

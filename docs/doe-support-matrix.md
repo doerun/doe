@@ -16,9 +16,9 @@ This document is the product-contract layer of a larger tracking model. Spec inv
 |------|-------------------|-------|
 | **doe-core** | Node/Bun/CLI headless | AI/ML infra, CI/perf teams |
 | **doe-runtime** | Native apps, engines, embedded | Teams replacing Dawn/wgpu in applications |
-| **fawn-browser** | Managed Chromium distribution | Enterprise/regulated browser deployments |
+| **chromium** | Managed Chromium distribution | Enterprise/regulated browser deployments |
 
-Each tier is additive: doe-runtime includes all doe-core commitments; fawn-browser includes all doe-runtime commitments.
+Each tier is additive: doe-runtime includes all doe-core commitments; chromium includes all doe-runtime commitments.
 
 ---
 
@@ -33,7 +33,7 @@ the tier contracts below for promotion requirements.
 | `doe-core` | `bench/out/amd-vulkan/20260310T153903Z/dawn-vs-doe.amd.vulkan.release.json` | 7 release workloads backed by 7 command examples on `amd|vulkan|gfx11|24.0.0` | `comparisonStatus=comparable`, `claimStatus=diagnostic` | `examples/upload_1kb_commands.json` is still a real tiny-upload loss in the latest release artifact |
 | `doe-core` | `bench/out/apple-metal/extended-comparable/20260310T171918Z/dawn-vs-doe.local.metal.extended.comparable.json` | 31 comparable workloads backed by 30 unique command examples on `apple|metal|m3|1.0.0` | `comparisonStatus=comparable`, `claimStatus=diagnostic` | `examples/upload_1mb_commands.json` is diagnostic in the latest artifact because selected-timing `p95` is negative |
 | `doe-runtime` | `bench/workloads.local.d3d12.extended.json` | 11 contract rows / 11 command examples for the first governed D3D12 scope | contract only; no fresh Windows artifact in the current inventory | first Windows evidence run, then drop-in gate, CTS subset publication, and runtime-tier gates |
-| `fawn-browser` | `nursery/fawn-browser/` lane docs only | browser integration lane exists in-repo | no fresh browser compatibility artifact in the current inventory | browser smoke evidence, rebase cadence, security-patch SLA, and operational commitments |
+| `chromium` | `nursery/chromium/` lane docs only | browser integration lane exists in-repo | no fresh browser compatibility artifact in the current inventory | browser smoke evidence, rebase cadence, security-patch SLA, and operational commitments |
 
 Current command-example coverage from active matrix artifacts/contracts:
 
@@ -82,7 +82,7 @@ Subpath reminder (the `@simulatte/*` scope is deprecated; use `doe-gpu`):
 | Deno | `@simulatte/webgpu` via `packages/webgpu/src/deno.js` | built-in Deno WebGPU (`navigator.gpu`, wgpu-backed) | product + governed compare lane | `verified` | Deno package lane now exists in-repo and is registered as `deno_package_compare`; still newer than Node/Bun and should be read lane-specifically. |
 | CLI | `doe-gpu-bench`, `doe-gpu-compare`, `createDoeRuntime()` | no package-surface incumbent | product surface | `supported` | Real public Doe-core surface, but not a JS package head-to-head cell. |
 | Node | `@simulatte/webgpu/native-direct` | raw competitor device surfaces in ad hoc four-way compares | diagnostic subpath | `diagnostic` | Useful for stripping wrapper noise out of Node package attribution. Not a public replacement promise by itself. |
-| Browser | `@simulatte/webgpu` package family | browser `navigator.gpu` | package cell | `not meaningful` | Browser ownership lives in `fawn-browser`, not in the npm runtime package family. |
+| Browser | `@simulatte/webgpu` package family | browser `navigator.gpu` | package cell | `not meaningful` | Browser ownership lives in `chromium`, not in the npm runtime package family. |
 
 ### Helper package family: `@simulatte/webgpu-doe` *(deprecated — merged into `doe-gpu`)*
 
@@ -268,7 +268,7 @@ All of doe-core, plus:
 
 - Browser-specific presentation integration (swapchain is native-window, not `GPUCanvasContext`)
 - Chromium GPU process integration
-- Browser security sandbox enforcement (that is fawn-browser)
+- Browser security sandbox enforcement (that is chromium)
 
 ### Required gates
 
@@ -310,12 +310,12 @@ All doe-core claims, plus:
 | "Conformance-tracked WebGPU runtime" | Yes | CTS subset results published |
 | "Production WebGPU runtime" | Yes | All blocking gates green, CTS published, at least one external consumer validated |
 | "Full WebGPU implementation" | No | Until CTS pass rate exceeds threshold (TBD) |
-| "Browser-ready" | No | Requires fawn-browser tier |
+| "Browser-ready" | No | Requires chromium tier |
 | "Formally verified" | No | Until Lean proof pipeline is operational in CI with specific scope documented |
 
 ---
 
-## Tier 3: fawn-browser
+## Tier 3: chromium
 
 ### Scope
 
@@ -340,7 +340,7 @@ All of doe-runtime, plus:
 
 ### Expanded scope vs doe-runtime
 
-| Capability | doe-runtime | fawn-browser |
+| Capability | doe-runtime | chromium |
 |-----------|-------------|--------------|
 | Browser `navigator.gpu` | Not supported | Required |
 | `GPUCanvasContext` / presentation | Native-window only | Browser tab integration |
@@ -412,7 +412,7 @@ All doe-runtime claims, plus:
 ## Tier progression
 
 ```
-doe-core ──────────► doe-runtime ──────────► fawn-browser
+doe-core ──────────► doe-runtime ──────────► chromium
   │                     │                       │
   │ Ship now            │ Ship when:            │ Ship when:
   │                     │ - requestAdapter FFI  │ - rebase cadence proven
@@ -439,7 +439,7 @@ doe-core ──────────► doe-runtime ────────�
 4. Binary size and build time comparison vs Dawn published
 5. At least one external consumer validated (AI workload stack, game engine, or embedded integrator)
 
-**doe-runtime → fawn-browser:**
+**doe-runtime → chromium:**
 
 1. All doe-runtime promotion criteria met
 2. Chromium fork builds and boots with Doe as WebGPU runtime on at least one platform
@@ -475,7 +475,7 @@ code path exists.
    `dropin_gate.py`, CTS subset publication, callback/device creation, and the
    backend-specific blocking gates required by this document.
 
-5. Escalate from `doe-runtime` to `fawn-browser` only after the browser lane
+5. Escalate from `doe-runtime` to `chromium` only after the browser lane
    has its own evidence: Chromium boot with Doe selected, browser smoke tests,
    rebase cadence, security-patch cadence, and rollback validation. Native
    runtime evidence does not automatically transfer to the browser tier.
@@ -494,7 +494,7 @@ layers.
 
 The claim discipline rules from the positioning report apply universally, but the *scope* of allowed claims differs by tier:
 
-| Rule | doe-core | doe-runtime | fawn-browser |
+| Rule | doe-core | doe-runtime | chromium |
 |------|----------|-------------|--------------|
 | Performance claims require artifact citation | Yes | Yes | Yes |
 | No generalization beyond covered workloads | Yes | Yes | Yes |
@@ -515,8 +515,8 @@ AI workload stacks are consumers of Doe, not tiers of Doe. Representative tier r
 |-----------------|-----------------|--------|
 | Browser inference on stock WebGPU | None (uses Dawn/wgpu via host browser) | Doe not involved |
 | Headless inference via Node provider module | doe-core | Needs `requestAdapter`/`requestDevice` in Node |
-| Vertically integrated browser AI stack | fawn-browser | Needs browser-integrated `navigator.gpu` on Doe |
-| Sovereign AI stack (all three) | fawn-browser | Full stack requires all tiers |
+| Vertically integrated browser AI stack | chromium | Needs browser-integrated `navigator.gpu` on Doe |
+| Sovereign AI stack (all three) | chromium | Full stack requires all tiers |
 
 AI workload stacks can ship value today on stock WebGPU (no Doe dependency). The Doe integration path adds value incrementally as tiers mature.
 
@@ -528,4 +528,4 @@ AI workload stacks can ship value today on stock WebGPU (no Doe dependency). The
 |------|--------|--------------|
 | doe-core | **Operational (CLI/process-bridge)** | Fresh strict evidence exists on AMD Vulkan and Apple Metal, but the latest artifacts are still overall diagnostic (`upload_1kb` on AMD release, `upload_1mb` on Apple Metal comparable). Provider-module in-process path still depends on provider callbacks; Doe-native Bun FFI adapter trampoline remains incomplete. |
 | doe-runtime | **Not yet shippable** | No CTS publication, no binary size measurements, `dropin_gate.py` still needs full-symbol validation, and the first governed D3D12 lane has contract coverage but no fresh Windows artifact in the current inventory. |
-| fawn-browser | **Not yet shippable** | No rebase cadence demonstrated, no security patch SLA, no browser smoke tests, operational commitments undocumented |
+| chromium | **Not yet shippable** | No rebase cadence demonstrated, no security patch SLA, no browser smoke tests, operational commitments undocumented |

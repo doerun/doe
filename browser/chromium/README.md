@@ -2,7 +2,7 @@
 
 ## Purpose
 
-`browser/fawn-browser` is the repo-local browser integration layer for
+`browser/chromium` is the repo-local browser integration layer for
 Chromium work. It contains the docs, contracts, helper scripts, and diagnostic
 harnesses that drive a Chromium checkout/build lane.
 
@@ -75,13 +75,13 @@ in the lane Chromium source checkout:
 
 - `browser/chromium_webgpu_lane/src/third_party/blink/renderer/modules/webgpu/`
 
-The `browser/fawn-browser` directory remains planner/gate/probe ownership and does
+The `browser/chromium` directory remains planner/gate/probe ownership and does
 not own Blink API surface files directly.
 
 Terminology used in this directory:
 
 1. "browser integration layer"
-   - `browser/fawn-browser/`
+   - `browser/chromium/`
 2. "Chromium checkout/build lane"
    - `browser/chromium_webgpu_lane/` or an externally mounted lane selected by
      `FAWN_CHROMIUM_LANE_DIR`
@@ -273,7 +273,7 @@ Current browser integration layer structure:
 - Rebuild from source with:
 
 ```bash
-cd browser/fawn-browser
+cd browser/chromium
 ./scripts/build-fawn-logo-assets.sh
 ```
 
@@ -333,8 +333,8 @@ Lane setup for both macOS and Linux:
 Notes:
 - Lane-local env file is `.external-lane.env` (mac helper also writes legacy `.external-macos.env` for compatibility).
 - External checkout/caches are stored at:
-  - `<external_volume>/fawn-browser/{src,depot_tools,cache}`
-- Local release sync remains in `browser/fawn-browser/out/fawn_release_local`.
+  - `<external_volume>/chromium/{src,depot_tools,cache}`
+- Local release sync remains in `browser/chromium/out/fawn_release_local`.
 
 ## Current status
 

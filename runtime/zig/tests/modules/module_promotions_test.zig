@@ -30,7 +30,7 @@ test "fawn_compute_services determinism" {
     const allocator = arena.allocator();
     const request_bytes = try readRepoFile(
         allocator,
-        "browser/fawn-browser/module-incubation/fixtures/fawn-compute-services.request.json",
+        "browser/chromium/module-incubation/fixtures/fawn-compute-services.request.json",
     );
     const policy_bytes = try readRepoFile(
         allocator,
@@ -58,7 +58,7 @@ test "fawn_resource_scheduler determinism" {
     const allocator = arena.allocator();
     const request_bytes = try readRepoFile(
         allocator,
-        "browser/fawn-browser/module-incubation/fixtures/fawn-resource-scheduler.request.json",
+        "browser/chromium/module-incubation/fixtures/fawn-resource-scheduler.request.json",
     );
     const policy_bytes = try readRepoFile(
         allocator,
@@ -86,7 +86,7 @@ test "fawn_effects_pipeline determinism" {
     const allocator = arena.allocator();
     const request_bytes = try readRepoFile(
         allocator,
-        "browser/fawn-browser/module-incubation/fixtures/fawn-effects-pipeline.request.json",
+        "browser/chromium/module-incubation/fixtures/fawn-effects-pipeline.request.json",
     );
     const policy_bytes = try readRepoFile(
         allocator,
@@ -114,7 +114,7 @@ test "fawn_path_engine determinism" {
     const allocator = arena.allocator();
     const request_bytes = try readRepoFile(
         allocator,
-        "browser/fawn-browser/module-incubation/fixtures/fawn-path-engine.request.json",
+        "browser/chromium/module-incubation/fixtures/fawn-path-engine.request.json",
     );
     const policy_bytes = try readRepoFile(
         allocator,
@@ -142,7 +142,7 @@ test "fawn_2d_sdf_renderer determinism" {
     const allocator = arena.allocator();
     const request_bytes = try readRepoFile(
         allocator,
-        "browser/fawn-browser/module-incubation/fixtures/fawn-2d-sdf-renderer.request.json",
+        "browser/chromium/module-incubation/fixtures/fawn-2d-sdf-renderer.request.json",
     );
     const policy_bytes = try readRepoFile(
         allocator,

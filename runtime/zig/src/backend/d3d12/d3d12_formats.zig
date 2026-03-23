@@ -211,6 +211,9 @@ pub fn wgpu_format_to_dxgi(format: model.WGPUTextureFormat) !u32 {
         compressed_formats.WGPUTextureFormat_BC7RGBAUnorm => DXGI_FORMAT_BC7_UNORM,
         compressed_formats.WGPUTextureFormat_BC7RGBAUnormSrgb => DXGI_FORMAT_BC7_UNORM_SRGB,
 
+        // ETC2/EAC and ASTC formats have no DXGI equivalent; D3D12 does not
+        // support these families. They fall through to UnsupportedFeature
+        // intentionally rather than being hidden in the catch-all else.
         else => error.UnsupportedFeature,
     };
 }
@@ -337,6 +340,23 @@ pub fn has_stencil(format: model.WGPUTextureFormat) bool {
 /// Returns true when the format is a BC block-compressed format.
 pub fn is_bc_compressed(format: model.WGPUTextureFormat) bool {
     return compressed_formats.isBCFormat(format);
+}
+
+/// Returns true when the format is an ETC2 or EAC compressed format.
+/// DXGI has no native ETC2/EAC support; D3D12 reports supports_etc2 = false.
+pub fn is_etc2_compressed(format: model.WGPUTextureFormat) bool {
+    return compressed_formats.isETC2Format(format);
+}
+
+/// Returns true when the format is an ASTC compressed format.
+/// DXGI has no native ASTC support; D3D12 reports supports_astc = false.
+pub fn is_astc_compressed(format: model.WGPUTextureFormat) bool {
+    return compressed_formats.isASTCFormat(format);
+}
+
+/// Returns true when the format is any block-compressed format (BC, ETC2/EAC, or ASTC).
+pub fn is_any_compressed(format: model.WGPUTextureFormat) bool {
+    return is_bc_compressed(format) or is_etc2_compressed(format) or is_astc_compressed(format);
 }
 
 // --- Vertex format translation ---
@@ -520,6 +540,55 @@ test "has_stencil distinguishes stencil formats" {
     try testing.expect(has_stencil(model.WGPUTextureFormat_Depth24PlusStencil8));
     try testing.expect(has_stencil(model.WGPUTextureFormat_Depth32FloatStencil8));
     try testing.expect(has_stencil(model.WGPUTextureFormat_Stencil8));
+}
+
+test "is_etc2_compressed identifies ETC2/EAC formats" {
+    try testing.expect(is_etc2_compressed(compressed_formats.WGPUTextureFormat_ETC2RGB8Unorm));
+    try testing.expect(is_etc2_compressed(compressed_formats.WGPUTextureFormat_ETC2RGB8UnormSrgb));
+    try testing.expect(is_etc2_compressed(compressed_formats.WGPUTextureFormat_ETC2RGB8A1Unorm));
+    try testing.expect(is_etc2_compressed(compressed_formats.WGPUTextureFormat_ETC2RGBA8Unorm));
+    try testing.expect(is_etc2_compressed(compressed_formats.WGPUTextureFormat_EACR11Unorm));
+    try testing.expect(is_etc2_compressed(compressed_formats.WGPUTextureFormat_EACR11Snorm));
+    try testing.expect(is_etc2_compressed(compressed_formats.WGPUTextureFormat_EACRG11Unorm));
+    try testing.expect(is_etc2_compressed(compressed_formats.WGPUTextureFormat_EACRG11Snorm));
+    try testing.expect(!is_etc2_compressed(model.WGPUTextureFormat_RGBA8Unorm));
+    try testing.expect(!is_etc2_compressed(compressed_formats.WGPUTextureFormat_BC1RGBAUnorm));
+    try testing.expect(!is_etc2_compressed(compressed_formats.WGPUTextureFormat_ASTC4x4Unorm));
+}
+
+test "is_astc_compressed identifies ASTC formats" {
+    try testing.expect(is_astc_compressed(compressed_formats.WGPUTextureFormat_ASTC4x4Unorm));
+    try testing.expect(is_astc_compressed(compressed_formats.WGPUTextureFormat_ASTC4x4UnormSrgb));
+    try testing.expect(is_astc_compressed(compressed_formats.WGPUTextureFormat_ASTC8x8Unorm));
+    try testing.expect(is_astc_compressed(compressed_formats.WGPUTextureFormat_ASTC10x10UnormSrgb));
+    try testing.expect(is_astc_compressed(compressed_formats.WGPUTextureFormat_ASTC12x12Unorm));
+    try testing.expect(is_astc_compressed(compressed_formats.WGPUTextureFormat_ASTC12x12UnormSrgb));
+    try testing.expect(!is_astc_compressed(model.WGPUTextureFormat_RGBA8Unorm));
+    try testing.expect(!is_astc_compressed(compressed_formats.WGPUTextureFormat_BC7RGBAUnorm));
+    try testing.expect(!is_astc_compressed(compressed_formats.WGPUTextureFormat_ETC2RGB8Unorm));
+}
+
+test "is_any_compressed covers all compressed families" {
+    // BC
+    try testing.expect(is_any_compressed(compressed_formats.WGPUTextureFormat_BC1RGBAUnorm));
+    try testing.expect(is_any_compressed(compressed_formats.WGPUTextureFormat_BC7RGBAUnormSrgb));
+    // ETC2/EAC
+    try testing.expect(is_any_compressed(compressed_formats.WGPUTextureFormat_ETC2RGB8Unorm));
+    try testing.expect(is_any_compressed(compressed_formats.WGPUTextureFormat_EACRG11Snorm));
+    // ASTC
+    try testing.expect(is_any_compressed(compressed_formats.WGPUTextureFormat_ASTC4x4Unorm));
+    try testing.expect(is_any_compressed(compressed_formats.WGPUTextureFormat_ASTC12x12UnormSrgb));
+    // Non-compressed
+    try testing.expect(!is_any_compressed(model.WGPUTextureFormat_RGBA8Unorm));
+    try testing.expect(!is_any_compressed(model.WGPUTextureFormat_R32Float));
+    try testing.expect(!is_any_compressed(model.WGPUTextureFormat_Depth32Float));
+}
+
+test "ETC2 and ASTC formats return UnsupportedFeature from wgpu_format_to_dxgi" {
+    try testing.expectError(error.UnsupportedFeature, wgpu_format_to_dxgi(compressed_formats.WGPUTextureFormat_ETC2RGB8Unorm));
+    try testing.expectError(error.UnsupportedFeature, wgpu_format_to_dxgi(compressed_formats.WGPUTextureFormat_EACRG11Snorm));
+    try testing.expectError(error.UnsupportedFeature, wgpu_format_to_dxgi(compressed_formats.WGPUTextureFormat_ASTC4x4Unorm));
+    try testing.expectError(error.UnsupportedFeature, wgpu_format_to_dxgi(compressed_formats.WGPUTextureFormat_ASTC12x12UnormSrgb));
 }
 
 test "wgpu_vertex_format_to_dxgi maps 8-bit formats" {

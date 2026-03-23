@@ -13,6 +13,7 @@ const query_native = @import("doe_query_native.zig");
 const error_scope = @import("error_scope.zig");
 const task_pool = @import("runtime/task_pool.zig");
 const singleflight = @import("runtime/pipeline_singleflight.zig");
+const pipeline_cache_integration = @import("runtime/pipeline_cache_integration.zig");
 
 extern fn wgpuGetProcAddress(name: types.WGPUStringView) callconv(.c) p1cap.WGPUProc;
 extern fn doeWgpuDropinAbortMissingRequiredSymbol(name: types.WGPUStringView) callconv(.c) noreturn;
@@ -528,6 +529,7 @@ fn run_compute_pipeline_async(ctx_raw: ?*anyopaque) void {
     const head = g_compute_inflight.take(std.heap.c_allocator, entry) orelse return;
     const lead = head;
     lead.pipeline = native.doeNativeDeviceCreateComputePipeline(lead.device, &lead.descriptor);
+    pipeline_cache_integration.recordComputePipelineCreation(if (lead.entry_point_bytes) |ep| ep else null);
     if (lead.pipeline == null) {
         set_compute_pipeline_request_error(lead, "pipeline creation failed");
     }
@@ -556,6 +558,7 @@ fn run_render_pipeline_async(ctx_raw: ?*anyopaque) void {
     const head = g_render_inflight.take(std.heap.c_allocator, entry) orelse return;
     const lead = head;
     lead.pipeline = native.doeNativeDeviceCreateRenderPipeline(lead.device, @ptrCast(&lead.descriptor));
+    pipeline_cache_integration.recordRenderPipelineCreation();
     if (lead.pipeline == null) {
         set_render_pipeline_request_error(lead, "render pipeline creation failed");
     }

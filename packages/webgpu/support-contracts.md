@@ -309,8 +309,8 @@ The following capabilities are not owned by `core` or `full` package contracts:
 
 These belong to Chromium Track A and must be governed by:
 
-- `browser/fawn-browser/README.md`
-- `browser/fawn-browser/plan.md`
+- `browser/chromium/README.md`
+- `browser/chromium/plan.md`
 - drop-in symbol/behavior/benchmark gates
 - browser replay and claimability artifacts
 

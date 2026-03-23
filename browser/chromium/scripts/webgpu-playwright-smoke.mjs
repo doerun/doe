@@ -12,7 +12,7 @@ const ROOT = resolve(SCRIPT_DIR, "..", "..", "..");
 function defaultChromePath() {
   const releaseLocalOut =
     process.env.FAWN_CHROMIUM_RELEASE_LOCAL_OUT ??
-    resolve(ROOT, "browser/fawn-browser/out/fawn_release_local");
+    resolve(ROOT, "browser/chromium/out/fawn_release_local");
   const chromiumLaneOut = resolve(ROOT, "browser/chromium_webgpu_lane/out/fawn_release_local");
   const hostFawnApp = resolve(process.env.HOME ?? "", "Applications/Fawn.app/Contents/MacOS/Chromium");
   const envChrome = process.env.FAWN_CHROME_BIN;
@@ -25,15 +25,15 @@ function defaultChromePath() {
     resolve(chromiumLaneOut, "Fawn.app/Contents/MacOS/Chromium"),
     resolve(chromiumLaneOut, "Chromium.app/Contents/MacOS/Chromium"),
     hostFawnApp,
-    resolve(ROOT, "browser/fawn-browser/src/out/fawn_release/chrome"),
-    resolve(ROOT, "browser/fawn-browser/src/out/fawn_release/Fawn.app/Contents/MacOS/Chromium"),
-    resolve(ROOT, "browser/fawn-browser/src/out/fawn_release/Chromium.app/Contents/MacOS/Chromium"),
+    resolve(ROOT, "browser/chromium/src/out/fawn_release/chrome"),
+    resolve(ROOT, "browser/chromium/src/out/fawn_release/Fawn.app/Contents/MacOS/Chromium"),
+    resolve(ROOT, "browser/chromium/src/out/fawn_release/Chromium.app/Contents/MacOS/Chromium"),
     resolve(ROOT, "browser/chromium_webgpu_lane/src/out/fawn_release/chrome"),
     resolve(ROOT, "browser/chromium_webgpu_lane/src/out/fawn_release/Fawn.app/Contents/MacOS/Chromium"),
     resolve(ROOT, "browser/chromium_webgpu_lane/src/out/fawn_release/Chromium.app/Contents/MacOS/Chromium"),
-    resolve(ROOT, "browser/fawn-browser/src/out/fawn_debug/chrome"),
-    resolve(ROOT, "browser/fawn-browser/src/out/fawn_debug/Fawn.app/Contents/MacOS/Chromium"),
-    resolve(ROOT, "browser/fawn-browser/src/out/fawn_debug/Chromium.app/Contents/MacOS/Chromium"),
+    resolve(ROOT, "browser/chromium/src/out/fawn_debug/chrome"),
+    resolve(ROOT, "browser/chromium/src/out/fawn_debug/Fawn.app/Contents/MacOS/Chromium"),
+    resolve(ROOT, "browser/chromium/src/out/fawn_debug/Chromium.app/Contents/MacOS/Chromium"),
     resolve(ROOT, "browser/chromium_webgpu_lane/src/out/fawn_debug/chrome"),
     resolve(ROOT, "browser/chromium_webgpu_lane/src/out/fawn_debug/Fawn.app/Contents/MacOS/Chromium"),
     resolve(ROOT, "browser/chromium_webgpu_lane/src/out/fawn_debug/Chromium.app/Contents/MacOS/Chromium"),
@@ -112,13 +112,13 @@ const ADAPTER_LIMIT_KEYS = [
 
 function usage() {
   console.log(`Usage:
-  node browser/fawn-browser/scripts/webgpu-playwright-smoke.mjs [options]
+  node browser/chromium/scripts/webgpu-playwright-smoke.mjs [options]
 
 Options:
   --mode dawn|doe|both      Runtime mode to run (default: both)
   --chrome PATH             Chrome binary path
   --doe-lib PATH            libwebgpu_doe.{so,dylib} path (for doe mode)
-  --out PATH                JSON report output path (default: browser/fawn-browser/artifacts/<timestamp>/${DEFAULT_OUT_FILE})
+  --out PATH                JSON report output path (default: browser/chromium/artifacts/<timestamp>/${DEFAULT_OUT_FILE})
   --allow-bench-out         Allow writing this diagnostic report under bench/out
   --headless true|false     Launch headless (default: true)
   --api-surface SURFACE     Browser API surface: native|package-browser (default: ${DEFAULT_API_SURFACE})
@@ -229,7 +229,7 @@ function timestampId() {
 function defaultOutPath() {
   return resolve(
     ROOT,
-    "browser/fawn-browser/artifacts",
+    "browser/chromium/artifacts",
     timestampId(),
     DEFAULT_OUT_FILE,
   );
@@ -252,7 +252,7 @@ function pathWithin(pathValue, rootPath) {
 function ensureAllowedOutPath(outPath, allowBenchOut) {
   if (!allowBenchOut && pathWithin(outPath, BENCH_OUT_ROOT)) {
     throw new Error(
-      `refusing to write diagnostic browser smoke output to ${BENCH_OUT_ROOT}; write under browser/fawn-browser/artifacts or pass --allow-bench-out explicitly`,
+      `refusing to write diagnostic browser smoke output to ${BENCH_OUT_ROOT}; write under browser/chromium/artifacts or pass --allow-bench-out explicitly`,
     );
   }
 }
@@ -391,7 +391,7 @@ async function loadChromiumDriver() {
   }
 
   throw new Error(
-    "Playwright not found. Install with: npm install --prefix browser/fawn-browser playwright-core",
+    "Playwright not found. Install with: npm install --prefix browser/chromium playwright-core",
   );
 }
 

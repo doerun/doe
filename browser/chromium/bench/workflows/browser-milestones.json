@@ -22,7 +22,7 @@
         {
           "id": "plan",
           "kind": "doc",
-          "path": "browser/fawn-browser/plan.md",
+          "path": "browser/chromium/plan.md",
           "description": "Primary milestone and acceptance plan.",
           "required": true,
           "mustExist": true
@@ -30,7 +30,7 @@
         {
           "id": "runtime_selector_contract",
           "kind": "contract",
-          "path": "browser/fawn-browser/contracts/runtime-selector-and-fallback.contract.md",
+          "path": "browser/chromium/contracts/runtime-selector-and-fallback.contract.md",
           "description": "Track A selector, kill switch, denylist, and fallback contract.",
           "required": true,
           "mustExist": true
@@ -38,7 +38,7 @@
         {
           "id": "module_contract_matrix",
           "kind": "contract",
-          "path": "browser/fawn-browser/contracts/module-contract-matrix.md",
+          "path": "browser/chromium/contracts/module-contract-matrix.md",
           "description": "Shared module matrix for Track A and Track B.",
           "required": true,
           "mustExist": true
@@ -68,7 +68,7 @@
         {
           "id": "bringup_doc",
           "kind": "doc",
-          "path": "browser/fawn-browser/chromium-bringup.md",
+          "path": "browser/chromium/chromium-bringup.md",
           "description": "Bring-up flow and lane wrapper usage.",
           "required": true,
           "mustExist": true
@@ -76,7 +76,7 @@
         {
           "id": "seam_note",
           "kind": "note",
-          "path": "browser/fawn-browser/notes/browser-runtime-seam-edit-plan.md",
+          "path": "browser/chromium/notes/browser-runtime-seam-edit-plan.md",
           "description": "Track A selector and decoder seam work log.",
           "required": true,
           "mustExist": true
@@ -84,7 +84,7 @@
         {
           "id": "bringup_status_note",
           "kind": "note",
-          "path": "browser/fawn-browser/notes/bringup-status-2026-02-24.md",
+          "path": "browser/chromium/notes/bringup-status-2026-02-24.md",
           "description": "Local Chromium lane bring-up and selector status snapshot.",
           "required": true,
           "mustExist": true
@@ -92,7 +92,7 @@
         {
           "id": "lane_preflight",
           "kind": "script",
-          "path": "browser/fawn-browser/scripts/preflight.sh",
+          "path": "browser/chromium/scripts/preflight.sh",
           "description": "Lane dependency and resolved-path preflight.",
           "required": true,
           "mustExist": true
@@ -100,7 +100,7 @@
         {
           "id": "lane_bringup",
           "kind": "script",
-          "path": "browser/fawn-browser/scripts/bringup-linux.sh",
+          "path": "browser/chromium/scripts/bringup-linux.sh",
           "description": "Linux bring-up wrapper for Chromium lane setup/build.",
           "required": true,
           "mustExist": true
@@ -108,7 +108,7 @@
         {
           "id": "layered_summary_artifact",
           "kind": "artifact",
-          "path": "browser/fawn-browser/artifacts/20260309T015018Z/dawn-vs-doe.browser-layered.superset.summary.json",
+          "path": "browser/chromium/artifacts/20260309T015018Z/dawn-vs-doe.browser-layered.superset.summary.json",
           "description": "Latest local browser-layered summary artifact showing Doe vs Dawn execution in the lane.",
           "required": false,
           "mustExist": true
@@ -116,7 +116,7 @@
         {
           "id": "fresh_smoke_artifact",
           "kind": "artifact",
-          "path": "browser/fawn-browser/artifacts/20260309T015018Z/dawn-vs-doe.browser.playwright-smoke.diagnostic.json",
+          "path": "browser/chromium/artifacts/20260309T015018Z/dawn-vs-doe.browser.playwright-smoke.diagnostic.json",
           "description": "Fresh promoted-browser-gate smoke artifact showing Dawn and Doe both pass browser WebGPU smoke.",
           "required": false,
           "mustExist": true
@@ -170,7 +170,7 @@
         {
           "id": "browser_superset_contract",
           "kind": "contract",
-          "path": "browser/fawn-browser/contracts/browser-benchmark-superset.contract.md",
+          "path": "browser/chromium/contracts/browser-benchmark-superset.contract.md",
           "description": "L0/L1/L2 browser projection and promotion contract.",
           "required": true,
           "mustExist": true
@@ -178,7 +178,7 @@
         {
           "id": "projection_manifest",
           "kind": "manifest",
-          "path": "browser/fawn-browser/bench/generated/browser_projection_manifest.json",
+          "path": "browser/chromium/bench/generated/browser_projection_manifest.json",
           "description": "Generated browser projection manifest from core workloads.",
           "required": true,
           "mustExist": true
@@ -186,7 +186,7 @@
         {
           "id": "workflow_manifest",
           "kind": "manifest",
-          "path": "browser/fawn-browser/bench/workflows/browser-workflow-manifest.json",
+          "path": "browser/chromium/bench/workflows/browser-workflow-manifest.json",
           "description": "L2 browser workflow definitions.",
           "required": true,
           "mustExist": true
@@ -194,7 +194,7 @@
         {
           "id": "superset_checker",
           "kind": "script",
-          "path": "browser/fawn-browser/scripts/check-browser-benchmark-superset.py",
+          "path": "browser/chromium/scripts/check-browser-benchmark-superset.py",
           "description": "Projection and coverage checker for browser-layered runs.",
           "required": true,
           "mustExist": true
@@ -202,7 +202,7 @@
         {
           "id": "latest_check_artifact",
           "kind": "artifact",
-          "path": "browser/fawn-browser/artifacts/20260309T015018Z/dawn-vs-doe.browser-layered.superset.check.json",
+          "path": "browser/chromium/artifacts/20260309T015018Z/dawn-vs-doe.browser-layered.superset.check.json",
           "description": "Latest strict promoted-browser-gate checker artifact for the current 80-row projection.",
           "required": false,
           "mustExist": true
@@ -210,7 +210,7 @@
         {
           "id": "fresh_bringup_note",
           "kind": "note",
-          "path": "browser/fawn-browser/notes/bringup-status-2026-03-09.md",
+          "path": "browser/chromium/notes/bringup-status-2026-03-09.md",
           "description": "Fresh March 9 browser-gate status note with promoted strict-run outcomes.",
           "required": false,
           "mustExist": true
@@ -218,7 +218,7 @@
         {
           "id": "promotion_approvals",
           "kind": "manifest",
-          "path": "browser/fawn-browser/bench/workflows/browser-promotion-approvals.json",
+          "path": "browser/chromium/bench/workflows/browser-promotion-approvals.json",
           "description": "Promoted Track A browser approval manifest with runtime, quality, methodology, and coordinator signoff.",
           "required": true,
           "mustExist": true
@@ -256,7 +256,7 @@
         {
           "id": "run_bench_wrapper",
           "kind": "script",
-          "path": "browser/fawn-browser/scripts/run-bench.sh",
+          "path": "browser/chromium/scripts/run-bench.sh",
           "description": "One-command browser-layered benchmark wrapper.",
           "required": true,
           "mustExist": true
@@ -264,7 +264,7 @@
         {
           "id": "superset_orchestrator",
           "kind": "script",
-          "path": "browser/fawn-browser/scripts/run-browser-benchmark-superset.py",
+          "path": "browser/chromium/scripts/run-browser-benchmark-superset.py",
           "description": "Generate-run-check-summary orchestration for the browser lane.",
           "required": true,
           "mustExist": true
@@ -272,7 +272,7 @@
         {
           "id": "latest_benchmark_summary",
           "kind": "artifact",
-          "path": "browser/fawn-browser/artifacts/20260309T015018Z/dawn-vs-doe.browser-layered.superset.summary.json",
+          "path": "browser/chromium/artifacts/20260309T015018Z/dawn-vs-doe.browser-layered.superset.summary.json",
           "description": "Latest promoted-browser-gate layered performance summary; still diagnostic by contract.",
           "required": false,
           "mustExist": true
@@ -280,7 +280,7 @@
         {
           "id": "latest_smoke_summary",
           "kind": "artifact",
-          "path": "browser/fawn-browser/artifacts/20260309T015018Z/dawn-vs-doe.browser.playwright-smoke.diagnostic.json",
+          "path": "browser/chromium/artifacts/20260309T015018Z/dawn-vs-doe.browser.playwright-smoke.diagnostic.json",
           "description": "Fresh promoted-browser-gate smoke performance proxy artifact; still diagnostic by contract.",
           "required": false,
           "mustExist": true
@@ -318,7 +318,7 @@
         {
           "id": "sdf_contract",
           "kind": "contract",
-          "path": "browser/fawn-browser/contracts/fawn-2d-sdf-renderer.contract.md",
+          "path": "browser/chromium/contracts/fawn-2d-sdf-renderer.contract.md",
           "description": "Candidate input/output/fallback contract for the first Track B module.",
           "required": true,
           "mustExist": true
@@ -326,7 +326,7 @@
         {
           "id": "module_policy",
           "kind": "manifest",
-          "path": "browser/fawn-browser/module-incubation/policy.json",
+          "path": "browser/chromium/module-incubation/policy.json",
           "description": "Config-driven thresholds and allowed operation policy for Track B (modules) prototypes.",
           "required": true,
           "mustExist": true
@@ -334,7 +334,7 @@
         {
           "id": "sdf_schema",
           "kind": "schema",
-          "path": "browser/fawn-browser/module-incubation/schemas/fawn-2d-sdf-renderer.schema.json",
+          "path": "browser/chromium/module-incubation/schemas/fawn-2d-sdf-renderer.schema.json",
           "description": "Schema-backed request/result contract for the SDF renderer prototype.",
           "required": true,
           "mustExist": true
@@ -342,7 +342,7 @@
         {
           "id": "sdf_fixture",
           "kind": "manifest",
-          "path": "browser/fawn-browser/module-incubation/fixtures/fawn-2d-sdf-renderer.request.json",
+          "path": "browser/chromium/module-incubation/fixtures/fawn-2d-sdf-renderer.request.json",
           "description": "Deterministic SDF renderer prototype request fixture.",
           "required": true,
           "mustExist": true
@@ -350,7 +350,7 @@
         {
           "id": "module_prototype_gate",
           "kind": "script",
-          "path": "browser/fawn-browser/scripts/check_module_prototypes.py",
+          "path": "browser/chromium/scripts/check_module_prototypes.py",
           "description": "Prototype gate for all Track B (modules) fixtures.",
           "required": true,
           "mustExist": true
@@ -358,7 +358,7 @@
         {
           "id": "module_prototype_gate_report",
           "kind": "artifact",
-          "path": "browser/fawn-browser/artifacts/20260309T014442Z/module-prototype-check.json",
+          "path": "browser/chromium/artifacts/20260309T014442Z/module-prototype-check.json",
           "description": "Passing Track B prototype gate report with deterministic fixture results.",
           "required": false,
           "mustExist": true
@@ -412,7 +412,7 @@
         {
           "id": "path_engine_contract",
           "kind": "contract",
-          "path": "browser/fawn-browser/contracts/fawn-path-engine.contract.md",
+          "path": "browser/chromium/contracts/fawn-path-engine.contract.md",
           "description": "Path engine contract draft.",
           "required": true,
           "mustExist": true
@@ -420,7 +420,7 @@
         {
           "id": "effects_contract",
           "kind": "contract",
-          "path": "browser/fawn-browser/contracts/fawn-effects-pipeline.contract.md",
+          "path": "browser/chromium/contracts/fawn-effects-pipeline.contract.md",
           "description": "Effects pipeline contract draft.",
           "required": true,
           "mustExist": true
@@ -428,7 +428,7 @@
         {
           "id": "compute_services_contract",
           "kind": "contract",
-          "path": "browser/fawn-browser/contracts/fawn-compute-services.contract.md",
+          "path": "browser/chromium/contracts/fawn-compute-services.contract.md",
           "description": "Compute services contract draft.",
           "required": true,
           "mustExist": true
@@ -436,7 +436,7 @@
         {
           "id": "resource_scheduler_contract",
           "kind": "contract",
-          "path": "browser/fawn-browser/contracts/fawn-resource-scheduler.contract.md",
+          "path": "browser/chromium/contracts/fawn-resource-scheduler.contract.md",
           "description": "Resource scheduler contract draft.",
           "required": true,
           "mustExist": true
@@ -444,7 +444,7 @@
         {
           "id": "path_engine_schema",
           "kind": "schema",
-          "path": "browser/fawn-browser/module-incubation/schemas/fawn-path-engine.schema.json",
+          "path": "browser/chromium/module-incubation/schemas/fawn-path-engine.schema.json",
           "description": "Schema-backed path engine request/result contract.",
           "required": true,
           "mustExist": true
@@ -452,7 +452,7 @@
         {
           "id": "effects_schema",
           "kind": "schema",
-          "path": "browser/fawn-browser/module-incubation/schemas/fawn-effects-pipeline.schema.json",
+          "path": "browser/chromium/module-incubation/schemas/fawn-effects-pipeline.schema.json",
           "description": "Schema-backed effects pipeline request/result contract.",
           "required": true,
           "mustExist": true
@@ -460,7 +460,7 @@
         {
           "id": "compute_schema",
           "kind": "schema",
-          "path": "browser/fawn-browser/module-incubation/schemas/fawn-compute-services.schema.json",
+          "path": "browser/chromium/module-incubation/schemas/fawn-compute-services.schema.json",
           "description": "Schema-backed compute services request/result contract.",
           "required": true,
           "mustExist": true
@@ -468,7 +468,7 @@
         {
           "id": "scheduler_schema",
           "kind": "schema",
-          "path": "browser/fawn-browser/module-incubation/schemas/fawn-resource-scheduler.schema.json",
+          "path": "browser/chromium/module-incubation/schemas/fawn-resource-scheduler.schema.json",
           "description": "Schema-backed resource scheduler request/result contract.",
           "required": true,
           "mustExist": true
@@ -476,7 +476,7 @@
         {
           "id": "path_engine_fixture",
           "kind": "manifest",
-          "path": "browser/fawn-browser/module-incubation/fixtures/fawn-path-engine.request.json",
+          "path": "browser/chromium/module-incubation/fixtures/fawn-path-engine.request.json",
           "description": "Deterministic path engine prototype request fixture.",
           "required": true,
           "mustExist": true
@@ -484,7 +484,7 @@
         {
           "id": "effects_fixture",
           "kind": "manifest",
-          "path": "browser/fawn-browser/module-incubation/fixtures/fawn-effects-pipeline.request.json",
+          "path": "browser/chromium/module-incubation/fixtures/fawn-effects-pipeline.request.json",
           "description": "Deterministic effects pipeline prototype request fixture.",
           "required": true,
           "mustExist": true
@@ -492,7 +492,7 @@
         {
           "id": "compute_fixture",
           "kind": "manifest",
-          "path": "browser/fawn-browser/module-incubation/fixtures/fawn-compute-services.request.json",
+          "path": "browser/chromium/module-incubation/fixtures/fawn-compute-services.request.json",
           "description": "Deterministic compute services prototype request fixture.",
           "required": true,
           "mustExist": true
@@ -500,7 +500,7 @@
         {
           "id": "scheduler_fixture",
           "kind": "manifest",
-          "path": "browser/fawn-browser/module-incubation/fixtures/fawn-resource-scheduler.request.json",
+          "path": "browser/chromium/module-incubation/fixtures/fawn-resource-scheduler.request.json",
           "description": "Deterministic resource scheduler prototype request fixture.",
           "required": true,
           "mustExist": true
@@ -508,7 +508,7 @@
         {
           "id": "module_prototype_runner",
           "kind": "script",
-          "path": "browser/fawn-browser/scripts/module_prototype.py",
+          "path": "browser/chromium/scripts/module_prototype.py",
           "description": "Shared deterministic Track B (modules) prototype runner.",
           "required": true,
           "mustExist": true
@@ -516,7 +516,7 @@
         {
           "id": "module_prototype_report",
           "kind": "artifact",
-          "path": "browser/fawn-browser/artifacts/20260309T014442Z/module-prototype-check.json",
+          "path": "browser/chromium/artifacts/20260309T014442Z/module-prototype-check.json",
           "description": "Passing Track B prototype gate report covering all additional modules.",
           "required": false,
           "mustExist": true
@@ -620,7 +620,7 @@
         {
           "id": "promotion_approvals_schema",
           "kind": "schema",
-          "path": "browser/fawn-browser/bench/workflows/browser-promotion-approvals.schema.json",
+          "path": "browser/chromium/bench/workflows/browser-promotion-approvals.schema.json",
           "description": "Promotion approval artifact schema.",
           "required": true,
           "mustExist": true
@@ -628,7 +628,7 @@
         {
           "id": "promotion_approvals_manifest",
           "kind": "manifest",
-          "path": "browser/fawn-browser/bench/workflows/browser-promotion-approvals.json",
+          "path": "browser/chromium/bench/workflows/browser-promotion-approvals.json",
           "description": "Explicit promotion approvals state.",
           "required": true,
           "mustExist": true

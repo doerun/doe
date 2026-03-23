@@ -216,12 +216,18 @@ pub fn create_graphics_pipeline(
     };
     try c.check_vk(c.vkCreateShaderModule(self.device, &fragment_shader_info, null, &state.fragment_shader));
 
+    const has_bind_groups = cmd.bind_texture_count > 0 or cmd.bind_sampler_count > 0;
+    if (has_bind_groups) {
+        try createRenderDescriptorState(self, state, cmd);
+    }
+
+    var set_layouts = [1]u64{state.descriptor_set_layout};
     var layout_info = c.VkPipelineLayoutCreateInfo{
         .sType = c.VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
         .pNext = null,
         .flags = 0,
-        .setLayoutCount = 0,
-        .pSetLayouts = null,
+        .setLayoutCount = if (has_bind_groups) 1 else 0,
+        .pSetLayouts = if (has_bind_groups) &set_layouts else null,
         .pushConstantRangeCount = 0,
         .pPushConstantRanges = null,
     };
@@ -446,4 +452,168 @@ pub fn create_graphics_pipeline(
         null,
         @ptrCast(&state.graphics_pipeline),
     ));
+}
+
+const MAX_RENDER_DESCRIPTOR_BINDINGS: usize = model.MAX_RENDER_BIND_ENTRIES * 2;
+const VK_SHADER_STAGE_ALL_GRAPHICS: u32 = c.VK_SHADER_STAGE_VERTEX_BIT | c.VK_SHADER_STAGE_FRAGMENT_BIT;
+
+/// Build descriptor set layout, pool, and set for render pipeline texture/sampler bindings.
+/// Each texture gets a combined-image-sampler binding; each standalone sampler gets a sampler binding.
+/// Descriptor writes resolve texture views and samplers from the runtime resource maps.
+fn createRenderDescriptorState(
+    self: anytype,
+    state: anytype,
+    cmd: model.RenderDrawCommand,
+) !void {
+    const tex_count: u32 = cmd.bind_texture_count;
+    const samp_count: u32 = cmd.bind_sampler_count;
+    // Standalone samplers only for those beyond the texture-paired range
+    const standalone_samp_count: u32 = if (samp_count > tex_count) samp_count - tex_count else 0;
+    const total_bindings = tex_count + standalone_samp_count;
+    if (total_bindings == 0) return;
+
+    // Build layout bindings: combined-image-sampler per texture, sampler-only for excess
+    var bindings: [MAX_RENDER_DESCRIPTOR_BINDINGS]c.VkDescriptorSetLayoutBinding = undefined;
+    var binding_index: u32 = 0;
+    while (binding_index < tex_count) : (binding_index += 1) {
+        bindings[binding_index] = .{
+            .binding = binding_index,
+            .descriptorType = c.VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .descriptorCount = 1,
+            .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS,
+            .pImmutableSamplers = null,
+        };
+    }
+    var samp_index: u32 = 0;
+    while (samp_index < standalone_samp_count) : (samp_index += 1) {
+        bindings[tex_count + samp_index] = .{
+            .binding = tex_count + samp_index,
+            .descriptorType = c.VK_DESCRIPTOR_TYPE_SAMPLER,
+            .descriptorCount = 1,
+            .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS,
+            .pImmutableSamplers = null,
+        };
+    }
+
+    // Create descriptor set layout
+    var layout_ci = c.VkDescriptorSetLayoutCreateInfo{
+        .sType = c.VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+        .pNext = null,
+        .flags = 0,
+        .bindingCount = total_bindings,
+        .pBindings = bindings[0..total_bindings].ptr,
+    };
+    try c.check_vk(c.vkCreateDescriptorSetLayout(self.device, &layout_ci, null, &state.descriptor_set_layout));
+    errdefer {
+        c.vkDestroyDescriptorSetLayout(self.device, state.descriptor_set_layout, null);
+        state.descriptor_set_layout = VK_NULL_U64;
+    }
+
+    // Create descriptor pool
+    var pool_sizes: [2]c.VkDescriptorPoolSize = undefined;
+    var pool_size_count: u32 = 0;
+    if (tex_count > 0) {
+        pool_sizes[pool_size_count] = .{
+            .type = c.VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .descriptorCount = tex_count,
+        };
+        pool_size_count += 1;
+    }
+    if (standalone_samp_count > 0) {
+        pool_sizes[pool_size_count] = .{
+            .type = c.VK_DESCRIPTOR_TYPE_SAMPLER,
+            .descriptorCount = standalone_samp_count,
+        };
+        pool_size_count += 1;
+    }
+    var pool_ci = c.VkDescriptorPoolCreateInfo{
+        .sType = c.VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+        .pNext = null,
+        .flags = 0,
+        .maxSets = 1,
+        .poolSizeCount = pool_size_count,
+        .pPoolSizes = pool_sizes[0..pool_size_count].ptr,
+    };
+    try c.check_vk(c.vkCreateDescriptorPool(self.device, &pool_ci, null, &state.descriptor_pool));
+    errdefer {
+        c.vkDestroyDescriptorPool(self.device, state.descriptor_pool, null);
+        state.descriptor_pool = VK_NULL_U64;
+    }
+
+    // Allocate descriptor set
+    const set_layout = [1]u64{state.descriptor_set_layout};
+    var alloc_info = c.VkDescriptorSetAllocateInfo{
+        .sType = c.VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+        .pNext = null,
+        .descriptorPool = state.descriptor_pool,
+        .descriptorSetCount = 1,
+        .pSetLayouts = &set_layout,
+    };
+    try c.check_vk(c.vkAllocateDescriptorSets(self.device, &alloc_info, @ptrCast(&state.descriptor_set)));
+
+    // Write descriptor updates for texture and sampler bindings
+    var image_infos: [MAX_RENDER_DESCRIPTOR_BINDINGS]c.VkDescriptorImageInfo = undefined;
+    var writes: [MAX_RENDER_DESCRIPTOR_BINDINGS]c.VkWriteDescriptorSet = undefined;
+    var write_count: u32 = 0;
+
+    var ti: u32 = 0;
+    while (ti < tex_count) : (ti += 1) {
+        const tex_handle = cmd.bind_texture_handles[ti];
+        const texture = self.textures.get(tex_handle);
+        const sampler_handle = if (ti < samp_count) cmd.bind_sampler_handles[ti] else 0;
+        const sampler_vk: u64 = if (sampler_handle != 0)
+            self.samplers.get(sampler_handle) orelse VK_NULL_U64
+        else
+            VK_NULL_U64;
+        image_infos[write_count] = .{
+            .sampler = sampler_vk,
+            .imageView = if (texture) |t| t.view else VK_NULL_U64,
+            .imageLayout = c.VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        };
+        writes[write_count] = .{
+            .sType = c.VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            .pNext = null,
+            .dstSet = state.descriptor_set,
+            .dstBinding = ti,
+            .dstArrayElement = 0,
+            .descriptorCount = 1,
+            .descriptorType = c.VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .pImageInfo = @ptrCast(&image_infos[write_count]),
+            .pBufferInfo = null,
+            .pTexelBufferView = null,
+        };
+        write_count += 1;
+    }
+
+    // Standalone sampler bindings (excess samplers beyond texture-paired range)
+    var si: u32 = 0;
+    while (si < standalone_samp_count) : (si += 1) {
+        const sampler_handle = cmd.bind_sampler_handles[tex_count + si];
+        const sampler_vk: u64 = if (sampler_handle != 0)
+            self.samplers.get(sampler_handle) orelse VK_NULL_U64
+        else
+            VK_NULL_U64;
+        image_infos[write_count] = .{
+            .sampler = sampler_vk,
+            .imageView = VK_NULL_U64,
+            .imageLayout = c.VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        };
+        writes[write_count] = .{
+            .sType = c.VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            .pNext = null,
+            .dstSet = state.descriptor_set,
+            .dstBinding = tex_count + si,
+            .dstArrayElement = 0,
+            .descriptorCount = 1,
+            .descriptorType = c.VK_DESCRIPTOR_TYPE_SAMPLER,
+            .pImageInfo = @ptrCast(&image_infos[write_count]),
+            .pBufferInfo = null,
+            .pTexelBufferView = null,
+        };
+        write_count += 1;
+    }
+
+    if (write_count > 0) {
+        c.vkUpdateDescriptorSets(self.device, write_count, writes[0..write_count].ptr, 0, null);
+    }
 }

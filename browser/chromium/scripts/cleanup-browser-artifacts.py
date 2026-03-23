@@ -16,7 +16,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--artifacts-dir",
-        default="browser/fawn-browser/artifacts",
+        default="browser/chromium/artifacts",
         help="Browser artifact directory to prune.",
     )
     parser.add_argument(

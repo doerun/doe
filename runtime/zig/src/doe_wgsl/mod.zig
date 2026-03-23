@@ -25,6 +25,7 @@ pub const emit_spirv_fn = @import("emit_spirv_fn.zig");
 pub const emit_spirv_stages = @import("emit_spirv_stages.zig");
 pub const emit_spirv_texture = @import("emit_spirv_texture.zig");
 pub const emit_dxil = @import("emit_dxil.zig");
+pub const emit_csl = @import("emit_csl.zig");
 pub const layout_utils = @import("layout_utils.zig");
 const legacy_msl = @import("doe_wgsl_msl.zig");
 const lean_proof = @import("../lean_proof.zig");
@@ -46,6 +47,7 @@ pub const TranslateError = error{
     UnknownType,
     UnsupportedBuiltin,
     UnsupportedConstruct,
+    UnsupportedPattern,
     UnsupportedWgsl,
 };
 
@@ -53,6 +55,7 @@ pub const MAX_OUTPUT: usize = emit_msl.MAX_OUTPUT;
 pub const MAX_HLSL_OUTPUT: usize = emit_hlsl.MAX_OUTPUT;
 pub const MAX_SPIRV_OUTPUT: usize = emit_spirv.MAX_OUTPUT;
 pub const MAX_DXIL_OUTPUT: usize = emit_dxil.MAX_OUTPUT;
+pub const MAX_CSL_OUTPUT: usize = emit_csl.MAX_OUTPUT;
 pub const DXIL_DXC_ENV_VAR: []const u8 = emit_dxil.DXC_ENV_VAR;
 pub const DXIL_DXC_PATH_SENTINEL: []const u8 = emit_dxil.DXC_PATH_SENTINEL;
 pub const DxilToolchainConfig = emit_dxil.ToolchainConfig;
@@ -84,6 +87,7 @@ pub const CompilationStage = enum {
     hlsl_emit,
     spirv_emit,
     dxil_emit,
+    csl_emit,
 };
 
 const LAST_ERROR_CAP: usize = 256;
@@ -478,6 +482,23 @@ pub fn translateToDxilWithToolchainConfig(
     };
 }
 
+pub fn translateToCsl(allocator: std.mem.Allocator, wgsl: []const u8, out: []u8) TranslateError!usize {
+    var module_ir = try analyzeToIr(allocator, wgsl);
+    defer module_ir.deinit();
+
+    return emit_csl.emit(&module_ir, out) catch |err| {
+        const kind = switch (err) {
+            error.OutputTooLarge => TranslateError.OutputTooLarge,
+            error.InvalidIr => TranslateError.InvalidIr,
+            error.UnsupportedBuiltin => TranslateError.UnsupportedBuiltin,
+            error.UnsupportedConstruct => TranslateError.UnsupportedConstruct,
+            error.UnsupportedPattern => TranslateError.UnsupportedPattern,
+        };
+        setLastError(.csl_emit, kind, null, null);
+        return kind;
+    };
+}
+
 fn mapSemanticError(err: anyerror) TranslateError {
     return switch (err) {
         error.OutOfMemory => TranslateError.OutOfMemory,
@@ -527,6 +548,7 @@ test {
     _ = emit_spirv_stages;
     _ = emit_spirv_texture;
     _ = emit_dxil;
+    _ = emit_csl;
     _ = layout_utils;
     // Test files are registered in test_suite*.zig, not imported here,
     // to avoid bleeding failing tests into every consumer of mod.zig.
@@ -773,4 +795,58 @@ test "arrayLength on struct member compiles to SPIR-V" {
     try std.testing.expect(len >= 20);
     const magic = std.mem.readInt(u32, @as(*const [4]u8, @ptrCast(out[0..4].ptr)), .little);
     try std.testing.expectEqual(@as(u32, 0x07230203), magic);
+}
+
+test "translate element-wise compute shader to CSL" {
+    const source =
+        \\struct Uniforms {
+        \\    size: u32,
+        \\    _pad0: u32,
+        \\    _pad1: u32,
+        \\    _pad2: u32,
+        \\}
+        \\@group(0) @binding(0) var<uniform> u: Uniforms;
+        \\@group(0) @binding(1) var<storage, read> input: array<f32>;
+        \\@group(0) @binding(2) var<storage, read_write> output: array<f32>;
+        \\fn gelu(x: f32) -> f32 {
+        \\    let inner = 0.7978845608 * (x + 0.044715 * x * x * x);
+        \\    let inner_clamped = clamp(inner, -15.0, 15.0);
+        \\    return 0.5 * x * (1.0 + tanh(inner_clamped));
+        \\}
+        \\@compute @workgroup_size(256)
+        \\fn main(@builtin(global_invocation_id) gid: vec3u) {
+        \\    let idx = gid.x;
+        \\    if (idx >= u.size) { return; }
+        \\    let x = input[idx];
+        \\    output[idx] = gelu(x);
+        \\}
+    ;
+    var out: [MAX_CSL_OUTPUT]u8 = undefined;
+    const len = try translateToCsl(std.testing.allocator, source, &out);
+    try std.testing.expect(len > 0);
+    const csl = out[0..len];
+    // Should contain both sections.
+    try std.testing.expect(std.mem.indexOf(u8, csl, "layout.csl") != null);
+    try std.testing.expect(std.mem.indexOf(u8, csl, "pe_program.csl") != null);
+    // Layout should define a rectangle.
+    try std.testing.expect(std.mem.indexOf(u8, csl, "@set_rectangle") != null);
+    // PE program should import memcpy and math.
+    try std.testing.expect(std.mem.indexOf(u8, csl, "memcpy") != null);
+    try std.testing.expect(std.mem.indexOf(u8, csl, "math") != null);
+    // Should have the gelu helper function.
+    try std.testing.expect(std.mem.indexOf(u8, csl, "gelu") != null);
+    // Should export compute.
+    try std.testing.expect(std.mem.indexOf(u8, csl, "@export_symbol(compute)") != null);
+}
+
+test "vertex shader rejected for CSL emission" {
+    const source =
+        \\@vertex
+        \\fn vs_main(@builtin(vertex_index) vid: u32) -> @builtin(position) vec4f {
+        \\    return vec4f(0.0, 0.0, 0.0, 1.0);
+        \\}
+    ;
+    var out: [MAX_CSL_OUTPUT]u8 = undefined;
+    const result = translateToCsl(std.testing.allocator, source, &out);
+    try std.testing.expectError(TranslateError.UnsupportedConstruct, result);
 }

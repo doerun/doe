@@ -15,7 +15,7 @@ for the wrapper's role.
 │ JS shim → browser's own navigator.gpu → browser drives GPU  │
 │ No Doe runtime code runs. Wrapper for API compatibility.    │
 ├──────────────────────────────────────────────────────────────┤
-│ browser/fawn-browser/            (this document — future)   │
+│ browser/chromium/            (this document — future)   │
 │ Embed Doe Zig runtime inside Chromium to replace Dawn       │
 │ at the navigator.gpu seam. Plans/contracts only today.      │
 └──────────────────────────────────────────────────────────────┘
@@ -25,14 +25,14 @@ for the wrapper's role.
 
 The browser family is split into two layers:
 
-- `browser/fawn-browser`
+- `browser/chromium`
   - docs, contracts, scripts, and diagnostics for Chromium integration
 - `browser/chromium_webgpu_lane`
   - the actual Chromium checkout/build workspace when stored in-tree
 
 Keep those layers distinct:
 
-- `fawn-browser` is the control and evidence layer
+- `chromium` is the control and evidence layer
 - `chromium_webgpu_lane` is the heavyweight build workspace
 
 Browser smoke and browser benchmark projection remain separate benchmark
@@ -44,5 +44,5 @@ Track B proposed optional Chromium-internal GPU modules (SDF renderer, path
 engine, effects pipeline, compute services, resource scheduler). It was
 archived 2026-03-19: the infrastructure dominance strategy determined that
 building parallel browser subsystem replacements duplicates work that arrives
-for free once Track A ships. See `browser/fawn-browser/README.md` and
+for free once Track A ships. See `browser/chromium/README.md` and
 `docs/status.md` for the full rationale.

@@ -39,6 +39,9 @@ pub const RenderState = struct {
     graphics_pipeline_layout: c.VkPipelineLayout = VK_NULL_U64,
     vertex_shader: c.VkShaderModule = VK_NULL_U64,
     fragment_shader: c.VkShaderModule = VK_NULL_U64,
+    descriptor_set_layout: u64 = VK_NULL_U64,
+    descriptor_pool: u64 = VK_NULL_U64,
+    descriptor_set: u64 = VK_NULL_U64,
     render_target: ?vk_resources.TextureResource = null,
     depth_stencil_target: ?vk_resources.TextureResource = null,
     render_target_handle: u64 = 0,
@@ -50,41 +53,31 @@ pub const RenderState = struct {
     owns_depth_stencil_target: bool = false,
 };
 
+fn destroyVkHandle(device: c.VkDevice, handle: *u64, destroy_fn: anytype) void {
+    if (handle.* != VK_NULL_U64) {
+        destroy_fn(device, handle.*, null);
+        handle.* = VK_NULL_U64;
+    }
+}
+
 pub fn release_render_state(device: c.VkDevice, state: *RenderState) void {
-    if (state.graphics_pipeline != VK_NULL_U64) {
-        c.vkDestroyPipeline(device, state.graphics_pipeline, null);
-        state.graphics_pipeline = VK_NULL_U64;
-    }
-    if (state.graphics_pipeline_layout != VK_NULL_U64) {
-        c.vkDestroyPipelineLayout(device, state.graphics_pipeline_layout, null);
-        state.graphics_pipeline_layout = VK_NULL_U64;
-    }
-    if (state.fragment_shader != VK_NULL_U64) {
-        c.vkDestroyShaderModule(device, state.fragment_shader, null);
-        state.fragment_shader = VK_NULL_U64;
-    }
-    if (state.vertex_shader != VK_NULL_U64) {
-        c.vkDestroyShaderModule(device, state.vertex_shader, null);
-        state.vertex_shader = VK_NULL_U64;
-    }
-    if (state.framebuffer != VK_NULL_U64) {
-        c.vkDestroyFramebuffer(device, state.framebuffer, null);
-        state.framebuffer = VK_NULL_U64;
-    }
-    if (state.render_pass != VK_NULL_U64) {
-        c.vkDestroyRenderPass(device, state.render_pass, null);
-        state.render_pass = VK_NULL_U64;
-    }
+    destroyVkHandle(device, &state.descriptor_pool, c.vkDestroyDescriptorPool);
+    state.descriptor_set = VK_NULL_U64;
+    destroyVkHandle(device, &state.descriptor_set_layout, c.vkDestroyDescriptorSetLayout);
+    destroyVkHandle(device, &state.graphics_pipeline, c.vkDestroyPipeline);
+    destroyVkHandle(device, &state.graphics_pipeline_layout, c.vkDestroyPipelineLayout);
+    destroyVkHandle(device, &state.fragment_shader, c.vkDestroyShaderModule);
+    destroyVkHandle(device, &state.vertex_shader, c.vkDestroyShaderModule);
+    destroyVkHandle(device, &state.framebuffer, c.vkDestroyFramebuffer);
+    destroyVkHandle(device, &state.render_pass, c.vkDestroyRenderPass);
     if (state.owns_render_target) {
-        if (state.render_target) |target| {
+        if (state.render_target) |target|
             vk_resources.release_texture_resource_with_device(device, target);
-        }
     }
     state.render_target = null;
     if (state.owns_depth_stencil_target) {
-        if (state.depth_stencil_target) |target| {
+        if (state.depth_stencil_target) |target|
             vk_resources.release_texture_resource_with_device(device, target);
-        }
     }
     state.depth_stencil_target = null;
 }
@@ -508,6 +501,16 @@ fn record_and_submit_draws(
 
     // Bind graphics pipeline
     c.vkCmdBindPipeline(self.primary_command_buffer, c.VK_PIPELINE_BIND_POINT_GRAPHICS, state.graphics_pipeline);
+
+    if (state.descriptor_set != VK_NULL_U64) {
+        const sets = [1]u64{state.descriptor_set};
+        c.vkCmdBindDescriptorSets(
+            self.primary_command_buffer,
+            c.VK_PIPELINE_BIND_POINT_GRAPHICS,
+            state.graphics_pipeline_layout,
+            0, 1, &sets, 0, null,
+        );
+    }
 
     if (cmd.vertex_buffer_count > 0) {
         var vk_buffers: [8]c.VkBuffer = [_]c.VkBuffer{VK_NULL_U64} ** 8;

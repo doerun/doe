@@ -91,7 +91,7 @@
     ],
     "diagnosticAllowedPrefixes": [
       "bench/out/scratch/",
-      "browser/fawn-browser/"
+      "browser/chromium/"
     ]
   },
   "attestations": {
