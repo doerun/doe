@@ -407,7 +407,7 @@ pub fn build(b: *std.Build) void {
     const import_fence_step = b.step("import-fence", "Validate core/full one-way import boundaries");
     import_fence_step.dependOn(&import_fence_check.step);
 
-    const coverage_gate_check = b.addSystemCommand(&.{ "python3", "../../bench/split_coverage_gate.py", "--surface", "both" });
+    const coverage_gate_check = b.addSystemCommand(&.{ "python3", "bench/split_coverage_gate.py", "--surface", "both" });
     coverage_gate_check.setCwd(b.path("../.."));
     const coverage_gate_step = b.step("coverage-gate", "Validate split core/full coverage ledgers against Zig partitions");
     coverage_gate_step.dependOn(&coverage_gate_check.step);

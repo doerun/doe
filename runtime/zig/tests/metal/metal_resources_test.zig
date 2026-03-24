@@ -316,25 +316,27 @@ test "lookup_render_pipeline returns null when archive is null" {
 // MetalPipelineCache.cache_compute_pipeline with null archive
 // ============================================================
 
-test "cache_compute_pipeline with null archive is a no-op" {
+test "compile_or_serve_compute with null archive is a no-op" {
     var cache = pipeline_cache.MetalPipelineCache{
         .allocator = std.testing.allocator,
         .device = null,
         .archive = null,
         .archive_path = null,
     };
-    cache.cache_compute_pipeline(null);
+    const result = cache.compile_or_serve_compute(null);
+    try std.testing.expectEqual(@as(?*anyopaque, null), result);
     try std.testing.expectEqual(false, cache.dirty);
 }
 
-test "cache_render_pipeline with null archive is a no-op" {
+test "compile_or_serve_render with null archive is a no-op" {
     var cache = pipeline_cache.MetalPipelineCache{
         .allocator = std.testing.allocator,
         .device = null,
         .archive = null,
         .archive_path = null,
     };
-    cache.cache_render_pipeline(null);
+    const result = cache.compile_or_serve_render(0, 0);
+    try std.testing.expectEqual(@as(?*anyopaque, null), result);
     try std.testing.expectEqual(false, cache.dirty);
 }
 

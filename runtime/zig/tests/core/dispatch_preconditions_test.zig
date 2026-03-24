@@ -522,9 +522,9 @@ test "DispatchPrecondition carries binding point" {
 // TextureDispatchPrecondition — structural checks
 // ============================================================
 
-test "TextureDispatchPreconditionKind has exactly 2 variants" {
+test "TextureDispatchPreconditionKind has exactly 3 variants" {
     const fields = @typeInfo(ir.TextureDispatchPreconditionKind).@"enum".fields;
-    try testing.expectEqual(@as(usize, 2), fields.len);
+    try testing.expectEqual(@as(usize, 3), fields.len);
 }
 
 test "TextureDispatchPrecondition default is 2D with mip_level 0" {

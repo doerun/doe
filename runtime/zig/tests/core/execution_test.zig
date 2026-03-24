@@ -293,6 +293,8 @@ test "ExecutionResult default construction has correct zero values" {
         .selection_policy_hash = null,
         .shader_artifact_manifest_path = null,
         .shader_artifact_manifest_hash = null,
+        .host_plan_artifact_path = null,
+        .host_plan_artifact_hash = null,
         .backend_lane = null,
         .adapter_ordinal = null,
         .queue_family_index = null,

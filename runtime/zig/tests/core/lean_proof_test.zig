@@ -20,9 +20,9 @@ const model = @import("../../src/model.zig");
 // BoundsPattern enum — exhaustiveness and variant count
 // ============================================================
 
-test "BoundsPattern enum has exactly 10 variants" {
+test "BoundsPattern enum has exactly 11 variants" {
     const fields = @typeInfo(lean_proof.BoundsPattern).@"enum".fields;
-    try testing.expectEqual(@as(usize, 10), fields.len);
+    try testing.expectEqual(@as(usize, 11), fields.len);
 }
 
 test "BoundsPattern variant names are stable" {
