@@ -11,6 +11,6 @@
     "render:hydrogen": "node node-render.js hydrogen_atom 120"
   },
   "dependencies": {
-    "@simulatte/webgpu": "file:../../packages/webgpu"
+    "doe-gpu": "file:../../packages/doe-gpu"
   }
 }

@@ -19,8 +19,8 @@ Default assumptions:
 - `bench/`, `browser/chromium/`, `pipeline/`, top-level `scripts/`, and
   contributor tooling under `runtime/zig/` are repo-only unless the tooling
   manifest marks them `audience=public`
-- `packages/webgpu/`, `packages/webgpu-doe/`, `dawn-research/`, and `nursery/`
-  are deprecated or archive surfaces
+- legacy npm names `@simulatte/webgpu` and `@simulatte/webgpu-doe` redirect to
+  `doe-gpu`; `dawn-research/` and `nursery/` are archive surfaces
 
 Do not infer public product commitments from repo-only tools, scripts, or
 historical docs.

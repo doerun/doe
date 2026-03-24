@@ -556,9 +556,9 @@ async function setupDawnRaw(workload) {
 
 async function setupDawnDoe(workload) {
   const imports = await timeAsync(async () => {
-    const [{ create }, { default: doe }] = await Promise.all([
+    const [{ create }, { gpu: doe }] = await Promise.all([
       import("webgpu"),
-      import("../../../packages/webgpu-doe/src/index.js"),
+      import("../../../packages/doe-gpu/src/index.js"),
     ]);
     return { create, doe };
   });
@@ -588,7 +588,7 @@ async function setupDawnDoe(workload) {
 }
 
 async function setupSimulatteRaw(workload) {
-  const imports = await timeAsync(() => import("../../../packages/webgpu/src/native-direct.js"));
+  const imports = await timeAsync(() => import("../../../packages/doe-gpu/src/index.js"));
   const { globals, providerInfo, requestDevice } = imports.value;
   const device = await timeAsync(() => requestDevice());
   return setupRawCandidate({
@@ -603,10 +603,8 @@ async function setupSimulatteRaw(workload) {
 
 async function setupSimulatteDoe(workload) {
   const imports = await timeAsync(async () => {
-    const [{ requestDevice, providerInfo }, { default: doe }] = await Promise.all([
-      import("../../../packages/webgpu/src/native-direct.js"),
-      import("../../../packages/webgpu-doe/src/index.js"),
-    ]);
+    const { requestDevice, providerInfo, gpu: doe } =
+      await import("../../../packages/doe-gpu/src/index.js");
     return { requestDevice, providerInfo, doe };
   });
   const device = await timeAsync(() => imports.value.requestDevice());
@@ -705,7 +703,7 @@ async function main() {
   const workload = createMatmulWorkload(sizeSelection.size);
 
   console.log(
-    `Versions: @simulatte/webgpu 0.3.2, @simulatte/webgpu-doe 0.3.2, webgpu 0.3.8`
+    `Versions: doe-gpu 0.3.4, webgpu 0.3.8`
   );
   console.log(
     `Workload: tiled matmul size=${workload.size}x${workload.size} iterations=${iterations} warmup=${warmupRuns}`

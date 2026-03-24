@@ -123,25 +123,6 @@
       ]
     },
     {
-      "id": "deprecated-package-family",
-      "audience": "archive",
-      "kind": "package",
-      "stability": "deprecated",
-      "shipped": false,
-      "summary": "Deprecated package family retained for migration and historical reference.",
-      "rootPaths": [
-        "packages/webgpu",
-        "packages/webgpu-doe"
-      ],
-      "entrypoints": [
-        "packages/webgpu/package.json",
-        "packages/webgpu-doe/package.json"
-      ],
-      "docs": [
-        "packages/README.md"
-      ]
-    },
-    {
       "id": "research-and-incubation",
       "audience": "archive",
       "kind": "research_archive",

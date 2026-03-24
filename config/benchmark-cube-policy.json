@@ -117,7 +117,7 @@
         "compute_dispatch_simple": "dispatch_only"
       },
       "notes": [
-        "Node is the primary supported package surface for @simulatte/webgpu.",
+        "Node is the primary supported package surface for doe-gpu.",
         "Node package comparisons are runtime/package evidence and do not replace strict backend reports."
       ]
     },

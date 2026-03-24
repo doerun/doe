@@ -42,6 +42,7 @@ nursery/webgpu/out/node-smoke.ndjson
 lean/artifacts/
 
 # Editor/temp artifacts
+.claude/
 .claude/worktrees/
 *.swp
 *.tmp

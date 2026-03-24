@@ -38,7 +38,7 @@ Doe is platform-shaped as well as module-shaped.
            │                              │
            ▼                              ▼
 ┌─────────────────────────┐  ┌────────────────────────────────────┐
-│ @simulatte/webgpu       │  │ Chromium Track A                   │
+│ doe-gpu                │  │ Chromium Track A                   │
 │ (headless package;      │  │ (future Chromium integration)      │
 │  deprecated, use        │  │                                    │
 │  doe-gpu)               │  │                                    │
@@ -53,7 +53,7 @@ Doe is platform-shaped as well as module-shaped.
 │   own navigator.gpu     │  │ Depends on full runtime artifact   │
 │   (no Doe code runs)    │  │ plus browser-specific gates.       │
 │                         │  │                                    │
-│ packages/webgpu/        │  │ One deployment surface, not the    │
+│ packages/doe-gpu/       │  │ One deployment surface, not the    │
 │                         │  │ whole identity of the project.     │
 └─────────────────────────┘  └────────────────────────────────────┘
 ```
@@ -62,12 +62,12 @@ Doe is platform-shaped as well as module-shaped.
 - the Zig-first execution engine and compiler stack
 - owns explicit runtime behavior, backend execution, and proof-aware branch elimination
 
-2. `@simulatte/webgpu` (headless package) *(deprecated — use `doe-gpu`)*
+2. `doe-gpu` (headless package)
 - the canonical package surface for Node.js, Bun, and browser environments
 - exposes Doe for compute, offscreen execution, benchmarking, and CI workflows
 - contains two distinct runtime paths:
   - **headless native** (Node.js / Bun) — calls into the Doe Zig runtime via N-API or Bun FFI; Doe drives the GPU
-  - **browser wrapper** (`src/browser.js`) — a JS shim that delegates every WebGPU call to the browser's own `navigator.gpu`; no Doe Zig code runs; exists so `@simulatte/webgpu` consumers can run the same code in a browser
+  - **browser wrapper** (`src/browser.js`) — a JS shim that delegates every WebGPU call to the browser's own `navigator.gpu`; no Doe Zig code runs; exists so `doe-gpu` consumers can run the same code in a browser
 
 3. Chromium Track A
 - the future browser integration lane: embed the Doe Zig runtime inside Chromium to replace Dawn at `navigator.gpu`
@@ -76,9 +76,9 @@ Doe is platform-shaped as well as module-shaped.
 - plans and contracts live in `browser/chromium/`; no production runtime behavior is enabled from that directory today
 
 Note: the browser wrapper (surface 2) and Chromium Track A (surface 3) serve
-different purposes. The wrapper lets existing `@simulatte/webgpu` (now `doe-gpu`) code run in
-a browser today by forwarding to the browser's WebGPU. Track A is the future
-effort to make the browser's WebGPU _be_ Doe.
+different purposes. The wrapper lets existing `doe-gpu` code run in a browser
+today by forwarding to the browser's WebGPU. Track A is the future effort to
+make the browser's WebGPU _be_ Doe.
 
 The supporting modules above exist to make those surfaces deterministic,
 measurable, and maintainable rather than to blur them together.

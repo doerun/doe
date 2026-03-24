@@ -71,7 +71,7 @@ Key invariant: every backend enters at `ir.Module`. No backend reads AST directl
 The compiler is internal to the WebGPU API. Consumers never see IR, MSL, SPIR-V, or HLSL.
 
 This diagram shows the **headless native path** (Node.js / Bun → Zig). The
-browser wrapper path (`packages/webgpu/src/browser.js`) does not use the Doe
+browser wrapper path (`packages/doe-gpu/src/browser.js`) does not use the Doe
 shader compiler — it delegates `createShaderModule` to the browser's own WebGPU
 implementation, which compiles shaders internally.
 

@@ -1,4 +1,4 @@
-import { doe, providerInfo } from "../../../packages/webgpu/src/compute.js";
+import { gpu as doe, providerInfo } from "../../../packages/doe-gpu/src/compute.js";
 import {
   DEFAULT_ELEMENTS,
   DEFAULT_ROUNDS,

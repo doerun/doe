@@ -1,4 +1,4 @@
-// node-render.js — headless volume ray marcher for Node.js via @simulatte/webgpu.
+// node-render.js — headless volume ray marcher for Node.js via doe-gpu.
 //
 // Usage:
 //   node node-render.js [dataset] [frames] [width] [height] [out_dir]
@@ -15,7 +15,7 @@
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { globals, requestDevice } from "@simulatte/webgpu";
+import { globals, requestDevice } from "doe-gpu";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 

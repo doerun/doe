@@ -242,8 +242,8 @@ By default the harness writes to timestamped lane-local artifacts:
 
 Optional browser-surface seam:
 
-- pass `--api-surface package-browser` to route the Playwright page through `@simulatte/webgpu/browser` instead of talking directly to native `navigator.gpu`
-- this path requires the local harness HTTP server because the page imports `packages/webgpu/src/browser.js`; the layered harness will fail fast instead of falling back to `data:` URLs in that mode
+- pass `--api-surface package-browser` to route the Playwright page through `doe-gpu/browser` instead of talking directly to native `navigator.gpu`
+- this path requires the local harness HTTP server because the page imports `packages/doe-gpu/src/browser.js`; the layered harness will fail fast instead of falling back to `data:` URLs in that mode
 
 Guardrail:
 

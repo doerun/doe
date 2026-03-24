@@ -429,9 +429,9 @@ async function setupDawnRaw(workload) {
 
 async function setupDawnDoe(workload) {
   const imports = await timeAsync(async () => {
-    const [{ create }, { default: doe }] = await Promise.all([
+    const [{ create }, { gpu: doe }] = await Promise.all([
       import("webgpu"),
-      import("../../../packages/webgpu-doe/src/index.js"),
+      import("../../../packages/doe-gpu/src/index.js"),
     ]);
     return { create, doe };
   });
@@ -452,7 +452,7 @@ async function setupDawnDoe(workload) {
 }
 
 async function setupSimulatteRaw(workload) {
-  const imports = await timeAsync(() => import("../../../packages/webgpu/src/native-direct.js"));
+  const imports = await timeAsync(() => import("../../../packages/doe-gpu/src/index.js"));
   const { globals, providerInfo, requestDevice } = imports.value;
   const device = await timeAsync(() => requestDevice());
   const state = await timeAsync(() =>
@@ -471,10 +471,8 @@ async function setupSimulatteRaw(workload) {
 
 async function setupSimulatteDoe(workload) {
   const imports = await timeAsync(async () => {
-    const [{ requestDevice, providerInfo }, { default: doe }] = await Promise.all([
-      import("../../../packages/webgpu/src/native-direct.js"),
-      import("../../../packages/webgpu-doe/src/index.js"),
-    ]);
+    const { requestDevice, providerInfo, gpu: doe } =
+      await import("../../../packages/doe-gpu/src/index.js");
     return { requestDevice, providerInfo, doe };
   });
   const device = await timeAsync(() => imports.value.requestDevice());

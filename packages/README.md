@@ -16,5 +16,5 @@ entrypoints of one package, not separate products.
 
 ## Deprecated
 
-- `packages/webgpu/` — `@simulatte/webgpu`, deprecated in favor of `doe-gpu`
-- `packages/webgpu-doe/` — `@simulatte/webgpu-doe`, merged into `doe-gpu`
+- `@simulatte/webgpu` — legacy npm name, now redirected to `doe-gpu`
+- `@simulatte/webgpu-doe` — legacy npm name, now redirected to `doe-gpu`

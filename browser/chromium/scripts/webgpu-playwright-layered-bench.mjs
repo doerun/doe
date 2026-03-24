@@ -570,7 +570,7 @@ function makeDataPageUrl() {
 }
 
 function browserSurfaceModuleUrl(baseUrl) {
-  return new URL("/packages/webgpu/src/browser.js", baseUrl).href;
+  return new URL("/packages/doe-gpu/src/browser.js", baseUrl).href;
 }
 
 async function resolvePageTarget(allowDataUrlFallback, apiSurface) {

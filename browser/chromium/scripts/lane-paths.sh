@@ -33,10 +33,7 @@ fawn_default_doe_lib_candidates() {
     "${FAWN_REPO_ROOT}/runtime/zig/zig-out/lib/libwebgpu_doe.${extension}" \
     "${FAWN_REPO_ROOT}/runtime/zig/zig-out/lib/libwebgpu_doe.so" \
     "${FAWN_REPO_ROOT}/runtime/zig/zig-out/lib/libwebgpu_doe.dylib" \
-    "${FAWN_REPO_ROOT}/runtime/zig/zig-out/lib/libwebgpu_doe.dll" \
-    "${FAWN_REPO_ROOT}/packages/webgpu/prebuilds/$(uname -s | tr '[:upper:]' '[:lower:]')-$(uname -m)/libwebgpu_doe.${extension}" \
-    "${FAWN_REPO_ROOT}/packages/webgpu/prebuilds/darwin-arm64/libwebgpu_doe.dylib" \
-    "${FAWN_REPO_ROOT}/packages/webgpu/prebuilds/linux-x64/libwebgpu_doe.so"
+    "${FAWN_REPO_ROOT}/runtime/zig/zig-out/lib/libwebgpu_doe.dll"
 }
 
 fawn_default_chrome_candidates() {

@@ -24,10 +24,8 @@ products.
 
 ### Packages
 
-- `packages/webgpu`
-  - the `@simulatte/webgpu` package family
-- `packages/webgpu-doe`
-  - the `@simulatte/webgpu-doe` package family
+- `packages/doe-gpu`
+  - the current public npm package surface
 
 ### Browser
 

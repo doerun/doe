@@ -49,8 +49,7 @@ In practice:
 These areas exist for migration, reference, or research and should not be read
 as active public product surfaces:
 
-- `packages/webgpu/`
-- `packages/webgpu-doe/`
+- legacy npm names `@simulatte/webgpu` and `@simulatte/webgpu-doe`
 - `dawn-research/`
 - `nursery/`
 

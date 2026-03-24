@@ -1,4 +1,4 @@
-// Vendored from doe-gpu (packages/webgpu-doe/src/index.js).
+// Legacy Doe helper surface carried forward into the consolidated doe-gpu package.
 // This file is self-contained with no external imports.
 
 const DOE_GPU_BUFFER_USAGE = {
