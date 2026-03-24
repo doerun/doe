@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "description": "Bun WebGPU benchmark: Doe (@simulatte/webgpu FFI) vs bun-webgpu",
+  "description": "Bun WebGPU benchmark: Doe (doe-gpu FFI) vs bun-webgpu",
   "providers": {
     "doe": {
-      "package": "@simulatte/webgpu",
-      "source": "packages/webgpu/src/bun.js",
+      "package": "doe-gpu",
+      "source": "packages/doe-gpu/src/bun.js",
       "notes": "Doe FFI provider backed by libwebgpu_doe via Bun FFI"
     },
     "bun-webgpu": {

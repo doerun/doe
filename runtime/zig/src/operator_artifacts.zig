@@ -339,6 +339,14 @@ fn write_execution_fields(writer: anytype, maybe_execution: ?execution.Execution
         try writer.writeAll(",\"shaderArtifactManifestHash\":");
         try trace.writeJsonString(writer, value);
     }
+    if (exec.host_plan_artifact_path) |value| {
+        try writer.writeAll(",\"hostPlanArtifactPath\":");
+        try trace.writeJsonString(writer, value);
+    }
+    if (exec.host_plan_artifact_hash) |value| {
+        try writer.writeAll(",\"hostPlanArtifactHash\":");
+        try trace.writeJsonString(writer, value);
+    }
     try writer.writeAll(",\"timings\":{\"durationNs\":");
     try writer.print("{}", .{exec.duration_ns});
     try writer.writeAll(",\"setupNs\":");

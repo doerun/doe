@@ -142,6 +142,8 @@ pub const ZigVulkanBackend = struct {
                 .selection_policy_hash = policy_hash,
                 .shader_artifact_manifest_path = null,
                 .shader_artifact_manifest_hash = null,
+                .host_plan_artifact_path = null,
+                .host_plan_artifact_hash = null,
                 .adapter_ordinal = null,
                 .queue_family_index = null,
                 .present_capable = null,
@@ -195,6 +197,10 @@ fn native_capability_set() capabilities.CapabilitySet {
         .async_pixel_local_storage,
         .gpu_timestamps,
         .render_bundle,
+        .indirect_draw,
+        .indexed_indirect_draw,
+        .depth_stencil,
+        .descriptor_binding,
     });
     return set;
 }

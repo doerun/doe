@@ -1,6 +1,6 @@
 import * as ffi from "./bun-ffi.js";
 import * as full from "./full.js";
-import { createDoeNamespace } from "../doe-namespace.js";
+import { createDoeNamespace } from '../doe-namespace.js';
 
 const runtime = process.platform === "linux" ? ffi : full;
 

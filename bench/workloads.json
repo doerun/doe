@@ -171,7 +171,7 @@
       "domain": "pipeline-async",
       "leftCommandRepeat": 50,
       "name": "async pipeline diagnostics contract",
-      "comparabilityNotes": "Dawn delegate does not execute this workload (0 dispatches, 0 encode); comparable: false until Dawn-side implementation is verified.",
+      "comparabilityNotes": "Directional-only pending fresh structural-equivalence evidence on this lane. Historical promotion notes and current catalog state diverged, so this workload remains excluded from strict comparable claim lanes until a new report is recorded.",
       "commandsPath": "examples/async_pipeline_diagnostics_commands.json",
       "quirksPath": "examples/quirks/intel_gen12_temp_buffer_list.json",
       "vendor": "intel",

@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "DOE WGSL CSL Simulator Plan Artifact",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "target",
+    "contract",
+    "driver",
+    "inputs",
+    "runtime",
+    "outputs"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "artifactKind": { "type": "string", "const": "csl_simulator_plan" },
+    "target": { "type": "string", "const": "wse3" },
+    "contract": { "type": "string", "const": "explicit_simulator_launch" },
+    "driver": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["protocol", "executableEnvVar", "failClosedIfMissing"],
+      "properties": {
+        "protocol": { "type": "string", "const": "doe.csl.simulator/v1" },
+        "executableEnvVar": { "type": "string", "const": "DOE_CSL_SIM_EXECUTABLE" },
+        "failClosedIfMissing": { "type": "boolean", "const": true }
+      }
+    },
+    "inputs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["hostPlanArtifactPath", "runtimeConfigPath", "compileRootPath", "compileTargets"],
+      "properties": {
+        "hostPlanArtifactPath": { "type": "string", "minLength": 1 },
+        "runtimeConfigPath": { "type": "string", "minLength": 1 },
+        "compileRootPath": { "type": "string", "minLength": 1 },
+        "compileTargets": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "layout", "peProgram"],
+            "properties": {
+              "name": { "type": "string", "minLength": 1 },
+              "layout": { "type": "string", "minLength": 1 },
+              "peProgram": { "type": "string", "minLength": 1 }
+            }
+          }
+        }
+      }
+    },
+    "runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "peGrid",
+        "prefillLaunchCount",
+        "decodeLaunchCount",
+        "weightMappingCount",
+        "stateBufferCount",
+        "maxDecodeTokens",
+        "timeoutMs",
+        "batchSize",
+        "eosTokenId"
+      ],
+      "properties": {
+        "peGrid": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["width", "height"],
+          "properties": {
+            "width": { "type": "integer", "minimum": 1 },
+            "height": { "type": "integer", "minimum": 1 }
+          }
+        },
+        "prefillLaunchCount": { "type": "integer", "minimum": 0 },
+        "decodeLaunchCount": { "type": "integer", "minimum": 0 },
+        "weightMappingCount": { "type": "integer", "minimum": 0 },
+        "stateBufferCount": { "type": "integer", "minimum": 0 },
+        "maxDecodeTokens": { "type": "integer", "minimum": 0 },
+        "timeoutMs": { "type": "integer", "minimum": 0 },
+        "batchSize": { "type": "integer", "minimum": 1 },
+        "eosTokenId": { "type": ["integer", "null"], "minimum": 0 }
+      }
+    },
+    "outputs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["stdoutPath", "stderrPath", "tracePath"],
+      "properties": {
+        "stdoutPath": { "type": "string", "minLength": 1 },
+        "stderrPath": { "type": "string", "minLength": 1 },
+        "tracePath": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

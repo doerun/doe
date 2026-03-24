@@ -7,7 +7,9 @@ const metal_bridge_blit_encoder_copy_buffer_to_texture = bridge.metal_bridge_bli
 const metal_bridge_blit_encoder_copy_region = bridge.metal_bridge_blit_encoder_copy_region;
 const metal_bridge_blit_encoder_copy_texture_to_buffer = bridge.metal_bridge_blit_encoder_copy_texture_to_buffer;
 const metal_bridge_blit_encoder_copy_texture_to_texture = bridge.metal_bridge_blit_encoder_copy_texture_to_texture;
+const metal_bridge_begin_blit_encoding = bridge.metal_bridge_begin_blit_encoding;
 const metal_bridge_cmd_buf_blit_encoder = bridge.metal_bridge_cmd_buf_blit_encoder;
+const metal_bridge_end_blit_encoding = bridge.metal_bridge_end_blit_encoding;
 const metal_bridge_create_command_buffer = bridge.metal_bridge_create_command_buffer;
 const metal_bridge_device_new_buffer_shared = bridge.metal_bridge_device_new_buffer_shared;
 const metal_bridge_device_new_texture = bridge.metal_bridge_device_new_texture;
@@ -43,18 +45,30 @@ pub fn execute_copy(self: anytype, cmd: model.CopyCommand, queue_sync_mode: webg
         null;
     const setup_ns = common_timing.ns_delta(common_timing.now_ns(), setup_start);
 
-    try ensure_blit_encoder(self);
+    // Route buffer-to-buffer copies to the dedicated copy queue when available,
+    // allowing overlap with compute/render on the main queue. Texture copies
+    // stay on the main queue (they may depend on render encoder state).
+    const use_copy_queue = cmd.direction == .buffer_to_buffer and self.copy_queue != null;
+    if (use_copy_queue) {
+        try ensure_copy_blit_encoder(self);
+    } else {
+        try ensure_blit_encoder(self);
+    }
 
     const encode_start = common_timing.now_ns();
     switch (cmd.direction) {
-        .buffer_to_buffer => metal_bridge_blit_encoder_copy_region(
-            self.streaming_blit_encoder,
-            src_buffer,
-            cmd.src.offset,
-            dst_buffer,
-            cmd.dst.offset,
-            cmd.bytes,
-        ),
+        .buffer_to_buffer => {
+            const encoder = if (use_copy_queue) self.copy_blit_encoder else self.streaming_blit_encoder;
+            metal_bridge_blit_encoder_copy_region(
+                encoder,
+                src_buffer,
+                cmd.src.offset,
+                dst_buffer,
+                cmd.dst.offset,
+                cmd.bytes,
+            );
+            if (use_copy_queue) self.has_pending_copies = true;
+        },
         .buffer_to_texture => metal_bridge_blit_encoder_copy_buffer_to_texture(
             self.streaming_blit_encoder,
             src_buffer,
@@ -165,4 +179,15 @@ fn normalize_copy_rows(value: u32, height: u32) u32 {
 
 fn normalize_copy_depth(value: u32) u32 {
     return if (value == 0) 1 else value;
+}
+
+fn ensure_copy_blit_encoder(self: anytype) !void {
+    if (self.copy_blit_encoder != null) return;
+    if (self.copy_cmd_buf == null) {
+        var encoder: ?*anyopaque = null;
+        self.copy_cmd_buf = metal_bridge_begin_blit_encoding(self.copy_queue, &encoder) orelse return error.InvalidState;
+        self.copy_blit_encoder = encoder;
+    } else {
+        self.copy_blit_encoder = metal_bridge_cmd_buf_blit_encoder(self.copy_cmd_buf) orelse return error.InvalidState;
+    }
 }

@@ -48,6 +48,8 @@
     "selectionPolicyHash": { "type": "string" },
     "shaderArtifactManifestPath": { "type": "string" },
     "shaderArtifactManifestHash": { "type": "string" },
+    "hostPlanArtifactPath": { "type": "string" },
+    "hostPlanArtifactHash": { "type": "string" },
     "queueSyncMode": { "type": "string" },
     "executionRowCount": { "type": "integer", "minimum": 0 },
     "executionSuccessCount": { "type": "integer", "minimum": 0 },

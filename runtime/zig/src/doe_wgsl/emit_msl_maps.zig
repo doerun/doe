@@ -34,6 +34,7 @@ pub fn msl_builtin_passthrough_name(name: []const u8) ?[]const u8 {
         "cos",
         "cosh",
         "cross",
+        "determinant",
         "distance",
         "dot",
         "exp",
@@ -48,7 +49,10 @@ pub fn msl_builtin_passthrough_name(name: []const u8) ?[]const u8 {
         "mix",
         "normalize",
         "pow",
+        "reflect",
+        "refract",
         "round",
+        "saturate",
         "sign",
         "sin",
         "sinh",
@@ -57,10 +61,22 @@ pub fn msl_builtin_passthrough_name(name: []const u8) ?[]const u8 {
         "step",
         "tan",
         "tanh",
+        "transpose",
         "trunc",
     };
     inline for (passthrough) |candidate| {
         if (std.mem.eql(u8, name, candidate)) return candidate;
+    }
+    // Builtins where WGSL name differs from MSL name.
+    const renamed = [_]struct { wgsl: []const u8, msl: []const u8 }{
+        .{ .wgsl = "faceForward", .msl = "faceforward" },
+        .{ .wgsl = "countOneBits", .msl = "popcount" },
+        .{ .wgsl = "reverseBits", .msl = "reverse_bits" },
+        .{ .wgsl = "countLeadingZeros", .msl = "clz" },
+        .{ .wgsl = "countTrailingZeros", .msl = "ctz" },
+    };
+    inline for (renamed) |entry| {
+        if (std.mem.eql(u8, name, entry.wgsl)) return entry.msl;
     }
     return null;
 }

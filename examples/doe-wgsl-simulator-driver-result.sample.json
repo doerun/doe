@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "csl_simulator_driver_result",
+  "target": "wse3",
+  "contract": "explicit_driver_outcome",
+  "simulatorPlanPath": "artifacts/simulator-plan.json",
+  "compilerExecutable": "/opt/cerebras/bin/cslc",
+  "runtimeConfigPath": "artifacts/runtime-config.json",
+  "compile": {
+    "attempted": true,
+    "status": "succeeded",
+    "reason": "compiled",
+    "targets": [
+      {
+        "name": "gemv",
+        "layoutPath": "compile/gemv/layout.csl",
+        "peProgramPath": "compile/gemv/pe_program.csl",
+        "outputDir": "compile/compiled/gemv",
+        "status": "succeeded",
+        "exitCode": 0,
+        "stdoutPath": "compile/driver-logs/gemv.cslc.stdout.log",
+        "stderrPath": "compile/driver-logs/gemv.cslc.stderr.log",
+        "command": ["/opt/cerebras/bin/cslc", "compile/gemv/layout.csl", "--arch=wse3", "--fabric-dims=32,4", "-o", "compile/compiled/gemv"]
+      }
+    ]
+  },
+  "run": {
+    "attempted": false,
+    "status": "blocked",
+    "reason": "compile_only_fixture",
+    "tracePath": "artifacts/trace.json",
+    "traceProduced": false,
+    "stdoutPath": "artifacts/stdout.log",
+    "stderrPath": "artifacts/stderr.log"
+  }
+}

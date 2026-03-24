@@ -129,6 +129,10 @@ pub fn emit_call(self: anytype, function: ir.Function, result_ty: ir.TypeId, cal
             try emit_atomic_fetch_explicit(self, function, call, "atomic_exchange_explicit");
             return;
         }
+        if (std.mem.eql(u8, call.name, "atomicCompareExchangeWeak")) {
+            try emit_atomic_compare_exchange_weak(self, function, call);
+            return;
+        }
         if (std.mem.eql(u8, call.name, "subgroupAdd")) {
             if (call.args.len != 1) return error.InvalidIr;
             try self.write("simd_sum(");
@@ -184,6 +188,34 @@ pub fn emit_call(self: anytype, function: ir.Function, result_ty: ir.TypeId, cal
             try self.write(")");
             return;
         }
+        if (std.mem.eql(u8, call.name, "pack2x16snorm")) {
+            if (call.args.len != 1) return error.InvalidIr;
+            try self.write("pack_float_to_snorm2x16(");
+            try self.emit_expr(function, function.expr_args.items[call.args.start]);
+            try self.write(")");
+            return;
+        }
+        if (std.mem.eql(u8, call.name, "pack2x16unorm")) {
+            if (call.args.len != 1) return error.InvalidIr;
+            try self.write("pack_float_to_unorm2x16(");
+            try self.emit_expr(function, function.expr_args.items[call.args.start]);
+            try self.write(")");
+            return;
+        }
+        if (std.mem.eql(u8, call.name, "unpack2x16snorm")) {
+            if (call.args.len != 1) return error.InvalidIr;
+            try self.write("unpack_snorm2x16_to_float(");
+            try self.emit_expr(function, function.expr_args.items[call.args.start]);
+            try self.write(")");
+            return;
+        }
+        if (std.mem.eql(u8, call.name, "unpack2x16unorm")) {
+            if (call.args.len != 1) return error.InvalidIr;
+            try self.write("unpack_unorm2x16_to_float(");
+            try self.emit_expr(function, function.expr_args.items[call.args.start]);
+            try self.write(")");
+            return;
+        }
         if (std.mem.eql(u8, call.name, "inverseSqrt")) {
             if (call.args.len != 1) return error.InvalidIr;
             try self.write("rsqrt(");
@@ -205,6 +237,76 @@ pub fn emit_call(self: anytype, function: ir.Function, result_ty: ir.TypeId, cal
             try self.write(" * 0.017453292519943295)");
             return;
         }
+        if (std.mem.eql(u8, call.name, "quantizeToF16")) {
+            if (call.args.len != 1) return error.InvalidIr;
+            try self.write("float(half(");
+            try self.emit_expr(function, function.expr_args.items[call.args.start]);
+            try self.write("))");
+            return;
+        }
+        if (std.mem.eql(u8, call.name, "modf")) {
+            // WGSL modf(x) returns __modf_result{fract, whole}; MSL has no struct
+            // equivalent — emit the fractional component via x - floor(x).
+            if (call.args.len != 1) return error.InvalidIr;
+            try self.write("(");
+            try self.emit_expr(function, function.expr_args.items[call.args.start]);
+            try self.write(" - floor(");
+            try self.emit_expr(function, function.expr_args.items[call.args.start]);
+            try self.write("))");
+            return;
+        }
+        if (std.mem.eql(u8, call.name, "frexp")) {
+            // WGSL frexp(x) returns __frexp_result{fract, exp}; MSL has no struct
+            // equivalent — emit the fractional mantissa via frexp(x, &dummy).
+            if (call.args.len != 1) return error.InvalidIr;
+            try self.write("frexp(");
+            try self.emit_expr(function, function.expr_args.items[call.args.start]);
+            try self.write(", (thread int*)nullptr)");
+            return;
+        }
+        if (std.mem.eql(u8, call.name, "extractBits")) {
+            if (call.args.len != 3) return error.InvalidIr;
+            try self.write("extract_bits(");
+            try self.emit_expr(function, function.expr_args.items[call.args.start]);
+            try self.write(", ");
+            try self.emit_expr(function, function.expr_args.items[call.args.start + 1]);
+            try self.write(", ");
+            try self.emit_expr(function, function.expr_args.items[call.args.start + 2]);
+            try self.write(")");
+            return;
+        }
+        if (std.mem.eql(u8, call.name, "insertBits")) {
+            if (call.args.len != 4) return error.InvalidIr;
+            try self.write("insert_bits(");
+            try self.emit_expr(function, function.expr_args.items[call.args.start]);
+            try self.write(", ");
+            try self.emit_expr(function, function.expr_args.items[call.args.start + 1]);
+            try self.write(", ");
+            try self.emit_expr(function, function.expr_args.items[call.args.start + 2]);
+            try self.write(", ");
+            try self.emit_expr(function, function.expr_args.items[call.args.start + 3]);
+            try self.write(")");
+            return;
+        }
+        if (std.mem.eql(u8, call.name, "firstLeadingBit")) {
+            // MSL clz returns count of leading zeros; WGSL firstLeadingBit returns
+            // the bit position of the highest set bit (31 - clz for u32).
+            if (call.args.len != 1) return error.InvalidIr;
+            try self.write("(31 - int(clz(");
+            try self.emit_expr(function, function.expr_args.items[call.args.start]);
+            try self.write(")))");
+            return;
+        }
+        if (std.mem.eql(u8, call.name, "firstTrailingBit")) {
+            // MSL ctz returns count of trailing zeros; WGSL firstTrailingBit
+            // returns the same value (bit position of the lowest set bit).
+            if (call.args.len != 1) return error.InvalidIr;
+            try self.write("int(ctz(");
+            try self.emit_expr(function, function.expr_args.items[call.args.start]);
+            try self.write("))");
+            return;
+        }
+        if (try emit_derivative_builtin(self, call, function)) return;
         if (std.mem.eql(u8, call.name, "arrayLength")) {
             if (call.args.len != 1) return error.InvalidIr;
             try emit_array_length(self, function, call);
@@ -338,4 +440,48 @@ fn should_force_literal_cast(module: *const ir.Module, function: ir.Function, ex
         .scalar => |scalar| scalar == .u32,
         else => false,
     };
+}
+
+fn emit_atomic_compare_exchange_weak(self: anytype, function: ir.Function, call: @FieldType(ir.Expr, "call")) EmitError!void {
+    // WGSL atomicCompareExchangeWeak(ptr, expected, desired) returns
+    // __atomic_compare_exchange_result{old_value, exchanged}. MSL has
+    // atomic_compare_exchange_weak_explicit which writes the old value
+    // through the expected pointer. Emit a comma expression that
+    // performs the CAS and yields the old value.
+    if (call.args.len != 3) return error.InvalidIr;
+    try self.write("({auto _doe_cew_e = ");
+    try self.emit_expr(function, function.expr_args.items[call.args.start + 1]);
+    try self.write("; atomic_compare_exchange_weak_explicit(&(");
+    try self.emit_expr(function, function.expr_args.items[call.args.start]);
+    try self.write("), &_doe_cew_e, ");
+    try self.emit_expr(function, function.expr_args.items[call.args.start + 2]);
+    try self.write(", memory_order_relaxed, memory_order_relaxed); _doe_cew_e;})");
+}
+
+/// Derivative builtins (fragment-only). WGSL names map directly or with
+/// fine/coarse suffixes to MSL dfdx/dfdy/fwidth.
+fn emit_derivative_builtin(self: anytype, call: @FieldType(ir.Expr, "call"), function: ir.Function) EmitError!bool {
+    const Mapping = struct { wgsl: []const u8, msl: []const u8 };
+    const DERIVATIVE_MAP = [_]Mapping{
+        .{ .wgsl = "dpdx", .msl = "dfdx" },
+        .{ .wgsl = "dpdxCoarse", .msl = "dfdx" },
+        .{ .wgsl = "dpdxFine", .msl = "dfdx" },
+        .{ .wgsl = "dpdy", .msl = "dfdy" },
+        .{ .wgsl = "dpdyCoarse", .msl = "dfdy" },
+        .{ .wgsl = "dpdyFine", .msl = "dfdy" },
+        .{ .wgsl = "fwidth", .msl = "fwidth" },
+        .{ .wgsl = "fwidthCoarse", .msl = "fwidth" },
+        .{ .wgsl = "fwidthFine", .msl = "fwidth" },
+    };
+    inline for (DERIVATIVE_MAP) |entry| {
+        if (std.mem.eql(u8, call.name, entry.wgsl)) {
+            if (call.args.len != 1) return error.InvalidIr;
+            try self.write(entry.msl);
+            try self.write("(");
+            try self.emit_expr(function, function.expr_args.items[call.args.start]);
+            try self.write(")");
+            return true;
+        }
+    }
+    return false;
 }

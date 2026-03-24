@@ -12,6 +12,7 @@ const artifact_meta = @import("../common/artifact_meta.zig");
 const artifact_policy = @import("../common/artifact_policy.zig");
 const hash_utils = @import("../common/hash_utils.zig");
 const artifact_emit = @import("artifact_emit.zig");
+const host_plan_artifact = @import("metal_host_plan_artifact.zig");
 const native_runtime = @import("metal_native_runtime.zig");
 extern fn metal_bridge_buffer_contents(buffer: ?*anyopaque) callconv(.c) ?[*]u8;
 
@@ -44,6 +45,11 @@ pub const ZigMetalBackend = struct {
     manifest_path_len: usize = 0,
     manifest_hash_storage: [HASH_HEX_SIZE]u8 = std.mem.zeroes([HASH_HEX_SIZE]u8),
     manifest_hash_len: usize = 0,
+    host_plan_emit_count: u64 = 0,
+    host_plan_path_storage: [MANIFEST_PATH_CAPACITY]u8 = std.mem.zeroes([MANIFEST_PATH_CAPACITY]u8),
+    host_plan_path_len: usize = 0,
+    host_plan_hash_storage: [HASH_HEX_SIZE]u8 = std.mem.zeroes([HASH_HEX_SIZE]u8),
+    host_plan_hash_len: usize = 0,
     last_manifest_meta: ?artifact_meta.ArtifactMeta = null,
     last_manifest_module_storage: [MANIFEST_MODULE_CAPACITY]u8 = std.mem.zeroes([MANIFEST_MODULE_CAPACITY]u8),
     last_manifest_module_len: usize = 0,
@@ -90,6 +96,11 @@ pub const ZigMetalBackend = struct {
             .manifest_path_len = 0,
             .manifest_hash_storage = std.mem.zeroes([HASH_HEX_SIZE]u8),
             .manifest_hash_len = 0,
+            .host_plan_emit_count = 0,
+            .host_plan_path_storage = std.mem.zeroes([MANIFEST_PATH_CAPACITY]u8),
+            .host_plan_path_len = 0,
+            .host_plan_hash_storage = std.mem.zeroes([HASH_HEX_SIZE]u8),
+            .host_plan_hash_len = 0,
             .last_manifest_meta = null,
             .last_manifest_module_storage = std.mem.zeroes([MANIFEST_MODULE_CAPACITY]u8),
             .last_manifest_module_len = 0,
@@ -129,6 +140,8 @@ pub const ZigMetalBackend = struct {
                 .selection_policy_hash = policy_hash,
                 .shader_artifact_manifest_path = null,
                 .shader_artifact_manifest_hash = null,
+                .host_plan_artifact_path = null,
+                .host_plan_artifact_hash = null,
                 .adapter_ordinal = null,
                 .queue_family_index = null,
                 .present_capable = null,
@@ -142,6 +155,14 @@ pub const ZigMetalBackend = struct {
 
     fn manifest_hash(self: *const ZigMetalBackend) ?[]const u8 {
         return artifact_emit.manifest_hash(self);
+    }
+
+    fn host_plan_path(self: *const ZigMetalBackend) ?[]const u8 {
+        return host_plan_artifact.hostPlanPath(self);
+    }
+
+    fn host_plan_hash(self: *const ZigMetalBackend) ?[]const u8 {
+        return host_plan_artifact.hostPlanHash(self);
     }
 
     fn flush_pending_artifact(self: *ZigMetalBackend) void {
@@ -207,6 +228,14 @@ pub fn manifest_path_from_context(ctx: *anyopaque) ?[]const u8 {
 
 pub fn manifest_hash_from_context(ctx: *anyopaque) ?[]const u8 {
     return cast(ctx).manifest_hash();
+}
+
+pub fn host_plan_path_from_context(ctx: *anyopaque) ?[]const u8 {
+    return cast(ctx).host_plan_path();
+}
+
+pub fn host_plan_hash_from_context(ctx: *anyopaque) ?[]const u8 {
+    return cast(ctx).host_plan_hash();
 }
 
 fn deinit(ctx: *anyopaque) void {
@@ -320,6 +349,7 @@ fn execute_kernel_dispatch(self: *ZigMetalBackend, kd: model.KernelDispatchComma
     r.gpu_timestamp_ns = result.gpu_elapsed_ns;
     r.gpu_timestamp_attempted = result.gpu_timestamps_attempted;
     r.gpu_timestamp_valid = result.gpu_timestamps_valid;
+    host_plan_artifact.emitForKernelDispatch(self, kd) catch {};
     return r;
 }
 
@@ -478,6 +508,8 @@ fn flush_pending_uploads_if_required(self: *ZigMetalBackend, command: model.Comm
 }
 
 fn execute_native_command(self: *ZigMetalBackend, command: model.Command) !webgpu.NativeExecutionResult {
+    host_plan_artifact.clearHostPlanArtifact(self);
+
     // Fail fast when gpu_timestamp_mode=require but the device does not
     // support MTLCounterSamplingPointAtStageBoundary.
     try check_timestamp_requirement(self);

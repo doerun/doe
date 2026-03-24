@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Doe CTS baseline snapshot",
+  "description": "Structured pass/fail results from a WebGPU CTS run against Doe, used as a regression baseline.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "generatedAtUtc",
+    "backend",
+    "host",
+    "os",
+    "ctsSource",
+    "ctsRevision",
+    "configPath",
+    "summary",
+    "results"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "generatedAtUtc": {
+      "type": "string",
+      "description": "ISO 8601 UTC timestamp of generation."
+    },
+    "backend": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Runtime backend identifier (e.g. doe_metal, doe_vulkan)."
+    },
+    "host": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Host machine identifier."
+    },
+    "os": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Operating system identifier."
+    },
+    "ctsSource": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Source of the CTS queries (e.g. vendored path or config file)."
+    },
+    "ctsRevision": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Revision or version of the CTS query set."
+    },
+    "configPath": {
+      "type": "string",
+      "description": "Path to the CTS subset config used for this run."
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["queryCount", "passCount", "failCount", "skipCount"],
+      "properties": {
+        "queryCount": { "type": "integer", "minimum": 0 },
+        "passCount": { "type": "integer", "minimum": 0 },
+        "failCount": { "type": "integer", "minimum": 0 },
+        "skipCount": { "type": "integer", "minimum": 0 },
+        "passRate": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Pass percentage (passCount / queryCount * 100)."
+        },
+        "bucketSummary": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["queryCount", "passCount", "failCount", "skipCount"],
+            "properties": {
+              "queryCount": { "type": "integer", "minimum": 0 },
+              "passCount": { "type": "integer", "minimum": 0 },
+              "failCount": { "type": "integer", "minimum": 0 },
+              "skipCount": { "type": "integer", "minimum": 0 }
+            }
+          }
+        }
+      }
+    },
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "query", "status"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "query": { "type": "string", "minLength": 1 },
+          "bucket": { "type": "string" },
+          "status": {
+            "type": "string",
+            "enum": ["pass", "fail", "skip"]
+          },
+          "exitCode": { "type": ["integer", "null"] },
+          "wallMs": { "type": ["number", "null"] },
+          "notes": { "type": "string" }
+        }
+      }
+    }
+  }
+}

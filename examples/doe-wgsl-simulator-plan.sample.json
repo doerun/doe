@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "csl_simulator_plan",
+  "target": "wse3",
+  "contract": "explicit_simulator_launch",
+  "driver": {
+    "protocol": "doe.csl.simulator/v1",
+    "executableEnvVar": "DOE_CSL_SIM_EXECUTABLE",
+    "failClosedIfMissing": true
+  },
+  "inputs": {
+    "hostPlanArtifactPath": "artifacts/host-plan.json",
+    "runtimeConfigPath": "artifacts/runtime.json",
+    "compileRootPath": "artifacts/compile",
+    "compileTargets": [
+      {
+        "name": "gelu",
+        "layout": "gelu/layout.csl",
+        "peProgram": "gelu/pe_program.csl"
+      }
+    ]
+  },
+  "runtime": {
+    "peGrid": {
+      "width": 16,
+      "height": 1
+    },
+    "prefillLaunchCount": 1,
+    "decodeLaunchCount": 1,
+    "weightMappingCount": 0,
+    "stateBufferCount": 0,
+    "maxDecodeTokens": 128,
+    "timeoutMs": 30000,
+    "batchSize": 1,
+    "eosTokenId": null
+  },
+  "outputs": {
+    "stdoutPath": "artifacts/stdout.log",
+    "stderrPath": "artifacts/stderr.log",
+    "tracePath": "artifacts/trace.json"
+  }
+}

@@ -1,5 +1,6 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
+  "enableStartupWarmup": true,
   "enableBackgroundWarmup": false,
   "maxWarmupPipelines": 64,
   "warmupWorkerCount": 2,

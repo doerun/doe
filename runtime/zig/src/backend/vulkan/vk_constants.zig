@@ -207,6 +207,8 @@ pub const vkCmdDrawIndexed = functions.vkCmdDrawIndexed;
 pub const vkCmdDrawIndirect = functions.vkCmdDrawIndirect;
 pub const vkCmdDrawIndexedIndirect = functions.vkCmdDrawIndexedIndirect;
 pub const vkCmdExecuteCommands = functions.vkCmdExecuteCommands;
+pub const vkCmdSetDepthBias = functions.vkCmdSetDepthBias;
+pub const vkCmdSetStencilReference = functions.vkCmdSetStencilReference;
 pub const vkEnumerateDeviceExtensionProperties = functions.vkEnumerateDeviceExtensionProperties;
 pub const check_vk = functions.check_vk;
 pub const map_vk_result = functions.map_vk_result;
@@ -443,6 +445,11 @@ pub const VK_BLEND_OP_MAX: u32 = 4;
 // --- Dynamic state ---
 pub const VK_DYNAMIC_STATE_VIEWPORT: u32 = 0;
 pub const VK_DYNAMIC_STATE_SCISSOR: u32 = 1;
+pub const VK_DYNAMIC_STATE_DEPTH_BIAS: u32 = 6;
+pub const VK_DYNAMIC_STATE_STENCIL_REFERENCE: u32 = 10;
+
+// --- Stencil face flags ---
+pub const VK_STENCIL_FACE_FRONT_AND_BACK: u32 = 0x00000003;
 
 // --- Sampler constants ---
 pub const VK_FILTER_NEAREST: u32 = 0;

@@ -1,34 +1,16 @@
-// emit_csl_reduction.zig — CSL PE program template for reduction kernels.
+// emit_csl_reduction.zig — CSL PE program emitter for reduction kernels.
 //
-// Maps Doppler's reduction WGSL pattern (RMSNorm, LayerNorm, Softmax) to
-// a CSL PE program. Two modes:
-//
-//   Single-PE mode (hidden_dim fits in PE SRAM):
-//     Each PE holds one full token's hidden vector.
-//     Reduction is purely local — loop + accumulate, no fabric.
-//     Works for Gemma 3 270M (hidden=1536) and 1B (hidden=1920).
-//
-//   Distributed mode (hidden_dim > PE SRAM budget):
-//     Hidden dimension partitioned across a PE row.
-//     Each PE computes local partial sum.
-//     Allreduce via fabric to get global sum.
-//     Each PE normalizes its local slice.
-//
-// This file implements single-PE mode. Distributed mode will use the
-// collectives library and is a Phase 2 deliverable.
+// Maps Doppler's reduction WGSL patterns (RMSNorm, LayerNorm, Softmax) to
+// CSL PE programs. Single-PE mode: each PE holds one full token's hidden
+// vector. Barriers become no-ops, shared memory becomes PE-local.
 
 const std = @import("std");
 const ir = @import("ir.zig");
-const spec = @import("csl_spec.zig");
-const maps = @import("emit_csl_maps.zig");
 const classify = @import("emit_csl_classify.zig");
+const W = @import("emit_csl_ir_walk.zig");
+const walk = W.Emit(.{ .skip_barriers = true, .runtime_array_size = "hidden_size" });
 
-pub const EmitError = error{
-    OutputTooLarge,
-    InvalidIr,
-    UnsupportedBuiltin,
-    UnsupportedConstruct,
-};
+pub const EmitError = W.EmitError;
 
 /// Emit a CSL PE program for a reduction kernel (single-PE mode).
 pub fn emit(
@@ -38,87 +20,58 @@ pub fn emit(
     entry: ir.EntryPoint,
     info: classify.ReductionInfo,
 ) EmitError!void {
-    _ = entry;
     _ = info;
+    const function = &module.functions.items[entry.function];
 
-    try write(buf, pos, "// PE program: reduction kernel (auto-generated from WGSL)\n");
-    try write(buf, pos, "// Single-PE mode: each PE processes one full token.\n");
-    try write(buf, pos, "// The reduction (sum of squares, mean, etc.) is local.\n\n");
+    try W.write(buf, pos, "// PE program: reduction kernel (auto-generated from WGSL)\n");
+    try W.write(buf, pos, "// Single-PE mode: each PE processes one full token.\n\n");
 
-    // Params
-    try write(buf, pos, "param memcpy_params: comptime_struct;\n");
-    try write(buf, pos, "param pe_id: i16;\n");
-    try write(buf, pos, "param num_pes: i16;\n");
-    try write(buf, pos, "param reduce_color: color;\n\n");
+    try W.write(buf, pos, "param memcpy_params: comptime_struct;\n");
+    try W.write(buf, pos, "param pe_id: i16;\n");
+    try W.write(buf, pos, "param num_pes: i16;\n");
+    try W.write(buf, pos, "param reduce_color: color;\n\n");
 
-    // Imports
-    try write(buf, pos, "const sys_mod = @import_module(\"<memcpy/memcpy>\", memcpy_params);\n");
-    try write(buf, pos, "const math = @import_module(\"<math>\");\n\n");
+    try W.write(buf, pos, "const sys_mod = @import_module(\"<memcpy/memcpy>\", memcpy_params);\n");
+    try W.write(buf, pos, "const math = @import_module(\"<math>\");\n\n");
 
-    // Buffers — for RMSNorm: input, weight, output, optional residual
-    try write(buf, pos, "// Hidden dimension size — set via host params.\n");
-    try write(buf, pos, "param hidden_size: i16 = 1536;\n");
-    try write(buf, pos, "param eps: f32 = 1e-5;\n\n");
+    try walk.uniformParams(buf, pos, module);
+    try walk.storageBuffers(buf, pos, module);
+    try walk.workgroupBuffers(buf, pos, module);
+    try walk.helperFunctions(buf, pos, module);
+    try emitComputeFunction(buf, pos, module, function);
 
+    // Reduction only exports storage (not uniform) in comptime block.
+    try W.write(buf, pos, "comptime {\n");
     for (module.globals.items) |global| {
         if (global.binding == null) continue;
         const space = global.addr_space orelse continue;
         if (space != .storage) continue;
-        try write(buf, pos, "var ");
-        try write(buf, pos, global.name);
-        try write(buf, pos, ": [hidden_size]f32 = @zeros([hidden_size]f32);\n");
-        try write(buf, pos, "var ");
-        try write(buf, pos, global.name);
-        try write(buf, pos, "_ptr: [*]f32 = &");
-        try write(buf, pos, global.name);
-        try write(buf, pos, ";\n");
+        try W.write(buf, pos, "    @export_symbol(");
+        try W.write(buf, pos, global.name);
+        try W.write(buf, pos, "_ptr, \"");
+        try W.write(buf, pos, global.name);
+        try W.write(buf, pos, "\");\n");
     }
-    try write(buf, pos, "\n");
-
-    // Compute function — RMSNorm pattern
-    try write(buf, pos, "fn compute() void {\n");
-    try write(buf, pos, "    // Phase 1: compute sum of squares (local reduction)\n");
-    try write(buf, pos, "    var sum_sq: f32 = 0.0;\n");
-    try write(buf, pos, "    for (@range(i16, hidden_size)) |i| {\n");
-    try write(buf, pos, "        const x = input[@as(u32, i)];\n");
-    try write(buf, pos, "        sum_sq += x * x;\n");
-    try write(buf, pos, "    }\n\n");
-
-    try write(buf, pos, "    // Phase 2: compute inverse RMS\n");
-    try write(buf, pos, "    const mean_sq = sum_sq / @as(f32, hidden_size);\n");
-    try write(buf, pos, "    const inv_rms = 1.0 / math.sqrt(mean_sq + eps);\n\n");
-
-    try write(buf, pos, "    // Phase 3: normalize and apply weight\n");
-    try write(buf, pos, "    for (@range(i16, hidden_size)) |i| {\n");
-    try write(buf, pos, "        const idx = @as(u32, i);\n");
-    try write(buf, pos, "        output[idx] = input[idx] * inv_rms * weight[idx];\n");
-    try write(buf, pos, "    }\n\n");
-
-    try write(buf, pos, "    sys_mod.unblock_cmd_stream();\n");
-    try write(buf, pos, "}\n\n");
-
-    // Comptime exports
-    try write(buf, pos, "comptime {\n");
-    for (module.globals.items) |global| {
-        if (global.binding == null) continue;
-        const space = global.addr_space orelse continue;
-        if (space != .storage) continue;
-        try write(buf, pos, "    @export_symbol(");
-        try write(buf, pos, global.name);
-        try write(buf, pos, "_ptr, \"");
-        try write(buf, pos, global.name);
-        try write(buf, pos, "\");\n");
-    }
-    try write(buf, pos, "    @export_symbol(compute);\n");
-    try write(buf, pos, "}\n");
+    try W.write(buf, pos, "    @export_symbol(compute);\n");
+    try W.write(buf, pos, "}\n");
 }
 
-// ---------------------------------------------------------------------------
-// Write helpers
-// ---------------------------------------------------------------------------
-
-fn write(buf: []u8, pos: *usize, text: []const u8) EmitError!void {
-    if (pos.* + text.len > buf.len) return error.OutputTooLarge;
-    @memcpy(buf[pos.*..][0..text.len], text);
-    pos.* += text.len;
+fn emitComputeFunction(buf: []u8, pos: *usize, module: *const ir.Module, function: *const ir.Function) EmitError!void {
+    try W.write(buf, pos, "fn compute() void {\n");
+    if (function.stmts.items.len > 0) {
+        // Walk root block, skipping barriers (handled by walk config).
+        const root = function.stmts.items[function.root_stmt];
+        switch (root) {
+            .block => |range| {
+                var i: u32 = 0;
+                while (i < range.len) : (i += 1) {
+                    const cid = function.stmt_children.items[range.start + i];
+                    try walk.stmt(buf, pos, module, function, cid, 1);
+                }
+            },
+            else => try walk.stmt(buf, pos, module, function, function.root_stmt, 1),
+        }
+    }
+    try W.write(buf, pos, "    sys_mod.unblock_cmd_stream();\n");
+    try W.write(buf, pos, "}\n\n");
 }

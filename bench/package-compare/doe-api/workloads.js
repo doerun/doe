@@ -7,7 +7,7 @@
 // wait for GPU completion via mapAsync readback. compute_once is not comparable
 // because it includes shader compilation per call (varies by implementation).
 
-import { createDoeNamespace } from '../../../packages/webgpu-doe/src/index.js';
+import { createDoeNamespace } from '../../../packages/doe-gpu/src/vendor/doe-namespace.js';
 
 const SHADER_MULTIPLY = `
 @group(0) @binding(0) var<storage, read> input: array<f32>;

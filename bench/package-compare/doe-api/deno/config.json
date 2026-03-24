@@ -3,9 +3,9 @@
   "description": "Deno webgpu-doe helper API benchmark: Doe helper vs raw deno-webgpu (wgpu)",
   "providers": {
     "doe-api": {
-      "package": "@simulatte/webgpu-doe",
-      "source": "packages/webgpu-doe/src/index.js",
-      "runtime": "@simulatte/webgpu (deno node-compat)",
+      "package": "doe-gpu",
+      "source": "packages/doe-gpu/src/vendor/doe-namespace.js",
+      "runtime": "doe-gpu (deno node-compat)",
       "notes": "Doe helper API on Doe via Deno node-compat N-API layer"
     },
     "deno-webgpu": {

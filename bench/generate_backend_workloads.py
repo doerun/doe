@@ -15,6 +15,9 @@ import jsonschema
 REPO_ROOT = Path(__file__).resolve().parent.parent
 CATALOG_PATH = REPO_ROOT / "bench" / "backend-workload-catalog.json"
 CATALOG_SCHEMA_PATH = REPO_ROOT / "config" / "backend-workload-catalog.schema.json"
+WORKLOAD_ORIGINS = {"dawn_derived", "doe_specific"}
+WORKLOAD_EFFECTIVE_ORIGINS = {"dawn_derived", "doe_specific", "hybrid"}
+WORKLOAD_ORIGIN_KEY = "workloadOrigin"
 
 DEFAULT_LANE_OUTPUTS = OrderedDict(
     [
@@ -51,6 +54,10 @@ def parse_args() -> argparse.Namespace:
         "--catalog",
         default=str(CATALOG_PATH),
         help="Canonical backend workload catalog path.",
+    )
+    parser.add_argument(
+        "--emit-workload-origins",
+        help="Optional output path for generated workload-origin provenance.",
     )
     parser.add_argument(
         "--bootstrap-from-existing",
@@ -107,6 +114,64 @@ def effective_field(item: dict[str, Any], lane_id: str, key: str, default: Any) 
     return default
 
 
+def infer_workload_origin(item: dict[str, Any], lane_id: str) -> str:
+    lane_row = item["lanes"].get(lane_id, {})
+    shared = item.get("shared", {})
+    has_dawn_filter = ("dawnFilter" in lane_row) or ("dawnFilter" in shared)
+    return "dawn_derived" if has_dawn_filter else "doe_specific"
+
+
+def resolve_workload_origin(item: dict[str, Any], lane_id: str) -> str:
+    explicit_origin = effective_field(item, lane_id, WORKLOAD_ORIGIN_KEY, None)
+    if explicit_origin is not None:
+        if explicit_origin not in WORKLOAD_ORIGINS:
+            raise ValueError(
+                f"{item['id']} lane={lane_id}: invalid workloadOrigin={explicit_origin!r}"
+            )
+        return explicit_origin
+    return infer_workload_origin(item, lane_id)
+
+
+def build_workload_origin_matrix(item: dict[str, Any]) -> dict[str, str]:
+    lane_origins: dict[str, str] = {}
+    for lane_id in item["lanes"]:
+        lane_origins[lane_id] = resolve_workload_origin(item, lane_id)
+    return lane_origins
+
+
+def workload_effective_origin(item: dict[str, Any]) -> str:
+    origins = set(build_workload_origin_matrix(item).values())
+    if not origins:
+        return "doe_specific"
+    if len(origins) == 1:
+        return next(iter(origins))
+    return "hybrid"
+
+
+def build_workload_origin_report(catalog: dict[str, Any]) -> dict[str, Any]:
+    rows: list[dict[str, Any]] = []
+    counts = {"dawn_derived": 0, "doe_specific": 0, "hybrid": 0}
+    for item in catalog["workloads"]:
+        lane_origins = build_workload_origin_matrix(item)
+        effective_origin = workload_effective_origin(item)
+        if effective_origin not in WORKLOAD_EFFECTIVE_ORIGINS:
+            raise ValueError(f"{item['id']}: invalid effective workload origin={effective_origin!r}")
+        counts[effective_origin] = counts.get(effective_origin, 0) + 1
+        rows.append(
+            {
+                "id": item["id"],
+                "effectiveOrigin": effective_origin,
+                "laneOrigins": lane_origins,
+            }
+        )
+    return {
+        "schemaVersion": 1,
+        "source": "bench/backend-workload-catalog.json",
+        "counts": counts,
+        "workloads": rows,
+    }
+
+
 def validate_catalog_semantics(catalog: dict[str, Any]) -> None:
     symmetry_fields = (
         ("leftCommandRepeat", "rightCommandRepeat", 1),
@@ -118,6 +183,7 @@ def validate_catalog_semantics(catalog: dict[str, Any]) -> None:
     problems: list[str] = []
     for item in catalog["workloads"]:
         for lane_id in item["lanes"]:
+            lane_origin = resolve_workload_origin(item, lane_id)
             comparable = effective_field(item, lane_id, "comparable", False)
             benchmark_class = effective_field(item, lane_id, "benchmarkClass", None)
             if benchmark_class is None:
@@ -144,6 +210,10 @@ def validate_catalog_semantics(catalog: dict[str, Any]) -> None:
                     f"{item['id']} lane={lane_id}: benchmarkClass=directional requires comparable=false"
                 )
                 continue
+            if comparable and lane_origin == "doe_specific":
+                problems.append(
+                    f"{item['id']} lane={lane_id}: comparable lanes must not be provenance='doe_specific'"
+                )
             if not comparable:
                 continue
             for left_key, right_key, default in symmetry_fields:
@@ -300,7 +370,6 @@ def verify_lane(path: Path, expected: dict[str, Any]) -> bool:
 
 
 def generate_from_catalog(catalog: dict[str, Any], verify_only: bool) -> None:
-    validate_catalog(catalog)
     mismatches: list[str] = []
     for lane_id, lane_entry in catalog["laneOutputs"].items():
         payload = materialize_lane(catalog, lane_id)
@@ -322,6 +391,9 @@ def main() -> None:
         write_json(catalog_path, catalog)
     else:
         catalog = load_json(catalog_path)
+    validate_catalog(catalog)
+    if args.emit_workload_origins is not None:
+        write_json(Path(args.emit_workload_origins), build_workload_origin_report(catalog))
     generate_from_catalog(catalog, verify_only=args.verify)
 
 

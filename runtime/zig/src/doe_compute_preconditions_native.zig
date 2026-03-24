@@ -31,12 +31,20 @@ pub fn validate_bind_groups(
         const raw_view = bind_group.texture_views[binding] orelse return error.DispatchPreconditionFailed;
         const view = native.cast(native.DoeTextureView, raw_view) orelse return error.DispatchPreconditionFailed;
         const required_x = try dispatch_preconditions.invocation_extent(dispatch_workgroups[0], workgroup_size[0]);
-        const required_y = try dispatch_preconditions.invocation_extent(dispatch_workgroups[1], workgroup_size[1]);
         if (required_x > mip_extent(view.tex.width, precondition.mip_level)) return error.DispatchPreconditionFailed;
-        if (required_y > mip_extent(view.tex.height, precondition.mip_level)) return error.DispatchPreconditionFailed;
         switch (precondition.kind) {
-            .gid_coords_2d => {},
+            .gid_coords_1d => {},
+            .gid_coords_2d => {
+                const required_y = try dispatch_preconditions.invocation_extent(dispatch_workgroups[1], workgroup_size[1]);
+                if (required_y > mip_extent(view.tex.height, precondition.mip_level)) {
+                    return error.DispatchPreconditionFailed;
+                }
+            },
             .gid_coords_3d => {
+                const required_y = try dispatch_preconditions.invocation_extent(dispatch_workgroups[1], workgroup_size[1]);
+                if (required_y > mip_extent(view.tex.height, precondition.mip_level)) {
+                    return error.DispatchPreconditionFailed;
+                }
                 const required_z = try dispatch_preconditions.invocation_extent(dispatch_workgroups[2], workgroup_size[2]);
                 if (required_z > mip_extent(view.tex.depth_or_array_layers, precondition.mip_level)) {
                     return error.DispatchPreconditionFailed;

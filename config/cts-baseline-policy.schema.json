@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Doe CTS baseline policy",
+  "description": "Thresholds and policy for CTS baseline regression detection.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "regressionPolicy", "trendPolicy"],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "regressionPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "maxNewFailures",
+        "requireNoRegressions",
+        "gateMode"
+      ],
+      "properties": {
+        "maxNewFailures": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Maximum number of new failures before the gate fails. 0 means zero-regression policy."
+        },
+        "requireNoRegressions": {
+          "type": "boolean",
+          "description": "When true, any test that was passing in baseline but fails in new run is a gate failure."
+        },
+        "gateMode": {
+          "type": "string",
+          "enum": ["blocking", "advisory"],
+          "description": "Whether CTS baseline regression is a blocking or advisory gate."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Human-readable notes about the current policy posture."
+        }
+      }
+    },
+    "trendPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["minSnapshots", "regressionWindowSize"],
+      "properties": {
+        "minSnapshots": {
+          "type": "integer",
+          "minimum": 2,
+          "description": "Minimum number of snapshots required to compute a trend."
+        },
+        "regressionWindowSize": {
+          "type": "integer",
+          "minimum": 2,
+          "description": "Number of recent snapshots to consider for regression trend detection."
+        }
+      }
+    }
+  }
+}

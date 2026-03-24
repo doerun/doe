@@ -36,7 +36,8 @@
       ],
       "properties": {
         "minOperationWallCoverageRatio": { "type": "number", "minimum": 0.0 },
-        "maxOperationWallCoverageAsymmetryRatio": { "type": "number", "minimum": 1.0 }
+        "maxOperationWallCoverageAsymmetryRatio": { "type": "number", "minimum": 1.0 },
+        "minRowTimingFloorNs": { "type": "integer", "minimum": 0 }
       }
     },
     "reliability": {

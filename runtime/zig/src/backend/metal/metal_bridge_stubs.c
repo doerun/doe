@@ -741,6 +741,45 @@ int doe_surface_is_configured(MetalHandle surf_h) {
     return 0;
 }
 
+// External texture import stubs
+#include "metal_external_texture_bridge.h"
+
+MetalHandle doe_metal_import_iosurface(MetalHandle device, void* iosurface, uint32_t plane, uint32_t width, uint32_t height, uint32_t pixel_format) {
+    (void)device;
+    (void)iosurface;
+    (void)plane;
+    (void)width;
+    (void)height;
+    (void)pixel_format;
+    return NULL;
+}
+MetalHandle doe_metal_import_cvpixelbuffer(MetalHandle device, void* cvpixelbuffer, uint32_t plane) {
+    (void)device;
+    (void)cvpixelbuffer;
+    (void)plane;
+    return NULL;
+}
+uint32_t doe_metal_external_plane_count(void* cvpixelbuffer) {
+    (void)cvpixelbuffer;
+    return 0;
+}
+void doe_metal_external_plane_size(void* cvpixelbuffer, uint32_t plane, uint32_t* out_width, uint32_t* out_height) {
+    (void)cvpixelbuffer;
+    (void)plane;
+    if (out_width) *out_width = 0;
+    if (out_height) *out_height = 0;
+}
+uint32_t doe_metal_iosurface_plane_count(void* iosurface) {
+    (void)iosurface;
+    return 0;
+}
+void doe_metal_iosurface_plane_size(void* iosurface, uint32_t plane, uint32_t* out_width, uint32_t* out_height) {
+    (void)iosurface;
+    (void)plane;
+    if (out_width) *out_width = 0;
+    if (out_height) *out_height = 0;
+}
+
 void metal_render_state_set_viewport(MetalHandle encoder, double x, double y, double width, double height, double depth_min, double depth_max) {
     (void)encoder;
     (void)x;

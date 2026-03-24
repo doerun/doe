@@ -36,6 +36,8 @@ pub const TraceRunSummary = struct {
     selection_policy_hash: ?[]const u8,
     shader_artifact_manifest_path: ?[]const u8,
     shader_artifact_manifest_hash: ?[]const u8,
+    host_plan_artifact_path: ?[]const u8 = null,
+    host_plan_artifact_hash: ?[]const u8 = null,
     semantic_tracing_enabled: bool = false,
     semantic_op_row_count: u64 = 0,
     semantic_capture_count: u64 = 0,
@@ -409,6 +411,14 @@ pub fn printTraceLineWithSemantic(
             try stdout.writeAll(",\"executionShaderArtifactManifestHash\":");
             try writeJsonString(stdout, value);
         }
+        if (exec.host_plan_artifact_path) |value| {
+            try stdout.writeAll(",\"executionHostPlanArtifactPath\":");
+            try writeJsonString(stdout, value);
+        }
+        if (exec.host_plan_artifact_hash) |value| {
+            try stdout.writeAll(",\"executionHostPlanArtifactHash\":");
+            try writeJsonString(stdout, value);
+        }
         if (exec.adapter_ordinal) |value| {
             try writef(stdout, ",\"executionAdapterOrdinal\":{}", .{value});
         }
@@ -635,6 +645,16 @@ pub fn writeTraceMeta(path: []const u8, summary: TraceRunSummary) !void {
     }
     if (summary.shader_artifact_manifest_hash) |hash| {
         try writer.writeAll("\"shaderArtifactManifestHash\":");
+        try writeJsonString(&writer, hash);
+        try writer.writeAll(",");
+    }
+    if (summary.host_plan_artifact_path) |artifact_path| {
+        try writer.writeAll("\"hostPlanArtifactPath\":");
+        try writeJsonString(&writer, artifact_path);
+        try writer.writeAll(",");
+    }
+    if (summary.host_plan_artifact_hash) |hash| {
+        try writer.writeAll("\"hostPlanArtifactHash\":");
         try writeJsonString(&writer, hash);
         try writer.writeAll(",");
     }

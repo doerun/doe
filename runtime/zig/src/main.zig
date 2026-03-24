@@ -478,6 +478,8 @@ pub fn main() !void {
         .selection_policy_hash = null,
         .shader_artifact_manifest_path = null,
         .shader_artifact_manifest_hash = null,
+        .host_plan_artifact_path = null,
+        .host_plan_artifact_hash = null,
         .semantic_tracing_enabled = false,
         .semantic_op_row_count = 0,
         .semantic_capture_count = 0,
@@ -506,6 +508,8 @@ pub fn main() !void {
             trace_summary.selection_policy_hash = selection.selection_policy_hash;
             trace_summary.shader_artifact_manifest_path = selection.shader_artifact_manifest_path;
             trace_summary.shader_artifact_manifest_hash = selection.shader_artifact_manifest_hash;
+            trace_summary.host_plan_artifact_path = selection.host_plan_artifact_path;
+            trace_summary.host_plan_artifact_hash = selection.host_plan_artifact_hash;
         }
     }
 
@@ -542,6 +546,8 @@ pub fn main() !void {
             if (executed.selection_policy_hash) |hash| trace_summary.selection_policy_hash = hash;
             if (executed.shader_artifact_manifest_path) |path| trace_summary.shader_artifact_manifest_path = path;
             if (executed.shader_artifact_manifest_hash) |hash| trace_summary.shader_artifact_manifest_hash = hash;
+            if (executed.host_plan_artifact_path) |path| trace_summary.host_plan_artifact_path = path;
+            if (executed.host_plan_artifact_hash) |hash| trace_summary.host_plan_artifact_hash = hash;
             if (executed.backend_lane) |lane| trace_summary.backend_lane = lane;
             if (executed.adapter_ordinal) |ordinal| trace_summary.adapter_ordinal = ordinal;
             if (executed.queue_family_index) |queue_family_index| trace_summary.queue_family_index = queue_family_index;

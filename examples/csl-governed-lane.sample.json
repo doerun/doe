@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-03-24T12:00:00Z",
+  "outputTimestamp": "20260324T120000Z",
+  "fixture": {
+    "id": "gemma-3-270m-manifest-smoke",
+    "inputJsonPath": "runtime/zig/examples/execution-v1/gemma-3-270m-manifest-smoke.json"
+  },
+  "laneStatus": "blocked",
+  "compile": {
+    "status": "blocked",
+    "reason": "compiler_unavailable",
+    "runnerExitCode": 2
+  },
+  "run": {
+    "status": "blocked",
+    "reason": "compile_not_ready",
+    "traceProduced": false
+  },
+  "parity": {
+    "status": "matched",
+    "reason": "host_plan_hash_match",
+    "expectedHostPlanSha256": "abc123",
+    "actualHostPlanSha256": "abc123"
+  },
+  "artifacts": {
+    "actualHostPlanPath": "bench/out/csl-governed/20260324T120000Z/host-plan.actual.json",
+    "expectedHostPlanPath": "runtime/zig/examples/doe-wgsl-host-plan.gemma-3-270m-manifest-smoke.json",
+    "simulatorPlanPath": "bench/out/csl-governed/20260324T120000Z/simulator-plan.json",
+    "simulatorResultPath": "bench/out/csl-governed/20260324T120000Z/sim.trace.json.result.json",
+    "driverResultPath": "bench/out/csl-governed/20260324T120000Z/sim.trace.json.driver-result.json"
+  },
+  "steps": {},
+  "simulationResult": {},
+  "driverResult": {},
+  "comparisonStatus": "diagnostic",
+  "claimStatus": "not-evaluated"
+}

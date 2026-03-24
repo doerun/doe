@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "laneId": "csl_gelu_smoke",
+  "target": "wse3",
+  "reportPath": "bench/out/csl-simulator/csl-gelu-smoke.json",
+  "kernelName": "gelu",
+  "wgslPath": "runtime/zig/examples/wgsl/csl-gelu-smoke.wgsl",
+  "hostPlanArtifactPath": "examples/doe-wgsl-host-plan.sample.json",
+  "runtimeConfigPath": "runtime/zig/examples/csl-runtime-smoke.json",
+  "driverExecutable": "runtime/zig/tools/csl_sdk_driver.py",
+  "peGrid": {
+    "width": 16,
+    "height": 1
+  },
+  "timeoutMs": 30000,
+  "expectedTrace": {
+    "compiledTargetCount": 1,
+    "prefillLaunchCount": 0,
+    "decodeLaunchCount": 0,
+    "peGrid": {
+      "width": 16,
+      "height": 1
+    }
+  }
+}

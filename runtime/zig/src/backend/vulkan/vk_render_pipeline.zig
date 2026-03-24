@@ -333,10 +333,10 @@ pub fn create_graphics_pipeline(
         .polygonMode = c.VK_POLYGON_MODE_FILL,
         .cullMode = cull_mode_to_vk(cmd.cull_mode),
         .frontFace = front_face_to_vk(cmd.front_face),
-        .depthBiasEnable = c.VK_FALSE,
-        .depthBiasConstantFactor = 0.0,
-        .depthBiasClamp = 0.0,
-        .depthBiasSlopeFactor = 0.0,
+        .depthBiasEnable = if (cmd.depth_bias != 0 or cmd.depth_bias_slope_scale != 0 or cmd.depth_bias_clamp != 0) c.VK_TRUE else c.VK_FALSE,
+        .depthBiasConstantFactor = @floatFromInt(cmd.depth_bias),
+        .depthBiasClamp = cmd.depth_bias_clamp,
+        .depthBiasSlopeFactor = cmd.depth_bias_slope_scale,
         .lineWidth = 1.0,
     };
 
@@ -379,18 +379,26 @@ pub fn create_graphics_pipeline(
         .blendConstants = cmd.blend_constant,
     };
 
-    const dynamic_states = [_]u32{
+    const has_depth_stencil = cmd.depth_stencil_format != model.WGPUTextureFormat_Undefined;
+    const depth_bias_enabled = cmd.depth_bias != 0 or cmd.depth_bias_slope_scale != 0 or cmd.depth_bias_clamp != 0;
+    const dynamic_states_full = [_]u32{
+        c.VK_DYNAMIC_STATE_VIEWPORT,
+        c.VK_DYNAMIC_STATE_SCISSOR,
+        c.VK_DYNAMIC_STATE_DEPTH_BIAS,
+        c.VK_DYNAMIC_STATE_STENCIL_REFERENCE,
+    };
+    const dynamic_states_base = [_]u32{
         c.VK_DYNAMIC_STATE_VIEWPORT,
         c.VK_DYNAMIC_STATE_SCISSOR,
     };
+    const dynamic_count: u32 = if (depth_bias_enabled or has_depth_stencil) dynamic_states_full.len else dynamic_states_base.len;
     var dynamic_state = c.VkPipelineDynamicStateCreateInfo{
         .sType = c.VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
         .pNext = null,
         .flags = 0,
-        .dynamicStateCount = dynamic_states.len,
-        .pDynamicStates = &dynamic_states,
+        .dynamicStateCount = dynamic_count,
+        .pDynamicStates = if (depth_bias_enabled or has_depth_stencil) &dynamic_states_full else &dynamic_states_base,
     };
-    const has_depth_stencil = cmd.depth_stencil_format != model.WGPUTextureFormat_Undefined;
     const has_stencil = has_depth_stencil and format_has_stencil(cmd.depth_stencil_format);
     var depth_stencil_state = VkPipelineDepthStencilStateCreateInfo{
         .sType = c.VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,

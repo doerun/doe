@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "regressionPolicy": {
+    "maxNewFailures": 0,
+    "requireNoRegressions": true,
+    "gateMode": "advisory",
+    "notes": "Advisory in v0 bootstrap. Becomes blocking once a stable baseline with at least 3 snapshots exists."
+  },
+  "trendPolicy": {
+    "minSnapshots": 2,
+    "regressionWindowSize": 5
+  }
+}

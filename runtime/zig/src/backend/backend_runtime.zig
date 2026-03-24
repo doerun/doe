@@ -81,6 +81,8 @@ pub const BackendRuntime = struct {
             .doe_metal => {
                 self.backend.telemetry.shader_artifact_manifest_path = metal_backend.manifest_path_from_context(self.backend.context);
                 self.backend.telemetry.shader_artifact_manifest_hash = metal_backend.manifest_hash_from_context(self.backend.context);
+                self.backend.telemetry.host_plan_artifact_path = metal_backend.host_plan_path_from_context(self.backend.context);
+                self.backend.telemetry.host_plan_artifact_hash = metal_backend.host_plan_hash_from_context(self.backend.context);
             },
             .doe_d3d12 => {
                 self.backend.telemetry.shader_artifact_manifest_path = d3d12_backend.manifest_path_from_context(self.backend.context);

@@ -4,7 +4,6 @@ const bridge = @import("metal_bridge_decls.zig");
 const metal_buffer_pool = @import("metal_buffer_pool.zig");
 const metal_pipeline_cache = @import("metal_pipeline_cache.zig");
 const HAS_PIPELINE_CACHE = builtin.os.tag == .macos;
-const _unused_mpc = if (HAS_PIPELINE_CACHE) metal_pipeline_cache else null;
 
 const metal_bridge_cmd_buf_render_encoder = bridge.metal_bridge_cmd_buf_render_encoder;
 const metal_bridge_device_new_buffer_shared = bridge.metal_bridge_device_new_buffer_shared;
@@ -55,6 +54,19 @@ pub fn ensure_kernel_pipeline(self: anytype, kernel: []const u8) !?*anyopaque {
     const key = try self.allocator.dupe(u8, base);
     errdefer self.allocator.free(key);
     try self.kernel_pipelines.put(self.allocator, key, .{ .library = lib, .pipeline = pso });
+
+    // Register kernel name in the pipeline cache warmup manifest so
+    // future sessions can pre-compile it on startup.
+    if (builtin.os.tag == .macos) {
+        if (HAS_PIPELINE_CACHE) {
+            if (@hasField(@TypeOf(self.*), "pipeline_binary_cache")) {
+                if (self.pipeline_binary_cache) |c| {
+                    const t: *metal_pipeline_cache.MetalPipelineCache = @ptrCast(@alignCast(c));
+                    t.register_compute_key(base);
+                }
+            }
+        }
+    }
     return pso;
 }
 
@@ -131,17 +143,16 @@ pub fn ensure_icb(self: anytype, draw_count: u32, vertex_count: u32, instance_co
     return icb;
 }
 
-// Resolve compute PSO via binary archive cache if available, else compile fresh.
+// Resolve compute PSO: try archive (compile-or-serve), fall back to plain compile.
+// Phase 2: on archive hit, the ObjC bridge returns a pre-compiled binary without
+// calling newLibraryWithSource.  On miss, it compiles and primes the archive.
 fn resolve_compute_pso_for(self: anytype, func: ?*anyopaque, err_buf: *[BRIDGE_ERROR_CAP]u8) !?*anyopaque {
     if (builtin.os.tag == .macos) {
         if (HAS_PIPELINE_CACHE) {
             if (@hasField(@TypeOf(self.*), "pipeline_binary_cache")) {
                 if (self.pipeline_binary_cache) |c| {
                     const t: *metal_pipeline_cache.MetalPipelineCache = @ptrCast(@alignCast(c));
-                    if (t.lookup_compute_pipeline(func)) |hit| return hit;
-                    const p = metal_bridge_device_new_compute_pipeline(self.device, func, err_buf, BRIDGE_ERROR_CAP) orelse return error.ShaderCompileFailed;
-                    t.cache_compute_pipeline(p);
-                    return p;
+                    if (t.compile_or_serve_compute(func)) |pso| return pso;
                 }
             }
         }
@@ -149,17 +160,14 @@ fn resolve_compute_pso_for(self: anytype, func: ?*anyopaque, err_buf: *[BRIDGE_E
     return metal_bridge_device_new_compute_pipeline(self.device, func, err_buf, BRIDGE_ERROR_CAP) orelse error.ShaderCompileFailed;
 }
 
-// Resolve render PSO via binary archive cache if available, else compile fresh.
+// Resolve render PSO: try archive (compile-or-serve), fall back to plain compile.
 fn resolve_render_pso_for(self: anytype, fmt: u32, err_buf: *[BRIDGE_ERROR_CAP]u8) !?*anyopaque {
     if (builtin.os.tag == .macos) {
         if (HAS_PIPELINE_CACHE) {
             if (@hasField(@TypeOf(self.*), "pipeline_binary_cache")) {
                 if (self.pipeline_binary_cache) |c| {
                     const t: *metal_pipeline_cache.MetalPipelineCache = @ptrCast(@alignCast(c));
-                    if (t.lookup_render_pipeline(fmt, 1)) |hit| return hit;
-                    const p = metal_bridge_device_new_render_pipeline(self.device, fmt, 1, err_buf, BRIDGE_ERROR_CAP) orelse return error.ShaderCompileFailed;
-                    t.cache_render_pipeline(p);
-                    return p;
+                    if (t.compile_or_serve_render(fmt, 1)) |pso| return pso;
                 }
             }
         }

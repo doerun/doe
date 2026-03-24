@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "config/csl-governed-lane-report.schema.json",
+  "title": "DOE CSL governed lane report",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "generatedAt",
+    "fixture",
+    "laneStatus",
+    "compile",
+    "run",
+    "parity",
+    "artifacts",
+    "comparisonStatus",
+    "claimStatus"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "generatedAt": { "type": "string", "minLength": 1 },
+    "outputTimestamp": { "type": "string" },
+    "fixture": {
+      "type": "object",
+      "required": ["id", "inputJsonPath"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "inputJsonPath": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": true
+    },
+    "laneStatus": { "enum": ["ready", "blocked", "failed"] },
+    "compile": {
+      "type": "object",
+      "required": ["status", "reason", "runnerExitCode"],
+      "properties": {
+        "status": { "enum": ["succeeded", "blocked", "failed", "not-produced"] },
+        "reason": { "type": "string", "minLength": 1 },
+        "runnerExitCode": { "type": "integer" }
+      },
+      "additionalProperties": true
+    },
+    "run": {
+      "type": "object",
+      "required": ["status", "reason", "traceProduced"],
+      "properties": {
+        "status": { "enum": ["succeeded", "blocked", "failed", "not-produced"] },
+        "reason": { "type": "string", "minLength": 1 },
+        "traceProduced": { "type": "boolean" }
+      },
+      "additionalProperties": true
+    },
+    "parity": {
+      "type": "object",
+      "required": ["status", "reason", "expectedHostPlanSha256", "actualHostPlanSha256"],
+      "properties": {
+        "status": { "enum": ["matched", "mismatched", "not-run"] },
+        "reason": { "type": "string", "minLength": 1 },
+        "expectedHostPlanSha256": { "type": "string" },
+        "actualHostPlanSha256": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "artifacts": {
+      "type": "object",
+      "required": [
+        "actualHostPlanPath",
+        "expectedHostPlanPath",
+        "simulatorPlanPath",
+        "simulatorResultPath",
+        "driverResultPath"
+      ],
+      "properties": {
+        "actualHostPlanPath": { "type": "string", "minLength": 1 },
+        "expectedHostPlanPath": { "type": "string", "minLength": 1 },
+        "simulatorPlanPath": { "type": "string", "minLength": 1 },
+        "simulatorResultPath": { "type": "string" },
+        "driverResultPath": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "steps": { "type": "object" },
+    "simulationResult": { "type": "object" },
+    "driverResult": { "type": "object" },
+    "comparisonStatus": { "const": "diagnostic" },
+    "claimStatus": { "const": "not-evaluated" }
+  },
+  "additionalProperties": true
+}

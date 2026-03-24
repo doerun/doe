@@ -59,67 +59,6 @@ function clearOutputPath(path) {
     }
 }
 
-function requirePlainObject(value, label) {
-    if (!value || typeof value !== "object" || Array.isArray(value)) {
-        throw new Error(`${label} must be an object.`);
-    }
-}
-
-function resolveSemanticBundlePath(anchorPath, outPath = null) {
-    if (typeof outPath === "string" && outPath.trim().length > 0) {
-        return resolve(outPath.trim());
-    }
-    if (typeof anchorPath === "string" && anchorPath.trim().length > 0) {
-        const resolvedAnchor = resolve(anchorPath.trim());
-        if (resolvedAnchor.endsWith(".json")) {
-            return resolvedAnchor.slice(0, -5) + ".semantic-operators.json";
-        }
-        return `${resolvedAnchor}.semantic-operators.json`;
-    }
-    throw new Error("writeSemanticOperatorBundle requires anchorPath or outPath.");
-}
-
-export async function writeSemanticOperatorBundle(options = {}) {
-    requirePlainObject(options, "writeSemanticOperatorBundle options");
-    if (!Array.isArray(options.timeline)) {
-        throw new Error("writeSemanticOperatorBundle requires timeline array.");
-    }
-
-    const [{ mkdir, writeFile }, { dirname: pathDirname }] = await Promise.all([
-        import("node:fs/promises"),
-        import("node:path"),
-    ]);
-
-    const outPath = resolveSemanticBundlePath(options.anchorPath ?? null, options.outPath ?? null);
-    const bundle = {
-        schemaVersion: 1,
-        source: "doe-gpu",
-        mode: typeof options.mode === "string" && options.mode.trim().length > 0
-            ? options.mode.trim()
-            : "operator_diff",
-        createdAt: new Date().toISOString(),
-        anchorPath: typeof options.anchorPath === "string" && options.anchorPath.trim().length > 0
-            ? resolve(options.anchorPath.trim())
-            : null,
-        provider: typeof options.provider === "string" && options.provider.trim().length > 0
-            ? options.provider.trim()
-            : null,
-        providerInfo: options.providerInfo ?? null,
-        reportInfo: options.reportInfo ?? null,
-        divergence: options.divergence ?? null,
-        summary: options.summary ?? null,
-        recordCount: options.timeline.length,
-        timeline: options.timeline,
-    };
-
-    await mkdir(pathDirname(outPath), { recursive: true });
-    await writeFile(outPath, JSON.stringify(bundle, null, 2), "utf8");
-    return {
-        path: outPath,
-        bundle,
-    };
-}
-
 function buildBenchArgs(options) {
     const args = ["--commands", options.commandsPath];
     if (options.quirksPath) args.push("--quirks", options.quirksPath);
@@ -247,7 +186,6 @@ export function createDoeRuntime(options = {}) {
         libPath,
         runRaw,
         runBench,
-        writeSemanticOperatorBundle,
     };
 }
 

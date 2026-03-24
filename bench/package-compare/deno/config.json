@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "description": "Deno WebGPU benchmark: Doe (@simulatte/webgpu via node-compat) vs deno-webgpu (built-in wgpu)",
+  "description": "Deno WebGPU benchmark: Doe (doe-gpu via node-compat) vs deno-webgpu (built-in wgpu)",
   "providers": {
     "doe": {
-      "package": "@simulatte/webgpu",
-      "source": "packages/webgpu/src/deno.js",
+      "package": "doe-gpu",
+      "source": "packages/doe-gpu/src/deno.js",
       "notes": "Doe provider loaded via Deno node-compat N-API layer"
     },
     "deno-webgpu": {

@@ -680,12 +680,10 @@ pub fn drain_global_work_done() void {
     }
 }
 
-/// Doe's execution is synchronous — by the time queueSubmit returns, all GPU
-/// work is complete. Fire the callback immediately instead of deferring to
-/// instanceProcessEvents. Deferring causes Dawn's wire client to call
-/// instance.WaitAny() which fails with "A valid external Instance reference
-/// no longer exists" because the wire client's Instance tracking diverges
-/// from Doe's.
+/// Doe's GPU work is synchronous — complete by the time queueSubmit returns.
+/// Fire callback immediately. The Instance lifetime guard in
+/// doeNativeInstanceRelease prevents premature Instance destruction while
+/// external textures are in flight.
 pub export fn doeNativeQueueOnSubmittedWorkDone(q_raw: ?*anyopaque, info: types.WGPUQueueWorkDoneCallbackInfo) callconv(.c) types.WGPUFuture {
     _ = q_raw;
     if (info.callback) |cb| {
@@ -698,11 +696,48 @@ pub export fn doeNativeQueueOnSubmittedWorkDone(q_raw: ?*anyopaque, info: types.
 // copyExternalImageToTexture — plane0 blit from external texture
 // ============================================================
 //
-// Chromium calls wgpuQueueCopyExternalImageToTexture with an
-// WGPUImageCopyExternalTexture source, WGPUTexelCopyTextureInfo
-// destination, and WGPUExtent3D copy size. The implementation
-// extracts plane0 from the external texture and delegates to
-// the existing texture-to-texture copy path.
+// Two paths: DoeTextureView-backed planes go through the standard
+// texture-to-texture copy; native-imported planes (raw MTLTexture
+// from IOSurface/CVPixelBuffer) are blitted directly via Metal.
+
+const ext_texture_mod = @import("doe_external_texture_native.zig");
+const DoeExternalTexture = ext_texture_mod.DoeExternalTexture;
+
+fn copy_external_texture_to_dst(
+    queue: *DoeQueue,
+    ext: *const DoeExternalTexture,
+    origin: types.WGPUOrigin3D,
+    destination: *const types.WGPUTexelCopyTextureInfo,
+    copy_size: *const types.WGPUExtent3D,
+) void {
+    if (ext_texture_mod.resolvePlane0DoeTexture(ext)) |src_tex| {
+        const source_copy = types.WGPUTexelCopyTextureInfo{
+            .texture = native.toOpaque(src_tex),
+            .mipLevel = 0,
+            .origin = origin,
+            .aspect = types.WGPUTextureAspect_All,
+        };
+        copy_texture_for_browser_passthrough(queue, &source_copy, destination, copy_size);
+        return;
+    }
+    // Native-imported: blit the raw MTLTexture handle directly.
+    const src_mtl = ext_texture_mod.resolvePlane0MtlHandle(ext) orelse return;
+    const dst_texture = cast(DoeTexture, destination.texture) orelse return;
+    const dst_mtl = dst_texture.mtl orelse return;
+    if (queue.dev.backend != .metal) return;
+    const cmd_buf = bridge.metal_bridge_create_command_buffer(queue.dev.mtl_queue);
+    if (cmd_buf == null) return;
+    const blit = bridge.metal_bridge_cmd_buf_blit_encoder(cmd_buf);
+    if (blit == null) { bridge.metal_bridge_release(cmd_buf); return; }
+    bridge.metal_bridge_blit_encoder_copy_texture_to_texture(
+        blit, src_mtl, 0, dst_mtl, destination.mipLevel,
+        copy_size.width, copy_size.height, copy_size.depthOrArrayLayers,
+    );
+    bridge.metal_bridge_end_blit_encoding(blit);
+    bridge.metal_bridge_command_buffer_commit(cmd_buf);
+    bridge.metal_bridge_command_buffer_wait_completed(cmd_buf);
+    bridge.metal_bridge_release(cmd_buf);
+}
 
 pub export fn doeNativeQueueCopyExternalImageToTexture(
     queue_raw: ?*anyopaque,
@@ -713,19 +748,10 @@ pub export fn doeNativeQueueCopyExternalImageToTexture(
     const source = source_raw orelse return;
     const destination = destination_raw orelse return;
     const copy_size = copy_size_raw orelse return;
-    const ext_mod = @import("doe_external_texture_native.zig");
-    const external_texture = ext_mod.cast(source.externalTexture) orelse return;
-    if (external_texture.expired) return;
-    const plane0_view = cast(native.DoeTextureView, external_texture.plane0) orelse return;
-    const source_texture = plane0_view.tex;
-    const source_copy = types.WGPUTexelCopyTextureInfo{
-        .texture = native.toOpaque(source_texture),
-        .mipLevel = 0,
-        .origin = source.origin,
-        .aspect = types.WGPUTextureAspect_All,
-    };
+    const ext = ext_texture_mod.cast(source.externalTexture) orelse return;
+    if (ext.expired) return;
     const queue = cast(DoeQueue, queue_raw) orelse return;
-    copy_texture_for_browser_passthrough(queue, &source_copy, destination, copy_size);
+    copy_external_texture_to_dst(queue, ext, source.origin, destination, copy_size);
 }
 
 pub export fn doeNativeQueueCopyExternalTextureForBrowser(
@@ -739,15 +765,8 @@ pub export fn doeNativeQueueCopyExternalTextureForBrowser(
     const source = source_raw orelse return;
     const destination = destination_raw orelse return;
     const copy_size = copy_size_raw orelse return;
-    const external_texture = @import("doe_external_texture_native.zig").cast(source.externalTexture) orelse return;
-    const plane0_view = cast(native.DoeTextureView, external_texture.plane0) orelse return;
-    const source_texture = plane0_view.tex;
-    const source_copy = types.WGPUTexelCopyTextureInfo{
-        .texture = native.toOpaque(source_texture),
-        .mipLevel = 0,
-        .origin = source.origin,
-        .aspect = types.WGPUTextureAspect_All,
-    };
+    const ext = ext_texture_mod.cast(source.externalTexture) orelse return;
+    if (ext.expired) return;
     const queue = cast(DoeQueue, queue_raw) orelse return;
-    copy_texture_for_browser_passthrough(queue, &source_copy, destination, copy_size);
+    copy_external_texture_to_dst(queue, ext, source.origin, destination, copy_size);
 }

@@ -91,6 +91,8 @@ pub extern fn vkCmdDrawIndexed(commandBuffer: vk.VkCommandBuffer, indexCount: u3
 pub extern fn vkCmdDrawIndirect(commandBuffer: vk.VkCommandBuffer, buffer: vk.VkBuffer, offset: vk.VkDeviceSize, drawCount: u32, stride: u32) callconv(.c) void;
 pub extern fn vkCmdDrawIndexedIndirect(commandBuffer: vk.VkCommandBuffer, buffer: vk.VkBuffer, offset: vk.VkDeviceSize, drawCount: u32, stride: u32) callconv(.c) void;
 pub extern fn vkCmdExecuteCommands(commandBuffer: vk.VkCommandBuffer, commandBufferCount: u32, pCommandBuffers: [*]const vk.VkCommandBuffer) callconv(.c) void;
+pub extern fn vkCmdSetDepthBias(commandBuffer: vk.VkCommandBuffer, depthBiasConstantFactor: f32, depthBiasClamp: f32, depthBiasSlopeFactor: f32) callconv(.c) void;
+pub extern fn vkCmdSetStencilReference(commandBuffer: vk.VkCommandBuffer, faceMask: u32, reference: u32) callconv(.c) void;
 pub extern fn vkEnumerateDeviceExtensionProperties(physicalDevice: vk.VkPhysicalDevice, pLayerName: ?[*:0]const u8, pPropertyCount: *u32, pProperties: ?[*]structs.VkExtensionProperties) callconv(.c) vk.VkResult;
 
 // Delegate to vulkan_errors.zig — the single source of truth for VkResult mapping.

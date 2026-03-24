@@ -318,10 +318,22 @@ pub export fn doeNativeDeviceCreateBindGroup(dev_raw: ?*anyopaque, desc: ?*const
                 bg.samplers[e.binding] = sampler.mtl;
                 retain_sampler(bg, e.binding, sampler);
             } else if (resolve_external_texture(e)) |external_texture| {
+                const ext_mod = @import("doe_external_texture_native.zig");
                 const ext = native.cast(DoeExternalTexture, external_texture) orelse continue;
-                bg.textures[e.binding] = ext.plane0;
+                // Resolve the MTL handle from plane0 (works for both DoeTextureView
+                // and native-imported paths).
+                const p0_mtl = ext_mod.resolvePlane0MtlHandle(ext);
+                bg.textures[e.binding] = p0_mtl;
                 bg.texture_views[e.binding] = ext.plane0;
                 retain_external_texture(bg, e.binding, external_texture);
+                if (ext_mod.isMultiPlane(ext)) {
+                    const next_slot = e.binding + 1;
+                    if (next_slot < MAX_BIND) {
+                        bg.textures[next_slot] = ext_mod.resolvePlane1MtlHandle(ext);
+                        bg.texture_views[next_slot] = ext.plane1;
+                        if (next_slot + 1 > bg.count) bg.count = next_slot + 1;
+                    }
+                }
             } else continue;
             if (e.binding + 1 > bg.count) bg.count = e.binding + 1;
         }

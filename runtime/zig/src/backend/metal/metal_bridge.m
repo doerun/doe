@@ -2553,7 +2553,7 @@ MetalHandle metal_bridge_device_new_compute_pipeline_with_archive(
 
         MTLComputePipelineDescriptor* desc = [MTLComputePipelineDescriptor new];
         desc.computeFunction = function;
-        // Attach archive so Metal can serve the binary from disk rather than recompiling.
+        // Attach archive so Metal serves the pre-compiled binary on hit.
         desc.binaryArchives = @[ archive ];
 
         NSError* err = nil;
@@ -2563,10 +2563,14 @@ MetalHandle metal_bridge_device_new_compute_pipeline_with_archive(
                                                reflection:nil
                                                     error:&err];
         if (pso == nil) {
-            // Cache miss — caller will compile fresh.
-            (void)error_buf; (void)error_cap;
+            write_error(err, error_buf, error_cap);
             return NULL;
         }
+        // Record into the archive so the next serializeToURL persists this binary.
+        // On a true cache hit this is a cheap no-op; on a miss it primes the archive
+        // with the freshly compiled binary for warm starts across process launches.
+        NSError* addErr = nil;
+        [archive addComputePipelineFunctionsWithDescriptor:desc error:&addErr];
         return (MetalHandle)CFBridgingRetain(pso);
     }
 #endif
@@ -2607,10 +2611,12 @@ MetalHandle metal_bridge_device_new_render_pipeline_with_archive(
         id<MTLRenderPipelineState> pso =
             [device newRenderPipelineStateWithDescriptor:desc error:&err];
         if (pso == nil) {
-            // Cache miss.
-            (void)error_buf; (void)error_cap;
+            write_error(err, error_buf, error_cap);
             return NULL;
         }
+        // Prime the archive for future serialization, mirroring compute path above.
+        NSError* addErr = nil;
+        [archive addRenderPipelineFunctionsWithDescriptor:desc error:&addErr];
         return (MetalHandle)CFBridgingRetain(pso);
     }
 #endif

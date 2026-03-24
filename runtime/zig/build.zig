@@ -38,6 +38,8 @@ fn configure_non_windows_graphics(artifact: *std.Build.Step.Compile, b: *std.Bui
         artifact.linkFramework("Foundation");
         artifact.linkFramework("QuartzCore");
         artifact.linkFramework("AppKit");
+        artifact.linkFramework("CoreVideo");
+        artifact.linkFramework("IOSurface");
         artifact.addCSourceFile(.{
             .file = b.path("src/backend/metal/metal_bridge.m"),
             .flags = &.{"-fobjc-arc"},
@@ -48,6 +50,10 @@ fn configure_non_windows_graphics(artifact: *std.Build.Step.Compile, b: *std.Bui
         });
         artifact.addCSourceFile(.{
             .file = b.path("src/backend/metal/metal_surface_bridge.m"),
+            .flags = &.{"-fobjc-arc"},
+        });
+        artifact.addCSourceFile(.{
+            .file = b.path("src/backend/metal/metal_external_texture_bridge.m"),
             .flags = &.{"-fobjc-arc"},
         });
     } else {
@@ -352,6 +358,50 @@ pub fn build(b: *std.Build) void {
     const module_runner_step = b.step("module-core-runner", "Build the module core runner");
     module_runner_step.dependOn(&install_module_runner.step);
     b.getInstallStep().dependOn(module_runner_step);
+
+    const csl_sim_runner = b.addExecutable(.{
+        .name = "doe-csl-sim-runner",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/csl_sim_runner.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    csl_sim_runner.linkLibC();
+    const install_csl_sim_runner = b.addInstallArtifact(csl_sim_runner, .{});
+    const csl_sim_runner_step = b.step("csl-sim-runner", "Build the CSL simulator contract runner");
+    csl_sim_runner_step.dependOn(&install_csl_sim_runner.step);
+    b.getInstallStep().dependOn(csl_sim_runner_step);
+
+    const csl_bundle_emitter = b.addExecutable(.{
+        .name = "doe-csl-bundle-emitter",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/csl_bundle_emitter.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{
+                .{ .name = "build_options", .module = build_options_module },
+            },
+        }),
+    });
+    const install_csl_bundle_emitter = b.addInstallArtifact(csl_bundle_emitter, .{});
+    const csl_bundle_emitter_step = b.step("csl-bundle-emitter", "Build the WGSL-to-CSL bundle emitter");
+    csl_bundle_emitter_step.dependOn(&install_csl_bundle_emitter.step);
+    b.getInstallStep().dependOn(csl_bundle_emitter_step);
+
+    const csl_host_plan_tool = b.addExecutable(.{
+        .name = "doe-csl-host-plan-tool",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/csl_host_plan_tool.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    csl_host_plan_tool.linkLibC();
+    const install_csl_host_plan_tool = b.addInstallArtifact(csl_host_plan_tool, .{});
+    const csl_host_plan_tool_step = b.step("csl-host-plan-tool", "Build the CSL host-plan lowering tool");
+    csl_host_plan_tool_step.dependOn(&install_csl_host_plan_tool.step);
+    b.getInstallStep().dependOn(csl_host_plan_tool_step);
 
     const import_fence_check = b.addSystemCommand(&.{ "python3", "tools/check_core_import_fence.py" });
     const import_fence_step = b.step("import-fence", "Validate core/full one-way import boundaries");

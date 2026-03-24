@@ -96,6 +96,10 @@ pub extern fn metal_bridge_query_device_max_buffer_length() callconv(.c) u64;
 pub extern fn metal_bridge_adapter_get_info_string(device: ?*anyopaque) callconv(.c) ?[*]u8;
 pub extern fn metal_bridge_free_string(str: ?[*]u8) callconv(.c) void;
 
+// Multi-queue support
+pub extern fn metal_bridge_device_new_command_queue_with_priority(device: ?*anyopaque, priority: u32) callconv(.c) ?*anyopaque;
+pub extern fn metal_bridge_command_buffer_encode_wait_event(cmd_buf: ?*anyopaque, event: ?*anyopaque, value: u64) callconv(.c) void;
+
 // GPU timestamp query (MTLCounterSampleBuffer)
 pub extern fn metal_bridge_supports_timestamp_query(device: ?*anyopaque) callconv(.c) c_int;
 pub extern fn metal_bridge_create_counter_sample_buffer(device: ?*anyopaque, count: u32) callconv(.c) ?*anyopaque;
@@ -103,6 +107,18 @@ pub extern fn metal_bridge_sample_timestamp(cmd_buf: ?*anyopaque, counter_buffer
 pub extern fn metal_bridge_resolve_timestamps(counter_buffer: ?*anyopaque, first_query: u32, query_count: u32, dest_ptr: [*]u64) callconv(.c) c_int;
 pub extern fn metal_bridge_resolve_timestamps_ns(counter_buffer: ?*anyopaque, first_query: u32, query_count: u32, dest_ptr: [*]u64) callconv(.c) c_int;
 pub extern fn metal_bridge_destroy_counter_sample_buffer(counter_buffer: ?*anyopaque) callconv(.c) void;
+// External texture import (IOSurface / CVPixelBuffer)
+pub extern fn doe_metal_import_iosurface(device: ?*anyopaque, iosurface: ?*anyopaque, plane: u32, width: u32, height: u32, pixel_format: u32) callconv(.c) ?*anyopaque;
+pub extern fn doe_metal_import_cvpixelbuffer(device: ?*anyopaque, cvpixelbuffer: ?*anyopaque, plane: u32) callconv(.c) ?*anyopaque;
+pub extern fn doe_metal_external_plane_count(cvpixelbuffer: ?*anyopaque) callconv(.c) u32;
+pub extern fn doe_metal_external_plane_size(cvpixelbuffer: ?*anyopaque, plane: u32, out_width: *u32, out_height: *u32) callconv(.c) void;
+pub extern fn doe_metal_iosurface_plane_count(iosurface: ?*anyopaque) callconv(.c) u32;
+pub extern fn doe_metal_iosurface_plane_size(iosurface: ?*anyopaque, plane: u32, out_width: *u32, out_height: *u32) callconv(.c) void;
+
+// Device property queries (implemented in metal_bridge.m).
+pub extern fn metal_bridge_device_registry_id(device: ?*anyopaque) callconv(.c) u64;
+pub extern fn metal_bridge_device_name(device: ?*anyopaque, buf: [*]u8, cap: usize) callconv(.c) void;
+
 pub const MetalVertexBufferLayout = extern struct {
     array_stride: u64,
     step_mode: u32,

@@ -61,6 +61,8 @@ class BackendWorkloadCatalogTests(unittest.TestCase):
     def test_expected_d3d12_workload_id_sets(self) -> None:
         smoke = self.generator.materialize_lane(self.catalog, "local_d3d12_smoke")
         extended = self.generator.materialize_lane(self.catalog, "local_d3d12_extended")
+        metal_extended = self.generator.materialize_lane(self.catalog, "apple_metal_extended")
+        vulkan_extended = self.generator.materialize_lane(self.catalog, "amd_vulkan_extended")
         self.assertEqual(
             [row["id"] for row in smoke["workloads"]],
             [
@@ -69,22 +71,14 @@ class BackendWorkloadCatalogTests(unittest.TestCase):
                 "upload_write_buffer_64kb",
             ],
         )
+        metal_ids = {row["id"] for row in metal_extended["workloads"]}
+        vulkan_ids = {row["id"] for row in vulkan_extended["workloads"]}
+        extended_ids = [row["id"] for row in extended["workloads"]]
         self.assertEqual(
-            [row["id"] for row in extended["workloads"]],
-            [
-                "compute_workgroup_atomic_1024",
-                "compute_workgroup_non_atomic_1024",
-                "pipeline_compile_stress",
-                "upload_write_buffer_16mb",
-                "upload_write_buffer_1kb",
-                "upload_write_buffer_1mb",
-                "upload_write_buffer_4mb",
-                "upload_write_buffer_64kb",
-                "compute_concurrent_execution_single",
-                "compute_zero_initialize_workgroup_memory_256",
-                "resource_lifecycle",
-            ],
+            set(extended_ids),
+            metal_ids & vulkan_ids,
         )
+        self.assertEqual(len(extended_ids), 50)
 
     def test_d3d12_comparable_generated_view_matches_catalog(self) -> None:
         comparable = self.generator.materialize_lane(self.catalog, "d3d12_comparable")
@@ -218,7 +212,7 @@ class BackendWorkloadCatalogTests(unittest.TestCase):
 
         self.assertEqual(smoke_config["workloads"], "bench/workloads.local.d3d12.smoke.json")
         self.assertEqual(
-            comparable_config["workloads"], "bench/workloads.local.d3d12.extended.json"
+            comparable_config["workloads"], "bench/workloads.d3d12.comparable.json"
         )
         self.assertEqual(release_config["workloads"], "bench/workloads.local.d3d12.extended.json")
 
@@ -249,6 +243,61 @@ class BackendWorkloadCatalogTests(unittest.TestCase):
             item for item in cube_policy["surfaces"] if item["id"] == "backend_native"
         )
         self.assertIn("windows_d3d12", backend_surface["expectedHostProfiles"])
+
+    def test_workload_origin_report_is_complete_and_consistent(self) -> None:
+        report = self.generator.build_workload_origin_report(self.catalog)
+        self.assertEqual(report["schemaVersion"], 1)
+        self.assertEqual(report["source"], "bench/backend-workload-catalog.json")
+        self.assertEqual(len(report["workloads"]), len(self.catalog["workloads"]))
+        rows_by_id = {row["id"]: row for row in report["workloads"]}
+        for item in self.catalog["workloads"]:
+            report_row = rows_by_id[item["id"]]
+            self.assertEqual(
+                report_row["laneOrigins"],
+                self.generator.build_workload_origin_matrix(item),
+            )
+            self.assertEqual(
+                report_row["effectiveOrigin"],
+                self.generator.workload_effective_origin(item),
+            )
+        workload_count = len(self.catalog["workloads"])
+        self.assertEqual(
+            sum(report["counts"].values()),
+            workload_count,
+        )
+        for key in ("dawn_derived", "doe_specific", "hybrid"):
+            self.assertIn(key, report["counts"])
+
+    def test_comparable_workloads_are_dawn_derived(self) -> None:
+        for item in self.catalog["workloads"]:
+            for lane_id in item["lanes"]:
+                comparable = self.generator.effective_field(
+                    item,
+                    lane_id,
+                    "comparable",
+                    False,
+                )
+                origin = self.generator.resolve_workload_origin(item, lane_id)
+                if comparable:
+                    self.assertNotEqual(
+                        origin,
+                        "doe_specific",
+                        msg=f"{item['id']} lane={lane_id} has comparable=true but provenance='doe_specific'",
+                    )
+
+    def test_catalog_validation_rejects_explicit_doe_specific_comparable(self) -> None:
+        mutated = json.loads(json.dumps(self.catalog))
+        target = next(
+            item
+            for item in mutated["workloads"]
+            if item["id"] == "compute_matvec_32768x2048_f32"
+        )
+        target["lanes"]["amd_vulkan_extended"]["workloadOrigin"] = "doe_specific"
+        with self.assertRaisesRegex(
+            ValueError,
+            r"comparable lanes must not be provenance='doe_specific'",
+        ):
+            self.generator.validate_catalog(mutated)
 
 
 if __name__ == "__main__":

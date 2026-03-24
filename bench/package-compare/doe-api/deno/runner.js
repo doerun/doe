@@ -8,11 +8,11 @@ const args = parsePackageRunnerArgs();
 
 async function loadProvider(name) {
   if (name === 'doe' || name === 'doe-api') {
-    const doe = await import('../../../../packages/webgpu/src/index.js');
+    const doe = await import('../../../../packages/doe-gpu/src/index.js');
     return {
       create: doe.create,
       globals: { ...doe.globals, doeApi: true },
-      name: '@simulatte/webgpu-doe (deno)',
+      name: 'doe-gpu (deno)',
     };
   }
   if (name === 'deno-webgpu') {

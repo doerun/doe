@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "csl_simulator_trace",
+  "target": "wse3",
+  "contract": "compile_run_smoke_summary",
+  "driverExecutable": "runtime/zig/tools/csl_sdk_driver.py",
+  "compiledTargetCount": 1,
+  "compiledTargets": [
+    {
+      "name": "gelu",
+      "artifactDir": "artifacts/compile/compiled/gelu"
+    }
+  ],
+  "peGrid": {
+    "width": 16,
+    "height": 1
+  },
+  "prefillLaunchCount": 0,
+  "decodeLaunchCount": 0,
+  "runtimeMode": "sdk_runtime_smoke",
+  "simfabTracesPath": null,
+  "generatedAtUtc": "2026-03-24T00:00:00Z"
+}

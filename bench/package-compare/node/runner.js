@@ -10,8 +10,8 @@ const args = parsePackageRunnerArgs();
 
 async function loadProvider(name) {
   if (name === 'doe') {
-    const doe = await import('../../../packages/webgpu/src/index.js');
-    return { create: doe.create, globals: doe.globals, name: '@simulatte/webgpu' };
+    const doe = await import('../../../packages/doe-gpu/src/index.js');
+    return { create: doe.create, globals: doe.globals, name: 'doe-gpu' };
   }
   if (name === 'dawn') {
     // The `webgpu` npm package uses: import { create, globals } from 'webgpu';

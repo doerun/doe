@@ -1043,3 +1043,339 @@ test "robustness: storage buffer sized array index is clamped" {
     const max_expr = module.functions.items[0].exprs.items[max_arg_id];
     try testing.expectEqual(@as(u64, 1023), max_expr.data.int_lit);
 }
+
+// ---- texture_1d coordinate clamping ----
+
+test "robustness: textureLoad 1D coord is clamped with min" {
+    const allocator = testing.allocator;
+    var module = try make_test_module(allocator);
+    defer module.deinit();
+
+    const f32_ty = f32_type(&module);
+    const u32_ty = u32_type(&module);
+    const vec4f_ty = try module.types.intern(.{ .vector = .{ .elem = f32_ty, .len = 4 } });
+    const tex_1d_ty = try module.types.intern(.{ .texture_1d = f32_ty });
+
+    try module.globals.append(allocator, .{
+        .name = try ir.dup_string(allocator, "tex1d"),
+        .ty = tex_1d_ty,
+        .class = .var_,
+        .addr_space = .handle,
+        .binding = .{ .group = 0, .binding = 0 },
+    });
+
+    var function = ir.Function{ .name = try ir.dup_string(allocator, "main"), .return_type = ir.INVALID_TYPE };
+    errdefer function.deinit(allocator);
+
+    const tex_id = try function.append_expr(allocator, .{ .ty = tex_1d_ty, .category = .value, .data = .{ .global_ref = 0 } });
+    const coord_id = try function.append_expr(allocator, .{ .ty = u32_ty, .category = .value, .data = .{ .int_lit = 999 } });
+    const level_id = try function.append_expr(allocator, .{ .ty = u32_ty, .category = .value, .data = .{ .int_lit = 0 } });
+    const call_args = try function.append_expr_args(allocator, &.{ tex_id, coord_id, level_id });
+    const call_id = try function.append_expr(allocator, .{
+        .ty = vec4f_ty,
+        .category = .value,
+        .data = .{ .call = .{
+            .name = try ir.dup_string(allocator, "textureLoad"),
+            .kind = .builtin,
+            .args = call_args,
+        } },
+    });
+
+    try module.functions.append(allocator, function);
+    try apply(allocator, &module, .{});
+
+    // 1D textures use scalar min(), not vector clamp()
+    const new_coord_id = module.functions.items[0].expr_args.items[call_args.start + 1];
+    try testing.expect(new_coord_id != coord_id);
+
+    const min_expr = module.functions.items[0].exprs.items[new_coord_id];
+    try testing.expect(min_expr.data == .call);
+    try testing.expectEqualStrings("min", min_expr.data.call.name);
+    try testing.expectEqual(@as(u32, 2), min_expr.data.call.args.len);
+
+    // First arg to min is the original coord
+    const min_first = module.functions.items[0].expr_args.items[min_expr.data.call.args.start];
+    try testing.expectEqual(coord_id, min_first);
+
+    // Second arg is textureDimensions(tex, level) - 1
+    const max_id = module.functions.items[0].expr_args.items[min_expr.data.call.args.start + 1];
+    const max_expr = module.functions.items[0].exprs.items[max_id];
+    try testing.expect(max_expr.data == .binary);
+    try testing.expectEqual(ir.BinaryOp.sub, max_expr.data.binary.op);
+
+    // lhs of the sub should be textureDimensions call with 2 args (tex + level)
+    const td_expr = module.functions.items[0].exprs.items[max_expr.data.binary.lhs];
+    try testing.expect(td_expr.data == .call);
+    try testing.expectEqualStrings("textureDimensions", td_expr.data.call.name);
+    try testing.expectEqual(@as(u32, 2), td_expr.data.call.args.len);
+
+    // Verify the call expression is unchanged
+    const transformed_call = module.functions.items[0].exprs.items[call_id];
+    try testing.expect(transformed_call.data == .call);
+    try testing.expectEqualStrings("textureLoad", transformed_call.data.call.name);
+}
+
+test "robustness: textureLoad 1D without level arg uses single-arg textureDimensions" {
+    const allocator = testing.allocator;
+    var module = try make_test_module(allocator);
+    defer module.deinit();
+
+    const f32_ty = f32_type(&module);
+    const u32_ty = u32_type(&module);
+    const vec4f_ty = try module.types.intern(.{ .vector = .{ .elem = f32_ty, .len = 4 } });
+    // texture_multisampled_2d has no level, but use texture_1d with only 2 args
+    // to test the textureStore path (no level param)
+    const stor_tex_ty = try module.types.intern(.{ .storage_texture_2d = .{ .format = .rgba8unorm, .access = .write } });
+    const vec2u_ty = try module.types.intern(.{ .vector = .{ .elem = u32_ty, .len = 2 } });
+    const void_ty = try module.types.intern(.{ .scalar = .void });
+
+    try module.globals.append(allocator, .{
+        .name = try ir.dup_string(allocator, "out_tex"),
+        .ty = stor_tex_ty,
+        .class = .var_,
+        .addr_space = .handle,
+        .binding = .{ .group = 0, .binding = 1 },
+    });
+
+    var function = ir.Function{ .name = try ir.dup_string(allocator, "main"), .return_type = ir.INVALID_TYPE };
+    errdefer function.deinit(allocator);
+
+    const tex_id = try function.append_expr(allocator, .{ .ty = stor_tex_ty, .category = .value, .data = .{ .global_ref = 0 } });
+    const coord_id = try function.append_expr(allocator, .{ .ty = vec2u_ty, .category = .value, .data = .{ .int_lit = 42 } });
+    const value_id = try function.append_expr(allocator, .{ .ty = vec4f_ty, .category = .value, .data = .{ .float_lit = 1.0 } });
+    const call_args = try function.append_expr_args(allocator, &.{ tex_id, coord_id, value_id });
+    _ = try function.append_expr(allocator, .{
+        .ty = void_ty,
+        .category = .value,
+        .data = .{ .call = .{
+            .name = try ir.dup_string(allocator, "textureStore"),
+            .kind = .builtin,
+            .args = call_args,
+        } },
+    });
+
+    try module.functions.append(allocator, function);
+    try apply(allocator, &module, .{});
+
+    // textureStore has no level — textureDimensions should get 1 arg
+    const new_coord_id = module.functions.items[0].expr_args.items[call_args.start + 1];
+    const clamp_expr = module.functions.items[0].exprs.items[new_coord_id];
+    try testing.expectEqualStrings("clamp", clamp_expr.data.call.name);
+
+    const clamp_max_id = module.functions.items[0].expr_args.items[clamp_expr.data.call.args.start + 2];
+    const max_expr = module.functions.items[0].exprs.items[clamp_max_id];
+    const td_cast_expr = module.functions.items[0].exprs.items[max_expr.data.binary.lhs];
+    const td_expr = module.functions.items[0].exprs.items[module.functions.items[0].expr_args.items[td_cast_expr.data.construct.args.start]];
+    try testing.expectEqualStrings("textureDimensions", td_expr.data.call.name);
+    try testing.expectEqual(@as(u32, 1), td_expr.data.call.args.len);
+}
+
+// ---- textureSampleLevel integer coordinate edge cases ----
+
+test "robustness: textureSampleLevel with integer-typed coords is not clamped" {
+    const allocator = testing.allocator;
+    var module = try make_test_module(allocator);
+    defer module.deinit();
+
+    const f32_ty = f32_type(&module);
+    const u32_ty = u32_type(&module);
+    const vec4f_ty = try module.types.intern(.{ .vector = .{ .elem = f32_ty, .len = 4 } });
+    const vec2u_ty = try module.types.intern(.{ .vector = .{ .elem = u32_ty, .len = 2 } });
+    const tex_ty = try module.types.intern(.{ .texture_2d = f32_ty });
+    const sampler_ty = try module.types.intern(.{ .sampler = {} });
+
+    try module.globals.append(allocator, .{
+        .name = try ir.dup_string(allocator, "tex"),
+        .ty = tex_ty,
+        .class = .var_,
+        .addr_space = .handle,
+        .binding = .{ .group = 0, .binding = 0 },
+    });
+    try module.globals.append(allocator, .{
+        .name = try ir.dup_string(allocator, "samp"),
+        .ty = sampler_ty,
+        .class = .var_,
+        .addr_space = .handle,
+        .binding = .{ .group = 0, .binding = 1 },
+    });
+
+    var function = ir.Function{ .name = try ir.dup_string(allocator, "main"), .return_type = ir.INVALID_TYPE };
+    errdefer function.deinit(allocator);
+
+    // textureSampleLevel with integer coords (malformed but possible in IR)
+    const tex_id = try function.append_expr(allocator, .{ .ty = tex_ty, .category = .value, .data = .{ .global_ref = 0 } });
+    const samp_id = try function.append_expr(allocator, .{ .ty = sampler_ty, .category = .value, .data = .{ .global_ref = 1 } });
+    const int_uv_id = try function.append_expr(allocator, .{ .ty = vec2u_ty, .category = .value, .data = .{ .int_lit = 10 } });
+    const level_id = try function.append_expr(allocator, .{ .ty = f32_ty, .category = .value, .data = .{ .float_lit = 0.0 } });
+    const args = try function.append_expr_args(allocator, &.{ tex_id, samp_id, int_uv_id, level_id });
+    _ = try function.append_expr(allocator, .{
+        .ty = vec4f_ty,
+        .category = .value,
+        .data = .{ .call = .{
+            .name = try ir.dup_string(allocator, "textureSampleLevel"),
+            .kind = .builtin,
+            .args = args,
+        } },
+    });
+
+    try module.functions.append(allocator, function);
+    const original_count = module.functions.items[0].exprs.items.len;
+    try apply(allocator, &module, .{});
+
+    // textureSampleLevel is not textureLoad/textureStore — no clamping regardless of coord type
+    try testing.expectEqual(original_count, module.functions.items[0].exprs.items.len);
+}
+
+test "robustness: textureSampleGrad and textureSampleCompare are not clamped" {
+    const allocator = testing.allocator;
+    var module = try make_test_module(allocator);
+    defer module.deinit();
+
+    const f32_ty = f32_type(&module);
+    const vec4f_ty = try module.types.intern(.{ .vector = .{ .elem = f32_ty, .len = 4 } });
+    const vec2f_ty = try module.types.intern(.{ .vector = .{ .elem = f32_ty, .len = 2 } });
+    const tex_ty = try module.types.intern(.{ .texture_2d = f32_ty });
+    const sampler_ty = try module.types.intern(.{ .sampler = {} });
+    const depth_tex_ty = try module.types.intern(.{ .texture_depth_2d = {} });
+    const sampler_cmp_ty = try module.types.intern(.{ .sampler_comparison = {} });
+
+    try module.globals.append(allocator, .{
+        .name = try ir.dup_string(allocator, "tex"),
+        .ty = tex_ty,
+        .class = .var_,
+        .addr_space = .handle,
+        .binding = .{ .group = 0, .binding = 0 },
+    });
+    try module.globals.append(allocator, .{
+        .name = try ir.dup_string(allocator, "samp"),
+        .ty = sampler_ty,
+        .class = .var_,
+        .addr_space = .handle,
+        .binding = .{ .group = 0, .binding = 1 },
+    });
+    try module.globals.append(allocator, .{
+        .name = try ir.dup_string(allocator, "depth_tex"),
+        .ty = depth_tex_ty,
+        .class = .var_,
+        .addr_space = .handle,
+        .binding = .{ .group = 0, .binding = 2 },
+    });
+    try module.globals.append(allocator, .{
+        .name = try ir.dup_string(allocator, "samp_cmp"),
+        .ty = sampler_cmp_ty,
+        .class = .var_,
+        .addr_space = .handle,
+        .binding = .{ .group = 0, .binding = 3 },
+    });
+
+    var function = ir.Function{ .name = try ir.dup_string(allocator, "main"), .return_type = ir.INVALID_TYPE };
+    errdefer function.deinit(allocator);
+
+    // textureSampleGrad(tex, samp, uv, ddx, ddy)
+    const tex_id = try function.append_expr(allocator, .{ .ty = tex_ty, .category = .value, .data = .{ .global_ref = 0 } });
+    const samp_id = try function.append_expr(allocator, .{ .ty = sampler_ty, .category = .value, .data = .{ .global_ref = 1 } });
+    const uv_id = try function.append_expr(allocator, .{ .ty = vec2f_ty, .category = .value, .data = .{ .float_lit = 0.5 } });
+    const ddx_id = try function.append_expr(allocator, .{ .ty = vec2f_ty, .category = .value, .data = .{ .float_lit = 0.01 } });
+    const ddy_id = try function.append_expr(allocator, .{ .ty = vec2f_ty, .category = .value, .data = .{ .float_lit = 0.01 } });
+    const grad_args = try function.append_expr_args(allocator, &.{ tex_id, samp_id, uv_id, ddx_id, ddy_id });
+    _ = try function.append_expr(allocator, .{
+        .ty = vec4f_ty,
+        .category = .value,
+        .data = .{ .call = .{
+            .name = try ir.dup_string(allocator, "textureSampleGrad"),
+            .kind = .builtin,
+            .args = grad_args,
+        } },
+    });
+
+    // textureSampleCompare(depth_tex, samp_cmp, uv, ref_value)
+    const dtex_id = try function.append_expr(allocator, .{ .ty = depth_tex_ty, .category = .value, .data = .{ .global_ref = 2 } });
+    const scmp_id = try function.append_expr(allocator, .{ .ty = sampler_cmp_ty, .category = .value, .data = .{ .global_ref = 3 } });
+    const uv_id2 = try function.append_expr(allocator, .{ .ty = vec2f_ty, .category = .value, .data = .{ .float_lit = 0.5 } });
+    const ref_id = try function.append_expr(allocator, .{ .ty = f32_ty, .category = .value, .data = .{ .float_lit = 0.5 } });
+    const cmp_args = try function.append_expr_args(allocator, &.{ dtex_id, scmp_id, uv_id2, ref_id });
+    _ = try function.append_expr(allocator, .{
+        .ty = f32_ty,
+        .category = .value,
+        .data = .{ .call = .{
+            .name = try ir.dup_string(allocator, "textureSampleCompare"),
+            .kind = .builtin,
+            .args = cmp_args,
+        } },
+    });
+
+    // textureSampleCompareLevel(depth_tex, samp_cmp, uv, ref_value)
+    const dtex_id2 = try function.append_expr(allocator, .{ .ty = depth_tex_ty, .category = .value, .data = .{ .global_ref = 2 } });
+    const scmp_id2 = try function.append_expr(allocator, .{ .ty = sampler_cmp_ty, .category = .value, .data = .{ .global_ref = 3 } });
+    const uv_id3 = try function.append_expr(allocator, .{ .ty = vec2f_ty, .category = .value, .data = .{ .float_lit = 0.5 } });
+    const ref_id2 = try function.append_expr(allocator, .{ .ty = f32_ty, .category = .value, .data = .{ .float_lit = 0.5 } });
+    const cmp_lvl_args = try function.append_expr_args(allocator, &.{ dtex_id2, scmp_id2, uv_id3, ref_id2 });
+    _ = try function.append_expr(allocator, .{
+        .ty = f32_ty,
+        .category = .value,
+        .data = .{ .call = .{
+            .name = try ir.dup_string(allocator, "textureSampleCompareLevel"),
+            .kind = .builtin,
+            .args = cmp_lvl_args,
+        } },
+    });
+
+    try module.functions.append(allocator, function);
+    const original_count = module.functions.items[0].exprs.items.len;
+    try apply(allocator, &module, .{});
+
+    // None of these should be clamped — all use float coordinates
+    try testing.expectEqual(original_count, module.functions.items[0].exprs.items.len);
+}
+
+// ---- Dispatch-fit texture precondition enforcement ----
+
+test "robustness: texture_1d resolve_texture_binding matches" {
+    const allocator = testing.allocator;
+    var module = try make_test_module(allocator);
+    defer module.deinit();
+
+    const f32_ty = f32_type(&module);
+    const u32_ty = u32_type(&module);
+    const vec4f_ty = try module.types.intern(.{ .vector = .{ .elem = f32_ty, .len = 4 } });
+    const tex_1d_ty = try module.types.intern(.{ .texture_1d = f32_ty });
+
+    try module.globals.append(allocator, .{
+        .name = try ir.dup_string(allocator, "tex1d"),
+        .ty = tex_1d_ty,
+        .class = .var_,
+        .addr_space = .handle,
+        .binding = .{ .group = 0, .binding = 5 },
+    });
+
+    var function = ir.Function{ .name = try ir.dup_string(allocator, "main"), .return_type = ir.INVALID_TYPE };
+    errdefer function.deinit(allocator);
+
+    // Build textureLoad(tex1d, coord, 0) to verify the 1D scalar clamp path
+    // works end-to-end and resolve_texture_binding accepts texture_1d
+    const tex_id = try function.append_expr(allocator, .{ .ty = tex_1d_ty, .category = .value, .data = .{ .global_ref = 0 } });
+    const coord_id = try function.append_expr(allocator, .{ .ty = u32_ty, .category = .value, .data = .{ .int_lit = 100 } });
+    const level_id = try function.append_expr(allocator, .{ .ty = u32_ty, .category = .value, .data = .{ .int_lit = 0 } });
+    const call_args = try function.append_expr_args(allocator, &.{ tex_id, coord_id, level_id });
+    _ = try function.append_expr(allocator, .{
+        .ty = vec4f_ty,
+        .category = .value,
+        .data = .{ .call = .{
+            .name = try ir.dup_string(allocator, "textureLoad"),
+            .kind = .builtin,
+            .args = call_args,
+        } },
+    });
+
+    try module.functions.append(allocator, function);
+
+    // With dispatch-fit enabled, the 1D texture clamp should still be
+    // injected (no lean proof available in test builds), proving
+    // resolve_texture_binding accepts texture_1d and the scalar path works.
+    try apply(allocator, &module, .{ .elide_proven_texture_bounds = true });
+
+    const new_coord_id = module.functions.items[0].expr_args.items[call_args.start + 1];
+    try testing.expect(new_coord_id != coord_id);
+    const min_expr = module.functions.items[0].exprs.items[new_coord_id];
+    try testing.expectEqualStrings("min", min_expr.data.call.name);
+}

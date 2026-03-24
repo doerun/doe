@@ -1,0 +1,26 @@
+// Layout: element-wise kernel distributed across a 1-D PE row.
+// Each PE processes a contiguous chunk of the input array.
+
+param width: i16;
+
+const memcpy = @import_module("<memcpy/get_params>", .{
+    .width = width,
+    .height = 1,
+});
+
+layout {
+    @set_rectangle(width, 1);
+
+    for (@range(i16, width)) |pe_x| {
+        @set_tile_code(pe_x, 0, "pe_program.csl", .{
+            .memcpy_params = memcpy.get_params(pe_x),
+            .pe_id = pe_x,
+            .num_pes = width,
+        });
+    }
+
+    @export_name("matrixData", [*]u32, true);
+    @export_name("vectorData", [*]u32, true);
+    @export_name("outData", [*]u32, true);
+    @export_name("compute", fn()void);
+}

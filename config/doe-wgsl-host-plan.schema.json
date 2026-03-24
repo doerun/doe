@@ -1,0 +1,138 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "DOE WGSL CSL Host Plan Artifact",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "target",
+    "contract",
+    "hostPlan",
+    "compileTargets"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "artifactKind": {
+      "type": "string",
+      "const": "csl_host_plan"
+    },
+    "target": {
+      "type": "string",
+      "const": "wse3"
+    },
+    "contract": {
+      "type": "string",
+      "const": "explicit_host_plan"
+    },
+    "hostPlan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "peGrid",
+        "kernels",
+        "phases",
+        "eosTokenId"
+      ],
+      "properties": {
+        "peGrid": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["width", "height"],
+          "properties": {
+            "width": { "type": "integer", "minimum": 1 },
+            "height": { "type": "integer", "minimum": 1 }
+          }
+        },
+        "kernels": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "pattern", "count"],
+            "properties": {
+              "name": { "type": "string", "minLength": 1 },
+              "pattern": { "type": "string", "minLength": 1 },
+              "count": { "type": "integer", "minimum": 1 }
+            }
+          }
+        },
+        "phases": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["prefill", "decode"],
+          "properties": {
+            "prefill": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/launchSpec" }
+            },
+            "decode": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/launchSpec" }
+            }
+          }
+        },
+        "eosTokenId": {
+          "type": ["integer", "null"],
+          "minimum": 0
+        }
+      }
+    },
+    "compileTargets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "layout", "peProgram"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "layout": { "type": "string", "minLength": 1 },
+          "peProgram": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "cslc": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["executable", "discovery", "validation"],
+      "properties": {
+        "executable": { "type": "string", "minLength": 1 },
+        "discovery": {
+          "type": "string",
+          "enum": ["explicit_config", "implicit_path_lookup"]
+        },
+        "validation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["command", "minimumVersion"],
+          "properties": {
+            "command": {
+              "type": "array",
+              "prefixItems": [
+                { "type": "string", "minLength": 1 },
+                { "type": "string", "const": "--version" }
+              ],
+              "minItems": 2,
+              "maxItems": 2
+            },
+            "minimumVersion": { "type": "string", "minLength": 1 }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "launchSpec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kernelName", "repeat"],
+      "properties": {
+        "kernelName": { "type": "string", "minLength": 1 },
+        "repeat": { "type": "integer", "minimum": 1 }
+      }
+    }
+  }
+}

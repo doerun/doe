@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "csl_simulator_result",
+  "target": "wse3",
+  "contract": "explicit_simulator_outcome",
+  "simulatorPlanPath": "artifacts/simulator-plan.json",
+  "driverExecutable": "/opt/cerebras/bin/csl-sim",
+  "status": "simulator_succeeded",
+  "termination": "exited",
+  "exitCode": 0,
+  "stdoutPath": "artifacts/stdout.log",
+  "stderrPath": "artifacts/stderr.log",
+  "tracePath": "artifacts/trace.json",
+  "traceProduced": true
+}

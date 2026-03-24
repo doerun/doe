@@ -26,6 +26,7 @@ BENCHMARK_POLICY = BenchmarkMethodologyPolicy(
     release_claim_min_timed_samples=15,
     min_operation_wall_coverage_ratio=0.05,
     max_operation_wall_coverage_asymmetry_ratio=128.0,
+    min_row_timing_floor_ns=5000000,
 )
 
 
@@ -292,6 +293,145 @@ class ClaimabilityMetricScopeTests(unittest.TestCase):
             any("asymmetric versus process wall" in r for r in claimability["reasons"]),
             f"expected operation-scope asymmetry reason, got: {claimability['reasons']}",
         )
+
+    def test_row_timing_floor_blocks_short_upload_rows(self) -> None:
+        """When the median row wall time is below minRowTimingFloorNs (5ms),
+        the workload should be non-claimable due to scheduler-noise risk."""
+        workload = SimpleNamespace(
+            id="upload_write_buffer_1kb",
+            domain="upload",
+            path_asymmetry=False,
+            path_asymmetry_note="",
+        )
+        # Simulate 1KB upload with 1000 repeats: ~0.170ms total row time
+        left_samples = [
+            {
+                "runIndex": i,
+                "elapsedMs": 0.170,
+                "measuredRawMs": 0.170,
+                "measuredMs": 0.170,
+                "timingSource": "doe-execution-row-total-ns",
+                "timing": {
+                    "timingRawMs": 0.170,
+                    "timingNormalizationDivisor": 1.0,
+                    "commandRepeat": 1000,
+                },
+                "commandRepeat": 1000,
+                "timingNormalizationDivisor": 1.0,
+            }
+            for i in range(19)
+        ]
+        right_samples = [
+            {
+                "runIndex": i,
+                "elapsedMs": 0.200,
+                "measuredRawMs": 0.200,
+                "measuredMs": 0.200,
+                "timingSource": "doe-execution-row-total-ns",
+                "timing": {
+                    "timingRawMs": 0.200,
+                    "timingNormalizationDivisor": 1.0,
+                    "commandRepeat": 1000,
+                },
+                "commandRepeat": 1000,
+                "timingNormalizationDivisor": 1.0,
+            }
+            for i in range(19)
+        ]
+        left = {"stats": make_stats(0.170, 0.180), "commandSamples": left_samples}
+        right = {"stats": make_stats(0.200, 0.210), "commandSamples": right_samples}
+        timing_interpretation = make_timing_interpretation(
+            headline_p50=0.170,
+            headline_p95=0.180,
+            headline_delta_p50=15.0,
+            headline_delta_p95=14.0,
+        )
+
+        claimability = assess_claimability(
+            mode="local",
+            min_timed_samples=19,
+            workload=workload,
+            left=left,
+            right=right,
+            delta={"p50Percent": 15.0, "p95Percent": 14.0, "p99Percent": 14.0},
+            timing_interpretation=timing_interpretation,
+            comparability={"comparable": True},
+            benchmark_policy=BENCHMARK_POLICY,
+        )
+
+        self.assertFalse(claimability["claimable"])
+        self.assertTrue(
+            any("scheduler-noise floor" in r for r in claimability["reasons"]),
+            f"expected scheduler-noise floor reason, got: {claimability['reasons']}",
+        )
+
+    def test_row_timing_floor_allows_long_upload_rows(self) -> None:
+        """When the median row wall time is above minRowTimingFloorNs (5ms),
+        the row timing floor check should not block claimability."""
+        workload = SimpleNamespace(
+            id="upload_write_buffer_1kb",
+            domain="upload",
+            path_asymmetry=False,
+            path_asymmetry_note="",
+        )
+        # Simulate 1KB upload with 50000 repeats: ~8.5ms total row time
+        left_samples = [
+            {
+                "runIndex": i,
+                "elapsedMs": 8.5,
+                "measuredRawMs": 8.5,
+                "measuredMs": 8.5,
+                "timingSource": "doe-execution-row-total-ns",
+                "timing": {
+                    "timingRawMs": 8.5,
+                    "timingNormalizationDivisor": 1.0,
+                    "commandRepeat": 50000,
+                },
+                "commandRepeat": 50000,
+                "timingNormalizationDivisor": 1.0,
+            }
+            for i in range(19)
+        ]
+        right_samples = [
+            {
+                "runIndex": i,
+                "elapsedMs": 10.0,
+                "measuredRawMs": 10.0,
+                "measuredMs": 10.0,
+                "timingSource": "doe-execution-row-total-ns",
+                "timing": {
+                    "timingRawMs": 10.0,
+                    "timingNormalizationDivisor": 1.0,
+                    "commandRepeat": 50000,
+                },
+                "commandRepeat": 50000,
+                "timingNormalizationDivisor": 1.0,
+            }
+            for i in range(19)
+        ]
+        left = {"stats": make_stats(8.5, 9.0), "commandSamples": left_samples}
+        right = {"stats": make_stats(10.0, 10.5), "commandSamples": right_samples}
+        timing_interpretation = make_timing_interpretation(
+            headline_p50=8.5,
+            headline_p95=9.0,
+            headline_delta_p50=15.0,
+            headline_delta_p95=14.0,
+        )
+
+        claimability = assess_claimability(
+            mode="local",
+            min_timed_samples=19,
+            workload=workload,
+            left=left,
+            right=right,
+            delta={"p50Percent": 15.0, "p95Percent": 14.0, "p99Percent": 14.0},
+            timing_interpretation=timing_interpretation,
+            comparability={"comparable": True},
+            benchmark_policy=BENCHMARK_POLICY,
+        )
+
+        floor_reasons = [r for r in claimability["reasons"] if "scheduler-noise floor" in r]
+        self.assertEqual(floor_reasons, [], f"unexpected floor reasons: {floor_reasons}")
 
     def test_does_not_switch_when_headline_tail_is_not_positive(self) -> None:
         workload = SimpleNamespace(

@@ -6,7 +6,6 @@ import { globals } from './webgpu-constants.js';
 import {
   createDoeRuntime as createDoeRuntimeCli,
   runDawnVsDoeCompare as runDawnVsDoeCompareCli,
-  writeSemanticOperatorBundle as writeSemanticOperatorBundleCli,
 } from './runtime-cli.js';
 import { loadDoeBuildMetadata } from './build-metadata.js';
 import {
@@ -1762,7 +1761,6 @@ export function providerInfo() {
  * - This is package/runtime orchestration, not the in-process WebGPU device path.
  */
 export const createDoeRuntime = createDoeRuntimeCli;
-export const writeSemanticOperatorBundle = writeSemanticOperatorBundleCli;
 
 /**
  * Run the Dawn-vs-Doe compare harness from the full package surface.
@@ -1808,6 +1806,5 @@ export default {
   requestDevice,
   providerInfo,
   createDoeRuntime,
-  writeSemanticOperatorBundle,
   runDawnVsDoeCompare,
 };

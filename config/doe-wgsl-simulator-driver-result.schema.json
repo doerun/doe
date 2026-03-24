@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "config/doe-wgsl-simulator-driver-result.schema.json",
+  "title": "DOE WGSL simulator driver result",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "target",
+    "contract",
+    "simulatorPlanPath",
+    "runtimeConfigPath",
+    "compile",
+    "run"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "artifactKind": { "const": "csl_simulator_driver_result" },
+    "target": { "type": "string", "minLength": 1 },
+    "contract": { "const": "explicit_driver_outcome" },
+    "simulatorPlanPath": { "type": "string", "minLength": 1 },
+    "compilerExecutable": { "type": ["string", "null"] },
+    "runtimeConfigPath": { "type": "string", "minLength": 1 },
+    "compile": {
+      "type": "object",
+      "required": ["attempted", "status", "reason", "targets"],
+      "properties": {
+        "attempted": { "type": "boolean" },
+        "status": { "enum": ["succeeded", "blocked", "failed"] },
+        "reason": { "type": "string", "minLength": 1 },
+        "targets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "layoutPath", "peProgramPath", "outputDir", "status"],
+            "properties": {
+              "name": { "type": "string", "minLength": 1 },
+              "layoutPath": { "type": "string", "minLength": 1 },
+              "peProgramPath": { "type": "string", "minLength": 1 },
+              "outputDir": { "type": "string", "minLength": 1 },
+              "status": { "enum": ["succeeded", "blocked", "failed"] },
+              "reason": { "type": "string" },
+              "exitCode": { "type": "integer" },
+              "stdoutPath": { "type": "string" },
+              "stderrPath": { "type": "string" },
+              "command": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            },
+            "additionalProperties": true
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "run": {
+      "type": "object",
+      "required": ["attempted", "status", "reason", "tracePath", "traceProduced", "stdoutPath", "stderrPath"],
+      "properties": {
+        "attempted": { "type": "boolean" },
+        "status": { "enum": ["succeeded", "blocked", "failed"] },
+        "reason": { "type": "string", "minLength": 1 },
+        "command": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "exitCode": { "type": "integer" },
+        "tracePath": { "type": "string", "minLength": 1 },
+        "traceProduced": { "type": "boolean" },
+        "stdoutPath": { "type": "string", "minLength": 1 },
+        "stderrPath": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

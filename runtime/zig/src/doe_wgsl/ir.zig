@@ -572,6 +572,7 @@ pub const DispatchPrecondition = struct {
 };
 
 pub const TextureDispatchPreconditionKind = enum {
+    gid_coords_1d,
     gid_coords_2d,
     gid_coords_3d,
 };

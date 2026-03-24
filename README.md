@@ -32,6 +32,16 @@ surfaces, browser bring-up, proof artifacts, tracing, and benchmarking.
   tooling
 - [`bench`](bench/README.md): Dawn-vs-Doe comparison harnesses and artifacts
 
+## Project split by feature, backend, and packaging
+
+See [runtime/zig/README.md](runtime/zig/README.md), and this package mapping:
+
+- API surface split (`compute`/`headless`/`full`) is defined in the runtime build system and runtime surface docs.
+- Backend routing (`metal`/`vulkan`/`d3d12`) is documented in backend architecture docs and source.
+- Package entrypoint split is documented in:
+  - [doe-gpu package README](packages/doe-gpu/README.md)
+  - package exports in [doe-gpu package.json](packages/doe-gpu/package.json)
+
 ## Why Doe
 
 Doe is built around a simple split: checks that can be resolved ahead of time
@@ -77,6 +87,75 @@ For runtime contributors:
 - start with [`runtime/zig/README.md`](runtime/zig/README.md)
 - then read [`bench/README.md`](bench/README.md) if your change affects
   performance or comparability
+
+## Validation clusters and preferred order
+
+When changes affect runtime behavior and performance claims, use this cluster order:
+
+1. Runtime correctness tests (`runtime/zig/tests`) via [`runtime/zig/README.md`](runtime/zig/README.md).
+2. Benchmark and comparison harnesses (native/package/drop-in/diagnostic) in [`bench/README.md`](bench/README.md).
+3. Claim and comparability gates in [`bench/README.md`](bench/README.md) (blocking/release gate cluster).
+4. Pipeline and generated-artifact tests:
+   [`pipeline/agent/test_mine_quirks.py`](pipeline/agent/test_mine_quirks.py),
+   [`pipeline/trace/test_trace_tools.py`](pipeline/trace/test_trace_tools.py),
+   Lean pipeline tests in [`pipeline/lean`](pipeline/lean/README.md).
+5. Browser tracks (`browser/chromium`):
+   smoke, projection, and browser-gate workflows are in
+   [`browser/chromium/README.md`](browser/chromium/README.md) and stay separate
+   from native/package claim lanes.
+
+This order keeps the repo moving from implementation correctness → performance claim
+production → proof/instrumentation validation → browser evidence.
+
+Suggested command surface:
+
+1) Runtime correctness tests
+
+```bash
+cd runtime/zig
+zig build test
+```
+
+2) Benchmarks and comparison harnesses (native/package/drop-in/diagnostic)
+
+```bash
+python3 bench/native-compare/compare_dawn_vs_doe.py --help
+python3 bench/run_bench.py --help
+python3 bench/package-compare/node/compare.js --help
+```
+
+3) Claim and comparability gates
+
+```bash
+python3 bench/run_blocking_gates.py --help
+```
+
+4) Pipeline and generated-artifact tests
+
+```bash
+python3 -m pytest \
+  pipeline/agent/test_mine_quirks.py \
+  pipeline/trace/test_trace_tools.py \
+  pipeline/lean/test_proof_pipeline.py \
+  pipeline/lean/test_lean_source.py
+```
+
+5) Browser tracks (preflight + smoke/bench)
+
+```bash
+python3 browser/chromium/scripts/run-smoke.sh --help
+python3 bench/browser/browser_gate.py --help
+```
+
+Evidence cube (optional, run after comparable report generation)
+
+```bash
+python3 bench/build_benchmark_cube.py --report-glob "bench/out/**/dawn-vs-doe*.json"
+```
+
+The cube is not for “smarter benchmarking”; it is an evidence normalization layer.
+It is useful for release-grade comparison visibility across lanes and workload
+coverage, and it tracks conformance/legacy provenance (`sourceConformance`) per row.
 
 ## Quick start
 

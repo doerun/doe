@@ -235,6 +235,26 @@
           "benchmarkClass": "directional",
           "directionalReason": "dawn_limit",
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+        },
+        "local_d3d12_extended": {
+          "comparabilityNotes": "Directional-only D3D12 parity scaffold. This workload is included in local_d3d12_extended to mirror the common Metal/Vulkan extended set, but it is excluded from governed strict D3D12 comparable lanes pending Windows-backed evidence and D3D12-specific Dawn mapping validation.",
+          "commandsPath": "examples/matrix_vector_mul_32768x2048_commands.json",
+          "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
+          "vendor": "generic",
+          "api": "d3d12",
+          "family": "d3d12",
+          "driver": "1.0.0",
+          "extraArgs": [
+            "--kernel-root",
+            "bench/kernels"
+          ],
+          "comparable": false,
+          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+          "dawnFilter": "@autodiscover",
+          "benchmarkClass": "directional",
+          "applesToApplesVetted": false,
+          "claimEligible": false,
+          "default": false
         }
       }
     },
@@ -384,6 +404,26 @@
           "benchmarkClass": "directional",
           "directionalReason": "dawn_limit",
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+        },
+        "local_d3d12_extended": {
+          "comparabilityNotes": "Directional-only D3D12 parity scaffold. This workload is included in local_d3d12_extended to mirror the common Metal/Vulkan extended set, but it is excluded from governed strict D3D12 comparable lanes pending Windows-backed evidence and D3D12-specific Dawn mapping validation.",
+          "commandsPath": "examples/matrix_vector_mul_32768x2048_swizzle1_commands.json",
+          "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
+          "vendor": "generic",
+          "api": "d3d12",
+          "family": "d3d12",
+          "driver": "1.0.0",
+          "extraArgs": [
+            "--kernel-root",
+            "bench/kernels"
+          ],
+          "comparable": false,
+          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+          "dawnFilter": "@autodiscover",
+          "benchmarkClass": "directional",
+          "applesToApplesVetted": false,
+          "claimEligible": false,
+          "default": false
         }
       }
     },
@@ -535,6 +575,26 @@
           "benchmarkClass": "directional",
           "directionalReason": "dawn_limit",
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+        },
+        "local_d3d12_extended": {
+          "comparabilityNotes": "Directional-only D3D12 parity scaffold. This workload is included in local_d3d12_extended to mirror the common Metal/Vulkan extended set, but it is excluded from governed strict D3D12 comparable lanes pending Windows-backed evidence and D3D12-specific Dawn mapping validation.",
+          "commandsPath": "examples/matrix_vector_mul_32768x2048_workgroupshared_swizzle1_commands.json",
+          "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
+          "vendor": "generic",
+          "api": "d3d12",
+          "family": "d3d12",
+          "driver": "1.0.0",
+          "extraArgs": [
+            "--kernel-root",
+            "bench/kernels"
+          ],
+          "comparable": false,
+          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+          "dawnFilter": "@autodiscover",
+          "benchmarkClass": "directional",
+          "applesToApplesVetted": false,
+          "claimEligible": false,
+          "default": false
         }
       }
     },
@@ -1056,7 +1116,7 @@
       },
       "lanes": {
         "generic": {
-          "comparabilityNotes": "Dawn delegate does not execute this workload (0 dispatches, 0 encode); comparable: false until Dawn-side implementation is verified.",
+          "comparabilityNotes": "Directional-only pending fresh structural-equivalence evidence on this lane. Historical promotion notes and current catalog state diverged, so this workload remains excluded from strict comparable claim lanes until a new report is recorded.",
           "commandsPath": "examples/async_pipeline_diagnostics_commands.json",
           "quirksPath": "examples/quirks/intel_gen12_temp_buffer_list.json",
           "vendor": "intel",
@@ -1088,7 +1148,7 @@
           "timingNormalizationNote": "Apples-to-apples only: Fawn repeats async diagnostics command and normalizes by async sub-steps to reduce fixed process/setup skew."
         },
         "amd_vulkan_superset_doe_vs_doe": {
-          "comparabilityNotes": "Dawn delegate does not execute this workload (0 dispatches, 0 encode); comparable: false until Dawn-side implementation is verified.",
+          "comparabilityNotes": "Directional-only pending fresh structural-equivalence evidence on this lane. Historical promotion notes and current catalog state diverged, so this workload remains excluded from strict comparable claim lanes until a new report is recorded.",
           "commandsPath": "examples/async_pipeline_diagnostics_commands.json",
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
           "vendor": "amd",
@@ -1099,7 +1159,7 @@
           "rightTimingDivisor": 1.0
         },
         "amd_vulkan_extended": {
-          "comparabilityNotes": "Dawn delegate does not execute this workload (0 dispatches, 0 encode); comparable: false until Dawn-side implementation is verified.",
+          "comparabilityNotes": "Directional-only pending fresh structural-equivalence evidence on this lane. Historical promotion notes and current catalog state diverged, so this workload remains excluded from strict comparable claim lanes until a new report is recorded.",
           "commandsPath": "examples/async_pipeline_diagnostics_commands.json",
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
           "vendor": "amd",
@@ -1110,7 +1170,7 @@
           "rightTimingDivisor": 1.0
         },
         "amd_vulkan_extended_strict": {
-          "comparabilityNotes": "Dawn delegate does not execute this workload (0 dispatches, 0 encode); comparable: false until Dawn-side implementation is verified.",
+          "comparabilityNotes": "Directional-only pending fresh structural-equivalence evidence on this lane. Historical promotion notes and current catalog state diverged, so this workload remains excluded from strict comparable claim lanes until a new report is recorded.",
           "commandsPath": "examples/async_pipeline_diagnostics_commands.json",
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
           "vendor": "amd",
@@ -1121,7 +1181,7 @@
           "rightTimingDivisor": 1.0
         },
         "apple_metal_extended": {
-          "comparabilityNotes": "Dawn delegate does not execute this workload (0 dispatches, 0 encode); comparable: false until Dawn-side implementation is verified.",
+          "comparabilityNotes": "Directional-only on Apple Metal pending fresh governed structural-equivalence evidence. A targeted Metal rerun showed no stronger runtime mismatch than contract-level non-comparable status, so strict comparable promotion remains withheld until a governed report is recorded.",
           "commandsPath": "examples/async_pipeline_diagnostics_commands.json",
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
           "vendor": "amd",
@@ -1130,6 +1190,24 @@
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
           "rightTimingDivisor": 1.0
+        },
+        "local_d3d12_extended": {
+          "comparabilityNotes": "Directional-only D3D12 parity scaffold. This workload is included in local_d3d12_extended to mirror the common Metal/Vulkan extended set, but it is excluded from governed strict D3D12 comparable lanes pending Windows-backed evidence and D3D12-specific Dawn mapping validation.",
+          "commandsPath": "examples/async_pipeline_diagnostics_commands.json",
+          "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
+          "vendor": "generic",
+          "family": "d3d12",
+          "driver": "1.0.0",
+          "leftTimingDivisor": 1.0,
+          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+          "rightTimingDivisor": 1.0,
+          "api": "d3d12",
+          "dawnFilter": "@autodiscover",
+          "comparable": false,
+          "benchmarkClass": "directional",
+          "applesToApplesVetted": false,
+          "claimEligible": false,
+          "default": false
         }
       }
     },
@@ -1445,6 +1523,24 @@
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
           "rightTimingDivisor": 1.0
+        },
+        "local_d3d12_extended": {
+          "comparabilityNotes": "Directional-only D3D12 parity scaffold. This workload is included in local_d3d12_extended to mirror the common Metal/Vulkan extended set, but it is excluded from governed strict D3D12 comparable lanes pending Windows-backed evidence and D3D12-specific Dawn mapping validation.",
+          "commandsPath": "examples/draw_call_render_bundle_dynamic_bindings_commands.json",
+          "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
+          "vendor": "generic",
+          "family": "d3d12",
+          "driver": "1.0.0",
+          "comparable": false,
+          "leftTimingDivisor": 1.0,
+          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+          "rightTimingDivisor": 1.0,
+          "api": "d3d12",
+          "dawnFilter": "@autodiscover",
+          "benchmarkClass": "directional",
+          "applesToApplesVetted": false,
+          "claimEligible": false,
+          "default": false
         }
       }
     },
@@ -1575,6 +1671,26 @@
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
           "rightTimingDivisor": 1.0
+        },
+        "local_d3d12_extended": {
+          "comparabilityNotes": "Directional-only D3D12 parity scaffold. This workload is included in local_d3d12_extended to mirror the common Metal/Vulkan extended set, but it is excluded from governed strict D3D12 comparable lanes pending Windows-backed evidence and D3D12-specific Dawn mapping validation.",
+          "commandsPath": "examples/draw_call_render_bundle_dynamic_pipeline_commands.json",
+          "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
+          "vendor": "generic",
+          "family": "d3d12",
+          "driver": "1.0.0",
+          "comparable": false,
+          "leftCommandRepeat": 10,
+          "rightCommandRepeat": 10,
+          "leftTimingDivisor": 1.0,
+          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+          "rightTimingDivisor": 1.0,
+          "api": "d3d12",
+          "dawnFilter": "@autodiscover",
+          "benchmarkClass": "directional",
+          "applesToApplesVetted": false,
+          "claimEligible": false,
+          "default": false
         }
       }
     },
@@ -1673,13 +1789,29 @@
           "timingNormalizationNote": "Directional-only: Apples-to-apples macro workload: normalize to per-draw units over 200k indexed draws with deferred queue sync."
         },
         "apple_metal_extended": {
-          "comparabilityNotes": "Directional-only contract. Dawn filter mapping is diagnostic and excluded from strict apples-to-apples claim lanes.",
+          "comparabilityNotes": "Directional-only on Apple Metal. A targeted Metal rerun showed no stronger runtime mismatch than contract-level non-comparable status; the current Dawn mapping remains diagnostic rather than a governed apples-to-apples draw contract.",
           "commandsPath": "examples/draw_call_indexed_proxy_macro_commands.json",
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
           "vendor": "amd",
           "family": "gfx11",
           "driver": "24.0.0",
           "timingNormalizationNote": "Directional-only: Apples-to-apples macro workload: normalize to per-draw units over 200k indexed draws with deferred queue sync."
+        },
+        "local_d3d12_extended": {
+          "comparabilityNotes": "Directional-only D3D12 parity scaffold. This workload is included in local_d3d12_extended to mirror the common Metal/Vulkan extended set, but it is excluded from governed strict D3D12 comparable lanes pending Windows-backed evidence and D3D12-specific Dawn mapping validation.",
+          "commandsPath": "examples/draw_call_indexed_proxy_macro_commands.json",
+          "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
+          "vendor": "generic",
+          "family": "d3d12",
+          "driver": "1.0.0",
+          "timingNormalizationNote": "Directional-only: Apples-to-apples macro workload: normalize to per-draw units over 200k indexed draws with deferred queue sync.",
+          "api": "d3d12",
+          "dawnFilter": "@autodiscover",
+          "comparable": false,
+          "benchmarkClass": "directional",
+          "applesToApplesVetted": false,
+          "claimEligible": false,
+          "default": false
         }
       }
     },
@@ -1794,7 +1926,7 @@
           "timingNormalizationNote": "Directional-only: Both sides report per-draw throughput units; Fawn issues indexed draws and Dawn uses the closest draw-call throughput proxy variant. Repeat=10 plus deferred queue sync reduces per-sample setup/sync overhead while preserving per-draw normalization."
         },
         "apple_metal_extended": {
-          "comparabilityNotes": "Directional-only draw-indexed proxy. Mapped to Dawn DrawCallPerf DynamicVertexBuffer as the nearest proxy; not strict apples-to-apples.",
+          "comparabilityNotes": "Directional-only draw-indexed proxy on Apple Metal. A targeted Metal rerun showed no stronger runtime mismatch than contract-level non-comparable status; the current Dawn mapping remains nearest-proxy rather than strict apples-to-apples.",
           "commandsPath": "examples/draw_call_indexed_proxy_commands.json",
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
           "vendor": "amd",
@@ -1803,6 +1935,23 @@
           "comparable": false,
           "leftTimingDivisor": 20000,
           "timingNormalizationNote": "Directional-only: Both sides report per-draw throughput units; Fawn issues indexed draws and Dawn uses the closest draw-call throughput proxy variant. Repeat=10 plus deferred queue sync reduces per-sample setup/sync overhead while preserving per-draw normalization."
+        },
+        "local_d3d12_extended": {
+          "comparabilityNotes": "Directional-only D3D12 parity scaffold. This workload is included in local_d3d12_extended to mirror the common Metal/Vulkan extended set, but it is excluded from governed strict D3D12 comparable lanes pending Windows-backed evidence and D3D12-specific Dawn mapping validation.",
+          "commandsPath": "examples/draw_call_indexed_proxy_commands.json",
+          "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
+          "vendor": "generic",
+          "family": "d3d12",
+          "driver": "1.0.0",
+          "comparable": false,
+          "leftTimingDivisor": 20000,
+          "timingNormalizationNote": "Directional-only: Both sides report per-draw throughput units; Fawn issues indexed draws and Dawn uses the closest draw-call throughput proxy variant. Repeat=10 plus deferred queue sync reduces per-sample setup/sync overhead while preserving per-draw normalization.",
+          "api": "d3d12",
+          "dawnFilter": "@autodiscover",
+          "benchmarkClass": "directional",
+          "applesToApplesVetted": false,
+          "claimEligible": false,
+          "default": false
         }
       }
     },
@@ -1931,6 +2080,26 @@
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
           "rightTimingDivisor": 1.0
+        },
+        "local_d3d12_extended": {
+          "comparabilityNotes": "Directional-only D3D12 parity scaffold. This workload is included in local_d3d12_extended to mirror the common Metal/Vulkan extended set, but it is excluded from governed strict D3D12 comparable lanes pending Windows-backed evidence and D3D12-specific Dawn mapping validation.",
+          "commandsPath": "examples/draw_call_redundant_pipeline_bindings_commands.json",
+          "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
+          "vendor": "generic",
+          "family": "d3d12",
+          "driver": "1.0.0",
+          "comparable": false,
+          "leftCommandRepeat": 10,
+          "rightCommandRepeat": 10,
+          "leftTimingDivisor": 1.0,
+          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+          "rightTimingDivisor": 1.0,
+          "api": "d3d12",
+          "dawnFilter": "@autodiscover",
+          "benchmarkClass": "directional",
+          "applesToApplesVetted": false,
+          "claimEligible": false,
+          "default": false
         }
       }
     },
@@ -2051,6 +2220,24 @@
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
           "rightTimingDivisor": 1.0
+        },
+        "local_d3d12_extended": {
+          "comparabilityNotes": "Directional-only D3D12 parity scaffold. This workload is included in local_d3d12_extended to mirror the common Metal/Vulkan extended set, but it is excluded from governed strict D3D12 comparable lanes pending Windows-backed evidence and D3D12-specific Dawn mapping validation.",
+          "commandsPath": "examples/draw_call_state_bindings_commands.json",
+          "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
+          "vendor": "generic",
+          "family": "d3d12",
+          "driver": "1.0.0",
+          "comparable": false,
+          "leftTimingDivisor": 1.0,
+          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+          "rightTimingDivisor": 1.0,
+          "api": "d3d12",
+          "dawnFilter": "@autodiscover",
+          "benchmarkClass": "directional",
+          "applesToApplesVetted": false,
+          "claimEligible": false,
+          "default": false
         }
       }
     },
@@ -2171,6 +2358,24 @@
           "comparable": true,
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+        },
+        "local_d3d12_extended": {
+          "description": "Apples-to-apples macro render throughput workload using a 200k-draw command stream.",
+          "comparabilityNotes": "Directional-only D3D12 parity scaffold. This workload is included in local_d3d12_extended to mirror the common Metal/Vulkan extended set, but it is excluded from governed strict D3D12 comparable lanes pending Windows-backed evidence and D3D12-specific Dawn mapping validation.",
+          "commandsPath": "examples/draw_call_proxy_macro_commands.json",
+          "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
+          "vendor": "generic",
+          "family": "d3d12",
+          "driver": "1.0.0",
+          "comparable": false,
+          "leftTimingDivisor": 1.0,
+          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+          "api": "d3d12",
+          "dawnFilter": "@autodiscover",
+          "benchmarkClass": "directional",
+          "applesToApplesVetted": false,
+          "claimEligible": false,
+          "default": false
         }
       }
     },
@@ -2358,6 +2563,26 @@
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
           "dawnFilter": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151",
           "rightTimingDivisor": 1.0
+        },
+        "local_d3d12_extended": {
+          "name": "render draw throughput",
+          "description": "Native render/draw throughput workload aligned to Dawn DrawCallPerf base variant.",
+          "comparabilityNotes": "Directional-only D3D12 parity scaffold. This workload is included in local_d3d12_extended to mirror the common Metal/Vulkan extended set, but it is excluded from governed strict D3D12 comparable lanes pending Windows-backed evidence and D3D12-specific Dawn mapping validation.",
+          "commandsPath": "examples/draw_call_proxy_commands.json",
+          "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
+          "vendor": "generic",
+          "api": "d3d12",
+          "family": "d3d12",
+          "driver": "1.0.0",
+          "comparable": false,
+          "leftTimingDivisor": 1.0,
+          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+          "dawnFilter": "@autodiscover",
+          "rightTimingDivisor": 1.0,
+          "benchmarkClass": "directional",
+          "applesToApplesVetted": false,
+          "claimEligible": false,
+          "default": false
         }
       }
     },
@@ -2462,7 +2687,7 @@
         },
         "apple_metal_extended": {
           "description": "Directional surface lifecycle proxy benchmark covering create/release surface path on headless adapters.",
-          "comparabilityNotes": "Directional-only surface lifecycle proxy. This workload is not comparable for strict claim lanes because Dawn perf coverage does not expose a matching create/release-surface benchmark contract.",
+          "comparabilityNotes": "Directional-only surface lifecycle proxy on Apple Metal. A targeted Metal rerun showed no stronger runtime mismatch than contract-level non-comparable status; Dawn still lacks a matching create/release-surface benchmark contract for strict comparable claim lanes.",
           "commandsPath": "examples/surface_presentation_commands.json",
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
           "vendor": "amd",
@@ -2470,6 +2695,23 @@
           "driver": "24.0.0",
           "comparable": false,
           "timingNormalizationNote": "Directional proxy only: normalize per create/release operation pair."
+        },
+        "local_d3d12_extended": {
+          "description": "Directional surface lifecycle proxy benchmark covering create/release surface path on headless adapters.",
+          "comparabilityNotes": "Directional-only D3D12 parity scaffold. This workload is included in local_d3d12_extended to mirror the common Metal/Vulkan extended set, but it is excluded from governed strict D3D12 comparable lanes pending Windows-backed evidence and D3D12-specific Dawn mapping validation.",
+          "commandsPath": "examples/surface_presentation_commands.json",
+          "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
+          "vendor": "generic",
+          "family": "d3d12",
+          "driver": "1.0.0",
+          "comparable": false,
+          "timingNormalizationNote": "Directional proxy only: normalize per create/release operation pair.",
+          "api": "d3d12",
+          "dawnFilter": "@autodiscover",
+          "benchmarkClass": "directional",
+          "applesToApplesVetted": false,
+          "claimEligible": false,
+          "default": false
         }
       }
     },
@@ -2601,6 +2843,25 @@
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
           "rightTimingDivisor": 1.0
+        },
+        "local_d3d12_extended": {
+          "comparabilityNotes": "Directional-only D3D12 parity scaffold. This workload is included in local_d3d12_extended to mirror the common Metal/Vulkan extended set, but it is excluded from governed strict D3D12 comparable lanes pending Windows-backed evidence and D3D12-specific Dawn mapping validation.",
+          "commandsPath": "examples/texture_sampler_write_query_destroy_commands.json",
+          "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
+          "vendor": "generic",
+          "family": "d3d12",
+          "driver": "1.0.0",
+          "comparable": false,
+          "rightCommandRepeat": 10,
+          "leftTimingDivisor": 1.0,
+          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+          "rightTimingDivisor": 1.0,
+          "api": "d3d12",
+          "dawnFilter": "@autodiscover",
+          "benchmarkClass": "directional",
+          "applesToApplesVetted": false,
+          "claimEligible": false,
+          "default": false
         }
       }
     },
@@ -2721,6 +2982,24 @@
           "comparable": true,
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+        },
+        "local_d3d12_extended": {
+          "description": "Apples-to-apples macro texture lifecycle workload with a larger render-draw phase for setup amortization analysis.",
+          "comparabilityNotes": "Directional-only D3D12 parity scaffold. This workload is included in local_d3d12_extended to mirror the common Metal/Vulkan extended set, but it is excluded from governed strict D3D12 comparable lanes pending Windows-backed evidence and D3D12-specific Dawn mapping validation.",
+          "commandsPath": "examples/texture_sampler_write_query_destroy_macro_commands.json",
+          "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
+          "vendor": "generic",
+          "family": "d3d12",
+          "driver": "1.0.0",
+          "comparable": false,
+          "leftTimingDivisor": 1.0,
+          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+          "api": "d3d12",
+          "dawnFilter": "@autodiscover",
+          "benchmarkClass": "directional",
+          "applesToApplesVetted": false,
+          "claimEligible": false,
+          "default": false
         }
       }
     },
@@ -2852,6 +3131,25 @@
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
           "rightTimingDivisor": 1.0
+        },
+        "local_d3d12_extended": {
+          "comparabilityNotes": "Directional-only D3D12 parity scaffold. This workload is included in local_d3d12_extended to mirror the common Metal/Vulkan extended set, but it is excluded from governed strict D3D12 comparable lanes pending Windows-backed evidence and D3D12-specific Dawn mapping validation.",
+          "commandsPath": "examples/texture_sampler_write_query_destroy_commands.json",
+          "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
+          "vendor": "generic",
+          "family": "d3d12",
+          "driver": "1.0.0",
+          "comparable": false,
+          "rightCommandRepeat": 10,
+          "leftTimingDivisor": 1.0,
+          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+          "rightTimingDivisor": 1.0,
+          "api": "d3d12",
+          "dawnFilter": "@autodiscover",
+          "benchmarkClass": "directional",
+          "applesToApplesVetted": false,
+          "claimEligible": false,
+          "default": false
         }
       }
     },
@@ -3006,7 +3304,7 @@
           "rightTimingDivisor": 1.0
         },
         "apple_metal_extended": {
-          "comparabilityNotes": "Directional-only on this Metal host lane for now: Doe doe_metal currently reports execution errors for this workload shape, so it is excluded from strict comparable/claim lanes until backend support is restored.",
+          "comparabilityNotes": "Directional-only on this Metal host lane pending fresh governed apples-to-apples evidence. A targeted Metal rerun did not reproduce the older Doe execution-error note, so strict comparable status remains withheld until a governed report is recorded.",
           "commandsPath": "examples/texture_raster_proxy_commands.json",
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
           "vendor": "amd",
@@ -3023,6 +3321,32 @@
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
           "rightTimingDivisor": 1.0
+        },
+        "local_d3d12_extended": {
+          "comparabilityNotes": "Directional-only D3D12 parity scaffold. This workload is included in local_d3d12_extended to mirror the common Metal/Vulkan extended set, but it is excluded from governed strict D3D12 comparable lanes pending Windows-backed evidence and D3D12-specific Dawn mapping validation.",
+          "commandsPath": "examples/texture_raster_proxy_commands.json",
+          "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
+          "vendor": "generic",
+          "family": "d3d12",
+          "driver": "1.0.0",
+          "extraArgs": [
+            "--kernel-root",
+            "bench/kernels",
+            "--gpu-timestamp-mode",
+            "off"
+          ],
+          "comparable": false,
+          "leftCommandRepeat": 500,
+          "rightCommandRepeat": 500,
+          "leftTimingDivisor": 1.0,
+          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+          "rightTimingDivisor": 1.0,
+          "api": "d3d12",
+          "dawnFilter": "@autodiscover",
+          "benchmarkClass": "directional",
+          "applesToApplesVetted": false,
+          "claimEligible": false,
+          "default": false
         }
       }
     },
@@ -3355,6 +3679,23 @@
           "vendor": "amd",
           "family": "gfx11",
           "driver": "24.0.0"
+        },
+        "local_d3d12_extended": {
+          "comparabilityNotes": "Directional-only D3D12 parity scaffold. This workload is included in local_d3d12_extended to mirror the common Metal/Vulkan extended set, but it is excluded from governed strict D3D12 comparable lanes pending Windows-backed evidence and D3D12-specific Dawn mapping validation.",
+          "commandsPath": "examples/upload_1gb_commands.json",
+          "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
+          "vendor": "generic",
+          "family": "d3d12",
+          "driver": "1.0.0",
+          "pathAsymmetry": true,
+          "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored.",
+          "api": "d3d12",
+          "dawnFilter": "@autodiscover",
+          "comparable": false,
+          "benchmarkClass": "directional",
+          "applesToApplesVetted": false,
+          "claimEligible": false,
+          "default": false
         }
       }
     },
@@ -3431,10 +3772,10 @@
           "vendor": "amd",
           "family": "gfx11",
           "driver": "24.0.0",
-          "rightCommandRepeat": 500,
+          "rightCommandRepeat": 50000,
           "rightIgnoreFirstOps": 1,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-          "leftCommandRepeat": 500,
+          "leftCommandRepeat": 50000,
           "leftIgnoreFirstOps": 1
         },
         "amd_vulkan_superset": {
@@ -3444,12 +3785,12 @@
           "vendor": "amd",
           "family": "gfx11",
           "driver": "24.0.0",
-          "rightCommandRepeat": 500,
+          "rightCommandRepeat": 50000,
           "rightIgnoreFirstOps": 1,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
           "pathAsymmetry": true,
           "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored.",
-          "leftCommandRepeat": 500,
+          "leftCommandRepeat": 50000,
           "leftIgnoreFirstOps": 1
         },
         "amd_vulkan_superset_native_supported": {
@@ -3459,10 +3800,10 @@
           "vendor": "amd",
           "family": "gfx11",
           "driver": "24.0.0",
-          "rightCommandRepeat": 500,
+          "rightCommandRepeat": 50000,
           "rightIgnoreFirstOps": 1,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-          "leftCommandRepeat": 500,
+          "leftCommandRepeat": 50000,
           "leftIgnoreFirstOps": 1
         },
         "amd_vulkan_superset_doe_vs_doe": {
@@ -3472,12 +3813,12 @@
           "vendor": "amd",
           "family": "gfx11",
           "driver": "24.0.0",
-          "rightCommandRepeat": 500,
+          "rightCommandRepeat": 50000,
           "rightIgnoreFirstOps": 1,
           "timingNormalizationNote": "Strict Doe-vs-Doe comparability uses direct timing (left/right divisors fixed to 1.0).",
           "pathAsymmetry": true,
           "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored.",
-          "leftCommandRepeat": 500,
+          "leftCommandRepeat": 50000,
           "leftIgnoreFirstOps": 1
         },
         "amd_vulkan_extended": {
@@ -3487,12 +3828,12 @@
           "vendor": "amd",
           "family": "gfx11",
           "driver": "24.0.0",
-          "rightCommandRepeat": 500,
+          "rightCommandRepeat": 50000,
           "rightIgnoreFirstOps": 1,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
           "pathAsymmetry": true,
           "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored.",
-          "leftCommandRepeat": 500,
+          "leftCommandRepeat": 50000,
           "leftIgnoreFirstOps": 1
         },
         "amd_vulkan_extended_strict": {
@@ -3502,10 +3843,10 @@
           "vendor": "amd",
           "family": "gfx11",
           "driver": "24.0.0",
-          "rightCommandRepeat": 500,
+          "rightCommandRepeat": 50000,
           "rightIgnoreFirstOps": 1,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-          "leftCommandRepeat": 500,
+          "leftCommandRepeat": 50000,
           "leftIgnoreFirstOps": 1
         },
         "apple_metal_extended": {
@@ -3515,8 +3856,8 @@
           "vendor": "amd",
           "family": "gfx11",
           "driver": "24.0.0",
-          "leftCommandRepeat": 1000,
-          "rightCommandRepeat": 1000,
+          "leftCommandRepeat": 50000,
+          "rightCommandRepeat": 50000,
           "rightIgnoreFirstOps": 0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
         },
@@ -3880,6 +4221,23 @@
           "vendor": "amd",
           "family": "gfx11",
           "driver": "24.0.0"
+        },
+        "local_d3d12_extended": {
+          "comparabilityNotes": "Directional-only D3D12 parity scaffold. This workload is included in local_d3d12_extended to mirror the common Metal/Vulkan extended set, but it is excluded from governed strict D3D12 comparable lanes pending Windows-backed evidence and D3D12-specific Dawn mapping validation.",
+          "commandsPath": "examples/upload_256mb_commands.json",
+          "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
+          "vendor": "generic",
+          "family": "d3d12",
+          "driver": "1.0.0",
+          "pathAsymmetry": true,
+          "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored.",
+          "api": "d3d12",
+          "dawnFilter": "@autodiscover",
+          "comparable": false,
+          "benchmarkClass": "directional",
+          "applesToApplesVetted": false,
+          "claimEligible": false,
+          "default": false
         }
       }
     },
@@ -4036,6 +4394,23 @@
           "driver": "24.0.0",
           "comparable": true,
           "benchmarkClass": "comparable"
+        },
+        "local_d3d12_extended": {
+          "comparabilityNotes": "Directional-only D3D12 parity scaffold. This workload is included in local_d3d12_extended to mirror the common Metal/Vulkan extended set, but it is excluded from governed strict D3D12 comparable lanes pending Windows-backed evidence and D3D12-specific Dawn mapping validation.",
+          "commandsPath": "examples/upload_4gb_commands.json",
+          "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
+          "vendor": "generic",
+          "family": "d3d12",
+          "driver": "1.0.0",
+          "comparable": false,
+          "benchmarkClass": "directional",
+          "pathAsymmetry": true,
+          "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored.",
+          "api": "d3d12",
+          "dawnFilter": "@autodiscover",
+          "applesToApplesVetted": false,
+          "claimEligible": false,
+          "default": false
         }
       }
     },
@@ -4312,10 +4687,10 @@
           "driver": "24.0.0",
           "extraArgs": [],
           "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_64KB",
-          "rightCommandRepeat": 500,
+          "rightCommandRepeat": 10000,
           "rightIgnoreFirstOps": 0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-          "leftCommandRepeat": 500,
+          "leftCommandRepeat": 10000,
           "leftIgnoreFirstOps": 0
         },
         "amd_vulkan_superset": {
@@ -4330,12 +4705,12 @@
           "driver": "24.0.0",
           "extraArgs": [],
           "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_64KB",
-          "rightCommandRepeat": 500,
+          "rightCommandRepeat": 10000,
           "rightIgnoreFirstOps": 0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
           "pathAsymmetry": true,
           "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored.",
-          "leftCommandRepeat": 500,
+          "leftCommandRepeat": 10000,
           "leftIgnoreFirstOps": 0
         },
         "amd_vulkan_superset_native_supported": {
@@ -4350,10 +4725,10 @@
           "driver": "24.0.0",
           "extraArgs": [],
           "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_64KB",
-          "rightCommandRepeat": 500,
+          "rightCommandRepeat": 10000,
           "rightIgnoreFirstOps": 0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-          "leftCommandRepeat": 500,
+          "leftCommandRepeat": 10000,
           "leftIgnoreFirstOps": 0
         },
         "amd_vulkan_superset_doe_vs_doe": {
@@ -4368,12 +4743,12 @@
           "driver": "24.0.0",
           "extraArgs": [],
           "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_64KB",
-          "rightCommandRepeat": 500,
+          "rightCommandRepeat": 10000,
           "rightIgnoreFirstOps": 0,
           "timingNormalizationNote": "Strict Doe-vs-Doe comparability uses direct timing (left/right divisors fixed to 1.0).",
           "pathAsymmetry": true,
           "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored.",
-          "leftCommandRepeat": 500,
+          "leftCommandRepeat": 10000,
           "leftIgnoreFirstOps": 0
         },
         "amd_vulkan_smoke": {
@@ -4411,12 +4786,12 @@
           "driver": "24.0.0",
           "extraArgs": [],
           "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_64KB",
-          "rightCommandRepeat": 500,
+          "rightCommandRepeat": 10000,
           "rightIgnoreFirstOps": 0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
           "pathAsymmetry": true,
           "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored.",
-          "leftCommandRepeat": 500,
+          "leftCommandRepeat": 10000,
           "leftIgnoreFirstOps": 0
         },
         "amd_vulkan_extended_strict": {
@@ -4431,10 +4806,10 @@
           "driver": "24.0.0",
           "extraArgs": [],
           "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_64KB",
-          "rightCommandRepeat": 500,
+          "rightCommandRepeat": 10000,
           "rightIgnoreFirstOps": 0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-          "leftCommandRepeat": 500,
+          "leftCommandRepeat": 10000,
           "leftIgnoreFirstOps": 0
         },
         "apple_metal_smoke": {
@@ -4467,8 +4842,8 @@
           "driver": "24.0.0",
           "extraArgs": [],
           "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_64KB",
-          "leftCommandRepeat": 500,
-          "rightCommandRepeat": 500,
+          "leftCommandRepeat": 10000,
+          "rightCommandRepeat": 10000,
           "rightIgnoreFirstOps": 0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
         },
@@ -4599,6 +4974,21 @@
         "apple_metal_extended": {
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
           "timingNormalizationNote": "Directional-only: Apples-to-apples P1 capability contract: normalize as a per-command introspection sequence."
+        },
+        "local_d3d12_extended": {
+          "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
+          "timingNormalizationNote": "Directional-only: Apples-to-apples P1 capability contract: normalize as a per-command introspection sequence.",
+          "vendor": "generic",
+          "api": "d3d12",
+          "family": "d3d12",
+          "driver": "1.0.0",
+          "dawnFilter": "@autodiscover",
+          "comparable": false,
+          "benchmarkClass": "directional",
+          "applesToApplesVetted": false,
+          "claimEligible": false,
+          "default": false,
+          "comparabilityNotes": "Directional-only D3D12 parity scaffold. This workload is included in local_d3d12_extended to mirror the common Metal/Vulkan extended set, but it is excluded from governed strict D3D12 comparable lanes pending Windows-backed evidence and D3D12-specific Dawn mapping validation."
         }
       }
     },
@@ -4672,6 +5062,21 @@
         "apple_metal_extended": {
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
           "timingNormalizationNote": "Directional-only: Apples-to-apples macro capability contract: normalize per internal introspection iteration."
+        },
+        "local_d3d12_extended": {
+          "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
+          "timingNormalizationNote": "Directional-only: Apples-to-apples macro capability contract: normalize per internal introspection iteration.",
+          "vendor": "generic",
+          "api": "d3d12",
+          "family": "d3d12",
+          "driver": "1.0.0",
+          "dawnFilter": "@autodiscover",
+          "comparable": false,
+          "benchmarkClass": "directional",
+          "applesToApplesVetted": false,
+          "claimEligible": false,
+          "default": false,
+          "comparabilityNotes": "Directional-only D3D12 parity scaffold. This workload is included in local_d3d12_extended to mirror the common Metal/Vulkan extended set, but it is excluded from governed strict D3D12 comparable lanes pending Windows-backed evidence and D3D12-specific Dawn mapping validation."
         }
       }
     },
@@ -4870,7 +5275,21 @@
           "timingNormalizationNote": "Strict comparable Apple-Metal dispatch contract: normalize per fallback dispatch operation at 500 repeats."
         },
         "amd_vulkan_extended": {},
-        "amd_vulkan_extended_strict": {}
+        "amd_vulkan_extended_strict": {},
+        "local_d3d12_extended": {
+          "vendor": "generic",
+          "api": "d3d12",
+          "family": "d3d12",
+          "driver": "1.0.0",
+          "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
+          "dawnFilter": "@autodiscover",
+          "comparable": false,
+          "benchmarkClass": "directional",
+          "applesToApplesVetted": false,
+          "claimEligible": false,
+          "default": false,
+          "comparabilityNotes": "Directional-only D3D12 parity scaffold. This workload is included in local_d3d12_extended to mirror the common Metal/Vulkan extended set, but it is excluded from governed strict D3D12 comparable lanes pending Windows-backed evidence and D3D12-specific Dawn mapping validation."
+        }
       }
     },
     {
@@ -4955,7 +5374,21 @@
           "timingNormalizationNote": "Strict comparable Apple-Metal dispatch grid contract: normalize across 600 repeated dispatch operations."
         },
         "amd_vulkan_extended": {},
-        "amd_vulkan_extended_strict": {}
+        "amd_vulkan_extended_strict": {},
+        "local_d3d12_extended": {
+          "vendor": "generic",
+          "api": "d3d12",
+          "family": "d3d12",
+          "driver": "1.0.0",
+          "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
+          "dawnFilter": "@autodiscover",
+          "comparable": false,
+          "benchmarkClass": "directional",
+          "applesToApplesVetted": false,
+          "claimEligible": false,
+          "default": false,
+          "comparabilityNotes": "Directional-only D3D12 parity scaffold. This workload is included in local_d3d12_extended to mirror the common Metal/Vulkan extended set, but it is excluded from governed strict D3D12 comparable lanes pending Windows-backed evidence and D3D12-specific Dawn mapping validation."
+        }
       }
     },
     {
@@ -5388,12 +5821,30 @@
           "benchmarkClass": "comparable"
         },
         "apple_metal_extended": {
+          "comparabilityNotes": "Directional compute contract on this Metal host lane. Strict apples-to-apples mapping is unavailable pending backend/runtime parity for indirect dispatch + timestamp/query contract.",
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
           "comparable": false,
           "leftTimingDivisor": 5120,
           "timingNormalizationNote": "Directional compute contract: command repeat=20 and kernel repeat=256 are normalized to per-dispatch units (20*256).",
           "applesToApplesVetted": false,
           "benchmarkClass": "directional"
+        },
+        "local_d3d12_extended": {
+          "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
+          "comparable": false,
+          "rightCommandRepeat": 20,
+          "leftTimingDivisor": 1.0,
+          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+          "applesToApplesVetted": false,
+          "benchmarkClass": "directional",
+          "vendor": "generic",
+          "api": "d3d12",
+          "family": "d3d12",
+          "driver": "1.0.0",
+          "dawnFilter": "@autodiscover",
+          "claimEligible": false,
+          "default": false,
+          "comparabilityNotes": "Directional-only D3D12 parity scaffold. This workload is included in local_d3d12_extended to mirror the common Metal/Vulkan extended set, but it is excluded from governed strict D3D12 comparable lanes pending Windows-backed evidence and D3D12-specific Dawn mapping validation."
         }
       }
     },
@@ -5797,7 +6248,21 @@
           "timingNormalizationNote": "Strict comparable Apple-Metal copy contract: normalize per buffer-to-texture copy command sequence across 400 repeated copies."
         },
         "amd_vulkan_extended": {},
-        "amd_vulkan_extended_strict": {}
+        "amd_vulkan_extended_strict": {},
+        "local_d3d12_extended": {
+          "vendor": "generic",
+          "api": "d3d12",
+          "family": "d3d12",
+          "driver": "1.0.0",
+          "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
+          "dawnFilter": "@autodiscover",
+          "comparable": false,
+          "benchmarkClass": "directional",
+          "applesToApplesVetted": false,
+          "claimEligible": false,
+          "default": false,
+          "comparabilityNotes": "Directional-only D3D12 parity scaffold. This workload is included in local_d3d12_extended to mirror the common Metal/Vulkan extended set, but it is excluded from governed strict D3D12 comparable lanes pending Windows-backed evidence and D3D12-specific Dawn mapping validation."
+        }
       }
     },
     {
@@ -5930,7 +6395,21 @@
           "timingNormalizationNote": "Strict comparable Apple-Metal mixed protocol contract: normalize across one full protocol cycle."
         },
         "amd_vulkan_extended": {},
-        "amd_vulkan_extended_strict": {}
+        "amd_vulkan_extended_strict": {},
+        "local_d3d12_extended": {
+          "vendor": "generic",
+          "api": "d3d12",
+          "family": "d3d12",
+          "driver": "1.0.0",
+          "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
+          "dawnFilter": "@autodiscover",
+          "comparable": false,
+          "benchmarkClass": "directional",
+          "applesToApplesVetted": false,
+          "claimEligible": false,
+          "default": false,
+          "comparabilityNotes": "Directional-only D3D12 parity scaffold. This workload is included in local_d3d12_extended to mirror the common Metal/Vulkan extended set, but it is excluded from governed strict D3D12 comparable lanes pending Windows-backed evidence and D3D12-specific Dawn mapping validation."
+        }
       }
     },
     {
@@ -6012,7 +6491,21 @@
           "timingNormalizationNote": "Strict comparable Apple-Metal copy contract: normalize per texture-to-buffer copy command sequence at 2000 repeats to stabilize headline process wall claimability."
         },
         "amd_vulkan_extended": {},
-        "amd_vulkan_extended_strict": {}
+        "amd_vulkan_extended_strict": {},
+        "local_d3d12_extended": {
+          "vendor": "generic",
+          "api": "d3d12",
+          "family": "d3d12",
+          "driver": "1.0.0",
+          "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
+          "dawnFilter": "@autodiscover",
+          "comparable": false,
+          "benchmarkClass": "directional",
+          "applesToApplesVetted": false,
+          "claimEligible": false,
+          "default": false,
+          "comparabilityNotes": "Directional-only D3D12 parity scaffold. This workload is included in local_d3d12_extended to mirror the common Metal/Vulkan extended set, but it is excluded from governed strict D3D12 comparable lanes pending Windows-backed evidence and D3D12-specific Dawn mapping validation."
+        }
       }
     },
     {
@@ -6146,7 +6639,21 @@
           "timingNormalizationNote": "Strict comparable Apple-Metal copy contract: normalize per texture-to-texture copy command sequence at 400 repeats to reduce headline process wall tail volatility."
         },
         "amd_vulkan_extended": {},
-        "amd_vulkan_extended_strict": {}
+        "amd_vulkan_extended_strict": {},
+        "local_d3d12_extended": {
+          "vendor": "generic",
+          "api": "d3d12",
+          "family": "d3d12",
+          "driver": "1.0.0",
+          "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
+          "dawnFilter": "@autodiscover",
+          "comparable": false,
+          "benchmarkClass": "directional",
+          "applesToApplesVetted": false,
+          "claimEligible": false,
+          "default": false,
+          "comparabilityNotes": "Directional-only D3D12 parity scaffold. This workload is included in local_d3d12_extended to mirror the common Metal/Vulkan extended set, but it is excluded from governed strict D3D12 comparable lanes pending Windows-backed evidence and D3D12-specific Dawn mapping validation."
+        }
       }
     },
     {
@@ -6341,6 +6848,21 @@
         "apple_metal_extended": {
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
           "timingNormalizationNote": "Directional-only: Apples-to-apples P2 lifecycle contract: normalize by addref/release touch count within the lifecycle sequence."
+        },
+        "local_d3d12_extended": {
+          "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
+          "timingNormalizationNote": "Directional-only: Apples-to-apples P2 lifecycle contract: normalize by addref/release touch count within the lifecycle sequence.",
+          "vendor": "generic",
+          "api": "d3d12",
+          "family": "d3d12",
+          "driver": "1.0.0",
+          "dawnFilter": "@autodiscover",
+          "comparable": false,
+          "benchmarkClass": "directional",
+          "applesToApplesVetted": false,
+          "claimEligible": false,
+          "default": false,
+          "comparabilityNotes": "Directional-only D3D12 parity scaffold. This workload is included in local_d3d12_extended to mirror the common Metal/Vulkan extended set, but it is excluded from governed strict D3D12 comparable lanes pending Windows-backed evidence and D3D12-specific Dawn mapping validation."
         }
       }
     },
@@ -6414,6 +6936,21 @@
         "apple_metal_extended": {
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
           "timingNormalizationNote": "Directional-only: Apples-to-apples macro lifecycle contract: normalize per internal addref/release touch operations across macro iterations."
+        },
+        "local_d3d12_extended": {
+          "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
+          "timingNormalizationNote": "Directional-only: Apples-to-apples macro lifecycle contract: normalize per internal addref/release touch operations across macro iterations.",
+          "vendor": "generic",
+          "api": "d3d12",
+          "family": "d3d12",
+          "driver": "1.0.0",
+          "dawnFilter": "@autodiscover",
+          "comparable": false,
+          "benchmarkClass": "directional",
+          "applesToApplesVetted": false,
+          "claimEligible": false,
+          "default": false,
+          "comparabilityNotes": "Directional-only D3D12 parity scaffold. This workload is included in local_d3d12_extended to mirror the common Metal/Vulkan extended set, but it is excluded from governed strict D3D12 comparable lanes pending Windows-backed evidence and D3D12-specific Dawn mapping validation."
         }
       }
     },
@@ -6668,6 +7205,22 @@
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
           "benchmarkClass": "directional"
+        },
+        "local_d3d12_extended": {
+          "comparabilityNotes": "Directional-only D3D12 parity scaffold. This workload is included in local_d3d12_extended to mirror the common Metal/Vulkan extended set, but it is excluded from governed strict D3D12 comparable lanes pending Windows-backed evidence and D3D12-specific Dawn mapping validation.",
+          "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
+          "comparable": false,
+          "leftTimingDivisor": 1.0,
+          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+          "benchmarkClass": "directional",
+          "vendor": "generic",
+          "api": "d3d12",
+          "family": "d3d12",
+          "driver": "1.0.0",
+          "dawnFilter": "@autodiscover",
+          "applesToApplesVetted": false,
+          "claimEligible": false,
+          "default": false
         }
       }
     },
@@ -6752,12 +7305,28 @@
           "benchmarkClass": "comparable"
         },
         "apple_metal_extended": {
-          "comparabilityNotes": "Directional-only on this Metal host lane for now: Doe doe_metal currently reports execution errors for this workload shape, so it is excluded from strict comparable/claim lanes until backend support is restored. Directional-only on this Metal host lane: Dawn Metal filter autodiscover has no DrawIndexed DrawCallPerf variant, so strict apples-to-apples mapping is unavailable.",
+          "comparabilityNotes": "Directional-only on this Metal host lane. A targeted Metal rerun did not reproduce the older Doe execution-error note, but Dawn Metal filter autodiscover still has no DrawIndexed DrawCallPerf variant, so strict apples-to-apples mapping remains unavailable.",
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
           "comparable": false,
           "leftTimingDivisor": 2000,
           "timingNormalizationNote": "Apples-to-apples indexed render contract: normalize per draw with explicit setup amortization over indexed draw stream.",
           "benchmarkClass": "directional"
+        },
+        "local_d3d12_extended": {
+          "comparabilityNotes": "Directional-only D3D12 parity scaffold. This workload is included in local_d3d12_extended to mirror the common Metal/Vulkan extended set, but it is excluded from governed strict D3D12 comparable lanes pending Windows-backed evidence and D3D12-specific Dawn mapping validation.",
+          "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
+          "comparable": false,
+          "leftTimingDivisor": 1.0,
+          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+          "benchmarkClass": "directional",
+          "vendor": "generic",
+          "api": "d3d12",
+          "family": "d3d12",
+          "driver": "1.0.0",
+          "dawnFilter": "@autodiscover",
+          "applesToApplesVetted": false,
+          "claimEligible": false,
+          "default": false
         }
       }
     },
@@ -7176,6 +7745,21 @@
         "apple_metal_extended": {
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
           "timingNormalizationNote": "Directional-only: Apples-to-apples PLS contract: normalize per barrier-sequencing sub-steps over repeated non-coherent diagnostic iterations."
+        },
+        "local_d3d12_extended": {
+          "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
+          "timingNormalizationNote": "Directional-only: Apples-to-apples PLS contract: normalize per barrier-sequencing sub-steps over repeated non-coherent diagnostic iterations.",
+          "vendor": "generic",
+          "api": "d3d12",
+          "family": "d3d12",
+          "driver": "1.0.0",
+          "dawnFilter": "@autodiscover",
+          "comparable": false,
+          "benchmarkClass": "directional",
+          "applesToApplesVetted": false,
+          "claimEligible": false,
+          "default": false,
+          "comparabilityNotes": "Directional-only D3D12 parity scaffold. This workload is included in local_d3d12_extended to mirror the common Metal/Vulkan extended set, but it is excluded from governed strict D3D12 comparable lanes pending Windows-backed evidence and D3D12-specific Dawn mapping validation."
         }
       }
     },
@@ -7239,32 +7823,48 @@
           "benchmarkClass": "directional"
         },
         "amd_vulkan_superset_doe_vs_doe": {
-          "comparabilityNotes": "Dawn delegate does not execute this workload (0 dispatches, 0 encode); comparable: false until Dawn-side implementation is verified.",
+          "comparabilityNotes": "Directional-only pending fresh structural-equivalence evidence on this lane. Historical promotion notes and current catalog state diverged, so this workload remains excluded from strict comparable claim lanes until a new report is recorded.",
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Doe-vs-Doe comparability uses direct timing (left/right divisors fixed to 1.0).",
           "benchmarkClass": "directional"
         },
         "amd_vulkan_extended": {
-          "comparabilityNotes": "Dawn delegate does not execute this workload (0 dispatches, 0 encode); comparable: false until Dawn-side implementation is verified.",
+          "comparabilityNotes": "Directional-only pending fresh structural-equivalence evidence on this lane. Historical promotion notes and current catalog state diverged, so this workload remains excluded from strict comparable claim lanes until a new report is recorded.",
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
           "benchmarkClass": "directional"
         },
         "amd_vulkan_extended_strict": {
-          "comparabilityNotes": "Dawn delegate does not execute this workload (0 dispatches, 0 encode); comparable: false until Dawn-side implementation is verified.",
+          "comparabilityNotes": "Directional-only pending fresh structural-equivalence evidence on this lane. Historical promotion notes and current catalog state diverged, so this workload remains excluded from strict comparable claim lanes until a new report is recorded.",
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
           "benchmarkClass": "directional"
         },
         "apple_metal_extended": {
-          "comparabilityNotes": "Dawn delegate does not execute this workload (0 dispatches, 0 encode); comparable: false until Dawn-side implementation is verified.",
+          "comparabilityNotes": "Directional-only pending fresh structural-equivalence evidence on this lane. Historical promotion notes and current catalog state diverged, so this workload remains excluded from strict comparable claim lanes until a new report is recorded.",
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
           "benchmarkClass": "directional"
+        },
+        "local_d3d12_extended": {
+          "comparabilityNotes": "Directional-only D3D12 parity scaffold. This workload is included in local_d3d12_extended to mirror the common Metal/Vulkan extended set, but it is excluded from governed strict D3D12 comparable lanes pending Windows-backed evidence and D3D12-specific Dawn mapping validation.",
+          "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
+          "leftTimingDivisor": 1.0,
+          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+          "benchmarkClass": "directional",
+          "vendor": "generic",
+          "api": "d3d12",
+          "family": "d3d12",
+          "driver": "1.0.0",
+          "dawnFilter": "@autodiscover",
+          "comparable": false,
+          "applesToApplesVetted": false,
+          "claimEligible": false,
+          "default": false
         }
       }
     },
@@ -7352,6 +7952,23 @@
           "rightCommandRepeat": 100,
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+        },
+        "local_d3d12_extended": {
+          "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
+          "comparable": false,
+          "rightCommandRepeat": 100,
+          "leftTimingDivisor": 1.0,
+          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+          "vendor": "generic",
+          "api": "d3d12",
+          "family": "d3d12",
+          "driver": "1.0.0",
+          "dawnFilter": "@autodiscover",
+          "benchmarkClass": "directional",
+          "applesToApplesVetted": false,
+          "claimEligible": false,
+          "default": false,
+          "comparabilityNotes": "Directional-only D3D12 parity scaffold. This workload is included in local_d3d12_extended to mirror the common Metal/Vulkan extended set, but it is excluded from governed strict D3D12 comparable lanes pending Windows-backed evidence and D3D12-specific Dawn mapping validation."
         }
       }
     },
@@ -7981,6 +8598,21 @@
         "apple_metal_extended": {
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
           "timingNormalizationNote": "Directional-only: Apples-to-apples P1 resource-table contract: normalize by command-sequence sub-steps with deterministic feature-gating parity support."
+        },
+        "local_d3d12_extended": {
+          "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
+          "timingNormalizationNote": "Directional-only: Apples-to-apples P1 resource-table contract: normalize by command-sequence sub-steps with deterministic feature-gating parity support.",
+          "vendor": "generic",
+          "api": "d3d12",
+          "family": "d3d12",
+          "driver": "1.0.0",
+          "dawnFilter": "@autodiscover",
+          "comparable": false,
+          "benchmarkClass": "directional",
+          "applesToApplesVetted": false,
+          "claimEligible": false,
+          "default": false,
+          "comparabilityNotes": "Directional-only D3D12 parity scaffold. This workload is included in local_d3d12_extended to mirror the common Metal/Vulkan extended set, but it is excluded from governed strict D3D12 comparable lanes pending Windows-backed evidence and D3D12-specific Dawn mapping validation."
         }
       }
     },
@@ -8033,7 +8665,7 @@
       "lanes": {
         "amd_vulkan_superset": {
           "description": "Apples-to-apples macro ResourceTable workload repeating resource-table/immediates path 500 times inside one command.",
-          "comparabilityNotes": "Dawn delegate does not execute this workload (0 dispatches, 0 encode); comparable: false until Dawn-side implementation is verified.",
+          "comparabilityNotes": "Directional-only pending fresh structural-equivalence evidence on this lane. Historical promotion notes and current catalog state diverged, so this workload remains excluded from strict comparable claim lanes until a new report is recorded.",
           "asyncDiagnosticsMode": "resource_table_immediates",
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
           "default": false,
@@ -8053,7 +8685,7 @@
         },
         "amd_vulkan_superset_doe_vs_doe": {
           "description": "Apples-to-apples macro ResourceTable workload repeating resource-table/immediates path 500 times inside one command.",
-          "comparabilityNotes": "Dawn delegate does not execute this workload (0 dispatches, 0 encode); comparable: false until Dawn-side implementation is verified.",
+          "comparabilityNotes": "Directional-only pending fresh structural-equivalence evidence on this lane. Historical promotion notes and current catalog state diverged, so this workload remains excluded from strict comparable claim lanes until a new report is recorded.",
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
           "default": false,
           "timingNormalizationNote": "Strict Doe-vs-Doe comparability uses direct timing (left/right divisors fixed to 1.0).",
@@ -8062,7 +8694,7 @@
         },
         "amd_vulkan_app_claim": {
           "description": "Apples-to-apples macro ResourceTable workload repeating resource-table/immediates path 500 times inside one command.",
-          "comparabilityNotes": "Dawn delegate does not execute this workload (0 dispatches, 0 encode); comparable: false until Dawn-side implementation is verified.",
+          "comparabilityNotes": "Directional-only pending fresh structural-equivalence evidence on this lane. Historical promotion notes and current catalog state diverged, so this workload remains excluded from strict comparable claim lanes until a new report is recorded.",
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
           "default": true,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
@@ -8070,7 +8702,7 @@
         },
         "amd_vulkan_extended": {
           "description": "Apples-to-apples macro ResourceTable workload repeating resource-table/immediates path 500 times inside one command.",
-          "comparabilityNotes": "Dawn delegate does not execute this workload (0 dispatches, 0 encode); comparable: false until Dawn-side implementation is verified.",
+          "comparabilityNotes": "Directional-only pending fresh structural-equivalence evidence on this lane. Historical promotion notes and current catalog state diverged, so this workload remains excluded from strict comparable claim lanes until a new report is recorded.",
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
           "default": false,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
@@ -8078,7 +8710,7 @@
         },
         "amd_vulkan_extended_strict": {
           "description": "Apples-to-apples macro ResourceTable workload repeating resource-table/immediates path 500 times inside one command.",
-          "comparabilityNotes": "Dawn delegate does not execute this workload (0 dispatches, 0 encode); comparable: false until Dawn-side implementation is verified.",
+          "comparabilityNotes": "Directional-only pending fresh structural-equivalence evidence on this lane. Historical promotion notes and current catalog state diverged, so this workload remains excluded from strict comparable claim lanes until a new report is recorded.",
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
           "default": false,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
@@ -8086,12 +8718,28 @@
         },
         "apple_metal_extended": {
           "description": "Apples-to-apples macro ResourceTable workload repeating resource-table/immediates path 500 times inside one command.",
-          "comparabilityNotes": "Dawn delegate does not execute this workload (0 dispatches, 0 encode); comparable: false until Dawn-side implementation is verified.",
+          "comparabilityNotes": "Directional-only pending fresh structural-equivalence evidence on this lane. Historical promotion notes and current catalog state diverged, so this workload remains excluded from strict comparable claim lanes until a new report is recorded.",
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
           "default": false,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
           "rightCommandRepeat": 500,
           "benchmarkClass": "directional"
+        },
+        "local_d3d12_extended": {
+          "description": "Apples-to-apples macro ResourceTable workload repeating resource-table/immediates path 500 times inside one command.",
+          "comparabilityNotes": "Directional-only D3D12 parity scaffold. This workload is included in local_d3d12_extended to mirror the common Metal/Vulkan extended set, but it is excluded from governed strict D3D12 comparable lanes pending Windows-backed evidence and D3D12-specific Dawn mapping validation.",
+          "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
+          "default": false,
+          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+          "benchmarkClass": "directional",
+          "vendor": "generic",
+          "api": "d3d12",
+          "family": "d3d12",
+          "driver": "1.0.0",
+          "dawnFilter": "@autodiscover",
+          "comparable": false,
+          "applesToApplesVetted": false,
+          "claimEligible": false
         }
       }
     },
@@ -8173,7 +8821,21 @@
           "timingNormalizationNote": "Strict comparable Apple-Metal surface contract: normalize per full presentation cycle across 100 repeated cycles."
         },
         "amd_vulkan_extended": {},
-        "amd_vulkan_extended_strict": {}
+        "amd_vulkan_extended_strict": {},
+        "local_d3d12_extended": {
+          "vendor": "generic",
+          "api": "d3d12",
+          "family": "d3d12",
+          "driver": "1.0.0",
+          "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
+          "dawnFilter": "@autodiscover",
+          "comparable": false,
+          "benchmarkClass": "directional",
+          "applesToApplesVetted": false,
+          "claimEligible": false,
+          "default": false,
+          "comparabilityNotes": "Directional-only D3D12 parity scaffold. This workload is included in local_d3d12_extended to mirror the common Metal/Vulkan extended set, but it is excluded from governed strict D3D12 comparable lanes pending Windows-backed evidence and D3D12-specific Dawn mapping validation."
+        }
       }
     }
   ]

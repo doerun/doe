@@ -1,0 +1,86 @@
+{
+  "schema": "doppler.execution/v1",
+  "modelFamily": "gemma3",
+  "modelId": "gemma-3-270m-it-q4k-ehf16-af32",
+  "grid": {
+    "width": 32,
+    "height": 4
+  },
+  "eosTokenId": 1,
+  "sessionDefaults": {
+    "compute": {
+      "defaults": {
+        "activationDtype": "f32",
+        "mathDtype": "f32",
+        "accumDtype": "f32",
+        "outputDtype": "f32"
+      }
+    },
+    "kvcache": {
+      "kvDtype": "f16"
+    },
+    "decodeLoop": null
+  },
+  "execution": {
+    "kernels": {
+      "embed": { "kernel": "gather.wgsl", "entry": "main", "digest": "sha256:fixture" },
+      "rmsnorm": { "kernel": "rmsnorm.wgsl", "entry": "main", "digest": "sha256:fixture" },
+      "gemv": { "kernel": "matmul_gemv_subgroup.wgsl", "entry": "main_vec4", "digest": "sha256:fixture" },
+      "rope": { "kernel": "rope.wgsl", "entry": "main", "digest": "sha256:fixture" },
+      "attn_decode": { "kernel": "attention_decode_online_f16kv.wgsl", "entry": "main", "digest": "sha256:fixture" },
+      "residual": { "kernel": "residual.wgsl", "entry": "main", "digest": "sha256:fixture" },
+      "gelu": { "kernel": "gelu.wgsl", "entry": "main", "digest": "sha256:fixture" },
+      "tiled": { "kernel": "matmul_f16w_f32a_tiled.wgsl", "entry": "main", "digest": "sha256:fixture" },
+      "attn_small": { "kernel": "attention_small_f16kv.wgsl", "entry": "main", "digest": "sha256:fixture" },
+      "sample": { "kernel": "sample.wgsl", "entry": "sample_single_pass", "digest": "sha256:fixture" }
+    },
+    "preLayer": [
+      ["embed", "embed", "embed_tokens"]
+    ],
+    "prefill": [
+      ["input_norm", "rmsnorm"],
+      ["q_proj", "tiled", "layer.0.self_attn.q_proj"],
+      ["k_proj", "tiled", "layer.0.self_attn.k_proj"],
+      ["v_proj", "tiled", "layer.0.self_attn.v_proj"],
+      ["rope_q", "rope"],
+      ["rope_k", "rope"],
+      ["attention", "attn_small"],
+      ["o_proj", "tiled", "layer.0.self_attn.o_proj"],
+      ["attn_residual", "residual"],
+      ["post_attn_norm", "rmsnorm"],
+      ["gate_proj", "tiled", "layer.0.mlp.gate_proj"],
+      ["up_proj", "tiled", "layer.0.mlp.up_proj"],
+      ["activation", "gelu"],
+      ["down_proj", "tiled", "layer.0.mlp.down_proj"],
+      ["ffn_residual", "residual"]
+    ],
+    "decode": [
+      ["input_norm", "rmsnorm"],
+      ["q_proj", "gemv", "layer.0.self_attn.q_proj"],
+      ["k_proj", "gemv", "layer.0.self_attn.k_proj"],
+      ["v_proj", "gemv", "layer.0.self_attn.v_proj"],
+      ["rope_q", "rope"],
+      ["rope_k", "rope"],
+      ["attention", "attn_decode"],
+      ["o_proj", "gemv", "layer.0.self_attn.o_proj"],
+      ["attn_residual", "residual"],
+      ["post_attn_norm", "rmsnorm"],
+      ["gate_proj", "gemv", "layer.0.mlp.gate_proj"],
+      ["up_proj", "gemv", "layer.0.mlp.up_proj"],
+      ["activation", "gelu"],
+      ["down_proj", "gemv", "layer.0.mlp.down_proj"],
+      ["ffn_residual", "residual"]
+    ],
+    "postLayer": [
+      ["final_norm", "rmsnorm"],
+      ["lm_head", "gemv", "lm_head"],
+      ["lm_head_prefill", "tiled", "lm_head"],
+      ["sample", "sample"]
+    ],
+    "policies": {
+      "unsupportedPrecision": "error",
+      "dtypeTransition": "require_cast_step",
+      "unresolvedKernel": "error"
+    }
+  }
+}

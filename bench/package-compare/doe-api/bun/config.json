@@ -3,9 +3,9 @@
   "description": "Bun webgpu-doe helper API benchmark: Doe helper vs raw bun-webgpu (Dawn)",
   "providers": {
     "doe-api": {
-      "package": "@simulatte/webgpu-doe",
-      "source": "packages/webgpu-doe/src/index.js",
-      "runtime": "@simulatte/webgpu (bun FFI)",
+      "package": "doe-gpu",
+      "source": "packages/doe-gpu/src/vendor/doe-namespace.js",
+      "runtime": "doe-gpu (bun FFI)",
       "notes": "Doe helper API on Doe Bun FFI runtime"
     },
     "bun-webgpu": {

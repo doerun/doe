@@ -1,5 +1,5 @@
 {
-  "workloads": "bench/workloads.local.d3d12.extended.json",
+  "workloads": "bench/workloads.d3d12.comparable.json",
   "left": {
     "name": "doe",
     "commandTemplate": "runtime/zig/zig-out/bin/doe-zig-runtime.exe --commands {commands} --quirks {quirks} --vendor {vendor} --api {api} --family {family} --driver {driver} --backend native --backend-lane d3d12_doe_comparable --execute --trace --queue-sync-mode {queue_sync_mode} --upload-buffer-usage {upload_buffer_usage} --upload-submit-every {upload_submit_every} --trace-jsonl {trace_jsonl} --trace-meta {trace_meta} {extra_args}"

@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "DOE WGSL CSL Simulator Result Artifact",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "target",
+    "contract",
+    "simulatorPlanPath",
+    "driverExecutable",
+    "status",
+    "termination",
+    "exitCode",
+    "stdoutPath",
+    "stderrPath",
+    "tracePath",
+    "traceProduced"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "artifactKind": { "type": "string", "const": "csl_simulator_result" },
+    "target": { "type": "string", "const": "wse3" },
+    "contract": { "type": "string", "const": "explicit_simulator_outcome" },
+    "simulatorPlanPath": { "type": "string", "minLength": 1 },
+    "driverExecutable": { "type": "string", "minLength": 1 },
+    "status": {
+      "type": "string",
+      "enum": ["launch_failed", "simulator_failed", "simulator_succeeded"]
+    },
+    "termination": {
+      "type": "string",
+      "enum": ["exited", "signal", "stopped", "unknown"]
+    },
+    "exitCode": {
+      "type": ["integer", "null"],
+      "minimum": 0
+    },
+    "stdoutPath": { "type": "string", "minLength": 1 },
+    "stderrPath": { "type": "string", "minLength": 1 },
+    "tracePath": { "type": "string", "minLength": 1 },
+    "traceProduced": { "type": "boolean" }
+  }
+}

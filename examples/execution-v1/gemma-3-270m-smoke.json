@@ -1,0 +1,43 @@
+{
+  "modelFamily": "gemma3",
+  "modelId": "gemma-3-270m-it-q4k-ehf16-af32",
+  "grid": {
+    "width": 32,
+    "height": 4
+  },
+  "eosTokenId": 1,
+  "steps": [
+    { "name": "embed_tokens", "phase": "prefill", "op": "embed", "kernelKey": "embed", "weightsKey": "embed_tokens" },
+    { "name": "input_norm", "phase": "prefill", "op": "rmsnorm", "kernelKey": "rmsnorm" },
+    { "name": "q_proj", "phase": "prefill", "op": "matmul", "kernelKey": "tiled", "weightsKey": "layer.0.self_attn.q_proj" },
+    { "name": "k_proj", "phase": "prefill", "op": "matmul", "kernelKey": "tiled", "weightsKey": "layer.0.self_attn.k_proj" },
+    { "name": "v_proj", "phase": "prefill", "op": "matmul", "kernelKey": "tiled", "weightsKey": "layer.0.self_attn.v_proj" },
+    { "name": "rope_q", "phase": "prefill", "op": "rope", "kernelKey": "rope" },
+    { "name": "rope_k", "phase": "prefill", "op": "rope", "kernelKey": "rope" },
+    { "name": "attention", "phase": "prefill", "op": "attention_prefill", "kernelKey": "attn_small" },
+    { "name": "o_proj", "phase": "prefill", "op": "matmul", "kernelKey": "tiled", "weightsKey": "layer.0.self_attn.o_proj" },
+    { "name": "attn_residual", "phase": "prefill", "op": "residual", "kernelKey": "residual" },
+    { "name": "post_attn_norm", "phase": "prefill", "op": "rmsnorm", "kernelKey": "rmsnorm" },
+    { "name": "gate_proj", "phase": "prefill", "op": "matmul", "kernelKey": "tiled", "weightsKey": "layer.0.mlp.gate_proj" },
+    { "name": "up_proj", "phase": "prefill", "op": "matmul", "kernelKey": "tiled", "weightsKey": "layer.0.mlp.up_proj" },
+    { "name": "activation", "phase": "prefill", "op": "gelu", "kernelKey": "gelu" },
+    { "name": "down_proj", "phase": "prefill", "op": "matmul", "kernelKey": "tiled", "weightsKey": "layer.0.mlp.down_proj" },
+    { "name": "ffn_residual", "phase": "prefill", "op": "residual", "kernelKey": "residual" },
+    { "name": "input_norm", "phase": "decode", "op": "rmsnorm", "kernelKey": "rmsnorm" },
+    { "name": "q_proj", "phase": "decode", "op": "matmul_q4k", "kernelKey": "gemv", "weightsKey": "layer.0.self_attn.q_proj" },
+    { "name": "k_proj", "phase": "decode", "op": "matmul_q4k", "kernelKey": "gemv", "weightsKey": "layer.0.self_attn.k_proj" },
+    { "name": "v_proj", "phase": "decode", "op": "matmul_q4k", "kernelKey": "gemv", "weightsKey": "layer.0.self_attn.v_proj" },
+    { "name": "rope_q", "phase": "decode", "op": "rope", "kernelKey": "rope" },
+    { "name": "rope_k", "phase": "decode", "op": "rope", "kernelKey": "rope" },
+    { "name": "attention", "phase": "decode", "op": "attention", "kernelKey": "attn_decode" },
+    { "name": "o_proj", "phase": "decode", "op": "matmul_q4k", "kernelKey": "gemv", "weightsKey": "layer.0.self_attn.o_proj" },
+    { "name": "attn_residual", "phase": "decode", "op": "residual", "kernelKey": "residual" },
+    { "name": "post_attn_norm", "phase": "decode", "op": "rmsnorm", "kernelKey": "rmsnorm" },
+    { "name": "gate_proj", "phase": "decode", "op": "matmul_q4k", "kernelKey": "gemv", "weightsKey": "layer.0.mlp.gate_proj" },
+    { "name": "up_proj", "phase": "decode", "op": "matmul_q4k", "kernelKey": "gemv", "weightsKey": "layer.0.mlp.up_proj" },
+    { "name": "activation", "phase": "decode", "op": "gelu", "kernelKey": "gelu" },
+    { "name": "down_proj", "phase": "decode", "op": "matmul_q4k", "kernelKey": "gemv", "weightsKey": "layer.0.mlp.down_proj" },
+    { "name": "ffn_residual", "phase": "decode", "op": "residual", "kernelKey": "residual" },
+    { "name": "sample", "phase": "decode", "op": "sample", "kernelKey": "sample" }
+  ]
+}

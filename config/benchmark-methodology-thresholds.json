@@ -10,7 +10,8 @@
   },
   "timingScopeSanity": {
     "minOperationWallCoverageRatio": 0.05,
-    "maxOperationWallCoverageAsymmetryRatio": 128.0
+    "maxOperationWallCoverageAsymmetryRatio": 128.0,
+    "minRowTimingFloorNs": 5000000
   },
   "reliability": {
     "localRequiredPositivePercentiles": [

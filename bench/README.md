@@ -172,6 +172,18 @@ That document defines:
   - query configs can now carry structured query metadata (`id`, `bucket`, `notes`) plus preflight requirements, so reports include per-bucket pass/fail counts instead of a flat raw-query list.
   - preferred Fawn-native config is `bench/cts_subset.fawn-node.json`, which drives the vendored WebGPU CTS through Doe via `bench/cts/fawn-node-gpu-provider.cjs`.
   - supports `--dry-run`, `--stop-on-fail`, and bounded query execution via `--max-queries`.
+- `run_csl_governed_lane.py`
+  - runs the non-hardware CSL smoke lane:
+    fresh HostPlan lowering from the Gemma fixture -> simulator-plan materialization -> external simulator-driver invocation -> governed JSON/markdown report.
+  - emits explicit compile/run/parity status without fabricating simulator trace output; blocked toolchain/runtime states remain diagnostic instead of silently passing.
+  - accepts explicit environment/toolchain wiring when available:
+    - `$DOE_CSL_SIM_EXECUTABLE` -> external driver
+    - `$DOE_CSLC_EXECUTABLE` -> `cslc`
+    - `$DOE_CSL_RUNTIME_EXECUTABLE` -> real simulator/runtime command
+- `csl_governed_lane_gate.py`
+  - validates governed CSL lane reports against schema and explicit parity/compile/run requirements.
+  - intended for `run_blocking_gates.py --with-csl-governed-lane-gate` once the report path is available.
+  - use `--require-compile-success` and `--require-run-success` once the SDK lane is available.
 - `build_model_capacity_matrix.py`
   - builds a hardware×model capacity matrix artifact from measured AI workload/Doe runs, including status classes (`pass`, `fail`, `oom`, `unsupported`) and per-hardware max passable model size.
   - emits JSON + markdown summaries for explicit model-size ceiling disclosure.
@@ -261,20 +273,45 @@ python3 bench/cleanup_out.py --retention-days 14
 - use `--workload-cohort comparability-candidates` to isolate that candidate set for directional parity work (requires `--include-noncomparable-workloads`).
 - use `--workload-cohort doe-advantage` to isolate governed directional Doe-vs-Dawn rows; this keeps the same strict operation timing basis but reports non-claimable incumbent-limited evidence separately from apples-to-apples lanes.
 - canonical cross-surface workload identity now lives in `bench/workload-registry.json`.
-  - backend-native execution contracts still live in `bench/workloads*.json`.
-  - backend-native workload source of truth now lives in `bench/backend-workload-catalog.json`, and `python3 bench/generate_backend_workloads.py` materializes the lane-specific `bench/workloads*.json` files from that catalog.
-  - `python3 bench/generate_backend_workloads.py --verify` is now part of the canonical blocking gate flow; generated backend workload files are no longer treated as hand-authored truth.
-  - Node/Bun package execution still lives in `bench/package-compare/node/workloads.js`.
-  - the registry bridges those surfaces so package aliases like `buffer_upload_1kb` normalize to canonical workload IDs such as `upload_write_buffer_1kb` in package reports and cube rows.
-  - the first Windows D3D12 execution contracts now exist as generated views:
-    - `bench/workloads.local.d3d12.smoke.json`
-    - `bench/workloads.local.d3d12.extended.json`
-  - the first governed D3D12 comparable config is `bench/native-compare/compare_dawn_vs_doe.config.local.d3d12.extended.comparable.json`.
-  - the governed strict comparable D3D12 lane now has a dedicated workload contract (`bench/workloads.d3d12.comparable.json`, 11 workloads, all comparable+default) and compare config (`bench/native-compare/compare_dawn_vs_doe.config.d3d12.comparable.json`).
-  - D3D12 release-lane scaffolding now also exists at `bench/native-compare/compare_dawn_vs_doe.config.local.d3d12.release.json`, but it remains unevidenced until a Windows host runs it.
-  - run `python3 bench/preflight_d3d12_host.py --json` on a Windows x64 host before D3D12 compare runs.
-  - `python3 bench/run_local_d3d12_lane.py` is the Windows handoff runner for preflight -> smoke -> extended comparable -> blocking gates -> cube rebuild.
-  - `python3 bench/test_backend_workload_catalog.py` covers D3D12 catalog round-trip, expected ID sets, and config/policy invariants; the blocking gate now runs it after `generate_backend_workloads.py --verify`.
+- backend-native execution contracts still live in `bench/workloads*.json`.
+- canonical source of workload intent is `bench/backend-workload-catalog.json`.
+- generated workload artifacts are `bench/workloads*.json`, `bench/workload-overlap-map.json`, and `bench/workload-origin-map.json`.
+- catalog refresh is [below](#workload-catalog-refresh).
+
+## Workload catalog refresh
+
+Use this exact sequence for any workload intent change:
+
+1. Edit workload intent only in `bench/backend-workload-catalog.json`.
+2. Regenerate all generated artifacts.
+3. Verify generated outputs are canonical and drift-free.
+4. Run catalog invariants checks.
+
+```bash
+python3 bench/generate_backend_workloads.py
+python3 bench/generate_workload_overlap_map.py
+python3 bench/generate_backend_workloads.py --emit-workload-origins bench/workload-origin-map.json
+python3 bench/generate_backend_workloads.py --verify
+python3 bench/generate_workload_overlap_map.py --verify
+python3 bench/test_backend_workload_catalog.py
+```
+
+`test_backend_workload_catalog.py` is an optional invariants check for schema and expected IDs.
+
+Rules:
+
+- do not hand-edit files matching `bench/workloads*.json`; they are generated views.
+- keep lane manifests and overlap/origin artifacts in sync with the catalog in the same change.
+- do not run release compares or gate-only runs until regenerate + verify steps pass.
+- if workload IDs or contract fields change, rerun the workflow before publishing evidence.
+- backend-native execution contracts still live in `bench/workloads*.json`.
+- Node/Bun package execution stays in `bench/package-compare/node/workloads.js`.
+- registry alias normalization still lands in `bench/workload-registry.json` and canonicalizes package IDs like `buffer_upload_1kb` to `upload_write_buffer_1kb`.
+- D3D12 managed lane files are also generated:
+  `bench/workloads.local.d3d12.smoke.json`, `bench/workloads.local.d3d12.extended.json`, `bench/workloads.d3d12.comparable.json`.
+- `bench/workloads.local.d3d12.extended.json` may include directional parity scaffolds beyond the governed comparable set. Treat `bench/workloads.d3d12.comparable.json` as the strict D3D12 comparable workload contract until Windows-backed evidence expands it.
+- D3D12 comparable contracts and configs remain in: `bench/native-compare/compare_dawn_vs_doe.config.local.d3d12.extended.comparable.json`, `bench/native-compare/compare_dawn_vs_doe.config.d3d12.comparable.json`, `bench/native-compare/compare_dawn_vs_doe.config.local.d3d12.release.json` (scaffolding only).
+- Windows D3D12 host workflow remains: `python3 bench/preflight_d3d12_host.py --json`, `python3 bench/run_local_d3d12_lane.py`.
 - current comparable default matrix is upload scaling: `buffer_upload_{1kb,64kb,1mb,4mb,16mb}`.
 - extended domains include render/draw, shader/pipeline, texture-raster, and compute suites.
 
@@ -1028,3 +1065,23 @@ Vendored CTS prerequisite:
 cd bench/vendor/dawn/third_party/webgpu-cts
 npm install
 ```
+
+## Governed CSL smoke lane
+
+Use this to exercise the non-hardware CSL prep path end to end:
+
+```bash
+python3 bench/run_csl_governed_lane.py \
+  --config bench/csl_governed_lane.gelu.smoke.json \
+  --with-gate
+```
+
+What it does:
+- builds `doe-csl-bundle-emitter` and `doe-csl-sim-runner`
+- emits a real smoke `layout.csl` / `pe_program.csl` bundle from WGSL
+- materializes a `csl_simulator_plan`
+- probes the external Cerebras SDK driver contract
+- writes a governed CSL lane report plus referenced artifacts
+
+Without `cslc` and the Cerebras SDK installed, this lane should finish as
+`blocked` / diagnostic with explicit blocker reasons rather than pretending to run.

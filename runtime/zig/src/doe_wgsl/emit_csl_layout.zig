@@ -205,6 +205,346 @@ pub fn emitMatmulLayout(
 }
 
 // ---------------------------------------------------------------------------
+// Gather layout: 1-D row, no fabric
+// ---------------------------------------------------------------------------
+
+pub fn emitGatherLayout(
+    buf: []u8,
+    pos: *usize,
+    module: *const ir.Module,
+    info: classify.GatherInfo,
+) EmitError!void {
+    _ = info;
+    try write(buf, pos, "// Layout: embedding gather on a 1-D PE row.\n\n");
+    try write(buf, pos, "param width: i16;\n");
+    try write(buf, pos, "param hidden_size: i16;\n");
+    try write(buf, pos, "param rows_per_pe: i16;\n");
+    try write(buf, pos, "param num_tokens: i16;\n\n");
+    try emitMemcpyRow(buf, pos);
+    try write(buf, pos, "layout {\n    @set_rectangle(width, 1);\n\n");
+    try emitRowTileLoop(buf, pos, ".hidden_size = hidden_size, .rows_per_pe = rows_per_pe, .num_tokens = num_tokens,\n");
+    try emitStorageExports(buf, pos, module);
+    try write(buf, pos, "    @export_name(\"compute\", fn()void);\n}\n");
+}
+
+// ---------------------------------------------------------------------------
+// RoPE layout: 1-D row, no fabric
+// ---------------------------------------------------------------------------
+
+pub fn emitRoPELayout(
+    buf: []u8,
+    pos: *usize,
+    module: *const ir.Module,
+    info: classify.RoPEInfo,
+) EmitError!void {
+    _ = info;
+    try write(buf, pos, "// Layout: rotary position embeddings on a 1-D PE row.\n\n");
+    try write(buf, pos, "param width: i16;\n");
+    try write(buf, pos, "param head_dim: i16;\n");
+    try write(buf, pos, "param num_pairs: i16;\n\n");
+    try emitMemcpyRow(buf, pos);
+    try write(buf, pos, "layout {\n    @set_rectangle(width, 1);\n\n");
+    try emitRowTileLoop(buf, pos, ".head_dim = head_dim, .num_pairs = num_pairs,\n");
+    try emitStorageExports(buf, pos, module);
+    try write(buf, pos, "    @export_name(\"compute\", fn()void);\n}\n");
+}
+
+// ---------------------------------------------------------------------------
+// Dequant layout: 1-D row, no fabric
+// ---------------------------------------------------------------------------
+
+pub fn emitDequantLayout(
+    buf: []u8,
+    pos: *usize,
+    module: *const ir.Module,
+    info: classify.DequantInfo,
+) EmitError!void {
+    _ = info;
+    try write(buf, pos, "// Layout: Q4K dequantization on a 1-D PE row.\n\n");
+    try write(buf, pos, "param width: i16;\n");
+    try write(buf, pos, "param num_blocks: i16;\n\n");
+    try emitMemcpyRow(buf, pos);
+    try write(buf, pos, "layout {\n    @set_rectangle(width, 1);\n\n");
+    try emitRowTileLoop(buf, pos, ".num_blocks = num_blocks,\n");
+    try emitStorageExports(buf, pos, module);
+    try write(buf, pos, "    @export_name(\"compute\", fn()void);\n}\n");
+}
+
+// ---------------------------------------------------------------------------
+// Streaming attention layout: 1-D row, no fabric
+// ---------------------------------------------------------------------------
+
+pub fn emitStreamingAttentionLayout(
+    buf: []u8,
+    pos: *usize,
+    module: *const ir.Module,
+    info: classify.AttentionStreamingInfo,
+) EmitError!void {
+    _ = info;
+    try write(buf, pos, "// Layout: streaming attention on a 1-D PE row (no fabric).\n\n");
+    try write(buf, pos, "param width: i16;\n");
+    try write(buf, pos, "param head_dim: i16;\n");
+    try write(buf, pos, "param kv_len: i16;\n\n");
+    try emitMemcpyRow(buf, pos);
+    try write(buf, pos, "layout {\n    @set_rectangle(width, 1);\n\n");
+    try emitRowTileLoop(buf, pos, ".head_dim = head_dim, .kv_len = kv_len,\n");
+    try emitStorageExports(buf, pos, module);
+    try write(buf, pos, "    @export_name(\"compute\", fn()void);\n}\n");
+}
+
+// ---------------------------------------------------------------------------
+// Decode attention layout: 1-D row with east→west reduce chain
+// ---------------------------------------------------------------------------
+
+pub fn emitDecodeAttentionLayout(
+    buf: []u8,
+    pos: *usize,
+    module: *const ir.Module,
+    info: classify.AttentionDecodeInfo,
+) EmitError!void {
+    _ = info;
+    try write(buf, pos, "// Layout: decode attention with fabric reduce chain.\n\n");
+    try write(buf, pos, "param width: i16;\n");
+    try write(buf, pos, "param head_dim: i16;\n");
+    try write(buf, pos, "param kv_chunk: i16;\n\n");
+    try emitMemcpyRow(buf, pos);
+    try emitReduceColor(buf, pos);
+    try write(buf, pos, "layout {\n    @set_rectangle(width, 1);\n\n");
+    try emitReduceRowTileLoop(buf, pos, ".head_dim = head_dim, .kv_chunk = kv_chunk,\n");
+    try emitStorageExports(buf, pos, module);
+    try write(buf, pos, "    @export_name(\"compute\", fn()void);\n}\n");
+}
+
+// ---------------------------------------------------------------------------
+// Tiled attention layout: 1-D row (tile loading from PE-local arrays)
+// ---------------------------------------------------------------------------
+
+pub fn emitTiledAttentionLayout(
+    buf: []u8,
+    pos: *usize,
+    module: *const ir.Module,
+    info: classify.AttentionTiledInfo,
+) EmitError!void {
+    _ = info;
+    try write(buf, pos, "// Layout: tiled Flash Attention on a 1-D PE row.\n\n");
+    try write(buf, pos, "param width: i16;\n");
+    try write(buf, pos, "param head_dim: i16;\n");
+    try write(buf, pos, "param kv_len: i16;\n");
+    try write(buf, pos, "param q_len: i16;\n\n");
+    try emitMemcpyRow(buf, pos);
+    try write(buf, pos, "layout {\n    @set_rectangle(width, 1);\n\n");
+    try emitRowTileLoop(buf, pos, ".head_dim = head_dim, .kv_len = kv_len, .q_len = q_len,\n");
+    try emitStorageExports(buf, pos, module);
+    try write(buf, pos, "    @export_name(\"compute\", fn()void);\n}\n");
+}
+
+// ---------------------------------------------------------------------------
+// Sample layout: 1-D row with east→west reduce chain
+// ---------------------------------------------------------------------------
+
+pub fn emitSampleLayout(
+    buf: []u8,
+    pos: *usize,
+    module: *const ir.Module,
+    info: classify.SampleInfo,
+) EmitError!void {
+    _ = info;
+    try write(buf, pos, "// Layout: token sampling with fabric reduce chain.\n\n");
+    try write(buf, pos, "param width: i16;\n");
+    try write(buf, pos, "param chunk_size: i16;\n\n");
+    try emitMemcpyRow(buf, pos);
+    try emitReduceColor(buf, pos);
+    try write(buf, pos, "layout {\n    @set_rectangle(width, 1);\n\n");
+    try emitReduceRowTileLoop(buf, pos, ".chunk_size = chunk_size,\n");
+    try emitStorageExports(buf, pos, module);
+    try write(buf, pos, "    @export_name(\"compute\", fn()void);\n}\n");
+}
+
+// ---------------------------------------------------------------------------
+// Fused GEMV + dequant layout: 1-D row with reduce chain
+// ---------------------------------------------------------------------------
+
+pub fn emitFusedGemvLayout(
+    buf: []u8,
+    pos: *usize,
+    module: *const ir.Module,
+    info: classify.FusedGemvDequantInfo,
+) EmitError!void {
+    _ = info;
+    try write(buf, pos, "// Layout: fused GEMV + Q4K dequant with fabric reduce.\n\n");
+    try write(buf, pos, "param width: i16;\n");
+    try write(buf, pos, "param out_dim: i16;\n");
+    try write(buf, pos, "param in_dim_per_pe: i16;\n");
+    try write(buf, pos, "param num_blocks_per_row: i16;\n\n");
+    try emitMemcpyRow(buf, pos);
+    try emitReduceColor(buf, pos);
+    try write(buf, pos, "layout {\n    @set_rectangle(width, 1);\n\n");
+    try emitReduceRowTileLoop(buf, pos, ".out_dim = out_dim, .in_dim_per_pe = in_dim_per_pe, .num_blocks_per_row = num_blocks_per_row,\n");
+    try emitStorageExports(buf, pos, module);
+    try write(buf, pos, "    @export_name(\"compute\", fn()void);\n}\n");
+}
+
+// ---------------------------------------------------------------------------
+// Linear attention layout: 1-D row, no fabric
+// ---------------------------------------------------------------------------
+
+pub fn emitLinearAttentionLayout(
+    buf: []u8,
+    pos: *usize,
+    module: *const ir.Module,
+    info: classify.AttentionLinearInfo,
+) EmitError!void {
+    _ = info;
+    try write(buf, pos, "// Layout: linear attention on a 1-D PE row (no fabric).\n\n");
+    try write(buf, pos, "param width: i16;\n");
+    try write(buf, pos, "param head_dim: i16;\n");
+    try write(buf, pos, "param kv_len: i16;\n\n");
+    try emitMemcpyRow(buf, pos);
+    try write(buf, pos, "layout {\n    @set_rectangle(width, 1);\n\n");
+    try emitRowTileLoop(buf, pos, ".head_dim = head_dim, .kv_len = kv_len,\n");
+    try emitStorageExports(buf, pos, module);
+    try write(buf, pos, "    @export_name(\"compute\", fn()void);\n}\n");
+}
+
+// ---------------------------------------------------------------------------
+// KV cache write layout: 1-D row, no fabric
+// ---------------------------------------------------------------------------
+
+pub fn emitKvWriteLayout(
+    buf: []u8,
+    pos: *usize,
+    module: *const ir.Module,
+    info: classify.KvWriteInfo,
+) EmitError!void {
+    _ = info;
+    try write(buf, pos, "// Layout: KV cache write on a 1-D PE row.\n\n");
+    try write(buf, pos, "param width: i16;\n");
+    try write(buf, pos, "param head_dim: i16;\n");
+    try write(buf, pos, "param max_seq_len: i16;\n\n");
+    try emitMemcpyRow(buf, pos);
+    try write(buf, pos, "layout {\n    @set_rectangle(width, 1);\n\n");
+    try emitRowTileLoop(buf, pos, ".head_dim = head_dim, .max_seq_len = max_seq_len,\n");
+    try emitStorageExports(buf, pos, module);
+    try write(buf, pos, "    @export_name(\"compute\", fn()void);\n}\n");
+}
+
+// ---------------------------------------------------------------------------
+// KV cache read layout: 1-D row, no fabric
+// ---------------------------------------------------------------------------
+
+pub fn emitKvReadLayout(
+    buf: []u8,
+    pos: *usize,
+    module: *const ir.Module,
+    info: classify.KvReadInfo,
+) EmitError!void {
+    _ = info;
+    try write(buf, pos, "// Layout: KV cache read on a 1-D PE row.\n\n");
+    try write(buf, pos, "param width: i16;\n");
+    try write(buf, pos, "param head_dim: i16;\n");
+    try write(buf, pos, "param read_len: i16;\n\n");
+    try emitMemcpyRow(buf, pos);
+    try write(buf, pos, "layout {\n    @set_rectangle(width, 1);\n\n");
+    try emitRowTileLoop(buf, pos, ".head_dim = head_dim, .read_len = read_len,\n");
+    try emitStorageExports(buf, pos, module);
+    try write(buf, pos, "    @export_name(\"compute\", fn()void);\n}\n");
+}
+
+// ---------------------------------------------------------------------------
+// Fused FFN layout: 1-D row with reduce chain
+// ---------------------------------------------------------------------------
+
+pub fn emitFusedFfnLayout(
+    buf: []u8,
+    pos: *usize,
+    module: *const ir.Module,
+    info: classify.FusedFfnInfo,
+) EmitError!void {
+    _ = info;
+    try write(buf, pos, "// Layout: fused SiLU-gated FFN with fabric reduce.\n\n");
+    try write(buf, pos, "param width: i16;\n");
+    try write(buf, pos, "param in_dim: i16;\n");
+    try write(buf, pos, "param out_dim: i16;\n");
+    try write(buf, pos, "param in_per_pe: i16;\n\n");
+    try emitMemcpyRow(buf, pos);
+    try emitReduceColor(buf, pos);
+    try write(buf, pos, "layout {\n    @set_rectangle(width, 1);\n\n");
+    try emitReduceRowTileLoop(buf, pos, ".in_dim = in_dim, .out_dim = out_dim, .in_per_pe = in_per_pe,\n");
+    try emitStorageExports(buf, pos, module);
+    try write(buf, pos, "    @export_name(\"compute\", fn()void);\n}\n");
+}
+
+// ---------------------------------------------------------------------------
+// Shared layout helpers
+// ---------------------------------------------------------------------------
+
+fn emitMemcpyRow(buf: []u8, pos: *usize) EmitError!void {
+    try write(buf, pos, "const memcpy = @import_module(\"<memcpy/get_params>\", .{\n");
+    try write(buf, pos, "    .width = width,\n    .height = 1,\n});\n\n");
+}
+
+fn emitReduceColor(buf: []u8, pos: *usize) EmitError!void {
+    try write(buf, pos, "const reduce_color: color = @get_color(");
+    try writeInt(buf, pos, spec.MEMCPY_RESERVED_COLORS);
+    try write(buf, pos, ");\n\n");
+}
+
+fn emitRowTileLoop(buf: []u8, pos: *usize, extra_params: []const u8) EmitError!void {
+    try write(buf, pos, "    for (@range(i16, width)) |pe_x| {\n");
+    try write(buf, pos, "        @set_tile_code(pe_x, 0, \"");
+    try write(buf, pos, spec.PE_PROGRAM_FILENAME);
+    try write(buf, pos, "\", .{\n");
+    try write(buf, pos, "            .memcpy_params = memcpy.get_params(pe_x),\n");
+    try write(buf, pos, "            .pe_id = pe_x,\n");
+    try write(buf, pos, "            .num_pes = width,\n");
+    try write(buf, pos, "            ");
+    try write(buf, pos, extra_params);
+    try write(buf, pos, "        });\n    }\n\n");
+}
+
+fn emitReduceRowTileLoop(buf: []u8, pos: *usize, extra_params: []const u8) EmitError!void {
+    try write(buf, pos, "    for (@range(i16, width)) |pe_x| {\n");
+    try write(buf, pos, "        @set_tile_code(pe_x, 0, \"");
+    try write(buf, pos, spec.PE_PROGRAM_FILENAME);
+    try write(buf, pos, "\", .{\n");
+    try write(buf, pos, "            .memcpy_params = memcpy.get_params(pe_x),\n");
+    try write(buf, pos, "            .pe_id = pe_x,\n");
+    try write(buf, pos, "            .num_pes = width,\n");
+    try write(buf, pos, "            .reduce_color = reduce_color,\n");
+    try write(buf, pos, "            ");
+    try write(buf, pos, extra_params);
+    try write(buf, pos, "        });\n\n");
+    // Reduce color routing: RAMP→EAST, WEST→EAST, WEST→RAMP
+    try write(buf, pos, "        if (pe_x == 0) {\n");
+    try write(buf, pos, "            @set_color_config(pe_x, 0, reduce_color, .{\n");
+    try write(buf, pos, "                .routes = .{ .rx = .{RAMP}, .tx = .{EAST} },\n");
+    try write(buf, pos, "            });\n");
+    try write(buf, pos, "        } else if (pe_x == width - 1) {\n");
+    try write(buf, pos, "            @set_color_config(pe_x, 0, reduce_color, .{\n");
+    try write(buf, pos, "                .routes = .{ .rx = .{WEST}, .tx = .{RAMP} },\n");
+    try write(buf, pos, "            });\n");
+    try write(buf, pos, "        } else {\n");
+    try write(buf, pos, "            @set_color_config(pe_x, 0, reduce_color, .{\n");
+    try write(buf, pos, "                .routes = .{ .rx = .{WEST, RAMP}, .tx = .{EAST} },\n");
+    try write(buf, pos, "            });\n");
+    try write(buf, pos, "        }\n");
+    try write(buf, pos, "    }\n\n");
+}
+
+fn emitStorageExports(buf: []u8, pos: *usize, module: *const ir.Module) EmitError!void {
+    for (module.globals.items) |global| {
+        if (global.binding == null) continue;
+        const space = global.addr_space orelse continue;
+        if (space != .storage and space != .uniform) continue;
+        try write(buf, pos, "    @export_name(\"");
+        try write(buf, pos, global.name);
+        try write(buf, pos, "\", [*]");
+        try writeScalarType(buf, pos, module, global.ty);
+        try write(buf, pos, ", true);\n");
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Write helpers
 // ---------------------------------------------------------------------------
 

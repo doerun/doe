@@ -69,6 +69,7 @@ Build:
 - `build.zig` — compile and run hooks, links libC and libdl.
 - `zig build dropin` — full drop-in shared library (`libwebgpu_doe.so`).
 - `zig build dropin-core` — core-only drop-in shared library (`libwebgpu_doe_core.so`).
+- `zig build csl-sim-runner` — explicit CSL simulator contract runner (`doe-csl-sim-runner`).
 - `zig build coverage-gate` — validate split coverage ledgers against Zig command partitions.
 - `zig build import-fence` — validate core/full one-way import boundaries.
 - benchmark/claim runs should use `zig build -Doptimize=ReleaseFast` so `zig-out/bin/doe-zig-runtime` is built with optimized codegen before compare lanes are executed.
@@ -88,7 +89,32 @@ zig build run -- --commands ../../examples/kernel_dispatch_commands.json --trace
 zig build run -- --commands ../../examples/kernel_dispatch_commands.json --emit-normalized
 zig build test
 zig build dropin
+zig build csl-sim-runner
 zig build app
+```
+
+### CSL simulator contract runner
+
+`doe-csl-sim-runner` is the explicit bridge between Doe-emitted
+`csl_simulator_plan` artifacts and a real Cerebras simulator executable.
+
+- It validates the simulator plan artifact before launch.
+- It resolves the simulator driver from:
+  1. `--driver-executable`
+  2. `$DOE_CSL_SIM_EXECUTABLE`
+- The external driver may also consume:
+  - `$DOE_CSLC_EXECUTABLE` for `cslc`
+  - `$DOE_CSL_RUNTIME_EXECUTABLE` for a real simulator/runtime command
+- It writes stdout/stderr to the plan-declared output paths.
+- It emits a result artifact at `<tracePath>.result.json` by default, or the path
+  provided via `--result-json`.
+- It does not synthesize trace output or fake execution if the driver is absent.
+
+Example:
+
+```bash
+zig-out/bin/doe-csl-sim-runner --plan path/to/simulator-plan.json
+DOE_CSL_SIM_EXECUTABLE=/opt/cerebras/bin/csl-sim zig-out/bin/doe-csl-sim-runner --plan path/to/simulator-plan.json
 ```
 
 When `--quirks` is provided, JSON file values are loaded directly and validated before transform.
@@ -362,3 +388,22 @@ Lane policy is contractized in `config/backend-runtime-policy.json`. Trace metad
 - async diagnostics mode values:
   `pipeline_async`, `capability_introspection`, `resource_table_immediates`, `lifecycle_refcount`, `pixel_local_storage`, `full`.
 - either `kind` or `command` may carry the command name in command JSON.
+
+## CSL smoke bundle and simulator prep
+
+Build the WGSL-to-CSL smoke bundle emitter:
+
+```bash
+zig build csl-bundle-emitter
+```
+
+Emit a split `layout.csl` + `pe_program.csl` bundle from the checked-in smoke WGSL fixture:
+
+```bash
+zig-out/bin/doe-csl-bundle-emitter \
+  --wgsl runtime/zig/examples/wgsl/csl-gelu-smoke.wgsl \
+  --out-dir /tmp/csl-gelu-smoke
+```
+
+The generated bundle is intended for the governed CSL smoke lane and the simulator
+contract runner. It does not claim full model-runtime execution.

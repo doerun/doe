@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "description": "Node.js WebGPU benchmark: Doe (@simulatte/webgpu) vs Dawn (webgpu npm)",
+  "description": "Node.js WebGPU benchmark: Doe (doe-gpu) vs Dawn (webgpu npm)",
   "providers": {
     "doe": {
-      "package": "@simulatte/webgpu",
-      "source": "packages/webgpu/src/index.js",
+      "package": "doe-gpu",
+      "source": "packages/doe-gpu/src/index.js",
       "notes": "Doe-native N-API provider backed by libwebgpu_doe"
     },
     "dawn": {

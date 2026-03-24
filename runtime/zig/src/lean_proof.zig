@@ -107,6 +107,10 @@ pub const BoundsPattern = enum {
     ///               AND width * height + offset <= arrayLength(&buf)
     gid_2d_flat_storage_buffer_offset,
 
+    /// textureLoad/textureStore with global_invocation_id.x scalar coord on a
+    /// bound 1D texture when dispatch extent fits the validated mip level.
+    gid_texture_1d_dispatch_fit,
+
     /// textureLoad/textureStore with global_invocation_id.xy coords on a bound
     /// 2D texture when dispatch extents fit the validated mip level.
     gid_texture_2d_dispatch_fit,
@@ -150,6 +154,10 @@ pub fn boundsProven(comptime pattern: BoundsPattern) bool {
         .gid_2d_flat_storage_buffer_offset => comptime blk: {
             @setEvalBranchQuota(400_000);
             break :blk comptimeContains(proof_json.?, "\"flat_index_2d_plus_offset_inbounds\"");
+        },
+        .gid_texture_1d_dispatch_fit => comptime blk: {
+            @setEvalBranchQuota(400_000);
+            break :blk comptimeContains(proof_json.?, "\"gid_texture_coord_1d_inbounds_when_dispatch_fits\"");
         },
         .gid_texture_2d_dispatch_fit => comptime blk: {
             @setEvalBranchQuota(400_000);

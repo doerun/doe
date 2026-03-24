@@ -3,9 +3,9 @@
   "description": "Node.js webgpu-doe helper API benchmark: Doe helper vs raw Dawn WebGPU",
   "providers": {
     "doe-api": {
-      "package": "@simulatte/webgpu-doe",
-      "source": "packages/webgpu-doe/src/index.js",
-      "runtime": "@simulatte/webgpu",
+      "package": "doe-gpu",
+      "source": "packages/doe-gpu/src/vendor/doe-namespace.js",
+      "runtime": "doe-gpu",
       "notes": "Doe helper API (gpu.compute, gpu.kernel, gpu.buffer) on Doe N-API runtime"
     },
     "dawn": {

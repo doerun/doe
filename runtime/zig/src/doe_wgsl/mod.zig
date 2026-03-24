@@ -26,10 +26,29 @@ pub const emit_spirv_stages = @import("emit_spirv_stages.zig");
 pub const emit_spirv_texture = @import("emit_spirv_texture.zig");
 pub const emit_dxil = @import("emit_dxil.zig");
 pub const emit_csl = @import("emit_csl.zig");
+pub const emit_csl_reduce_dist = @import("emit_csl_reduce_dist.zig");
+pub const emit_csl_attention = @import("emit_csl_attention.zig");
+pub const emit_csl_gather = @import("emit_csl_gather.zig");
+pub const emit_csl_rope = @import("emit_csl_rope.zig");
+pub const emit_csl_dequant = @import("emit_csl_dequant.zig");
+pub const emit_csl_sample = @import("emit_csl_sample.zig");
+pub const emit_csl_fused = @import("emit_csl_fused.zig");
+pub const emit_csl_linear_attn = @import("emit_csl_linear_attn.zig");
+pub const emit_csl_kv_cache = @import("emit_csl_kv_cache.zig");
+pub const emit_csl_fused_ffn = @import("emit_csl_fused_ffn.zig");
+pub const emit_csl_host = @import("emit_csl_host.zig");
+pub const emit_csl_host_plan = @import("emit_csl_host_plan.zig");
+pub const emit_csl_toolchain = @import("emit_csl_toolchain.zig");
+pub const emit_csl_simulator = @import("emit_csl_simulator.zig");
+pub const emit_csl_mem_plan = @import("emit_csl_mem_plan.zig");
+pub const emit_csl_exec_v1 = @import("emit_csl_exec_v1.zig");
+pub const emit_csl_host_runtime = @import("emit_csl_host_runtime.zig");
+pub const emit_csl_decode = @import("emit_csl_decode.zig");
+pub const emit_csl_validate = @import("emit_csl_validate.zig");
+const csl_tests = @import("doe_wgsl_csl_tests.zig");
 pub const layout_utils = @import("layout_utils.zig");
 const legacy_msl = @import("doe_wgsl_msl.zig");
 const lean_proof = @import("../lean_proof.zig");
-
 const std = @import("std");
 
 pub const TranslateError = error{
@@ -60,6 +79,13 @@ pub const DXIL_DXC_ENV_VAR: []const u8 = emit_dxil.DXC_ENV_VAR;
 pub const DXIL_DXC_PATH_SENTINEL: []const u8 = emit_dxil.DXC_PATH_SENTINEL;
 pub const DxilToolchainConfig = emit_dxil.ToolchainConfig;
 pub const DxilToolchainDiscovery = emit_dxil.ToolchainDiscovery;
+pub const CslValidationError = emit_csl_validate.Error;
+pub const CslPatternKind = emit_csl_validate.PatternKind;
+pub const CslValidationResult = emit_csl_validate.ValidationResult;
+pub const CslToolchainConfig = emit_csl_validate.ToolchainConfig;
+pub const CslToolchainDiscovery = emit_csl_validate.ToolchainDiscovery;
+pub const CSLC_ENV_VAR = emit_csl_validate.CSLC_ENV_VAR;
+pub const CSLC_PATH_SENTINEL = emit_csl_validate.CSLC_PATH_SENTINEL;
 pub const MAX_BINDINGS: usize = 16;
 
 pub const BindingKind = enum(u32) {
@@ -499,6 +525,26 @@ pub fn translateToCsl(allocator: std.mem.Allocator, wgsl: []const u8, out: []u8)
     };
 }
 
+pub fn loadCslToolchainConfig(allocator: std.mem.Allocator) emit_csl_validate.Error!emit_csl_validate.ToolchainConfig {
+    return emit_csl_validate.loadToolchainConfig(allocator);
+}
+
+pub fn validateCslPattern(csl: []const u8, pattern: emit_csl_validate.PatternKind) emit_csl_validate.ValidationResult {
+    return emit_csl_validate.validatePattern(csl, pattern);
+}
+
+pub fn validateCslPatternWithToolchainConfig(
+    csl: []const u8,
+    pattern: emit_csl_validate.PatternKind,
+    config: emit_csl_validate.ToolchainConfig,
+) emit_csl_validate.Error!emit_csl_validate.ValidationResult {
+    return emit_csl_validate.validatePatternWithToolchainConfig(csl, pattern, config);
+}
+
+pub fn validateCslToolchainConfig(config: emit_csl_validate.ToolchainConfig) emit_csl_validate.Error!void {
+    return emit_csl_validate.validateToolchainConfig(config);
+}
+
 fn mapSemanticError(err: anyerror) TranslateError {
     return switch (err) {
         error.OutOfMemory => TranslateError.OutOfMemory,
@@ -549,6 +595,23 @@ test {
     _ = emit_spirv_texture;
     _ = emit_dxil;
     _ = emit_csl;
+    _ = emit_csl_reduce_dist;
+    _ = emit_csl_attention;
+    _ = emit_csl_gather;
+    _ = emit_csl_rope;
+    _ = emit_csl_dequant;
+    _ = emit_csl_sample;
+    _ = emit_csl_fused;
+    _ = emit_csl_linear_attn;
+    _ = emit_csl_kv_cache;
+    _ = emit_csl_fused_ffn;
+    _ = emit_csl_host;
+    _ = emit_csl_toolchain;
+    _ = emit_csl_mem_plan;
+    _ = emit_csl_exec_v1;
+    _ = emit_csl_host_runtime;
+    _ = emit_csl_decode;
+    _ = emit_csl_validate;
     _ = layout_utils;
     // Test files are registered in test_suite*.zig, not imported here,
     // to avoid bleeding failing tests into every consumer of mod.zig.
@@ -683,170 +746,26 @@ test "robustness: runtime-sized array index emits arrayLength in MSL output" {
 }
 
 test "arrayLength(&buf) in comparison compiles" {
-    const source =
-        \\@group(0) @binding(0) var<storage, read_write> buf: array<f32>;
-        \\@compute @workgroup_size(64)
-        \\fn main(@builtin(global_invocation_id) id: vec3u) {
-        \\    if (id.x < arrayLength(&buf)) { buf[id.x] = buf[id.x] * 2.0; }
-        \\}
-    ;
-    var out: [MAX_OUTPUT]u8 = undefined;
-    const len = try translateToMsl(std.testing.allocator, source, &out);
-    try std.testing.expect(len > 0);
+    try csl_tests.expectArrayLengthInComparisonCompiles(std.testing.allocator, translateToMsl, MAX_OUTPUT);
 }
-
 test "robustness: runtime-sized constant index coerces abstract int for MSL min()" {
-    const source =
-        \\@group(0) @binding(0) var<storage, read_write> buf: array<u32>;
-        \\@compute @workgroup_size(1)
-        \\fn main() {
-        \\    buf[0] = 42u;
-        \\}
-    ;
-    var out: [MAX_OUTPUT]u8 = undefined;
-    const len = try translateToMsl(std.testing.allocator, source, &out);
-    const msl = out[0..len];
-    try std.testing.expect(std.mem.indexOf(u8, msl, "min(uint(0), (uint(_doe_sizes[0] / sizeof(uint)) - 1))") != null);
+    try csl_tests.expectRuntimeSizedConstantIndexCoercesAbstractIntForMslMin(std.testing.allocator, translateToMsl, MAX_OUTPUT);
 }
-
 test "robustness: vertex array clamp coerces u32 literal for MSL min()" {
-    const source =
-        \\@vertex
-        \\fn main(@builtin(vertex_index) vid: u32) -> @builtin(position) vec4f {
-        \\    var pos = array<vec2f, 3>(
-        \\        vec2f( 0.0,  0.5),
-        \\        vec2f(-0.5, -0.5),
-        \\        vec2f( 0.5, -0.5),
-        \\    );
-        \\    return vec4f(pos[vid], 0.0, 1.0);
-        \\}
-    ;
-    var out: [MAX_OUTPUT]u8 = undefined;
-    const len = try translateToMsl(std.testing.allocator, source, &out);
-    const msl = out[0..len];
-    try std.testing.expect(std.mem.indexOf(u8, msl, "min(vid, uint(2))") != null);
+    try csl_tests.expectVertexArrayClampCoercesU32LiteralForMslMin(std.testing.allocator, translateToMsl, MAX_OUTPUT);
 }
-
 test "arrayLength on struct member compiles to MSL" {
-    const source =
-        \\struct Storage {
-        \\    count: u32,
-        \\    data: array<f32>,
-        \\}
-        \\@group(0) @binding(0) var<storage, read_write> buf: Storage;
-        \\@compute @workgroup_size(64)
-        \\fn main(@builtin(global_invocation_id) gid: vec3u) {
-        \\    let len = arrayLength(&buf.data);
-        \\    buf.data[0] = f32(len);
-        \\}
-    ;
-    var out: [MAX_OUTPUT]u8 = undefined;
-    const len = try translateToMsl(std.testing.allocator, source, &out);
-    try std.testing.expect(len > 0);
-    const msl = out[0..len];
-    // Should contain the _doe_sizes lookup with byte offset subtraction.
-    // Storage has u32 count (4 bytes), then array<f32> at offset 4.
-    try std.testing.expect(std.mem.indexOf(u8, msl, "_doe_sizes[") != null);
-    try std.testing.expect(std.mem.indexOf(u8, msl, "- 4)") != null);
-    try std.testing.expect(std.mem.indexOf(u8, msl, "sizeof(float)") != null);
+    try csl_tests.expectArrayLengthOnStructMemberCompilesToMsl(std.testing.allocator, translateToMsl, MAX_OUTPUT);
 }
-
 test "arrayLength on struct member compiles to HLSL" {
-    const source =
-        \\struct Storage {
-        \\    count: u32,
-        \\    data: array<f32>,
-        \\}
-        \\@group(0) @binding(0) var<storage, read_write> buf: Storage;
-        \\@compute @workgroup_size(64)
-        \\fn main(@builtin(global_invocation_id) gid: vec3u) {
-        \\    let len = arrayLength(&buf.data);
-        \\    buf.data[0] = f32(len);
-        \\}
-    ;
-    var out: [MAX_HLSL_OUTPUT]u8 = undefined;
-    const len = try translateToHlsl(std.testing.allocator, source, &out);
-    try std.testing.expect(len > 0);
-    const hlsl = out[0..len];
-    // Should contain the generated helper function.
-    try std.testing.expect(std.mem.indexOf(u8, hlsl, "doe_arrayLength_buf_data()") != null);
-    // The helper should use GetDimensions.
-    try std.testing.expect(std.mem.indexOf(u8, hlsl, "GetDimensions") != null);
+    try csl_tests.expectArrayLengthOnStructMemberCompilesToHlsl(std.testing.allocator, translateToHlsl, MAX_HLSL_OUTPUT);
 }
-
 test "arrayLength on struct member compiles to SPIR-V" {
-    const source =
-        \\struct Storage {
-        \\    count: u32,
-        \\    data: array<f32>,
-        \\}
-        \\@group(0) @binding(0) var<storage, read_write> buf: Storage;
-        \\@compute @workgroup_size(64)
-        \\fn main(@builtin(global_invocation_id) gid: vec3u) {
-        \\    let len = arrayLength(&buf.data);
-        \\    buf.data[0] = f32(len);
-        \\}
-    ;
-    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
-    const len = try translateToSpirv(std.testing.allocator, source, &out);
-    // SPIR-V already handles struct member arrayLength correctly.
-    try std.testing.expect(len > 0);
-    // Verify valid SPIR-V header (magic number).
-    try std.testing.expect(len >= 20);
-    const magic = std.mem.readInt(u32, @as(*const [4]u8, @ptrCast(out[0..4].ptr)), .little);
-    try std.testing.expectEqual(@as(u32, 0x07230203), magic);
+    try csl_tests.expectArrayLengthOnStructMemberCompilesToSpirv(std.testing.allocator, translateToSpirv, MAX_SPIRV_OUTPUT);
 }
-
 test "translate element-wise compute shader to CSL" {
-    const source =
-        \\struct Uniforms {
-        \\    size: u32,
-        \\    _pad0: u32,
-        \\    _pad1: u32,
-        \\    _pad2: u32,
-        \\}
-        \\@group(0) @binding(0) var<uniform> u: Uniforms;
-        \\@group(0) @binding(1) var<storage, read> input: array<f32>;
-        \\@group(0) @binding(2) var<storage, read_write> output: array<f32>;
-        \\fn gelu(x: f32) -> f32 {
-        \\    let inner = 0.7978845608 * (x + 0.044715 * x * x * x);
-        \\    let inner_clamped = clamp(inner, -15.0, 15.0);
-        \\    return 0.5 * x * (1.0 + tanh(inner_clamped));
-        \\}
-        \\@compute @workgroup_size(256)
-        \\fn main(@builtin(global_invocation_id) gid: vec3u) {
-        \\    let idx = gid.x;
-        \\    if (idx >= u.size) { return; }
-        \\    let x = input[idx];
-        \\    output[idx] = gelu(x);
-        \\}
-    ;
-    var out: [MAX_CSL_OUTPUT]u8 = undefined;
-    const len = try translateToCsl(std.testing.allocator, source, &out);
-    try std.testing.expect(len > 0);
-    const csl = out[0..len];
-    // Should contain both sections.
-    try std.testing.expect(std.mem.indexOf(u8, csl, "layout.csl") != null);
-    try std.testing.expect(std.mem.indexOf(u8, csl, "pe_program.csl") != null);
-    // Layout should define a rectangle.
-    try std.testing.expect(std.mem.indexOf(u8, csl, "@set_rectangle") != null);
-    // PE program should import memcpy and math.
-    try std.testing.expect(std.mem.indexOf(u8, csl, "memcpy") != null);
-    try std.testing.expect(std.mem.indexOf(u8, csl, "math") != null);
-    // Should have the gelu helper function.
-    try std.testing.expect(std.mem.indexOf(u8, csl, "gelu") != null);
-    // Should export compute.
-    try std.testing.expect(std.mem.indexOf(u8, csl, "@export_symbol(compute)") != null);
+    try csl_tests.expectElementWiseComputeShaderCompilesToCsl(std.testing.allocator, translateToCsl, MAX_CSL_OUTPUT);
 }
-
 test "vertex shader rejected for CSL emission" {
-    const source =
-        \\@vertex
-        \\fn vs_main(@builtin(vertex_index) vid: u32) -> @builtin(position) vec4f {
-        \\    return vec4f(0.0, 0.0, 0.0, 1.0);
-        \\}
-    ;
-    var out: [MAX_CSL_OUTPUT]u8 = undefined;
-    const result = translateToCsl(std.testing.allocator, source, &out);
-    try std.testing.expectError(TranslateError.UnsupportedConstruct, result);
+    try csl_tests.expectVertexShaderRejectedForCsl(std.testing.allocator, translateToCsl, TranslateError.UnsupportedConstruct, MAX_CSL_OUTPUT);
 }

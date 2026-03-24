@@ -195,6 +195,36 @@ pub fn emit_builtin(self: anytype, function: ir.Function, call: @FieldType(ir.Ex
         }
         return true;
     }
+    if (std.mem.eql(u8, call.name, "textureSampleBias")) {
+        if (call.args.len != 4) return error.InvalidIr;
+        try self.emit_expr(function, function.expr_args.items[call.args.start]);
+        try self.write(".sample(");
+        try self.emit_expr(function, function.expr_args.items[call.args.start + 1]);
+        try self.write(", ");
+        try self.emit_expr(function, function.expr_args.items[call.args.start + 2]);
+        try self.write(", bias(");
+        try self.emit_expr(function, function.expr_args.items[call.args.start + 3]);
+        try self.write("))");
+        return true;
+    }
+    if (std.mem.eql(u8, call.name, "textureNumLevels")) {
+        if (call.args.len != 1) return error.InvalidIr;
+        try self.emit_expr(function, function.expr_args.items[call.args.start]);
+        try self.write(".get_num_mip_levels()");
+        return true;
+    }
+    if (std.mem.eql(u8, call.name, "textureNumLayers")) {
+        if (call.args.len != 1) return error.InvalidIr;
+        try self.emit_expr(function, function.expr_args.items[call.args.start]);
+        try self.write(".get_array_size()");
+        return true;
+    }
+    if (std.mem.eql(u8, call.name, "textureNumSamples")) {
+        if (call.args.len != 1) return error.InvalidIr;
+        try self.emit_expr(function, function.expr_args.items[call.args.start]);
+        try self.write(".get_num_samples()");
+        return true;
+    }
     if (std.mem.eql(u8, call.name, "textureDimensions")) {
         if (call.args.len < 1 or call.args.len > 2) return error.InvalidIr;
         const target_expr = function.expr_args.items[call.args.start];

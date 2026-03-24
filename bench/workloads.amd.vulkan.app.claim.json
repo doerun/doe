@@ -41,7 +41,7 @@
       "rightTimingDivisor": 1.0,
       "vendor": "amd",
       "description": "Apples-to-apples macro ResourceTable workload repeating resource-table/immediates path 500 times inside one command.",
-      "comparabilityNotes": "Dawn delegate does not execute this workload (0 dispatches, 0 encode); comparable: false until Dawn-side implementation is verified.",
+      "comparabilityNotes": "Directional-only pending fresh structural-equivalence evidence on this lane. Historical promotion notes and current catalog state diverged, so this workload remains excluded from strict comparable claim lanes until a new report is recorded.",
       "quirksPath": "examples/quirks/amd_radv_noop_list.json",
       "default": true,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",

@@ -1,34 +1,27 @@
-// Render pass creation, draw call execution, and render bundle replay
-// for the Vulkan backend. Pipeline creation in vk_render_pipeline.zig.
-
+// Render pass creation, draw call execution, and render bundle replay.
+// Pipeline creation in vk_render_pipeline.zig.
 const std = @import("std");
 const c = @import("vk_constants.zig");
 const vk_device = @import("vk_device.zig");
 const vk_sync = @import("vk_sync.zig");
 const vk_formats = @import("vk_formats.zig");
-
-const VK_QUERY_CONTROL_NONE: u32 = 0;
 const vk_upload = @import("vk_upload.zig");
 const vk_resources = @import("vk_resources.zig");
 const model = @import("../../model.zig");
 const common_timing = @import("../common/timing.zig");
 const render_bundle = @import("../../render_bundle.zig");
 const vk_render_pipeline = @import("vk_render_pipeline.zig");
-
-const VK_NULL_U64 = c.VK_NULL_U64;
 const native_runtime = @import("native_runtime.zig");
 const Runtime = native_runtime.NativeVulkanRuntime;
 const DispatchMetrics = native_runtime.DispatchMetrics;
+const VK_NULL_U64 = c.VK_NULL_U64;
+const VK_QUERY_CONTROL_NONE: u32 = 0;
 const VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT: u32 = 0x00000020;
-const VK_DRAW_INDIRECT_STRIDE: u32 = 16;
-const VK_DRAW_INDEXED_INDIRECT_STRIDE: u32 = 20;
 const VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL: u32 = 3;
 const VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT: u32 = 0x00000100;
 const VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT: u32 = 0x00000200;
 const VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT: u32 = 0x00000200;
 const VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT: u32 = 0x00000400;
-const VK_INDEX_TYPE_UINT16: u32 = 0;
-const VK_INDEX_TYPE_UINT32: u32 = 1;
 const WGPU_INDEX_FORMAT_UINT16: u32 = 0x00000001;
 const WGPU_INDEX_FORMAT_UINT32: u32 = 0x00000002;
 
@@ -419,8 +412,6 @@ fn create_graphics_pipeline(
     return vk_render_pipeline.create_graphics_pipeline(self, state, vk_format, cmd);
 }
 
-// Draw execution helper: resolve VkBuffer from opaque handle.
-
 fn resolve_vk_buffer_handle(self: *Runtime, handle: ?*anyopaque) ?c.VkBuffer {
     const ptr = handle orelse return null;
     const cb = self.compute_buffers.get(@intFromPtr(ptr)) orelse return null;
@@ -474,7 +465,6 @@ fn record_and_submit_draws(
             c.vkCmdBindVertexBuffers(self.primary_command_buffer, binding.slot, 1, &buffers_arr, &offsets_arr);
         }
     }
-    // Set dynamic viewport
     const vp_width = cmd.viewport_width orelse @as(f32, @floatFromInt(target_width));
     const vp_height = cmd.viewport_height orelse @as(f32, @floatFromInt(target_height));
     var viewport = c.VkViewport{
@@ -486,8 +476,6 @@ fn record_and_submit_draws(
         .maxDepth = cmd.viewport_max_depth,
     };
     c.vkCmdSetViewport(self.primary_command_buffer, 0, 1, @ptrCast(&viewport));
-
-    // Set dynamic scissor
     const sc_width = cmd.scissor_width orelse target_width;
     const sc_height = cmd.scissor_height orelse target_height;
     var scissor = c.VkRect2D{
@@ -498,6 +486,23 @@ fn record_and_submit_draws(
         .extent = .{ .width = sc_width, .height = sc_height },
     };
     c.vkCmdSetScissor(self.primary_command_buffer, 0, 1, @ptrCast(&scissor));
+
+    if (cmd.depth_bias != 0 or cmd.depth_bias_slope_scale != 0 or cmd.depth_bias_clamp != 0) {
+        c.vkCmdSetDepthBias(
+            self.primary_command_buffer,
+            @floatFromInt(cmd.depth_bias),
+            cmd.depth_bias_clamp,
+            cmd.depth_bias_slope_scale,
+        );
+    }
+
+    if (cmd.depth_stencil_format != model.WGPUTextureFormat_Undefined) {
+        c.vkCmdSetStencilReference(
+            self.primary_command_buffer,
+            c.VK_STENCIL_FACE_FRONT_AND_BACK,
+            cmd.stencil_reference,
+        );
+    }
 
     // Bind graphics pipeline
     c.vkCmdBindPipeline(self.primary_command_buffer, c.VK_PIPELINE_BIND_POINT_GRAPHICS, state.graphics_pipeline);
@@ -534,35 +539,31 @@ fn record_and_submit_draws(
         }
     }
 
-    // Issue draw calls
     const vertex_count = cmd.vertex_count;
     const instance_count = cmd.instance_count;
     const first_vertex = cmd.first_vertex;
     const first_instance = cmd.first_instance;
-
     if (cmd.indirect_buffer_handle != 0) {
-        // Indirect draw path: resolve buffer and issue vkCmdDrawIndirect or vkCmdDrawIndexedIndirect
         const indirect_vk_buf = blk: {
             const cb = self.compute_buffers.get(cmd.indirect_buffer_handle) orelse return error.InvalidArgument;
             break :blk cb.buffer;
         };
         if (cmd.index_data != null or cmd.index_binding != null or cmd.index_count != null) {
-            // Bind the index buffer first, then issue indirect indexed draw
             if (cmd.index_binding) |ib| {
                 const vk_buf = resolve_vk_buffer_handle(self, ib.handle) orelse return error.InvalidArgument;
-                const vk_index_type = if (ib.format == WGPU_INDEX_FORMAT_UINT16) VK_INDEX_TYPE_UINT16 else VK_INDEX_TYPE_UINT32;
+                const vk_index_type = if (ib.format == WGPU_INDEX_FORMAT_UINT16) c.VK_INDEX_TYPE_UINT16 else c.VK_INDEX_TYPE_UINT32;
                 c.vkCmdBindIndexBuffer(self.primary_command_buffer, vk_buf, ib.offset, vk_index_type);
             } else if (cmd.index_buffer_handle != 0) {
                 const vk_buf = blk2: {
                     const cb2 = self.compute_buffers.get(cmd.index_buffer_handle) orelse return error.InvalidArgument;
                     break :blk2 cb2.buffer;
                 };
-                const vk_index_type = if (cmd.index_format == WGPU_INDEX_FORMAT_UINT16) VK_INDEX_TYPE_UINT16 else VK_INDEX_TYPE_UINT32;
+                const vk_index_type = if (cmd.index_format == WGPU_INDEX_FORMAT_UINT16) c.VK_INDEX_TYPE_UINT16 else c.VK_INDEX_TYPE_UINT32;
                 c.vkCmdBindIndexBuffer(self.primary_command_buffer, vk_buf, cmd.index_buffer_offset, vk_index_type);
             }
-            c.vkCmdDrawIndexedIndirect(self.primary_command_buffer, indirect_vk_buf, cmd.indirect_offset, 1, VK_DRAW_INDEXED_INDIRECT_STRIDE);
+            c.vkCmdDrawIndexedIndirect(self.primary_command_buffer, indirect_vk_buf, cmd.indirect_offset, 1, c.VK_DRAW_INDEXED_INDIRECT_COMMAND_STRIDE);
         } else {
-            c.vkCmdDrawIndirect(self.primary_command_buffer, indirect_vk_buf, cmd.indirect_offset, 1, VK_DRAW_INDIRECT_STRIDE);
+            c.vkCmdDrawIndirect(self.primary_command_buffer, indirect_vk_buf, cmd.indirect_offset, 1, c.VK_DRAW_INDIRECT_COMMAND_STRIDE);
         }
     } else if (cmd.index_data != null or cmd.index_binding != null or cmd.index_count != null) {
         try record_indexed_draws(self, cmd, draw_count);
@@ -600,7 +601,6 @@ fn record_and_submit_draws(
     }
 }
 
-// Reset the command pool and begin recording on the primary command buffer.
 fn begin_primary_recording(self: *Runtime) !void {
     try c.check_vk(c.vkResetCommandPool(self.device, self.command_pool, 0));
     var begin_info = c.VkCommandBufferBeginInfo{
@@ -646,7 +646,7 @@ fn record_indexed_draws(
 ) !void {
     if (cmd.index_binding) |ib| {
         const vk_buf = resolve_vk_buffer_handle(self, ib.handle) orelse return error.InvalidArgument;
-        const vk_index_type = if (ib.format == WGPU_INDEX_FORMAT_UINT16) VK_INDEX_TYPE_UINT16 else VK_INDEX_TYPE_UINT32;
+        const vk_index_type = if (ib.format == WGPU_INDEX_FORMAT_UINT16) c.VK_INDEX_TYPE_UINT16 else c.VK_INDEX_TYPE_UINT32;
         c.vkCmdBindIndexBuffer(self.primary_command_buffer, vk_buf, ib.offset, vk_index_type);
         var draw_index: u32 = 0;
         while (draw_index < draw_count) : (draw_index += 1) {

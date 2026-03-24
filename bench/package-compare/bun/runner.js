@@ -10,8 +10,8 @@ const args = parsePackageRunnerArgs();
 
 async function loadProvider(name) {
   if (name === 'doe') {
-    const doe = await import('../../../packages/webgpu/src/bun.js');
-    return { create: doe.create, globals: doe.globals, name: '@simulatte/webgpu (bun default)' };
+    const doe = await import('../../../packages/doe-gpu/src/bun.js');
+    return { create: doe.create, globals: doe.globals, name: 'doe-gpu (bun default)' };
   }
   if (name === 'bun-webgpu') {
     // Community Bun WebGPU package: installs navigator.gpu via setupGlobals().

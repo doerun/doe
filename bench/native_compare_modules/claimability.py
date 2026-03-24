@@ -168,6 +168,43 @@ def assess_phase_equivalence(
     return reasons
 
 
+def _median_elapsed_ns(command_samples: list[dict[str, Any]]) -> float | None:
+    """Return the median raw elapsedMs (converted to ns) across successful samples."""
+    elapsed_values: list[float] = []
+    for sample in command_samples:
+        if not isinstance(sample, dict):
+            continue
+        val = safe_float(sample.get("elapsedMs"))
+        if val is not None and val > 0.0:
+            elapsed_values.append(val * 1e6)
+    if not elapsed_values:
+        return None
+    elapsed_values.sort()
+    return elapsed_values[len(elapsed_values) // 2]
+
+
+def assess_row_timing_floor(
+    *,
+    left_command_samples: list[dict[str, Any]],
+    right_command_samples: list[dict[str, Any]],
+    min_row_timing_floor_ns: int,
+) -> list[str]:
+    """Demote claims where per-row wall time is below the scheduler-noise floor."""
+    if min_row_timing_floor_ns <= 0:
+        return []
+    reasons: list[str] = []
+    left_median_ns = _median_elapsed_ns(left_command_samples)
+    right_median_ns = _median_elapsed_ns(right_command_samples)
+    for side_name, median_ns in [("left", left_median_ns), ("right", right_median_ns)]:
+        if median_ns is not None and median_ns < min_row_timing_floor_ns:
+            reasons.append(
+                f"{side_name} median row wall time ({median_ns / 1e6:.3f}ms) is below "
+                f"the {min_row_timing_floor_ns / 1e6:.1f}ms scheduler-noise floor; "
+                f"increase commandRepeat to push row timing above the floor"
+            )
+    return reasons
+
+
 _UPLOAD_SIZE_SUFFIXES = {
     "1kb": 1024,
     "4kb": 4096,
@@ -492,6 +529,19 @@ def assess_claimability(
         reasons.append(f"left p50 timing ({left_p50_ms * 1e6:.1f}ns) is below the 100ns measurement noise floor")
     if right_p50_ms is not None and right_p50_ms < 0.0001:
         reasons.append(f"right p50 timing ({right_p50_ms * 1e6:.1f}ns) is below the 100ns measurement noise floor")
+
+    min_row_timing_floor_ns = getattr(benchmark_policy, "min_row_timing_floor_ns", 0)
+    if min_row_timing_floor_ns > 0:
+        left_samples_for_floor = left.get("commandSamples", [])
+        right_samples_for_floor = right.get("commandSamples", [])
+        if isinstance(left_samples_for_floor, list) and isinstance(right_samples_for_floor, list):
+            reasons.extend(
+                assess_row_timing_floor(
+                    left_command_samples=left_samples_for_floor,
+                    right_command_samples=right_samples_for_floor,
+                    min_row_timing_floor_ns=min_row_timing_floor_ns,
+                )
+            )
 
     reasons.extend(
         assess_throughput_plausibility(

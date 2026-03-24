@@ -4,6 +4,9 @@
 Zig runtime sources in runtime/zig/src/ must not exceed 777 lines.
 Python benchmark/tooling files in bench/ and pipeline/agent/ must not exceed 1200 lines.
 
+Exemptions (Zig): test files (test_*.zig, *_test.zig, test_suite*.zig) and
+wgpu_types.zig are data-heavy by nature and exempt from the 777-line limit.
+
 Exit 0 when all files are within limits, 1 when any violation is found.
 """
 
@@ -12,6 +15,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -21,6 +25,11 @@ PYTHON_LINE_LIMIT = 1200
 
 # Directories containing third-party code that are not subject to project limits.
 VENDOR_DIRS = ("vendor",)
+
+# Zig filenames exempt from the line limit (test and type-definition files).
+ZIG_EXEMPT_NAMES = frozenset({"wgpu_types.zig"})
+ZIG_EXEMPT_PREFIXES = ("test_", "test_suite")
+ZIG_EXEMPT_SUFFIXES = ("_test.zig",)
 
 
 @dataclass(frozen=True)
@@ -86,6 +95,17 @@ def _is_vendored(path: Path, scan_root: Path) -> bool:
     return any(part in VENDOR_DIRS for part in parts)
 
 
+def _is_zig_exempt(name: str) -> bool:
+    """Return True for Zig files exempt from the line limit per CLAUDE.md policy."""
+    if name in ZIG_EXEMPT_NAMES:
+        return True
+    if any(name.startswith(p) for p in ZIG_EXEMPT_PREFIXES):
+        return True
+    if any(name.endswith(s) for s in ZIG_EXEMPT_SUFFIXES):
+        return True
+    return False
+
+
 def scan_directory(
     root: Path,
     rel_dir: str,
@@ -93,6 +113,8 @@ def scan_directory(
     limit: int,
     language: str,
     excludes: set[str],
+    *,
+    exempt_fn: Callable[[str], bool] | None = None,
 ) -> list[Violation]:
     violations: list[Violation] = []
     scan_root = root / rel_dir
@@ -102,6 +124,8 @@ def scan_directory(
         if not path.is_file():
             continue
         if _is_vendored(path, scan_root):
+            continue
+        if exempt_fn is not None and exempt_fn(path.name):
             continue
         rel = str(path.relative_to(root))
         if rel in excludes:
@@ -131,7 +155,10 @@ def main() -> int:
     violations: list[Violation] = []
 
     violations.extend(
-        scan_directory(root, "runtime/zig/src", ".zig", ZIG_LINE_LIMIT, "zig", excludes)
+        scan_directory(
+            root, "runtime/zig/src", ".zig", ZIG_LINE_LIMIT, "zig", excludes,
+            exempt_fn=_is_zig_exempt,
+        )
     )
     violations.extend(
         scan_directory(root, "bench", ".py", PYTHON_LINE_LIMIT, "python", excludes)

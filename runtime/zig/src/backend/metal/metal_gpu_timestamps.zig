@@ -1,4 +1,8 @@
 const bridge = @import("metal_bridge_decls.zig");
+const metal_bridge_begin_blit_encoding = bridge.metal_bridge_begin_blit_encoding;
+const metal_bridge_end_blit_encoding = bridge.metal_bridge_end_blit_encoding;
+const metal_bridge_release = bridge.metal_bridge_release;
+const metal_bridge_render_encoder_end = bridge.metal_bridge_render_encoder_end;
 
 // Number of timestamp query slots: index 0 = begin, index 1 = end.
 const QUERY_COUNT: u32 = 2;
@@ -67,3 +71,33 @@ pub const TimestampState = struct {
         self.* = .{};
     }
 };
+
+/// Activate GPU timestamp recording on the runtime's streaming command buffer.
+/// Ensures a command buffer exists, ends any active encoders, then samples
+/// the begin timestamp. No-op when timestamps are unsupported or already active.
+pub fn activate_gpu_timestamps(self: anytype) !void {
+    if (!self.timestamp_state.supported) return;
+    if (self.streaming_gpu_timestamps_active) return;
+    // Ensure a streaming command buffer exists.
+    if (self.streaming_cmd_buf == null) {
+        var encoder: ?*anyopaque = null;
+        self.streaming_cmd_buf = metal_bridge_begin_blit_encoding(self.queue, &encoder) orelse return error.InvalidState;
+        self.streaming_blit_encoder = encoder;
+    }
+    // End any active encoder before sampling (one encoder per cmd buf).
+    if (self.streaming_render_encoder) |enc| {
+        metal_bridge_render_encoder_end(enc);
+        metal_bridge_release(enc);
+        self.streaming_render_encoder = null;
+    }
+    if (self.streaming_blit_encoder) |enc| {
+        metal_bridge_end_blit_encoding(enc);
+        self.streaming_blit_encoder = null;
+    }
+    self.timestamp_state.record_begin(self.streaming_cmd_buf);
+    self.streaming_gpu_timestamps_active = true;
+}
+
+pub fn gpu_timestamps_supported(self: anytype) bool {
+    return self.timestamp_state.supported;
+}

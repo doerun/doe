@@ -141,6 +141,7 @@ class BenchmarkMethodologyPolicy:
     release_claim_min_timed_samples: int
     min_operation_wall_coverage_ratio: float
     max_operation_wall_coverage_asymmetry_ratio: float
+    min_row_timing_floor_ns: int = 0
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
@@ -604,6 +605,15 @@ def load_benchmark_methodology_policy(explicit_path: str) -> BenchmarkMethodolog
         field="timingScopeSanity.maxOperationWallCoverageAsymmetryRatio",
     )
 
+    min_row_timing_floor_ns_raw = first_config_value(
+        payload, ["timingScopeSanity.minRowTimingFloorNs"]
+    )
+    min_row_timing_floor_ns = (
+        as_int(min_row_timing_floor_ns_raw, field="timingScopeSanity.minRowTimingFloorNs")
+        if min_row_timing_floor_ns_raw is not None
+        else 0
+    )
+
     if dispatch_ns < 0:
         raise ValueError("timingSelection.minDispatchWindowNsWithoutEncode must be >= 0")
     if dispatch_coverage < 0.0:
@@ -620,6 +630,8 @@ def load_benchmark_methodology_policy(explicit_path: str) -> BenchmarkMethodolog
         raise ValueError(
             "timingScopeSanity.maxOperationWallCoverageAsymmetryRatio must be >= 1"
         )
+    if min_row_timing_floor_ns < 0:
+        raise ValueError("timingScopeSanity.minRowTimingFloorNs must be >= 0")
 
     return BenchmarkMethodologyPolicy(
         source_path=str(path),
@@ -629,6 +641,7 @@ def load_benchmark_methodology_policy(explicit_path: str) -> BenchmarkMethodolog
         release_claim_min_timed_samples=release_min_samples,
         min_operation_wall_coverage_ratio=min_operation_wall_coverage_ratio,
         max_operation_wall_coverage_asymmetry_ratio=max_operation_wall_coverage_asymmetry_ratio,
+        min_row_timing_floor_ns=min_row_timing_floor_ns,
     )
 
 

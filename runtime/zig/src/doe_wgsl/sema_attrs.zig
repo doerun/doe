@@ -190,7 +190,7 @@ pub fn infer_builtin_call(self: anytype, name: []const u8, arg_types: []const ir
             else => error.UnsupportedBuiltin,
         };
     }
-    if (std.mem.eql(u8, name, "atomicLoad") or std.mem.eql(u8, name, "atomicStore") or std.mem.eql(u8, name, "atomicAdd") or std.mem.eql(u8, name, "atomicSub") or std.mem.eql(u8, name, "atomicMax") or std.mem.eql(u8, name, "atomicMin") or std.mem.eql(u8, name, "atomicAnd") or std.mem.eql(u8, name, "atomicOr") or std.mem.eql(u8, name, "atomicXor") or std.mem.eql(u8, name, "atomicExchange")) {
+    if (std.mem.eql(u8, name, "atomicLoad") or std.mem.eql(u8, name, "atomicStore") or std.mem.eql(u8, name, "atomicAdd") or std.mem.eql(u8, name, "atomicSub") or std.mem.eql(u8, name, "atomicMax") or std.mem.eql(u8, name, "atomicMin") or std.mem.eql(u8, name, "atomicAnd") or std.mem.eql(u8, name, "atomicOr") or std.mem.eql(u8, name, "atomicXor") or std.mem.eql(u8, name, "atomicExchange") or std.mem.eql(u8, name, "atomicCompareExchangeWeak")) {
         if (arg_types.len == 0) return error.UnsupportedBuiltin;
         return switch (self.module.types.get(arg_types[0])) {
             .atomic => |inner| inner,
@@ -244,9 +244,29 @@ pub fn infer_builtin_call(self: anytype, name: []const u8, arg_types: []const ir
             else => error.UnsupportedBuiltin,
         };
     }
-    // textureNumLevels / textureNumLayers return u32.
-    if (std.mem.eql(u8, name, "textureNumLevels") or std.mem.eql(u8, name, "textureNumLayers")) {
+    // textureNumLevels / textureNumLayers / textureNumSamples return u32.
+    if (std.mem.eql(u8, name, "textureNumLevels") or std.mem.eql(u8, name, "textureNumLayers") or std.mem.eql(u8, name, "textureNumSamples")) {
         return self.module.u32_type;
+    }
+    if (std.mem.eql(u8, name, "textureSampleBias")) {
+        if (arg_types.len == 0) return error.UnsupportedBuiltin;
+        return switch (self.module.types.get(arg_types[0])) {
+            .texture_1d => |sample_ty| try self.module.types.intern(.{ .vector = .{ .elem = sample_ty, .len = 4 } }),
+            .texture_2d => |sample_ty| try self.module.types.intern(.{ .vector = .{ .elem = sample_ty, .len = 4 } }),
+            .texture_3d => |sample_ty| try self.module.types.intern(.{ .vector = .{ .elem = sample_ty, .len = 4 } }),
+            .texture_cube => |sample_ty| try self.module.types.intern(.{ .vector = .{ .elem = sample_ty, .len = 4 } }),
+            .texture_2d_array => |sample_ty| try self.module.types.intern(.{ .vector = .{ .elem = sample_ty, .len = 4 } }),
+            else => error.UnsupportedBuiltin,
+        };
+    }
+    // Derivative builtins return the same type as their input.
+    if (is_derivative_builtin(name)) {
+        if (arg_types.len == 0) return error.UnsupportedBuiltin;
+        return arg_types[0];
+    }
+    // quantizeToF16 returns f32 (the input rounded to f16 precision).
+    if (std.mem.eql(u8, name, "quantizeToF16")) {
+        return try self.module.types.intern(.{ .scalar = .f32 });
     }
     return error.UnsupportedBuiltin;
 }
@@ -275,7 +295,7 @@ fn is_passthrough_math(name: []const u8) bool {
         "exp",                "exp2",            "log",              "log2",        "pow",
         "step",               "tan",             "asin",             "acos",        "atan",
         "sinh",               "cosh",            "tanh",             "saturate",    "dot",
-        "cross",              "reflect",         "refract",          "modf",        "frexp",
+        "cross",              "faceForward",     "reflect",          "refract",     "modf",        "frexp",
         "countOneBits",       "reverseBits",     "extractBits",      "insertBits",  "countLeadingZeros",
         "countTrailingZeros", "firstLeadingBit", "firstTrailingBit",
     };
@@ -303,6 +323,18 @@ fn is_unpack_2_builtin(name: []const u8) bool {
 
 fn is_unpack_4_builtin(name: []const u8) bool {
     const ops = [_][]const u8{ "unpack4x8unorm", "unpack4x8snorm" };
+    for (ops) |op| {
+        if (std.mem.eql(u8, name, op)) return true;
+    }
+    return false;
+}
+
+fn is_derivative_builtin(name: []const u8) bool {
+    const ops = [_][]const u8{
+        "dpdx",       "dpdxCoarse", "dpdxFine",
+        "dpdy",       "dpdyCoarse", "dpdyFine",
+        "fwidth",     "fwidthCoarse", "fwidthFine",
+    };
     for (ops) |op| {
         if (std.mem.eql(u8, name, op)) return true;
     }

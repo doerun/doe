@@ -288,6 +288,7 @@ fn texture_has_level(tex_type: ir.Type) bool {
 
 fn dispatch_fit_texture_coord_dim(tex_type: ir.Type) ?u8 {
     return switch (tex_type) {
+        .texture_1d => 1,
         .texture_2d, .texture_depth_2d, .texture_multisampled_2d, .storage_texture_2d => 2,
         .texture_3d => 3,
         else => null,
@@ -371,6 +372,7 @@ fn resolve_texture_binding(
             const global = module.globals.items[global_idx];
             const binding = global.binding orelse return null;
             return switch (resolve_texture_type(&module.types, global.ty)) {
+                .texture_1d,
                 .texture_2d,
                 .texture_depth_2d,
                 .texture_multisampled_2d,
@@ -399,6 +401,7 @@ fn is_identity_gid_coord(function: *const ir.Function, expr_id: ir.ExprId, dim: 
             const io = function.params.items[param_idx].io orelse return false;
             if (io.builtin != .global_invocation_id) return false;
             return switch (dim) {
+                1 => std.mem.eql(u8, member.field_name, "x"),
                 2 => std.mem.eql(u8, member.field_name, "xy"),
                 3 => std.mem.eql(u8, member.field_name, "xyz"),
                 else => false,
@@ -418,7 +421,11 @@ fn is_identity_gid_coord(function: *const ir.Function, expr_id: ir.ExprId, dim: 
             }
             return true;
         },
-        else => return false,
+        else => {
+            // For 1D dispatch-fit, the coord is a scalar gid.x, not a vector.
+            if (dim == 1) return classify_gid_scalar(function, expr_id) == 0;
+            return false;
+        },
     }
 }
 
@@ -450,13 +457,23 @@ fn try_elide_dispatch_fit_texture_coords(
     if (!is_identity_gid_coord(function, coord_arg, dim)) return null;
 
     const binding = resolve_texture_binding(module, function, texture_arg) orelse return null;
-    switch (dim) {
-        2 => if (!lean_proof.boundsProven(.gid_texture_2d_dispatch_fit)) return null,
-        3 => if (!lean_proof.boundsProven(.gid_texture_3d_dispatch_fit)) return null,
+    const kind: ir.TextureDispatchPreconditionKind = switch (dim) {
+        1 => blk: {
+            if (!lean_proof.boundsProven(.gid_texture_1d_dispatch_fit)) return null;
+            break :blk .gid_coords_1d;
+        },
+        2 => blk: {
+            if (!lean_proof.boundsProven(.gid_texture_2d_dispatch_fit)) return null;
+            break :blk .gid_coords_2d;
+        },
+        3 => blk: {
+            if (!lean_proof.boundsProven(.gid_texture_3d_dispatch_fit)) return null;
+            break :blk .gid_coords_3d;
+        },
         else => return null,
-    }
+    };
     return .{
-        .kind = if (dim == 2) .gid_coords_2d else .gid_coords_3d,
+        .kind = kind,
         .texture_binding = binding,
         .mip_level = 0,
     };

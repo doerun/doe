@@ -1,8 +1,422 @@
 # Doe status
+## CSL governed smoke lane and SDK driver bridge (2026-03-24)
+
+- Added `doe-csl-bundle-emitter`, a small Zig binary that turns a WGSL smoke fixture
+  into a split `layout.csl` / `pe_program.csl` bundle for CSL compile smoke paths.
+- Added `runtime/zig/tools/csl_sdk_driver.py`, an explicit external driver that
+  consumes `csl_simulator_plan`, probes for `cslc` + `cerebras-sdk`, compiles a
+  single smoke target when available, and emits a trace summary instead of faking
+  model execution.
+- Added a governed bench lane wrapper and gate:
+  - `bench/run_csl_governed_lane.py`
+  - `bench/csl_simulator_gate.py`
+- The governed lane currently proves the compile/run/parity contract surface for a
+  single-kernel smoke path. Full model/runtime execution still remains blocked on
+  real multi-kernel host-runtime sequencing and actual Cerebras simulator/hardware.
+
 
 ## Snapshot
 
 Date: 2026-03-23
+
+### CSL simulator contract runner and outcome artifacts (2026-03-24)
+
+- Added a schema-backed simulator launch contract for CSL work that remains
+  explicit-only and fail-closed:
+  - `config/doe-wgsl-simulator-plan.schema.json`
+  - `examples/doe-wgsl-simulator-plan.sample.json`
+- Added a schema-backed simulator outcome artifact:
+  - `config/doe-wgsl-simulator-result.schema.json`
+  - `examples/doe-wgsl-simulator-result.sample.json`
+- Added `emit_csl_simulator.zig` typed parsing and validation for simulator
+  plan/result artifacts, plus result emission helpers.
+- Added `doe-csl-sim-runner`, a separate Zig executable that:
+  - validates `csl_simulator_plan`
+  - resolves the simulator driver explicitly (`--driver-executable` or
+    `DOE_CSL_SIM_EXECUTABLE`)
+  - writes stdout/stderr to declared artifact paths
+  - emits a deterministic simulator result artifact
+- This is simulator-prep only. It does not invent trace output, and it does not
+  emulate Cerebras execution when a simulator is unavailable.
+
+### Vulkan graphics path promotion (2026-03-23)
+
+- Wired depth bias dynamic state into Vulkan render pipeline creation and draw recording.
+  `vk_render_pipeline.zig`: rasterization state now reads `depth_bias`, `depth_bias_slope_scale`,
+  `depth_bias_clamp` from `RenderDrawCommand` instead of hardcoding zeros. Dynamic state list
+  conditionally includes `VK_DYNAMIC_STATE_DEPTH_BIAS` and `VK_DYNAMIC_STATE_STENCIL_REFERENCE`
+  when depth/stencil is active.
+- Added `vkCmdSetDepthBias` and `vkCmdSetStencilReference` dynamic state calls in
+  `vk_render.zig` draw recording, matching WebGPU per-draw-call semantics.
+- Added extern declarations for `vkCmdSetDepthBias` and `vkCmdSetStencilReference` in
+  `vk_functions.zig`, with re-exports and new constants (`VK_DYNAMIC_STATE_DEPTH_BIAS`,
+  `VK_DYNAMIC_STATE_STENCIL_REFERENCE`, `VK_STENCIL_FACE_FRONT_AND_BACK`) in `vk_constants.zig`.
+- Declared four new capabilities in `mod.zig` `native_capability_set()`: `indirect_draw`,
+  `indexed_indirect_draw`, `depth_stencil`, `descriptor_binding` -- these were already
+  implemented in draw paths but not advertised.
+- Fixed double-prefix bug (`c.c.VK_INDEX_TYPE_*`) in `vk_render.zig` inline index buffer path.
+- Added `vulkan_render_pipeline_test.zig` (229 lines, 40 tests) covering all pure conversion
+  helpers: `blend_factor_to_vk`, `blend_operation_to_vk`, `topology_to_vk`, `cull_mode_to_vk`,
+  `front_face_to_vk`, `sample_count_to_vk`, `color_write_mask_to_vk`, `wgpu_compare_to_vk`,
+  `wgpu_stencil_op_to_vk`, `format_has_stencil`, `resolve_entry_point_name`,
+  `vertex_step_mode_to_vk`. Registered in `test_suite.zig`.
+- All modified runtime files remain under the 777-line limit.
+- Follow-up: occlusion query creation/management and multi-draw-indirect are not yet
+  exposed as standalone capabilities; tracked for future promotion.
+
+### Regenerate stale Bun/Deno artifacts from catalog changes (2026-03-23)
+
+- Regenerated all backend workload lane files from `bench/backend-workload-catalog.json`
+  via `bench/generate_backend_workloads.py`. Catalog changes included new D3D12 extended
+  lane entries and updated comparability notes.
+- Regenerated workload overlap map via `bench/generate_workload_overlap_map.py`.
+- Regenerated WebGPU surface reports (`config/generated/webgpu-surface-*.json`)
+  via `scripts/generate_webgpu_surface_reports.py`.
+- Ran `packages/doe-gpu/scripts/sync-vendor.js` to sync vendored files into the
+  `doe-gpu` package. Removed stale `writeSemanticOperatorBundle` export that was
+  deleted upstream. Fixed quote style inconsistency in vendored `bun.js`.
+- Updated Bun/Deno/Node benchmark harness configs and runners under
+  `bench/package-compare/` to reference `doe-gpu` instead of `@simulatte/webgpu`
+  and `packages/doe-gpu/src/` instead of `packages/webgpu/src/`:
+  - `bench/package-compare/bun/config.json`, `runner.js`
+  - `bench/package-compare/deno/config.json`, `runner.js`
+  - `bench/package-compare/node/config.json`, `runner.js`
+  - `bench/package-compare/doe-api/bun/config.json`, `runner.js`
+  - `bench/package-compare/doe-api/deno/config.json`, `runner.js`
+  - `bench/package-compare/doe-api/node/config.json`, `runner.js`
+  - `bench/package-compare/doe-api/workloads.js`
+- Updated `config/workload-registry.schema.json` title from "Fawn" to "Doe".
+- Workload registry (`bench/workload-registry.json`) verified consistent with catalog:
+  30 workloads across all three package surfaces (node_package, bun_package, deno_package).
+
+### D3D12 parity scaffold correction (2026-03-23)
+
+- Kept `local_d3d12_extended` at parity breadth with the common Metal/Vulkan
+  extended set, but corrected the lane semantics for the 39 newly added rows.
+- Those 39 rows are now explicit directional D3D12 parity scaffolds:
+  - `comparable: false`
+  - `benchmarkClass: directional`
+  - `dawnFilter: "@autodiscover"`
+  - Windows D3D12 profile fields and `windows_d3d12_noop_list.json`
+- This prevents the strict D3D12 comparable config from accidentally promoting
+  render/texture/surface rows into governed apples-to-apples claim lanes before
+  Windows-backed evidence exists.
+- The governed D3D12 comparable contract remains the existing 11-row
+  compute/upload/pipeline/p0-resource slice; `bench/workloads.d3d12.comparable.json`
+  stays authoritative for that strict subset.
+
+### WGSL builtin spec conformance expansion (2026-03-23)
+
+- Expanded WGSL-to-MSL builtin function coverage across five categories:
+  - **Pack/unpack 2x16:** pack2x16snorm, pack2x16unorm, unpack2x16snorm, unpack2x16unorm
+    mapped to MSL `pack_float_to_snorm2x16`, `pack_float_to_unorm2x16`,
+    `unpack_snorm2x16_to_float`, `unpack_unorm2x16_to_float`.
+  - **Renamed math builtins:** faceForward -> `faceforward`, countOneBits -> `popcount`,
+    reverseBits -> `reverse_bits`, countLeadingZeros -> `clz`, countTrailingZeros -> `ctz`.
+    saturate, reflect, refract, transpose, determinant added as passthrough.
+  - **Bit manipulation:** extractBits -> `extract_bits`, insertBits -> `insert_bits`,
+    firstLeadingBit -> `(31 - clz(...))`, firstTrailingBit -> `ctz(...)`.
+  - **Texture query:** textureNumLevels -> `.get_num_mip_levels()`,
+    textureNumLayers -> `.get_array_size()`, textureNumSamples -> `.get_num_samples()`,
+    textureSampleBias -> `.sample(..., bias(...))`.
+  - **Fragment derivatives:** dpdx/dpdxCoarse/dpdxFine -> `dfdx`,
+    dpdy/dpdyCoarse/dpdyFine -> `dfdy`, fwidth/fwidthCoarse/fwidthFine -> `fwidth`.
+  - **Other:** atomicCompareExchangeWeak, quantizeToF16 -> `float(half(...))`,
+    modf (fractional component), frexp (mantissa).
+- Added `faceForward` to sema `is_passthrough_math` (was missing).
+- Added derivative builtins, textureSampleBias, textureNumSamples,
+  atomicCompareExchangeWeak, quantizeToF16 to sema type inference.
+- New test file: `coverage_builtin_spec_test.zig` with 18 tests covering all
+  new builtins. Registered in `test_suite_wgsl.zig`.
+- All modified files remain under the 777-line limit.
+- Modified files:
+  - `runtime/zig/src/doe_wgsl/emit_msl_ir_builtins.zig` (341 -> 487 lines)
+  - `runtime/zig/src/doe_wgsl/emit_msl_maps.zig` (137 -> 153 lines)
+  - `runtime/zig/src/doe_wgsl/emit_msl_texture.zig` (306 -> 336 lines)
+  - `runtime/zig/src/doe_wgsl/sema_attrs.zig` (424 -> 456 lines)
+  - `runtime/zig/src/doe_wgsl/coverage_builtin_spec_test.zig` (new, 324 lines)
+  - `runtime/zig/test_suite_wgsl.zig` (updated with new test import)
+
+### CTS baseline infrastructure (2026-03-23)
+
+- Built CTS conformance test suite baseline infrastructure for regression detection.
+- Baseline generator: `bench/cts_baseline_generate.py` runs CTS queries against Doe
+  and captures structured pass/fail results into `bench/out/cts-baseline/<timestamp>.json`.
+  Reuses the existing CTS subset config format (`bench/cts_subset.fawn-node.json`).
+- Baseline comparator: `bench/cts_baseline_compare.py` loads a baseline snapshot and
+  a current snapshot, diffs per-query results, and emits a comparison report with
+  new passes, new failures, stable counts, and regression/improvement tallies.
+  Supports `--gate` mode for CI integration with policy-driven pass/fail.
+- Trend reporter: `bench/cts_baseline_trend.py` reads all timestamped snapshots from
+  the baseline directory and classifies the overall trend as improving, regressing,
+  stable, or insufficient_data. Window size and minimum snapshot count are policy-driven.
+- Schema: `config/cts-baseline.schema.json` defines the baseline snapshot artifact format.
+- Policy: `config/cts-baseline-policy.json` (schema: `config/cts-baseline-policy.schema.json`)
+  controls regression thresholds (`maxNewFailures`, `requireNoRegressions`) and trend
+  window configuration. Advisory gate mode in v0 bootstrap.
+- Gate wiring: `bench/run_blocking_gates.py` gains `--with-cts-baseline-gate` (opt-in),
+  `--cts-baseline-snapshot`, `--cts-baseline-current`, and `--cts-baseline-policy` flags.
+- Schema registration: `config/cts-baseline-policy.json` added to `config/schema-targets.json`.
+- Gate documentation updated in `docs/process.md`.
+- Follow-up: promote from advisory to blocking once a stable baseline with at least 3
+  snapshots exists and the CTS vendor dependencies are wired end-to-end.
+
+### Pipeline cache Phase 3: startup warmup scheduler (2026-03-23)
+
+- Implemented synchronous pipeline cache warmup on startup in `metal_pipeline_cache.zig`.
+  On `flush_archive()`, a sidecar manifest (`doe_pipeline_archive.manifest`) is written
+  listing all pipeline keys compiled during the session: render pixel formats (`R:<fmt>`)
+  and compute kernel names (`C:<name>`).
+- On `init()`, the manifest is loaded from the previous session. `run_warmup()` re-triggers
+  `compile_or_serve_render` for each render entry so Metal loads cached binaries into memory,
+  eliminating first-use compile misses. Compute kernel names are returned to the runtime
+  bootstrap, which resolves them via `ensure_kernel_pipeline`.
+- `register_compute_key()` called from `ensure_kernel_pipeline` in `metal_runtime_resources.zig`
+  records kernel names into the manifest for future sessions.
+- Warmup telemetry: `warmup_count` and `warmup_ns` added to `CacheTelemetry`. New C ABI
+  export `doeNativeMetalPipelineCacheWarmupTelemetry` exposes both counters.
+  `finalize_warmup_telemetry()` accumulates compute-side warmup timing from the runtime.
+- Warmup policy: `config/pipeline-warmup-policy.json` schema bumped to v2,
+  `enableStartupWarmup` field added (default: true). `maxWarmupPipelines` (default: 64)
+  caps manifest entries loaded at init.
+- Graceful degradation: missing/stale/corrupt manifest files are silently skipped;
+  manifest entries exceeding `MAX_COMPUTE_KEY_LEN` (256) or `MAX_MANIFEST_BYTES` (64 KB)
+  are discarded.
+- Modified files:
+  - `runtime/zig/src/backend/metal/metal_pipeline_cache.zig` (473 -> 664 lines)
+  - `runtime/zig/src/backend/metal/metal_native_runtime.zig` (bootstrap warmup integration)
+  - `runtime/zig/src/backend/metal/metal_runtime_resources.zig` (register_compute_key call)
+  - `config/pipeline-warmup-policy.json` (schema v1 -> v2)
+  - `config/pipeline-warmup-policy.schema.json` (enableStartupWarmup field)
+- All files remain under the 777-line limit.
+- Follow-up: Phase 4 background warmup (multi-threaded, config-gated via `enableBackgroundWarmup`).
+
+### DXIL structural validation gate wired into CI (2026-03-23)
+
+- Wired the existing `dxil_validate.zig` structural validator and
+  `emit_dxil_test.zig` integration tests into the CI gate infrastructure.
+- Added `emit_dxil_test` and `dxil_validate` imports to
+  `runtime/zig/test_suite_wgsl.zig` so `zig build test-wgsl` now exercises
+  DXIL container validation (DXBC header, version, part bounds, LLVM bitcode
+  magic) and WGSL-to-DXIL compilation across compute/vertex/fragment stages.
+- Created `bench/dxil_validate_gate.py`: standalone gate script that runs the
+  Zig-level DXIL tests and a Python-side defense-in-depth structural
+  validation pass with failure taxonomy (`zig_test_failure`,
+  `compilation_failure`, `structural_failure`, `missing_magic`, `too_small`).
+- Wired into `bench/run_blocking_gates.py` via `--with-dxil-validate-gate`
+  (opt-in, consistent with `--with-spirv-val-gate` pattern).
+- Updated `docs/process.md` gate documentation for Apple Metal, AMD Vulkan
+  extended, and the general gate section.
+- Modified files:
+  - `runtime/zig/test_suite_wgsl.zig` (added 2 imports + 2 comptime refs)
+  - `bench/dxil_validate_gate.py` (new, standalone gate)
+  - `bench/run_blocking_gates.py` (added CLI args + gate invocation)
+  - `docs/process.md` (gate documentation)
+
+### Apple Metal non-comparable catalog cleanup (2026-03-23)
+
+- Cleaned stale comparability notes in `bench/backend-workload-catalog.json`
+  for `pipeline_async_diagnostics`,
+  `render_pixel_local_storage_barrier_500`, and
+  `resource_table_immediates_500`.
+- Previous notes claimed the Dawn delegate executed `0 dispatches, 0 encode`,
+  but historical compare artifacts and current catalog state had diverged. The
+  cited scratch artifact is no longer present under `bench/out`, so that claim
+  is not audit-safe.
+- These rows now stay fail-closed as directional-only pending fresh
+  structural-equivalence evidence on the affected lanes, including
+  `apple_metal_extended`.
+- Fresh targeted Apple Metal evidence also removed the stale
+  Doe-execution-error claim from `render_multidraw` and
+  `render_multidraw_indexed`. Current targeted reruns executed without
+  process-level failures, so those rows now remain directional-only for
+  mapping/governance reasons rather than a claimed active Doe crash.
+- Remaining Apple Metal contract-only rows
+  (`pipeline_async_diagnostics`, `render_draw_indexed_200k`,
+  `render_draw_indexed_baseline`, `surface_presentation`) now cite only fresh
+  targeted-rerun evidence plus the remaining contract-level reason for staying
+  directional. Their notes no longer rely on inherited generic wording.
+- `compute_indirect_timestamp` remains directional on
+  `apple_metal_extended`; no source change was required because the Apple Metal
+  lane override already carried the correct directional note.
+
+### External texture interop: Doe-side completion (2026-03-23)
+
+- Fixed `doeNativeQueueCopyExternalImageToTexture` and
+  `doeNativeQueueCopyExternalTextureForBrowser` to handle both DoeTextureView-backed
+  and native-imported (IOSurface/CVPixelBuffer) external textures. Previously, the
+  copy path cast `plane0` to `DoeTextureView` unconditionally, which silently failed
+  for native-imported textures (where `plane0` is a raw MTLTexture handle).
+  New `copy_external_texture_to_dst` helper dispatches to the standard texture-to-texture
+  copy for DoeTextureView-backed planes, and to a direct Metal blit for native imports.
+- Fixed bind group external texture slot population in `doe_bind_group_native.zig`.
+  Previously `bg.textures[binding]` stored the raw `ext.plane0` pointer for both
+  DoeTextureView and native-imported paths. For DoeTextureView-backed external textures,
+  this was a DoeTextureView pointer, not an MTLTexture handle, causing Metal encoding
+  to receive the wrong handle type. Now uses `resolvePlane0MtlHandle` and
+  `resolvePlane1MtlHandle` to extract the correct MTL handle for all external textures.
+- Added three resolution helpers in `doe_external_texture_native.zig`:
+  `resolvePlane0MtlHandle`, `resolvePlane1MtlHandle`, `resolvePlane0DoeTexture`.
+  These correctly dispatch between DoeTextureView-backed planes (extracts
+  `view.handle` or `view.tex.mtl`) and native-imported planes (returns the raw
+  MTLTexture handle directly).
+- Updated `config/webgpu-integration-chromium.json`: `copyExternalImageToTexture` and
+  `importExternalTexture` status changed from `not_supported` to
+  `implemented_untested_in_browser` with `blockedBy` changed from
+  `chromium-shared-image-interop` to `chromium-wire-instance-lifetime`.
+- Doe-side external texture implementation is now complete. The remaining browser-level
+  failure ("A valid external Instance reference no longer exists") is a Chromium wire
+  client Instance validation issue: the wire client's EventManager state diverges from
+  Doe's Instance lifecycle. Fixing requires DoeCommandDecoder Phase 2+ wire interception
+  (upstream Chromium change, not a Doe runtime bug).
+- Modified files:
+  - `runtime/zig/src/doe_external_texture_native.zig` (295 -> 320 lines)
+  - `runtime/zig/src/doe_queue_submit_native.zig` (753 -> 773 lines)
+  - `runtime/zig/src/doe_bind_group_native.zig` (382 -> 384 lines)
+  - `config/webgpu-integration-chromium.json`
+- All files remain under the 777-line limit.
+
+### Pipeline cache Phase 2.5: lazy flush, fingerprint invalidation, hit/miss timing (2026-03-23)
+
+- Three gaps closed in the Metal pipeline cache (`metal_pipeline_cache.zig`):
+  1. **Background flush timer**: lazy periodic flush via `maybe_lazy_flush()` called
+     after each cache miss. If `FLUSH_INTERVAL_NS` (30 seconds) has elapsed since
+     the last serialize, `flush_archive()` is called automatically. No background
+     thread — single-threaded model preserved. Timestamp tracked in `last_flush_ns`.
+  2. **Archive invalidation on GPU/driver change**: on init, `validate_or_discard_archive()`
+     computes a device fingerprint (`<device_name>:<registry_id_hex>`) from
+     `metal_bridge_device_name` and `metal_bridge_device_registry_id`, compares
+     against the stored sidecar file (`doe_pipeline_archive.fingerprint`), and
+     deletes the stale `.metallib` archive on mismatch. New bridge extern
+     declarations added to `metal_bridge_decls.zig`.
+  3. **Per-pipeline hit/miss timing telemetry**: `CacheTelemetry` now tracks
+     `total_hit_ns` and `total_miss_ns`. Each `compile_or_serve_*` call wraps the
+     bridge invocation with `common_timing.now_ns()` timestamps. New C ABI export
+     `doeNativeMetalPipelineCacheTelemetryExt` exposes all four counters.
+- Modified files:
+  - `runtime/zig/src/backend/metal/metal_pipeline_cache.zig` (333 -> 473 lines)
+  - `runtime/zig/src/backend/metal/metal_bridge_decls.zig` (added device property externs)
+- All files remain under the 777-line limit.
+- New constants: `FLUSH_INTERVAL_NS`, `FINGERPRINT_FILENAME`, `DEVICE_NAME_CAP`.
+- No new dependencies; uses existing `common_timing` module and ObjC bridge functions
+  that were already implemented in `metal_bridge.m` / `metal_bridge.h`.
+
+### Render texture lifecycle timing regression fix (2026-03-23)
+
+- Root cause: `texture_sampler_write_query_destroy` workload shows tail-negative
+  results (p95 delta compressing to 99.3%) because Doe's per-call CFRelease on
+  sampler_destroy/texture_destroy serializes against Metal's internal ARC
+  machinery under aggregate lane pressure (10+ destroys per flush cycle).
+  Dawn avoids this by deferring object destruction to a GC pass at command
+  buffer boundaries.
+- Fix: two-part optimization in the Metal backend resource lifecycle:
+  1. **Deferred batch release pool** (`metal_deferred_release.zig`): fixed-capacity
+     ring buffer (64 slots) collects pending texture/sampler Metal object releases
+     and batch-drains them in a single tight loop at `flush_queue_timed` boundaries.
+     Eliminates per-destroy CFRelease round-trips during the timed workload window.
+  2. **Sampler descriptor cache** (`metal_deferred_release.zig`): caches up to 16
+     unique MTLSamplerState objects by descriptor key. Identical sampler parameter
+     tuples (filter, address mode, LOD, anisotropy) share a single Metal object with
+     reference counting. For the common case of repeated identical sampler descriptors
+     in lifecycle benchmarks, this eliminates Metal alloc/dealloc entirely.
+- Modified files:
+  - `runtime/zig/src/backend/metal/metal_deferred_release.zig` (new, 207 lines)
+  - `runtime/zig/src/backend/metal/metal_resource_commands.zig` (updated)
+  - `runtime/zig/src/backend/metal/metal_native_runtime.zig` (added pool/cache fields, wired drain)
+  - `runtime/zig/src/backend/metal/metal_cleanup.zig` (sampler release coordinates with cache)
+- All files remain under the 777-line limit.
+- Expected impact: eliminates tail-negative regression on texture_sampler_write_query_destroy
+  workload by matching Dawn's deferred destruction semantics while preserving
+  Doe's explicit lifecycle guarantees.
+
+### Small-upload timing jitter fix (2026-03-23)
+
+- Root cause: `upload_write_buffer_1kb` (1000 repeats, ~170us total row time)
+  and `upload_write_buffer_64kb` (500 repeats, ~200us total row time) are far
+  below the OS scheduler preemption window (~10-50us). A single preemption
+  during a 170us measurement window causes 5-25% p95 instability under
+  full-lane contention, making these rows non-claimable (`p50 -5.34%`,
+  `p95 -12.38%` for 1KB in the full lane).
+- Fix is two-pronged:
+  1. **Increased repeat counts** to push row timing above the scheduler-noise
+     floor: 1KB from 1000 to 50000 repeats (~8.5ms row time), 64KB from 500 to
+     10000 repeats (~5ms row time). Both left and right sides updated
+     symmetrically for comparability.
+  2. **New `minRowTimingFloorNs` policy** in
+     `config/benchmark-methodology-thresholds.json` (set to 5000000 = 5ms).
+     Claimability assessment now checks median row wall time against this floor
+     and demotes workloads below it to diagnostic, providing a safety net for
+     any row whose repeat count hasn't been tuned yet.
+- Files changed:
+  - `config/benchmark-methodology-thresholds.json`: added
+    `timingScopeSanity.minRowTimingFloorNs`
+  - `config/benchmark-methodology-thresholds.schema.json`: added optional
+    `minRowTimingFloorNs` property
+  - `bench/native_compare_modules/config_support.py`: `BenchmarkMethodologyPolicy`
+    gains `min_row_timing_floor_ns` field; loader reads from config
+  - `bench/native_compare_modules/claimability.py`: new
+    `assess_row_timing_floor()` check wired into `assess_claimability()`
+  - `bench/workloads.apple.metal.extended.json`: 1KB repeat 1000->50000,
+    64KB repeat 500->10000
+  - `bench/backend-workload-catalog.json`: same changes in
+    `apple_metal_extended` lane
+  - `bench/test_claimability.py`: two new tests for the row timing floor
+- Follow-up: AMD Vulkan lanes still use 500 repeats for small uploads;
+  if the same jitter pattern appears there, apply the same fix.
+
+### Pipeline cache Phase 2: compile-skip via MTLBinaryArchive (2026-03-23)
+
+- Phase 2 closes the compile-skip gap in the Metal pipeline cache. On a cache
+  hit, `metal_bridge_device_new_compute_pipeline_with_archive` now serves a
+  pre-compiled binary from the MTLBinaryArchive without re-entering
+  `newLibraryWithSource`. On a miss, compilation proceeds normally and the
+  result is recorded via `addComputePipelineFunctionsWithDescriptor` for
+  future warm starts.
+- `metal_bridge.m`: `_with_archive` functions now call
+  `addComputePipelineFunctionsWithDescriptor:` / `addRenderPipelineFunctionsWithDescriptor:`
+  after compilation to prime the archive. Previous Phase 1 no-op `add_compute` / `add_render`
+  bridge functions remain as ABI-stable stubs.
+- `metal_pipeline_cache.zig`: replaced lookup-then-compile-then-add two-step with
+  unified `compile_or_serve_compute` / `compile_or_serve_render` path. Added
+  `CacheTelemetry` (compile_count, serialize_count), `DOE_PIPELINE_CACHE_DIR`
+  env var support, and `makePath` for cache directory auto-creation.
+- `metal_runtime_resources.zig`: `resolve_compute_pso_for` / `resolve_render_pso_for`
+  simplified to single `compile_or_serve` call with plain-compile fallback.
+- Archive flush occurs at `deinit` (process shutdown) and via `doeNativeMetalPipelineCacheFlush`.
+  Serialization persists the `.metallib` to disk, enabling warm starts across process launches.
+- Not yet implemented: background flush on a timer (currently synchronous at shutdown only),
+  archive invalidation on driver/GPU change, and per-pipeline timing to distinguish hit vs miss
+  in telemetry.
+
+### CSL validation and host-plan metadata cleanup (2026-03-23)
+
+- `runtime/zig/src/doe_wgsl/mod.zig` now exposes opt-in CSL validation wrappers
+  backed by `emit_csl_validate`, so callers can validate pattern output or
+  toolchain config without importing the submodule directly.
+- `runtime/zig/src/doe_wgsl/csl_spec.zig` now owns the shared CSL host-plan and
+  toolchain metadata constants, including schema identity, target identity,
+  the SDK minimum version, and the `cslc --version` validation arg.
+- `runtime/zig/src/doe_wgsl/emit_csl_host_plan.zig` and
+  `runtime/zig/src/doe_wgsl/emit_csl_toolchain.zig` now consume those shared
+  constants; the host-plan artifact still records optional cslc validation
+  metadata, while the toolchain emitter stays declarative.
+
+### CSL host-plan honesty and WGSL module sharding (2026-03-23)
+
+- `runtime/zig/src/doe_wgsl/emit_csl_host.zig` no longer claims to lower
+  Doppler execution-v1 directly. It now emits host-side scaffolds from an
+  explicit `HostPlan` contract with declared kernels, prefill/decode launch
+  phases, optional `eosTokenId`, and a conservative SRAM estimate payload.
+- The generated Python scaffold now matches Doppler RDRR shard schema fields:
+  reads `filename` and preserves `index`, `offset`, and `size` metadata instead
+  of relying on nonexistent shard keys.
+- Misleading SRAM “fit” semantics were removed. The host module now exposes
+  conservative estimate helpers (`estimateLayerSramBytes`, `estimateModelSram`)
+  rather than treating rough arithmetic as a placement proof.
+- `runtime/zig/src/doe_wgsl/mod.zig` was reduced below the 777-line limit by
+  moving CSL-specific test bodies into
+  `runtime/zig/src/doe_wgsl/doe_wgsl_csl_tests.zig` while keeping the public
+  API unchanged.
 
 ### SPIR-V emission parity with MSL (2026-03-23)
 

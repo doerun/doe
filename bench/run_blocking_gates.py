@@ -162,6 +162,21 @@ def parse_args() -> argparse.Namespace:
         help="Which surface(s) to validate in the split coverage gate.",
     )
     parser.add_argument(
+        "--with-dxil-validate-gate",
+        action="store_true",
+        help="Run dxil_validate_gate.py to validate DXIL structural correctness.",
+    )
+    parser.add_argument(
+        "--dxil-validate-zig",
+        default="zig",
+        help="Path to the Zig compiler for DXIL validation gate.",
+    )
+    parser.add_argument(
+        "--dxil-validate-skip-zig-tests",
+        action="store_true",
+        help="Pass --skip-zig-tests to dxil_validate_gate.py.",
+    )
+    parser.add_argument(
         "--with-spirv-val-gate",
         action="store_true",
         help="Run spirv_val_gate.py to validate SPIR-V artifacts with spirv-val.",
@@ -193,6 +208,51 @@ def parse_args() -> argparse.Namespace:
             "Fail unless --with-claim-gate is set. "
             "Use this when the run is intended as release-claim readiness evidence."
         ),
+    )
+    parser.add_argument(
+        "--with-cts-baseline-gate",
+        action="store_true",
+        help="Run cts_baseline_compare.py to detect CTS conformance regressions.",
+    )
+    parser.add_argument(
+        "--with-csl-governed-lane-gate",
+        action="store_true",
+        help="Run csl_governed_lane_gate.py to validate governed CSL compile/run/parity reports.",
+    )
+    parser.add_argument(
+        "--csl-governed-report",
+        default="bench/out/csl-governed-lane.report.json",
+        help="Governed CSL lane report path passed to csl_governed_lane_gate.py.",
+    )
+    parser.add_argument(
+        "--csl-governed-schema",
+        default="config/csl-governed-lane-report.schema.json",
+        help="Governed CSL lane schema path passed to csl_governed_lane_gate.py.",
+    )
+    parser.add_argument(
+        "--csl-governed-require-compile-success",
+        action="store_true",
+        help="Require compile.status=succeeded in the CSL governed lane gate.",
+    )
+    parser.add_argument(
+        "--csl-governed-require-run-success",
+        action="store_true",
+        help="Require run.status=succeeded in the CSL governed lane gate.",
+    )
+    parser.add_argument(
+        "--cts-baseline-snapshot",
+        default="",
+        help="Path to the baseline CTS snapshot JSON for regression comparison.",
+    )
+    parser.add_argument(
+        "--cts-baseline-current",
+        default="",
+        help="Path to the current CTS snapshot JSON. When omitted, latest in bench/out/cts-baseline/ is used.",
+    )
+    parser.add_argument(
+        "--cts-baseline-policy",
+        default="config/cts-baseline-policy.json",
+        help="CTS baseline policy config path.",
     )
     parser.add_argument(
         "--trace-semantic-parity-mode",
@@ -355,12 +415,14 @@ def main() -> int:
     split_coverage_gate = bench_dir / "split_coverage_gate.py"
     backend_workload_catalog_gate = bench_dir / "generate_backend_workloads.py"
     backend_workload_catalog_tests = bench_dir / "test_backend_workload_catalog.py"
+    workload_overlap_map = bench_dir / "generate_workload_overlap_map.py"
     comparability_parity_gate = bench_dir / "comparability_obligation_parity_gate.py"
     correctness_gate = bench_dir / "check_correctness.py"
     trace_gate = bench_dir / "trace_gate.py"
     backend_selection_gate = bench_dir / "backend_selection_gate.py"
     shader_artifact_gate = bench_dir / "shader_artifact_gate.py"
     spirv_val_gate = bench_dir / "spirv_val_gate.py"
+    dxil_validate_gate = bench_dir / "dxil_validate_gate.py"
     metal_sync_conformance = bench_dir / "metal_sync_conformance.py"
     metal_timing_policy_gate = bench_dir / "metal_timing_policy_gate.py"
     vulkan_sync_conformance = bench_dir / "vulkan_sync_conformance.py"
@@ -374,6 +436,8 @@ def main() -> int:
     structural_equivalence_gate = bench_dir / "structural_equivalence_gate.py"
     dropin_gate = bench_dir / "dropin_gate.py"
     dropin_proc_resolution_tests = bench_dir / "dropin_proc_resolution_tests.py"
+    cts_baseline_compare = bench_dir / "cts_baseline_compare.py"
+    csl_governed_lane_gate = bench_dir / "csl_governed_lane_gate.py"
     claim_gate = bench_dir / "claim_gate.py"
 
     if not args.with_claim_gate:
@@ -415,6 +479,14 @@ def main() -> int:
             "backend-workload-catalog-tests",
             [sys.executable, str(backend_workload_catalog_tests)],
         )
+        run_gate(
+            "backend-workload-overlap-map",
+            [
+                sys.executable,
+                str(workload_overlap_map),
+                "--verify",
+            ],
+        )
         if args.with_comparability_parity_gate:
             run_gate("comparability-parity", [sys.executable, str(comparability_parity_gate)])
         run_gate(
@@ -451,6 +523,20 @@ def main() -> int:
                     str(report_path),
                 ],
             )
+        if args.with_csl_governed_lane_gate:
+            gate_cmd = [
+                sys.executable,
+                str(csl_governed_lane_gate),
+                "--report",
+                args.csl_governed_report,
+                "--schema",
+                args.csl_governed_schema,
+            ]
+            if args.csl_governed_require_compile_success:
+                gate_cmd.append("--require-compile-success")
+            if args.csl_governed_require_run_success:
+                gate_cmd.append("--require-run-success")
+            run_gate("csl-governed-lane", gate_cmd)
 
         if args.with_modules:
             run_gate(
@@ -552,6 +638,17 @@ def main() -> int:
             if args.spirv_val_compile:
                 spirv_val_command.append("--compile")
             run_gate("spirv-val", spirv_val_command)
+
+        if args.with_dxil_validate_gate:
+            dxil_validate_command = [
+                sys.executable,
+                str(dxil_validate_gate),
+                "--zig",
+                args.dxil_validate_zig,
+            ]
+            if args.dxil_validate_skip_zig_tests:
+                dxil_validate_command.append("--skip-zig-tests")
+            run_gate("dxil-validate", dxil_validate_command)
 
         if args.with_metal_sync_conformance_gate:
             timing_policy_path = Path(args.backend_timing_policy)
@@ -719,6 +816,29 @@ def main() -> int:
                     str(ownership_path),
                 ],
             )
+
+        if args.with_cts_baseline_gate:
+            if not args.cts_baseline_snapshot.strip():
+                print("FAIL: --with-cts-baseline-gate requires --cts-baseline-snapshot")
+                return 1
+            baseline_snapshot_path = Path(args.cts_baseline_snapshot)
+            if not baseline_snapshot_path.exists():
+                print(f"FAIL: missing --cts-baseline-snapshot: {baseline_snapshot_path}")
+                return 1
+            cts_compare_command = [
+                sys.executable,
+                str(cts_baseline_compare),
+                "--baseline",
+                str(baseline_snapshot_path),
+                "--policy",
+                args.cts_baseline_policy,
+                "--gate",
+            ]
+            if args.cts_baseline_current.strip():
+                cts_compare_command.extend(["--current", args.cts_baseline_current])
+            else:
+                cts_compare_command.extend(["--current-dir", "bench/out/cts-baseline"])
+            run_gate("cts-baseline", cts_compare_command)
 
         if args.with_claim_gate:
             claim_command = [

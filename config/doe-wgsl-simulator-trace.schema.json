@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Doe WGSL simulator trace summary",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "target",
+    "contract",
+    "driverExecutable",
+    "compiledTargetCount",
+    "compiledTargets",
+    "peGrid",
+    "prefillLaunchCount",
+    "decodeLaunchCount",
+    "runtimeMode",
+    "generatedAtUtc"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "artifactKind": { "const": "csl_simulator_trace" },
+    "target": { "type": "string", "minLength": 1 },
+    "contract": { "const": "compile_run_smoke_summary" },
+    "driverExecutable": { "type": "string", "minLength": 1 },
+    "compiledTargetCount": { "type": "integer", "minimum": 0 },
+    "compiledTargets": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "artifactDir"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "artifactDir": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "peGrid": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["width", "height"],
+      "properties": {
+        "width": { "type": "integer", "minimum": 1 },
+        "height": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "prefillLaunchCount": { "type": "integer", "minimum": 0 },
+    "decodeLaunchCount": { "type": "integer", "minimum": 0 },
+    "runtimeMode": { "const": "sdk_runtime_smoke" },
+    "simfabTracesPath": {
+      "anyOf": [
+        { "type": "string", "minLength": 1 },
+        { "type": "null" }
+      ]
+    },
+    "generatedAtUtc": { "type": "string", "minLength": 1 }
+  }
+}

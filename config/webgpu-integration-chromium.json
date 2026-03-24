@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "surfaceId": "doe-chromium",
   "surfaceVersion": 1,
-  "lastUpdated": "2026-03-22",
+  "lastUpdated": "2026-03-23",
   "description": "Integration overlay when Doe runs inside Chromium via --use-webgpu-runtime=doe. The wire protocol and browser-owned media paths add constraints beyond Doe's native command and capability surfaces.",
   "smokeTestArtifact": "browser/chromium/artifacts/20260322T220335Z/dawn-vs-doe.browser.playwright-smoke.diagnostic.json",
   "coverage": [
@@ -74,17 +74,17 @@
     },
     {
       "capability": "copyExternalImageToTexture",
-      "status": "not_supported",
+      "status": "implemented_untested_in_browser",
       "domain": "external_texture",
-      "blockedBy": "chromium-shared-image-interop",
-      "notes": "Requires Chromium SharedImage/mailbox media interop that Doe does not implement. Dawn wire client reports 'A valid external Instance reference no longer exists.' Not a Doe runtime bug — Doe genuinely does not support OS-level media texture import (DMABUF/IOSurface/DXGI)."
+      "blockedBy": "chromium-wire-instance-lifetime",
+      "notes": "Doe-side implementation is complete: DoeTextureView-backed and native-imported (IOSurface/CVPixelBuffer) plane paths both handled in doeNativeQueueCopyExternalImageToTexture. Remaining browser failure is Chromium wire client Instance validation ('A valid external Instance reference no longer exists') which requires DoeCommandDecoder Phase 2+ wire interception (upstream Chromium change)."
     },
     {
       "capability": "importExternalTexture",
-      "status": "not_supported",
+      "status": "implemented_untested_in_browser",
       "domain": "external_texture",
-      "blockedBy": "chromium-shared-image-interop",
-      "notes": "Same root cause as copyExternalImageToTexture. Requires native video frame import via platform APIs. The DoeExternalTexture handle wrapper exists but does not perform actual media import."
+      "blockedBy": "chromium-wire-instance-lifetime",
+      "notes": "Doe-side implementation is complete: DoeExternalTexture with IOSurface/CVPixelBuffer import via Metal bridge, bind group MTL handle resolution for both DoeTextureView and native-imported paths. Remaining browser failure is the same Chromium wire client Instance validation gap as copyExternalImageToTexture."
     },
     {
       "capability": "textureDestroy",
@@ -114,6 +114,6 @@
   "wireProtocolNotes": {
     "architecture": "DoeCommandDecoder Phase 1 — all wire commands delegate to Dawn's WireServer with Doe proc table. Progressive native decoding planned (Phase 2-5).",
     "instanceLifetime": "Dawn wire client maintains its own Instance reference tracking. Doe's Instance lifecycle diverges from Dawn's expectations. Destructor ordering fixed to prevent GPU process SIGSEGV. onSubmittedWorkDone fires synchronously to avoid wire client EventManager mismatch.",
-    "externalTextureGap": "External texture operations flow through Dawn wire → Chromium SharedImage → mailbox association → Skia fallback. Doe devices use AssociateMailboxUsingSkiaFallback which creates textures via Doe procs but the wire client's Instance validation fails because Doe's Instance doesn't maintain Dawn's EventManager state. Fixing requires either DoeCommandDecoder Phase 2+ wire interception or native Doe shared-image import."
+    "externalTextureGap": "Doe-side external texture implementation is complete: IOSurface/CVPixelBuffer import via Metal bridge, DoeTextureView and native plane resolution in bind groups and copy paths, Instance lifetime guard preventing premature destruction. The remaining browser-level failure is Chromium wire client Instance validation: external texture operations flow through Dawn wire → SharedImage → mailbox, and the wire client's EventManager state diverges from Doe's Instance lifecycle. Fixing requires DoeCommandDecoder Phase 2+ wire interception to bypass Dawn's client-side Instance validation for Doe-routed operations."
   }
 }

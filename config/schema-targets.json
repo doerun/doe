@@ -90,6 +90,34 @@
       "data": "config/shader-toolchain.json"
     },
     {
+      "schema": "config/doe-wgsl-host-plan.schema.json",
+      "data": "examples/doe-wgsl-host-plan.sample.json"
+    },
+    {
+      "schema": "config/doe-wgsl-host-plan.schema.json",
+      "data": "examples/doe-wgsl-host-plan.gemma-3-270m-smoke.json"
+    },
+    {
+      "schema": "config/doe-wgsl-simulator-plan.schema.json",
+      "data": "examples/doe-wgsl-simulator-plan.sample.json"
+    },
+    {
+      "schema": "config/doe-wgsl-simulator-result.schema.json",
+      "data": "examples/doe-wgsl-simulator-result.sample.json"
+    },
+    {
+      "schema": "config/doe-wgsl-simulator-driver-result.schema.json",
+      "data": "examples/doe-wgsl-simulator-driver-result.sample.json"
+    },
+    {
+      "schema": "config/doe-wgsl-simulator-trace.schema.json",
+      "data": "examples/doe-wgsl-simulator-trace.sample.json"
+    },
+    {
+      "schema": "config/csl-governed-lane-report.schema.json",
+      "data": "examples/csl-governed-lane.sample.json"
+    },
+    {
       "schema": "config/shader-error-taxonomy.schema.json",
       "data": "config/shader-error-taxonomy.json"
     },
@@ -132,6 +160,10 @@
     {
       "schema": "config/module-ownership.schema.json",
       "data": "config/module-ownership.json"
+    },
+    {
+      "schema": "config/cts-baseline-policy.schema.json",
+      "data": "config/cts-baseline-policy.json"
     },
     {
       "schema": "config/backend-workload-catalog.schema.json",

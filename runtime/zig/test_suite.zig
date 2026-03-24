@@ -4,6 +4,7 @@ const metal_resources_test = @import("tests/metal/metal_resources_test.zig");
 const metal_timing_semantics_test = @import("tests/metal/metal_timing_semantics_test.zig");
 const vulkan_mod_integration_test = @import("tests/vulkan/vulkan_mod_integration_test.zig");
 const vulkan_native_runtime_test = @import("tests/vulkan/vulkan_native_runtime_test.zig");
+const vulkan_render_pipeline_test = @import("tests/vulkan/vulkan_render_pipeline_test.zig");
 const vulkan_timing_semantics_test = @import("tests/vulkan/vulkan_timing_semantics_test.zig");
 const common_artifact_meta_test = @import("tests/backend/common_artifact_meta_test.zig");
 const common_capabilities_test = @import("tests/backend/common_capabilities_test.zig");
@@ -58,6 +59,7 @@ comptime {
     _ = metal_native_unit_test;
     _ = vulkan_mod_integration_test;
     _ = vulkan_native_runtime_test;
+    _ = vulkan_render_pipeline_test;
     _ = vulkan_timing_semantics_test;
     _ = common_artifact_meta_test;
     _ = common_capabilities_test;

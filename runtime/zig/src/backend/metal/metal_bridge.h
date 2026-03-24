@@ -680,7 +680,8 @@ MetalHandle metal_bridge_binary_archive_create(
     char*       error_buf,
     size_t      error_cap);
 
-// Add a compiled compute pipeline to the archive. Returns 1 on success.
+// Legacy Phase 1: best-effort no-op.  Archive priming now happens inside
+// metal_bridge_device_new_compute_pipeline_with_archive.  Kept for ABI stability.
 uint32_t metal_bridge_binary_archive_add_compute(
     MetalHandle archive,
     MetalHandle device,
@@ -688,7 +689,7 @@ uint32_t metal_bridge_binary_archive_add_compute(
     char*       error_buf,
     size_t      error_cap);
 
-// Add a compiled render pipeline to the archive. Returns 1 on success.
+// Legacy Phase 1: best-effort no-op.  Same rationale as add_compute above.
 uint32_t metal_bridge_binary_archive_add_render(
     MetalHandle archive,
     MetalHandle device,
@@ -702,8 +703,11 @@ uint32_t metal_bridge_binary_archive_serialize(
     char*       error_buf,
     size_t      error_cap);
 
-// Create a compute pipeline, using archive as the binary source when available.
-// Returns NULL on cache miss (caller should compile fresh and add to archive).
+// Compile-or-serve: create a compute pipeline using the archive as binary source.
+// On cache hit, returns a pre-compiled PSO (skips shader compilation).
+// On cache miss, compiles fresh and records the result into the archive via
+// addComputePipelineFunctionsWithDescriptor for future warm starts.
+// Returns NULL only on genuine compile failure.
 MetalHandle metal_bridge_device_new_compute_pipeline_with_archive(
     MetalHandle device,
     MetalHandle function,
@@ -711,8 +715,8 @@ MetalHandle metal_bridge_device_new_compute_pipeline_with_archive(
     char*       error_buf,
     size_t      error_cap);
 
-// Create a render pipeline using archive as the binary source when available.
-// Returns NULL on cache miss.
+// Compile-or-serve for render pipelines. Same semantics as compute above.
+// On miss, compiles and primes the archive via addRenderPipelineFunctionsWithDescriptor.
 MetalHandle metal_bridge_device_new_render_pipeline_with_archive(
     MetalHandle device,
     uint32_t    pixel_format,

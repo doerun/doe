@@ -8,10 +8,10 @@ const args = parsePackageRunnerArgs();
 
 async function loadProvider(name) {
   if (name === 'doe') {
-    // Doe loads via packages/webgpu/src/deno.js, which uses Deno's Node
+    // Doe loads via packages/doe-gpu/src/deno.js, which uses Deno's Node
     // compatibility layer to load the N-API addon. Verified on Deno 2.7.5.
-    const doe = await import('../../../packages/webgpu/src/deno.js');
-    return { create: doe.create, globals: doe.globals, name: '@simulatte/webgpu (deno node-compat)' };
+    const doe = await import('../../../packages/doe-gpu/src/deno.js');
+    return { create: doe.create, globals: doe.globals, name: 'doe-gpu (deno node-compat)' };
   }
   if (name === 'deno-webgpu') {
     if (typeof globalThis.navigator === 'undefined' || !globalThis.navigator.gpu) {

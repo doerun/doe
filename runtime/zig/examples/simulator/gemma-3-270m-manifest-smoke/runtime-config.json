@@ -1,0 +1,11 @@
+{
+  "mode": "compile-only",
+  "notes": "Replace this with an SDK-backed run command when Cerebras simulator access is available.",
+  "runtimeExecutableEnvVar": "DOE_CSL_RUNTIME_EXECUTABLE",
+  "exampleCommandWhenAvailable": [
+    "--compile-root",
+    "{compile_root}",
+    "--trace-out",
+    "{trace_path}"
+  ]
+}
