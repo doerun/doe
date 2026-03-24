@@ -195,8 +195,8 @@ def main() -> int:
         hint = ""
         if not args.include_noncomparable_workloads or not args.include_extended_workloads:
             hint = (
-                " (selected workloads may be filtered by comparable=false/default=false; "
-                "use --include-noncomparable-workloads and/or --include-extended-workloads)"
+                " (selected workloads may be filtered by selector/cohort/benchmarkClass or by "
+                "legacy comparable=false/default=false behavior)"
             )
         if args.workload_cohort == "comparability-candidates":
             hint += (

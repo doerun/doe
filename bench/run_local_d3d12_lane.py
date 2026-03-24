@@ -27,20 +27,25 @@ def parse_args() -> argparse.Namespace:
         help="Smoke compare config path.",
     )
     parser.add_argument(
+        "--compare-config",
+        default="bench/native-compare/compare_dawn_vs_doe.config.local.d3d12.compare.json",
+        help="Governed compare config path.",
+    )
+    parser.add_argument(
         "--extended-config",
-        default="bench/native-compare/compare_dawn_vs_doe.config.local.d3d12.extended.comparable.json",
-        help="Extended comparable config path.",
+        dest="compare_config",
+        help="Legacy alias for --compare-config.",
     )
     parser.add_argument(
         "--trace-semantic-parity-mode",
         choices=["off", "auto", "required"],
         default="auto",
-        help="Forwarded to run_blocking_gates.py for the extended comparable report.",
+        help="Forwarded to run_blocking_gates.py for the governed compare report.",
     )
     parser.add_argument(
         "--skip-cube",
         action="store_true",
-        help="Skip benchmark cube rebuild after the extended comparable lane passes.",
+        help="Skip benchmark cube rebuild after the governed compare lane passes.",
     )
     parser.add_argument(
         "--dry-run",
@@ -79,20 +84,20 @@ def run_step(name: str, command: list[str], *, dry_run: bool) -> None:
 def main() -> int:
     args = parse_args()
     smoke_config = REPO_ROOT / args.smoke_config
-    extended_config = REPO_ROOT / args.extended_config
-    extended_report = config_report_path(extended_config)
+    compare_config = REPO_ROOT / args.compare_config
+    compare_report = config_report_path(compare_config)
 
     steps: list[tuple[str, list[str]]] = [
         ("preflight", [sys.executable, str(PREFLIGHT), "--json"]),
         ("smoke", [sys.executable, str(COMPARE), "--config", str(smoke_config)]),
-        ("extended", [sys.executable, str(COMPARE), "--config", str(extended_config)]),
+        ("compare", [sys.executable, str(COMPARE), "--config", str(compare_config)]),
         (
             "blocking-gates",
             [
                 sys.executable,
                 str(BLOCKING_GATES),
                 "--report",
-                str(extended_report),
+                str(compare_report),
                 "--trace-semantic-parity-mode",
                 args.trace_semantic_parity_mode,
             ],

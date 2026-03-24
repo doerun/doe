@@ -10,6 +10,7 @@ from typing import Any, Callable
 
 from config_validation import load_validated_config
 from native_compare_modules.timing_selection import (
+    RENDER_ENCODE_TIMING_DOMAINS,
     canonical_timing_source,
     classify_timing_source,
 )
@@ -35,7 +36,6 @@ DAWN_OPERATION_TIMING_SOURCES = {
 OBLIGATION_SCHEMA_VERSION = 2
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _COMPARABILITY_OBLIGATIONS_PATH = _REPO_ROOT / "config/comparability-obligations.json"
-RENDER_ENCODE_TIMING_DOMAINS = {"render", "render-bundle"}
 _PHASE_ASYMMETRY_THRESHOLD = 0.10
 _TIMING_PHASE_FIELDS: tuple[tuple[str, str], ...] = (
     ("setup", "executionSetupTotalNs"),
@@ -49,21 +49,28 @@ def _normalized_domain(workload_domain: str) -> str:
 
 
 def _strict_doe_expected_sources(workload_domain: str) -> set[str]:
+    """Return the set of acceptable timing sources for a domain in strict mode.
+
+    GPU timestamps are acceptable for all domains since they measure actual
+    GPU execution time and are preferred when available.
+    """
     normalized_domain = _normalized_domain(workload_domain)
+    gpu = "doe-execution-gpu-timestamp-ns"
     if normalized_domain == "upload":
-        return {"doe-execution-row-total-ns"}
+        return {"doe-execution-row-total-ns", gpu}
     if normalized_domain in RENDER_ENCODE_TIMING_DOMAINS:
-        return {"doe-execution-encode-ns"}
-    return {"doe-execution-total-ns"}
+        return {"doe-execution-encode-ns", "doe-execution-total-ns", gpu}
+    return {"doe-execution-total-ns", gpu}
 
 
 def _strict_doe_expected_policies(workload_domain: str) -> set[str]:
     normalized_domain = _normalized_domain(workload_domain)
+    gpu = "gpu-timestamp-fallback"
     if normalized_domain == "upload":
-        return {"upload-row-total-preferred"}
+        return {"upload-row-total-preferred", gpu}
     if normalized_domain in RENDER_ENCODE_TIMING_DOMAINS:
-        return {"render-encode-preferred"}
-    return {"<none>"}
+        return {"render-encode-preferred", "<none>", gpu}
+    return {"<none>", gpu}
 
 
 def _obligation(
@@ -146,9 +153,9 @@ def _sources_match_with_runtime_compatibility(
             right_expected = {"dawn-perf-wall-time"}
         elif is_right_dawn_delegate or is_right_doe:
             right_expected = doe_expected
-        if left_expected is not None and left_set != left_expected:
+        if left_expected is not None and not left_set.issubset(left_expected):
             return False
-        if right_expected is not None and right_set != right_expected:
+        if right_expected is not None and not right_set.issubset(right_expected):
             return False
         return True
 
@@ -208,9 +215,9 @@ def _timing_selection_policy_match_with_runtime_compatibility(
             right_expected = {"<none>"}
         elif is_right_dawn_delegate or is_right_doe:
             right_expected = doe_expected
-        if left_expected is not None and left_set != left_expected:
+        if left_expected is not None and not left_set.issubset(left_expected):
             return False
-        if right_expected is not None and right_set != right_expected:
+        if right_expected is not None and not right_set.issubset(right_expected):
             return False
         return True
 

@@ -27,7 +27,7 @@ const WEBGPU_TOP_LEVEL_FILES = [
 ];
 
 const DOE_NAMESPACE_HEADER =
-  '// Vendored from @simulatte/webgpu-doe (packages/webgpu-doe/src/index.js).\n' +
+  '// Vendored from doe-gpu (packages/webgpu-doe/src/index.js).\n' +
   '// This file is self-contained with no external imports.\n\n';
 
 function collectSharedFiles(dir) {

@@ -6,6 +6,25 @@ This file is the source of truth for Doe work only.
 Do not apply `dream/AGENTS.md` or `doppler/AGENTS.md` as process for this project.
 It is acceptable to reuse selected technical principles from those files, as listed here, when directly useful.
 
+## Tooling surface contract
+
+Canonical public/internal/archive tooling separation is defined in:
+
+- `config/tool-surfaces.json`
+- `docs/internal-tooling.md`
+
+Default assumptions:
+
+- only `packages/doe-gpu/` exports and docs are the public npm package contract
+- `bench/`, `browser/chromium/`, `pipeline/`, top-level `scripts/`, and
+  contributor tooling under `runtime/zig/` are repo-only unless the tooling
+  manifest marks them `audience=public`
+- `packages/webgpu/`, `packages/webgpu-doe/`, `dawn-research/`, and `nursery/`
+  are deprecated or archive surfaces
+
+Do not infer public product commitments from repo-only tools, scripts, or
+historical docs.
+
 ## Prime directive
 
 Doe is the WebGPU runtime you embed when you can't ship Dawn.

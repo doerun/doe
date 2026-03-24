@@ -1,0 +1,163 @@
+{
+  "schemaVersion": 1,
+  "surfaces": [
+    {
+      "id": "doe-gpu-package",
+      "audience": "public",
+      "kind": "package",
+      "stability": "semver",
+      "shipped": true,
+      "summary": "Public npm package surface for Doe.",
+      "rootPaths": [
+        "packages/doe-gpu"
+      ],
+      "entrypoints": [
+        "packages/doe-gpu/src/index.js",
+        "packages/doe-gpu/src/compute.js",
+        "packages/doe-gpu/src/browser.js"
+      ],
+      "docs": [
+        "packages/doe-gpu/README.md",
+        "packages/README.md"
+      ]
+    },
+    {
+      "id": "doe-gpu-advanced-helpers",
+      "audience": "public",
+      "kind": "package_helper",
+      "stability": "semver",
+      "shipped": true,
+      "summary": "Advanced JS helper exports for repo-adjacent runtime orchestration.",
+      "rootPaths": [
+        "packages/doe-gpu/src"
+      ],
+      "entrypoints": [
+        "packages/doe-gpu/src/index.js"
+      ],
+      "docs": [
+        "packages/doe-gpu/README.md",
+        "docs/internal-tooling.md"
+      ]
+    },
+    {
+      "id": "doe-runtime-zig",
+      "audience": "internal",
+      "kind": "runtime_binary",
+      "stability": "repo_only",
+      "shipped": false,
+      "summary": "Contributor/runtime binary and build surface for the Zig runtime.",
+      "rootPaths": [
+        "runtime/zig"
+      ],
+      "entrypoints": [
+        "runtime/zig/build.zig",
+        "runtime/zig/src/main.zig"
+      ],
+      "docs": [
+        "runtime/zig/README.md",
+        "docs/internal-tooling.md"
+      ]
+    },
+    {
+      "id": "bench-operator-tooling",
+      "audience": "internal",
+      "kind": "operator_cli",
+      "stability": "repo_only",
+      "shipped": false,
+      "summary": "Canonical Dawn-vs-Doe compare, release, and workload-catalog operator entrypoints.",
+      "rootPaths": [
+        "bench",
+        "bench/native-compare",
+        "bench/native_compare_modules"
+      ],
+      "entrypoints": [
+        "bench/native-compare/compare_dawn_vs_doe.py",
+        "bench/run_release_pipeline.py",
+        "bench/run_blocking_gates.py",
+        "bench/generate_backend_workloads.py"
+      ],
+      "docs": [
+        "bench/README.md",
+        "docs/internal-tooling.md"
+      ]
+    },
+    {
+      "id": "browser-chromium-lane",
+      "audience": "internal",
+      "kind": "browser_lane",
+      "stability": "experimental",
+      "shipped": false,
+      "summary": "Repo-only Chromium integration and browser benchmark lane.",
+      "rootPaths": [
+        "browser/chromium"
+      ],
+      "entrypoints": [
+        "browser/chromium/scripts/run-smoke.sh",
+        "browser/chromium/scripts/run-bench.sh"
+      ],
+      "docs": [
+        "browser/chromium/README.md",
+        "docs/internal-tooling.md"
+      ]
+    },
+    {
+      "id": "pipeline-tooling",
+      "audience": "internal",
+      "kind": "contributor_guide",
+      "stability": "repo_only",
+      "shipped": false,
+      "summary": "Repo-only pipeline, proof, and trace tooling.",
+      "rootPaths": [
+        "pipeline"
+      ],
+      "entrypoints": [
+        "pipeline/agent/mine_upstream_quirks.py",
+        "pipeline/trace/replay.py",
+        "pipeline/lean/generate_comparability_contract.py"
+      ],
+      "docs": [
+        "pipeline/README.md",
+        "pipeline/agent/README.md",
+        "pipeline/trace/README.md",
+        "pipeline/lean/README.md"
+      ]
+    },
+    {
+      "id": "deprecated-package-family",
+      "audience": "archive",
+      "kind": "package",
+      "stability": "deprecated",
+      "shipped": false,
+      "summary": "Deprecated package family retained for migration and historical reference.",
+      "rootPaths": [
+        "packages/webgpu",
+        "packages/webgpu-doe"
+      ],
+      "entrypoints": [
+        "packages/webgpu/package.json",
+        "packages/webgpu-doe/package.json"
+      ],
+      "docs": [
+        "packages/README.md"
+      ]
+    },
+    {
+      "id": "research-and-incubation",
+      "audience": "archive",
+      "kind": "research_archive",
+      "stability": "deprecated",
+      "shipped": false,
+      "summary": "Research and incubation areas that are not product or package contracts.",
+      "rootPaths": [
+        "dawn-research",
+        "nursery"
+      ],
+      "entrypoints": [
+        "dawn-research/scripts/analyze_dawn_hotspots.py"
+      ],
+      "docs": [
+        "docs/internal-tooling.md"
+      ]
+    }
+  ]
+}

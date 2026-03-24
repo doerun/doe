@@ -22,12 +22,12 @@ from native_compare_modules.config_support import (
     Workload,
     BenchmarkMethodologyPolicy,
     percent_delta,
-    safe_float,
 )
 from native_compare_modules.runner import (
     file_sha256,
     json_sha256,
     collect_trace_meta_hashes,
+    safe_float,
 )
 from native_compare_modules.timing_interpretation import (
     build_timing_interpretation,
@@ -56,11 +56,14 @@ def build_report_header(
     out: Path,
     workspace: Path,
 ) -> dict[str, Any]:
+    selector = getattr(args, "selector", {}) if isinstance(getattr(args, "selector", {}), dict) else {}
+    selector_benchmark_classes = selector.get("benchmarkClass", [])
+    selector_comparability = selector.get("comparability", [])
     if args.workload_cohort == "doe-advantage":
         benchmark_intent = "doe-advantage"
     elif args.workload_cohort == "comparability-candidates":
         benchmark_intent = "comparability-candidates"
-    elif not args.include_noncomparable_workloads:
+    elif selector_benchmark_classes == ["comparable"] or selector_comparability == ["comparable"]:
         benchmark_intent = "apples-to-apples"
     else:
         benchmark_intent = "mixed"
@@ -209,6 +212,7 @@ def build_workload_report_entry(
         },
         "workloadComparable": workload.comparable,
         "benchmarkClass": workload.benchmark_class,
+        "cohorts": workload.cohorts,
         "directionalReason": workload.directional_reason or None,
         "pathAsymmetry": workload.path_asymmetry,
         "pathAsymmetryNote": workload.path_asymmetry_note,

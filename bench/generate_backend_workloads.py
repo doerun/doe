@@ -15,35 +15,70 @@ import jsonschema
 REPO_ROOT = Path(__file__).resolve().parent.parent
 CATALOG_PATH = REPO_ROOT / "bench" / "backend-workload-catalog.json"
 CATALOG_SCHEMA_PATH = REPO_ROOT / "config" / "backend-workload-catalog.schema.json"
-WORKLOAD_ORIGINS = {"dawn_derived", "doe_specific"}
-WORKLOAD_EFFECTIVE_ORIGINS = {"dawn_derived", "doe_specific", "hybrid"}
+COHORTS_PATH = REPO_ROOT / "config" / "backend-workload-cohorts.json"
+COHORTS_SCHEMA_PATH = REPO_ROOT / "config" / "backend-workload-cohorts.schema.json"
+WORKLOAD_ORIGINS = (
+    "dawn_benchmark",
+    "dawn_autodiscovered",
+    "doe_contract_with_dawn_mapping",
+    "doe_specific",
+)
+WORKLOAD_ORIGIN_VALUES = set(WORKLOAD_ORIGINS)
+WORKLOAD_EFFECTIVE_ORIGINS = (*WORKLOAD_ORIGINS, "hybrid")
+WORKLOAD_EFFECTIVE_ORIGIN_VALUES = set(WORKLOAD_EFFECTIVE_ORIGINS)
 WORKLOAD_ORIGIN_KEY = "workloadOrigin"
 
 DEFAULT_LANE_OUTPUTS = OrderedDict(
     [
         ("generic", {"outputPath": "bench/workloads.json"}),
-        ("amd_vulkan_base", {"outputPath": "bench/workloads.amd.vulkan.json"}),
-        ("amd_vulkan_superset", {"outputPath": "bench/workloads.amd.vulkan.superset.json"}),
         (
-            "amd_vulkan_superset_native_supported",
-            {"outputPath": "bench/workloads.amd.vulkan.superset.native-supported.json"},
+            "amd_vulkan",
+            {
+                "outputPath": "bench/workloads.amd.vulkan.json",
+                "sourceLane": "amd_vulkan_superset",
+                "profile": "amd_vulkan",
+            },
         ),
         (
-            "amd_vulkan_superset_doe_vs_doe",
-            {"outputPath": "bench/workloads.amd.vulkan.superset.doe-vs-doe.json"},
+            "amd_vulkan_smoke",
+            {
+                "outputPath": "bench/workloads.amd.vulkan.smoke.json",
+                "sourceLane": "amd_vulkan_smoke",
+                "profile": "amd_vulkan",
+            },
         ),
-        ("amd_vulkan_app_claim", {"outputPath": "bench/workloads.amd.vulkan.app.claim.json"}),
-        ("amd_vulkan_smoke", {"outputPath": "bench/workloads.amd.vulkan.smoke.json"}),
-        ("amd_vulkan_extended", {"outputPath": "bench/workloads.amd.vulkan.extended.json"}),
         (
-            "amd_vulkan_extended_strict",
-            {"outputPath": "bench/workloads.amd.vulkan.extended.strict.json"},
+            "apple_metal",
+            {
+                "outputPath": "bench/workloads.apple.metal.json",
+                "sourceLane": "apple_metal_extended",
+                "profile": "apple_metal",
+            },
         ),
-        ("apple_metal_smoke", {"outputPath": "bench/workloads.apple.metal.smoke.json"}),
-        ("apple_metal_extended", {"outputPath": "bench/workloads.apple.metal.extended.json"}),
-        ("local_d3d12_smoke", {"outputPath": "bench/workloads.local.d3d12.smoke.json"}),
-        ("local_d3d12_extended", {"outputPath": "bench/workloads.local.d3d12.extended.json"}),
-        ("d3d12_comparable", {"outputPath": "bench/workloads.d3d12.comparable.json"}),
+        (
+            "apple_metal_smoke",
+            {
+                "outputPath": "bench/workloads.apple.metal.smoke.json",
+                "sourceLane": "apple_metal_smoke",
+                "profile": "apple_metal",
+            },
+        ),
+        (
+            "local_d3d12",
+            {
+                "outputPath": "bench/workloads.local.d3d12.json",
+                "sourceLane": "local_d3d12_extended",
+                "profile": "local_d3d12",
+            },
+        ),
+        (
+            "local_d3d12_smoke",
+            {
+                "outputPath": "bench/workloads.local.d3d12.smoke.json",
+                "sourceLane": "local_d3d12_smoke",
+                "profile": "local_d3d12",
+            },
+        ),
     ]
 )
 
@@ -105,6 +140,21 @@ def validate_catalog(catalog: dict[str, Any]) -> None:
     validate_catalog_semantics(catalog)
 
 
+def load_cohorts_config() -> dict[str, Any]:
+    payload = load_json(COHORTS_PATH)
+    schema = load_json(COHORTS_SCHEMA_PATH)
+    validator = jsonschema.Draft202012Validator(schema)
+    errors = sorted(
+        validator.iter_errors(payload),
+        key=lambda item: tuple(str(part) for part in item.absolute_path),
+    )
+    if errors:
+        first = errors[0]
+        location = ".".join(str(part) for part in first.absolute_path) if first.absolute_path else "<root>"
+        raise ValueError(f"{COHORTS_SCHEMA_PATH}: {location}: {first.message}")
+    return payload
+
+
 def effective_field(item: dict[str, Any], lane_id: str, key: str, default: Any) -> Any:
     lane_override = item["lanes"].get(lane_id, {})
     if key in lane_override:
@@ -115,16 +165,18 @@ def effective_field(item: dict[str, Any], lane_id: str, key: str, default: Any) 
 
 
 def infer_workload_origin(item: dict[str, Any], lane_id: str) -> str:
-    lane_row = item["lanes"].get(lane_id, {})
-    shared = item.get("shared", {})
-    has_dawn_filter = ("dawnFilter" in lane_row) or ("dawnFilter" in shared)
-    return "dawn_derived" if has_dawn_filter else "doe_specific"
+    dawn_filter = effective_field(item, lane_id, "dawnFilter", None)
+    if dawn_filter is None:
+        return "doe_specific"
+    if isinstance(dawn_filter, str) and dawn_filter.strip() == "@autodiscover":
+        return "dawn_autodiscovered"
+    return "dawn_benchmark"
 
 
 def resolve_workload_origin(item: dict[str, Any], lane_id: str) -> str:
     explicit_origin = effective_field(item, lane_id, WORKLOAD_ORIGIN_KEY, None)
     if explicit_origin is not None:
-        if explicit_origin not in WORKLOAD_ORIGINS:
+        if explicit_origin not in WORKLOAD_ORIGIN_VALUES:
             raise ValueError(
                 f"{item['id']} lane={lane_id}: invalid workloadOrigin={explicit_origin!r}"
             )
@@ -150,11 +202,11 @@ def workload_effective_origin(item: dict[str, Any]) -> str:
 
 def build_workload_origin_report(catalog: dict[str, Any]) -> dict[str, Any]:
     rows: list[dict[str, Any]] = []
-    counts = {"dawn_derived": 0, "doe_specific": 0, "hybrid": 0}
+    counts = {origin: 0 for origin in WORKLOAD_EFFECTIVE_ORIGINS}
     for item in catalog["workloads"]:
         lane_origins = build_workload_origin_matrix(item)
         effective_origin = workload_effective_origin(item)
-        if effective_origin not in WORKLOAD_EFFECTIVE_ORIGINS:
+        if effective_origin not in WORKLOAD_EFFECTIVE_ORIGIN_VALUES:
             raise ValueError(f"{item['id']}: invalid effective workload origin={effective_origin!r}")
         counts[effective_origin] = counts.get(effective_origin, 0) + 1
         rows.append(
@@ -335,9 +387,26 @@ def bootstrap_catalog() -> dict[str, Any]:
 
 
 def materialize_lane(catalog: dict[str, Any], lane_id: str) -> dict[str, Any]:
+    lane_outputs = catalog.get("laneOutputs", {})
+    lane_entry = lane_outputs.get(lane_id, {}) if isinstance(lane_outputs, dict) else {}
+    source_lane = (
+        lane_entry.get("sourceLane", lane_id)
+        if isinstance(lane_entry, dict)
+        else lane_id
+    )
+    profile = lane_entry.get("profile") if isinstance(lane_entry, dict) else None
+    cohorts_payload = load_cohorts_config()
+    profile_cohorts = (
+        cohorts_payload["profiles"].get(profile, {})
+        if isinstance(profile, str)
+        else {}
+    )
+    smoke_ids = set(profile_cohorts.get("smoke", []))
+    governed_ids = set(profile_cohorts.get("governed", []))
+    regression_ids = set(profile_cohorts.get("regression", []))
     workloads = []
     for item in catalog["workloads"]:
-        lane_override = item["lanes"].get(lane_id)
+        lane_override = item["lanes"].get(source_lane)
         if lane_override is None:
             continue
         row = OrderedDict()
@@ -353,6 +422,20 @@ def materialize_lane(catalog: dict[str, Any], lane_id: str) -> dict[str, Any]:
         for key, value in lane_override.items():
             if key not in row:
                 row[key] = value
+        row[WORKLOAD_ORIGIN_KEY] = resolve_workload_origin(item, source_lane)
+        if profile is not None:
+            cohort_tags: list[str] = []
+            workload_id = item["id"]
+            if workload_id in smoke_ids:
+                cohort_tags.append("smoke")
+            if workload_id in governed_ids:
+                cohort_tags.append("governed")
+            if workload_id in regression_ids:
+                cohort_tags.append("regression")
+            if workload_id not in governed_ids:
+                cohort_tags.append("exploration")
+            row.pop("suiteTags", None)
+            row["cohorts"] = cohort_tags
         workloads.append(row)
     return OrderedDict(
         [

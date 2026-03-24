@@ -1,0 +1,7 @@
+R:22
+C:workgroup_atomic
+C:workgroup_non_atomic
+C:shader_robustness_matmul_512_f32
+C:concurrent_execution_runsingle_u32
+C:dispatch_noop
+C:zero_initialize_workgroup_memory_2048

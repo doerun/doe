@@ -1,7 +1,7 @@
 {
   "name": "doe-gpu",
-  "version": "0.3.3",
-  "description": "WebGPU runtime you embed when you can't ship Dawn",
+  "version": "0.3.4",
+  "description": "Zig-first WebGPU runtime for Node.js, Bun, and Deno",
   "type": "module",
   "main": "./src/index.js",
   "types": "./src/index.d.ts",
@@ -21,25 +21,12 @@
       "default": "./src/browser.js"
     }
   },
-  "bin": {
-    "doe-gpu-bench": "./bin/doe-gpu-bench.js",
-    "doe-gpu-compare": "./bin/doe-gpu-compare.js"
-  },
   "engines": {
     "node": ">=18"
   },
   "files": [
-    "assets/",
-    "bin/",
-    "docs/",
-    "examples/",
     "src/",
-    "scripts/",
-    "prebuilds/",
-    "binding.gyp",
-    "LICENSE",
-    "README.md",
-    "CHANGELOG.md"
+    "README.md"
   ],
   "scripts": {
     "test": "npm run test:smoke && npm run test:integration",

@@ -27,7 +27,7 @@ from native_compare_modules.comparability_upload_contract import (
     validate_upload_apples_to_apples,
     verify_fawn_upload_runtime_contract,
 )
-from native_compare_modules.reporting import parse_int, safe_int, valid_sync_mode
+from native_compare_modules.reporting import parse_int, safe_float, safe_int, valid_sync_mode
 from native_compare_modules.timing_selection import canonical_timing_source, classify_timing_source
 
 def _median_phase_fractions(
@@ -820,6 +820,75 @@ def compare_assessment(
         details={
             "rightExecutionErrorSampleCount": right_execution_error_samples,
             "rightSampleCount": len(right_samples),
+        },
+    )
+
+    # ── Timing plausibility: traced timing must be a non-trivial fraction
+    # of wall time.  If the traced metric is <1% of wall time on either
+    # side, the timing source is measuring the wrong scope.
+    _PLAUSIBILITY_MIN_WALL_RATIO = 0.01
+    _PLAUSIBILITY_MIN_WALL_MS = 5.0  # skip check for sub-5ms wall (noise)
+
+    def _median_timing_wall_ratio(
+        samples: list[dict[str, Any]],
+    ) -> tuple[float | None, float | None, float | None]:
+        """Return (median_traced_ms, median_wall_ms, median_ratio)."""
+        ratios: list[float] = []
+        traced_values: list[float] = []
+        wall_values: list[float] = []
+        for sample in samples:
+            traced = safe_float(sample.get("measuredMs"))
+            wall = safe_float(sample.get("elapsedMs"))
+            if traced is not None and wall is not None and wall > 0:
+                traced_values.append(traced)
+                wall_values.append(wall)
+                ratios.append(traced / wall)
+        if not ratios:
+            return None, None, None
+        return (
+            statistics.median(traced_values),
+            statistics.median(wall_values),
+            statistics.median(ratios),
+        )
+
+    left_traced, left_wall, left_ratio = _median_timing_wall_ratio(left_samples)
+    right_traced, right_wall, right_ratio = _median_timing_wall_ratio(right_samples)
+
+    plausibility_applies = (
+        left_wall is not None
+        and right_wall is not None
+        and (left_wall >= _PLAUSIBILITY_MIN_WALL_MS or right_wall >= _PLAUSIBILITY_MIN_WALL_MS)
+    )
+    plausibility_failures: list[str] = []
+    if plausibility_applies:
+        if left_ratio is not None and left_ratio < _PLAUSIBILITY_MIN_WALL_RATIO and left_wall >= _PLAUSIBILITY_MIN_WALL_MS:
+            plausibility_failures.append(
+                f"left traced timing ({left_traced:.4f}ms) is {left_ratio:.4%} of wall time "
+                f"({left_wall:.1f}ms); timing source is not measuring the actual operation"
+            )
+        if right_ratio is not None and right_ratio < _PLAUSIBILITY_MIN_WALL_RATIO and right_wall >= _PLAUSIBILITY_MIN_WALL_MS:
+            plausibility_failures.append(
+                f"right traced timing ({right_traced:.4f}ms) is {right_ratio:.4%} of wall time "
+                f"({right_wall:.1f}ms); timing source is not measuring the actual operation"
+            )
+
+    _record_obligation(
+        obligations,
+        reasons,
+        obligation_id="left_right_timing_plausibility",
+        blocking=True,
+        applicable=plausibility_applies,
+        passes=len(plausibility_failures) == 0,
+        failure_reason="; ".join(plausibility_failures),
+        details={
+            "minWallRatio": _PLAUSIBILITY_MIN_WALL_RATIO,
+            "minWallMs": _PLAUSIBILITY_MIN_WALL_MS,
+            "leftMedianTracedMs": left_traced,
+            "leftMedianWallMs": left_wall,
+            "leftMedianRatio": left_ratio,
+            "rightMedianTracedMs": right_traced,
+            "rightMedianWallMs": right_wall,
+            "rightMedianRatio": right_ratio,
         },
     )
 

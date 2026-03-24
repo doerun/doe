@@ -785,7 +785,7 @@ export function createCanvasContext(canvas, options = {}) {
 export function providerInfo() {
   const native_gpu = globalThis.navigator?.gpu ?? null;
   return buildProviderInfo({
-    moduleName: '@simulatte/webgpu/browser',
+    moduleName: 'doe-gpu/browser',
     loaded: Boolean(native_gpu),
     loadError: native_gpu ? '' : 'native browser navigator.gpu is unavailable',
     defaultCreateArgs: [],

@@ -88,12 +88,12 @@
   - legacy simulator/runtime-state modules are not part of the D3D12 lane; command execution must flow through the instance-owned native backend implementation.
   - command support must be capability-gated via `backend/common/capabilities.zig`; unsupported commands fail fast with typed taxonomy and capability name.
   - comparability/timing labeling must be derived from shared artifact classification (`backend/common/artifact_meta.zig`): GPU timestamp valid => strict; attempted-but-invalid or no-attempt => directional CPU timing classes.
-  - the first governed D3D12 comparable workload scope remains compute/upload/pipeline/p0-resource only. `bench/workloads.local.d3d12.extended.json` may also carry additional directional parity scaffolds, but only the governed comparable subset is eligible for strict D3D12 compare/claim lanes until Windows-backed evidence expands the contract.
+  - the first governed D3D12 comparable workload scope remains compute/upload/pipeline/p0-resource only. `bench/workloads.local.d3d12.json` is the canonical D3D12 catalog; strict D3D12 compare/claim lanes select the governed comparable subset from that catalog via `selector.cohorts=["governed"]` and `selector.benchmarkClass=["comparable"]`, while broader directional parity scaffolds remain in the same catalog under exploration cohorts until Windows-backed evidence expands the contract.
   - Windows preflight is explicit and blocking before compare execution:
     `python3 bench/preflight_d3d12_host.py --json`
   - first compare configs:
     - smoke: `bench/native-compare/compare_dawn_vs_doe.config.local.d3d12.smoke.json`
-    - comparable: `bench/native-compare/compare_dawn_vs_doe.config.local.d3d12.extended.comparable.json`
+    - compare: `bench/native-compare/compare_dawn_vs_doe.config.local.d3d12.compare.json`
     - release scaffold: `bench/native-compare/compare_dawn_vs_doe.config.local.d3d12.release.json` (contract only until a Windows host produces evidence)
   - Windows handoff runner for the first governed D3D12 lane:
     `python3 bench/run_local_d3d12_lane.py`
@@ -221,8 +221,10 @@ Apple Metal lanes are additive and must not weaken AMD Vulkan strict defaults.
 
 2. compare
 - use Apple Metal config presets:
-  - `bench/native-compare/compare_dawn_vs_doe.config.apple.metal.extended.comparable.json`
-  - for release-claim checks, reuse the same config with `--claimability release` (and optional explicit `--out` path)
+  - `bench/native-compare/compare_dawn_vs_doe.config.apple.metal.compare.json`
+  - `bench/native-compare/compare_dawn_vs_doe.config.apple.metal.release.json`
+  - `bench/native-compare/compare_dawn_vs_doe.config.apple.metal.frontier.json` for broader comparable-only diagnostics
+  - `bench/native-compare/compare_dawn_vs_doe.config.apple.metal.explore.json` for mixed comparable/directional engineering runs
   - optional Dawn-baseline lane forcing for baseline checks: `--local-metal-lane metal_dawn_release`
   - render/bundle rows may still select encode-only timing for strict comparability, but claim evaluation must use `timingInterpretation.headlineProcessWall` when `selectedTiming.scopeClass=narrow-hot-path`
   - repeat-asymmetric rows must normalize both selected operation timing and `headlineProcessWall` to one workload unit via `commandRepeat` before comparability or claimability is evaluated
@@ -252,20 +254,20 @@ Apple Metal lanes are additive and must not weaken AMD Vulkan strict defaults.
 - validate rollback readiness by running `bench/cycle_gate.py` (via release pipeline with `--with-cycle-gate --cycle-enforce-rollbacks`) under the same comparable/release evidence policy.
 - runtime backend routing is strict no-fallback by contract across all lanes (`allowFallback=false`, `strictNoFallback=true` in `config/backend-runtime-policy.json`).
 
-## 9. AMD Vulkan extended hardening flow (additive)
+## 9. AMD Vulkan hardening flow (additive)
 
-AMD Vulkan extended lanes are additive and must not weaken the governed AMD Vulkan release defaults.
+AMD Vulkan catalog presets are additive and must not weaken the governed AMD Vulkan release defaults.
 
 1. preflight
 - run `python3 bench/preflight_vulkan_host.py`
 
 2. compare
-- use AMD Vulkan extended config presets:
-  - `bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.extended.comparable.json`
-    legacy compatibility alias for the strict extended comparable contract
-  - `bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.extended.strict.directional.json`
-  - `bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.extended.strict.comparable.json`
-  - `bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.extended.strict.release.json`
+- use AMD Vulkan config presets:
+  - `bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.compare.json`
+  - `bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.release.json`
+  - `bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.frontier.json` for comparable-only diagnostics outside the governed cohort
+  - `bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.explore.json` for mixed comparable/directional engineering runs
+  - `bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.smoke.json` for diagnostic sanity only
 
 3. blocking gates
 - run backend/sync/timing/shader checks in `bench/run_blocking_gates.py`:
@@ -277,8 +279,8 @@ AMD Vulkan extended lanes are additive and must not weaken the governed AMD Vulk
   - `--with-dxil-validate-gate` (validates DXIL structural correctness via native emitter and DXBC container checks)
 
 4. strict lane policy
-- strict AMD Vulkan extended lanes must fail on fallback (`fallbackUsed=true`)
-- strict AMD Vulkan extended release claims should require backend telemetry and backend identity `doe_vulkan`
+- strict AMD Vulkan compare/release lanes must fail on fallback (`fallbackUsed=true`)
+- strict AMD Vulkan release claims should require backend telemetry and backend identity `doe_vulkan`
 - shader manifest checks may be required per lane (`vulkan_doe_comparable`, `vulkan_doe_release`)
 
 ## 10. Market-Readiness Evidence Flow (Additive)

@@ -36,6 +36,7 @@
     "left_success_or_unsupported_or_skipped",
     "left_execution_errors_absent",
     "right_execution_errors_absent",
+    "left_right_timing_plausibility",
     "resource_probe_enabled",
     "left_resource_probe_available",
     "right_resource_probe_available",
@@ -192,6 +193,12 @@
       "blocking": true,
       "applicableWhen": { "const": true },
       "passesWhen": { "fact": "right_execution_errors_absent" }
+    },
+    {
+      "id": "left_right_timing_plausibility",
+      "blocking": true,
+      "applicableWhen": { "const": true },
+      "passesWhen": { "fact": "left_right_timing_plausibility" }
     },
     {
       "id": "left_resource_probe_available",

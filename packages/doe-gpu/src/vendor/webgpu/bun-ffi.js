@@ -1371,7 +1371,7 @@ function buildDeviceDescriptor(descriptor) {
             const featureName = requiredFeatures[index];
             const featureCode = FEATURE_NAME_MAP.get(featureName);
             if (featureCode === undefined) {
-                throw new Error(`[fawn-webgpu] requestDevice requiredFeatures contains an unknown feature: ${featureName}`);
+                throw new Error(`[doe-gpu] requestDevice requiredFeatures contains an unknown feature: ${featureName}`);
             }
             featureView.setUint32(index * 4, featureCode, true);
         }
@@ -1582,7 +1582,7 @@ function processEventsUntilDone(instancePtr, isDone, timeoutNs = processEventsTi
     while (!isDone()) {
         wgpu.symbols.wgpuInstanceProcessEvents(instancePtr);
         if (Number(process.hrtime.bigint()) - start >= timeoutNs) {
-            throw new Error("[fawn-webgpu] processEvents timeout");
+            throw new Error("[doe-gpu] processEvents timeout");
         }
     }
 }
@@ -1856,7 +1856,7 @@ function popDeviceErrorScope(native) {
     try {
         popErrorScope(native, callback.ptr, null, null);
         if (!done) {
-            throw new Error("[fawn-webgpu] popErrorScope: no active error scope");
+            throw new Error("[doe-gpu] popErrorScope: no active error scope");
         }
         return result;
     } finally {
@@ -1880,10 +1880,10 @@ function requestAdapterSync(instancePtr, options) {
     try {
         const futureId = wgpu.symbols.doeRequestAdapterFlat(
             instancePtr, optionsBytes ? bunPtr(optionsBytes) : null, CALLBACK_MODE_ALLOW_PROCESS_EVENTS, cb.ptr, null, null);
-        if (futureId === 0 || futureId === 0n) throw new Error("[fawn-webgpu] requestAdapter future unavailable");
+        if (futureId === 0 || futureId === 0n) throw new Error("[doe-gpu] requestAdapter future unavailable");
         processEventsUntilDone(instancePtr, () => done);
         if (resolvedStatus !== REQUEST_ADAPTER_STATUS_SUCCESS || !resolvedAdapter) {
-            throw new Error(nativeFailureMessage(`[fawn-webgpu] requestAdapter failed (status=${resolvedStatus})`));
+            throw new Error(nativeFailureMessage(`[doe-gpu] requestAdapter failed (status=${resolvedStatus})`));
         }
         return resolvedAdapter;
     } finally {
@@ -1913,10 +1913,10 @@ function requestDeviceSync(instancePtr, adapterPtr, descriptor) {
             null,
             null,
         );
-        if (futureId === 0 || futureId === 0n) throw new Error("[fawn-webgpu] requestDevice future unavailable");
+        if (futureId === 0 || futureId === 0n) throw new Error("[doe-gpu] requestDevice future unavailable");
         processEventsUntilDone(instancePtr, () => done);
         if (resolvedStatus !== REQUEST_DEVICE_STATUS_SUCCESS || !resolvedDevice) {
-            throw new Error(nativeFailureMessage(`[fawn-webgpu] requestDevice failed (status=${resolvedStatus})`));
+            throw new Error(nativeFailureMessage(`[doe-gpu] requestDevice failed (status=${resolvedStatus})`));
         }
         return resolvedDevice;
     } finally {
@@ -1929,7 +1929,7 @@ function bufferMapSync(instancePtr, bufferPtr, mode, offset, size) {
         const status = wgpu.symbols.doeBufferMapSyncFlat(
             instancePtr, bufferPtr, BigInt(mode), BigInt(offset), BigInt(size));
         if (status !== MAP_ASYNC_STATUS_SUCCESS) {
-            throw new Error(nativeFailureMessage(`[fawn-webgpu] bufferMapAsync failed (status=${status})`));
+            throw new Error(nativeFailureMessage(`[doe-gpu] bufferMapAsync failed (status=${status})`));
         }
         return;
     }
@@ -1943,10 +1943,10 @@ function bufferMapSync(instancePtr, bufferPtr, mode, offset, size) {
         const futureId = wgpu.symbols.doeBufferMapAsyncFlat(
             bufferPtr, BigInt(mode), BigInt(offset), BigInt(size),
             CALLBACK_MODE_ALLOW_PROCESS_EVENTS, cb.ptr, null, null);
-        if (futureId === 0 || futureId === 0n) throw new Error("[fawn-webgpu] bufferMapAsync future unavailable");
+        if (futureId === 0 || futureId === 0n) throw new Error("[doe-gpu] bufferMapAsync future unavailable");
         processEventsUntilDone(instancePtr, () => done);
         if (mapStatus !== MAP_ASYNC_STATUS_SUCCESS) {
-            throw new Error(nativeFailureMessage(`[fawn-webgpu] bufferMapAsync failed (status=${mapStatus})`));
+            throw new Error(nativeFailureMessage(`[doe-gpu] bufferMapAsync failed (status=${mapStatus})`));
         }
     } finally {
         cb.close();
@@ -1972,13 +1972,13 @@ function waitForSubmittedWorkDoneSync(instancePtr, queuePtr) {
             null,
         );
         if (futureId === 0 || futureId === 0n) {
-            const error = new Error("[fawn-webgpu] queue work-done future unavailable");
+            const error = new Error("[doe-gpu] queue work-done future unavailable");
             error.code = "DOE_QUEUE_UNAVAILABLE";
             throw error;
         }
         processEventsUntilDone(instancePtr, () => done, processEventsTimeoutNs);
         if (queueStatus !== REQUEST_DEVICE_STATUS_SUCCESS) {
-            const error = new Error(nativeFailureMessage(`[fawn-webgpu] queue work-done failed (status=${queueStatus})`));
+            const error = new Error(nativeFailureMessage(`[doe-gpu] queue work-done failed (status=${queueStatus})`));
             if (queueStatus === 0) {
                 error.code = "DOE_QUEUE_UNAVAILABLE";
             }
@@ -2021,7 +2021,7 @@ function ensureBunCommandEncoderNative(encoder) {
 function readIndirectDispatchCounts(bufferNative, offset) {
     const dataPtr = wgpu.symbols.wgpuBufferGetConstMappedRange(bufferNative, BigInt(offset), BigInt(12));
     if (!dataPtr) {
-        throw new Error("[fawn-webgpu] indirect dispatch buffer is not CPU-readable");
+        throw new Error("[doe-gpu] indirect dispatch buffer is not CPU-readable");
     }
     const countsBytes = new Uint8Array(toArrayBuffer(dataPtr, 0, 12)).slice(0);
     const counts = new DataView(countsBytes.buffer, countsBytes.byteOffset, countsBytes.byteLength);
@@ -2391,7 +2391,7 @@ const bunEncoderBackend = {
             );
             return;
         }
-        throw new Error("[fawn-webgpu] copyBufferToTexture is unavailable in the loaded library");
+        throw new Error("[doe-gpu] copyBufferToTexture is unavailable in the loaded library");
     },
     commandEncoderCopyTextureToBuffer(encoder, source, destination, copySize) {
         ensureBunCommandEncoderNative(encoder);
@@ -2423,7 +2423,7 @@ const bunEncoderBackend = {
             );
             return;
         }
-        throw new Error("[fawn-webgpu] copyTextureToBuffer is unavailable in the loaded library");
+        throw new Error("[doe-gpu] copyTextureToBuffer is unavailable in the loaded library");
     },
     commandEncoderFinish(encoder) {
         encoder._finished = true;
@@ -2474,11 +2474,11 @@ const fullSurfaceBackend = {
         const isWrite = (wrapper._mapMode & 0x0002) !== 0;
         if (isWrite) {
             const dataPtr = wgpu.symbols.wgpuBufferGetMappedRange(native, BigInt(offset), BigInt(size));
-            if (!dataPtr) throw new Error("[fawn-webgpu] getMappedRange (write) returned NULL");
+            if (!dataPtr) throw new Error("[doe-gpu] getMappedRange (write) returned NULL");
             return toArrayBuffer(dataPtr, 0, size);
         }
         const dataPtr = wgpu.symbols.wgpuBufferGetConstMappedRange(native, BigInt(offset), BigInt(size));
-        if (!dataPtr) throw new Error("[fawn-webgpu] getMappedRange returned NULL");
+        if (!dataPtr) throw new Error("[doe-gpu] getMappedRange returned NULL");
         if (DOE_LIBRARY_FLAVOR === "doe-dropin") {
             return toArrayBuffer(dataPtr, 0, size);
         }
@@ -2659,7 +2659,7 @@ const fullSurfaceBackend = {
             desc,
         );
         void _refs;
-        if (!native) throw new Error("[fawn-webgpu] createRenderBundleEncoder failed");
+        if (!native) throw new Error("[doe-gpu] createRenderBundleEncoder failed");
         return new encoderClasses.DoeGPURenderBundleEncoder(native, device);
     },
     deviceLimits,
@@ -2797,14 +2797,14 @@ const fullSurfaceBackend = {
         const QUERY_TYPE_TIMESTAMP = 2;
         const fn = wgpu.symbols.doeNativeDeviceCreateQuerySet;
         if (typeof fn !== "function") {
-            throw new Error("[fawn-webgpu] doeNativeDeviceCreateQuerySet not available");
+            throw new Error("[doe-gpu] doeNativeDeviceCreateQuerySet not available");
         }
         const native = fn(
             assertLiveResource(device, "GPUDevice.createQuerySet", "GPUDevice"),
             descriptor.type === "occlusion" ? QUERY_TYPE_OCCLUSION : QUERY_TYPE_TIMESTAMP,
             descriptor.count,
         );
-        if (!native) throw new Error("[fawn-webgpu] createQuerySet failed");
+        if (!native) throw new Error("[doe-gpu] createQuerySet failed");
         return native;
     },
     querySetDestroy(native) {
@@ -2976,7 +2976,7 @@ function ensureLibrary() {
     if (libraryLoaded) return;
     if (!DOE_LIB_PATH) {
         throw new Error(
-            "@simulatte/webgpu: libwebgpu_doe not found. Build it with `cd runtime/zig && zig build dropin` or set DOE_WEBGPU_LIB."
+            "doe-gpu: libwebgpu_doe not found. Build it with `cd runtime/zig && zig build dropin` or set DOE_WEBGPU_LIB."
         );
     }
     wgpu = openLibrary(DOE_LIB_PATH);

@@ -9,7 +9,9 @@ from typing import Any
 from native_compare_modules.reporting import NS_PER_MS, safe_float, safe_int
 
 
-RENDER_ENCODE_TIMING_DOMAINS = {"render", "render-bundle"}
+RENDER_ENCODE_TIMING_DOMAINS = {"render", "render-bundle", "render-macro", "p0-render", "p0-render-macro"}
+
+_ENCODE_PLAUSIBILITY_RATIO = 0.05
 
 
 def parse_trace_rows(path: Path) -> list[dict[str, Any]]:
@@ -265,24 +267,29 @@ def pick_measured_timing_ms(
                 return measured_ms, "doe-execution-row-total-ns", timing_meta
 
     if prefer_render_encode and execution_encode_total_ns > 0:
-        measured_ms = float(execution_encode_total_ns) / NS_PER_MS
-        timing_meta = {
-            "source": "trace-meta",
-            "traceMetaSource": "doe-execution-encode-ns",
-            "traceMetaTimingMs": measured_ms,
-            "executionEncodeTotalNs": execution_encode_total_ns,
-            "executionDispatchCount": execution_dispatch_count,
-            "executionRowCount": execution_row_count,
-            "executionSuccessCount": execution_success_count,
-            "wallTimeMs": wall_ms,
-            "timingSelectionPolicy": "render-encode-preferred",
-        }
-        measured_ms = maybe_normalize_by_repeat(
-            measured_ms,
-            timing_meta,
-            canonical_source="doe-execution-encode-ns",
+        encode_plausible = (
+            execution_total_ns <= 0
+            or float(execution_encode_total_ns) / float(execution_total_ns) >= _ENCODE_PLAUSIBILITY_RATIO
         )
-        return measured_ms, "doe-execution-encode-ns", timing_meta
+        if encode_plausible:
+            measured_ms = float(execution_encode_total_ns) / NS_PER_MS
+            timing_meta = {
+                "source": "trace-meta",
+                "traceMetaSource": "doe-execution-encode-ns",
+                "traceMetaTimingMs": measured_ms,
+                "executionEncodeTotalNs": execution_encode_total_ns,
+                "executionDispatchCount": execution_dispatch_count,
+                "executionRowCount": execution_row_count,
+                "executionSuccessCount": execution_success_count,
+                "wallTimeMs": wall_ms,
+                "timingSelectionPolicy": "render-encode-preferred",
+            }
+            measured_ms = maybe_normalize_by_repeat(
+                measured_ms,
+                timing_meta,
+                canonical_source="doe-execution-encode-ns",
+            )
+            return measured_ms, "doe-execution-encode-ns", timing_meta
 
     if execution_total_ns > 0 and has_execution_evidence:
         measured_ms = float(execution_total_ns) / NS_PER_MS
@@ -305,13 +312,17 @@ def pick_measured_timing_ms(
     gpu_timestamp_total_ns = safe_int(
         trace_meta.get("executionGpuTimestampTotalNs"), default=-1
     )
-    if gpu_timestamp_total_ns > 0:
+    gpu_timestamp_valid_count = safe_int(
+        trace_meta.get("executionGpuTimestampValidCount"), default=0
+    )
+    if gpu_timestamp_total_ns > 0 and gpu_timestamp_valid_count > 0:
         measured_ms = float(gpu_timestamp_total_ns) / NS_PER_MS
         timing_meta = {
             "source": "trace-meta",
             "traceMetaSource": "doe-execution-gpu-timestamp-ns",
             "traceMetaTimingMs": measured_ms,
             "executionGpuTimestampTotalNs": gpu_timestamp_total_ns,
+            "executionGpuTimestampValidCount": gpu_timestamp_valid_count,
             "executionDispatchCount": execution_dispatch_count,
             "executionRowCount": execution_row_count,
             "executionSuccessCount": execution_success_count,

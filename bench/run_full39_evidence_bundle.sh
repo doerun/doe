@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Legacy name retained for compatibility. This now validates the full
+# AMD Vulkan frontier-comparable matrix from the canonical main catalog.
+
 if [[ $# -lt 1 ]]; then
   echo "usage: $0 <matrix_report_json> [windows]"
   exit 2
@@ -24,7 +27,7 @@ python3 bench/run_blocking_gates.py \
   --claim-require-claim-status claimable \
   --claim-require-claimability-mode release \
   --claim-require-min-timed-samples 15 \
-  --claim-expected-workload-contract bench/workloads.amd.vulkan.extended.json \
+  --claim-expected-workload-contract bench/workloads.amd.vulkan.json \
   --claim-require-workload-contract-hash \
   --claim-require-workload-id-set-match
 

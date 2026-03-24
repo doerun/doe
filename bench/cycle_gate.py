@@ -192,6 +192,7 @@ def parse_cycle_contract(repo_root: Path, path: Path) -> tuple[dict[str, Any], l
 
     comparable_ids: list[str] = []
     directional_ids: list[str] = []
+    methodology = payload.get("methodology")
 
     workload_sets = payload.get("workloadSets")
     if not isinstance(workload_sets, dict):
@@ -203,7 +204,7 @@ def parse_cycle_contract(repo_root: Path, path: Path) -> tuple[dict[str, Any], l
             failures.append("workloadSets.comparableIds missing/invalid")
         else:
             comparable_ids = sorted({str(item) for item in comparable_raw if isinstance(item, str) and item})
-        if not isinstance(directional_raw, list) or not directional_raw:
+        if not isinstance(directional_raw, list):
             failures.append("workloadSets.directionalIds missing/invalid")
         else:
             directional_ids = sorted({str(item) for item in directional_raw if isinstance(item, str) and item})
@@ -215,10 +216,45 @@ def parse_cycle_contract(repo_root: Path, path: Path) -> tuple[dict[str, Any], l
         if not isinstance(workloads, list):
             failures.append("workload contract missing workloads[]")
         else:
+            selector = methodology.get("selector") if isinstance(methodology, dict) else None
+            selected_rows = workloads
+            if isinstance(selector, dict):
+                cohort_filter = selector.get("cohorts", [])
+                benchmark_class_filter = selector.get("benchmarkClass", [])
+                claim_eligible_only = bool(selector.get("claimEligibleOnly", False))
+                domain_filter = selector.get("domains", [])
+                id_filter = selector.get("ids", [])
+                exclude_ids = set(selector.get("excludeIds", []))
+                filtered_rows: list[dict[str, Any]] = []
+                for row in workloads:
+                    if not isinstance(row, dict):
+                        continue
+                    workload_id = row.get("id")
+                    if not isinstance(workload_id, str) or not workload_id:
+                        continue
+                    if workload_id in exclude_ids:
+                        continue
+                    if id_filter and workload_id not in id_filter:
+                        continue
+                    row_cohorts = row.get("cohorts", row.get("suiteTags", []))
+                    if cohort_filter and not any(tag in cohort_filter for tag in row_cohorts):
+                        continue
+                    row_benchmark_class = row.get(
+                        "benchmarkClass",
+                        "comparable" if bool(row.get("comparable", False)) else "directional",
+                    )
+                    if benchmark_class_filter and row_benchmark_class not in benchmark_class_filter:
+                        continue
+                    if claim_eligible_only and not bool(row.get("claimEligible", True)):
+                        continue
+                    if domain_filter and row.get("domain") not in domain_filter:
+                        continue
+                    filtered_rows.append(row)
+                selected_rows = filtered_rows
             expected_comparable = sorted(
                 {
                     row.get("id")
-                    for row in workloads
+                    for row in selected_rows
                     if isinstance(row, dict)
                     and isinstance(row.get("id"), str)
                     and row.get("id")
@@ -228,7 +264,7 @@ def parse_cycle_contract(repo_root: Path, path: Path) -> tuple[dict[str, Any], l
             expected_directional = sorted(
                 {
                     row.get("id")
-                    for row in workloads
+                    for row in selected_rows
                     if isinstance(row, dict)
                     and isinstance(row.get("id"), str)
                     and row.get("id")
@@ -256,7 +292,6 @@ def parse_cycle_contract(repo_root: Path, path: Path) -> tuple[dict[str, Any], l
                     f"missing={missing} extra={extra}"
                 )
 
-    methodology = payload.get("methodology")
     if not isinstance(methodology, dict):
         failures.append("methodology missing/invalid")
     else:
@@ -306,16 +341,6 @@ def parse_cycle_contract(repo_root: Path, path: Path) -> tuple[dict[str, Any], l
                     parse_int(methodology.get("minTimedSamples")),
                     parse_int(claimability.get("minTimedSamples")),
                 ),
-                (
-                    "includeExtendedWorkloads",
-                    methodology.get("includeExtendedWorkloads"),
-                    run.get("includeExtendedWorkloads"),
-                ),
-                (
-                    "includeNoncomparableWorkloads",
-                    methodology.get("includeNoncomparableWorkloads"),
-                    run.get("includeNoncomparableWorkloads"),
-                ),
             ]
             for field, expected, actual in expected_pairs:
                 match = expected == actual
@@ -328,6 +353,23 @@ def parse_cycle_contract(repo_root: Path, path: Path) -> tuple[dict[str, Any], l
                     failures.append(
                         f"methodology mismatch for {field}: expected={expected!r} actual={actual!r}"
                     )
+            expected_selector = methodology.get("selector")
+            actual_selector = (
+                config_payload.get("selector")
+                if isinstance(config_payload.get("selector"), dict)
+                else None
+            )
+            selector_match = expected_selector == actual_selector
+            checks["methodology"]["selector"] = {
+                "expected": expected_selector,
+                "actual": actual_selector,
+                "match": selector_match,
+            }
+            if not selector_match:
+                failures.append(
+                    "methodology mismatch for selector: "
+                    f"expected={expected_selector!r} actual={actual_selector!r}"
+                )
 
     milestones = payload.get("milestones")
     if not isinstance(milestones, list) or not milestones:

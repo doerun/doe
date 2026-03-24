@@ -11,14 +11,14 @@ from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_FULL_FRONTIER = {
-    "metal": "bench/workloads.apple.metal.extended.json",
-    "vulkan": "bench/workloads.amd.vulkan.extended.strict.json",
-    "d3d12": "bench/workloads.local.d3d12.extended.json",
+    "metal": "bench/workloads.apple.metal.json",
+    "vulkan": "bench/workloads.amd.vulkan.json",
+    "d3d12": "bench/workloads.local.d3d12.json",
 }
 DEFAULT_METAL_RELEASE_LENS = {
-    "metal": "bench/workloads.apple.metal.smoke.json",
-    "vulkan": "bench/workloads.amd.vulkan.extended.strict.json",
-    "d3d12": "bench/workloads.local.d3d12.extended.json",
+    "metal": "bench/workloads.apple.metal.json",
+    "vulkan": "bench/workloads.amd.vulkan.json",
+    "d3d12": "bench/workloads.local.d3d12.json",
 }
 
 
@@ -82,7 +82,7 @@ def load_json(path: str | Path) -> dict[str, Any]:
     return payload
 
 
-def load_comparable_ids(path: str | Path) -> set[str]:
+def load_comparable_ids(path: str | Path, *, required_cohort: str | None = None) -> set[str]:
     payload = load_json(path)
     workloads = payload.get("workloads")
     if not isinstance(workloads, list):
@@ -93,6 +93,10 @@ def load_comparable_ids(path: str | Path) -> set[str]:
             continue
         if not row.get("comparable", False):
             continue
+        if required_cohort is not None:
+            cohorts = row.get("cohorts", row.get("suiteTags", []))
+            if required_cohort not in cohorts:
+                continue
         workload_id = row.get("id")
         if isinstance(workload_id, str):
             workload_ids.add(workload_id)
@@ -109,9 +113,9 @@ def build_overlap_map(
         load_comparable_ids(full_frontier_sources["d3d12"]),
     )
     metal_release_lens = build_overlap_section(
-        load_comparable_ids(release_lens_sources["metal"]),
-        load_comparable_ids(release_lens_sources["vulkan"]),
-        load_comparable_ids(release_lens_sources["d3d12"]),
+        load_comparable_ids(release_lens_sources["metal"], required_cohort="governed"),
+        load_comparable_ids(release_lens_sources["vulkan"], required_cohort="governed"),
+        load_comparable_ids(release_lens_sources["d3d12"], required_cohort="governed"),
     )
     return {
         "schemaVersion": 1,
@@ -144,7 +148,7 @@ def build_overlap_map(
                 "vulkan": normalize_path(release_lens_sources["vulkan"]),
                 "d3d12": normalize_path(release_lens_sources["d3d12"]),
             },
-            "reason": "Derived from current Metal release workload source plus Vulkan/D3D12 strict comparable sources.",
+            "reason": "Derived from current governed comparable workload cohorts across Metal/Vulkan/D3D12 sources.",
             "coverage": metal_release_lens["coverage"],
             "counts": metal_release_lens["counts"],
         },

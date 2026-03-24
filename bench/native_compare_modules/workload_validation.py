@@ -13,9 +13,8 @@ from native_compare_modules.config_support import (
     KNOWN_GPU_BACKENDS,
     GPU_BACKEND_ALIASES,
     HOST_ALLOWED_GPU_BACKENDS,
-    parse_int,
-    command_for,
 )
+from native_compare_modules.runner import parse_int, command_for
 
 
 def parse_positive_int_command_field(

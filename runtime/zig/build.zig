@@ -1,7 +1,7 @@
 const std = @import("std");
 const APP_BUNDLE_NAME = "Doe Runtime.app";
 const APP_ICON_BASENAME = "DoeRuntime";
-const APP_ICON_SOURCE_SVG = "../../browser/chromium/assets/fawn-icon-main.svg";
+const APP_ICON_SOURCE_SVG = "../../browser/chromium/assets/logo/source/fawn-icon-main.svg";
 
 fn fileExists(path: []const u8) bool {
     std.fs.cwd().access(path, .{}) catch return false;
@@ -291,9 +291,10 @@ pub fn build(b: *std.Build) void {
             const missing_icon = b.addFail("Missing required macOS icon source: " ++ APP_ICON_SOURCE_SVG);
             app_step.dependOn(&missing_icon.step);
         } else {
-            const make_icon = b.addSystemCommand(&.{ "python3", "tools/generate_macos_icon.py", "--out", "--source-svg", APP_ICON_SOURCE_SVG });
-            make_icon.setCwd(b.path("."));
+            const make_icon = b.addSystemCommand(&.{ "python3", "tools/generate_macos_icon.py", "--out" });
             const icon_icns = make_icon.addOutputFileArg(APP_ICON_BASENAME ++ ".icns");
+            make_icon.addArgs(&.{ "--source-svg", APP_ICON_SOURCE_SVG });
+            make_icon.setCwd(b.path("."));
 
             const app_prefix = "app/" ++ APP_BUNDLE_NAME ++ "/Contents";
             const install_app_exe = b.addInstallFileWithDir(

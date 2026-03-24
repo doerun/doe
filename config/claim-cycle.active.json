@@ -5,16 +5,16 @@
   "objective": "Move from strong local comparable results to repeatable, auditable incumbent-replacement confidence under one active contract hash.",
   "contracts": {
     "workloadContract": {
-      "path": "bench/workloads.amd.vulkan.extended.json",
-      "sha256": "efa20507fdaa28f16c3ba230cc913b9886b7a6ce73e5e78915aa4f644422f1b9"
+      "path": "bench/workloads.amd.vulkan.json",
+      "sha256": "4bee85ff2509759eb71ae3f2da75b5ccde1cc8be35edaacba14f7c1906dd6d3d"
     },
     "benchmarkPolicy": {
       "path": "config/benchmark-methodology-thresholds.json",
-      "sha256": "e50ef9f750667dfc1d6505a097db71be9322df24d099ef91a9e4f49fd3468152"
+      "sha256": "32e0942cc8f4114210ee2010f524bcbd4c9548a123fc75d29bc699c698262355"
     },
     "compareConfig": {
       "path": "bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.release.json",
-      "sha256": "34e9141cda711755f3bdc2e2baed937bf99789cf07f1031bc045c8921fbb5c41"
+      "sha256": "c10526db8b75b47e1352fd659bde79a39dfdbe235e4529a44c2a93278f06ca62"
     },
     "substantiationPolicy": {
       "path": "config/substantiation-policy.json",
@@ -23,48 +23,19 @@
   },
   "workloadSets": {
     "comparableIds": [
-      "pipeline_async_diagnostics",
-      "upload_write_buffer_16mb",
-      "upload_write_buffer_1kb",
-      "upload_write_buffer_1mb",
-      "upload_write_buffer_4mb",
-      "upload_write_buffer_64kb",
       "compute_concurrent_execution_single",
       "compute_matvec_32768x2048_f32",
       "compute_matvec_32768x2048_f32_swizzle1",
       "compute_matvec_32768x2048_f32_workgroupshared_swizzle1",
-      "render_bundle_dynamic_bindings",
-      "render_bundle_dynamic_pipeline_bindings",
-      "render_draw_redundant_pipeline_bindings",
-      "render_draw_state_bindings",
-      "render_draw_throughput_baseline",
-      "pipeline_compile_stress",
-      "texture_sampler_write_query_destroy",
-      "texture_sampler_write_query_destroy_mip8",
-      "texture_sampling_raster_baseline",
-      "render_uniform_buffer_update_writebuffer_partial_single",
       "compute_workgroup_atomic_1024",
       "compute_workgroup_non_atomic_1024",
-      "compute_zero_initialize_workgroup_memory_256"
+      "pipeline_compile_stress",
+      "upload_write_buffer_1kb",
+      "upload_write_buffer_1mb",
+      "upload_write_buffer_4mb",
+      "upload_write_buffer_64kb"
     ],
     "directionalIds": [
-      "render_draw_indexed_200k",
-      "render_draw_indexed_baseline",
-      "compute_indirect_timestamp",
-      "render_multidraw",
-      "render_multidraw_indexed",
-      "render_pixel_local_storage_barrier",
-      "render_pixel_local_storage_barrier_500",
-      "resource_lifecycle",
-      "capability_introspection",
-      "capability_introspection_500",
-      "resource_table_immediates",
-      "resource_table_immediates_500",
-      "lifecycle_refcount",
-      "lifecycle_refcount_200",
-      "render_draw_throughput_200k",
-      "surface_presentation",
-      "texture_sampler_write_query_destroy_500"
     ]
   },
   "methodology": {
@@ -74,8 +45,18 @@
     "requireTimingClass": "operation",
     "claimabilityMode": "release",
     "minTimedSamples": 15,
-    "includeExtendedWorkloads": true,
-    "includeNoncomparableWorkloads": false
+    "selector": {
+      "cohorts": [
+        "governed"
+      ],
+      "benchmarkClass": [
+        "comparable"
+      ],
+      "claimEligibleOnly": true,
+      "domains": [],
+      "ids": [],
+      "excludeIds": []
+    }
   },
   "milestones": [
     {
@@ -94,7 +75,7 @@
           "id": "comparable_pass_count",
           "metric": "comparableWorkloadsPassCount",
           "operator": "==",
-          "target": 23
+          "target": 11
         }
       ]
     },

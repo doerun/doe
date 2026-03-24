@@ -1,4 +1,4 @@
-// Deno entry point for @simulatte/webgpu.
+// Deno entry point for doe-gpu.
 //
 // Deno's Node compatibility layer supports createRequire and N-API addons,
 // so this entry point re-exports the full Node surface through index.js.
@@ -6,7 +6,7 @@
 // without changing the public export shape.
 
 import * as full from './index.js';
-// Use relative path for Deno compatibility; bare specifier @simulatte/webgpu-doe
+// Use relative path for Deno compatibility; bare specifier doe-gpu-doe
 // requires Node-style node_modules resolution that Deno does not support without
 // explicit import maps. This relative path resolves via the monorepo symlink in
 // development and works as a direct path for all Deno contexts.

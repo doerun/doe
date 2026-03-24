@@ -39,7 +39,7 @@ async function requestDeviceFromRequestAdapter(requestAdapter, options = {}) {
 }
 
 function buildProviderInfo({
-  moduleName = '@simulatte/webgpu',
+  moduleName = 'doe-gpu',
   loaded,
   loadError,
   defaultCreateArgs = [],

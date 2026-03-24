@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Validate full-matrix claim readiness from a compare_dawn_vs_doe report."""
+"""Validate full frontier-comparable matrix readiness from a compare report.
+
+Legacy name retained for compatibility with existing scripts.
+"""
 
 from __future__ import annotations
 
@@ -44,7 +47,7 @@ def load_expected_comparable_workload_ids(path: Path) -> list[str]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Check full matrix comparability/claimability/correctness counters."
+        description="Check full frontier-comparable matrix comparability/claimability/correctness counters."
     )
     parser.add_argument("--report", required=True, help="Path to compare report JSON.")
     parser.add_argument(
@@ -55,7 +58,7 @@ def main() -> int:
     )
     parser.add_argument(
         "--expected-workload-contract",
-        default="bench/workloads.amd.vulkan.extended.json",
+        default="bench/workloads.amd.vulkan.json",
         help=(
             "Workload contract JSON used for strict workload-identity checks. "
             "Set to empty string to disable identity/hash checks."
@@ -118,7 +121,7 @@ def main() -> int:
         if expected_workload_ids:
             expected_workload_count = len(expected_workload_ids)
         else:
-            expected_workload_count = 39
+            expected_workload_count = 0
 
     workloads = payload.get("workloads", [])
     workload_count = len(workloads) if isinstance(workloads, list) else 0

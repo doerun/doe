@@ -166,6 +166,16 @@ def derive_bench_out_group(path: str | Path) -> Path | None:
     stripped = _strip_known_prefix(lowered)
     if stripped.startswith("amd.vulkan.single."):
         return Path("amd-vulkan") / "singles"
+    if stripped.startswith("amd.vulkan.compare-dev"):
+        return Path("amd-vulkan") / "compare-dev"
+    if stripped.startswith("amd.vulkan.compare"):
+        return Path("amd-vulkan") / "compare"
+    if stripped.startswith("amd.vulkan.frontier"):
+        return Path("amd-vulkan") / "frontier"
+    if stripped.startswith("amd.vulkan.explore"):
+        return Path("amd-vulkan") / "explore"
+    if stripped.startswith("amd.vulkan.smoke"):
+        return Path("amd-vulkan") / "smoke"
     if stripped.startswith("amd.vulkan.extended.strict.comparable"):
         return Path("amd-vulkan") / "extended-strict-comparable"
     if stripped.startswith("amd.vulkan.extended.strict.release"):
@@ -182,6 +192,16 @@ def derive_bench_out_group(path: str | Path) -> Path | None:
         return Path("amd-vulkan") / "superset-native-supported-release"
     if stripped.startswith("amd.vulkan.superset.comparable"):
         return Path("amd-vulkan") / "superset-comparable"
+    if stripped.startswith("apple.metal.compare-dev"):
+        return Path("apple-metal") / "compare-dev"
+    if stripped.startswith("apple.metal.compare"):
+        return Path("apple-metal") / "compare"
+    if stripped.startswith("apple.metal.frontier"):
+        return Path("apple-metal") / "frontier"
+    if stripped.startswith("apple.metal.explore"):
+        return Path("apple-metal") / "explore"
+    if stripped.startswith("apple.metal.smoke"):
+        return Path("apple-metal") / "smoke"
     if stripped.startswith("apple.metal.extended.comparable"):
         return Path("apple-metal") / "extended-comparable"
     if stripped.startswith("apple.metal.release"):
@@ -194,6 +214,18 @@ def derive_bench_out_group(path: str | Path) -> Path | None:
         return Path("apple-metal")
     if stripped.startswith("amd.vulkan"):
         return Path("amd-vulkan")
+    if stripped.startswith("local.d3d12.compare-dev"):
+        return Path("windows-d3d12") / "compare-dev"
+    if stripped.startswith("local.d3d12.compare"):
+        return Path("windows-d3d12") / "compare"
+    if stripped.startswith("local.d3d12.frontier"):
+        return Path("windows-d3d12") / "frontier"
+    if stripped.startswith("local.d3d12.explore"):
+        return Path("windows-d3d12") / "explore"
+    if stripped.startswith("local.d3d12.smoke"):
+        return Path("windows-d3d12") / "smoke"
+    if stripped.startswith("local.d3d12.release"):
+        return Path("windows-d3d12") / "release"
     if stripped.startswith("local.metal.extended.comparable"):
         return Path("apple-metal") / "extended-comparable"
     if stripped.startswith("local.metal.release"):

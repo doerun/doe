@@ -10,6 +10,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from native_compare_modules.reporting import parse_int
+
 DEFAULT_WORKLOADS_PATH = "bench/workloads.json"
 DEFAULT_LEFT_NAME = "doe"
 DEFAULT_RIGHT_NAME = "dawn"
@@ -47,9 +49,11 @@ VALID_DIRECTIONAL_REASONS = {
     "dawn_limit",
     "dawn_missing_contract",
     "dawn_no_execution",
+    "implementation_gap",
     "path_asymmetry",
     "host_instability",
     "methodology_gap",
+    "timing_scope_audit_pending",
     "other",
 }
 NON_APPLES_TO_APPLES_DOMAINS = {
@@ -126,7 +130,7 @@ class Workload:
     path_asymmetry: bool
     path_asymmetry_note: str
     strict_normalization_unit: str
-    suite_tags: list[str] = field(default_factory=lambda: ["release"])
+    cohorts: list[str] = field(default_factory=lambda: ["exploration"])
     claim_eligible: bool = True
 
 
@@ -204,12 +208,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--include-extended-workloads",
         action="store_true",
-        help="Include workloads marked with default=false in workloads.json.",
+        help="Legacy fallback: include workloads marked with default=false when selector is not used.",
     )
     parser.add_argument(
         "--include-noncomparable-workloads",
         action="store_true",
-        help="Include workloads marked as non-comparable in workloads.json.",
+        help="Legacy fallback: include workloads marked as non-comparable when selector is not used.",
     )
     parser.add_argument(
         "--comparability",
@@ -800,14 +804,16 @@ def resolve_selector(
     """Filter workloads using a selector config object.
 
     Selector fields:
-      suite        -- workload must have at least one matching suite tag
-      comparability -- maps to existing comparable boolean
+      cohorts         -- workload must have at least one matching cohort tag
+      benchmarkClass  -- comparable or directional
+      comparability   -- legacy alias mapping comparable/non_comparable to comparable bool
       claimEligibleOnly -- if true, only workloads with claim_eligible=true
-      domains      -- if non-empty, workload domain must be in list
-      ids          -- if non-empty, workload ID must be in list
-      excludeIds   -- exclude these IDs
+      domains         -- if non-empty, workload domain must be in list
+      ids             -- if non-empty, workload ID must be in list
+      excludeIds      -- exclude these IDs
     """
-    suite_filter = selector_config.get("suite", [])
+    cohort_filter = selector_config.get("cohorts", selector_config.get("suite", []))
+    benchmark_class_filter = selector_config.get("benchmarkClass", [])
     comparability_filter = selector_config.get("comparability", [])
     claim_eligible_only = selector_config.get("claimEligibleOnly", False)
     domain_filter = selector_config.get("domains", [])
@@ -821,9 +827,11 @@ def resolve_selector(
         if id_filter:
             if workload.id not in id_filter:
                 continue
-        if suite_filter:
-            if not any(tag in suite_filter for tag in workload.suite_tags):
+        if cohort_filter:
+            if not any(tag in cohort_filter for tag in workload.cohorts):
                 continue
+        if benchmark_class_filter and workload.benchmark_class not in benchmark_class_filter:
+            continue
         if comparability_filter:
             workload_comparability = "comparable" if workload.comparable else "non_comparable"
             if workload_comparability not in comparability_filter:
@@ -968,7 +976,7 @@ def load_workloads(
             path_asymmetry=path_asymmetry,
             path_asymmetry_note=str(item.get("pathAsymmetryNote", "")),
             strict_normalization_unit=str(item.get("strictNormalizationUnit", "")).strip().lower(),
-            suite_tags=item.get("suiteTags", ["release"]),
+            cohorts=item.get("cohorts", item.get("suiteTags", ["exploration"])),
             claim_eligible=bool(item.get("claimEligible", True)),
         )
         if workload.strict_normalization_unit not in {"", "command", "dispatch", "cycle"}:

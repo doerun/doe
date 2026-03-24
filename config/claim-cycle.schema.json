@@ -120,7 +120,6 @@
         },
         "directionalIds": {
           "type": "array",
-          "minItems": 1,
           "uniqueItems": true,
           "items": {
             "type": "string",
@@ -139,8 +138,7 @@
         "requireTimingClass",
         "claimabilityMode",
         "minTimedSamples",
-        "includeExtendedWorkloads",
-        "includeNoncomparableWorkloads"
+        "selector"
       ],
       "properties": {
         "iterations": {
@@ -179,11 +177,63 @@
           "type": "integer",
           "minimum": 0
         },
-        "includeExtendedWorkloads": {
-          "type": "boolean"
-        },
-        "includeNoncomparableWorkloads": {
-          "type": "boolean"
+        "selector": {
+          "type": "object",
+          "required": [
+            "claimEligibleOnly",
+            "domains",
+            "ids",
+            "excludeIds"
+          ],
+          "properties": {
+            "cohorts": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true
+            },
+            "benchmarkClass": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "comparable",
+                  "directional"
+                ]
+              },
+              "uniqueItems": true
+            },
+            "claimEligibleOnly": {
+              "type": "boolean"
+            },
+            "domains": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true
+            },
+            "ids": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true
+            },
+            "excludeIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true
+            }
+          },
+          "additionalProperties": false
         }
       },
       "additionalProperties": false

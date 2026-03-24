@@ -4,44 +4,35 @@
     "generic": {
       "outputPath": "bench/workloads.json"
     },
-    "amd_vulkan_base": {
-      "outputPath": "bench/workloads.amd.vulkan.json"
-    },
-    "amd_vulkan_superset": {
-      "outputPath": "bench/workloads.amd.vulkan.superset.json"
-    },
-    "amd_vulkan_superset_native_supported": {
-      "outputPath": "bench/workloads.amd.vulkan.superset.native-supported.json"
-    },
-    "amd_vulkan_superset_doe_vs_doe": {
-      "outputPath": "bench/workloads.amd.vulkan.superset.doe-vs-doe.json"
-    },
-    "amd_vulkan_app_claim": {
-      "outputPath": "bench/workloads.amd.vulkan.app.claim.json"
+    "amd_vulkan": {
+      "outputPath": "bench/workloads.amd.vulkan.json",
+      "sourceLane": "amd_vulkan_superset",
+      "profile": "amd_vulkan"
     },
     "amd_vulkan_smoke": {
-      "outputPath": "bench/workloads.amd.vulkan.smoke.json"
-    },
-    "amd_vulkan_extended": {
-      "outputPath": "bench/workloads.amd.vulkan.extended.json"
-    },
-    "amd_vulkan_extended_strict": {
-      "outputPath": "bench/workloads.amd.vulkan.extended.strict.json"
+      "outputPath": "bench/workloads.amd.vulkan.smoke.json",
+      "sourceLane": "amd_vulkan_smoke",
+      "profile": "amd_vulkan"
     },
     "apple_metal_smoke": {
-      "outputPath": "bench/workloads.apple.metal.smoke.json"
+      "outputPath": "bench/workloads.apple.metal.smoke.json",
+      "sourceLane": "apple_metal_smoke",
+      "profile": "apple_metal"
     },
-    "apple_metal_extended": {
-      "outputPath": "bench/workloads.apple.metal.extended.json"
+    "apple_metal": {
+      "outputPath": "bench/workloads.apple.metal.json",
+      "sourceLane": "apple_metal_extended",
+      "profile": "apple_metal"
     },
     "local_d3d12_smoke": {
-      "outputPath": "bench/workloads.local.d3d12.smoke.json"
+      "outputPath": "bench/workloads.local.d3d12.smoke.json",
+      "sourceLane": "local_d3d12_smoke",
+      "profile": "local_d3d12"
     },
-    "local_d3d12_extended": {
-      "outputPath": "bench/workloads.local.d3d12.extended.json"
-    },
-    "d3d12_comparable": {
-      "outputPath": "bench/workloads.d3d12.comparable.json"
+    "local_d3d12": {
+      "outputPath": "bench/workloads.local.d3d12.json",
+      "sourceLane": "local_d3d12_extended",
+      "profile": "local_d3d12"
     }
   },
   "workloads": [
@@ -816,7 +807,7 @@
           "comparable": true,
           "default": true,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-          "dawnFilter": "WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeAtomic"
+          "dawnFilter": "@autodiscover"
         },
         "local_d3d12_smoke": {
           "name": "workgroup-atomic-smoke",
@@ -1184,12 +1175,13 @@
           "comparabilityNotes": "Directional-only on Apple Metal pending fresh governed structural-equivalence evidence. A targeted Metal rerun showed no stronger runtime mismatch than contract-level non-comparable status, so strict comparable promotion remains withheld until a governed report is recorded.",
           "commandsPath": "examples/async_pipeline_diagnostics_commands.json",
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
-          "vendor": "amd",
-          "family": "gfx11",
-          "driver": "24.0.0",
+          "vendor": "apple",
+          "family": "m3",
+          "driver": "1.0.0",
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-          "rightTimingDivisor": 1.0
+          "rightTimingDivisor": 1.0,
+          "api": "metal"
         },
         "local_d3d12_extended": {
           "comparabilityNotes": "Directional-only D3D12 parity scaffold. This workload is included in local_d3d12_extended to mirror the common Metal/Vulkan extended set, but it is excluded from governed strict D3D12 comparable lanes pending Windows-backed evidence and D3D12-specific Dawn mapping validation.",
@@ -1516,13 +1508,14 @@
           "comparabilityNotes": "Promoted to strict comparable on Apple Metal using full-suite evidence from bench/out/scratch/20260226T005744Z/metal.full.fixed.full12.json and retained under apples-to-apples operation timing policy with zero execution error/unsupported requirements.",
           "commandsPath": "examples/draw_call_render_bundle_dynamic_bindings_commands.json",
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
-          "vendor": "amd",
-          "family": "gfx11",
-          "driver": "24.0.0",
+          "vendor": "apple",
+          "family": "m3",
+          "driver": "1.0.0",
           "comparable": true,
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-          "rightTimingDivisor": 1.0
+          "rightTimingDivisor": 1.0,
+          "api": "metal"
         },
         "local_d3d12_extended": {
           "comparabilityNotes": "Directional-only D3D12 parity scaffold. This workload is included in local_d3d12_extended to mirror the common Metal/Vulkan extended set, but it is excluded from governed strict D3D12 comparable lanes pending Windows-backed evidence and D3D12-specific Dawn mapping validation.",
@@ -1662,15 +1655,16 @@
           "comparabilityNotes": "Promoted to strict comparable on Apple Metal using full-suite evidence from bench/out/scratch/20260226T005744Z/metal.full.fixed.full12.json and retained under apples-to-apples operation timing policy with zero execution error/unsupported requirements.",
           "commandsPath": "examples/draw_call_render_bundle_dynamic_pipeline_commands.json",
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
-          "vendor": "amd",
-          "family": "gfx11",
-          "driver": "24.0.0",
+          "vendor": "apple",
+          "family": "m3",
+          "driver": "1.0.0",
           "comparable": true,
           "leftCommandRepeat": 10,
           "rightCommandRepeat": 10,
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-          "rightTimingDivisor": 1.0
+          "rightTimingDivisor": 1.0,
+          "api": "metal"
         },
         "local_d3d12_extended": {
           "comparabilityNotes": "Directional-only D3D12 parity scaffold. This workload is included in local_d3d12_extended to mirror the common Metal/Vulkan extended set, but it is excluded from governed strict D3D12 comparable lanes pending Windows-backed evidence and D3D12-specific Dawn mapping validation.",
@@ -1792,10 +1786,11 @@
           "comparabilityNotes": "Directional-only on Apple Metal. A targeted Metal rerun showed no stronger runtime mismatch than contract-level non-comparable status; the current Dawn mapping remains diagnostic rather than a governed apples-to-apples draw contract.",
           "commandsPath": "examples/draw_call_indexed_proxy_macro_commands.json",
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
-          "vendor": "amd",
-          "family": "gfx11",
-          "driver": "24.0.0",
-          "timingNormalizationNote": "Directional-only: Apples-to-apples macro workload: normalize to per-draw units over 200k indexed draws with deferred queue sync."
+          "vendor": "apple",
+          "family": "m3",
+          "driver": "1.0.0",
+          "timingNormalizationNote": "Directional-only: Apples-to-apples macro workload: normalize to per-draw units over 200k indexed draws with deferred queue sync.",
+          "api": "metal"
         },
         "local_d3d12_extended": {
           "comparabilityNotes": "Directional-only D3D12 parity scaffold. This workload is included in local_d3d12_extended to mirror the common Metal/Vulkan extended set, but it is excluded from governed strict D3D12 comparable lanes pending Windows-backed evidence and D3D12-specific Dawn mapping validation.",
@@ -1929,12 +1924,13 @@
           "comparabilityNotes": "Directional-only draw-indexed proxy on Apple Metal. A targeted Metal rerun showed no stronger runtime mismatch than contract-level non-comparable status; the current Dawn mapping remains nearest-proxy rather than strict apples-to-apples.",
           "commandsPath": "examples/draw_call_indexed_proxy_commands.json",
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
-          "vendor": "amd",
-          "family": "gfx11",
-          "driver": "24.0.0",
+          "vendor": "apple",
+          "family": "m3",
+          "driver": "1.0.0",
           "comparable": false,
           "leftTimingDivisor": 20000,
-          "timingNormalizationNote": "Directional-only: Both sides report per-draw throughput units; Fawn issues indexed draws and Dawn uses the closest draw-call throughput proxy variant. Repeat=10 plus deferred queue sync reduces per-sample setup/sync overhead while preserving per-draw normalization."
+          "timingNormalizationNote": "Directional-only: Both sides report per-draw throughput units; Fawn issues indexed draws and Dawn uses the closest draw-call throughput proxy variant. Repeat=10 plus deferred queue sync reduces per-sample setup/sync overhead while preserving per-draw normalization.",
+          "api": "metal"
         },
         "local_d3d12_extended": {
           "comparabilityNotes": "Directional-only D3D12 parity scaffold. This workload is included in local_d3d12_extended to mirror the common Metal/Vulkan extended set, but it is excluded from governed strict D3D12 comparable lanes pending Windows-backed evidence and D3D12-specific Dawn mapping validation.",
@@ -2071,15 +2067,16 @@
           "comparabilityNotes": "Promoted to strict comparable on Apple Metal using full-suite evidence from bench/out/scratch/20260226T005744Z/metal.full.fixed.full12.json and retained under apples-to-apples operation timing policy with zero execution error/unsupported requirements.",
           "commandsPath": "examples/draw_call_redundant_pipeline_bindings_commands.json",
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
-          "vendor": "amd",
-          "family": "gfx11",
-          "driver": "24.0.0",
+          "vendor": "apple",
+          "family": "m3",
+          "driver": "1.0.0",
           "comparable": true,
           "leftCommandRepeat": 10,
           "rightCommandRepeat": 10,
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-          "rightTimingDivisor": 1.0
+          "rightTimingDivisor": 1.0,
+          "api": "metal"
         },
         "local_d3d12_extended": {
           "comparabilityNotes": "Directional-only D3D12 parity scaffold. This workload is included in local_d3d12_extended to mirror the common Metal/Vulkan extended set, but it is excluded from governed strict D3D12 comparable lanes pending Windows-backed evidence and D3D12-specific Dawn mapping validation.",
@@ -2213,13 +2210,14 @@
           "comparabilityNotes": "Promoted to strict comparable on Apple Metal using full-suite evidence from bench/out/scratch/20260226T005744Z/metal.full.fixed.full12.json and retained under apples-to-apples operation timing policy with zero execution error/unsupported requirements.",
           "commandsPath": "examples/draw_call_state_bindings_commands.json",
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
-          "vendor": "amd",
-          "family": "gfx11",
-          "driver": "24.0.0",
+          "vendor": "apple",
+          "family": "m3",
+          "driver": "1.0.0",
           "comparable": true,
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-          "rightTimingDivisor": 1.0
+          "rightTimingDivisor": 1.0,
+          "api": "metal"
         },
         "local_d3d12_extended": {
           "comparabilityNotes": "Directional-only D3D12 parity scaffold. This workload is included in local_d3d12_extended to mirror the common Metal/Vulkan extended set, but it is excluded from governed strict D3D12 comparable lanes pending Windows-backed evidence and D3D12-specific Dawn mapping validation.",
@@ -2352,12 +2350,13 @@
           "comparabilityNotes": "Apples-to-apples macro contract. Dawn filter mapping is explicitly aligned for strict claim lanes.",
           "commandsPath": "examples/draw_call_proxy_macro_commands.json",
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
-          "vendor": "amd",
-          "family": "gfx11",
-          "driver": "24.0.0",
+          "vendor": "apple",
+          "family": "m3",
+          "driver": "1.0.0",
           "comparable": true,
           "leftTimingDivisor": 1.0,
-          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+          "api": "metal"
         },
         "local_d3d12_extended": {
           "description": "Apples-to-apples macro render throughput workload using a 200k-draw command stream.",
@@ -2554,14 +2553,14 @@
           "comparabilityNotes": "Promoted to strict comparable on Apple Metal using full-suite evidence from bench/out/scratch/20260226T005744Z/metal.full.fixed.full12.json and retained under apples-to-apples operation timing policy with zero execution error/unsupported requirements.",
           "commandsPath": "examples/draw_call_proxy_commands.json",
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
-          "vendor": "amd",
-          "api": "vulkan",
-          "family": "gfx11",
-          "driver": "24.0.0",
+          "vendor": "apple",
+          "api": "metal",
+          "family": "m3",
+          "driver": "1.0.0",
           "comparable": true,
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-          "dawnFilter": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151",
+          "dawnFilter": "@autodiscover",
           "rightTimingDivisor": 1.0
         },
         "local_d3d12_extended": {
@@ -2690,11 +2689,12 @@
           "comparabilityNotes": "Directional-only surface lifecycle proxy on Apple Metal. A targeted Metal rerun showed no stronger runtime mismatch than contract-level non-comparable status; Dawn still lacks a matching create/release-surface benchmark contract for strict comparable claim lanes.",
           "commandsPath": "examples/surface_presentation_commands.json",
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
-          "vendor": "amd",
-          "family": "gfx11",
-          "driver": "24.0.0",
+          "vendor": "apple",
+          "family": "m3",
+          "driver": "1.0.0",
           "comparable": false,
-          "timingNormalizationNote": "Directional proxy only: normalize per create/release operation pair."
+          "timingNormalizationNote": "Directional proxy only: normalize per create/release operation pair.",
+          "api": "metal"
         },
         "local_d3d12_extended": {
           "description": "Directional surface lifecycle proxy benchmark covering create/release surface path on headless adapters.",
@@ -2831,9 +2831,9 @@
           "comparabilityNotes": "Promoted to strict comparable on Apple Metal using full-suite evidence from bench/out/scratch/20260226T005744Z/metal.full.fixed.full12.json and retained under apples-to-apples operation timing policy with zero execution error/unsupported requirements.",
           "commandsPath": "examples/texture_sampler_write_query_destroy_commands.json",
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
-          "vendor": "amd",
-          "family": "gfx11",
-          "driver": "24.0.0",
+          "vendor": "apple",
+          "family": "m3",
+          "driver": "1.0.0",
           "extraArgs": [
             "--queue-sync-mode",
             "deferred"
@@ -2842,7 +2842,8 @@
           "rightCommandRepeat": 10,
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-          "rightTimingDivisor": 1.0
+          "rightTimingDivisor": 1.0,
+          "api": "metal"
         },
         "local_d3d12_extended": {
           "comparabilityNotes": "Directional-only D3D12 parity scaffold. This workload is included in local_d3d12_extended to mirror the common Metal/Vulkan extended set, but it is excluded from governed strict D3D12 comparable lanes pending Windows-backed evidence and D3D12-specific Dawn mapping validation.",
@@ -2976,12 +2977,13 @@
           "comparabilityNotes": "Promoted to strict comparable on Apple Metal using full-suite evidence from bench/out/scratch/20260226T005744Z/metal.full.fixed.full12.json and retained under apples-to-apples operation timing policy with zero execution error/unsupported requirements.",
           "commandsPath": "examples/texture_sampler_write_query_destroy_macro_commands.json",
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
-          "vendor": "amd",
-          "family": "gfx11",
-          "driver": "24.0.0",
+          "vendor": "apple",
+          "family": "m3",
+          "driver": "1.0.0",
           "comparable": true,
           "leftTimingDivisor": 1.0,
-          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+          "api": "metal"
         },
         "local_d3d12_extended": {
           "description": "Apples-to-apples macro texture lifecycle workload with a larger render-draw phase for setup amortization analysis.",
@@ -3119,9 +3121,9 @@
           "comparabilityNotes": "Promoted to strict comparable on Apple Metal using full-suite evidence from bench/out/scratch/20260226T005744Z/metal.full.fixed.full12.json and retained under apples-to-apples operation timing policy with zero execution error/unsupported requirements.",
           "commandsPath": "examples/texture_sampler_write_query_destroy_commands.json",
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
-          "vendor": "amd",
-          "family": "gfx11",
-          "driver": "24.0.0",
+          "vendor": "apple",
+          "family": "m3",
+          "driver": "1.0.0",
           "extraArgs": [
             "--queue-sync-mode",
             "deferred"
@@ -3130,7 +3132,8 @@
           "rightCommandRepeat": 10,
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-          "rightTimingDivisor": 1.0
+          "rightTimingDivisor": 1.0,
+          "api": "metal"
         },
         "local_d3d12_extended": {
           "comparabilityNotes": "Directional-only D3D12 parity scaffold. This workload is included in local_d3d12_extended to mirror the common Metal/Vulkan extended set, but it is excluded from governed strict D3D12 comparable lanes pending Windows-backed evidence and D3D12-specific Dawn mapping validation.",
@@ -3307,9 +3310,9 @@
           "comparabilityNotes": "Directional-only on this Metal host lane pending fresh governed apples-to-apples evidence. A targeted Metal rerun did not reproduce the older Doe execution-error note, so strict comparable status remains withheld until a governed report is recorded.",
           "commandsPath": "examples/texture_raster_proxy_commands.json",
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
-          "vendor": "amd",
-          "family": "gfx11",
-          "driver": "24.0.0",
+          "vendor": "apple",
+          "family": "m3",
+          "driver": "1.0.0",
           "extraArgs": [
             "--kernel-root",
             "bench/kernels",
@@ -3320,7 +3323,8 @@
           "leftCommandRepeat": 500,
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-          "rightTimingDivisor": 1.0
+          "rightTimingDivisor": 1.0,
+          "api": "metal"
         },
         "local_d3d12_extended": {
           "comparabilityNotes": "Directional-only D3D12 parity scaffold. This workload is included in local_d3d12_extended to mirror the common Metal/Vulkan extended set, but it is excluded from governed strict D3D12 comparable lanes pending Windows-backed evidence and D3D12-specific Dawn mapping validation.",
@@ -3505,12 +3509,15 @@
           "commandsPath": "examples/upload_16mb_commands.json",
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
           "leftCommandRepeat": 50,
-          "vendor": "amd",
-          "family": "gfx11",
-          "driver": "24.0.0",
+          "vendor": "apple",
+          "family": "m3",
+          "driver": "1.0.0",
           "rightCommandRepeat": 50,
           "rightIgnoreFirstOps": 0,
-          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+          "api": "metal",
+          "pathAsymmetry": true,
+          "pathAsymmetryNote": "Apple Metal UMA may use shared-memory writes without staging-buffer GPU copy, while Dawn delegate performs staging+copy. This hardware-path advantage is non-transferable."
         },
         "local_d3d12_extended": {
           "comparabilityNotes": "Matched staged D3D12 upload-copy shape on both sides with adapter-autodiscovered Dawn mapping and strict per-upload timing normalization.",
@@ -3676,9 +3683,12 @@
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
           "leftUploadBufferUsage": "copy-dst-copy-src",
           "rightUploadBufferUsage": "copy-dst-copy-src",
-          "vendor": "amd",
-          "family": "gfx11",
-          "driver": "24.0.0"
+          "vendor": "apple",
+          "family": "m3",
+          "driver": "1.0.0",
+          "api": "metal",
+          "pathAsymmetry": true,
+          "pathAsymmetryNote": "Apple Metal UMA may use shared-memory writes without staging-buffer GPU copy, while Dawn delegate performs staging+copy. This hardware-path advantage is non-transferable."
         },
         "local_d3d12_extended": {
           "comparabilityNotes": "Directional-only D3D12 parity scaffold. This workload is included in local_d3d12_extended to mirror the common Metal/Vulkan extended set, but it is excluded from governed strict D3D12 comparable lanes pending Windows-backed evidence and D3D12-specific Dawn mapping validation.",
@@ -3853,13 +3863,16 @@
           "comparabilityNotes": "Matched single queue write upload shape on both sides with staged copy-dst uploads and strict per-upload timing normalization.",
           "commandsPath": "examples/upload_1kb_commands.json",
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
-          "vendor": "amd",
-          "family": "gfx11",
-          "driver": "24.0.0",
+          "vendor": "apple",
+          "family": "m3",
+          "driver": "1.0.0",
           "leftCommandRepeat": 50000,
           "rightCommandRepeat": 50000,
           "rightIgnoreFirstOps": 0,
-          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+          "api": "metal",
+          "pathAsymmetry": true,
+          "pathAsymmetryNote": "Apple Metal UMA may use shared-memory writes without staging-buffer GPU copy, while Dawn delegate performs staging+copy. This hardware-path advantage is non-transferable."
         },
         "local_d3d12_extended": {
           "comparabilityNotes": "Matched staged D3D12 upload-copy shape on both sides with adapter-autodiscovered Dawn mapping and strict per-upload timing normalization.",
@@ -4048,13 +4061,16 @@
           "comparabilityNotes": "Matched single queue write upload shape on both sides with staged copy-dst uploads and strict per-upload timing normalization.",
           "commandsPath": "examples/upload_1mb_commands.json",
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
-          "vendor": "amd",
-          "family": "gfx11",
-          "driver": "24.0.0",
+          "vendor": "apple",
+          "family": "m3",
+          "driver": "1.0.0",
           "leftCommandRepeat": 100,
           "rightCommandRepeat": 100,
           "rightIgnoreFirstOps": 0,
-          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+          "api": "metal",
+          "pathAsymmetry": true,
+          "pathAsymmetryNote": "Apple Metal UMA may use shared-memory writes without staging-buffer GPU copy, while Dawn delegate performs staging+copy. This hardware-path advantage is non-transferable."
         },
         "local_d3d12_extended": {
           "comparabilityNotes": "Matched staged D3D12 upload-copy shape on both sides with adapter-autodiscovered Dawn mapping and strict per-upload timing normalization.",
@@ -4218,9 +4234,12 @@
           "comparabilityNotes": "Apples-to-apples upload contract via command-stream Dawn delegate lane; both sides execute the same staged copy-dst 256MB WriteBuffer workload with strict normalization.",
           "commandsPath": "examples/upload_256mb_commands.json",
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
-          "vendor": "amd",
-          "family": "gfx11",
-          "driver": "24.0.0"
+          "vendor": "apple",
+          "family": "m3",
+          "driver": "1.0.0",
+          "api": "metal",
+          "pathAsymmetry": true,
+          "pathAsymmetryNote": "Apple Metal UMA may use shared-memory writes without staging-buffer GPU copy, while Dawn delegate performs staging+copy. This hardware-path advantage is non-transferable."
         },
         "local_d3d12_extended": {
           "comparabilityNotes": "Directional-only D3D12 parity scaffold. This workload is included in local_d3d12_extended to mirror the common Metal/Vulkan extended set, but it is excluded from governed strict D3D12 comparable lanes pending Windows-backed evidence and D3D12-specific Dawn mapping validation.",
@@ -4389,11 +4408,14 @@
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
           "leftUploadBufferUsage": "copy-dst-copy-src",
           "rightUploadBufferUsage": "copy-dst-copy-src",
-          "vendor": "amd",
-          "family": "gfx11",
-          "driver": "24.0.0",
+          "vendor": "apple",
+          "family": "m3",
+          "driver": "1.0.0",
           "comparable": true,
-          "benchmarkClass": "comparable"
+          "benchmarkClass": "comparable",
+          "api": "metal",
+          "pathAsymmetry": true,
+          "pathAsymmetryNote": "Apple Metal UMA may use shared-memory writes without staging-buffer GPU copy, while Dawn delegate performs staging+copy. This hardware-path advantage is non-transferable."
         },
         "local_d3d12_extended": {
           "comparabilityNotes": "Directional-only D3D12 parity scaffold. This workload is included in local_d3d12_extended to mirror the common Metal/Vulkan extended set, but it is excluded from governed strict D3D12 comparable lanes pending Windows-backed evidence and D3D12-specific Dawn mapping validation.",
@@ -4569,12 +4591,15 @@
           "commandsPath": "examples/upload_4mb_commands.json",
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
           "leftCommandRepeat": 50,
-          "vendor": "amd",
-          "family": "gfx11",
-          "driver": "24.0.0",
+          "vendor": "apple",
+          "family": "m3",
+          "driver": "1.0.0",
           "rightCommandRepeat": 50,
           "rightIgnoreFirstOps": 0,
-          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+          "api": "metal",
+          "pathAsymmetry": true,
+          "pathAsymmetryNote": "Apple Metal UMA may use shared-memory writes without staging-buffer GPU copy, while Dawn delegate performs staging+copy. This hardware-path advantage is non-transferable."
         },
         "local_d3d12_extended": {
           "comparabilityNotes": "Matched staged D3D12 upload-copy shape on both sides with adapter-autodiscovered Dawn mapping and strict per-upload timing normalization.",
@@ -4828,7 +4853,9 @@
           "rightIgnoreFirstOps": 1,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
           "leftCommandRepeat": 16,
-          "leftIgnoreFirstOps": 1
+          "leftIgnoreFirstOps": 1,
+          "pathAsymmetry": true,
+          "pathAsymmetryNote": "Apple Metal UMA may use shared-memory writes without staging-buffer GPU copy, while Dawn delegate performs staging+copy. This hardware-path advantage is non-transferable."
         },
         "apple_metal_extended": {
           "name": "buffer-upload 64KB",
@@ -4836,16 +4863,18 @@
           "comparabilityNotes": "Matched single queue write upload shape on both sides with staged copy-dst uploads and strict per-upload timing normalization.",
           "commandsPath": "examples/upload_64kb_commands.json",
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
-          "vendor": "amd",
-          "api": "vulkan",
-          "family": "gfx11",
-          "driver": "24.0.0",
+          "vendor": "apple",
+          "api": "metal",
+          "family": "m3",
+          "driver": "1.0.0",
           "extraArgs": [],
-          "dawnFilter": "BufferUploadPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WriteBuffer_BufferSize_64KB",
+          "dawnFilter": "@autodiscover",
           "leftCommandRepeat": 10000,
           "rightCommandRepeat": 10000,
           "rightIgnoreFirstOps": 0,
-          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+          "pathAsymmetry": true,
+          "pathAsymmetryNote": "Apple Metal UMA may use shared-memory writes without staging-buffer GPU copy, while Dawn delegate performs staging+copy. This hardware-path advantage is non-transferable."
         },
         "local_d3d12_smoke": {
           "name": "upload-64kb-smoke",
@@ -4973,7 +5002,11 @@
         },
         "apple_metal_extended": {
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
-          "timingNormalizationNote": "Directional-only: Apples-to-apples P1 capability contract: normalize as a per-command introspection sequence."
+          "timingNormalizationNote": "Directional-only: Apples-to-apples P1 capability contract: normalize as a per-command introspection sequence.",
+          "vendor": "apple",
+          "api": "metal",
+          "family": "m3",
+          "driver": "1.0.0"
         },
         "local_d3d12_extended": {
           "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
@@ -5061,7 +5094,11 @@
         },
         "apple_metal_extended": {
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
-          "timingNormalizationNote": "Directional-only: Apples-to-apples macro capability contract: normalize per internal introspection iteration."
+          "timingNormalizationNote": "Directional-only: Apples-to-apples macro capability contract: normalize per internal introspection iteration.",
+          "vendor": "apple",
+          "api": "metal",
+          "family": "m3",
+          "driver": "1.0.0"
         },
         "local_d3d12_extended": {
           "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
@@ -5163,7 +5200,11 @@
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
           "comparable": true,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-          "benchmarkClass": "comparable"
+          "benchmarkClass": "comparable",
+          "vendor": "apple",
+          "api": "metal",
+          "family": "m3",
+          "driver": "1.0.0"
         },
         "local_d3d12_extended": {
           "dawnFilter": "@autodiscover",
@@ -5237,6 +5278,7 @@
         "domain": "compute",
         "driver": "24.0.0",
         "family": "gfx11",
+        "workloadOrigin": "doe_contract_with_dawn_mapping",
         "leftCommandRepeat": 500,
         "leftTimingDivisor": 500,
         "name": "dispatch fallback contract",
@@ -5336,6 +5378,7 @@
         "domain": "compute",
         "driver": "24.0.0",
         "family": "gfx11",
+        "workloadOrigin": "doe_contract_with_dawn_mapping",
         "leftCommandRepeat": 300,
         "leftTimingDivisor": 300,
         "name": "dispatch grid contract",
@@ -5827,7 +5870,11 @@
           "leftTimingDivisor": 5120,
           "timingNormalizationNote": "Directional compute contract: command repeat=20 and kernel repeat=256 are normalized to per-dispatch units (20*256).",
           "applesToApplesVetted": false,
-          "benchmarkClass": "directional"
+          "benchmarkClass": "directional",
+          "vendor": "apple",
+          "api": "metal",
+          "family": "m3",
+          "driver": "1.0.0"
         },
         "local_d3d12_extended": {
           "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
@@ -6210,6 +6257,7 @@
         "domain": "copy",
         "driver": "24.0.0",
         "family": "gfx11",
+        "workloadOrigin": "doe_contract_with_dawn_mapping",
         "leftCommandRepeat": 200,
         "leftTimingDivisor": 200,
         "name": "copy buffer-to-texture contract",
@@ -6358,6 +6406,7 @@
         "domain": "copy",
         "driver": "24.0.0",
         "family": "gfx11",
+        "workloadOrigin": "doe_contract_with_dawn_mapping",
         "leftCommandRepeat": 100,
         "leftTimingDivisor": 100,
         "name": "copy protocol contract",
@@ -6453,6 +6502,7 @@
         "domain": "copy",
         "driver": "24.0.0",
         "family": "gfx11",
+        "workloadOrigin": "doe_contract_with_dawn_mapping",
         "leftCommandRepeat": 250,
         "leftTimingDivisor": 250,
         "name": "copy texture-to-buffer contract",
@@ -6475,20 +6525,21 @@
           "driver": "1.0.0",
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
           "applesToApplesVetted": true,
-          "benchmarkClass": "comparable",
+          "benchmarkClass": "directional",
           "comparabilityCandidate": {
             "enabled": false,
             "tier": "targeted-dawn-parity",
             "notes": "Parity promotion complete for the Apple Metal lane."
           },
           "comparabilityNotes": "Strict comparable on Apple Metal after Dawn-side copy ABI parity fixes; claimability uses headline process wall because delegate operation timing undercounts end-to-end texture-to-buffer completion. The Apple Metal lane uses 2000 repeats to reduce tail volatility under aggregate lane pressure.",
-          "comparable": true,
+          "comparable": false,
           "description": "Comparable copy contract covering texture-to-buffer transfer path.",
           "leftCommandRepeat": 2000,
           "leftTimingDivisor": 2000,
           "rightCommandRepeat": 2000,
           "rightTimingDivisor": 2000,
-          "timingNormalizationNote": "Strict comparable Apple-Metal copy contract: normalize per texture-to-buffer copy command sequence at 2000 repeats to stabilize headline process wall claimability."
+          "timingNormalizationNote": "Strict comparable Apple-Metal copy contract: normalize per texture-to-buffer copy command sequence at 2000 repeats to stabilize headline process wall claimability.",
+          "directionalReason": "implementation_gap"
         },
         "amd_vulkan_extended": {},
         "amd_vulkan_extended_strict": {},
@@ -6601,6 +6652,7 @@
         "domain": "copy",
         "driver": "24.0.0",
         "family": "gfx11",
+        "workloadOrigin": "doe_contract_with_dawn_mapping",
         "leftCommandRepeat": 200,
         "leftTimingDivisor": 200,
         "name": "copy texture-to-texture contract",
@@ -6847,7 +6899,11 @@
         },
         "apple_metal_extended": {
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
-          "timingNormalizationNote": "Directional-only: Apples-to-apples P2 lifecycle contract: normalize by addref/release touch count within the lifecycle sequence."
+          "timingNormalizationNote": "Directional-only: Apples-to-apples P2 lifecycle contract: normalize by addref/release touch count within the lifecycle sequence.",
+          "vendor": "apple",
+          "api": "metal",
+          "family": "m3",
+          "driver": "1.0.0"
         },
         "local_d3d12_extended": {
           "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
@@ -6935,7 +6991,11 @@
         },
         "apple_metal_extended": {
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
-          "timingNormalizationNote": "Directional-only: Apples-to-apples macro lifecycle contract: normalize per internal addref/release touch operations across macro iterations."
+          "timingNormalizationNote": "Directional-only: Apples-to-apples macro lifecycle contract: normalize per internal addref/release touch operations across macro iterations.",
+          "vendor": "apple",
+          "api": "metal",
+          "family": "m3",
+          "driver": "1.0.0"
         },
         "local_d3d12_extended": {
           "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
@@ -7204,7 +7264,11 @@
           "comparable": false,
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-          "benchmarkClass": "directional"
+          "benchmarkClass": "directional",
+          "vendor": "apple",
+          "api": "metal",
+          "family": "m3",
+          "driver": "1.0.0"
         },
         "local_d3d12_extended": {
           "comparabilityNotes": "Directional-only D3D12 parity scaffold. This workload is included in local_d3d12_extended to mirror the common Metal/Vulkan extended set, but it is excluded from governed strict D3D12 comparable lanes pending Windows-backed evidence and D3D12-specific Dawn mapping validation.",
@@ -7310,7 +7374,11 @@
           "comparable": false,
           "leftTimingDivisor": 2000,
           "timingNormalizationNote": "Apples-to-apples indexed render contract: normalize per draw with explicit setup amortization over indexed draw stream.",
-          "benchmarkClass": "directional"
+          "benchmarkClass": "directional",
+          "vendor": "apple",
+          "api": "metal",
+          "family": "m3",
+          "driver": "1.0.0"
         },
         "local_d3d12_extended": {
           "comparabilityNotes": "Directional-only D3D12 parity scaffold. This workload is included in local_d3d12_extended to mirror the common Metal/Vulkan extended set, but it is excluded from governed strict D3D12 comparable lanes pending Windows-backed evidence and D3D12-specific Dawn mapping validation.",
@@ -7744,7 +7812,11 @@
         },
         "apple_metal_extended": {
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
-          "timingNormalizationNote": "Directional-only: Apples-to-apples PLS contract: normalize per barrier-sequencing sub-steps over repeated non-coherent diagnostic iterations."
+          "timingNormalizationNote": "Directional-only: Apples-to-apples PLS contract: normalize per barrier-sequencing sub-steps over repeated non-coherent diagnostic iterations.",
+          "vendor": "apple",
+          "api": "metal",
+          "family": "m3",
+          "driver": "1.0.0"
         },
         "local_d3d12_extended": {
           "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
@@ -7848,7 +7920,11 @@
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-          "benchmarkClass": "directional"
+          "benchmarkClass": "directional",
+          "vendor": "apple",
+          "api": "metal",
+          "family": "m3",
+          "driver": "1.0.0"
         },
         "local_d3d12_extended": {
           "comparabilityNotes": "Directional-only D3D12 parity scaffold. This workload is included in local_d3d12_extended to mirror the common Metal/Vulkan extended set, but it is excluded from governed strict D3D12 comparable lanes pending Windows-backed evidence and D3D12-specific Dawn mapping validation.",
@@ -7951,7 +8027,11 @@
           "comparable": true,
           "rightCommandRepeat": 100,
           "leftTimingDivisor": 1.0,
-          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+          "vendor": "apple",
+          "api": "metal",
+          "family": "m3",
+          "driver": "1.0.0"
         },
         "local_d3d12_extended": {
           "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
@@ -8486,11 +8566,16 @@
         "apple_metal_extended": {
           "comparabilityNotes": "Apples-to-apples contract. Dawn filter mapping and repeat accounting are explicitly aligned for strict claim lanes; uses deferred queue sync on Metal to avoid per-command wait inflation.",
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
-          "comparable": true,
+          "comparable": false,
           "rightCommandRepeat": 100,
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-          "benchmarkClass": "comparable"
+          "benchmarkClass": "directional",
+          "vendor": "apple",
+          "api": "metal",
+          "family": "m3",
+          "driver": "1.0.0",
+          "directionalReason": "timing_scope_audit_pending"
         },
         "local_d3d12_extended": {
           "api": "d3d12",
@@ -8597,7 +8682,11 @@
         },
         "apple_metal_extended": {
           "quirksPath": "examples/quirks/apple_m3_noop_list.json",
-          "timingNormalizationNote": "Directional-only: Apples-to-apples P1 resource-table contract: normalize by command-sequence sub-steps with deterministic feature-gating parity support."
+          "timingNormalizationNote": "Directional-only: Apples-to-apples P1 resource-table contract: normalize by command-sequence sub-steps with deterministic feature-gating parity support.",
+          "vendor": "apple",
+          "api": "metal",
+          "family": "m3",
+          "driver": "1.0.0"
         },
         "local_d3d12_extended": {
           "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
@@ -8723,7 +8812,11 @@
           "default": false,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
           "rightCommandRepeat": 500,
-          "benchmarkClass": "directional"
+          "benchmarkClass": "directional",
+          "vendor": "apple",
+          "api": "metal",
+          "family": "m3",
+          "driver": "1.0.0"
         },
         "local_d3d12_extended": {
           "description": "Apples-to-apples macro ResourceTable workload repeating resource-table/immediates path 500 times inside one command.",

@@ -81,7 +81,7 @@ export function loadDoeBuildMetadata({ packageRoot = '', libraryPath = '' } = {}
     candidates.push({ metadataPath, parser, source });
   };
 
-  pushCandidate(process.env.FAWN_DOE_BUILD_METADATA ?? '', parseDoeBuildSidecar, 'env');
+  pushCandidate(process.env.DOE_BUILD_METADATA ?? '', parseDoeBuildSidecar, 'env');
 
   if (libraryPath) {
     const libraryDir = dirname(libraryPath);

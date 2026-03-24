@@ -1,4 +1,69 @@
 # Doe status
+## Workload origin taxonomy split (2026-03-24)
+
+- Replaced the old binary inferred provenance model
+  (`dawn_derived` / `doe_specific`) with explicit/generated workload origins:
+  `dawn_benchmark`, `dawn_autodiscovered`,
+  `doe_contract_with_dawn_mapping`, and `doe_specific`.
+- `@autodiscover` mappings now materialize as `dawn_autodiscovered` instead of
+  being flattened into the same bucket as direct Dawn benchmark lifts.
+- Doe-authored copy/dispatch command fixtures that run against Dawn only as a
+  delegate host process are now explicitly marked
+  `workloadOrigin=doe_contract_with_dawn_mapping` in the canonical backend
+  catalog.
+- Generated backend workload files now carry `workloadOrigin` on every row, and
+  the workload-origin report reflects the finer taxonomy plus `hybrid` for
+  mixed-lane rows.
+
+## Tooling surface boundary cleanup (2026-03-24)
+
+- Added a schema-backed tooling surface contract:
+  - `config/tool-surfaces.schema.json`
+  - `config/tool-surfaces.json`
+- Added `docs/internal-tooling.md` as the canonical human-readable guide for
+  public package surfaces vs repo-only operator tooling.
+- Removed npm publication of the internal `doe-gpu-bench` and
+  `doe-gpu-compare` CLI wrappers. Canonical compare/release/gate entrypoints
+  remain repo-only under `bench/`.
+- Collapsed duplicated model-facing docs so `AGENTS.md` is the only full source
+  of truth; `CLAUDE.md` and `GEMINI.md` now point back to it instead of carrying
+  drift-prone copies.
+- Updated repo/package docs to route package questions to `packages/doe-gpu/`
+  and repo-operator questions to `docs/internal-tooling.md`.
+
+## Benchmark catalog cohort cutover (2026-03-24)
+
+- Replaced the old mixed `core` / `extended` / `superset` naming model for
+  native Dawn-vs-Doe workloads with explicit backend catalogs plus cohort-based
+  selection:
+  - `bench/workloads.amd.vulkan.json`
+  - `bench/workloads.amd.vulkan.smoke.json`
+  - `bench/workloads.apple.metal.json`
+  - `bench/workloads.apple.metal.smoke.json`
+  - `bench/workloads.local.d3d12.json`
+  - `bench/workloads.local.d3d12.smoke.json`
+- Generated workload rows now carry explicit `cohorts` metadata and compare
+  configs now select with `selector.cohorts` + `selector.benchmarkClass`
+  instead of relying on `suiteTags`, `includeExtendedWorkloads`, or file names
+  to encode run policy.
+- Canonical preset names are now `smoke`, `compare-dev`, `compare`, `frontier`,
+  `explore`, and `release` for each backend profile.
+- `smoke` is now a diagnostic-only sanity lane by contract. It may include
+  directional rows and is not claim-bearing evidence.
+- AMD Vulkan governed release/compare lanes now select governed comparable rows
+  from the main Vulkan catalog. Path-asymmetric upload rows remain outside the
+  governed cohort and stay exploration-only until structural equivalence is
+  restored.
+- D3D12 governed compare/release lanes now select the compute/upload/pipeline/
+  `p0-resource` subset from `bench/workloads.local.d3d12.json`; render/texture/
+  copy/surface rows remain exploration-only until fresh Windows evidence expands
+  the governed contract.
+- Removed the stale AMD Vulkan app-claim scaffold (`bench/workloads.amd.vulkan.app.claim.json`,
+  `bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.app.claim.json`,
+  `config/claim-cycle.amd-vulkan-app-local.json`) instead of carrying forward a
+  seventh special-case workload file with contradictory claim/comparability
+  semantics.
+
 ## CSL governed smoke lane and SDK driver bridge (2026-03-24)
 
 - Added `doe-csl-bundle-emitter`, a small Zig binary that turns a WGSL smoke fixture

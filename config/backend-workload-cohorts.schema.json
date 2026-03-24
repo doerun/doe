@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Doe backend workload cohorts",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "profiles"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "profiles": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "amd_vulkan",
+        "apple_metal",
+        "local_d3d12"
+      ],
+      "properties": {
+        "amd_vulkan": {
+          "$ref": "#/$defs/profile"
+        },
+        "apple_metal": {
+          "$ref": "#/$defs/profile"
+        },
+        "local_d3d12": {
+          "$ref": "#/$defs/profile"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "idList": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "smoke",
+        "governed",
+        "regression"
+      ],
+      "properties": {
+        "smoke": {
+          "$ref": "#/$defs/idList"
+        },
+        "governed": {
+          "$ref": "#/$defs/idList"
+        },
+        "regression": {
+          "$ref": "#/$defs/idList"
+        }
+      }
+    }
+  }
+}

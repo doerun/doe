@@ -4,7 +4,7 @@ import { createDoeNamespace } from '../doe-namespace.js';
 /**
  * Shared Doe API namespace for the full package surface.
  *
- * Surface: Doe API on `@simulatte/webgpu`.
+ * Surface: Doe API on `doe-gpu`.
  * Input: Called through `doe.requestDevice(...)` or `doe.bind(device)`.
  * Returns: A bound `gpu` helper object over a full raw device.
  *
@@ -16,12 +16,12 @@ import { createDoeNamespace } from '../doe-namespace.js';
  * This example shows the API in its basic form.
  *
  * ```js
- * import { doe } from "@simulatte/webgpu";
+ * import { doe } from "doe-gpu";
  *
  * const gpu = await doe.requestDevice();
  * ```
  *
- * - The Doe helper shape matches `@simulatte/webgpu/compute`; the difference is the raw device underneath.
+ * - The Doe helper shape matches `doe-gpu/compute`; the difference is the raw device underneath.
  * - If you need explicit render, sampler, or surface APIs, use `gpu.device`.
  * - See the package `requestDevice()` export when you want the raw full device without Doe helpers.
  */

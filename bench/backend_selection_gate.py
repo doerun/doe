@@ -55,24 +55,52 @@ def infer_lane(report: dict[str, Any], explicit_lane: str) -> str:
         return "metal_doe_app"
     if ".metal.dawn" in config_path:
         return "metal_dawn_release"
+    if ".metal.smoke" in config_path:
+        return "metal_doe_directional"
     if ".metal.release" in config_path:
         return "metal_doe_release"
+    if (
+        ".metal.compare-dev" in config_path
+        or ".metal.compare" in config_path
+        or ".metal.frontier" in config_path
+    ):
+        return "metal_doe_comparable"
     if ".metal.comparable" in config_path or ".metal.extended.comparable" in config_path:
         return "metal_doe_comparable"
+    if ".metal.explore" in config_path:
+        return "metal_doe_directional"
     if ".metal.directional" in config_path:
         return "metal_doe_directional"
+    if ".local.d3d12.smoke" in config_path:
+        return "d3d12_doe_comparable"
     if ".local.d3d12.release" in config_path:
         return "d3d12_doe_release"
+    if (
+        ".local.d3d12.compare-dev" in config_path
+        or ".local.d3d12.compare" in config_path
+        or ".local.d3d12.frontier" in config_path
+    ):
+        return "d3d12_doe_comparable"
     if ".local.d3d12.comparable" in config_path or ".local.d3d12.extended.comparable" in config_path:
         return "d3d12_doe_comparable"
+    if ".local.d3d12.explore" in config_path:
+        return "d3d12_doe_directional"
     if ".local.d3d12.directional" in config_path:
         return "d3d12_doe_directional"
     if ".d3d12.dawn" in config_path:
         return "d3d12_dawn_release"
     if ".d3d12.app" in config_path:
         return "d3d12_doe_app"
+    if ".amd.vulkan.smoke" in config_path:
+        return "vulkan_doe_app"
     if ".amd.vulkan.release" in config_path or ".amd.vulkan.extended.strict.release" in config_path or ".amd.vulkan.superset.native-supported.release" in config_path or ".local.vulkan.release" in config_path:
         return "vulkan_doe_release"
+    if (
+        ".amd.vulkan.compare-dev" in config_path
+        or ".amd.vulkan.compare" in config_path
+        or ".amd.vulkan.frontier" in config_path
+    ):
+        return "vulkan_doe_comparable"
     if (
         ".amd.vulkan.comparable" in config_path
         or ".amd.vulkan.extended.comparable" in config_path
@@ -83,6 +111,8 @@ def infer_lane(report: dict[str, Any], explicit_lane: str) -> str:
         or ".local.vulkan.extended.comparable" in config_path
     ):
         return "vulkan_doe_comparable"
+    if ".amd.vulkan.explore" in config_path:
+        return "vulkan_doe_app"
     if (
         ".amd.vulkan.directional" in config_path
         or ".amd.vulkan.macro.directional" in config_path

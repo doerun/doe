@@ -1,7 +1,42 @@
 const core = @import("wgpu_dropin_ext_a_core.zig");
 const pipeline = @import("wgpu_dropin_ext_a_pipeline.zig");
-usingnamespace core;
-usingnamespace pipeline;
+
+// Explicit aliases from core (replaces `usingnamespace core`)
+const std = core.std;
+const types = core.types;
+const p1cap = core.p1cap;
+const p0 = core.p0;
+const p1res = core.p1res;
+const p2life = core.p2life;
+const surface = core.surface;
+const render = core.render;
+const async_procs = core.async_procs;
+const native = core.native;
+const query_native = core.query_native;
+const error_scope = core.error_scope;
+const task_pool = core.task_pool;
+const resolveRequiredProc = core.resolveRequiredProc;
+const fill_adapter_info_struct = core.fill_adapter_info_struct;
+const fill_supported_features_from_adapter = core.fill_supported_features_from_adapter;
+const fill_supported_features_from_device = core.fill_supported_features_from_device;
+const LoggingCallbackInfo = core.LoggingCallbackInfo;
+const PopErrorScopeBridgeState = core.PopErrorScopeBridgeState;
+const bridge_pop_error_scope_callback = core.bridge_pop_error_scope_callback;
+const doeNativeComputePassSetImmediates = core.doeNativeComputePassSetImmediates;
+const doeNativeQuerySetDestroy = core.doeNativeQuerySetDestroy;
+const doeNativeQuerySetGetCount = core.doeNativeQuerySetGetCount;
+const doeNativeQuerySetGetType = core.doeNativeQuerySetGetType;
+
+// Explicit aliases from pipeline (replaces `usingnamespace pipeline`)
+const next_async_future_id = pipeline.next_async_future_id;
+const copy_compute_pipeline_request = pipeline.copy_compute_pipeline_request;
+const compute_pipeline_request_key = pipeline.compute_pipeline_request_key;
+const free_compute_pipeline_request = pipeline.free_compute_pipeline_request;
+const run_compute_pipeline_async = pipeline.run_compute_pipeline_async;
+const copy_render_pipeline_request = pipeline.copy_render_pipeline_request;
+const render_pipeline_request_key = pipeline.render_pipeline_request_key;
+const free_render_pipeline_request = pipeline.free_render_pipeline_request;
+const run_render_pipeline_async = pipeline.run_render_pipeline_async;
 
 pub export fn wgpuAdapterAddRef(a0: types.WGPUAdapter) callconv(.c) void {
     native.doeNativeAdapterAddRef(a0);
@@ -127,7 +162,7 @@ pub export fn wgpuDeviceCreateComputePipelineAsync(a0: types.WGPUDevice, a1: *co
         }
         return future;
     };
-    const joined = g_compute_inflight.join_or_create(std.heap.c_allocator, compute_pipeline_request_key(req), req) catch {
+    const joined = pipeline.g_compute_inflight.join_or_create(std.heap.c_allocator, compute_pipeline_request_key(req), req) catch {
         free_compute_pipeline_request(req);
         if (a2.callback) |cb| {
             const msg = "async pipeline single-flight allocation failed";
@@ -140,7 +175,7 @@ pub export fn wgpuDeviceCreateComputePipelineAsync(a0: types.WGPUDevice, a1: *co
             .run = run_compute_pipeline_async,
             .ctx = joined.entry,
         }) catch {
-            _ = g_compute_inflight.take(std.heap.c_allocator, joined.entry);
+            _ = pipeline.g_compute_inflight.take(std.heap.c_allocator, joined.entry);
             free_compute_pipeline_request(req);
             if (a2.callback) |cb| {
                 const msg = "async pipeline worker submit failed";
@@ -164,7 +199,7 @@ pub export fn wgpuDeviceCreateRenderPipelineAsync(a0: types.WGPUDevice, a1: *con
         }
         return future;
     };
-    const joined = g_render_inflight.join_or_create(std.heap.c_allocator, render_pipeline_request_key(req), req) catch {
+    const joined = pipeline.g_render_inflight.join_or_create(std.heap.c_allocator, render_pipeline_request_key(req), req) catch {
         free_render_pipeline_request(req);
         if (a2.callback) |cb| {
             const msg = "async render single-flight allocation failed";
@@ -177,7 +212,7 @@ pub export fn wgpuDeviceCreateRenderPipelineAsync(a0: types.WGPUDevice, a1: *con
             .run = run_render_pipeline_async,
             .ctx = joined.entry,
         }) catch {
-            _ = g_render_inflight.take(std.heap.c_allocator, joined.entry);
+            _ = pipeline.g_render_inflight.take(std.heap.c_allocator, joined.entry);
             free_render_pipeline_request(req);
             if (a2.callback) |cb| {
                 const msg = "async render worker submit failed";

@@ -1,5 +1,39 @@
 # Config Migration Notes
 
+## 2026-03-24
+
+### Workload origin taxonomy split
+
+- Replaced the old binary inferred workload provenance model
+  (`dawn_derived` / `doe_specific`) with explicit authored/generated origins:
+  - `dawn_benchmark`
+  - `dawn_autodiscovered`
+  - `doe_contract_with_dawn_mapping`
+  - `doe_specific`
+- `bench/generate_backend_workloads.py` now infers `dawn_autodiscovered` from
+  `dawnFilter="@autodiscover"` and `dawn_benchmark` from non-autodiscovered
+  Dawn filter mappings, while allowing explicit authored overrides for
+  Doe-authored comparable contracts that still run against Dawn.
+- The canonical backend workload catalog now explicitly marks the copy/dispatch
+  contract rows that use Dawn only as a delegate host process as
+  `workloadOrigin="doe_contract_with_dawn_mapping"`.
+- Generated backend workload files now carry per-row `workloadOrigin` so
+  provenance can be queried without reconstructing catalog inference.
+
+### Tooling surface contract and npm CLI boundary
+
+- Added a schema-backed tooling surface manifest:
+  - `config/tool-surfaces.schema.json`
+  - `config/tool-surfaces.json`
+- `config/schema-targets.json` now validates the tooling surface contract as a
+  blocking schema target.
+- `packages/doe-gpu/package.json` no longer publishes `doe-gpu-bench` or
+  `doe-gpu-compare` as npm CLI binaries, and the npm tarball no longer includes
+  the old `bin/` or `scripts/` package-side operator files.
+- Public package docs now treat compare/release workflows as repo-only operator
+  tooling documented in `docs/internal-tooling.md`, not as npm-shipped product
+  CLIs.
+
 ## 2026-03-22
 
 ### doe-gpu semantic operator bundle contract

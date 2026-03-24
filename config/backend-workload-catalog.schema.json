@@ -51,6 +51,18 @@
           "type": "string",
           "minLength": 1
         },
+        "sourceLane": {
+          "type": "string",
+          "minLength": 1
+        },
+        "profile": {
+          "type": "string",
+          "enum": [
+            "amd_vulkan",
+            "apple_metal",
+            "local_d3d12"
+          ]
+        },
         "description": {
           "type": "string"
         }
@@ -58,6 +70,17 @@
     },
     "workloadOverride": {
       "type": "object",
+      "properties": {
+        "workloadOrigin": {
+          "type": "string",
+          "enum": [
+            "dawn_benchmark",
+            "dawn_autodiscovered",
+            "doe_contract_with_dawn_mapping",
+            "doe_specific"
+          ]
+        }
+      },
       "additionalProperties": {
         "$ref": "#/$defs/scalarOrContainer"
       }

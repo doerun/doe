@@ -23,10 +23,13 @@
       "default": true,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "dawnFilter": "@autodiscover",
-      "suiteTags": [
-        "release"
-      ],
-      "claimEligible": true
+      "claimEligible": true,
+      "workloadOrigin": "dawn_autodiscovered",
+      "cohorts": [
+        "smoke",
+        "governed",
+        "regression"
+      ]
     },
     {
       "id": "pipeline_compile_stress",
@@ -50,11 +53,13 @@
       ],
       "comparable": true,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-      "suiteTags": [
-        "release",
-        "extended"
-      ],
-      "claimEligible": true
+      "claimEligible": true,
+      "workloadOrigin": "dawn_autodiscovered",
+      "cohorts": [
+        "smoke",
+        "governed",
+        "regression"
+      ]
     },
     {
       "id": "upload_write_buffer_64kb",
@@ -83,11 +88,13 @@
       "rightCommandRepeat": 16,
       "rightIgnoreFirstOps": 1,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-      "suiteTags": [
-        "release",
+      "claimEligible": true,
+      "workloadOrigin": "dawn_autodiscovered",
+      "cohorts": [
+        "smoke",
+        "governed",
         "regression"
-      ],
-      "claimEligible": true
+      ]
     }
   ]
 }

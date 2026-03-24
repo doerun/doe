@@ -85,7 +85,7 @@ function hasOptionFlag(args, flag) {
     return Array.isArray(args) && args.includes(flag);
 }
 
-export function resolveFawnRepoRoot(explicitPath) {
+export function resolveDoeRepoRoot(explicitPath) {
     const resolved = firstExistingPath([
         explicitPath ? resolve(explicitPath, "bench/native-compare/compare_dawn_vs_doe.py") : null,
         resolve(process.cwd(), "bench/native-compare/compare_dawn_vs_doe.py"),
@@ -93,7 +93,7 @@ export function resolveFawnRepoRoot(explicitPath) {
     ]);
     if (!resolved) {
         throw new Error(
-            "Could not locate Fawn repo root. Pass { repoRoot } or run from a Fawn checkout."
+            "Could not locate Doe repo root. Pass { repoRoot } or run from a Doe checkout."
         );
     }
     return resolve(resolved, "..", "..");
@@ -102,13 +102,14 @@ export function resolveFawnRepoRoot(explicitPath) {
 export function resolveDoeBinaryPath(explicitPath) {
     const resolved = firstExistingPath([
         explicitPath,
+        process.env.DOE_BIN,
         process.env.FAWN_DOE_BIN,
         resolve(process.cwd(), "runtime/zig/zig-out/bin/doe-zig-runtime"),
         resolve(WORKSPACE_ROOT, "runtime/zig/zig-out/bin/doe-zig-runtime"),
     ]);
     if (!resolved) {
         throw new Error(
-            "Could not locate doe-zig-runtime. Set FAWN_DOE_BIN or pass { binPath }."
+            "Could not locate doe-zig-runtime. Set DOE_BIN or pass { binPath }."
         );
     }
     return resolved;
@@ -118,7 +119,7 @@ export function resolveDoeLibraryPath(explicitPath) {
     const preferredExt = LIB_EXTENSION_BY_PLATFORM[process.platform] ?? "so";
     return firstExistingPath([
         explicitPath,
-        process.env.FAWN_DOE_LIB,
+        process.env.DOE_LIB,
         resolve(process.cwd(), `runtime/zig/zig-out/lib/libwebgpu_doe.${preferredExt}`),
         resolve(WORKSPACE_ROOT, `runtime/zig/zig-out/lib/libwebgpu_doe.${preferredExt}`),
         resolve(process.cwd(), "runtime/zig/zig-out/lib/libwebgpu_doe.dylib"),
@@ -152,7 +153,7 @@ export function createDoeRuntime(options = {}) {
     function runRaw(args, spawnOptions = {}) {
         const env = { ...process.env, ...(spawnOptions.env ?? {}) };
         if (libPath) {
-            env.FAWN_DOE_LIB = libPath;
+            env.DOE_LIB = libPath;
         }
         return runProcess(binPath, args, {
             ...spawnOptions,
@@ -190,7 +191,7 @@ export function createDoeRuntime(options = {}) {
 }
 
 export function runDawnVsDoeCompare(options = {}) {
-    const repoRoot = resolveFawnRepoRoot(options.repoRoot);
+    const repoRoot = resolveDoeRepoRoot(options.repoRoot);
     const scriptPath = resolveCompareScriptPath(options.compareScriptPath, repoRoot);
     const pythonBin = options.pythonBin || process.env.PYTHON_BIN || "python3";
     const extraArgs = Array.isArray(options.extraArgs) ? options.extraArgs : [];

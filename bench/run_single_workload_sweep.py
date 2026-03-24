@@ -17,7 +17,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--config",
-        default="bench/native-compare/compare_dawn_vs_doe.config.apple.metal.extended.comparable.json",
+        default="bench/native-compare/compare_dawn_vs_doe.config.apple.metal.compare.json",
     )
     parser.add_argument("--workload", required=True)
     parser.add_argument("--repeats", type=int, default=5)

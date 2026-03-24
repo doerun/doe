@@ -140,7 +140,7 @@ function resolveDoeLibraryPath() {
 
   const candidates = [
     process.env.DOE_WEBGPU_LIB,
-    process.env.FAWN_DOE_LIB,
+    process.env.DOE_LIB,
     resolve(__dirname, '..', '..', '..', 'runtime', 'zig', 'zig-out', 'lib', `libwebgpu_doe.${ext}`),
     resolve(__dirname, '..', '..', '..', 'zig', 'zig-out', 'lib', `libwebgpu_doe.${ext}`),
     resolve(__dirname, '..', 'prebuilds', `${process.platform}-${process.arch}`, `libwebgpu_doe.${ext}`),
@@ -158,12 +158,12 @@ function ensureLibrary() {
   if (libraryLoaded) return;
   if (!addon) {
     throw new Error(
-      '@simulatte/webgpu: Native addon not found. Run `npm run build:addon` or `npx node-gyp rebuild`.'
+      'doe-gpu: Native addon not found. Run `npm run build:addon` or `npx node-gyp rebuild`.'
     );
   }
   if (!DOE_LIB_PATH) {
     throw new Error(
-      '@simulatte/webgpu: libwebgpu_doe not found. Build it with `cd runtime/zig && zig build dropin` or set DOE_WEBGPU_LIB.'
+      'doe-gpu: libwebgpu_doe not found. Build it with `cd runtime/zig && zig build dropin` or set DOE_WEBGPU_LIB.'
     );
   }
   addon.loadLibrary(DOE_LIB_PATH);
@@ -469,14 +469,14 @@ async function nodeDevicePopErrorScope() {
  * This example shows the API in its basic form.
  *
  * ```js
- * import { globals } from "@simulatte/webgpu";
+ * import { globals } from "doe-gpu";
  *
  * const usage = globals.GPUBufferUsage.STORAGE | globals.GPUBufferUsage.COPY_DST;
  * ```
  *
  * - These values mirror the standard WebGPU numeric constants.
  * - They do not install themselves on `globalThis`; use `setupGlobals(...)` if needed.
- * - `@simulatte/webgpu/compute` shares the same constants even though its device facade is narrower.
+ * - `doe-gpu/compute` shares the same constants even though its device facade is narrower.
  */
 /**
  * Compute pass encoder returned by `commandEncoder.beginComputePass(...)`.
@@ -1603,7 +1603,7 @@ const {
  * This example shows the API in its basic form.
  *
  * ```js
- * import { create } from "@simulatte/webgpu";
+ * import { create } from "doe-gpu";
  *
  * const gpu = create();
  * const adapter = await gpu.requestAdapter();
@@ -1650,7 +1650,7 @@ export function setNativeTimeoutMs(timeoutMs) {
  * This example shows the API in its basic form.
  *
  * ```js
- * import { setupGlobals } from "@simulatte/webgpu";
+ * import { setupGlobals } from "doe-gpu";
  *
  * setupGlobals(globalThis);
  * const adapter = await navigator.gpu.requestAdapter();
@@ -1673,7 +1673,7 @@ export function setupGlobals(target = globalThis, createArgs = null) {
  * This example shows the API in its basic form.
  *
  * ```js
- * import { requestAdapter } from "@simulatte/webgpu";
+ * import { requestAdapter } from "doe-gpu";
  *
  * const adapter = await requestAdapter();
  * ```
@@ -1694,7 +1694,7 @@ export async function requestAdapter(adapterOptions = undefined, createArgs = nu
  * This example shows the API in its basic form.
  *
  * ```js
- * import { requestDevice } from "@simulatte/webgpu";
+ * import { requestDevice } from "doe-gpu";
  *
  * const device = await requestDevice();
  * const buffer = device.createBuffer({
@@ -1720,7 +1720,7 @@ export async function requestDevice(options = {}) {
  * This example shows the API in its basic form.
  *
  * ```js
- * import { providerInfo } from "@simulatte/webgpu";
+ * import { providerInfo } from "doe-gpu";
  *
  * console.log(providerInfo());
  * ```
@@ -1753,7 +1753,7 @@ export function providerInfo() {
  * This example shows the API in its basic form.
  *
  * ```js
- * import { createDoeRuntime } from "@simulatte/webgpu";
+ * import { createDoeRuntime } from "doe-gpu";
  *
  * const runtime = createDoeRuntime();
  * ```
@@ -1771,7 +1771,7 @@ export const createDoeRuntime = createDoeRuntimeCli;
  * This example shows the API in its basic form.
  *
  * ```js
- * import { runDawnVsDoeCompare } from "@simulatte/webgpu";
+ * import { runDawnVsDoeCompare } from "doe-gpu";
  *
  * const result = runDawnVsDoeCompare({ configPath: "bench/config.json" });
  * ```

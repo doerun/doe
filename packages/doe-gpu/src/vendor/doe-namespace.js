@@ -1,4 +1,4 @@
-// Vendored from @simulatte/webgpu-doe (packages/webgpu-doe/src/index.js).
+// Vendored from doe-gpu (packages/webgpu-doe/src/index.js).
 // This file is self-contained with no external imports.
 
 const DOE_GPU_BUFFER_USAGE = {

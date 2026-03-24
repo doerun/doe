@@ -1,6 +1,6 @@
 // doe-gpu — full (default)
 //
-// Merged package surface combining @simulatte/webgpu and @simulatte/webgpu-doe.
+// Merged package surface combining doe-gpu and doe-gpu-doe.
 // Primary export: gpu (not doe).
 
 import * as full from './vendor/webgpu/index.js';

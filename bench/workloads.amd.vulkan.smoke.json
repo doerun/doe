@@ -25,10 +25,13 @@
       "default": true,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "dawnFilter": "@autodiscover",
-      "suiteTags": [
-        "release"
-      ],
-      "claimEligible": true
+      "claimEligible": true,
+      "workloadOrigin": "dawn_autodiscovered",
+      "cohorts": [
+        "smoke",
+        "governed",
+        "regression"
+      ]
     },
     {
       "id": "render_draw_throughput_baseline",
@@ -47,11 +50,12 @@
       "leftTimingDivisor": 4,
       "timingNormalizationNote": "Directional render proxy only",
       "dawnFilter": "@autodiscover",
-      "suiteTags": [
-        "release",
-        "extended"
-      ],
-      "claimEligible": true
+      "claimEligible": true,
+      "workloadOrigin": "dawn_autodiscovered",
+      "cohorts": [
+        "smoke",
+        "exploration"
+      ]
     },
     {
       "id": "upload_write_buffer_64kb",
@@ -85,11 +89,13 @@
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "pathAsymmetry": true,
       "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored.",
-      "suiteTags": [
-        "release",
+      "claimEligible": true,
+      "workloadOrigin": "dawn_autodiscovered",
+      "cohorts": [
+        "smoke",
+        "governed",
         "regression"
-      ],
-      "claimEligible": true
+      ]
     }
   ]
 }

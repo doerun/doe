@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "reportKind": "webgpu-surface-report",
   "surfaceId": "doe-chromium",
-  "generatedAt": "2026-03-24T00:53:14.327137+00:00",
+  "generatedAt": "2026-03-24T21:12:18.152216+00:00",
   "derivedFrom": {
     "commandCoverage": "config/webgpu-command-coverage-full.json",
     "capabilityInventory": "config/webgpu-capability-inventory.json",

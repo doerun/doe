@@ -793,7 +793,7 @@ function wrapGpu(raw) {
  * This example shows the API in its basic form.
  *
  * ```js
- * import { globals } from "@simulatte/webgpu/compute";
+ * import { globals } from "doe-gpu/compute";
  *
  * const usage = globals.GPUBufferUsage.STORAGE | globals.GPUBufferUsage.COPY_DST;
  * ```
@@ -812,7 +812,7 @@ export const globals = full.globals;
  * This example shows the API in its basic form.
  *
  * ```js
- * import { create } from "@simulatte/webgpu/compute";
+ * import { create } from "doe-gpu/compute";
  *
  * const gpu = create();
  * const adapter = await gpu.requestAdapter();
@@ -834,7 +834,7 @@ export function create(createArgs = null) {
  * This example shows the API in its basic form.
  *
  * ```js
- * import { setupGlobals } from "@simulatte/webgpu/compute";
+ * import { setupGlobals } from "doe-gpu/compute";
  *
  * setupGlobals(globalThis);
  * const device = await navigator.gpu.requestAdapter().then((a) => a.requestDevice());
@@ -882,7 +882,7 @@ export function setupGlobals(target = globalThis, createArgs = null) {
  * This example shows the API in its basic form.
  *
  * ```js
- * import { requestAdapter } from "@simulatte/webgpu/compute";
+ * import { requestAdapter } from "doe-gpu/compute";
  *
  * const adapter = await requestAdapter();
  * ```
@@ -907,7 +907,7 @@ export async function requestAdapter(adapterOptions = undefined, createArgs = nu
  * This example shows the API in its basic form.
  *
  * ```js
- * import { requestDevice } from "@simulatte/webgpu/compute";
+ * import { requestDevice } from "doe-gpu/compute";
  *
  * const device = await requestDevice();
  * console.log(typeof device.createRenderPipeline);
@@ -925,7 +925,7 @@ export async function requestDevice(options = {}) {
 /**
  * Shared Doe API namespace for the compute package surface.
  *
- * Surface: Doe API on `@simulatte/webgpu/compute`.
+ * Surface: Doe API on `doe-gpu/compute`.
  * Input: Called through `doe.requestDevice(...)` or `doe.bind(device)`.
  * Returns: A bound `gpu` helper object over a compute-only device facade.
  *
@@ -936,7 +936,7 @@ export async function requestDevice(options = {}) {
  * This example shows the API in its basic form.
  *
  * ```js
- * import { doe } from "@simulatte/webgpu/compute";
+ * import { doe } from "doe-gpu/compute";
  *
  * const gpu = await doe.requestDevice();
  * const src = gpu.buffer.create({ data: new Float32Array([1, 2, 3, 4]) });
@@ -964,13 +964,13 @@ export const doe = createDoeNamespace({
  * This example shows the API in its basic form.
  *
  * ```js
- * import { providerInfo } from "@simulatte/webgpu/compute";
+ * import { providerInfo } from "doe-gpu/compute";
  *
  * console.log(providerInfo().loaded);
  * ```
  *
  * - The report describes runtime loading, not the compute facade wrapper itself.
- * - The shape is shared with `@simulatte/webgpu`.
+ * - The shape is shared with `doe-gpu`.
  */
 export const providerInfo = full.providerInfo;
 /**
@@ -986,7 +986,7 @@ export const providerInfo = full.providerInfo;
  * This example shows the API in its basic form.
  *
  * ```js
- * import { createDoeRuntime } from "@simulatte/webgpu/compute";
+ * import { createDoeRuntime } from "doe-gpu/compute";
  *
  * const runtime = createDoeRuntime();
  * ```
@@ -1008,7 +1008,7 @@ export const createDoeRuntime = full.createDoeRuntime;
  * This example shows the API in its basic form.
  *
  * ```js
- * import { runDawnVsDoeCompare } from "@simulatte/webgpu/compute";
+ * import { runDawnVsDoeCompare } from "doe-gpu/compute";
  *
  * const result = runDawnVsDoeCompare({ configPath: "bench/config.json" });
  * ```

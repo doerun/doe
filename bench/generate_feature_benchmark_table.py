@@ -124,12 +124,12 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--workloads",
-        default="bench/workloads.amd.vulkan.extended.json",
+        default="bench/workloads.amd.vulkan.json",
         help="Workloads config JSON path.",
     )
     parser.add_argument(
         "--dawn-map",
-        default="bench/native-compare/dawn_workload_map.amd.extended.json",
+        default="bench/dawn_workload_map.amd.autodiscover.json",
         help="Dawn workload map JSON path.",
     )
     parser.add_argument(
@@ -291,15 +291,17 @@ def main() -> int:
             done=dawn_header_covered,
             total=dawn_header_total,
         ),
-        "| Capability-to-benchmark mapping coverage | {percent:.2f}% ({done}/{total}) | `CAPABILITY_TO_WORKLOADS` intersection with `bench/workloads.amd.vulkan.extended.json` |".format(
+        "| Capability-to-benchmark mapping coverage | {percent:.2f}% ({done}/{total}) | `CAPABILITY_TO_WORKLOADS` intersection with `{workloads}` |".format(
             percent=mapped_capability_percent,
             done=mapped_capability_count,
             total=total_capabilities,
+            workloads=args.workloads,
         ),
-        "| Comparable capability benchmark coverage | {percent:.2f}% ({done}/{total}) | Capabilities with at least one mapped workload where `comparable=true` in `bench/workloads.amd.vulkan.extended.json` |".format(
+        "| Comparable capability benchmark coverage | {percent:.2f}% ({done}/{total}) | Capabilities with at least one mapped workload where `comparable=true` in `{workloads}` |".format(
             percent=comparable_mapped_capability_percent,
             done=comparable_mapped_capability_count,
             total=total_capabilities,
+            workloads=args.workloads,
         ),
         "| Comparable capability benchmark coverage (eligible-only) | {percent:.2f}% ({done}/{total}) | Excludes capability entries with `benchmarkClass=directional` in `config/webgpu-capability-inventory.json` |".format(
             percent=comparable_eligible_mapped_capability_percent,

@@ -32,7 +32,7 @@ the tier contracts below for promotion requirements.
 |------|-----------------|---------------|--------------|-------------------|
 | `doe-core` | `bench/out/amd-vulkan/20260310T153903Z/dawn-vs-doe.amd.vulkan.release.json` | 7 release workloads backed by 7 command examples on `amd|vulkan|gfx11|24.0.0` | `comparisonStatus=comparable`, `claimStatus=diagnostic` | `examples/upload_1kb_commands.json` is still a real tiny-upload loss in the latest release artifact |
 | `doe-core` | `bench/out/apple-metal/extended-comparable/20260310T171918Z/dawn-vs-doe.local.metal.extended.comparable.json` | 31 comparable workloads backed by 30 unique command examples on `apple|metal|m3|1.0.0` | `comparisonStatus=comparable`, `claimStatus=diagnostic` | `examples/upload_1mb_commands.json` is diagnostic in the latest artifact because selected-timing `p95` is negative |
-| `doe-runtime` | `bench/workloads.local.d3d12.extended.json` | 11 contract rows / 11 command examples for the first governed D3D12 scope | contract only; no fresh Windows artifact in the current inventory | first Windows evidence run, then drop-in gate, CTS subset publication, and runtime-tier gates |
+| `doe-runtime` | `bench/workloads.local.d3d12.json` | 11 governed comparable rows selected from the canonical D3D12 catalog (`cohorts=governed`, `benchmarkClass=comparable`) | contract only; no fresh Windows artifact in the current inventory | first Windows evidence run, then drop-in gate, CTS subset publication, and runtime-tier gates |
 | `chromium` | `nursery/chromium/` lane docs only | browser integration lane exists in-repo | no fresh browser compatibility artifact in the current inventory | browser smoke evidence, rebase cadence, security-patch SLA, and operational commitments |
 
 Current command-example coverage from active matrix artifacts/contracts:
@@ -80,7 +80,7 @@ Subpath reminder (the `@simulatte/*` scope is deprecated; use `doe-gpu`):
 | Node | `@simulatte/webgpu` / `@simulatte/webgpu/node` | `webgpu` (Dawn) | product + governed compare lane | `verified` | Main headless Node package niche. Canonical package compare lane with fresh claimable rows in `docs/status.md`. |
 | Bun | `@simulatte/webgpu` / `@simulatte/webgpu/bun` | `bun-webgpu` (Dawn) | product + governed compare lane | `verified` | Main Bun package niche. Canonical package compare lane with fresh claimable rows in `docs/status.md`. |
 | Deno | `@simulatte/webgpu` via `packages/webgpu/src/deno.js` | built-in Deno WebGPU (`navigator.gpu`, wgpu-backed) | product + governed compare lane | `verified` | Deno package lane now exists in-repo and is registered as `deno_package_compare`; still newer than Node/Bun and should be read lane-specifically. |
-| CLI | `doe-gpu-bench`, `doe-gpu-compare`, `createDoeRuntime()` | no package-surface incumbent | product surface | `supported` | Real public Doe-core surface, but not a JS package head-to-head cell. |
+| Node / Bun / Deno | `createDoeRuntime()`, `runDawnVsDoeCompare()` | no package-surface incumbent | advanced helper surface | `supported` | Public helper exports exist, but compare/release operator CLIs live in-repo under `bench/` and are not npm-shipped tools. |
 | Node | `@simulatte/webgpu/native-direct` | raw competitor device surfaces in ad hoc four-way compares | diagnostic subpath | `diagnostic` | Useful for stripping wrapper noise out of Node package attribution. Not a public replacement promise by itself. |
 | Browser | `@simulatte/webgpu` package family | browser `navigator.gpu` | package cell | `not meaningful` | Browser ownership lives in `chromium`, not in the npm runtime package family. |
 
@@ -165,16 +165,15 @@ From `@simulatte/webgpu` (now `doe-gpu`) API contract v1:
 | `setupGlobals(target?, createArgs?)` | Required | Installs `navigator.gpu` + enum bootstrap |
 | `requestAdapter(adapterOptions?, createArgs?)` | Required | Returns `Promise<GPUAdapter \| null>` when provider supports in-process adapter callbacks |
 | `requestDevice(options?)` | Required | Returns `Promise<GPUDevice>` when provider supports in-process adapter/device callbacks |
-| `createDoeRuntime(options?)` | Required | CLI orchestration: `runRaw`, `runBench` |
-| `runDawnVsDoeCompare(options)` | Required | Wraps `bench/compare_dawn_vs_doe.py` |
+| `createDoeRuntime(options?)` | Required | Advanced helper surface for `runRaw` and `runBench` orchestration |
+| `runDawnVsDoeCompare(options)` | Required | Advanced helper that wraps repo compare tooling when the compare assets are present |
 | `providerInfo()` | Required | Module/load diagnostics |
 
-CLI tools:
+Package boundary:
 
-| Tool | Status |
-|------|--------|
-| `doe-gpu-bench` | Required |
-| `doe-gpu-compare` | Required |
+- `doe-gpu` does not ship compare or release npm CLI binaries.
+- Canonical compare/release operator entrypoints live in the repo under `bench/`.
+- See `docs/internal-tooling.md` for the tooling boundary contract.
 
 ### Not supported
 
@@ -262,7 +261,7 @@ All of doe-core, plus:
 | Presentation/swapchain | Not required | Required only for windowed/browser-integrated targets |
 | Error scopes | Not required | Required |
 | Device lost events | Not required | Required |
-| Shader module creation | Via CLI | In-process via `webgpu.h` |
+| Shader module creation | Via helper/runtime tooling | In-process via `webgpu.h` |
 
 ### Not supported
 

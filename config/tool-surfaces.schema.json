@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Doe tooling surface contract",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "surfaces"],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "surfaces": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "audience",
+          "kind",
+          "stability",
+          "shipped",
+          "summary",
+          "rootPaths",
+          "docs"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]*$"
+          },
+          "audience": {
+            "type": "string",
+            "enum": ["public", "internal", "archive"]
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "package",
+              "package_helper",
+              "operator_cli",
+              "runtime_binary",
+              "contributor_guide",
+              "browser_lane",
+              "research_archive"
+            ]
+          },
+          "stability": {
+            "type": "string",
+            "enum": ["semver", "repo_only", "experimental", "deprecated"]
+          },
+          "shipped": {
+            "type": "boolean"
+          },
+          "summary": {
+            "type": "string",
+            "minLength": 1
+          },
+          "rootPaths": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "entrypoints": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "docs": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    }
+  }
+}

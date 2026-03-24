@@ -170,6 +170,14 @@
       "data": "bench/backend-workload-catalog.json"
     },
     {
+      "schema": "config/backend-workload-cohorts.schema.json",
+      "data": "config/backend-workload-cohorts.json"
+    },
+    {
+      "schema": "config/tool-surfaces.schema.json",
+      "data": "config/tool-surfaces.json"
+    },
+    {
       "schema": "config/workload-registry.schema.json",
       "data": "bench/workload-registry.json"
     }

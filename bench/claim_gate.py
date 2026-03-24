@@ -60,7 +60,7 @@ def parse_args() -> argparse.Namespace:
         "--expected-workload-contract",
         default="",
         help=(
-            "Optional workload contract JSON (for example bench/workloads.amd.vulkan.extended.json). "
+            "Optional workload contract JSON (for example bench/workloads.amd.vulkan.json). "
             "When provided with hash/id checks, gate validates report workload contract hash and "
             "expected comparable workload ID set."
         ),
