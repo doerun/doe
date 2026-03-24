@@ -1,4 +1,13 @@
 # Doe status
+## Metal compare-dev signal (2026-03-24)
+
+Current Metal `compare-dev` results show Doe faster than Dawn on 8 of 9
+comparable workloads, spanning compute, pipeline compilation, render state and
+bundle cases, texture contract stress, and concurrent execution.
+
+See `bench/out/apple-metal/compare-dev/20260324T233128Z/dawn-vs-doe.apple.metal.compare-dev.json`
+for the current artifact.
+
 ## Workload origin taxonomy split (2026-03-24)
 
 - Replaced the old binary inferred provenance model
