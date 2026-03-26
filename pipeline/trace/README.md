@@ -17,11 +17,11 @@ Modes:
   - serves as v0 replay contract entrypoint
   - `--trace-jsonl` validates deterministic hash-chain order and sequence continuity
   - compares `trace-meta` fields (`seqMax`, `rowCount`, `hash`) against replay rows when present
-  - used as a blocking release gate via `python3 bench/trace_gate.py` against Dawn/Doe comparison artifacts.
+  - used as a blocking release gate via `python3 bench/gates/trace_gate.py` against Dawn/Doe comparison artifacts.
 - `compare_dispatch_traces.py`
   - compares two NDJSON trace streams by normalized decision envelope
   - fails fast with first mismatch report
-  - used by `bench/trace_gate.py` semantic parity mode (`--semantic-parity-mode auto|required`) for runtime-to-runtime parity checks
+  - used by `bench/gates/trace_gate.py` semantic parity mode (`--semantic-parity-mode auto|required`) for runtime-to-runtime parity checks
   - example:
     - `python3 pipeline/trace/compare_dispatch_traces.py --left zig.ndjson --right lean.ndjson`
 

@@ -1,0 +1,963 @@
+{
+  "schemaVersion": 1,
+  "source": "bench/workloads/metadata/backend-workload-catalog.json",
+  "counts": {
+    "dawn_benchmark": 31,
+    "dawn_autodiscovered": 3,
+    "doe_contract_with_dawn_mapping": 6,
+    "doe_specific": 0,
+    "hybrid": 41
+  },
+  "workloads": [
+    {
+      "id": "compute_kernel_dispatch_100",
+      "effectiveOrigin": "dawn_benchmark",
+      "laneOrigins": {
+        "generic": "dawn_benchmark"
+      }
+    },
+    {
+      "id": "compute_matvec_32768x2048_f32",
+      "effectiveOrigin": "hybrid",
+      "laneOrigins": {
+        "generic": "dawn_benchmark",
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark",
+        "amd_vulkan_superset_doe_vs_doe": "dawn_benchmark",
+        "amd_vulkan_extended": "dawn_benchmark",
+        "amd_vulkan_extended_strict": "dawn_benchmark",
+        "apple_metal_extended": "dawn_benchmark",
+        "local_d3d12_extended": "dawn_autodiscovered"
+      }
+    },
+    {
+      "id": "compute_matvec_32768x2048_f32_swizzle1",
+      "effectiveOrigin": "hybrid",
+      "laneOrigins": {
+        "generic": "dawn_benchmark",
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark",
+        "amd_vulkan_superset_doe_vs_doe": "dawn_benchmark",
+        "amd_vulkan_extended": "dawn_benchmark",
+        "amd_vulkan_extended_strict": "dawn_benchmark",
+        "apple_metal_extended": "dawn_benchmark",
+        "local_d3d12_extended": "dawn_autodiscovered"
+      }
+    },
+    {
+      "id": "compute_matvec_32768x2048_f32_workgroupshared_swizzle1",
+      "effectiveOrigin": "hybrid",
+      "laneOrigins": {
+        "generic": "dawn_benchmark",
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark",
+        "amd_vulkan_superset_doe_vs_doe": "dawn_benchmark",
+        "amd_vulkan_extended": "dawn_benchmark",
+        "amd_vulkan_extended_strict": "dawn_benchmark",
+        "apple_metal_extended": "dawn_benchmark",
+        "local_d3d12_extended": "dawn_autodiscovered"
+      }
+    },
+    {
+      "id": "compute_workgroup_atomic_1024",
+      "effectiveOrigin": "hybrid",
+      "laneOrigins": {
+        "generic": "dawn_benchmark",
+        "amd_vulkan_base": "dawn_benchmark",
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark",
+        "amd_vulkan_superset_doe_vs_doe": "dawn_benchmark",
+        "amd_vulkan_smoke": "dawn_autodiscovered",
+        "amd_vulkan_extended": "dawn_benchmark",
+        "amd_vulkan_extended_strict": "dawn_benchmark",
+        "apple_metal_smoke": "dawn_autodiscovered",
+        "apple_metal_extended": "dawn_autodiscovered",
+        "local_d3d12_smoke": "dawn_autodiscovered",
+        "local_d3d12_extended": "dawn_autodiscovered",
+        "d3d12_comparable": "dawn_autodiscovered"
+      }
+    },
+    {
+      "id": "compute_workgroup_non_atomic_1024",
+      "effectiveOrigin": "hybrid",
+      "laneOrigins": {
+        "generic": "dawn_benchmark",
+        "amd_vulkan_base": "dawn_benchmark",
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark",
+        "amd_vulkan_superset_doe_vs_doe": "dawn_benchmark",
+        "amd_vulkan_extended": "dawn_benchmark",
+        "amd_vulkan_extended_strict": "dawn_benchmark",
+        "apple_metal_extended": "dawn_benchmark",
+        "local_d3d12_extended": "dawn_autodiscovered",
+        "d3d12_comparable": "dawn_autodiscovered"
+      }
+    },
+    {
+      "id": "pipeline_async_diagnostics",
+      "effectiveOrigin": "hybrid",
+      "laneOrigins": {
+        "generic": "dawn_benchmark",
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark",
+        "amd_vulkan_superset_doe_vs_doe": "dawn_benchmark",
+        "amd_vulkan_extended": "dawn_benchmark",
+        "amd_vulkan_extended_strict": "dawn_benchmark",
+        "apple_metal_extended": "dawn_benchmark",
+        "local_d3d12_extended": "dawn_autodiscovered"
+      }
+    },
+    {
+      "id": "pipeline_compile_stress",
+      "effectiveOrigin": "hybrid",
+      "laneOrigins": {
+        "generic": "dawn_benchmark",
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark",
+        "amd_vulkan_superset_doe_vs_doe": "dawn_benchmark",
+        "amd_vulkan_extended": "dawn_benchmark",
+        "amd_vulkan_extended_strict": "dawn_benchmark",
+        "apple_metal_extended": "dawn_benchmark",
+        "local_d3d12_smoke": "dawn_autodiscovered",
+        "local_d3d12_extended": "dawn_autodiscovered",
+        "d3d12_comparable": "dawn_autodiscovered"
+      }
+    },
+    {
+      "id": "render_bundle_dynamic_bindings",
+      "effectiveOrigin": "hybrid",
+      "laneOrigins": {
+        "generic": "dawn_benchmark",
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark",
+        "amd_vulkan_superset_doe_vs_doe": "dawn_benchmark",
+        "amd_vulkan_extended": "dawn_benchmark",
+        "amd_vulkan_extended_strict": "dawn_benchmark",
+        "apple_metal_extended": "dawn_benchmark",
+        "local_d3d12_extended": "dawn_autodiscovered"
+      }
+    },
+    {
+      "id": "render_bundle_dynamic_pipeline_bindings",
+      "effectiveOrigin": "hybrid",
+      "laneOrigins": {
+        "generic": "dawn_benchmark",
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark",
+        "amd_vulkan_superset_doe_vs_doe": "dawn_benchmark",
+        "amd_vulkan_extended": "dawn_benchmark",
+        "amd_vulkan_extended_strict": "dawn_benchmark",
+        "apple_metal_extended": "dawn_benchmark",
+        "local_d3d12_extended": "dawn_autodiscovered"
+      }
+    },
+    {
+      "id": "render_draw_indexed_200k",
+      "effectiveOrigin": "hybrid",
+      "laneOrigins": {
+        "generic": "dawn_benchmark",
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark",
+        "amd_vulkan_superset_doe_vs_doe": "dawn_benchmark",
+        "amd_vulkan_extended": "dawn_benchmark",
+        "amd_vulkan_extended_strict": "dawn_benchmark",
+        "apple_metal_extended": "dawn_benchmark",
+        "local_d3d12_extended": "dawn_autodiscovered"
+      }
+    },
+    {
+      "id": "render_draw_indexed_baseline",
+      "effectiveOrigin": "hybrid",
+      "laneOrigins": {
+        "generic": "dawn_benchmark",
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark",
+        "amd_vulkan_superset_doe_vs_doe": "dawn_benchmark",
+        "amd_vulkan_extended": "dawn_benchmark",
+        "amd_vulkan_extended_strict": "dawn_benchmark",
+        "apple_metal_extended": "dawn_benchmark",
+        "local_d3d12_extended": "dawn_autodiscovered"
+      }
+    },
+    {
+      "id": "render_draw_redundant_pipeline_bindings",
+      "effectiveOrigin": "hybrid",
+      "laneOrigins": {
+        "generic": "dawn_benchmark",
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark",
+        "amd_vulkan_superset_doe_vs_doe": "dawn_benchmark",
+        "amd_vulkan_extended": "dawn_benchmark",
+        "amd_vulkan_extended_strict": "dawn_benchmark",
+        "apple_metal_extended": "dawn_benchmark",
+        "local_d3d12_extended": "dawn_autodiscovered"
+      }
+    },
+    {
+      "id": "render_draw_state_bindings",
+      "effectiveOrigin": "hybrid",
+      "laneOrigins": {
+        "generic": "dawn_benchmark",
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark",
+        "amd_vulkan_superset_doe_vs_doe": "dawn_benchmark",
+        "amd_vulkan_extended": "dawn_benchmark",
+        "amd_vulkan_extended_strict": "dawn_benchmark",
+        "apple_metal_extended": "dawn_benchmark",
+        "local_d3d12_extended": "dawn_autodiscovered"
+      }
+    },
+    {
+      "id": "render_draw_throughput_200k",
+      "effectiveOrigin": "hybrid",
+      "laneOrigins": {
+        "generic": "dawn_benchmark",
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark",
+        "amd_vulkan_superset_doe_vs_doe": "dawn_benchmark",
+        "amd_vulkan_extended": "dawn_benchmark",
+        "amd_vulkan_extended_strict": "dawn_benchmark",
+        "apple_metal_extended": "dawn_benchmark",
+        "local_d3d12_extended": "dawn_autodiscovered"
+      }
+    },
+    {
+      "id": "render_draw_throughput_baseline",
+      "effectiveOrigin": "hybrid",
+      "laneOrigins": {
+        "generic": "dawn_benchmark",
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark",
+        "amd_vulkan_superset_doe_vs_doe": "dawn_benchmark",
+        "amd_vulkan_app_claim": "dawn_autodiscovered",
+        "amd_vulkan_smoke": "dawn_autodiscovered",
+        "amd_vulkan_extended": "dawn_benchmark",
+        "amd_vulkan_extended_strict": "dawn_benchmark",
+        "apple_metal_smoke": "dawn_autodiscovered",
+        "apple_metal_extended": "dawn_autodiscovered",
+        "local_d3d12_extended": "dawn_autodiscovered"
+      }
+    },
+    {
+      "id": "surface_presentation",
+      "effectiveOrigin": "hybrid",
+      "laneOrigins": {
+        "generic": "dawn_benchmark",
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark",
+        "amd_vulkan_superset_doe_vs_doe": "dawn_benchmark",
+        "amd_vulkan_extended": "dawn_benchmark",
+        "amd_vulkan_extended_strict": "dawn_benchmark",
+        "apple_metal_extended": "dawn_benchmark",
+        "local_d3d12_extended": "dawn_autodiscovered"
+      }
+    },
+    {
+      "id": "texture_sampler_write_query_destroy",
+      "effectiveOrigin": "hybrid",
+      "laneOrigins": {
+        "generic": "dawn_benchmark",
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark",
+        "amd_vulkan_superset_doe_vs_doe": "dawn_benchmark",
+        "amd_vulkan_extended": "dawn_benchmark",
+        "amd_vulkan_extended_strict": "dawn_benchmark",
+        "apple_metal_extended": "dawn_benchmark",
+        "local_d3d12_extended": "dawn_autodiscovered"
+      }
+    },
+    {
+      "id": "texture_sampler_write_query_destroy_500",
+      "effectiveOrigin": "hybrid",
+      "laneOrigins": {
+        "generic": "dawn_benchmark",
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark",
+        "amd_vulkan_superset_doe_vs_doe": "dawn_benchmark",
+        "amd_vulkan_extended": "dawn_benchmark",
+        "amd_vulkan_extended_strict": "dawn_benchmark",
+        "apple_metal_extended": "dawn_benchmark",
+        "local_d3d12_extended": "dawn_autodiscovered"
+      }
+    },
+    {
+      "id": "texture_sampler_write_query_destroy_mip8",
+      "effectiveOrigin": "hybrid",
+      "laneOrigins": {
+        "generic": "dawn_benchmark",
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark",
+        "amd_vulkan_superset_doe_vs_doe": "dawn_benchmark",
+        "amd_vulkan_extended": "dawn_benchmark",
+        "amd_vulkan_extended_strict": "dawn_benchmark",
+        "apple_metal_extended": "dawn_benchmark",
+        "local_d3d12_extended": "dawn_autodiscovered"
+      }
+    },
+    {
+      "id": "texture_sampling_raster_baseline",
+      "effectiveOrigin": "hybrid",
+      "laneOrigins": {
+        "generic": "dawn_benchmark",
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark",
+        "amd_vulkan_superset_doe_vs_doe": "dawn_benchmark",
+        "amd_vulkan_extended": "dawn_benchmark",
+        "amd_vulkan_extended_strict": "dawn_benchmark",
+        "apple_metal_extended": "dawn_benchmark",
+        "local_d3d12_extended": "dawn_autodiscovered"
+      }
+    },
+    {
+      "id": "upload_write_buffer_16mb",
+      "effectiveOrigin": "hybrid",
+      "laneOrigins": {
+        "generic": "dawn_benchmark",
+        "amd_vulkan_base": "dawn_benchmark",
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark",
+        "amd_vulkan_superset_doe_vs_doe": "dawn_benchmark",
+        "amd_vulkan_extended": "dawn_benchmark",
+        "amd_vulkan_extended_strict": "dawn_benchmark",
+        "apple_metal_extended": "dawn_benchmark",
+        "local_d3d12_extended": "dawn_autodiscovered",
+        "d3d12_comparable": "dawn_autodiscovered"
+      }
+    },
+    {
+      "id": "upload_write_buffer_1gb",
+      "effectiveOrigin": "dawn_autodiscovered",
+      "laneOrigins": {
+        "generic": "dawn_autodiscovered",
+        "amd_vulkan_base": "dawn_autodiscovered",
+        "amd_vulkan_superset": "dawn_autodiscovered",
+        "amd_vulkan_superset_native_supported": "dawn_autodiscovered",
+        "amd_vulkan_superset_doe_vs_doe": "dawn_autodiscovered",
+        "amd_vulkan_extended": "dawn_autodiscovered",
+        "amd_vulkan_extended_strict": "dawn_autodiscovered",
+        "apple_metal_extended": "dawn_autodiscovered",
+        "local_d3d12_extended": "dawn_autodiscovered"
+      }
+    },
+    {
+      "id": "upload_write_buffer_1kb",
+      "effectiveOrigin": "hybrid",
+      "laneOrigins": {
+        "generic": "dawn_benchmark",
+        "amd_vulkan_base": "dawn_benchmark",
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark",
+        "amd_vulkan_superset_doe_vs_doe": "dawn_benchmark",
+        "amd_vulkan_extended": "dawn_benchmark",
+        "amd_vulkan_extended_strict": "dawn_benchmark",
+        "apple_metal_extended": "dawn_benchmark",
+        "local_d3d12_extended": "dawn_autodiscovered",
+        "d3d12_comparable": "dawn_autodiscovered"
+      }
+    },
+    {
+      "id": "upload_write_buffer_1mb",
+      "effectiveOrigin": "hybrid",
+      "laneOrigins": {
+        "generic": "dawn_benchmark",
+        "amd_vulkan_base": "dawn_benchmark",
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark",
+        "amd_vulkan_superset_doe_vs_doe": "dawn_benchmark",
+        "amd_vulkan_extended": "dawn_benchmark",
+        "amd_vulkan_extended_strict": "dawn_benchmark",
+        "apple_metal_extended": "dawn_benchmark",
+        "local_d3d12_extended": "dawn_autodiscovered",
+        "d3d12_comparable": "dawn_autodiscovered"
+      }
+    },
+    {
+      "id": "upload_write_buffer_256mb",
+      "effectiveOrigin": "dawn_autodiscovered",
+      "laneOrigins": {
+        "generic": "dawn_autodiscovered",
+        "amd_vulkan_base": "dawn_autodiscovered",
+        "amd_vulkan_superset": "dawn_autodiscovered",
+        "amd_vulkan_superset_native_supported": "dawn_autodiscovered",
+        "amd_vulkan_superset_doe_vs_doe": "dawn_autodiscovered",
+        "amd_vulkan_extended": "dawn_autodiscovered",
+        "amd_vulkan_extended_strict": "dawn_autodiscovered",
+        "apple_metal_extended": "dawn_autodiscovered",
+        "local_d3d12_extended": "dawn_autodiscovered"
+      }
+    },
+    {
+      "id": "upload_write_buffer_4gb",
+      "effectiveOrigin": "dawn_autodiscovered",
+      "laneOrigins": {
+        "generic": "dawn_autodiscovered",
+        "amd_vulkan_base": "dawn_autodiscovered",
+        "amd_vulkan_superset": "dawn_autodiscovered",
+        "amd_vulkan_superset_native_supported": "dawn_autodiscovered",
+        "amd_vulkan_superset_doe_vs_doe": "dawn_autodiscovered",
+        "amd_vulkan_extended": "dawn_autodiscovered",
+        "amd_vulkan_extended_strict": "dawn_autodiscovered",
+        "apple_metal_extended": "dawn_autodiscovered",
+        "local_d3d12_extended": "dawn_autodiscovered"
+      }
+    },
+    {
+      "id": "upload_write_buffer_4mb",
+      "effectiveOrigin": "hybrid",
+      "laneOrigins": {
+        "generic": "dawn_benchmark",
+        "amd_vulkan_base": "dawn_benchmark",
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark",
+        "amd_vulkan_superset_doe_vs_doe": "dawn_benchmark",
+        "amd_vulkan_extended": "dawn_benchmark",
+        "amd_vulkan_extended_strict": "dawn_benchmark",
+        "apple_metal_extended": "dawn_benchmark",
+        "local_d3d12_extended": "dawn_autodiscovered",
+        "d3d12_comparable": "dawn_autodiscovered"
+      }
+    },
+    {
+      "id": "upload_write_buffer_64kb",
+      "effectiveOrigin": "hybrid",
+      "laneOrigins": {
+        "generic": "dawn_benchmark",
+        "amd_vulkan_base": "dawn_benchmark",
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark",
+        "amd_vulkan_superset_doe_vs_doe": "dawn_benchmark",
+        "amd_vulkan_smoke": "dawn_autodiscovered",
+        "amd_vulkan_extended": "dawn_benchmark",
+        "amd_vulkan_extended_strict": "dawn_benchmark",
+        "apple_metal_smoke": "dawn_autodiscovered",
+        "apple_metal_extended": "dawn_autodiscovered",
+        "local_d3d12_smoke": "dawn_autodiscovered",
+        "local_d3d12_extended": "dawn_autodiscovered",
+        "d3d12_comparable": "dawn_autodiscovered"
+      }
+    },
+    {
+      "id": "capability_introspection",
+      "effectiveOrigin": "hybrid",
+      "laneOrigins": {
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark",
+        "amd_vulkan_superset_doe_vs_doe": "dawn_benchmark",
+        "amd_vulkan_extended": "dawn_benchmark",
+        "amd_vulkan_extended_strict": "dawn_benchmark",
+        "apple_metal_extended": "dawn_benchmark",
+        "local_d3d12_extended": "dawn_autodiscovered"
+      }
+    },
+    {
+      "id": "capability_introspection_500",
+      "effectiveOrigin": "hybrid",
+      "laneOrigins": {
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark",
+        "amd_vulkan_superset_doe_vs_doe": "dawn_benchmark",
+        "amd_vulkan_extended": "dawn_benchmark",
+        "amd_vulkan_extended_strict": "dawn_benchmark",
+        "apple_metal_extended": "dawn_benchmark",
+        "local_d3d12_extended": "dawn_autodiscovered"
+      }
+    },
+    {
+      "id": "compute_concurrent_execution_single",
+      "effectiveOrigin": "hybrid",
+      "laneOrigins": {
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark",
+        "amd_vulkan_superset_doe_vs_doe": "dawn_benchmark",
+        "amd_vulkan_extended": "dawn_benchmark",
+        "amd_vulkan_extended_strict": "dawn_benchmark",
+        "apple_metal_extended": "dawn_benchmark",
+        "local_d3d12_extended": "dawn_autodiscovered",
+        "d3d12_comparable": "dawn_autodiscovered"
+      }
+    },
+    {
+      "id": "compute_dispatch_fallback",
+      "effectiveOrigin": "doe_contract_with_dawn_mapping",
+      "laneOrigins": {
+        "amd_vulkan_superset": "doe_contract_with_dawn_mapping",
+        "amd_vulkan_superset_native_supported": "doe_contract_with_dawn_mapping",
+        "apple_metal_extended": "doe_contract_with_dawn_mapping",
+        "amd_vulkan_extended": "doe_contract_with_dawn_mapping",
+        "amd_vulkan_extended_strict": "doe_contract_with_dawn_mapping",
+        "local_d3d12_extended": "doe_contract_with_dawn_mapping"
+      }
+    },
+    {
+      "id": "compute_dispatch_grid",
+      "effectiveOrigin": "doe_contract_with_dawn_mapping",
+      "laneOrigins": {
+        "amd_vulkan_superset": "doe_contract_with_dawn_mapping",
+        "amd_vulkan_superset_native_supported": "doe_contract_with_dawn_mapping",
+        "apple_metal_extended": "doe_contract_with_dawn_mapping",
+        "amd_vulkan_extended": "doe_contract_with_dawn_mapping",
+        "amd_vulkan_extended_strict": "doe_contract_with_dawn_mapping",
+        "local_d3d12_extended": "doe_contract_with_dawn_mapping"
+      }
+    },
+    {
+      "id": "compute_dispatch_indirect_large_args",
+      "effectiveOrigin": "dawn_benchmark",
+      "laneOrigins": {
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark"
+      }
+    },
+    {
+      "id": "compute_dispatch_indirect_live_args",
+      "effectiveOrigin": "dawn_benchmark",
+      "laneOrigins": {
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark"
+      }
+    },
+    {
+      "id": "compute_dispatch_indirect_single",
+      "effectiveOrigin": "dawn_benchmark",
+      "laneOrigins": {
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark"
+      }
+    },
+    {
+      "id": "compute_dispatch_workgroups_2d_sweep",
+      "effectiveOrigin": "dawn_benchmark",
+      "laneOrigins": {
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark"
+      }
+    },
+    {
+      "id": "compute_dispatch_workgroups_3d_sweep",
+      "effectiveOrigin": "dawn_benchmark",
+      "laneOrigins": {
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark"
+      }
+    },
+    {
+      "id": "compute_dispatch_workgroups_indirect_pipeline_switch",
+      "effectiveOrigin": "dawn_benchmark",
+      "laneOrigins": {
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark"
+      }
+    },
+    {
+      "id": "compute_indirect_timestamp",
+      "effectiveOrigin": "hybrid",
+      "laneOrigins": {
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark",
+        "amd_vulkan_superset_doe_vs_doe": "dawn_benchmark",
+        "amd_vulkan_extended": "dawn_benchmark",
+        "amd_vulkan_extended_strict": "dawn_benchmark",
+        "apple_metal_extended": "dawn_benchmark",
+        "local_d3d12_extended": "dawn_autodiscovered"
+      }
+    },
+    {
+      "id": "compute_kernel_dispatch_1000",
+      "effectiveOrigin": "dawn_benchmark",
+      "laneOrigins": {
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark"
+      }
+    },
+    {
+      "id": "compute_zero_initialize_workgroup_memory_256",
+      "effectiveOrigin": "hybrid",
+      "laneOrigins": {
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark",
+        "amd_vulkan_superset_doe_vs_doe": "dawn_benchmark",
+        "amd_vulkan_extended": "dawn_benchmark",
+        "amd_vulkan_extended_strict": "dawn_benchmark",
+        "apple_metal_extended": "dawn_benchmark",
+        "local_d3d12_extended": "dawn_autodiscovered",
+        "d3d12_comparable": "dawn_autodiscovered"
+      }
+    },
+    {
+      "id": "copy_buffer_to_buffer_4kb",
+      "effectiveOrigin": "dawn_benchmark",
+      "laneOrigins": {
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark"
+      }
+    },
+    {
+      "id": "copy_buffer_to_buffer_overlap",
+      "effectiveOrigin": "dawn_benchmark",
+      "laneOrigins": {
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark"
+      }
+    },
+    {
+      "id": "copy_buffer_to_texture",
+      "effectiveOrigin": "doe_contract_with_dawn_mapping",
+      "laneOrigins": {
+        "amd_vulkan_superset": "doe_contract_with_dawn_mapping",
+        "amd_vulkan_superset_native_supported": "doe_contract_with_dawn_mapping",
+        "apple_metal_extended": "doe_contract_with_dawn_mapping",
+        "amd_vulkan_extended": "doe_contract_with_dawn_mapping",
+        "amd_vulkan_extended_strict": "doe_contract_with_dawn_mapping",
+        "local_d3d12_extended": "doe_contract_with_dawn_mapping"
+      }
+    },
+    {
+      "id": "copy_buffer_to_texture_tight_pitch",
+      "effectiveOrigin": "dawn_benchmark",
+      "laneOrigins": {
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark"
+      }
+    },
+    {
+      "id": "copy_protocol",
+      "effectiveOrigin": "doe_contract_with_dawn_mapping",
+      "laneOrigins": {
+        "amd_vulkan_superset": "doe_contract_with_dawn_mapping",
+        "amd_vulkan_superset_native_supported": "doe_contract_with_dawn_mapping",
+        "apple_metal_extended": "doe_contract_with_dawn_mapping",
+        "amd_vulkan_extended": "doe_contract_with_dawn_mapping",
+        "amd_vulkan_extended_strict": "doe_contract_with_dawn_mapping",
+        "local_d3d12_extended": "doe_contract_with_dawn_mapping"
+      }
+    },
+    {
+      "id": "copy_texture_to_buffer",
+      "effectiveOrigin": "doe_contract_with_dawn_mapping",
+      "laneOrigins": {
+        "amd_vulkan_superset": "doe_contract_with_dawn_mapping",
+        "amd_vulkan_superset_native_supported": "doe_contract_with_dawn_mapping",
+        "apple_metal_extended": "doe_contract_with_dawn_mapping",
+        "amd_vulkan_extended": "doe_contract_with_dawn_mapping",
+        "amd_vulkan_extended_strict": "doe_contract_with_dawn_mapping",
+        "local_d3d12_extended": "doe_contract_with_dawn_mapping"
+      }
+    },
+    {
+      "id": "copy_texture_to_buffer_padded",
+      "effectiveOrigin": "dawn_benchmark",
+      "laneOrigins": {
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark"
+      }
+    },
+    {
+      "id": "copy_texture_to_texture",
+      "effectiveOrigin": "doe_contract_with_dawn_mapping",
+      "laneOrigins": {
+        "amd_vulkan_superset": "doe_contract_with_dawn_mapping",
+        "amd_vulkan_superset_native_supported": "doe_contract_with_dawn_mapping",
+        "apple_metal_extended": "doe_contract_with_dawn_mapping",
+        "amd_vulkan_extended": "doe_contract_with_dawn_mapping",
+        "amd_vulkan_extended_strict": "doe_contract_with_dawn_mapping",
+        "local_d3d12_extended": "doe_contract_with_dawn_mapping"
+      }
+    },
+    {
+      "id": "copy_texture_to_texture_stress",
+      "effectiveOrigin": "dawn_benchmark",
+      "laneOrigins": {
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark"
+      }
+    },
+    {
+      "id": "copy_texture_to_texture_subresource",
+      "effectiveOrigin": "dawn_benchmark",
+      "laneOrigins": {
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark"
+      }
+    },
+    {
+      "id": "lifecycle_refcount",
+      "effectiveOrigin": "hybrid",
+      "laneOrigins": {
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark",
+        "amd_vulkan_superset_doe_vs_doe": "dawn_benchmark",
+        "amd_vulkan_extended": "dawn_benchmark",
+        "amd_vulkan_extended_strict": "dawn_benchmark",
+        "apple_metal_extended": "dawn_benchmark",
+        "local_d3d12_extended": "dawn_autodiscovered"
+      }
+    },
+    {
+      "id": "lifecycle_refcount_200",
+      "effectiveOrigin": "hybrid",
+      "laneOrigins": {
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark",
+        "amd_vulkan_superset_doe_vs_doe": "dawn_benchmark",
+        "amd_vulkan_extended": "dawn_benchmark",
+        "amd_vulkan_extended_strict": "dawn_benchmark",
+        "apple_metal_extended": "dawn_benchmark",
+        "local_d3d12_extended": "dawn_autodiscovered"
+      }
+    },
+    {
+      "id": "render_draw_indexed_indirect_u16",
+      "effectiveOrigin": "dawn_benchmark",
+      "laneOrigins": {
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark"
+      }
+    },
+    {
+      "id": "render_draw_indexed_indirect_u32",
+      "effectiveOrigin": "dawn_benchmark",
+      "laneOrigins": {
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark"
+      }
+    },
+    {
+      "id": "render_draw_indirect_legacy_equivalent",
+      "effectiveOrigin": "dawn_benchmark",
+      "laneOrigins": {
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark"
+      }
+    },
+    {
+      "id": "render_multidraw",
+      "effectiveOrigin": "hybrid",
+      "laneOrigins": {
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark",
+        "amd_vulkan_superset_doe_vs_doe": "dawn_benchmark",
+        "amd_vulkan_extended": "dawn_benchmark",
+        "amd_vulkan_extended_strict": "dawn_benchmark",
+        "apple_metal_extended": "dawn_benchmark",
+        "local_d3d12_extended": "dawn_autodiscovered"
+      }
+    },
+    {
+      "id": "render_multidraw_indexed",
+      "effectiveOrigin": "hybrid",
+      "laneOrigins": {
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark",
+        "amd_vulkan_superset_doe_vs_doe": "dawn_benchmark",
+        "amd_vulkan_extended": "dawn_benchmark",
+        "amd_vulkan_extended_strict": "dawn_benchmark",
+        "apple_metal_extended": "dawn_benchmark",
+        "local_d3d12_extended": "dawn_autodiscovered"
+      }
+    },
+    {
+      "id": "render_pass_depth_stencil",
+      "effectiveOrigin": "dawn_benchmark",
+      "laneOrigins": {
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark"
+      }
+    },
+    {
+      "id": "render_pass_dynamic_viewport_scissor",
+      "effectiveOrigin": "dawn_benchmark",
+      "laneOrigins": {
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark"
+      }
+    },
+    {
+      "id": "render_pass_loadops_clear_load",
+      "effectiveOrigin": "dawn_benchmark",
+      "laneOrigins": {
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark"
+      }
+    },
+    {
+      "id": "render_pass_multisample_resolve",
+      "effectiveOrigin": "dawn_benchmark",
+      "laneOrigins": {
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark"
+      }
+    },
+    {
+      "id": "render_pass_stencil_ref_sweep",
+      "effectiveOrigin": "dawn_benchmark",
+      "laneOrigins": {
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark"
+      }
+    },
+    {
+      "id": "render_pass_storeops_discard",
+      "effectiveOrigin": "dawn_benchmark",
+      "laneOrigins": {
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark"
+      }
+    },
+    {
+      "id": "render_pixel_local_storage_barrier",
+      "effectiveOrigin": "hybrid",
+      "laneOrigins": {
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark",
+        "amd_vulkan_superset_doe_vs_doe": "dawn_benchmark",
+        "amd_vulkan_extended": "dawn_benchmark",
+        "amd_vulkan_extended_strict": "dawn_benchmark",
+        "apple_metal_extended": "dawn_benchmark",
+        "local_d3d12_extended": "dawn_autodiscovered"
+      }
+    },
+    {
+      "id": "render_pixel_local_storage_barrier_500",
+      "effectiveOrigin": "hybrid",
+      "laneOrigins": {
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark",
+        "amd_vulkan_superset_doe_vs_doe": "dawn_benchmark",
+        "amd_vulkan_extended": "dawn_benchmark",
+        "amd_vulkan_extended_strict": "dawn_benchmark",
+        "apple_metal_extended": "dawn_benchmark",
+        "local_d3d12_extended": "dawn_autodiscovered"
+      }
+    },
+    {
+      "id": "render_uniform_buffer_update_writebuffer_partial_single",
+      "effectiveOrigin": "hybrid",
+      "laneOrigins": {
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark",
+        "amd_vulkan_superset_doe_vs_doe": "dawn_benchmark",
+        "amd_vulkan_extended": "dawn_benchmark",
+        "amd_vulkan_extended_strict": "dawn_benchmark",
+        "apple_metal_extended": "dawn_benchmark",
+        "local_d3d12_extended": "dawn_autodiscovered"
+      }
+    },
+    {
+      "id": "resource_buffer_map_double_request_guard",
+      "effectiveOrigin": "dawn_benchmark",
+      "laneOrigins": {
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark"
+      }
+    },
+    {
+      "id": "resource_buffer_map_partial_read_4kb",
+      "effectiveOrigin": "dawn_benchmark",
+      "laneOrigins": {
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark"
+      }
+    },
+    {
+      "id": "resource_buffer_map_partial_write_64kb",
+      "effectiveOrigin": "dawn_benchmark",
+      "laneOrigins": {
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark"
+      }
+    },
+    {
+      "id": "resource_buffer_map_readback_1kb",
+      "effectiveOrigin": "dawn_benchmark",
+      "laneOrigins": {
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark"
+      }
+    },
+    {
+      "id": "resource_buffer_map_readback_64kb",
+      "effectiveOrigin": "dawn_benchmark",
+      "laneOrigins": {
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark"
+      }
+    },
+    {
+      "id": "resource_buffer_map_unmap_storm",
+      "effectiveOrigin": "dawn_benchmark",
+      "laneOrigins": {
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark"
+      }
+    },
+    {
+      "id": "resource_buffer_map_write_1kb",
+      "effectiveOrigin": "dawn_benchmark",
+      "laneOrigins": {
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark"
+      }
+    },
+    {
+      "id": "resource_buffer_map_write_64kb",
+      "effectiveOrigin": "dawn_benchmark",
+      "laneOrigins": {
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark"
+      }
+    },
+    {
+      "id": "resource_lifecycle",
+      "effectiveOrigin": "hybrid",
+      "laneOrigins": {
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark",
+        "amd_vulkan_superset_doe_vs_doe": "dawn_benchmark",
+        "amd_vulkan_extended": "dawn_benchmark",
+        "amd_vulkan_extended_strict": "dawn_benchmark",
+        "apple_metal_extended": "dawn_benchmark",
+        "local_d3d12_extended": "dawn_autodiscovered",
+        "d3d12_comparable": "dawn_autodiscovered"
+      }
+    },
+    {
+      "id": "resource_table_immediates",
+      "effectiveOrigin": "hybrid",
+      "laneOrigins": {
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark",
+        "amd_vulkan_superset_doe_vs_doe": "dawn_benchmark",
+        "amd_vulkan_extended": "dawn_benchmark",
+        "amd_vulkan_extended_strict": "dawn_benchmark",
+        "apple_metal_extended": "dawn_benchmark",
+        "local_d3d12_extended": "dawn_autodiscovered"
+      }
+    },
+    {
+      "id": "resource_table_immediates_500",
+      "effectiveOrigin": "hybrid",
+      "laneOrigins": {
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark",
+        "amd_vulkan_superset_doe_vs_doe": "dawn_benchmark",
+        "amd_vulkan_app_claim": "dawn_benchmark",
+        "amd_vulkan_extended": "dawn_benchmark",
+        "amd_vulkan_extended_strict": "dawn_benchmark",
+        "apple_metal_extended": "dawn_benchmark",
+        "local_d3d12_extended": "dawn_autodiscovered"
+      }
+    },
+    {
+      "id": "surface_full_presentation",
+      "effectiveOrigin": "hybrid",
+      "laneOrigins": {
+        "amd_vulkan_superset": "dawn_benchmark",
+        "amd_vulkan_superset_native_supported": "dawn_benchmark",
+        "apple_metal_extended": "dawn_benchmark",
+        "amd_vulkan_extended": "dawn_benchmark",
+        "amd_vulkan_extended_strict": "dawn_benchmark",
+        "local_d3d12_extended": "dawn_autodiscovered"
+      }
+    }
+  ]
+}

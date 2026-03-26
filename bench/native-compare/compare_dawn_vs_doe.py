@@ -8,17 +8,24 @@ timing traces where available, with wall-time as a fallback.
 
 from __future__ import annotations
 
-import json
 import sys
-import time
 from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+BENCH_ROOT = REPO_ROOT / "bench"
+for _path_entry in (str(REPO_ROOT), str(BENCH_ROOT)):
+    if _path_entry not in sys.path:
+        sys.path.insert(0, _path_entry)
+
+
+import json
+import os
+import time
 from typing import Any
 
-BENCH_ROOT = Path(__file__).resolve().parents[1]
-if str(BENCH_ROOT) not in sys.path:
-    sys.path.insert(0, str(BENCH_ROOT))
+CATALOG_PATH = BENCH_ROOT / "workloads" / "metadata" / "backend-workload-catalog.json"
 
-import output_paths
+from bench.lib import output_paths
 from native_compare_modules import config_support as config_support_mod
 from native_compare_modules import claimability as claimability_mod
 from native_compare_modules import comparability as comparability_mod
@@ -92,6 +99,8 @@ command_for = runner_mod.command_for
 max_rss_time_prefix = runner_mod.max_rss_time_prefix
 run_once = runner_mod.run_once
 run_workload = runner_mod.run_workload
+run_compilation_workload = runner_mod.run_compilation_workload
+run_js_pipeline_workload = runner_mod.run_js_pipeline_workload
 load_workloads = config_support_mod.load_workloads
 
 # Re-exports from workload_validation
@@ -183,6 +192,16 @@ def main() -> int:
     benchmark_policy = load_benchmark_methodology_policy(args.benchmark_policy)
 
     workloads_path = Path(args.workloads)
+    if CATALOG_PATH.exists() and workloads_path.exists():
+        catalog_mtime = os.path.getmtime(CATALOG_PATH)
+        workloads_mtime = os.path.getmtime(workloads_path)
+        if catalog_mtime > workloads_mtime:
+            print(
+                f"WARNING: {workloads_path.name} may be stale — "
+                f"workloads/metadata/backend-workload-catalog.json was modified more recently. "
+                f"Run: python3 bench/tools/generate_backend_workloads.py",
+                file=sys.stderr,
+            )
     workloads = load_workloads(
         workloads_path,
         args.workload_filter,
@@ -302,53 +321,85 @@ def main() -> int:
 
     for idx, workload in enumerate(workloads, 1):
         print(f"[{idx}/{len(workloads)}] Running workload: {workload.id}...", file=sys.stderr, flush=True)
-        validate_upload_apples_to_apples(
-            workload,
-            comparability_mode=args.comparability,
-        )
         workload_dir = workspace / workload.id
-        left = run_workload(
-            name=args.left_name,
-            template=args.left_command_template,
-            workload=workload,
-            iterations=args.iterations,
-            warmup=args.warmup,
-            out_dir=workload_dir / "left",
-            gpu_memory_probe=args.resource_probe,
-            resource_sample_ms=args.resource_sample_ms,
-            resource_sample_target_count=args.resource_sample_target_count,
-            timing_divisor=workload.left_timing_divisor,
-            command_repeat=workload.left_command_repeat,
-            ignore_first_ops=workload.left_ignore_first_ops,
-            upload_buffer_usage=workload.left_upload_buffer_usage,
-            upload_submit_every=workload.left_upload_submit_every,
-            inject_upload_runtime_flags=True,
-            required_timing_class=args.require_timing_class,
-            comparability_mode=args.comparability,
-            benchmark_policy=benchmark_policy,
-            emit_shell=args.emit_shell,
-        )
-        right = run_workload(
-            name=args.right_name,
-            template=args.right_command_template,
-            workload=workload,
-            iterations=args.iterations,
-            warmup=args.warmup,
-            out_dir=workload_dir / "right",
-            gpu_memory_probe=args.resource_probe,
-            resource_sample_ms=args.resource_sample_ms,
-            resource_sample_target_count=args.resource_sample_target_count,
-            timing_divisor=workload.right_timing_divisor,
-            command_repeat=workload.right_command_repeat,
-            ignore_first_ops=workload.right_ignore_first_ops,
-            upload_buffer_usage=workload.right_upload_buffer_usage,
-            upload_submit_every=workload.right_upload_submit_every,
-            inject_upload_runtime_flags=False,
-            required_timing_class=args.require_timing_class,
-            comparability_mode=args.comparability,
-            benchmark_policy=benchmark_policy,
-            emit_shell=args.emit_shell,
-        )
+        runner_type = getattr(workload, "runner_type", "zig-runtime")
+
+        if runner_type == "compilation":
+            try:
+                both = run_compilation_workload(
+                    workload=workload,
+                    iterations=args.iterations,
+                    warmup=args.warmup,
+                    out_dir=workload_dir,
+                    doe_compilation_bin=getattr(args, "doe_compilation_bin", "runtime/zig/zig-out/bin/doe-compilation-bench"),
+                    tint_bin=getattr(args, "tint_bin", "bench/vendor/dawn/out/Release/tint"),
+                )
+            except RuntimeError as exc:
+                print(f"  SKIP ({exc})", file=sys.stderr, flush=True)
+                continue
+            left = both["left"]
+            right = both["right"]
+        elif runner_type == "js-pipeline":
+            try:
+                both = run_js_pipeline_workload(
+                    workload=workload,
+                    iterations=args.iterations,
+                    warmup=args.warmup,
+                    out_dir=workload_dir,
+                    js_runtime=getattr(args, "js_runtime", "node"),
+                )
+            except RuntimeError as exc:
+                print(f"  SKIP ({exc})", file=sys.stderr, flush=True)
+                continue
+            left = both["left"]
+            right = both["right"]
+        else:
+            validate_upload_apples_to_apples(
+                workload,
+                comparability_mode=args.comparability,
+            )
+            left = run_workload(
+                name=args.left_name,
+                template=args.left_command_template,
+                workload=workload,
+                iterations=args.iterations,
+                warmup=args.warmup,
+                out_dir=workload_dir / "left",
+                gpu_memory_probe=args.resource_probe,
+                resource_sample_ms=args.resource_sample_ms,
+                resource_sample_target_count=args.resource_sample_target_count,
+                timing_divisor=workload.left_timing_divisor,
+                command_repeat=workload.left_command_repeat,
+                ignore_first_ops=workload.left_ignore_first_ops,
+                upload_buffer_usage=workload.left_upload_buffer_usage,
+                upload_submit_every=workload.left_upload_submit_every,
+                inject_upload_runtime_flags=True,
+                required_timing_class=args.require_timing_class,
+                comparability_mode=args.comparability,
+                benchmark_policy=benchmark_policy,
+                emit_shell=args.emit_shell,
+            )
+            right = run_workload(
+                name=args.right_name,
+                template=args.right_command_template,
+                workload=workload,
+                iterations=args.iterations,
+                warmup=args.warmup,
+                out_dir=workload_dir / "right",
+                gpu_memory_probe=args.resource_probe,
+                resource_sample_ms=args.resource_sample_ms,
+                resource_sample_target_count=args.resource_sample_target_count,
+                timing_divisor=workload.right_timing_divisor,
+                command_repeat=workload.right_command_repeat,
+                ignore_first_ops=workload.right_ignore_first_ops,
+                upload_buffer_usage=workload.right_upload_buffer_usage,
+                upload_submit_every=workload.right_upload_submit_every,
+                inject_upload_runtime_flags=False,
+                required_timing_class=args.require_timing_class,
+                comparability_mode=args.comparability,
+                benchmark_policy=benchmark_policy,
+                emit_shell=args.emit_shell,
+            )
 
         left_stats = left["stats"]
         right_stats = right["stats"]

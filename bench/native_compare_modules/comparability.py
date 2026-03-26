@@ -8,7 +8,7 @@ import subprocess
 from pathlib import Path
 from typing import Any, Callable
 
-from config_validation import load_validated_config
+from bench.lib.config_validation import load_validated_config
 from native_compare_modules.timing_selection import (
     RENDER_ENCODE_TIMING_DOMAINS,
     canonical_timing_source,
@@ -141,6 +141,11 @@ def _sources_match_with_runtime_compatibility(
     left_set = set(left_sources)
     right_set = set(right_sources)
     normalized_domain = _normalized_domain(workload_domain)
+    strict_both_doe_native = (
+        comparability_mode == "strict"
+        and (is_left_dawn_delegate or is_left_doe)
+        and (is_right_dawn_delegate or is_right_doe)
+    )
     if comparability_mode == "strict":
         doe_expected = _strict_doe_expected_sources(normalized_domain)
         left_expected: set[str] | None = None
@@ -156,6 +161,8 @@ def _sources_match_with_runtime_compatibility(
         if left_expected is not None and not left_set.issubset(left_expected):
             return False
         if right_expected is not None and not right_set.issubset(right_expected):
+            return False
+        if strict_both_doe_native and left_set != right_set:
             return False
         return True
 
@@ -202,6 +209,11 @@ def _timing_selection_policy_match_with_runtime_compatibility(
     left_set = set(left_policies)
     right_set = set(right_policies)
     normalized_domain = _normalized_domain(workload_domain)
+    strict_both_doe_native = (
+        comparability_mode == "strict"
+        and (is_left_dawn_delegate or is_left_doe)
+        and (is_right_dawn_delegate or is_right_doe)
+    )
 
     if comparability_mode == "strict":
         doe_expected = _strict_doe_expected_policies(normalized_domain)
@@ -218,6 +230,8 @@ def _timing_selection_policy_match_with_runtime_compatibility(
         if left_expected is not None and not left_set.issubset(left_expected):
             return False
         if right_expected is not None and not right_set.issubset(right_expected):
+            return False
+        if strict_both_doe_native and left_set != right_set:
             return False
         return True
 

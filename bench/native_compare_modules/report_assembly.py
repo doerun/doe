@@ -13,7 +13,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-import output_paths
+from bench.lib import output_paths
 from native_compare_modules import comparability as comparability_mod
 from native_compare_modules import claimability as claimability_mod
 from native_compare_modules import operator_diff as operator_diff_mod

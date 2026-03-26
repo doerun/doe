@@ -40,7 +40,7 @@ pub const LoadedSelectionPolicy = struct {
 pub const DEFAULT_RUNTIME_POLICY_PATH = "config/backend-runtime-policy.json";
 const MAX_RUNTIME_POLICY_BYTES: usize = 64 * 1024;
 const EXPECTED_SCHEMA_VERSION: i64 = 2;
-const DEFAULT_POLICY_HASH = "backend-runtime-policy-v2";
+const DEFAULT_POLICY_HASH = "backend-runtime-policy-v3";
 
 pub const PolicyLoadError = error{
     InvalidRuntimePolicy,
@@ -164,7 +164,7 @@ pub fn load_policy_for_lane(
         };
         break :blk parse_upload_path_policy(upload_path_policy_name) orelse return PolicyLoadError.InvalidRuntimePolicy;
     };
-    if (strict_vulkan_upload_policy_required(lane) and upload_path_policy != .staged_copy_only) {
+    if (strict_staged_upload_policy_required(lane) and upload_path_policy != .staged_copy_only) {
         return PolicyLoadError.InvalidRuntimePolicy;
     }
 
@@ -183,13 +183,21 @@ pub fn load_policy_for_lane(
 
 pub fn default_policy_for_lane(lane: BackendLane) SelectionPolicy {
     return switch (lane) {
-        .metal_doe_app, .metal_doe_comparable, .metal_doe_release => .{
+        .metal_doe_app => .{
             .lane = lane,
             .default_backend = .doe_metal,
             .allow_fallback = false,
             .strict_no_fallback = true,
             .policy_hash = DEFAULT_POLICY_HASH,
             .upload_path_policy = .allow_mapped_shortcuts,
+        },
+        .metal_doe_comparable, .metal_doe_release => .{
+            .lane = lane,
+            .default_backend = .doe_metal,
+            .allow_fallback = false,
+            .strict_no_fallback = true,
+            .policy_hash = DEFAULT_POLICY_HASH,
+            .upload_path_policy = .staged_copy_only,
         },
         .metal_doe_directional => .{
             .lane = lane,
@@ -231,13 +239,21 @@ pub fn default_policy_for_lane(lane: BackendLane) SelectionPolicy {
             .policy_hash = DEFAULT_POLICY_HASH,
             .upload_path_policy = .allow_mapped_shortcuts,
         },
-        .d3d12_doe_app, .d3d12_doe_comparable, .d3d12_doe_release => .{
+        .d3d12_doe_app => .{
             .lane = lane,
             .default_backend = .doe_d3d12,
             .allow_fallback = false,
             .strict_no_fallback = true,
             .policy_hash = DEFAULT_POLICY_HASH,
             .upload_path_policy = .allow_mapped_shortcuts,
+        },
+        .d3d12_doe_comparable, .d3d12_doe_release => .{
+            .lane = lane,
+            .default_backend = .doe_d3d12,
+            .allow_fallback = false,
+            .strict_no_fallback = true,
+            .policy_hash = DEFAULT_POLICY_HASH,
+            .upload_path_policy = .staged_copy_only,
         },
         .d3d12_doe_directional => .{
             .lane = lane,
@@ -264,9 +280,15 @@ fn parse_upload_path_policy(raw: []const u8) ?UploadPathPolicy {
     return null;
 }
 
-fn strict_vulkan_upload_policy_required(lane: BackendLane) bool {
+fn strict_staged_upload_policy_required(lane: BackendLane) bool {
     return switch (lane) {
-        .vulkan_doe_comparable, .vulkan_doe_release => true,
+        .metal_doe_comparable,
+        .metal_doe_release,
+        .vulkan_doe_comparable,
+        .vulkan_doe_release,
+        .d3d12_doe_comparable,
+        .d3d12_doe_release,
+        => true,
         else => false,
     };
 }

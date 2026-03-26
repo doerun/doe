@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "models": [
+    {
+      "id": "gemma_3_270m",
+      "templatePath": "bench/inference-pipeline/model-templates/gemma-3-270m.json",
+      "promptTokens": 32,
+      "decodeTokens": 64
+    }
+  ],
+  "run": {
+    "iterations": 10,
+    "warmup": 2,
+    "phases": ["prefill", "decode", "e2e"],
+    "timingGranularity": "per-phase"
+  },
+  "comparison": {
+    "leftRuntime": "doe-native",
+    "rightRuntime": "dawn-delegate",
+    "leftBackendLane": "metal_doe_comparable",
+    "rightBackendLane": "metal_dawn_release"
+  },
+  "output": {
+    "dir": "bench/out/inference-pipeline",
+    "reportPrefix": "inference-pipeline"
+  }
+}

@@ -11,7 +11,7 @@ This runbook is for final strict apples-to-apples Metal proof on Apple Silicon h
 ## 1. Host preflight
 
 ```bash
-python3 bench/preflight_metal_host.py
+python3 bench/runners/preflight_metal_host.py
 ```
 
 Expected: preflight reports Metal-capable host and exits `0`.
@@ -19,7 +19,7 @@ Expected: preflight reports Metal-capable host and exits `0`.
 ## 2. Strict local-metal comparable run
 
 ```bash
-python3 bench/run_release_pipeline.py \
+python3 bench/runners/run_release_pipeline.py \
   --config bench/native-compare/compare_dawn_vs_doe.config.apple.metal.compare.json \
   --report bench/out/metal.macos.final.local.comparable.json \
   --workspace bench/out/runtime-comparisons.metal.macos.final.local.comparable \
@@ -39,7 +39,7 @@ python3 bench/run_release_pipeline.py \
 ## 3. Strict local-metal release run
 
 ```bash
-python3 bench/run_release_pipeline.py \
+python3 bench/runners/run_release_pipeline.py \
   --config bench/native-compare/compare_dawn_vs_doe.config.apple.metal.release.json \
   --report bench/out/metal.macos.final.local.release.json \
   --workspace bench/out/runtime-comparisons.metal.macos.final.local.release \
@@ -59,7 +59,7 @@ python3 bench/run_release_pipeline.py \
 ## 4. metal_doe_app lane strict run
 
 ```bash
-python3 bench/run_release_pipeline.py \
+python3 bench/runners/run_release_pipeline.py \
   --config bench/native-compare/compare_dawn_vs_doe.config.apple.metal.compare.json \
   --report bench/out/metal.macos.final.metal_doe_app.comparable.json \
   --workspace bench/out/runtime-comparisons.metal.macos.final.metal_doe_app.comparable \
@@ -79,7 +79,7 @@ python3 bench/run_release_pipeline.py \
 Strict-lane run:
 
 ```bash
-python3 bench/run_release_pipeline.py \
+python3 bench/runners/run_release_pipeline.py \
   --config bench/native-compare/compare_dawn_vs_doe.config.apple.metal.compare.json \
   --report bench/out/metal.macos.final.strict_nofallback.json \
   --workspace bench/out/runtime-comparisons.metal.macos.final.strict_nofallback \
@@ -92,7 +92,7 @@ Optional invariance check (legacy env var should be inert):
 
 ```bash
 FAWN_BACKEND_SWITCH=force_dawn_delegate \
-python3 bench/run_release_pipeline.py \
+python3 bench/runners/run_release_pipeline.py \
   --config bench/native-compare/compare_dawn_vs_doe.config.apple.metal.compare.json \
   --report bench/out/metal.macos.final.strict_nofallback.legacy_env.json \
   --workspace bench/out/runtime-comparisons.metal.macos.final.strict_nofallback.legacy_env \
@@ -105,7 +105,7 @@ Expected strict evidence:
 
 1. Left backend selection remains `doe_metal` on both runs.
 2. `fallbackUsed` is `false` for every sample.
-3. `bench/backend_selection_gate.py` passes for `metal_doe_app`.
+3. `bench/gates/backend_selection_gate.py` passes for `metal_doe_app`.
 4. Legacy `FAWN_BACKEND_SWITCH` no longer changes runtime backend routing.
 
 ## 6. Required proof bundle artifacts

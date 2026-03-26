@@ -11,11 +11,11 @@ It does not cover quirk sample JSON under `examples/quirks/` or notes such as
 | `fresh-evidence` | The example appears in the latest published comparable/release artifact for at least one active lane. |
 | `diagnostic` | The latest artifact includes the example, but the lane is not currently claimable for that example. |
 | `contract-covered` | The example is referenced by at least one active workload contract, but it is absent from the latest published comparable/release artifacts. |
-| `ungoverned` | The example exists on disk but is not referenced by any current smoke/extended/release workload matrix. |
+| `ungoverned` | The example exists on disk but is not referenced by any current smoke/governed/release workload matrix. |
 
 Validation run for this doc pass:
 
-- `python3 bench/schema_gate.py` -> `PASS`
+- `python3 bench/gates/schema_gate.py` -> `PASS`
 - all 90 JSON files under `examples/` parse successfully
 
 That means no obvious structurally broken example files were found in this pass.
@@ -28,7 +28,7 @@ schema failures.
 |------|-----------------|-----------------------|-------------------------|-------------|
 | AMD Vulkan release | `bench/out/amd-vulkan/20260310T153903Z/dawn-vs-doe.amd.vulkan.release.json` | 7 | 7 | `comparable`, overall `diagnostic` |
 | Apple Metal extended-comparable | `bench/out/apple-metal/extended-comparable/20260310T171918Z/dawn-vs-doe.local.metal.extended.comparable.json` | 31 | 30 | `comparable`, overall `diagnostic` |
-| Local D3D12 extended | `bench/workloads.local.d3d12.extended.json` | 11 contract rows | 11 contract examples | contract only; no fresh Windows artifact in inventory |
+| Local D3D12 comparable | `bench/workloads/workloads.local.d3d12.json` | 11 contract rows | 11 contract examples | contract only; no fresh Windows artifact in inventory |
 
 ## Current diagnostic examples
 

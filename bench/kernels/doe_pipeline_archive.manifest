@@ -5,3 +5,6 @@ C:shader_robustness_matmul_512_f32
 C:concurrent_execution_runsingle_u32
 C:dispatch_noop
 C:zero_initialize_workgroup_memory_2048
+C:matrix_vector_mul_32768x2048_f32_naive_swizzle0
+C:matrix_vector_mul_32768x2048_f32_swizzle1
+C:matrix_vector_mul_32768x2048_f32_workgroupshared_swizzle1

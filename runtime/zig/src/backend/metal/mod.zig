@@ -14,6 +14,7 @@ const hash_utils = @import("../common/hash_utils.zig");
 const artifact_emit = @import("artifact_emit.zig");
 const host_plan_artifact = @import("metal_host_plan_artifact.zig");
 const native_runtime = @import("metal_native_runtime.zig");
+const backend_policy = @import("../backend_policy.zig");
 extern fn metal_bridge_buffer_contents(buffer: ?*anyopaque) callconv(.c) ?[*]u8;
 
 const MANIFEST_PATH_CAPACITY: usize = 256;
@@ -28,6 +29,7 @@ pub const ZigMetalBackend = struct {
     allocator: std.mem.Allocator,
     runtime: ?native_runtime.NativeMetalRuntime = null,
     kernel_root_owned: ?[]u8 = null,
+    upload_path_policy: backend_policy.UploadPathPolicy = .allow_mapped_shortcuts,
 
     upload_buffer_usage_mode: webgpu.UploadBufferUsageMode = .copy_dst_copy_src,
     upload_submit_every: u32 = 1,
@@ -66,6 +68,20 @@ pub const ZigMetalBackend = struct {
         profile: model.DeviceProfile,
         kernel_root: ?[]const u8,
     ) !*ZigMetalBackend {
+        return init_with_selection_policy(
+            allocator,
+            profile,
+            kernel_root,
+            backend_policy.default_policy_for_lane(.metal_doe_app),
+        );
+    }
+
+    pub fn init_with_selection_policy(
+        allocator: std.mem.Allocator,
+        profile: model.DeviceProfile,
+        kernel_root: ?[]const u8,
+        selection_policy: backend_policy.SelectionPolicy,
+    ) !*ZigMetalBackend {
         if (profile.api != .metal) return common_errors.BackendNativeError.UnsupportedFeature;
         if (builtin.os.tag != .macos) return common_errors.BackendNativeError.UnsupportedFeature;
 
@@ -82,6 +98,7 @@ pub const ZigMetalBackend = struct {
             .allocator = allocator,
             .runtime = runtime,
             .kernel_root_owned = owned_root,
+            .upload_path_policy = selection_policy.upload_path_policy,
             .upload_buffer_usage_mode = .copy_dst_copy_src,
             .upload_submit_every = 1,
             .queue_wait_mode = .process_events,
@@ -595,8 +612,9 @@ fn execute_command(ctx: *anyopaque, command: model.Command) anyerror!webgpu.Nati
 fn set_upload_behavior(ctx: *anyopaque, mode: webgpu.UploadBufferUsageMode, submit_every: u32) void {
     const self = cast(ctx);
     const normalized = if (submit_every == 0) @as(u32, 1) else submit_every;
-    if (self.upload_buffer_usage_mode == mode and self.upload_submit_every == normalized) return;
-    self.upload_buffer_usage_mode = mode;
+    const effective_mode = if (self.upload_path_policy == .staged_copy_only) webgpu.UploadBufferUsageMode.copy_dst else mode;
+    if (self.upload_buffer_usage_mode == effective_mode and self.upload_submit_every == normalized) return;
+    self.upload_buffer_usage_mode = effective_mode;
     self.upload_submit_every = normalized;
 }
 

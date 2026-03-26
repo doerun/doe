@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "modelId": "gemma-3-270m",
+  "modelFamily": "gemma3",
+  "layers": 18,
+  "hiddenDim": 1536,
+  "headDim": 256,
+  "numHeads": 4,
+  "intermediateSize": 6144,
+  "vocabSize": 262144,
+  "maxSeqLen": 512,
+  "activationType": "gelu",
+  "normType": "rmsnorm",
+  "normEps": 1e-6,
+  "kernels": {
+    "embed": "gather.wgsl",
+    "rmsnorm": "rmsnorm.wgsl",
+    "gemv": "matmul-gemv.wgsl",
+    "tiled": "matmul-tiled.wgsl",
+    "rope": "rope.wgsl",
+    "attn_decode": "attention-decode.wgsl",
+    "attn_prefill": "attention-prefill.wgsl",
+    "residual": "residual.wgsl",
+    "gelu": "gelu.wgsl",
+    "sample": "sample.wgsl"
+  },
+  "prefillOps": [
+    ["input_norm",    "rmsnorm"],
+    ["q_proj",        "tiled"],
+    ["k_proj",        "tiled"],
+    ["v_proj",        "tiled"],
+    ["rope_q",        "rope"],
+    ["rope_k",        "rope"],
+    ["attention",     "attn_prefill"],
+    ["o_proj",        "tiled"],
+    ["attn_residual", "residual"],
+    ["post_attn_norm","rmsnorm"],
+    ["gate_proj",     "tiled"],
+    ["up_proj",       "tiled"],
+    ["activation",    "gelu"],
+    ["down_proj",     "tiled"],
+    ["ffn_residual",  "residual"]
+  ],
+  "decodeOps": [
+    ["input_norm",    "rmsnorm"],
+    ["q_proj",        "gemv"],
+    ["k_proj",        "gemv"],
+    ["v_proj",        "gemv"],
+    ["rope_q",        "rope"],
+    ["rope_k",        "rope"],
+    ["attention",     "attn_decode"],
+    ["o_proj",        "gemv"],
+    ["attn_residual", "residual"],
+    ["post_attn_norm","rmsnorm"],
+    ["gate_proj",     "gemv"],
+    ["up_proj",       "gemv"],
+    ["activation",    "gelu"],
+    ["down_proj",     "gemv"],
+    ["ffn_residual",  "residual"]
+  ],
+  "preLayerOps": [
+    ["embed", "embed"]
+  ],
+  "postLayerOps": [
+    ["final_norm", "rmsnorm"],
+    ["lm_head",    "gemv"],
+    ["sample",     "sample"]
+  ]
+}

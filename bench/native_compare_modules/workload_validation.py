@@ -183,6 +183,8 @@ def enforce_strict_command_shape_divisor_contracts(
     for workload in workloads:
         if not workload.comparable:
             continue
+        if getattr(workload, "runner_type", "zig-runtime") != "zig-runtime":
+            continue
         commands_path = Path(workload.commands_path)
         cache_key = str(commands_path.resolve()) if commands_path.exists() else str(commands_path)
         if cache_key not in command_shape_cache:
@@ -491,6 +493,8 @@ def enforce_host_backend_policy(
 
     violations: list[str] = []
     for workload in workloads:
+        if getattr(workload, "runner_type", "zig-runtime") != "zig-runtime":
+            continue
         detected = infer_workload_backends(
             workload=workload,
             left_command_template=left_command_template,

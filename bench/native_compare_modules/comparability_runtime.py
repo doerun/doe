@@ -30,6 +30,28 @@ from native_compare_modules.comparability_upload_contract import (
 from native_compare_modules.reporting import parse_int, safe_float, safe_int, valid_sync_mode
 from native_compare_modules.timing_selection import canonical_timing_source, classify_timing_source
 
+
+def _sample_normalized_wall_ms(sample: dict[str, Any]) -> float | None:
+    elapsed_ms = safe_float(sample.get("elapsedMs"))
+    if elapsed_ms is None or elapsed_ms <= 0.0:
+        return None
+    timing = sample.get("timing", {})
+    command_repeat = None
+    timing_divisor = None
+    if isinstance(timing, dict):
+        command_repeat = safe_float(timing.get("commandRepeat"))
+        timing_divisor = safe_float(timing.get("timingNormalizationDivisor"))
+    if command_repeat is None or command_repeat <= 0.0:
+        command_repeat = safe_float(sample.get("commandRepeat"))
+    if timing_divisor is None or timing_divisor <= 0.0:
+        timing_divisor = safe_float(sample.get("timingNormalizationDivisor"))
+    if command_repeat is None or command_repeat <= 0.0:
+        command_repeat = 1.0
+    if timing_divisor is None or timing_divisor <= 0.0:
+        timing_divisor = 1.0
+    return elapsed_ms / (command_repeat * timing_divisor)
+
+
 def _median_phase_fractions(
     command_samples: list[dict[str, Any]],
 ) -> dict[str, list[float]]:
@@ -831,28 +853,33 @@ def compare_assessment(
 
     def _median_timing_wall_ratio(
         samples: list[dict[str, Any]],
-    ) -> tuple[float | None, float | None, float | None]:
-        """Return (median_traced_ms, median_wall_ms, median_ratio)."""
+    ) -> tuple[float | None, float | None, float | None, float | None]:
+        """Return (median_traced_ms, median_normalized_wall_ms, median_ratio, median_process_wall_ms)."""
         ratios: list[float] = []
         traced_values: list[float] = []
         wall_values: list[float] = []
+        process_wall_values: list[float] = []
         for sample in samples:
             traced = safe_float(sample.get("measuredMs"))
-            wall = safe_float(sample.get("elapsedMs"))
+            wall = _sample_normalized_wall_ms(sample)
+            process_wall = safe_float(sample.get("elapsedMs"))
             if traced is not None and wall is not None and wall > 0:
                 traced_values.append(traced)
                 wall_values.append(wall)
                 ratios.append(traced / wall)
+                if process_wall is not None and process_wall > 0.0:
+                    process_wall_values.append(process_wall)
         if not ratios:
-            return None, None, None
+            return None, None, None, None
         return (
             statistics.median(traced_values),
             statistics.median(wall_values),
             statistics.median(ratios),
+            statistics.median(process_wall_values) if process_wall_values else None,
         )
 
-    left_traced, left_wall, left_ratio = _median_timing_wall_ratio(left_samples)
-    right_traced, right_wall, right_ratio = _median_timing_wall_ratio(right_samples)
+    left_traced, left_wall, left_ratio, left_process_wall = _median_timing_wall_ratio(left_samples)
+    right_traced, right_wall, right_ratio, right_process_wall = _median_timing_wall_ratio(right_samples)
 
     plausibility_applies = (
         left_wall is not None
@@ -863,12 +890,12 @@ def compare_assessment(
     if plausibility_applies:
         if left_ratio is not None and left_ratio < _PLAUSIBILITY_MIN_WALL_RATIO and left_wall >= _PLAUSIBILITY_MIN_WALL_MS:
             plausibility_failures.append(
-                f"left traced timing ({left_traced:.4f}ms) is {left_ratio:.4%} of wall time "
+                f"left traced timing ({left_traced:.4f}ms) is {left_ratio:.4%} of normalized wall time "
                 f"({left_wall:.1f}ms); timing source is not measuring the actual operation"
             )
         if right_ratio is not None and right_ratio < _PLAUSIBILITY_MIN_WALL_RATIO and right_wall >= _PLAUSIBILITY_MIN_WALL_MS:
             plausibility_failures.append(
-                f"right traced timing ({right_traced:.4f}ms) is {right_ratio:.4%} of wall time "
+                f"right traced timing ({right_traced:.4f}ms) is {right_ratio:.4%} of normalized wall time "
                 f"({right_wall:.1f}ms); timing source is not measuring the actual operation"
             )
 
@@ -885,9 +912,11 @@ def compare_assessment(
             "minWallMs": _PLAUSIBILITY_MIN_WALL_MS,
             "leftMedianTracedMs": left_traced,
             "leftMedianWallMs": left_wall,
+            "leftMedianProcessWallMs": left_process_wall,
             "leftMedianRatio": left_ratio,
             "rightMedianTracedMs": right_traced,
             "rightMedianWallMs": right_wall,
+            "rightMedianProcessWallMs": right_process_wall,
             "rightMedianRatio": right_ratio,
         },
     )

@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "csl_host_plan",
+  "target": "wse3",
+  "contract": "explicit_host_plan",
+  "hostPlan": {
+    "peGrid": { "width": 1, "height": 1 },
+    "kernels": [
+      { "name": "zero_initialize_workgroup_memory_2048", "pattern": "kernel_dispatch_translation_unavailable", "count": 1 }
+    ],
+    "phases": {
+      "prefill": [
+        { "kernelName": "zero_initialize_workgroup_memory_2048", "repeat": 50 }
+      ],
+      "decode": [
+      ]
+    },
+    "eosTokenId": null
+  },
+  "compileTargets": [
+    { "name": "zero_initialize_workgroup_memory_2048", "layout": "bench/out/csl-host-plans/zero_initialize_workgroup_memory_2048_1/layout.csl", "peProgram": "bench/out/csl-host-plans/zero_initialize_workgroup_memory_2048_1/pe_program.csl" }
+  ],
+  "cslc": {
+    "executable": "cslc",
+    "discovery": "implicit_path_lookup",
+    "validation": {
+      "command": ["cslc", "--version"],
+      "minimumVersion": "1.4.0"
+    }
+  }
+}

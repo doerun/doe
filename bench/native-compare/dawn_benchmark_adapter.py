@@ -38,13 +38,21 @@ INCOMPATIBLE_DRIVER_RE = re.compile(r"Could not open device (?P<device>/dev/dri/
 AUTO_DISCOVER_TOKEN = "@autodiscover"
 AUTODISCOVER_WORKLOAD_PATTERNS: dict[str, tuple[str, str | None]] = {
     "upload_write_buffer_1kb": ("BufferUploadPerf", "WriteBuffer_BufferSize_1KB"),
+    "upload_write_buffer_1kb_staged": ("BufferUploadPerf", "WriteBuffer_BufferSize_1KB"),
     "upload_write_buffer_64kb": ("BufferUploadPerf", "WriteBuffer_BufferSize_64KB"),
+    "upload_write_buffer_64kb_staged": ("BufferUploadPerf", "WriteBuffer_BufferSize_64KB"),
     "upload_write_buffer_1mb": ("BufferUploadPerf", "WriteBuffer_BufferSize_1MB"),
+    "upload_write_buffer_1mb_staged": ("BufferUploadPerf", "WriteBuffer_BufferSize_1MB"),
     "upload_write_buffer_4mb": ("BufferUploadPerf", "WriteBuffer_BufferSize_4MB"),
+    "upload_write_buffer_4mb_staged": ("BufferUploadPerf", "WriteBuffer_BufferSize_4MB"),
     "upload_write_buffer_16mb": ("BufferUploadPerf", "WriteBuffer_BufferSize_16MB"),
+    "upload_write_buffer_16mb_staged": ("BufferUploadPerf", "WriteBuffer_BufferSize_16MB"),
     "upload_write_buffer_256mb": ("BufferUploadPerf", "WriteBuffer_BufferSize_256MB"),
+    "upload_write_buffer_256mb_staged": ("BufferUploadPerf", "WriteBuffer_BufferSize_256MB"),
     "upload_write_buffer_1gb": ("BufferUploadPerf", "WriteBuffer_BufferSize_1GB"),
+    "upload_write_buffer_1gb_staged": ("BufferUploadPerf", "WriteBuffer_BufferSize_1GB"),
     "upload_write_buffer_4gb": ("BufferUploadPerf", "WriteBuffer_BufferSize_4GB"),
+    "upload_write_buffer_4gb_staged": ("BufferUploadPerf", "WriteBuffer_BufferSize_4GB"),
     "compute_workgroup_atomic_1024": ("WorkgroupAtomicPerf", "WorkgroupTypeAtomic"),
     "compute_workgroup_non_atomic_1024": ("WorkgroupAtomicPerf", "WorkgroupTypeNonAtomic"),
     "compute_matvec_32768x2048_f32": (
@@ -165,7 +173,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--dawn-binary", default=None)
     parser.add_argument(
         "--dawn-state",
-        default="bench/dawn_runtime_state.json",
+        default="bench/fixtures/dawn_runtime_state.json",
         help="Optional state file emitted by bootstrap_dawn.py.",
     )
     parser.add_argument("--workload", default="")

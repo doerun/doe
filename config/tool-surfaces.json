@@ -72,9 +72,9 @@
       ],
       "entrypoints": [
         "bench/native-compare/compare_dawn_vs_doe.py",
-        "bench/run_release_pipeline.py",
-        "bench/run_blocking_gates.py",
-        "bench/generate_backend_workloads.py"
+        "bench/runners/run_release_pipeline.py",
+        "bench/runners/run_blocking_gates.py",
+        "bench/tools/generate_backend_workloads.py"
       ],
       "docs": [
         "bench/README.md",

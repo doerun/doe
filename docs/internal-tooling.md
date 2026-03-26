@@ -27,9 +27,9 @@ The npm package does not ship compare, bench, or release pipeline CLIs.
 These are repo-only contributor/operator surfaces:
 
 - [`bench/native-compare/compare_dawn_vs_doe.py`](../bench/native-compare/compare_dawn_vs_doe.py)
-- [`bench/run_release_pipeline.py`](../bench/run_release_pipeline.py)
-- [`bench/run_blocking_gates.py`](../bench/run_blocking_gates.py)
-- [`bench/generate_backend_workloads.py`](../bench/generate_backend_workloads.py)
+- [`bench/runners/run_release_pipeline.py`](../bench/runners/run_release_pipeline.py)
+- [`bench/runners/run_blocking_gates.py`](../bench/runners/run_blocking_gates.py)
+- [`bench/tools/generate_backend_workloads.py`](../bench/tools/generate_backend_workloads.py)
 - [`runtime/zig/README.md`](../runtime/zig/README.md) and `doe-zig-runtime`
 - browser lane scripts under [`browser/chromium`](../browser/chromium/README.md)
 

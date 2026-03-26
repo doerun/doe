@@ -64,7 +64,7 @@ Fawn already has an ABI-focused drop-in lane and compatibility gates that make C
    - `bench/drop-in/dropin_benchmark_suite.py`
    - `bench/drop-in/dropin_gate.py`
 3. Existing pipeline/trace/replay and claimability policy:
-   - `pipeline/trace/replay.py`, `bench/trace_gate.py`, `bench/claim_gate.py`
+   - `pipeline/trace/replay.py`, `bench/gates/trace_gate.py`, `bench/gates/claim_gate.py`
 
 This layer extends those capabilities to Chromium integration planning without
 coupling directly to core runtime code yet.

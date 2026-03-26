@@ -1,0 +1,168 @@
+{
+  "schemaVersion": 1,
+  "generatedBy": "bench/tools/generate_workload_overlap_map.py",
+  "assumptions": {
+    "criterion": "comparable == true",
+    "fullComparableFrontier": {
+      "metal": "bench/workloads/workloads.apple.metal.json",
+      "vulkan": "bench/workloads/workloads.amd.vulkan.json",
+      "d3d12": "bench/workloads/workloads.local.d3d12.json"
+    },
+    "metalReleaseLens": {
+      "metal": "bench/workloads/workloads.apple.metal.json",
+      "vulkan": "bench/workloads/workloads.amd.vulkan.json",
+      "d3d12": "bench/workloads/workloads.local.d3d12.json"
+    }
+  },
+  "fullComparableFrontier": {
+    "source": {
+      "metal": "bench/workloads/workloads.apple.metal.json",
+      "vulkan": "bench/workloads/workloads.amd.vulkan.json",
+      "d3d12": "bench/workloads/workloads.local.d3d12.json"
+    },
+    "coverage": {
+      "across_all_three_backends": [
+        "compute_concurrent_execution_single",
+        "compute_workgroup_atomic_1024",
+        "compute_workgroup_non_atomic_1024",
+        "pipeline_compile_stress"
+      ],
+      "only_vulkan": [
+        "compute_matvec_32768x2048_f32",
+        "compute_matvec_32768x2048_f32_swizzle1",
+        "compute_matvec_32768x2048_f32_workgroupshared_swizzle1",
+        "surface_presentation",
+        "upload_write_buffer_1gb",
+        "upload_write_buffer_256mb",
+        "upload_write_buffer_4gb"
+      ],
+      "only_metal": [
+        "compute_dispatch_fallback",
+        "compute_dispatch_grid",
+        "copy_buffer_to_texture",
+        "copy_protocol",
+        "copy_texture_to_texture",
+        "render_bundle_dynamic_bindings",
+        "render_bundle_dynamic_pipeline_bindings_200k",
+        "render_draw_redundant_pipeline_bindings_200k",
+        "render_draw_state_bindings",
+        "render_draw_throughput_200k",
+        "render_draw_throughput_baseline",
+        "render_uniform_buffer_update_writebuffer_partial_single",
+        "surface_full_presentation",
+        "texture_sampler_write_query_destroy",
+        "texture_sampler_write_query_destroy_500",
+        "texture_sampler_write_query_destroy_mip8",
+        "upload_write_buffer_16mb_staged",
+        "upload_write_buffer_1gb_staged",
+        "upload_write_buffer_1kb_staged",
+        "upload_write_buffer_1mb_staged",
+        "upload_write_buffer_256mb_staged",
+        "upload_write_buffer_4gb_staged",
+        "upload_write_buffer_4mb_staged",
+        "upload_write_buffer_64kb_staged"
+      ],
+      "only_d3d12": [
+        "resource_lifecycle"
+      ],
+      "vulkan_and_metal_only": [],
+      "metal_and_d3d12_only": [
+        "compute_zero_initialize_workgroup_memory_256"
+      ],
+      "vulkan_and_d3d12_only": [
+        "upload_write_buffer_16mb",
+        "upload_write_buffer_1kb",
+        "upload_write_buffer_1mb",
+        "upload_write_buffer_4mb",
+        "upload_write_buffer_64kb"
+      ]
+    },
+    "counts": {
+      "across_all_three_backends": 4,
+      "only_vulkan": 7,
+      "only_metal": 24,
+      "only_d3d12": 1,
+      "vulkan_and_metal_only": 0,
+      "metal_and_d3d12_only": 1,
+      "vulkan_and_d3d12_only": 5,
+      "distinctComparable": {
+        "metal": 29,
+        "vulkan": 16,
+        "d3d12": 11
+      }
+    }
+  },
+  "metalReleaseLens": {
+    "source": {
+      "metal": "bench/workloads/workloads.apple.metal.json",
+      "vulkan": "bench/workloads/workloads.amd.vulkan.json",
+      "d3d12": "bench/workloads/workloads.local.d3d12.json"
+    },
+    "reason": "Derived from current governed comparable workload cohorts across Metal/Vulkan/D3D12 sources.",
+    "coverage": {
+      "across_all_three_backends": [
+        "compute_concurrent_execution_single",
+        "compute_workgroup_atomic_1024",
+        "compute_workgroup_non_atomic_1024",
+        "pipeline_compile_stress"
+      ],
+      "only_vulkan": [
+        "compute_matvec_32768x2048_f32",
+        "compute_matvec_32768x2048_f32_swizzle1",
+        "compute_matvec_32768x2048_f32_workgroupshared_swizzle1"
+      ],
+      "only_metal": [
+        "compute_dispatch_fallback",
+        "compute_dispatch_grid",
+        "copy_buffer_to_texture",
+        "copy_protocol",
+        "copy_texture_to_texture",
+        "render_bundle_dynamic_bindings",
+        "render_bundle_dynamic_pipeline_bindings_200k",
+        "render_draw_redundant_pipeline_bindings_200k",
+        "render_draw_state_bindings",
+        "render_draw_throughput_200k",
+        "render_uniform_buffer_update_writebuffer_partial_single",
+        "texture_sampler_write_query_destroy",
+        "texture_sampler_write_query_destroy_500",
+        "texture_sampler_write_query_destroy_mip8",
+        "upload_write_buffer_16mb_staged",
+        "upload_write_buffer_1gb_staged",
+        "upload_write_buffer_1kb_staged",
+        "upload_write_buffer_1mb_staged",
+        "upload_write_buffer_256mb_staged",
+        "upload_write_buffer_4gb_staged",
+        "upload_write_buffer_4mb_staged",
+        "upload_write_buffer_64kb_staged"
+      ],
+      "only_d3d12": [
+        "resource_lifecycle",
+        "upload_write_buffer_16mb"
+      ],
+      "vulkan_and_metal_only": [],
+      "metal_and_d3d12_only": [
+        "compute_zero_initialize_workgroup_memory_256"
+      ],
+      "vulkan_and_d3d12_only": [
+        "upload_write_buffer_1kb",
+        "upload_write_buffer_1mb",
+        "upload_write_buffer_4mb",
+        "upload_write_buffer_64kb"
+      ]
+    },
+    "counts": {
+      "across_all_three_backends": 4,
+      "only_vulkan": 3,
+      "only_metal": 22,
+      "only_d3d12": 2,
+      "vulkan_and_metal_only": 0,
+      "metal_and_d3d12_only": 1,
+      "vulkan_and_d3d12_only": 4,
+      "distinctComparable": {
+        "metal": 27,
+        "vulkan": 11,
+        "d3d12": 11
+      }
+    }
+  }
+}

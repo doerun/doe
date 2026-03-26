@@ -32,7 +32,7 @@ the tier contracts below for promotion requirements.
 |------|-----------------|---------------|--------------|-------------------|
 | `doe-core` | `bench/out/amd-vulkan/20260310T153903Z/dawn-vs-doe.amd.vulkan.release.json` | 7 release workloads backed by 7 command examples on `amd|vulkan|gfx11|24.0.0` | `comparisonStatus=comparable`, `claimStatus=diagnostic` | `examples/upload_1kb_commands.json` is still a real tiny-upload loss in the latest release artifact |
 | `doe-core` | `bench/out/apple-metal/extended-comparable/20260310T171918Z/dawn-vs-doe.local.metal.extended.comparable.json` | 31 comparable workloads backed by 30 unique command examples on `apple|metal|m3|1.0.0` | `comparisonStatus=comparable`, `claimStatus=diagnostic` | `examples/upload_1mb_commands.json` is diagnostic in the latest artifact because selected-timing `p95` is negative |
-| `doe-runtime` | `bench/workloads.local.d3d12.json` | 11 governed comparable rows selected from the canonical D3D12 catalog (`cohorts=governed`, `benchmarkClass=comparable`) | contract only; no fresh Windows artifact in the current inventory | first Windows evidence run, then drop-in gate, CTS subset publication, and runtime-tier gates |
+| `doe-runtime` | `bench/workloads/workloads.local.d3d12.json` | 11 governed comparable rows selected from the canonical D3D12 catalog (`cohorts=governed`, `benchmarkClass=comparable`) | contract only; no fresh Windows artifact in the current inventory | first Windows evidence run, then drop-in gate, CTS subset publication, and runtime-tier gates |
 | `chromium` | `nursery/chromium/` lane docs only | browser integration lane exists in-repo | no fresh browser compatibility artifact in the current inventory | browser smoke evidence, rebase cadence, security-patch SLA, and operational commitments |
 
 Current command-example coverage from active matrix artifacts/contracts:
@@ -188,11 +188,11 @@ Package boundary:
 
 | Gate | Mode | Script |
 |------|------|--------|
-| Schema | Blocking | `bench/schema_gate.py` |
-| Correctness | Blocking | `bench/check_correctness.py` |
-| Trace/replay | Blocking | `bench/trace_gate.py` |
+| Schema | Blocking | `bench/gates/schema_gate.py` |
+| Correctness | Blocking | `bench/gates/check_correctness.py` |
+| Trace/replay | Blocking | `bench/gates/trace_gate.py` |
 | Comparability | Blocking | `bench/compare_dawn_vs_doe.py --strict` |
-| Claim | Blocking for claim artifacts | `bench/claim_gate.py` |
+| Claim | Blocking for claim artifacts | `bench/gates/claim_gate.py` |
 | Performance | Advisory | `gates.json` ratchet |
 
 ### Conformance requirements
@@ -360,10 +360,10 @@ All doe-runtime gates, plus:
 
 | Gate | Mode | Script |
 |------|------|--------|
-| Cycle lock/rollback | Blocking | `bench/cycle_gate.py` |
+| Cycle lock/rollback | Blocking | `bench/gates/cycle_gate.py` |
 | Cutover verification | Blocking per lane | `--with-local-metal-gates --local-metal-lane metal_doe_app` |
-| Claim rehearsal | Required for release claims | `bench/build_claim_rehearsal_artifacts.py` |
-| Substantiation | Required for trend publication | `bench/run_release_claim_windows.py` |
+| Claim rehearsal | Required for release claims | `bench/tools/build_claim_rehearsal_artifacts.py` |
+| Substantiation | Required for trend publication | `bench/runners/run_release_claim_windows.py` |
 
 ### Conformance requirements
 

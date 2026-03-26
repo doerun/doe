@@ -12,7 +12,7 @@ from typing import Any
 
 from native_compare_modules.reporting import parse_int
 
-DEFAULT_WORKLOADS_PATH = "bench/workloads.json"
+DEFAULT_WORKLOADS_PATH = "bench/workloads/workloads.json"
 DEFAULT_LEFT_NAME = "doe"
 DEFAULT_RIGHT_NAME = "dawn"
 DEFAULT_LEFT_COMMAND_TEMPLATE = (
@@ -49,6 +49,8 @@ VALID_DIRECTIONAL_REASONS = {
     "dawn_limit",
     "dawn_missing_contract",
     "dawn_no_execution",
+    "different_compiler_codebases",
+    "different_runtime_stacks_random_weights",
     "implementation_gap",
     "path_asymmetry",
     "host_instability",
@@ -132,6 +134,14 @@ class Workload:
     strict_normalization_unit: str
     cohorts: list[str] = field(default_factory=lambda: ["exploration"])
     claim_eligible: bool = True
+    runner_type: str = "zig-runtime"
+    # compilation runner fields
+    shader_path: str = ""
+    compilation_target: str = ""
+    # js-pipeline runner fields
+    script_path: str = ""
+    script_config: str = ""
+    pipeline_phase: str = ""
 
 
 @dataclass(frozen=True)
@@ -978,7 +988,26 @@ def load_workloads(
             strict_normalization_unit=str(item.get("strictNormalizationUnit", "")).strip().lower(),
             cohorts=item.get("cohorts", item.get("suiteTags", ["exploration"])),
             claim_eligible=bool(item.get("claimEligible", True)),
+            runner_type=str(item.get("runnerType", "zig-runtime")).strip(),
+            shader_path=str(item.get("shaderPath", "")),
+            compilation_target=str(item.get("compilationTarget", "")),
+            script_path=str(item.get("scriptPath", "")),
+            script_config=str(item.get("scriptConfig", "")),
+            pipeline_phase=str(item.get("pipelinePhase", "")),
         )
+        if workload.runner_type not in {"zig-runtime", "compilation", "js-pipeline"}:
+            raise ValueError(
+                f"invalid workload {workload.id}: runnerType must be one of "
+                "['zig-runtime', 'compilation', 'js-pipeline']"
+            )
+        if workload.runner_type == "compilation" and not workload.shader_path:
+            raise ValueError(
+                f"invalid workload {workload.id}: runnerType=compilation requires shaderPath"
+            )
+        if workload.runner_type == "js-pipeline" and not workload.script_path:
+            raise ValueError(
+                f"invalid workload {workload.id}: runnerType=js-pipeline requires scriptPath"
+            )
         if workload.strict_normalization_unit not in {"", "command", "dispatch", "cycle"}:
             raise ValueError(
                 f"invalid workload {workload.id}: strictNormalizationUnit must be one of "

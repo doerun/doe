@@ -129,6 +129,45 @@ Do not collapse these harnesses into one generic runner. That would blur evidenc
   - browser promotion evidence
 - Separate from package-surface and native lanes because the execution surface is an actual browser process with browser lifecycle overhead.
 
+### 9. WGSL compilation comparison
+
+- Primary entrypoints:
+  - `bench/native-compare/compare_doe_vs_tint_compilation.py`
+  - also dispatchable via `compare_dawn_vs_doe.py` with `runnerType: "compilation"` catalog entries
+- Question: "How does Doe's WGSL compiler compare to Tint (Dawn's compiler) for shader compilation speed?"
+- Contract:
+  - left: Doe `doe-compilation-bench` binary
+  - right: Tint CLI
+  - per-shader WGSL-to-target (MSL/SPIR-V) compilation timing
+  - corpus spans trivial/simple/moderate/complex/stress tiers
+- Allowed outputs:
+  - per-shader compilation time deltas
+  - directional Doe-vs-Tint compilation reports
+- Not for:
+  - claim-grade runtime performance comparison
+  - runtime dispatch or execution evidence
+- Separate from native compare because the surface is the compiler toolchain, not the GPU runtime. Different codebases (Doe ~13.7K LOC vs Tint ~200K LOC) make strict comparability structurally impossible; all results are directional.
+
+### 10. Inference pipeline comparison
+
+- Primary entrypoints:
+  - `bench/inference-pipeline/compare-inference-pipeline.py`
+  - also dispatchable via `compare_dawn_vs_doe.py` with `runnerType: "js-pipeline"` catalog entries
+- Question: "How does end-to-end ML inference pipeline throughput compare between Doe-native and Dawn-delegate WebGPU backends?"
+- Contract:
+  - JS-driven WebGPU inference pipeline with random weights (not timed)
+  - per-phase timing: prefill, decode, e2e
+  - structural work equivalence via dispatch counting and trace meta
+  - model template driven (e.g. Gemma-3-270M)
+- Allowed outputs:
+  - per-phase inference pipeline time deltas
+  - dispatch count parity evidence
+  - directional Doe-vs-Dawn inference reports
+- Not for:
+  - correctness validation (random weights)
+  - claim-grade comparison (different runtime stacks)
+- Separate from native compare because the execution surface is a JS inference pipeline exercising the full kernel dispatch graph, not a single replayed command stream. Weight generation uses random data and is excluded from timing.
+
 ## What may share code
 
 These are valid consolidation targets because they keep the same contract class:
@@ -152,6 +191,8 @@ Do not merge these classes:
 - browser smoke with browser benchmark projection
 - claim lanes with targeted attribution experiments
 - drop-in benchmark suite with runtime/package/browser harnesses
+- compilation comparison with native runtime comparison
+- inference pipeline comparison with targeted JS attribution experiments
 
 If these are merged, the same artifact format would start mixing different contracts, which makes status interpretation unreliable.
 
@@ -175,6 +216,8 @@ When adding a new harness, decide by the first question:
    - package API
    - browser
    - ABI/drop-in
+   - compiler toolchain
+   - JS inference pipeline
 2. Is this correctness smoke, canonical comparison, or diagnostic attribution?
 3. Does it need claim-grade status, or only engineering guidance?
 

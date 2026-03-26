@@ -413,7 +413,7 @@ pub fn build(b: *std.Build) void {
     const coverage_gate_step = b.step("coverage-gate", "Validate split core/full coverage ledgers against Zig partitions");
     coverage_gate_step.dependOn(&coverage_gate_check.step);
 
-    const spirv_val_check = b.addSystemCommand(&.{ "python3", "../../bench/spirv_val_gate.py" });
+    const spirv_val_check = b.addSystemCommand(&.{ "python3", "../../bench/gates/spirv_val_gate.py" });
     const spirv_val_step = b.step("spirv-val", "Validate SPIR-V artifacts with spirv-val (skips gracefully if not installed)");
     spirv_val_step.dependOn(&spirv_val_check.step);
 
@@ -679,9 +679,12 @@ pub fn build(b: *std.Build) void {
     const compilation_bench_exe = b.addExecutable(.{
         .name = "doe-compilation-bench",
         .root_module = b.createModule(.{
-            .root_source_file = b.path("src/doe_wgsl/bench_compilation.zig"),
+            .root_source_file = b.path("src/main_bench_compilation.zig"),
             .target = target,
             .optimize = optimize,
+            .imports = &.{
+                .{ .name = "build_options", .module = build_options_module },
+            },
         }),
     });
     compilation_bench_exe.linkLibC();

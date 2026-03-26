@@ -802,3 +802,278 @@ def run_workload(
         "timingMetricsRawStatsMs": reporting_mod.summarize_timing_metric_stats(run_records, "timingMetricsRawMs"),
         "timingMetricsNormalizedStatsMs": reporting_mod.summarize_timing_metric_stats(run_records, "timingMetricsNormalizedMs"),
     }
+
+
+# ============================================================
+# Compilation runner
+# ============================================================
+
+VALID_COMPILATION_TARGETS = {"msl", "hlsl", "spirv"}
+TINT_FORMAT_MAP = {"msl": "msl", "hlsl": "hlsl", "spirv": "spv"}
+
+
+def _parse_compilation_ndjson(path: Path, shader_name: str) -> dict[str, Any]:
+    """Extract a single shader's compilation_bench record from NDJSON output."""
+    if not path.exists():
+        return {}
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            record = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if record.get("kind") == "compilation_bench" and record.get("shader") == shader_name:
+            return record
+    return {}
+
+
+def _tint_compile_samples(
+    tint_bin: Path,
+    shader_path: Path,
+    target: str,
+    iterations: int,
+    warmup: int,
+) -> list[float]:
+    """Time Tint compilation of a single shader, return list of timing samples in ms."""
+    tint_format = TINT_FORMAT_MAP.get(target, target)
+    total_runs = warmup + iterations
+    samples: list[float] = []
+
+    for i in range(total_runs):
+        start = time.perf_counter()
+        proc = subprocess.run(
+            [str(tint_bin), f"--format={tint_format}", str(shader_path)],
+            capture_output=True,
+        )
+        elapsed_ms = (time.perf_counter() - start) * 1000.0
+
+        if proc.returncode != 0:
+            raise RuntimeError(
+                f"tint compilation failed for {shader_path.name}: "
+                f"{proc.stderr.decode('utf-8', errors='replace')[:300]}"
+            )
+        if i >= warmup:
+            samples.append(elapsed_ms)
+
+    return samples
+
+
+def run_compilation_workload(
+    workload: Any,
+    iterations: int,
+    warmup: int,
+    out_dir: Path,
+    doe_compilation_bin: str,
+    tint_bin: str,
+) -> dict[str, Any]:
+    """Run compilation benchmark for a single shader: Doe vs Tint.
+
+    Returns the same shape as run_workload() so the compare harness can
+    consume it uniformly.
+    """
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    shader_path = Path(workload.shader_path)
+    shader_name = shader_path.stem
+    target = workload.compilation_target or "msl"
+
+    if target not in VALID_COMPILATION_TARGETS:
+        raise ValueError(
+            f"invalid compilation target {target!r} for workload {workload.id}: "
+            f"expected one of {sorted(VALID_COMPILATION_TARGETS)}"
+        )
+
+    # --- Left: Doe compilation bench ---
+    doe_out = out_dir / "left.compilation.ndjson"
+    doe_bin_path = Path(doe_compilation_bin)
+    if not doe_bin_path.exists():
+        raise RuntimeError(
+            f"Doe compilation binary not found: {doe_compilation_bin}. "
+            "Build with: cd runtime/zig && zig build bench-compilation"
+        )
+    doe_cmd = [
+        str(doe_bin_path),
+        "--target", target,
+        "--iterations", str(iterations),
+        "--warmup", str(warmup),
+        "--filter", shader_name,
+        "--out", str(doe_out),
+    ]
+    subprocess.run(doe_cmd, check=True)
+    doe_record = _parse_compilation_ndjson(doe_out, shader_name)
+    doe_p50_ms = float(doe_record.get("p50_ns", 0)) / 1_000_000.0
+
+    # --- Right: Tint ---
+    tint_bin_path = Path(tint_bin)
+    if not tint_bin_path.exists():
+        raise RuntimeError(
+            f"Tint binary not found: {tint_bin}. "
+            "Build Dawn in Release mode and place tint at the configured path."
+        )
+    tint_samples = _tint_compile_samples(
+        tint_bin_path, shader_path, target, iterations, warmup,
+    )
+
+    # Build trace meta compatible with the harness expectations
+    doe_trace_meta = {
+        "runnerType": "compilation",
+        "compiler": "doe_wgsl",
+        "shader": shader_name,
+        "target": target,
+        "p50_ns": doe_record.get("p50_ns", 0),
+        "p95_ns": doe_record.get("p95_ns", 0),
+        "p99_ns": doe_record.get("p99_ns", 0),
+        "bytesOut": doe_record.get("bytesOut", 0),
+        "executionDispatchCount": 1,
+        "executionRowCount": 1,
+        "executionSuccessCount": 1,
+    }
+
+    tint_trace_meta = {
+        "runnerType": "compilation",
+        "compiler": "tint",
+        "shader": shader_name,
+        "target": target,
+        "timingNote": "process-level timing includes tint startup overhead",
+        "executionDispatchCount": 1,
+        "executionRowCount": 1,
+        "executionSuccessCount": 1,
+    }
+
+    # Write trace meta files for comparability module consumption
+    left_meta_path = out_dir / "left.meta.json"
+    right_meta_path = out_dir / "right.meta.json"
+    left_meta_path.write_text(json.dumps(doe_trace_meta, separators=(",", ":")) + "\n", encoding="utf-8")
+    right_meta_path.write_text(json.dumps(tint_trace_meta, separators=(",", ":")) + "\n", encoding="utf-8")
+
+    return {
+        "left": {
+            "commandSamples": [],
+            "stats": reporting_mod.format_stats([doe_p50_ms]),
+            "timingsMs": [doe_p50_ms],
+            "lastMeta": doe_trace_meta,
+            "timingSources": ["compilation-bench-in-process"],
+            "timingClasses": ["operation"],
+        },
+        "right": {
+            "commandSamples": [],
+            "stats": reporting_mod.format_stats(tint_samples),
+            "timingsMs": tint_samples,
+            "lastMeta": tint_trace_meta,
+            "timingSources": ["compilation-process-wall"],
+            "timingClasses": ["process-wall"],
+        },
+    }
+
+
+# ============================================================
+# JS pipeline runner
+# ============================================================
+
+def _parse_js_pipeline_ndjson(path: Path, phase: str) -> tuple[list[float], dict[str, Any]]:
+    """Parse inference pipeline NDJSON, return (timed samples ms, summary record)."""
+    samples: list[float] = []
+    summary: dict[str, Any] = {}
+    if not path.exists():
+        return samples, summary
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            record = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if record.get("phase") != phase:
+            continue
+        if record.get("kind") == "inference_pipeline_bench":
+            samples.append(float(record.get("totalMs", 0)))
+        elif record.get("kind") == "inference_pipeline_bench_summary":
+            summary = record
+    return samples, summary
+
+
+def _build_pipeline_trace_meta(summary: dict[str, Any], side: str) -> dict[str, Any]:
+    """Build trace meta from a pipeline summary record."""
+    dispatch_count = summary.get("dispatchCount", 0)
+    return {
+        "runnerType": "js-pipeline",
+        "side": side,
+        "modelId": summary.get("modelId", ""),
+        "phase": summary.get("phase", ""),
+        "layers": summary.get("layers", 0),
+        "promptTokens": summary.get("promptTokens", 0),
+        "decodeTokens": summary.get("decodeTokens", 0),
+        "timingSource": summary.get("timingSource", "performance.now"),
+        "executionDispatchCount": dispatch_count,
+        "executionRowCount": dispatch_count,
+        "executionSuccessCount": dispatch_count,
+    }
+
+
+def run_js_pipeline_workload(
+    workload: Any,
+    iterations: int,
+    warmup: int,
+    out_dir: Path,
+    js_runtime: str = "node",
+) -> dict[str, Any]:
+    """Run inference pipeline benchmark for one phase: Doe native vs Dawn delegate.
+
+    Returns a dict with "left" and "right" keys, each matching the shape
+    of run_workload() output so the compare harness can consume it uniformly.
+    """
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    script_path = Path(workload.script_path)
+    if not script_path.exists():
+        raise RuntimeError(f"JS pipeline script not found: {script_path}")
+
+    phase = workload.pipeline_phase or "e2e"
+    config_path = workload.script_config or ""
+
+    base_args = [
+        js_runtime,
+        str(script_path),
+        "--phase", phase,
+        "--iterations", str(iterations),
+        "--warmup", str(warmup),
+    ]
+    if config_path:
+        base_args.extend(["--config", config_path])
+
+    sides: dict[str, dict[str, Any]] = {}
+
+    for side, backend in [("left", "doe-native"), ("right", "dawn-delegate")]:
+        side_out = out_dir / f"{side}.pipeline.ndjson"
+        cmd = [*base_args, "--backend", backend, "--out", str(side_out)]
+
+        elapsed_ms, process_cpu_ms, rc, resource = run_once(
+            cmd,
+            gpu_memory_probe="",
+            resource_sample_ms=1000,
+            resource_sample_target_count=0,
+        )
+
+        samples, summary = _parse_js_pipeline_ndjson(side_out, phase)
+        trace_meta = _build_pipeline_trace_meta(summary, side)
+
+        meta_path = out_dir / f"{side}.meta.json"
+        meta_path.write_text(json.dumps(trace_meta, separators=(",", ":")) + "\n", encoding="utf-8")
+
+        sides[side] = {
+            "commandSamples": [],
+            "stats": reporting_mod.format_stats(samples),
+            "timingsMs": samples,
+            "lastMeta": trace_meta,
+            "timingSources": [summary.get("timingSource", "performance.now")],
+            "timingClasses": ["operation"],
+            "resourceStats": {
+                "processWallMs": elapsed_ms,
+                "processCpuMs": process_cpu_ms,
+            },
+        }
+
+    return sides

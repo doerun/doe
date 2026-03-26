@@ -3,6 +3,7 @@ const build_options = @import("build_options");
 
 pub const lean_verified: bool = build_options.lean_verified;
 pub const comparability_obligations_sha256: []const u8 = build_options.comparability_obligations_sha256;
+const JSON_SEARCH_BRANCH_QUOTA = 2_000_000;
 
 const proof_json: ?[]const u8 = if (build_options.lean_verified)
     build_options.lean_proof_json
@@ -32,7 +33,7 @@ fn requireTheorem(comptime json: []const u8, comptime theorem: []const u8) void 
 /// be removed from the hot path.
 pub const validator_elimination_available: bool = blk: {
     if (!build_options.lean_verified) break :blk false;
-    @setEvalBranchQuota(400_000);
+    @setEvalBranchQuota(JSON_SEARCH_BRANCH_QUOTA);
     const json = proof_json.?;
     break :blk comptimeContains(json, "\"builder_soundness\"") and
         comptimeContains(json, "\"ValidatorRedundant\"");
@@ -45,7 +46,7 @@ pub const validator_elimination_available: bool = blk: {
 /// no-op and can be elided.
 pub const bounds_elimination_available: bool = blk: {
     if (!build_options.lean_verified) break :blk false;
-    @setEvalBranchQuota(400_000);
+    @setEvalBranchQuota(JSON_SEARCH_BRANCH_QUOTA);
     const json = proof_json.?;
     break :blk comptimeContains(json, "\"gid_inbounds_when_dispatch_fits\"") and
         comptimeContains(json, "\"clamp_noop_when_inbounds\"") and
@@ -128,50 +129,50 @@ pub fn boundsProven(comptime pattern: BoundsPattern) bool {
     return switch (pattern) {
         .gid_1d_storage_buffer => true,
         .gid_1d_storage_buffer_offset => comptime blk: {
-            @setEvalBranchQuota(400_000);
+            @setEvalBranchQuota(JSON_SEARCH_BRANCH_QUOTA);
             break :blk comptimeContains(proof_json.?, "\"gid_plus_offset_inbounds_when_dispatch_fits\"");
         },
         .gid_1d_storage_buffer_stride => comptime blk: {
-            @setEvalBranchQuota(400_000);
+            @setEvalBranchQuota(JSON_SEARCH_BRANCH_QUOTA);
             break :blk comptimeContains(proof_json.?, "\"gid_times_stride_plus_offset_inbounds_when_dispatch_fits\"");
         },
         .gid_1d_storage_buffer_loop_offset => comptime blk: {
-            @setEvalBranchQuota(400_000);
+            @setEvalBranchQuota(JSON_SEARCH_BRANCH_QUOTA);
             break :blk comptimeContains(proof_json.?, "\"gid_plus_bounded_loop_index_inbounds_when_dispatch_fits\"");
         },
         .gid_1d_storage_buffer_loop_affine => comptime blk: {
-            @setEvalBranchQuota(400_000);
+            @setEvalBranchQuota(JSON_SEARCH_BRANCH_QUOTA);
             break :blk comptimeContains(proof_json.?, "\"gid_affine_plus_scaled_loop_index_inbounds_when_dispatch_fits\"");
         },
         .gid_1d_storage_buffer_tiled => comptime blk: {
-            @setEvalBranchQuota(400_000);
+            @setEvalBranchQuota(JSON_SEARCH_BRANCH_QUOTA);
             break :blk comptimeContains(proof_json.?, "\"gid_tiled_index_plus_offset_inbounds_when_dispatch_fits\"");
         },
         .gid_2d_flat_storage_buffer => comptime blk: {
-            @setEvalBranchQuota(400_000);
+            @setEvalBranchQuota(JSON_SEARCH_BRANCH_QUOTA);
             break :blk comptimeContains(proof_json.?, "\"flat_index_2d_inbounds\"");
         },
         .gid_2d_flat_storage_buffer_offset => comptime blk: {
-            @setEvalBranchQuota(400_000);
+            @setEvalBranchQuota(JSON_SEARCH_BRANCH_QUOTA);
             break :blk comptimeContains(proof_json.?, "\"flat_index_2d_plus_offset_inbounds\"");
         },
         .gid_texture_1d_dispatch_fit => comptime blk: {
-            @setEvalBranchQuota(400_000);
+            @setEvalBranchQuota(JSON_SEARCH_BRANCH_QUOTA);
             break :blk comptimeContains(proof_json.?, "\"gid_texture_coord_1d_inbounds_when_dispatch_fits\"");
         },
         .gid_texture_2d_dispatch_fit => comptime blk: {
-            @setEvalBranchQuota(400_000);
+            @setEvalBranchQuota(JSON_SEARCH_BRANCH_QUOTA);
             break :blk comptimeContains(proof_json.?, "\"gid_texture_coords_2d_inbounds_when_dispatch_fits\"");
         },
         .gid_texture_3d_dispatch_fit => comptime blk: {
-            @setEvalBranchQuota(400_000);
+            @setEvalBranchQuota(JSON_SEARCH_BRANCH_QUOTA);
             break :blk comptimeContains(proof_json.?, "\"gid_texture_coords_3d_inbounds_when_dispatch_fits\"");
         },
     };
 }
 
 comptime {
-    @setEvalBranchQuota(400_000);
+    @setEvalBranchQuota(JSON_SEARCH_BRANCH_QUOTA);
     if (build_options.lean_verified) {
         const json = proof_json.?;
 

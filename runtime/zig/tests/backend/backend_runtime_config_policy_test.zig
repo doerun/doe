@@ -12,8 +12,8 @@ test "backend runtime policy loads local metal lane from config" {
     try std.testing.expect(loaded.policy.default_backend == .doe_metal);
     try std.testing.expect(!loaded.policy.allow_fallback);
     try std.testing.expect(loaded.policy.strict_no_fallback);
-    try std.testing.expect(loaded.policy.upload_path_policy == .allow_mapped_shortcuts);
-    try std.testing.expectEqualStrings("backend-runtime-policy-v2", loaded.policy.policy_hash);
+    try std.testing.expect(loaded.policy.upload_path_policy == .staged_copy_only);
+    try std.testing.expectEqualStrings("backend-runtime-policy-v3", loaded.policy.policy_hash);
 }
 
 test "backend runtime policy forces staged uploads on strict Vulkan lanes" {
@@ -28,7 +28,7 @@ test "backend runtime policy forces staged uploads on strict Vulkan lanes" {
     try std.testing.expect(!loaded.policy.allow_fallback);
     try std.testing.expect(loaded.policy.strict_no_fallback);
     try std.testing.expect(loaded.policy.upload_path_policy == .staged_copy_only);
-    try std.testing.expectEqualStrings("backend-runtime-policy-v2", loaded.policy.policy_hash);
+    try std.testing.expectEqualStrings("backend-runtime-policy-v3", loaded.policy.policy_hash);
 }
 
 test "backend lane parser handles metal_doe_app and local metal lanes" {
@@ -61,7 +61,7 @@ test "backend runtime policy rejects fallback-enabled lane config" {
         .data =
         \\{
         \\  "schemaVersion": 2,
-        \\  "selectionPolicyHashSeed": "backend-runtime-policy-v2",
+        \\  "selectionPolicyHashSeed": "backend-runtime-policy-v3",
         \\  "lanes": {
         \\    "metal_doe_comparable": {
         \\      "defaultBackend": "doe_metal",
@@ -83,7 +83,7 @@ test "backend runtime policy rejects fallback-enabled lane config" {
     );
 }
 
-test "backend runtime policy rejects mapped shortcuts for strict Vulkan lanes" {
+test "backend runtime policy rejects mapped shortcuts for strict staged-upload lanes" {
     const path = ".tmp_backend_runtime_policy_invalid_upload.json";
     defer std.fs.cwd().deleteFile(path) catch {};
 
@@ -92,10 +92,10 @@ test "backend runtime policy rejects mapped shortcuts for strict Vulkan lanes" {
         .data =
         \\{
         \\  "schemaVersion": 2,
-        \\  "selectionPolicyHashSeed": "backend-runtime-policy-v2",
+        \\  "selectionPolicyHashSeed": "backend-runtime-policy-v3",
         \\  "lanes": {
-        \\    "vulkan_doe_release": {
-        \\      "defaultBackend": "doe_vulkan",
+        \\    "metal_doe_release": {
+        \\      "defaultBackend": "doe_metal",
         \\      "allowFallback": false,
         \\      "strictNoFallback": true,
         \\      "uploadPathPolicy": "allow_mapped_shortcuts"
@@ -110,7 +110,7 @@ test "backend runtime policy rejects mapped shortcuts for strict Vulkan lanes" {
         backend_policy.load_policy_for_lane(
             std.testing.allocator,
             path,
-            .vulkan_doe_release,
+            .metal_doe_release,
         ),
     );
 }

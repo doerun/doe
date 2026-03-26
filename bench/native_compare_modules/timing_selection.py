@@ -9,9 +9,21 @@ from typing import Any
 from native_compare_modules.reporting import NS_PER_MS, safe_float, safe_int
 
 
-RENDER_ENCODE_TIMING_DOMAINS = {"render", "render-bundle", "render-macro", "p0-render", "p0-render-macro"}
+RENDER_ENCODE_TIMING_DOMAINS = {"render", "render-macro", "p0-render", "p0-render-macro"}
 
 _ENCODE_PLAUSIBILITY_RATIO = 0.05
+
+
+def _is_render_encode_plausible(
+    *,
+    execution_total_ns: int,
+    execution_encode_total_ns: int,
+) -> bool:
+    if execution_encode_total_ns <= 0:
+        return False
+    if execution_total_ns <= 0:
+        return True
+    return float(execution_encode_total_ns) / float(execution_total_ns) >= _ENCODE_PLAUSIBILITY_RATIO
 
 
 def parse_trace_rows(path: Path) -> list[dict[str, Any]]:
@@ -180,6 +192,10 @@ def pick_measured_timing_ms(
     prefer_render_encode = (
         normalized_domain in RENDER_ENCODE_TIMING_DOMAINS and has_execution_evidence
     )
+    render_encode_plausible = _is_render_encode_plausible(
+        execution_total_ns=execution_total_ns,
+        execution_encode_total_ns=execution_encode_total_ns,
+    )
     effective_repeat = command_repeat if command_repeat > 0 else 1
 
     def maybe_normalize_by_repeat(
@@ -221,7 +237,13 @@ def pick_measured_timing_ms(
             return wall_ms, "wall-time", timing_meta
         if prefer_upload_row_total and canonical_source != "doe-execution-row-total-ns":
             pass
-        elif prefer_render_encode and canonical_source != "doe-execution-encode-ns":
+        elif (
+            prefer_render_encode
+            and (
+                canonical_source != "doe-execution-encode-ns"
+                or not render_encode_plausible
+            )
+        ):
             pass
         else:
             timing_meta = {
@@ -266,30 +288,25 @@ def pick_measured_timing_ms(
                 }
                 return measured_ms, "doe-execution-row-total-ns", timing_meta
 
-    if prefer_render_encode and execution_encode_total_ns > 0:
-        encode_plausible = (
-            execution_total_ns <= 0
-            or float(execution_encode_total_ns) / float(execution_total_ns) >= _ENCODE_PLAUSIBILITY_RATIO
+    if prefer_render_encode and render_encode_plausible:
+        measured_ms = float(execution_encode_total_ns) / NS_PER_MS
+        timing_meta = {
+            "source": "trace-meta",
+            "traceMetaSource": "doe-execution-encode-ns",
+            "traceMetaTimingMs": measured_ms,
+            "executionEncodeTotalNs": execution_encode_total_ns,
+            "executionDispatchCount": execution_dispatch_count,
+            "executionRowCount": execution_row_count,
+            "executionSuccessCount": execution_success_count,
+            "wallTimeMs": wall_ms,
+            "timingSelectionPolicy": "render-encode-preferred",
+        }
+        measured_ms = maybe_normalize_by_repeat(
+            measured_ms,
+            timing_meta,
+            canonical_source="doe-execution-encode-ns",
         )
-        if encode_plausible:
-            measured_ms = float(execution_encode_total_ns) / NS_PER_MS
-            timing_meta = {
-                "source": "trace-meta",
-                "traceMetaSource": "doe-execution-encode-ns",
-                "traceMetaTimingMs": measured_ms,
-                "executionEncodeTotalNs": execution_encode_total_ns,
-                "executionDispatchCount": execution_dispatch_count,
-                "executionRowCount": execution_row_count,
-                "executionSuccessCount": execution_success_count,
-                "wallTimeMs": wall_ms,
-                "timingSelectionPolicy": "render-encode-preferred",
-            }
-            measured_ms = maybe_normalize_by_repeat(
-                measured_ms,
-                timing_meta,
-                canonical_source="doe-execution-encode-ns",
-            )
-            return measured_ms, "doe-execution-encode-ns", timing_meta
+        return measured_ms, "doe-execution-encode-ns", timing_meta
 
     if execution_total_ns > 0 and has_execution_evidence:
         measured_ms = float(execution_total_ns) / NS_PER_MS

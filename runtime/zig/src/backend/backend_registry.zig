@@ -22,7 +22,12 @@ pub fn init_backend(
             break :blk try backend.as_iface(allocator, reason, policy.policy_hash);
         },
         .doe_metal => blk: {
-            const backend = try metal_backend.ZigMetalBackend.init(allocator, profile, kernel_root);
+            const backend = try metal_backend.ZigMetalBackend.init_with_selection_policy(
+                allocator,
+                profile,
+                kernel_root,
+                policy,
+            );
             break :blk try backend.as_iface(allocator, reason, policy.policy_hash);
         },
         .doe_vulkan => blk: {

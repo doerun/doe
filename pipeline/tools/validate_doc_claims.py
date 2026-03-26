@@ -42,7 +42,7 @@ STRUCTURAL_CLAIMS = [
     ("runtime/zig/src/doe_wgsl/mod.zig", "WGSL compiler entry point"),
 
     # Benchmark contracts
-    ("bench/backend-workload-catalog.json", "benchmark workload catalog"),
+    ("bench/workloads/metadata/backend-workload-catalog.json", "benchmark workload catalog"),
     ("config/backend-runtime-policy.json", "backend runtime policy"),
 
     # GPU timeline (deferred callback infrastructure)

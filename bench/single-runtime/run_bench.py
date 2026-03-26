@@ -3,6 +3,16 @@
 
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+BENCH_ROOT = REPO_ROOT / "bench"
+for _path_entry in (str(REPO_ROOT), str(BENCH_ROOT)):
+    if _path_entry not in sys.path:
+        sys.path.insert(0, _path_entry)
+
+
 import argparse
 import hashlib
 import json
@@ -21,7 +31,7 @@ BENCH_ROOT = Path(__file__).resolve().parents[1]
 if str(BENCH_ROOT) not in sys.path:
     sys.path.insert(0, str(BENCH_ROOT))
 
-import output_paths
+from bench.lib import output_paths
 
 
 NS_PER_MS: float = 1_000_000.0
@@ -56,7 +66,7 @@ class Workload:
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--bench-config", default="config/benchmarks.json")
-    parser.add_argument("--workloads", default="bench/workloads.json")
+    parser.add_argument("--workloads", default="bench/workloads/workloads.json")
     parser.add_argument("--workload-id", default="compute_kernel_dispatch_100")
     parser.add_argument("--command-template", default=(
         "runtime/zig/zig-out/bin/doe-zig-runtime"

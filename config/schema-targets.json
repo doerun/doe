@@ -59,7 +59,7 @@
     },
     {
       "schema": "config/comparability-obligation-fixtures.schema.json",
-      "data": "bench/comparability_obligation_fixtures.json"
+      "data": "bench/fixtures/comparability_obligation_fixtures.json"
     },
     {
       "schema": "config/quirk-mining-manifest.schema.json",
@@ -167,7 +167,7 @@
     },
     {
       "schema": "config/backend-workload-catalog.schema.json",
-      "data": "bench/backend-workload-catalog.json"
+      "data": "bench/workloads/metadata/backend-workload-catalog.json"
     },
     {
       "schema": "config/backend-workload-cohorts.schema.json",
@@ -179,7 +179,7 @@
     },
     {
       "schema": "config/workload-registry.schema.json",
-      "data": "bench/workload-registry.json"
+      "data": "bench/workloads/metadata/workload-registry.json"
     }
   ],
   "globTargets": [

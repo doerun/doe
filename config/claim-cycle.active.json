@@ -5,7 +5,7 @@
   "objective": "Move from strong local comparable results to repeatable, auditable incumbent-replacement confidence under one active contract hash.",
   "contracts": {
     "workloadContract": {
-      "path": "bench/workloads.amd.vulkan.json",
+      "path": "bench/workloads/workloads.amd.vulkan.json",
       "sha256": "4bee85ff2509759eb71ae3f2da75b5ccde1cc8be35edaacba14f7c1906dd6d3d"
     },
     "benchmarkPolicy": {

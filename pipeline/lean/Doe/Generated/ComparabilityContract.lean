@@ -1,6 +1,6 @@
 import Doe.Core.Model
 
-def comparabilityContractSha256 : String := "68598321d000d069f8d95eef213dcfe0dc2559a24a35275d06d2c4dda4b9d10c"
+def comparabilityContractSha256 : String := "853bfa69636f8a03b0aca9b218be928bd42b7c86af37d1e67a954fb4a6513612"
 
 inductive ComparabilityObligationId where
   | workloadMarkedComparable
@@ -27,6 +27,7 @@ inductive ComparabilityObligationId where
   | leftSuccessOrUnsupportedOrSkipped
   | leftExecutionErrorsAbsent
   | rightExecutionErrorsAbsent
+  | leftRightTimingPlausibility
   | leftResourceProbeAvailable
   | rightResourceProbeAvailable
   | strictResourceSampleTargetPositive
@@ -90,6 +91,7 @@ structure ComparabilityFacts where
   leftSuccessOrUnsupportedOrSkipped : Bool
   leftExecutionErrorsAbsent : Bool
   rightExecutionErrorsAbsent : Bool
+  leftRightTimingPlausibility : Bool
   resourceProbeEnabled : Bool
   leftResourceProbeAvailable : Bool
   rightResourceProbeAvailable : Bool
@@ -201,6 +203,10 @@ def obligationsFromFacts (facts : ComparabilityFacts) : List ComparabilityObliga
       blocking := true
       applicable := true
       passes := facts.rightExecutionErrorsAbsent },
+    { id := .leftRightTimingPlausibility
+      blocking := true
+      applicable := true
+      passes := facts.leftRightTimingPlausibility },
     { id := .leftResourceProbeAvailable
       blocking := true
       applicable := facts.resourceProbeEnabled

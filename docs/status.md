@@ -1,4 +1,96 @@
 # Doe status
+## Bench runners, gates, tools, fixtures, and shared helpers moved under subfolders (2026-03-25)
+
+- Moved the remaining flat bench surface into purpose-built subfolders:
+  - runner entrypoints under `bench/runners/`
+  - blocking/advisory gates under `bench/gates/`
+  - generators and reporting tools under `bench/tools/`
+  - shared Python helpers under `bench/lib/`
+  - JSON fixtures under `bench/fixtures/`
+- Added package markers for the reorganized Python bench surface so direct
+  script execution and `python -m unittest bench.tests...` both keep working.
+- Updated the active runners, gates, browser helpers, drop-in tools, tests,
+  schema targets, tool-surface manifest, and current docs to use the new
+  subfolder layout.
+- Top-level `bench/` now contains only `README.md`, `__init__.py`, and
+  `package.json` as files; the previous flat script sprawl is gone.
+
+## Bench workload contracts and tests moved under subfolders (2026-03-25)
+
+- Moved generated workload contract files under `bench/workloads/`.
+- Moved workload metadata under `bench/workloads/metadata/`.
+- Moved bench docs under `bench/docs/`.
+- Moved Python regression tests under `bench/tests/`.
+- Updated live scripts, compare configs, schema targets, tests, and current
+  docs to use the new layout while keeping the top-level bench entry points
+  (`run.py`, compare harnesses, release runners) stable.
+
+## Legacy extended workload aliases removed (2026-03-25)
+
+- Removed the stale generated workload alias files:
+  `bench/workloads.apple.metal.extended.json`,
+  `bench/workloads.amd.vulkan.extended.json`, and
+  `bench/workloads.local.d3d12.extended.json`.
+- Active compare tooling and workload generation already use the canonical
+  non-`extended` contracts:
+  `bench/workloads.apple.metal.json`,
+  `bench/workloads.amd.vulkan.json`, and
+  `bench/workloads.local.d3d12.json`.
+- Updated current-facing example documentation to reference the canonical
+  D3D12 workload contract path instead of the removed alias.
+
+## Apple Metal upload lane split (2026-03-25)
+
+- Split Apple Metal upload benchmarking into two explicit intent lanes:
+  - strict staged-copy comparable rows with new `_staged` workload IDs for
+    governed compare/release evidence
+  - directional Apple UMA advantage rows that keep the existing upload IDs and
+    remain exploration-only
+- `metal_doe_comparable` and `metal_doe_release` now require
+  `uploadPathPolicy: "staged_copy_only"` in
+  `config/backend-runtime-policy.json`, and the Metal backend coerces upload
+  behavior onto `copy-dst` in those lanes.
+- `metal_doe_directional` remains shortcut-friendly for diagnostic advantage
+  profiling, and Apple Metal smoke/explore/breadth configs now use that
+  directional lane on the Doe side.
+- Apple Metal governed cohorts now select the staged upload IDs:
+  `upload_write_buffer_{1kb,64kb,1mb,4mb,16mb,256mb,1gb,4gb}_staged`.
+- Targeted compare-dev evidence under the new strict lane:
+  `bench/out/scratch/metal_upload_staged_compare_dev.large.json`
+  shows `upload_write_buffer_{1mb,4mb,16mb,256mb}_staged` comparable with no
+  hardware-path failure. `upload_write_buffer_{1gb,4gb}_staged` now fail only
+  `left_right_timing_plausibility`, which is the remaining methodology issue to
+  solve for the largest uploads.
+
+## Apple Metal render macro replacements (2026-03-25)
+
+- Replaced the weak Apple Metal governed rows
+  `render_bundle_dynamic_pipeline_bindings` and
+  `render_draw_redundant_pipeline_bindings` with new 200k-draw macro contracts:
+  `render_bundle_dynamic_pipeline_bindings_200k` and
+  `render_draw_redundant_pipeline_bindings_200k`.
+- Added dedicated macro command fixtures for both workload families and moved
+  the old repeated 2k-draw rows to exploration-only directional status.
+- Apple Metal governed cohort selection now points at the macro IDs.
+- Render-bundle workloads no longer use encode-preferred timing selection in
+  strict compare mode; they now use total execution timing because bundle
+  encode timing produced scope-asymmetric Doe-vs-Dawn rows on Metal.
+
+## Metal timing-scope normalization hardening (2026-03-25)
+
+- Fixed strict compare timing plausibility to evaluate selected operation timing
+  against the same normalized workload unit used for deltas instead of against
+  whole timed-command wall for repeated rows.
+- Tightened strict Doe-native timing-source matching so mixed selected scopes
+  such as `doe-execution-total-ns` vs `doe-execution-encode-ns` fail
+  comparability instead of slipping through as source-family-compatible.
+- Render timing selection now keeps `render-encode-preferred` only when encode
+  timing is a plausible share of total execution for that side; otherwise it
+  falls back to total execution timing.
+- Historical Apple Metal compare artifacts should be treated through this
+  corrected lens: repeated render rows that depended on mixed source selection
+  or pre-fix plausibility math are diagnostic until rerun.
+
 ## Metal compare-dev signal (2026-03-24)
 
 Current Metal `compare-dev` results show Doe faster than Dawn on 8 of 9

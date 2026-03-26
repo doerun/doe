@@ -3,7 +3,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const REGISTRY_PATH = resolve(__dirname, '..', 'workload-registry.json');
+const REGISTRY_PATH = resolve(__dirname, '..', '..', 'workloads', 'metadata', 'workload-registry.json');
 
 let registry;
 try {
