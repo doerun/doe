@@ -157,3 +157,52 @@ test "validate_bind_groups rejects undersized 2d texture coverage" {
         .mip_level = 0,
     }}, &.{&bind_group}, .{ 8, 4, 1 }, .{ 8, 8, 1 }));
 }
+
+test "validate_bind_groups rejects missing storage binding" {
+    var bind_group = native.DoeBindGroup{};
+
+    try std.testing.expectError(error.DispatchPreconditionFailed, validate_bind_groups(&.{.{
+        .kind = .gid_component,
+        .gid_axis = 0,
+        .storage_binding = .{ .group = 0, .binding = 0 },
+        .element_multiplier = 1,
+        .element_stride_bytes = 4,
+        .element_offset = 0,
+    }}, &.{}, &.{&bind_group}, .{ 8, 1, 1 }, .{ 64, 1, 1 }));
+}
+
+test "validate_bind_groups accepts matching 1d texture coverage" {
+    var texture = native.DoeTexture{
+        .width = 64,
+    };
+    var view = native.DoeTextureView{
+        .tex = &texture,
+    };
+    var bind_group = native.DoeBindGroup{};
+    bind_group.texture_views[0] = native.toOpaque(&view);
+
+    try validate_bind_groups(&.{}, &.{.{
+        .kind = .gid_coords_1d,
+        .texture_binding = .{ .group = 0, .binding = 0 },
+        .mip_level = 0,
+    }}, &.{&bind_group}, .{ 8, 1, 1 }, .{ 8, 1, 1 });
+}
+
+test "validate_bind_groups rejects undersized 3d texture mip coverage" {
+    var texture = native.DoeTexture{
+        .width = 64,
+        .height = 64,
+        .depth_or_array_layers = 3,
+    };
+    var view = native.DoeTextureView{
+        .tex = &texture,
+    };
+    var bind_group = native.DoeBindGroup{};
+    bind_group.texture_views[0] = native.toOpaque(&view);
+
+    try std.testing.expectError(error.DispatchPreconditionFailed, validate_bind_groups(&.{}, &.{.{
+        .kind = .gid_coords_3d,
+        .texture_binding = .{ .group = 0, .binding = 0 },
+        .mip_level = 1,
+    }}, &.{&bind_group}, .{ 2, 2, 2 }, .{ 8, 8, 2 }));
+}

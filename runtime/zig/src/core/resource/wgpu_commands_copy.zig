@@ -141,6 +141,49 @@ pub fn executeUpload(self: *Backend, upload: model.UploadCommand) !types.NativeE
     };
 }
 
+pub fn executeBufferWrite(self: *Backend, command: model.BufferWriteCommand) !types.NativeExecutionResult {
+    const setup_start_ns = std.time.nanoTimestamp();
+    if (command.data.len == 0) return error.InvalidArgument;
+
+    const data_bytes = std.mem.sliceAsBytes(command.data);
+    const required_size = if (command.buffer_size > 0)
+        @max(command.buffer_size, try resources.requiredBytes(data_bytes.len, command.offset))
+    else
+        try resources.requiredBytes(data_bytes.len, command.offset);
+    const usage = types.WGPUBufferUsage_Storage |
+        types.WGPUBufferUsage_Uniform |
+        types.WGPUBufferUsage_CopyDst |
+        types.WGPUBufferUsage_CopySrc;
+    const buffer = try resources.getOrCreateBuffer(self, command.handle, required_size, usage);
+    self.core.procs.?.wgpuQueueWriteBuffer(
+        self.core.queue.?,
+        buffer,
+        command.offset,
+        @ptrCast(data_bytes.ptr),
+        data_bytes.len,
+    );
+    const setup_end_ns = std.time.nanoTimestamp();
+
+    self.core.upload_submit_pending += 1;
+    var submit_wait_ns: u64 = 0;
+    if (self.core.upload_submit_pending >= self.core.upload_submit_every) {
+        submit_wait_ns = try self.submitEmpty();
+        self.core.upload_submit_pending = 0;
+    }
+
+    const setup_ns = if (setup_end_ns > setup_start_ns)
+        @as(u64, @intCast(setup_end_ns - setup_start_ns))
+    else
+        0;
+
+    return .{
+        .status = .ok,
+        .status_message = "buffer seeded via queueWriteBuffer",
+        .setup_ns = setup_ns,
+        .submit_wait_ns = submit_wait_ns,
+    };
+}
+
 pub fn executeCopy(self: *Backend, copy: model.CopyCommand) !types.NativeExecutionResult {
     const bytes = @as(u64, copy.bytes);
 

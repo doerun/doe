@@ -173,6 +173,153 @@ class BackendWorkloadCatalogTests(unittest.TestCase):
         self.assertIn("upload_write_buffer_1gb", workload_ids)
         self.assertIn("upload_write_buffer_1gb_staged", workload_ids)
 
+    def test_apple_metal_compilation_rows_include_real_inference_kernels(self) -> None:
+        metal = self.generator.materialize_lane(self.catalog, "apple_metal")
+        rows = {row["id"]: row for row in metal["workloads"]}
+        expected = {
+            "compilation_inference_attention_decode_msl": "bench/inference-pipeline/kernels/attention-decode.wgsl",
+            "compilation_inference_attention_prefill_msl": "bench/inference-pipeline/kernels/attention-prefill.wgsl",
+            "compilation_inference_matmul_gemv_msl": "bench/inference-pipeline/kernels/matmul-gemv.wgsl",
+            "compilation_inference_matmul_tiled_msl": "bench/inference-pipeline/kernels/matmul-tiled.wgsl",
+            "compilation_inference_rmsnorm_msl": "bench/inference-pipeline/kernels/rmsnorm.wgsl",
+            "compilation_inference_rope_msl": "bench/inference-pipeline/kernels/rope.wgsl",
+        }
+        for workload_id, shader_path in expected.items():
+            self.assertIn(workload_id, rows)
+            self.assertEqual(rows[workload_id]["runnerType"], "compilation")
+            self.assertEqual(rows[workload_id]["shaderPath"], shader_path)
+            self.assertEqual(rows[workload_id]["compilationTarget"], "msl")
+
+    def test_apple_metal_runtime_rows_include_gemma_shaped_inference_sequences(self) -> None:
+        metal = self.generator.materialize_lane(self.catalog, "apple_metal")
+        rows = {row["id"]: row for row in metal["workloads"]}
+        expected = {
+            "inference_gemma3_270m_prefill_32tok": (
+                "bench/ir/gemma3_270m.json",
+                "bench/plans/generated/inference_gemma3_270m_prefill_32tok.plan.json",
+                "bench/plans/generated/compat/inference_gemma3_270m_prefill_32tok_commands.json",
+                25,
+                7,
+                18,
+                {"governed"},
+            ),
+            "inference_gemma3_270m_decode_1tok": (
+                "bench/ir/gemma3_270m.json",
+                "bench/plans/generated/inference_gemma3_270m_decode_1tok.plan.json",
+                "bench/plans/generated/compat/inference_gemma3_270m_decode_1tok_commands.json",
+                24,
+                6,
+                18,
+                {"governed"},
+            ),
+            "inference_gemma3_270m_prefill_64tok_decode_64tok": (
+                "bench/ir/gemma3_270m.json",
+                "bench/plans/generated/inference_gemma3_270m_prefill_64tok_decode_64tok.plan.json",
+                "bench/plans/generated/compat/inference_gemma3_270m_prefill_64tok_decode_64tok_commands.json",
+                1561,
+                391,
+                1170,
+                {"governed"},
+            ),
+            "inference_gemma3_1b_prefill_32tok": (
+                "bench/ir/gemma3_1b.json",
+                "bench/plans/generated/inference_gemma3_1b_prefill_32tok.plan.json",
+                "bench/plans/generated/compat/inference_gemma3_1b_prefill_32tok_commands.json",
+                25,
+                7,
+                18,
+                {"exploration"},
+            ),
+            "inference_gemma3_1b_decode_1tok": (
+                "bench/ir/gemma3_1b.json",
+                "bench/plans/generated/inference_gemma3_1b_decode_1tok.plan.json",
+                "bench/plans/generated/compat/inference_gemma3_1b_decode_1tok_commands.json",
+                24,
+                6,
+                18,
+                {"exploration"},
+            ),
+            "inference_gemma3_1b_prefill_64tok_decode_64tok": (
+                "bench/ir/gemma3_1b.json",
+                "bench/plans/generated/inference_gemma3_1b_prefill_64tok_decode_64tok.plan.json",
+                "bench/plans/generated/compat/inference_gemma3_1b_prefill_64tok_decode_64tok_commands.json",
+                1561,
+                391,
+                1170,
+                {"exploration"},
+            ),
+        }
+        for workload_id, (
+            ir_path,
+            plan_path,
+            commands_path,
+            command_count,
+            buffer_write_count,
+            dispatch_count,
+            required_cohorts,
+        ) in expected.items():
+            self.assertIn(workload_id, rows)
+            self.assertEqual(rows[workload_id]["irPath"], ir_path)
+            self.assertEqual(rows[workload_id]["irScenario"], workload_id)
+            self.assertEqual(rows[workload_id]["planPath"], plan_path)
+            self.assertEqual(rows[workload_id]["commandsPath"], commands_path)
+            self.assertEqual(rows[workload_id]["planSchemaVersion"], 1)
+            self.assertEqual(rows[workload_id]["planCommandCount"], command_count)
+            self.assertEqual(rows[workload_id]["planBufferWriteCount"], buffer_write_count)
+            self.assertEqual(rows[workload_id]["planDispatchCount"], dispatch_count)
+            self.assertRegex(rows[workload_id]["planHash"], r"^[0-9a-f]{64}$")
+            self.assertRegex(rows[workload_id]["sourceIrSha256"], r"^[0-9a-f]{64}$")
+            self.assertRegex(rows[workload_id]["compatibilityCommandHash"], r"^[0-9a-f]{64}$")
+            self.assertEqual(rows[workload_id]["extraArgs"], ["--kernel-root", "bench/inference-pipeline/kernels"])
+            self.assertEqual(rows[workload_id]["benchmarkClass"], "comparable")
+            self.assertTrue(rows[workload_id]["comparable"])
+            self.assertTrue(rows[workload_id]["claimEligible"])
+            for cohort in required_cohorts:
+                self.assertIn(cohort, rows[workload_id]["cohorts"])
+            self.assertEqual(rows[workload_id]["runnerType"], "zig-runtime")
+
+            generated_plan = load_json(REPO_ROOT / plan_path)
+            generated_commands = json.loads((REPO_ROOT / commands_path).read_text(encoding="utf-8"))
+            legacy_commands = json.loads(
+                (REPO_ROOT / "examples" / f"{workload_id}_commands.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(generated_commands, legacy_commands)
+            self.assertEqual(generated_plan["commands"], generated_commands)
+            self.assertEqual(generated_plan["workloadId"], workload_id)
+            self.assertEqual(generated_plan["commandCount"], command_count)
+            self.assertEqual(generated_plan["bufferWriteCount"], buffer_write_count)
+            self.assertEqual(generated_plan["dispatchCount"], dispatch_count)
+
+    def test_gemma_runtime_rows_are_ir_backed_in_the_catalog(self) -> None:
+        gemma_ids = {
+            "inference_gemma3_270m_prefill_32tok",
+            "inference_gemma3_270m_decode_1tok",
+            "inference_gemma3_270m_prefill_64tok_decode_64tok",
+            "inference_gemma3_1b_prefill_32tok",
+            "inference_gemma3_1b_decode_1tok",
+            "inference_gemma3_1b_prefill_64tok_decode_64tok",
+        }
+        rows = {item["id"]: item for item in self.catalog["workloads"] if item["id"] in gemma_ids}
+        self.assertEqual(set(rows), gemma_ids)
+        for workload_id, item in rows.items():
+            shared = item["shared"]
+            lane = item["lanes"]["apple_metal_extended"]
+            expected_ir_path = "bench/ir/gemma3_1b.json" if "_1b_" in workload_id else "bench/ir/gemma3_270m.json"
+            self.assertEqual(shared["irPath"], expected_ir_path)
+            self.assertEqual(shared["irScenario"], workload_id)
+            self.assertNotIn("commandsPath", lane)
+            self.assertNotIn("commandsPath", shared)
+
+    def test_no_js_pipeline_workloads_remain(self) -> None:
+        for lane_id in self.catalog["laneOutputs"]:
+            materialized = self.generator.materialize_lane(self.catalog, lane_id)
+            for row in materialized["workloads"]:
+                self.assertNotEqual(
+                    row.get("runnerType"),
+                    "js-pipeline",
+                    msg=f"{row['id']} lane={lane_id} should not materialize a synthetic js-pipeline workload",
+                )
+
     def test_comparable_rows_are_symmetric(self) -> None:
         defaults = {
             "leftCommandRepeat": 1,

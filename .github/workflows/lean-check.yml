@@ -18,13 +18,13 @@ jobs:
           curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
       - name: Run Lean typecheck
-        run: bash lean/check.sh
+        run: bash pipeline/lean/check.sh
       - name: Extract proof artifacts
-        run: bash lean/extract.sh
+        run: bash pipeline/lean/extract.sh
       - name: Validate proof artifact
-        run: python3 -c "import json; d = json.load(open('lean/artifacts/proven-conditions.json')); assert d['status'] == 'verified', 'proof artifact status is not verified'"
+        run: python3 pipeline/lean/test_proof_pipeline.py
       - name: Upload proof artifact
         uses: actions/upload-artifact@v4
         with:
           name: proven-conditions
-          path: lean/artifacts/proven-conditions.json
+          path: pipeline/lean/artifacts/proven-conditions.json

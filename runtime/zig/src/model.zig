@@ -150,6 +150,7 @@ pub const CopyResourceKind = model_webgpu_types.CopyResourceKind;
 pub const CopyDirection = model_webgpu_types.CopyDirection;
 pub const CopyTextureResource = model_webgpu_types.CopyTextureResource;
 pub const UploadCommand = model_webgpu_types.UploadCommand;
+pub const BufferWriteCommand = model_webgpu_types.BufferWriteCommand;
 pub const CopyCommand = model_webgpu_types.CopyCommand;
 pub const BarrierCommand = model_webgpu_types.BarrierCommand;
 pub const DispatchCommand = model_webgpu_types.DispatchCommand;
@@ -239,10 +240,9 @@ pub const ProofLevel = enum(u8) {
     guarded,
     rejected,
 };
-/// Combined command kind — composed from CoreCommandKind + FullCommandKind.
-/// Core variants come first (ordinals 0..N-1), full variants follow (N..N+M-1).
 pub const CommandKind = enum(u8) {
     upload,
+    buffer_write,
     copy_buffer_to_texture,
     barrier,
     dispatch,
@@ -267,12 +267,10 @@ pub const CommandKind = enum(u8) {
     async_diagnostics,
     map_async,
 };
-/// Combined command union — composes CoreCommand and FullCommand payload types.
-/// Payload types are defined authoritatively in the partition modules;
-/// this union references them to avoid duplicate definitions.
 pub const Command = union(CommandKind) {
     // Core commands (payload types from core/command_partition.zig via CoreCommand)
     upload: UploadCommand,
+    buffer_write: BufferWriteCommand,
     copy_buffer_to_texture: CopyCommand,
     barrier: BarrierCommand,
     dispatch: DispatchCommand,
@@ -302,9 +300,6 @@ pub const Command = union(CommandKind) {
     // Core queue-sync commands
     map_async: MapAsyncCommand,
 };
-// Comptime check: every CoreCommand variant has a matching Command variant,
-// and every FullCommand variant has a matching Command variant, and the
-// combined Command has no extra variants beyond core + full.
 comptime {
     const core_fields = @typeInfo(CoreCommand).@"union".fields;
     const full_fields = @typeInfo(FullCommand).@"union".fields;
@@ -515,6 +510,7 @@ pub fn is_full_command_kind(kind: CommandKind) bool {
 pub fn as_core_command(cmd: Command) ?CoreCommand {
     return switch (cmd) {
         .upload => |payload| .{ .upload = payload },
+        .buffer_write => |payload| .{ .buffer_write = payload },
         .copy_buffer_to_texture => |payload| .{ .copy_buffer_to_texture = payload },
         .barrier => |payload| .{ .barrier = payload },
         .dispatch => |payload| .{ .dispatch = payload },
@@ -698,6 +694,7 @@ test "needsStrongestProof only true for proven" {
 
 test "command_kind_name returns correct string for selected kinds" {
     try testing.expectEqualStrings("upload", command_kind_name(.upload));
+    try testing.expectEqualStrings("buffer_write", command_kind_name(.buffer_write));
     try testing.expectEqualStrings("kernel_dispatch", command_kind_name(.kernel_dispatch));
     try testing.expectEqualStrings("render_draw", command_kind_name(.render_draw));
     try testing.expectEqualStrings("map_async", command_kind_name(.map_async));
@@ -713,6 +710,7 @@ test "scope_name and safety_class_name return correct strings" {
 test "is_core_command_kind and is_full_command_kind partition correctly" {
     // Core commands
     try testing.expect(is_core_command_kind(.upload));
+    try testing.expect(is_core_command_kind(.buffer_write));
     try testing.expect(is_core_command_kind(.dispatch));
     try testing.expect(is_core_command_kind(.kernel_dispatch));
     try testing.expect(is_core_command_kind(.map_async));

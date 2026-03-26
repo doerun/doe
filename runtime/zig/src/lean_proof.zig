@@ -3,6 +3,11 @@ const build_options = @import("build_options");
 
 pub const lean_verified: bool = build_options.lean_verified;
 pub const comparability_obligations_sha256: []const u8 = build_options.comparability_obligations_sha256;
+pub const lean_toolchain_ref: []const u8 = build_options.lean_toolchain_ref;
+pub const lean_extract_program_sha256: []const u8 = build_options.lean_extract_program_sha256;
+pub const lean_source_tree_sha256: []const u8 = build_options.lean_source_tree_sha256;
+pub const generated_comparability_contract_sha256: []const u8 = build_options.generated_comparability_contract_sha256;
+pub const proof_pattern_spec_sha256: []const u8 = build_options.proof_pattern_spec_sha256;
 const JSON_SEARCH_BRANCH_QUOTA = 2_000_000;
 
 const proof_json: ?[]const u8 = if (build_options.lean_verified)
@@ -22,6 +27,17 @@ fn comptimeContains(haystack: []const u8, needle: []const u8) bool {
 fn requireTheorem(comptime json: []const u8, comptime theorem: []const u8) void {
     if (!comptimeContains(json, theorem)) {
         @compileError("lean proof artifact: missing required theorem " ++ theorem);
+    }
+}
+
+fn requireFieldValue(
+    comptime json: []const u8,
+    comptime key: []const u8,
+    comptime value: []const u8,
+    comptime context: []const u8,
+) void {
+    if (!comptimeContains(json, "\"" ++ key ++ "\": \"" ++ value ++ "\"")) {
+        @compileError("lean proof artifact: " ++ context ++ " mismatch for field " ++ key);
     }
 }
 
@@ -181,6 +197,15 @@ comptime {
 
         if (!comptimeContains(json, "\"status\": \"verified\""))
             @compileError("lean proof artifact: status is not 'verified'");
+
+        if (!comptimeContains(json, "\"provenance\""))
+            @compileError("lean proof artifact: provenance section missing");
+
+        requireFieldValue(json, "leanToolchainRef", lean_toolchain_ref, "provenance");
+        requireFieldValue(json, "extractProgramSha256", lean_extract_program_sha256, "provenance");
+        requireFieldValue(json, "leanSourceTreeSha256", lean_source_tree_sha256, "provenance");
+        requireFieldValue(json, "generatedComparabilityContractSha256", generated_comparability_contract_sha256, "provenance");
+        requireFieldValue(json, "proofPatternSpecSha256", proof_pattern_spec_sha256, "provenance");
 
         if (!comptimeContains(json, "\"comparabilityObligationsSha256\": \"" ++ comparability_obligations_sha256 ++ "\""))
             @compileError("lean proof artifact: comparability obligation contract hash mismatch");

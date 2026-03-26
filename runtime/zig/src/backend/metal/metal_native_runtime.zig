@@ -30,6 +30,9 @@ const metal_bridge_create_default_device = bridge.metal_bridge_create_default_de
 const metal_bridge_device_new_command_queue = bridge.metal_bridge_device_new_command_queue;
 const metal_bridge_device_new_command_queue_with_priority = bridge.metal_bridge_device_new_command_queue_with_priority;
 const metal_bridge_device_new_shared_event = bridge.metal_bridge_device_new_shared_event;
+const metal_bridge_blit_encoder_copy_texture_to_texture = bridge.metal_bridge_blit_encoder_copy_texture_to_texture;
+const metal_bridge_cmd_buf_blit_encoder = bridge.metal_bridge_cmd_buf_blit_encoder;
+const metal_bridge_device_new_render_target = bridge.metal_bridge_device_new_render_target;
 const metal_bridge_end_blit_encoding = bridge.metal_bridge_end_blit_encoding;
 const metal_bridge_release = bridge.metal_bridge_release;
 const metal_bridge_render_encoder_draw = bridge.metal_bridge_render_encoder_draw;
@@ -397,10 +400,11 @@ pub const NativeMetalRuntime = struct {
         z: u32,
         repeat: u32,
         warmup: u32,
+        initialize_buffers_on_create: bool,
         bindings: ?[]const model.KernelBinding,
         record_timestamps: bool,
     ) !KernelDispatchResult {
-        return kernel_dispatch.run_kernel_dispatch_timed(self, kernel, x, y, z, repeat, warmup, bindings, record_timestamps);
+        return kernel_dispatch.run_kernel_dispatch_timed(self, kernel, x, y, z, repeat, warmup, initialize_buffers_on_create, bindings, record_timestamps);
     }
 
     pub fn run_dispatch(self: *NativeMetalRuntime, x: u32, y: u32, z: u32, queue_sync_mode: webgpu.QueueSyncMode) !DispatchMetrics {
@@ -429,6 +433,10 @@ pub const NativeMetalRuntime = struct {
         return resource_commands.texture_write(self, cmd);
     }
 
+    pub fn write_buffer(self: *NativeMetalRuntime, cmd: model.BufferWriteCommand) !void {
+        return resource_runtime.write_compute_buffer_words(self, cmd.handle, cmd.offset, cmd.buffer_size, cmd.data);
+    }
+
     pub fn texture_query(self: *NativeMetalRuntime, cmd: model.TextureQueryCommand) !void {
         return resource_commands.texture_query(self, cmd);
     }
@@ -442,10 +450,35 @@ pub const NativeMetalRuntime = struct {
         const is_bundle = cmd.encode_mode == .render_bundle;
         const red_pl: c_int = if (cmd.pipeline_mode == .redundant) 1 else 0;
 
+        // Quirk: Intel Metal R8/RG8Unorm small-mip workaround. When the flag
+        // is set, render to a temporary texture then blit to the real target,
+        // avoiding driver corruption on affected mip levels.
+        const needs_temp_texture = cmd.uses_temporary_render_texture;
+
         // Setup: pipeline compile, texture alloc, ICB creation, encoder creation.
         const setup_start = common_timing.now_ns();
         try self.ensure_render_pipeline(fmt);
         try self.ensure_render_target(cmd.target_width, cmd.target_height, fmt);
+
+        var temp_texture: ?*anyopaque = null;
+        var saved_target: ?*anyopaque = null;
+        if (needs_temp_texture) {
+            saved_target = self.render_target;
+            temp_texture = metal_bridge_device_new_render_target(
+                self.device,
+                cmd.target_width,
+                cmd.target_height,
+                fmt,
+            ) orelse return error.InvalidState;
+            self.render_target = temp_texture;
+            // Force fresh render encoder targeting the temporary texture.
+            if (self.streaming_render_encoder) |enc| {
+                metal_bridge_render_encoder_end(enc);
+                metal_bridge_release(enc);
+                self.streaming_render_encoder = null;
+            }
+        }
+
         const icb = if (is_bundle) try self.ensure_icb(cmd.draw_count, cmd.vertex_count, cmd.instance_count, red_pl) else null;
         try self.ensure_streaming_render_encoder();
         const setup_ns = common_timing.ns_delta(common_timing.now_ns(), setup_start);
@@ -471,6 +504,36 @@ pub const NativeMetalRuntime = struct {
                 self.render_pipeline,
             );
         }
+
+        // Blit temporary texture to the real render target.
+        if (needs_temp_texture) {
+            if (self.streaming_render_encoder) |enc| {
+                metal_bridge_render_encoder_end(enc);
+                metal_bridge_release(enc);
+                self.streaming_render_encoder = null;
+            }
+            self.render_target = saved_target.?;
+            // Ensure blit encoder for the copy.
+            if (self.streaming_blit_encoder == null) {
+                if (self.streaming_cmd_buf == null) {
+                    self.streaming_cmd_buf = metal_bridge_create_command_buffer(self.queue) orelse return error.InvalidState;
+                }
+                self.streaming_blit_encoder = metal_bridge_cmd_buf_blit_encoder(self.streaming_cmd_buf) orelse return error.InvalidState;
+            }
+            metal_bridge_blit_encoder_copy_texture_to_texture(
+                self.streaming_blit_encoder,
+                temp_texture,
+                0,
+                self.render_target,
+                0,
+                cmd.target_width,
+                cmd.target_height,
+                1,
+            );
+            metal_bridge_release(temp_texture.?);
+            self.streaming_has_copy = true;
+        }
+
         const encode_ns = common_timing.ns_delta(common_timing.now_ns(), encode_start);
 
         // Submit+wait: commit command buffer and wait for GPU completion.
@@ -574,8 +637,8 @@ pub const NativeMetalRuntime = struct {
         return resource_runtime.ensure_kernel_pipeline(self, kernel);
     }
 
-    pub fn ensure_compute_buffer(self: *NativeMetalRuntime, handle: u64, size: u64) !?*anyopaque {
-        return resource_runtime.ensure_compute_buffer(self, handle, size);
+    pub fn ensure_compute_buffer(self: *NativeMetalRuntime, handle: u64, size: u64, initialize_buffers_on_create: bool) !?*anyopaque {
+        return resource_runtime.ensure_compute_buffer(self, handle, size, initialize_buffers_on_create);
     }
 
     pub fn ensure_render_pipeline(self: *NativeMetalRuntime, fmt: u32) !void {

@@ -3,6 +3,7 @@ const model = @import("../../model.zig");
 pub fn manifest_module(command: model.Command) []const u8 {
     return switch (command) {
         .upload => "upload",
+        .buffer_write => "buffer_write",
         .copy_buffer_to_texture => "copy_buffer_to_texture",
         .barrier => "barrier",
         .dispatch => "dispatch",

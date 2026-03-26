@@ -14,7 +14,7 @@ from typing import Any
 
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-DEFAULT_WORKLOADS = REPO_ROOT / "bench/workloads/workloads.amd.vulkan.superset.json"
+DEFAULT_WORKLOADS = REPO_ROOT / "bench/workloads/specialized/workloads.amd.vulkan.superset.json"
 DEFAULT_RULES = REPO_ROOT / "browser/chromium/bench/projection-rules.json"
 DEFAULT_MANIFEST = (
     REPO_ROOT / "browser/chromium/bench/generated/browser_projection_manifest.json"

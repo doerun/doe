@@ -24,6 +24,18 @@ _NARROW_OPERATION_SCOPE_BY_SOURCE = {
     "doe-execution-encode-ns": "operation-encode",
     "doe-execution-dispatch-window-ns": "operation-dispatch-window",
 }
+_HOST_OVERHEAD_BUCKETS = (
+    ("inputRead", "hostInputReadTotalNs", "Input/config file reads before selected execution timing begins."),
+    ("inputParse", "hostInputParseTotalNs", "Command/plan parsing and input decoding before selected execution timing begins."),
+    ("workloadPrepare", "hostWorkloadPrepareTotalNs", "Pre-execution workload preparation such as dispatch-context or buffer-spec setup."),
+    ("executorInit", "hostExecutorInitTotalNs", "Executor/device/backend initialization outside the selected execution timing."),
+    ("uploadPrewarm", "hostUploadPrewarmTotalNs", "Doe upload-path prewarm work outside the selected execution timing."),
+    ("kernelPrewarm", "hostKernelPrewarmTotalNs", "Kernel/pipeline prewarm work outside the selected execution timing."),
+    ("commandOrchestration", "hostCommandOrchestrationTotalNs", "Command-loop bookkeeping outside traced execution phase timing."),
+    ("artifactFinalize", "hostArtifactFinalizeTotalNs", "Post-execution artifact writing/finalization outside the selected execution timing."),
+)
+WORKLOAD_UNIT_WALL_FIELD = "workloadUnitWall"
+LEGACY_WORKLOAD_UNIT_WALL_FIELD = "headlineProcessWall"
 
 
 def percent_delta(left: float, right: float) -> float:
@@ -66,6 +78,103 @@ def command_sample_field_values_ms(
                 timing_divisor = 1.0
             parsed /= command_repeat * timing_divisor
         values.append(parsed)
+    return values
+
+
+def _sample_normalization_factor(sample: dict[str, Any]) -> float:
+    command_repeat = safe_float(sample.get("commandRepeat")) or 1.0
+    if command_repeat <= 0.0:
+        command_repeat = 1.0
+    timing_divisor = safe_float(sample.get("timingNormalizationDivisor"))
+    if timing_divisor is None or timing_divisor <= 0.0:
+        timing_meta = sample.get("timing", {})
+        if isinstance(timing_meta, dict):
+            timing_divisor = safe_float(timing_meta.get("timingNormalizationDivisor"))
+    if timing_divisor is None or timing_divisor <= 0.0:
+        timing_divisor = 1.0
+    return command_repeat * timing_divisor
+
+
+def _normalized_elapsed_ms(sample: dict[str, Any]) -> float | None:
+    elapsed_ms = safe_float(sample.get("elapsedMs"))
+    if elapsed_ms is None or elapsed_ms < 0.0:
+        return None
+    return elapsed_ms / _sample_normalization_factor(sample)
+
+
+def _normalized_trace_meta_total_ms(sample: dict[str, Any], field: str) -> float | None:
+    trace_meta = sample.get("traceMeta", {})
+    if not isinstance(trace_meta, dict):
+        return None
+    raw_ns = safe_float(trace_meta.get(field))
+    if raw_ns is None or raw_ns < 0.0:
+        return None
+    return (raw_ns / reporting_mod.NS_PER_MS) / _sample_normalization_factor(sample)
+
+
+def trace_meta_field_values_ms(
+    command_samples: list[dict[str, Any]],
+    field: str,
+) -> list[float]:
+    values: list[float] = []
+    for sample in command_samples:
+        if not isinstance(sample, dict):
+            continue
+        normalized_ms = _normalized_trace_meta_total_ms(sample, field)
+        if normalized_ms is None:
+            continue
+        values.append(normalized_ms)
+    return values
+
+
+def selected_gap_values_ms(command_samples: list[dict[str, Any]]) -> list[float]:
+    values: list[float] = []
+    for sample in command_samples:
+        if not isinstance(sample, dict):
+            continue
+        elapsed_ms = _normalized_elapsed_ms(sample)
+        measured_ms = safe_float(sample.get("measuredMs"))
+        if elapsed_ms is None or measured_ms is None:
+            continue
+        values.append(elapsed_ms - measured_ms)
+    return values
+
+
+def attributed_host_values_ms(command_samples: list[dict[str, Any]]) -> list[float]:
+    values: list[float] = []
+    for sample in command_samples:
+        if not isinstance(sample, dict):
+            continue
+        sample_total_ms = 0.0
+        found = False
+        for _, field_name, _ in _HOST_OVERHEAD_BUCKETS:
+            field_ms = _normalized_trace_meta_total_ms(sample, field_name)
+            if field_ms is None:
+                continue
+            sample_total_ms += field_ms
+            found = True
+        if found:
+            values.append(sample_total_ms)
+    return values
+
+
+def unattributed_gap_remainder_values_ms(command_samples: list[dict[str, Any]]) -> list[float]:
+    values: list[float] = []
+    for sample in command_samples:
+        if not isinstance(sample, dict):
+            continue
+        elapsed_ms = _normalized_elapsed_ms(sample)
+        measured_ms = safe_float(sample.get("measuredMs"))
+        if elapsed_ms is None or measured_ms is None:
+            continue
+        gap_ms = elapsed_ms - measured_ms
+        attributed_ms = 0.0
+        for _, field_name, _ in _HOST_OVERHEAD_BUCKETS:
+            field_ms = _normalized_trace_meta_total_ms(sample, field_name)
+            if field_ms is None:
+                continue
+            attributed_ms += field_ms
+        values.append(gap_ms - attributed_ms)
     return values
 
 
@@ -134,7 +243,7 @@ def _selected_scope(canonical_sources: list[str], timing_classes: list[str]) -> 
             "narrow-hot-path",
             True,
             "Selected timing isolates a narrow operation hot path and excludes setup, "
-            "submit/wait, and process startup. Use headlineProcessWall for end-to-end ranking.",
+            "submit/wait, and process startup. Use workloadUnitWall for end-to-end ranking.",
         )
 
     if canonical_sources and all(source in _OPERATION_TOTAL_SOURCES for source in canonical_sources):
@@ -142,8 +251,8 @@ def _selected_scope(canonical_sources: list[str], timing_classes: list[str]) -> 
             "operation-total",
             "operation-total",
             False,
-            "Selected timing measures the comparable operation scope. headlineProcessWall "
-            "adds process startup and harness overhead for the timed command.",
+            "Selected timing measures the comparable operation scope. workloadUnitWall "
+            "adds the full timed workload-unit wall interval for the command the harness ran.",
         )
 
     normalized_classes = sorted({value for value in timing_classes if value})
@@ -171,6 +280,88 @@ def _selected_scope(canonical_sources: list[str], timing_classes: list[str]) -> 
     )
 
 
+def workload_unit_wall_view(timing_interpretation: dict[str, Any]) -> dict[str, Any]:
+    if not isinstance(timing_interpretation, dict):
+        return {}
+    current = timing_interpretation.get(WORKLOAD_UNIT_WALL_FIELD)
+    if isinstance(current, dict):
+        return current
+    legacy = timing_interpretation.get(LEGACY_WORKLOAD_UNIT_WALL_FIELD)
+    if isinstance(legacy, dict):
+        return legacy
+    return {}
+
+
+def build_host_overhead_breakdown(
+    *,
+    left_command_samples: list[dict[str, Any]],
+    right_command_samples: list[dict[str, Any]],
+) -> dict[str, Any]:
+    left_gap_stats = reporting_mod.format_stats(selected_gap_values_ms(left_command_samples))
+    right_gap_stats = reporting_mod.format_stats(selected_gap_values_ms(right_command_samples))
+    left_attributed_stats = reporting_mod.format_stats(attributed_host_values_ms(left_command_samples))
+    right_attributed_stats = reporting_mod.format_stats(attributed_host_values_ms(right_command_samples))
+    left_remainder_stats = reporting_mod.format_stats(unattributed_gap_remainder_values_ms(left_command_samples))
+    right_remainder_stats = reporting_mod.format_stats(unattributed_gap_remainder_values_ms(right_command_samples))
+
+    buckets: dict[str, Any] = {}
+    for bucket_id, field_name, note in _HOST_OVERHEAD_BUCKETS:
+        left_stats = reporting_mod.format_stats(trace_meta_field_values_ms(left_command_samples, field_name))
+        right_stats = reporting_mod.format_stats(trace_meta_field_values_ms(right_command_samples, field_name))
+        buckets[bucket_id] = {
+            "traceMetaField": field_name,
+            "leftStatsMs": left_stats,
+            "rightStatsMs": right_stats,
+            "deltaPercent": delta_percent_from_stats(left_stats, right_stats),
+            "note": note,
+        }
+
+    return {
+        "metric": "traceMeta.host*TotalNs",
+        "scope": "selected-timing-gap-breakdown",
+        "scopeClass": "host-overhead-diagnostic",
+        "available": (
+            int(left_gap_stats.get("count", 0)) > 0
+            and int(right_gap_stats.get("count", 0)) > 0
+        ),
+        "selectedGap": {
+            "leftStatsMs": left_gap_stats,
+            "rightStatsMs": right_gap_stats,
+            "deltaPercent": delta_percent_from_stats(left_gap_stats, right_gap_stats),
+            "note": (
+                "The normalized difference between workloadUnitWall and selected timing "
+                "for each timed sample."
+            ),
+        },
+        "attributedHostOverhead": {
+            "leftStatsMs": left_attributed_stats,
+            "rightStatsMs": right_attributed_stats,
+            "deltaPercent": delta_percent_from_stats(left_attributed_stats, right_attributed_stats),
+            "note": (
+                "Sum of coarse host-overhead buckets recorded outside the selected "
+                "execution timing. These buckets are once-per-sample phase timers, not "
+                "per-dispatch probes."
+            ),
+        },
+        "unattributedGapRemainder": {
+            "leftStatsMs": left_remainder_stats,
+            "rightStatsMs": right_remainder_stats,
+            "deltaPercent": delta_percent_from_stats(left_remainder_stats, right_remainder_stats),
+            "note": (
+                "Selected-gap remainder after subtracting the coarse host-overhead "
+                "buckets. This typically captures trace-meta emission, process teardown, "
+                "and any uninstrumented sample overhead."
+            ),
+        },
+        "buckets": buckets,
+        "note": (
+            "Coarse host-overhead buckets are recorded around existing once-per-sample "
+            "phase boundaries so they explain workloadUnitWall minus selected timing "
+            "without inserting hot-path profiling probes."
+        ),
+    }
+
+
 def build_timing_interpretation(
     *,
     left: dict[str, Any],
@@ -185,13 +376,39 @@ def build_timing_interpretation(
     timing_classes = sorted({value for value in left_classes + right_classes if value})
     scope, scope_class, is_narrow, note = _selected_scope(canonical_sources, timing_classes)
 
-    left_headline_stats = summarize_command_sample_field_ms(
+    left_workload_unit_stats = summarize_command_sample_field_ms(
         left.get("commandSamples", []),
         "elapsedMs",
     )
-    right_headline_stats = summarize_command_sample_field_ms(
+    right_workload_unit_stats = summarize_command_sample_field_ms(
         right.get("commandSamples", []),
         "elapsedMs",
+    )
+    workload_unit_wall = {
+        "metric": "elapsedMs",
+        "scope": "timed-command-process-wall",
+        "scopeClass": "workload-unit-wall",
+        "available": (
+            int(left_workload_unit_stats.get("count", 0)) > 0
+            and int(right_workload_unit_stats.get("count", 0)) > 0
+        ),
+        "leftStatsMs": left_workload_unit_stats,
+        "rightStatsMs": right_workload_unit_stats,
+        "deltaPercent": delta_percent_from_stats(
+            left_workload_unit_stats,
+            right_workload_unit_stats,
+        ),
+        "note": (
+            "Uses timed command process wall normalized by commandRepeat and "
+            "timingNormalizationDivisor. This is the full timed workload-unit view for one "
+            "comparable workload unit, not a warm-session-only metric."
+        ),
+    }
+    legacy_workload_unit_wall = dict(workload_unit_wall)
+    legacy_workload_unit_wall["deprecatedAliasFor"] = WORKLOAD_UNIT_WALL_FIELD
+    host_overhead_breakdown = build_host_overhead_breakdown(
+        left_command_samples=left.get("commandSamples", []),
+        right_command_samples=right.get("commandSamples", []),
     )
 
     return {
@@ -207,20 +424,7 @@ def build_timing_interpretation(
             "isNarrowHotPath": is_narrow,
             "note": note,
         },
-        "headlineProcessWall": {
-            "metric": "elapsedMs",
-            "scope": "timed-command-process-wall",
-            "available": (
-                int(left_headline_stats.get("count", 0)) > 0
-                and int(right_headline_stats.get("count", 0)) > 0
-            ),
-            "leftStatsMs": left_headline_stats,
-            "rightStatsMs": right_headline_stats,
-            "deltaPercent": delta_percent_from_stats(left_headline_stats, right_headline_stats),
-            "note": (
-                "Uses timed command process wall normalized by commandRepeat and "
-                "timingNormalizationDivisor. This is the end-to-end ranking view for one "
-                "comparable workload unit."
-            ),
-        },
+        WORKLOAD_UNIT_WALL_FIELD: workload_unit_wall,
+        "hostOverheadBreakdown": host_overhead_breakdown,
+        LEGACY_WORKLOAD_UNIT_WALL_FIELD: legacy_workload_unit_wall,
     }

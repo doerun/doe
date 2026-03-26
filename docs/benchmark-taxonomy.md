@@ -26,12 +26,14 @@ Do not collapse these harnesses into one generic runner. That would blur evidenc
   - package-surface comparison
   - browser projection evidence
 
-### 2. Native left/right runtime comparison
+### 2. Left/right runtime comparison
 
 - Primary entrypoint: `bench/native-compare/compare_dawn_vs_doe.py`
 - Question: "Given the same workload contract, is Doe comparable to and faster/slower than Dawn?"
 - Contract:
-  - explicit left/right runtime templates
+  - explicit left/right executors or runtime templates
+  - left is normally Doe's direct backend implementation path
+  - right may be either Doe's Dawn delegate path or a standalone non-Doe WebGPU executor
   - timing-source selection
   - comparability obligations
   - claimability status
@@ -40,6 +42,11 @@ Do not collapse these harnesses into one generic runner. That would blur evidenc
   - `comparisonStatus`
   - `claimStatus`
 - This is the main claim-grade compare harness.
+- The current executor architecture is:
+  - authored neutral benchmark IR
+  - normalized executable plan
+  - executor-specific implementation
+  - shared compare/report contract
 
 ### 3. Generic ad hoc runtime comparison
 
@@ -66,7 +73,7 @@ Do not collapse these harnesses into one generic runner. That would blur evidenc
 - Allowed outputs:
   - package-surface compare reports
   - cube-ingestable package rows
-- Separate from native compare because the execution surface is the package API, not the native runtime CLI.
+- Separate from runtime compare because the execution surface is the package API, not the Doe runtime CLI.
 
 ### 5. Targeted JS attribution experiments
 
@@ -139,34 +146,17 @@ Do not collapse these harnesses into one generic runner. That would blur evidenc
   - left: Doe `doe-compilation-bench` binary
   - right: Tint CLI
   - per-shader WGSL-to-target (MSL/SPIR-V) compilation timing
-  - corpus spans trivial/simple/moderate/complex/stress tiers
+  - named workload rows from `bench/workloads/*.json` are the canonical source
+    for what gets compiled
+  - compiler rows may point at the standalone compilation corpus or at real
+    `bench/inference-pipeline/kernels/*.wgsl` model kernels
 - Allowed outputs:
   - per-shader compilation time deltas
   - directional Doe-vs-Tint compilation reports
 - Not for:
   - claim-grade runtime performance comparison
   - runtime dispatch or execution evidence
-- Separate from native compare because the surface is the compiler toolchain, not the GPU runtime. Different codebases (Doe ~13.7K LOC vs Tint ~200K LOC) make strict comparability structurally impossible; all results are directional.
-
-### 10. Inference pipeline comparison
-
-- Primary entrypoints:
-  - `bench/inference-pipeline/compare-inference-pipeline.py`
-  - also dispatchable via `compare_dawn_vs_doe.py` with `runnerType: "js-pipeline"` catalog entries
-- Question: "How does end-to-end ML inference pipeline throughput compare between Doe-native and Dawn-delegate WebGPU backends?"
-- Contract:
-  - JS-driven WebGPU inference pipeline with random weights (not timed)
-  - per-phase timing: prefill, decode, e2e
-  - structural work equivalence via dispatch counting and trace meta
-  - model template driven (e.g. Gemma-3-270M)
-- Allowed outputs:
-  - per-phase inference pipeline time deltas
-  - dispatch count parity evidence
-  - directional Doe-vs-Dawn inference reports
-- Not for:
-  - correctness validation (random weights)
-  - claim-grade comparison (different runtime stacks)
-- Separate from native compare because the execution surface is a JS inference pipeline exercising the full kernel dispatch graph, not a single replayed command stream. Weight generation uses random data and is excluded from timing.
+- Separate from runtime compare because the surface is the compiler toolchain, not the GPU runtime. Different codebases (Doe ~13.7K LOC vs Tint ~200K LOC) make strict comparability structurally impossible; all results are directional.
 
 ## What may share code
 
@@ -186,13 +176,12 @@ These are valid consolidation targets because they keep the same contract class:
 Do not merge these classes:
 
 - `run_bench.py` with `compare_dawn_vs_doe.py`
-- native compare with package compare
+- runtime compare with package compare
 - package compare with browser Playwright harnesses
 - browser smoke with browser benchmark projection
 - claim lanes with targeted attribution experiments
 - drop-in benchmark suite with runtime/package/browser harnesses
-- compilation comparison with native runtime comparison
-- inference pipeline comparison with targeted JS attribution experiments
+- compilation comparison with runtime comparison
 
 If these are merged, the same artifact format would start mixing different contracts, which makes status interpretation unreliable.
 
@@ -212,12 +201,11 @@ If all active users actually need workload-contract evidence, it can be retired 
 When adding a new harness, decide by the first question:
 
 1. What surface is being tested?
-   - native runtime
+   - runtime implementation path
    - package API
    - browser
    - ABI/drop-in
    - compiler toolchain
-   - JS inference pipeline
 2. Is this correctness smoke, canonical comparison, or diagnostic attribution?
 3. Does it need claim-grade status, or only engineering guidance?
 

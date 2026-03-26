@@ -11,14 +11,132 @@ fn fileExists(path: []const u8) bool {
 fn sha256HexAlloc(allocator: std.mem.Allocator, input: []const u8) []u8 {
     var digest: [32]u8 = undefined;
     std.crypto.hash.sha2.Sha256.hash(input, &digest, .{});
-    const hex = allocator.alloc(u8, digest.len * 2) catch
+    return hexEncodeAlloc(allocator, &digest);
+}
+
+fn hexEncodeAlloc(allocator: std.mem.Allocator, bytes: []const u8) []u8 {
+    const hex = allocator.alloc(u8, bytes.len * 2) catch
         @panic("failed to allocate sha256 hex");
     const alphabet = "0123456789abcdef";
-    for (digest, 0..) |byte, idx| {
+    for (bytes, 0..) |byte, idx| {
         hex[idx * 2] = alphabet[byte >> 4];
         hex[idx * 2 + 1] = alphabet[byte & 0x0f];
     }
     return hex;
+}
+
+const ProofProvenance = struct {
+    lean_toolchain_ref: []const u8,
+    extract_program_sha256: []const u8,
+    lean_source_tree_sha256: []const u8,
+    generated_comparability_contract_sha256: []const u8,
+    proof_pattern_spec_sha256: []const u8,
+};
+
+fn readFileAlloc(allocator: std.mem.Allocator, path: []const u8, max_bytes: usize) []u8 {
+    const file = std.fs.cwd().openFile(path, .{}) catch
+        @panic("required file not found");
+    defer file.close();
+    return file.readToEndAlloc(allocator, max_bytes) catch
+        @panic("failed to read required file");
+}
+
+fn hashFileAlloc(allocator: std.mem.Allocator, path: []const u8, max_bytes: usize) []u8 {
+    const contents = readFileAlloc(allocator, path, max_bytes);
+    defer allocator.free(contents);
+    return sha256HexAlloc(allocator, contents);
+}
+
+fn lessThanString(_: void, lhs: []const u8, rhs: []const u8) bool {
+    return std.mem.lessThan(u8, lhs, rhs);
+}
+
+fn hashLeanSourceTreeAlloc(allocator: std.mem.Allocator, root_path: []const u8) []u8 {
+    var dir = std.fs.cwd().openDir(root_path, .{ .iterate = true }) catch
+        @panic("failed to open Lean source tree");
+    defer dir.close();
+
+    var walker = dir.walk(allocator) catch
+        @panic("failed to walk Lean source tree");
+    defer walker.deinit();
+
+    var rel_paths = std.ArrayList([]u8).initCapacity(allocator, 0) catch
+        @panic("failed to allocate Lean path list");
+    defer {
+        for (rel_paths.items) |path| allocator.free(path);
+        rel_paths.deinit(allocator);
+    }
+
+    while (walker.next() catch @panic("failed to iterate Lean source tree")) |entry| {
+        if (entry.kind != .file) continue;
+        if (!std.mem.endsWith(u8, entry.path, ".lean")) continue;
+        rel_paths.append(allocator, allocator.dupe(u8, entry.path) catch @panic("failed to dupe Lean path")) catch
+            @panic("failed to collect Lean paths");
+    }
+
+    std.sort.heap([]u8, rel_paths.items, {}, lessThanString);
+
+    var hasher = std.crypto.hash.sha2.Sha256.init(.{});
+    for (rel_paths.items) |rel_path| {
+        const repo_rel_path = std.fmt.allocPrint(allocator, "pipeline/lean/Doe/{s}", .{rel_path}) catch
+            @panic("failed to format Lean source path");
+        defer allocator.free(repo_rel_path);
+        hasher.update(repo_rel_path);
+        hasher.update("\n");
+
+        const full_path = std.fmt.allocPrint(allocator, "{s}/{s}", .{ root_path, rel_path }) catch
+            @panic("failed to format Lean source full path");
+        defer allocator.free(full_path);
+        const contents = readFileAlloc(allocator, full_path, 512 * 1024);
+        defer allocator.free(contents);
+        hasher.update(contents);
+        hasher.update("\n");
+    }
+
+    var digest: [32]u8 = undefined;
+    hasher.final(&digest);
+    return hexEncodeAlloc(allocator, &digest);
+}
+
+fn loadLeanToolchainRefAlloc(allocator: std.mem.Allocator) []u8 {
+    const ToolchainConfig = struct {
+        toolchains: struct {
+            lean: struct {
+                version: []const u8,
+            },
+        },
+    };
+
+    const json = readFileAlloc(allocator, "../../config/toolchains.json", 64 * 1024);
+    defer allocator.free(json);
+    const parsed = std.json.parseFromSlice(ToolchainConfig, allocator, json, .{
+        .ignore_unknown_fields = true,
+    }) catch @panic("failed to parse config/toolchains.json");
+    defer parsed.deinit();
+
+    const version = parsed.value.toolchains.lean.version;
+    return if (std.mem.startsWith(u8, version, "v"))
+        std.fmt.allocPrint(allocator, "leanprover/lean4:{s}", .{version}) catch @panic("failed to format Lean toolchain ref")
+    else
+        std.fmt.allocPrint(allocator, "leanprover/lean4:v{s}", .{version}) catch @panic("failed to format Lean toolchain ref");
+}
+
+fn loadProofProvenance(allocator: std.mem.Allocator) ProofProvenance {
+    return .{
+        .lean_toolchain_ref = loadLeanToolchainRefAlloc(allocator),
+        .extract_program_sha256 = hashFileAlloc(allocator, "../../pipeline/lean/Doe/Extract.lean", 64 * 1024),
+        .lean_source_tree_sha256 = hashLeanSourceTreeAlloc(allocator, "../../pipeline/lean/Doe"),
+        .generated_comparability_contract_sha256 = hashFileAlloc(allocator, "../../pipeline/lean/Doe/Generated/ComparabilityContract.lean", 256 * 1024),
+        .proof_pattern_spec_sha256 = hashFileAlloc(allocator, "../../config/lean-proof-patterns.json", 64 * 1024),
+    };
+}
+
+fn addProofProvenanceOptions(options: *std.Build.Step.Options, provenance: ProofProvenance) void {
+    options.addOption([]const u8, "lean_toolchain_ref", provenance.lean_toolchain_ref);
+    options.addOption([]const u8, "lean_extract_program_sha256", provenance.extract_program_sha256);
+    options.addOption([]const u8, "lean_source_tree_sha256", provenance.lean_source_tree_sha256);
+    options.addOption([]const u8, "generated_comparability_contract_sha256", provenance.generated_comparability_contract_sha256);
+    options.addOption([]const u8, "proof_pattern_spec_sha256", provenance.proof_pattern_spec_sha256);
 }
 
 fn configure_non_windows_graphics(artifact: *std.Build.Step.Compile, b: *std.Build, target: std.Build.ResolvedTarget) void {
@@ -70,11 +188,13 @@ pub fn build(b: *std.Build) void {
 
     const BuildTier = enum { compute, headless, full };
     const build_tier = b.option(BuildTier, "tier", "Build tier: compute (dispatch+buffer only), headless (full WebGPU sans presentation), full (Dawn drop-in)") orelse .headless;
+    const proof_provenance = loadProofProvenance(b.allocator);
 
     const lean_verified = b.option(bool, "lean-verified", "Embed Lean proof artifact and validate at comptime") orelse false;
     const build_options = b.addOptions();
     build_options.addOption(bool, "lean_verified", lean_verified);
     build_options.addOption(BuildTier, "build_tier", build_tier);
+    addProofProvenanceOptions(build_options, proof_provenance);
     {
         const f = std.fs.cwd().openFile("../../config/comparability-obligations.json", .{}) catch
             @panic("config/comparability-obligations.json not found");
@@ -85,15 +205,16 @@ pub fn build(b: *std.Build) void {
         build_options.addOption([]const u8, "comparability_obligations_sha256", sha256HexAlloc(b.allocator, json));
     }
 
+    var proof_json: ?[]const u8 = null;
     var proof_artifact_sha256: ?[]const u8 = null;
     if (lean_verified) {
         const proof_artifact = std.fs.cwd().openFile("../../pipeline/lean/artifacts/proven-conditions.json", .{}) catch
             @panic("lean-verified=true but pipeline/lean/artifacts/proven-conditions.json not found. Run pipeline/lean/extract.sh first.");
         defer proof_artifact.close();
-        const proof_json = proof_artifact.readToEndAlloc(b.allocator, 64 * 1024) catch
+        proof_json = proof_artifact.readToEndAlloc(b.allocator, 64 * 1024) catch
             @panic("failed to read lean proof artifact");
-        build_options.addOption([]const u8, "lean_proof_json", proof_json);
-        proof_artifact_sha256 = sha256HexAlloc(b.allocator, proof_json);
+        build_options.addOption([]const u8, "lean_proof_json", proof_json.?);
+        proof_artifact_sha256 = sha256HexAlloc(b.allocator, proof_json.?);
     }
 
     {
@@ -252,7 +373,10 @@ pub fn build(b: *std.Build) void {
         configure_non_windows_graphics(exe, b, target);
     }
 
-    b.installArtifact(exe);
+    const install_exe = b.addInstallArtifact(exe, .{});
+    const runtime_step = b.step("doe-runtime", "Build the Doe runtime binary");
+    runtime_step.dependOn(&install_exe.step);
+    b.getInstallStep().dependOn(&install_exe.step);
 
     const app_step = b.step("app", "Build macOS Doe Runtime .app bundle with generated icon");
     if (target.result.os.tag == .macos) {
@@ -360,6 +484,66 @@ pub fn build(b: *std.Build) void {
     module_runner_step.dependOn(&install_module_runner.step);
     b.getInstallStep().dependOn(module_runner_step);
 
+    const emit_msl_exe = b.addExecutable(.{
+        .name = "doe-emit-msl",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/main_emit_msl.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{
+                .{ .name = "build_options", .module = build_options_module },
+            },
+        }),
+    });
+    emit_msl_exe.linkLibC();
+    const install_emit_msl = b.addInstallArtifact(emit_msl_exe, .{});
+    const emit_msl_step = b.step("emit-msl", "Build the WGSL-to-MSL emitter tool");
+    emit_msl_step.dependOn(&install_emit_msl.step);
+    b.getInstallStep().dependOn(emit_msl_step);
+
+    const dawn_plan_executor = b.addExecutable(.{
+        .name = "dawn-plan-executor",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/main_dawn_plan_executor.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    dawn_plan_executor.linkLibC();
+    dawn_plan_executor.addIncludePath(b.path("../../bench/vendor/dawn/third_party/webgpu-headers/src"));
+    const install_dawn_plan_executor = b.addInstallArtifact(dawn_plan_executor, .{});
+    const dawn_plan_executor_step = b.step("dawn-plan-executor", "Build the standalone Dawn plan executor");
+    dawn_plan_executor_step.dependOn(&install_dawn_plan_executor.step);
+    b.getInstallStep().dependOn(dawn_plan_executor_step);
+
+    const doe_plan_executor = b.addExecutable(.{
+        .name = "doe-plan-executor",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/main_doe_plan_executor.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{
+                .{ .name = "build_options", .module = build_options_module },
+            },
+        }),
+    });
+    doe_plan_executor.linkLibC();
+    if (target.result.os.tag == .windows) {
+        doe_plan_executor.linkSystemLibrary("d3d12");
+        doe_plan_executor.linkSystemLibrary("dxgi");
+        doe_plan_executor.linkSystemLibrary("dxguid");
+        doe_plan_executor.addCSourceFile(.{
+            .file = b.path("src/backend/d3d12/d3d12_bridge.c"),
+            .flags = &.{},
+        });
+    } else {
+        configure_non_windows_graphics(doe_plan_executor, b, target);
+    }
+    const install_doe_plan_executor = b.addInstallArtifact(doe_plan_executor, .{});
+    const doe_plan_executor_step = b.step("doe-plan-executor", "Build the standalone Doe direct plan executor");
+    doe_plan_executor_step.dependOn(&install_doe_plan_executor.step);
+    b.getInstallStep().dependOn(doe_plan_executor_step);
+
     const csl_sim_runner = b.addExecutable(.{
         .name = "doe-csl-sim-runner",
         .root_module = b.createModule(.{
@@ -423,6 +607,7 @@ pub fn build(b: *std.Build) void {
     const compute_build_options = b.addOptions();
     compute_build_options.addOption(bool, "lean_verified", lean_verified);
     compute_build_options.addOption(BuildTier, "build_tier", .compute);
+    addProofProvenanceOptions(compute_build_options, proof_provenance);
     // Re-embed required config for the compute variant.
     {
         const f = std.fs.cwd().openFile("../../config/comparability-obligations.json", .{}) catch @panic("config/comparability-obligations.json not found");
@@ -431,6 +616,7 @@ pub fn build(b: *std.Build) void {
         compute_build_options.addOption([]const u8, "comparability_obligations_json", json);
         compute_build_options.addOption([]const u8, "comparability_obligations_sha256", sha256HexAlloc(b.allocator, json));
     }
+    if (lean_verified) compute_build_options.addOption([]const u8, "lean_proof_json", proof_json orelse @panic("lean proof json missing for compute build options"));
     {
         const f = std.fs.cwd().openFile("../../config/dropin-abi-behavior.json", .{}) catch @panic("config/dropin-abi-behavior.json not found");
         defer f.close();
@@ -483,6 +669,7 @@ pub fn build(b: *std.Build) void {
     const full_build_options = b.addOptions();
     full_build_options.addOption(bool, "lean_verified", lean_verified);
     full_build_options.addOption(BuildTier, "build_tier", .full);
+    addProofProvenanceOptions(full_build_options, proof_provenance);
     {
         const f = std.fs.cwd().openFile("../../config/comparability-obligations.json", .{}) catch @panic("config/comparability-obligations.json not found");
         defer f.close();
@@ -490,6 +677,7 @@ pub fn build(b: *std.Build) void {
         full_build_options.addOption([]const u8, "comparability_obligations_json", json);
         full_build_options.addOption([]const u8, "comparability_obligations_sha256", sha256HexAlloc(b.allocator, json));
     }
+    if (lean_verified) full_build_options.addOption([]const u8, "lean_proof_json", proof_json orelse @panic("lean proof json missing for full build options"));
     {
         const f = std.fs.cwd().openFile("../../config/dropin-abi-behavior.json", .{}) catch @panic("config/dropin-abi-behavior.json not found");
         defer f.close();
@@ -663,6 +851,20 @@ pub fn build(b: *std.Build) void {
             .root_source_file = b.path("src/doe_wgsl/bench.zig"),
             .target = target,
             .optimize = optimize,
+            .imports = &.{
+                .{ .name = "build_options", .module = build_options_module },
+                .{
+                    .name = "lean_proof",
+                    .module = b.createModule(.{
+                        .root_source_file = b.path("src/lean_proof.zig"),
+                        .target = target,
+                        .optimize = optimize,
+                        .imports = &.{
+                            .{ .name = "build_options", .module = build_options_module },
+                        },
+                    }),
+                },
+            },
         }),
     });
     shader_bench_exe.linkLibC();
@@ -697,4 +899,5 @@ pub fn build(b: *std.Build) void {
     const compilation_bench_run_step = b.step("bench-compilation-run", "Build and run the WGSL compilation latency benchmark");
     compilation_bench_run_step.dependOn(&install_compilation_bench.step);
     compilation_bench_run_step.dependOn(&run_compilation_bench.step);
+
 }

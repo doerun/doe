@@ -56,7 +56,7 @@ def make_timing_interpretation(
             "scope": "operation-total",
             "scopeClass": "operation-total",
         },
-        "headlineProcessWall": {
+        "workloadUnitWall": {
             "available": True,
             "leftStatsMs": make_stats(headline_p50, headline_p95),
             "rightStatsMs": make_stats(headline_p50 * 1.1, headline_p95 * 1.1),
@@ -99,7 +99,7 @@ class ClaimabilityMetricScopeTests(unittest.TestCase):
         )
 
         self.assertTrue(claimability["claimable"])
-        self.assertEqual(claimability["claimMetricScope"], "headlineProcessWall")
+        self.assertEqual(claimability["claimMetricScope"], "workloadUnitWall")
 
     def test_surface_prefers_headline_when_operation_total_undercovers_end_to_end(self) -> None:
         workload = SimpleNamespace(
@@ -130,10 +130,10 @@ class ClaimabilityMetricScopeTests(unittest.TestCase):
         )
 
         self.assertTrue(claimability["claimable"])
-        self.assertEqual(claimability["claimMetricScope"], "headlineProcessWall")
+        self.assertEqual(claimability["claimMetricScope"], "workloadUnitWall")
 
-    def test_upload_headline_claim_not_blocked_by_operation_scope_asymmetry(self) -> None:
-        """When an upload workload's claim has been promoted to headlineProcessWall
+    def test_upload_workload_unit_claim_not_blocked_by_operation_scope_asymmetry(self) -> None:
+        """When an upload workload's claim has been promoted to workloadUnitWall
         due to operation-timing coverage asymmetry (e.g. Doe deferred-queue-sync
         memcpy vs Dawn callback-loop timing), the operation-scope sanity check
         must not re-reject the already-promoted claim."""
@@ -211,7 +211,7 @@ class ClaimabilityMetricScopeTests(unittest.TestCase):
         )
 
         self.assertTrue(claimability["claimable"], f"reasons: {claimability['reasons']}")
-        self.assertEqual(claimability["claimMetricScope"], "headlineProcessWall")
+        self.assertEqual(claimability["claimMetricScope"], "workloadUnitWall")
 
     def test_operation_scope_asymmetry_blocks_when_claim_is_selected_timing(self) -> None:
         """When the claim metric is still selectedTiming (headline not available),
@@ -266,13 +266,13 @@ class ClaimabilityMetricScopeTests(unittest.TestCase):
         ]
         left = {"stats": make_stats(0.00017, 0.00019), "commandSamples": left_samples}
         right = {"stats": make_stats(0.076, 0.080), "commandSamples": right_samples}
-        # No headline available -- claim stays on selectedTiming
+        # No workload-unit wall available -- claim stays on selectedTiming
         timing_interpretation = {
             "selectedTiming": {
                 "scope": "operation-total",
                 "scopeClass": "operation-total",
             },
-            "headlineProcessWall": {"available": False},
+            "workloadUnitWall": {"available": False},
         }
 
         claimability = assess_claimability(
@@ -293,6 +293,47 @@ class ClaimabilityMetricScopeTests(unittest.TestCase):
             any("asymmetric versus process wall" in r for r in claimability["reasons"]),
             f"expected operation-scope asymmetry reason, got: {claimability['reasons']}",
         )
+
+    def test_legacy_headline_alias_still_promotes_to_workload_unit_wall(self) -> None:
+        workload = SimpleNamespace(
+            id="surface_full_presentation",
+            domain="surface",
+            path_asymmetry=False,
+            path_asymmetry_note="",
+        )
+        left = {"stats": make_stats(0.0202, 0.0246), "commandSamples": []}
+        right = {"stats": make_stats(0.0191, 0.0240), "commandSamples": []}
+        timing_interpretation = {
+            "selectedTiming": {
+                "scope": "operation-total",
+                "scopeClass": "narrow-hot-path",
+            },
+            "headlineProcessWall": {
+                "available": True,
+                "leftStatsMs": make_stats(0.0507, 0.0526),
+                "rightStatsMs": make_stats(0.0558, 0.0578),
+                "deltaPercent": {
+                    "p50Percent": 7.8,
+                    "p95Percent": 16.7,
+                    "p99Percent": 16.7,
+                },
+            },
+        }
+
+        claimability = assess_claimability(
+            mode="local",
+            min_timed_samples=19,
+            workload=workload,
+            left=left,
+            right=right,
+            delta={"p50Percent": -5.3, "p95Percent": -2.5, "p99Percent": -2.5},
+            timing_interpretation=timing_interpretation,
+            comparability={"comparable": True},
+            benchmark_policy=BENCHMARK_POLICY,
+        )
+
+        self.assertTrue(claimability["claimable"])
+        self.assertEqual(claimability["claimMetricScope"], "workloadUnitWall")
 
     def test_row_timing_floor_blocks_short_upload_rows(self) -> None:
         """When the median row wall time is below minRowTimingFloorNs (5ms),

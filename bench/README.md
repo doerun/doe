@@ -34,21 +34,69 @@ bench/run.py                            # compare metal smoke (macOS default)
 bench/run.py breadth                    # compare metal breadth — full coverage, fast
 bench/run.py compare vulkan release     # explicit harness + backend + preset
 bench/run.py compile metal smoke        # WGSL compilation comparison (Doe vs Tint)
-bench/run.py inference metal breadth    # JS inference pipeline comparison
 bench/run.py single metal --workload-id compute_dispatch_grid
+bench/run.py compare metal --config bench/native-compare/compare_dawn_vs_doe.config.apple.metal.gemma64.ir.json
 ```
 
 Positional arguments:
 
 | Axis    | Values | Default |
 |---------|--------|---------|
-| Harness | `compare`, `single`, `compile`, `inference`, `adhoc` | `compare` |
+| Harness | `compare`, `single`, `compile`, `adhoc` | `compare` |
 | Backend | `metal`, `vulkan`, `d3d12` | auto-detect |
 | Preset  | `smoke`, `compare-dev`, `compare`, `frontier`, `explore`, `release`, `breadth` | `smoke` |
 
 Extra `--flags` after the positionals are forwarded to the underlying harness
 script. The runner warns if workload lane files are stale relative to the
 catalog.
+
+## Terminology
+
+Use this mental model when reading benchmark docs and reports:
+
+- `Doe direct backend path`
+  - This is just Doe doing its real job: implementing WebGPU semantics itself
+    on a backend such as Metal, Vulkan, or D3D12.
+  - On Apple Metal, this means Doe parses the workload, translates WGSL as
+    needed, creates backend pipelines/resources itself, and records Metal
+    command buffers directly.
+- `Dawn delegate path`
+  - This is the compare lane where the same workload contract is executed
+    through the Dawn-backed path instead of Doe's own implementation.
+- `Package-surface compare`
+  - This is the JS/package lane where the same normalized plan is executed
+    through public Node-facing providers rather than the direct backend
+    executors.
+  - Use this when the question is "what does a JS user experience?" rather
+    than "which implementation wins at the backend boundary?"
+- `Plan-backed comparable runtime row`
+  - If a comparable runtime workload exposes `planPath`, the fair benchmark
+    boundary is the normalized plan on both sides.
+  - For claim-oriented `workloadUnitWall` comparisons, Doe and Dawn must both
+    run direct plan executors. Generated compatibility `commandsPath` artifacts
+    remain useful for debugging and legacy runtime paths, but they are not the
+    comparable wall-time boundary for IR-backed rows.
+- `Runtime workload`
+  - A runtime row usually includes three kinds of work together:
+    API/setup work, first-use kernel compilation/pipeline creation, and GPU
+    dispatch execution.
+  - Compilation-only rows are separate `runnerType: "compilation"` workloads.
+- `Host-overhead breakdown`
+  - Compare reports now also expose
+    `timingInterpretation.hostOverheadBreakdown`.
+  - This is a coarse once-per-sample breakdown of workload-unit wall overhead
+    outside the selected execution timing, derived from trace-meta totals such
+    as input read/parse, executor init, prewarm, command orchestration, and
+    artifact finalization.
+
+The important comparison split is therefore:
+
+- Doe implementation path
+- Dawn delegate path
+
+not:
+
+- "Doe native" versus "Doe non-native"
 
 ## Performance Strategy (Read First)
 
@@ -65,6 +113,83 @@ That document defines:
 - claimability order and comparability invariants
 - delta sign convention (`+` faster, `-` slower from Doe/left perspective)
 - optimization priorities and anti-patterns
+
+## Workload layout
+
+- Canonical backend workload lanes live directly under `bench/workloads/`:
+  - `workloads.apple.metal.json`
+  - `workloads.apple.metal.smoke.json`
+  - `workloads.amd.vulkan.json`
+  - `workloads.amd.vulkan.smoke.json`
+  - `workloads.local.d3d12.json`
+  - `workloads.local.d3d12.smoke.json`
+- The source of truth is `bench/workloads/metadata/backend-workload-catalog.json`.
+- Generic and special-purpose projections live under `bench/workloads/specialized/`.
+  Use those only when a tool or document explicitly calls for them.
+- Compilation rows now live in the same workload contracts as runtime rows.
+  The Doe-vs-Tint compiler harness resolves `runnerType: "compilation"` rows
+  from the workload file instead of scanning an unrelated shader directory, so
+  named compilation workloads can point at the real inference-pipeline WGSLs.
+- Apple Metal also carries Doe-owned Gemma-3-270M-shaped direct-backend runtime rows:
+  `inference_gemma3_270m_prefill_32tok` and
+  `inference_gemma3_270m_decode_1tok`. These are plain Doe command streams,
+  not imported manifest schemas: they seed uniform/token buffers with explicit
+  `buffer_write` commands and dispatch the retained inference WGSL kernels in
+  the same compute shape as the real prefill/decode path.
+- Neutral authored benchmark IR now lives under `bench/ir/`.
+  - `bench/ir/gemma3_270m.json` is the current Gemma-shaped source of truth.
+  - Generated normalized plans live under `bench/plans/generated/`.
+  - Compatibility command artifacts remain emitted for Doe runtime execution,
+    but they are generated artifacts, not the authored benchmark layer.
+  - For comparable IR-backed runtime rows, `planPath` is the strict apples-to-
+    apples execution boundary. `commandsPath` compatibility artifacts are
+    non-claim debugging surfaces for those rows.
+- The old synthetic JS inference-pipeline benchmark surface was removed.
+  For real model inference benchmarking, use Doe-owned runtime command streams
+  and runtime example paths under `runtime/zig/examples/`, not a random-weight
+  JS proxy.
+
+## IR and executors
+
+- `bench/ir/*.json`
+  - neutral authored benchmark IR
+- `bench/plans/generated/*.plan.json`
+  - normalized executable plans derived from the IR
+- `bench/executors/`
+  - standalone executors that consume normalized plans
+  - current direct executor coverage:
+    - Doe direct backend via `runtime/zig/zig-out/bin/doe-plan-executor`
+      for plan-backed comparable runtime rows
+    - standalone direct Dawn/WebGPU executor via `runtime/zig/zig-out/bin/dawn-plan-executor`
+    - standalone Node package executor via `bench/executors/run-node-webgpu-plan.js`
+      for:
+      - `doe-gpu` (`doe_node_webgpu`)
+      - Dawn Node WebGPU (`dawn_node_webgpu`)
+
+The compare harness can now resolve executor ids instead of only raw command
+templates. The current Gemma-shaped end-to-end config is:
+
+- `bench/native-compare/compare_dawn_vs_doe.config.apple.metal.gemma64.ir.json`
+
+That row compares:
+
+- left: Doe direct Metal backend execution through the normalized plan executor
+- right: standalone direct Dawn/WebGPU execution on Metal
+
+over the same normalized `prefill64 + decode64` Gemma-shaped plan.
+
+Package-surface configs now exist alongside the direct configs:
+
+- `bench/native-compare/compare_dawn_vs_doe.config.apple.metal.gemma64.node-package.ir.json`
+- `bench/native-compare/compare_dawn_vs_doe.config.apple.metal.gemma1b.node-package.ir.json`
+
+These compare the public Node-facing providers over the same normalized plan:
+
+- left: `doe-gpu`
+- right: Dawn Node WebGPU
+
+They are apples-to-apples for the package layer, but they are not direct
+backend implementation claims.
 
 ## Scripts
 
@@ -101,13 +226,13 @@ That document defines:
   - scans Dawn-vs-Doe compare reports and emits:
     - canonical tested-profile inventory JSON (`vendor/api/deviceFamily/driver` coverage, matrix status history, report-level status rollups)
     - simple HTML dashboard for matrix status + performance delta vs Dawn
-  - only includes conformant compare reports (`schemaVersion=4`, canonical comparability-obligation IDs, and valid `workloadContract.path/sha256` hash match).
+  - only includes conformant compare reports (`schemaVersion=5`, canonical comparability-obligation IDs, and valid `workloadContract.path/sha256` hash match).
   - profile combos are sourced from per-sample `traceMeta.profile` fields; sides without profile metadata are tracked as report status only (not hardware-profile coverage).
   - also writes stable latest paths (`bench/out/test-inventory.latest.json`, `bench/out/test-dashboard.latest.html`) for a single canonical source of truth.
   - excludes `bench/out/scratch/**` from canonical inventory aggregation.
 - `build_baseline_dataset.py`
   - builds a canonical baseline trend package from historical comparison artifacts.
-  - only includes conformant compare reports (`schemaVersion=4`, canonical comparability-obligation IDs, and valid `workloadContract.path/sha256` hash match).
+  - only includes conformant compare reports (`schemaVersion=5`, canonical comparability-obligation IDs, and valid `workloadContract.path/sha256` hash match).
   - emits timestamped JSON trend dataset + markdown summary plus stable latest outputs.
   - groups history by matrix/runtime pair and tracks latest/best/worst p50 delta snapshots.
 - `build_benchmark_cube.py`
@@ -307,7 +432,7 @@ python3 bench/tools/cleanup_out.py --retention-days 14
 
 ## Workload presets
 
-- `bench/workloads/workloads.json` defines replay workloads, default profiles, and command seed artifacts.
+- `bench/workloads/specialized/workloads.generic.json` defines the generic replay workload view, default profiles, and command seed artifacts.
 - workload IDs must follow the immutable naming contract from `bench/docs/benchmark-writing-guide.md`:
   `domain_subject_shape_variant` (status-free, no lifecycle/maturity prefixes).
 - each workload includes `comparable` to declare whether mapping quality is apples-to-apples (`true`) or directional (`false`).
@@ -441,7 +566,7 @@ python3 bench/native-compare/compare_dawn_vs_doe.py \
   `--claimability local|release` enforces sample-floor and positive-tail checks for claimable speed reports.
   use `--claim-min-timed-samples N` to override mode defaults loaded from `config/benchmark-methodology-thresholds.json` (`claimabilityDefaults.localMinTimedSamples`, `claimabilityDefaults.releaseMinTimedSamples`).
   claimability failures return non-zero exit status (`3`) and report `claimStatus=diagnostic`.
-  workloads whose selected timing scope is `narrow-hot-path` keep `deltaPercent` as an engineering diagnostic, but claimability now evaluates `timingInterpretation.headlineProcessWall.deltaPercent` when that end-to-end metric is available. `headlineProcessWall` is normalized by `commandRepeat` and `timingNormalizationDivisor`, so repeat-asymmetric lanes still compare one workload unit to one workload unit.
+  workloads whose selected timing scope is `narrow-hot-path` keep `deltaPercent` as an engineering diagnostic, but claimability now evaluates `timingInterpretation.workloadUnitWall.deltaPercent` when that full workload-unit metric is available. `workloadUnitWall` is normalized by `commandRepeat` and `timingNormalizationDivisor`, so repeat-asymmetric lanes still compare one workload unit to one workload unit.
 - trace replay gate supports semantic parity lanes:
   `bench/gates/trace_gate.py --semantic-parity-mode auto|required`.
   use `required` only for runtime-to-runtime parity artifacts (for example Doe vs Dawn traces), because Dawn comparison traces are not semantic-envelope compatible.
@@ -518,11 +643,11 @@ Interpret VRAM deltas as device-level signals (global GPU usage), not isolated p
   when ignore-first is enabled and applied, source is reported as `doe-execution-row-total-ns+ignore-first-ops`.
 - compare reports now also emit `timingInterpretation` per workload:
   - `selectedTiming` describes what `deltaPercent` actually measures (`operation-total`, `operation-encode`, `process-wall`, etc.).
-  - `headlineProcessWall` reports the timed-command process-wall view for honest end-to-end ranking, normalized to one workload unit via `commandRepeat` and `timingNormalizationDivisor`.
-  - when `selectedTiming.scopeClass=narrow-hot-path`, `deltaPercent` stays a phase-specific diagnostic while claimability uses `headlineProcessWall.deltaPercent` for end-to-end evaluation when available.
+  - `workloadUnitWall` reports the timed-command process-wall view for the full workload unit, normalized to one workload unit via `commandRepeat` and `timingNormalizationDivisor`.
+  - when `selectedTiming.scopeClass=narrow-hot-path`, `deltaPercent` stays a phase-specific diagnostic while claimability uses `workloadUnitWall.deltaPercent` for full workload-unit evaluation when available.
 - per-workload timing normalization is config-driven via `leftTimingDivisor` / `rightTimingDivisor`
   in `workloads.json` (matvec uses `leftTimingDivisor=100` and `rightTimingDivisor=1` because Dawn already reports per-dispatch via `iterationsPerStep=100`).
-  repeat-asymmetric benchmark runs also normalize counter-derived operation totals and headline process wall by `commandRepeat`, so `repeat=100` vs `repeat=1` still compares a single workload unit on both sides.
+  repeat-asymmetric benchmark runs also normalize counter-derived operation totals and workload-unit wall by `commandRepeat`, so `repeat=100` vs `repeat=1` still compares a single workload unit on both sides.
 - non-comparable mappings can be explicitly flagged in workload contracts and excluded by default.
 
 Extended workload domains now include:
@@ -783,7 +908,7 @@ Config fields (CLI-compatible, config-first):
 
 ```json
 {
-  "workloads": "bench/workloads/workloads.json",
+  "workloads": "bench/workloads/specialized/workloads.generic.json",
   "left": {
     "name": "doe",
     "commandTemplate": "env LD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$LD_LIBRARY_PATH runtime/zig/zig-out/bin/doe-zig-runtime --commands {commands} --quirks {quirks} --vendor {vendor} --api {api} --family {family} --driver {driver} --backend native --execute --trace --trace-jsonl {trace_jsonl} --trace-meta {trace_meta} {extra_args}"
@@ -974,15 +1099,16 @@ Interpretation examples:
 - `+400%` => left is `5x` faster
 - `-50%` => left is `2x` slower
 
-`compare_dawn_vs_doe.py` and `compare_runtimes.py` emit `deltaPercentConvention` in reports and now write `schemaVersion: 4`.
+`compare_dawn_vs_doe.py` and `compare_runtimes.py` emit `deltaPercentConvention` in reports and now write `schemaVersion: 5`.
 
-`schemaVersion: 4` percentile summaries include fast-end, median, and tail metrics:
+`schemaVersion: 5` percentile summaries include fast-end, median, tail metrics, and the clearer `workloadUnitWall` timing name:
 
 - workload stats include `p10Ms`, `p50Ms`, `p95Ms`, `p99Ms`
 - workload deltas include `p10Percent`, `p50Percent`, `p95Percent`, `p99Percent`
 - overall delta summary includes `p10Approx`, `p50Approx`, `p95Approx`, `p99Approx`
-- workload timing interpretation includes selected-scope metadata and a headline process-wall view (`timingInterpretation.selectedTiming`, `timingInterpretation.headlineProcessWall`)
-- reports may also include `overallHeadlineProcessWall` for end-to-end process-wall aggregation across comparable workloads
+- workload timing interpretation includes selected-scope metadata and a workload-unit wall view (`timingInterpretation.selectedTiming`, `timingInterpretation.workloadUnitWall`)
+- reports may also include `overallWorkloadUnitWall` for end-to-end process-wall aggregation across comparable workloads
+- legacy aliases remain during migration: `timingInterpretation.headlineProcessWall` and `overallHeadlineProcessWall`
 - HTML visualization emphasizes `p10/p50/p95/p99`
 - claimability metadata fields are included:
   `claimabilityPolicy`, workload `claimability`, `claimabilitySummary`, `claimStatus`

@@ -6,6 +6,7 @@ from typing import Any
 
 from native_compare_modules import timing_sanity
 from native_compare_modules.reporting import safe_float, safe_int
+from native_compare_modules.timing_interpretation import workload_unit_wall_view
 from native_compare_modules.timing_selection import canonical_timing_source
 
 END_TO_END_CLAIM_UNDERCOVERAGE_RATIO = 0.5
@@ -261,7 +262,7 @@ def assess_throughput_plausibility(
     return reasons
 
 
-def should_prefer_headline_for_upload_claim(
+def should_prefer_workload_unit_wall_for_upload_claim(
     *,
     workload_id: str,
     workload_domain: str,
@@ -278,24 +279,24 @@ def should_prefer_headline_for_upload_claim(
     )
 
 
-def _headline_percentiles_positive(
-    headline_delta: dict[str, Any] | None,
+def _workload_unit_wall_percentiles_positive(
+    workload_unit_wall_delta: dict[str, Any] | None,
     required_percentiles: list[str],
 ) -> bool:
-    if not isinstance(headline_delta, dict):
+    if not isinstance(workload_unit_wall_delta, dict):
         return False
     for percentile in required_percentiles:
-        value = safe_float(headline_delta.get(percentile))
+        value = safe_float(workload_unit_wall_delta.get(percentile))
         if value is None or value <= 0.0:
             return False
     return True
 
 
-def should_prefer_headline_for_end_to_end_claim(
+def should_prefer_workload_unit_wall_for_end_to_end_claim(
     *,
     workload_domain: str,
     selected_scope_class: str,
-    headline_delta: dict[str, Any] | None,
+    workload_unit_wall_delta: dict[str, Any] | None,
     left_selected_wall_coverage: float | None,
     right_selected_wall_coverage: float | None,
     required_percentiles: list[str],
@@ -308,7 +309,10 @@ def should_prefer_headline_for_end_to_end_claim(
         return False
     if max(left_selected_wall_coverage, right_selected_wall_coverage) >= END_TO_END_CLAIM_UNDERCOVERAGE_RATIO:
         return False
-    return _headline_percentiles_positive(headline_delta, required_percentiles)
+    return _workload_unit_wall_percentiles_positive(
+        workload_unit_wall_delta,
+        required_percentiles,
+    )
 
 
 def assess_claimability(
@@ -359,44 +363,62 @@ def assess_claimability(
     selected_timing = timing_interpretation.get("selectedTiming", {})
     if not isinstance(selected_timing, dict):
         selected_timing = {}
-    headline = timing_interpretation.get("headlineProcessWall", {})
-    headline_available = isinstance(headline, dict) and headline.get("available") is True
+    workload_unit_wall = workload_unit_wall_view(timing_interpretation)
+    workload_unit_wall_available = workload_unit_wall.get("available") is True
     if selected_timing.get("scopeClass") == "narrow-hot-path":
-        if headline_available:
-            headline_delta = headline.get("deltaPercent")
-            headline_left = headline.get("leftStatsMs")
-            headline_right = headline.get("rightStatsMs")
-            if isinstance(headline_delta, dict) and isinstance(headline_left, dict) and isinstance(headline_right, dict):
-                claim_metric_field = "timingInterpretation.headlineProcessWall.deltaPercent"
-                claim_metric_scope = "headlineProcessWall"
-                claim_delta = headline_delta
-                claim_left_stats = headline_left
-                claim_right_stats = headline_right
+        if workload_unit_wall_available:
+            workload_unit_wall_delta = workload_unit_wall.get("deltaPercent")
+            workload_unit_wall_left = workload_unit_wall.get("leftStatsMs")
+            workload_unit_wall_right = workload_unit_wall.get("rightStatsMs")
+            if (
+                isinstance(workload_unit_wall_delta, dict)
+                and isinstance(workload_unit_wall_left, dict)
+                and isinstance(workload_unit_wall_right, dict)
+            ):
+                claim_metric_field = "timingInterpretation.workloadUnitWall.deltaPercent"
+                claim_metric_scope = "workloadUnitWall"
+                claim_delta = workload_unit_wall_delta
+                claim_left_stats = workload_unit_wall_left
+                claim_right_stats = workload_unit_wall_right
             else:
                 reasons.append(
-                    "selected timing scope is narrow-hot-path but headlineProcessWall is incomplete for claim evaluation"
+                    "selected timing scope is narrow-hot-path but workloadUnitWall is incomplete for claim evaluation"
                 )
         else:
             reasons.append(
-                "selected timing scope is narrow-hot-path and headlineProcessWall is unavailable for end-to-end claim evaluation"
+                "selected timing scope is narrow-hot-path and workloadUnitWall is unavailable for full workload-unit claim evaluation"
             )
 
     left_p50_ms = safe_float(claim_left_stats.get("p50Ms"))
     right_p50_ms = safe_float(claim_right_stats.get("p50Ms"))
-    headline_delta = headline.get("deltaPercent") if isinstance(headline, dict) else None
-    headline_left = headline.get("leftStatsMs") if isinstance(headline, dict) else None
-    headline_right = headline.get("rightStatsMs") if isinstance(headline, dict) else None
-    headline_left_p50_ms = safe_float(headline_left.get("p50Ms")) if isinstance(headline_left, dict) else None
-    headline_right_p50_ms = safe_float(headline_right.get("p50Ms")) if isinstance(headline_right, dict) else None
-    left_selected_wall_coverage = coverage_ratio(left_p50_ms, headline_left_p50_ms)
-    right_selected_wall_coverage = coverage_ratio(right_p50_ms, headline_right_p50_ms)
+    workload_unit_wall_delta = (
+        workload_unit_wall.get("deltaPercent") if isinstance(workload_unit_wall, dict) else None
+    )
+    workload_unit_wall_left = (
+        workload_unit_wall.get("leftStatsMs") if isinstance(workload_unit_wall, dict) else None
+    )
+    workload_unit_wall_right = (
+        workload_unit_wall.get("rightStatsMs") if isinstance(workload_unit_wall, dict) else None
+    )
+    workload_unit_wall_left_p50_ms = (
+        safe_float(workload_unit_wall_left.get("p50Ms"))
+        if isinstance(workload_unit_wall_left, dict)
+        else None
+    )
+    workload_unit_wall_right_p50_ms = (
+        safe_float(workload_unit_wall_right.get("p50Ms"))
+        if isinstance(workload_unit_wall_right, dict)
+        else None
+    )
+    left_selected_wall_coverage = coverage_ratio(left_p50_ms, workload_unit_wall_left_p50_ms)
+    right_selected_wall_coverage = coverage_ratio(right_p50_ms, workload_unit_wall_right_p50_ms)
     if (
         workload.domain in {"copy", "upload", "p0-resource"}
         and claim_metric_scope == "selectedTiming"
         and selected_timing.get("scopeClass") == "operation-total"
-        and isinstance(headline_delta, dict)
-        and isinstance(headline_left, dict)
-        and isinstance(headline_right, dict)
+        and isinstance(workload_unit_wall_delta, dict)
+        and isinstance(workload_unit_wall_left, dict)
+        and isinstance(workload_unit_wall_right, dict)
         and left_selected_wall_coverage is not None
         and right_selected_wall_coverage is not None
     ):
@@ -404,88 +426,95 @@ def assess_claimability(
         larger_coverage = max(left_selected_wall_coverage, right_selected_wall_coverage)
         coverage_asymmetry = float("inf") if smaller_coverage <= 0.0 else larger_coverage / smaller_coverage
         if smaller_coverage < 0.05 and coverage_asymmetry >= 5.0:
-            claim_metric_field = "timingInterpretation.headlineProcessWall.deltaPercent"
-            claim_metric_scope = "headlineProcessWall"
-            claim_delta = headline_delta
-            claim_left_stats = headline_left
-            claim_right_stats = headline_right
-            left_p50_ms = headline_left_p50_ms
-            right_p50_ms = headline_right_p50_ms
+            claim_metric_field = "timingInterpretation.workloadUnitWall.deltaPercent"
+            claim_metric_scope = "workloadUnitWall"
+            claim_delta = workload_unit_wall_delta
+            claim_left_stats = workload_unit_wall_left
+            claim_right_stats = workload_unit_wall_right
+            left_p50_ms = workload_unit_wall_left_p50_ms
+            right_p50_ms = workload_unit_wall_right_p50_ms
     if (
         claim_metric_scope == "selectedTiming"
-        and isinstance(headline_delta, dict)
-        and isinstance(headline_left, dict)
-        and isinstance(headline_right, dict)
-        and should_prefer_headline_for_end_to_end_claim(
+        and isinstance(workload_unit_wall_delta, dict)
+        and isinstance(workload_unit_wall_left, dict)
+        and isinstance(workload_unit_wall_right, dict)
+        and should_prefer_workload_unit_wall_for_end_to_end_claim(
             workload_domain=workload.domain,
             selected_scope_class=str(selected_timing.get("scopeClass", "")),
-            headline_delta=headline_delta,
+            workload_unit_wall_delta=workload_unit_wall_delta,
             left_selected_wall_coverage=left_selected_wall_coverage,
             right_selected_wall_coverage=right_selected_wall_coverage,
             required_percentiles=required_percentiles,
         )
     ):
-        claim_metric_field = "timingInterpretation.headlineProcessWall.deltaPercent"
-        claim_metric_scope = "headlineProcessWall"
-        claim_delta = headline_delta
-        claim_left_stats = headline_left
-        claim_right_stats = headline_right
-        left_p50_ms = headline_left_p50_ms
-        right_p50_ms = headline_right_p50_ms
+        claim_metric_field = "timingInterpretation.workloadUnitWall.deltaPercent"
+        claim_metric_scope = "workloadUnitWall"
+        claim_delta = workload_unit_wall_delta
+        claim_left_stats = workload_unit_wall_left
+        claim_right_stats = workload_unit_wall_right
+        left_p50_ms = workload_unit_wall_left_p50_ms
+        right_p50_ms = workload_unit_wall_right_p50_ms
     if (
         workload.domain == "upload"
         and claim_metric_scope == "selectedTiming"
-        and isinstance(headline_delta, dict)
-        and isinstance(headline_left, dict)
-        and isinstance(headline_right, dict)
-        and should_prefer_headline_for_upload_claim(
+        and isinstance(workload_unit_wall_delta, dict)
+        and isinstance(workload_unit_wall_left, dict)
+        and isinstance(workload_unit_wall_right, dict)
+        and should_prefer_workload_unit_wall_for_upload_claim(
             workload_id=workload.id,
             workload_domain=workload.domain,
             left_p50_ms=left_p50_ms,
             right_p50_ms=right_p50_ms,
         )
     ):
-        claim_metric_field = "timingInterpretation.headlineProcessWall.deltaPercent"
-        claim_metric_scope = "headlineProcessWall"
-        claim_delta = headline_delta
-        claim_left_stats = headline_left
-        claim_right_stats = headline_right
-        left_p50_ms = headline_left_p50_ms
-        right_p50_ms = headline_right_p50_ms
+        claim_metric_field = "timingInterpretation.workloadUnitWall.deltaPercent"
+        claim_metric_scope = "workloadUnitWall"
+        claim_delta = workload_unit_wall_delta
+        claim_left_stats = workload_unit_wall_left
+        claim_right_stats = workload_unit_wall_right
+        left_p50_ms = workload_unit_wall_left_p50_ms
+        right_p50_ms = workload_unit_wall_right_p50_ms
     if (
         workload.domain == "upload"
         and claim_metric_scope == "selectedTiming"
         and selected_timing.get("scopeClass") == "operation-total"
-        and _headline_percentiles_positive(headline_delta, required_percentiles)
+        and _workload_unit_wall_percentiles_positive(
+            workload_unit_wall_delta,
+            required_percentiles,
+        )
         and left_selected_wall_coverage is not None
         and right_selected_wall_coverage is not None
         and max(left_selected_wall_coverage, right_selected_wall_coverage) < 0.5
     ):
-        claim_metric_field = "timingInterpretation.headlineProcessWall.deltaPercent"
-        claim_metric_scope = "headlineProcessWall"
-        claim_delta = headline_delta
-        claim_left_stats = headline_left
-        claim_right_stats = headline_right
-        left_p50_ms = headline_left_p50_ms
-        right_p50_ms = headline_right_p50_ms
+        claim_metric_field = "timingInterpretation.workloadUnitWall.deltaPercent"
+        claim_metric_scope = "workloadUnitWall"
+        claim_delta = workload_unit_wall_delta
+        claim_left_stats = workload_unit_wall_left
+        claim_right_stats = workload_unit_wall_right
+        left_p50_ms = workload_unit_wall_left_p50_ms
+        right_p50_ms = workload_unit_wall_right_p50_ms
     if (
         workload.domain == "copy"
         and claim_metric_scope == "selectedTiming"
         and selected_timing.get("scopeClass") == "operation-total"
-        and headline_available
+        and workload_unit_wall_available
         and ((left_p50_ms is not None and left_p50_ms < 0.0001) or (right_p50_ms is not None and right_p50_ms < 0.0001))
     ):
-        if isinstance(headline_delta, dict) and isinstance(headline_left, dict) and isinstance(headline_right, dict):
-            claim_metric_field = "timingInterpretation.headlineProcessWall.deltaPercent"
-            claim_metric_scope = "headlineProcessWall"
-            claim_delta = headline_delta
-            claim_left_stats = headline_left
-            claim_right_stats = headline_right
+        if (
+            isinstance(workload_unit_wall_delta, dict)
+            and isinstance(workload_unit_wall_left, dict)
+            and isinstance(workload_unit_wall_right, dict)
+        ):
+            claim_metric_field = "timingInterpretation.workloadUnitWall.deltaPercent"
+            claim_metric_scope = "workloadUnitWall"
+            claim_delta = workload_unit_wall_delta
+            claim_left_stats = workload_unit_wall_left
+            claim_right_stats = workload_unit_wall_right
             left_p50_ms = safe_float(claim_left_stats.get("p50Ms"))
             right_p50_ms = safe_float(claim_right_stats.get("p50Ms"))
         else:
             reasons.append(
-                "copy workload selected timing is below the measurement noise floor but headlineProcessWall is incomplete"
+                "copy workload selected timing is below the measurement noise floor but workloadUnitWall is incomplete"
             )
 
     left_count = safe_int(claim_left_stats.get("count"), default=0)
@@ -585,10 +614,10 @@ def assess_claimability(
     if isinstance(left_samples, list) and isinstance(right_samples, list):
         # Operation-scope sanity only applies when the claim metric is still
         # based on operation timing.  When the claim has already been promoted
-        # to headlineProcessWall (e.g. because of a known coverage asymmetry
+        # to workloadUnitWall (e.g. because of a known coverage asymmetry
         # such as upload deferred-queue-sync), the operation-timing coverage
         # ratio is expected to be asymmetric and is no longer claim-relevant.
-        if claim_metric_scope != "headlineProcessWall":
+        if claim_metric_scope != "workloadUnitWall":
             reasons.extend(
                 timing_sanity.assess_operation_scope_claim_sanity(
                     left_command_samples=left_samples,

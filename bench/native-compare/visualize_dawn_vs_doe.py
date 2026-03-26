@@ -317,12 +317,16 @@ def analyze_workload(
     selected_timing = timing_interpretation.get("selectedTiming", {})
     if not isinstance(selected_timing, dict):
         selected_timing = {}
-    headline_process_wall = timing_interpretation.get("headlineProcessWall", {})
-    if not isinstance(headline_process_wall, dict):
-        headline_process_wall = {}
-    headline_delta = headline_process_wall.get("deltaPercent", {})
-    if not isinstance(headline_delta, dict):
-        headline_delta = {}
+    workload_unit_wall = timing_interpretation.get("workloadUnitWall", {})
+    if not isinstance(workload_unit_wall, dict):
+        workload_unit_wall = {}
+    if not workload_unit_wall:
+        legacy_workload_unit_wall = timing_interpretation.get("headlineProcessWall", {})
+        if isinstance(legacy_workload_unit_wall, dict):
+            workload_unit_wall = legacy_workload_unit_wall
+    workload_unit_delta = workload_unit_wall.get("deltaPercent", {})
+    if not isinstance(workload_unit_delta, dict):
+        workload_unit_delta = {}
 
     return {
         "id": workload.get("id"),
@@ -349,7 +353,7 @@ def analyze_workload(
             "scopeClass": selected_timing.get("scopeClass"),
             "note": selected_timing.get("note"),
         },
-        "headlineProcessWallDeltaPercent": headline_delta,
+        "workloadUnitWallDeltaPercent": workload_unit_delta,
         "leftSamplesMs": left_samples,
         "rightSamplesMs": right_samples,
     }
@@ -570,9 +574,9 @@ def generate_html(
         left_stats = analysis.get("leftStatsMs", {})
         right_stats = analysis.get("rightStatsMs", {})
         delta = analysis.get("deltaPercent", {})
-        headline_delta = analysis.get("headlineProcessWallDeltaPercent", {})
-        if not isinstance(headline_delta, dict):
-            headline_delta = {}
+        workload_unit_delta = analysis.get("workloadUnitWallDeltaPercent", {})
+        if not isinstance(workload_unit_delta, dict):
+            workload_unit_delta = {}
         selected_timing = analysis.get("selectedTiming", {})
         if not isinstance(selected_timing, dict):
             selected_timing = {}
@@ -593,7 +597,7 @@ def generate_html(
             f"<td>{fmt_ms(right_stats.get('p50Ms'))}</td>"
             f"<td>{fmt_ms(right_stats.get('p95Ms'))}</td>"
             f"<td>{fmt_ms(right_stats.get('p99Ms'))}</td>"
-            f"<td style='color:{pick_delta_color(headline_delta.get('p50Percent'))};font-weight:600'>{fmt_pct(headline_delta.get('p50Percent'))}</td>"
+            f"<td style='color:{pick_delta_color(workload_unit_delta.get('p50Percent'))};font-weight:600'>{fmt_pct(workload_unit_delta.get('p50Percent'))}</td>"
             f"<td style='color:{pick_delta_color(delta.get('p10Percent'))};font-weight:600'>{fmt_pct(delta.get('p10Percent'))}</td>"
             f"<td style='color:{pick_delta_color(delta.get('p50Percent'))};font-weight:600'>{fmt_pct(delta.get('p50Percent'))}</td>"
             f"<td style='color:{pick_delta_color(delta.get('p95Percent'))};font-weight:600'>{fmt_pct(delta.get('p95Percent'))}</td>"
@@ -627,7 +631,7 @@ def generate_html(
             "          <th>right p50 ms</th>\n"
             "          <th>right p95 ms</th>\n"
             "          <th>right p99 ms</th>\n"
-            "          <th>headline wall p50</th>\n"
+            "          <th>workload-unit wall p50</th>\n"
             "          <th>delta p10</th>\n"
             "          <th>delta p50</th>\n"
             "          <th>delta p95</th>\n"
@@ -815,7 +819,7 @@ def generate_html(
     </section>
     <section class="panel">
       <h2>Workload Table (Strict Baseline)</h2>
-      <div class="meta">Fast-end metric shown is p10. Headline wall p50 is the honest timed-command process-wall view; selected deltas may be narrower in encode-only lanes.</div>
+      <div class="meta">Fast-end metric shown is p10. Workload-unit wall p50 is the honest timed-command process-wall view; selected deltas may be narrower in encode-only lanes.</div>
       <div class="table-wrap">
         <table>
           <thead>
@@ -832,7 +836,7 @@ def generate_html(
               <th>right p50 ms</th>
               <th>right p95 ms</th>
               <th>right p99 ms</th>
-              <th>headline wall p50</th>
+              <th>workload-unit wall p50</th>
               <th>delta p10</th>
               <th>delta p50</th>
               <th>delta p95</th>

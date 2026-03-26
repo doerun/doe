@@ -7,7 +7,6 @@ a small number of human-friendly axes:
     python3 bench/run.py compare metal breadth
     python3 bench/run.py compare vulkan smoke
     python3 bench/run.py compile metal smoke
-    python3 bench/run.py inference metal breadth
     python3 bench/run.py single metal --workload-id compute_dispatch_grid
 
 Backend auto-detects from platform when omitted:
@@ -32,7 +31,6 @@ HARNESSES = {
     "compare": "bench/native-compare/compare_dawn_vs_doe.py",
     "single": "bench/single-runtime/run_bench.py",
     "compile": "bench/native-compare/compare_doe_vs_tint_compilation.py",
-    "inference": "bench/inference-pipeline/compare-inference-pipeline.py",
     "adhoc": "bench/native-compare/compare_runtimes.py",
 }
 
@@ -94,6 +92,20 @@ def resolve_compare_config(backend: str, preset: str) -> Path:
     return config_path
 
 
+def resolve_compile_config(backend: str, preset: str) -> Path:
+    backend_key = BACKEND_ALIASES.get(backend, backend)
+    candidates = [
+        BENCH_ROOT / "native-compare" / f"compare_doe_vs_tint.config.{backend_key}.{preset}.json",
+        BENCH_ROOT / "native-compare" / f"compare_doe_vs_tint.config.{backend_key}.json",
+        BENCH_ROOT / "native-compare" / "compare_doe_vs_tint.config.json",
+    ]
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    print("ERROR: Doe-vs-Tint compilation config not found", file=sys.stderr)
+    sys.exit(1)
+
+
 # ── Staleness check ──────────────────────────────────────────────────────────
 
 
@@ -136,8 +148,8 @@ def build_command(
         check_workload_staleness(config_path)
         return [sys.executable, str(script), "--config", str(config_path)] + extra_args
 
-    if harness in ("compile", "inference"):
-        config_path = resolve_compare_config(backend, preset)
+    if harness == "compile":
+        config_path = resolve_compile_config(backend, preset)
         check_workload_staleness(config_path)
         return [sys.executable, str(script), "--config", str(config_path)] + extra_args
 
@@ -193,7 +205,7 @@ def print_help() -> None:
     print(
         """Usage: bench/run.py [harness] [backend] [preset] [-- extra-args...]
 
-  Harnesses:  compare (default), single, compile, inference, adhoc
+  Harnesses:  compare (default), single, compile, adhoc
   Backends:   metal, vulkan, d3d12  (auto-detected from platform)
   Presets:    smoke (default), compare-dev, compare, frontier,
               explore, release, breadth
@@ -204,6 +216,7 @@ Examples:
   bench/run.py compare vulkan release   # explicit
   bench/run.py compile metal smoke      # compilation comparison
   bench/run.py single metal --workload-id compute_dispatch_grid
+  bench/run.py compare metal --config bench/native-compare/compare_dawn_vs_doe.config.apple.metal.gemma64.ir.json
 
 Extra args after the positionals are forwarded to the harness script."""
     )

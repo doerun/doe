@@ -62,6 +62,10 @@
       "data": "bench/fixtures/comparability_obligation_fixtures.json"
     },
     {
+      "schema": "config/lean-proof-patterns.schema.json",
+      "data": "config/lean-proof-patterns.json"
+    },
+    {
       "schema": "config/quirk-mining-manifest.schema.json",
       "data": "examples/quirk-mining.manifest.sample.json"
     },
@@ -180,12 +184,24 @@
     {
       "schema": "config/workload-registry.schema.json",
       "data": "bench/workloads/metadata/workload-registry.json"
+    },
+    {
+      "schema": "bench/ir/benchmark_ir.schema.json",
+      "data": "bench/ir/gemma3_270m.json"
+    },
+    {
+      "schema": "bench/ir/benchmark_ir.schema.json",
+      "data": "bench/ir/gemma3_1b.json"
     }
   ],
   "globTargets": [
     {
       "schema": "config/quirks.schema.json",
       "glob": "examples/quirks/*.json"
+    },
+    {
+      "schema": "bench/plans/normalized_plan.schema.json",
+      "glob": "bench/plans/generated/*.plan.json"
     }
   ]
 }

@@ -1,4 +1,285 @@
 # Doe status
+## IR-backed Node package compare lane now exists beside the direct executor lane (2026-03-26)
+
+- The standalone Node plan executor under
+  `bench/executors/run-node-webgpu-plan.js` now supports both:
+  - `doe` via the local `doe-gpu` package surface
+  - `dawn` via the Node `webgpu` package
+- Added explicit compare executor ids:
+  - `doe_node_webgpu`
+  - `dawn_node_webgpu`
+- Added first-class Apple Metal package-lane configs for the neutral Gemma IR
+  rows:
+  - `bench/native-compare/compare_dawn_vs_doe.config.apple.metal.gemma64.node-package.ir.json`
+  - `bench/native-compare/compare_dawn_vs_doe.config.apple.metal.gemma1b.node-package.ir.json`
+- This lane is for JS/package-surface evidence. It reuses the same normalized
+  plan and compare/report stack, but it is distinct from the direct
+  implementation lane and should be interpreted that way.
+
+## Quirk active mode: backends now consume workaround flags (2026-03-26)
+
+- **Metal copy**: `metal_copy_runtime.zig` texture-to-texture path now checks
+  `uses_temporary_buffer`. When set, copies stage through a temporary buffer
+  (src texture -> staging buffer -> dst texture) with alignment from the quirk.
+- **Metal render**: `metal_native_runtime.zig` render_draw now checks
+  `uses_temporary_render_texture`. When set, renders to a temporary texture and
+  blits to the real target, working around Intel R8/RG8Unorm small-mip
+  corruption.
+- **D3D12 copy**: `d3d12_copy.zig` texture-to-texture path now checks
+  `uses_temporary_buffer`. When set, stages through a temporary buffer with
+  a resource barrier transition between the two copies.
+- **Nightly mining**: Added `.github/workflows/nightly-quirk-mining.yml` (daily
+  at 02:57 UTC) that runs `mine_upstream_quirks.py` across all vendor/API
+  combinations against the vendored Dawn source.
+- **Integration tests**: `quirk/mod.zig` now tests the full roundtrip:
+  `dispatchWithMode(.active, ...)` propagates `uses_temporary_buffer` and
+  `uses_temporary_render_texture` flags through to the output command, while
+  `.trace` and `.off` modes leave commands unmodified.
+
+## Lean proof artifacts now carry source/toolchain provenance and shared pattern contracts (2026-03-26)
+
+- `config/proof-artifact.schema.json` now requires a `provenance` block on the
+  Lean proof artifact, covering:
+  - the pinned Lean toolchain ref
+  - `pipeline/lean/Doe/Extract.lean`
+  - the deterministic `pipeline/lean/Doe` source tree hash
+  - the generated comparability contract
+  - the shared proof-pattern spec under `config/lean-proof-patterns.json`
+- `pipeline/lean/extract.sh` now computes and injects those provenance values
+  during extraction, and `runtime/zig/src/lean_proof.zig` now rejects
+  `-Dlean-verified=true` builds when the artifact provenance does not match the
+  current repo state.
+- Added `config/lean-proof-patterns.json` as the shared runtime proof-pattern
+  contract for theorem-backed bounds elision and validator removal callsites.
+- Added targeted negative tests so near-miss shader patterns keep their
+  robustness clamps and do not silently record dispatch-fit preconditions.
+- Added extra host-side precondition tests around missing bindings and
+  1D/3D texture extent validation to tighten the trusted matcher/application
+  boundary.
+
+## Metal direct compute buffers now honor initialize-on-create parity for IR-backed compare runs (2026-03-26)
+
+- The direct Metal compute-buffer path now honors
+  `initialize_buffers_on_create` for first-use buffer allocation in
+  `runtime/zig/src/backend/metal/metal_runtime_resources.zig`, matching the
+  existing Dawn/WebGPU and Vulkan behavior instead of silently ignoring the
+  request on Doe.
+- This closes a real apples-to-apples criticism for IR-backed inference
+  compares: the benchmark IR already requested zero-init, and the Dawn side
+  enforced it, but Doe's Metal path previously did not.
+- The parity fix was validated with:
+  - build/test: `zig build test`
+  - fair rerun artifact:
+    `bench/out/apple-metal/20260326T202133Z/gemma1b.ir.compare.json`
+- The prior pre-fix comparison artifact remains useful as historical context:
+  `bench/out/apple-metal/20260326T200557Z/gemma1b.ir.compare.json`
+
+## Added Gemma-shaped 1B runtime benchmark rows on the neutral IR path (2026-03-26)
+
+- Added a second neutral inference IR at `bench/ir/gemma3_1b.json` for a
+  larger 1B-class Gemma-shaped compute workload on the same retained-kernel
+  path used by the existing 270M row.
+- Apple Metal now materializes three comparable 1B-shaped runtime rows:
+  - `inference_gemma3_1b_prefill_32tok`
+  - `inference_gemma3_1b_decode_1tok`
+  - `inference_gemma3_1b_prefill_64tok_decode_64tok`
+- A dedicated direct-plan compare config now exists at
+  `bench/native-compare/compare_dawn_vs_doe.config.apple.metal.gemma1b.ir.json`.
+- The 1B rows are exploration-only for now so the governed Metal suite does
+  not silently become much heavier before fresh evidence is collected.
+
+## WGSL bench validator elision and compute bind-group slot flattening now honor Lean/runtime invariants (2026-03-26)
+
+- `runtime/zig/src/doe_wgsl/bench.zig` now uses the same
+  `lean_proof.validator_elimination_available` gate as the main WGSL
+  translation path, so the shader microbenchmark no longer pays
+  `ir_validate.validate()` when the checked proof artifact already proves the
+  validator redundant for builder-produced IR.
+- `runtime/zig/build.zig` now passes `build_options` into the standalone
+  `doe-shader-bench` target so the benchmark executable can consume Lean proof
+  availability the same way as the rest of the runtime build.
+- Added `runtime/zig/src/doe_compute_bind_groups.zig` and routed
+  `doe_compute_ext_native.zig` plus `doe_compute_fast.zig` through it so direct
+  dispatch, indirect dispatch, and the fast compute path flatten bind groups
+  using the existing `MAX_BIND * MAX_COMPUTE_BIND_GROUPS` invariant instead of
+  rechecking `slot < MAX_FLAT_BIND` inside the hot loop.
+
+## Compute runtime translation now consumes proof-backed texture dispatch-fit elision (2026-03-26)
+
+- `runtime/zig/src/doe_wgsl/runtime_compile.zig` now enables
+  `elide_proven_texture_bounds` for compute-runtime translation when the Lean
+  proof artifact covers dispatch-fit texture coordinate theorems.
+- Native compute runtime translation therefore records texture dispatch
+  preconditions and elides redundant `clamp(coords, 0, textureDimensions - 1)`
+  injection for proof-covered `textureLoad` / `textureStore` gid-coordinate
+  patterns through the same runtime pipeline that already enforces those
+  preconditions before dispatch.
+- Default/public `translateTo*` entrypoints remain conservative for the
+  dispatch-fit texture path because they do not surface host-side precondition
+  metadata to external callers.
+
+## Comparable Gemma64 runtime wall timing now runs plan-vs-plan on both sides (2026-03-26)
+
+- Added a standalone Doe direct plan executor at
+  `runtime/zig/zig-out/bin/doe-plan-executor`.
+- Comparable IR-backed runtime rows that expose `planPath` now require direct
+  plan executors on both sides for `workloadUnitWall` evaluation; mixing
+  normalized-plan execution on one side with generated `commandsPath`
+  compatibility execution on the other is now a strict comparability failure.
+- The Apple Metal Gemma64 IR compare config
+  `bench/native-compare/compare_dawn_vs_doe.config.apple.metal.gemma64.ir.json`
+  now runs:
+  - left: Doe direct plan executor
+  - right: standalone Dawn direct plan executor
+- The fair-boundary before/after evidence is:
+  - prior mixed-boundary artifact:
+    `bench/out/apple-metal/20260326T180619Z/gemma64.ir.compare.json`
+  - current plan-vs-plan artifact:
+    `bench/out/apple-metal/20260326T192810Z/gemma64.ir.compare.json`
+- The current plan-vs-plan artifact is `comparisonStatus=comparable` and
+  `claimStatus=claimable`.
+- The remaining wall-gap work is now primarily honest direct-executor overhead,
+  not legacy Doe command-runtime boundary cost.
+
+## Compare reports now explain workload-unit wall with coarse host-overhead buckets (2026-03-26)
+
+- Doe direct runtime and the standalone Dawn plan executor now emit coarse
+  trace-meta host-overhead totals for:
+  input read, input parse, workload prepare, executor init, upload prewarm,
+  kernel prewarm, command orchestration, and artifact finalization.
+- Compare reports synthesize those into
+  `timingInterpretation.hostOverheadBreakdown`, which explains the workload-unit
+  wall gap relative to selected timing as:
+  - attributable coarse host overhead
+  - remaining unattributed gap
+- The new view is diagnostic only. It is intended to make wall-versus-selected
+  discrepancies explainable without adding hot-path profiling probes.
+
+## Compare reports now expose workload-unit wall terminology (2026-03-26)
+
+- Compare reports now use `timingInterpretation.workloadUnitWall` as the
+  primary name for the full timed workload-unit wall metric, with
+  `overallWorkloadUnitWall` for the aggregate view.
+- Legacy aliases remain in emitted reports during migration:
+  - `timingInterpretation.headlineProcessWall`
+  - `overallHeadlineProcessWall`
+- Claimability metadata now points to `workloadUnitWall` when a claim is based
+  on the full workload-unit wall metric rather than the selected operation
+  timing.
+- Warm-session wall is not inferred from this metric; it remains a distinct
+  future benchmark scope.
+
+## Standalone direct Dawn executor replaces Node package path for IR compare runs (2026-03-26)
+
+- Added a standalone direct Dawn/WebGPU benchmark executor binary at
+  `runtime/zig/zig-out/bin/dawn-plan-executor`.
+- The Apple Metal Gemma64 IR compare config now resolves:
+  - left: Doe direct Metal backend executor
+  - right: standalone direct Dawn/WebGPU executor
+- The older standalone Node WebGPU executor remains in `bench/executors/`, but
+  it is now a diagnostic package-surface path rather than the primary
+  claim-oriented IR compare path.
+
+## Neutral benchmark IR and standalone Dawn/WebGPU executor wired end to end (2026-03-26)
+
+- Added a neutral benchmark IR authoring layer under `bench/ir/` and a
+  normalized executable plan layer under `bench/plans/generated/`.
+- The current Gemma-shaped source of truth is `bench/ir/gemma3_270m.json`,
+  which now generates:
+  - normalized plans for `prefill_32tok`, `decode_1tok`, and
+    `prefill_64tok_decode_64tok`
+  - compatibility command artifacts for Doe runtime execution
+- Added a standalone Node WebGPU executor under `bench/executors/` that reads
+  normalized plans directly and emits trace-meta / trace-jsonl artifacts in the
+  same compare contract shape used by the Doe runtime lanes.
+- The native compare harness now supports explicit executor IDs, so the compare
+  surface can be driven as:
+  - left: Doe direct backend executor
+  - right: standalone Dawn/WebGPU executor
+  over the same normalized plan instead of only through Doe-owned command
+  templates.
+- Added a dedicated Apple Metal end-to-end config for the Gemma-shaped runtime
+  row:
+  `bench/native-compare/compare_dawn_vs_doe.config.apple.metal.gemma64.ir.json`
+- Benchmark IR and normalized plan schemas are now covered by the blocking
+  schema gate via `config/schema-targets.json`.
+
+## Gemma-shaped Metal compare and WGSL direct-backend path unblocked (2026-03-26)
+
+- Apple Metal direct-backend `kernel_dispatch` now accepts Doe-owned WGSL kernels in
+  addition to checked-in `.metal` sources by translating sibling WGSL files to
+  MSL at runtime when a direct Metal source is absent.
+- The MSL emitter now places compute workgroup globals at function scope and
+  emits named fixed-size arrays in valid Metal declaration form, which unblocks
+  retained inference kernels such as rmsnorm, tiled matmul, and attention on
+  Doe's direct Metal backend path.
+- The strict Doe-vs-Dawn compare loader now applies CLI `--workload-filter`
+  after config-driven selector resolution, so governed benchmark configs can be
+  narrowed to specific workload IDs without accidentally running the whole
+  suite.
+- Current Doe-vs-Dawn evidence for the Doe-owned Gemma-shaped Metal rows lives
+  at `bench/out/apple-metal/20260326T133500Z/inference-gemma3-270m.compare.json`.
+
+## Doe-owned Gemma-shaped direct-backend benchmark rows added (2026-03-26)
+
+- Added two Apple Metal direct-backend runtime workload rows to the canonical bench
+  catalog:
+  `inference_gemma3_270m_prefill_32tok` and
+  `inference_gemma3_270m_decode_1tok`.
+- These rows do not depend on or import any external manifest schema concept.
+  They are plain Doe command streams under `examples/` that:
+  - seed small uniform/token buffers with explicit `buffer_write` commands
+  - dispatch the retained inference kernels under
+    `bench/inference-pipeline/kernels/`
+  - reproduce the same broad compute shape as the real Gemma-style
+    prefill/decode path using Doe-owned benchmark contracts
+- The Apple Metal governed and regression cohort lists now include those rows,
+  so the standard strict Doe-vs-Dawn Metal compare harness can run them
+  directly with the canonical workload contract.
+
+## Synthetic JS inference benchmark surface removed (2026-03-26)
+
+- Removed the synthetic random-weight JS inference harness surface:
+  - `bench/inference-pipeline/run-inference-bench.js`
+  - `bench/inference-pipeline/compare-inference-pipeline.py`
+  - `bench/inference-pipeline/inference-pipeline-config.json`
+  - `bench/inference-pipeline/model-templates/gemma-3-270m.json`
+- Removed the corresponding `runnerType: "js-pipeline"` workload rows from the
+  benchmark catalog and generated workload lanes.
+- `bench/run.py` no longer exposes an `inference` harness because that surface
+  was not a real-model benchmark: it allocated random dense F32 weights instead
+  of the quantized, sharded model layouts used by real inference paths.
+- The real inference-pipeline WGSL kernels remain under
+  `bench/inference-pipeline/kernels/` as the canonical model-kernel corpus for
+  Doe-vs-Tint compilation benchmarking.
+
+## Inference-pipeline kernels promoted to named compilation workloads (2026-03-25)
+
+- Added named `runnerType: "compilation"` workload rows for the real
+  inference-pipeline WGSL kernels under
+  `bench/inference-pipeline/kernels/`, including attention decode/prefill,
+  matmul gemv/tiled, rmsnorm, rope, gelu, gather, residual, and sample.
+- The Doe-vs-Tint compilation harness now resolves compilation work from
+  workload contracts instead of only scanning
+  `bench/kernels/compilation-corpus/`, so named compilation workloads and
+  executed compiler benchmarks are now the same surface.
+- `runtime/zig/src/doe_wgsl/bench_compilation.zig` now accepts explicit
+  `--shader-path` / `--shader-name` / `--shader-tier` inputs so both the
+  generic compare harness and the dedicated Doe-vs-Tint compilation harness can
+  benchmark external WGSL files without copying them into the baked-in corpus.
+
+## Bench workload contracts split into canonical vs specialized views (2026-03-25)
+
+- `bench/workloads/` now only carries the canonical backend lanes:
+  full + smoke for Apple Metal, AMD Vulkan, and local D3D12.
+- Generic and special-purpose workload projections moved under
+  `bench/workloads/specialized/`, including the generic replay view,
+  browser-oriented Vulkan superset views, the Doe-vs-Doe Vulkan fullsuite
+  slice, the legacy Vulkan strict slice, and the narrow D3D12 comparable slice.
+- Updated the generator, compare defaults, single-runtime defaults, browser
+  superset tooling, and current docs so the main workload folder reads as the
+  canonical surface instead of a mixed bag of lane types.
+
 ## Bench runners, gates, tools, fixtures, and shared helpers moved under subfolders (2026-03-25)
 
 - Moved the remaining flat bench surface into purpose-built subfolders:

@@ -32,9 +32,10 @@ pub fn run_kernel_dispatch(
     z: u32,
     repeat: u32,
     warmup: u32,
+    initialize_buffers_on_create: bool,
     bindings: ?[]const model.KernelBinding,
 ) !DispatchMetrics {
-    const result = try run_kernel_dispatch_timed(runtime, kernel, x, y, z, repeat, warmup, bindings, false);
+    const result = try run_kernel_dispatch_timed(runtime, kernel, x, y, z, repeat, warmup, initialize_buffers_on_create, bindings, false);
     return result.metrics;
 }
 
@@ -46,6 +47,7 @@ pub fn run_kernel_dispatch_timed(
     z: u32,
     repeat: u32,
     warmup: u32,
+    initialize_buffers_on_create: bool,
     bindings: ?[]const model.KernelBinding,
     record_timestamps: bool,
 ) !KernelDispatchResult {
@@ -60,7 +62,7 @@ pub fn run_kernel_dispatch_timed(
         for (bs) |b| {
             if (b.resource_kind != .buffer) continue;
             if (b.binding >= MAX_BINDING_SLOTS) continue;
-            buf_slots[b.binding] = try runtime.ensure_compute_buffer(b.resource_handle, b.buffer_size);
+            buf_slots[b.binding] = try runtime.ensure_compute_buffer(b.resource_handle, b.buffer_size, initialize_buffers_on_create);
             if (b.binding + 1 > slot_count) slot_count = @intCast(b.binding + 1);
         }
     }

@@ -42,6 +42,19 @@ pub fn printNormalizedCommand(stdout: anytype, seq: usize, command: model.Comman
             try stdout.print("{}", .{upload.align_bytes});
             try stdout.writeAll("}\n");
         },
+        .buffer_write => |buffer_write| {
+            try stdout.writeAll("{\"seq\":");
+            try stdout.print("{}", .{seq});
+            try stdout.writeAll(",\"kind\":\"buffer_write\",\"handle\":");
+            try stdout.print("{}", .{buffer_write.handle});
+            try stdout.writeAll(",\"offset\":");
+            try stdout.print("{}", .{buffer_write.offset});
+            try stdout.writeAll(",\"bufferSize\":");
+            try stdout.print("{}", .{buffer_write.buffer_size});
+            try stdout.writeAll(",\"data\":");
+            try stdout.print("{any}", .{buffer_write.data});
+            try stdout.writeAll("}\n");
+        },
         .copy_buffer_to_texture => |copy| {
             try stdout.writeAll("{\"seq\":");
             try stdout.print("{}", .{seq});
@@ -333,6 +346,14 @@ pub fn printCommandSummary(stdout: anytype, target: model.Command, execute_resul
         },
         .upload => |upload| {
             try stdout.print("  -> upload bytes={} align={}\\n", .{ upload.bytes, upload.align_bytes });
+        },
+        .buffer_write => |buffer_write| {
+            try stdout.print("  -> buffer_write handle={} offset={} words={} size={}\\n", .{
+                buffer_write.handle,
+                buffer_write.offset,
+                buffer_write.data.len,
+                buffer_write.buffer_size,
+            });
         },
         .kernel_dispatch => |kernel_cmd| {
             try stdout.print("  -> kernel={s} dispatch {}x{}x{} repeat={}\\n", .{ kernel_cmd.kernel, kernel_cmd.x, kernel_cmd.y, kernel_cmd.z, kernel_cmd.repeat });

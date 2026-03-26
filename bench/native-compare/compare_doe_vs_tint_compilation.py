@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """WGSL compilation speed comparison: Doe vs Tint.
 
-Runs both compilers on the same shader corpus and emits a comparison
-report with per-shader delta statistics. Both sides measure the same
-scope: WGSL source -> target text/binary (parse + sema + IR + emit).
+Runs both compilers on the same named workload rows or a legacy shader
+corpus and emits a comparison report with per-shader delta statistics.
+Both sides measure the same scope: WGSL source -> target text/binary
+(parse + sema + IR + emit).
 
 Usage:
     python3 bench/native-compare/compare_doe_vs_tint_compilation.py \
@@ -46,12 +47,37 @@ def parse_args():
         action="store_true",
         help="Print commands without executing",
     )
+    parser.add_argument(
+        "--workload-id",
+        action="append",
+        default=[],
+        help="Optional compilation workload id to run. Repeat to select multiple rows.",
+    )
+    parser.add_argument(
+        "--iterations",
+        type=int,
+        help="Override timed iterations from config.",
+    )
+    parser.add_argument(
+        "--warmup",
+        type=int,
+        help="Override warmup iterations from config.",
+    )
     return parser.parse_args()
 
 
 def load_config(path):
     with open(path) as f:
         return json.load(f)
+
+
+def infer_tier_from_name(name):
+    if name.startswith("compilation_inference_") or name.startswith("inference_"):
+        return "inference"
+    head = name.split("_", 1)[0]
+    if head in {"trivial", "simple", "moderate", "complex", "stress"}:
+        return head
+    return "external"
 
 
 def discover_corpus(corpus_dir, tiers):
@@ -79,38 +105,100 @@ def discover_corpus(corpus_dir, tiers):
     return shaders
 
 
+def discover_workload_rows(workloads_path, workload_ids):
+    workload_path = REPO_ROOT / workloads_path
+    if not workload_path.is_file():
+        print(f"error: workloads file not found: {workload_path}", file=sys.stderr)
+        sys.exit(1)
+
+    payload = json.loads(workload_path.read_text(encoding="utf-8"))
+    rows = payload.get("workloads", [])
+    requested_ids = list(workload_ids or [])
+    requested_id_set = set(requested_ids)
+    shaders = []
+
+    for row in rows:
+        if row.get("runnerType") != "compilation":
+            continue
+        workload_id = row.get("id", "")
+        if requested_id_set and workload_id not in requested_id_set:
+            continue
+        shader_rel = row.get("shaderPath", "")
+        shader_path = REPO_ROOT / shader_rel
+        if not shader_path.is_file():
+            print(
+                f"error: shaderPath not found for workload {workload_id}: {shader_path}",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        source_lines = len(shader_path.read_text(encoding="utf-8").splitlines())
+        shaders.append(
+            {
+                "workloadId": workload_id,
+                "name": workload_id,
+                "tier": infer_tier_from_name(workload_id),
+                "path": str(shader_path),
+                "sourceLines": source_lines,
+                "target": row.get("compilationTarget", "msl"),
+                "sourceShader": shader_path.stem,
+            }
+        )
+
+    if requested_id_set:
+        found_ids = {shader["workloadId"] for shader in shaders}
+        missing = [workload_id for workload_id in requested_ids if workload_id not in found_ids]
+        if missing:
+            print(
+                f"error: workload ids not found in {workload_path}: {', '.join(missing)}",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+
+    if not shaders:
+        print(f"error: no compilation workloads found in {workload_path}", file=sys.stderr)
+        sys.exit(1)
+
+    return shaders
+
+
 def run_doe_bench(cfg, shaders, target, out_path, dry_run):
-    """Run Doe's compilation benchmark on the corpus."""
+    """Run Doe's compilation benchmark on the selected shader rows."""
     doe_bin = REPO_ROOT / cfg["left"]["binaryPath"]
     if not doe_bin.exists() and not dry_run:
         print(f"error: Doe binary not found: {doe_bin}", file=sys.stderr)
         print("  Build with: cd runtime/zig && zig build bench-compilation", file=sys.stderr)
         sys.exit(1)
-
-    cmd = [
-        str(doe_bin),
-        "--target", target,
-        "--iterations", str(cfg["run"]["iterations"]),
-        "--warmup", str(cfg["run"]["warmup"]),
-        "--out", str(out_path),
-    ]
-
-    if dry_run:
-        print(f"[dry-run] {' '.join(cmd)}")
-        return {}
-
-    subprocess.run(cmd, check=True)
-
-    # Parse NDJSON output, index by shader name
     results = {}
-    with open(out_path) as f:
-        for line in f:
-            line = line.strip()
-            if not line:
-                continue
-            record = json.loads(line)
-            if record.get("kind") == "compilation_bench":
-                results[record["shader"]] = record
+
+    for shader in shaders:
+        shader_target = shader.get("target", target)
+        cmd = [
+            str(doe_bin),
+            "--target", shader_target,
+            "--iterations", str(cfg["run"]["iterations"]),
+            "--warmup", str(cfg["run"]["warmup"]),
+            "--shader-path", shader["path"],
+            "--shader-name", shader["name"],
+            "--shader-tier", shader["tier"],
+            "--out", str(out_path),
+        ]
+
+        if dry_run:
+            print(f"[dry-run] {' '.join(cmd)}")
+            results[shader["name"]] = {"p50_ns": 0, "p95_ns": 0, "p99_ns": 0}
+            continue
+
+        subprocess.run(cmd, check=True)
+        with open(out_path, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                record = json.loads(line)
+                if record.get("kind") == "compilation_bench" and record.get("shader") == shader["name"]:
+                    results[shader["name"]] = record
+                    break
+
     return results
 
 
@@ -198,6 +286,8 @@ def build_report(cfg, shaders, target, doe_results, tint_results):
                     "kind": "compilation_comparison",
                     "schemaVersion": SCHEMA_VERSION,
                     "shader": name,
+                    "workloadId": shader.get("workloadId", name),
+                    "shaderPath": shader["path"],
                     "tier": shader["tier"],
                     "target": target,
                     "sourceLines": shader["sourceLines"],
@@ -220,6 +310,8 @@ def build_report(cfg, shaders, target, doe_results, tint_results):
                 "schemaVersion": SCHEMA_VERSION,
                 "deltaPercentConvention": DELTA_PERCENT_CONVENTION,
                 "shader": name,
+                "workloadId": shader.get("workloadId", name),
+                "shaderPath": shader["path"],
                 "tier": shader["tier"],
                 "target": target,
                 "sourceLines": shader["sourceLines"],
@@ -307,12 +399,21 @@ def main():
     corpus_dir = cfg.get("corpusDir", "bench/kernels/compilation-corpus")
     tiers = cfg["run"].get("tiers", [])
     targets = cfg["run"].get("targets", ["msl"])
-    iterations = cfg["run"]["iterations"]
-    warmup = cfg["run"]["warmup"]
+    iterations = args.iterations if args.iterations is not None else cfg["run"]["iterations"]
+    warmup = args.warmup if args.warmup is not None else cfg["run"]["warmup"]
     out_dir = cfg["run"].get("outDir", "bench/out/compilation")
+    cfg["run"]["iterations"] = iterations
+    cfg["run"]["warmup"] = warmup
 
-    shaders = discover_corpus(corpus_dir, tiers)
-    print(f"corpus: {len(shaders)} shaders from {corpus_dir}")
+    if "workloads" in cfg:
+        workload_ids = args.workload_id or cfg.get("workloadIds", [])
+        shaders = discover_workload_rows(cfg["workloads"], workload_ids)
+        source_label = cfg["workloads"]
+    else:
+        shaders = discover_corpus(corpus_dir, tiers)
+        source_label = corpus_dir
+
+    print(f"shaders: {len(shaders)} selected from {source_label}")
 
     for target in targets:
         print(f"\n=== target: {target} ===")

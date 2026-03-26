@@ -63,8 +63,22 @@ pub const CopyState = struct {
                 const format: u32 = if (cmd.dst.format != model.WGPUTextureFormat_Undefined) cmd.dst.format else model.WGPUTextureFormat_RGBA8Unorm;
                 d3d12_bridge_command_list_copy_texture_region(self.cmd_list, dst_resource, src_resource, cmd.src.offset, width, height, bpr, format);
             },
-            .texture_to_buffer, .texture_to_texture => {
+            .texture_to_buffer => {
                 d3d12_bridge_command_list_copy_buffer(self.cmd_list, dst_resource, src_resource, cmd.bytes);
+            },
+            .texture_to_texture => {
+                if (cmd.uses_temporary_buffer) {
+                    // Quirk workaround: stage through a temporary buffer to
+                    // avoid driver bugs in direct texture-to-texture copies.
+                    const staging_size = alignedSize(cmd.bytes, cmd.temporary_buffer_alignment);
+                    const staging = d3d12_bridge_device_create_buffer(device, staging_size, HEAP_TYPE_DEFAULT) orelse return error.InvalidState;
+                    defer d3d12_bridge_release(staging);
+                    d3d12_bridge_command_list_copy_buffer(self.cmd_list, staging, src_resource, cmd.bytes);
+                    d3d12_bridge_command_list_resource_barrier_transition(self.cmd_list, staging, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_COPY_SOURCE);
+                    d3d12_bridge_command_list_copy_buffer(self.cmd_list, dst_resource, staging, cmd.bytes);
+                } else {
+                    d3d12_bridge_command_list_copy_buffer(self.cmd_list, dst_resource, src_resource, cmd.bytes);
+                }
             },
         }
 
@@ -100,6 +114,15 @@ pub const CopyState = struct {
         self.* = .{};
     }
 };
+
+const D3D12_RESOURCE_STATE_COPY_DEST: c_int = 0x800;
+const D3D12_RESOURCE_STATE_COPY_SOURCE: c_int = 0x400;
+
+fn alignedSize(bytes: usize, alignment: u32) usize {
+    if (alignment <= 1) return bytes;
+    const a: usize = alignment;
+    return (bytes + a - 1) / a * a;
+}
 
 fn resolve_resource(
     device: ?*anyopaque,

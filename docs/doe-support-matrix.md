@@ -93,15 +93,15 @@ Subpath reminder (the `@simulatte/*` scope is deprecated; use `doe-gpu`):
 | Bun | `@simulatte/webgpu-doe` bound onto `bun-webgpu` raw devices | Dawn-backed Bun runtime | compatibility cell | `possible` | Allowed by the transport-free helper contract when the surface is compatible, but not a governed lane today. |
 | Deno | `@simulatte/webgpu-doe` bound onto built-in Deno WebGPU devices | wgpu-backed Deno runtime | compatibility cell | `possible` | Contractually plausible, but not yet a documented governed helper-comparison lane. |
 | Browser | `@simulatte/webgpu-doe` bound onto browser-provided `GPUDevice` objects | stock browser WebGPU surfaces | product helper surface | `supported` | This is the portable helper niche: bring Doe API ergonomics to any compatible browser/device without shipping Doe runtime itself. |
-| Any host | `@simulatte/webgpu-doe` treated as a standalone WebGPU runtime | runtime incumbents | product cell | `not meaningful` | The helper package does not ship the Doe native runtime and should not be described as a runtime replacement. |
+| Any host | `@simulatte/webgpu-doe` treated as a standalone WebGPU runtime | runtime incumbents | product cell | `not meaningful` | The helper package does not ship Doe's direct backend implementation path and should not be described as a runtime replacement. |
 
-### Native runtime, ABI, and browser cells
+### Runtime, ABI, and browser cells
 
 | Host / platform | Left surface | Right / reference surface | Kind | Current state | Value / note |
 |------|------|------|------|------|------|
-| macOS Apple Silicon | Doe Metal backend | Dawn Metal delegate | governed native compare lane | `verified` | Strong backend-native evidence exists, but the current broad full lane remains diagnostic rather than fully claimable. |
-| Linux AMD Vulkan | Doe Vulkan backend | Dawn Vulkan delegate | governed native compare lane | `verified` | Real native compare evidence exists; the current strict release lane remains diagnostic with one remaining upload blocker. |
-| Windows D3D12 | Doe D3D12 backend | Dawn D3D12 delegate | governed native compare lane | `scaffolded` | Contracts, configs, and runtime path exist, but the current inventory still lacks a fresh Windows evidence artifact. |
+| macOS Apple Silicon | Doe Metal backend | Dawn Metal delegate | governed runtime compare lane | `verified` | Strong Doe-vs-Dawn direct-backend evidence exists, but the current broad full lane remains diagnostic rather than fully claimable. |
+| Linux AMD Vulkan | Doe Vulkan backend | Dawn Vulkan delegate | governed runtime compare lane | `verified` | Real Doe-vs-Dawn runtime evidence exists; the current strict release lane remains diagnostic with one remaining upload blocker. |
+| Windows D3D12 | Doe D3D12 backend | Dawn D3D12 delegate | governed runtime compare lane | `scaffolded` | Contracts, configs, and runtime path exist, but the current inventory still lacks a fresh Windows evidence artifact. |
 | Native apps / engines / embedded | `libwebgpu_doe.{so,dylib,dll}` drop-in runtime | Dawn / wgpu via `webgpu.h` ABI | runtime replacement target | `scaffolded` | This is the intended doe-runtime product cell, but `dropin_gate.py`, CTS publication, and broader runtime-tier evidence are still open. |
 | Any `webgpu.h` host | Doe shared-library ABI surface | Dawn ABI / `webgpu.h` expectations | validation cell | `scaffolded` | Valuable because ABI validation is required for runtime-tier replacement claims, but the support matrix still treats full validation as incomplete. |
 | Chromium / Fawn browser lane | Doe as browser `navigator.gpu` runtime | Chromium / Chrome Dawn path | browser compare / smoke cell | `diagnostic` | Browser lane exists and is governed, but current browser evidence is still separate from claim-grade native/package replacement language. |

@@ -477,7 +477,7 @@ fn supportsCommand(scope: model.Scope, command_kind: model.CommandKind) bool {
             command_kind == .render_pass or
             command_kind == .surface_present,
         .driver_toggle => true,
-        .memory => command_kind == .copy_buffer_to_texture or command_kind == .upload or command_kind == .texture_write or command_kind == .texture_query or command_kind == .texture_destroy,
+        .memory => command_kind == .buffer_write or command_kind == .copy_buffer_to_texture or command_kind == .upload or command_kind == .texture_write or command_kind == .texture_query or command_kind == .texture_destroy,
     };
 }
 
@@ -499,8 +499,9 @@ fn scoreRule(quirk: model.Quirk, command_kind: model.CommandKind, profile: model
     if (quirk.scope == .memory and profile.device_family != null and quirk.match_spec.device_family != null) score += 20;
 
     switch (command_kind) {
-        .upload => {
+        .buffer_write, .upload => {
             if (quirk.scope == .alignment) score += 5;
+            if (quirk.scope == .memory) score += 3;
         },
         .copy_buffer_to_texture => {
             if (quirk.scope == .memory) score += 8;
@@ -605,6 +606,7 @@ fn eqIgnoreCase(lhs: []const u8, rhs: []const u8) bool {
 
 fn bucketForKind(context: DispatchContext, kind: model.CommandKind) CommandDispatchBucket {
     return switch (kind) {
+        .buffer_write => context.upload,
         .upload => context.upload,
         .copy_buffer_to_texture => context.copy_buffer_to_texture,
         .barrier => context.barrier,

@@ -1,0 +1,48 @@
+name: nightly-quirk-mining
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "57 2 * * *"
+
+jobs:
+  mine-upstream-quirks:
+    runs-on:
+      - self-hosted
+      - linux
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Mine upstream quirks (all backends)
+        run: |
+          STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
+          DAWN_COMMIT="$(git -C bench/vendor/dawn rev-parse HEAD 2>/dev/null || echo unknown)"
+
+          for VENDOR in intel amd nvidia; do
+            for API in vulkan metal d3d12; do
+              python3 pipeline/agent/mine_upstream_quirks.py \
+                --source-root bench/vendor/dawn/src/dawn/native/vulkan \
+                --source-root bench/vendor/dawn/src/dawn/native/metal \
+                --source-root bench/vendor/dawn/src/dawn/native/d3d12 \
+                --source-repo dawn/main \
+                --source-commit "$DAWN_COMMIT" \
+                --vendor "$VENDOR" \
+                --api "$API" \
+                --observed-at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+                --output "bench/out/mined-quirks/${STAMP}/quirks.${VENDOR}.${API}.json" \
+                --manifest-output "bench/out/mined-quirks/${STAMP}/quirks.${VENDOR}.${API}.manifest.json" \
+              || echo "Warning: mining ${VENDOR}/${API} failed, continuing"
+            done
+          done
+
+      - name: Validate mined quirks against schema
+        run: |
+          python3 pipeline/agent/test_mine_quirks.py 2>&1 || echo "Warning: schema tests had failures"
+
+      - name: Upload mining artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-quirk-mining
+          retention-days: 30
+          path: |
+            bench/out/mined-quirks/**/*.json

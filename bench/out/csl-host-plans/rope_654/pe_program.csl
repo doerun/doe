@@ -1,0 +1,49 @@
+// PE program: element-wise kernel (auto-generated from WGSL)
+// Each PE processes chunk_size elements with no fabric routing.
+
+param memcpy_params: comptime_struct;
+param pe_id: i16;
+param num_pes: i16;
+
+const sys_mod = @import_module("<memcpy/memcpy>", memcpy_params);
+const math = @import_module("<math>");
+
+// Uniforms (loaded from host before compute)
+var seq_len: u32 = 0;
+var head_dim: u32 = 0;
+var num_heads: u32 = 0;
+var position_offset: u32 = 0;
+
+// Storage buffers — each PE holds its local data.
+param chunk_size: i16 = 1024;
+
+var qk: [chunk_size]f32 = @zeros([chunk_size]f32);
+var qk_ptr: [*]f32 = &qk;
+var freq_cis: [chunk_size]f32 = @zeros([chunk_size]f32);
+var freq_cis_ptr: [*]f32 = &freq_cis;
+
+fn compute() void {
+    for (@range(i16, chunk_size)) |_idx| {
+        const idx = @as(u32, _idx);
+        const half_dim: u32 = (head_dim / 2);
+        const pair_idx: u32 = gid.x;
+        const head_idx: u32 = gid.y;
+        const seq_idx: u32 = gid.z;
+        const base: u32 = (((seq_idx * num_heads) + head_idx) * head_dim);
+        const x0: f32 = qk[math.min(f32, (base + pair_idx), (arrayLength(qk) - 1))];
+        const x1: f32 = qk[math.min(f32, ((base + pair_idx) + half_dim), (arrayLength(qk) - 1))];
+        const freq: u32 = ((pos * half_dim) + pair_idx);
+        const cos_v: f32 = freq_cis[math.min(f32, (freq * 2), (arrayLength(freq_cis) - 1))];
+        const sin_v: f32 = freq_cis[math.min(f32, ((freq * 2) + 1), (arrayLength(freq_cis) - 1))];
+        qk[math.min(f32, (base + pair_idx), (arrayLength(qk) - 1))] = ((x0 * cos_v) - (x1 * sin_v));
+        qk[math.min(f32, ((base + pair_idx) + half_dim), (arrayLength(qk) - 1))] = ((x0 * sin_v) + (x1 * cos_v));
+    }
+    sys_mod.unblock_cmd_stream();
+}
+
+comptime {
+    @export_symbol(u_ptr, "u");
+    @export_symbol(qk_ptr, "qk");
+    @export_symbol(freq_cis_ptr, "freq_cis");
+    @export_symbol(compute);
+}

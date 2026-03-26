@@ -204,6 +204,13 @@ pub const UploadCommand = struct {
     align_bytes: u32,
 };
 
+pub const BufferWriteCommand = struct {
+    handle: u64,
+    offset: u64 = 0,
+    buffer_size: u64 = 0,
+    data: []u32,
+};
+
 pub const CopyCommand = struct {
     direction: CopyDirection,
     src: CopyTextureResource,

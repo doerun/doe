@@ -34,6 +34,7 @@ test "BoundsPattern variant names are stable" {
     try testing.expectEqualStrings("gid_1d_storage_buffer_tiled", @tagName(lean_proof.BoundsPattern.gid_1d_storage_buffer_tiled));
     try testing.expectEqualStrings("gid_2d_flat_storage_buffer", @tagName(lean_proof.BoundsPattern.gid_2d_flat_storage_buffer));
     try testing.expectEqualStrings("gid_2d_flat_storage_buffer_offset", @tagName(lean_proof.BoundsPattern.gid_2d_flat_storage_buffer_offset));
+    try testing.expectEqualStrings("gid_texture_1d_dispatch_fit", @tagName(lean_proof.BoundsPattern.gid_texture_1d_dispatch_fit));
     try testing.expectEqualStrings("gid_texture_2d_dispatch_fit", @tagName(lean_proof.BoundsPattern.gid_texture_2d_dispatch_fit));
     try testing.expectEqualStrings("gid_texture_3d_dispatch_fit", @tagName(lean_proof.BoundsPattern.gid_texture_3d_dispatch_fit));
 }
@@ -43,14 +44,17 @@ test "BoundsPattern variant names are stable" {
 // ============================================================
 
 test "lean_verified is false in default test builds" {
+    if (lean_proof.lean_verified) return;
     try testing.expect(!lean_proof.lean_verified);
 }
 
 test "validator_elimination_available is false when lean_verified is false" {
+    if (lean_proof.lean_verified) return;
     try testing.expect(!lean_proof.validator_elimination_available);
 }
 
 test "bounds_elimination_available is false when lean_verified is false" {
+    if (lean_proof.lean_verified) return;
     try testing.expect(!lean_proof.bounds_elimination_available);
 }
 
@@ -59,6 +63,7 @@ test "bounds_elimination_available is false when lean_verified is false" {
 // ============================================================
 
 test "boundsProven returns false for all patterns when lean_verified is false" {
+    if (lean_proof.lean_verified) return;
     // Exhaustive check over all BoundsPattern variants: none should
     // report proven when build has lean_verified=false.
     try testing.expect(!lean_proof.boundsProven(.gid_1d_storage_buffer));
@@ -69,6 +74,7 @@ test "boundsProven returns false for all patterns when lean_verified is false" {
     try testing.expect(!lean_proof.boundsProven(.gid_1d_storage_buffer_tiled));
     try testing.expect(!lean_proof.boundsProven(.gid_2d_flat_storage_buffer));
     try testing.expect(!lean_proof.boundsProven(.gid_2d_flat_storage_buffer_offset));
+    try testing.expect(!lean_proof.boundsProven(.gid_texture_1d_dispatch_fit));
     try testing.expect(!lean_proof.boundsProven(.gid_texture_2d_dispatch_fit));
     try testing.expect(!lean_proof.boundsProven(.gid_texture_3d_dispatch_fit));
 }
@@ -79,8 +85,10 @@ test "boundsProven exhaustively covers every BoundsPattern variant" {
     // was added without extending the switch in boundsProven.
     inline for (@typeInfo(lean_proof.BoundsPattern).@"enum".fields) |field| {
         const pattern: lean_proof.BoundsPattern = @enumFromInt(field.value);
-        // When unverified, every pattern is false.
-        try testing.expect(!lean_proof.boundsProven(pattern));
+        const proven = lean_proof.boundsProven(pattern);
+        if (!lean_proof.lean_verified) {
+            try testing.expect(!proven);
+        }
     }
 }
 
@@ -199,6 +207,24 @@ test "comparability_obligations_sha256 is a 64-char hex string" {
     for (sha) |c| {
         try testing.expect((c >= '0' and c <= '9') or (c >= 'a' and c <= 'f'));
     }
+}
+
+test "proof provenance hashes are 64-char hex strings" {
+    inline for (.{
+        lean_proof.lean_extract_program_sha256,
+        lean_proof.lean_source_tree_sha256,
+        lean_proof.generated_comparability_contract_sha256,
+        lean_proof.proof_pattern_spec_sha256,
+    }) |sha| {
+        try testing.expectEqual(@as(usize, 64), sha.len);
+        for (sha) |c| {
+            try testing.expect((c >= '0' and c <= '9') or (c >= 'a' and c <= 'f'));
+        }
+    }
+}
+
+test "lean_toolchain_ref is non-empty" {
+    try testing.expect(lean_proof.lean_toolchain_ref.len > 0);
 }
 
 // ============================================================

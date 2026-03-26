@@ -12,9 +12,11 @@ from typing import Any
 
 from native_compare_modules.reporting import parse_int
 
-DEFAULT_WORKLOADS_PATH = "bench/workloads/workloads.json"
+DEFAULT_WORKLOADS_PATH = "bench/workloads/specialized/workloads.generic.json"
 DEFAULT_LEFT_NAME = "doe"
 DEFAULT_RIGHT_NAME = "dawn"
+DEFAULT_LEFT_EXECUTOR_ID = ""
+DEFAULT_RIGHT_EXECUTOR_ID = ""
 DEFAULT_LEFT_COMMAND_TEMPLATE = (
     "runtime/zig/zig-out/bin/doe-zig-runtime "
     "--commands {commands} --quirks {quirks} "
@@ -135,13 +137,11 @@ class Workload:
     cohorts: list[str] = field(default_factory=lambda: ["exploration"])
     claim_eligible: bool = True
     runner_type: str = "zig-runtime"
+    ir_path: str = ""
+    plan_path: str = ""
     # compilation runner fields
     shader_path: str = ""
     compilation_target: str = ""
-    # js-pipeline runner fields
-    script_path: str = ""
-    script_config: str = ""
-    pipeline_phase: str = ""
 
 
 @dataclass(frozen=True)
@@ -171,8 +171,18 @@ def parse_args() -> argparse.Namespace:
         default=DEFAULT_LEFT_NAME,
     )
     parser.add_argument(
+        "--left-executor-id",
+        default=DEFAULT_LEFT_EXECUTOR_ID,
+        help="Optional explicit executor id for the left side.",
+    )
+    parser.add_argument(
         "--right-name",
         default=DEFAULT_RIGHT_NAME,
+    )
+    parser.add_argument(
+        "--right-executor-id",
+        default=DEFAULT_RIGHT_EXECUTOR_ID,
+        help="Optional explicit executor id for the right side.",
     )
     parser.add_argument(
         "--left-command-template",
@@ -388,10 +398,18 @@ def apply_config_defaults(args: argparse.Namespace) -> argparse.Namespace:
         value = first_config_value(payload, ["left.name", "leftName"])
         if value is not None:
             args.left_name = as_str(value, field="left.name")
+    if args.left_executor_id == DEFAULT_LEFT_EXECUTOR_ID:
+        value = first_config_value(payload, ["left.executorId", "leftExecutorId"])
+        if value is not None:
+            args.left_executor_id = as_str(value, field="left.executorId")
     if args.right_name == DEFAULT_RIGHT_NAME:
         value = first_config_value(payload, ["right.name", "rightName"])
         if value is not None:
             args.right_name = as_str(value, field="right.name")
+    if args.right_executor_id == DEFAULT_RIGHT_EXECUTOR_ID:
+        value = first_config_value(payload, ["right.executorId", "rightExecutorId"])
+        if value is not None:
+            args.right_executor_id = as_str(value, field="right.executorId")
 
     if args.left_command_template == DEFAULT_LEFT_COMMAND_TEMPLATE:
         value = first_config_value(payload, ["left.commandTemplate", "leftCommandTemplate"])
@@ -950,6 +968,8 @@ def load_workloads(
             domain=item.get("domain", "uncategorized"),
             comparability_notes=item.get("comparabilityNotes", ""),
             commands_path=item.get("commandsPath", ""),
+            ir_path=item.get("irPath", ""),
+            plan_path=item.get("planPath", ""),
             quirks_path=item.get("quirksPath", ""),
             vendor=item.get("vendor", "intel"),
             api=item.get("api", "vulkan"),
@@ -991,22 +1011,15 @@ def load_workloads(
             runner_type=str(item.get("runnerType", "zig-runtime")).strip(),
             shader_path=str(item.get("shaderPath", "")),
             compilation_target=str(item.get("compilationTarget", "")),
-            script_path=str(item.get("scriptPath", "")),
-            script_config=str(item.get("scriptConfig", "")),
-            pipeline_phase=str(item.get("pipelinePhase", "")),
         )
-        if workload.runner_type not in {"zig-runtime", "compilation", "js-pipeline"}:
+        if workload.runner_type not in {"zig-runtime", "compilation"}:
             raise ValueError(
                 f"invalid workload {workload.id}: runnerType must be one of "
-                "['zig-runtime', 'compilation', 'js-pipeline']"
+                "['zig-runtime', 'compilation']"
             )
         if workload.runner_type == "compilation" and not workload.shader_path:
             raise ValueError(
                 f"invalid workload {workload.id}: runnerType=compilation requires shaderPath"
-            )
-        if workload.runner_type == "js-pipeline" and not workload.script_path:
-            raise ValueError(
-                f"invalid workload {workload.id}: runnerType=js-pipeline requires scriptPath"
             )
         if workload.strict_normalization_unit not in {"", "command", "dispatch", "cycle"}:
             raise ValueError(
@@ -1101,7 +1114,10 @@ def load_workloads(
         result.append(workload)
 
     if selector is not None:
-        return resolve_selector(selector, result)
+        selector_result = resolve_selector(selector, result)
+        if not selected:
+            return selector_result
+        return [workload for workload in selector_result if workload.id in selected]
 
     filtered: list[Workload] = []
     for workload in result:

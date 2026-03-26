@@ -1,0 +1,535 @@
+const std = @import("std");
+const model = @import("model.zig");
+const execution = @import("execution.zig");
+const backend_policy = @import("backend/backend_policy.zig");
+const main_print = @import("main_print.zig");
+const quirk = @import("quirk/mod.zig");
+const semantic_trace = @import("semantic_trace.zig");
+const trace = @import("trace.zig");
+const dawn_plan_types = @import("dawn_plan_types.zig");
+
+const Allocator = std.mem.Allocator;
+
+const DEFAULT_MODULE_NAME = "doe-plan-executor";
+const DEFAULT_EXECUTION_BACKEND = "doe_direct_plan";
+const DEFAULT_SEMANTIC_STAGE = "runtime_plan";
+
+const RunOptions = struct {
+    plan_path: []const u8,
+    trace_meta_path: []const u8,
+    trace_jsonl_path: []const u8,
+    workload_id: []const u8,
+    vendor: []const u8 = "apple",
+    api: []const u8 = "metal",
+    family: ?[]const u8 = "m3",
+    driver: []const u8 = "1.0.0",
+    kernel_root: ?[]const u8 = null,
+    backend_lane: ?[]const u8 = null,
+    gpu_timestamp_mode: execution.GpuTimestampMode = .auto,
+    queue_wait_mode: execution.QueueWaitMode = .process_events,
+    queue_sync_mode: execution.QueueSyncMode = .per_command,
+    upload_buffer_usage_mode: execution.UploadBufferUsageMode = .copy_dst_copy_src,
+    upload_submit_every: u32 = 1,
+    dry_run: bool = false,
+};
+
+const ExecutableCommand = struct {
+    command: model.Command,
+    semantic_phase: []const u8,
+};
+
+const BufferedTraceRow = struct {
+    seq: usize,
+    command: model.Command,
+    semantic_phase: []const u8,
+    timestamp_ns: u64,
+    hash: u64,
+    previous_hash: u64,
+    execution_result: ?execution.ExecutionResult,
+};
+
+const TraceDecisionWrapper = struct {
+    decision: quirk.runtime.DispatchDecision,
+};
+
+const EMPTY_DECISION = quirk.runtime.DispatchDecision{
+    .matched_quirk_id = null,
+    .action = null,
+    .score = 0,
+    .matched_count = 0,
+    .requires_lean = false,
+    .is_blocking = false,
+    .proof_level = null,
+    .verification_mode = null,
+    .applied_toggle = null,
+    .matched_scope = null,
+    .matched_safety_class = null,
+};
+
+fn nowNs() u64 {
+    return @as(u64, @intCast(std.time.nanoTimestamp()));
+}
+
+fn elapsedSince(start_ns: u64) u64 {
+    return nowNs() - start_ns;
+}
+
+fn ensureParentDir(path: []const u8) !void {
+    const dir = std.fs.path.dirname(path) orelse return;
+    if (dir.len == 0) return;
+    try std.fs.cwd().makePath(dir);
+}
+
+fn optionExpectsValue(option: []const u8) bool {
+    return std.mem.eql(u8, option, "--plan") or
+        std.mem.eql(u8, option, "--trace-meta") or
+        std.mem.eql(u8, option, "--trace-jsonl") or
+        std.mem.eql(u8, option, "--workload") or
+        std.mem.eql(u8, option, "--vendor") or
+        std.mem.eql(u8, option, "--api") or
+        std.mem.eql(u8, option, "--family") or
+        std.mem.eql(u8, option, "--driver") or
+        std.mem.eql(u8, option, "--kernel-root") or
+        std.mem.eql(u8, option, "--backend-lane") or
+        std.mem.eql(u8, option, "--gpu-timestamp-mode") or
+        std.mem.eql(u8, option, "--queue-wait-mode") or
+        std.mem.eql(u8, option, "--queue-sync-mode") or
+        std.mem.eql(u8, option, "--upload-buffer-usage") or
+        std.mem.eql(u8, option, "--upload-submit-every");
+}
+
+fn semanticOpId(seq: usize, buffer: *[32]u8) []const u8 {
+    return std.fmt.bufPrint(buffer, "step-{d:0>6}", .{seq}) catch "step";
+}
+
+fn semanticContext(seq: usize, phase: []const u8, plan_hash: []const u8, op_id_buffer: *[32]u8) semantic_trace.SemanticContext {
+    return .{
+        .op_id = semanticOpId(seq, op_id_buffer),
+        .stage = DEFAULT_SEMANTIC_STAGE,
+        .phase = phase,
+        .execution_plan_hash = plan_hash,
+    };
+}
+
+fn parseBufferType(buffer_type: dawn_plan_types.BufferBindingType) u32 {
+    return switch (buffer_type) {
+        .uniform => model.WGPUBufferBindingType_Uniform,
+        .storage => model.WGPUBufferBindingType_Storage,
+        .read_only_storage => model.WGPUBufferBindingType_ReadOnlyStorage,
+    };
+}
+
+fn lowerPlanCommands(allocator: Allocator, plan: dawn_plan_types.Plan) ![]ExecutableCommand {
+    const commands = try allocator.alloc(ExecutableCommand, plan.commands.len);
+    for (plan.commands, 0..) |plan_command, idx| {
+        commands[idx] = switch (plan_command) {
+            .buffer_write => |bw| .{
+                .command = .{
+                    .buffer_write = .{
+                        .handle = bw.handle,
+                        .offset = bw.offset,
+                        .buffer_size = bw.buffer_size,
+                        .data = bw.data,
+                    },
+                },
+                .semantic_phase = "buffer_write",
+            },
+            .kernel_dispatch => |kd| blk: {
+                const bindings = try allocator.alloc(model.KernelBinding, kd.bindings.len);
+                for (kd.bindings, 0..) |binding, binding_idx| {
+                    bindings[binding_idx] = .{
+                        .binding = binding.binding,
+                        .group = binding.group,
+                        .resource_kind = .buffer,
+                        .resource_handle = binding.resource_handle,
+                        .buffer_size = binding.buffer_size,
+                        .buffer_type = parseBufferType(binding.buffer_type),
+                    };
+                }
+                break :blk .{
+                    .command = .{
+                        .kernel_dispatch = .{
+                            .kernel = kd.kernel,
+                            .entry_point = kd.entry_point,
+                            .x = kd.x,
+                            .y = kd.y,
+                            .z = kd.z,
+                            .initialize_buffers_on_create = kd.initialize_buffers_on_create,
+                            .bindings = bindings,
+                        },
+                    },
+                    .semantic_phase = "kernel_dispatch",
+                };
+            },
+        };
+    }
+    return commands;
+}
+
+fn validatePlanCounts(plan: dawn_plan_types.Plan) !void {
+    var buffer_write_count: u32 = 0;
+    var dispatch_count: u32 = 0;
+    for (plan.commands) |command| {
+        switch (command) {
+            .buffer_write => buffer_write_count += 1,
+            .kernel_dispatch => dispatch_count += 1,
+        }
+    }
+    if (buffer_write_count != plan.buffer_write_count or dispatch_count != plan.dispatch_count or plan.command_count != plan.commands.len) {
+        return error.InvalidPlan;
+    }
+}
+
+fn loadKernelRoot(allocator: Allocator, ir_path: []const u8, override_root: ?[]const u8) ![]const u8 {
+    if (override_root) |value| return allocator.dupe(u8, value);
+    const ir_bytes = std.fs.cwd().readFileAlloc(allocator, ir_path, 8 * 1024 * 1024) catch {
+        return allocator.dupe(u8, "bench/inference-pipeline/kernels");
+    };
+    defer allocator.free(ir_bytes);
+    var arena = std.heap.ArenaAllocator.init(allocator);
+    defer arena.deinit();
+    const parsed = try std.json.parseFromSlice(std.json.Value, arena.allocator(), ir_bytes, .{ .allocate = .alloc_always });
+    defer parsed.deinit();
+    switch (parsed.value) {
+        .object => |object| {
+            if (object.get("shared")) |shared| switch (shared) {
+                .object => |shared_object| {
+                    if (shared_object.get("kernelRoot")) |value| {
+                        if (value == .string) return allocator.dupe(u8, value.string);
+                    }
+                },
+                else => {},
+            };
+        },
+        else => {},
+    }
+    return allocator.dupe(u8, "bench/inference-pipeline/kernels");
+}
+
+fn makeDryRunExecutionResult(command: model.Command, backend_lane: backend_policy.BackendLane, plan_path: []const u8, plan_hash: []const u8) execution.ExecutionResult {
+    return .{
+        .backend = DEFAULT_EXECUTION_BACKEND,
+        .status = .ok,
+        .status_code = "dry_run",
+        .duration_ns = 0,
+        .setup_ns = 0,
+        .encode_ns = 0,
+        .submit_wait_ns = 0,
+        .dispatch_count = switch (command) {
+            .kernel_dispatch => 1,
+            else => 0,
+        },
+        .gpu_timestamp_ns = 0,
+        .gpu_timestamp_attempted = false,
+        .gpu_timestamp_valid = false,
+        .backend_selection_reason = null,
+        .fallback_used = null,
+        .selection_policy_hash = null,
+        .shader_artifact_manifest_path = null,
+        .shader_artifact_manifest_hash = null,
+        .host_plan_artifact_path = plan_path,
+        .host_plan_artifact_hash = plan_hash,
+        .backend_lane = execution.backendLaneName(backend_lane),
+        .adapter_ordinal = null,
+        .queue_family_index = null,
+        .present_capable = null,
+    };
+}
+
+fn parseArgs(allocator: Allocator) !RunOptions {
+    const argv = try std.process.argsAlloc(allocator);
+    defer std.process.argsFree(allocator, argv);
+
+    var options = RunOptions{
+        .plan_path = "",
+        .trace_meta_path = "",
+        .trace_jsonl_path = "",
+        .workload_id = "",
+    };
+
+    var idx: usize = 1;
+    while (idx < argv.len) : (idx += 1) {
+        const arg = argv[idx];
+        if (std.mem.eql(u8, arg, "--dry-run")) {
+            options.dry_run = true;
+            continue;
+        }
+        if (!optionExpectsValue(arg)) return error.InvalidCommandLine;
+        if (idx + 1 >= argv.len) return error.InvalidCommandLine;
+        idx += 1;
+        const value = argv[idx];
+        if (std.mem.eql(u8, arg, "--plan")) {
+            options.plan_path = try allocator.dupe(u8, value);
+        } else if (std.mem.eql(u8, arg, "--trace-meta")) {
+            options.trace_meta_path = try allocator.dupe(u8, value);
+        } else if (std.mem.eql(u8, arg, "--trace-jsonl")) {
+            options.trace_jsonl_path = try allocator.dupe(u8, value);
+        } else if (std.mem.eql(u8, arg, "--workload")) {
+            options.workload_id = try allocator.dupe(u8, value);
+        } else if (std.mem.eql(u8, arg, "--vendor")) {
+            options.vendor = try allocator.dupe(u8, value);
+        } else if (std.mem.eql(u8, arg, "--api")) {
+            options.api = try allocator.dupe(u8, value);
+        } else if (std.mem.eql(u8, arg, "--family")) {
+            options.family = try allocator.dupe(u8, value);
+        } else if (std.mem.eql(u8, arg, "--driver")) {
+            options.driver = try allocator.dupe(u8, value);
+        } else if (std.mem.eql(u8, arg, "--kernel-root")) {
+            options.kernel_root = try allocator.dupe(u8, value);
+        } else if (std.mem.eql(u8, arg, "--backend-lane")) {
+            options.backend_lane = try allocator.dupe(u8, value);
+        } else if (std.mem.eql(u8, arg, "--gpu-timestamp-mode")) {
+            options.gpu_timestamp_mode = execution.parseGpuTimestampMode(value) orelse return error.InvalidCommandLine;
+        } else if (std.mem.eql(u8, arg, "--queue-wait-mode")) {
+            options.queue_wait_mode = execution.parseQueueWaitMode(value) orelse return error.InvalidCommandLine;
+        } else if (std.mem.eql(u8, arg, "--queue-sync-mode")) {
+            options.queue_sync_mode = execution.parseQueueSyncMode(value) orelse return error.InvalidCommandLine;
+        } else if (std.mem.eql(u8, arg, "--upload-buffer-usage")) {
+            options.upload_buffer_usage_mode = execution.parseUploadBufferUsage(value) orelse return error.InvalidCommandLine;
+        } else if (std.mem.eql(u8, arg, "--upload-submit-every")) {
+            options.upload_submit_every = std.fmt.parseUnsigned(u32, value, 10) catch return error.InvalidCommandLine;
+            if (options.upload_submit_every == 0) return error.InvalidCommandLine;
+        }
+    }
+
+    if (options.plan_path.len == 0 or options.trace_meta_path.len == 0 or options.trace_jsonl_path.len == 0 or options.workload_id.len == 0) {
+        return error.MissingField;
+    }
+    return options;
+}
+
+pub fn runPlan(allocator: Allocator, options: RunOptions) !void {
+    const plan_read_start_ns = nowNs();
+    const plan_bytes = try dawn_plan_types.readPlanBytes(allocator, options.plan_path);
+    const host_input_read_total_ns = elapsedSince(plan_read_start_ns);
+    defer allocator.free(plan_bytes);
+
+    const plan_parse_start_ns = nowNs();
+    var loaded = try dawn_plan_types.parsePlanBytes(allocator, plan_bytes);
+    const host_input_parse_total_ns = elapsedSince(plan_parse_start_ns);
+    defer loaded.deinit();
+
+    if (!std.mem.eql(u8, loaded.plan.workload_id, options.workload_id)) return error.WorkloadMismatch;
+
+    const workload_prepare_start_ns = nowNs();
+    try validatePlanCounts(loaded.plan);
+    const kernel_root = try loadKernelRoot(allocator, loaded.plan.ir_path, options.kernel_root);
+    defer allocator.free(kernel_root);
+    const executable_commands = try lowerPlanCommands(allocator, loaded.plan);
+    const host_workload_prepare_total_ns = elapsedSince(workload_prepare_start_ns);
+
+    const profile = model.DeviceProfile{
+        .vendor = options.vendor,
+        .api = try model.parse_api(options.api),
+        .device_family = options.family,
+        .driver_version = try model.SemVer.parse(options.driver),
+    };
+    const backend_lane = if (options.backend_lane) |raw_lane|
+        (execution.parseBackendLane(raw_lane) orelse return error.InvalidCommandLine)
+    else
+        execution.defaultBackendLane(profile);
+
+    var trace_state = trace.TraceState{};
+    var trace_rows = try std.ArrayList(BufferedTraceRow).initCapacity(allocator, executable_commands.len);
+    defer trace_rows.deinit(allocator);
+
+    var trace_summary = trace.TraceRunSummary{
+        .trace_version = 1,
+        .module_name = DEFAULT_MODULE_NAME,
+        .seq_max = 0,
+        .row_count = 0,
+        .command_count = @intCast(executable_commands.len),
+        .matched_count = 0,
+        .blocking_count = 0,
+        .requires_lean_count = 0,
+        .lean_required_count = 0,
+        .execution_row_count = 0,
+        .execution_success_count = 0,
+        .execution_error_count = 0,
+        .execution_skipped_count = 0,
+        .execution_unsupported_count = 0,
+        .execution_total_ns = 0,
+        .execution_setup_total_ns = 0,
+        .execution_encode_total_ns = 0,
+        .execution_submit_wait_total_ns = 0,
+        .execution_dispatch_count = 0,
+        .host_input_read_total_ns = host_input_read_total_ns,
+        .host_input_parse_total_ns = host_input_parse_total_ns,
+        .host_workload_prepare_total_ns = host_workload_prepare_total_ns,
+        .host_executor_init_total_ns = 0,
+        .host_upload_prewarm_total_ns = 0,
+        .host_kernel_prewarm_total_ns = 0,
+        .host_command_orchestration_total_ns = 0,
+        .host_artifact_finalize_total_ns = 0,
+        .execution_gpu_timestamp_total_ns = 0,
+        .execution_gpu_timestamp_attempted_count = 0,
+        .execution_gpu_timestamp_valid_count = 0,
+        .execution_backend = DEFAULT_EXECUTION_BACKEND,
+        .backend_selection_reason = null,
+        .fallback_used = null,
+        .selection_policy_hash = null,
+        .shader_artifact_manifest_path = null,
+        .shader_artifact_manifest_hash = null,
+        .host_plan_artifact_path = options.plan_path,
+        .host_plan_artifact_hash = loaded.plan.plan_sha256,
+        .semantic_tracing_enabled = true,
+        .semantic_op_row_count = 0,
+        .semantic_capture_count = 0,
+        .semantic_repro_count = 0,
+        .operator_record_manifest_path = null,
+        .operator_record_manifest_hash = null,
+        .backend_lane = execution.backendLaneName(backend_lane),
+        .adapter_ordinal = null,
+        .queue_family_index = null,
+        .present_capable = null,
+        .final_hash = trace_state.previous_hash,
+        .final_previous_hash = trace_state.previous_hash,
+        .profile_vendor = options.vendor,
+        .profile_api = trace.apiName(profile.api),
+        .profile_family = options.family,
+        .profile_driver = options.driver,
+        .queue_sync_mode = switch (options.queue_sync_mode) {
+            .per_command => "per-command",
+            .deferred => "deferred",
+        },
+        .quirk_mode = "off",
+    };
+
+    var host_executor_init_total_ns: u64 = 0;
+    var execute_wall_ns: u64 = 0;
+    var execution_context: ?execution.ExecutionContext = null;
+    if (!options.dry_run) {
+        const executor_init_start_ns = nowNs();
+        execution_context = try execution.ExecutionContext.init(allocator, .native, profile, kernel_root, backend_lane);
+        host_executor_init_total_ns = elapsedSince(executor_init_start_ns);
+        if (execution_context) |*ctx| {
+            ctx.configureUploadBehavior(options.upload_buffer_usage_mode, options.upload_submit_every);
+            ctx.configureGpuTimestampMode(options.gpu_timestamp_mode);
+            ctx.configureQueueWaitMode(options.queue_wait_mode);
+            ctx.configureQueueSyncMode(options.queue_sync_mode);
+            if (ctx.telemetry()) |selection| {
+                trace_summary.execution_backend = execution.backend_id_name(selection.backend_id);
+                trace_summary.backend_selection_reason = selection.backend_selection_reason;
+                trace_summary.fallback_used = selection.fallback_used;
+                trace_summary.selection_policy_hash = selection.selection_policy_hash;
+                trace_summary.shader_artifact_manifest_path = selection.shader_artifact_manifest_path;
+                trace_summary.shader_artifact_manifest_hash = selection.shader_artifact_manifest_hash;
+            }
+        }
+    }
+    defer if (execution_context) |*ctx| ctx.deinit();
+    trace_summary.host_executor_init_total_ns = host_executor_init_total_ns;
+
+    const execute_start_ns = nowNs();
+    for (executable_commands, 0..) |item, idx| {
+        var op_id_buffer: [32]u8 = undefined;
+        const semantic = semanticContext(idx, item.semantic_phase, loaded.plan.plan_sha256, &op_id_buffer);
+        const command_label = main_print.commandName(item.command);
+        const kernel_name = main_print.commandKernel(item.command);
+        const timestamp_ns = nowNs();
+        const execution_result = if (execution_context) |*ctx|
+            try ctx.execute_with_semantic(item.command, semantic)
+        else
+            makeDryRunExecutionResult(item.command, backend_lane, options.plan_path, loaded.plan.plan_sha256);
+
+        trace_summary.execution_row_count += 1;
+        trace_summary.execution_total_ns += execution_result.duration_ns;
+        trace_summary.execution_setup_total_ns += execution_result.setup_ns;
+        trace_summary.execution_encode_total_ns += execution_result.encode_ns;
+        trace_summary.execution_submit_wait_total_ns += execution_result.submit_wait_ns;
+        trace_summary.execution_dispatch_count += execution_result.dispatch_count;
+        trace_summary.execution_gpu_timestamp_total_ns += execution_result.gpu_timestamp_ns;
+        if (execution_result.gpu_timestamp_attempted) trace_summary.execution_gpu_timestamp_attempted_count += 1;
+        if (execution_result.gpu_timestamp_valid) trace_summary.execution_gpu_timestamp_valid_count += 1;
+        trace_summary.execution_backend = execution_result.backend;
+        if (execution_result.backend_selection_reason) |reason| trace_summary.backend_selection_reason = reason;
+        if (execution_result.fallback_used) |fallback| trace_summary.fallback_used = fallback;
+        if (execution_result.selection_policy_hash) |hash| trace_summary.selection_policy_hash = hash;
+        if (execution_result.shader_artifact_manifest_path) |path| trace_summary.shader_artifact_manifest_path = path;
+        if (execution_result.shader_artifact_manifest_hash) |hash| trace_summary.shader_artifact_manifest_hash = hash;
+        if (execution_result.host_plan_artifact_path) |path| trace_summary.host_plan_artifact_path = path;
+        if (execution_result.host_plan_artifact_hash) |hash| trace_summary.host_plan_artifact_hash = hash;
+        if (execution_result.backend_lane) |lane| trace_summary.backend_lane = lane;
+        if (execution_result.adapter_ordinal) |ordinal| trace_summary.adapter_ordinal = ordinal;
+        if (execution_result.queue_family_index) |queue_family_index| trace_summary.queue_family_index = queue_family_index;
+        if (execution_result.present_capable) |present_capable| trace_summary.present_capable = present_capable;
+
+        switch (execution_result.status) {
+            .ok => trace_summary.execution_success_count += 1,
+            .@"error" => trace_summary.execution_error_count += 1,
+            .unsupported => trace_summary.execution_unsupported_count += 1,
+            .skipped => trace_summary.execution_skipped_count += 1,
+        }
+
+        const previous_hash = trace_state.previous_hash;
+        const row_hash = trace.tracePayloadHashWithSemantic(
+            trace_state,
+            idx,
+            command_label,
+            item.command,
+            kernel_name,
+            semantic,
+            TraceDecisionWrapper{ .decision = EMPTY_DECISION },
+        );
+        try trace_rows.append(allocator, .{
+            .seq = idx,
+            .command = item.command,
+            .semantic_phase = item.semantic_phase,
+            .timestamp_ns = timestamp_ns,
+            .hash = row_hash,
+            .previous_hash = previous_hash,
+            .execution_result = execution_result,
+        });
+        trace_summary.seq_max = @intCast(idx);
+        trace_summary.row_count += 1;
+        trace_summary.final_previous_hash = previous_hash;
+        trace_summary.final_hash = row_hash;
+        trace_state.previous_hash = row_hash;
+    }
+    execute_wall_ns = elapsedSince(execute_start_ns);
+    if (execute_wall_ns > trace_summary.execution_total_ns) {
+        trace_summary.host_command_orchestration_total_ns = execute_wall_ns - trace_summary.execution_total_ns;
+    }
+
+    if (execution_context) |*ctx| {
+        if (options.queue_sync_mode == .deferred or options.upload_submit_every > 1) {
+            const flush_start_ns = nowNs();
+            const flush_ns = try ctx.flushQueue();
+            trace_summary.execution_submit_wait_total_ns += flush_ns;
+            trace_summary.host_command_orchestration_total_ns += elapsedSince(flush_start_ns);
+        }
+    }
+
+    const artifact_finalize_start_ns = nowNs();
+    try ensureParentDir(options.trace_meta_path);
+    try ensureParentDir(options.trace_jsonl_path);
+    {
+        const trace_file = try std.fs.cwd().createFile(options.trace_jsonl_path, .{ .truncate = true });
+        defer trace_file.close();
+        const writer = trace_file.deprecatedWriter();
+        for (trace_rows.items) |row| {
+            var op_id_buffer: [32]u8 = undefined;
+            const semantic = semanticContext(row.seq, row.semantic_phase, loaded.plan.plan_sha256, &op_id_buffer);
+            try trace.printTraceLineWithSemantic(
+                writer,
+                row.seq,
+                main_print.commandName(row.command),
+                main_print.commandKernel(row.command),
+                semantic,
+                TraceDecisionWrapper{ .decision = EMPTY_DECISION },
+                row.timestamp_ns,
+                row.hash,
+                row.previous_hash,
+                row.execution_result,
+            );
+        }
+    }
+    trace_summary.host_artifact_finalize_total_ns = elapsedSince(artifact_finalize_start_ns);
+    try trace.writeTraceMeta(options.trace_meta_path, trace_summary);
+}
+
+pub fn main() !void {
+    const allocator = std.heap.page_allocator;
+    const options = try parseArgs(allocator);
+    try runPlan(allocator, options);
+}

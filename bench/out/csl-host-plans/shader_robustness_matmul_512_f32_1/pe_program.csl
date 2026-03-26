@@ -1,3 +1,3 @@
 // translationStatus: unavailable
 // sourceKernel: shader_robustness_matmul_512_f32.wgsl
-// translateError: InvalidType
+// translateError: InvalidIr

@@ -1,0 +1,38 @@
+{
+  "artifact": "bench/vendor/dawn/out/Release/libwebgpu_dawn.dylib",
+  "compileCommand": [
+    "cc",
+    "-std=c11",
+    "-O2",
+    "-Wall",
+    "-Wextra",
+    "-Werror",
+    "-I",
+    "/Users/xyz/deco/doe/bench/vendor/dawn/third_party/webgpu-headers/src",
+    "/Users/xyz/deco/doe/bench/drop-in/dropin_benchmark_harness.c",
+    "/Users/xyz/deco/doe/bench/drop-in/dropin_benchmark_ops.c",
+    "-L",
+    "/Users/xyz/deco/doe/bench/vendor/dawn/out/Release",
+    "-Wl,-rpath,/Users/xyz/deco/doe/bench/vendor/dawn/out/Release",
+    "-l:libwebgpu_dawn.dylib",
+    "-o",
+    "/var/folders/85/l5dptg296tlfx03cd_k7h0l80000gn/T/fawn-dropin-bench-bb8vju51/dropin_benchmark_suite"
+  ],
+  "compileReturnCode": 1,
+  "compileStderr": "ld: library ':libwebgpu_dawn.dylib' not found\nclang: error: linker command failed with exit code 1 (use -v to see invocation)\n",
+  "compileStdout": "",
+  "e2eIterations": 1,
+  "error": "benchmark harness compile failed",
+  "generatedAtUtc": "2026-03-26T15:31:30.385323Z",
+  "headerDir": "bench/vendor/dawn/third_party/webgpu-headers/src",
+  "microIterations": 1,
+  "opsSource": "bench/drop-in/dropin_benchmark_ops.c",
+  "outputTimestamp": "",
+  "pass": false,
+  "schemaVersion": 1,
+  "source": "bench/drop-in/dropin_benchmark_harness.c",
+  "sources": [
+    "bench/drop-in/dropin_benchmark_harness.c",
+    "bench/drop-in/dropin_benchmark_ops.c"
+  ]
+}

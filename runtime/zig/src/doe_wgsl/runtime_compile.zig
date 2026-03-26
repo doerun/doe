@@ -24,6 +24,11 @@ pub const TranslationResult = struct {
 pub fn compute_runtime_robustness_config() mod.ir_transform_robustness.Config {
     return .{
         .elide_proven_bounds = lean_proof.bounds_elimination_available,
+        // Runtime translation carries dispatch preconditions into pipeline
+        // metadata, so it can safely consume proof-backed texture clamp elision.
+        .elide_proven_texture_bounds = lean_proof.boundsProven(.gid_texture_1d_dispatch_fit) or
+            lean_proof.boundsProven(.gid_texture_2d_dispatch_fit) or
+            lean_proof.boundsProven(.gid_texture_3d_dispatch_fit),
     };
 }
 

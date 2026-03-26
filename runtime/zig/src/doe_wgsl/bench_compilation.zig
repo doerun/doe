@@ -40,16 +40,9 @@ const BENCH_VERSION: u32 = 1;
 // Shader corpus — four complexity tiers
 // ============================================================
 
-const Tier = enum {
-    trivial,
-    simple,
-    moderate,
-    complex,
-};
-
 const Shader = struct {
     name: []const u8,
-    tier: Tier,
+    tier: []const u8,
     source: []const u8,
     source_lines: u32,
 };
@@ -163,15 +156,15 @@ const SHADER_SOURCES = struct {
 };
 
 const SHADERS = [_]Shader{
-    .{ .name = "empty_compute", .tier = .trivial, .source = SHADER_SOURCES.empty_compute, .source_lines = count_lines(SHADER_SOURCES.empty_compute) },
-    .{ .name = "passthrough_vertex", .tier = .trivial, .source = SHADER_SOURCES.passthrough_vertex, .source_lines = count_lines(SHADER_SOURCES.passthrough_vertex) },
-    .{ .name = "scale_compute", .tier = .simple, .source = SHADER_SOURCES.scale_compute, .source_lines = count_lines(SHADER_SOURCES.scale_compute) },
-    .{ .name = "color_fragment", .tier = .simple, .source = SHADER_SOURCES.color_fragment, .source_lines = count_lines(SHADER_SOURCES.color_fragment) },
-    .{ .name = "matmul_compute", .tier = .moderate, .source = SHADER_SOURCES.matmul_compute, .source_lines = count_lines(SHADER_SOURCES.matmul_compute) },
-    .{ .name = "vertex_transform", .tier = .moderate, .source = SHADER_SOURCES.vertex_transform, .source_lines = count_lines(SHADER_SOURCES.vertex_transform) },
-    .{ .name = "texture_compute", .tier = .complex, .source = SHADER_SOURCES.texture_compute, .source_lines = count_lines(SHADER_SOURCES.texture_compute) },
-    .{ .name = "multi_binding_compute", .tier = .complex, .source = SHADER_SOURCES.multi_binding_compute, .source_lines = count_lines(SHADER_SOURCES.multi_binding_compute) },
-    .{ .name = "fragment_discard", .tier = .complex, .source = SHADER_SOURCES.fragment_discard, .source_lines = count_lines(SHADER_SOURCES.fragment_discard) },
+    .{ .name = "empty_compute", .tier = "trivial", .source = SHADER_SOURCES.empty_compute, .source_lines = count_lines(SHADER_SOURCES.empty_compute) },
+    .{ .name = "passthrough_vertex", .tier = "trivial", .source = SHADER_SOURCES.passthrough_vertex, .source_lines = count_lines(SHADER_SOURCES.passthrough_vertex) },
+    .{ .name = "scale_compute", .tier = "simple", .source = SHADER_SOURCES.scale_compute, .source_lines = count_lines(SHADER_SOURCES.scale_compute) },
+    .{ .name = "color_fragment", .tier = "simple", .source = SHADER_SOURCES.color_fragment, .source_lines = count_lines(SHADER_SOURCES.color_fragment) },
+    .{ .name = "matmul_compute", .tier = "moderate", .source = SHADER_SOURCES.matmul_compute, .source_lines = count_lines(SHADER_SOURCES.matmul_compute) },
+    .{ .name = "vertex_transform", .tier = "moderate", .source = SHADER_SOURCES.vertex_transform, .source_lines = count_lines(SHADER_SOURCES.vertex_transform) },
+    .{ .name = "texture_compute", .tier = "complex", .source = SHADER_SOURCES.texture_compute, .source_lines = count_lines(SHADER_SOURCES.texture_compute) },
+    .{ .name = "multi_binding_compute", .tier = "complex", .source = SHADER_SOURCES.multi_binding_compute, .source_lines = count_lines(SHADER_SOURCES.multi_binding_compute) },
+    .{ .name = "fragment_discard", .tier = "complex", .source = SHADER_SOURCES.fragment_discard, .source_lines = count_lines(SHADER_SOURCES.fragment_discard) },
 };
 
 // ============================================================
@@ -195,6 +188,9 @@ const Config = struct {
     warmup: u32,
     out_path: ?[]const u8,
     filter: ?[]const u8,
+    shader_path: ?[]const u8,
+    shader_name: ?[]const u8,
+    shader_tier: ?[]const u8,
     targets: []const Target,
 };
 
@@ -207,6 +203,9 @@ fn parse_args(allocator: std.mem.Allocator) !Config {
         .warmup = DEFAULT_WARMUP,
         .out_path = null,
         .filter = null,
+        .shader_path = null,
+        .shader_name = null,
+        .shader_tier = null,
         .targets = &ALL_TARGETS,
     };
 
@@ -230,6 +229,15 @@ fn parse_args(allocator: std.mem.Allocator) !Config {
         } else if (std.mem.eql(u8, args[i], "--filter") and i + 1 < args.len) {
             i += 1;
             cfg.filter = try allocator.dupe(u8, args[i]);
+        } else if (std.mem.eql(u8, args[i], "--shader-path") and i + 1 < args.len) {
+            i += 1;
+            cfg.shader_path = try allocator.dupe(u8, args[i]);
+        } else if (std.mem.eql(u8, args[i], "--shader-name") and i + 1 < args.len) {
+            i += 1;
+            cfg.shader_name = try allocator.dupe(u8, args[i]);
+        } else if (std.mem.eql(u8, args[i], "--shader-tier") and i + 1 < args.len) {
+            i += 1;
+            cfg.shader_tier = try allocator.dupe(u8, args[i]);
         } else if (std.mem.eql(u8, args[i], "--target") and i + 1 < args.len) {
             i += 1;
             if (std.mem.eql(u8, args[i], "msl")) {
@@ -351,7 +359,7 @@ fn write_result(
         .{
             BENCH_VERSION,
             shader.name,
-            @tagName(shader.tier),
+            shader.tier,
             @tagName(target),
             shader.source_lines,
             iterations,
@@ -487,6 +495,9 @@ pub fn main() !void {
     };
     defer if (cfg.out_path) |p| allocator.free(p);
     defer if (cfg.filter) |f| allocator.free(f);
+    defer if (cfg.shader_path) |p| allocator.free(p);
+    defer if (cfg.shader_name) |n| allocator.free(n);
+    defer if (cfg.shader_tier) |t| allocator.free(t);
 
     if (cfg.iterations > MAX_SAMPLES) {
         std.debug.print(
@@ -518,13 +529,50 @@ pub fn main() !void {
 fn run_all(allocator: std.mem.Allocator, cfg: Config, writer: anytype) !void {
     print_stderr_header();
 
+    var dynamic_source: ?[]u8 = null;
+    defer if (dynamic_source) |buf| allocator.free(buf);
+    var dynamic_name: ?[]u8 = null;
+    defer if (dynamic_name) |buf| allocator.free(buf);
+    var dynamic_tier: ?[]u8 = null;
+    defer if (dynamic_tier) |buf| allocator.free(buf);
+
+    const shader_slice = blk: {
+        if (cfg.shader_path) |shader_path| {
+            const source = try std.fs.cwd().readFileAlloc(allocator, shader_path, 8 * 1024 * 1024);
+            dynamic_source = source;
+            const name = if (cfg.shader_name) |shader_name| name_blk: {
+                break :name_blk try allocator.dupe(u8, shader_name);
+            } else stem_blk: {
+                const basename = std.fs.path.basename(shader_path);
+                const stem = std.fs.path.stem(basename);
+                break :stem_blk try allocator.dupe(u8, stem);
+            };
+            dynamic_name = name;
+            const tier = if (cfg.shader_tier) |shader_tier|
+                try allocator.dupe(u8, shader_tier)
+            else
+                try allocator.dupe(u8, "external");
+            dynamic_tier = tier;
+            const external_shader = try allocator.alloc(Shader, 1);
+            external_shader[0] = .{
+                .name = name,
+                .tier = tier,
+                .source = source,
+                .source_lines = count_lines(source),
+            };
+            break :blk external_shader;
+        }
+        break :blk SHADERS[0..];
+    };
+    defer if (cfg.shader_path != null) allocator.free(shader_slice);
+
     for (cfg.targets) |target| {
         var total_p50: u64 = 0;
         var min_p50: u64 = std.math.maxInt(u64);
         var max_p50: u64 = 0;
         var shader_count: u32 = 0;
 
-        for (SHADERS) |shader| {
+        for (shader_slice) |shader| {
             if (cfg.filter) |f| {
                 if (!std.mem.eql(u8, f, shader.name)) continue;
             }

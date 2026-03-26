@@ -186,6 +186,9 @@ Tracing is binary and deterministic:
 - required event fields: `module`, `opCode`, `seq`, `timestampMonoNs`, `hashes`
 - crash artifact: binary dump + metadata JSON
 - replay tool must reproduce module sequence and hash chain
+- trace-meta may also emit coarse once-per-sample host-overhead totals
+  (`host*TotalNs`) so compare reports can explain workload-unit wall minus the
+  selected execution timing without inserting per-dispatch profiling probes
 - semantic operator debugging extends the same deterministic contract:
   semantic IDs must be explicit command-stream inputs, trace rows must preserve
   them verbatim, and any capture/repro artifact emitted from a trace run must be
@@ -226,8 +229,9 @@ Apple Metal lanes are additive and must not weaken AMD Vulkan strict defaults.
   - `bench/native-compare/compare_dawn_vs_doe.config.apple.metal.frontier.json` for broader comparable-only diagnostics
   - `bench/native-compare/compare_dawn_vs_doe.config.apple.metal.explore.json` for mixed comparable/directional engineering runs
   - optional Dawn-baseline lane forcing for baseline checks: `--local-metal-lane metal_dawn_release`
-  - render/bundle rows may still select encode-only timing for strict comparability, but claim evaluation must use `timingInterpretation.headlineProcessWall` when `selectedTiming.scopeClass=narrow-hot-path`
-  - repeat-asymmetric rows must normalize both selected operation timing and `headlineProcessWall` to one workload unit via `commandRepeat` before comparability or claimability is evaluated
+  - render/bundle rows may still select encode-only timing for strict comparability, but claim evaluation must use `timingInterpretation.workloadUnitWall` when `selectedTiming.scopeClass=narrow-hot-path`
+  - repeat-asymmetric rows must normalize both selected operation timing and `workloadUnitWall` to one workload unit via `commandRepeat` before comparability or claimability is evaluated
+  - comparable runtime workloads that expose `planPath` must execute the normalized plan boundary on both sides; mixing `planPath` on one side with generated `commandsPath` on the other is a comparability failure for `workloadUnitWall`
   - strict comparable workloads may now declare `strictNormalizationUnit` in the workload contract when the comparable unit is not raw command-row count:
     - `dispatch`: divisor must match repeated dispatch count
     - `cycle`: divisor must match repeated full-workload cycles

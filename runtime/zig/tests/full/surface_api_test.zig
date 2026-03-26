@@ -52,9 +52,9 @@ test "full surface accepts_kind covers all combined command kinds" {
 }
 
 test "full surface command counts are consistent" {
-    try std.testing.expectEqual(@as(u32, 10), core_surface.CORE_COMMAND_COUNT);
+    try std.testing.expectEqual(@as(u32, 11), core_surface.CORE_COMMAND_COUNT);
     try std.testing.expectEqual(@as(u32, 14), full_surface_api.FULL_ONLY_COMMAND_COUNT);
-    try std.testing.expectEqual(@as(u32, 24), full_surface_api.TOTAL_COMMAND_COUNT);
+    try std.testing.expectEqual(@as(u32, 25), full_surface_api.TOTAL_COMMAND_COUNT);
 
     const combined_kinds = @typeInfo(model.CommandKind).@"enum".fields.len;
     try std.testing.expectEqual(combined_kinds, full_surface_api.TOTAL_COMMAND_COUNT);

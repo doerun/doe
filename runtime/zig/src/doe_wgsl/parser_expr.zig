@@ -642,6 +642,8 @@ pub fn parseTypeExpr(self: anytype) @TypeOf(self.*).Error!u32 {
 
 fn parseParameterizedType(self: anytype) @TypeOf(self.*).Error!u32 {
     const main_token = self.token_idx;
+    const parses_array_length_expr = main_token < self.tree.tokens.items.len and
+        self.tree.tokens.items[main_token].tag == .kw_array;
     self.advance();
 
     if (self.peekTag() != .@"<") {
@@ -657,8 +659,12 @@ fn parseParameterizedType(self: anytype) @TypeOf(self.*).Error!u32 {
     const scratch_top = self.scratch.items.len;
     defer self.scratch.shrinkRetainingCapacity(scratch_top);
 
+    var param_index: u32 = 0;
     while (self.peekTag() != .@">" and self.peekTag() != .shift_right and self.peekTag() != .eof) {
-        if (self.peekTag() == .int_literal) {
+        if (parses_array_length_expr and param_index == 1) {
+            const param = try parseArrayLengthExpr(self);
+            try self.scratch.append(self.allocator, param);
+        } else if (self.peekTag() == .int_literal) {
             const tok = self.token_idx;
             self.advance();
             const node = try self.tree.addNode(.{
@@ -672,6 +678,7 @@ fn parseParameterizedType(self: anytype) @TypeOf(self.*).Error!u32 {
             try self.scratch.append(self.allocator, param);
         }
         if (self.peekTag() == .@",") self.advance();
+        param_index += 1;
     }
     if (self.peekTag() == .shift_right) {
         self.tree.tokens.items[self.token_idx].tag = .@">";
@@ -688,4 +695,134 @@ fn parseParameterizedType(self: anytype) @TypeOf(self.*).Error!u32 {
         .main_token = main_token,
         .data = .{ .lhs = extra_start, .rhs = count },
     });
+}
+
+fn parseArrayLengthExpr(self: anytype) @TypeOf(self.*).Error!u32 {
+    return parseArrayLengthBitwiseOr(self);
+}
+
+fn parseArrayLengthBitwiseOr(self: anytype) @TypeOf(self.*).Error!u32 {
+    var lhs = try parseArrayLengthBitwiseXor(self);
+    while (self.peekTag() == .@"|") {
+        const op_token = self.token_idx;
+        self.advance();
+        const rhs = try parseArrayLengthBitwiseXor(self);
+        lhs = try self.tree.addNode(.{
+            .tag = .binary_expr,
+            .main_token = op_token,
+            .data = .{ .lhs = lhs, .rhs = rhs },
+        });
+    }
+    return lhs;
+}
+
+fn parseArrayLengthBitwiseXor(self: anytype) @TypeOf(self.*).Error!u32 {
+    var lhs = try parseArrayLengthBitwiseAnd(self);
+    while (self.peekTag() == .@"^") {
+        const op_token = self.token_idx;
+        self.advance();
+        const rhs = try parseArrayLengthBitwiseAnd(self);
+        lhs = try self.tree.addNode(.{
+            .tag = .binary_expr,
+            .main_token = op_token,
+            .data = .{ .lhs = lhs, .rhs = rhs },
+        });
+    }
+    return lhs;
+}
+
+fn parseArrayLengthBitwiseAnd(self: anytype) @TypeOf(self.*).Error!u32 {
+    var lhs = try parseArrayLengthShift(self);
+    while (self.peekTag() == .@"&") {
+        const op_token = self.token_idx;
+        self.advance();
+        const rhs = try parseArrayLengthShift(self);
+        lhs = try self.tree.addNode(.{
+            .tag = .binary_expr,
+            .main_token = op_token,
+            .data = .{ .lhs = lhs, .rhs = rhs },
+        });
+    }
+    return lhs;
+}
+
+fn parseArrayLengthShift(self: anytype) @TypeOf(self.*).Error!u32 {
+    var lhs = try parseArrayLengthAddSub(self);
+    while (true) {
+        const tag = self.peekTag();
+        if (tag != .shift_left and tag != .shift_right) break;
+        const op_token = self.token_idx;
+        self.advance();
+        const rhs = try parseArrayLengthAddSub(self);
+        lhs = try self.tree.addNode(.{
+            .tag = .binary_expr,
+            .main_token = op_token,
+            .data = .{ .lhs = lhs, .rhs = rhs },
+        });
+    }
+    return lhs;
+}
+
+fn parseArrayLengthAddSub(self: anytype) @TypeOf(self.*).Error!u32 {
+    var lhs = try parseArrayLengthMulDiv(self);
+    while (true) {
+        const tag = self.peekTag();
+        if (tag != .@"+" and tag != .@"-") break;
+        const op_token = self.token_idx;
+        self.advance();
+        const rhs = try parseArrayLengthMulDiv(self);
+        lhs = try self.tree.addNode(.{
+            .tag = .binary_expr,
+            .main_token = op_token,
+            .data = .{ .lhs = lhs, .rhs = rhs },
+        });
+    }
+    return lhs;
+}
+
+fn parseArrayLengthMulDiv(self: anytype) @TypeOf(self.*).Error!u32 {
+    var lhs = try parseArrayLengthPrimary(self);
+    while (true) {
+        const tag = self.peekTag();
+        if (tag != .@"*" and tag != .@"/" and tag != .@"%") break;
+        const op_token = self.token_idx;
+        self.advance();
+        const rhs = try parseArrayLengthPrimary(self);
+        lhs = try self.tree.addNode(.{
+            .tag = .binary_expr,
+            .main_token = op_token,
+            .data = .{ .lhs = lhs, .rhs = rhs },
+        });
+    }
+    return lhs;
+}
+
+fn parseArrayLengthPrimary(self: anytype) @TypeOf(self.*).Error!u32 {
+    switch (self.peekTag()) {
+        .int_literal => {
+            const tok = self.token_idx;
+            self.advance();
+            return self.tree.addNode(.{
+                .tag = .int_literal,
+                .main_token = tok,
+                .data = .{},
+            });
+        },
+        .ident => {
+            const tok = self.token_idx;
+            self.advance();
+            return self.tree.addNode(.{
+                .tag = .ident_expr,
+                .main_token = tok,
+                .data = .{},
+            });
+        },
+        .@"(" => {
+            self.advance();
+            const expr = try parseArrayLengthExpr(self);
+            _ = try self.expect(.@")");
+            return expr;
+        },
+        else => return error.UnexpectedToken,
+    }
 }

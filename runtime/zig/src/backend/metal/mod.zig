@@ -202,6 +202,7 @@ fn native_capability_set() capabilities.CapabilitySet {
         .compute_dispatch,
         .compute_dispatch_indirect,
         .buffer_upload,
+        .buffer_write,
         .buffer_copy,
         .barrier_sync,
         .kernel_dispatch,
@@ -328,6 +329,34 @@ fn execute_upload(self: *ZigMetalBackend, upload: model.UploadCommand) !webgpu.N
     return r;
 }
 
+fn execute_buffer_write(self: *ZigMetalBackend, cmd: model.BufferWriteCommand) !webgpu.NativeExecutionResult {
+    const rt = get_runtime(self);
+    const setup_start = common_timing.now_ns();
+    try rt.write_buffer(cmd);
+    const setup_end = common_timing.now_ns();
+
+    self.pending_upload_commands +|= 1;
+    var submit_wait_ns: u64 = 0;
+    if (self.queue_sync_mode == .per_command and self.pending_upload_commands >= self.upload_submit_every) {
+        submit_wait_ns = try rt.flush_queue();
+        self.pending_upload_commands = 0;
+    } else {
+        rt.has_deferred_submissions = true;
+    }
+
+    return .{
+        .status = .ok,
+        .status_message = "",
+        .setup_ns = common_timing.ns_delta(setup_end, setup_start),
+        .encode_ns = 0,
+        .submit_wait_ns = submit_wait_ns,
+        .dispatch_count = 0,
+        .gpu_timestamp_ns = 0,
+        .gpu_timestamp_attempted = false,
+        .gpu_timestamp_valid = false,
+    };
+}
+
 fn execute_barrier(self: *ZigMetalBackend) !webgpu.NativeExecutionResult {
     const rt = get_runtime(self);
     // barrier is a control operation, not a GPU workload — no timestamp
@@ -359,6 +388,7 @@ fn execute_kernel_dispatch(self: *ZigMetalBackend, kd: model.KernelDispatchComma
         kd.z,
         kd.repeat,
         kd.warmup_dispatch_count,
+        kd.initialize_buffers_on_create,
         kd.bindings,
         want_ts,
     );
@@ -505,7 +535,7 @@ fn prewarm_kernel_dispatch(ctx: *anyopaque, kernel: []const u8, bindings: ?[]con
     if (bindings) |bs| {
         for (bs) |b| {
             if (b.resource_kind != .buffer) continue;
-            _ = try rt.ensure_compute_buffer(b.resource_handle, b.buffer_size);
+            _ = try rt.ensure_compute_buffer(b.resource_handle, b.buffer_size, false);
         }
     }
 }
@@ -550,6 +580,7 @@ fn execute_native_command(self: *ZigMetalBackend, command: model.Command) !webgp
 
     var result = switch (command) {
         .upload => |upload| try execute_upload(self, upload),
+        .buffer_write => |cmd| try execute_buffer_write(self, cmd),
         .copy_buffer_to_texture => |copy| try execute_copy(self, copy),
         .barrier => try execute_barrier(self),
         .dispatch => |dispatch| try execute_dispatch(self, dispatch),

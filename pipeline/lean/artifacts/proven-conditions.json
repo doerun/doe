@@ -1,6 +1,13 @@
 {
   "schemaVersion": 1,
   "status": "verified",
+  "provenance": {
+    "leanToolchainRef": "leanprover/lean4:v4.16.0",
+    "extractProgramSha256": "022a84e2b541a0a8b0d96b759b780c7ccbe19dd91237d5e38047cbcf5acdf7d5",
+    "leanSourceTreeSha256": "d5fea24f230904682bf5b540ff72a6cbb06232cc05b1d082503ebf874e29f23f",
+    "generatedComparabilityContractSha256": "69128a41659fa829567d6634cda96c18308e470feb9b80a7fe29ce4c17d8d911",
+    "proofPatternSpecSha256": "ffbdd2e4aae2b5032983c0fddcef16033641055062a7798a9d0f7b9cdbe30269"
+  },
   "contractHashes": {
     "comparabilityObligationsSha256": "853bfa69636f8a03b0aca9b218be928bd42b7c86af37d1e67a954fb4a6513612"
   },

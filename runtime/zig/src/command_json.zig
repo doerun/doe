@@ -17,10 +17,11 @@ pub fn parseCommands(allocator: Allocator, text: []const u8) ![]model.Command {
 
     // Zig's strict parser crashes if the string has a trailing newline after the valid JSON array end.
     const cleanly_trimmed = std.mem.trimRight(u8, text, " \n\r\t\\n");
-    const parsed = try std.json.parseFromSliceLeaky([]const RawCommand, allocator, cleanly_trimmed, .{
+    var parsed = try std.json.parseFromSlice([]const RawCommand, allocator, cleanly_trimmed, .{
         .ignore_unknown_fields = true,
         .allocate = .alloc_always,
     });
+    defer parsed.deinit();
 
     var list = std.ArrayList(model.Command).empty;
     errdefer {
@@ -29,9 +30,9 @@ pub fn parseCommands(allocator: Allocator, text: []const u8) ![]model.Command {
         }
         list.deinit(allocator);
     }
-    try list.ensureTotalCapacity(allocator, parsed.len);
+    try list.ensureTotalCapacity(allocator, parsed.value.len);
 
-    for (parsed) |raw| {
+    for (parsed.value) |raw| {
         list.appendAssumeCapacity(try parseOne(allocator, raw));
     }
 
@@ -52,6 +53,7 @@ fn freeCommandPayload(allocator: Allocator, command: model.Command) void {
             if (kernel_command.entry_point) |entry_point| allocator.free(entry_point);
             if (kernel_command.bindings) |bindings| allocator.free(bindings);
         },
+        .buffer_write => |buffer_write| allocator.free(buffer_write.data),
         .render_draw, .draw_indirect, .draw_indexed_indirect, .render_pass => |render_command| {
             if (render_command.index_data) |index_data| {
                 switch (index_data) {
@@ -79,6 +81,7 @@ fn getCommandName(raw: RawCommand) ?[]const u8 {
 
 const NormalizedKind = enum {
     upload,
+    buffer_write,
     copy,
     barrier,
     dispatch,
@@ -109,6 +112,12 @@ fn parseKind(raw: RawCommand) !NormalizedKind {
 
     if (commandKindEquals(kind, "upload") or commandKindEquals(kind, "buffer_upload")) {
         return .upload;
+    }
+    if (commandKindEquals(kind, "buffer_write") or
+        commandKindEquals(kind, "write_buffer") or
+        commandKindEquals(kind, "queue_write_buffer"))
+    {
+        return .buffer_write;
     }
 
     if (commandKindEquals(kind, "copy_buffer_to_texture") or
@@ -375,6 +384,20 @@ fn parseOne(allocator: Allocator, raw: RawCommand) !model.Command {
         const bytes = raw.bytes orelse return ParseError.InvalidCommandPayload;
         const align_bytes = raw.alignBytes orelse raw.alignmentBytes orelse 4;
         return .{ .upload = .{ .bytes = bytes, .align_bytes = align_bytes } };
+    }
+
+    if (kind == .buffer_write) {
+        const handle = raw.handle orelse raw.resource_handle orelse raw.resourceHandle orelse return ParseError.InvalidCommandPayload;
+        const data = raw.data orelse return ParseError.InvalidCommandPayload;
+        if (data.len == 0) return ParseError.InvalidCommandPayload;
+        const owned_data = try allocator.dupe(u32, data);
+        errdefer allocator.free(owned_data);
+        return .{ .buffer_write = .{
+            .handle = handle,
+            .offset = raw.offset orelse 0,
+            .buffer_size = raw.buffer_size orelse raw.bufferSize orelse 0,
+            .data = owned_data,
+        } };
     }
 
     if (kind == .copy) {
@@ -703,6 +726,28 @@ test "parseCommands parses map_async with default write mode" {
     );
     try std.testing.expectEqual(@as(usize, 4096), cmds[0].map_async.bytes);
     try std.testing.expectEqual(model.MapAsyncMode.write, cmds[0].map_async.mode);
+}
+
+test "parseCommands parses buffer_write" {
+    const allocator = std.testing.allocator;
+    const json =
+        \\[
+        \\  {
+        \\    "command": "write_buffer",
+        \\    "handle": 17,
+        \\    "offset": 16,
+        \\    "bufferSize": 64,
+        \\    "data": [1, 2, 3, 4]
+        \\  }
+        \\]
+    ;
+    const cmds = try parseCommands(allocator, json);
+    defer freeCommands(allocator, cmds);
+    try std.testing.expectEqual(@as(usize, 1), cmds.len);
+    try std.testing.expectEqual(@as(u64, 17), cmds[0].buffer_write.handle);
+    try std.testing.expectEqual(@as(u64, 16), cmds[0].buffer_write.offset);
+    try std.testing.expectEqual(@as(u64, 64), cmds[0].buffer_write.buffer_size);
+    try std.testing.expectEqual(@as(usize, 4), cmds[0].buffer_write.data.len);
 }
 
 test "parseCommands parses multiple heterogeneous commands" {

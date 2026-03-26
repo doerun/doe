@@ -952,6 +952,42 @@ test "analyzeToIrWithConfig records texture dispatch-fit preconditions" {
     try std.testing.expect(!elided_has_clamp);
 }
 
+test "compute runtime robustness config records texture dispatch-fit preconditions" {
+    const source =
+        \\@group(0) @binding(0) var src_tex: texture_2d<f32>;
+        \\@group(0) @binding(1) var dst_tex: texture_storage_2d<rgba8unorm, write>;
+        \\@compute @workgroup_size(8, 8, 1)
+        \\fn main(@builtin(global_invocation_id) gid: vec3u) {
+        \\    let sample = textureLoad(src_tex, vec2u(gid.x, gid.y), 0);
+        \\    textureStore(dst_tex, vec2u(gid.x, gid.y), sample);
+        \\}
+    ;
+
+    var module_ir = try analyzeToIrWithConfig(
+        std.testing.allocator,
+        source,
+        runtime_compile.compute_runtime_robustness_config(),
+    );
+    defer module_ir.deinit();
+
+    const proofs_available = lean_proof.boundsProven(.gid_texture_2d_dispatch_fit);
+    if (!proofs_available) {
+        try std.testing.expectEqual(@as(usize, 0), module_ir.texture_dispatch_preconditions.items.len);
+        return;
+    }
+
+    try std.testing.expectEqual(@as(usize, 2), module_ir.texture_dispatch_preconditions.items.len);
+
+    var has_clamp = false;
+    for (module_ir.functions.items[0].exprs.items) |expr| {
+        if (expr.data == .call and std.mem.eql(u8, expr.data.call.name, "clamp")) {
+            has_clamp = true;
+            break;
+        }
+    }
+    try std.testing.expect(!has_clamp);
+}
+
 test "translate inter-stage variables with centroid sampling to SPIR-V" {
     const source =
         \\struct VsOut {

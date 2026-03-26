@@ -71,6 +71,45 @@
     "workloadOverride": {
       "type": "object",
       "properties": {
+        "irPath": {
+          "type": "string",
+          "minLength": 1
+        },
+        "irScenario": {
+          "type": "string",
+          "minLength": 1
+        },
+        "planPath": {
+          "type": "string",
+          "minLength": 1
+        },
+        "planSchemaVersion": {
+          "type": "integer"
+        },
+        "planHash": {
+          "type": "string",
+          "minLength": 1
+        },
+        "planCommandCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "planDispatchCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "planBufferWriteCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "compatibilityCommandHash": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sourceIrSha256": {
+          "type": "string",
+          "minLength": 1
+        },
         "workloadOrigin": {
           "type": "string",
           "enum": [

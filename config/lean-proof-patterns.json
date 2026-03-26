@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "boundsPatterns": [
+    {
+      "id": "gid_1d_storage_buffer",
+      "theorem": "gid_inbounds_when_dispatch_fits",
+      "runtimePath": "runtime/zig/src/doe_wgsl/dispatch_proof_match.zig:try_elide_storage_index"
+    },
+    {
+      "id": "gid_1d_storage_buffer_offset",
+      "theorem": "gid_plus_offset_inbounds_when_dispatch_fits",
+      "runtimePath": "runtime/zig/src/doe_wgsl/dispatch_proof_match.zig:try_elide_storage_index"
+    },
+    {
+      "id": "gid_1d_storage_buffer_stride",
+      "theorem": "gid_times_stride_plus_offset_inbounds_when_dispatch_fits",
+      "runtimePath": "runtime/zig/src/doe_wgsl/dispatch_proof_match.zig:try_elide_storage_index"
+    },
+    {
+      "id": "gid_1d_storage_buffer_loop_offset",
+      "theorem": "gid_plus_bounded_loop_index_inbounds_when_dispatch_fits",
+      "runtimePath": "runtime/zig/src/doe_wgsl/dispatch_proof_match.zig:try_elide_storage_index"
+    },
+    {
+      "id": "gid_1d_storage_buffer_loop_affine",
+      "theorem": "gid_affine_plus_scaled_loop_index_inbounds_when_dispatch_fits",
+      "runtimePath": "runtime/zig/src/doe_wgsl/dispatch_proof_match.zig:try_elide_storage_index"
+    },
+    {
+      "id": "gid_1d_storage_buffer_tiled",
+      "theorem": "gid_tiled_index_plus_offset_inbounds_when_dispatch_fits",
+      "runtimePath": "runtime/zig/src/doe_wgsl/dispatch_proof_match.zig:try_elide_storage_index"
+    },
+    {
+      "id": "gid_2d_flat_storage_buffer",
+      "theorem": "flat_index_2d_inbounds",
+      "runtimePath": "runtime/zig/src/doe_wgsl/dispatch_proof_match.zig:try_elide_storage_index"
+    },
+    {
+      "id": "gid_2d_flat_storage_buffer_offset",
+      "theorem": "flat_index_2d_plus_offset_inbounds",
+      "runtimePath": "runtime/zig/src/doe_wgsl/dispatch_proof_match.zig:try_elide_storage_index"
+    },
+    {
+      "id": "gid_texture_2d_dispatch_fit",
+      "theorem": "gid_texture_coords_2d_inbounds_when_dispatch_fits",
+      "runtimePath": "runtime/zig/src/doe_wgsl/ir_transform_robustness.zig:try_elide_dispatch_fit_texture_coords"
+    },
+    {
+      "id": "gid_texture_3d_dispatch_fit",
+      "theorem": "gid_texture_coords_3d_inbounds_when_dispatch_fits",
+      "runtimePath": "runtime/zig/src/doe_wgsl/ir_transform_robustness.zig:try_elide_dispatch_fit_texture_coords"
+    }
+  ],
+  "validatorElisions": [
+    {
+      "id": "wgsl_analyze_to_ir",
+      "requiredTheorems": ["builder_soundness", "ValidatorRedundant"],
+      "runtimePath": "runtime/zig/src/doe_wgsl/mod.zig:analyzeToIr"
+    },
+    {
+      "id": "wgsl_shader_bench",
+      "requiredTheorems": ["builder_soundness", "ValidatorRedundant"],
+      "runtimePath": "runtime/zig/src/doe_wgsl/bench.zig:maybe_validate_module"
+    }
+  ]
+}

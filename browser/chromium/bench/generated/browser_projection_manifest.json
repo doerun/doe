@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "generatedAt": "2026-03-19T11:57:59.104140Z",
-  "sourceWorkloadsPath": "bench/workloads/workloads.amd.vulkan.superset.json",
+  "sourceWorkloadsPath": "bench/workloads/specialized/workloads.amd.vulkan.superset.json",
   "sourceWorkloadsSha256": "e555b01264c084d264cfc4cf6578dd7191031667c9c44fe0bbf65a67816b41fb",
   "rulesPath": "browser/chromium/bench/projection-rules.json",
   "rulesSha256": "06ac37731d70bb86652dbad5a6e7e80f1de4aad1b5020d530b500c98e54de245",

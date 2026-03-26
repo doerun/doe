@@ -386,6 +386,12 @@ fn write_command_shape(writer: anytype, command: model.Command) !void {
             try writer.writeAll("\"uploadBytes\":");
             try writer.print("{}", .{upload.bytes});
         },
+        .buffer_write => |buffer_write| {
+            try writer.writeAll("\"bufferWriteHandle\":");
+            try writer.print("{}", .{buffer_write.handle});
+            try writer.writeAll(",\"bufferWriteWords\":");
+            try writer.print("{}", .{buffer_write.data.len});
+        },
         .copy_buffer_to_texture => |copy| {
             try writer.writeAll("\"copyBytes\":");
             try writer.print("{}", .{copy.bytes});

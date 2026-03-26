@@ -68,6 +68,7 @@ pub const CoverageStatus = enum {
 pub fn domain_for_kind(kind: CoreCommandKind) []const u8 {
     return switch (kind) {
         .upload => "copy",
+        .buffer_write => "copy",
         .copy_buffer_to_texture => "copy",
         .barrier => "compute",
         .dispatch => "compute",

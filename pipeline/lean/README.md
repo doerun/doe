@@ -106,6 +106,24 @@ Specific obligation sets verified against the `lean_verified` theorems. The arti
 - Zig/Python runtime/gate logic mirrors Lean obligation fields and policy (`verificationMode`, `proofLevel`, blocking/advisory outcomes).
 - Manual Lean typecheck/build is available through `./pipeline/lean/check.sh` (uses pinned toolchain version from `config/toolchains.json`).
 
+## Trusted boundary and limits
+
+Lean proves theorem families. It does not, by itself, prove that every Zig caller applies those theorems correctly.
+
+The current trusted matcher/application boundary is:
+
+- `runtime/zig/src/doe_wgsl/dispatch_proof_match.zig` decides which shader access shapes are theorem-covered.
+- `runtime/zig/src/doe_compute_preconditions_native.zig` enforces the host-side preconditions that replace per-access shader clamps.
+- `runtime/zig/src/lean_proof.zig` validates theorem presence plus artifact provenance at comptime.
+
+So the strongest current Lean story is:
+
+- validator redundancy
+- comparability/workload-geometry model correctness
+- specific bounds-elision families that are also covered by targeted Zig tests
+
+It is not yet a fully verified runtime, because the Zig matcher/application layer remains trusted code.
+
 ## File layout
 
 Core theorem pack (`Doe/Core/`, maps to `runtime/zig/src/core/`):
@@ -152,17 +170,34 @@ Extraction:
 - `./pipeline/lean/generate_comparability_contract.py` regenerates `Doe/Generated/ComparabilityContract.lean` from `config/comparability-obligations.json` before typecheck/extraction.
 - `./pipeline/lean/extract.sh` compiles all Lean modules and runs `Doe/Extract.lean` to produce `pipeline/lean/artifacts/proven-conditions.json`.
 - The artifact lists all verified theorems with their tier classification, records the active comparability contract hash, evaluates decidable propositions, and maps theorems to Zig runtime elimination targets.
+- The artifact also records a provenance block covering:
+  - the pinned Lean toolchain ref
+  - `pipeline/lean/Doe/Extract.lean`
+  - the deterministic Lean source tree hash under `pipeline/lean/Doe`
+  - the generated comparability contract
+  - the shared proof-pattern spec in `config/lean-proof-patterns.json`
 - Artifact schema: `config/proof-artifact.schema.json`.
 - CI runs extraction after typecheck and uploads the artifact (see `.github/workflows/lean-check.yml`).
 - The artifact is generated (not committed); `pipeline/lean/artifacts/` is gitignored.
 - Zig build embeds the artifact at comptime via `-Dlean-verified=true`.
 
+## Shared proof-pattern contract
+
+`config/lean-proof-patterns.json` is the canonical list of runtime proof-application IDs Doe expects to be covered today.
+
+- `boundsPatterns` maps stable runtime pattern IDs to theorems and matcher callsites.
+- `validatorElisions` maps validator-removal sites to the theorems that justify them.
+
+This is not proof-carrying code generation, but it reduces drift by giving the artifact, the runtime gate, and the proof-pipeline tests one shared named contract.
+
 ## Zig runtime integration
 
 When built with `-Dlean-verified=true`, `lean_proof.zig` validates the proof artifact at comptime and sets `lean_proof.lean_verified = true`. The Zig compiler dead-code-eliminates branches gated on this flag.
+
+`lean_proof.zig` now also rejects artifacts whose provenance does not match the current Lean source tree, generated comparability contract, toolchain ref, or shared proof-pattern spec.
 
 The `tautological` and `comptime_verified` theorems gate init-time and per-command branch elimination in `quirk/runtime.zig`. These properties are independently verifiable by Zig `comptime` — the Lean proof is a redundant second check, not the sole authority.
 
 The `lean_verified` theorems validate the comparability obligation model used by benchmark methodology gates. These cannot be replicated by `comptime` exhaustion because they quantify over arbitrary obligation lists and arbitrary Nat-valued workload geometry. This is where Lean earns its keep.
 
-Build chain: Lean typecheck → `extract.sh` emits `proven-conditions.json` → `build.zig` reads artifact → `lean_proof.zig` validates at comptime → `runtime.zig` uses `lean_proof.lean_verified` as comptime gate → compiler eliminates unreachable branches.
+Build chain: Lean typecheck → `extract.sh` emits `proven-conditions.json` with provenance → `build.zig` recomputes provenance from the current tree → `lean_proof.zig` validates theorem names plus provenance at comptime → runtime gates use theorem availability as compile-time switches.

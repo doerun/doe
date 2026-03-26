@@ -3,9 +3,12 @@ const std = @import("std");
 const bridge = @import("metal_bridge_decls.zig");
 const metal_buffer_pool = @import("metal_buffer_pool.zig");
 const metal_pipeline_cache = @import("metal_pipeline_cache.zig");
+const wgsl_compiler = @import("../../doe_wgsl/mod.zig");
+const wgsl_runtime_compile = @import("../../doe_wgsl/runtime_compile.zig");
 const HAS_PIPELINE_CACHE = builtin.os.tag == .macos;
 
 const metal_bridge_cmd_buf_render_encoder = bridge.metal_bridge_cmd_buf_render_encoder;
+const metal_bridge_buffer_contents = bridge.metal_bridge_buffer_contents;
 const metal_bridge_device_new_buffer_shared = bridge.metal_bridge_device_new_buffer_shared;
 const metal_bridge_device_new_compute_pipeline = bridge.metal_bridge_device_new_compute_pipeline;
 const metal_bridge_device_new_icb = bridge.metal_bridge_device_new_icb;
@@ -27,22 +30,8 @@ pub fn ensure_kernel_pipeline(self: anytype, kernel: []const u8) !?*anyopaque {
     if (self.kernel_pipelines.get(base)) |kp| return kp.pipeline;
 
     const root = self.kernel_root orelse DEFAULT_KERNEL_ROOT;
-    const path = try std.fmt.allocPrint(self.allocator, "{s}/{s}.metal", .{ root, base });
-    defer self.allocator.free(path);
-
-    const source = std.fs.cwd().readFileAlloc(self.allocator, path, MAX_KERNEL_SOURCE_BYTES) catch {
-        return error.ShaderCompileFailed;
-    };
-    defer self.allocator.free(source);
-
     var err_buf: [BRIDGE_ERROR_CAP]u8 = undefined;
-    const lib = metal_bridge_device_new_library_msl(
-        self.device,
-        source.ptr,
-        source.len,
-        &err_buf,
-        BRIDGE_ERROR_CAP,
-    ) orelse return error.ShaderCompileFailed;
+    const lib = try compile_kernel_library(self, root, base, &err_buf);
     errdefer metal_bridge_release(lib);
 
     const func = metal_bridge_library_new_function(lib, KERNEL_ENTRY_Z) orelse return error.ShaderCompileFailed;
@@ -70,11 +59,103 @@ pub fn ensure_kernel_pipeline(self: anytype, kernel: []const u8) !?*anyopaque {
     return pso;
 }
 
-pub fn ensure_compute_buffer(self: anytype, handle: u64, size: u64) !?*anyopaque {
+fn compile_kernel_library(
+    self: anytype,
+    root: []const u8,
+    base: []const u8,
+    err_buf: *[BRIDGE_ERROR_CAP]u8,
+) !?*anyopaque {
+    const metal_path = try std.fmt.allocPrint(self.allocator, "{s}/{s}.metal", .{ root, base });
+    defer self.allocator.free(metal_path);
+
+    const metal_source = std.fs.cwd().readFileAlloc(self.allocator, metal_path, MAX_KERNEL_SOURCE_BYTES) catch |err| switch (err) {
+        error.FileNotFound => null,
+        else => return error.ShaderCompileFailed,
+    };
+    if (metal_source) |source| {
+        defer self.allocator.free(source);
+        return metal_bridge_device_new_library_msl(
+            self.device,
+            source.ptr,
+            source.len,
+            err_buf,
+            BRIDGE_ERROR_CAP,
+        ) orelse error.ShaderCompileFailed;
+    }
+
+    const wgsl_path = try std.fmt.allocPrint(self.allocator, "{s}/{s}.wgsl", .{ root, base });
+    defer self.allocator.free(wgsl_path);
+
+    const wgsl_source = std.fs.cwd().readFileAlloc(self.allocator, wgsl_path, MAX_KERNEL_SOURCE_BYTES) catch {
+        return error.ShaderCompileFailed;
+    };
+    defer self.allocator.free(wgsl_source);
+
+    const msl_buf = try self.allocator.alloc(u8, wgsl_compiler.MAX_OUTPUT);
+    defer self.allocator.free(msl_buf);
+
+    const translated_len = blk: {
+        var translation = wgsl_runtime_compile.translateToMslForComputeRuntime(
+            self.allocator,
+            wgsl_source,
+            msl_buf,
+            null,
+            0,
+        ) catch {
+            break :blk wgsl_compiler.translateToMsl(self.allocator, wgsl_source, msl_buf) catch {
+                return error.ShaderCompileFailed;
+            };
+        };
+        defer translation.info.deinit(self.allocator);
+        break :blk translation.len;
+    };
+
+    return metal_bridge_device_new_library_msl(
+        self.device,
+        msl_buf.ptr,
+        translated_len,
+        err_buf,
+        BRIDGE_ERROR_CAP,
+    ) orelse error.ShaderCompileFailed;
+}
+
+fn zeroBufferBytes(bytes: []u8) void {
+    @memset(bytes, 0);
+}
+
+fn zeroComputeBufferContents(buffer: ?*anyopaque, size: u64) !void {
+    if (size == 0) return;
+    const mapped = metal_bridge_buffer_contents(buffer) orelse return error.InvalidState;
+    zeroBufferBytes(@as([*]u8, @ptrCast(mapped))[0..@intCast(size)]);
+}
+
+pub fn ensure_compute_buffer(self: anytype, handle: u64, size: u64, initialize_buffers_on_create: bool) !?*anyopaque {
     if (self.compute_buffers.get(handle)) |b| return b;
     const buf = metal_bridge_device_new_buffer_shared(self.device, @intCast(size)) orelse return error.InvalidState;
+    if (initialize_buffers_on_create) try zeroComputeBufferContents(buf, size);
     try self.compute_buffers.put(self.allocator, handle, buf);
     return buf;
+}
+
+pub fn write_compute_buffer_words(self: anytype, handle: u64, offset: u64, buffer_size: u64, data: []const u32) !void {
+    if (data.len == 0) return error.InvalidArgument;
+    const data_bytes = std.mem.sliceAsBytes(data);
+    const required_size = if (buffer_size > 0)
+        @max(buffer_size, offset + data_bytes.len)
+    else
+        offset + data_bytes.len;
+    const buffer = try ensure_compute_buffer(self, handle, required_size, false);
+    const mapped = metal_bridge_buffer_contents(buffer) orelse return error.InvalidState;
+    const dst = @as([*]u8, @ptrCast(mapped));
+    @memcpy(dst[@intCast(offset)..][0..data_bytes.len], data_bytes);
+}
+
+test "zeroBufferBytes clears mapped storage" {
+    var bytes = [_]u8{ 1, 2, 3, 4, 5, 6, 7, 8 };
+    zeroBufferBytes(bytes[0..]);
+    for (bytes) |value| {
+        try std.testing.expectEqual(@as(u8, 0), value);
+    }
 }
 
 pub fn ensure_render_pipeline(self: anytype, fmt: u32) !void {

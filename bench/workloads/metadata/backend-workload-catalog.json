@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "laneOutputs": {
     "generic": {
-      "outputPath": "bench/workloads/workloads.json"
+      "outputPath": "bench/workloads/specialized/workloads.generic.json"
     },
     "amd_vulkan": {
       "outputPath": "bench/workloads/workloads.amd.vulkan.json",
@@ -7397,14 +7397,14 @@
             "tier": "targeted-dawn-parity",
             "notes": "Parity promotion complete for the Apple Metal lane."
           },
-          "comparabilityNotes": "Strict comparable on Apple Metal after Dawn-side copy ABI parity fixes; claimability uses headline process wall because delegate operation timing undercounts end-to-end texture-to-buffer completion. The Apple Metal lane uses 2000 repeats to reduce tail volatility under aggregate lane pressure.",
+          "comparabilityNotes": "Strict comparable on Apple Metal after Dawn-side copy ABI parity fixes; claimability uses workload-unit wall because delegate operation timing undercounts full texture-to-buffer completion. The Apple Metal lane uses 2000 repeats to reduce tail volatility under aggregate lane pressure.",
           "comparable": false,
           "description": "Comparable copy contract covering texture-to-buffer transfer path.",
           "leftCommandRepeat": 2000,
           "leftTimingDivisor": 2000,
           "rightCommandRepeat": 2000,
           "rightTimingDivisor": 2000,
-          "timingNormalizationNote": "Strict comparable Apple-Metal copy contract: normalize per texture-to-buffer copy command sequence at 2000 repeats to stabilize headline process wall claimability.",
+          "timingNormalizationNote": "Strict comparable Apple-Metal copy contract: normalize per texture-to-buffer copy command sequence at 2000 repeats to stabilize workload-unit wall claimability.",
           "directionalReason": "implementation_gap"
         },
         "amd_vulkan_extended": {},
@@ -7554,7 +7554,7 @@
           "leftTimingDivisor": 400,
           "rightCommandRepeat": 400,
           "rightTimingDivisor": 400,
-          "timingNormalizationNote": "Strict comparable Apple-Metal copy contract: normalize per texture-to-texture copy command sequence at 400 repeats to reduce headline process wall tail volatility."
+          "timingNormalizationNote": "Strict comparable Apple-Metal copy contract: normalize per texture-to-texture copy command sequence at 400 repeats to reduce workload-unit wall tail volatility."
         },
         "amd_vulkan_extended": {},
         "amd_vulkan_extended_strict": {},
@@ -9815,7 +9815,7 @@
       "shared": {
         "runnerType": "compilation",
         "domain": "compilation",
-        "name": "wgsl→msl compile: trivial noop compute",
+        "name": "wgsl\u2192msl compile: trivial noop compute",
         "description": "WGSL-to-MSL compilation benchmark for trivial_noop_compute.wgsl (Doe vs Tint).",
         "shaderPath": "bench/kernels/compilation-corpus/trivial_noop_compute.wgsl",
         "compilationTarget": "msl",
@@ -9850,7 +9850,7 @@
       "shared": {
         "runnerType": "compilation",
         "domain": "compilation",
-        "name": "wgsl→msl compile: trivial passthrough vertex",
+        "name": "wgsl\u2192msl compile: trivial passthrough vertex",
         "description": "WGSL-to-MSL compilation benchmark for trivial_passthrough_vertex.wgsl (Doe vs Tint).",
         "shaderPath": "bench/kernels/compilation-corpus/trivial_passthrough_vertex.wgsl",
         "compilationTarget": "msl",
@@ -9885,7 +9885,7 @@
       "shared": {
         "runnerType": "compilation",
         "domain": "compilation",
-        "name": "wgsl→msl compile: simple relu",
+        "name": "wgsl\u2192msl compile: simple relu",
         "description": "WGSL-to-MSL compilation benchmark for simple_relu.wgsl (Doe vs Tint).",
         "shaderPath": "bench/kernels/compilation-corpus/simple_relu.wgsl",
         "compilationTarget": "msl",
@@ -9920,7 +9920,7 @@
       "shared": {
         "runnerType": "compilation",
         "domain": "compilation",
-        "name": "wgsl→msl compile: simple silu",
+        "name": "wgsl\u2192msl compile: simple silu",
         "description": "WGSL-to-MSL compilation benchmark for simple_silu.wgsl (Doe vs Tint).",
         "shaderPath": "bench/kernels/compilation-corpus/simple_silu.wgsl",
         "compilationTarget": "msl",
@@ -9955,7 +9955,7 @@
       "shared": {
         "runnerType": "compilation",
         "domain": "compilation",
-        "name": "wgsl→msl compile: simple scale f32",
+        "name": "wgsl\u2192msl compile: simple scale f32",
         "description": "WGSL-to-MSL compilation benchmark for simple_scale_f32.wgsl (Doe vs Tint).",
         "shaderPath": "bench/kernels/compilation-corpus/simple_scale_f32.wgsl",
         "compilationTarget": "msl",
@@ -9990,7 +9990,7 @@
       "shared": {
         "runnerType": "compilation",
         "domain": "compilation",
-        "name": "wgsl→msl compile: simple residual add",
+        "name": "wgsl\u2192msl compile: simple residual add",
         "description": "WGSL-to-MSL compilation benchmark for simple_residual_add.wgsl (Doe vs Tint).",
         "shaderPath": "bench/kernels/compilation-corpus/simple_residual_add.wgsl",
         "compilationTarget": "msl",
@@ -10025,7 +10025,7 @@
       "shared": {
         "runnerType": "compilation",
         "domain": "compilation",
-        "name": "wgsl→msl compile: moderate rmsnorm",
+        "name": "wgsl\u2192msl compile: moderate rmsnorm",
         "description": "WGSL-to-MSL compilation benchmark for moderate_rmsnorm.wgsl (Doe vs Tint).",
         "shaderPath": "bench/kernels/compilation-corpus/moderate_rmsnorm.wgsl",
         "compilationTarget": "msl",
@@ -10060,7 +10060,7 @@
       "shared": {
         "runnerType": "compilation",
         "domain": "compilation",
-        "name": "wgsl→msl compile: moderate gelu",
+        "name": "wgsl\u2192msl compile: moderate gelu",
         "description": "WGSL-to-MSL compilation benchmark for moderate_gelu.wgsl (Doe vs Tint).",
         "shaderPath": "bench/kernels/compilation-corpus/moderate_gelu.wgsl",
         "compilationTarget": "msl",
@@ -10095,7 +10095,7 @@
       "shared": {
         "runnerType": "compilation",
         "domain": "compilation",
-        "name": "wgsl→msl compile: moderate rope",
+        "name": "wgsl\u2192msl compile: moderate rope",
         "description": "WGSL-to-MSL compilation benchmark for moderate_rope.wgsl (Doe vs Tint).",
         "shaderPath": "bench/kernels/compilation-corpus/moderate_rope.wgsl",
         "compilationTarget": "msl",
@@ -10130,7 +10130,7 @@
       "shared": {
         "runnerType": "compilation",
         "domain": "compilation",
-        "name": "wgsl→msl compile: moderate softmax",
+        "name": "wgsl\u2192msl compile: moderate softmax",
         "description": "WGSL-to-MSL compilation benchmark for moderate_softmax.wgsl (Doe vs Tint).",
         "shaderPath": "bench/kernels/compilation-corpus/moderate_softmax.wgsl",
         "compilationTarget": "msl",
@@ -10165,7 +10165,7 @@
       "shared": {
         "runnerType": "compilation",
         "domain": "compilation",
-        "name": "wgsl→msl compile: moderate layernorm",
+        "name": "wgsl\u2192msl compile: moderate layernorm",
         "description": "WGSL-to-MSL compilation benchmark for moderate_layernorm.wgsl (Doe vs Tint).",
         "shaderPath": "bench/kernels/compilation-corpus/moderate_layernorm.wgsl",
         "compilationTarget": "msl",
@@ -10200,7 +10200,7 @@
       "shared": {
         "runnerType": "compilation",
         "domain": "compilation",
-        "name": "wgsl→msl compile: moderate matmul naive",
+        "name": "wgsl\u2192msl compile: moderate matmul naive",
         "description": "WGSL-to-MSL compilation benchmark for moderate_matmul_naive.wgsl (Doe vs Tint).",
         "shaderPath": "bench/kernels/compilation-corpus/moderate_matmul_naive.wgsl",
         "compilationTarget": "msl",
@@ -10235,7 +10235,7 @@
       "shared": {
         "runnerType": "compilation",
         "domain": "compilation",
-        "name": "wgsl→msl compile: complex attention decode",
+        "name": "wgsl\u2192msl compile: complex attention decode",
         "description": "WGSL-to-MSL compilation benchmark for complex_attention_decode.wgsl (Doe vs Tint).",
         "shaderPath": "bench/kernels/compilation-corpus/complex_attention_decode.wgsl",
         "compilationTarget": "msl",
@@ -10270,7 +10270,7 @@
       "shared": {
         "runnerType": "compilation",
         "domain": "compilation",
-        "name": "wgsl→msl compile: complex matmul tiled",
+        "name": "wgsl\u2192msl compile: complex matmul tiled",
         "description": "WGSL-to-MSL compilation benchmark for complex_matmul_tiled.wgsl (Doe vs Tint).",
         "shaderPath": "bench/kernels/compilation-corpus/complex_matmul_tiled.wgsl",
         "compilationTarget": "msl",
@@ -10305,7 +10305,7 @@
       "shared": {
         "runnerType": "compilation",
         "domain": "compilation",
-        "name": "wgsl→msl compile: complex fused gemv dequant",
+        "name": "wgsl\u2192msl compile: complex fused gemv dequant",
         "description": "WGSL-to-MSL compilation benchmark for complex_fused_gemv_dequant.wgsl (Doe vs Tint).",
         "shaderPath": "bench/kernels/compilation-corpus/complex_fused_gemv_dequant.wgsl",
         "compilationTarget": "msl",
@@ -10340,7 +10340,7 @@
       "shared": {
         "runnerType": "compilation",
         "domain": "compilation",
-        "name": "wgsl→msl compile: complex multi entry",
+        "name": "wgsl\u2192msl compile: complex multi entry",
         "description": "WGSL-to-MSL compilation benchmark for complex_multi_entry.wgsl (Doe vs Tint).",
         "shaderPath": "bench/kernels/compilation-corpus/complex_multi_entry.wgsl",
         "compilationTarget": "msl",
@@ -10355,6 +10355,321 @@
       "lanes": {
         "generic": {},
         "apple_metal_extended": {}
+      }
+    },
+    {
+      "id": "inference_gemma3_270m_prefill_32tok",
+      "fieldOrder": [
+        "api",
+        "runnerType",
+        "irPath",
+        "irScenario",
+        "comparabilityNotes",
+        "comparable",
+        "benchmarkClass",
+        "claimEligible",
+        "default",
+        "description",
+        "domain",
+        "driver",
+        "extraArgs",
+        "family",
+        "name",
+        "quirksPath",
+        "vendor"
+      ],
+      "shared": {
+        "comparabilityNotes": "Doe-owned apples-to-apples single-block Gemma-3-270M-shaped prefill sequence. Both sides execute the same retained inference kernels and identical buffer-write + dispatch command stream under the runtime compare harness.",
+        "comparable": true,
+        "benchmarkClass": "comparable",
+        "claimEligible": true,
+        "default": false,
+        "description": "Single-block Gemma-3-270M-shaped prefill pass over 32 prompt tokens using Doe-owned retained inference kernels and seeded uniform/token buffer writes.",
+        "domain": "compute",
+        "extraArgs": [
+          "--kernel-root",
+          "bench/inference-pipeline/kernels"
+        ],
+        "name": "gemma-3 270m shaped prefill 32tok",
+        "runnerType": "zig-runtime",
+        "suiteTags": [
+          "release",
+          "extended"
+        ],
+        "irPath": "bench/ir/gemma3_270m.json",
+        "irScenario": "inference_gemma3_270m_prefill_32tok"
+      },
+      "lanes": {
+        "apple_metal_extended": {
+          "api": "metal",
+          "driver": "1.0.0",
+          "family": "m3",
+          "quirksPath": "examples/quirks/apple_m3_noop_list.json",
+          "vendor": "apple",
+          "workloadOrigin": "doe_contract_with_dawn_mapping"
+        }
+      }
+    },
+    {
+      "id": "inference_gemma3_270m_decode_1tok",
+      "fieldOrder": [
+        "api",
+        "runnerType",
+        "irPath",
+        "irScenario",
+        "comparabilityNotes",
+        "comparable",
+        "benchmarkClass",
+        "claimEligible",
+        "default",
+        "description",
+        "domain",
+        "driver",
+        "extraArgs",
+        "family",
+        "name",
+        "quirksPath",
+        "vendor"
+      ],
+      "shared": {
+        "comparabilityNotes": "Doe-owned apples-to-apples single-block Gemma-3-270M-shaped decode step. Both sides execute the same retained inference kernels and identical buffer-write + dispatch command stream under the runtime compare harness.",
+        "comparable": true,
+        "benchmarkClass": "comparable",
+        "claimEligible": true,
+        "default": false,
+        "description": "Single-token Gemma-3-270M-shaped decode step using Doe-owned retained inference kernels plus explicit cache/position uniform writes.",
+        "domain": "compute",
+        "extraArgs": [
+          "--kernel-root",
+          "bench/inference-pipeline/kernels"
+        ],
+        "name": "gemma-3 270m shaped decode 1tok",
+        "runnerType": "zig-runtime",
+        "suiteTags": [
+          "release",
+          "extended"
+        ],
+        "irPath": "bench/ir/gemma3_270m.json",
+        "irScenario": "inference_gemma3_270m_decode_1tok"
+      },
+      "lanes": {
+        "apple_metal_extended": {
+          "api": "metal",
+          "driver": "1.0.0",
+          "family": "m3",
+          "quirksPath": "examples/quirks/apple_m3_noop_list.json",
+          "vendor": "apple",
+          "workloadOrigin": "doe_contract_with_dawn_mapping"
+        }
+      }
+    },
+    {
+      "id": "inference_gemma3_270m_prefill_64tok_decode_64tok",
+      "fieldOrder": [
+        "api",
+        "runnerType",
+        "irPath",
+        "irScenario",
+        "comparabilityNotes",
+        "comparable",
+        "benchmarkClass",
+        "claimEligible",
+        "default",
+        "description",
+        "domain",
+        "driver",
+        "extraArgs",
+        "family",
+        "name",
+        "quirksPath",
+        "vendor"
+      ],
+      "shared": {
+        "comparabilityNotes": "Doe-owned apples-to-apples combined Gemma-3-270M-shaped inference sequence. Both sides execute one retained-kernel command stream containing a 64-token prefill phase followed by 64 single-token decode phases under the runtime compare harness.",
+        "comparable": true,
+        "benchmarkClass": "comparable",
+        "claimEligible": true,
+        "default": false,
+        "description": "Single-run Gemma-3-270M-shaped inference sequence with a 64-token prefill phase and 64 sequential single-token decode phases using Doe-owned retained inference kernels plus explicit buffer writes.",
+        "domain": "compute",
+        "extraArgs": [
+          "--kernel-root",
+          "bench/inference-pipeline/kernels"
+        ],
+        "name": "gemma-3 270m shaped prefill 64tok + decode 64tok",
+        "runnerType": "zig-runtime",
+        "suiteTags": [
+          "release",
+          "extended"
+        ],
+        "irPath": "bench/ir/gemma3_270m.json",
+        "irScenario": "inference_gemma3_270m_prefill_64tok_decode_64tok"
+      },
+      "lanes": {
+        "apple_metal_extended": {
+          "api": "metal",
+          "driver": "1.0.0",
+          "family": "m3",
+          "quirksPath": "examples/quirks/apple_m3_noop_list.json",
+          "vendor": "apple",
+          "workloadOrigin": "doe_contract_with_dawn_mapping"
+        }
+      }
+    },
+    {
+      "id": "inference_gemma3_1b_prefill_32tok",
+      "fieldOrder": [
+        "api",
+        "runnerType",
+        "irPath",
+        "irScenario",
+        "comparabilityNotes",
+        "comparable",
+        "benchmarkClass",
+        "claimEligible",
+        "default",
+        "description",
+        "domain",
+        "driver",
+        "extraArgs",
+        "family",
+        "name",
+        "quirksPath",
+        "vendor"
+      ],
+      "shared": {
+        "comparabilityNotes": "Doe-owned apples-to-apples single-block Gemma-3-1B-shaped prefill sequence. Both sides execute the same retained inference kernels and identical buffer-write + dispatch command stream under the runtime compare harness.",
+        "comparable": true,
+        "benchmarkClass": "comparable",
+        "claimEligible": true,
+        "default": false,
+        "description": "Single-block Gemma-3-1B-shaped prefill pass over 32 prompt tokens using Doe-owned retained inference kernels and seeded uniform/token buffer writes.",
+        "domain": "compute",
+        "extraArgs": [
+          "--kernel-root",
+          "bench/inference-pipeline/kernels"
+        ],
+        "name": "gemma-3 1b shaped prefill 32tok",
+        "runnerType": "zig-runtime",
+        "suiteTags": [
+          "extended"
+        ],
+        "irPath": "bench/ir/gemma3_1b.json",
+        "irScenario": "inference_gemma3_1b_prefill_32tok"
+      },
+      "lanes": {
+        "apple_metal_extended": {
+          "api": "metal",
+          "driver": "1.0.0",
+          "family": "m3",
+          "quirksPath": "examples/quirks/apple_m3_noop_list.json",
+          "vendor": "apple",
+          "workloadOrigin": "doe_contract_with_dawn_mapping"
+        }
+      }
+    },
+    {
+      "id": "inference_gemma3_1b_decode_1tok",
+      "fieldOrder": [
+        "api",
+        "runnerType",
+        "irPath",
+        "irScenario",
+        "comparabilityNotes",
+        "comparable",
+        "benchmarkClass",
+        "claimEligible",
+        "default",
+        "description",
+        "domain",
+        "driver",
+        "extraArgs",
+        "family",
+        "name",
+        "quirksPath",
+        "vendor"
+      ],
+      "shared": {
+        "comparabilityNotes": "Doe-owned apples-to-apples single-block Gemma-3-1B-shaped decode step. Both sides execute the same retained inference kernels and identical buffer-write + dispatch command stream under the runtime compare harness.",
+        "comparable": true,
+        "benchmarkClass": "comparable",
+        "claimEligible": true,
+        "default": false,
+        "description": "Single-token Gemma-3-1B-shaped decode step using Doe-owned retained inference kernels plus explicit cache/position uniform writes.",
+        "domain": "compute",
+        "extraArgs": [
+          "--kernel-root",
+          "bench/inference-pipeline/kernels"
+        ],
+        "name": "gemma-3 1b shaped decode 1tok",
+        "runnerType": "zig-runtime",
+        "suiteTags": [
+          "extended"
+        ],
+        "irPath": "bench/ir/gemma3_1b.json",
+        "irScenario": "inference_gemma3_1b_decode_1tok"
+      },
+      "lanes": {
+        "apple_metal_extended": {
+          "api": "metal",
+          "driver": "1.0.0",
+          "family": "m3",
+          "quirksPath": "examples/quirks/apple_m3_noop_list.json",
+          "vendor": "apple",
+          "workloadOrigin": "doe_contract_with_dawn_mapping"
+        }
+      }
+    },
+    {
+      "id": "inference_gemma3_1b_prefill_64tok_decode_64tok",
+      "fieldOrder": [
+        "api",
+        "runnerType",
+        "irPath",
+        "irScenario",
+        "comparabilityNotes",
+        "comparable",
+        "benchmarkClass",
+        "claimEligible",
+        "default",
+        "description",
+        "domain",
+        "driver",
+        "extraArgs",
+        "family",
+        "name",
+        "quirksPath",
+        "vendor"
+      ],
+      "shared": {
+        "comparabilityNotes": "Doe-owned apples-to-apples combined Gemma-3-1B-shaped inference sequence. Both sides execute one retained-kernel command stream containing a 64-token prefill phase followed by 64 single-token decode phases under the runtime compare harness.",
+        "comparable": true,
+        "benchmarkClass": "comparable",
+        "claimEligible": true,
+        "default": false,
+        "description": "Single-run Gemma-3-1B-shaped inference sequence with a 64-token prefill phase and 64 sequential single-token decode phases using Doe-owned retained inference kernels plus explicit buffer writes.",
+        "domain": "compute",
+        "extraArgs": [
+          "--kernel-root",
+          "bench/inference-pipeline/kernels"
+        ],
+        "name": "gemma-3 1b shaped prefill 64tok + decode 64tok",
+        "runnerType": "zig-runtime",
+        "suiteTags": [
+          "extended"
+        ],
+        "irPath": "bench/ir/gemma3_1b.json",
+        "irScenario": "inference_gemma3_1b_prefill_64tok_decode_64tok"
+      },
+      "lanes": {
+        "apple_metal_extended": {
+          "api": "metal",
+          "driver": "1.0.0",
+          "family": "m3",
+          "quirksPath": "examples/quirks/apple_m3_noop_list.json",
+          "vendor": "apple",
+          "workloadOrigin": "doe_contract_with_dawn_mapping"
+        }
       }
     },
     {
@@ -10375,7 +10690,7 @@
       "shared": {
         "runnerType": "compilation",
         "domain": "compilation",
-        "name": "wgsl→msl compile: stress many bindings",
+        "name": "wgsl\u2192msl compile: stress many bindings",
         "description": "WGSL-to-MSL compilation benchmark for stress_many_bindings.wgsl (Doe vs Tint).",
         "shaderPath": "bench/kernels/compilation-corpus/stress_many_bindings.wgsl",
         "compilationTarget": "msl",
@@ -10393,15 +10708,14 @@
       }
     },
     {
-      "id": "inference_gemma3_270m_prefill_32tok",
+      "id": "compilation_inference_attention_decode_msl",
       "fieldOrder": [
         "runnerType",
         "domain",
         "name",
         "description",
-        "scriptPath",
-        "scriptConfig",
-        "pipelinePhase",
+        "shaderPath",
+        "compilationTarget",
         "comparable",
         "benchmarkClass",
         "directionalReason",
@@ -10409,16 +10723,15 @@
         "suiteTags"
       ],
       "shared": {
-        "runnerType": "js-pipeline",
-        "domain": "inference",
-        "name": "inference pipeline: gemma-3-270m prefill 32tok",
-        "description": "End-to-end prefill phase benchmark for Gemma-3-270M (random weights, 32 tokens) comparing Doe-native vs Dawn-delegate WebGPU backends.",
-        "scriptPath": "bench/inference-pipeline/run-inference-bench.js",
-        "scriptConfig": "bench/inference-pipeline/inference-pipeline-config.json",
-        "pipelinePhase": "prefill",
+        "runnerType": "compilation",
+        "domain": "compilation",
+        "name": "wgsl\u2192msl compile: inference attention decode",
+        "description": "WGSL-to-MSL compilation benchmark for the real inference-pipeline attention-decode kernel.",
+        "shaderPath": "bench/inference-pipeline/kernels/attention-decode.wgsl",
+        "compilationTarget": "msl",
         "comparable": false,
         "benchmarkClass": "directional",
-        "directionalReason": "different_runtime_stacks_random_weights",
+        "directionalReason": "different_compiler_codebases",
         "claimEligible": false,
         "suiteTags": [
           "exploration"
@@ -10430,15 +10743,14 @@
       }
     },
     {
-      "id": "inference_gemma3_270m_decode_1tok",
+      "id": "compilation_inference_attention_prefill_msl",
       "fieldOrder": [
         "runnerType",
         "domain",
         "name",
         "description",
-        "scriptPath",
-        "scriptConfig",
-        "pipelinePhase",
+        "shaderPath",
+        "compilationTarget",
         "comparable",
         "benchmarkClass",
         "directionalReason",
@@ -10446,16 +10758,15 @@
         "suiteTags"
       ],
       "shared": {
-        "runnerType": "js-pipeline",
-        "domain": "inference",
-        "name": "inference pipeline: gemma-3-270m decode 1tok",
-        "description": "End-to-end decode phase benchmark for Gemma-3-270M (random weights, 1 token per step) comparing Doe-native vs Dawn-delegate WebGPU backends.",
-        "scriptPath": "bench/inference-pipeline/run-inference-bench.js",
-        "scriptConfig": "bench/inference-pipeline/inference-pipeline-config.json",
-        "pipelinePhase": "decode",
+        "runnerType": "compilation",
+        "domain": "compilation",
+        "name": "wgsl\u2192msl compile: inference attention prefill",
+        "description": "WGSL-to-MSL compilation benchmark for the real inference-pipeline attention-prefill kernel.",
+        "shaderPath": "bench/inference-pipeline/kernels/attention-prefill.wgsl",
+        "compilationTarget": "msl",
         "comparable": false,
         "benchmarkClass": "directional",
-        "directionalReason": "different_runtime_stacks_random_weights",
+        "directionalReason": "different_compiler_codebases",
         "claimEligible": false,
         "suiteTags": [
           "exploration"
@@ -10467,15 +10778,14 @@
       }
     },
     {
-      "id": "inference_gemma3_270m_e2e",
+      "id": "compilation_inference_gather_msl",
       "fieldOrder": [
         "runnerType",
         "domain",
         "name",
         "description",
-        "scriptPath",
-        "scriptConfig",
-        "pipelinePhase",
+        "shaderPath",
+        "compilationTarget",
         "comparable",
         "benchmarkClass",
         "directionalReason",
@@ -10483,16 +10793,260 @@
         "suiteTags"
       ],
       "shared": {
-        "runnerType": "js-pipeline",
-        "domain": "inference",
-        "name": "inference pipeline: gemma-3-270m e2e",
-        "description": "End-to-end combined inference benchmark for Gemma-3-270M (random weights, prefill+decode) comparing Doe-native vs Dawn-delegate WebGPU backends.",
-        "scriptPath": "bench/inference-pipeline/run-inference-bench.js",
-        "scriptConfig": "bench/inference-pipeline/inference-pipeline-config.json",
-        "pipelinePhase": "e2e",
+        "runnerType": "compilation",
+        "domain": "compilation",
+        "name": "wgsl\u2192msl compile: inference gather",
+        "description": "WGSL-to-MSL compilation benchmark for the real inference-pipeline gather kernel.",
+        "shaderPath": "bench/inference-pipeline/kernels/gather.wgsl",
+        "compilationTarget": "msl",
         "comparable": false,
         "benchmarkClass": "directional",
-        "directionalReason": "different_runtime_stacks_random_weights",
+        "directionalReason": "different_compiler_codebases",
+        "claimEligible": false,
+        "suiteTags": [
+          "exploration"
+        ]
+      },
+      "lanes": {
+        "generic": {},
+        "apple_metal_extended": {}
+      }
+    },
+    {
+      "id": "compilation_inference_gelu_msl",
+      "fieldOrder": [
+        "runnerType",
+        "domain",
+        "name",
+        "description",
+        "shaderPath",
+        "compilationTarget",
+        "comparable",
+        "benchmarkClass",
+        "directionalReason",
+        "claimEligible",
+        "suiteTags"
+      ],
+      "shared": {
+        "runnerType": "compilation",
+        "domain": "compilation",
+        "name": "wgsl\u2192msl compile: inference gelu",
+        "description": "WGSL-to-MSL compilation benchmark for the real inference-pipeline gelu kernel.",
+        "shaderPath": "bench/inference-pipeline/kernels/gelu.wgsl",
+        "compilationTarget": "msl",
+        "comparable": false,
+        "benchmarkClass": "directional",
+        "directionalReason": "different_compiler_codebases",
+        "claimEligible": false,
+        "suiteTags": [
+          "exploration"
+        ]
+      },
+      "lanes": {
+        "generic": {},
+        "apple_metal_extended": {}
+      }
+    },
+    {
+      "id": "compilation_inference_matmul_gemv_msl",
+      "fieldOrder": [
+        "runnerType",
+        "domain",
+        "name",
+        "description",
+        "shaderPath",
+        "compilationTarget",
+        "comparable",
+        "benchmarkClass",
+        "directionalReason",
+        "claimEligible",
+        "suiteTags"
+      ],
+      "shared": {
+        "runnerType": "compilation",
+        "domain": "compilation",
+        "name": "wgsl\u2192msl compile: inference matmul gemv",
+        "description": "WGSL-to-MSL compilation benchmark for the real inference-pipeline matmul-gemv kernel.",
+        "shaderPath": "bench/inference-pipeline/kernels/matmul-gemv.wgsl",
+        "compilationTarget": "msl",
+        "comparable": false,
+        "benchmarkClass": "directional",
+        "directionalReason": "different_compiler_codebases",
+        "claimEligible": false,
+        "suiteTags": [
+          "exploration"
+        ]
+      },
+      "lanes": {
+        "generic": {},
+        "apple_metal_extended": {}
+      }
+    },
+    {
+      "id": "compilation_inference_matmul_tiled_msl",
+      "fieldOrder": [
+        "runnerType",
+        "domain",
+        "name",
+        "description",
+        "shaderPath",
+        "compilationTarget",
+        "comparable",
+        "benchmarkClass",
+        "directionalReason",
+        "claimEligible",
+        "suiteTags"
+      ],
+      "shared": {
+        "runnerType": "compilation",
+        "domain": "compilation",
+        "name": "wgsl\u2192msl compile: inference matmul tiled",
+        "description": "WGSL-to-MSL compilation benchmark for the real inference-pipeline matmul-tiled kernel.",
+        "shaderPath": "bench/inference-pipeline/kernels/matmul-tiled.wgsl",
+        "compilationTarget": "msl",
+        "comparable": false,
+        "benchmarkClass": "directional",
+        "directionalReason": "different_compiler_codebases",
+        "claimEligible": false,
+        "suiteTags": [
+          "exploration"
+        ]
+      },
+      "lanes": {
+        "generic": {},
+        "apple_metal_extended": {}
+      }
+    },
+    {
+      "id": "compilation_inference_residual_msl",
+      "fieldOrder": [
+        "runnerType",
+        "domain",
+        "name",
+        "description",
+        "shaderPath",
+        "compilationTarget",
+        "comparable",
+        "benchmarkClass",
+        "directionalReason",
+        "claimEligible",
+        "suiteTags"
+      ],
+      "shared": {
+        "runnerType": "compilation",
+        "domain": "compilation",
+        "name": "wgsl\u2192msl compile: inference residual",
+        "description": "WGSL-to-MSL compilation benchmark for the real inference-pipeline residual kernel.",
+        "shaderPath": "bench/inference-pipeline/kernels/residual.wgsl",
+        "compilationTarget": "msl",
+        "comparable": false,
+        "benchmarkClass": "directional",
+        "directionalReason": "different_compiler_codebases",
+        "claimEligible": false,
+        "suiteTags": [
+          "exploration"
+        ]
+      },
+      "lanes": {
+        "generic": {},
+        "apple_metal_extended": {}
+      }
+    },
+    {
+      "id": "compilation_inference_rmsnorm_msl",
+      "fieldOrder": [
+        "runnerType",
+        "domain",
+        "name",
+        "description",
+        "shaderPath",
+        "compilationTarget",
+        "comparable",
+        "benchmarkClass",
+        "directionalReason",
+        "claimEligible",
+        "suiteTags"
+      ],
+      "shared": {
+        "runnerType": "compilation",
+        "domain": "compilation",
+        "name": "wgsl\u2192msl compile: inference rmsnorm",
+        "description": "WGSL-to-MSL compilation benchmark for the real inference-pipeline rmsnorm kernel.",
+        "shaderPath": "bench/inference-pipeline/kernels/rmsnorm.wgsl",
+        "compilationTarget": "msl",
+        "comparable": false,
+        "benchmarkClass": "directional",
+        "directionalReason": "different_compiler_codebases",
+        "claimEligible": false,
+        "suiteTags": [
+          "exploration"
+        ]
+      },
+      "lanes": {
+        "generic": {},
+        "apple_metal_extended": {}
+      }
+    },
+    {
+      "id": "compilation_inference_rope_msl",
+      "fieldOrder": [
+        "runnerType",
+        "domain",
+        "name",
+        "description",
+        "shaderPath",
+        "compilationTarget",
+        "comparable",
+        "benchmarkClass",
+        "directionalReason",
+        "claimEligible",
+        "suiteTags"
+      ],
+      "shared": {
+        "runnerType": "compilation",
+        "domain": "compilation",
+        "name": "wgsl\u2192msl compile: inference rope",
+        "description": "WGSL-to-MSL compilation benchmark for the real inference-pipeline rope kernel.",
+        "shaderPath": "bench/inference-pipeline/kernels/rope.wgsl",
+        "compilationTarget": "msl",
+        "comparable": false,
+        "benchmarkClass": "directional",
+        "directionalReason": "different_compiler_codebases",
+        "claimEligible": false,
+        "suiteTags": [
+          "exploration"
+        ]
+      },
+      "lanes": {
+        "generic": {},
+        "apple_metal_extended": {}
+      }
+    },
+    {
+      "id": "compilation_inference_sample_msl",
+      "fieldOrder": [
+        "runnerType",
+        "domain",
+        "name",
+        "description",
+        "shaderPath",
+        "compilationTarget",
+        "comparable",
+        "benchmarkClass",
+        "directionalReason",
+        "claimEligible",
+        "suiteTags"
+      ],
+      "shared": {
+        "runnerType": "compilation",
+        "domain": "compilation",
+        "name": "wgsl\u2192msl compile: inference sample",
+        "description": "WGSL-to-MSL compilation benchmark for the real inference-pipeline sample kernel.",
+        "shaderPath": "bench/inference-pipeline/kernels/sample.wgsl",
+        "compilationTarget": "msl",
+        "comparable": false,
+        "benchmarkClass": "directional",
+        "directionalReason": "different_compiler_codebases",
         "claimEligible": false,
         "suiteTags": [
           "exploration"

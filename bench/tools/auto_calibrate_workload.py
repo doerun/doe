@@ -18,7 +18,11 @@ from pathlib import Path
 def parse_args():
     parser = argparse.ArgumentParser(description="Auto-calibrate a workload for optimal benchmarking stability.")
     parser.add_argument("--workload", required=True, help="Workload ID to calibrate")
-    parser.add_argument("--workloads-file", default="bench/workloads/workloads.json", help="Path to workloads.json")
+    parser.add_argument(
+        "--workloads-file",
+        default="bench/workloads/specialized/workloads.generic.json",
+        help="Path to the workload contract file",
+    )
     parser.add_argument("--max-steps", type=int, default=10, help="Maximum search steps")
     parser.add_argument("--out", default="bench/out/calibration_result.json", help="Output file for optimal configuration")
     parser.add_argument("--target-p95-cv", type=float, default=0.05, help="Target coefficient of variation for p95")

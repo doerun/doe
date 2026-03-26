@@ -244,6 +244,27 @@ test "declarations: fixed-size array parameter through MSL HLSL and SPIR-V" {
     try std.testing.expect(spirv_len > 0);
 }
 
+test "declarations: array length const expression in workgroup array through MSL" {
+    const source =
+        \\const TILE: u32 = 16u;
+        \\@group(0) @binding(0) var<storage, read_write> data: array<f32>;
+        \\var<workgroup> tile_a: array<f32, TILE * TILE>;
+        \\
+        \\@compute @workgroup_size(TILE, TILE, 1)
+        \\fn main(@builtin(local_invocation_id) lid: vec3u, @builtin(workgroup_id) wid: vec3u) {
+        \\    tile_a[lid.y * TILE + lid.x] = 0.0;
+        \\    workgroupBarrier();
+        \\    data[wid.x] = tile_a[lid.x];
+        \\}
+    ;
+
+    var out: [MAX_OUTPUT]u8 = undefined;
+    const len = try translateToMsl(std.testing.allocator, source, &out);
+    try std.testing.expect(len > 0);
+    try std.testing.expect(contains(out[0..len], "threadgroup float tile_a[256];"));
+    try std.testing.expect(!contains(out[0..len], "threadgroup array<"));
+}
+
 test "declarations: helper function call through MSL" {
     const source =
         \\fn square(x: f32) -> f32 {

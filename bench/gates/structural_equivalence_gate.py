@@ -179,13 +179,17 @@ def check_throughput_plausibility(workload: dict[str, Any]) -> list[str]:
         return failures
 
     timing_interpretation = workload.get("timingInterpretation", {})
-    headline = (
-        timing_interpretation.get("headlineProcessWall", {})
-        if isinstance(timing_interpretation, dict)
-        else {}
-    )
-    headline_left_p50 = safe_float(headline.get("leftStatsMs", {}).get("p50Ms"))
-    headline_right_p50 = safe_float(headline.get("rightStatsMs", {}).get("p50Ms"))
+    workload_unit_wall = {}
+    if isinstance(timing_interpretation, dict):
+        current_workload_unit_wall = timing_interpretation.get("workloadUnitWall", {})
+        if isinstance(current_workload_unit_wall, dict):
+            workload_unit_wall = current_workload_unit_wall
+        if not workload_unit_wall:
+            legacy_workload_unit_wall = timing_interpretation.get("headlineProcessWall", {})
+            if isinstance(legacy_workload_unit_wall, dict):
+                workload_unit_wall = legacy_workload_unit_wall
+    headline_left_p50 = safe_float(workload_unit_wall.get("leftStatsMs", {}).get("p50Ms"))
+    headline_right_p50 = safe_float(workload_unit_wall.get("rightStatsMs", {}).get("p50Ms"))
 
     for side_name in ("left", "right"):
         p50_ms = safe_float(workload.get(side_name, {}).get("stats", {}).get("p50Ms"))

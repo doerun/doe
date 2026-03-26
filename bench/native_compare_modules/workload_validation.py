@@ -149,6 +149,14 @@ def template_uses_doe_runtime(template: str) -> bool:
     return "doe-zig-runtime" in template
 
 
+def template_uses_plan_boundary(template: str) -> bool:
+    return "--plan" in template
+
+
+def template_uses_commands_boundary(template: str) -> bool:
+    return "--commands" in template
+
+
 def expected_divisor_units(
     *,
     workload: Workload,
@@ -234,6 +242,45 @@ def enforce_strict_command_shape_divisor_contracts(
     if failures:
         raise ValueError(
             "strict command-shape divisor lint failed for comparable workloads: "
+            + "; ".join(failures)
+        )
+
+
+def enforce_strict_plan_boundary_symmetry(
+    *,
+    workloads: list[Workload],
+    left_command_template: str,
+    right_command_template: str,
+    comparability_mode: str,
+) -> None:
+    if comparability_mode != "strict":
+        return
+
+    left_uses_plan = template_uses_plan_boundary(left_command_template)
+    right_uses_plan = template_uses_plan_boundary(right_command_template)
+    left_uses_commands = template_uses_commands_boundary(left_command_template)
+    right_uses_commands = template_uses_commands_boundary(right_command_template)
+
+    failures: list[str] = []
+    for workload in workloads:
+        if not workload.comparable:
+            continue
+        if getattr(workload, "runner_type", "zig-runtime") != "zig-runtime":
+            continue
+        if not getattr(workload, "plan_path", "").strip():
+            continue
+
+        if not left_uses_plan or not right_uses_plan:
+            failures.append(
+                f"{workload.id}: comparable plan-backed workload requires plan executors on both sides "
+                f"(leftBoundary={'plan' if left_uses_plan else 'commands' if left_uses_commands else 'unknown'}, "
+                f"rightBoundary={'plan' if right_uses_plan else 'commands' if right_uses_commands else 'unknown'}, "
+                f"planPath={workload.plan_path})"
+            )
+
+    if failures:
+        raise ValueError(
+            "strict comparable plan-backed workloads must use the normalized plan boundary on both sides: "
             + "; ".join(failures)
         )
 
@@ -451,6 +498,7 @@ def infer_workload_backends(
         workload=workload,
         workload_id=workload.id,
         commands_path=workload.commands_path,
+        plan_path=getattr(workload, "plan_path", ""),
         trace_jsonl=probe_root / f"{workload.id}.left.ndjson",
         trace_meta=probe_root / f"{workload.id}.left.meta.json",
         queue_sync_mode=queue_sync_mode,
@@ -463,6 +511,7 @@ def infer_workload_backends(
         workload=workload,
         workload_id=workload.id,
         commands_path=workload.commands_path,
+        plan_path=getattr(workload, "plan_path", ""),
         trace_jsonl=probe_root / f"{workload.id}.right.ndjson",
         trace_meta=probe_root / f"{workload.id}.right.meta.json",
         queue_sync_mode=queue_sync_mode,

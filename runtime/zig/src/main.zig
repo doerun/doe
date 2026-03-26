@@ -4,6 +4,7 @@ const quirk = @import("quirk/mod.zig");
 const command_stream = @import("command_stream.zig");
 const execution = @import("execution.zig");
 const operator_artifacts = @import("operator_artifacts.zig");
+const semantic_trace = @import("semantic_trace.zig");
 const trace = @import("trace.zig");
 const replay = @import("replay.zig");
 const main_print = @import("main_print.zig");
@@ -43,6 +44,7 @@ const sample_quirks =
 const default_commands = [_]model.Command{
     .{ .copy_buffer_to_texture = .{ .direction = .buffer_to_texture, .src = .{ .handle = 0x1000 }, .dst = .{ .handle = 0x2000 }, .bytes = 4096 } },
     .{ .upload = .{ .bytes = 4096, .align_bytes = 4 } },
+    .{ .buffer_write = .{ .handle = 0x3000, .buffer_size = 16, .data = @constCast(&[_]u32{ 1, 2, 3, 4 }) } },
     .{ .kernel_dispatch = .{ .kernel = "bench/kernels/shader_compile_pipeline_stress.wgsl", .x = 2, .y = 1, .z = 1 } },
     .{ .barrier = .{ .dependency_count = 3 } },
 };
@@ -60,6 +62,7 @@ fn printUsage(stdout: anytype) !void {
         \\ [--execute]
         \\commands file examples:
         \\  upload | buffer_upload
+        \\  buffer_write | write_buffer | queue_write_buffer
         \\  copy_buffer_to_texture | texture_copy | copy_texture | copy_buffer_to_buffer | copy_texture_to_buffer | copy_texture_to_texture
         \\  dispatch | dispatch_workgroups | dispatch_invocations
         \\  dispatch_indirect
@@ -124,6 +127,14 @@ fn readFileAlloc(allocator: std.mem.Allocator, path: []const u8) ![]const u8 {
     return try file.readToEndAlloc(allocator, 16 * 1024 * 1024);
 }
 
+fn nowNs() u64 {
+    return @as(u64, @intCast(std.time.nanoTimestamp()));
+}
+
+fn elapsedSince(start_ns: u64) u64 {
+    return nowNs() - start_ns;
+}
+
 fn optionExpectsValue(option: []const u8) bool {
     return std.mem.eql(u8, option, "--quirks") or
         std.mem.eql(u8, option, "--commands") or
@@ -154,6 +165,10 @@ fn maxUploadBytes(commands: []const model.Command) u64 {
                     max_bytes = upload.bytes;
                 }
             },
+            .buffer_write => |buffer_write| {
+                const bytes = std.mem.sliceAsBytes(buffer_write.data).len;
+                if (bytes > max_bytes) max_bytes = bytes;
+            },
             else => {},
         }
     }
@@ -176,6 +191,18 @@ fn prewarmKernelDispatches(ctx: *execution.ExecutionContext, commands: []const m
         }
     }
 }
+
+const BufferedTraceRow = struct {
+    seq: usize,
+    command_label: []const u8,
+    kernel_name: ?[]const u8,
+    semantic: semantic_trace.SemanticContext,
+    decision: quirk.runtime.DispatchDecision,
+    timestamp_ns: u64,
+    hash: u64,
+    previous_hash: u64,
+    execution_result: ?execution.ExecutionResult,
+};
 
 pub fn main() !void {
     const allocator = std.heap.page_allocator;
@@ -205,6 +232,14 @@ pub fn main() !void {
     var gpu_timestamp_mode: execution.GpuTimestampMode = .auto;
     var queue_wait_mode: execution.QueueWaitMode = .process_events;
     var queue_sync_mode: execution.QueueSyncMode = .per_command;
+    var host_input_read_total_ns: u64 = 0;
+    var host_input_parse_total_ns: u64 = 0;
+    var host_workload_prepare_total_ns: u64 = 0;
+    var host_executor_init_total_ns: u64 = 0;
+    var host_upload_prewarm_total_ns: u64 = 0;
+    var host_kernel_prewarm_total_ns: u64 = 0;
+    var host_command_orchestration_total_ns: u64 = 0;
+    var host_artifact_finalize_total_ns: u64 = 0;
 
     var i: usize = 1;
     while (i < argv.len) {
@@ -341,30 +376,42 @@ pub fn main() !void {
         i += 1;
     }
 
+    const quirks_read_start_ns = nowNs();
     const quirks_bytes = if (quirk_mode.loadsQuirks())
         (if (quirks_text) |path| try readFileAlloc(allocator, path) else sample_quirks)
     else
         "[]";
+    host_input_read_total_ns += elapsedSince(quirks_read_start_ns);
     const using_quarks_from_file = quirks_text != null and quirk_mode.loadsQuirks();
 
+    const quirks_parse_start_ns = nowNs();
     const quirks = try quirk.parser.parseQuirks(allocator, quirks_bytes);
+    host_input_parse_total_ns += elapsedSince(quirks_parse_start_ns);
     defer {
         if (using_quarks_from_file) allocator.free(quirks_bytes);
         quirk.parser.freeQuirks(allocator, quirks);
     }
     var replay_expectations: ?[]replay.ReplayExpectation = null;
     if (replay_path) |path| {
+        const replay_parse_start_ns = nowNs();
         replay_expectations = try replay.loadReplayExpectations(allocator, path);
+        host_input_parse_total_ns += elapsedSince(replay_parse_start_ns);
     }
     defer if (replay_expectations) |expectations| replay.freeReplayExpectations(allocator, expectations);
     var commands: []const model.Command = default_commands[0..];
+    const default_metadata_start_ns = nowNs();
     var command_metadata: []command_stream.CommandMetadata = try command_stream.metadata_for_slice(allocator, commands);
+    host_input_parse_total_ns += elapsedSince(default_metadata_start_ns);
     var owned_stream: ?command_stream.ParsedCommandStream = null;
 
     if (commands_text) |commands_path| {
+        const commands_read_start_ns = nowNs();
         const commands_bytes = try readFileAlloc(allocator, commands_path);
+        host_input_read_total_ns += elapsedSince(commands_read_start_ns);
         defer allocator.free(commands_bytes);
+        const commands_parse_start_ns = nowNs();
         const parsed_stream = try command_stream.parse_command_stream(allocator, commands_bytes);
+        host_input_parse_total_ns += elapsedSince(commands_parse_start_ns);
         commands = parsed_stream.commands;
         allocator.free(command_metadata);
         command_metadata = parsed_stream.metadata;
@@ -378,12 +425,14 @@ pub fn main() !void {
         }
     }
 
+    const profile_prepare_start_ns = nowNs();
     const profile = model.DeviceProfile{
         .vendor = profile_vendor,
         .api = try model.parse_api(profile_api),
         .device_family = profile_family,
         .driver_version = try model.SemVer.parse(profile_driver),
     };
+    host_workload_prepare_total_ns += elapsedSince(profile_prepare_start_ns);
 
     const backend_lane = if (backend_lane_value) |raw_lane| blk: {
         if (execution.parseBackendLane(raw_lane)) |lane| {
@@ -401,7 +450,9 @@ pub fn main() !void {
         return;
     }
 
+    const dispatch_context_start_ns = nowNs();
     var dispatch_context = try quirk.runtime.buildProfileDispatchContext(allocator, profile, quirks);
+    host_workload_prepare_total_ns += elapsedSince(dispatch_context_start_ns);
     defer dispatch_context.deinit();
     var trace_state = trace.TraceState{};
 
@@ -412,17 +463,25 @@ pub fn main() !void {
 
     var execution_context: ?execution.ExecutionContext = null;
     if (execute) {
+        const executor_init_start_ns = nowNs();
         execution_context = try execution.ExecutionContext.init(allocator, backend_mode, profile, kernel_root, backend_lane);
         if (execution_context) |*ctx| {
             ctx.configureUploadBehavior(upload_buffer_usage_mode, upload_submit_every);
             ctx.configureGpuTimestampMode(gpu_timestamp_mode);
             ctx.configureQueueWaitMode(queue_wait_mode);
             ctx.configureQueueSyncMode(queue_sync_mode);
+            host_executor_init_total_ns += elapsedSince(executor_init_start_ns);
             const max_upload_bytes = maxUploadBytes(commands);
             if (max_upload_bytes > 0) {
+                const upload_prewarm_start_ns = nowNs();
                 try ctx.prewarmUploadPath(max_upload_bytes);
+                host_upload_prewarm_total_ns += elapsedSince(upload_prewarm_start_ns);
             }
+            const kernel_prewarm_start_ns = nowNs();
             prewarmKernelDispatches(ctx, commands);
+            host_kernel_prewarm_total_ns += elapsedSince(kernel_prewarm_start_ns);
+        } else {
+            host_executor_init_total_ns += elapsedSince(executor_init_start_ns);
         }
     }
     defer {
@@ -431,11 +490,11 @@ pub fn main() !void {
         }
     }
 
-    var trace_jsonl_file: ?std.fs.File = null;
-    if (emit_trace_jsonl) |path| {
-        trace_jsonl_file = try std.fs.cwd().createFile(path, .{});
+    var buffered_trace_rows: ?std.ArrayList(BufferedTraceRow) = null;
+    if (emit_trace_jsonl != null) {
+        buffered_trace_rows = try std.ArrayList(BufferedTraceRow).initCapacity(allocator, 0);
     }
-    defer if (trace_jsonl_file) |trace_file| trace_file.close();
+    defer if (buffered_trace_rows) |*rows| rows.deinit(allocator);
 
     var artifact_recorder = try operator_artifacts.Recorder.init(
         allocator,
@@ -463,6 +522,12 @@ pub fn main() !void {
         .execution_encode_total_ns = 0,
         .execution_submit_wait_total_ns = 0,
         .execution_dispatch_count = 0,
+        .host_input_read_total_ns = host_input_read_total_ns,
+        .host_input_parse_total_ns = host_input_parse_total_ns,
+        .host_workload_prepare_total_ns = host_workload_prepare_total_ns,
+        .host_executor_init_total_ns = host_executor_init_total_ns,
+        .host_upload_prewarm_total_ns = host_upload_prewarm_total_ns,
+        .host_kernel_prewarm_total_ns = host_kernel_prewarm_total_ns,
         .execution_gpu_timestamp_total_ns = 0,
         .execution_gpu_timestamp_attempted_count = 0,
         .execution_gpu_timestamp_valid_count = 0,
@@ -513,6 +578,7 @@ pub fn main() !void {
         }
     }
 
+    const command_loop_start_ns = nowNs();
     var idx: usize = 0;
     while (idx < commands.len) : (idx += 1) {
         const command = commands[idx];
@@ -526,7 +592,7 @@ pub fn main() !void {
         const command_label = main_print.commandName(target);
         const timestamp_ns: u64 = @intCast(std.time.nanoTimestamp());
         var execute_result: ?execution.ExecutionResult = null;
-        const emit_trace_payload = emit_trace or (trace_jsonl_file != null) or (trace_meta_path != null) or (replay_expectations != null);
+        const emit_trace_payload = emit_trace or (buffered_trace_rows != null) or (trace_meta_path != null) or (replay_expectations != null);
 
         if (execution_context) |*ctx| {
             const executed = try ctx.execute_with_semantic(target, metadata.semantic);
@@ -603,20 +669,18 @@ pub fn main() !void {
                     execute_result,
                 );
             }
-            if (trace_jsonl_file) |*file| {
-                const trace_writer = file.deprecatedWriter();
-                try trace.printTraceLineWithSemantic(
-                    trace_writer,
-                    idx,
-                    command_label,
-                    kernel_name,
-                    metadata.semantic,
-                    result,
-                    @intCast(timestamp_ns),
-                    semantic_hash,
-                    trace_state.previous_hash,
-                    execute_result,
-                );
+            if (buffered_trace_rows) |*rows| {
+                try rows.append(allocator, .{
+                    .seq = idx,
+                    .command_label = command_label,
+                    .kernel_name = kernel_name,
+                    .semantic = metadata.semantic,
+                    .decision = result.decision,
+                    .timestamp_ns = @intCast(timestamp_ns),
+                    .hash = semantic_hash,
+                    .previous_hash = trace_state.previous_hash,
+                    .execution_result = execute_result,
+                });
             }
             try artifact_recorder.record(
                 if (execution_context) |*ctx| ctx else null,
@@ -661,20 +725,51 @@ pub fn main() !void {
         }
         if (!emit_trace_payload) try main_print.printCommandSummary(stdout, target, execute_result);
     }
+    const command_loop_wall_ns = elapsedSince(command_loop_start_ns);
+    if (command_loop_wall_ns > trace_summary.execution_total_ns) {
+        host_command_orchestration_total_ns = command_loop_wall_ns - trace_summary.execution_total_ns;
+    }
 
     if (execution_context) |*ctx| {
         if (queue_sync_mode == .deferred or upload_submit_every > 1) {
+            const flush_start_ns = nowNs();
             const flush_ns = try ctx.flushQueue();
             trace_summary.execution_submit_wait_total_ns += flush_ns;
+            host_command_orchestration_total_ns += elapsedSince(flush_start_ns);
         }
     }
 
+    const artifact_finalize_start_ns = nowNs();
+    if (emit_trace_jsonl) |path| {
+        if (buffered_trace_rows) |*rows| {
+            const trace_file = try std.fs.cwd().createFile(path, .{});
+            defer trace_file.close();
+            const trace_writer = trace_file.deprecatedWriter();
+            for (rows.items) |row| {
+                try trace.printTraceLineWithSemantic(
+                    trace_writer,
+                    row.seq,
+                    row.command_label,
+                    row.kernel_name,
+                    row.semantic,
+                    .{ .decision = row.decision },
+                    row.timestamp_ns,
+                    row.hash,
+                    row.previous_hash,
+                    row.execution_result,
+                );
+            }
+        }
+    }
     const artifact_summary = try artifact_recorder.finalize();
+    host_artifact_finalize_total_ns = elapsedSince(artifact_finalize_start_ns);
     trace_summary.semantic_op_row_count = artifact_summary.row_count;
     trace_summary.semantic_capture_count = artifact_summary.capture_count;
     trace_summary.semantic_repro_count = artifact_summary.repro_count;
     trace_summary.operator_record_manifest_path = artifact_summary.manifest_path;
     trace_summary.operator_record_manifest_hash = artifact_summary.manifest_hash;
+    trace_summary.host_command_orchestration_total_ns = host_command_orchestration_total_ns;
+    trace_summary.host_artifact_finalize_total_ns = host_artifact_finalize_total_ns;
 
     if (trace_meta_path) |path| {
         try trace.writeTraceMeta(path, trace_summary);

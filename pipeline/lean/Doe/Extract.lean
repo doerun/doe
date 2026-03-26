@@ -17,10 +17,20 @@ set_option maxRecDepth 4096
 
 private def jsonBool (b : Bool) : String := if b then "true" else "false"
 
+private def requireEnv (name : String) : IO String := do
+  match (← IO.getEnv name) with
+  | some value => pure value
+  | none => throw (IO.userError s!"missing required extraction env var: {name}")
+
 /-- Emit proof artifact as JSON to stdout.
     Compilation of this module verifies all imported theorems.
     Decidable propositions are additionally evaluated at runtime. -/
 def main : IO Unit := do
+  let leanToolchainRef ← requireEnv "DOE_LEAN_TOOLCHAIN_REF"
+  let extractProgramSha256 ← requireEnv "DOE_LEAN_EXTRACT_PROGRAM_SHA256"
+  let leanSourceTreeSha256 ← requireEnv "DOE_LEAN_SOURCE_TREE_SHA256"
+  let generatedComparabilityContractSha256 ← requireEnv "DOE_LEAN_GENERATED_COMPARABILITY_CONTRACT_SHA256"
+  let proofPatternSpecSha256 ← requireEnv "DOE_LEAN_PROOF_PATTERN_SPEC_SHA256"
   let happyPath := comparableFromFacts strictHappyPathFacts
   let missingLeft := comparableFromFacts strictMissingLeftSamplesFacts
   let densityFailure := comparableFromFacts allowLeftNoExecutionDensityFailureFacts
@@ -31,6 +41,13 @@ def main : IO Unit := do
   IO.println "{"
   IO.println "  \"schemaVersion\": 1,"
   IO.println "  \"status\": \"verified\","
+  IO.println "  \"provenance\": {"
+  IO.println ("    \"leanToolchainRef\": \"" ++ leanToolchainRef ++ "\",")
+  IO.println ("    \"extractProgramSha256\": \"" ++ extractProgramSha256 ++ "\",")
+  IO.println ("    \"leanSourceTreeSha256\": \"" ++ leanSourceTreeSha256 ++ "\",")
+  IO.println ("    \"generatedComparabilityContractSha256\": \"" ++ generatedComparabilityContractSha256 ++ "\",")
+  IO.println ("    \"proofPatternSpecSha256\": \"" ++ proofPatternSpecSha256 ++ "\"")
+  IO.println "  },"
   IO.println "  \"contractHashes\": {"
   IO.println ("    \"comparabilityObligationsSha256\": \"" ++ comparabilityContractSha256 ++ "\"")
   IO.println "  },"

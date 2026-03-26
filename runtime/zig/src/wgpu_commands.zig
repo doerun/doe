@@ -35,7 +35,7 @@ pub fn executeCommand(self: *Backend, command: model.Command) !types.NativeExecu
     self.clearUncapturedError();
     if (model.as_core_command(command)) |core_command| {
         switch (core_command) {
-            .upload => {},
+            .upload, .buffer_write => {},
             else => try flushPendingUploads(self),
         }
     } else {

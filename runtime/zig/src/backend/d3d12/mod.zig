@@ -462,6 +462,7 @@ fn execute_native_command(self: *ZigD3D12Backend, command: model.Command) !webgp
 
     var result = switch (command) {
         .upload => |upload| try execute_upload(self, setup_ns, upload),
+        .buffer_write => return error.UnsupportedFeature,
         .barrier => try execute_barrier(self, setup_ns),
         .kernel_dispatch => |kd| try execute_kernel_dispatch(self, setup_ns, kd),
         .dispatch => |cmd| try execute_compute_dispatch_cmd(self, setup_ns, cmd),

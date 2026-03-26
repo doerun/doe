@@ -10,6 +10,7 @@ pub fn execute(self: *Backend, command: model.Command) !?types.NativeExecutionRe
     const core_command = model.as_core_command(command) orelse return null;
     return switch (core_command) {
         .upload => |payload| try copy_commands.executeUpload(self, payload),
+        .buffer_write => |payload| try copy_commands.executeBufferWrite(self, payload),
         .copy_buffer_to_texture => |payload| try copy_commands.executeCopy(self, payload),
         .barrier => |payload| try compute_commands.executeBarrier(self, payload),
         .dispatch => |payload| try compute_commands.executeDispatch(self, payload),

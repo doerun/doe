@@ -93,16 +93,57 @@ pub fn execute_copy(self: anytype, cmd: model.CopyCommand, queue_sync_mode: webg
             cmd.src.height,
             normalize_copy_depth(cmd.src.depth_or_array_layers),
         ),
-        .texture_to_texture => metal_bridge_blit_encoder_copy_texture_to_texture(
-            self.streaming_blit_encoder,
-            src_texture,
-            cmd.src.mip_level,
-            dst_texture,
-            cmd.dst.mip_level,
-            cmd.src.width,
-            cmd.src.height,
-            normalize_copy_depth(cmd.src.depth_or_array_layers),
-        ),
+        .texture_to_texture => {
+            if (cmd.uses_temporary_buffer) {
+                // Quirk workaround: stage texture-to-texture through a temporary
+                // buffer to avoid driver bugs on certain GPU/driver combinations.
+                const staging_size = alignedStagingSize(cmd);
+                const staging_buf = metal_bridge_device_new_buffer_shared(self.device, staging_size) orelse return error.InvalidState;
+                defer metal_bridge_release(staging_buf);
+
+                const width = if (cmd.src.width > 0) cmd.src.width else 1;
+                const height = if (cmd.src.height > 0) cmd.src.height else 1;
+                const depth = normalize_copy_depth(cmd.src.depth_or_array_layers);
+                const bpr = normalize_copy_pitch(cmd.src.bytes_per_row, width, 4);
+                const rpi = normalize_copy_rows(cmd.src.rows_per_image, height);
+
+                metal_bridge_blit_encoder_copy_texture_to_buffer(
+                    self.streaming_blit_encoder,
+                    src_texture,
+                    cmd.src.mip_level,
+                    staging_buf,
+                    0,
+                    bpr,
+                    rpi,
+                    width,
+                    height,
+                    depth,
+                );
+                metal_bridge_blit_encoder_copy_buffer_to_texture(
+                    self.streaming_blit_encoder,
+                    staging_buf,
+                    0,
+                    bpr,
+                    rpi,
+                    dst_texture,
+                    cmd.dst.mip_level,
+                    if (cmd.dst.width > 0) cmd.dst.width else width,
+                    if (cmd.dst.height > 0) cmd.dst.height else height,
+                    depth,
+                );
+            } else {
+                metal_bridge_blit_encoder_copy_texture_to_texture(
+                    self.streaming_blit_encoder,
+                    src_texture,
+                    cmd.src.mip_level,
+                    dst_texture,
+                    cmd.dst.mip_level,
+                    cmd.src.width,
+                    cmd.src.height,
+                    normalize_copy_depth(cmd.src.depth_or_array_layers),
+                );
+            }
+        },
     }
     const encode_ns = common_timing.ns_delta(common_timing.now_ns(), encode_start);
 
@@ -179,6 +220,17 @@ fn normalize_copy_rows(value: u32, height: u32) u32 {
 
 fn normalize_copy_depth(value: u32) u32 {
     return if (value == 0) 1 else value;
+}
+
+fn alignedStagingSize(cmd: model.CopyCommand) u64 {
+    const raw: u64 = if (cmd.bytes > 0) @intCast(cmd.bytes) else blk: {
+        const w: u64 = if (cmd.src.width > 0) cmd.src.width else 1;
+        const h: u64 = if (cmd.src.height > 0) cmd.src.height else 1;
+        const d: u64 = if (cmd.src.depth_or_array_layers > 0) cmd.src.depth_or_array_layers else 1;
+        break :blk w * h * d * 4;
+    };
+    const a: u64 = if (cmd.temporary_buffer_alignment > 1) cmd.temporary_buffer_alignment else 1;
+    return (raw + a - 1) / a * a;
 }
 
 fn ensure_copy_blit_encoder(self: anytype) !void {

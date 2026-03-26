@@ -1,0 +1,842 @@
+[
+  {
+    "kind": "buffer_write",
+    "handle": 1002,
+    "bufferSize": 16,
+    "data": [
+      3072,
+      925353388,
+      0,
+      0
+    ]
+  },
+  {
+    "kind": "buffer_write",
+    "handle": 1007,
+    "bufferSize": 16,
+    "data": [
+      3072,
+      3072,
+      0,
+      0
+    ]
+  },
+  {
+    "kind": "buffer_write",
+    "handle": 1008,
+    "bufferSize": 16,
+    "data": [
+      1,
+      128,
+      24,
+      31
+    ]
+  },
+  {
+    "kind": "buffer_write",
+    "handle": 1009,
+    "bufferSize": 16,
+    "data": [
+      24,
+      128,
+      32,
+      1035273459
+    ]
+  },
+  {
+    "kind": "buffer_write",
+    "handle": 1010,
+    "bufferSize": 16,
+    "data": [
+      8192,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "kind": "buffer_write",
+    "handle": 1011,
+    "bufferSize": 16,
+    "data": [
+      8192,
+      3072,
+      0,
+      0
+    ]
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "rmsnorm.wgsl",
+    "x": 1,
+    "y": 1,
+    "z": 1,
+    "initialize_buffers_on_create": true,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "uniform",
+        "resource_handle": 1002,
+        "buffer_size": 16,
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "readonly",
+        "resource_handle": 2201,
+        "buffer_size": 12288,
+        "visibility": "compute"
+      },
+      {
+        "binding": 2,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "readonly",
+        "resource_handle": 2202,
+        "buffer_size": 12288,
+        "visibility": "compute"
+      },
+      {
+        "binding": 3,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "storage",
+        "resource_handle": 2203,
+        "buffer_size": 12288,
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "matmul-gemv.wgsl",
+    "x": 48,
+    "y": 1,
+    "z": 1,
+    "initialize_buffers_on_create": true,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "uniform",
+        "resource_handle": 1007,
+        "buffer_size": 16,
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "readonly",
+        "resource_handle": 2204,
+        "buffer_size": 37748736,
+        "visibility": "compute"
+      },
+      {
+        "binding": 2,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "readonly",
+        "resource_handle": 2203,
+        "buffer_size": 12288,
+        "visibility": "compute"
+      },
+      {
+        "binding": 3,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "storage",
+        "resource_handle": 2205,
+        "buffer_size": 12288,
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "matmul-gemv.wgsl",
+    "x": 48,
+    "y": 1,
+    "z": 1,
+    "initialize_buffers_on_create": true,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "uniform",
+        "resource_handle": 1007,
+        "buffer_size": 16,
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "readonly",
+        "resource_handle": 2206,
+        "buffer_size": 37748736,
+        "visibility": "compute"
+      },
+      {
+        "binding": 2,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "readonly",
+        "resource_handle": 2203,
+        "buffer_size": 12288,
+        "visibility": "compute"
+      },
+      {
+        "binding": 3,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "storage",
+        "resource_handle": 2207,
+        "buffer_size": 12288,
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "matmul-gemv.wgsl",
+    "x": 48,
+    "y": 1,
+    "z": 1,
+    "initialize_buffers_on_create": true,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "uniform",
+        "resource_handle": 1007,
+        "buffer_size": 16,
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "readonly",
+        "resource_handle": 2208,
+        "buffer_size": 37748736,
+        "visibility": "compute"
+      },
+      {
+        "binding": 2,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "readonly",
+        "resource_handle": 2203,
+        "buffer_size": 12288,
+        "visibility": "compute"
+      },
+      {
+        "binding": 3,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "storage",
+        "resource_handle": 2209,
+        "buffer_size": 12288,
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "rope.wgsl",
+    "x": 1,
+    "y": 24,
+    "z": 1,
+    "initialize_buffers_on_create": true,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "uniform",
+        "resource_handle": 1008,
+        "buffer_size": 16,
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "storage",
+        "resource_handle": 2205,
+        "buffer_size": 12288,
+        "visibility": "compute"
+      },
+      {
+        "binding": 2,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "readonly",
+        "resource_handle": 2210,
+        "buffer_size": 16384,
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "rope.wgsl",
+    "x": 1,
+    "y": 24,
+    "z": 1,
+    "initialize_buffers_on_create": true,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "uniform",
+        "resource_handle": 1008,
+        "buffer_size": 16,
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "storage",
+        "resource_handle": 2207,
+        "buffer_size": 12288,
+        "visibility": "compute"
+      },
+      {
+        "binding": 2,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "readonly",
+        "resource_handle": 2210,
+        "buffer_size": 16384,
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "attention-decode.wgsl",
+    "x": 24,
+    "y": 1,
+    "z": 1,
+    "initialize_buffers_on_create": true,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "uniform",
+        "resource_handle": 1009,
+        "buffer_size": 16,
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "readonly",
+        "resource_handle": 2205,
+        "buffer_size": 12288,
+        "visibility": "compute"
+      },
+      {
+        "binding": 2,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "readonly",
+        "resource_handle": 2211,
+        "buffer_size": 393216,
+        "visibility": "compute"
+      },
+      {
+        "binding": 3,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "readonly",
+        "resource_handle": 2212,
+        "buffer_size": 393216,
+        "visibility": "compute"
+      },
+      {
+        "binding": 4,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "storage",
+        "resource_handle": 2213,
+        "buffer_size": 12288,
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "matmul-gemv.wgsl",
+    "x": 48,
+    "y": 1,
+    "z": 1,
+    "initialize_buffers_on_create": true,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "uniform",
+        "resource_handle": 1007,
+        "buffer_size": 16,
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "readonly",
+        "resource_handle": 2214,
+        "buffer_size": 37748736,
+        "visibility": "compute"
+      },
+      {
+        "binding": 2,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "readonly",
+        "resource_handle": 2213,
+        "buffer_size": 12288,
+        "visibility": "compute"
+      },
+      {
+        "binding": 3,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "storage",
+        "resource_handle": 2215,
+        "buffer_size": 12288,
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "residual.wgsl",
+    "x": 12,
+    "y": 1,
+    "z": 1,
+    "initialize_buffers_on_create": true,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "readonly",
+        "resource_handle": 2215,
+        "buffer_size": 12288,
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "readonly",
+        "resource_handle": 2201,
+        "buffer_size": 12288,
+        "visibility": "compute"
+      },
+      {
+        "binding": 2,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "storage",
+        "resource_handle": 2216,
+        "buffer_size": 12288,
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "rmsnorm.wgsl",
+    "x": 1,
+    "y": 1,
+    "z": 1,
+    "initialize_buffers_on_create": true,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "uniform",
+        "resource_handle": 1002,
+        "buffer_size": 16,
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "readonly",
+        "resource_handle": 2216,
+        "buffer_size": 12288,
+        "visibility": "compute"
+      },
+      {
+        "binding": 2,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "readonly",
+        "resource_handle": 2202,
+        "buffer_size": 12288,
+        "visibility": "compute"
+      },
+      {
+        "binding": 3,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "storage",
+        "resource_handle": 2217,
+        "buffer_size": 12288,
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "matmul-gemv.wgsl",
+    "x": 48,
+    "y": 1,
+    "z": 1,
+    "initialize_buffers_on_create": true,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "uniform",
+        "resource_handle": 1007,
+        "buffer_size": 16,
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "readonly",
+        "resource_handle": 2218,
+        "buffer_size": 37748736,
+        "visibility": "compute"
+      },
+      {
+        "binding": 2,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "readonly",
+        "resource_handle": 2217,
+        "buffer_size": 12288,
+        "visibility": "compute"
+      },
+      {
+        "binding": 3,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "storage",
+        "resource_handle": 2219,
+        "buffer_size": 12288,
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "matmul-gemv.wgsl",
+    "x": 48,
+    "y": 1,
+    "z": 1,
+    "initialize_buffers_on_create": true,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "uniform",
+        "resource_handle": 1007,
+        "buffer_size": 16,
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "readonly",
+        "resource_handle": 2220,
+        "buffer_size": 37748736,
+        "visibility": "compute"
+      },
+      {
+        "binding": 2,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "readonly",
+        "resource_handle": 2217,
+        "buffer_size": 12288,
+        "visibility": "compute"
+      },
+      {
+        "binding": 3,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "storage",
+        "resource_handle": 2221,
+        "buffer_size": 12288,
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "gelu.wgsl",
+    "x": 12,
+    "y": 1,
+    "z": 1,
+    "initialize_buffers_on_create": true,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "readonly",
+        "resource_handle": 2219,
+        "buffer_size": 12288,
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "storage",
+        "resource_handle": 2222,
+        "buffer_size": 12288,
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "matmul-gemv.wgsl",
+    "x": 48,
+    "y": 1,
+    "z": 1,
+    "initialize_buffers_on_create": true,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "uniform",
+        "resource_handle": 1007,
+        "buffer_size": 16,
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "readonly",
+        "resource_handle": 2223,
+        "buffer_size": 37748736,
+        "visibility": "compute"
+      },
+      {
+        "binding": 2,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "readonly",
+        "resource_handle": 2222,
+        "buffer_size": 12288,
+        "visibility": "compute"
+      },
+      {
+        "binding": 3,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "storage",
+        "resource_handle": 2224,
+        "buffer_size": 12288,
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "residual.wgsl",
+    "x": 12,
+    "y": 1,
+    "z": 1,
+    "initialize_buffers_on_create": true,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "readonly",
+        "resource_handle": 2224,
+        "buffer_size": 12288,
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "readonly",
+        "resource_handle": 2216,
+        "buffer_size": 12288,
+        "visibility": "compute"
+      },
+      {
+        "binding": 2,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "storage",
+        "resource_handle": 2225,
+        "buffer_size": 12288,
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "rmsnorm.wgsl",
+    "x": 1,
+    "y": 1,
+    "z": 1,
+    "initialize_buffers_on_create": true,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "uniform",
+        "resource_handle": 1002,
+        "buffer_size": 16,
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "readonly",
+        "resource_handle": 2225,
+        "buffer_size": 12288,
+        "visibility": "compute"
+      },
+      {
+        "binding": 2,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "readonly",
+        "resource_handle": 2202,
+        "buffer_size": 12288,
+        "visibility": "compute"
+      },
+      {
+        "binding": 3,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "storage",
+        "resource_handle": 2226,
+        "buffer_size": 12288,
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "matmul-gemv.wgsl",
+    "x": 128,
+    "y": 1,
+    "z": 1,
+    "initialize_buffers_on_create": true,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "uniform",
+        "resource_handle": 1011,
+        "buffer_size": 16,
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "readonly",
+        "resource_handle": 2002,
+        "buffer_size": 100663296,
+        "visibility": "compute"
+      },
+      {
+        "binding": 2,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "readonly",
+        "resource_handle": 2226,
+        "buffer_size": 12288,
+        "visibility": "compute"
+      },
+      {
+        "binding": 3,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "storage",
+        "resource_handle": 2227,
+        "buffer_size": 32768,
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "sample.wgsl",
+    "x": 1,
+    "y": 1,
+    "z": 1,
+    "initialize_buffers_on_create": true,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "uniform",
+        "resource_handle": 1010,
+        "buffer_size": 16,
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "readonly",
+        "resource_handle": 2227,
+        "buffer_size": 32768,
+        "visibility": "compute"
+      },
+      {
+        "binding": 2,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "storage",
+        "resource_handle": 2228,
+        "buffer_size": 4,
+        "visibility": "compute"
+      }
+    ]
+  }
+]

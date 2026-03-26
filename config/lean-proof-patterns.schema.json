@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Doe Lean proof patterns",
+  "description": "Canonical mapping from proof-backed runtime pattern IDs to theorems and runtime callsites.",
+  "type": "object",
+  "required": ["schemaVersion", "boundsPatterns", "validatorElisions"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "boundsPatterns": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "theorem", "runtimePath"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "theorem": {
+            "type": "string"
+          },
+          "runtimePath": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "validatorElisions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "requiredTheorems", "runtimePath"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "requiredTheorems": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string"
+            }
+          },
+          "runtimePath": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

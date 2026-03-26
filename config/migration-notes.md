@@ -1,5 +1,50 @@
 # Config Migration Notes
 
+## 2026-03-26
+
+### Trace-meta host-overhead totals for workload-unit wall diagnostics
+
+- `config/trace-meta.schema.json` now accepts coarse sample-level host-overhead
+  totals:
+  - `hostInputReadTotalNs`
+  - `hostInputParseTotalNs`
+  - `hostWorkloadPrepareTotalNs`
+  - `hostExecutorInitTotalNs`
+  - `hostUploadPrewarmTotalNs`
+  - `hostKernelPrewarmTotalNs`
+  - `hostCommandOrchestrationTotalNs`
+  - `hostArtifactFinalizeTotalNs`
+- Doe direct runtime and the standalone Dawn plan executor now emit those totals
+  in trace meta using once-per-sample phase timers around existing
+  read/parse/init/prewarm/loop/finalize boundaries.
+- Compare reports now synthesize
+  `timingInterpretation.hostOverheadBreakdown` from those totals so
+  workload-unit wall can be explained as:
+  - selected timing
+  - attributable coarse host overhead
+  - remaining unattributed wall gap
+- This is a diagnostic attribution layer only; it does not change comparability
+  or claimability policy.
+
+### Compare report workload-unit wall terminology
+
+- `bench/native-compare/compare_dawn_vs_doe.py` now writes compare reports with
+  `schemaVersion: 5`.
+- The clearer external timing name is now:
+  - per workload `timingInterpretation.workloadUnitWall`
+  - optional top-level `overallWorkloadUnitWall`
+- Legacy aliases remain during migration:
+  - per workload `timingInterpretation.headlineProcessWall`
+  - optional top-level `overallHeadlineProcessWall`
+- Claimability metadata now reports:
+  - `claimMetricField = timingInterpretation.workloadUnitWall.deltaPercent`
+  - `claimMetricScope = workloadUnitWall`
+- Behavioral difference versus the prior report surface:
+  compare artifacts now distinguish the full timed workload-unit wall view from
+  selected operation timing without implying that the metric is a generic
+  end-user session-latency number. Warm-session timing remains a separate future
+  benchmark scope rather than something inferred from workload-unit wall.
+
 ## 2026-03-24
 
 ### Workload origin taxonomy split

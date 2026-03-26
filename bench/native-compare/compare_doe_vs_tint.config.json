@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "corpusDir": "bench/kernels/compilation-corpus",
+  "workloads": "bench/workloads/workloads.apple.metal.json",
   "left": {
     "name": "doe_wgsl",
     "binaryPath": "runtime/zig/zig-out/bin/doe-compilation-bench"

@@ -3,6 +3,7 @@ const types = @import("../model_webgpu_types.zig");
 
 pub const CommandKind = enum(u8) {
     upload,
+    buffer_write,
     copy_buffer_to_texture,
     barrier,
     dispatch,
@@ -18,6 +19,7 @@ pub const CommandKind = enum(u8) {
 /// This is the authoritative definition; model.zig re-exports it.
 pub const Command = union(CommandKind) {
     upload: types.UploadCommand,
+    buffer_write: types.BufferWriteCommand,
     copy_buffer_to_texture: types.CopyCommand,
     barrier: types.BarrierCommand,
     dispatch: types.DispatchCommand,

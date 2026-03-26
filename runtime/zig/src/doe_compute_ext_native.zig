@@ -3,6 +3,7 @@
 
 const std = @import("std");
 const native = @import("doe_wgpu_native.zig");
+const compute_bind_groups = @import("doe_compute_bind_groups.zig");
 const compute_preconditions = @import("doe_compute_preconditions_native.zig");
 const wgsl_compiler = @import("doe_wgsl/mod.zig");
 const bridge = @import("backend/metal/metal_bridge_decls.zig");
@@ -11,7 +12,6 @@ const alloc = native.alloc;
 const make = native.make;
 const cast = native.cast;
 const toOpaque = native.toOpaque;
-const MAX_BIND = native.MAX_BIND;
 const metal_bridge_buffer_contents = bridge.metal_bridge_buffer_contents;
 
 const DoeComputePipeline = native.DoeComputePipeline;
@@ -21,8 +21,8 @@ const DoeBindGroup = native.DoeBindGroup;
 const DoeBindGroupLayout = native.DoeBindGroupLayout;
 const DoeBindGroupLayoutEntry = native.DoeBindGroupLayoutEntry;
 const RecordedCmd = native.RecordedCmd;
-const MAX_COMPUTE_BIND_GROUPS = native.MAX_COMPUTE_BIND_GROUPS;
-const MAX_FLAT_BIND = native.MAX_FLAT_BIND;
+const MAX_COMPUTE_BIND_GROUPS = compute_bind_groups.MAX_COMPUTE_BIND_GROUPS;
+const MAX_FLAT_BIND = compute_bind_groups.MAX_FLAT_BIND;
 const MAX_SHADER_BINDINGS = native.MAX_SHADER_BINDINGS;
 
 const RESOURCE_KIND_NONE: u32 = 0;
@@ -94,6 +94,14 @@ fn synthesize_layout_entry(binding: native.BindingInfo) DoeBindGroupLayoutEntry 
     return entry;
 }
 
+fn populateRecordedDispatchBindings(
+    bind_groups: []const ?*DoeBindGroup,
+    bufs: *[MAX_FLAT_BIND]?*anyopaque,
+    buf_sizes: *[MAX_FLAT_BIND]u64,
+) u32 {
+    return compute_bind_groups.populateFlatBindings(bind_groups, bufs, buf_sizes);
+}
+
 // ============================================================
 // Compute Pass operations
 // ============================================================
@@ -132,19 +140,11 @@ pub export fn doeNativeComputePassDispatch(pass_raw: ?*anyopaque, x: u32, y: u32
         .wg_y = pip.wg_y,
         .wg_z = pip.wg_z,
     } };
-    var total: u32 = 0;
-    for (pass.bind_groups, 0..) |maybe_bg, group_index| {
-        const bg = maybe_bg orelse continue;
-        for (0..bg.count) |i| {
-            const slot = group_index * MAX_BIND + i;
-            if (slot < MAX_FLAT_BIND) {
-                cmd.dispatch.bufs[slot] = bg.buffers[i];
-                cmd.dispatch.buf_sizes[slot] = bg.buffer_sizes[i];
-                if (slot + 1 > total) total = @intCast(slot + 1);
-            }
-        }
-    }
-    cmd.dispatch.buf_count = total;
+    cmd.dispatch.buf_count = populateRecordedDispatchBindings(
+        pass.bind_groups[0..],
+        &cmd.dispatch.bufs,
+        &cmd.dispatch.buf_sizes,
+    );
     pass.enc.cmds.append(alloc, cmd) catch
         std.debug.panic("doe_compute_ext_native: OOM recording dispatch command", .{});
 }
@@ -245,19 +245,11 @@ pub export fn doeNativeComputePassDispatchIndirect(pass_raw: ?*anyopaque, buf_ra
         .wg_y = pip.wg_y,
         .wg_z = pip.wg_z,
     } };
-    var total: u32 = 0;
-    for (pass.bind_groups, 0..) |maybe_bg, group_index| {
-        const bg = maybe_bg orelse continue;
-        for (0..bg.count) |i| {
-            const slot = group_index * MAX_BIND + i;
-            if (slot < MAX_FLAT_BIND) {
-                cmd.dispatch_indirect.bufs[slot] = bg.buffers[i];
-                cmd.dispatch_indirect.buf_sizes[slot] = bg.buffer_sizes[i];
-                if (slot + 1 > total) total = @intCast(slot + 1);
-            }
-        }
-    }
-    cmd.dispatch_indirect.buf_count = total;
+    cmd.dispatch_indirect.buf_count = populateRecordedDispatchBindings(
+        pass.bind_groups[0..],
+        &cmd.dispatch_indirect.bufs,
+        &cmd.dispatch_indirect.buf_sizes,
+    );
     pass.enc.cmds.append(alloc, cmd) catch
         std.debug.panic("doe_compute_ext_native: OOM recording indirect dispatch command", .{});
 }

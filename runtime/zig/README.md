@@ -16,6 +16,13 @@ Interop note:
 - initial integration target is Doe's standalone runtime path
 - adapter/ABI paths are used only for side-by-side incumbent comparisons
 
+Terminology note:
+- Doe's real execution path is its own direct backend implementation path.
+- In benchmark docs, that is the path contrasted with the Dawn delegate path.
+- "native" in flags such as `--backend native` means Doe is executing the
+  workload through its own backend implementation, not that Doe has some
+  separate non-runtime identity.
+
 Style guide:
 - follow `STYLE.md` for all Zig implementations in this module.
 

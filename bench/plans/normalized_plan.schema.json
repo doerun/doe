@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Doe normalized benchmark plan",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "planKind",
+    "workloadId",
+    "irPath",
+    "irScenario",
+    "commandCount",
+    "bufferWriteCount",
+    "dispatchCount",
+    "sourceIrSha256",
+    "compatibilityCommandsSha256",
+    "commands"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "planKind": {
+      "type": "string",
+      "minLength": 1
+    },
+    "workloadId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "irPath": {
+      "type": "string",
+      "minLength": 1
+    },
+    "irScenario": {
+      "type": "string",
+      "minLength": 1
+    },
+    "description": {
+      "type": "string"
+    },
+    "planPath": {
+      "type": "string",
+      "minLength": 1
+    },
+    "commandsPath": {
+      "type": "string",
+      "minLength": 1
+    },
+    "commandCount": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "bufferWriteCount": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "dispatchCount": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "sourceIrSha256": {
+      "type": "string",
+      "minLength": 1
+    },
+    "compatibilityCommandsSha256": {
+      "type": "string",
+      "minLength": 1
+    },
+    "planSha256": {
+      "type": "string",
+      "minLength": 1
+    },
+    "commands": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "kind"
+        ]
+      }
+    }
+  }
+}

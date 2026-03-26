@@ -3,7 +3,7 @@
   "title": "Fawn Proof Artifact",
   "description": "Machine-readable artifact emitted by Lean proof extraction. Compilation of the extraction module verifies all listed theorems. Decidable propositions are additionally evaluated at runtime.",
   "type": "object",
-  "required": ["schemaVersion", "status", "contractHashes", "theorems", "evaluatedConditions", "eliminationTargets", "boundsEliminations"],
+  "required": ["schemaVersion", "status", "provenance", "contractHashes", "theorems", "evaluatedConditions", "eliminationTargets", "boundsEliminations"],
   "additionalProperties": false,
   "properties": {
     "schemaVersion": {
@@ -14,6 +14,44 @@
       "type": "string",
       "enum": ["verified", "failed"],
       "description": "verified means all theorems typechecked and all evaluations completed."
+    },
+    "provenance": {
+      "type": "object",
+      "required": [
+        "leanToolchainRef",
+        "extractProgramSha256",
+        "leanSourceTreeSha256",
+        "generatedComparabilityContractSha256",
+        "proofPatternSpecSha256"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "leanToolchainRef": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Pinned Lean toolchain ref used for extraction, matching the toolchain resolution in pipeline/lean/lean_build_common.sh."
+        },
+        "extractProgramSha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "SHA-256 of pipeline/lean/Doe/Extract.lean."
+        },
+        "leanSourceTreeSha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "Deterministic SHA-256 over the repo-relative Lean source tree under pipeline/lean/Doe."
+        },
+        "generatedComparabilityContractSha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "SHA-256 of pipeline/lean/Doe/Generated/ComparabilityContract.lean."
+        },
+        "proofPatternSpecSha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "SHA-256 of config/lean-proof-patterns.json, the canonical proof-application pattern contract."
+        }
+      }
     },
     "contractHashes": {
       "type": "object",

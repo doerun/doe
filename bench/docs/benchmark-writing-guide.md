@@ -2,11 +2,23 @@
 
 This guide defines how to add and evolve benchmarks so results stay reproducible, apples-to-apples, and claim-safe.
 
+Terminology note:
+- Doe is the implementation under test. When this guide says "Doe runtime
+  path" or "Doe direct backend path", that means Doe implementing WebGPU
+  semantics itself on the target backend.
+- Dawn is the comparison implementation. In Doe-vs-Dawn runtime reports, the
+  useful split is "Doe direct backend path" versus "Dawn delegate path".
+- Runtime workloads usually mix API/setup work, first-use shader
+  compilation/pipeline creation, and GPU execution unless the workload is
+  explicitly scoped to isolate one of those layers.
+
 ## Scope
 
 Applies to:
-- `bench/workloads/workloads.json`
+- `bench/workloads/specialized/workloads.generic.json`
 - `bench/workloads.*.json`
+- `bench/ir/*.json`
+- `bench/plans/generated/*.plan.json`
 - `examples/*_commands.json`
 - `bench/native-compare/compare_dawn_vs_doe.config.*.json`
 - `config/comparability-obligations.json`
@@ -26,7 +38,7 @@ Applies to:
 
 - Workload contracts:
   - `bench/workloads*.json`
-  - DOE-vs-DOE strict fullsuite contract: `bench/workloads/workloads.amd.vulkan.superset.doe-vs-doe.json`
+  - DOE-vs-DOE strict fullsuite contract: `bench/workloads/specialized/workloads.amd.vulkan.superset.doe-vs-doe.json`
 - Compare harness:
   - `bench/native-compare/compare_dawn_vs_doe.py`
   - `bench/native_compare_modules/comparability.py`
@@ -61,6 +73,7 @@ Required fields:
 - `id`
 - `name`
 - `commandsPath`
+- `runnerType`
 - `quirksPath`
 - `vendor`
 - `api`
@@ -86,6 +99,17 @@ Common comparability fields:
 - `rightTimingDivisor`
 - `allowLeftNoExecution`
 - `extraArgs`
+
+IR-backed workload fields:
+- `irPath`
+- `irScenario`
+- `planPath`
+
+IR-backed authoring rule:
+- authored benchmark meaning belongs in `bench/ir/*.json`
+- generated backend workload lanes may still carry `commandsPath`, but for
+  IR-backed rows those command files are compatibility artifacts, not the
+  authored source of truth
 
 Strict Dawn-vs-Doe operation comparability rule:
 - when `comparability=strict` and `requireTimingClass=operation`, comparable workloads must use direct timing:
@@ -194,6 +218,12 @@ Before accepting claimable results from any run:
 
 ## 6) Timing selection and normalization policy
 
+Runtime timing scope reminder:
+- operation timing on runtime rows does not imply "pure GPU math only".
+- unless a workload contract explicitly isolates compilation or pure execution,
+  runtime operation timing may still include first-use pipeline/shader setup
+  inside the measured workload unit.
+
 For strict Dawn-vs-Doe claim lanes, required timing class is `operation` by default.
 
 For same-runtime parity lanes (Doe-vs-Doe or Dawn-vs-Dawn), operation timing remains
@@ -256,7 +286,19 @@ When reporting counts, always state:
 - selected workload filter/cohort flags
 - final executed workload count in report
 
-## 9) Command file contract (`examples/*_commands.json`)
+## 9) Neutral benchmark IR and command compatibility artifacts
+
+For new end-to-end runtime workloads, the preferred authoring surface is the
+neutral benchmark IR under `bench/ir/*.json`.
+
+Normalized plans under `bench/plans/generated/*.plan.json` are the executable
+contract that standalone executors consume.
+
+`examples/*_commands.json` still exists, but for IR-backed workloads it is a
+generated compatibility artifact for Doe runtime execution, not the authored
+benchmark definition.
+
+### 9.1 Command file contract (`examples/*_commands.json`)
 
 Command files must be deterministic JSON arrays of command objects with `kind`.
 
@@ -303,13 +345,14 @@ Coverage updates are separate from claimability. A covered feature is not automa
 
 ## 11) Recommended workflow for new or changed benchmarks
 
-1. Add or update deterministic command file.
-2. Add workload entry in the correct workload catalog.
-3. Document normalization and comparability notes.
-4. Run targeted compare config in strict mode.
-5. Run `comparability_obligation_parity_gate.py` and `schema_gate.py`.
-6. Run timing-policy gate for policy-bound lanes.
-7. Treat any non-comparable output as diagnostic until obligations are green.
+1. Add or update neutral benchmark IR, or deterministic command file when IR is not yet appropriate.
+2. Regenerate plans / compatibility command artifacts when the workload is IR-backed.
+3. Add workload entry in the correct workload catalog.
+4. Document normalization and comparability notes.
+5. Run targeted compare config in strict mode.
+6. Run `comparability_obligation_parity_gate.py` and `schema_gate.py`.
+7. Run timing-policy gate for policy-bound lanes.
+8. Treat any non-comparable output as diagnostic until obligations are green.
 
 Useful strict run pattern:
 

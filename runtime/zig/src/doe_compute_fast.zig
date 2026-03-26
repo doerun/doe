@@ -1,5 +1,6 @@
 const std = @import("std");
 const native = @import("doe_wgpu_native.zig");
+const compute_bind_groups = @import("doe_compute_bind_groups.zig");
 const compute_preconditions = @import("doe_compute_preconditions_native.zig");
 const bridge = @import("backend/metal/metal_bridge_decls.zig");
 const emit_msl = @import("doe_wgsl/emit_msl_ir.zig");
@@ -7,8 +8,8 @@ const metal_bridge_compute_dispatch_copy_signal_commit = bridge.metal_bridge_com
 const metal_bridge_buffer_contents = bridge.metal_bridge_buffer_contents;
 const metal_bridge_device_new_buffer_shared = bridge.metal_bridge_device_new_buffer_shared;
 const metal_bridge_release = bridge.metal_bridge_release;
-const MAX_BIND = native.MAX_BIND;
-const MAX_COMPUTE_BIND_GROUPS = native.MAX_COMPUTE_BIND_GROUPS;
+const MAX_COMPUTE_BIND_GROUPS = compute_bind_groups.MAX_COMPUTE_BIND_GROUPS;
+const MAX_FLAT_BIND = compute_bind_groups.MAX_FLAT_BIND;
 const MSL_SIZES_SLOT: u32 = emit_msl.MSL_SIZES_SLOT;
 const SIZES_BUF_BYTES: usize = (MSL_SIZES_SLOT + 1) * @sizeOf(u32);
 
@@ -49,20 +50,9 @@ pub export fn doeNativeComputeDispatchFlush(
         return;
     };
 
-    var bufs: [MAX_BIND * 4]?*anyopaque = [_]?*anyopaque{null} ** (MAX_BIND * 4);
-    var buf_sizes: [MAX_BIND * 4]u64 = [_]u64{0} ** (MAX_BIND * 4);
-    var buf_total: u32 = 0;
-    for (bind_groups, 0..) |maybe_bg, i| {
-        const bg = maybe_bg orelse continue;
-        for (0..bg.count) |j| {
-            const idx = i * MAX_BIND + j;
-            if (idx < bufs.len) {
-                bufs[idx] = bg.buffers[j];
-                buf_sizes[idx] = bg.buffer_sizes[j];
-                if (idx + 1 > buf_total) buf_total = @intCast(idx + 1);
-            }
-        }
-    }
+    var bufs: [MAX_FLAT_BIND]?*anyopaque = [_]?*anyopaque{null} ** MAX_FLAT_BIND;
+    var buf_sizes: [MAX_FLAT_BIND]u64 = [_]u64{0} ** MAX_FLAT_BIND;
+    var buf_total = compute_bind_groups.populateFlatBindings(bind_groups[0..], &bufs, &buf_sizes);
 
     var sizes_mtl: ?*anyopaque = null;
     defer if (sizes_mtl) |smtl| metal_bridge_release(smtl);

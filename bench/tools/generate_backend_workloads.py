@@ -5,14 +5,21 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from collections import OrderedDict
 from pathlib import Path
 from typing import Any
 
 import jsonschema
 
-
 REPO_ROOT = Path(__file__).resolve().parents[2]
+for _path_entry in (str(REPO_ROOT), str(REPO_ROOT / "bench")):
+    if _path_entry not in sys.path:
+        sys.path.insert(0, _path_entry)
+
+from bench.lib import benchmark_ir as benchmark_ir_mod
+
+
 CATALOG_PATH = REPO_ROOT / "bench" / "workloads" / "metadata" / "backend-workload-catalog.json"
 CATALOG_SCHEMA_PATH = REPO_ROOT / "config" / "backend-workload-catalog.schema.json"
 COHORTS_PATH = REPO_ROOT / "config" / "backend-workload-cohorts.json"
@@ -30,7 +37,7 @@ WORKLOAD_ORIGIN_KEY = "workloadOrigin"
 
 DEFAULT_LANE_OUTPUTS = OrderedDict(
     [
-        ("generic", {"outputPath": "bench/workloads/workloads.json"}),
+        ("generic", {"outputPath": "bench/workloads/specialized/workloads.generic.json"}),
         (
             "amd_vulkan",
             {
@@ -238,6 +245,9 @@ def validate_catalog_semantics(catalog: dict[str, Any]) -> None:
             lane_origin = resolve_workload_origin(item, lane_id)
             comparable = effective_field(item, lane_id, "comparable", False)
             benchmark_class = effective_field(item, lane_id, "benchmarkClass", None)
+            ir_path = effective_field(item, lane_id, "irPath", None)
+            ir_scenario = effective_field(item, lane_id, "irScenario", None)
+            commands_path = effective_field(item, lane_id, "commandsPath", None)
             if benchmark_class is None:
                 benchmark_class = "comparable" if comparable else "directional"
             elif isinstance(benchmark_class, str):
@@ -262,6 +272,21 @@ def validate_catalog_semantics(catalog: dict[str, Any]) -> None:
                     f"{item['id']} lane={lane_id}: benchmarkClass=directional requires comparable=false"
                 )
                 continue
+            if ir_path is not None and not isinstance(ir_path, str):
+                problems.append(f"{item['id']} lane={lane_id}: irPath must be a string when present")
+                continue
+            if ir_scenario is not None and not isinstance(ir_scenario, str):
+                problems.append(f"{item['id']} lane={lane_id}: irScenario must be a string when present")
+                continue
+            if ir_path is not None:
+                if ir_scenario is None:
+                    problems.append(
+                        f"{item['id']} lane={lane_id}: irScenario is required when irPath is present"
+                    )
+                if commands_path is not None:
+                    problems.append(
+                        f"{item['id']} lane={lane_id}: ir-backed workloads must not author commandsPath in the catalog"
+                    )
             if comparable and lane_origin == "doe_specific":
                 problems.append(
                     f"{item['id']} lane={lane_id}: comparable lanes must not be provenance='doe_specific'"
@@ -305,6 +330,24 @@ def validate_catalog_semantics(catalog: dict[str, Any]) -> None:
         )
 
 
+def validate_ir_catalog(catalog: dict[str, Any]) -> None:
+    ir_rows = []
+    for item in catalog["workloads"]:
+        for lane_id in item["lanes"]:
+            ir_path = effective_field(item, lane_id, "irPath", None)
+            ir_scenario = effective_field(item, lane_id, "irScenario", None)
+            if ir_path is None:
+                continue
+            ir_rows.append((item["id"], lane_id, ir_path, ir_scenario))
+    if not ir_rows:
+        return
+    for workload_id, lane_id, ir_path, ir_scenario in ir_rows:
+        benchmark_ir_mod.load_ir_document(REPO_ROOT / str(ir_path))
+        if not isinstance(ir_scenario, str):
+            raise ValueError(f"{workload_id} lane={lane_id}: invalid IR scenario")
+        benchmark_ir_mod.load_ir_scenario(REPO_ROOT / str(ir_path), ir_scenario)
+
+
 def bootstrap_catalog() -> dict[str, Any]:
     lane_outputs = OrderedDict(DEFAULT_LANE_OUTPUTS)
     lane_rows: dict[str, dict[str, dict[str, Any]]] = {}
@@ -333,7 +376,24 @@ def bootstrap_catalog() -> dict[str, Any]:
     workloads = []
     for workload_id in ordered_ids:
         present_rows = [lane_rows[lane][workload_id] for lane in lane_outputs if workload_id in lane_rows[lane]]
-        field_order = [key for key in present_rows[0].keys() if key != "id"]
+        has_ir_source = any("irPath" in row for row in present_rows)
+        generated_ir_keys = {
+            "commandsPath",
+            "planPath",
+            "planSchemaVersion",
+            "planHash",
+            "planCommandCount",
+            "planDispatchCount",
+            "planBufferWriteCount",
+            "compatibilityCommandHash",
+            "sourceIrSha256",
+            "compatibilityCommandsSha256",
+        }
+        field_order = [
+            key
+            for key in present_rows[0].keys()
+            if key != "id" and (not has_ir_source or key not in generated_ir_keys)
+        ]
         common_keys = set(present_rows[0].keys())
         for row in present_rows[1:]:
             common_keys &= set(row.keys())
@@ -360,6 +420,8 @@ def bootstrap_catalog() -> dict[str, Any]:
                 if key == "id":
                     continue
                 if shared.get(key) == value:
+                    continue
+                if has_ir_source and key in generated_ir_keys:
                     continue
                 override[key] = value
             lane_overrides[lane_id] = override
@@ -425,6 +487,26 @@ def materialize_lane(catalog: dict[str, Any], lane_id: str) -> dict[str, Any]:
         if "benchmarkClass" not in row:
             row["benchmarkClass"] = "comparable" if bool(row.get("comparable", False)) else "directional"
         row[WORKLOAD_ORIGIN_KEY] = resolve_workload_origin(item, source_lane)
+        ir_path = row.get("irPath")
+        ir_scenario = row.get("irScenario")
+        if ir_path is not None:
+            if not isinstance(ir_path, str) or not isinstance(ir_scenario, str):
+                raise ValueError(
+                    f"{item['id']} lane={source_lane}: ir-backed workload requires string irPath/irScenario"
+                )
+            ir_artifacts = benchmark_ir_mod.materialize_plan_artifacts(
+                REPO_ROOT / ir_path,
+                ir_scenario,
+            )
+            row["planPath"] = ir_artifacts["planPath"]
+            row["planSchemaVersion"] = ir_artifacts["plan"]["schemaVersion"]
+            row["planHash"] = ir_artifacts["planSha256"]
+            row["planCommandCount"] = ir_artifacts["commandCount"]
+            row["planDispatchCount"] = ir_artifacts["dispatchCount"]
+            row["planBufferWriteCount"] = ir_artifacts["bufferWriteCount"]
+            row["compatibilityCommandHash"] = ir_artifacts["compatibilityCommandsSha256"]
+            row["sourceIrSha256"] = ir_artifacts["sourceIrSha256"]
+            row["commandsPath"] = ir_artifacts["commandsPath"]
         if profile is not None:
             cohort_tags: list[str] = []
             workload_id = item["id"]
@@ -464,6 +546,26 @@ def generate_from_catalog(catalog: dict[str, Any], verify_only: bool) -> None:
                 mismatches.append(str(output_path))
         else:
             write_json(output_path, payload)
+        for row in payload["workloads"]:
+            ir_path = row.get("irPath")
+            ir_scenario = row.get("irScenario")
+            if ir_path is None:
+                continue
+            artifacts = benchmark_ir_mod.materialize_plan_artifacts(REPO_ROOT / ir_path, ir_scenario)
+            plan_path = REPO_ROOT / str(row["planPath"])
+            commands_path = REPO_ROOT / str(row["commandsPath"])
+            legacy_commands_path = REPO_ROOT / "examples" / f"{ir_scenario}_commands.json"
+            if verify_only:
+                if not verify_lane(plan_path, artifacts["plan"]):
+                    mismatches.append(str(plan_path))
+                if not verify_lane(commands_path, artifacts["commands"]):
+                    mismatches.append(str(commands_path))
+                if not verify_lane(legacy_commands_path, artifacts["commands"]):
+                    mismatches.append(str(legacy_commands_path))
+            else:
+                write_json(plan_path, artifacts["plan"])
+                write_json(commands_path, artifacts["commands"])
+                write_json(legacy_commands_path, artifacts["commands"])
     if mismatches:
         raise SystemExit("generated workload files diverged:\n" + "\n".join(mismatches))
 
@@ -477,6 +579,7 @@ def main() -> None:
     else:
         catalog = load_json(catalog_path)
     validate_catalog(catalog)
+    validate_ir_catalog(catalog)
     if args.emit_workload_origins is not None:
         write_json(Path(args.emit_workload_origins), build_workload_origin_report(catalog))
     generate_from_catalog(catalog, verify_only=args.verify)

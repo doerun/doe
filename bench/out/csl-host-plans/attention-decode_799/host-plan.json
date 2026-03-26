@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "csl_host_plan",
+  "target": "wse3",
+  "contract": "explicit_host_plan",
+  "hostPlan": {
+    "peGrid": { "width": 1, "height": 1 },
+    "kernels": [
+      { "name": "attention-decode", "pattern": "kernel_dispatch_translated", "count": 1 }
+    ],
+    "phases": {
+      "prefill": [
+        { "kernelName": "attention-decode", "repeat": 1 }
+      ],
+      "decode": [
+      ]
+    },
+    "eosTokenId": null
+  },
+  "compileTargets": [
+    { "name": "attention-decode", "layout": "bench/out/csl-host-plans/attention-decode_799/layout.csl", "peProgram": "bench/out/csl-host-plans/attention-decode_799/pe_program.csl" }
+  ],
+  "cslc": {
+    "executable": "cslc",
+    "discovery": "implicit_path_lookup",
+    "validation": {
+      "command": ["cslc", "--version"],
+      "minimumVersion": "1.4.0"
+    }
+  }
+}

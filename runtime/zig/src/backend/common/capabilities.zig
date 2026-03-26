@@ -5,6 +5,7 @@ pub const Capability = enum {
     compute_dispatch_indirect,
     kernel_dispatch,
     buffer_upload,
+    buffer_write,
     buffer_copy,
     barrier_sync,
     sampler_lifecycle,
@@ -36,14 +37,14 @@ pub const Capability = enum {
 };
 
 pub const CapabilitySet = struct {
-    bits: u32 = 0,
+    bits: u64 = 0,
 
     pub fn supports(self: CapabilitySet, cap: Capability) bool {
-        return (self.bits & (@as(u32, 1) << @intFromEnum(cap))) != 0;
+        return (self.bits & (@as(u64, 1) << @intFromEnum(cap))) != 0;
     }
 
     pub fn declare(self: *CapabilitySet, cap: Capability) void {
-        self.bits |= @as(u32, 1) << @intFromEnum(cap);
+        self.bits |= @as(u64, 1) << @intFromEnum(cap);
     }
 
     pub fn declare_all(self: *CapabilitySet, caps: []const Capability) void {
@@ -63,6 +64,7 @@ pub fn required_capabilities(command: model.Command) CapabilitySet {
     var set = CapabilitySet{};
     switch (command) {
         .upload => set.declare(.buffer_upload),
+        .buffer_write => set.declare(.buffer_write),
         .copy_buffer_to_texture => {
             set.declare(.buffer_copy);
             set.declare(.texture_write);
@@ -118,6 +120,7 @@ pub fn capability_name(cap: Capability) []const u8 {
         .compute_dispatch_indirect => "compute_dispatch_indirect",
         .kernel_dispatch => "kernel_dispatch",
         .buffer_upload => "buffer_upload",
+        .buffer_write => "buffer_write",
         .buffer_copy => "buffer_copy",
         .barrier_sync => "barrier_sync",
         .sampler_lifecycle => "sampler_lifecycle",

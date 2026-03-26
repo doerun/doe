@@ -311,8 +311,62 @@ def materialize_repeated_commands(
     expanded = payload * repeat
     generated = out_dir / f"{side_name}.commands.repeat{repeat}.json"
     generated.parent.mkdir(parents=True, exist_ok=True)
-    generated.write_text(json.dumps(expanded, indent=2) + "\\n", encoding="utf-8")
+    generated.write_text(json.dumps(expanded, indent=2) + "\n", encoding="utf-8")
     return str(generated)
+
+
+def materialize_repeated_plan(
+    plan_path: str,
+    *,
+    repeat: int,
+    out_dir: Path,
+    side_name: str,
+) -> str:
+    if repeat <= 1 or not plan_path:
+        return plan_path
+
+    source_path = Path(plan_path)
+    if not source_path.exists():
+        raise ValueError(f"plan repeat requested but plan file does not exist: {plan_path}")
+
+    try:
+        payload = json.loads(source_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"invalid plan JSON for repeat expansion ({plan_path}): {exc}") from exc
+
+    if not isinstance(payload, dict):
+        raise ValueError(
+            f"plan repeat requires a JSON object payload, got {type(payload).__name__} in {plan_path}"
+        )
+    raw_commands = payload.get("commands")
+    list_field = "commands"
+    if not isinstance(raw_commands, list) or not raw_commands:
+        raw_commands = payload.get("steps")
+        list_field = "steps"
+    if not isinstance(raw_commands, list) or not raw_commands:
+        raise ValueError(
+            f"plan repeat requires a non-empty commands/steps array in {plan_path}"
+        )
+
+    repeated = dict(payload)
+    repeated[list_field] = raw_commands * repeat
+    if isinstance(repeated.get("summary"), dict):
+        summary = dict(repeated["summary"])
+        for key in ("stepCount", "operationCount", "dispatchCount", "bufferWriteCount"):
+            value = summary.get(key)
+            if isinstance(value, int) and value >= 0:
+                summary[key] = value * repeat
+        repeated["summary"] = summary
+    for key in ("commandCount", "dispatchCount", "bufferWriteCount"):
+        value = repeated.get(key)
+        if isinstance(value, int) and value >= 0:
+            repeated[key] = value * repeat
+
+    generated = out_dir / f"{side_name}.plan.repeat{repeat}.json"
+    generated.parent.mkdir(parents=True, exist_ok=True)
+    generated.write_text(json.dumps(repeated, indent=2) + "\n", encoding="utf-8")
+    return str(generated)
+
 
 def command_for(
     template: str,
@@ -320,6 +374,7 @@ def command_for(
     workload: Any,
     workload_id: str,
     commands_path: str,
+    plan_path: str,
     trace_jsonl: Path,
     trace_meta: Path,
     queue_sync_mode: str,
@@ -329,6 +384,7 @@ def command_for(
 ) -> list[str]:
     ctx = {
         "commands": shlex.quote(commands_path),
+        "plan": shlex.quote(plan_path),
         "quirks": shlex.quote(workload.quirks_path),
         "vendor": shlex.quote(workload.vendor),
         "api": shlex.quote(workload.api),
@@ -550,6 +606,12 @@ def run_workload(
         out_dir=out_dir,
         side_name=name,
     )
+    plan_path = materialize_repeated_plan(
+        getattr(workload, "plan_path", ""),
+        repeat=command_repeat,
+        out_dir=out_dir,
+        side_name=name,
+    )
     timings: list[float] = []
     run_records: list[dict[str, Any]] = []
     sample_meta: dict[str, Any] = {}
@@ -585,6 +647,7 @@ def run_workload(
             workload=workload,
             workload_id=workload.id,
             commands_path=commands_path,
+            plan_path=plan_path,
             trace_jsonl=preflight_trace_jsonl,
             trace_meta=preflight_trace_meta,
             queue_sync_mode=queue_sync_mode,
@@ -633,6 +696,7 @@ def run_workload(
             workload=workload,
             workload_id=workload.id,
             commands_path=commands_path,
+            plan_path=plan_path,
             trace_jsonl=trace_jsonl,
             trace_meta=trace_meta,
             queue_sync_mode=queue_sync_mode,
@@ -876,7 +940,8 @@ def run_compilation_workload(
     out_dir.mkdir(parents=True, exist_ok=True)
 
     shader_path = Path(workload.shader_path)
-    shader_name = shader_path.stem
+    shader_name = workload.id
+    shader_tier = "inference" if "/bench/inference-pipeline/kernels/" in str(shader_path).replace("\\", "/") else "external"
     target = workload.compilation_target or "msl"
 
     if target not in VALID_COMPILATION_TARGETS:
@@ -898,7 +963,9 @@ def run_compilation_workload(
         "--target", target,
         "--iterations", str(iterations),
         "--warmup", str(warmup),
-        "--filter", shader_name,
+        "--shader-path", str(shader_path),
+        "--shader-name", shader_name,
+        "--shader-tier", shader_tier,
         "--out", str(doe_out),
     ]
     subprocess.run(doe_cmd, check=True)
@@ -971,109 +1038,3 @@ def run_compilation_workload(
 # ============================================================
 # JS pipeline runner
 # ============================================================
-
-def _parse_js_pipeline_ndjson(path: Path, phase: str) -> tuple[list[float], dict[str, Any]]:
-    """Parse inference pipeline NDJSON, return (timed samples ms, summary record)."""
-    samples: list[float] = []
-    summary: dict[str, Any] = {}
-    if not path.exists():
-        return samples, summary
-    for line in path.read_text(encoding="utf-8").splitlines():
-        line = line.strip()
-        if not line:
-            continue
-        try:
-            record = json.loads(line)
-        except json.JSONDecodeError:
-            continue
-        if record.get("phase") != phase:
-            continue
-        if record.get("kind") == "inference_pipeline_bench":
-            samples.append(float(record.get("totalMs", 0)))
-        elif record.get("kind") == "inference_pipeline_bench_summary":
-            summary = record
-    return samples, summary
-
-
-def _build_pipeline_trace_meta(summary: dict[str, Any], side: str) -> dict[str, Any]:
-    """Build trace meta from a pipeline summary record."""
-    dispatch_count = summary.get("dispatchCount", 0)
-    return {
-        "runnerType": "js-pipeline",
-        "side": side,
-        "modelId": summary.get("modelId", ""),
-        "phase": summary.get("phase", ""),
-        "layers": summary.get("layers", 0),
-        "promptTokens": summary.get("promptTokens", 0),
-        "decodeTokens": summary.get("decodeTokens", 0),
-        "timingSource": summary.get("timingSource", "performance.now"),
-        "executionDispatchCount": dispatch_count,
-        "executionRowCount": dispatch_count,
-        "executionSuccessCount": dispatch_count,
-    }
-
-
-def run_js_pipeline_workload(
-    workload: Any,
-    iterations: int,
-    warmup: int,
-    out_dir: Path,
-    js_runtime: str = "node",
-) -> dict[str, Any]:
-    """Run inference pipeline benchmark for one phase: Doe native vs Dawn delegate.
-
-    Returns a dict with "left" and "right" keys, each matching the shape
-    of run_workload() output so the compare harness can consume it uniformly.
-    """
-    out_dir.mkdir(parents=True, exist_ok=True)
-
-    script_path = Path(workload.script_path)
-    if not script_path.exists():
-        raise RuntimeError(f"JS pipeline script not found: {script_path}")
-
-    phase = workload.pipeline_phase or "e2e"
-    config_path = workload.script_config or ""
-
-    base_args = [
-        js_runtime,
-        str(script_path),
-        "--phase", phase,
-        "--iterations", str(iterations),
-        "--warmup", str(warmup),
-    ]
-    if config_path:
-        base_args.extend(["--config", config_path])
-
-    sides: dict[str, dict[str, Any]] = {}
-
-    for side, backend in [("left", "doe-native"), ("right", "dawn-delegate")]:
-        side_out = out_dir / f"{side}.pipeline.ndjson"
-        cmd = [*base_args, "--backend", backend, "--out", str(side_out)]
-
-        elapsed_ms, process_cpu_ms, rc, resource = run_once(
-            cmd,
-            gpu_memory_probe="",
-            resource_sample_ms=1000,
-            resource_sample_target_count=0,
-        )
-
-        samples, summary = _parse_js_pipeline_ndjson(side_out, phase)
-        trace_meta = _build_pipeline_trace_meta(summary, side)
-
-        meta_path = out_dir / f"{side}.meta.json"
-        meta_path.write_text(json.dumps(trace_meta, separators=(",", ":")) + "\n", encoding="utf-8")
-
-        sides[side] = {
-            "commandSamples": [],
-            "stats": reporting_mod.format_stats(samples),
-            "timingsMs": samples,
-            "lastMeta": trace_meta,
-            "timingSources": [summary.get("timingSource", "performance.now")],
-            "timingClasses": ["operation"],
-            "resourceStats": {
-                "processWallMs": elapsed_ms,
-                "processCpuMs": process_cpu_ms,
-            },
-        }
-
-    return sides

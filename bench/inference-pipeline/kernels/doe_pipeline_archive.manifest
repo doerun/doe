@@ -1,0 +1,10 @@
+C:gather
+C:rope
+C:residual
+C:gelu
+C:matmul-gemv
+C:rmsnorm
+C:matmul-tiled
+C:attention-prefill
+C:attention-decode
+C:sample

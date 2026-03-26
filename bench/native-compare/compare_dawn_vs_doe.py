@@ -2,8 +2,9 @@
 """
 Dawn/Doe side-by-side benchmark runner.
 
-This script executes shared workload command templates for both runtimes and emits
-timing traces where available, with wall-time as a fallback.
+This script executes shared workload contracts for both sides using either
+explicit executor ids or raw command templates, then emits timing traces where
+available, with wall-time as a fallback.
 """
 
 from __future__ import annotations
@@ -27,6 +28,7 @@ CATALOG_PATH = BENCH_ROOT / "workloads" / "metadata" / "backend-workload-catalog
 
 from bench.lib import output_paths
 from native_compare_modules import config_support as config_support_mod
+from native_compare_modules import executor_registry as executor_registry_mod
 from native_compare_modules import claimability as claimability_mod
 from native_compare_modules import comparability as comparability_mod
 from native_compare_modules import reporting as reporting_mod
@@ -100,8 +102,8 @@ max_rss_time_prefix = runner_mod.max_rss_time_prefix
 run_once = runner_mod.run_once
 run_workload = runner_mod.run_workload
 run_compilation_workload = runner_mod.run_compilation_workload
-run_js_pipeline_workload = runner_mod.run_js_pipeline_workload
 load_workloads = config_support_mod.load_workloads
+resolve_executor_command_template = executor_registry_mod.resolve_executor_command_template
 
 # Re-exports from workload_validation
 parse_positive_int_command_field = workload_validation_mod.parse_positive_int_command_field
@@ -110,8 +112,10 @@ infer_command_shape_operation_count = workload_validation_mod.infer_command_shap
 infer_command_shape_dispatch_count = workload_validation_mod.infer_command_shape_dispatch_count
 enforce_strict_command_shape_divisor_contracts = workload_validation_mod.enforce_strict_command_shape_divisor_contracts
 template_uses_doe_runtime = workload_validation_mod.template_uses_doe_runtime
+template_uses_plan_boundary = workload_validation_mod.template_uses_plan_boundary
 expected_divisor_units = workload_validation_mod.expected_divisor_units
 template_backend_lane = workload_validation_mod.template_backend_lane
+enforce_strict_plan_boundary_symmetry = workload_validation_mod.enforce_strict_plan_boundary_symmetry
 enforce_strict_doe_runtime_normalization_symmetry = workload_validation_mod.enforce_strict_doe_runtime_normalization_symmetry
 enforce_strict_dawn_vs_doe_direct_operation_timing = workload_validation_mod.enforce_strict_dawn_vs_doe_direct_operation_timing
 backend_from_token = workload_validation_mod.backend_from_token
@@ -165,6 +169,14 @@ collect_trace_meta_hashes = runner_mod.collect_trace_meta_hashes
 def main() -> int:
     args = parse_args()
     args = apply_config_defaults(args)
+    if getattr(args, "left_executor_id", ""):
+        args.left_command_template = resolve_executor_command_template(
+            args.left_executor_id
+        )
+    if getattr(args, "right_executor_id", ""):
+        args.right_command_template = resolve_executor_command_template(
+            args.right_executor_id
+        )
 
     if args.iterations < 0 or args.warmup < 0:
         raise ValueError("--iterations and --warmup must be >= 0")
@@ -233,6 +245,12 @@ def main() -> int:
         workloads=workloads,
         left_command_template=args.left_command_template,
         right_command_template=args.right_command_template,
+    )
+    enforce_strict_plan_boundary_symmetry(
+        workloads=workloads,
+        left_command_template=args.left_command_template,
+        right_command_template=args.right_command_template,
+        comparability_mode=args.comparability,
     )
     if args.claimability in {"local", "release"}:
         non_comparable_contract_ids = [
@@ -312,8 +330,8 @@ def main() -> int:
 
     overall_left: list[float] = []
     overall_right: list[float] = []
-    overall_headline_left: list[float] = []
-    overall_headline_right: list[float] = []
+    overall_workload_unit_left: list[float] = []
+    overall_workload_unit_right: list[float] = []
     comparability_failures: list[dict[str, Any]] = []
     claimability_failures: list[dict[str, Any]] = []
     previous_claim_row_hash = "0" * 64
@@ -333,20 +351,6 @@ def main() -> int:
                     out_dir=workload_dir,
                     doe_compilation_bin=getattr(args, "doe_compilation_bin", "runtime/zig/zig-out/bin/doe-compilation-bench"),
                     tint_bin=getattr(args, "tint_bin", "bench/vendor/dawn/out/Release/tint"),
-                )
-            except RuntimeError as exc:
-                print(f"  SKIP ({exc})", file=sys.stderr, flush=True)
-                continue
-            left = both["left"]
-            right = both["right"]
-        elif runner_type == "js-pipeline":
-            try:
-                both = run_js_pipeline_workload(
-                    workload=workload,
-                    iterations=args.iterations,
-                    warmup=args.warmup,
-                    out_dir=workload_dir,
-                    js_runtime=getattr(args, "js_runtime", "node"),
                 )
             except RuntimeError as exc:
                 print(f"  SKIP ({exc})", file=sys.stderr, flush=True)
@@ -461,12 +465,12 @@ def main() -> int:
         if comparability.get("comparable"):
             if left_stats["count"] >= 7:
                 overall_left.extend([safe_float(v) for v in left_timings if safe_float(v) is not None])
-                overall_headline_left.extend(
+                overall_workload_unit_left.extend(
                     command_sample_field_values_ms(left.get("commandSamples", []), "elapsedMs")
                 )
             if right_stats["count"] >= 7:
                 overall_right.extend([safe_float(v) for v in right_timings if safe_float(v) is not None])
-                overall_headline_right.extend(
+                overall_workload_unit_right.extend(
                     command_sample_field_values_ms(right.get("commandSamples", []), "elapsedMs")
                 )
 
@@ -514,8 +518,8 @@ def main() -> int:
     build_overall_stats(
         overall_left=overall_left,
         overall_right=overall_right,
-        overall_headline_left=overall_headline_left,
-        overall_headline_right=overall_headline_right,
+        overall_workload_unit_left=overall_workload_unit_left,
+        overall_workload_unit_right=overall_workload_unit_right,
         report=report,
     )
     build_report_summaries(

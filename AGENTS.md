@@ -58,6 +58,7 @@ If a change affects runtime-visible behavior and any mandatory doc above has not
 
 For Dawn-vs-Doe performance work, also read:
 
+- `SKILLS.md`
 - `docs/performance-strategy.md`
 
 ## Core principles (adopted)

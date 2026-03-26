@@ -68,7 +68,7 @@ def build_report_header(
     else:
         benchmark_intent = "mixed"
     report: dict[str, Any] = {
-        "schemaVersion": 4,
+        "schemaVersion": 5,
         "generatedAt": datetime.now(timezone.utc).isoformat(),
         "outputTimestamp": output_timestamp,
         "outPath": str(out),
@@ -91,17 +91,21 @@ def build_report_header(
         "timingInterpretationPolicy": {
             "selectedMetricField": "deltaPercent",
             "selectedMetricUse": "methodology-selected apples-to-apples claim metric",
-            "headlineMetricField": "timingInterpretation.headlineProcessWall.deltaPercent",
-            "headlineMetricUse": "timed-command process-wall end-to-end ranking metric",
-            "headlineMetricScope": "timed-command-process-wall",
+            "workloadUnitWallMetricField": "timingInterpretation.workloadUnitWall.deltaPercent",
+            "workloadUnitWallMetricUse": "timed workload-unit wall end-to-end ranking metric",
+            "workloadUnitWallMetricScope": "workloadUnitWall",
             "narrowSelectedScopeClass": "narrow-hot-path",
             "narrowSelectedMetricEligibleForClaims": False,
-            "narrowHotPathClaimMetricField": "timingInterpretation.headlineProcessWall.deltaPercent",
-            "narrowHotPathClaimMetricScope": "headlineProcessWall",
+            "narrowHotPathClaimMetricField": "timingInterpretation.workloadUnitWall.deltaPercent",
+            "narrowHotPathClaimMetricScope": "workloadUnitWall",
+            "legacyAliases": {
+                "timingInterpretation.headlineProcessWall": "timingInterpretation.workloadUnitWall",
+                "overallHeadlineProcessWall": "overallWorkloadUnitWall",
+            },
             "guidance": (
                 "When timingInterpretation.selectedTiming.scopeClass is narrow-hot-path, "
                 "deltaPercent remains a phase-specific diagnostic. Claimability evaluates "
-                "timingInterpretation.headlineProcessWall.deltaPercent when that end-to-end "
+                "timingInterpretation.workloadUnitWall.deltaPercent when that full "
                 "metric is available."
             ),
         },
@@ -287,8 +291,8 @@ def build_overall_stats(
     *,
     overall_left: list[float],
     overall_right: list[float],
-    overall_headline_left: list[float],
-    overall_headline_right: list[float],
+    overall_workload_unit_left: list[float],
+    overall_workload_unit_right: list[float],
     report: dict[str, Any],
 ) -> None:
     if overall_left and overall_right:
@@ -316,19 +320,24 @@ def build_overall_stats(
                 ),
             },
         }
-    if overall_headline_left and overall_headline_right:
-        overall_headline_left_stats = format_stats(overall_headline_left)
-        overall_headline_right_stats = format_stats(overall_headline_right)
-        report["overallHeadlineProcessWall"] = {
+    if overall_workload_unit_left and overall_workload_unit_right:
+        overall_workload_unit_left_stats = format_stats(overall_workload_unit_left)
+        overall_workload_unit_right_stats = format_stats(overall_workload_unit_right)
+        overall_workload_unit_wall = {
             "scope": "timed-command-process-wall",
+            "scopeClass": "workload-unit-wall",
             "metric": "elapsedMs",
-            "left": overall_headline_left_stats,
-            "right": overall_headline_right_stats,
+            "left": overall_workload_unit_left_stats,
+            "right": overall_workload_unit_right_stats,
             "deltaPercent": delta_percent_from_stats(
-                overall_headline_left_stats,
-                overall_headline_right_stats,
+                overall_workload_unit_left_stats,
+                overall_workload_unit_right_stats,
             ),
         }
+        report["overallWorkloadUnitWall"] = overall_workload_unit_wall
+        legacy_overall_workload_unit_wall = dict(overall_workload_unit_wall)
+        legacy_overall_workload_unit_wall["deprecatedAliasFor"] = "overallWorkloadUnitWall"
+        report["overallHeadlineProcessWall"] = legacy_overall_workload_unit_wall
 
 
 def build_report_summaries(

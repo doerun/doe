@@ -130,9 +130,7 @@ const Emitter = struct {
                     },
                     else => {},
                 }
-                try self.emit_type(field.ty);
-                try self.write(" ");
-                try self.write(field.name);
+                try self.emit_named_decl(field.ty, field.name);
                 try self.write(";\n");
             }
             self.indent -= 4;
@@ -147,13 +145,11 @@ const Emitter = struct {
                 .var_ => {
                     const addr_space = global.addr_space orelse continue;
                     switch (addr_space) {
-                        .workgroup => try self.write("\nthreadgroup "),
+                        .workgroup => continue,
                         .private => try self.write("\nthread "),
                         else => continue,
                     }
-                    try self.emit_type(global.ty);
-                    try self.write(" ");
-                    try self.write(global.name);
+                    try self.emit_named_decl(global.ty, global.name);
                     if (global.initializer) |constant| {
                         try self.write(" = ");
                         try self.emit_constant(constant, global.ty);
@@ -162,9 +158,7 @@ const Emitter = struct {
                 },
                 .const_, .override_ => {
                     try self.write("\nconstant ");
-                    try self.emit_type(global.ty);
-                    try self.write(" ");
-                    try self.write(global.name);
+                    try self.emit_named_decl(global.ty, global.name);
                     if (global.initializer) |constant| {
                         try self.write(" = ");
                         try self.emit_constant(constant, global.ty);
@@ -173,6 +167,19 @@ const Emitter = struct {
                 },
                 else => {},
             }
+        }
+    }
+
+    fn emit_function_scoped_workgroup_globals(self: *Emitter) EmitError!void {
+        for (self.module.globals.items) |global| {
+            if (global.binding != null) continue;
+            if (global.class != .var_) continue;
+            const addr_space = global.addr_space orelse continue;
+            if (addr_space != .workgroup) continue;
+            try self.write_indent();
+            try self.write("threadgroup ");
+            try self.emit_named_decl(global.ty, global.name);
+            try self.write(";\n");
         }
     }
 
@@ -217,6 +224,9 @@ const Emitter = struct {
         }
         try self.write(") {\n");
         self.indent += 4;
+        if (stage != null and stage.? == .compute) {
+            try self.emit_function_scoped_workgroup_globals();
+        }
         try self.emit_stmt(function, function.root_stmt);
         self.indent -= 4;
         try self.write("}\n");
@@ -359,9 +369,7 @@ const Emitter = struct {
                 if (decl.is_const) {
                     try self.write("const ");
                 }
-                try self.emit_type(local.ty);
-                try self.write(" ");
-                try self.write(local.name);
+                try self.emit_named_decl(local.ty, local.name);
                 if (decl.initializer) |expr_id| {
                     try self.write(" = ");
                     try self.emit_expr(function, expr_id);
@@ -655,6 +663,25 @@ const Emitter = struct {
                 try self.write(">");
             },
             .ref => |ref_ty| try self.emit_type(ref_ty.elem),
+        }
+    }
+
+    fn emit_named_decl(self: *Emitter, ty: ir.TypeId, name: []const u8) EmitError!void {
+        switch (self.module.types.get(ty)) {
+            .array => |arr| {
+                if (arr.len == null) return error.InvalidIr;
+                try self.emit_type(arr.elem);
+                try self.write(" ");
+                try self.write(name);
+                try self.write("[");
+                try self.write_u32(arr.len.?);
+                try self.write("]");
+            },
+            else => {
+                try self.emit_type(ty);
+                try self.write(" ");
+                try self.write(name);
+            },
         }
     }
 

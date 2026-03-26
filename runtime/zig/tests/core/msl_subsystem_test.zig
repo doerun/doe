@@ -102,7 +102,7 @@ test "msl: matrix type mapping — float4x4" {
     try expectHas(msl, "float4x4");
 }
 
-test "msl: fixed-size array emits array<type, N>" {
+test "msl: fixed-size local array emits C-style declaration" {
     const msl = try compile_msl(
         \\@group(0) @binding(0) var<storage, read_write> buf: array<u32>;
         \\@compute @workgroup_size(1)
@@ -113,7 +113,7 @@ test "msl: fixed-size array emits array<type, N>" {
         \\}
     );
     defer free_msl(msl);
-    try expectHas(msl, "array<float, 4>");
+    try expectHas(msl, "float a[4];");
 }
 
 // ============================================================

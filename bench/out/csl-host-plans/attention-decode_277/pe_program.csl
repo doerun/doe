@@ -1,0 +1,90 @@
+// PE program: tiled Flash Attention for prefill (auto-generated)
+// KV tiles broadcast via collectives, online softmax accumulation.
+
+param memcpy_params: comptime_struct;
+param head_dim: i16;
+param block_size: i16 = 32;
+param kv_len: i16;
+param q_len: i16;
+param scale: f32 = 0.125;
+
+const sys_mod = @import_module("<memcpy/memcpy>", memcpy_params);
+const math = @import_module("<math>");
+
+var q: [*]f32 = undefined;
+var q_ptr: [*]f32 = &q;
+var k_cache: [*]f32 = undefined;
+var k_cache_ptr: [*]f32 = &k_cache;
+var v_cache: [*]f32 = undefined;
+var v_cache_ptr: [*]f32 = &v_cache;
+var output: [*]f32 = undefined;
+var output_ptr: [*]f32 = &output;
+
+var K_tile = @zeros([block_size * head_dim]f32);
+var V_tile = @zeros([block_size * head_dim]f32);
+
+var m_i: f32 = -3.4028235e+38;
+var l_i: f32 = 0.0;
+
+fn compute() void {
+    for (@range(i16, head_dim)) |d| { output[@as(u32, d)] = 0.0; }
+    m_i = -3.4028235e+38;
+    l_i = 0.0;
+
+    var kv_start: i16 = 0;
+    while (kv_start < kv_len) : (kv_start += block_size) {
+        const blk_end = math.min(i16, kv_start + block_size, kv_len);
+        const blk_len = blk_end - kv_start;
+
+        for (@range(i16, blk_len)) |bi| {
+            for (@range(i16, head_dim)) |d| {
+                const src = @as(u32, kv_start + bi) * @as(u32, head_dim) + @as(u32, d);
+                const dst = @as(u32, bi) * @as(u32, head_dim) + @as(u32, d);
+                K_tile[dst] = k_cache[src];
+                V_tile[dst] = v_cache[src];
+            }
+        }
+
+        var blk_max: f32 = -3.4028235e+38;
+        for (@range(i16, blk_len)) |bi| {
+            var score: f32 = 0.0;
+            for (@range(i16, head_dim)) |d| {
+                score += q[@as(u32, d)] * K_tile[@as(u32, bi) * @as(u32, head_dim) + @as(u32, d)];
+            }
+            score *= scale;
+            if (score > blk_max) blk_max = score;
+        }
+
+        const m_new = math.max(f32, m_i, blk_max);
+        const rescale = math.exp(m_i - m_new);
+        l_i *= rescale;
+        for (@range(i16, head_dim)) |d| {
+            output[@as(u32, d)] *= rescale;
+        }
+
+        for (@range(i16, blk_len)) |bi| {
+            var score: f32 = 0.0;
+            for (@range(i16, head_dim)) |d| {
+                score += q[@as(u32, d)] * K_tile[@as(u32, bi) * @as(u32, head_dim) + @as(u32, d)];
+            }
+            const w = math.exp(score * scale - m_new);
+            l_i += w;
+            for (@range(i16, head_dim)) |d| {
+                output[@as(u32, d)] += w * V_tile[@as(u32, bi) * @as(u32, head_dim) + @as(u32, d)];
+            }
+        }
+        m_i = m_new;
+    }
+
+    const inv = 1.0 / l_i;
+    for (@range(i16, head_dim)) |d| { output[@as(u32, d)] *= inv; }
+    sys_mod.unblock_cmd_stream();
+}
+
+comptime {
+    @export_symbol(q_ptr, "q");
+    @export_symbol(k_cache_ptr, "k_cache");
+    @export_symbol(v_cache_ptr, "v_cache");
+    @export_symbol(output_ptr, "output");
+    @export_symbol(compute);
+}

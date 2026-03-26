@@ -32,6 +32,7 @@ if str(BENCH_ROOT) not in sys.path:
     sys.path.insert(0, str(BENCH_ROOT))
 
 from bench.lib import output_paths
+from bench.native_compare_modules import executor_registry as executor_registry_mod
 
 
 NS_PER_MS: float = 1_000_000.0
@@ -54,7 +55,10 @@ class Workload:
     workload_id: str
     name: str
     description: str
+    runner_type: str
     commands_path: str
+    ir_path: str
+    plan_path: str
     quirks_path: str
     vendor: str
     api: str
@@ -66,8 +70,13 @@ class Workload:
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--bench-config", default="config/benchmarks.json")
-    parser.add_argument("--workloads", default="bench/workloads/workloads.json")
+    parser.add_argument("--workloads", default="bench/workloads/specialized/workloads.generic.json")
     parser.add_argument("--workload-id", default="compute_kernel_dispatch_100")
+    parser.add_argument(
+        "--executor-id",
+        default="",
+        help="Optional executor id. When set, resolves the command template from the executor registry.",
+    )
     parser.add_argument("--command-template", default=(
         "runtime/zig/zig-out/bin/doe-zig-runtime"
         " --commands {commands}"
@@ -326,7 +335,10 @@ def load_workloads(path: str, workload_id: str) -> Workload:
         workload_id=cfg["id"],
         name=cfg.get("name", workload_id),
         description=cfg.get("description", ""),
+        runner_type=cfg.get("runnerType", "zig-runtime"),
         commands_path=cfg.get("commandsPath", ""),
+        ir_path=cfg.get("irPath", ""),
+        plan_path=cfg.get("planPath", ""),
         quirks_path=cfg.get("quirksPath", ""),
         vendor=cfg.get("vendor", "intel"),
         api=cfg.get("api", "vulkan"),
@@ -479,8 +491,17 @@ def command_for(
     trace_meta: Path,
     command_template_args: dict[str, Any],
 ) -> list[str]:
+    if "{commands}" in template and not workload.commands_path:
+        raise ValueError(
+            f"workload {workload.workload_id!r} requires commandsPath for the selected template"
+        )
+    if "{plan}" in template and not workload.plan_path:
+        raise ValueError(
+            f"workload {workload.workload_id!r} requires planPath for the selected template"
+        )
     context = {
         "commands": shlex.quote(workload.commands_path),
+        "plan": shlex.quote(workload.plan_path),
         "quirks": shlex.quote(workload.quirks_path),
         "vendor": shlex.quote(workload.vendor),
         "api": shlex.quote(workload.api),
@@ -530,6 +551,10 @@ def main() -> int:
     args = parse_args()
     if args.iterations < 0 or args.warmup < 0:
         raise ValueError("--iterations and --warmup must be >= 0")
+    if args.executor_id:
+        args.command_template = executor_registry_mod.resolve_executor_command_template(
+            args.executor_id
+        )
 
     generated_at = datetime.now(timezone.utc).isoformat()
     output_timestamp = (
@@ -632,7 +657,10 @@ def main() -> int:
             "id": workload.workload_id,
             "name": workload.name,
             "description": workload.description,
+            "runnerType": workload.runner_type,
             "commandsPath": workload.commands_path,
+            "irPath": workload.ir_path,
+            "planPath": workload.plan_path,
             "quirksPath": workload.quirks_path,
             "vendor": workload.vendor,
             "api": workload.api,
@@ -674,6 +702,7 @@ def main() -> int:
         "gpu": args.gpu,
         "driver": args.driver,
         "backend": args.backend,
+        "executorId": args.executor_id,
         "toolchains": {
             "zig": "unknown",
             "lean": "unknown",

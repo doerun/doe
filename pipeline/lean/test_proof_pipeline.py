@@ -9,6 +9,7 @@ Pipeline flow:
 """
 
 import json
+import hashlib
 import os
 import stat
 import unittest
@@ -17,6 +18,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 ARTIFACT_PATH = REPO_ROOT / "pipeline" / "lean" / "artifacts" / "proven-conditions.json"
 SCHEMA_PATH = REPO_ROOT / "config" / "proof-artifact.schema.json"
+PATTERN_SPEC_PATH = REPO_ROOT / "config" / "lean-proof-patterns.json"
 EXTRACT_SCRIPT = REPO_ROOT / "pipeline" / "lean" / "extract.sh"
 LEAN_SOURCE_DIR = REPO_ROOT / "pipeline" / "lean" / "Doe"
 
@@ -41,6 +43,33 @@ def _load_artifact():
 def _load_schema():
     with open(SCHEMA_PATH) as f:
         return json.load(f)
+
+
+def _load_pattern_spec():
+    with open(PATTERN_SPEC_PATH) as f:
+        return json.load(f)
+
+
+def _sha256_file(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _sha256_lean_tree(root: Path) -> str:
+    digest = hashlib.sha256()
+    for path in sorted(root.rglob("*.lean")):
+        relative = path.relative_to(REPO_ROOT).as_posix()
+        digest.update(relative.encode("utf-8"))
+        digest.update(b"\n")
+        digest.update(path.read_bytes())
+        digest.update(b"\n")
+    return digest.hexdigest()
+
+
+def _load_lean_toolchain_ref() -> str:
+    with open(REPO_ROOT / "config" / "toolchains.json") as f:
+        toolchains = json.load(f)
+    version = toolchains["toolchains"]["lean"]["version"]
+    return f"leanprover/lean4:{version}" if version.startswith("v") else f"leanprover/lean4:v{version}"
 
 
 class TestArtifactExistsAndValid(unittest.TestCase):
@@ -264,6 +293,71 @@ class TestContractHashes(unittest.TestCase):
         )
 
 
+class TestProvenance(unittest.TestCase):
+    """Artifact provenance must match the current Lean tree and toolchain contract."""
+
+    def setUp(self):
+        self.artifact = _load_artifact()
+        self.provenance = self.artifact.get("provenance", {})
+
+    def test_provenance_is_dict(self):
+        self.assertIsInstance(self.provenance, dict)
+
+    def test_provenance_hash_fields_are_hex(self):
+        import re
+
+        hex_pattern = re.compile(r"^[0-9a-f]{64}$")
+        for key in (
+            "extractProgramSha256",
+            "leanSourceTreeSha256",
+            "generatedComparabilityContractSha256",
+            "proofPatternSpecSha256",
+        ):
+            self.assertIn(key, self.provenance, f"Missing provenance field '{key}'")
+            self.assertRegex(
+                self.provenance[key],
+                hex_pattern,
+                f"provenance['{key}'] is not a 64-char lowercase hex string",
+            )
+
+    def test_lean_toolchain_ref_matches_current_config(self):
+        self.assertEqual(
+            self.provenance.get("leanToolchainRef"),
+            _load_lean_toolchain_ref(),
+            "Artifact Lean toolchain ref does not match config/toolchains.json",
+        )
+
+    def test_extract_program_hash_matches_current_source(self):
+        self.assertEqual(
+            self.provenance.get("extractProgramSha256"),
+            _sha256_file(REPO_ROOT / "pipeline" / "lean" / "Doe" / "Extract.lean"),
+            "Artifact extractProgramSha256 is stale",
+        )
+
+    def test_generated_contract_hash_matches_current_source(self):
+        self.assertEqual(
+            self.provenance.get("generatedComparabilityContractSha256"),
+            _sha256_file(
+                REPO_ROOT / "pipeline" / "lean" / "Doe" / "Generated" / "ComparabilityContract.lean"
+            ),
+            "Artifact generatedComparabilityContractSha256 is stale",
+        )
+
+    def test_proof_pattern_spec_hash_matches_current_source(self):
+        self.assertEqual(
+            self.provenance.get("proofPatternSpecSha256"),
+            _sha256_file(PATTERN_SPEC_PATH),
+            "Artifact proofPatternSpecSha256 is stale",
+        )
+
+    def test_lean_source_tree_hash_matches_current_tree(self):
+        self.assertEqual(
+            self.provenance.get("leanSourceTreeSha256"),
+            _sha256_lean_tree(LEAN_SOURCE_DIR),
+            "Artifact leanSourceTreeSha256 does not match the current Lean source tree",
+        )
+
+
 class TestBoundsEliminations(unittest.TestCase):
     """If boundsEliminations array exists, verify each entry has required fields."""
 
@@ -423,6 +517,53 @@ class TestExtractScript(unittest.TestCase):
             "bash",
             first_line,
             "Extract script shebang does not reference bash",
+        )
+
+
+class TestProofPatternSpec(unittest.TestCase):
+    """Shared proof-pattern spec stays aligned with the extracted artifact."""
+
+    def setUp(self):
+        self.artifact = _load_artifact()
+        self.spec = _load_pattern_spec()
+
+    def test_pattern_spec_exists(self):
+        self.assertTrue(
+            PATTERN_SPEC_PATH.exists(),
+            f"Pattern spec not found at {PATTERN_SPEC_PATH}",
+        )
+
+    def test_bounds_pattern_ids_are_unique(self):
+        ids = [entry["id"] for entry in self.spec["boundsPatterns"]]
+        self.assertEqual(len(ids), len(set(ids)), "Duplicate bounds pattern ids in spec")
+
+    def test_validator_elision_ids_are_unique(self):
+        ids = [entry["id"] for entry in self.spec["validatorElisions"]]
+        self.assertEqual(len(ids), len(set(ids)), "Duplicate validator elision ids in spec")
+
+    def test_spec_bounds_theorems_exist_in_artifact_bounds_eliminations(self):
+        artifact_theorems = {
+            entry["theorem"] for entry in self.artifact.get("boundsEliminations", [])
+        }
+        missing = []
+        for entry in self.spec["boundsPatterns"]:
+            if entry["theorem"] not in artifact_theorems:
+                missing.append((entry["id"], entry["theorem"]))
+        self.assertFalse(
+            missing,
+            f"Shared proof-pattern spec references bounds theorems missing from artifact: {missing}",
+        )
+
+    def test_spec_validator_theorems_exist_in_artifact_theorem_inventory(self):
+        artifact_theorems = {thm["name"] for thm in self.artifact.get("theorems", [])}
+        missing = []
+        for entry in self.spec["validatorElisions"]:
+            for theorem in entry["requiredTheorems"]:
+                if theorem not in artifact_theorems:
+                    missing.append((entry["id"], theorem))
+        self.assertFalse(
+            missing,
+            f"Shared proof-pattern spec references validator theorems missing from artifact: {missing}",
         )
 
 
