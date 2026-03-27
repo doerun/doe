@@ -8,23 +8,57 @@
 #include "dropin_benchmark_ops.h"
 
 static const uint64_t ASYNC_TIMEOUT_MS = 5000;
+static const size_t FAILURE_DETAIL_CAPACITY = 256;
+static char g_failure_detail[256] = {0};
 
 typedef struct AdapterRequestState {
     volatile bool done;
     WGPURequestAdapterStatus status;
     WGPUAdapter adapter;
+    char message[256];
 } AdapterRequestState;
 
 typedef struct DeviceRequestState {
     volatile bool done;
     WGPURequestDeviceStatus status;
     WGPUDevice device;
+    char message[256];
 } DeviceRequestState;
 
 typedef struct QueueWorkDoneState {
     volatile bool done;
     WGPUQueueWorkDoneStatus status;
+    char message[256];
 } QueueWorkDoneState;
+
+static void clear_failure_detail(void) {
+    g_failure_detail[0] = '\0';
+}
+
+static void copy_failure_detail(char* out, size_t out_cap, WGPUStringView message) {
+    if (out == NULL || out_cap == 0) {
+        return;
+    }
+    out[0] = '\0';
+    if (message.data == NULL || message.length == 0) {
+        return;
+    }
+    size_t copy_len = message.length;
+    if (copy_len >= out_cap) {
+        copy_len = out_cap - 1;
+    }
+    memcpy(out, message.data, copy_len);
+    out[copy_len] = '\0';
+}
+
+static void update_global_failure_detail(const char* detail) {
+    clear_failure_detail();
+    if (detail == NULL || detail[0] == '\0') {
+        return;
+    }
+    strncpy(g_failure_detail, detail, FAILURE_DETAIL_CAPACITY - 1);
+    g_failure_detail[FAILURE_DETAIL_CAPACITY - 1] = '\0';
+}
 
 static uint64_t monotonic_time_ns(void) {
     struct timespec ts;
@@ -59,11 +93,11 @@ static void on_request_adapter(
     void* userdata1,
     void* userdata2
 ) {
-    (void)message;
     (void)userdata2;
     AdapterRequestState* state = (AdapterRequestState*)userdata1;
     state->status = status;
     state->adapter = adapter;
+    copy_failure_detail(state->message, sizeof(state->message), message);
     state->done = true;
 }
 
@@ -74,11 +108,11 @@ static void on_request_device(
     void* userdata1,
     void* userdata2
 ) {
-    (void)message;
     (void)userdata2;
     DeviceRequestState* state = (DeviceRequestState*)userdata1;
     state->status = status;
     state->device = device;
+    copy_failure_detail(state->message, sizeof(state->message), message);
     state->done = true;
 }
 
@@ -88,18 +122,24 @@ static void on_queue_work_done(
     void* userdata1,
     void* userdata2
 ) {
-    (void)message;
     (void)userdata2;
     QueueWorkDoneState* state = (QueueWorkDoneState*)userdata1;
     state->status = status;
+    copy_failure_detail(state->message, sizeof(state->message), message);
     state->done = true;
 }
 
-static bool request_adapter(WGPUInstance instance, WGPUAdapter* out_adapter, const char** failure) {
+static bool request_adapter_with_power_preference(
+    WGPUInstance instance,
+    WGPUPowerPreference power_preference,
+    WGPUAdapter* out_adapter,
+    const char** failure
+) {
     AdapterRequestState adapter_state = {
         .done = false,
         .status = WGPURequestAdapterStatus_Error,
         .adapter = NULL,
+        .message = {0},
     };
 
     WGPURequestAdapterCallbackInfo callback = WGPU_REQUEST_ADAPTER_CALLBACK_INFO_INIT;
@@ -108,19 +148,37 @@ static bool request_adapter(WGPUInstance instance, WGPUAdapter* out_adapter, con
     callback.userdata1 = &adapter_state;
 
     WGPURequestAdapterOptions options = WGPU_REQUEST_ADAPTER_OPTIONS_INIT;
+    options.powerPreference = power_preference;
     wgpuInstanceRequestAdapter(instance, &options, callback);
 
     if (!wait_for_flag(instance, &adapter_state.done, ASYNC_TIMEOUT_MS)) {
+        update_global_failure_detail("adapter request timed out while waiting for process events");
         *failure = "adapter_request_timeout";
         return false;
     }
     if (adapter_state.status != WGPURequestAdapterStatus_Success || adapter_state.adapter == NULL) {
+        update_global_failure_detail(adapter_state.message);
         *failure = "adapter_request_failed";
         return false;
     }
 
     *out_adapter = adapter_state.adapter;
     return true;
+}
+
+static bool request_adapter(WGPUInstance instance, WGPUAdapter* out_adapter, const char** failure) {
+    const WGPUPowerPreference requests[] = {
+        WGPUPowerPreference_HighPerformance,
+        WGPUPowerPreference_Undefined,
+        WGPUPowerPreference_LowPower,
+    };
+    for (size_t i = 0; i < sizeof(requests) / sizeof(requests[0]); ++i) {
+        if (request_adapter_with_power_preference(instance, requests[i], out_adapter, failure)) {
+            return true;
+        }
+    }
+    *failure = "adapter_request_failed";
+    return false;
 }
 
 static bool request_device(
@@ -133,6 +191,7 @@ static bool request_device(
         .done = false,
         .status = WGPURequestDeviceStatus_Error,
         .device = NULL,
+        .message = {0},
     };
 
     WGPURequestDeviceCallbackInfo callback = WGPU_REQUEST_DEVICE_CALLBACK_INFO_INIT;
@@ -144,10 +203,12 @@ static bool request_device(
     wgpuAdapterRequestDevice(adapter, &descriptor, callback);
 
     if (!wait_for_flag(instance, &device_state.done, ASYNC_TIMEOUT_MS)) {
+        update_global_failure_detail("device request timed out while waiting for process events");
         *failure = "device_request_timeout";
         return false;
     }
     if (device_state.status != WGPURequestDeviceStatus_Success || device_state.device == NULL) {
+        update_global_failure_detail(device_state.message);
         *failure = "device_request_failed";
         return false;
     }
@@ -164,6 +225,7 @@ static bool wait_for_queue_done(
     QueueWorkDoneState state = {
         .done = false,
         .status = WGPUQueueWorkDoneStatus_Error,
+        .message = {0},
     };
 
     WGPUQueueWorkDoneCallbackInfo callback = WGPU_QUEUE_WORK_DONE_CALLBACK_INFO_INIT;
@@ -174,10 +236,12 @@ static bool wait_for_queue_done(
     wgpuQueueOnSubmittedWorkDone(queue, callback);
 
     if (!wait_for_flag(instance, &state.done, ASYNC_TIMEOUT_MS)) {
+        update_global_failure_detail("queue.onSubmittedWorkDone timed out while waiting for process events");
         *failure = "queue_work_done_timeout";
         return false;
     }
     if (state.status != WGPUQueueWorkDoneStatus_Success) {
+        update_global_failure_detail(state.message);
         *failure = "queue_work_done_failed";
         return false;
     }
@@ -186,6 +250,7 @@ static bool wait_for_queue_done(
 
 bool dropin_bench_create_context(DropinContext* ctx, const char** failure) {
     memset(ctx, 0, sizeof(*ctx));
+    clear_failure_detail();
 
     WGPUInstanceDescriptor instance_desc = WGPU_INSTANCE_DESCRIPTOR_INIT;
     ctx->instance = wgpuCreateInstance(&instance_desc);
@@ -219,6 +284,10 @@ bool dropin_bench_create_context(DropinContext* ctx, const char** failure) {
     }
 
     return true;
+}
+
+const char* dropin_bench_failure_detail(void) {
+    return g_failure_detail;
 }
 
 void dropin_bench_destroy_context(DropinContext* ctx) {

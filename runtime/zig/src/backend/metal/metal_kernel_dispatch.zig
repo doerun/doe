@@ -27,6 +27,7 @@ pub const KernelDispatchResult = struct {
 pub fn run_kernel_dispatch(
     runtime: anytype,
     kernel: []const u8,
+    entry_point: ?[]const u8,
     x: u32,
     y: u32,
     z: u32,
@@ -35,13 +36,14 @@ pub fn run_kernel_dispatch(
     initialize_buffers_on_create: bool,
     bindings: ?[]const model.KernelBinding,
 ) !DispatchMetrics {
-    const result = try run_kernel_dispatch_timed(runtime, kernel, x, y, z, repeat, warmup, initialize_buffers_on_create, bindings, false);
+    const result = try run_kernel_dispatch_timed(runtime, kernel, entry_point, x, y, z, repeat, warmup, initialize_buffers_on_create, bindings, false);
     return result.metrics;
 }
 
 pub fn run_kernel_dispatch_timed(
     runtime: anytype,
     kernel: []const u8,
+    entry_point: ?[]const u8,
     x: u32,
     y: u32,
     z: u32,
@@ -53,7 +55,8 @@ pub fn run_kernel_dispatch_timed(
 ) !KernelDispatchResult {
     // Setup: pipeline compile, buffer allocation, warmup dispatches.
     const setup_start = common_timing.now_ns();
-    const pipeline = try runtime.ensure_kernel_pipeline(kernel);
+    const pipeline = try runtime.ensure_kernel_pipeline(kernel, entry_point);
+    const workgroup_size = try runtime.get_kernel_workgroup_size(kernel, entry_point);
 
     var buf_slots: [MAX_BINDING_SLOTS]?*anyopaque = [_]?*anyopaque{null} ** MAX_BINDING_SLOTS;
     var slot_count: u32 = 0;
@@ -80,9 +83,11 @@ pub fn run_kernel_dispatch_timed(
             y,
             z,
             warmup,
+            workgroup_size[0],
+            workgroup_size[1],
+            workgroup_size[2],
         ) orelse return error.InvalidState;
-        metal_bridge_command_buffer_commit(wcb);
-        metal_bridge_command_buffer_wait_completed(wcb);
+        commitAndWait(wcb);
         metal_bridge_release(wcb);
     }
     const setup_ns = common_timing.ns_delta(common_timing.now_ns(), setup_start);
@@ -108,9 +113,9 @@ pub fn run_kernel_dispatch_timed(
                 x,
                 y,
                 z,
-                0,
-                0,
-                0,
+                workgroup_size[0],
+                workgroup_size[1],
+                workgroup_size[2],
             );
         }
         runtime.timestamp_state.record_end(cb);
@@ -125,14 +130,16 @@ pub fn run_kernel_dispatch_timed(
             y,
             z,
             run_count,
+            workgroup_size[0],
+            workgroup_size[1],
+            workgroup_size[2],
         ) orelse return error.InvalidState;
     };
 
     const encode_ns = common_timing.ns_delta(common_timing.now_ns(), t_enc_start);
 
-    metal_bridge_command_buffer_commit(cmd_buf);
     const t_sub_start = common_timing.now_ns();
-    metal_bridge_command_buffer_wait_completed(cmd_buf);
+    commitAndWait(cmd_buf);
     const submit_wait_ns = common_timing.ns_delta(common_timing.now_ns(), t_sub_start);
 
     var gpu_elapsed_ns: u64 = 0;
@@ -153,4 +160,9 @@ pub fn run_kernel_dispatch_timed(
         .gpu_timestamps_attempted = want_ts,
         .gpu_timestamps_valid = want_ts and gpu_elapsed_ns > 0,
     };
+}
+
+fn commitAndWait(cmd_buf: ?*anyopaque) void {
+    metal_bridge_command_buffer_commit(cmd_buf);
+    metal_bridge_command_buffer_wait_completed(cmd_buf);
 }

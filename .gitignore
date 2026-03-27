@@ -17,6 +17,7 @@ zig/.zig-global-cache-sandbox/
 zig/zig-out/
 runtime/zig/.zig-cache/
 runtime/zig/zig-out/
+packages/doe-gpu/build/
 
 # Python cache artifacts
 bench/__pycache__/

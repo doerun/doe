@@ -47,6 +47,47 @@ def make_side(timing_source: str) -> dict[str, object]:
     }
 
 
+def make_prepared_session_side() -> dict[str, object]:
+    return {
+        "timingSources": ["doe-execution-total-ns"],
+        "timingClasses": ["operation"],
+        "commandSamples": [
+            {
+                "elapsedMs": 30.0,
+                "measuredMs": 20.0,
+                "commandRepeat": 1,
+                "timingNormalizationDivisor": 1.0,
+                "traceMeta": {
+                    "workloadUnitWallSource": "trace-meta-process-wall",
+                    "packagePreparedSession": True,
+                    "hostInputReadTotalNs": 0,
+                    "hostInputParseTotalNs": 0,
+                    "hostWorkloadPrepareTotalNs": 0,
+                    "hostExecutorInitTotalNs": 0,
+                    "hostCommandOrchestrationTotalNs": 3_000_000,
+                    "hostArtifactFinalizeTotalNs": 2_000_000,
+                },
+            },
+            {
+                "elapsedMs": 32.0,
+                "measuredMs": 21.0,
+                "commandRepeat": 1,
+                "timingNormalizationDivisor": 1.0,
+                "traceMeta": {
+                    "workloadUnitWallSource": "trace-meta-process-wall",
+                    "packagePreparedSession": True,
+                    "hostInputReadTotalNs": 0,
+                    "hostInputParseTotalNs": 0,
+                    "hostWorkloadPrepareTotalNs": 0,
+                    "hostExecutorInitTotalNs": 0,
+                    "hostCommandOrchestrationTotalNs": 4_000_000,
+                    "hostArtifactFinalizeTotalNs": 2_000_000,
+                },
+            },
+        ],
+    }
+
+
 class TimingInterpretationNamingTests(unittest.TestCase):
     def test_emits_workload_unit_wall_with_legacy_alias(self) -> None:
         interpretation = build_timing_interpretation(
@@ -83,6 +124,24 @@ class TimingInterpretationNamingTests(unittest.TestCase):
         self.assertEqual(
             host_overhead["buckets"]["inputRead"].get("traceMetaField"),
             "hostInputReadTotalNs",
+        )
+
+    def test_prepared_session_host_overhead_stays_within_selected_gap(self) -> None:
+        interpretation = build_timing_interpretation(
+            left=make_prepared_session_side(),
+            right=make_prepared_session_side(),
+        )
+
+        host_overhead = interpretation.get("hostOverheadBreakdown")
+        self.assertIsInstance(host_overhead, dict)
+        self.assertTrue(host_overhead.get("available"))
+        self.assertLessEqual(
+            host_overhead["attributedHostOverhead"]["leftStatsMs"]["p50Ms"],
+            host_overhead["selectedGap"]["leftStatsMs"]["p50Ms"],
+        )
+        self.assertGreaterEqual(
+            host_overhead["unattributedGapRemainder"]["leftStatsMs"]["p50Ms"],
+            0.0,
         )
 
 

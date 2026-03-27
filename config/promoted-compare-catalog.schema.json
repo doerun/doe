@@ -1,0 +1,122 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Doe promoted compare catalog",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "entries"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 2
+    },
+    "entries": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/entry"
+      },
+      "minItems": 1
+    }
+  },
+  "$defs": {
+    "surface": {
+      "type": "string",
+      "enum": [
+        "native",
+        "direct",
+        "package"
+      ]
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "default",
+        "cold",
+        "warm"
+      ]
+    },
+    "entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "backend",
+        "surface",
+        "mode",
+        "benchmarkClass",
+        "leftExecutorId",
+        "rightExecutorId",
+        "configPath",
+        "description"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "backend": {
+          "type": "string",
+          "minLength": 1
+        },
+        "surface": {
+          "$ref": "#/$defs/surface"
+        },
+        "preset": {
+          "type": "string",
+          "minLength": 1
+        },
+        "workload": {
+          "type": "string",
+          "minLength": 1
+        },
+        "mode": {
+          "$ref": "#/$defs/mode"
+        },
+        "benchmarkClass": {
+          "type": "string",
+          "minLength": 1
+        },
+        "leftExecutorId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "rightExecutorId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "configPath": {
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "oneOf": [
+        {
+          "required": [
+            "preset"
+          ],
+          "not": {
+            "required": [
+              "workload"
+            ]
+          }
+        },
+        {
+          "required": [
+            "workload"
+          ],
+          "not": {
+            "required": [
+              "preset"
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

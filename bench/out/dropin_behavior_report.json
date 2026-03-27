@@ -1,0 +1,50 @@
+{
+  "artifact": "runtime/zig/zig-out/lib/libwebgpu_doe.dylib",
+  "compileCommand": [
+    "cc",
+    "-std=c11",
+    "-O2",
+    "-Wall",
+    "-Wextra",
+    "-Werror",
+    "-I",
+    "/Users/xyz/deco/doe/bench/vendor/dawn/third_party/webgpu-headers/src",
+    "/Users/xyz/deco/doe/bench/drop-in/dropin_behavior_suite.c",
+    "/Users/xyz/deco/doe/runtime/zig/zig-out/lib/libwebgpu_doe.dylib",
+    "-Wl,-rpath,/Users/xyz/deco/doe/runtime/zig/zig-out/lib",
+    "-o",
+    "/var/folders/85/l5dptg296tlfx03cd_k7h0l80000gn/T/fawn-dropin-behavior-99qdnxho/dropin_behavior_suite"
+  ],
+  "compileReturnCode": 0,
+  "compileStderr": "ld: warning: building for macOS-26.0, but linking with dylib '@rpath/libwebgpu_doe.dylib' which was built for newer version 26.3\n",
+  "compileStdout": "",
+  "error": "behavior suite reported compatibility failure",
+  "generatedAtUtc": "2026-03-27T01:14:42.031876Z",
+  "headerDir": "bench/vendor/dawn/third_party/webgpu-headers/src",
+  "outputTimestamp": "",
+  "pass": false,
+  "runCommand": [
+    "/var/folders/85/l5dptg296tlfx03cd_k7h0l80000gn/T/fawn-dropin-behavior-99qdnxho/dropin_behavior_suite"
+  ],
+  "runReturnCode": 1,
+  "runStderr": "dropin_behavior_adapter_message: metal default device unavailable\n",
+  "runStdout": "{\"schemaVersion\":1,\"pass\":false,\"instanceCreate\":true,\"adapterRequest\":false,\"deviceRequest\":false,\"queueOps\":false,\"errorCapture\":false,\"lifecycle\":true,\"adapterStatus\":3,\"deviceStatus\":0,\"queueWorkDoneStatus\":0,\"popErrorScopeStatus\":0,\"popErrorType\":0,\"failure\":\"adapter_request_failed\"}\n",
+  "schemaVersion": 1,
+  "source": "bench/drop-in/dropin_behavior_suite.c",
+  "suiteResult": {
+    "adapterRequest": false,
+    "adapterStatus": 3,
+    "deviceRequest": false,
+    "deviceStatus": 0,
+    "errorCapture": false,
+    "failure": "adapter_request_failed",
+    "instanceCreate": true,
+    "lifecycle": true,
+    "pass": false,
+    "popErrorScopeStatus": 0,
+    "popErrorType": 0,
+    "queueOps": false,
+    "queueWorkDoneStatus": 0,
+    "schemaVersion": 1
+  }
+}

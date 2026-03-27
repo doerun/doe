@@ -178,6 +178,10 @@
       "data": "config/backend-workload-cohorts.json"
     },
     {
+      "schema": "config/promoted-compare-catalog.schema.json",
+      "data": "config/promoted-compare-catalog.json"
+    },
+    {
       "schema": "config/tool-surfaces.schema.json",
       "data": "config/tool-surfaces.json"
     },
@@ -188,6 +192,10 @@
     {
       "schema": "bench/ir/benchmark_ir.schema.json",
       "data": "bench/ir/gemma3_270m.json"
+    },
+    {
+      "schema": "bench/ir/benchmark_ir.schema.json",
+      "data": "bench/ir/gemma3_270m_literal.json"
     },
     {
       "schema": "bench/ir/benchmark_ir.schema.json",

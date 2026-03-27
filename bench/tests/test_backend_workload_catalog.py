@@ -221,6 +221,15 @@ class BackendWorkloadCatalogTests(unittest.TestCase):
                 1170,
                 {"governed"},
             ),
+            "inference_gemma3_270m_literal_prefill_32tok_decode_1tok": (
+                "bench/ir/gemma3_270m_literal.json",
+                "bench/plans/generated/inference_gemma3_270m_literal_prefill_32tok_decode_1tok.plan.json",
+                "bench/plans/generated/compat/inference_gemma3_270m_literal_prefill_32tok_decode_1tok_commands.json",
+                49,
+                13,
+                36,
+                {"exploration"},
+            ),
             "inference_gemma3_1b_prefill_32tok": (
                 "bench/ir/gemma3_1b.json",
                 "bench/plans/generated/inference_gemma3_1b_prefill_32tok.plan.json",
@@ -295,6 +304,7 @@ class BackendWorkloadCatalogTests(unittest.TestCase):
             "inference_gemma3_270m_prefill_32tok",
             "inference_gemma3_270m_decode_1tok",
             "inference_gemma3_270m_prefill_64tok_decode_64tok",
+            "inference_gemma3_270m_literal_prefill_32tok_decode_1tok",
             "inference_gemma3_1b_prefill_32tok",
             "inference_gemma3_1b_decode_1tok",
             "inference_gemma3_1b_prefill_64tok_decode_64tok",
@@ -304,7 +314,12 @@ class BackendWorkloadCatalogTests(unittest.TestCase):
         for workload_id, item in rows.items():
             shared = item["shared"]
             lane = item["lanes"]["apple_metal_extended"]
-            expected_ir_path = "bench/ir/gemma3_1b.json" if "_1b_" in workload_id else "bench/ir/gemma3_270m.json"
+            if "_1b_" in workload_id:
+                expected_ir_path = "bench/ir/gemma3_1b.json"
+            elif "_literal_" in workload_id:
+                expected_ir_path = "bench/ir/gemma3_270m_literal.json"
+            else:
+                expected_ir_path = "bench/ir/gemma3_270m.json"
             self.assertEqual(shared["irPath"], expected_ir_path)
             self.assertEqual(shared["irScenario"], workload_id)
             self.assertNotIn("commandsPath", lane)

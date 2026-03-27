@@ -29,11 +29,16 @@ if str(BENCH_ROOT) not in sys.path:
 from bench.lib import output_paths
 
 
+def default_dropin_artifact() -> str:
+    extension = "dylib" if sys.platform == "darwin" else "so"
+    return f"runtime/zig/zig-out/lib/libwebgpu_doe.{extension}"
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--artifact",
-        default="runtime/zig/zig-out/lib/libwebgpu_doe.so",
+        default=default_dropin_artifact(),
         help="Path to candidate drop-in shared library artifact.",
     )
     parser.add_argument(

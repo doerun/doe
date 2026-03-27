@@ -3,8 +3,14 @@ C:rope
 C:residual
 C:gelu
 C:matmul-gemv
-C:rmsnorm
 C:matmul-tiled
 C:attention-prefill
 C:attention-decode
-C:sample
+C:gelu_gated
+C:rmsnorm#main_weight_offset
+C:matmul_f16w_f32a_tiled
+C:attention_small_f16kv
+C:matmul_gemv_subgroup#main_vec4
+C:attention_decode_online_f16kv
+C:matmul_gemv_subgroup#main_multicol
+C:sample#sample_single_pass

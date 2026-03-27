@@ -383,6 +383,7 @@ fn execute_kernel_dispatch(self: *ZigMetalBackend, kd: model.KernelDispatchComma
     const want_ts = gpu_timestamps_wanted(self);
     const result = try rt.run_kernel_dispatch_timed(
         kd.kernel,
+        kd.entry_point,
         kd.x,
         kd.y,
         kd.z,
@@ -531,7 +532,7 @@ fn execute_map_async(self: *ZigMetalBackend, cmd: model.MapAsyncCommand) !webgpu
 fn prewarm_kernel_dispatch(ctx: *anyopaque, kernel: []const u8, bindings: ?[]const model.KernelBinding) anyerror!void {
     const self = cast(ctx);
     const rt = get_runtime(self);
-    _ = try rt.ensure_kernel_pipeline(kernel);
+    _ = try rt.ensure_kernel_pipeline(kernel, null);
     if (bindings) |bs| {
         for (bs) |b| {
             if (b.resource_kind != .buffer) continue;

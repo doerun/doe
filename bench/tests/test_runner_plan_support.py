@@ -17,7 +17,13 @@ for _path_entry in (str(REPO_ROOT), str(BENCH_ROOT)):
     if _path_entry not in sys.path:
         sys.path.insert(0, _path_entry)
 
-from bench.native_compare_modules.runner import command_for, materialize_repeated_plan
+from bench.native_compare_modules.runner import (
+    command_for,
+    extract_timing_metrics_ms,
+    materialize_repeated_plan,
+    trace_meta_records_terminal_execution_outcome,
+    workload_unit_wall_from_trace_meta,
+)
 from bench.native_compare_modules.workload_validation import (
     enforce_strict_plan_boundary_symmetry,
 )
@@ -92,6 +98,55 @@ class RunnerPlanSupportTests(unittest.TestCase):
                 right_command_template="runtime/zig/zig-out/bin/dawn-plan-executor --plan {plan}",
                 comparability_mode="strict",
             )
+
+    def test_workload_unit_wall_from_trace_meta_uses_prepared_session_wall(self) -> None:
+        self.assertEqual(
+            workload_unit_wall_from_trace_meta(
+                {
+                    "workloadUnitWallSource": "trace-meta-process-wall",
+                    "processWallMs": 12.5,
+                }
+            ),
+            12.5,
+        )
+        self.assertIsNone(workload_unit_wall_from_trace_meta({}))
+
+    def test_workload_unit_wall_from_trace_meta_rejects_unknown_source(self) -> None:
+        self.assertIsNone(
+            workload_unit_wall_from_trace_meta(
+                {
+                    "workloadUnitWallSource": "trace-meta-processwall",
+                    "processWallMs": 12.5,
+                }
+            )
+        )
+
+    def test_extract_timing_metrics_ms_drops_cpu_when_only_inner_wall_boundary_moves(self) -> None:
+        metrics = extract_timing_metrics_ms(
+            {
+                "workloadUnitWallSource": "trace-meta-process-wall",
+                "processWallMs": 12.5,
+            },
+            wall_ms=12.5,
+            cpu_ms=None,
+        )
+        self.assertEqual(metrics["wall_time"], 12.5)
+        self.assertIsNone(metrics["cpu_time"])
+
+    def test_trace_meta_records_terminal_execution_outcome_accepts_error_or_unsupported(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="doe-runner-trace-meta-") as tmpdir:
+            trace_meta_path = Path(tmpdir) / "trace.meta.json"
+            trace_meta_path.write_text(
+                json.dumps(
+                    {
+                        "executionErrorCount": 1,
+                        "executionUnsupportedCount": 0,
+                        "executionSkippedCount": 0,
+                    }
+                ),
+                encoding="utf-8",
+            )
+            self.assertTrue(trace_meta_records_terminal_execution_outcome(trace_meta_path))
 
 
 if __name__ == "__main__":

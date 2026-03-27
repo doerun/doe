@@ -44,7 +44,6 @@ import {
   libraryFlavor,
 } from './shared/public-surface.js';
 import {
-  shaderCheckFailure,
   enrichNativeCompilerError,
   compilerErrorFromMessage,
   pipelineErrorFromError,
@@ -72,6 +71,8 @@ import {
 } from './shared/native-metal-canvas-backend.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+const PACKAGE_ROOT = resolve(__dirname, '..', '..', '..');
+const WORKSPACE_ROOT = resolve(PACKAGE_ROOT, '..', '..');
 const require = createRequire(import.meta.url);
 const TEXTURE_DIMENSION_MAP = Object.freeze({
   '1d': 1,
@@ -104,7 +105,7 @@ const WHOLE_SIZE_SENTINEL = -1;
 const addon = loadAddon();
 const DOE_LIB_PATH = resolveDoeLibraryPath();
 const DOE_BUILD_METADATA = loadDoeBuildMetadata({
-  packageRoot: resolve(__dirname, '..'),
+  packageRoot: PACKAGE_ROOT,
   libraryPath: DOE_LIB_PATH ?? '',
 });
 let libraryLoaded = false;
@@ -118,20 +119,21 @@ export {
 
 
 function loadAddon() {
-  const prebuildPath = resolve(__dirname, '..', 'prebuilds', `${process.platform}-${process.arch}`, 'doe_napi.node');
-  try {
-    return require('../build/Release/doe_napi.node');
-  } catch {
+  const candidates = [
+    resolve(PACKAGE_ROOT, 'build', 'Release', 'doe_napi.node'),
+    resolve(PACKAGE_ROOT, 'build', 'Debug', 'doe_napi.node'),
+    resolve(__dirname, '..', 'build', 'Release', 'doe_napi.node'),
+    resolve(__dirname, '..', 'build', 'Debug', 'doe_napi.node'),
+    resolve(PACKAGE_ROOT, 'prebuilds', `${process.platform}-${process.arch}`, 'doe_napi.node'),
+  ];
+  for (const candidate of candidates) {
     try {
-      return require('../build/Debug/doe_napi.node');
+      return require(candidate);
     } catch {
-      try {
-        return require(prebuildPath);
-      } catch {
-        return null;
-      }
+      // Keep searching. The common local failure is an incompatible stale binary.
     }
   }
+  return null;
 }
 
 function resolveDoeLibraryPath() {
@@ -141,9 +143,9 @@ function resolveDoeLibraryPath() {
   const candidates = [
     process.env.DOE_WEBGPU_LIB,
     process.env.DOE_LIB,
-    resolve(__dirname, '..', '..', '..', 'runtime', 'zig', 'zig-out', 'lib', `libwebgpu_doe.${ext}`),
-    resolve(__dirname, '..', '..', '..', 'zig', 'zig-out', 'lib', `libwebgpu_doe.${ext}`),
-    resolve(__dirname, '..', 'prebuilds', `${process.platform}-${process.arch}`, `libwebgpu_doe.${ext}`),
+    resolve(WORKSPACE_ROOT, 'runtime', 'zig', 'zig-out', 'lib', `libwebgpu_doe.${ext}`),
+    resolve(WORKSPACE_ROOT, 'zig', 'zig-out', 'lib', `libwebgpu_doe.${ext}`),
+    resolve(PACKAGE_ROOT, 'prebuilds', `${process.platform}-${process.arch}`, `libwebgpu_doe.${ext}`),
     resolve(process.cwd(), 'runtime', 'zig', 'zig-out', 'lib', `libwebgpu_doe.${ext}`),
     resolve(process.cwd(), 'zig', 'zig-out', 'lib', `libwebgpu_doe.${ext}`),
   ];
@@ -1040,20 +1042,9 @@ const nodeEncoderBackend = {
   },
   commandEncoderFinish(encoder) {
     const cmds = encoder._commands;
-    if (
-      process.platform === 'darwin'
-      && encoder._native === null
-      && cmds.length === 2
-      && cmds[0].t === 0
-      && cmds[1].t === 1
-    ) {
+    if (encoder._native === null) {
       encoder._finished = true;
       return { _commands: cmds, _batched: true };
-    }
-    if (
-      encoder._native === null
-    ) {
-      ensureNodeCommandEncoderNative(encoder);
     }
     encoder._finished = true;
     const cmd = addon.commandEncoderFinish(encoder._native);
@@ -1171,9 +1162,15 @@ const fullSurfaceBackend = {
   queueSubmit(queue, queueNative, buffers) {
     const deviceNative = assertLiveResource(queue._device, 'GPUQueue.submit', 'GPUDevice');
     queue._submittedSerial += 1;
-    if (buffers.length === 1 && buffers[0]?._batched) {
+    if (buffers.length === 1 && buffers[0]?._batched && Array.isArray(buffers[0]._commands)) {
       failIfSubmittedCommandBuffer(buffers[0], 0);
       const cmds = buffers[0]._commands;
+      if (cmds.length === 0) {
+        queue.markSubmittedWorkDone();
+        consumeSubmittedCommandBuffers(buffers);
+        presentPendingCanvasContexts(queue);
+        return;
+      }
       if (
         cmds.length === 2
         && cmds[0]?.t === 0
@@ -1201,6 +1198,17 @@ const fullSurfaceBackend = {
         presentPendingCanvasContexts(queue);
         return;
       }
+      addon.submitBatched(deviceNative, queueNative, cmds);
+      if (
+        cmds.length === 2
+        && cmds[0]?.t === 0
+        && cmds[1]?.t === 1
+      ) {
+        queue.markSubmittedWorkDone();
+      }
+      consumeSubmittedCommandBuffers(buffers);
+      presentPendingCanvasContexts(queue);
+      return;
     }
     if (buffers.every((commandBuffer) => commandBuffer?._batched && Array.isArray(commandBuffer._commands))) {
       for (let index = 0; index < buffers.length; index += 1) {
@@ -1209,6 +1217,12 @@ const fullSurfaceBackend = {
       const allCommands = [];
       for (const cb of buffers) {
         allCommands.push(...cb._commands);
+      }
+      if (allCommands.length === 0) {
+        queue.markSubmittedWorkDone();
+        consumeSubmittedCommandBuffers(buffers);
+        presentPendingCanvasContexts(queue);
+        return;
       }
       addon.submitBatched(deviceNative, queueNative, allCommands);
       if (
@@ -1254,6 +1268,9 @@ const fullSurfaceBackend = {
     );
   },
   async queueOnSubmittedWorkDone(queue, queueNative) {
+    if (!queue.hasPendingSubmissions()) {
+      return;
+    }
     try {
       addon.queueFlush(queue._instance, queueNative);
       queue.markSubmittedWorkDone();
@@ -1361,10 +1378,6 @@ const fullSurfaceBackend = {
     return addon.createBuffer(assertLiveResource(device, 'GPUDevice.createBuffer', 'GPUDevice'), validated);
   },
   deviceCreateShaderModule(device, code, compilationHints, label = null) {
-    const preflight = preflightShaderSource(code);
-    if (preflight.ok === false) {
-      shaderCheckFailure('GPUDevice.createShaderModule', preflight);
-    }
     try {
       return addon.createShaderModule(
         assertLiveResource(device, 'GPUDevice.createShaderModule', 'GPUDevice'),

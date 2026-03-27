@@ -26,7 +26,7 @@ pub fn run_dispatch(runtime: anytype, x: u32, y: u32, z: u32, queue_sync_mode: w
     if (runtime.streaming_cmd_buf != null or runtime.has_deferred_submissions or runtime.outstanding_cmd_buf != null) {
         _ = try runtime.flush_queue();
     }
-    const pipeline = try runtime.ensure_kernel_pipeline(DEFAULT_DISPATCH_KERNEL);
+    const pipeline = try runtime.ensure_kernel_pipeline(DEFAULT_DISPATCH_KERNEL, null);
     const encode_start = common_timing.now_ns();
     const cmd_buf = metal_bridge_encode_compute_dispatch(runtime.queue, pipeline, null, 0, x, y, z) orelse return error.InvalidState;
     const encode_ns = common_timing.ns_delta(common_timing.now_ns(), encode_start);
@@ -44,7 +44,7 @@ pub fn run_dispatch_indirect(runtime: anytype, x: u32, y: u32, z: u32, queue_syn
     if (runtime.streaming_cmd_buf != null or runtime.has_deferred_submissions or runtime.outstanding_cmd_buf != null) {
         _ = try runtime.flush_queue();
     }
-    const pipeline = try runtime.ensure_kernel_pipeline(DEFAULT_DISPATCH_KERNEL);
+    const pipeline = try runtime.ensure_kernel_pipeline(DEFAULT_DISPATCH_KERNEL, null);
     const indirect_buffer = try ensure_dispatch_indirect_args_buffer(runtime);
     try write_dispatch_indirect_args(indirect_buffer, x, y, z);
     const encode_start = common_timing.now_ns();

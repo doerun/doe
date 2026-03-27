@@ -15,6 +15,7 @@ const std = @import("std");
 const dispatch_proof_match = @import("dispatch_proof_match.zig");
 const ir = @import("ir.zig");
 const lean_proof = @import("../lean_proof.zig");
+const robustness_static_bounds = @import("robustness_static_bounds.zig");
 
 pub const TransformError = error{
     OutOfMemory,
@@ -62,7 +63,12 @@ fn transform_function(
                 switch (module.types.get(base_ty)) {
                     .array => |arr| {
                         if (arr.len) |len| {
-                            if (len > 0) try clamp_sized(allocator, module, function, i, len);
+                            if (len > 0) {
+                                if (robustness_static_bounds.sizedArrayIndexProvablyInBounds(module, function, i, index_data.base, index_data.index, len)) {
+                                    continue;
+                                }
+                                try clamp_sized(allocator, module, function, i, len);
+                            }
                         } else {
                             if (config.elide_proven_bounds) {
                                 if (dispatch_proof_match.try_elide_storage_index(module, function, function_id, i, index_data)) |precondition| {

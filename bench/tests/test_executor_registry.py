@@ -48,6 +48,16 @@ class ExecutorRegistryTests(unittest.TestCase):
         self.assertIn("--provider doe", template)
         self.assertEqual(resolve_executor_boundary("doe_node_webgpu"), "plan")
 
+    def test_resolves_prepared_node_webgpu_executors(self) -> None:
+        dawn_template = resolve_executor_command_template("dawn_node_webgpu_prepared")
+        doe_template = resolve_executor_command_template("doe_node_webgpu_prepared")
+        self.assertIn("--provider dawn", dawn_template)
+        self.assertIn("--provider doe", doe_template)
+        self.assertIn("--prepared-session", dawn_template)
+        self.assertIn("--prepared-session", doe_template)
+        self.assertEqual(resolve_executor_boundary("dawn_node_webgpu_prepared"), "plan")
+        self.assertEqual(resolve_executor_boundary("doe_node_webgpu_prepared"), "plan")
+
     def test_resolves_direct_dawn_executor(self) -> None:
         template = resolve_executor_command_template("dawn_direct_metal")
         self.assertIn("dawn-plan-executor", template)

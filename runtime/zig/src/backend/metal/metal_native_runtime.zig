@@ -66,6 +66,7 @@ pub const PendingUpload = struct {
 pub const KernelPipeline = struct {
     library: ?*anyopaque,
     pipeline: ?*anyopaque,
+    workgroup_size: [3]u32 = .{ 0, 0, 0 },
 };
 
 pub const IcbKey = struct {
@@ -382,19 +383,22 @@ pub const NativeMetalRuntime = struct {
     pub fn run_kernel_dispatch(
         self: *NativeMetalRuntime,
         kernel: []const u8,
+        entry_point: ?[]const u8,
         x: u32,
         y: u32,
         z: u32,
         repeat: u32,
         warmup: u32,
+        initialize_buffers_on_create: bool,
         bindings: ?[]const model.KernelBinding,
     ) !DispatchMetrics {
-        return kernel_dispatch.run_kernel_dispatch(self, kernel, x, y, z, repeat, warmup, bindings);
+        return kernel_dispatch.run_kernel_dispatch(self, kernel, entry_point, x, y, z, repeat, warmup, initialize_buffers_on_create, bindings);
     }
 
     pub fn run_kernel_dispatch_timed(
         self: *NativeMetalRuntime,
         kernel: []const u8,
+        entry_point: ?[]const u8,
         x: u32,
         y: u32,
         z: u32,
@@ -404,7 +408,7 @@ pub const NativeMetalRuntime = struct {
         bindings: ?[]const model.KernelBinding,
         record_timestamps: bool,
     ) !KernelDispatchResult {
-        return kernel_dispatch.run_kernel_dispatch_timed(self, kernel, x, y, z, repeat, warmup, initialize_buffers_on_create, bindings, record_timestamps);
+        return kernel_dispatch.run_kernel_dispatch_timed(self, kernel, entry_point, x, y, z, repeat, warmup, initialize_buffers_on_create, bindings, record_timestamps);
     }
 
     pub fn run_dispatch(self: *NativeMetalRuntime, x: u32, y: u32, z: u32, queue_sync_mode: webgpu.QueueSyncMode) !DispatchMetrics {
@@ -618,7 +622,7 @@ pub const NativeMetalRuntime = struct {
                     const ct0 = common_timing.now_ns();
                     var compute_warmed: u64 = 0;
                     for (compute_keys) |key| {
-                        if (resource_runtime.ensure_kernel_pipeline(self, key) catch null) |_| {
+                        if (resource_runtime.ensure_kernel_pipeline(self, key, null) catch null) |_| {
                             compute_warmed +%= 1;
                         }
                     }
@@ -633,8 +637,12 @@ pub const NativeMetalRuntime = struct {
         cleanup.release_deferred(&self.deferred_releases);
     }
 
-    pub fn ensure_kernel_pipeline(self: *NativeMetalRuntime, kernel: []const u8) !?*anyopaque {
-        return resource_runtime.ensure_kernel_pipeline(self, kernel);
+    pub fn ensure_kernel_pipeline(self: *NativeMetalRuntime, kernel: []const u8, entry_point: ?[]const u8) !?*anyopaque {
+        return resource_runtime.ensure_kernel_pipeline(self, kernel, entry_point);
+    }
+
+    pub fn get_kernel_workgroup_size(self: *NativeMetalRuntime, kernel: []const u8, entry_point: ?[]const u8) ![3]u32 {
+        return resource_runtime.get_kernel_workgroup_size(self, kernel, entry_point);
     }
 
     pub fn ensure_compute_buffer(self: *NativeMetalRuntime, handle: u64, size: u64, initialize_buffers_on_create: bool) !?*anyopaque {

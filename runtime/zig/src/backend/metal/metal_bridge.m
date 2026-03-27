@@ -324,6 +324,26 @@ static MTLIndexType wgpu_to_mtl_index_type(uint32_t format) {
 // Core device / buffer / blit
 // ============================================================
 
+static void ensure_headless_application_ready(void) {
+    [NSApplication sharedApplication];
+    [NSApp setActivationPolicy:NSApplicationActivationPolicyProhibited];
+}
+
+static MetalHandle create_default_device_handle(void) {
+    ensure_headless_application_ready();
+    id<MTLDevice> device = MTLCreateSystemDefaultDevice();
+#if TARGET_OS_OSX
+    if (device == nil) {
+        NSArray<id<MTLDevice>>* devices = MTLCopyAllDevices();
+        if (devices.count > 0) {
+            device = devices.firstObject;
+        }
+    }
+#endif
+    if (device == nil) return NULL;
+    return (MetalHandle)CFBridgingRetain(device);
+}
+
 @interface MetalSurfaceHost : NSObject
 @property(nonatomic, strong) NSWindow* window;
 @property(nonatomic, strong) NSView* view;
@@ -340,8 +360,7 @@ static MTLIndexType wgpu_to_mtl_index_type(uint32_t format) {
         return nil;
     }
 
-    [NSApplication sharedApplication];
-    [NSApp setActivationPolicy:NSApplicationActivationPolicyProhibited];
+    ensure_headless_application_ready();
 
     NSRect frame = NSMakeRect(0.0, 0.0, 64.0, 64.0);
     self.window = [[NSWindow alloc] initWithContentRect:frame
@@ -387,9 +406,15 @@ static MTLIndexType wgpu_to_mtl_index_type(uint32_t format) {
 @end
 
 MetalHandle metal_bridge_create_default_device(void) {
-    id<MTLDevice> device = MTLCreateSystemDefaultDevice();
-    if (device == nil) return NULL;
-    return (MetalHandle)CFBridgingRetain(device);
+    if ([NSThread isMainThread]) {
+        return create_default_device_handle();
+    }
+
+    __block MetalHandle handle = NULL;
+    dispatch_sync(dispatch_get_main_queue(), ^{
+        handle = create_default_device_handle();
+    });
+    return handle;
 }
 
 MetalHandle metal_bridge_create_surface_host(MetalHandle* layer_out) {
@@ -1267,7 +1292,10 @@ MetalHandle metal_bridge_encode_compute_dispatch_batch(
     uint32_t     x,
     uint32_t     y,
     uint32_t     z,
-    uint32_t     repeat_count)
+    uint32_t     repeat_count,
+    uint32_t     wg_x,
+    uint32_t     wg_y,
+    uint32_t     wg_z)
 {
     id<MTLCommandQueue>          queue    = (__bridge id<MTLCommandQueue>)queue_h;
     id<MTLComputePipelineState>  pipeline = (__bridge id<MTLComputePipelineState>)pipeline_h;
@@ -1275,16 +1303,20 @@ MetalHandle metal_bridge_encode_compute_dispatch_batch(
     id<MTLCommandBuffer> cmd_buf = [queue commandBufferWithUnretainedReferences];
     if (cmd_buf == nil) return NULL;
 
-    NSUInteger max_tg = pipeline.maxTotalThreadsPerThreadgroup;
-    if (max_tg == 0) max_tg = 256;
     MTLSize tg_size;
-    if (y > 1) {
-        // 2D grid: distribute threadgroup threads across X and Y.
-        NSUInteger tg_x = (NSUInteger)sqrt((double)max_tg);
-        while (tg_x > 1 && max_tg % tg_x != 0) tg_x--;
-        tg_size = MTLSizeMake(tg_x, max_tg / tg_x, 1);
+    if (wg_x > 0) {
+        tg_size = MTLSizeMake(wg_x, wg_y > 0 ? wg_y : 1, wg_z > 0 ? wg_z : 1);
     } else {
-        tg_size = MTLSizeMake(max_tg, 1, 1);
+        NSUInteger max_tg = pipeline.maxTotalThreadsPerThreadgroup;
+        if (max_tg == 0) max_tg = 256;
+        if (y > 1) {
+            // 2D grid: distribute threadgroup threads across X and Y.
+            NSUInteger tg_x = (NSUInteger)sqrt((double)max_tg);
+            while (tg_x > 1 && max_tg % tg_x != 0) tg_x--;
+            tg_size = MTLSizeMake(tg_x, max_tg / tg_x, 1);
+        } else {
+            tg_size = MTLSizeMake(max_tg, 1, 1);
+        }
     }
     MTLSize grid_size = MTLSizeMake(x, y, z);
 

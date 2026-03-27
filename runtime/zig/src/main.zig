@@ -6,6 +6,7 @@ const execution = @import("execution.zig");
 const operator_artifacts = @import("operator_artifacts.zig");
 const semantic_trace = @import("semantic_trace.zig");
 const trace = @import("trace.zig");
+const trace_jsonl_emit = @import("trace_jsonl_emit.zig");
 const replay = @import("replay.zig");
 const main_print = @import("main_print.zig");
 const lean_proof = @import("lean_proof.zig");
@@ -192,17 +193,7 @@ fn prewarmKernelDispatches(ctx: *execution.ExecutionContext, commands: []const m
     }
 }
 
-const BufferedTraceRow = struct {
-    seq: usize,
-    command_label: []const u8,
-    kernel_name: ?[]const u8,
-    semantic: semantic_trace.SemanticContext,
-    decision: quirk.runtime.DispatchDecision,
-    timestamp_ns: u64,
-    hash: u64,
-    previous_hash: u64,
-    execution_result: ?execution.ExecutionResult,
-};
+const BufferedTraceRow = trace_jsonl_emit.BufferedTraceRow;
 
 pub fn main() !void {
     const allocator = std.heap.page_allocator;
@@ -240,6 +231,9 @@ pub fn main() !void {
     var host_kernel_prewarm_total_ns: u64 = 0;
     var host_command_orchestration_total_ns: u64 = 0;
     var host_artifact_finalize_total_ns: u64 = 0;
+    var host_artifact_trace_jsonl_serialize_total_ns: u64 = 0;
+    var host_artifact_trace_jsonl_write_total_ns: u64 = 0;
+    var host_artifact_operator_manifest_finalize_total_ns: u64 = 0;
 
     var i: usize = 1;
     while (i < argv.len) {
@@ -742,26 +736,14 @@ pub fn main() !void {
     const artifact_finalize_start_ns = nowNs();
     if (emit_trace_jsonl) |path| {
         if (buffered_trace_rows) |*rows| {
-            const trace_file = try std.fs.cwd().createFile(path, .{});
-            defer trace_file.close();
-            const trace_writer = trace_file.deprecatedWriter();
-            for (rows.items) |row| {
-                try trace.printTraceLineWithSemantic(
-                    trace_writer,
-                    row.seq,
-                    row.command_label,
-                    row.kernel_name,
-                    row.semantic,
-                    .{ .decision = row.decision },
-                    row.timestamp_ns,
-                    row.hash,
-                    row.previous_hash,
-                    row.execution_result,
-                );
-            }
+            const trace_jsonl_timing = try trace_jsonl_emit.writeBufferedTraceRows(allocator, path, rows.items);
+            host_artifact_trace_jsonl_serialize_total_ns = trace_jsonl_timing.serialize_ns;
+            host_artifact_trace_jsonl_write_total_ns = trace_jsonl_timing.write_ns;
         }
     }
+    const operator_manifest_finalize_start_ns = nowNs();
     const artifact_summary = try artifact_recorder.finalize();
+    host_artifact_operator_manifest_finalize_total_ns = elapsedSince(operator_manifest_finalize_start_ns);
     host_artifact_finalize_total_ns = elapsedSince(artifact_finalize_start_ns);
     trace_summary.semantic_op_row_count = artifact_summary.row_count;
     trace_summary.semantic_capture_count = artifact_summary.capture_count;
@@ -770,6 +752,9 @@ pub fn main() !void {
     trace_summary.operator_record_manifest_hash = artifact_summary.manifest_hash;
     trace_summary.host_command_orchestration_total_ns = host_command_orchestration_total_ns;
     trace_summary.host_artifact_finalize_total_ns = host_artifact_finalize_total_ns;
+    trace_summary.host_artifact_trace_jsonl_serialize_total_ns = host_artifact_trace_jsonl_serialize_total_ns;
+    trace_summary.host_artifact_trace_jsonl_write_total_ns = host_artifact_trace_jsonl_write_total_ns;
+    trace_summary.host_artifact_operator_manifest_finalize_total_ns = host_artifact_operator_manifest_finalize_total_ns;
 
     if (trace_meta_path) |path| {
         try trace.writeTraceMeta(path, trace_summary);

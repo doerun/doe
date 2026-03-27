@@ -34,6 +34,10 @@ const PROVIDERS = Object.freeze({
   },
 });
 
+const TRACE_META_PROCESS_WALL_SOURCE = 'trace-meta-process-wall';
+const DEBUG_PROGRESS_INTERVAL = 64;
+const NODE_WEBGPU_UNSUPPORTED_ERROR_CODE = 'NODE_WEBGPU_UNSUPPORTED';
+
 function nsFromMs(ms) {
   return Math.max(0, Math.round(ms * 1_000_000));
 }
@@ -46,6 +50,103 @@ function stableArtifactHash(payload) {
   return createHash('sha256').update(JSON.stringify(payload), 'utf8').digest('hex');
 }
 
+function nsDelta(startedAtMs) {
+  return nsFromMs(performance.now() - startedAtMs);
+}
+
+function parseOptionalPositiveInt(value) {
+  const normalized = typeof value === 'string' ? value.trim() : '';
+  if (!normalized) {
+    return 0;
+  }
+  const parsed = Number(normalized);
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    throw new Error(`expected a positive integer, got: ${value}`);
+  }
+  return parsed;
+}
+
+function createDebugLogger(enabled) {
+  return (phase, fields = {}) => {
+    if (!enabled) {
+      return;
+    }
+    process.stderr.write(`${JSON.stringify({
+      kind: 'node_webgpu_debug',
+      phase,
+      ...fields,
+    })}\n`);
+  };
+}
+
+function shouldLogProgress(index, total) {
+  if (total <= 0) {
+    return false;
+  }
+  return index < 3 || index === total - 1 || (index + 1) % DEBUG_PROGRESS_INTERVAL === 0;
+}
+
+function executionShapeForPlan(plan) {
+  return {
+    bufferCount: plan.buffers.length,
+    moduleCount: plan.modules.length,
+    stepCount: plan.steps.length,
+    writeBufferCount: plan.steps.filter((step) => step.kind === 'writeBuffer').length,
+    dispatchCount: plan.steps.filter((step) => step.kind === 'dispatch').length,
+    copyBufferToBufferCount: plan.steps.filter((step) => step.kind === 'copyBufferToBuffer').length,
+    readBufferCount: plan.steps.filter((step) => step.kind === 'readBuffer').length,
+  };
+}
+
+export function applyDebugStepLimit(normalizedPlan, stepLimit) {
+  if (!stepLimit || stepLimit >= normalizedPlan.steps.length) {
+    return normalizedPlan;
+  }
+  const steps = normalizedPlan.steps.slice(0, stepLimit);
+  const referencedBuffers = new Set();
+  const referencedModules = new Set();
+  for (const step of steps) {
+    if (step.kind === 'writeBuffer' || step.kind === 'readBuffer') {
+      referencedBuffers.add(step.bufferId);
+      continue;
+    }
+    if (step.kind === 'copyBufferToBuffer') {
+      referencedBuffers.add(step.srcBufferId);
+      referencedBuffers.add(step.dstBufferId);
+      continue;
+    }
+    if (step.kind === 'dispatch') {
+      referencedModules.add(step.moduleId);
+      for (const binding of step.bindings ?? []) {
+        referencedBuffers.add(binding.bufferId);
+      }
+    }
+  }
+  const limitedPlan = {
+    ...normalizedPlan,
+    buffers: normalizedPlan.buffers.filter((buffer) => referencedBuffers.has(buffer.id)),
+    modules: normalizedPlan.modules.filter((module) => referencedModules.has(module.id)),
+    steps,
+  };
+  return {
+    ...limitedPlan,
+    planHash: stableArtifactHash({
+      schemaVersion: limitedPlan.schemaVersion,
+      planId: limitedPlan.planId,
+      executorId: limitedPlan.executorId,
+      workloadId: limitedPlan.workloadId,
+      domain: limitedPlan.domain,
+      comparable: limitedPlan.comparable,
+      timing: limitedPlan.timing,
+      adapter: limitedPlan.adapter,
+      buffers: limitedPlan.buffers,
+      modules: limitedPlan.modules,
+      steps: limitedPlan.steps,
+    }),
+    executionShape: executionShapeForPlan(limitedPlan),
+  };
+}
+
 async function loadJsonFile(path) {
   const text = await readFile(path, 'utf8');
   const payload = JSON.parse(text);
@@ -53,6 +154,282 @@ async function loadJsonFile(path) {
     throw new Error(`${path}: expected a JSON object`);
   }
   return payload;
+}
+
+function zeroHostTotals() {
+  return {
+    hostInputReadTotalNs: 0,
+    hostInputParseTotalNs: 0,
+    hostWorkloadPrepareTotalNs: 0,
+    hostExecutorInitTotalNs: 0,
+    hostUploadPrewarmTotalNs: 0,
+    hostKernelPrewarmTotalNs: 0,
+    hostCommandOrchestrationTotalNs: 0,
+    hostArtifactFinalizeTotalNs: 0,
+  };
+}
+
+export function boundaryScopedHostTotals({
+  preparedSession,
+  hostInputReadTotalNs,
+  hostInputParseTotalNs,
+  hostWorkloadPrepareTotalNs,
+  hostExecutorInitTotalNs,
+  hostUploadPrewarmTotalNs,
+  hostKernelPrewarmTotalNs,
+  hostCommandOrchestrationTotalNs,
+  hostArtifactFinalizeTotalNs,
+}) {
+  return {
+    hostInputReadTotalNs: preparedSession ? 0 : hostInputReadTotalNs,
+    hostInputParseTotalNs: preparedSession ? 0 : hostInputParseTotalNs,
+    hostWorkloadPrepareTotalNs: preparedSession ? 0 : hostWorkloadPrepareTotalNs,
+    hostExecutorInitTotalNs: preparedSession ? 0 : hostExecutorInitTotalNs,
+    hostUploadPrewarmTotalNs,
+    hostKernelPrewarmTotalNs,
+    hostCommandOrchestrationTotalNs,
+    hostArtifactFinalizeTotalNs,
+  };
+}
+
+function zeroPackageSetupBreakdown() {
+  return {
+    bufferCreateTotalNs: 0,
+    initialDataWriteTotalNs: 0,
+    shaderModuleCreateTotalNs: 0,
+    bindGroupLayoutCreateTotalNs: 0,
+    pipelineLayoutCreateTotalNs: 0,
+    pipelineCreateTotalNs: 0,
+    bindGroupCreateTotalNs: 0,
+  };
+}
+
+function zeroPackageStepBreakdown() {
+  return {
+    writeMaterializeTotalNs: 0,
+    writeQueueWriteTotalNs: 0,
+    dispatchEncodeApiTotalNs: 0,
+    copyEncodeApiTotalNs: 0,
+    readbackTotalNs: 0,
+  };
+}
+
+function makeUnsupportedNodeWebGpuError({
+  unsupportedCode,
+  message,
+  detail = '',
+  hostExecutorInitTotalNs = 0,
+}) {
+  const error = new Error(message);
+  error.code = NODE_WEBGPU_UNSUPPORTED_ERROR_CODE;
+  error.unsupportedCode = unsupportedCode;
+  error.unsupportedDetail = detail;
+  error.hostExecutorInitTotalNs = hostExecutorInitTotalNs;
+  return error;
+}
+
+function isUnsupportedNodeWebGpuError(error) {
+  return Boolean(error && error.code === NODE_WEBGPU_UNSUPPORTED_ERROR_CODE);
+}
+
+export function classifyBringupUnsupported(stage, error) {
+  const message = String(error?.message ?? error ?? '');
+  const code = String(error?.code ?? '');
+  const normalized = message.toLowerCase();
+  const unavailable = (
+    normalized.includes('status=3')
+    || normalized.includes('unavailable')
+    || normalized.includes('no adapter found')
+    || normalized.includes('runtime init failed')
+  );
+  if (!unavailable && code !== 'DOE_REQUEST_ADAPTER_ERROR' && code !== 'DOE_REQUEST_DEVICE_ERROR') {
+    return null;
+  }
+  return {
+    unsupportedCode: stage === 'requestDevice' ? 'device_unavailable' : 'adapter_unavailable',
+    detail: message,
+  };
+}
+
+export function buildUnsupportedExecutionResult({
+  normalizedPlan,
+  spec,
+  preparedSession,
+  hostInputReadTotalNs,
+  hostInputParseTotalNs,
+  hostWorkloadPrepareTotalNs,
+  hostExecutorInitTotalNs,
+  processWallMs,
+}) {
+  const executionUnsupportedCount = normalizedPlan.executionShape.stepCount > 0 ? 1 : 0;
+  const meta = {
+    schemaVersion: 1,
+    kind: 'trace_meta',
+    provider: spec.provider,
+    providerName: spec.providerName,
+    executionBackend: spec.executionBackend,
+    executionProvider: spec.provider,
+    executionProviderName: spec.providerName,
+    executionRowCount: 0,
+    executionSuccessCount: 0,
+    executionErrorCount: 0,
+    executionSkippedCount: 0,
+    executionUnsupportedCount,
+    executionDispatchCount: 0,
+    executionTotalNs: 0,
+    executionSetupTotalNs: 0,
+    executionEncodeTotalNs: 0,
+    executionSubmitWaitTotalNs: 0,
+    hostInputReadTotalNs,
+    hostInputParseTotalNs,
+    hostWorkloadPrepareTotalNs,
+    hostExecutorInitTotalNs,
+    hostUploadPrewarmTotalNs: 0,
+    hostKernelPrewarmTotalNs: 0,
+    hostCommandOrchestrationTotalNs: 0,
+    hostArtifactFinalizeTotalNs: 0,
+    timingMs: 0,
+    elapsedMs: processWallMs,
+    processWallMs,
+    timingSource: 'doe-execution-total-ns',
+    timingClass: 'operation',
+    queueSyncMode: 'per-command',
+    queueWaitMode: 'queue.onSubmittedWorkDone',
+    executionQueueSyncMode: 'per-command',
+    executionQueueWaitMode: 'queue.onSubmittedWorkDone',
+    workload: normalizedPlan.workloadId,
+    canonicalWorkloadId: normalizedPlan.workloadId,
+    planId: normalizedPlan.planId,
+    planHash: normalizedPlan.planHash,
+    planSummary: {
+      schemaVersion: normalizedPlan.schemaVersion,
+      planId: normalizedPlan.planId,
+      executorId: normalizedPlan.executorId,
+      workloadId: normalizedPlan.workloadId,
+      domain: normalizedPlan.domain,
+      comparable: normalizedPlan.comparable,
+      timing: normalizedPlan.timing,
+      planHash: normalizedPlan.planHash,
+      executionShape: normalizedPlan.executionShape,
+    },
+    executionShape: normalizedPlan.executionShape,
+    packagePreparedSession: preparedSession,
+    packageSetupIncludedInSelectedTiming: !preparedSession,
+    packageSetupTotalNs: 0,
+    packageSetupBreakdownNs: zeroPackageSetupBreakdown(),
+    packageStepBreakdownNs: zeroPackageStepBreakdown(),
+    ...(preparedSession ? { workloadUnitWallSource: TRACE_META_PROCESS_WALL_SOURCE } : {}),
+    samplesMs: [0],
+    stats: {
+      count: 1,
+      min: 0,
+      max: 0,
+      median: 0,
+      p95: 0,
+      p99: 0,
+      mean: 0,
+      stdev: 0,
+    },
+  };
+  meta.artifactHash = stableArtifactHash(meta);
+  return { meta, rows: [] };
+}
+
+export function buildErrorExecutionResult({
+  normalizedPlan,
+  spec,
+  preparedSession,
+  hostInputReadTotalNs,
+  hostInputParseTotalNs,
+  hostWorkloadPrepareTotalNs,
+  hostExecutorInitTotalNs,
+  processWallMs,
+}) {
+  const meta = {
+    schemaVersion: 1,
+    kind: 'trace_meta',
+    provider: spec.provider,
+    providerName: spec.providerName,
+    executionBackend: spec.executionBackend,
+    executionProvider: spec.provider,
+    executionProviderName: spec.providerName,
+    executionRowCount: 0,
+    executionSuccessCount: 0,
+    executionErrorCount: 1,
+    executionSkippedCount: 0,
+    executionUnsupportedCount: 0,
+    executionDispatchCount: 0,
+    executionTotalNs: 0,
+    executionSetupTotalNs: 0,
+    executionEncodeTotalNs: 0,
+    executionSubmitWaitTotalNs: 0,
+    hostInputReadTotalNs,
+    hostInputParseTotalNs,
+    hostWorkloadPrepareTotalNs,
+    hostExecutorInitTotalNs,
+    hostUploadPrewarmTotalNs: 0,
+    hostKernelPrewarmTotalNs: 0,
+    hostCommandOrchestrationTotalNs: 0,
+    hostArtifactFinalizeTotalNs: 0,
+    timingMs: 0,
+    elapsedMs: processWallMs,
+    processWallMs,
+    timingSource: 'doe-execution-total-ns',
+    timingClass: 'operation',
+    queueSyncMode: 'per-command',
+    queueWaitMode: 'queue.onSubmittedWorkDone',
+    executionQueueSyncMode: 'per-command',
+    executionQueueWaitMode: 'queue.onSubmittedWorkDone',
+    workload: normalizedPlan.workloadId,
+    canonicalWorkloadId: normalizedPlan.workloadId,
+    planId: normalizedPlan.planId,
+    planHash: normalizedPlan.planHash,
+    planSummary: {
+      schemaVersion: normalizedPlan.schemaVersion,
+      planId: normalizedPlan.planId,
+      executorId: normalizedPlan.executorId,
+      workloadId: normalizedPlan.workloadId,
+      domain: normalizedPlan.domain,
+      comparable: normalizedPlan.comparable,
+      timing: normalizedPlan.timing,
+      planHash: normalizedPlan.planHash,
+      executionShape: normalizedPlan.executionShape,
+    },
+    executionShape: normalizedPlan.executionShape,
+    packagePreparedSession: preparedSession,
+    packageSetupIncludedInSelectedTiming: !preparedSession,
+    packageSetupTotalNs: 0,
+    packageSetupBreakdownNs: zeroPackageSetupBreakdown(),
+    packageStepBreakdownNs: zeroPackageStepBreakdown(),
+    ...(preparedSession ? { workloadUnitWallSource: TRACE_META_PROCESS_WALL_SOURCE } : {}),
+    samplesMs: [0],
+    stats: {
+      count: 1,
+      min: 0,
+      max: 0,
+      median: 0,
+      p95: 0,
+      p99: 0,
+      mean: 0,
+      stdev: 0,
+    },
+  };
+  meta.artifactHash = stableArtifactHash(meta);
+  return { meta, rows: [] };
+}
+
+async function writeExecutorArtifacts(traceMetaPath, traceJsonlPath, meta, rows) {
+  if (traceMetaPath) {
+    await mkdir(resolve(traceMetaPath, '..'), { recursive: true });
+    await writeFile(traceMetaPath, `${JSON.stringify(meta)}\n`, 'utf8');
+  }
+  if (traceJsonlPath) {
+    await mkdir(resolve(traceJsonlPath, '..'), { recursive: true });
+    const payload = rows.length > 0
+      ? `${rows.map((row) => JSON.stringify(row)).join('\n')}\n`
+      : '';
+    await writeFile(traceJsonlPath, payload, 'utf8');
+  }
 }
 
 function bufferUsageMask(globals, usage) {
@@ -110,8 +487,26 @@ function buildBindingDescriptor(binding, buffers, globals) {
   };
 }
 
-async function createRuntime(normalizedPlan, webgpu, spec) {
+export function buildDispatchBindingCacheKey(step) {
+  return stableArtifactHash(
+    (step.bindings ?? []).map((binding) => ({
+      binding: binding.binding,
+      bufferId: binding.bufferId,
+      bufferType: binding.bufferType,
+      offset: binding.offset ?? 0,
+      size: binding.size ?? null,
+    })),
+  );
+}
+
+async function createRuntime(normalizedPlan, webgpu, spec, { debugLog }) {
   const { create, globals } = webgpu;
+  debugLog('runtime.create.start', {
+    provider: spec.provider,
+    executionBackend: spec.executionBackend,
+    executionShape: normalizedPlan.executionShape,
+  });
+  const executorInitStartedAt = performance.now();
   const gpu = create([]);
   const preferredPower = normalizedPlan.adapter?.powerPreference ?? 'high-performance';
   const adapterRequests = [];
@@ -123,20 +518,69 @@ async function createRuntime(normalizedPlan, webgpu, spec) {
     adapterRequests.push({ powerPreference: 'low-power' });
   }
   let adapter = null;
-  for (const request of adapterRequests) {
-    adapter = await gpu.requestAdapter(request);
+  const adapterAttemptDetails = [];
+  for (const [requestIndex, request] of adapterRequests.entries()) {
+    debugLog('runtime.requestAdapter.start', {
+      requestIndex,
+      request,
+    });
+    try {
+      adapter = await gpu.requestAdapter(request);
+    } catch (error) {
+      const unsupported = classifyBringupUnsupported('requestAdapter', error);
+      if (!unsupported) {
+        throw error;
+      }
+      adapterAttemptDetails.push(unsupported.detail);
+      debugLog('runtime.requestAdapter.result', {
+        requestIndex,
+        found: false,
+        unsupportedCode: unsupported.unsupportedCode,
+        detail: unsupported.detail,
+      });
+      continue;
+    }
+    debugLog('runtime.requestAdapter.result', {
+      requestIndex,
+      found: Boolean(adapter),
+    });
     if (adapter) {
       break;
     }
   }
   if (!adapter) {
-    throw new Error('no adapter found for node-webgpu executor');
+    throw makeUnsupportedNodeWebGpuError({
+      unsupportedCode: 'adapter_unavailable',
+      message: `node-webgpu adapter unavailable for provider ${spec.provider}`,
+      detail: adapterAttemptDetails.join('; ') || 'requestAdapter returned null for all requests',
+      hostExecutorInitTotalNs: nsDelta(executorInitStartedAt),
+    });
   }
 
-  const device = await adapter.requestDevice({
-    requiredFeatures: normalizedPlan.adapter?.requiredFeatures ?? [],
-    requiredLimits: normalizedPlan.adapter?.requiredLimits ?? {},
+  debugLog('runtime.requestDevice.start', {
+    requiredFeatureCount: normalizedPlan.adapter?.requiredFeatures?.length ?? 0,
+    requiredLimitCount: Object.keys(normalizedPlan.adapter?.requiredLimits ?? {}).length,
   });
+  let device;
+  try {
+    device = await adapter.requestDevice({
+      requiredFeatures: normalizedPlan.adapter?.requiredFeatures ?? [],
+      requiredLimits: normalizedPlan.adapter?.requiredLimits ?? {},
+    });
+  } catch (error) {
+    const unsupported = classifyBringupUnsupported('requestDevice', error);
+    if (!unsupported) {
+      throw error;
+    }
+    throw makeUnsupportedNodeWebGpuError({
+      unsupportedCode: unsupported.unsupportedCode,
+      message: `node-webgpu device unavailable for provider ${spec.provider}`,
+      detail: unsupported.detail,
+      hostExecutorInitTotalNs: nsDelta(executorInitStartedAt),
+    });
+  }
+  debugLog('runtime.requestDevice.done', {});
+  const hostExecutorInitTotalNs = nsDelta(executorInitStartedAt);
   const queue = device.queue;
   const buffers = new Map();
   const shaderModules = new Map();
@@ -144,33 +588,71 @@ async function createRuntime(normalizedPlan, webgpu, spec) {
   const bindGroupLayoutCache = new Map();
   const pipelineLayoutCache = new Map();
   const pipelineCache = new Map();
+  const bindGroupCache = new Map();
+  const setupBreakdownNs = zeroPackageSetupBreakdown();
+  debugLog('runtime.setup.start', {
+    bufferCount: normalizedPlan.buffers.length,
+    moduleCount: normalizedPlan.modules.length,
+    dispatchCount: normalizedPlan.executionShape.dispatchCount,
+  });
 
   const setupStartedAt = performance.now();
-  for (const bufferDef of normalizedPlan.buffers) {
+  for (const [bufferIndex, bufferDef] of normalizedPlan.buffers.entries()) {
+    if (shouldLogProgress(bufferIndex, normalizedPlan.buffers.length)) {
+      debugLog('runtime.setup.buffer', {
+        bufferIndex,
+        bufferCount: normalizedPlan.buffers.length,
+        bufferId: bufferDef.id,
+        size: bufferDef.size,
+      });
+    }
+    const createStartedAt = performance.now();
     const buffer = device.createBuffer({
       size: bufferDef.size,
       usage: bufferUsageMask(globals, bufferDef.usage),
       ...(bufferDef.label ? { label: bufferDef.label } : {}),
     });
+    setupBreakdownNs.bufferCreateTotalNs += nsDelta(createStartedAt);
     buffers.set(bufferDef.id, buffer);
     if (bufferDef.data) {
+      const writeStartedAt = performance.now();
       const materialized = materializeBufferData(bufferDef.data);
       if (materialized) {
         queue.writeBuffer(buffer, 0, materialized);
       }
+      setupBreakdownNs.initialDataWriteTotalNs += nsDelta(writeStartedAt);
     }
   }
 
-  for (const moduleDef of normalizedPlan.modules) {
+  for (const [moduleIndex, moduleDef] of normalizedPlan.modules.entries()) {
+    if (shouldLogProgress(moduleIndex, normalizedPlan.modules.length)) {
+      debugLog('runtime.setup.module', {
+        moduleIndex,
+        moduleCount: normalizedPlan.modules.length,
+        moduleId: moduleDef.id,
+        sourceKind: moduleDef.source.kind,
+      });
+    }
+    const moduleStartedAt = performance.now();
     const code = moduleDef.source.kind === 'inline'
       ? moduleDef.source.code
       : await readFile(resolve(REPO_ROOT, moduleDef.source.path), 'utf8');
     shaderModules.set(moduleDef.id, device.createShaderModule({ code }));
+    setupBreakdownNs.shaderModuleCreateTotalNs += nsDelta(moduleStartedAt);
   }
 
+  let dispatchSetupIndex = 0;
   for (const step of normalizedPlan.steps) {
     if (step.kind !== 'dispatch') {
       continue;
+    }
+    if (shouldLogProgress(dispatchSetupIndex, normalizedPlan.executionShape.dispatchCount)) {
+      debugLog('runtime.setup.dispatch', {
+        dispatchSetupIndex,
+        dispatchCount: normalizedPlan.executionShape.dispatchCount,
+        moduleId: step.moduleId,
+        bindingCount: step.bindings.length,
+      });
     }
     const shaderModule = shaderModules.get(step.moduleId);
     if (!shaderModule) {
@@ -186,17 +668,22 @@ async function createRuntime(normalizedPlan, webgpu, spec) {
     const layoutKey = stableArtifactHash(bindingLayouts);
     let bindGroupLayout = bindGroupLayoutCache.get(layoutKey);
     if (!bindGroupLayout) {
+      const bindGroupLayoutStartedAt = performance.now();
       bindGroupLayout = device.createBindGroupLayout({ entries: bindingLayouts });
+      setupBreakdownNs.bindGroupLayoutCreateTotalNs += nsDelta(bindGroupLayoutStartedAt);
       bindGroupLayoutCache.set(layoutKey, bindGroupLayout);
     }
     let pipelineLayout = pipelineLayoutCache.get(layoutKey);
     if (!pipelineLayout) {
+      const pipelineLayoutStartedAt = performance.now();
       pipelineLayout = device.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] });
+      setupBreakdownNs.pipelineLayoutCreateTotalNs += nsDelta(pipelineLayoutStartedAt);
       pipelineLayoutCache.set(layoutKey, pipelineLayout);
     }
     const pipelineKey = `${step.moduleId}:${step.entryPoint ?? 'main'}:${layoutKey}`;
     let pipeline = pipelineCache.get(pipelineKey);
     if (!pipeline) {
+      const pipelineStartedAt = performance.now();
       pipeline = device.createComputePipeline({
         layout: pipelineLayout,
         compute: {
@@ -204,15 +691,28 @@ async function createRuntime(normalizedPlan, webgpu, spec) {
           entryPoint: step.entryPoint ?? 'main',
         },
       });
+      setupBreakdownNs.pipelineCreateTotalNs += nsDelta(pipelineStartedAt);
       pipelineCache.set(pipelineKey, pipeline);
     }
-    const bindGroup = device.createBindGroup({
-      layout: bindGroupLayout,
-      entries: bindEntries,
-    });
+    const bindGroupKey = `${layoutKey}:${buildDispatchBindingCacheKey(step)}`;
+    let bindGroup = bindGroupCache.get(bindGroupKey);
+    if (!bindGroup) {
+      const bindGroupStartedAt = performance.now();
+      bindGroup = device.createBindGroup({
+        layout: bindGroupLayout,
+        entries: bindEntries,
+      });
+      setupBreakdownNs.bindGroupCreateTotalNs += nsDelta(bindGroupStartedAt);
+      bindGroupCache.set(bindGroupKey, bindGroup);
+    }
     dispatchStates.push({ step, pipeline, bindGroup });
+    dispatchSetupIndex += 1;
   }
   const setupTotalNs = nsFromMs(performance.now() - setupStartedAt);
+  debugLog('runtime.setup.done', {
+    setupTotalNs,
+    setupBreakdownNs,
+  });
 
   return {
     adapter,
@@ -222,20 +722,24 @@ async function createRuntime(normalizedPlan, webgpu, spec) {
     providerSpec: spec,
     buffers,
     dispatchStates,
+    hostExecutorInitTotalNs,
     setupTotalNs,
+    setupBreakdownNs,
   };
 }
 
-async function executeSample(normalizedPlan, runtime) {
+async function executeSample(normalizedPlan, runtime, { includeSetupInSelectedTiming, debugLog }) {
   const rows = [];
   let executionSetupTotalNs = 0;
   let executionEncodeTotalNs = 0;
   let executionSubmitWaitTotalNs = 0;
   let executionDispatchCount = 0;
   let executionSuccessCount = 0;
+  const stepBreakdownNs = zeroPackageStepBreakdown();
   let encoder = null;
   let pass = null;
   let dispatchStateIndex = 0;
+  let firstSubmitLogged = false;
   async function flushEncoder() {
     if (!encoder) {
       return;
@@ -247,11 +751,25 @@ async function executeSample(normalizedPlan, runtime) {
     const submitStartedAt = performance.now();
     const commandBuffer = encoder.finish();
     encoder = null;
+    if (!firstSubmitLogged) {
+      debugLog('execution.firstSubmit.start', {
+        dispatchesEncoded: dispatchStateIndex,
+      });
+      firstSubmitLogged = true;
+    }
     runtime.queue.submit([commandBuffer]);
     await runtime.queue.onSubmittedWorkDone?.();
-    executionSubmitWaitTotalNs += nsFromMs(performance.now() - submitStartedAt);
+    const submitNs = nsFromMs(performance.now() - submitStartedAt);
+    executionSubmitWaitTotalNs += submitNs;
+    if (firstSubmitLogged) {
+      debugLog('execution.firstSubmit.done', {
+        submitWaitNs: submitNs,
+      });
+      firstSubmitLogged = false;
+    }
   }
 
+  const commandLoopStartedAt = performance.now();
   for (const [index, step] of normalizedPlan.steps.entries()) {
     if (step.kind === 'writeBuffer') {
       await flushEncoder();
@@ -259,10 +777,15 @@ async function executeSample(normalizedPlan, runtime) {
       if (!buffer) {
         throw new Error(`writeBuffer references unknown buffer: ${step.bufferId}`);
       }
-      const writeStartedAt = performance.now();
+      const materializeStartedAt = performance.now();
       const materialized = materializeBufferData(step.data);
+      const materializeNs = nsDelta(materializeStartedAt);
+      const writeStartedAt = performance.now();
       runtime.queue.writeBuffer(buffer, step.offset ?? 0, materialized);
-      const writeNs = nsFromMs(performance.now() - writeStartedAt);
+      const queueWriteNs = nsDelta(writeStartedAt);
+      const writeNs = materializeNs + queueWriteNs;
+      stepBreakdownNs.writeMaterializeTotalNs += materializeNs;
+      stepBreakdownNs.writeQueueWriteTotalNs += queueWriteNs;
       executionSetupTotalNs += writeNs;
       rows.push({
         schemaVersion: 1,
@@ -303,7 +826,8 @@ async function executeSample(normalizedPlan, runtime) {
       pass.setPipeline(state.pipeline);
       pass.setBindGroup(0, state.bindGroup);
       pass.dispatchWorkgroups(step.workgroups[0], step.workgroups[1], step.workgroups[2]);
-      const opNs = nsFromMs(performance.now() - opStartedAt);
+      const opNs = nsDelta(opStartedAt);
+      stepBreakdownNs.dispatchEncodeApiTotalNs += opNs;
       executionEncodeTotalNs += opNs;
       rows.push({
         schemaVersion: 1,
@@ -345,7 +869,8 @@ async function executeSample(normalizedPlan, runtime) {
       }
       const opStartedAt = performance.now();
       encoder.copyBufferToBuffer(src, 0, dst, 0, step.sizeBytes);
-      const opNs = nsFromMs(performance.now() - opStartedAt);
+      const opNs = nsDelta(opStartedAt);
+      stepBreakdownNs.copyEncodeApiTotalNs += opNs;
       executionEncodeTotalNs += opNs;
       rows.push({
         schemaVersion: 1,
@@ -385,7 +910,8 @@ async function executeSample(normalizedPlan, runtime) {
         throw new Error(`validation failed for ${step.bufferId}: ${validation.detail}`);
       }
       buffer.unmap();
-      const stepNs = nsFromMs(performance.now() - readStartedAt);
+      const stepNs = nsDelta(readStartedAt);
+      stepBreakdownNs.readbackTotalNs += stepNs;
       executionSubmitWaitTotalNs += stepNs;
       rows.push({
         schemaVersion: 1,
@@ -415,8 +941,22 @@ async function executeSample(normalizedPlan, runtime) {
   }
 
   await flushEncoder();
-  const executionTotalNs = runtime.setupTotalNs + executionSetupTotalNs + executionEncodeTotalNs + executionSubmitWaitTotalNs;
+  const commandLoopWallNs = nsDelta(commandLoopStartedAt);
+  const selectedLoopTotalNs = executionSetupTotalNs + executionEncodeTotalNs + executionSubmitWaitTotalNs;
+  const executionTotalNs = (
+    (includeSetupInSelectedTiming ? runtime.setupTotalNs : 0)
+    + selectedLoopTotalNs
+  );
+  const hostCommandOrchestrationTotalNs = Math.max(0, commandLoopWallNs - selectedLoopTotalNs);
   const timingMs = executionTotalNs / 1_000_000;
+  debugLog('execution.done', {
+    includeSetupInSelectedTiming,
+    executionTotalNs,
+    executionSetupTotalNs: (includeSetupInSelectedTiming ? runtime.setupTotalNs : 0) + executionSetupTotalNs,
+    executionEncodeTotalNs,
+    executionSubmitWaitTotalNs,
+    hostCommandOrchestrationTotalNs,
+  });
 
   const meta = {
     schemaVersion: 1,
@@ -428,11 +968,22 @@ async function executeSample(normalizedPlan, runtime) {
     executionProviderName: runtime.providerSpec.providerName,
     executionRowCount: rows.length,
     executionSuccessCount,
+    executionErrorCount: 0,
+    executionSkippedCount: 0,
+    executionUnsupportedCount: 0,
     executionDispatchCount,
     executionTotalNs,
-    executionSetupTotalNs: runtime.setupTotalNs + executionSetupTotalNs,
+    executionSetupTotalNs: (includeSetupInSelectedTiming ? runtime.setupTotalNs : 0) + executionSetupTotalNs,
     executionEncodeTotalNs,
     executionSubmitWaitTotalNs,
+    hostInputReadTotalNs: 0,
+    hostInputParseTotalNs: 0,
+    hostWorkloadPrepareTotalNs: 0,
+    hostExecutorInitTotalNs: runtime.hostExecutorInitTotalNs,
+    hostUploadPrewarmTotalNs: 0,
+    hostKernelPrewarmTotalNs: 0,
+    hostCommandOrchestrationTotalNs,
+    hostArtifactFinalizeTotalNs: 0,
     timingMs,
     timingSource: 'doe-execution-total-ns',
     timingClass: 'operation',
@@ -448,6 +999,11 @@ async function executeSample(normalizedPlan, runtime) {
     adapterLimits: runtime.adapter.limits ?? null,
     planSummary: planSummary(normalizedPlan),
     executionShape: normalizedPlan.executionShape,
+    packagePreparedSession: !includeSetupInSelectedTiming,
+    packageSetupIncludedInSelectedTiming: includeSetupInSelectedTiming,
+    packageSetupTotalNs: runtime.setupTotalNs,
+    packageSetupBreakdownNs: runtime.setupBreakdownNs,
+    packageStepBreakdownNs: stepBreakdownNs,
     samplesMs: [timingMs],
     stats: {
       count: 1,
@@ -472,10 +1028,42 @@ export async function executePlanFile({
   traceMetaPath,
   traceJsonlPath,
   dryRun = false,
+  preparedSession = false,
+  debugBoundaries = false,
+  stepLimit = 0,
 }) {
+  const debugEnabled = debugBoundaries || process.env.DOE_NODE_WEBGPU_DEBUG_BOUNDARIES === '1';
+  const effectiveStepLimit = stepLimit || parseOptionalPositiveInt(process.env.DOE_NODE_WEBGPU_STEP_LIMIT ?? '');
+  const debugLog = createDebugLogger(debugEnabled);
+  debugLog('execute.start', {
+    provider,
+    planPath,
+    workloadId,
+    preparedSession,
+    dryRun,
+    stepLimit: effectiveStepLimit,
+  });
   const spec = providerSpec(provider);
-  const plan = await loadJsonFile(planPath);
-  const normalizedPlan = normalizePlan(plan);
+  const hostInputReadStartedAt = performance.now();
+  const planText = await readFile(planPath, 'utf8');
+  const hostInputReadTotalNs = nsDelta(hostInputReadStartedAt);
+  const hostInputParseStartedAt = performance.now();
+  const plan = JSON.parse(planText);
+  const hostInputParseTotalNs = nsDelta(hostInputParseStartedAt);
+  const hostWorkloadPrepareStartedAt = performance.now();
+  let normalizedPlan = normalizePlan(plan);
+  const hostWorkloadPrepareTotalNs = nsDelta(hostWorkloadPrepareStartedAt);
+  debugLog('plan.normalized', {
+    planBytes: planText.length,
+    executionShape: normalizedPlan.executionShape,
+  });
+  if (effectiveStepLimit > 0) {
+    normalizedPlan = applyDebugStepLimit(normalizedPlan, effectiveStepLimit);
+    debugLog('plan.stepLimit.applied', {
+      stepLimit: effectiveStepLimit,
+      executionShape: normalizedPlan.executionShape,
+    });
+  }
   if (workloadId && workloadId !== normalizedPlan.workloadId) {
     throw new Error(`workload mismatch: expected ${workloadId}, got ${normalizedPlan.workloadId}`);
   }
@@ -491,12 +1079,18 @@ export async function executePlanFile({
       executionProviderName: spec.providerName,
       executionRowCount: normalizedPlan.executionShape.stepCount,
       executionSuccessCount: normalizedPlan.executionShape.stepCount,
+      executionErrorCount: 0,
+      executionSkippedCount: 0,
+      executionUnsupportedCount: 0,
       executionDispatchCount: normalizedPlan.executionShape.dispatchCount,
       executionTotalNs: 0,
       executionSetupTotalNs: 0,
       executionEncodeTotalNs: 0,
       executionSubmitWaitTotalNs: 0,
+      ...zeroHostTotals(),
       timingMs: 0,
+      elapsedMs: 0,
+      processWallMs: 0,
       timingSource: 'doe-execution-total-ns',
       timingClass: 'operation',
       queueSyncMode: 'per-command',
@@ -509,6 +1103,12 @@ export async function executePlanFile({
       planHash: normalizedPlan.planHash,
       planSummary: planSummary(normalizedPlan),
       executionShape: normalizedPlan.executionShape,
+      packagePreparedSession: preparedSession,
+      packageSetupIncludedInSelectedTiming: !preparedSession,
+      packageSetupTotalNs: 0,
+      packageSetupBreakdownNs: zeroPackageSetupBreakdown(),
+      packageStepBreakdownNs: zeroPackageStepBreakdown(),
+      ...(preparedSession ? { workloadUnitWallSource: TRACE_META_PROCESS_WALL_SOURCE } : {}),
       samplesMs: [0],
       stats: {
         count: 1,
@@ -522,7 +1122,7 @@ export async function executePlanFile({
       },
     };
     meta.artifactHash = stableArtifactHash(meta);
-      const rows = normalizedPlan.steps.map((step, index) => ({
+    const rows = normalizedPlan.steps.map((step, index) => ({
       schemaVersion: 1,
       kind: 'node_webgpu_step',
       stepIndex: index,
@@ -542,41 +1142,95 @@ export async function executePlanFile({
       planId: normalizedPlan.planId,
       planHash: normalizedPlan.planHash,
     }));
-    if (traceMetaPath) {
-      await mkdir(resolve(traceMetaPath, '..'), { recursive: true });
-      await writeFile(traceMetaPath, `${JSON.stringify(meta, null, 2)}\n`, 'utf8');
-    }
-    if (traceJsonlPath) {
-      await mkdir(resolve(traceJsonlPath, '..'), { recursive: true });
-      await writeFile(
-        traceJsonlPath,
-        `${rows.map((row) => JSON.stringify(row)).join('\n')}\n`,
-        'utf8',
-      );
-    }
+    await writeExecutorArtifacts(traceMetaPath, traceJsonlPath, meta, rows);
     return { meta, rows };
   }
 
+  const executionEnvelopeStartedAt = performance.now();
+  const webgpuResolveStartedAt = performance.now();
+  debugLog('provider.resolve.start', {
+    provider: spec.provider,
+  });
   const webgpu = await resolveProviderModule(spec);
-  const runtime = await createRuntime(normalizedPlan, webgpu, spec);
+  const providerModuleResolveTotalNs = nsDelta(webgpuResolveStartedAt);
+  debugLog('provider.resolve.done', {
+    provider: spec.provider,
+    providerModuleResolveTotalNs,
+  });
+  let runtime = null;
   try {
-    const result = await executeSample(normalizedPlan, runtime);
-
-    if (traceMetaPath) {
-      await mkdir(resolve(traceMetaPath, '..'), { recursive: true });
-      await writeFile(traceMetaPath, `${JSON.stringify(result.meta, null, 2)}\n`, 'utf8');
-    }
+    runtime = await createRuntime(normalizedPlan, webgpu, spec, { debugLog });
+    runtime.hostExecutorInitTotalNs += providerModuleResolveTotalNs;
+    const timedEnvelopeStartedAt = performance.now();
+    const result = await executeSample(normalizedPlan, runtime, {
+      includeSetupInSelectedTiming: !preparedSession,
+      debugLog,
+    });
+    const artifactFinalizeStartedAt = performance.now();
     if (traceJsonlPath) {
-      await mkdir(resolve(traceJsonlPath, '..'), { recursive: true });
-      await writeFile(
-        traceJsonlPath,
-        `${result.rows.map((row) => JSON.stringify(row)).join('\n')}\n`,
-        'utf8',
-      );
+      await writeExecutorArtifacts(null, traceJsonlPath, result.meta, result.rows);
     }
+    Object.assign(result.meta, boundaryScopedHostTotals({
+      preparedSession,
+      hostInputReadTotalNs,
+      hostInputParseTotalNs,
+      hostWorkloadPrepareTotalNs,
+      hostExecutorInitTotalNs: runtime.hostExecutorInitTotalNs,
+      hostUploadPrewarmTotalNs: result.meta.hostUploadPrewarmTotalNs,
+      hostKernelPrewarmTotalNs: result.meta.hostKernelPrewarmTotalNs,
+      hostCommandOrchestrationTotalNs: result.meta.hostCommandOrchestrationTotalNs,
+      hostArtifactFinalizeTotalNs: nsDelta(artifactFinalizeStartedAt),
+    }));
+    const processWallMs = (performance.now() - timedEnvelopeStartedAt);
+    result.meta.elapsedMs = processWallMs;
+    result.meta.processWallMs = processWallMs;
+    if (preparedSession) {
+      result.meta.workloadUnitWallSource = TRACE_META_PROCESS_WALL_SOURCE;
+    }
+    result.meta.artifactHash = stableArtifactHash(result.meta);
+    await writeExecutorArtifacts(traceMetaPath, null, result.meta, result.rows);
 
     return result;
+  } catch (error) {
+    if (isUnsupportedNodeWebGpuError(error)) {
+      debugLog('runtime.unsupported', {
+        unsupportedCode: error.unsupportedCode,
+        detail: error.unsupportedDetail ?? '',
+      });
+      const unsupportedResult = buildUnsupportedExecutionResult({
+        normalizedPlan,
+        spec,
+        preparedSession,
+        hostInputReadTotalNs,
+        hostInputParseTotalNs,
+        hostWorkloadPrepareTotalNs,
+        hostExecutorInitTotalNs: providerModuleResolveTotalNs + (error.hostExecutorInitTotalNs ?? 0),
+        processWallMs: performance.now() - executionEnvelopeStartedAt,
+      });
+      const artifactFinalizeStartedAt = performance.now();
+      await writeExecutorArtifacts(traceMetaPath, traceJsonlPath, unsupportedResult.meta, unsupportedResult.rows);
+      unsupportedResult.meta.hostArtifactFinalizeTotalNs = nsDelta(artifactFinalizeStartedAt);
+      unsupportedResult.meta.artifactHash = stableArtifactHash(unsupportedResult.meta);
+      await writeExecutorArtifacts(traceMetaPath, null, unsupportedResult.meta, unsupportedResult.rows);
+      return unsupportedResult;
+    }
+    const errorResult = buildErrorExecutionResult({
+      normalizedPlan,
+      spec,
+      preparedSession,
+      hostInputReadTotalNs,
+      hostInputParseTotalNs,
+      hostWorkloadPrepareTotalNs,
+      hostExecutorInitTotalNs: providerModuleResolveTotalNs + (runtime?.hostExecutorInitTotalNs ?? 0),
+      processWallMs: performance.now() - executionEnvelopeStartedAt,
+    });
+    const artifactFinalizeStartedAt = performance.now();
+    await writeExecutorArtifacts(traceMetaPath, traceJsonlPath, errorResult.meta, errorResult.rows);
+    errorResult.meta.hostArtifactFinalizeTotalNs = nsDelta(artifactFinalizeStartedAt);
+    errorResult.meta.artifactHash = stableArtifactHash(errorResult.meta);
+    await writeExecutorArtifacts(traceMetaPath, null, errorResult.meta, errorResult.rows);
+    throw error;
   } finally {
-    runtime.device.destroy?.();
+    runtime?.device.destroy?.();
   }
 }

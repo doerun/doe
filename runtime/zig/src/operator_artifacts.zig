@@ -6,10 +6,13 @@ const semantic_trace = @import("semantic_trace.zig");
 const trace = @import("trace.zig");
 const hash_utils = @import("backend/common/hash_utils.zig");
 
-const MANIFEST_SUFFIX = ".operators.json";
+const MANIFEST_PATH_SUFFIX = ".operators.json";
 const CAPTURE_SUFFIX = ".capture.bin";
 const REPRO_COMMANDS_SUFFIX = ".repro.commands.json";
 const REPRO_META_SUFFIX = ".repro.meta.json";
+const MANIFEST_JSON_PREFIX = "[\n";
+const MANIFEST_JSON_SUFFIX = "\n]\n";
+const ESTIMATED_RECORD_BYTES: usize = 2048;
 
 pub const Summary = struct {
     enabled: bool = false,
@@ -43,6 +46,7 @@ pub const Recorder = struct {
     manifest_path: ?[]u8 = null,
     manifest_hash: ?[]u8 = null,
     manifest_file: ?std.fs.File = null,
+    manifest_hasher: ?std.crypto.hash.sha2.Sha256 = null,
     first_record: bool = true,
     row_count: u64 = 0,
     capture_count: u64 = 0,
@@ -56,16 +60,19 @@ pub const Recorder = struct {
         }
         const owned_anchor = try allocator.dupe(u8, anchor.?);
         errdefer allocator.free(owned_anchor);
-        const manifest_path = try std.mem.concat(allocator, u8, &.{ owned_anchor, MANIFEST_SUFFIX });
+        const manifest_path = try std.mem.concat(allocator, u8, &.{ owned_anchor, MANIFEST_PATH_SUFFIX });
         errdefer allocator.free(manifest_path);
         const file = try std.fs.cwd().createFile(manifest_path, .{});
         errdefer file.close();
-        try file.writeAll("[\n");
+        var manifest_hasher = std.crypto.hash.sha2.Sha256.init(.{});
+        manifest_hasher.update(MANIFEST_JSON_PREFIX);
+        try file.writeAll(MANIFEST_JSON_PREFIX);
         return .{
             .allocator = allocator,
             .anchor_path = owned_anchor,
             .manifest_path = manifest_path,
             .manifest_file = file,
+            .manifest_hasher = manifest_hasher,
         };
     }
 
@@ -88,13 +95,17 @@ pub const Recorder = struct {
 
     pub fn finalize(self: *Recorder) !Summary {
         if (self.manifest_file) |file| {
-            try file.writeAll("\n]\n");
+            try file.writeAll(MANIFEST_JSON_SUFFIX);
+            if (self.manifest_hasher) |*manifest_hasher| {
+                manifest_hasher.update(MANIFEST_JSON_SUFFIX);
+                var digest: [32]u8 = undefined;
+                manifest_hasher.final(&digest);
+                const hash = hash_utils.sha256_digest_hex(digest);
+                self.manifest_hash = try self.allocator.dupe(u8, hash[0..]);
+            }
             file.close();
             self.manifest_file = null;
-            const bytes = try read_file_alloc(self.allocator, self.manifest_path.?);
-            defer self.allocator.free(bytes);
-            const hash = hash_utils.sha256_hex(bytes);
-            self.manifest_hash = try self.allocator.dupe(u8, hash[0..]);
+            self.manifest_hasher = null;
         }
         return .{
             .enabled = self.row_count > 0,
@@ -126,15 +137,18 @@ pub const Recorder = struct {
         }
 
         const file = self.manifest_file.?;
-        var writer = file.deprecatedWriter();
+        var shader_manifest_arena = std.heap.ArenaAllocator.init(self.allocator);
+        defer shader_manifest_arena.deinit();
+        const shader_manifest = try load_shader_manifest_summary(shader_manifest_arena.allocator(), input.execution_result);
+
+        var record_bytes = try std.ArrayList(u8).initCapacity(self.allocator, ESTIMATED_RECORD_BYTES);
+        defer record_bytes.deinit(self.allocator);
+        const writer = record_bytes.writer(self.allocator);
+
         if (!self.first_record) {
             try writer.writeAll(",\n");
         }
         self.first_record = false;
-
-        var shader_manifest_arena = std.heap.ArenaAllocator.init(self.allocator);
-        defer shader_manifest_arena.deinit();
-        const shader_manifest = try load_shader_manifest_summary(shader_manifest_arena.allocator(), input.execution_result);
 
         try writer.writeAll("{\"schemaVersion\":1,\"sourceIndex\":");
         try writer.print("{}", .{input.source_index});
@@ -153,6 +167,10 @@ pub const Recorder = struct {
         try write_capture_fields(writer, input.capture, capture_result);
         try write_repro_fields(writer, repro_result);
         try writer.writeAll("}");
+        try file.writeAll(record_bytes.items);
+        if (self.manifest_hasher) |*manifest_hasher| {
+            manifest_hasher.update(record_bytes.items);
+        }
 
         self.row_count += 1;
         if (capture_result.status == .ok) self.capture_count += 1;

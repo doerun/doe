@@ -80,6 +80,10 @@ class DoeDirectPlanExecutorTests(unittest.TestCase):
             self.assertEqual(rows[0]["semanticStage"], "runtime_plan")
             self.assertEqual(rows[0]["semanticOpId"], "step-000000")
             self.assertEqual(rows[-1]["semanticOpId"], "step-000024")
+            self.assertEqual(rows[0]["executionStatusCode"], "dry_run")
+            self.assertNotIn("matched", rows[0])
+            self.assertNotIn("executionHostPlanArtifactPath", rows[0])
+            self.assertNotIn("executionSelectionPolicyHash", rows[0])
 
     def test_workload_mismatch_is_rejected(self) -> None:
         with tempfile.TemporaryDirectory(prefix="doe-direct-plan-executor-") as tmpdir:

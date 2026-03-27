@@ -8,6 +8,7 @@ Audience:
 Canonical front doors:
 
 - `run.py` — unified entry point (see Quick Start below)
+- `run_compare.py` — config-backed compare front door
 - `native-compare/compare_dawn_vs_doe.py`
 - `run_release_pipeline.py`
 - `run_blocking_gates.py`
@@ -36,6 +37,10 @@ bench/run.py compare vulkan release     # explicit harness + backend + preset
 bench/run.py compile metal smoke        # WGSL compilation comparison (Doe vs Tint)
 bench/run.py single metal --workload-id compute_dispatch_grid
 bench/run.py compare metal --config bench/native-compare/compare_dawn_vs_doe.config.apple.metal.gemma64.ir.json
+python3 bench/run_compare.py --list
+python3 bench/run_compare.py --surface native --backend apple-metal --preset compare
+python3 bench/run_compare.py --surface direct --backend apple-metal --workload gemma270m-literal
+python3 bench/run_compare.py --surface package --backend apple-metal --workload gemma64 --mode warm
 ```
 
 Positional arguments:
@@ -138,6 +143,10 @@ That document defines:
   the same compute shape as the real prefill/decode path.
 - Neutral authored benchmark IR now lives under `bench/ir/`.
   - `bench/ir/gemma3_270m.json` is the current Gemma-shaped source of truth.
+  - `bench/ir/gemma3_270m_literal.json` is the current Doe-owned
+    literal-production-style 270M row: it stays synthetic, but it tracks the
+    production-style kernel family, entry points, gated FFN, and tied LM head
+    more closely than the shaped row.
   - Generated normalized plans live under `bench/plans/generated/`.
   - Compatibility command artifacts remain emitted for Doe runtime execution,
     but they are generated artifacts, not the authored benchmark layer.
@@ -182,6 +191,8 @@ Package-surface configs now exist alongside the direct configs:
 
 - `bench/native-compare/compare_dawn_vs_doe.config.apple.metal.gemma64.node-package.ir.json`
 - `bench/native-compare/compare_dawn_vs_doe.config.apple.metal.gemma1b.node-package.ir.json`
+- `bench/native-compare/compare_dawn_vs_doe.config.apple.metal.gemma64.node-package.warm.ir.json`
+- `bench/native-compare/compare_dawn_vs_doe.config.apple.metal.gemma1b.node-package.warm.ir.json`
 
 These compare the public Node-facing providers over the same normalized plan:
 
@@ -190,6 +201,54 @@ These compare the public Node-facing providers over the same normalized plan:
 
 They are apples-to-apples for the package layer, but they are not direct
 backend implementation claims.
+
+The package lane now has two explicit timing boundaries:
+
+- cold package lane (`*.node-package.ir.json`)
+  - keeps package setup inside `selectedTiming`
+  - keeps `workloadUnitWall` on the compare harness subprocess wall
+  - represents first-use package cost from a JS caller point of view
+- prepared-session package lane (`*.node-package.warm.ir.json`)
+  - builds the package runtime and cached WebGPU objects before the timed sample
+  - keeps `selectedTiming` on the repeated workload steps only
+  - switches `workloadUnitWall` to trace-meta `processWallMs` via
+    `workloadUnitWallSource=trace-meta-process-wall`
+  - represents steady-state package execution without silently redefining the
+    cold metric
+
+Package trace meta now emits explicit host and setup buckets for this lane,
+including input read/parse, workload prepare, executor init, command
+orchestration, artifact finalize, and package setup breakdowns such as shader
+module creation and bind-group/pipeline creation.
+
+Config-backed compare wrappers now sit above those raw configs. The catalog lives in:
+
+- `config/promoted-compare-catalog.json`
+
+And the front door is:
+
+- `python3 bench/run_compare.py --list`
+- `python3 bench/run_compare.py --surface native --backend amd-vulkan --preset compare`
+- `python3 bench/run_compare.py --surface native --backend apple-metal --preset release`
+- `python3 bench/run_compare.py --surface native --backend local-d3d12 --preset smoke`
+- `python3 bench/run_compare.py --surface direct --backend apple-metal --workload gemma64`
+- `python3 bench/run_compare.py --surface direct --backend apple-metal --workload gemma1b`
+- `python3 bench/run_compare.py --surface direct --backend apple-metal --workload gemma270m-literal`
+- `python3 bench/run_compare.py --surface package --backend apple-metal --workload gemma64`
+- `python3 bench/run_compare.py --surface package --backend apple-metal --workload gemma64 --mode warm`
+
+The matrix is explicit in config:
+
+- `surface=native`
+  - existing native command/delegate preset configs on Metal, Vulkan, and D3D12
+- `surface=direct`
+  - standalone Doe-plan vs standalone Dawn-plan compare rows
+- `surface=package`
+  - Node/package-surface compare rows, with `mode=cold` or `mode=warm`
+
+This wrapper does not replace `compare_dawn_vs_doe.py`; it resolves a friendly
+config-backed matrix entry and then delegates to the existing compare runner
+unchanged.
 
 ## Scripts
 
@@ -695,7 +754,7 @@ python3 bench/runners/run_release_pipeline.py \
 
 # drop-in compatibility + benchmark suite against a built shared-library artifact:
 python3 bench/drop-in/dropin_gate.py \
-  --artifact runtime/zig/zig-out/lib/libwebgpu_doe.so \
+  --artifact runtime/zig/zig-out/lib/libwebgpu_doe.<so|dylib> \
   --report bench/out/dropin_report.json
 
 # optional standalone drop-in benchmark visualization (micro vs end-to-end sections):
@@ -709,7 +768,7 @@ python3 bench/runners/run_release_pipeline.py \
   --strict-amd-vulkan \
   --trace-semantic-parity-mode auto \
   --with-dropin-gate \
-  --dropin-artifact runtime/zig/zig-out/lib/libwebgpu_doe.so \
+  --dropin-artifact runtime/zig/zig-out/lib/libwebgpu_doe.<so|dylib> \
   --with-claim-gate
 
 # optional repeated release windows for trend evidence:
@@ -719,7 +778,7 @@ python3 bench/runners/run_release_claim_windows.py \
   --strict-amd-vulkan \
   --trace-semantic-parity-mode auto \
   --with-dropin-gate \
-  --dropin-artifact runtime/zig/zig-out/lib/libwebgpu_doe.so \
+  --dropin-artifact runtime/zig/zig-out/lib/libwebgpu_doe.<so|dylib> \
   --with-substantiation-gate \
   --substantiation-policy config/substantiation-policy.json
 # disable per-window claim rehearsal artifacts only when intentionally running diagnostics:

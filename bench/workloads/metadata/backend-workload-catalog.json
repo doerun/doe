@@ -10517,6 +10517,58 @@
       }
     },
     {
+      "id": "inference_gemma3_270m_literal_prefill_32tok_decode_1tok",
+      "fieldOrder": [
+        "api",
+        "runnerType",
+        "irPath",
+        "irScenario",
+        "comparabilityNotes",
+        "comparable",
+        "benchmarkClass",
+        "claimEligible",
+        "default",
+        "description",
+        "domain",
+        "driver",
+        "extraArgs",
+        "family",
+        "name",
+        "quirksPath",
+        "vendor"
+      ],
+      "shared": {
+        "comparabilityNotes": "Doe-owned apples-to-apples literal-production-style Gemma-3-270M inference unit. Both sides execute the same prefill-plus-decode command stream with production-style kernel families and entry points, while dense synthetic buffers stand in for real q4k and f16kv payloads.",
+        "comparable": true,
+        "benchmarkClass": "comparable",
+        "claimEligible": true,
+        "default": false,
+        "description": "Minimal Doe-owned Gemma-3-270M literal-production-style inference unit with a 32-token prefill followed by a single decode token.",
+        "domain": "compute",
+        "extraArgs": [
+          "--kernel-root",
+          "bench/inference-pipeline/kernels"
+        ],
+        "name": "gemma-3 270m literal prefill 32tok + decode 1tok",
+        "runnerType": "zig-runtime",
+        "suiteTags": [
+          "extended"
+        ],
+        "irPath": "bench/ir/gemma3_270m_literal.json",
+        "irScenario": "inference_gemma3_270m_literal_prefill_32tok_decode_1tok"
+      },
+      "lanes": {
+        "apple_metal_extended": {
+          "api": "metal",
+          "driver": "1.0.0",
+          "family": "m3",
+          "quirksPath": "examples/quirks/apple_m3_noop_list.json",
+          "vendor": "apple",
+          "workloadOrigin": "doe_contract_with_dawn_mapping"
+        }
+      }
+    },
+    {
       "id": "inference_gemma3_1b_prefill_32tok",
       "fieldOrder": [
         "api",

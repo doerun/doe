@@ -1,6 +1,64 @@
 # Config Migration Notes
 
+## 2026-03-27
+
+### Promoted compare front-door catalog
+
+- Added `config/promoted-compare-catalog.json` and
+  `config/promoted-compare-catalog.schema.json` as the config-backed registry
+  for promoted Doe-vs-Dawn compare surfaces.
+- `schemaVersion` is now `2`.
+- The catalog now maps the full front-door matrix onto existing
+  `bench/native-compare/compare_dawn_vs_doe.config.*.json` files using explicit
+  axes:
+  - `backend`
+  - `surface` = `native` | `direct` | `package`
+  - `preset` for native command/delegate preset lanes
+  - `workload` for direct and package workload rows
+  - `mode` = `default` | `cold` | `warm`
+- Native preset rows now cover the existing Metal, AMD Vulkan, and local D3D12
+  compare presets without duplicating compare-runner logic.
+- Direct/package rows remain config-backed wrappers over the existing Apple
+  Metal direct-plan and Node package compare configs.
+- `config/schema-targets.json` now validates the promoted compare catalog as a
+  blocking schema target.
+
 ## 2026-03-26
+
+### Node package-lane trace-meta boundary and setup diagnostics
+
+- `config/trace-meta.schema.json` now accepts package-surface diagnostics for the
+  Node WebGPU executor:
+  - `workloadUnitWallSource`
+  - `packagePreparedSession`
+  - `packageSetupIncludedInSelectedTiming`
+  - `packageSetupTotalNs`
+  - `packageSetupBreakdownNs`
+  - `packageStepBreakdownNs`
+- The cold Node package lane keeps package setup inside selected timing, but now
+  emits explicit package-setup and step-cost breakdowns in trace meta so the
+  package boundary can be diagnosed without redefining the claim metric.
+- The prepared-session Node package lane emits
+  `workloadUnitWallSource=trace-meta-process-wall` and reports
+  `processWallMs` from the executor’s internal prepared session, so
+  workload-unit wall for that lane no longer includes fresh process startup and
+  pre-timed package preparation.
+
+### Prepared-session workload-unit wall boundary semantics
+
+- `config/trace-meta.schema.json` now constrains `workloadUnitWallSource` to the
+  explicit enum value `trace-meta-process-wall` instead of allowing arbitrary
+  strings.
+- Prepared-session Node package rows now keep the existing `host*TotalNs`
+  invariant: those fields mean "outside selected timing but inside
+  workload-unit wall". Pre-boundary setup costs are therefore zeroed for
+  prepared-session rows instead of being reported through the existing
+  host-overhead buckets.
+- The compare runner now suppresses `cpu_time` for
+  `workloadUnitWallSource=trace-meta-process-wall` rows unless the executor
+  provides a matching inner-boundary CPU metric. The subprocess CPU sample
+  remains available in the resource record, but it is no longer mixed into the
+  warm prepared-session timing metric set.
 
 ### Trace-meta host-overhead totals for workload-unit wall diagnostics
 
@@ -25,6 +83,19 @@
   - remaining unattributed wall gap
 - This is a diagnostic attribution layer only; it does not change comparability
   or claimability policy.
+
+### Fine-grained artifact-finalize trace-meta totals
+
+- `config/trace-meta.schema.json` now also accepts finer-grained artifact
+  finalize diagnostics:
+  - `hostArtifactTraceJsonlSerializeTotalNs`
+  - `hostArtifactTraceJsonlWriteTotalNs`
+  - `hostArtifactOperatorManifestFinalizeTotalNs`
+- Doe direct-runtime trace meta can now distinguish JSONL serialization cost
+  from JSONL file writeback and operator-manifest finalization, instead of
+  reporting only one coarse `hostArtifactFinalizeTotalNs` bucket.
+- This is a diagnostic contract only; it does not change timing scope,
+  comparability, or claimability policy.
 
 ### Compare report workload-unit wall terminology
 

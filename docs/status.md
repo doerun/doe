@@ -1,4 +1,557 @@
 # Doe status
+## Compare front doors now expose the native/direct/package matrix through one config-backed catalog instead of a handful of special-case wrappers (2026-03-27)
+
+- Expanded `config/promoted-compare-catalog.json` from the earlier
+  Apple-Metal-only direct/package aliases into a fuller matrix registry with:
+  - `surface=native` for existing command/delegate preset lanes
+  - `surface=direct` for standalone Doe-plan vs standalone Dawn-plan rows
+  - `surface=package` for Node/package-surface rows
+- The catalog now has explicit tuple axes:
+  - `backend`
+  - `surface`
+  - `preset` for native preset lanes
+  - `workload` for direct/package workload rows
+  - `mode` for `default` / `cold` / `warm`
+- `bench/run_compare.py` now resolves either:
+  - `--surface native --backend <backend> --preset <preset>`
+  - `--surface direct --backend apple-metal --workload <workload>`
+  - `--surface package --backend apple-metal --workload <workload> --mode <mode>`
+- This keeps the existing compare configs and compare runner unchanged. The new
+  layer is only a schema-validated config front door above them.
+- Added native preset coverage for:
+  - Apple Metal: `smoke`, `compare-dev`, `compare`, `frontier`, `explore`,
+    `release`, `breadth`
+  - AMD Vulkan: `smoke`, `smoke-gpu`, `compare-dev`, `compare`, `frontier`,
+    `explore`, `release`
+  - local D3D12: `smoke`, `compare-dev`, `compare`, `frontier`, `explore`,
+    `release`
+- Updated `bench/tests/test_promoted_compare.py` to cover native preset
+  resolution as well as direct/package workload resolution.
+- Verification:
+  - `python3 -m unittest bench.tests.test_promoted_compare bench.tests.test_executor_registry bench.tests.test_native_compare_config_support`
+  - `python3 bench/gates/schema_gate.py`
+  - `python3 bench/run_compare.py --list --backend apple-metal`
+  - `python3 bench/run_compare.py --surface native --backend apple-metal --preset compare --dry-run`
+  - `python3 bench/run_compare.py --surface direct --backend apple-metal --workload gemma270m-literal --dry-run`
+
+## Promoted compare front doors now wrap standalone direct Dawn rows and Node package rows through a schema-validated catalog instead of raw config filenames (2026-03-27)
+
+- Added `config/promoted-compare-catalog.json` and
+  `config/promoted-compare-catalog.schema.json` as the config-backed registry
+  for promoted compare surfaces.
+- Added `bench/run_compare.py` as a thin front door that resolves a promoted
+  backend/surface/workload tuple (or exact profile id) and then delegates to
+  the existing `bench/native-compare/compare_dawn_vs_doe.py` runner.
+- The promoted catalog currently wraps the existing Apple Metal rows for:
+  - standalone direct Doe vs standalone direct Dawn:
+    `gemma64`, `gemma1b`, and `gemma270m-literal`
+  - package-surface Doe vs Dawn Node WebGPU:
+    `gemma64` and `gemma1b` on both cold and prepared-session boundaries
+- This does not change benchmark methodology or executor wiring. It promotes
+  the claim-grade direct Dawn lane and the separate package-surface lane as
+  explicit front doors above the existing config files and executor registry.
+- Added focused coverage in `bench/tests/test_promoted_compare.py` for catalog
+  loading, direct/package resolution, and wrapper argv construction.
+- `config/schema-targets.json` now validates the promoted compare catalog as a
+  blocking schema target.
+- Verification:
+  - `python3 -m unittest bench.tests.test_promoted_compare`
+  - `python3 bench/run_compare.py --list`
+  - `python3 bench/run_compare.py --surface direct --backend apple-metal --workload gemma270m-literal --dry-run`
+  - `python3 bench/gates/schema_gate.py`
+
+## Literal Gemma270M direct Metal now dispatches WGSL kernels with their declared workgroup size, and the row is claimable again on repeated reruns (2026-03-27)
+
+- The literal 270M row in `bench/ir/gemma3_270m_literal.json` had one more
+  real direct-Metal mismatch after the robustness-clamp fix: the compute
+  runtime already knew the WGSL workgroup size, but the benchmark-facing Metal
+  pipeline cache was discarding that metadata and launching `kernel_dispatch`
+  workloads with a generic pipeline-max threadgroup shape.
+- `runtime/zig/src/backend/metal/metal_runtime_resources.zig` now keeps
+  WGSL-derived `workgroup_size` metadata alongside the cached Metal pipeline,
+  and `runtime/zig/src/backend/metal/metal_native_runtime.zig` /
+  `runtime/zig/src/backend/metal/metal_kernel_dispatch.zig` now thread that
+  metadata into the direct `kernel_dispatch` path instead of guessing.
+- `runtime/zig/src/backend/metal/metal_bridge.m`,
+  `runtime/zig/src/backend/metal/metal_bridge_decls.zig`, and
+  `runtime/zig/src/backend/metal/metal_bridge_stubs.c` now accept explicit
+  workgroup dimensions on the batched compute-dispatch bridge call, matching
+  the lower-level command-buffer encode path that already supported them.
+- The direct outcome is that the production-style literal tiled matmul path is
+  no longer benchmarking Doe with a synthetic threadgroup geometry on Metal.
+- New focused coverage in
+  `runtime/zig/src/backend/metal/metal_runtime_resources.zig` locks the cached
+  workgroup-size lookup for keyed pipelines.
+- Fresh literal-row artifacts after the workgroup-size fix:
+  - `bench/out/apple-metal/20260327T122749Z/gemma270m.literal.ir.compare.json`
+  - `bench/out/apple-metal/20260327T122813Z/gemma270m.literal.ir.compare.json`
+- Result:
+  - both reruns stayed `comparisonStatus=comparable`
+  - both reruns are now `claimStatus=claimable`
+  - this supersedes the earlier diagnostic literal artifacts that were still
+    paying the wrong direct-Metal dispatch geometry
+- Verification:
+  - `zig build doe-plan-executor`
+  - `zig build test-core`
+  - `python3 bench/native-compare/compare_dawn_vs_doe.py --config bench/native-compare/compare_dawn_vs_doe.config.apple.metal.gemma270m.literal.ir.json`
+
+## Literal Gemma270M now uses the more production-like kernel path, and the WGSL robustness pass no longer injects redundant tile clamps into provably in-bounds local/workgroup accesses (2026-03-27)
+
+- The new literal 270M benchmark source is
+  `bench/ir/gemma3_270m_literal.json`, with compare config
+  `bench/native-compare/compare_dawn_vs_doe.config.apple.metal.gemma270m.literal.ir.json`.
+- That row keeps synthetic weights, but it now follows the production-style
+  execution path more closely: production-like kernel families and entry
+  points, gated FFN, tied LM-head-style decode, and split current/past KV
+  decode attention.
+- To make the literal path valid on Doe direct Metal,
+  `runtime/zig/src/backend/metal/metal_runtime_resources.zig`,
+  `runtime/zig/src/backend/metal/metal_native_runtime.zig`,
+  `runtime/zig/src/backend/metal/metal_kernel_dispatch.zig`,
+  `runtime/zig/src/backend/metal/mod.zig`, and
+  `runtime/zig/src/backend/metal/metal_dispatch_runtime.zig` now honor
+  non-default compute entry points and cache pipelines by kernel plus entry
+  point instead of kernel filename alone.
+- The remaining literal-row performance regression was traced to Doe's WGSL
+  robustness lowering: the runtime compiler was still emitting redundant
+  bounds clamps on provably in-range workgroup tile accesses inside the
+  tiled prefill matmul hot loop.
+- `runtime/zig/src/doe_wgsl/ir_transform_robustness.zig` now elides those
+  clamps when static bounds prove a sized-array access is in range, and the
+  new helper `runtime/zig/src/doe_wgsl/robustness_static_bounds.zig` proves
+  bounds for local/workgroup/function/private arrays using module constants,
+  local invocation IDs, simple arithmetic, const-local aliases, and canonical
+  counted loops.
+- New coverage lives in
+  `runtime/zig/src/doe_wgsl/mod_bounds_local_test.zig`, and
+  `runtime/zig/src/doe_wgsl/WGSL_SUPPORT.md` now documents that Doe keeps
+  robustness on unknown accesses while dropping redundant clamps for provably
+  in-range local/workgroup/function/private sized arrays.
+- Fresh literal-row artifacts:
+  - initial literal compare:
+    `bench/out/apple-metal/20260327T012241Z/gemma270m.literal.ir.compare.json`
+  - pre-fix loss after the more production-like tiled kernel:
+    `bench/out/apple-metal/20260327T014136Z/gemma270m.literal.ir.compare.json`
+  - post-fix reruns after clamp elision:
+    `bench/out/apple-metal/20260327T015737Z/gemma270m.literal.ir.compare.json`
+    `bench/out/apple-metal/20260327T015845Z/gemma270m.literal.ir.compare.json`
+    `bench/out/apple-metal/20260327T015906Z/gemma270m.literal.ir.compare.json`
+- Result:
+  - the literal 270M row is now structurally comparable and materially closer
+    to parity than the pre-fix regression artifact
+  - the benchmark is still diagnostic on this host because the tail and
+    workload-unit-wall outcomes are not yet consistently positive for Doe
+  - the remaining issue is no longer benchmark validity or obvious hot-loop
+    clamp pollution; it is residual runtime/submit-wait stability on the
+    literal path
+- Verification:
+  - `zig build test-core`
+  - `zig build emit-msl`
+  - `zig build doe-plan-executor`
+  - `python3 bench/native-compare/compare_dawn_vs_doe.py --config bench/native-compare/compare_dawn_vs_doe.config.apple.metal.gemma270m.literal.ir.json`
+
+## Node package dispatch bind groups now reuse repeated binding sets, Metal bring-up falls back to enumerated devices, and the remaining package/drop-in blockers are now clearly host/runtime failures rather than harness gaps (2026-03-27)
+
+- `bench/executors/node-webgpu/executor.js` now caches package-path bind
+  groups by binding set instead of creating a fresh bind group for every
+  dispatch step.
+- On the Gemma package plans, that cache targets a real cold-path cost center:
+  the shaped Gemma command streams still execute `1170` dispatches, but they
+  only use `36` distinct bind-group binding sets.
+- `runtime/zig/src/backend/metal/metal_bridge.m` now falls back from
+  `MTLCreateSystemDefaultDevice()` to `MTLCopyAllDevices()` on macOS, and it
+  ensures default-device creation runs on the main thread before returning the
+  retained Metal handle.
+- `bench/drop-in/dropin_behavior_suite.c` now uses the same
+  high-performance / default / low-power adapter retry order as the benchmark
+  suite instead of a single adapter request.
+- Fresh Gemma64 package reruns after the bind-group cache:
+  - cold package lane:
+    `bench/out/apple-metal/20260327T014544Z/gemma64.node-package.ir.compare.json`
+  - prepared-session package lane:
+    `bench/out/apple-metal/20260327T014544Z/gemma64.node-package.warm.ir.compare.json`
+- Result:
+  - both Gemma64 package lanes stayed `comparisonStatus=comparable`
+  - both are still `claimStatus=diagnostic` on this host
+  - the cache is a real product/runtime reduction in cold setup churn, but this
+    rerun did not turn the package lane into claimable evidence
+- Fresh Gemma1B package reruns after the supervisor hardening remained:
+  - cold:
+    `bench/out/apple-metal/20260327T014608Z/gemma1b.node-package.ir.compare.json`
+  - warm:
+    `bench/out/apple-metal/20260327T014609Z/gemma1b.node-package.warm.ir.compare.json`
+- Result:
+  - both 1B package lanes still terminate as diagnostic artifacts instead of
+    exploding the compare harness
+  - both remain blocked by Dawn/right-side execution failure on this host, not
+    by missing artifacts or compare-runner crashes
+- Fresh drop-in reruns after the Metal fallback and behavior-suite retry parity:
+  - benchmark suite:
+    `bench/out/dropin/20260327T014653Z/dropin_benchmark_report.json`
+  - behavior suite:
+    `bench/out/dropin/20260327T014653Z/dropin_behavior_report.json`
+- Result:
+  - the remaining drop-in blocker is still adapter unavailability on this host
+    (`metal default device unavailable` / `adapter_request_failed`)
+  - the fallback/retry changes did not restore adapter-dependent rows on this
+    machine, so microbench-driven runtime tuning is still blocked by host
+    bring-up rather than harness/build failures
+- Verification:
+  - `python3 -m unittest bench.tests.test_node_webgpu_executor bench.tests.test_runner_plan_support bench.tests.test_executor_registry`
+  - `node packages/doe-gpu/test/smoke/test-smoke-load.js`
+  - `node packages/doe-gpu/test/integration/run-integration.js --runtime node`
+  - `zig build doe-runtime`
+  - `python3 bench/native-compare/compare_dawn_vs_doe.py --config bench/native-compare/compare_dawn_vs_doe.config.apple.metal.gemma64.node-package.ir.json`
+  - `python3 bench/native-compare/compare_dawn_vs_doe.py --config bench/native-compare/compare_dawn_vs_doe.config.apple.metal.gemma64.node-package.warm.ir.json`
+  - `python3 bench/native-compare/compare_dawn_vs_doe.py --config bench/native-compare/compare_dawn_vs_doe.config.apple.metal.gemma1b.node-package.ir.json`
+  - `python3 bench/native-compare/compare_dawn_vs_doe.py --config bench/native-compare/compare_dawn_vs_doe.config.apple.metal.gemma1b.node-package.warm.ir.json`
+  - `python3 bench/drop-in/dropin_behavior_suite.py --artifact runtime/zig/zig-out/lib/libwebgpu_doe.dylib`
+  - `python3 bench/drop-in/dropin_benchmark_suite.py --artifact runtime/zig/zig-out/lib/libwebgpu_doe.dylib --micro-iterations 1 --e2e-iterations 1`
+
+## Gemma1B Node package lanes now fail safely with diagnostic artifacts, and drop-in reports now capture the adapter-unavailable root cause explicitly (2026-03-27)
+
+- `bench/executors/run-node-webgpu-plan.js` now runs the Node package executor
+  under a supervisor process. If the inner provider process exits before
+  writing terminal trace metadata, the supervisor writes an explicit error
+  `trace_meta` record instead of leaving the compare harness with a raw process
+  failure and no evidence.
+- `bench/executors/node-webgpu/executor.js` already emitted explicit
+  unsupported/error metadata for executor-managed failure paths; this change
+  closes the remaining gap where the outer process could die before those
+  artifacts existed.
+- Fresh Gemma1B Node package compare artifacts after that hardening:
+  - cold package lane:
+    `bench/out/apple-metal/20260327T012838Z/gemma1b.node-package.ir.compare.json`
+  - prepared-session package lane:
+    `bench/out/apple-metal/20260327T012903Z/gemma1b.node-package.warm.ir.compare.json`
+- Result:
+  - both 1B package compares now terminate as diagnostic artifacts instead of
+    crashing the compare harness
+  - both rows are still unreliable/non-comparable on this host because the
+    Dawn/right side reports execution errors in every timed sample, with zero
+    dispatch/row/success counts and zero traced execution timing
+  - the remaining blocker is therefore the underlying Dawn/host package
+    execution failure, not missing compare evidence
+- The right-side workspace metadata now records that failure explicitly, for
+  example:
+  - cold:
+    `bench/out/apple-metal/20260327T012838Z/gemma1b.node-package.ir.workspace/inference_gemma3_1b_prefill_64tok_decode_64tok/right/dawn_node_webgpu.run000.meta.json`
+  - warm:
+    `bench/out/apple-metal/20260327T012903Z/gemma1b.node-package.warm.ir.workspace/inference_gemma3_1b_prefill_64tok_decode_64tok/right/dawn_node_webgpu_prepared.run000.meta.json`
+- The drop-in harness path is likewise now evidence-complete:
+  - benchmark report:
+    `bench/out/dropin_benchmark_report.json`
+  - behavior report:
+    `bench/out/dropin_behavior_report.json`
+- Result:
+  - the macOS link-path issue remains fixed
+  - the remaining drop-in blocker is now explicit adapter unavailability on
+    this host (`metal default device unavailable` / `adapter_request_failed`),
+    not harness build failure
+  - `instance_create_destroy` still emits samples, but adapter-dependent rows
+    remain blocked until adapter/device acquisition is stable again
+- Verification:
+  - `python3 -m unittest bench.tests.test_node_webgpu_executor bench.tests.test_runner_plan_support bench.tests.test_executor_registry`
+  - `python3 bench/native-compare/compare_dawn_vs_doe.py --config bench/native-compare/compare_dawn_vs_doe.config.apple.metal.gemma1b.node-package.ir.json`
+  - `python3 bench/native-compare/compare_dawn_vs_doe.py --config bench/native-compare/compare_dawn_vs_doe.config.apple.metal.gemma1b.node-package.warm.ir.json`
+
+## Literal Gemma-3-270M benchmark row landed, Doe direct Metal now honors compute entry points, and the first literal compare is structurally comparable but still diagnostic (2026-03-27)
+
+- Added a new Doe-owned literal-production-style benchmark source at
+  `bench/ir/gemma3_270m_literal.json` with the minimal
+  `inference_gemma3_270m_literal_prefill_32tok_decode_1tok` scenario.
+- Added the matching compare config at
+  `bench/native-compare/compare_dawn_vs_doe.config.apple.metal.gemma270m.literal.ir.json`
+  and catalog wiring in:
+  - `bench/workloads/metadata/backend-workload-catalog.json`
+  - `bench/tests/test_backend_workload_catalog.py`
+  - `config/schema-targets.json`
+  - `bench/README.md`
+- The literal row keeps synthetic data, but it now follows the production-style
+  path much more closely than the shaped row:
+  - production-style kernel families and entry points
+  - gated FFN via `gelu_gated.wgsl`
+  - tied LM-head-style multicol decode path
+  - production-style RMSNorm weight offset entry point
+  - decode attention split across current and past KV bindings
+- Doe direct Metal now honors non-default compute entry points in the runtime
+  path. The direct backend change landed in:
+  - `runtime/zig/src/backend/metal/mod.zig`
+  - `runtime/zig/src/backend/metal/metal_kernel_dispatch.zig`
+  - `runtime/zig/src/backend/metal/metal_native_runtime.zig`
+  - `runtime/zig/src/backend/metal/metal_runtime_resources.zig`
+  - `runtime/zig/src/backend/metal/metal_dispatch_runtime.zig`
+- Metal pipeline cache keys now include non-default compute entry points, so
+  warmup and direct runtime execution resolve the same compute pipeline
+  identity instead of collapsing multiple entry points onto one kernel-name key.
+- The literal-production-style kernels were also reduced back into the WGSL/MSL
+  subset Doe’s direct runtime compiler accepts without changing the benchmark
+  graph shape. The key fixes were:
+  - flatten helper functions that implicitly captured bound resources or
+    threadgroup storage
+  - remove the inline conditional-expression form that Doe sema still rejects
+- Fresh literal compare artifact:
+  `bench/out/apple-metal/20260327T012241Z/gemma270m.literal.ir.compare.json`
+- Result:
+  - the row is now structurally comparable on both sides instead of failing on
+    Doe-side shader compilation
+  - it is still diagnostic, not claimable, because Doe is slower than Dawn on
+    this more literal 270M production-style path on this host
+- Verification:
+  - `zig build doe-plan-executor`
+  - `zig build test-core`
+  - `python3 bench/tools/generate_backend_workloads.py --verify`
+  - `python3 bench/gates/schema_gate.py`
+  - `python3 -m unittest bench.tests.test_backend_workload_catalog bench.tests.test_benchmark_ir`
+
+## Node package submit/wait short-circuit landed, Gemma64 package reruns moved again, and the drop-in macOS harness now links against the Doe dylib by path (2026-03-27)
+
+- `packages/doe-gpu/src/vendor/webgpu/index.js` now skips
+  `queueFlush(...)` in `queue.onSubmittedWorkDone()` when the queue state is
+  already marked complete, so synchronous or already-completed package submits
+  no longer pay a redundant wait path.
+- The same package submit path now fast-paths a single `_batched`
+  command-buffer submit by passing its recorded command array directly to
+  `submitBatched(...)`, instead of rebuilding a flattened array first.
+- Fresh Gemma64 package reruns after that change:
+  - cold package lane:
+    `bench/out/apple-metal/20260327T004741Z/gemma64.node-package.ir.compare.json`
+  - prepared-session package lane:
+    `bench/out/apple-metal/20260327T004755Z/gemma64.node-package.warm.ir.compare.json`
+- Compared with the 2026-03-26 package baselines:
+  - `bench/out/apple-metal/20260326T214312Z/gemma64.node-package.ir.compare.json`
+  - `bench/out/apple-metal/20260326T214456Z/gemma64.node-package.warm.ir.compare.json`
+- Result:
+  - the new reruns changed direction on this host, but the Dawn/package side
+    also moved materially at the same time
+  - treat these as additional tuning artifacts, not as stable replacement
+    package evidence yet
+  - the warm row remains attribution-consistent, so the package boundary itself
+    is still the right tuning target even though this rerun needs stability
+    follow-up
+- `bench/executors/node-webgpu/executor.js` and
+  `bench/executors/run-node-webgpu-plan.js` now support executor-local
+  `--debug-boundaries` and `--step-limit` flags for bounded package crash
+  diagnosis without changing compare workload contracts.
+- Gemma1B package evidence remains blocked:
+  - a fresh cold package compare still fails on the Dawn side with `rc=-11` in
+    `bench/out/apple-metal/20260327T005008Z/gemma1b.node-package.ir.workspace/`
+  - a debug rerun under `DOE_NODE_WEBGPU_DEBUG_BOUNDARIES=1` then exposed a
+    separate host-instability case where the Doe side failed early with
+    `metal default device unavailable` in
+    `bench/out/apple-metal/20260327T005355Z/gemma1b.node-package.ir.workspace/`
+  - Gemma1B package rows are therefore still unusable evidence on this host
+- `bench/drop-in/dropin_benchmark_suite.py` and
+  `bench/drop-in/dropin_behavior_suite.py` now link the candidate shared
+  library by explicit path on macOS instead of GNU `-l:` syntax, and they set
+  `DYLD_LIBRARY_PATH` alongside `LD_LIBRARY_PATH` for the child harness.
+- `bench/drop-in/dropin_gate.py` now defaults its `--artifact` path to
+  `libwebgpu_doe.dylib` on macOS instead of the Linux `.so` name.
+- Fresh drop-in artifacts after that harness fix:
+  - benchmark suite:
+    `bench/out/dropin/20260327T005752Z/dropin_benchmark_report.json`
+  - behavior suite:
+    `bench/out/dropin_behavior_report.json`
+- Result:
+  - the macOS link-path failure is fixed
+  - both suites are still blocked by `adapter_request_failed` once they move
+    past `instance_create_destroy`
+  - `instance_create_destroy` now emits real samples again on this host, but
+    the adapter-dependent micro rows are still not trustworthy enough to drive
+    runtime tuning yet
+
+## Node package Gemma64 narrowed on both cold and prepared-session lanes, and empty queue submit now avoids useless Metal command-buffer creation (2026-03-26)
+
+- `packages/doe-gpu/src/vendor/webgpu/index.js` no longer runs duplicate WGSL
+  preflight on the Node full-surface `createShaderModule()` path. The full
+  surface was already validating shader source in
+  `shared/full-surface.js`; the Node backend was repeating the same preflight
+  immediately before `addon.createShaderModule(...)`.
+- The same Node package path now keeps lazy compute/copy command buffers batched
+  through `commandEncoder.finish()` so `GPUQueue.submit()` can use the existing
+  `submitBatched(...)` path instead of replaying the recorded command list into
+  a native command encoder first on the common compute path.
+- Fresh Gemma64 package reruns after those changes:
+  - cold package lane:
+    `bench/out/apple-metal/20260326T214312Z/gemma64.node-package.ir.compare.json`
+  - prepared-session package lane:
+    `bench/out/apple-metal/20260326T214328Z/gemma64.node-package.warm.ir.compare.json`
+- Compared with the earlier package references:
+  - `bench/out/apple-metal/20260326T212317Z/gemma64.node-package.ir.compare.json`
+  - `bench/out/apple-metal/20260326T212405Z/gemma64.node-package.warm.ir.compare.json`
+- Result:
+  - Doe is still slower than Dawn on the Node/package boundary, but both lanes
+    improved materially on this host
+  - the cold package loss narrowed after reducing Doe-side shader-module setup
+    cost
+  - the prepared-session loss also narrowed, which means the general batched
+    command-buffer path helped the steady-state package lane too
+- Current package diagnosis:
+  - shader-module creation was a real cold-package problem and is now smaller
+  - the remaining package gap is still dominated by the Node/package execution
+    boundary, especially the submit/wait portion on Gemma64
+  - Gemma1B Node package compare is still blocked locally by a Dawn-side
+    `rc=-11` crash, so Gemma64 remains the validated package evidence row
+- `runtime/zig/src/doe_queue_submit_native.zig` now fast-exits empty queue
+  submits before creating a Metal command buffer when every submitted
+  `DoeCommandBuffer` has zero recorded commands. This is a real runtime-path
+  improvement for the named `queue_submit_empty` microbench target, not a
+  benchmark-only change.
+- Validation:
+  - `node packages/doe-gpu/test/smoke/test-smoke-load.js`
+  - `node packages/doe-gpu/test/integration/run-integration.js --runtime node`
+  - `python3 -m unittest bench.tests.test_node_webgpu_executor bench.tests.test_executor_registry bench.tests.test_runner_plan_support`
+  - `zig build doe-runtime`
+  - `zig build test-core`
+
+## Warm Node package rows now keep workload-unit wall attribution internally consistent (2026-03-26)
+
+- Prepared-session Node package rows now keep the existing host-overhead bucket
+  contract: `host*TotalNs` fields mean "outside selected timing but inside
+  workload-unit wall", so pre-boundary plan load/parse/normalize and runtime
+  creation no longer flow into those buckets on warm rows.
+- `config/trace-meta.schema.json` now constrains
+  `workloadUnitWallSource=trace-meta-process-wall` via enum rather than allowing
+  arbitrary strings.
+- The compare runner now suppresses prepared-session `cpu_time` metrics unless a
+  matching inner-boundary CPU source exists, instead of mixing subprocess CPU
+  time with the inner trace-meta wall boundary.
+- Fresh warm-package rerun artifact:
+  `bench/out/apple-metal/20260326T214456Z/gemma64.node-package.warm.ir.compare.json`
+- The rerun remains `comparisonStatus=comparable` and `claimStatus=diagnostic`.
+- The new left-side warm trace meta in
+  `bench/out/apple-metal/20260326T214456Z/gemma64.node-package.warm.ir.workspace/`
+  now shows the prepared-session pre-boundary host totals zeroed, while the
+  host-overhead breakdown in the compare artifact no longer produces the prior
+  negative selected-gap remainder.
+- This supersedes the earlier prepared-session package attribution note at
+  `bench/out/apple-metal/20260326T212405Z/gemma64.node-package.warm.ir.compare.json`.
+
+## Governed Gemma 1B rerun now exposes artifact-finalize sub-buckets and confirms the remaining direct-lane cost is JSONL serialization (2026-03-26)
+
+- `runtime/zig/src/trace.zig` and `config/trace-meta.schema.json` now carry
+  fine-grained artifact-finalize diagnostics for:
+  - `hostArtifactTraceJsonlSerializeTotalNs`
+  - `hostArtifactTraceJsonlWriteTotalNs`
+  - `hostArtifactOperatorManifestFinalizeTotalNs`
+- `runtime/zig/src/trace_jsonl_emit.zig` now streams both generic and
+  plan-specific trace rows through a buffered file writer while timing
+  serialization separately from file writeback.
+- Corrected governed Apple Metal Gemma 1B rerun artifact after rebuilding the
+  standalone plan executors:
+  `bench/out/apple-metal/20260326T212923Z/gemma1b.ir.compare.json`
+- The compare artifact remains `comparisonStatus=comparable` and
+  `claimStatus=claimable`.
+- The new left-side trace meta in
+  `bench/out/apple-metal/20260326T212923Z/gemma1b.ir.workspace/` now shows that
+  the remaining Doe direct-lane artifact-finalize cost is dominated by JSONL
+  serialization rather than file writeback.
+- This supersedes the earlier 2026-03-26 note that saw no governed
+  `artifactFinalize` improvement before the actual `doe-plan-executor` target
+  was rebuilt for the compare lane.
+
+## Node package Gemma compare now has explicit cold vs prepared-session boundaries and package host buckets (2026-03-26)
+
+- The Node plan executor under `bench/executors/node-webgpu/executor.js` now
+  emits real package-lane host totals:
+  - `hostInputReadTotalNs`
+  - `hostInputParseTotalNs`
+  - `hostWorkloadPrepareTotalNs`
+  - `hostExecutorInitTotalNs`
+  - `hostCommandOrchestrationTotalNs`
+  - `hostArtifactFinalizeTotalNs`
+- Trace meta for this lane now also carries explicit package setup and step
+  breakdowns, including shader-module creation, bind-group/pipeline creation,
+  write materialization, queue writes, and dispatch encode API time.
+- Added prepared-session package executor ids and configs:
+  - `doe_node_webgpu_prepared`
+  - `dawn_node_webgpu_prepared`
+  - `bench/native-compare/compare_dawn_vs_doe.config.apple.metal.gemma64.node-package.warm.ir.json`
+  - `bench/native-compare/compare_dawn_vs_doe.config.apple.metal.gemma1b.node-package.warm.ir.json`
+- Cold package rerun artifact:
+  `bench/out/apple-metal/20260326T212317Z/gemma64.node-package.ir.compare.json`
+  - stayed `comparisonStatus=comparable`
+  - stayed `claimStatus=diagnostic`
+  - Doe remained slower on selected timing and workload-unit wall
+  - the new buckets show the dominant cold-package gap is setup, especially
+    Doe-side shader-module creation under the JS/package path
+- Prepared-session rerun artifact:
+  `bench/out/apple-metal/20260326T212405Z/gemma64.node-package.warm.ir.compare.json`
+  - stayed `comparisonStatus=comparable`
+  - stayed `claimStatus=diagnostic`
+  - Doe remained slower even after package setup was moved out of
+    `selectedTiming`
+  - this means the remaining package loss is not just cold first-use setup; it
+    persists on the steady-state Node/package boundary too
+- Methodology note:
+  - cold package rows keep setup inside `selectedTiming` and keep
+    `workloadUnitWall` on subprocess wall
+  - prepared-session rows use
+    `workloadUnitWallSource=trace-meta-process-wall` so the timed wall matches
+    the prepared-session boundary instead of fresh-process startup
+- Current diagnosis:
+  - Doe direct backend still wins on the direct executor lane
+  - Doe package-surface loss is now concretely attributable to the Node/package
+    path rather than missing host-bucket instrumentation
+  - next tuning target is the Doe package integration path, starting with
+    shader-module creation and other per-session JS/addon setup costs
+- Follow-up stability note:
+  - the Gemma 1B Node package configs are now selector-correct for the
+    `exploration` cohort, but fresh local reruns still fail on the Dawn Node
+    WebGPU side with `rc=-11` before producing a compare artifact
+  - this means the cold/prepared package-boundary split is validated on the
+    Gemma64 row today, while Gemma1B package execution still needs a separate
+    stability investigation before it can join the package evidence set
+
+## Plan-specific trace rows now remove the dominant Doe artifact-finalize cost on the governed Gemma 1B lane (2026-03-26)
+
+- `runtime/zig/src/trace_jsonl_emit.zig` now has a plan-specific JSONL trace
+  writer for direct plan execution, and
+  `runtime/zig/src/doe_plan_executor.zig` uses that writer instead of the
+  generic quirk/trace row formatter.
+- The direct plan trace rows no longer repeat per-row execution artifact
+  metadata that is already present in trace meta, and they no longer emit
+  unused quirk-decision fields on the plan path.
+- The governed Apple Metal Gemma 1B rerun after this change is:
+  `bench/out/apple-metal/20260326T210623Z/gemma1b.ir.compare.json`
+- Compared with the earlier references:
+  - `bench/out/apple-metal/20260326T202133Z/gemma1b.ir.compare.json`
+  - `bench/out/apple-metal/20260326T205420Z/gemma1b.ir.compare.json`
+- The new artifact keeps `comparisonStatus=comparable` and
+  `claimStatus=claimable`, while the Doe-side host-overhead breakdown now shows
+  the prior artifact-finalize bottleneck materially reduced on this lane.
+
+## First governed Gemma 1B rerun after host-side artifact write changes is still comparable but not yet lower in artifact finalize (2026-03-26)
+
+- Re-ran the governed Apple Metal Gemma 1B IR compare config after the trace
+  JSONL buffering and incremental manifest-hash changes:
+  - current artifact:
+    `bench/out/apple-metal/20260326T205420Z/gemma1b.ir.compare.json`
+  - prior reference artifact:
+    `bench/out/apple-metal/20260326T202133Z/gemma1b.ir.compare.json`
+- The new run remains `comparisonStatus=comparable` and `claimStatus=claimable`.
+- The host-overhead bucket layout still points to `artifactFinalize` as the
+  dominant Doe-side wall-gap cost on this lane. The code changes removed an
+  extra manifest reread/hash pass and buffered the trace JSONL writes, but this
+  first governed rerun did not yet show a material reduction in that bucket
+  relative to the latest pre-change reference artifact.
+- This means the current diagnosis stays the same: the host-side artifact path
+  is still the main optimization target, and the new changes are safe plumbing
+  improvements rather than a demonstrated end-state fix.
+
+## Trace JSONL emission and operator manifests now avoid extra host-side artifact passes (2026-03-26)
+
+- `runtime/zig/src/trace_jsonl_emit.zig` now batches trace JSONL rows into one
+  in-memory buffer before writing them to disk, and both
+  `runtime/zig/src/main.zig` plus `runtime/zig/src/doe_plan_executor.zig` use
+  that shared path for artifact finalization.
+- `runtime/zig/src/operator_artifacts.zig` now hashes the operator manifest
+  incrementally while records are emitted and finalized, instead of rereading
+  the manifest from disk after close just to compute `manifest_hash`.
+- This change is intentionally a host-overhead optimization only. It does not
+  move artifact work outside `workloadUnitWall`, change compare methodology, or
+  add benchmark-only hidden switches.
+
 ## IR-backed Node package compare lane now exists beside the direct executor lane (2026-03-26)
 
 - The standalone Node plan executor under

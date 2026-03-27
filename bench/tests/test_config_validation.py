@@ -278,6 +278,25 @@ class TestRealConfigs(unittest.TestCase):
         sch = repo_root / "config" / "trace-meta.schema.json"
         self.assertTrue(sch.exists(), "trace-meta.schema.json should exist")
 
+    def test_trace_meta_workload_unit_wall_source_is_enum_constrained(self):
+        repo_root = Path(__file__).resolve().parents[2]
+        sch = repo_root / "config" / "trace-meta.schema.json"
+        schema = json.loads(sch.read_text(encoding="utf-8"))
+        valid = {
+            "traceVersion": 1,
+            "module": "alpha",
+            "seqMax": 0,
+            "rowCount": 0,
+            "hash": "0x1",
+            "previousHash": "0x0",
+            "workloadUnitWallSource": "trace-meta-process-wall",
+        }
+        jsonschema.validate(valid, schema)
+        invalid = dict(valid)
+        invalid["workloadUnitWallSource"] = "trace-meta-processwall"
+        with self.assertRaises(jsonschema.ValidationError):
+            jsonschema.validate(invalid, schema)
+
 
 if __name__ == "__main__":
     unittest.main()

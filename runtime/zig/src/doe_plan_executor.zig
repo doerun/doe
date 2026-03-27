@@ -6,6 +6,7 @@ const main_print = @import("main_print.zig");
 const quirk = @import("quirk/mod.zig");
 const semantic_trace = @import("semantic_trace.zig");
 const trace = @import("trace.zig");
+const trace_jsonl_emit = @import("trace_jsonl_emit.zig");
 const dawn_plan_types = @import("dawn_plan_types.zig");
 
 const Allocator = std.mem.Allocator;
@@ -38,15 +39,7 @@ const ExecutableCommand = struct {
     semantic_phase: []const u8,
 };
 
-const BufferedTraceRow = struct {
-    seq: usize,
-    command: model.Command,
-    semantic_phase: []const u8,
-    timestamp_ns: u64,
-    hash: u64,
-    previous_hash: u64,
-    execution_result: ?execution.ExecutionResult,
-};
+const BufferedTraceRow = trace_jsonl_emit.BufferedTraceRow;
 
 const TraceDecisionWrapper = struct {
     decision: quirk.runtime.DispatchDecision,
@@ -361,6 +354,9 @@ pub fn runPlan(allocator: Allocator, options: RunOptions) !void {
         .host_kernel_prewarm_total_ns = 0,
         .host_command_orchestration_total_ns = 0,
         .host_artifact_finalize_total_ns = 0,
+        .host_artifact_trace_jsonl_serialize_total_ns = 0,
+        .host_artifact_trace_jsonl_write_total_ns = 0,
+        .host_artifact_operator_manifest_finalize_total_ns = 0,
         .execution_gpu_timestamp_total_ns = 0,
         .execution_gpu_timestamp_attempted_count = 0,
         .execution_gpu_timestamp_valid_count = 0,
@@ -421,9 +417,10 @@ pub fn runPlan(allocator: Allocator, options: RunOptions) !void {
     trace_summary.host_executor_init_total_ns = host_executor_init_total_ns;
 
     const execute_start_ns = nowNs();
+    var op_id_storage = try allocator.alloc([32]u8, executable_commands.len);
+    defer allocator.free(op_id_storage);
     for (executable_commands, 0..) |item, idx| {
-        var op_id_buffer: [32]u8 = undefined;
-        const semantic = semanticContext(idx, item.semantic_phase, loaded.plan.plan_sha256, &op_id_buffer);
+        const semantic = semanticContext(idx, item.semantic_phase, loaded.plan.plan_sha256, &op_id_storage[idx]);
         const command_label = main_print.commandName(item.command);
         const kernel_name = main_print.commandKernel(item.command);
         const timestamp_ns = nowNs();
@@ -473,8 +470,10 @@ pub fn runPlan(allocator: Allocator, options: RunOptions) !void {
         );
         try trace_rows.append(allocator, .{
             .seq = idx,
-            .command = item.command,
-            .semantic_phase = item.semantic_phase,
+            .command_label = command_label,
+            .kernel_name = kernel_name,
+            .semantic = semantic,
+            .decision = EMPTY_DECISION,
             .timestamp_ns = timestamp_ns,
             .hash = row_hash,
             .previous_hash = previous_hash,
@@ -503,27 +502,14 @@ pub fn runPlan(allocator: Allocator, options: RunOptions) !void {
     const artifact_finalize_start_ns = nowNs();
     try ensureParentDir(options.trace_meta_path);
     try ensureParentDir(options.trace_jsonl_path);
-    {
-        const trace_file = try std.fs.cwd().createFile(options.trace_jsonl_path, .{ .truncate = true });
-        defer trace_file.close();
-        const writer = trace_file.deprecatedWriter();
-        for (trace_rows.items) |row| {
-            var op_id_buffer: [32]u8 = undefined;
-            const semantic = semanticContext(row.seq, row.semantic_phase, loaded.plan.plan_sha256, &op_id_buffer);
-            try trace.printTraceLineWithSemantic(
-                writer,
-                row.seq,
-                main_print.commandName(row.command),
-                main_print.commandKernel(row.command),
-                semantic,
-                TraceDecisionWrapper{ .decision = EMPTY_DECISION },
-                row.timestamp_ns,
-                row.hash,
-                row.previous_hash,
-                row.execution_result,
-            );
-        }
-    }
+    const trace_jsonl_timing = try trace_jsonl_emit.writeBufferedPlanTraceRows(
+        allocator,
+        options.trace_jsonl_path,
+        DEFAULT_MODULE_NAME,
+        trace_rows.items,
+    );
+    trace_summary.host_artifact_trace_jsonl_serialize_total_ns = trace_jsonl_timing.serialize_ns;
+    trace_summary.host_artifact_trace_jsonl_write_total_ns = trace_jsonl_timing.write_ns;
     trace_summary.host_artifact_finalize_total_ns = elapsedSince(artifact_finalize_start_ns);
     try trace.writeTraceMeta(options.trace_meta_path, trace_summary);
 }

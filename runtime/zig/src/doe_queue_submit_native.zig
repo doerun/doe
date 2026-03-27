@@ -107,6 +107,14 @@ fn executeDeferredResolves(q: *DoeQueue) void {
     q.deferred_resolve_count = 0;
 }
 
+fn submittedBuffersHaveRecordedCommands(count: usize, cmd_bufs: [*]const ?*anyopaque) bool {
+    for (cmd_bufs[0..count]) |raw| {
+        const cb = cast(DoeCommandBuffer, raw) orelse continue;
+        if (cb.cmds.items.len != 0) return true;
+    }
+    return false;
+}
+
 fn read_indirect_dispatch_counts(buffer_raw: ?*anyopaque, offset: u64) ?struct { x: u32, y: u32, z: u32 } {
     const buffer = cast(DoeBuffer, buffer_raw) orelse return null;
     const byte_offset: usize = @intCast(offset);
@@ -219,6 +227,10 @@ pub export fn doeNativeQueueSubmit(q_raw: ?*anyopaque, count: usize, cmd_bufs: [
 
     // Flush any prior pending GPU work before encoding new commands.
     flush_pending_work(q);
+
+    if (!submittedBuffersHaveRecordedCommands(count, cmd_bufs)) {
+        return;
+    }
 
     // Batch all recorded commands into a single MTLCommandBuffer.
     const mtl_cmd = metal_bridge_create_command_buffer(queue) orelse return;

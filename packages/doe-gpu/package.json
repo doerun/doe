@@ -26,9 +26,12 @@
   },
   "files": [
     "src/",
+    "scripts/",
+    "binding.gyp",
     "README.md"
   ],
   "scripts": {
+    "build:addon": "node scripts/build-addon.js",
     "test": "npm run test:smoke && npm run test:integration",
     "test:smoke": "node test/smoke/test-smoke-load.js",
     "test:integration": "node test/integration/run-integration.js --runtime node",

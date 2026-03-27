@@ -336,7 +336,7 @@ MetalHandle metal_bridge_encode_compute_dispatch(MetalHandle queue, MetalHandle 
     (void)z;
     return NULL;
 }
-MetalHandle metal_bridge_encode_compute_dispatch_batch(MetalHandle queue, MetalHandle pipeline, MetalHandle* buffers, uint32_t buffer_count, uint32_t x, uint32_t y, uint32_t z, uint32_t repeat_count) {
+MetalHandle metal_bridge_encode_compute_dispatch_batch(MetalHandle queue, MetalHandle pipeline, MetalHandle* buffers, uint32_t buffer_count, uint32_t x, uint32_t y, uint32_t z, uint32_t repeat_count, uint32_t wg_x, uint32_t wg_y, uint32_t wg_z) {
     (void)queue;
     (void)pipeline;
     (void)buffers;
@@ -345,6 +345,9 @@ MetalHandle metal_bridge_encode_compute_dispatch_batch(MetalHandle queue, MetalH
     (void)y;
     (void)z;
     (void)repeat_count;
+    (void)wg_x;
+    (void)wg_y;
+    (void)wg_z;
     return NULL;
 }
 void metal_bridge_cmd_buf_encode_compute_dispatch(MetalHandle cmd_buf, MetalHandle pipeline, MetalHandle* buffers, uint32_t buffer_count, uint32_t x, uint32_t y, uint32_t z, uint32_t wg_x, uint32_t wg_y, uint32_t wg_z) {

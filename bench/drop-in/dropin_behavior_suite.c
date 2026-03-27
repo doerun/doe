@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 #include <time.h>
 
 #include <webgpu.h>
@@ -39,23 +40,27 @@ typedef struct AdapterRequestState {
     volatile bool done;
     WGPURequestAdapterStatus status;
     WGPUAdapter adapter;
+    char message[256];
 } AdapterRequestState;
 
 typedef struct DeviceRequestState {
     volatile bool done;
     WGPURequestDeviceStatus status;
     WGPUDevice device;
+    char message[256];
 } DeviceRequestState;
 
 typedef struct QueueWorkDoneState {
     volatile bool done;
     WGPUQueueWorkDoneStatus status;
+    char message[256];
 } QueueWorkDoneState;
 
 typedef struct ErrorScopeState {
     volatile bool done;
     WGPUPopErrorScopeStatus status;
     WGPUErrorType error_type;
+    char message[256];
 } ErrorScopeState;
 
 typedef struct SuiteResult {
@@ -74,6 +79,22 @@ typedef struct SuiteResult {
     const char* failure;
 } SuiteResult;
 
+static void copy_message(char* out, size_t out_cap, WGPUStringView message) {
+    if (out == NULL || out_cap == 0) {
+        return;
+    }
+    out[0] = '\0';
+    if (message.data == NULL || message.length == 0) {
+        return;
+    }
+    size_t copy_len = message.length;
+    if (copy_len >= out_cap) {
+        copy_len = out_cap - 1;
+    }
+    memcpy(out, message.data, copy_len);
+    out[copy_len] = '\0';
+}
+
 static void on_request_adapter(
     WGPURequestAdapterStatus status,
     WGPUAdapter adapter,
@@ -81,11 +102,11 @@ static void on_request_adapter(
     void* userdata1,
     void* userdata2
 ) {
-    (void)message;
     (void)userdata2;
     AdapterRequestState* state = (AdapterRequestState*)userdata1;
     state->status = status;
     state->adapter = adapter;
+    copy_message(state->message, sizeof(state->message), message);
     state->done = true;
 }
 
@@ -96,11 +117,11 @@ static void on_request_device(
     void* userdata1,
     void* userdata2
 ) {
-    (void)message;
     (void)userdata2;
     DeviceRequestState* state = (DeviceRequestState*)userdata1;
     state->status = status;
     state->device = device;
+    copy_message(state->message, sizeof(state->message), message);
     state->done = true;
 }
 
@@ -110,10 +131,10 @@ static void on_queue_work_done(
     void* userdata1,
     void* userdata2
 ) {
-    (void)message;
     (void)userdata2;
     QueueWorkDoneState* state = (QueueWorkDoneState*)userdata1;
     state->status = status;
+    copy_message(state->message, sizeof(state->message), message);
     state->done = true;
 }
 
@@ -124,12 +145,33 @@ static void on_pop_error_scope(
     void* userdata1,
     void* userdata2
 ) {
-    (void)message;
     (void)userdata2;
     ErrorScopeState* state = (ErrorScopeState*)userdata1;
     state->status = status;
     state->error_type = type;
+    copy_message(state->message, sizeof(state->message), message);
     state->done = true;
+}
+
+static bool request_adapter_with_power_preference(
+    WGPUInstance instance,
+    WGPUPowerPreference power_preference,
+    AdapterRequestState* out_state)
+{
+    out_state->done = false;
+    out_state->status = WGPURequestAdapterStatus_Error;
+    out_state->adapter = NULL;
+    out_state->message[0] = '\0';
+
+    WGPURequestAdapterCallbackInfo adapter_callback = WGPU_REQUEST_ADAPTER_CALLBACK_INFO_INIT;
+    adapter_callback.mode = WGPUCallbackMode_AllowProcessEvents;
+    adapter_callback.callback = on_request_adapter;
+    adapter_callback.userdata1 = out_state;
+
+    WGPURequestAdapterOptions adapter_options = WGPU_REQUEST_ADAPTER_OPTIONS_INIT;
+    adapter_options.powerPreference = power_preference;
+    wgpuInstanceRequestAdapter(instance, &adapter_options, adapter_callback);
+    return wait_for_flag(instance, &out_state->done, ASYNC_TIMEOUT_MS);
 }
 
 static const char* bool_to_json(bool value) {
@@ -173,22 +215,27 @@ int main(void) {
         .done = false,
         .status = WGPURequestAdapterStatus_Error,
         .adapter = NULL,
+        .message = {0},
     };
-    WGPURequestAdapterCallbackInfo adapter_callback = WGPU_REQUEST_ADAPTER_CALLBACK_INFO_INIT;
-    adapter_callback.mode = WGPUCallbackMode_AllowProcessEvents;
-    adapter_callback.callback = on_request_adapter;
-    adapter_callback.userdata1 = &adapter_state;
-
-    WGPURequestAdapterOptions adapter_options = WGPU_REQUEST_ADAPTER_OPTIONS_INIT;
-    wgpuInstanceRequestAdapter(instance, &adapter_options, adapter_callback);
-    if (!wait_for_flag(instance, &adapter_state.done, ASYNC_TIMEOUT_MS)) {
-        result.failure = "adapter_request_timeout";
-        goto cleanup;
+    const WGPUPowerPreference requests[] = {
+        WGPUPowerPreference_HighPerformance,
+        WGPUPowerPreference_Undefined,
+        WGPUPowerPreference_LowPower,
+    };
+    bool adapter_ready = false;
+    for (size_t i = 0; i < sizeof(requests) / sizeof(requests[0]); ++i) {
+        if (!request_adapter_with_power_preference(instance, requests[i], &adapter_state)) {
+            result.failure = "adapter_request_timeout";
+            goto cleanup;
+        }
+        result.adapter_status = (uint32_t)adapter_state.status;
+        adapter = adapter_state.adapter;
+        if (adapter_state.status == WGPURequestAdapterStatus_Success && adapter != NULL) {
+            adapter_ready = true;
+            break;
+        }
     }
-
-    result.adapter_status = (uint32_t)adapter_state.status;
-    adapter = adapter_state.adapter;
-    if (adapter_state.status != WGPURequestAdapterStatus_Success || adapter == NULL) {
+    if (!adapter_ready) {
         result.failure = "adapter_request_failed";
         goto cleanup;
     }
@@ -198,6 +245,7 @@ int main(void) {
         .done = false,
         .status = WGPURequestDeviceStatus_Error,
         .device = NULL,
+        .message = {0},
     };
     WGPURequestDeviceCallbackInfo device_callback = WGPU_REQUEST_DEVICE_CALLBACK_INFO_INIT;
     device_callback.mode = WGPUCallbackMode_AllowProcessEvents;
@@ -257,6 +305,7 @@ int main(void) {
     QueueWorkDoneState queue_state = {
         .done = false,
         .status = WGPUQueueWorkDoneStatus_Error,
+        .message = {0},
     };
     WGPUQueueWorkDoneCallbackInfo queue_callback = WGPU_QUEUE_WORK_DONE_CALLBACK_INFO_INIT;
     queue_callback.mode = WGPUCallbackMode_AllowProcessEvents;
@@ -283,6 +332,7 @@ int main(void) {
         .done = false,
         .status = WGPUPopErrorScopeStatus_Error,
         .error_type = WGPUErrorType_NoError,
+        .message = {0},
     };
     WGPUPopErrorScopeCallbackInfo error_callback = WGPU_POP_ERROR_SCOPE_CALLBACK_INFO_INIT;
     error_callback.mode = WGPUCallbackMode_AllowProcessEvents;
@@ -343,6 +393,21 @@ cleanup:
 
     if (result.instance_create) {
         result.lifecycle = true;
+    }
+
+    if (!result.pass) {
+        if (!result.adapter_request && adapter_state.message[0] != '\0') {
+            fprintf(stderr, "dropin_behavior_adapter_message: %s\n", adapter_state.message);
+        }
+        if (result.adapter_request && !result.device_request && device_state.message[0] != '\0') {
+            fprintf(stderr, "dropin_behavior_device_message: %s\n", device_state.message);
+        }
+        if (result.device_request && !result.queue_ops && queue_state.message[0] != '\0') {
+            fprintf(stderr, "dropin_behavior_queue_message: %s\n", queue_state.message);
+        }
+        if (result.queue_ops && !result.error_capture && error_state.message[0] != '\0') {
+            fprintf(stderr, "dropin_behavior_error_scope_message: %s\n", error_state.message);
+        }
     }
 
     printf(

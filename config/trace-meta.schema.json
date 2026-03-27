@@ -69,6 +69,9 @@
     "hostKernelPrewarmTotalNs": { "type": "integer", "minimum": 0 },
     "hostCommandOrchestrationTotalNs": { "type": "integer", "minimum": 0 },
     "hostArtifactFinalizeTotalNs": { "type": "integer", "minimum": 0 },
+    "hostArtifactTraceJsonlSerializeTotalNs": { "type": "integer", "minimum": 0 },
+    "hostArtifactTraceJsonlWriteTotalNs": { "type": "integer", "minimum": 0 },
+    "hostArtifactOperatorManifestFinalizeTotalNs": { "type": "integer", "minimum": 0 },
     "executionGpuTimestampTotalNs": { "type": "integer", "minimum": 0 },
     "executionGpuTimestampAttemptedCount": { "type": "integer", "minimum": 0 },
     "executionGpuTimestampValidCount": { "type": "integer", "minimum": 0 },
@@ -88,6 +91,37 @@
     "timingMs": { "type": "number", "minimum": 0 },
     "elapsedMs": { "type": "number", "minimum": 0 },
     "processWallMs": { "type": "number", "minimum": 0 },
+    "workloadUnitWallSource": {
+      "type": "string",
+      "enum": ["trace-meta-process-wall"]
+    },
+    "packagePreparedSession": { "type": "boolean" },
+    "packageSetupIncludedInSelectedTiming": { "type": "boolean" },
+    "packageSetupTotalNs": { "type": "integer", "minimum": 0 },
+    "packageSetupBreakdownNs": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "bufferCreateTotalNs": { "type": "integer", "minimum": 0 },
+        "initialDataWriteTotalNs": { "type": "integer", "minimum": 0 },
+        "shaderModuleCreateTotalNs": { "type": "integer", "minimum": 0 },
+        "bindGroupLayoutCreateTotalNs": { "type": "integer", "minimum": 0 },
+        "pipelineLayoutCreateTotalNs": { "type": "integer", "minimum": 0 },
+        "pipelineCreateTotalNs": { "type": "integer", "minimum": 0 },
+        "bindGroupCreateTotalNs": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "packageStepBreakdownNs": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "writeMaterializeTotalNs": { "type": "integer", "minimum": 0 },
+        "writeQueueWriteTotalNs": { "type": "integer", "minimum": 0 },
+        "dispatchEncodeApiTotalNs": { "type": "integer", "minimum": 0 },
+        "copyEncodeApiTotalNs": { "type": "integer", "minimum": 0 },
+        "readbackTotalNs": { "type": "integer", "minimum": 0 }
+      }
+    },
     "benchmarkWallMsSamples": {
       "type": "array",
       "items": { "type": "number", "minimum": 0 }

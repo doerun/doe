@@ -1,0 +1,40 @@
+// PE program: element-wise kernel (auto-generated from WGSL)
+// Each PE processes chunk_size elements with no fabric routing.
+
+param memcpy_params: comptime_struct;
+param pe_id: i16;
+param num_pes: i16;
+
+const sys_mod = @import_module("<memcpy/memcpy>", memcpy_params);
+const math = @import_module("<math>");
+
+// Storage buffers — each PE holds its local data.
+param chunk_size: i16 = 1024;
+
+var gate: [chunk_size]f32 = @zeros([chunk_size]f32);
+var gate_ptr: [*]f32 = &gate;
+var up: [chunk_size]f32 = @zeros([chunk_size]f32);
+var up_ptr: [*]f32 = &up;
+var output: [chunk_size]f32 = @zeros([chunk_size]f32);
+var output_ptr: [*]f32 = &output;
+
+fn gelu(x: f32) f32 {
+    const inner: f32 = (0.7978845608 * (x + (((0.044715 * x) * x) * x)));
+    return ((0.5 * x) * (1 + math.tanh(math.min(f32, math.max(f32, inner, -(15)), 15))));
+}
+
+fn compute() void {
+    for (@range(i16, chunk_size)) |_idx| {
+        const idx = @as(u32, _idx);
+        const idx: u32 = gid.x;
+        output[math.min(f32, idx, (arrayLength(output) - 1))] = (gelu(gate[math.min(f32, idx, (arrayLength(gate) - 1))]) * up[math.min(f32, idx, (arrayLength(up) - 1))]);
+    }
+    sys_mod.unblock_cmd_stream();
+}
+
+comptime {
+    @export_symbol(gate_ptr, "gate");
+    @export_symbol(up_ptr, "up");
+    @export_symbol(output_ptr, "output");
+    @export_symbol(compute);
+}

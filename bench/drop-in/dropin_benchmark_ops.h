@@ -40,5 +40,6 @@ bool dropin_bench_full_lifecycle_device_only_once(const char** failure);
 bool dropin_bench_full_lifecycle_queue_submit_once(const char** failure);
 bool dropin_bench_full_lifecycle_write_size_once(size_t write_size, const char** failure);
 bool dropin_bench_full_lifecycle_queue_ops_once(const char** failure);
+const char* dropin_bench_failure_detail(void);
 
 #endif

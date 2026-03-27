@@ -119,6 +119,24 @@ _REGISTRY: dict[str, ExecutorSpec] = {
         ),
         execution_boundary="plan",
     ),
+    "dawn_node_webgpu_prepared": ExecutorSpec(
+        executor_id="dawn_node_webgpu_prepared",
+        command_template=(
+            "node bench/executors/run-node-webgpu-plan.js "
+            "--provider dawn --prepared-session --plan {plan} --trace-jsonl {trace_jsonl} "
+            "--trace-meta {trace_meta} --workload {workload}"
+        ),
+        execution_boundary="plan",
+    ),
+    "doe_node_webgpu_prepared": ExecutorSpec(
+        executor_id="doe_node_webgpu_prepared",
+        command_template=(
+            "node bench/executors/run-node-webgpu-plan.js "
+            "--provider doe --prepared-session --plan {plan} --trace-jsonl {trace_jsonl} "
+            "--trace-meta {trace_meta} --workload {workload}"
+        ),
+        execution_boundary="plan",
+    ),
 }
 
 

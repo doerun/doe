@@ -10,13 +10,14 @@ import shutil
 from pathlib import Path
 from typing import Any
 
-from native_compare_modules.reporting import NS_PER_MS, parse_int, safe_float
+from native_compare_modules.reporting import NS_PER_MS, parse_int, safe_float, safe_int
 from native_compare_modules.timing_selection import (
     pick_measured_timing_ms,
     maybe_adjust_timing_for_ignored_first_ops,
 )
 
 MAX_RSS_MARKER = "__DOE_MAXRSS_KB__:"
+TRACE_META_PROCESS_WALL_SOURCE = "trace-meta-process-wall"
 
 def file_sha256(path: Path) -> str:
     import hashlib
@@ -66,11 +67,38 @@ def dawn_metric_median_ms(trace_meta: dict[str, Any], metric_name: str) -> float
         return None
     return value
 
+
+def workload_unit_wall_from_trace_meta(trace_meta: dict[str, Any]) -> float | None:
+    source = str(trace_meta.get("workloadUnitWallSource", "")).strip()
+    if source != TRACE_META_PROCESS_WALL_SOURCE:
+        return None
+    value = safe_float(trace_meta.get("processWallMs"))
+    if value is None or value < 0.0:
+        raise ValueError(
+            f"traceMeta requested workloadUnitWallSource={TRACE_META_PROCESS_WALL_SOURCE} "
+            "but processWallMs is missing or invalid"
+        )
+    return value
+
+
+def trace_meta_records_terminal_execution_outcome(trace_meta_path: Path | None) -> bool:
+    if trace_meta_path is None or not trace_meta_path.exists():
+        return False
+    try:
+        payload = parse_trace_meta(trace_meta_path)
+    except Exception:
+        return False
+    return (
+        safe_int(payload.get("executionErrorCount"), default=0) > 0
+        or safe_int(payload.get("executionUnsupportedCount"), default=0) > 0
+        or safe_int(payload.get("executionSkippedCount"), default=0) > 0
+    )
+
 def extract_timing_metrics_ms(
     trace_meta: dict[str, Any],
     *,
     wall_ms: float,
-    cpu_ms: float,
+    cpu_ms: float | None,
 ) -> dict[str, float | None]:
     dawn_wall_ms = dawn_metric_median_ms(trace_meta, "wall_time")
     dawn_cpu_ms = dawn_metric_median_ms(trace_meta, "cpu_time")
@@ -434,6 +462,7 @@ def run_once(
     gpu_memory_probe: str,
     resource_sample_ms: int,
     resource_sample_target_count: int,
+    trace_meta_path: Path | None = None,
 ) -> tuple[float, float, int, dict[str, Any]]:
     time_prefix = time_prefix_cache
     wrapped_command = [*time_prefix, *command] if time_prefix else command
@@ -568,6 +597,11 @@ def run_once(
                 resource["gpuMemoryProbeAvailable"] = True
 
         if popen.returncode != 0:
+            if trace_meta_records_terminal_execution_outcome(trace_meta_path):
+                resource["subprocessReturnCode"] = popen.returncode
+                resource["subprocessStderr"] = sanitized_stderr
+                resource["subprocessFailureCapturedByTraceMeta"] = True
+                return elapsed_ms, process_cpu_ms, popen.returncode, resource
             stdout_text = stdout.strip() if isinstance(stdout, str) else ""
             raise RuntimeError(
                 f"command failed (rc={popen.returncode}): {' '.join(command)}\\n"
@@ -660,6 +694,7 @@ def run_workload(
             gpu_memory_probe=gpu_memory_probe,
             resource_sample_ms=resource_sample_ms,
             resource_sample_target_count=resource_sample_target_count,
+            trace_meta_path=preflight_trace_meta,
         )
         preflight_meta = parse_trace_meta(preflight_trace_meta)
         preflight_meta_patched = ensure_doe_runtime_trace_meta_fields(
@@ -724,6 +759,7 @@ def run_workload(
                 gpu_memory_probe=gpu_memory_probe,
                 resource_sample_ms=resource_sample_ms,
                 resource_sample_target_count=resource_sample_target_count,
+                trace_meta_path=trace_meta,
             )
             continue
 
@@ -732,8 +768,16 @@ def run_workload(
             gpu_memory_probe=gpu_memory_probe,
             resource_sample_ms=resource_sample_ms,
             resource_sample_target_count=resource_sample_target_count,
+            trace_meta_path=trace_meta,
         )
         sample_meta = parse_trace_meta(trace_meta)
+        trace_meta_wall_ms = workload_unit_wall_from_trace_meta(sample_meta)
+        if trace_meta_wall_ms is not None:
+            resource["subprocessWallMs"] = resource.get("processWallMs", elapsed_ms)
+            resource["traceMetaProcessWallMs"] = trace_meta_wall_ms
+            resource["subprocessCpuMs"] = process_cpu_ms
+            elapsed_ms = trace_meta_wall_ms
+            process_cpu_ms = None
 
         trace_meta_patched = False
         if is_doe_runtime:

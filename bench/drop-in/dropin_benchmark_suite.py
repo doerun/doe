@@ -99,7 +99,14 @@ def parse_args() -> argparse.Namespace:
 
 
 def run_command(command: list[str], *, env: dict[str, str] | None = None) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(command, capture_output=True, text=True, check=False, env=env)
+    return subprocess.run(
+        command,
+        capture_output=True,
+        text=True,
+        errors="replace",
+        check=False,
+        env=env,
+    )
 
 
 def parse_suite_json(stdout: str) -> dict[str, Any] | None:
@@ -128,6 +135,33 @@ def dedupe_source_paths(paths: list[Path]) -> list[Path]:
         seen.add(key)
         unique.append(candidate)
     return unique
+
+
+def dylib_link_args(artifact_path: Path) -> list[str]:
+    artifact_dir = artifact_path.resolve().parent
+    if sys.platform == "darwin" and artifact_path.suffix == ".dylib":
+        return [
+            str(artifact_path.resolve()),
+            f"-Wl,-rpath,{artifact_dir}",
+        ]
+    return [
+        "-L",
+        str(artifact_dir),
+        f"-Wl,-rpath,{artifact_dir}",
+        f"-l:{artifact_path.resolve().name}",
+    ]
+
+
+def add_runtime_library_paths(env: dict[str, str], artifact_dir: Path) -> None:
+    existing_ld = env.get("LD_LIBRARY_PATH", "")
+    env["LD_LIBRARY_PATH"] = (
+        f"{artifact_dir}:{existing_ld}" if existing_ld else str(artifact_dir)
+    )
+    if sys.platform == "darwin":
+        existing_dyld = env.get("DYLD_LIBRARY_PATH", "")
+        env["DYLD_LIBRARY_PATH"] = (
+            f"{artifact_dir}:{existing_dyld}" if existing_dyld else str(artifact_dir)
+        )
 
 
 def main() -> int:
@@ -182,8 +216,6 @@ def main() -> int:
             raise FileNotFoundError(f"missing header directory: {header_dir}")
 
         artifact_dir = artifact_path.resolve().parent
-        artifact_name = artifact_path.resolve().name
-
         with tempfile.TemporaryDirectory(prefix="fawn-dropin-bench-") as tmp_dir:
             binary_path = Path(tmp_dir) / "dropin_benchmark_suite"
             compile_command = [
@@ -196,10 +228,7 @@ def main() -> int:
                 "-I",
                 str(header_dir.resolve()),
                 *[str(path.resolve()) for path in compile_sources],
-                "-L",
-                str(artifact_dir),
-                f"-Wl,-rpath,{artifact_dir}",
-                f"-l:{artifact_name}",
+                *dylib_link_args(artifact_path),
                 "-o",
                 str(binary_path),
             ]
@@ -219,10 +248,7 @@ def main() -> int:
                 str(args.e2e_iterations),
             ]
             run_env = os.environ.copy()
-            existing_ld = run_env.get("LD_LIBRARY_PATH", "")
-            run_env["LD_LIBRARY_PATH"] = (
-                f"{artifact_dir}:{existing_ld}" if existing_ld else str(artifact_dir)
-            )
+            add_runtime_library_paths(run_env, artifact_dir)
 
             run_result = run_command(run_command_list, env=run_env)
             suite_result = parse_suite_json(run_result.stdout)

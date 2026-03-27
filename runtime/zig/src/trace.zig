@@ -35,6 +35,9 @@ pub const TraceRunSummary = struct {
     host_kernel_prewarm_total_ns: u64 = 0,
     host_command_orchestration_total_ns: u64 = 0,
     host_artifact_finalize_total_ns: u64 = 0,
+    host_artifact_trace_jsonl_serialize_total_ns: u64 = 0,
+    host_artifact_trace_jsonl_write_total_ns: u64 = 0,
+    host_artifact_operator_manifest_finalize_total_ns: u64 = 0,
     execution_gpu_timestamp_total_ns: u64,
     execution_gpu_timestamp_attempted_count: u64,
     execution_gpu_timestamp_valid_count: u64,
@@ -617,7 +620,7 @@ pub fn writeTraceMeta(path: []const u8, summary: TraceRunSummary) !void {
         summary.execution_submit_wait_total_ns,
         summary.execution_dispatch_count,
     });
-    try writef(writer, "\"hostInputReadTotalNs\":{},\"hostInputParseTotalNs\":{},\"hostWorkloadPrepareTotalNs\":{},\"hostExecutorInitTotalNs\":{},\"hostUploadPrewarmTotalNs\":{},\"hostKernelPrewarmTotalNs\":{},\"hostCommandOrchestrationTotalNs\":{},\"hostArtifactFinalizeTotalNs\":{},\"executionGpuTimestampTotalNs\":{},\"executionGpuTimestampAttemptedCount\":{},\"executionGpuTimestampValidCount\":{},\"semanticTracingEnabled\":{},\"semanticOpRowCount\":{},\"semanticCaptureCount\":{},\"semanticReproCount\":{},\"hash\":\"0x{x}\",\"previousHash\":\"0x{x}\",", .{
+    try writef(writer, "\"hostInputReadTotalNs\":{},\"hostInputParseTotalNs\":{},\"hostWorkloadPrepareTotalNs\":{},\"hostExecutorInitTotalNs\":{},\"hostUploadPrewarmTotalNs\":{},\"hostKernelPrewarmTotalNs\":{},\"hostCommandOrchestrationTotalNs\":{},\"hostArtifactFinalizeTotalNs\":{},\"hostArtifactTraceJsonlSerializeTotalNs\":{},\"hostArtifactTraceJsonlWriteTotalNs\":{},\"hostArtifactOperatorManifestFinalizeTotalNs\":{},\"executionGpuTimestampTotalNs\":{},\"executionGpuTimestampAttemptedCount\":{},\"executionGpuTimestampValidCount\":{},\"semanticTracingEnabled\":{},\"semanticOpRowCount\":{},\"semanticCaptureCount\":{},\"semanticReproCount\":{},\"hash\":\"0x{x}\",\"previousHash\":\"0x{x}\",", .{
         summary.host_input_read_total_ns,
         summary.host_input_parse_total_ns,
         summary.host_workload_prepare_total_ns,
@@ -626,6 +629,9 @@ pub fn writeTraceMeta(path: []const u8, summary: TraceRunSummary) !void {
         summary.host_kernel_prewarm_total_ns,
         summary.host_command_orchestration_total_ns,
         summary.host_artifact_finalize_total_ns,
+        summary.host_artifact_trace_jsonl_serialize_total_ns,
+        summary.host_artifact_trace_jsonl_write_total_ns,
+        summary.host_artifact_operator_manifest_finalize_total_ns,
         summary.execution_gpu_timestamp_total_ns,
         summary.execution_gpu_timestamp_attempted_count,
         summary.execution_gpu_timestamp_valid_count,

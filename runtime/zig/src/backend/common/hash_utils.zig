@@ -5,9 +5,13 @@ pub const SHA256_HEX_SIZE: usize = 64;
 const HEX = "0123456789abcdef";
 
 pub fn sha256_hex(input: []const u8) [SHA256_HEX_SIZE]u8 {
-    var output: [SHA256_HEX_SIZE]u8 = undefined;
     var digest: [32]u8 = undefined;
     std.crypto.hash.sha2.Sha256.hash(input, &digest, .{});
+    return sha256_digest_hex(digest);
+}
+
+pub fn sha256_digest_hex(digest: [32]u8) [SHA256_HEX_SIZE]u8 {
+    var output: [SHA256_HEX_SIZE]u8 = undefined;
     for (digest, 0..) |byte, index| {
         const output_index = index * 2;
         output[output_index] = HEX[(byte >> 4) & 0x0F];
@@ -32,6 +36,12 @@ test "sha256_hex is deterministic" {
     const a = sha256_hex("deterministic input");
     const b = sha256_hex("deterministic input");
     try std.testing.expectEqual(a, b);
+}
+
+test "sha256_digest_hex matches sha256_hex output" {
+    var digest: [32]u8 = undefined;
+    std.crypto.hash.sha2.Sha256.hash("digest input", &digest, .{});
+    try std.testing.expectEqual(sha256_hex("digest input"), sha256_digest_hex(digest));
 }
 
 test "sha256_hex produces different output for different inputs" {

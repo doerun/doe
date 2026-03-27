@@ -343,6 +343,13 @@ int main(int argc, char** argv) {
         }
     }
 
+    if (!pass) {
+        const char* failure_detail = dropin_bench_failure_detail();
+        if (failure_detail != NULL && failure_detail[0] != '\0') {
+            fprintf(stderr, "dropin_benchmark_failure_detail: %s\n", failure_detail);
+        }
+    }
+
     const StatsSummary instance_summary = compute_summary(instance_samples, instance_count);
     const StatsSummary cmd_finish_summary = compute_summary(cmd_finish_samples, cmd_finish_count);
     const StatsSummary submit_summary = compute_summary(submit_samples, submit_count);
