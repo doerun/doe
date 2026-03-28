@@ -2,6 +2,7 @@ import Doe.Core.Bridge
 import Doe.Core.BindGroupSlot
 import Doe.Core.BufferLifecycle
 import Doe.Core.Dispatch
+import Doe.Core.DeterminismPolicy
 import Doe.Core.IrBuilderSoundness
 import Doe.Core.IrSemanticContract
 import Doe.Core.IrValidatorRedundancy
@@ -57,6 +58,12 @@ def main : IO Unit := do
   IO.println "    { \"name\": \"toggleAlwaysSupported\", \"module\": \"Doe.Core.Dispatch\", \"category\": \"tautological\" },"
   IO.println "    { \"name\": \"strongerSafetyRaisesProofDemand\", \"module\": \"Doe.Core.Dispatch\", \"category\": \"comptime_verified\" },"
   IO.println "    { \"name\": \"betterMatch_prefers_higher_score\", \"module\": \"Doe.Core.Runtime\", \"category\": \"tautological\" },"
+  IO.println "    { \"name\": \"stableTokenChoose_mem_tiedMaxIndices\", \"module\": \"Doe.Core.DeterminismPolicy\", \"category\": \"lean_verified\" },"
+  IO.println "    { \"name\": \"stableTokenChoose_le_all_tiedMaxIndices\", \"module\": \"Doe.Core.DeterminismPolicy\", \"category\": \"lean_verified\" },"
+  IO.println "    { \"name\": \"exactMaxTieTriggered_iff_two_or_more_candidates\", \"module\": \"Doe.Core.DeterminismPolicy\", \"category\": \"lean_verified\" },"
+  IO.println "    { \"name\": \"candidateMarginBandTriggered_iff_gap_within_epsilon\", \"module\": \"Doe.Core.DeterminismPolicy\", \"category\": \"lean_verified\" },"
+  IO.println "    { \"name\": \"fixedPriorityBetter_true_implies_lexicographic_preference\", \"module\": \"Doe.Core.DeterminismPolicy\", \"category\": \"lean_verified\" },"
+  IO.println "    { \"name\": \"reviewedChoiceSelect_uses_review_token_when_present\", \"module\": \"Doe.Core.DeterminismPolicy\", \"category\": \"lean_verified\" },"
   IO.println "    { \"name\": \"comparableFromObligations_eq_noFailed\", \"module\": \"Doe.Full.Comparability\", \"category\": \"lean_verified\" },"
   IO.println "    { \"name\": \"comparableFromFacts_eq_noFailed\", \"module\": \"Doe.Full.Comparability\", \"category\": \"lean_verified\" },"
   IO.println "    { \"name\": \"comparableFromObligations_true_iff_failedBlockingNil\", \"module\": \"Doe.Full.Comparability\", \"category\": \"lean_verified\" },"

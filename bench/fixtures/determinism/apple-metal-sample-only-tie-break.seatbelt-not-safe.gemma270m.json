@@ -1,0 +1,78 @@
+{
+  "scenarioId": "apple_metal_sample_only_tie_break_seatbelt_not_safe_gemma270m",
+  "description": "Apple Metal sample-only tie-break probe for the prompt 'Driving without a seatbelt is safe or unsafe. It is', with a controlled exact tie between the semantic answer tokens ' not' and ' safe'.",
+  "kernelRoot": "bench/inference-pipeline/kernels",
+  "profile": {
+    "vendor": "apple",
+    "api": "metal",
+    "family": "m3",
+    "driver": "1.0.0"
+  },
+  "queueWaitMode": "process-events",
+  "queueSyncMode": "per-command",
+  "sourceCases": [
+    {
+      "promptId": "seatbelt-safe-unsafe",
+      "phase": "prefill",
+      "stepIndex": 0
+    }
+  ],
+  "doeStableToken": {
+    "mode": "buffer-readback",
+    "topCandidates": 5
+  },
+  "doeStableChoice": {
+    "mode": "buffer-readback",
+    "topCandidates": 5,
+    "policyId": "seatbelt/not-safe-first",
+    "candidateSetId": "safety.not_safe",
+    "candidateSetSource": "source-report-resolved",
+    "triggerPolicyId": "candidate-margin-band-v1",
+    "candidates": [
+      { "token": 711, "label": "not" },
+      { "token": 6338, "label": "safe" }
+    ],
+    "ambiguityTriggerPolicyId": "candidate-margin-band-v1"
+  },
+  "doeReviewedChoice": {
+    "mode": "buffer-readback",
+    "topCandidates": 5,
+    "reviewPolicyId": "seatbelt/reviewer-v1",
+    "candidateSetId": "safety.not_safe",
+    "candidateSetSource": "source-report-resolved",
+    "triggerPolicyId": "candidate-margin-band-v1",
+    "candidates": [
+      { "token": 711, "label": "not" },
+      { "token": 6338, "label": "safe" }
+    ],
+    "ambiguityTriggerPolicyId": "candidate-margin-band-v1",
+    "decision": {
+      "token": 6338,
+      "label": "safe",
+      "reviewerId": "seatbelt/reviewer-v1",
+      "decisionId": "seatbelt-review-001",
+      "decisionRef": "receipt://seatbelt-review-001",
+      "signature": "sha256:seatbelt-review-001"
+    }
+  },
+  "backendLanes": [
+    {
+      "id": "doe",
+      "backendLane": "metal_doe_comparable"
+    },
+    {
+      "id": "dawn",
+      "backendLane": "metal_dawn_release"
+    }
+  ],
+  "defaultRunCount": 10,
+  "defaultCaseCount": 1,
+  "mutations": [
+    { "id": "as-captured", "kind": "identity" },
+    {
+      "id": "force-not-safe-exact-tie",
+      "kind": "explicit_tokens_exact_tie",
+      "tokens": [711, 6338]
+    }
+  ]
+}

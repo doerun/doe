@@ -1,0 +1,36 @@
+{
+  "scenarioId": "apple_metal_semantic_pair_hunt_gemma270m_choice_breadth",
+  "defaultPerPairLimit": 3,
+  "semanticPairs": [
+    {
+      "id": "seatbelt_not_safe",
+      "leftTokenText": " not",
+      "rightTokenText": " safe",
+      "promptIds": ["seatbelt-safe-unsafe"]
+    },
+    {
+      "id": "brakes_not_safe",
+      "leftTokenText": " not",
+      "rightTokenText": " safe",
+      "promptIds": ["brakes-safe-unsafe-breadth"]
+    },
+    {
+      "id": "red_go_stop",
+      "leftTokenText": " go",
+      "rightTokenText": " stop",
+      "promptIds": ["red-go-stop-breadth"]
+    },
+    {
+      "id": "earth_true_false",
+      "leftTokenText": " true",
+      "rightTokenText": " false",
+      "promptIds": ["earth-true-false"]
+    },
+    {
+      "id": "seventeen_even_odd",
+      "leftTokenText": " even",
+      "rightTokenText": " odd",
+      "promptIds": ["seventeen-even-odd"]
+    }
+  ]
+}

@@ -1,0 +1,81 @@
+{
+  "type": "object",
+  "required": ["schemaVersion", "unsupportedExecutions"],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "unsupportedExecutions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "runtimeHost",
+          "provider",
+          "workloadId",
+          "host",
+          "unsupportedCode",
+          "message",
+          "detail"
+        ],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "runtimeHost": { "type": "string", "enum": ["node", "bun"] },
+          "provider": { "type": "string", "minLength": 1 },
+          "workloadId": { "type": "string", "minLength": 1 },
+          "host": {
+            "type": "object",
+            "required": ["platform", "arch", "hostname", "osRelease"],
+            "properties": {
+              "platform": {
+                "oneOf": [
+                  { "type": "string", "minLength": 1 },
+                  {
+                    "type": "array",
+                    "items": { "type": "string", "minLength": 1 },
+                    "minItems": 1
+                  }
+                ]
+              },
+              "arch": {
+                "oneOf": [
+                  { "type": "string", "minLength": 1 },
+                  {
+                    "type": "array",
+                    "items": { "type": "string", "minLength": 1 },
+                    "minItems": 1
+                  }
+                ]
+              },
+              "hostname": {
+                "oneOf": [
+                  { "type": "string", "minLength": 1 },
+                  {
+                    "type": "array",
+                    "items": { "type": "string", "minLength": 1 },
+                    "minItems": 1
+                  }
+                ]
+              },
+              "osRelease": {
+                "oneOf": [
+                  { "type": "string", "minLength": 1 },
+                  {
+                    "type": "array",
+                    "items": { "type": "string", "minLength": 1 },
+                    "minItems": 1
+                  }
+                ]
+              }
+            },
+            "additionalProperties": false
+          },
+          "unsupportedCode": { "type": "string", "minLength": 1 },
+          "message": { "type": "string", "minLength": 1 },
+          "detail": { "type": "string", "minLength": 1 }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

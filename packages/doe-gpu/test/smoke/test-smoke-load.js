@@ -55,6 +55,78 @@ check('gpu is an object', typeof mod.gpu === 'object');
 check('gpu.requestDevice is a function', typeof mod.gpu.requestDevice === 'function');
 check('gpu.bind is a function', typeof mod.gpu.bind === 'function');
 
+console.log('\ngpu determinism shape:');
+const boundWithoutGpu = mod.gpu.bind({});
+check('gpu.bind({}) exposes determinism namespace', boundWithoutGpu.determinism != null && typeof boundWithoutGpu.determinism === 'object');
+check('gpu.bind({}).determinism.stableToken is a function', typeof boundWithoutGpu.determinism?.stableToken === 'function');
+check('gpu.bind({}).determinism.stableChoice is a function', typeof boundWithoutGpu.determinism?.stableChoice === 'function');
+check('gpu.bind({}).determinism.reviewedChoice is a function', typeof boundWithoutGpu.determinism?.reviewedChoice === 'function');
+try {
+  const stable = await boundWithoutGpu.determinism.stableToken({
+    logits: new Float32Array([0, 7, 7, 3]),
+  });
+  check('stableToken returns lowest max index for host logits', stable.token === 1, JSON.stringify(stable));
+  check('stableToken receipt reports host-bytes source', stable.receipt?.sourceKind === 'host-bytes');
+  check('stableToken receipt reports tied max count', stable.receipt?.tiedMaxCount === 2);
+  check('stableToken receipt reports explicit tie-break rule', stable.receipt?.tieBreakRule === 'lowest-index-among-max');
+  check('stableToken receipt exposes proof links', Array.isArray(stable.receipt?.proofLinks) && stable.receipt.proofLinks.length >= 1);
+} catch (err) {
+  check('stableToken host-logit helper succeeds', false, err.message);
+}
+try {
+  const choice = await boundWithoutGpu.determinism.stableChoice({
+    logits: new Float32Array([0, 7, 7, 3]),
+    candidates: [
+      { token: 2, label: 'unsafe' },
+      { token: 1, label: 'safe' },
+    ],
+    ambiguityTrigger: { mode: 'exact-max-tie' },
+    policyId: 'smoke/fixed-priority-safe-last',
+    triggerPolicyId: 'exact-max-tie-v1',
+    candidateSetId: 'safety.safe_unsafe',
+    candidateSetSource: 'fixture-declared',
+  });
+  check('stableChoice exact tie follows fixed-priority order', choice.token === 2, JSON.stringify(choice));
+  check('stableChoice receipt reports stable-choice mode', choice.receipt?.mode === 'stable-choice');
+  check('stableChoice receipt reports policy trigger', choice.receipt?.ambiguityTriggered === true);
+  check('stableChoice receipt records selectedBy policy', choice.receipt?.selectedBy === 'stable-choice-policy');
+  check('stableChoice receipt preserves policyId', choice.receipt?.policyId === 'smoke/fixed-priority-safe-last');
+  check('stableChoice receipt preserves triggerPolicyId', choice.receipt?.triggerPolicyId === 'exact-max-tie-v1');
+  check('stableChoice receipt preserves candidateSetId', choice.receipt?.candidateSetId === 'safety.safe_unsafe');
+  check('stableChoice receipt preserves candidateSetSource', choice.receipt?.candidateSetSource === 'fixture-declared');
+  check('stableChoice receipt exposes proof links', Array.isArray(choice.receipt?.proofLinks) && choice.receipt.proofLinks.length >= 3);
+} catch (err) {
+  check('stableChoice host-logit helper succeeds', false, err.message);
+}
+try {
+  const reviewed = await boundWithoutGpu.determinism.reviewedChoice({
+    logits: new Float32Array([0, 7, 7, 3]),
+    candidates: [
+      { token: 2, label: 'unsafe' },
+      { token: 1, label: 'safe' },
+    ],
+    ambiguityTrigger: { mode: 'exact-max-tie' },
+    reviewPolicyId: 'smoke/reviewer-v1',
+    triggerPolicyId: 'exact-max-tie-v1',
+    candidateSetId: 'safety.safe_unsafe',
+    candidateSetSource: 'fixture-declared',
+    decision: {
+      token: 1,
+      label: 'safe',
+      reviewerId: 'smoke/reviewer-v1',
+      decisionId: 'smoke-review-001',
+    },
+  });
+  check('reviewedChoice exact tie honors reviewed token', reviewed.token === 1, JSON.stringify(reviewed));
+  check('reviewedChoice receipt reports reviewed-choice mode', reviewed.receipt?.mode === 'reviewed-choice');
+  check('reviewedChoice receipt records decision acceptance', reviewed.receipt?.decisionAccepted === true);
+  check('reviewedChoice receipt records selectedBy decision', reviewed.receipt?.selectedBy === 'reviewed-choice-decision');
+  check('reviewedChoice receipt preserves reviewerId', reviewed.receipt?.decision?.reviewerId === 'smoke/reviewer-v1');
+  check('reviewedChoice receipt exposes proof links', Array.isArray(reviewed.receipt?.proofLinks) && reviewed.receipt.proofLinks.length >= 3);
+} catch (err) {
+  check('reviewedChoice host-logit helper succeeds', false, err.message);
+}
+
 // ── 4. globals has standard WebGPU enum objects ─────────────────────────
 
 console.log('\nglobals shape:');

@@ -20,6 +20,77 @@ const DOE_GPU_MAP_MODE = {
 const DOE_BUFFER_META = new WeakMap();
 const DOE_READBACK_STAGING = new WeakMap();
 const DOE_PENDING_ENCODERS = new WeakMap();
+const DOE_F32_BYTE_WIDTH = 4;
+const DOE_DEFAULT_STABLE_TOKEN_TOP_CANDIDATES = 5;
+const DOE_MAX_STABLE_TOKEN_TIED_INDEX_PREFIX = 16;
+const DOE_STABLE_TOKEN_TIE_BREAK_RULE = 'lowest-index-among-max';
+const DOE_STABLE_TOKEN_MODE = 'stable-token';
+const DOE_STABLE_CHOICE_MODE = 'stable-choice';
+const DOE_REVIEWED_CHOICE_MODE = 'reviewed-choice';
+const DOE_STABLE_TOKEN_COMPARATOR = 'scalar-f32-greedy';
+const DOE_STABLE_CHOICE_BASE_RULE_ID = 'stable-token/lowest-index-among-max';
+const DOE_STABLE_CHOICE_EVALUATOR_KIND = 'fixed-priority';
+const DOE_REVIEWED_CHOICE_EVALUATOR_KIND = 'explicit-review-decision';
+const DOE_STABLE_CHOICE_TRIGGER_EXACT_MAX_TIE = 'exact-max-tie';
+const DOE_STABLE_CHOICE_TRIGGER_CANDIDATE_MARGIN_BAND = 'candidate-margin-band';
+const DOE_STABLE_CHOICE_SELECTED_BY_POLICY = 'stable-choice-policy';
+const DOE_STABLE_CHOICE_SELECTED_BY_FALLBACK = 'stable-token-fallback';
+const DOE_REVIEWED_CHOICE_SELECTED_BY_DECISION = 'reviewed-choice-decision';
+const DOE_REVIEWED_CHOICE_SELECTED_BY_FALLBACK = 'stable-token-fallback';
+const DOE_REVIEWED_CHOICE_ACCEPTED = 'reviewed-choice-decision';
+const DOE_REVIEWED_CHOICE_FALLBACK_NOT_TRIGGERED = 'stable-token-fallback/not-triggered';
+const DOE_REVIEWED_CHOICE_FALLBACK_NOT_IN_CANDIDATE_SET = 'stable-token-fallback/not-in-candidate-set';
+const DOE_REVIEWED_CHOICE_FALLBACK_NOT_AMBIGUOUS = 'stable-token-fallback/not-ambiguous';
+const DOE_STABLE_CHOICE_CANDIDATE_SET_SOURCES = new Set([
+  'fixture-declared',
+  'registry-resolved',
+  'source-report-resolved',
+]);
+const DOE_DETERMINISM_PROOF_ARTIFACT_PATH = 'pipeline/lean/artifacts/proven-conditions.json';
+const DOE_STABLE_TOKEN_PROOF_LINKS = Object.freeze([
+  Object.freeze({
+    theorem: 'stableTokenChoose_mem_tiedMaxIndices',
+    module: 'Doe.Core.DeterminismPolicy',
+    category: 'lean_verified',
+    relation: 'stable-token-tie-break-membership',
+    artifactPath: DOE_DETERMINISM_PROOF_ARTIFACT_PATH,
+  }),
+  Object.freeze({
+    theorem: 'stableTokenChoose_le_all_tiedMaxIndices',
+    module: 'Doe.Core.DeterminismPolicy',
+    category: 'lean_verified',
+    relation: 'stable-token-lowest-index-among-max',
+    artifactPath: DOE_DETERMINISM_PROOF_ARTIFACT_PATH,
+  }),
+]);
+const DOE_EXACT_MAX_TIE_PROOF_LINK = Object.freeze({
+  theorem: 'exactMaxTieTriggered_iff_two_or_more_candidates',
+  module: 'Doe.Core.DeterminismPolicy',
+  category: 'lean_verified',
+  relation: 'stable-choice-exact-max-tie-trigger',
+  artifactPath: DOE_DETERMINISM_PROOF_ARTIFACT_PATH,
+});
+const DOE_CANDIDATE_MARGIN_BAND_PROOF_LINK = Object.freeze({
+  theorem: 'candidateMarginBandTriggered_iff_gap_within_epsilon',
+  module: 'Doe.Core.DeterminismPolicy',
+  category: 'lean_verified',
+  relation: 'stable-choice-candidate-margin-band-trigger',
+  artifactPath: DOE_DETERMINISM_PROOF_ARTIFACT_PATH,
+});
+const DOE_FIXED_PRIORITY_PROOF_LINK = Object.freeze({
+  theorem: 'fixedPriorityBetter_true_implies_lexicographic_preference',
+  module: 'Doe.Core.DeterminismPolicy',
+  category: 'lean_verified',
+  relation: 'stable-choice-fixed-priority-evaluator',
+  artifactPath: DOE_DETERMINISM_PROOF_ARTIFACT_PATH,
+});
+const DOE_REVIEWED_CHOICE_PROOF_LINK = Object.freeze({
+  theorem: 'reviewedChoiceSelect_uses_review_token_when_present',
+  module: 'Doe.Core.DeterminismPolicy',
+  category: 'lean_verified',
+  relation: 'reviewed-choice-decision-evaluator',
+  artifactPath: DOE_DETERMINISM_PROOF_ARTIFACT_PATH,
+});
 
 function deferCommandBuffer(device, commandBuffer) {
   if (!commandBuffer || typeof commandBuffer !== 'object') {
@@ -176,6 +247,609 @@ function resolveBufferSize(source) {
     return source.byteLength;
   }
   throw new Error('Doe buffer-like source must expose a byte size or be ArrayBuffer-backed data.');
+}
+
+function validateNonNegativeInteger(value, label) {
+  if (!Number.isInteger(value) || value < 0) {
+    throw new Error(`${label} must be a non-negative integer.`);
+  }
+}
+
+function resolveStableTokenTieBreakRule(value) {
+  const rule = value ?? DOE_STABLE_TOKEN_TIE_BREAK_RULE;
+  if (rule !== DOE_STABLE_TOKEN_TIE_BREAK_RULE) {
+    throw new Error(
+      `Doe determinism.stableToken tieBreakRule must be "${DOE_STABLE_TOKEN_TIE_BREAK_RULE}".`
+    );
+  }
+  return rule;
+}
+
+function resolveStableTokenTopCandidates(value) {
+  const count = value ?? DOE_DEFAULT_STABLE_TOKEN_TOP_CANDIDATES;
+  validatePositiveInteger(count, 'Doe determinism.stableToken topCandidates');
+  return count;
+}
+
+function resolveStableChoicePolicyId(value) {
+  if (value == null) {
+    return DOE_STABLE_CHOICE_EVALUATOR_KIND;
+  }
+  if (typeof value !== 'string' || value.trim().length === 0) {
+    throw new Error('Doe determinism.stableChoice policyId must be a non-empty string when provided.');
+  }
+  return value;
+}
+
+function resolveStableChoiceTriggerPolicyId(value) {
+  if (value == null) {
+    return null;
+  }
+  if (typeof value !== 'string' || value.trim().length === 0) {
+    throw new Error('Doe determinism.stableChoice triggerPolicyId must be a non-empty string when provided.');
+  }
+  return value;
+}
+
+function resolveStableChoiceCandidateSetId(value) {
+  if (value == null) {
+    return null;
+  }
+  if (typeof value !== 'string' || value.trim().length === 0) {
+    throw new Error('Doe determinism.stableChoice candidateSetId must be a non-empty string when provided.');
+  }
+  return value;
+}
+
+function resolveStableChoiceCandidateSetSource(value) {
+  if (value == null) {
+    return null;
+  }
+  if (!DOE_STABLE_CHOICE_CANDIDATE_SET_SOURCES.has(value)) {
+    throw new Error('Doe determinism.stableChoice candidateSetSource is not recognized.');
+  }
+  return value;
+}
+
+function cloneProofLinks(proofLinks) {
+  return proofLinks.map((proofLink) => ({ ...proofLink }));
+}
+
+function triggerProofLink(mode) {
+  return mode === DOE_STABLE_CHOICE_TRIGGER_EXACT_MAX_TIE
+    ? DOE_EXACT_MAX_TIE_PROOF_LINK
+    : DOE_CANDIDATE_MARGIN_BAND_PROOF_LINK;
+}
+
+function stableTokenProofLinks() {
+  return cloneProofLinks(DOE_STABLE_TOKEN_PROOF_LINKS);
+}
+
+function stableChoiceProofLinks(mode) {
+  return cloneProofLinks([
+    ...DOE_STABLE_TOKEN_PROOF_LINKS,
+    triggerProofLink(mode),
+    DOE_FIXED_PRIORITY_PROOF_LINK,
+  ]);
+}
+
+function reviewedChoiceProofLinks(mode) {
+  return cloneProofLinks([
+    ...DOE_STABLE_TOKEN_PROOF_LINKS,
+    triggerProofLink(mode),
+    DOE_REVIEWED_CHOICE_PROOF_LINK,
+  ]);
+}
+
+function normalizeStableChoiceCandidate(rawCandidate, priority) {
+  if (Number.isInteger(rawCandidate) && rawCandidate >= 0) {
+    return {
+      token: rawCandidate,
+      label: null,
+      priority,
+    };
+  }
+  if (!rawCandidate || typeof rawCandidate !== 'object' || Array.isArray(rawCandidate)) {
+    throw new Error('Doe determinism.stableChoice candidates must be token integers or { token, label } objects.');
+  }
+  const token = rawCandidate.token;
+  if (!Number.isInteger(token) || token < 0) {
+    throw new Error('Doe determinism.stableChoice candidate.token must be a non-negative integer.');
+  }
+  const label = rawCandidate.label == null ? null : String(rawCandidate.label);
+  return {
+    token,
+    label,
+    priority,
+  };
+}
+
+function normalizeReviewedChoiceDecision(rawDecision, vocabSize) {
+  if (!rawDecision || typeof rawDecision !== 'object' || Array.isArray(rawDecision)) {
+    throw new Error('Doe determinism.reviewedChoice decision must be an object.');
+  }
+  const token = rawDecision.token;
+  if (!Number.isInteger(token) || token < 0) {
+    throw new Error('Doe determinism.reviewedChoice decision.token must be a non-negative integer.');
+  }
+  if (token >= vocabSize) {
+    throw new Error(
+      `Doe determinism.reviewedChoice decision token ${token} exceeds logits vocabSize ${vocabSize}.`
+    );
+  }
+  const reviewerId = rawDecision.reviewerId;
+  if (typeof reviewerId !== 'string' || reviewerId.trim().length === 0) {
+    throw new Error('Doe determinism.reviewedChoice decision.reviewerId must be a non-empty string.');
+  }
+  const normalizeOptional = (value, label) => {
+    if (value == null) {
+      return null;
+    }
+    if (typeof value !== 'string' || value.trim().length === 0) {
+      throw new Error(`Doe determinism.reviewedChoice decision.${label} must be a non-empty string when provided.`);
+    }
+    return value;
+  };
+  return {
+    token,
+    label: rawDecision.label == null ? null : String(rawDecision.label),
+    reviewerId,
+    decisionId: normalizeOptional(rawDecision.decisionId, 'decisionId'),
+    decisionRef: normalizeOptional(rawDecision.decisionRef, 'decisionRef'),
+    signature: normalizeOptional(rawDecision.signature, 'signature'),
+  };
+}
+
+function resolveStableChoiceCandidates(candidates, vocabSize) {
+  if (!Array.isArray(candidates) || candidates.length < 2) {
+    throw new Error('Doe determinism.stableChoice candidates must contain at least two entries.');
+  }
+  const normalized = candidates.map((candidate, priority) => normalizeStableChoiceCandidate(candidate, priority));
+  const seen = new Set();
+  for (const candidate of normalized) {
+    if (candidate.token >= vocabSize) {
+      throw new Error(
+        `Doe determinism.stableChoice candidate token ${candidate.token} exceeds logits vocabSize ${vocabSize}.`
+      );
+    }
+    if (seen.has(candidate.token)) {
+      throw new Error(`Doe determinism.stableChoice candidate token ${candidate.token} is duplicated.`);
+    }
+    seen.add(candidate.token);
+  }
+  return normalized;
+}
+
+function resolveStableChoiceTrigger(trigger) {
+  if (!trigger || typeof trigger !== 'object' || Array.isArray(trigger)) {
+    throw new Error('Doe determinism.stableChoice ambiguityTrigger must be an object.');
+  }
+  const mode = trigger.mode;
+  if (mode !== DOE_STABLE_CHOICE_TRIGGER_EXACT_MAX_TIE && mode !== DOE_STABLE_CHOICE_TRIGGER_CANDIDATE_MARGIN_BAND) {
+    throw new Error(
+      `Doe determinism.stableChoice ambiguityTrigger.mode must be "${DOE_STABLE_CHOICE_TRIGGER_EXACT_MAX_TIE}" ` +
+      `or "${DOE_STABLE_CHOICE_TRIGGER_CANDIDATE_MARGIN_BAND}".`
+    );
+  }
+  if (mode === DOE_STABLE_CHOICE_TRIGGER_CANDIDATE_MARGIN_BAND) {
+    const epsilon = trigger.epsilon;
+    if (typeof epsilon !== 'number' || Number.isNaN(epsilon) || epsilon < 0) {
+      throw new Error('Doe determinism.stableChoice ambiguityTrigger.epsilon must be a non-negative number.');
+    }
+    return { mode, epsilon };
+  }
+  return { mode, epsilon: null };
+}
+
+function resolveStableTokenByteSize(totalBytes, offset, size, vocabSize, labelPrefix) {
+  validateNonNegativeInteger(offset, `${labelPrefix} offset`);
+  if (offset > totalBytes) {
+    throw new Error(`${labelPrefix} offset ${offset} exceeds byteLength ${totalBytes}.`);
+  }
+  const remainingBytes = totalBytes - offset;
+  let resolvedSize = size;
+  if (resolvedSize == null && vocabSize != null) {
+    validatePositiveInteger(vocabSize, `${labelPrefix} vocabSize`);
+    resolvedSize = vocabSize * DOE_F32_BYTE_WIDTH;
+  }
+  if (resolvedSize == null) {
+    resolvedSize = remainingBytes;
+  }
+  validateNonNegativeInteger(resolvedSize, `${labelPrefix} size`);
+  if (resolvedSize > remainingBytes) {
+    throw new Error(`${labelPrefix} size ${resolvedSize} exceeds remaining byteLength ${remainingBytes}.`);
+  }
+  if (resolvedSize === 0) {
+    throw new Error(`${labelPrefix} size must be greater than zero.`);
+  }
+  if (resolvedSize % DOE_F32_BYTE_WIDTH !== 0) {
+    throw new Error(`${labelPrefix} size ${resolvedSize} must be a multiple of ${DOE_F32_BYTE_WIDTH} bytes.`);
+  }
+  if (vocabSize != null && resolvedSize !== vocabSize * DOE_F32_BYTE_WIDTH) {
+    throw new Error(
+      `${labelPrefix} size ${resolvedSize} does not match vocabSize ${vocabSize} * ${DOE_F32_BYTE_WIDTH}.`
+    );
+  }
+  return resolvedSize;
+}
+
+function toStableTokenFloat32Array(data, offset, byteSize) {
+  const bytes = normalizeDataView(data).subarray(offset, offset + byteSize).slice();
+  return new Float32Array(bytes.buffer);
+}
+
+async function sha256HexFromBytes(bytes) {
+  const subtle = globalThis.crypto?.subtle;
+  if (!subtle || typeof subtle.digest !== 'function') {
+    throw new Error('Doe determinism.stableToken requires crypto.subtle.digest support.');
+  }
+  const digest = await subtle.digest('SHA-256', bytes);
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
+function collectStableTokenSummary(logits, topCandidateCount) {
+  const topCandidates = [];
+  let bestIndex = 0;
+  let bestLogit = Number.NEGATIVE_INFINITY;
+  let sawFinite = false;
+  let tiedMaxCount = 0;
+  let tiedMaxIndicesPrefix = [];
+
+  for (let index = 0; index < logits.length; index += 1) {
+    const logit = logits[index];
+    if (Number.isNaN(logit)) {
+      continue;
+    }
+    sawFinite = true;
+
+    let insertAt = 0;
+    while (insertAt < topCandidates.length) {
+      const current = topCandidates[insertAt];
+      if (logit > current.logit || (logit === current.logit && index < current.index)) {
+        break;
+      }
+      insertAt += 1;
+    }
+    if (insertAt < topCandidateCount) {
+      topCandidates.splice(insertAt, 0, { index, logit });
+      if (topCandidates.length > topCandidateCount) {
+        topCandidates.pop();
+      }
+    }
+
+    if (logit > bestLogit) {
+      bestLogit = logit;
+      bestIndex = index;
+      tiedMaxCount = 1;
+      tiedMaxIndicesPrefix = [index];
+      continue;
+    }
+    if (logit === bestLogit) {
+      tiedMaxCount += 1;
+      if (tiedMaxIndicesPrefix.length < DOE_MAX_STABLE_TOKEN_TIED_INDEX_PREFIX) {
+        tiedMaxIndicesPrefix.push(index);
+      }
+    }
+  }
+
+  if (!sawFinite) {
+    throw new Error('Doe determinism.stableToken requires at least one finite logit value.');
+  }
+
+  return {
+    token: bestIndex,
+    maxLogit: bestLogit,
+    tiedMaxCount,
+    tiedMaxIndicesPrefix,
+    tiedMaxIndicesOmittedCount: Math.max(0, tiedMaxCount - tiedMaxIndicesPrefix.length),
+    topCandidates,
+  };
+}
+
+function collectChoiceCandidateContext(logits, options, methodLabel) {
+  const candidates = resolveStableChoiceCandidates(options.candidates, logits.length);
+  const ambiguityTrigger = resolveStableChoiceTrigger(options.ambiguityTrigger);
+  const candidateSet = candidates
+    .map((candidate) => ({
+      token: candidate.token,
+      label: candidate.label,
+      priority: candidate.priority,
+      logit: logits[candidate.token],
+    }))
+    .filter((candidate) => !Number.isNaN(candidate.logit))
+    .sort((left, right) => {
+      if (right.logit !== left.logit) {
+        return right.logit - left.logit;
+      }
+      if (left.priority !== right.priority) {
+        return left.priority - right.priority;
+      }
+      return left.token - right.token;
+    });
+  if (candidateSet.length < 2) {
+    throw new Error(`${methodLabel} requires at least two finite candidate logits.`);
+  }
+  const topCandidate = candidateSet[0];
+  const runnerUp = candidateSet[1];
+  let ambiguousCandidates = [];
+  if (ambiguityTrigger.mode === DOE_STABLE_CHOICE_TRIGGER_EXACT_MAX_TIE) {
+    ambiguousCandidates = candidateSet.filter((candidate) => candidate.logit === topCandidate.logit);
+  } else {
+    ambiguousCandidates = candidateSet.filter(
+      (candidate) => (topCandidate.logit - candidate.logit) <= ambiguityTrigger.epsilon
+    );
+  }
+  return {
+    ambiguityTrigger,
+    candidateSet,
+    ambiguityTriggered: ambiguousCandidates.length >= 2,
+    ambiguityTopGap: topCandidate.logit - runnerUp.logit,
+    ambiguousCandidates,
+  };
+}
+
+function collectStableChoiceSummary(logits, stableTokenSummary, options) {
+  const policyId = resolveStableChoicePolicyId(options.policyId);
+  const triggerPolicyId = resolveStableChoiceTriggerPolicyId(options.triggerPolicyId);
+  const candidateSetId = resolveStableChoiceCandidateSetId(options.candidateSetId);
+  const candidateSetSource = resolveStableChoiceCandidateSetSource(options.candidateSetSource);
+  const choiceContext = collectChoiceCandidateContext(logits, options, 'Doe determinism.stableChoice');
+  const ambiguityTriggered = choiceContext.ambiguityTriggered;
+  const selectedCandidate = ambiguityTriggered
+    ? choiceContext.ambiguousCandidates.reduce((best, candidate) => {
+      if (candidate.priority !== best.priority) {
+        return candidate.priority < best.priority ? candidate : best;
+      }
+      return candidate.token < best.token ? candidate : best;
+    })
+    : null;
+  return {
+    policyId,
+    triggerPolicyId,
+    candidateSetId,
+    candidateSetSource,
+    ...choiceContext,
+    token: selectedCandidate ? selectedCandidate.token : stableTokenSummary.token,
+    selectedBy: selectedCandidate ? DOE_STABLE_CHOICE_SELECTED_BY_POLICY : DOE_STABLE_CHOICE_SELECTED_BY_FALLBACK,
+  };
+}
+
+function resolveReviewedChoicePolicyId(value) {
+  if (value == null) {
+    return DOE_REVIEWED_CHOICE_EVALUATOR_KIND;
+  }
+  if (typeof value !== 'string' || value.trim().length === 0) {
+    throw new Error('Doe determinism.reviewedChoice reviewPolicyId must be a non-empty string when provided.');
+  }
+  return value;
+}
+
+function collectReviewedChoiceSummary(logits, stableTokenSummary, options) {
+  const reviewPolicyId = resolveReviewedChoicePolicyId(options.reviewPolicyId);
+  const triggerPolicyId = resolveStableChoiceTriggerPolicyId(options.triggerPolicyId);
+  const candidateSetId = resolveStableChoiceCandidateSetId(options.candidateSetId);
+  const candidateSetSource = resolveStableChoiceCandidateSetSource(options.candidateSetSource);
+  const choiceContext = collectChoiceCandidateContext(logits, options, 'Doe determinism.reviewedChoice');
+  const decision = normalizeReviewedChoiceDecision(options.decision, logits.length);
+  const candidateMatch = choiceContext.candidateSet.find((candidate) => candidate.token === decision.token) ?? null;
+  const ambiguousMatch = choiceContext.ambiguousCandidates.find((candidate) => candidate.token === decision.token) ?? null;
+  let token = stableTokenSummary.token;
+  let selectedBy = DOE_REVIEWED_CHOICE_SELECTED_BY_FALLBACK;
+  let decisionAccepted = false;
+  let decisionAcceptanceReason = DOE_REVIEWED_CHOICE_FALLBACK_NOT_TRIGGERED;
+  if (choiceContext.ambiguityTriggered) {
+    if (!candidateMatch) {
+      decisionAcceptanceReason = DOE_REVIEWED_CHOICE_FALLBACK_NOT_IN_CANDIDATE_SET;
+    } else if (!ambiguousMatch) {
+      decisionAcceptanceReason = DOE_REVIEWED_CHOICE_FALLBACK_NOT_AMBIGUOUS;
+    } else {
+      token = decision.token;
+      selectedBy = DOE_REVIEWED_CHOICE_SELECTED_BY_DECISION;
+      decisionAccepted = true;
+      decisionAcceptanceReason = DOE_REVIEWED_CHOICE_ACCEPTED;
+    }
+  }
+  return {
+    reviewPolicyId,
+    triggerPolicyId,
+    candidateSetId,
+    candidateSetSource,
+    decision,
+    decisionAccepted,
+    decisionAcceptanceReason,
+    ...choiceContext,
+    token,
+    selectedBy,
+  };
+}
+
+async function resolveDeterminismPayload(device, options, methodLabel) {
+  if (!options || typeof options !== 'object') {
+    throw new Error(`${methodLabel} options must be an object.`);
+  }
+  const tieBreakRule = resolveStableTokenTieBreakRule(options.tieBreakRule);
+  const topCandidateCount = resolveStableTokenTopCandidates(options.topCandidates);
+  const logits = options.logits;
+  if (logits == null) {
+    throw new Error(`${methodLabel} requires logits.`);
+  }
+
+  if (ArrayBuffer.isView(logits) || logits instanceof ArrayBuffer) {
+    const bytes = normalizeDataView(logits);
+    const offset = options.offset ?? 0;
+    const byteSize = resolveStableTokenByteSize(
+      bytes.byteLength,
+      offset,
+      options.size,
+      options.vocabSize,
+      `${methodLabel} host logits`,
+    );
+    return {
+      logits: toStableTokenFloat32Array(logits, offset, byteSize),
+      bytesRead: byteSize,
+      sourceKind: 'host-bytes',
+      tieBreakRule,
+      topCandidateCount,
+    };
+  }
+
+  if (!device || typeof device !== 'object') {
+    throw new Error(
+      `${methodLabel} buffer readback requires a bound Doe device; use typed-array logits instead.`
+    );
+  }
+  if (typeof logits !== 'object' || typeof logits.size !== 'number') {
+    throw new Error(
+      `${methodLabel} logits must be a GPU buffer, ArrayBuffer, or ArrayBufferView.`
+    );
+  }
+  const offset = options.offset ?? 0;
+  const byteSize = resolveStableTokenByteSize(
+    logits.size,
+    offset,
+    options.size,
+    options.vocabSize,
+    `${methodLabel} buffer logits`,
+  );
+  return {
+    logits: await readBuffer(device, logits, Float32Array, {
+      offset,
+      size: byteSize,
+      label: options.label,
+    }),
+    bytesRead: byteSize,
+    sourceKind: 'buffer-readback',
+    tieBreakRule,
+    topCandidateCount,
+  };
+}
+
+async function stableTokenResult(device, options) {
+  const payload = await resolveDeterminismPayload(device, options, 'Doe determinism.stableToken');
+  const logitsBytes = new Uint8Array(payload.logits.buffer, payload.logits.byteOffset, payload.logits.byteLength);
+  const summary = collectStableTokenSummary(payload.logits, payload.topCandidateCount);
+  return {
+    token: summary.token,
+    receipt: {
+      mode: DOE_STABLE_TOKEN_MODE,
+      comparator: DOE_STABLE_TOKEN_COMPARATOR,
+      tieBreakRule: payload.tieBreakRule,
+      sourceKind: payload.sourceKind,
+      vocabSize: payload.logits.length,
+      bytesRead: payload.bytesRead,
+      logitsSha256: await sha256HexFromBytes(logitsBytes),
+      token: summary.token,
+      maxLogit: summary.maxLogit,
+      tiedMaxCount: summary.tiedMaxCount,
+      tiedMaxIndicesPrefix: summary.tiedMaxIndicesPrefix,
+      tiedMaxIndicesOmittedCount: summary.tiedMaxIndicesOmittedCount,
+      topCandidates: summary.topCandidates,
+      proofLinks: stableTokenProofLinks(),
+    },
+  };
+}
+
+async function stableChoiceResult(device, options) {
+  if (!options || typeof options !== 'object') {
+    throw new Error('Doe determinism.stableChoice options must be an object.');
+  }
+  const payload = await resolveDeterminismPayload(device, options, 'Doe determinism.stableChoice');
+  const logitsBytes = new Uint8Array(payload.logits.buffer, payload.logits.byteOffset, payload.logits.byteLength);
+  const stableSummary = collectStableTokenSummary(payload.logits, payload.topCandidateCount);
+  const choiceSummary = collectStableChoiceSummary(payload.logits, stableSummary, options);
+  return {
+    token: choiceSummary.token,
+    receipt: {
+      mode: DOE_STABLE_CHOICE_MODE,
+      comparator: DOE_STABLE_TOKEN_COMPARATOR,
+      baseRuleId: DOE_STABLE_CHOICE_BASE_RULE_ID,
+      evaluatorKind: DOE_STABLE_CHOICE_EVALUATOR_KIND,
+      policyId: choiceSummary.policyId,
+      triggerPolicyId: choiceSummary.triggerPolicyId,
+      candidateSetId: choiceSummary.candidateSetId,
+      candidateSetSource: choiceSummary.candidateSetSource,
+      sourceKind: payload.sourceKind,
+      vocabSize: payload.logits.length,
+      bytesRead: payload.bytesRead,
+      logitsSha256: await sha256HexFromBytes(logitsBytes),
+      token: choiceSummary.token,
+      stableTokenToken: stableSummary.token,
+      stableTokenTiedMaxCount: stableSummary.tiedMaxCount,
+      stableTokenTiedMaxIndicesPrefix: stableSummary.tiedMaxIndicesPrefix,
+      stableTokenTiedMaxIndicesOmittedCount: stableSummary.tiedMaxIndicesOmittedCount,
+      ambiguityTrigger: {
+        mode: choiceSummary.ambiguityTrigger.mode,
+        epsilon: choiceSummary.ambiguityTrigger.epsilon,
+      },
+      ambiguityTriggered: choiceSummary.ambiguityTriggered,
+      ambiguityTopGap: choiceSummary.ambiguityTopGap,
+      selectedBy: choiceSummary.selectedBy,
+      candidateSet: choiceSummary.candidateSet,
+      ambiguousCandidateCount: choiceSummary.ambiguousCandidates.length,
+      ambiguousCandidateIndicesPrefix: choiceSummary.ambiguousCandidates
+        .slice(0, DOE_MAX_STABLE_TOKEN_TIED_INDEX_PREFIX)
+        .map((candidate) => candidate.token),
+      ambiguousCandidateIndicesOmittedCount: Math.max(
+        0,
+        choiceSummary.ambiguousCandidates.length - DOE_MAX_STABLE_TOKEN_TIED_INDEX_PREFIX
+      ),
+      topCandidates: stableSummary.topCandidates,
+      proofLinks: stableChoiceProofLinks(choiceSummary.ambiguityTrigger.mode),
+    },
+  };
+}
+
+async function reviewedChoiceResult(device, options) {
+  if (!options || typeof options !== 'object') {
+    throw new Error('Doe determinism.reviewedChoice options must be an object.');
+  }
+  const payload = await resolveDeterminismPayload(device, options, 'Doe determinism.reviewedChoice');
+  const logitsBytes = new Uint8Array(payload.logits.buffer, payload.logits.byteOffset, payload.logits.byteLength);
+  const stableSummary = collectStableTokenSummary(payload.logits, payload.topCandidateCount);
+  const reviewedSummary = collectReviewedChoiceSummary(payload.logits, stableSummary, options);
+  return {
+    token: reviewedSummary.token,
+    receipt: {
+      mode: DOE_REVIEWED_CHOICE_MODE,
+      comparator: DOE_STABLE_TOKEN_COMPARATOR,
+      baseRuleId: DOE_STABLE_CHOICE_BASE_RULE_ID,
+      evaluatorKind: DOE_REVIEWED_CHOICE_EVALUATOR_KIND,
+      reviewPolicyId: reviewedSummary.reviewPolicyId,
+      triggerPolicyId: reviewedSummary.triggerPolicyId,
+      candidateSetId: reviewedSummary.candidateSetId,
+      candidateSetSource: reviewedSummary.candidateSetSource,
+      sourceKind: payload.sourceKind,
+      vocabSize: payload.logits.length,
+      bytesRead: payload.bytesRead,
+      logitsSha256: await sha256HexFromBytes(logitsBytes),
+      token: reviewedSummary.token,
+      stableTokenToken: stableSummary.token,
+      stableTokenTiedMaxCount: stableSummary.tiedMaxCount,
+      stableTokenTiedMaxIndicesPrefix: stableSummary.tiedMaxIndicesPrefix,
+      stableTokenTiedMaxIndicesOmittedCount: stableSummary.tiedMaxIndicesOmittedCount,
+      ambiguityTrigger: {
+        mode: reviewedSummary.ambiguityTrigger.mode,
+        epsilon: reviewedSummary.ambiguityTrigger.epsilon,
+      },
+      ambiguityTriggered: reviewedSummary.ambiguityTriggered,
+      ambiguityTopGap: reviewedSummary.ambiguityTopGap,
+      selectedBy: reviewedSummary.selectedBy,
+      decision: reviewedSummary.decision,
+      decisionAccepted: reviewedSummary.decisionAccepted,
+      decisionAcceptanceReason: reviewedSummary.decisionAcceptanceReason,
+      candidateSet: reviewedSummary.candidateSet,
+      ambiguousCandidateCount: reviewedSummary.ambiguousCandidates.length,
+      ambiguousCandidateIndicesPrefix: reviewedSummary.ambiguousCandidates
+        .slice(0, DOE_MAX_STABLE_TOKEN_TIED_INDEX_PREFIX)
+        .map((candidate) => candidate.token),
+      ambiguousCandidateIndicesOmittedCount: Math.max(
+        0,
+        reviewedSummary.ambiguousCandidates.length - DOE_MAX_STABLE_TOKEN_TIED_INDEX_PREFIX
+      ),
+      topCandidates: stableSummary.topCandidates,
+      proofLinks: reviewedChoiceProofLinks(reviewedSummary.ambiguityTrigger.mode),
+    },
+  };
 }
 
 function normalizeBinding(binding, index) {
@@ -1191,6 +1865,94 @@ function createBoundDoe(device) {
        */
       create(options) {
         return createKernel(device, options);
+      },
+    },
+    determinism: {
+      /**
+       * Select a stable greedy token with an explicit scalar tie-break rule.
+       *
+       * Surface: Doe API `gpu.determinism`.
+       * Input: Host logits bytes or a GPU buffer containing `f32` logits.
+       * Returns: A promise for `{ token, receipt }`.
+       *
+       * This helper is the explicit Doe determinism contract for greedy
+       * decoding. It reads `f32` logits, applies scalar CPU argmax with the
+       * documented `lowest-index-among-max` tie-break rule, and emits a receipt
+       * describing the exact policy and observed max set.
+       *
+       * This example shows the API in its basic form.
+       *
+       * ```js
+       * const { token, receipt } = await gpu.determinism.stableToken({
+       *   logits: new Float32Array([0, 7, 7, 3]),
+       * });
+       * ```
+       *
+      * - Host inputs may be `ArrayBuffer` or `ArrayBufferView`.
+      * - Buffer inputs use Doe readback first, then the same scalar tie-break policy.
+      * - The current contract supports only `lowest-index-among-max`.
+      */
+      stableToken(options) {
+        return stableTokenResult(device, options);
+      },
+      /**
+       * Resolve ambiguity inside a bounded candidate set with a deterministic policy.
+       *
+       * Surface: Doe API `gpu.determinism`.
+       * Input: Host logits bytes or a GPU buffer plus a candidate set and trigger.
+       * Returns: A promise for `{ token, receipt }`.
+       *
+       * This helper builds on Doe's scalar stable-token boundary. It first
+       * computes the scalar greedy token, then checks a bounded candidate set
+       * for ambiguity (`exact-max-tie` or `candidate-margin-band`). If the
+       * trigger fires, it applies the explicit `fixed-priority` policy over the
+       * ambiguous candidate subset; otherwise it falls back to the scalar
+       * stable-token result.
+       *
+       * ```js
+       * const { token, receipt } = await gpu.determinism.stableChoice({
+       *   logits: new Float32Array([0, 7, 7, 3]),
+       *   candidates: [{ token: 2, label: 'unsafe' }, { token: 1, label: 'safe' }],
+       *   ambiguityTrigger: { mode: 'exact-max-tie' },
+       * });
+       * ```
+       *
+       * - Candidate order is the deterministic priority order for `fixed-priority`.
+       * - The ambiguity trigger is evaluated only over the provided candidate set.
+       * - If the trigger does not fire, the helper returns the scalar stable-token result.
+       */
+      stableChoice(options) {
+        return stableChoiceResult(device, options);
+      },
+      /**
+       * Apply an explicit reviewed decision over a bounded ambiguous candidate set.
+       *
+       * Surface: Doe API `gpu.determinism`.
+       * Input: Host logits bytes or a GPU buffer plus a candidate set, trigger, and reviewed decision.
+       * Returns: A promise for `{ token, receipt }`.
+       *
+       * This helper keeps the same bounded ambiguity trigger model as
+       * `stableChoice(...)`, but the evaluator is an explicit reviewed decision
+       * instead of the built-in fixed-priority program. If the trigger fires
+       * and the reviewed token is present in the ambiguous subset, Doe returns
+       * that token and emits a receipt that records the reviewed source.
+       * Otherwise it falls back to the scalar stable-token result.
+       *
+       * ```js
+       * const { token, receipt } = await gpu.determinism.reviewedChoice({
+       *   logits: new Float32Array([0, 7, 7, 3]),
+       *   candidates: [{ token: 2, label: 'unsafe' }, { token: 1, label: 'safe' }],
+       *   ambiguityTrigger: { mode: 'exact-max-tie' },
+       *   decision: { token: 1, label: 'safe', reviewerId: 'demo/reviewer' },
+       * });
+       * ```
+       *
+       * - The reviewed decision is accepted only when the ambiguity trigger fires.
+       * - The reviewed token must belong to the bounded candidate set and the ambiguous subset.
+       * - The receipt keeps the decision source and fallback reason explicit.
+       */
+      reviewedChoice(options) {
+        return reviewedChoiceResult(device, options);
       },
     },
     compute,

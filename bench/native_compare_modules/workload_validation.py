@@ -478,7 +478,7 @@ def extract_backends_from_command(command: list[str]) -> set[str]:
 
 
 def infer_workload_queue_sync_mode(workload: Workload) -> str:
-    queue_sync_mode = "per-command"
+    queue_sync_mode = "deferred" if getattr(workload, "domain", "") == "upload" else "per-command"
     for index, arg in enumerate(workload.extra_args):
         if arg == "--queue-sync-mode" and index + 1 < len(workload.extra_args):
             queue_sync_mode = workload.extra_args[index + 1]

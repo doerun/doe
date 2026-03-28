@@ -1,0 +1,89 @@
+[
+  {
+    "kind": "buffer_write",
+    "handle": 1010,
+    "bufferSize": 16,
+    "data": [
+      32,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "kind": "buffer_write",
+    "handle": 2227,
+    "bufferSize": 128,
+    "data": [
+      3240099840,
+      3239837696,
+      3239575552,
+      3239313408,
+      3239051264,
+      3238789120,
+      3238526976,
+      3238264832,
+      3238002688,
+      3237478400,
+      3236954112,
+      3236429824,
+      3235905536,
+      3235381248,
+      3234856960,
+      3234332672,
+      3233808384,
+      1109917696,
+      3232759808,
+      3232235520,
+      3231711232,
+      3231186944,
+      3230662656,
+      3230138368,
+      3229614080,
+      3228565504,
+      3227516928,
+      3226468352,
+      3225419776,
+      3224371200,
+      3223322624,
+      3222274048
+    ]
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "sample.wgsl",
+    "x": 1,
+    "y": 1,
+    "z": 1,
+    "initialize_buffers_on_create": true,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "uniform",
+        "resource_handle": 1010,
+        "buffer_size": 16,
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "readonly",
+        "resource_handle": 2227,
+        "buffer_size": 128,
+        "visibility": "compute"
+      },
+      {
+        "binding": 2,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "storage",
+        "resource_handle": 2228,
+        "buffer_size": 4,
+        "visibility": "compute"
+      }
+    ]
+  }
+]

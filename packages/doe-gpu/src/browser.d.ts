@@ -1,5 +1,16 @@
 import type {
   DoeNamespace,
+  DoeDeterminismProofLink,
+  DoeReviewedChoiceOptions,
+  DoeReviewedChoiceReceipt,
+  DoeReviewedChoiceResult,
+  DoeStableChoiceOptions,
+  DoeStableChoiceReceipt,
+  DoeStableChoiceResult,
+  DoeStableTokenOptions,
+  DoeStableTokenReceipt,
+  DoeStableTokenResult,
+  DoeStableTokenTieBreakRule,
 } from "./vendor/doe-namespace.js";
 import type {
   ProviderInfo,
@@ -99,6 +110,20 @@ export function createBrowserSurfaceClasses(
 export function createNativeBrowserCanvasBackend(options?: {
   contextFactory?: (canvas: unknown, context: unknown) => unknown;
 }): NativeBrowserCanvasBackend;
+
+export type {
+  DoeDeterminismProofLink,
+  DoeReviewedChoiceOptions,
+  DoeReviewedChoiceReceipt,
+  DoeReviewedChoiceResult,
+  DoeStableChoiceOptions,
+  DoeStableChoiceReceipt,
+  DoeStableChoiceResult,
+  DoeStableTokenOptions,
+  DoeStableTokenReceipt,
+  DoeStableTokenResult,
+  DoeStableTokenTieBreakRule,
+};
 
 export const gpu: DoeNamespace<GPUDevice, unknown, BrowserRequestDeviceOptions>;
 export const createGpuNamespace: typeof import("./vendor/doe-namespace.js").createDoeNamespace;

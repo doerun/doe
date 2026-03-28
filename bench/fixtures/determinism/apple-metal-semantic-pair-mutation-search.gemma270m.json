@@ -1,0 +1,51 @@
+{
+  "scenarioId": "apple_metal_semantic_pair_mutation_search_gemma270m",
+  "pairMiningFixturePath": "bench/fixtures/determinism/apple-metal-pair-agnostic-mine.gemma270m.json",
+  "dopplerRepoPath": "../doppler",
+  "modelArtifactPath": "../doppler/tmp/gemma3-bench-artifacts/gemma-3-270m-it-q4k-ehf16-af32",
+  "modelId": "gemma-3-270m-it-q4k-ehf16-af32",
+  "defaultCaseCount": 6,
+  "defaultRepeatCount": 1,
+  "decodeSteps": 1,
+  "topK": 32,
+  "topCandidatesToKeep": 24,
+  "persistLogits": true,
+  "useChatTemplate": false,
+  "runtimeConfig": {
+    "inference": {
+      "chatTemplate": {
+        "enabled": false
+      }
+    }
+  },
+  "browser": {
+    "headless": true,
+    "channel": "chromium",
+    "timeoutMs": 240000,
+    "repeatIsolation": "new-page"
+  },
+  "promotionPolicy": {
+    "minimumUsefulnessDelta": 0.01
+  },
+  "mutationTemplates": [
+    {
+      "id": "one-word-choice",
+      "kind": "template",
+      "template": "{prompt} Answer with exactly one word: {left} or {right}."
+    },
+    {
+      "id": "reverse-one-word-choice",
+      "kind": "template",
+      "template": "{prompt} Answer with exactly one word: {right} or {left}."
+    },
+    {
+      "id": "bounded-prefix",
+      "kind": "template",
+      "template": "Choose exactly one of {left} or {right}. {prompt}"
+    },
+    {
+      "id": "swap-inline-choice",
+      "kind": "swap-inline-choice"
+    }
+  ]
+}

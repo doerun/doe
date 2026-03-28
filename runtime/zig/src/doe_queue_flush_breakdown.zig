@@ -7,6 +7,7 @@ const metal_bridge_buffer_contents = bridge.metal_bridge_buffer_contents;
 const metal_bridge_command_buffer_wait_completed = bridge.metal_bridge_command_buffer_wait_completed;
 const metal_bridge_release = bridge.metal_bridge_release;
 const metal_bridge_resolve_timestamps = bridge.metal_bridge_resolve_timestamps;
+const metal_bridge_shared_event_wait = bridge.metal_bridge_shared_event_wait;
 
 pub const QueueFlushBreakdown = extern struct {
     waitCompletedNs: u64 = 0,
@@ -44,12 +45,11 @@ pub fn flushPendingWorkTimed(q: *DoeQueue) QueueFlushBreakdown {
     var out = QueueFlushBreakdown{};
     if (q.pending_cmd) |cmd| {
         const wait_started_ns = monotonicNowNs();
-        _ = q.mtl_event;
-        _ = q.event_counter;
-        // Package lanes spend most of their submit/wait time in long-running GPU work.
-        // Blocking on the command buffer directly is less jitter-prone than the
-        // shared-event spin/yield path for these waits.
-        metal_bridge_command_buffer_wait_completed(cmd);
+        if (q.mtl_event != null and q.event_counter != 0) {
+            metal_bridge_shared_event_wait(q.mtl_event, q.event_counter);
+        } else {
+            metal_bridge_command_buffer_wait_completed(cmd);
+        }
         out.waitCompletedNs = monotonicNowNs() - wait_started_ns;
         metal_bridge_release(cmd);
         q.pending_cmd = null;

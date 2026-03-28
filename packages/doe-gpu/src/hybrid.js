@@ -33,7 +33,7 @@ function detectGpuCapability() {
 async function tryLoadLocal(modelId, timeoutMs) {
   let doppler;
   try {
-    const mod = await import('@simulatte/doppler');
+    const mod = await import('doppler-gpu');
     doppler = mod.doppler;
   } catch {
     return null;

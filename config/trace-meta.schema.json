@@ -56,6 +56,8 @@
     "executionErrorCount": { "type": "integer", "minimum": 0 },
     "executionSkippedCount": { "type": "integer", "minimum": 0 },
     "executionUnsupportedCount": { "type": "integer", "minimum": 0 },
+    "unsupportedCode": { "type": "string" },
+    "unsupportedDetail": { "type": "string" },
     "executionTotalNs": { "type": "integer", "minimum": 0 },
     "executionSetupTotalNs": { "type": "integer", "minimum": 0 },
     "executionEncodeTotalNs": { "type": "integer", "minimum": 0 },

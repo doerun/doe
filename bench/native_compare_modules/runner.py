@@ -671,7 +671,7 @@ def run_workload(
                 str(upload_submit_every),
             ]
         )
-    queue_sync_mode = "per-command"
+    queue_sync_mode = "deferred" if workload.domain == "upload" else "per-command"
     for i, arg in enumerate(workload.extra_args):
         if arg == "--queue-sync-mode" and i + 1 < len(workload.extra_args):
             queue_sync_mode = workload.extra_args[i + 1]

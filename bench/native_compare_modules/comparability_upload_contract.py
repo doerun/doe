@@ -126,6 +126,7 @@ def verify_fawn_upload_runtime_contract(
         workload=workload,
         workload_id=workload.id,
         commands_path=workload.commands_path,
+        plan_path=getattr(workload, "plan_path", ""),
         trace_jsonl=preflight_trace_jsonl,
         trace_meta=preflight_trace_meta,
         queue_sync_mode=queue_sync_mode,

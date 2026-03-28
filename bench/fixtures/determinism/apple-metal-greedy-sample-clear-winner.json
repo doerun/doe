@@ -1,0 +1,28 @@
+{
+  "scenarioId": "apple_metal_greedy_sample_clear_winner",
+  "description": "Apple Metal determinism probe for the greedy argmax sampling kernel with explicit non-zero logits and one clear winner at token index 17.",
+  "commandsPath": "bench/fixtures/determinism/greedy-sample-clear-winner.commands.json",
+  "determinismMode": "stable-token",
+  "semanticStage": "greedy_sample",
+  "kernelRoot": "bench/inference-pipeline/kernels",
+  "profile": {
+    "vendor": "apple",
+    "api": "metal",
+    "family": "m3",
+    "driver": "1.0.0"
+  },
+  "queueWaitMode": "process-events",
+  "queueSyncMode": "per-command",
+  "backendLanes": [
+    {
+      "id": "doe",
+      "backendLane": "metal_doe_comparable"
+    },
+    {
+      "id": "dawn",
+      "backendLane": "metal_dawn_release"
+    }
+  ],
+  "defaultRunCount": 50,
+  "captures": []
+}

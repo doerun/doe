@@ -1,19 +1,26 @@
 # Doe Lean module
 
-## Verification tier classification
+## Verification category classification
 
-Every theorem is classified into one of four tiers based on whether Lean is actually necessary to verify it:
+Current theorem inventory and category counts live in
+`pipeline/lean/artifacts/proven-conditions.json`.
+
+Every extracted theorem is classified into one of five artifact categories
+based on whether Lean is actually necessary to verify it:
 
 - **`tautological`** — correct by construction or definitional. There is nothing to verify: the property follows directly from how the code is written. Lean is restating the definition. Examples: a table built from a function trivially matches that function; `rfl` proofs that just unfold a definition; a one-liner that follows from another theorem.
 - **`comptime_verified`** — property over a finite domain that requires checking all cases but is independently verifiable by Zig `comptime` exhaustion or unit tests. Lean is redundant — a `comptime` inline-for or exhaustive test does the same thing.
 - **`lean_verified`** — property quantified over unbounded domains (arbitrary lists, parametric structures) that `comptime` cannot enumerate. Lean is necessary.
+- **`lean_required`** — theorem that requires Lean proof and is used as a blocking proof obligation in the current artifact/gate model.
 - **`lean_fixture`** — specific test case verified against a `lean_verified` theorem. Could be an integration test, but exercises the genuine proofs and catches regressions in the obligation model.
 
 The tier is recorded in the `category` field of the proof artifact (`config/proof-artifact.schema.json`).
 
 ## Theorem inventory by tier
 
-### `tautological` (current artifact: 10 theorems; representative selection below)
+### `tautological`
+
+See `pipeline/lean/artifacts/proven-conditions.json` for the current count.
 
 Nothing to verify. These restate definitions or are correct by construction.
 
@@ -28,7 +35,9 @@ Nothing to verify. These restate definitions or are correct by construction.
 | `betterMatch_prefers_higher_score` | Higher score wins | `if a < b then b` returns `b` — obvious from definition |
 | `identityActionPreservesCommand` | Identity actions preserve commands | One-liner: calls `identityActionComplete` |
 
-### `comptime_verified` (4 theorems, ~19 lines)
+### `comptime_verified`
+
+See `pipeline/lean/artifacts/proven-conditions.json` for the current count.
 
 Finite-enum properties that require checking all cases. Zig `comptime` inline-for or exhaustive tests would verify the same thing.
 
@@ -39,11 +48,16 @@ Finite-enum properties that require checking all cases. Zig `comptime` inline-fo
 | `strongerSafetyRaisesProofDemand` | Critical safety demands `.proven` proof | 3 enum values |
 | `identityActionComplete` | Exactly which actions are identity (iff) | 4 action variants × sub-cases |
 
-### `lean_verified` (current artifact: 17 theorems) and `lean_required` (current artifact: 40 theorems)
+### `lean_verified` and `lean_required`
+
+See `pipeline/lean/artifacts/proven-conditions.json` for the current counts.
 
 `lean_verified` theorems are quantified over arbitrary `List Obligation` or arbitrary `Nat` — unbounded domain, cannot enumerate. `lean_required` theorems also require Lean (induction over unbounded structures: lists, IR node counts, ref chains, render-pass state machines) and are classified separately in the proof artifact.
 
-Combined unbounded-domain theorems (57 total). Representative `lean_verified` selection below; full `lean_required` list includes IR builder soundness, IR semantic/validator contracts, MSL address-space chains, render-pass state machines, buffer dispatch preconditions, and compute bounds theorems.
+Representative `lean_verified` selection below; full `lean_required` coverage
+in the current artifact includes IR builder soundness, IR semantic/validator
+contracts, MSL address-space chains, render-pass state machines, buffer
+dispatch preconditions, and compute bounds theorems.
 
 | Theorem | What it proves |
 |---------|---------------|
@@ -72,9 +86,13 @@ Combined unbounded-domain theorems (57 total). Representative `lean_verified` se
 | `gid_texture_coords_3d_inbounds_when_dispatch_fits` | Dispatch-fit precondition implies 3D gid texture coords are in bounds |
 | `guarded_gid_texture_coords_3d_inbounds` | Root early-return guard against `textureDimensions(...).xyz` implies 3D gid coords are in bounds |
 
-### `lean_fixture` (current artifact: 6 theorems)
+### `lean_fixture`
 
-Specific obligation sets verified against the `lean_verified` theorems. The artifact contains 6 fixture theorems; 4 additional fixture candidates (timing-phase, hardware-path) are defined in Lean source but not yet extracted to the proof artifact.
+See `pipeline/lean/artifacts/proven-conditions.json` for the current count.
+
+Specific obligation sets verified against the `lean_verified` theorems. Four
+additional fixture candidates (timing-phase, hardware-path) are defined in Lean
+source but not yet extracted to the proof artifact.
 
 | Theorem | Fixture | In artifact |
 |---------|---------|-------------|
@@ -130,6 +148,7 @@ Core theorem pack (`Doe/Core/`, maps to `runtime/zig/src/core/`):
 - `Doe/Core/Model.lean` — foundational enums, precedence lattice, requirement predicates
 - `Doe/Core/Runtime.lean` — deterministic matching, scoring, selector, driver-range matching
 - `Doe/Core/Dispatch.lean` — dispatch-level theorems (`tautological` and `comptime_verified`)
+- `Doe/Core/DeterminismPolicy.lean` — policy-layer determinism contracts for `stable-token`, trigger evaluation, fixed-priority choice, and reviewed-choice decision acceptance
 - `Doe/Core/Bridge.lean` — obligation gate evaluation from dispatch decisions
 
 Full theorem pack (`Doe/Full/`, maps to `runtime/zig/src/full/`):

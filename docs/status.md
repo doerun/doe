@@ -1,4 +1,596 @@
 # Doe status
+## Doe now has a proof-linked reviewed-choice sibling beside stable-token and stable-choice: Apple sample-only receipts can show raw Doe/Dawn, deterministic policy lanes, and an explicit reviewed decision as separate audited outcomes (2026-03-28)
+
+- New public determinism surfaces and receipt contract:
+  - `packages/doe-gpu/src/vendor/doe-namespace.js`
+  - `packages/doe-gpu/src/vendor/doe-namespace.d.ts`
+  - `packages/doe-gpu/README.md`
+  - `config/doe-determinism-receipt.schema.json`
+  - `examples/doe-determinism-receipt.stable-token.sample.json`
+  - `examples/doe-determinism-receipt.stable-choice.sample.json`
+  - `examples/doe-determinism-receipt.reviewed-choice.sample.json`
+- New proof-layer sources and extraction path:
+  - `pipeline/lean/Doe/Core/DeterminismPolicy.lean`
+  - `pipeline/lean/Doe/DeterminismPolicy.lean`
+  - `pipeline/lean/Doe/Extract.lean`
+  - `pipeline/lean/lean_build_common.sh`
+  - `pipeline/lean/artifacts/proven-conditions.json`
+- New Apple sample-only reviewed-choice receipt:
+  - `bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/apple_metal_sample_only_tie_break_seatbelt_not_safe_gemma270m.sample-only-tie-break.json`
+- Current result:
+  - Doe now keeps three post-logit contracts separate in public/package-visible
+    receipts:
+    - `stable-token`: deterministic full-vocab greedy tie-break
+    - `stable-choice`: deterministic bounded candidate-set policy
+    - `reviewed-choice`: explicit reviewed decision over the same bounded
+      ambiguity contract
+  - the receipt schema now requires `proofLinks` for all three modes, and those
+    links now resolve to extracted theorems in
+    `pipeline/lean/artifacts/proven-conditions.json`
+  - on the refreshed Apple seatbelt sample-only artifact above:
+    - `as-captured`: raw Doe, raw Dawn, Doe `stable-token`, Doe
+      `stable-choice`, and Doe `reviewed-choice` all fall back to the same raw
+      token
+    - `force-not-safe-exact-tie`: raw Doe/raw Dawn emit `6338`, Doe
+      `stable-token` and Doe `stable-choice` emit `711`, and Doe
+      `reviewed-choice` accepts the explicit reviewed decision and emits `6338`
+- Interpretation:
+  - this is a stronger Doe capability claim than more prompt hunting:
+    Doe now owns an explicit, audited boundary after logits and before final
+    token emission, with proof-linked policy receipts instead of raw GPU
+    sampler behavior alone
+  - the stronger claim is still narrow:
+    the Lean links cover policy-layer semantics only
+    (tie-break, trigger, evaluator acceptance), not GPU floating-point
+    determinism or cross-backend model correctness
+
+## Hardened Apple Metal determinism receipts now separate natural discoveries from mutation-assisted demos, gate pair mining through a tokenizer-aware answer-set registry plus versioned trigger policies, and narrow the current live claim to exact-tie differentiation rather than a natural stable-choice win (2026-03-28)
+
+- New config and receipt-contract surfaces:
+  - `config/determinism-answer-set-registry.json`
+  - `config/determinism-answer-set-registry.schema.json`
+  - `config/determinism-trigger-policy.json`
+  - `config/determinism-trigger-policy.schema.json`
+  - `config/doe-determinism-receipt.schema.json`
+  - `packages/doe-gpu/src/vendor/doe-namespace.js`
+  - `packages/doe-gpu/src/vendor/doe-namespace.d.ts`
+- Fresh refreshed scout and promotion receipts:
+  - `bench/out/apple-metal-real-logit-hunt/20260328T182007Z/apple_metal_real_logit_hunt_gemma270m_choice_breadth.real-logit-hunt.json`
+  - `bench/out/apple-metal-real-logit-hunt/20260328T182007Z/apple_metal_real_logit_hunt_gemma270m_seatbelt_safe_unsafe.real-logit-hunt.json`
+  - `bench/out/apple-metal-real-logit-hunt/20260328T182048Z/apple_metal_real_logit_hunt_gemma270m_high_stakes.real-logit-hunt.json`
+  - `bench/out/apple-metal-pair-agnostic-mine/20260328T182131Z/apple_metal_pair_agnostic_mine_gemma270m.pair-agnostic-mine.json`
+  - `bench/out/apple-metal-semantic-pair-hunt/20260328T182238Z/apple_metal_pair_agnostic_mine_gemma270m.semantic-pair-hunt.json`
+  - `bench/out/apple-metal-sample-only-tie-break/20260328T182215Z/apple_metal_sample_only_tie_break_seatbelt_not_safe_gemma270m.sample-only-tie-break.json`
+- Current result:
+  - the refreshed scout receipts now carry explicit scout-stage stability
+    (`promptTokenizationStable`, `topCandidateMembershipStable`) instead of
+    letting downstream stages assume that those checks existed
+  - across the refreshed `choice_breadth`, `seatbelt_safe_unsafe`, and
+    `high_stakes` scout corpora, the registry-gated pair miner promotes zero
+    natural cases:
+    `sourceCandidateCount=94`, `minedCandidateCount=0`,
+    `promotedCandidateCount=0`
+  - because the natural mined report is empty, the mutation stage has no honest
+    shortlist to mutate right now; the correct next state is a zero-promotion
+    semantic receipt, not a mutation-assisted headline demo
+  - `stable-choice` receipts now explicitly record:
+    - `triggerPolicyId`
+    - `candidateSetId`
+    - `candidateSetSource`
+  - the seatbelt sample-only fixture now pins the bounded candidate set by
+    token ID (`711`, `6338`) so the probe stays reproducible even when a
+    refreshed scout no longer keeps both candidate tokens in source `topK`
+  - on the refreshed seatbelt sample-only probe:
+    - `as-captured`: raw Doe, raw Dawn, Doe `stable-token`, and Doe
+      `stable-choice` all emit `496`
+    - `force-not-safe-exact-tie`: raw Doe and raw Dawn emit `6338`, while Doe
+      `stable-token` and Doe `stable-choice` emit `711`
+- Interpretation:
+  - the current stronger claim is contract discipline, not broader ambiguity
+    coverage:
+    Doe now has explicit natural-vs-mutation provenance, registry-gated pair
+    mining, versioned trigger policies, and stage-specific stability receipts
+  - the current narrower live differentiator is still real:
+    Doe can apply explicit deterministic sampler and bounded-policy decisions on
+    the same fixed logits when the raw GPU sampler does not follow the scalar
+    expected token
+  - what no longer holds on refreshed Apple source receipts is the softer
+    “natural seatbelt stable-choice win” story; that earlier receipt should be
+    treated as superseded by the refreshed no-trigger `as-captured` run above
+
+## Doe now has a reproducible Apple Metal determinism-search funnel: broad scout -> pair-agnostic mining -> decode-state promotion -> shortlist mutation search, with negative controls carried forward instead of hidden (2026-03-28)
+
+- New search/promotion fixtures and runners:
+  - `bench/fixtures/determinism/apple-metal-pair-agnostic-mine.gemma270m.json`
+  - `bench/fixtures/determinism/apple-metal-semantic-pair-mutation-search.gemma270m.json`
+  - `bench/runners/determinism_search_helpers.py`
+  - `bench/runners/run_pair_agnostic_pair_miner.py`
+  - `bench/runners/run_semantic_pair_mutation_search.py`
+- Fresh live search artifacts:
+  - `bench/out/apple-metal-pair-agnostic-mine/20260328T175850Z/apple_metal_pair_agnostic_mine_gemma270m.pair-agnostic-mine.json`
+  - `bench/out/apple-metal-semantic-pair-hunt/20260328T175911Z/apple_metal_pair_agnostic_mine_gemma270m.semantic-pair-hunt.json`
+  - `bench/out/apple-metal-semantic-pair-mutation-search/20260328T180122Z/apple_metal_semantic_pair_mutation_search_gemma270m.semantic-pair-mutation-search.json`
+  - `bench/out/apple-metal-semantic-pair-mutation-search/20260328T180122Z/apple_metal_semantic_pair_mutation_search_gemma270m.real-logit-hunt.json`
+  - `bench/out/apple-metal-semantic-pair-mutation-search/20260328T180122Z/apple_metal_semantic_pair_mutation_search_gemma270m.pair-agnostic-mine.json`
+- Current result:
+  - the pair-agnostic miner is now conservative and provenance-heavy:
+    it mines replayable single-token answer pairs from broad scout output,
+    carries canonical token IDs plus `candidateSetSource=mined-topk-v1`, and
+    keeps only prompt-bounded cases that meet explicit usefulness criteria
+  - on the current Apple breadth receipts, that miner promotes exactly one
+    useful case:
+    the repeated seatbelt ` not`/` safe` source at
+    `bench/out/apple-metal-real-logit-hunt/20260328T172744Z/apple_metal_real_logit_hunt_gemma270m_seatbelt_safe_unsafe.real-logit-hunt.json`
+  - `run_semantic_pair_hunt.py --mined-report ...` now reconstructs a full
+    decode-state recipe from the mined case without needing a hand-written pair
+    fixture:
+    `promptTokenIds`, `decodePrefixTokenIds`, `currentIds`, and
+    `greedyTokenSequence` are all present in
+    `bench/out/apple-metal-semantic-pair-hunt/20260328T175911Z/apple_metal_pair_agnostic_mine_gemma270m.semantic-pair-hunt.json`
+  - the first shortlist mutation pass is intentionally a negative-control run,
+    not a victory lap:
+    - `sourceCaseCount=1`
+    - `mutationCandidateCount=3`
+    - `improvedMutationCount=0`
+    - `outcomeCounts={"pair-missing": 3}`
+  - the three seatbelt prompt mutations all failed honestly for different
+    reasons recorded in the mutation hunt report:
+    - the two instructional variants (`one-word-choice`,
+      `reverse-one-word-choice`) collapsed into list/format tokens rather than
+      preserving a promotable semantic pair
+    - the `bounded-prefix` variant made ` not` the top token but did not keep
+      ` safe` in the mined near-pair window, so it stayed a negative control
+- Interpretation:
+  - Doe now has the search infrastructure needed to discover determinism and
+    ambiguity-resolution demos without guessing exact prompts up front
+  - the funnel is explicit and auditable:
+    scout receipts -> mined pair receipts -> decode-state receipts -> mutation
+    receipts -> promoted mined cases
+  - the current honest state is stronger methodology, not a stronger claim:
+    the search machinery is real and replayable, but the first live mutation
+    pass did not produce a new promotable case beyond the original seatbelt
+    source
+
+## Doe now has a separate Apple Metal stable-choice layer above stable-token: on the repeated prompt `Driving without a seatbelt is safe or unsafe. It is`, raw Doe, raw Dawn, and Doe `stable-token` all stay on the natural greedy token, while Doe `stable-choice` deterministically resolves the bounded ` not`/` safe` ambiguity to ` not` with an explicit policy receipt (2026-03-28)
+
+- New public helper and receipt contract:
+  - `packages/doe-gpu/src/vendor/doe-namespace.js`
+  - `packages/doe-gpu/src/vendor/doe-namespace.d.ts`
+  - `packages/doe-gpu/README.md`
+  - `config/doe-determinism-receipt.schema.json`
+- New schema-gated sample receipts:
+  - `examples/doe-determinism-receipt.stable-token.sample.json`
+  - `examples/doe-determinism-receipt.stable-choice.sample.json`
+- New seatbelt stable-choice source and probe receipts:
+  - `bench/out/apple-metal-real-logit-hunt/20260328T172744Z/apple_metal_real_logit_hunt_gemma270m_seatbelt_safe_unsafe.real-logit-hunt.json`
+  - `bench/out/apple-metal-sample-only-tie-break/20260328T173832Z/apple_metal_sample_only_tie_break_seatbelt_not_safe_gemma270m.sample-only-tie-break.json`
+- Current result:
+  - the repeated seatbelt real-logit source receipt is byte-stable across
+    three reruns on this host
+  - on the natural `as-captured` logits:
+    - raw Doe emits `1492`
+    - raw Dawn emits `1492`
+    - Doe `stable-token` emits `1492`
+    - Doe `stable-choice` emits `711`
+  - the stable-choice receipt is not pretending the model became numerically
+    deterministic; it records a separate bounded-policy decision:
+    - `policyId=seatbelt/not-safe-first`
+    - candidate set `{711:"not", 6338:"safe"}`
+    - `ambiguityTrigger.mode=candidate-margin-band`
+    - `ambiguityTrigger.epsilon=0.05`
+    - observed candidate-set gap `0.04282951354980469`
+    - `selectedBy=stable-choice-policy`
+  - on the controlled exact-tie stress case:
+    - raw Doe emits `6338`
+    - raw Dawn emits `6338`
+    - Doe `stable-token` emits `711`
+    - Doe `stable-choice` emits `711`
+- Interpretation:
+  - this is the clean separation Doe needs:
+    `stable-token` remains a narrow sampler-determinism claim over fixed logits,
+    while `stable-choice` is an explicit policy-governed ambiguity-resolution
+    layer over a bounded answer set
+  - Apple still does not show a raw Doe-vs-Dawn sampling split on natural
+    logits here; the differentiator is that Doe now has a documented,
+    deterministic, auditable policy layer when the answer set is ambiguous
+
+## Doe now has a broader Apple Metal stable-token search surface with replayable decode-state recipes, and one repeated two-token semantic differentiator on a real safety prompt: for `Driving without a seatbelt is safe or unsafe. It is`, raw Doe and Dawn emit ` safe` under an exact ` not`/` safe` tie while Doe `stable-token` emits the scalar-expected ` not` (2026-03-28)
+
+- New real-logit hunt fixtures for semantic breadth and a repeated source receipt:
+  - `bench/fixtures/determinism/apple-metal-real-logit-hunt.gemma270m.choice-breadth.json`
+  - `bench/fixtures/determinism/apple-metal-real-logit-hunt.gemma270m.seatbelt-safe-unsafe.json`
+- New semantic-pair hunt fixtures:
+  - `bench/fixtures/determinism/apple-metal-semantic-pair-hunt.gemma270m.json`
+  - `bench/fixtures/determinism/apple-metal-semantic-pair-hunt.gemma270m.choice-breadth.json`
+- New focused sample-only fixtures for semantic two-token ties:
+  - `bench/fixtures/determinism/apple-metal-sample-only-tie-break.driving-not-good.gemma270m.json`
+  - `bench/fixtures/determinism/apple-metal-sample-only-tie-break.patch-public-private.gemma270m.json`
+  - `bench/fixtures/determinism/apple-metal-sample-only-tie-break.red-go-stop.gemma270m.json`
+  - `bench/fixtures/determinism/apple-metal-sample-only-tie-break.snow-winter-summer.gemma270m.json`
+  - `bench/fixtures/determinism/apple-metal-sample-only-tie-break.seatbelt-not-safe.gemma270m.json`
+- Fresh breadth source receipts:
+  - `bench/out/apple-metal-real-logit-hunt/20260328T172358Z/apple_metal_real_logit_hunt_gemma270m_choice_breadth.real-logit-hunt.json`
+  - `bench/out/apple-metal-real-logit-hunt/20260328T172744Z/apple_metal_real_logit_hunt_gemma270m_seatbelt_safe_unsafe.real-logit-hunt.json`
+- Fresh semantic-pair hunt receipts with decode-state recipes:
+  - `bench/out/apple-metal-semantic-pair-hunt/20260328T172132Z/apple_metal_semantic_pair_hunt_gemma270m.semantic-pair-hunt.json`
+  - `bench/out/apple-metal-semantic-pair-hunt/20260328T172758Z/apple_metal_semantic_pair_hunt_gemma270m_choice_breadth.semantic-pair-hunt.json`
+- Fresh semantic sample-only receipts:
+  - `bench/out/apple-metal-sample-only-tie-break/20260328T172535Z/apple_metal_sample_only_tie_break_driving_not_good_gemma270m.sample-only-tie-break.json`
+  - `bench/out/apple-metal-sample-only-tie-break/20260328T172553Z/apple_metal_sample_only_tie_break_patch_public_private_gemma270m.sample-only-tie-break.json`
+  - `bench/out/apple-metal-sample-only-tie-break/20260328T172609Z/apple_metal_sample_only_tie_break_red_go_stop_gemma270m.sample-only-tie-break.json`
+  - `bench/out/apple-metal-sample-only-tie-break/20260328T172626Z/apple_metal_sample_only_tie_break_snow_winter_summer_gemma270m.sample-only-tie-break.json`
+  - `bench/out/apple-metal-sample-only-tie-break/20260328T172808Z/apple_metal_sample_only_tie_break_seatbelt_not_safe_gemma270m.sample-only-tie-break.json`
+- Current result:
+  - `run_semantic_pair_hunt.py` now emits token-level decode-state recipes
+    (`promptTokenIds`, `decodePrefixTokenIds`, `currentIds`) so the interesting
+    real prompt boundaries can be recreated later without access to raw backend
+    KV buffers
+  - the current best natural semantic near-tie remains the short prompt
+    `Driving without brakes is`, where ` not` and ` good` sit very close in the
+    source receipt
+  - the broader semantic hunt also surfaces repeatable Apple prompts for:
+    ` not`/` safe`, ` public`/` private`, ` winter`/` summer`, ` go`/` stop`,
+    ` true`/` false`, and ` even`/` odd`
+  - two-token exact-tie probes are narrower than the earlier `top4` tie story:
+    the `driving not/good`, `public/private`, `go/stop`, and
+    `winter/summer` probes all keep raw Doe, raw Dawn, and Doe `stable-token`
+    aligned with scalar first-max semantics
+  - the repeated seatbelt source receipt is the current strongest two-token
+    stable-token differentiator:
+    - repeated real-logit source receipt:
+      `bench/out/apple-metal-real-logit-hunt/20260328T172744Z/apple_metal_real_logit_hunt_gemma270m_seatbelt_safe_unsafe.real-logit-hunt.json`
+    - repeated sample-only receipt:
+      `bench/out/apple-metal-sample-only-tie-break/20260328T172808Z/apple_metal_sample_only_tie_break_seatbelt_not_safe_gemma270m.sample-only-tie-break.json`
+    - baseline `as-captured`: raw Doe, raw Dawn, and Doe `stable-token` agree
+    - `force-not-safe-exact-tie`: raw Doe emits `6338`, raw Dawn emits `6338`,
+      Doe `stable-token` emits `711`
+    - the Doe receipt records the exact contract and evidence:
+      `mode=stable-token`, `comparator=scalar-f32-greedy`,
+      `tieBreakRule=lowest-index-among-max`, plus tied-max prefix
+      `[711, 6338]`
+- Interpretation:
+  - the repo now has a broader, more honest search story for deterministic
+    semantic decisions: most real two-token ties do not currently distinguish
+    Doe from Dawn, but Doe can still provide an explicit stable-token contract
+    where the raw GPU sampler does not follow scalar first-max semantics
+  - the current Apple claim stays narrow:
+    Doe has replayable semantic tie receipts and at least one repeated real
+    safety prompt where Doe `stable-token` changes the answer under a controlled
+    exact tie while raw Doe and raw Dawn stay in lockstep
+
+## Doe now has a human-readable Apple Metal stable-token receipt on a real safety prompt: when the prompt `Driving without brakes is safe or unsafe. It is` is stress-mutated into an exact tie between ` not` and ` safe`, raw Doe and Dawn both emit ` safe`, while Doe `stable-token` emits the scalar-expected ` not` with explicit receipts (2026-03-28)
+
+- New real-logit hunt fixture for semantic answer-token prompts:
+  - `bench/fixtures/determinism/apple-metal-real-logit-hunt.gemma270m.choice-primer.json`
+- New focused sample-only fixture for the semantic tie case:
+  - `bench/fixtures/determinism/apple-metal-sample-only-tie-break.brakes-safe-unsafe.gemma270m.json`
+- Fresh source report:
+  - `bench/out/apple-metal-real-logit-hunt/20260328T165934Z/apple_metal_real_logit_hunt_gemma270m_choice_primer.real-logit-hunt.json`
+- Fresh semantic sample-only report:
+  - `bench/out/apple-metal-sample-only-tie-break/20260328T165957Z/apple_metal_sample_only_tie_break_brakes_safe_unsafe_gemma270m.sample-only-tie-break.json`
+- Fresh differentiator receipt:
+  - `bench/out/apple-metal-sample-only-tie-break/20260328T165957Z/brakes-safe-unsafe-prefill-force-not-safe-exact-tie/brakes-safe-unsafe-prefill-force-not-safe-exact-tie.determinism.json`
+- Current result:
+  - the source real-logit receipt for `brakes-safe-unsafe` is byte-stable across
+    reruns on this host
+  - `as-captured`: raw Doe, raw Dawn, and Doe `stable-token` all agree on token
+    `1492` (`" now"`)
+  - `force-not-safe-exact-tie`: the runner lifts token `711` (`" not"`) and
+    token `6338` (`" safe"`) to the same exact max value above the original top
+    logit
+  - on that exact same mutated logits buffer:
+    - raw Doe emits `6338`
+    - raw Dawn emits `6338`
+    - Doe `stable-token` emits `711`
+  - the Doe receipt records the applied contract explicitly:
+    `mode=stable-token`, `comparator=scalar-f32-greedy`,
+    `tieBreakRule=lowest-index-among-max`, plus the tied-max prefix
+    `[711, 6338]`
+- Interpretation:
+  - this is still a controlled exact-tie stress receipt, not a claim that real
+    prompts naturally land on this exact tie boundary
+  - Apple Metal still does not show a raw Doe-vs-Dawn sampling split; the raw
+    GPU lanes stay in lockstep here
+  - the stronger claim is narrower and more useful:
+    Doe now has a human-readable stable-token differentiator on a real prompt
+    with meaningful answer tokens, not just anonymous top-k tie fixtures
+
+## Doe now has a real Apple Metal stable-token differentiator: on forced 4-way exact ties, raw Doe and Dawn still match each other, but Doe `stable-token` recovers the scalar expected token with explicit receipts (2026-03-28)
+
+- Public helper surface:
+  - `packages/doe-gpu/src/vendor/doe-namespace.js`
+  - `packages/doe-gpu/README.md`
+- New Doe stable-token executor used by the sample-only probe:
+  - `bench/executors/run-doe-stable-token.js`
+- Updated sample-only fixture with explicit Doe stable-token config:
+  - `bench/fixtures/determinism/apple-metal-sample-only-tie-break.gemma270m.json`
+- Fresh aggregate sample-only report with Doe stable-token receipts:
+  - `bench/out/apple-metal-sample-only-tie-break/20260328T162956Z/apple_metal_sample_only_tie_break_gemma270m.sample-only-tie-break.json`
+- Fresh Doe stable-token differentiator receipts:
+  - `bench/out/apple-metal-sample-only-tie-break/20260328T162956Z/answer-is-prefill-force-top4-exact-tie/doe.stable-token.json`
+  - `bench/out/apple-metal-sample-only-tie-break/20260328T162956Z/sky-is-decode-2--force-top4-exact-tie/doe.stable-token.json`
+- Current result:
+  - raw Doe and Dawn still stay in lockstep on all `20` sample-only cases from
+    the real-logit hunt corpus
+  - the same two forced `top4` exact-tie cases remain the only scalar-audit
+    mismatches on the raw GPU sample path:
+    - `answer-is-prefill-force-top4-exact-tie`
+    - `sky-is-decode-2--force-top4-exact-tie`
+  - in both cases, raw Doe and raw Dawn emit the same stable GPU token while
+    Doe `stable-token` emits the scalar expected token:
+    - `answer-is-prefill-force-top4-exact-tie`: raw Doe/Dawn `236761`, Doe
+      `stable-token` `107`
+    - `sky-is-decode-2--force-top4-exact-tie`: raw Doe/Dawn `808`, Doe
+      `stable-token` `107`
+  - the Doe stable-token receipts are explicit about the applied contract:
+    `mode=stable-token`, `comparator=scalar-f32-greedy`,
+    `tieBreakRule=lowest-index-among-max`, plus logits SHA-256 and tied-max
+    index prefixes
+- Interpretation:
+  - Apple Metal still does **not** show a raw Doe-vs-Dawn sampling split on the
+    shared GPU kernel path
+  - Doe now has a narrower but real determinism differentiator:
+    an explicit package/runtime helper that can enforce scalar greedy tie-break
+    semantics with receipts on the same logits where the raw GPU kernel follows
+    a different stable tie path
+  - this is a valid fixed-host, fixed-input stable-token claim; it is still not
+    a full-model LM determinism claim, not a cross-backend claim, and not a
+    proof of floating-point determinism
+
+## Apple sample-only tie-break probes now reuse persisted real Gemma 270M logits; Doe and Dawn remain identical on every tested case, while forced 4-way exact ties expose a stable kernel-vs-scalar-argmax mismatch rather than a Doe-vs-Dawn split (2026-03-28)
+
+- New runner:
+  - `bench/runners/run_sample_only_tie_break_probe.py`
+- Bundled fixture:
+  - `bench/fixtures/determinism/apple-metal-sample-only-tie-break.gemma270m.json`
+- Source real-logit report with persisted logits:
+  - `bench/out/apple-metal-real-logit-hunt/20260328T154808Z/apple_metal_real_logit_hunt_gemma270m.real-logit-hunt.json`
+- Fresh sample-only tie-break report:
+  - `bench/out/apple-metal-sample-only-tie-break/20260328T160703Z/apple_metal_sample_only_tie_break_gemma270m.sample-only-tie-break.json`
+- Current result:
+  - `20` Apple Metal sample-only cases were exercised:
+    top `4` real prompt/step candidates from the real-logit hunt times `5`
+    controlled mutations each
+  - Doe and Dawn matched each other on every case:
+    all cases are `sameDecodedValueAcrossLanes=true`
+  - the `as-captured`, `force-top2-exact-tie`, and both corrected `1ulp`
+    mutations stay aligned with the scalar `f32` argmax audit
+  - two forced `top4` exact-tie cases do **not** match scalar CPU argmax:
+    - `answer-is-prefill-force-top4-exact-tie`
+    - `sky-is-decode-2--force-top4-exact-tie`
+  - in both of those cases Doe and Dawn still agree with each other and remain
+    byte-stable across runs; the mismatch is between the real GPU sample kernel
+    and the scalar audit model, not between Doe and Dawn
+- Interpretation:
+  - Apple Metal still does not show a Doe-vs-Dawn sampling divergence on this
+    path
+  - the useful new fact is narrower and still important:
+    forced multi-way exact ties can make the real `sample.wgsl` kernel pick a
+    stable token that differs from scalar CPU argmax semantics
+  - that strengthens the case for an explicit Doe `stable-token` mode with a
+    documented CPU-side argmax/tie-break contract if we want a determinism
+    surface that is stronger than “same as Dawn on this GPU kernel”
+
+## Apple real-logit hunt now separates browser repeat isolation; fresh-page reruns remove the earlier zero-logit collapse and keep current real Gemma 270M candidates byte-stable on this host (2026-03-28)
+
+- `bench/executors/harvest-doppler-browser-logits.js` now supports explicit
+  `browser.repeatIsolation` for real-logit harvests:
+  - `reuse-page`
+  - `new-page`
+  - `new-browser`
+- `bench/runners/run_real_logit_hunt.py` now uses that control to rank real
+  prompt/decode candidates from Doppler's browser advanced API against a real
+  Gemma 270M artifact.
+- Current receipts:
+  - older reuse-page report showing the collapse:
+    - `bench/out/apple-metal-real-logit-hunt/20260328T154208Z/apple_metal_real_logit_hunt_gemma270m.real-logit-hunt.json`
+  - fresh new-page report:
+    - `bench/out/apple-metal-real-logit-hunt/20260328T154607Z/apple_metal_real_logit_hunt_gemma270m.real-logit-hunt.json`
+  - fresh new-page report with persisted logits for sample-only follow-up:
+    - `bench/out/apple-metal-real-logit-hunt/20260328T154808Z/apple_metal_real_logit_hunt_gemma270m.real-logit-hunt.json`
+- Interpretation:
+  - the older reuse-page report should be treated as a browser/model lifecycle
+    bug receipt, not as real greedy-token instability
+  - the fresh new-page report removes that collapse; current real prompt/step
+    candidates are byte-stable across reruns on this fixed Apple Metal host
+  - the current hunt now gives a real-logit candidate list that can feed the
+    next sample-only Doe-vs-Dawn tie-break probe without conflating lifecycle
+    faults with numerical drift
+
+## Apple Metal tie-break audit now checks expected greedy sequencing directly from captured logits; current Doe and Dawn receipts stay in lockstep even on exact full-vocab ties (2026-03-28)
+
+- `bench/runners/run_determinism_probe.py` now derives an explicit
+  `tieBreakAudit` for `stable-decode-step` reports:
+  - decodes captured final logits as `f32`
+  - computes the greedy expectation as the lowest index among max logits
+  - compares that expected token to the captured sampled token for each lane
+- Fresh 64-step exact-tie audit:
+  - `bench/out/apple-metal-determinism/20260328T183500Z/g270m_prefill64_decode64_full_tie_audit.determinism.json`
+- Current result:
+  - all 64 decode steps on the Apple Metal Gemma 270M shaped prefill+decode
+    command stream are exact `4096`-way ties at the sampled logits boundary
+  - Doe emits token `0` on every step and matches the expected greedy
+    tie-break sequence on all 64 steps
+  - Dawn emits the same token sequence and also matches the expected greedy
+    tie-break sequence on all 64 steps
+- Interpretation:
+  - the current Apple Metal WebGPU path does not show a Doe-vs-Dawn tie-break
+    sequencing bug on this exact-tie workload
+  - the useful current claim is narrower: Doe can now prove that both lanes
+    obey the same greedy tie-break expectation on a real repeated tie receipt
+  - the most suspicious remaining sequencing risk is outside this Apple WebGPU
+    path, especially in other sampling implementations that do not explicitly
+    preserve global tie order
+
+## Apple Metal now has an explicit determinism claim ladder: receipt, stable-token, and stable-decode-step all emit fresh byte receipts through the same probe runner, but Doe is currently at parity with Dawn rather than “more deterministic” (2026-03-28)
+
+- `bench/runners/run_determinism_probe.py` now supports three explicit
+  determinism modes instead of depending on hand-authored capture indices:
+  - `receipt`
+  - `stable-token`
+  - `stable-decode-step`
+- The runner now infers semantic capture points directly from the command
+  stream:
+  - `receipt` captures the sampled token on `sample.wgsl`
+  - `stable-token` repeats that token capture across many runs
+  - `stable-decode-step` captures both the final-logits producer buffer and the
+    sampled token boundary for each decode step
+- Fresh Apple Metal `receipt` artifact:
+  - fixture:
+    - `bench/fixtures/determinism/apple-metal-greedy-sample-receipt.json`
+  - report:
+    - `bench/out/apple-metal-determinism/20260328T173500Z/apple_metal_greedy_sample_receipt.determinism.json`
+  - current result:
+    - Doe and Dawn both emit a one-run operator receipt for
+      `sample.output_token`
+    - both lanes capture the same bytes and decode token `17`
+- Fresh Apple Metal `stable-token` artifact:
+  - fixture:
+    - `bench/fixtures/determinism/apple-metal-greedy-sample-clear-winner.json`
+  - report:
+    - `bench/out/apple-metal-determinism/20260328T173700Z/apple_metal_greedy_sample_clear_winner.determinism.json`
+  - current result:
+    - Doe is byte-stable across 50 runs on `sample.output_token`
+    - Dawn is byte-stable across the same 50 runs on the same operator
+    - both lanes decode token `17`
+    - Doe and Dawn match byte-for-byte on this fixed-host greedy-argmax probe
+- Fresh Apple Metal `stable-decode-step` artifact:
+  - fixture:
+    - `bench/fixtures/determinism/apple-metal-gemma3-270m-decode1tok.json`
+  - report:
+    - `bench/out/apple-metal-determinism/20260328T174000Z/apple_metal_gemma3_270m_decode_1tok.determinism.json`
+  - current result:
+    - Doe is byte-stable across 20 runs on both `decode.final_logits` and
+      `decode.sample_token`
+    - Dawn is byte-stable across the same 20 runs on the same operators
+    - both lanes match byte-for-byte across the captured final-logits and token
+      buffers
+- Important interpretation:
+  - this is now a better determinism story than “we think temperature zero is
+    stable”: Doe can emit explicit byte receipts at three levels on Apple Metal
+  - the current evidence still does **not** support “Doe is more deterministic
+    than Dawn”; on these Apple probes they are equally stable
+  - the current evidence still does **not** support a full-model LM
+    determinism claim, cross-backend determinism, or a formal proof of
+    floating-point determinism
+
+## Apple Metal now has explicit determinism receipts for greedy sampling and a Gemma-shaped decode slice; Doe matches Dawn byte-for-byte on those fixed-input probes, but this is not yet a full-model determinism claim (2026-03-28)
+
+- Added a dedicated Apple determinism probe runner:
+  - `bench/runners/run_determinism_probe.py`
+- The runner annotates explicit semantic capture points on a command stream, reruns
+  Doe and Dawn repeatedly on the same host/backend, and emits a report that
+  separates:
+  - repeated-byte stability within Doe
+  - repeated-byte stability within Dawn
+  - byte equality across Doe vs Dawn
+- Dawn-delegate now supports targeted buffer capture through the shared
+  WebGPU-backed readback path in:
+  - `runtime/zig/src/core/queue/wgpu_ffi_capture.zig`
+  - `runtime/zig/src/backend/dawn_delegate_backend.zig`
+- Fresh Apple Metal greedy-sampling receipt with explicit non-zero logits:
+  - fixture:
+    - `bench/fixtures/determinism/apple-metal-greedy-sample-clear-winner.json`
+    - `bench/fixtures/determinism/greedy-sample-clear-winner.commands.json`
+  - report:
+    - `bench/out/apple-metal-determinism/20260328T152600Z/apple_metal_greedy_sample_clear_winner.determinism.json`
+  - current result:
+    - Doe stable across 50 runs on `sample.input_logits` and `sample.output_token`
+    - Dawn stable across 50 runs on the same two semantic operators
+    - Doe and Dawn emit the same bytes for the fixed logits input and the same
+      sampled-token bytes across lanes
+    - both lanes decode token `17` from the captured output buffer
+- Fresh Apple Metal Gemma-shaped decode receipt:
+  - fixture:
+    - `bench/fixtures/determinism/apple-metal-gemma3-270m-decode1tok.json`
+  - report:
+    - `bench/out/apple-metal-determinism/20260328T151500Z/apple_metal_gemma3_270m_decode_1tok.determinism.json`
+  - current result:
+    - Doe stable across 20 runs on the captured final-logits and sampled-token
+      buffers
+    - Dawn stable across the same 20 runs on the same semantic capture points
+    - Doe and Dawn emit the same captured bytes for both operators on this host
+- Important caveat:
+  - the Gemma 270M decode probe uses the generated compat command stream, which
+    is graph/shape-faithful but still a zero-initialized command stream rather
+    than a full model-weight execution receipt
+  - this means the repo can now defend fixed-host, fixed-input byte-stability
+    for named Apple Metal probes, including a real greedy-sampling kernel and a
+    Gemma-shaped decode slice
+  - the repo still cannot defend “Doe proves deterministic LM inference” or
+    “Doe is more deterministic than Dawn” as a general public claim
+
+## Apple Metal now has a publishable runtime bundle and a stable Apple-scoped package claim surface: Bun Gemma64/Gemma1B are claimable, and Node/Dawn Gemma64/Gemma1B are explicitly unsupported on `mac.lan` (2026-03-28)
+
+- Apple Metal runtime release bundle is now published through:
+  - `bench/runners/publish_apple_runtime_release.py`
+- Fresh Apple runtime release bundle:
+  - `bench/out/apple-runtime-release/20260328T031800Z/apple_runtime_release_manifest.json`
+- The bundle binds one Apple-local runtime deliverable:
+  - raw + stripped dylib paths, SHA-256s, sizes, strip command, and dependency
+    list live in the manifest under `artifact`
+  - runtime footprint reports:
+    - `bench/out/apple-runtime-release/20260328T031800Z/runtime_footprint_report.json`
+    - `bench/out/apple-runtime-release/20260328T031800Z/runtime_footprint_report.md`
+  - drop-in ABI receipts:
+    - `bench/out/apple-runtime-release/20260328T031800Z/dropin_report.json`
+    - `bench/out/apple-runtime-release/20260328T031800Z/dropin_symbol_report.json`
+    - `bench/out/apple-runtime-release/20260328T031800Z/dropin_behavior_report.json`
+    - `bench/out/apple-runtime-release/20260328T031800Z/dropin_benchmark_report.json`
+  - native consumer receipt:
+    - `bench/out/apple-runtime-release/20260328T031800Z/apple_runtime_consumer_report.json`
+  - Apple Metal runtime compare + backend-gate receipts:
+    - `bench/out/apple-runtime-release/20260328T031800Z/apple_metal_compare_dev.json`
+    - `bench/out/apple-runtime-release/20260328T031800Z/metal_sync_conformance_gate.json`
+    - `bench/out/apple-runtime-release/20260328T031800Z/metal_timing_policy_gate.json`
+  - Apple CTS release publication + trend receipt:
+    - `bench/out/apple-runtime-release/20260328T031800Z/cts_baseline.json`
+    - `bench/out/apple-runtime-release/20260328T031800Z/cts_trend.json`
+  - `config/webgpu-cts-evidence.json` now points at the release-bundle CTS
+    baseline instead of an ad hoc local snapshot
+- The retained Apple runtime/harness fixes behind that bundle are:
+  - `runtime/zig/src/doe_queue_submit_native.zig`
+  - `bench/native_compare_modules/runner.py`
+  - `bench/native_compare_modules/workload_validation.py`
+  - `bench/native-compare/compare_dawn_vs_doe.config.apple.metal.compare-dev.json`
+  - `bench/runners/publish_apple_runtime_release.py`
+  - `bench/drop-in/apple_runtime_consumer.c`
+  - `bench/drop-in/apple_runtime_consumer.py`
+- Fresh Apple package receipts:
+  - Bun/package Gemma64 cold + warm are both claimable:
+    - `bench/out/apple-metal/20260328T035500Z/gemma64.bun-package.ir.compare.json`
+    - `bench/out/apple-metal/20260328T035500Z/gemma64.bun-package.warm.ir.compare.json`
+  - Bun/package Gemma1B cold + warm are both claimable:
+    - `bench/out/apple-metal/20260328T035500Z/gemma1b.bun-package.ir.compare.json`
+    - `bench/out/apple-metal/20260328T035500Z/gemma1b.bun-package.warm.ir.compare.json`
+  - Node/Dawn Gemma64 cold + warm are now explicit unsupported receipts on this
+    host instead of intermittent crash artifacts:
+    - compare surface:
+      - `bench/out/apple-metal/20260328T040500Z/gemma64.node-package.ir.compare.json`
+      - `bench/out/apple-metal/20260328T040500Z/gemma64.node-package.warm.ir.compare.json`
+    - right-side unsupported trace-meta receipt:
+      - `bench/out/apple-metal/20260328T040500Z/gemma64.node-package.ir.workspace/inference_gemma3_270m_prefill_64tok_decode_64tok/right/dawn_node_webgpu.run000.meta.json`
+  - Node/Dawn Gemma1B cold + warm are now explicit unsupported receipts on this
+    host instead of “still pending a tiny fix”:
+    - compare surface:
+      - `bench/out/apple-metal/20260328T040500Z/gemma1b.node-package.ir.compare.json`
+      - `bench/out/apple-metal/20260328T040500Z/gemma1b.node-package.warm.ir.compare.json`
+    - right-side unsupported trace-meta receipt:
+      - `bench/out/apple-metal/20260328T040500Z/gemma1b.node-package.ir.workspace/inference_gemma3_1b_prefill_64tok_decode_64tok/right/dawn_node_webgpu.run000.meta.json`
+- Current interpretation:
+  - the safe Apple package claim is now exact and narrower:
+    Apple Metal, package surface, selected timing, `doe-gpu` vs `bun-webgpu`,
+    Gemma64 + Gemma1B, cold + prepared-session lanes only
+  - Node/Dawn Gemma64 and Gemma1B are explicitly unsupported on `mac.lan`; they
+    are not part of the Apple package headline surface
+  - Apple runtime evidence is now packaged as one coherent local release
+    deliverable with ABI gate, binary artifact, consumer receipt, compare-dev,
+    sync/timing gates, and CTS publication tied together by one manifest
+  - this still does not close broad `doe-runtime` or conformance language:
+    the evidence is Apple Metal only, non-Apple runtime slices are still
+    missing, and backend/release publication is not yet broad across the
+    intended runtime matrix
+
 ## Apple Metal runtime receipts are now current: drop-in gate is green, the preferred CTS subset was republished, and Node/Dawn Gemma1B remains a diagnostic package lane on this host (2026-03-28)
 
 - Rebuilt the Apple drop-in dylib after fixing two Apple-local runtime issues:

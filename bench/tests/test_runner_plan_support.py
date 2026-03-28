@@ -26,6 +26,12 @@ from bench.native_compare_modules.runner import (
     trace_meta_records_terminal_execution_outcome,
     workload_unit_wall_from_trace_meta,
 )
+from bench.native_compare_modules.comparability_upload_contract import (
+    verify_fawn_upload_runtime_contract,
+)
+from bench.native_compare_modules.workload_validation import (
+    infer_workload_queue_sync_mode,
+)
 from bench.native_compare_modules.workload_validation import (
     enforce_strict_plan_boundary_symmetry,
 )
@@ -38,6 +44,16 @@ class _Workload:
     family = "m3"
     driver = "1.0.0"
     dawn_filter = "alpha"
+
+
+class _UploadWorkload(_Workload):
+    id = "upload_alpha"
+    domain = "upload"
+    commands_path = "bench/commands/upload_alpha.commands.json"
+    plan_path = "bench/plans/upload_alpha.plan.json"
+    extra_args: list[str] = []
+    left_upload_buffer_usage = "copy-dst"
+    left_upload_submit_every = 1
 
 
 class RunnerPlanSupportTests(unittest.TestCase):
@@ -85,6 +101,35 @@ class RunnerPlanSupportTests(unittest.TestCase):
         )
         self.assertIn("bench/executors/run-node-webgpu-plan.js", command[1])
         self.assertIn("bench/plans/alpha.plan.json", command)
+
+    def test_verify_fawn_upload_runtime_contract_passes_plan_path_to_command_builder(self) -> None:
+        captured: dict[str, object] = {}
+
+        def fake_command_for(template: str, **kwargs: object) -> list[str]:
+            captured["template"] = template
+            captured.update(kwargs)
+            return ["echo", "not-a-runtime"]
+
+        verify_fawn_upload_runtime_contract(
+            template="runtime/zig/zig-out/bin/doe-zig-runtime --plan {plan}",
+            workload=_UploadWorkload(),
+            command_for_fn=fake_command_for,
+            runtime_source_paths=(),
+        )
+
+        self.assertEqual(captured["plan_path"], "bench/plans/upload_alpha.plan.json")
+
+    def test_infer_workload_queue_sync_mode_defaults_uploads_to_deferred(self) -> None:
+        upload = SimpleNamespace(domain="upload", extra_args=[])
+        compute = SimpleNamespace(domain="compute", extra_args=[])
+        explicit = SimpleNamespace(
+            domain="upload",
+            extra_args=["--queue-sync-mode", "per-command"],
+        )
+
+        self.assertEqual(infer_workload_queue_sync_mode(upload), "deferred")
+        self.assertEqual(infer_workload_queue_sync_mode(compute), "per-command")
+        self.assertEqual(infer_workload_queue_sync_mode(explicit), "per-command")
 
     def test_strict_plan_boundary_symmetry_rejects_mixed_plan_and_commands(self) -> None:
         workload = SimpleNamespace(

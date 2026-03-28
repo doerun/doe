@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://doe-gpu.dev/config/determinism-answer-set-registry.schema.json",
+  "title": "Determinism answer-set registry",
+  "type": "object",
+  "required": ["schemaVersion", "registryVersion", "models"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "registryVersion": { "type": "string", "minLength": 1 },
+    "models": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/modelRegistry" }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "answerForm": {
+      "type": "object",
+      "required": ["tokenText", "normalizedTokenText", "singleToken"],
+      "properties": {
+        "tokenText": { "type": "string", "minLength": 1 },
+        "normalizedTokenText": { "type": "string", "minLength": 1 },
+        "singleToken": { "type": "boolean" },
+        "leadingSpacePreferred": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "answerOption": {
+      "type": "object",
+      "required": ["id", "label", "forms"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "label": { "type": "string", "minLength": 1 },
+        "forms": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/answerForm" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "answerSet": {
+      "type": "object",
+      "required": ["id", "domainId", "description", "headlineEligible", "promptAnchors", "options"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "domainId": { "type": "string", "minLength": 1 },
+        "description": { "type": "string", "minLength": 1 },
+        "headlineEligible": { "type": "boolean" },
+        "promptAnchors": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "options": {
+          "type": "array",
+          "minItems": 2,
+          "items": { "$ref": "#/$defs/answerOption" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "modelRegistry": {
+      "type": "object",
+      "required": ["modelId", "tokenizerId", "answerSets"],
+      "properties": {
+        "modelId": { "type": "string", "minLength": 1 },
+        "tokenizerId": { "type": "string", "minLength": 1 },
+        "answerSets": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/answerSet" }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

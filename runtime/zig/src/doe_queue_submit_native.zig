@@ -636,7 +636,11 @@ pub export fn doeNativeQueueRelease(raw: ?*anyopaque) callconv(.c) void {
             native.doeNativeDeviceRelease(toOpaque(dev));
             return;
         }
-        flush_pending_work(q);
+        // Queue teardown is outside the measured package hot path. Prefer the
+        // direct command-buffer completion wait here so native drop-in
+        // consumers do not depend on the shared-event fast path during final
+        // release cleanup.
+        flush_pending_work_dropin_sync(q);
         if (q.mtl_event) |ev| metal_bridge_release(ev);
         const dev = q.dev;
         alloc.destroy(q);
@@ -647,6 +651,24 @@ pub export fn doeNativeQueueRelease(raw: ?*anyopaque) callconv(.c) void {
 pub export fn doeNativeQueueAddRef(raw: ?*anyopaque) callconv(.c) void {
     const q = cast(DoeQueue, raw) orelse return;
     q.ref_count +|= 1;
+}
+
+fn flush_pending_work_dropin_sync(q: *DoeQueue) void {
+    if (q.dev.backend == .vulkan) {
+        if (native.device_vk_runtime(q.dev)) |rt| {
+            _ = rt.flush_queue() catch |err| {
+                std.debug.print("warn: doe_queue_submit: dropin sync flush: {s}\n", .{@errorName(err)});
+            };
+        }
+        return;
+    }
+    if (q.pending_cmd) |cmd| {
+        metal_bridge_command_buffer_wait_completed(cmd);
+        metal_bridge_release(cmd);
+        q.pending_cmd = null;
+    }
+    queue_flush_breakdown.executeDeferredCopies(q);
+    queue_flush_breakdown.executeDeferredResolves(q);
 }
 
 // ============================================================
@@ -684,12 +706,12 @@ pub fn drain_global_work_done() void {
     }
 }
 
-/// Doe's GPU work is synchronous — complete by the time queueSubmit returns.
-/// Fire callback immediately. The Instance lifetime guard in
-/// doeNativeInstanceRelease prevents premature Instance destruction while
-/// external textures are in flight.
+/// For the native drop-in ABI, flush before invoking the callback so
+/// standalone consumers observe real completion before they map/read back.
 pub export fn doeNativeQueueOnSubmittedWorkDone(q_raw: ?*anyopaque, info: types.WGPUQueueWorkDoneCallbackInfo) callconv(.c) types.WGPUFuture {
-    _ = q_raw;
+    if (cast(DoeQueue, q_raw)) |q| {
+        flush_pending_work_dropin_sync(q);
+    }
     if (info.callback) |cb| {
         cb(.success, .{ .data = null, .length = 0 }, info.userdata1, info.userdata2);
     }

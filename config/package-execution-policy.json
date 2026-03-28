@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "unsupportedExecutions": [
+    {
+      "id": "apple-node-dawn-gemma64-mac-lan",
+      "runtimeHost": "node",
+      "provider": "dawn",
+      "workloadId": "inference_gemma3_270m_prefill_64tok_decode_64tok",
+      "host": {
+        "platform": "darwin",
+        "arch": "arm64",
+        "hostname": "mac.lan",
+        "osRelease": "25.3.0"
+      },
+      "unsupportedCode": "provider_execution_unavailable",
+      "message": "node-webgpu execution unavailable for provider dawn on this Apple host",
+      "detail": "Gemma64 on Apple Node/Dawn is explicitly unsupported on mac.lan after repeated direct reruns showed an intermittent host-specific Dawn package crash during the first queue.onSubmittedWorkDone wait after full setup. The same workload completes on Bun/bun-webgpu and Doe on this host."
+    },
+    {
+      "id": "apple-node-dawn-gemma1b-mac-lan",
+      "runtimeHost": "node",
+      "provider": "dawn",
+      "workloadId": "inference_gemma3_1b_prefill_64tok_decode_64tok",
+      "host": {
+        "platform": "darwin",
+        "arch": "arm64",
+        "hostname": "mac.lan",
+        "osRelease": "25.3.0"
+      },
+      "unsupportedCode": "provider_execution_unavailable",
+      "message": "node-webgpu execution unavailable for provider dawn on this Apple host",
+      "detail": "Gemma1B on Apple Node/Dawn is explicitly unsupported on mac.lan after step-limit bisect and submit-boundary diagnostics showed a host-specific Dawn package crash in the final submit window. The same prefixes complete on Bun/bun-webgpu and Doe on this host."
+    }
+  ]
+}

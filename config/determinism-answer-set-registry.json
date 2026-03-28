@@ -1,0 +1,237 @@
+{
+  "schemaVersion": 1,
+  "registryVersion": "2026-03-28",
+  "models": [
+    {
+      "modelId": "gemma-3-270m-it-q4k-ehf16-af32",
+      "tokenizerId": "gemma-3-spm-v1",
+      "answerSets": [
+        {
+          "id": "safety.not_safe",
+          "domainId": "safety",
+          "description": "Negation-versus-safe bounded answer set used by the Apple seatbelt and brakes prompts.",
+          "headlineEligible": true,
+          "promptAnchors": ["safe", "unsafe"],
+          "options": [
+            {
+              "id": "not",
+              "label": "not",
+              "forms": [
+                { "tokenText": " not", "normalizedTokenText": "not", "singleToken": true, "leadingSpacePreferred": true },
+                { "tokenText": "not", "normalizedTokenText": "not", "singleToken": true, "leadingSpacePreferred": false }
+              ]
+            },
+            {
+              "id": "safe",
+              "label": "safe",
+              "forms": [
+                { "tokenText": " safe", "normalizedTokenText": "safe", "singleToken": true, "leadingSpacePreferred": true },
+                { "tokenText": "safe", "normalizedTokenText": "safe", "singleToken": true, "leadingSpacePreferred": false }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "quality.good_bad",
+          "domainId": "quality",
+          "description": "Good-versus-bad bounded answer set for short evaluative prompts.",
+          "headlineEligible": false,
+          "promptAnchors": ["good", "bad"],
+          "options": [
+            {
+              "id": "good",
+              "label": "good",
+              "forms": [
+                { "tokenText": " good", "normalizedTokenText": "good", "singleToken": true, "leadingSpacePreferred": true },
+                { "tokenText": "good", "normalizedTokenText": "good", "singleToken": true, "leadingSpacePreferred": false }
+              ]
+            },
+            {
+              "id": "bad",
+              "label": "bad",
+              "forms": [
+                { "tokenText": " bad", "normalizedTokenText": "bad", "singleToken": true, "leadingSpacePreferred": true },
+                { "tokenText": "bad", "normalizedTokenText": "bad", "singleToken": true, "leadingSpacePreferred": false }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "privacy.public_private",
+          "domainId": "privacy",
+          "description": "Public-versus-private bounded answer set for configuration/privacy prompts.",
+          "headlineEligible": false,
+          "promptAnchors": ["public", "private"],
+          "options": [
+            {
+              "id": "public",
+              "label": "public",
+              "forms": [
+                { "tokenText": " public", "normalizedTokenText": "public", "singleToken": true, "leadingSpacePreferred": true },
+                { "tokenText": "public", "normalizedTokenText": "public", "singleToken": true, "leadingSpacePreferred": false }
+              ]
+            },
+            {
+              "id": "private",
+              "label": "private",
+              "forms": [
+                { "tokenText": " private", "normalizedTokenText": "private", "singleToken": true, "leadingSpacePreferred": true },
+                { "tokenText": "private", "normalizedTokenText": "private", "singleToken": true, "leadingSpacePreferred": false }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "traffic.go_stop",
+          "domainId": "traffic",
+          "description": "Go-versus-stop bounded answer set for traffic control prompts.",
+          "headlineEligible": false,
+          "promptAnchors": ["go", "stop"],
+          "options": [
+            {
+              "id": "go",
+              "label": "go",
+              "forms": [
+                { "tokenText": " go", "normalizedTokenText": "go", "singleToken": true, "leadingSpacePreferred": true },
+                { "tokenText": "go", "normalizedTokenText": "go", "singleToken": true, "leadingSpacePreferred": false }
+              ]
+            },
+            {
+              "id": "stop",
+              "label": "stop",
+              "forms": [
+                { "tokenText": " stop", "normalizedTokenText": "stop", "singleToken": true, "leadingSpacePreferred": true },
+                { "tokenText": "stop", "normalizedTokenText": "stop", "singleToken": true, "leadingSpacePreferred": false }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "season.winter_summer",
+          "domainId": "season",
+          "description": "Winter-versus-summer bounded answer set for seasonal prompts.",
+          "headlineEligible": false,
+          "promptAnchors": ["winter", "summer"],
+          "options": [
+            {
+              "id": "winter",
+              "label": "winter",
+              "forms": [
+                { "tokenText": " winter", "normalizedTokenText": "winter", "singleToken": true, "leadingSpacePreferred": true },
+                { "tokenText": "winter", "normalizedTokenText": "winter", "singleToken": true, "leadingSpacePreferred": false }
+              ]
+            },
+            {
+              "id": "summer",
+              "label": "summer",
+              "forms": [
+                { "tokenText": " summer", "normalizedTokenText": "summer", "singleToken": true, "leadingSpacePreferred": true },
+                { "tokenText": "summer", "normalizedTokenText": "summer", "singleToken": true, "leadingSpacePreferred": false }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "binary.true_false",
+          "domainId": "binary",
+          "description": "True-versus-false bounded answer set for factual binary prompts.",
+          "headlineEligible": false,
+          "promptAnchors": ["true", "false"],
+          "options": [
+            {
+              "id": "true",
+              "label": "true",
+              "forms": [
+                { "tokenText": " true", "normalizedTokenText": "true", "singleToken": true, "leadingSpacePreferred": true },
+                { "tokenText": "true", "normalizedTokenText": "true", "singleToken": true, "leadingSpacePreferred": false }
+              ]
+            },
+            {
+              "id": "false",
+              "label": "false",
+              "forms": [
+                { "tokenText": " false", "normalizedTokenText": "false", "singleToken": true, "leadingSpacePreferred": true },
+                { "tokenText": "false", "normalizedTokenText": "false", "singleToken": true, "leadingSpacePreferred": false }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "binary.yes_no",
+          "domainId": "binary",
+          "description": "Yes-versus-no bounded answer set for short decision prompts.",
+          "headlineEligible": false,
+          "promptAnchors": ["yes", "no"],
+          "options": [
+            {
+              "id": "yes",
+              "label": "yes",
+              "forms": [
+                { "tokenText": " yes", "normalizedTokenText": "yes", "singleToken": true, "leadingSpacePreferred": true },
+                { "tokenText": "yes", "normalizedTokenText": "yes", "singleToken": true, "leadingSpacePreferred": false }
+              ]
+            },
+            {
+              "id": "no",
+              "label": "no",
+              "forms": [
+                { "tokenText": " no", "normalizedTokenText": "no", "singleToken": true, "leadingSpacePreferred": true },
+                { "tokenText": "no", "normalizedTokenText": "no", "singleToken": true, "leadingSpacePreferred": false }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "change.approve_deny",
+          "domainId": "change-control",
+          "description": "Approve-versus-deny bounded answer set for patch/control prompts.",
+          "headlineEligible": false,
+          "promptAnchors": ["approved", "denied", "approve", "deny"],
+          "options": [
+            {
+              "id": "approve",
+              "label": "approve",
+              "forms": [
+                { "tokenText": " approve", "normalizedTokenText": "approve", "singleToken": true, "leadingSpacePreferred": true },
+                { "tokenText": " approved", "normalizedTokenText": "approved", "singleToken": true, "leadingSpacePreferred": true }
+              ]
+            },
+            {
+              "id": "deny",
+              "label": "deny",
+              "forms": [
+                { "tokenText": " deny", "normalizedTokenText": "deny", "singleToken": true, "leadingSpacePreferred": true },
+                { "tokenText": " denied", "normalizedTokenText": "denied", "singleToken": true, "leadingSpacePreferred": true }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "authz.allow_block",
+          "domainId": "authz",
+          "description": "Allow-versus-block bounded answer set for access and phishing prompts.",
+          "headlineEligible": false,
+          "promptAnchors": ["allow", "block", "blocked", "allowed"],
+          "options": [
+            {
+              "id": "allow",
+              "label": "allow",
+              "forms": [
+                { "tokenText": " allow", "normalizedTokenText": "allow", "singleToken": true, "leadingSpacePreferred": true },
+                { "tokenText": " allowed", "normalizedTokenText": "allowed", "singleToken": true, "leadingSpacePreferred": true }
+              ]
+            },
+            {
+              "id": "block",
+              "label": "block",
+              "forms": [
+                { "tokenText": " block", "normalizedTokenText": "block", "singleToken": true, "leadingSpacePreferred": true },
+                { "tokenText": " blocked", "normalizedTokenText": "blocked", "singleToken": true, "leadingSpacePreferred": true }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

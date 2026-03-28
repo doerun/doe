@@ -226,6 +226,8 @@ const result = buildUnsupportedExecutionResult({{
   hostWorkloadPrepareTotalNs: 13,
   hostExecutorInitTotalNs: 14,
   processWallMs: 1.5,
+  unsupportedCode: 'provider_execution_unavailable',
+  unsupportedDetail: 'node-webgpu execution unavailable for provider dawn on this Apple host',
 }});
 console.log(JSON.stringify(result));
 """
@@ -242,6 +244,11 @@ console.log(JSON.stringify(result));
         self.assertEqual(meta["executionRowCount"], 0)
         self.assertEqual(meta["executionSuccessCount"], 0)
         self.assertEqual(meta["executionUnsupportedCount"], 1)
+        self.assertEqual(meta["unsupportedCode"], "provider_execution_unavailable")
+        self.assertEqual(
+            meta["unsupportedDetail"],
+            "node-webgpu execution unavailable for provider dawn on this Apple host",
+        )
         self.assertEqual(meta["hostInputReadTotalNs"], 0)
         self.assertEqual(meta["hostInputParseTotalNs"], 0)
         self.assertEqual(meta["hostWorkloadPrepareTotalNs"], 0)
@@ -405,6 +412,61 @@ console.log(JSON.stringify({{ empty, populated }}));
             payload["populated"]["requiredLimits"]["maxStorageBuffersPerShaderStage"],
             8,
         )
+
+    def test_lookup_unsupported_package_execution_entry_matches_host_specific_lane(self) -> None:
+        script = f"""
+import {{ lookupUnsupportedPackageExecutionEntry }} from {json.dumps(EXECUTOR_MODULE_URL)};
+const policy = {{
+  schemaVersion: 1,
+  unsupportedExecutions: [
+    {{
+      id: 'apple-node-dawn-gemma1b-mac-lan',
+      runtimeHost: 'node',
+      provider: 'dawn',
+      workloadId: 'inference_gemma3_1b_prefill_64tok_decode_64tok',
+      host: {{
+        platform: 'darwin',
+        arch: 'arm64',
+        hostname: 'mac.lan',
+        osRelease: '25.3.0',
+      }},
+      unsupportedCode: 'provider_execution_unavailable',
+      message: 'node-webgpu execution unavailable for provider dawn on this Apple host',
+      detail: 'diagnostic detail',
+    }},
+  ],
+}};
+const matched = lookupUnsupportedPackageExecutionEntry(policy, {{
+  runtimeHost: 'node',
+  provider: 'dawn',
+  workloadId: 'inference_gemma3_1b_prefill_64tok_decode_64tok',
+  platform: 'darwin',
+  arch: 'arm64',
+  hostname: 'mac.lan',
+  osRelease: '25.3.0',
+}});
+const missed = lookupUnsupportedPackageExecutionEntry(policy, {{
+  runtimeHost: 'node',
+  provider: 'dawn',
+  workloadId: 'inference_gemma3_1b_prefill_64tok_decode_64tok',
+  platform: 'darwin',
+  arch: 'arm64',
+  hostname: 'other-host',
+  osRelease: '25.3.0',
+}});
+console.log(JSON.stringify({{ matched, missed }}));
+"""
+        result = subprocess.run(
+            ["node", "--input-type=module", "-e", script],
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertEqual(payload["matched"]["unsupportedCode"], "provider_execution_unavailable")
+        self.assertIsNone(payload["missed"])
 
     def test_prepared_session_boundary_scopes_pre_boundary_host_totals(self) -> None:
         script = f"""

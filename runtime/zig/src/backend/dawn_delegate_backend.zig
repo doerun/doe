@@ -98,12 +98,8 @@ fn prewarm_kernel_dispatch(ctx: *anyopaque, kernel: []const u8, bindings: ?[]con
 }
 
 fn capture_buffer(ctx: *anyopaque, allocator: std.mem.Allocator, handle: u64, offset: u64, size: u64) anyerror![]u8 {
-    _ = ctx;
-    _ = allocator;
-    _ = handle;
-    _ = offset;
-    _ = size;
-    return error.UnsupportedFeature;
+    const self = cast(ctx);
+    return try self.inner.captureBuffer(allocator, handle, offset, size);
 }
 
 const VTABLE = backend_iface.BackendVTable{

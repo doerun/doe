@@ -1,0 +1,28 @@
+{
+  "scenarioId": "apple_metal_gemma3_270m_decode_1tok",
+  "description": "Apple Metal determinism probe for one real Gemma3 270M decode step. Captures the final logits buffer before sampling and the final sampled token buffer after sampling.",
+  "commandsPath": "bench/plans/generated/compat/inference_gemma3_270m_decode_1tok_commands.json",
+  "determinismMode": "stable-decode-step",
+  "semanticStage": "gemma3_decode",
+  "kernelRoot": "bench/inference-pipeline/kernels",
+  "profile": {
+    "vendor": "apple",
+    "api": "metal",
+    "family": "m3",
+    "driver": "1.0.0"
+  },
+  "queueWaitMode": "process-events",
+  "queueSyncMode": "per-command",
+  "backendLanes": [
+    {
+      "id": "doe",
+      "backendLane": "metal_doe_comparable"
+    },
+    {
+      "id": "dawn",
+      "backendLane": "metal_dawn_release"
+    }
+  ],
+  "defaultRunCount": 20,
+  "captures": []
+}

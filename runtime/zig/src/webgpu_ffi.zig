@@ -483,6 +483,7 @@ pub const WebGPUBackend = struct {
     pub const submitCommandBuffers = @import("core/queue/wgpu_ffi_sync.zig").submitCommandBuffers;
     pub const submitInternal = @import("core/queue/wgpu_ffi_sync.zig").submitInternal;
     pub const flushQueue = @import("core/queue/wgpu_ffi_sync.zig").flushQueue;
+    pub const captureBuffer = @import("core/queue/wgpu_ffi_capture.zig").captureBuffer;
     pub const waitForQueue = @import("core/queue/wgpu_ffi_sync.zig").waitForQueue;
     pub const waitForQueueOnce = @import("core/queue/wgpu_ffi_sync.zig").waitForQueueOnce;
     pub const shouldRetryQueueWait = @import("core/queue/wgpu_ffi_sync.zig").shouldRetryQueueWait;

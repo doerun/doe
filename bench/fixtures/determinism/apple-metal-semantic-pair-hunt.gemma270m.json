@@ -1,0 +1,36 @@
+{
+  "scenarioId": "apple_metal_semantic_pair_hunt_gemma270m",
+  "defaultPerPairLimit": 3,
+  "semanticPairs": [
+    {
+      "id": "brakes_not_safe",
+      "leftTokenText": " not",
+      "rightTokenText": " safe",
+      "promptIds": ["brakes-safe-unsafe"]
+    },
+    {
+      "id": "red_go_stop",
+      "leftTokenText": " go",
+      "rightTokenText": " stop",
+      "promptIds": ["red-go-stop"]
+    },
+    {
+      "id": "snow_winter_summer",
+      "leftTokenText": " winter",
+      "rightTokenText": " summer",
+      "promptIds": ["snow-season", "snow-summer-winter"]
+    },
+    {
+      "id": "patch_public_private",
+      "leftTokenText": " public",
+      "rightTokenText": " private",
+      "promptIds": ["patch-public-server"]
+    },
+    {
+      "id": "driving_not_good",
+      "leftTokenText": " not",
+      "rightTokenText": " good",
+      "promptIds": ["driving-brakes"]
+    }
+  ]
+}

@@ -1,5 +1,16 @@
 import type {
   BoundDoeNamespace,
+  DoeDeterminismProofLink,
+  DoeReviewedChoiceOptions,
+  DoeReviewedChoiceReceipt,
+  DoeReviewedChoiceResult,
+  DoeStableChoiceOptions,
+  DoeStableChoiceReceipt,
+  DoeStableChoiceResult,
+  DoeStableTokenOptions,
+  DoeStableTokenReceipt,
+  DoeStableTokenResult,
+  DoeStableTokenTieBreakRule,
   DoeKernelDispatchOptions,
   DoeKernelCreateOptions,
   DoeNamespace,
@@ -130,6 +141,20 @@ export interface ComputeDoeNamespace
     ComputeBoundDoeNamespace,
     RequestDeviceOptions
   > {}
+
+export type {
+  DoeDeterminismProofLink,
+  DoeReviewedChoiceOptions,
+  DoeReviewedChoiceReceipt,
+  DoeReviewedChoiceResult,
+  DoeStableChoiceOptions,
+  DoeStableChoiceReceipt,
+  DoeStableChoiceResult,
+  DoeStableTokenOptions,
+  DoeStableTokenReceipt,
+  DoeStableTokenResult,
+  DoeStableTokenTieBreakRule,
+};
 
 export const globals: Record<string, unknown>;
 export function create(createArgs?: string[] | null): ComputeGPU;

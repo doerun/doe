@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "registryVersion": "2026-03-28",
+  "policies": [
+    {
+      "id": "exact-max-tie-v1",
+      "description": "Fire only when multiple candidates in the bounded set are exactly tied for the maximum logit.",
+      "mode": "exact-max-tie",
+      "epsilon": null
+    },
+    {
+      "id": "candidate-margin-band-v1",
+      "description": "Fire when the bounded candidate-set gap from the best candidate to the runner-up is at most 0.05.",
+      "mode": "candidate-margin-band",
+      "epsilon": 0.05
+    }
+  ]
+}

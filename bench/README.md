@@ -10,6 +10,7 @@ Canonical front doors:
 - `run.py` — unified entry point (see Quick Start below)
 - `run_compare.py` — config-backed compare front door
 - `native-compare/compare_dawn_vs_doe.py`
+- `runners/publish_apple_runtime_release.py`
 - `run_release_pipeline.py`
 - `run_blocking_gates.py`
 - `generate_backend_workloads.py`
@@ -21,7 +22,8 @@ Canonical compare taxonomy:
 - `config/generated/compare-taxonomy-expanded.jsonl`
 
 For public package usage, use `packages/doe-gpu/README.md`. For the public vs
-repo-only tooling boundary, use `docs/internal-tooling.md`.
+repo-only tooling boundary, use `docs/internal-tooling.md`. For the Apple
+runtime bundle receipt, use `docs/apple-metal-runtime-release.md`.
 
 Purpose:
 - run correctness and performance measurements against specialization outputs
@@ -47,6 +49,7 @@ python3 bench/run_compare.py --list
 python3 bench/run_compare.py --surface native --backend apple-metal --preset compare
 python3 bench/run_compare.py --surface direct --backend apple-metal --workload gemma270m-literal
 python3 bench/run_compare.py --surface package --backend apple-metal --workload gemma64 --mode warm
+python3 bench/runners/publish_apple_runtime_release.py --timestamp <YYYYMMDDTHHMMSSZ>
 ```
 
 Positional arguments:
@@ -401,6 +404,210 @@ resolves its entries against repo root.
   - see `bench/docs/operator-diff-demo-runbook.md` for the currently validated
     scratch-harness proof path covering structural match, semantic identity
     mismatch, and capture digest mismatch.
+- `run_determinism_probe.py`
+  - runs explicit determinism stages against Doe and Dawn on the same
+    host/backend using the existing semantic-operator artifact path.
+  - supported modes are:
+    - `receipt`: emit a one-run semantic capture receipt for the sampled-token
+      boundary
+    - `stable-token`: rerun a greedy sampling boundary and prove token-byte
+      stability across runs
+    - `stable-decode-step`: rerun a decode step and prove both final-logits and
+      sampled-token byte stability across runs
+  - the runner can infer semantic capture points directly from ordinary command
+    streams, so the bundled fixtures no longer depend on hand-authored capture
+    indices for sample-boundary probes.
+  - writes an annotated command stream plus per-run trace/meta/operator-manifest
+    artifacts and a final report that separates:
+    Doe repeated-byte stability, Dawn repeated-byte stability, and cross-lane
+    byte equality.
+  - for `stable-decode-step` reports, the runner also emits a `tieBreakAudit`
+    section that derives the expected greedy token from the captured logits
+    buffer (`lowest index among max logits`) and flags whether each lane's
+    sampled token matches that sequencing rule.
+  - current bundled fixtures are:
+    - `bench/fixtures/determinism/apple-metal-greedy-sample-receipt.json`
+      for the one-run `receipt` stage on the real `sample.wgsl`
+      greedy-argmax kernel
+    - `bench/fixtures/determinism/apple-metal-greedy-sample-clear-winner.json`
+      for the `stable-token` stage on the real `sample.wgsl`
+      greedy-argmax kernel with explicit non-zero logits
+    - `bench/fixtures/determinism/apple-metal-gemma3-270m-decode1tok.json`
+      for the `stable-decode-step` stage on a Gemma-shaped decode slice on the
+      generated compat command stream
+  - example:
+    - `python3 bench/runners/run_determinism_probe.py --fixture bench/fixtures/determinism/apple-metal-greedy-sample-receipt.json`
+    - `python3 bench/runners/run_determinism_probe.py --fixture bench/fixtures/determinism/apple-metal-greedy-sample-clear-winner.json`
+    - `python3 bench/runners/run_determinism_probe.py --fixture bench/fixtures/determinism/apple-metal-gemma3-270m-decode1tok.json`
+  - use the generated report to make narrow claims only:
+    fixed-host, fixed-input byte stability for named probes; not universal LM
+    determinism, not cross-platform determinism, and not automatically “more
+    deterministic than Dawn”
+- `run_real_logit_hunt.py`
+  - harvests real final-logits receipts from Doppler's browser advanced API
+    (`prefillWithLogits()` / `decodeStepLogits()`) against a real model
+    artifact, then ranks prompt/step candidates by exact-max ties, greedy-token
+    flips, byte drift, and top-2 margin.
+  - uses `bench/executors/harvest-doppler-browser-logits.js` under the hood and
+    now supports explicit browser repeat isolation through
+    `browser.repeatIsolation`:
+    - `reuse-page`: keep one page alive across repeats
+    - `new-page`: open a fresh page for each repeat within one browser
+    - `new-browser`: relaunch Chromium for each repeat
+  - use `new-page` or `new-browser` when hunting real small-margin prompts; the
+    older `reuse-page` mode is still useful as a lifecycle-bug detector but is
+    not a safe default for determinism claims.
+  - current bundled fixture:
+    - `bench/fixtures/determinism/apple-metal-real-logit-hunt.gemma270m.json`
+    - `bench/fixtures/determinism/apple-metal-real-logit-hunt.gemma270m.natural-stakes.json`
+    - `bench/fixtures/determinism/apple-metal-real-logit-hunt.gemma270m.choice-primer.json`
+    - `bench/fixtures/determinism/apple-metal-real-logit-hunt.gemma270m.choice-breadth.json`
+    - `bench/fixtures/determinism/apple-metal-real-logit-hunt.gemma270m.seatbelt-safe-unsafe.json`
+  - example:
+    - `python3 bench/runners/run_real_logit_hunt.py --runs 3 --top-candidates 12`
+    - `python3 bench/runners/run_real_logit_hunt.py --runs 3 --top-candidates 12 --persist-logits`
+  - use the generated report to separate:
+    real prompt/step candidates with small greedy margins from browser/model
+    lifecycle faults that can otherwise masquerade as nondeterministic logits.
+- `run_semantic_pair_hunt.py`
+  - scans one or more real-logit hunt reports for semantically meaningful token
+    pairs such as ` not` vs ` safe` or ` public` vs ` private`, then ranks the
+    matches by pairwise logit gap and proximity to the current top token.
+  - it now has two explicit input modes:
+    - `--source-report`: the original hand-declared pair-fixture path
+    - `--mined-report`: promote pair-agnostic mined cases into decode-state
+      receipts without a handwritten pair list
+  - emits a token-level decode-state recipe for each match:
+    `promptTokenIds`, the already-decoded greedy prefix, and the exact
+    `currentIds` sequence needed to reconstruct an equivalent decode boundary on
+    the same model/runtime path.
+  - bundled fixture:
+    - `bench/fixtures/determinism/apple-metal-semantic-pair-hunt.gemma270m.json`
+    - `bench/fixtures/determinism/apple-metal-semantic-pair-hunt.gemma270m.choice-breadth.json`
+  - example:
+    - `python3 bench/runners/run_semantic_pair_hunt.py --source-report bench/out/apple-metal-real-logit-hunt/<timestamp>/apple_metal_real_logit_hunt_gemma270m_choice_primer.real-logit-hunt.json --source-report bench/out/apple-metal-real-logit-hunt/<timestamp>/apple_metal_real_logit_hunt_gemma270m_natural_stakes.real-logit-hunt.json`
+    - `python3 bench/runners/run_semantic_pair_hunt.py --mined-report bench/out/apple-metal-pair-agnostic-mine/<timestamp>/apple_metal_pair_agnostic_mine_gemma270m.pair-agnostic-mine.json`
+  - use the generated report to answer:
+    where the model already places meaningful alternatives near the top, and
+    which exact decode states are worth carrying forward into sample-only
+    stable-token probes.
+- `run_pair_agnostic_pair_miner.py`
+  - consumes one or more broad scout receipts from `run_real_logit_hunt.py` and
+    mines plausible single-token answer pairs directly from each step's `topK`
+    surface instead of requiring a predeclared pair library.
+  - mining is gated by a tokenizer-aware bounded answer-set registry plus a
+    versioned trigger-policy config, so the runner does not promote arbitrary
+    numerically-close pairs.
+  - the miner keeps explicit provenance on every promoted case:
+    `candidateSetSource=mined-topk-v1`, canonical token IDs, source report path,
+    source repeat index, prompt/phase/step identity, source logits
+    artifact digest/path, `discoveryMode`, `promotionBucket`,
+    `triggerPolicyId`, `triggerEvaluation`, and stage-specific stability.
+  - the current bundled fixture is conservative by design:
+    - `bench/fixtures/determinism/apple-metal-pair-agnostic-mine.gemma270m.json`
+  - example:
+    - `python3 bench/runners/run_pair_agnostic_pair_miner.py --source-report bench/out/apple-metal-real-logit-hunt/<timestamp>/apple_metal_real_logit_hunt_gemma270m_choice_breadth.real-logit-hunt.json --source-report bench/out/apple-metal-real-logit-hunt/<timestamp>/apple_metal_real_logit_hunt_gemma270m_seatbelt_safe_unsafe.real-logit-hunt.json --source-report bench/out/apple-metal-real-logit-hunt/<timestamp>/apple_metal_real_logit_hunt_gemma270m_high_stakes.real-logit-hunt.json`
+  - use the generated report to answer:
+    which prompt-bounded pairs are useful enough to promote into decode-state
+    receipts without hardcoding the answer pair in advance.
+  - zero promotions are a valid result:
+    if the registry-gated pairs never survive the usefulness and stability
+    filters, the report should stay empty instead of manufacturing a demo.
+- `run_semantic_pair_mutation_search.py`
+  - takes a promoted semantic-pair report, mutates only the shortlist, reruns a
+    cheap real-logit scout over those prompt variants, and writes both:
+    - a mutation-search report with promotions and negative controls
+    - a companion mined-pair report containing only the improved cases
+  - this keeps the later pipeline stages unchanged:
+    `run_semantic_pair_hunt.py --mined-report ...` can consume the companion
+    mined report directly, and the negative controls remain first-class
+    artifacts instead of disappearing.
+  - bundled fixture:
+    - `bench/fixtures/determinism/apple-metal-semantic-pair-mutation-search.gemma270m.json`
+  - example:
+    - `python3 bench/runners/run_semantic_pair_mutation_search.py --source-report bench/out/apple-metal-semantic-pair-hunt/<timestamp>/apple_metal_pair_agnostic_mine_gemma270m.semantic-pair-hunt.json --case-count 3 --runs 1`
+  - use the generated report to answer:
+    whether small prompt edits actually preserve and improve a useful semantic
+    pair, or whether they collapse into format/list tokens and should stay as
+    negative controls.
+  - mutation-derived promotions remain a separate provenance lane:
+    they carry `discoveryMode=mutation-derived`,
+    `promotionBucket=mutation-assisted`, and source prompt metadata instead of
+    being mixed into natural discoveries.
+- `run_sample_only_tie_break_probe.py`
+  - reuses persisted real-logit hunt artifacts and synthesizes a minimal
+    `sample.wgsl` command stream so Doe and Dawn can be compared on the same
+    exact input logits bytes.
+  - the fixture now also declares an explicit Doe stable-token receipt config
+    under `doeStableToken`; the runner invokes
+    `bench/executors/run-doe-stable-token.js` so each case carries a Doe
+    helper receipt in addition to the raw Doe/Dawn sample receipts.
+  - fixtures may also declare an optional `doeStableChoice` section; the
+    runner invokes `bench/executors/run-doe-stable-choice.js` so each case can
+    carry a bounded-policy ambiguity-resolution receipt alongside the raw and
+    stable-token receipts.
+  - fixtures may also declare an optional `doeReviewedChoice` section; the
+    runner invokes `bench/executors/run-doe-reviewed-choice.js` so each case
+    can carry an explicit reviewed-decision receipt alongside the raw,
+    stable-token, and stable-choice receipts.
+  - stable-choice receipts now include explicit policy provenance:
+    `triggerPolicyId`, `candidateSetId`, and `candidateSetSource`.
+  - reviewed-choice receipts keep the same trigger and candidate-set
+    provenance, but add explicit decision provenance:
+    `reviewerId`, optional decision IDs/refs, acceptance, and fallback reason.
+  - keeps the same lane methodology as `run_determinism_probe.py`:
+    one annotated command stream per case, repeated runs per lane, semantic
+    token capture, per-lane stability summary, and cross-lane byte/token
+    equality checks.
+  - supports controlled mutations on the top-ranked logits before upload:
+    - `as-captured`
+    - `force-top2-exact-tie`
+    - `force-top4-exact-tie`
+    - `force-top1-wins-by-1ulp`
+    - `force-top2-wins-by-1ulp`
+    - `explicit_tokens_exact_tie`
+      - ties an explicit semantic token set from the source report, selected by
+        token IDs or token texts, at one `f32` ULP above the original global
+        max so the chosen tokens control the greedy boundary
+  - fixtures can now pin exact source cases with `sourceCases` instead of
+    taking the first `N` candidates from the report
+  - the runner audits those cases against a scalar `f32` argmax model
+    (`cpu_f32_first_max`) so exact-tie stress cases can be separated from
+    simple Doe-vs-Dawn parity.
+  - the Doe stable-token receipt path uses the public `gpu.determinism.stableToken(...)`
+    helper from `doe-gpu`, not an internal Python-only audit branch.
+  - bundled fixture:
+    - `bench/fixtures/determinism/apple-metal-sample-only-tie-break.gemma270m.json`
+    - `bench/fixtures/determinism/apple-metal-sample-only-tie-break.brakes-safe-unsafe.gemma270m.json`
+    - `bench/fixtures/determinism/apple-metal-sample-only-tie-break.driving-not-good.gemma270m.json`
+    - `bench/fixtures/determinism/apple-metal-sample-only-tie-break.patch-public-private.gemma270m.json`
+    - `bench/fixtures/determinism/apple-metal-sample-only-tie-break.red-go-stop.gemma270m.json`
+    - `bench/fixtures/determinism/apple-metal-sample-only-tie-break.snow-winter-summer.gemma270m.json`
+    - `bench/fixtures/determinism/apple-metal-sample-only-tie-break.seatbelt-not-safe.gemma270m.json`
+  - example:
+    - `python3 bench/runners/run_sample_only_tie_break_probe.py --source-report bench/out/apple-metal-real-logit-hunt/<timestamp>/apple_metal_real_logit_hunt_gemma270m.real-logit-hunt.json`
+    - `python3 bench/runners/run_sample_only_tie_break_probe.py --fixture bench/fixtures/determinism/apple-metal-sample-only-tie-break.brakes-safe-unsafe.gemma270m.json --source-report bench/out/apple-metal-real-logit-hunt/<timestamp>/apple_metal_real_logit_hunt_gemma270m_choice_primer.real-logit-hunt.json`
+    - `python3 bench/runners/run_sample_only_tie_break_probe.py --fixture bench/fixtures/determinism/apple-metal-sample-only-tie-break.seatbelt-not-safe.gemma270m.json --source-report bench/out/apple-metal-real-logit-hunt/<timestamp>/apple_metal_real_logit_hunt_gemma270m_seatbelt_safe_unsafe.real-logit-hunt.json`
+  - use the generated report to answer three different questions:
+    - do Doe and Dawn pick the same sampled token on the exact same logits?
+    - does the real GPU sample kernel stay aligned with scalar CPU argmax
+      semantics under forced exact-tie stress?
+    - does Doe `stable-token` recover the scalar expected token on those same
+      exact logits when the raw GPU sample kernel does not?
+    - can Doe keep the bounded ambiguity detector fixed but switch the
+      evaluator from a deterministic program (`stable-choice`) to an explicit
+      reviewed decision (`reviewed-choice`) with a separate receipt?
+    - can that exact-tie stress be expressed on a real prompt with meaningful
+      answer tokens such as ` not` vs ` safe`, not just anonymous `topK`
+      positions?
+    - which semantic tie families actually differentiate on Apple Metal and
+      which ones remain raw Doe/Dawn parity even under a controlled exact tie?
+    - can Doe apply a separate bounded-policy `stable-choice` decision on a
+      real near-ambiguous prompt without claiming that the underlying model or
+      raw sampler became more deterministic?
+  - if a refreshed source scout no longer keeps the bounded candidate set in
+    `topK`, pin explicit token IDs in the fixture rather than silently
+    broadening the source evidence.
 - `cleanup_out.py`
   - prunes legacy untimestamped artifacts from `bench/out` and can optionally prune old timestamped run folders by retention window.
 - `organize_out_by_timestamp.py`

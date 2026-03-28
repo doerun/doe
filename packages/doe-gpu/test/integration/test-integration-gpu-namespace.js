@@ -72,10 +72,14 @@ try {
   check('bound.kernel is object', bound.kernel != null && typeof bound.kernel === 'object');
   check('bound.kernel.create is function', typeof bound.kernel.create === 'function');
   check('bound.kernel.run is function', typeof bound.kernel.run === 'function');
+  check('bound.determinism is object', bound.determinism != null && typeof bound.determinism === 'object');
+  check('bound.determinism.stableToken is function', typeof bound.determinism.stableToken === 'function');
+  check('bound.determinism.reviewedChoice is function', typeof bound.determinism.reviewedChoice === 'function');
   check('bound.compute is function', typeof bound.compute === 'function');
   check('bound.compute.begin is function', typeof bound.compute.begin === 'function');
   check('bound.commandEncoder is object', bound.commandEncoder != null && typeof bound.commandEncoder === 'object');
   check('bound.commandEncoder.create is function', typeof bound.commandEncoder.create === 'function');
+  check('bound.determinism.stableChoice is function', typeof bound.determinism.stableChoice === 'function');
   bound.device.destroy();
 } catch (err) {
   if (isDeviceUnavailableError(err)) {
@@ -180,6 +184,194 @@ console.log('\n4. createGpuNamespace() — custom namespace');
     } else {
       check('custom namespace requestDevice', false, err.message);
     }
+  }
+}
+
+// ── 4b. determinism.stableToken() — host and buffer paths ──────────────
+
+console.log('\n4b. determinism.stableToken() — host and buffer paths');
+
+try {
+  const bound = await gpu.requestDevice();
+
+  const hostResult = await bound.determinism.stableToken({
+    logits: new Float32Array([0, 7, 7, 3]),
+  });
+  check('stableToken host logits returns lowest tied token', hostResult.token === 1, JSON.stringify(hostResult));
+  check('stableToken host logits sourceKind=host-bytes', hostResult.receipt.sourceKind === 'host-bytes');
+  check('stableToken host logits tiedMaxCount=2', hostResult.receipt.tiedMaxCount === 2);
+
+  const logitsBuffer = bound.buffer.create({
+    data: new Float32Array([0, 7, 7, 3]),
+    usage: ['storageRead', 'readback'],
+  });
+  const bufferResult = await bound.determinism.stableToken({
+    logits: logitsBuffer,
+    vocabSize: 4,
+  });
+  check('stableToken buffer logits returns lowest tied token', bufferResult.token === 1, JSON.stringify(bufferResult));
+  check('stableToken buffer logits sourceKind=buffer-readback', bufferResult.receipt.sourceKind === 'buffer-readback');
+  check('stableToken buffer logits tiedMaxCount=2', bufferResult.receipt.tiedMaxCount === 2);
+  check(
+    'stableToken buffer and host receipts agree on token',
+    bufferResult.receipt.token === hostResult.receipt.token,
+  );
+  check('stableToken receipt exposes proof links', Array.isArray(hostResult.receipt.proofLinks) && hostResult.receipt.proofLinks.length >= 1);
+
+  logitsBuffer.destroy();
+  bound.device.destroy();
+} catch (err) {
+  if (isDeviceUnavailableError(err)) {
+    skip('determinism.stableToken (no GPU available)');
+  } else {
+    check('determinism.stableToken', false, err.message);
+  }
+}
+
+// ── 4c. determinism.stableChoice() — host and buffer paths ─────────────
+
+console.log('\n4c. determinism.stableChoice() — host and buffer paths');
+
+try {
+  const bound = await gpu.requestDevice();
+
+  const hostResult = await bound.determinism.stableChoice({
+    logits: new Float32Array([0, 7, 7, 3]),
+    candidates: [
+      { token: 2, label: 'unsafe' },
+      { token: 1, label: 'safe' },
+    ],
+    ambiguityTrigger: { mode: 'exact-max-tie' },
+    policyId: 'integration/fixed-priority-unsafe-first',
+    triggerPolicyId: 'exact-max-tie-v1',
+    candidateSetId: 'safety.safe_unsafe',
+    candidateSetSource: 'fixture-declared',
+  });
+  check('stableChoice host logits returns fixed-priority candidate', hostResult.token === 2, JSON.stringify(hostResult));
+  check('stableChoice host logits sourceKind=host-bytes', hostResult.receipt.sourceKind === 'host-bytes');
+  check('stableChoice host logits ambiguityTriggered=true', hostResult.receipt.ambiguityTriggered === true);
+  check('stableChoice host logits selectedBy=stable-choice-policy', hostResult.receipt.selectedBy === 'stable-choice-policy');
+  check('stableChoice host logits preserves triggerPolicyId', hostResult.receipt.triggerPolicyId === 'exact-max-tie-v1');
+  check('stableChoice host logits preserves candidateSetId', hostResult.receipt.candidateSetId === 'safety.safe_unsafe');
+  check('stableChoice host logits preserves candidateSetSource', hostResult.receipt.candidateSetSource === 'fixture-declared');
+
+  const logitsBuffer = bound.buffer.create({
+    data: new Float32Array([0, 7, 7, 3]),
+    usage: ['storageRead', 'readback'],
+  });
+  const bufferResult = await bound.determinism.stableChoice({
+    logits: logitsBuffer,
+    vocabSize: 4,
+    candidates: [
+      { token: 2, label: 'unsafe' },
+      { token: 1, label: 'safe' },
+    ],
+    ambiguityTrigger: { mode: 'exact-max-tie' },
+    policyId: 'integration/fixed-priority-unsafe-first',
+    triggerPolicyId: 'exact-max-tie-v1',
+    candidateSetId: 'safety.safe_unsafe',
+    candidateSetSource: 'fixture-declared',
+  });
+  check('stableChoice buffer logits returns fixed-priority candidate', bufferResult.token === 2, JSON.stringify(bufferResult));
+  check('stableChoice buffer logits sourceKind=buffer-readback', bufferResult.receipt.sourceKind === 'buffer-readback');
+  check('stableChoice buffer and host receipts agree on token', bufferResult.receipt.token === hostResult.receipt.token);
+
+  const marginResult = await bound.determinism.stableChoice({
+    logits: new Float32Array([0, 9, 8.97, 3]),
+    candidates: [
+      { token: 2, label: 'unsafe' },
+      { token: 1, label: 'safe' },
+    ],
+    ambiguityTrigger: { mode: 'candidate-margin-band', epsilon: 0.05 },
+    policyId: 'integration/fixed-priority-unsafe-first',
+    triggerPolicyId: 'candidate-margin-band-v1',
+    candidateSetId: 'safety.safe_unsafe',
+    candidateSetSource: 'fixture-declared',
+  });
+  check('stableChoice margin band can override stable-token fallback', marginResult.token === 2, JSON.stringify(marginResult));
+  check('stableChoice margin band records ambiguity trigger mode', marginResult.receipt.ambiguityTrigger.mode === 'candidate-margin-band');
+  check('stableChoice margin band preserves triggerPolicyId', marginResult.receipt.triggerPolicyId === 'candidate-margin-band-v1');
+  check('stableChoice receipt exposes proof links', Array.isArray(hostResult.receipt.proofLinks) && hostResult.receipt.proofLinks.length >= 3);
+
+  logitsBuffer.destroy();
+  bound.device.destroy();
+} catch (err) {
+  if (isDeviceUnavailableError(err)) {
+    skip('determinism.stableChoice (no GPU available)');
+  } else {
+    check('determinism.stableChoice', false, err.message);
+  }
+}
+
+// ── 4d. determinism.reviewedChoice() — host and buffer paths ───────────
+
+console.log('\n4d. determinism.reviewedChoice() — host and buffer paths');
+
+try {
+  const bound = await gpu.requestDevice();
+
+  const hostResult = await bound.determinism.reviewedChoice({
+    logits: new Float32Array([0, 7, 7, 3]),
+    candidates: [
+      { token: 2, label: 'unsafe' },
+      { token: 1, label: 'safe' },
+    ],
+    ambiguityTrigger: { mode: 'exact-max-tie' },
+    reviewPolicyId: 'integration/reviewer-v1',
+    triggerPolicyId: 'exact-max-tie-v1',
+    candidateSetId: 'safety.safe_unsafe',
+    candidateSetSource: 'fixture-declared',
+    decision: {
+      token: 1,
+      label: 'safe',
+      reviewerId: 'integration/reviewer-v1',
+      decisionId: 'integration-review-001',
+      decisionRef: 'receipt://integration-review-001',
+    },
+  });
+  check('reviewedChoice host logits honors reviewed token', hostResult.token === 1, JSON.stringify(hostResult));
+  check('reviewedChoice host logits sourceKind=host-bytes', hostResult.receipt.sourceKind === 'host-bytes');
+  check('reviewedChoice host logits ambiguityTriggered=true', hostResult.receipt.ambiguityTriggered === true);
+  check('reviewedChoice host logits decisionAccepted=true', hostResult.receipt.decisionAccepted === true);
+  check('reviewedChoice host logits selectedBy=reviewed-choice-decision', hostResult.receipt.selectedBy === 'reviewed-choice-decision');
+  check('reviewedChoice host logits preserves triggerPolicyId', hostResult.receipt.triggerPolicyId === 'exact-max-tie-v1');
+  check('reviewedChoice host logits preserves reviewerId', hostResult.receipt.decision.reviewerId === 'integration/reviewer-v1');
+
+  const logitsBuffer = bound.buffer.create({
+    data: new Float32Array([0, 7, 7, 3]),
+    usage: ['storageRead', 'readback'],
+  });
+  const bufferResult = await bound.determinism.reviewedChoice({
+    logits: logitsBuffer,
+    vocabSize: 4,
+    candidates: [
+      { token: 2, label: 'unsafe' },
+      { token: 1, label: 'safe' },
+    ],
+    ambiguityTrigger: { mode: 'exact-max-tie' },
+    reviewPolicyId: 'integration/reviewer-v1',
+    triggerPolicyId: 'exact-max-tie-v1',
+    candidateSetId: 'safety.safe_unsafe',
+    candidateSetSource: 'fixture-declared',
+    decision: {
+      token: 1,
+      label: 'safe',
+      reviewerId: 'integration/reviewer-v1',
+      decisionId: 'integration-review-001',
+    },
+  });
+  check('reviewedChoice buffer logits honors reviewed token', bufferResult.token === 1, JSON.stringify(bufferResult));
+  check('reviewedChoice buffer logits sourceKind=buffer-readback', bufferResult.receipt.sourceKind === 'buffer-readback');
+  check('reviewedChoice buffer and host receipts agree on token', bufferResult.receipt.token === hostResult.receipt.token);
+  check('reviewedChoice receipt exposes proof links', Array.isArray(hostResult.receipt.proofLinks) && hostResult.receipt.proofLinks.length >= 3);
+
+  logitsBuffer.destroy();
+  bound.device.destroy();
+} catch (err) {
+  if (isDeviceUnavailableError(err)) {
+    skip('determinism.reviewedChoice (no GPU available)');
+  } else {
+    check('determinism.reviewedChoice', false, err.message);
   }
 }
 

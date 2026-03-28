@@ -1,5 +1,188 @@
 # Config Migration Notes
 
+## 2026-03-28
+
+### Determinism policy productization: reviewed-choice and proof-linked receipts
+
+- `packages/doe-gpu/src/vendor/doe-namespace.js`
+  and `packages/doe-gpu/src/vendor/doe-namespace.d.ts`
+  - Doe determinism helpers now expose a third sibling surface:
+    `gpu.determinism.reviewedChoice(...)`.
+  - `stable-token` and `stable-choice` receipts now also include `proofLinks`.
+- `config/doe-determinism-receipt.schema.json`
+  - the determinism receipt contract now has three discriminated modes:
+    `stable-token`, `stable-choice`, and `reviewed-choice`.
+  - the schema now requires proof-link metadata for all three modes.
+- `examples/doe-determinism-receipt.reviewed-choice.sample.json`
+  and `config/schema-targets.json`
+  - schema validation now covers a reviewed-choice sample receipt in addition
+    to the existing stable-token and stable-choice samples.
+- `pipeline/lean/Doe/Core/DeterminismPolicy.lean`
+  and `pipeline/lean/Doe/DeterminismPolicy.lean`
+  - Doe now has an explicit Lean theorem pack for policy-layer determinism:
+    stable-token tie-break semantics, ambiguity-trigger semantics,
+    fixed-priority comparator semantics, and reviewed-choice decision
+    acceptance.
+- `pipeline/lean/Doe/Extract.lean`
+  and `pipeline/lean/lean_build_common.sh`
+  - those determinism-policy theorems are now part of the extracted proof
+    artifact surface.
+- `bench/executors/run-doe-reviewed-choice.js`
+  - new repo-only executor for generating reviewed-choice receipts from
+    persisted logits.
+- `bench/runners/run_sample_only_tie_break_probe.py`
+  and `bench/fixtures/determinism/apple-metal-sample-only-tie-break.seatbelt-not-safe.gemma270m.json`
+  - the sample-only probe can now emit `raw`, `stable-token`,
+    `stable-choice`, and `reviewed-choice` side by side from the same logits.
+- Behavioral difference versus the prior surface:
+  Doe now has an explicit audited reviewed-decision lane above the deterministic
+  sampler and deterministic bounded-policy lanes, with proof-linked receipts
+  that distinguish:
+  raw sampler behavior,
+  deterministic tie-break behavior,
+  deterministic bounded-policy behavior,
+  and explicit reviewed ambiguity resolution.
+
+### Determinism contract hardening: answer-set registry, trigger policies, and refreshed Apple receipts
+
+- `config/determinism-answer-set-registry.json`
+  and `config/determinism-answer-set-registry.schema.json`
+  - Doe now has a tokenizer-aware bounded answer-set registry for determinism
+    search and promotion work.
+- `config/determinism-trigger-policy.json`
+  and `config/determinism-trigger-policy.schema.json`
+  - ambiguity trigger policies are now versioned config, not ad hoc runner
+    choices.
+- `bench/runners/determinism_search_helpers.py`
+  - shared determinism helpers now load answer-set registries and trigger
+    policies, evaluate trigger contracts, and emit stage-specific stability
+    requirements.
+- `bench/runners/run_pair_agnostic_pair_miner.py`
+  - pair mining now requires `registryModelId` and `triggerPolicyId`, emits
+    explicit discovery provenance (`discoveryMode`, `promotionBucket`,
+    `mutationDepth`, `mutationType`), and scores/promotes against the
+    configured trigger policy rather than numerically-close pairs alone.
+- `bench/runners/run_semantic_pair_mutation_search.py`
+  - mutation-assisted promotions now stay in a separate provenance lane and
+    write structured negative-control groups by domain / answer-set / outcome.
+- `packages/doe-gpu/src/vendor/doe-namespace.js`
+  and `packages/doe-gpu/src/vendor/doe-namespace.d.ts`
+  - `stable-choice` receipts now expose `triggerPolicyId`,
+    `candidateSetId`, and `candidateSetSource` so the bounded-policy decision
+    contract is auditable end to end.
+- `config/doe-determinism-receipt.schema.json`
+  - the stable-choice receipt schema now requires the policy-provenance fields
+    above.
+- Behavioral difference versus the prior surface:
+  refreshed Apple scout receipts can now honestly produce zero natural
+  promotions if no registry-gated candidate set survives the stability and
+  usefulness filters, and the seatbelt stable-choice demo no longer implies a
+  natural ambiguous source state when only the forced exact-tie case
+  differentiates.
+
+### Determinism search funnel: pair-agnostic mining and shortlist mutation search
+
+- `bench/fixtures/determinism/apple-metal-pair-agnostic-mine.gemma270m.json`
+  - Doe now has an explicit mining-policy contract for discovering replayable
+    semantic answer pairs from broad scout receipts instead of relying only on
+    hand-declared pair fixtures.
+- `bench/runners/run_pair_agnostic_pair_miner.py`
+  - new repo-only determinism search stage:
+    broad `run_real_logit_hunt.py` scout receipts can now be mined into
+    provenance-rich pair cases with canonical token IDs, source report links,
+    usefulness scores, and logits artifact references.
+- `bench/runners/run_semantic_pair_hunt.py`
+  - the semantic pair runner now supports `--mined-report` in addition to the
+    original explicit `--source-report` + pair fixture path, so mined cases can
+    be promoted into decode-state receipts without rewriting them into a manual
+    pair list first.
+- `bench/fixtures/determinism/apple-metal-semantic-pair-mutation-search.gemma270m.json`
+  and `bench/runners/run_semantic_pair_mutation_search.py`
+  - Doe now has a shortlist-only mutation stage that reruns a cheap scout on
+    prompt variants and emits both:
+    - a mutation-search report with explicit negative controls
+    - a companion mined-pair report containing only improved cases
+- Behavioral difference versus the prior surface:
+  the determinism workflow is now an explicit funnel:
+  broad scout -> pair-agnostic mined pairs -> decode-state promotion ->
+  mutation search -> promoted mined cases.
+  Negative controls are now artifacts, not discarded failed experiments.
+
+### Doe stable-choice helper surface and determinism receipt schema
+
+- `packages/doe-gpu/src/vendor/doe-namespace.js`
+  - the bound Doe helper namespace now also exposes
+    `gpu.determinism.stableChoice(...)`.
+- `packages/doe-gpu/src/vendor/doe-namespace.d.ts`
+  - the public package helper contract now includes bounded candidate sets,
+    ambiguity triggers (`exact-max-tie` and `candidate-margin-band`), and the
+    `stable-choice` receipt payload.
+- `config/doe-determinism-receipt.schema.json`
+  - Doe now has a schema-gated determinism receipt contract covering both
+    `stable-token` and `stable-choice`.
+- `config/schema-targets.json`
+  - schema validation now covers sample `stable-token` and `stable-choice`
+    receipts.
+- `bench/fixtures/determinism/apple-metal-sample-only-tie-break.seatbelt-not-safe.gemma270m.json`
+  - the seatbelt semantic probe fixture now declares an optional
+    `doeStableChoice` section so policy-governed ambiguity resolution is part
+    of the explicit fixture methodology.
+- `bench/runners/run_sample_only_tie_break_probe.py`
+  - the sample-only probe now emits optional Doe stable-choice receipts per
+    case using `bench/executors/run-doe-stable-choice.js`.
+- Behavioral difference versus the prior surface:
+  Doe now separates:
+  raw GPU sampling, scalar `stable-token`, and bounded-policy `stable-choice`.
+  `stable-choice` can now deterministically override the scalar greedy token
+  when a documented candidate-set ambiguity trigger fires, while leaving the
+  scalar `stable-token` contract unchanged.
+
+### Doe stable-token helper surface and sample-only tie-break fixture contract
+
+- `packages/doe-gpu/src/vendor/doe-namespace.js`
+  - the bound Doe helper namespace now exposes `gpu.determinism.stableToken(...)`.
+- Behavioral difference versus the prior surface:
+  Doe now has an explicit scalar greedy-token helper with a documented
+  `lowest-index-among-max` tie-break rule and a receipt payload
+  (`mode`, `comparator`, `tieBreakRule`, logits digest, top candidates, and
+  tied-max indices) instead of relying only on the raw GPU `sample.wgsl`
+  reduction semantics.
+
+- `bench/fixtures/determinism/apple-metal-sample-only-tie-break.gemma270m.json`
+  - the sample-only tie-break fixture now declares a `doeStableToken` section
+    so the Doe stable-token receipt path is part of the explicit fixture
+    methodology rather than an implicit runner default.
+- `bench/runners/run_sample_only_tie_break_probe.py`
+  - the sample-only probe now emits Doe stable-token receipts per case using
+    `bench/executors/run-doe-stable-token.js`.
+- Behavioral difference versus the prior surface:
+  sample-only tie-break reports can now distinguish:
+  raw Doe/Dawn parity on the shared GPU sample kernel from Doe's explicit
+  scalar stable-token helper result on the same logits.
+
+### Apple package unsupported receipts and Apple runtime bundle gating
+
+- `config/trace-meta.schema.json`
+  - package trace-meta receipts may now include optional `unsupportedCode` and
+    `unsupportedDetail` fields when an executor emits an explicit unsupported
+    classification instead of a generic execution error.
+- `config/package-execution-policy.json`
+  - Apple host-scoped package execution policy now retires the Node/Dawn
+    Gemma64 and Gemma1B IR-backed package rows on `mac.lan` instead of letting
+    the compare surface oscillate between provider crashes and partial receipts.
+- `config/schema-targets.json`
+  - schema validation now covers the package execution policy contract.
+- `bench/native-compare/compare_dawn_vs_doe.config.apple.metal.compare-dev.json`
+  - the Apple compare-dev runtime lane now excludes the plan-backed Gemma270M
+    rows and the two staged-upload rows whose Dawn-side timing is still
+    implausible on this host, so the Apple runtime gate bundle stays on the
+    intended governed runtime receipt set.
+- `bench/native_compare_modules/runner.py` and
+  `bench/native_compare_modules/workload_validation.py`
+  - upload workloads now default to `queueSyncMode=deferred` unless a workload
+    explicitly overrides that mode, matching the Apple Metal timing/sync policy
+    gate contract.
+
 ## 2026-03-27
 
 ### Apple package CLI direct execution and drop-in Apple gate fixes
@@ -2015,3 +2198,12 @@ Contract updates in this change:
   `runtime/zig/src/backend/vulkan/vulkan_surface.zig` now consume that field
   during swapchain format selection so `extended` tone mapping prefers
   extended-sRGB Vulkan surface formats when the platform exposes them.
+### Host-scoped package execution unsupported policy
+
+- Added `config/package-execution-policy.json` with schema
+  `config/package-execution-policy.schema.json` as the config-backed source of
+  truth for host/provider/workload package lanes that must fail fast as
+  explicit unsupported execution instead of crashing inside a provider process.
+- `bench/executors/node-webgpu/executor.js` now resolves that policy before
+  runtime bring-up and emits deterministic unsupported artifacts when a matching
+  package lane is classified unsupported on the current host.

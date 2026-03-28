@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "source": "doe-stable-token",
+  "configPath": "bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-force-not-safe-exact-tie/doe_stable_token.config.json",
+  "mode": "buffer-readback",
+  "logitsPath": "bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-force-not-safe-exact-tie/input.logits.bin",
+  "logitsSha256": "e88c46d6711676fcb5e134008cbf3b1eb9ceca2c85e36dcaa2bc8858d8bd2743",
+  "vocabSize": 262144,
+  "result": {
+    "token": 711,
+    "receipt": {
+      "mode": "stable-token",
+      "comparator": "scalar-f32-greedy",
+      "tieBreakRule": "lowest-index-among-max",
+      "sourceKind": "buffer-readback",
+      "vocabSize": 262144,
+      "bytesRead": 1048576,
+      "logitsSha256": "e88c46d6711676fcb5e134008cbf3b1eb9ceca2c85e36dcaa2bc8858d8bd2743",
+      "token": 711,
+      "maxLogit": 21.390546798706055,
+      "tiedMaxCount": 2,
+      "tiedMaxIndicesPrefix": [
+        711,
+        6338
+      ],
+      "tiedMaxIndicesOmittedCount": 0,
+      "topCandidates": [
+        {
+          "index": 711,
+          "logit": 21.390546798706055
+        },
+        {
+          "index": 6338,
+          "logit": 21.390546798706055
+        },
+        {
+          "index": 496,
+          "logit": 21.390544891357422
+        },
+        {
+          "index": 992,
+          "logit": 19.14216423034668
+        },
+        {
+          "index": 506,
+          "logit": 19.070335388183594
+        }
+      ],
+      "proofLinks": [
+        {
+          "theorem": "stableTokenChoose_mem_tiedMaxIndices",
+          "module": "Doe.Core.DeterminismPolicy",
+          "category": "lean_verified",
+          "relation": "stable-token-tie-break-membership",
+          "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+        },
+        {
+          "theorem": "stableTokenChoose_le_all_tiedMaxIndices",
+          "module": "Doe.Core.DeterminismPolicy",
+          "category": "lean_verified",
+          "relation": "stable-token-lowest-index-among-max",
+          "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+        }
+      ]
+    }
+  }
+}

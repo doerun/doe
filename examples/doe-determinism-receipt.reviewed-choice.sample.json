@@ -1,0 +1,78 @@
+{
+  "mode": "reviewed-choice",
+  "comparator": "scalar-f32-greedy",
+  "baseRuleId": "stable-token/lowest-index-among-max",
+  "evaluatorKind": "explicit-review-decision",
+  "reviewPolicyId": "demo/reviewer-v1",
+  "triggerPolicyId": "exact-max-tie-v1",
+  "candidateSetId": "safety.safe_unsafe",
+  "candidateSetSource": "fixture-declared",
+  "sourceKind": "host-bytes",
+  "vocabSize": 4,
+  "bytesRead": 16,
+  "logitsSha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+  "token": 1,
+  "stableTokenToken": 1,
+  "stableTokenTiedMaxCount": 2,
+  "stableTokenTiedMaxIndicesPrefix": [1, 2],
+  "stableTokenTiedMaxIndicesOmittedCount": 0,
+  "ambiguityTrigger": {
+    "mode": "exact-max-tie",
+    "epsilon": null
+  },
+  "ambiguityTriggered": true,
+  "ambiguityTopGap": 0.0,
+  "selectedBy": "reviewed-choice-decision",
+  "decision": {
+    "token": 1,
+    "label": "safe",
+    "reviewerId": "demo/reviewer-v1",
+    "decisionId": "demo-review-001",
+    "decisionRef": "receipt://demo-review-001",
+    "signature": "sha256:deadbeef"
+  },
+  "decisionAccepted": true,
+  "decisionAcceptanceReason": "reviewed-choice-decision",
+  "candidateSet": [
+    { "token": 2, "label": "unsafe", "priority": 0, "logit": 7.0 },
+    { "token": 1, "label": "safe", "priority": 1, "logit": 7.0 }
+  ],
+  "ambiguousCandidateCount": 2,
+  "ambiguousCandidateIndicesPrefix": [2, 1],
+  "ambiguousCandidateIndicesOmittedCount": 0,
+  "topCandidates": [
+    { "index": 1, "logit": 7.0 },
+    { "index": 2, "logit": 7.0 },
+    { "index": 3, "logit": 3.0 }
+  ],
+  "proofLinks": [
+    {
+      "theorem": "stableTokenChoose_mem_tiedMaxIndices",
+      "module": "Doe.Core.DeterminismPolicy",
+      "category": "lean_verified",
+      "relation": "stable-token-tie-break-membership",
+      "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+    },
+    {
+      "theorem": "stableTokenChoose_le_all_tiedMaxIndices",
+      "module": "Doe.Core.DeterminismPolicy",
+      "category": "lean_verified",
+      "relation": "stable-token-lowest-index-among-max",
+      "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+    },
+    {
+      "theorem": "exactMaxTieTriggered_iff_two_or_more_candidates",
+      "module": "Doe.Core.DeterminismPolicy",
+      "category": "lean_verified",
+      "relation": "stable-choice-exact-max-tie-trigger",
+      "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+    },
+    {
+      "theorem": "reviewedChoiceSelect_uses_review_token_when_present",
+      "module": "Doe.Core.DeterminismPolicy",
+      "category": "lean_verified",
+      "relation": "reviewed-choice-decision-evaluator",
+      "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+    }
+  ]
+}

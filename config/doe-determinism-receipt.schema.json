@@ -1,0 +1,310 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://doe-gpu.dev/config/doe-determinism-receipt.schema.json",
+  "title": "Doe determinism receipt",
+  "type": "object",
+  "oneOf": [
+    { "$ref": "#/$defs/stableTokenReceipt" },
+    { "$ref": "#/$defs/stableChoiceReceipt" },
+    { "$ref": "#/$defs/reviewedChoiceReceipt" }
+  ],
+  "$defs": {
+    "proofLink": {
+      "type": "object",
+      "required": ["theorem", "module", "category", "relation", "artifactPath"],
+      "properties": {
+        "theorem": { "type": "string", "minLength": 1 },
+        "module": { "type": "string", "minLength": 1 },
+        "category": {
+          "type": "string",
+          "enum": ["tautological", "comptime_verified", "lean_verified", "lean_fixture", "lean_required"]
+        },
+        "relation": { "type": "string", "minLength": 1 },
+        "artifactPath": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "topCandidate": {
+      "type": "object",
+      "required": ["index", "logit"],
+      "properties": {
+        "index": { "type": "integer", "minimum": 0 },
+        "logit": { "type": "number" }
+      },
+      "additionalProperties": false
+    },
+    "stableTokenReceipt": {
+      "type": "object",
+      "required": [
+        "mode",
+        "comparator",
+        "tieBreakRule",
+        "sourceKind",
+        "vocabSize",
+        "bytesRead",
+        "logitsSha256",
+        "token",
+        "maxLogit",
+        "tiedMaxCount",
+        "tiedMaxIndicesPrefix",
+        "tiedMaxIndicesOmittedCount",
+        "topCandidates"
+      ],
+      "properties": {
+        "mode": { "const": "stable-token" },
+        "comparator": { "const": "scalar-f32-greedy" },
+        "tieBreakRule": { "const": "lowest-index-among-max" },
+        "sourceKind": { "enum": ["host-bytes", "buffer-readback"] },
+        "vocabSize": { "type": "integer", "minimum": 1 },
+        "bytesRead": { "type": "integer", "minimum": 1 },
+        "logitsSha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "token": { "type": "integer", "minimum": 0 },
+        "maxLogit": { "type": "number" },
+        "tiedMaxCount": { "type": "integer", "minimum": 1 },
+        "tiedMaxIndicesPrefix": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 0 }
+        },
+        "tiedMaxIndicesOmittedCount": { "type": "integer", "minimum": 0 },
+        "topCandidates": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/topCandidate" }
+        },
+        "proofLinks": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/proofLink" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "stableChoiceCandidate": {
+      "type": "object",
+      "required": ["token", "priority", "logit"],
+      "properties": {
+        "token": { "type": "integer", "minimum": 0 },
+        "label": { "type": ["string", "null"] },
+        "priority": { "type": "integer", "minimum": 0 },
+        "logit": { "type": "number" }
+      },
+      "additionalProperties": false
+    },
+    "stableChoiceReceipt": {
+      "type": "object",
+      "required": [
+        "mode",
+        "comparator",
+        "baseRuleId",
+        "evaluatorKind",
+        "policyId",
+        "triggerPolicyId",
+        "candidateSetId",
+        "candidateSetSource",
+        "sourceKind",
+        "vocabSize",
+        "bytesRead",
+        "logitsSha256",
+        "token",
+        "stableTokenToken",
+        "stableTokenTiedMaxCount",
+        "stableTokenTiedMaxIndicesPrefix",
+        "stableTokenTiedMaxIndicesOmittedCount",
+        "ambiguityTrigger",
+        "ambiguityTriggered",
+        "ambiguityTopGap",
+        "selectedBy",
+        "candidateSet",
+        "ambiguousCandidateCount",
+        "ambiguousCandidateIndicesPrefix",
+        "ambiguousCandidateIndicesOmittedCount",
+        "topCandidates"
+      ],
+      "properties": {
+        "mode": { "const": "stable-choice" },
+        "comparator": { "const": "scalar-f32-greedy" },
+        "baseRuleId": { "const": "stable-token/lowest-index-among-max" },
+        "evaluatorKind": { "const": "fixed-priority" },
+        "policyId": { "type": "string", "minLength": 1 },
+        "triggerPolicyId": { "type": ["string", "null"], "minLength": 1 },
+        "candidateSetId": { "type": ["string", "null"], "minLength": 1 },
+        "candidateSetSource": {
+          "type": ["string", "null"],
+          "enum": ["fixture-declared", "registry-resolved", "source-report-resolved", null]
+        },
+        "sourceKind": { "enum": ["host-bytes", "buffer-readback"] },
+        "vocabSize": { "type": "integer", "minimum": 1 },
+        "bytesRead": { "type": "integer", "minimum": 1 },
+        "logitsSha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "token": { "type": "integer", "minimum": 0 },
+        "stableTokenToken": { "type": "integer", "minimum": 0 },
+        "stableTokenTiedMaxCount": { "type": "integer", "minimum": 1 },
+        "stableTokenTiedMaxIndicesPrefix": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 0 }
+        },
+        "stableTokenTiedMaxIndicesOmittedCount": { "type": "integer", "minimum": 0 },
+        "ambiguityTrigger": {
+          "type": "object",
+          "required": ["mode", "epsilon"],
+          "properties": {
+            "mode": { "enum": ["exact-max-tie", "candidate-margin-band"] },
+            "epsilon": { "type": ["number", "null"], "minimum": 0 }
+          },
+          "additionalProperties": false
+        },
+        "ambiguityTriggered": { "type": "boolean" },
+        "ambiguityTopGap": { "type": "number", "minimum": 0 },
+        "selectedBy": { "enum": ["stable-choice-policy", "stable-token-fallback"] },
+        "candidateSet": {
+          "type": "array",
+          "minItems": 2,
+          "items": { "$ref": "#/$defs/stableChoiceCandidate" }
+        },
+        "ambiguousCandidateCount": { "type": "integer", "minimum": 0 },
+        "ambiguousCandidateIndicesPrefix": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 0 }
+        },
+        "ambiguousCandidateIndicesOmittedCount": { "type": "integer", "minimum": 0 },
+        "topCandidates": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/topCandidate" }
+        },
+        "proofLinks": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/proofLink" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "reviewedChoiceDecision": {
+      "type": "object",
+      "required": ["token", "reviewerId"],
+      "properties": {
+        "token": { "type": "integer", "minimum": 0 },
+        "label": { "type": ["string", "null"] },
+        "reviewerId": { "type": "string", "minLength": 1 },
+        "decisionId": { "type": ["string", "null"], "minLength": 1 },
+        "decisionRef": { "type": ["string", "null"], "minLength": 1 },
+        "signature": { "type": ["string", "null"], "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "reviewedChoiceReceipt": {
+      "type": "object",
+      "required": [
+        "mode",
+        "comparator",
+        "baseRuleId",
+        "evaluatorKind",
+        "reviewPolicyId",
+        "triggerPolicyId",
+        "candidateSetId",
+        "candidateSetSource",
+        "sourceKind",
+        "vocabSize",
+        "bytesRead",
+        "logitsSha256",
+        "token",
+        "stableTokenToken",
+        "stableTokenTiedMaxCount",
+        "stableTokenTiedMaxIndicesPrefix",
+        "stableTokenTiedMaxIndicesOmittedCount",
+        "ambiguityTrigger",
+        "ambiguityTriggered",
+        "ambiguityTopGap",
+        "selectedBy",
+        "decision",
+        "decisionAccepted",
+        "decisionAcceptanceReason",
+        "candidateSet",
+        "ambiguousCandidateCount",
+        "ambiguousCandidateIndicesPrefix",
+        "ambiguousCandidateIndicesOmittedCount",
+        "topCandidates",
+        "proofLinks"
+      ],
+      "properties": {
+        "mode": { "const": "reviewed-choice" },
+        "comparator": { "const": "scalar-f32-greedy" },
+        "baseRuleId": { "const": "stable-token/lowest-index-among-max" },
+        "evaluatorKind": { "const": "explicit-review-decision" },
+        "reviewPolicyId": { "type": "string", "minLength": 1 },
+        "triggerPolicyId": { "type": ["string", "null"], "minLength": 1 },
+        "candidateSetId": { "type": ["string", "null"], "minLength": 1 },
+        "candidateSetSource": {
+          "type": ["string", "null"],
+          "enum": ["fixture-declared", "registry-resolved", "source-report-resolved", null]
+        },
+        "sourceKind": { "enum": ["host-bytes", "buffer-readback"] },
+        "vocabSize": { "type": "integer", "minimum": 1 },
+        "bytesRead": { "type": "integer", "minimum": 1 },
+        "logitsSha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "token": { "type": "integer", "minimum": 0 },
+        "stableTokenToken": { "type": "integer", "minimum": 0 },
+        "stableTokenTiedMaxCount": { "type": "integer", "minimum": 1 },
+        "stableTokenTiedMaxIndicesPrefix": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 0 }
+        },
+        "stableTokenTiedMaxIndicesOmittedCount": { "type": "integer", "minimum": 0 },
+        "ambiguityTrigger": {
+          "type": "object",
+          "required": ["mode", "epsilon"],
+          "properties": {
+            "mode": { "enum": ["exact-max-tie", "candidate-margin-band"] },
+            "epsilon": { "type": ["number", "null"], "minimum": 0 }
+          },
+          "additionalProperties": false
+        },
+        "ambiguityTriggered": { "type": "boolean" },
+        "ambiguityTopGap": { "type": "number", "minimum": 0 },
+        "selectedBy": { "enum": ["reviewed-choice-decision", "stable-token-fallback"] },
+        "decision": { "$ref": "#/$defs/reviewedChoiceDecision" },
+        "decisionAccepted": { "type": "boolean" },
+        "decisionAcceptanceReason": {
+          "enum": [
+            "reviewed-choice-decision",
+            "stable-token-fallback/not-triggered",
+            "stable-token-fallback/not-in-candidate-set",
+            "stable-token-fallback/not-ambiguous"
+          ]
+        },
+        "candidateSet": {
+          "type": "array",
+          "minItems": 2,
+          "items": { "$ref": "#/$defs/stableChoiceCandidate" }
+        },
+        "ambiguousCandidateCount": { "type": "integer", "minimum": 0 },
+        "ambiguousCandidateIndicesPrefix": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 0 }
+        },
+        "ambiguousCandidateIndicesOmittedCount": { "type": "integer", "minimum": 0 },
+        "topCandidates": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/topCandidate" }
+        },
+        "proofLinks": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/proofLink" }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

@@ -64,6 +64,116 @@ Use `gpu` when you want the higher-level Doe helper namespace. Use
 `requestAdapter()` / `requestDevice()` when you want the lower-level
 WebGPU-facing surface directly.
 
+## Deterministic greedy selection
+
+The Doe helper namespace now exposes an explicit deterministic greedy-token
+selector:
+
+```js
+import { gpu } from 'doe-gpu';
+
+const bound = await gpu.requestDevice();
+const { token, receipt } = await bound.determinism.stableToken({
+  logits: new Float32Array([0, 7, 7, 3]),
+});
+```
+
+- `stableToken()` applies scalar CPU argmax over `f32` logits.
+- the tie-break rule is explicit: `lowest-index-among-max`
+- the helper accepts either host logits bytes or a GPU buffer
+- every call returns a receipt with the selected token, the max-tie set, the
+  top candidates, the logits SHA-256 digest, and proof links for the
+  policy-layer tie-break contract
+
+## Deterministic ambiguity resolution
+
+Doe also exposes a separate bounded-choice helper for ambiguous answer sets:
+
+```js
+import { gpu } from 'doe-gpu';
+
+const bound = await gpu.requestDevice();
+const { token, receipt } = await bound.determinism.stableChoice({
+  logits: new Float32Array([0, 9.0, 8.97, 3.0]),
+  candidates: [
+    { token: 2, label: 'unsafe' },
+    { token: 1, label: 'safe' },
+  ],
+  ambiguityTrigger: { mode: 'candidate-margin-band', epsilon: 0.05 },
+  policyId: 'demo/fixed-priority-unsafe-first',
+  triggerPolicyId: 'candidate-margin-band-v1',
+  candidateSetId: 'safety.safe_unsafe',
+  candidateSetSource: 'fixture-declared',
+});
+```
+
+- `stableChoice()` is not the same claim as `stableToken()`
+- it starts from the same scalar `stable-token` boundary, then evaluates a
+  bounded candidate set for ambiguity
+- current trigger modes:
+  - `exact-max-tie`
+  - `candidate-margin-band`
+- current evaluator:
+  - `fixed-priority` using the candidate array order
+- if the ambiguity trigger does not fire, the helper falls back to the scalar
+  `stable-token` result
+- every call returns a receipt with:
+  - logits digest
+  - candidate-set logits
+  - ambiguity trigger config and whether it fired
+  - the policy ID / evaluator kind
+  - the trigger policy ID, candidate-set ID, and candidate-set provenance
+  - the final chosen token and whether it came from policy or fallback
+  - proof links for the stable-token base rule, trigger contract, and
+    fixed-priority evaluator semantics
+
+## Reviewed ambiguity resolution
+
+Doe also exposes a separate reviewed-choice helper when you want the ambiguity
+resolution path to be explicit and auditable instead of purely programmatic:
+
+```js
+import { gpu } from 'doe-gpu';
+
+const bound = await gpu.requestDevice();
+const { token, receipt } = await bound.determinism.reviewedChoice({
+  logits: new Float32Array([0, 7, 7, 3]),
+  candidates: [
+    { token: 2, label: 'unsafe' },
+    { token: 1, label: 'safe' },
+  ],
+  ambiguityTrigger: { mode: 'exact-max-tie' },
+  reviewPolicyId: 'demo/reviewer-v1',
+  triggerPolicyId: 'exact-max-tie-v1',
+  candidateSetId: 'safety.safe_unsafe',
+  candidateSetSource: 'fixture-declared',
+  decision: {
+    token: 1,
+    label: 'safe',
+    reviewerId: 'demo/reviewer-v1',
+    decisionId: 'demo-review-001',
+  },
+});
+```
+
+- `reviewedChoice()` is a sibling of `stableToken()` and `stableChoice()`, not
+  an alias for either one
+- it uses the same bounded candidate-set and ambiguity-trigger contract as
+  `stableChoice()`
+- the evaluator is an explicit reviewed decision receipt, not the built-in
+  fixed-priority program
+- if the ambiguity trigger does not fire, or the reviewed token is outside the
+  ambiguous bounded set, the helper falls back to the scalar `stable-token`
+  result
+- every call returns a receipt with:
+  - logits digest
+  - bounded candidate-set logits
+  - ambiguity trigger config and whether it fired
+  - reviewed decision provenance (`reviewerId`, optional decision IDs/refs)
+  - whether the reviewed decision was accepted or why it fell back
+  - proof links for the stable-token base rule, trigger contract, and
+    reviewed-decision evaluator semantics
+
 ## Subpath exports
 
 ```js

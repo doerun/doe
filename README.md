@@ -7,74 +7,30 @@
 Doe is a Zig-first WebGPU runtime built as an explicit, performance-oriented
 alternative to Dawn.
 
-This repo contains the runtime, package surfaces, browser integration work,
-proof pipeline, trace tooling, and benchmarking infrastructure. If you want the
-published package surface, start with
+This repo contains the runtime, the `doe-gpu` package surface, benchmarking and
+gate tooling, proof artifacts, trace/replay tooling, and the Chromium browser
+lane. If you want the published package surface, start with
 [`packages/doe-gpu/README.md`](packages/doe-gpu/README.md).
 
 ## Start here
 
-Pick the README that matches the surface you are touching.
-
-- Package consumers:
-  [`packages/doe-gpu/README.md`](packages/doe-gpu/README.md)
-- Internal operator tooling:
-  [`docs/internal-tooling.md`](docs/internal-tooling.md)
-- Runtime contributors:
-  [`runtime/zig/README.md`](runtime/zig/README.md)
-- Benchmarking, comparability, and claim gates:
-  [`bench/README.md`](bench/README.md)
-- Browser integration:
-  [`browser/chromium/README.md`](browser/chromium/README.md)
-- Proof and pipeline work:
-  [`pipeline/lean/README.md`](pipeline/lean/README.md),
-  [`pipeline/trace/README.md`](pipeline/trace/README.md),
-  [`pipeline/agent/README.md`](pipeline/agent/README.md)
+- Package consumers: [`packages/doe-gpu/README.md`](packages/doe-gpu/README.md)
+- Runtime contributors: [`runtime/zig/README.md`](runtime/zig/README.md)
+- Benchmarking and gates: [`bench/README.md`](bench/README.md)
+- Browser lane: [`browser/chromium/README.md`](browser/chromium/README.md)
+- Proof and pipeline work: [`pipeline/lean/README.md`](pipeline/lean/README.md), [`pipeline/trace/README.md`](pipeline/trace/README.md), [`pipeline/agent/README.md`](pipeline/agent/README.md)
+  Current Lean theorem inventory: [`pipeline/lean/artifacts/proven-conditions.json`](pipeline/lean/artifacts/proven-conditions.json)
+- Public vs repo-only tooling boundary: [`docs/internal-tooling.md`](docs/internal-tooling.md)
 
 ## Repo layout
 
-- [`runtime/zig`](runtime/zig/README.md): runtime, WGSL pipeline, and native
-  backend execution paths
+- [`runtime/zig`](runtime/zig/README.md): Doe runtime, WGSL pipeline, and native backends
 - [`packages/doe-gpu`](packages/doe-gpu/README.md): npm package surface
-- [`bench`](bench/README.md): Dawn-vs-Doe comparison harnesses, gates, and
-  evidence workflows
-- [`browser/chromium`](browser/chromium/README.md): Chromium-oriented
-  integration and browser tracks
-- [`pipeline/lean`](pipeline/lean/README.md): proof artifacts and proof-driven
-  elimination pipeline
-- [`pipeline/trace`](pipeline/trace/README.md): deterministic trace and replay
-  tooling
-- [`pipeline/agent`](pipeline/agent/README.md): quirk mining and normalization
+- [`bench`](bench/README.md): compare harnesses, gates, and evidence workflows
+- [`browser/chromium`](browser/chromium/README.md): Chromium integration docs, probes, and lane scripts
+- [`pipeline`](pipeline/README.md): quirk mining, proofs, trace, and supporting pipeline modules
 
-## Design direction
-
-Doe keeps runtime behavior explicit:
-
-- native backend paths instead of opaque bridge layers
-- config-first policy and schema-backed behavior
-- optional Lean-backed proof elimination at build time, not a runtime proof
-  interpreter
-- replayable benchmark artifacts instead of prose-only claims
-
-## Current status
-
-Doe currently targets Vulkan, Metal, and D3D12. It is intentionally focused on
-modern GPU APIs and modern workloads rather than broad legacy-backend coverage.
-
-For current status, process, and performance policy, use:
-
-- [`docs/status.md`](docs/status.md)
-- [`docs/process.md`](docs/process.md)
-- [`docs/performance-strategy.md`](docs/performance-strategy.md)
-
-Package-surface results are tracked separately from backend-native Dawn-vs-Doe
-evidence.
-
-## Stranger quickstart
-
-This is the shortest repo-local path from clone to visible output. It uses the
-real Doe native library plus the package addon, then runs the package smoke
-test.
+## Quick start
 
 Requirements:
 
@@ -95,28 +51,32 @@ Expected output ends with:
 Results: <n> passed, 0 failed
 ```
 
-That smoke path is export- and load-oriented, so it does not require a GPU.
+That smoke path checks export/load wiring and does not require a GPU.
 
-For package install and JS usage, use
-[`packages/doe-gpu/README.md`](packages/doe-gpu/README.md). For benchmark,
-compare, and gate workflows, use [`bench/README.md`](bench/README.md) instead
-of treating this README as the operational guide.
+## Current scope
 
-## Deprecated packages
+Doe currently targets Metal, Vulkan, and D3D12. Package-surface results are
+tracked separately from backend-native Dawn-vs-Doe evidence.
 
-The following packages are deprecated and replaced by `doe-gpu`:
+For current status and policy, use:
+
+- [`docs/status.md`](docs/status.md)
+- [`docs/process.md`](docs/process.md)
+- [`docs/performance-strategy.md`](docs/performance-strategy.md)
+
+## Key docs
+
+- [`docs/thesis.md`](docs/thesis.md): project rationale
+- [`docs/architecture.md`](docs/architecture.md): system boundaries and surfaces
+- [`docs/compare-taxonomy.md`](docs/compare-taxonomy.md): compare-axis language
+- [`docs/licensing.md`](docs/licensing.md): licensing and third-party usage
+
+## Deprecated package names
+
+These legacy package names are deprecated in favor of `doe-gpu`:
 
 - `@simulatte/webgpu`
 - `@simulatte/webgpu-doe`
-
-## More docs
-
-- [`docs/thesis.md`](docs/thesis.md): project thesis and framing
-- [`docs/architecture.md`](docs/architecture.md): system overview
-- [`docs/internal-tooling.md`](docs/internal-tooling.md): public vs repo-only tooling boundary
-- [`docs/process.md`](docs/process.md): stage order, gates, and release policy
-- [`docs/status.md`](docs/status.md): current status and tracked follow-ups
-- [`docs/compare-taxonomy.md`](docs/compare-taxonomy.md): canonical compare axis language and generated matrix
 
 ## License
 

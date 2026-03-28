@@ -1,0 +1,36 @@
+{
+  "scenarioId": "apple_metal_sample_only_tie_break_gemma270m",
+  "description": "Apple Metal sample-only tie-break probe that reuses persisted real Gemma 270M logits from the real-logit hunt and runs controlled top-k mutations through the shared sample.wgsl determinism path on Doe and Dawn.",
+  "kernelRoot": "bench/inference-pipeline/kernels",
+  "profile": {
+    "vendor": "apple",
+    "api": "metal",
+    "family": "m3",
+    "driver": "1.0.0"
+  },
+  "queueWaitMode": "process-events",
+  "queueSyncMode": "per-command",
+  "doeStableToken": {
+    "mode": "buffer-readback",
+    "topCandidates": 5
+  },
+  "backendLanes": [
+    {
+      "id": "doe",
+      "backendLane": "metal_doe_comparable"
+    },
+    {
+      "id": "dawn",
+      "backendLane": "metal_dawn_release"
+    }
+  ],
+  "defaultRunCount": 10,
+  "defaultCaseCount": 4,
+  "mutations": [
+    { "id": "as-captured", "kind": "identity" },
+    { "id": "force-top2-exact-tie", "kind": "top2_exact_tie" },
+    { "id": "force-top4-exact-tie", "kind": "topk_exact_tie", "topK": 4 },
+    { "id": "force-top1-wins-by-1ulp", "kind": "top2_first_candidate_wins_by_ulp" },
+    { "id": "force-top2-wins-by-1ulp", "kind": "top2_second_candidate_wins_by_ulp" }
+  ]
+}

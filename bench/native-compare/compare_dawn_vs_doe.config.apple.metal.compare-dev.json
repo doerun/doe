@@ -40,6 +40,12 @@
     "claimEligibleOnly": false,
     "domains": [],
     "ids": [],
-    "excludeIds": []
+    "excludeIds": [
+      "inference_gemma3_270m_prefill_32tok",
+      "inference_gemma3_270m_decode_1tok",
+      "inference_gemma3_270m_prefill_64tok_decode_64tok",
+      "upload_write_buffer_1gb_staged",
+      "upload_write_buffer_4gb_staged"
+    ]
   }
 }

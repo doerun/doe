@@ -31,6 +31,200 @@ export interface DoeReadBufferOptions<T extends ArrayBufferView = ArrayBufferVie
   type: { new (buffer: ArrayBuffer): T };
 }
 
+export type DoeStableTokenTieBreakRule = "lowest-index-among-max";
+export type DoeDeterminismProofCategory =
+  | "tautological"
+  | "comptime_verified"
+  | "lean_verified"
+  | "lean_fixture"
+  | "lean_required";
+
+export interface DoeDeterminismProofLink {
+  theorem: string;
+  module: string;
+  category: DoeDeterminismProofCategory;
+  relation: string;
+  artifactPath: string;
+}
+
+export interface DoeStableTokenTopCandidate {
+  index: number;
+  logit: number;
+}
+
+export interface DoeStableTokenReceipt {
+  mode: "stable-token";
+  comparator: "scalar-f32-greedy";
+  tieBreakRule: DoeStableTokenTieBreakRule;
+  sourceKind: "host-bytes" | "buffer-readback";
+  vocabSize: number;
+  bytesRead: number;
+  logitsSha256: string;
+  token: number;
+  maxLogit: number;
+  tiedMaxCount: number;
+  tiedMaxIndicesPrefix: number[];
+  tiedMaxIndicesOmittedCount: number;
+  topCandidates: DoeStableTokenTopCandidate[];
+  proofLinks: DoeDeterminismProofLink[];
+}
+
+export interface DoeStableTokenResult {
+  token: number;
+  receipt: DoeStableTokenReceipt;
+}
+
+export interface DoeStableTokenOptions<TBuffer> extends DoeReadBufferSubrangeOptions {
+  logits: TBuffer | ArrayBufferView | ArrayBuffer;
+  vocabSize?: number;
+  topCandidates?: number;
+  tieBreakRule?: DoeStableTokenTieBreakRule;
+}
+
+export type DoeStableChoiceTriggerMode = "exact-max-tie" | "candidate-margin-band";
+export type DoeStableChoiceEvaluatorKind = "fixed-priority";
+export type DoeStableChoiceSelectedBy = "stable-choice-policy" | "stable-token-fallback";
+export type DoeStableChoiceCandidateSetSource =
+  | "fixture-declared"
+  | "registry-resolved"
+  | "source-report-resolved";
+
+export interface DoeStableChoiceCandidate {
+  token: number;
+  label?: string;
+}
+
+export interface DoeStableChoiceReceiptCandidate extends DoeStableChoiceCandidate {
+  priority: number;
+  logit: number;
+}
+
+export interface DoeStableChoiceTrigger {
+  mode: DoeStableChoiceTriggerMode;
+  epsilon?: number | null;
+}
+
+export interface DoeStableChoiceReceipt {
+  mode: "stable-choice";
+  comparator: "scalar-f32-greedy";
+  baseRuleId: "stable-token/lowest-index-among-max";
+  evaluatorKind: DoeStableChoiceEvaluatorKind;
+  policyId: string;
+  triggerPolicyId: string | null;
+  candidateSetId: string | null;
+  candidateSetSource: DoeStableChoiceCandidateSetSource | null;
+  sourceKind: "host-bytes" | "buffer-readback";
+  vocabSize: number;
+  bytesRead: number;
+  logitsSha256: string;
+  token: number;
+  stableTokenToken: number;
+  stableTokenTiedMaxCount: number;
+  stableTokenTiedMaxIndicesPrefix: number[];
+  stableTokenTiedMaxIndicesOmittedCount: number;
+  ambiguityTrigger: {
+    mode: DoeStableChoiceTriggerMode;
+    epsilon: number | null;
+  };
+  ambiguityTriggered: boolean;
+  ambiguityTopGap: number;
+  selectedBy: DoeStableChoiceSelectedBy;
+  candidateSet: DoeStableChoiceReceiptCandidate[];
+  ambiguousCandidateCount: number;
+  ambiguousCandidateIndicesPrefix: number[];
+  ambiguousCandidateIndicesOmittedCount: number;
+  topCandidates: DoeStableTokenTopCandidate[];
+  proofLinks: DoeDeterminismProofLink[];
+}
+
+export interface DoeStableChoiceResult {
+  token: number;
+  receipt: DoeStableChoiceReceipt;
+}
+
+export interface DoeStableChoiceOptions<TBuffer> extends DoeReadBufferSubrangeOptions {
+  logits: TBuffer | ArrayBufferView | ArrayBuffer;
+  vocabSize?: number;
+  topCandidates?: number;
+  candidates: Array<number | DoeStableChoiceCandidate>;
+  ambiguityTrigger: DoeStableChoiceTrigger;
+  policyId?: string;
+  triggerPolicyId?: string;
+  candidateSetId?: string;
+  candidateSetSource?: DoeStableChoiceCandidateSetSource;
+}
+
+export type DoeReviewedChoiceEvaluatorKind = "explicit-review-decision";
+export type DoeReviewedChoiceSelectedBy = "reviewed-choice-decision" | "stable-token-fallback";
+export type DoeReviewedChoiceDecisionAcceptanceReason =
+  | "reviewed-choice-decision"
+  | "stable-token-fallback/not-triggered"
+  | "stable-token-fallback/not-in-candidate-set"
+  | "stable-token-fallback/not-ambiguous";
+
+export interface DoeReviewedChoiceDecision extends DoeStableChoiceCandidate {
+  reviewerId: string;
+  decisionId?: string | null;
+  decisionRef?: string | null;
+  signature?: string | null;
+}
+
+export interface DoeReviewedChoiceReceiptDecision extends DoeReviewedChoiceDecision {}
+
+export interface DoeReviewedChoiceReceipt {
+  mode: "reviewed-choice";
+  comparator: "scalar-f32-greedy";
+  baseRuleId: "stable-token/lowest-index-among-max";
+  evaluatorKind: DoeReviewedChoiceEvaluatorKind;
+  reviewPolicyId: string;
+  triggerPolicyId: string | null;
+  candidateSetId: string | null;
+  candidateSetSource: DoeStableChoiceCandidateSetSource | null;
+  sourceKind: "host-bytes" | "buffer-readback";
+  vocabSize: number;
+  bytesRead: number;
+  logitsSha256: string;
+  token: number;
+  stableTokenToken: number;
+  stableTokenTiedMaxCount: number;
+  stableTokenTiedMaxIndicesPrefix: number[];
+  stableTokenTiedMaxIndicesOmittedCount: number;
+  ambiguityTrigger: {
+    mode: DoeStableChoiceTriggerMode;
+    epsilon: number | null;
+  };
+  ambiguityTriggered: boolean;
+  ambiguityTopGap: number;
+  selectedBy: DoeReviewedChoiceSelectedBy;
+  decision: DoeReviewedChoiceReceiptDecision;
+  decisionAccepted: boolean;
+  decisionAcceptanceReason: DoeReviewedChoiceDecisionAcceptanceReason;
+  candidateSet: DoeStableChoiceReceiptCandidate[];
+  ambiguousCandidateCount: number;
+  ambiguousCandidateIndicesPrefix: number[];
+  ambiguousCandidateIndicesOmittedCount: number;
+  topCandidates: DoeStableTokenTopCandidate[];
+  proofLinks: DoeDeterminismProofLink[];
+}
+
+export interface DoeReviewedChoiceResult {
+  token: number;
+  receipt: DoeReviewedChoiceReceipt;
+}
+
+export interface DoeReviewedChoiceOptions<TBuffer> extends DoeReadBufferSubrangeOptions {
+  logits: TBuffer | ArrayBufferView | ArrayBuffer;
+  vocabSize?: number;
+  topCandidates?: number;
+  candidates: Array<number | DoeStableChoiceCandidate>;
+  ambiguityTrigger: DoeStableChoiceTrigger;
+  reviewPolicyId?: string;
+  triggerPolicyId?: string;
+  candidateSetId?: string;
+  candidateSetSource?: DoeStableChoiceCandidateSetSource;
+  decision: DoeReviewedChoiceDecision;
+}
+
 export interface DoeBindingBuffer<TBuffer> {
   buffer: TBuffer;
   access?: DoeBindingAccess;
@@ -140,6 +334,12 @@ export interface BoundDoeBufferNamespace<TBuffer> {
   ): Promise<T>;
 }
 
+export interface BoundDoeDeterminismNamespace<TBuffer> {
+  stableToken(options: DoeStableTokenOptions<TBuffer>): Promise<DoeStableTokenResult>;
+  stableChoice(options: DoeStableChoiceOptions<TBuffer>): Promise<DoeStableChoiceResult>;
+  reviewedChoice(options: DoeReviewedChoiceOptions<TBuffer>): Promise<DoeReviewedChoiceResult>;
+}
+
 export interface BoundDoeKernelNamespace<
   TBuffer,
   TKernel,
@@ -173,6 +373,7 @@ export interface BoundDoeNamespace<
 > {
   readonly device: TDevice;
   readonly buffer: BoundDoeBufferNamespace<TBuffer>;
+  readonly determinism: BoundDoeDeterminismNamespace<TBuffer>;
   readonly commandEncoder: BoundDoeCommandEncoderNamespace<TEncoder>;
   readonly kernel: BoundDoeKernelNamespace<TBuffer, TKernel, TBindingSet>;
   readonly compute: BoundDoeComputeCallable<TBuffer, TBatch>;

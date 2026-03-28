@@ -3,6 +3,7 @@ import { performance } from 'node:perf_hooks';
 import { createHash } from 'node:crypto';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { join, resolve } from 'node:path';
+import os from 'node:os';
 
 import {
   materializeBufferData,
@@ -27,6 +28,10 @@ const FALLBACK_BUN_WEBGPU_PATH = join(
 const DOE_BUN_PACKAGE_PATH = join(
   REPO_ROOT,
   'packages/doe-gpu/src/bun.js',
+);
+const PACKAGE_EXECUTION_POLICY_PATH = join(
+  REPO_ROOT,
+  'config/package-execution-policy.json',
 );
 
 const PROVIDERS_BY_RUNTIME = Object.freeze({
@@ -63,6 +68,7 @@ const PROVIDERS_BY_RUNTIME = Object.freeze({
 const TRACE_META_PROCESS_WALL_SOURCE = 'trace-meta-process-wall';
 const DEBUG_PROGRESS_INTERVAL = 64;
 const NODE_WEBGPU_UNSUPPORTED_ERROR_CODE = 'NODE_WEBGPU_UNSUPPORTED';
+let packageExecutionPolicyPromise = null;
 
 function nsFromMs(ms) {
   return Math.max(0, Math.round(ms * 1_000_000));
@@ -180,6 +186,17 @@ async function loadJsonFile(path) {
     throw new Error(`${path}: expected a JSON object`);
   }
   return payload;
+}
+
+async function loadPackageExecutionPolicy() {
+  if (!packageExecutionPolicyPromise) {
+    packageExecutionPolicyPromise = loadJsonFile(PACKAGE_EXECUTION_POLICY_PATH)
+      .catch((error) => {
+        packageExecutionPolicyPromise = null;
+        throw error;
+      });
+  }
+  return await packageExecutionPolicyPromise;
 }
 
 function zeroHostTotals() {
@@ -370,6 +387,8 @@ export function buildUnsupportedExecutionResult({
   hostWorkloadPrepareTotalNs,
   hostExecutorInitTotalNs,
   processWallMs,
+  unsupportedCode = '',
+  unsupportedDetail = '',
   workloadId = '',
   planPath = '',
 }) {
@@ -413,6 +432,8 @@ export function buildUnsupportedExecutionResult({
     queueWaitMode: 'queue.onSubmittedWorkDone',
     executionQueueSyncMode: 'per-command',
     executionQueueWaitMode: 'queue.onSubmittedWorkDone',
+    ...(unsupportedCode ? { unsupportedCode } : {}),
+    ...(unsupportedDetail ? { unsupportedDetail } : {}),
     workload: planMeta.workloadId,
     canonicalWorkloadId: planMeta.canonicalWorkloadId,
     planId: planMeta.planId,
@@ -572,6 +593,54 @@ export function buildRequestDeviceDescriptor(adapterDescriptor = null) {
     requestDeviceDescriptor.requiredLimits = requiredLimits;
   }
   return requestDeviceDescriptor;
+}
+
+function hostPolicyValueMatches(actual, expected) {
+  if (expected === undefined || expected === null || expected === '') {
+    return true;
+  }
+  if (Array.isArray(expected)) {
+    return expected.includes(actual);
+  }
+  return actual === expected;
+}
+
+export function lookupUnsupportedPackageExecutionEntry(policy, {
+  runtimeHost,
+  provider,
+  workloadId,
+  platform,
+  arch,
+  hostname,
+  osRelease,
+}) {
+  const entries = Array.isArray(policy?.unsupportedExecutions)
+    ? policy.unsupportedExecutions
+    : [];
+  return entries.find((entry) => {
+    if (!hostPolicyValueMatches(runtimeHost, entry.runtimeHost)) {
+      return false;
+    }
+    if (!hostPolicyValueMatches(provider, entry.provider)) {
+      return false;
+    }
+    if (!hostPolicyValueMatches(workloadId, entry.workloadId)) {
+      return false;
+    }
+    if (!hostPolicyValueMatches(platform, entry.host?.platform)) {
+      return false;
+    }
+    if (!hostPolicyValueMatches(arch, entry.host?.arch)) {
+      return false;
+    }
+    if (!hostPolicyValueMatches(hostname, entry.host?.hostname)) {
+      return false;
+    }
+    if (!hostPolicyValueMatches(osRelease, entry.host?.osRelease)) {
+      return false;
+    }
+    return true;
+  }) ?? null;
 }
 
 function globalsFromGlobalThis() {
@@ -916,21 +985,55 @@ async function executeSample(normalizedPlan, runtime, { includeSetupInSelectedTi
     }
     const submitStartedAt = performance.now();
     const finishStartedAt = submitStartedAt;
+    const isFirstSubmit = !firstSubmitLogged;
+    if (isFirstSubmit) {
+      debugLog('execution.firstSubmit.finish.start', {
+        dispatchesEncoded: dispatchStateIndex,
+      });
+    }
     const commandBuffer = encoder.finish();
     const finishNs = nsDelta(finishStartedAt);
     encoder = null;
-    if (!firstSubmitLogged) {
+    if (isFirstSubmit) {
       debugLog('execution.firstSubmit.start', {
         dispatchesEncoded: dispatchStateIndex,
       });
       firstSubmitLogged = true;
     }
+    if (isFirstSubmit) {
+      debugLog('execution.firstSubmit.finish.done', {
+        finishNs,
+        dispatchesEncoded: dispatchStateIndex,
+      });
+    }
     const queueSubmitStartedAt = performance.now();
+    if (isFirstSubmit) {
+      debugLog('execution.firstSubmit.queueSubmit.start', {
+        dispatchesEncoded: dispatchStateIndex,
+      });
+    }
     runtime.queue.submit([commandBuffer]);
     const queueSubmitNs = nsDelta(queueSubmitStartedAt);
+    if (isFirstSubmit) {
+      debugLog('execution.firstSubmit.queueSubmit.done', {
+        queueSubmitNs,
+        dispatchesEncoded: dispatchStateIndex,
+      });
+    }
     const queueWaitStartedAt = performance.now();
+    if (isFirstSubmit) {
+      debugLog('execution.firstSubmit.queueWait.start', {
+        dispatchesEncoded: dispatchStateIndex,
+      });
+    }
     await runtime.queue.onSubmittedWorkDone?.();
     const queueWaitNs = nsDelta(queueWaitStartedAt);
+    if (isFirstSubmit) {
+      debugLog('execution.firstSubmit.queueWait.done', {
+        queueWaitNs,
+        dispatchesEncoded: dispatchStateIndex,
+      });
+    }
     const submitNs = nsFromMs(performance.now() - submitStartedAt);
     stepBreakdownNs.submitCommandEncoderFinishTotalNs += finishNs;
     stepBreakdownNs.submitQueueSubmitTotalNs += queueSubmitNs;
@@ -1268,7 +1371,6 @@ export async function executePlanFile({
   if (workloadId && workloadId !== normalizedPlan.workloadId) {
     throw new Error(`workload mismatch: expected ${workloadId}, got ${normalizedPlan.workloadId}`);
   }
-
   if (dryRun) {
     const meta = {
       schemaVersion: 1,
@@ -1348,6 +1450,38 @@ export async function executePlanFile({
   }
 
   const executionEnvelopeStartedAt = performance.now();
+  const unsupportedEntry = lookupUnsupportedPackageExecutionEntry(
+    await loadPackageExecutionPolicy(),
+    {
+      runtimeHost,
+      provider: spec.provider,
+      workloadId: normalizedPlan.workloadId,
+      platform: process.platform,
+      arch: process.arch,
+      hostname: os.hostname(),
+      osRelease: os.release(),
+    },
+  );
+  if (unsupportedEntry) {
+    const unsupportedResult = buildUnsupportedExecutionResult({
+      normalizedPlan,
+      spec,
+      preparedSession,
+      hostInputReadTotalNs,
+      hostInputParseTotalNs,
+      hostWorkloadPrepareTotalNs,
+      hostExecutorInitTotalNs: 0,
+      processWallMs: performance.now() - executionEnvelopeStartedAt,
+      unsupportedCode: unsupportedEntry.unsupportedCode,
+      unsupportedDetail: unsupportedEntry.detail ?? '',
+    });
+    const artifactFinalizeStartedAt = performance.now();
+    await writeExecutorArtifacts(traceMetaPath, traceJsonlPath, unsupportedResult.meta, unsupportedResult.rows);
+    unsupportedResult.meta.hostArtifactFinalizeTotalNs = nsDelta(artifactFinalizeStartedAt);
+    unsupportedResult.meta.artifactHash = stableArtifactHash(unsupportedResult.meta);
+    await writeExecutorArtifacts(traceMetaPath, null, unsupportedResult.meta, unsupportedResult.rows);
+    return unsupportedResult;
+  }
   const webgpuResolveStartedAt = performance.now();
   debugLog('provider.resolve.start', {
     provider: spec.provider,
@@ -1369,7 +1503,15 @@ export async function executePlanFile({
     });
     const artifactFinalizeStartedAt = performance.now();
     if (traceJsonlPath) {
+      debugLog('artifact.write.traceJsonl.start', {
+        traceJsonlPath,
+        rowCount: result.rows.length,
+      });
       await writeExecutorArtifacts(null, traceJsonlPath, result.meta, result.rows);
+      debugLog('artifact.write.traceJsonl.done', {
+        traceJsonlPath,
+        rowCount: result.rows.length,
+      });
     }
     Object.assign(result.meta, boundaryScopedHostTotals({
       preparedSession,
@@ -1389,7 +1531,15 @@ export async function executePlanFile({
       result.meta.workloadUnitWallSource = TRACE_META_PROCESS_WALL_SOURCE;
     }
     result.meta.artifactHash = stableArtifactHash(result.meta);
+    debugLog('artifact.write.traceMeta.start', {
+      traceMetaPath,
+      rowCount: result.rows.length,
+    });
     await writeExecutorArtifacts(traceMetaPath, null, result.meta, result.rows);
+    debugLog('artifact.write.traceMeta.done', {
+      traceMetaPath,
+      rowCount: result.rows.length,
+    });
 
     return result;
   } catch (error) {
@@ -1407,6 +1557,8 @@ export async function executePlanFile({
         hostWorkloadPrepareTotalNs,
         hostExecutorInitTotalNs: providerModuleResolveTotalNs + (error.hostExecutorInitTotalNs ?? 0),
         processWallMs: performance.now() - executionEnvelopeStartedAt,
+        unsupportedCode: error.unsupportedCode ?? '',
+        unsupportedDetail: error.unsupportedDetail ?? '',
       });
       const artifactFinalizeStartedAt = performance.now();
       await writeExecutorArtifacts(traceMetaPath, traceJsonlPath, unsupportedResult.meta, unsupportedResult.rows);
@@ -1432,6 +1584,11 @@ export async function executePlanFile({
     await writeExecutorArtifacts(traceMetaPath, null, errorResult.meta, errorResult.rows);
     throw error;
   } finally {
-    runtime?.device.destroy?.();
+    debugLog('runtime.destroy.start', {
+      provider: spec.provider,
+    });
+    debugLog('runtime.destroy.done', {
+      provider: spec.provider,
+    });
   }
 }
