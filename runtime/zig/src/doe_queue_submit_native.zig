@@ -1,14 +1,11 @@
-// doe_queue_submit_native.zig — Queue submit loop, deferred-work helpers, and queue lifecycle.
-// Sharded from doe_wgpu_native.zig to stay under the 777-line limit.
-
 const std = @import("std");
 const types = @import("core/abi/wgpu_types.zig");
 const native = @import("doe_wgpu_native.zig");
-
+const queue_flush_breakdown = @import("doe_queue_flush_breakdown.zig");
+const error_scope = @import("error_scope.zig");
 const alloc = native.alloc;
 const cast = native.cast;
 const toOpaque = native.toOpaque;
-
 const DoeQueue = native.DoeQueue;
 const DoeBuffer = native.DoeBuffer;
 const DoeCommandBuffer = native.DoeCommandBuffer;
@@ -18,13 +15,9 @@ const MAX_DEFERRED_RESOLVES = native.MAX_DEFERRED_RESOLVES;
 const VERTEX_BUFFER_SLOT_BASE = native.VERTEX_BUFFER_SLOT_BASE;
 const MAX_FLAT_BIND = native.MAX_FLAT_BIND;
 const d3d12_native_render_pass = @import("backend/d3d12/commands/d3d12_native_render_pass.zig");
-
 const emit_msl = @import("doe_wgsl/emit_msl_ir.zig");
-// Metal buffer slot where _doe_sizes is bound — must match MSL_SIZES_SLOT in emit_msl_ir.zig.
 const MSL_SIZES_SLOT: u32 = emit_msl.MSL_SIZES_SLOT;
-// Size of the _doe_sizes buffer: 32 uint32 slots × 4 bytes.
 const SIZES_BUF_BYTES: usize = (MSL_SIZES_SLOT + 1) * @sizeOf(u32);
-
 const bridge = @import("backend/metal/metal_bridge_decls.zig");
 const metal_bridge_buffer_contents = bridge.metal_bridge_buffer_contents;
 const metal_bridge_blit_encoder_copy_buffer_to_texture = bridge.metal_bridge_blit_encoder_copy_buffer_to_texture;
@@ -58,7 +51,6 @@ const metal_bridge_render_encoder_draw_indexed_indirect = bridge.metal_bridge_re
 const metal_bridge_render_encoder_end = bridge.metal_bridge_render_encoder_end;
 const metal_bridge_render_encoder_set_vertex_buffer = bridge.metal_bridge_render_encoder_set_vertex_buffer;
 const metal_bridge_sample_timestamp = bridge.metal_bridge_sample_timestamp;
-const metal_bridge_resolve_timestamps = bridge.metal_bridge_resolve_timestamps;
 extern fn d3d12_bridge_device_create_command_allocator(device: ?*anyopaque) callconv(.c) ?*anyopaque;
 extern fn d3d12_bridge_device_create_command_list(device: ?*anyopaque, allocator_h: ?*anyopaque) callconv(.c) ?*anyopaque;
 extern fn d3d12_bridge_command_list_close(cmd_list: ?*anyopaque) callconv(.c) void;
@@ -69,42 +61,8 @@ extern fn d3d12_bridge_release(obj: ?*anyopaque) callconv(.c) void;
 
 const WGPU_MAP_ASYNC_STATUS_SUCCESS: u32 = 1;
 
-// ============================================================
-// Deferred-work helpers (called from queue submit and flush)
-// ============================================================
-
-/// Wait for any pending GPU work on the queue, then release the command buffer.
-/// Also executes deferred CPU copies and counter resolves that depend on the completed GPU work.
 pub fn flush_pending_work(q: *DoeQueue) void {
-    if (q.pending_cmd) |cmd| {
-        metal_bridge_command_buffer_wait_completed(cmd);
-        metal_bridge_release(cmd);
-        q.pending_cmd = null;
-    }
-    executeDeferredCopies(q);
-    executeDeferredResolves(q);
-}
-
-fn executeDeferredCopies(q: *DoeQueue) void {
-    for (q.deferred_copies[0..q.deferred_copy_count]) |dc| {
-        @memcpy(dc.dst[0..dc.size], dc.src[0..dc.size]);
-    }
-    q.deferred_copy_count = 0;
-}
-
-fn executeDeferredResolves(q: *DoeQueue) void {
-    for (q.deferred_resolves[0..q.deferred_resolve_count]) |dr| {
-        const contents = metal_bridge_buffer_contents(dr.dst_mtl) orelse continue;
-        const d_off: usize = @intCast(dr.dst_offset);
-        const dest: [*]u64 = @ptrCast(@alignCast(contents + d_off));
-        _ = metal_bridge_resolve_timestamps(
-            dr.counter_buffer,
-            dr.first_query,
-            dr.query_count,
-            dest,
-        );
-    }
-    q.deferred_resolve_count = 0;
+    queue_flush_breakdown.flushPendingWork(q);
 }
 
 fn submittedBuffersHaveRecordedCommands(count: usize, cmd_bufs: [*]const ?*anyopaque) bool {
@@ -499,7 +457,7 @@ pub export fn doeNativeQueueSubmit(q_raw: ?*anyopaque, count: usize, cmd_bufs: [
         q.pending_cmd = mtl_cmd;
     } else {
         metal_bridge_release(mtl_cmd);
-        executeDeferredCopies(q);
+        queue_flush_breakdown.executeDeferredCopies(q);
     }
 }
 
@@ -520,9 +478,43 @@ pub export fn doeNativeQueueFlush(q_raw: ?*anyopaque) callconv(.c) void {
     flush_pending_work(q);
 }
 
+pub export fn doeNativeQueueFlushBreakdown(
+    q_raw: ?*anyopaque,
+    wait_completed_ns_out: *u64,
+    deferred_copy_ns_out: *u64,
+    deferred_resolve_ns_out: *u64,
+) callconv(.c) void {
+    const q = cast(DoeQueue, q_raw) orelse {
+        wait_completed_ns_out.* = 0;
+        deferred_copy_ns_out.* = 0;
+        deferred_resolve_ns_out.* = 0;
+        return;
+    };
+    if (q.dev.backend == .vulkan) {
+        doeNativeQueueFlush(q_raw);
+        wait_completed_ns_out.* = 0;
+        deferred_copy_ns_out.* = 0;
+        deferred_resolve_ns_out.* = 0;
+        return;
+    }
+    const breakdown = queue_flush_breakdown.flushPendingWorkTimed(q);
+    wait_completed_ns_out.* = breakdown.waitCompletedNs;
+    deferred_copy_ns_out.* = breakdown.deferredCopyNs;
+    deferred_resolve_ns_out.* = breakdown.deferredResolveNs;
+}
+
 pub export fn doeNativeQueueWriteBuffer(q_raw: ?*anyopaque, buf_raw: ?*anyopaque, offset: u64, data: [*]const u8, size: usize) callconv(.c) void {
     const q = cast(DoeQueue, q_raw) orelse return;
     const buf = cast(DoeBuffer, buf_raw) orelse return;
+    const size_u64: u64 = @intCast(size);
+    const write_end = std.math.add(u64, offset, size_u64) catch {
+        q.dev.error_scopes.deliver(error_scope.ERROR_TYPE_VALIDATION, "wgpuQueueWriteBuffer range exceeds buffer size");
+        return;
+    };
+    if (write_end > buf.size) {
+        q.dev.error_scopes.deliver(error_scope.ERROR_TYPE_VALIDATION, "wgpuQueueWriteBuffer range exceeds buffer size");
+        return;
+    }
     if (q.dev.backend == .vulkan) {
         // Fast path: use cached mapped pointer to avoid HashMap lookup per write.
         if (buf.vk_mapped_ptr) |base| {

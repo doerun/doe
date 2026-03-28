@@ -1,0 +1,142 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Doe compare taxonomy expanded row",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "rowId",
+    "platformLane",
+    "comparisonBoundary",
+    "runtimeHost",
+    "providerPair",
+    "temperature",
+    "targetKind",
+    "promotedCompareSurface",
+    "repoSurface",
+    "structuralFamilyId",
+    "executorInputBoundary",
+    "isTypeCorrectStructural",
+    "isTypeCorrectConcrete",
+    "isPromotedCompareReachable",
+    "theoreticalConcreteTargetIds",
+    "theoreticalConcreteRowSlotCount",
+    "promotedTargetIds",
+    "promotedCompareProfileIds",
+    "promotedCompareRowCount"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "rowId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "platformLane": {
+      "type": "string",
+      "minLength": 1
+    },
+    "comparisonBoundary": {
+      "type": "string",
+      "minLength": 1
+    },
+    "runtimeHost": {
+      "type": "string",
+      "minLength": 1
+    },
+    "providerPair": {
+      "type": "string",
+      "minLength": 1
+    },
+    "temperature": {
+      "type": "string",
+      "minLength": 1
+    },
+    "targetKind": {
+      "type": "string",
+      "minLength": 1
+    },
+    "promotedCompareSurface": {
+      "type": "string",
+      "enum": [
+        "native",
+        "direct",
+        "package"
+      ]
+    },
+    "repoSurface": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "backend_native",
+        "node_package",
+        "bun_package",
+        "deno_package",
+        null
+      ]
+    },
+    "structuralFamilyId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "executorInputBoundary": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "commands",
+        "plan",
+        null
+      ]
+    },
+    "isTypeCorrectStructural": {
+      "type": "boolean"
+    },
+    "isTypeCorrectConcrete": {
+      "type": "boolean"
+    },
+    "isPromotedCompareReachable": {
+      "type": "boolean"
+    },
+    "theoreticalConcreteTargetIds": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "theoreticalConcreteRowSlotCount": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "promotedTargetIds": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "promotedCompareProfileIds": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "promotedCompareRowCount": {
+      "type": "integer",
+      "minimum": 0
+    }
+  }
+}

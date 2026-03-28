@@ -1,4 +1,4 @@
-# Fawn Toolchain Upgrade Policy
+# Doe toolchain upgrade policy
 
 ## Scope
 

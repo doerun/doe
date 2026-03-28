@@ -138,7 +138,10 @@ fn reference_is_mutable(module: *const ir.Module, function: ir.Function, expr_id
             .ref => |ref_ty| ref_ty.access != .read,
             else => true,
         },
-        .local_ref => |index| function.locals.items[index].mutable,
+        .local_ref => |index| switch (module.types.get(function.locals.items[index].ty)) {
+            .ref => |ref_ty| ref_ty.access != .read,
+            else => function.locals.items[index].mutable,
+        },
         .global_ref => |index| switch (module.globals.items[index].class) {
             .var_ => true,
             else => false,

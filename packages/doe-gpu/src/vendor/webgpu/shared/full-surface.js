@@ -884,9 +884,11 @@ function createFullSurfaceClasses({
       const objectDescriptor = assertObject(descriptor, 'GPUDevice.createShaderModule', 'descriptor');
       const code = objectDescriptor.code ?? objectDescriptor.source;
       assertNonEmptyString(code, 'GPUDevice.createShaderModule', 'descriptor.code');
-      const preflight = backend.preflightShaderSource(code);
-      if (!preflight.ok) {
-        shaderCheckFailure('GPUDevice.createShaderModule', preflight);
+      if (backend.preflightShaderSourceOnCreate !== false) {
+        const preflight = backend.preflightShaderSource(code);
+        if (!preflight.ok) {
+          shaderCheckFailure('GPUDevice.createShaderModule', preflight);
+        }
       }
       const hints = objectDescriptor.compilationHints ?? null;
       const native = backend.deviceCreateShaderModule(this, code, hints, objectDescriptor.label ?? null);

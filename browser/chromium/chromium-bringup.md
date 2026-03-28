@@ -80,7 +80,7 @@ From `` root:
 
 ```bash
 cd browser/chromium
-./scripts/setup-macos-external-lane.sh /Volumes/fawn
+./scripts/setup-macos-external-lane.sh /Volumes/chromium-lane
 source ./scripts/env.sh
 
 # one-time checkout and sync (runs on external volume via lane symlinks)
@@ -112,7 +112,7 @@ From `` root:
 
 ```bash
 cd browser/chromium
-./scripts/setup-linux-external-lane.sh /mnt/fawn
+./scripts/setup-linux-external-lane.sh /mnt/chromium-lane
 source ./scripts/env.sh
 
 # one-time checkout and sync (runs on external path via lane symlinks)
@@ -137,9 +137,9 @@ cd browser/chromium
 
 Default local release artifact path:
 
-- `browser/chromium/out/fawn_release_local`
-- local app bundle is synchronized as canonical `Fawn.app`
-- if upstream still emits `Chromium.app`, sync maps it into local `Fawn.app` during artifact copy
+- `browser/chromium/out/fawn_release_local` (literal current output folder name)
+- local app bundle is synchronized into the lane-local branded app bundle
+- if upstream still emits `Chromium.app`, sync maps it into the branded local app during artifact copy
 
 ## Integration starting point
 
@@ -155,7 +155,7 @@ Start with Track A (browser) seam-only work:
 
 Do not begin with compositor/layout/media refactors.
 
-## Fawn artifact usage (Track A (browser))
+## Current lane artifact usage (Track A browser)
 
 Use existing drop-in artifact lane as initial test substrate:
 

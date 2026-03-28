@@ -594,6 +594,16 @@ function normalizeRequestDeviceDescriptor(descriptor, path = 'GPUAdapter.request
   }
   const normalized = assertObject(descriptor, path, 'descriptor');
   const result = { ...normalized };
+  if (normalized.defaultQueue !== undefined) {
+    const queue_descriptor = assertObject(normalized.defaultQueue, path, 'descriptor.defaultQueue');
+    const queue_result = { ...queue_descriptor };
+    if (queue_result.label === undefined) {
+      queue_result.label = '';
+    } else if (typeof queue_result.label !== 'string') {
+      failValidation(path, 'descriptor.defaultQueue.label must be a string');
+    }
+    result.defaultQueue = queue_result;
+  }
   if (normalized.requiredFeatures !== undefined) {
     const values = Array.isArray(normalized.requiredFeatures)
       ? normalized.requiredFeatures

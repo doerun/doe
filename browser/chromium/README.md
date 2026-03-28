@@ -29,7 +29,7 @@ In scope:
 Out of scope:
 
 1. Direct edits to core runtime execution in `runtime/zig/src`.
-2. Redefining Fawn stage order or existing gate precedence.
+2. Redefining Doe stage order or existing gate precedence.
 3. Claims of browser-wide replacement semantics.
 
 ## Isolation contract
@@ -53,7 +53,7 @@ Milestone status source of truth:
 
 ## Context summary
 
-Fawn already has an ABI-focused drop-in lane and compatibility gates that make Chromium experimentation realistic:
+Doe already has an ABI-focused drop-in lane and compatibility gates that make Chromium experimentation realistic:
 
 1. Drop-in artifact:
    - `runtime/zig/zig-out/lib/libwebgpu_doe.{so,dylib}`
@@ -88,7 +88,7 @@ Terminology used in this directory:
 
 ## Program shape
 
-Track A (browser): Dawn replacement path for `navigator.gpu` via Fawn.
+Track A (browser): Dawn replacement path for `navigator.gpu` via Doe.
 
 Track B (modules) was archived 2026-03-19. See "Track B" section below.
 
@@ -144,7 +144,7 @@ inactive. Milestone governance (M4-M6) is demoted to `archived` in
 `bench/workflows/browser-milestones.json`. Module ownership is marked archived
 in `config/module-ownership.json`.
 
-## What WebGPU/Fawn can and cannot replace
+## What WebGPU/Doe can and cannot replace
 
 Can replace or absorb:
 
@@ -187,7 +187,7 @@ Future implementation promoted from this layer must use config-as-code:
 
 ## Gate policy alignment
 
-This layer inherits Fawn v0 gate priorities:
+This layer inherits Doe v0 gate priorities:
 
 1. Blocking:
    - schema,
@@ -264,18 +264,8 @@ Current browser integration layer structure:
 
 ## Logo asset layout
 
-- Source SVG: `assets/logo/source/fawn-icon-main.svg`
-- Compiled macOS icon: `assets/logo/compiled/macos/fawn-icon-main.icns`
-- Compiled Linux PNGs: `assets/logo/compiled/linux/fawn-icon-main-16.png`,
-  `fawn-icon-main-32.png`, `fawn-icon-main-64.png`,
-  `fawn-icon-main-128.png`, `fawn-icon-main-256.png`,
-  `fawn-icon-main-512.png`.
-- Rebuild from source with:
-
-```bash
-cd browser/chromium
-./scripts/build-fawn-logo-assets.sh
-```
+See `assets/logo/README.md` for the literal current asset filenames and rebuild
+command used by the lane scripts.
 
 Any script/code added here must be non-production and must not alter core runtime behavior by default.
 
@@ -318,8 +308,8 @@ Cross-owner signoff is required before any promotion from nursery to core paths.
 Lane setup for both macOS and Linux:
 
 1. Choose the platform flow and run setup:
-   - macOS: `./scripts/setup-macos-external-lane.sh /Volumes/fawn`
-   - Linux: `./scripts/setup-linux-external-lane.sh /mnt/fawn`
+   - macOS: `./scripts/setup-macos-external-lane.sh /Volumes/chromium-lane`
+   - Linux: `./scripts/setup-linux-external-lane.sh /mnt/chromium-lane`
 2. Load lane env: `source ./scripts/env.sh`
 3. Build Chromium on Linux with release output:
    - `./scripts/bringup-linux.sh --mode release --skip-fetch --skip-sync`
@@ -334,7 +324,8 @@ Notes:
 - Lane-local env file is `.external-lane.env` (mac helper also writes legacy `.external-macos.env` for compatibility).
 - External checkout/caches are stored at:
   - `<external_volume>/chromium/{src,depot_tools,cache}`
-- Local release sync remains in `browser/chromium/out/fawn_release_local`.
+- Local release sync remains in `browser/chromium/out/fawn_release_local`
+  (literal current folder name used by the lane scripts).
 
 ## Current status
 

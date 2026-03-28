@@ -1,6 +1,6 @@
 # Runtime architecture
 
-The Doe runtime is the engine underneath Fawn.
+The Doe runtime is the core execution engine in this repo.
 
 ## Runtime family
 
@@ -12,7 +12,7 @@ The Doe runtime is the engine underneath Fawn.
 ## Separation of concerns
 
 - `runtime/*` owns execution
-- `packages/webgpu` packages the runtime for JavaScript surfaces
-- `packages/webgpu-doe` owns helper APIs only
+- `packages/doe-gpu` packages Doe for JavaScript surfaces
 - `bench/*` measures the runtime and package surfaces
+- `browser/*` owns Chromium-lane integration docs and probes
 - `pipeline/*` and `config/` supply policy, proof, trace, and quirk inputs

@@ -10,7 +10,7 @@
   "properties": {
     "schemaVersion": {
       "type": "integer",
-      "const": 2
+      "const": 3
     },
     "entries": {
       "type": "array",
@@ -74,6 +74,13 @@
         "mode": {
           "$ref": "#/$defs/mode"
         },
+        "packageRuntime": {
+          "type": "string",
+          "enum": [
+            "node",
+            "bun"
+          ]
+        },
         "benchmarkClass": {
           "type": "string",
           "minLength": 1
@@ -95,6 +102,29 @@
           "minLength": 1
         }
       },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "surface": {
+                "const": "package"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "packageRuntime"
+            ]
+          },
+          "else": {
+            "not": {
+              "required": [
+                "packageRuntime"
+              ]
+            }
+          }
+        }
+      ],
       "oneOf": [
         {
           "required": [

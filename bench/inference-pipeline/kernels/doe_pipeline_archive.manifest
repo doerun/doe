@@ -14,3 +14,5 @@ C:matmul_gemv_subgroup#main_vec4
 C:attention_decode_online_f16kv
 C:matmul_gemv_subgroup#main_multicol
 C:sample#sample_single_pass
+C:rmsnorm
+C:sample

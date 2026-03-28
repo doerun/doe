@@ -10,7 +10,7 @@ pub const EmitError = error{
     InvalidIr,
 };
 
-pub const MAX_OUTPUT: usize = 128 * 1024;
+pub const MAX_OUTPUT: usize = 1024 * 1024;
 const BINDINGS_PER_GROUP: u32 = 16;
 // Reserved Metal buffer slot for the runtime array sizes buffer (_doe_sizes).
 // Must match MSL_SIZES_SLOT in doe_queue_submit_native.zig.
@@ -316,6 +316,10 @@ const Emitter = struct {
     }
 
     fn emit_ref_param(self: *Emitter, ref_ty: @FieldType(ir.Type, "ref"), name: []const u8) EmitError!void {
+        return self.emit_ref_decl(ref_ty, name);
+    }
+
+    fn emit_ref_decl(self: *Emitter, ref_ty: @FieldType(ir.Type, "ref"), name: []const u8) EmitError!void {
         switch (ref_ty.addr_space) {
             .storage => {
                 if (ref_ty.access == .read) {
@@ -668,6 +672,7 @@ const Emitter = struct {
 
     fn emit_named_decl(self: *Emitter, ty: ir.TypeId, name: []const u8) EmitError!void {
         switch (self.module.types.get(ty)) {
+            .ref => |ref_ty| try self.emit_ref_decl(ref_ty, name),
             .array => |arr| {
                 if (arr.len == null) return error.InvalidIr;
                 try self.emit_type(arr.elem);

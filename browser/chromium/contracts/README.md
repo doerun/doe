@@ -4,6 +4,9 @@ This directory contains contract drafts for the Chromium WebGPU lane.
 
 These files define candidate module boundaries and promotion expectations before implementation.
 
+Archived Track B module filenames retain their historical `fawn-*` identifiers
+because the archived schemas and fixtures still use those ids.
+
 ## Files
 
 1. `runtime-selector-and-fallback.contract.md`
@@ -43,4 +46,4 @@ These files define candidate module boundaries and promotion expectations before
 
 ## Draft Status
 
-All contracts here are `draft` and non-binding until promoted through Fawn stage and gate policy.
+All contracts here are `draft` and non-binding until promoted through Doe stage and gate policy.

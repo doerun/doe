@@ -1,4 +1,4 @@
-# Fawn Licensing and Third-Party Usage
+# Doe licensing and third-party usage
 
 ## Doe (this project)
 

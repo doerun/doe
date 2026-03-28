@@ -182,6 +182,14 @@
       "data": "config/promoted-compare-catalog.json"
     },
     {
+      "schema": "config/compare-taxonomy.schema.json",
+      "data": "config/compare-taxonomy.json"
+    },
+    {
+      "schema": "config/compare-taxonomy-expanded-row.schema.json",
+      "data": "config/generated/compare-taxonomy-expanded.jsonl"
+    },
+    {
       "schema": "config/tool-surfaces.schema.json",
       "data": "config/tool-surfaces.json"
     },

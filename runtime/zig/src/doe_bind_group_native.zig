@@ -9,6 +9,7 @@ const make = native.make;
 const cast = native.cast;
 const toOpaque = native.toOpaque;
 const MAX_BIND = native.MAX_BIND;
+const MAX_COMPUTE_BIND_GROUPS = native.MAX_COMPUTE_BIND_GROUPS;
 const label_store = native.label_store;
 
 const DoeDevice = native.DoeDevice;
@@ -369,7 +370,20 @@ pub export fn doeNativeDeviceCreatePipelineLayout(dev_raw: ?*anyopaque, desc: ?*
     pl.* = .{};
     const pl_result = toOpaque(pl);
     if (desc) |pd| {
+        if (pd.bindGroupLayoutCount > MAX_COMPUTE_BIND_GROUPS) {
+            doeNativePipelineLayoutRelease(pl_result);
+            return null;
+        }
         pl.immediate_size = pd.immediateSize;
+        pl.bind_group_layout_count = @intCast(pd.bindGroupLayoutCount);
+        for (0..pd.bindGroupLayoutCount) |index| {
+            const layout = cast(DoeBindGroupLayout, pd.bindGroupLayouts[index]) orelse {
+                doeNativePipelineLayoutRelease(pl_result);
+                return null;
+            };
+            native.object_add_ref(DoeBindGroupLayout, toOpaque(layout));
+            pl.bind_group_layouts[index] = layout;
+        }
         label_store.set(pl_result, pd.label.data, pd.label.length);
     }
     return pl_result;
@@ -379,6 +393,9 @@ pub export fn doeNativePipelineLayoutRelease(raw: ?*anyopaque) callconv(.c) void
     if (cast(DoePipelineLayout, raw)) |l| {
         if (!native.object_should_destroy(l)) return;
         label_store.remove(raw);
+        for (l.bind_group_layouts[0..l.bind_group_layout_count]) |layout| {
+            if (layout) |bgl| doeNativeBindGroupLayoutRelease(toOpaque(bgl));
+        }
         alloc.destroy(l);
     }
 }

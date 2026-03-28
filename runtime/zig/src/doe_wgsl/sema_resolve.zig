@@ -22,11 +22,10 @@ pub fn resolve_type_parameterized(self: anytype, node: Node) !ir.TypeId {
         const len: u8 = if (std.mem.eql(u8, name, "vec2")) 2 else if (std.mem.eql(u8, name, "vec3")) 3 else 4;
         return try self.module.types.intern(.{ .vector = .{ .elem = elem, .len = len } });
     }
-    if (std.mem.eql(u8, name, "mat2x2") or std.mem.eql(u8, name, "mat3x3") or std.mem.eql(u8, name, "mat4x4")) {
+    if (parse_matrix_shape(name)) |shape| {
         if (params_len != 1) return error.InvalidType;
         const elem = try self.resolve_type_node(self.module.tree.extra_data.items[params_start]);
-        const dim: u8 = if (std.mem.eql(u8, name, "mat2x2")) 2 else if (std.mem.eql(u8, name, "mat3x3")) 3 else 4;
-        return try self.module.types.intern(.{ .matrix = .{ .elem = elem, .columns = dim, .rows = dim } });
+        return try self.module.types.intern(.{ .matrix = .{ .elem = elem, .columns = shape.columns, .rows = shape.rows } });
     }
     if (std.mem.eql(u8, name, "array")) {
         if (params_len < 1 or params_len > 2) return error.InvalidType;
@@ -88,6 +87,23 @@ pub fn resolve_type_parameterized(self: anytype, node: Node) !ir.TypeId {
         return try self.module.types.intern(.{ .ref = .{ .elem = elem, .addr_space = addr_space, .access = access } });
     }
     return error.UnknownType;
+}
+
+fn parse_matrix_shape(name: []const u8) ?struct { columns: u8, rows: u8 } {
+    if (!std.mem.startsWith(u8, name, "mat") or name.len != 6 or name[4] != 'x') return null;
+    const columns: u8 = switch (name[3]) {
+        '2' => 2,
+        '3' => 3,
+        '4' => 4,
+        else => return null,
+    };
+    const rows: u8 = switch (name[5]) {
+        '2' => 2,
+        '3' => 3,
+        '4' => 4,
+        else => return null,
+    };
+    return .{ .columns = columns, .rows = rows };
 }
 
 const MAX_ARRAY_LENGTH_CONST_DEPTH: u8 = 32;

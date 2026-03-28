@@ -1,6 +1,9 @@
-# Fawn logo assets (Chromium lane)
+# Doe Chromium lane logo assets
 
 Source and compiled brand assets are now centralized here.
+
+Current asset filenames retain the historical `fawn-*` prefix because those are
+the literal paths consumed by the lane scripts.
 
 - Source SVG: `assets/logo/source/fawn-icon-main.svg`
 - macOS compiled: `assets/logo/compiled/macos/fawn-icon-main.icns`

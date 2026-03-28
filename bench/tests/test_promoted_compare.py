@@ -3,7 +3,9 @@
 
 from __future__ import annotations
 
+import json
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -63,8 +65,24 @@ class PromotedCompareTests(unittest.TestCase):
             mode="warm",
         )
         self.assertEqual(entry.id, "apple-metal-gemma64-package-warm")
+        self.assertEqual(entry.package_runtime, "node")
         self.assertEqual(entry.left_executor_id, "doe_node_webgpu_prepared")
         self.assertEqual(entry.right_executor_id, "dawn_node_webgpu_prepared")
+
+    def test_resolve_bun_package_warm_entry_by_workload(self) -> None:
+        entries = load_catalog(REPO_ROOT / "config" / "promoted-compare-catalog.json")
+        entry = resolve_entry(
+            entries,
+            backend="apple-metal",
+            surface="package",
+            workload="gemma64",
+            mode="warm",
+            package_runtime="bun",
+        )
+        self.assertEqual(entry.id, "apple-metal-gemma64-bun-package-warm")
+        self.assertEqual(entry.package_runtime, "bun")
+        self.assertEqual(entry.left_executor_id, "doe_bun_package_prepared")
+        self.assertEqual(entry.right_executor_id, "bun_webgpu_package_prepared")
 
     def test_resolve_entry_by_profile_id(self) -> None:
         entries = load_catalog(REPO_ROOT / "config" / "promoted-compare-catalog.json")
@@ -92,6 +110,37 @@ class PromotedCompareTests(unittest.TestCase):
             argv,
         )
 
+    def test_build_compare_argv_resolves_config_relative_to_custom_catalog(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="doe-promoted-compare-") as tmpdir:
+            tmp = Path(tmpdir)
+            catalog_path = tmp / "catalog.json"
+            config_path = tmp / "custom.compare.json"
+            config_path.write_text("{}", encoding="utf-8")
+            catalog_path.write_text(
+                json.dumps({
+                    "schemaVersion": 2,
+                    "entries": [
+                        {
+                            "id": "custom-native-compare",
+                            "backend": "custom",
+                            "surface": "native",
+                            "preset": "compare",
+                            "mode": "default",
+                            "benchmarkClass": "native-runtime-preset",
+                            "leftExecutorId": "doe_direct_metal",
+                            "rightExecutorId": "dawn_delegate_metal",
+                            "configPath": "custom.compare.json",
+                            "description": "custom entry",
+                        }
+                    ],
+                }),
+                encoding="utf-8",
+            )
+            entries = load_catalog(catalog_path)
+            entry = resolve_entry(entries, profile_id="custom-native-compare")
+            argv = build_compare_argv(entry, catalog_path=catalog_path)
+            self.assertEqual(Path(argv[3]).resolve(), config_path.resolve())
+
     def test_missing_workload_raises_clear_error(self) -> None:
         entries = load_catalog(REPO_ROOT / "config" / "promoted-compare-catalog.json")
         with self.assertRaises(ValueError):
@@ -100,6 +149,17 @@ class PromotedCompareTests(unittest.TestCase):
                 backend="apple-metal",
                 surface="package",
                 workload="gemma270m-literal",
+            )
+
+    def test_package_runtime_is_rejected_for_non_package_surface(self) -> None:
+        entries = load_catalog(REPO_ROOT / "config" / "promoted-compare-catalog.json")
+        with self.assertRaises(ValueError):
+            resolve_entry(
+                entries,
+                backend="apple-metal",
+                surface="direct",
+                workload="gemma64",
+                package_runtime="bun",
             )
 
     def test_preset_and_workload_cannot_both_be_set(self) -> None:

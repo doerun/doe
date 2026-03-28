@@ -64,7 +64,7 @@ Required fields for every module run artifact:
 1. Schema gate for selector fields.
 2. Correctness gate for mode precedence and denylist behavior.
 3. Trace gate for deterministic decision ordering.
-4. Drop-in symbol gate for selected Fawn artifact.
+4. Drop-in symbol gate for selected Doe artifact.
 
 ### Advisory Gates
 

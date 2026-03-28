@@ -1,4 +1,4 @@
-# Fawn Performance Strategy
+# Doe performance strategy
 
 ## Purpose
 
@@ -136,7 +136,7 @@ Interpretation:
 
 Language alone does not guarantee wins. C++/Dawn can close gaps with enough focused engineering.
 
-Fawn's durable advantage should come from:
+Doe's durable advantage should come from:
 
 - explicit hot-path control in Zig
 - config-driven methodology with fail-fast comparability

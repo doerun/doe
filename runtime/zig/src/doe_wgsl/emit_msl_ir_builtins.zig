@@ -327,6 +327,14 @@ pub fn emit_call(self: anytype, function: ir.Function, result_ty: ir.TypeId, cal
             try emit_concrete_numeric_builtin(self, function, result_ty, call);
             return;
         }
+        if (std.mem.eql(u8, call.name, "any") or std.mem.eql(u8, call.name, "all")) {
+            if (call.args.len != 1) return error.InvalidIr;
+            try self.write(call.name);
+            try self.write("(");
+            try self.emit_expr(function, function.expr_args.items[call.args.start]);
+            try self.write(")");
+            return;
+        }
         if (maps.msl_builtin_passthrough_name(call.name)) |mapped_name| {
             try self.write(mapped_name);
             try self.write("(");

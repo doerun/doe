@@ -157,23 +157,17 @@ pub const DoeShaderModule = struct {
     mtl_library: ?*anyopaque = null,
     bindings: [MAX_SHADER_BINDINGS]BindingInfo = undefined,
     binding_count: u32 = 0,
+    bindings_ready: bool = false,
     wg_x: u32 = 0, // @workgroup_size (0 = unknown)
     wg_y: u32 = 0,
     wg_z: u32 = 0,
-    // True when the WGSL source uses arrayLength() — dispatch must pass _doe_sizes buffer.
     needs_sizes_buf: bool = false,
     dispatch_preconditions: []const wgsl_compiler.ir.DispatchPrecondition = &.{},
     texture_dispatch_preconditions: []const wgsl_compiler.ir.TextureDispatchPrecondition = &.{},
-    // Precompiled shader storage for non-Metal backends.
-    // SPIR-V binary for compute shaders (heap-allocated copy, owned by this module).
     spirv_data: ?[]const u32 = null,
-    // Per-stage SPIR-V for graphics shaders (vertex/fragment).
     vertex_spirv_data: ?[]const u32 = null,
     fragment_spirv_data: ?[]const u32 = null,
-    // HLSL source text (heap-allocated copy, owned by this module).
     hlsl_source: ?[]const u8 = null,
-    // Original WGSL source (heap-allocated copy, owned by this module).
-    // Retained for re-translation when pipeline override constants are provided.
     wgsl_source: ?[]const u8 = null,
     compilation_message_kind: CompilationMessageKind = .none,
     compilation_message: ?[]const u8 = null,
@@ -186,7 +180,7 @@ pub const DoeComputePipeline = struct {
     ref_count: u32 = 1,
     mtl_pso: ?*anyopaque = null,
     layout: ?*DoePipelineLayout = null,
-    bindings: [MAX_SHADER_BINDINGS]BindingInfo = undefined,
+    shader_module: ?*DoeShaderModule = null,
     binding_count: u32 = 0,
     wg_x: u32 = 0,
     wg_y: u32 = 0,
@@ -194,7 +188,6 @@ pub const DoeComputePipeline = struct {
     needs_sizes_buf: bool = false,
     dispatch_preconditions: []const wgsl_compiler.ir.DispatchPrecondition = &.{},
     texture_dispatch_preconditions: []const wgsl_compiler.ir.TextureDispatchPrecondition = &.{},
-    // Vulkan-only: heap-allocated SPIR-V words, duplicated from the shader module.
     spirv_data: ?[]const u32 = null,
 };
 pub const DoeBindGroupLayout = struct {
@@ -217,6 +210,8 @@ pub const DoePipelineLayout = struct {
     magic: u32 = TYPE_MAGIC,
     ref_count: u32 = 1,
     immediate_size: u32 = 0,
+    bind_group_layout_count: u32 = 0,
+    bind_group_layouts: [MAX_COMPUTE_BIND_GROUPS]?*DoeBindGroupLayout = [_]?*DoeBindGroupLayout{null} ** MAX_COMPUTE_BIND_GROUPS,
 };
 pub const DoeBindGroup = struct {
     pub const TYPE_MAGIC = MAGIC_BIND_GROUP;

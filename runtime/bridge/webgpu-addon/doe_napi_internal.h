@@ -499,7 +499,9 @@ DECL_PFN(WGPUFuture, doeNativeAdapterRequestDevice, (WGPUAdapter, const void*, W
 DECL_PFN(WGPUFuture, doeRequestAdapterFlat, (WGPUInstance, const void*, uint32_t, WGPURequestAdapterCallback, void*, void*));
 DECL_PFN(WGPUFuture, doeRequestDeviceFlat, (WGPUAdapter, const void*, uint32_t, WGPURequestDeviceCallback, void*, void*));
 DECL_PFN(void, doeNativeQueueFlush, (void*));
+DECL_PFN(void, doeNativeQueueFlushBreakdown, (void*, uint64_t*, uint64_t*, uint64_t*));
 DECL_PFN(void, doeNativeComputeDispatchFlush, (void*, void*, void**, uint32_t, uint32_t, uint32_t, uint32_t, void*, uint64_t, void*, uint64_t, uint64_t));
+DECL_PFN(void, doeNativeComputeDispatchBatchFlush, (void*, size_t, void**, void**, const uint32_t*, const uint32_t*));
 DECL_PFN(WGPUQuerySet, doeNativeDeviceCreateQuerySet, (WGPUDevice, uint32_t, uint32_t));
 DECL_PFN(void, doeNativeCommandEncoderWriteTimestamp, (WGPUCommandEncoder, WGPUQuerySet, uint32_t));
 DECL_PFN(void, doeNativeCommandEncoderResolveQuerySet, (WGPUCommandEncoder, WGPUQuerySet, uint32_t, uint32_t, WGPUBuffer, uint64_t));

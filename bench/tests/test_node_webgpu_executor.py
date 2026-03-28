@@ -242,7 +242,10 @@ console.log(JSON.stringify(result));
         self.assertEqual(meta["executionRowCount"], 0)
         self.assertEqual(meta["executionSuccessCount"], 0)
         self.assertEqual(meta["executionUnsupportedCount"], 1)
-        self.assertEqual(meta["hostExecutorInitTotalNs"], 14)
+        self.assertEqual(meta["hostInputReadTotalNs"], 0)
+        self.assertEqual(meta["hostInputParseTotalNs"], 0)
+        self.assertEqual(meta["hostWorkloadPrepareTotalNs"], 0)
+        self.assertEqual(meta["hostExecutorInitTotalNs"], 0)
         self.assertTrue(meta["packagePreparedSession"])
         self.assertEqual(meta["workloadUnitWallSource"], "trace-meta-process-wall")
         self.assertEqual(payload["rows"], [])
@@ -300,6 +303,45 @@ console.log(JSON.stringify(result));
         self.assertFalse(meta["packagePreparedSession"])
         self.assertEqual(payload["rows"], [])
 
+    def test_build_error_execution_result_zeroes_prepared_session_pre_boundary_totals(self) -> None:
+        script = f"""
+import {{ buildErrorExecutionResult }} from {json.dumps(EXECUTOR_MODULE_URL)};
+const result = buildErrorExecutionResult({{
+  normalizedPlan: null,
+  workloadId: 'prepared_error_alpha',
+  planPath: '/tmp/prepared_error_alpha.json',
+  spec: {{
+    provider: 'doe',
+    providerName: 'doe-gpu',
+    executionBackend: 'doe_node_webgpu',
+  }},
+  preparedSession: true,
+  hostInputReadTotalNs: 11,
+  hostInputParseTotalNs: 12,
+  hostWorkloadPrepareTotalNs: 13,
+  hostExecutorInitTotalNs: 14,
+  processWallMs: 2.5,
+}});
+console.log(JSON.stringify(result));
+"""
+        result = subprocess.run(
+            ["node", "--input-type=module", "-e", script],
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        payload = json.loads(result.stdout)
+        meta = payload["meta"]
+        self.assertEqual(meta["executionErrorCount"], 1)
+        self.assertTrue(meta["packagePreparedSession"])
+        self.assertEqual(meta["hostInputReadTotalNs"], 0)
+        self.assertEqual(meta["hostInputParseTotalNs"], 0)
+        self.assertEqual(meta["hostWorkloadPrepareTotalNs"], 0)
+        self.assertEqual(meta["hostExecutorInitTotalNs"], 0)
+        self.assertEqual(meta["workloadUnitWallSource"], "trace-meta-process-wall")
+
     def test_build_dispatch_binding_cache_key_reuses_identical_bindings(self) -> None:
         script = f"""
 import {{ buildDispatchBindingCacheKey }} from {json.dumps(EXECUTOR_MODULE_URL)};
@@ -334,6 +376,35 @@ console.log(JSON.stringify({{ a, b, c }}));
         payload = json.loads(result.stdout)
         self.assertEqual(payload["a"], payload["b"])
         self.assertNotEqual(payload["a"], payload["c"])
+
+    def test_build_request_device_descriptor_omits_empty_fields(self) -> None:
+        script = f"""
+import {{ buildRequestDeviceDescriptor }} from {json.dumps(EXECUTOR_MODULE_URL)};
+const empty = buildRequestDeviceDescriptor({{
+  requiredFeatures: [],
+  requiredLimits: {{}},
+}});
+const populated = buildRequestDeviceDescriptor({{
+  requiredFeatures: ['shader-f16'],
+  requiredLimits: {{ maxStorageBuffersPerShaderStage: 8 }},
+}});
+console.log(JSON.stringify({{ empty, populated }}));
+"""
+        result = subprocess.run(
+            ["node", "--input-type=module", "-e", script],
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertEqual(payload["empty"], {})
+        self.assertEqual(payload["populated"]["requiredFeatures"], ["shader-f16"])
+        self.assertEqual(
+            payload["populated"]["requiredLimits"]["maxStorageBuffersPerShaderStage"],
+            8,
+        )
 
     def test_prepared_session_boundary_scopes_pre_boundary_host_totals(self) -> None:
         script = f"""
@@ -535,10 +606,51 @@ console.log(JSON.stringify(boundaryScopedHostTotals({{
             )
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("writeBuffer target input requires copy_dst usage", result.stderr)
-            self.assertFalse(meta_path.exists())
-            self.assertFalse(trace_path.exists())
+            self.assertTrue(meta_path.exists())
+            self.assertTrue(trace_path.exists())
+            meta = json.loads(meta_path.read_text(encoding="utf-8"))
+            self.assertEqual(meta["executionErrorCount"], 1)
+            self.assertEqual(meta["workload"], "simple_compute_roundtrip")
+            self.assertEqual(trace_path.read_text(encoding="utf-8"), "")
 
-    def test_supervisor_writes_error_meta_when_child_fails_before_trace_meta(self) -> None:
+    def test_unparseable_plan_still_emits_terminal_artifacts(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="doe-node-webgpu-executor-") as tmpdir:
+            tmp = Path(tmpdir)
+            plan_path = tmp / "bad-plan.json"
+            meta_path = tmp / "trace-meta.json"
+            trace_path = tmp / "trace.jsonl"
+            plan_path.write_text("{ not valid json", encoding="utf-8")
+
+            result = subprocess.run(
+                [
+                    "node",
+                    str(CLI_PATH),
+                    "--provider",
+                    "dawn",
+                    "--plan",
+                    str(plan_path),
+                    "--trace-meta",
+                    str(meta_path),
+                    "--trace-jsonl",
+                    str(trace_path),
+                    "--workload",
+                    "bad_plan_workload",
+                ],
+                cwd=REPO_ROOT,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertTrue(meta_path.exists())
+            self.assertTrue(trace_path.exists())
+            meta = json.loads(meta_path.read_text(encoding="utf-8"))
+            self.assertEqual(meta["executionErrorCount"], 1)
+            self.assertEqual(meta["workload"], "bad_plan_workload")
+            self.assertEqual(meta["executionShape"]["stepCount"], 0)
+            self.assertEqual(trace_path.read_text(encoding="utf-8"), "")
+
+    def test_cli_writes_error_meta_when_workload_id_mismatch(self) -> None:
         with tempfile.TemporaryDirectory(prefix="doe-node-webgpu-executor-") as tmpdir:
             tmp = Path(tmpdir)
             plan_path = tmp / "plan.json"
@@ -569,7 +681,6 @@ console.log(JSON.stringify(boundaryScopedHostTotals({{
             self.assertNotEqual(result.returncode, 0)
             self.assertTrue(meta_path.exists())
             self.assertTrue(trace_path.exists())
-            self.assertIn("node-webgpu supervisor captured child failure", result.stderr)
 
             meta = json.loads(meta_path.read_text(encoding="utf-8"))
             self.assertEqual(meta["executionErrorCount"], 1)

@@ -1,7 +1,140 @@
 {
   "schemaVersion": 1,
-  "lastUpdated": "2026-03-17",
+  "lastUpdated": "2026-03-28",
   "ctsSource": "vendored WebGPU CTS via bench/vendor/dawn/third_party/webgpu-cts",
   "ctsRevision": "untracked",
-  "evidence": []
+  "evidence": [
+    {
+      "query": "webgpu:api,operation,adapter,requestAdapter:*",
+      "bucket": "adapter",
+      "status": "pass",
+      "surface": "package",
+      "host": "mac.lan",
+      "os": "darwin-25.3.0",
+      "backend": "doe_metal",
+      "artifactPath": "bench/out/cts-baseline/20260328T014648Z.json",
+      "notes": "Current preferred Doe CTS subset baseline on this host; this fresh Apple Metal artifact supersedes the March 27 baseline."
+    },
+    {
+      "query": "webgpu:api,operation,adapter,requestDevice:*",
+      "bucket": "adapter",
+      "status": "pass",
+      "surface": "package",
+      "host": "mac.lan",
+      "os": "darwin-25.3.0",
+      "backend": "doe_metal",
+      "artifactPath": "bench/out/cts-baseline/20260328T014648Z.json",
+      "notes": "Current preferred Doe CTS subset baseline on this host; this fresh Apple Metal artifact supersedes the March 27 baseline."
+    },
+    {
+      "query": "webgpu:api,operation,buffers,map:*",
+      "bucket": "buffer",
+      "status": "pass",
+      "surface": "package",
+      "host": "mac.lan",
+      "os": "darwin-25.3.0",
+      "backend": "doe_metal",
+      "artifactPath": "bench/out/cts-baseline/20260328T014648Z.json",
+      "notes": "Current preferred Doe CTS subset baseline on this host; this fresh Apple Metal artifact supersedes the March 27 baseline."
+    },
+    {
+      "query": "webgpu:api,operation,buffers,createBindGroup:*",
+      "bucket": "buffer",
+      "status": "pass",
+      "surface": "package",
+      "host": "mac.lan",
+      "os": "darwin-25.3.0",
+      "backend": "doe_metal",
+      "artifactPath": "bench/out/cts-baseline/20260328T014648Z.json",
+      "notes": "Current preferred Doe CTS subset baseline on this host; this fresh Apple Metal artifact supersedes the March 27 baseline."
+    },
+    {
+      "query": "webgpu:api,operation,command_buffer,basic:*",
+      "bucket": "command_buffer",
+      "status": "pass",
+      "surface": "package",
+      "host": "mac.lan",
+      "os": "darwin-25.3.0",
+      "backend": "doe_metal",
+      "artifactPath": "bench/out/cts-baseline/20260328T014648Z.json",
+      "notes": "Current preferred Doe CTS subset baseline on this host; this fresh Apple Metal artifact supersedes the March 27 baseline."
+    },
+    {
+      "query": "webgpu:api,operation,command_buffer,copyBufferToBuffer:*",
+      "bucket": "command_buffer",
+      "status": "pass",
+      "surface": "package",
+      "host": "mac.lan",
+      "os": "darwin-25.3.0",
+      "backend": "doe_metal",
+      "artifactPath": "bench/out/cts-baseline/20260328T014648Z.json",
+      "notes": "Current preferred Doe CTS subset baseline on this host; this fresh Apple Metal artifact supersedes the March 27 baseline."
+    },
+    {
+      "query": "webgpu:api,operation,queue,writeBuffer:*",
+      "bucket": "queue",
+      "status": "pass",
+      "surface": "package",
+      "host": "mac.lan",
+      "os": "darwin-25.3.0",
+      "backend": "doe_metal",
+      "artifactPath": "bench/out/cts-baseline/20260328T014648Z.json",
+      "notes": "Current preferred Doe CTS subset baseline on this host; this fresh Apple Metal artifact supersedes the March 27 baseline."
+    },
+    {
+      "query": "webgpu:api,operation,onSubmittedWorkDone:*",
+      "bucket": "queue",
+      "status": "pass",
+      "surface": "package",
+      "host": "mac.lan",
+      "os": "darwin-25.3.0",
+      "backend": "doe_metal",
+      "artifactPath": "bench/out/cts-baseline/20260328T014648Z.json",
+      "notes": "Current preferred Doe CTS subset baseline on this host; this fresh Apple Metal artifact supersedes the March 27 baseline."
+    },
+    {
+      "query": "webgpu:api,operation,compute,basic:*",
+      "bucket": "compute",
+      "status": "pass",
+      "surface": "package",
+      "host": "mac.lan",
+      "os": "darwin-25.3.0",
+      "backend": "doe_metal",
+      "artifactPath": "bench/out/cts-baseline/20260328T014648Z.json",
+      "notes": "Current preferred Doe CTS subset baseline on this host; this fresh Apple Metal artifact supersedes the March 27 baseline."
+    },
+    {
+      "query": "webgpu:api,validation,error_scope:*",
+      "bucket": "validation",
+      "status": "pass",
+      "surface": "package",
+      "host": "mac.lan",
+      "os": "darwin-25.3.0",
+      "backend": "doe_metal",
+      "artifactPath": "bench/out/cts-baseline/20260328T014648Z.json",
+      "notes": "Current preferred Doe CTS subset baseline on this host; this fresh Apple Metal artifact supersedes the March 27 baseline."
+    },
+    {
+      "query": "webgpu:api,validation,buffer,create:*",
+      "bucket": "validation",
+      "status": "pass",
+      "surface": "package",
+      "host": "mac.lan",
+      "os": "darwin-25.3.0",
+      "backend": "doe_metal",
+      "artifactPath": "bench/out/cts-baseline/20260328T014648Z.json",
+      "notes": "Current preferred Doe CTS subset baseline on this host; this fresh Apple Metal artifact supersedes the March 27 baseline."
+    },
+    {
+      "query": "webgpu:shader,execution,expression,call,builtin,textureDimensions:*",
+      "bucket": "shader_execution",
+      "status": "pass",
+      "surface": "package",
+      "host": "mac.lan",
+      "os": "darwin-25.3.0",
+      "backend": "doe_metal",
+      "artifactPath": "bench/out/cts-baseline/20260328T014648Z.json",
+      "notes": "Current preferred Doe CTS subset baseline on this host; this fresh Apple Metal artifact supersedes the March 27 baseline."
+    }
+  ]
 }

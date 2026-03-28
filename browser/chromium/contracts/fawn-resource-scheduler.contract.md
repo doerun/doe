@@ -6,7 +6,7 @@
 
 ## Goal
 
-Define config-driven, deterministic resource pooling and submit-cadence behavior for Chromium lane modules running through Fawn.
+Define config-driven, deterministic resource pooling and submit-cadence behavior for Chromium lane modules running through Doe.
 
 ## Ownership Boundary
 

@@ -12,6 +12,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+SCRIPT_DIR = Path(__file__).resolve().parent
+REPO_ROOT = SCRIPT_DIR.parent.parent
+
 
 def normalize_label(value: str) -> str:
     return "".join(ch if ch.isalnum() else "_" for ch in value).strip("_") or "query"
@@ -275,6 +278,8 @@ def main() -> int:
             id=entry["id"],
             bucket=entry["bucket"],
             notes=entry["notes"],
+            repo_root=str(REPO_ROOT),
+            config_dir=str(config_path.resolve().parent),
         )
         command = shlex.split(rendered)
         if args.dry_run:

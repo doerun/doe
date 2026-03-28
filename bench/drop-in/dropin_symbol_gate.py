@@ -30,7 +30,7 @@ if str(BENCH_ROOT) not in sys.path:
 from bench.lib import output_paths
 
 
-SYMBOL_PATTERN = re.compile(r"\b(wgpu[A-Za-z0-9_]+)\b")
+SYMBOL_PATTERN = re.compile(r"^_?(wgpu[A-Za-z0-9_]+)$")
 
 
 def parse_args() -> argparse.Namespace:
@@ -99,16 +99,37 @@ def run_symbol_tool(command: list[str]) -> tuple[int, str, str]:
 
 
 def extract_symbols_from_output(output: str) -> set[str]:
-    return {match.group(1) for match in SYMBOL_PATTERN.finditer(output)}
+    symbols: set[str] = set()
+    for raw_line in output.splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+        for token in reversed(line.split()):
+            match = SYMBOL_PATTERN.fullmatch(token)
+            if match is not None:
+                symbols.add(match.group(1))
+                break
+    return symbols
 
 
-def export_symbols_from_artifact(artifact: Path) -> tuple[list[str], set[str], str]:
-    tool_candidates: list[list[str]] = [
+def tool_candidates_for_artifact(artifact: Path, platform_name: str | None = None) -> list[list[str]]:
+    effective_platform = platform_name or sys.platform
+    if effective_platform == "darwin":
+        return [
+            ["nm", "-gUj", str(artifact)],
+            ["nm", "-gU", str(artifact)],
+            ["llvm-nm", "--extern-only", "--defined-only", "--just-symbol-name", str(artifact)],
+        ]
+    return [
         ["nm", "-D", "--defined-only", str(artifact)],
         ["llvm-nm", "-D", "--defined-only", str(artifact)],
         ["objdump", "-T", str(artifact)],
         ["readelf", "-Ws", str(artifact)],
     ]
+
+
+def export_symbols_from_artifact(artifact: Path) -> tuple[list[str], set[str], str]:
+    tool_candidates = tool_candidates_for_artifact(artifact)
 
     attempted_commands: list[str] = []
     for command in tool_candidates:

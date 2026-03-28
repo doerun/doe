@@ -1,8 +1,8 @@
-# Fawn Thesis
+# Doe thesis
 
 ## Abstract
 
-Fawn is the development platform for Doe, a Zig-first WebGPU runtime.
+Doe is a Zig-first WebGPU runtime developed in this repository.
 
 Doe is built around a core technical move:
 
@@ -10,7 +10,7 @@ Doe is built around a core technical move:
 - keep hot paths explicit in Zig
 - use Lean 4 where proofs can remove runtime branches instead of adding ceremony
 
-Around that core, Fawn develops, verifies, benchmarks, packages, and
+Around that core, Doe develops, verifies, benchmarks, packages, and
 integrates Doe across headless execution, Node/Bun package surfaces, and
 Chromium bring-up.
 

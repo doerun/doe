@@ -1,0 +1,331 @@
+{
+  "schemaVersion": 1,
+  "axes": {
+    "platformLanes": [
+      "apple-metal",
+      "amd-vulkan",
+      "local-d3d12"
+    ],
+    "comparisonBoundaries": [
+      "backend_native",
+      "direct_plan",
+      "package_surface"
+    ],
+    "runtimeHosts": [
+      "none",
+      "node",
+      "bun",
+      "deno"
+    ],
+    "providerPairs": [
+      "doe_vs_dawn_delegate",
+      "doe_vs_dawn_direct",
+      "doe_vs_dawn_node_webgpu",
+      "doe_vs_bun_webgpu",
+      "doe_vs_deno_webgpu"
+    ],
+    "temperatures": [
+      "default",
+      "cold",
+      "warm"
+    ],
+    "targetKinds": [
+      "preset",
+      "workload"
+    ],
+    "presetIds": [
+      "smoke",
+      "smoke-gpu",
+      "compare-dev",
+      "compare",
+      "frontier",
+      "explore",
+      "release",
+      "breadth"
+    ],
+    "workloadIds": [
+      "gemma64",
+      "gemma1b",
+      "gemma270m-literal"
+    ],
+    "executorInputBoundaries": [
+      "commands",
+      "plan"
+    ]
+  },
+  "aliases": {
+    "promotedCompareSurfaceByBoundary": {
+      "backend_native": "native",
+      "direct_plan": "direct",
+      "package_surface": "package"
+    },
+    "repoSurfaceByBoundaryAndRuntimeHost": [
+      {
+        "comparisonBoundary": "backend_native",
+        "runtimeHost": "none",
+        "repoSurface": "backend_native"
+      },
+      {
+        "comparisonBoundary": "package_surface",
+        "runtimeHost": "node",
+        "repoSurface": "node_package"
+      },
+      {
+        "comparisonBoundary": "package_surface",
+        "runtimeHost": "bun",
+        "repoSurface": "bun_package"
+      },
+      {
+        "comparisonBoundary": "package_surface",
+        "runtimeHost": "deno",
+        "repoSurface": "deno_package"
+      }
+    ]
+  },
+  "structuralFamilies": [
+    {
+      "id": "backend_native",
+      "comparisonBoundary": "backend_native",
+      "runtimeHost": "none",
+      "providerPair": "doe_vs_dawn_delegate",
+      "temperature": "default",
+      "targetKind": "preset",
+      "executorInputBoundary": "commands",
+      "structuralPlatformLanes": [
+        "apple-metal",
+        "amd-vulkan",
+        "local-d3d12"
+      ],
+      "theoreticalConcreteTargetIds": [
+        "smoke",
+        "smoke-gpu",
+        "compare-dev",
+        "compare",
+        "frontier",
+        "explore",
+        "release",
+        "breadth"
+      ]
+    },
+    {
+      "id": "direct_plan",
+      "comparisonBoundary": "direct_plan",
+      "runtimeHost": "none",
+      "providerPair": "doe_vs_dawn_direct",
+      "temperature": "default",
+      "targetKind": "workload",
+      "executorInputBoundary": "plan",
+      "structuralPlatformLanes": [
+        "apple-metal",
+        "amd-vulkan",
+        "local-d3d12"
+      ],
+      "theoreticalConcreteTargetIds": [
+        "gemma64",
+        "gemma1b",
+        "gemma270m-literal"
+      ]
+    },
+    {
+      "id": "package_node_cold",
+      "comparisonBoundary": "package_surface",
+      "runtimeHost": "node",
+      "providerPair": "doe_vs_dawn_node_webgpu",
+      "temperature": "cold",
+      "targetKind": "workload",
+      "executorInputBoundary": "plan",
+      "structuralPlatformLanes": [
+        "apple-metal",
+        "amd-vulkan",
+        "local-d3d12"
+      ],
+      "theoreticalConcreteTargetIds": [
+        "gemma64",
+        "gemma1b",
+        "gemma270m-literal"
+      ]
+    },
+    {
+      "id": "package_node_warm",
+      "comparisonBoundary": "package_surface",
+      "runtimeHost": "node",
+      "providerPair": "doe_vs_dawn_node_webgpu",
+      "temperature": "warm",
+      "targetKind": "workload",
+      "executorInputBoundary": "plan",
+      "structuralPlatformLanes": [
+        "apple-metal",
+        "amd-vulkan",
+        "local-d3d12"
+      ],
+      "theoreticalConcreteTargetIds": [
+        "gemma64",
+        "gemma1b",
+        "gemma270m-literal"
+      ]
+    },
+    {
+      "id": "package_bun_cold",
+      "comparisonBoundary": "package_surface",
+      "runtimeHost": "bun",
+      "providerPair": "doe_vs_bun_webgpu",
+      "temperature": "cold",
+      "targetKind": "workload",
+      "executorInputBoundary": "plan",
+      "structuralPlatformLanes": [
+        "apple-metal",
+        "amd-vulkan",
+        "local-d3d12"
+      ],
+      "theoreticalConcreteTargetIds": [
+        "gemma64",
+        "gemma1b",
+        "gemma270m-literal"
+      ]
+    },
+    {
+      "id": "package_bun_warm",
+      "comparisonBoundary": "package_surface",
+      "runtimeHost": "bun",
+      "providerPair": "doe_vs_bun_webgpu",
+      "temperature": "warm",
+      "targetKind": "workload",
+      "executorInputBoundary": "plan",
+      "structuralPlatformLanes": [
+        "apple-metal",
+        "amd-vulkan",
+        "local-d3d12"
+      ],
+      "theoreticalConcreteTargetIds": [
+        "gemma64",
+        "gemma1b",
+        "gemma270m-literal"
+      ]
+    },
+    {
+      "id": "package_deno_cold",
+      "comparisonBoundary": "package_surface",
+      "runtimeHost": "deno",
+      "providerPair": "doe_vs_deno_webgpu",
+      "temperature": "cold",
+      "targetKind": "workload",
+      "executorInputBoundary": "plan",
+      "structuralPlatformLanes": [
+        "apple-metal",
+        "amd-vulkan",
+        "local-d3d12"
+      ],
+      "theoreticalConcreteTargetIds": [
+        "gemma64",
+        "gemma1b",
+        "gemma270m-literal"
+      ]
+    },
+    {
+      "id": "package_deno_warm",
+      "comparisonBoundary": "package_surface",
+      "runtimeHost": "deno",
+      "providerPair": "doe_vs_deno_webgpu",
+      "temperature": "warm",
+      "targetKind": "workload",
+      "executorInputBoundary": "plan",
+      "structuralPlatformLanes": [
+        "apple-metal",
+        "amd-vulkan",
+        "local-d3d12"
+      ],
+      "theoreticalConcreteTargetIds": [
+        "gemma64",
+        "gemma1b",
+        "gemma270m-literal"
+      ]
+    }
+  ],
+  "promotedCompareCoverage": [
+    {
+      "familyId": "backend_native",
+      "platformLane": "apple-metal",
+      "targetIds": [
+        "smoke",
+        "compare-dev",
+        "compare",
+        "frontier",
+        "explore",
+        "release",
+        "breadth"
+      ]
+    },
+    {
+      "familyId": "backend_native",
+      "platformLane": "amd-vulkan",
+      "targetIds": [
+        "smoke",
+        "smoke-gpu",
+        "compare-dev",
+        "compare",
+        "frontier",
+        "explore",
+        "release"
+      ]
+    },
+    {
+      "familyId": "backend_native",
+      "platformLane": "local-d3d12",
+      "targetIds": [
+        "smoke",
+        "compare-dev",
+        "compare",
+        "frontier",
+        "explore",
+        "release"
+      ]
+    },
+    {
+      "familyId": "direct_plan",
+      "platformLane": "apple-metal",
+      "targetIds": [
+        "gemma64",
+        "gemma1b",
+        "gemma270m-literal"
+      ]
+    },
+    {
+      "familyId": "package_node_cold",
+      "platformLane": "apple-metal",
+      "targetIds": [
+        "gemma64",
+        "gemma1b"
+      ]
+    },
+    {
+      "familyId": "package_node_warm",
+      "platformLane": "apple-metal",
+      "targetIds": [
+        "gemma64",
+        "gemma1b"
+      ]
+    },
+    {
+      "familyId": "package_bun_cold",
+      "platformLane": "apple-metal",
+      "targetIds": [
+        "gemma64",
+        "gemma1b"
+      ]
+    },
+    {
+      "familyId": "package_bun_warm",
+      "platformLane": "apple-metal",
+      "targetIds": [
+        "gemma64",
+        "gemma1b"
+      ]
+    }
+  ],
+  "expectedCounts": {
+    "naiveCartesianRows": 1080,
+    "typeCorrectStructuralRows": 24,
+    "typeCorrectConcreteRowSlots": 87,
+    "promotedCompareRows": 31
+  }
+}

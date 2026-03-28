@@ -1,4 +1,4 @@
-# Fawn vs Dawn (Local Metal Extended Comparable) Walkthrough
+# Doe vs Dawn (Local Metal Extended Comparable) walkthrough
 
 ## Artifacts audited
 

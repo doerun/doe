@@ -9,7 +9,7 @@
 Define deterministic runtime selection for Chromium WebGPU execution:
 
 1. `dawn` path.
-2. `fawn` path.
+2. `doe` path.
 3. `auto` policy path.
 
 Ensure immediate fallback with explicit reasons and no hidden behavior switches.
@@ -35,7 +35,7 @@ Out of scope:
 Candidate control surfaces (precedence high -> low):
 
 1. Emergency global kill switch.
-2. Explicit command-line/runtime override (`dawn` or `fawn`).
+2. Explicit command-line/runtime override (`dawn` or `doe`).
 3. Enterprise/policy override (if present in integration target).
 4. Auto selection policy based on adapter/profile support.
 5. Default baseline (`dawn`) when none provided.
@@ -44,10 +44,10 @@ Candidate control surfaces (precedence high -> low):
 
 1. `dawn`
    - force incumbent runtime.
-2. `fawn`
-   - force Fawn path.
+2. `doe`
+   - force Doe path.
 3. `auto`
-   - attempt Fawn only when all gating preconditions hold for active profile; otherwise fallback to Dawn with reason code.
+   - attempt Doe only when all gating preconditions hold for active profile; otherwise fallback to Dawn with reason code.
 
 ## Auto Mode Preconditions (Draft)
 
@@ -123,7 +123,7 @@ Advisory:
 2. Missing required symbols -> deterministic fallback with `symbol_surface_incomplete`.
 3. Denylisted profile -> deterministic fallback with `profile_denylisted`.
 4. Global kill switch -> deterministic fallback with `global_disable_active`.
-5. Forced `fawn` with failed init -> explicit hard failure, not silent Dawn selection.
+5. Forced `doe` with failed init -> explicit hard failure, not silent Dawn selection.
 
 ## Rollback Contract
 

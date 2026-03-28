@@ -1,4 +1,4 @@
-# Fawn Trace Module
+# Doe trace module
 
 Purpose:
 - capture deterministic event artifacts

@@ -2,7 +2,11 @@
 
 ## Purpose
 
-This document defines the benchmark and comparison harness classes in Fawn, the question each class answers, and which classes may share code versus remain separate.
+This document defines the benchmark and comparison harness classes in Doe, the question each class answers, and which classes may share code versus remain separate.
+
+For the canonical compare-axis language (`platformLane`, `comparisonBoundary`,
+`runtimeHost`, and the generated cartesian-product expansion), use
+`docs/compare-taxonomy.md` and `config/compare-taxonomy.json`.
 
 The key rule is:
 
@@ -144,7 +148,8 @@ Do not collapse these harnesses into one generic runner. That would blur evidenc
 - Question: "How does Doe's WGSL compiler compare to Tint (Dawn's compiler) for shader compilation speed?"
 - Contract:
   - left: Doe `doe-compilation-bench` binary
-  - right: Tint CLI
+  - right: Tint CLI for raw process-wall timings
+  - optional right-side warm view from Dawn's `tint_benchmark` target
   - per-shader WGSL-to-target (MSL/SPIR-V) compilation timing
   - named workload rows from `bench/workloads/*.json` are the canonical source
     for what gets compiled
@@ -152,6 +157,9 @@ Do not collapse these harnesses into one generic runner. That would blur evidenc
     `bench/inference-pipeline/kernels/*.wgsl` model kernels
 - Allowed outputs:
   - per-shader compilation time deltas
+  - raw Tint process-wall results plus a startup-corrected derived view
+  - real warm/in-process Tint benchmark results when the compare config points
+    at Dawn's benchmark corpus and `tint_benchmark`
   - directional Doe-vs-Tint compilation reports
 - Not for:
   - claim-grade runtime performance comparison

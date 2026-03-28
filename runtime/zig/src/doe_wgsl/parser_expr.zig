@@ -509,6 +509,10 @@ fn looksLikeTypeArgs(self: anytype) bool {
                 depth -= 1;
                 if (depth == 0) return true;
             },
+            .shift_right => {
+                if (depth <= 2) return true;
+                depth -= 2;
+            },
             .@";", .@"{", .@"}", .eof => return false,
             // Operators that cannot appear in type args.
             .@"+",

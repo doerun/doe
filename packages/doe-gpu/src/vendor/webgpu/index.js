@@ -100,6 +100,7 @@ const TEXTURE_SWIZZLE_COMPONENT_MAP = Object.freeze({
   b: 5,
   a: 6,
 });
+const NS_PER_MS = 1_000_000;
 const WHOLE_SIZE_SENTINEL = -1;
 
 const addon = loadAddon();
@@ -363,6 +364,12 @@ function installNodeDeviceCallbacks(device) {
       configurable: true,
       enumerable: true,
       get() {
+        if (this._lost != null) {
+          return this._lost;
+        }
+        if (this._lostRegistrationAttempted && !this._lostSupported) {
+          throw unsupportedNodeDeviceCapability('GPUDevice.lost');
+        }
         assertLiveResource(this, 'GPUDevice.lost', 'GPUDevice');
         if (!ensureNodeDeviceLostRegistration(this)) {
           throw unsupportedNodeDeviceCapability('GPUDevice.lost');
@@ -426,6 +433,7 @@ function installNodeDeviceCallbacks(device) {
       },
     },
   });
+  ensureNodeDeviceLostRegistration(device);
 }
 
 function nodeDevicePushErrorScope(filter) {
@@ -551,6 +559,48 @@ function consumeSubmittedCommandBuffers(commandBuffers) {
     commandBuffer._submitted = true;
     commandBuffer.destroy?.();
   }
+}
+
+function elapsedNsSince(startedAtMs) {
+  return Math.max(0, Math.round((performance.now() - startedAtMs) * NS_PER_MS));
+}
+
+function zeroQueueSubmitBreakdown() {
+  return {
+    submitCommandPrepTotalNs: 0,
+    submitAddonCallTotalNs: 0,
+    submitAddonCommandReplayTotalNs: 0,
+    submitAddonQueueSubmitTotalNs: 0,
+    submitAddonFlushTotalNs: 0,
+    submitPostSubmitBookkeepingTotalNs: 0,
+    submitQueueFlushTotalNs: 0,
+    submitQueueFlushWaitCompletedTotalNs: 0,
+    submitQueueFlushDeferredCopyTotalNs: 0,
+    submitQueueFlushDeferredResolveTotalNs: 0,
+    submitQueueWaitBookkeepingTotalNs: 0,
+  };
+}
+
+function accumulateQueueSubmitBreakdown(queue, field, startedAtMs) {
+  queue._submitBreakdownNs[field] += elapsedNsSince(startedAtMs);
+}
+
+function accumulateAddonSubmitBreakdown(queue, addonBreakdown) {
+  if (!addonBreakdown || typeof addonBreakdown !== 'object') {
+    return;
+  }
+  queue._submitBreakdownNs.submitAddonCommandReplayTotalNs += Number(addonBreakdown.commandReplayNs ?? 0);
+  queue._submitBreakdownNs.submitAddonQueueSubmitTotalNs += Number(addonBreakdown.queueSubmitNs ?? 0);
+  queue._submitBreakdownNs.submitAddonFlushTotalNs += Number(addonBreakdown.flushNs ?? 0);
+}
+
+function accumulateQueueFlushBreakdown(queue, flushBreakdown) {
+  if (!flushBreakdown || typeof flushBreakdown !== 'object') {
+    return;
+  }
+  queue._submitBreakdownNs.submitQueueFlushWaitCompletedTotalNs += Number(flushBreakdown.waitCompletedNs ?? 0);
+  queue._submitBreakdownNs.submitQueueFlushDeferredCopyTotalNs += Number(flushBreakdown.deferredCopyNs ?? 0);
+  queue._submitBreakdownNs.submitQueueFlushDeferredResolveTotalNs += Number(flushBreakdown.deferredResolveNs ?? 0);
 }
 
 const nodeEncoderBackend = {
@@ -1152,6 +1202,7 @@ const fullSurfaceBackend = {
   initQueueState(queue) {
     queue._submittedSerial = 0;
     queue._completedSerial = 0;
+    queue._submitBreakdownNs = zeroQueueSubmitBreakdown();
   },
   queueHasPendingSubmissions(queue) {
     return queue._completedSerial < queue._submittedSerial;
@@ -1163,12 +1214,16 @@ const fullSurfaceBackend = {
     const deviceNative = assertLiveResource(queue._device, 'GPUQueue.submit', 'GPUDevice');
     queue._submittedSerial += 1;
     if (buffers.length === 1 && buffers[0]?._batched && Array.isArray(buffers[0]._commands)) {
+      const prepStartedAt = performance.now();
       failIfSubmittedCommandBuffer(buffers[0], 0);
       const cmds = buffers[0]._commands;
+      accumulateQueueSubmitBreakdown(queue, 'submitCommandPrepTotalNs', prepStartedAt);
       if (cmds.length === 0) {
+        const bookkeepingStartedAt = performance.now();
         queue.markSubmittedWorkDone();
         consumeSubmittedCommandBuffers(buffers);
         presentPendingCanvasContexts(queue);
+        accumulateQueueSubmitBreakdown(queue, 'submitPostSubmitBookkeepingTotalNs', bookkeepingStartedAt);
         return;
       }
       if (
@@ -1177,6 +1232,7 @@ const fullSurfaceBackend = {
         && cmds[1]?.t === 1
         && typeof addon.submitComputeDispatchCopy === 'function'
       ) {
+        const addonStartedAt = performance.now();
         addon.submitComputeDispatchCopy(
           deviceNative,
           queueNative,
@@ -1191,14 +1247,21 @@ const fullSurfaceBackend = {
           cmds[1].do,
           cmds[1].sz,
         );
+        accumulateQueueSubmitBreakdown(queue, 'submitAddonCallTotalNs', addonStartedAt);
         // submitComputeDispatchCopy is synchronous: spin-polls until GPU signals.
         // Mark done so onSubmittedWorkDone() short-circuits rather than calling queueFlush.
+        const bookkeepingStartedAt = performance.now();
         queue.markSubmittedWorkDone();
         consumeSubmittedCommandBuffers(buffers);
         presentPendingCanvasContexts(queue);
+        accumulateQueueSubmitBreakdown(queue, 'submitPostSubmitBookkeepingTotalNs', bookkeepingStartedAt);
         return;
       }
-      addon.submitBatched(deviceNative, queueNative, cmds);
+      const addonStartedAt = performance.now();
+      const addonBreakdown = addon.submitBatched(deviceNative, queueNative, cmds);
+      accumulateQueueSubmitBreakdown(queue, 'submitAddonCallTotalNs', addonStartedAt);
+      accumulateAddonSubmitBreakdown(queue, addonBreakdown);
+      const bookkeepingStartedAt = performance.now();
       if (
         cmds.length === 2
         && cmds[0]?.t === 0
@@ -1208,9 +1271,11 @@ const fullSurfaceBackend = {
       }
       consumeSubmittedCommandBuffers(buffers);
       presentPendingCanvasContexts(queue);
+      accumulateQueueSubmitBreakdown(queue, 'submitPostSubmitBookkeepingTotalNs', bookkeepingStartedAt);
       return;
     }
     if (buffers.every((commandBuffer) => commandBuffer?._batched && Array.isArray(commandBuffer._commands))) {
+      const prepStartedAt = performance.now();
       for (let index = 0; index < buffers.length; index += 1) {
         failIfSubmittedCommandBuffer(buffers[index], index);
       }
@@ -1218,13 +1283,20 @@ const fullSurfaceBackend = {
       for (const cb of buffers) {
         allCommands.push(...cb._commands);
       }
+      accumulateQueueSubmitBreakdown(queue, 'submitCommandPrepTotalNs', prepStartedAt);
       if (allCommands.length === 0) {
+        const bookkeepingStartedAt = performance.now();
         queue.markSubmittedWorkDone();
         consumeSubmittedCommandBuffers(buffers);
         presentPendingCanvasContexts(queue);
+        accumulateQueueSubmitBreakdown(queue, 'submitPostSubmitBookkeepingTotalNs', bookkeepingStartedAt);
         return;
       }
-      addon.submitBatched(deviceNative, queueNative, allCommands);
+      const addonStartedAt = performance.now();
+      const addonBreakdown = addon.submitBatched(deviceNative, queueNative, allCommands);
+      accumulateQueueSubmitBreakdown(queue, 'submitAddonCallTotalNs', addonStartedAt);
+      accumulateAddonSubmitBreakdown(queue, addonBreakdown);
+      const bookkeepingStartedAt = performance.now();
       if (
         allCommands.length === 2
         && allCommands[0]?.t === 0
@@ -1234,8 +1306,10 @@ const fullSurfaceBackend = {
       }
       consumeSubmittedCommandBuffers(buffers);
       presentPendingCanvasContexts(queue);
+      accumulateQueueSubmitBreakdown(queue, 'submitPostSubmitBookkeepingTotalNs', bookkeepingStartedAt);
       return;
     }
+    const prepStartedAt = performance.now();
     const natives = buffers.map((commandBuffer, index) => {
       failIfSubmittedCommandBuffer(commandBuffer, index);
       if (!commandBuffer || typeof commandBuffer !== 'object' || commandBuffer._native == null) {
@@ -1243,9 +1317,14 @@ const fullSurfaceBackend = {
       }
       return commandBuffer._native;
     });
+    accumulateQueueSubmitBreakdown(queue, 'submitCommandPrepTotalNs', prepStartedAt);
+    const addonStartedAt = performance.now();
     addon.queueSubmit(queueNative, natives);
+    accumulateQueueSubmitBreakdown(queue, 'submitAddonCallTotalNs', addonStartedAt);
+    const bookkeepingStartedAt = performance.now();
     consumeSubmittedCommandBuffers(buffers);
     presentPendingCanvasContexts(queue);
+    accumulateQueueSubmitBreakdown(queue, 'submitPostSubmitBookkeepingTotalNs', bookkeepingStartedAt);
   },
   queueWriteBuffer(_queue, queueNative, bufferNative, bufferOffset, view) {
     addon.queueWriteBuffer(queueNative, bufferNative, bufferOffset, view);
@@ -1272,8 +1351,13 @@ const fullSurfaceBackend = {
       return;
     }
     try {
-      addon.queueFlush(queue._instance, queueNative);
+      const flushStartedAt = performance.now();
+      const flushBreakdown = addon.queueFlush(queue._instance, queueNative);
+      accumulateQueueSubmitBreakdown(queue, 'submitQueueFlushTotalNs', flushStartedAt);
+      accumulateQueueFlushBreakdown(queue, flushBreakdown);
+      const bookkeepingStartedAt = performance.now();
       queue.markSubmittedWorkDone();
+      accumulateQueueSubmitBreakdown(queue, 'submitQueueWaitBookkeepingTotalNs', bookkeepingStartedAt);
     } catch (error) {
       if (error?.code === 'DOE_QUEUE_UNAVAILABLE') {
         return;
@@ -1364,6 +1448,7 @@ const fullSurfaceBackend = {
   adapterLimits,
   adapterFeatures,
   preflightShaderSource,
+  preflightShaderSourceOnCreate: false,
   requireAutoLayoutEntriesFromNative(shader, visibility, path) {
     return requireAutoLayoutEntriesFromNative(
       assertLiveResource(shader, path, 'GPUShaderModule'),

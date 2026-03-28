@@ -5,6 +5,7 @@ const std = @import("std");
 const native = @import("doe_wgpu_native.zig");
 const compute_bind_groups = @import("doe_compute_bind_groups.zig");
 const compute_preconditions = @import("doe_compute_preconditions_native.zig");
+const shader_native = @import("doe_shader_native.zig");
 const wgsl_compiler = @import("doe_wgsl/mod.zig");
 const bridge = @import("backend/metal/metal_bridge_decls.zig");
 
@@ -20,6 +21,8 @@ const DoeBuffer = native.DoeBuffer;
 const DoeBindGroup = native.DoeBindGroup;
 const DoeBindGroupLayout = native.DoeBindGroupLayout;
 const DoeBindGroupLayoutEntry = native.DoeBindGroupLayoutEntry;
+const DoePipelineLayout = native.DoePipelineLayout;
+const DoeShaderModule = native.DoeShaderModule;
 const RecordedCmd = native.RecordedCmd;
 const MAX_COMPUTE_BIND_GROUPS = compute_bind_groups.MAX_COMPUTE_BIND_GROUPS;
 const MAX_FLAT_BIND = compute_bind_groups.MAX_FLAT_BIND;
@@ -56,12 +59,10 @@ fn read_indirect_dispatch_counts(buffer: *const DoeBuffer, offset: u64) ?[3]u32 
 }
 
 fn clamped_binding_count(pip: *const DoeComputePipeline) usize {
-    const count: usize = @intCast(pip.binding_count);
+    const sm = pip.shader_module orelse return 0;
+    const count: usize = @intCast(sm.binding_count);
     if (count <= MAX_SHADER_BINDINGS) return count;
-    std.log.err(
-        "doe_compute_ext_native: invalid compute pipeline binding_count={} max={} - clamping",
-        .{ pip.binding_count, MAX_SHADER_BINDINGS },
-    );
+    std.log.err("doe_compute_ext_native: invalid shader binding_count={} max={} - clamping", .{ sm.binding_count, MAX_SHADER_BINDINGS });
     return MAX_SHADER_BINDINGS;
 }
 
@@ -187,9 +188,18 @@ pub export fn doeNativeComputePassRelease(raw: ?*anyopaque) callconv(.c) void {
 
 pub export fn doeNativeComputePipelineGetBindGroupLayout(pip_raw: ?*anyopaque, group_index: u32) callconv(.c) ?*anyopaque {
     const pip = cast(DoeComputePipeline, pip_raw) orelse return null;
+    if (pip.layout) |layout| {
+        if (group_index < layout.bind_group_layout_count) {
+            const retained = layout.bind_group_layouts[group_index] orelse return null;
+            native.object_add_ref(DoeBindGroupLayout, toOpaque(retained));
+            return toOpaque(retained);
+        }
+    }
+    const sm: *DoeShaderModule = pip.shader_module orelse return null;
+    shader_native.ensureShaderBindings(sm);
     const binding_count = clamped_binding_count(pip);
     var entry_count: usize = 0;
-    for (pip.bindings[0..binding_count]) |b| {
+    for (sm.bindings[0..binding_count]) |b| {
         if (b.group == group_index) entry_count += 1;
     }
     const bgl = make(DoeBindGroupLayout) orelse return null;
@@ -200,7 +210,7 @@ pub export fn doeNativeComputePipelineGetBindGroupLayout(pip_raw: ?*anyopaque, g
             return null;
         };
         var write_index: usize = 0;
-        for (pip.bindings[0..binding_count]) |binding| {
+        for (sm.bindings[0..binding_count]) |binding| {
             if (binding.group != group_index) continue;
             entries.?[write_index] = synthesize_layout_entry(binding);
             write_index += 1;

@@ -22,6 +22,7 @@ NATIVE_SURFACE = "native"
 DEFAULT_DIRECT_MODE = "default"
 DEFAULT_PACKAGE_MODE = "cold"
 DEFAULT_NATIVE_MODE = "default"
+DEFAULT_PACKAGE_RUNTIME = "node"
 
 
 @dataclass(frozen=True)
@@ -29,6 +30,7 @@ class PromotedCompareEntry:
     id: str
     backend: str
     surface: str
+    package_runtime: str
     preset: str
     workload: str
     mode: str
@@ -49,6 +51,10 @@ def load_catalog(path: Path) -> list[PromotedCompareEntry]:
                 id=raw["id"],
                 backend=raw["backend"],
                 surface=raw["surface"],
+                package_runtime=raw.get(
+                    "packageRuntime",
+                    DEFAULT_PACKAGE_RUNTIME if raw["surface"] == PACKAGE_SURFACE else "",
+                ),
                 preset=raw.get("preset", ""),
                 workload=raw.get("workload", ""),
                 mode=raw["mode"],
@@ -79,6 +85,7 @@ def resolve_entry(
     preset: str = "",
     workload: str = "",
     mode: str = "",
+    package_runtime: str = "",
 ) -> PromotedCompareEntry:
     if profile_id:
         for entry in entries:
@@ -98,13 +105,19 @@ def resolve_entry(
         raise ValueError(
             "resolve_entry requires either --preset or --workload when --profile is omitted"
         )
+    if package_runtime and surface != PACKAGE_SURFACE:
+        raise ValueError("--package-runtime applies only to --surface package")
 
     effective_mode = mode or default_mode_for_surface(surface)
+    effective_package_runtime = (
+        package_runtime or (DEFAULT_PACKAGE_RUNTIME if surface == PACKAGE_SURFACE else "")
+    )
     matches = [
         entry
         for entry in entries
         if entry.backend == backend
         and entry.surface == surface
+        and entry.package_runtime == effective_package_runtime
         and entry.preset == preset
         and entry.workload == workload
         and entry.mode == effective_mode
@@ -117,26 +130,42 @@ def resolve_entry(
         raise ValueError(
             "no promoted compare profile matches "
             f"backend={backend!r}, surface={surface!r}, {target_name}={target_value!r}, "
-            f"mode={effective_mode!r}"
+            f"mode={effective_mode!r}, package_runtime={effective_package_runtime!r}"
         )
     raise ValueError(
         "multiple promoted compare profiles matched "
         f"backend={backend!r}, surface={surface!r}, preset={preset!r}, "
-        f"workload={workload!r}, mode={effective_mode!r}"
+        f"workload={workload!r}, mode={effective_mode!r}, "
+        f"package_runtime={effective_package_runtime!r}"
     )
 
 
 def build_compare_argv(
     entry: PromotedCompareEntry,
     *,
+    catalog_path: Path = DEFAULT_CATALOG_PATH,
     compare_script: Path = DEFAULT_COMPARE_SCRIPT,
     passthrough: Sequence[str] = (),
 ) -> list[str]:
+    raw_config_path = Path(entry.config_path)
+    if raw_config_path.is_absolute():
+        resolved_config_path = raw_config_path
+    elif catalog_path.resolve() == DEFAULT_CATALOG_PATH.resolve():
+        resolved_config_path = REPO_ROOT / raw_config_path
+    else:
+        catalog_relative = catalog_path.resolve().parent / raw_config_path
+        repo_relative = REPO_ROOT / raw_config_path
+        if catalog_relative.exists():
+            resolved_config_path = catalog_relative
+        elif repo_relative.exists():
+            resolved_config_path = repo_relative
+        else:
+            resolved_config_path = catalog_relative
     return [
         sys.executable,
         str(compare_script),
         "--config",
-        str(REPO_ROOT / entry.config_path),
+        str(resolved_config_path),
         *passthrough,
     ]
 
@@ -165,6 +194,12 @@ def parse_args(argv: Sequence[str]) -> tuple[argparse.Namespace, list[str]]:
     )
     parser.add_argument("--workload", default="", help="Promoted workload alias, e.g. gemma64.")
     parser.add_argument(
+        "--package-runtime",
+        choices=[DEFAULT_PACKAGE_RUNTIME, "bun"],
+        default="",
+        help="Package runtime for package surfaces. Defaults to 'node'.",
+    )
+    parser.add_argument(
         "--mode",
         choices=[DEFAULT_DIRECT_MODE, "cold", "warm"],
         default="",
@@ -185,9 +220,12 @@ def parse_args(argv: Sequence[str]) -> tuple[argparse.Namespace, list[str]]:
 
 def format_entry(entry: PromotedCompareEntry) -> str:
     target_field = f"preset={entry.preset}" if entry.preset else f"workload={entry.workload}"
+    package_runtime_field = (
+        f" packageRuntime={entry.package_runtime}" if entry.package_runtime else ""
+    )
     return (
         f"{entry.id}: backend={entry.backend} surface={entry.surface} "
-        f"{target_field} mode={entry.mode} class={entry.benchmark_class} "
+        f"{target_field}{package_runtime_field} mode={entry.mode} class={entry.benchmark_class} "
         f"left={entry.left_executor_id} right={entry.right_executor_id} "
         f"config={entry.config_path}"
     )
@@ -201,6 +239,7 @@ def filter_entries(
     preset: str = "",
     workload: str = "",
     mode: str = "",
+    package_runtime: str = "",
 ) -> list[PromotedCompareEntry]:
     return [
         entry
@@ -210,6 +249,7 @@ def filter_entries(
         and (not preset or entry.preset == preset)
         and (not workload or entry.workload == workload)
         and (not mode or entry.mode == mode)
+        and (not package_runtime or entry.package_runtime == package_runtime)
     ]
 
 
@@ -226,6 +266,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             preset=ns.preset,
             workload=ns.workload,
             mode=ns.mode,
+            package_runtime=ns.package_runtime,
         )
         for entry in sorted(
             filtered,
@@ -248,8 +289,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         preset=ns.preset,
         workload=ns.workload,
         mode=ns.mode,
+        package_runtime=ns.package_runtime,
     )
-    argv_out = build_compare_argv(entry, passthrough=passthrough)
+    argv_out = build_compare_argv(entry, catalog_path=catalog_path, passthrough=passthrough)
     if ns.dry_run:
         print(" ".join(argv_out))
         return 0

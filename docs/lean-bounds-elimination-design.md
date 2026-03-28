@@ -4,7 +4,7 @@
 
 Design approved. Layer 1 (unconditional clamping) is implemented in
 `ir_transform_robustness.zig`. Layer 2 (Lean-verified elimination) has
-theorem proofs in `pipeline/lean/Fawn/Shader/ComputeBounds.lean` and
+theorem proofs in `pipeline/lean/Doe/Shader/ComputeBounds.lean` and
 now covers both storage-buffer gid indexing and textureLoad/textureStore
 gid-coordinate guards, plus dispatch-fit texture extent proofs for 2D/3D
 gid coordinates. The proof-backed pattern recognizers and IR metadata are
@@ -79,7 +79,7 @@ at dispatch time, then `global_invocation_id.x < array_length` and the
 `min()` clamp is a no-op.
 
 This is formalized as `gid_inbounds_when_dispatch_fits` in
-`Fawn/Shader/ComputeBounds.lean`.
+`Doe/Shader/ComputeBounds.lean`.
 
 ### Proof artifact integration
 
@@ -119,11 +119,11 @@ The proof artifact (`proven-conditions.json`) schema version 1 includes a
 
 ```
 1. Lean typecheck
-   pipeline/lean/Fawn/Shader/ComputeBounds.lean is compiled.
+   pipeline/lean/Doe/Shader/ComputeBounds.lean is compiled.
    All theorems are verified by the Lean kernel.
 
 2. Artifact extraction
-   pipeline/lean/extract.sh runs Fawn/Extract.lean.
+   pipeline/lean/extract.sh runs Doe/Extract.lean.
    Emits proven-conditions.json with boundsEliminations section.
 
 3. Zig build
@@ -238,7 +238,7 @@ exactly matching the criterion established in `pipeline/lean/README.md`.
 ## Implementation sequence
 
 1. **Done**: `ir_transform_robustness.zig` — unconditional clamping (Layer 1)
-2. **Done**: `Fawn/Shader/ComputeBounds.lean` — formal proofs
+2. **Done**: `Doe/Shader/ComputeBounds.lean` — formal proofs
 3. **Done**: `Extract.lean` updated to import Shader module and emit `boundsEliminations`
 4. **Done**: Pattern recognizer in `ir_transform_robustness.zig` — matches gid storage-buffer access patterns, guarded gid texture coordinate patterns, and dispatch-fit gid texture coordinate patterns
 5. **Done**: `lean_proof.zig` — validates shader theorem/artifact coverage and exposes the comptime availability flags
@@ -251,9 +251,9 @@ exactly matching the criterion established in `pipeline/lean/README.md`.
 
 | File | Role |
 |---|---|
-| `pipeline/lean/Fawn/Shader/ComputeBounds.lean` | Formal proofs of compute bounds safety |
+| `pipeline/lean/Doe/Shader/ComputeBounds.lean` | Formal proofs of compute bounds safety |
 | `runtime/zig/src/doe_wgsl/ir_transform_robustness.zig` | Layer 1 clamping + future Layer 2 pattern recognizer |
 | `runtime/zig/src/lean_proof.zig` | Comptime proof artifact validator |
-| `pipeline/lean/Fawn/Extract.lean` | Proof artifact extraction (emits proven-conditions.json) |
+| `pipeline/lean/Doe/Extract.lean` | Proof artifact extraction (emits proven-conditions.json) |
 | `config/proof-artifact.schema.json` | Schema for proven-conditions.json |
 | `docs/lean-bounds-elimination-design.md` | This document |

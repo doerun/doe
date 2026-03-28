@@ -20,19 +20,34 @@ Output:
 """
 
 import argparse
+import ast
 import json
 import os
 import subprocess
 import sys
+import tempfile
 import time
 from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 REPO_ROOT = SCRIPT_DIR.parent.parent
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from bench.native_compare_modules.reporting import (  # noqa: E402
+    format_stats,
+    subtract_baseline_ms,
+)
 
 TARGET_MAP = {"msl": "msl", "spirv": "spv", "hlsl": "hlsl"}
-SCHEMA_VERSION = 1
+TINT_BENCHMARK_TARGET_MAP = {"msl": "GenerateMSL", "spirv": "GenerateSPIRV", "hlsl": "GenerateHLSL"}
+DEFAULT_TINT_WARM_MIN_TIME = "0.01s"
+DEFAULT_TINT_WARM_REPETITIONS = 9
+SCHEMA_VERSION = 3
 DELTA_PERCENT_CONVENTION = "((rightNs / leftNs) - 1) * 100; positive = left (Doe) faster"
+_TINT_STARTUP_BASELINE_WGSL = """@compute @workgroup_size(1)
+fn main() {}
+"""
 
 
 def parse_args():
@@ -161,6 +176,115 @@ def discover_workload_rows(workloads_path, workload_ids):
     return shaders
 
 
+def discover_tint_benchmark_rows(script_path, requested_names):
+    benchmark_script = REPO_ROOT / script_path
+    if not benchmark_script.is_file():
+        print(f"error: Tint benchmark input script not found: {benchmark_script}", file=sys.stderr)
+        sys.exit(1)
+
+    script_text = benchmark_script.read_text(encoding="utf-8")
+    marker = "kBenchmarkFiles = ["
+    start = script_text.find(marker)
+    if start < 0:
+        print(f"error: failed to locate kBenchmarkFiles in {benchmark_script}", file=sys.stderr)
+        sys.exit(1)
+    end = script_text.find("]\n\n\ndef main", start)
+    if end < 0:
+        print(f"error: failed to parse kBenchmarkFiles block in {benchmark_script}", file=sys.stderr)
+        sys.exit(1)
+    try:
+        benchmark_files = ast.literal_eval(script_text[start + len("kBenchmarkFiles = "):end + 1])
+    except (SyntaxError, ValueError) as exc:
+        print(f"error: failed to parse kBenchmarkFiles from {benchmark_script}: {exc}", file=sys.stderr)
+        sys.exit(1)
+
+    requested_name_set = set(requested_names or [])
+    base_dir = (benchmark_script.parent / "../../../../").resolve()
+    shaders = []
+    for benchmark_file in benchmark_files:
+        benchmark_name = Path(benchmark_file).name
+        if requested_name_set and benchmark_name not in requested_name_set:
+            continue
+        shader_rel = f"{benchmark_file}.wgsl" if benchmark_file.endswith(".spv") else benchmark_file
+        shader_path = (base_dir / shader_rel).resolve()
+        if not shader_path.is_file():
+            print(
+                f"error: Tint benchmark shader not found for {benchmark_name}: {shader_path}",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        source_lines = len(shader_path.read_text(encoding="utf-8").splitlines())
+        shaders.append(
+            {
+                "name": benchmark_name,
+                "benchmarkName": benchmark_name,
+                "tier": "benchmark",
+                "path": str(shader_path),
+                "sourceLines": source_lines,
+                "sourceShader": shader_path.stem,
+            }
+        )
+
+    if requested_name_set:
+        found_names = {shader["name"] for shader in shaders}
+        missing = [name for name in requested_names if name not in found_names]
+        if missing:
+            print(
+                f"error: Tint benchmark shader names not found in {benchmark_script}: {', '.join(missing)}",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+
+    if not shaders:
+        print(f"error: no Tint benchmark shaders found in {benchmark_script}", file=sys.stderr)
+        sys.exit(1)
+
+    return shaders
+
+
+def ns_stats(samples):
+    if not samples:
+        return {
+            "p50_ns": 0,
+            "p95_ns": 0,
+            "p99_ns": 0,
+            "min_ns": 0,
+            "max_ns": 0,
+            "mean_ns": 0,
+            "iterations": 0,
+        }
+
+    ordered = sorted(int(sample) for sample in samples)
+
+    def percentile(p):
+        index = int((len(ordered) - 1) * p)
+        return ordered[index]
+
+    return {
+        "p50_ns": percentile(0.50),
+        "p95_ns": percentile(0.95),
+        "p99_ns": percentile(0.99),
+        "min_ns": ordered[0],
+        "max_ns": ordered[-1],
+        "mean_ns": sum(ordered) // len(ordered),
+        "iterations": len(ordered),
+    }
+
+
+def duration_to_ns(value, unit):
+    if value is None:
+        return None
+    scale = {
+        "ns": 1.0,
+        "us": 1_000.0,
+        "ms": 1_000_000.0,
+        "s": 1_000_000_000.0,
+    }.get(unit)
+    if scale is None:
+        return None
+    return int(float(value) * scale)
+
+
 def run_doe_bench(cfg, shaders, target, out_path, dry_run):
     """Run Doe's compilation benchmark on the selected shader rows."""
     doe_bin = REPO_ROOT / cfg["left"]["binaryPath"]
@@ -202,6 +326,46 @@ def run_doe_bench(cfg, shaders, target, out_path, dry_run):
     return results
 
 
+def _run_tint_samples(tint_bin, tint_format, shader_path, total_runs, warmup):
+    samples = []
+    for i in range(total_runs):
+        start = time.perf_counter_ns()
+        proc = subprocess.run(
+            [str(tint_bin), f"--format={tint_format}", shader_path],
+            capture_output=True,
+        )
+        elapsed = time.perf_counter_ns() - start
+
+        if proc.returncode != 0:
+            raise RuntimeError(proc.stderr.decode()[:200])
+
+        if i >= warmup:
+            samples.append(elapsed)
+    return samples
+
+
+def measure_tint_startup_baseline(tint_bin, tint_format, iterations, warmup, dry_run):
+    total_runs = iterations + warmup
+    if dry_run:
+        print(f"[dry-run] tint startup-baseline --format={tint_format} x{total_runs}")
+        return {"p50_ns": 0, "p95_ns": 0, "p99_ns": 0, "min_ns": 0, "max_ns": 0, "mean_ns": 0, "iterations": 0}
+
+    with tempfile.TemporaryDirectory(prefix="doe-tint-startup-") as tmpdir:
+        shader_path = Path(tmpdir) / "startup-baseline.wgsl"
+        shader_path.write_text(_TINT_STARTUP_BASELINE_WGSL, encoding="utf-8")
+        samples = _run_tint_samples(tint_bin, tint_format, str(shader_path), total_runs, warmup)
+    stats_ms = format_stats([sample / 1_000_000.0 for sample in samples])
+    return {
+        "p50_ns": int(stats_ms["p50Ms"] * 1_000_000.0),
+        "p95_ns": int(stats_ms["p95Ms"] * 1_000_000.0),
+        "p99_ns": int(stats_ms["p99Ms"] * 1_000_000.0),
+        "min_ns": int(stats_ms["minMs"] * 1_000_000.0),
+        "max_ns": int(stats_ms["maxMs"] * 1_000_000.0),
+        "mean_ns": int(stats_ms["meanMs"] * 1_000_000.0),
+        "iterations": int(stats_ms["count"]),
+    }
+
+
 def run_tint_bench(cfg, shaders, target, iterations, warmup, dry_run):
     """Time Tint compilation for each shader in the corpus."""
     tint_bin = REPO_ROOT / cfg["right"]["binaryPath"]
@@ -217,38 +381,54 @@ def run_tint_bench(cfg, shaders, target, iterations, warmup, dry_run):
 
     results = {}
     total_runs = iterations + warmup
+    startup_baseline = measure_tint_startup_baseline(
+        tint_bin,
+        tint_format,
+        iterations,
+        warmup,
+        dry_run,
+    )
+    startup_baseline_p50_ns = startup_baseline.get("p50_ns", 0)
+    tint_warm_results = run_tint_warm_bench(cfg, shaders, target, dry_run)
 
     for shader in shaders:
         if dry_run:
             print(f"[dry-run] tint --format={tint_format} {shader['path']} x{total_runs}")
-            results[shader["name"]] = {"p50_ns": 0, "p95_ns": 0, "p99_ns": 0}
+            results[shader["name"]] = {
+                "p50_ns": 0,
+                "p95_ns": 0,
+                "p99_ns": 0,
+                "startupBaseline": startup_baseline,
+                "startupCorrected": {"p50_ns": 0, "p95_ns": 0, "p99_ns": 0},
+                "warm": tint_warm_results.get(shader["name"], {"p50_ns": 0, "p95_ns": 0, "p99_ns": 0}),
+            }
             continue
 
-        samples = []
-        for i in range(total_runs):
-            start = time.perf_counter_ns()
-            proc = subprocess.run(
-                [str(tint_bin), f"--format={tint_format}", shader["path"]],
-                capture_output=True,
+        try:
+            samples = _run_tint_samples(
+                tint_bin,
+                tint_format,
+                shader["path"],
+                total_runs,
+                warmup,
             )
-            elapsed = time.perf_counter_ns() - start
-
-            if proc.returncode != 0:
-                print(
-                    f"  warning: tint failed on {shader['name']}: {proc.stderr.decode()[:200]}",
-                    file=sys.stderr,
-                )
-                break
-
-            # skip warmup
-            if i >= warmup:
-                samples.append(elapsed)
+        except RuntimeError as exc:
+            print(
+                f"  warning: tint failed on {shader['name']}: {str(exc)[:200]}",
+                file=sys.stderr,
+            )
+            samples = []
 
         if not samples:
             print(f"  skipping {shader['name']}: no successful timed samples", file=sys.stderr)
             continue
 
         samples.sort()
+        corrected_samples = subtract_baseline_ms(
+            [sample / 1_000_000.0 for sample in samples],
+            startup_baseline_p50_ns / 1_000_000.0,
+        )
+        corrected_stats_ms = format_stats(corrected_samples)
         n = len(samples)
         results[shader["name"]] = {
             "p50_ns": samples[n // 2],
@@ -259,8 +439,85 @@ def run_tint_bench(cfg, shaders, target, iterations, warmup, dry_run):
             "mean_ns": sum(samples) // n,
             "iterations": n,
             "timingNote": "process-level timing includes tint startup overhead",
+            "startupBaseline": startup_baseline,
+            "startupCorrected": {
+                "p50_ns": int(corrected_stats_ms["p50Ms"] * 1_000_000.0),
+                "p95_ns": int(corrected_stats_ms["p95Ms"] * 1_000_000.0),
+                "p99_ns": int(corrected_stats_ms["p99Ms"] * 1_000_000.0),
+                "timingNote": "raw tint process-wall samples with the trivial-shader baseline p50 subtracted",
+            },
+            "warm": tint_warm_results.get(shader["name"], {}),
         }
 
+    return results
+
+
+def run_tint_warm_bench(cfg, shaders, target, dry_run):
+    warm_binary_path = cfg["right"].get("warmBinaryPath")
+    if not warm_binary_path:
+        return {}
+
+    benchmark_prefix = TINT_BENCHMARK_TARGET_MAP.get(target)
+    if benchmark_prefix is None:
+        print(f"error: Tint warm benchmark target is unsupported for {target}", file=sys.stderr)
+        sys.exit(1)
+
+    warm_bin = REPO_ROOT / warm_binary_path
+    if not warm_bin.exists() and not dry_run:
+        print(f"error: Tint warm benchmark binary not found: {warm_bin}", file=sys.stderr)
+        print("  Build with: ninja -C bench/vendor/dawn/out/Release tint_benchmark", file=sys.stderr)
+        sys.exit(1)
+
+    repetitions = int(cfg["run"].get("warmRepetitions", DEFAULT_TINT_WARM_REPETITIONS))
+    min_time = cfg["run"].get("warmMinTime", DEFAULT_TINT_WARM_MIN_TIME)
+    selected_names = {shader.get("benchmarkName", shader["name"]) for shader in shaders}
+    command = [
+        str(warm_bin),
+        f"--benchmark_filter={benchmark_prefix}/.*",
+        f"--benchmark_min_time={min_time}",
+        f"--benchmark_repetitions={repetitions}",
+        "--benchmark_report_aggregates_only=false",
+        "--benchmark_format=json",
+    ]
+
+    if dry_run:
+        print(f"[dry-run] {' '.join(command)}")
+        return {
+            shader["name"]: {
+                "p50_ns": 0,
+                "p95_ns": 0,
+                "p99_ns": 0,
+                "timingNote": "in-process tint_benchmark real_time samples",
+            }
+            for shader in shaders
+        }
+
+    proc = subprocess.run(command, check=True, capture_output=True, text=True)
+    payload = json.loads(proc.stdout)
+    samples_by_name = {}
+    for benchmark in payload.get("benchmarks", []):
+        if benchmark.get("run_type") != "iteration":
+            continue
+        benchmark_name = benchmark.get("name", "")
+        if not benchmark_name.startswith(f"{benchmark_prefix}/"):
+            continue
+        short_name = benchmark_name.split("/", 1)[1]
+        if short_name not in selected_names:
+            continue
+        sample_ns = duration_to_ns(benchmark.get("real_time"), benchmark.get("time_unit"))
+        if sample_ns is None:
+            continue
+        samples_by_name.setdefault(short_name, []).append(sample_ns)
+
+    results = {}
+    for shader in shaders:
+        benchmark_name = shader.get("benchmarkName", shader["name"])
+        samples = samples_by_name.get(benchmark_name, [])
+        if not samples:
+            continue
+        result = ns_stats(samples)
+        result["timingNote"] = "in-process tint_benchmark real_time samples"
+        results[shader["name"]] = result
     return results
 
 
@@ -303,6 +560,14 @@ def build_report(cfg, shaders, target, doe_results, tint_results):
         right_p95 = tint.get("p95_ns", 0)
         left_p99 = doe.get("p99_ns", 0)
         right_p99 = tint.get("p99_ns", 0)
+        right_corrected = tint.get("startupCorrected", {})
+        right_corrected_p50 = right_corrected.get("p50_ns", 0)
+        right_corrected_p95 = right_corrected.get("p95_ns", 0)
+        right_corrected_p99 = right_corrected.get("p99_ns", 0)
+        right_warm = tint.get("warm", {})
+        right_warm_p50 = right_warm.get("p50_ns", 0)
+        right_warm_p95 = right_warm.get("p95_ns", 0)
+        right_warm_p99 = right_warm.get("p99_ns", 0)
 
         records.append(
             {
@@ -332,6 +597,25 @@ def build_report(cfg, shaders, target, doe_results, tint_results):
                         "timingNote",
                         "process-level timing includes startup overhead",
                     ),
+                    "startupBaseline": tint.get("startupBaseline", {}),
+                    "startupCorrected": {
+                        "p50_ns": right_corrected_p50,
+                        "p95_ns": right_corrected_p95,
+                        "p99_ns": right_corrected_p99,
+                        "timingNote": right_corrected.get(
+                            "timingNote",
+                            "raw tint process-wall samples with the trivial-shader baseline p50 subtracted",
+                        ),
+                    },
+                    "warm": {
+                        "p50_ns": right_warm_p50,
+                        "p95_ns": right_warm_p95,
+                        "p99_ns": right_warm_p99,
+                        "timingNote": right_warm.get(
+                            "timingNote",
+                            "in-process tint_benchmark real_time samples",
+                        ),
+                    },
                 },
                 "deltaPercent": {
                     "p50": round(compute_delta(left_p50, right_p50), 2)
@@ -344,10 +628,37 @@ def build_report(cfg, shaders, target, doe_results, tint_results):
                     if left_p99 > 0 and right_p99 > 0
                     else None,
                 },
+                "startupCorrectedDeltaPercent": {
+                    "p50": round(compute_delta(left_p50, right_corrected_p50), 2)
+                    if left_p50 > 0 and right_corrected_p50 > 0
+                    else None,
+                    "p95": round(compute_delta(left_p95, right_corrected_p95), 2)
+                    if left_p95 > 0 and right_corrected_p95 > 0
+                    else None,
+                    "p99": round(compute_delta(left_p99, right_corrected_p99), 2)
+                    if left_p99 > 0 and right_corrected_p99 > 0
+                    else None,
+                },
+                "warmDeltaPercent": {
+                    "p50": round(compute_delta(left_p50, right_warm_p50), 2)
+                    if left_p50 > 0 and right_warm_p50 > 0
+                    else None,
+                    "p95": round(compute_delta(left_p95, right_warm_p95), 2)
+                    if left_p95 > 0 and right_warm_p95 > 0
+                    else None,
+                    "p99": round(compute_delta(left_p99, right_warm_p99), 2)
+                    if left_p99 > 0 and right_warm_p99 > 0
+                    else None,
+                },
                 "status": "compared",
-                "comparabilityNote": "Doe uses in-process timing; Tint uses process-level timing "
-                "which includes OS process startup. For strict comparison, use tint-bench "
-                "in-process harness when available.",
+                "comparabilityNote": (
+                    "Doe uses in-process timing; Tint raw timings use process-level timing "
+                    "which includes OS process startup. startupCorrectedDeltaPercent is a "
+                    "derived view that subtracts the trivial-shader baseline p50 from each "
+                    "Tint raw sample; raw timings remain the auditable source metric. "
+                    "When right.warm is present it comes from the in-process Dawn "
+                    "tint_benchmark target on the Tint benchmark corpus."
+                ),
             }
         )
 
@@ -368,27 +679,58 @@ def print_summary(records, target):
         print("no comparable results")
         return
 
-    print(f"\n{'shader':<40} {'tier':<10} {'doe p50(us)':>12} {'tint p50(us)':>12} {'delta%':>10}")
-    print("-" * 90)
+    print(
+        f"\n{'shader':<40} {'tier':<10} {'doe p50(us)':>12} "
+        f"{'tint raw(us)':>12} {'tint corr(us)':>14} {'tint warm(us)':>14} "
+        f"{'raw delta%':>11} {'corr delta%':>12} {'warm delta%':>12}"
+    )
+    print("-" * 140)
 
     for r in compared:
         doe_us = r["left"]["p50_ns"] / 1000
-        tint_us = r["right"]["p50_ns"] / 1000
-        delta = r["deltaPercent"]["p50"]
-        delta_str = f"+{delta:.1f}%" if delta and delta > 0 else f"{delta:.1f}%" if delta else "n/a"
-        print(f"{r['shader']:<40} {r['tier']:<10} {doe_us:>12.1f} {tint_us:>12.1f} {delta_str:>10}")
+        tint_raw_us = r["right"]["p50_ns"] / 1000
+        tint_corr_us = r["right"]["startupCorrected"]["p50_ns"] / 1000
+        tint_warm_us = r["right"]["warm"]["p50_ns"] / 1000
+        raw_delta = r["deltaPercent"]["p50"]
+        corr_delta = r["startupCorrectedDeltaPercent"]["p50"]
+        warm_delta = r["warmDeltaPercent"]["p50"]
+        raw_delta_str = f"+{raw_delta:.1f}%" if raw_delta and raw_delta > 0 else f"{raw_delta:.1f}%" if raw_delta else "n/a"
+        corr_delta_str = f"+{corr_delta:.1f}%" if corr_delta and corr_delta > 0 else f"{corr_delta:.1f}%" if corr_delta else "n/a"
+        warm_delta_str = f"+{warm_delta:.1f}%" if warm_delta and warm_delta > 0 else f"{warm_delta:.1f}%" if warm_delta else "n/a"
+        print(
+            f"{r['shader']:<40} {r['tier']:<10} {doe_us:>12.1f} {tint_raw_us:>12.1f} "
+            f"{tint_corr_us:>14.1f} {tint_warm_us:>14.1f} "
+            f"{raw_delta_str:>11} {corr_delta_str:>12} {warm_delta_str:>12}"
+        )
 
     # aggregate
     doe_total = sum(r["left"]["p50_ns"] for r in compared)
     tint_total = sum(r["right"]["p50_ns"] for r in compared)
+    tint_corrected_total = sum(r["right"]["startupCorrected"]["p50_ns"] for r in compared)
+    tint_warm_total = sum(r["right"]["warm"]["p50_ns"] for r in compared)
     overall_delta = compute_delta(doe_total, tint_total)
-    print("-" * 90)
+    overall_corrected_delta = compute_delta(doe_total, tint_corrected_total)
+    overall_warm_delta = compute_delta(doe_total, tint_warm_total)
+    overall_delta_str = (
+        f"{'+' if overall_delta > 0 else ''}{overall_delta:.1f}%"
+        if overall_delta is not None
+        else "n/a"
+    )
+    overall_corrected_delta_str = (
+        f"{'+' if overall_corrected_delta > 0 else ''}{overall_corrected_delta:.1f}%"
+        if overall_corrected_delta is not None
+        else "n/a"
+    )
+    overall_warm_delta_str = (
+        f"{'+' if overall_warm_delta > 0 else ''}{overall_warm_delta:.1f}%"
+        if overall_warm_delta is not None
+        else "n/a"
+    )
+    print("-" * 140)
     print(
         f"{'TOTAL':<40} {'':<10} {doe_total/1000:>12.1f} {tint_total/1000:>12.1f} "
-        f"{'+' if overall_delta and overall_delta > 0 else ''}"
-        f"{overall_delta:.1f}%"
-        if overall_delta
-        else "n/a"
+        f"{tint_corrected_total/1000:>14.1f} {tint_warm_total/1000:>14.1f} "
+        f"{overall_delta_str:>11} {overall_corrected_delta_str:>12} {overall_warm_delta_str:>12}"
     )
 
 
@@ -402,10 +744,15 @@ def main():
     iterations = args.iterations if args.iterations is not None else cfg["run"]["iterations"]
     warmup = args.warmup if args.warmup is not None else cfg["run"]["warmup"]
     out_dir = cfg["run"].get("outDir", "bench/out/compilation")
+    out_stem = cfg["run"].get("outStem", "doe-vs-tint")
     cfg["run"]["iterations"] = iterations
     cfg["run"]["warmup"] = warmup
 
-    if "workloads" in cfg:
+    if "tintBenchmarkInputsScriptPath" in cfg:
+        benchmark_names = args.workload_id or cfg.get("shaderNames", [])
+        shaders = discover_tint_benchmark_rows(cfg["tintBenchmarkInputsScriptPath"], benchmark_names)
+        source_label = cfg["tintBenchmarkInputsScriptPath"]
+    elif "workloads" in cfg:
         workload_ids = args.workload_id or cfg.get("workloadIds", [])
         shaders = discover_workload_rows(cfg["workloads"], workload_ids)
         source_label = cfg["workloads"]
@@ -426,7 +773,7 @@ def main():
 
         records = build_report(cfg, shaders, target, doe_results, tint_results)
 
-        report_path = REPO_ROOT / out_dir / f"doe-vs-tint.{target}.ndjson"
+        report_path = REPO_ROOT / out_dir / f"{out_stem}.{target}.ndjson"
         write_report(records, report_path)
         print_summary(records, target)
 

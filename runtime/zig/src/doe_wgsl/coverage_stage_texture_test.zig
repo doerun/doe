@@ -161,6 +161,24 @@ test "texture_depth_cube compiles to MSL" {
     try std.testing.expect(contains(out[0..len], "depthcube"));
 }
 
+test "texture_depth_2d textureDimensions compiles to MSL" {
+    const source =
+        \\@group(0) @binding(0) var t: texture_depth_2d;
+        \\@group(0) @binding(1) var<storage, read_write> out: array<f32>;
+        \\
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    let dims = textureDimensions(t, 0);
+        \\    out[id.x] = f32(dims.x);
+        \\}
+    ;
+    var out: [MAX_OUTPUT]u8 = undefined;
+    const len = try translateToMsl(std.testing.allocator, source, &out);
+    try std.testing.expect(len > 0);
+    try std.testing.expect(contains(out[0..len], "depth2d"));
+    try std.testing.expect(contains(out[0..len], ".get_width("));
+}
+
 test "texture_2d_array compiles to MSL" {
     const source =
         \\@group(0) @binding(0) var t: texture_2d_array<f32>;

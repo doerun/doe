@@ -1,4 +1,4 @@
-# Fawn Agent Module
+# Doe agent module
 
 Purpose:
 - mine upstream quirk/workaround signals from Dawn source trees

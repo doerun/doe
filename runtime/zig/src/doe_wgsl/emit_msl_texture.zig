@@ -233,67 +233,67 @@ pub fn emit_builtin(self: anytype, function: ir.Function, call: @FieldType(ir.Ex
                 const global = self.module.globals.items[index];
                 switch (self.module.types.get(global.ty)) {
                     .texture_1d => {
-                        if (call.args.len != 2) return error.InvalidIr;
+                        if (call.args.len < 1 or call.args.len > 2) return error.InvalidIr;
                         try self.write(global.name);
-                        try self.write(".get_width(uint(");
-                        try self.emit_expr(function, function.expr_args.items[call.args.start + 1]);
+                        try self.write(".get_width(");
+                        try emit_texture_dimensions_level(self, function, call);
+                        try self.write(")");
+                        return true;
+                    },
+                    .texture_2d, .texture_depth_2d, .texture_multisampled_2d => {
+                        if (call.args.len < 1 or call.args.len > 2) return error.InvalidIr;
+                        try self.write("uint2(");
+                        try self.write(global.name);
+                        try self.write(".get_width(");
+                        try emit_texture_dimensions_level(self, function, call);
+                        try self.write("), ");
+                        try self.write(global.name);
+                        try self.write(".get_height(");
+                        try emit_texture_dimensions_level(self, function, call);
                         try self.write("))");
                         return true;
                     },
-                    .texture_2d => {
-                        if (call.args.len != 2) return error.InvalidIr;
-                        try self.write("uint2(");
-                        try self.write(global.name);
-                        try self.write(".get_width(uint(");
-                        try self.emit_expr(function, function.expr_args.items[call.args.start + 1]);
-                        try self.write(")), ");
-                        try self.write(global.name);
-                        try self.write(".get_height(uint(");
-                        try self.emit_expr(function, function.expr_args.items[call.args.start + 1]);
-                        try self.write(")))");
-                        return true;
-                    },
                     .texture_3d => {
-                        if (call.args.len != 2) return error.InvalidIr;
+                        if (call.args.len < 1 or call.args.len > 2) return error.InvalidIr;
                         try self.write("uint3(");
                         try self.write(global.name);
-                        try self.write(".get_width(uint(");
-                        try self.emit_expr(function, function.expr_args.items[call.args.start + 1]);
-                        try self.write(")), ");
+                        try self.write(".get_width(");
+                        try emit_texture_dimensions_level(self, function, call);
+                        try self.write("), ");
                         try self.write(global.name);
-                        try self.write(".get_height(uint(");
-                        try self.emit_expr(function, function.expr_args.items[call.args.start + 1]);
-                        try self.write(")), ");
+                        try self.write(".get_height(");
+                        try emit_texture_dimensions_level(self, function, call);
+                        try self.write("), ");
                         try self.write(global.name);
-                        try self.write(".get_depth(uint(");
-                        try self.emit_expr(function, function.expr_args.items[call.args.start + 1]);
-                        try self.write(")))");
+                        try self.write(".get_depth(");
+                        try emit_texture_dimensions_level(self, function, call);
+                        try self.write("))");
                         return true;
                     },
                     .texture_cube, .texture_depth_cube => {
-                        if (call.args.len != 2) return error.InvalidIr;
+                        if (call.args.len < 1 or call.args.len > 2) return error.InvalidIr;
                         try self.write("uint2(");
                         try self.write(global.name);
-                        try self.write(".get_width(uint(");
-                        try self.emit_expr(function, function.expr_args.items[call.args.start + 1]);
-                        try self.write(")), ");
+                        try self.write(".get_width(");
+                        try emit_texture_dimensions_level(self, function, call);
+                        try self.write("), ");
                         try self.write(global.name);
-                        try self.write(".get_height(uint(");
-                        try self.emit_expr(function, function.expr_args.items[call.args.start + 1]);
-                        try self.write(")))");
+                        try self.write(".get_height(");
+                        try emit_texture_dimensions_level(self, function, call);
+                        try self.write("))");
                         return true;
                     },
                     .texture_2d_array => {
-                        if (call.args.len != 2) return error.InvalidIr;
+                        if (call.args.len < 1 or call.args.len > 2) return error.InvalidIr;
                         try self.write("uint2(");
                         try self.write(global.name);
-                        try self.write(".get_width(uint(");
-                        try self.emit_expr(function, function.expr_args.items[call.args.start + 1]);
-                        try self.write(")), ");
+                        try self.write(".get_width(");
+                        try emit_texture_dimensions_level(self, function, call);
+                        try self.write("), ");
                         try self.write(global.name);
-                        try self.write(".get_height(uint(");
-                        try self.emit_expr(function, function.expr_args.items[call.args.start + 1]);
-                        try self.write(")))");
+                        try self.write(".get_height(");
+                        try emit_texture_dimensions_level(self, function, call);
+                        try self.write("))");
                         return true;
                     },
                     .storage_texture_2d => {
@@ -312,6 +312,16 @@ pub fn emit_builtin(self: anytype, function: ir.Function, call: @FieldType(ir.Ex
         }
     }
     return false;
+}
+
+fn emit_texture_dimensions_level(self: anytype, function: ir.Function, call: @FieldType(ir.Expr, "call")) !void {
+    if (call.args.len == 2) {
+        try self.write("uint(");
+        try self.emit_expr(function, function.expr_args.items[call.args.start + 1]);
+        try self.write(")");
+        return;
+    }
+    try self.write("0");
 }
 
 fn is_texture_1d(module: *const ir.Module, function: ir.Function, expr_id: ir.ExprId) bool {

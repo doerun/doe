@@ -6,7 +6,7 @@
 
 ## Goal
 
-Define a deterministic contract for selected Chromium-internal compute workloads running through Fawn/WebGPU.
+Define a deterministic contract for selected Chromium-internal compute workloads running through Doe/WebGPU.
 
 ## Ownership Boundary
 

@@ -25,6 +25,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+SCRIPT_DIR = Path(__file__).resolve().parent
+REPO_ROOT = SCRIPT_DIR.parent.parent
+
 
 def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
@@ -212,6 +215,8 @@ def main() -> int:
             id=entry["id"],
             bucket=entry.get("bucket", ""),
             notes=entry.get("notes", ""),
+            repo_root=str(REPO_ROOT),
+            config_dir=str(config_path.resolve().parent),
         )
         command = shlex.split(rendered)
 

@@ -1,16 +1,16 @@
-# Fawn glossary
+# Doe glossary
 
-- `Fawn`
-  - the full development platform and repository for Doe
+- `Doe`
+  - the full repository and development platform
 - `Doe runtime`
   - the Zig-native WebGPU engine and its shared-library artifacts
-- `Doe API`
-  - the JavaScript helper surface exposed by Doe helper packages
+- `doe-gpu`
+  - the current JavaScript package surface for Doe
 - `@simulatte/webgpu`
-  - the main runtime package family for Node.js and Bun
+  - a legacy runtime package family for Node.js and Bun
   - Deprecated — use `doe-gpu` instead
 - `@simulatte/webgpu-doe`
-  - the transport-free helper package family for compatible WebGPU surfaces
+  - a legacy transport-free helper package family for compatible WebGPU surfaces
   - Deprecated — use `doe-gpu` instead
 - `subpath entrypoint`
   - an alternate export of one package family, not a separate product

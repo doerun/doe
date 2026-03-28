@@ -5,7 +5,7 @@
 This plan defines a detailed, contract-first rollout for:
 
 1. Track A:
-   - Fawn as an optional Dawn replacement for Chromium `navigator.gpu`.
+   - Doe as an optional Dawn replacement for Chromium `navigator.gpu`.
 
 Track B (optional internal Chromium GPU modules) was archived 2026-03-19.
 See the Track B sections below (marked archived) and `docs/status.md` for
@@ -25,7 +25,7 @@ state and local evidence.
 
 1. Keep this layer isolated in `browser/chromium/`.
 2. Do not modify core runtime behavior implicitly.
-3. Preserve Fawn stage discipline and gate precedence.
+3. Preserve Doe stage discipline and gate precedence.
 4. Require deterministic artifacts for all quality decisions.
 5. Keep Dawn fallback available at every rollout stage.
 
@@ -64,7 +64,7 @@ Establish unambiguous integration contracts and acceptance criteria before imple
 
 ### Goal
 
-Run Chromium with Fawn on the WebGPU runtime seam behind an explicit opt-in switch.
+Run Chromium with Doe on the WebGPU runtime seam behind an explicit opt-in switch.
 
 ### Scope
 
@@ -358,7 +358,7 @@ Initial acceptance:
 
 ## Gate mapping
 
-Use existing Fawn gate order and tools where applicable:
+Use existing Doe gate order and tools where applicable:
 
 1. Schema gate:
    - required for all promoted contract surfaces.

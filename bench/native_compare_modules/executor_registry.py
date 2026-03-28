@@ -137,6 +137,42 @@ _REGISTRY: dict[str, ExecutorSpec] = {
         ),
         execution_boundary="plan",
     ),
+    "bun_webgpu_package": ExecutorSpec(
+        executor_id="bun_webgpu_package",
+        command_template=(
+            "bun bench/executors/run-bun-webgpu-plan.js "
+            "--provider bun-webgpu --plan {plan} --trace-jsonl {trace_jsonl} "
+            "--trace-meta {trace_meta} --workload {workload}"
+        ),
+        execution_boundary="plan",
+    ),
+    "doe_bun_package": ExecutorSpec(
+        executor_id="doe_bun_package",
+        command_template=(
+            "bun bench/executors/run-bun-webgpu-plan.js "
+            "--provider doe --plan {plan} --trace-jsonl {trace_jsonl} "
+            "--trace-meta {trace_meta} --workload {workload}"
+        ),
+        execution_boundary="plan",
+    ),
+    "bun_webgpu_package_prepared": ExecutorSpec(
+        executor_id="bun_webgpu_package_prepared",
+        command_template=(
+            "bun bench/executors/run-bun-webgpu-plan.js "
+            "--provider bun-webgpu --prepared-session --plan {plan} --trace-jsonl {trace_jsonl} "
+            "--trace-meta {trace_meta} --workload {workload}"
+        ),
+        execution_boundary="plan",
+    ),
+    "doe_bun_package_prepared": ExecutorSpec(
+        executor_id="doe_bun_package_prepared",
+        command_template=(
+            "bun bench/executors/run-bun-webgpu-plan.js "
+            "--provider doe --prepared-session --plan {plan} --trace-jsonl {trace_jsonl} "
+            "--trace-meta {trace_meta} --workload {workload}"
+        ),
+        execution_boundary="plan",
+    ),
 }
 
 

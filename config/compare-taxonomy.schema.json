@@ -1,0 +1,253 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Doe compare taxonomy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "axes",
+    "aliases",
+    "structuralFamilies",
+    "promotedCompareCoverage",
+    "expectedCounts"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "axes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "platformLanes",
+        "comparisonBoundaries",
+        "runtimeHosts",
+        "providerPairs",
+        "temperatures",
+        "targetKinds",
+        "presetIds",
+        "workloadIds",
+        "executorInputBoundaries"
+      ],
+      "properties": {
+        "platformLanes": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "comparisonBoundaries": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "runtimeHosts": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "providerPairs": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "temperatures": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "targetKinds": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "presetIds": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "workloadIds": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "executorInputBoundaries": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        }
+      }
+    },
+    "aliases": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "promotedCompareSurfaceByBoundary",
+        "repoSurfaceByBoundaryAndRuntimeHost"
+      ],
+      "properties": {
+        "promotedCompareSurfaceByBoundary": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "backend_native",
+            "direct_plan",
+            "package_surface"
+          ],
+          "properties": {
+            "backend_native": {
+              "type": "string",
+              "const": "native"
+            },
+            "direct_plan": {
+              "type": "string",
+              "const": "direct"
+            },
+            "package_surface": {
+              "type": "string",
+              "const": "package"
+            }
+          }
+        },
+        "repoSurfaceByBoundaryAndRuntimeHost": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/repoSurfaceAlias"
+          },
+          "minItems": 1
+        }
+      }
+    },
+    "structuralFamilies": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/structuralFamily"
+      },
+      "minItems": 1
+    },
+    "promotedCompareCoverage": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/promotedCoverage"
+      },
+      "minItems": 1
+    },
+    "expectedCounts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "naiveCartesianRows",
+        "typeCorrectStructuralRows",
+        "typeCorrectConcreteRowSlots",
+        "promotedCompareRows"
+      ],
+      "properties": {
+        "naiveCartesianRows": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "typeCorrectStructuralRows": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "typeCorrectConcreteRowSlots": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "promotedCompareRows": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    }
+  },
+  "$defs": {
+    "nonEmptyStringArray": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "repoSurfaceAlias": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "comparisonBoundary",
+        "runtimeHost",
+        "repoSurface"
+      ],
+      "properties": {
+        "comparisonBoundary": {
+          "type": "string",
+          "minLength": 1
+        },
+        "runtimeHost": {
+          "type": "string",
+          "minLength": 1
+        },
+        "repoSurface": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "structuralFamily": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "comparisonBoundary",
+        "runtimeHost",
+        "providerPair",
+        "temperature",
+        "targetKind",
+        "executorInputBoundary",
+        "structuralPlatformLanes",
+        "theoreticalConcreteTargetIds"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "comparisonBoundary": {
+          "type": "string",
+          "minLength": 1
+        },
+        "runtimeHost": {
+          "type": "string",
+          "minLength": 1
+        },
+        "providerPair": {
+          "type": "string",
+          "minLength": 1
+        },
+        "temperature": {
+          "type": "string",
+          "minLength": 1
+        },
+        "targetKind": {
+          "type": "string",
+          "minLength": 1
+        },
+        "executorInputBoundary": {
+          "type": "string",
+          "minLength": 1
+        },
+        "structuralPlatformLanes": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "theoreticalConcreteTargetIds": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        }
+      }
+    },
+    "promotedCoverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "familyId",
+        "platformLane",
+        "targetIds"
+      ],
+      "properties": {
+        "familyId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "platformLane": {
+          "type": "string",
+          "minLength": 1
+        },
+        "targetIds": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        }
+      }
+    }
+  }
+}

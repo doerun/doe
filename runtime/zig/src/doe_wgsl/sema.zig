@@ -4,6 +4,7 @@ const token_mod = @import("token.zig");
 const ir = @import("ir.zig");
 const sema_types = @import("sema_types.zig");
 const sema_attrs = @import("sema_attrs.zig");
+const sema_expr = @import("sema_expr.zig");
 const sema_helpers = @import("sema_helpers.zig");
 const sema_resolve = @import("sema_resolve.zig");
 const sema_typeutils = @import("sema_typeutils.zig");
@@ -33,12 +34,8 @@ pub const FailureContext = struct {
 
 var last_failure_context = FailureContext{};
 
-pub fn resetLastFailureContext() void {
-    last_failure_context = .{};
-}
-pub fn lastFailureContext() FailureContext {
-    return last_failure_context;
-}
+pub fn resetLastFailureContext() void { last_failure_context = .{}; }
+pub fn lastFailureContext() FailureContext { return last_failure_context; }
 pub fn analyze(allocator: std.mem.Allocator, tree: *const Ast) !SemanticModule {
     resetLastFailureContext();
     var module = SemanticModule{
@@ -442,10 +439,16 @@ const Analyzer = struct {
             .switch_case => try self.analyze_stmt(node.data.lhs, body),
             .discard_stmt => {},
             .expr_stmt => _ = try self.analyze_expr(node.data.lhs, body),
-            .assign_stmt => {
-                const lhs_ty = try self.analyze_expr(node.data.lhs, body);
-                const lhs_info = self.module.node_info.items[node.data.lhs];
-                if (lhs_info.category != .ref) return error.InvalidWgsl;
+        .assign_stmt => {
+            const lhs_node = self.module.tree.nodes.items[node.data.lhs];
+            if (lhs_node.tag == .ident_expr and std.mem.eql(u8, self.module.tree.tokenSlice(lhs_node.main_token), "_")) {
+                _ = try self.analyze_expr(node.data.rhs, body);
+                self.module.node_info.items[node_idx].ty = self.module.void_type;
+                return;
+            }
+            const lhs_ty = try self.analyze_expr(node.data.lhs, body);
+            const lhs_info = self.module.node_info.items[node.data.lhs];
+            if (lhs_info.category != .ref) return error.InvalidWgsl;
                 const rhs_ty = try self.analyze_expr(node.data.rhs, body);
                 if (!self.type_compatible(lhs_ty, rhs_ty)) return error.TypeMismatch;
                 self.module.node_info.items[node_idx].ty = lhs_ty;
@@ -538,26 +541,13 @@ const Analyzer = struct {
 
     fn analyze_unary(self: *Analyzer, node: Node, body: ?*BodyAnalyzer) AnalyzeError!ir.TypeId {
         const operand_ty = try self.analyze_expr(node.data.lhs, body);
-        return switch (self.module.tree.tokens.items[node.main_token].tag) {
-            .@"-", .@"~" => operand_ty,
-            .@"!" => self.module.bool_type,
-            .@"&" => operand_ty,
-            .@"*" => switch (self.module.types.get(operand_ty)) {
-                .ref => |ref_ty| ref_ty.elem,
-                else => operand_ty,
-            },
-            else => error.InvalidWgsl,
-        };
+        return try sema_expr.analyze_unary_type(self, node, body, operand_ty);
     }
 
     fn analyze_binary(self: *Analyzer, node: Node, body: ?*BodyAnalyzer) AnalyzeError!ir.TypeId {
         const lhs_ty = try self.analyze_expr(node.data.lhs, body);
         const rhs_ty = try self.analyze_expr(node.data.rhs, body);
-        const op = self.module.tree.tokens.items[node.main_token].tag;
-        return switch (op) {
-            .eq_eq, .not_eq, .@"<", .lte, .@">", .gte, .and_and, .or_or => self.module.bool_type,
-            else => if (self.type_compatible(lhs_ty, rhs_ty)) concrete_numeric_type(self.module, lhs_ty, rhs_ty) else error.TypeMismatch,
-        };
+        return try sema_expr.analyze_binary_type(self, lhs_ty, rhs_ty, self.module.tree.tokens.items[node.main_token].tag);
     }
 
     fn analyze_call(self: *Analyzer, node: Node, body: ?*BodyAnalyzer) AnalyzeError!ir.TypeId {
@@ -573,6 +563,10 @@ const Analyzer = struct {
         }
 
         if (self.try_resolve_named_type(name)) |ty| {
+            try sema_expr.validate_construct(self, ty, arg_types_buf[0..args_len]);
+            return ty;
+        }
+        if (try sema_expr.infer_constructor_call(self, name, arg_types_buf[0..args_len])) |ty| {
             return ty;
         }
         if (self.module.function_map.get(name)) |function_index| {
@@ -607,7 +601,6 @@ const Analyzer = struct {
     }
 
     fn analyze_construct(self: *Analyzer, node: Node, body: ?*BodyAnalyzer) AnalyzeError!ir.TypeId {
-        const target_ty = try self.resolve_type_node(node.data.lhs);
         const span = decode_packed_span(node.data.rhs);
 
         var arg_types_buf: [16]ir.TypeId = undefined;
@@ -617,18 +610,18 @@ const Analyzer = struct {
             arg_types_buf[i] = try self.analyze_expr(self.module.tree.extra_data.items[span.start + i], body);
         }
 
-        switch (self.module.types.get(target_ty)) {
-            .scalar => if (span.len != 1) return error.TypeMismatch,
-            .struct_ => |struct_id| {
-                const fields = self.module.structs.items[struct_id].fields.items;
-                if (fields.len != span.len) return error.TypeMismatch;
-                for (fields, 0..) |field, field_index| {
-                    if (!self.type_compatible(field.ty, arg_types_buf[field_index])) return error.TypeMismatch;
-                }
-            },
-            else => {},
-        }
-
+        const target_ty = blk: {
+            const type_node = self.module.tree.nodes.items[node.data.lhs];
+            switch (type_node.tag) {
+                .type_name, .type_vec_shorthand, .type_mat_shorthand => {
+                    const name = self.module.tree.tokenSlice(type_node.main_token);
+                    if (try sema_expr.infer_constructor_call(self, name, arg_types_buf[0..span.len])) |ty| break :blk ty;
+                },
+                else => {},
+            }
+            break :blk try self.resolve_type_node(node.data.lhs);
+        };
+        try sema_expr.validate_construct(self, target_ty, arg_types_buf[0..span.len]);
         return target_ty;
     }
     fn analyze_member(self: *Analyzer, node: Node, body: ?*BodyAnalyzer, out: *NodeInfo) AnalyzeError!ir.TypeId {
@@ -662,7 +655,6 @@ const Analyzer = struct {
         const base_ty = try self.analyze_expr(node.data.lhs, body);
         _ = try self.analyze_expr(node.data.rhs, body);
         out.category = self.module.node_info.items[node.data.lhs].category;
-        // Unwrap ref to get the underlying indexable type.
         const inner_ty = switch (self.module.types.get(base_ty)) {
             .ref => |ref_ty| ref_ty.elem,
             else => base_ty,
@@ -740,7 +732,7 @@ const Analyzer = struct {
         return sema_resolve.resolve_type_parameterized(self, node);
     }
 
-    fn type_compatible(self: *Analyzer, expected: ir.TypeId, actual: ir.TypeId) bool {
+    pub fn type_compatible(self: *Analyzer, expected: ir.TypeId, actual: ir.TypeId) bool {
         if (expected == actual) return true;
         if (expected == ir.INVALID_TYPE or actual == ir.INVALID_TYPE) return false;
         return switch (self.module.types.get(expected)) {
@@ -754,7 +746,6 @@ const Analyzer = struct {
                 },
                 else => false,
             },
-            // Pointer param accepts matching element type (from & address-of).
             .ref => |ref_ty| ref_ty.elem == actual or self.type_compatible(ref_ty.elem, actual),
             else => false,
         };
@@ -766,11 +757,9 @@ fn captureFailureNode(tree: *const Ast, node_idx: u32) void {
 }
 
 const bitcast_types_compatible = sema_typeutils.bitcast_types_compatible;
-const bitcast_type_bits = sema_typeutils.bitcast_type_bits;
 const is_handle_type = sema_typeutils.is_handle_type;
 const materialize_inferred_local_type = sema_typeutils.materialize_inferred_local_type;
 const init_builtin_types = sema_helpers.init_builtin_types;
-const concrete_numeric_type = sema_helpers.concrete_numeric_type;
 const decode_packed_span = sema_helpers.decode_packed_span;
 const parse_address_space = sema_helpers.parse_address_space;
 const parse_access = sema_helpers.parse_access;

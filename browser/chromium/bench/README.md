@@ -67,7 +67,7 @@ To run dawn/doe against different browser executables in one benchmark run:
 ./browser/chromium/scripts/run-bench.sh \
   --mode both \
   --dawn-chrome /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome \
-  --doe-chrome browser/chromium/out/fawn_release_local/Fawn.app/Contents/MacOS/Chromium
+  --doe-chrome /path/to/your/doe-chromium-binary
 ```
 
 Default outputs are lane-local diagnostic artifacts under:

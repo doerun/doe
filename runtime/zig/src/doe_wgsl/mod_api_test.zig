@@ -1068,6 +1068,107 @@ test "translate interpolation with centroid sampling to MSL" {
     try std.testing.expect(std.mem.indexOf(u8, msl, "centroid_no_perspective") != null);
 }
 
+test "translate flat either interpolation to MSL" {
+    const source =
+        \\struct VsOut {
+        \\    @builtin(position) pos: vec4f,
+        \\    @location(0) @interpolate(flat, either) flat_id: u32,
+        \\}
+        \\@vertex
+        \\fn vs_main(@builtin(vertex_index) vid: u32) -> VsOut {
+        \\    var out: VsOut;
+        \\    out.flat_id = vid;
+        \\    return out;
+        \\}
+    ;
+    var out: [MAX_OUTPUT]u8 = undefined;
+    const len = try translateToMsl(std.testing.allocator, source, &out);
+    try std.testing.expect(len > 0);
+}
+
+test "translate benchmark-style vector and any/all constructs to MSL" {
+    const source =
+        \\struct RenderParams {
+        \\  right : vec3<f32>,
+        \\  up : vec3<f32>,
+        \\};
+        \\@binding(0) @group(0) var<uniform> render_params : RenderParams;
+        \\@binding(1) @group(0) var tex : texture_2d<f32>;
+        \\@binding(2) @group(0) var tex_out : texture_storage_2d<rgba8unorm, write>;
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) gid : vec3<u32>) {
+        \\  let quad_pos = mat2x3<f32>(render_params.right, render_params.up) * vec2<f32>(1.0, 2.0);
+        \\  let value = vec4<f32>(0.5);
+        \\  let probs = vec4<f32>(0.0, 0.2, 0.4, 0.8);
+        \\  let mask = (value >= vec4<f32>(0.0, probs.xyz)) & (value < probs);
+        \\  if (all(gid.xy < vec2<u32>(textureDimensions(tex_out)))) {
+        \\    let step = select(0u, 1u, any(mask.yw));
+        \\    textureStore(tex_out, vec2<i32>(i32(step), i32(gid.y)), vec4<f32>(quad_pos, 1.0));
+        \\  }
+        \\}
+    ;
+    var out: [MAX_OUTPUT]u8 = undefined;
+    const len = try translateToMsl(std.testing.allocator, source, &out);
+    try std.testing.expect(len > 0);
+}
+
+test "translate benchmark-style matrix constructors and scalar broadcasts to MSL" {
+    const source =
+        \\struct VertexInput {
+        \\  @location(0) normal : vec3<f32>,
+        \\  @location(1) instance0 : vec4<f32>,
+        \\  @location(2) instance1 : vec4<f32>,
+        \\  @location(3) instance2 : vec4<f32>,
+        \\  @location(4) instance3 : vec4<f32>,
+        \\}
+        \\fn getInstanceMatrix(input : VertexInput) -> mat4x4<f32> {
+        \\  return mat4x4(input.instance0, input.instance1, input.instance2, input.instance3);
+        \\}
+        \\@vertex
+        \\fn main(input : VertexInput) -> @builtin(position) vec4<f32> {
+        \\  let m = getInstanceMatrix(input);
+        \\  let n = normalize((m * vec4f(input.normal, 0.0)).xyz);
+        \\  let lit = min(0.2 + 0.5 * n, vec3<f32>(1.0));
+        \\  return vec4<f32>(lit, 1.0);
+        \\}
+    ;
+    var out: [MAX_OUTPUT]u8 = undefined;
+    const len = try translateToMsl(std.testing.allocator, source, &out);
+    try std.testing.expect(len > 0);
+}
+
+test "translate nested bitcast generic call to MSL" {
+    const source =
+        \\@compute @workgroup_size(1)
+        \\fn main() {
+        \\  var a : vec3<i32>;
+        \\  var b : vec4<u32>;
+        \\  let c = (a.xyzz >= bitcast<vec4<i32>>(b.xyww)).xyz;
+        \\  _ = c;
+        \\}
+    ;
+    var out: [MAX_OUTPUT]u8 = undefined;
+    const len = try translateToMsl(std.testing.allocator, source, &out);
+    try std.testing.expect(len > 0);
+}
+
+test "translate zero-arg value constructors to MSL" {
+    const source =
+        \\@compute @workgroup_size(1)
+        \\fn main() {
+        \\  let a = vec4<f32>();
+        \\  let b = vec2<u32>();
+        \\  let c = mat4x4<f32>();
+        \\  _ = a;
+        \\  _ = b;
+        \\  _ = c;
+        \\}
+    ;
+    var out: [MAX_OUTPUT]u8 = undefined;
+    const len = try translateToMsl(std.testing.allocator, source, &out);
+    try std.testing.expect(len > 0);
+}
+
 test "compile shader with pointer output parameter to MSL" {
     const source =
         \\fn helper(p: ptr<function, f32>) {
@@ -1121,4 +1222,64 @@ test "compile shader with pointer output parameter to SPIR-V" {
     var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
     const len = try translateToSpirv(std.testing.allocator, source, &out);
     try std.testing.expect(len > 0);
+}
+
+test "compile shader with dereferenced pointer locals to MSL" {
+    const source =
+        \\fn read_back(p: ptr<function, i32>) -> i32 {
+        \\    let x : i32 = *p;
+        \\    return x;
+        \\}
+        \\@compute @workgroup_size(1)
+        \\fn main() {
+        \\    var x: i32 = 7;
+        \\    let y = read_back(&x);
+        \\    _ = y;
+        \\}
+    ;
+
+    var out: [MAX_OUTPUT]u8 = undefined;
+    const len = try translateToMsl(std.testing.allocator, source, &out);
+    try std.testing.expect(len > 0);
+}
+
+test "compile shader with let-bound ref writes to MSL" {
+    const source =
+        \\@compute @workgroup_size(1)
+        \\fn main() {
+        \\    var x: vec4<f32> = vec4<f32>(1.0);
+        \\    let p = &(x);
+        \\    *(p) = vec4<f32>(2.0);
+        \\}
+    ;
+
+    var out: [MAX_OUTPUT]u8 = undefined;
+    const len = try translateToMsl(std.testing.allocator, source, &out);
+    try std.testing.expect(len > 0);
+    const msl = out[0..len];
+    try std.testing.expect(std.mem.indexOf(u8, msl, "const thread float4& p = x;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, msl, "p = float4(2.0);") != null);
+}
+
+test "compile shader using atomicAdd result as scalar value to MSL" {
+    const source =
+        \\struct OutBuf {
+        \\    values: array<u32>,
+        \\};
+        \\
+        \\@group(0) @binding(0) var<storage, read_write> counter: atomic<u32>;
+        \\@group(0) @binding(1) var<storage, read_write> out_buf: OutBuf;
+        \\
+        \\@compute @workgroup_size(1)
+        \\fn main() {
+        \\    let old = atomicAdd(&(counter), 1u);
+        \\    out_buf.values[0] = old + 1u;
+        \\}
+    ;
+
+    var out: [MAX_OUTPUT]u8 = undefined;
+    const len = try translateToMsl(std.testing.allocator, source, &out);
+    try std.testing.expect(len > 0);
+    const msl = out[0..len];
+    try std.testing.expect(std.mem.indexOf(u8, msl, "const uint old = atomic_fetch_add_explicit") != null);
 }

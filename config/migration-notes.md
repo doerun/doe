@@ -2,6 +2,130 @@
 
 ## 2026-03-27
 
+### Apple package CLI direct execution and drop-in Apple gate fixes
+
+- `bench/drop-in/dropin_symbol_gate.py` now uses macOS-appropriate `nm` modes
+  for `.dylib` artifacts and normalizes underscore-prefixed exported symbols.
+- Behavioral difference versus the prior surface:
+  the drop-in symbol gate can now validate macOS dylibs instead of treating the
+  host symbol-table format as a gate failure.
+
+- `runtime/zig/src/doe_queue_submit_native.zig` now validates
+  `wgpuQueueWriteBuffer` ranges before writing and delivers a validation error
+  to the device error-scope stack when the write exceeds the buffer bounds.
+- Behavioral difference versus the prior surface:
+  the drop-in ABI path now reports the expected validation error for out-of-
+  range queue writes instead of silently writing past the declared WebGPU range.
+
+### Tint compilation reports now expose raw, startup-corrected, and warm Tint timings
+
+- The Doe-vs-Tint compilation surfaces now keep raw Tint process-wall timings
+  as the auditable source metric and also publish a derived startup-corrected
+  view.
+- The compiler compare can now also publish a real warm/in-process Tint view
+  from Dawn's `tint_benchmark` target when the compare config provides:
+  - `right.warmBinaryPath`
+  - `tintBenchmarkInputsScriptPath`
+- The correction method is explicit:
+  subtract the Tint trivial-shader baseline `p50` from each raw Tint sample,
+  then recompute `p50`/`p95`/`p99`.
+- `bench/native_compare_modules/runner.py` adds the following fields to the
+  right-side compilation result payload used by the compare harness for the
+  raw/startup-corrected view:
+  - `startupBaselineStatsMs`
+  - `startupCorrectionMethod`
+  - `startupCorrectedStatsMs`
+- `bench/native-compare/compare_doe_vs_tint_compilation.py` now writes
+  `schemaVersion: 3` records with:
+  - raw Tint timings under `right`
+  - startup-corrected Tint timings under `right.startupCorrected`
+  - optional warm Tint timings under `right.warm`
+  - raw deltas under `deltaPercent`
+  - startup-corrected deltas under `startupCorrectedDeltaPercent`
+  - warm deltas under `warmDeltaPercent`
+- Added the first benchmark-corpus config for the real warm surface:
+  - `bench/native-compare/compare_doe_vs_tint.benchmark-corpus.config.json`
+- New optional config knobs for the warm surface:
+  - `run.outStem`
+  - `run.warmRepetitions`
+  - `run.warmMinTime`
+- Behavioral difference versus the prior surface:
+  raw Tint timings are still published unchanged, startup-corrected timings are
+  still a derived presentation layer, and the surface can now publish a real
+  in-process Tint benchmark view instead of relying only on correction math.
+
+### CTS subset command templates now accept repo-root placeholders
+
+- `bench/tools/cts_baseline_generate.py` and `bench/runners/run_cts_subset.py`
+  now render the following extra placeholders inside `commandTemplate`:
+  - `repo_root`
+  - `config_dir`
+- `bench/fixtures/cts_subset.fawn-node.json` now uses the repo-root placeholder
+  to pass an absolute provider path to the vendored CTS runner:
+  `cts/fawn-node-gpu-provider.js`
+- Behavioral difference versus the prior surface:
+  the preferred CTS subset config no longer depends on a fragile relative
+  require path inside the vendored CTS loader.
+
+### Canonical compare taxonomy and generated expansion artifact
+
+- Added a canonical compare-axis contract:
+  - `config/compare-taxonomy.json`
+  - `config/compare-taxonomy.schema.json`
+- Added a generated expansion artifact plus row schema:
+  - `config/generated/compare-taxonomy-expanded.jsonl`
+  - `config/compare-taxonomy-expanded-row.schema.json`
+- The taxonomy now defines the shared axis language for:
+  - `platformLane`
+  - `comparisonBoundary`
+  - `runtimeHost`
+  - `providerPair`
+  - `temperature`
+  - `targetKind`
+- The generated expansion annotates the naive cartesian product with:
+  - type-correct structural membership
+  - theoretical concrete target ids
+  - current promoted compare reachability
+  - promoted compare profile ids
+- `bench/tools/generate_compare_taxonomy.py` is the canonical generator and
+  verify tool for the expansion artifact.
+- Root `README.md`, `bench/README.md`, and `docs/benchmark-taxonomy.md` now
+  link to `docs/compare-taxonomy.md` so the compare vocabulary is documented in
+  one place instead of being inferred from several overlapping configs.
+
+### Bun package rows in the IR-backed compare stack
+
+- Added Bun package executor ids to the native-compare registry:
+  - `doe_bun_package`
+  - `bun_webgpu_package`
+  - `doe_bun_package_prepared`
+  - `bun_webgpu_package_prepared`
+- Added Bun cold and prepared-session Gemma package configs alongside the
+  existing Node package configs:
+  - `bench/native-compare/compare_dawn_vs_doe.config.apple.metal.gemma64.bun-package.ir.json`
+  - `bench/native-compare/compare_dawn_vs_doe.config.apple.metal.gemma64.bun-package.warm.ir.json`
+  - `bench/native-compare/compare_dawn_vs_doe.config.apple.metal.gemma1b.bun-package.ir.json`
+  - `bench/native-compare/compare_dawn_vs_doe.config.apple.metal.gemma1b.bun-package.warm.ir.json`
+- `config/promoted-compare-catalog.json` and
+  `config/promoted-compare-catalog.schema.json` now include an explicit
+  `packageRuntime` axis for `surface=package` entries.
+- `schemaVersion` is now `3`.
+- `bench/run_compare.py` keeps Node as the default package runtime for backward
+  compatibility, and Bun rows are selected explicitly with
+  `--package-runtime bun`.
+
+### Node package failure containment and custom compare-catalog resolution
+
+- `bench/executors/run-node-webgpu-plan.js` supervisor fallback now emits
+  terminal trace artifacts even when the plan JSON cannot be parsed or
+  normalized.
+- Prepared-session unsupported/error artifacts from
+  `bench/executors/node-webgpu/executor.js` now zero pre-boundary host totals
+  consistently with the warm package boundary.
+- `bench/run_compare.py` now resolves relative `configPath` values against the
+  selected `--catalog` location for custom catalogs, while the default repo
+  catalog continues to resolve against repo root.
+
 ### Promoted compare front-door catalog
 
 - Added `config/promoted-compare-catalog.json` and
@@ -24,6 +148,30 @@
   blocking schema target.
 
 ## 2026-03-26
+
+### Node package submit-path trace-meta breakdown
+
+- `config/trace-meta.schema.json` now accepts finer-grained package submit-path
+  diagnostics inside `packageStepBreakdownNs`:
+  - `submitCommandEncoderFinishTotalNs`
+  - `submitQueueSubmitTotalNs`
+  - `submitQueueWaitTotalNs`
+  - `submitCommandPrepTotalNs`
+  - `submitAddonCallTotalNs`
+  - `submitAddonCommandReplayTotalNs`
+  - `submitAddonQueueSubmitTotalNs`
+  - `submitAddonFlushTotalNs`
+  - `submitPostSubmitBookkeepingTotalNs`
+  - `submitQueueFlushTotalNs`
+  - `submitQueueFlushWaitCompletedTotalNs`
+  - `submitQueueFlushDeferredCopyTotalNs`
+  - `submitQueueFlushDeferredResolveTotalNs`
+  - `submitQueueWaitBookkeepingTotalNs`
+- The Node/Bun package executor still reports the same selected timing and
+  workload-unit wall boundaries, but now splits the existing
+  `executionSubmitWaitTotalNs` bucket into finish, submit, wait, and internal
+  package-submit sub-costs so package submit-path tuning can target the
+  retained boundary with explicit evidence.
 
 ### Node package-lane trace-meta boundary and setup diagnostics
 

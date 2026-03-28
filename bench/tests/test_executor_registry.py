@@ -58,6 +58,26 @@ class ExecutorRegistryTests(unittest.TestCase):
         self.assertEqual(resolve_executor_boundary("dawn_node_webgpu_prepared"), "plan")
         self.assertEqual(resolve_executor_boundary("doe_node_webgpu_prepared"), "plan")
 
+    def test_resolves_bun_webgpu_executors(self) -> None:
+        bun_template = resolve_executor_command_template("bun_webgpu_package")
+        doe_template = resolve_executor_command_template("doe_bun_package")
+        self.assertIn("run-bun-webgpu-plan.js", bun_template)
+        self.assertIn("run-bun-webgpu-plan.js", doe_template)
+        self.assertIn("--provider bun-webgpu", bun_template)
+        self.assertIn("--provider doe", doe_template)
+        self.assertEqual(resolve_executor_boundary("bun_webgpu_package"), "plan")
+        self.assertEqual(resolve_executor_boundary("doe_bun_package"), "plan")
+
+    def test_resolves_prepared_bun_webgpu_executors(self) -> None:
+        bun_template = resolve_executor_command_template("bun_webgpu_package_prepared")
+        doe_template = resolve_executor_command_template("doe_bun_package_prepared")
+        self.assertIn("--provider bun-webgpu", bun_template)
+        self.assertIn("--provider doe", doe_template)
+        self.assertIn("--prepared-session", bun_template)
+        self.assertIn("--prepared-session", doe_template)
+        self.assertEqual(resolve_executor_boundary("bun_webgpu_package_prepared"), "plan")
+        self.assertEqual(resolve_executor_boundary("doe_bun_package_prepared"), "plan")
+
     def test_resolves_direct_dawn_executor(self) -> None:
         template = resolve_executor_command_template("dawn_direct_metal")
         self.assertIn("dawn-plan-executor", template)

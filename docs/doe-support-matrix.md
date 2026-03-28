@@ -102,9 +102,9 @@ Subpath reminder (the `@simulatte/*` scope is deprecated; use `doe-gpu`):
 | macOS Apple Silicon | Doe Metal backend | Dawn Metal delegate | governed runtime compare lane | `verified` | Strong Doe-vs-Dawn direct-backend evidence exists, but the current broad full lane remains diagnostic rather than fully claimable. |
 | Linux AMD Vulkan | Doe Vulkan backend | Dawn Vulkan delegate | governed runtime compare lane | `verified` | Real Doe-vs-Dawn runtime evidence exists; the current strict release lane remains diagnostic with one remaining upload blocker. |
 | Windows D3D12 | Doe D3D12 backend | Dawn D3D12 delegate | governed runtime compare lane | `scaffolded` | Contracts, configs, and runtime path exist, but the current inventory still lacks a fresh Windows evidence artifact. |
-| Native apps / engines / embedded | `libwebgpu_doe.{so,dylib,dll}` drop-in runtime | Dawn / wgpu via `webgpu.h` ABI | runtime replacement target | `scaffolded` | This is the intended doe-runtime product cell, but `dropin_gate.py`, CTS publication, and broader runtime-tier evidence are still open. |
-| Any `webgpu.h` host | Doe shared-library ABI surface | Dawn ABI / `webgpu.h` expectations | validation cell | `scaffolded` | Valuable because ABI validation is required for runtime-tier replacement claims, but the support matrix still treats full validation as incomplete. |
-| Chromium / Fawn browser lane | Doe as browser `navigator.gpu` runtime | Chromium / Chrome Dawn path | browser compare / smoke cell | `diagnostic` | Browser lane exists and is governed, but current browser evidence is still separate from claim-grade native/package replacement language. |
+| Native apps / engines / embedded | `libwebgpu_doe.{so,dylib,dll}` drop-in runtime | Dawn / wgpu via `webgpu.h` ABI | runtime replacement target | `scaffolded` | Fresh Apple Metal drop-in gate and Apple CTS subset receipts now exist in `docs/status.md`, but broader runtime-tier evidence, backend/release CTS publication, and non-Apple runtime slices are still open. |
+| Any `webgpu.h` host | Doe shared-library ABI surface | Dawn ABI / `webgpu.h` expectations | validation cell | `scaffolded` | Fresh Apple dylib validation now exists in `docs/status.md`, but full validation across the intended runtime hosts/backends is still incomplete. |
+| Chromium / Doe browser lane | Doe as browser `navigator.gpu` runtime | Chromium / Chrome Dawn path | browser compare / smoke cell | `diagnostic` | Browser lane exists and is governed, but current browser evidence is still separate from claim-grade native/package replacement language. |
 
 ### Exhaustiveness notes
 
@@ -370,7 +370,7 @@ All doe-runtime gates, plus:
 All doe-runtime requirements, plus:
 
 - **Expanded CTS coverage:** CTS subset must cover browser-visible API surface, not just compute/buffer operations.
-- **Browser smoke tests:** Standard WebGPU samples (rotating cube, compute boids, deferred rendering) must render correctly in Fawn.
+- **Browser smoke tests:** Standard WebGPU samples (rotating cube, compute boids, deferred rendering) must render correctly in the Doe Chromium lane.
 - **Regression gate:** No CTS regression and no browser smoke test regression between releases.
 
 ### Operational commitments
@@ -380,16 +380,16 @@ All doe-runtime requirements, plus:
 | Security patch cadence | Within 72 hours of Chrome stable security update | GPU process CVEs prioritized |
 | Upstream rebase cadence | Per Chrome major release (every 4 weeks) | Doe integration isolated to minimize conflict surface |
 | Rollback policy | Runtime backend override switch removed; use explicit lane/config policy | Deterministic recovery via audited policy updates |
-| Diff size tracking | Published per release | Fawn-vs-upstream Chromium diff LOC tracked; growing diff requires justification |
+| Diff size tracking | Published per release | Doe Chromium lane vs upstream Chromium diff LOC tracked; growing diff requires justification |
 | Release cadence | Monthly minimum, aligned with Chrome stable | Hotfix releases for security within SLA |
 
 ### Fork maintenance contracts
 
 | Area | Contract |
 |------|----------|
-| Isolation boundary | Fawn modifies only: `third_party/dawn/` replacement surface, GPU process initialization/runtime selection, `webgpu.h` binding layer, and packaging/branding/launcher metadata required for distribution. All other Chromium code tracked upstream without modification. |
-| Rebase strategy | Cherry-pick security patches immediately. Full rebase per Chrome major release. Merge conflicts in isolation boundary resolved by Fawn team; conflicts outside boundary indicate scope creep. |
-| Diff ceiling | If Fawn-vs-upstream diff exceeds 50K LOC (excluding `third_party/dawn/` replacement), trigger architectural review to re-isolate. |
+| Isolation boundary | The Doe Chromium lane modifies only: `third_party/dawn/` replacement surface, GPU process initialization/runtime selection, `webgpu.h` binding layer, and packaging/branding/launcher metadata required for distribution. All other Chromium code tracked upstream without modification. |
+| Rebase strategy | Cherry-pick security patches immediately. Full rebase per Chrome major release. Merge conflicts in the isolation boundary are resolved by the Doe team; conflicts outside that boundary indicate scope creep. |
+| Diff ceiling | If the Doe Chromium lane diff exceeds 50K LOC (excluding `third_party/dawn/` replacement), trigger architectural review to re-isolate. |
 | Security audit | Doe runtime code in GPU process is in-scope for security review. Sandbox boundary behavior must match Dawn's guarantees or explicitly document deviations. |
 
 ### Allowed marketing claims
@@ -521,10 +521,10 @@ AI workload stacks can ship value today on stock WebGPU (no Doe dependency). The
 
 ---
 
-## Current status (2026-03-10)
+## Current status (2026-03-28)
 
 | Tier | Status | Blocking Gaps |
 |------|--------|--------------|
 | doe-core | **Operational (CLI/process-bridge)** | Fresh strict evidence exists on AMD Vulkan and Apple Metal, but the latest artifacts are still overall diagnostic (`upload_1kb` on AMD release, `upload_1mb` on Apple Metal comparable). Provider-module in-process path still depends on provider callbacks; Doe-native Bun FFI adapter trampoline remains incomplete. |
-| doe-runtime | **Not yet shippable** | No CTS publication, no binary size measurements, `dropin_gate.py` still needs full-symbol validation, and the first governed D3D12 lane has contract coverage but no fresh Windows artifact in the current inventory. |
+| doe-runtime | **Not yet shippable** | Fresh Apple drop-in gate and Apple CTS subset receipts now exist, but backend/release CTS publication, binary size measurements, and fresh Windows D3D12 runtime evidence are still missing. |
 | chromium | **Not yet shippable** | No rebase cadence demonstrated, no security patch SLA, no browser smoke tests, operational commitments undocumented |

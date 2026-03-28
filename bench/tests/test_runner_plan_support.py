@@ -9,6 +9,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
+from unittest.mock import patch
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -21,6 +22,7 @@ from bench.native_compare_modules.runner import (
     command_for,
     extract_timing_metrics_ms,
     materialize_repeated_plan,
+    run_compilation_workload,
     trace_meta_records_terminal_execution_outcome,
     workload_unit_wall_from_trace_meta,
 )
@@ -147,6 +149,56 @@ class RunnerPlanSupportTests(unittest.TestCase):
                 encoding="utf-8",
             )
             self.assertTrue(trace_meta_records_terminal_execution_outcome(trace_meta_path))
+
+    @patch(
+        "bench.native_compare_modules.runner._parse_compilation_ndjson",
+        return_value={"p50_ns": 2_000_000, "p95_ns": 2_500_000, "p99_ns": 3_000_000, "bytesOut": 128},
+    )
+    @patch(
+        "bench.native_compare_modules.runner._tint_startup_baseline_samples",
+        return_value=[3.0, 4.0, 5.0],
+    )
+    @patch(
+        "bench.native_compare_modules.runner._tint_compile_samples",
+        return_value=[10.0, 11.0, 12.0],
+    )
+    @patch("bench.native_compare_modules.runner.subprocess.run")
+    def test_run_compilation_workload_reports_tint_raw_and_startup_corrected_stats(
+        self,
+        _mock_subprocess_run,
+        _mock_tint_compile_samples,
+        _mock_tint_startup_baseline_samples,
+        _mock_parse_compilation_ndjson,
+    ) -> None:
+        with tempfile.TemporaryDirectory(prefix="doe-compilation-runner-") as tmpdir:
+            tmp = Path(tmpdir)
+            shader_path = tmp / "alpha.wgsl"
+            doe_bin = tmp / "doe-compilation-bench"
+            tint_bin = tmp / "tint"
+            shader_path.write_text("@compute @workgroup_size(1)\nfn main() {}\n", encoding="utf-8")
+            doe_bin.write_text("", encoding="utf-8")
+            tint_bin.write_text("", encoding="utf-8")
+            workload = SimpleNamespace(
+                id="alpha",
+                shader_path=str(shader_path),
+                compilation_target="msl",
+            )
+
+            result = run_compilation_workload(
+                workload,
+                iterations=3,
+                warmup=1,
+                out_dir=tmp / "out",
+                doe_compilation_bin=str(doe_bin),
+                tint_bin=str(tint_bin),
+            )
+
+        right = result["right"]
+        self.assertEqual(right["stats"]["p50Ms"], 11.0)
+        self.assertEqual(right["startupBaselineStatsMs"]["p50Ms"], 4.0)
+        self.assertEqual(right["startupCorrectionMethod"], "subtract-trivial-shader-baseline-p50")
+        self.assertEqual(right["startupCorrectedStatsMs"]["p50Ms"], 7.0)
+        self.assertIn("startup-corrected", right["lastMeta"]["timingNote"])
 
 
 if __name__ == "__main__":

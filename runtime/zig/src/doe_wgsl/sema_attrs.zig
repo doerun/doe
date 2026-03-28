@@ -125,6 +125,13 @@ pub fn infer_builtin_call(self: anytype, name: []const u8, arg_types: []const ir
     if (std.mem.eql(u8, name, "workgroupBarrier") or std.mem.eql(u8, name, "storageBarrier") or std.mem.eql(u8, name, "textureBarrier")) return self.module.void_type;
     if (std.mem.eql(u8, name, "arrayLength")) return self.module.u32_type;
     if (std.mem.eql(u8, name, "textureStore")) return self.module.void_type;
+    if (std.mem.eql(u8, name, "any") or std.mem.eql(u8, name, "all")) {
+        if (arg_types.len != 1) return error.UnsupportedBuiltin;
+        return switch (self.module.types.get(arg_types[0])) {
+            .vector => |vec| if (vec.elem == self.module.bool_type) self.module.bool_type else error.UnsupportedBuiltin,
+            else => error.UnsupportedBuiltin,
+        };
+    }
     if (std.mem.eql(u8, name, "textureSample") or std.mem.eql(u8, name, "textureSampleLevel") or std.mem.eql(u8, name, "textureSampleGrad") or std.mem.eql(u8, name, "textureSampleOffset") or std.mem.eql(u8, name, "textureSampleLevelOffset")) {
         if (arg_types.len == 0) return error.UnsupportedBuiltin;
         return switch (self.module.types.get(arg_types[0])) {
@@ -176,6 +183,14 @@ pub fn infer_builtin_call(self: anytype, name: []const u8, arg_types: []const ir
             else => error.UnsupportedBuiltin,
         };
     }
+    if (std.mem.eql(u8, name, "length") or std.mem.eql(u8, name, "distance")) {
+        if (arg_types.len == 0) return error.UnsupportedBuiltin;
+        return switch (self.module.types.get(arg_types[0])) {
+            .vector => |vec| vec.elem,
+            .scalar => arg_types[0],
+            else => error.UnsupportedBuiltin,
+        };
+    }
     if (std.mem.eql(u8, name, "textureLoad")) {
         if (arg_types.len == 0) return error.UnsupportedBuiltin;
         const first = self.module.types.get(arg_types[0]);
@@ -192,9 +207,13 @@ pub fn infer_builtin_call(self: anytype, name: []const u8, arg_types: []const ir
     }
     if (std.mem.eql(u8, name, "atomicLoad") or std.mem.eql(u8, name, "atomicStore") or std.mem.eql(u8, name, "atomicAdd") or std.mem.eql(u8, name, "atomicSub") or std.mem.eql(u8, name, "atomicMax") or std.mem.eql(u8, name, "atomicMin") or std.mem.eql(u8, name, "atomicAnd") or std.mem.eql(u8, name, "atomicOr") or std.mem.eql(u8, name, "atomicXor") or std.mem.eql(u8, name, "atomicExchange") or std.mem.eql(u8, name, "atomicCompareExchangeWeak")) {
         if (arg_types.len == 0) return error.UnsupportedBuiltin;
-        return switch (self.module.types.get(arg_types[0])) {
-            .atomic => |inner| inner,
+        const target_ty = switch (self.module.types.get(arg_types[0])) {
+            .ref => |ref_ty| ref_ty.elem,
             else => arg_types[0],
+        };
+        return switch (self.module.types.get(target_ty)) {
+            .atomic => |inner| inner,
+            else => target_ty,
         };
     }
     if (is_passthrough_math(name)) {
@@ -421,6 +440,8 @@ fn parse_interpolation_attr(tree: *const Ast, attr_idx: u32) !InterpolationResul
             sampling = .centroid;
         } else if (std.mem.eql(u8, sampling_name, "sample")) {
             sampling = .sample;
+        } else if (std.mem.eql(u8, sampling_name, "either")) {
+            sampling = null;
         } else {
             return error.InvalidAttribute;
         }

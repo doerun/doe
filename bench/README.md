@@ -14,6 +14,12 @@ Canonical front doors:
 - `run_blocking_gates.py`
 - `generate_backend_workloads.py`
 
+Canonical compare taxonomy:
+
+- `docs/compare-taxonomy.md`
+- `config/compare-taxonomy.json`
+- `config/generated/compare-taxonomy-expanded.jsonl`
+
 For public package usage, use `packages/doe-gpu/README.md`. For the public vs
 repo-only tooling boundary, use `docs/internal-tooling.md`.
 
@@ -135,6 +141,19 @@ That document defines:
   The Doe-vs-Tint compiler harness resolves `runnerType: "compilation"` rows
   from the workload file instead of scanning an unrelated shader directory, so
   named compilation workloads can point at the real inference-pipeline WGSLs.
+- Compilation rows now publish both:
+  - raw Tint process-wall timings
+  - a startup-corrected derived view that subtracts the Tint trivial-shader
+    baseline `p50` from each raw Tint sample
+- Compilation rows may also publish a real warm/in-process Tint view from
+  Dawn's `tint_benchmark` target when the compare config provides
+  `right.warmBinaryPath`.
+- Raw Tint timings remain the auditable source metric; the corrected view is a
+  presentation aid so process startup does not get mistaken for compile work.
+  The warm view is separate again: it is a true in-process Tint measurement,
+  not a correction derived from the raw CLI samples.
+- The benchmark-corpus config for that warm compiler surface is:
+  `bench/native-compare/compare_doe_vs_tint.benchmark-corpus.config.json`
 - Apple Metal also carries Doe-owned Gemma-3-270M-shaped direct-backend runtime rows:
   `inference_gemma3_270m_prefill_32tok` and
   `inference_gemma3_270m_decode_1tok`. These are plain Doe command streams,
@@ -193,22 +212,30 @@ Package-surface configs now exist alongside the direct configs:
 - `bench/native-compare/compare_dawn_vs_doe.config.apple.metal.gemma1b.node-package.ir.json`
 - `bench/native-compare/compare_dawn_vs_doe.config.apple.metal.gemma64.node-package.warm.ir.json`
 - `bench/native-compare/compare_dawn_vs_doe.config.apple.metal.gemma1b.node-package.warm.ir.json`
+- `bench/native-compare/compare_dawn_vs_doe.config.apple.metal.gemma64.bun-package.ir.json`
+- `bench/native-compare/compare_dawn_vs_doe.config.apple.metal.gemma1b.bun-package.ir.json`
+- `bench/native-compare/compare_dawn_vs_doe.config.apple.metal.gemma64.bun-package.warm.ir.json`
+- `bench/native-compare/compare_dawn_vs_doe.config.apple.metal.gemma1b.bun-package.warm.ir.json`
 
-These compare the public Node-facing providers over the same normalized plan:
+These compare public package providers over the same normalized plan:
 
-- left: `doe-gpu`
-- right: Dawn Node WebGPU
+- Node package rows
+  - left: `doe-gpu`
+  - right: Dawn Node WebGPU
+- Bun package rows
+  - left: `doe-gpu`
+  - right: `bun-webgpu`
 
 They are apples-to-apples for the package layer, but they are not direct
 backend implementation claims.
 
 The package lane now has two explicit timing boundaries:
 
-- cold package lane (`*.node-package.ir.json`)
+- cold package lane (`*.node-package.ir.json`, `*.bun-package.ir.json`)
   - keeps package setup inside `selectedTiming`
   - keeps `workloadUnitWall` on the compare harness subprocess wall
   - represents first-use package cost from a JS caller point of view
-- prepared-session package lane (`*.node-package.warm.ir.json`)
+- prepared-session package lane (`*.node-package.warm.ir.json`, `*.bun-package.warm.ir.json`)
   - builds the package runtime and cached WebGPU objects before the timed sample
   - keeps `selectedTiming` on the repeated workload steps only
   - switches `workloadUnitWall` to trace-meta `processWallMs` via
@@ -236,6 +263,8 @@ And the front door is:
 - `python3 bench/run_compare.py --surface direct --backend apple-metal --workload gemma270m-literal`
 - `python3 bench/run_compare.py --surface package --backend apple-metal --workload gemma64`
 - `python3 bench/run_compare.py --surface package --backend apple-metal --workload gemma64 --mode warm`
+- `python3 bench/run_compare.py --surface package --backend apple-metal --workload gemma64 --package-runtime bun`
+- `python3 bench/run_compare.py --surface package --backend apple-metal --workload gemma64 --mode warm --package-runtime bun`
 
 The matrix is explicit in config:
 
@@ -244,11 +273,20 @@ The matrix is explicit in config:
 - `surface=direct`
   - standalone Doe-plan vs standalone Dawn-plan compare rows
 - `surface=package`
-  - Node/package-surface compare rows, with `mode=cold` or `mode=warm`
+  - package-surface compare rows for `packageRuntime=node` or `packageRuntime=bun`, with `mode=cold` or `mode=warm`
+
+The canonical axis vocabulary underneath those front doors is defined in
+`config/compare-taxonomy.json`. Use that file, plus the generated expansion in
+`config/generated/compare-taxonomy-expanded.jsonl`, when you need the unified
+cartesian-product view instead of the promoted wrapper subset.
 
 This wrapper does not replace `compare_dawn_vs_doe.py`; it resolves a friendly
 config-backed matrix entry and then delegates to the existing compare runner
 unchanged.
+
+If you pass `--catalog` to `bench/run_compare.py`, relative `configPath`
+entries resolve against that catalog file. The default repo catalog still
+resolves its entries against repo root.
 
 ## Scripts
 
@@ -398,7 +436,7 @@ unchanged.
 - `run_cts_subset.py`
   - executes a configured WebGPU CTS query subset and emits per-query pass/fail + wall-time artifacts (JSON + markdown).
   - query configs can now carry structured query metadata (`id`, `bucket`, `notes`) plus preflight requirements, so reports include per-bucket pass/fail counts instead of a flat raw-query list.
-  - preferred Fawn-native config is `bench/fixtures/cts_subset.fawn-node.json`, which drives the vendored WebGPU CTS through Doe via `bench/cts/fawn-node-gpu-provider.cjs`.
+  - preferred Doe CTS config is `bench/fixtures/cts_subset.fawn-node.json` (literal current compatibility filename), which drives the vendored WebGPU CTS through Doe via `cts/fawn-node-gpu-provider.js`.
   - supports `--dry-run`, `--stop-on-fail`, and bounded query execution via `--max-queries`.
 - `run_csl_governed_lane.py`
   - runs the non-hardware CSL smoke lane:

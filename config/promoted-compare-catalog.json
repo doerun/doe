@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "entries": [
     {
       "id": "amd-vulkan-native-smoke",
@@ -209,6 +209,7 @@
       "id": "apple-metal-gemma64-package-cold",
       "backend": "apple-metal",
       "surface": "package",
+      "packageRuntime": "node",
       "workload": "gemma64",
       "mode": "cold",
       "benchmarkClass": "package-surface",
@@ -221,6 +222,7 @@
       "id": "apple-metal-gemma64-package-warm",
       "backend": "apple-metal",
       "surface": "package",
+      "packageRuntime": "node",
       "workload": "gemma64",
       "mode": "warm",
       "benchmarkClass": "package-surface",
@@ -233,6 +235,7 @@
       "id": "apple-metal-gemma1b-package-cold",
       "backend": "apple-metal",
       "surface": "package",
+      "packageRuntime": "node",
       "workload": "gemma1b",
       "mode": "cold",
       "benchmarkClass": "package-surface",
@@ -245,6 +248,7 @@
       "id": "apple-metal-gemma1b-package-warm",
       "backend": "apple-metal",
       "surface": "package",
+      "packageRuntime": "node",
       "workload": "gemma1b",
       "mode": "warm",
       "benchmarkClass": "package-surface",
@@ -252,6 +256,58 @@
       "rightExecutorId": "dawn_node_webgpu_prepared",
       "configPath": "bench/native-compare/compare_dawn_vs_doe.config.apple.metal.gemma1b.node-package.warm.ir.json",
       "description": "Prepared-session package-surface compare for doe-gpu vs Dawn Node WebGPU on the Gemma1B shaped row."
+    },
+    {
+      "id": "apple-metal-gemma64-bun-package-cold",
+      "backend": "apple-metal",
+      "surface": "package",
+      "packageRuntime": "bun",
+      "workload": "gemma64",
+      "mode": "cold",
+      "benchmarkClass": "package-surface",
+      "leftExecutorId": "doe_bun_package",
+      "rightExecutorId": "bun_webgpu_package",
+      "configPath": "bench/native-compare/compare_dawn_vs_doe.config.apple.metal.gemma64.bun-package.ir.json",
+      "description": "Cold package-surface compare for doe-gpu vs bun-webgpu on the Gemma64 shaped row."
+    },
+    {
+      "id": "apple-metal-gemma64-bun-package-warm",
+      "backend": "apple-metal",
+      "surface": "package",
+      "packageRuntime": "bun",
+      "workload": "gemma64",
+      "mode": "warm",
+      "benchmarkClass": "package-surface",
+      "leftExecutorId": "doe_bun_package_prepared",
+      "rightExecutorId": "bun_webgpu_package_prepared",
+      "configPath": "bench/native-compare/compare_dawn_vs_doe.config.apple.metal.gemma64.bun-package.warm.ir.json",
+      "description": "Prepared-session package-surface compare for doe-gpu vs bun-webgpu on the Gemma64 shaped row."
+    },
+    {
+      "id": "apple-metal-gemma1b-bun-package-cold",
+      "backend": "apple-metal",
+      "surface": "package",
+      "packageRuntime": "bun",
+      "workload": "gemma1b",
+      "mode": "cold",
+      "benchmarkClass": "package-surface",
+      "leftExecutorId": "doe_bun_package",
+      "rightExecutorId": "bun_webgpu_package",
+      "configPath": "bench/native-compare/compare_dawn_vs_doe.config.apple.metal.gemma1b.bun-package.ir.json",
+      "description": "Cold package-surface compare for doe-gpu vs bun-webgpu on the Gemma1B shaped row."
+    },
+    {
+      "id": "apple-metal-gemma1b-bun-package-warm",
+      "backend": "apple-metal",
+      "surface": "package",
+      "packageRuntime": "bun",
+      "workload": "gemma1b",
+      "mode": "warm",
+      "benchmarkClass": "package-surface",
+      "leftExecutorId": "doe_bun_package_prepared",
+      "rightExecutorId": "bun_webgpu_package_prepared",
+      "configPath": "bench/native-compare/compare_dawn_vs_doe.config.apple.metal.gemma1b.bun-package.warm.ir.json",
+      "description": "Prepared-session package-surface compare for doe-gpu vs bun-webgpu on the Gemma1B shaped row."
     },
     {
       "id": "local-d3d12-native-smoke",

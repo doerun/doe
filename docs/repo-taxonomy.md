@@ -1,8 +1,8 @@
-# Fawn repository taxonomy
+# Doe repository taxonomy
 
 ## Purpose
 
-Fawn is organized by product boundary first:
+Doe is organized by product boundary first:
 
 - engine/runtime
 - package families

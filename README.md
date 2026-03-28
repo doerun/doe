@@ -70,25 +70,37 @@ For current status, process, and performance policy, use:
 Package-surface results are tracked separately from backend-native Dawn-vs-Doe
 evidence.
 
-## Quick start
+## Stranger quickstart
 
-For package install and JS usage, use
-[`packages/doe-gpu/README.md`](packages/doe-gpu/README.md).
+This is the shortest repo-local path from clone to visible output. It uses the
+real Doe native library plus the package addon, then runs the package smoke
+test.
 
-For local runtime work:
+Requirements:
+
+- Zig 0.15.2
+- Node.js 18+
 
 ```bash
-cd runtime/zig
-zig build test
+git clone https://github.com/doe-gpu/doe.git
+cd doe
 zig build dropin
+node packages/doe-gpu/scripts/build-addon.js
+node packages/doe-gpu/test/smoke/test-smoke-load.js
 ```
 
-Doe currently requires Zig 0.15.2. See
-[`config/toolchains.json`](config/toolchains.json).
+Expected output ends with:
 
-For benchmark, compare, and gate workflows, use
-[`bench/README.md`](bench/README.md) instead of treating this README as the
-operational guide.
+```text
+Results: <n> passed, 0 failed
+```
+
+That smoke path is export- and load-oriented, so it does not require a GPU.
+
+For package install and JS usage, use
+[`packages/doe-gpu/README.md`](packages/doe-gpu/README.md). For benchmark,
+compare, and gate workflows, use [`bench/README.md`](bench/README.md) instead
+of treating this README as the operational guide.
 
 ## Deprecated packages
 
@@ -104,6 +116,7 @@ The following packages are deprecated and replaced by `doe-gpu`:
 - [`docs/internal-tooling.md`](docs/internal-tooling.md): public vs repo-only tooling boundary
 - [`docs/process.md`](docs/process.md): stage order, gates, and release policy
 - [`docs/status.md`](docs/status.md): current status and tracked follow-ups
+- [`docs/compare-taxonomy.md`](docs/compare-taxonomy.md): canonical compare axis language and generated matrix
 
 ## License
 

@@ -1,7 +1,7 @@
-# Fawn Chromium Fork Maintenance Policy
+# Doe Chromium fork maintenance policy
 
 Purpose:
-- define how Fawn keeps Chromium security/currentness while carrying Doe integration deltas.
+- define how the Doe Chromium lane stays current on Chromium security updates while carrying the minimum Doe integration delta.
 
 Scope:
 - this document governs `browser/chromium` operational maintenance.
@@ -9,14 +9,14 @@ Scope:
 
 ## 1. Integration boundary
 
-Fawn-specific Chromium changes must stay isolated to explicit WebGPU runtime integration boundaries:
+Doe-specific Chromium changes must stay isolated to explicit WebGPU runtime integration boundaries:
 - runtime selector flags/boot wiring
 - Doe library load path handling
 - WebGPU runtime identity/diagnostic wiring
 - branding/packaging assets
 
 Goal:
-- keep Fawn delta reviewable and rebase-conflict surface bounded.
+- keep the Doe delta reviewable and rebase-conflict surface bounded.
 
 ## 2. Patch cadence and SLA
 
@@ -36,7 +36,7 @@ If SLA is missed:
 Preferred order:
 1. fast-forward/cherry-pick security fixes when feasible.
 2. full branch rebase for milestone synchronization.
-3. resolve integration conflicts only in declared Fawn-owned boundary files.
+3. resolve integration conflicts only in declared Doe-owned boundary files.
 
 Non-goal:
 - broad downstream divergence across unrelated Chromium subsystems.
@@ -44,15 +44,15 @@ Non-goal:
 ## 4. Evidence required per Chromium update
 
 Per update cut, record:
-1. Chromium base revision and Fawn revision.
+1. Chromium base revision and Doe lane revision.
 2. security update class (critical/high/regular).
-3. changed-file set inside Fawn-owned boundary.
+3. changed-file set inside Doe-owned boundary.
 4. successful app launch proof artifact.
 5. Doe runtime selection proof artifact (`chrome://version` command line or equivalent).
 
 ## 5. Release guardrails
 
-Before shipping a patched `Fawn.app`:
+Before shipping a patched Chromium lane build:
 1. app bundle executable metadata must resolve correctly (`CFBundleExecutable`).
 2. runtime flags must preserve Doe launch path in produced wrapper.
 3. benchmark evidence claims must remain scoped to published artifact status.

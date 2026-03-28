@@ -116,6 +116,18 @@ def format_distribution(values: list[float]) -> dict[str, float]:
     }
 
 
+def median_sample(values: list[float]) -> float:
+    if not values:
+        return 0.0
+    sorted_values = sorted(values)
+    return sorted_values[len(sorted_values) // 2]
+
+
+def subtract_baseline_ms(values: list[float], baseline_ms: float) -> list[float]:
+    baseline = max(baseline_ms, 0.0)
+    return [max(value - baseline, 0.0) for value in values]
+
+
 def summarize_timing_metric_stats(
     run_records: list[dict[str, Any]],
     field: str,

@@ -1,4 +1,4 @@
-# Fawn Benchmark Writing Guide
+# Doe benchmark writing guide
 
 This guide defines how to add and evolve benchmarks so results stay reproducible, apples-to-apples, and claim-safe.
 
@@ -45,7 +45,7 @@ Applies to:
   - `bench/native_compare_modules/timing_selection.py`
 - Comparability obligation contract:
   - `config/comparability-obligations.json`
-  - `pipeline/lean/Fawn/Comparability.lean`
+  - `pipeline/lean/Doe/Comparability.lean`
 - Timing policy contract:
   - `config/backend-timing-policy.json`
   - `bench/vulkan_timing_policy_gate.py`

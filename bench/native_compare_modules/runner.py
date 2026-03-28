@@ -10,7 +10,14 @@ import shutil
 from pathlib import Path
 from typing import Any
 
-from native_compare_modules.reporting import NS_PER_MS, parse_int, safe_float, safe_int
+from native_compare_modules.reporting import (
+    NS_PER_MS,
+    median_sample,
+    parse_int,
+    safe_float,
+    safe_int,
+    subtract_baseline_ms,
+)
 from native_compare_modules.timing_selection import (
     pick_measured_timing_ms,
     maybe_adjust_timing_for_ignored_first_ops,
@@ -18,6 +25,10 @@ from native_compare_modules.timing_selection import (
 
 MAX_RSS_MARKER = "__DOE_MAXRSS_KB__:"
 TRACE_META_PROCESS_WALL_SOURCE = "trace-meta-process-wall"
+_TINT_STARTUP_BASELINE_CACHE: dict[tuple[str, str, int, int], list[float]] = {}
+_TINT_STARTUP_BASELINE_WGSL = """@compute @workgroup_size(1)
+fn main() {}
+"""
 
 def file_sha256(path: Path) -> str:
     import hashlib
@@ -968,6 +979,25 @@ def _tint_compile_samples(
     return samples
 
 
+def _tint_startup_baseline_samples(
+    tint_bin: Path,
+    target: str,
+    iterations: int,
+    warmup: int,
+) -> list[float]:
+    cache_key = (str(tint_bin), target, iterations, warmup)
+    cached = _TINT_STARTUP_BASELINE_CACHE.get(cache_key)
+    if cached is not None:
+        return list(cached)
+
+    with tempfile.TemporaryDirectory(prefix="doe-tint-startup-") as tmpdir:
+        shader_path = Path(tmpdir) / "startup-baseline.wgsl"
+        shader_path.write_text(_TINT_STARTUP_BASELINE_WGSL, encoding="utf-8")
+        samples = _tint_compile_samples(tint_bin, shader_path, target, iterations, warmup)
+    _TINT_STARTUP_BASELINE_CACHE[cache_key] = list(samples)
+    return list(samples)
+
+
 def run_compilation_workload(
     workload: Any,
     iterations: int,
@@ -1026,6 +1056,19 @@ def run_compilation_workload(
     tint_samples = _tint_compile_samples(
         tint_bin_path, shader_path, target, iterations, warmup,
     )
+    tint_startup_baseline_samples = _tint_startup_baseline_samples(
+        tint_bin_path,
+        target,
+        iterations,
+        warmup,
+    )
+    tint_startup_baseline_stats = reporting_mod.format_stats(tint_startup_baseline_samples)
+    tint_startup_baseline_p50_ms = median_sample(tint_startup_baseline_samples)
+    tint_startup_corrected_samples = subtract_baseline_ms(
+        tint_samples,
+        tint_startup_baseline_p50_ms,
+    )
+    tint_startup_corrected_stats = reporting_mod.format_stats(tint_startup_corrected_samples)
 
     # Build trace meta compatible with the harness expectations
     doe_trace_meta = {
@@ -1047,7 +1090,11 @@ def run_compilation_workload(
         "compiler": "tint",
         "shader": shader_name,
         "target": target,
-        "timingNote": "process-level timing includes tint startup overhead",
+        "timingNote": (
+            "process-level timing includes tint startup overhead; "
+            "compare report publishes raw process-wall stats plus a startup-corrected "
+            "view that subtracts the trivial-shader baseline p50 from each raw sample"
+        ),
         "executionDispatchCount": 1,
         "executionRowCount": 1,
         "executionSuccessCount": 1,
@@ -1075,6 +1122,9 @@ def run_compilation_workload(
             "lastMeta": tint_trace_meta,
             "timingSources": ["compilation-process-wall"],
             "timingClasses": ["process-wall"],
+            "startupBaselineStatsMs": tint_startup_baseline_stats,
+            "startupCorrectionMethod": "subtract-trivial-shader-baseline-p50",
+            "startupCorrectedStatsMs": tint_startup_corrected_stats,
         },
     }
 
