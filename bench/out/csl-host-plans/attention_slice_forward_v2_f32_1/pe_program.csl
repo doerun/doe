@@ -1,0 +1,75 @@
+// PE program: streaming attention (auto-generated from WGSL)
+// Per-PE online softmax: each PE handles one (query, head) pair.
+// No inter-PE communication — fully local.
+
+param memcpy_params: comptime_struct;
+param pe_id: i16;
+param num_pes: i16;
+
+param head_dim: i16;
+param kv_len: i16;
+param softcap: f32 = 0.0;
+param scale: f32 = 0.125;
+
+const sys_mod = @import_module("<memcpy/memcpy>", memcpy_params);
+const math = @import_module("<math>");
+
+var q: [*]f32 = undefined;
+var q_ptr: [*]f32 = &q;
+var k: [*]f32 = undefined;
+var k_ptr: [*]f32 = &k;
+var v: [*]f32 = undefined;
+var v_ptr: [*]f32 = &v;
+var output: [*]f32 = undefined;
+var output_ptr: [*]f32 = &output;
+
+fn compute() void {
+    var max_score: f32 = -3.4028235e+38;
+    for (@range(i16, kv_len)) |kv_i| {
+        var score: f32 = 0.0;
+        for (@range(i16, head_dim)) |d| {
+            const qi = q[@as(u32, d)];
+            const ki = k[@as(u32, kv_i) * @as(u32, head_dim) + @as(u32, d)];
+            score += qi * ki;
+        }
+        score *= scale;
+        if (softcap != 0.0) {
+            score = softcap * math.tanh(score / softcap);
+        }
+        if (score > max_score) max_score = score;
+    }
+
+    var sum_exp: f32 = 0.0;
+    for (@range(i16, head_dim)) |d| {
+        output[@as(u32, d)] = 0.0;
+    }
+    for (@range(i16, kv_len)) |kv_i| {
+        var score: f32 = 0.0;
+        for (@range(i16, head_dim)) |d| {
+            score += q[@as(u32, d)] * k[@as(u32, kv_i) * @as(u32, head_dim) + @as(u32, d)];
+        }
+        score *= scale;
+        if (softcap != 0.0) score = softcap * math.tanh(score / softcap);
+        const w = math.exp(score - max_score);
+        sum_exp += w;
+        for (@range(i16, head_dim)) |d| {
+            const idx = @as(u32, d);
+            output[idx] += w * v[@as(u32, kv_i) * @as(u32, head_dim) + idx];
+        }
+    }
+
+    const inv_sum = 1.0 / sum_exp;
+    for (@range(i16, head_dim)) |d| {
+        output[@as(u32, d)] *= inv_sum;
+    }
+
+    sys_mod.unblock_cmd_stream();
+}
+
+comptime {
+    @export_symbol(q_ptr, "q");
+    @export_symbol(k_ptr, "k");
+    @export_symbol(v_ptr, "v");
+    @export_symbol(output_ptr, "output");
+    @export_symbol(compute);
+}

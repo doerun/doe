@@ -1,0 +1,14 @@
+{
+  "scenarioId": "apple_metal_selective_stable_rerun_rmsnorm_slice",
+  "description": "Route the rmsnorm-family token-flip case through the numeric-stability policy: compare a fast reduction-tree rmsnorm path against a strict-serial rerun, locate first divergence, and keep the fast path when the serial rerun does not restore the exact-reference top token.",
+  "policyRegistryPath": "config/numeric-stability-policy.json",
+  "triggerPolicyId": "numeric-instability/selected-token-disagreement-with-reference-improvement-v1",
+  "routingPolicyId": "numeric-stability/prefer-stable-on-selected-token-disagreement-v1",
+  "operatorFamily": "rmsnorm-slice",
+  "fastVariantId": "tree",
+  "stableVariantId": "serial",
+  "selectedTokenOpId": "sample.token",
+  "sensitiveOperators": [
+    "rmsnorm.output"
+  ]
+}

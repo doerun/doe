@@ -1,0 +1,220 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://doe-gpu.dev/config/fragility-signature.schema.json",
+  "title": "Doe fragility signature",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "signatureId",
+    "contractStage",
+    "artifactKind",
+    "corpusClass",
+    "routeTaxonomyVersion",
+    "sourceArtifactPath",
+    "scenarioStem"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "signatureId": { "type": "string", "minLength": 1 },
+    "contractStage": {
+      "type": "string",
+      "enum": [
+        "discovery",
+        "promoted",
+        "runtime-candidate",
+        "runtime-exercised"
+      ]
+    },
+    "artifactKind": {
+      "type": "string",
+      "enum": [
+        "prompt-lm-head-flip",
+        "prompt-top-prefix-flip",
+        "policy-boundary",
+        "operator-control"
+      ]
+    },
+    "corpusClass": {
+      "type": "string",
+      "enum": [
+        "strict",
+        "broad",
+        "control",
+        "top-prefix-only",
+        "policy-boundary",
+        "operator-control"
+      ]
+    },
+    "routeTaxonomyVersion": { "type": "string", "minLength": 1 },
+    "sourceArtifactPath": { "type": "string", "minLength": 1 },
+    "sourceSearchArtifactPath": { "type": "string", "minLength": 1 },
+    "relatedArtifactPaths": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    },
+    "scenarioStem": { "type": "string", "minLength": 1 },
+    "promptId": { "type": "string", "minLength": 1 },
+    "promptText": { "type": "string", "minLength": 1 },
+    "answerSet": { "$ref": "#/$defs/answerSet" },
+    "firstGeneratedToken": { "$ref": "#/$defs/tokenObservation" },
+    "referenceSelection": { "$ref": "#/$defs/tokenSelection" },
+    "fastSelection": { "$ref": "#/$defs/tokenSelection" },
+    "stableSelection": { "$ref": "#/$defs/tokenSelection" },
+    "boundedAnswerMetrics": { "$ref": "#/$defs/boundedAnswerMetrics" },
+    "globalDecisionMetrics": { "$ref": "#/$defs/globalDecisionMetrics" },
+    "firstDivergence": { "$ref": "#/$defs/firstDivergence" },
+    "routeExpectation": { "$ref": "#/$defs/routeExpectation" },
+    "routeOutcome": { "$ref": "#/$defs/routeOutcome" },
+    "proofLinks": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/proofLink" }
+    },
+    "notes": { "type": "string" }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "tokenObservation": {
+      "type": "object",
+      "required": ["tokenId", "tokenText"],
+      "properties": {
+        "tokenId": { "type": "integer", "minimum": 0 },
+        "tokenText": { "type": "string" },
+        "logit": { "type": "number" }
+      },
+      "additionalProperties": false
+    },
+    "tokenSelection": {
+      "type": "object",
+      "required": ["tokenId", "tokenText"],
+      "properties": {
+        "tokenId": { "type": "integer", "minimum": 0 },
+        "tokenText": { "type": "string" },
+        "variantId": { "type": "string", "minLength": 1 },
+        "policyId": { "type": "string", "minLength": 1 },
+        "matchesExactReference": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "answerSet": {
+      "type": "object",
+      "required": ["answerSetId", "candidates"],
+      "properties": {
+        "answerSetId": { "type": "string", "minLength": 1 },
+        "candidateSetSource": { "type": "string", "minLength": 1 },
+        "candidates": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["tokenId", "tokenText"],
+            "properties": {
+              "tokenId": { "type": "integer", "minimum": 0 },
+              "tokenText": { "type": "string" },
+              "priority": { "type": "integer", "minimum": 0 }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "boundedAnswerMetrics": {
+      "type": "object",
+      "required": [
+        "pairGapLogit",
+        "pairMarginProbability",
+        "referenceProbability",
+        "referenceSurprisalNats",
+        "fastProbability",
+        "fastSurprisalNats"
+      ],
+      "properties": {
+        "pairGapLogit": { "type": "number" },
+        "pairMarginProbability": { "type": "number" },
+        "pairEntropyNats": { "type": "number" },
+        "referenceProbability": { "type": "number" },
+        "referenceSurprisalNats": { "type": "number" },
+        "fastProbability": { "type": "number" },
+        "fastSurprisalNats": { "type": "number" }
+      },
+      "additionalProperties": false
+    },
+    "globalDecisionMetrics": {
+      "type": "object",
+      "required": [
+        "globalGreedyToken",
+        "globalTop2GapLogit",
+        "referenceTokenGlobalSurprisalStatus"
+      ],
+      "properties": {
+        "globalGreedyToken": { "$ref": "#/$defs/tokenObservation" },
+        "globalTop2GapLogit": { "type": "number" },
+        "outsiderLeadVsPairMaxLogit": { "type": "number" },
+        "outsiderDominatesPair": { "type": "boolean" },
+        "referenceTokenGlobalProbability": { "type": "number" },
+        "referenceTokenGlobalSurprisalNats": { "type": "number" },
+        "referenceTokenGlobalSurprisalStatus": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "firstDivergence": {
+      "type": "object",
+      "required": ["semanticOpId"],
+      "properties": {
+        "semanticOpId": { "type": "string", "minLength": 1 },
+        "operatorFamily": { "type": "string", "minLength": 1 },
+        "semanticStage": { "type": "string", "minLength": 1 },
+        "semanticPhase": { "type": "string", "minLength": 1 },
+        "fastDigest": { "type": "string", "minLength": 1 },
+        "stableDigest": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "routeExpectation": {
+      "type": "object",
+      "required": ["decision", "status", "sourceArtifactPath", "hasPromotionEvidence"],
+      "properties": {
+        "decision": { "$ref": "#/$defs/routeDecision" },
+        "status": {
+          "type": "string",
+          "enum": [
+            "hypothetical-from-hunt",
+            "realized-in-promotion",
+            "realized-in-runtime-control"
+          ]
+        },
+        "sourceArtifactPath": { "type": "string", "minLength": 1 },
+        "hasPromotionEvidence": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "routeOutcome": {
+      "type": "object",
+      "required": ["decision"],
+      "properties": {
+        "decision": { "$ref": "#/$defs/routeDecision" },
+        "selectedVariantId": { "type": "string", "minLength": 1 },
+        "selectedTokenId": { "type": "integer", "minimum": 0 },
+        "receiptArtifactPath": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "routeDecision": {
+      "type": "string",
+      "enum": ["accept-fast", "prefer-stable", "abstain"]
+    },
+    "proofLink": {
+      "type": "object",
+      "required": ["theorem", "module", "category", "relation", "artifactPath"],
+      "properties": {
+        "theorem": { "type": "string", "minLength": 1 },
+        "module": { "type": "string", "minLength": 1 },
+        "category": { "type": "string", "minLength": 1 },
+        "relation": { "type": "string", "minLength": 1 },
+        "artifactPath": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    }
+  }
+}

@@ -1,0 +1,150 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://doe-gpu.dev/config/numeric-stability-policy.schema.json",
+  "title": "Doe numeric stability policy registry",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "registryVersion",
+    "routeTaxonomyVersion",
+    "proofArtifactPath",
+    "routeDecisions",
+    "routeDecisionMetadata",
+    "triggerPolicies",
+    "routingPolicies"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 2 },
+    "registryVersion": { "type": "string", "minLength": 1 },
+    "routeTaxonomyVersion": { "type": "string", "minLength": 1 },
+    "proofArtifactPath": { "type": "string", "minLength": 1 },
+    "routeDecisions": {
+      "type": "array",
+      "minItems": 3,
+      "items": {
+        "type": "string",
+        "enum": ["accept-fast", "prefer-stable", "abstain"]
+      },
+      "uniqueItems": true
+    },
+    "routeDecisionMetadata": {
+      "type": "array",
+      "minItems": 3,
+      "items": { "$ref": "#/$defs/routeDecisionMetadata" }
+    },
+    "triggerPolicies": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/triggerPolicy" }
+    },
+    "routingPolicies": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/routingPolicy" }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "routeDecision": {
+      "type": "string",
+      "enum": ["accept-fast", "prefer-stable", "abstain"]
+    },
+    "selectionMode": {
+      "type": "string",
+      "enum": ["fast", "stable", "none"]
+    },
+    "routeDecisionMetadata": {
+      "type": "object",
+      "required": [
+        "decision",
+        "selectionMode",
+        "proofLinks"
+      ],
+      "properties": {
+        "decision": { "$ref": "#/$defs/routeDecision" },
+        "selectionMode": { "$ref": "#/$defs/selectionMode" },
+        "proofLinks": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/proofLink" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "triggerPolicy": {
+      "type": "object",
+      "required": [
+        "triggerPolicyId",
+        "requireFirstDivergence",
+        "requireSelectedTokenDisagreement",
+        "requireStableMatchesExactReference",
+        "requireFastMissesExactReference",
+        "allowedSensitiveOperators",
+        "proofLinks"
+      ],
+      "properties": {
+        "triggerPolicyId": { "type": "string", "minLength": 1 },
+        "requireFirstDivergence": { "type": "boolean" },
+        "requireSelectedTokenDisagreement": { "type": "boolean" },
+        "requireStableMatchesExactReference": { "type": "boolean" },
+        "requireFastMissesExactReference": { "type": "boolean" },
+        "allowedSensitiveOperators": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "proofLinks": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/proofLink" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "routingPolicy": {
+      "type": "object",
+      "required": [
+        "policyId",
+        "triggerPolicyId",
+        "triggeredDecision",
+        "fallbackDecision",
+        "proofLinks"
+      ],
+      "properties": {
+        "policyId": { "type": "string", "minLength": 1 },
+        "triggerPolicyId": { "type": "string", "minLength": 1 },
+        "triggeredDecision": {
+          "$ref": "#/$defs/routeDecision"
+        },
+        "fallbackDecision": {
+          "$ref": "#/$defs/routeDecision"
+        },
+        "proofLinks": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/proofLink" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "proofLink": {
+      "type": "object",
+      "required": [
+        "theorem",
+        "module",
+        "category",
+        "relation",
+        "artifactPath"
+      ],
+      "properties": {
+        "theorem": { "type": "string", "minLength": 1 },
+        "module": { "type": "string", "minLength": 1 },
+        "category": { "type": "string", "minLength": 1 },
+        "relation": { "type": "string", "minLength": 1 },
+        "artifactPath": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    }
+  }
+}

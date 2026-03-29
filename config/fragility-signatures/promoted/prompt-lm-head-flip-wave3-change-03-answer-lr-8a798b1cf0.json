@@ -1,0 +1,143 @@
+{
+  "schemaVersion": 1,
+  "signatureId": "prompt-lm-head-flip::wave3-change-03-answer-lr::8a798b1cf0",
+  "contractStage": "runtime-exercised",
+  "artifactKind": "prompt-lm-head-flip",
+  "corpusClass": "strict",
+  "routeTaxonomyVersion": "numeric-stability-routes-v1",
+  "sourceArtifactPath": "bench/out/apple-metal-real-lm-head-slice-hunt/20260329T143813Z/apple_metal_real_lm_head_slice_hunt_gemma270m_wave3_shard01.real-lm-head-slice-hunt.json",
+  "scenarioStem": "Revoking access for a departed employee should be",
+  "notes": "Runtime-exercised through ordinary doe-zig-runtime execution; see `bench/out/apple-metal-in-path-numeric-stability/20260329T191921Z/in-path-revoking-departed-employee/in-path-numeric-stability.case.json` for route and overhead details.",
+  "sourceSearchArtifactPath": "bench/out/apple-metal-real-lm-head-slice-hunt/20260329T143813Z/apple_metal_real_lm_head_slice_hunt_gemma270m_wave3_shard01.real-lm-head-slice-hunt.json",
+  "relatedArtifactPaths": [
+    "bench/out/apple-metal-reduction-order-logit-flip/20260329T143813Z/apple_metal_real_lm_head_slice_hunt_gemma270m_wave3_shard01_wave3-change-03-answer-lr_prefix2.reduction-order-logit-flip.json",
+    "bench/out/apple-metal-selective-stable-rerun/20260329T143813Z/apple_metal_real_lm_head_slice_hunt_gemma270m_wave3_shard01_wave3-change-03-answer-lr_prefix2_selective_stable_rerun.selective-stable-rerun.json",
+    "bench/out/apple-metal-real-lm-head-slice-hunt/20260329T143813Z/wave3-change-03-answer-lr-prefix2/apple_metal_real_lm_head_slice_hunt_gemma270m_wave3_shard01_wave3-change-03-answer-lr_prefix2.fixture.json",
+    "bench/out/apple-metal-real-lm-head-slice-hunt/20260329T143813Z/wave3-change-03-answer-lr-prefix2/apple_metal_real_lm_head_slice_hunt_gemma270m_wave3_shard01_wave3-change-03-answer-lr_prefix2_selective_stable_rerun.fixture.json",
+    "bench/out/apple-metal-runtime-numeric-stability/20260329T184228Z/prompt-revoking-departed-employee-runtime/runtime-numeric-stability.request.json",
+    "bench/out/apple-metal-runtime-numeric-stability/20260329T184228Z/prompt-revoking-departed-employee-runtime/runtime-numeric-stability.result.json",
+    "bench/out/apple-metal-runtime-numeric-stability/20260329T184228Z/prompt-revoking-departed-employee-runtime/runtime-numeric-stability.receipt.jsonl",
+    "bench/out/apple-metal-runtime-numeric-stability/20260329T184228Z/prompt-revoking-departed-employee-runtime/runtime-numeric-stability.trace-meta.json",
+    "bench/out/apple-metal-runtime-numeric-stability/20260329T184228Z/prompt-revoking-departed-employee-runtime/runtime-numeric-stability.case.json",
+    "bench/out/apple-metal-runtime-numeric-stability/20260329T184418Z/prompt-revoking-departed-employee-runtime/runtime-numeric-stability.request.json",
+    "bench/out/apple-metal-runtime-numeric-stability/20260329T184418Z/prompt-revoking-departed-employee-runtime/runtime-numeric-stability.result.json",
+    "bench/out/apple-metal-runtime-numeric-stability/20260329T184418Z/prompt-revoking-departed-employee-runtime/runtime-numeric-stability.receipt.jsonl",
+    "bench/out/apple-metal-runtime-numeric-stability/20260329T184418Z/prompt-revoking-departed-employee-runtime/runtime-numeric-stability.trace-meta.json",
+    "bench/out/apple-metal-runtime-numeric-stability/20260329T184418Z/prompt-revoking-departed-employee-runtime/runtime-numeric-stability.case.json",
+    "bench/out/apple-metal-in-path-numeric-stability/20260329T223000Z/in-path-revoking-departed-employee/in-path-numeric-stability.commands.json",
+    "bench/out/apple-metal-in-path-numeric-stability/20260329T223000Z/in-path-revoking-departed-employee/in-path-numeric-stability.trace-meta.json",
+    "bench/out/apple-metal-in-path-numeric-stability/20260329T223000Z/in-path-revoking-departed-employee/in-path-numeric-stability.trace-meta.json.numeric-stability.jsonl",
+    "bench/out/apple-metal-in-path-numeric-stability/20260329T223000Z/in-path-revoking-departed-employee/in-path-numeric-stability.case.json",
+    "bench/out/apple-metal-in-path-numeric-stability/20260329T191921Z/in-path-revoking-departed-employee/in-path-numeric-stability.commands.json",
+    "bench/out/apple-metal-in-path-numeric-stability/20260329T191921Z/in-path-revoking-departed-employee/in-path-numeric-stability.trace-meta.json",
+    "bench/out/apple-metal-in-path-numeric-stability/20260329T191921Z/in-path-revoking-departed-employee/in-path-numeric-stability.trace-meta.json.numeric-stability.jsonl",
+    "bench/out/apple-metal-in-path-numeric-stability/20260329T191921Z/in-path-revoking-departed-employee/in-path-numeric-stability.case.json"
+  ],
+  "promptId": "wave3-change-03-answer-lr",
+  "promptText": "Answer with exactly one word: approve or deny.\nQuestion: Revoking access for a departed employee should be\nAnswer:",
+  "answerSet": {
+    "answerSetId": "approve_deny",
+    "candidateSetSource": "prompt-choice",
+    "candidates": [
+      {
+        "tokenId": 34767,
+        "tokenText": " approve",
+        "priority": 0
+      },
+      {
+        "tokenId": 30590,
+        "tokenText": " deny",
+        "priority": 1
+      }
+    ]
+  },
+  "globalDecisionMetrics": {
+    "globalGreedyToken": {
+      "tokenId": 34767,
+      "tokenText": " approve",
+      "logit": 16.932552337646484
+    },
+    "globalTop2GapLogit": 0.009578704833984375,
+    "referenceTokenGlobalSurprisalStatus": "unavailable_no_full_logits",
+    "outsiderLeadVsPairMaxLogit": -0.055728912353515625,
+    "outsiderDominatesPair": false
+  },
+  "firstGeneratedToken": {
+    "tokenId": 34767,
+    "tokenText": " approve",
+    "logit": 16.932552337646484
+  },
+  "boundedAnswerMetrics": {
+    "pairGapLogit": 0.009578704833984375,
+    "pairMarginProbability": 0.00478931579810471,
+    "pairEntropyNats": 0.6931357117431937,
+    "referenceProbability": 0.5023946578990524,
+    "referenceSurprisalNats": 0.6883692970473949,
+    "fastProbability": 0.49760534210094765,
+    "fastSurprisalNats": 0.6979480018813793
+  },
+  "referenceSelection": {
+    "tokenId": 34767,
+    "tokenText": "approve",
+    "matchesExactReference": true,
+    "variantId": "exact-reference",
+    "policyId": "lm-head-slice/cpu-f64-serial-v1"
+  },
+  "fastSelection": {
+    "tokenId": 30590,
+    "tokenText": "deny",
+    "matchesExactReference": false,
+    "variantId": "f16accum",
+    "policyId": "lm-head-slice/forward-f16accum-v1"
+  },
+  "stableSelection": {
+    "tokenId": 34767,
+    "tokenText": "approve",
+    "matchesExactReference": true,
+    "variantId": "forward",
+    "policyId": "lm-head-slice/forward-serial-v1"
+  },
+  "firstDivergence": {
+    "semanticOpId": "matmul.logits",
+    "operatorFamily": "lm-head-slice",
+    "semanticStage": "real_lm_head_slice",
+    "semanticPhase": "logits",
+    "fastDigest": "74c1ed214daf696945c4e5fb66050f7817b3907d3ac6112dc05260b0e93dabf9",
+    "stableDigest": "263cb170633ca86f24cbac8318951e616c31fdf2bb314cc3a724db635d3241aa"
+  },
+  "routeExpectation": {
+    "decision": "prefer-stable",
+    "status": "realized-in-promotion",
+    "sourceArtifactPath": "bench/out/apple-metal-selective-stable-rerun/20260329T143813Z/apple_metal_real_lm_head_slice_hunt_gemma270m_wave3_shard01_wave3-change-03-answer-lr_prefix2_selective_stable_rerun.selective-stable-rerun.json",
+    "hasPromotionEvidence": true
+  },
+  "proofLinks": [
+    {
+      "theorem": "selectedTokenReferenceImprovementTriggered_iff_all_checks",
+      "module": "Doe.Core.NumericStabilityPolicy",
+      "category": "lean_verified",
+      "relation": "numeric-stability-trigger-all-checks",
+      "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+    },
+    {
+      "theorem": "routeDecisionForTrigger_prefers_triggered_decision_when_true",
+      "module": "Doe.Core.NumericStabilityPolicy",
+      "category": "lean_verified",
+      "relation": "numeric-stability-route-triggered",
+      "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+    },
+    {
+      "theorem": "routeDecisionForTrigger_prefers_fallback_decision_when_false",
+      "module": "Doe.Core.NumericStabilityPolicy",
+      "category": "lean_verified",
+      "relation": "numeric-stability-route-fallback",
+      "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+    }
+  ],
+  "routeOutcome": {
+    "decision": "prefer-stable",
+    "receiptArtifactPath": "bench/out/apple-metal-in-path-numeric-stability/20260329T191921Z/in-path-revoking-departed-employee/in-path-numeric-stability.trace-meta.json.numeric-stability.jsonl",
+    "selectedVariantId": "forward",
+    "selectedTokenId": 34767
+  }
+}

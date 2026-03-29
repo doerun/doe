@@ -16,3 +16,14 @@ C:matmul_gemv_subgroup#main_multicol
 C:sample#sample_single_pass
 C:rmsnorm
 C:sample
+C:dot_product_forward_f32
+C:dot_product_reverse_f32
+C:dot_product_pairwise_f32
+C:matmul_logits_forward_f32
+C:matmul_logits_reverse_f32
+C:matmul_logits_pairwise_f32
+C:attention_slice_forward_v2_f32
+C:attention_slice_pairwise_v2_f32
+C:rmsnorm_serial_f32
+C:matmul_logits_tree64_f32
+C:matmul_logits_forward_f16accum

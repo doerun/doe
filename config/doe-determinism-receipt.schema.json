@@ -37,6 +37,9 @@
       "type": "object",
       "required": [
         "mode",
+        "policyRegistryPath",
+        "policyRegistryVersion",
+        "policyId",
         "comparator",
         "tieBreakRule",
         "sourceKind",
@@ -48,10 +51,15 @@
         "tiedMaxCount",
         "tiedMaxIndicesPrefix",
         "tiedMaxIndicesOmittedCount",
-        "topCandidates"
+        "selectedBy",
+        "topCandidates",
+        "proofLinks"
       ],
       "properties": {
         "mode": { "const": "stable-token" },
+        "policyRegistryPath": { "type": "string", "minLength": 1 },
+        "policyRegistryVersion": { "type": "string", "minLength": 1 },
+        "policyId": { "type": "string", "minLength": 1 },
         "comparator": { "const": "scalar-f32-greedy" },
         "tieBreakRule": { "const": "lowest-index-among-max" },
         "sourceKind": { "enum": ["host-bytes", "buffer-readback"] },
@@ -69,6 +77,7 @@
           "items": { "type": "integer", "minimum": 0 }
         },
         "tiedMaxIndicesOmittedCount": { "type": "integer", "minimum": 0 },
+        "selectedBy": { "const": "stable-token-policy" },
         "topCandidates": {
           "type": "array",
           "minItems": 1,
@@ -97,6 +106,8 @@
       "type": "object",
       "required": [
         "mode",
+        "policyRegistryPath",
+        "policyRegistryVersion",
         "comparator",
         "baseRuleId",
         "evaluatorKind",
@@ -121,12 +132,15 @@
         "ambiguousCandidateCount",
         "ambiguousCandidateIndicesPrefix",
         "ambiguousCandidateIndicesOmittedCount",
-        "topCandidates"
+        "topCandidates",
+        "proofLinks"
       ],
       "properties": {
         "mode": { "const": "stable-choice" },
+        "policyRegistryPath": { "type": "string", "minLength": 1 },
+        "policyRegistryVersion": { "type": "string", "minLength": 1 },
         "comparator": { "const": "scalar-f32-greedy" },
-        "baseRuleId": { "const": "stable-token/lowest-index-among-max" },
+        "baseRuleId": { "type": "string", "minLength": 1 },
         "evaluatorKind": { "const": "fixed-priority" },
         "policyId": { "type": "string", "minLength": 1 },
         "triggerPolicyId": { "type": ["string", "null"], "minLength": 1 },
@@ -203,6 +217,8 @@
       "type": "object",
       "required": [
         "mode",
+        "policyRegistryPath",
+        "policyRegistryVersion",
         "comparator",
         "baseRuleId",
         "evaluatorKind",
@@ -235,8 +251,10 @@
       ],
       "properties": {
         "mode": { "const": "reviewed-choice" },
+        "policyRegistryPath": { "type": "string", "minLength": 1 },
+        "policyRegistryVersion": { "type": "string", "minLength": 1 },
         "comparator": { "const": "scalar-f32-greedy" },
-        "baseRuleId": { "const": "stable-token/lowest-index-among-max" },
+        "baseRuleId": { "type": "string", "minLength": 1 },
         "evaluatorKind": { "const": "explicit-review-decision" },
         "reviewPolicyId": { "type": "string", "minLength": 1 },
         "triggerPolicyId": { "type": ["string", "null"], "minLength": 1 },

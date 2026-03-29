@@ -1,0 +1,99 @@
+{
+  "schemaVersion": 1,
+  "signatureId": "operator::live-matmul-accept-fast-control",
+  "contractStage": "runtime-exercised",
+  "artifactKind": "operator-control",
+  "corpusClass": "operator-control",
+  "routeTaxonomyVersion": "numeric-stability-routes-v1",
+  "sourceArtifactPath": "bench/out/apple-metal-runtime-numeric-stability/20260329T184418Z/control-live-matmul-accept-fast/runtime-numeric-stability.result.json",
+  "scenarioStem": "live matmul accept-fast control",
+  "sourceSearchArtifactPath": "bench/out/apple-metal-runtime-numeric-stability/20260329T184418Z/control-live-matmul-accept-fast/runtime-numeric-stability.request.json",
+  "relatedArtifactPaths": [
+    "bench/out/apple-metal-runtime-numeric-stability/20260329T184418Z/control-live-matmul-accept-fast/runtime-numeric-stability.request.json",
+    "bench/out/apple-metal-runtime-numeric-stability/20260329T184418Z/control-live-matmul-accept-fast/runtime-numeric-stability.result.json",
+    "bench/out/apple-metal-runtime-numeric-stability/20260329T184418Z/control-live-matmul-accept-fast/runtime-numeric-stability.receipt.jsonl",
+    "bench/out/apple-metal-runtime-numeric-stability/20260329T184418Z/control-live-matmul-accept-fast/runtime-numeric-stability.trace-meta.json",
+    "bench/out/apple-metal-runtime-numeric-stability/20260329T184418Z/control-live-matmul-accept-fast/runtime-numeric-stability.case.json",
+    "bench/out/apple-metal-in-path-numeric-stability/20260329T223000Z/in-path-accept-fast-control/in-path-numeric-stability.commands.json",
+    "bench/out/apple-metal-in-path-numeric-stability/20260329T223000Z/in-path-accept-fast-control/in-path-numeric-stability.trace-meta.json",
+    "bench/out/apple-metal-in-path-numeric-stability/20260329T223000Z/in-path-accept-fast-control/in-path-numeric-stability.trace-meta.json.numeric-stability.jsonl",
+    "bench/out/apple-metal-in-path-numeric-stability/20260329T223000Z/in-path-accept-fast-control/in-path-numeric-stability.case.json",
+    "bench/out/apple-metal-in-path-numeric-stability/20260329T191921Z/in-path-accept-fast-control/in-path-numeric-stability.commands.json",
+    "bench/out/apple-metal-in-path-numeric-stability/20260329T191921Z/in-path-accept-fast-control/in-path-numeric-stability.trace-meta.json",
+    "bench/out/apple-metal-in-path-numeric-stability/20260329T191921Z/in-path-accept-fast-control/in-path-numeric-stability.trace-meta.json.numeric-stability.jsonl",
+    "bench/out/apple-metal-in-path-numeric-stability/20260329T191921Z/in-path-accept-fast-control/in-path-numeric-stability.case.json"
+  ],
+  "answerSet": {
+    "answerSetId": "fast_slow",
+    "candidateSetSource": "runtime-exercise-control",
+    "candidates": [
+      {
+        "tokenId": 11,
+        "tokenText": "fast",
+        "priority": 0
+      },
+      {
+        "tokenId": 22,
+        "tokenText": "slow",
+        "priority": 1
+      }
+    ]
+  },
+  "referenceSelection": {
+    "tokenId": 11,
+    "tokenText": "fast-ref",
+    "matchesExactReference": true,
+    "variantId": "exact-reference",
+    "policyId": "lm-head-slice/cpu-f64-serial-v1"
+  },
+  "fastSelection": {
+    "tokenId": 11,
+    "tokenText": "fast-ref",
+    "matchesExactReference": true,
+    "variantId": "f16accum",
+    "policyId": "lm-head-slice/forward-f16accum-v1"
+  },
+  "stableSelection": {
+    "tokenId": 11,
+    "tokenText": "fast-ref",
+    "matchesExactReference": true,
+    "variantId": "forward",
+    "policyId": "lm-head-slice/forward-serial-v1"
+  },
+  "routeExpectation": {
+    "decision": "accept-fast",
+    "status": "realized-in-runtime-control",
+    "sourceArtifactPath": "bench/out/apple-metal-runtime-numeric-stability/20260329T184418Z/control-live-matmul-accept-fast/runtime-numeric-stability.result.json",
+    "hasPromotionEvidence": false
+  },
+  "routeOutcome": {
+    "decision": "accept-fast",
+    "receiptArtifactPath": "bench/out/apple-metal-in-path-numeric-stability/20260329T191921Z/in-path-accept-fast-control/in-path-numeric-stability.trace-meta.json.numeric-stability.jsonl",
+    "selectedVariantId": "f16accum",
+    "selectedTokenId": 11
+  },
+  "notes": "Runtime-exercised through ordinary doe-zig-runtime execution; see `bench/out/apple-metal-in-path-numeric-stability/20260329T191921Z/in-path-accept-fast-control/in-path-numeric-stability.case.json` for route and overhead details.",
+  "proofLinks": [
+    {
+      "theorem": "selectedTokenReferenceImprovementTriggered_iff_all_checks",
+      "module": "Doe.Core.NumericStabilityPolicy",
+      "category": "lean_verified",
+      "relation": "numeric-stability-trigger-all-checks",
+      "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+    },
+    {
+      "theorem": "routeDecisionForTrigger_prefers_triggered_decision_when_true",
+      "module": "Doe.Core.NumericStabilityPolicy",
+      "category": "lean_verified",
+      "relation": "numeric-stability-route-triggered",
+      "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+    },
+    {
+      "theorem": "routeDecisionForTrigger_prefers_fallback_decision_when_false",
+      "module": "Doe.Core.NumericStabilityPolicy",
+      "category": "lean_verified",
+      "relation": "numeric-stability-route-fallback",
+      "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+    }
+  ]
+}

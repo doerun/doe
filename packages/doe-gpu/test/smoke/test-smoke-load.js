@@ -61,14 +61,21 @@ check('gpu.bind({}) exposes determinism namespace', boundWithoutGpu.determinism 
 check('gpu.bind({}).determinism.stableToken is a function', typeof boundWithoutGpu.determinism?.stableToken === 'function');
 check('gpu.bind({}).determinism.stableChoice is a function', typeof boundWithoutGpu.determinism?.stableChoice === 'function');
 check('gpu.bind({}).determinism.reviewedChoice is a function', typeof boundWithoutGpu.determinism?.reviewedChoice === 'function');
+console.log('\ngpu numericStability shape:');
+check('gpu.bind({}) exposes numericStability namespace', boundWithoutGpu.numericStability != null && typeof boundWithoutGpu.numericStability === 'object');
+check('gpu.bind({}).numericStability.matmulLogitsSlice is a function', typeof boundWithoutGpu.numericStability?.matmulLogitsSlice === 'function');
 try {
   const stable = await boundWithoutGpu.determinism.stableToken({
     logits: new Float32Array([0, 7, 7, 3]),
   });
   check('stableToken returns lowest max index for host logits', stable.token === 1, JSON.stringify(stable));
+  check('stableToken receipt reports policy registry path', stable.receipt?.policyRegistryPath === 'config/determinism-policy.json');
+  check('stableToken receipt reports policy registry version', stable.receipt?.policyRegistryVersion === '2026-03-28');
+  check('stableToken receipt reports policy id', stable.receipt?.policyId === 'stable-token/lowest-index-among-max-v1');
   check('stableToken receipt reports host-bytes source', stable.receipt?.sourceKind === 'host-bytes');
   check('stableToken receipt reports tied max count', stable.receipt?.tiedMaxCount === 2);
   check('stableToken receipt reports explicit tie-break rule', stable.receipt?.tieBreakRule === 'lowest-index-among-max');
+  check('stableToken receipt reports selectedBy policy', stable.receipt?.selectedBy === 'stable-token-policy');
   check('stableToken receipt exposes proof links', Array.isArray(stable.receipt?.proofLinks) && stable.receipt.proofLinks.length >= 1);
 } catch (err) {
   check('stableToken host-logit helper succeeds', false, err.message);
@@ -88,6 +95,8 @@ try {
   });
   check('stableChoice exact tie follows fixed-priority order', choice.token === 2, JSON.stringify(choice));
   check('stableChoice receipt reports stable-choice mode', choice.receipt?.mode === 'stable-choice');
+  check('stableChoice receipt reports policy registry path', choice.receipt?.policyRegistryPath === 'config/determinism-policy.json');
+  check('stableChoice receipt reports policy registry version', choice.receipt?.policyRegistryVersion === '2026-03-28');
   check('stableChoice receipt reports policy trigger', choice.receipt?.ambiguityTriggered === true);
   check('stableChoice receipt records selectedBy policy', choice.receipt?.selectedBy === 'stable-choice-policy');
   check('stableChoice receipt preserves policyId', choice.receipt?.policyId === 'smoke/fixed-priority-safe-last');
@@ -119,6 +128,8 @@ try {
   });
   check('reviewedChoice exact tie honors reviewed token', reviewed.token === 1, JSON.stringify(reviewed));
   check('reviewedChoice receipt reports reviewed-choice mode', reviewed.receipt?.mode === 'reviewed-choice');
+  check('reviewedChoice receipt reports policy registry path', reviewed.receipt?.policyRegistryPath === 'config/determinism-policy.json');
+  check('reviewedChoice receipt reports policy registry version', reviewed.receipt?.policyRegistryVersion === '2026-03-28');
   check('reviewedChoice receipt records decision acceptance', reviewed.receipt?.decisionAccepted === true);
   check('reviewedChoice receipt records selectedBy decision', reviewed.receipt?.selectedBy === 'reviewed-choice-decision');
   check('reviewedChoice receipt preserves reviewerId', reviewed.receipt?.decision?.reviewerId === 'smoke/reviewer-v1');
@@ -176,6 +187,50 @@ try {
   const runtime = mod.createDoeRuntime();
   check('createDoeRuntime() returns object', typeof runtime === 'object' && runtime != null);
   check('runtime.runBench is a function', typeof runtime.runBench === 'function');
+  check('runtime.runModule is a function', typeof runtime.runModule === 'function');
+  check('runtime.runNumericStabilityMatmulLogitsSlice is a function', typeof runtime.runNumericStabilityMatmulLogitsSlice === 'function');
+  if (typeof runtime.runNumericStabilityMatmulLogitsSlice === 'function') {
+    try {
+      const numeric = await boundWithoutGpu.numericStability.matmulLogitsSlice({
+        runtime,
+        hiddenState: [1, 1, 1],
+        candidates: [
+          { tokenId: 11, label: 'keep', weights: [10000, 0.01, -10000] },
+          { tokenId: 22, label: 'flip', weights: [0, 0.001, 0] },
+        ],
+      });
+      check('numericStability host helper returns prefer-stable route', numeric.routeDecision === 'prefer-stable', JSON.stringify(numeric));
+      check('numericStability host helper returns stable token', numeric.token === 11, JSON.stringify(numeric));
+      check('numericStability receipt reports numeric-stability mode', numeric.receipt?.mode === 'numeric-stability');
+      check('numericStability receipt reports policy registry path', numeric.receipt?.policyRegistryPath === 'config/numeric-stability-policy.json');
+      check('numericStability receipt reports policy registry version', numeric.receipt?.policyRegistryVersion === '2026-03-29-route-taxonomy-v2');
+      check('numericStability receipt reports route taxonomy version', numeric.receipt?.routeTaxonomyVersion === 'numeric-stability-routes-v1');
+      check('numericStability receipt reports route selection mode', numeric.receipt?.route?.selectionMode === 'stable');
+      const acceptFast = await boundWithoutGpu.numericStability.matmulLogitsSlice({
+        runtime,
+        hiddenState: [1, 2],
+        candidates: [
+          { tokenId: 11, label: 'fast-ref', weights: [0.25, 0.75] },
+          { tokenId: 22, label: 'stable-drift', weights: [0.1, 0.2] },
+        ],
+      });
+      check('numericStability host helper returns accept-fast route', acceptFast.routeDecision === 'accept-fast', JSON.stringify(acceptFast));
+      check('numericStability host helper returns fast token for accept-fast', acceptFast.token === 11, JSON.stringify(acceptFast));
+      const abstain = await boundWithoutGpu.numericStability.matmulLogitsSlice({
+        runtime,
+        routingPolicyId: 'numeric-stability/abstain-on-selected-token-disagreement-v1',
+        hiddenState: [1, 1, 1],
+        candidates: [
+          { tokenId: 11, label: 'keep', weights: [10000, 0.01, -10000] },
+          { tokenId: 22, label: 'flip', weights: [0, 0.001, 0] },
+        ],
+      });
+      check('numericStability host helper returns abstain route', abstain.routeDecision === 'abstain', JSON.stringify(abstain));
+      check('numericStability host helper returns null token for abstain', abstain.token == null, JSON.stringify(abstain));
+    } catch (err) {
+      check('numericStability host helper succeeds', false, err.message);
+    }
+  }
 } catch {
   // createDoeRuntime throws when doe-zig-runtime binary is not built/found.
   // This is expected in CI or before building the runtime — skip gracefully.

@@ -1,0 +1,143 @@
+{
+  "schemaVersion": 1,
+  "signatureId": "prompt-lm-head-flip::wave3-privacy-22-scenario-lr::995c725fe2",
+  "contractStage": "runtime-exercised",
+  "artifactKind": "prompt-lm-head-flip",
+  "corpusClass": "strict",
+  "routeTaxonomyVersion": "numeric-stability-routes-v1",
+  "sourceArtifactPath": "bench/out/apple-metal-real-lm-head-slice-hunt/20260329T144110Z/apple_metal_real_lm_head_slice_hunt_gemma270m_wave3_shard02.real-lm-head-slice-hunt.json",
+  "scenarioStem": "A public open-source README should remain",
+  "notes": "Runtime-exercised through ordinary doe-zig-runtime execution; see `bench/out/apple-metal-in-path-numeric-stability/20260329T191921Z/in-path-public-readme/in-path-numeric-stability.case.json` for route and overhead details.",
+  "sourceSearchArtifactPath": "bench/out/apple-metal-real-lm-head-slice-hunt/20260329T144110Z/apple_metal_real_lm_head_slice_hunt_gemma270m_wave3_shard02.real-lm-head-slice-hunt.json",
+  "relatedArtifactPaths": [
+    "bench/out/apple-metal-reduction-order-logit-flip/20260329T144110Z/apple_metal_real_lm_head_slice_hunt_gemma270m_wave3_shard02_wave3-privacy-22-scenario-lr_prefix2.reduction-order-logit-flip.json",
+    "bench/out/apple-metal-selective-stable-rerun/20260329T144110Z/apple_metal_real_lm_head_slice_hunt_gemma270m_wave3_shard02_wave3-privacy-22-scenario-lr_prefix2_selective_stable_rerun.selective-stable-rerun.json",
+    "bench/out/apple-metal-real-lm-head-slice-hunt/20260329T144110Z/wave3-privacy-22-scenario-lr-prefix2/apple_metal_real_lm_head_slice_hunt_gemma270m_wave3_shard02_wave3-privacy-22-scenario-lr_prefix2.fixture.json",
+    "bench/out/apple-metal-real-lm-head-slice-hunt/20260329T144110Z/wave3-privacy-22-scenario-lr-prefix2/apple_metal_real_lm_head_slice_hunt_gemma270m_wave3_shard02_wave3-privacy-22-scenario-lr_prefix2_selective_stable_rerun.fixture.json",
+    "bench/out/apple-metal-runtime-numeric-stability/20260329T184228Z/prompt-public-readme-runtime/runtime-numeric-stability.request.json",
+    "bench/out/apple-metal-runtime-numeric-stability/20260329T184228Z/prompt-public-readme-runtime/runtime-numeric-stability.result.json",
+    "bench/out/apple-metal-runtime-numeric-stability/20260329T184228Z/prompt-public-readme-runtime/runtime-numeric-stability.receipt.jsonl",
+    "bench/out/apple-metal-runtime-numeric-stability/20260329T184228Z/prompt-public-readme-runtime/runtime-numeric-stability.trace-meta.json",
+    "bench/out/apple-metal-runtime-numeric-stability/20260329T184228Z/prompt-public-readme-runtime/runtime-numeric-stability.case.json",
+    "bench/out/apple-metal-runtime-numeric-stability/20260329T184418Z/prompt-public-readme-runtime/runtime-numeric-stability.request.json",
+    "bench/out/apple-metal-runtime-numeric-stability/20260329T184418Z/prompt-public-readme-runtime/runtime-numeric-stability.result.json",
+    "bench/out/apple-metal-runtime-numeric-stability/20260329T184418Z/prompt-public-readme-runtime/runtime-numeric-stability.receipt.jsonl",
+    "bench/out/apple-metal-runtime-numeric-stability/20260329T184418Z/prompt-public-readme-runtime/runtime-numeric-stability.trace-meta.json",
+    "bench/out/apple-metal-runtime-numeric-stability/20260329T184418Z/prompt-public-readme-runtime/runtime-numeric-stability.case.json",
+    "bench/out/apple-metal-in-path-numeric-stability/20260329T223000Z/in-path-public-readme/in-path-numeric-stability.commands.json",
+    "bench/out/apple-metal-in-path-numeric-stability/20260329T223000Z/in-path-public-readme/in-path-numeric-stability.trace-meta.json",
+    "bench/out/apple-metal-in-path-numeric-stability/20260329T223000Z/in-path-public-readme/in-path-numeric-stability.trace-meta.json.numeric-stability.jsonl",
+    "bench/out/apple-metal-in-path-numeric-stability/20260329T223000Z/in-path-public-readme/in-path-numeric-stability.case.json",
+    "bench/out/apple-metal-in-path-numeric-stability/20260329T191921Z/in-path-public-readme/in-path-numeric-stability.commands.json",
+    "bench/out/apple-metal-in-path-numeric-stability/20260329T191921Z/in-path-public-readme/in-path-numeric-stability.trace-meta.json",
+    "bench/out/apple-metal-in-path-numeric-stability/20260329T191921Z/in-path-public-readme/in-path-numeric-stability.trace-meta.json.numeric-stability.jsonl",
+    "bench/out/apple-metal-in-path-numeric-stability/20260329T191921Z/in-path-public-readme/in-path-numeric-stability.case.json"
+  ],
+  "promptId": "wave3-privacy-22-scenario-lr",
+  "promptText": "Given the scenario, answer with exactly one word: public or private.\nScenario: A public open-source README should remain\nAnswer:",
+  "answerSet": {
+    "answerSetId": "public_private",
+    "candidateSetSource": "prompt-choice",
+    "candidates": [
+      {
+        "tokenId": 1237,
+        "tokenText": " public",
+        "priority": 0
+      },
+      {
+        "tokenId": 2147,
+        "tokenText": " private",
+        "priority": 1
+      }
+    ]
+  },
+  "globalDecisionMetrics": {
+    "globalGreedyToken": {
+      "tokenId": 107,
+      "tokenText": "\n",
+      "logit": 18.4737548828125
+    },
+    "globalTop2GapLogit": 1.6937313079833984,
+    "referenceTokenGlobalSurprisalStatus": "unavailable_no_full_logits",
+    "outsiderLeadVsPairMaxLogit": 3.1029510498046875,
+    "outsiderDominatesPair": true
+  },
+  "firstGeneratedToken": {
+    "tokenId": 107,
+    "tokenText": "\n",
+    "logit": 18.4737548828125
+  },
+  "boundedAnswerMetrics": {
+    "pairGapLogit": 0.009626388549804688,
+    "pairMarginProbability": 0.004813157106414279,
+    "pairEntropyNats": 0.6931355972745556,
+    "referenceProbability": 0.5024065785532071,
+    "referenceSurprisalNats": 0.688345569659882,
+    "fastProbability": 0.49759342144679286,
+    "fastSurprisalNats": 0.6979719582096867
+  },
+  "referenceSelection": {
+    "tokenId": 1237,
+    "tokenText": "public",
+    "matchesExactReference": true,
+    "variantId": "exact-reference",
+    "policyId": "lm-head-slice/cpu-f64-serial-v1"
+  },
+  "fastSelection": {
+    "tokenId": 2147,
+    "tokenText": "private",
+    "matchesExactReference": false,
+    "variantId": "f16accum",
+    "policyId": "lm-head-slice/forward-f16accum-v1"
+  },
+  "stableSelection": {
+    "tokenId": 1237,
+    "tokenText": "public",
+    "matchesExactReference": true,
+    "variantId": "forward",
+    "policyId": "lm-head-slice/forward-serial-v1"
+  },
+  "firstDivergence": {
+    "semanticOpId": "matmul.logits",
+    "operatorFamily": "lm-head-slice",
+    "semanticStage": "real_lm_head_slice",
+    "semanticPhase": "logits",
+    "fastDigest": "18e00576ac1e7c6c6a99711b8c090f0817f318604935b24a899ff89bb81138f0",
+    "stableDigest": "417aa2c7bcfc588209fddcea2aed9cfac200fead82b6ee5062d8332135906c2c"
+  },
+  "routeExpectation": {
+    "decision": "prefer-stable",
+    "status": "realized-in-promotion",
+    "sourceArtifactPath": "bench/out/apple-metal-selective-stable-rerun/20260329T144110Z/apple_metal_real_lm_head_slice_hunt_gemma270m_wave3_shard02_wave3-privacy-22-scenario-lr_prefix2_selective_stable_rerun.selective-stable-rerun.json",
+    "hasPromotionEvidence": true
+  },
+  "proofLinks": [
+    {
+      "theorem": "selectedTokenReferenceImprovementTriggered_iff_all_checks",
+      "module": "Doe.Core.NumericStabilityPolicy",
+      "category": "lean_verified",
+      "relation": "numeric-stability-trigger-all-checks",
+      "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+    },
+    {
+      "theorem": "routeDecisionForTrigger_prefers_triggered_decision_when_true",
+      "module": "Doe.Core.NumericStabilityPolicy",
+      "category": "lean_verified",
+      "relation": "numeric-stability-route-triggered",
+      "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+    },
+    {
+      "theorem": "routeDecisionForTrigger_prefers_fallback_decision_when_false",
+      "module": "Doe.Core.NumericStabilityPolicy",
+      "category": "lean_verified",
+      "relation": "numeric-stability-route-fallback",
+      "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+    }
+  ],
+  "routeOutcome": {
+    "decision": "prefer-stable",
+    "receiptArtifactPath": "bench/out/apple-metal-in-path-numeric-stability/20260329T191921Z/in-path-public-readme/in-path-numeric-stability.trace-meta.json.numeric-stability.jsonl",
+    "selectedVariantId": "forward",
+    "selectedTokenId": 1237
+  }
+}

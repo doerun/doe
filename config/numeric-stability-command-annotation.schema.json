@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://doe-gpu.dev/config/numeric-stability-command-annotation.schema.json",
+  "title": "Doe numeric stability command annotation",
+  "type": "object",
+  "required": [
+    "operatorFamily",
+    "triggerPolicyId",
+    "routingPolicyId",
+    "fastPolicyId",
+    "stablePolicyId",
+    "hiddenState",
+    "logits",
+    "weights",
+    "candidates"
+  ],
+  "properties": {
+    "operatorFamily": { "const": "lm-head-slice" },
+    "triggerPolicyId": { "type": "string", "minLength": 1 },
+    "routingPolicyId": { "type": "string", "minLength": 1 },
+    "fastPolicyId": { "type": "string", "minLength": 1 },
+    "stablePolicyId": { "type": "string", "minLength": 1 },
+    "hiddenState": { "$ref": "#/$defs/vectorCapture" },
+    "logits": { "$ref": "#/$defs/vectorCapture" },
+    "weights": { "$ref": "#/$defs/weightsCapture" },
+    "candidates": {
+      "type": "array",
+      "minItems": 2,
+      "items": { "$ref": "#/$defs/candidate" }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "vectorCapture": {
+      "type": "object",
+      "required": ["bufferHandle", "elementCount"],
+      "properties": {
+        "bufferHandle": { "type": "integer", "minimum": 0 },
+        "offset": { "type": "integer", "minimum": 0 },
+        "elementCount": { "type": "integer", "minimum": 1 }
+      },
+      "additionalProperties": false
+    },
+    "weightsCapture": {
+      "type": "object",
+      "required": ["bufferHandle", "rowStrideElements"],
+      "properties": {
+        "bufferHandle": { "type": "integer", "minimum": 0 },
+        "offset": { "type": "integer", "minimum": 0 },
+        "rowStrideElements": { "type": "integer", "minimum": 1 }
+      },
+      "additionalProperties": false
+    },
+    "candidate": {
+      "type": "object",
+      "required": ["tokenId", "rowIndex"],
+      "properties": {
+        "tokenId": { "type": "integer", "minimum": 0 },
+        "label": { "type": ["string", "null"] },
+        "rowIndex": { "type": "integer", "minimum": 0 },
+        "bias": { "type": ["number", "null"] }
+      },
+      "additionalProperties": false
+    }
+  }
+}

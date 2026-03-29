@@ -1,6 +1,7 @@
 const std = @import("std");
 const compute_services = @import("full/modules/services/compute_services.zig");
 const effects_pipeline = @import("full/modules/rendering/effects_pipeline.zig");
+const numeric_stability = @import("full/modules/services/numeric_stability.zig");
 const path_engine = @import("full/modules/rendering/path_engine.zig");
 const resource_scheduler = @import("full/modules/services/resource_scheduler.zig");
 const sdf_renderer = @import("full/modules/rendering/sdf_renderer.zig");
@@ -61,6 +62,18 @@ pub fn main() !void {
         var parsed_policy = try compute_services.parsePolicy(allocator, policy_bytes);
         defer parsed_policy.deinit();
         const result = try compute_services.execute(allocator, parsed_request.value, parsed_policy.value);
+        const payload = try common.jsonStringifyAlloc(allocator, result);
+        defer allocator.free(payload);
+        try stdout.writeAll(payload);
+        try stdout.writeAll("\n");
+        return;
+    }
+    if (module_id != null and std.mem.eql(u8, module_id.?, numeric_stability.MODULE_ID)) {
+        var parsed_request = try numeric_stability.parseRequest(allocator, request_bytes);
+        defer parsed_request.deinit();
+        var parsed_policy = try numeric_stability.parsePolicy(allocator, resolved_policy, policy_bytes);
+        defer parsed_policy.deinit(allocator);
+        const result = try numeric_stability.execute(allocator, parsed_request.value, parsed_policy.value);
         const payload = try common.jsonStringifyAlloc(allocator, result);
         defer allocator.free(payload);
         try stdout.writeAll(payload);

@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 1,
+  "signatureId": "operator::red-light-lm-head-flagship",
+  "contractStage": "promoted",
+  "artifactKind": "operator-control",
+  "corpusClass": "operator-control",
+  "routeTaxonomyVersion": "numeric-stability-routes-v1",
+  "sourceArtifactPath": "bench/out/apple-metal-selective-stable-rerun/20260329T134732Z/apple_metal_real_lm_head_slice_hunt_gemma270m_red_go_stop_answer_red-go-stop-answer_prefix2_selective_stable_rerun.selective-stable-rerun.json",
+  "scenarioStem": "real red-light LM-head flagship",
+  "notes": "Promoted by fragility-promotion/numeric-stability-v1 from the numeric fragility corpus. Runtime novelty remains blocked until a runtime-exercised receipt exists.",
+  "relatedArtifactPaths": [
+    "bench/out/apple-metal-real-lm-head-slice-hunt/20260329T134732Z/apple_metal_real_lm_head_slice_hunt_gemma270m_red_go_stop_answer.real-lm-head-slice-hunt.json",
+    "bench/out/apple-metal-reduction-order-logit-flip/20260329T134732Z/apple_metal_real_lm_head_slice_hunt_gemma270m_red_go_stop_answer_red-go-stop-answer_prefix2.reduction-order-logit-flip.json"
+  ],
+  "referenceSelection": {
+    "tokenId": 0,
+    "tokenText": "token:0",
+    "matchesExactReference": true,
+    "variantId": "exact-reference"
+  },
+  "fastSelection": {
+    "tokenId": 1,
+    "tokenText": "token:1",
+    "matchesExactReference": false,
+    "variantId": "f16accum",
+    "policyId": "lm-head-slice/forward-f16accum-v1"
+  },
+  "stableSelection": {
+    "tokenId": 0,
+    "tokenText": "token:0",
+    "matchesExactReference": true,
+    "variantId": "forward",
+    "policyId": "lm-head-slice/forward-serial-v1"
+  },
+  "firstDivergence": {
+    "semanticOpId": "matmul.logits",
+    "operatorFamily": "lm-head-slice",
+    "semanticStage": "real_lm_head_slice",
+    "semanticPhase": "logits",
+    "fastDigest": "26d457ce24b587186229808d11152326853786bd7c6015b517bc0086f8928594",
+    "stableDigest": "2fd852cd1557746d808663b7c9c4bdf5b129065f8381afa79088c83dda5028fa"
+  },
+  "routeExpectation": {
+    "decision": "prefer-stable",
+    "status": "realized-in-promotion",
+    "sourceArtifactPath": "bench/out/apple-metal-selective-stable-rerun/20260329T134732Z/apple_metal_real_lm_head_slice_hunt_gemma270m_red_go_stop_answer_red-go-stop-answer_prefix2_selective_stable_rerun.selective-stable-rerun.json",
+    "hasPromotionEvidence": true
+  },
+  "proofLinks": [
+    {
+      "theorem": "selectedTokenReferenceImprovementTriggered_iff_all_checks",
+      "module": "Doe.Core.NumericStabilityPolicy",
+      "category": "lean_verified",
+      "relation": "numeric-stability-trigger-all-checks",
+      "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+    },
+    {
+      "theorem": "routeDecisionForTrigger_prefers_triggered_decision_when_true",
+      "module": "Doe.Core.NumericStabilityPolicy",
+      "category": "lean_verified",
+      "relation": "numeric-stability-route-triggered",
+      "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+    },
+    {
+      "theorem": "routeDecisionForTrigger_prefers_fallback_decision_when_false",
+      "module": "Doe.Core.NumericStabilityPolicy",
+      "category": "lean_verified",
+      "relation": "numeric-stability-route-fallback",
+      "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+    },
+    {
+      "theorem": "selectedValueForRoute_preferStable_returns_stable",
+      "module": "Doe.Core.NumericStabilityPolicy",
+      "category": "lean_verified",
+      "relation": "numeric-stability-route-select-stable",
+      "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+    }
+  ]
+}

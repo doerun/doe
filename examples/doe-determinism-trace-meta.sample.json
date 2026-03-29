@@ -1,0 +1,34 @@
+{
+  "traceVersion": 1,
+  "module": "doe-gpu/determinism",
+  "seqMax": 0,
+  "rowCount": 0,
+  "commandCount": 0,
+  "hash": "sha256:7fdd0fab7fd78783e720ceae3b8377174cc419f70b08ea05483eaaf273471e8f",
+  "previousHash": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+  "determinism": {
+    "mode": "stable-choice",
+    "policyRegistryPath": "config/determinism-policy.json",
+    "policyRegistryVersion": "2026-03-28",
+    "policyId": "demo/fixed-priority-safe-first",
+    "baseRuleId": "stable-token/lowest-index-among-max-v1",
+    "comparator": "scalar-f32-greedy",
+    "evaluatorKind": "fixed-priority",
+    "triggerPolicyId": "exact-max-tie-v1",
+    "candidateSetId": "safety.safe_unsafe",
+    "candidateSetSource": "fixture-declared",
+    "selectedBy": "stable-choice-policy",
+    "ambiguityTriggered": true,
+    "ambiguityTopGap": 0,
+    "stableTokenToken": 1,
+    "logitsSha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    "token": 2,
+    "proofArtifactPath": "pipeline/lean/artifacts/proven-conditions.json",
+    "proofTheorems": [
+      "stableTokenChoose_mem_tiedMaxIndices",
+      "stableTokenChoose_le_all_tiedMaxIndices",
+      "exactMaxTieTriggered_iff_two_or_more_candidates",
+      "fixedPriorityBetter_true_implies_lexicographic_preference"
+    ]
+  }
+}

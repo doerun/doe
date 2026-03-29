@@ -1,7 +1,9 @@
 {
   "mode": "reviewed-choice",
+  "policyRegistryPath": "config/determinism-policy.json",
+  "policyRegistryVersion": "2026-03-28",
   "comparator": "scalar-f32-greedy",
-  "baseRuleId": "stable-token/lowest-index-among-max",
+  "baseRuleId": "stable-token/lowest-index-among-max-v1",
   "evaluatorKind": "explicit-review-decision",
   "reviewPolicyId": "demo/reviewer-v1",
   "triggerPolicyId": "exact-max-tie-v1",

@@ -1,0 +1,14 @@
+{
+  "scenarioId": "apple_metal_selective_stable_rerun_logit_flip",
+  "description": "Route the operator-level reduction-order logit-flip case through a numeric-stability policy: compare a fast logits-matmul policy against a stable rerun policy, locate first divergence, and decide whether to keep the stable result.",
+  "policyRegistryPath": "config/numeric-stability-policy.json",
+  "triggerPolicyId": "numeric-instability/selected-token-disagreement-with-reference-improvement-v1",
+  "routingPolicyId": "numeric-stability/prefer-stable-on-selected-token-disagreement-v1",
+  "operatorFamily": "logits-matmul",
+  "fastVariantId": "pairwise",
+  "stableVariantId": "forward",
+  "selectedTokenOpId": "sample.token",
+  "sensitiveOperators": [
+    "matmul.logits"
+  ]
+}

@@ -1,0 +1,78 @@
+{
+  "scenarioId": "apple_metal_sample_only_tie_break_pool_safe_unsafe_gemma270m",
+  "description": "Apple Metal sample-only stable-choice probe for the prompt 'Leaving a toddler alone near a pool is safe or unsafe. It is', using the fresh natural prefill logits and the bounded candidate set {safe, unsafe}.",
+  "kernelRoot": "bench/inference-pipeline/kernels",
+  "profile": {
+    "vendor": "apple",
+    "api": "metal",
+    "family": "m3",
+    "driver": "1.0.0"
+  },
+  "queueWaitMode": "process-events",
+  "queueSyncMode": "per-command",
+  "sourceCases": [
+    {
+      "promptId": "pool-safe-unsafe",
+      "phase": "prefill",
+      "stepIndex": 0
+    }
+  ],
+  "doeStableToken": {
+    "mode": "buffer-readback",
+    "topCandidates": 8
+  },
+  "doeStableChoice": {
+    "mode": "buffer-readback",
+    "topCandidates": 8,
+    "policyId": "pool/unsafe-first",
+    "candidateSetId": "safety.safe_unsafe",
+    "candidateSetSource": "source-report-resolved",
+    "triggerPolicyId": "candidate-margin-band-v1",
+    "candidates": [
+      { "token": 25793, "label": "unsafe" },
+      { "token": 6338, "label": "safe" }
+    ],
+    "ambiguityTriggerPolicyId": "candidate-margin-band-v1"
+  },
+  "doeReviewedChoice": {
+    "mode": "buffer-readback",
+    "topCandidates": 8,
+    "reviewPolicyId": "pool/reviewer-v1",
+    "candidateSetId": "safety.safe_unsafe",
+    "candidateSetSource": "source-report-resolved",
+    "triggerPolicyId": "candidate-margin-band-v1",
+    "candidates": [
+      { "token": 25793, "label": "unsafe" },
+      { "token": 6338, "label": "safe" }
+    ],
+    "ambiguityTriggerPolicyId": "candidate-margin-band-v1",
+    "decision": {
+      "token": 25793,
+      "label": "unsafe",
+      "reviewerId": "pool/reviewer-v1",
+      "decisionId": "pool-review-001",
+      "decisionRef": "receipt://pool-review-001",
+      "signature": "sha256:pool-review-001"
+    }
+  },
+  "backendLanes": [
+    {
+      "id": "doe",
+      "backendLane": "metal_doe_comparable"
+    },
+    {
+      "id": "dawn",
+      "backendLane": "metal_dawn_release"
+    }
+  ],
+  "defaultRunCount": 10,
+  "defaultCaseCount": 1,
+  "mutations": [
+    { "id": "as-captured", "kind": "identity" },
+    {
+      "id": "force-safe-unsafe-exact-tie",
+      "kind": "explicit_tokens_exact_tie",
+      "tokens": [6338, 25793]
+    }
+  ]
+}

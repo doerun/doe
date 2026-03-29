@@ -1,0 +1,53 @@
+{
+  "scenarioId": "apple_metal_real_lm_head_slice_hunt_gemma270m_explicit_choice",
+  "sourceRealLogitFixturePath": "bench/fixtures/determinism/apple-metal-real-logit-hunt.gemma270m.explicit-choice.json",
+  "answerSetRegistryPath": "config/determinism-answer-set-registry.json",
+  "topCandidatePrefixes": [2],
+  "promotion": {
+    "maxPromotedCases": 2,
+    "kernelRoot": "bench/inference-pipeline/kernels",
+    "profile": {
+      "vendor": "apple",
+      "api": "metal",
+      "family": "m3",
+      "driver": "1.0.0"
+    },
+    "queueWaitMode": "process-events",
+    "queueSyncMode": "per-command",
+    "backendLanes": [
+      {
+        "id": "doe",
+        "backendLane": "metal_doe_comparable"
+      },
+      {
+        "id": "dawn",
+        "backendLane": "metal_dawn_release"
+      }
+    ],
+    "variants": [
+      {
+        "id": "forward",
+        "policyId": "lm-head-slice/forward-serial-v1",
+        "kernel": "matmul_logits_forward_f32.wgsl"
+      },
+      {
+        "id": "reverse",
+        "policyId": "lm-head-slice/reverse-serial-v1",
+        "kernel": "matmul_logits_reverse_f32.wgsl"
+      },
+      {
+        "id": "tree64",
+        "policyId": "lm-head-slice/tree64-v1",
+        "kernel": "matmul_logits_tree64_f32.wgsl"
+      },
+      {
+        "id": "f16accum",
+        "policyId": "lm-head-slice/forward-f16accum-v1",
+        "kernel": "matmul_logits_forward_f16accum.wgsl"
+      }
+    ],
+    "policyRegistryPath": "config/numeric-stability-policy.json",
+    "triggerPolicyId": "numeric-instability/selected-token-disagreement-with-reference-improvement-v1",
+    "routingPolicyId": "numeric-stability/prefer-stable-on-selected-token-disagreement-v1"
+  }
+}

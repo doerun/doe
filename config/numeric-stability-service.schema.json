@@ -1,0 +1,225 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://doe-gpu.dev/config/numeric-stability-service.schema.json",
+  "title": "Doe numeric stability service artifacts",
+  "oneOf": [
+    { "$ref": "#/$defs/request" },
+    { "$ref": "#/$defs/result" }
+  ],
+  "$defs": {
+    "candidateInput": {
+      "type": "object",
+      "required": ["tokenId", "weights"],
+      "properties": {
+        "tokenId": { "type": "integer", "minimum": 0 },
+        "label": { "type": ["string", "null"] },
+        "weights": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "number" }
+        },
+        "bias": { "type": ["number", "null"] }
+      },
+      "additionalProperties": false
+    },
+    "receipt": {
+      "type": "object",
+      "required": [
+        "schemaVersion",
+        "mode",
+        "operatorFamily",
+        "semanticOpId",
+        "semanticStage",
+        "semanticPhase",
+        "policyRegistryPath",
+        "policyRegistryVersion",
+        "routeTaxonomyVersion",
+        "proofArtifactPath",
+        "triggerPolicyId",
+        "routingPolicyId",
+        "fastPolicyId",
+        "stablePolicyId",
+        "referencePolicyId",
+        "candidates",
+        "selectedToken",
+        "trigger",
+        "route"
+      ],
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "mode": { "const": "numeric-stability" },
+        "operatorFamily": { "type": "string", "minLength": 1 },
+        "semanticOpId": { "type": "string", "minLength": 1 },
+        "semanticStage": { "type": "string", "minLength": 1 },
+        "semanticPhase": { "type": "string", "minLength": 1 },
+        "policyRegistryPath": { "type": "string", "minLength": 1 },
+        "policyRegistryVersion": { "type": "string", "minLength": 1 },
+        "routeTaxonomyVersion": { "type": "string", "minLength": 1 },
+        "proofArtifactPath": { "type": "string", "minLength": 1 },
+        "triggerPolicyId": { "type": "string", "minLength": 1 },
+        "routingPolicyId": { "type": "string", "minLength": 1 },
+        "fastPolicyId": { "type": "string", "minLength": 1 },
+        "stablePolicyId": { "type": "string", "minLength": 1 },
+        "referencePolicyId": { "type": "string", "minLength": 1 },
+        "candidates": { "type": "array", "minItems": 2 },
+        "firstDivergence": {
+          "type": ["object", "null"]
+        },
+        "selectedToken": { "type": "object" },
+        "trigger": { "type": "object" },
+        "route": {
+          "type": "object",
+          "required": ["decision", "selectionMode", "proofLinks", "selectionProofLinks"],
+          "properties": {
+            "decision": {
+              "type": "string",
+              "enum": ["accept-fast", "prefer-stable", "abstain"]
+            },
+            "selectionMode": {
+              "type": "string",
+              "enum": ["fast", "stable", "none"]
+            },
+            "selectedPolicyId": { "type": ["string", "null"] },
+            "selectedToken": { "type": ["integer", "null"], "minimum": 0 },
+            "proofLinks": {
+              "type": "array",
+              "items": { "type": "object" }
+            },
+            "selectionProofLinks": {
+              "type": "array",
+              "items": { "type": "object" }
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "request": {
+      "type": "object",
+      "required": [
+        "schemaVersion",
+        "moduleId",
+        "artifactKind",
+        "serviceId",
+        "operatorFamily",
+        "semanticOpId",
+        "semanticStage",
+        "semanticPhase",
+        "triggerPolicyId",
+        "routingPolicyId",
+        "fastPolicyId",
+        "stablePolicyId",
+        "candidates",
+        "hiddenState"
+      ],
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "moduleId": { "const": "doe_numeric_stability" },
+        "artifactKind": { "const": "request" },
+        "serviceId": { "const": "matmul_logits_slice" },
+        "operatorFamily": { "const": "lm-head-slice" },
+        "semanticOpId": { "const": "matmul.logits" },
+        "semanticStage": { "type": "string", "minLength": 1 },
+        "semanticPhase": { "type": "string", "minLength": 1 },
+        "triggerPolicyId": { "type": "string", "minLength": 1 },
+        "routingPolicyId": { "type": "string", "minLength": 1 },
+        "fastPolicyId": { "type": "string", "minLength": 1 },
+        "stablePolicyId": { "type": "string", "minLength": 1 },
+        "candidates": {
+          "type": "array",
+          "minItems": 2,
+          "items": { "$ref": "#/$defs/candidateInput" }
+        },
+        "hiddenState": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "number" }
+        },
+        "receiptPath": { "type": ["string", "null"] },
+        "traceMetaPath": { "type": ["string", "null"] }
+      },
+      "additionalProperties": false
+    },
+    "result": {
+      "type": "object",
+      "required": [
+        "schemaVersion",
+        "moduleId",
+        "artifactKind",
+        "serviceId",
+        "serviceResult",
+        "executionStats",
+        "timingStats",
+        "failureDetails",
+        "routeDecision",
+        "receipt"
+      ],
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "moduleId": { "const": "doe_numeric_stability" },
+        "artifactKind": { "const": "result" },
+        "serviceId": { "const": "matmul_logits_slice" },
+        "serviceResult": {
+          "type": "object",
+          "required": ["status"],
+          "properties": {
+            "status": { "const": "ok" }
+          },
+          "additionalProperties": false
+        },
+        "executionStats": {
+          "type": "object",
+          "required": ["dispatchCount", "bytesMoved", "candidateCount"],
+          "properties": {
+            "dispatchCount": { "type": "integer", "minimum": 0 },
+            "bytesMoved": { "type": "integer", "minimum": 0 },
+            "candidateCount": { "type": "integer", "minimum": 0 }
+          },
+          "additionalProperties": false
+        },
+        "timingStats": {
+          "type": "object",
+          "required": ["setupNs", "encodeNs", "submitNs", "dispatchNs"],
+          "properties": {
+            "setupNs": { "type": "integer", "minimum": 0 },
+            "encodeNs": { "type": "integer", "minimum": 0 },
+            "submitNs": { "type": "integer", "minimum": 0 },
+            "dispatchNs": { "type": "integer", "minimum": 0 }
+          },
+          "additionalProperties": false
+        },
+        "failureDetails": {
+          "type": "object",
+          "required": ["code"],
+          "properties": {
+            "code": { "type": "string", "minLength": 1 }
+          },
+          "additionalProperties": false
+        },
+        "routeDecision": {
+          "type": "string",
+          "enum": ["accept-fast", "prefer-stable", "abstain"]
+        },
+        "selectedToken": { "type": ["integer", "null"], "minimum": 0 },
+        "receiptPath": { "type": ["string", "null"] },
+        "traceMetaPath": { "type": ["string", "null"] },
+        "receipt": {
+          "$ref": "#/$defs/receipt"
+        },
+        "traceLink": {
+          "type": "object",
+          "required": ["moduleIdentity", "requestHash", "policyHash", "resultHash"],
+          "properties": {
+            "moduleIdentity": { "type": "string", "minLength": 1 },
+            "requestHash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+            "policyHash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+            "resultHash": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

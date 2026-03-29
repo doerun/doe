@@ -413,6 +413,133 @@ console.log(JSON.stringify({{ empty, populated }}));
             8,
         )
 
+    def test_command_plan_roundtrip_preserves_capture_semantics_and_determinism(self) -> None:
+        script = f"""
+import {{ normalizePlan }} from {json.dumps((REPO_ROOT / "bench" / "executors" / "node-webgpu" / "plan.js").resolve().as_uri())};
+const plan = {{
+  schemaVersion: 1,
+  planKind: 'benchmark_ir',
+  workloadId: 'sample_capture_roundtrip',
+  planSha256: 'sample-capture-roundtrip',
+  compatibilityCommandsSha256: 'sample-capture-roundtrip',
+  determinism: {{
+    mode: 'stable-token',
+    semanticTokenIndex: 0,
+    providerBoundary: 'doe',
+    topCandidates: 4,
+  }},
+  commands: [
+    {{
+      kind: 'buffer_write',
+      handle: 1010,
+      bufferSize: 16,
+      data: [1, 0, 0, 0],
+    }},
+    {{
+      kind: 'buffer_write',
+      handle: 2227,
+      bufferSize: 16,
+      data: [0, 0, 0, 0],
+      semanticOpId: 'decode.final_logits',
+      semanticStage: 'sample_only',
+      semanticPhase: 'final_logits',
+      semanticTokenIndex: 0,
+      semanticExecutionPlanHash: 'abc123',
+      captureBufferHandle: 2227,
+      captureSize: 16,
+    }},
+    {{
+      kind: 'kernel_dispatch',
+      kernel: 'sample.wgsl',
+      x: 1,
+      y: 1,
+      z: 1,
+      bindings: [
+        {{
+          binding: 0,
+          resource_handle: 1010,
+          buffer_size: 16,
+          buffer_type: 'uniform',
+        }},
+        {{
+          binding: 1,
+          resource_handle: 2227,
+          buffer_size: 16,
+          buffer_type: 'readonly',
+        }},
+        {{
+          binding: 2,
+          resource_handle: 2228,
+          buffer_size: 4,
+          buffer_type: 'storage',
+        }},
+      ],
+      semanticOpId: 'sample.output_token',
+      semanticStage: 'sample_only',
+      semanticPhase: 'output_token',
+      semanticTokenIndex: 0,
+      semanticExecutionPlanHash: 'abc123',
+      captureBufferHandle: 2228,
+      captureSize: 4,
+    }},
+  ],
+}};
+const normalized = normalizePlan(plan);
+console.log(JSON.stringify(normalized));
+"""
+        result = subprocess.run(
+            ["node", "--input-type=module", "-e", script],
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertEqual(payload["determinism"]["mode"], "stable-token")
+        self.assertEqual(payload["determinism"]["providerBoundary"], "doe")
+        self.assertEqual(payload["executionShape"]["readBufferCount"], 2)
+        self.assertEqual(payload["executionShape"]["copyBufferToBufferCount"], 2)
+        read_steps = [step for step in payload["steps"] if step["kind"] == "readBuffer"]
+        self.assertEqual(read_steps[0]["semanticPhase"], "final_logits")
+        self.assertEqual(read_steps[1]["semanticPhase"], "output_token")
+        self.assertEqual(read_steps[0]["captureSourceBufferId"], "buffer_2227")
+        self.assertEqual(read_steps[1]["captureSourceBufferId"], "buffer_2228")
+
+    def test_evaluate_execution_determinism_uses_host_byte_policy(self) -> None:
+        script = f"""
+import {{ evaluateExecutionDeterminism }} from {json.dumps((REPO_ROOT / "bench" / "executors" / "node-webgpu" / "determinism.js").resolve().as_uri())};
+const logits = new Uint8Array(new Float32Array([1, 7, 7, 2]).buffer);
+const token = new Uint8Array(new Uint32Array([2]).buffer);
+const result = await evaluateExecutionDeterminism({{
+  determinismConfig: {{
+    mode: 'stable-token',
+    semanticTokenIndex: 0,
+    providerBoundary: 'doe',
+    topCandidates: 4,
+  }},
+  provider: 'doe',
+  captureRows: new Map([
+    ['0:final_logits', {{ bytes: logits, semanticPhase: 'final_logits', semanticTokenIndex: 0 }}],
+    ['0:output_token', {{ bytes: token, semanticPhase: 'output_token', semanticTokenIndex: 0 }}],
+  ]),
+}});
+console.log(JSON.stringify(result));
+"""
+        result = subprocess.run(
+            ["node", "--input-type=module", "-e", script],
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertEqual(payload["rawToken"], 2)
+        self.assertEqual(payload["receipt"]["token"], 1)
+        self.assertEqual(payload["determinism"]["mode"], "stable-token")
+        self.assertEqual(payload["determinism"]["selectedBy"], "stable-token-policy")
+
     def test_lookup_unsupported_package_execution_entry_matches_host_specific_lane(self) -> None:
         script = f"""
 import {{ lookupUnsupportedPackageExecutionEntry }} from {json.dumps(EXECUTOR_MODULE_URL)};

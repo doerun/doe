@@ -1,0 +1,14 @@
+{
+  "scenarioId": "apple_metal_selective_stable_rerun_attention_slice",
+  "description": "Route the attention-family token-flip case through the numeric-stability policy: compare a fast forward attention slice against a stable pairwise rerun, locate first divergence, and prefer the stable result only when it restores the exact-reference top token.",
+  "policyRegistryPath": "config/numeric-stability-policy.json",
+  "triggerPolicyId": "numeric-instability/selected-token-disagreement-with-reference-improvement-v1",
+  "routingPolicyId": "numeric-stability/prefer-stable-on-selected-token-disagreement-v1",
+  "operatorFamily": "attention-prefill-slice",
+  "fastVariantId": "forward",
+  "stableVariantId": "pairwise",
+  "selectedTokenOpId": "sample.token",
+  "sensitiveOperators": [
+    "attention.output"
+  ]
+}

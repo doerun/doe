@@ -218,6 +218,54 @@
       "data": "config/determinism-trigger-policy.json"
     },
     {
+      "schema": "config/determinism-policy.schema.json",
+      "data": "config/determinism-policy.json"
+    },
+    {
+      "schema": "config/numeric-stability-policy.schema.json",
+      "data": "config/numeric-stability-policy.json"
+    },
+    {
+      "schema": "config/doe-numeric-stability-receipt.schema.json",
+      "data": "examples/doe-numeric-stability-receipt.sample.json"
+    },
+    {
+      "schema": "config/numeric-stability-command-annotation.schema.json",
+      "data": "examples/numeric-stability-command-annotation.sample.json"
+    },
+    {
+      "schema": "config/numeric-stability-service.schema.json",
+      "data": "examples/numeric-stability-service.request.sample.json"
+    },
+    {
+      "schema": "config/numeric-stability-service.schema.json",
+      "data": "examples/numeric-stability-service.result.sample.json"
+    },
+    {
+      "schema": "config/fragility-promotion-policy.schema.json",
+      "data": "config/fragility-promotion-policy.json"
+    },
+    {
+      "schema": "config/promoted-fragility-catalog.schema.json",
+      "data": "config/promoted-fragility-catalog.json"
+    },
+    {
+      "schema": "config/runtime-numeric-stability-exercise.schema.json",
+      "data": "config/runtime-numeric-stability-exercise.json"
+    },
+    {
+      "schema": "config/in-path-numeric-stability-exercise.schema.json",
+      "data": "config/in-path-numeric-stability-exercise.json"
+    },
+    {
+      "schema": "config/trace-meta.schema.json",
+      "data": "examples/doe-determinism-trace-meta.sample.json"
+    },
+    {
+      "schema": "config/trace-meta.schema.json",
+      "data": "examples/doe-numeric-stability-trace-meta.sample.json"
+    },
+    {
       "schema": "config/workload-registry.schema.json",
       "data": "bench/workloads/metadata/workload-registry.json"
     },
@@ -235,6 +283,10 @@
     }
   ],
   "globTargets": [
+    {
+      "schema": "config/fragility-signature.schema.json",
+      "glob": "config/fragility-signatures/**/*.json"
+    },
     {
       "schema": "config/quirks.schema.json",
       "glob": "examples/quirks/*.json"

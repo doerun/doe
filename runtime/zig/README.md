@@ -76,6 +76,8 @@ Build:
 - `build.zig` — compile and run hooks, links libC and libdl.
 - `zig build dropin` — full drop-in shared library (`libwebgpu_doe.so`).
 - `zig build dropin-core` — core-only drop-in shared library (`libwebgpu_doe_core.so`).
+- `zig build module-core-runner` — explicit service runner for promoted Zig
+  module contracts, including the v1 numeric-stability service.
 - `zig build csl-sim-runner` — explicit CSL simulator contract runner (`doe-csl-sim-runner`).
 - `zig build coverage-gate` — validate split coverage ledgers against Zig command partitions.
 - `zig build import-fence` — validate core/full one-way import boundaries.
@@ -99,6 +101,50 @@ zig build dropin
 zig build csl-sim-runner
 zig build app
 ```
+
+### Explicit numeric-stability service
+
+`module-core-runner` now exposes the first live Doe numeric-stability service
+as an explicit Zig-owned contract:
+
+- module: `doe_numeric_stability`
+- service: `matmul_logits_slice`
+- policy source: `config/numeric-stability-policy.json`
+
+The v1 path is intentionally explicit:
+
+- it evaluates a bounded LM-head / `matmul.logits` slice
+- it runs fast, stable, and bounded CPU-reference policies
+- it emits a per-event numeric-stability receipt plus an optional trace-meta
+  summary block
+- it supports explicit route-policy selection, including:
+  - `numeric-stability/prefer-stable-on-selected-token-disagreement-v1`
+  - `numeric-stability/abstain-on-selected-token-disagreement-v1`
+- it remains the current public/package-facing numeric-stability helper
+
+### In-path numeric-stability annotations
+
+`doe-zig-runtime` now also supports native ordinary-execution numeric-stability
+evaluation for annotated `kernel_dispatch` commands targeting `matmul.logits`.
+
+- command JSON may carry a `numericStability` object on `kernel_dispatch`
+- the annotation contract is schema-backed in:
+  - `config/numeric-stability-command-annotation.schema.json`
+  - `examples/numeric-stability-command-annotation.sample.json`
+- when present on an executed native command stream with trace output enabled,
+  the runtime:
+  - captures the live hidden-state vector, bounded candidate row weights, and
+    fast logits buffer from the real dispatch
+  - computes stable and exact-reference comparisons locally in Zig
+  - emits `<trace-meta>.numeric-stability.jsonl`
+  - populates the `numericStability` trace-meta summary block
+
+This in-path ordinary-execution support is currently native-runtime-only. The
+explicit `module-core-runner` service above remains the public/package-facing
+entry point until `doe-gpu` grows ordinary-execution exposure.
+
+Use this path when promoting bench numeric-fragility evidence into a real Doe
+runtime contract.
 
 ### CSL simulator contract runner
 
@@ -232,6 +278,11 @@ This emits timestamp-path diagnostics to stderr, including adapter/device featur
 - `--trace-meta` execution timing now includes split fields:
   `executionSetupTotalNs`, `executionEncodeTotalNs`, `executionSubmitWaitTotalNs`, `executionDispatchCount`.
   Native execution metadata also records `queueSyncMode` when `--execute` is enabled.
+- the shared trace-meta schema now also reserves an optional `determinism`
+  block for explicit post-logit policy boundaries (`stable-token`,
+  `stable-choice`, `reviewed-choice`). The Zig trace summary carries that
+  field as an opt-in contract stub so native/runtime lanes can emit the same
+  policy IDs and proof-linked boundary metadata as the package helpers.
 - when a trace anchor is present (`--trace-meta` or `--trace-jsonl`), Doe-native
   runs also emit operator artifacts adjacent to that anchor:
   - `.operators.json` manifest

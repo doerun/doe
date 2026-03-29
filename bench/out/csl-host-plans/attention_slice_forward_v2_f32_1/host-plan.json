@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "csl_host_plan",
+  "target": "wse3",
+  "contract": "explicit_host_plan",
+  "hostPlan": {
+    "peGrid": { "width": 1, "height": 1 },
+    "kernels": [
+      { "name": "attention_slice_forward_v2_f32", "pattern": "kernel_dispatch_translated", "count": 1 }
+    ],
+    "phases": {
+      "prefill": [
+        { "kernelName": "attention_slice_forward_v2_f32", "repeat": 1 }
+      ],
+      "decode": [
+      ]
+    },
+    "eosTokenId": null
+  },
+  "compileTargets": [
+    { "name": "attention_slice_forward_v2_f32", "layout": "bench/out/csl-host-plans/attention_slice_forward_v2_f32_1/layout.csl", "peProgram": "bench/out/csl-host-plans/attention_slice_forward_v2_f32_1/pe_program.csl" }
+  ],
+  "cslc": {
+    "executable": "cslc",
+    "discovery": "implicit_path_lookup",
+    "validation": {
+      "command": ["cslc", "--version"],
+      "minimumVersion": "1.4.0"
+    }
+  }
+}

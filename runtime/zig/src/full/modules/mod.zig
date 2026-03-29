@@ -1,5 +1,6 @@
 pub const common = @import("common.zig");
 pub const compute_services = @import("services/compute_services.zig");
+pub const numeric_stability = @import("services/numeric_stability.zig");
 pub const resource_scheduler = @import("services/resource_scheduler.zig");
 pub const render_runtime = @import("rendering/render_runtime.zig");
 pub const effects_pipeline = @import("rendering/effects_pipeline.zig");

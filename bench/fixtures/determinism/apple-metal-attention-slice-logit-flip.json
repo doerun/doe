@@ -1,0 +1,64 @@
+{
+  "scenarioId": "apple_metal_attention_slice_logit_flip",
+  "description": "Apple Metal attention-family slice counterexample: the same fixed attention prefill slice produces different 2-logit outputs and different selected tokens under forward vs pairwise accumulation policies.",
+  "kernelRoot": "bench/inference-pipeline/kernels",
+  "profile": {
+    "vendor": "apple",
+    "api": "metal",
+    "family": "m3",
+    "driver": "1.0.0"
+  },
+  "queueWaitMode": "process-events",
+  "queueSyncMode": "per-command",
+  "backendLanes": [
+    {
+      "id": "doe",
+      "backendLane": "metal_doe_comparable"
+    },
+    {
+      "id": "dawn",
+      "backendLane": "metal_dawn_release"
+    }
+  ],
+  "defaultRunCount": 5,
+  "logitsSemanticOpId": "attention.output",
+  "selectedTokenSemanticOpId": "sample.token",
+  "exactReferenceLogits": [
+    -255.99999999983018,
+    -255.99999999982697
+  ],
+  "exactReferenceTopToken": 1,
+  "captures": [
+    {
+      "commandIndex": 5,
+      "semanticOpId": "attention.output",
+      "semanticStage": "attention_slice",
+      "semanticPhase": "output_logits",
+      "captureBufferHandle": 4305,
+      "captureOffset": 0,
+      "captureSize": 8
+    },
+    {
+      "commandIndex": 6,
+      "semanticOpId": "sample.token",
+      "semanticStage": "attention_slice",
+      "semanticPhase": "selected_token",
+      "captureBufferHandle": 4306,
+      "captureOffset": 0,
+      "captureSize": 4,
+      "decode": "u32le"
+    }
+  ],
+  "variants": [
+    {
+      "id": "forward",
+      "policyId": "attention-slice/forward-serial-v1",
+      "commandsPath": "bench/fixtures/determinism/attention-slice-forward.commands.json"
+    },
+    {
+      "id": "pairwise",
+      "policyId": "attention-slice/pairwise-tree-v1",
+      "commandsPath": "bench/fixtures/determinism/attention-slice-pairwise.commands.json"
+    }
+  ]
+}

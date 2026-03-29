@@ -147,6 +147,18 @@ Promoted Track A (browser) diagnostics are governed through the lane-wrapper bro
 
 Track A (browser) claimability is now a separate repeated-window lane in `bench/browser/browser_claim_gate.py`, controlled by `config/browser-claim-policy.json`. `python3 bench/runners/run_blocking_gates.py --with-browser-claim-gate` runs the claim gate instead of the single-window browser gate, aggregates repeated strict browser windows, and requires positive local-claim percentiles before reporting `claimStatus=claimable`. Browser claimability remains local-only until a release-grade browser claim policy is explicitly added.
 
+### Numeric-stability promotion rule
+
+Numeric-stability discovery artifacts and promoted signatures are advisory for
+novelty. The blocking novelty bar is a runtime-exercised receipt.
+
+- Discovery/promotion policy lives in `config/fragility-promotion-policy.json`.
+- Checked-in promoted cases live in `config/promoted-fragility-catalog.json`
+  plus `config/fragility-signatures/promoted/*.json`.
+- Public/runtime novelty claims require the `runtime-exercised` stage described
+  in the promotion policy; promoted bench receipts alone do not satisfy that
+  bar.
+
 ### Verification obligation precedence
 
 1. `verificationMode` is the primary selector for Lean obligation.

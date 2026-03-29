@@ -1,5 +1,8 @@
 {
   "mode": "stable-token",
+  "policyRegistryPath": "config/determinism-policy.json",
+  "policyRegistryVersion": "2026-03-28",
+  "policyId": "stable-token/lowest-index-among-max-v1",
   "comparator": "scalar-f32-greedy",
   "tieBreakRule": "lowest-index-among-max",
   "sourceKind": "host-bytes",
@@ -11,6 +14,7 @@
   "tiedMaxCount": 2,
   "tiedMaxIndicesPrefix": [1, 2],
   "tiedMaxIndicesOmittedCount": 0,
+  "selectedBy": "stable-token-policy",
   "topCandidates": [
     { "index": 1, "logit": 7.0 },
     { "index": 2, "logit": 7.0 },

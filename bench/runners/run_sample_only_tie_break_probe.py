@@ -683,9 +683,11 @@ def run_doe_stable_token(
     stable_config = fixture["doeStableToken"]
     config_path = case_dir / "doe_stable_token.config.json"
     report_path = case_dir / "doe.stable-token.json"
+    trace_meta_path = case_dir / "doe.stable-token.trace-meta.json"
     config = {
         "logitsPath": str(logits_path),
         "outputPath": str(report_path),
+        "traceMetaPath": str(trace_meta_path),
         "vocabSize": int(logits_path.stat().st_size // 4),
         "mode": stable_config["mode"],
         "topCandidates": int(stable_config["topCandidates"]),
@@ -704,6 +706,8 @@ def run_doe_stable_token(
     return {
         "mode": report["mode"],
         "reportPath": relative_or_absolute(report_path),
+        "traceMetaPath": relative_or_absolute(trace_meta_path),
+        "traceMeta": report.get("traceMeta"),
         "token": token,
         "receipt": report["result"]["receipt"],
         "matchesExpectedGreedyToken": token == expected_greedy_token,
@@ -724,9 +728,11 @@ def run_doe_stable_choice(
     ambiguity_trigger, trigger_policy_id = resolve_choice_trigger(stable_choice_config)
     config_path = case_dir / "doe_stable_choice.config.json"
     report_path = case_dir / "doe.stable-choice.json"
+    trace_meta_path = case_dir / "doe.stable-choice.trace-meta.json"
     config = {
         "logitsPath": str(logits_path),
         "outputPath": str(report_path),
+        "traceMetaPath": str(trace_meta_path),
         "vocabSize": int(logits_path.stat().st_size // 4),
         "mode": stable_choice_config["mode"],
         "topCandidates": int(stable_choice_config["topCandidates"]),
@@ -750,6 +756,8 @@ def run_doe_stable_choice(
     return {
         "mode": report["mode"],
         "reportPath": relative_or_absolute(report_path),
+        "traceMetaPath": relative_or_absolute(trace_meta_path),
+        "traceMeta": report.get("traceMeta"),
         "token": report["result"]["token"],
         "receipt": report["result"]["receipt"],
     }
@@ -769,9 +777,11 @@ def run_doe_reviewed_choice(
     ambiguity_trigger, trigger_policy_id = resolve_choice_trigger(reviewed_choice_config)
     config_path = case_dir / "doe_reviewed_choice.config.json"
     report_path = case_dir / "doe.reviewed-choice.json"
+    trace_meta_path = case_dir / "doe.reviewed-choice.trace-meta.json"
     config = {
         "logitsPath": str(logits_path),
         "outputPath": str(report_path),
+        "traceMetaPath": str(trace_meta_path),
         "vocabSize": int(logits_path.stat().st_size // 4),
         "mode": reviewed_choice_config["mode"],
         "topCandidates": int(reviewed_choice_config["topCandidates"]),
@@ -796,6 +806,8 @@ def run_doe_reviewed_choice(
     return {
         "mode": report["mode"],
         "reportPath": relative_or_absolute(report_path),
+        "traceMetaPath": relative_or_absolute(trace_meta_path),
+        "traceMeta": report.get("traceMeta"),
         "token": report["result"]["token"],
         "receipt": report["result"]["receipt"],
     }

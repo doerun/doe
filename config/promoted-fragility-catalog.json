@@ -1,0 +1,163 @@
+{
+  "schemaVersion": 1,
+  "catalogVersion": "fragility-promotion/numeric-stability-v1",
+  "promotionPolicyId": "fragility-promotion/numeric-stability-v1",
+  "routeTaxonomyVersion": "numeric-stability-routes-v1",
+  "sourceCorpusPath": "bench/out/apple-metal-numeric-fragility-corpus/20260329T174341Z/apple_metal_numeric_fragility_corpus.jsonl",
+  "entries": [
+    {
+      "signatureId": "operator::attention-negative-control",
+      "signaturePath": "config/fragility-signatures/promoted/operator-attention-negative-control.json",
+      "contractStage": "promoted",
+      "artifactKind": "operator-control",
+      "corpusClass": "operator-control",
+      "scenarioStem": "attention negative control",
+      "routeExpectationDecision": "accept-fast"
+    },
+    {
+      "signatureId": "operator::red-light-lm-head-flagship",
+      "signaturePath": "config/fragility-signatures/promoted/operator-red-light-lm-head-flagship.json",
+      "contractStage": "promoted",
+      "artifactKind": "operator-control",
+      "corpusClass": "operator-control",
+      "scenarioStem": "real red-light LM-head flagship",
+      "routeExpectationDecision": "prefer-stable"
+    },
+    {
+      "signatureId": "operator::real-rmsnorm-slice",
+      "signaturePath": "config/fragility-signatures/promoted/operator-real-rmsnorm-slice.json",
+      "contractStage": "promoted",
+      "artifactKind": "operator-control",
+      "corpusClass": "operator-control",
+      "scenarioStem": "real rmsnorm slice",
+      "routeExpectationDecision": "accept-fast"
+    },
+    {
+      "signatureId": "operator::synthetic-logits-op-flip",
+      "signaturePath": "config/fragility-signatures/promoted/operator-synthetic-logits-op-flip.json",
+      "contractStage": "promoted",
+      "artifactKind": "operator-control",
+      "corpusClass": "operator-control",
+      "scenarioStem": "synthetic logits-op token flip",
+      "routeExpectationDecision": "prefer-stable"
+    },
+    {
+      "signatureId": "prompt-lm-head-flip::extra-privacy-public_private-09-question_first-rl::0deb85be35",
+      "signaturePath": "config/fragility-signatures/promoted/prompt-lm-head-flip-extra-privacy-public-private-09-question-first-rl-0deb85be35.json",
+      "contractStage": "promoted",
+      "artifactKind": "prompt-lm-head-flip",
+      "corpusClass": "broad",
+      "scenarioStem": "A payroll spreadsheet should remain",
+      "routeExpectationDecision": "prefer-stable",
+      "promptId": "extra-privacy-public_private-09-question_first-rl"
+    },
+    {
+      "signatureId": "prompt-lm-head-flip::wave3-binary-06-reply-lr::c8e8becac5",
+      "signaturePath": "config/fragility-signatures/promoted/prompt-lm-head-flip-wave3-binary-06-reply-lr-c8e8becac5.json",
+      "contractStage": "promoted",
+      "artifactKind": "prompt-lm-head-flip",
+      "corpusClass": "broad",
+      "scenarioStem": "Publishing a private SSH key is safe.",
+      "routeExpectationDecision": "prefer-stable",
+      "promptId": "wave3-binary-06-reply-lr"
+    },
+    {
+      "signatureId": "operator::live-matmul-accept-fast-control",
+      "signaturePath": "config/fragility-signatures/promoted/operator-live-matmul-accept-fast-control.json",
+      "contractStage": "runtime-exercised",
+      "artifactKind": "operator-control",
+      "corpusClass": "operator-control",
+      "scenarioStem": "live matmul accept-fast control",
+      "routeExpectationDecision": "accept-fast",
+      "routeOutcomeDecision": "accept-fast"
+    },
+    {
+      "signatureId": "prompt-lm-head-flip::wave3-privacy-23-question_first-lr::e07a6d9627",
+      "signaturePath": "config/fragility-signatures/promoted/prompt-lm-head-flip-wave3-privacy-23-question-first-lr-e07a6d9627.json",
+      "contractStage": "runtime-exercised",
+      "artifactKind": "prompt-lm-head-flip",
+      "corpusClass": "broad",
+      "scenarioStem": "An internal incident report should remain",
+      "routeExpectationDecision": "prefer-stable",
+      "routeOutcomeDecision": "abstain",
+      "promptId": "wave3-privacy-23-question_first-lr"
+    },
+    {
+      "signatureId": "prompt-lm-head-flip::wave3-binary-06-one_word-rl::749967506e",
+      "signaturePath": "config/fragility-signatures/promoted/prompt-lm-head-flip-wave3-binary-06-one-word-rl-749967506e.json",
+      "contractStage": "runtime-exercised",
+      "artifactKind": "prompt-lm-head-flip",
+      "corpusClass": "broad",
+      "scenarioStem": "Publishing a private SSH key is safe.",
+      "routeExpectationDecision": "prefer-stable",
+      "routeOutcomeDecision": "abstain",
+      "promptId": "wave3-binary-06-one_word-rl"
+    },
+    {
+      "signatureId": "prompt-lm-head-flip::wave3-privacy-22-scenario-lr::995c725fe2",
+      "signaturePath": "config/fragility-signatures/promoted/prompt-lm-head-flip-wave3-privacy-22-scenario-lr-995c725fe2.json",
+      "contractStage": "runtime-exercised",
+      "artifactKind": "prompt-lm-head-flip",
+      "corpusClass": "strict",
+      "scenarioStem": "A public open-source README should remain",
+      "routeExpectationDecision": "prefer-stable",
+      "routeOutcomeDecision": "prefer-stable",
+      "promptId": "wave3-privacy-22-scenario-lr"
+    },
+    {
+      "signatureId": "prompt-lm-head-flip::red-go-stop-answer::2f8677733c",
+      "signaturePath": "config/fragility-signatures/promoted/prompt-lm-head-flip-red-go-stop-answer-2f8677733c.json",
+      "contractStage": "runtime-exercised",
+      "artifactKind": "prompt-lm-head-flip",
+      "corpusClass": "strict",
+      "scenarioStem": "At a red traffic light, cars should",
+      "routeExpectationDecision": "prefer-stable",
+      "routeOutcomeDecision": "prefer-stable",
+      "promptId": "red-go-stop-answer"
+    },
+    {
+      "signatureId": "prompt-lm-head-flip::wave3-authz-17-choose-rl::01c4f69aae",
+      "signaturePath": "config/fragility-signatures/promoted/prompt-lm-head-flip-wave3-authz-17-choose-rl-01c4f69aae.json",
+      "contractStage": "runtime-exercised",
+      "artifactKind": "prompt-lm-head-flip",
+      "corpusClass": "strict",
+      "scenarioStem": "Emergency SSH from the approved bastion host should",
+      "routeExpectationDecision": "prefer-stable",
+      "routeOutcomeDecision": "prefer-stable",
+      "promptId": "wave3-authz-17-choose-rl"
+    },
+    {
+      "signatureId": "prompt-lm-head-flip::wave3-change-03-answer-lr::8a798b1cf0",
+      "signaturePath": "config/fragility-signatures/promoted/prompt-lm-head-flip-wave3-change-03-answer-lr-8a798b1cf0.json",
+      "contractStage": "runtime-exercised",
+      "artifactKind": "prompt-lm-head-flip",
+      "corpusClass": "strict",
+      "scenarioStem": "Revoking access for a departed employee should be",
+      "routeExpectationDecision": "prefer-stable",
+      "routeOutcomeDecision": "prefer-stable",
+      "promptId": "wave3-change-03-answer-lr"
+    }
+  ],
+  "summary": {
+    "entryCount": 13,
+    "countsByContractStage": {
+      "promoted": 6,
+      "runtime-exercised": 7
+    },
+    "countsByArtifactKind": {
+      "operator-control": 5,
+      "prompt-lm-head-flip": 8
+    },
+    "countsByCorpusClass": {
+      "operator-control": 5,
+      "broad": 4,
+      "strict": 4
+    },
+    "countsByRouteOutcome": {
+      "accept-fast": 1,
+      "prefer-stable": 4,
+      "abstain": 2
+    }
+  },
+  "sourceManifestPath": "bench/out/apple-metal-numeric-fragility-corpus/20260329T174341Z/apple_metal_numeric_fragility_corpus.manifest.json"
+}

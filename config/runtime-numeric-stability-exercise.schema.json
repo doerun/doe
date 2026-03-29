@@ -1,0 +1,136 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://doe-gpu.dev/config/runtime-numeric-stability-exercise.schema.json",
+  "title": "Doe runtime numeric stability exercise plan",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "policyRegistryPath",
+    "promotedCatalogPath",
+    "signatureRoot",
+    "outputRoot",
+    "repeatCount",
+    "cases",
+    "syntheticControls"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "policyRegistryPath": { "type": "string", "minLength": 1 },
+    "promotedCatalogPath": { "type": "string", "minLength": 1 },
+    "signatureRoot": { "type": "string", "minLength": 1 },
+    "outputRoot": { "type": "string", "minLength": 1 },
+    "repeatCount": { "type": "integer", "minimum": 1 },
+    "cases": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/caseSpec" }
+    },
+    "syntheticControls": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/syntheticControl" }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "caseSpec": {
+      "type": "object",
+      "required": [
+        "caseId",
+        "signatureId",
+        "routingPolicyId",
+        "expectedRouteDecision"
+      ],
+      "properties": {
+        "caseId": { "type": "string", "minLength": 1 },
+        "signatureId": { "type": "string", "minLength": 1 },
+        "routingPolicyId": { "type": "string", "minLength": 1 },
+        "expectedRouteDecision": {
+          "type": "string",
+          "enum": ["accept-fast", "prefer-stable", "abstain"]
+        }
+      },
+      "additionalProperties": false
+    },
+    "candidateInput": {
+      "type": "object",
+      "required": ["tokenId", "weights"],
+      "properties": {
+        "tokenId": { "type": "integer", "minimum": 0 },
+        "label": { "type": ["string", "null"] },
+        "weights": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "number" }
+        },
+        "bias": { "type": ["number", "null"] }
+      },
+      "additionalProperties": false
+    },
+    "syntheticControl": {
+      "type": "object",
+      "required": [
+        "caseId",
+        "signatureId",
+        "scenarioStem",
+        "artifactKind",
+        "corpusClass",
+        "routingPolicyId",
+        "expectedRouteDecision",
+        "request"
+      ],
+      "properties": {
+        "caseId": { "type": "string", "minLength": 1 },
+        "signatureId": { "type": "string", "minLength": 1 },
+        "scenarioStem": { "type": "string", "minLength": 1 },
+        "artifactKind": {
+          "type": "string",
+          "enum": ["operator-control", "policy-boundary"]
+        },
+        "corpusClass": {
+          "type": "string",
+          "enum": ["operator-control", "policy-boundary"]
+        },
+        "routingPolicyId": { "type": "string", "minLength": 1 },
+        "expectedRouteDecision": {
+          "type": "string",
+          "enum": ["accept-fast", "prefer-stable", "abstain"]
+        },
+        "request": {
+          "type": "object",
+          "required": [
+            "operatorFamily",
+            "semanticOpId",
+            "semanticStage",
+            "semanticPhase",
+            "triggerPolicyId",
+            "fastPolicyId",
+            "stablePolicyId",
+            "hiddenState",
+            "candidates"
+          ],
+          "properties": {
+            "operatorFamily": { "type": "string", "minLength": 1 },
+            "semanticOpId": { "type": "string", "minLength": 1 },
+            "semanticStage": { "type": "string", "minLength": 1 },
+            "semanticPhase": { "type": "string", "minLength": 1 },
+            "triggerPolicyId": { "type": "string", "minLength": 1 },
+            "fastPolicyId": { "type": "string", "minLength": 1 },
+            "stablePolicyId": { "type": "string", "minLength": 1 },
+            "hiddenState": {
+              "type": "array",
+              "minItems": 1,
+              "items": { "type": "number" }
+            },
+            "candidates": {
+              "type": "array",
+              "minItems": 2,
+              "items": { "$ref": "#/$defs/candidateInput" }
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

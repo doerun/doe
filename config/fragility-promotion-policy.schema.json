@@ -1,0 +1,198 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://doe-gpu.dev/config/fragility-promotion-policy.schema.json",
+  "title": "Doe fragility promotion policy",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "policyId",
+    "routeTaxonomyVersion",
+    "selectionRules",
+    "presentationBucketToCorpusClass",
+    "contractStages",
+    "corpusClasses",
+    "noveltyThreshold"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "policyId": { "type": "string", "minLength": 1 },
+    "routeTaxonomyVersion": { "type": "string", "minLength": 1 },
+    "selectionRules": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/selectionRule" }
+    },
+    "presentationBucketToCorpusClass": {
+      "type": "object",
+      "required": [
+        "headline-safe",
+        "adversarial-useful",
+        "binary-variant",
+        "noisy-bounded",
+        "broad-research",
+        "top-prefix-only",
+        "policy-boundary",
+        "operator-control"
+      ],
+      "properties": {
+        "headline-safe": { "$ref": "#/$defs/corpusClass" },
+        "adversarial-useful": { "$ref": "#/$defs/corpusClass" },
+        "binary-variant": { "$ref": "#/$defs/corpusClass" },
+        "noisy-bounded": { "$ref": "#/$defs/corpusClass" },
+        "broad-research": { "$ref": "#/$defs/corpusClass" },
+        "top-prefix-only": { "$ref": "#/$defs/corpusClass" },
+        "policy-boundary": { "$ref": "#/$defs/corpusClass" },
+        "operator-control": { "$ref": "#/$defs/corpusClass" }
+      },
+      "additionalProperties": false
+    },
+    "contractStages": {
+      "type": "array",
+      "minItems": 4,
+      "items": { "$ref": "#/$defs/stagePolicy" }
+    },
+    "corpusClasses": {
+      "type": "array",
+      "minItems": 5,
+      "items": { "$ref": "#/$defs/corpusClassPolicy" }
+    },
+    "noveltyThreshold": { "$ref": "#/$defs/noveltyThreshold" }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "entryType": {
+      "type": "string",
+      "enum": [
+        "prompt-lm-head-flip",
+        "prompt-top-prefix-flip",
+        "policy-boundary",
+        "operator-control"
+      ]
+    },
+    "contractStage": {
+      "type": "string",
+      "enum": [
+        "discovery",
+        "promoted",
+        "runtime-candidate",
+        "runtime-exercised"
+      ]
+    },
+    "corpusClass": {
+      "type": "string",
+      "enum": [
+        "strict",
+        "broad",
+        "control",
+        "top-prefix-only",
+        "policy-boundary",
+        "operator-control"
+      ]
+    },
+    "selectionRule": {
+      "type": "object",
+      "required": [
+        "entryType",
+        "contractStage",
+        "requireSourceBacked"
+      ],
+      "properties": {
+        "entryType": { "$ref": "#/$defs/entryType" },
+        "contractStage": { "$ref": "#/$defs/contractStage" },
+        "requireSourceBacked": { "type": "boolean" },
+        "requirePromotionEvidence": { "type": "boolean" },
+        "requireRouteExpectationStatus": {
+          "type": "string",
+          "enum": ["hypothetical-from-hunt", "realized-in-promotion"]
+        },
+        "requireRelatedArtifactKinds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "reduction-order-counterexample",
+              "reduction-order-logit-flip",
+              "selective-stable-rerun",
+              "package-determinism",
+              "sample-only-determinism",
+              "real-lm-head-slice-hunt"
+            ]
+          },
+          "uniqueItems": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "stagePolicy": {
+      "type": "object",
+      "required": [
+        "stageId",
+        "blockingEvidence",
+        "advisoryEvidence",
+        "countsAsNovelty"
+      ],
+      "properties": {
+        "stageId": { "$ref": "#/$defs/contractStage" },
+        "blockingEvidence": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "advisoryEvidence": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "countsAsNovelty": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "corpusClassPolicy": {
+      "type": "object",
+      "required": [
+        "corpusClass",
+        "blockingEvidence",
+        "advisoryEvidence"
+      ],
+      "properties": {
+        "corpusClass": { "$ref": "#/$defs/corpusClass" },
+        "blockingEvidence": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "advisoryEvidence": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "noveltyThreshold": {
+      "type": "object",
+      "required": [
+        "requiredStage",
+        "blockingEvidence",
+        "advisoryEvidence"
+      ],
+      "properties": {
+        "requiredStage": { "$ref": "#/$defs/contractStage" },
+        "blockingEvidence": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "advisoryEvidence": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

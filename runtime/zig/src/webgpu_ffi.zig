@@ -78,11 +78,13 @@ pub const CoreWebGPUBackend = struct {
     adapter_has_multi_draw_indirect: bool = false,
     adapter_has_pixel_local_storage_coherent: bool = false,
     adapter_has_pixel_local_storage_non_coherent: bool = false,
+    adapter_has_shader_f16: bool = false,
     has_timestamp_query: bool = false,
     has_timestamp_inside_passes: bool = false,
     has_multi_draw_indirect: bool = false,
     has_pixel_local_storage_coherent: bool = false,
     has_pixel_local_storage_non_coherent: bool = false,
+    has_shader_f16: bool = false,
     has_adapter_limits: bool = false,
     has_device_limits: bool = false,
     adapter_limits: types.WGPULimits = std.mem.zeroes(types.WGPULimits),
@@ -146,10 +148,12 @@ pub const WebGPUBackend = struct {
             self.core.adapter_has_multi_draw_indirect = procs.wgpuAdapterHasFeature(self.core.adapter.?, types.WGPUFeatureName_MultiDrawIndirect) != types.WGPU_FALSE;
             self.core.adapter_has_pixel_local_storage_coherent = procs.wgpuAdapterHasFeature(self.core.adapter.?, types.WGPUFeatureName_PixelLocalStorageCoherent) != types.WGPU_FALSE;
             self.core.adapter_has_pixel_local_storage_non_coherent = procs.wgpuAdapterHasFeature(self.core.adapter.?, types.WGPUFeatureName_PixelLocalStorageNonCoherent) != types.WGPU_FALSE;
+            self.core.adapter_has_shader_f16 = procs.wgpuAdapterHasFeature(self.core.adapter.?, types.WGPUFeatureName_ShaderF16) != types.WGPU_FALSE;
             self.core.has_timestamp_query = self.core.adapter_has_timestamp_query;
             self.core.has_multi_draw_indirect = self.core.adapter_has_multi_draw_indirect;
             self.core.has_pixel_local_storage_coherent = self.core.adapter_has_pixel_local_storage_coherent;
             self.core.has_pixel_local_storage_non_coherent = self.core.adapter_has_pixel_local_storage_non_coherent;
+            self.core.has_shader_f16 = self.core.adapter_has_shader_f16;
             self.core.has_timestamp_inside_passes = procs.wgpuAdapterHasFeature(self.core.adapter.?, types.WGPUFeatureName_ChromiumExperimentalTimestampQueryInsidePasses) != types.WGPU_FALSE;
             self.core.device = try self.requestDevice();
             if (procs.wgpuDeviceHasFeature) |device_has_feature| {
@@ -157,13 +161,14 @@ pub const WebGPUBackend = struct {
                 self.core.has_multi_draw_indirect = device_has_feature(self.core.device.?, types.WGPUFeatureName_MultiDrawIndirect) != types.WGPU_FALSE;
                 self.core.has_pixel_local_storage_coherent = device_has_feature(self.core.device.?, types.WGPUFeatureName_PixelLocalStorageCoherent) != types.WGPU_FALSE;
                 self.core.has_pixel_local_storage_non_coherent = device_has_feature(self.core.device.?, types.WGPUFeatureName_PixelLocalStorageNonCoherent) != types.WGPU_FALSE;
+                self.core.has_shader_f16 = device_has_feature(self.core.device.?, types.WGPUFeatureName_ShaderF16) != types.WGPU_FALSE;
             }
             self.core.queue = procs.wgpuDeviceGetQueue(self.core.device.?);
             if (self.core.queue == null) return error.NativeQueueUnavailable;
             try self.captureAdapterLimits();
             try self.captureDeviceLimits();
             self.timestampLog(
-                "init_features adapter_ts={} device_ts={} inside_passes={} adapter_multi_draw={} device_multi_draw={} adapter_pls_coherent={} adapter_pls_noncoherent={} device_pls_coherent={} device_pls_noncoherent={}\n",
+                "init_features adapter_ts={} device_ts={} inside_passes={} adapter_multi_draw={} device_multi_draw={} adapter_pls_coherent={} adapter_pls_noncoherent={} device_pls_coherent={} device_pls_noncoherent={} adapter_shader_f16={} device_shader_f16={}\n",
                 .{
                     self.core.adapter_has_timestamp_query,
                     self.core.has_timestamp_query,
@@ -174,6 +179,8 @@ pub const WebGPUBackend = struct {
                     self.core.adapter_has_pixel_local_storage_non_coherent,
                     self.core.has_pixel_local_storage_coherent,
                     self.core.has_pixel_local_storage_non_coherent,
+                    self.core.adapter_has_shader_f16,
+                    self.core.has_shader_f16,
                 },
             );
         }
@@ -626,7 +633,7 @@ pub const WebGPUBackend = struct {
             .userdata1 = &state,
             .userdata2 = null,
         };
-        var required_features = [_]types.WGPUFeatureName{undefined} ** 6;
+        var required_features = [_]types.WGPUFeatureName{undefined} ** 7;
         var feature_count: usize = 0;
         const has_resource_table_feature = self.core.procs.?.wgpuAdapterHasFeature(self.core.adapter.?, types.WGPUFeatureName_ChromiumExperimentalSamplingResourceTable) != types.WGPU_FALSE;
         if (self.core.has_timestamp_query) {
@@ -649,16 +656,21 @@ pub const WebGPUBackend = struct {
             required_features[feature_count] = types.WGPUFeatureName_PixelLocalStorageNonCoherent;
             feature_count += 1;
         }
+        if (self.core.adapter_has_shader_f16) {
+            required_features[feature_count] = types.WGPUFeatureName_ShaderF16;
+            feature_count += 1;
+        }
         if (has_resource_table_feature) {
             required_features[feature_count] = types.WGPUFeatureName_ChromiumExperimentalSamplingResourceTable;
             feature_count += 1;
         }
-        self.timestampLog("request_device required_features timestamp={} inside_passes={} multi_draw={} pls_coherent={} pls_noncoherent={} resource_table={} count={} adapter_limits={} max_storage_binding={} max_uniform_binding={} max_buffer={}\n", .{
+        self.timestampLog("request_device required_features timestamp={} inside_passes={} multi_draw={} pls_coherent={} pls_noncoherent={} shader_f16={} resource_table={} count={} adapter_limits={} max_storage_binding={} max_uniform_binding={} max_buffer={}\n", .{
             self.core.has_timestamp_query,
             self.core.has_timestamp_inside_passes,
             self.core.has_multi_draw_indirect,
             self.core.has_pixel_local_storage_coherent,
             self.core.has_pixel_local_storage_non_coherent,
+            self.core.adapter_has_shader_f16,
             has_resource_table_feature,
             feature_count,
             self.core.has_adapter_limits,

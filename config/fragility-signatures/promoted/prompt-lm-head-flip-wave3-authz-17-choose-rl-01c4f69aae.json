@@ -1,0 +1,143 @@
+{
+  "schemaVersion": 1,
+  "signatureId": "prompt-lm-head-flip::wave3-authz-17-choose-rl::01c4f69aae",
+  "contractStage": "runtime-exercised",
+  "artifactKind": "prompt-lm-head-flip",
+  "corpusClass": "strict",
+  "routeTaxonomyVersion": "numeric-stability-routes-v1",
+  "sourceArtifactPath": "bench/out/apple-metal-real-lm-head-slice-hunt/20260329T144110Z/apple_metal_real_lm_head_slice_hunt_gemma270m_wave3_shard02.real-lm-head-slice-hunt.json",
+  "scenarioStem": "Emergency SSH from the approved bastion host should",
+  "notes": "Runtime-exercised through ordinary doe-zig-runtime execution; see `bench/out/apple-metal-in-path-numeric-stability/20260329T191921Z/in-path-emergency-ssh/in-path-numeric-stability.case.json` for route and overhead details.",
+  "sourceSearchArtifactPath": "bench/out/apple-metal-real-lm-head-slice-hunt/20260329T144110Z/apple_metal_real_lm_head_slice_hunt_gemma270m_wave3_shard02.real-lm-head-slice-hunt.json",
+  "relatedArtifactPaths": [
+    "bench/out/apple-metal-reduction-order-logit-flip/20260329T144110Z/apple_metal_real_lm_head_slice_hunt_gemma270m_wave3_shard02_wave3-authz-17-choose-rl_prefix2.reduction-order-logit-flip.json",
+    "bench/out/apple-metal-selective-stable-rerun/20260329T144110Z/apple_metal_real_lm_head_slice_hunt_gemma270m_wave3_shard02_wave3-authz-17-choose-rl_prefix2_selective_stable_rerun.selective-stable-rerun.json",
+    "bench/out/apple-metal-real-lm-head-slice-hunt/20260329T144110Z/wave3-authz-17-choose-rl-prefix2/apple_metal_real_lm_head_slice_hunt_gemma270m_wave3_shard02_wave3-authz-17-choose-rl_prefix2.fixture.json",
+    "bench/out/apple-metal-real-lm-head-slice-hunt/20260329T144110Z/wave3-authz-17-choose-rl-prefix2/apple_metal_real_lm_head_slice_hunt_gemma270m_wave3_shard02_wave3-authz-17-choose-rl_prefix2_selective_stable_rerun.fixture.json",
+    "bench/out/apple-metal-runtime-numeric-stability/20260329T184228Z/prompt-emergency-ssh-runtime/runtime-numeric-stability.request.json",
+    "bench/out/apple-metal-runtime-numeric-stability/20260329T184228Z/prompt-emergency-ssh-runtime/runtime-numeric-stability.result.json",
+    "bench/out/apple-metal-runtime-numeric-stability/20260329T184228Z/prompt-emergency-ssh-runtime/runtime-numeric-stability.receipt.jsonl",
+    "bench/out/apple-metal-runtime-numeric-stability/20260329T184228Z/prompt-emergency-ssh-runtime/runtime-numeric-stability.trace-meta.json",
+    "bench/out/apple-metal-runtime-numeric-stability/20260329T184228Z/prompt-emergency-ssh-runtime/runtime-numeric-stability.case.json",
+    "bench/out/apple-metal-runtime-numeric-stability/20260329T184418Z/prompt-emergency-ssh-runtime/runtime-numeric-stability.request.json",
+    "bench/out/apple-metal-runtime-numeric-stability/20260329T184418Z/prompt-emergency-ssh-runtime/runtime-numeric-stability.result.json",
+    "bench/out/apple-metal-runtime-numeric-stability/20260329T184418Z/prompt-emergency-ssh-runtime/runtime-numeric-stability.receipt.jsonl",
+    "bench/out/apple-metal-runtime-numeric-stability/20260329T184418Z/prompt-emergency-ssh-runtime/runtime-numeric-stability.trace-meta.json",
+    "bench/out/apple-metal-runtime-numeric-stability/20260329T184418Z/prompt-emergency-ssh-runtime/runtime-numeric-stability.case.json",
+    "bench/out/apple-metal-in-path-numeric-stability/20260329T223000Z/in-path-emergency-ssh/in-path-numeric-stability.commands.json",
+    "bench/out/apple-metal-in-path-numeric-stability/20260329T223000Z/in-path-emergency-ssh/in-path-numeric-stability.trace-meta.json",
+    "bench/out/apple-metal-in-path-numeric-stability/20260329T223000Z/in-path-emergency-ssh/in-path-numeric-stability.trace-meta.json.numeric-stability.jsonl",
+    "bench/out/apple-metal-in-path-numeric-stability/20260329T223000Z/in-path-emergency-ssh/in-path-numeric-stability.case.json",
+    "bench/out/apple-metal-in-path-numeric-stability/20260329T191921Z/in-path-emergency-ssh/in-path-numeric-stability.commands.json",
+    "bench/out/apple-metal-in-path-numeric-stability/20260329T191921Z/in-path-emergency-ssh/in-path-numeric-stability.trace-meta.json",
+    "bench/out/apple-metal-in-path-numeric-stability/20260329T191921Z/in-path-emergency-ssh/in-path-numeric-stability.trace-meta.json.numeric-stability.jsonl",
+    "bench/out/apple-metal-in-path-numeric-stability/20260329T191921Z/in-path-emergency-ssh/in-path-numeric-stability.case.json"
+  ],
+  "promptId": "wave3-authz-17-choose-rl",
+  "promptText": "Choose exactly one word: block or allow.\nQuestion: Emergency SSH from the approved bastion host should\nAnswer:",
+  "answerSet": {
+    "answerSetId": "allow_block",
+    "candidateSetSource": "answer-set",
+    "candidates": [
+      {
+        "tokenId": 2174,
+        "tokenText": " allow",
+        "priority": 0
+      },
+      {
+        "tokenId": 3355,
+        "tokenText": " block",
+        "priority": 1
+      }
+    ]
+  },
+  "globalDecisionMetrics": {
+    "globalGreedyToken": {
+      "tokenId": 236743,
+      "tokenText": " ",
+      "logit": 16.44179344177246
+    },
+    "globalTop2GapLogit": 0.18959617614746094,
+    "referenceTokenGlobalSurprisalStatus": "unavailable_no_full_logits",
+    "outsiderLeadVsPairMaxLogit": 3.85317325592041,
+    "outsiderDominatesPair": true
+  },
+  "firstGeneratedToken": {
+    "tokenId": 236743,
+    "tokenText": " ",
+    "logit": 16.44179344177246
+  },
+  "boundedAnswerMetrics": {
+    "pairGapLogit": 0.02791309356689453,
+    "pairMarginProbability": 0.013955640677802195,
+    "pairEntropyNats": 0.6930497974453833,
+    "referenceProbability": 0.5069778203389012,
+    "referenceSurprisalNats": 0.6792880232139487,
+    "fastProbability": 0.49302217966109896,
+    "fastSurprisalNats": 0.7072011167808432
+  },
+  "referenceSelection": {
+    "tokenId": 2174,
+    "tokenText": "allow",
+    "matchesExactReference": true,
+    "variantId": "exact-reference",
+    "policyId": "lm-head-slice/cpu-f64-serial-v1"
+  },
+  "fastSelection": {
+    "tokenId": 3355,
+    "tokenText": "block",
+    "matchesExactReference": false,
+    "variantId": "f16accum",
+    "policyId": "lm-head-slice/forward-f16accum-v1"
+  },
+  "stableSelection": {
+    "tokenId": 2174,
+    "tokenText": "allow",
+    "matchesExactReference": true,
+    "variantId": "forward",
+    "policyId": "lm-head-slice/forward-serial-v1"
+  },
+  "firstDivergence": {
+    "semanticOpId": "matmul.logits",
+    "operatorFamily": "lm-head-slice",
+    "semanticStage": "real_lm_head_slice",
+    "semanticPhase": "logits",
+    "fastDigest": "7f1a31d759dbfb4e749e0efa4db5bebf2b6ce6f0e82ce455f14c1b8934a6cc49",
+    "stableDigest": "abe1c96bb68f5bcbab99478c93dea472ee73e6a8b822876036983bef25d6467d"
+  },
+  "routeExpectation": {
+    "decision": "prefer-stable",
+    "status": "realized-in-promotion",
+    "sourceArtifactPath": "bench/out/apple-metal-selective-stable-rerun/20260329T144110Z/apple_metal_real_lm_head_slice_hunt_gemma270m_wave3_shard02_wave3-authz-17-choose-rl_prefix2_selective_stable_rerun.selective-stable-rerun.json",
+    "hasPromotionEvidence": true
+  },
+  "proofLinks": [
+    {
+      "theorem": "selectedTokenReferenceImprovementTriggered_iff_all_checks",
+      "module": "Doe.Core.NumericStabilityPolicy",
+      "category": "lean_verified",
+      "relation": "numeric-stability-trigger-all-checks",
+      "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+    },
+    {
+      "theorem": "routeDecisionForTrigger_prefers_triggered_decision_when_true",
+      "module": "Doe.Core.NumericStabilityPolicy",
+      "category": "lean_verified",
+      "relation": "numeric-stability-route-triggered",
+      "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+    },
+    {
+      "theorem": "routeDecisionForTrigger_prefers_fallback_decision_when_false",
+      "module": "Doe.Core.NumericStabilityPolicy",
+      "category": "lean_verified",
+      "relation": "numeric-stability-route-fallback",
+      "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+    }
+  ],
+  "routeOutcome": {
+    "decision": "prefer-stable",
+    "receiptArtifactPath": "bench/out/apple-metal-in-path-numeric-stability/20260329T191921Z/in-path-emergency-ssh/in-path-numeric-stability.trace-meta.json.numeric-stability.jsonl",
+    "selectedVariantId": "forward",
+    "selectedTokenId": 2174
+  }
+}

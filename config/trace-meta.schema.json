@@ -138,9 +138,197 @@
         "readbackTotalNs": { "type": "integer", "minimum": 0 }
       }
     },
+    "determinism": {
+      "oneOf": [
+        { "$ref": "#/$defs/stableTokenDeterminismMeta" },
+        { "$ref": "#/$defs/stableChoiceDeterminismMeta" },
+        { "$ref": "#/$defs/reviewedChoiceDeterminismMeta" }
+      ]
+    },
+    "numericStability": {
+      "$ref": "#/$defs/numericStabilityMeta"
+    },
     "benchmarkWallMsSamples": {
       "type": "array",
       "items": { "type": "number", "minimum": 0 }
+    }
+  },
+  "$defs": {
+    "determinismCommon": {
+      "type": "object",
+      "required": [
+        "mode",
+        "policyRegistryPath",
+        "policyRegistryVersion",
+        "comparator",
+        "logitsSha256",
+        "token",
+        "proofArtifactPath",
+        "proofTheorems"
+      ],
+      "properties": {
+        "mode": { "type": "string" },
+        "policyRegistryPath": { "type": "string", "minLength": 1 },
+        "policyRegistryVersion": { "type": "string", "minLength": 1 },
+        "comparator": { "const": "scalar-f32-greedy" },
+        "logitsSha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "token": { "type": "integer", "minimum": 0 },
+        "proofArtifactPath": { "type": "string", "minLength": 1 },
+        "proofTheorems": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "stableTokenDeterminismMeta": {
+      "unevaluatedProperties": false,
+      "allOf": [
+        { "$ref": "#/$defs/determinismCommon" },
+        {
+          "type": "object",
+          "required": ["policyId", "tieBreakRule", "selectedBy"],
+          "properties": {
+            "mode": { "const": "stable-token" },
+            "policyId": { "type": "string", "minLength": 1 },
+            "tieBreakRule": { "const": "lowest-index-among-max" },
+            "selectedBy": { "const": "stable-token-policy" }
+          }
+        }
+      ]
+    },
+    "stableChoiceDeterminismMeta": {
+      "unevaluatedProperties": false,
+      "allOf": [
+        { "$ref": "#/$defs/determinismCommon" },
+        {
+          "type": "object",
+          "required": [
+            "policyId",
+            "baseRuleId",
+            "evaluatorKind",
+            "triggerPolicyId",
+            "candidateSetId",
+            "candidateSetSource",
+            "selectedBy",
+            "ambiguityTriggered",
+            "ambiguityTopGap",
+            "stableTokenToken"
+          ],
+          "properties": {
+            "mode": { "const": "stable-choice" },
+            "policyId": { "type": "string", "minLength": 1 },
+            "baseRuleId": { "type": "string", "minLength": 1 },
+            "evaluatorKind": { "const": "fixed-priority" },
+            "triggerPolicyId": { "type": ["string", "null"], "minLength": 1 },
+            "candidateSetId": { "type": ["string", "null"], "minLength": 1 },
+            "candidateSetSource": {
+              "type": ["string", "null"],
+              "enum": ["fixture-declared", "registry-resolved", "source-report-resolved", null]
+            },
+            "selectedBy": {
+              "type": "string",
+              "enum": ["stable-choice-policy", "stable-token-fallback"]
+            },
+            "ambiguityTriggered": { "type": "boolean" },
+            "ambiguityTopGap": { "type": "number", "minimum": 0 },
+            "stableTokenToken": { "type": "integer", "minimum": 0 }
+          }
+        }
+      ]
+    },
+    "reviewedChoiceDeterminismMeta": {
+      "unevaluatedProperties": false,
+      "allOf": [
+        { "$ref": "#/$defs/determinismCommon" },
+        {
+          "type": "object",
+          "required": [
+            "reviewPolicyId",
+            "baseRuleId",
+            "evaluatorKind",
+            "triggerPolicyId",
+            "candidateSetId",
+            "candidateSetSource",
+            "selectedBy",
+            "ambiguityTriggered",
+            "ambiguityTopGap",
+            "stableTokenToken",
+            "decisionAccepted",
+            "decisionAcceptanceReason",
+            "decisionToken",
+            "decisionReviewerId"
+          ],
+          "properties": {
+            "mode": { "const": "reviewed-choice" },
+            "reviewPolicyId": { "type": "string", "minLength": 1 },
+            "baseRuleId": { "type": "string", "minLength": 1 },
+            "evaluatorKind": { "const": "explicit-review-decision" },
+            "triggerPolicyId": { "type": ["string", "null"], "minLength": 1 },
+            "candidateSetId": { "type": ["string", "null"], "minLength": 1 },
+            "candidateSetSource": {
+              "type": ["string", "null"],
+              "enum": ["fixture-declared", "registry-resolved", "source-report-resolved", null]
+            },
+            "selectedBy": {
+              "type": "string",
+              "enum": ["reviewed-choice-decision", "stable-token-fallback"]
+            },
+            "ambiguityTriggered": { "type": "boolean" },
+            "ambiguityTopGap": { "type": "number", "minimum": 0 },
+            "stableTokenToken": { "type": "integer", "minimum": 0 },
+            "decisionAccepted": { "type": "boolean" },
+            "decisionAcceptanceReason": {
+              "type": "string",
+              "enum": [
+                "reviewed-choice-decision",
+                "stable-token-fallback/not-triggered",
+                "stable-token-fallback/not-in-candidate-set",
+                "stable-token-fallback/not-ambiguous"
+              ]
+            },
+            "decisionToken": { "type": "integer", "minimum": 0 },
+            "decisionReviewerId": { "type": "string", "minLength": 1 },
+            "decisionId": { "type": ["string", "null"], "minLength": 1 },
+            "decisionRef": { "type": ["string", "null"], "minLength": 1 },
+            "decisionSignature": { "type": ["string", "null"], "minLength": 1 }
+          }
+        }
+      ]
+    },
+    "numericStabilityMeta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "policyRegistryPath",
+        "policyRegistryVersion",
+        "routeTaxonomyVersion",
+        "receiptPath",
+        "receiptCount",
+        "decisionCounts",
+        "firstDivergencePresentCount"
+      ],
+      "properties": {
+        "policyRegistryPath": { "type": "string", "minLength": 1 },
+        "policyRegistryVersion": { "type": "string", "minLength": 1 },
+        "routeTaxonomyVersion": { "type": "string", "minLength": 1 },
+        "receiptPath": { "type": "string", "minLength": 1 },
+        "receiptCount": { "type": "integer", "minimum": 0 },
+        "decisionCounts": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["accept-fast", "prefer-stable", "abstain"],
+          "properties": {
+            "accept-fast": { "type": "integer", "minimum": 0 },
+            "prefer-stable": { "type": "integer", "minimum": 0 },
+            "abstain": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "firstDivergencePresentCount": { "type": "integer", "minimum": 0 }
+      }
     }
   }
 }

@@ -1,0 +1,99 @@
+{
+  "schemaVersion": 1,
+  "moduleId": "doe_numeric_stability",
+  "artifactKind": "result",
+  "serviceId": "matmul_logits_slice",
+  "serviceResult": {
+    "status": "ok"
+  },
+  "executionStats": {
+    "dispatchCount": 0,
+    "bytesMoved": 72,
+    "candidateCount": 2
+  },
+  "timingStats": {
+    "setupNs": 0,
+    "encodeNs": 0,
+    "submitNs": 0,
+    "dispatchNs": 4200
+  },
+  "failureDetails": {
+    "code": "none"
+  },
+  "routeDecision": "prefer-stable",
+  "selectedToken": 817,
+  "receiptPath": "artifacts/red-go-stop.numeric-stability.jsonl",
+  "traceMetaPath": "artifacts/red-go-stop.trace-meta.json",
+  "receipt": {
+    "schemaVersion": 1,
+    "mode": "numeric-stability",
+    "operatorFamily": "lm-head-slice",
+    "semanticOpId": "matmul.logits",
+    "semanticStage": "lm_head_slice",
+    "semanticPhase": "logits",
+    "policyRegistryPath": "config/numeric-stability-policy.json",
+    "policyRegistryVersion": "2026-03-29-route-taxonomy-v2",
+    "routeTaxonomyVersion": "numeric-stability-routes-v1",
+    "proofArtifactPath": "pipeline/lean/artifacts/proven-conditions.json",
+    "triggerPolicyId": "numeric-instability/selected-token-disagreement-with-reference-improvement-v1",
+    "routingPolicyId": "numeric-stability/prefer-stable-on-selected-token-disagreement-v1",
+    "fastPolicyId": "lm-head-slice/forward-f16accum-v1",
+    "stablePolicyId": "lm-head-slice/forward-serial-v1",
+    "referencePolicyId": "lm-head-slice/cpu-f64-serial-v1",
+    "candidates": [
+      {
+        "tokenId": 817,
+        "label": "go",
+        "fastLogit": 0.0,
+        "stableLogit": 0.01,
+        "referenceLogit": 0.01
+      },
+      {
+        "tokenId": 4721,
+        "label": "stop",
+        "fastLogit": 0.001,
+        "stableLogit": 0.001,
+        "referenceLogit": 0.001
+      }
+    ],
+    "firstDivergence": {
+      "semanticOpId": "matmul.logits",
+      "semanticStage": "lm_head_slice",
+      "semanticPhase": "logits",
+      "fastDigest": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+      "stableDigest": "fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210"
+    },
+    "selectedToken": {
+      "fast": 4721,
+      "stable": 817,
+      "reference": 817,
+      "fastMatchesReference": false,
+      "stableMatchesReference": true
+    },
+    "trigger": {
+      "fired": true,
+      "checks": {
+        "firstDivergencePresent": true,
+        "sensitiveOperatorMatched": true,
+        "selectedTokenDisagreement": true,
+        "stableMatchesExactReference": true,
+        "fastMissesExactReference": true
+      },
+      "proofLinks": []
+    },
+    "route": {
+      "decision": "prefer-stable",
+      "selectionMode": "stable",
+      "selectedPolicyId": "lm-head-slice/forward-serial-v1",
+      "selectedToken": 817,
+      "proofLinks": [],
+      "selectionProofLinks": []
+    }
+  },
+  "traceLink": {
+    "moduleIdentity": "doe_numeric_stability",
+    "requestHash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    "policyHash": "fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210",
+    "resultHash": "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff"
+  }
+}

@@ -1,0 +1,121 @@
+{
+  "schemaVersion": 2,
+  "registryVersion": "2026-03-29-route-taxonomy-v2",
+  "routeTaxonomyVersion": "numeric-stability-routes-v1",
+  "proofArtifactPath": "pipeline/lean/artifacts/proven-conditions.json",
+  "routeDecisions": [
+    "accept-fast",
+    "prefer-stable",
+    "abstain"
+  ],
+  "routeDecisionMetadata": [
+    {
+      "decision": "accept-fast",
+      "selectionMode": "fast",
+      "proofLinks": [
+        {
+          "theorem": "selectedValueForRoute_acceptFast_returns_fast",
+          "module": "Doe.Core.NumericStabilityPolicy",
+          "category": "lean_verified",
+          "relation": "numeric-stability-route-select-fast",
+          "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+        }
+      ]
+    },
+    {
+      "decision": "prefer-stable",
+      "selectionMode": "stable",
+      "proofLinks": [
+        {
+          "theorem": "selectedValueForRoute_preferStable_returns_stable",
+          "module": "Doe.Core.NumericStabilityPolicy",
+          "category": "lean_verified",
+          "relation": "numeric-stability-route-select-stable",
+          "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+        }
+      ]
+    },
+    {
+      "decision": "abstain",
+      "selectionMode": "none",
+      "proofLinks": [
+        {
+          "theorem": "selectedValueForRoute_abstain_returns_none",
+          "module": "Doe.Core.NumericStabilityPolicy",
+          "category": "lean_verified",
+          "relation": "numeric-stability-route-select-none",
+          "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+        }
+      ]
+    }
+  ],
+  "triggerPolicies": [
+    {
+      "triggerPolicyId": "numeric-instability/selected-token-disagreement-with-reference-improvement-v1",
+      "requireFirstDivergence": true,
+        "requireSelectedTokenDisagreement": true,
+      "requireStableMatchesExactReference": true,
+      "requireFastMissesExactReference": true,
+      "allowedSensitiveOperators": [
+        "matmul.logits",
+        "attention.output",
+        "rmsnorm.output"
+      ],
+      "proofLinks": [
+        {
+          "theorem": "selectedTokenReferenceImprovementTriggered_iff_all_checks",
+          "module": "Doe.Core.NumericStabilityPolicy",
+          "category": "lean_verified",
+          "relation": "numeric-stability-trigger-all-checks",
+          "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+        }
+      ]
+    }
+  ],
+  "routingPolicies": [
+    {
+      "policyId": "numeric-stability/prefer-stable-on-selected-token-disagreement-v1",
+      "triggerPolicyId": "numeric-instability/selected-token-disagreement-with-reference-improvement-v1",
+      "triggeredDecision": "prefer-stable",
+      "fallbackDecision": "accept-fast",
+      "proofLinks": [
+        {
+          "theorem": "routeDecisionForTrigger_prefers_triggered_decision_when_true",
+          "module": "Doe.Core.NumericStabilityPolicy",
+          "category": "lean_verified",
+          "relation": "numeric-stability-route-triggered",
+          "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+        },
+        {
+          "theorem": "routeDecisionForTrigger_prefers_fallback_decision_when_false",
+          "module": "Doe.Core.NumericStabilityPolicy",
+          "category": "lean_verified",
+          "relation": "numeric-stability-route-fallback",
+          "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+        }
+      ]
+    },
+    {
+      "policyId": "numeric-stability/abstain-on-selected-token-disagreement-v1",
+      "triggerPolicyId": "numeric-instability/selected-token-disagreement-with-reference-improvement-v1",
+      "triggeredDecision": "abstain",
+      "fallbackDecision": "accept-fast",
+      "proofLinks": [
+        {
+          "theorem": "routeDecisionForTrigger_prefers_triggered_decision_when_true",
+          "module": "Doe.Core.NumericStabilityPolicy",
+          "category": "lean_verified",
+          "relation": "numeric-stability-route-triggered",
+          "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+        },
+        {
+          "theorem": "routeDecisionForTrigger_prefers_fallback_decision_when_false",
+          "module": "Doe.Core.NumericStabilityPolicy",
+          "category": "lean_verified",
+          "relation": "numeric-stability-route-fallback",
+          "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+        }
+      ]
+    }
+  ]
+}

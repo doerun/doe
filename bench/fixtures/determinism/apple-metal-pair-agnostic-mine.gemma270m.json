@@ -5,6 +5,7 @@
   "answerSetRegistryPath": "config/determinism-answer-set-registry.json",
   "registryModelId": "gemma-3-270m-it-q4k-ehf16-af32",
   "allowedAnswerSetIds": [
+    "safety.safe_unsafe",
     "safety.not_safe",
     "quality.good_bad",
     "privacy.public_private",

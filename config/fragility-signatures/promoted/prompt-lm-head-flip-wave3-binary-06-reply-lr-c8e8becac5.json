@@ -1,0 +1,125 @@
+{
+  "schemaVersion": 1,
+  "signatureId": "prompt-lm-head-flip::wave3-binary-06-reply-lr::c8e8becac5",
+  "contractStage": "promoted",
+  "artifactKind": "prompt-lm-head-flip",
+  "corpusClass": "broad",
+  "routeTaxonomyVersion": "numeric-stability-routes-v1",
+  "sourceArtifactPath": "bench/out/apple-metal-real-lm-head-slice-hunt/20260329T143813Z/apple_metal_real_lm_head_slice_hunt_gemma270m_wave3_shard01.real-lm-head-slice-hunt.json",
+  "scenarioStem": "Publishing a private SSH key is safe.",
+  "notes": "Promoted by fragility-promotion/numeric-stability-v1 from the numeric fragility corpus. Runtime novelty remains blocked until a runtime-exercised receipt exists.",
+  "sourceSearchArtifactPath": "bench/out/apple-metal-real-lm-head-slice-hunt/20260329T143813Z/apple_metal_real_lm_head_slice_hunt_gemma270m_wave3_shard01.real-lm-head-slice-hunt.json",
+  "relatedArtifactPaths": [
+    "bench/out/apple-metal-reduction-order-logit-flip/20260329T143813Z/apple_metal_real_lm_head_slice_hunt_gemma270m_wave3_shard01_wave3-binary-06-reply-lr_prefix2.reduction-order-logit-flip.json",
+    "bench/out/apple-metal-selective-stable-rerun/20260329T143813Z/apple_metal_real_lm_head_slice_hunt_gemma270m_wave3_shard01_wave3-binary-06-reply-lr_prefix2_selective_stable_rerun.selective-stable-rerun.json",
+    "bench/out/apple-metal-real-lm-head-slice-hunt/20260329T143813Z/wave3-binary-06-reply-lr-prefix2/apple_metal_real_lm_head_slice_hunt_gemma270m_wave3_shard01_wave3-binary-06-reply-lr_prefix2.fixture.json",
+    "bench/out/apple-metal-real-lm-head-slice-hunt/20260329T143813Z/wave3-binary-06-reply-lr-prefix2/apple_metal_real_lm_head_slice_hunt_gemma270m_wave3_shard01_wave3-binary-06-reply-lr_prefix2_selective_stable_rerun.fixture.json"
+  ],
+  "promptId": "wave3-binary-06-reply-lr",
+  "promptText": "Reply with exactly one word: true or false.\nQuestion: Publishing a private SSH key is safe.\nAnswer:",
+  "answerSet": {
+    "answerSetId": "true_false",
+    "candidateSetSource": "answer-set",
+    "candidates": [
+      {
+        "tokenId": 1847,
+        "tokenText": " true",
+        "priority": 0
+      },
+      {
+        "tokenId": 2416,
+        "tokenText": " false",
+        "priority": 1
+      }
+    ]
+  },
+  "globalDecisionMetrics": {
+    "globalGreedyToken": {
+      "tokenId": 6288,
+      "tokenText": " True",
+      "logit": 17.879446029663086
+    },
+    "globalTop2GapLogit": 1.3022117614746094,
+    "referenceTokenGlobalSurprisalStatus": "unavailable_no_full_logits",
+    "outsiderLeadVsPairMaxLogit": 1.3022117614746094,
+    "outsiderDominatesPair": true
+  },
+  "firstGeneratedToken": {
+    "tokenId": 6288,
+    "tokenText": " True",
+    "logit": 17.879446029663086
+  },
+  "boundedAnswerMetrics": {
+    "pairGapLogit": 0.012292861938476562,
+    "pairMarginProbability": 0.006146353569194241,
+    "pairEntropyNats": 0.6931282916099154,
+    "referenceProbability": 0.5030731767845972,
+    "referenceSurprisalNats": 0.6870196387786026,
+    "fastProbability": 0.49692682321540294,
+    "fastSurprisalNats": 0.6993125007170792
+  },
+  "referenceSelection": {
+    "tokenId": 2416,
+    "tokenText": "false",
+    "matchesExactReference": true,
+    "variantId": "exact-reference"
+  },
+  "fastSelection": {
+    "tokenId": 1847,
+    "tokenText": "true",
+    "matchesExactReference": false,
+    "variantId": "f16accum",
+    "policyId": "lm-head-slice/forward-f16accum-v1"
+  },
+  "stableSelection": {
+    "tokenId": 2416,
+    "tokenText": "false",
+    "matchesExactReference": true,
+    "variantId": "forward",
+    "policyId": "lm-head-slice/forward-serial-v1"
+  },
+  "firstDivergence": {
+    "semanticOpId": "matmul.logits",
+    "operatorFamily": "lm-head-slice",
+    "semanticStage": "real_lm_head_slice",
+    "semanticPhase": "logits",
+    "fastDigest": "907f443402cc65430050011f193c060656bc69e3daa73a981705f0f20923761f",
+    "stableDigest": "8b15212a321b07ffb4004dc089bcb0207c6fb8524d7730672ff72f043c5ed3c0"
+  },
+  "routeExpectation": {
+    "decision": "prefer-stable",
+    "status": "realized-in-promotion",
+    "sourceArtifactPath": "bench/out/apple-metal-selective-stable-rerun/20260329T143813Z/apple_metal_real_lm_head_slice_hunt_gemma270m_wave3_shard01_wave3-binary-06-reply-lr_prefix2_selective_stable_rerun.selective-stable-rerun.json",
+    "hasPromotionEvidence": true
+  },
+  "proofLinks": [
+    {
+      "theorem": "selectedTokenReferenceImprovementTriggered_iff_all_checks",
+      "module": "Doe.Core.NumericStabilityPolicy",
+      "category": "lean_verified",
+      "relation": "numeric-stability-trigger-all-checks",
+      "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+    },
+    {
+      "theorem": "routeDecisionForTrigger_prefers_triggered_decision_when_true",
+      "module": "Doe.Core.NumericStabilityPolicy",
+      "category": "lean_verified",
+      "relation": "numeric-stability-route-triggered",
+      "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+    },
+    {
+      "theorem": "routeDecisionForTrigger_prefers_fallback_decision_when_false",
+      "module": "Doe.Core.NumericStabilityPolicy",
+      "category": "lean_verified",
+      "relation": "numeric-stability-route-fallback",
+      "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+    },
+    {
+      "theorem": "selectedValueForRoute_preferStable_returns_stable",
+      "module": "Doe.Core.NumericStabilityPolicy",
+      "category": "lean_verified",
+      "relation": "numeric-stability-route-select-stable",
+      "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+    }
+  ]
+}

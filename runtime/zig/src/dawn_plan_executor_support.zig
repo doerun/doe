@@ -19,6 +19,7 @@ pub const FnCreateInstance = *const fn (?*const c.WGPUInstanceDescriptor) callco
 pub const FnInstanceRequestAdapter = *const fn (c.WGPUInstance, ?*const c.WGPURequestAdapterOptions, c.WGPURequestAdapterCallbackInfo) callconv(.c) c.WGPUFuture;
 pub const FnInstanceProcessEvents = *const fn (c.WGPUInstance) callconv(.c) void;
 pub const FnAdapterRequestDevice = *const fn (c.WGPUAdapter, ?*const c.WGPUDeviceDescriptor, c.WGPURequestDeviceCallbackInfo) callconv(.c) c.WGPUFuture;
+pub const FnAdapterHasFeature = *const fn (c.WGPUAdapter, c.WGPUFeatureName) callconv(.c) c.WGPUBool;
 pub const FnAdapterRelease = *const fn (c.WGPUAdapter) callconv(.c) void;
 pub const FnDeviceGetQueue = *const fn (c.WGPUDevice) callconv(.c) c.WGPUQueue;
 pub const FnDeviceDestroy = *const fn (c.WGPUDevice) callconv(.c) void;
@@ -137,6 +138,7 @@ pub const DawnProcs = struct {
     instance_request_adapter: FnInstanceRequestAdapter,
     instance_process_events: FnInstanceProcessEvents,
     adapter_request_device: FnAdapterRequestDevice,
+    adapter_has_feature: FnAdapterHasFeature,
     adapter_release: FnAdapterRelease,
     device_get_queue: FnDeviceGetQueue,
     device_destroy: FnDeviceDestroy,
@@ -214,6 +216,7 @@ pub fn loadDawnProcs(lib: std.DynLib) !DawnProcs {
         .instance_request_adapter = try loadProc(lib, FnInstanceRequestAdapter, "wgpuInstanceRequestAdapter"),
         .instance_process_events = try loadProc(lib, FnInstanceProcessEvents, "wgpuInstanceProcessEvents"),
         .adapter_request_device = try loadProc(lib, FnAdapterRequestDevice, "wgpuAdapterRequestDevice"),
+        .adapter_has_feature = try loadProc(lib, FnAdapterHasFeature, "wgpuAdapterHasFeature"),
         .adapter_release = try loadProc(lib, FnAdapterRelease, "wgpuAdapterRelease"),
         .device_get_queue = try loadProc(lib, FnDeviceGetQueue, "wgpuDeviceGetQueue"),
         .device_destroy = try loadProc(lib, FnDeviceDestroy, "wgpuDeviceDestroy"),

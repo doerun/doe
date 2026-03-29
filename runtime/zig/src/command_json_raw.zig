@@ -32,6 +32,49 @@ pub const RawKernelBinding = struct {
     multisampled: ?bool = null,
 };
 
+pub const RawNumericStabilityVectorCapture = struct {
+    bufferHandle: ?u64 = null,
+    buffer_handle: ?u64 = null,
+    offset: ?u64 = null,
+    elementCount: ?u32 = null,
+    element_count: ?u32 = null,
+};
+
+pub const RawNumericStabilityWeightsCapture = struct {
+    bufferHandle: ?u64 = null,
+    buffer_handle: ?u64 = null,
+    offset: ?u64 = null,
+    rowStrideElements: ?u32 = null,
+    row_stride_elements: ?u32 = null,
+};
+
+pub const RawNumericStabilityCandidate = struct {
+    tokenId: ?u32 = null,
+    token_id: ?u32 = null,
+    label: ?[]const u8 = null,
+    rowIndex: ?u32 = null,
+    row_index: ?u32 = null,
+    bias: ?f64 = null,
+};
+
+pub const RawNumericStability = struct {
+    operatorFamily: ?[]const u8 = null,
+    operator_family: ?[]const u8 = null,
+    triggerPolicyId: ?[]const u8 = null,
+    trigger_policy_id: ?[]const u8 = null,
+    routingPolicyId: ?[]const u8 = null,
+    routing_policy_id: ?[]const u8 = null,
+    fastPolicyId: ?[]const u8 = null,
+    fast_policy_id: ?[]const u8 = null,
+    stablePolicyId: ?[]const u8 = null,
+    stable_policy_id: ?[]const u8 = null,
+    hiddenState: ?RawNumericStabilityVectorCapture = null,
+    hidden_state: ?RawNumericStabilityVectorCapture = null,
+    logits: ?RawNumericStabilityVectorCapture = null,
+    weights: ?RawNumericStabilityWeightsCapture = null,
+    candidates: ?[]RawNumericStabilityCandidate = null,
+};
+
 pub const RawCommand = struct {
     kind: ?[]const u8 = null,
     command: ?[]const u8 = null,
@@ -271,6 +314,8 @@ pub const RawCommand = struct {
     captureOffset: ?u64 = null,
     capture_size: ?u64 = null,
     captureSize: ?u64 = null,
+    numeric_stability: ?RawNumericStability = null,
+    numericStability: ?RawNumericStability = null,
 };
 
 pub const ParseError = error{

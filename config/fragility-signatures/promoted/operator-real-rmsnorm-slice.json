@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "signatureId": "operator::real-rmsnorm-slice",
+  "contractStage": "promoted",
+  "artifactKind": "operator-control",
+  "corpusClass": "operator-control",
+  "routeTaxonomyVersion": "numeric-stability-routes-v1",
+  "sourceArtifactPath": "bench/out/apple-metal-reduction-order-logit-flip/20260329T124056Z/apple_metal_rmsnorm_slice_logit_flip.reduction-order-logit-flip.json",
+  "scenarioStem": "real rmsnorm slice",
+  "notes": "Promoted by fragility-promotion/numeric-stability-v1 from the numeric fragility corpus. Runtime novelty remains blocked until a runtime-exercised receipt exists.",
+  "relatedArtifactPaths": [
+    "bench/out/apple-metal-selective-stable-rerun/20260329T124139Z/apple_metal_selective_stable_rerun_rmsnorm_slice.selective-stable-rerun.json"
+  ],
+  "referenceSelection": {
+    "tokenId": 0,
+    "tokenText": "token:0",
+    "matchesExactReference": true,
+    "variantId": "exact-reference"
+  },
+  "fastSelection": {
+    "tokenId": 0,
+    "tokenText": "token:0",
+    "matchesExactReference": true,
+    "variantId": "tree",
+    "policyId": "rmsnorm/reduction-tree-v1"
+  },
+  "stableSelection": {
+    "tokenId": 1,
+    "tokenText": "token:1",
+    "matchesExactReference": false,
+    "variantId": "serial",
+    "policyId": "rmsnorm/strict-serial-v1"
+  },
+  "firstDivergence": {
+    "semanticOpId": "rmsnorm.output",
+    "operatorFamily": "rmsnorm-slice",
+    "semanticStage": "rmsnorm_slice",
+    "semanticPhase": "normalized_hidden",
+    "fastDigest": "15a23257dab368d95637e5a0b007c46f6bf6d9f1bc6d116cd98da9514dcb28d9",
+    "stableDigest": "5e18ca7eda3a5b1b7ae36ac604961a1495667e77de0e419bac903083f2780db3"
+  },
+  "routeExpectation": {
+    "decision": "accept-fast",
+    "status": "realized-in-promotion",
+    "sourceArtifactPath": "bench/out/apple-metal-selective-stable-rerun/20260329T124139Z/apple_metal_selective_stable_rerun_rmsnorm_slice.selective-stable-rerun.json",
+    "hasPromotionEvidence": true
+  },
+  "proofLinks": [
+    {
+      "theorem": "selectedTokenReferenceImprovementTriggered_iff_all_checks",
+      "module": "Doe.Core.NumericStabilityPolicy",
+      "category": "lean_verified",
+      "relation": "numeric-stability-trigger-all-checks",
+      "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+    },
+    {
+      "theorem": "routeDecisionForTrigger_prefers_triggered_decision_when_true",
+      "module": "Doe.Core.NumericStabilityPolicy",
+      "category": "lean_verified",
+      "relation": "numeric-stability-route-triggered",
+      "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+    },
+    {
+      "theorem": "routeDecisionForTrigger_prefers_fallback_decision_when_false",
+      "module": "Doe.Core.NumericStabilityPolicy",
+      "category": "lean_verified",
+      "relation": "numeric-stability-route-fallback",
+      "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+    },
+    {
+      "theorem": "selectedValueForRoute_acceptFast_returns_fast",
+      "module": "Doe.Core.NumericStabilityPolicy",
+      "category": "lean_verified",
+      "relation": "numeric-stability-route-select-fast",
+      "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+    }
+  ]
+}

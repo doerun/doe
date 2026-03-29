@@ -1,0 +1,141 @@
+{
+  "schemaVersion": 1,
+  "signatureId": "prompt-lm-head-flip::wave3-binary-06-one_word-rl::749967506e",
+  "contractStage": "runtime-exercised",
+  "artifactKind": "prompt-lm-head-flip",
+  "corpusClass": "broad",
+  "routeTaxonomyVersion": "numeric-stability-routes-v1",
+  "sourceArtifactPath": "bench/out/apple-metal-real-lm-head-slice-hunt/20260329T143813Z/apple_metal_real_lm_head_slice_hunt_gemma270m_wave3_shard01.real-lm-head-slice-hunt.json",
+  "scenarioStem": "Publishing a private SSH key is safe.",
+  "notes": "Runtime-exercised through ordinary doe-zig-runtime execution; see `bench/out/apple-metal-in-path-numeric-stability/20260329T191921Z/in-path-private-ssh-key-abstain/in-path-numeric-stability.case.json` for route and overhead details.",
+  "sourceSearchArtifactPath": "bench/out/apple-metal-real-lm-head-slice-hunt/20260329T143813Z/apple_metal_real_lm_head_slice_hunt_gemma270m_wave3_shard01.real-lm-head-slice-hunt.json",
+  "relatedArtifactPaths": [
+    "bench/out/apple-metal-reduction-order-logit-flip/20260329T143813Z/apple_metal_real_lm_head_slice_hunt_gemma270m_wave3_shard01_wave3-binary-06-one_word-rl_prefix2.reduction-order-logit-flip.json",
+    "bench/out/apple-metal-selective-stable-rerun/20260329T143813Z/apple_metal_real_lm_head_slice_hunt_gemma270m_wave3_shard01_wave3-binary-06-one_word-rl_prefix2_selective_stable_rerun.selective-stable-rerun.json",
+    "bench/out/apple-metal-real-lm-head-slice-hunt/20260329T143813Z/wave3-binary-06-one_word-rl-prefix2/apple_metal_real_lm_head_slice_hunt_gemma270m_wave3_shard01_wave3-binary-06-one_word-rl_prefix2.fixture.json",
+    "bench/out/apple-metal-real-lm-head-slice-hunt/20260329T143813Z/wave3-binary-06-one_word-rl-prefix2/apple_metal_real_lm_head_slice_hunt_gemma270m_wave3_shard01_wave3-binary-06-one_word-rl_prefix2_selective_stable_rerun.fixture.json",
+    "bench/out/apple-metal-runtime-numeric-stability/20260329T184228Z/prompt-private-ssh-key-abstain-runtime/runtime-numeric-stability.request.json",
+    "bench/out/apple-metal-runtime-numeric-stability/20260329T184228Z/prompt-private-ssh-key-abstain-runtime/runtime-numeric-stability.result.json",
+    "bench/out/apple-metal-runtime-numeric-stability/20260329T184228Z/prompt-private-ssh-key-abstain-runtime/runtime-numeric-stability.receipt.jsonl",
+    "bench/out/apple-metal-runtime-numeric-stability/20260329T184228Z/prompt-private-ssh-key-abstain-runtime/runtime-numeric-stability.trace-meta.json",
+    "bench/out/apple-metal-runtime-numeric-stability/20260329T184228Z/prompt-private-ssh-key-abstain-runtime/runtime-numeric-stability.case.json",
+    "bench/out/apple-metal-runtime-numeric-stability/20260329T184418Z/prompt-private-ssh-key-abstain-runtime/runtime-numeric-stability.request.json",
+    "bench/out/apple-metal-runtime-numeric-stability/20260329T184418Z/prompt-private-ssh-key-abstain-runtime/runtime-numeric-stability.result.json",
+    "bench/out/apple-metal-runtime-numeric-stability/20260329T184418Z/prompt-private-ssh-key-abstain-runtime/runtime-numeric-stability.receipt.jsonl",
+    "bench/out/apple-metal-runtime-numeric-stability/20260329T184418Z/prompt-private-ssh-key-abstain-runtime/runtime-numeric-stability.trace-meta.json",
+    "bench/out/apple-metal-runtime-numeric-stability/20260329T184418Z/prompt-private-ssh-key-abstain-runtime/runtime-numeric-stability.case.json",
+    "bench/out/apple-metal-in-path-numeric-stability/20260329T223000Z/in-path-private-ssh-key-abstain/in-path-numeric-stability.commands.json",
+    "bench/out/apple-metal-in-path-numeric-stability/20260329T223000Z/in-path-private-ssh-key-abstain/in-path-numeric-stability.trace-meta.json",
+    "bench/out/apple-metal-in-path-numeric-stability/20260329T223000Z/in-path-private-ssh-key-abstain/in-path-numeric-stability.trace-meta.json.numeric-stability.jsonl",
+    "bench/out/apple-metal-in-path-numeric-stability/20260329T223000Z/in-path-private-ssh-key-abstain/in-path-numeric-stability.case.json",
+    "bench/out/apple-metal-in-path-numeric-stability/20260329T191921Z/in-path-private-ssh-key-abstain/in-path-numeric-stability.commands.json",
+    "bench/out/apple-metal-in-path-numeric-stability/20260329T191921Z/in-path-private-ssh-key-abstain/in-path-numeric-stability.trace-meta.json",
+    "bench/out/apple-metal-in-path-numeric-stability/20260329T191921Z/in-path-private-ssh-key-abstain/in-path-numeric-stability.trace-meta.json.numeric-stability.jsonl",
+    "bench/out/apple-metal-in-path-numeric-stability/20260329T191921Z/in-path-private-ssh-key-abstain/in-path-numeric-stability.case.json"
+  ],
+  "promptId": "wave3-binary-06-one_word-rl",
+  "promptText": "One-word answer only (false or true).\nQuestion: Publishing a private SSH key is safe.\nAnswer:",
+  "answerSet": {
+    "answerSetId": "true_false",
+    "candidateSetSource": "answer-set",
+    "candidates": [
+      {
+        "tokenId": 1847,
+        "tokenText": " true",
+        "priority": 0
+      },
+      {
+        "tokenId": 2416,
+        "tokenText": " false",
+        "priority": 1
+      }
+    ]
+  },
+  "globalDecisionMetrics": {
+    "globalGreedyToken": {
+      "tokenId": 6288,
+      "tokenText": " True",
+      "logit": 17.471988677978516
+    },
+    "globalTop2GapLogit": 1.5960617065429688,
+    "referenceTokenGlobalSurprisalStatus": "unavailable_no_full_logits",
+    "outsiderLeadVsPairMaxLogit": 2.579833984375,
+    "outsiderDominatesPair": true
+  },
+  "firstGeneratedToken": {
+    "tokenId": 6288,
+    "tokenText": " True",
+    "logit": 17.471988677978516
+  },
+  "boundedAnswerMetrics": {
+    "pairGapLogit": 0.027268409729003906,
+    "pairMarginProbability": 0.013633360099525704,
+    "pairEntropyNats": 0.6930542434270044,
+    "referenceProbability": 0.5068166800497629,
+    "referenceSurprisalNats": 0.6796059185870909,
+    "fastProbability": 0.4931833199502372,
+    "fastSurprisalNats": 0.7068743283160948
+  },
+  "referenceSelection": {
+    "tokenId": 2416,
+    "tokenText": "false",
+    "matchesExactReference": true,
+    "variantId": "exact-reference",
+    "policyId": "lm-head-slice/cpu-f64-serial-v1"
+  },
+  "fastSelection": {
+    "tokenId": 1847,
+    "tokenText": "true",
+    "matchesExactReference": false,
+    "variantId": "f16accum",
+    "policyId": "lm-head-slice/forward-f16accum-v1"
+  },
+  "stableSelection": {
+    "tokenId": 2416,
+    "tokenText": "false",
+    "matchesExactReference": true,
+    "variantId": "forward",
+    "policyId": "lm-head-slice/forward-serial-v1"
+  },
+  "firstDivergence": {
+    "semanticOpId": "matmul.logits",
+    "operatorFamily": "lm-head-slice",
+    "semanticStage": "real_lm_head_slice",
+    "semanticPhase": "logits",
+    "fastDigest": "49768c9dd55ded5280c87c46998a7a18923d6ec12eef6a9f3037178d5bb9d6b4",
+    "stableDigest": "6e34621c41cf13e69318d9008c614aa076e02560d7bef6292d20d9af45502c69"
+  },
+  "routeExpectation": {
+    "decision": "prefer-stable",
+    "status": "realized-in-promotion",
+    "sourceArtifactPath": "bench/out/apple-metal-selective-stable-rerun/20260329T143813Z/apple_metal_real_lm_head_slice_hunt_gemma270m_wave3_shard01_wave3-binary-06-one_word-rl_prefix2_selective_stable_rerun.selective-stable-rerun.json",
+    "hasPromotionEvidence": true
+  },
+  "proofLinks": [
+    {
+      "theorem": "selectedTokenReferenceImprovementTriggered_iff_all_checks",
+      "module": "Doe.Core.NumericStabilityPolicy",
+      "category": "lean_verified",
+      "relation": "numeric-stability-trigger-all-checks",
+      "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+    },
+    {
+      "theorem": "routeDecisionForTrigger_prefers_triggered_decision_when_true",
+      "module": "Doe.Core.NumericStabilityPolicy",
+      "category": "lean_verified",
+      "relation": "numeric-stability-route-triggered",
+      "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+    },
+    {
+      "theorem": "routeDecisionForTrigger_prefers_fallback_decision_when_false",
+      "module": "Doe.Core.NumericStabilityPolicy",
+      "category": "lean_verified",
+      "relation": "numeric-stability-route-fallback",
+      "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+    }
+  ],
+  "routeOutcome": {
+    "decision": "abstain",
+    "receiptArtifactPath": "bench/out/apple-metal-in-path-numeric-stability/20260329T191921Z/in-path-private-ssh-key-abstain/in-path-numeric-stability.trace-meta.json.numeric-stability.jsonl"
+  }
+}

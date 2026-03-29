@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://doe-gpu.dev/config/promoted-fragility-catalog.schema.json",
+  "title": "Doe promoted fragility catalog",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "catalogVersion",
+    "promotionPolicyId",
+    "routeTaxonomyVersion",
+    "sourceCorpusPath",
+    "entries",
+    "summary"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "catalogVersion": { "type": "string", "minLength": 1 },
+    "promotionPolicyId": { "type": "string", "minLength": 1 },
+    "routeTaxonomyVersion": { "type": "string", "minLength": 1 },
+    "sourceCorpusPath": { "type": "string", "minLength": 1 },
+    "sourceManifestPath": { "type": "string", "minLength": 1 },
+    "entries": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/catalogEntry" }
+    },
+    "summary": { "$ref": "#/$defs/summary" }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "contractStage": {
+      "type": "string",
+      "enum": [
+        "discovery",
+        "promoted",
+        "runtime-candidate",
+        "runtime-exercised"
+      ]
+    },
+    "artifactKind": {
+      "type": "string",
+      "enum": [
+        "prompt-lm-head-flip",
+        "prompt-top-prefix-flip",
+        "policy-boundary",
+        "operator-control"
+      ]
+    },
+    "corpusClass": {
+      "type": "string",
+      "enum": [
+        "strict",
+        "broad",
+        "control",
+        "top-prefix-only",
+        "policy-boundary",
+        "operator-control"
+      ]
+    },
+    "catalogEntry": {
+      "type": "object",
+      "required": [
+        "signatureId",
+        "signaturePath",
+        "contractStage",
+        "artifactKind",
+        "corpusClass",
+        "scenarioStem",
+        "routeExpectationDecision"
+      ],
+      "properties": {
+        "signatureId": { "type": "string", "minLength": 1 },
+        "signaturePath": { "type": "string", "minLength": 1 },
+        "contractStage": { "$ref": "#/$defs/contractStage" },
+        "artifactKind": { "$ref": "#/$defs/artifactKind" },
+        "corpusClass": { "$ref": "#/$defs/corpusClass" },
+        "scenarioStem": { "type": "string", "minLength": 1 },
+        "promptId": { "type": "string", "minLength": 1 },
+        "routeExpectationDecision": {
+          "type": "string",
+          "enum": ["accept-fast", "prefer-stable", "abstain"]
+        },
+        "routeOutcomeDecision": {
+          "type": "string",
+          "enum": ["accept-fast", "prefer-stable", "abstain"]
+        }
+      },
+      "additionalProperties": false
+    },
+    "countMap": {
+      "type": "object",
+      "propertyNames": { "type": "string", "minLength": 1 },
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 0
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": [
+        "entryCount",
+        "countsByContractStage",
+        "countsByArtifactKind",
+        "countsByCorpusClass",
+        "countsByRouteOutcome"
+      ],
+      "properties": {
+        "entryCount": { "type": "integer", "minimum": 1 },
+        "countsByContractStage": { "$ref": "#/$defs/countMap" },
+        "countsByArtifactKind": { "$ref": "#/$defs/countMap" },
+        "countsByCorpusClass": { "$ref": "#/$defs/countMap" },
+        "countsByRouteOutcome": { "$ref": "#/$defs/countMap" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

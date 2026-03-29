@@ -1,0 +1,144 @@
+{
+  "schemaVersion": 1,
+  "signatureId": "prompt-lm-head-flip::red-go-stop-answer::2f8677733c",
+  "contractStage": "runtime-exercised",
+  "artifactKind": "prompt-lm-head-flip",
+  "corpusClass": "strict",
+  "routeTaxonomyVersion": "numeric-stability-routes-v1",
+  "sourceArtifactPath": "bench/out/apple-metal-real-lm-head-slice-hunt/20260329T134732Z/apple_metal_real_lm_head_slice_hunt_gemma270m_red_go_stop_answer.real-lm-head-slice-hunt.json",
+  "scenarioStem": "At a red traffic light, cars should",
+  "notes": "Runtime-exercised through ordinary doe-zig-runtime execution; see `bench/out/apple-metal-in-path-numeric-stability/20260329T191921Z/in-path-red-go-stop/in-path-numeric-stability.case.json` for route and overhead details.",
+  "sourceSearchArtifactPath": "bench/out/apple-metal-real-lm-head-slice-hunt/20260329T134105Z/apple_metal_real_lm_head_slice_hunt_gemma270m_generated_choice_scout.real-lm-head-slice-hunt.json",
+  "relatedArtifactPaths": [
+    "bench/out/apple-metal-real-lm-head-slice-hunt/20260329T134105Z/apple_metal_real_lm_head_slice_hunt_gemma270m_generated_choice_scout.real-lm-head-slice-hunt.json",
+    "bench/out/apple-metal-reduction-order-logit-flip/20260329T134732Z/apple_metal_real_lm_head_slice_hunt_gemma270m_red_go_stop_answer_red-go-stop-answer_prefix2.reduction-order-logit-flip.json",
+    "bench/out/apple-metal-selective-stable-rerun/20260329T134732Z/apple_metal_real_lm_head_slice_hunt_gemma270m_red_go_stop_answer_red-go-stop-answer_prefix2_selective_stable_rerun.selective-stable-rerun.json",
+    "bench/out/apple-metal-real-lm-head-slice-hunt/20260329T134732Z/red-go-stop-answer-prefix2/apple_metal_real_lm_head_slice_hunt_gemma270m_red_go_stop_answer_red-go-stop-answer_prefix2.fixture.json",
+    "bench/out/apple-metal-real-lm-head-slice-hunt/20260329T134732Z/red-go-stop-answer-prefix2/apple_metal_real_lm_head_slice_hunt_gemma270m_red_go_stop_answer_red-go-stop-answer_prefix2_selective_stable_rerun.fixture.json",
+    "bench/out/apple-metal-runtime-numeric-stability/20260329T184228Z/prompt-red-go-stop-runtime/runtime-numeric-stability.request.json",
+    "bench/out/apple-metal-runtime-numeric-stability/20260329T184228Z/prompt-red-go-stop-runtime/runtime-numeric-stability.result.json",
+    "bench/out/apple-metal-runtime-numeric-stability/20260329T184228Z/prompt-red-go-stop-runtime/runtime-numeric-stability.receipt.jsonl",
+    "bench/out/apple-metal-runtime-numeric-stability/20260329T184228Z/prompt-red-go-stop-runtime/runtime-numeric-stability.trace-meta.json",
+    "bench/out/apple-metal-runtime-numeric-stability/20260329T184228Z/prompt-red-go-stop-runtime/runtime-numeric-stability.case.json",
+    "bench/out/apple-metal-runtime-numeric-stability/20260329T184418Z/prompt-red-go-stop-runtime/runtime-numeric-stability.request.json",
+    "bench/out/apple-metal-runtime-numeric-stability/20260329T184418Z/prompt-red-go-stop-runtime/runtime-numeric-stability.result.json",
+    "bench/out/apple-metal-runtime-numeric-stability/20260329T184418Z/prompt-red-go-stop-runtime/runtime-numeric-stability.receipt.jsonl",
+    "bench/out/apple-metal-runtime-numeric-stability/20260329T184418Z/prompt-red-go-stop-runtime/runtime-numeric-stability.trace-meta.json",
+    "bench/out/apple-metal-runtime-numeric-stability/20260329T184418Z/prompt-red-go-stop-runtime/runtime-numeric-stability.case.json",
+    "bench/out/apple-metal-in-path-numeric-stability/20260329T223000Z/in-path-red-go-stop/in-path-numeric-stability.commands.json",
+    "bench/out/apple-metal-in-path-numeric-stability/20260329T223000Z/in-path-red-go-stop/in-path-numeric-stability.trace-meta.json",
+    "bench/out/apple-metal-in-path-numeric-stability/20260329T223000Z/in-path-red-go-stop/in-path-numeric-stability.trace-meta.json.numeric-stability.jsonl",
+    "bench/out/apple-metal-in-path-numeric-stability/20260329T223000Z/in-path-red-go-stop/in-path-numeric-stability.case.json",
+    "bench/out/apple-metal-in-path-numeric-stability/20260329T191921Z/in-path-red-go-stop/in-path-numeric-stability.commands.json",
+    "bench/out/apple-metal-in-path-numeric-stability/20260329T191921Z/in-path-red-go-stop/in-path-numeric-stability.trace-meta.json",
+    "bench/out/apple-metal-in-path-numeric-stability/20260329T191921Z/in-path-red-go-stop/in-path-numeric-stability.trace-meta.json.numeric-stability.jsonl",
+    "bench/out/apple-metal-in-path-numeric-stability/20260329T191921Z/in-path-red-go-stop/in-path-numeric-stability.case.json"
+  ],
+  "promptId": "red-go-stop-answer",
+  "promptText": "Answer with exactly one word: go or stop.\nQuestion: At a red traffic light, cars should\nAnswer:",
+  "answerSet": {
+    "answerSetId": "go_stop",
+    "candidateSetSource": "prompt-choice",
+    "candidates": [
+      {
+        "tokenId": 817,
+        "tokenText": " go",
+        "priority": 0
+      },
+      {
+        "tokenId": 4721,
+        "tokenText": " stop",
+        "priority": 1
+      }
+    ]
+  },
+  "globalDecisionMetrics": {
+    "globalGreedyToken": {
+      "tokenId": 817,
+      "tokenText": " go",
+      "logit": 17.802072525024414
+    },
+    "globalTop2GapLogit": 0.02170562744140625,
+    "referenceTokenGlobalSurprisalStatus": "unavailable_no_full_logits",
+    "outsiderLeadVsPairMaxLogit": -2.2926626205444336,
+    "outsiderDominatesPair": false
+  },
+  "firstGeneratedToken": {
+    "tokenId": 817,
+    "tokenText": " go",
+    "logit": 17.802072525024414
+  },
+  "boundedAnswerMetrics": {
+    "pairGapLogit": 0.02170562744140625,
+    "pairMarginProbability": 0.01085238764641111,
+    "pairEntropyNats": 0.6930882922451778,
+    "referenceProbability": 0.5054261938232055,
+    "referenceSurprisalNats": 0.682353257466026,
+    "fastProbability": 0.4945738061767944,
+    "fastSurprisalNats": 0.7040588849074322
+  },
+  "referenceSelection": {
+    "tokenId": 817,
+    "tokenText": "go",
+    "matchesExactReference": true,
+    "variantId": "exact-reference",
+    "policyId": "lm-head-slice/cpu-f64-serial-v1"
+  },
+  "fastSelection": {
+    "tokenId": 4721,
+    "tokenText": "stop",
+    "matchesExactReference": false,
+    "variantId": "f16accum",
+    "policyId": "lm-head-slice/forward-f16accum-v1"
+  },
+  "stableSelection": {
+    "tokenId": 817,
+    "tokenText": "go",
+    "matchesExactReference": true,
+    "variantId": "forward",
+    "policyId": "lm-head-slice/forward-serial-v1"
+  },
+  "firstDivergence": {
+    "semanticOpId": "matmul.logits",
+    "operatorFamily": "lm-head-slice",
+    "semanticStage": "real_lm_head_slice",
+    "semanticPhase": "logits",
+    "fastDigest": "91e9990b7e752791a8fe7ab76c7034830ae1a7049f866c004f81ebc3bf982984",
+    "stableDigest": "6d7897acadf2a630ff455c54ca8ac1bd3ec5eb8c50789fd4ee398585400c279c"
+  },
+  "routeExpectation": {
+    "decision": "prefer-stable",
+    "status": "realized-in-promotion",
+    "sourceArtifactPath": "bench/out/apple-metal-selective-stable-rerun/20260329T134732Z/apple_metal_real_lm_head_slice_hunt_gemma270m_red_go_stop_answer_red-go-stop-answer_prefix2_selective_stable_rerun.selective-stable-rerun.json",
+    "hasPromotionEvidence": true
+  },
+  "proofLinks": [
+    {
+      "theorem": "selectedTokenReferenceImprovementTriggered_iff_all_checks",
+      "module": "Doe.Core.NumericStabilityPolicy",
+      "category": "lean_verified",
+      "relation": "numeric-stability-trigger-all-checks",
+      "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+    },
+    {
+      "theorem": "routeDecisionForTrigger_prefers_triggered_decision_when_true",
+      "module": "Doe.Core.NumericStabilityPolicy",
+      "category": "lean_verified",
+      "relation": "numeric-stability-route-triggered",
+      "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+    },
+    {
+      "theorem": "routeDecisionForTrigger_prefers_fallback_decision_when_false",
+      "module": "Doe.Core.NumericStabilityPolicy",
+      "category": "lean_verified",
+      "relation": "numeric-stability-route-fallback",
+      "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+    }
+  ],
+  "routeOutcome": {
+    "decision": "prefer-stable",
+    "receiptArtifactPath": "bench/out/apple-metal-in-path-numeric-stability/20260329T191921Z/in-path-red-go-stop/in-path-numeric-stability.trace-meta.json.numeric-stability.jsonl",
+    "selectedVariantId": "forward",
+    "selectedTokenId": 817
+  }
+}

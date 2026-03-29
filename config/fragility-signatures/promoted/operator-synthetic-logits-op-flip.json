@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "signatureId": "operator::synthetic-logits-op-flip",
+  "contractStage": "promoted",
+  "artifactKind": "operator-control",
+  "corpusClass": "operator-control",
+  "routeTaxonomyVersion": "numeric-stability-routes-v1",
+  "sourceArtifactPath": "bench/out/apple-metal-reduction-order-logit-flip/20260329T031521Z/apple_metal_reduction_order_logit_flip.reduction-order-logit-flip.json",
+  "scenarioStem": "synthetic logits-op token flip",
+  "notes": "Promoted by fragility-promotion/numeric-stability-v1 from the numeric fragility corpus. Runtime novelty remains blocked until a runtime-exercised receipt exists.",
+  "relatedArtifactPaths": [
+    "bench/out/apple-metal-selective-stable-rerun/20260329T123001Z/apple_metal_selective_stable_rerun_logit_flip.selective-stable-rerun.json"
+  ],
+  "referenceSelection": {
+    "tokenId": 1,
+    "tokenText": "token:1",
+    "matchesExactReference": true,
+    "variantId": "exact-reference"
+  },
+  "fastSelection": {
+    "tokenId": 0,
+    "tokenText": "token:0",
+    "matchesExactReference": false,
+    "variantId": "pairwise",
+    "policyId": "matmul-logits/pairwise-tree-v1"
+  },
+  "stableSelection": {
+    "tokenId": 1,
+    "tokenText": "token:1",
+    "matchesExactReference": true,
+    "variantId": "forward",
+    "policyId": "matmul-logits/forward-serial-v1"
+  },
+  "firstDivergence": {
+    "semanticOpId": "matmul.logits",
+    "operatorFamily": "logits-matmul",
+    "semanticStage": "micro_matmul_logits",
+    "semanticPhase": "logits",
+    "fastDigest": "16ded72b880fe74e1d0bbdc39ba9a9fb40c87499da7f44edad9d81272b176e51",
+    "stableDigest": "5842b802ee7b089f69320559f8a40d994ef8c4315e1a1616c1c6059cb3522762"
+  },
+  "routeExpectation": {
+    "decision": "prefer-stable",
+    "status": "realized-in-promotion",
+    "sourceArtifactPath": "bench/out/apple-metal-selective-stable-rerun/20260329T123001Z/apple_metal_selective_stable_rerun_logit_flip.selective-stable-rerun.json",
+    "hasPromotionEvidence": true
+  },
+  "proofLinks": [
+    {
+      "theorem": "selectedTokenReferenceImprovementTriggered_iff_all_checks",
+      "module": "Doe.Core.NumericStabilityPolicy",
+      "category": "lean_verified",
+      "relation": "numeric-stability-trigger-all-checks",
+      "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+    },
+    {
+      "theorem": "routeDecisionForTrigger_prefers_triggered_decision_when_true",
+      "module": "Doe.Core.NumericStabilityPolicy",
+      "category": "lean_verified",
+      "relation": "numeric-stability-route-triggered",
+      "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+    },
+    {
+      "theorem": "routeDecisionForTrigger_prefers_fallback_decision_when_false",
+      "module": "Doe.Core.NumericStabilityPolicy",
+      "category": "lean_verified",
+      "relation": "numeric-stability-route-fallback",
+      "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+    },
+    {
+      "theorem": "selectedValueForRoute_preferStable_returns_stable",
+      "module": "Doe.Core.NumericStabilityPolicy",
+      "category": "lean_verified",
+      "relation": "numeric-stability-route-select-stable",
+      "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+    }
+  ]
+}

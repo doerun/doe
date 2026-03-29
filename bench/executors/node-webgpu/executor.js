@@ -11,6 +11,9 @@ import {
   planSummary,
   validateSampleExpectation,
 } from './plan.js';
+import {
+  evaluateExecutionDeterminism,
+} from './determinism.js';
 
 const REPO_ROOT = resolve(fileURLToPath(new URL('../../..', import.meta.url)));
 const FALLBACK_WEBGPU_PATH = join(
@@ -965,6 +968,7 @@ async function createRuntime(normalizedPlan, webgpu, spec, { debugLog }) {
 
 async function executeSample(normalizedPlan, runtime, { includeSetupInSelectedTiming, debugLog }) {
   const rows = [];
+  const determinismCaptureRows = new Map();
   let executionSetupTotalNs = 0;
   let executionEncodeTotalNs = 0;
   let executionSubmitWaitTotalNs = 0;
@@ -1082,6 +1086,10 @@ async function executeSample(normalizedPlan, runtime, { includeSetupInSelectedTi
         executionEncodeNs: 0,
         executionSubmitWaitNs: 0,
         executionSuccess: true,
+        ...(typeof step.semanticOpId === 'string' ? { semanticOpId: step.semanticOpId } : {}),
+        ...(typeof step.semanticStage === 'string' ? { semanticStage: step.semanticStage } : {}),
+        ...(typeof step.semanticPhase === 'string' ? { semanticPhase: step.semanticPhase } : {}),
+        ...(Number.isInteger(step.semanticTokenIndex) ? { semanticTokenIndex: step.semanticTokenIndex } : {}),
         timingSource: 'doe-execution-total-ns',
         timingClass: 'operation',
         workloadId: normalizedPlan.workloadId,
@@ -1149,7 +1157,7 @@ async function executeSample(normalizedPlan, runtime, { includeSetupInSelectedTi
         throw new Error(`copyBufferToBuffer references unknown buffer(s): ${step.srcBufferId} -> ${step.dstBufferId}`);
       }
       const opStartedAt = performance.now();
-      encoder.copyBufferToBuffer(src, 0, dst, 0, step.sizeBytes);
+      encoder.copyBufferToBuffer(src, step.srcOffset ?? 0, dst, step.dstOffset ?? 0, step.sizeBytes);
       const opNs = nsDelta(opStartedAt);
       stepBreakdownNs.copyEncodeApiTotalNs += opNs;
       executionEncodeTotalNs += opNs;
@@ -1167,6 +1175,10 @@ async function executeSample(normalizedPlan, runtime, { includeSetupInSelectedTi
         executionEncodeNs: opNs,
         executionSubmitWaitNs: 0,
         executionSuccess: true,
+        ...(typeof step.semanticOpId === 'string' ? { semanticOpId: step.semanticOpId } : {}),
+        ...(typeof step.semanticStage === 'string' ? { semanticStage: step.semanticStage } : {}),
+        ...(typeof step.semanticPhase === 'string' ? { semanticPhase: step.semanticPhase } : {}),
+        ...(Number.isInteger(step.semanticTokenIndex) ? { semanticTokenIndex: step.semanticTokenIndex } : {}),
         timingSource: 'doe-execution-total-ns',
         timingClass: 'operation',
         workloadId: normalizedPlan.workloadId,
@@ -1191,6 +1203,18 @@ async function executeSample(normalizedPlan, runtime, { includeSetupInSelectedTi
         throw new Error(`validation failed for ${step.bufferId}: ${validation.detail}`);
       }
       buffer.unmap();
+      if (typeof step.semanticPhase === 'string') {
+        determinismCaptureRows.set(
+          `${Number.isInteger(step.semanticTokenIndex) ? step.semanticTokenIndex : 0}:${step.semanticPhase}`,
+          {
+            bytes: mapped,
+            semanticOpId: typeof step.semanticOpId === 'string' ? step.semanticOpId : null,
+            semanticStage: typeof step.semanticStage === 'string' ? step.semanticStage : null,
+            semanticPhase: step.semanticPhase,
+            semanticTokenIndex: Number.isInteger(step.semanticTokenIndex) ? step.semanticTokenIndex : 0,
+          },
+        );
+      }
       const stepNs = nsDelta(readStartedAt);
       stepBreakdownNs.readbackTotalNs += stepNs;
       executionSubmitWaitTotalNs += stepNs;
@@ -1208,6 +1232,10 @@ async function executeSample(normalizedPlan, runtime, { includeSetupInSelectedTi
         executionEncodeNs: 0,
         executionSubmitWaitNs: stepNs,
         executionSuccess: true,
+        ...(typeof step.semanticOpId === 'string' ? { semanticOpId: step.semanticOpId } : {}),
+        ...(typeof step.semanticStage === 'string' ? { semanticStage: step.semanticStage } : {}),
+        ...(typeof step.semanticPhase === 'string' ? { semanticPhase: step.semanticPhase } : {}),
+        ...(Number.isInteger(step.semanticTokenIndex) ? { semanticTokenIndex: step.semanticTokenIndex } : {}),
         timingSource: 'doe-execution-total-ns',
         timingClass: 'operation',
         workloadId: normalizedPlan.workloadId,
@@ -1243,6 +1271,11 @@ async function executeSample(normalizedPlan, runtime, { includeSetupInSelectedTi
   );
   const hostCommandOrchestrationTotalNs = Math.max(0, commandLoopWallNs - selectedLoopTotalNs);
   const timingMs = executionTotalNs / 1_000_000;
+  const determinismResult = await evaluateExecutionDeterminism({
+    determinismConfig: normalizedPlan.determinism ?? null,
+    provider: runtime.providerSpec.provider,
+    captureRows: determinismCaptureRows,
+  });
   debugLog('execution.done', {
     includeSetupInSelectedTiming,
     executionTotalNs,
@@ -1298,6 +1331,7 @@ async function executeSample(normalizedPlan, runtime, { includeSetupInSelectedTi
     packageSetupTotalNs: runtime.setupTotalNs,
     packageSetupBreakdownNs: runtime.setupBreakdownNs,
     packageStepBreakdownNs: stepBreakdownNs,
+    ...(determinismResult ? { determinism: determinismResult.determinism } : {}),
     samplesMs: [timingMs],
     stats: {
       count: 1,

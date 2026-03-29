@@ -1,4 +1,545 @@
 # Doe status
+## Native ordinary-execution numeric stability is now live for `matmul.logits`: selected prompt/control signatures run through real `doe-zig-runtime` `kernel_dispatch` command streams with `numericStability` annotations, emit live trace-meta summaries plus per-run receipts, and update the checked-in promoted catalog from ordinary execution rather than the explicit bounded-slice module service (2026-03-29 UTC)
+
+- New runtime surfaces:
+  - `runtime/zig/src/numeric_stability_annotation.zig`
+  - `runtime/zig/src/numeric_stability_runtime.zig`
+  - `runtime/zig/src/main_usage.zig`
+  - `runtime/zig/src/command_json_raw.zig`
+  - `runtime/zig/src/command_stream.zig`
+  - `runtime/zig/src/main.zig`
+- New command/config/exercise surfaces:
+  - `config/numeric-stability-command-annotation.schema.json`
+  - `config/in-path-numeric-stability-exercise.json`
+  - `config/in-path-numeric-stability-exercise.schema.json`
+  - `examples/numeric-stability-command-annotation.sample.json`
+  - `bench/runners/exercise_in_path_numeric_stability.py`
+- Fresh native ordinary-execution artifact set:
+  - `bench/out/apple-metal-in-path-numeric-stability/20260329T191921Z/apple_metal_in_path_numeric_stability.manifest.json`
+- Current result:
+  - the native runtime can now evaluate numeric stability inside ordinary
+    `kernel_dispatch` execution for annotated `matmul.logits` commands instead
+    of only through the explicit `doe_numeric_stability` bounded-slice service
+  - Doe captures the live hidden-state vector, bounded row weights, and fast
+    logits buffer from the executed dispatch, computes stable and exact-
+    reference comparisons locally in Zig, and emits receipts at
+    `<trace-meta>.numeric-stability.jsonl`
+  - trace-meta now carries a live `numericStability` summary for the same
+    ordinary execution run; see the manifest above and per-case trace-meta
+    artifacts for the current route mix and dispatch/timing envelopes
+  - selected strict, broad, and control signatures in
+    `config/promoted-fragility-catalog.json` now reach
+    `contractStage = runtime-exercised` through ordinary execution, not
+    through the earlier bounded-slice service runner
+  - this satisfies the current novelty bar for one native operator family:
+    `matmul.logits` in ordinary Doe execution
+  - `doe-gpu` still exposes only the explicit bounded-slice numeric-stability
+    helper; package/browser ordinary execution do not yet consume this path
+- Verification run:
+  - `python3 bench/runners/exercise_in_path_numeric_stability.py`
+
+## Live runtime numeric-stability exercise now closes the loop: selected prompt/control signatures have been replayed through the real Zig `doe_numeric_stability` service, the checked-in fragility catalog now records `runtime-exercised` route outcomes, and the current live route surface includes `accept-fast`, `prefer-stable`, and `abstain` instead of leaving `abstain` as schema-only (2026-03-29 UTC)
+
+- New runtime exercise/config surface:
+  - `config/runtime-numeric-stability-exercise.json`
+  - `config/runtime-numeric-stability-exercise.schema.json`
+  - `bench/runners/exercise_runtime_numeric_stability.py`
+- Fresh live runtime artifact set:
+  - `bench/out/apple-metal-runtime-numeric-stability/20260329T184418Z/apple_metal_runtime_numeric_stability.manifest.json`
+- Current result:
+  - selected prompt/control cases are now runtime-exercised through the real
+    Zig module runner instead of only inherited from bench selective-rerun
+    receipts
+  - the checked-in catalog now distinguishes:
+    - `routeExpectationDecision`
+    - `routeOutcomeDecision`
+  - selected signatures now carry live `routeOutcome` data and move to
+    `contractStage = runtime-exercised`
+  - the live route set is now demonstrated end to end:
+    see the runtime exercise manifest above for the current route counts and
+    bounded-overhead summaries
+  - the broad prompt lane now has an honest abstaining path:
+    the same numeric trigger can now route to `abstain` instead of
+    auto-substituting the stable result when the caller chooses
+    `numeric-stability/abstain-on-selected-token-disagreement-v1`
+  - the package smoke path now exercises all three live route classes through
+    `gpu.numericStability.matmulLogitsSlice(...)`
+- Checked-in catalog/control note:
+  - `config/promoted-fragility-catalog.json` now records live
+    `routeOutcomeDecision` data and includes a live runtime
+    `accept-fast` control signature:
+    `operator::live-matmul-accept-fast-control`
+
+## Explicit runtime numeric-stability v1 is now live: Doe has a real Zig-owned `doe_numeric_stability` module-runner service for bounded `matmul.logits` slices, and `doe-gpu` now exposes that path as `gpu.numericStability.matmulLogitsSlice(...)` with receipted route decisions instead of leaving numeric stability trapped in bench/probe artifacts (2026-03-29 UTC)
+
+- New runtime surfaces:
+  - `runtime/zig/src/numeric_stability_policy.zig`
+  - `runtime/zig/src/trace_numeric_stability.zig`
+  - `runtime/zig/src/full/modules/services/numeric_stability.zig`
+  - `runtime/zig/src/module_runner.zig`
+- New package surfaces:
+  - `packages/doe-gpu/src/vendor/webgpu/runtime-cli.js`
+  - `packages/doe-gpu/src/vendor/doe-numeric-stability-policy.js`
+  - `packages/doe-gpu/src/vendor/doe-namespace.js`
+  - `packages/doe-gpu/src/vendor/doe-namespace.d.ts`
+- New contract/samples:
+  - `config/doe-numeric-stability-receipt.schema.json`
+  - `config/numeric-stability-service.schema.json`
+  - `examples/doe-numeric-stability-receipt.sample.json`
+  - `examples/numeric-stability-service.request.sample.json`
+  - `examples/numeric-stability-service.result.sample.json`
+  - `examples/doe-numeric-stability-trace-meta.sample.json`
+- Current runtime result:
+  - the v1 path is explicit, not hidden interception:
+    callers send a bounded hidden-state + candidate-row request to the Zig
+    module runner for `matmul_logits_slice`
+  - the service now:
+    - loads the shared numeric-stability registry directly
+    - evaluates fast, stable, and bounded CPU-reference policies
+    - emits a per-event numeric-stability receipt
+    - can emit a trace-meta `numericStability` summary block
+    - returns the governed route decision from the live runtime path
+    - copies `routeTaxonomyVersion`, route `selectionMode`, and selection proof
+      links from the shared registry into the live receipt
+  - the package helper now exposes that exact service as:
+    `gpu.numericStability.matmulLogitsSlice(...)`
+  - the current live route vocabulary remains aligned with the registry:
+    `accept-fast`, `prefer-stable`, `abstain`
+  - this is still a bounded-slice runtime service, not yet a novelty-grade
+    operator-local rerun of ordinary WebGPU execution
+- Verification run:
+  - `zig build module-core-runner`
+  - `zig build doe-runtime`
+  - `python3 bench/gates/schema_gate.py`
+  - `node packages/doe-gpu/test/smoke/test-smoke-load.js`
+  - `node packages/doe-gpu/test/integration/test-integration-gpu-namespace.js`
+- Verification note:
+  - the runtime targets used by this surface build cleanly
+  - the full default `zig build` path still reaches the existing macOS app
+    icon dependency in `zig build app` (`ImageMagick convert`), which is
+    outside the numeric-stability implementation itself
+
+## Numeric-stability contract surfaces are now checked in: route taxonomy is versioned in the registry, route-to-selection semantics are Lean-backed, and promoted fragility cases now live as config instead of only timestamped bench artifacts (2026-03-29 UTC)
+
+- New contract/config surfaces:
+  - `config/numeric-stability-policy.json`
+  - `config/numeric-stability-policy.schema.json`
+  - `config/fragility-promotion-policy.json`
+  - `config/fragility-promotion-policy.schema.json`
+  - `config/promoted-fragility-catalog.json`
+  - `config/promoted-fragility-catalog.schema.json`
+  - `config/fragility-signatures/promoted/*.json`
+  - `bench/runners/promote_numeric_fragility_signatures.py`
+- Current result:
+  - the numeric-stability registry now carries an explicit
+    `routeTaxonomyVersion` plus route-decision metadata for:
+    - `accept-fast`
+    - `prefer-stable`
+    - `abstain`
+  - Lean now proves the current route-to-selection semantics in addition to the
+    earlier trigger and triggered-vs-fallback route logic:
+    - `accept-fast` selects the fast value
+    - `prefer-stable` selects the stable value
+    - `abstain` selects no substitution
+  - promoted fragility evidence is now frozen into checked-in config:
+    - the promotion policy defines what qualifies for `discovery`,
+      `promoted`, `runtime-candidate`, and `runtime-exercised`
+    - the promoted catalog points at normalized signature files instead of
+      treating timestamped hunt reports as the only source of truth
+  - the current promoted set remains a contract layer, not a runtime novelty
+    claim:
+    see `config/promoted-fragility-catalog.json` for the current promoted
+    entries and `config/fragility-promotion-policy.json` for what is still
+    blocking versus advisory
+- Interpretation:
+  - this is the clean bridge from discovery artifacts to future runtime
+    consumption
+  - it now feeds a live Zig/package bounded-slice service, but it still does
+    not satisfy the `runtime-exercised` novelty bar until Doe emits true
+    operator-local rerun receipts
+
+## Numeric-stability contract planning is now explicit: a canonical fragility-signature schema and a discovery -> promoted -> runtime-exercised graduation ladder are defined so the runtime side can consume evidence without drifting from bench artifacts (2026-03-29 UTC)
+
+- New planning/config surfaces:
+  - `config/fragility-signature.schema.json`
+  - `docs/numeric-stability-contract-roadmap.md`
+- Current result:
+  - the fragility-signature schema defines one canonical case shape for:
+    - prompt-level flips
+    - top-prefix-only prompt flips
+    - policy-boundary examples
+    - operator controls
+  - the roadmap now fixes the artifact-graduation ladder:
+    - `discovery`
+    - `promoted`
+    - `runtime-candidate`
+    - `runtime-exercised`
+  - route semantics are now stated explicitly at the planning layer:
+    - current runtime truth remains `accept-fast | prefer-stable | abstain`
+    - `review-required` is deferred until it has a real runtime surface,
+      schema migration, and proof support
+  - blocking versus advisory is also explicit:
+    - schema, traceability, and proof-linked route semantics are blocking
+    - corpus breadth, browser promotion, and semantic legibility remain
+      advisory until runtime-exercised evidence lands
+- Interpretation:
+  - this no longer describes a runtime vacuum: Doe now has an explicit
+    runtime/package bounded-slice service
+  - it still defines the contract boundary that future Zig/package/browser
+    work must satisfy before bench evidence can be promoted into a novelty
+    claim
+
+## Fresh Apple Metal numeric-fragility corpus exports now normalize the prompt-flip, policy-boundary, and operator-control evidence into one JSONL surface with bounded-answer surprisal, pair-margin, and outsider-lead fields, so the repo can compare numeric brittleness to uncertainty without hand-merging reports (2026-03-29 UTC)
+
+- New runner:
+  - `bench/runners/export_numeric_fragility_corpus.py`
+- Fresh artifacts:
+  - `bench/out/apple-metal-numeric-fragility-corpus/20260329T174341Z/apple_metal_numeric_fragility_corpus.jsonl`
+  - `bench/out/apple-metal-numeric-fragility-corpus/20260329T174341Z/apple_metal_numeric_fragility_corpus.manifest.json`
+- Current result:
+  - the export now keeps one row shape across:
+    - prompt-level LM-head bounded-answer flips
+    - curated top-prefix-only prompt flips
+    - stable-choice / reviewed-choice policy-boundary cases
+    - operator-level numeric-stability controls
+  - prompt-level rows now carry the token-level uncertainty fields needed to
+    compare fragility against confidence:
+    - renormalized 2-row probabilities for the bounded answer set
+    - per-token bounded surprisal for the exact/reference token and the
+      `f16accum` token
+    - bounded-answer entropy and probability margin
+    - global top-candidate context plus outsider lead against the bounded pair
+  - when the source report did not persist full logits, the export leaves the
+    global reference-token surprisal unset and records the reason explicitly
+    instead of inventing an approximation
+  - route semantics are now explicit:
+    - `routeExpectation` is hunt-derived only and records whether it is still
+      hypothetical or has been realized in a promoted rerun
+    - `routeDecision` is reserved for an exercised rerun or policy artifact
+  - promoted prompt rows now point `sourceArtifactPath` at the promoted
+    hunt report itself, while `sourceSearchArtifactPath` preserves the earlier
+    representative hunt artifact used to surface the case
+- Interpretation:
+  - this makes the current numeric-stability corpus usable for the next
+    analysis layer:
+    where pair margins are small, where outsiders still dominate, and where a
+    low-level math-policy change crosses a brittle bounded-answer decision
+    boundary
+
+## Fresh Apple Metal real-weight LM-head receipts now show the first natural prompt/operator/rerun chain: the real prompt `Answer with exactly one word: go or stop. Question: At a red traffic light, cars should Answer:` yields the same real final-norm embedding and the same bounded `{ go, stop }` candidate rows, but `f16` accumulation flips the selected token from `go` to `stop`, and the numeric-stability route correctly prefers the stable serial policy on both Doe and Dawn (2026-03-29 UTC)
+
+- New real prompt/operator-family fixture surface:
+  - `bench/fixtures/determinism/apple-metal-real-logit-hunt.gemma270m.red-go-stop-answer.json`
+  - `bench/fixtures/determinism/apple-metal-real-lm-head-slice-hunt.gemma270m.red-go-stop-answer.json`
+  - `bench/runners/run_real_lm_head_slice_hunt.py`
+- Fresh reports:
+  - `bench/out/apple-metal-real-lm-head-slice-hunt/20260329T134732Z/apple_metal_real_lm_head_slice_hunt_gemma270m_red_go_stop_answer.real-lm-head-slice-hunt.json`
+  - `bench/out/apple-metal-reduction-order-logit-flip/20260329T134732Z/apple_metal_real_lm_head_slice_hunt_gemma270m_red_go_stop_answer_red-go-stop-answer_prefix2.reduction-order-logit-flip.json`
+  - `bench/out/apple-metal-selective-stable-rerun/20260329T134732Z/apple_metal_real_lm_head_slice_hunt_gemma270m_red_go_stop_answer_red-go-stop-answer_prefix2_selective_stable_rerun.selective-stable-rerun.json`
+- Current result:
+  - the new lane is fully real at the source:
+    Doppler browser harvest captures a stable real prefill logits receipt and a
+    stable real last-token embedding for the explicit-choice traffic-light
+    prompt above
+  - the bounded answer rows are the real model output rows for:
+    - token `817` = ` go`
+    - token `4721` = ` stop`
+  - the exact-reference logits on that real embedding are:
+    - ` go` = `17.802072751012076`
+    - ` stop` = `17.780365353832053`
+    so the exact-reference top token is ` go`
+  - on both Doe and Dawn:
+    - `forward`, `reverse`, and `tree64` all keep the selected token on ` go`
+    - `f16accum` flips the selected token to ` stop`
+  - the fresh reduction-order receipt therefore records the real operator
+    bridge:
+    same prompt, same real final-projection input, same real candidate rows,
+    different accumulation policy, different selected token
+  - the paired selective-rerun receipt records the full governance chain on
+    both Doe and Dawn:
+    - first divergence is `matmul.logits`
+    - fast `f16accum` token = `1` (` stop`)
+    - stable `forward` token = `0` (` go`)
+    - stable matches the exact reference and fast does not
+    - route decision = `prefer-stable`
+- Runtime-path note:
+  - the Dawn-backed WebGPU runtime path now explicitly requests
+    `ShaderF16` when the adapter advertises it, which is what made the live
+    `f16` promotion path possible for this real LM-head slice
+- Interpretation:
+  - this is the first honest real prompt/operator/rerun flagship case for the
+    numeric-stability thesis:
+    Doe can harvest a real prompt state, promote it into a real operator-family
+    slice, show a selected-token cliff under alternate accumulation policy, and
+    record the explicit rerun route that corrects it
+  - it is still not a Doe-vs-Dawn divergence claim:
+    both lanes exhibit the same numeric cliff here; Doe’s wedge is the owned
+    runtime/package stack that makes the cliff observable, receipted, and
+    governable
+
+## Fresh Apple Metal `rmsnorm` family receipts now show the first real operator-family bridge from reduction policy to selected-token drift: the same fixed `rmsnorm` reduction family plus the same downstream 2-row logits projection produce different selected tokens under reduction-tree and strict-serial accumulation, while the exact-reference path stays on the tree side and the numeric-stability route correctly keeps `accept-fast` (2026-03-29 UTC)
+
+- New real operator-family fixture surface:
+  - `bench/inference-pipeline/kernels/rmsnorm_serial_f32.wgsl`
+  - `bench/fixtures/determinism/rmsnorm-slice-tree.commands.json`
+  - `bench/fixtures/determinism/rmsnorm-slice-serial.commands.json`
+  - `bench/fixtures/determinism/apple-metal-rmsnorm-slice-logit-flip.json`
+  - `bench/fixtures/determinism/apple-metal-selective-stable-rerun-rmsnorm-slice.json`
+- Fresh reports:
+  - `bench/out/apple-metal-reduction-order-logit-flip/20260329T124056Z/apple_metal_rmsnorm_slice_logit_flip.reduction-order-logit-flip.json`
+  - `bench/out/apple-metal-selective-stable-rerun/20260329T124139Z/apple_metal_selective_stable_rerun_rmsnorm_slice.selective-stable-rerun.json`
+- Current result:
+  - the new lane keeps the operator family real:
+    first capture is `rmsnorm.output`, second capture is the downstream
+    2-row `matmul.logits`, third capture is `sample.token`
+  - on both Doe and Dawn:
+    - tree-reduction `rmsnorm` selects token `0`
+    - strict-serial `rmsnorm` selects token `1`
+    - the exact-reference logits stay on token `0`
+  - the selective-rerun receipt therefore records the full trigger surface:
+    first divergence present, sensitive operator matched, selected token
+    changed, but `stableMatchesExactReference = false` and
+    `fastMissesExactReference = false`
+  - the final route decision is correctly `accept-fast`, not because the
+    operator family is ignored, but because the strict-serial rerun is worse
+    for this specific case
+- Interpretation:
+  - this is the first real operator-family receipt that proves Doe’s
+    numeric-governance layer is not fake “always prefer stable” theater
+  - the current honest claim is:
+    Doe can detect a real `rmsnorm`-family numeric cliff, trace first
+    divergence at the operator boundary, show the selected-token consequence,
+    and keep the fast path when the stable rerun is not actually better
+
+## Fresh Apple Metal numeric-stability routing is now proof-linked, and the first real operator-family negative control is explicit: the attention-style slice runs cleanly, stays parity/stable on Doe and Dawn, and therefore routes `accept-fast`, while the shared probe now rejects any semantic capture whose execution status is not actually `ok` (2026-03-29 UTC)
+
+- New proof-linked numeric-stability contract surface:
+  - `pipeline/lean/Doe/Core/NumericStabilityPolicy.lean`
+  - `pipeline/lean/Doe/NumericStabilityPolicy.lean`
+  - `config/numeric-stability-policy.json`
+  - `config/numeric-stability-policy.schema.json`
+- Fresh proof-linked selective-rerun receipts:
+  - `bench/out/apple-metal-selective-stable-rerun/20260329T123001Z/apple_metal_selective_stable_rerun_logit_flip.selective-stable-rerun.json`
+  - `bench/out/apple-metal-selective-stable-rerun/20260329T123001Z/apple_metal_selective_stable_rerun_attention_slice.selective-stable-rerun.json`
+- Fresh real operator-family negative control:
+  - `bench/out/apple-metal-reduction-order-logit-flip/20260329T122013Z/apple_metal_attention_slice_logit_flip.reduction-order-logit-flip.json`
+- Current result:
+  - the numeric-stability registry now carries explicit proof links for the
+    trigger theorem and both route-decision theorems, all extracted into
+    `pipeline/lean/artifacts/proven-conditions.json`
+  - the refreshed selective-rerun receipts above now copy that proof-linked
+    contract into the live report:
+    `proofArtifactPath`, trigger proof links, and route proof links
+  - the attention-style slice is the first honest real operator-family
+    negative control:
+    forward and pairwise attention-output lanes stay byte-identical across
+    repeats on both Doe and Dawn, so `tokenFlipObserved = false`,
+    `sampleFlipObserved = false`, `firstDivergence = null`, and the route
+    decision remains `accept-fast`
+  - `bench/runners/run_determinism_probe.py` now rejects any captured semantic
+    operator whose `execution.status` is not `ok`, so shader-compile failures
+    or other execution errors can no longer masquerade as valid deterministic
+    captures
+- Interpretation:
+  - Doe now has a proof-linked numeric-stability route contract and a clean
+    real-operator-family control that shows where the wedge does not begin
+  - the next valid promotion target remains another real operator family that
+    actually moves selected token or bounded answer under alternate numeric
+    policies, rather than a synthetic-only slice
+
+## Fresh Apple Metal selective stable-rerun receipts now show the first full numeric-governance probe: the operator-level logit-flip lane can identify `matmul.logits` as the first divergence, compare fast vs stable digests, and route the selected token onto the stable policy when only the stable rerun matches the exact-reference top token (2026-03-29 UTC)
+
+- New numeric-stability policy and selective-rerun tooling:
+  - `config/numeric-stability-policy.json`
+  - `config/numeric-stability-policy.schema.json`
+  - `bench/runners/run_selective_stable_rerun_probe.py`
+  - `bench/fixtures/determinism/apple-metal-selective-stable-rerun-logit-flip.json`
+- Fresh report:
+  - `bench/out/apple-metal-selective-stable-rerun/20260329T032429Z/apple_metal_selective_stable_rerun_logit_flip.selective-stable-rerun.json`
+- Current result:
+  - the probe consumes the fresh operator-level logit-flip report and applies a
+    versioned numeric-stability route policy:
+    `numeric-stability/prefer-stable-on-selected-token-disagreement-v1`
+  - on both Doe and Dawn lanes, the first divergence is the sensitive operator
+    `matmul.logits`
+  - in the fast `pairwise` policy, the selected token is `0`
+  - in the stable `forward` policy, the selected token is `1`, which matches
+    the exact-reference top token for this scenario
+  - the trigger policy fires because:
+    first divergence is present, the sensitive operator matches, the selected
+    token changes, the stable rerun matches the exact reference, and the fast
+    path does not
+  - the resulting route decision is therefore `prefer-stable` on both lanes
+- Interpretation:
+  - this is the first full receipt chain for the numeric-governance thesis:
+    first divergence, fast/stable digest comparison, selected-token
+    consequence, and an explicit route decision
+  - it is still a bench/runtime-governance probe, not yet a live native or
+    package execution path that automatically reruns only the sensitive
+    operator inside a real workload
+  - it is also not a Doe-vs-Dawn divergence claim:
+    both lanes support the same route decision in this synthetic operator case;
+    Doe’s moat is the owned runtime/package surface that can eventually make
+    this selective correction path real and auditable
+
+## Fresh Apple Metal reduction-order logit-flip receipts now show an operator-level bridge from accumulation policy to token selection: the same fixed hidden state and same nominal 2-row logits matmul produce different winning rows and different sampled tokens under forward, reverse, and pairwise accumulation policies on both Doe and Dawn (2026-03-29 UTC)
+
+- New operator-level counterexample tooling and fixture:
+  - `bench/runners/run_reduction_order_logit_flip.py`
+  - `bench/fixtures/determinism/apple-metal-reduction-order-logit-flip.json`
+  - `bench/fixtures/determinism/matmul-logits-forward.commands.json`
+  - `bench/fixtures/determinism/matmul-logits-reverse.commands.json`
+  - `bench/fixtures/determinism/matmul-logits-pairwise.commands.json`
+  - `bench/inference-pipeline/kernels/matmul_logits_forward_f32.wgsl`
+  - `bench/inference-pipeline/kernels/matmul_logits_reverse_f32.wgsl`
+  - `bench/inference-pipeline/kernels/matmul_logits_pairwise_f32.wgsl`
+- Fresh report:
+  - `bench/out/apple-metal-reduction-order-logit-flip/20260329T031521Z/apple_metal_reduction_order_logit_flip.reduction-order-logit-flip.json`
+- Current result:
+  - the new lane runs the same fixed hidden state through three explicit
+    logits-matmul accumulation contracts:
+    forward serial, reverse serial, and pairwise-tree reduction
+  - the exact reference logits are `[6.0, 8.85]`, so the exact top token is
+    row `1`
+  - the live Apple Metal receipts above show:
+    - forward logits `[6.0, 6.710000038146973]`, top token `1`, sampled token `1`
+    - pairwise logits `[6.0, 4.0]`, top token `0`, sampled token `0`
+    - reverse logits `[8.0, 8.0]`, scalar argmax token `0`, sampled token `0`
+  - each variant is byte-stable across repeated runs on both Doe and Dawn, and
+    Doe and Dawn match each other for every named accumulation policy
+- Interpretation:
+  - this is the operator-level bridge the micro dot-product lane was meant to
+    enable:
+    same nominal logits operator, same inputs, different declared accumulation
+    policy, different winning row, different sampled token
+  - the current honest claim is still narrow:
+    Doe now has a receipted Apple Metal operator-level sensitivity lane for
+    accumulation-order-induced token flips
+  - this is not yet a Doe-vs-Dawn divergence; it is a proof that Doe now has
+    the right measurement surface to trace numeric policy choices from
+    reduction order into token selection
+  - the next work should promote this further into real operator families with
+    semantic cliffs:
+    softmax denominator, layernorm, attention score accumulation, and small
+    matmul inner products that can be selectively routed onto stricter modes
+
+## Fresh Apple Metal reduction-order counterexample receipts now show a metal-level numeric divergence on the same fixed dot product: forward, reverse, and pairwise accumulation policies produce distinct stable output bytes on both Doe and Dawn, which establishes the micro counterexample base for later operator- and decode-level instability hunts (2026-03-28)
+
+- New micro-counterexample tooling and fixture:
+  - `bench/runners/run_reduction_order_counterexample.py`
+  - `bench/fixtures/determinism/apple-metal-reduction-order-dot-product.json`
+  - `bench/fixtures/determinism/dot-product-forward.commands.json`
+  - `bench/fixtures/determinism/dot-product-reverse.commands.json`
+  - `bench/fixtures/determinism/dot-product-pairwise.commands.json`
+  - `bench/inference-pipeline/kernels/dot_product_forward_f32.wgsl`
+  - `bench/inference-pipeline/kernels/dot_product_reverse_f32.wgsl`
+  - `bench/inference-pipeline/kernels/dot_product_pairwise_f32.wgsl`
+- Fresh report:
+  - `bench/out/apple-metal-reduction-order-counterexample/20260329T030505Z/apple_metal_reduction_order_dot_product.reduction-order-counterexample.json`
+- Current result:
+  - the new lane runs the same fixed 8-term dot product through three explicit
+    accumulation contracts:
+    forward serial, reverse serial, and pairwise-tree reduction
+  - each variant is byte-stable across repeated runs on both Doe and Dawn
+  - each variant produces a distinct captured output on both Doe and Dawn; see
+    the report above for the exact values, digests, and deltas from the exact
+    reference sum
+  - Doe and Dawn match each other for each named accumulation policy in the
+    current Apple Metal receipt, so this is not yet a Doe-vs-Dawn divergence
+- Interpretation:
+  - this is the metal-level base case we were missing:
+    same nominal dot product, same inputs, different declared accumulation
+    order, different bytes
+  - the current honest claim is still narrow:
+    Doe now has an explicit, receipted micro-counterexample lane for
+    accumulation-order sensitivity on Apple Metal
+  - the next work should promote this from micro counterexample to
+    operator-level and decode-level sensitivity hunts:
+    attention, softmax, layernorm, and matmul-inner-product slices with
+    first-divergence tracing and selective correction modes
+
+## Fresh Apple Metal package determinism receipts now show a real natural supporting stable-choice case on the ordinary Node/package lane: for `Leaving a toddler alone near a pool is safe or unsafe. It is`, Doe keeps the raw global argmax under `stable-token`, but the bounded `{safe, unsafe}` policy lanes resolve the declared ambiguity to `unsafe` with proof-linked receipts (2026-03-28)
+
+- New real scout, sample-only, and package receipts:
+  - `bench/out/apple-metal-real-logit-hunt/20260328T211207Z/apple_metal_real_logit_hunt_gemma270m_policy_breadth.real-logit-hunt.json`
+  - `bench/out/apple-metal-sample-only-tie-break/20260328T212034Z/apple_metal_sample_only_tie_break_pool_safe_unsafe_gemma270m.sample-only-tie-break.json`
+  - `bench/out/apple-metal-package-determinism/20260328T212103Z/pool-safe-unsafe-prefill-as-captured-stable-token/pool-safe-unsafe-prefill-as-captured-stable-token.package-determinism.json`
+  - `bench/out/apple-metal-package-determinism/20260328T212034Z/pool-safe-unsafe-prefill-as-captured-stable-choice/pool-safe-unsafe-prefill-as-captured-stable-choice.package-determinism.json`
+  - `bench/out/apple-metal-package-determinism/20260328T212034Z/pool-safe-unsafe-prefill-as-captured-reviewed-choice/pool-safe-unsafe-prefill-as-captured-reviewed-choice.package-determinism.json`
+- New supporting fixtures/config:
+  - `config/determinism-answer-set-registry.json`
+  - `bench/fixtures/determinism/apple-metal-real-logit-hunt.gemma270m.policy-breadth.json`
+  - `bench/fixtures/determinism/apple-metal-sample-only-tie-break.pool-safe-unsafe.gemma270m.json`
+  - `bench/runners/run_package_determinism_receipt.py`
+- Current result:
+  - the fresh `pool-safe-unsafe` scout receipt above is byte-stable across
+    repeats on Apple Metal and preserves the same prompt-tokenization and
+    `topK` membership in the scout contract
+  - on that natural prefill state, the bounded candidate set `{safe, unsafe}`
+    falls inside the fixed `candidate-margin-band-v1` trigger; see the scout
+    and package receipt artifacts above for the exact logits and digest
+  - on the ordinary Node/package lane:
+    - `stable-token` stays on the raw scalar greedy token
+    - `stable-choice` triggers and emits `selectedBy=stable-choice-policy`
+    - `reviewed-choice` accepts the explicit reviewed decision and emits
+      `selectedBy=reviewed-choice-decision`
+  - the fresh sample-only report above shows:
+    - `stableChoiceDifferentiatorCaseCount=2`
+    - `reviewedChoiceDifferentiatorCaseCount=2`
+    for the natural `as-captured` case plus the exact-tie stress case
+- Interpretation:
+  - this is the first fresh natural supporting case for Doe’s bounded
+    post-logit policy lane after the hardened scout/promotion contracts:
+    the underlying model/sampler still prefers a non-answer global argmax, but
+    Doe can now apply a declared bounded ambiguity policy on the same real
+    logits and emit package-level receipts for it
+  - this is still not a broad mined-corpus headline claim:
+    the pair-agnostic miner correctly keeps the broader natural scout corpus at
+    zero promoted headline cases because the strongest natural cases still have
+    large outsider leads
+  - the safe public claim is therefore:
+    Doe has a real Apple Metal natural supporting `stable-choice` example on
+    the package lane, not a broad natural ambiguity-resolution win across the
+    whole prompt corpus
+
+## Determinism boundary contracts now use a versioned policy registry and emit schema-valid trace-meta companions for stable-token, stable-choice, and reviewed-choice instead of helper-local policy constants (2026-03-28)
+
+- New shared policy and trace-meta contract surfaces:
+  - `config/determinism-policy.json`
+  - `config/determinism-policy.schema.json`
+  - `packages/doe-gpu/src/vendor/doe-determinism-policy.js`
+  - `config/doe-determinism-receipt.schema.json`
+  - `config/trace-meta.schema.json`
+  - `examples/doe-determinism-trace-meta.sample.json`
+  - `runtime/zig/src/trace_determinism.zig`
+  - `runtime/zig/src/trace.zig`
+- Fresh emitted scratch receipts proving the new trace-meta path:
+  - `bench/out/scratch/20260328T194525Z-determinism-trace-meta/doe.stable-token.trace-meta.json`
+  - `bench/out/scratch/20260328T194525Z-determinism-trace-meta/doe.stable-choice.trace-meta.json`
+  - `bench/out/scratch/20260328T194525Z-determinism-trace-meta/doe.reviewed-choice.trace-meta.json`
+- Current result:
+  - the three Doe post-logit boundaries now all resolve against the same
+    versioned registry at `config/determinism-policy.json`
+  - public/package receipts now carry:
+    - `policyRegistryPath`
+    - `policyRegistryVersion`
+    - versioned policy IDs
+  - `stable-token` receipts are now structurally parallel with the other two
+    modes:
+    they expose both `policyId` and `selectedBy=stable-token-policy`
+  - the repo-only determinism executors now emit adjacent zero-row
+    `trace_meta` files whose `determinism` block preserves the same:
+    mode, policy IDs, trigger IDs, evaluator IDs, selected-by fields, and
+    proof theorem list as the public receipts
+  - the native Zig trace summary now carries the same optional `determinism`
+    block as a contract stub, so native/runtime callers can emit the same
+    boundary metadata when that lane is wired
+- Interpretation:
+  - this is a contract hardening step, not a broader ambiguity claim:
+    Doe’s product wedge is now more explicit and auditable because the
+    post-logit boundaries are versioned config-backed contracts with trace-meta
+    alignment, not just helper-returned JSON receipts
+
 ## Doe now has a proof-linked reviewed-choice sibling beside stable-token and stable-choice: Apple sample-only receipts can show raw Doe/Dawn, deterministic policy lanes, and an explicit reviewed decision as separate audited outcomes (2026-03-28)
 
 - New public determinism surfaces and receipt contract:

@@ -1,0 +1,89 @@
+[
+  {
+    "kind": "buffer_write",
+    "handle": 4101,
+    "bufferSize": 16,
+    "data": [
+      8,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "kind": "buffer_write",
+    "handle": 4102,
+    "bufferSize": 32,
+    "data": [
+      1287568416,
+      1065353216,
+      3435052064,
+      1065353216,
+      1065353216,
+      1065353216,
+      1065353216,
+      1065353216
+    ]
+  },
+  {
+    "kind": "buffer_write",
+    "handle": 4103,
+    "bufferSize": 32,
+    "data": [
+      1065353216,
+      1065353216,
+      1065353216,
+      1065353216,
+      1065353216,
+      1065353216,
+      1065353216,
+      1065353216
+    ]
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "dot_product_forward_f32.wgsl",
+    "x": 1,
+    "y": 1,
+    "z": 1,
+    "initialize_buffers_on_create": true,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "uniform",
+        "resource_handle": 4101,
+        "buffer_size": 16,
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "readonly",
+        "resource_handle": 4102,
+        "buffer_size": 32,
+        "visibility": "compute"
+      },
+      {
+        "binding": 2,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "readonly",
+        "resource_handle": 4103,
+        "buffer_size": 32,
+        "visibility": "compute"
+      },
+      {
+        "binding": 3,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "storage",
+        "resource_handle": 4104,
+        "buffer_size": 4,
+        "visibility": "compute"
+      }
+    ]
+  }
+]

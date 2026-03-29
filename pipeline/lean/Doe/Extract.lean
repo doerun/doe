@@ -3,6 +3,7 @@ import Doe.Core.BindGroupSlot
 import Doe.Core.BufferLifecycle
 import Doe.Core.Dispatch
 import Doe.Core.DeterminismPolicy
+import Doe.Core.NumericStabilityPolicy
 import Doe.Core.IrBuilderSoundness
 import Doe.Core.IrSemanticContract
 import Doe.Core.IrValidatorRedundancy
@@ -64,6 +65,12 @@ def main : IO Unit := do
   IO.println "    { \"name\": \"candidateMarginBandTriggered_iff_gap_within_epsilon\", \"module\": \"Doe.Core.DeterminismPolicy\", \"category\": \"lean_verified\" },"
   IO.println "    { \"name\": \"fixedPriorityBetter_true_implies_lexicographic_preference\", \"module\": \"Doe.Core.DeterminismPolicy\", \"category\": \"lean_verified\" },"
   IO.println "    { \"name\": \"reviewedChoiceSelect_uses_review_token_when_present\", \"module\": \"Doe.Core.DeterminismPolicy\", \"category\": \"lean_verified\" },"
+  IO.println "    { \"name\": \"selectedTokenReferenceImprovementTriggered_iff_all_checks\", \"module\": \"Doe.Core.NumericStabilityPolicy\", \"category\": \"lean_verified\" },"
+  IO.println "    { \"name\": \"routeDecisionForTrigger_prefers_triggered_decision_when_true\", \"module\": \"Doe.Core.NumericStabilityPolicy\", \"category\": \"lean_verified\" },"
+  IO.println "    { \"name\": \"routeDecisionForTrigger_prefers_fallback_decision_when_false\", \"module\": \"Doe.Core.NumericStabilityPolicy\", \"category\": \"lean_verified\" },"
+  IO.println "    { \"name\": \"selectedValueForRoute_acceptFast_returns_fast\", \"module\": \"Doe.Core.NumericStabilityPolicy\", \"category\": \"lean_verified\" },"
+  IO.println "    { \"name\": \"selectedValueForRoute_preferStable_returns_stable\", \"module\": \"Doe.Core.NumericStabilityPolicy\", \"category\": \"lean_verified\" },"
+  IO.println "    { \"name\": \"selectedValueForRoute_abstain_returns_none\", \"module\": \"Doe.Core.NumericStabilityPolicy\", \"category\": \"lean_verified\" },"
   IO.println "    { \"name\": \"comparableFromObligations_eq_noFailed\", \"module\": \"Doe.Full.Comparability\", \"category\": \"lean_verified\" },"
   IO.println "    { \"name\": \"comparableFromFacts_eq_noFailed\", \"module\": \"Doe.Full.Comparability\", \"category\": \"lean_verified\" },"
   IO.println "    { \"name\": \"comparableFromObligations_true_iff_failedBlockingNil\", \"module\": \"Doe.Full.Comparability\", \"category\": \"lean_verified\" },"

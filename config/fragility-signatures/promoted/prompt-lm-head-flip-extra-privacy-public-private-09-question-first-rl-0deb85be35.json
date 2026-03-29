@@ -1,0 +1,126 @@
+{
+  "schemaVersion": 1,
+  "signatureId": "prompt-lm-head-flip::extra-privacy-public_private-09-question_first-rl::0deb85be35",
+  "contractStage": "promoted",
+  "artifactKind": "prompt-lm-head-flip",
+  "corpusClass": "broad",
+  "routeTaxonomyVersion": "numeric-stability-routes-v1",
+  "sourceArtifactPath": "bench/out/apple-metal-real-lm-head-slice-hunt/20260329T144110Z/apple_metal_real_lm_head_slice_hunt_gemma270m_wave3_shard02.real-lm-head-slice-hunt.json",
+  "scenarioStem": "A payroll spreadsheet should remain",
+  "notes": "Promoted by fragility-promotion/numeric-stability-v1 from the numeric fragility corpus. Runtime novelty remains blocked until a runtime-exercised receipt exists.",
+  "sourceSearchArtifactPath": "bench/out/apple-metal-real-lm-head-slice-hunt/20260329T143247Z/apple_metal_real_lm_head_slice_hunt_gemma270m_curated_expected_extra_shard04.real-lm-head-slice-hunt.json",
+  "relatedArtifactPaths": [
+    "bench/out/apple-metal-real-lm-head-slice-hunt/20260329T143247Z/apple_metal_real_lm_head_slice_hunt_gemma270m_curated_expected_extra_shard04.real-lm-head-slice-hunt.json",
+    "bench/out/apple-metal-reduction-order-logit-flip/20260329T144110Z/apple_metal_real_lm_head_slice_hunt_gemma270m_wave3_shard02_wave3-privacy-20-question_first-rl_prefix2.reduction-order-logit-flip.json",
+    "bench/out/apple-metal-selective-stable-rerun/20260329T144110Z/apple_metal_real_lm_head_slice_hunt_gemma270m_wave3_shard02_wave3-privacy-20-question_first-rl_prefix2_selective_stable_rerun.selective-stable-rerun.json",
+    "bench/out/apple-metal-real-lm-head-slice-hunt/20260329T144110Z/wave3-privacy-20-question_first-rl-prefix2/apple_metal_real_lm_head_slice_hunt_gemma270m_wave3_shard02_wave3-privacy-20-question_first-rl_prefix2.fixture.json",
+    "bench/out/apple-metal-real-lm-head-slice-hunt/20260329T144110Z/wave3-privacy-20-question_first-rl-prefix2/apple_metal_real_lm_head_slice_hunt_gemma270m_wave3_shard02_wave3-privacy-20-question_first-rl_prefix2_selective_stable_rerun.fixture.json"
+  ],
+  "promptId": "extra-privacy-public_private-09-question_first-rl",
+  "promptText": "Question: A payroll spreadsheet should remain\nAnswer with exactly one word: private or public.\nAnswer:",
+  "answerSet": {
+    "answerSetId": "private_public",
+    "candidateSetSource": "prompt-choice",
+    "candidates": [
+      {
+        "tokenId": 2147,
+        "tokenText": " private",
+        "priority": 0
+      },
+      {
+        "tokenId": 7423,
+        "tokenText": " Public",
+        "priority": 1
+      }
+    ]
+  },
+  "globalDecisionMetrics": {
+    "globalGreedyToken": {
+      "tokenId": 107,
+      "tokenText": "\n",
+      "logit": 14.59748649597168
+    },
+    "globalTop2GapLogit": 0.4608602523803711,
+    "referenceTokenGlobalSurprisalStatus": "unavailable_no_full_logits",
+    "outsiderLeadVsPairMaxLogit": 3.435727119445801,
+    "outsiderDominatesPair": true
+  },
+  "firstGeneratedToken": {
+    "tokenId": 107,
+    "tokenText": "\n",
+    "logit": 14.59748649597168
+  },
+  "boundedAnswerMetrics": {
+    "pairGapLogit": 0.006440162658691406,
+    "pairMarginProbability": 0.003220070199799252,
+    "pairEntropyNats": 0.69314199612494,
+    "referenceProbability": 0.5016100350998997,
+    "referenceSurprisalNats": 0.6899322836835239,
+    "fastProbability": 0.4983899649001004,
+    "fastSurprisalNats": 0.6963724463422152
+  },
+  "referenceSelection": {
+    "tokenId": 7423,
+    "tokenText": "Public",
+    "matchesExactReference": true,
+    "variantId": "exact-reference"
+  },
+  "fastSelection": {
+    "tokenId": 2147,
+    "tokenText": "private",
+    "matchesExactReference": false,
+    "variantId": "f16accum",
+    "policyId": "lm-head-slice/forward-f16accum-v1"
+  },
+  "stableSelection": {
+    "tokenId": 7423,
+    "tokenText": "Public",
+    "matchesExactReference": true,
+    "variantId": "forward",
+    "policyId": "lm-head-slice/forward-serial-v1"
+  },
+  "firstDivergence": {
+    "semanticOpId": "matmul.logits",
+    "operatorFamily": "lm-head-slice",
+    "semanticStage": "real_lm_head_slice",
+    "semanticPhase": "logits",
+    "fastDigest": "f766fe4a145b766f23b1bd541f99cac91e5d0c2e269ba3c1015e79897ae8a36b",
+    "stableDigest": "88525044e5543af4718d9aa553689875090f5ac44b65050438848e22f162e2ab"
+  },
+  "routeExpectation": {
+    "decision": "prefer-stable",
+    "status": "realized-in-promotion",
+    "sourceArtifactPath": "bench/out/apple-metal-selective-stable-rerun/20260329T144110Z/apple_metal_real_lm_head_slice_hunt_gemma270m_wave3_shard02_wave3-privacy-20-question_first-rl_prefix2_selective_stable_rerun.selective-stable-rerun.json",
+    "hasPromotionEvidence": true
+  },
+  "proofLinks": [
+    {
+      "theorem": "selectedTokenReferenceImprovementTriggered_iff_all_checks",
+      "module": "Doe.Core.NumericStabilityPolicy",
+      "category": "lean_verified",
+      "relation": "numeric-stability-trigger-all-checks",
+      "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+    },
+    {
+      "theorem": "routeDecisionForTrigger_prefers_triggered_decision_when_true",
+      "module": "Doe.Core.NumericStabilityPolicy",
+      "category": "lean_verified",
+      "relation": "numeric-stability-route-triggered",
+      "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+    },
+    {
+      "theorem": "routeDecisionForTrigger_prefers_fallback_decision_when_false",
+      "module": "Doe.Core.NumericStabilityPolicy",
+      "category": "lean_verified",
+      "relation": "numeric-stability-route-fallback",
+      "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+    },
+    {
+      "theorem": "selectedValueForRoute_preferStable_returns_stable",
+      "module": "Doe.Core.NumericStabilityPolicy",
+      "category": "lean_verified",
+      "relation": "numeric-stability-route-select-stable",
+      "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+    }
+  ]
+}

@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 1,
+  "mode": "numeric-stability",
+  "operatorFamily": "lm-head-slice",
+  "semanticOpId": "matmul.logits",
+  "semanticStage": "lm_head_slice",
+  "semanticPhase": "logits",
+  "policyRegistryPath": "config/numeric-stability-policy.json",
+  "policyRegistryVersion": "2026-03-29-route-taxonomy-v2",
+  "routeTaxonomyVersion": "numeric-stability-routes-v1",
+  "proofArtifactPath": "pipeline/lean/artifacts/proven-conditions.json",
+  "triggerPolicyId": "numeric-instability/selected-token-disagreement-with-reference-improvement-v1",
+  "routingPolicyId": "numeric-stability/prefer-stable-on-selected-token-disagreement-v1",
+  "fastPolicyId": "lm-head-slice/forward-f16accum-v1",
+  "stablePolicyId": "lm-head-slice/forward-serial-v1",
+  "referencePolicyId": "lm-head-slice/cpu-f64-serial-v1",
+  "candidates": [
+    {
+      "tokenId": 817,
+      "label": "go",
+      "fastLogit": 17.765625,
+      "stableLogit": 17.802072751012076,
+      "referenceLogit": 17.802072751012076
+    },
+    {
+      "tokenId": 4721,
+      "label": "stop",
+      "fastLogit": 17.828125,
+      "stableLogit": 17.780365353832053,
+      "referenceLogit": 17.780365353832053
+    }
+  ],
+  "firstDivergence": {
+    "semanticOpId": "matmul.logits",
+    "semanticStage": "lm_head_slice",
+    "semanticPhase": "logits",
+    "fastDigest": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    "stableDigest": "fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210"
+  },
+  "selectedToken": {
+    "fast": 4721,
+    "stable": 817,
+    "reference": 817,
+    "fastMatchesReference": false,
+    "stableMatchesReference": true
+  },
+  "trigger": {
+    "fired": true,
+    "checks": {
+      "firstDivergencePresent": true,
+      "sensitiveOperatorMatched": true,
+      "selectedTokenDisagreement": true,
+      "stableMatchesExactReference": true,
+      "fastMissesExactReference": true
+    },
+    "proofLinks": [
+      {
+        "theorem": "selectedTokenReferenceImprovementTriggered_iff_all_checks",
+        "module": "Doe.Core.NumericStabilityPolicy",
+        "category": "lean_verified",
+        "relation": "numeric-stability-trigger-all-checks",
+        "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+      }
+    ]
+  },
+  "route": {
+    "decision": "prefer-stable",
+    "selectionMode": "stable",
+    "selectedPolicyId": "lm-head-slice/forward-serial-v1",
+    "selectedToken": 817,
+    "proofLinks": [
+      {
+        "theorem": "routeDecisionForTrigger_prefers_triggered_decision_when_true",
+        "module": "Doe.Core.NumericStabilityPolicy",
+        "category": "lean_verified",
+        "relation": "numeric-stability-route-triggered",
+        "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+      }
+    ],
+    "selectionProofLinks": [
+      {
+        "theorem": "selectedValueForRoute_preferStable_returns_stable",
+        "module": "Doe.Core.NumericStabilityPolicy",
+        "category": "lean_verified",
+        "relation": "numeric-stability-route-select-stable",
+        "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+      }
+    ]
+  }
+}

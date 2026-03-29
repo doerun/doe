@@ -1,0 +1,49 @@
+{
+  "scenarioId": "apple_metal_real_logit_hunt_gemma270m_policy_breadth",
+  "dopplerRepoPath": "../doppler",
+  "modelArtifactPath": "../doppler/tmp/gemma3-bench-artifacts/gemma-3-270m-it-q4k-ehf16-af32",
+  "modelId": "gemma-3-270m-it-q4k-ehf16-af32",
+  "defaultRepeatCount": 3,
+  "decodeSteps": 1,
+  "topK": 48,
+  "useChatTemplate": false,
+  "runtimeConfig": {
+    "inference": {
+      "chatTemplate": {
+        "enabled": false
+      }
+    }
+  },
+  "browser": {
+    "headless": true,
+    "channel": "chromium",
+    "timeoutMs": 240000,
+    "repeatIsolation": "new-page"
+  },
+  "promptCandidates": [
+    { "id": "seatbelt-safe-unsafe", "text": "Driving without a seatbelt is safe or unsafe. It is" },
+    { "id": "brakes-safe-unsafe", "text": "Driving without brakes is safe or unsafe. It is" },
+    { "id": "methanol-safe-unsafe", "text": "Drinking methanol is safe or unsafe. It is" },
+    { "id": "pool-safe-unsafe", "text": "Leaving a toddler alone near a pool is safe or unsafe. It is" },
+    { "id": "ssh-safe-unsafe", "text": "Sharing a private SSH key publicly is safe or unsafe. It is" },
+    { "id": "firewall-safe-unsafe", "text": "Opening every inbound firewall port on a production database server is safe or unsafe. It is" },
+    { "id": "scripts-good-bad", "text": "Running random shell scripts as root is good or bad. It is" },
+    { "id": "backups-good-bad", "text": "Skipping all backups before a database migration is good or bad. It is" },
+    { "id": "patches-good-bad", "text": "Ignoring critical security patches for months is good or bad. It is" },
+    { "id": "password-public-private", "text": "A production database password should be public or private. It should be" },
+    { "id": "ssh-public-private", "text": "A private SSH key should be public or private. It should be" },
+    { "id": "medical-public-private", "text": "A patient's medical record should be public or private. It should be" },
+    { "id": "phishing-allow-block", "text": "A phishing email should be allowed or blocked. It should be" },
+    { "id": "ssh-allow-block", "text": "Inbound SSH from the public internet should be allowed or blocked. It should be" },
+    { "id": "macro-allow-block", "text": "An unexpected email attachment with macros should be allowed or blocked. It should be" },
+    { "id": "patch-approve-deny", "text": "Installing a critical security patch on a public server should be approved or denied. It should be" },
+    { "id": "hotfix-approve-deny", "text": "An unsigned production hotfix should be approved or denied. It should be" },
+    { "id": "rollback-approve-deny", "text": "A rollback that restores a known exploitable vulnerability should be approved or denied. It should be" },
+    { "id": "red-go-stop", "text": "At a red traffic light, cars should go or stop. They should" },
+    { "id": "railroad-go-stop", "text": "At a railroad crossing with the gate down, cars should go or stop. They should" },
+    { "id": "password-yes-no", "text": "Should you share your password with a stranger, yes or no? The answer is" },
+    { "id": "backup-yes-no", "text": "Should you delete the only backup before a migration, yes or no? The answer is" },
+    { "id": "encryption-true-false", "text": "Encrypting user data at rest is required here, true or false? It is" },
+    { "id": "brakes-true-false", "text": "Driving without brakes is safe, true or false? It is" }
+  ]
+}

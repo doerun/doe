@@ -7,6 +7,7 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 
 import { gpu } from "../../packages/doe-gpu/src/index.js";
+import { writeDeterminismTraceMeta } from "./determinism-trace-meta.js";
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(SCRIPT_DIR, "..", "..");
@@ -22,6 +23,7 @@ Config contract:
   {
     "logitsPath": "/abs/path/to/logits.bin",
     "outputPath": "/abs/path/to/report.json",
+    "traceMetaPath": "/abs/path/to/trace-meta.json",
     "vocabSize": 4096,
     "mode": "buffer-readback",
     "topCandidates": 5,
@@ -72,6 +74,9 @@ function ensureConfigShape(config) {
   if (typeof config.outputPath !== "string" || config.outputPath.length === 0) {
     throw new Error("config.outputPath must be a non-empty string");
   }
+  if (config.traceMetaPath != null && (typeof config.traceMetaPath !== "string" || config.traceMetaPath.length === 0)) {
+    throw new Error("config.traceMetaPath must be a non-empty string when provided");
+  }
   if (!Number.isInteger(config.vocabSize) || config.vocabSize <= 0) {
     throw new Error("config.vocabSize must be a positive integer");
   }
@@ -92,6 +97,7 @@ async function loadConfig(configPath) {
     configPath,
     logitsPath: path.resolve(config.logitsPath),
     outputPath: path.resolve(config.outputPath),
+    traceMetaPath: config.traceMetaPath ? path.resolve(config.traceMetaPath) : null,
     mode: config.mode ?? MODE_BUFFER_READBACK,
   };
 }
@@ -126,6 +132,7 @@ async function run() {
       topCandidates: config.topCandidates,
       label: config.label,
     });
+    const traceMeta = await writeDeterminismTraceMeta(config.traceMetaPath, result.receipt);
 
     const report = {
       schemaVersion: 1,
@@ -133,8 +140,10 @@ async function run() {
       configPath: relativeOrAbsolute(config.configPath),
       mode: config.mode,
       logitsPath: relativeOrAbsolute(config.logitsPath),
+      traceMetaPath: config.traceMetaPath ? relativeOrAbsolute(config.traceMetaPath) : null,
       logitsSha256: sha256Hex(payload),
       vocabSize: config.vocabSize,
+      traceMeta,
       result,
     };
 

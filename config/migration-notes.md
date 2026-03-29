@@ -1,6 +1,374 @@
 # Config Migration Notes
 
+## 2026-03-29
+
+### Native ordinary-execution numeric stability for `matmul.logits`
+
+- `config/numeric-stability-command-annotation.schema.json`
+  and `examples/numeric-stability-command-annotation.sample.json`
+  - added the schema-backed command-stream annotation for in-path
+    numeric-stability evaluation during ordinary `kernel_dispatch` execution
+  - the annotation records:
+    - operator family and trigger/routing policy IDs
+    - operand capture locations for hidden state, logits, and bounded row
+      weights
+    - candidate token metadata for the bounded slice
+- `config/in-path-numeric-stability-exercise.json`
+  and `config/in-path-numeric-stability-exercise.schema.json`
+  and `bench/runners/exercise_in_path_numeric_stability.py`
+  - added the config-backed native exercise lane for ordinary execution
+  - the runner emits real command streams, trace artifacts, per-run receipts,
+    and a manifest under `bench/out/apple-metal-in-path-numeric-stability/*`
+  - the runner also updates checked-in promoted signatures and the promoted
+    fragility catalog from native ordinary execution receipts instead of the
+    earlier explicit bounded-slice service path
+- `runtime/zig/src/numeric_stability_annotation.zig`
+  and `runtime/zig/src/numeric_stability_runtime.zig`
+  and `runtime/zig/src/command_json_raw.zig`
+  and `runtime/zig/src/command_stream.zig`
+  and `runtime/zig/src/main.zig`
+  and `runtime/zig/src/main_usage.zig`
+  - Doe now has a native ordinary-execution numeric-stability path for one
+    operator family:
+    annotated `matmul.logits` `kernel_dispatch`
+  - the runtime:
+    - parses `numericStability` command annotations
+    - captures live ordinary-execution operands and fast logits from the real
+      dispatch
+    - computes stable and bounded exact-reference comparisons locally in Zig
+    - emits first-divergence receipts and trace-meta summary blocks on the
+      same execution run
+- Behavioral difference versus the prior surface:
+  Doe numeric stability is no longer only an explicit bounded-slice runtime
+  service for live route outcomes.
+  Selected native `matmul.logits` cases can now reach
+  `contractStage: runtime-exercised` through ordinary Doe execution, while the
+  explicit bounded-slice service remains the package-visible helper surface.
+
+### Live runtime numeric-stability exercise and abstain route
+
+- `config/numeric-stability-policy.json`
+  - registry version is now `2026-03-29-route-taxonomy-v2`
+  - added an explicit abstaining routing policy:
+    `numeric-stability/abstain-on-selected-token-disagreement-v1`
+  - current route vocabulary remains unchanged:
+    `accept-fast`, `prefer-stable`, `abstain`
+- `config/runtime-numeric-stability-exercise.json`
+  and `config/runtime-numeric-stability-exercise.schema.json`
+  - added the config-backed runtime exercise plan for the live Zig
+    numeric-stability service
+  - the plan now chooses:
+    - strict prompt cases that should stay `prefer-stable`
+    - broad prompt cases that should `abstain`
+    - a live runtime `accept-fast` control
+- `bench/runners/exercise_runtime_numeric_stability.py`
+  - added the runtime exercise runner that replays promoted prompt/control
+    cases through `doe_numeric_stability`
+  - the runner writes:
+    - explicit request/result/receipt/trace-meta artifacts
+    - a bounded-overhead manifest under
+      `bench/out/apple-metal-runtime-numeric-stability/*`
+  - the runner also updates checked-in fragility signatures and the promoted
+    catalog from `promoted` to `runtime-exercised` when a live route outcome
+    exists
+- `config/promoted-fragility-catalog.json`
+  and `config/promoted-fragility-catalog.schema.json`
+  and `config/fragility-signatures/promoted/*.json`
+  - promoted catalog entries can now record `routeOutcomeDecision`
+  - the catalog summary now records `countsByRouteOutcome`
+  - selected signatures now carry live `routeOutcome` data and
+    `contractStage: runtime-exercised`
+- `packages/doe-gpu/test/smoke/test-smoke-load.js`
+  - the public package smoke path now exercises all three live route classes
+    through the real helper surface:
+    `prefer-stable`, `accept-fast`, and `abstain`
+
+### Runtime numeric-stability service v1
+
+- `config/doe-numeric-stability-receipt.schema.json`
+  and `config/numeric-stability-service.schema.json`
+  - added the first schema-backed runtime contracts for Doe numeric stability:
+    - the explicit `doe_numeric_stability` service request/result envelope
+    - the live per-event numeric-stability receipt
+- `examples/numeric-stability-service.request.sample.json`
+  and `examples/numeric-stability-service.result.sample.json`
+  and `examples/doe-numeric-stability-receipt.sample.json`
+  and `examples/doe-numeric-stability-trace-meta.sample.json`
+  - added schema-valid samples for:
+    - explicit module-runner request
+    - service result
+    - receipt row
+    - trace-meta summary block
+- `config/trace-meta.schema.json`
+  - trace-meta now accepts an optional `numericStability` summary block with:
+    - policy registry provenance
+    - receipt path/count
+    - route decision counts
+    - first-divergence-present count
+- `runtime/zig/src/numeric_stability_policy.zig`
+  and `runtime/zig/src/trace_numeric_stability.zig`
+  and `runtime/zig/src/full/modules/services/numeric_stability.zig`
+  and `runtime/zig/src/module_runner.zig`
+  - Doe now has a real Zig-owned numeric-stability path:
+    - policy loading from the shared registry
+    - explicit `matmul_logits_slice` service execution
+    - per-event receipt emission
+    - optional trace-meta summary emission
+    - governed route evaluation using the shared trigger/routing policy
+    - route-taxonomy and route-selection proof metadata copied from the shared
+      registry into live receipts
+- `packages/doe-gpu/src/vendor/webgpu/runtime-cli.js`
+  and `packages/doe-gpu/src/vendor/doe-namespace.js`
+  and `packages/doe-gpu/src/vendor/doe-namespace.d.ts`
+  and `packages/doe-gpu/src/vendor/doe-numeric-stability-policy.js`
+  - the public package surface now exposes the first explicit numeric-stability
+    helper:
+    `gpu.numericStability.matmulLogitsSlice(...)`
+  - `createDoeRuntime()` now also exposes:
+    - `runModule(...)`
+    - `runNumericStabilityMatmulLogitsSlice(...)`
+- Behavioral difference versus the prior surface:
+  Doe numeric stability is no longer only a bench/probe concept.
+  The repo now has a live runtime/package bounded-slice v1 that can evaluate a
+  declared `matmul.logits` slice under fast/stable/reference policies and emit
+  a receipted route decision from the real Zig module-runner path.
+  This explicit service still exists and remains the current package-facing
+  helper surface even though native ordinary-execution rerun now also exists
+  for annotated `matmul.logits` commands.
+
+### Numeric-stability promotion contract hardening
+
+- `config/numeric-stability-policy.json`
+  and `config/numeric-stability-policy.schema.json`
+  - schema version is now `2`.
+  - the registry now carries:
+    - `routeTaxonomyVersion`
+    - `routeDecisionMetadata`
+  - current route truth is still unchanged:
+    `accept-fast`, `prefer-stable`, `abstain`
+  - the new route-decision metadata records the current selection semantics and
+    proof links for each supported route.
+  - runtime/package receipts now copy:
+    - `routeTaxonomyVersion`
+    - route `selectionMode`
+    - route `selectionProofLinks`
+- `config/fragility-promotion-policy.json`
+  and `config/fragility-promotion-policy.schema.json`
+  - added the machine-readable promotion ladder for numeric fragility:
+    discovery -> promoted -> runtime-candidate -> runtime-exercised
+  - added explicit blocking versus advisory evidence for:
+    - each contract stage
+    - each corpus class
+    - the novelty bar
+- `config/promoted-fragility-catalog.json`
+  and `config/promoted-fragility-catalog.schema.json`
+  and `config/fragility-signatures/promoted/*.json`
+  - added the checked-in promoted fragility catalog plus normalized promoted
+    signatures.
+  - promoted signatures intentionally keep `routeOutcome` unset until a real
+    runtime-exercised receipt exists.
+- `bench/runners/promote_numeric_fragility_signatures.py`
+  - added the repo-level promotion tool that lifts the latest exported numeric
+    fragility corpus into the checked-in promoted catalog surfaces.
+
+### Fragility-signature contract planning
+
+- `config/fragility-signature.schema.json`
+  - added a canonical schema for normalized numeric-fragility cases.
+  - the schema is discovery/promotion planning only; it does not change Doe
+    runtime behavior.
+  - it defines the stable case fields needed to graduate evidence from:
+    - discovery
+    - promoted
+    - runtime-candidate
+    - runtime-exercised
+- `docs/numeric-stability-contract-roadmap.md`
+  - added the planning contract for:
+    - fragility corpus formalization
+    - route taxonomy roadmap
+    - proof roadmap
+    - artifact graduation from discovery to runtime contract
+  - current route truth remains unchanged:
+    `accept-fast`, `prefer-stable`, `abstain`
+  - `review-required` remains roadmap-only until a later explicit migration.
+
+### Numeric-fragility corpus export
+
+- `bench/runners/export_numeric_fragility_corpus.py`
+  - added a repo-level export that normalizes the current Apple Metal
+    numeric-stability evidence into one JSONL corpus plus a manifest.
+  - the exported prompt rows now record:
+    - bounded-answer pair probability
+    - bounded-answer per-token surprisal
+    - bounded-answer entropy and margin
+    - global top-candidate context and outsider lead
+    - explicit status when global reference-token surprisal is unavailable
+  - the exported route contract is now split explicitly:
+    - `routeExpectation` is hunt-derived and can remain hypothetical
+    - `routeDecision` is reserved for realized rerun or policy outcomes
+  - promoted prompt rows now use the promoted hunt report as
+    `sourceArtifactPath`, with the earlier representative hunt artifact kept as
+    `sourceSearchArtifactPath`
+  - this is a bench/reporting contract only; it does not change Doe runtime
+    behavior.
+
+### Real LM-head slice hunt and ShaderF16 promotion path
+
+- `runtime/zig/src/webgpu_ffi.zig`
+  and `runtime/zig/src/dawn_plan_executor_support.zig`
+  and `runtime/zig/src/dawn_plan_executor.zig`
+  - Dawn-backed runtime lanes now explicitly request `ShaderF16` when the
+    adapter advertises it.
+  - this unblocks live promotion of `enable f16;` numeric-stability kernels on
+    Apple Metal instead of leaving them stuck as search-only counterfactuals.
+- `bench/executors/harvest-doppler-browser-logits.js`
+  - the real browser harvest path can now optionally capture the stable real
+    last-token embedding for prefill, not only the logits/topK receipt.
+- `bench/runners/run_real_lm_head_slice_hunt.py`
+  and `bench/fixtures/determinism/apple-metal-real-logit-hunt.gemma270m.red-go-stop-answer.json`
+  and `bench/fixtures/determinism/apple-metal-real-lm-head-slice-hunt.gemma270m.red-go-stop-answer.json`
+  - added the first real LM-head slice promotion lane:
+    harvest a real prompt embedding, read the real output rows from the model
+    artifact, evaluate alternate accumulation policies, and promote the best
+    case into reduction-order and selective-rerun receipts.
+- Behavioral difference versus the prior surface:
+  Doe can now promote a real explicit-choice prompt into a full numeric-
+  governance receipt chain on Apple Metal:
+  for the bounded `{ go, stop }` traffic-light prompt, the real exact-reference
+  and f32 policies stay on ` go`, `f16accum` flips to ` stop`, and the
+  selective rerun policy correctly prefers the stable serial path on both Doe
+  and Dawn.
+
+### Numeric-stability routing policy and selective stable-rerun probe
+
+- `config/numeric-stability-policy.json`
+  and `config/numeric-stability-policy.schema.json`
+  - added the first versioned numeric-stability policy registry for the
+    bench/runtime-governance lane.
+  - the registry now also records:
+    - `proofArtifactPath`
+    - trigger-policy proof links
+    - routing-policy proof links
+  - the current registry defines:
+    - one trigger policy:
+      `numeric-instability/selected-token-disagreement-with-reference-improvement-v1`
+    - one routing policy:
+      `numeric-stability/prefer-stable-on-selected-token-disagreement-v1`
+    - sensitive operator coverage for:
+      `matmul.logits`, `attention.output`, and `rmsnorm.output`
+  - these policies encode the current selective-correction rule:
+    reroute onto the stable result only when a sensitive operator is the first
+    divergence, the selected token changes, the stable rerun matches the exact
+    reference, and the fast path does not.
+- `bench/runners/run_selective_stable_rerun_probe.py`
+  and `bench/fixtures/determinism/apple-metal-selective-stable-rerun-logit-flip.json`
+  - added the first receipted selective stable-rerun probe over the operator-
+    level logit-flip lane.
+  - the probe now also copies the proof-linked contract into the live report:
+    `proofArtifactPath`, trigger proof links, and route proof links.
+  - the probe does not yet make package/native execution rerun a real operator
+    in place; it evaluates the governance decision over a source report and
+    records the first divergence, trigger checks, and final route.
+- `bench/fixtures/determinism/apple-metal-selective-stable-rerun-attention-slice.json`
+  - added the first clean real-operator-family negative control for the
+    numeric-stability lane:
+    the attention-style slice now routes `accept-fast` because no first
+    divergence or selected-token change is observed on the live Apple Metal
+    path.
+- `bench/inference-pipeline/kernels/rmsnorm_serial_f32.wgsl`
+  and `bench/fixtures/determinism/rmsnorm-slice-tree.commands.json`
+  and `bench/fixtures/determinism/rmsnorm-slice-serial.commands.json`
+  and `bench/fixtures/determinism/apple-metal-rmsnorm-slice-logit-flip.json`
+  and `bench/fixtures/determinism/apple-metal-selective-stable-rerun-rmsnorm-slice.json`
+  - added the first real `rmsnorm`-family numeric cliff lane:
+    the same operator family plus the same downstream 2-row logits projection
+    now produce different selected tokens under reduction-tree vs strict-
+    serial accumulation on Apple Metal.
+  - the paired rerun receipt shows the numeric-governance lane is not biased
+    toward "stable" by default:
+    `rmsnorm.output` is treated as a sensitive operator, the token changes,
+    but the exact-reference path stays on tree/fast so the route correctly
+    remains `accept-fast`.
+- Behavioral difference versus the prior surface:
+  Doe now has a versioned config-backed way to express the first
+  "numeric instability detected -> prefer stable rerun" rule, now with
+  proof-linked trigger/route contracts and an explicit negative-control lane,
+  even though the actual live rerun still exists today as a bench probe rather
+  than an ordinary runtime/package execution path.
+
 ## 2026-03-28
+
+### Package-path determinism receipts and natural safe/unsafe supporting case
+
+- `bench/executors/determinism-trace-meta.js`
+  and `bench/executors/node-webgpu/determinism.js`
+  and `bench/executors/node-webgpu/plan.js`
+  and `bench/executors/node-webgpu/executor.js`
+  and `bench/runners/run_package_determinism_receipt.py`
+  - the ordinary Node/package executor now preserves semantic capture metadata,
+    performs deterministic logits/token readbacks on the package lane, and can
+    emit a schema-valid `trace_meta.determinism` block from those real captured
+    bytes instead of helper-only receipts.
+- `config/determinism-answer-set-registry.json`
+  - added a tokenizer-aware `safety.safe_unsafe` bounded answer set alongside
+    the existing `safety.not_safe` lane.
+- `bench/fixtures/determinism/apple-metal-real-logit-hunt.gemma270m.policy-breadth.json`
+  and `bench/fixtures/determinism/apple-metal-sample-only-tie-break.pool-safe-unsafe.gemma270m.json`
+  - new Apple Metal scout/support fixtures for the natural prompt
+    `Leaving a toddler alone near a pool is safe or unsafe. It is`.
+- Behavioral difference versus the prior surface:
+  Doe can now emit real package-lane receipts for a fresh natural supporting
+  bounded-choice case on Apple Metal:
+  `stable-token` stays on the raw scalar greedy token, while `stable-choice`
+  and `reviewed-choice` resolve the declared `{safe, unsafe}` ambiguity under
+  the fixed `candidate-margin-band-v1` trigger with proof-linked receipts.
+
+### Determinism policy registry and trace-meta alignment
+
+- `config/determinism-policy.json`
+  and `config/determinism-policy.schema.json`
+  - Doe now has a versioned determinism policy registry for the three explicit
+    post-logit boundaries:
+    `stable-token`, `stable-choice`, and `reviewed-choice`.
+  - the registry is now the source of truth for:
+    policy IDs, base-rule IDs, evaluator IDs, candidate-set provenance values,
+    and proof-link sets.
+- `packages/doe-gpu/src/vendor/doe-determinism-policy.js`
+  - the public package helper surface now consumes a checked-in mirror of that
+    registry instead of hardcoded determinism proof/policy constants embedded
+    directly in `doe-namespace.js`.
+- `packages/doe-gpu/src/vendor/doe-namespace.js`
+  and `packages/doe-gpu/src/vendor/doe-namespace.d.ts`
+  - determinism receipts now include:
+    - `policyRegistryPath`
+    - `policyRegistryVersion`
+    - versioned policy IDs for all three modes
+  - `stable-token` receipts now also expose an explicit `policyId` and
+    `selectedBy=stable-token-policy`, keeping the three boundary receipts more
+    structurally parallel.
+- `config/doe-determinism-receipt.schema.json`
+  - the schema now requires the policy-registry provenance fields above, and
+    `stable-token` receipts now require `policyId` and `selectedBy`.
+- `config/trace-meta.schema.json`
+  and `examples/doe-determinism-trace-meta.sample.json`
+  - trace-meta now accepts an optional `determinism` block carrying the same
+    policy-registry IDs, evaluator provenance, trigger provenance, and proof
+    theorem summary as the public determinism receipts.
+- `bench/executors/determinism-trace-meta.js`
+  and `bench/executors/run-doe-stable-{token,choice}.js`
+  and `bench/executors/run-doe-reviewed-choice.js`
+  - the repo-only determinism executors now emit adjacent zero-row
+    `trace_meta` artifacts in addition to the existing report JSON files.
+- `runtime/zig/src/trace_determinism.zig`
+  and `runtime/zig/src/trace.zig`
+  - the native Zig trace-summary contract now carries the same optional
+    `determinism` block, so future native/runtime callers can emit the same
+    boundary metadata without inventing a second trace contract.
+- Behavioral difference versus the prior surface:
+  determinism receipts and trace summaries are now tied back to an explicit
+  versioned policy registry instead of helper-local constants, and the
+  package-side determinism surfaces now align with the shared trace-meta
+  contract that native/runtime lanes will use.
 
 ### Determinism policy productization: reviewed-choice and proof-linked receipts
 

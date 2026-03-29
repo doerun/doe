@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "in-path-numeric-stability-exercise-plan",
+  "policyRegistryPath": "config/numeric-stability-policy.json",
+  "promotedCatalogPath": "config/promoted-fragility-catalog.json",
+  "signatureRoot": "config/fragility-signatures/promoted",
+  "outputRoot": "bench/out/apple-metal-in-path-numeric-stability",
+  "repeatCount": 3,
+  "promptCases": [
+    {
+      "caseId": "in-path-red-go-stop",
+      "signatureId": "prompt-lm-head-flip::red-go-stop-answer::2f8677733c",
+      "routingPolicyId": "numeric-stability/prefer-stable-on-selected-token-disagreement-v1",
+      "expectedRouteDecision": "prefer-stable"
+    },
+    {
+      "caseId": "in-path-public-readme",
+      "signatureId": "prompt-lm-head-flip::wave3-privacy-22-scenario-lr::995c725fe2",
+      "routingPolicyId": "numeric-stability/prefer-stable-on-selected-token-disagreement-v1",
+      "expectedRouteDecision": "prefer-stable"
+    },
+    {
+      "caseId": "in-path-emergency-ssh",
+      "signatureId": "prompt-lm-head-flip::wave3-authz-17-choose-rl::01c4f69aae",
+      "routingPolicyId": "numeric-stability/prefer-stable-on-selected-token-disagreement-v1",
+      "expectedRouteDecision": "prefer-stable"
+    },
+    {
+      "caseId": "in-path-revoking-departed-employee",
+      "signatureId": "prompt-lm-head-flip::wave3-change-03-answer-lr::8a798b1cf0",
+      "routingPolicyId": "numeric-stability/prefer-stable-on-selected-token-disagreement-v1",
+      "expectedRouteDecision": "prefer-stable"
+    },
+    {
+      "caseId": "in-path-private-ssh-key-abstain",
+      "signatureId": "prompt-lm-head-flip::wave3-binary-06-one_word-rl::749967506e",
+      "routingPolicyId": "numeric-stability/abstain-on-selected-token-disagreement-v1",
+      "expectedRouteDecision": "abstain"
+    },
+    {
+      "caseId": "in-path-internal-incident-report-abstain",
+      "signatureId": "prompt-lm-head-flip::wave3-privacy-23-question_first-lr::e07a6d9627",
+      "routingPolicyId": "numeric-stability/abstain-on-selected-token-disagreement-v1",
+      "expectedRouteDecision": "abstain"
+    }
+  ],
+  "controls": [
+    {
+      "caseId": "in-path-accept-fast-control",
+      "signatureId": "operator::live-matmul-accept-fast-control",
+      "scenarioStem": "Synthetic in-path matmul control",
+      "routingPolicyId": "numeric-stability/prefer-stable-on-selected-token-disagreement-v1",
+      "expectedRouteDecision": "accept-fast",
+      "hiddenState": [1.0, 2.0],
+      "candidates": [
+        {
+          "tokenId": 11,
+          "label": "fast-ref",
+          "weights": [0.25, 0.75]
+        },
+        {
+          "tokenId": 22,
+          "label": "stable-drift",
+          "weights": [0.1, 0.2]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,168 @@
+{
+  "schemaVersion": 1,
+  "policyId": "fragility-promotion/numeric-stability-v1",
+  "routeTaxonomyVersion": "numeric-stability-routes-v1",
+  "selectionRules": [
+    {
+      "entryType": "prompt-lm-head-flip",
+      "contractStage": "promoted",
+      "requireSourceBacked": true,
+      "requirePromotionEvidence": true,
+      "requireRouteExpectationStatus": "realized-in-promotion",
+      "requireRelatedArtifactKinds": [
+        "reduction-order-logit-flip",
+        "selective-stable-rerun"
+      ]
+    },
+    {
+      "entryType": "operator-control",
+      "contractStage": "promoted",
+      "requireSourceBacked": true,
+      "requireRelatedArtifactKinds": [
+        "selective-stable-rerun"
+      ]
+    }
+  ],
+  "presentationBucketToCorpusClass": {
+    "headline-safe": "strict",
+    "adversarial-useful": "broad",
+    "binary-variant": "broad",
+    "noisy-bounded": "broad",
+    "broad-research": "broad",
+    "top-prefix-only": "top-prefix-only",
+    "policy-boundary": "policy-boundary",
+    "operator-control": "operator-control"
+  },
+  "contractStages": [
+    {
+      "stageId": "discovery",
+      "blockingEvidence": [
+        "schema-valid",
+        "traceable-source-artifact",
+        "route-expectation-distinct-from-route-outcome"
+      ],
+      "advisoryEvidence": [
+        "repeat-stability",
+        "human-readable-semantics",
+        "bounded-answer-legibility"
+      ],
+      "countsAsNovelty": false
+    },
+    {
+      "stageId": "promoted",
+      "blockingEvidence": [
+        "first-divergent-operator",
+        "fast-stable-digests",
+        "realized-promotion-receipt"
+      ],
+      "advisoryEvidence": [
+        "multi-lane-parity",
+        "buyer-legible-scenario"
+      ],
+      "countsAsNovelty": false
+    },
+    {
+      "stageId": "runtime-candidate",
+      "blockingEvidence": [
+        "versioned-runtime-policy",
+        "runtime-trace-schema-support",
+        "promoted-signature-catalog"
+      ],
+      "advisoryEvidence": [
+        "bounded-hot-path-cost"
+      ],
+      "countsAsNovelty": false
+    },
+    {
+      "stageId": "runtime-exercised",
+      "blockingEvidence": [
+        "live-operator-local-rerun",
+        "live-route-outcome",
+        "proof-linked-receipt"
+      ],
+      "advisoryEvidence": [
+        "multi-backend-reproduction",
+        "multi-step-semantic-consequence"
+      ],
+      "countsAsNovelty": true
+    }
+  ],
+  "corpusClasses": [
+    {
+      "corpusClass": "strict",
+      "blockingEvidence": [
+        "real-prompt-text",
+        "bounded-answer-set",
+        "exact-reference-selection",
+        "fast-stable-answer-flip"
+      ],
+      "advisoryEvidence": [
+        "headline-legible-semantics"
+      ]
+    },
+    {
+      "corpusClass": "broad",
+      "blockingEvidence": [
+        "real-source-state",
+        "bounded-answer-set-or-explicit-pair",
+        "fast-stable-answer-flip"
+      ],
+      "advisoryEvidence": [
+        "human-right-answer-alignment"
+      ]
+    },
+    {
+      "corpusClass": "control",
+      "blockingEvidence": [
+        "named-control-purpose",
+        "source-traceability"
+      ],
+      "advisoryEvidence": [
+        "semantic-legibility"
+      ]
+    },
+    {
+      "corpusClass": "top-prefix-only",
+      "blockingEvidence": [
+        "explicit-top-prefix-surface",
+        "source-traceability"
+      ],
+      "advisoryEvidence": [
+        "promotion-to-answer-set"
+      ]
+    },
+    {
+      "corpusClass": "policy-boundary",
+      "blockingEvidence": [
+        "bounded-candidate-set",
+        "policy-receipt"
+      ],
+      "advisoryEvidence": [
+        "natural-prompt-legibility"
+      ]
+    },
+    {
+      "corpusClass": "operator-control",
+      "blockingEvidence": [
+        "named-operator-family",
+        "counterfactual-policy-comparison"
+      ],
+      "advisoryEvidence": [
+        "prompt-level-promotion"
+      ]
+    }
+  ],
+  "noveltyThreshold": {
+    "requiredStage": "runtime-exercised",
+    "blockingEvidence": [
+      "runtime-chose-route",
+      "operator-local-rerun-only",
+      "first-divergence-receipt",
+      "proof-link-resolution"
+    ],
+    "advisoryEvidence": [
+      "buyer-legible-danger-case",
+      "embarrassing-control-case"
+    ]
+  }
+}

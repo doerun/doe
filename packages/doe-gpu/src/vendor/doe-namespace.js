@@ -1,5 +1,8 @@
 // Legacy Doe helper surface carried forward into the consolidated doe-gpu package.
-// This file is self-contained with no external imports.
+// Local imports are limited to config-backed registry metadata used by receipts.
+
+import { DOE_DETERMINISM_POLICY_REGISTRY } from './doe-determinism-policy.js';
+import { DOE_NUMERIC_STABILITY_POLICY_REGISTRY } from './doe-numeric-stability-policy.js';
 
 const DOE_GPU_BUFFER_USAGE = {
   MAP_READ: 0x0001,
@@ -23,74 +26,41 @@ const DOE_PENDING_ENCODERS = new WeakMap();
 const DOE_F32_BYTE_WIDTH = 4;
 const DOE_DEFAULT_STABLE_TOKEN_TOP_CANDIDATES = 5;
 const DOE_MAX_STABLE_TOKEN_TIED_INDEX_PREFIX = 16;
-const DOE_STABLE_TOKEN_TIE_BREAK_RULE = 'lowest-index-among-max';
 const DOE_STABLE_TOKEN_MODE = 'stable-token';
 const DOE_STABLE_CHOICE_MODE = 'stable-choice';
 const DOE_REVIEWED_CHOICE_MODE = 'reviewed-choice';
-const DOE_STABLE_TOKEN_COMPARATOR = 'scalar-f32-greedy';
-const DOE_STABLE_CHOICE_BASE_RULE_ID = 'stable-token/lowest-index-among-max';
-const DOE_STABLE_CHOICE_EVALUATOR_KIND = 'fixed-priority';
-const DOE_REVIEWED_CHOICE_EVALUATOR_KIND = 'explicit-review-decision';
 const DOE_STABLE_CHOICE_TRIGGER_EXACT_MAX_TIE = 'exact-max-tie';
 const DOE_STABLE_CHOICE_TRIGGER_CANDIDATE_MARGIN_BAND = 'candidate-margin-band';
-const DOE_STABLE_CHOICE_SELECTED_BY_POLICY = 'stable-choice-policy';
-const DOE_STABLE_CHOICE_SELECTED_BY_FALLBACK = 'stable-token-fallback';
-const DOE_REVIEWED_CHOICE_SELECTED_BY_DECISION = 'reviewed-choice-decision';
-const DOE_REVIEWED_CHOICE_SELECTED_BY_FALLBACK = 'stable-token-fallback';
-const DOE_REVIEWED_CHOICE_ACCEPTED = 'reviewed-choice-decision';
-const DOE_REVIEWED_CHOICE_FALLBACK_NOT_TRIGGERED = 'stable-token-fallback/not-triggered';
-const DOE_REVIEWED_CHOICE_FALLBACK_NOT_IN_CANDIDATE_SET = 'stable-token-fallback/not-in-candidate-set';
-const DOE_REVIEWED_CHOICE_FALLBACK_NOT_AMBIGUOUS = 'stable-token-fallback/not-ambiguous';
-const DOE_STABLE_CHOICE_CANDIDATE_SET_SOURCES = new Set([
-  'fixture-declared',
-  'registry-resolved',
-  'source-report-resolved',
-]);
-const DOE_DETERMINISM_PROOF_ARTIFACT_PATH = 'pipeline/lean/artifacts/proven-conditions.json';
-const DOE_STABLE_TOKEN_PROOF_LINKS = Object.freeze([
-  Object.freeze({
-    theorem: 'stableTokenChoose_mem_tiedMaxIndices',
-    module: 'Doe.Core.DeterminismPolicy',
-    category: 'lean_verified',
-    relation: 'stable-token-tie-break-membership',
-    artifactPath: DOE_DETERMINISM_PROOF_ARTIFACT_PATH,
-  }),
-  Object.freeze({
-    theorem: 'stableTokenChoose_le_all_tiedMaxIndices',
-    module: 'Doe.Core.DeterminismPolicy',
-    category: 'lean_verified',
-    relation: 'stable-token-lowest-index-among-max',
-    artifactPath: DOE_DETERMINISM_PROOF_ARTIFACT_PATH,
-  }),
-]);
-const DOE_EXACT_MAX_TIE_PROOF_LINK = Object.freeze({
-  theorem: 'exactMaxTieTriggered_iff_two_or_more_candidates',
-  module: 'Doe.Core.DeterminismPolicy',
-  category: 'lean_verified',
-  relation: 'stable-choice-exact-max-tie-trigger',
-  artifactPath: DOE_DETERMINISM_PROOF_ARTIFACT_PATH,
-});
-const DOE_CANDIDATE_MARGIN_BAND_PROOF_LINK = Object.freeze({
-  theorem: 'candidateMarginBandTriggered_iff_gap_within_epsilon',
-  module: 'Doe.Core.DeterminismPolicy',
-  category: 'lean_verified',
-  relation: 'stable-choice-candidate-margin-band-trigger',
-  artifactPath: DOE_DETERMINISM_PROOF_ARTIFACT_PATH,
-});
-const DOE_FIXED_PRIORITY_PROOF_LINK = Object.freeze({
-  theorem: 'fixedPriorityBetter_true_implies_lexicographic_preference',
-  module: 'Doe.Core.DeterminismPolicy',
-  category: 'lean_verified',
-  relation: 'stable-choice-fixed-priority-evaluator',
-  artifactPath: DOE_DETERMINISM_PROOF_ARTIFACT_PATH,
-});
-const DOE_REVIEWED_CHOICE_PROOF_LINK = Object.freeze({
-  theorem: 'reviewedChoiceSelect_uses_review_token_when_present',
-  module: 'Doe.Core.DeterminismPolicy',
-  category: 'lean_verified',
-  relation: 'reviewed-choice-decision-evaluator',
-  artifactPath: DOE_DETERMINISM_PROOF_ARTIFACT_PATH,
-});
+const DOE_NUMERIC_STABILITY_MODE = 'numeric-stability';
+const DOE_DETERMINISM_POLICY_REGISTRY_PATH = DOE_DETERMINISM_POLICY_REGISTRY.policyRegistryPath;
+const DOE_DETERMINISM_POLICY_REGISTRY_VERSION = DOE_DETERMINISM_POLICY_REGISTRY.registryVersion;
+const DOE_STABLE_TOKEN_POLICY = DOE_DETERMINISM_POLICY_REGISTRY.stableToken;
+const DOE_STABLE_CHOICE_POLICY = DOE_DETERMINISM_POLICY_REGISTRY.stableChoice;
+const DOE_REVIEWED_CHOICE_POLICY = DOE_DETERMINISM_POLICY_REGISTRY.reviewedChoice;
+const DOE_NUMERIC_STABILITY_POLICY_REGISTRY_PATH =
+  DOE_NUMERIC_STABILITY_POLICY_REGISTRY.policyRegistryPath;
+const DOE_NUMERIC_STABILITY_POLICY_REGISTRY_VERSION =
+  DOE_NUMERIC_STABILITY_POLICY_REGISTRY.registryVersion;
+const DOE_NUMERIC_STABILITY_ROUTE_DECISIONS = new Set(
+  DOE_NUMERIC_STABILITY_POLICY_REGISTRY.routeDecisions
+);
+const DOE_NUMERIC_STABILITY_MATMUL_LOGITS_SLICE =
+  DOE_NUMERIC_STABILITY_POLICY_REGISTRY.matmulLogitsSlice;
+const DOE_STABLE_TOKEN_TIE_BREAK_RULE = DOE_STABLE_TOKEN_POLICY.tieBreakRule;
+const DOE_STABLE_TOKEN_COMPARATOR = DOE_STABLE_TOKEN_POLICY.comparator;
+const DOE_STABLE_TOKEN_SELECTED_BY_POLICY = DOE_STABLE_TOKEN_POLICY.selectedBy;
+const DOE_STABLE_CHOICE_BASE_RULE_ID = DOE_STABLE_CHOICE_POLICY.baseRuleId;
+const DOE_STABLE_CHOICE_EVALUATOR_KIND = DOE_STABLE_CHOICE_POLICY.evaluatorKind;
+const DOE_STABLE_CHOICE_SELECTED_BY_POLICY = DOE_STABLE_CHOICE_POLICY.selectedBy.policy;
+const DOE_STABLE_CHOICE_SELECTED_BY_FALLBACK = DOE_STABLE_CHOICE_POLICY.selectedBy.fallback;
+const DOE_REVIEWED_CHOICE_EVALUATOR_KIND = DOE_REVIEWED_CHOICE_POLICY.evaluatorKind;
+const DOE_REVIEWED_CHOICE_SELECTED_BY_DECISION = DOE_REVIEWED_CHOICE_POLICY.selectedBy.decision;
+const DOE_REVIEWED_CHOICE_SELECTED_BY_FALLBACK = DOE_REVIEWED_CHOICE_POLICY.selectedBy.fallback;
+const DOE_REVIEWED_CHOICE_ACCEPTED = DOE_REVIEWED_CHOICE_POLICY.decisionAcceptanceReasons.accepted;
+const DOE_REVIEWED_CHOICE_FALLBACK_NOT_TRIGGERED = DOE_REVIEWED_CHOICE_POLICY.decisionAcceptanceReasons.notTriggered;
+const DOE_REVIEWED_CHOICE_FALLBACK_NOT_IN_CANDIDATE_SET = DOE_REVIEWED_CHOICE_POLICY.decisionAcceptanceReasons.notInCandidateSet;
+const DOE_REVIEWED_CHOICE_FALLBACK_NOT_AMBIGUOUS = DOE_REVIEWED_CHOICE_POLICY.decisionAcceptanceReasons.notAmbiguous;
+const DOE_STABLE_CHOICE_CANDIDATE_SET_SOURCES = new Set(DOE_DETERMINISM_POLICY_REGISTRY.candidateSetSources);
 
 function deferCommandBuffer(device, commandBuffer) {
   if (!commandBuffer || typeof commandBuffer !== 'object') {
@@ -273,7 +243,7 @@ function resolveStableTokenTopCandidates(value) {
 
 function resolveStableChoicePolicyId(value) {
   if (value == null) {
-    return DOE_STABLE_CHOICE_EVALUATOR_KIND;
+    return DOE_STABLE_CHOICE_POLICY.defaultPolicyId;
   }
   if (typeof value !== 'string' || value.trim().length === 0) {
     throw new Error('Doe determinism.stableChoice policyId must be a non-empty string when provided.');
@@ -315,30 +285,16 @@ function cloneProofLinks(proofLinks) {
   return proofLinks.map((proofLink) => ({ ...proofLink }));
 }
 
-function triggerProofLink(mode) {
-  return mode === DOE_STABLE_CHOICE_TRIGGER_EXACT_MAX_TIE
-    ? DOE_EXACT_MAX_TIE_PROOF_LINK
-    : DOE_CANDIDATE_MARGIN_BAND_PROOF_LINK;
-}
-
 function stableTokenProofLinks() {
-  return cloneProofLinks(DOE_STABLE_TOKEN_PROOF_LINKS);
+  return cloneProofLinks(DOE_STABLE_TOKEN_POLICY.proofLinks);
 }
 
 function stableChoiceProofLinks(mode) {
-  return cloneProofLinks([
-    ...DOE_STABLE_TOKEN_PROOF_LINKS,
-    triggerProofLink(mode),
-    DOE_FIXED_PRIORITY_PROOF_LINK,
-  ]);
+  return cloneProofLinks(DOE_STABLE_CHOICE_POLICY.proofLinksByTriggerMode[mode]);
 }
 
 function reviewedChoiceProofLinks(mode) {
-  return cloneProofLinks([
-    ...DOE_STABLE_TOKEN_PROOF_LINKS,
-    triggerProofLink(mode),
-    DOE_REVIEWED_CHOICE_PROOF_LINK,
-  ]);
+  return cloneProofLinks(DOE_REVIEWED_CHOICE_POLICY.proofLinksByTriggerMode[mode]);
 }
 
 function normalizeStableChoiceCandidate(rawCandidate, priority) {
@@ -616,7 +572,7 @@ function collectStableChoiceSummary(logits, stableTokenSummary, options) {
 
 function resolveReviewedChoicePolicyId(value) {
   if (value == null) {
-    return DOE_REVIEWED_CHOICE_EVALUATOR_KIND;
+    return DOE_REVIEWED_CHOICE_POLICY.defaultPolicyId;
   }
   if (typeof value !== 'string' || value.trim().length === 0) {
     throw new Error('Doe determinism.reviewedChoice reviewPolicyId must be a non-empty string when provided.');
@@ -732,6 +688,9 @@ async function stableTokenResult(device, options) {
     token: summary.token,
     receipt: {
       mode: DOE_STABLE_TOKEN_MODE,
+      policyRegistryPath: DOE_DETERMINISM_POLICY_REGISTRY_PATH,
+      policyRegistryVersion: DOE_DETERMINISM_POLICY_REGISTRY_VERSION,
+      policyId: DOE_STABLE_TOKEN_POLICY.policyId,
       comparator: DOE_STABLE_TOKEN_COMPARATOR,
       tieBreakRule: payload.tieBreakRule,
       sourceKind: payload.sourceKind,
@@ -743,6 +702,7 @@ async function stableTokenResult(device, options) {
       tiedMaxCount: summary.tiedMaxCount,
       tiedMaxIndicesPrefix: summary.tiedMaxIndicesPrefix,
       tiedMaxIndicesOmittedCount: summary.tiedMaxIndicesOmittedCount,
+      selectedBy: DOE_STABLE_TOKEN_SELECTED_BY_POLICY,
       topCandidates: summary.topCandidates,
       proofLinks: stableTokenProofLinks(),
     },
@@ -761,6 +721,8 @@ async function stableChoiceResult(device, options) {
     token: choiceSummary.token,
     receipt: {
       mode: DOE_STABLE_CHOICE_MODE,
+      policyRegistryPath: DOE_DETERMINISM_POLICY_REGISTRY_PATH,
+      policyRegistryVersion: DOE_DETERMINISM_POLICY_REGISTRY_VERSION,
       comparator: DOE_STABLE_TOKEN_COMPARATOR,
       baseRuleId: DOE_STABLE_CHOICE_BASE_RULE_ID,
       evaluatorKind: DOE_STABLE_CHOICE_EVALUATOR_KIND,
@@ -811,8 +773,10 @@ async function reviewedChoiceResult(device, options) {
     token: reviewedSummary.token,
     receipt: {
       mode: DOE_REVIEWED_CHOICE_MODE,
+      policyRegistryPath: DOE_DETERMINISM_POLICY_REGISTRY_PATH,
+      policyRegistryVersion: DOE_DETERMINISM_POLICY_REGISTRY_VERSION,
       comparator: DOE_STABLE_TOKEN_COMPARATOR,
-      baseRuleId: DOE_STABLE_CHOICE_BASE_RULE_ID,
+      baseRuleId: DOE_REVIEWED_CHOICE_POLICY.baseRuleId,
       evaluatorKind: DOE_REVIEWED_CHOICE_EVALUATOR_KIND,
       reviewPolicyId: reviewedSummary.reviewPolicyId,
       triggerPolicyId: reviewedSummary.triggerPolicyId,
@@ -849,6 +813,186 @@ async function reviewedChoiceResult(device, options) {
       topCandidates: stableSummary.topCandidates,
       proofLinks: reviewedChoiceProofLinks(reviewedSummary.ambiguityTrigger.mode),
     },
+  };
+}
+
+function isNodeDoeRuntimeAvailable() {
+  return typeof process === 'object' && process != null && !!process.versions?.node;
+}
+
+function normalizeFiniteNumber(value, label) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    throw new Error(`${label} must be a finite number.`);
+  }
+  return value;
+}
+
+function normalizeNumericArray(values, label) {
+  if (ArrayBuffer.isView(values)) {
+    return Array.from(values, (value, index) => normalizeFiniteNumber(value, `${label}[${index}]`));
+  }
+  if (Array.isArray(values)) {
+    return values.map((value, index) => normalizeFiniteNumber(value, `${label}[${index}]`));
+  }
+  throw new Error(`${label} must be an array or typed array of finite numbers.`);
+}
+
+function normalizeNumericStabilityString(value, fallback, label) {
+  const resolved = value ?? fallback;
+  if (typeof resolved !== 'string' || resolved.trim().length === 0) {
+    throw new Error(`${label} must be a non-empty string.`);
+  }
+  return resolved;
+}
+
+function normalizeNumericStabilityCandidate(candidate, hiddenStateLength, index) {
+  if (!candidate || typeof candidate !== 'object') {
+    throw new Error(`Doe numericStability.matmulLogitsSlice candidates[${index}] must be an object.`);
+  }
+  validateNonNegativeInteger(candidate.tokenId, `Doe numericStability.matmulLogitsSlice candidates[${index}].tokenId`);
+  if (candidate.label != null && (typeof candidate.label !== 'string' || candidate.label.trim().length === 0)) {
+    throw new Error(`Doe numericStability.matmulLogitsSlice candidates[${index}].label must be a non-empty string when provided.`);
+  }
+  const weights = normalizeNumericArray(
+    candidate.weights,
+    `Doe numericStability.matmulLogitsSlice candidates[${index}].weights`
+  );
+  if (weights.length !== hiddenStateLength) {
+    throw new Error(
+      `Doe numericStability.matmulLogitsSlice candidates[${index}].weights length ${weights.length} must match hiddenState length ${hiddenStateLength}.`
+    );
+  }
+  const bias = candidate.bias == null
+    ? null
+    : normalizeFiniteNumber(
+        candidate.bias,
+        `Doe numericStability.matmulLogitsSlice candidates[${index}].bias`
+      );
+  return {
+    tokenId: candidate.tokenId,
+    label: candidate.label ?? null,
+    weights,
+    bias,
+  };
+}
+
+function normalizeNumericStabilityMatmulLogitsSliceOptions(options) {
+  if (!options || typeof options !== 'object') {
+    throw new Error('Doe numericStability.matmulLogitsSlice options must be an object.');
+  }
+  const hiddenState = normalizeNumericArray(
+    options.hiddenState,
+    'Doe numericStability.matmulLogitsSlice hiddenState'
+  );
+  if (hiddenState.length === 0) {
+    throw new Error('Doe numericStability.matmulLogitsSlice hiddenState must contain at least one element.');
+  }
+  if (!Array.isArray(options.candidates) || options.candidates.length < 2) {
+    throw new Error('Doe numericStability.matmulLogitsSlice candidates must contain at least two entries.');
+  }
+  const candidates = options.candidates.map((candidate, index) =>
+    normalizeNumericStabilityCandidate(candidate, hiddenState.length, index)
+  );
+  return {
+    hiddenState,
+    candidates,
+    operatorFamily: normalizeNumericStabilityString(
+      options.operatorFamily,
+      DOE_NUMERIC_STABILITY_MATMUL_LOGITS_SLICE.operatorFamily,
+      'Doe numericStability.matmulLogitsSlice operatorFamily'
+    ),
+    semanticOpId: normalizeNumericStabilityString(
+      options.semanticOpId,
+      DOE_NUMERIC_STABILITY_MATMUL_LOGITS_SLICE.semanticOpId,
+      'Doe numericStability.matmulLogitsSlice semanticOpId'
+    ),
+    semanticStage: normalizeNumericStabilityString(
+      options.semanticStage,
+      DOE_NUMERIC_STABILITY_MATMUL_LOGITS_SLICE.semanticStage,
+      'Doe numericStability.matmulLogitsSlice semanticStage'
+    ),
+    semanticPhase: normalizeNumericStabilityString(
+      options.semanticPhase,
+      DOE_NUMERIC_STABILITY_MATMUL_LOGITS_SLICE.semanticPhase,
+      'Doe numericStability.matmulLogitsSlice semanticPhase'
+    ),
+    triggerPolicyId: normalizeNumericStabilityString(
+      options.triggerPolicyId,
+      DOE_NUMERIC_STABILITY_MATMUL_LOGITS_SLICE.defaultTriggerPolicyId,
+      'Doe numericStability.matmulLogitsSlice triggerPolicyId'
+    ),
+    routingPolicyId: normalizeNumericStabilityString(
+      options.routingPolicyId,
+      DOE_NUMERIC_STABILITY_MATMUL_LOGITS_SLICE.defaultRoutingPolicyId,
+      'Doe numericStability.matmulLogitsSlice routingPolicyId'
+    ),
+    fastPolicyId: normalizeNumericStabilityString(
+      options.fastPolicyId,
+      DOE_NUMERIC_STABILITY_MATMUL_LOGITS_SLICE.fastPolicyId,
+      'Doe numericStability.matmulLogitsSlice fastPolicyId'
+    ),
+    stablePolicyId: normalizeNumericStabilityString(
+      options.stablePolicyId,
+      DOE_NUMERIC_STABILITY_MATMUL_LOGITS_SLICE.stablePolicyId,
+      'Doe numericStability.matmulLogitsSlice stablePolicyId'
+    ),
+    runtime: options.runtime ?? null,
+    runtimeOptions: options.runtimeOptions ?? null,
+    policyPath: options.policyPath ?? null,
+    moduleRunnerPath: options.moduleRunnerPath ?? null,
+    receiptPath: options.receiptPath ?? null,
+    traceMetaPath: options.traceMetaPath ?? null,
+    cwd: options.cwd ?? null,
+  };
+}
+
+async function numericStabilityMatmulLogitsSliceResult(device, options) {
+  void device;
+  const normalized = normalizeNumericStabilityMatmulLogitsSliceOptions(options);
+  if (!isNodeDoeRuntimeAvailable()) {
+    throw new Error(
+      'Doe gpu.numericStability.matmulLogitsSlice is unavailable in this surface. ' +
+      'Use doe-gpu or doe-gpu/compute with the Doe native runtime.'
+    );
+  }
+  const runtimeCli = await import('./webgpu/runtime-cli.js');
+  const runtime = normalized.runtime ?? runtimeCli.createDoeRuntime(normalized.runtimeOptions ?? {});
+  if (typeof runtime?.runNumericStabilityMatmulLogitsSlice !== 'function') {
+    throw new Error('Doe numeric stability runtime helper is unavailable in this context.');
+  }
+  const result = runtime.runNumericStabilityMatmulLogitsSlice({
+    hiddenState: normalized.hiddenState,
+    candidates: normalized.candidates,
+    operatorFamily: normalized.operatorFamily,
+    semanticOpId: normalized.semanticOpId,
+    semanticStage: normalized.semanticStage,
+    semanticPhase: normalized.semanticPhase,
+    triggerPolicyId: normalized.triggerPolicyId,
+    routingPolicyId: normalized.routingPolicyId,
+    fastPolicyId: normalized.fastPolicyId,
+    stablePolicyId: normalized.stablePolicyId,
+    policyPath: normalized.policyPath,
+    moduleRunnerPath: normalized.moduleRunnerPath,
+    receiptPath: normalized.receiptPath,
+    traceMetaPath: normalized.traceMetaPath,
+    cwd: normalized.cwd,
+  });
+  if (!DOE_NUMERIC_STABILITY_ROUTE_DECISIONS.has(result.routeDecision)) {
+    throw new Error(`Doe numeric stability returned unknown route decision: ${String(result.routeDecision)}`);
+  }
+  if (!result.receipt || result.receipt.mode !== DOE_NUMERIC_STABILITY_MODE) {
+    throw new Error('Doe numeric stability service returned an invalid receipt.');
+  }
+  if (result.receipt.policyRegistryPath !== DOE_NUMERIC_STABILITY_POLICY_REGISTRY_PATH) {
+    throw new Error('Doe numeric stability receipt reported an unexpected policy registry path.');
+  }
+  if (result.receipt.policyRegistryVersion !== DOE_NUMERIC_STABILITY_POLICY_REGISTRY_VERSION) {
+    throw new Error('Doe numeric stability receipt reported an unexpected policy registry version.');
+  }
+  return {
+    token: result.token,
+    routeDecision: result.routeDecision,
+    receipt: result.receipt,
   };
 }
 
@@ -1953,6 +2097,37 @@ function createBoundDoe(device) {
        */
       reviewedChoice(options) {
         return reviewedChoiceResult(device, options);
+      },
+    },
+    numericStability: {
+      /**
+       * Evaluate a bounded LM-head slice under fast, stable, and reference numeric policies.
+       *
+       * Surface: Doe API `gpu.numericStability`.
+       * Input: A hidden-state vector plus bounded candidate rows for one LM-head slice.
+       * Returns: A promise for `{ token, routeDecision, receipt }`.
+       *
+       * This helper is the explicit Doe runtime-owned numeric-stability v1
+       * contract. It calls the Zig module service for `matmul.logits`,
+       * compares fast/stable/reference results for the bounded candidate set,
+       * and returns the governed route decision with a first-divergence receipt.
+       *
+       * ```js
+       * const result = await gpu.numericStability.matmulLogitsSlice({
+       *   hiddenState: [1, 1, 1],
+       *   candidates: [
+       *     { tokenId: 817, label: 'go', weights: [10000, 0.01, -10000] },
+       *     { tokenId: 4721, label: 'stop', weights: [0, 0.001, 0] },
+       *   ],
+       * });
+       * ```
+       *
+       * - This v1 path is explicit; it does not intercept ordinary WebGPU execution.
+       * - The browser shim does not support this helper yet.
+       * - The current route vocabulary is `accept-fast`, `prefer-stable`, or `abstain`.
+       */
+      matmulLogitsSlice(options) {
+        return numericStabilityMatmulLogitsSliceResult(device, options);
       },
     },
     compute,

@@ -2,6 +2,8 @@ const std = @import("std");
 const model = @import("model.zig");
 const execution = @import("execution.zig");
 const semantic_trace = @import("semantic_trace.zig");
+const trace_determinism = @import("trace_determinism.zig");
+const trace_numeric_stability = @import("trace_numeric_stability.zig");
 
 pub const TraceState = struct {
     previous_hash: u64 = 0x9e3779b97f4a7c15,
@@ -67,6 +69,8 @@ pub const TraceRunSummary = struct {
     profile_driver: []const u8,
     queue_sync_mode: ?[]const u8 = null,
     quirk_mode: ?[]const u8 = null,
+    determinism: ?trace_determinism.TraceDeterminismSummary = null,
+    numeric_stability: ?trace_numeric_stability.TraceNumericStabilitySummary = null,
 };
 
 pub fn writef(writer: anytype, comptime format: []const u8, args: anytype) !void {
@@ -715,6 +719,16 @@ pub fn writeTraceMeta(path: []const u8, summary: TraceRunSummary) !void {
     if (summary.quirk_mode) |qmode| {
         try writer.writeAll("\"quirkMode\":");
         try writeJsonString(&writer, qmode);
+        try writer.writeAll(",");
+    }
+    if (summary.determinism) |determinism| {
+        try writer.writeAll("\"determinism\":");
+        try trace_determinism.writeDeterminismMeta(&writer, determinism);
+        try writer.writeAll(",");
+    }
+    if (summary.numeric_stability) |numeric_stability| {
+        try writer.writeAll("\"numericStability\":");
+        try trace_numeric_stability.writeNumericStabilityMeta(&writer, numeric_stability);
         try writer.writeAll(",");
     }
     try writer.writeAll("\"profile\":{");

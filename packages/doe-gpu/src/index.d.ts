@@ -16,6 +16,13 @@ import type {
   DoeStableChoiceOptions,
   DoeStableChoiceReceipt,
   DoeStableChoiceResult,
+  DoeNumericStabilityCandidateInput,
+  DoeNumericStabilityFirstDivergence,
+  DoeNumericStabilityReceipt,
+  DoeNumericStabilityReceiptCandidate,
+  DoeNumericStabilityRouteDecision,
+  DoeMatmulLogitsSliceOptions,
+  DoeMatmulLogitsSliceResult,
   DoeReviewedChoiceOptions,
   DoeReviewedChoiceReceipt,
   DoeReviewedChoiceResult,
@@ -45,6 +52,13 @@ export type {
   DoeStableChoiceOptions,
   DoeStableChoiceReceipt,
   DoeStableChoiceResult,
+  DoeNumericStabilityCandidateInput,
+  DoeNumericStabilityFirstDivergence,
+  DoeNumericStabilityReceipt,
+  DoeNumericStabilityReceiptCandidate,
+  DoeNumericStabilityRouteDecision,
+  DoeMatmulLogitsSliceOptions,
+  DoeMatmulLogitsSliceResult,
   DoeReviewedChoiceOptions,
   DoeReviewedChoiceReceipt,
   DoeReviewedChoiceResult,
@@ -102,11 +116,36 @@ export interface DoeRuntimeBenchOptions {
   cwd?: string;
 }
 
+export interface DoeRuntimeModuleResult extends DoeRuntimeRunResult {
+  output: Record<string, unknown> | null;
+}
+
+export interface DoeRuntimeNumericStabilityMatmulLogitsSliceResult
+  extends DoeRuntimeModuleResult {
+  receiptPath: string | null;
+  traceMetaPath: string | null;
+  traceMeta: Record<string, unknown> | null;
+  routeDecision: DoeNumericStabilityRouteDecision;
+  token: number | null;
+  receipt: DoeNumericStabilityReceipt;
+}
+
 export interface DoeRuntime {
   binPath: string;
   libPath: string | null;
+  moduleRunnerPath: string | null;
   runRaw(args: string[], spawnOptions?: Record<string, unknown>): DoeRuntimeRunResult;
   runBench(options: DoeRuntimeBenchOptions): DoeRuntimeBenchResult;
+  runModule(options: {
+    moduleId: string;
+    request: Record<string, unknown>;
+    policyPath: string;
+    cwd?: string;
+    moduleRunnerPath?: string;
+  }): DoeRuntimeModuleResult;
+  runNumericStabilityMatmulLogitsSlice(
+    options: DoeMatmulLogitsSliceOptions<unknown>,
+  ): DoeRuntimeNumericStabilityMatmulLogitsSliceResult;
 }
 
 export interface RequestDeviceOptions {
@@ -155,6 +194,7 @@ export function providerInfo(): ProviderInfo;
 export function createDoeRuntime(options?: {
   binPath?: string;
   libPath?: string;
+  moduleRunnerPath?: string;
 }): DoeRuntime;
 export function runDawnVsDoeCompare(options: Record<string, unknown>): DoeRuntimeRunResult;
 export function preflightShaderSource(code: string): {

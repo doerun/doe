@@ -7,6 +7,31 @@
       "tokenizerId": "gemma-3-spm-v1",
       "answerSets": [
         {
+          "id": "safety.safe_unsafe",
+          "domainId": "safety",
+          "description": "Safe-versus-unsafe bounded answer set for direct risk labeling prompts.",
+          "headlineEligible": true,
+          "promptAnchors": ["safe", "unsafe"],
+          "options": [
+            {
+              "id": "safe",
+              "label": "safe",
+              "forms": [
+                { "tokenText": " safe", "normalizedTokenText": "safe", "singleToken": true, "leadingSpacePreferred": true },
+                { "tokenText": "safe", "normalizedTokenText": "safe", "singleToken": true, "leadingSpacePreferred": false }
+              ]
+            },
+            {
+              "id": "unsafe",
+              "label": "unsafe",
+              "forms": [
+                { "tokenText": " unsafe", "normalizedTokenText": "unsafe", "singleToken": true, "leadingSpacePreferred": true },
+                { "tokenText": "unsafe", "normalizedTokenText": "unsafe", "singleToken": true, "leadingSpacePreferred": false }
+              ]
+            }
+          ]
+        },
+        {
           "id": "safety.not_safe",
           "domainId": "safety",
           "description": "Negation-versus-safe bounded answer set used by the Apple seatbelt and brakes prompts.",

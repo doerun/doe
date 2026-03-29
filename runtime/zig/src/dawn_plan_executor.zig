@@ -143,7 +143,17 @@ const Executor = struct {
             .userdata1 = &state,
             .userdata2 = null,
         };
-        const desc = c.WGPUDeviceDescriptor{ .nextInChain = null };
+        var required_features = [_]c.WGPUFeatureName{undefined} ** 1;
+        var feature_count: usize = 0;
+        if (self.procs.adapter_has_feature(self.adapter, c.WGPUFeatureName_ShaderF16) != c.WGPU_FALSE) {
+            required_features[feature_count] = c.WGPUFeatureName_ShaderF16;
+            feature_count += 1;
+        }
+        const desc = c.WGPUDeviceDescriptor{
+            .nextInChain = null,
+            .requiredFeatureCount = feature_count,
+            .requiredFeatures = if (feature_count > 0) required_features[0..].ptr else null,
+        };
         const future = self.procs.adapter_request_device(self.adapter, &desc, callback);
         if (future.id == 0) return error.DeviceRequestFailed;
         try support.waitForFlag(self.instance, self.procs.instance_process_events, &state.done, support.ASYNC_TIMEOUT_NS);

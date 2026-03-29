@@ -82,7 +82,8 @@ const { token, receipt } = await bound.determinism.stableToken({
 - the tie-break rule is explicit: `lowest-index-among-max`
 - the helper accepts either host logits bytes or a GPU buffer
 - every call returns a receipt with the selected token, the max-tie set, the
-  top candidates, the logits SHA-256 digest, and proof links for the
+  top candidates, the logits SHA-256 digest, the versioned stable-token
+  policy ID, the policy registry path/version, and proof links for the
   policy-layer tie-break contract
 
 ## Deterministic ambiguity resolution
@@ -121,7 +122,7 @@ const { token, receipt } = await bound.determinism.stableChoice({
   - logits digest
   - candidate-set logits
   - ambiguity trigger config and whether it fired
-  - the policy ID / evaluator kind
+  - the policy registry path/version plus the policy ID / evaluator kind
   - the trigger policy ID, candidate-set ID, and candidate-set provenance
   - the final chosen token and whether it came from policy or fallback
   - proof links for the stable-token base rule, trigger contract, and
@@ -169,10 +170,71 @@ const { token, receipt } = await bound.determinism.reviewedChoice({
   - logits digest
   - bounded candidate-set logits
   - ambiguity trigger config and whether it fired
+  - the policy registry path/version plus the review policy ID
   - reviewed decision provenance (`reviewerId`, optional decision IDs/refs)
   - whether the reviewed decision was accepted or why it fell back
   - proof links for the stable-token base rule, trigger contract, and
     reviewed-decision evaluator semantics
+
+## Numeric stability service
+
+Doe also exposes an explicit runtime-owned numeric-stability helper for a
+bounded `matmul.logits` / LM-head slice:
+
+```js
+import { gpu } from 'doe-gpu';
+
+const bound = gpu.bind({});
+const { token, routeDecision, receipt } =
+  await bound.numericStability.matmulLogitsSlice({
+    hiddenState: [1, 1, 1],
+    candidates: [
+      { tokenId: 11, label: 'keep', weights: [10000, 0.01, -10000] },
+      { tokenId: 22, label: 'flip', weights: [0, 0.001, 0] },
+    ],
+  });
+```
+
+- `matmulLogitsSlice()` is a sibling of `gpu.determinism.*`, not part of the
+  post-logit determinism layer
+- v1 is an explicit runtime service, not hidden interception of ordinary
+  WebGPU execution
+- callers provide the bounded hidden-state vector and candidate rows directly;
+  v1 does not yet capture and rerun an operator out of an ordinary WebGPU
+  request on its own
+- native `doe-zig-runtime` now has a separate ordinary-execution
+  `matmul.logits` path for annotated `kernel_dispatch` commands, but that
+  in-path capability is not yet exposed through the generic `doe-gpu` package
+  execution APIs
+- the service evaluates three declared policies over the bounded candidate set:
+  - fast policy
+  - stable policy
+  - bounded CPU reference policy
+- callers can override the route policy explicitly when they want the same
+  trigger to abstain instead of auto-substituting the stable result, for
+  example:
+
+```js
+await bound.numericStability.matmulLogitsSlice({
+  routingPolicyId: 'numeric-stability/abstain-on-selected-token-disagreement-v1',
+  hiddenState: [1, 1, 1],
+  candidates: [
+    { tokenId: 11, label: 'keep', weights: [10000, 0.01, -10000] },
+    { tokenId: 22, label: 'flip', weights: [0, 0.001, 0] },
+  ],
+});
+```
+
+- every call returns:
+  - the routed token
+  - the route decision (`accept-fast`, `prefer-stable`, or `abstain`)
+  - a receipt with per-candidate fast/stable/reference logits, first
+    divergence, trigger checks, `routeTaxonomyVersion`, and proof-linked route
+    plus route-selection metadata
+- the current public surface is available from:
+  - `doe-gpu`
+  - `doe-gpu/compute`
+- `doe-gpu/browser` does not support this helper yet and fails explicitly
 
 ## Subpath exports
 
@@ -194,6 +256,15 @@ The browser subpath is a browser-oriented JS shim. The default package and
 `createDoeRuntime()` and `runDawnVsDoeCompare()` remain available for
 repo-adjacent environments that already have Doe runtime or compare assets
 available.
+
+`createDoeRuntime()` now also exposes:
+
+- `runModule(...)` for explicit Zig module-runner calls
+- `runNumericStabilityMatmulLogitsSlice(...)` for the v1 numeric-stability
+  runtime service
+
+Those helpers target the explicit bounded-slice runtime contract. They are not
+yet the same thing as the native ordinary-execution numeric-stability path.
 
 They are not npm CLI tools. Canonical compare, release, and gate workflows live
 in the repo under `bench/`.

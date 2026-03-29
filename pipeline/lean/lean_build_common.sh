@@ -35,7 +35,13 @@ LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \
 LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \
   "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Doe/Core/DeterminismPolicy.olean" "${ROOT_DIR}/pipeline/lean/Doe/Core/DeterminismPolicy.lean"
 LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \
+  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Doe/Core/NumericStabilityPolicy.olean" "${ROOT_DIR}/pipeline/lean/Doe/Core/NumericStabilityPolicy.lean"
+LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \
   "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Doe/Core/Bridge.olean" "${ROOT_DIR}/pipeline/lean/Doe/Core/Bridge.lean"
+LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \
+  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Doe/NumericStabilityPolicy.olean" "${ROOT_DIR}/pipeline/lean/Doe/NumericStabilityPolicy.lean"
+LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \
+  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Doe/Bridge.olean" "${ROOT_DIR}/pipeline/lean/Doe/Bridge.lean"
 LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \
   "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Doe/Core/BindGroupSlot.olean" "${ROOT_DIR}/pipeline/lean/Doe/Core/BindGroupSlot.lean"
 LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \
@@ -80,5 +86,3 @@ LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \
   "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Doe/Comparability.olean" "${ROOT_DIR}/pipeline/lean/Doe/Comparability.lean"
 LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \
   "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Doe/ComparabilityFixtures.olean" "${ROOT_DIR}/pipeline/lean/Doe/ComparabilityFixtures.lean"
-LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \
-  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Doe/Bridge.olean" "${ROOT_DIR}/pipeline/lean/Doe/Bridge.lean"

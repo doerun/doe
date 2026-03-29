@@ -48,6 +48,8 @@ Config contract:
     "decodeSteps": 1,
     "topK": 5,
     "persistLogits": false,
+    "capturePrefillEmbedding": false,
+    "prefillEmbeddingMode": "last",
     "useChatTemplate": false,
     "runtimeConfig": { ... },
     "browser": {
@@ -305,15 +307,34 @@ async function withTimeout(promise, timeoutMs, label) {
 }
 
 async function persistArtifacts(result, outputDir) {
-  if (!result.persistLogits) {
+  if (!result.persistLogits && !result.capturePrefillEmbedding) {
     return result;
   }
   const logitsDir = path.join(outputDir, "logits");
+  const embeddingsDir = path.join(outputDir, "embeddings");
   await mkdir(logitsDir, { recursive: true });
+  if (result.capturePrefillEmbedding) {
+    await mkdir(embeddingsDir, { recursive: true });
+  }
   for (const run of result.runs) {
     for (const prompt of run.promptResults) {
       if (prompt.status !== "ok") continue;
       const promptId = sanitizeId(prompt.id, `prompt-${String(prompt.promptIndex).padStart(3, "0")}`);
+      if (result.capturePrefillEmbedding) {
+        const embedding = prompt.prefillEmbedding;
+        if (embedding && typeof embedding.embeddingBase64 === "string" && embedding.embeddingBase64.length > 0) {
+          const fileName = `${promptId}.run${String(run.repeatIndex).padStart(3, "0")}.prefill.embedding.f32.bin`;
+          const filePath = path.join(embeddingsDir, fileName);
+          const payload = Buffer.from(embedding.embeddingBase64, "base64");
+          const digest = sha256Hex(payload);
+          await writeFile(filePath, payload);
+          if (digest !== embedding.embeddingSha256) {
+            throw new Error(`Persisted embedding digest mismatch for ${fileName}`);
+          }
+          embedding.embeddingArtifactPath = relativeOrAbsolute(filePath);
+          delete embedding.embeddingBase64;
+        }
+      }
       for (const step of prompt.steps) {
         if (typeof step.logitsBase64 !== "string" || step.logitsBase64.length === 0) continue;
         const phaseId = step.phase === "prefill" ? "prefill" : `decode-${step.stepIndex}`;
@@ -427,6 +448,21 @@ async function harvestRepeat(page, spec, timeoutMs) {
           }
         }
 
+        async function summarizeEmbedding(embedding, embeddingMode) {
+          if (!(embedding instanceof Float32Array)) {
+            throw new Error(`Expected Float32Array embedding, got ${embedding?.constructor?.name ?? typeof embedding}`);
+          }
+          const bytes = new Uint8Array(embedding.buffer, embedding.byteOffset, embedding.byteLength);
+          const digest = await crypto.subtle.digest("SHA-256", bytes);
+          return {
+            embeddingMode,
+            embeddingFloatCount: embedding.length,
+            embeddingByteLength: bytes.byteLength,
+            embeddingSha256: hexFromBytes(new Uint8Array(digest)),
+            embeddingBase64: bytesToBase64(bytes),
+          };
+        }
+
         async function summarizeLogits(logits, summary, tokenizer) {
           const topEntries = [];
           let maxLogit = -Infinity;
@@ -462,18 +498,68 @@ async function harvestRepeat(page, spec, timeoutMs) {
           };
         }
 
+        function resolveTokenTexts(tokenizer, tokenTexts) {
+          const resolved = {};
+          for (const tokenText of tokenTexts || []) {
+            try {
+              const tokenIds = Array.from(tokenizer.encode(tokenText));
+              resolved[tokenText] = {
+                tokenText,
+                tokenIds,
+                singleToken: tokenIds.length === 1,
+                tokenId: tokenIds.length === 1 ? tokenIds[0] : null,
+                decodedTokenText: tokenIds.length === 1 ? decodeTokenText(tokenizer, tokenIds[0]) : null,
+              };
+            } catch (error) {
+              resolved[tokenText] = {
+                tokenText,
+                tokenIds: [],
+                singleToken: false,
+                tokenId: null,
+                decodedTokenText: null,
+                error: String(error?.message ?? error),
+              };
+            }
+          }
+          return resolved;
+        }
+
         const adapter = await navigator.gpu.requestAdapter();
         const adapterInfo = await adapter?.requestAdapterInfo?.().catch(() => null);
-        const [{ doppler }, { initTokenizerFromManifest }] = await Promise.all([
+        const [{ doppler }, { createPipeline, initTokenizerFromManifest }, { parseManifest }] = await Promise.all([
           import("/src/index.js"),
           import("/src/generation/index.js"),
+          import("/src/formats/rdrr/index.js"),
         ]);
         const repeatStart = performance.now();
-        const model = await doppler.load(
-          { url: runSpec.modelUrl },
-          { runtimeConfig: runSpec.runtimeConfig },
-        );
-        const tokenizer = await initTokenizerFromManifest(model.manifest, runSpec.modelUrl);
+        let runtime = null;
+        let tokenizer = null;
+        let manifest = null;
+        let pipeline = null;
+        if (runSpec.capturePrefillEmbedding) {
+          const manifestResponse = await fetch(`${runSpec.modelUrl}/manifest.json`);
+          if (!manifestResponse.ok) {
+            throw new Error(`Failed to fetch manifest from ${runSpec.modelUrl}: ${manifestResponse.status}`);
+          }
+          manifest = parseManifest(await manifestResponse.text());
+          if (manifest?.inference?.output?.embeddingPostprocessor) {
+            throw new Error("capturePrefillEmbedding requires output.embeddingPostprocessor to be disabled.");
+          }
+          pipeline = await createPipeline(manifest, {
+            baseUrl: runSpec.modelUrl,
+            runtimeConfig: runSpec.runtimeConfig,
+          });
+          runtime = pipeline;
+          tokenizer = pipeline.tokenizer ?? await initTokenizerFromManifest(manifest, runSpec.modelUrl);
+        } else {
+          runtime = await doppler.load(
+            { url: runSpec.modelUrl },
+            { runtimeConfig: runSpec.runtimeConfig },
+          );
+          manifest = runtime.manifest;
+          tokenizer = await initTokenizerFromManifest(runtime.manifest, runSpec.modelUrl);
+        }
+        const resolvedTokens = resolveTokenTexts(tokenizer, runSpec.tokenTextsToResolve);
         const promptResults = [];
         try {
           for (let promptIndex = 0; promptIndex < runSpec.promptCandidates.length; promptIndex += 1) {
@@ -482,10 +568,38 @@ async function harvestRepeat(page, spec, timeoutMs) {
               ? Math.max(0, Math.floor(prompt.decodeSteps))
               : runSpec.decodeSteps;
             try {
-              const prefill = await model.advanced.prefillWithLogits(prompt.text, {
-                useChatTemplate: runSpec.useChatTemplate,
-              });
+              let prefillEmbeddingSummary = null;
+              let embeddingPromptTokenIds = null;
+              if (runSpec.capturePrefillEmbedding) {
+                pipeline.reset();
+                const prefillEmbedding = await pipeline.prefillWithEmbedding(prompt.text, {
+                  useChatTemplate: runSpec.useChatTemplate,
+                  embeddingMode: runSpec.prefillEmbeddingMode,
+                });
+                embeddingPromptTokenIds = Array.from(prefillEmbedding.tokens);
+                prefillEmbeddingSummary = await summarizeEmbedding(
+                  prefillEmbedding.embedding,
+                  prefillEmbedding.embeddingMode ?? runSpec.prefillEmbeddingMode,
+                );
+              }
+              if (pipeline) {
+                pipeline.reset();
+              }
+              const prefill = pipeline
+                ? await pipeline.prefillWithLogits(prompt.text, {
+                  useChatTemplate: runSpec.useChatTemplate,
+                })
+                : await runtime.advanced.prefillWithLogits(prompt.text, {
+                  useChatTemplate: runSpec.useChatTemplate,
+                });
               const promptTokenIds = Array.from(prefill.tokens);
+              if (embeddingPromptTokenIds) {
+                const sameLength = embeddingPromptTokenIds.length === promptTokenIds.length;
+                const sameIds = sameLength && embeddingPromptTokenIds.every((value, index) => value === promptTokenIds[index]);
+                if (!sameIds) {
+                  throw new Error("prefillWithEmbedding tokenIds differed from prefillWithLogits tokenIds");
+                }
+              }
               const steps = [];
               const prefillSummary = await summarizeLogits(prefill.logits, runSpec, tokenizer);
               steps.push({
@@ -501,9 +615,13 @@ async function harvestRepeat(page, spec, timeoutMs) {
               const greedyTokenSequence = [selectedToken];
               for (let decodeIndex = 0; decodeIndex < promptDecodeSteps; decodeIndex += 1) {
                 currentIds = [...currentIds, selectedToken];
-                const step = await model.advanced.decodeStepLogits(currentIds, {
-                  useChatTemplate: runSpec.useChatTemplate,
-                });
+                const step = pipeline
+                  ? await pipeline.decodeStepLogits(currentIds, {
+                    useChatTemplate: runSpec.useChatTemplate,
+                  })
+                  : await runtime.advanced.decodeStepLogits(currentIds, {
+                    useChatTemplate: runSpec.useChatTemplate,
+                  });
                 const stepSummary = await summarizeLogits(step.logits, runSpec, tokenizer);
                 steps.push({
                   phase: "decode",
@@ -523,6 +641,7 @@ async function harvestRepeat(page, spec, timeoutMs) {
                 promptIndex,
                 promptTokenIds,
                 greedyTokenSequence,
+                prefillEmbedding: prefillEmbeddingSummary,
                 steps,
               });
             } catch (error) {
@@ -536,11 +655,13 @@ async function harvestRepeat(page, spec, timeoutMs) {
             }
           }
         } finally {
-          await model.unload();
+          await runtime.unload();
         }
         return {
           browserUserAgent: navigator.userAgent,
           adapterInfo,
+          manifestModelId: manifest?.modelId ?? null,
+          resolvedTokens,
           repeatIndex: runSpec.repeatIndex,
           elapsedMs: performance.now() - repeatStart,
           promptResults,
@@ -561,6 +682,10 @@ async function runProbe(config) {
   const decodeSteps = asPositiveInt(config.decodeSteps, "decodeSteps", 1);
   const topK = asPositiveInt(config.topK, "topK", 5);
   const persistLogits = asBoolean(config.persistLogits, false);
+  const capturePrefillEmbedding = asBoolean(config.capturePrefillEmbedding, false);
+  const prefillEmbeddingMode = typeof config.prefillEmbeddingMode === "string" && config.prefillEmbeddingMode.trim().length > 0
+    ? config.prefillEmbeddingMode.trim()
+    : "last";
   const useChatTemplate = asBoolean(config.useChatTemplate, false);
   const repeatIsolation = browserRepeatIsolation(config);
   const mounts = [{ urlPrefix: DEFAULT_MODEL_MOUNT, rootDir: modelArtifactPath }];
@@ -581,11 +706,17 @@ async function runProbe(config) {
       decodeSteps,
       topK,
       persistLogits,
+      capturePrefillEmbedding,
+      prefillEmbeddingMode,
+      tokenTextsToResolve: Array.isArray(config.tokenTextsToResolve)
+        ? config.tokenTextsToResolve.map((entry) => String(entry))
+        : [],
       useChatTemplate,
     };
     const runs = [];
     let browserUserAgent = null;
     let adapterInfo = null;
+    let resolvedTokens = null;
     let sharedPage = null;
     if (repeatIsolation !== "new-browser") {
       browser = await withTimeout(browserType.launch(launchOptions), timeoutMs, "browser launch");
@@ -617,6 +748,7 @@ async function runProbe(config) {
         );
         browserUserAgent ??= repeatResult.browserUserAgent;
         adapterInfo ??= repeatResult.adapterInfo;
+        resolvedTokens ??= repeatResult.resolvedTokens ?? null;
         runs.push({
           repeatIndex: repeatResult.repeatIndex,
           elapsedMs: repeatResult.elapsedMs,
@@ -642,6 +774,8 @@ async function runProbe(config) {
       decodeSteps,
       topK,
       persistLogits,
+      capturePrefillEmbedding,
+      prefillEmbeddingMode,
       useChatTemplate,
       browser: {
         repeatIsolation,
@@ -650,6 +784,7 @@ async function runProbe(config) {
       runtimeConfig: config.runtimeConfig ?? {},
       browserUserAgent,
       adapterInfo,
+      resolvedTokens,
       runs,
     };
     return persistArtifacts(result, outputDir);

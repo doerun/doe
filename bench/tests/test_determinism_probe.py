@@ -35,6 +35,7 @@ class DeterminismProbeTests(unittest.TestCase):
                 "captureBufferHandle": 2228,
                 "captureOffset": 0,
                 "captureSize": 4,
+                "decode": "u32le",
             }
         ]
         annotated = annotate_commands(commands, captures, execution_plan_hash="abc123")
@@ -42,6 +43,7 @@ class DeterminismProbeTests(unittest.TestCase):
         self.assertEqual(annotated[1]["semanticOpId"], "decode.sample_token")
         self.assertEqual(annotated[1]["semanticExecutionPlanHash"], "abc123")
         self.assertEqual(annotated[1]["captureBufferHandle"], 2228)
+        self.assertEqual(annotated[1]["decode"], "u32le")
         self.assertEqual(commands[1].get("semanticOpId"), None)
 
     def test_decode_capture_value_reads_u32le(self) -> None:

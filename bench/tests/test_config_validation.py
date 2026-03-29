@@ -297,6 +297,60 @@ class TestRealConfigs(unittest.TestCase):
         with self.assertRaises(jsonschema.ValidationError):
             jsonschema.validate(invalid, schema)
 
+    def test_trace_meta_determinism_accepts_stable_token_summary(self):
+        repo_root = Path(__file__).resolve().parents[2]
+        sch = repo_root / "config" / "trace-meta.schema.json"
+        schema = json.loads(sch.read_text(encoding="utf-8"))
+        valid = {
+            "traceVersion": 1,
+            "module": "doe-gpu/determinism",
+            "seqMax": 0,
+            "rowCount": 0,
+            "hash": "sha256:" + ("1" * 64),
+            "previousHash": "sha256:" + ("0" * 64),
+            "determinism": {
+                "mode": "stable-token",
+                "policyRegistryPath": "config/determinism-policy.json",
+                "policyRegistryVersion": "2026-03-28",
+                "policyId": "stable-token/lowest-index-among-max-v1",
+                "comparator": "scalar-f32-greedy",
+                "tieBreakRule": "lowest-index-among-max",
+                "selectedBy": "stable-token-policy",
+                "logitsSha256": "a" * 64,
+                "token": 7,
+                "proofArtifactPath": "pipeline/lean/artifacts/proven-conditions.json",
+                "proofTheorems": ["stableTokenChoose_mem_tiedMaxIndices"],
+            },
+        }
+        jsonschema.validate(valid, schema)
+
+    def test_trace_meta_determinism_rejects_missing_policy_registry_version(self):
+        repo_root = Path(__file__).resolve().parents[2]
+        sch = repo_root / "config" / "trace-meta.schema.json"
+        schema = json.loads(sch.read_text(encoding="utf-8"))
+        invalid = {
+            "traceVersion": 1,
+            "module": "doe-gpu/determinism",
+            "seqMax": 0,
+            "rowCount": 0,
+            "hash": "sha256:" + ("1" * 64),
+            "previousHash": "sha256:" + ("0" * 64),
+            "determinism": {
+                "mode": "stable-token",
+                "policyRegistryPath": "config/determinism-policy.json",
+                "policyId": "stable-token/lowest-index-among-max-v1",
+                "comparator": "scalar-f32-greedy",
+                "tieBreakRule": "lowest-index-among-max",
+                "selectedBy": "stable-token-policy",
+                "logitsSha256": "a" * 64,
+                "token": 7,
+                "proofArtifactPath": "pipeline/lean/artifacts/proven-conditions.json",
+                "proofTheorems": ["stableTokenChoose_mem_tiedMaxIndices"],
+            },
+        }
+        with self.assertRaises(jsonschema.ValidationError):
+            jsonschema.validate(invalid, schema)
+
 
 if __name__ == "__main__":
     unittest.main()

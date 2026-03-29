@@ -1,6 +1,13 @@
 import type {
   BoundDoeNamespace,
   DoeDeterminismProofLink,
+  DoeMatmulLogitsSliceOptions,
+  DoeMatmulLogitsSliceResult,
+  DoeNumericStabilityCandidateInput,
+  DoeNumericStabilityFirstDivergence,
+  DoeNumericStabilityReceipt,
+  DoeNumericStabilityReceiptCandidate,
+  DoeNumericStabilityRouteDecision,
   DoeReviewedChoiceOptions,
   DoeReviewedChoiceReceipt,
   DoeReviewedChoiceResult,
@@ -144,6 +151,13 @@ export interface ComputeDoeNamespace
 
 export type {
   DoeDeterminismProofLink,
+  DoeMatmulLogitsSliceOptions,
+  DoeMatmulLogitsSliceResult,
+  DoeNumericStabilityCandidateInput,
+  DoeNumericStabilityFirstDivergence,
+  DoeNumericStabilityReceipt,
+  DoeNumericStabilityReceiptCandidate,
+  DoeNumericStabilityRouteDecision,
   DoeReviewedChoiceOptions,
   DoeReviewedChoiceReceipt,
   DoeReviewedChoiceResult,
@@ -168,6 +182,7 @@ export function providerInfo(): ProviderInfo;
 export function createDoeRuntime(options?: {
   binPath?: string;
   libPath?: string;
+  moduleRunnerPath?: string;
 }): DoeRuntime;
 export function runDawnVsDoeCompare(options: Record<string, unknown>): DoeRuntimeRunResult;
 

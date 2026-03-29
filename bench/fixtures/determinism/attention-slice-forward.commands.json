@@ -1,0 +1,225 @@
+[
+  {
+    "kind": "buffer_write",
+    "handle": 4301,
+    "bufferSize": 16,
+    "data": [
+      8,
+      8,
+      1065353216,
+      0
+    ]
+  },
+  {
+    "kind": "buffer_write",
+    "handle": 4302,
+    "bufferSize": 32,
+    "data": [
+      3212836864,
+      1056964608,
+      1259902592,
+      3238133760,
+      3435052064,
+      3223322624,
+      1259902592,
+      1063256064
+    ]
+  },
+  {
+    "kind": "buffer_write",
+    "handle": 4303,
+    "bufferSize": 256,
+    "data": [
+      1052770304,
+      3435052064,
+      3212836864,
+      1056964608,
+      3407386239,
+      1132466176,
+      3407386242,
+      1115684864,
+      3407386240,
+      1176256512,
+      1176256512,
+      1259902590,
+      3407386240,
+      1176254464,
+      1176257536,
+      1132396544,
+      3204448256,
+      3435052064,
+      1176256640,
+      3206545408,
+      1115684864,
+      3228397732,
+      3323740032,
+      1069547520,
+      3262644224,
+      1287568416,
+      3217031168,
+      1176257536,
+      1078523331,
+      3213885440,
+      3407386240,
+      3240099840,
+      3224727716,
+      3323740288,
+      3218792776,
+      3407386240,
+      3224727716,
+      0,
+      3279978496,
+      1090650112,
+      1074329027,
+      1082424033,
+      1075838976,
+      3435052064,
+      0,
+      1176257536,
+      3238133760,
+      3238002688,
+      3323740288,
+      1090256896,
+      1074329027,
+      3231103058,
+      3435052064,
+      1287568416,
+      1075838976,
+      3262906368,
+      1090519040,
+      3224727716,
+      1287568416,
+      1176257536,
+      1052770304,
+      1052770304,
+      1056964608,
+      1069547520
+    ]
+  },
+  {
+    "kind": "buffer_write",
+    "handle": 4304,
+    "bufferSize": 64,
+    "data": [
+      1082424033,
+      3212836864,
+      1090519040,
+      1287568416,
+      1090650112,
+      1077936128,
+      1078523331,
+      3239051264,
+      3323741184,
+      1115422720,
+      1176257536,
+      3435052064,
+      3279945728,
+      3279945728,
+      3206545408,
+      1066401792
+    ]
+  },
+  {
+    "kind": "buffer_write",
+    "handle": 4310,
+    "bufferSize": 16,
+    "data": [
+      2,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "attention_slice_forward_v2_f32.wgsl",
+    "x": 1,
+    "y": 1,
+    "z": 1,
+    "initialize_buffers_on_create": true,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "uniform",
+        "resource_handle": 4301,
+        "buffer_size": 16,
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "readonly",
+        "resource_handle": 4302,
+        "buffer_size": 32,
+        "visibility": "compute"
+      },
+      {
+        "binding": 2,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "readonly",
+        "resource_handle": 4303,
+        "buffer_size": 256,
+        "visibility": "compute"
+      },
+      {
+        "binding": 3,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "readonly",
+        "resource_handle": 4304,
+        "buffer_size": 64,
+        "visibility": "compute"
+      },
+      {
+        "binding": 4,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "storage",
+        "resource_handle": 4305,
+        "buffer_size": 8,
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "sample.wgsl",
+    "x": 1,
+    "y": 1,
+    "z": 1,
+    "initialize_buffers_on_create": true,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "uniform",
+        "resource_handle": 4310,
+        "buffer_size": 16,
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "readonly",
+        "resource_handle": 4305,
+        "buffer_size": 8,
+        "visibility": "compute"
+      },
+      {
+        "binding": 2,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "storage",
+        "resource_handle": 4306,
+        "buffer_size": 4,
+        "visibility": "compute"
+      }
+    ]
+  }
+]

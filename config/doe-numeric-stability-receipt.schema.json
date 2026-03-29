@@ -1,0 +1,188 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://doe-gpu.dev/config/doe-numeric-stability-receipt.schema.json",
+  "title": "Doe numeric stability receipt",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "mode",
+    "operatorFamily",
+    "semanticOpId",
+    "semanticStage",
+    "semanticPhase",
+    "policyRegistryPath",
+    "policyRegistryVersion",
+    "routeTaxonomyVersion",
+    "proofArtifactPath",
+    "triggerPolicyId",
+    "routingPolicyId",
+    "fastPolicyId",
+    "stablePolicyId",
+    "referencePolicyId",
+    "candidates",
+    "selectedToken",
+    "trigger",
+    "route"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "mode": { "const": "numeric-stability" },
+    "operatorFamily": { "type": "string", "minLength": 1 },
+    "semanticOpId": { "type": "string", "minLength": 1 },
+    "semanticStage": { "type": "string", "minLength": 1 },
+    "semanticPhase": { "type": "string", "minLength": 1 },
+    "policyRegistryPath": { "type": "string", "minLength": 1 },
+    "policyRegistryVersion": { "type": "string", "minLength": 1 },
+    "routeTaxonomyVersion": { "type": "string", "minLength": 1 },
+    "proofArtifactPath": { "type": "string", "minLength": 1 },
+    "triggerPolicyId": { "type": "string", "minLength": 1 },
+    "routingPolicyId": { "type": "string", "minLength": 1 },
+    "fastPolicyId": { "type": "string", "minLength": 1 },
+    "stablePolicyId": { "type": "string", "minLength": 1 },
+    "referencePolicyId": { "type": "string", "minLength": 1 },
+    "candidates": {
+      "type": "array",
+      "minItems": 2,
+      "items": { "$ref": "#/$defs/candidate" }
+    },
+    "firstDivergence": {
+      "oneOf": [
+        { "type": "null" },
+        { "$ref": "#/$defs/firstDivergence" }
+      ]
+    },
+    "selectedToken": { "$ref": "#/$defs/selectedToken" },
+    "trigger": { "$ref": "#/$defs/trigger" },
+    "route": { "$ref": "#/$defs/route" }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "candidate": {
+      "type": "object",
+      "required": [
+        "tokenId",
+        "fastLogit",
+        "stableLogit",
+        "referenceLogit"
+      ],
+      "properties": {
+        "tokenId": { "type": "integer", "minimum": 0 },
+        "label": { "type": ["string", "null"] },
+        "fastLogit": { "type": "number" },
+        "stableLogit": { "type": "number" },
+        "referenceLogit": { "type": "number" }
+      },
+      "additionalProperties": false
+    },
+    "firstDivergence": {
+      "type": "object",
+      "required": [
+        "semanticOpId",
+        "semanticStage",
+        "semanticPhase",
+        "fastDigest",
+        "stableDigest"
+      ],
+      "properties": {
+        "semanticOpId": { "type": "string", "minLength": 1 },
+        "semanticStage": { "type": "string", "minLength": 1 },
+        "semanticPhase": { "type": "string", "minLength": 1 },
+        "fastDigest": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "stableDigest": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      },
+      "additionalProperties": false
+    },
+    "selectedToken": {
+      "type": "object",
+      "required": [
+        "fast",
+        "stable",
+        "reference",
+        "fastMatchesReference",
+        "stableMatchesReference"
+      ],
+      "properties": {
+        "fast": { "type": "integer", "minimum": 0 },
+        "stable": { "type": "integer", "minimum": 0 },
+        "reference": { "type": "integer", "minimum": 0 },
+        "fastMatchesReference": { "type": "boolean" },
+        "stableMatchesReference": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "triggerChecks": {
+      "type": "object",
+      "required": [
+        "firstDivergencePresent",
+        "sensitiveOperatorMatched",
+        "selectedTokenDisagreement",
+        "stableMatchesExactReference",
+        "fastMissesExactReference"
+      ],
+      "properties": {
+        "firstDivergencePresent": { "type": "boolean" },
+        "sensitiveOperatorMatched": { "type": "boolean" },
+        "selectedTokenDisagreement": { "type": "boolean" },
+        "stableMatchesExactReference": { "type": "boolean" },
+        "fastMissesExactReference": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "trigger": {
+      "type": "object",
+      "required": ["fired", "checks", "proofLinks"],
+      "properties": {
+        "fired": { "type": "boolean" },
+        "checks": { "$ref": "#/$defs/triggerChecks" },
+        "proofLinks": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/proofLink" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "route": {
+      "type": "object",
+      "required": ["decision", "selectionMode", "proofLinks", "selectionProofLinks"],
+      "properties": {
+        "decision": {
+          "type": "string",
+          "enum": ["accept-fast", "prefer-stable", "abstain"]
+        },
+        "selectionMode": {
+          "type": "string",
+          "enum": ["fast", "stable", "none"]
+        },
+        "selectedPolicyId": { "type": ["string", "null"] },
+        "selectedToken": { "type": ["integer", "null"], "minimum": 0 },
+        "proofLinks": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/proofLink" }
+        },
+        "selectionProofLinks": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/proofLink" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "proofLink": {
+      "type": "object",
+      "required": [
+        "theorem",
+        "module",
+        "category",
+        "relation",
+        "artifactPath"
+      ],
+      "properties": {
+        "theorem": { "type": "string", "minLength": 1 },
+        "module": { "type": "string", "minLength": 1 },
+        "category": { "type": "string", "minLength": 1 },
+        "relation": { "type": "string", "minLength": 1 },
+        "artifactPath": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    }
+  }
+}

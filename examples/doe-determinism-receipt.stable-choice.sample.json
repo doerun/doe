@@ -1,7 +1,9 @@
 {
   "mode": "stable-choice",
+  "policyRegistryPath": "config/determinism-policy.json",
+  "policyRegistryVersion": "2026-03-28",
   "comparator": "scalar-f32-greedy",
-  "baseRuleId": "stable-token/lowest-index-among-max",
+  "baseRuleId": "stable-token/lowest-index-among-max-v1",
   "evaluatorKind": "fixed-priority",
   "policyId": "demo/fixed-priority-safe-first",
   "triggerPolicyId": "exact-max-tie-v1",

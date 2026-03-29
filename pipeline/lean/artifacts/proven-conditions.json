@@ -3,8 +3,8 @@
   "status": "verified",
   "provenance": {
     "leanToolchainRef": "leanprover/lean4:v4.16.0",
-    "extractProgramSha256": "5a2bcafd5ae94081f2c6d03dcf7846824c095bc51d68ba362b2d115dbbfa01b5",
-    "leanSourceTreeSha256": "f9c27c5edd3217cdd5511c21c0699359380f1b42f3fb659d9cb1b6c9728621fb",
+    "extractProgramSha256": "f12b1b06ec3d6f8892e1897d3e6fb9f0c9f75b1a8fe2cde9546de6d605f96f2b",
+    "leanSourceTreeSha256": "40f5f4f510bdf1df1365b96413a9e1f3f1bebe0845073ef0e48e453300dec9f2",
     "generatedComparabilityContractSha256": "69128a41659fa829567d6634cda96c18308e470feb9b80a7fe29ce4c17d8d911",
     "proofPatternSpecSha256": "ffbdd2e4aae2b5032983c0fddcef16033641055062a7798a9d0f7b9cdbe30269"
   },
@@ -23,6 +23,12 @@
     { "name": "candidateMarginBandTriggered_iff_gap_within_epsilon", "module": "Doe.Core.DeterminismPolicy", "category": "lean_verified" },
     { "name": "fixedPriorityBetter_true_implies_lexicographic_preference", "module": "Doe.Core.DeterminismPolicy", "category": "lean_verified" },
     { "name": "reviewedChoiceSelect_uses_review_token_when_present", "module": "Doe.Core.DeterminismPolicy", "category": "lean_verified" },
+    { "name": "selectedTokenReferenceImprovementTriggered_iff_all_checks", "module": "Doe.Core.NumericStabilityPolicy", "category": "lean_verified" },
+    { "name": "routeDecisionForTrigger_prefers_triggered_decision_when_true", "module": "Doe.Core.NumericStabilityPolicy", "category": "lean_verified" },
+    { "name": "routeDecisionForTrigger_prefers_fallback_decision_when_false", "module": "Doe.Core.NumericStabilityPolicy", "category": "lean_verified" },
+    { "name": "selectedValueForRoute_acceptFast_returns_fast", "module": "Doe.Core.NumericStabilityPolicy", "category": "lean_verified" },
+    { "name": "selectedValueForRoute_preferStable_returns_stable", "module": "Doe.Core.NumericStabilityPolicy", "category": "lean_verified" },
+    { "name": "selectedValueForRoute_abstain_returns_none", "module": "Doe.Core.NumericStabilityPolicy", "category": "lean_verified" },
     { "name": "comparableFromObligations_eq_noFailed", "module": "Doe.Full.Comparability", "category": "lean_verified" },
     { "name": "comparableFromFacts_eq_noFailed", "module": "Doe.Full.Comparability", "category": "lean_verified" },
     { "name": "comparableFromObligations_true_iff_failedBlockingNil", "module": "Doe.Full.Comparability", "category": "lean_verified" },

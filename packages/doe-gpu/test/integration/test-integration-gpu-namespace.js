@@ -11,6 +11,11 @@
 //   0  All checks passed (or skipped due to no GPU)
 //   1  A check failed (actionable error printed)
 
+import { readFileSync } from 'node:fs';
+
+import { DOE_DETERMINISM_POLICY_REGISTRY } from '../../src/vendor/doe-determinism-policy.js';
+import { DOE_NUMERIC_STABILITY_POLICY_REGISTRY } from '../../src/vendor/doe-numeric-stability-policy.js';
+
 let passed = 0;
 let failed = 0;
 let skipped = 0;
@@ -57,6 +62,102 @@ try {
 }
 
 const { gpu, createGpuNamespace, requestDevice } = mod;
+
+// ── 0. determinism policy registry sync ────────────────────────────────
+
+console.log('\n0. determinism policy registry sync');
+
+try {
+  const repoRegistry = JSON.parse(
+    readFileSync(new URL('../../../../config/determinism-policy.json', import.meta.url), 'utf8'),
+  );
+  check(
+    'determinism policy registry version matches config',
+    DOE_DETERMINISM_POLICY_REGISTRY.registryVersion === repoRegistry.registryVersion,
+    JSON.stringify({
+      package: DOE_DETERMINISM_POLICY_REGISTRY.registryVersion,
+      repo: repoRegistry.registryVersion,
+    }),
+  );
+  check(
+    'stable-token policy id matches config',
+    DOE_DETERMINISM_POLICY_REGISTRY.stableToken.policyId === repoRegistry.stableToken.policyId,
+    JSON.stringify({
+      package: DOE_DETERMINISM_POLICY_REGISTRY.stableToken.policyId,
+      repo: repoRegistry.stableToken.policyId,
+    }),
+  );
+  check(
+    'stable-choice default policy id matches config',
+    DOE_DETERMINISM_POLICY_REGISTRY.stableChoice.defaultPolicyId === repoRegistry.stableChoice.defaultPolicyId,
+    JSON.stringify({
+      package: DOE_DETERMINISM_POLICY_REGISTRY.stableChoice.defaultPolicyId,
+      repo: repoRegistry.stableChoice.defaultPolicyId,
+    }),
+  );
+  check(
+    'reviewed-choice default policy id matches config',
+    DOE_DETERMINISM_POLICY_REGISTRY.reviewedChoice.defaultPolicyId === repoRegistry.reviewedChoice.defaultPolicyId,
+    JSON.stringify({
+      package: DOE_DETERMINISM_POLICY_REGISTRY.reviewedChoice.defaultPolicyId,
+      repo: repoRegistry.reviewedChoice.defaultPolicyId,
+    }),
+  );
+} catch (err) {
+  check('determinism policy registry sync', false, err.message);
+}
+
+console.log('\n0b. numeric stability policy registry sync');
+
+try {
+  const repoRegistry = JSON.parse(
+    readFileSync(new URL('../../../../config/numeric-stability-policy.json', import.meta.url), 'utf8'),
+  );
+  check(
+    'numeric stability registry version matches config',
+    DOE_NUMERIC_STABILITY_POLICY_REGISTRY.registryVersion === repoRegistry.registryVersion,
+    JSON.stringify({
+      package: DOE_NUMERIC_STABILITY_POLICY_REGISTRY.registryVersion,
+      repo: repoRegistry.registryVersion,
+    }),
+  );
+  check(
+    'numeric stability policy path matches config contract',
+    DOE_NUMERIC_STABILITY_POLICY_REGISTRY.policyRegistryPath === 'config/numeric-stability-policy.json',
+    DOE_NUMERIC_STABILITY_POLICY_REGISTRY.policyRegistryPath,
+  );
+  check(
+    'numeric stability default trigger policy matches config',
+    DOE_NUMERIC_STABILITY_POLICY_REGISTRY.matmulLogitsSlice.defaultTriggerPolicyId ===
+      repoRegistry.triggerPolicies[0].triggerPolicyId,
+    JSON.stringify({
+      package: DOE_NUMERIC_STABILITY_POLICY_REGISTRY.matmulLogitsSlice.defaultTriggerPolicyId,
+      repo: repoRegistry.triggerPolicies[0].triggerPolicyId,
+    }),
+  );
+  check(
+    'numeric stability default routing policy matches config',
+    DOE_NUMERIC_STABILITY_POLICY_REGISTRY.matmulLogitsSlice.defaultRoutingPolicyId ===
+      repoRegistry.routingPolicies[0].policyId,
+    JSON.stringify({
+      package: DOE_NUMERIC_STABILITY_POLICY_REGISTRY.matmulLogitsSlice.defaultRoutingPolicyId,
+      repo: repoRegistry.routingPolicies[0].policyId,
+    }),
+  );
+} catch (err) {
+  check('numeric stability policy registry sync', false, err.message);
+}
+
+console.log('\n0c. numeric stability namespace shape');
+
+{
+  const bound = gpu.bind({});
+  check('gpu.bind({}) exposes numericStability', bound.numericStability != null && typeof bound.numericStability === 'object');
+  check(
+    'gpu.bind({}).numericStability.matmulLogitsSlice is function',
+    typeof bound.numericStability?.matmulLogitsSlice === 'function',
+  );
+}
 
 // ── 1. gpu.requestDevice() — bound namespace shape ──────────────────────
 
@@ -198,8 +299,12 @@ try {
     logits: new Float32Array([0, 7, 7, 3]),
   });
   check('stableToken host logits returns lowest tied token', hostResult.token === 1, JSON.stringify(hostResult));
+  check('stableToken host logits policyRegistryPath=config/determinism-policy.json', hostResult.receipt.policyRegistryPath === 'config/determinism-policy.json');
+  check('stableToken host logits policyRegistryVersion=2026-03-28', hostResult.receipt.policyRegistryVersion === '2026-03-28');
+  check('stableToken host logits policyId=stable-token/lowest-index-among-max-v1', hostResult.receipt.policyId === 'stable-token/lowest-index-among-max-v1');
   check('stableToken host logits sourceKind=host-bytes', hostResult.receipt.sourceKind === 'host-bytes');
   check('stableToken host logits tiedMaxCount=2', hostResult.receipt.tiedMaxCount === 2);
+  check('stableToken host logits selectedBy=stable-token-policy', hostResult.receipt.selectedBy === 'stable-token-policy');
 
   const logitsBuffer = bound.buffer.create({
     data: new Float32Array([0, 7, 7, 3]),
@@ -248,6 +353,8 @@ try {
     candidateSetSource: 'fixture-declared',
   });
   check('stableChoice host logits returns fixed-priority candidate', hostResult.token === 2, JSON.stringify(hostResult));
+  check('stableChoice host logits policyRegistryPath=config/determinism-policy.json', hostResult.receipt.policyRegistryPath === 'config/determinism-policy.json');
+  check('stableChoice host logits policyRegistryVersion=2026-03-28', hostResult.receipt.policyRegistryVersion === '2026-03-28');
   check('stableChoice host logits sourceKind=host-bytes', hostResult.receipt.sourceKind === 'host-bytes');
   check('stableChoice host logits ambiguityTriggered=true', hostResult.receipt.ambiguityTriggered === true);
   check('stableChoice host logits selectedBy=stable-choice-policy', hostResult.receipt.selectedBy === 'stable-choice-policy');
@@ -330,6 +437,8 @@ try {
     },
   });
   check('reviewedChoice host logits honors reviewed token', hostResult.token === 1, JSON.stringify(hostResult));
+  check('reviewedChoice host logits policyRegistryPath=config/determinism-policy.json', hostResult.receipt.policyRegistryPath === 'config/determinism-policy.json');
+  check('reviewedChoice host logits policyRegistryVersion=2026-03-28', hostResult.receipt.policyRegistryVersion === '2026-03-28');
   check('reviewedChoice host logits sourceKind=host-bytes', hostResult.receipt.sourceKind === 'host-bytes');
   check('reviewedChoice host logits ambiguityTriggered=true', hostResult.receipt.ambiguityTriggered === true);
   check('reviewedChoice host logits decisionAccepted=true', hostResult.receipt.decisionAccepted === true);

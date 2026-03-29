@@ -1,0 +1,73 @@
+{
+  "scenarioId": "apple_metal_rmsnorm_slice_logit_flip",
+  "description": "Apple Metal rmsnorm-family slice: the same fixed rmsnorm reduction family plus the same downstream 2-row logits projection produce different selected tokens under reduction-tree and strict-serial accumulation policies, while the exact-reference path stays on the tree side.",
+  "kernelRoot": "bench/inference-pipeline/kernels",
+  "profile": {
+    "vendor": "apple",
+    "api": "metal",
+    "family": "m3",
+    "driver": "1.0.0"
+  },
+  "queueWaitMode": "process-events",
+  "queueSyncMode": "per-command",
+  "backendLanes": [
+    {
+      "id": "doe",
+      "backendLane": "metal_doe_comparable"
+    },
+    {
+      "id": "dawn",
+      "backendLane": "metal_dawn_release"
+    }
+  ],
+  "defaultRunCount": 5,
+  "logitsSemanticOpId": "matmul.logits",
+  "selectedTokenSemanticOpId": "sample.token",
+  "exactReferenceLogits": [
+    0.0,
+    -4.5774200558662415
+  ],
+  "exactReferenceTopToken": 0,
+  "captures": [
+    {
+      "commandIndex": 6,
+      "semanticOpId": "rmsnorm.output",
+      "semanticStage": "rmsnorm_slice",
+      "semanticPhase": "normalized_hidden",
+      "captureBufferHandle": 4504,
+      "captureOffset": 0,
+      "captureSize": 1028
+    },
+    {
+      "commandIndex": 7,
+      "semanticOpId": "matmul.logits",
+      "semanticStage": "rmsnorm_slice",
+      "semanticPhase": "output_logits",
+      "captureBufferHandle": 4513,
+      "captureOffset": 0,
+      "captureSize": 8
+    },
+    {
+      "commandIndex": 8,
+      "semanticOpId": "sample.token",
+      "semanticStage": "rmsnorm_slice",
+      "semanticPhase": "selected_token",
+      "captureBufferHandle": 4521,
+      "captureOffset": 0,
+      "captureSize": 4,
+      "decode": "u32le"
+    }
+  ],
+  "variants": [
+    {
+      "id": "tree",
+      "policyId": "rmsnorm/reduction-tree-v1",
+      "commandsPath": "bench/fixtures/determinism/rmsnorm-slice-tree.commands.json"
+    },
+    {
+      "id": "serial",
+      "policyId": "rmsnorm/strict-serial-v1",
+      "commandsPath": "bench/fixtures/determinism/rmsnorm-slice-serial.commands.json"
+    }
+  ]
+}

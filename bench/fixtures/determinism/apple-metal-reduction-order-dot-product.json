@@ -1,0 +1,53 @@
+{
+  "scenarioId": "apple_metal_reduction_order_dot_product",
+  "description": "Apple Metal micro dot-product counterexample: same 8-term dot product, alternate accumulation policies, and receipted output divergence.",
+  "kernelRoot": "bench/inference-pipeline/kernels",
+  "profile": {
+    "vendor": "apple",
+    "api": "metal",
+    "family": "m3",
+    "driver": "1.0.0"
+  },
+  "queueWaitMode": "process-events",
+  "queueSyncMode": "per-command",
+  "backendLanes": [
+    {
+      "id": "doe",
+      "backendLane": "metal_doe_comparable"
+    },
+    {
+      "id": "dawn",
+      "backendLane": "metal_dawn_release"
+    }
+  ],
+  "defaultRunCount": 5,
+  "exactReferenceValue": 6.0,
+  "captures": [
+    {
+      "commandIndex": 3,
+      "semanticOpId": "dot.output",
+      "semanticStage": "micro_dot_product",
+      "semanticPhase": "output",
+      "captureBufferHandle": 4104,
+      "captureOffset": 0,
+      "captureSize": 4
+    }
+  ],
+  "variants": [
+    {
+      "id": "forward",
+      "policyId": "dot-product/forward-serial-v1",
+      "commandsPath": "bench/fixtures/determinism/dot-product-forward.commands.json"
+    },
+    {
+      "id": "reverse",
+      "policyId": "dot-product/reverse-serial-v1",
+      "commandsPath": "bench/fixtures/determinism/dot-product-reverse.commands.json"
+    },
+    {
+      "id": "pairwise",
+      "policyId": "dot-product/pairwise-tree-v1",
+      "commandsPath": "bench/fixtures/determinism/dot-product-pairwise.commands.json"
+    }
+  ]
+}

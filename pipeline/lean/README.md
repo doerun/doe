@@ -149,7 +149,16 @@ Core theorem pack (`Doe/Core/`, maps to `runtime/zig/src/core/`):
 - `Doe/Core/Runtime.lean` — deterministic matching, scoring, selector, driver-range matching
 - `Doe/Core/Dispatch.lean` — dispatch-level theorems (`tautological` and `comptime_verified`)
 - `Doe/Core/DeterminismPolicy.lean` — policy-layer determinism contracts for `stable-token`, trigger evaluation, fixed-priority choice, and reviewed-choice decision acceptance
+- `Doe/Core/NumericStabilityPolicy.lean` — numeric-instability trigger, route-selection, and route-to-selection contracts for selective stable rerun
 - `Doe/Core/Bridge.lean` — obligation gate evaluation from dispatch decisions
+
+Current numeric-stability proof scope is intentionally narrow:
+- trigger predicate correctness
+- triggered-vs-fallback route selection
+- route-to-selection semantics for `accept-fast`, `prefer-stable`, and `abstain`
+
+It still does not attempt to prove floating-point equivalence or discovery
+heuristics.
 
 Full theorem pack (`Doe/Full/`, maps to `runtime/zig/src/full/`):
 - `Doe/Full/Comparability.lean` — comparability obligation model (`lean_verified`)

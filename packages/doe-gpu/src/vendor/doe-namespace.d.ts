@@ -32,6 +32,7 @@ export interface DoeReadBufferOptions<T extends ArrayBufferView = ArrayBufferVie
 }
 
 export type DoeStableTokenTieBreakRule = "lowest-index-among-max";
+export type DoeStableTokenSelectedBy = "stable-token-policy";
 export type DoeDeterminismProofCategory =
   | "tautological"
   | "comptime_verified"
@@ -54,6 +55,9 @@ export interface DoeStableTokenTopCandidate {
 
 export interface DoeStableTokenReceipt {
   mode: "stable-token";
+  policyRegistryPath: string;
+  policyRegistryVersion: string;
+  policyId: string;
   comparator: "scalar-f32-greedy";
   tieBreakRule: DoeStableTokenTieBreakRule;
   sourceKind: "host-bytes" | "buffer-readback";
@@ -65,6 +69,7 @@ export interface DoeStableTokenReceipt {
   tiedMaxCount: number;
   tiedMaxIndicesPrefix: number[];
   tiedMaxIndicesOmittedCount: number;
+  selectedBy: DoeStableTokenSelectedBy;
   topCandidates: DoeStableTokenTopCandidate[];
   proofLinks: DoeDeterminismProofLink[];
 }
@@ -106,8 +111,10 @@ export interface DoeStableChoiceTrigger {
 
 export interface DoeStableChoiceReceipt {
   mode: "stable-choice";
+  policyRegistryPath: string;
+  policyRegistryVersion: string;
   comparator: "scalar-f32-greedy";
-  baseRuleId: "stable-token/lowest-index-among-max";
+  baseRuleId: string;
   evaluatorKind: DoeStableChoiceEvaluatorKind;
   policyId: string;
   triggerPolicyId: string | null;
@@ -173,8 +180,10 @@ export interface DoeReviewedChoiceReceiptDecision extends DoeReviewedChoiceDecis
 
 export interface DoeReviewedChoiceReceipt {
   mode: "reviewed-choice";
+  policyRegistryPath: string;
+  policyRegistryVersion: string;
   comparator: "scalar-f32-greedy";
-  baseRuleId: "stable-token/lowest-index-among-max";
+  baseRuleId: string;
   evaluatorKind: DoeReviewedChoiceEvaluatorKind;
   reviewPolicyId: string;
   triggerPolicyId: string | null;
@@ -223,6 +232,123 @@ export interface DoeReviewedChoiceOptions<TBuffer> extends DoeReadBufferSubrange
   candidateSetId?: string;
   candidateSetSource?: DoeStableChoiceCandidateSetSource;
   decision: DoeReviewedChoiceDecision;
+}
+
+export type DoeNumericStabilityRouteDecision =
+  | "accept-fast"
+  | "prefer-stable"
+  | "abstain";
+
+export type DoeNumericStabilitySelectionMode =
+  | "fast"
+  | "stable"
+  | "none";
+
+export interface DoeNumericStabilityCandidateInput {
+  tokenId: number;
+  label?: string | null;
+  weights: ReadonlyArray<number> | Float32Array | Float64Array;
+  bias?: number | null;
+}
+
+export interface DoeNumericStabilityReceiptCandidate {
+  tokenId: number;
+  label?: string | null;
+  fastLogit: number;
+  stableLogit: number;
+  referenceLogit: number;
+}
+
+export interface DoeNumericStabilityFirstDivergence {
+  semanticOpId: string;
+  semanticStage: string;
+  semanticPhase: string;
+  fastDigest: string;
+  stableDigest: string;
+}
+
+export interface DoeNumericStabilityReceipt {
+  schemaVersion: 1;
+  mode: "numeric-stability";
+  operatorFamily: string;
+  semanticOpId: string;
+  semanticStage: string;
+  semanticPhase: string;
+  policyRegistryPath: string;
+  policyRegistryVersion: string;
+  routeTaxonomyVersion: string;
+  proofArtifactPath: string;
+  triggerPolicyId: string;
+  routingPolicyId: string;
+  fastPolicyId: string;
+  stablePolicyId: string;
+  referencePolicyId: string;
+  candidates: DoeNumericStabilityReceiptCandidate[];
+  firstDivergence?: DoeNumericStabilityFirstDivergence | null;
+  selectedToken: {
+    fast: number;
+    stable: number;
+    reference: number;
+    fastMatchesReference: boolean;
+    stableMatchesReference: boolean;
+  };
+  trigger: {
+    fired: boolean;
+    checks: {
+      firstDivergencePresent: boolean;
+      sensitiveOperatorMatched: boolean;
+      selectedTokenDisagreement: boolean;
+      stableMatchesExactReference: boolean;
+      fastMissesExactReference: boolean;
+    };
+    proofLinks: DoeDeterminismProofLink[];
+  };
+  route: {
+    decision: DoeNumericStabilityRouteDecision;
+    selectionMode: DoeNumericStabilitySelectionMode;
+    selectedPolicyId?: string | null;
+    selectedToken?: number | null;
+    proofLinks: DoeDeterminismProofLink[];
+    selectionProofLinks: DoeDeterminismProofLink[];
+  };
+}
+
+export interface DoeMatmulLogitsSliceOptions<TBuffer> {
+  hiddenState: ReadonlyArray<number> | Float32Array | Float64Array;
+  candidates: DoeNumericStabilityCandidateInput[];
+  operatorFamily?: string;
+  semanticOpId?: string;
+  semanticStage?: string;
+  semanticPhase?: string;
+  triggerPolicyId?: string;
+  routingPolicyId?: string;
+  fastPolicyId?: string;
+  stablePolicyId?: string;
+  runtime?: {
+    runNumericStabilityMatmulLogitsSlice(
+      options: Record<string, unknown>,
+    ): {
+      token: number | null;
+      routeDecision: DoeNumericStabilityRouteDecision;
+      receipt: DoeNumericStabilityReceipt;
+    };
+  } | null;
+  runtimeOptions?: {
+    binPath?: string;
+    libPath?: string;
+    moduleRunnerPath?: string;
+  } | null;
+  policyPath?: string | null;
+  moduleRunnerPath?: string | null;
+  receiptPath?: string | null;
+  traceMetaPath?: string | null;
+  cwd?: string | null;
+}
+
+export interface DoeMatmulLogitsSliceResult {
+  token: number | null;
+  routeDecision: DoeNumericStabilityRouteDecision;
+  receipt: DoeNumericStabilityReceipt;
 }
 
 export interface DoeBindingBuffer<TBuffer> {
@@ -340,6 +466,12 @@ export interface BoundDoeDeterminismNamespace<TBuffer> {
   reviewedChoice(options: DoeReviewedChoiceOptions<TBuffer>): Promise<DoeReviewedChoiceResult>;
 }
 
+export interface BoundDoeNumericStabilityNamespace<TBuffer> {
+  matmulLogitsSlice(
+    options: DoeMatmulLogitsSliceOptions<TBuffer>,
+  ): Promise<DoeMatmulLogitsSliceResult>;
+}
+
 export interface BoundDoeKernelNamespace<
   TBuffer,
   TKernel,
@@ -374,6 +506,7 @@ export interface BoundDoeNamespace<
   readonly device: TDevice;
   readonly buffer: BoundDoeBufferNamespace<TBuffer>;
   readonly determinism: BoundDoeDeterminismNamespace<TBuffer>;
+  readonly numericStability: BoundDoeNumericStabilityNamespace<TBuffer>;
   readonly commandEncoder: BoundDoeCommandEncoderNamespace<TEncoder>;
   readonly kernel: BoundDoeKernelNamespace<TBuffer, TKernel, TBindingSet>;
   readonly compute: BoundDoeComputeCallable<TBuffer, TBatch>;

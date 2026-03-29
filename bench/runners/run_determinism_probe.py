@@ -106,6 +106,8 @@ def annotate_commands(
         command["captureBufferHandle"] = capture["captureBufferHandle"]
         command["captureOffset"] = capture.get("captureOffset", 0)
         command["captureSize"] = capture["captureSize"]
+        if "decode" in capture:
+            command["decode"] = capture["decode"]
     return annotated
 
 
@@ -568,6 +570,11 @@ def run_lane(
             if row is None:
                 raise RuntimeError(
                     f"{lane_id} run {run_index} missing semantic operator {capture['semanticOpId']} in {manifest_path}"
+                )
+            execution_info = row.get("execution")
+            if not isinstance(execution_info, dict) or execution_info.get("status") != "ok":
+                raise RuntimeError(
+                    f"{lane_id} run {run_index} execution failed for {capture['semanticOpId']}: {execution_info}"
                 )
             capture_info = row.get("capture")
             if not capture_info or capture_info.get("status") != "ok":

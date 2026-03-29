@@ -1,6 +1,13 @@
 import type {
   DoeNamespace,
   DoeDeterminismProofLink,
+  DoeMatmulLogitsSliceOptions,
+  DoeMatmulLogitsSliceResult,
+  DoeNumericStabilityCandidateInput,
+  DoeNumericStabilityFirstDivergence,
+  DoeNumericStabilityReceipt,
+  DoeNumericStabilityReceiptCandidate,
+  DoeNumericStabilityRouteDecision,
   DoeReviewedChoiceOptions,
   DoeReviewedChoiceReceipt,
   DoeReviewedChoiceResult,
@@ -113,6 +120,13 @@ export function createNativeBrowserCanvasBackend(options?: {
 
 export type {
   DoeDeterminismProofLink,
+  DoeMatmulLogitsSliceOptions,
+  DoeMatmulLogitsSliceResult,
+  DoeNumericStabilityCandidateInput,
+  DoeNumericStabilityFirstDivergence,
+  DoeNumericStabilityReceipt,
+  DoeNumericStabilityReceiptCandidate,
+  DoeNumericStabilityRouteDecision,
   DoeReviewedChoiceOptions,
   DoeReviewedChoiceReceipt,
   DoeReviewedChoiceResult,

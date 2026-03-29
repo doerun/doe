@@ -50,6 +50,8 @@ python3 bench/run_compare.py --surface native --backend apple-metal --preset com
 python3 bench/run_compare.py --surface direct --backend apple-metal --workload gemma270m-literal
 python3 bench/run_compare.py --surface package --backend apple-metal --workload gemma64 --mode warm
 python3 bench/runners/publish_apple_runtime_release.py --timestamp <YYYYMMDDTHHMMSSZ>
+python3 bench/runners/exercise_runtime_numeric_stability.py
+python3 bench/runners/exercise_in_path_numeric_stability.py
 ```
 
 Positional arguments:
@@ -63,6 +65,36 @@ Positional arguments:
 Extra `--flags` after the positionals are forwarded to the underlying harness
 script. The runner warns if workload lane files are stale relative to the
 catalog.
+
+## Numeric-stability promotion and runtime exercise
+
+Numeric-stability work now has three explicit repo runners:
+
+- `bench/runners/promote_numeric_fragility_signatures.py`
+  - lifts the latest corpus export into checked-in promoted signatures and the
+    promoted fragility catalog
+- `bench/runners/exercise_runtime_numeric_stability.py`
+  - replays selected promoted prompt/control cases through the live Zig
+    `doe_numeric_stability` service
+  - writes runtime receipts plus bounded overhead summaries under
+    `bench/out/apple-metal-runtime-numeric-stability/*`
+  - updates selected signatures and the promoted catalog from `promoted` to
+    `runtime-exercised`
+- `bench/runners/exercise_in_path_numeric_stability.py`
+  - replays selected promoted prompt/control cases through ordinary
+    `doe-zig-runtime` `kernel_dispatch` execution with `numericStability`
+    annotations
+  - writes native trace artifacts, ordinary-execution receipts, and manifest
+    summaries under `bench/out/apple-metal-in-path-numeric-stability/*`
+  - is the current source of truth for native `runtime-exercised`
+    `matmul.logits` signatures in the promoted catalog
+
+The exercise lane is config-backed by:
+
+- `config/runtime-numeric-stability-exercise.json`
+- `config/runtime-numeric-stability-exercise.schema.json`
+- `config/in-path-numeric-stability-exercise.json`
+- `config/in-path-numeric-stability-exercise.schema.json`
 
 ## Terminology
 
@@ -404,6 +436,145 @@ resolves its entries against repo root.
   - see `bench/docs/operator-diff-demo-runbook.md` for the currently validated
     scratch-harness proof path covering structural match, semantic identity
     mismatch, and capture digest mismatch.
+- `run_reduction_order_counterexample.py`
+  - runs multiple explicit command-stream variants of the same micro workload
+    through Doe and Dawn, then compares the captured output bytes per variant
+    instead of only asking whether one fixed command stream is stable.
+  - this is the first metal-level counterexample lane:
+    same fixed dot product, same inputs, different declared accumulation
+    policy, distinct stable output bytes.
+  - current bundled fixture:
+    - `bench/fixtures/determinism/apple-metal-reduction-order-dot-product.json`
+  - example:
+    - `python3 bench/runners/run_reduction_order_counterexample.py --fixture bench/fixtures/determinism/apple-metal-reduction-order-dot-product.json --runs 3`
+  - use the generated report to answer:
+    whether alternate accumulation modes change bytes on the same exact micro
+    workload, whether each policy is stable across repeats, and whether Doe and
+    Dawn stay aligned for each named policy.
+- `run_reduction_order_logit_flip.py`
+  - promotes the same idea to a tiny logits operator:
+    the runner executes three explicit accumulation policies for the same
+    2-row matmul, captures the 2-logit output plus sampled token, and reports
+    whether the winning row and sampled token flip when only the accumulation
+    contract changes.
+  - this is the operator-level bridge from numeric drift to token selection:
+    same hidden state, same nominal logits op, different declared accumulation
+    policy, different top token.
+  - current bundled fixture:
+    - `bench/fixtures/determinism/apple-metal-reduction-order-logit-flip.json`
+    - `bench/fixtures/determinism/apple-metal-rmsnorm-slice-logit-flip.json`
+  - example:
+    - `python3 bench/runners/run_reduction_order_logit_flip.py --fixture bench/fixtures/determinism/apple-metal-reduction-order-logit-flip.json --runs 3`
+    - `python3 bench/runners/run_reduction_order_logit_flip.py --fixture bench/fixtures/determinism/apple-metal-rmsnorm-slice-logit-flip.json --runs 3`
+  - use the generated report to answer:
+    whether alternate accumulation modes change logits bytes, whether those
+    changed logits flip scalar argmax and sampled token, whether each policy is
+    stable across repeats, and whether Doe and Dawn stay aligned for each named
+    policy.
+  - the `rmsnorm` family fixture is the current real operator-family promotion:
+    first divergence is `rmsnorm.output`, the downstream selected token flips,
+    and the exact-reference path stays on the tree/fast side.
+- `run_real_lm_head_slice_hunt.py`
+  - promotes the same numeric-sensitivity search onto a real prompt state:
+    the runner harvests a real browser/Doppler prefill embedding plus logits,
+    resolves real output rows from the model artifact, evaluates multiple
+    accumulation contracts over that exact LM-head slice, and promotes the best
+    case into both:
+    - a reduction-order logit-flip receipt
+    - a selective stable-rerun receipt
+  - this is the first real prompt/operator/rerun bridge:
+    same natural prompt state, same real LM-head rows, different declared
+    accumulation policy, different selected token, then an explicit route
+    decision over the real operator family.
+  - current bundled fixture:
+    - `bench/fixtures/determinism/apple-metal-real-lm-head-slice-hunt.gemma270m.red-go-stop-answer.json`
+  - example:
+    - `python3 bench/runners/run_real_lm_head_slice_hunt.py --fixture bench/fixtures/determinism/apple-metal-real-lm-head-slice-hunt.gemma270m.red-go-stop-answer.json --runs 3 --top-candidates 4`
+  - the current flagship report is the explicit-choice traffic-light prompt:
+    the real bounded `{ go, stop }` slice stays on ` go` under the f32
+    policies, flips to ` stop` under `f16accum`, and the selective rerun route
+    correctly prefers the stable serial policy on both Doe and Dawn.
+- `export_numeric_fragility_corpus.py`
+  - normalizes the current Apple Metal prompt-flip, policy-boundary, and
+    operator-control evidence into one JSONL corpus plus a companion manifest.
+  - the exporter keeps a stable row shape and now adds the token-level metrics
+    needed to compare numeric fragility against uncertainty:
+    - bounded-answer renormalized probability
+    - bounded-answer surprisal (`-log p`) for the exact/reference token and the
+      `f16accum` token
+    - bounded-answer entropy and margin
+    - global top-candidate context, including outsider lead versus the bounded
+      pair
+    - global reference-token surprisal when the source report persisted full
+      logits; otherwise the row records why it is unavailable
+  - route fields are intentionally split:
+    - `routeExpectation`: hunt-derived expectation only, with explicit status
+      (`hypothetical-from-hunt` vs `realized-in-promotion`)
+    - `routeDecision`: realized route from a promoted rerun or policy artifact
+  - promoted prompt rows now use the promoted hunt report as
+    `sourceArtifactPath`; the earlier representative hunt artifact is preserved
+    separately as `sourceSearchArtifactPath`
+  - the prompt-flip rows are deduped by full prompt text across
+    `prompt-choice` and `answer-set` candidates, while the curated
+    `top-prefix-only` rows remain a separate lane.
+  - example:
+    - `python3 bench/runners/export_numeric_fragility_corpus.py`
+  - current output root:
+    - `bench/out/apple-metal-numeric-fragility-corpus/<timestamp>/`
+  - use the manifest as the source of truth for the current corpus size and the
+    current mix of:
+    - `prompt-lm-head-flip`
+    - `prompt-top-prefix-flip`
+    - `policy-boundary`
+    - `operator-control`
+- `promote_numeric_fragility_signatures.py`
+  - promotes the current numeric-fragility corpus into checked-in config for
+    the contract side of numeric stability.
+  - the promotion ladder is governed by:
+    - `config/fragility-promotion-policy.json`
+  - checked-in outputs are:
+    - `config/promoted-fragility-catalog.json`
+    - `config/fragility-signatures/promoted/*.json`
+  - each signature is validated against:
+    - `config/fragility-signature.schema.json`
+  - example:
+    - `python3 bench/runners/promote_numeric_fragility_signatures.py`
+  - interpretation:
+    - this freezes promoted bench evidence into a runtime-consumable config
+      shape without claiming that the runtime already enforces it
+    - native `matmul.logits` novelty is now exercised through the in-path
+      runner; broader operator families and package/browser ordinary execution
+      still remain future work
+- `run_selective_stable_rerun_probe.py`
+  - consumes a reduction-order source report and applies a versioned
+    numeric-stability route policy instead of only stopping at "the bytes
+    changed".
+  - records the full governance path:
+    first divergence op, fast-vs-stable digests, selected-token consequence,
+    trigger checks, and the final route decision.
+  - the route policy is now proof-linked:
+    the report also records `proofArtifactPath`, `routeTaxonomyVersion`,
+    explicit trigger/route proof links, and route-to-selection proof links
+    from `config/numeric-stability-policy.json`.
+  - current bundled fixture:
+    - `bench/fixtures/determinism/apple-metal-selective-stable-rerun-logit-flip.json`
+    - `bench/fixtures/determinism/apple-metal-selective-stable-rerun-attention-slice.json`
+    - `bench/fixtures/determinism/apple-metal-selective-stable-rerun-rmsnorm-slice.json`
+  - example:
+    - `python3 bench/runners/run_selective_stable_rerun_probe.py --fixture bench/fixtures/determinism/apple-metal-selective-stable-rerun-logit-flip.json --source-report bench/out/apple-metal-reduction-order-logit-flip/<timestamp>/apple_metal_reduction_order_logit_flip.reduction-order-logit-flip.json`
+  - use the generated report to answer:
+    where the first sensitive divergence begins, whether the stable rerun
+    restores the exact-reference top token, and whether the declared route
+    policy should keep the fast or stable result.
+  - the attention-slice fixture is the current real-operator-family negative
+    control:
+    it proves the pipeline can say "no first divergence, keep fast path"
+    instead of forcing every named operator family into a false-positive wedge.
+  - the `rmsnorm` fixture is the current real-operator-family `accept-fast`
+    control:
+    the operator is sensitive, the selected token changes, but the strict-
+    serial rerun still loses to the exact-reference path, so the route keeps
+    the tree/fast result.
 - `run_determinism_probe.py`
   - runs explicit determinism stages against Doe and Dawn on the same
     host/backend using the existing semantic-operator artifact path.
@@ -417,6 +588,9 @@ resolves its entries against repo root.
   - the runner can infer semantic capture points directly from ordinary command
     streams, so the bundled fixtures no longer depend on hand-authored capture
     indices for sample-boundary probes.
+  - captures are only accepted when semantic execution succeeded:
+    if a captured operator reports any `execution.status` other than `ok`, the
+    runner fails the lane instead of producing misleading stability receipts.
   - writes an annotated command stream plus per-run trace/meta/operator-manifest
     artifacts and a final report that separates:
     Doe repeated-byte stability, Dawn repeated-byte stability, and cross-lane
@@ -469,6 +643,8 @@ resolves its entries against repo root.
   - use the generated report to separate:
     real prompt/step candidates with small greedy margins from browser/model
     lifecycle faults that can otherwise masquerade as nondeterministic logits.
+  - the dedicated `red-go-stop-answer` fixture is the current real source lane
+    for the promoted LM-head slice above.
 - `run_semantic_pair_hunt.py`
   - scans one or more real-logit hunt reports for semantically meaningful token
     pairs such as ` not` vs ` safe` or ` public` vs ` private`, then ranks the
@@ -576,6 +752,12 @@ resolves its entries against repo root.
     simple Doe-vs-Dawn parity.
   - the Doe stable-token receipt path uses the public `gpu.determinism.stableToken(...)`
     helper from `doe-gpu`, not an internal Python-only audit branch.
+  - the repo-only Doe determinism executors now also emit adjacent zero-row
+    `trace_meta` companions (`doe.stable-token.trace-meta.json`,
+    `doe.stable-choice.trace-meta.json`, `doe.reviewed-choice.trace-meta.json`)
+    whose `determinism` block carries the same policy registry path/version,
+    policy IDs, trigger IDs, evaluator IDs, and proof theorem list as the
+    public receipts.
   - bundled fixture:
     - `bench/fixtures/determinism/apple-metal-sample-only-tie-break.gemma270m.json`
     - `bench/fixtures/determinism/apple-metal-sample-only-tie-break.brakes-safe-unsafe.gemma270m.json`
@@ -608,6 +790,23 @@ resolves its entries against repo root.
   - if a refreshed source scout no longer keeps the bounded candidate set in
     `topK`, pin explicit token IDs in the fixture rather than silently
     broadening the source evidence.
+- `run_package_determinism_receipt.py`
+  - replays one persisted real-logit determinism case through the ordinary
+    Node/package executor instead of the helper-only sample probe.
+  - preserves semantic capture metadata in the package plan, captures the
+    logits/token buffers through the normal readback path, and emits a real
+    package `trace_meta` receipt whose `determinism` block matches the public
+    `doe-gpu` policy contract.
+  - use this runner when a helper/sample-only result needs to be re-proven on
+    the actual package lane before it becomes part of a public claim.
+  - bundled fixture:
+    - `bench/fixtures/determinism/apple-metal-sample-only-tie-break.pool-safe-unsafe.gemma270m.json`
+  - example:
+    - `python3 bench/runners/run_package_determinism_receipt.py --fixture bench/fixtures/determinism/apple-metal-sample-only-tie-break.pool-safe-unsafe.gemma270m.json --source-report bench/out/apple-metal-real-logit-hunt/<timestamp>/apple_metal_real_logit_hunt_gemma270m_policy_breadth.real-logit-hunt.json --prompt-id pool-safe-unsafe --phase prefill --step-index 0 --mutation-id as-captured --mode stable-choice`
+  - fresh natural supporting package receipts:
+    - `bench/out/apple-metal-package-determinism/20260328T212103Z/pool-safe-unsafe-prefill-as-captured-stable-token/pool-safe-unsafe-prefill-as-captured-stable-token.package-determinism.json`
+    - `bench/out/apple-metal-package-determinism/20260328T212034Z/pool-safe-unsafe-prefill-as-captured-stable-choice/pool-safe-unsafe-prefill-as-captured-stable-choice.package-determinism.json`
+    - `bench/out/apple-metal-package-determinism/20260328T212034Z/pool-safe-unsafe-prefill-as-captured-reviewed-choice/pool-safe-unsafe-prefill-as-captured-reviewed-choice.package-determinism.json`
 - `cleanup_out.py`
   - prunes legacy untimestamped artifacts from `bench/out` and can optionally prune old timestamped run folders by retention window.
 - `organize_out_by_timestamp.py`

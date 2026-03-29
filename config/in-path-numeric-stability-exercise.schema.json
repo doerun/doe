@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://doe-gpu.dev/config/in-path-numeric-stability-exercise.schema.json",
+  "title": "Doe in-path numeric stability exercise plan",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "policyRegistryPath",
+    "promotedCatalogPath",
+    "signatureRoot",
+    "outputRoot",
+    "repeatCount",
+    "promptCases",
+    "controls"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "artifactKind": { "const": "in-path-numeric-stability-exercise-plan" },
+    "policyRegistryPath": { "type": "string", "minLength": 1 },
+    "promotedCatalogPath": { "type": "string", "minLength": 1 },
+    "signatureRoot": { "type": "string", "minLength": 1 },
+    "outputRoot": { "type": "string", "minLength": 1 },
+    "repeatCount": { "type": "integer", "minimum": 1 },
+    "promptCases": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/promptCase" }
+    },
+    "controls": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/controlCase" }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "promptCase": {
+      "type": "object",
+      "required": ["caseId", "signatureId", "routingPolicyId", "expectedRouteDecision"],
+      "properties": {
+        "caseId": { "type": "string", "minLength": 1 },
+        "signatureId": { "type": "string", "minLength": 1 },
+        "routingPolicyId": { "type": "string", "minLength": 1 },
+        "expectedRouteDecision": {
+          "type": "string",
+          "enum": ["accept-fast", "prefer-stable", "abstain"]
+        }
+      },
+      "additionalProperties": false
+    },
+    "candidate": {
+      "type": "object",
+      "required": ["tokenId", "weights"],
+      "properties": {
+        "tokenId": { "type": "integer", "minimum": 0 },
+        "label": { "type": ["string", "null"] },
+        "weights": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "number" }
+        },
+        "bias": { "type": ["number", "null"] }
+      },
+      "additionalProperties": false
+    },
+    "controlCase": {
+      "type": "object",
+      "required": [
+        "caseId",
+        "signatureId",
+        "scenarioStem",
+        "routingPolicyId",
+        "expectedRouteDecision",
+        "hiddenState",
+        "candidates"
+      ],
+      "properties": {
+        "caseId": { "type": "string", "minLength": 1 },
+        "signatureId": { "type": "string", "minLength": 1 },
+        "scenarioStem": { "type": "string", "minLength": 1 },
+        "routingPolicyId": { "type": "string", "minLength": 1 },
+        "expectedRouteDecision": {
+          "type": "string",
+          "enum": ["accept-fast", "prefer-stable", "abstain"]
+        },
+        "hiddenState": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "number" }
+        },
+        "candidates": {
+          "type": "array",
+          "minItems": 2,
+          "items": { "$ref": "#/$defs/candidate" }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

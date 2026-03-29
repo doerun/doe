@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "moduleId": "doe_numeric_stability",
+  "artifactKind": "request",
+  "serviceId": "matmul_logits_slice",
+  "operatorFamily": "lm-head-slice",
+  "semanticOpId": "matmul.logits",
+  "semanticStage": "lm_head_slice",
+  "semanticPhase": "logits",
+  "triggerPolicyId": "numeric-instability/selected-token-disagreement-with-reference-improvement-v1",
+  "routingPolicyId": "numeric-stability/prefer-stable-on-selected-token-disagreement-v1",
+  "fastPolicyId": "lm-head-slice/forward-f16accum-v1",
+  "stablePolicyId": "lm-head-slice/forward-serial-v1",
+  "candidates": [
+    {
+      "tokenId": 817,
+      "label": "go",
+      "weights": [10000.0, 0.01, -10000.0]
+    },
+    {
+      "tokenId": 4721,
+      "label": "stop",
+      "weights": [0.0, 0.001, 0.0]
+    }
+  ],
+  "hiddenState": [1.0, 1.0, 1.0],
+  "receiptPath": "artifacts/red-go-stop.numeric-stability.jsonl",
+  "traceMetaPath": "artifacts/red-go-stop.trace-meta.json"
+}

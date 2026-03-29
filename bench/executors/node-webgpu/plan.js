@@ -3,6 +3,7 @@ import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { basename, extname, resolve } from 'node:path';
+import { normalizeDeterminismConfig } from './determinism.js';
 
 const ALLOWED_BUFFER_USAGES = new Set([
   'storage',
@@ -71,6 +72,16 @@ function inferKernelSourcePath(kernel) {
   return `bench/inference-pipeline/kernels/${kernel}`;
 }
 
+function captureReadbackBufferId(commandIndex, handle) {
+  return `capture_${commandIndex}_${handle}`;
+}
+
+function omitUndefinedFields(value) {
+  return Object.fromEntries(
+    Object.entries(value).filter(([, entry]) => entry !== undefined),
+  );
+}
+
 function commandPlanToNeutralPlan(plan) {
   const commands = Array.isArray(plan.commands) ? plan.commands : [];
   const buffers = new Map();
@@ -78,7 +89,12 @@ function commandPlanToNeutralPlan(plan) {
   const steps = [];
 
   function ensureBuffer(handle, size, options = {}) {
-    const { bindingType = '', writable = false } = options;
+    const {
+      bindingType = '',
+      writable = false,
+      readableCopySource = false,
+      readableMap = false,
+    } = options;
     const id = `buffer_${handle}`;
     const existing = buffers.get(id) ?? {
       id,
@@ -94,8 +110,83 @@ function commandPlanToNeutralPlan(plan) {
     if (writable) {
       existing.usage.add('copy_dst');
     }
+    if (readableCopySource) {
+      existing.usage.add('copy_src');
+    }
+    if (readableMap) {
+      existing.usage.add('map_read');
+    }
     buffers.set(id, existing);
     return id;
+  }
+
+  function appendCaptureSteps(command, index) {
+    const captureHandle = Number(command.captureBufferHandle ?? command.capture_buffer_handle);
+    const captureSize = Number(command.captureSize ?? command.capture_size ?? 0);
+    const captureOffset = Number(command.captureOffset ?? command.capture_offset ?? 0);
+    if (!Number.isInteger(captureHandle) || captureHandle < 0) {
+      return;
+    }
+    if (!Number.isInteger(captureSize) || captureSize <= 0) {
+      return;
+    }
+    if (!Number.isInteger(captureOffset) || captureOffset < 0) {
+      return;
+    }
+    const sourceBufferId = ensureBuffer(
+      captureHandle,
+      captureOffset + captureSize,
+      { bindingType: 'storage', readableCopySource: true },
+    );
+    const readbackBufferId = ensureBuffer(
+      captureReadbackBufferId(index, captureHandle),
+      captureSize,
+      { writable: true, readableMap: true },
+    );
+    steps.push({
+      id: `step-${index}-capture-copy`,
+      kind: 'copyBufferToBuffer',
+      srcBufferId: sourceBufferId,
+      dstBufferId: readbackBufferId,
+      srcOffset: captureOffset,
+      dstOffset: 0,
+      sizeBytes: captureSize,
+    });
+    steps.push(omitUndefinedFields({
+      id: `step-${index}-capture-read`,
+      kind: 'readBuffer',
+      bufferId: readbackBufferId,
+      semanticOpId: typeof command.semanticOpId === 'string'
+        ? command.semanticOpId
+        : typeof command.semantic_op_id === 'string'
+          ? command.semantic_op_id
+          : undefined,
+      semanticStage: typeof command.semanticStage === 'string'
+        ? command.semanticStage
+        : typeof command.semantic_stage === 'string'
+          ? command.semantic_stage
+          : undefined,
+      semanticPhase: typeof command.semanticPhase === 'string'
+        ? command.semanticPhase
+        : typeof command.semantic_phase === 'string'
+          ? command.semantic_phase
+          : undefined,
+      semanticTokenIndex: Number.isInteger(Number(command.semanticTokenIndex ?? command.semantic_token_index))
+        ? Number(command.semanticTokenIndex ?? command.semantic_token_index)
+        : undefined,
+      semanticLayerIndex: Number.isInteger(Number(command.semanticLayerIndex ?? command.semantic_layer_index))
+        ? Number(command.semanticLayerIndex ?? command.semantic_layer_index)
+        : undefined,
+      semanticExecutionPlanHash: typeof command.semanticExecutionPlanHash === 'string'
+        ? command.semanticExecutionPlanHash
+        : typeof command.semantic_execution_plan_hash === 'string'
+          ? command.semantic_execution_plan_hash
+          : undefined,
+      captureSourceBufferId: sourceBufferId,
+      captureOffset,
+      captureSize,
+      captureDecode: typeof command.decode === 'string' ? command.decode : undefined,
+    }));
   }
 
   commands.forEach((command, index) => {
@@ -117,6 +208,7 @@ function commandPlanToNeutralPlan(plan) {
         offset: 0,
         data: { kind: 'u32', values },
       });
+      appendCaptureSteps(command, index);
       return;
     }
     if (kind === 'kernel_dispatch') {
@@ -160,6 +252,7 @@ function commandPlanToNeutralPlan(plan) {
         ],
         bindings,
       });
+      appendCaptureSteps(command, index);
     }
   });
 
@@ -171,6 +264,9 @@ function commandPlanToNeutralPlan(plan) {
     domain: 'compute',
     comparable: true,
     description: typeof plan.description === 'string' ? plan.description : '',
+    ...(plan.determinism && typeof plan.determinism === 'object' && !Array.isArray(plan.determinism)
+      ? { determinism: plan.determinism }
+      : {}),
     timing: {
       iterations: 1,
       warmup: 0,
@@ -353,6 +449,95 @@ function normalizeModule(module, index, problems) {
   };
 }
 
+function normalizeSemanticMetadata(step, index, problems) {
+  const semanticOpId = step.semanticOpId;
+  const semanticStage = step.semanticStage;
+  const semanticPhase = step.semanticPhase;
+  const semanticTokenIndex = step.semanticTokenIndex;
+  const semanticLayerIndex = step.semanticLayerIndex;
+  const semanticExecutionPlanHash = step.semanticExecutionPlanHash;
+  const captureSourceBufferId = step.captureSourceBufferId;
+  const captureOffset = step.captureOffset;
+  const captureSize = step.captureSize;
+  const captureDecode = step.captureDecode;
+  const metadata = {};
+  if (semanticOpId !== undefined) {
+    if (typeof semanticOpId !== 'string' || semanticOpId.length === 0) {
+      problems.push(`steps[${index}].semanticOpId must be a non-empty string when provided`);
+    } else {
+      metadata.semanticOpId = semanticOpId;
+    }
+  }
+  if (semanticStage !== undefined) {
+    if (typeof semanticStage !== 'string' || semanticStage.length === 0) {
+      problems.push(`steps[${index}].semanticStage must be a non-empty string when provided`);
+    } else {
+      metadata.semanticStage = semanticStage;
+    }
+  }
+  if (semanticPhase !== undefined) {
+    if (typeof semanticPhase !== 'string' || semanticPhase.length === 0) {
+      problems.push(`steps[${index}].semanticPhase must be a non-empty string when provided`);
+    } else {
+      metadata.semanticPhase = semanticPhase;
+    }
+  }
+  if (semanticTokenIndex !== undefined) {
+    const parsed = Number(semanticTokenIndex);
+    if (!Number.isInteger(parsed) || parsed < 0) {
+      problems.push(`steps[${index}].semanticTokenIndex must be a non-negative integer when provided`);
+    } else {
+      metadata.semanticTokenIndex = parsed;
+    }
+  }
+  if (semanticLayerIndex !== undefined) {
+    const parsed = Number(semanticLayerIndex);
+    if (!Number.isInteger(parsed) || parsed < 0) {
+      problems.push(`steps[${index}].semanticLayerIndex must be a non-negative integer when provided`);
+    } else {
+      metadata.semanticLayerIndex = parsed;
+    }
+  }
+  if (semanticExecutionPlanHash !== undefined) {
+    if (typeof semanticExecutionPlanHash !== 'string' || semanticExecutionPlanHash.length === 0) {
+      problems.push(`steps[${index}].semanticExecutionPlanHash must be a non-empty string when provided`);
+    } else {
+      metadata.semanticExecutionPlanHash = semanticExecutionPlanHash;
+    }
+  }
+  if (captureSourceBufferId !== undefined) {
+    if (typeof captureSourceBufferId !== 'string' || captureSourceBufferId.length === 0) {
+      problems.push(`steps[${index}].captureSourceBufferId must be a non-empty string when provided`);
+    } else {
+      metadata.captureSourceBufferId = captureSourceBufferId;
+    }
+  }
+  if (captureOffset !== undefined) {
+    const parsed = Number(captureOffset);
+    if (!Number.isInteger(parsed) || parsed < 0) {
+      problems.push(`steps[${index}].captureOffset must be a non-negative integer when provided`);
+    } else {
+      metadata.captureOffset = parsed;
+    }
+  }
+  if (captureSize !== undefined) {
+    const parsed = Number(captureSize);
+    if (!Number.isInteger(parsed) || parsed <= 0) {
+      problems.push(`steps[${index}].captureSize must be a positive integer when provided`);
+    } else {
+      metadata.captureSize = parsed;
+    }
+  }
+  if (captureDecode !== undefined) {
+    if (typeof captureDecode !== 'string' || captureDecode.length === 0) {
+      problems.push(`steps[${index}].captureDecode must be a non-empty string when provided`);
+    } else {
+      metadata.captureDecode = captureDecode;
+    }
+  }
+  return metadata;
+}
+
 function normalizeStep(step, index, problems) {
   if (!isPlainObject(step)) {
     problems.push(`steps[${index}] must be an object`);
@@ -377,7 +562,13 @@ function normalizeStep(step, index, problems) {
     if (!data) {
       problems.push(`steps[${index}].data must be present and valid`);
     }
-    return { kind, bufferId, offset, data };
+    return {
+      kind,
+      bufferId,
+      offset,
+      data,
+      ...(typeof step.id === 'string' ? { id: step.id } : {}),
+    };
   }
 
   if (kind === 'dispatch') {
@@ -393,6 +584,7 @@ function normalizeStep(step, index, problems) {
       bindings: Array.isArray(step.bindings)
         ? step.bindings.map((binding, bindingIndex) => normalizeBinding(binding, bindingIndex, `steps[${index}].bindings`, problems)).filter(Boolean)
         : [],
+      ...normalizeSemanticMetadata(step, index, problems),
     };
   }
 
@@ -400,6 +592,8 @@ function normalizeStep(step, index, problems) {
     const srcBufferId = typeof step.srcBufferId === 'string' ? step.srcBufferId : '';
     const dstBufferId = typeof step.dstBufferId === 'string' ? step.dstBufferId : '';
     const sizeBytes = Number(step.sizeBytes);
+    const srcOffset = Number(step.srcOffset ?? 0);
+    const dstOffset = Number(step.dstOffset ?? 0);
     if (!srcBufferId) {
       problems.push(`steps[${index}].srcBufferId must be a non-empty string`);
     }
@@ -409,7 +603,22 @@ function normalizeStep(step, index, problems) {
     if (!Number.isInteger(sizeBytes) || sizeBytes <= 0) {
       problems.push(`steps[${index}].sizeBytes must be a positive integer`);
     }
-    return { kind, srcBufferId, dstBufferId, sizeBytes: Number.isInteger(sizeBytes) && sizeBytes > 0 ? sizeBytes : 0 };
+    if (!Number.isInteger(srcOffset) || srcOffset < 0) {
+      problems.push(`steps[${index}].srcOffset must be a non-negative integer when provided`);
+    }
+    if (!Number.isInteger(dstOffset) || dstOffset < 0) {
+      problems.push(`steps[${index}].dstOffset must be a non-negative integer when provided`);
+    }
+    return {
+      kind,
+      srcBufferId,
+      dstBufferId,
+      sizeBytes: Number.isInteger(sizeBytes) && sizeBytes > 0 ? sizeBytes : 0,
+      srcOffset: Number.isInteger(srcOffset) && srcOffset >= 0 ? srcOffset : 0,
+      dstOffset: Number.isInteger(dstOffset) && dstOffset >= 0 ? dstOffset : 0,
+      ...(typeof step.id === 'string' ? { id: step.id } : {}),
+      ...normalizeSemanticMetadata(step, index, problems),
+    };
   }
 
   const bufferId = typeof step.bufferId === 'string' ? step.bufferId : '';
@@ -420,6 +629,8 @@ function normalizeStep(step, index, problems) {
     kind,
     bufferId,
     validate: isPlainObject(step.validate) ? step.validate : null,
+    ...(typeof step.id === 'string' ? { id: step.id } : {}),
+    ...normalizeSemanticMetadata(step, index, problems),
   };
 }
 
@@ -447,6 +658,7 @@ export function validatePlan(plan) {
   if (typeof candidate.comparable !== 'boolean') {
     problems.push('comparable must be a boolean');
   }
+  const normalizedDeterminism = normalizeDeterminismConfig(candidate.determinism, problems, 'determinism');
 
   const timing = isPlainObject(candidate.timing) ? candidate.timing : null;
   if (!timing) {
@@ -503,7 +715,7 @@ export function validatePlan(plan) {
   let seenReadbackStep = false;
   normalizedSteps.forEach((step, index) => {
     if (step.kind === 'readBuffer') {
-      seenReadbackStep = true;
+      seenReadbackStep = !step.semanticOpId;
       return;
     }
     if (seenReadbackStep) {
@@ -535,6 +747,9 @@ export function validatePlan(plan) {
     } else if (step.kind === 'readBuffer') {
       if (!bufferIds.has(step.bufferId)) {
         problems.push(`readBuffer references unknown buffer: ${step.bufferId}`);
+      }
+      if (step.captureSourceBufferId && !bufferIds.has(step.captureSourceBufferId)) {
+        problems.push(`readBuffer capture source references unknown buffer: ${step.captureSourceBufferId}`);
       }
     }
   }
@@ -579,6 +794,7 @@ export function normalizePlan(plan) {
   if (problems.length) {
     throw new Error(`invalid neutral plan:\n- ${problems.join('\n- ')}`);
   }
+  const normalizedDeterminism = normalizeDeterminismConfig(candidate.determinism, [], 'determinism');
 
   const normalized = {
     schemaVersion: 1,
@@ -588,6 +804,7 @@ export function normalizePlan(plan) {
     domain: candidate.domain,
     comparable: candidate.comparable,
     description: typeof candidate.description === 'string' ? candidate.description : '',
+    ...(normalizedDeterminism ? { determinism: normalizedDeterminism } : {}),
     timing: {
       iterations: Number(candidate.timing.iterations),
       warmup: Number(candidate.timing.warmup),
@@ -625,22 +842,44 @@ export function normalizePlan(plan) {
     })),
     steps: candidate.steps.map((step) => {
       if (step.kind === 'dispatch') {
-        return {
+        return omitUndefinedFields({
           kind: step.kind,
           moduleId: step.moduleId,
           entryPoint: step.entryPoint,
           workgroups: step.workgroups,
           bindings: step.bindings,
           ...(typeof step.id === 'string' ? { id: step.id } : {}),
-        };
+          ...normalizeSemanticMetadata(step, -1, []),
+        });
       }
       if (step.kind === 'copyBufferToBuffer') {
-        return step;
+        return omitUndefinedFields({
+          kind: step.kind,
+          srcBufferId: step.srcBufferId,
+          dstBufferId: step.dstBufferId,
+          sizeBytes: step.sizeBytes,
+          srcOffset: step.srcOffset,
+          dstOffset: step.dstOffset,
+          ...(typeof step.id === 'string' ? { id: step.id } : {}),
+          ...normalizeSemanticMetadata(step, -1, []),
+        });
       }
       if (step.kind === 'writeBuffer') {
-        return step;
+        return omitUndefinedFields({
+          kind: step.kind,
+          bufferId: step.bufferId,
+          offset: step.offset,
+          data: step.data,
+          ...(typeof step.id === 'string' ? { id: step.id } : {}),
+        });
       }
-      return step;
+      return omitUndefinedFields({
+        kind: step.kind,
+        bufferId: step.bufferId,
+        validate: step.validate,
+        ...(typeof step.id === 'string' ? { id: step.id } : {}),
+        ...normalizeSemanticMetadata(step, -1, []),
+      });
     }),
   };
 

@@ -2,6 +2,7 @@ const std = @import("std");
 const model = @import("model.zig");
 const command_json = @import("command_json.zig");
 const command_json_raw = @import("command_json_raw.zig");
+const numeric_stability_annotation = @import("numeric_stability_annotation.zig");
 const semantic_trace = @import("semantic_trace.zig");
 
 const RawCommand = command_json_raw.RawCommand;
@@ -9,6 +10,7 @@ const RawCommand = command_json_raw.RawCommand;
 pub const CommandMetadata = struct {
     semantic: semantic_trace.SemanticContext = .{},
     capture: ?semantic_trace.CaptureRequest = null,
+    numeric_stability: ?numeric_stability_annotation.Annotation = null,
 };
 
 pub const ParsedCommandStream = struct {
@@ -16,6 +18,11 @@ pub const ParsedCommandStream = struct {
     metadata: []CommandMetadata,
 
     pub fn deinit(self: ParsedCommandStream, allocator: std.mem.Allocator) void {
+        for (self.metadata) |entry| {
+            if (entry.numeric_stability) |annotation| {
+                allocator.free(annotation.candidates);
+            }
+        }
         command_json.freeCommands(allocator, self.commands);
         allocator.free(self.metadata);
     }
@@ -66,6 +73,7 @@ pub fn parse_command_stream(
                 .execution_plan_hash = entry.semantic_execution_plan_hash orelse entry.semanticExecutionPlanHash,
             },
             .capture = parse_capture(entry),
+            .numeric_stability = try parse_numeric_stability(allocator, entry),
         };
     }
 
@@ -83,5 +91,66 @@ fn parse_capture(raw: RawCommand) ?semantic_trace.CaptureRequest {
         .buffer_handle = handle,
         .offset = raw.capture_offset orelse raw.captureOffset orelse 0,
         .size = size,
+    };
+}
+
+fn parse_vector_capture(raw: command_json_raw.RawNumericStabilityVectorCapture) !numeric_stability_annotation.VectorCapture {
+    const buffer_handle = raw.buffer_handle orelse raw.bufferHandle orelse return error.InvalidCommandStream;
+    const element_count = raw.element_count orelse raw.elementCount orelse return error.InvalidCommandStream;
+    if (element_count == 0) return error.InvalidCommandStream;
+    return .{
+        .buffer_handle = buffer_handle,
+        .offset = raw.offset orelse 0,
+        .element_count = element_count,
+    };
+}
+
+fn parse_weights_capture(raw: command_json_raw.RawNumericStabilityWeightsCapture) !numeric_stability_annotation.WeightsCapture {
+    const buffer_handle = raw.buffer_handle orelse raw.bufferHandle orelse return error.InvalidCommandStream;
+    const row_stride_elements = raw.row_stride_elements orelse raw.rowStrideElements orelse return error.InvalidCommandStream;
+    if (row_stride_elements == 0) return error.InvalidCommandStream;
+    return .{
+        .buffer_handle = buffer_handle,
+        .offset = raw.offset orelse 0,
+        .row_stride_elements = row_stride_elements,
+    };
+}
+
+fn parse_numeric_stability_candidate(raw: command_json_raw.RawNumericStabilityCandidate) !numeric_stability_annotation.Candidate {
+    const token_id = raw.token_id orelse raw.tokenId orelse return error.InvalidCommandStream;
+    const row_index = raw.row_index orelse raw.rowIndex orelse return error.InvalidCommandStream;
+    return .{
+        .token_id = token_id,
+        .label = raw.label,
+        .row_index = row_index,
+        .bias = raw.bias,
+    };
+}
+
+fn parse_numeric_stability(
+    allocator: std.mem.Allocator,
+    raw: RawCommand,
+) !?numeric_stability_annotation.Annotation {
+    const payload = raw.numeric_stability orelse raw.numericStability orelse return null;
+    const hidden_state = try parse_vector_capture(payload.hidden_state orelse payload.hiddenState orelse return error.InvalidCommandStream);
+    const logits = try parse_vector_capture(payload.logits orelse return error.InvalidCommandStream);
+    const weights = try parse_weights_capture(payload.weights orelse return error.InvalidCommandStream);
+    const raw_candidates = payload.candidates orelse return error.InvalidCommandStream;
+    if (raw_candidates.len < 2) return error.InvalidCommandStream;
+    const candidates = try allocator.alloc(numeric_stability_annotation.Candidate, raw_candidates.len);
+    errdefer allocator.free(candidates);
+    for (raw_candidates, 0..) |candidate, index| {
+        candidates[index] = try parse_numeric_stability_candidate(candidate);
+    }
+    return .{
+        .operator_family = payload.operator_family orelse payload.operatorFamily orelse numeric_stability_annotation.DEFAULT_OPERATOR_FAMILY,
+        .trigger_policy_id = payload.trigger_policy_id orelse payload.triggerPolicyId orelse numeric_stability_annotation.DEFAULT_TRIGGER_POLICY_ID,
+        .routing_policy_id = payload.routing_policy_id orelse payload.routingPolicyId orelse numeric_stability_annotation.DEFAULT_ROUTING_POLICY_ID,
+        .fast_policy_id = payload.fast_policy_id orelse payload.fastPolicyId orelse numeric_stability_annotation.DEFAULT_FAST_POLICY_ID,
+        .stable_policy_id = payload.stable_policy_id orelse payload.stablePolicyId orelse numeric_stability_annotation.DEFAULT_STABLE_POLICY_ID,
+        .hidden_state = hidden_state,
+        .logits = logits,
+        .weights = weights,
+        .candidates = candidates,
     };
 }

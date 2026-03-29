@@ -1,0 +1,21 @@
+{
+  "traceVersion": 1,
+  "module": "doe_numeric_stability",
+  "seqMax": 0,
+  "rowCount": 0,
+  "hash": "sha256:7fdd0fab7fd78783e720ceae3b8377174cc419f70b08ea05483eaaf273471e8f",
+  "previousHash": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+  "numericStability": {
+    "policyRegistryPath": "config/numeric-stability-policy.json",
+    "policyRegistryVersion": "2026-03-29-route-taxonomy-v2",
+    "routeTaxonomyVersion": "numeric-stability-routes-v1",
+    "receiptPath": "artifacts/red-go-stop.numeric-stability.jsonl",
+    "receiptCount": 1,
+    "decisionCounts": {
+      "accept-fast": 0,
+      "prefer-stable": 1,
+      "abstain": 0
+    },
+    "firstDivergencePresentCount": 1
+  }
+}
