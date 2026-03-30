@@ -1,3 +1,0 @@
-// translationStatus: unavailable
-// sourceKernel: bench/inference-pipeline/kernels/matmul_logits_forward_f16accum.wgsl
-// translateError: UnsupportedPattern

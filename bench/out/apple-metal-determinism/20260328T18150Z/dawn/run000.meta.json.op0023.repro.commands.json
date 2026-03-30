@@ -1,3 +1,0 @@
-[
-{"seq":0,"kind":"kernel_dispatch","kernel":"sample.wgsl","x":1,"y":1,"z":1,"repeat":1,"semanticOpId":"decode.sample_token","semanticStage":"gemma3_decode","semanticPhase":"sample_token","semanticTokenIndex":0,"semanticExecutionPlanHash":"f107772b576d213946cb3c7ed0d3a49ac5aec7d9db021e0c8c5eb663d10edcd7","captureBufferHandle":2228,"captureOffset":0,"captureSize":4}
-]
