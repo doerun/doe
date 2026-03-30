@@ -226,8 +226,64 @@
       "data": "config/numeric-stability-policy.json"
     },
     {
+      "schema": "config/numeric-stability-auto-detection-plan.schema.json",
+      "data": "config/numeric-stability-auto-detection-plan.json"
+    },
+    {
+      "schema": "config/numeric-stability-decode-fragility-plan.schema.json",
+      "data": "config/numeric-stability-decode-fragility-plan.json"
+    },
+    {
+      "schema": "config/numeric-stability-decode-harvest-plan.schema.json",
+      "data": "config/numeric-stability-decode-harvest-plan.json"
+    },
+    {
+      "schema": "config/numeric-stability-decode-row.schema.json",
+      "data": "examples/numeric-stability-decode-row.sample.json"
+    },
+    {
+      "schema": "config/numeric-stability-decode-row-enrichment.schema.json",
+      "data": "examples/numeric-stability-decode-row-enrichment.sample.json"
+    },
+    {
+      "schema": "config/numeric-stability-decode-fragility-report.schema.json",
+      "data": "examples/numeric-stability-decode-fragility-report.sample.json"
+    },
+    {
+      "schema": "config/numeric-stability-decode-signature.schema.json",
+      "data": "examples/numeric-stability-decode-signature.sample.json"
+    },
+    {
+      "schema": "config/numeric-stability-decode-promoted-catalog.schema.json",
+      "data": "config/numeric-stability-decode-promoted-catalog.json"
+    },
+    {
+      "schema": "config/numeric-stability-operator-expansion-plan.schema.json",
+      "data": "config/numeric-stability-operator-expansion-plan.json"
+    },
+    {
+      "schema": "config/numeric-stability-semantic-envelope.schema.json",
+      "data": "examples/numeric-stability-semantic-envelope.sample.json"
+    },
+    {
+      "schema": "config/numeric-stability-semantic-envelope-plan.schema.json",
+      "data": "config/numeric-stability-semantic-envelope-plan.json"
+    },
+    {
+      "schema": "config/numeric-stability-decode-validation-plan.schema.json",
+      "data": "config/numeric-stability-decode-validation-plan.json"
+    },
+    {
+      "schema": "config/numeric-stability-decode-vulkan-replay-plan.schema.json",
+      "data": "config/numeric-stability-decode-vulkan-replay-plan.json"
+    },
+    {
       "schema": "config/doe-numeric-stability-receipt.schema.json",
       "data": "examples/doe-numeric-stability-receipt.sample.json"
+    },
+    {
+      "schema": "config/doe-numeric-stability-receipt.schema.json",
+      "data": "examples/doe-numeric-stability-receipt.decode-sample.sample.json"
     },
     {
       "schema": "config/numeric-stability-command-annotation.schema.json",

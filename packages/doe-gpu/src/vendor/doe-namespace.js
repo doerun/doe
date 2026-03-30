@@ -946,6 +946,139 @@ function normalizeNumericStabilityMatmulLogitsSliceOptions(options) {
   };
 }
 
+function normalizeOptionalNonEmptyString(value, label) {
+  if (value == null) {
+    return null;
+  }
+  if (typeof value !== 'string' || value.trim().length === 0) {
+    throw new Error(`${label} must be a non-empty string when provided.`);
+  }
+  return value;
+}
+
+function normalizeOptionalStringArray(values, label) {
+  if (values == null) {
+    return null;
+  }
+  if (!Array.isArray(values)) {
+    throw new Error(`${label} must be an array of strings when provided.`);
+  }
+  return values.map((value, index) => {
+    if (typeof value !== 'string' || value.trim().length === 0) {
+      throw new Error(`${label}[${index}] must be a non-empty string.`);
+    }
+    return value;
+  });
+}
+
+function matchesExpectedPolicyRegistryPath(actualPath, expectedPath) {
+  if (actualPath === expectedPath) {
+    return true;
+  }
+  if (typeof actualPath !== 'string' || typeof expectedPath !== 'string') {
+    return false;
+  }
+  return (
+    actualPath.endsWith(`/${expectedPath}`) ||
+    actualPath.endsWith(`\\${expectedPath}`)
+  );
+}
+
+function normalizeNumericStabilityOrdinaryExecutionOptions(
+  options,
+  pathPrefix = 'Doe ordinaryExecution'
+) {
+  if (!options || typeof options !== 'object') {
+    throw new Error(`${pathPrefix} options must be an object.`);
+  }
+  const commandsPath = normalizeOptionalNonEmptyString(
+    options.commandsPath,
+    `${pathPrefix} commandsPath`
+  );
+  if (commandsPath == null) {
+    throw new Error(`${pathPrefix} commandsPath is required.`);
+  }
+  const uploadSubmitEvery = options.uploadSubmitEvery == null
+    ? null
+    : validateNonNegativeInteger(
+        options.uploadSubmitEvery,
+        `${pathPrefix} uploadSubmitEvery`
+      );
+  if (uploadSubmitEvery != null && uploadSubmitEvery <= 0) {
+    throw new Error(`${pathPrefix} uploadSubmitEvery must be greater than zero.`);
+  }
+  return {
+    commandsPath,
+    quirksPath: normalizeOptionalNonEmptyString(
+      options.quirksPath,
+      `${pathPrefix} quirksPath`
+    ),
+    kernelRoot: normalizeOptionalNonEmptyString(
+      options.kernelRoot,
+      `${pathPrefix} kernelRoot`
+    ),
+    numericStabilityPolicyPath: normalizeOptionalNonEmptyString(
+      options.policyPath,
+      `${pathPrefix} policyPath`
+    ),
+    numericStabilityExecutionProfileId: normalizeOptionalNonEmptyString(
+      options.executionProfileId,
+      `${pathPrefix} executionProfileId`
+    ),
+    vendor: normalizeOptionalNonEmptyString(
+      options.vendor,
+      `${pathPrefix} vendor`
+    ),
+    api: normalizeOptionalNonEmptyString(
+      options.api,
+      `${pathPrefix} api`
+    ),
+    family: normalizeOptionalNonEmptyString(
+      options.family,
+      `${pathPrefix} family`
+    ),
+    driver: normalizeOptionalNonEmptyString(
+      options.driver,
+      `${pathPrefix} driver`
+    ),
+    backendLane: normalizeOptionalNonEmptyString(
+      options.backendLane,
+      `${pathPrefix} backendLane`
+    ),
+    traceJsonlPath: normalizeOptionalNonEmptyString(
+      options.traceJsonlPath,
+      `${pathPrefix} traceJsonlPath`
+    ),
+    traceMetaPath: normalizeOptionalNonEmptyString(
+      options.traceMetaPath,
+      `${pathPrefix} traceMetaPath`
+    ),
+    uploadBufferUsage: normalizeOptionalNonEmptyString(
+      options.uploadBufferUsage,
+      `${pathPrefix} uploadBufferUsage`
+    ),
+    uploadSubmitEvery,
+    queueWaitMode: normalizeOptionalNonEmptyString(
+      options.queueWaitMode,
+      `${pathPrefix} queueWaitMode`
+    ),
+    queueSyncMode: normalizeOptionalNonEmptyString(
+      options.queueSyncMode,
+      `${pathPrefix} queueSyncMode`
+    ),
+    extraArgs: normalizeOptionalStringArray(
+      options.extraArgs,
+      `${pathPrefix} extraArgs`
+    ),
+    runtime: options.runtime ?? null,
+    runtimeOptions: options.runtimeOptions ?? null,
+    cwd: normalizeOptionalNonEmptyString(
+      options.cwd,
+      `${pathPrefix} cwd`
+    ),
+  };
+}
+
 async function numericStabilityMatmulLogitsSliceResult(device, options) {
   void device;
   const normalized = normalizeNumericStabilityMatmulLogitsSliceOptions(options);
@@ -983,7 +1116,7 @@ async function numericStabilityMatmulLogitsSliceResult(device, options) {
   if (!result.receipt || result.receipt.mode !== DOE_NUMERIC_STABILITY_MODE) {
     throw new Error('Doe numeric stability service returned an invalid receipt.');
   }
-  if (result.receipt.policyRegistryPath !== DOE_NUMERIC_STABILITY_POLICY_REGISTRY_PATH) {
+  if (!matchesExpectedPolicyRegistryPath(result.receipt.policyRegistryPath, DOE_NUMERIC_STABILITY_POLICY_REGISTRY_PATH)) {
     throw new Error('Doe numeric stability receipt reported an unexpected policy registry path.');
   }
   if (result.receipt.policyRegistryVersion !== DOE_NUMERIC_STABILITY_POLICY_REGISTRY_VERSION) {
@@ -994,6 +1127,118 @@ async function numericStabilityMatmulLogitsSliceResult(device, options) {
     routeDecision: result.routeDecision,
     receipt: result.receipt,
   };
+}
+
+async function numericStabilityOrdinaryExecutionResult(device, options) {
+  void device;
+  const normalized = normalizeNumericStabilityOrdinaryExecutionOptions(
+    options,
+    'Doe numericStability.ordinaryExecution'
+  );
+  if (!isNodeDoeRuntimeAvailable()) {
+    throw new Error(
+      'Doe gpu.numericStability.ordinaryExecution is unavailable in this surface. ' +
+      'Use doe-gpu or doe-gpu/compute with the Doe native runtime.'
+    );
+  }
+  const runtimeCli = await import('./webgpu/runtime-cli.js');
+  const runtime = normalized.runtime ?? runtimeCli.createDoeRuntime(normalized.runtimeOptions ?? {});
+  if (typeof runtime?.runNumericStabilityOrdinaryExecution !== 'function') {
+    throw new Error('Doe numeric stability ordinary-execution helper is unavailable in this context.');
+  }
+  const result = runtime.runNumericStabilityOrdinaryExecution({
+    commandsPath: normalized.commandsPath,
+    quirksPath: normalized.quirksPath,
+    kernelRoot: normalized.kernelRoot,
+    numericStabilityPolicyPath: normalized.numericStabilityPolicyPath,
+    numericStabilityExecutionProfileId: normalized.numericStabilityExecutionProfileId,
+    vendor: normalized.vendor,
+    api: normalized.api,
+    family: normalized.family,
+    driver: normalized.driver,
+    backendLane: normalized.backendLane,
+    traceJsonlPath: normalized.traceJsonlPath,
+    traceMetaPath: normalized.traceMetaPath,
+    uploadBufferUsage: normalized.uploadBufferUsage,
+    uploadSubmitEvery: normalized.uploadSubmitEvery,
+    queueWaitMode: normalized.queueWaitMode,
+    queueSyncMode: normalized.queueSyncMode,
+    extraArgs: normalized.extraArgs,
+    cwd: normalized.cwd,
+  });
+  for (const decision of result.routeDecisions ?? []) {
+    if (!DOE_NUMERIC_STABILITY_ROUTE_DECISIONS.has(decision)) {
+      throw new Error(`Doe numeric stability ordinary execution returned unknown route decision: ${String(decision)}`);
+    }
+  }
+  for (const receipt of result.receipts ?? []) {
+    if (!receipt || receipt.mode !== DOE_NUMERIC_STABILITY_MODE) {
+      throw new Error('Doe numeric stability ordinary execution returned an invalid receipt.');
+    }
+    if (
+      normalized.numericStabilityPolicyPath == null &&
+      !matchesExpectedPolicyRegistryPath(
+        receipt.policyRegistryPath,
+        DOE_NUMERIC_STABILITY_POLICY_REGISTRY_PATH,
+      )
+    ) {
+      throw new Error('Doe numeric stability receipt reported an unexpected policy registry path.');
+    }
+    if (receipt.policyRegistryVersion !== DOE_NUMERIC_STABILITY_POLICY_REGISTRY_VERSION) {
+      throw new Error('Doe numeric stability receipt reported an unexpected policy registry version.');
+    }
+  }
+  return {
+    traceJsonlPath: result.traceJsonlPath,
+    traceMetaPath: result.traceMetaPath,
+    traceMeta: result.traceMeta,
+    executionProfileId: result.executionProfileId ?? null,
+    receiptPath: result.receiptPath,
+    receipts: result.receipts,
+    routeDecisions: result.routeDecisions,
+    latestReceipt: result.latestReceipt,
+    latestRouteDecision: result.latestRouteDecision,
+    latestToken: result.latestToken,
+  };
+}
+
+async function ordinaryExecutionResult(device, options) {
+  void device;
+  const normalized = normalizeNumericStabilityOrdinaryExecutionOptions(
+    options,
+    'Doe ordinaryExecution'
+  );
+  if (!isNodeDoeRuntimeAvailable()) {
+    throw new Error(
+      'Doe ordinaryExecution is unavailable in this surface. ' +
+      'Use doe-gpu or doe-gpu/compute with the Doe native runtime.'
+    );
+  }
+  const runtimeCli = await import('./webgpu/runtime-cli.js');
+  const runtime = normalized.runtime ?? runtimeCli.createDoeRuntime(normalized.runtimeOptions ?? {});
+  if (typeof runtime?.runOrdinaryExecution === 'function') {
+    return runtime.runOrdinaryExecution({
+      commandsPath: normalized.commandsPath,
+      quirksPath: normalized.quirksPath,
+      kernelRoot: normalized.kernelRoot,
+      numericStabilityPolicyPath: normalized.numericStabilityPolicyPath,
+      numericStabilityExecutionProfileId: normalized.numericStabilityExecutionProfileId,
+      vendor: normalized.vendor,
+      api: normalized.api,
+      family: normalized.family,
+      driver: normalized.driver,
+      backendLane: normalized.backendLane,
+      traceJsonlPath: normalized.traceJsonlPath,
+      traceMetaPath: normalized.traceMetaPath,
+      uploadBufferUsage: normalized.uploadBufferUsage,
+      uploadSubmitEvery: normalized.uploadSubmitEvery,
+      queueWaitMode: normalized.queueWaitMode,
+      queueSyncMode: normalized.queueSyncMode,
+      extraArgs: normalized.extraArgs,
+      cwd: normalized.cwd,
+    });
+  }
+  return numericStabilityOrdinaryExecutionResult(device, options);
 }
 
 function normalizeBinding(binding, index) {
@@ -1814,6 +2059,8 @@ async function computeOnce(device, options) {
 }
 
 function createBoundDoe(device) {
+  const ordinaryExecution = (options) => ordinaryExecutionResult(device, options);
+
   /**
    * Run a one-shot typed-array compute workflow.
    *
@@ -2099,6 +2346,20 @@ function createBoundDoe(device) {
         return reviewedChoiceResult(device, options);
       },
     },
+    /**
+     * Run an ordinary Doe command stream and inherit the runtime numeric-governance path.
+     *
+     * Surface: Doe API `gpu.ordinaryExecution`.
+     * Input: A normal runtime command stream plus optional runtime bench settings.
+     * Returns: A promise for the traced run and any in-path numeric-stability receipt rows.
+     *
+     * This is the preferred package entrypoint for ordinary command-stream
+     * execution with Doe's current in-path numeric-governance contract. It
+     * uses the same runtime path as `gpu.numericStability.ordinaryExecution(...)`
+     * without requiring callers to enter through the numeric-stability
+     * namespace first.
+     */
+    ordinaryExecution,
     numericStability: {
       /**
        * Evaluate a bounded LM-head slice under fast, stable, and reference numeric policies.
@@ -2129,6 +2390,25 @@ function createBoundDoe(device) {
       matmulLogitsSlice(options) {
         return numericStabilityMatmulLogitsSliceResult(device, options);
       },
+      /**
+       * Run an ordinary Doe command stream and surface any in-path numeric-stability receipts.
+       *
+       * Surface: Doe API `gpu.numericStability`.
+       * Input: A normal runtime command stream plus optional runtime bench settings.
+       * Returns: A promise for the traced run and any numeric-stability receipt rows.
+       *
+       * This helper reuses the ordinary `doe-zig-runtime` execution path instead
+       * of the explicit bounded-slice service. The runtime executes the command
+       * stream, auto-detects supported sensitive operators such as
+       * `matmul.logits`, and then returns the live receipt rows emitted during
+       * that execution.
+       *
+       * - This path requires Doe native runtime support and a trace-meta output.
+       * - Receipts may be empty when no supported numeric-stability event fired.
+       * - Current ordinary-execution support is runtime-driven; browser shims do
+       *   not provide it yet.
+       */
+      ordinaryExecution,
     },
     compute,
   };
@@ -2136,6 +2416,19 @@ function createBoundDoe(device) {
 
 export function createDoeNamespace({ requestDevice } = {}) {
   return {
+    /**
+     * Run an ordinary Doe command stream and inherit the runtime numeric-governance path.
+     *
+     * Surface: Doe API namespace.
+     * Input: A normal runtime command stream plus optional runtime bench settings.
+     * Returns: A promise for the traced run and any in-path numeric-stability receipt rows.
+     *
+     * This is the package-level entrypoint for ordinary Doe execution when no
+     * pre-bound device helper is needed.
+     */
+    ordinaryExecution(options) {
+      return ordinaryExecutionResult(null, options);
+    },
     /**
      * Request a device and return the bound Doe API in one step.
      *

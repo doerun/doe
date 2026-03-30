@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "planVersion": "2026-03-29-sampled-decode-harvest-v1",
+  "policyPath": "config/numeric-stability-policy.json",
+  "executionProfileId": "numeric-stability/default-ordinary-execution-v1",
+  "repeatCount": 3,
+  "kernelRoot": "bench/inference-pipeline/kernels",
+  "sampleConfig": {
+    "temperature": 1.0,
+    "topK": 8,
+    "topP": 0.95,
+    "rngSeed": 17,
+    "rngDraw": 0.5
+  },
+  "backend": {
+    "vendor": "apple",
+    "api": "metal",
+    "family": "apple-gpu",
+    "driver": "1.0.0",
+    "backendLane": "metal_doe_app"
+  },
+  "cases": [
+    {
+      "caseId": "decode-demo-sampled",
+      "commandsPath": "examples/numeric-stability-decode-sampled.commands.json",
+      "kernelRoot": ".",
+      "promptText": "Decode demo sampled control case for ordinary Doe execution.",
+      "semanticPriorityClass": "other",
+      "repeatCount": 3,
+      "maxSampleStepsToCapture": 1,
+      "sampleConfig": {
+        "temperature": 1.0,
+        "topK": 2,
+        "topP": 0.75,
+        "rngSeed": 17,
+        "rngDraw": 0.875
+      }
+    },
+    {
+      "caseId": "gemma3-270m-prefill64-decode64-sampled",
+      "commandsPath": "examples/inference_gemma3_270m_prefill_64tok_decode_64tok_commands.json",
+      "promptText": "Gemma 3 270M ordinary execution sampled harvest over the first decode steps.",
+      "semanticPriorityClass": "other",
+      "repeatCount": 3,
+      "maxSampleStepsToCapture": 5
+    }
+  ]
+}

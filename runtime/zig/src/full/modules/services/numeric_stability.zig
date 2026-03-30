@@ -116,10 +116,71 @@ pub const TriggerReceipt = struct {
 pub const RouteReceipt = struct {
     decision: []const u8,
     selectionMode: []const u8,
+    committedResultMode: []const u8,
+    downstreamAction: []const u8,
+    effectApplied: bool,
     selectedPolicyId: ?[]const u8 = null,
     selectedToken: ?u32 = null,
     proofLinks: []const numeric_stability_policy.ProofLink,
     selectionProofLinks: []const numeric_stability_policy.ProofLink,
+};
+
+pub const ExecutionIdentityReceipt = struct {
+    kernelPath: ?[]const u8 = null,
+    kernelBasename: ?[]const u8 = null,
+    layoutFingerprint: ?[]const u8 = null,
+    compiledPlanHash: ?[]const u8 = null,
+    backend: ?[]const u8 = null,
+    backendLane: ?[]const u8 = null,
+    adapterOrdinal: ?u32 = null,
+    queueFamilyIndex: ?u32 = null,
+    presentCapable: ?bool = null,
+    profileVendor: ?[]const u8 = null,
+    profileApi: ?[]const u8 = null,
+    profileFamily: ?[]const u8 = null,
+    profileDriver: ?[]const u8 = null,
+    selectionPolicyHash: ?[]const u8 = null,
+    hostPlanArtifactHash: ?[]const u8 = null,
+};
+
+pub const UpstreamReceiptLink = struct {
+    semanticOpId: []const u8,
+    semanticStage: []const u8,
+    semanticPhase: []const u8,
+    selectedPolicyId: ?[]const u8 = null,
+    decision: []const u8,
+};
+
+pub const DecodeBoundaryMetrics = struct {
+    fastTop1Margin: f64,
+    stableTop1Margin: f64,
+    referenceTop1Margin: f64,
+    topKBoundaryGap: ?f64 = null,
+    topPBoundaryGap: ?f64 = null,
+    cdfDistanceToDraw: ?f64 = null,
+    adjacentDecodePersistence: ?u32 = null,
+    actualSelectedTokenChanged: bool,
+    liveSelectedMatchesFast: bool,
+    liveSelectedMatchesStable: bool,
+    liveSelectedMatchesReference: bool,
+};
+
+pub const DecodeBoundaryReceipt = struct {
+    decodeMode: []const u8,
+    logitsCoverage: []const u8,
+    vocabSize: u32,
+    residualMassUpperBound: ?f64 = null,
+    temperature: ?f64 = null,
+    topK: ?u32 = null,
+    topP: ?f64 = null,
+    rngSeed: ?u64 = null,
+    rngDraw: ?f64 = null,
+    survivingTokenSetKind: []const u8,
+    survivingTokenIds: ?[]const u32 = null,
+    liveSelectedToken: u32,
+    liveSelectedMatchesCommittedSelection: bool,
+    metrics: DecodeBoundaryMetrics,
+    upstreamLinks: []const UpstreamReceiptLink,
 };
 
 pub const Receipt = struct {
@@ -139,7 +200,9 @@ pub const Receipt = struct {
     stablePolicyId: []const u8,
     referencePolicyId: []const u8,
     candidates: []const ReceiptCandidate,
+    executionIdentity: ?ExecutionIdentityReceipt = null,
     firstDivergence: ?FirstDivergence = null,
+    decodeBoundary: ?DecodeBoundaryReceipt = null,
     selectedToken: SelectedTokenReceipt,
     trigger: TriggerReceipt,
     route: RouteReceipt,
@@ -493,6 +556,7 @@ pub fn execute(allocator: std.mem.Allocator, request: Request, policy: Policy) !
         .stablePolicyId = request.stablePolicyId,
         .referencePolicyId = REFERENCE_POLICY_ID,
         .candidates = receipt_candidates,
+        .executionIdentity = null,
         .firstDivergence = first_divergence,
         .selectedToken = .{
             .fast = fast_token,
@@ -509,6 +573,9 @@ pub fn execute(allocator: std.mem.Allocator, request: Request, policy: Policy) !
         .route = .{
             .decision = route_decision,
             .selectionMode = route_metadata.selectionMode,
+            .committedResultMode = route_metadata.committedResultMode,
+            .downstreamAction = route_metadata.downstreamAction,
+            .effectApplied = false,
             .selectedPolicyId = selected_policy_id,
             .selectedToken = selected_token,
             .proofLinks = routing_policy.proofLinks,
@@ -529,6 +596,10 @@ pub fn execute(allocator: std.mem.Allocator, request: Request, policy: Policy) !
             .receipt_count = if (request.receiptPath != null) 1 else 0,
             .decision_counts = buildDecisionCounts(route_decision),
             .first_divergence_present_count = if (first_divergence != null) 1 else 0,
+            .annotation_count = 0,
+            .auto_detect_count = 0,
+            .committed_stable_rewrite_count = 0,
+            .downstream_stop_count = 0,
         };
         try writeTraceMetaJson(allocator, trace_meta_path, summary);
     }
@@ -619,16 +690,26 @@ test "prefer-stable fires when stable matches reference and fast misses" {
     const policy = Policy{
         .policyRegistryPath = "config/numeric-stability-policy.json",
         .registry = .{
-            .schemaVersion = 2,
-            .registryVersion = "2026-03-29-route-taxonomy-v2",
+            .schemaVersion = 3,
+            .registryVersion = "2026-03-29-execution-profiles-v1",
             .routeTaxonomyVersion = "numeric-stability-routes-v1",
             .proofArtifactPath = "pipeline/lean/artifacts/proven-conditions.json",
+            .defaultExecutionProfileId = "execution/default-v1",
             .routeDecisions = &.{ "accept-fast", "prefer-stable", "abstain" },
             .routeDecisionMetadata = &.{
-                .{ .decision = "accept-fast", .selectionMode = "fast", .proofLinks = &.{} },
-                .{ .decision = "prefer-stable", .selectionMode = "stable", .proofLinks = &.{} },
-                .{ .decision = "abstain", .selectionMode = "none", .proofLinks = &.{} },
+                .{ .decision = "accept-fast", .selectionMode = "fast", .committedResultMode = "fast", .downstreamAction = "continue", .proofLinks = &.{} },
+                .{ .decision = "prefer-stable", .selectionMode = "stable", .committedResultMode = "stable", .downstreamAction = "continue", .proofLinks = &.{} },
+                .{ .decision = "abstain", .selectionMode = "none", .committedResultMode = "none", .downstreamAction = "stop", .proofLinks = &.{} },
             },
+            .executionProfiles = &.{
+                .{
+                    .profileId = "execution/default-v1",
+                    .surface = numeric_stability_policy.EXECUTION_SURFACE_ORDINARY_EXECUTION,
+                    .description = "default execution profile",
+                    .routingPolicyId = request.routingPolicyId,
+                },
+            },
+            .autoDetectProfiles = &.{},
             .triggerPolicies = &.{
                 .{
                     .triggerPolicyId = request.triggerPolicyId,
@@ -691,16 +772,26 @@ test "accept-fast falls back when no divergence is present" {
     const policy = Policy{
         .policyRegistryPath = "config/numeric-stability-policy.json",
         .registry = .{
-            .schemaVersion = 2,
-            .registryVersion = "2026-03-29-route-taxonomy-v2",
+            .schemaVersion = 3,
+            .registryVersion = "2026-03-29-execution-profiles-v1",
             .routeTaxonomyVersion = "numeric-stability-routes-v1",
             .proofArtifactPath = "pipeline/lean/artifacts/proven-conditions.json",
+            .defaultExecutionProfileId = "execution/default-v1",
             .routeDecisions = &.{ "accept-fast", "prefer-stable", "abstain" },
             .routeDecisionMetadata = &.{
-                .{ .decision = "accept-fast", .selectionMode = "fast", .proofLinks = &.{} },
-                .{ .decision = "prefer-stable", .selectionMode = "stable", .proofLinks = &.{} },
-                .{ .decision = "abstain", .selectionMode = "none", .proofLinks = &.{} },
+                .{ .decision = "accept-fast", .selectionMode = "fast", .committedResultMode = "fast", .downstreamAction = "continue", .proofLinks = &.{} },
+                .{ .decision = "prefer-stable", .selectionMode = "stable", .committedResultMode = "stable", .downstreamAction = "continue", .proofLinks = &.{} },
+                .{ .decision = "abstain", .selectionMode = "none", .committedResultMode = "none", .downstreamAction = "stop", .proofLinks = &.{} },
             },
+            .executionProfiles = &.{
+                .{
+                    .profileId = "execution/default-v1",
+                    .surface = numeric_stability_policy.EXECUTION_SURFACE_ORDINARY_EXECUTION,
+                    .description = "default execution profile",
+                    .routingPolicyId = request.routingPolicyId,
+                },
+            },
+            .autoDetectProfiles = &.{},
             .triggerPolicies = &.{
                 .{
                     .triggerPolicyId = request.triggerPolicyId,

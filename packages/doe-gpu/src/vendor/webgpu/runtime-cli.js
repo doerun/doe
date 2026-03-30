@@ -65,6 +65,15 @@ function readTraceMeta(path) {
     return JSON.parse(raw);
 }
 
+function readJsonl(path) {
+    if (!path || !existsSync(path)) return [];
+    return readFileSync(path, "utf8")
+        .split(/\r?\n/u)
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0)
+        .map((line) => JSON.parse(line));
+}
+
 function clearOutputPath(path) {
     if (!path || !existsSync(path)) return;
     try {
@@ -77,10 +86,12 @@ function clearOutputPath(path) {
 function buildBenchArgs(options) {
     const args = ["--commands", options.commandsPath];
     if (options.quirksPath) args.push("--quirks", options.quirksPath);
+    if (options.kernelRoot) args.push("--kernel-root", options.kernelRoot);
     if (options.vendor) args.push("--vendor", options.vendor);
     if (options.api) args.push("--api", options.api);
     if (options.family) args.push("--family", options.family);
     if (options.driver) args.push("--driver", options.driver);
+    if (options.backendLane) args.push("--backend-lane", options.backendLane);
     if (options.queueWaitMode) args.push("--queue-wait-mode", options.queueWaitMode);
     if (options.queueSyncMode) args.push("--queue-sync-mode", options.queueSyncMode);
     if (options.uploadBufferUsage) args.push("--upload-buffer-usage", options.uploadBufferUsage);
@@ -90,6 +101,15 @@ function buildBenchArgs(options) {
     args.push("--backend", "native", "--execute");
     if (options.traceJsonlPath) args.push("--trace-jsonl", options.traceJsonlPath);
     if (options.traceMetaPath) args.push("--trace-meta", options.traceMetaPath);
+    if (options.numericStabilityPolicyPath) {
+        args.push("--numeric-stability-policy", options.numericStabilityPolicyPath);
+    }
+    if (options.numericStabilityExecutionProfileId) {
+        args.push(
+            "--numeric-stability-execution-profile",
+            options.numericStabilityExecutionProfileId,
+        );
+    }
     if (Array.isArray(options.extraArgs) && options.extraArgs.length > 0) {
         args.push(...options.extraArgs);
     }
@@ -198,19 +218,50 @@ export function createDoeRuntime(options = {}) {
         if (!runOptions || typeof runOptions !== "object") {
             throw new Error("runBench requires an options object.");
         }
-        requireExistingPath("commandsPath", runOptions.commandsPath);
-        if (runOptions.quirksPath) requireExistingPath("quirksPath", runOptions.quirksPath);
-        clearOutputPath(runOptions.traceJsonlPath);
-        clearOutputPath(runOptions.traceMetaPath);
-        const args = buildBenchArgs(runOptions);
-        const result = runRaw(args, {
-            cwd: runOptions.cwd || REPO_ROOT,
+        const runCwd = runOptions.cwd || REPO_ROOT;
+        const commandsPath = resolve(runCwd, runOptions.commandsPath);
+        const quirksPath = runOptions.quirksPath ? resolve(runCwd, runOptions.quirksPath) : null;
+        const kernelRoot = runOptions.kernelRoot ? resolve(runCwd, runOptions.kernelRoot) : null;
+        const traceJsonlPath = runOptions.traceJsonlPath
+            ? resolve(runCwd, runOptions.traceJsonlPath)
+            : null;
+        const traceMetaPath = runOptions.traceMetaPath
+            ? resolve(runCwd, runOptions.traceMetaPath)
+            : null;
+        const numericStabilityPolicyPath = runOptions.numericStabilityPolicyPath
+            ? resolve(runCwd, runOptions.numericStabilityPolicyPath)
+            : null;
+        const numericStabilityExecutionProfileId =
+            typeof runOptions.numericStabilityExecutionProfileId === "string" &&
+            runOptions.numericStabilityExecutionProfileId.trim().length > 0
+                ? runOptions.numericStabilityExecutionProfileId.trim()
+                : null;
+        requireExistingPath("commandsPath", commandsPath);
+        if (quirksPath) requireExistingPath("quirksPath", quirksPath);
+        if (kernelRoot) requireExistingPath("kernelRoot", kernelRoot);
+        if (numericStabilityPolicyPath) {
+            requireExistingPath("numericStabilityPolicyPath", numericStabilityPolicyPath);
+        }
+        clearOutputPath(traceJsonlPath);
+        clearOutputPath(traceMetaPath);
+        const args = buildBenchArgs({
+            ...runOptions,
+            commandsPath,
+            quirksPath,
+            kernelRoot,
+            traceJsonlPath,
+            traceMetaPath,
+            numericStabilityPolicyPath,
+            numericStabilityExecutionProfileId,
         });
-        const traceMeta = readTraceMeta(runOptions.traceMetaPath);
+        const result = runRaw(args, {
+            cwd: runCwd,
+        });
+        const traceMeta = readTraceMeta(traceMetaPath);
         return {
             ...result,
-            traceJsonlPath: runOptions.traceJsonlPath ?? null,
-            traceMetaPath: runOptions.traceMetaPath ?? null,
+            traceJsonlPath,
+            traceMetaPath,
             traceMeta,
         };
     }
@@ -340,6 +391,66 @@ export function createDoeRuntime(options = {}) {
         };
     }
 
+    function runNumericStabilityOrdinaryExecution(runOptions) {
+        if (!runOptions || typeof runOptions !== "object") {
+            throw new Error("runNumericStabilityOrdinaryExecution requires an options object.");
+        }
+        const autoArtifactDir =
+            runOptions.traceJsonlPath == null || runOptions.traceMetaPath == null
+                ? mkdtempSync(join(tmpdir(), "doe-numeric-stability-ordinary-"))
+                : null;
+        const runCwd = runOptions.cwd || REPO_ROOT;
+        const traceJsonlPath = resolve(
+            runCwd,
+            runOptions.traceJsonlPath ??
+                join(autoArtifactDir, "numeric-stability-ordinary.trace.jsonl")
+        );
+        const traceMetaPath = resolve(
+            runCwd,
+            runOptions.traceMetaPath ??
+                join(autoArtifactDir, "numeric-stability-ordinary.trace-meta.json")
+        );
+        const benchResult = runBench({
+            ...runOptions,
+            traceJsonlPath,
+            traceMetaPath,
+            numericStabilityPolicyPath:
+                runOptions.numericStabilityPolicyPath ??
+                runOptions.policyPath ??
+                DEFAULT_NUMERIC_STABILITY_POLICY_REGISTRY_PATH,
+            numericStabilityExecutionProfileId:
+                runOptions.numericStabilityExecutionProfileId ??
+                runOptions.executionProfileId ??
+                null,
+            kernelRoot: runOptions.kernelRoot ?? ".",
+        });
+        const receiptPathValue = benchResult.traceMeta?.numericStability?.receiptPath;
+        const receiptPath =
+            typeof receiptPathValue === "string" && receiptPathValue.length > 0
+                ? receiptPathValue
+                : null;
+        const receipts = readJsonl(receiptPath);
+        const latestReceipt = receipts.length > 0 ? receipts[receipts.length - 1] : null;
+        const routeDecisions = receipts
+            .map((receipt) => receipt?.route?.decision)
+            .filter((decision) => typeof decision === "string");
+        return {
+            ...benchResult,
+            receiptPath,
+            receipts,
+            latestReceipt,
+            routeDecisions,
+            latestRouteDecision: latestReceipt?.route?.decision ?? null,
+            latestToken: latestReceipt?.route?.selectedToken ?? null,
+            executionProfileId:
+                benchResult.traceMeta?.numericStability?.executionProfileId ?? null,
+        };
+    }
+
+    function runOrdinaryExecution(runOptions) {
+        return runNumericStabilityOrdinaryExecution(runOptions);
+    }
+
     return {
         binPath,
         libPath,
@@ -347,7 +458,9 @@ export function createDoeRuntime(options = {}) {
         runRaw,
         runBench,
         runModule,
+        runOrdinaryExecution,
         runNumericStabilityMatmulLogitsSlice,
+        runNumericStabilityOrdinaryExecution,
     };
 }
 

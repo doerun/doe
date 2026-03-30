@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://doe-gpu.dev/config/numeric-stability-decode-row-enrichment.schema.json",
+  "title": "Numeric stability decode row enrichment",
+  "type": "object",
+  "required": ["schemaVersion", "entries"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "entries": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/entry" }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "match": {
+      "type": "object",
+      "properties": {
+        "receiptPath": { "type": "string", "minLength": 1 },
+        "semanticStage": { "type": "string", "minLength": 1 },
+        "semanticOpId": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false,
+      "minProperties": 1
+    },
+    "selectedTokenText": {
+      "type": "object",
+      "properties": {
+        "fast": { "type": "string", "minLength": 1 },
+        "stable": { "type": "string", "minLength": 1 },
+        "reference": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "suffixReplay": {
+      "type": "object",
+      "required": ["available", "divergent"],
+      "properties": {
+        "available": { "type": "boolean" },
+        "divergent": { "type": "boolean" },
+        "replayStepCount": { "type": ["integer", "null"], "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "overrides": {
+      "type": "object",
+      "properties": {
+        "caseId": { "type": "string", "minLength": 1 },
+        "promptText": { "type": "string", "minLength": 1 },
+        "decodeStepIndex": { "type": "integer", "minimum": 0 },
+        "semanticPriorityClass": { "type": "string", "minLength": 1 },
+        "selectedTokenText": { "$ref": "#/$defs/selectedTokenText" },
+        "withinPolicyStable": { "type": "boolean" },
+        "adjacentDecodePersistence": { "type": "number", "minimum": 0 },
+        "suffixReplay": { "$ref": "#/$defs/suffixReplay" }
+      },
+      "additionalProperties": false
+    },
+    "entry": {
+      "type": "object",
+      "required": ["match", "overrides"],
+      "properties": {
+        "match": { "$ref": "#/$defs/match" },
+        "overrides": { "$ref": "#/$defs/overrides" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

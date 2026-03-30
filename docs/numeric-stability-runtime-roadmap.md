@@ -19,6 +19,7 @@ The current evidence base lives in:
 - [`bench/README.md`](../bench/README.md)
 - [`config/numeric-stability-policy.json`](../config/numeric-stability-policy.json)
 - [`config/numeric-stability-policy.schema.json`](../config/numeric-stability-policy.schema.json)
+- [`docs/numeric-stability-decode-validation-plan.md`](./numeric-stability-decode-validation-plan.md)
 - [`pipeline/lean/Doe/Core/NumericStabilityPolicy.lean`](../pipeline/lean/Doe/Core/NumericStabilityPolicy.lean)
 
 ## Current truth
@@ -48,7 +49,16 @@ The current numeric-stability contract is real but narrow:
 2. one trigger family and one routing family are currently defined
 3. route evaluation now exists in both:
    - bench/probe flows for promoted cases
-   - native ordinary execution for annotated `matmul.logits`
+   - native ordinary execution for auto-detected `matmul.logits`
+   - explicit `doe-gpu` ordinary-execution consumption of the same receipt lane
+
+The next decode-boundary expansion is now explicit too:
+
+1. Track 1 owns the future `sample.token` receipt surface
+2. Track 2 owns mining and promotion of likely fragile decode states
+3. Track 3 owns meaningful-token filtering, short suffix consequence, and
+   Metal-first then Vulkan promotion rules in
+   [`docs/numeric-stability-decode-validation-plan.md`](./numeric-stability-decode-validation-plan.md)
 
 The current public/package determinism surface is also real but separate:
 
@@ -92,14 +102,14 @@ The target capability is:
 1. the runtime detects a numerically fragile decision boundary
 2. it localizes first divergence to a named operator family
 3. it reruns only the fragile operator under a stronger declared numeric policy
-4. it returns a governed route decision from the real runtime path
+4. it can make that route decision matter to live execution
 5. it emits versioned receipts that tie route semantics to config and proof
 
 The concise product thesis is:
 
 **Doe is a WebGPU runtime that can detect numerically fragile decisions, rerun
-only the fragile operator under a stronger declared policy, and return a
-receipted route decision.**
+only the fragile operator under a stronger declared policy, and govern the
+live outcome with a receipted route decision.**
 
 ## What must belong to Doe
 
@@ -126,8 +136,9 @@ The following must land in Doe to become defensible:
 2. runtime-emitted first-divergence receipts
 3. operator-local rerun in the live execution path
 4. route decisions executed by the runtime, not a post-hoc probe
-5. package-facing APIs that expose the contract to ordinary callers
-6. eventual browser-lane consumption of the same core contract
+5. route effect on live execution, not just receipt emission
+6. package-facing APIs that expose the contract to ordinary callers
+7. eventual browser-lane consumption of the same core contract
 
 The clean rule is:
 
@@ -153,9 +164,14 @@ More specifically:
 3. there is now a public `doe-gpu` numeric-stability API for the bounded
    `matmul.logits` slice service
 4. there is now a native ordinary-execution rerun path in `runtime/zig` for
-   annotated `matmul.logits`
-5. ordinary package callers do not yet get that in-path behavior
-6. the current flagship is still parity evidence on Doe and Dawn, not a Doe-only
+   auto-detected `matmul.logits`
+5. that in-path path now has explicit route effect on downstream execution for
+   the current native lane:
+   - `prefer-stable` rewrites the committed result
+   - `abstain` stops the downstream suffix
+6. ordinary package callers now have an explicit helper for that in-path
+   receipt contract
+7. the current flagship is still parity evidence on Doe and Dawn, not a Doe-only
    runtime behavior claim
 
 ## Public claim ladder
@@ -179,7 +195,13 @@ Claims must stay below the current implementation boundary.
 2. Doe runtime can rerun one sensitive operator family under a stronger policy.
 3. Doe can enforce `accept-fast`, `prefer-stable`, and `abstain` in a live path.
 
-This is now true for native `matmul.logits`.
+This is now true in the narrow sense for native `matmul.logits`.
+
+What is not yet true:
+
+1. that the routed result is committed into ordinary downstream execution for
+   general callers
+2. that multiple operator families share the same live path
 
 ### True only later
 
@@ -307,10 +329,27 @@ Exit bar:
 Status:
 
 1. done for native annotated `matmul.logits`
-2. remaining work is broader operator families and ordinary package-caller
-   exposure
+2. the remaining moat work is route effect on downstream execution, broader
+   operator families, and ordinary package-caller exposure
 
-## Phase 4: expose it in `doe-gpu`
+## Phase 4: make the route affect live execution
+
+Goal: move from observation-plus-receipt to real execution governance.
+
+Deliver:
+
+1. `accept-fast` explicitly commits the fast path and records that fact
+2. `prefer-stable` can commit the stable result into the live path
+3. `abstain` can stop forced continuation with a typed governed outcome
+4. receipts prove not only the chosen route but the route effect
+
+Exit bar:
+
+1. at least one in-path case changes the committed downstream result
+2. at least one in-path `abstain` case prevents forced continuation
+3. receipts show route effect, not just route selection
+
+## Phase 5: expose it in `doe-gpu`
 
 Goal: make numeric stability visible to package callers as a first-class
 runtime capability.
@@ -333,9 +372,9 @@ Exit bar:
 Status:
 
 1. done for the explicit bounded-slice service
-2. not yet done for ordinary-execution operator-local rerun
+2. not yet done for ordinary-execution operator-local rerun or route effect
 
-## Phase 5: grow policy and proof
+## Phase 6: grow policy and proof
 
 Goal: evolve past the current minimal trigger family without losing rigor.
 
@@ -355,9 +394,23 @@ If `review-required` is introduced later, it must land through:
 3. Lean route-proof expansion
 4. package/runtime receipt updates
 
-## Phase 6: browser promotion
+## Phase 7: browser promotion
 
 Goal: make the browser lane consume the same promoted runtime contract.
+
+## Route-effect reading order
+
+The intended sequence is:
+
+1. explicit bounded-slice service
+2. annotation-gated in-path rerun
+3. route effect on live execution
+4. automatic detection
+5. multiple operator families
+6. ordinary package exposure
+7. browser consumption
+
+That is the shortest path from evidence to moat.
 
 This comes last.
 
@@ -419,7 +472,28 @@ Runtime v1 is done when all of the following are true:
 7. one live `abstain` case exists.
 8. docs and receipts distinguish current truth from target state cleanly.
 
-At that point, the novelty claim becomes credible:
+At that point, the runtime-capability claim becomes credible:
 
 **Doe is not just a harness that finds numeric fragility. It is a WebGPU
 runtime that can govern it.**
+
+## Definition of done for moat v1
+
+Moat v1 is a higher bar than runtime v1.
+
+Moat v1 is done only when all of the following are true:
+
+1. at least one in-path route affects downstream execution rather than only
+   emitting a receipt
+2. at least one in-path `abstain` case prevents a forced winner in live
+   execution
+3. at least two operator families share the same ordinary-execution governance
+   path
+4. ordinary package callers can consume the same promoted in-path contract
+5. the cost envelope for automatic or default triggering is measured and
+   bounded
+
+At that point, the moat claim becomes credible:
+
+**Doe is the WebGPU runtime that governs numeric fragility for ordinary
+callers, not just the runtime that can detect and receipt it.**

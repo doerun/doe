@@ -1,0 +1,99 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "numeric-stability-semantic-envelope",
+  "artifactVersion": "semantic-envelope-v1",
+  "scenarioId": "semantic-envelope-red-go-stop-demo",
+  "description": "Example semantic envelope for a bounded go/stop decision under multiple legal numeric views.",
+  "sourceCaseRefs": [
+    {
+      "kind": "fragility-signature",
+      "path": "config/fragility-signatures/promoted/prompt-lm-head-flip-red-go-stop-answer-2f8677733c.json"
+    },
+    {
+      "kind": "runtime-receipt",
+      "path": "bench/out/apple-metal-in-path-numeric-stability/20260329T223000Z/in-path-red-go-stop/in-path-numeric-stability.trace-meta.json.numeric-stability.jsonl"
+    }
+  ],
+  "semanticClasses": [
+    {
+      "classId": "safe.go",
+      "label": "go",
+      "memberTokens": [
+        { "tokenId": 1001, "tokenText": "go" }
+      ]
+    },
+    {
+      "classId": "safe.stop",
+      "label": "stop",
+      "memberTokens": [
+        { "tokenId": 1002, "tokenText": "stop" }
+      ]
+    }
+  ],
+  "views": [
+    {
+      "viewId": "prefill-fast",
+      "viewKind": "full-prefill",
+      "numericPolicyId": "lm-head-slice/forward-f16accum-v1",
+      "kernelVariantId": "matmul_logits_forward_f16accum",
+      "prefixVariantId": null,
+      "decodeWindowId": null,
+      "reachableClassIds": ["safe.go", "safe.stop"],
+      "selectedClassId": "safe.stop",
+      "outsiderDominates": false,
+      "boundedMargin": 0.021706,
+      "outsiderLead": 0.0
+    },
+    {
+      "viewId": "prefill-stable",
+      "viewKind": "full-prefill",
+      "numericPolicyId": "lm-head-slice/forward-serial-v1",
+      "kernelVariantId": "matmul_logits_forward_f32",
+      "prefixVariantId": null,
+      "decodeWindowId": null,
+      "reachableClassIds": ["safe.go", "safe.stop"],
+      "selectedClassId": "safe.go",
+      "outsiderDominates": false,
+      "boundedMargin": 0.021706,
+      "outsiderLead": 0.0
+    },
+    {
+      "viewId": "decode1-stable",
+      "viewKind": "prefill-plus-decode1",
+      "numericPolicyId": "lm-head-slice/forward-serial-v1",
+      "kernelVariantId": "matmul_logits_forward_f32",
+      "prefixVariantId": null,
+      "decodeWindowId": "decode1",
+      "reachableClassIds": ["safe.go"],
+      "selectedClassId": "safe.go",
+      "outsiderDominates": false,
+      "boundedMargin": 0.0800000000000000,
+      "outsiderLead": 0.0
+    }
+  ],
+  "reachableAnswers": [
+    {
+      "classId": "safe.go",
+      "reachableViaViews": ["prefill-fast", "prefill-stable", "decode1-stable"],
+      "selectedByViews": ["prefill-stable", "decode1-stable"]
+    },
+    {
+      "classId": "safe.stop",
+      "reachableViaViews": ["prefill-fast", "prefill-stable"],
+      "selectedByViews": ["prefill-fast"]
+    }
+  ],
+  "envelopeStatus": "split",
+  "metrics": {
+    "semanticEnvelopeWidth": 2,
+    "classAgreementRate": 0.6666666666666666,
+    "outsiderDominanceRate": 0.0,
+    "meanBoundedMargin": 0.04056866666666667,
+    "routeStabilityAcrossAdjacentDecode": 0.5,
+    "incrementalCostUnits": 3.0
+  },
+  "notes": [
+    "Example only; values are illustrative and schema-valid.",
+    "The artifact records reachable semantic classes across legal numeric/runtime views."
+  ]
+}

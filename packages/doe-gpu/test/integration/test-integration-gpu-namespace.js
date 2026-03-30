@@ -144,6 +144,24 @@ try {
       repo: repoRegistry.routingPolicies[0].policyId,
     }),
   );
+  check(
+    'numeric stability default execution profile matches config',
+    DOE_NUMERIC_STABILITY_POLICY_REGISTRY.defaultExecutionProfileId ===
+      repoRegistry.defaultExecutionProfileId,
+    JSON.stringify({
+      package: DOE_NUMERIC_STABILITY_POLICY_REGISTRY.defaultExecutionProfileId,
+      repo: repoRegistry.defaultExecutionProfileId,
+    }),
+  );
+  check(
+    'numeric stability execution profile count matches config',
+    DOE_NUMERIC_STABILITY_POLICY_REGISTRY.executionProfiles.length ===
+      repoRegistry.executionProfiles.length,
+    JSON.stringify({
+      package: DOE_NUMERIC_STABILITY_POLICY_REGISTRY.executionProfiles.length,
+      repo: repoRegistry.executionProfiles.length,
+    }),
+  );
 } catch (err) {
   check('numeric stability policy registry sync', false, err.message);
 }
@@ -152,10 +170,20 @@ console.log('\n0c. numeric stability namespace shape');
 
 {
   const bound = gpu.bind({});
+  check('gpu.ordinaryExecution is function', typeof gpu.ordinaryExecution === 'function');
+  check('gpu.bind({}).ordinaryExecution is function', typeof bound.ordinaryExecution === 'function');
   check('gpu.bind({}) exposes numericStability', bound.numericStability != null && typeof bound.numericStability === 'object');
   check(
     'gpu.bind({}).numericStability.matmulLogitsSlice is function',
     typeof bound.numericStability?.matmulLogitsSlice === 'function',
+  );
+  check(
+    'gpu.bind({}).numericStability.ordinaryExecution is function',
+    typeof bound.numericStability?.ordinaryExecution === 'function',
+  );
+  check(
+    'gpu.bind({}).ordinaryExecution aliases numericStability.ordinaryExecution',
+    bound.ordinaryExecution === bound.numericStability?.ordinaryExecution,
   );
 }
 
@@ -181,6 +209,7 @@ try {
   check('bound.commandEncoder is object', bound.commandEncoder != null && typeof bound.commandEncoder === 'object');
   check('bound.commandEncoder.create is function', typeof bound.commandEncoder.create === 'function');
   check('bound.determinism.stableChoice is function', typeof bound.determinism.stableChoice === 'function');
+  check('bound.ordinaryExecution is function', typeof bound.ordinaryExecution === 'function');
   bound.device.destroy();
 } catch (err) {
   if (isDeviceUnavailableError(err)) {

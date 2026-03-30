@@ -1,0 +1,141 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://doe-gpu.dev/config/numeric-stability-semantic-envelope-plan.schema.json",
+  "title": "Numeric stability semantic envelope plan",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "planVersion",
+    "proposalState",
+    "combinationFamilies",
+    "algorithms",
+    "evaluationMetrics",
+    "rankedExperiments",
+    "noveltyCriteria"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "planVersion": { "type": "string", "minLength": 1 },
+    "proposalState": { "const": "planning-only" },
+    "combinationFamilies": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/combinationFamily" }
+    },
+    "algorithms": {
+      "type": "array",
+      "minItems": 2,
+      "items": { "$ref": "#/$defs/algorithm" }
+    },
+    "evaluationMetrics": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/metric" }
+    },
+    "rankedExperiments": {
+      "type": "array",
+      "minItems": 8,
+      "items": { "$ref": "#/$defs/experiment" }
+    },
+    "noveltyCriteria": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "combinationFamily": {
+      "type": "object",
+      "required": ["familyId", "description", "branchWhenTriggeredOnly"],
+      "properties": {
+        "familyId": {
+          "type": "string",
+          "enum": [
+            "full-prefill",
+            "truncated-prefix-subsequences",
+            "semantic-rewrites",
+            "prefill-plus-decode1",
+            "short-suffix-replay-windows",
+            "kernel-policy-variants",
+            "bounded-pair-vs-global-topk"
+          ]
+        },
+        "description": { "type": "string", "minLength": 1 },
+        "branchWhenTriggeredOnly": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "algorithm": {
+      "type": "object",
+      "required": ["algorithmId", "description", "collapseRule"],
+      "properties": {
+        "algorithmId": {
+          "type": "string",
+          "enum": [
+            "policy-beam-decode-with-semantic-collapse",
+            "semantic-barycenter-across-views"
+          ]
+        },
+        "description": { "type": "string", "minLength": 1 },
+        "collapseRule": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "metric": {
+      "type": "object",
+      "required": ["metricId", "description"],
+      "properties": {
+        "metricId": {
+          "type": "string",
+          "enum": [
+            "semantic-envelope-width",
+            "class-agreement-rate",
+            "outsider-lead",
+            "bounded-margin",
+            "route-stability-across-adjacent-decode",
+            "incremental-cost"
+          ]
+        },
+        "description": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "experiment": {
+      "type": "object",
+      "required": [
+        "rank",
+        "scenarioStem",
+        "bucket",
+        "sourceRef",
+        "whyItMatters"
+      ],
+      "properties": {
+        "rank": { "type": "integer", "minimum": 1 },
+        "scenarioStem": { "type": "string", "minLength": 1 },
+        "bucket": {
+          "type": "string",
+          "enum": ["headline-safe", "embarrassing-control", "abstain-friendly"]
+        },
+        "sourceRef": {
+          "type": "object",
+          "required": ["kind", "id", "evidenceStage"],
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": ["fragility-signature", "fragility-corpus-entry"]
+            },
+            "id": { "type": "string", "minLength": 1 },
+            "evidenceStage": {
+              "type": "string",
+              "enum": ["runtime-exercised", "promoted", "corpus-only"]
+            }
+          },
+          "additionalProperties": false
+        },
+        "whyItMatters": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    }
+  }
+}

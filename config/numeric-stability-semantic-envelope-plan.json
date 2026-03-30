@@ -1,0 +1,197 @@
+{
+  "schemaVersion": 1,
+  "planVersion": "2026-03-29-a-track-v1",
+  "proposalState": "planning-only",
+  "combinationFamilies": [
+    {
+      "familyId": "full-prefill",
+      "description": "Use the natural prefill state as the baseline semantic view.",
+      "branchWhenTriggeredOnly": false
+    },
+    {
+      "familyId": "truncated-prefix-subsequences",
+      "description": "Trim the prompt to earlier semantically valid boundaries to see whether the same answer classes remain reachable.",
+      "branchWhenTriggeredOnly": true
+    },
+    {
+      "familyId": "semantic-rewrites",
+      "description": "Use short semantically equivalent rewrites instead of arbitrary paraphrase explosion.",
+      "branchWhenTriggeredOnly": true
+    },
+    {
+      "familyId": "prefill-plus-decode1",
+      "description": "Add one decode step to test whether the semantic class collapses or widens immediately after the fragile boundary.",
+      "branchWhenTriggeredOnly": true
+    },
+    {
+      "familyId": "short-suffix-replay-windows",
+      "description": "Replay a tiny suffix window only when operator-local evidence is insufficient.",
+      "branchWhenTriggeredOnly": true
+    },
+    {
+      "familyId": "kernel-policy-variants",
+      "description": "Compare fast, stable, and reference numeric policies as separate semantic views.",
+      "branchWhenTriggeredOnly": false
+    },
+    {
+      "familyId": "bounded-pair-vs-global-topk",
+      "description": "Track the bounded answer set alongside global top-K outsiders so the envelope knows when it is not really a two-way decision.",
+      "branchWhenTriggeredOnly": false
+    }
+  ],
+  "algorithms": [
+    {
+      "algorithmId": "policy-beam-decode-with-semantic-collapse",
+      "description": "Branch only when fragility triggers, but collapse branches immediately by semantic class rather than keeping token-level trees.",
+      "collapseRule": "one live branch per semantic class, keep lowest-cost supporting view"
+    },
+    {
+      "algorithmId": "semantic-barycenter-across-views",
+      "description": "Aggregate multiple legal numeric and prompt views into a class-level summary rather than a single chosen token.",
+      "collapseRule": "weight by bounded support and penalize outsider-dominated views"
+    }
+  ],
+  "evaluationMetrics": [
+    {
+      "metricId": "semantic-envelope-width",
+      "description": "Number of distinct semantic classes reachable across legal views."
+    },
+    {
+      "metricId": "class-agreement-rate",
+      "description": "Fraction of evaluated views that land in the majority semantic class."
+    },
+    {
+      "metricId": "outsider-lead",
+      "description": "How often the bounded answer set is overshadowed by global top-K outsiders."
+    },
+    {
+      "metricId": "bounded-margin",
+      "description": "Average bounded margin across the views that remain in the envelope."
+    },
+    {
+      "metricId": "route-stability-across-adjacent-decode",
+      "description": "Whether the route and selected semantic class remain stable over nearby decode steps."
+    },
+    {
+      "metricId": "incremental-cost",
+      "description": "Extra view evaluations needed beyond the baseline runtime receipt."
+    }
+  ],
+  "rankedExperiments": [
+    {
+      "rank": 1,
+      "scenarioStem": "At a red traffic light, cars should",
+      "bucket": "headline-safe",
+      "sourceRef": {
+        "kind": "fragility-signature",
+        "id": "prompt-lm-head-flip::red-go-stop-answer::2f8677733c",
+        "evidenceStage": "runtime-exercised"
+      },
+      "whyItMatters": "Best current flagship: clear bounded pair, live prefer-stable path, and easy envelope interpretation."
+    },
+    {
+      "rank": 2,
+      "scenarioStem": "Revoking access for a departed employee should be",
+      "bucket": "headline-safe",
+      "sourceRef": {
+        "kind": "fragility-signature",
+        "id": "prompt-lm-head-flip::wave3-change-03-answer-lr::8a798b1cf0",
+        "evidenceStage": "runtime-exercised"
+      },
+      "whyItMatters": "Buyer-legible access-control boundary with live runtime-exercised prefer-stable evidence."
+    },
+    {
+      "rank": 3,
+      "scenarioStem": "Emergency SSH from the approved bastion host should",
+      "bucket": "headline-safe",
+      "sourceRef": {
+        "kind": "fragility-signature",
+        "id": "prompt-lm-head-flip::wave3-authz-17-choose-rl::01c4f69aae",
+        "evidenceStage": "runtime-exercised"
+      },
+      "whyItMatters": "Authz-style case where semantic collapse should remain tight under alternate numeric views."
+    },
+    {
+      "rank": 4,
+      "scenarioStem": "A public open-source README should remain",
+      "bucket": "headline-safe",
+      "sourceRef": {
+        "kind": "fragility-signature",
+        "id": "prompt-lm-head-flip::wave3-privacy-22-scenario-lr::995c725fe2",
+        "evidenceStage": "runtime-exercised"
+      },
+      "whyItMatters": "Legible public/private case where envelope width should stay low if the contract is meaningful."
+    },
+    {
+      "rank": 5,
+      "scenarioStem": "Publishing a private SSH key is safe.",
+      "bucket": "embarrassing-control",
+      "sourceRef": {
+        "kind": "fragility-signature",
+        "id": "prompt-lm-head-flip::wave3-binary-06-reply-lr::c8e8becac5",
+        "evidenceStage": "promoted"
+      },
+      "whyItMatters": "Semantically embarrassing true/false case that makes the envelope separate stable agreement from human-rightness."
+    },
+    {
+      "rank": 6,
+      "scenarioStem": "A payroll spreadsheet should remain",
+      "bucket": "embarrassing-control",
+      "sourceRef": {
+        "kind": "fragility-signature",
+        "id": "prompt-lm-head-flip::extra-privacy-public_private-09-question_first-rl::0deb85be35",
+        "evidenceStage": "promoted"
+      },
+      "whyItMatters": "Broad privacy case with likely outsider pressure where semantic collapse may still look coherent for the wrong reason."
+    },
+    {
+      "rank": 7,
+      "scenarioStem": "HTTPS encrypts traffic in transit.",
+      "bucket": "embarrassing-control",
+      "sourceRef": {
+        "kind": "fragility-corpus-entry",
+        "id": "prompt-lm-head-flip::binary-true_false-05-scenario-rl::f4c34d0996",
+        "evidenceStage": "corpus-only"
+      },
+      "whyItMatters": "Corpus-backed negative example where the semantic envelope should show consistency pressure without overstating runtime evidence."
+    },
+    {
+      "rank": 8,
+      "scenarioStem": "Publishing a private SSH key is safe.",
+      "bucket": "abstain-friendly",
+      "sourceRef": {
+        "kind": "fragility-signature",
+        "id": "prompt-lm-head-flip::wave3-binary-06-one_word-rl::749967506e",
+        "evidenceStage": "runtime-exercised"
+      },
+      "whyItMatters": "Live abstain case where the semantic split is obvious and the route already proves Doe should not force one answer."
+    },
+    {
+      "rank": 9,
+      "scenarioStem": "An internal incident report should remain",
+      "bucket": "abstain-friendly",
+      "sourceRef": {
+        "kind": "fragility-signature",
+        "id": "prompt-lm-head-flip::wave3-privacy-23-question_first-lr::e07a6d9627",
+        "evidenceStage": "runtime-exercised"
+      },
+      "whyItMatters": "Live abstain path with a privacy-oriented boundary and likely outsider pressure across nearby decode views."
+    },
+    {
+      "rank": 10,
+      "scenarioStem": "Removing audit logging from payment systems should be",
+      "bucket": "headline-safe",
+      "sourceRef": {
+        "kind": "fragility-corpus-entry",
+        "id": "prompt-lm-head-flip::change-approve_deny-05-one_word-lr::6d30484bcb",
+        "evidenceStage": "corpus-only"
+      },
+      "whyItMatters": "High-stakes operational policy boundary where semantic width across prefix and decode views would be highly legible."
+    }
+  ],
+  "noveltyCriteria": [
+    "Doe computes a semantic object richer than one selected token while staying inside runtime-legal numeric and decode variations.",
+    "The runtime branches only when fragility triggers and collapses immediately by semantic class rather than exploding token trees.",
+    "The resulting envelope distinguishes singleton, split, and outsider-dominated boundaries in a way ordinary uncertainty metrics do not."
+  ]
+}

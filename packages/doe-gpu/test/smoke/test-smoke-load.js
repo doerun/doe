@@ -10,8 +10,13 @@
 //   0  All checks passed
 //   1  A check failed (actionable error printed)
 
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 let passed = 0;
 let failed = 0;
+const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../../../..');
 
 function check(label, condition, detail) {
   if (condition) {
@@ -21,6 +26,38 @@ function check(label, condition, detail) {
     failed++;
     console.error(`  FAIL: ${label}${detail ? ' — ' + detail : ''}`);
   }
+}
+
+function latestInPathNumericStabilityCommandsPath() {
+  const root = resolve(REPO_ROOT, 'bench/out/apple-metal-in-path-numeric-stability');
+  if (!existsSync(root)) {
+    return null;
+  }
+  const timestampDirs = readdirSync(root, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
+    .sort()
+    .reverse();
+  for (const timestampDir of timestampDirs) {
+    const caseRoot = resolve(root, timestampDir);
+    const manifestPath = resolve(caseRoot, 'apple_metal_in_path_numeric_stability.manifest.json');
+    if (!existsSync(manifestPath)) {
+      continue;
+    }
+    const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+    for (const entry of manifest.cases ?? []) {
+      const commandsPath = resolve(REPO_ROOT, entry.commandsPath);
+      if (existsSync(commandsPath)) {
+        return commandsPath;
+      }
+    }
+  }
+  return null;
+}
+
+function decodeSampledCommandsPath() {
+  const path = resolve(REPO_ROOT, 'examples/numeric-stability-decode-sampled.commands.json');
+  return existsSync(path) ? path : null;
 }
 
 console.log('=== doe-gpu smoke test ===\n');
@@ -62,8 +99,15 @@ check('gpu.bind({}).determinism.stableToken is a function', typeof boundWithoutG
 check('gpu.bind({}).determinism.stableChoice is a function', typeof boundWithoutGpu.determinism?.stableChoice === 'function');
 check('gpu.bind({}).determinism.reviewedChoice is a function', typeof boundWithoutGpu.determinism?.reviewedChoice === 'function');
 console.log('\ngpu numericStability shape:');
+check('gpu.ordinaryExecution is a function', typeof mod.gpu?.ordinaryExecution === 'function');
+check('gpu.bind({}).ordinaryExecution is a function', typeof boundWithoutGpu.ordinaryExecution === 'function');
 check('gpu.bind({}) exposes numericStability namespace', boundWithoutGpu.numericStability != null && typeof boundWithoutGpu.numericStability === 'object');
 check('gpu.bind({}).numericStability.matmulLogitsSlice is a function', typeof boundWithoutGpu.numericStability?.matmulLogitsSlice === 'function');
+check('gpu.bind({}).numericStability.ordinaryExecution is a function', typeof boundWithoutGpu.numericStability?.ordinaryExecution === 'function');
+check(
+  'gpu.bind({}).ordinaryExecution aliases numericStability.ordinaryExecution',
+  boundWithoutGpu.ordinaryExecution === boundWithoutGpu.numericStability?.ordinaryExecution,
+);
 try {
   const stable = await boundWithoutGpu.determinism.stableToken({
     logits: new Float32Array([0, 7, 7, 3]),
@@ -188,7 +232,9 @@ try {
   check('createDoeRuntime() returns object', typeof runtime === 'object' && runtime != null);
   check('runtime.runBench is a function', typeof runtime.runBench === 'function');
   check('runtime.runModule is a function', typeof runtime.runModule === 'function');
+  check('runtime.runOrdinaryExecution is a function', typeof runtime.runOrdinaryExecution === 'function');
   check('runtime.runNumericStabilityMatmulLogitsSlice is a function', typeof runtime.runNumericStabilityMatmulLogitsSlice === 'function');
+  check('runtime.runNumericStabilityOrdinaryExecution is a function', typeof runtime.runNumericStabilityOrdinaryExecution === 'function');
   if (typeof runtime.runNumericStabilityMatmulLogitsSlice === 'function') {
     try {
       const numeric = await boundWithoutGpu.numericStability.matmulLogitsSlice({
@@ -203,7 +249,7 @@ try {
       check('numericStability host helper returns stable token', numeric.token === 11, JSON.stringify(numeric));
       check('numericStability receipt reports numeric-stability mode', numeric.receipt?.mode === 'numeric-stability');
       check('numericStability receipt reports policy registry path', numeric.receipt?.policyRegistryPath === 'config/numeric-stability-policy.json');
-      check('numericStability receipt reports policy registry version', numeric.receipt?.policyRegistryVersion === '2026-03-29-route-taxonomy-v2');
+      check('numericStability receipt reports policy registry version', numeric.receipt?.policyRegistryVersion === '2026-03-29-execution-profiles-v1');
       check('numericStability receipt reports route taxonomy version', numeric.receipt?.routeTaxonomyVersion === 'numeric-stability-routes-v1');
       check('numericStability receipt reports route selection mode', numeric.receipt?.route?.selectionMode === 'stable');
       const acceptFast = await boundWithoutGpu.numericStability.matmulLogitsSlice({
@@ -229,6 +275,132 @@ try {
       check('numericStability host helper returns null token for abstain', abstain.token == null, JSON.stringify(abstain));
     } catch (err) {
       check('numericStability host helper succeeds', false, err.message);
+    }
+  }
+  if (typeof runtime.runOrdinaryExecution === 'function') {
+    const commandsPath = latestInPathNumericStabilityCommandsPath();
+    if (commandsPath) {
+      try {
+        const numeric = await boundWithoutGpu.ordinaryExecution({
+          runtime,
+          commandsPath,
+          vendor: 'apple',
+          api: 'metal',
+          family: 'apple-gpu',
+          driver: '1.0.0',
+        });
+        check(
+          'ordinaryExecution returns at least one route decision',
+          Array.isArray(numeric.routeDecisions) && numeric.routeDecisions.length >= 1,
+          JSON.stringify(numeric),
+        );
+        check(
+          'ordinaryExecution returns latest receipt',
+          numeric.latestReceipt?.mode === 'numeric-stability',
+          JSON.stringify(numeric.latestReceipt),
+        );
+        check(
+          'ordinaryExecution reports selected execution profile',
+          numeric.executionProfileId === 'numeric-stability/default-ordinary-execution-v1',
+          JSON.stringify({ executionProfileId: numeric.executionProfileId }),
+        );
+        check(
+          'ordinaryExecution receipt has kernel basename',
+          typeof numeric.latestReceipt?.executionIdentity?.kernelBasename === 'string' &&
+            numeric.latestReceipt.executionIdentity.kernelBasename.length > 0,
+          JSON.stringify(numeric.latestReceipt?.executionIdentity),
+        );
+        check(
+          'ordinaryExecution receipt has layout fingerprint',
+          typeof numeric.latestReceipt?.executionIdentity?.layoutFingerprint === 'string' &&
+            numeric.latestReceipt.executionIdentity.layoutFingerprint.length > 0,
+          JSON.stringify(numeric.latestReceipt?.executionIdentity),
+        );
+        check(
+          'ordinaryExecution receipt has compiled plan hash',
+          typeof numeric.latestReceipt?.executionIdentity?.compiledPlanHash === 'string' &&
+            numeric.latestReceipt.executionIdentity.compiledPlanHash.length > 0,
+          JSON.stringify(numeric.latestReceipt?.executionIdentity),
+        );
+        check(
+          'ordinaryExecution receipt records route effect fields',
+          typeof numeric.latestReceipt?.route?.effectApplied === 'boolean' &&
+            typeof numeric.latestReceipt?.route?.committedResultMode === 'string' &&
+            typeof numeric.latestReceipt?.route?.downstreamAction === 'string',
+          JSON.stringify(numeric.latestReceipt?.route),
+        );
+      } catch (err) {
+        check('ordinaryExecution helper succeeds', false, err.message);
+      }
+    } else {
+      console.log('  skip: ordinaryExecution (no in-path artifacts found)');
+    }
+
+    const decodeCommandsPath = decodeSampledCommandsPath();
+    if (decodeCommandsPath && process.platform === 'darwin') {
+      try {
+        const decode = await boundWithoutGpu.ordinaryExecution({
+          runtime,
+          commandsPath: decodeCommandsPath,
+          vendor: 'apple',
+          api: 'metal',
+          family: 'apple-gpu',
+          driver: '1.0.0',
+        });
+        check(
+          'ordinaryExecution decode demo emits decode.sample_token receipt',
+          decode.latestReceipt?.semanticOpId === 'decode.sample_token',
+          JSON.stringify(decode.latestReceipt),
+        );
+        check(
+          'ordinaryExecution decode demo exposes decodeBoundary block',
+          decode.latestReceipt?.decodeBoundary != null &&
+            typeof decode.latestReceipt.decodeBoundary === 'object',
+          JSON.stringify(decode.latestReceipt?.decodeBoundary),
+        );
+        check(
+          'ordinaryExecution decode demo reports sampled full-vocab boundary',
+          decode.latestReceipt?.decodeBoundary?.decodeMode === 'sampled-cdf' &&
+            decode.latestReceipt?.decodeBoundary?.logitsCoverage === 'full-vocab',
+          JSON.stringify(decode.latestReceipt?.decodeBoundary),
+        );
+        check(
+          'ordinaryExecution decode demo exposes sampled replay metrics',
+          typeof decode.latestReceipt?.decodeBoundary?.metrics?.fastTop1Margin === 'number' &&
+            typeof decode.latestReceipt?.decodeBoundary?.metrics?.actualSelectedTokenChanged === 'boolean' &&
+            typeof decode.latestReceipt?.decodeBoundary?.rngDraw === 'number',
+          JSON.stringify(decode.latestReceipt?.decodeBoundary?.metrics),
+        );
+        check(
+          'ordinaryExecution decode demo links upstream decode.final_logits receipt',
+          Array.isArray(decode.latestReceipt?.decodeBoundary?.upstreamLinks) &&
+            decode.latestReceipt.decodeBoundary.upstreamLinks[0]?.semanticOpId ===
+              'decode.final_logits',
+          JSON.stringify(decode.latestReceipt?.decodeBoundary?.upstreamLinks),
+        );
+        check(
+          'ordinaryExecution decode demo keeps live token aligned with committed selection',
+          decode.latestReceipt?.decodeBoundary?.liveSelectedMatchesCommittedSelection === true,
+          JSON.stringify(decode.latestReceipt?.decodeBoundary),
+        );
+        check(
+          'ordinaryExecution decode demo records a real selected-token change under sampled replay',
+          decode.latestReceipt?.decodeBoundary?.metrics?.actualSelectedTokenChanged === true &&
+            decode.latestReceipt?.selectedToken?.fast !== decode.latestReceipt?.selectedToken?.reference &&
+            decode.latestReceipt?.decodeBoundary?.liveSelectedToken ===
+              decode.latestReceipt?.selectedToken?.fast,
+          JSON.stringify({
+            selectedToken: decode.latestReceipt?.selectedToken,
+            metrics: decode.latestReceipt?.decodeBoundary?.metrics,
+          }),
+        );
+      } catch (err) {
+        check('ordinaryExecution decode demo succeeds', false, err.message);
+      }
+    } else if (decodeCommandsPath) {
+      console.log('  skip: ordinaryExecution decode demo (requires darwin metal lane)');
+    } else {
+      console.log('  skip: ordinaryExecution decode demo (example commands not found)');
     }
   }
 } catch {

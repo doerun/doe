@@ -1,8 +1,9 @@
 {
-  "schemaVersion": 2,
-  "registryVersion": "2026-03-29-route-taxonomy-v2",
+  "schemaVersion": 3,
+  "registryVersion": "2026-03-29-execution-profiles-v1",
   "routeTaxonomyVersion": "numeric-stability-routes-v1",
   "proofArtifactPath": "pipeline/lean/artifacts/proven-conditions.json",
+  "defaultExecutionProfileId": "numeric-stability/default-ordinary-execution-v1",
   "routeDecisions": [
     "accept-fast",
     "prefer-stable",
@@ -12,6 +13,8 @@
     {
       "decision": "accept-fast",
       "selectionMode": "fast",
+      "committedResultMode": "fast",
+      "downstreamAction": "continue",
       "proofLinks": [
         {
           "theorem": "selectedValueForRoute_acceptFast_returns_fast",
@@ -25,6 +28,8 @@
     {
       "decision": "prefer-stable",
       "selectionMode": "stable",
+      "committedResultMode": "stable",
+      "downstreamAction": "continue",
       "proofLinks": [
         {
           "theorem": "selectedValueForRoute_preferStable_returns_stable",
@@ -38,6 +43,8 @@
     {
       "decision": "abstain",
       "selectionMode": "none",
+      "committedResultMode": "none",
+      "downstreamAction": "stop",
       "proofLinks": [
         {
           "theorem": "selectedValueForRoute_abstain_returns_none",
@@ -49,6 +56,100 @@
       ]
     }
   ],
+  "executionProfiles": [
+    {
+      "profileId": "numeric-stability/default-ordinary-execution-v1",
+      "surface": "ordinary-execution",
+      "description": "Default ordinary execution mode: prefer the stable result when the selected-token reference-improvement trigger fires; otherwise keep the fast result.",
+      "routingPolicyId": "numeric-stability/prefer-stable-on-selected-token-disagreement-v1"
+    },
+    {
+      "profileId": "numeric-stability/cautious-ordinary-execution-v1",
+      "surface": "ordinary-execution",
+      "description": "Cautious ordinary execution mode: abstain instead of forcing a winner when the selected-token reference-improvement trigger fires.",
+      "routingPolicyId": "numeric-stability/abstain-on-selected-token-disagreement-v1"
+    },
+    {
+      "profileId": "numeric-stability/observe-only-ordinary-execution-v1",
+      "surface": "ordinary-execution",
+      "description": "Observe-only ordinary execution mode: emit receipts and route metadata, but always keep the fast result.",
+      "routingPolicyId": "numeric-stability/accept-fast-on-selected-token-disagreement-v1"
+    }
+  ],
+  "autoDetectProfiles": [
+    {
+      "profileId": "numeric-stability-auto-detect/matmul-logits-v1",
+      "enabled": true,
+      "operatorFamily": "lm-head-slice",
+      "semanticOpId": "matmul.logits",
+      "semanticStage": null,
+      "semanticPhase": "logits",
+      "kernelBasenames": [
+        "matmul_logits_forward_f16accum.wgsl"
+      ],
+      "triggerPolicyId": "numeric-instability/selected-token-disagreement-with-reference-improvement-v1",
+      "routingPolicyId": "numeric-stability/prefer-stable-on-selected-token-disagreement-v1",
+      "fastPolicyId": "lm-head-slice/forward-f16accum-v1",
+      "stablePolicyId": "lm-head-slice/forward-serial-v1",
+      "referencePolicyId": "lm-head-slice/cpu-f64-serial-v1",
+      "capturePlanId": "matmul-logits-bindings-v1",
+      "decisionStrategyId": "selected-row-argmax-v1"
+    },
+    {
+      "profileId": "numeric-stability-auto-detect/decode-final-logits-v1",
+      "enabled": true,
+      "operatorFamily": "decode-final-logits",
+      "semanticOpId": "decode.final_logits",
+      "semanticStage": null,
+      "semanticPhase": "final_logits",
+      "kernelBasenames": [
+        "matmul-gemv.wgsl"
+      ],
+      "triggerPolicyId": "numeric-instability/selected-token-disagreement-with-reference-improvement-v1",
+      "routingPolicyId": "numeric-stability/prefer-stable-on-selected-token-disagreement-v1",
+      "fastPolicyId": "decode-final-logits/forward-f32-v1",
+      "stablePolicyId": "decode-final-logits/forward-serial-v1",
+      "referencePolicyId": "decode-final-logits/cpu-f64-serial-v1",
+      "capturePlanId": "decode-final-logits-matmul-gemv-bindings-v1",
+      "decisionStrategyId": "selected-row-argmax-v1"
+    },
+    {
+      "profileId": "numeric-stability-auto-detect/rmsnorm-output-v1",
+      "enabled": true,
+      "operatorFamily": "rmsnorm-slice",
+      "semanticOpId": "rmsnorm.output",
+      "semanticStage": null,
+      "semanticPhase": "normalized_hidden",
+      "kernelBasenames": [
+        "rmsnorm.wgsl"
+      ],
+      "triggerPolicyId": "numeric-instability/selected-token-disagreement-with-reference-improvement-v1",
+      "routingPolicyId": "numeric-stability/prefer-stable-on-selected-token-disagreement-v1",
+      "fastPolicyId": "rmsnorm/reduction-tree-v1",
+      "stablePolicyId": "rmsnorm/strict-serial-v1",
+      "referencePolicyId": "rmsnorm/cpu-f64-serial-v1",
+      "capturePlanId": "rmsnorm-output-bindings-v1",
+      "decisionStrategyId": "rmsnorm-then-matmul-logits-selected-row-v1"
+    },
+    {
+      "profileId": "numeric-stability-auto-detect/attention-output-v1",
+      "enabled": true,
+      "operatorFamily": "attention-prefill-slice",
+      "semanticOpId": "attention.output",
+      "semanticStage": null,
+      "semanticPhase": "output_logits",
+      "kernelBasenames": [
+        "attention_slice_forward_v2_f32.wgsl"
+      ],
+      "triggerPolicyId": "numeric-instability/selected-token-disagreement-with-reference-improvement-v1",
+      "routingPolicyId": "numeric-stability/prefer-stable-on-selected-token-disagreement-v1",
+      "fastPolicyId": "attention-slice/forward-serial-v1",
+      "stablePolicyId": "attention-slice/pairwise-tree-v1",
+      "referencePolicyId": "attention-slice/cpu-f64-serial-v1",
+      "capturePlanId": "attention-output-bindings-v1",
+      "decisionStrategyId": "selected-row-argmax-v1"
+    }
+  ],
   "triggerPolicies": [
     {
       "triggerPolicyId": "numeric-instability/selected-token-disagreement-with-reference-improvement-v1",
@@ -58,6 +159,7 @@
       "requireFastMissesExactReference": true,
       "allowedSensitiveOperators": [
         "matmul.logits",
+        "decode.final_logits",
         "attention.output",
         "rmsnorm.output"
       ],
@@ -99,6 +201,28 @@
       "policyId": "numeric-stability/abstain-on-selected-token-disagreement-v1",
       "triggerPolicyId": "numeric-instability/selected-token-disagreement-with-reference-improvement-v1",
       "triggeredDecision": "abstain",
+      "fallbackDecision": "accept-fast",
+      "proofLinks": [
+        {
+          "theorem": "routeDecisionForTrigger_prefers_triggered_decision_when_true",
+          "module": "Doe.Core.NumericStabilityPolicy",
+          "category": "lean_verified",
+          "relation": "numeric-stability-route-triggered",
+          "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+        },
+        {
+          "theorem": "routeDecisionForTrigger_prefers_fallback_decision_when_false",
+          "module": "Doe.Core.NumericStabilityPolicy",
+          "category": "lean_verified",
+          "relation": "numeric-stability-route-fallback",
+          "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+        }
+      ]
+    },
+    {
+      "policyId": "numeric-stability/accept-fast-on-selected-token-disagreement-v1",
+      "triggerPolicyId": "numeric-instability/selected-token-disagreement-with-reference-improvement-v1",
+      "triggeredDecision": "accept-fast",
       "fallbackDecision": "accept-fast",
       "proofLinks": [
         {

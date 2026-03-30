@@ -6,6 +6,7 @@ pub fn printUsage(stdout: anytype) !void {
         \\ [--gpu-timestamp-mode auto|off|require]
         \\ [--queue-wait-mode process-events|wait-any]
         \\ [--queue-sync-mode per-command|deferred]
+        \\ [--numeric-stability-execution-profile <id>]
         \\ [--kernel-root <path>]
         \\ [--replay <path>]
         \\ [--execute]
@@ -64,6 +65,12 @@ pub fn printUsage(stdout: anytype) !void {
         \\--queue-sync-mode controls when queue synchronization occurs.
         \\  per-command: waitForQueue after every submit (default).
         \\  deferred: skip per-submit waits; one final flush after the command loop.
+        \\--numeric-stability-execution-profile selects the ordinary-execution
+        \\  numeric-governance profile from config/numeric-stability-policy.json.
+        \\  current built-in profiles:
+        \\    numeric-stability/default-ordinary-execution-v1
+        \\    numeric-stability/cautious-ordinary-execution-v1
+        \\    numeric-stability/observe-only-ordinary-execution-v1
         \\--kernel-root provides a filesystem root for kernel lookup when kernel_dispatch is used.
         \\--replay validates current dispatch rows against a replay artifact path.
         \\

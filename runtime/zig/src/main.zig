@@ -80,6 +80,8 @@ fn optionExpectsValue(option: []const u8) bool {
         std.mem.eql(u8, option, "--driver") or
         std.mem.eql(u8, option, "--trace-jsonl") or
         std.mem.eql(u8, option, "--trace-meta") or
+        std.mem.eql(u8, option, "--numeric-stability-policy") or
+        std.mem.eql(u8, option, "--numeric-stability-execution-profile") or
         std.mem.eql(u8, option, "--kernel-root") or
         std.mem.eql(u8, option, "--backend") or
         std.mem.eql(u8, option, "--backend-lane") or
@@ -147,6 +149,8 @@ pub fn main() !void {
     var emit_trace_jsonl: ?[]const u8 = null;
     var emit_normalized = false;
     var trace_meta_path: ?[]const u8 = null;
+    var numeric_stability_policy_path: ?[]const u8 = null;
+    var numeric_stability_execution_profile_id: ?[]const u8 = null;
     var replay_path: ?[]const u8 = null;
     var execute = false;
     var backend_mode: execution.BackendMode = .trace;
@@ -207,6 +211,12 @@ pub fn main() !void {
         } else if (std.mem.eql(u8, argv[i], "--trace-meta") and i + 1 < argv.len) {
             i += 1;
             trace_meta_path = argv[i];
+        } else if (std.mem.eql(u8, argv[i], "--numeric-stability-policy") and i + 1 < argv.len) {
+            i += 1;
+            numeric_stability_policy_path = argv[i];
+        } else if (std.mem.eql(u8, argv[i], "--numeric-stability-execution-profile") and i + 1 < argv.len) {
+            i += 1;
+            numeric_stability_execution_profile_id = argv[i];
         } else if (std.mem.eql(u8, argv[i], "--kernel-root") and i + 1 < argv.len) {
             i += 1;
             kernel_root = argv[i];
@@ -368,8 +378,8 @@ pub fn main() !void {
         try trace.writef(stdout, "numeric-stability annotations require --backend native\n", .{});
         return;
     }
-    if (requires_numeric_stability and trace_meta_path == null and emit_trace_jsonl == null) {
-        try trace.writef(stdout, "numeric-stability annotations require --trace-meta or --trace-jsonl\n", .{});
+    if (requires_numeric_stability and trace_meta_path == null) {
+        try trace.writef(stdout, "numeric-stability annotations require --trace-meta\n", .{});
         return;
     }
 
@@ -451,7 +461,9 @@ pub fn main() !void {
     defer artifact_recorder.deinit();
     var numeric_stability_recorder = try numeric_stability_runtime.Recorder.init(
         allocator,
-        operator_artifact_anchor(trace_meta_path, emit_trace_jsonl),
+        trace_meta_path,
+        numeric_stability_policy_path,
+        numeric_stability_execution_profile_id,
     );
     defer numeric_stability_recorder.deinit();
 
@@ -654,15 +666,27 @@ pub fn main() !void {
                     .trace_meta_path = trace_meta_path,
                 },
             );
-            if (metadata.numeric_stability) |annotation| {
-                if (execute_result) |executed| {
-                    if (executed.status == .ok) {
-                        if (execution_context) |*ctx| {
-                            try numeric_stability_recorder.record(
-                                ctx,
-                                metadata.semantic,
-                                annotation,
-                            );
+            if (execute_result) |executed| {
+                if (executed.status == .ok) {
+                    if (execution_context) |*ctx| {
+                        const numeric_outcome = try numeric_stability_recorder.record(
+                            ctx,
+                            target,
+                            metadata.semantic,
+                            metadata.numeric_stability,
+                            commands[idx + 1 ..],
+                            command_metadata[idx + 1 ..],
+                            .{
+                                .profile_vendor = profile_vendor,
+                                .profile_api = trace.apiName(profile.api),
+                                .profile_family = profile_family,
+                                .profile_driver = profile_driver,
+                                .execution_result = executed,
+                            },
+                        );
+                        if (numeric_outcome.should_stop_downstream) {
+                            trace_summary.execution_skipped_count += @as(u32, @intCast(commands.len - idx - 1));
+                            break;
                         }
                     }
                 }

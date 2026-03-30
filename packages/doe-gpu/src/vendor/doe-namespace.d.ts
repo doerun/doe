@@ -244,6 +244,10 @@ export type DoeNumericStabilitySelectionMode =
   | "stable"
   | "none";
 
+export type DoeNumericStabilityDownstreamAction =
+  | "continue"
+  | "stop";
+
 export interface DoeNumericStabilityCandidateInput {
   tokenId: number;
   label?: string | null;
@@ -267,6 +271,62 @@ export interface DoeNumericStabilityFirstDivergence {
   stableDigest: string;
 }
 
+export interface DoeNumericStabilityExecutionIdentity {
+  kernelPath?: string | null;
+  kernelBasename?: string | null;
+  layoutFingerprint?: string | null;
+  compiledPlanHash?: string | null;
+  backend?: string | null;
+  backendLane?: string | null;
+  adapterOrdinal?: number | null;
+  queueFamilyIndex?: number | null;
+  presentCapable?: boolean | null;
+  profileVendor?: string | null;
+  profileApi?: string | null;
+  profileFamily?: string | null;
+  profileDriver?: string | null;
+  selectionPolicyHash?: string | null;
+  hostPlanArtifactHash?: string | null;
+}
+
+export interface DoeNumericStabilityUpstreamReceiptLink {
+  semanticOpId: string;
+  semanticStage: string;
+  semanticPhase: string;
+  selectedPolicyId?: string | null;
+  decision: DoeNumericStabilityRouteDecision;
+}
+
+export interface DoeNumericStabilityDecodeBoundaryReceipt {
+  decodeMode: string;
+  logitsCoverage: string;
+  vocabSize: number;
+  residualMassUpperBound?: number | null;
+  temperature?: number | null;
+  topK?: number | null;
+  topP?: number | null;
+  rngSeed?: number | null;
+  rngDraw?: number | null;
+  survivingTokenSetKind: string;
+  survivingTokenIds?: number[] | null;
+  liveSelectedToken: number;
+  liveSelectedMatchesCommittedSelection: boolean;
+  metrics: {
+    fastTop1Margin: number;
+    stableTop1Margin: number;
+    referenceTop1Margin: number;
+    topKBoundaryGap?: number | null;
+    topPBoundaryGap?: number | null;
+    cdfDistanceToDraw?: number | null;
+    adjacentDecodePersistence?: number | null;
+    actualSelectedTokenChanged: boolean;
+    liveSelectedMatchesFast: boolean;
+    liveSelectedMatchesStable: boolean;
+    liveSelectedMatchesReference: boolean;
+  };
+  upstreamLinks: DoeNumericStabilityUpstreamReceiptLink[];
+}
+
 export interface DoeNumericStabilityReceipt {
   schemaVersion: 1;
   mode: "numeric-stability";
@@ -284,7 +344,9 @@ export interface DoeNumericStabilityReceipt {
   stablePolicyId: string;
   referencePolicyId: string;
   candidates: DoeNumericStabilityReceiptCandidate[];
+  executionIdentity?: DoeNumericStabilityExecutionIdentity | null;
   firstDivergence?: DoeNumericStabilityFirstDivergence | null;
+  decodeBoundary?: DoeNumericStabilityDecodeBoundaryReceipt | null;
   selectedToken: {
     fast: number;
     stable: number;
@@ -306,6 +368,9 @@ export interface DoeNumericStabilityReceipt {
   route: {
     decision: DoeNumericStabilityRouteDecision;
     selectionMode: DoeNumericStabilitySelectionMode;
+    committedResultMode: DoeNumericStabilitySelectionMode;
+    downstreamAction: DoeNumericStabilityDownstreamAction;
+    effectApplied: boolean;
     selectedPolicyId?: string | null;
     selectedToken?: number | null;
     proofLinks: DoeDeterminismProofLink[];
@@ -349,6 +414,56 @@ export interface DoeMatmulLogitsSliceResult {
   token: number | null;
   routeDecision: DoeNumericStabilityRouteDecision;
   receipt: DoeNumericStabilityReceipt;
+}
+
+export interface DoeNumericStabilityOrdinaryExecutionResult {
+  traceJsonlPath: string | null;
+  traceMetaPath: string | null;
+  traceMeta: Record<string, unknown> | null;
+  executionProfileId: string | null;
+  receiptPath: string | null;
+  receipts: DoeNumericStabilityReceipt[];
+  routeDecisions: DoeNumericStabilityRouteDecision[];
+  latestReceipt: DoeNumericStabilityReceipt | null;
+  latestRouteDecision: DoeNumericStabilityRouteDecision | null;
+  latestToken: number | null;
+}
+
+export interface DoeOrdinaryExecutionOptions
+  extends DoeNumericStabilityOrdinaryExecutionOptions {}
+
+export interface DoeOrdinaryExecutionResult
+  extends DoeNumericStabilityOrdinaryExecutionResult {}
+
+export interface DoeNumericStabilityOrdinaryExecutionOptions {
+  commandsPath: string;
+  quirksPath?: string | null;
+  kernelRoot?: string | null;
+  vendor?: string | null;
+  api?: string | null;
+  family?: string | null;
+  driver?: string | null;
+  backendLane?: string | null;
+  traceJsonlPath?: string | null;
+  traceMetaPath?: string | null;
+  uploadBufferUsage?: string | null;
+  uploadSubmitEvery?: number | null;
+  queueWaitMode?: string | null;
+  queueSyncMode?: string | null;
+  extraArgs?: string[] | null;
+  runtime?: {
+    runNumericStabilityOrdinaryExecution(
+      options: Record<string, unknown>,
+    ): DoeNumericStabilityOrdinaryExecutionResult;
+  } | null;
+  runtimeOptions?: {
+    binPath?: string;
+    libPath?: string;
+    moduleRunnerPath?: string;
+  } | null;
+  policyPath?: string | null;
+  executionProfileId?: string | null;
+  cwd?: string | null;
 }
 
 export interface DoeBindingBuffer<TBuffer> {
@@ -470,6 +585,9 @@ export interface BoundDoeNumericStabilityNamespace<TBuffer> {
   matmulLogitsSlice(
     options: DoeMatmulLogitsSliceOptions<TBuffer>,
   ): Promise<DoeMatmulLogitsSliceResult>;
+  ordinaryExecution(
+    options: DoeNumericStabilityOrdinaryExecutionOptions,
+  ): Promise<DoeNumericStabilityOrdinaryExecutionResult>;
 }
 
 export interface BoundDoeKernelNamespace<
@@ -507,6 +625,9 @@ export interface BoundDoeNamespace<
   readonly buffer: BoundDoeBufferNamespace<TBuffer>;
   readonly determinism: BoundDoeDeterminismNamespace<TBuffer>;
   readonly numericStability: BoundDoeNumericStabilityNamespace<TBuffer>;
+  ordinaryExecution(
+    options: DoeOrdinaryExecutionOptions,
+  ): Promise<DoeOrdinaryExecutionResult>;
   readonly commandEncoder: BoundDoeCommandEncoderNamespace<TEncoder>;
   readonly kernel: BoundDoeKernelNamespace<TBuffer, TKernel, TBindingSet>;
   readonly compute: BoundDoeComputeCallable<TBuffer, TBatch>;
@@ -517,6 +638,9 @@ export interface DoeNamespace<
   TBoundDoe,
   TRequestDeviceOptions = unknown,
 > {
+  ordinaryExecution(
+    options: DoeOrdinaryExecutionOptions,
+  ): Promise<DoeOrdinaryExecutionResult>;
   requestDevice(options?: TRequestDeviceOptions): Promise<TBoundDoe>;
   bind(device: TDevice): TBoundDoe;
 }

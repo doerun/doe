@@ -95,7 +95,17 @@ def load_json(path: Path) -> dict[str, Any]:
 
 def write_json(path: Path, payload: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    with tempfile.NamedTemporaryFile(
+        "w",
+        encoding="utf-8",
+        dir=path.parent,
+        prefix=f".{path.name}.",
+        suffix=".tmp",
+        delete=False,
+    ) as handle:
+        handle.write(json.dumps(payload, indent=2) + "\n")
+        temp_path = Path(handle.name)
+    temp_path.replace(path)
 
 
 def unique_paths(paths: list[str | None]) -> list[str]:
@@ -622,11 +632,21 @@ def exercise_request(
     }
 
 
-def rebuild_catalog(signature_root: Path, existing_catalog: dict[str, Any]) -> dict[str, Any]:
+def rebuild_catalog(
+    signature_root: Path,
+    existing_catalog: dict[str, Any],
+    *,
+    catalog_signature_root: Path | None = None,
+) -> dict[str, Any]:
     signatures: list[tuple[Path, dict[str, Any]]] = []
     for signature_path in sorted(signature_root.glob("*.json")):
         signature = load_validated_config(signature_path, FRAGILITY_SIGNATURE_SCHEMA_PATH)
-        signatures.append((signature_path, signature))
+        catalog_path = (
+            signature_path
+            if catalog_signature_root is None
+            else catalog_signature_root / signature_path.name
+        )
+        signatures.append((catalog_path, signature))
     return build_catalog(
         signatures=signatures,
         catalog_version=existing_catalog["catalogVersion"],

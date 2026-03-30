@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://doe-gpu.dev/config/numeric-stability-operator-expansion-plan.schema.json",
+  "title": "Numeric stability operator expansion plan",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "planVersion",
+    "proposalState",
+    "rankingCriteria",
+    "operatorFamilies"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "planVersion": { "type": "string", "minLength": 1 },
+    "proposalState": { "const": "planning-only" },
+    "rankingCriteria": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "operatorFamilies": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/operatorFamily" }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "priorityBand": {
+      "type": "string",
+      "enum": ["high", "medium", "low"]
+    },
+    "operatorFamily": {
+      "type": "object",
+      "required": [
+        "rank",
+        "operatorFamily",
+        "semanticOpId",
+        "currentStatus",
+        "likelySemanticEffect",
+        "captureFeasibility",
+        "rerunCost",
+        "noveltyValue",
+        "recommendedNextStep",
+        "requiredOperands",
+        "captureHook",
+        "rerunShape",
+        "reasons"
+      ],
+      "properties": {
+        "rank": { "type": "integer", "minimum": 1 },
+        "operatorFamily": { "type": "string", "minLength": 1 },
+        "semanticOpId": { "type": "string", "minLength": 1 },
+        "currentStatus": {
+          "type": "string",
+          "enum": ["live-annotated", "bench-only", "planned"]
+        },
+        "likelySemanticEffect": { "$ref": "#/$defs/priorityBand" },
+        "captureFeasibility": { "$ref": "#/$defs/priorityBand" },
+        "rerunCost": { "$ref": "#/$defs/priorityBand" },
+        "noveltyValue": { "$ref": "#/$defs/priorityBand" },
+        "recommendedNextStep": {
+          "type": "string",
+          "enum": [
+            "ordinary-execution-annotation",
+            "ordinary-execution-auto-detect",
+            "suffix-replay-only"
+          ]
+        },
+        "requiredOperands": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "captureHook": { "type": "string", "minLength": 1 },
+        "rerunShape": { "type": "string", "minLength": 1 },
+        "reasons": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

@@ -1,0 +1,126 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://doe-gpu.dev/config/numeric-stability-decode-signature.schema.json",
+  "title": "Numeric stability decode promoted signature",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "signatureId",
+    "promotionPolicyId",
+    "contractStage",
+    "caseId",
+    "promptText",
+    "semanticPriorityClass",
+    "semanticScenarioBucket",
+    "meaningfulTokenClass",
+    "decodeStepIndex",
+    "routeDecision",
+    "selectedTokens",
+    "metrics",
+    "sourceReportPath",
+    "sourceManifestPath",
+    "sourceReceiptPath",
+    "commandsPath",
+    "kernelRoot",
+    "sampleConfig",
+    "backend"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "signatureId": { "type": "string", "minLength": 1 },
+    "promotionPolicyId": { "type": "string", "minLength": 1 },
+    "contractStage": {
+      "type": "string",
+      "enum": [
+        "metal-exercised",
+        "metal-promoted",
+        "vulkan-reproduced",
+        "cross-backend-promoted"
+      ]
+    },
+    "caseId": { "type": "string", "minLength": 1 },
+    "promptText": { "type": "string", "minLength": 1 },
+    "semanticPriorityClass": { "type": "string", "minLength": 1 },
+    "semanticScenarioBucket": { "type": "string", "minLength": 1 },
+    "meaningfulTokenClass": { "type": "string", "minLength": 1 },
+    "decodeStepIndex": { "type": "integer", "minimum": 0 },
+    "routeDecision": {
+      "type": "string",
+      "enum": ["accept-fast", "prefer-stable", "abstain"]
+    },
+    "selectedTokens": {
+      "type": "object",
+      "required": ["fast", "stable", "reference", "fastText", "stableText", "referenceText"],
+      "properties": {
+        "fast": { "type": "integer", "minimum": 0 },
+        "stable": { "type": "integer", "minimum": 0 },
+        "reference": { "type": "integer", "minimum": 0 },
+        "fastText": { "type": "string", "minLength": 1 },
+        "stableText": { "type": "string", "minLength": 1 },
+        "referenceText": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "metrics": {
+      "type": "object",
+      "required": [
+        "actualSelectedTokenChanged",
+        "meaningfulToken",
+        "withinPolicyStable",
+        "suffixReplayDivergent",
+        "suffixReplayAvailable"
+      ],
+      "properties": {
+        "postTemperatureTop1Margin": { "type": ["number", "null"] },
+        "topKBoundaryGap": { "type": ["number", "null"] },
+        "topPBoundaryGap": { "type": ["number", "null"] },
+        "cdfDistanceToDraw": { "type": ["number", "null"] },
+        "adjacentDecodePersistence": { "type": ["number", "null"] },
+        "actualSelectedTokenChanged": { "type": "boolean" },
+        "meaningfulToken": { "type": "boolean" },
+        "withinPolicyStable": { "type": "boolean" },
+        "suffixReplayDivergent": { "type": "boolean" },
+        "suffixReplayAvailable": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "sourceReportPath": { "type": "string", "minLength": 1 },
+    "sourceManifestPath": { "type": "string", "minLength": 1 },
+    "sourceReceiptPath": { "type": "string", "minLength": 1 },
+    "commandsPath": { "type": "string", "minLength": 1 },
+    "patchedCommandsPath": { "type": "string", "minLength": 1 },
+    "kernelRoot": { "type": "string", "minLength": 1 },
+    "maxSampleStepsToCapture": { "type": ["integer", "null"], "minimum": 1 },
+    "sampleConfig": {
+      "type": "object",
+      "required": ["temperature", "topK", "topP", "rngSeed", "rngDraw"],
+      "properties": {
+        "temperature": { "type": "number", "exclusiveMinimum": 0 },
+        "topK": { "type": "integer", "minimum": 1 },
+        "topP": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 },
+        "rngSeed": { "type": "integer", "minimum": 0 },
+        "rngDraw": { "type": "number", "minimum": 0, "maximum": 1 }
+      },
+      "additionalProperties": false
+    },
+    "backend": {
+      "type": "object",
+      "required": ["vendor", "api", "family", "driver", "backendLane"],
+      "properties": {
+        "vendor": { "type": "string", "minLength": 1 },
+        "api": { "type": "string", "minLength": 1 },
+        "family": { "type": "string", "minLength": 1 },
+        "driver": { "type": "string", "minLength": 1 },
+        "backendLane": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "executionIdentity": {
+      "type": ["object", "null"]
+    },
+    "vulkanReplay": {
+      "type": ["object", "null"]
+    }
+  },
+  "additionalProperties": false
+}

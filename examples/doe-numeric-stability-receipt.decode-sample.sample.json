@@ -1,0 +1,148 @@
+{
+  "schemaVersion": 1,
+  "mode": "numeric-stability",
+  "operatorFamily": "decode-sample-token",
+  "semanticOpId": "decode.sample_token",
+  "semanticStage": "decode_demo",
+  "semanticPhase": "sample_token",
+  "policyRegistryPath": "config/numeric-stability-policy.json",
+  "policyRegistryVersion": "2026-03-29-execution-profiles-v1",
+  "routeTaxonomyVersion": "numeric-stability-routes-v1",
+  "proofArtifactPath": "pipeline/lean/artifacts/proven-conditions.json",
+  "triggerPolicyId": "numeric-instability/selected-token-disagreement-with-reference-improvement-v1",
+  "routingPolicyId": "numeric-stability/prefer-stable-on-selected-token-disagreement-v1",
+  "fastPolicyId": "decode-final-logits/forward-f32-v1",
+  "stablePolicyId": "decode-final-logits/forward-serial-v1",
+  "referencePolicyId": "decode-final-logits/cpu-f64-serial-v1",
+  "candidates": [
+    {
+      "tokenId": 0,
+      "label": null,
+      "fastLogit": 0.0,
+      "stableLogit": 0.0,
+      "referenceLogit": 1.0
+    },
+    {
+      "tokenId": 1,
+      "label": null,
+      "fastLogit": 0.5,
+      "stableLogit": 0.5,
+      "referenceLogit": 0.5
+    }
+  ],
+  "executionIdentity": {
+    "kernelPath": "bench/inference-pipeline/kernels/matmul-gemv.wgsl",
+    "kernelBasename": "matmul-gemv.wgsl",
+    "layoutFingerprint": "e4d7cc2e5ddc5ba5494a469f66c0a853b78a7b2ba5bdaa862de16fd41d184644",
+    "compiledPlanHash": "52498adf87ff473757df42642505e4c913cbaa63c786f3e753bc89b8818b081e",
+    "backend": "doe_metal",
+    "backendLane": "metal_doe_app",
+    "adapterOrdinal": null,
+    "queueFamilyIndex": null,
+    "presentCapable": null,
+    "profileVendor": "apple",
+    "profileApi": "metal",
+    "profileFamily": "apple-gpu",
+    "profileDriver": "1.0.0",
+    "selectionPolicyHash": "backend-runtime-policy-v3",
+    "hostPlanArtifactHash": "52498adf87ff473757df42642505e4c913cbaa63c786f3e753bc89b8818b081e"
+  },
+  "firstDivergence": null,
+  "decodeBoundary": {
+    "decodeMode": "sampled-cdf",
+    "logitsCoverage": "full-vocab",
+    "vocabSize": 2,
+    "residualMassUpperBound": 0,
+    "temperature": 1,
+    "topK": 2,
+    "topP": 0.75,
+    "rngSeed": 17,
+    "rngDraw": 0.875,
+    "survivingTokenSetKind": "all-vocab",
+    "survivingTokenIds": null,
+    "liveSelectedToken": 0,
+    "liveSelectedMatchesCommittedSelection": true,
+    "metrics": {
+      "fastTop1Margin": 0.2449186624037092,
+      "stableTop1Margin": 0.2449186624037092,
+      "referenceTop1Margin": 0.2449186624037092,
+      "topKBoundaryGap": null,
+      "topPBoundaryGap": null,
+      "cdfDistanceToDraw": 0.125,
+      "adjacentDecodePersistence": null,
+      "actualSelectedTokenChanged": true,
+      "liveSelectedMatchesFast": true,
+      "liveSelectedMatchesStable": true,
+      "liveSelectedMatchesReference": false
+    },
+    "upstreamLinks": [
+      {
+        "semanticOpId": "decode.final_logits",
+        "semanticStage": "decode_demo",
+        "semanticPhase": "final_logits",
+        "selectedPolicyId": "decode-final-logits/forward-f32-v1",
+        "decision": "accept-fast"
+      }
+    ]
+  },
+  "selectedToken": {
+    "fast": 0,
+    "stable": 0,
+    "reference": 1,
+    "fastMatchesReference": false,
+    "stableMatchesReference": false
+  },
+  "trigger": {
+    "fired": false,
+    "checks": {
+      "firstDivergencePresent": false,
+      "sensitiveOperatorMatched": false,
+      "selectedTokenDisagreement": false,
+      "stableMatchesExactReference": false,
+      "fastMissesExactReference": true
+    },
+    "proofLinks": [
+      {
+        "theorem": "selectedTokenReferenceImprovementTriggered_iff_all_checks",
+        "module": "Doe.Core.NumericStabilityPolicy",
+        "category": "lean_verified",
+        "relation": "numeric-stability-trigger-all-checks",
+        "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+      }
+    ]
+  },
+  "route": {
+    "decision": "accept-fast",
+    "selectionMode": "fast",
+    "committedResultMode": "fast",
+    "downstreamAction": "continue",
+    "effectApplied": false,
+    "selectedPolicyId": "decode-final-logits/forward-f32-v1",
+    "selectedToken": 1,
+    "proofLinks": [
+      {
+        "theorem": "routeDecisionForTrigger_prefers_triggered_decision_when_true",
+        "module": "Doe.Core.NumericStabilityPolicy",
+        "category": "lean_verified",
+        "relation": "numeric-stability-route-triggered",
+        "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+      },
+      {
+        "theorem": "routeDecisionForTrigger_prefers_fallback_decision_when_false",
+        "module": "Doe.Core.NumericStabilityPolicy",
+        "category": "lean_verified",
+        "relation": "numeric-stability-route-fallback",
+        "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+      }
+    ],
+    "selectionProofLinks": [
+      {
+        "theorem": "selectedValueForRoute_acceptFast_returns_fast",
+        "module": "Doe.Core.NumericStabilityPolicy",
+        "category": "lean_verified",
+        "relation": "numeric-stability-route-select-fast",
+        "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+      }
+    ]
+  }
+}

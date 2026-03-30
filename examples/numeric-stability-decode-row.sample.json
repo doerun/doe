@@ -1,0 +1,47 @@
+{
+  "caseId": "red-go-stop-decode0",
+  "promptText": "Answer with exactly one word: go or stop. Question: At a red traffic light, cars should Answer:",
+  "decodeStepIndex": 0,
+  "semanticPriorityClass": "policy-action",
+  "sourceArtifactPath": "bench/out/example/red-go-stop.decode-sample.receipt.jsonl",
+  "receiptPath": "bench/out/example/red-go-stop.decode-sample.receipt.jsonl",
+  "decodeConfig": {
+    "temperature": 0.7,
+    "topK": 5,
+    "topP": 0.9,
+    "rngSeed": 17,
+    "randomDraw": 0.42
+  },
+  "selectedToken": {
+    "fast": 4721,
+    "stable": 817,
+    "reference": 817
+  },
+  "selectedTokenText": {
+    "fast": " stop",
+    "stable": " go",
+    "reference": " go"
+  },
+  "metrics": {
+    "postTemperatureTop1Margin": 0.02118,
+    "topKBoundaryGap": 0.00491,
+    "topPBoundaryGap": 0.00317,
+    "cdfDistanceToDraw": 0.00205,
+    "adjacentDecodePersistence": 2,
+    "actualSelectedTokenChanged": true,
+    "liveSelectedMatchesFast": true,
+    "liveSelectedMatchesStable": false,
+    "liveSelectedMatchesReference": false,
+    "meaningfulToken": true,
+    "withinPolicyStable": true
+  },
+  "upstream": {
+    "fastStableDisagreement": true,
+    "firstDivergenceSemanticOpId": "matmul.logits"
+  },
+  "suffixReplay": {
+    "available": true,
+    "divergent": true,
+    "replayStepCount": 2
+  }
+}

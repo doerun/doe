@@ -173,6 +173,12 @@ The remaining v1 demo work is:
 1. promote a real operator-family `accept-fast` beyond the synthetic control
 2. add another buyer-legible prompt case beyond the red-light flagship
 
+Important caveat:
+
+1. the current native ladder proves live route outcomes and receipts
+2. it does not yet prove moat-grade route effect on downstream execution for
+   ordinary callers
+
 ## Target v2 demo mix
 
 After the first runtime promotion, expand to:
@@ -181,6 +187,39 @@ After the first runtime promotion, expand to:
 2. multiple prompt families
 3. at least two operator families
 4. at least one negative control shown alongside the headline cases
+
+## Target moat demo mix
+
+The first demo set that should count as moat-grade should include:
+
+1. one case where `prefer-stable` changes the committed downstream result
+2. one case where `accept-fast` explicitly preserves the fast path in the live
+   execution contract
+3. one case where `abstain` prevents a forced winner instead of merely logging
+   a receipt
+4. one second operator family beyond `matmul.logits`
+5. one ordinary package-facing example that exercises the same promoted
+   contract
+
+Until those exist, treat the current ladder as a strong runtime capability
+demo, not the final moat demo.
+
+## Future decode-boundary demo filter
+
+When Doe adds a real `sample.token` receipt, the decode-boundary demo ladder
+should be stricter than the operator-boundary ladder.
+
+Promote only cases where:
+
+1. the actual selected token changes
+2. the token is semantically meaningful
+3. the change happens early enough to matter
+4. each compared policy is internally stable
+5. a short suffix replay stays semantically divergent
+6. Metal proof comes first and Vulkan reproduction follows later
+
+This keeps the future decode story from filling up with whitespace, casing, or
+one-backend curiosities.
 
 ## Demo reading order
 

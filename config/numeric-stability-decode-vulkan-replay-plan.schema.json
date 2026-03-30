@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://doe-gpu.dev/config/numeric-stability-decode-vulkan-replay-plan.schema.json",
+  "title": "Numeric stability decode Vulkan replay plan",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "planVersion",
+    "policyPath",
+    "executionProfileId",
+    "backend"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "planVersion": { "type": "string", "minLength": 1 },
+    "policyPath": { "type": "string", "minLength": 1 },
+    "executionProfileId": { "type": "string", "minLength": 1 },
+    "backend": {
+      "type": "object",
+      "required": ["vendor", "api", "family", "driver", "backendLane"],
+      "properties": {
+        "vendor": { "type": "string", "minLength": 1 },
+        "api": { "type": "string", "minLength": 1 },
+        "family": { "type": "string", "minLength": 1 },
+        "driver": { "type": "string", "minLength": 1 },
+        "backendLane": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

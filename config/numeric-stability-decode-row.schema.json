@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://doe-gpu.dev/config/numeric-stability-decode-row.schema.json",
+  "title": "Numeric stability decode row",
+  "type": "object",
+  "required": [
+    "caseId",
+    "promptText",
+    "decodeStepIndex",
+    "semanticPriorityClass",
+    "sourceArtifactPath",
+    "selectedToken",
+    "metrics",
+    "upstream",
+    "suffixReplay"
+  ],
+  "properties": {
+    "caseId": { "type": "string", "minLength": 1 },
+    "promptText": { "type": "string", "minLength": 1 },
+    "decodeStepIndex": { "type": "integer", "minimum": 0 },
+    "semanticPriorityClass": { "type": "string", "minLength": 1 },
+    "sourceArtifactPath": { "type": "string", "minLength": 1 },
+    "receiptPath": { "type": "string", "minLength": 1 },
+    "decodeConfig": {
+      "type": "object",
+      "properties": {
+        "temperature": { "type": ["number", "null"] },
+        "topK": { "type": ["integer", "null"], "minimum": 1 },
+        "topP": { "type": ["number", "null"] },
+        "rngSeed": { "type": ["integer", "null"], "minimum": 0 },
+        "randomDraw": { "type": ["number", "null"] }
+      },
+      "additionalProperties": false
+    },
+    "selectedToken": {
+      "type": "object",
+      "required": ["fast", "stable", "reference"],
+      "properties": {
+        "fast": { "type": "integer", "minimum": 0 },
+        "stable": { "type": "integer", "minimum": 0 },
+        "reference": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "selectedTokenText": {
+      "type": "object",
+      "properties": {
+        "fast": { "type": "string", "minLength": 1 },
+        "stable": { "type": "string", "minLength": 1 },
+        "reference": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "metrics": {
+      "type": "object",
+      "required": [
+        "postTemperatureTop1Margin",
+        "actualSelectedTokenChanged",
+        "meaningfulToken",
+        "withinPolicyStable"
+      ],
+      "properties": {
+        "postTemperatureTop1Margin": { "type": "number", "minimum": 0 },
+        "topKBoundaryGap": { "type": ["number", "null"], "minimum": 0 },
+        "topPBoundaryGap": { "type": ["number", "null"], "minimum": 0 },
+        "cdfDistanceToDraw": { "type": ["number", "null"], "minimum": 0 },
+        "adjacentDecodePersistence": { "type": ["number", "null"], "minimum": 0 },
+        "actualSelectedTokenChanged": { "type": "boolean" },
+        "liveSelectedMatchesFast": { "type": ["boolean", "null"] },
+        "liveSelectedMatchesStable": { "type": ["boolean", "null"] },
+        "liveSelectedMatchesReference": { "type": ["boolean", "null"] },
+        "meaningfulToken": { "type": "boolean" },
+        "withinPolicyStable": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "upstream": {
+      "type": "object",
+      "required": ["fastStableDisagreement"],
+      "properties": {
+        "fastStableDisagreement": { "type": "boolean" },
+        "firstDivergenceSemanticOpId": { "type": ["string", "null"], "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "suffixReplay": {
+      "type": "object",
+      "required": ["available", "divergent"],
+      "properties": {
+        "available": { "type": "boolean" },
+        "divergent": { "type": "boolean" },
+        "replayStepCount": { "type": ["integer", "null"], "minimum": 0 }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

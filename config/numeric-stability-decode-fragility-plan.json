@@ -1,0 +1,247 @@
+{
+  "schemaVersion": 1,
+  "planVersion": "2026-03-29-track2-v1",
+  "proposalState": "implementation-ready",
+  "currentLiveBoundary": {
+    "fullDecodeReceiptAvailable": false,
+    "boundedSliceGovernanceAvailable": true,
+    "ordinaryExecutionGovernanceAvailable": true,
+    "notes": [
+      "The current live runtime lane can govern selected LM-head rows and ordinary execution for configured operators.",
+      "The next missing artifact is a sample.token receipt that captures the real decode policy boundary instead of a selected-row proxy."
+    ]
+  },
+  "normalizedInputContract": {
+    "requiredPaths": [
+      "caseId",
+      "promptText",
+      "decodeStepIndex",
+      "semanticPriorityClass",
+      "sourceArtifactPath",
+      "selectedToken.fast",
+      "selectedToken.stable",
+      "selectedToken.reference",
+      "metrics.postTemperatureTop1Margin",
+      "metrics.actualSelectedTokenChanged",
+      "metrics.meaningfulToken",
+      "metrics.withinPolicyStable",
+      "upstream.fastStableDisagreement",
+      "suffixReplay.available",
+      "suffixReplay.divergent"
+    ],
+    "optionalPaths": [
+      "metrics.topKBoundaryGap",
+      "metrics.topPBoundaryGap",
+      "metrics.cdfDistanceToDraw",
+      "metrics.adjacentDecodePersistence",
+      "decodeConfig.temperature",
+      "decodeConfig.topK",
+      "decodeConfig.topP",
+      "decodeConfig.rngSeed",
+      "decodeConfig.randomDraw",
+      "upstream.firstDivergenceSemanticOpId",
+      "selectedTokenText.fast",
+      "selectedTokenText.stable",
+      "selectedTokenText.reference",
+      "suffixReplay.replayStepCount",
+      "receiptPath"
+    ]
+  },
+  "replayPredicates": [
+    {
+      "mode": "greedy",
+      "description": "Promote only when the selected greedy token changes under the same decode step.",
+      "predicate": "selectedToken.fast != selectedToken.stable || selectedToken.fast != selectedToken.reference"
+    },
+    {
+      "mode": "sampling",
+      "description": "Promote only when the runtime decode function changes token under the same decode config and identical RNG draw u.",
+      "predicate": "Decode(fast_logits, cfg, u) != Decode(stable_logits, cfg, u) || Decode(fast_logits, cfg, u) != Decode(reference_logits, cfg, u)"
+    }
+  ],
+  "scoringSignals": [
+    {
+      "signalId": "postTemperatureTop1Margin",
+      "sourcePath": "metrics.postTemperatureTop1Margin",
+      "direction": "lower-is-fragile",
+      "weight": 1.0,
+      "normalizationCeiling": 0.05,
+      "missingValuePolicy": "reject",
+      "notes": [
+        "This is the core decode-local fragility metric after temperature has been applied."
+      ]
+    },
+    {
+      "signalId": "topKBoundaryGap",
+      "sourcePath": "metrics.topKBoundaryGap",
+      "direction": "lower-is-fragile",
+      "weight": 0.8,
+      "normalizationCeiling": 0.05,
+      "missingValuePolicy": "ignore"
+    },
+    {
+      "signalId": "topPBoundaryGap",
+      "sourcePath": "metrics.topPBoundaryGap",
+      "direction": "lower-is-fragile",
+      "weight": 0.8,
+      "normalizationCeiling": 0.05,
+      "missingValuePolicy": "ignore"
+    },
+    {
+      "signalId": "cdfDistanceToDraw",
+      "sourcePath": "metrics.cdfDistanceToDraw",
+      "direction": "lower-is-fragile",
+      "weight": 0.9,
+      "normalizationCeiling": 0.05,
+      "missingValuePolicy": "ignore",
+      "notes": [
+        "This is the strongest sampling-specific boundary signal when temperature is non-zero."
+      ]
+    },
+    {
+      "signalId": "adjacentDecodePersistence",
+      "sourcePath": "metrics.adjacentDecodePersistence",
+      "direction": "higher-is-fragile",
+      "weight": 0.6,
+      "normalizationCeiling": 3,
+      "missingValuePolicy": "ignore"
+    },
+    {
+      "signalId": "fastStableDisagreement",
+      "sourcePath": "upstream.fastStableDisagreement",
+      "direction": "boolean-boost",
+      "weight": 0.8,
+      "normalizationCeiling": null,
+      "missingValuePolicy": "reject"
+    },
+    {
+      "signalId": "decodeStepIndex",
+      "sourcePath": "decodeStepIndex",
+      "direction": "lower-is-better",
+      "weight": 0.5,
+      "normalizationCeiling": 4,
+      "missingValuePolicy": "reject",
+      "notes": [
+        "Earlier decode positions are preferred because they affect continuation more strongly."
+      ]
+    }
+  ],
+  "semanticPriorityClasses": [
+    {
+      "classId": "tool-choice",
+      "priorityWeight": 1.0,
+      "examples": ["tool call token", "function selector", "agent route token"]
+    },
+    {
+      "classId": "json-boolean",
+      "priorityWeight": 0.95,
+      "examples": ["true", "false", "null-like boolean boundary"]
+    },
+    {
+      "classId": "moderation-label",
+      "priorityWeight": 0.95,
+      "examples": ["allow", "block", "safe", "unsafe"]
+    },
+    {
+      "classId": "policy-action",
+      "priorityWeight": 0.9,
+      "examples": ["approve", "deny", "public", "private", "go", "stop"]
+    },
+    {
+      "classId": "short-answer",
+      "priorityWeight": 0.7,
+      "examples": ["yes", "no", "good", "bad"]
+    },
+    {
+      "classId": "other",
+      "priorityWeight": 0.4,
+      "examples": ["fallback category for cases that are semantically meaningful but not yet classified"]
+    }
+  ],
+  "seedPromptFamilies": [
+    {
+      "familyId": "policy-action",
+      "examples": [
+        "go/stop",
+        "allow/block",
+        "approve/deny",
+        "public/private"
+      ]
+    },
+    {
+      "familyId": "security-ops",
+      "examples": [
+        "phishing classification",
+        "SSH access control",
+        "access revocation",
+        "secret redaction"
+      ]
+    },
+    {
+      "familyId": "structured-generation",
+      "examples": [
+        "tool choice",
+        "JSON booleans",
+        "moderation labels"
+      ]
+    }
+  ],
+  "promotionRequirements": {
+    "requireActualSelectedTokenChange": true,
+    "requireMeaningfulToken": true,
+    "maxDecodeStepIndex": 3,
+    "requireWithinPolicyStability": true,
+    "requireUpstreamDisagreement": true,
+    "requireSuffixReplayDivergence": true,
+    "minimumPromotableScore": 3.0,
+    "rejectionReasons": [
+      "missing-required-field",
+      "selected-token-unchanged",
+      "meaningless-token",
+      "late-decode-position",
+      "within-policy-instability",
+      "missing-upstream-disagreement",
+      "missing-suffix-replay",
+      "suffix-replay-converged",
+      "score-below-threshold"
+    ]
+  },
+  "suffixReplayPolicy": {
+    "minReplaySteps": 1,
+    "maxReplaySteps": 4,
+    "requiredForPromotion": true,
+    "notes": [
+      "Short suffix replay is used only to confirm semantic consequence after a real selected-token flip has already been observed.",
+      "The replay budget is intentionally small so this remains a promotion filter instead of a new generation mode."
+    ]
+  },
+  "rankingBuckets": [
+    {
+      "bucketId": "promotable",
+      "description": "Real selected-token flip with semantic consequence and score above the promotion threshold.",
+      "minimumScore": 3.0
+    },
+    {
+      "bucketId": "investigate",
+      "description": "Interesting decode-boundary fragility that needs more evidence or better suffix consequence before promotion.",
+      "minimumScore": 1.5
+    },
+    {
+      "bucketId": "reject",
+      "description": "Fails the current promotion bar or lacks meaningful decode consequence.",
+      "minimumScore": 0.0
+    }
+  ],
+  "backendExpansionOrder": [
+    {
+      "backendId": "apple:metal",
+      "priority": 1,
+      "reason": "Land the decode receipt and promotion loop on the backend with the current strongest ordinary-execution numeric-governance evidence."
+    },
+    {
+      "backendId": "amd:vulkan",
+      "priority": 2,
+      "reason": "Demonstrate that the decode-governance contract is runtime-level and portable beyond one backend."
+    }
+  ]
+}

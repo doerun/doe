@@ -122,26 +122,59 @@ The v1 path is intentionally explicit:
   - `numeric-stability/abstain-on-selected-token-disagreement-v1`
 - it remains the current public/package-facing numeric-stability helper
 
-### In-path numeric-stability annotations
+### In-path ordinary-execution numeric stability
 
-`doe-zig-runtime` now also supports native ordinary-execution numeric-stability
-evaluation for annotated `kernel_dispatch` commands targeting `matmul.logits`.
+`doe-zig-runtime` now supports native ordinary-execution numeric-stability
+evaluation from config-backed auto-detect profiles during real
+`kernel_dispatch` execution.
 
-- command JSON may carry a `numericStability` object on `kernel_dispatch`
-- the annotation contract is schema-backed in:
-  - `config/numeric-stability-command-annotation.schema.json`
-  - `examples/numeric-stability-command-annotation.sample.json`
-- when present on an executed native command stream with trace output enabled,
-  the runtime:
-  - captures the live hidden-state vector, bounded candidate row weights, and
-    fast logits buffer from the real dispatch
+- the current auto-detect registry lives in:
+  - `config/numeric-stability-policy.json`
+  - `config/numeric-stability-policy.schema.json`
+- the current native ordinary-execution operator families are:
+  - `matmul.logits`
+  - `rmsnorm.output`
+  - `attention.output`
+- ordinary execution now resolves a named execution profile from the shared
+  registry:
+  - `numeric-stability/default-ordinary-execution-v1`
+  - `numeric-stability/cautious-ordinary-execution-v1`
+  - `numeric-stability/observe-only-ordinary-execution-v1`
+- matching uses semantic fields plus executed kernel identity
+- explicit command-local `numericStability` annotations remain supported as an
+  override path, but they are no longer required for the primary in-path lane
+- when a supported native command stream runs with `--trace-meta`, the runtime:
+  - captures the live operator operands and fast output from the executed
+    dispatch
   - computes stable and exact-reference comparisons locally in Zig
+  - can rewrite the committed result for `prefer-stable`
+  - can stop the downstream command suffix for `abstain`
+  - emits decode-boundary receipts for the shipped `sample.wgsl` path when it
+    follows an auto-detected `decode.final_logits` producer
   - emits `<trace-meta>.numeric-stability.jsonl`
   - populates the `numericStability` trace-meta summary block
+  - records the selected `executionProfileId` in trace meta
+  - binds receipt identity to kernel path/basename, layout fingerprint,
+    adapter/driver profile, and compiled plan hash
+- the current live decode-boundary surface is intentionally narrow but no
+  longer greedy-only:
+  - `decode.sample_token` receipts report a real full-vocabulary decode
+    boundary
+  - the legacy 16-byte sample uniform remains backward-compatible and reports
+    `decodeMode = greedy-argmax`
+  - when the expanded sample ABI is present, the runtime now:
+    - parses `temperature`, `topK`, `topP`, `rngSeed`, and `rngDraw`
+    - replays `fast`, `stable`, and `reference` under the same draw
+    - writes the committed sampled token back into the real output buffer
+    - records `cdfDistanceToDraw` plus the sampled selected-token triple
+  - `decodeBoundary.upstreamLinks` still point back to the governing
+    `decode.final_logits` receipt
 
-This in-path ordinary-execution support is currently native-runtime-only. The
-explicit `module-core-runner` service above remains the public/package-facing
-entry point until `doe-gpu` grows ordinary-execution exposure.
+This in-path ordinary-execution support is still strongest in the native
+runtime lane, but `doe-gpu` now also exposes the same ordinary command-stream
+contract via `gpu.ordinaryExecution(...)`, with
+`gpu.numericStability.ordinaryExecution(...)` retained as a compatibility
+alias.
 
 Use this path when promoting bench numeric-fragility evidence into a real Doe
 runtime contract.

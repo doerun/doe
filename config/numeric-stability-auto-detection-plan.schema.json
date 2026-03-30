@@ -1,0 +1,363 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://doe-gpu.dev/config/numeric-stability-auto-detection-plan.schema.json",
+  "title": "Numeric stability auto detection plan",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "planVersion",
+    "proposalState",
+    "currentLiveBoundary",
+    "signalDefinitions",
+    "detectionProfiles",
+    "capturePlans",
+    "rerunPlans",
+    "suffixReplayPlans",
+    "overheadBudgets",
+    "migrationStages"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "planVersion": { "type": "string", "minLength": 1 },
+    "proposalState": { "const": "planning-only" },
+    "currentLiveBoundary": {
+      "type": "object",
+      "required": [
+        "requiresAnnotation",
+        "operatorFamilies",
+        "routeDecisions"
+      ],
+      "properties": {
+        "requiresAnnotation": { "type": "boolean" },
+        "operatorFamilies": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "routeDecisions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "enum": ["accept-fast", "prefer-stable", "abstain"]
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "signalDefinitions": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/signalDefinition" }
+    },
+    "detectionProfiles": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/detectionProfile" }
+    },
+    "capturePlans": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/capturePlan" }
+    },
+    "rerunPlans": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/rerunPlan" }
+    },
+    "suffixReplayPlans": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/suffixReplayPlan" }
+    },
+    "overheadBudgets": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/overheadBudget" }
+    },
+    "migrationStages": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/migrationStage" }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "signalDefinition": {
+      "type": "object",
+      "required": [
+        "signalId",
+        "description",
+        "source",
+        "direction"
+      ],
+      "properties": {
+        "signalId": { "type": "string", "minLength": 1 },
+        "description": { "type": "string", "minLength": 1 },
+        "source": {
+          "type": "string",
+          "enum": [
+            "runtime-receipt",
+            "trace-meta",
+            "bounded-answer-metrics",
+            "decode-window",
+            "device-identity"
+          ]
+        },
+        "direction": {
+          "type": "string",
+          "enum": [
+            "lower-is-fragile",
+            "higher-is-fragile",
+            "boolean-gate",
+            "identity-match"
+          ]
+        },
+        "unit": { "type": ["string", "null"] }
+      },
+      "additionalProperties": false
+    },
+    "gatingSignal": {
+      "type": "object",
+      "required": ["signalId", "comparator"],
+      "properties": {
+        "signalId": { "type": "string", "minLength": 1 },
+        "comparator": {
+          "type": "string",
+          "enum": ["<=", ">=", "==", "present"]
+        },
+        "threshold": { "type": ["number", "null"] },
+        "required": { "type": "boolean", "default": true }
+      },
+      "additionalProperties": false
+    },
+    "persistenceWindow": {
+      "type": "object",
+      "required": ["kind", "previousSteps", "nextSteps", "requiredHits"],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": ["same-step", "adjacent-decode", "short-suffix-window"]
+        },
+        "previousSteps": { "type": "integer", "minimum": 0 },
+        "nextSteps": { "type": "integer", "minimum": 0 },
+        "requiredHits": { "type": "integer", "minimum": 1 }
+      },
+      "additionalProperties": false
+    },
+    "deviceScope": {
+      "type": "object",
+      "properties": {
+        "includeAdapterIdentities": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "includeDriverPatterns": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "includeKernelIdentities": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      },
+      "additionalProperties": false
+    },
+    "detectionProfile": {
+      "type": "object",
+      "required": [
+        "profileId",
+        "stage",
+        "operatorFamily",
+        "semanticOpId",
+        "gatingSignals",
+        "persistenceWindow",
+        "capturePlanId",
+        "rerunPlanId",
+        "overheadBudgetId"
+      ],
+      "properties": {
+        "profileId": { "type": "string", "minLength": 1 },
+        "stage": {
+          "type": "string",
+          "enum": [
+            "annotation-assisted",
+            "shadow-auto-detect",
+            "auto-detect-rerun",
+            "suffix-replay"
+          ]
+        },
+        "operatorFamily": { "type": "string", "minLength": 1 },
+        "semanticOpId": { "type": "string", "minLength": 1 },
+        "gatingSignals": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/gatingSignal" }
+        },
+        "persistenceWindow": { "$ref": "#/$defs/persistenceWindow" },
+        "deviceScope": { "$ref": "#/$defs/deviceScope" },
+        "capturePlanId": { "type": "string", "minLength": 1 },
+        "rerunPlanId": { "type": "string", "minLength": 1 },
+        "overheadBudgetId": { "type": "string", "minLength": 1 },
+        "notes": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      },
+      "additionalProperties": false
+    },
+    "capturePlan": {
+      "type": "object",
+      "required": [
+        "capturePlanId",
+        "capturePoint",
+        "operands",
+        "readbackScope",
+        "avoidFullModelRerun"
+      ],
+      "properties": {
+        "capturePlanId": { "type": "string", "minLength": 1 },
+        "capturePoint": {
+          "type": "string",
+          "enum": [
+            "post-dispatch-live-buffers",
+            "pre-sample-live-buffers",
+            "suffix-checkpoint"
+          ]
+        },
+        "operands": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "readbackScope": {
+          "type": "string",
+          "enum": [
+            "bounded-rows-only",
+            "bounded-rows-and-topk",
+            "operator-output-window"
+          ]
+        },
+        "avoidFullModelRerun": { "const": true }
+      },
+      "additionalProperties": false
+    },
+    "rerunPlan": {
+      "type": "object",
+      "required": [
+        "rerunPlanId",
+        "rerunUnit",
+        "proposedStablePolicyId",
+        "proposedReferencePolicyId",
+        "compareOutputs",
+        "allowedRouteDecisions"
+      ],
+      "properties": {
+        "rerunPlanId": { "type": "string", "minLength": 1 },
+        "rerunUnit": {
+          "type": "string",
+          "enum": [
+            "single-operator",
+            "single-operator-plus-sample",
+            "suffix-window"
+          ]
+        },
+        "proposedStablePolicyId": { "type": "string", "minLength": 1 },
+        "proposedReferencePolicyId": { "type": ["string", "null"] },
+        "compareOutputs": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "allowedRouteDecisions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "enum": ["accept-fast", "prefer-stable", "abstain"]
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "suffixReplayPlan": {
+      "type": "object",
+      "required": [
+        "suffixReplayPlanId",
+        "activationProfileId",
+        "checkpointSource",
+        "windowKind",
+        "maxReplayTokens",
+        "defaultRouteWhenWindowUnavailable"
+      ],
+      "properties": {
+        "suffixReplayPlanId": { "type": "string", "minLength": 1 },
+        "activationProfileId": { "type": "string", "minLength": 1 },
+        "checkpointSource": {
+          "type": "string",
+          "enum": [
+            "semantic-trace",
+            "capture-ledger",
+            "future-kv-checkpoint"
+          ]
+        },
+        "windowKind": {
+          "type": "string",
+          "enum": ["single-token", "two-token", "short-suffix"]
+        },
+        "maxReplayTokens": { "type": "integer", "minimum": 1 },
+        "defaultRouteWhenWindowUnavailable": {
+          "type": "string",
+          "enum": ["accept-fast", "abstain"]
+        }
+      },
+      "additionalProperties": false
+    },
+    "overheadBudget": {
+      "type": "object",
+      "required": [
+        "overheadBudgetId",
+        "maxBytesReadback",
+        "maxExtraOperatorReruns",
+        "maxActivationRate",
+        "budgetExceededRouteDecision"
+      ],
+      "properties": {
+        "overheadBudgetId": { "type": "string", "minLength": 1 },
+        "maxBytesReadback": { "type": "integer", "minimum": 0 },
+        "maxExtraOperatorReruns": { "type": "integer", "minimum": 0 },
+        "maxActivationRate": { "type": "number", "minimum": 0, "maximum": 1 },
+        "budgetExceededRouteDecision": {
+          "type": "string",
+          "enum": ["accept-fast", "abstain"]
+        }
+      },
+      "additionalProperties": false
+    },
+    "migrationStage": {
+      "type": "object",
+      "required": ["stageId", "blockingRequirements", "advisoryRequirements"],
+      "properties": {
+        "stageId": {
+          "type": "string",
+          "enum": [
+            "annotation-gated",
+            "shadow-auto-detect",
+            "auto-detect-receipt-only",
+            "auto-detect-single-operator-rerun",
+            "suffix-replay-assisted"
+          ]
+        },
+        "blockingRequirements": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "advisoryRequirements": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

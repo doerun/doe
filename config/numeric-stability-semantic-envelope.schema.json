@@ -1,0 +1,175 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://doe-gpu.dev/config/numeric-stability-semantic-envelope.schema.json",
+  "title": "Numeric stability semantic envelope",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "artifactVersion",
+    "scenarioId",
+    "sourceCaseRefs",
+    "semanticClasses",
+    "views",
+    "reachableAnswers",
+    "envelopeStatus",
+    "metrics"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "artifactKind": { "const": "numeric-stability-semantic-envelope" },
+    "artifactVersion": { "type": "string", "minLength": 1 },
+    "scenarioId": { "type": "string", "minLength": 1 },
+    "description": { "type": "string", "minLength": 1 },
+    "sourceCaseRefs": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/sourceCaseRef" }
+    },
+    "semanticClasses": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/semanticClass" }
+    },
+    "views": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/view" }
+    },
+    "reachableAnswers": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/reachableAnswer" }
+    },
+    "envelopeStatus": {
+      "type": "string",
+      "enum": ["singleton", "split", "outsider-dominated"]
+    },
+    "metrics": { "$ref": "#/$defs/metrics" },
+    "notes": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "sourceCaseRef": {
+      "type": "object",
+      "required": ["kind", "path"],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "fragility-signature",
+            "fragility-corpus-entry",
+            "runtime-receipt",
+            "trace-meta",
+            "hunt-report",
+            "package-receipt"
+          ]
+        },
+        "path": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "semanticClass": {
+      "type": "object",
+      "required": ["classId", "label", "memberTokens"],
+      "properties": {
+        "classId": { "type": "string", "minLength": 1 },
+        "label": { "type": "string", "minLength": 1 },
+        "memberTokens": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["tokenId", "tokenText"],
+            "properties": {
+              "tokenId": { "type": "integer", "minimum": 0 },
+              "tokenText": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "view": {
+      "type": "object",
+      "required": [
+        "viewId",
+        "viewKind",
+        "numericPolicyId",
+        "reachableClassIds",
+        "selectedClassId"
+      ],
+      "properties": {
+        "viewId": { "type": "string", "minLength": 1 },
+        "viewKind": {
+          "type": "string",
+          "enum": [
+            "full-prefill",
+            "truncated-prefix",
+            "prompt-rewrite",
+            "prefill-plus-decode1",
+            "short-suffix-replay",
+            "kernel-variant",
+            "bounded-pair-context",
+            "global-topk-context"
+          ]
+        },
+        "numericPolicyId": { "type": "string", "minLength": 1 },
+        "kernelVariantId": { "type": ["string", "null"] },
+        "prefixVariantId": { "type": ["string", "null"] },
+        "decodeWindowId": { "type": ["string", "null"] },
+        "reachableClassIds": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "selectedClassId": { "type": "string", "minLength": 1 },
+        "outsiderDominates": { "type": "boolean" },
+        "boundedMargin": { "type": ["number", "null"] },
+        "outsiderLead": { "type": ["number", "null"] }
+      },
+      "additionalProperties": false
+    },
+    "reachableAnswer": {
+      "type": "object",
+      "required": ["classId", "reachableViaViews"],
+      "properties": {
+        "classId": { "type": "string", "minLength": 1 },
+        "reachableViaViews": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "selectedByViews": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      },
+      "additionalProperties": false
+    },
+    "metrics": {
+      "type": "object",
+      "required": [
+        "semanticEnvelopeWidth",
+        "classAgreementRate",
+        "outsiderDominanceRate",
+        "meanBoundedMargin",
+        "routeStabilityAcrossAdjacentDecode",
+        "incrementalCostUnits"
+      ],
+      "properties": {
+        "semanticEnvelopeWidth": { "type": "integer", "minimum": 1 },
+        "classAgreementRate": { "type": "number", "minimum": 0, "maximum": 1 },
+        "outsiderDominanceRate": { "type": "number", "minimum": 0, "maximum": 1 },
+        "meanBoundedMargin": { "type": ["number", "null"] },
+        "routeStabilityAcrossAdjacentDecode": { "type": "number", "minimum": 0, "maximum": 1 },
+        "incrementalCostUnits": { "type": "number", "minimum": 0 }
+      },
+      "additionalProperties": false
+    }
+  }
+}

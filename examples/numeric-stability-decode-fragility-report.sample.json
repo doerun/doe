@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "numeric-stability-decode-fragility-report",
+  "timestamp": "2026-03-29T23:30:00Z",
+  "planPath": "config/numeric-stability-decode-fragility-plan.json",
+  "sourcePath": "bench/out/example/sample-token-receipts.jsonl",
+  "rankedCases": [
+    {
+      "caseId": "red-go-stop-decode0",
+      "promptText": "Answer with exactly one word: go or stop. Question: At a red traffic light, cars should Answer:",
+      "decodeStepIndex": 0,
+      "semanticPriorityClass": "policy-action",
+      "score": 4.15,
+      "rankingBucket": "promotable",
+      "selectedTokens": {
+        "fast": 4721,
+        "stable": 817,
+        "reference": 817,
+        "fastText": " stop",
+        "stableText": " go",
+        "referenceText": " go"
+      },
+      "sourceArtifactPath": "bench/out/example/red-go-stop.receipt.jsonl",
+      "receiptPath": "bench/out/example/red-go-stop.receipt.jsonl",
+      "upstreamSemanticOpId": "matmul.logits",
+      "metrics": {
+        "postTemperatureTop1Margin": 0.02118,
+        "topKBoundaryGap": 0.00491,
+        "topPBoundaryGap": 0.00317,
+        "cdfDistanceToDraw": 0.00205,
+        "adjacentDecodePersistence": 2,
+        "actualSelectedTokenChanged": true,
+        "meaningfulToken": true,
+        "withinPolicyStable": true,
+        "suffixReplayDivergent": true
+      },
+      "rejectionReasons": []
+    }
+  ],
+  "summary": {
+    "caseCount": 1,
+    "countsByBucket": {
+      "promotable": 1
+    },
+    "countsBySemanticPriorityClass": {
+      "policy-action": 1
+    },
+    "topCaseId": "red-go-stop-decode0"
+  }
+}

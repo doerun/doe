@@ -1,0 +1,264 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://doe-gpu.dev/config/numeric-stability-decode-validation-plan.schema.json",
+  "title": "Numeric stability decode validation plan",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "planVersion",
+    "proposalState",
+    "basePromotionPolicyId",
+    "semanticScenarioBuckets",
+    "meaningfulTokenClasses",
+    "rejectionRules",
+    "promotionCriteria",
+    "withinPolicyStability",
+    "suffixReplayValidation",
+    "backendPromotionStages",
+    "demoSetRequirements"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "planVersion": { "type": "string", "minLength": 1 },
+    "proposalState": { "const": "planning-only" },
+    "basePromotionPolicyId": { "type": "string", "minLength": 1 },
+    "semanticScenarioBuckets": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/semanticScenarioBucket" }
+    },
+    "meaningfulTokenClasses": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/meaningfulTokenClass" }
+    },
+    "rejectionRules": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/rejectionRule" }
+    },
+    "promotionCriteria": { "$ref": "#/$defs/promotionCriteria" },
+    "withinPolicyStability": { "$ref": "#/$defs/withinPolicyStability" },
+    "suffixReplayValidation": { "$ref": "#/$defs/suffixReplayValidation" },
+    "backendPromotionStages": {
+      "type": "array",
+      "minItems": 2,
+      "items": { "$ref": "#/$defs/backendPromotionStage" }
+    },
+    "demoSetRequirements": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/demoRequirement" }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "semanticScenarioBucket": {
+      "type": "object",
+      "required": ["bucketId", "description", "exampleStems"],
+      "properties": {
+        "bucketId": {
+          "type": "string",
+          "enum": [
+            "tool-choice",
+            "json-boolean",
+            "moderation-label",
+            "policy-action",
+            "visibility-label",
+            "approval-label",
+            "tool-call"
+          ]
+        },
+        "description": { "type": "string", "minLength": 1 },
+        "exampleStems": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      },
+      "additionalProperties": false
+    },
+    "meaningfulTokenClass": {
+      "type": "object",
+      "required": ["classId", "description", "examples"],
+      "properties": {
+        "classId": {
+          "type": "string",
+          "enum": [
+            "json-literal",
+            "policy-action-word",
+            "visibility-label",
+            "moderation-label",
+            "tool-identifier",
+            "approval-label",
+            "whole-word-answer"
+          ]
+        },
+        "description": { "type": "string", "minLength": 1 },
+        "examples": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      },
+      "additionalProperties": false
+    },
+    "rejectionRule": {
+      "type": "object",
+      "required": ["ruleId", "description", "rejectWhen"],
+      "properties": {
+        "ruleId": { "type": "string", "minLength": 1 },
+        "description": { "type": "string", "minLength": 1 },
+        "rejectWhen": {
+          "type": "string",
+          "enum": [
+            "whitespace-only",
+            "newline-only",
+            "punctuation-only",
+            "delimiter-only",
+            "bpe-fragment-only",
+            "casing-only",
+            "format-only"
+          ]
+        },
+        "examples": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      },
+      "additionalProperties": false
+    },
+    "promotionCriteria": {
+      "type": "object",
+      "required": ["blockingEvidence", "advisoryEvidence"],
+      "properties": {
+        "blockingEvidence": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "enum": [
+              "selected-token-changed",
+              "meaningful-token-class",
+              "early-decode-position",
+              "within-policy-stability",
+              "short-suffix-consequence"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "advisoryEvidence": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "buyer-legible-scenario",
+              "cross-backend-parity",
+              "semantic-envelope-support",
+              "operator-chain-legibility"
+            ]
+          },
+          "uniqueItems": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "withinPolicyStability": {
+      "type": "object",
+      "required": [
+        "rerunsPerPolicy",
+        "requireSameSeed",
+        "requireSameDecodeConfig",
+        "requiredAgreementRate"
+      ],
+      "properties": {
+        "rerunsPerPolicy": { "type": "integer", "minimum": 2 },
+        "requireSameSeed": { "type": "boolean" },
+        "requireSameDecodeConfig": { "type": "boolean" },
+        "requiredAgreementRate": { "type": "number", "minimum": 0, "maximum": 1 }
+      },
+      "additionalProperties": false
+    },
+    "suffixReplayValidation": {
+      "type": "object",
+      "required": [
+        "minReplaySteps",
+        "maxReplaySteps",
+        "requireSameSeed",
+        "requireSameDecodeConfig",
+        "requiredConsequenceKinds"
+      ],
+      "properties": {
+        "minReplaySteps": { "type": "integer", "minimum": 1 },
+        "maxReplaySteps": { "type": "integer", "minimum": 1 },
+        "requireSameSeed": { "type": "boolean" },
+        "requireSameDecodeConfig": { "type": "boolean" },
+        "requiredConsequenceKinds": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "enum": [
+              "selected-token-divergence",
+              "semantic-class-divergence"
+            ]
+          },
+          "uniqueItems": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "backendPromotionStage": {
+      "type": "object",
+      "required": [
+        "stageId",
+        "description",
+        "blockingEvidence",
+        "advisoryEvidence"
+      ],
+      "properties": {
+        "stageId": {
+          "type": "string",
+          "enum": [
+            "metal-exercised",
+            "metal-promoted",
+            "vulkan-reproduced",
+            "cross-backend-promoted"
+          ]
+        },
+        "description": { "type": "string", "minLength": 1 },
+        "blockingEvidence": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "advisoryEvidence": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "demoRequirement": {
+      "type": "object",
+      "required": ["bucketId", "description", "minimumCases"],
+      "properties": {
+        "bucketId": {
+          "type": "string",
+          "enum": [
+            "buyer-legible-prefer-stable",
+            "real-accept-fast-control",
+            "real-abstain",
+            "cross-backend-repeat",
+            "semantically-embarrassing-control"
+          ]
+        },
+        "description": { "type": "string", "minLength": 1 },
+        "minimumCases": { "type": "integer", "minimum": 1 }
+      },
+      "additionalProperties": false
+    }
+  }
+}

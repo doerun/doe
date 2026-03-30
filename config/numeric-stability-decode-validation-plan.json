@@ -1,0 +1,259 @@
+{
+  "schemaVersion": 1,
+  "planVersion": "2026-03-29-track3-v1",
+  "proposalState": "planning-only",
+  "basePromotionPolicyId": "fragility-promotion/numeric-stability-v1",
+  "semanticScenarioBuckets": [
+    {
+      "bucketId": "tool-choice",
+      "description": "Prompts where the token selects between tools or operational branches.",
+      "exampleStems": [
+        "Choose the safer tool for this request",
+        "Call the approval tool or the deny tool"
+      ]
+    },
+    {
+      "bucketId": "json-boolean",
+      "description": "Prompts that emit JSON booleans or similarly strict machine-consumed literals.",
+      "exampleStems": [
+        "{\"allow\":",
+        "{\"approved\":"
+      ]
+    },
+    {
+      "bucketId": "moderation-label",
+      "description": "Prompts that emit bounded moderation labels such as safe, unsafe, allow, or block.",
+      "exampleStems": [
+        "Label this message",
+        "Moderation decision:"
+      ]
+    },
+    {
+      "bucketId": "policy-action",
+      "description": "Prompts with policy-action words such as allow, block, approve, deny, go, and stop.",
+      "exampleStems": [
+        "At a red traffic light, cars should",
+        "Revoking access for a departed employee should be"
+      ]
+    },
+    {
+      "bucketId": "visibility-label",
+      "description": "Prompts with public/private, redact/release, or internal/external style labels.",
+      "exampleStems": [
+        "An internal incident report should remain",
+        "A public open-source README should remain"
+      ]
+    },
+    {
+      "bucketId": "approval-label",
+      "description": "Prompts that drive approve/deny or safe/unsafe style workflow labels.",
+      "exampleStems": [
+        "This change should be",
+        "Risk decision:"
+      ]
+    },
+    {
+      "bucketId": "tool-call",
+      "description": "Prompts where the next token identifies a privileged tool or function call target.",
+      "exampleStems": [
+        "Next tool:",
+        "Function call:"
+      ]
+    }
+  ],
+  "meaningfulTokenClasses": [
+    {
+      "classId": "json-literal",
+      "description": "A token that directly determines a JSON literal consumed by a workflow.",
+      "examples": ["true", "false", "null"]
+    },
+    {
+      "classId": "policy-action-word",
+      "description": "A token that directly names an operational action or refusal.",
+      "examples": ["allow", "block", "approve", "deny", "go", "stop"]
+    },
+    {
+      "classId": "visibility-label",
+      "description": "A token that directly determines visibility or disclosure class.",
+      "examples": ["public", "private", "internal", "external"]
+    },
+    {
+      "classId": "moderation-label",
+      "description": "A token that directly determines a moderation or safety class.",
+      "examples": ["safe", "unsafe", "spam", "phishing"]
+    },
+    {
+      "classId": "tool-identifier",
+      "description": "A token that directly chooses a tool or function family.",
+      "examples": ["search", "delete_user", "redact", "release"]
+    },
+    {
+      "classId": "approval-label",
+      "description": "A token that directly drives an approve/deny or pass/fail workflow.",
+      "examples": ["approved", "denied", "accept", "reject"]
+    },
+    {
+      "classId": "whole-word-answer",
+      "description": "A full lexical answer token that is not just formatting noise.",
+      "examples": ["yes", "no", "keep", "flip"]
+    }
+  ],
+  "rejectionRules": [
+    {
+      "ruleId": "reject-whitespace-only",
+      "description": "Do not promote flips where the changed token is only whitespace.",
+      "rejectWhen": "whitespace-only",
+      "examples": [" ", "  "]
+    },
+    {
+      "ruleId": "reject-newline-only",
+      "description": "Do not promote flips where the changed token is only a newline or line-break control.",
+      "rejectWhen": "newline-only",
+      "examples": ["\\n", "\\r\\n"]
+    },
+    {
+      "ruleId": "reject-punctuation-only",
+      "description": "Do not promote flips where the changed token is only punctuation with no workflow consequence.",
+      "rejectWhen": "punctuation-only",
+      "examples": [",", ".", ":"]
+    },
+    {
+      "ruleId": "reject-delimiter-only",
+      "description": "Do not promote flips where the change is only a structural delimiter.",
+      "rejectWhen": "delimiter-only",
+      "examples": ["}", "]", "\")\""]
+    },
+    {
+      "ruleId": "reject-bpe-fragment-only",
+      "description": "Do not promote flips that only swap subword fragments without stable semantic consequence.",
+      "rejectWhen": "bpe-fragment-only",
+      "examples": ["ing", "ed", "##ly"]
+    },
+    {
+      "ruleId": "reject-casing-only",
+      "description": "Do not promote flips where the only difference is casing.",
+      "rejectWhen": "casing-only",
+      "examples": ["Allow vs allow", "True vs true"]
+    },
+    {
+      "ruleId": "reject-format-only",
+      "description": "Do not promote flips that only change formatting while preserving the same semantic label.",
+      "rejectWhen": "format-only",
+      "examples": ["\"allow\" vs allow", "yes. vs yes"]
+    }
+  ],
+  "promotionCriteria": {
+    "blockingEvidence": [
+      "selected-token-changed",
+      "meaningful-token-class",
+      "early-decode-position",
+      "within-policy-stability",
+      "short-suffix-consequence"
+    ],
+    "advisoryEvidence": [
+      "buyer-legible-scenario",
+      "cross-backend-parity",
+      "semantic-envelope-support",
+      "operator-chain-legibility"
+    ]
+  },
+  "withinPolicyStability": {
+    "rerunsPerPolicy": 3,
+    "requireSameSeed": true,
+    "requireSameDecodeConfig": true,
+    "requiredAgreementRate": 1.0
+  },
+  "suffixReplayValidation": {
+    "minReplaySteps": 1,
+    "maxReplaySteps": 4,
+    "requireSameSeed": true,
+    "requireSameDecodeConfig": true,
+    "requiredConsequenceKinds": [
+      "selected-token-divergence",
+      "semantic-class-divergence"
+    ]
+  },
+  "backendPromotionStages": [
+    {
+      "stageId": "metal-exercised",
+      "description": "The case is real on the primary Metal lane with a schema-backed decode receipt and validated semantic consequence.",
+      "blockingEvidence": [
+        "sample-token-receipt",
+        "real-decode-change",
+        "meaningful-token-filter-pass",
+        "suffix-replay-consequence"
+      ],
+      "advisoryEvidence": [
+        "buyer-legible-scenario",
+        "upstream-operator-chain-present"
+      ]
+    },
+    {
+      "stageId": "metal-promoted",
+      "description": "The case is strong enough to appear in the promoted decode-boundary set on Metal.",
+      "blockingEvidence": [
+        "within-policy-stability",
+        "semantic-scenario-bucket",
+        "demo-bucket-assigned"
+      ],
+      "advisoryEvidence": [
+        "semantic-envelope-support",
+        "operator-family-legibility"
+      ]
+    },
+    {
+      "stageId": "vulkan-reproduced",
+      "description": "The same decode-boundary case reproduces on the Vulkan lane with the same semantic bucket and route interpretation.",
+      "blockingEvidence": [
+        "same-prompt-and-model",
+        "same-decode-config",
+        "same-semantic-bucket",
+        "claimable-vulkan-receipt"
+      ],
+      "advisoryEvidence": [
+        "same-upstream-operator-family",
+        "same-meaningful-token-class"
+      ]
+    },
+    {
+      "stageId": "cross-backend-promoted",
+      "description": "The case is promoted as a runtime contract example rather than a one-backend artifact.",
+      "blockingEvidence": [
+        "metal-promoted",
+        "vulkan-reproduced",
+        "backend-portability-note"
+      ],
+      "advisoryEvidence": [
+        "demo-ready-writeup",
+        "semantic-envelope-export"
+      ]
+    }
+  ],
+  "demoSetRequirements": [
+    {
+      "bucketId": "buyer-legible-prefer-stable",
+      "description": "At least one decode-boundary case where a meaningful token flip causes a buyer-legible prefer-stable outcome.",
+      "minimumCases": 1
+    },
+    {
+      "bucketId": "real-accept-fast-control",
+      "description": "At least one decode-boundary control where the real runtime keeps the fast path.",
+      "minimumCases": 1
+    },
+    {
+      "bucketId": "real-abstain",
+      "description": "At least one decode-boundary case where Doe refuses to force a winner.",
+      "minimumCases": 1
+    },
+    {
+      "bucketId": "cross-backend-repeat",
+      "description": "At least one decode-boundary case that repeats on Metal and Vulkan with the same semantic bucket.",
+      "minimumCases": 1
+    },
+    {
+      "bucketId": "semantically-embarrassing-control",
+      "description": "At least one case where stable or reference consistency does not imply human-rightness, so the demo stays honest.",
+      "minimumCases": 1
+    }
+  ]
+}

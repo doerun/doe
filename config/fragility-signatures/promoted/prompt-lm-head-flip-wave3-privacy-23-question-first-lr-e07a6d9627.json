@@ -7,7 +7,7 @@
   "routeTaxonomyVersion": "numeric-stability-routes-v1",
   "sourceArtifactPath": "bench/out/apple-metal-real-lm-head-slice-hunt/20260329T144110Z/apple_metal_real_lm_head_slice_hunt_gemma270m_wave3_shard02.real-lm-head-slice-hunt.json",
   "scenarioStem": "An internal incident report should remain",
-  "notes": "Runtime-exercised through ordinary doe-zig-runtime execution; see `bench/out/apple-metal-in-path-numeric-stability/20260329T191921Z/in-path-internal-incident-report-abstain/in-path-numeric-stability.case.json` for route and overhead details.",
+  "notes": "Runtime-exercised through ordinary doe-zig-runtime execution; see `bench/out/apple-metal-in-path-numeric-stability/20260329T222057Z/in-path-internal-incident-report-abstain/in-path-numeric-stability.case.json` for route and overhead details.",
   "sourceSearchArtifactPath": "bench/out/apple-metal-real-lm-head-slice-hunt/20260329T144110Z/apple_metal_real_lm_head_slice_hunt_gemma270m_wave3_shard02.real-lm-head-slice-hunt.json",
   "relatedArtifactPaths": [
     "bench/out/apple-metal-reduction-order-logit-flip/20260329T144110Z/apple_metal_real_lm_head_slice_hunt_gemma270m_wave3_shard02_wave3-privacy-23-question_first-lr_prefix2.reduction-order-logit-flip.json",
@@ -31,7 +31,19 @@
     "bench/out/apple-metal-in-path-numeric-stability/20260329T191921Z/in-path-internal-incident-report-abstain/in-path-numeric-stability.commands.json",
     "bench/out/apple-metal-in-path-numeric-stability/20260329T191921Z/in-path-internal-incident-report-abstain/in-path-numeric-stability.trace-meta.json",
     "bench/out/apple-metal-in-path-numeric-stability/20260329T191921Z/in-path-internal-incident-report-abstain/in-path-numeric-stability.trace-meta.json.numeric-stability.jsonl",
-    "bench/out/apple-metal-in-path-numeric-stability/20260329T191921Z/in-path-internal-incident-report-abstain/in-path-numeric-stability.case.json"
+    "bench/out/apple-metal-in-path-numeric-stability/20260329T191921Z/in-path-internal-incident-report-abstain/in-path-numeric-stability.case.json",
+    "bench/out/apple-metal-in-path-numeric-stability/20260329T193115Z/in-path-internal-incident-report-abstain/in-path-numeric-stability.commands.json",
+    "bench/out/apple-metal-in-path-numeric-stability/20260329T193115Z/in-path-internal-incident-report-abstain/in-path-numeric-stability.trace-meta.json",
+    "bench/out/apple-metal-in-path-numeric-stability/20260329T193115Z/in-path-internal-incident-report-abstain/in-path-numeric-stability.trace-meta.json.numeric-stability.jsonl",
+    "bench/out/apple-metal-in-path-numeric-stability/20260329T193115Z/in-path-internal-incident-report-abstain/in-path-numeric-stability.case.json",
+    "bench/out/apple-metal-in-path-numeric-stability/20260329T221712Z/in-path-internal-incident-report-abstain/in-path-numeric-stability.commands.json",
+    "bench/out/apple-metal-in-path-numeric-stability/20260329T221712Z/in-path-internal-incident-report-abstain/in-path-numeric-stability.trace-meta.json",
+    "bench/out/apple-metal-in-path-numeric-stability/20260329T221712Z/in-path-internal-incident-report-abstain/in-path-numeric-stability.trace-meta.json.numeric-stability.jsonl",
+    "bench/out/apple-metal-in-path-numeric-stability/20260329T221712Z/in-path-internal-incident-report-abstain/in-path-numeric-stability.case.json",
+    "bench/out/apple-metal-in-path-numeric-stability/20260329T222057Z/in-path-internal-incident-report-abstain/in-path-numeric-stability.commands.json",
+    "bench/out/apple-metal-in-path-numeric-stability/20260329T222057Z/in-path-internal-incident-report-abstain/in-path-numeric-stability.trace-meta.json",
+    "bench/out/apple-metal-in-path-numeric-stability/20260329T222057Z/in-path-internal-incident-report-abstain/in-path-numeric-stability.trace-meta.json.numeric-stability.jsonl",
+    "bench/out/apple-metal-in-path-numeric-stability/20260329T222057Z/in-path-internal-incident-report-abstain/in-path-numeric-stability.case.json"
   ],
   "promptId": "wave3-privacy-23-question_first-lr",
   "promptText": "Question: An internal incident report should remain\nAnswer with exactly one word: public or private.\nAnswer:",
@@ -77,22 +89,22 @@
     "fastSurprisalNats": 0.6960873766512379
   },
   "referenceSelection": {
-    "tokenId": 1237,
-    "tokenText": "public",
+    "tokenId": 0,
+    "tokenText": "token:0",
     "matchesExactReference": true,
     "variantId": "exact-reference",
     "policyId": "lm-head-slice/cpu-f64-serial-v1"
   },
   "fastSelection": {
-    "tokenId": 2147,
-    "tokenText": "private",
+    "tokenId": 1,
+    "tokenText": "token:1",
     "matchesExactReference": false,
     "variantId": "f16accum",
     "policyId": "lm-head-slice/forward-f16accum-v1"
   },
   "stableSelection": {
-    "tokenId": 1237,
-    "tokenText": "public",
+    "tokenId": 0,
+    "tokenText": "token:0",
     "matchesExactReference": true,
     "variantId": "forward",
     "policyId": "lm-head-slice/forward-serial-v1"
@@ -135,7 +147,9 @@
     }
   ],
   "routeOutcome": {
-    "decision": "abstain",
-    "receiptArtifactPath": "bench/out/apple-metal-in-path-numeric-stability/20260329T191921Z/in-path-internal-incident-report-abstain/in-path-numeric-stability.trace-meta.json.numeric-stability.jsonl"
+    "decision": "prefer-stable",
+    "receiptArtifactPath": "bench/out/apple-metal-in-path-numeric-stability/20260329T222057Z/in-path-internal-incident-report-abstain/in-path-numeric-stability.trace-meta.json.numeric-stability.jsonl",
+    "selectedVariantId": "forward",
+    "selectedTokenId": 0
   }
 }

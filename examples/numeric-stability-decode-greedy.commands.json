@@ -1,0 +1,117 @@
+[
+  {
+    "kind": "buffer_write",
+    "handle": 1011,
+    "bufferSize": 16,
+    "data": [2, 3, 0, 0]
+  },
+  {
+    "kind": "buffer_write",
+    "handle": 2002,
+    "bufferSize": 24,
+    "data": [1287568416, 1065353216, 3435052064, 0, 1056964608, 0]
+  },
+  {
+    "kind": "buffer_write",
+    "handle": 2226,
+    "bufferSize": 12,
+    "data": [1065353216, 1065353216, 1065353216]
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "bench/inference-pipeline/kernels/matmul-gemv.wgsl",
+    "x": 64,
+    "y": 1,
+    "z": 1,
+    "initialize_buffers_on_create": true,
+    "semanticOpId": "decode.final_logits",
+    "semanticStage": "decode_demo",
+    "semanticPhase": "final_logits",
+    "semanticTokenIndex": 0,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "uniform",
+        "resource_handle": 1011,
+        "buffer_size": 16,
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "readonly",
+        "resource_handle": 2002,
+        "buffer_size": 24,
+        "visibility": "compute"
+      },
+      {
+        "binding": 2,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "readonly",
+        "resource_handle": 2226,
+        "buffer_size": 12,
+        "visibility": "compute"
+      },
+      {
+        "binding": 3,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "storage",
+        "resource_handle": 2227,
+        "buffer_size": 8,
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "buffer_write",
+    "handle": 1010,
+    "bufferSize": 16,
+    "data": [2, 0, 0, 0]
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "bench/inference-pipeline/kernels/sample.wgsl",
+    "x": 1,
+    "y": 1,
+    "z": 1,
+    "initialize_buffers_on_create": true,
+    "semanticOpId": "decode.sample_token",
+    "semanticStage": "decode_demo",
+    "semanticPhase": "sample_token",
+    "semanticTokenIndex": 0,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "uniform",
+        "resource_handle": 1010,
+        "buffer_size": 16,
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "readonly",
+        "resource_handle": 2227,
+        "buffer_size": 8,
+        "visibility": "compute"
+      },
+      {
+        "binding": 2,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "storage",
+        "resource_handle": 2228,
+        "buffer_size": 4,
+        "visibility": "compute"
+      }
+    ]
+  }
+]

@@ -1,4 +1,431 @@
 # Doe status
+## Sampled decode harvest, enrichment, and promotion are now executable end to end: Doe can patch ordinary command streams into sampled decode mode, harvest real `decode.sample_token` receipts on Metal, attach within-policy stability and short suffix replay evidence, rank the resulting rows, and write a checked decode-promotion catalog even when the honest answer is “no promotable cases yet” (2026-03-29 UTC)
+
+- New config and tooling surfaces:
+  - `config/numeric-stability-decode-harvest-plan.json`
+  - `config/numeric-stability-decode-harvest-plan.schema.json`
+  - `config/numeric-stability-decode-vulkan-replay-plan.json`
+  - `config/numeric-stability-decode-vulkan-replay-plan.schema.json`
+  - `config/numeric-stability-decode-signature.schema.json`
+  - `config/numeric-stability-decode-promoted-catalog.json`
+  - `config/numeric-stability-decode-promoted-catalog.schema.json`
+  - `bench/lib/sampled_decode_fragility.py`
+  - `bench/runners/harvest_sampled_decode_fragility.py`
+  - `bench/runners/enrich_sampled_decode_rows.py`
+  - `bench/runners/promote_sampled_decode_fragility.py`
+  - `bench/runners/replay_promoted_sampled_decode_vulkan.py`
+- Latest live artifacts:
+  - Metal harvest manifest:
+    `bench/out/apple-metal-sampled-decode-fragility/20260330T022000Z/sampled_decode_harvest.manifest.json`
+  - normalized rows:
+    `bench/out/apple-metal-sampled-decode-fragility/20260330T022000Z/numeric_stability_decode.rows.jsonl`
+  - ranked report:
+    `bench/out/apple-metal-sampled-decode-fragility/20260330T022000Z/numeric_stability_decode_fragility.report.json`
+  - Vulkan replay report:
+    `bench/out/amd-vulkan-sampled-decode-replay/20260330T022500Z/numeric_stability_decode_vulkan_replay.report.json`
+- Current truth:
+  - Doe now has a real runtime-to-promotion path for sampled decode states:
+    ordinary execution harvest on Metal, repeat-based within-policy stability,
+    short suffix replay evidence, normalized rows, ranked
+    `promotable` / `investigate` / `reject` output, and a checked
+    decode-promotion catalog
+  - the current checked harvest ran two live cases:
+    the sampled decode demo and a first-5-step truncated `gemma3_270m`
+    ordinary decode
+  - the latest ranked result is still honest and empty on promotion:
+    all six harvested rows are `reject`, so
+    `config/numeric-stability-decode-promoted-catalog.json` currently has
+    `entryCount = 0`
+  - the remaining gap is no longer missing pipeline code:
+    it is finding real semantically meaningful sampled flips in better seeded
+    workloads, then replaying those promoted cases on Vulkan
+
+## Sampled decode-boundary receipts are now live: Doe now parses the expanded `sample.wgsl` uniform ABI during ordinary execution, replays the exact decode function under shared `temperature` / `topK` / `topP` / RNG settings, commits the selected token into the live output buffer, and emits a real sampled `decode.sample_token` receipt instead of a greedy-only placeholder (2026-03-29 UTC)
+
+- Runtime/package/example surfaces:
+  - `runtime/zig/src/numeric_stability_runtime_decode.zig`
+  - `runtime/zig/src/numeric_stability_runtime.zig`
+  - `examples/numeric-stability-decode-sampled.commands.json`
+  - `examples/doe-numeric-stability-receipt.decode-sample.sample.json`
+  - `packages/doe-gpu/test/smoke/test-smoke-load.js`
+  - `packages/doe-gpu/README.md`
+- Current truth:
+  - Doe still accepts the legacy 16-byte `sample.wgsl` uniform and reports it
+    as `greedy-argmax`
+  - when the expanded sample uniform is present, Doe now records live:
+    - `temperature`
+    - `topK`
+    - `topP`
+    - `rngSeed`
+    - `rngDraw`
+    - the surviving fast-lane token set after filtering
+    - sampled `fast` / `stable` / `reference` selected tokens under the same
+      draw
+    - `cdfDistanceToDraw` for the fast replay lane
+  - the runtime now writes the chosen token back into the real sample output
+    buffer so the receipt matches the committed ordinary-execution result
+  - the checked-in sampled decode demo now proves a real decode-only change:
+    `sample.wgsl` would have produced greedy token `1`, but Doe commits sampled
+    fast token `0` under the shared draw while `reference` still selects `1`
+- Remaining gap:
+  - the blocker is no longer “sampled decode receipt fields are missing”
+  - the next decode-governance gap is mining and promoting real sampled flips
+    from live workloads, then proving short suffix consequence and cross-
+    backend portability
+
+## Repo-truth sync for decode-boundary mining: the live state is now greedy `sample.token` receipts plus row normalization, and the remaining gap is sampled decode, not the existence of a receipt surface (2026-03-29 UTC)
+
+- Current truth:
+  - Doe already has a live greedy `decode.sample_token` receipt surface in the
+    runtime and package smoke path
+  - track-2 normalization already consumes the runtime-emitted
+    `decodeBoundary.metrics` fields when present; the checked-in sample receipt
+    preserves `fastTop1Margin=0.5` through the normalized row pipeline
+  - the remaining missing artifact is the richer sampled decode contract:
+    `temperature`, `topK`, `topP`, RNG draw, and the sampled-token replay
+    predicate
+- Supersession note:
+  - the later 2026-03-29 planning entries below that say
+    “`sample.token` must become a receipt surface” or
+    “it does not add a live `sample.token` receipt yet”
+    predate the greedy decode-boundary landing and should now be read as
+    “sampled decode receipt is not live yet”
+
+## Track-2 decode-row normalization now consumes live greedy decode receipts: Doe can normalize `decode.sample_token` receipts into rankable decode rows, merge prompt/stability/suffix evidence through an explicit enrichment sidecar, and keep evidence-gap cases in `investigate` instead of discarding them before the sampled decode contract lands (2026-03-29 UTC)
+
+- New tooling/config surfaces:
+  - `config/numeric-stability-decode-row.schema.json`
+  - `config/numeric-stability-decode-row-enrichment.schema.json`
+  - `examples/numeric-stability-decode-row.sample.json`
+  - `examples/numeric-stability-decode-row-enrichment.sample.json`
+  - `bench/runners/normalize_decode_fragility_rows.py`
+  - `bench/tests/test_normalize_decode_fragility_rows.py`
+- Current result:
+  - track 2 no longer depends on hypothetical selected-row proxies:
+    it can consume the live greedy `decode.sample_token` receipt shape and
+    convert it into a stable normalized mining row
+  - the normalization contract now freezes:
+    - decode config fields
+    - runtime-emitted decode-boundary margin and cutoff metrics
+    - selected-token triples
+    - upstream disagreement state
+    - suffix replay evidence
+  - the row contract now also preserves the runtime's own decode-boundary
+    booleans:
+    - `actualSelectedTokenChanged`
+    - `liveSelectedMatchesFast`
+    - `liveSelectedMatchesStable`
+    - `liveSelectedMatchesReference`
+  - prompt text, decode step index, semantic-priority overrides, and
+    short-suffix/stability evidence now have an explicit sidecar contract
+    instead of ad-hoc bench glue
+  - the ranking loop now distinguishes:
+    - hard rejects such as meaningless-token or unchanged-selection
+    - `investigate` cases where the token flip is real but suffix replay or
+      within-policy stability evidence is still missing
+  - this still does not make the sampled decode moat claim true yet:
+    the live receipt lane is greedy-only and sampled decode fields remain
+    future work
+
+## Track-1 greedy decode-boundary receipts are now live: Doe now emits a real ordinary-execution `decode.sample_token` numeric-stability receipt linked back to an auto-detected `decode.final_logits` producer, so the runtime can finally prove a live full-vocabulary greedy decode boundary instead of only selected-row proxies (2026-03-29 UTC)
+
+- Runtime/config/package surfaces:
+  - `runtime/zig/src/numeric_stability_runtime.zig`
+  - `runtime/zig/src/numeric_stability_runtime_decode.zig`
+  - `runtime/zig/src/numeric_stability_runtime_plan.zig`
+  - `config/doe-numeric-stability-receipt.schema.json`
+  - `config/numeric-stability-policy.json`
+  - `packages/doe-gpu/src/vendor/doe-namespace.d.ts`
+  - `packages/doe-gpu/test/smoke/test-smoke-load.js`
+- Example/sample surfaces:
+  - `examples/numeric-stability-decode-greedy.commands.json`
+  - `examples/doe-numeric-stability-receipt.decode-sample.sample.json`
+- Current result:
+  - ordinary execution now stores the upstream `decode.final_logits` receipt
+    state and emits a downstream `decode.sample_token` receipt when the live
+    greedy `sample.wgsl` path consumes the same logits buffer
+  - the new `decodeBoundary` block records:
+    - full-vocabulary greedy coverage
+    - the live selected token read from the executed sample buffer
+    - whether that live token matches the committed route selection
+    - exact greedy replay metrics for `fast`, `stable`, and `reference`
+    - whether the selected token changed across replayed policies
+    - upstream receipt links back to `decode.final_logits`
+  - the checked-in decode demo command stream now exercises the contract
+    through `gpu.ordinaryExecution(...)` and the package smoke test asserts the
+    emitted `decode.sample_token` receipt shape
+  - the checked-in decode demo now shows a real selected-token change at the
+    decode boundary under exact greedy replay:
+    `fast` and `stable` select token `1`, while `reference` selects token `0`
+  - this is still the narrow greedy lane:
+    `temperature`, `topK`, `topP`, `rngSeed`, and `rngDraw` remain reserved
+    and `null` until Doe lands the richer sampled decode-boundary path
+
+## Track-2 decode-fragility mining is now explicit: Doe now has a schema-backed scoring and promotion surface for future `sample.token` receipts, so the next decode-governance step can rank real decode states instead of drifting back into selected-row proxies (2026-03-29 UTC)
+
+- Planning/config surfaces:
+  - `config/numeric-stability-decode-fragility-plan.json`
+  - `config/numeric-stability-decode-fragility-plan.schema.json`
+  - `config/numeric-stability-decode-fragility-report.schema.json`
+  - `examples/numeric-stability-decode-fragility-report.sample.json`
+  - `bench/runners/rank_decode_fragility_states.py`
+  - `bench/tests/test_rank_decode_fragility_states.py`
+  - `docs/numeric-stability-decode-fragility-plan.md`
+- Current result:
+  - the missing artifact is now explicit and repo-tracked:
+    `sample.token` must become a receipt surface before Doe can claim real
+    decode-governance evidence instead of selected-row evidence
+  - track 2 now has a stable normalized input contract for future decode rows:
+    required fields cover:
+    - selected token under `fast`, `stable`, and `reference`
+    - post-temperature margin
+    - upstream disagreement
+    - semantic priority class
+    - suffix replay availability and divergence
+  - the ranking loop now has a schema-backed signal set:
+    - top-1 margin
+    - `top-k` edge
+    - `top-p` edge
+    - CDF proximity to `u`
+    - adjacent-step persistence
+    - upstream disagreement
+    - early decode position
+  - promotion is intentionally strict:
+    only real selected-token changes with meaningful tokens, within-policy
+    stability, and short suffix divergence are `promotable`
+  - this work is planning and bench-tooling only:
+    it does not add a live `sample.token` receipt yet
+
+## Track-3 decode validation and backend promotion planning is now explicit: Doe now has a schema-backed plan for deciding which decode-boundary token flips are meaningful, which are junk, how short suffix consequence is judged, and how Metal-first cases graduate to Vulkan-backed runtime contract examples (2026-03-29 UTC)
+
+- Planning/config surfaces:
+  - `config/numeric-stability-decode-validation-plan.json`
+  - `config/numeric-stability-decode-validation-plan.schema.json`
+  - `docs/numeric-stability-decode-validation-plan.md`
+- Current result:
+  - Track 3 now has an explicit contract for:
+    - semantically sharp scenario buckets
+    - meaningful-token classes
+    - junk-token rejection rules
+    - within-policy stability requirements
+    - short suffix replay consequence requirements
+    - backend promotion stages:
+      - `metal-exercised`
+      - `metal-promoted`
+      - `vulkan-reproduced`
+      - `cross-backend-promoted`
+  - this work is planning-only:
+    it does not add a live `sample.token` receipt yet
+  - the purpose is to give the decode-receipt and mining tracks a stable
+    promotion target so Doe does not overfit on whitespace, punctuation, or
+    one-backend artifacts
+
+## Ordinary-execution numeric governance now has registry-backed execution profiles: Doe centralizes default versus cautious versus observe-only behavior in the shared numeric-stability registry, surfaces the selected profile in trace metadata, and refreshes the operator-expansion plan around the live trio plus the next ranked families (2026-03-29 UTC)
+
+- Runtime/config surfaces:
+  - `config/numeric-stability-policy.json`
+  - `config/numeric-stability-policy.schema.json`
+  - `config/trace-meta.schema.json`
+  - `runtime/zig/src/numeric_stability_policy.zig`
+  - `runtime/zig/src/numeric_stability_runtime.zig`
+  - `runtime/zig/src/numeric_stability_runtime_plan.zig`
+  - `runtime/zig/src/trace_numeric_stability.zig`
+  - `runtime/zig/src/main.zig`
+  - `runtime/zig/src/main_usage.zig`
+- Package surfaces:
+  - `packages/doe-gpu/src/vendor/doe-numeric-stability-policy.js`
+  - `packages/doe-gpu/src/vendor/webgpu/runtime-cli.js`
+  - `packages/doe-gpu/src/vendor/doe-namespace.js`
+  - `packages/doe-gpu/src/vendor/doe-namespace.d.ts`
+  - `packages/doe-gpu/src/index.d.ts`
+- Planning surfaces:
+  - `config/numeric-stability-auto-detection-plan.json`
+  - `config/numeric-stability-operator-expansion-plan.json`
+  - `docs/numeric-stability-auto-detection-plan.md`
+- Current result:
+  - ordinary execution now chooses a named registry-backed execution profile
+    instead of leaving default guardrail behavior spread across helpers:
+    - `numeric-stability/default-ordinary-execution-v1`
+    - `numeric-stability/cautious-ordinary-execution-v1`
+    - `numeric-stability/observe-only-ordinary-execution-v1`
+  - the observe-only path is now a first-class routing policy:
+    `numeric-stability/accept-fast-on-selected-token-disagreement-v1`
+  - trace-meta numeric-stability summaries now record the selected
+    `executionProfileId`
+  - `gpu.ordinaryExecution(...)` and `createDoeRuntime().runOrdinaryExecution(...)`
+    can now select the profile explicitly with `executionProfileId`
+  - the planning surfaces now reflect current runtime truth:
+    the live ordinary-execution trio is:
+    - `matmul.logits`
+    - `rmsnorm.output`
+    - `attention.output`
+  - the next ranked operator opportunities are now explicit:
+    - `softmax.denominator`
+    - `layernorm.output`
+    - `mlp.output`
+    - `residual.add`
+    - `task-head.score`
+
+## Ordinary doe-gpu execution is now a first-class package/runtime surface instead of only a numeric-stability namespace entry: `gpu.ordinaryExecution(...)` and `createDoeRuntime().runOrdinaryExecution(...)` now expose the same in-path governed command-stream contract, while `gpu.numericStability.ordinaryExecution(...)` remains as a compatibility alias (2026-03-29 UTC)
+
+- Package/runtime surfaces:
+  - `packages/doe-gpu/src/vendor/doe-namespace.js`
+  - `packages/doe-gpu/src/vendor/doe-namespace.d.ts`
+  - `packages/doe-gpu/src/vendor/webgpu/runtime-cli.js`
+  - `packages/doe-gpu/src/index.d.ts`
+- Current result:
+  - ordinary command-stream execution no longer needs to be introduced to
+    package callers as a special `gpu.numericStability.*` API
+  - `gpu.ordinaryExecution(...)` now runs the same auto-detected in-path
+    numeric-governance path as the earlier numeric-stability helper
+  - `createDoeRuntime().runOrdinaryExecution(...)` now exposes the same
+    contract at the runtime helper layer
+  - `gpu.numericStability.ordinaryExecution(...)` and
+    `runNumericStabilityOrdinaryExecution(...)` remain available as explicit
+    compatibility aliases for existing callers and tests
+  - this closes part of the remaining package ergonomics gap between “runtime
+    governance exists” and “ordinary Doe execution inherits it by default”
+
+## Auto-detected ordinary-execution numeric stability is now live across native runtime and doe-gpu: Doe no longer needs command-local numeric-stability annotations for the primary in-path lane, `prefer-stable` now rewrites the committed result, `abstain` now stops downstream execution, receipts bind execution identity, and `gpu.numericStability.ordinaryExecution(...)` now exposes the same ordinary command-stream contract through the package surface (2026-03-29 UTC)
+
+- Runtime/config surfaces:
+  - `config/numeric-stability-policy.json`
+  - `config/numeric-stability-policy.schema.json`
+  - `runtime/zig/src/numeric_stability_policy.zig`
+  - `runtime/zig/src/numeric_stability_runtime.zig`
+  - `runtime/zig/src/numeric_stability_runtime_plan.zig`
+  - `runtime/zig/src/numeric_stability_runtime_eval.zig`
+- Package surfaces:
+  - `packages/doe-gpu/src/vendor/webgpu/runtime-cli.js`
+  - `packages/doe-gpu/src/vendor/doe-namespace.js`
+  - `packages/doe-gpu/src/vendor/doe-namespace.d.ts`
+  - `packages/doe-gpu/src/index.d.ts`
+- Current result:
+  - native ordinary execution now resolves numeric-stability behavior from the
+    shared auto-detect registry for:
+    - `matmul.logits`
+    - `rmsnorm.output`
+    - `attention.output`
+  - the in-path exercise lane now emits plain semantic command streams; the
+    runtime detects the supported operator from semantic fields plus executed
+    kernel identity instead of relying on command-local `numericStability`
+    annotations
+  - `prefer-stable` now rewrites the committed buffer content for supported
+    ordinary-execution numeric-stability events
+  - `abstain` now stops the downstream command suffix in the native
+    ordinary-execution lane
+  - numeric-stability receipts now bind:
+    - executed kernel path/basename
+    - layout fingerprint
+    - adapter/driver profile
+    - compiled plan hash
+  - `createDoeRuntime()` now exposes
+    `runNumericStabilityOrdinaryExecution(...)`
+  - `gpu.numericStability.ordinaryExecution(...)` now surfaces the same
+    ordinary command-stream receipt contract through `doe-gpu`
+  - the explicit bounded-slice helper
+    `gpu.numericStability.matmulLogitsSlice(...)` remains available as the
+    narrower runtime service path
+- Verification run:
+  - `zig build doe-runtime`
+  - `zig build test-wgsl`
+  - `python3 bench/runners/exercise_in_path_numeric_stability.py`
+  - `python3 bench/gates/schema_gate.py`
+  - `python3 -m unittest bench.tests.test_exercise_in_path_numeric_stability bench.tests.test_exercise_runtime_numeric_stability bench.tests.test_config_validation`
+  - `node packages/doe-gpu/test/smoke/test-smoke-load.js`
+  - `node packages/doe-gpu/test/integration/test-integration-gpu-namespace.js`
+  - `git diff --check`
+
+## A-track semantic-envelope planning is now explicit: Doe has a schema-backed proposal for computing semantic envelopes over runtime-legal numeric and decode variations, with source-backed ranked experiments separated by `runtime-exercised`, `promoted`, and `corpus-only` evidence stages (2026-03-29 UTC)
+
+- New planning/config surfaces:
+  - `config/numeric-stability-semantic-envelope.schema.json`
+  - `examples/numeric-stability-semantic-envelope.sample.json`
+  - `config/numeric-stability-semantic-envelope-plan.schema.json`
+  - `config/numeric-stability-semantic-envelope-plan.json`
+  - `docs/numeric-stability-semantic-envelope-plan.md`
+- Current result:
+  - Doe now has a canonical semantic-envelope artifact proposal that can say:
+    - which semantic classes were considered
+    - which legal numeric and decode views were evaluated
+    - which answers were reachable
+    - whether the boundary is `singleton`, `split`, or
+      `outsider-dominated`
+  - the ranked experiment list is now source-backed instead of relying on
+    semantically nearby signatures:
+    every case points either to a checked-in promoted/runtime fragility
+    signature or to a frozen corpus entry
+  - the current plan stays within existing route truth:
+    `accept-fast`, `prefer-stable`, `abstain`
+  - no live runtime behavior changed; this is the design and artifact contract
+    for the next A-track exporter step
+
+## B-track auto-detection and operator-expansion planning is now explicit: Doe has schema-backed planning surfaces for automatic fragility detection, ranked operator-family expansion, bounded rerun budgets, and the annotation-gated -> auto-detected migration path, without changing the current live route taxonomy or runtime behavior (2026-03-29 UTC)
+
+- New planning/config surfaces:
+  - `config/numeric-stability-auto-detection-plan.json`
+  - `config/numeric-stability-auto-detection-plan.schema.json`
+  - `config/numeric-stability-operator-expansion-plan.json`
+  - `config/numeric-stability-operator-expansion-plan.schema.json`
+  - `docs/numeric-stability-auto-detection-plan.md`
+- Current result:
+  - the runtime-first B-track is now checked in as config instead of staying
+    as loose prose:
+    - detection signals are explicit
+    - operator-family ranking is explicit
+    - bounded rerun budgets are explicit
+    - suffix replay is defined as an escalation path instead of a default
+  - the current live boundary remains unchanged:
+    - annotation-gated native `matmul.logits`
+    - live routes remain `accept-fast`, `prefer-stable`, `abstain`
+  - the next operator-family order is now fixed for planning:
+    - `rmsnorm.output`
+    - `attention.output`
+    - followed by `softmax.denominator` / `layernorm.output`
+  - the migration from annotation-gated ordinary execution to auto-detected
+    rerun is now explicit and ready for later runtime work without hidden
+    heuristics
+
+## Numeric-stability novelty is now pinned to route effect rather than receipt emission alone: the repo docs now explicitly separate current live in-path rerun/receipt capability from the stronger moat bar where Doe’s route changes live execution, spans multiple operator families, and reaches ordinary package/browser callers (2026-03-29 UTC)
+
+- Planning/claim surfaces:
+  - `docs/numeric-stability-moat-plan.md`
+  - `docs/numeric-stability-claim-ladder.md`
+  - `docs/numeric-stability-runtime-roadmap.md`
+  - `docs/numeric-stability-demo-ladder.md`
+  - `docs/architecture.md`
+- Current result:
+  - the repo now distinguishes three layers cleanly:
+    - novel evidence
+    - novel runtime capability
+    - novel moat
+  - the current live native `matmul.logits` path remains a real runtime
+    capability, but the moat bar is now stated more strictly:
+    route effect on live execution, automatic or ordinary-caller access,
+    multiple operator families, and the same promoted contract across surfaces
+  - this keeps future numeric-stability work pointed at the runtime boundary
+    rather than overclaiming based on prompt hunts or bounded-slice services
+
+## In-path numeric-stability receipts are now harder to fake and harder to half-promote: native ordinary-execution runs now require `--trace-meta`, the receipt validates fast/stable policy IDs against the executed `kernel_dispatch` contract instead of trusting annotation strings, and the in-path promotion runner stages signature/catalog updates before committing them (2026-03-29 UTC)
+
+- Runtime hardening:
+  - `runtime/zig/src/numeric_stability_runtime.zig`
+  - `runtime/zig/src/main.zig`
+- Runner hardening:
+  - `bench/runners/exercise_in_path_numeric_stability.py`
+  - `bench/runners/exercise_runtime_numeric_stability.py`
+- Current result:
+  - native in-path numeric-stability annotations now fail unless `--trace-meta`
+    is present, so the persisted receipt sidecar and the persisted
+    `numericStability` trace-meta summary remain coupled
+  - the ordinary-execution receipt no longer simply echoes
+    annotation-supplied fast/stable policy IDs:
+    Doe validates the executed `kernel_dispatch` contract before writing those
+    fields
+  - the in-path promotion runner no longer rewrites checked-in signatures
+    incrementally during case execution; it stages signature/catalog updates
+    and commits them only after the run succeeds
+
 ## Native ordinary-execution numeric stability is now live for `matmul.logits`: selected prompt/control signatures run through real `doe-zig-runtime` `kernel_dispatch` command streams with `numericStability` annotations, emit live trace-meta summaries plus per-run receipts, and update the checked-in promoted catalog from ordinary execution rather than the explicit bounded-slice module service (2026-03-29 UTC)
 
 - New runtime surfaces:

@@ -1,0 +1,124 @@
+{
+  "schemaVersion": 1,
+  "planVersion": "2026-03-29-b-track-v2",
+  "proposalState": "planning-only",
+  "rankingCriteria": [
+    "likely semantic effect on downstream token choice or bounded class decision",
+    "capture feasibility in ordinary execution",
+    "bounded rerun cost",
+    "novelty value once promoted into runtime governance"
+  ],
+  "operatorFamilies": [
+    {
+      "rank": 1,
+      "operatorFamily": "softmax-window",
+      "semanticOpId": "softmax.denominator",
+      "currentStatus": "planned",
+      "likelySemanticEffect": "high",
+      "captureFeasibility": "medium",
+      "rerunCost": "medium",
+      "noveltyValue": "high",
+      "recommendedNextStep": "ordinary-execution-auto-detect",
+      "requiredOperands": [
+        "pre-softmax score window",
+        "bounded denominator reduction inputs",
+        "bounded probability output window"
+      ],
+      "captureHook": "capture the pre-softmax score window before normalization and compare bounded post-softmax probabilities after the real dispatch",
+      "rerunShape": "single normalization rerun with bounded probability comparison plus optional one-step downstream check when the semantic boundary is close",
+      "reasons": [
+        "Softmax denominator is a classic numeric cliff with a direct semantic story buyers can understand.",
+        "It expands Doe beyond norm and projection operators without requiring full-model replay."
+      ]
+    },
+    {
+      "rank": 2,
+      "operatorFamily": "layernorm-window",
+      "semanticOpId": "layernorm.output",
+      "currentStatus": "planned",
+      "likelySemanticEffect": "high",
+      "captureFeasibility": "high",
+      "rerunCost": "medium",
+      "noveltyValue": "medium",
+      "recommendedNextStep": "ordinary-execution-auto-detect",
+      "requiredOperands": [
+        "pre-norm activation window",
+        "gamma vector",
+        "beta vector",
+        "fast normalized output window"
+      ],
+      "captureHook": "reuse the rmsnorm-style ordinary-execution capture path with additional beta capture for the bounded normalization window",
+      "rerunShape": "single-operator rerun over the bounded normalization window with stable serial and optional cpu-f64 reference variants",
+      "reasons": [
+        "Layernorm shares the most infrastructure with live rmsnorm support, so it is the fastest next implementation after softmax.",
+        "It broadens ordinary-execution coverage without inventing a new cost model."
+      ]
+    },
+    {
+      "rank": 3,
+      "operatorFamily": "mlp-window",
+      "semanticOpId": "mlp.output",
+      "currentStatus": "planned",
+      "likelySemanticEffect": "high",
+      "captureFeasibility": "medium",
+      "rerunCost": "medium",
+      "noveltyValue": "high",
+      "recommendedNextStep": "ordinary-execution-auto-detect",
+      "requiredOperands": [
+        "bounded MLP input activation window",
+        "projected weight window",
+        "fast output window"
+      ],
+      "captureHook": "capture the bounded input/output window around the executed MLP dispatch and attach a downstream semantic check when the output feeds a watched head",
+      "rerunShape": "single-operator rerun with bounded downstream comparison, escalating to a one-step suffix check only when the local output disagreement persists",
+      "reasons": [
+        "MLP drift can materially change later choice without being dismissed as a last-layer-only trick.",
+        "Landing it would strengthen Doe's claim that numeric governance spans the wider decode path."
+      ]
+    },
+    {
+      "rank": 4,
+      "operatorFamily": "residual-add-window",
+      "semanticOpId": "residual.add",
+      "currentStatus": "planned",
+      "likelySemanticEffect": "medium",
+      "captureFeasibility": "high",
+      "rerunCost": "low",
+      "noveltyValue": "medium",
+      "recommendedNextStep": "ordinary-execution-auto-detect",
+      "requiredOperands": [
+        "left residual branch window",
+        "right residual branch window",
+        "fast merged output window"
+      ],
+      "captureHook": "capture both residual branches at the merge point and compare the bounded merged output immediately after dispatch",
+      "rerunShape": "single-operator rerun over the merge window with cheap bounded output comparison",
+      "reasons": [
+        "Residual adds are cheap to watch and can reveal compounded drift after multiple branches rejoin.",
+        "They are a good low-cost expansion once the higher-value normalization and softmax steps are in place."
+      ]
+    },
+    {
+      "rank": 5,
+      "operatorFamily": "task-head-slice",
+      "semanticOpId": "task-head.score",
+      "currentStatus": "planned",
+      "likelySemanticEffect": "high",
+      "captureFeasibility": "high",
+      "rerunCost": "low",
+      "noveltyValue": "high",
+      "recommendedNextStep": "ordinary-execution-annotation",
+      "requiredOperands": [
+        "bounded hidden-state slice",
+        "task-head row weights",
+        "fast head-score output"
+      ],
+      "captureHook": "reuse the LM-head bounded-slice capture path for classifier, scorer, or reranker heads attached to local workflows",
+      "rerunShape": "single head-score rerun with bounded class comparison and no suffix replay by default",
+      "reasons": [
+        "Task heads map directly onto buyer-facing approve/deny, redact/release, and allow/block workflows.",
+        "They are the easiest way to extend numeric governance beyond next-token generation into classifier-style products."
+      ]
+    }
+  ]
+}

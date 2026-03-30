@@ -202,10 +202,10 @@ const { token, routeDecision, receipt } =
 - callers provide the bounded hidden-state vector and candidate rows directly;
   v1 does not yet capture and rerun an operator out of an ordinary WebGPU
   request on its own
-- native `doe-zig-runtime` now has a separate ordinary-execution
-  `matmul.logits` path for annotated `kernel_dispatch` commands, but that
-  in-path capability is not yet exposed through the generic `doe-gpu` package
-  execution APIs
+- `doe-gpu` now also exposes the native ordinary-execution path as
+  `gpu.ordinaryExecution(...)`
+- `gpu.numericStability.ordinaryExecution(...)` remains available as a
+  compatibility alias for the same package/runtime path
 - the service evaluates three declared policies over the bounded candidate set:
   - fast policy
   - stable policy
@@ -231,10 +231,111 @@ await bound.numericStability.matmulLogitsSlice({
   - a receipt with per-candidate fast/stable/reference logits, first
     divergence, trigger checks, `routeTaxonomyVersion`, and proof-linked route
     plus route-selection metadata
+- the ordinary-execution helper returns:
+  - the ordinary runtime trace paths
+  - all numeric-stability receipt rows emitted during that execution
+  - the latest route decision and token selected by that receipt stream
+  - execution identity fields such as kernel basename, layout fingerprint,
+    adapter/driver profile, and compiled plan hash
 - the current public surface is available from:
   - `doe-gpu`
   - `doe-gpu/compute`
 - `doe-gpu/browser` does not support this helper yet and fails explicitly
+
+```js
+const result = await gpu.ordinaryExecution({
+  commandsPath:
+    'bench/out/apple-metal-in-path-numeric-stability/<timestamp>/<case>/in-path-numeric-stability.commands.json',
+  vendor: 'apple',
+  api: 'metal',
+  family: 'apple-gpu',
+  driver: '1.0.0',
+});
+```
+
+- this path runs an ordinary `doe-zig-runtime` command stream, not the explicit
+  bounded-slice module service
+- numeric-stability handling is resolved from the runtime auto-detect registry
+  for supported operator families
+- ordinary execution now selects a named execution profile from the shared
+  registry:
+  - default:
+    `numeric-stability/default-ordinary-execution-v1`
+  - cautious:
+    `numeric-stability/cautious-ordinary-execution-v1`
+  - observe-only:
+    `numeric-stability/observe-only-ordinary-execution-v1`
+- ordinary package callers no longer need to enter through a special
+  `gpu.numericStability.*` namespace to inherit this in-path governance path
+- current ordinary-execution route effects are:
+  - `prefer-stable`: rewrite committed result
+  - `abstain`: stop the downstream path
+  - `accept-fast`: keep the fast result
+- Doe now also emits a decode-boundary receipt when the ordinary command stream
+  reaches the shipped `sample.wgsl` path after an auto-detected
+  `decode.final_logits` producer
+- the current live decode-boundary lane is:
+  - full-vocabulary decode replay over the real sampled logits buffer
+  - linked back to the upstream `decode.final_logits` receipt
+  - exposed as `latestReceipt.decodeBoundary`
+  - enriched with exact replay metrics:
+    - top-1 margins for `fast`, `stable`, and `reference`
+    - live `temperature`, `topK`, `topP`, `rngSeed`, and `rngDraw` when the
+      expanded sample-uniform ABI is present
+    - whether the selected token actually changed across policies
+    - whether the live selected token matches `fast`, `stable`, and
+      `reference`
+- the legacy 16-byte `sample.wgsl` uniform stays backward-compatible and
+  remains `greedy-argmax`
+- callers can override the default profile per workflow:
+
+```js
+const cautious = await gpu.ordinaryExecution({
+  commandsPath:
+    'bench/out/apple-metal-in-path-numeric-stability/<timestamp>/<case>/in-path-numeric-stability.commands.json',
+  executionProfileId: 'numeric-stability/cautious-ordinary-execution-v1',
+});
+```
+
+You can exercise the current sampled decode-boundary contract directly with the
+checked in example command stream:
+
+```js
+const decode = await gpu.ordinaryExecution({
+  commandsPath: 'examples/numeric-stability-decode-sampled.commands.json',
+  vendor: 'apple',
+  api: 'metal',
+  family: 'apple-gpu',
+  driver: '1.0.0',
+});
+
+console.log(decode.latestReceipt.semanticOpId);
+// "decode.sample_token"
+
+console.log(decode.latestReceipt.decodeBoundary);
+// {
+//   decodeMode: "sampled-cdf",
+//   logitsCoverage: "full-vocab",
+//   vocabSize: 2,
+//   temperature: 1,
+//   topK: 2,
+//   topP: 0.75,
+//   rngSeed: 17,
+//   rngDraw: 0.875,
+//   liveSelectedToken: 0,
+//   liveSelectedMatchesCommittedSelection: true,
+//   metrics: {
+//     fastTop1Margin: 0.24491866,
+//     stableTop1Margin: 0.24491866,
+//     referenceTop1Margin: 0.24491866,
+//     actualSelectedTokenChanged: true,
+//     liveSelectedMatchesFast: true,
+//     liveSelectedMatchesStable: true,
+//     liveSelectedMatchesReference: false,
+//   },
+//   upstreamLinks: [{ semanticOpId: "decode.final_logits", ... }]
+// }
+```
 
 ## Subpath exports
 
@@ -260,11 +361,17 @@ available.
 `createDoeRuntime()` now also exposes:
 
 - `runModule(...)` for explicit Zig module-runner calls
+- `runOrdinaryExecution(...)` for the ordinary command-stream contract that
+  inherits in-path numeric governance
 - `runNumericStabilityMatmulLogitsSlice(...)` for the v1 numeric-stability
   runtime service
+- `runNumericStabilityOrdinaryExecution(...)` for ordinary command-stream
+  numeric-stability receipts as a compatibility alias
 
-Those helpers target the explicit bounded-slice runtime contract. They are not
-yet the same thing as the native ordinary-execution numeric-stability path.
+Those helpers now cover both:
+
+- the explicit bounded-slice runtime contract
+- the native ordinary-execution command-stream contract
 
 They are not npm CLI tools. Canonical compare, release, and gate workflows live
 in the repo under `bench/`.

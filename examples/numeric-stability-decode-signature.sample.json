@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "signatureId": "decode-sampled-red-go-stop-step-0",
+  "promotionPolicyId": "fragility-promotion/numeric-stability-v1",
+  "contractStage": "metal-promoted",
+  "caseId": "red-go-stop::step-0",
+  "promptText": "Answer with exactly one word: go or stop.",
+  "semanticPriorityClass": "policy-action",
+  "semanticScenarioBucket": "policy-action",
+  "meaningfulTokenClass": "policy-action-word",
+  "decodeStepIndex": 0,
+  "routeDecision": "prefer-stable",
+  "selectedTokens": {
+    "fast": 4721,
+    "stable": 817,
+    "reference": 817,
+    "fastText": " stop",
+    "stableText": " go",
+    "referenceText": " go"
+  },
+  "metrics": {
+    "postTemperatureTop1Margin": 0.02118,
+    "topKBoundaryGap": 0.00491,
+    "topPBoundaryGap": 0.00317,
+    "cdfDistanceToDraw": 0.00205,
+    "adjacentDecodePersistence": 2,
+    "actualSelectedTokenChanged": true,
+    "meaningfulToken": true,
+    "withinPolicyStable": true,
+    "suffixReplayDivergent": true,
+    "suffixReplayAvailable": true
+  },
+  "sourceReportPath": "examples/numeric-stability-decode-fragility-report.sample.json",
+  "sourceManifestPath": "examples/numeric-stability-decode-harvest.manifest.sample.json",
+  "sourceReceiptPath": "examples/doe-numeric-stability-receipt.decode-sample.sample.json",
+  "commandsPath": "examples/numeric-stability-decode-sampled.commands.json",
+  "patchedCommandsPath": "examples/numeric-stability-decode-sampled.commands.json",
+  "kernelRoot": ".",
+  "maxSampleStepsToCapture": 1,
+  "sampleConfig": {
+    "temperature": 1.0,
+    "topK": 2,
+    "topP": 0.75,
+    "rngSeed": 17,
+    "rngDraw": 0.875
+  },
+  "backend": {
+    "vendor": "apple",
+    "api": "metal",
+    "family": "apple-gpu",
+    "driver": "1.0.0",
+    "backendLane": "metal_doe_app"
+  },
+  "executionIdentity": null,
+  "vulkanReplay": null
+}

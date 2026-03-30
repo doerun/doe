@@ -32,7 +32,7 @@
     "semanticStage": "lm_head_slice",
     "semanticPhase": "logits",
     "policyRegistryPath": "config/numeric-stability-policy.json",
-    "policyRegistryVersion": "2026-03-29-route-taxonomy-v2",
+    "policyRegistryVersion": "2026-03-29-execution-profiles-v1",
     "routeTaxonomyVersion": "numeric-stability-routes-v1",
     "proofArtifactPath": "pipeline/lean/artifacts/proven-conditions.json",
     "triggerPolicyId": "numeric-instability/selected-token-disagreement-with-reference-improvement-v1",

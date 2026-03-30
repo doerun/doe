@@ -20,6 +20,7 @@
     "stablePolicyId",
     "referencePolicyId",
     "candidates",
+    "executionIdentity",
     "selectedToken",
     "trigger",
     "route"
@@ -45,10 +46,22 @@
       "minItems": 2,
       "items": { "$ref": "#/$defs/candidate" }
     },
+    "executionIdentity": {
+      "oneOf": [
+        { "type": "null" },
+        { "$ref": "#/$defs/executionIdentity" }
+      ]
+    },
     "firstDivergence": {
       "oneOf": [
         { "type": "null" },
         { "$ref": "#/$defs/firstDivergence" }
+      ]
+    },
+    "decodeBoundary": {
+      "oneOf": [
+        { "type": "null" },
+        { "$ref": "#/$defs/decodeBoundary" }
       ]
     },
     "selectedToken": { "$ref": "#/$defs/selectedToken" },
@@ -143,7 +156,15 @@
     },
     "route": {
       "type": "object",
-      "required": ["decision", "selectionMode", "proofLinks", "selectionProofLinks"],
+      "required": [
+        "decision",
+        "selectionMode",
+        "committedResultMode",
+        "downstreamAction",
+        "effectApplied",
+        "proofLinks",
+        "selectionProofLinks"
+      ],
       "properties": {
         "decision": {
           "type": "string",
@@ -153,6 +174,15 @@
           "type": "string",
           "enum": ["fast", "stable", "none"]
         },
+        "committedResultMode": {
+          "type": "string",
+          "enum": ["fast", "stable", "none"]
+        },
+        "downstreamAction": {
+          "type": "string",
+          "enum": ["continue", "stop"]
+        },
+        "effectApplied": { "type": "boolean" },
         "selectedPolicyId": { "type": ["string", "null"] },
         "selectedToken": { "type": ["integer", "null"], "minimum": 0 },
         "proofLinks": {
@@ -162,6 +192,127 @@
         "selectionProofLinks": {
           "type": "array",
           "items": { "$ref": "#/$defs/proofLink" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "executionIdentity": {
+      "type": "object",
+      "required": [
+        "kernelPath",
+        "kernelBasename",
+        "layoutFingerprint",
+        "compiledPlanHash",
+        "backend",
+        "backendLane",
+        "adapterOrdinal",
+        "queueFamilyIndex",
+        "presentCapable",
+        "profileVendor",
+        "profileApi",
+        "profileFamily",
+        "profileDriver",
+        "selectionPolicyHash",
+        "hostPlanArtifactHash"
+      ],
+      "properties": {
+        "kernelPath": { "type": ["string", "null"], "minLength": 1 },
+        "kernelBasename": { "type": ["string", "null"], "minLength": 1 },
+        "layoutFingerprint": { "type": ["string", "null"], "pattern": "^[0-9a-f]{64}$" },
+        "compiledPlanHash": { "type": ["string", "null"], "minLength": 1 },
+        "backend": { "type": ["string", "null"], "minLength": 1 },
+        "backendLane": { "type": ["string", "null"], "minLength": 1 },
+        "adapterOrdinal": { "type": ["integer", "null"], "minimum": 0 },
+        "queueFamilyIndex": { "type": ["integer", "null"], "minimum": 0 },
+        "presentCapable": { "type": ["boolean", "null"] },
+        "profileVendor": { "type": ["string", "null"], "minLength": 1 },
+        "profileApi": { "type": ["string", "null"], "minLength": 1 },
+        "profileFamily": { "type": ["string", "null"], "minLength": 1 },
+        "profileDriver": { "type": ["string", "null"], "minLength": 1 },
+        "selectionPolicyHash": { "type": ["string", "null"], "minLength": 1 },
+        "hostPlanArtifactHash": { "type": ["string", "null"], "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "upstreamReceiptLink": {
+      "type": "object",
+      "required": [
+        "semanticOpId",
+        "semanticStage",
+        "semanticPhase",
+        "decision"
+      ],
+      "properties": {
+        "semanticOpId": { "type": "string", "minLength": 1 },
+        "semanticStage": { "type": "string", "minLength": 1 },
+        "semanticPhase": { "type": "string", "minLength": 1 },
+        "selectedPolicyId": { "type": ["string", "null"] },
+        "decision": {
+          "type": "string",
+          "enum": ["accept-fast", "prefer-stable", "abstain"]
+        }
+      },
+      "additionalProperties": false
+    },
+    "decodeBoundary": {
+      "type": "object",
+      "required": [
+        "decodeMode",
+        "logitsCoverage",
+        "vocabSize",
+        "survivingTokenSetKind",
+        "liveSelectedToken",
+        "liveSelectedMatchesCommittedSelection",
+        "metrics",
+        "upstreamLinks"
+      ],
+      "properties": {
+        "decodeMode": { "type": "string", "minLength": 1 },
+        "logitsCoverage": { "type": "string", "minLength": 1 },
+        "vocabSize": { "type": "integer", "minimum": 1 },
+        "residualMassUpperBound": { "type": ["number", "null"] },
+        "temperature": { "type": ["number", "null"] },
+        "topK": { "type": ["integer", "null"], "minimum": 1 },
+        "topP": { "type": ["number", "null"] },
+        "rngSeed": { "type": ["integer", "null"], "minimum": 0 },
+        "rngDraw": { "type": ["number", "null"] },
+        "survivingTokenSetKind": { "type": "string", "minLength": 1 },
+        "survivingTokenIds": {
+          "type": ["array", "null"],
+          "items": { "type": "integer", "minimum": 0 }
+        },
+        "liveSelectedToken": { "type": "integer", "minimum": 0 },
+        "liveSelectedMatchesCommittedSelection": { "type": "boolean" },
+        "metrics": {
+          "type": "object",
+          "required": [
+            "fastTop1Margin",
+            "stableTop1Margin",
+            "referenceTop1Margin",
+            "actualSelectedTokenChanged",
+            "liveSelectedMatchesFast",
+            "liveSelectedMatchesStable",
+            "liveSelectedMatchesReference"
+          ],
+          "properties": {
+            "fastTop1Margin": { "type": "number" },
+            "stableTop1Margin": { "type": "number" },
+            "referenceTop1Margin": { "type": "number" },
+            "topKBoundaryGap": { "type": ["number", "null"] },
+            "topPBoundaryGap": { "type": ["number", "null"] },
+            "cdfDistanceToDraw": { "type": ["number", "null"] },
+            "adjacentDecodePersistence": { "type": ["integer", "null"], "minimum": 0 },
+            "actualSelectedTokenChanged": { "type": "boolean" },
+            "liveSelectedMatchesFast": { "type": "boolean" },
+            "liveSelectedMatchesStable": { "type": "boolean" },
+            "liveSelectedMatchesReference": { "type": "boolean" }
+          },
+          "additionalProperties": false
+        },
+        "upstreamLinks": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/upstreamReceiptLink" }
         }
       },
       "additionalProperties": false

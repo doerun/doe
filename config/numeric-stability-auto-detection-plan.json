@@ -1,0 +1,308 @@
+{
+  "schemaVersion": 1,
+  "planVersion": "2026-03-29-b-track-v2",
+  "proposalState": "planning-only",
+  "currentLiveBoundary": {
+    "requiresAnnotation": false,
+    "operatorFamilies": [
+      "matmul.logits",
+      "rmsnorm.output",
+      "attention.output"
+    ],
+    "routeDecisions": [
+      "accept-fast",
+      "prefer-stable",
+      "abstain"
+    ]
+  },
+  "signalDefinitions": [
+    {
+      "signalId": "boundedMargin",
+      "description": "Gap between bounded answer candidates after renormalization.",
+      "source": "bounded-answer-metrics",
+      "direction": "lower-is-fragile",
+      "unit": "probability-margin"
+    },
+    {
+      "signalId": "referenceSurprisalNats",
+      "description": "Per-token surprisal for the reference-selected bounded token.",
+      "source": "bounded-answer-metrics",
+      "direction": "higher-is-fragile",
+      "unit": "nats"
+    },
+    {
+      "signalId": "outsiderLead",
+      "description": "Lead held by an outsider token over the bounded candidate set.",
+      "source": "bounded-answer-metrics",
+      "direction": "higher-is-fragile",
+      "unit": "logit-gap"
+    },
+    {
+      "signalId": "fastStableDisagreement",
+      "description": "Fast and stable paths choose different bounded tokens.",
+      "source": "runtime-receipt",
+      "direction": "boolean-gate",
+      "unit": null
+    },
+    {
+      "signalId": "firstDivergencePresent",
+      "description": "Fast and stable outputs diverge at the monitored operator.",
+      "source": "runtime-receipt",
+      "direction": "boolean-gate",
+      "unit": null
+    },
+    {
+      "signalId": "adjacentDecodePersistence",
+      "description": "Fragility repeats across nearby decode steps.",
+      "source": "decode-window",
+      "direction": "higher-is-fragile",
+      "unit": "hit-count"
+    },
+    {
+      "signalId": "deviceKernelMatch",
+      "description": "Adapter, driver, and kernel identity match a known fragile fingerprint.",
+      "source": "device-identity",
+      "direction": "identity-match",
+      "unit": null
+    }
+  ],
+  "detectionProfiles": [
+    {
+      "profileId": "matmul-logits-shadow-v1",
+      "stage": "auto-detect-rerun",
+      "operatorFamily": "lm-head-slice",
+      "semanticOpId": "matmul.logits",
+      "gatingSignals": [
+        { "signalId": "boundedMargin", "comparator": "<=", "threshold": 0.05, "required": true },
+        { "signalId": "outsiderLead", "comparator": "<=", "threshold": 0.50, "required": true },
+        { "signalId": "referenceSurprisalNats", "comparator": ">=", "threshold": 0.50, "required": false },
+        { "signalId": "deviceKernelMatch", "comparator": "present", "threshold": null, "required": false }
+      ],
+      "persistenceWindow": {
+        "kind": "same-step",
+        "previousSteps": 0,
+        "nextSteps": 0,
+        "requiredHits": 1
+      },
+      "deviceScope": {
+        "includeAdapterIdentities": ["apple:metal:apple-gpu"],
+        "includeKernelIdentities": ["matmul_logits_forward_f16accum.wgsl"]
+      },
+      "capturePlanId": "matmul-logits-bounded-live-buffers-v1",
+      "rerunPlanId": "matmul-logits-single-operator-v2",
+      "overheadBudgetId": "bounded-lm-head-shadow-v1",
+      "notes": [
+        "The core auto-detected ordinary-execution rerun path is already live for matmul.logits.",
+        "This profile now serves as the hardening overlay for measured trigger quality, profile defaults, and per-device policy tuning."
+      ]
+    },
+    {
+      "profileId": "rmsnorm-output-auto-detect-v1",
+      "stage": "auto-detect-rerun",
+      "operatorFamily": "rmsnorm-slice",
+      "semanticOpId": "rmsnorm.output",
+      "gatingSignals": [
+        { "signalId": "firstDivergencePresent", "comparator": "present", "threshold": null, "required": true },
+        { "signalId": "fastStableDisagreement", "comparator": "present", "threshold": null, "required": true },
+        { "signalId": "adjacentDecodePersistence", "comparator": ">=", "threshold": 2, "required": true },
+        { "signalId": "deviceKernelMatch", "comparator": "present", "threshold": null, "required": false }
+      ],
+      "persistenceWindow": {
+        "kind": "adjacent-decode",
+        "previousSteps": 1,
+        "nextSteps": 1,
+        "requiredHits": 2
+      },
+      "deviceScope": {
+        "includeAdapterIdentities": ["apple:metal:apple-gpu"]
+      },
+      "capturePlanId": "rmsnorm-output-window-v1",
+      "rerunPlanId": "rmsnorm-single-operator-v1",
+      "overheadBudgetId": "norm-output-rerun-v1",
+      "notes": [
+        "The core auto-detected ordinary-execution rerun path is already live for rmsnorm.output.",
+        "Next work should harden trigger quality, overhead budgeting, and workflow-level execution-profile defaults."
+      ]
+    },
+    {
+      "profileId": "attention-output-auto-detect-v1",
+      "stage": "suffix-replay",
+      "operatorFamily": "attention-slice",
+      "semanticOpId": "attention.output",
+      "gatingSignals": [
+        { "signalId": "firstDivergencePresent", "comparator": "present", "threshold": null, "required": true },
+        { "signalId": "outsiderLead", "comparator": "<=", "threshold": 0.75, "required": false },
+        { "signalId": "adjacentDecodePersistence", "comparator": ">=", "threshold": 2, "required": true },
+        { "signalId": "deviceKernelMatch", "comparator": "present", "threshold": null, "required": false }
+      ],
+      "persistenceWindow": {
+        "kind": "short-suffix-window",
+        "previousSteps": 0,
+        "nextSteps": 2,
+        "requiredHits": 2
+      },
+      "deviceScope": {
+        "includeAdapterIdentities": ["apple:metal:apple-gpu"]
+      },
+      "capturePlanId": "attention-output-window-v1",
+      "rerunPlanId": "attention-suffix-window-v1",
+      "overheadBudgetId": "attention-output-rerun-v1",
+      "notes": [
+        "The core auto-detected ordinary-execution rerun path is already live for attention.output.",
+        "Suffix replay remains the next escalation only for cases where operator-local rerun does not explain the downstream semantic effect well enough."
+      ]
+    }
+  ],
+  "capturePlans": [
+    {
+      "capturePlanId": "matmul-logits-bounded-live-buffers-v1",
+      "capturePoint": "post-dispatch-live-buffers",
+      "operands": ["hidden-state-vector", "bounded-weight-rows", "fast-logits-buffer"],
+      "readbackScope": "bounded-rows-only",
+      "avoidFullModelRerun": true
+    },
+    {
+      "capturePlanId": "rmsnorm-output-window-v1",
+      "capturePoint": "post-dispatch-live-buffers",
+      "operands": ["pre-norm-window", "scale-weights", "fast-output-window"],
+      "readbackScope": "operator-output-window",
+      "avoidFullModelRerun": true
+    },
+    {
+      "capturePlanId": "attention-output-window-v1",
+      "capturePoint": "suffix-checkpoint",
+      "operands": ["attention-input-window", "score-window", "value-window", "fast-output-window"],
+      "readbackScope": "operator-output-window",
+      "avoidFullModelRerun": true
+    }
+  ],
+  "rerunPlans": [
+    {
+      "rerunPlanId": "matmul-logits-single-operator-v2",
+      "rerunUnit": "single-operator",
+      "proposedStablePolicyId": "lm-head-slice/forward-serial-v1",
+      "proposedReferencePolicyId": "lm-head-slice/cpu-f64-serial-v1",
+      "compareOutputs": ["selected-token", "bounded-margin", "first-divergence-digest"],
+      "allowedRouteDecisions": ["accept-fast", "prefer-stable", "abstain"]
+    },
+    {
+      "rerunPlanId": "rmsnorm-single-operator-v1",
+      "rerunUnit": "single-operator",
+      "proposedStablePolicyId": "rmsnorm.output/strict-serial-f32-v1",
+      "proposedReferencePolicyId": "rmsnorm.output/cpu-f64-serial-v1",
+      "compareOutputs": ["operator-output-window", "downstream-selected-token", "first-divergence-digest"],
+      "allowedRouteDecisions": ["accept-fast", "prefer-stable", "abstain"]
+    },
+    {
+      "rerunPlanId": "attention-suffix-window-v1",
+      "rerunUnit": "suffix-window",
+      "proposedStablePolicyId": "attention.output/fixed-tree-f32-v1",
+      "proposedReferencePolicyId": null,
+      "compareOutputs": ["operator-output-window", "suffix-selected-token", "route-stability"],
+      "allowedRouteDecisions": ["accept-fast", "abstain"]
+    }
+  ],
+  "suffixReplayPlans": [
+    {
+      "suffixReplayPlanId": "attention-short-suffix-v1",
+      "activationProfileId": "attention-output-auto-detect-v1",
+      "checkpointSource": "semantic-trace",
+      "windowKind": "short-suffix",
+      "maxReplayTokens": 2,
+      "defaultRouteWhenWindowUnavailable": "abstain"
+    },
+    {
+      "suffixReplayPlanId": "rmsnorm-single-token-followup-v1",
+      "activationProfileId": "rmsnorm-output-auto-detect-v1",
+      "checkpointSource": "capture-ledger",
+      "windowKind": "single-token",
+      "maxReplayTokens": 1,
+      "defaultRouteWhenWindowUnavailable": "accept-fast"
+    }
+  ],
+  "overheadBudgets": [
+    {
+      "overheadBudgetId": "bounded-lm-head-shadow-v1",
+      "maxBytesReadback": 65536,
+      "maxExtraOperatorReruns": 1,
+      "maxActivationRate": 0.05,
+      "budgetExceededRouteDecision": "abstain"
+    },
+    {
+      "overheadBudgetId": "norm-output-rerun-v1",
+      "maxBytesReadback": 32768,
+      "maxExtraOperatorReruns": 1,
+      "maxActivationRate": 0.02,
+      "budgetExceededRouteDecision": "abstain"
+    },
+    {
+      "overheadBudgetId": "attention-output-rerun-v1",
+      "maxBytesReadback": 131072,
+      "maxExtraOperatorReruns": 1,
+      "maxActivationRate": 0.01,
+      "budgetExceededRouteDecision": "abstain"
+    }
+  ],
+  "migrationStages": [
+    {
+      "stageId": "annotation-gated",
+      "blockingRequirements": [
+        "schema-backed-command-annotation",
+        "live-first-divergence-receipt",
+        "single-operator-route-outcome"
+      ],
+      "advisoryRequirements": [
+        "bounded-overhead-manifest",
+        "package-helper-parity"
+      ]
+    },
+    {
+      "stageId": "shadow-auto-detect",
+      "blockingRequirements": [
+        "config-backed-detection-profile",
+        "trace-meta-signal-emission",
+        "no-annotation-selection-report"
+      ],
+      "advisoryRequirements": [
+        "device-specific-fragility-fingerprint",
+        "package-shadow-telemetry"
+      ]
+    },
+    {
+      "stageId": "auto-detect-receipt-only",
+      "blockingRequirements": [
+        "runtime-selected-profile",
+        "receipt-states-auto-detect-source",
+        "bounded-overhead-budget-enforced"
+      ],
+      "advisoryRequirements": [
+        "adjacent-step-persistence-check",
+        "operator-family-specific-budgets"
+      ]
+    },
+    {
+      "stageId": "auto-detect-single-operator-rerun",
+      "blockingRequirements": [
+        "single-operator-rerun-from-auto-detect",
+        "route-decision-live",
+        "operator-local-rerun-only"
+      ],
+      "advisoryRequirements": [
+        "real-operator-accept-fast-control",
+        "multi-family-corpus-support"
+      ]
+    },
+    {
+      "stageId": "suffix-replay-assisted",
+      "blockingRequirements": [
+        "checkpoint-or-suffix-window-capture",
+        "bounded-suffix-replay-budget",
+        "route-stability-report"
+      ],
+      "advisoryRequirements": [
+        "multiple-operator-families",
+        "package-surface-consumption"
+      ]
+    }
+  ]
+}

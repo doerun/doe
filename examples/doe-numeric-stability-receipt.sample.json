@@ -6,7 +6,7 @@
   "semanticStage": "lm_head_slice",
   "semanticPhase": "logits",
   "policyRegistryPath": "config/numeric-stability-policy.json",
-  "policyRegistryVersion": "2026-03-29-route-taxonomy-v2",
+  "policyRegistryVersion": "2026-03-29-execution-profiles-v1",
   "routeTaxonomyVersion": "numeric-stability-routes-v1",
   "proofArtifactPath": "pipeline/lean/artifacts/proven-conditions.json",
   "triggerPolicyId": "numeric-instability/selected-token-disagreement-with-reference-improvement-v1",
@@ -30,6 +30,23 @@
       "referenceLogit": 17.780365353832053
     }
   ],
+  "executionIdentity": {
+    "kernelPath": "bench/inference-pipeline/kernels/matmul_logits_forward_f16accum.wgsl",
+    "kernelBasename": "matmul_logits_forward_f16accum.wgsl",
+    "layoutFingerprint": "1111111111111111111111111111111111111111111111111111111111111111",
+    "compiledPlanHash": "2222222222222222222222222222222222222222222222222222222222222222",
+    "backend": "doe_metal",
+    "backendLane": "metal_doe_app",
+    "adapterOrdinal": 0,
+    "queueFamilyIndex": 0,
+    "presentCapable": false,
+    "profileVendor": "apple",
+    "profileApi": "metal",
+    "profileFamily": "apple-gpu",
+    "profileDriver": "1.0.0",
+    "selectionPolicyHash": "backend-runtime-policy-v3",
+    "hostPlanArtifactHash": "3333333333333333333333333333333333333333333333333333333333333333"
+  },
   "firstDivergence": {
     "semanticOpId": "matmul.logits",
     "semanticStage": "lm_head_slice",
@@ -66,6 +83,9 @@
   "route": {
     "decision": "prefer-stable",
     "selectionMode": "stable",
+    "committedResultMode": "stable",
+    "downstreamAction": "continue",
+    "effectApplied": true,
     "selectedPolicyId": "lm-head-slice/forward-serial-v1",
     "selectedToken": 817,
     "proofLinks": [

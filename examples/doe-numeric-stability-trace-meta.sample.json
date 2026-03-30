@@ -7,8 +7,9 @@
   "previousHash": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
   "numericStability": {
     "policyRegistryPath": "config/numeric-stability-policy.json",
-    "policyRegistryVersion": "2026-03-29-route-taxonomy-v2",
+    "policyRegistryVersion": "2026-03-29-execution-profiles-v1",
     "routeTaxonomyVersion": "numeric-stability-routes-v1",
+    "executionProfileId": "numeric-stability/default-ordinary-execution-v1",
     "receiptPath": "artifacts/red-go-stop.numeric-stability.jsonl",
     "receiptCount": 1,
     "decisionCounts": {
@@ -16,6 +17,10 @@
       "prefer-stable": 1,
       "abstain": 0
     },
-    "firstDivergencePresentCount": 1
+    "firstDivergencePresentCount": 1,
+    "annotationCount": 0,
+    "autoDetectCount": 1,
+    "committedStableRewriteCount": 1,
+    "downstreamStopCount": 0
   }
 }

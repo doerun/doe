@@ -82,8 +82,8 @@ Numeric-stability work now has three explicit repo runners:
     `runtime-exercised`
 - `bench/runners/exercise_in_path_numeric_stability.py`
   - replays selected promoted prompt/control cases through ordinary
-    `doe-zig-runtime` `kernel_dispatch` execution with `numericStability`
-    annotations
+    `doe-zig-runtime` `kernel_dispatch` execution using the runtime
+    auto-detect profiles for supported operator families
   - writes native trace artifacts, ordinary-execution receipts, and manifest
     summaries under `bench/out/apple-metal-in-path-numeric-stability/*`
   - is the current source of truth for native `runtime-exercised`
@@ -545,6 +545,67 @@ resolves its entries against repo root.
     - native `matmul.logits` novelty is now exercised through the in-path
       runner; broader operator families and package/browser ordinary execution
       still remain future work
+- `rank_decode_fragility_states.py`
+  - ranks normalized decode-boundary rows for the next numeric-stability
+    promotion step.
+  - this runner is track-2 tooling:
+    it does not invent a decode receipt, it scores the rows emitted by the
+    live ordinary-execution decode-boundary surface and keeps promotion
+    criteria explicit.
+  - the current scoring contract is schema-backed in:
+    - `config/numeric-stability-decode-fragility-plan.json`
+  - current ranked signals:
+    - post-temperature top-1 margin
+    - `top-k` cutoff proximity
+    - `top-p` cutoff proximity
+    - sampled CDF proximity to the draw `u`
+    - adjacent-step persistence
+    - upstream fast/stable disagreement
+    - early decode position
+  - promotion remains strict:
+    - actual selected-token change
+    - meaningful token
+    - within-policy stability
+    - upstream disagreement
+    - short suffix replay divergence
+  - example:
+    - `python3 bench/runners/rank_decode_fragility_states.py --input <sample-token-receipts.jsonl>`
+  - current output root:
+    - `bench/out/numeric-stability-decode-fragility/<timestamp>/`
+- `harvest_sampled_decode_fragility.py`
+  - patches ordinary command streams into sampled decode mode, annotates
+    `decode.final_logits` / `decode.sample_token` with step-stable semantic
+    identities, and harvests real sampled decode receipts on Metal across
+    repeated runs.
+  - config is explicit in:
+    - `config/numeric-stability-decode-harvest-plan.json`
+  - current output root:
+    - `bench/out/apple-metal-sampled-decode-fragility/<timestamp>/`
+  - example:
+    - `python3 bench/runners/harvest_sampled_decode_fragility.py`
+- `enrich_sampled_decode_rows.py`
+  - attaches within-policy stability and short suffix replay evidence to the
+    harvested decode receipts, then writes normalized rows and the ranked
+    decode-fragility report in one pass.
+  - example:
+    - `python3 bench/runners/enrich_sampled_decode_rows.py --manifest <harvest-manifest.json>`
+- `promote_sampled_decode_fragility.py`
+  - writes the checked decode-boundary promotion catalog and per-case promoted
+    signatures when the ranked report contains real promotable sampled flips.
+  - current checked catalog:
+    - `config/numeric-stability-decode-promoted-catalog.json`
+  - the catalog may legitimately stay empty when the latest harvest only
+    produced controls or meaningless flips.
+  - example:
+    - `python3 bench/runners/promote_sampled_decode_fragility.py --report <decode-fragility-report.json> --manifest <harvest-manifest.json>`
+- `replay_promoted_sampled_decode_vulkan.py`
+  - replays the promoted sampled decode set on the configured Vulkan lane so
+    cross-backend reproduction becomes an explicit runtime artifact instead of
+    a hand-waved follow-up.
+  - config is explicit in:
+    - `config/numeric-stability-decode-vulkan-replay-plan.json`
+  - example:
+    - `python3 bench/runners/replay_promoted_sampled_decode_vulkan.py`
 - `run_selective_stable_rerun_probe.py`
   - consumes a reduction-order source report and applies a versioned
     numeric-stability route policy instead of only stopping at "the bytes

@@ -8,16 +8,20 @@
     "registryVersion",
     "routeTaxonomyVersion",
     "proofArtifactPath",
+    "defaultExecutionProfileId",
     "routeDecisions",
     "routeDecisionMetadata",
+    "executionProfiles",
+    "autoDetectProfiles",
     "triggerPolicies",
     "routingPolicies"
   ],
   "properties": {
-    "schemaVersion": { "const": 2 },
+    "schemaVersion": { "const": 3 },
     "registryVersion": { "type": "string", "minLength": 1 },
     "routeTaxonomyVersion": { "type": "string", "minLength": 1 },
     "proofArtifactPath": { "type": "string", "minLength": 1 },
+    "defaultExecutionProfileId": { "type": "string", "minLength": 1 },
     "routeDecisions": {
       "type": "array",
       "minItems": 3,
@@ -31,6 +35,16 @@
       "type": "array",
       "minItems": 3,
       "items": { "$ref": "#/$defs/routeDecisionMetadata" }
+    },
+    "executionProfiles": {
+      "type": "array",
+      "minItems": 3,
+      "items": { "$ref": "#/$defs/executionProfile" }
+    },
+    "autoDetectProfiles": {
+      "type": "array",
+      "minItems": 3,
+      "items": { "$ref": "#/$defs/autoDetectProfile" }
     },
     "triggerPolicies": {
       "type": "array",
@@ -53,21 +67,92 @@
       "type": "string",
       "enum": ["fast", "stable", "none"]
     },
+    "committedResultMode": {
+      "type": "string",
+      "enum": ["fast", "stable", "none"]
+    },
+    "downstreamAction": {
+      "type": "string",
+      "enum": ["continue", "stop"]
+    },
+    "executionSurface": {
+      "type": "string",
+      "enum": ["ordinary-execution"]
+    },
     "routeDecisionMetadata": {
       "type": "object",
       "required": [
         "decision",
         "selectionMode",
+        "committedResultMode",
+        "downstreamAction",
         "proofLinks"
       ],
       "properties": {
         "decision": { "$ref": "#/$defs/routeDecision" },
         "selectionMode": { "$ref": "#/$defs/selectionMode" },
+        "committedResultMode": { "$ref": "#/$defs/committedResultMode" },
+        "downstreamAction": { "$ref": "#/$defs/downstreamAction" },
         "proofLinks": {
           "type": "array",
           "minItems": 1,
           "items": { "$ref": "#/$defs/proofLink" }
         }
+      },
+      "additionalProperties": false
+    },
+    "executionProfile": {
+      "type": "object",
+      "required": [
+        "profileId",
+        "surface",
+        "description",
+        "routingPolicyId"
+      ],
+      "properties": {
+        "profileId": { "type": "string", "minLength": 1 },
+        "surface": { "$ref": "#/$defs/executionSurface" },
+        "description": { "type": "string", "minLength": 1 },
+        "routingPolicyId": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "autoDetectProfile": {
+      "type": "object",
+      "required": [
+        "profileId",
+        "enabled",
+        "operatorFamily",
+        "semanticOpId",
+        "kernelBasenames",
+        "triggerPolicyId",
+        "routingPolicyId",
+        "fastPolicyId",
+        "stablePolicyId",
+        "referencePolicyId",
+        "capturePlanId",
+        "decisionStrategyId"
+      ],
+      "properties": {
+        "profileId": { "type": "string", "minLength": 1 },
+        "enabled": { "type": "boolean" },
+        "operatorFamily": { "type": "string", "minLength": 1 },
+        "semanticOpId": { "type": "string", "minLength": 1 },
+        "semanticStage": { "type": ["string", "null"], "minLength": 1 },
+        "semanticPhase": { "type": ["string", "null"], "minLength": 1 },
+        "kernelBasenames": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "triggerPolicyId": { "type": "string", "minLength": 1 },
+        "routingPolicyId": { "type": "string", "minLength": 1 },
+        "fastPolicyId": { "type": "string", "minLength": 1 },
+        "stablePolicyId": { "type": "string", "minLength": 1 },
+        "referencePolicyId": { "type": "string", "minLength": 1 },
+        "capturePlanId": { "type": "string", "minLength": 1 },
+        "decisionStrategyId": { "type": "string", "minLength": 1 }
       },
       "additionalProperties": false
     },

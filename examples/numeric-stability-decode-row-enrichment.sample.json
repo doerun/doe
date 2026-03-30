@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "entries": [
+    {
+      "match": {
+        "receiptPath": "examples/doe-numeric-stability-receipt.decode-sample.sample.json",
+        "semanticStage": "decode_demo",
+        "semanticOpId": "decode.sample_token"
+      },
+      "overrides": {
+        "caseId": "decode-demo-greedy-control",
+        "promptText": "Decode demo control case for a greedy ordinary-execution sample receipt.",
+        "decodeStepIndex": 0,
+        "semanticPriorityClass": "other",
+        "withinPolicyStable": true,
+        "suffixReplay": {
+          "available": false,
+          "divergent": false,
+          "replayStepCount": null
+        }
+      }
+    }
+  ]
+}

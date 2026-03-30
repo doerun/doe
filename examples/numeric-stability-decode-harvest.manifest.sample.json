@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "sampled-decode-fragility-harvest",
+  "timestamp": "20260330T020000Z",
+  "planPath": "config/numeric-stability-decode-harvest-plan.json",
+  "runtimeBinPath": "runtime/zig/zig-out/bin/doe-zig-runtime",
+  "outputRoot": "bench/out/apple-metal-sampled-decode-fragility/20260330T020000Z",
+  "cases": [
+    {
+      "schemaVersion": 1,
+      "artifactKind": "sampled-decode-fragility-case",
+      "caseId": "decode-demo-sampled",
+      "commandsPath": "examples/numeric-stability-decode-sampled.commands.json",
+      "patchedCommandsPath": "bench/out/apple-metal-sampled-decode-fragility/20260330T020000Z/decode-demo-sampled/sampled-decode.commands.json",
+      "kernelRoot": ".",
+      "promptText": "Decode demo sampled control case for ordinary Doe execution.",
+      "semanticPriorityClass": "other",
+      "sampleConfig": {
+        "temperature": 1.0,
+        "topK": 2,
+        "topP": 0.75,
+        "rngSeed": 17,
+        "rngDraw": 0.875
+      },
+      "backend": {
+        "vendor": "apple",
+        "api": "metal",
+        "family": "apple-gpu",
+        "driver": "1.0.0",
+        "backendLane": "metal_doe_app"
+      },
+      "repeatCount": 3,
+      "status": "success",
+      "decodeReceiptCount": 3,
+      "repeats": []
+    }
+  ],
+  "summary": {
+    "caseCount": 1,
+    "totalDecodeReceiptCount": 3,
+    "countsByStatus": {
+      "success": 1
+    }
+  }
+}

@@ -6,8 +6,10 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
 import struct
 import subprocess
+import tempfile
 import time
 from pathlib import Path
 from typing import Any
@@ -99,20 +101,11 @@ def build_commands_from_request(request: dict[str, Any]) -> list[dict[str, Any]]
     row_count = len(candidates)
     col_count = len(hidden_state)
     flattened_weights: list[float] = []
-    numeric_candidates: list[dict[str, Any]] = []
-    for row_index, candidate in enumerate(candidates):
+    for candidate in candidates:
         weights = [float(value) for value in candidate["weights"]]
         if len(weights) != col_count:
             raise ValueError("candidate weight width mismatch")
         flattened_weights.extend(weights)
-        numeric_entry = {
-            "tokenId": int(candidate["tokenId"]),
-            "label": candidate_label(candidate.get("label"), int(candidate["tokenId"])),
-            "rowIndex": row_index,
-        }
-        if candidate.get("bias") is not None:
-            numeric_entry["bias"] = float(candidate["bias"])
-        numeric_candidates.append(numeric_entry)
     return [
         {"kind": "buffer_write", "handle": 4201, "bufferSize": 16, "data": [row_count, col_count, 0, 0]},
         {"kind": "buffer_write", "handle": 4202, "bufferSize": col_count * 4, "data": f32_bits(hidden_state)},
@@ -132,17 +125,6 @@ def build_commands_from_request(request: dict[str, Any]) -> list[dict[str, Any]]
             "semanticOpId": request["semanticOpId"],
             "semanticStage": request["semanticStage"],
             "semanticPhase": request["semanticPhase"],
-            "numericStability": {
-                "operatorFamily": request["operatorFamily"],
-                "triggerPolicyId": request["triggerPolicyId"],
-                "routingPolicyId": request["routingPolicyId"],
-                "fastPolicyId": request["fastPolicyId"],
-                "stablePolicyId": request["stablePolicyId"],
-                "hiddenState": {"bufferHandle": 4202, "offset": 0, "elementCount": col_count},
-                "logits": {"bufferHandle": 4204, "offset": 0, "elementCount": row_count},
-                "weights": {"bufferHandle": 4203, "offset": 0, "rowStrideElements": col_count},
-                "candidates": numeric_candidates,
-            },
             "bindings": [
                 {
                     "binding": 0,
@@ -344,6 +326,58 @@ def ordinary_execution_note(case_report_rel: str) -> str:
     )
 
 
+def stage_signature_tree(signature_root: Path, staging_root: Path) -> Path:
+    staged_signature_root = staging_root / signature_root.relative_to(REPO_ROOT)
+    staged_signature_root.mkdir(parents=True, exist_ok=True)
+    for existing in signature_root.glob("*.json"):
+        shutil.copy2(existing, staged_signature_root / existing.name)
+    return staged_signature_root
+
+
+def stage_signature_updates(
+    staging_root: Path,
+    pending_updates: dict[Path, dict[str, Any]],
+) -> dict[Path, Path]:
+    staged_paths: dict[Path, Path] = {}
+    for target_path, payload in pending_updates.items():
+        staged_path = staging_root / target_path.relative_to(REPO_ROOT)
+        write_json(staged_path, payload)
+        load_validated_config(staged_path, FRAGILITY_SIGNATURE_SCHEMA_PATH)
+        staged_paths[target_path] = staged_path
+    return staged_paths
+
+
+def commit_staged_updates(
+    *,
+    staged_signature_paths: dict[Path, Path],
+    staged_catalog_path: Path,
+    catalog_path: Path,
+    rollback_root: Path,
+) -> None:
+    backup_root = rollback_root / "rollback"
+    backup_root.mkdir(parents=True, exist_ok=True)
+
+    all_targets = sorted(staged_signature_paths, key=lambda item: str(item)) + [catalog_path]
+    backups: dict[Path, Path] = {}
+    for target_path in all_targets:
+        backup_path = backup_root / target_path.relative_to(REPO_ROOT)
+        backup_path.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(target_path, backup_path)
+        backups[target_path] = backup_path
+
+    committed_targets: list[Path] = []
+    try:
+        for target_path in sorted(staged_signature_paths, key=lambda item: str(item)):
+            staged_signature_paths[target_path].replace(target_path)
+            committed_targets.append(target_path)
+        staged_catalog_path.replace(catalog_path)
+        committed_targets.append(catalog_path)
+    except Exception:
+        for target_path in reversed(committed_targets):
+            backups[target_path].replace(target_path)
+        raise
+
+
 def build_manifest_entry(
     *,
     case_id: str,
@@ -386,6 +420,7 @@ def main() -> int:
 
     manifest_cases: list[dict[str, Any]] = []
     counts_by_route: dict[str, int] = {"accept-fast": 0, "prefer-stable": 0, "abstain": 0}
+    pending_signature_updates: dict[Path, dict[str, Any]] = {}
 
     for prompt_case in plan["promptCases"]:
         catalog_entry = catalog_entries.get(prompt_case["signatureId"])
@@ -422,8 +457,7 @@ def main() -> int:
         updated_signature["notes"] = ordinary_execution_note(
             case_report["commandsPath"].replace(COMMANDS_FILE_NAME, CASE_REPORT_FILE_NAME)
         )
-        write_json(signature_path, updated_signature)
-        load_validated_config(signature_path, FRAGILITY_SIGNATURE_SCHEMA_PATH)
+        pending_signature_updates[signature_path] = updated_signature
 
     for control in plan["controls"]:
         request = build_control_request(control)
@@ -460,11 +494,27 @@ def main() -> int:
         updated_signature["notes"] = ordinary_execution_note(
             case_report["commandsPath"].replace(COMMANDS_FILE_NAME, CASE_REPORT_FILE_NAME)
         )
-        write_json(signature_path, updated_signature)
-        load_validated_config(signature_path, FRAGILITY_SIGNATURE_SCHEMA_PATH)
+        pending_signature_updates[signature_path] = updated_signature
 
-    updated_catalog = rebuild_catalog(signature_root, catalog)
-    write_json(catalog_path, updated_catalog)
+    with tempfile.TemporaryDirectory(prefix="in-path-numeric-stability-stage-", dir=output_dir) as staging_dir_str:
+        staging_root = Path(staging_dir_str)
+        staged_signature_root = stage_signature_tree(signature_root, staging_root)
+        staged_signature_paths = stage_signature_updates(staging_root, pending_signature_updates)
+        updated_catalog = rebuild_catalog(
+            staged_signature_root,
+            catalog,
+            catalog_signature_root=signature_root,
+        )
+        staged_catalog_path = staging_root / catalog_path.relative_to(REPO_ROOT)
+        write_json(staged_catalog_path, updated_catalog)
+        load_validated_config(staged_catalog_path, PROMOTED_CATALOG_SCHEMA_PATH)
+        commit_staged_updates(
+            staged_signature_paths=staged_signature_paths,
+            staged_catalog_path=staged_catalog_path,
+            catalog_path=catalog_path,
+            rollback_root=staging_root,
+        )
+
     load_validated_config(catalog_path, PROMOTED_CATALOG_SCHEMA_PATH)
 
     manifest = {

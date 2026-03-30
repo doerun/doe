@@ -1,0 +1,240 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://doe-gpu.dev/config/numeric-stability-decode-fragility-plan.schema.json",
+  "title": "Numeric stability decode fragility plan",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "planVersion",
+    "proposalState",
+    "currentLiveBoundary",
+    "normalizedInputContract",
+    "replayPredicates",
+    "scoringSignals",
+    "semanticPriorityClasses",
+    "seedPromptFamilies",
+    "promotionRequirements",
+    "suffixReplayPolicy",
+    "rankingBuckets",
+    "backendExpansionOrder"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "planVersion": { "type": "string", "minLength": 1 },
+    "proposalState": {
+      "type": "string",
+      "enum": ["planning-only", "implementation-ready"]
+    },
+    "currentLiveBoundary": {
+      "type": "object",
+      "required": [
+        "fullDecodeReceiptAvailable",
+        "boundedSliceGovernanceAvailable",
+        "ordinaryExecutionGovernanceAvailable"
+      ],
+      "properties": {
+        "fullDecodeReceiptAvailable": { "type": "boolean" },
+        "boundedSliceGovernanceAvailable": { "type": "boolean" },
+        "ordinaryExecutionGovernanceAvailable": { "type": "boolean" },
+        "notes": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      },
+      "additionalProperties": false
+    },
+    "normalizedInputContract": {
+      "type": "object",
+      "required": ["requiredPaths", "optionalPaths"],
+      "properties": {
+        "requiredPaths": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "optionalPaths": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      },
+      "additionalProperties": false
+    },
+    "replayPredicates": {
+      "type": "array",
+      "minItems": 2,
+      "items": { "$ref": "#/$defs/replayPredicate" }
+    },
+    "scoringSignals": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/scoringSignal" }
+    },
+    "semanticPriorityClasses": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/semanticPriorityClass" }
+    },
+    "seedPromptFamilies": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/seedPromptFamily" }
+    },
+    "promotionRequirements": { "$ref": "#/$defs/promotionRequirements" },
+    "suffixReplayPolicy": { "$ref": "#/$defs/suffixReplayPolicy" },
+    "rankingBuckets": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/rankingBucket" }
+    },
+    "backendExpansionOrder": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/backendTarget" }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "replayPredicate": {
+      "type": "object",
+      "required": ["mode", "description", "predicate"],
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["greedy", "sampling"]
+        },
+        "description": { "type": "string", "minLength": 1 },
+        "predicate": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "scoringSignal": {
+      "type": "object",
+      "required": [
+        "signalId",
+        "sourcePath",
+        "direction",
+        "weight"
+      ],
+      "properties": {
+        "signalId": { "type": "string", "minLength": 1 },
+        "sourcePath": { "type": "string", "minLength": 1 },
+        "direction": {
+          "type": "string",
+          "enum": [
+            "lower-is-fragile",
+            "higher-is-fragile",
+            "boolean-boost",
+            "lower-is-better"
+          ]
+        },
+        "weight": { "type": "number", "exclusiveMinimum": 0 },
+        "normalizationCeiling": { "type": ["number", "null"], "exclusiveMinimum": 0 },
+        "missingValuePolicy": {
+          "type": "string",
+          "enum": ["ignore", "reject"],
+          "default": "ignore"
+        },
+        "notes": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      },
+      "additionalProperties": false
+    },
+    "semanticPriorityClass": {
+      "type": "object",
+      "required": ["classId", "priorityWeight", "examples"],
+      "properties": {
+        "classId": { "type": "string", "minLength": 1 },
+        "priorityWeight": { "type": "number", "minimum": 0 },
+        "examples": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      },
+      "additionalProperties": false
+    },
+    "seedPromptFamily": {
+      "type": "object",
+      "required": ["familyId", "examples"],
+      "properties": {
+        "familyId": { "type": "string", "minLength": 1 },
+        "examples": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      },
+      "additionalProperties": false
+    },
+    "promotionRequirements": {
+      "type": "object",
+      "required": [
+        "requireActualSelectedTokenChange",
+        "requireMeaningfulToken",
+        "maxDecodeStepIndex",
+        "requireWithinPolicyStability",
+        "requireUpstreamDisagreement",
+        "requireSuffixReplayDivergence",
+        "minimumPromotableScore"
+      ],
+      "properties": {
+        "requireActualSelectedTokenChange": { "const": true },
+        "requireMeaningfulToken": { "const": true },
+        "maxDecodeStepIndex": { "type": "integer", "minimum": 0 },
+        "requireWithinPolicyStability": { "const": true },
+        "requireUpstreamDisagreement": { "const": true },
+        "requireSuffixReplayDivergence": { "const": true },
+        "minimumPromotableScore": { "type": "number", "minimum": 0 },
+        "rejectionReasons": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      },
+      "additionalProperties": false
+    },
+    "suffixReplayPolicy": {
+      "type": "object",
+      "required": [
+        "minReplaySteps",
+        "maxReplaySteps",
+        "requiredForPromotion"
+      ],
+      "properties": {
+        "minReplaySteps": { "type": "integer", "minimum": 1 },
+        "maxReplaySteps": { "type": "integer", "minimum": 1 },
+        "requiredForPromotion": { "const": true },
+        "notes": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      },
+      "additionalProperties": false
+    },
+    "rankingBucket": {
+      "type": "object",
+      "required": ["bucketId", "description", "minimumScore"],
+      "properties": {
+        "bucketId": {
+          "type": "string",
+          "enum": ["promotable", "investigate", "reject"]
+        },
+        "description": { "type": "string", "minLength": 1 },
+        "minimumScore": { "type": "number", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "backendTarget": {
+      "type": "object",
+      "required": ["backendId", "priority", "reason"],
+      "properties": {
+        "backendId": { "type": "string", "minLength": 1 },
+        "priority": { "type": "integer", "minimum": 1 },
+        "reason": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    }
+  }
+}

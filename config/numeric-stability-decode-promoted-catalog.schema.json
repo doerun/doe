@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://doe-gpu.dev/config/numeric-stability-decode-promoted-catalog.schema.json",
+  "title": "Numeric stability decode promoted catalog",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "catalogVersion",
+    "promotionPolicyId",
+    "validationPlanPath",
+    "sourceReportPath",
+    "sourceManifestPath",
+    "entries",
+    "summary"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "catalogVersion": { "type": "string", "minLength": 1 },
+    "promotionPolicyId": { "type": "string", "minLength": 1 },
+    "validationPlanPath": { "type": "string", "minLength": 1 },
+    "sourceReportPath": { "type": "string", "minLength": 1 },
+    "sourceManifestPath": { "type": "string", "minLength": 1 },
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "signatureId",
+          "signaturePath",
+          "contractStage",
+          "semanticScenarioBucket",
+          "routeDecision"
+        ],
+        "properties": {
+          "signatureId": { "type": "string", "minLength": 1 },
+          "signaturePath": { "type": "string", "minLength": 1 },
+          "contractStage": { "type": "string", "minLength": 1 },
+          "semanticScenarioBucket": { "type": "string", "minLength": 1 },
+          "routeDecision": {
+            "type": "string",
+            "enum": ["accept-fast", "prefer-stable", "abstain"]
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": [
+        "entryCount",
+        "countsByContractStage",
+        "countsByRouteDecision",
+        "countsBySemanticScenarioBucket"
+      ],
+      "properties": {
+        "entryCount": { "type": "integer", "minimum": 0 },
+        "countsByContractStage": {
+          "type": "object",
+          "additionalProperties": { "type": "integer", "minimum": 0 }
+        },
+        "countsByRouteDecision": {
+          "type": "object",
+          "additionalProperties": { "type": "integer", "minimum": 0 }
+        },
+        "countsBySemanticScenarioBucket": {
+          "type": "object",
+          "additionalProperties": { "type": "integer", "minimum": 0 }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

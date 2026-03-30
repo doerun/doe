@@ -309,12 +309,17 @@
         "receiptPath",
         "receiptCount",
         "decisionCounts",
-        "firstDivergencePresentCount"
+        "firstDivergencePresentCount",
+        "annotationCount",
+        "autoDetectCount",
+        "committedStableRewriteCount",
+        "downstreamStopCount"
       ],
       "properties": {
         "policyRegistryPath": { "type": "string", "minLength": 1 },
         "policyRegistryVersion": { "type": "string", "minLength": 1 },
         "routeTaxonomyVersion": { "type": "string", "minLength": 1 },
+        "executionProfileId": { "type": "string", "minLength": 1 },
         "receiptPath": { "type": "string", "minLength": 1 },
         "receiptCount": { "type": "integer", "minimum": 0 },
         "decisionCounts": {
@@ -327,7 +332,11 @@
             "abstain": { "type": "integer", "minimum": 0 }
           }
         },
-        "firstDivergencePresentCount": { "type": "integer", "minimum": 0 }
+        "firstDivergencePresentCount": { "type": "integer", "minimum": 0 },
+        "annotationCount": { "type": "integer", "minimum": 0 },
+        "autoDetectCount": { "type": "integer", "minimum": 0 },
+        "committedStableRewriteCount": { "type": "integer", "minimum": 0 },
+        "downstreamStopCount": { "type": "integer", "minimum": 0 }
       }
     }
   }

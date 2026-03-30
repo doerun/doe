@@ -18,9 +18,14 @@ import type {
   DoeStableChoiceResult,
   DoeNumericStabilityCandidateInput,
   DoeNumericStabilityFirstDivergence,
+  DoeNumericStabilityExecutionIdentity,
   DoeNumericStabilityReceipt,
   DoeNumericStabilityReceiptCandidate,
   DoeNumericStabilityRouteDecision,
+  DoeOrdinaryExecutionOptions,
+  DoeOrdinaryExecutionResult,
+  DoeNumericStabilityOrdinaryExecutionOptions,
+  DoeNumericStabilityOrdinaryExecutionResult,
   DoeMatmulLogitsSliceOptions,
   DoeMatmulLogitsSliceResult,
   DoeReviewedChoiceOptions,
@@ -54,9 +59,14 @@ export type {
   DoeStableChoiceResult,
   DoeNumericStabilityCandidateInput,
   DoeNumericStabilityFirstDivergence,
+  DoeNumericStabilityExecutionIdentity,
   DoeNumericStabilityReceipt,
   DoeNumericStabilityReceiptCandidate,
   DoeNumericStabilityRouteDecision,
+  DoeOrdinaryExecutionOptions,
+  DoeOrdinaryExecutionResult,
+  DoeNumericStabilityOrdinaryExecutionOptions,
+  DoeNumericStabilityOrdinaryExecutionResult,
   DoeMatmulLogitsSliceOptions,
   DoeMatmulLogitsSliceResult,
   DoeReviewedChoiceOptions,
@@ -102,10 +112,15 @@ export interface DoeRuntimeBenchResult extends DoeRuntimeRunResult {
 export interface DoeRuntimeBenchOptions {
   commandsPath: string;
   quirksPath?: string;
+  kernelRoot?: string;
+  numericStabilityPolicyPath?: string;
+  executionProfileId?: string;
+  numericStabilityExecutionProfileId?: string;
   vendor?: string;
   api?: string;
   family?: string;
   driver?: string;
+  backendLane?: string;
   traceJsonlPath?: string;
   traceMetaPath?: string;
   uploadBufferUsage?: string;
@@ -130,6 +145,20 @@ export interface DoeRuntimeNumericStabilityMatmulLogitsSliceResult
   receipt: DoeNumericStabilityReceipt;
 }
 
+export interface DoeRuntimeNumericStabilityOrdinaryExecutionResult
+  extends DoeRuntimeBenchResult {
+  executionProfileId: string | null;
+  receiptPath: string | null;
+  receipts: DoeNumericStabilityReceipt[];
+  latestReceipt: DoeNumericStabilityReceipt | null;
+  routeDecisions: DoeNumericStabilityRouteDecision[];
+  latestRouteDecision: DoeNumericStabilityRouteDecision | null;
+  latestToken: number | null;
+}
+
+export interface DoeRuntimeOrdinaryExecutionResult
+  extends DoeRuntimeNumericStabilityOrdinaryExecutionResult {}
+
 export interface DoeRuntime {
   binPath: string;
   libPath: string | null;
@@ -146,6 +175,12 @@ export interface DoeRuntime {
   runNumericStabilityMatmulLogitsSlice(
     options: DoeMatmulLogitsSliceOptions<unknown>,
   ): DoeRuntimeNumericStabilityMatmulLogitsSliceResult;
+  runOrdinaryExecution(
+    options: DoeRuntimeBenchOptions,
+  ): DoeRuntimeOrdinaryExecutionResult;
+  runNumericStabilityOrdinaryExecution(
+    options: DoeRuntimeBenchOptions,
+  ): DoeRuntimeNumericStabilityOrdinaryExecutionResult;
 }
 
 export interface RequestDeviceOptions {

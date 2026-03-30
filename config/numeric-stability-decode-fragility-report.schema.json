@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://doe-gpu.dev/config/numeric-stability-decode-fragility-report.schema.json",
+  "title": "Numeric stability decode fragility report",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "timestamp",
+    "planPath",
+    "sourcePath",
+    "rankedCases",
+    "summary"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "artifactKind": { "const": "numeric-stability-decode-fragility-report" },
+    "timestamp": { "type": "string", "minLength": 1 },
+    "planPath": { "type": "string", "minLength": 1 },
+    "sourcePath": { "type": "string", "minLength": 1 },
+    "rankedCases": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/rankedCase" }
+    },
+    "summary": { "$ref": "#/$defs/summary" }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "selectedTokens": {
+      "type": "object",
+      "required": ["fast", "stable", "reference"],
+      "properties": {
+        "fast": { "type": "integer", "minimum": 0 },
+        "stable": { "type": "integer", "minimum": 0 },
+        "reference": { "type": "integer", "minimum": 0 },
+        "fastText": { "type": "string" },
+        "stableText": { "type": "string" },
+        "referenceText": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "rankedCase": {
+      "type": "object",
+      "required": [
+        "caseId",
+        "promptText",
+        "decodeStepIndex",
+        "semanticPriorityClass",
+        "score",
+        "rankingBucket",
+        "selectedTokens",
+        "rejectionReasons"
+      ],
+      "properties": {
+        "caseId": { "type": "string", "minLength": 1 },
+        "promptText": { "type": "string", "minLength": 1 },
+        "decodeStepIndex": { "type": "integer", "minimum": 0 },
+        "semanticPriorityClass": { "type": "string", "minLength": 1 },
+        "score": { "type": "number", "minimum": 0 },
+        "rankingBucket": {
+          "type": "string",
+          "enum": ["promotable", "investigate", "reject"]
+        },
+        "selectedTokens": { "$ref": "#/$defs/selectedTokens" },
+        "sourceArtifactPath": { "type": "string", "minLength": 1 },
+        "receiptPath": { "type": "string", "minLength": 1 },
+        "upstreamSemanticOpId": { "type": "string", "minLength": 1 },
+        "metrics": {
+          "type": "object",
+          "propertyNames": { "type": "string", "minLength": 1 },
+          "additionalProperties": {
+            "type": ["number", "boolean", "null"]
+          }
+        },
+        "rejectionReasons": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      },
+      "additionalProperties": false
+    },
+    "countMap": {
+      "type": "object",
+      "propertyNames": { "type": "string", "minLength": 1 },
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 0
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": [
+        "caseCount",
+        "countsByBucket",
+        "countsBySemanticPriorityClass"
+      ],
+      "properties": {
+        "caseCount": { "type": "integer", "minimum": 0 },
+        "countsByBucket": { "$ref": "#/$defs/countMap" },
+        "countsBySemanticPriorityClass": { "$ref": "#/$defs/countMap" },
+        "topCaseId": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    }
+  }
+}

@@ -79,7 +79,7 @@
       "corpusClass": "broad",
       "scenarioStem": "An internal incident report should remain",
       "routeExpectationDecision": "prefer-stable",
-      "routeOutcomeDecision": "abstain",
+      "routeOutcomeDecision": "prefer-stable",
       "promptId": "wave3-privacy-23-question_first-lr"
     },
     {
@@ -90,7 +90,7 @@
       "corpusClass": "broad",
       "scenarioStem": "Publishing a private SSH key is safe.",
       "routeExpectationDecision": "prefer-stable",
-      "routeOutcomeDecision": "abstain",
+      "routeOutcomeDecision": "prefer-stable",
       "promptId": "wave3-binary-06-one_word-rl"
     },
     {
@@ -155,8 +155,7 @@
     },
     "countsByRouteOutcome": {
       "accept-fast": 1,
-      "prefer-stable": 4,
-      "abstain": 2
+      "prefer-stable": 6
     }
   },
   "sourceManifestPath": "bench/out/apple-metal-numeric-fragility-corpus/20260329T174341Z/apple_metal_numeric_fragility_corpus.manifest.json"

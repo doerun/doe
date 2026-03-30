@@ -64,10 +64,29 @@ Safe claim:
 3. Doe runtime reruns one sensitive operator family locally
 4. Doe runtime returns a governed route decision in the live path
 
-This is now true for native ordinary execution of annotated `matmul.logits`
-`kernel_dispatch` commands.
+This is now true for native ordinary execution of auto-detected
+`matmul.logits` `kernel_dispatch` commands.
 
-## Level 4: Doe has a package/runtime product surface
+Important caveat:
+
+1. the current live path proves in-path rerun plus route effect for one
+   operator family
+2. it does not yet prove automatic ordinary-execution governance for generic
+   callers across multiple operator families
+
+## Level 4: Doe has in-path execution governance
+
+Safe claim only after route effect becomes real:
+
+1. `accept-fast` explicitly keeps the fast result in the live path
+2. `prefer-stable` can commit the stable result into the live path
+3. `abstain` can prevent forced continuation and return an explicit governed
+   outcome
+
+This is the first level that starts to look like a moat rather than a runtime
+measurement feature.
+
+## Level 5: Doe has a package/runtime product surface
 
 Safe claim:
 
@@ -81,13 +100,13 @@ What is not yet true at this level:
 
 1. ordinary package callers do not yet get the native in-path operator-local
    rerun path automatically
-2. package execution surfaces do not yet expose ordinary-execution
-   numeric-stability capture
+2. package execution surfaces do not yet apply ordinary-execution
+   numeric-stability capture automatically to arbitrary callers
 
 This is the current product-shape claim boundary for the explicit bounded-slice
 service, not for ordinary execution generally.
 
-## Level 5: Doe has browser-lane adoption
+## Level 6: Doe has browser-lane adoption
 
 Safe claim only after core promotion and browser consumption:
 
@@ -104,11 +123,16 @@ We should currently claim only:
 
 1. Doe has a real numeric-fragility evidence base.
 2. Doe has a proof-linked numeric-stability route contract in bench/probe land.
-3. Doe has a native ordinary-execution numeric-stability path for annotated
-   `matmul.logits` execution in `doe-zig-runtime`.
-4. Doe has an explicit bounded-slice runtime/package numeric-stability service.
+3. Doe has a native ordinary-execution numeric-stability path for
+   auto-detected `matmul.logits` execution in `doe-zig-runtime`.
+4. Doe has both:
+   - an explicit bounded-slice runtime/package numeric-stability service
+   - an explicit package helper for ordinary-execution numeric-stability
+     receipts
 5. Doe has real prompt/control cases that are `runtime-exercised` in native
    ordinary execution.
+6. Doe does not yet claim moat-level execution governance for ordinary
+   automatic callers.
 
 ## What we should not claim yet
 
@@ -119,8 +143,9 @@ We should not currently claim:
 3. that browser replacement is already a shipped numeric-stability feature
 4. that `review-required` is part of the live numeric-stability route contract
 5. that generic package callers already get ordinary-execution operator-local
-   rerun
+   rerun automatically
 6. that the flagship case is a Doe-vs-Dawn divergence today
+7. that every current in-path route changes the committed downstream result
 
 ## Doe versus Doppler
 
@@ -141,7 +166,8 @@ The clean split is:
 2. runtime-emitted first-divergence receipts
 3. live operator-local rerun
 4. governed route decisions in the execution path
-5. package-facing runtime APIs for the feature
+5. route effect on live execution
+6. package-facing runtime APIs for the feature
 
 That is the actual defensible boundary.
 
@@ -150,16 +176,15 @@ That is the actual defensible boundary.
 The shortest credible product line is:
 
 **Doe is a WebGPU runtime that can detect numerically fragile decisions, rerun
-only the fragile operator under a stronger declared policy, and return a
-receipted route decision.**
+only the fragile operator under a stronger declared policy, and govern the
+live outcome with a receipted route decision.**
 
-That sentence is now true for native annotated `matmul.logits` ordinary
-execution. It is not yet fully true for generic package callers or browser
-lanes.
+That sentence is the target moat wording. It is not yet fully true today for
+generic package callers, browser lanes, or general in-path route effect.
 
 Until then, the safer internal wording is:
 
 **Doe now has a native ordinary-execution `matmul.logits` numeric-stability
 path plus an explicit bounded-slice runtime/package service, and the remaining
-promotion work is broader operator coverage plus package/browser consumption of
-the same core contract.**
+promotion work is live route effect, broader operator coverage, and
+package/browser consumption of the same core contract.**
