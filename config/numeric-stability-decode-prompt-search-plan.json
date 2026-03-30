@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "planVersion": "2026-03-30-sampled-decode-prompt-search-v4",
+  "sourceFixturePath": "bench/fixtures/determinism/apple-metal-real-logit-hunt.gemma270m.prompt-search-sharp.json",
+  "pairMiningFixturePath": "bench/fixtures/determinism/apple-metal-pair-agnostic-mine.gemma270m.search-loose.json",
+  "rounds": 4,
+  "beamWidth": 10,
+  "maxPromptCandidatesPerRound": 64,
+  "perPromptLimit": 2,
+  "globalLimit": 64,
+  "topCandidatesToKeep": 64,
+  "persistLogits": false,
+  "repeatCount": 3,
+  "minimumUsefulnessScore": 0.68,
+  "mutationTemplates": [
+    {
+      "id": "answer-question",
+      "kind": "structured-choice",
+      "style": "answer-question"
+    },
+    {
+      "id": "answer-question-reversed",
+      "kind": "structured-choice",
+      "style": "answer-question",
+      "reverseOptions": true
+    },
+    {
+      "id": "choose-question",
+      "kind": "structured-choice",
+      "style": "choose-question"
+    },
+    {
+      "id": "reply-question",
+      "kind": "structured-choice",
+      "style": "reply-question"
+    },
+    {
+      "id": "parenthetical-question",
+      "kind": "structured-choice",
+      "style": "parenthetical-question"
+    },
+    {
+      "id": "question-answer",
+      "kind": "structured-choice",
+      "style": "question-answer"
+    },
+    {
+      "id": "scenario-answer",
+      "kind": "structured-choice",
+      "style": "scenario-answer"
+    },
+    {
+      "id": "inline-colon",
+      "kind": "structured-choice",
+      "style": "inline-colon"
+    },
+    {
+      "id": "inline-colon-reversed",
+      "kind": "structured-choice",
+      "style": "inline-colon",
+      "reverseOptions": true
+    },
+    {
+      "id": "output-only",
+      "kind": "structured-choice",
+      "style": "output-only"
+    },
+    {
+      "id": "swap-inline-choice",
+      "kind": "swap-inline-choice"
+    }
+  ]
+}

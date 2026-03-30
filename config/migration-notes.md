@@ -1,6 +1,56 @@
 # Config Migration Notes
 
+## 2026-03-30
+
+### Diverse prompt-search seeds and wider pair registry
+
+- `bench/fixtures/determinism/apple-metal-real-logit-hunt.gemma270m.prompt-search-sharp.json`
+  - expands the live sampled-decode prompt-search seed bank beyond
+    operational/security examples into bounded ambiguity prompts across
+    philosophy, science, law, identity, and art
+- `bench/fixtures/determinism/apple-metal-pair-agnostic-mine.gemma270m.search-loose.json`
+  - widens the allowed answer-set ids so the loose miner can score more than
+    the original workflow-heavy binary pairs
+- `config/determinism-answer-set-registry.json`
+  - adds the new bounded answer-set families used by that wider search lane,
+    including `mercy/cruelty`, `justice/revenge`, `friend/stranger`,
+    `natural/artificial`, `authentic/staged`, `science/faith`,
+    `freedom/loss`, and related pairs
+- `config/numeric-stability-decode-prompt-search-plan.json`
+  - raises the round-1 prompt cap so the expanded seed bank is not silently
+    truncated by the old limit
+- `bench/runners/search_sampled_decode_prompts.py`
+  and `bench/tests/test_search_sampled_decode_prompts.py`
+  - structured-choice mutation now preserves multi-option prompts such as
+    `X, Y, or both: ...` instead of assuming every seed is binary
+
 ## 2026-03-29
+
+### Prompt-search discovery for sampled decode fragility
+
+- `config/numeric-stability-decode-prompt-search-plan.json`
+  and `config/numeric-stability-decode-prompt-search-plan.schema.json`
+  - add the config-backed discovery plan for finding better sampled-decode
+    prompt seeds
+  - the plan now fixes:
+    - the source real-logit hunt fixture
+    - the pair-mining fixture
+    - round count and beam width
+    - prompt-candidate limits
+    - the minimum usefulness score required to keep mutating a case
+    - the mutation-template family used for prompt rewrites
+- `bench/runners/search_sampled_decode_prompts.py`
+  and `bench/tests/test_search_sampled_decode_prompts.py`
+  - add the executable search loop that:
+    - starts from semantically sharp prompt families or explicit initial seeds
+    - runs the existing real-logit scout in rounds
+    - mines semantically meaningful near-miss token pairs from each round
+    - mutates the strongest cases into the next prompt batch
+    - writes a search report that can seed later sampled ordinary-execution
+      harvests on Metal
+  - this is discovery tooling only:
+    it improves prompt quality for the sampled decode lane, but it does not
+    replace the live runtime receipt, enrichment, ranking, or promotion path
 
 ### Sampled decode harvest and promotion pipeline
 

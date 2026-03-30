@@ -2,12 +2,14 @@
 // render pass ops for the Doe WebGPU C ABI. Executes synchronously.
 
 const std = @import("std");
+const builtin = @import("builtin");
+const has_vulkan = (builtin.os.tag == .linux);
 const native = @import("doe_wgpu_native.zig");
 const types = @import("core/abi/wgpu_types.zig");
 const model = @import("model.zig");
 const query_native = @import("doe_query_native.zig");
-const c = @import("backend/vulkan/vk_constants.zig");
-const vk_resources = @import("backend/vulkan/vk_resources.zig");
+const c = if (has_vulkan) @import("backend/vulkan/vk_constants.zig") else struct {};
+const vk_resources = if (has_vulkan) @import("backend/vulkan/vk_resources.zig") else struct {};
 const doe_wgsl = @import("doe_wgsl/mod.zig");
 const runtime_compile = @import("doe_wgsl/runtime_compile.zig");
 const NativeVulkanRuntime = native.NativeVulkanRuntime;
@@ -46,6 +48,7 @@ const VK_COMPARE_OP_GREATER_OR_EQUAL: u32 = 6;
 const VK_COMPARE_OP_ALWAYS: u32 = 7;
 
 fn get_runtime(dev: *DoeDevice) ?*NativeVulkanRuntime {
+    if (comptime !has_vulkan) return null;
     return native.device_vk_runtime(dev);
 }
 fn wgpu_filter_to_vk(filter: u32) u32 {
@@ -82,6 +85,7 @@ fn wgpu_compare_to_vk(compare: u32) u32 {
 // ============================================================
 
 pub fn vulkan_create_texture(dev: *DoeDevice, tex: *DoeTexture, desc: *const types.WGPUTextureDescriptor) bool {
+    if (comptime !has_vulkan) return false;
     const rt = get_runtime(dev) orelse {
         std.debug.print("doe_vulkan_render_native: device has no Vulkan runtime\n", .{});
         return false;
@@ -121,6 +125,7 @@ pub fn vulkan_create_texture(dev: *DoeDevice, tex: *DoeTexture, desc: *const typ
 }
 
 pub fn vulkan_destroy_texture(tex: *DoeTexture) void {
+    if (comptime !has_vulkan) return;
     if (tex.vk_id == 0) return;
     const rt_ptr = tex.vk_runtime_ref orelse return;
     const rt: *NativeVulkanRuntime = @ptrCast(@alignCast(rt_ptr));
@@ -132,6 +137,7 @@ pub fn vulkan_destroy_texture(tex: *DoeTexture) void {
 }
 
 pub fn vulkan_create_texture_view(tex: *DoeTexture, tv: *DoeTextureView, desc: *const types.WGPUTextureViewDescriptor) bool {
+    if (comptime !has_vulkan) return false;
     if (tex.vk_id == 0) return false;
     const rt_ptr = tex.vk_runtime_ref orelse return false;
     const rt: *NativeVulkanRuntime = @ptrCast(@alignCast(rt_ptr));
@@ -179,6 +185,7 @@ pub fn vulkan_create_texture_view(tex: *DoeTexture, tv: *DoeTextureView, desc: *
 }
 
 pub fn vulkan_destroy_texture_view(tv: *DoeTextureView) void {
+    if (comptime !has_vulkan) return;
     const handle_ptr = tv.handle orelse return;
     const rt_ptr = tv.tex.vk_runtime_ref orelse return;
     const rt: *NativeVulkanRuntime = @ptrCast(@alignCast(rt_ptr));
@@ -194,6 +201,7 @@ pub fn vulkan_destroy_texture_view(tv: *DoeTextureView) void {
 // ============================================================
 
 pub fn vulkan_create_sampler(dev: *DoeDevice, sampler: *DoeSampler, desc: *const types.WGPUSamplerDescriptor) bool {
+    if (comptime !has_vulkan) return false;
     const rt = get_runtime(dev) orelse {
         std.debug.print("doe_vulkan_render_native: device has no Vulkan runtime for sampler\n", .{});
         return false;
@@ -246,6 +254,7 @@ pub fn vulkan_create_sampler(dev: *DoeDevice, sampler: *DoeSampler, desc: *const
 }
 
 pub fn vulkan_destroy_sampler(sampler: *DoeSampler, rt: *NativeVulkanRuntime) void {
+    if (comptime !has_vulkan) return;
     const handle: u64 = @intFromPtr(sampler);
     // Remove from runtime map (does NOT destroy the VkSampler — we do that below).
     _ = rt.samplers.remove(handle);
@@ -672,6 +681,7 @@ pub fn vulkan_render_pass_draw(
     first_vertex: u32,
     first_instance: u32,
 ) void {
+    if (comptime !has_vulkan) return;
     const rt = get_runtime(pass.enc.dev) orelse {
         std.debug.print("doe_vulkan_render_native: render pass draw: no Vulkan runtime\n", .{});
         return;
@@ -697,6 +707,7 @@ pub fn vulkan_render_pass_draw_indexed(
     base_vertex: i32,
     first_instance: u32,
 ) void {
+    if (comptime !has_vulkan) return;
     const rt = get_runtime(pass.enc.dev) orelse {
         std.debug.print("doe_vulkan_render_native: render pass draw_indexed: no Vulkan runtime\n", .{});
         return;
@@ -722,6 +733,7 @@ pub fn vulkan_render_pass_draw_indexed(
 }
 
 pub fn vulkan_render_pass_draw_indirect(pass: *DoeRenderPass, indirect_buffer_raw: ?*anyopaque, indirect_offset: u64) void {
+    if (comptime !has_vulkan) return;
     const indirect_buf = native.cast(DoeBuffer, indirect_buffer_raw) orelse return;
     if (indirect_buf.vk_id == 0) return;
     const rt = get_runtime(pass.enc.dev) orelse return;
@@ -737,6 +749,7 @@ pub fn vulkan_render_pass_draw_indirect(pass: *DoeRenderPass, indirect_buffer_ra
 }
 
 pub fn vulkan_render_pass_draw_indexed_indirect(pass: *DoeRenderPass, indirect_buffer_raw: ?*anyopaque, indirect_offset: u64) void {
+    if (comptime !has_vulkan) return;
     const indirect_buf = native.cast(DoeBuffer, indirect_buffer_raw) orelse return;
     if (indirect_buf.vk_id == 0) return;
     const rt = get_runtime(pass.enc.dev) orelse return;

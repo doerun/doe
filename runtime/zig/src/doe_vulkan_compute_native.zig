@@ -2,6 +2,8 @@
 // Routes shader module creation and compute dispatch through NativeVulkanRuntime when the
 // device backend is .vulkan. Commands execute immediately (no deferred batching).
 
+const builtin = @import("builtin");
+const has_vulkan = (builtin.os.tag == .linux);
 const std = @import("std");
 const doe_wgsl = @import("doe_wgsl/mod.zig");
 const runtime_compile = @import("doe_wgsl/runtime_compile.zig");
@@ -130,6 +132,7 @@ fn collect_bindings(
 /// Immediate Vulkan compute dispatch via NativeVulkanRuntime.
 /// Called from doe_compute_ext_native.zig when pass.enc.dev.backend == .vulkan.
 pub fn vulkan_compute_pass_dispatch(pass: *DoeComputePass, x: u32, y: u32, z: u32) void {
+    if (comptime !has_vulkan) return;
     if (x == 0 or y == 0 or z == 0) {
         std.log.err("doe_vulkan_compute: dispatch called with zero dimension ({},{},{})", .{ x, y, z });
         return;
@@ -191,6 +194,7 @@ pub fn vulkan_compute_pass_dispatch_indirect(
     buf_raw: ?*anyopaque,
     offset: u64,
 ) void {
+    if (comptime !has_vulkan) return;
     const rt = device_vk_runtime(pass.enc.dev) orelse {
         std.log.err("doe_vulkan_compute: dispatch_indirect failed: no VulkanRuntime on device", .{});
         return;
@@ -259,6 +263,7 @@ fn resolve_indirect_dims(
     buf_raw: ?*anyopaque,
     offset: u64,
 ) [3]u32 {
+    if (comptime !has_vulkan) return .{ 0, 0, 0 };
     const NULL_DIMS = [3]u32{ 0, 0, 0 };
     const buf = cast(DoeBuffer, buf_raw) orelse return NULL_DIMS;
     if (buf.vk_id == 0) return NULL_DIMS;

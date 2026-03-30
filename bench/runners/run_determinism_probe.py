@@ -23,6 +23,7 @@ DEFAULT_FIXTURE = REPO_ROOT / "bench" / "fixtures" / "determinism" / "apple-meta
 DEFAULT_OUTPUT_ROOT = REPO_ROOT / "bench" / "out" / "apple-metal-determinism"
 RUNTIME_BIN = REPO_ROOT / "runtime" / "zig" / "zig-out" / "bin" / "doe-zig-runtime"
 DAWN_LIB_DIR = REPO_ROOT / "bench" / "vendor" / "dawn" / "out" / "Release"
+WEBKIT_SHIM_DIR = REPO_ROOT / "bench" / "vendor" / "webkit-webgpu" / "out" / "shim"
 
 
 def parse_args() -> argparse.Namespace:
@@ -274,10 +275,31 @@ def build_runtime() -> None:
     )
 
 
-def runtime_env() -> dict[str, str]:
+WEBKIT_RUNTIME_STATE = REPO_ROOT / "bench" / "fixtures" / "webkit_webgpu_runtime_state.json"
+
+
+def _webkit_framework_dir() -> str | None:
+    """Resolve the DerivedData products dir for the WebKit WebGPU build."""
+    if not WEBKIT_RUNTIME_STATE.is_file():
+        return None
+    state = json.loads(WEBKIT_RUNTIME_STATE.read_text())
+    dd = state.get("derivedData", "")
+    if dd:
+        return str(Path(dd) / "Build" / "Products" / state.get("configuration", "Release"))
+    return None
+
+
+def runtime_env(backend_lane: str = "") -> dict[str, str]:
     env = os.environ.copy()
     existing = env.get("DYLD_LIBRARY_PATH", "")
-    lib_dir = str(DAWN_LIB_DIR)
+    if backend_lane.startswith("metal_webkit_"):
+        lib_dir = str(WEBKIT_SHIM_DIR)
+        fw_dir = _webkit_framework_dir()
+        if fw_dir:
+            existing_fw = env.get("DYLD_FRAMEWORK_PATH", "")
+            env["DYLD_FRAMEWORK_PATH"] = fw_dir if not existing_fw else f"{fw_dir}:{existing_fw}"
+    else:
+        lib_dir = str(DAWN_LIB_DIR)
     env["DYLD_LIBRARY_PATH"] = lib_dir if not existing else f"{lib_dir}:{existing}"
     return env
 
@@ -546,7 +568,7 @@ def run_lane(
         completed = subprocess.run(
             command,
             cwd=REPO_ROOT,
-            env=runtime_env(),
+            env=runtime_env(backend_lane),
             capture_output=True,
             text=True,
             check=False,

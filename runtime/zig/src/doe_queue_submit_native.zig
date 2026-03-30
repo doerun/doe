@@ -1,3 +1,5 @@
+const builtin = @import("builtin");
+const has_vulkan = (builtin.os.tag == .linux);
 const std = @import("std");
 const types = @import("core/abi/wgpu_types.zig");
 const native = @import("doe_wgpu_native.zig");
@@ -469,10 +471,12 @@ pub export fn doeNativeQueueSubmit(q_raw: ?*anyopaque, count: usize, cmd_bufs: [
 pub export fn doeNativeQueueFlush(q_raw: ?*anyopaque) callconv(.c) void {
     const q = cast(DoeQueue, q_raw) orelse return;
     if (q.dev.backend == .vulkan) {
-        const rt = native.device_vk_runtime(q.dev) orelse return;
-        _ = rt.flush_queue() catch |err| {
-            std.debug.print("warn: doe_queue_submit: queue flush: {s}\n", .{@errorName(err)});
-        };
+        if (comptime has_vulkan) {
+            const rt = native.device_vk_runtime(q.dev) orelse return;
+            _ = rt.flush_queue() catch |err| {
+                std.debug.print("warn: doe_queue_submit: queue flush: {s}\n", .{@errorName(err)});
+            };
+        }
         return;
     }
     flush_pending_work(q);
@@ -516,20 +520,22 @@ pub export fn doeNativeQueueWriteBuffer(q_raw: ?*anyopaque, buf_raw: ?*anyopaque
         return;
     }
     if (q.dev.backend == .vulkan) {
-        // Fast path: use cached mapped pointer to avoid HashMap lookup per write.
-        if (buf.vk_mapped_ptr) |base| {
-            const o: usize = @intCast(offset);
-            @memcpy(base[o .. o + size], data[0..size]);
-            return;
-        }
-        // Fallback: HashMap lookup for buffers created before cached-pointer support.
-        if (buf.vk_id != 0) {
-            const rt = native.device_vk_runtime(q.dev) orelse return;
-            if (rt.compute_buffers.get(buf.vk_id)) |cb| {
-                if (cb.mapped) |ptr| {
-                    const o: usize = @intCast(offset);
-                    const d: [*]u8 = @ptrCast(ptr);
-                    @memcpy(d[o .. o + size], data[0..size]);
+        if (comptime has_vulkan) {
+            // Fast path: use cached mapped pointer to avoid HashMap lookup per write.
+            if (buf.vk_mapped_ptr) |base| {
+                const o: usize = @intCast(offset);
+                @memcpy(base[o .. o + size], data[0..size]);
+                return;
+            }
+            // Fallback: HashMap lookup for buffers created before cached-pointer support.
+            if (buf.vk_id != 0) {
+                const rt = native.device_vk_runtime(q.dev) orelse return;
+                if (rt.compute_buffers.get(buf.vk_id)) |cb| {
+                    if (cb.mapped) |ptr| {
+                        const o: usize = @intCast(offset);
+                        const d: [*]u8 = @ptrCast(ptr);
+                        @memcpy(d[o .. o + size], data[0..size]);
+                    }
                 }
             }
         }
@@ -550,25 +556,27 @@ fn copy_texture_for_browser_passthrough(
     const dst_texture = cast(DoeTexture, destination.texture) orelse return;
 
     if (q.dev.backend == .vulkan) {
-        const rt = native.device_vk_runtime(q.dev) orelse return;
-        if (src_texture.vk_id == 0 or dst_texture.vk_id == 0) return;
-        rt.texture_copy(.{
-            .src_handle = src_texture.vk_id,
-            .src_mip = source.mipLevel,
-            .src_x = source.origin.x,
-            .src_y = source.origin.y,
-            .src_z = source.origin.z,
-            .dst_handle = dst_texture.vk_id,
-            .dst_mip = destination.mipLevel,
-            .dst_x = destination.origin.x,
-            .dst_y = destination.origin.y,
-            .dst_z = destination.origin.z,
-            .width = copy_size.width,
-            .height = copy_size.height,
-            .depth_or_layers = copy_size.depthOrArrayLayers,
-        }) catch |err| {
-            std.debug.print("warn: doe_queue_submit: texture copy: {s}\n", .{@errorName(err)});
-        };
+        if (comptime has_vulkan) {
+            const rt = native.device_vk_runtime(q.dev) orelse return;
+            if (src_texture.vk_id == 0 or dst_texture.vk_id == 0) return;
+            rt.texture_copy(.{
+                .src_handle = src_texture.vk_id,
+                .src_mip = source.mipLevel,
+                .src_x = source.origin.x,
+                .src_y = source.origin.y,
+                .src_z = source.origin.z,
+                .dst_handle = dst_texture.vk_id,
+                .dst_mip = destination.mipLevel,
+                .dst_x = destination.origin.x,
+                .dst_y = destination.origin.y,
+                .dst_z = destination.origin.z,
+                .width = copy_size.width,
+                .height = copy_size.height,
+                .depth_or_layers = copy_size.depthOrArrayLayers,
+            }) catch |err| {
+                std.debug.print("warn: doe_queue_submit: texture copy: {s}\n", .{@errorName(err)});
+            };
+        }
         return;
     }
 
@@ -626,10 +634,12 @@ pub export fn doeNativeQueueRelease(raw: ?*anyopaque) callconv(.c) void {
             q.dev.queue = null;
         }
         if (q.dev.backend == .vulkan) {
-            if (native.device_vk_runtime(q.dev)) |rt| {
-                _ = rt.flush_queue() catch |err| {
-                    std.debug.print("warn: doe_queue_submit: flush on queue release: {s}\n", .{@errorName(err)});
-                };
+            if (comptime has_vulkan) {
+                if (native.device_vk_runtime(q.dev)) |rt| {
+                    _ = rt.flush_queue() catch |err| {
+                        std.debug.print("warn: doe_queue_submit: flush on queue release: {s}\n", .{@errorName(err)});
+                    };
+                }
             }
             const dev = q.dev;
             alloc.destroy(q);
@@ -655,10 +665,12 @@ pub export fn doeNativeQueueAddRef(raw: ?*anyopaque) callconv(.c) void {
 
 fn flush_pending_work_dropin_sync(q: *DoeQueue) void {
     if (q.dev.backend == .vulkan) {
-        if (native.device_vk_runtime(q.dev)) |rt| {
-            _ = rt.flush_queue() catch |err| {
-                std.debug.print("warn: doe_queue_submit: dropin sync flush: {s}\n", .{@errorName(err)});
-            };
+        if (comptime has_vulkan) {
+            if (native.device_vk_runtime(q.dev)) |rt| {
+                _ = rt.flush_queue() catch |err| {
+                    std.debug.print("warn: doe_queue_submit: dropin sync flush: {s}\n", .{@errorName(err)});
+                };
+            }
         }
         return;
     }

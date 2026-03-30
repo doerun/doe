@@ -34,6 +34,12 @@ _DAWN_DIRECT_PREFIX = (
     "--trace-jsonl {trace_jsonl} --trace-meta {trace_meta} --workload {workload}"
 )
 
+_APPLE_WEBKIT_DIRECT_PREFIX = (
+    "env DYLD_LIBRARY_PATH=bench/vendor/webkit-webgpu/out/shim:$DYLD_LIBRARY_PATH "
+    "runtime/zig/zig-out/bin/dawn-plan-executor --plan {plan} "
+    "--trace-jsonl {trace_jsonl} --trace-meta {trace_meta} --workload {workload}"
+)
+
 
 @dataclass(frozen=True)
 class ExecutorSpec:
@@ -99,6 +105,11 @@ _REGISTRY: dict[str, ExecutorSpec] = {
     "dawn_direct_metal": ExecutorSpec(
         executor_id="dawn_direct_metal",
         command_template=_DAWN_DIRECT_PREFIX,
+        execution_boundary="plan",
+    ),
+    "apple_webgpu_native_metal": ExecutorSpec(
+        executor_id="apple_webgpu_native_metal",
+        command_template=_APPLE_WEBKIT_DIRECT_PREFIX,
         execution_boundary="plan",
     ),
     "dawn_node_webgpu": ExecutorSpec(

@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "planVersion": "2026-03-30-search-candidate-harvest-dawn-v1",
+  "policyPath": "config/numeric-stability-policy.json",
+  "executionProfileId": "numeric-stability/default-ordinary-execution-v1",
+  "repeatCount": 5,
+  "kernelRoot": "bench/inference-pipeline/kernels",
+  "sampleConfig": {
+    "temperature": 1.0,
+    "topK": 8,
+    "topP": 0.95,
+    "rngSeed": 17,
+    "rngDraw": 0.5
+  },
+  "backend": {
+    "vendor": "apple",
+    "api": "metal",
+    "family": "apple-gpu",
+    "driver": "1.0.0",
+    "backendLane": "metal_dawn_release"
+  },
+  "cases": [
+    {
+      "caseId": "search-science-rigor-ambiguity-parenthetical--false__true--inline-colon-reversed",
+      "commandsPath": "bench/plans/generated/compat/search_candidate_science-rigor-ambiguity-parenthetical--false__true--inline-colon-reversed_commands.json",
+      "promptText": "true or false: A scientist can be rigorous without removing every ambiguity.",
+      "semanticPriorityClass": "search-candidate",
+      "repeatCount": 5,
+      "maxSampleStepsToCapture": 1
+    },
+    {
+      "caseId": "search-science-rigor-ambiguity-parenthetical--false__true--inline-colon",
+      "commandsPath": "bench/plans/generated/compat/search_candidate_science-rigor-ambiguity-parenthetical--false__true--inline-colon_commands.json",
+      "promptText": "false or true: A scientist can be rigorous without removing every ambiguity.",
+      "semanticPriorityClass": "search-candidate",
+      "repeatCount": 5,
+      "maxSampleStepsToCapture": 1
+    },
+    {
+      "caseId": "search-science-rigor-certainty-answer--false__true--inline-colon",
+      "commandsPath": "bench/plans/generated/compat/search_candidate_science-rigor-certainty-answer--false__true--inline-colon_commands.json",
+      "promptText": "true or false: Scientific rigor requires complete certainty.",
+      "semanticPriorityClass": "search-candidate",
+      "repeatCount": 5,
+      "maxSampleStepsToCapture": 1
+    },
+    {
+      "caseId": "search-philosophy-rigor-ambiguity-answer--false__true--swap-inline-choice",
+      "commandsPath": "bench/plans/generated/compat/search_candidate_philosophy-rigor-ambiguity-answer--false__true--swap-inline-choice_commands.json",
+      "promptText": "Answer with exactly one word: false or true. Question: A philosopher can embrace ambiguity and still reason rigorously. Answer:",
+      "semanticPriorityClass": "search-candidate",
+      "repeatCount": 5,
+      "maxSampleStepsToCapture": 1
+    },
+    {
+      "caseId": "search-science-rigor-certainty-answer--false__true--inline-colon-reversed",
+      "commandsPath": "bench/plans/generated/compat/search_candidate_science-rigor-certainty-answer--false__true--inline-colon-reversed_commands.json",
+      "promptText": "false or true: Scientific rigor requires complete certainty.",
+      "semanticPriorityClass": "search-candidate",
+      "repeatCount": 5,
+      "maxSampleStepsToCapture": 1
+    },
+    {
+      "caseId": "search-science-rigor-ambiguity-parenthetical--false__true--swap-inline-choice",
+      "commandsPath": "bench/plans/generated/compat/search_candidate_science-rigor-ambiguity-parenthetical--false__true--swap-inline-choice_commands.json",
+      "promptText": "One-word answer only (true or false). Question: A scientist can be rigorous without removing every ambiguity. Answer:",
+      "semanticPriorityClass": "search-candidate",
+      "repeatCount": 5,
+      "maxSampleStepsToCapture": 1
+    },
+    {
+      "caseId": "search-philosophy-doubt-rigor-answer--false__true--swap-inline-choice",
+      "commandsPath": "bench/plans/generated/compat/search_candidate_philosophy-doubt-rigor-answer--false__true--swap-inline-choice_commands.json",
+      "promptText": "Answer with exactly one word: false or true. Question: If an argument leaves room for doubt, it has failed to be rigorous. Answer:",
+      "semanticPriorityClass": "search-candidate",
+      "repeatCount": 5,
+      "maxSampleStepsToCapture": 1
+    },
+    {
+      "caseId": "search-science-rigor-ambiguity-parenthetical--false__true--scenario-answer",
+      "commandsPath": "bench/plans/generated/compat/search_candidate_science-rigor-ambiguity-parenthetical--false__true--scenario-answer_commands.json",
+      "promptText": "Given the scenario, answer with exactly one word: false or true. Scenario: A scientist can be rigorous without removing every ambiguity. Answer:",
+      "semanticPriorityClass": "search-candidate",
+      "repeatCount": 5,
+      "maxSampleStepsToCapture": 1
+    }
+  ]
+}

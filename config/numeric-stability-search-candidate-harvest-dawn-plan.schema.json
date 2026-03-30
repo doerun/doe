@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://doe-gpu.dev/config/numeric-stability-decode-harvest-plan.schema.json",
+  "title": "Numeric stability decode harvest plan",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "planVersion",
+    "policyPath",
+    "executionProfileId",
+    "repeatCount",
+    "kernelRoot",
+    "sampleConfig",
+    "backend",
+    "cases"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "planVersion": { "type": "string", "minLength": 1 },
+    "policyPath": { "type": "string", "minLength": 1 },
+    "executionProfileId": { "type": "string", "minLength": 1 },
+    "repeatCount": { "type": "integer", "minimum": 1 },
+    "kernelRoot": { "type": "string", "minLength": 1 },
+    "sampleConfig": { "$ref": "#/$defs/sampleConfig" },
+    "backend": { "$ref": "#/$defs/backend" },
+    "cases": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/case" }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "sampleConfig": {
+      "type": "object",
+      "required": ["temperature", "topK", "topP", "rngSeed", "rngDraw"],
+      "properties": {
+        "temperature": { "type": "number", "exclusiveMinimum": 0 },
+        "topK": { "type": "integer", "minimum": 1 },
+        "topP": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 },
+        "rngSeed": { "type": "integer", "minimum": 0 },
+        "rngDraw": { "type": "number", "minimum": 0, "maximum": 1 }
+      },
+      "additionalProperties": false
+    },
+    "backend": {
+      "type": "object",
+      "required": ["vendor", "api", "family", "driver", "backendLane"],
+      "properties": {
+        "vendor": { "type": "string", "minLength": 1 },
+        "api": { "type": "string", "minLength": 1 },
+        "family": { "type": "string", "minLength": 1 },
+        "driver": { "type": "string", "minLength": 1 },
+        "backendLane": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "case": {
+      "type": "object",
+      "required": ["caseId", "commandsPath", "promptText", "semanticPriorityClass"],
+      "properties": {
+        "caseId": { "type": "string", "minLength": 1 },
+        "commandsPath": { "type": "string", "minLength": 1 },
+        "kernelRoot": { "type": "string", "minLength": 1 },
+        "promptText": { "type": "string", "minLength": 1 },
+        "semanticPriorityClass": { "type": "string", "minLength": 1 },
+        "executionProfileId": { "type": "string", "minLength": 1 },
+        "repeatCount": { "type": "integer", "minimum": 1 },
+        "maxSampleStepsToCapture": { "type": "integer", "minimum": 1 },
+        "sampleConfig": { "$ref": "#/$defs/sampleConfig" },
+        "backend": { "$ref": "#/$defs/backend" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

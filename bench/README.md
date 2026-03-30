@@ -572,6 +572,26 @@ resolves its entries against repo root.
     - `python3 bench/runners/rank_decode_fragility_states.py --input <sample-token-receipts.jsonl>`
   - current output root:
     - `bench/out/numeric-stability-decode-fragility/<timestamp>/`
+- `search_sampled_decode_prompts.py`
+  - runs a bench-side discovery loop for sampled decode fragility:
+    it reuses the real-logit scout, pair-agnostic miner, and semantic mutation
+    templates to search prompt space in rounds instead of relying on hand-picked
+    decode prompts.
+  - the default seed bank is no longer only operational/security phrasing:
+    it now mixes those controls with bounded ambiguity prompts across
+    philosophy, science, law, identity, and art.
+  - structured-choice mutation now preserves natural three-way forms such as
+    `X, Y, or both: ...` so those prompts can survive into later mutation
+    rounds instead of being flattened into malformed binary rewrites.
+  - this runner is discovery-only:
+    it improves the seed prompt pool for later sampled ordinary-execution
+    harvests, but it does not by itself claim a live decode-governance case.
+  - config is explicit in:
+    - `config/numeric-stability-decode-prompt-search-plan.json`
+  - example:
+    - `python3 bench/runners/search_sampled_decode_prompts.py`
+  - current output root:
+    - `bench/out/apple-metal-sampled-decode-prompt-search/<timestamp>/`
 - `harvest_sampled_decode_fragility.py`
   - patches ordinary command streams into sampled decode mode, annotates
     `decode.final_logits` / `decode.sample_token` with step-stable semantic

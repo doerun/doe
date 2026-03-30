@@ -1,4 +1,49 @@
 # Doe status
+## Diverse headline-style ambiguity seeds are now part of the sampled decode prompt-search lane: Doe’s live search fixture now mixes operational controls with philosophy/science/law/art prompts, the mutator preserves three-way natural-choice prompts instead of flattening them to binary forms, and the loose pair miner can score a broader set of semantic pairs such as `mercy/cruelty`, `justice/revenge`, `friend/stranger`, and `authentic/staged` (2026-03-30 UTC)
+
+- Updated discovery/config surfaces:
+  - `bench/fixtures/determinism/apple-metal-real-logit-hunt.gemma270m.prompt-search-sharp.json`
+  - `bench/fixtures/determinism/apple-metal-pair-agnostic-mine.gemma270m.search-loose.json`
+  - `config/determinism-answer-set-registry.json`
+  - `config/numeric-stability-decode-prompt-search-plan.json`
+  - `bench/runners/search_sampled_decode_prompts.py`
+  - `bench/tests/test_search_sampled_decode_prompts.py`
+- Current truth:
+  - Doe’s default prompt-search lane no longer starts from only operational/security-style seeds:
+    it now includes a wider bank of bounded but semantically ambiguous prompts
+    across philosophy, science, law, ethics, identity, and art
+  - three-way prompt forms such as
+    `Justice, revenge, or both: ...` and
+    `True, false, or undecidable: ...`
+    now survive mutation rounds through the structured-choice mutator instead
+    of being misparsed into malformed binary rewrites
+  - the loose pair-mining registry now recognizes a wider set of binary cores
+    inside those prompts, so the search loop can score more than
+    `true/false`, `yes/no`, and a few workflow-specific pairs
+  - this is still a seed/discovery improvement, not a claim that Doe has
+    already harvested promotable sampled decode flips from all of these new
+    families
+
+## Prompt-search discovery for sampled decode fragility is now executable: Doe can reuse the real-logit scout, pair-agnostic miner, and semantic mutation templates to search semantically sharp prompt space in rounds instead of relying only on hand-picked decode seeds (2026-03-29 UTC)
+
+- New tooling/config surfaces:
+  - `config/numeric-stability-decode-prompt-search-plan.json`
+  - `config/numeric-stability-decode-prompt-search-plan.schema.json`
+  - `bench/runners/search_sampled_decode_prompts.py`
+  - `bench/tests/test_search_sampled_decode_prompts.py`
+- Current truth:
+  - Doe now has a concrete discovery loop for better sampled-decode workloads:
+    start from seeded prompt families, harvest real-logit near-misses, mine
+    semantically meaningful token pairs, mutate the strongest cases, and feed
+    the next round with deduped prompt candidates
+  - this closes a real gap in the current decode-governance lane:
+    the blocker is no longer "we have no search strategy," it is whether the
+    seeded workloads and mutation families are strong enough to yield real
+    promotable sampled flips
+  - the runner is intentionally bench-side discovery only:
+    it is used to generate better prompt seeds for ordinary-execution sampled
+    harvests, not to replace the live decode-boundary receipt path
+
 ## Sampled decode harvest, enrichment, and promotion are now executable end to end: Doe can patch ordinary command streams into sampled decode mode, harvest real `decode.sample_token` receipts on Metal, attach within-policy stability and short suffix replay evidence, rank the resulting rows, and write a checked decode-promotion catalog even when the honest answer is “no promotable cases yet” (2026-03-29 UTC)
 
 - New config and tooling surfaces:

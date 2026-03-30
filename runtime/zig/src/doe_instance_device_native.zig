@@ -7,6 +7,7 @@
 
 const std = @import("std");
 const builtin = @import("builtin");
+const has_vulkan = (builtin.os.tag == .linux);
 const types = @import("core/abi/wgpu_types.zig");
 const native = @import("doe_wgpu_native.zig");
 
@@ -23,10 +24,10 @@ const DoeQueue = native.DoeQueue;
 const NativeVulkanRuntime = native.NativeVulkanRuntime;
 const NativeD3D12Runtime = native.NativeD3D12Runtime;
 const d3d12_device_caps = @import("backend/d3d12/d3d12_device_caps.zig");
-const vk_feature_caps = @import("backend/vulkan/vk_feature_caps.zig");
-const vk_device_caps = @import("backend/vulkan/vk_device_caps.zig");
-const vulkan_feature_cache = @import("doe_vulkan_feature_cache.zig");
-const vk_device = @import("backend/vulkan/vk_device.zig");
+const vk_feature_caps = if (has_vulkan) @import("backend/vulkan/vk_feature_caps.zig") else struct {};
+const vk_device_caps = if (has_vulkan) @import("backend/vulkan/vk_device_caps.zig") else struct {};
+const vulkan_feature_cache = if (has_vulkan) @import("doe_vulkan_feature_cache.zig") else struct {};
+const vk_device = if (has_vulkan) @import("backend/vulkan/vk_device.zig") else struct {};
 const backend_policy = @import("backend/backend_policy.zig");
 
 const bridge = @import("backend/metal/metal_bridge_decls.zig");
@@ -108,7 +109,8 @@ fn probe_d3d12_adapter_caps() d3d12_device_caps.D3D12DeviceCaps {
 }
 
 // Conservative static fallback when Vulkan probe fails (no GPU, driver error).
-fn probe_vulkan_device_caps_fallback() vk_device_caps.VulkanDeviceCaps {
+fn probe_vulkan_device_caps_fallback() if (has_vulkan) vk_device_caps.VulkanDeviceCaps else void {
+    if (comptime !has_vulkan) return {};
     return .{
         .limits = vulkan_limits_static_fallback(),
         .has_depth_clip_control = false,
@@ -167,33 +169,35 @@ fn create_device_error_message(err: CreateDeviceError) types.WGPUStringView {
 }
 
 fn create_device_for_adapter(adapter: *DoeAdapter, adapter_raw: ?*anyopaque) CreateDeviceError!*DoeDevice {
-    if (adapter.backend == .vulkan) {
-        const feature_caps: vk_feature_caps.VulkanFeatureCaps =
-            vulkan_feature_cache.get_adapter(adapter_raw) orelse .{};
-        const dev = make(DoeDevice) orelse return error.DeviceAllocationFailed;
-        const rt = alloc.create(NativeVulkanRuntime) catch {
-            alloc.destroy(dev);
-            return error.DeviceAllocationFailed;
-        };
-        rt.* = NativeVulkanRuntime.init(alloc, null) catch {
-            alloc.destroy(rt);
-            alloc.destroy(dev);
-            return error.VkRuntimeInitFailed;
-        };
-        adapter_add_ref(adapter);
-        dev.* = .{ .backend = .vulkan, .adapter = adapter, .vk_runtime = @ptrCast(rt) };
-        vulkan_feature_cache.set_device(toOpaque(dev), feature_caps);
-        // Propagate hardware-queried device caps from adapter, or re-query from runtime.
-        if (vulkan_feature_cache.get_adapter_device_caps(adapter_raw)) |adapter_hw_caps| {
-            vulkan_feature_cache.set_device_device_caps(toOpaque(dev), adapter_hw_caps);
-        } else {
-            const runtime_caps = vk_device_caps.query_device_caps(
-                rt.physical_device,
-                if (rt.timestamp_query_supported_value) 36 else 0,
-            );
-            vulkan_feature_cache.set_device_device_caps(toOpaque(dev), runtime_caps);
+    if (comptime has_vulkan) {
+        if (adapter.backend == .vulkan) {
+            const feature_caps: vk_feature_caps.VulkanFeatureCaps =
+                vulkan_feature_cache.get_adapter(adapter_raw) orelse .{};
+            const dev = make(DoeDevice) orelse return error.DeviceAllocationFailed;
+            const rt = alloc.create(NativeVulkanRuntime) catch {
+                alloc.destroy(dev);
+                return error.DeviceAllocationFailed;
+            };
+            rt.* = NativeVulkanRuntime.init(alloc, null) catch {
+                alloc.destroy(rt);
+                alloc.destroy(dev);
+                return error.VkRuntimeInitFailed;
+            };
+            adapter_add_ref(adapter);
+            dev.* = .{ .backend = .vulkan, .adapter = adapter, .vk_runtime = @ptrCast(rt) };
+            vulkan_feature_cache.set_device(toOpaque(dev), feature_caps);
+            // Propagate hardware-queried device caps from adapter, or re-query from runtime.
+            if (vulkan_feature_cache.get_adapter_device_caps(adapter_raw)) |adapter_hw_caps| {
+                vulkan_feature_cache.set_device_device_caps(toOpaque(dev), adapter_hw_caps);
+            } else {
+                const runtime_caps = vk_device_caps.query_device_caps(
+                    rt.physical_device,
+                    if (rt.timestamp_query_supported_value) 36 else 0,
+                );
+                vulkan_feature_cache.set_device_device_caps(toOpaque(dev), runtime_caps);
+            }
+            return dev;
         }
-        return dev;
     }
 
     if (adapter.backend == .d3d12) {
@@ -297,20 +301,22 @@ pub export fn doeNativeRequestAdapterFlat(
             return .{ .id = 1 };
         },
         .vulkan => {
-            const feature_caps: vk_feature_caps.VulkanFeatureCaps =
-                vk_device.probe_default_feature_caps(alloc) catch .{};
-            const hw_caps: vk_device_caps.VulkanDeviceCaps =
-                vk_device_caps.probe_device_caps(alloc) catch probe_vulkan_device_caps_fallback();
-            const adapter = make(DoeAdapter) orelse {
-                if (callback) |cb| cb(WGPU_REQUEST_STATUS_ERROR, null, stringView(MSG_ADAPTER_ALLOCATION_FAILED), userdata1, userdata2);
+            if (comptime has_vulkan) {
+                const feature_caps: vk_feature_caps.VulkanFeatureCaps =
+                    vk_device.probe_default_feature_caps(alloc) catch .{};
+                const hw_caps: vk_device_caps.VulkanDeviceCaps =
+                    vk_device_caps.probe_device_caps(alloc) catch probe_vulkan_device_caps_fallback();
+                const adapter = make(DoeAdapter) orelse {
+                    if (callback) |cb| cb(WGPU_REQUEST_STATUS_ERROR, null, stringView(MSG_ADAPTER_ALLOCATION_FAILED), userdata1, userdata2);
+                    return .{ .id = 1 };
+                };
+                if (retained_instance) |instance_ref| instance_add_ref(instance_ref);
+                adapter.* = .{ .backend = .vulkan, .instance = retained_instance };
+                vulkan_feature_cache.set_adapter(toOpaque(adapter), feature_caps);
+                vulkan_feature_cache.set_adapter_device_caps(toOpaque(adapter), hw_caps);
+                if (callback) |cb| cb(WGPU_REQUEST_STATUS_SUCCESS, toOpaque(adapter), stringView(""), userdata1, userdata2);
                 return .{ .id = 1 };
-            };
-            if (retained_instance) |instance_ref| instance_add_ref(instance_ref);
-            adapter.* = .{ .backend = .vulkan, .instance = retained_instance };
-            vulkan_feature_cache.set_adapter(toOpaque(adapter), feature_caps);
-            vulkan_feature_cache.set_adapter_device_caps(toOpaque(adapter), hw_caps);
-            if (callback) |cb| cb(WGPU_REQUEST_STATUS_SUCCESS, toOpaque(adapter), stringView(""), userdata1, userdata2);
-            return .{ .id = 1 };
+            }
         },
         .metal => {},
     }
@@ -353,20 +359,22 @@ pub export fn doeNativeInstanceRequestAdapter(
             return .{ .id = 1 };
         },
         .vulkan => {
-            const feature_caps: vk_feature_caps.VulkanFeatureCaps =
-                vk_device.probe_default_feature_caps(alloc) catch .{};
-            const hw_caps: vk_device_caps.VulkanDeviceCaps =
-                vk_device_caps.probe_device_caps(alloc) catch probe_vulkan_device_caps_fallback();
-            const adapter = make(DoeAdapter) orelse {
-                call_request_adapter_callback(info, .@"error", null, stringView(MSG_ADAPTER_ALLOCATION_FAILED));
+            if (comptime has_vulkan) {
+                const feature_caps: vk_feature_caps.VulkanFeatureCaps =
+                    vk_device.probe_default_feature_caps(alloc) catch .{};
+                const hw_caps: vk_device_caps.VulkanDeviceCaps =
+                    vk_device_caps.probe_device_caps(alloc) catch probe_vulkan_device_caps_fallback();
+                const adapter = make(DoeAdapter) orelse {
+                    call_request_adapter_callback(info, .@"error", null, stringView(MSG_ADAPTER_ALLOCATION_FAILED));
+                    return .{ .id = 1 };
+                };
+                if (retained_instance) |instance_ref| instance_add_ref(instance_ref);
+                adapter.* = .{ .backend = .vulkan, .instance = retained_instance };
+                vulkan_feature_cache.set_adapter(toOpaque(adapter), feature_caps);
+                vulkan_feature_cache.set_adapter_device_caps(toOpaque(adapter), hw_caps);
+                call_request_adapter_callback(info, .success, toOpaque(adapter), stringView(""));
                 return .{ .id = 1 };
-            };
-            if (retained_instance) |instance_ref| instance_add_ref(instance_ref);
-            adapter.* = .{ .backend = .vulkan, .instance = retained_instance };
-            vulkan_feature_cache.set_adapter(toOpaque(adapter), feature_caps);
-            vulkan_feature_cache.set_adapter_device_caps(toOpaque(adapter), hw_caps);
-            call_request_adapter_callback(info, .success, toOpaque(adapter), stringView(""));
-            return .{ .id = 1 };
+            }
         },
         .metal => {},
     }
@@ -407,7 +415,9 @@ pub export fn doeNativeAdapterRelease(raw: ?*anyopaque) callconv(.c) void {
             return;
         }
         label_store.remove(raw);
-        if (a.backend == .vulkan) vulkan_feature_cache.remove_adapter(raw);
+        if (comptime has_vulkan) {
+            if (a.backend == .vulkan) vulkan_feature_cache.remove_adapter(raw);
+        }
         if (a.backend == .d3d12) d3d12_device_caps.remove_adapter_caps(raw);
         if (a.instance) |instance_ref| doeNativeInstanceRelease(toOpaque(instance_ref));
         alloc.destroy(a);
@@ -489,13 +499,24 @@ pub export fn doeNativeDeviceRelease(raw: ?*anyopaque) callconv(.c) void {
         // Fire the device-lost callback with reason "destroyed" before teardown.
         const multi_adapter = @import("multi_adapter.zig");
         multi_adapter.notify_device_released(raw);
-        if (d.backend == .vulkan) {
-            vulkan_feature_cache.remove_device(raw);
-            // Deinit and free the Vulkan runtime (releases all VkBuffer/VkDevice etc.).
-            if (d.vk_runtime) |ptr| {
-                const rt: *NativeVulkanRuntime = @ptrCast(@alignCast(ptr));
-                rt.deinit();
-                alloc.destroy(rt);
+        if (comptime has_vulkan) {
+            if (d.backend == .vulkan) {
+                vulkan_feature_cache.remove_device(raw);
+                // Deinit and free the Vulkan runtime (releases all VkBuffer/VkDevice etc.).
+                if (d.vk_runtime) |ptr| {
+                    const rt: *NativeVulkanRuntime = @ptrCast(@alignCast(ptr));
+                    rt.deinit();
+                    alloc.destroy(rt);
+                }
+            } else if (d.backend == .d3d12) {
+                if (d.d3d12_runtime) |ptr| {
+                    const rt: *NativeD3D12Runtime = @ptrCast(@alignCast(ptr));
+                    rt.deinit();
+                    alloc.destroy(rt);
+                }
+            } else {
+                if (d.mtl_queue) |q| metal_bridge_release(q);
+                if (d.mtl_device) |dev| metal_bridge_release(dev);
             }
         } else if (d.backend == .d3d12) {
             if (d.d3d12_runtime) |ptr| {

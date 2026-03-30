@@ -145,10 +145,7 @@ fn configure_non_windows_graphics(artifact: *std.Build.Step.Compile, b: *std.Bui
         .file = b.path("src/backend/d3d12/d3d12_bridge_stubs.c"),
         .flags = &.{},
     });
-    if (target.result.os.tag == .linux or target.result.os.tag == .macos) {
-        if (target.result.os.tag == .macos) {
-            artifact.addLibraryPath(.{ .cwd_relative = "/opt/homebrew/lib" });
-        }
+    if (target.result.os.tag == .linux) {
         artifact.linkSystemLibrary("vulkan");
     }
     if (target.result.os.tag == .macos) {

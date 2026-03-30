@@ -10,8 +10,10 @@
 // and acquire fail explicitly until a real platform surface is attached.
 
 const std = @import("std");
+const builtin = @import("builtin");
+const has_vulkan = (builtin.os.tag == .linux);
 const native = @import("doe_wgpu_native.zig");
-const vk_surf = @import("backend/vulkan/vulkan_surface.zig");
+const vk_surf = if (has_vulkan) @import("backend/vulkan/vulkan_surface.zig") else struct {};
 
 const alloc = native.alloc;
 const make = native.make;
@@ -51,6 +53,7 @@ pub export fn doeNativeInstanceCreateSurface(
     desc_raw: ?*anyopaque,
     dev_raw: ?*anyopaque,
 ) callconv(.c) ?*anyopaque {
+    if (comptime !has_vulkan) return null;
     _ = inst_raw;
     _ = desc_raw;
     const dev = cast(DoeDevice, dev_raw) orelse return null;
@@ -88,6 +91,7 @@ pub export fn doeNativeSurfaceSetXcbHandle(
     xcb_connection: ?*anyopaque,
     xcb_window: u32,
 ) callconv(.c) void {
+    if (comptime !has_vulkan) return;
     const surf = cast(DoeSurface, surf_raw) orelse return;
     if (surf.backend != .vulkan) return;
     const rt_ptr = surf.vk_runtime_ref orelse return;
@@ -108,6 +112,7 @@ pub export fn doeNativeSurfaceSetWaylandHandle(
     wl_display: ?*anyopaque,
     wl_surface: ?*anyopaque,
 ) callconv(.c) void {
+    if (comptime !has_vulkan) return;
     const surf = cast(DoeSurface, surf_raw) orelse return;
     if (surf.backend != .vulkan) return;
     const rt_ptr = surf.vk_runtime_ref orelse return;
@@ -136,6 +141,7 @@ pub export fn doeNativeSurfaceConfigure(
     present_mode: u32,
     tone_mapping_mode: u32,
 ) callconv(.c) void {
+    if (comptime !has_vulkan) return;
     const surf = cast(DoeSurface, surf_raw) orelse return;
     if (surf.backend != .vulkan) return;
     const rt_ptr = surf.vk_runtime_ref orelse return;
@@ -164,6 +170,7 @@ pub export fn doeNativeSurfaceGetCurrentTexture(
     if (out_status) |s| s.* = WGPU_SURFACE_GET_CURRENT_TEXTURE_STATUS_TIMEOUT;
     if (out_suboptimal) |s| s.* = 0;
     if (out_texture) |t| t.* = null;
+    if (comptime !has_vulkan) return;
 
     const surf = cast(DoeSurface, surf_raw) orelse return;
     if (surf.backend != .vulkan) return;
@@ -198,6 +205,7 @@ pub export fn doeNativeSurfaceGetCurrentTexture(
 }
 
 pub export fn doeNativeSurfacePresent(surf_raw: ?*anyopaque) callconv(.c) void {
+    if (comptime !has_vulkan) return;
     const surf = cast(DoeSurface, surf_raw) orelse return;
     if (surf.backend != .vulkan) return;
     const rt_ptr = surf.vk_runtime_ref orelse return;
@@ -208,6 +216,7 @@ pub export fn doeNativeSurfacePresent(surf_raw: ?*anyopaque) callconv(.c) void {
 }
 
 pub export fn doeNativeSurfaceUnconfigure(surf_raw: ?*anyopaque) callconv(.c) void {
+    if (comptime !has_vulkan) return;
     const surf = cast(DoeSurface, surf_raw) orelse return;
     if (surf.backend != .vulkan) return;
     const rt_ptr = surf.vk_runtime_ref orelse return;
@@ -222,6 +231,7 @@ pub export fn doeNativeSurfaceUnconfigure(surf_raw: ?*anyopaque) callconv(.c) vo
 }
 
 pub export fn doeNativeSurfaceRelease(surf_raw: ?*anyopaque) callconv(.c) void {
+    if (comptime !has_vulkan) return;
     const surf = cast(DoeSurface, surf_raw) orelse return;
     if (!native.object_should_destroy(surf)) return;
     if (surf.backend == .vulkan) {

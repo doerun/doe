@@ -168,7 +168,9 @@
               "label": "true",
               "forms": [
                 { "tokenText": " true", "normalizedTokenText": "true", "singleToken": true, "leadingSpacePreferred": true },
-                { "tokenText": "true", "normalizedTokenText": "true", "singleToken": true, "leadingSpacePreferred": false }
+                { "tokenText": "true", "normalizedTokenText": "true", "singleToken": true, "leadingSpacePreferred": false },
+                { "tokenText": " True", "normalizedTokenText": "true", "singleToken": true, "leadingSpacePreferred": true },
+                { "tokenText": "True", "normalizedTokenText": "true", "singleToken": true, "leadingSpacePreferred": false }
               ]
             },
             {
@@ -176,7 +178,9 @@
               "label": "false",
               "forms": [
                 { "tokenText": " false", "normalizedTokenText": "false", "singleToken": true, "leadingSpacePreferred": true },
-                { "tokenText": "false", "normalizedTokenText": "false", "singleToken": true, "leadingSpacePreferred": false }
+                { "tokenText": "false", "normalizedTokenText": "false", "singleToken": true, "leadingSpacePreferred": false },
+                { "tokenText": " False", "normalizedTokenText": "false", "singleToken": true, "leadingSpacePreferred": true },
+                { "tokenText": "False", "normalizedTokenText": "false", "singleToken": true, "leadingSpacePreferred": false }
               ]
             }
           ]
@@ -252,6 +256,385 @@
               "forms": [
                 { "tokenText": " block", "normalizedTokenText": "block", "singleToken": true, "leadingSpacePreferred": true },
                 { "tokenText": " blocked", "normalizedTokenText": "blocked", "singleToken": true, "leadingSpacePreferred": true }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ethics.mercy_cruelty",
+          "domainId": "ethics",
+          "description": "Mercy-versus-cruelty bounded answer set for ethically ambiguous action prompts.",
+          "headlineEligible": true,
+          "promptAnchors": ["mercy", "cruelty"],
+          "options": [
+            {
+              "id": "mercy",
+              "label": "mercy",
+              "forms": [
+                { "tokenText": " mercy", "normalizedTokenText": "mercy", "singleToken": true, "leadingSpacePreferred": true },
+                { "tokenText": "mercy", "normalizedTokenText": "mercy", "singleToken": true, "leadingSpacePreferred": false }
+              ]
+            },
+            {
+              "id": "cruelty",
+              "label": "cruelty",
+              "forms": [
+                { "tokenText": " cruelty", "normalizedTokenText": "cruelty", "singleToken": true, "leadingSpacePreferred": true },
+                { "tokenText": "cruelty", "normalizedTokenText": "cruelty", "singleToken": true, "leadingSpacePreferred": false }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ethics.justice_revenge",
+          "domainId": "ethics",
+          "description": "Justice-versus-revenge bounded answer set for punishment and retribution prompts.",
+          "headlineEligible": true,
+          "promptAnchors": ["justice", "revenge"],
+          "options": [
+            {
+              "id": "justice",
+              "label": "justice",
+              "forms": [
+                { "tokenText": " justice", "normalizedTokenText": "justice", "singleToken": true, "leadingSpacePreferred": true },
+                { "tokenText": "justice", "normalizedTokenText": "justice", "singleToken": true, "leadingSpacePreferred": false }
+              ]
+            },
+            {
+              "id": "revenge",
+              "label": "revenge",
+              "forms": [
+                { "tokenText": " revenge", "normalizedTokenText": "revenge", "singleToken": true, "leadingSpacePreferred": true },
+                { "tokenText": "revenge", "normalizedTokenText": "revenge", "singleToken": true, "leadingSpacePreferred": false }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "identity.friend_stranger",
+          "domainId": "identity",
+          "description": "Friend-versus-stranger bounded answer set for relational-boundary prompts.",
+          "headlineEligible": true,
+          "promptAnchors": ["friend", "stranger"],
+          "options": [
+            {
+              "id": "friend",
+              "label": "friend",
+              "forms": [
+                { "tokenText": " friend", "normalizedTokenText": "friend", "singleToken": true, "leadingSpacePreferred": true },
+                { "tokenText": "friend", "normalizedTokenText": "friend", "singleToken": true, "leadingSpacePreferred": false }
+              ]
+            },
+            {
+              "id": "stranger",
+              "label": "stranger",
+              "forms": [
+                { "tokenText": " stranger", "normalizedTokenText": "stranger", "singleToken": true, "leadingSpacePreferred": true },
+                { "tokenText": "stranger", "normalizedTokenText": "stranger", "singleToken": true, "leadingSpacePreferred": false }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "society.child_adult",
+          "domainId": "society",
+          "description": "Child-versus-adult bounded answer set for maturity and responsibility prompts.",
+          "headlineEligible": true,
+          "promptAnchors": ["child", "adult"],
+          "options": [
+            {
+              "id": "child",
+              "label": "child",
+              "forms": [
+                { "tokenText": " child", "normalizedTokenText": "child", "singleToken": true, "leadingSpacePreferred": true },
+                { "tokenText": "child", "normalizedTokenText": "child", "singleToken": true, "leadingSpacePreferred": false }
+              ]
+            },
+            {
+              "id": "adult",
+              "label": "adult",
+              "forms": [
+                { "tokenText": " adult", "normalizedTokenText": "adult", "singleToken": true, "leadingSpacePreferred": true },
+                { "tokenText": "adult", "normalizedTokenText": "adult", "singleToken": true, "leadingSpacePreferred": false }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ontology.natural_artificial",
+          "domainId": "ontology",
+          "description": "Natural-versus-artificial bounded answer set for classification prompts.",
+          "headlineEligible": true,
+          "promptAnchors": ["natural", "artificial"],
+          "options": [
+            {
+              "id": "natural",
+              "label": "natural",
+              "forms": [
+                { "tokenText": " natural", "normalizedTokenText": "natural", "singleToken": true, "leadingSpacePreferred": true },
+                { "tokenText": "natural", "normalizedTokenText": "natural", "singleToken": true, "leadingSpacePreferred": false }
+              ]
+            },
+            {
+              "id": "artificial",
+              "label": "artificial",
+              "forms": [
+                { "tokenText": " artificial", "normalizedTokenText": "artificial", "singleToken": true, "leadingSpacePreferred": true },
+                { "tokenText": "artificial", "normalizedTokenText": "artificial", "singleToken": true, "leadingSpacePreferred": false }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "culture.original_derivative",
+          "domainId": "culture",
+          "description": "Original-versus-derivative bounded answer set for art and remix prompts.",
+          "headlineEligible": true,
+          "promptAnchors": ["original", "derivative"],
+          "options": [
+            {
+              "id": "original",
+              "label": "original",
+              "forms": [
+                { "tokenText": " original", "normalizedTokenText": "original", "singleToken": true, "leadingSpacePreferred": true },
+                { "tokenText": "original", "normalizedTokenText": "original", "singleToken": true, "leadingSpacePreferred": false }
+              ]
+            },
+            {
+              "id": "derivative",
+              "label": "derivative",
+              "forms": [
+                { "tokenText": " derivative", "normalizedTokenText": "derivative", "singleToken": true, "leadingSpacePreferred": true },
+                { "tokenText": "derivative", "normalizedTokenText": "derivative", "singleToken": true, "leadingSpacePreferred": false }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "therapy.healing_harmful",
+          "domainId": "therapy",
+          "description": "Healing-versus-harmful bounded answer set for therapy and recovery prompts.",
+          "headlineEligible": true,
+          "promptAnchors": ["healing", "harmful"],
+          "options": [
+            {
+              "id": "healing",
+              "label": "healing",
+              "forms": [
+                { "tokenText": " healing", "normalizedTokenText": "healing", "singleToken": true, "leadingSpacePreferred": true },
+                { "tokenText": "healing", "normalizedTokenText": "healing", "singleToken": true, "leadingSpacePreferred": false }
+              ]
+            },
+            {
+              "id": "harmful",
+              "label": "harmful",
+              "forms": [
+                { "tokenText": " harmful", "normalizedTokenText": "harmful", "singleToken": true, "leadingSpacePreferred": true },
+                { "tokenText": "harmful", "normalizedTokenText": "harmful", "singleToken": true, "leadingSpacePreferred": false }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "signal.signal_noise",
+          "domainId": "signal",
+          "description": "Signal-versus-noise bounded answer set for interpretive and perceptual prompts.",
+          "headlineEligible": true,
+          "promptAnchors": ["signal", "noise"],
+          "options": [
+            {
+              "id": "signal",
+              "label": "signal",
+              "forms": [
+                { "tokenText": " signal", "normalizedTokenText": "signal", "singleToken": true, "leadingSpacePreferred": true },
+                { "tokenText": "signal", "normalizedTokenText": "signal", "singleToken": true, "leadingSpacePreferred": false }
+              ]
+            },
+            {
+              "id": "noise",
+              "label": "noise",
+              "forms": [
+                { "tokenText": " noise", "normalizedTokenText": "noise", "singleToken": true, "leadingSpacePreferred": true },
+                { "tokenText": "noise", "normalizedTokenText": "noise", "singleToken": true, "leadingSpacePreferred": false }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "authenticity.authentic_staged",
+          "domainId": "authenticity",
+          "description": "Authentic-versus-staged bounded answer set for documentary and media prompts.",
+          "headlineEligible": true,
+          "promptAnchors": ["authentic", "staged"],
+          "options": [
+            {
+              "id": "authentic",
+              "label": "authentic",
+              "forms": [
+                { "tokenText": " authentic", "normalizedTokenText": "authentic", "singleToken": true, "leadingSpacePreferred": true },
+                { "tokenText": "authentic", "normalizedTokenText": "authentic", "singleToken": true, "leadingSpacePreferred": false }
+              ]
+            },
+            {
+              "id": "staged",
+              "label": "staged",
+              "forms": [
+                { "tokenText": " staged", "normalizedTokenText": "staged", "singleToken": true, "leadingSpacePreferred": true },
+                { "tokenText": "staged", "normalizedTokenText": "staged", "singleToken": true, "leadingSpacePreferred": false }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "science.correlation_causation",
+          "domainId": "science",
+          "description": "Correlation-versus-causation bounded answer set for inference prompts.",
+          "headlineEligible": true,
+          "promptAnchors": ["correlation", "causation"],
+          "options": [
+            {
+              "id": "correlation",
+              "label": "correlation",
+              "forms": [
+                { "tokenText": " correlation", "normalizedTokenText": "correlation", "singleToken": true, "leadingSpacePreferred": true },
+                { "tokenText": "correlation", "normalizedTokenText": "correlation", "singleToken": true, "leadingSpacePreferred": false }
+              ]
+            },
+            {
+              "id": "causation",
+              "label": "causation",
+              "forms": [
+                { "tokenText": " causation", "normalizedTokenText": "causation", "singleToken": true, "leadingSpacePreferred": true },
+                { "tokenText": "causation", "normalizedTokenText": "causation", "singleToken": true, "leadingSpacePreferred": false }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "science.discovery_invention",
+          "domainId": "science",
+          "description": "Discovery-versus-invention bounded answer set for mathematics and knowledge prompts.",
+          "headlineEligible": true,
+          "promptAnchors": ["discovery", "discovered", "invention", "invented"],
+          "options": [
+            {
+              "id": "discovery",
+              "label": "discovery",
+              "forms": [
+                { "tokenText": " discovery", "normalizedTokenText": "discovery", "singleToken": true, "leadingSpacePreferred": true },
+                { "tokenText": " discovered", "normalizedTokenText": "discovered", "singleToken": true, "leadingSpacePreferred": true },
+                { "tokenText": "discovery", "normalizedTokenText": "discovery", "singleToken": true, "leadingSpacePreferred": false },
+                { "tokenText": "discovered", "normalizedTokenText": "discovered", "singleToken": true, "leadingSpacePreferred": false }
+              ]
+            },
+            {
+              "id": "invention",
+              "label": "invention",
+              "forms": [
+                { "tokenText": " invention", "normalizedTokenText": "invention", "singleToken": true, "leadingSpacePreferred": true },
+                { "tokenText": " invented", "normalizedTokenText": "invented", "singleToken": true, "leadingSpacePreferred": true },
+                { "tokenText": "invention", "normalizedTokenText": "invention", "singleToken": true, "leadingSpacePreferred": false },
+                { "tokenText": "invented", "normalizedTokenText": "invented", "singleToken": true, "leadingSpacePreferred": false }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "worldview.science_faith",
+          "domainId": "worldview",
+          "description": "Science-versus-faith bounded answer set for epistemic framing prompts.",
+          "headlineEligible": true,
+          "promptAnchors": ["science", "faith"],
+          "options": [
+            {
+              "id": "science",
+              "label": "science",
+              "forms": [
+                { "tokenText": " science", "normalizedTokenText": "science", "singleToken": true, "leadingSpacePreferred": true },
+                { "tokenText": "science", "normalizedTokenText": "science", "singleToken": true, "leadingSpacePreferred": false }
+              ]
+            },
+            {
+              "id": "faith",
+              "label": "faith",
+              "forms": [
+                { "tokenText": " faith", "normalizedTokenText": "faith", "singleToken": true, "leadingSpacePreferred": true },
+                { "tokenText": "faith", "normalizedTokenText": "faith", "singleToken": true, "leadingSpacePreferred": false }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "emotion.freedom_loss",
+          "domainId": "emotion",
+          "description": "Freedom-versus-loss bounded answer set for identity and departure prompts.",
+          "headlineEligible": true,
+          "promptAnchors": ["freedom", "loss"],
+          "options": [
+            {
+              "id": "freedom",
+              "label": "freedom",
+              "forms": [
+                { "tokenText": " freedom", "normalizedTokenText": "freedom", "singleToken": true, "leadingSpacePreferred": true },
+                { "tokenText": "freedom", "normalizedTokenText": "freedom", "singleToken": true, "leadingSpacePreferred": false }
+              ]
+            },
+            {
+              "id": "loss",
+              "label": "loss",
+              "forms": [
+                { "tokenText": " loss", "normalizedTokenText": "loss", "singleToken": true, "leadingSpacePreferred": true },
+                { "tokenText": "loss", "normalizedTokenText": "loss", "singleToken": true, "leadingSpacePreferred": false }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "emotion.grief_relief",
+          "domainId": "emotion",
+          "description": "Grief-versus-relief bounded answer set for hospice and loss prompts.",
+          "headlineEligible": true,
+          "promptAnchors": ["grief", "relief"],
+          "options": [
+            {
+              "id": "grief",
+              "label": "grief",
+              "forms": [
+                { "tokenText": " grief", "normalizedTokenText": "grief", "singleToken": true, "leadingSpacePreferred": true },
+                { "tokenText": "grief", "normalizedTokenText": "grief", "singleToken": true, "leadingSpacePreferred": false }
+              ]
+            },
+            {
+              "id": "relief",
+              "label": "relief",
+              "forms": [
+                { "tokenText": " relief", "normalizedTokenText": "relief", "singleToken": true, "leadingSpacePreferred": true },
+                { "tokenText": "relief", "normalizedTokenText": "relief", "singleToken": true, "leadingSpacePreferred": false }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "heritage.sacred_historical",
+          "domainId": "heritage",
+          "description": "Sacred-versus-historical bounded answer set for ritual and heritage prompts.",
+          "headlineEligible": true,
+          "promptAnchors": ["sacred", "historical"],
+          "options": [
+            {
+              "id": "sacred",
+              "label": "sacred",
+              "forms": [
+                { "tokenText": " sacred", "normalizedTokenText": "sacred", "singleToken": true, "leadingSpacePreferred": true },
+                { "tokenText": "sacred", "normalizedTokenText": "sacred", "singleToken": true, "leadingSpacePreferred": false }
+              ]
+            },
+            {
+              "id": "historical",
+              "label": "historical",
+              "forms": [
+                { "tokenText": " historical", "normalizedTokenText": "historical", "singleToken": true, "leadingSpacePreferred": true },
+                { "tokenText": "historical", "normalizedTokenText": "historical", "singleToken": true, "leadingSpacePreferred": false }
               ]
             }
           ]

@@ -2,6 +2,7 @@
 // Sharded from doe_wgpu_native.zig to keep related surface concerns together.
 
 const builtin = @import("builtin");
+const has_vulkan = (builtin.os.tag == .linux);
 const std = @import("std");
 const types = @import("core/abi/wgpu_types.zig");
 const native = @import("doe_wgpu_native.zig");
@@ -30,7 +31,9 @@ pub export fn doeNativeAdapterGetPreferredCanvasFormat(raw: ?*anyopaque) callcon
     }
     if (native.cast(native.DoeDevice, raw)) |device| {
         if (device.backend == .vulkan) {
-            if (native.device_vk_runtime(device)) |rt| return rt.preferred_canvas_format();
+            if (comptime has_vulkan) {
+                if (native.device_vk_runtime(device)) |rt| return rt.preferred_canvas_format();
+            }
             return model.WGPUTextureFormat_BGRA8Unorm;
         }
     }

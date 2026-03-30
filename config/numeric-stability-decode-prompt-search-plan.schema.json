@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://doe-gpu.dev/config/numeric-stability-decode-prompt-search-plan.schema.json",
+  "title": "Numeric stability decode prompt search plan",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "planVersion",
+    "sourceFixturePath",
+    "pairMiningFixturePath",
+    "rounds",
+    "beamWidth",
+    "maxPromptCandidatesPerRound",
+    "perPromptLimit",
+    "globalLimit",
+    "topCandidatesToKeep",
+    "persistLogits",
+    "mutationTemplates"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "planVersion": { "type": "string", "minLength": 1 },
+    "sourceFixturePath": { "type": "string", "minLength": 1 },
+    "pairMiningFixturePath": { "type": "string", "minLength": 1 },
+    "rounds": { "type": "integer", "minimum": 1 },
+    "beamWidth": { "type": "integer", "minimum": 1 },
+    "maxPromptCandidatesPerRound": { "type": "integer", "minimum": 1 },
+    "perPromptLimit": { "type": "integer", "minimum": 1 },
+    "globalLimit": { "type": "integer", "minimum": 1 },
+    "topCandidatesToKeep": { "type": "integer", "minimum": 1 },
+    "persistLogits": { "type": "boolean" },
+    "repeatCount": { "type": "integer", "minimum": 1 },
+    "minimumUsefulnessScore": { "type": "number", "minimum": 0 },
+    "initialPromptCandidates": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/promptCandidate" }
+    },
+    "mutationTemplates": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/mutationTemplate" }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "promptCandidate": {
+      "type": "object",
+      "required": ["id", "text"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "text": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "mutationTemplate": {
+      "type": "object",
+      "required": ["id", "kind"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "kind": {
+          "type": "string",
+          "enum": ["template", "structured-choice", "swap-inline-choice"]
+        },
+        "template": { "type": "string", "minLength": 1 },
+        "style": {
+          "type": "string",
+          "enum": [
+            "answer-question",
+            "choose-question",
+            "reply-question",
+            "parenthetical-question",
+            "question-answer",
+            "scenario-answer",
+            "inline-colon",
+            "output-only"
+          ]
+        },
+        "reverseOptions": { "type": "boolean" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "kind": { "const": "template" } }, "required": ["kind"] },
+          "then": { "required": ["template"] }
+        },
+        {
+          "if": { "properties": { "kind": { "const": "structured-choice" } }, "required": ["kind"] },
+          "then": { "required": ["style"] }
+        }
+      ],
+      "additionalProperties": false
+    }
+  }
+}

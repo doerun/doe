@@ -37,6 +37,12 @@
       "strictNoFallback": true,
       "notes": "Metal Dawn baseline benchmark lane"
     },
+    "metal_webkit_release": {
+      "defaultBackend": "webkit_delegate",
+      "allowFallback": false,
+      "strictNoFallback": true,
+      "notes": "Metal WebKit WebGPU baseline benchmark lane via struct-translating shim"
+    },
     "vulkan_doe_app": {
       "defaultBackend": "doe_vulkan",
       "allowFallback": false,

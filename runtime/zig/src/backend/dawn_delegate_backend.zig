@@ -8,13 +8,19 @@ const backend_telemetry = @import("backend_telemetry.zig");
 pub const DawnDelegateBackend = struct {
     allocator: std.mem.Allocator,
     inner: webgpu.WebGPUBackend,
+    effective_id: backend_ids.BackendId,
 
     pub fn init(allocator: std.mem.Allocator, profile: model.DeviceProfile, kernel_root: ?[]const u8) !*DawnDelegateBackend {
+        return init_with_id(allocator, profile, kernel_root, .dawn_delegate);
+    }
+
+    pub fn init_with_id(allocator: std.mem.Allocator, profile: model.DeviceProfile, kernel_root: ?[]const u8, id: backend_ids.BackendId) !*DawnDelegateBackend {
         const ptr = try allocator.create(DawnDelegateBackend);
         errdefer allocator.destroy(ptr);
         ptr.* = .{
             .allocator = allocator,
             .inner = try webgpu.WebGPUBackend.init(allocator, profile, kernel_root),
+            .effective_id = id,
         };
         return ptr;
     }
@@ -22,11 +28,11 @@ pub const DawnDelegateBackend = struct {
     pub fn as_iface(self: *DawnDelegateBackend, allocator: std.mem.Allocator, reason: []const u8, policy_hash: []const u8) !backend_iface.BackendIface {
         _ = allocator;
         return .{
-            .id = .dawn_delegate,
+            .id = self.effective_id,
             .context = self,
             .vtable = &VTABLE,
             .telemetry = .{
-                .backend_id = .dawn_delegate,
+                .backend_id = self.effective_id,
                 .backend_selection_reason = reason,
                 .fallback_used = false,
                 .selection_policy_hash = policy_hash,

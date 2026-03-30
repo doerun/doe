@@ -7,9 +7,16 @@
 // destination buffer after GPU completion.
 
 const std = @import("std");
+const builtin = @import("builtin");
+const has_vulkan = (builtin.os.tag == .linux);
 const native = @import("doe_wgpu_native.zig");
 const bridge = @import("backend/metal/metal_bridge_decls.zig");
-const c = @import("backend/vulkan/vk_constants.zig");
+const c = if (has_vulkan) @import("backend/vulkan/vk_constants.zig") else struct {
+    // Minimal type stubs so DoeQuerySet struct fields compile on non-Linux.
+    pub const VkQueryPool = u64;
+    pub const VkDevice = ?*anyopaque;
+    pub const VK_NULL_U64: u64 = 0;
+};
 
 const MAGIC_QUERY_SET: u32 = 0xD0E1_0020;
 const TIMESTAMP_BYTES: usize = @sizeOf(u64);
@@ -48,8 +55,10 @@ pub export fn doeNativeDeviceCreateQuerySet(
 
     const dev = native.cast(native.DoeDevice, dev_raw) orelse return null;
 
-    if (dev.backend == .vulkan) {
-        return vulkan_create_query_set(dev, query_type, count);
+    if (comptime has_vulkan) {
+        if (dev.backend == .vulkan) {
+            return vulkan_create_query_set(dev, query_type, count);
+        }
     }
 
     if (query_type != WGPU_QUERY_TYPE_TIMESTAMP) {
@@ -82,9 +91,11 @@ pub export fn doeNativeCommandEncoderWriteTimestamp(
     const qs = native.cast(DoeQuerySet, qs_raw) orelse return;
     if (query_index >= qs.count) return;
 
-    if (qs.backend == .vulkan) {
-        vulkan_write_timestamp(qs, query_index);
-        return;
+    if (comptime has_vulkan) {
+        if (qs.backend == .vulkan) {
+            vulkan_write_timestamp(qs, query_index);
+            return;
+        }
     }
 
     // Metal: record for deferred execution at submit.
@@ -116,9 +127,11 @@ pub export fn doeNativeCommandEncoderResolveQuerySet(
     const d_off: usize = @intCast(dst_offset);
     if (d_off + copy_bytes > @as(usize, @intCast(dst.size))) return;
 
-    if (qs.backend == .vulkan) {
-        vulkan_resolve_query_set(qs, first_query, query_count, dst, dst_offset);
-        return;
+    if (comptime has_vulkan) {
+        if (qs.backend == .vulkan) {
+            vulkan_resolve_query_set(qs, first_query, query_count, dst, dst_offset);
+            return;
+        }
     }
 
     // Metal: record for deferred execution at submit.
@@ -140,12 +153,14 @@ pub export fn doeNativeQuerySetDestroy(qs_raw: ?*anyopaque) callconv(.c) void {
     if (!native.object_should_destroy(qs)) return;
     native.label_store.remove(qs_raw);
 
-    if (qs.backend == .vulkan) {
-        if (qs.vk_query_pool != c.VK_NULL_U64) {
-            c.vkDestroyQueryPool(qs.vk_device, qs.vk_query_pool, null);
+    if (comptime has_vulkan) {
+        if (qs.backend == .vulkan) {
+            if (qs.vk_query_pool != c.VK_NULL_U64) {
+                c.vkDestroyQueryPool(qs.vk_device, qs.vk_query_pool, null);
+            }
+            native.alloc.destroy(qs);
+            return;
         }
-        native.alloc.destroy(qs);
-        return;
     }
 
     // Metal path.

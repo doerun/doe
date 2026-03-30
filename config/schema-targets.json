@@ -238,6 +238,10 @@
       "data": "config/numeric-stability-decode-harvest-plan.json"
     },
     {
+      "schema": "config/numeric-stability-decode-prompt-search-plan.schema.json",
+      "data": "config/numeric-stability-decode-prompt-search-plan.json"
+    },
+    {
       "schema": "config/numeric-stability-decode-row.schema.json",
       "data": "examples/numeric-stability-decode-row.sample.json"
     },

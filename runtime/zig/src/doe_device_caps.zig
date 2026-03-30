@@ -5,12 +5,13 @@
 // Static fallbacks apply on non-Metal targets or when hardware query fails.
 
 const builtin = @import("builtin");
+const has_vulkan = (builtin.os.tag == .linux);
 const types = @import("core/abi/wgpu_types.zig");
 const native = @import("doe_wgpu_native.zig");
 const d3d12_device_caps = @import("backend/d3d12/d3d12_device_caps.zig");
-const vk_feature_caps = @import("backend/vulkan/vk_feature_caps.zig");
-const vk_device_caps = @import("backend/vulkan/vk_device_caps.zig");
-const vulkan_feature_cache = @import("doe_vulkan_feature_cache.zig");
+const vk_feature_caps = if (has_vulkan) @import("backend/vulkan/vk_feature_caps.zig") else struct {};
+const vk_device_caps = if (has_vulkan) @import("backend/vulkan/vk_device_caps.zig") else struct {};
+const vulkan_feature_cache = if (has_vulkan) @import("doe_vulkan_feature_cache.zig") else struct {};
 const DoeDevice = native.DoeDevice;
 const DoeAdapter = native.DoeAdapter;
 
@@ -208,9 +209,10 @@ fn is_metal_feature_supported(feature: u32) bool {
 // on native VkPhysicalDeviceFeatures or format-capability publication.
 fn is_vulkan_feature_supported(
     feature: u32,
-    caps: ?vk_feature_caps.VulkanFeatureCaps,
-    hw_caps: ?vk_device_caps.VulkanDeviceCaps,
+    caps: if (has_vulkan) ?vk_feature_caps.VulkanFeatureCaps else ?void,
+    hw_caps: if (has_vulkan) ?vk_device_caps.VulkanDeviceCaps else ?void,
 ) bool {
+    if (comptime !has_vulkan) return false;
     return switch (feature) {
         // Dynamic features probed via vk_feature_caps (format queries, subgroups, etc.).
         FEATURE_SHADER_F16,
@@ -249,10 +251,12 @@ fn d3d12_runtime(device: *DoeDevice) ?*native.NativeD3D12Runtime {
 
 pub export fn doeNativeAdapterHasFeature(raw: ?*anyopaque, feature: u32) callconv(.c) u32 {
     if (native.cast(DoeAdapter, raw)) |a| {
-        if (a.backend == .vulkan) {
-            const caps = vulkan_feature_cache.get_adapter(raw);
-            const hw_caps = vulkan_feature_cache.get_adapter_device_caps(raw);
-            return if (is_vulkan_feature_supported(feature, caps, hw_caps)) 1 else 0;
+        if (comptime has_vulkan) {
+            if (a.backend == .vulkan) {
+                const caps = vulkan_feature_cache.get_adapter(raw);
+                const hw_caps = vulkan_feature_cache.get_adapter_device_caps(raw);
+                return if (is_vulkan_feature_supported(feature, caps, hw_caps)) 1 else 0;
+            }
         }
         if (a.backend == .d3d12) {
             if (d3d12_device_caps.get_adapter_caps(raw)) |caps| {
@@ -266,10 +270,12 @@ pub export fn doeNativeAdapterHasFeature(raw: ?*anyopaque, feature: u32) callcon
 
 pub export fn doeNativeDeviceHasFeature(raw: ?*anyopaque, feature: u32) callconv(.c) u32 {
     if (native.cast(DoeDevice, raw)) |d| {
-        if (d.backend == .vulkan) {
-            const caps = vulkan_feature_cache.get_device(raw);
-            const hw_caps = vulkan_feature_cache.get_device_device_caps(raw);
-            return if (is_vulkan_feature_supported(feature, caps, hw_caps)) 1 else 0;
+        if (comptime has_vulkan) {
+            if (d.backend == .vulkan) {
+                const caps = vulkan_feature_cache.get_device(raw);
+                const hw_caps = vulkan_feature_cache.get_device_device_caps(raw);
+                return if (is_vulkan_feature_supported(feature, caps, hw_caps)) 1 else 0;
+            }
         }
         if (d.backend == .d3d12) {
             if (d3d12_runtime(d)) |rt| {
@@ -290,15 +296,17 @@ pub export fn doeNativeDeviceHasFeature(raw: ?*anyopaque, feature: u32) callconv
 // back to conservative static limits when the cache entry is absent.
 pub export fn doeNativeDeviceGetLimits(raw: ?*anyopaque, limits: ?*types.WGPULimits) callconv(.c) types.WGPUStatus {
     if (native.cast(DoeDevice, raw)) |d| {
-        if (d.backend == .vulkan) {
-            if (limits) |l| {
-                if (vulkan_feature_cache.get_device_device_caps(raw)) |hw_caps| {
-                    l.* = hw_caps.limits;
-                } else {
-                    l.* = VULKAN_LIMITS_STATIC;
+        if (comptime has_vulkan) {
+            if (d.backend == .vulkan) {
+                if (limits) |l| {
+                    if (vulkan_feature_cache.get_device_device_caps(raw)) |hw_caps| {
+                        l.* = hw_caps.limits;
+                    } else {
+                        l.* = VULKAN_LIMITS_STATIC;
+                    }
                 }
+                return types.WGPUStatus_Success;
             }
-            return types.WGPUStatus_Success;
         }
         if (d.backend == .d3d12) {
             if (limits) |l| {
@@ -317,15 +325,17 @@ pub export fn doeNativeDeviceGetLimits(raw: ?*anyopaque, limits: ?*types.WGPULim
 
 pub export fn doeNativeAdapterGetLimits(raw: ?*anyopaque, limits: ?*types.WGPULimits) callconv(.c) types.WGPUStatus {
     if (native.cast(DoeAdapter, raw)) |a| {
-        if (a.backend == .vulkan) {
-            if (limits) |l| {
-                if (vulkan_feature_cache.get_adapter_device_caps(raw)) |hw_caps| {
-                    l.* = hw_caps.limits;
-                } else {
-                    l.* = VULKAN_LIMITS_STATIC;
+        if (comptime has_vulkan) {
+            if (a.backend == .vulkan) {
+                if (limits) |l| {
+                    if (vulkan_feature_cache.get_adapter_device_caps(raw)) |hw_caps| {
+                        l.* = hw_caps.limits;
+                    } else {
+                        l.* = VULKAN_LIMITS_STATIC;
+                    }
                 }
+                return types.WGPUStatus_Success;
             }
-            return types.WGPUStatus_Success;
         }
         if (a.backend == .d3d12) {
             if (limits) |l| d3d12_device_caps.d3d12_adapter_get_limits(l);

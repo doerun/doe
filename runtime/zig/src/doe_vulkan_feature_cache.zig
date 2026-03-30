@@ -1,6 +1,12 @@
 const std = @import("std");
-const vk_feature_caps = @import("backend/vulkan/vk_feature_caps.zig");
-const vk_device_caps = @import("backend/vulkan/vk_device_caps.zig");
+const builtin = @import("builtin");
+const has_vulkan = (builtin.os.tag == .linux);
+const vk_feature_caps = if (has_vulkan) @import("backend/vulkan/vk_feature_caps.zig") else struct {
+    pub const VulkanFeatureCaps = struct {};
+};
+const vk_device_caps = if (has_vulkan) @import("backend/vulkan/vk_device_caps.zig") else struct {
+    pub const VulkanDeviceCaps = struct {};
+};
 
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 const alloc = gpa.allocator();

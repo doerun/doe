@@ -27,3 +27,6 @@ C:attention_slice_pairwise_v2_f32
 C:rmsnorm_serial_f32
 C:matmul_logits_tree64_f32
 C:matmul_logits_forward_f16accum
+C:write_known_logits
+C:matmul_logits_f16accum_stub
+C:copy_buffer

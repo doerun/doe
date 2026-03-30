@@ -2,6 +2,8 @@
 // Implements the ~40 functions needed by doe_napi.c without Dawn.
 // Limitations (v0.1): Vulkan path executes commands immediately (no deferred batching).
 const std = @import("std");
+const builtin = @import("builtin");
+const has_vulkan = (builtin.os.tag == .linux);
 const model = @import("model.zig");
 const types = @import("core/abi/wgpu_types.zig");
 const wgsl_compiler = @import("doe_wgsl/mod.zig");
@@ -38,7 +40,7 @@ const MAGIC_SAMPLER: u32 = 0xD0E1_0010;
 const MAGIC_RENDER_PIPE: u32 = 0xD0E1_0011;
 const MAGIC_RENDER_PASS: u32 = 0xD0E1_0012;
 pub const BackendKind = enum(u8) { metal = 0, vulkan = 1, d3d12 = 2 };
-pub const NativeVulkanRuntime = @import("backend/vulkan/native_runtime.zig").NativeVulkanRuntime;
+pub const NativeVulkanRuntime = if (has_vulkan) @import("backend/vulkan/native_runtime.zig").NativeVulkanRuntime else void;
 pub const NativeD3D12Runtime = @import("backend/d3d12/d3d12_native_runtime.zig").NativeD3D12Runtime;
 pub const MAX_BIND: usize = 16;
 pub const MAX_RENDER_BIND_GROUPS: usize = 4;
@@ -530,7 +532,8 @@ pub fn toOpaque(p: anytype) ?*anyopaque {
 
 // Cast the vk_runtime opaque pointer on a DoeDevice to NativeVulkanRuntime.
 // Returns null when the device is Metal-backed or the pointer is unset.
-pub fn device_vk_runtime(dev: *DoeDevice) ?*NativeVulkanRuntime {
+pub fn device_vk_runtime(dev: *DoeDevice) if (has_vulkan) ?*NativeVulkanRuntime else ?*void {
+    if (comptime !has_vulkan) return null;
     const ptr = dev.vk_runtime orelse return null;
     return @as(*NativeVulkanRuntime, @ptrCast(@alignCast(ptr)));
 }

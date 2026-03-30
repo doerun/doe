@@ -8,6 +8,7 @@
     "d3d12_doe_directional": "doe_d3d12",
     "d3d12_doe_release": "doe_d3d12",
     "metal_dawn_release": "dawn_delegate",
+    "metal_webkit_release": "webkit_delegate",
     "metal_doe_app": "doe_metal",
     "metal_doe_comparable": "doe_metal",
     "metal_doe_directional": "doe_metal",
@@ -22,6 +23,9 @@
       "d3d12_dawn_release",
       "metal_dawn_release",
       "vulkan_dawn_release"
+    ],
+    "webkit_delegate": [
+      "metal_webkit_release"
     ],
     "doe_metal": [
       "metal_doe_app",

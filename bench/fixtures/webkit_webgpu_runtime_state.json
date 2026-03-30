@@ -1,0 +1,32 @@
+{
+  "phase": "probe",
+  "probe": {
+    "webgpu_dir_exists": true,
+    "wtf_dir_exists": true,
+    "bmalloc_dir_exists": true,
+    "xcode_project_exists": true,
+    "xcscheme_exists": true,
+    "webgpu_source_cpp_count": 35,
+    "webgpu_source_header_count": 166
+  },
+  "layout": {
+    "required": {
+      "Source/WebGPU": true,
+      "Source/WebGPU/WebGPU.xcodeproj": true,
+      "Source/WebGPU/WebGPU.xcodeproj/xcshareddata/xcschemes/WebGPU.xcscheme": true,
+      "Source/WebGPU/Configurations": true,
+      "Source/WebGPU/WebGPU/WebGPU.h": true,
+      "Source/WTF": true,
+      "Source/bmalloc": true,
+      "Source/cmake": true
+    },
+    "optional": {
+      "Source/ThirdParty": true,
+      "Source/JavaScriptCore": true,
+      "Source/WebCore": true,
+      "Source/WebKit": true,
+      "Source/WebKitLegacy": true
+    },
+    "missing_optional": []
+  }
+}

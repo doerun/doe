@@ -2,6 +2,8 @@
 // range operations. Sharded from doe_wgpu_native.zig.
 
 const std = @import("std");
+const builtin = @import("builtin");
+const has_vulkan = (builtin.os.tag == .linux);
 const types = @import("core/abi/wgpu_types.zig");
 const native = @import("doe_wgpu_native.zig");
 const d3d12_constants = @import("backend/d3d12/d3d12_constants.zig");
@@ -70,20 +72,22 @@ pub export fn doeNativeDeviceCreateBuffer(dev_raw: ?*anyopaque, desc: ?*const ty
     const d = desc orelse return null;
     const buf = make(DoeBuffer) orelse return null;
     buf.* = .{ .backend = dev.backend, .size = d.size, .usage = d.usage };
-    if (dev.backend == .vulkan) {
-        const rt = native.device_vk_runtime(dev) orelse { alloc.destroy(buf); return null; };
-        const id: u64 = @intFromPtr(buf);
-        buf.vk_id = id;
-        buf.vk_runtime_ref = @ptrCast(rt);
-        const vk_resources = @import("backend/vulkan/vk_resources.zig");
-        const cb = vk_resources.create_compute_buffer(rt, d.size, false) catch { alloc.destroy(buf); return null; };
-        rt.compute_buffers.put(rt.allocator, id, cb) catch { vk_resources.release_compute_buffer(rt, cb); alloc.destroy(buf); return null; };
-        // Cache host-visible mapped pointer to skip HashMap lookup on writeBuffer.
-        if (cb.mapped) |m| buf.vk_mapped_ptr = @ptrCast(m);
-        if (d.mappedAtCreation != 0) buf.mapped = true;
-        const result = toOpaque(buf);
-        label_store.set(result, d.label.data, d.label.length);
-        return result;
+    if (comptime has_vulkan) {
+        if (dev.backend == .vulkan) {
+            const rt = native.device_vk_runtime(dev) orelse { alloc.destroy(buf); return null; };
+            const id: u64 = @intFromPtr(buf);
+            buf.vk_id = id;
+            buf.vk_runtime_ref = @ptrCast(rt);
+            const vk_resources = @import("backend/vulkan/vk_resources.zig");
+            const cb = vk_resources.create_compute_buffer(rt, d.size, false) catch { alloc.destroy(buf); return null; };
+            rt.compute_buffers.put(rt.allocator, id, cb) catch { vk_resources.release_compute_buffer(rt, cb); alloc.destroy(buf); return null; };
+            // Cache host-visible mapped pointer to skip HashMap lookup on writeBuffer.
+            if (cb.mapped) |m| buf.vk_mapped_ptr = @ptrCast(m);
+            if (d.mappedAtCreation != 0) buf.mapped = true;
+            const result = toOpaque(buf);
+            label_store.set(result, d.label.data, d.label.length);
+            return result;
+        }
     }
     if (dev.backend == .d3d12) {
         const rt = native.device_d3d12_runtime(dev) orelse { alloc.destroy(buf); return null; };
@@ -111,14 +115,16 @@ pub export fn doeNativeBufferRelease(raw: ?*anyopaque) callconv(.c) void {
     if (cast(DoeBuffer, raw)) |b| {
         if (!object_should_destroy(b)) return;
         label_store.remove(raw);
-        if (b.backend == .vulkan and b.vk_id != 0) {
-            if (b.vk_runtime_ref) |rt_ptr| {
-                const rt: *NativeVulkanRuntime = @ptrCast(@alignCast(rt_ptr));
-                const vk_resources = @import("backend/vulkan/vk_resources.zig");
-                if (rt.compute_buffers.fetchRemove(b.vk_id)) |entry| { vk_resources.release_compute_buffer(rt, entry.value); }
+        if (comptime has_vulkan) {
+            if (b.backend == .vulkan and b.vk_id != 0) {
+                if (b.vk_runtime_ref) |rt_ptr| {
+                    const rt: *NativeVulkanRuntime = @ptrCast(@alignCast(rt_ptr));
+                    const vk_resources = @import("backend/vulkan/vk_resources.zig");
+                    if (rt.compute_buffers.fetchRemove(b.vk_id)) |entry| { vk_resources.release_compute_buffer(rt, entry.value); }
+                }
+                alloc.destroy(b);
+                return;
             }
-            alloc.destroy(b);
-            return;
         }
         if (b.backend == .d3d12) {
             if (b.d3d12_mapped_ptr != null and b.mtl != null) { d3d12_bridge_resource_unmap(b.mtl); b.d3d12_mapped_ptr = null; }
@@ -182,19 +188,21 @@ pub export fn doeNativeBufferGetConstMappedRange(buf_raw: ?*anyopaque, offset: u
     if (!buf.mapped) return null;
     const range_size = resolve_buffer_map_range(buf, offset, size) orelse return null;
     _ = range_size;
-    if (buf.backend == .vulkan) {
-        // Fast path: use cached mapped pointer to avoid HashMap lookup.
-        if (buf.vk_mapped_ptr) |base| return @ptrCast(base + offset);
-        // Fallback: HashMap lookup for buffers without a cached pointer.
-        if (buf.vk_id != 0) {
-            if (buf.vk_runtime_ref) |rt_ptr| {
-                const rt: *NativeVulkanRuntime = @ptrCast(@alignCast(rt_ptr));
-                const cb = rt.compute_buffers.get(buf.vk_id) orelse return null;
-                const base: [*]u8 = @ptrCast(cb.mapped orelse return null);
-                return @ptrCast(base + offset);
+    if (comptime has_vulkan) {
+        if (buf.backend == .vulkan) {
+            // Fast path: use cached mapped pointer to avoid HashMap lookup.
+            if (buf.vk_mapped_ptr) |base| return @ptrCast(base + offset);
+            // Fallback: HashMap lookup for buffers without a cached pointer.
+            if (buf.vk_id != 0) {
+                if (buf.vk_runtime_ref) |rt_ptr| {
+                    const rt: *NativeVulkanRuntime = @ptrCast(@alignCast(rt_ptr));
+                    const cb = rt.compute_buffers.get(buf.vk_id) orelse return null;
+                    const base: [*]u8 = @ptrCast(cb.mapped orelse return null);
+                    return @ptrCast(base + offset);
+                }
             }
+            return null;
         }
-        return null;
     }
     if (buf.backend == .d3d12) {
         const mapped = buf.d3d12_mapped_ptr orelse return null;
