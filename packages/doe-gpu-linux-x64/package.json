@@ -1,0 +1,12 @@
+{
+  "name": "doe-gpu-linux-x64",
+  "version": "0.3.4",
+  "description": "doe-gpu prebuilt binary for Linux x86-64",
+  "type": "module",
+  "main": "./index.js",
+  "os": ["linux"],
+  "cpu": ["x64"],
+  "files": ["index.js", "bin/"],
+  "publishConfig": { "access": "public" },
+  "license": "Apache-2.0"
+}

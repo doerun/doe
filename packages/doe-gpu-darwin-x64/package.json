@@ -1,0 +1,12 @@
+{
+  "name": "doe-gpu-darwin-x64",
+  "version": "0.3.4",
+  "description": "doe-gpu prebuilt binary for macOS Intel",
+  "type": "module",
+  "main": "./index.js",
+  "os": ["darwin"],
+  "cpu": ["x64"],
+  "files": ["index.js", "bin/"],
+  "publishConfig": { "access": "public" },
+  "license": "Apache-2.0"
+}
