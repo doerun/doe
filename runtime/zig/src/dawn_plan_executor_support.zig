@@ -15,6 +15,45 @@ pub const HASH_SEED: u64 = 0x9e3779b97f4a7c15;
 pub const ASYNC_TIMEOUT_NS: u64 = 5_000_000_000;
 pub const ZERO_INIT_CHUNK_BYTES: usize = 64 * 1024;
 
+pub const WEBKIT_BACKEND_ID = "webkit_direct_metal";
+pub const WEBKIT_BACKEND_LANE = "metal_webkit_release";
+pub const WEBKIT_PROFILE_DRIVER = "libwebgpu_webkit_cshim.dylib";
+
+/// Identity strings for the loaded WebGPU backend.
+/// Resolved by probeBackendIdentity() after dlopen.
+pub const BackendIdentity = struct {
+    backend_id: []const u8,
+    backend_lane: []const u8,
+    execution_backend: []const u8,
+    profile_driver: []const u8,
+};
+
+pub const DAWN_IDENTITY = BackendIdentity{
+    .backend_id = DEFAULT_BACKEND_ID,
+    .backend_lane = "metal_dawn_release",
+    .execution_backend = DEFAULT_BACKEND_ID,
+    .profile_driver = DEFAULT_PROFILE_DRIVER,
+};
+
+pub const WEBKIT_IDENTITY = BackendIdentity{
+    .backend_id = WEBKIT_BACKEND_ID,
+    .backend_lane = WEBKIT_BACKEND_LANE,
+    .execution_backend = WEBKIT_BACKEND_ID,
+    .profile_driver = WEBKIT_PROFILE_DRIVER,
+};
+
+/// Probe the loaded library for the WebKit shim identity symbol.
+/// If doe_shim_get_backend_identity resolves, the library is the WebKit shim.
+/// Otherwise it's Dawn (or another implementation without the probe symbol).
+pub fn probeBackendIdentity(lib: std.DynLib) BackendIdentity {
+    const FnGetIdentity = *const fn () callconv(.c) [*:0]const u8;
+    var mutable = lib;
+    if (mutable.lookup(FnGetIdentity, "doe_shim_get_backend_identity")) |_| {
+        return WEBKIT_IDENTITY;
+    }
+    return DAWN_IDENTITY;
+}
+
 pub const FnCreateInstance = *const fn (?*const c.WGPUInstanceDescriptor) callconv(.c) c.WGPUInstance;
 pub const FnInstanceRequestAdapter = *const fn (c.WGPUInstance, ?*const c.WGPURequestAdapterOptions, c.WGPURequestAdapterCallbackInfo) callconv(.c) c.WGPUFuture;
 pub const FnInstanceProcessEvents = *const fn (c.WGPUInstance) callconv(.c) void;

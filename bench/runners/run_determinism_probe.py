@@ -642,12 +642,15 @@ def claim_summary(
 ) -> dict[str, Any]:
     doe = lanes.get("doe")
     dawn = lanes.get("dawn")
+    webkit = lanes.get("webkit")
     result = {
         "mode": determinism_mode,
         "doeReceiptAvailable": doe is not None,
         "dawnReceiptAvailable": dawn is not None,
+        "webkitReceiptAvailable": webkit is not None,
         "doeStableAcrossRuns": doe["stableAcrossRuns"] if doe else None,
         "dawnStableAcrossRuns": dawn["stableAcrossRuns"] if dawn else None,
+        "webkitStableAcrossRuns": webkit["stableAcrossRuns"] if webkit else None,
         "doeMoreDeterministicThanDawn": bool(doe and dawn and doe["stableAcrossRuns"] and not dawn["stableAcrossRuns"]),
         "crossLaneSameBytes": all(summary["sameAcrossLanes"] for summary in cross_lane["operators"].values()),
         "tieBreakAuditAvailable": any(bool(v) for v in tie_break_audit["lanes"].values()),
@@ -658,12 +661,15 @@ def claim_summary(
         operator_claim: dict[str, Any] = {
             "doeStableAcrossRuns": doe["operators"][op_id]["stableAcrossRuns"] if doe else None,
             "dawnStableAcrossRuns": dawn["operators"][op_id]["stableAcrossRuns"] if dawn else None,
+            "webkitStableAcrossRuns": webkit["operators"][op_id]["stableAcrossRuns"] if webkit else None,
             "sameAcrossLanes": cross_lane["operators"][op_id]["sameAcrossLanes"],
         }
         if doe and "dominantDecodedValue" in doe["operators"][op_id]:
             operator_claim["doeDecodedValue"] = doe["operators"][op_id]["dominantDecodedValue"]
         if dawn and "dominantDecodedValue" in dawn["operators"][op_id]:
             operator_claim["dawnDecodedValue"] = dawn["operators"][op_id]["dominantDecodedValue"]
+        if webkit and "dominantDecodedValue" in webkit["operators"][op_id]:
+            operator_claim["webkitDecodedValue"] = webkit["operators"][op_id]["dominantDecodedValue"]
         if "sameDecodedValueAcrossLanes" in cross_lane["operators"][op_id]:
             operator_claim["sameDecodedValueAcrossLanes"] = cross_lane["operators"][op_id]["sameDecodedValueAcrossLanes"]
         result["perOperator"][op_id] = operator_claim

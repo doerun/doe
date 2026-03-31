@@ -22,6 +22,14 @@ pub fn select_backend(profile: model.DeviceProfile, policy: backend_policy.Selec
         };
     }
 
+    if (policy.default_backend == .webkit_delegate) {
+        return .{
+            .backend_id = .webkit_delegate,
+            .reason = "policy_lane_prefers_webkit_delegate",
+            .fallback_used = false,
+        };
+    }
+
     if (policy.default_backend == .doe_metal and profile.api == .metal and is_apple_vendor(profile.vendor)) {
         return .{
             .backend_id = .doe_metal,

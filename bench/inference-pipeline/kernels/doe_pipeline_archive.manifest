@@ -30,3 +30,7 @@ C:matmul_logits_forward_f16accum
 C:write_known_logits
 C:matmul_logits_f16accum_stub
 C:copy_buffer
+C:matmul_logits_f16accum_wg1
+C:matmul_logits_f16accum_wg64
+C:matmul_logits_f16accum_wg128
+C:matmul_logits_f16accum_wg256

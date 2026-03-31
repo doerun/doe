@@ -1,4 +1,33 @@
 # Doe status
+## WebKit WebGPU is a first-class backend: runtime probe, verifiable metadata, shim enum hardening, and main runtime integration (2026-03-30 UTC)
+
+- Runtime identity probe: `dawn-plan-executor` now detects WebKit shim at load time via `dlsym("doe_shim_get_backend_identity")` and records the correct `backendId`, `backendLane`, and `profile.driver` in all trace metadata and JSONL artifacts
+- CLI override: `--backend-id webkit_direct_metal` explicitly selects WebKit identity (used by `executor_registry.py`)
+- Shim enum hardening: audited all `static_cast`/`reinterpret_cast` in `webkit_webgpu_c_shim.mm` against both Dawn and WebKit headers. Added translation functions with range guards for three additional divergent enums:
+  - `WGPUTextureAspect`: Dawn Undefined=0,All=1,Stencil=2,Depth=3 vs WebKit All=0,Stencil=1,Depth=2
+  - `WGPUTextureDimension`: Dawn Undefined=0,1D=1,2D=2,3D=3 vs WebKit 1D=0,2D=1,3D=2
+  - `WGPUQueryType`: Dawn Occlusion=1,Timestamp=2 vs WebKit Occlusion=0,Timestamp=1
+  - Confirmed safe (values match): `WGPUTextureFormat`, `WGPUTextureViewDimension`, `WGPUBackendType`, `WGPUPowerPreference`, bit-flag enums (usage, shader stage, map mode)
+- Main runtime integration: `wgpu_loader.zig` now includes `libwebgpu_webkit_cshim.dylib` in macOS candidate list
+- Determinism probe: `claim_summary()` now supports webkit lane alongside doe and dawn
+- Backend selection: `backend_selection.zig` handles `webkit_delegate` policy
+
+## Three-way cross-backend bitwise identity: Doe native Metal, Google Dawn Metal, and Apple WebKit Metal all produce byte-identical compute output for the same WGSL kernels on the same GPU (2026-03-30 UTC)
+
+- Tested surfaces:
+  - Full 49-command Gemma3-270M inference pipeline (13 buffer writes + 36 kernel dispatches): **bitwise match across all three backends**
+  - 13 f16accum LM-head-slice answer sets with real model weights: **13/13 three-way match**
+  - 13 f32 forward LM-head-slice answer sets with real model weights: **13/13 three-way match**
+  - 75 total command files, 0 divergences
+- Root cause of prior WebKit zero-output bug:
+  - `WGPUBufferBindingType` enum offset: Dawn added `BindingNotUsed=0x00`, shifting Undefined/Uniform/Storage/ReadOnlyStorage by +1 relative to WebKit
+  - The C-linkage shim (`bench/drop-in/webkit_webgpu_c_shim.mm`) was doing `static_cast` without translation, causing Dawn’s `Storage (0x03)` to become WebKit’s `ReadOnlyStorage (0x03)` — silently dropping all shader writes
+  - Fix: added `translateBufferBindingType()` function to subtract 1 from Dawn values
+- Key finding:
+  - Same WGSL source → same Metal GPU → bitwise identical output, regardless of which WebGPU implementation compiles the WGSL to MSL
+  - This holds for both f16 and f32 accumulation, subgroup operations, workgroup shared memory, and parallel reductions
+  - The WebGPU portability promise (write once, run anywhere) extends to numerical identity on the same hardware with the same driver
+
 ## Diverse headline-style ambiguity seeds are now part of the sampled decode prompt-search lane: Doe’s live search fixture now mixes operational controls with philosophy/science/law/art prompts, the mutator preserves three-way natural-choice prompts instead of flattening them to binary forms, and the loose pair miner can score a broader set of semantic pairs such as `mercy/cruelty`, `justice/revenge`, `friend/stranger`, and `authentic/staged` (2026-03-30 UTC)
 
 - Updated discovery/config surfaces:

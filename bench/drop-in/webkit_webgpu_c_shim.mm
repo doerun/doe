@@ -351,6 +351,12 @@ static void queue_done_cb_wrapper(WGPUQueueWorkDoneStatus status, void* userdata
 
 #define SHIM_EXPORT extern "C" __attribute__((visibility("default")))
 
+// ── Shim identity probe ─────────────────────────────────────────────
+// The runtime calls dlsym("doe_shim_get_backend_identity") after loading
+// the library. If it resolves, the loaded library is the WebKit shim.
+// Dawn does not export this symbol, so resolution is proof of identity.
+SHIM_EXPORT char const* doe_shim_get_backend_identity(void);
+
 // ── Forward declarations with asm labels ────────────────────────────
 
 // Struct-translating functions (Dawn struct → WebKit struct)
@@ -619,6 +625,49 @@ WGPUShaderModule cshim_wgpuDeviceCreateShaderModule(WGPUDevice d, DawnShaderModu
 //               buffer{nextInChain, type, hasDynamicOffset, minBindingSize}, ...}
 // WebKit entries: {binding, metalBinding[3], visibility(uint32),
 //                 buffer{type, hasDynamicOffset, minBindingSize, bufferSizeForBinding}, ...}
+
+// Dawn added BindingNotUsed=0x00 before Undefined, shifting all buffer binding type
+// values by +1 relative to WebKit.  Translate back:
+//   Dawn 0x01 (Undefined)        → WebKit 0x00 (Undefined)
+//   Dawn 0x02 (Uniform)          → WebKit 0x01 (Uniform)
+//   Dawn 0x03 (Storage)          → WebKit 0x02 (Storage)
+//   Dawn 0x04 (ReadOnlyStorage)  → WebKit 0x03 (ReadOnlyStorage)
+static WGPUBufferBindingType translateBufferBindingType(uint32_t dawn_val) {
+    if (dawn_val == 0) return WGPUBufferBindingType_Undefined;  // BindingNotUsed → Undefined
+    if (dawn_val > 4) return WGPUBufferBindingType_Undefined;   // out of range guard
+    return static_cast<WGPUBufferBindingType>(dawn_val - 1);
+}
+
+// Dawn added Undefined=0x00 before the real values, shifting all texture aspect
+// values by +1 relative to WebKit.
+//   Dawn 0x00 (Undefined)    → WebKit 0x00 (All, best default)
+//   Dawn 0x01 (All)          → WebKit 0x00 (All)
+//   Dawn 0x02 (StencilOnly)  → WebKit 0x01 (StencilOnly)
+//   Dawn 0x03 (DepthOnly)    → WebKit 0x02 (DepthOnly)
+static WGPUTextureAspect translateTextureAspect(uint32_t dawn_val) {
+    if (dawn_val == 0) return WGPUTextureAspect_All;            // Undefined → All
+    if (dawn_val > 3) return WGPUTextureAspect_All;             // out of range guard
+    return static_cast<WGPUTextureAspect>(dawn_val - 1);
+}
+
+// Dawn added Undefined=0x00 before the real values:
+//   Dawn 0x00 (Undefined) → WebKit 0x01 (_2D, safe default)
+//   Dawn 0x01 (_1D)       → WebKit 0x00 (_1D)
+//   Dawn 0x02 (_2D)       → WebKit 0x01 (_2D)
+//   Dawn 0x03 (_3D)       → WebKit 0x02 (_3D)
+static WGPUTextureDimension translateTextureDimension(uint32_t dawn_val) {
+    if (dawn_val == 0) return WGPUTextureDimension_2D;          // Undefined → 2D
+    if (dawn_val > 3) return WGPUTextureDimension_2D;           // out of range guard
+    return static_cast<WGPUTextureDimension>(dawn_val - 1);
+}
+
+// Dawn: Occlusion=0x01, Timestamp=0x02
+// WebKit: Occlusion=0x00, Timestamp=0x01
+static WGPUQueryType translateQueryType(uint32_t dawn_val) {
+    if (dawn_val == 0 || dawn_val > 2) return WGPUQueryType_Occlusion;  // guard
+    return static_cast<WGPUQueryType>(dawn_val - 1);
+}
+
 WGPUBindGroupLayout cshim_wgpuDeviceCreateBindGroupLayout(WGPUDevice d, DawnBindGroupLayoutDescriptor const *desc) {
     size_t count = desc->entryCount;
     auto* webkit_entries = new WGPUBindGroupLayoutEntry[count];
@@ -634,8 +683,8 @@ WGPUBindGroupLayout cshim_wgpuDeviceCreateBindGroupLayout(WGPUDevice d, DawnBind
         dst.metalBinding[2] = src.binding;  // compute
         dst.visibility = static_cast<WGPUShaderStageFlags>(src.visibility);  // truncate 64→32
 
-        // Buffer binding layout
-        dst.buffer.type = static_cast<WGPUBufferBindingType>(src.buffer.type);
+        // Buffer binding layout — translate Dawn enum → WebKit enum
+        dst.buffer.type = translateBufferBindingType(src.buffer.type);
         dst.buffer.hasDynamicOffset = src.buffer.hasDynamicOffset;
         dst.buffer.minBindingSize = src.buffer.minBindingSize;
         dst.buffer.bufferSizeForBinding = 0;
@@ -1045,7 +1094,7 @@ void cshim_wgpuCommandEncoderCopyBufferToTexture(
     webkit_dst.texture = dst->texture;
     webkit_dst.mipLevel = dst->mipLevel;
     webkit_dst.origin = { dst->originX, dst->originY, dst->originZ };
-    webkit_dst.aspect = static_cast<WGPUTextureAspect>(dst->aspect);
+    webkit_dst.aspect = translateTextureAspect(dst->aspect);
 
     WGPUExtent3D extent = { sz->width, sz->height, sz->depthOrArrayLayers };
     wgpuCommandEncoderCopyBufferToTexture(e, &webkit_src, &webkit_dst, &extent);
@@ -1059,7 +1108,7 @@ void cshim_wgpuCommandEncoderCopyTextureToBuffer(
     webkit_src.texture = src->texture;
     webkit_src.mipLevel = src->mipLevel;
     webkit_src.origin = { src->originX, src->originY, src->originZ };
-    webkit_src.aspect = static_cast<WGPUTextureAspect>(src->aspect);
+    webkit_src.aspect = translateTextureAspect(src->aspect);
 
     WGPUImageCopyBuffer webkit_dst = {};
     webkit_dst.layout.offset = dst->layout.offset;
@@ -1079,13 +1128,13 @@ void cshim_wgpuCommandEncoderCopyTextureToTexture(
     webkit_src.texture = src->texture;
     webkit_src.mipLevel = src->mipLevel;
     webkit_src.origin = { src->originX, src->originY, src->originZ };
-    webkit_src.aspect = static_cast<WGPUTextureAspect>(src->aspect);
+    webkit_src.aspect = translateTextureAspect(src->aspect);
 
     WGPUImageCopyTexture webkit_dst = {};
     webkit_dst.texture = dst->texture;
     webkit_dst.mipLevel = dst->mipLevel;
     webkit_dst.origin = { dst->originX, dst->originY, dst->originZ };
-    webkit_dst.aspect = static_cast<WGPUTextureAspect>(dst->aspect);
+    webkit_dst.aspect = translateTextureAspect(dst->aspect);
 
     WGPUExtent3D extent = { sz->width, sz->height, sz->depthOrArrayLayers };
     wgpuCommandEncoderCopyTextureToTexture(e, &webkit_src, &webkit_dst, &extent);
@@ -1096,7 +1145,7 @@ void cshim_wgpuCommandEncoderCopyTextureToTexture(
 WGPUQuerySet cshim_wgpuDeviceCreateQuerySet(WGPUDevice d, DawnQuerySetDescriptor const* desc) {
     WGPUQuerySetDescriptor webkit_desc = {};
     webkit_desc.label = nullptr;
-    webkit_desc.type = static_cast<WGPUQueryType>(desc->type);
+    webkit_desc.type = translateQueryType(desc->type);
     webkit_desc.count = desc->count;
     return wgpuDeviceCreateQuerySet(d, &webkit_desc);
 }
@@ -1118,7 +1167,7 @@ WGPUTexture cshim_wgpuDeviceCreateTexture(WGPUDevice d, DawnTextureDescriptor co
     WGPUTextureDescriptor webkit_desc = {};
     webkit_desc.label = nullptr;
     webkit_desc.usage = static_cast<WGPUTextureUsageFlags>(desc->usage);  // truncate 64→32
-    webkit_desc.dimension = static_cast<WGPUTextureDimension>(desc->dimension);
+    webkit_desc.dimension = translateTextureDimension(desc->dimension);
     webkit_desc.size = { desc->width, desc->height, desc->depthOrArrayLayers };
     webkit_desc.format = static_cast<WGPUTextureFormat>(desc->format);
     webkit_desc.mipLevelCount = desc->mipLevelCount;
@@ -1139,7 +1188,7 @@ WGPUTextureView cshim_wgpuTextureCreateView(WGPUTexture t, DawnTextureViewDescri
     webkit_desc.mipLevelCount = desc->mipLevelCount;
     webkit_desc.baseArrayLayer = desc->baseArrayLayer;
     webkit_desc.arrayLayerCount = desc->arrayLayerCount;
-    webkit_desc.aspect = static_cast<WGPUTextureAspect>(desc->aspect);
+    webkit_desc.aspect = translateTextureAspect(desc->aspect);
     webkit_desc.usage = static_cast<WGPUTextureUsageFlags>(desc->usage);  // truncate 64→32
     return wgpuTextureCreateView(t, &webkit_desc);
 }
@@ -1159,4 +1208,13 @@ void cshim_wgpuTextureViewRelease(WGPUTextureView v) {
 uint32_t cshim_wgpuInstanceWaitAny(WGPUInstance i, size_t futureCount, void* futures, uint64_t timeoutNS) {
     (void)i; (void)futureCount; (void)futures; (void)timeoutNS;
     return 3; // WGPUWaitStatus_TimedOut
+}
+
+// ── Shim identity probe ─────────────────────────────────────────────
+// Returns a fixed identity string. The runtime calls
+// dlsym("doe_shim_get_backend_identity") after loading the WebGPU
+// library. If this symbol resolves, the library is the WebKit shim.
+// Dawn does not export this symbol.
+char const* doe_shim_get_backend_identity(void) {
+    return "webkit_webgpu_cshim_v1";
 }

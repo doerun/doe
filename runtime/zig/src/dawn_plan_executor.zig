@@ -18,6 +18,7 @@ const RunOptions = struct {
     trace_jsonl_path: []const u8,
     workload_id: []const u8,
     dry_run: bool = false,
+    backend_id_override: ?[]const u8 = null,
 };
 
 pub const Config = RunOptions;
@@ -27,6 +28,7 @@ const Executor = struct {
     allocator: Allocator,
     lib: std.DynLib,
     procs: support.DawnProcs,
+    identity: support.BackendIdentity,
     instance: c.WGPUInstance,
     adapter: c.WGPUAdapter,
     device: c.WGPUDevice,
@@ -35,10 +37,18 @@ const Executor = struct {
     pipeline_cache: std.AutoHashMap(u64, support.CachedPipeline),
     buffer_specs: std.AutoHashMap(u64, support.BufferSpec),
 
-    fn init(allocator: Allocator, buffer_specs: *const std.AutoHashMap(u64, support.BufferSpec)) !Executor {
+    fn init(allocator: Allocator, buffer_specs: *const std.AutoHashMap(u64, support.BufferSpec), backend_id_override: ?[]const u8) !Executor {
         var lib = try support.openDawnLibrary();
         errdefer lib.close();
         const procs = try support.loadDawnProcs(lib);
+
+        // Resolve backend identity: CLI override > runtime probe
+        const identity = if (backend_id_override) |override| blk: {
+            if (std.mem.eql(u8, override, support.WEBKIT_BACKEND_ID)) {
+                break :blk support.WEBKIT_IDENTITY;
+            }
+            break :blk support.DAWN_IDENTITY;
+        } else support.probeBackendIdentity(lib);
 
         const instance_desc = c.WGPUInstanceDescriptor{ .nextInChain = null };
         const instance = procs.create_instance(&instance_desc) orelse return error.InstanceCreateFailed;
@@ -47,6 +57,7 @@ const Executor = struct {
             .allocator = allocator,
             .lib = lib,
             .procs = procs,
+            .identity = identity,
             .instance = instance,
             .adapter = null,
             .device = null,
@@ -309,9 +320,9 @@ const Executor = struct {
             .encode_ns = encode_ns,
             .submit_wait_ns = 0,
             .dispatch_count = 0,
-            .execution_backend = support.DEFAULT_BACKEND_ID,
-            .backend_id = support.DEFAULT_BACKEND_ID,
-            .backend_lane = support.DEFAULT_BACKEND_ID,
+            .execution_backend = self.identity.execution_backend,
+            .backend_id = self.identity.backend_id,
+            .backend_lane = self.identity.backend_lane,
             .plan_hash = plan_hash,
         };
     }
@@ -400,9 +411,9 @@ const Executor = struct {
             .encode_ns = encode_ns,
             .submit_wait_ns = submit_wait_ns,
             .dispatch_count = 1,
-            .execution_backend = support.DEFAULT_BACKEND_ID,
-            .backend_id = support.DEFAULT_BACKEND_ID,
-            .backend_lane = support.DEFAULT_BACKEND_ID,
+            .execution_backend = self.identity.execution_backend,
+            .backend_id = self.identity.backend_id,
+            .backend_lane = self.identity.backend_lane,
             .plan_hash = plan_hash,
         };
     }
@@ -459,12 +470,20 @@ pub fn runPlan(allocator: Allocator, options: RunOptions) !void {
 
     var host_executor_init_total_ns: u64 = 0;
     var execute_wall_ns: u64 = 0;
+    var resolved_identity: support.BackendIdentity = support.DAWN_IDENTITY;
     const results = if (options.dry_run) blk: {
-        break :blk try makeDryRunResults(allocator, loaded.plan);
+        // For dry-run, resolve identity from override only (no library to probe)
+        if (options.backend_id_override) |override| {
+            if (std.mem.eql(u8, override, support.WEBKIT_BACKEND_ID)) {
+                resolved_identity = support.WEBKIT_IDENTITY;
+            }
+        }
+        break :blk try makeDryRunResults(allocator, loaded.plan, resolved_identity);
     } else blk: {
         const executor_init_start_ns = support.nowNs();
-        var executor = try Executor.init(allocator, &buffer_specs);
+        var executor = try Executor.init(allocator, &buffer_specs, options.backend_id_override);
         host_executor_init_total_ns = support.elapsedSince(executor_init_start_ns);
+        resolved_identity = executor.identity;
         defer executor.deinit();
         const execute_start_ns = support.nowNs();
         const executed = try executor.execute(loaded.plan, loaded.plan.plan_sha256, kernel_root);
@@ -488,7 +507,7 @@ pub fn runPlan(allocator: Allocator, options: RunOptions) !void {
     try writeTraceJsonl(options.trace_jsonl_path, results);
     summary.host_artifact_finalize_total_ns = support.elapsedSince(artifact_finalize_start_ns);
     summary.process_wall_ns = support.elapsedSince(start_ns);
-    try writeTraceMeta(options.trace_meta_path, loaded.plan, summary, options.plan_path);
+    try writeTraceMeta(options.trace_meta_path, loaded.plan, summary, options.plan_path, resolved_identity);
 }
 
 fn validatePlanCounts(plan: dawn_plan_types.Plan) !void {
@@ -505,7 +524,7 @@ fn validatePlanCounts(plan: dawn_plan_types.Plan) !void {
     }
 }
 
-fn makeDryRunResults(allocator: Allocator, plan: dawn_plan_types.Plan) ![]support.StepResult {
+fn makeDryRunResults(allocator: Allocator, plan: dawn_plan_types.Plan, identity: support.BackendIdentity) ![]support.StepResult {
     const results = try allocator.alloc(support.StepResult, plan.commands.len);
     for (plan.commands, 0..) |command, idx| {
         const seq = @as(u64, idx);
@@ -525,9 +544,9 @@ fn makeDryRunResults(allocator: Allocator, plan: dawn_plan_types.Plan) ![]suppor
                 .encode_ns = 0,
                 .submit_wait_ns = 0,
                 .dispatch_count = 0,
-                .execution_backend = support.DEFAULT_BACKEND_ID,
-                .backend_id = support.DEFAULT_BACKEND_ID,
-                .backend_lane = support.DEFAULT_BACKEND_ID,
+                .execution_backend = identity.execution_backend,
+                .backend_id = identity.backend_id,
+                .backend_lane = identity.backend_lane,
                 .plan_hash = plan.plan_sha256,
             },
             .kernel_dispatch => |kd| support.StepResult{
@@ -545,9 +564,9 @@ fn makeDryRunResults(allocator: Allocator, plan: dawn_plan_types.Plan) ![]suppor
                 .encode_ns = 0,
                 .submit_wait_ns = 0,
                 .dispatch_count = 1,
-                .execution_backend = support.DEFAULT_BACKEND_ID,
-                .backend_id = support.DEFAULT_BACKEND_ID,
-                .backend_lane = support.DEFAULT_BACKEND_ID,
+                .execution_backend = identity.execution_backend,
+                .backend_id = identity.backend_id,
+                .backend_lane = identity.backend_lane,
                 .plan_hash = plan.plan_sha256,
             },
         };
@@ -580,7 +599,7 @@ fn summarize(results: []const support.StepResult) support.RunSummary {
     return summary;
 }
 
-fn writeTraceMeta(path: []const u8, plan: dawn_plan_types.Plan, summary: support.RunSummary, plan_path: []const u8) !void {
+fn writeTraceMeta(path: []const u8, plan: dawn_plan_types.Plan, summary: support.RunSummary, plan_path: []const u8, identity: support.BackendIdentity) !void {
     const file = try std.fs.cwd().createFile(path, .{ .truncate = true });
     defer file.close();
     var writer = file.deprecatedWriter();
@@ -614,11 +633,11 @@ fn writeTraceMeta(path: []const u8, plan: dawn_plan_types.Plan, summary: support
         summary.previous_hash,
     });
     try writer.writeAll("\"executionBackend\":");
-    try support.writeJsonString(&writer, support.DEFAULT_BACKEND_ID);
+    try support.writeJsonString(&writer, identity.execution_backend);
     try writer.writeAll(",\"backendId\":");
-    try support.writeJsonString(&writer, support.DEFAULT_BACKEND_ID);
+    try support.writeJsonString(&writer, identity.backend_id);
     try writer.writeAll(",\"backendLane\":");
-    try support.writeJsonString(&writer, support.DEFAULT_BACKEND_ID);
+    try support.writeJsonString(&writer, identity.backend_lane);
     try writer.writeAll(",\"backendSelectionReason\":");
     try support.writeJsonString(&writer, DEFAULT_BACKEND_SELECTION_REASON);
     try writer.writeAll(",\"queueSyncMode\":");
@@ -640,7 +659,7 @@ fn writeTraceMeta(path: []const u8, plan: dawn_plan_types.Plan, summary: support
     try writer.writeAll(",\"api\":");
     try support.writeJsonString(&writer, support.DEFAULT_PROFILE_API);
     try writer.writeAll(",\"deviceFamily\":null,\"driver\":");
-    try support.writeJsonString(&writer, support.DEFAULT_PROFILE_DRIVER);
+    try support.writeJsonString(&writer, identity.profile_driver);
     try writer.writeAll("}}\n");
 }
 
@@ -703,6 +722,7 @@ fn parseArgs(allocator: Allocator) !RunOptions {
     var trace_jsonl_path: ?[]const u8 = null;
     var workload_id: ?[]const u8 = null;
     var dry_run = false;
+    var backend_id_override: ?[]const u8 = null;
 
     var i: usize = 1;
     while (i < argv.len) : (i += 1) {
@@ -731,6 +751,11 @@ fn parseArgs(allocator: Allocator) !RunOptions {
             workload_id = try allocator.dupe(u8, argv[i]);
             continue;
         }
+        if (std.mem.eql(u8, arg, "--backend-id") and i + 1 < argv.len) {
+            i += 1;
+            backend_id_override = try allocator.dupe(u8, argv[i]);
+            continue;
+        }
         return error.InvalidCommandLine;
     }
 
@@ -740,6 +765,7 @@ fn parseArgs(allocator: Allocator) !RunOptions {
         .trace_jsonl_path = trace_jsonl_path orelse return error.MissingField,
         .workload_id = workload_id orelse return error.MissingField,
         .dry_run = dry_run,
+        .backend_id_override = backend_id_override,
     };
 }
 

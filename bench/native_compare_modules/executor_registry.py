@@ -37,7 +37,8 @@ _DAWN_DIRECT_PREFIX = (
 _APPLE_WEBKIT_DIRECT_PREFIX = (
     "env DYLD_LIBRARY_PATH=bench/vendor/webkit-webgpu/out/shim:$DYLD_LIBRARY_PATH "
     "runtime/zig/zig-out/bin/dawn-plan-executor --plan {plan} "
-    "--trace-jsonl {trace_jsonl} --trace-meta {trace_meta} --workload {workload}"
+    "--trace-jsonl {trace_jsonl} --trace-meta {trace_meta} --workload {workload} "
+    "--backend-id webkit_direct_metal"
 )
 
 

@@ -2020,7 +2020,7 @@
           "vendor": "intel",
           "family": "gen12",
           "driver": "31.0.101",
-          "comparable": true,
+          "comparable": false,
           "rightCommandRepeat": 10,
           "leftTimingDivisor": 1.0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
