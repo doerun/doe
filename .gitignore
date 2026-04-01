@@ -30,7 +30,7 @@ bench/compare_dawn_vs_doe.config.local.*.json
 !bench/compare_dawn_vs_doe.config.local.vulkan.comparable.json
 !bench/compare_dawn_vs_doe.config.local.vulkan.release.json
 !bench/compare_dawn_vs_doe.config.local.vulkan.directional.json
-# Bench outputs — all ignored. Force-add curated claims with `git add -f bench/out/...`.
+# Bench outputs — force-add specific reports with `git add -f`.
 bench/out/
 nursery/webgpu/out/node-smoke.meta.json
 nursery/webgpu/out/node-smoke.ndjson

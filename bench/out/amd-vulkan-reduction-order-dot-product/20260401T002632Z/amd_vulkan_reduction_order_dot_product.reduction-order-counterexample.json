@@ -1,0 +1,408 @@
+{
+  "schemaVersion": 1,
+  "scenarioId": "amd_vulkan_reduction_order_dot_product",
+  "description": "AMD Vulkan micro dot-product counterexample: same 8-term dot product, alternate accumulation policies, and receipted output divergence.",
+  "fixturePath": "/home/x/deco/doe/bench/fixtures/determinism/amd-vulkan-reduction-order-dot-product.json",
+  "timestamp": "20260401T002632Z",
+  "runCount": 5,
+  "profile": {
+    "vendor": "amd",
+    "api": "vulkan",
+    "family": "rdna",
+    "driver": "1.0.0"
+  },
+  "captures": [
+    {
+      "commandIndex": 3,
+      "semanticOpId": "dot.output",
+      "semanticStage": "micro_dot_product",
+      "semanticPhase": "output",
+      "captureBufferHandle": 4104,
+      "captureOffset": 0,
+      "captureSize": 4
+    }
+  ],
+  "variants": {
+    "forward": {
+      "id": "forward",
+      "policyId": "dot-product/forward-serial-v1",
+      "commandsPath": "/home/x/deco/doe/bench/fixtures/determinism/dot-product-forward.commands.json",
+      "baseCommandsSha256": "8633e0760190aa476b4cd981c4bdc6038479793cd4bc177f4005a92247e3dd48",
+      "annotatedCommandsPath": "/home/x/deco/doe/bench/out/amd-vulkan-reduction-order-dot-product/20260401T002632Z/amd_vulkan_reduction_order_dot_product.forward.commands.annotated.json",
+      "annotatedCommandsSha256": "65c5b63ab632c98d26d5fd8bc991bf90af1e3c366b3f4f12c8af756cbb6d50db",
+      "lanes": {
+        "doe": {
+          "stableAcrossRuns": true,
+          "operators": {
+            "dot.output": {
+              "stableAcrossRuns": true,
+              "runCount": 5,
+              "captureSize": 4,
+              "statusCounts": {
+                "ok": 5
+              },
+              "uniqueDigestCount": 1,
+              "sameByteRate": 1.0,
+              "dominantDigest": "fca31f1667a6aa1bba12fca4e4ea1becd503379d80da3213af07f6cc5702828d",
+              "digestCounts": {
+                "fca31f1667a6aa1bba12fca4e4ea1becd503379d80da3213af07f6cc5702828d": 5
+              },
+              "artifacts": [
+                {
+                  "runIndex": 0,
+                  "capturePath": "/home/x/deco/doe/bench/out/amd-vulkan-reduction-order-dot-product/20260401T002632Z/forward/doe/run000.meta.json.op0003.capture.bin",
+                  "captureSha256": "fca31f1667a6aa1bba12fca4e4ea1becd503379d80da3213af07f6cc5702828d"
+                },
+                {
+                  "runIndex": 1,
+                  "capturePath": "/home/x/deco/doe/bench/out/amd-vulkan-reduction-order-dot-product/20260401T002632Z/forward/doe/run001.meta.json.op0003.capture.bin",
+                  "captureSha256": "fca31f1667a6aa1bba12fca4e4ea1becd503379d80da3213af07f6cc5702828d"
+                },
+                {
+                  "runIndex": 2,
+                  "capturePath": "/home/x/deco/doe/bench/out/amd-vulkan-reduction-order-dot-product/20260401T002632Z/forward/doe/run002.meta.json.op0003.capture.bin",
+                  "captureSha256": "fca31f1667a6aa1bba12fca4e4ea1becd503379d80da3213af07f6cc5702828d"
+                },
+                {
+                  "runIndex": 3,
+                  "capturePath": "/home/x/deco/doe/bench/out/amd-vulkan-reduction-order-dot-product/20260401T002632Z/forward/doe/run003.meta.json.op0003.capture.bin",
+                  "captureSha256": "fca31f1667a6aa1bba12fca4e4ea1becd503379d80da3213af07f6cc5702828d"
+                },
+                {
+                  "runIndex": 4,
+                  "capturePath": "/home/x/deco/doe/bench/out/amd-vulkan-reduction-order-dot-product/20260401T002632Z/forward/doe/run004.meta.json.op0003.capture.bin",
+                  "captureSha256": "fca31f1667a6aa1bba12fca4e4ea1becd503379d80da3213af07f6cc5702828d"
+                }
+              ],
+              "firstDivergenceRunIndex": null
+            }
+          },
+          "id": "doe",
+          "backendLane": "vulkan_doe_comparable",
+          "runs": [
+            {
+              "runIndex": 0,
+              "traceMetaPath": "/home/x/deco/doe/bench/out/amd-vulkan-reduction-order-dot-product/20260401T002632Z/forward/doe/run000.meta.json",
+              "traceJsonlPath": "/home/x/deco/doe/bench/out/amd-vulkan-reduction-order-dot-product/20260401T002632Z/forward/doe/run000.trace.jsonl",
+              "operatorManifestPath": "/home/x/deco/doe/bench/out/amd-vulkan-reduction-order-dot-product/20260401T002632Z/forward/doe/run000.meta.json.operators.json"
+            },
+            {
+              "runIndex": 1,
+              "traceMetaPath": "/home/x/deco/doe/bench/out/amd-vulkan-reduction-order-dot-product/20260401T002632Z/forward/doe/run001.meta.json",
+              "traceJsonlPath": "/home/x/deco/doe/bench/out/amd-vulkan-reduction-order-dot-product/20260401T002632Z/forward/doe/run001.trace.jsonl",
+              "operatorManifestPath": "/home/x/deco/doe/bench/out/amd-vulkan-reduction-order-dot-product/20260401T002632Z/forward/doe/run001.meta.json.operators.json"
+            },
+            {
+              "runIndex": 2,
+              "traceMetaPath": "/home/x/deco/doe/bench/out/amd-vulkan-reduction-order-dot-product/20260401T002632Z/forward/doe/run002.meta.json",
+              "traceJsonlPath": "/home/x/deco/doe/bench/out/amd-vulkan-reduction-order-dot-product/20260401T002632Z/forward/doe/run002.trace.jsonl",
+              "operatorManifestPath": "/home/x/deco/doe/bench/out/amd-vulkan-reduction-order-dot-product/20260401T002632Z/forward/doe/run002.meta.json.operators.json"
+            },
+            {
+              "runIndex": 3,
+              "traceMetaPath": "/home/x/deco/doe/bench/out/amd-vulkan-reduction-order-dot-product/20260401T002632Z/forward/doe/run003.meta.json",
+              "traceJsonlPath": "/home/x/deco/doe/bench/out/amd-vulkan-reduction-order-dot-product/20260401T002632Z/forward/doe/run003.trace.jsonl",
+              "operatorManifestPath": "/home/x/deco/doe/bench/out/amd-vulkan-reduction-order-dot-product/20260401T002632Z/forward/doe/run003.meta.json.operators.json"
+            },
+            {
+              "runIndex": 4,
+              "traceMetaPath": "/home/x/deco/doe/bench/out/amd-vulkan-reduction-order-dot-product/20260401T002632Z/forward/doe/run004.meta.json",
+              "traceJsonlPath": "/home/x/deco/doe/bench/out/amd-vulkan-reduction-order-dot-product/20260401T002632Z/forward/doe/run004.trace.jsonl",
+              "operatorManifestPath": "/home/x/deco/doe/bench/out/amd-vulkan-reduction-order-dot-product/20260401T002632Z/forward/doe/run004.meta.json.operators.json"
+            }
+          ]
+        }
+      },
+      "crossLane": {
+        "operators": {
+          "dot.output": {
+            "sameAcrossLanes": true,
+            "laneDominantDigests": {
+              "doe": "fca31f1667a6aa1bba12fca4e4ea1becd503379d80da3213af07f6cc5702828d"
+            }
+          }
+        }
+      }
+    },
+    "reverse": {
+      "id": "reverse",
+      "policyId": "dot-product/reverse-serial-v1",
+      "commandsPath": "/home/x/deco/doe/bench/fixtures/determinism/dot-product-reverse.commands.json",
+      "baseCommandsSha256": "ce70987223ea1475a7c3573a3860dbaa3fc0fe4c8b7695609bd18dc53bdb093d",
+      "annotatedCommandsPath": "/home/x/deco/doe/bench/out/amd-vulkan-reduction-order-dot-product/20260401T002632Z/amd_vulkan_reduction_order_dot_product.reverse.commands.annotated.json",
+      "annotatedCommandsSha256": "e381bc967cb3af0f80f1283a1b220f2967d28a9045c950e03624c43049af0462",
+      "lanes": {
+        "doe": {
+          "stableAcrossRuns": true,
+          "operators": {
+            "dot.output": {
+              "stableAcrossRuns": true,
+              "runCount": 5,
+              "captureSize": 4,
+              "statusCounts": {
+                "ok": 5
+              },
+              "uniqueDigestCount": 1,
+              "sameByteRate": 1.0,
+              "dominantDigest": "03e3c2420f5066a5fa6e36735ed8cc4f6a251046263e1a6024f009deeee3b952",
+              "digestCounts": {
+                "03e3c2420f5066a5fa6e36735ed8cc4f6a251046263e1a6024f009deeee3b952": 5
+              },
+              "artifacts": [
+                {
+                  "runIndex": 0,
+                  "capturePath": "/home/x/deco/doe/bench/out/amd-vulkan-reduction-order-dot-product/20260401T002632Z/reverse/doe/run000.meta.json.op0003.capture.bin",
+                  "captureSha256": "03e3c2420f5066a5fa6e36735ed8cc4f6a251046263e1a6024f009deeee3b952"
+                },
+                {
+                  "runIndex": 1,
+                  "capturePath": "/home/x/deco/doe/bench/out/amd-vulkan-reduction-order-dot-product/20260401T002632Z/reverse/doe/run001.meta.json.op0003.capture.bin",
+                  "captureSha256": "03e3c2420f5066a5fa6e36735ed8cc4f6a251046263e1a6024f009deeee3b952"
+                },
+                {
+                  "runIndex": 2,
+                  "capturePath": "/home/x/deco/doe/bench/out/amd-vulkan-reduction-order-dot-product/20260401T002632Z/reverse/doe/run002.meta.json.op0003.capture.bin",
+                  "captureSha256": "03e3c2420f5066a5fa6e36735ed8cc4f6a251046263e1a6024f009deeee3b952"
+                },
+                {
+                  "runIndex": 3,
+                  "capturePath": "/home/x/deco/doe/bench/out/amd-vulkan-reduction-order-dot-product/20260401T002632Z/reverse/doe/run003.meta.json.op0003.capture.bin",
+                  "captureSha256": "03e3c2420f5066a5fa6e36735ed8cc4f6a251046263e1a6024f009deeee3b952"
+                },
+                {
+                  "runIndex": 4,
+                  "capturePath": "/home/x/deco/doe/bench/out/amd-vulkan-reduction-order-dot-product/20260401T002632Z/reverse/doe/run004.meta.json.op0003.capture.bin",
+                  "captureSha256": "03e3c2420f5066a5fa6e36735ed8cc4f6a251046263e1a6024f009deeee3b952"
+                }
+              ],
+              "firstDivergenceRunIndex": null
+            }
+          },
+          "id": "doe",
+          "backendLane": "vulkan_doe_comparable",
+          "runs": [
+            {
+              "runIndex": 0,
+              "traceMetaPath": "/home/x/deco/doe/bench/out/amd-vulkan-reduction-order-dot-product/20260401T002632Z/reverse/doe/run000.meta.json",
+              "traceJsonlPath": "/home/x/deco/doe/bench/out/amd-vulkan-reduction-order-dot-product/20260401T002632Z/reverse/doe/run000.trace.jsonl",
+              "operatorManifestPath": "/home/x/deco/doe/bench/out/amd-vulkan-reduction-order-dot-product/20260401T002632Z/reverse/doe/run000.meta.json.operators.json"
+            },
+            {
+              "runIndex": 1,
+              "traceMetaPath": "/home/x/deco/doe/bench/out/amd-vulkan-reduction-order-dot-product/20260401T002632Z/reverse/doe/run001.meta.json",
+              "traceJsonlPath": "/home/x/deco/doe/bench/out/amd-vulkan-reduction-order-dot-product/20260401T002632Z/reverse/doe/run001.trace.jsonl",
+              "operatorManifestPath": "/home/x/deco/doe/bench/out/amd-vulkan-reduction-order-dot-product/20260401T002632Z/reverse/doe/run001.meta.json.operators.json"
+            },
+            {
+              "runIndex": 2,
+              "traceMetaPath": "/home/x/deco/doe/bench/out/amd-vulkan-reduction-order-dot-product/20260401T002632Z/reverse/doe/run002.meta.json",
+              "traceJsonlPath": "/home/x/deco/doe/bench/out/amd-vulkan-reduction-order-dot-product/20260401T002632Z/reverse/doe/run002.trace.jsonl",
+              "operatorManifestPath": "/home/x/deco/doe/bench/out/amd-vulkan-reduction-order-dot-product/20260401T002632Z/reverse/doe/run002.meta.json.operators.json"
+            },
+            {
+              "runIndex": 3,
+              "traceMetaPath": "/home/x/deco/doe/bench/out/amd-vulkan-reduction-order-dot-product/20260401T002632Z/reverse/doe/run003.meta.json",
+              "traceJsonlPath": "/home/x/deco/doe/bench/out/amd-vulkan-reduction-order-dot-product/20260401T002632Z/reverse/doe/run003.trace.jsonl",
+              "operatorManifestPath": "/home/x/deco/doe/bench/out/amd-vulkan-reduction-order-dot-product/20260401T002632Z/reverse/doe/run003.meta.json.operators.json"
+            },
+            {
+              "runIndex": 4,
+              "traceMetaPath": "/home/x/deco/doe/bench/out/amd-vulkan-reduction-order-dot-product/20260401T002632Z/reverse/doe/run004.meta.json",
+              "traceJsonlPath": "/home/x/deco/doe/bench/out/amd-vulkan-reduction-order-dot-product/20260401T002632Z/reverse/doe/run004.trace.jsonl",
+              "operatorManifestPath": "/home/x/deco/doe/bench/out/amd-vulkan-reduction-order-dot-product/20260401T002632Z/reverse/doe/run004.meta.json.operators.json"
+            }
+          ]
+        }
+      },
+      "crossLane": {
+        "operators": {
+          "dot.output": {
+            "sameAcrossLanes": true,
+            "laneDominantDigests": {
+              "doe": "03e3c2420f5066a5fa6e36735ed8cc4f6a251046263e1a6024f009deeee3b952"
+            }
+          }
+        }
+      }
+    },
+    "pairwise": {
+      "id": "pairwise",
+      "policyId": "dot-product/pairwise-tree-v1",
+      "commandsPath": "/home/x/deco/doe/bench/fixtures/determinism/dot-product-pairwise.commands.json",
+      "baseCommandsSha256": "a633cde231c4e242540c5cb5f6a53f4e0f19967185135df513dacb9154cec592",
+      "annotatedCommandsPath": "/home/x/deco/doe/bench/out/amd-vulkan-reduction-order-dot-product/20260401T002632Z/amd_vulkan_reduction_order_dot_product.pairwise.commands.annotated.json",
+      "annotatedCommandsSha256": "c5e27f544885661f137e22401b711239ace98f073fab612e16facde55e4d314d",
+      "lanes": {
+        "doe": {
+          "stableAcrossRuns": true,
+          "operators": {
+            "dot.output": {
+              "stableAcrossRuns": true,
+              "runCount": 5,
+              "captureSize": 4,
+              "statusCounts": {
+                "ok": 5
+              },
+              "uniqueDigestCount": 1,
+              "sameByteRate": 1.0,
+              "dominantDigest": "4f4b9b7d8b86633e2824e2f439819357b0cd010ab410ea1a691b12c5f94e91e0",
+              "digestCounts": {
+                "4f4b9b7d8b86633e2824e2f439819357b0cd010ab410ea1a691b12c5f94e91e0": 5
+              },
+              "artifacts": [
+                {
+                  "runIndex": 0,
+                  "capturePath": "/home/x/deco/doe/bench/out/amd-vulkan-reduction-order-dot-product/20260401T002632Z/pairwise/doe/run000.meta.json.op0003.capture.bin",
+                  "captureSha256": "4f4b9b7d8b86633e2824e2f439819357b0cd010ab410ea1a691b12c5f94e91e0"
+                },
+                {
+                  "runIndex": 1,
+                  "capturePath": "/home/x/deco/doe/bench/out/amd-vulkan-reduction-order-dot-product/20260401T002632Z/pairwise/doe/run001.meta.json.op0003.capture.bin",
+                  "captureSha256": "4f4b9b7d8b86633e2824e2f439819357b0cd010ab410ea1a691b12c5f94e91e0"
+                },
+                {
+                  "runIndex": 2,
+                  "capturePath": "/home/x/deco/doe/bench/out/amd-vulkan-reduction-order-dot-product/20260401T002632Z/pairwise/doe/run002.meta.json.op0003.capture.bin",
+                  "captureSha256": "4f4b9b7d8b86633e2824e2f439819357b0cd010ab410ea1a691b12c5f94e91e0"
+                },
+                {
+                  "runIndex": 3,
+                  "capturePath": "/home/x/deco/doe/bench/out/amd-vulkan-reduction-order-dot-product/20260401T002632Z/pairwise/doe/run003.meta.json.op0003.capture.bin",
+                  "captureSha256": "4f4b9b7d8b86633e2824e2f439819357b0cd010ab410ea1a691b12c5f94e91e0"
+                },
+                {
+                  "runIndex": 4,
+                  "capturePath": "/home/x/deco/doe/bench/out/amd-vulkan-reduction-order-dot-product/20260401T002632Z/pairwise/doe/run004.meta.json.op0003.capture.bin",
+                  "captureSha256": "4f4b9b7d8b86633e2824e2f439819357b0cd010ab410ea1a691b12c5f94e91e0"
+                }
+              ],
+              "firstDivergenceRunIndex": null
+            }
+          },
+          "id": "doe",
+          "backendLane": "vulkan_doe_comparable",
+          "runs": [
+            {
+              "runIndex": 0,
+              "traceMetaPath": "/home/x/deco/doe/bench/out/amd-vulkan-reduction-order-dot-product/20260401T002632Z/pairwise/doe/run000.meta.json",
+              "traceJsonlPath": "/home/x/deco/doe/bench/out/amd-vulkan-reduction-order-dot-product/20260401T002632Z/pairwise/doe/run000.trace.jsonl",
+              "operatorManifestPath": "/home/x/deco/doe/bench/out/amd-vulkan-reduction-order-dot-product/20260401T002632Z/pairwise/doe/run000.meta.json.operators.json"
+            },
+            {
+              "runIndex": 1,
+              "traceMetaPath": "/home/x/deco/doe/bench/out/amd-vulkan-reduction-order-dot-product/20260401T002632Z/pairwise/doe/run001.meta.json",
+              "traceJsonlPath": "/home/x/deco/doe/bench/out/amd-vulkan-reduction-order-dot-product/20260401T002632Z/pairwise/doe/run001.trace.jsonl",
+              "operatorManifestPath": "/home/x/deco/doe/bench/out/amd-vulkan-reduction-order-dot-product/20260401T002632Z/pairwise/doe/run001.meta.json.operators.json"
+            },
+            {
+              "runIndex": 2,
+              "traceMetaPath": "/home/x/deco/doe/bench/out/amd-vulkan-reduction-order-dot-product/20260401T002632Z/pairwise/doe/run002.meta.json",
+              "traceJsonlPath": "/home/x/deco/doe/bench/out/amd-vulkan-reduction-order-dot-product/20260401T002632Z/pairwise/doe/run002.trace.jsonl",
+              "operatorManifestPath": "/home/x/deco/doe/bench/out/amd-vulkan-reduction-order-dot-product/20260401T002632Z/pairwise/doe/run002.meta.json.operators.json"
+            },
+            {
+              "runIndex": 3,
+              "traceMetaPath": "/home/x/deco/doe/bench/out/amd-vulkan-reduction-order-dot-product/20260401T002632Z/pairwise/doe/run003.meta.json",
+              "traceJsonlPath": "/home/x/deco/doe/bench/out/amd-vulkan-reduction-order-dot-product/20260401T002632Z/pairwise/doe/run003.trace.jsonl",
+              "operatorManifestPath": "/home/x/deco/doe/bench/out/amd-vulkan-reduction-order-dot-product/20260401T002632Z/pairwise/doe/run003.meta.json.operators.json"
+            },
+            {
+              "runIndex": 4,
+              "traceMetaPath": "/home/x/deco/doe/bench/out/amd-vulkan-reduction-order-dot-product/20260401T002632Z/pairwise/doe/run004.meta.json",
+              "traceJsonlPath": "/home/x/deco/doe/bench/out/amd-vulkan-reduction-order-dot-product/20260401T002632Z/pairwise/doe/run004.trace.jsonl",
+              "operatorManifestPath": "/home/x/deco/doe/bench/out/amd-vulkan-reduction-order-dot-product/20260401T002632Z/pairwise/doe/run004.meta.json.operators.json"
+            }
+          ]
+        }
+      },
+      "crossLane": {
+        "operators": {
+          "dot.output": {
+            "sameAcrossLanes": true,
+            "laneDominantDigests": {
+              "doe": "4f4b9b7d8b86633e2824e2f439819357b0cd010ab410ea1a691b12c5f94e91e0"
+            }
+          }
+        }
+      }
+    }
+  },
+  "laneVariantSummary": {
+    "doe": {
+      "laneId": "doe",
+      "variantCount": 3,
+      "variantOutputs": [
+        {
+          "variantId": "forward",
+          "policyId": "dot-product/forward-serial-v1",
+          "stableAcrossRuns": true,
+          "dominantDigest": "fca31f1667a6aa1bba12fca4e4ea1becd503379d80da3213af07f6cc5702828d",
+          "outputValueF32": 5.0,
+          "outputWordHex": "0x40a00000",
+          "capturePath": "/home/x/deco/doe/bench/out/amd-vulkan-reduction-order-dot-product/20260401T002632Z/forward/doe/run000.meta.json.op0003.capture.bin",
+          "deltaFromExactReference": -1.0
+        },
+        {
+          "variantId": "pairwise",
+          "policyId": "dot-product/pairwise-tree-v1",
+          "stableAcrossRuns": true,
+          "dominantDigest": "4f4b9b7d8b86633e2824e2f439819357b0cd010ab410ea1a691b12c5f94e91e0",
+          "outputValueF32": 4.0,
+          "outputWordHex": "0x40800000",
+          "capturePath": "/home/x/deco/doe/bench/out/amd-vulkan-reduction-order-dot-product/20260401T002632Z/pairwise/doe/run000.meta.json.op0003.capture.bin",
+          "deltaFromExactReference": -2.0
+        },
+        {
+          "variantId": "reverse",
+          "policyId": "dot-product/reverse-serial-v1",
+          "stableAcrossRuns": true,
+          "dominantDigest": "03e3c2420f5066a5fa6e36735ed8cc4f6a251046263e1a6024f009deeee3b952",
+          "outputValueF32": 8.0,
+          "outputWordHex": "0x41000000",
+          "capturePath": "/home/x/deco/doe/bench/out/amd-vulkan-reduction-order-dot-product/20260401T002632Z/reverse/doe/run000.meta.json.op0003.capture.bin",
+          "deltaFromExactReference": 2.0
+        }
+      ],
+      "uniqueOutputValueCount": 3,
+      "uniqueDigestCount": 3,
+      "counterexampleObserved": true,
+      "comparisons": [
+        {
+          "leftVariantId": "forward",
+          "rightVariantId": "pairwise",
+          "sameBytes": false,
+          "sameValue": false,
+          "valueDelta": 1.0,
+          "ulpDistance": 2097152
+        },
+        {
+          "leftVariantId": "forward",
+          "rightVariantId": "reverse",
+          "sameBytes": false,
+          "sameValue": false,
+          "valueDelta": -3.0,
+          "ulpDistance": 6291456
+        },
+        {
+          "leftVariantId": "pairwise",
+          "rightVariantId": "reverse",
+          "sameBytes": false,
+          "sameValue": false,
+          "valueDelta": -4.0,
+          "ulpDistance": 8388608
+        }
+      ]
+    }
+  },
+  "claim": {
+    "exactReferenceValue": 6.0,
+    "counterexampleObserved": true,
+    "lanes": {
+      "doe": {
+        "counterexampleObserved": true,
+        "uniqueOutputValueCount": 3,
+        "uniqueDigestCount": 3
+      }
+    }
+  }
+}
