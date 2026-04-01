@@ -1,0 +1,14 @@
+{
+  "scenarioId": "apple_metal_real_lm_head_slice_hunt_gemma270m_search_sharp_mercy-cruelty-explicit--question01--mut04_prefix2_selective_stable_rerun",
+  "description": "Selective stable-rerun route over a real prompt LM-head slice counterexample.",
+  "policyRegistryPath": "config/numeric-stability-policy.json",
+  "triggerPolicyId": "numeric-instability/selected-token-disagreement-with-reference-improvement-v1",
+  "routingPolicyId": "numeric-stability/prefer-stable-on-selected-token-disagreement-v1",
+  "operatorFamily": "lm-head-slice",
+  "fastVariantId": "f16accum",
+  "stableVariantId": "forward",
+  "selectedTokenOpId": "sample.token",
+  "sensitiveOperators": [
+    "matmul.logits"
+  ]
+}

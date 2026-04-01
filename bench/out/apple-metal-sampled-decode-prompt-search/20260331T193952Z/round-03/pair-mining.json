@@ -1,0 +1,2862 @@
+{
+  "schemaVersion": 1,
+  "source": "doe-pair-agnostic-mine",
+  "scenarioId": "apple_metal_pair_agnostic_mine_gemma270m_search_loose",
+  "sourceReportPaths": [
+    "bench/out/apple-metal-sampled-decode-prompt-search/20260331T193952Z/round-03/real-logit-hunt.json"
+  ],
+  "answerSetRegistryPath": "config/determinism-answer-set-registry.json",
+  "registryModelId": "gemma-3-270m-it-q4k-ehf16-af32",
+  "registryTokenizerId": "gemma-3-spm-v1",
+  "triggerPolicyPath": "config/determinism-trigger-policy.json",
+  "triggerPolicyId": "candidate-margin-band-v1",
+  "perPromptLimit": 2,
+  "globalLimit": 64,
+  "miningPolicy": {
+    "topCandidateLimit": 64,
+    "requireWordLike": true,
+    "requireSingleTokenAnswers": true,
+    "minNormalizedTokenLength": 2,
+    "excludedNormalizedTokens": [
+      "a",
+      "all",
+      "almost",
+      "an",
+      "and",
+      "answer",
+      "be",
+      "it",
+      "its",
+      "question",
+      "really",
+      "scenario",
+      "should",
+      "the",
+      "they",
+      "this"
+    ],
+    "requiredPromptSubstrings": [
+      " or "
+    ],
+    "requireBoundedAnswerPrompt": true,
+    "minPromptAnchorCount": 1,
+    "allowSingleAnchorTokens": [
+      "no",
+      "not"
+    ],
+    "maxPairGapToMine": 4.0,
+    "maxPairLeadToMine": 8.0,
+    "maxOutsiderLeadToMine": 8.0,
+    "maxPairGapForScore": 4.0,
+    "maxPairLeadForScore": 8.0,
+    "maxOutsiderLeadForScore": 8.0,
+    "pairGapWeight": 0.45,
+    "pairLeadWeight": 0.2,
+    "outsiderLeadWeight": 0.15,
+    "promptAnchorWeight": 0.05,
+    "boundedAnswerPromptWeight": 0.05,
+    "sourceByteStableWeight": 0.05,
+    "sourceGreedyStableWeight": 0.05
+  },
+  "summary": {
+    "sourceReportCount": 1,
+    "sourceCandidateCount": 24,
+    "minedCandidateCount": 15,
+    "promotedCandidateCount": 15,
+    "uniquePromptCount": 12,
+    "uniquePairIdCount": 1,
+    "topUsefulCasesByBucket": {
+      "natural-supporting": [
+        {
+          "candidateSetSource": "mined-topk-v1",
+          "candidateSetId": "binary.true_false",
+          "candidateSetRegistryTokenizerId": "gemma-3-spm-v1",
+          "answerSetId": "binary.true_false",
+          "domainId": "binary",
+          "answerOptionIds": [
+            "true",
+            "false"
+          ],
+          "answerOptionLabels": [
+            "true",
+            "false"
+          ],
+          "candidatePairId": "false__true",
+          "candidateCanonicalOrder": "token-id-ascending",
+          "canonicalCandidateSet": [
+            {
+              "token": 6288,
+              "tokenText": " True",
+              "normalizedTokenText": "true"
+            },
+            {
+              "token": 8450,
+              "tokenText": " False",
+              "normalizedTokenText": "false"
+            }
+          ],
+          "discoveryMode": "natural-scout",
+          "sourcePromptId": "psych-diagnosis-uncertain-answer--false__true--answer-question-reversed--false__true--parenthetical-question",
+          "mutationDepth": 0,
+          "mutationType": null,
+          "promotionBucket": "natural-supporting",
+          "sourceReportPath": "bench/out/apple-metal-sampled-decode-prompt-search/20260331T193952Z/round-03/real-logit-hunt.json",
+          "sourceReportScenarioId": "apple_metal_real_logit_hunt_gemma270m_prompt_search_sharp--round-03",
+          "sourceRepeatIndex": 0,
+          "promptId": "psych-diagnosis-uncertain-answer--false__true--answer-question-reversed--false__true--parenthetical-question",
+          "promptText": "One-word answer only (false or true). Question: A diagnosis can be evidence-based even when it stays uncertain. Answer:",
+          "promptIndex": 2,
+          "phase": "prefill",
+          "stepIndex": 0,
+          "stepLabel": "prefill",
+          "top2Gap": 0.013545989990234375,
+          "exactMaxTieObserved": false,
+          "topTokenText": " False",
+          "topToken": 8450,
+          "topTokenLogit": 19.128890991210938,
+          "leftTokenText": " True",
+          "leftNormalizedTokenText": "true",
+          "leftToken": 6288,
+          "leftLogit": 19.115345001220703,
+          "leftRank": 2,
+          "leftPromptAnchored": true,
+          "rightTokenText": " False",
+          "rightNormalizedTokenText": "false",
+          "rightToken": 8450,
+          "rightLogit": 19.128890991210938,
+          "rightRank": 1,
+          "rightPromptAnchored": true,
+          "pairGap": 0.013545989990234375,
+          "pairLeadFromTop": 0.0,
+          "outsiderLead": 0.0,
+          "promptAnchorCount": 2,
+          "answerSetPromptAnchorCount": 2,
+          "boundedAnswerPrompt": true,
+          "sourceRepeatCount": 3,
+          "sourceByteStable": true,
+          "sourceGreedyStable": true,
+          "candidateSetStable": true,
+          "candidateSetPresenceRate": 1.0,
+          "triggerPolicyId": "candidate-margin-band-v1",
+          "triggerEvaluation": {
+            "policyId": "candidate-margin-band-v1",
+            "mode": "candidate-margin-band",
+            "epsilon": 0.05,
+            "candidateTopGap": 0.013545989990234375,
+            "ambiguousCandidateCount": 2,
+            "wouldTrigger": true
+          },
+          "stageStability": {
+            "scout": {
+              "requirementId": "scout-v1",
+              "promptTokenizationStable": true,
+              "topCandidateMembershipStable": true,
+              "passed": true
+            },
+            "promote": {
+              "requirementId": "promote-v1",
+              "candidateSetStable": true,
+              "digestStable": true,
+              "passed": true
+            },
+            "claimableDemo": {
+              "requirementId": "claimable-demo-v1",
+              "finalTokenStable": null,
+              "receiptReplayStable": null,
+              "passed": null
+            }
+          },
+          "usefulnessScore": 1.048476,
+          "logitsArtifactPath": null,
+          "logitsSha256": "cddee602c8facdb8b07ad71bf7870adfe85e91b7d5ab00ee962918107722884f"
+        },
+        {
+          "candidateSetSource": "mined-topk-v1",
+          "candidateSetId": "binary.true_false",
+          "candidateSetRegistryTokenizerId": "gemma-3-spm-v1",
+          "answerSetId": "binary.true_false",
+          "domainId": "binary",
+          "answerOptionIds": [
+            "true",
+            "false"
+          ],
+          "answerOptionLabels": [
+            "true",
+            "false"
+          ],
+          "candidatePairId": "false__true",
+          "candidateCanonicalOrder": "token-id-ascending",
+          "canonicalCandidateSet": [
+            {
+              "token": 6288,
+              "tokenText": " True",
+              "normalizedTokenText": "true"
+            },
+            {
+              "token": 8450,
+              "tokenText": " False",
+              "normalizedTokenText": "false"
+            }
+          ],
+          "discoveryMode": "natural-scout",
+          "sourcePromptId": "psych-diagnosis-uncertain-answer--false__true--answer-question-reversed--false__true--choose-question",
+          "mutationDepth": 0,
+          "mutationType": null,
+          "promotionBucket": "natural-supporting",
+          "sourceReportPath": "bench/out/apple-metal-sampled-decode-prompt-search/20260331T193952Z/round-03/real-logit-hunt.json",
+          "sourceReportScenarioId": "apple_metal_real_logit_hunt_gemma270m_prompt_search_sharp--round-03",
+          "sourceRepeatIndex": 0,
+          "promptId": "psych-diagnosis-uncertain-answer--false__true--answer-question-reversed--false__true--choose-question",
+          "promptText": "Choose exactly one word: false or true. Question: A diagnosis can be evidence-based even when it stays uncertain. Answer:",
+          "promptIndex": 0,
+          "phase": "prefill",
+          "stepIndex": 0,
+          "stepLabel": "prefill",
+          "top2Gap": 0.023981094360351562,
+          "exactMaxTieObserved": false,
+          "topTokenText": " True",
+          "topToken": 6288,
+          "topTokenLogit": 16.996335983276367,
+          "leftTokenText": " True",
+          "leftNormalizedTokenText": "true",
+          "leftToken": 6288,
+          "leftLogit": 16.996335983276367,
+          "leftRank": 1,
+          "leftPromptAnchored": true,
+          "rightTokenText": " False",
+          "rightNormalizedTokenText": "false",
+          "rightToken": 8450,
+          "rightLogit": 16.87859535217285,
+          "rightRank": 3,
+          "rightPromptAnchored": true,
+          "pairGap": 0.11774063110351562,
+          "pairLeadFromTop": 0.0,
+          "outsiderLead": 0.0,
+          "promptAnchorCount": 2,
+          "answerSetPromptAnchorCount": 2,
+          "boundedAnswerPrompt": true,
+          "sourceRepeatCount": 3,
+          "sourceByteStable": true,
+          "sourceGreedyStable": true,
+          "candidateSetStable": true,
+          "candidateSetPresenceRate": 1.0,
+          "triggerPolicyId": "candidate-margin-band-v1",
+          "triggerEvaluation": {
+            "policyId": "candidate-margin-band-v1",
+            "mode": "candidate-margin-band",
+            "epsilon": 0.05,
+            "candidateTopGap": 0.11774063110351562,
+            "ambiguousCandidateCount": 1,
+            "wouldTrigger": false
+          },
+          "stageStability": {
+            "scout": {
+              "requirementId": "scout-v1",
+              "promptTokenizationStable": true,
+              "topCandidateMembershipStable": true,
+              "passed": true
+            },
+            "promote": {
+              "requirementId": "promote-v1",
+              "candidateSetStable": true,
+              "digestStable": true,
+              "passed": true
+            },
+            "claimableDemo": {
+              "requirementId": "claimable-demo-v1",
+              "finalTokenStable": null,
+              "receiptReplayStable": null,
+              "passed": null
+            }
+          },
+          "usefulnessScore": 1.036754,
+          "logitsArtifactPath": null,
+          "logitsSha256": "430745f989668b8abfe505d98c2e9c9a3c5038dc535e2045f3dadf58412e8a3f"
+        },
+        {
+          "candidateSetSource": "mined-topk-v1",
+          "candidateSetId": "binary.true_false",
+          "candidateSetRegistryTokenizerId": "gemma-3-spm-v1",
+          "answerSetId": "binary.true_false",
+          "domainId": "binary",
+          "answerOptionIds": [
+            "true",
+            "false"
+          ],
+          "answerOptionLabels": [
+            "true",
+            "false"
+          ],
+          "candidatePairId": "false__true",
+          "candidateCanonicalOrder": "token-id-ascending",
+          "canonicalCandidateSet": [
+            {
+              "token": 6288,
+              "tokenText": " True",
+              "normalizedTokenText": "true"
+            },
+            {
+              "token": 8450,
+              "tokenText": " False",
+              "normalizedTokenText": "false"
+            }
+          ],
+          "discoveryMode": "natural-scout",
+          "sourcePromptId": "psych-diagnosis-uncertain-answer--false__true--answer-question-reversed--false__true--scenario-answer",
+          "mutationDepth": 0,
+          "mutationType": null,
+          "promotionBucket": "natural-supporting",
+          "sourceReportPath": "bench/out/apple-metal-sampled-decode-prompt-search/20260331T193952Z/round-03/real-logit-hunt.json",
+          "sourceReportScenarioId": "apple_metal_real_logit_hunt_gemma270m_prompt_search_sharp--round-03",
+          "sourceRepeatIndex": 0,
+          "promptId": "psych-diagnosis-uncertain-answer--false__true--answer-question-reversed--false__true--scenario-answer",
+          "promptText": "Given the scenario, answer with exactly one word: false or true. Scenario: A diagnosis can be evidence-based even when it stays uncertain. Answer:",
+          "promptIndex": 4,
+          "phase": "prefill",
+          "stepIndex": 0,
+          "stepLabel": "prefill",
+          "top2Gap": 0.6510257720947266,
+          "exactMaxTieObserved": false,
+          "topTokenText": " True",
+          "topToken": 6288,
+          "topTokenLogit": 18.98687744140625,
+          "leftTokenText": " True",
+          "leftNormalizedTokenText": "true",
+          "leftToken": 6288,
+          "leftLogit": 18.98687744140625,
+          "leftRank": 1,
+          "leftPromptAnchored": true,
+          "rightTokenText": " False",
+          "rightNormalizedTokenText": "false",
+          "rightToken": 8450,
+          "rightLogit": 18.335851669311523,
+          "rightRank": 2,
+          "rightPromptAnchored": true,
+          "pairGap": 0.6510257720947266,
+          "pairLeadFromTop": 0.0,
+          "outsiderLead": 0.0,
+          "promptAnchorCount": 2,
+          "answerSetPromptAnchorCount": 2,
+          "boundedAnswerPrompt": true,
+          "sourceRepeatCount": 3,
+          "sourceByteStable": true,
+          "sourceGreedyStable": true,
+          "candidateSetStable": true,
+          "candidateSetPresenceRate": 1.0,
+          "triggerPolicyId": "candidate-margin-band-v1",
+          "triggerEvaluation": {
+            "policyId": "candidate-margin-band-v1",
+            "mode": "candidate-margin-band",
+            "epsilon": 0.05,
+            "candidateTopGap": 0.6510257720947266,
+            "ambiguousCandidateCount": 1,
+            "wouldTrigger": false
+          },
+          "stageStability": {
+            "scout": {
+              "requirementId": "scout-v1",
+              "promptTokenizationStable": true,
+              "topCandidateMembershipStable": true,
+              "passed": true
+            },
+            "promote": {
+              "requirementId": "promote-v1",
+              "candidateSetStable": true,
+              "digestStable": true,
+              "passed": true
+            },
+            "claimableDemo": {
+              "requirementId": "claimable-demo-v1",
+              "finalTokenStable": null,
+              "receiptReplayStable": null,
+              "passed": null
+            }
+          },
+          "usefulnessScore": 0.97676,
+          "logitsArtifactPath": null,
+          "logitsSha256": "946320217f4c68af32e4eabcfd0955f19f1c3a474c3995b96e1519d0de26ac18"
+        },
+        {
+          "candidateSetSource": "mined-topk-v1",
+          "candidateSetId": "binary.true_false",
+          "candidateSetRegistryTokenizerId": "gemma-3-spm-v1",
+          "answerSetId": "binary.true_false",
+          "domainId": "binary",
+          "answerOptionIds": [
+            "true",
+            "false"
+          ],
+          "answerOptionLabels": [
+            "true",
+            "false"
+          ],
+          "candidatePairId": "false__true",
+          "candidateCanonicalOrder": "token-id-ascending",
+          "canonicalCandidateSet": [
+            {
+              "token": 6288,
+              "tokenText": " True",
+              "normalizedTokenText": "true"
+            },
+            {
+              "token": 8450,
+              "tokenText": " False",
+              "normalizedTokenText": "false"
+            }
+          ],
+          "discoveryMode": "natural-scout",
+          "sourcePromptId": "psych-diagnosis-uncertain-answer--false__true--answer-question-reversed--false__true--reply-question",
+          "mutationDepth": 0,
+          "mutationType": null,
+          "promotionBucket": "natural-supporting",
+          "sourceReportPath": "bench/out/apple-metal-sampled-decode-prompt-search/20260331T193952Z/round-03/real-logit-hunt.json",
+          "sourceReportScenarioId": "apple_metal_real_logit_hunt_gemma270m_prompt_search_sharp--round-03",
+          "sourceRepeatIndex": 0,
+          "promptId": "psych-diagnosis-uncertain-answer--false__true--answer-question-reversed--false__true--reply-question",
+          "promptText": "Reply with exactly one word: false or true. Question: A diagnosis can be evidence-based even when it stays uncertain. Answer:",
+          "promptIndex": 1,
+          "phase": "prefill",
+          "stepIndex": 0,
+          "stepLabel": "prefill",
+          "top2Gap": 0.07114791870117188,
+          "exactMaxTieObserved": false,
+          "topTokenText": " False",
+          "topToken": 8450,
+          "topTokenLogit": 20.09122085571289,
+          "leftTokenText": " True",
+          "leftNormalizedTokenText": "true",
+          "leftToken": 6288,
+          "leftLogit": 19.25296974182129,
+          "leftRank": 3,
+          "leftPromptAnchored": true,
+          "rightTokenText": " False",
+          "rightNormalizedTokenText": "false",
+          "rightToken": 8450,
+          "rightLogit": 20.09122085571289,
+          "rightRank": 1,
+          "rightPromptAnchored": true,
+          "pairGap": 0.8382511138916016,
+          "pairLeadFromTop": 0.0,
+          "outsiderLead": 0.0,
+          "promptAnchorCount": 2,
+          "answerSetPromptAnchorCount": 2,
+          "boundedAnswerPrompt": true,
+          "sourceRepeatCount": 3,
+          "sourceByteStable": true,
+          "sourceGreedyStable": true,
+          "candidateSetStable": true,
+          "candidateSetPresenceRate": 1.0,
+          "triggerPolicyId": "candidate-margin-band-v1",
+          "triggerEvaluation": {
+            "policyId": "candidate-margin-band-v1",
+            "mode": "candidate-margin-band",
+            "epsilon": 0.05,
+            "candidateTopGap": 0.8382511138916016,
+            "ambiguousCandidateCount": 1,
+            "wouldTrigger": false
+          },
+          "stageStability": {
+            "scout": {
+              "requirementId": "scout-v1",
+              "promptTokenizationStable": true,
+              "topCandidateMembershipStable": true,
+              "passed": true
+            },
+            "promote": {
+              "requirementId": "promote-v1",
+              "candidateSetStable": true,
+              "digestStable": true,
+              "passed": true
+            },
+            "claimableDemo": {
+              "requirementId": "claimable-demo-v1",
+              "finalTokenStable": null,
+              "receiptReplayStable": null,
+              "passed": null
+            }
+          },
+          "usefulnessScore": 0.955697,
+          "logitsArtifactPath": null,
+          "logitsSha256": "e3c7b0d9bb29ae7e21cc77dc614153565d0953081ecb3fb56c18f97b641fd1aa"
+        },
+        {
+          "candidateSetSource": "mined-topk-v1",
+          "candidateSetId": "binary.true_false",
+          "candidateSetRegistryTokenizerId": "gemma-3-spm-v1",
+          "answerSetId": "binary.true_false",
+          "domainId": "binary",
+          "answerOptionIds": [
+            "true",
+            "false"
+          ],
+          "answerOptionLabels": [
+            "true",
+            "false"
+          ],
+          "candidatePairId": "false__true",
+          "candidateCanonicalOrder": "token-id-ascending",
+          "canonicalCandidateSet": [
+            {
+              "token": 6288,
+              "tokenText": " True",
+              "normalizedTokenText": "true"
+            },
+            {
+              "token": 8450,
+              "tokenText": " False",
+              "normalizedTokenText": "false"
+            }
+          ],
+          "discoveryMode": "natural-scout",
+          "sourcePromptId": "physics-position-momentum-answer--false__true--swap-inline-choice--false__true--reply-question",
+          "mutationDepth": 0,
+          "mutationType": null,
+          "promotionBucket": "natural-supporting",
+          "sourceReportPath": "bench/out/apple-metal-sampled-decode-prompt-search/20260331T193952Z/round-03/real-logit-hunt.json",
+          "sourceReportScenarioId": "apple_metal_real_logit_hunt_gemma270m_prompt_search_sharp--round-03",
+          "sourceRepeatIndex": 0,
+          "promptId": "physics-position-momentum-answer--false__true--swap-inline-choice--false__true--reply-question",
+          "promptText": "Reply with exactly one word: false or true. Question: An electron can have an exact position and exact momentum at the same time. Answer:",
+          "promptIndex": 7,
+          "phase": "prefill",
+          "stepIndex": 0,
+          "stepLabel": "prefill",
+          "top2Gap": 1.065816879272461,
+          "exactMaxTieObserved": false,
+          "topTokenText": " True",
+          "topToken": 6288,
+          "topTokenLogit": 20.490886688232422,
+          "leftTokenText": " True",
+          "leftNormalizedTokenText": "true",
+          "leftToken": 6288,
+          "leftLogit": 20.490886688232422,
+          "leftRank": 1,
+          "leftPromptAnchored": true,
+          "rightTokenText": " False",
+          "rightNormalizedTokenText": "false",
+          "rightToken": 8450,
+          "rightLogit": 19.42506980895996,
+          "rightRank": 2,
+          "rightPromptAnchored": true,
+          "pairGap": 1.065816879272461,
+          "pairLeadFromTop": 0.0,
+          "outsiderLead": 0.0,
+          "promptAnchorCount": 2,
+          "answerSetPromptAnchorCount": 2,
+          "boundedAnswerPrompt": true,
+          "sourceRepeatCount": 3,
+          "sourceByteStable": true,
+          "sourceGreedyStable": true,
+          "candidateSetStable": true,
+          "candidateSetPresenceRate": 1.0,
+          "triggerPolicyId": "candidate-margin-band-v1",
+          "triggerEvaluation": {
+            "policyId": "candidate-margin-band-v1",
+            "mode": "candidate-margin-band",
+            "epsilon": 0.05,
+            "candidateTopGap": 1.065816879272461,
+            "ambiguousCandidateCount": 1,
+            "wouldTrigger": false
+          },
+          "stageStability": {
+            "scout": {
+              "requirementId": "scout-v1",
+              "promptTokenizationStable": true,
+              "topCandidateMembershipStable": true,
+              "passed": true
+            },
+            "promote": {
+              "requirementId": "promote-v1",
+              "candidateSetStable": true,
+              "digestStable": true,
+              "passed": true
+            },
+            "claimableDemo": {
+              "requirementId": "claimable-demo-v1",
+              "finalTokenStable": null,
+              "receiptReplayStable": null,
+              "passed": null
+            }
+          },
+          "usefulnessScore": 0.930096,
+          "logitsArtifactPath": null,
+          "logitsSha256": "3b5db9ac7a4b677917eb19449155b4f5eee6e0a3ed0990ddd725c6b88682ad56"
+        },
+        {
+          "candidateSetSource": "mined-topk-v1",
+          "candidateSetId": "binary.true_false",
+          "candidateSetRegistryTokenizerId": "gemma-3-spm-v1",
+          "answerSetId": "binary.true_false",
+          "domainId": "binary",
+          "answerOptionIds": [
+            "true",
+            "false"
+          ],
+          "answerOptionLabels": [
+            "true",
+            "false"
+          ],
+          "candidatePairId": "false__true",
+          "candidateCanonicalOrder": "token-id-ascending",
+          "canonicalCandidateSet": [
+            {
+              "token": 6288,
+              "tokenText": " True",
+              "normalizedTokenText": "true"
+            },
+            {
+              "token": 8450,
+              "tokenText": " False",
+              "normalizedTokenText": "false"
+            }
+          ],
+          "discoveryMode": "natural-scout",
+          "sourcePromptId": "physics-position-momentum-answer--false__true--swap-inline-choice--false__true--parenthetical-question",
+          "mutationDepth": 0,
+          "mutationType": null,
+          "promotionBucket": "natural-supporting",
+          "sourceReportPath": "bench/out/apple-metal-sampled-decode-prompt-search/20260331T193952Z/round-03/real-logit-hunt.json",
+          "sourceReportScenarioId": "apple_metal_real_logit_hunt_gemma270m_prompt_search_sharp--round-03",
+          "sourceRepeatIndex": 0,
+          "promptId": "physics-position-momentum-answer--false__true--swap-inline-choice--false__true--parenthetical-question",
+          "promptText": "One-word answer only (false or true). Question: An electron can have an exact position and exact momentum at the same time. Answer:",
+          "promptIndex": 8,
+          "phase": "prefill",
+          "stepIndex": 0,
+          "stepLabel": "prefill",
+          "top2Gap": 1.1689071655273438,
+          "exactMaxTieObserved": false,
+          "topTokenText": " True",
+          "topToken": 6288,
+          "topTokenLogit": 20.14313316345215,
+          "leftTokenText": " True",
+          "leftNormalizedTokenText": "true",
+          "leftToken": 6288,
+          "leftLogit": 20.14313316345215,
+          "leftRank": 1,
+          "leftPromptAnchored": true,
+          "rightTokenText": " False",
+          "rightNormalizedTokenText": "false",
+          "rightToken": 8450,
+          "rightLogit": 18.974225997924805,
+          "rightRank": 2,
+          "rightPromptAnchored": true,
+          "pairGap": 1.1689071655273438,
+          "pairLeadFromTop": 0.0,
+          "outsiderLead": 0.0,
+          "promptAnchorCount": 2,
+          "answerSetPromptAnchorCount": 2,
+          "boundedAnswerPrompt": true,
+          "sourceRepeatCount": 3,
+          "sourceByteStable": true,
+          "sourceGreedyStable": true,
+          "candidateSetStable": true,
+          "candidateSetPresenceRate": 1.0,
+          "triggerPolicyId": "candidate-margin-band-v1",
+          "triggerEvaluation": {
+            "policyId": "candidate-margin-band-v1",
+            "mode": "candidate-margin-band",
+            "epsilon": 0.05,
+            "candidateTopGap": 1.1689071655273438,
+            "ambiguousCandidateCount": 1,
+            "wouldTrigger": false
+          },
+          "stageStability": {
+            "scout": {
+              "requirementId": "scout-v1",
+              "promptTokenizationStable": true,
+              "topCandidateMembershipStable": true,
+              "passed": true
+            },
+            "promote": {
+              "requirementId": "promote-v1",
+              "candidateSetStable": true,
+              "digestStable": true,
+              "passed": true
+            },
+            "claimableDemo": {
+              "requirementId": "claimable-demo-v1",
+              "finalTokenStable": null,
+              "receiptReplayStable": null,
+              "passed": null
+            }
+          },
+          "usefulnessScore": 0.918498,
+          "logitsArtifactPath": null,
+          "logitsSha256": "d060e163965acf903e7267ccdad3a86cf6aef2e87f5559732c490a288bd2dca0"
+        },
+        {
+          "candidateSetSource": "mined-topk-v1",
+          "candidateSetId": "binary.true_false",
+          "candidateSetRegistryTokenizerId": "gemma-3-spm-v1",
+          "answerSetId": "binary.true_false",
+          "domainId": "binary",
+          "answerOptionIds": [
+            "true",
+            "false"
+          ],
+          "answerOptionLabels": [
+            "true",
+            "false"
+          ],
+          "candidatePairId": "false__true",
+          "candidateCanonicalOrder": "token-id-ascending",
+          "canonicalCandidateSet": [
+            {
+              "token": 6288,
+              "tokenText": " True",
+              "normalizedTokenText": "true"
+            },
+            {
+              "token": 8450,
+              "tokenText": " False",
+              "normalizedTokenText": "false"
+            }
+          ],
+          "discoveryMode": "natural-scout",
+          "sourcePromptId": "physics-position-momentum-answer--false__true--swap-inline-choice--false__true--question-answer",
+          "mutationDepth": 0,
+          "mutationType": null,
+          "promotionBucket": "natural-supporting",
+          "sourceReportPath": "bench/out/apple-metal-sampled-decode-prompt-search/20260331T193952Z/round-03/real-logit-hunt.json",
+          "sourceReportScenarioId": "apple_metal_real_logit_hunt_gemma270m_prompt_search_sharp--round-03",
+          "sourceRepeatIndex": 0,
+          "promptId": "physics-position-momentum-answer--false__true--swap-inline-choice--false__true--question-answer",
+          "promptText": "Question: An electron can have an exact position and exact momentum at the same time. Answer with exactly one word: false or true. Answer:",
+          "promptIndex": 9,
+          "phase": "prefill",
+          "stepIndex": 0,
+          "stepLabel": "prefill",
+          "top2Gap": 1.2682914733886719,
+          "exactMaxTieObserved": false,
+          "topTokenText": " True",
+          "topToken": 6288,
+          "topTokenLogit": 20.432355880737305,
+          "leftTokenText": " True",
+          "leftNormalizedTokenText": "true",
+          "leftToken": 6288,
+          "leftLogit": 20.432355880737305,
+          "leftRank": 1,
+          "leftPromptAnchored": true,
+          "rightTokenText": " False",
+          "rightNormalizedTokenText": "false",
+          "rightToken": 8450,
+          "rightLogit": 19.164064407348633,
+          "rightRank": 2,
+          "rightPromptAnchored": true,
+          "pairGap": 1.2682914733886719,
+          "pairLeadFromTop": 0.0,
+          "outsiderLead": 0.0,
+          "promptAnchorCount": 2,
+          "answerSetPromptAnchorCount": 2,
+          "boundedAnswerPrompt": true,
+          "sourceRepeatCount": 3,
+          "sourceByteStable": true,
+          "sourceGreedyStable": true,
+          "candidateSetStable": true,
+          "candidateSetPresenceRate": 1.0,
+          "triggerPolicyId": "candidate-margin-band-v1",
+          "triggerEvaluation": {
+            "policyId": "candidate-margin-band-v1",
+            "mode": "candidate-margin-band",
+            "epsilon": 0.05,
+            "candidateTopGap": 1.2682914733886719,
+            "ambiguousCandidateCount": 1,
+            "wouldTrigger": false
+          },
+          "stageStability": {
+            "scout": {
+              "requirementId": "scout-v1",
+              "promptTokenizationStable": true,
+              "topCandidateMembershipStable": true,
+              "passed": true
+            },
+            "promote": {
+              "requirementId": "promote-v1",
+              "candidateSetStable": true,
+              "digestStable": true,
+              "passed": true
+            },
+            "claimableDemo": {
+              "requirementId": "claimable-demo-v1",
+              "finalTokenStable": null,
+              "receiptReplayStable": null,
+              "passed": null
+            }
+          },
+          "usefulnessScore": 0.907317,
+          "logitsArtifactPath": null,
+          "logitsSha256": "6f78067938bd654393ecfe1080fd5eb0a1de03ddcd8297fd299b07b03615c3ee"
+        },
+        {
+          "candidateSetSource": "mined-topk-v1",
+          "candidateSetId": "binary.true_false",
+          "candidateSetRegistryTokenizerId": "gemma-3-spm-v1",
+          "answerSetId": "binary.true_false",
+          "domainId": "binary",
+          "answerOptionIds": [
+            "true",
+            "false"
+          ],
+          "answerOptionLabels": [
+            "true",
+            "false"
+          ],
+          "candidatePairId": "false__true",
+          "candidateCanonicalOrder": "token-id-ascending",
+          "canonicalCandidateSet": [
+            {
+              "token": 6288,
+              "tokenText": " True",
+              "normalizedTokenText": "true"
+            },
+            {
+              "token": 8450,
+              "tokenText": " False",
+              "normalizedTokenText": "false"
+            }
+          ],
+          "discoveryMode": "natural-scout",
+          "sourcePromptId": "physics-position-momentum-answer--false__true--swap-inline-choice--false__true--scenario-answer",
+          "mutationDepth": 0,
+          "mutationType": null,
+          "promotionBucket": "natural-supporting",
+          "sourceReportPath": "bench/out/apple-metal-sampled-decode-prompt-search/20260331T193952Z/round-03/real-logit-hunt.json",
+          "sourceReportScenarioId": "apple_metal_real_logit_hunt_gemma270m_prompt_search_sharp--round-03",
+          "sourceRepeatIndex": 0,
+          "promptId": "physics-position-momentum-answer--false__true--swap-inline-choice--false__true--scenario-answer",
+          "promptText": "Given the scenario, answer with exactly one word: false or true. Scenario: An electron can have an exact position and exact momentum at the same time. Answer:",
+          "promptIndex": 10,
+          "phase": "prefill",
+          "stepIndex": 0,
+          "stepLabel": "prefill",
+          "top2Gap": 1.433309555053711,
+          "exactMaxTieObserved": false,
+          "topTokenText": " True",
+          "topToken": 6288,
+          "topTokenLogit": 20.27273941040039,
+          "leftTokenText": " True",
+          "leftNormalizedTokenText": "true",
+          "leftToken": 6288,
+          "leftLogit": 20.27273941040039,
+          "leftRank": 1,
+          "leftPromptAnchored": true,
+          "rightTokenText": " False",
+          "rightNormalizedTokenText": "false",
+          "rightToken": 8450,
+          "rightLogit": 18.83942985534668,
+          "rightRank": 2,
+          "rightPromptAnchored": true,
+          "pairGap": 1.433309555053711,
+          "pairLeadFromTop": 0.0,
+          "outsiderLead": 0.0,
+          "promptAnchorCount": 2,
+          "answerSetPromptAnchorCount": 2,
+          "boundedAnswerPrompt": true,
+          "sourceRepeatCount": 3,
+          "sourceByteStable": true,
+          "sourceGreedyStable": true,
+          "candidateSetStable": true,
+          "candidateSetPresenceRate": 1.0,
+          "triggerPolicyId": "candidate-margin-band-v1",
+          "triggerEvaluation": {
+            "policyId": "candidate-margin-band-v1",
+            "mode": "candidate-margin-band",
+            "epsilon": 0.05,
+            "candidateTopGap": 1.433309555053711,
+            "ambiguousCandidateCount": 1,
+            "wouldTrigger": false
+          },
+          "stageStability": {
+            "scout": {
+              "requirementId": "scout-v1",
+              "promptTokenizationStable": true,
+              "topCandidateMembershipStable": true,
+              "passed": true
+            },
+            "promote": {
+              "requirementId": "promote-v1",
+              "candidateSetStable": true,
+              "digestStable": true,
+              "passed": true
+            },
+            "claimableDemo": {
+              "requirementId": "claimable-demo-v1",
+              "finalTokenStable": null,
+              "receiptReplayStable": null,
+              "passed": null
+            }
+          },
+          "usefulnessScore": 0.888753,
+          "logitsArtifactPath": null,
+          "logitsSha256": "47df109426698152c02b7f4976cbcf08c25bf2ead0c458dc6a5293d92b739027"
+        },
+        {
+          "candidateSetSource": "mined-topk-v1",
+          "candidateSetId": "binary.true_false",
+          "candidateSetRegistryTokenizerId": "gemma-3-spm-v1",
+          "answerSetId": "binary.true_false",
+          "domainId": "binary",
+          "answerOptionIds": [
+            "true",
+            "false"
+          ],
+          "answerOptionLabels": [
+            "true",
+            "false"
+          ],
+          "candidatePairId": "false__true",
+          "candidateCanonicalOrder": "token-id-ascending",
+          "canonicalCandidateSet": [
+            {
+              "token": 6288,
+              "tokenText": " True",
+              "normalizedTokenText": "true"
+            },
+            {
+              "token": 8450,
+              "tokenText": " False",
+              "normalizedTokenText": "false"
+            }
+          ],
+          "discoveryMode": "natural-scout",
+          "sourcePromptId": "physics-position-momentum-answer--false__true--swap-inline-choice--false__true--choose-question",
+          "mutationDepth": 0,
+          "mutationType": null,
+          "promotionBucket": "natural-supporting",
+          "sourceReportPath": "bench/out/apple-metal-sampled-decode-prompt-search/20260331T193952Z/round-03/real-logit-hunt.json",
+          "sourceReportScenarioId": "apple_metal_real_logit_hunt_gemma270m_prompt_search_sharp--round-03",
+          "sourceRepeatIndex": 0,
+          "promptId": "physics-position-momentum-answer--false__true--swap-inline-choice--false__true--choose-question",
+          "promptText": "Choose exactly one word: false or true. Question: An electron can have an exact position and exact momentum at the same time. Answer:",
+          "promptIndex": 6,
+          "phase": "prefill",
+          "stepIndex": 0,
+          "stepLabel": "prefill",
+          "top2Gap": 1.435201644897461,
+          "exactMaxTieObserved": false,
+          "topTokenText": " True",
+          "topToken": 6288,
+          "topTokenLogit": 20.173864364624023,
+          "leftTokenText": " True",
+          "leftNormalizedTokenText": "true",
+          "leftToken": 6288,
+          "leftLogit": 20.173864364624023,
+          "leftRank": 1,
+          "leftPromptAnchored": true,
+          "rightTokenText": " False",
+          "rightNormalizedTokenText": "false",
+          "rightToken": 8450,
+          "rightLogit": 18.738662719726562,
+          "rightRank": 2,
+          "rightPromptAnchored": true,
+          "pairGap": 1.435201644897461,
+          "pairLeadFromTop": 0.0,
+          "outsiderLead": 0.0,
+          "promptAnchorCount": 2,
+          "answerSetPromptAnchorCount": 2,
+          "boundedAnswerPrompt": true,
+          "sourceRepeatCount": 3,
+          "sourceByteStable": true,
+          "sourceGreedyStable": true,
+          "candidateSetStable": true,
+          "candidateSetPresenceRate": 1.0,
+          "triggerPolicyId": "candidate-margin-band-v1",
+          "triggerEvaluation": {
+            "policyId": "candidate-margin-band-v1",
+            "mode": "candidate-margin-band",
+            "epsilon": 0.05,
+            "candidateTopGap": 1.435201644897461,
+            "ambiguousCandidateCount": 1,
+            "wouldTrigger": false
+          },
+          "stageStability": {
+            "scout": {
+              "requirementId": "scout-v1",
+              "promptTokenizationStable": true,
+              "topCandidateMembershipStable": true,
+              "passed": true
+            },
+            "promote": {
+              "requirementId": "promote-v1",
+              "candidateSetStable": true,
+              "digestStable": true,
+              "passed": true
+            },
+            "claimableDemo": {
+              "requirementId": "claimable-demo-v1",
+              "finalTokenStable": null,
+              "receiptReplayStable": null,
+              "passed": null
+            }
+          },
+          "usefulnessScore": 0.88854,
+          "logitsArtifactPath": null,
+          "logitsSha256": "89510c2e84f0b52a4ca573073267da20d7b252e6d4f1c7048bf24a2e9d2083ba"
+        },
+        {
+          "candidateSetSource": "mined-topk-v1",
+          "candidateSetId": "binary.true_false",
+          "candidateSetRegistryTokenizerId": "gemma-3-spm-v1",
+          "answerSetId": "binary.true_false",
+          "domainId": "binary",
+          "answerOptionIds": [
+            "true",
+            "false"
+          ],
+          "answerOptionLabels": [
+            "true",
+            "false"
+          ],
+          "candidatePairId": "false__true",
+          "candidateCanonicalOrder": "token-id-ascending",
+          "canonicalCandidateSet": [
+            {
+              "token": 6288,
+              "tokenText": " True",
+              "normalizedTokenText": "true"
+            },
+            {
+              "token": 8450,
+              "tokenText": " False",
+              "normalizedTokenText": "false"
+            }
+          ],
+          "discoveryMode": "natural-scout",
+          "sourcePromptId": "psych-diagnosis-uncertain-answer--false__true--answer-question-reversed--false__true--question-answer",
+          "mutationDepth": 0,
+          "mutationType": null,
+          "promotionBucket": "natural-supporting",
+          "sourceReportPath": "bench/out/apple-metal-sampled-decode-prompt-search/20260331T193952Z/round-03/real-logit-hunt.json",
+          "sourceReportScenarioId": "apple_metal_real_logit_hunt_gemma270m_prompt_search_sharp--round-03",
+          "sourceRepeatIndex": 0,
+          "promptId": "psych-diagnosis-uncertain-answer--false__true--answer-question-reversed--false__true--question-answer",
+          "promptText": "Question: A diagnosis can be evidence-based even when it stays uncertain. Answer with exactly one word: false or true. Answer:",
+          "promptIndex": 3,
+          "phase": "prefill",
+          "stepIndex": 0,
+          "stepLabel": "prefill",
+          "top2Gap": 1.546255111694336,
+          "exactMaxTieObserved": false,
+          "topTokenText": " True",
+          "topToken": 6288,
+          "topTokenLogit": 20.174816131591797,
+          "leftTokenText": " True",
+          "leftNormalizedTokenText": "true",
+          "leftToken": 6288,
+          "leftLogit": 20.174816131591797,
+          "leftRank": 1,
+          "leftPromptAnchored": true,
+          "rightTokenText": " False",
+          "rightNormalizedTokenText": "false",
+          "rightToken": 8450,
+          "rightLogit": 18.62856101989746,
+          "rightRank": 2,
+          "rightPromptAnchored": true,
+          "pairGap": 1.546255111694336,
+          "pairLeadFromTop": 0.0,
+          "outsiderLead": 0.0,
+          "promptAnchorCount": 2,
+          "answerSetPromptAnchorCount": 2,
+          "boundedAnswerPrompt": true,
+          "sourceRepeatCount": 3,
+          "sourceByteStable": true,
+          "sourceGreedyStable": true,
+          "candidateSetStable": true,
+          "candidateSetPresenceRate": 1.0,
+          "triggerPolicyId": "candidate-margin-band-v1",
+          "triggerEvaluation": {
+            "policyId": "candidate-margin-band-v1",
+            "mode": "candidate-margin-band",
+            "epsilon": 0.05,
+            "candidateTopGap": 1.546255111694336,
+            "ambiguousCandidateCount": 1,
+            "wouldTrigger": false
+          },
+          "stageStability": {
+            "scout": {
+              "requirementId": "scout-v1",
+              "promptTokenizationStable": true,
+              "topCandidateMembershipStable": true,
+              "passed": true
+            },
+            "promote": {
+              "requirementId": "promote-v1",
+              "candidateSetStable": true,
+              "digestStable": true,
+              "passed": true
+            },
+            "claimableDemo": {
+              "requirementId": "claimable-demo-v1",
+              "finalTokenStable": null,
+              "receiptReplayStable": null,
+              "passed": null
+            }
+          },
+          "usefulnessScore": 0.876046,
+          "logitsArtifactPath": null,
+          "logitsSha256": "0face1d4b00b72b9f261fb527536fa0e10c84932888353c2db2bdcad50b2a235"
+        },
+        {
+          "candidateSetSource": "mined-topk-v1",
+          "candidateSetId": "binary.true_false",
+          "candidateSetRegistryTokenizerId": "gemma-3-spm-v1",
+          "answerSetId": "binary.true_false",
+          "domainId": "binary",
+          "answerOptionIds": [
+            "true",
+            "false"
+          ],
+          "answerOptionLabels": [
+            "true",
+            "false"
+          ],
+          "candidatePairId": "false__true",
+          "candidateCanonicalOrder": "token-id-ascending",
+          "canonicalCandidateSet": [
+            {
+              "token": 6288,
+              "tokenText": " True",
+              "normalizedTokenText": "true"
+            },
+            {
+              "token": 8450,
+              "tokenText": " False",
+              "normalizedTokenText": "false"
+            }
+          ],
+          "discoveryMode": "natural-scout",
+          "sourcePromptId": "psych-diagnosis-uncertain-answer--false__true--answer-question-reversed--false__true--output-only",
+          "mutationDepth": 0,
+          "mutationType": null,
+          "promotionBucket": "natural-supporting",
+          "sourceReportPath": "bench/out/apple-metal-sampled-decode-prompt-search/20260331T193952Z/round-03/real-logit-hunt.json",
+          "sourceReportScenarioId": "apple_metal_real_logit_hunt_gemma270m_prompt_search_sharp--round-03",
+          "sourceRepeatIndex": 0,
+          "promptId": "psych-diagnosis-uncertain-answer--false__true--answer-question-reversed--false__true--output-only",
+          "promptText": "Output only false or true. A diagnosis can be evidence-based even when it stays uncertain.",
+          "promptIndex": 5,
+          "phase": "prefill",
+          "stepIndex": 0,
+          "stepLabel": "prefill",
+          "top2Gap": 0.1376190185546875,
+          "exactMaxTieObserved": false,
+          "topTokenText": "\n\n",
+          "topToken": 108,
+          "topTokenLogit": 17.14349365234375,
+          "leftTokenText": " True",
+          "leftNormalizedTokenText": "true",
+          "leftToken": 6288,
+          "leftLogit": 11.118783950805664,
+          "leftRank": 19,
+          "leftPromptAnchored": true,
+          "rightTokenText": " False",
+          "rightNormalizedTokenText": "false",
+          "rightToken": 8450,
+          "rightLogit": 10.619152069091797,
+          "rightRank": 23,
+          "rightPromptAnchored": true,
+          "pairGap": 0.4996318817138672,
+          "pairLeadFromTop": 6.024709701538086,
+          "outsiderLead": 6.024709701538086,
+          "promptAnchorCount": 2,
+          "answerSetPromptAnchorCount": 2,
+          "boundedAnswerPrompt": true,
+          "sourceRepeatCount": 3,
+          "sourceByteStable": true,
+          "sourceGreedyStable": true,
+          "candidateSetStable": true,
+          "candidateSetPresenceRate": 1.0,
+          "triggerPolicyId": "candidate-margin-band-v1",
+          "triggerEvaluation": {
+            "policyId": "candidate-margin-band-v1",
+            "mode": "candidate-margin-band",
+            "epsilon": 0.05,
+            "candidateTopGap": 0.4996318817138672,
+            "ambiguousCandidateCount": 1,
+            "wouldTrigger": false
+          },
+          "stageStability": {
+            "scout": {
+              "requirementId": "scout-v1",
+              "promptTokenizationStable": true,
+              "topCandidateMembershipStable": true,
+              "passed": true
+            },
+            "promote": {
+              "requirementId": "promote-v1",
+              "candidateSetStable": true,
+              "digestStable": true,
+              "passed": true
+            },
+            "claimableDemo": {
+              "requirementId": "claimable-demo-v1",
+              "finalTokenStable": null,
+              "receiptReplayStable": null,
+              "passed": null
+            }
+          },
+          "usefulnessScore": 0.73021,
+          "logitsArtifactPath": null,
+          "logitsSha256": "470a95908c58077e2757e285bed2851880f407b3cf75101b3e90a49b2e6a266f"
+        },
+        {
+          "candidateSetSource": "mined-topk-v1",
+          "candidateSetId": "binary.true_false",
+          "candidateSetRegistryTokenizerId": "gemma-3-spm-v1",
+          "answerSetId": "binary.true_false",
+          "domainId": "binary",
+          "answerOptionIds": [
+            "true",
+            "false"
+          ],
+          "answerOptionLabels": [
+            "true",
+            "false"
+          ],
+          "candidatePairId": "false__true",
+          "candidateCanonicalOrder": "token-id-ascending",
+          "canonicalCandidateSet": [
+            {
+              "token": 6288,
+              "tokenText": " True",
+              "normalizedTokenText": "true"
+            },
+            {
+              "token": 8450,
+              "tokenText": " False",
+              "normalizedTokenText": "false"
+            }
+          ],
+          "discoveryMode": "natural-scout",
+          "sourcePromptId": "physics-position-momentum-answer--false__true--swap-inline-choice--false__true--output-only",
+          "mutationDepth": 0,
+          "mutationType": null,
+          "promotionBucket": "natural-supporting",
+          "sourceReportPath": "bench/out/apple-metal-sampled-decode-prompt-search/20260331T193952Z/round-03/real-logit-hunt.json",
+          "sourceReportScenarioId": "apple_metal_real_logit_hunt_gemma270m_prompt_search_sharp--round-03",
+          "sourceRepeatIndex": 0,
+          "promptId": "physics-position-momentum-answer--false__true--swap-inline-choice--false__true--output-only",
+          "promptText": "Output only false or true. An electron can have an exact position and exact momentum at the same time.",
+          "promptIndex": 11,
+          "phase": "prefill",
+          "stepIndex": 0,
+          "stepLabel": "prefill",
+          "top2Gap": 0.39547157287597656,
+          "exactMaxTieObserved": false,
+          "topTokenText": "\n\n",
+          "topToken": 108,
+          "topTokenLogit": 18.115068435668945,
+          "leftTokenText": " True",
+          "leftNormalizedTokenText": "true",
+          "leftToken": 6288,
+          "leftLogit": 13.28799057006836,
+          "leftRank": 8,
+          "leftPromptAnchored": true,
+          "rightTokenText": " False",
+          "rightNormalizedTokenText": "false",
+          "rightToken": 8450,
+          "rightLogit": 12.30854320526123,
+          "rightRank": 17,
+          "rightPromptAnchored": true,
+          "pairGap": 0.9794473648071289,
+          "pairLeadFromTop": 4.827077865600586,
+          "outsiderLead": 4.827077865600586,
+          "promptAnchorCount": 2,
+          "answerSetPromptAnchorCount": 2,
+          "boundedAnswerPrompt": true,
+          "sourceRepeatCount": 3,
+          "sourceByteStable": true,
+          "sourceGreedyStable": true,
+          "candidateSetStable": true,
+          "candidateSetPresenceRate": 1.0,
+          "triggerPolicyId": "candidate-margin-band-v1",
+          "triggerEvaluation": {
+            "policyId": "candidate-margin-band-v1",
+            "mode": "candidate-margin-band",
+            "epsilon": 0.05,
+            "candidateTopGap": 0.9794473648071289,
+            "ambiguousCandidateCount": 1,
+            "wouldTrigger": false
+          },
+          "stageStability": {
+            "scout": {
+              "requirementId": "scout-v1",
+              "promptTokenizationStable": true,
+              "topCandidateMembershipStable": true,
+              "passed": true
+            },
+            "promote": {
+              "requirementId": "promote-v1",
+              "candidateSetStable": true,
+              "digestStable": true,
+              "passed": true
+            },
+            "claimableDemo": {
+              "requirementId": "claimable-demo-v1",
+              "finalTokenStable": null,
+              "receiptReplayStable": null,
+              "passed": null
+            }
+          },
+          "usefulnessScore": 0.728628,
+          "logitsArtifactPath": null,
+          "logitsSha256": "d98cd144662b1d5375a1df7807aa2d205739e7fb62eedc550c7e151c8b662258"
+        }
+      ]
+    },
+    "promotionBucketCounts": {
+      "natural-supporting": 15
+    },
+    "pairCounts": {
+      "false__true": 15
+    }
+  },
+  "cases": [
+    {
+      "candidateSetSource": "mined-topk-v1",
+      "candidateSetId": "binary.true_false",
+      "candidateSetRegistryTokenizerId": "gemma-3-spm-v1",
+      "answerSetId": "binary.true_false",
+      "domainId": "binary",
+      "answerOptionIds": [
+        "true",
+        "false"
+      ],
+      "answerOptionLabels": [
+        "true",
+        "false"
+      ],
+      "candidatePairId": "false__true",
+      "candidateCanonicalOrder": "token-id-ascending",
+      "canonicalCandidateSet": [
+        {
+          "token": 6288,
+          "tokenText": " True",
+          "normalizedTokenText": "true"
+        },
+        {
+          "token": 8450,
+          "tokenText": " False",
+          "normalizedTokenText": "false"
+        }
+      ],
+      "discoveryMode": "natural-scout",
+      "sourcePromptId": "psych-diagnosis-uncertain-answer--false__true--answer-question-reversed--false__true--parenthetical-question",
+      "mutationDepth": 0,
+      "mutationType": null,
+      "promotionBucket": "natural-supporting",
+      "sourceReportPath": "bench/out/apple-metal-sampled-decode-prompt-search/20260331T193952Z/round-03/real-logit-hunt.json",
+      "sourceReportScenarioId": "apple_metal_real_logit_hunt_gemma270m_prompt_search_sharp--round-03",
+      "sourceRepeatIndex": 0,
+      "promptId": "psych-diagnosis-uncertain-answer--false__true--answer-question-reversed--false__true--parenthetical-question",
+      "promptText": "One-word answer only (false or true). Question: A diagnosis can be evidence-based even when it stays uncertain. Answer:",
+      "promptIndex": 2,
+      "phase": "prefill",
+      "stepIndex": 0,
+      "stepLabel": "prefill",
+      "top2Gap": 0.013545989990234375,
+      "exactMaxTieObserved": false,
+      "topTokenText": " False",
+      "topToken": 8450,
+      "topTokenLogit": 19.128890991210938,
+      "leftTokenText": " True",
+      "leftNormalizedTokenText": "true",
+      "leftToken": 6288,
+      "leftLogit": 19.115345001220703,
+      "leftRank": 2,
+      "leftPromptAnchored": true,
+      "rightTokenText": " False",
+      "rightNormalizedTokenText": "false",
+      "rightToken": 8450,
+      "rightLogit": 19.128890991210938,
+      "rightRank": 1,
+      "rightPromptAnchored": true,
+      "pairGap": 0.013545989990234375,
+      "pairLeadFromTop": 0.0,
+      "outsiderLead": 0.0,
+      "promptAnchorCount": 2,
+      "answerSetPromptAnchorCount": 2,
+      "boundedAnswerPrompt": true,
+      "sourceRepeatCount": 3,
+      "sourceByteStable": true,
+      "sourceGreedyStable": true,
+      "candidateSetStable": true,
+      "candidateSetPresenceRate": 1.0,
+      "triggerPolicyId": "candidate-margin-band-v1",
+      "triggerEvaluation": {
+        "policyId": "candidate-margin-band-v1",
+        "mode": "candidate-margin-band",
+        "epsilon": 0.05,
+        "candidateTopGap": 0.013545989990234375,
+        "ambiguousCandidateCount": 2,
+        "wouldTrigger": true
+      },
+      "stageStability": {
+        "scout": {
+          "requirementId": "scout-v1",
+          "promptTokenizationStable": true,
+          "topCandidateMembershipStable": true,
+          "passed": true
+        },
+        "promote": {
+          "requirementId": "promote-v1",
+          "candidateSetStable": true,
+          "digestStable": true,
+          "passed": true
+        },
+        "claimableDemo": {
+          "requirementId": "claimable-demo-v1",
+          "finalTokenStable": null,
+          "receiptReplayStable": null,
+          "passed": null
+        }
+      },
+      "usefulnessScore": 1.048476,
+      "logitsArtifactPath": null,
+      "logitsSha256": "cddee602c8facdb8b07ad71bf7870adfe85e91b7d5ab00ee962918107722884f"
+    },
+    {
+      "candidateSetSource": "mined-topk-v1",
+      "candidateSetId": "binary.true_false",
+      "candidateSetRegistryTokenizerId": "gemma-3-spm-v1",
+      "answerSetId": "binary.true_false",
+      "domainId": "binary",
+      "answerOptionIds": [
+        "true",
+        "false"
+      ],
+      "answerOptionLabels": [
+        "true",
+        "false"
+      ],
+      "candidatePairId": "false__true",
+      "candidateCanonicalOrder": "token-id-ascending",
+      "canonicalCandidateSet": [
+        {
+          "token": 6288,
+          "tokenText": " True",
+          "normalizedTokenText": "true"
+        },
+        {
+          "token": 8450,
+          "tokenText": " False",
+          "normalizedTokenText": "false"
+        }
+      ],
+      "discoveryMode": "natural-scout",
+      "sourcePromptId": "psych-diagnosis-uncertain-answer--false__true--answer-question-reversed--false__true--choose-question",
+      "mutationDepth": 0,
+      "mutationType": null,
+      "promotionBucket": "natural-supporting",
+      "sourceReportPath": "bench/out/apple-metal-sampled-decode-prompt-search/20260331T193952Z/round-03/real-logit-hunt.json",
+      "sourceReportScenarioId": "apple_metal_real_logit_hunt_gemma270m_prompt_search_sharp--round-03",
+      "sourceRepeatIndex": 0,
+      "promptId": "psych-diagnosis-uncertain-answer--false__true--answer-question-reversed--false__true--choose-question",
+      "promptText": "Choose exactly one word: false or true. Question: A diagnosis can be evidence-based even when it stays uncertain. Answer:",
+      "promptIndex": 0,
+      "phase": "prefill",
+      "stepIndex": 0,
+      "stepLabel": "prefill",
+      "top2Gap": 0.023981094360351562,
+      "exactMaxTieObserved": false,
+      "topTokenText": " True",
+      "topToken": 6288,
+      "topTokenLogit": 16.996335983276367,
+      "leftTokenText": " True",
+      "leftNormalizedTokenText": "true",
+      "leftToken": 6288,
+      "leftLogit": 16.996335983276367,
+      "leftRank": 1,
+      "leftPromptAnchored": true,
+      "rightTokenText": " False",
+      "rightNormalizedTokenText": "false",
+      "rightToken": 8450,
+      "rightLogit": 16.87859535217285,
+      "rightRank": 3,
+      "rightPromptAnchored": true,
+      "pairGap": 0.11774063110351562,
+      "pairLeadFromTop": 0.0,
+      "outsiderLead": 0.0,
+      "promptAnchorCount": 2,
+      "answerSetPromptAnchorCount": 2,
+      "boundedAnswerPrompt": true,
+      "sourceRepeatCount": 3,
+      "sourceByteStable": true,
+      "sourceGreedyStable": true,
+      "candidateSetStable": true,
+      "candidateSetPresenceRate": 1.0,
+      "triggerPolicyId": "candidate-margin-band-v1",
+      "triggerEvaluation": {
+        "policyId": "candidate-margin-band-v1",
+        "mode": "candidate-margin-band",
+        "epsilon": 0.05,
+        "candidateTopGap": 0.11774063110351562,
+        "ambiguousCandidateCount": 1,
+        "wouldTrigger": false
+      },
+      "stageStability": {
+        "scout": {
+          "requirementId": "scout-v1",
+          "promptTokenizationStable": true,
+          "topCandidateMembershipStable": true,
+          "passed": true
+        },
+        "promote": {
+          "requirementId": "promote-v1",
+          "candidateSetStable": true,
+          "digestStable": true,
+          "passed": true
+        },
+        "claimableDemo": {
+          "requirementId": "claimable-demo-v1",
+          "finalTokenStable": null,
+          "receiptReplayStable": null,
+          "passed": null
+        }
+      },
+      "usefulnessScore": 1.036754,
+      "logitsArtifactPath": null,
+      "logitsSha256": "430745f989668b8abfe505d98c2e9c9a3c5038dc535e2045f3dadf58412e8a3f"
+    },
+    {
+      "candidateSetSource": "mined-topk-v1",
+      "candidateSetId": "binary.true_false",
+      "candidateSetRegistryTokenizerId": "gemma-3-spm-v1",
+      "answerSetId": "binary.true_false",
+      "domainId": "binary",
+      "answerOptionIds": [
+        "true",
+        "false"
+      ],
+      "answerOptionLabels": [
+        "true",
+        "false"
+      ],
+      "candidatePairId": "false__true",
+      "candidateCanonicalOrder": "token-id-ascending",
+      "canonicalCandidateSet": [
+        {
+          "token": 6288,
+          "tokenText": " True",
+          "normalizedTokenText": "true"
+        },
+        {
+          "token": 8450,
+          "tokenText": " False",
+          "normalizedTokenText": "false"
+        }
+      ],
+      "discoveryMode": "natural-scout",
+      "sourcePromptId": "psych-diagnosis-uncertain-answer--false__true--answer-question-reversed--false__true--scenario-answer",
+      "mutationDepth": 0,
+      "mutationType": null,
+      "promotionBucket": "natural-supporting",
+      "sourceReportPath": "bench/out/apple-metal-sampled-decode-prompt-search/20260331T193952Z/round-03/real-logit-hunt.json",
+      "sourceReportScenarioId": "apple_metal_real_logit_hunt_gemma270m_prompt_search_sharp--round-03",
+      "sourceRepeatIndex": 0,
+      "promptId": "psych-diagnosis-uncertain-answer--false__true--answer-question-reversed--false__true--scenario-answer",
+      "promptText": "Given the scenario, answer with exactly one word: false or true. Scenario: A diagnosis can be evidence-based even when it stays uncertain. Answer:",
+      "promptIndex": 4,
+      "phase": "prefill",
+      "stepIndex": 0,
+      "stepLabel": "prefill",
+      "top2Gap": 0.6510257720947266,
+      "exactMaxTieObserved": false,
+      "topTokenText": " True",
+      "topToken": 6288,
+      "topTokenLogit": 18.98687744140625,
+      "leftTokenText": " True",
+      "leftNormalizedTokenText": "true",
+      "leftToken": 6288,
+      "leftLogit": 18.98687744140625,
+      "leftRank": 1,
+      "leftPromptAnchored": true,
+      "rightTokenText": " False",
+      "rightNormalizedTokenText": "false",
+      "rightToken": 8450,
+      "rightLogit": 18.335851669311523,
+      "rightRank": 2,
+      "rightPromptAnchored": true,
+      "pairGap": 0.6510257720947266,
+      "pairLeadFromTop": 0.0,
+      "outsiderLead": 0.0,
+      "promptAnchorCount": 2,
+      "answerSetPromptAnchorCount": 2,
+      "boundedAnswerPrompt": true,
+      "sourceRepeatCount": 3,
+      "sourceByteStable": true,
+      "sourceGreedyStable": true,
+      "candidateSetStable": true,
+      "candidateSetPresenceRate": 1.0,
+      "triggerPolicyId": "candidate-margin-band-v1",
+      "triggerEvaluation": {
+        "policyId": "candidate-margin-band-v1",
+        "mode": "candidate-margin-band",
+        "epsilon": 0.05,
+        "candidateTopGap": 0.6510257720947266,
+        "ambiguousCandidateCount": 1,
+        "wouldTrigger": false
+      },
+      "stageStability": {
+        "scout": {
+          "requirementId": "scout-v1",
+          "promptTokenizationStable": true,
+          "topCandidateMembershipStable": true,
+          "passed": true
+        },
+        "promote": {
+          "requirementId": "promote-v1",
+          "candidateSetStable": true,
+          "digestStable": true,
+          "passed": true
+        },
+        "claimableDemo": {
+          "requirementId": "claimable-demo-v1",
+          "finalTokenStable": null,
+          "receiptReplayStable": null,
+          "passed": null
+        }
+      },
+      "usefulnessScore": 0.97676,
+      "logitsArtifactPath": null,
+      "logitsSha256": "946320217f4c68af32e4eabcfd0955f19f1c3a474c3995b96e1519d0de26ac18"
+    },
+    {
+      "candidateSetSource": "mined-topk-v1",
+      "candidateSetId": "binary.true_false",
+      "candidateSetRegistryTokenizerId": "gemma-3-spm-v1",
+      "answerSetId": "binary.true_false",
+      "domainId": "binary",
+      "answerOptionIds": [
+        "true",
+        "false"
+      ],
+      "answerOptionLabels": [
+        "true",
+        "false"
+      ],
+      "candidatePairId": "false__true",
+      "candidateCanonicalOrder": "token-id-ascending",
+      "canonicalCandidateSet": [
+        {
+          "token": 6288,
+          "tokenText": " True",
+          "normalizedTokenText": "true"
+        },
+        {
+          "token": 8450,
+          "tokenText": " False",
+          "normalizedTokenText": "false"
+        }
+      ],
+      "discoveryMode": "natural-scout",
+      "sourcePromptId": "psych-diagnosis-uncertain-answer--false__true--answer-question-reversed--false__true--reply-question",
+      "mutationDepth": 0,
+      "mutationType": null,
+      "promotionBucket": "natural-supporting",
+      "sourceReportPath": "bench/out/apple-metal-sampled-decode-prompt-search/20260331T193952Z/round-03/real-logit-hunt.json",
+      "sourceReportScenarioId": "apple_metal_real_logit_hunt_gemma270m_prompt_search_sharp--round-03",
+      "sourceRepeatIndex": 0,
+      "promptId": "psych-diagnosis-uncertain-answer--false__true--answer-question-reversed--false__true--reply-question",
+      "promptText": "Reply with exactly one word: false or true. Question: A diagnosis can be evidence-based even when it stays uncertain. Answer:",
+      "promptIndex": 1,
+      "phase": "prefill",
+      "stepIndex": 0,
+      "stepLabel": "prefill",
+      "top2Gap": 0.07114791870117188,
+      "exactMaxTieObserved": false,
+      "topTokenText": " False",
+      "topToken": 8450,
+      "topTokenLogit": 20.09122085571289,
+      "leftTokenText": " True",
+      "leftNormalizedTokenText": "true",
+      "leftToken": 6288,
+      "leftLogit": 19.25296974182129,
+      "leftRank": 3,
+      "leftPromptAnchored": true,
+      "rightTokenText": " False",
+      "rightNormalizedTokenText": "false",
+      "rightToken": 8450,
+      "rightLogit": 20.09122085571289,
+      "rightRank": 1,
+      "rightPromptAnchored": true,
+      "pairGap": 0.8382511138916016,
+      "pairLeadFromTop": 0.0,
+      "outsiderLead": 0.0,
+      "promptAnchorCount": 2,
+      "answerSetPromptAnchorCount": 2,
+      "boundedAnswerPrompt": true,
+      "sourceRepeatCount": 3,
+      "sourceByteStable": true,
+      "sourceGreedyStable": true,
+      "candidateSetStable": true,
+      "candidateSetPresenceRate": 1.0,
+      "triggerPolicyId": "candidate-margin-band-v1",
+      "triggerEvaluation": {
+        "policyId": "candidate-margin-band-v1",
+        "mode": "candidate-margin-band",
+        "epsilon": 0.05,
+        "candidateTopGap": 0.8382511138916016,
+        "ambiguousCandidateCount": 1,
+        "wouldTrigger": false
+      },
+      "stageStability": {
+        "scout": {
+          "requirementId": "scout-v1",
+          "promptTokenizationStable": true,
+          "topCandidateMembershipStable": true,
+          "passed": true
+        },
+        "promote": {
+          "requirementId": "promote-v1",
+          "candidateSetStable": true,
+          "digestStable": true,
+          "passed": true
+        },
+        "claimableDemo": {
+          "requirementId": "claimable-demo-v1",
+          "finalTokenStable": null,
+          "receiptReplayStable": null,
+          "passed": null
+        }
+      },
+      "usefulnessScore": 0.955697,
+      "logitsArtifactPath": null,
+      "logitsSha256": "e3c7b0d9bb29ae7e21cc77dc614153565d0953081ecb3fb56c18f97b641fd1aa"
+    },
+    {
+      "candidateSetSource": "mined-topk-v1",
+      "candidateSetId": "binary.true_false",
+      "candidateSetRegistryTokenizerId": "gemma-3-spm-v1",
+      "answerSetId": "binary.true_false",
+      "domainId": "binary",
+      "answerOptionIds": [
+        "true",
+        "false"
+      ],
+      "answerOptionLabels": [
+        "true",
+        "false"
+      ],
+      "candidatePairId": "false__true",
+      "candidateCanonicalOrder": "token-id-ascending",
+      "canonicalCandidateSet": [
+        {
+          "token": 6288,
+          "tokenText": " True",
+          "normalizedTokenText": "true"
+        },
+        {
+          "token": 8450,
+          "tokenText": " False",
+          "normalizedTokenText": "false"
+        }
+      ],
+      "discoveryMode": "natural-scout",
+      "sourcePromptId": "physics-position-momentum-answer--false__true--swap-inline-choice--false__true--reply-question",
+      "mutationDepth": 0,
+      "mutationType": null,
+      "promotionBucket": "natural-supporting",
+      "sourceReportPath": "bench/out/apple-metal-sampled-decode-prompt-search/20260331T193952Z/round-03/real-logit-hunt.json",
+      "sourceReportScenarioId": "apple_metal_real_logit_hunt_gemma270m_prompt_search_sharp--round-03",
+      "sourceRepeatIndex": 0,
+      "promptId": "physics-position-momentum-answer--false__true--swap-inline-choice--false__true--reply-question",
+      "promptText": "Reply with exactly one word: false or true. Question: An electron can have an exact position and exact momentum at the same time. Answer:",
+      "promptIndex": 7,
+      "phase": "prefill",
+      "stepIndex": 0,
+      "stepLabel": "prefill",
+      "top2Gap": 1.065816879272461,
+      "exactMaxTieObserved": false,
+      "topTokenText": " True",
+      "topToken": 6288,
+      "topTokenLogit": 20.490886688232422,
+      "leftTokenText": " True",
+      "leftNormalizedTokenText": "true",
+      "leftToken": 6288,
+      "leftLogit": 20.490886688232422,
+      "leftRank": 1,
+      "leftPromptAnchored": true,
+      "rightTokenText": " False",
+      "rightNormalizedTokenText": "false",
+      "rightToken": 8450,
+      "rightLogit": 19.42506980895996,
+      "rightRank": 2,
+      "rightPromptAnchored": true,
+      "pairGap": 1.065816879272461,
+      "pairLeadFromTop": 0.0,
+      "outsiderLead": 0.0,
+      "promptAnchorCount": 2,
+      "answerSetPromptAnchorCount": 2,
+      "boundedAnswerPrompt": true,
+      "sourceRepeatCount": 3,
+      "sourceByteStable": true,
+      "sourceGreedyStable": true,
+      "candidateSetStable": true,
+      "candidateSetPresenceRate": 1.0,
+      "triggerPolicyId": "candidate-margin-band-v1",
+      "triggerEvaluation": {
+        "policyId": "candidate-margin-band-v1",
+        "mode": "candidate-margin-band",
+        "epsilon": 0.05,
+        "candidateTopGap": 1.065816879272461,
+        "ambiguousCandidateCount": 1,
+        "wouldTrigger": false
+      },
+      "stageStability": {
+        "scout": {
+          "requirementId": "scout-v1",
+          "promptTokenizationStable": true,
+          "topCandidateMembershipStable": true,
+          "passed": true
+        },
+        "promote": {
+          "requirementId": "promote-v1",
+          "candidateSetStable": true,
+          "digestStable": true,
+          "passed": true
+        },
+        "claimableDemo": {
+          "requirementId": "claimable-demo-v1",
+          "finalTokenStable": null,
+          "receiptReplayStable": null,
+          "passed": null
+        }
+      },
+      "usefulnessScore": 0.930096,
+      "logitsArtifactPath": null,
+      "logitsSha256": "3b5db9ac7a4b677917eb19449155b4f5eee6e0a3ed0990ddd725c6b88682ad56"
+    },
+    {
+      "candidateSetSource": "mined-topk-v1",
+      "candidateSetId": "binary.true_false",
+      "candidateSetRegistryTokenizerId": "gemma-3-spm-v1",
+      "answerSetId": "binary.true_false",
+      "domainId": "binary",
+      "answerOptionIds": [
+        "true",
+        "false"
+      ],
+      "answerOptionLabels": [
+        "true",
+        "false"
+      ],
+      "candidatePairId": "false__true",
+      "candidateCanonicalOrder": "token-id-ascending",
+      "canonicalCandidateSet": [
+        {
+          "token": 6288,
+          "tokenText": " True",
+          "normalizedTokenText": "true"
+        },
+        {
+          "token": 8450,
+          "tokenText": " False",
+          "normalizedTokenText": "false"
+        }
+      ],
+      "discoveryMode": "natural-scout",
+      "sourcePromptId": "physics-position-momentum-answer--false__true--swap-inline-choice--false__true--parenthetical-question",
+      "mutationDepth": 0,
+      "mutationType": null,
+      "promotionBucket": "natural-supporting",
+      "sourceReportPath": "bench/out/apple-metal-sampled-decode-prompt-search/20260331T193952Z/round-03/real-logit-hunt.json",
+      "sourceReportScenarioId": "apple_metal_real_logit_hunt_gemma270m_prompt_search_sharp--round-03",
+      "sourceRepeatIndex": 0,
+      "promptId": "physics-position-momentum-answer--false__true--swap-inline-choice--false__true--parenthetical-question",
+      "promptText": "One-word answer only (false or true). Question: An electron can have an exact position and exact momentum at the same time. Answer:",
+      "promptIndex": 8,
+      "phase": "prefill",
+      "stepIndex": 0,
+      "stepLabel": "prefill",
+      "top2Gap": 1.1689071655273438,
+      "exactMaxTieObserved": false,
+      "topTokenText": " True",
+      "topToken": 6288,
+      "topTokenLogit": 20.14313316345215,
+      "leftTokenText": " True",
+      "leftNormalizedTokenText": "true",
+      "leftToken": 6288,
+      "leftLogit": 20.14313316345215,
+      "leftRank": 1,
+      "leftPromptAnchored": true,
+      "rightTokenText": " False",
+      "rightNormalizedTokenText": "false",
+      "rightToken": 8450,
+      "rightLogit": 18.974225997924805,
+      "rightRank": 2,
+      "rightPromptAnchored": true,
+      "pairGap": 1.1689071655273438,
+      "pairLeadFromTop": 0.0,
+      "outsiderLead": 0.0,
+      "promptAnchorCount": 2,
+      "answerSetPromptAnchorCount": 2,
+      "boundedAnswerPrompt": true,
+      "sourceRepeatCount": 3,
+      "sourceByteStable": true,
+      "sourceGreedyStable": true,
+      "candidateSetStable": true,
+      "candidateSetPresenceRate": 1.0,
+      "triggerPolicyId": "candidate-margin-band-v1",
+      "triggerEvaluation": {
+        "policyId": "candidate-margin-band-v1",
+        "mode": "candidate-margin-band",
+        "epsilon": 0.05,
+        "candidateTopGap": 1.1689071655273438,
+        "ambiguousCandidateCount": 1,
+        "wouldTrigger": false
+      },
+      "stageStability": {
+        "scout": {
+          "requirementId": "scout-v1",
+          "promptTokenizationStable": true,
+          "topCandidateMembershipStable": true,
+          "passed": true
+        },
+        "promote": {
+          "requirementId": "promote-v1",
+          "candidateSetStable": true,
+          "digestStable": true,
+          "passed": true
+        },
+        "claimableDemo": {
+          "requirementId": "claimable-demo-v1",
+          "finalTokenStable": null,
+          "receiptReplayStable": null,
+          "passed": null
+        }
+      },
+      "usefulnessScore": 0.918498,
+      "logitsArtifactPath": null,
+      "logitsSha256": "d060e163965acf903e7267ccdad3a86cf6aef2e87f5559732c490a288bd2dca0"
+    },
+    {
+      "candidateSetSource": "mined-topk-v1",
+      "candidateSetId": "binary.true_false",
+      "candidateSetRegistryTokenizerId": "gemma-3-spm-v1",
+      "answerSetId": "binary.true_false",
+      "domainId": "binary",
+      "answerOptionIds": [
+        "true",
+        "false"
+      ],
+      "answerOptionLabels": [
+        "true",
+        "false"
+      ],
+      "candidatePairId": "false__true",
+      "candidateCanonicalOrder": "token-id-ascending",
+      "canonicalCandidateSet": [
+        {
+          "token": 6288,
+          "tokenText": " True",
+          "normalizedTokenText": "true"
+        },
+        {
+          "token": 8450,
+          "tokenText": " False",
+          "normalizedTokenText": "false"
+        }
+      ],
+      "discoveryMode": "natural-scout",
+      "sourcePromptId": "physics-position-momentum-answer--false__true--swap-inline-choice--false__true--question-answer",
+      "mutationDepth": 0,
+      "mutationType": null,
+      "promotionBucket": "natural-supporting",
+      "sourceReportPath": "bench/out/apple-metal-sampled-decode-prompt-search/20260331T193952Z/round-03/real-logit-hunt.json",
+      "sourceReportScenarioId": "apple_metal_real_logit_hunt_gemma270m_prompt_search_sharp--round-03",
+      "sourceRepeatIndex": 0,
+      "promptId": "physics-position-momentum-answer--false__true--swap-inline-choice--false__true--question-answer",
+      "promptText": "Question: An electron can have an exact position and exact momentum at the same time. Answer with exactly one word: false or true. Answer:",
+      "promptIndex": 9,
+      "phase": "prefill",
+      "stepIndex": 0,
+      "stepLabel": "prefill",
+      "top2Gap": 1.2682914733886719,
+      "exactMaxTieObserved": false,
+      "topTokenText": " True",
+      "topToken": 6288,
+      "topTokenLogit": 20.432355880737305,
+      "leftTokenText": " True",
+      "leftNormalizedTokenText": "true",
+      "leftToken": 6288,
+      "leftLogit": 20.432355880737305,
+      "leftRank": 1,
+      "leftPromptAnchored": true,
+      "rightTokenText": " False",
+      "rightNormalizedTokenText": "false",
+      "rightToken": 8450,
+      "rightLogit": 19.164064407348633,
+      "rightRank": 2,
+      "rightPromptAnchored": true,
+      "pairGap": 1.2682914733886719,
+      "pairLeadFromTop": 0.0,
+      "outsiderLead": 0.0,
+      "promptAnchorCount": 2,
+      "answerSetPromptAnchorCount": 2,
+      "boundedAnswerPrompt": true,
+      "sourceRepeatCount": 3,
+      "sourceByteStable": true,
+      "sourceGreedyStable": true,
+      "candidateSetStable": true,
+      "candidateSetPresenceRate": 1.0,
+      "triggerPolicyId": "candidate-margin-band-v1",
+      "triggerEvaluation": {
+        "policyId": "candidate-margin-band-v1",
+        "mode": "candidate-margin-band",
+        "epsilon": 0.05,
+        "candidateTopGap": 1.2682914733886719,
+        "ambiguousCandidateCount": 1,
+        "wouldTrigger": false
+      },
+      "stageStability": {
+        "scout": {
+          "requirementId": "scout-v1",
+          "promptTokenizationStable": true,
+          "topCandidateMembershipStable": true,
+          "passed": true
+        },
+        "promote": {
+          "requirementId": "promote-v1",
+          "candidateSetStable": true,
+          "digestStable": true,
+          "passed": true
+        },
+        "claimableDemo": {
+          "requirementId": "claimable-demo-v1",
+          "finalTokenStable": null,
+          "receiptReplayStable": null,
+          "passed": null
+        }
+      },
+      "usefulnessScore": 0.907317,
+      "logitsArtifactPath": null,
+      "logitsSha256": "6f78067938bd654393ecfe1080fd5eb0a1de03ddcd8297fd299b07b03615c3ee"
+    },
+    {
+      "candidateSetSource": "mined-topk-v1",
+      "candidateSetId": "binary.true_false",
+      "candidateSetRegistryTokenizerId": "gemma-3-spm-v1",
+      "answerSetId": "binary.true_false",
+      "domainId": "binary",
+      "answerOptionIds": [
+        "true",
+        "false"
+      ],
+      "answerOptionLabels": [
+        "true",
+        "false"
+      ],
+      "candidatePairId": "false__true",
+      "candidateCanonicalOrder": "token-id-ascending",
+      "canonicalCandidateSet": [
+        {
+          "token": 6288,
+          "tokenText": " True",
+          "normalizedTokenText": "true"
+        },
+        {
+          "token": 8450,
+          "tokenText": " False",
+          "normalizedTokenText": "false"
+        }
+      ],
+      "discoveryMode": "natural-scout",
+      "sourcePromptId": "physics-position-momentum-answer--false__true--swap-inline-choice--false__true--scenario-answer",
+      "mutationDepth": 0,
+      "mutationType": null,
+      "promotionBucket": "natural-supporting",
+      "sourceReportPath": "bench/out/apple-metal-sampled-decode-prompt-search/20260331T193952Z/round-03/real-logit-hunt.json",
+      "sourceReportScenarioId": "apple_metal_real_logit_hunt_gemma270m_prompt_search_sharp--round-03",
+      "sourceRepeatIndex": 0,
+      "promptId": "physics-position-momentum-answer--false__true--swap-inline-choice--false__true--scenario-answer",
+      "promptText": "Given the scenario, answer with exactly one word: false or true. Scenario: An electron can have an exact position and exact momentum at the same time. Answer:",
+      "promptIndex": 10,
+      "phase": "prefill",
+      "stepIndex": 0,
+      "stepLabel": "prefill",
+      "top2Gap": 1.433309555053711,
+      "exactMaxTieObserved": false,
+      "topTokenText": " True",
+      "topToken": 6288,
+      "topTokenLogit": 20.27273941040039,
+      "leftTokenText": " True",
+      "leftNormalizedTokenText": "true",
+      "leftToken": 6288,
+      "leftLogit": 20.27273941040039,
+      "leftRank": 1,
+      "leftPromptAnchored": true,
+      "rightTokenText": " False",
+      "rightNormalizedTokenText": "false",
+      "rightToken": 8450,
+      "rightLogit": 18.83942985534668,
+      "rightRank": 2,
+      "rightPromptAnchored": true,
+      "pairGap": 1.433309555053711,
+      "pairLeadFromTop": 0.0,
+      "outsiderLead": 0.0,
+      "promptAnchorCount": 2,
+      "answerSetPromptAnchorCount": 2,
+      "boundedAnswerPrompt": true,
+      "sourceRepeatCount": 3,
+      "sourceByteStable": true,
+      "sourceGreedyStable": true,
+      "candidateSetStable": true,
+      "candidateSetPresenceRate": 1.0,
+      "triggerPolicyId": "candidate-margin-band-v1",
+      "triggerEvaluation": {
+        "policyId": "candidate-margin-band-v1",
+        "mode": "candidate-margin-band",
+        "epsilon": 0.05,
+        "candidateTopGap": 1.433309555053711,
+        "ambiguousCandidateCount": 1,
+        "wouldTrigger": false
+      },
+      "stageStability": {
+        "scout": {
+          "requirementId": "scout-v1",
+          "promptTokenizationStable": true,
+          "topCandidateMembershipStable": true,
+          "passed": true
+        },
+        "promote": {
+          "requirementId": "promote-v1",
+          "candidateSetStable": true,
+          "digestStable": true,
+          "passed": true
+        },
+        "claimableDemo": {
+          "requirementId": "claimable-demo-v1",
+          "finalTokenStable": null,
+          "receiptReplayStable": null,
+          "passed": null
+        }
+      },
+      "usefulnessScore": 0.888753,
+      "logitsArtifactPath": null,
+      "logitsSha256": "47df109426698152c02b7f4976cbcf08c25bf2ead0c458dc6a5293d92b739027"
+    },
+    {
+      "candidateSetSource": "mined-topk-v1",
+      "candidateSetId": "binary.true_false",
+      "candidateSetRegistryTokenizerId": "gemma-3-spm-v1",
+      "answerSetId": "binary.true_false",
+      "domainId": "binary",
+      "answerOptionIds": [
+        "true",
+        "false"
+      ],
+      "answerOptionLabels": [
+        "true",
+        "false"
+      ],
+      "candidatePairId": "false__true",
+      "candidateCanonicalOrder": "token-id-ascending",
+      "canonicalCandidateSet": [
+        {
+          "token": 6288,
+          "tokenText": " True",
+          "normalizedTokenText": "true"
+        },
+        {
+          "token": 8450,
+          "tokenText": " False",
+          "normalizedTokenText": "false"
+        }
+      ],
+      "discoveryMode": "natural-scout",
+      "sourcePromptId": "physics-position-momentum-answer--false__true--swap-inline-choice--false__true--choose-question",
+      "mutationDepth": 0,
+      "mutationType": null,
+      "promotionBucket": "natural-supporting",
+      "sourceReportPath": "bench/out/apple-metal-sampled-decode-prompt-search/20260331T193952Z/round-03/real-logit-hunt.json",
+      "sourceReportScenarioId": "apple_metal_real_logit_hunt_gemma270m_prompt_search_sharp--round-03",
+      "sourceRepeatIndex": 0,
+      "promptId": "physics-position-momentum-answer--false__true--swap-inline-choice--false__true--choose-question",
+      "promptText": "Choose exactly one word: false or true. Question: An electron can have an exact position and exact momentum at the same time. Answer:",
+      "promptIndex": 6,
+      "phase": "prefill",
+      "stepIndex": 0,
+      "stepLabel": "prefill",
+      "top2Gap": 1.435201644897461,
+      "exactMaxTieObserved": false,
+      "topTokenText": " True",
+      "topToken": 6288,
+      "topTokenLogit": 20.173864364624023,
+      "leftTokenText": " True",
+      "leftNormalizedTokenText": "true",
+      "leftToken": 6288,
+      "leftLogit": 20.173864364624023,
+      "leftRank": 1,
+      "leftPromptAnchored": true,
+      "rightTokenText": " False",
+      "rightNormalizedTokenText": "false",
+      "rightToken": 8450,
+      "rightLogit": 18.738662719726562,
+      "rightRank": 2,
+      "rightPromptAnchored": true,
+      "pairGap": 1.435201644897461,
+      "pairLeadFromTop": 0.0,
+      "outsiderLead": 0.0,
+      "promptAnchorCount": 2,
+      "answerSetPromptAnchorCount": 2,
+      "boundedAnswerPrompt": true,
+      "sourceRepeatCount": 3,
+      "sourceByteStable": true,
+      "sourceGreedyStable": true,
+      "candidateSetStable": true,
+      "candidateSetPresenceRate": 1.0,
+      "triggerPolicyId": "candidate-margin-band-v1",
+      "triggerEvaluation": {
+        "policyId": "candidate-margin-band-v1",
+        "mode": "candidate-margin-band",
+        "epsilon": 0.05,
+        "candidateTopGap": 1.435201644897461,
+        "ambiguousCandidateCount": 1,
+        "wouldTrigger": false
+      },
+      "stageStability": {
+        "scout": {
+          "requirementId": "scout-v1",
+          "promptTokenizationStable": true,
+          "topCandidateMembershipStable": true,
+          "passed": true
+        },
+        "promote": {
+          "requirementId": "promote-v1",
+          "candidateSetStable": true,
+          "digestStable": true,
+          "passed": true
+        },
+        "claimableDemo": {
+          "requirementId": "claimable-demo-v1",
+          "finalTokenStable": null,
+          "receiptReplayStable": null,
+          "passed": null
+        }
+      },
+      "usefulnessScore": 0.88854,
+      "logitsArtifactPath": null,
+      "logitsSha256": "89510c2e84f0b52a4ca573073267da20d7b252e6d4f1c7048bf24a2e9d2083ba"
+    },
+    {
+      "candidateSetSource": "mined-topk-v1",
+      "candidateSetId": "binary.true_false",
+      "candidateSetRegistryTokenizerId": "gemma-3-spm-v1",
+      "answerSetId": "binary.true_false",
+      "domainId": "binary",
+      "answerOptionIds": [
+        "true",
+        "false"
+      ],
+      "answerOptionLabels": [
+        "true",
+        "false"
+      ],
+      "candidatePairId": "false__true",
+      "candidateCanonicalOrder": "token-id-ascending",
+      "canonicalCandidateSet": [
+        {
+          "token": 6288,
+          "tokenText": " True",
+          "normalizedTokenText": "true"
+        },
+        {
+          "token": 8450,
+          "tokenText": " False",
+          "normalizedTokenText": "false"
+        }
+      ],
+      "discoveryMode": "natural-scout",
+      "sourcePromptId": "psych-diagnosis-uncertain-answer--false__true--answer-question-reversed--false__true--question-answer",
+      "mutationDepth": 0,
+      "mutationType": null,
+      "promotionBucket": "natural-supporting",
+      "sourceReportPath": "bench/out/apple-metal-sampled-decode-prompt-search/20260331T193952Z/round-03/real-logit-hunt.json",
+      "sourceReportScenarioId": "apple_metal_real_logit_hunt_gemma270m_prompt_search_sharp--round-03",
+      "sourceRepeatIndex": 0,
+      "promptId": "psych-diagnosis-uncertain-answer--false__true--answer-question-reversed--false__true--question-answer",
+      "promptText": "Question: A diagnosis can be evidence-based even when it stays uncertain. Answer with exactly one word: false or true. Answer:",
+      "promptIndex": 3,
+      "phase": "prefill",
+      "stepIndex": 0,
+      "stepLabel": "prefill",
+      "top2Gap": 1.546255111694336,
+      "exactMaxTieObserved": false,
+      "topTokenText": " True",
+      "topToken": 6288,
+      "topTokenLogit": 20.174816131591797,
+      "leftTokenText": " True",
+      "leftNormalizedTokenText": "true",
+      "leftToken": 6288,
+      "leftLogit": 20.174816131591797,
+      "leftRank": 1,
+      "leftPromptAnchored": true,
+      "rightTokenText": " False",
+      "rightNormalizedTokenText": "false",
+      "rightToken": 8450,
+      "rightLogit": 18.62856101989746,
+      "rightRank": 2,
+      "rightPromptAnchored": true,
+      "pairGap": 1.546255111694336,
+      "pairLeadFromTop": 0.0,
+      "outsiderLead": 0.0,
+      "promptAnchorCount": 2,
+      "answerSetPromptAnchorCount": 2,
+      "boundedAnswerPrompt": true,
+      "sourceRepeatCount": 3,
+      "sourceByteStable": true,
+      "sourceGreedyStable": true,
+      "candidateSetStable": true,
+      "candidateSetPresenceRate": 1.0,
+      "triggerPolicyId": "candidate-margin-band-v1",
+      "triggerEvaluation": {
+        "policyId": "candidate-margin-band-v1",
+        "mode": "candidate-margin-band",
+        "epsilon": 0.05,
+        "candidateTopGap": 1.546255111694336,
+        "ambiguousCandidateCount": 1,
+        "wouldTrigger": false
+      },
+      "stageStability": {
+        "scout": {
+          "requirementId": "scout-v1",
+          "promptTokenizationStable": true,
+          "topCandidateMembershipStable": true,
+          "passed": true
+        },
+        "promote": {
+          "requirementId": "promote-v1",
+          "candidateSetStable": true,
+          "digestStable": true,
+          "passed": true
+        },
+        "claimableDemo": {
+          "requirementId": "claimable-demo-v1",
+          "finalTokenStable": null,
+          "receiptReplayStable": null,
+          "passed": null
+        }
+      },
+      "usefulnessScore": 0.876046,
+      "logitsArtifactPath": null,
+      "logitsSha256": "0face1d4b00b72b9f261fb527536fa0e10c84932888353c2db2bdcad50b2a235"
+    },
+    {
+      "candidateSetSource": "mined-topk-v1",
+      "candidateSetId": "binary.true_false",
+      "candidateSetRegistryTokenizerId": "gemma-3-spm-v1",
+      "answerSetId": "binary.true_false",
+      "domainId": "binary",
+      "answerOptionIds": [
+        "true",
+        "false"
+      ],
+      "answerOptionLabels": [
+        "true",
+        "false"
+      ],
+      "candidatePairId": "false__true",
+      "candidateCanonicalOrder": "token-id-ascending",
+      "canonicalCandidateSet": [
+        {
+          "token": 6288,
+          "tokenText": " True",
+          "normalizedTokenText": "true"
+        },
+        {
+          "token": 8450,
+          "tokenText": " False",
+          "normalizedTokenText": "false"
+        }
+      ],
+      "discoveryMode": "natural-scout",
+      "sourcePromptId": "psych-diagnosis-uncertain-answer--false__true--answer-question-reversed--false__true--output-only",
+      "mutationDepth": 0,
+      "mutationType": null,
+      "promotionBucket": "natural-supporting",
+      "sourceReportPath": "bench/out/apple-metal-sampled-decode-prompt-search/20260331T193952Z/round-03/real-logit-hunt.json",
+      "sourceReportScenarioId": "apple_metal_real_logit_hunt_gemma270m_prompt_search_sharp--round-03",
+      "sourceRepeatIndex": 0,
+      "promptId": "psych-diagnosis-uncertain-answer--false__true--answer-question-reversed--false__true--output-only",
+      "promptText": "Output only false or true. A diagnosis can be evidence-based even when it stays uncertain.",
+      "promptIndex": 5,
+      "phase": "prefill",
+      "stepIndex": 0,
+      "stepLabel": "prefill",
+      "top2Gap": 0.1376190185546875,
+      "exactMaxTieObserved": false,
+      "topTokenText": "\n\n",
+      "topToken": 108,
+      "topTokenLogit": 17.14349365234375,
+      "leftTokenText": " True",
+      "leftNormalizedTokenText": "true",
+      "leftToken": 6288,
+      "leftLogit": 11.118783950805664,
+      "leftRank": 19,
+      "leftPromptAnchored": true,
+      "rightTokenText": " False",
+      "rightNormalizedTokenText": "false",
+      "rightToken": 8450,
+      "rightLogit": 10.619152069091797,
+      "rightRank": 23,
+      "rightPromptAnchored": true,
+      "pairGap": 0.4996318817138672,
+      "pairLeadFromTop": 6.024709701538086,
+      "outsiderLead": 6.024709701538086,
+      "promptAnchorCount": 2,
+      "answerSetPromptAnchorCount": 2,
+      "boundedAnswerPrompt": true,
+      "sourceRepeatCount": 3,
+      "sourceByteStable": true,
+      "sourceGreedyStable": true,
+      "candidateSetStable": true,
+      "candidateSetPresenceRate": 1.0,
+      "triggerPolicyId": "candidate-margin-band-v1",
+      "triggerEvaluation": {
+        "policyId": "candidate-margin-band-v1",
+        "mode": "candidate-margin-band",
+        "epsilon": 0.05,
+        "candidateTopGap": 0.4996318817138672,
+        "ambiguousCandidateCount": 1,
+        "wouldTrigger": false
+      },
+      "stageStability": {
+        "scout": {
+          "requirementId": "scout-v1",
+          "promptTokenizationStable": true,
+          "topCandidateMembershipStable": true,
+          "passed": true
+        },
+        "promote": {
+          "requirementId": "promote-v1",
+          "candidateSetStable": true,
+          "digestStable": true,
+          "passed": true
+        },
+        "claimableDemo": {
+          "requirementId": "claimable-demo-v1",
+          "finalTokenStable": null,
+          "receiptReplayStable": null,
+          "passed": null
+        }
+      },
+      "usefulnessScore": 0.73021,
+      "logitsArtifactPath": null,
+      "logitsSha256": "470a95908c58077e2757e285bed2851880f407b3cf75101b3e90a49b2e6a266f"
+    },
+    {
+      "candidateSetSource": "mined-topk-v1",
+      "candidateSetId": "binary.true_false",
+      "candidateSetRegistryTokenizerId": "gemma-3-spm-v1",
+      "answerSetId": "binary.true_false",
+      "domainId": "binary",
+      "answerOptionIds": [
+        "true",
+        "false"
+      ],
+      "answerOptionLabels": [
+        "true",
+        "false"
+      ],
+      "candidatePairId": "false__true",
+      "candidateCanonicalOrder": "token-id-ascending",
+      "canonicalCandidateSet": [
+        {
+          "token": 6288,
+          "tokenText": " True",
+          "normalizedTokenText": "true"
+        },
+        {
+          "token": 8450,
+          "tokenText": " False",
+          "normalizedTokenText": "false"
+        }
+      ],
+      "discoveryMode": "natural-scout",
+      "sourcePromptId": "physics-position-momentum-answer--false__true--swap-inline-choice--false__true--output-only",
+      "mutationDepth": 0,
+      "mutationType": null,
+      "promotionBucket": "natural-supporting",
+      "sourceReportPath": "bench/out/apple-metal-sampled-decode-prompt-search/20260331T193952Z/round-03/real-logit-hunt.json",
+      "sourceReportScenarioId": "apple_metal_real_logit_hunt_gemma270m_prompt_search_sharp--round-03",
+      "sourceRepeatIndex": 0,
+      "promptId": "physics-position-momentum-answer--false__true--swap-inline-choice--false__true--output-only",
+      "promptText": "Output only false or true. An electron can have an exact position and exact momentum at the same time.",
+      "promptIndex": 11,
+      "phase": "prefill",
+      "stepIndex": 0,
+      "stepLabel": "prefill",
+      "top2Gap": 0.39547157287597656,
+      "exactMaxTieObserved": false,
+      "topTokenText": "\n\n",
+      "topToken": 108,
+      "topTokenLogit": 18.115068435668945,
+      "leftTokenText": " True",
+      "leftNormalizedTokenText": "true",
+      "leftToken": 6288,
+      "leftLogit": 13.28799057006836,
+      "leftRank": 8,
+      "leftPromptAnchored": true,
+      "rightTokenText": " False",
+      "rightNormalizedTokenText": "false",
+      "rightToken": 8450,
+      "rightLogit": 12.30854320526123,
+      "rightRank": 17,
+      "rightPromptAnchored": true,
+      "pairGap": 0.9794473648071289,
+      "pairLeadFromTop": 4.827077865600586,
+      "outsiderLead": 4.827077865600586,
+      "promptAnchorCount": 2,
+      "answerSetPromptAnchorCount": 2,
+      "boundedAnswerPrompt": true,
+      "sourceRepeatCount": 3,
+      "sourceByteStable": true,
+      "sourceGreedyStable": true,
+      "candidateSetStable": true,
+      "candidateSetPresenceRate": 1.0,
+      "triggerPolicyId": "candidate-margin-band-v1",
+      "triggerEvaluation": {
+        "policyId": "candidate-margin-band-v1",
+        "mode": "candidate-margin-band",
+        "epsilon": 0.05,
+        "candidateTopGap": 0.9794473648071289,
+        "ambiguousCandidateCount": 1,
+        "wouldTrigger": false
+      },
+      "stageStability": {
+        "scout": {
+          "requirementId": "scout-v1",
+          "promptTokenizationStable": true,
+          "topCandidateMembershipStable": true,
+          "passed": true
+        },
+        "promote": {
+          "requirementId": "promote-v1",
+          "candidateSetStable": true,
+          "digestStable": true,
+          "passed": true
+        },
+        "claimableDemo": {
+          "requirementId": "claimable-demo-v1",
+          "finalTokenStable": null,
+          "receiptReplayStable": null,
+          "passed": null
+        }
+      },
+      "usefulnessScore": 0.728628,
+      "logitsArtifactPath": null,
+      "logitsSha256": "d98cd144662b1d5375a1df7807aa2d205739e7fb62eedc550c7e151c8b662258"
+    },
+    {
+      "candidateSetSource": "mined-topk-v1",
+      "candidateSetId": "binary.true_false",
+      "candidateSetRegistryTokenizerId": "gemma-3-spm-v1",
+      "answerSetId": "binary.true_false",
+      "domainId": "binary",
+      "answerOptionIds": [
+        "true",
+        "false"
+      ],
+      "answerOptionLabels": [
+        "true",
+        "false"
+      ],
+      "candidatePairId": "false__true",
+      "candidateCanonicalOrder": "token-id-ascending",
+      "canonicalCandidateSet": [
+        {
+          "token": 6288,
+          "tokenText": " True",
+          "normalizedTokenText": "true"
+        },
+        {
+          "token": 8450,
+          "tokenText": " False",
+          "normalizedTokenText": "false"
+        }
+      ],
+      "discoveryMode": "natural-scout",
+      "sourcePromptId": "psych-diagnosis-uncertain-answer--false__true--answer-question-reversed--false__true--choose-question",
+      "mutationDepth": 0,
+      "mutationType": null,
+      "promotionBucket": "natural-supporting",
+      "sourceReportPath": "bench/out/apple-metal-sampled-decode-prompt-search/20260331T193952Z/round-03/real-logit-hunt.json",
+      "sourceReportScenarioId": "apple_metal_real_logit_hunt_gemma270m_prompt_search_sharp--round-03",
+      "sourceRepeatIndex": 0,
+      "promptId": "psych-diagnosis-uncertain-answer--false__true--answer-question-reversed--false__true--choose-question",
+      "promptText": "Choose exactly one word: false or true. Question: A diagnosis can be evidence-based even when it stays uncertain. Answer:",
+      "promptIndex": 0,
+      "phase": "decode",
+      "stepIndex": 1,
+      "stepLabel": "decode[1]",
+      "top2Gap": 0.05728340148925781,
+      "exactMaxTieObserved": false,
+      "topTokenText": "\n",
+      "topToken": 107,
+      "topTokenLogit": 16.355823516845703,
+      "leftTokenText": " True",
+      "leftNormalizedTokenText": "true",
+      "leftToken": 6288,
+      "leftLogit": 9.68837833404541,
+      "leftRank": 8,
+      "leftPromptAnchored": true,
+      "rightTokenText": " False",
+      "rightNormalizedTokenText": "false",
+      "rightToken": 8450,
+      "rightLogit": 10.348474502563477,
+      "rightRank": 6,
+      "rightPromptAnchored": true,
+      "pairGap": 0.6600961685180664,
+      "pairLeadFromTop": 6.007349014282227,
+      "outsiderLead": 6.007349014282227,
+      "promptAnchorCount": 2,
+      "answerSetPromptAnchorCount": 2,
+      "boundedAnswerPrompt": true,
+      "sourceRepeatCount": 3,
+      "sourceByteStable": true,
+      "sourceGreedyStable": true,
+      "candidateSetStable": true,
+      "candidateSetPresenceRate": 1.0,
+      "triggerPolicyId": "candidate-margin-band-v1",
+      "triggerEvaluation": {
+        "policyId": "candidate-margin-band-v1",
+        "mode": "candidate-margin-band",
+        "epsilon": 0.05,
+        "candidateTopGap": 0.6600961685180664,
+        "ambiguousCandidateCount": 1,
+        "wouldTrigger": false
+      },
+      "stageStability": {
+        "scout": {
+          "requirementId": "scout-v1",
+          "promptTokenizationStable": true,
+          "topCandidateMembershipStable": true,
+          "passed": true
+        },
+        "promote": {
+          "requirementId": "promote-v1",
+          "candidateSetStable": true,
+          "digestStable": true,
+          "passed": true
+        },
+        "claimableDemo": {
+          "requirementId": "claimable-demo-v1",
+          "finalTokenStable": null,
+          "receiptReplayStable": null,
+          "passed": null
+        }
+      },
+      "usefulnessScore": 0.712918,
+      "logitsArtifactPath": null,
+      "logitsSha256": "1462dbdcebca3451646166353470c8794b8299da35eb1b98eca52fcf987212c2"
+    },
+    {
+      "candidateSetSource": "mined-topk-v1",
+      "candidateSetId": "binary.true_false",
+      "candidateSetRegistryTokenizerId": "gemma-3-spm-v1",
+      "answerSetId": "binary.true_false",
+      "domainId": "binary",
+      "answerOptionIds": [
+        "true",
+        "false"
+      ],
+      "answerOptionLabels": [
+        "true",
+        "false"
+      ],
+      "candidatePairId": "false__true",
+      "candidateCanonicalOrder": "token-id-ascending",
+      "canonicalCandidateSet": [
+        {
+          "token": 6288,
+          "tokenText": " True",
+          "normalizedTokenText": "true"
+        },
+        {
+          "token": 8450,
+          "tokenText": " False",
+          "normalizedTokenText": "false"
+        }
+      ],
+      "discoveryMode": "natural-scout",
+      "sourcePromptId": "psych-diagnosis-uncertain-answer--false__true--answer-question-reversed--false__true--reply-question",
+      "mutationDepth": 0,
+      "mutationType": null,
+      "promotionBucket": "natural-supporting",
+      "sourceReportPath": "bench/out/apple-metal-sampled-decode-prompt-search/20260331T193952Z/round-03/real-logit-hunt.json",
+      "sourceReportScenarioId": "apple_metal_real_logit_hunt_gemma270m_prompt_search_sharp--round-03",
+      "sourceRepeatIndex": 0,
+      "promptId": "psych-diagnosis-uncertain-answer--false__true--answer-question-reversed--false__true--reply-question",
+      "promptText": "Reply with exactly one word: false or true. Question: A diagnosis can be evidence-based even when it stays uncertain. Answer:",
+      "promptIndex": 1,
+      "phase": "decode",
+      "stepIndex": 1,
+      "stepLabel": "decode[1]",
+      "top2Gap": 0.47220802307128906,
+      "exactMaxTieObserved": false,
+      "topTokenText": "\n",
+      "topToken": 107,
+      "topTokenLogit": 18.026601791381836,
+      "leftTokenText": " True",
+      "leftNormalizedTokenText": "true",
+      "leftToken": 6288,
+      "leftLogit": 10.116230010986328,
+      "leftRank": 10,
+      "leftPromptAnchored": true,
+      "rightTokenText": " False",
+      "rightNormalizedTokenText": "false",
+      "rightToken": 8450,
+      "rightLogit": 8.81893539428711,
+      "rightRank": 18,
+      "rightPromptAnchored": true,
+      "pairGap": 1.2972946166992188,
+      "pairLeadFromTop": 7.910371780395508,
+      "outsiderLead": 7.910371780395508,
+      "promptAnchorCount": 2,
+      "answerSetPromptAnchorCount": 2,
+      "boundedAnswerPrompt": true,
+      "sourceRepeatCount": 3,
+      "sourceByteStable": true,
+      "sourceGreedyStable": true,
+      "candidateSetStable": true,
+      "candidateSetPresenceRate": 1.0,
+      "triggerPolicyId": "candidate-margin-band-v1",
+      "triggerEvaluation": {
+        "policyId": "candidate-margin-band-v1",
+        "mode": "candidate-margin-band",
+        "epsilon": 0.05,
+        "candidateTopGap": 1.2972946166992188,
+        "ambiguousCandidateCount": 1,
+        "wouldTrigger": false
+      },
+      "stageStability": {
+        "scout": {
+          "requirementId": "scout-v1",
+          "promptTokenizationStable": true,
+          "topCandidateMembershipStable": true,
+          "passed": true
+        },
+        "promote": {
+          "requirementId": "promote-v1",
+          "candidateSetStable": true,
+          "digestStable": true,
+          "passed": true
+        },
+        "claimableDemo": {
+          "requirementId": "claimable-demo-v1",
+          "finalTokenStable": null,
+          "receiptReplayStable": null,
+          "passed": null
+        }
+      },
+      "usefulnessScore": 0.557976,
+      "logitsArtifactPath": null,
+      "logitsSha256": "1ca319793cdc975299ba0614762fe4b46f77efa7c7a686079ff6418b90e7d806"
+    },
+    {
+      "candidateSetSource": "mined-topk-v1",
+      "candidateSetId": "binary.true_false",
+      "candidateSetRegistryTokenizerId": "gemma-3-spm-v1",
+      "answerSetId": "binary.true_false",
+      "domainId": "binary",
+      "answerOptionIds": [
+        "true",
+        "false"
+      ],
+      "answerOptionLabels": [
+        "true",
+        "false"
+      ],
+      "candidatePairId": "false__true",
+      "candidateCanonicalOrder": "token-id-ascending",
+      "canonicalCandidateSet": [
+        {
+          "token": 6288,
+          "tokenText": " True",
+          "normalizedTokenText": "true"
+        },
+        {
+          "token": 8450,
+          "tokenText": " False",
+          "normalizedTokenText": "false"
+        }
+      ],
+      "discoveryMode": "natural-scout",
+      "sourcePromptId": "psych-diagnosis-uncertain-answer--false__true--answer-question-reversed--false__true--parenthetical-question",
+      "mutationDepth": 0,
+      "mutationType": null,
+      "promotionBucket": "natural-supporting",
+      "sourceReportPath": "bench/out/apple-metal-sampled-decode-prompt-search/20260331T193952Z/round-03/real-logit-hunt.json",
+      "sourceReportScenarioId": "apple_metal_real_logit_hunt_gemma270m_prompt_search_sharp--round-03",
+      "sourceRepeatIndex": 0,
+      "promptId": "psych-diagnosis-uncertain-answer--false__true--answer-question-reversed--false__true--parenthetical-question",
+      "promptText": "One-word answer only (false or true). Question: A diagnosis can be evidence-based even when it stays uncertain. Answer:",
+      "promptIndex": 2,
+      "phase": "decode",
+      "stepIndex": 1,
+      "stepLabel": "decode[1]",
+      "top2Gap": 0.1884937286376953,
+      "exactMaxTieObserved": false,
+      "topTokenText": "\n",
+      "topToken": 107,
+      "topTokenLogit": 17.916887283325195,
+      "leftTokenText": " True",
+      "leftNormalizedTokenText": "true",
+      "leftToken": 6288,
+      "leftLogit": 10.141244888305664,
+      "leftRank": 12,
+      "leftPromptAnchored": true,
+      "rightTokenText": " False",
+      "rightNormalizedTokenText": "false",
+      "rightToken": 8450,
+      "rightLogit": 8.739713668823242,
+      "rightRank": 26,
+      "rightPromptAnchored": true,
+      "pairGap": 1.4015312194824219,
+      "pairLeadFromTop": 7.775642395019531,
+      "outsiderLead": 7.775642395019531,
+      "promptAnchorCount": 2,
+      "answerSetPromptAnchorCount": 2,
+      "boundedAnswerPrompt": true,
+      "sourceRepeatCount": 3,
+      "sourceByteStable": true,
+      "sourceGreedyStable": true,
+      "candidateSetStable": true,
+      "candidateSetPresenceRate": 1.0,
+      "triggerPolicyId": "candidate-margin-band-v1",
+      "triggerEvaluation": {
+        "policyId": "candidate-margin-band-v1",
+        "mode": "candidate-margin-band",
+        "epsilon": 0.05,
+        "candidateTopGap": 1.4015312194824219,
+        "ambiguousCandidateCount": 1,
+        "wouldTrigger": false
+      },
+      "stageStability": {
+        "scout": {
+          "requirementId": "scout-v1",
+          "promptTokenizationStable": true,
+          "topCandidateMembershipStable": true,
+          "passed": true
+        },
+        "promote": {
+          "requirementId": "promote-v1",
+          "candidateSetStable": true,
+          "digestStable": true,
+          "passed": true
+        },
+        "claimableDemo": {
+          "requirementId": "claimable-demo-v1",
+          "finalTokenStable": null,
+          "receiptReplayStable": null,
+          "passed": null
+        }
+      },
+      "usefulnessScore": 0.552143,
+      "logitsArtifactPath": null,
+      "logitsSha256": "72c01404e8d50d7aa0630c07c3f7e203a2c404b860d78b044128460a1a2fe4d0"
+    }
+  ]
+}

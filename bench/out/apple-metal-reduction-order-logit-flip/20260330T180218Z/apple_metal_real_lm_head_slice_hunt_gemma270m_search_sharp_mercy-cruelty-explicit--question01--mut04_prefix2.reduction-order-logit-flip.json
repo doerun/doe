@@ -1,0 +1,1228 @@
+{
+  "schemaVersion": 1,
+  "scenarioId": "apple_metal_real_lm_head_slice_hunt_gemma270m_search_sharp_mercy-cruelty-explicit--question01--mut04_prefix2",
+  "description": "Real prompt LM-head slice reduction-order counterexample: same final-norm hidden state, same real candidate rows, different accumulation policies, different selected row.",
+  "fixturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-real-lm-head-slice-frontier-sweep/20260330T180218Z/20260330T180218Z/mercy-cruelty-explicit--question01--mut04-prefix2/apple_metal_real_lm_head_slice_hunt_gemma270m_search_sharp_mercy-cruelty-explicit--question01--mut04_prefix2.fixture.json",
+  "timestamp": "20260330T180218Z",
+  "runCount": 3,
+  "profile": {
+    "vendor": "apple",
+    "api": "metal",
+    "family": "apple-gpu",
+    "driver": "1.0.0"
+  },
+  "captures": [
+    {
+      "commandIndex": 4,
+      "semanticOpId": "matmul.logits",
+      "semanticStage": "real_lm_head_slice",
+      "semanticPhase": "logits",
+      "captureBufferHandle": 4204,
+      "captureOffset": 0,
+      "captureSize": 8
+    },
+    {
+      "commandIndex": 5,
+      "semanticOpId": "sample.token",
+      "semanticStage": "real_lm_head_slice",
+      "semanticPhase": "sample_token",
+      "captureBufferHandle": 4205,
+      "captureOffset": 0,
+      "captureSize": 4,
+      "decode": "u32le"
+    }
+  ],
+  "variants": {
+    "forward": {
+      "id": "forward",
+      "policyId": "lm-head-slice/forward-serial-v1",
+      "commandsPath": "/Users/xyz/deco/doe/bench/out/apple-metal-real-lm-head-slice-frontier-sweep/20260330T180218Z/20260330T180218Z/mercy-cruelty-explicit--question01--mut04-prefix2/mercy-cruelty-explicit--question01--mut04.forward.commands.json",
+      "baseCommandsSha256": "6cc7b5af72285c603ab60095411f516c5f96fb9878aa168aa79693f7a5b03616",
+      "annotatedCommandsPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/apple_metal_real_lm_head_slice_hunt_gemma270m_search_sharp_mercy-cruelty-explicit--question01--mut04_prefix2.forward.commands.annotated.json",
+      "annotatedCommandsSha256": "b3aad4d660a941675f92f17d14e9993051f0ad32582e8d05fe5c1cb71e4069ed",
+      "lanes": {
+        "doe": {
+          "stableAcrossRuns": true,
+          "operators": {
+            "matmul.logits": {
+              "stableAcrossRuns": true,
+              "runCount": 3,
+              "captureSize": 8,
+              "statusCounts": {
+                "ok": 3
+              },
+              "uniqueDigestCount": 1,
+              "sameByteRate": 1.0,
+              "dominantDigest": "a3dbfdb637dcd26c94497b7d210cb6e59dc8e4617e3164ac8b2d02f1460f9cec",
+              "digestCounts": {
+                "a3dbfdb637dcd26c94497b7d210cb6e59dc8e4617e3164ac8b2d02f1460f9cec": 3
+              },
+              "artifacts": [
+                {
+                  "runIndex": 0,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/forward/doe/run000.meta.json.op0004.capture.bin",
+                  "captureSha256": "a3dbfdb637dcd26c94497b7d210cb6e59dc8e4617e3164ac8b2d02f1460f9cec"
+                },
+                {
+                  "runIndex": 1,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/forward/doe/run001.meta.json.op0004.capture.bin",
+                  "captureSha256": "a3dbfdb637dcd26c94497b7d210cb6e59dc8e4617e3164ac8b2d02f1460f9cec"
+                },
+                {
+                  "runIndex": 2,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/forward/doe/run002.meta.json.op0004.capture.bin",
+                  "captureSha256": "a3dbfdb637dcd26c94497b7d210cb6e59dc8e4617e3164ac8b2d02f1460f9cec"
+                }
+              ],
+              "firstDivergenceRunIndex": null
+            },
+            "sample.token": {
+              "stableAcrossRuns": true,
+              "runCount": 3,
+              "captureSize": 4,
+              "statusCounts": {
+                "ok": 3
+              },
+              "uniqueDigestCount": 1,
+              "sameByteRate": 1.0,
+              "dominantDigest": "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450",
+              "digestCounts": {
+                "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450": 3
+              },
+              "artifacts": [
+                {
+                  "runIndex": 0,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/forward/doe/run000.meta.json.op0005.capture.bin",
+                  "captureSha256": "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450"
+                },
+                {
+                  "runIndex": 1,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/forward/doe/run001.meta.json.op0005.capture.bin",
+                  "captureSha256": "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450"
+                },
+                {
+                  "runIndex": 2,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/forward/doe/run002.meta.json.op0005.capture.bin",
+                  "captureSha256": "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450"
+                }
+              ],
+              "firstDivergenceRunIndex": null,
+              "decodedValueCounts": {
+                "1": 3
+              },
+              "dominantDecodedValue": 1,
+              "decodedValueStableAcrossRuns": true,
+              "decodedValueRate": 1.0
+            }
+          },
+          "id": "doe",
+          "backendLane": "metal_doe_comparable",
+          "runs": [
+            {
+              "runIndex": 0,
+              "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/forward/doe/run000.meta.json",
+              "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/forward/doe/run000.trace.jsonl",
+              "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/forward/doe/run000.meta.json.operators.json"
+            },
+            {
+              "runIndex": 1,
+              "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/forward/doe/run001.meta.json",
+              "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/forward/doe/run001.trace.jsonl",
+              "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/forward/doe/run001.meta.json.operators.json"
+            },
+            {
+              "runIndex": 2,
+              "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/forward/doe/run002.meta.json",
+              "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/forward/doe/run002.trace.jsonl",
+              "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/forward/doe/run002.meta.json.operators.json"
+            }
+          ]
+        },
+        "dawn": {
+          "stableAcrossRuns": true,
+          "operators": {
+            "matmul.logits": {
+              "stableAcrossRuns": true,
+              "runCount": 3,
+              "captureSize": 8,
+              "statusCounts": {
+                "ok": 3
+              },
+              "uniqueDigestCount": 1,
+              "sameByteRate": 1.0,
+              "dominantDigest": "a3dbfdb637dcd26c94497b7d210cb6e59dc8e4617e3164ac8b2d02f1460f9cec",
+              "digestCounts": {
+                "a3dbfdb637dcd26c94497b7d210cb6e59dc8e4617e3164ac8b2d02f1460f9cec": 3
+              },
+              "artifacts": [
+                {
+                  "runIndex": 0,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/forward/dawn/run000.meta.json.op0004.capture.bin",
+                  "captureSha256": "a3dbfdb637dcd26c94497b7d210cb6e59dc8e4617e3164ac8b2d02f1460f9cec"
+                },
+                {
+                  "runIndex": 1,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/forward/dawn/run001.meta.json.op0004.capture.bin",
+                  "captureSha256": "a3dbfdb637dcd26c94497b7d210cb6e59dc8e4617e3164ac8b2d02f1460f9cec"
+                },
+                {
+                  "runIndex": 2,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/forward/dawn/run002.meta.json.op0004.capture.bin",
+                  "captureSha256": "a3dbfdb637dcd26c94497b7d210cb6e59dc8e4617e3164ac8b2d02f1460f9cec"
+                }
+              ],
+              "firstDivergenceRunIndex": null
+            },
+            "sample.token": {
+              "stableAcrossRuns": true,
+              "runCount": 3,
+              "captureSize": 4,
+              "statusCounts": {
+                "ok": 3
+              },
+              "uniqueDigestCount": 1,
+              "sameByteRate": 1.0,
+              "dominantDigest": "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450",
+              "digestCounts": {
+                "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450": 3
+              },
+              "artifacts": [
+                {
+                  "runIndex": 0,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/forward/dawn/run000.meta.json.op0005.capture.bin",
+                  "captureSha256": "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450"
+                },
+                {
+                  "runIndex": 1,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/forward/dawn/run001.meta.json.op0005.capture.bin",
+                  "captureSha256": "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450"
+                },
+                {
+                  "runIndex": 2,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/forward/dawn/run002.meta.json.op0005.capture.bin",
+                  "captureSha256": "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450"
+                }
+              ],
+              "firstDivergenceRunIndex": null,
+              "decodedValueCounts": {
+                "1": 3
+              },
+              "dominantDecodedValue": 1,
+              "decodedValueStableAcrossRuns": true,
+              "decodedValueRate": 1.0
+            }
+          },
+          "id": "dawn",
+          "backendLane": "metal_dawn_release",
+          "runs": [
+            {
+              "runIndex": 0,
+              "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/forward/dawn/run000.meta.json",
+              "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/forward/dawn/run000.trace.jsonl",
+              "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/forward/dawn/run000.meta.json.operators.json"
+            },
+            {
+              "runIndex": 1,
+              "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/forward/dawn/run001.meta.json",
+              "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/forward/dawn/run001.trace.jsonl",
+              "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/forward/dawn/run001.meta.json.operators.json"
+            },
+            {
+              "runIndex": 2,
+              "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/forward/dawn/run002.meta.json",
+              "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/forward/dawn/run002.trace.jsonl",
+              "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/forward/dawn/run002.meta.json.operators.json"
+            }
+          ]
+        }
+      },
+      "crossLane": {
+        "operators": {
+          "matmul.logits": {
+            "sameAcrossLanes": true,
+            "laneDominantDigests": {
+              "doe": "a3dbfdb637dcd26c94497b7d210cb6e59dc8e4617e3164ac8b2d02f1460f9cec",
+              "dawn": "a3dbfdb637dcd26c94497b7d210cb6e59dc8e4617e3164ac8b2d02f1460f9cec"
+            }
+          },
+          "sample.token": {
+            "sameAcrossLanes": true,
+            "laneDominantDigests": {
+              "doe": "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450",
+              "dawn": "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450"
+            },
+            "sameDecodedValueAcrossLanes": true,
+            "laneDominantDecodedValues": {
+              "doe": 1,
+              "dawn": 1
+            }
+          }
+        }
+      }
+    },
+    "reverse": {
+      "id": "reverse",
+      "policyId": "lm-head-slice/reverse-serial-v1",
+      "commandsPath": "/Users/xyz/deco/doe/bench/out/apple-metal-real-lm-head-slice-frontier-sweep/20260330T180218Z/20260330T180218Z/mercy-cruelty-explicit--question01--mut04-prefix2/mercy-cruelty-explicit--question01--mut04.reverse.commands.json",
+      "baseCommandsSha256": "47d328795061a79412332279de3c93310009531a81653850e245462fd557cd43",
+      "annotatedCommandsPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/apple_metal_real_lm_head_slice_hunt_gemma270m_search_sharp_mercy-cruelty-explicit--question01--mut04_prefix2.reverse.commands.annotated.json",
+      "annotatedCommandsSha256": "4db98cd0dcbee81e0a1ffc4a74c770c0d3aa41dbd0a87d4a3abc84316cd2ae8f",
+      "lanes": {
+        "doe": {
+          "stableAcrossRuns": true,
+          "operators": {
+            "matmul.logits": {
+              "stableAcrossRuns": true,
+              "runCount": 3,
+              "captureSize": 8,
+              "statusCounts": {
+                "ok": 3
+              },
+              "uniqueDigestCount": 1,
+              "sameByteRate": 1.0,
+              "dominantDigest": "73b725112de5df1901515f303a21f54ba35335d4e201abd244cc895187f9cd31",
+              "digestCounts": {
+                "73b725112de5df1901515f303a21f54ba35335d4e201abd244cc895187f9cd31": 3
+              },
+              "artifacts": [
+                {
+                  "runIndex": 0,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/reverse/doe/run000.meta.json.op0004.capture.bin",
+                  "captureSha256": "73b725112de5df1901515f303a21f54ba35335d4e201abd244cc895187f9cd31"
+                },
+                {
+                  "runIndex": 1,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/reverse/doe/run001.meta.json.op0004.capture.bin",
+                  "captureSha256": "73b725112de5df1901515f303a21f54ba35335d4e201abd244cc895187f9cd31"
+                },
+                {
+                  "runIndex": 2,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/reverse/doe/run002.meta.json.op0004.capture.bin",
+                  "captureSha256": "73b725112de5df1901515f303a21f54ba35335d4e201abd244cc895187f9cd31"
+                }
+              ],
+              "firstDivergenceRunIndex": null
+            },
+            "sample.token": {
+              "stableAcrossRuns": true,
+              "runCount": 3,
+              "captureSize": 4,
+              "statusCounts": {
+                "ok": 3
+              },
+              "uniqueDigestCount": 1,
+              "sameByteRate": 1.0,
+              "dominantDigest": "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450",
+              "digestCounts": {
+                "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450": 3
+              },
+              "artifacts": [
+                {
+                  "runIndex": 0,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/reverse/doe/run000.meta.json.op0005.capture.bin",
+                  "captureSha256": "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450"
+                },
+                {
+                  "runIndex": 1,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/reverse/doe/run001.meta.json.op0005.capture.bin",
+                  "captureSha256": "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450"
+                },
+                {
+                  "runIndex": 2,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/reverse/doe/run002.meta.json.op0005.capture.bin",
+                  "captureSha256": "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450"
+                }
+              ],
+              "firstDivergenceRunIndex": null,
+              "decodedValueCounts": {
+                "1": 3
+              },
+              "dominantDecodedValue": 1,
+              "decodedValueStableAcrossRuns": true,
+              "decodedValueRate": 1.0
+            }
+          },
+          "id": "doe",
+          "backendLane": "metal_doe_comparable",
+          "runs": [
+            {
+              "runIndex": 0,
+              "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/reverse/doe/run000.meta.json",
+              "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/reverse/doe/run000.trace.jsonl",
+              "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/reverse/doe/run000.meta.json.operators.json"
+            },
+            {
+              "runIndex": 1,
+              "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/reverse/doe/run001.meta.json",
+              "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/reverse/doe/run001.trace.jsonl",
+              "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/reverse/doe/run001.meta.json.operators.json"
+            },
+            {
+              "runIndex": 2,
+              "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/reverse/doe/run002.meta.json",
+              "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/reverse/doe/run002.trace.jsonl",
+              "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/reverse/doe/run002.meta.json.operators.json"
+            }
+          ]
+        },
+        "dawn": {
+          "stableAcrossRuns": true,
+          "operators": {
+            "matmul.logits": {
+              "stableAcrossRuns": true,
+              "runCount": 3,
+              "captureSize": 8,
+              "statusCounts": {
+                "ok": 3
+              },
+              "uniqueDigestCount": 1,
+              "sameByteRate": 1.0,
+              "dominantDigest": "73b725112de5df1901515f303a21f54ba35335d4e201abd244cc895187f9cd31",
+              "digestCounts": {
+                "73b725112de5df1901515f303a21f54ba35335d4e201abd244cc895187f9cd31": 3
+              },
+              "artifacts": [
+                {
+                  "runIndex": 0,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/reverse/dawn/run000.meta.json.op0004.capture.bin",
+                  "captureSha256": "73b725112de5df1901515f303a21f54ba35335d4e201abd244cc895187f9cd31"
+                },
+                {
+                  "runIndex": 1,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/reverse/dawn/run001.meta.json.op0004.capture.bin",
+                  "captureSha256": "73b725112de5df1901515f303a21f54ba35335d4e201abd244cc895187f9cd31"
+                },
+                {
+                  "runIndex": 2,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/reverse/dawn/run002.meta.json.op0004.capture.bin",
+                  "captureSha256": "73b725112de5df1901515f303a21f54ba35335d4e201abd244cc895187f9cd31"
+                }
+              ],
+              "firstDivergenceRunIndex": null
+            },
+            "sample.token": {
+              "stableAcrossRuns": true,
+              "runCount": 3,
+              "captureSize": 4,
+              "statusCounts": {
+                "ok": 3
+              },
+              "uniqueDigestCount": 1,
+              "sameByteRate": 1.0,
+              "dominantDigest": "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450",
+              "digestCounts": {
+                "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450": 3
+              },
+              "artifacts": [
+                {
+                  "runIndex": 0,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/reverse/dawn/run000.meta.json.op0005.capture.bin",
+                  "captureSha256": "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450"
+                },
+                {
+                  "runIndex": 1,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/reverse/dawn/run001.meta.json.op0005.capture.bin",
+                  "captureSha256": "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450"
+                },
+                {
+                  "runIndex": 2,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/reverse/dawn/run002.meta.json.op0005.capture.bin",
+                  "captureSha256": "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450"
+                }
+              ],
+              "firstDivergenceRunIndex": null,
+              "decodedValueCounts": {
+                "1": 3
+              },
+              "dominantDecodedValue": 1,
+              "decodedValueStableAcrossRuns": true,
+              "decodedValueRate": 1.0
+            }
+          },
+          "id": "dawn",
+          "backendLane": "metal_dawn_release",
+          "runs": [
+            {
+              "runIndex": 0,
+              "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/reverse/dawn/run000.meta.json",
+              "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/reverse/dawn/run000.trace.jsonl",
+              "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/reverse/dawn/run000.meta.json.operators.json"
+            },
+            {
+              "runIndex": 1,
+              "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/reverse/dawn/run001.meta.json",
+              "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/reverse/dawn/run001.trace.jsonl",
+              "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/reverse/dawn/run001.meta.json.operators.json"
+            },
+            {
+              "runIndex": 2,
+              "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/reverse/dawn/run002.meta.json",
+              "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/reverse/dawn/run002.trace.jsonl",
+              "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/reverse/dawn/run002.meta.json.operators.json"
+            }
+          ]
+        }
+      },
+      "crossLane": {
+        "operators": {
+          "matmul.logits": {
+            "sameAcrossLanes": true,
+            "laneDominantDigests": {
+              "doe": "73b725112de5df1901515f303a21f54ba35335d4e201abd244cc895187f9cd31",
+              "dawn": "73b725112de5df1901515f303a21f54ba35335d4e201abd244cc895187f9cd31"
+            }
+          },
+          "sample.token": {
+            "sameAcrossLanes": true,
+            "laneDominantDigests": {
+              "doe": "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450",
+              "dawn": "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450"
+            },
+            "sameDecodedValueAcrossLanes": true,
+            "laneDominantDecodedValues": {
+              "doe": 1,
+              "dawn": 1
+            }
+          }
+        }
+      }
+    },
+    "tree64": {
+      "id": "tree64",
+      "policyId": "lm-head-slice/tree64-v1",
+      "commandsPath": "/Users/xyz/deco/doe/bench/out/apple-metal-real-lm-head-slice-frontier-sweep/20260330T180218Z/20260330T180218Z/mercy-cruelty-explicit--question01--mut04-prefix2/mercy-cruelty-explicit--question01--mut04.tree64.commands.json",
+      "baseCommandsSha256": "2c5c9855351a878d6e3ef99d5b903bb2af4b70fee958ab72a4b3ebacaae93fdb",
+      "annotatedCommandsPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/apple_metal_real_lm_head_slice_hunt_gemma270m_search_sharp_mercy-cruelty-explicit--question01--mut04_prefix2.tree64.commands.annotated.json",
+      "annotatedCommandsSha256": "85e0bceb61efe016200ddce3071234c869f873c48db2a9481aca23c0808832d2",
+      "lanes": {
+        "doe": {
+          "stableAcrossRuns": true,
+          "operators": {
+            "matmul.logits": {
+              "stableAcrossRuns": true,
+              "runCount": 3,
+              "captureSize": 8,
+              "statusCounts": {
+                "ok": 3
+              },
+              "uniqueDigestCount": 1,
+              "sameByteRate": 1.0,
+              "dominantDigest": "faed249031f47d443a7af2b1bd85741da11bb5fb8b56afa1b2afce73e32fc964",
+              "digestCounts": {
+                "faed249031f47d443a7af2b1bd85741da11bb5fb8b56afa1b2afce73e32fc964": 3
+              },
+              "artifacts": [
+                {
+                  "runIndex": 0,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/tree64/doe/run000.meta.json.op0004.capture.bin",
+                  "captureSha256": "faed249031f47d443a7af2b1bd85741da11bb5fb8b56afa1b2afce73e32fc964"
+                },
+                {
+                  "runIndex": 1,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/tree64/doe/run001.meta.json.op0004.capture.bin",
+                  "captureSha256": "faed249031f47d443a7af2b1bd85741da11bb5fb8b56afa1b2afce73e32fc964"
+                },
+                {
+                  "runIndex": 2,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/tree64/doe/run002.meta.json.op0004.capture.bin",
+                  "captureSha256": "faed249031f47d443a7af2b1bd85741da11bb5fb8b56afa1b2afce73e32fc964"
+                }
+              ],
+              "firstDivergenceRunIndex": null
+            },
+            "sample.token": {
+              "stableAcrossRuns": true,
+              "runCount": 3,
+              "captureSize": 4,
+              "statusCounts": {
+                "ok": 3
+              },
+              "uniqueDigestCount": 1,
+              "sameByteRate": 1.0,
+              "dominantDigest": "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450",
+              "digestCounts": {
+                "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450": 3
+              },
+              "artifacts": [
+                {
+                  "runIndex": 0,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/tree64/doe/run000.meta.json.op0005.capture.bin",
+                  "captureSha256": "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450"
+                },
+                {
+                  "runIndex": 1,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/tree64/doe/run001.meta.json.op0005.capture.bin",
+                  "captureSha256": "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450"
+                },
+                {
+                  "runIndex": 2,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/tree64/doe/run002.meta.json.op0005.capture.bin",
+                  "captureSha256": "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450"
+                }
+              ],
+              "firstDivergenceRunIndex": null,
+              "decodedValueCounts": {
+                "1": 3
+              },
+              "dominantDecodedValue": 1,
+              "decodedValueStableAcrossRuns": true,
+              "decodedValueRate": 1.0
+            }
+          },
+          "id": "doe",
+          "backendLane": "metal_doe_comparable",
+          "runs": [
+            {
+              "runIndex": 0,
+              "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/tree64/doe/run000.meta.json",
+              "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/tree64/doe/run000.trace.jsonl",
+              "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/tree64/doe/run000.meta.json.operators.json"
+            },
+            {
+              "runIndex": 1,
+              "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/tree64/doe/run001.meta.json",
+              "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/tree64/doe/run001.trace.jsonl",
+              "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/tree64/doe/run001.meta.json.operators.json"
+            },
+            {
+              "runIndex": 2,
+              "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/tree64/doe/run002.meta.json",
+              "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/tree64/doe/run002.trace.jsonl",
+              "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/tree64/doe/run002.meta.json.operators.json"
+            }
+          ]
+        },
+        "dawn": {
+          "stableAcrossRuns": true,
+          "operators": {
+            "matmul.logits": {
+              "stableAcrossRuns": true,
+              "runCount": 3,
+              "captureSize": 8,
+              "statusCounts": {
+                "ok": 3
+              },
+              "uniqueDigestCount": 1,
+              "sameByteRate": 1.0,
+              "dominantDigest": "faed249031f47d443a7af2b1bd85741da11bb5fb8b56afa1b2afce73e32fc964",
+              "digestCounts": {
+                "faed249031f47d443a7af2b1bd85741da11bb5fb8b56afa1b2afce73e32fc964": 3
+              },
+              "artifacts": [
+                {
+                  "runIndex": 0,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/tree64/dawn/run000.meta.json.op0004.capture.bin",
+                  "captureSha256": "faed249031f47d443a7af2b1bd85741da11bb5fb8b56afa1b2afce73e32fc964"
+                },
+                {
+                  "runIndex": 1,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/tree64/dawn/run001.meta.json.op0004.capture.bin",
+                  "captureSha256": "faed249031f47d443a7af2b1bd85741da11bb5fb8b56afa1b2afce73e32fc964"
+                },
+                {
+                  "runIndex": 2,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/tree64/dawn/run002.meta.json.op0004.capture.bin",
+                  "captureSha256": "faed249031f47d443a7af2b1bd85741da11bb5fb8b56afa1b2afce73e32fc964"
+                }
+              ],
+              "firstDivergenceRunIndex": null
+            },
+            "sample.token": {
+              "stableAcrossRuns": true,
+              "runCount": 3,
+              "captureSize": 4,
+              "statusCounts": {
+                "ok": 3
+              },
+              "uniqueDigestCount": 1,
+              "sameByteRate": 1.0,
+              "dominantDigest": "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450",
+              "digestCounts": {
+                "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450": 3
+              },
+              "artifacts": [
+                {
+                  "runIndex": 0,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/tree64/dawn/run000.meta.json.op0005.capture.bin",
+                  "captureSha256": "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450"
+                },
+                {
+                  "runIndex": 1,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/tree64/dawn/run001.meta.json.op0005.capture.bin",
+                  "captureSha256": "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450"
+                },
+                {
+                  "runIndex": 2,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/tree64/dawn/run002.meta.json.op0005.capture.bin",
+                  "captureSha256": "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450"
+                }
+              ],
+              "firstDivergenceRunIndex": null,
+              "decodedValueCounts": {
+                "1": 3
+              },
+              "dominantDecodedValue": 1,
+              "decodedValueStableAcrossRuns": true,
+              "decodedValueRate": 1.0
+            }
+          },
+          "id": "dawn",
+          "backendLane": "metal_dawn_release",
+          "runs": [
+            {
+              "runIndex": 0,
+              "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/tree64/dawn/run000.meta.json",
+              "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/tree64/dawn/run000.trace.jsonl",
+              "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/tree64/dawn/run000.meta.json.operators.json"
+            },
+            {
+              "runIndex": 1,
+              "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/tree64/dawn/run001.meta.json",
+              "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/tree64/dawn/run001.trace.jsonl",
+              "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/tree64/dawn/run001.meta.json.operators.json"
+            },
+            {
+              "runIndex": 2,
+              "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/tree64/dawn/run002.meta.json",
+              "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/tree64/dawn/run002.trace.jsonl",
+              "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/tree64/dawn/run002.meta.json.operators.json"
+            }
+          ]
+        }
+      },
+      "crossLane": {
+        "operators": {
+          "matmul.logits": {
+            "sameAcrossLanes": true,
+            "laneDominantDigests": {
+              "doe": "faed249031f47d443a7af2b1bd85741da11bb5fb8b56afa1b2afce73e32fc964",
+              "dawn": "faed249031f47d443a7af2b1bd85741da11bb5fb8b56afa1b2afce73e32fc964"
+            }
+          },
+          "sample.token": {
+            "sameAcrossLanes": true,
+            "laneDominantDigests": {
+              "doe": "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450",
+              "dawn": "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450"
+            },
+            "sameDecodedValueAcrossLanes": true,
+            "laneDominantDecodedValues": {
+              "doe": 1,
+              "dawn": 1
+            }
+          }
+        }
+      }
+    },
+    "f16accum": {
+      "id": "f16accum",
+      "policyId": "lm-head-slice/forward-f16accum-v1",
+      "commandsPath": "/Users/xyz/deco/doe/bench/out/apple-metal-real-lm-head-slice-frontier-sweep/20260330T180218Z/20260330T180218Z/mercy-cruelty-explicit--question01--mut04-prefix2/mercy-cruelty-explicit--question01--mut04.f16accum.commands.json",
+      "baseCommandsSha256": "ba7049dd880a30d4107b270067bad40fc41f43b31cf34505037522b18c28fc7a",
+      "annotatedCommandsPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/apple_metal_real_lm_head_slice_hunt_gemma270m_search_sharp_mercy-cruelty-explicit--question01--mut04_prefix2.f16accum.commands.annotated.json",
+      "annotatedCommandsSha256": "3aaa8fed9f83f401dc72c03327fca3f61f5f277c108c7b3bdb7ae4e299471d0e",
+      "lanes": {
+        "doe": {
+          "stableAcrossRuns": true,
+          "operators": {
+            "matmul.logits": {
+              "stableAcrossRuns": true,
+              "runCount": 3,
+              "captureSize": 8,
+              "statusCounts": {
+                "ok": 3
+              },
+              "uniqueDigestCount": 1,
+              "sameByteRate": 1.0,
+              "dominantDigest": "f85da69e697aa20b4a7284f506bc8888ec0070e4c12d7ad4e687934e97f273df",
+              "digestCounts": {
+                "f85da69e697aa20b4a7284f506bc8888ec0070e4c12d7ad4e687934e97f273df": 3
+              },
+              "artifacts": [
+                {
+                  "runIndex": 0,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/f16accum/doe/run000.meta.json.op0004.capture.bin",
+                  "captureSha256": "f85da69e697aa20b4a7284f506bc8888ec0070e4c12d7ad4e687934e97f273df"
+                },
+                {
+                  "runIndex": 1,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/f16accum/doe/run001.meta.json.op0004.capture.bin",
+                  "captureSha256": "f85da69e697aa20b4a7284f506bc8888ec0070e4c12d7ad4e687934e97f273df"
+                },
+                {
+                  "runIndex": 2,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/f16accum/doe/run002.meta.json.op0004.capture.bin",
+                  "captureSha256": "f85da69e697aa20b4a7284f506bc8888ec0070e4c12d7ad4e687934e97f273df"
+                }
+              ],
+              "firstDivergenceRunIndex": null
+            },
+            "sample.token": {
+              "stableAcrossRuns": true,
+              "runCount": 3,
+              "captureSize": 4,
+              "statusCounts": {
+                "ok": 3
+              },
+              "uniqueDigestCount": 1,
+              "sameByteRate": 1.0,
+              "dominantDigest": "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450",
+              "digestCounts": {
+                "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450": 3
+              },
+              "artifacts": [
+                {
+                  "runIndex": 0,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/f16accum/doe/run000.meta.json.op0005.capture.bin",
+                  "captureSha256": "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450"
+                },
+                {
+                  "runIndex": 1,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/f16accum/doe/run001.meta.json.op0005.capture.bin",
+                  "captureSha256": "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450"
+                },
+                {
+                  "runIndex": 2,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/f16accum/doe/run002.meta.json.op0005.capture.bin",
+                  "captureSha256": "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450"
+                }
+              ],
+              "firstDivergenceRunIndex": null,
+              "decodedValueCounts": {
+                "1": 3
+              },
+              "dominantDecodedValue": 1,
+              "decodedValueStableAcrossRuns": true,
+              "decodedValueRate": 1.0
+            }
+          },
+          "id": "doe",
+          "backendLane": "metal_doe_comparable",
+          "runs": [
+            {
+              "runIndex": 0,
+              "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/f16accum/doe/run000.meta.json",
+              "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/f16accum/doe/run000.trace.jsonl",
+              "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/f16accum/doe/run000.meta.json.operators.json"
+            },
+            {
+              "runIndex": 1,
+              "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/f16accum/doe/run001.meta.json",
+              "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/f16accum/doe/run001.trace.jsonl",
+              "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/f16accum/doe/run001.meta.json.operators.json"
+            },
+            {
+              "runIndex": 2,
+              "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/f16accum/doe/run002.meta.json",
+              "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/f16accum/doe/run002.trace.jsonl",
+              "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/f16accum/doe/run002.meta.json.operators.json"
+            }
+          ]
+        },
+        "dawn": {
+          "stableAcrossRuns": true,
+          "operators": {
+            "matmul.logits": {
+              "stableAcrossRuns": true,
+              "runCount": 3,
+              "captureSize": 8,
+              "statusCounts": {
+                "ok": 3
+              },
+              "uniqueDigestCount": 1,
+              "sameByteRate": 1.0,
+              "dominantDigest": "f85da69e697aa20b4a7284f506bc8888ec0070e4c12d7ad4e687934e97f273df",
+              "digestCounts": {
+                "f85da69e697aa20b4a7284f506bc8888ec0070e4c12d7ad4e687934e97f273df": 3
+              },
+              "artifacts": [
+                {
+                  "runIndex": 0,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/f16accum/dawn/run000.meta.json.op0004.capture.bin",
+                  "captureSha256": "f85da69e697aa20b4a7284f506bc8888ec0070e4c12d7ad4e687934e97f273df"
+                },
+                {
+                  "runIndex": 1,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/f16accum/dawn/run001.meta.json.op0004.capture.bin",
+                  "captureSha256": "f85da69e697aa20b4a7284f506bc8888ec0070e4c12d7ad4e687934e97f273df"
+                },
+                {
+                  "runIndex": 2,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/f16accum/dawn/run002.meta.json.op0004.capture.bin",
+                  "captureSha256": "f85da69e697aa20b4a7284f506bc8888ec0070e4c12d7ad4e687934e97f273df"
+                }
+              ],
+              "firstDivergenceRunIndex": null
+            },
+            "sample.token": {
+              "stableAcrossRuns": true,
+              "runCount": 3,
+              "captureSize": 4,
+              "statusCounts": {
+                "ok": 3
+              },
+              "uniqueDigestCount": 1,
+              "sameByteRate": 1.0,
+              "dominantDigest": "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450",
+              "digestCounts": {
+                "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450": 3
+              },
+              "artifacts": [
+                {
+                  "runIndex": 0,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/f16accum/dawn/run000.meta.json.op0005.capture.bin",
+                  "captureSha256": "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450"
+                },
+                {
+                  "runIndex": 1,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/f16accum/dawn/run001.meta.json.op0005.capture.bin",
+                  "captureSha256": "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450"
+                },
+                {
+                  "runIndex": 2,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/f16accum/dawn/run002.meta.json.op0005.capture.bin",
+                  "captureSha256": "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450"
+                }
+              ],
+              "firstDivergenceRunIndex": null,
+              "decodedValueCounts": {
+                "1": 3
+              },
+              "dominantDecodedValue": 1,
+              "decodedValueStableAcrossRuns": true,
+              "decodedValueRate": 1.0
+            }
+          },
+          "id": "dawn",
+          "backendLane": "metal_dawn_release",
+          "runs": [
+            {
+              "runIndex": 0,
+              "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/f16accum/dawn/run000.meta.json",
+              "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/f16accum/dawn/run000.trace.jsonl",
+              "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/f16accum/dawn/run000.meta.json.operators.json"
+            },
+            {
+              "runIndex": 1,
+              "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/f16accum/dawn/run001.meta.json",
+              "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/f16accum/dawn/run001.trace.jsonl",
+              "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/f16accum/dawn/run001.meta.json.operators.json"
+            },
+            {
+              "runIndex": 2,
+              "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/f16accum/dawn/run002.meta.json",
+              "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/f16accum/dawn/run002.trace.jsonl",
+              "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/f16accum/dawn/run002.meta.json.operators.json"
+            }
+          ]
+        }
+      },
+      "crossLane": {
+        "operators": {
+          "matmul.logits": {
+            "sameAcrossLanes": true,
+            "laneDominantDigests": {
+              "doe": "f85da69e697aa20b4a7284f506bc8888ec0070e4c12d7ad4e687934e97f273df",
+              "dawn": "f85da69e697aa20b4a7284f506bc8888ec0070e4c12d7ad4e687934e97f273df"
+            }
+          },
+          "sample.token": {
+            "sameAcrossLanes": true,
+            "laneDominantDigests": {
+              "doe": "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450",
+              "dawn": "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450"
+            },
+            "sameDecodedValueAcrossLanes": true,
+            "laneDominantDecodedValues": {
+              "doe": 1,
+              "dawn": 1
+            }
+          }
+        }
+      }
+    }
+  },
+  "laneVariantSummary": {
+    "doe": {
+      "laneId": "doe",
+      "variantOutputs": [
+        {
+          "variantId": "f16accum",
+          "policyId": "lm-head-slice/forward-f16accum-v1",
+          "stableAcrossRuns": true,
+          "logitsDigest": "f85da69e697aa20b4a7284f506bc8888ec0070e4c12d7ad4e687934e97f273df",
+          "tokenDigest": "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450",
+          "logits": [
+            15.6015625,
+            15.578125
+          ],
+          "logitsArtifactPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/f16accum/doe/run000.meta.json.op0004.capture.bin",
+          "topTokenFromLogits": 0,
+          "sampledToken": 1,
+          "sampleMatchesScalarArgmax": false,
+          "matchesExactReferenceTopToken": false,
+          "deltaFromExactReferenceLogits": [
+            -0.023168442722266036,
+            -0.07320435562741068
+          ]
+        },
+        {
+          "variantId": "forward",
+          "policyId": "lm-head-slice/forward-serial-v1",
+          "stableAcrossRuns": true,
+          "logitsDigest": "a3dbfdb637dcd26c94497b7d210cb6e59dc8e4617e3164ac8b2d02f1460f9cec",
+          "tokenDigest": "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450",
+          "logits": [
+            15.624728202819824,
+            15.65131950378418
+          ],
+          "logitsArtifactPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/forward/doe/run000.meta.json.op0004.capture.bin",
+          "topTokenFromLogits": 1,
+          "sampledToken": 1,
+          "sampleMatchesScalarArgmax": true,
+          "matchesExactReferenceTopToken": true,
+          "deltaFromExactReferenceLogits": [
+            -2.7399024418173212e-06,
+            -9.851843230990198e-06
+          ]
+        },
+        {
+          "variantId": "reverse",
+          "policyId": "lm-head-slice/reverse-serial-v1",
+          "stableAcrossRuns": true,
+          "logitsDigest": "73b725112de5df1901515f303a21f54ba35335d4e201abd244cc895187f9cd31",
+          "tokenDigest": "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450",
+          "logits": [
+            15.624726295471191,
+            15.651329040527344
+          ],
+          "logitsArtifactPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/reverse/doe/run000.meta.json.op0004.capture.bin",
+          "topTokenFromLogits": 1,
+          "sampledToken": 1,
+          "sampleMatchesScalarArgmax": true,
+          "matchesExactReferenceTopToken": true,
+          "deltaFromExactReferenceLogits": [
+            -4.647251074629821e-06,
+            -3.151000669276982e-07
+          ]
+        },
+        {
+          "variantId": "tree64",
+          "policyId": "lm-head-slice/tree64-v1",
+          "stableAcrossRuns": true,
+          "logitsDigest": "faed249031f47d443a7af2b1bd85741da11bb5fb8b56afa1b2afce73e32fc964",
+          "tokenDigest": "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450",
+          "logits": [
+            15.624730110168457,
+            15.651329040527344
+          ],
+          "logitsArtifactPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/tree64/doe/run000.meta.json.op0004.capture.bin",
+          "topTokenFromLogits": 1,
+          "sampledToken": 1,
+          "sampleMatchesScalarArgmax": true,
+          "matchesExactReferenceTopToken": true,
+          "deltaFromExactReferenceLogits": [
+            -8.325538090048212e-07,
+            -3.151000669276982e-07
+          ]
+        }
+      ],
+      "tokenFlipObserved": true,
+      "sampleFlipObserved": false,
+      "comparisons": [
+        {
+          "leftVariantId": "f16accum",
+          "rightVariantId": "forward",
+          "sameLogitsBytes": false,
+          "sameTopTokenFromLogits": false,
+          "sameSampledToken": true
+        },
+        {
+          "leftVariantId": "f16accum",
+          "rightVariantId": "reverse",
+          "sameLogitsBytes": false,
+          "sameTopTokenFromLogits": false,
+          "sameSampledToken": true
+        },
+        {
+          "leftVariantId": "f16accum",
+          "rightVariantId": "tree64",
+          "sameLogitsBytes": false,
+          "sameTopTokenFromLogits": false,
+          "sameSampledToken": true
+        },
+        {
+          "leftVariantId": "forward",
+          "rightVariantId": "reverse",
+          "sameLogitsBytes": false,
+          "sameTopTokenFromLogits": true,
+          "sameSampledToken": true
+        },
+        {
+          "leftVariantId": "forward",
+          "rightVariantId": "tree64",
+          "sameLogitsBytes": false,
+          "sameTopTokenFromLogits": true,
+          "sameSampledToken": true
+        },
+        {
+          "leftVariantId": "reverse",
+          "rightVariantId": "tree64",
+          "sameLogitsBytes": false,
+          "sameTopTokenFromLogits": true,
+          "sameSampledToken": true
+        }
+      ]
+    },
+    "dawn": {
+      "laneId": "dawn",
+      "variantOutputs": [
+        {
+          "variantId": "f16accum",
+          "policyId": "lm-head-slice/forward-f16accum-v1",
+          "stableAcrossRuns": true,
+          "logitsDigest": "f85da69e697aa20b4a7284f506bc8888ec0070e4c12d7ad4e687934e97f273df",
+          "tokenDigest": "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450",
+          "logits": [
+            15.6015625,
+            15.578125
+          ],
+          "logitsArtifactPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/f16accum/dawn/run000.meta.json.op0004.capture.bin",
+          "topTokenFromLogits": 0,
+          "sampledToken": 1,
+          "sampleMatchesScalarArgmax": false,
+          "matchesExactReferenceTopToken": false,
+          "deltaFromExactReferenceLogits": [
+            -0.023168442722266036,
+            -0.07320435562741068
+          ]
+        },
+        {
+          "variantId": "forward",
+          "policyId": "lm-head-slice/forward-serial-v1",
+          "stableAcrossRuns": true,
+          "logitsDigest": "a3dbfdb637dcd26c94497b7d210cb6e59dc8e4617e3164ac8b2d02f1460f9cec",
+          "tokenDigest": "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450",
+          "logits": [
+            15.624728202819824,
+            15.65131950378418
+          ],
+          "logitsArtifactPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/forward/dawn/run000.meta.json.op0004.capture.bin",
+          "topTokenFromLogits": 1,
+          "sampledToken": 1,
+          "sampleMatchesScalarArgmax": true,
+          "matchesExactReferenceTopToken": true,
+          "deltaFromExactReferenceLogits": [
+            -2.7399024418173212e-06,
+            -9.851843230990198e-06
+          ]
+        },
+        {
+          "variantId": "reverse",
+          "policyId": "lm-head-slice/reverse-serial-v1",
+          "stableAcrossRuns": true,
+          "logitsDigest": "73b725112de5df1901515f303a21f54ba35335d4e201abd244cc895187f9cd31",
+          "tokenDigest": "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450",
+          "logits": [
+            15.624726295471191,
+            15.651329040527344
+          ],
+          "logitsArtifactPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/reverse/dawn/run000.meta.json.op0004.capture.bin",
+          "topTokenFromLogits": 1,
+          "sampledToken": 1,
+          "sampleMatchesScalarArgmax": true,
+          "matchesExactReferenceTopToken": true,
+          "deltaFromExactReferenceLogits": [
+            -4.647251074629821e-06,
+            -3.151000669276982e-07
+          ]
+        },
+        {
+          "variantId": "tree64",
+          "policyId": "lm-head-slice/tree64-v1",
+          "stableAcrossRuns": true,
+          "logitsDigest": "faed249031f47d443a7af2b1bd85741da11bb5fb8b56afa1b2afce73e32fc964",
+          "tokenDigest": "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450",
+          "logits": [
+            15.624730110168457,
+            15.651329040527344
+          ],
+          "logitsArtifactPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip/20260330T180218Z/tree64/dawn/run000.meta.json.op0004.capture.bin",
+          "topTokenFromLogits": 1,
+          "sampledToken": 1,
+          "sampleMatchesScalarArgmax": true,
+          "matchesExactReferenceTopToken": true,
+          "deltaFromExactReferenceLogits": [
+            -8.325538090048212e-07,
+            -3.151000669276982e-07
+          ]
+        }
+      ],
+      "tokenFlipObserved": true,
+      "sampleFlipObserved": false,
+      "comparisons": [
+        {
+          "leftVariantId": "f16accum",
+          "rightVariantId": "forward",
+          "sameLogitsBytes": false,
+          "sameTopTokenFromLogits": false,
+          "sameSampledToken": true
+        },
+        {
+          "leftVariantId": "f16accum",
+          "rightVariantId": "reverse",
+          "sameLogitsBytes": false,
+          "sameTopTokenFromLogits": false,
+          "sameSampledToken": true
+        },
+        {
+          "leftVariantId": "f16accum",
+          "rightVariantId": "tree64",
+          "sameLogitsBytes": false,
+          "sameTopTokenFromLogits": false,
+          "sameSampledToken": true
+        },
+        {
+          "leftVariantId": "forward",
+          "rightVariantId": "reverse",
+          "sameLogitsBytes": false,
+          "sameTopTokenFromLogits": true,
+          "sameSampledToken": true
+        },
+        {
+          "leftVariantId": "forward",
+          "rightVariantId": "tree64",
+          "sameLogitsBytes": false,
+          "sameTopTokenFromLogits": true,
+          "sameSampledToken": true
+        },
+        {
+          "leftVariantId": "reverse",
+          "rightVariantId": "tree64",
+          "sameLogitsBytes": false,
+          "sameTopTokenFromLogits": true,
+          "sameSampledToken": true
+        }
+      ]
+    }
+  },
+  "claim": {
+    "exactReferenceLogits": [
+      15.624730942722266,
+      15.65132935562741
+    ],
+    "exactReferenceTopToken": 1,
+    "tokenFlipObserved": true,
+    "sampleFlipObserved": false,
+    "lanes": {
+      "doe": {
+        "tokenFlipObserved": true,
+        "sampleFlipObserved": false
+      },
+      "dawn": {
+        "tokenFlipObserved": true,
+        "sampleFlipObserved": false
+      }
+    }
+  }
+}

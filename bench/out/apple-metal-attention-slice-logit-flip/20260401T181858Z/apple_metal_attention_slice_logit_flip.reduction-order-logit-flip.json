@@ -1,0 +1,752 @@
+{
+  "schemaVersion": 1,
+  "scenarioId": "apple_metal_attention_slice_logit_flip",
+  "description": "Apple Metal attention-family slice counterexample: the same fixed attention prefill slice produces different 2-logit outputs and different selected tokens under forward vs pairwise accumulation policies.",
+  "fixturePath": "/Users/xyz/deco/doe/bench/fixtures/determinism/apple-metal-attention-slice-logit-flip.json",
+  "timestamp": "20260401T181858Z",
+  "runCount": 5,
+  "profile": {
+    "vendor": "apple",
+    "api": "metal",
+    "family": "m3",
+    "driver": "1.0.0"
+  },
+  "captures": [
+    {
+      "commandIndex": 5,
+      "semanticOpId": "attention.output",
+      "semanticStage": "attention_slice",
+      "semanticPhase": "output_logits",
+      "captureBufferHandle": 4305,
+      "captureOffset": 0,
+      "captureSize": 8
+    },
+    {
+      "commandIndex": 6,
+      "semanticOpId": "sample.token",
+      "semanticStage": "attention_slice",
+      "semanticPhase": "selected_token",
+      "captureBufferHandle": 4306,
+      "captureOffset": 0,
+      "captureSize": 4,
+      "decode": "u32le"
+    }
+  ],
+  "variants": {
+    "forward": {
+      "id": "forward",
+      "policyId": "attention-slice/forward-serial-v1",
+      "commandsPath": "/Users/xyz/deco/doe/bench/fixtures/determinism/attention-slice-forward.commands.json",
+      "baseCommandsSha256": "ae57562baf632295d4f510db089e34d1cec92ce3f405a9b2a12ef582bec2dc98",
+      "annotatedCommandsPath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/apple_metal_attention_slice_logit_flip.forward.commands.annotated.json",
+      "annotatedCommandsSha256": "594e88cd75ba13608c56038df6c8f9aecdbccc9e73d6cac1986d120ee937d25c",
+      "lanes": {
+        "doe": {
+          "stableAcrossRuns": true,
+          "operators": {
+            "attention.output": {
+              "stableAcrossRuns": true,
+              "runCount": 5,
+              "captureSize": 8,
+              "statusCounts": {
+                "ok": 5
+              },
+              "uniqueDigestCount": 1,
+              "sameByteRate": 1.0,
+              "dominantDigest": "a60d88b8965d62a9e610618b1f60e1f521c2702c22c7b298f27773f653622627",
+              "digestCounts": {
+                "a60d88b8965d62a9e610618b1f60e1f521c2702c22c7b298f27773f653622627": 5
+              },
+              "artifacts": [
+                {
+                  "runIndex": 0,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/forward/doe/run000.meta.json.op0005.capture.bin",
+                  "captureSha256": "a60d88b8965d62a9e610618b1f60e1f521c2702c22c7b298f27773f653622627"
+                },
+                {
+                  "runIndex": 1,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/forward/doe/run001.meta.json.op0005.capture.bin",
+                  "captureSha256": "a60d88b8965d62a9e610618b1f60e1f521c2702c22c7b298f27773f653622627"
+                },
+                {
+                  "runIndex": 2,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/forward/doe/run002.meta.json.op0005.capture.bin",
+                  "captureSha256": "a60d88b8965d62a9e610618b1f60e1f521c2702c22c7b298f27773f653622627"
+                },
+                {
+                  "runIndex": 3,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/forward/doe/run003.meta.json.op0005.capture.bin",
+                  "captureSha256": "a60d88b8965d62a9e610618b1f60e1f521c2702c22c7b298f27773f653622627"
+                },
+                {
+                  "runIndex": 4,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/forward/doe/run004.meta.json.op0005.capture.bin",
+                  "captureSha256": "a60d88b8965d62a9e610618b1f60e1f521c2702c22c7b298f27773f653622627"
+                }
+              ],
+              "firstDivergenceRunIndex": null
+            },
+            "sample.token": {
+              "stableAcrossRuns": true,
+              "runCount": 5,
+              "captureSize": 4,
+              "statusCounts": {
+                "ok": 5
+              },
+              "uniqueDigestCount": 1,
+              "sameByteRate": 1.0,
+              "dominantDigest": "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450",
+              "digestCounts": {
+                "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450": 5
+              },
+              "artifacts": [
+                {
+                  "runIndex": 0,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/forward/doe/run000.meta.json.op0006.capture.bin",
+                  "captureSha256": "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450"
+                },
+                {
+                  "runIndex": 1,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/forward/doe/run001.meta.json.op0006.capture.bin",
+                  "captureSha256": "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450"
+                },
+                {
+                  "runIndex": 2,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/forward/doe/run002.meta.json.op0006.capture.bin",
+                  "captureSha256": "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450"
+                },
+                {
+                  "runIndex": 3,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/forward/doe/run003.meta.json.op0006.capture.bin",
+                  "captureSha256": "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450"
+                },
+                {
+                  "runIndex": 4,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/forward/doe/run004.meta.json.op0006.capture.bin",
+                  "captureSha256": "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450"
+                }
+              ],
+              "firstDivergenceRunIndex": null,
+              "decodedValueCounts": {
+                "1": 5
+              },
+              "dominantDecodedValue": 1,
+              "decodedValueStableAcrossRuns": true,
+              "decodedValueRate": 1.0
+            }
+          },
+          "id": "doe",
+          "backendLane": "metal_doe_comparable",
+          "runs": [
+            {
+              "runIndex": 0,
+              "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/forward/doe/run000.meta.json",
+              "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/forward/doe/run000.trace.jsonl",
+              "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/forward/doe/run000.meta.json.operators.json"
+            },
+            {
+              "runIndex": 1,
+              "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/forward/doe/run001.meta.json",
+              "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/forward/doe/run001.trace.jsonl",
+              "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/forward/doe/run001.meta.json.operators.json"
+            },
+            {
+              "runIndex": 2,
+              "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/forward/doe/run002.meta.json",
+              "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/forward/doe/run002.trace.jsonl",
+              "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/forward/doe/run002.meta.json.operators.json"
+            },
+            {
+              "runIndex": 3,
+              "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/forward/doe/run003.meta.json",
+              "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/forward/doe/run003.trace.jsonl",
+              "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/forward/doe/run003.meta.json.operators.json"
+            },
+            {
+              "runIndex": 4,
+              "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/forward/doe/run004.meta.json",
+              "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/forward/doe/run004.trace.jsonl",
+              "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/forward/doe/run004.meta.json.operators.json"
+            }
+          ]
+        },
+        "dawn": {
+          "stableAcrossRuns": true,
+          "operators": {
+            "attention.output": {
+              "stableAcrossRuns": true,
+              "runCount": 5,
+              "captureSize": 8,
+              "statusCounts": {
+                "ok": 5
+              },
+              "uniqueDigestCount": 1,
+              "sameByteRate": 1.0,
+              "dominantDigest": "a60d88b8965d62a9e610618b1f60e1f521c2702c22c7b298f27773f653622627",
+              "digestCounts": {
+                "a60d88b8965d62a9e610618b1f60e1f521c2702c22c7b298f27773f653622627": 5
+              },
+              "artifacts": [
+                {
+                  "runIndex": 0,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/forward/dawn/run000.meta.json.op0005.capture.bin",
+                  "captureSha256": "a60d88b8965d62a9e610618b1f60e1f521c2702c22c7b298f27773f653622627"
+                },
+                {
+                  "runIndex": 1,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/forward/dawn/run001.meta.json.op0005.capture.bin",
+                  "captureSha256": "a60d88b8965d62a9e610618b1f60e1f521c2702c22c7b298f27773f653622627"
+                },
+                {
+                  "runIndex": 2,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/forward/dawn/run002.meta.json.op0005.capture.bin",
+                  "captureSha256": "a60d88b8965d62a9e610618b1f60e1f521c2702c22c7b298f27773f653622627"
+                },
+                {
+                  "runIndex": 3,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/forward/dawn/run003.meta.json.op0005.capture.bin",
+                  "captureSha256": "a60d88b8965d62a9e610618b1f60e1f521c2702c22c7b298f27773f653622627"
+                },
+                {
+                  "runIndex": 4,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/forward/dawn/run004.meta.json.op0005.capture.bin",
+                  "captureSha256": "a60d88b8965d62a9e610618b1f60e1f521c2702c22c7b298f27773f653622627"
+                }
+              ],
+              "firstDivergenceRunIndex": null
+            },
+            "sample.token": {
+              "stableAcrossRuns": true,
+              "runCount": 5,
+              "captureSize": 4,
+              "statusCounts": {
+                "ok": 5
+              },
+              "uniqueDigestCount": 1,
+              "sameByteRate": 1.0,
+              "dominantDigest": "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450",
+              "digestCounts": {
+                "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450": 5
+              },
+              "artifacts": [
+                {
+                  "runIndex": 0,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/forward/dawn/run000.meta.json.op0006.capture.bin",
+                  "captureSha256": "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450"
+                },
+                {
+                  "runIndex": 1,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/forward/dawn/run001.meta.json.op0006.capture.bin",
+                  "captureSha256": "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450"
+                },
+                {
+                  "runIndex": 2,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/forward/dawn/run002.meta.json.op0006.capture.bin",
+                  "captureSha256": "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450"
+                },
+                {
+                  "runIndex": 3,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/forward/dawn/run003.meta.json.op0006.capture.bin",
+                  "captureSha256": "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450"
+                },
+                {
+                  "runIndex": 4,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/forward/dawn/run004.meta.json.op0006.capture.bin",
+                  "captureSha256": "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450"
+                }
+              ],
+              "firstDivergenceRunIndex": null,
+              "decodedValueCounts": {
+                "1": 5
+              },
+              "dominantDecodedValue": 1,
+              "decodedValueStableAcrossRuns": true,
+              "decodedValueRate": 1.0
+            }
+          },
+          "id": "dawn",
+          "backendLane": "metal_dawn_release",
+          "runs": [
+            {
+              "runIndex": 0,
+              "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/forward/dawn/run000.meta.json",
+              "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/forward/dawn/run000.trace.jsonl",
+              "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/forward/dawn/run000.meta.json.operators.json"
+            },
+            {
+              "runIndex": 1,
+              "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/forward/dawn/run001.meta.json",
+              "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/forward/dawn/run001.trace.jsonl",
+              "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/forward/dawn/run001.meta.json.operators.json"
+            },
+            {
+              "runIndex": 2,
+              "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/forward/dawn/run002.meta.json",
+              "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/forward/dawn/run002.trace.jsonl",
+              "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/forward/dawn/run002.meta.json.operators.json"
+            },
+            {
+              "runIndex": 3,
+              "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/forward/dawn/run003.meta.json",
+              "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/forward/dawn/run003.trace.jsonl",
+              "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/forward/dawn/run003.meta.json.operators.json"
+            },
+            {
+              "runIndex": 4,
+              "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/forward/dawn/run004.meta.json",
+              "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/forward/dawn/run004.trace.jsonl",
+              "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/forward/dawn/run004.meta.json.operators.json"
+            }
+          ]
+        }
+      },
+      "crossLane": {
+        "operators": {
+          "attention.output": {
+            "sameAcrossLanes": true,
+            "laneDominantDigests": {
+              "doe": "a60d88b8965d62a9e610618b1f60e1f521c2702c22c7b298f27773f653622627",
+              "dawn": "a60d88b8965d62a9e610618b1f60e1f521c2702c22c7b298f27773f653622627"
+            }
+          },
+          "sample.token": {
+            "sameAcrossLanes": true,
+            "laneDominantDigests": {
+              "doe": "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450",
+              "dawn": "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450"
+            },
+            "sameDecodedValueAcrossLanes": true,
+            "laneDominantDecodedValues": {
+              "doe": 1,
+              "dawn": 1
+            }
+          }
+        }
+      }
+    },
+    "pairwise": {
+      "id": "pairwise",
+      "policyId": "attention-slice/pairwise-tree-v1",
+      "commandsPath": "/Users/xyz/deco/doe/bench/fixtures/determinism/attention-slice-pairwise.commands.json",
+      "baseCommandsSha256": "bdf7df251abf00e20356c650a122ce66843ae637952083aaba7c9b09465f6ddd",
+      "annotatedCommandsPath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/apple_metal_attention_slice_logit_flip.pairwise.commands.annotated.json",
+      "annotatedCommandsSha256": "3cb0b5e49cc1f5622c601235cdd0f7e9bcd8ac4bf600b8747a56c69435e695d8",
+      "lanes": {
+        "doe": {
+          "stableAcrossRuns": true,
+          "operators": {
+            "attention.output": {
+              "stableAcrossRuns": true,
+              "runCount": 5,
+              "captureSize": 8,
+              "statusCounts": {
+                "ok": 5
+              },
+              "uniqueDigestCount": 1,
+              "sameByteRate": 1.0,
+              "dominantDigest": "a60d88b8965d62a9e610618b1f60e1f521c2702c22c7b298f27773f653622627",
+              "digestCounts": {
+                "a60d88b8965d62a9e610618b1f60e1f521c2702c22c7b298f27773f653622627": 5
+              },
+              "artifacts": [
+                {
+                  "runIndex": 0,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/pairwise/doe/run000.meta.json.op0005.capture.bin",
+                  "captureSha256": "a60d88b8965d62a9e610618b1f60e1f521c2702c22c7b298f27773f653622627"
+                },
+                {
+                  "runIndex": 1,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/pairwise/doe/run001.meta.json.op0005.capture.bin",
+                  "captureSha256": "a60d88b8965d62a9e610618b1f60e1f521c2702c22c7b298f27773f653622627"
+                },
+                {
+                  "runIndex": 2,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/pairwise/doe/run002.meta.json.op0005.capture.bin",
+                  "captureSha256": "a60d88b8965d62a9e610618b1f60e1f521c2702c22c7b298f27773f653622627"
+                },
+                {
+                  "runIndex": 3,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/pairwise/doe/run003.meta.json.op0005.capture.bin",
+                  "captureSha256": "a60d88b8965d62a9e610618b1f60e1f521c2702c22c7b298f27773f653622627"
+                },
+                {
+                  "runIndex": 4,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/pairwise/doe/run004.meta.json.op0005.capture.bin",
+                  "captureSha256": "a60d88b8965d62a9e610618b1f60e1f521c2702c22c7b298f27773f653622627"
+                }
+              ],
+              "firstDivergenceRunIndex": null
+            },
+            "sample.token": {
+              "stableAcrossRuns": true,
+              "runCount": 5,
+              "captureSize": 4,
+              "statusCounts": {
+                "ok": 5
+              },
+              "uniqueDigestCount": 1,
+              "sameByteRate": 1.0,
+              "dominantDigest": "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119",
+              "digestCounts": {
+                "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119": 5
+              },
+              "artifacts": [
+                {
+                  "runIndex": 0,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/pairwise/doe/run000.meta.json.op0006.capture.bin",
+                  "captureSha256": "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119"
+                },
+                {
+                  "runIndex": 1,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/pairwise/doe/run001.meta.json.op0006.capture.bin",
+                  "captureSha256": "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119"
+                },
+                {
+                  "runIndex": 2,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/pairwise/doe/run002.meta.json.op0006.capture.bin",
+                  "captureSha256": "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119"
+                },
+                {
+                  "runIndex": 3,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/pairwise/doe/run003.meta.json.op0006.capture.bin",
+                  "captureSha256": "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119"
+                },
+                {
+                  "runIndex": 4,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/pairwise/doe/run004.meta.json.op0006.capture.bin",
+                  "captureSha256": "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119"
+                }
+              ],
+              "firstDivergenceRunIndex": null,
+              "decodedValueCounts": {
+                "0": 5
+              },
+              "dominantDecodedValue": 0,
+              "decodedValueStableAcrossRuns": true,
+              "decodedValueRate": 1.0
+            }
+          },
+          "id": "doe",
+          "backendLane": "metal_doe_comparable",
+          "runs": [
+            {
+              "runIndex": 0,
+              "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/pairwise/doe/run000.meta.json",
+              "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/pairwise/doe/run000.trace.jsonl",
+              "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/pairwise/doe/run000.meta.json.operators.json"
+            },
+            {
+              "runIndex": 1,
+              "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/pairwise/doe/run001.meta.json",
+              "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/pairwise/doe/run001.trace.jsonl",
+              "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/pairwise/doe/run001.meta.json.operators.json"
+            },
+            {
+              "runIndex": 2,
+              "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/pairwise/doe/run002.meta.json",
+              "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/pairwise/doe/run002.trace.jsonl",
+              "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/pairwise/doe/run002.meta.json.operators.json"
+            },
+            {
+              "runIndex": 3,
+              "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/pairwise/doe/run003.meta.json",
+              "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/pairwise/doe/run003.trace.jsonl",
+              "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/pairwise/doe/run003.meta.json.operators.json"
+            },
+            {
+              "runIndex": 4,
+              "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/pairwise/doe/run004.meta.json",
+              "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/pairwise/doe/run004.trace.jsonl",
+              "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/pairwise/doe/run004.meta.json.operators.json"
+            }
+          ]
+        },
+        "dawn": {
+          "stableAcrossRuns": true,
+          "operators": {
+            "attention.output": {
+              "stableAcrossRuns": true,
+              "runCount": 5,
+              "captureSize": 8,
+              "statusCounts": {
+                "ok": 5
+              },
+              "uniqueDigestCount": 1,
+              "sameByteRate": 1.0,
+              "dominantDigest": "a60d88b8965d62a9e610618b1f60e1f521c2702c22c7b298f27773f653622627",
+              "digestCounts": {
+                "a60d88b8965d62a9e610618b1f60e1f521c2702c22c7b298f27773f653622627": 5
+              },
+              "artifacts": [
+                {
+                  "runIndex": 0,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/pairwise/dawn/run000.meta.json.op0005.capture.bin",
+                  "captureSha256": "a60d88b8965d62a9e610618b1f60e1f521c2702c22c7b298f27773f653622627"
+                },
+                {
+                  "runIndex": 1,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/pairwise/dawn/run001.meta.json.op0005.capture.bin",
+                  "captureSha256": "a60d88b8965d62a9e610618b1f60e1f521c2702c22c7b298f27773f653622627"
+                },
+                {
+                  "runIndex": 2,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/pairwise/dawn/run002.meta.json.op0005.capture.bin",
+                  "captureSha256": "a60d88b8965d62a9e610618b1f60e1f521c2702c22c7b298f27773f653622627"
+                },
+                {
+                  "runIndex": 3,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/pairwise/dawn/run003.meta.json.op0005.capture.bin",
+                  "captureSha256": "a60d88b8965d62a9e610618b1f60e1f521c2702c22c7b298f27773f653622627"
+                },
+                {
+                  "runIndex": 4,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/pairwise/dawn/run004.meta.json.op0005.capture.bin",
+                  "captureSha256": "a60d88b8965d62a9e610618b1f60e1f521c2702c22c7b298f27773f653622627"
+                }
+              ],
+              "firstDivergenceRunIndex": null
+            },
+            "sample.token": {
+              "stableAcrossRuns": true,
+              "runCount": 5,
+              "captureSize": 4,
+              "statusCounts": {
+                "ok": 5
+              },
+              "uniqueDigestCount": 1,
+              "sameByteRate": 1.0,
+              "dominantDigest": "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119",
+              "digestCounts": {
+                "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119": 5
+              },
+              "artifacts": [
+                {
+                  "runIndex": 0,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/pairwise/dawn/run000.meta.json.op0006.capture.bin",
+                  "captureSha256": "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119"
+                },
+                {
+                  "runIndex": 1,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/pairwise/dawn/run001.meta.json.op0006.capture.bin",
+                  "captureSha256": "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119"
+                },
+                {
+                  "runIndex": 2,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/pairwise/dawn/run002.meta.json.op0006.capture.bin",
+                  "captureSha256": "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119"
+                },
+                {
+                  "runIndex": 3,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/pairwise/dawn/run003.meta.json.op0006.capture.bin",
+                  "captureSha256": "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119"
+                },
+                {
+                  "runIndex": 4,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/pairwise/dawn/run004.meta.json.op0006.capture.bin",
+                  "captureSha256": "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119"
+                }
+              ],
+              "firstDivergenceRunIndex": null,
+              "decodedValueCounts": {
+                "0": 5
+              },
+              "dominantDecodedValue": 0,
+              "decodedValueStableAcrossRuns": true,
+              "decodedValueRate": 1.0
+            }
+          },
+          "id": "dawn",
+          "backendLane": "metal_dawn_release",
+          "runs": [
+            {
+              "runIndex": 0,
+              "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/pairwise/dawn/run000.meta.json",
+              "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/pairwise/dawn/run000.trace.jsonl",
+              "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/pairwise/dawn/run000.meta.json.operators.json"
+            },
+            {
+              "runIndex": 1,
+              "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/pairwise/dawn/run001.meta.json",
+              "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/pairwise/dawn/run001.trace.jsonl",
+              "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/pairwise/dawn/run001.meta.json.operators.json"
+            },
+            {
+              "runIndex": 2,
+              "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/pairwise/dawn/run002.meta.json",
+              "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/pairwise/dawn/run002.trace.jsonl",
+              "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/pairwise/dawn/run002.meta.json.operators.json"
+            },
+            {
+              "runIndex": 3,
+              "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/pairwise/dawn/run003.meta.json",
+              "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/pairwise/dawn/run003.trace.jsonl",
+              "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/pairwise/dawn/run003.meta.json.operators.json"
+            },
+            {
+              "runIndex": 4,
+              "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/pairwise/dawn/run004.meta.json",
+              "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/pairwise/dawn/run004.trace.jsonl",
+              "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/pairwise/dawn/run004.meta.json.operators.json"
+            }
+          ]
+        }
+      },
+      "crossLane": {
+        "operators": {
+          "attention.output": {
+            "sameAcrossLanes": true,
+            "laneDominantDigests": {
+              "doe": "a60d88b8965d62a9e610618b1f60e1f521c2702c22c7b298f27773f653622627",
+              "dawn": "a60d88b8965d62a9e610618b1f60e1f521c2702c22c7b298f27773f653622627"
+            }
+          },
+          "sample.token": {
+            "sameAcrossLanes": true,
+            "laneDominantDigests": {
+              "doe": "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119",
+              "dawn": "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119"
+            },
+            "sameDecodedValueAcrossLanes": true,
+            "laneDominantDecodedValues": {
+              "doe": 0,
+              "dawn": 0
+            }
+          }
+        }
+      }
+    }
+  },
+  "laneVariantSummary": {
+    "doe": {
+      "laneId": "doe",
+      "variantOutputs": [
+        {
+          "variantId": "forward",
+          "policyId": "attention-slice/forward-serial-v1",
+          "stableAcrossRuns": true,
+          "logitsDigest": "a60d88b8965d62a9e610618b1f60e1f521c2702c22c7b298f27773f653622627",
+          "tokenDigest": "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450",
+          "logits": [
+            -256.0,
+            -256.0
+          ],
+          "logitsArtifactPath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/forward/doe/run000.meta.json.op0005.capture.bin",
+          "topTokenFromLogits": 0,
+          "sampledToken": 1,
+          "sampleMatchesScalarArgmax": false,
+          "matchesExactReferenceTopToken": false,
+          "deltaFromExactReferenceLogits": [
+            -1.6981971384666394e-10,
+            -1.730313670122996e-10
+          ]
+        },
+        {
+          "variantId": "pairwise",
+          "policyId": "attention-slice/pairwise-tree-v1",
+          "stableAcrossRuns": true,
+          "logitsDigest": "a60d88b8965d62a9e610618b1f60e1f521c2702c22c7b298f27773f653622627",
+          "tokenDigest": "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119",
+          "logits": [
+            -256.0,
+            -256.0
+          ],
+          "logitsArtifactPath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/pairwise/doe/run000.meta.json.op0005.capture.bin",
+          "topTokenFromLogits": 0,
+          "sampledToken": 0,
+          "sampleMatchesScalarArgmax": true,
+          "matchesExactReferenceTopToken": false,
+          "deltaFromExactReferenceLogits": [
+            -1.6981971384666394e-10,
+            -1.730313670122996e-10
+          ]
+        }
+      ],
+      "tokenFlipObserved": false,
+      "sampleFlipObserved": true,
+      "comparisons": [
+        {
+          "leftVariantId": "forward",
+          "rightVariantId": "pairwise",
+          "sameLogitsBytes": true,
+          "sameTopTokenFromLogits": true,
+          "sameSampledToken": false
+        }
+      ]
+    },
+    "dawn": {
+      "laneId": "dawn",
+      "variantOutputs": [
+        {
+          "variantId": "forward",
+          "policyId": "attention-slice/forward-serial-v1",
+          "stableAcrossRuns": true,
+          "logitsDigest": "a60d88b8965d62a9e610618b1f60e1f521c2702c22c7b298f27773f653622627",
+          "tokenDigest": "67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450",
+          "logits": [
+            -256.0,
+            -256.0
+          ],
+          "logitsArtifactPath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/forward/dawn/run000.meta.json.op0005.capture.bin",
+          "topTokenFromLogits": 0,
+          "sampledToken": 1,
+          "sampleMatchesScalarArgmax": false,
+          "matchesExactReferenceTopToken": false,
+          "deltaFromExactReferenceLogits": [
+            -1.6981971384666394e-10,
+            -1.730313670122996e-10
+          ]
+        },
+        {
+          "variantId": "pairwise",
+          "policyId": "attention-slice/pairwise-tree-v1",
+          "stableAcrossRuns": true,
+          "logitsDigest": "a60d88b8965d62a9e610618b1f60e1f521c2702c22c7b298f27773f653622627",
+          "tokenDigest": "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119",
+          "logits": [
+            -256.0,
+            -256.0
+          ],
+          "logitsArtifactPath": "/Users/xyz/deco/doe/bench/out/apple-metal-attention-slice-logit-flip/20260401T181858Z/pairwise/dawn/run000.meta.json.op0005.capture.bin",
+          "topTokenFromLogits": 0,
+          "sampledToken": 0,
+          "sampleMatchesScalarArgmax": true,
+          "matchesExactReferenceTopToken": false,
+          "deltaFromExactReferenceLogits": [
+            -1.6981971384666394e-10,
+            -1.730313670122996e-10
+          ]
+        }
+      ],
+      "tokenFlipObserved": false,
+      "sampleFlipObserved": true,
+      "comparisons": [
+        {
+          "leftVariantId": "forward",
+          "rightVariantId": "pairwise",
+          "sameLogitsBytes": true,
+          "sameTopTokenFromLogits": true,
+          "sameSampledToken": false
+        }
+      ]
+    }
+  },
+  "claim": {
+    "exactReferenceLogits": [
+      -255.99999999983018,
+      -255.99999999982697
+    ],
+    "exactReferenceTopToken": 1,
+    "tokenFlipObserved": false,
+    "sampleFlipObserved": true,
+    "lanes": {
+      "doe": {
+        "tokenFlipObserved": false,
+        "sampleFlipObserved": true
+      },
+      "dawn": {
+        "tokenFlipObserved": false,
+        "sampleFlipObserved": true
+      }
+    }
+  }
+}

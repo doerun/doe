@@ -1,0 +1,693 @@
+{
+  "schemaVersion": 1,
+  "scenarioId": "apple_metal_real_lm_head_slice_hunt_gemma270m_search_sharp_science-model-open-answer_prefix2",
+  "description": "Real prompt LM-head slice: 0.006 gap between False/false, tightest gap in the search-sharp set.",
+  "fixturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-real-lm-head-slice-hunt-search-sharp/20260330T171628Z/science-model-open-answer-prefix2/apple_metal_real_lm_head_slice_hunt_gemma270m_search_sharp_science-model-open-answer_prefix2.dawn-only.fixture.json",
+  "timestamp": "20260330T180537Z",
+  "runCount": 3,
+  "profile": {
+    "vendor": "apple",
+    "api": "metal",
+    "family": "apple-gpu",
+    "driver": "1.0.0"
+  },
+  "captures": [
+    {
+      "commandIndex": 4,
+      "semanticOpId": "matmul.logits",
+      "semanticStage": "real_lm_head_slice",
+      "semanticPhase": "logits",
+      "captureBufferHandle": 4204,
+      "captureOffset": 0,
+      "captureSize": 8
+    },
+    {
+      "commandIndex": 5,
+      "semanticOpId": "sample.token",
+      "semanticStage": "real_lm_head_slice",
+      "semanticPhase": "sample_token",
+      "captureBufferHandle": 4205,
+      "captureOffset": 0,
+      "captureSize": 4,
+      "decode": "u32le"
+    }
+  ],
+  "variants": {
+    "forward": {
+      "id": "forward",
+      "policyId": "lm-head-slice/forward-serial-v1",
+      "commandsPath": "/Users/xyz/deco/doe/bench/out/apple-metal-real-lm-head-slice-hunt-search-sharp/20260330T171628Z/science-model-open-answer-prefix2/science-model-open-answer.forward.commands.json",
+      "baseCommandsSha256": "dbdf5aaf8fcdd1ef5e9bb7675f8fc23e587d3d478f1550171b627b12a52022a7",
+      "annotatedCommandsPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/apple_metal_real_lm_head_slice_hunt_gemma270m_search_sharp_science-model-open-answer_prefix2.forward.commands.annotated.json",
+      "annotatedCommandsSha256": "5bc6a0df1e8f554633a445048d3c7b033d61e8f724d60e1f3b124c04ed8c2032",
+      "lanes": {
+        "dawn": {
+          "stableAcrossRuns": true,
+          "operators": {
+            "matmul.logits": {
+              "stableAcrossRuns": true,
+              "runCount": 3,
+              "captureSize": 8,
+              "statusCounts": {
+                "ok": 3
+              },
+              "uniqueDigestCount": 1,
+              "sameByteRate": 1.0,
+              "dominantDigest": "f62d7077dba53c8ec71440698d0a7f419a9cb94212cfc913fbf7b2006bb0bc5e",
+              "digestCounts": {
+                "f62d7077dba53c8ec71440698d0a7f419a9cb94212cfc913fbf7b2006bb0bc5e": 3
+              },
+              "artifacts": [
+                {
+                  "runIndex": 0,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/forward/dawn/run000.meta.json.op0004.capture.bin",
+                  "captureSha256": "f62d7077dba53c8ec71440698d0a7f419a9cb94212cfc913fbf7b2006bb0bc5e"
+                },
+                {
+                  "runIndex": 1,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/forward/dawn/run001.meta.json.op0004.capture.bin",
+                  "captureSha256": "f62d7077dba53c8ec71440698d0a7f419a9cb94212cfc913fbf7b2006bb0bc5e"
+                },
+                {
+                  "runIndex": 2,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/forward/dawn/run002.meta.json.op0004.capture.bin",
+                  "captureSha256": "f62d7077dba53c8ec71440698d0a7f419a9cb94212cfc913fbf7b2006bb0bc5e"
+                }
+              ],
+              "firstDivergenceRunIndex": null
+            },
+            "sample.token": {
+              "stableAcrossRuns": true,
+              "runCount": 3,
+              "captureSize": 4,
+              "statusCounts": {
+                "ok": 3
+              },
+              "uniqueDigestCount": 1,
+              "sameByteRate": 1.0,
+              "dominantDigest": "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119",
+              "digestCounts": {
+                "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119": 3
+              },
+              "artifacts": [
+                {
+                  "runIndex": 0,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/forward/dawn/run000.meta.json.op0005.capture.bin",
+                  "captureSha256": "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119"
+                },
+                {
+                  "runIndex": 1,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/forward/dawn/run001.meta.json.op0005.capture.bin",
+                  "captureSha256": "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119"
+                },
+                {
+                  "runIndex": 2,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/forward/dawn/run002.meta.json.op0005.capture.bin",
+                  "captureSha256": "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119"
+                }
+              ],
+              "firstDivergenceRunIndex": null,
+              "decodedValueCounts": {
+                "0": 3
+              },
+              "dominantDecodedValue": 0,
+              "decodedValueStableAcrossRuns": true,
+              "decodedValueRate": 1.0
+            }
+          },
+          "id": "dawn",
+          "backendLane": "metal_dawn_release",
+          "runs": [
+            {
+              "runIndex": 0,
+              "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/forward/dawn/run000.meta.json",
+              "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/forward/dawn/run000.trace.jsonl",
+              "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/forward/dawn/run000.meta.json.operators.json"
+            },
+            {
+              "runIndex": 1,
+              "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/forward/dawn/run001.meta.json",
+              "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/forward/dawn/run001.trace.jsonl",
+              "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/forward/dawn/run001.meta.json.operators.json"
+            },
+            {
+              "runIndex": 2,
+              "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/forward/dawn/run002.meta.json",
+              "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/forward/dawn/run002.trace.jsonl",
+              "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/forward/dawn/run002.meta.json.operators.json"
+            }
+          ]
+        }
+      },
+      "crossLane": {
+        "operators": {
+          "matmul.logits": {
+            "sameAcrossLanes": true,
+            "laneDominantDigests": {
+              "dawn": "f62d7077dba53c8ec71440698d0a7f419a9cb94212cfc913fbf7b2006bb0bc5e"
+            }
+          },
+          "sample.token": {
+            "sameAcrossLanes": true,
+            "laneDominantDigests": {
+              "dawn": "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119"
+            },
+            "sameDecodedValueAcrossLanes": true,
+            "laneDominantDecodedValues": {
+              "dawn": 0
+            }
+          }
+        }
+      }
+    },
+    "reverse": {
+      "id": "reverse",
+      "policyId": "lm-head-slice/reverse-serial-v1",
+      "commandsPath": "/Users/xyz/deco/doe/bench/out/apple-metal-real-lm-head-slice-hunt-search-sharp/20260330T171628Z/science-model-open-answer-prefix2/science-model-open-answer.reverse.commands.json",
+      "baseCommandsSha256": "c355712167a38156a2d6a3d0cc8d55e4ec5dbe466eac639d2c9c2d30ea3e272a",
+      "annotatedCommandsPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/apple_metal_real_lm_head_slice_hunt_gemma270m_search_sharp_science-model-open-answer_prefix2.reverse.commands.annotated.json",
+      "annotatedCommandsSha256": "561de2c128a65fd08d728689c5538b676d309a8815b7a5a1ad93eff2c3561c3c",
+      "lanes": {
+        "dawn": {
+          "stableAcrossRuns": true,
+          "operators": {
+            "matmul.logits": {
+              "stableAcrossRuns": true,
+              "runCount": 3,
+              "captureSize": 8,
+              "statusCounts": {
+                "ok": 3
+              },
+              "uniqueDigestCount": 1,
+              "sameByteRate": 1.0,
+              "dominantDigest": "f6a2264e45846d6153963e1200f5bf7048b620e61370d4ddff844db0e887cbf0",
+              "digestCounts": {
+                "f6a2264e45846d6153963e1200f5bf7048b620e61370d4ddff844db0e887cbf0": 3
+              },
+              "artifacts": [
+                {
+                  "runIndex": 0,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/reverse/dawn/run000.meta.json.op0004.capture.bin",
+                  "captureSha256": "f6a2264e45846d6153963e1200f5bf7048b620e61370d4ddff844db0e887cbf0"
+                },
+                {
+                  "runIndex": 1,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/reverse/dawn/run001.meta.json.op0004.capture.bin",
+                  "captureSha256": "f6a2264e45846d6153963e1200f5bf7048b620e61370d4ddff844db0e887cbf0"
+                },
+                {
+                  "runIndex": 2,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/reverse/dawn/run002.meta.json.op0004.capture.bin",
+                  "captureSha256": "f6a2264e45846d6153963e1200f5bf7048b620e61370d4ddff844db0e887cbf0"
+                }
+              ],
+              "firstDivergenceRunIndex": null
+            },
+            "sample.token": {
+              "stableAcrossRuns": true,
+              "runCount": 3,
+              "captureSize": 4,
+              "statusCounts": {
+                "ok": 3
+              },
+              "uniqueDigestCount": 1,
+              "sameByteRate": 1.0,
+              "dominantDigest": "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119",
+              "digestCounts": {
+                "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119": 3
+              },
+              "artifacts": [
+                {
+                  "runIndex": 0,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/reverse/dawn/run000.meta.json.op0005.capture.bin",
+                  "captureSha256": "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119"
+                },
+                {
+                  "runIndex": 1,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/reverse/dawn/run001.meta.json.op0005.capture.bin",
+                  "captureSha256": "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119"
+                },
+                {
+                  "runIndex": 2,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/reverse/dawn/run002.meta.json.op0005.capture.bin",
+                  "captureSha256": "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119"
+                }
+              ],
+              "firstDivergenceRunIndex": null,
+              "decodedValueCounts": {
+                "0": 3
+              },
+              "dominantDecodedValue": 0,
+              "decodedValueStableAcrossRuns": true,
+              "decodedValueRate": 1.0
+            }
+          },
+          "id": "dawn",
+          "backendLane": "metal_dawn_release",
+          "runs": [
+            {
+              "runIndex": 0,
+              "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/reverse/dawn/run000.meta.json",
+              "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/reverse/dawn/run000.trace.jsonl",
+              "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/reverse/dawn/run000.meta.json.operators.json"
+            },
+            {
+              "runIndex": 1,
+              "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/reverse/dawn/run001.meta.json",
+              "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/reverse/dawn/run001.trace.jsonl",
+              "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/reverse/dawn/run001.meta.json.operators.json"
+            },
+            {
+              "runIndex": 2,
+              "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/reverse/dawn/run002.meta.json",
+              "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/reverse/dawn/run002.trace.jsonl",
+              "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/reverse/dawn/run002.meta.json.operators.json"
+            }
+          ]
+        }
+      },
+      "crossLane": {
+        "operators": {
+          "matmul.logits": {
+            "sameAcrossLanes": true,
+            "laneDominantDigests": {
+              "dawn": "f6a2264e45846d6153963e1200f5bf7048b620e61370d4ddff844db0e887cbf0"
+            }
+          },
+          "sample.token": {
+            "sameAcrossLanes": true,
+            "laneDominantDigests": {
+              "dawn": "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119"
+            },
+            "sameDecodedValueAcrossLanes": true,
+            "laneDominantDecodedValues": {
+              "dawn": 0
+            }
+          }
+        }
+      }
+    },
+    "tree64": {
+      "id": "tree64",
+      "policyId": "lm-head-slice/tree64-v1",
+      "commandsPath": "/Users/xyz/deco/doe/bench/out/apple-metal-real-lm-head-slice-hunt-search-sharp/20260330T171628Z/science-model-open-answer-prefix2/science-model-open-answer.tree64.commands.json",
+      "baseCommandsSha256": "8864fbc9be87cfda273a610a4847a18e0a1d9e735ab8c47cb94ec5a87dd460c6",
+      "annotatedCommandsPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/apple_metal_real_lm_head_slice_hunt_gemma270m_search_sharp_science-model-open-answer_prefix2.tree64.commands.annotated.json",
+      "annotatedCommandsSha256": "44bacdbbe85223b03861f76eaa6fd81b99528848d498ae47f2e96dd3065077eb",
+      "lanes": {
+        "dawn": {
+          "stableAcrossRuns": true,
+          "operators": {
+            "matmul.logits": {
+              "stableAcrossRuns": true,
+              "runCount": 3,
+              "captureSize": 8,
+              "statusCounts": {
+                "ok": 3
+              },
+              "uniqueDigestCount": 1,
+              "sameByteRate": 1.0,
+              "dominantDigest": "7dc5bac03e7cf7ad51b76b98ae9329263d461173ca03b2214b779da9272036ea",
+              "digestCounts": {
+                "7dc5bac03e7cf7ad51b76b98ae9329263d461173ca03b2214b779da9272036ea": 3
+              },
+              "artifacts": [
+                {
+                  "runIndex": 0,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/tree64/dawn/run000.meta.json.op0004.capture.bin",
+                  "captureSha256": "7dc5bac03e7cf7ad51b76b98ae9329263d461173ca03b2214b779da9272036ea"
+                },
+                {
+                  "runIndex": 1,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/tree64/dawn/run001.meta.json.op0004.capture.bin",
+                  "captureSha256": "7dc5bac03e7cf7ad51b76b98ae9329263d461173ca03b2214b779da9272036ea"
+                },
+                {
+                  "runIndex": 2,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/tree64/dawn/run002.meta.json.op0004.capture.bin",
+                  "captureSha256": "7dc5bac03e7cf7ad51b76b98ae9329263d461173ca03b2214b779da9272036ea"
+                }
+              ],
+              "firstDivergenceRunIndex": null
+            },
+            "sample.token": {
+              "stableAcrossRuns": true,
+              "runCount": 3,
+              "captureSize": 4,
+              "statusCounts": {
+                "ok": 3
+              },
+              "uniqueDigestCount": 1,
+              "sameByteRate": 1.0,
+              "dominantDigest": "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119",
+              "digestCounts": {
+                "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119": 3
+              },
+              "artifacts": [
+                {
+                  "runIndex": 0,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/tree64/dawn/run000.meta.json.op0005.capture.bin",
+                  "captureSha256": "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119"
+                },
+                {
+                  "runIndex": 1,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/tree64/dawn/run001.meta.json.op0005.capture.bin",
+                  "captureSha256": "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119"
+                },
+                {
+                  "runIndex": 2,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/tree64/dawn/run002.meta.json.op0005.capture.bin",
+                  "captureSha256": "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119"
+                }
+              ],
+              "firstDivergenceRunIndex": null,
+              "decodedValueCounts": {
+                "0": 3
+              },
+              "dominantDecodedValue": 0,
+              "decodedValueStableAcrossRuns": true,
+              "decodedValueRate": 1.0
+            }
+          },
+          "id": "dawn",
+          "backendLane": "metal_dawn_release",
+          "runs": [
+            {
+              "runIndex": 0,
+              "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/tree64/dawn/run000.meta.json",
+              "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/tree64/dawn/run000.trace.jsonl",
+              "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/tree64/dawn/run000.meta.json.operators.json"
+            },
+            {
+              "runIndex": 1,
+              "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/tree64/dawn/run001.meta.json",
+              "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/tree64/dawn/run001.trace.jsonl",
+              "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/tree64/dawn/run001.meta.json.operators.json"
+            },
+            {
+              "runIndex": 2,
+              "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/tree64/dawn/run002.meta.json",
+              "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/tree64/dawn/run002.trace.jsonl",
+              "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/tree64/dawn/run002.meta.json.operators.json"
+            }
+          ]
+        }
+      },
+      "crossLane": {
+        "operators": {
+          "matmul.logits": {
+            "sameAcrossLanes": true,
+            "laneDominantDigests": {
+              "dawn": "7dc5bac03e7cf7ad51b76b98ae9329263d461173ca03b2214b779da9272036ea"
+            }
+          },
+          "sample.token": {
+            "sameAcrossLanes": true,
+            "laneDominantDigests": {
+              "dawn": "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119"
+            },
+            "sameDecodedValueAcrossLanes": true,
+            "laneDominantDecodedValues": {
+              "dawn": 0
+            }
+          }
+        }
+      }
+    },
+    "f16accum": {
+      "id": "f16accum",
+      "policyId": "lm-head-slice/forward-f16accum-v1",
+      "commandsPath": "/Users/xyz/deco/doe/bench/out/apple-metal-real-lm-head-slice-hunt-search-sharp/20260330T171628Z/science-model-open-answer-prefix2/science-model-open-answer.f16accum.commands.json",
+      "baseCommandsSha256": "a9fe6c7570d0675ee15cf352bfdfa05476677095f0bafae721ca19d946aa4905",
+      "annotatedCommandsPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/apple_metal_real_lm_head_slice_hunt_gemma270m_search_sharp_science-model-open-answer_prefix2.f16accum.commands.annotated.json",
+      "annotatedCommandsSha256": "2ecf55668c5a0b88117c08c51618322ae435bac87f66a337c1ef88c0431f5347",
+      "lanes": {
+        "dawn": {
+          "stableAcrossRuns": true,
+          "operators": {
+            "matmul.logits": {
+              "stableAcrossRuns": true,
+              "runCount": 3,
+              "captureSize": 8,
+              "statusCounts": {
+                "ok": 3
+              },
+              "uniqueDigestCount": 1,
+              "sameByteRate": 1.0,
+              "dominantDigest": "7b4bef9bf2c88fef4a1263cf50d6cc22936e93cd018b5c795ec1a0c967e25236",
+              "digestCounts": {
+                "7b4bef9bf2c88fef4a1263cf50d6cc22936e93cd018b5c795ec1a0c967e25236": 3
+              },
+              "artifacts": [
+                {
+                  "runIndex": 0,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/f16accum/dawn/run000.meta.json.op0004.capture.bin",
+                  "captureSha256": "7b4bef9bf2c88fef4a1263cf50d6cc22936e93cd018b5c795ec1a0c967e25236"
+                },
+                {
+                  "runIndex": 1,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/f16accum/dawn/run001.meta.json.op0004.capture.bin",
+                  "captureSha256": "7b4bef9bf2c88fef4a1263cf50d6cc22936e93cd018b5c795ec1a0c967e25236"
+                },
+                {
+                  "runIndex": 2,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/f16accum/dawn/run002.meta.json.op0004.capture.bin",
+                  "captureSha256": "7b4bef9bf2c88fef4a1263cf50d6cc22936e93cd018b5c795ec1a0c967e25236"
+                }
+              ],
+              "firstDivergenceRunIndex": null
+            },
+            "sample.token": {
+              "stableAcrossRuns": true,
+              "runCount": 3,
+              "captureSize": 4,
+              "statusCounts": {
+                "ok": 3
+              },
+              "uniqueDigestCount": 1,
+              "sameByteRate": 1.0,
+              "dominantDigest": "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119",
+              "digestCounts": {
+                "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119": 3
+              },
+              "artifacts": [
+                {
+                  "runIndex": 0,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/f16accum/dawn/run000.meta.json.op0005.capture.bin",
+                  "captureSha256": "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119"
+                },
+                {
+                  "runIndex": 1,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/f16accum/dawn/run001.meta.json.op0005.capture.bin",
+                  "captureSha256": "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119"
+                },
+                {
+                  "runIndex": 2,
+                  "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/f16accum/dawn/run002.meta.json.op0005.capture.bin",
+                  "captureSha256": "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119"
+                }
+              ],
+              "firstDivergenceRunIndex": null,
+              "decodedValueCounts": {
+                "0": 3
+              },
+              "dominantDecodedValue": 0,
+              "decodedValueStableAcrossRuns": true,
+              "decodedValueRate": 1.0
+            }
+          },
+          "id": "dawn",
+          "backendLane": "metal_dawn_release",
+          "runs": [
+            {
+              "runIndex": 0,
+              "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/f16accum/dawn/run000.meta.json",
+              "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/f16accum/dawn/run000.trace.jsonl",
+              "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/f16accum/dawn/run000.meta.json.operators.json"
+            },
+            {
+              "runIndex": 1,
+              "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/f16accum/dawn/run001.meta.json",
+              "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/f16accum/dawn/run001.trace.jsonl",
+              "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/f16accum/dawn/run001.meta.json.operators.json"
+            },
+            {
+              "runIndex": 2,
+              "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/f16accum/dawn/run002.meta.json",
+              "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/f16accum/dawn/run002.trace.jsonl",
+              "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/f16accum/dawn/run002.meta.json.operators.json"
+            }
+          ]
+        }
+      },
+      "crossLane": {
+        "operators": {
+          "matmul.logits": {
+            "sameAcrossLanes": true,
+            "laneDominantDigests": {
+              "dawn": "7b4bef9bf2c88fef4a1263cf50d6cc22936e93cd018b5c795ec1a0c967e25236"
+            }
+          },
+          "sample.token": {
+            "sameAcrossLanes": true,
+            "laneDominantDigests": {
+              "dawn": "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119"
+            },
+            "sameDecodedValueAcrossLanes": true,
+            "laneDominantDecodedValues": {
+              "dawn": 0
+            }
+          }
+        }
+      }
+    }
+  },
+  "laneVariantSummary": {
+    "dawn": {
+      "laneId": "dawn",
+      "variantOutputs": [
+        {
+          "variantId": "f16accum",
+          "policyId": "lm-head-slice/forward-f16accum-v1",
+          "stableAcrossRuns": true,
+          "logitsDigest": "7b4bef9bf2c88fef4a1263cf50d6cc22936e93cd018b5c795ec1a0c967e25236",
+          "tokenDigest": "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119",
+          "logits": [
+            18.484375,
+            18.46875
+          ],
+          "logitsArtifactPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/f16accum/dawn/run000.meta.json.op0004.capture.bin",
+          "topTokenFromLogits": 0,
+          "sampledToken": 0,
+          "sampleMatchesScalarArgmax": true,
+          "matchesExactReferenceTopToken": true,
+          "deltaFromExactReferenceLogits": [
+            -0.0008461325931996555,
+            -0.01033614254797044
+          ]
+        },
+        {
+          "variantId": "forward",
+          "policyId": "lm-head-slice/forward-serial-v1",
+          "stableAcrossRuns": true,
+          "logitsDigest": "f62d7077dba53c8ec71440698d0a7f419a9cb94212cfc913fbf7b2006bb0bc5e",
+          "tokenDigest": "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119",
+          "logits": [
+            18.485212326049805,
+            18.479097366333008
+          ],
+          "logitsArtifactPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/forward/dawn/run000.meta.json.op0004.capture.bin",
+          "topTokenFromLogits": 0,
+          "sampledToken": 0,
+          "sampleMatchesScalarArgmax": true,
+          "matchesExactReferenceTopToken": true,
+          "deltaFromExactReferenceLogits": [
+            -8.806543394968003e-06,
+            1.122378503737309e-05
+          ]
+        },
+        {
+          "variantId": "reverse",
+          "policyId": "lm-head-slice/reverse-serial-v1",
+          "stableAcrossRuns": true,
+          "logitsDigest": "f6a2264e45846d6153963e1200f5bf7048b620e61370d4ddff844db0e887cbf0",
+          "tokenDigest": "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119",
+          "logits": [
+            18.485225677490234,
+            18.47907257080078
+          ],
+          "logitsArtifactPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/reverse/dawn/run000.meta.json.op0004.capture.bin",
+          "topTokenFromLogits": 0,
+          "sampledToken": 0,
+          "sampleMatchesScalarArgmax": true,
+          "matchesExactReferenceTopToken": true,
+          "deltaFromExactReferenceLogits": [
+            4.544897034719497e-06,
+            -1.357174718918941e-05
+          ]
+        },
+        {
+          "variantId": "tree64",
+          "policyId": "lm-head-slice/tree64-v1",
+          "stableAcrossRuns": true,
+          "logitsDigest": "7dc5bac03e7cf7ad51b76b98ae9329263d461173ca03b2214b779da9272036ea",
+          "tokenDigest": "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119",
+          "logits": [
+            18.48522186279297,
+            18.47908592224121
+          ],
+          "logitsArtifactPath": "/Users/xyz/deco/doe/bench/out/apple-metal-reduction-order-logit-flip-science-model-dawn/20260330T180537Z/tree64/dawn/run000.meta.json.op0004.capture.bin",
+          "topTokenFromLogits": 0,
+          "sampledToken": 0,
+          "sampleMatchesScalarArgmax": true,
+          "matchesExactReferenceTopToken": true,
+          "deltaFromExactReferenceLogits": [
+            7.301997690944972e-07,
+            -2.2030675950190926e-07
+          ]
+        }
+      ],
+      "tokenFlipObserved": false,
+      "sampleFlipObserved": false,
+      "comparisons": [
+        {
+          "leftVariantId": "f16accum",
+          "rightVariantId": "forward",
+          "sameLogitsBytes": false,
+          "sameTopTokenFromLogits": true,
+          "sameSampledToken": true
+        },
+        {
+          "leftVariantId": "f16accum",
+          "rightVariantId": "reverse",
+          "sameLogitsBytes": false,
+          "sameTopTokenFromLogits": true,
+          "sameSampledToken": true
+        },
+        {
+          "leftVariantId": "f16accum",
+          "rightVariantId": "tree64",
+          "sameLogitsBytes": false,
+          "sameTopTokenFromLogits": true,
+          "sameSampledToken": true
+        },
+        {
+          "leftVariantId": "forward",
+          "rightVariantId": "reverse",
+          "sameLogitsBytes": false,
+          "sameTopTokenFromLogits": true,
+          "sameSampledToken": true
+        },
+        {
+          "leftVariantId": "forward",
+          "rightVariantId": "tree64",
+          "sameLogitsBytes": false,
+          "sameTopTokenFromLogits": true,
+          "sameSampledToken": true
+        },
+        {
+          "leftVariantId": "reverse",
+          "rightVariantId": "tree64",
+          "sameLogitsBytes": false,
+          "sameTopTokenFromLogits": true,
+          "sameSampledToken": true
+        }
+      ]
+    }
+  },
+  "claim": {
+    "exactReferenceLogits": [
+      18.4852211325932,
+      18.47908614254797
+    ],
+    "exactReferenceTopToken": 0,
+    "tokenFlipObserved": false,
+    "sampleFlipObserved": false,
+    "lanes": {
+      "dawn": {
+        "tokenFlipObserved": false,
+        "sampleFlipObserved": false
+      }
+    }
+  }
+}

@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "sampled-decode-fragility-case",
+  "caseId": "gemma3-270m-prefill64-decode64-sampled",
+  "commandsPath": "examples/inference_gemma3_270m_prefill_64tok_decode_64tok_commands.json",
+  "patchedCommandsPath": "bench/out/apple-metal-sampled-decode-fragility/20260331T193843Z/gemma3-270m-prefill64-decode64-sampled/sampled-decode.commands.json",
+  "kernelRoot": "bench/inference-pipeline/kernels",
+  "promptText": "Gemma 3 270M ordinary execution sampled harvest over the first decode steps.",
+  "semanticPriorityClass": "other",
+  "sampleConfig": {
+    "temperature": 1.0,
+    "topK": 8,
+    "topP": 0.95,
+    "rngSeed": 17,
+    "rngDraw": 0.5
+  },
+  "backend": {
+    "vendor": "apple",
+    "api": "metal",
+    "family": "apple-gpu",
+    "driver": "1.0.0",
+    "backendLane": "metal_doe_app"
+  },
+  "repeatCount": 3,
+  "status": "success",
+  "decodeReceiptCount": 15,
+  "repeats": [
+    {
+      "repeatLabel": "repeat-01",
+      "traceMetaPath": "bench/out/apple-metal-sampled-decode-fragility/20260331T193843Z/gemma3-270m-prefill64-decode64-sampled/repeat-01/sampled-decode.trace-meta.json",
+      "traceJsonlPath": "bench/out/apple-metal-sampled-decode-fragility/20260331T193843Z/gemma3-270m-prefill64-decode64-sampled/repeat-01/sampled-decode.trace.jsonl",
+      "status": "success",
+      "elapsedNs": 730428375,
+      "numericReceiptPath": "bench/out/apple-metal-sampled-decode-fragility/20260331T193843Z/gemma3-270m-prefill64-decode64-sampled/repeat-01/sampled-decode.trace-meta.json.numeric-stability.jsonl",
+      "decodeReceiptCount": 5,
+      "decodeReceiptPaths": [
+        "bench/out/apple-metal-sampled-decode-fragility/20260331T193843Z/gemma3-270m-prefill64-decode64-sampled/receipts/repeat-01/gemma3-270m-prefill64-decode64-sampled.t0__decode.sample_token.receipt.json",
+        "bench/out/apple-metal-sampled-decode-fragility/20260331T193843Z/gemma3-270m-prefill64-decode64-sampled/receipts/repeat-01/gemma3-270m-prefill64-decode64-sampled.t1__decode.sample_token.receipt.json",
+        "bench/out/apple-metal-sampled-decode-fragility/20260331T193843Z/gemma3-270m-prefill64-decode64-sampled/receipts/repeat-01/gemma3-270m-prefill64-decode64-sampled.t2__decode.sample_token.receipt.json",
+        "bench/out/apple-metal-sampled-decode-fragility/20260331T193843Z/gemma3-270m-prefill64-decode64-sampled/receipts/repeat-01/gemma3-270m-prefill64-decode64-sampled.t3__decode.sample_token.receipt.json",
+        "bench/out/apple-metal-sampled-decode-fragility/20260331T193843Z/gemma3-270m-prefill64-decode64-sampled/receipts/repeat-01/gemma3-270m-prefill64-decode64-sampled.t4__decode.sample_token.receipt.json"
+      ]
+    },
+    {
+      "repeatLabel": "repeat-02",
+      "traceMetaPath": "bench/out/apple-metal-sampled-decode-fragility/20260331T193843Z/gemma3-270m-prefill64-decode64-sampled/repeat-02/sampled-decode.trace-meta.json",
+      "traceJsonlPath": "bench/out/apple-metal-sampled-decode-fragility/20260331T193843Z/gemma3-270m-prefill64-decode64-sampled/repeat-02/sampled-decode.trace.jsonl",
+      "status": "success",
+      "elapsedNs": 772512583,
+      "numericReceiptPath": "bench/out/apple-metal-sampled-decode-fragility/20260331T193843Z/gemma3-270m-prefill64-decode64-sampled/repeat-02/sampled-decode.trace-meta.json.numeric-stability.jsonl",
+      "decodeReceiptCount": 5,
+      "decodeReceiptPaths": [
+        "bench/out/apple-metal-sampled-decode-fragility/20260331T193843Z/gemma3-270m-prefill64-decode64-sampled/receipts/repeat-02/gemma3-270m-prefill64-decode64-sampled.t0__decode.sample_token.receipt.json",
+        "bench/out/apple-metal-sampled-decode-fragility/20260331T193843Z/gemma3-270m-prefill64-decode64-sampled/receipts/repeat-02/gemma3-270m-prefill64-decode64-sampled.t1__decode.sample_token.receipt.json",
+        "bench/out/apple-metal-sampled-decode-fragility/20260331T193843Z/gemma3-270m-prefill64-decode64-sampled/receipts/repeat-02/gemma3-270m-prefill64-decode64-sampled.t2__decode.sample_token.receipt.json",
+        "bench/out/apple-metal-sampled-decode-fragility/20260331T193843Z/gemma3-270m-prefill64-decode64-sampled/receipts/repeat-02/gemma3-270m-prefill64-decode64-sampled.t3__decode.sample_token.receipt.json",
+        "bench/out/apple-metal-sampled-decode-fragility/20260331T193843Z/gemma3-270m-prefill64-decode64-sampled/receipts/repeat-02/gemma3-270m-prefill64-decode64-sampled.t4__decode.sample_token.receipt.json"
+      ]
+    },
+    {
+      "repeatLabel": "repeat-03",
+      "traceMetaPath": "bench/out/apple-metal-sampled-decode-fragility/20260331T193843Z/gemma3-270m-prefill64-decode64-sampled/repeat-03/sampled-decode.trace-meta.json",
+      "traceJsonlPath": "bench/out/apple-metal-sampled-decode-fragility/20260331T193843Z/gemma3-270m-prefill64-decode64-sampled/repeat-03/sampled-decode.trace.jsonl",
+      "status": "success",
+      "elapsedNs": 853264208,
+      "numericReceiptPath": "bench/out/apple-metal-sampled-decode-fragility/20260331T193843Z/gemma3-270m-prefill64-decode64-sampled/repeat-03/sampled-decode.trace-meta.json.numeric-stability.jsonl",
+      "decodeReceiptCount": 5,
+      "decodeReceiptPaths": [
+        "bench/out/apple-metal-sampled-decode-fragility/20260331T193843Z/gemma3-270m-prefill64-decode64-sampled/receipts/repeat-03/gemma3-270m-prefill64-decode64-sampled.t0__decode.sample_token.receipt.json",
+        "bench/out/apple-metal-sampled-decode-fragility/20260331T193843Z/gemma3-270m-prefill64-decode64-sampled/receipts/repeat-03/gemma3-270m-prefill64-decode64-sampled.t1__decode.sample_token.receipt.json",
+        "bench/out/apple-metal-sampled-decode-fragility/20260331T193843Z/gemma3-270m-prefill64-decode64-sampled/receipts/repeat-03/gemma3-270m-prefill64-decode64-sampled.t2__decode.sample_token.receipt.json",
+        "bench/out/apple-metal-sampled-decode-fragility/20260331T193843Z/gemma3-270m-prefill64-decode64-sampled/receipts/repeat-03/gemma3-270m-prefill64-decode64-sampled.t3__decode.sample_token.receipt.json",
+        "bench/out/apple-metal-sampled-decode-fragility/20260331T193843Z/gemma3-270m-prefill64-decode64-sampled/receipts/repeat-03/gemma3-270m-prefill64-decode64-sampled.t4__decode.sample_token.receipt.json"
+      ]
+    }
+  ],
+  "maxSampleStepsToCapture": 5
+}

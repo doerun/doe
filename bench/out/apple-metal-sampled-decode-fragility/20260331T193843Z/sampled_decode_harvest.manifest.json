@@ -1,0 +1,163 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "sampled-decode-fragility-harvest",
+  "timestamp": "20260331T193843Z",
+  "planPath": "config/numeric-stability-decode-harvest-plan.json",
+  "runtimeBinPath": "runtime/zig/zig-out/bin/doe-zig-runtime",
+  "outputRoot": "bench/out/apple-metal-sampled-decode-fragility/20260331T193843Z",
+  "cases": [
+    {
+      "schemaVersion": 1,
+      "artifactKind": "sampled-decode-fragility-case",
+      "caseId": "decode-demo-sampled",
+      "commandsPath": "examples/numeric-stability-decode-sampled.commands.json",
+      "patchedCommandsPath": "bench/out/apple-metal-sampled-decode-fragility/20260331T193843Z/decode-demo-sampled/sampled-decode.commands.json",
+      "kernelRoot": ".",
+      "promptText": "Decode demo sampled control case for ordinary Doe execution.",
+      "semanticPriorityClass": "other",
+      "sampleConfig": {
+        "temperature": 1.0,
+        "topK": 2,
+        "topP": 0.75,
+        "rngSeed": 17,
+        "rngDraw": 0.875
+      },
+      "backend": {
+        "vendor": "apple",
+        "api": "metal",
+        "family": "apple-gpu",
+        "driver": "1.0.0",
+        "backendLane": "metal_doe_app"
+      },
+      "repeatCount": 3,
+      "status": "success",
+      "decodeReceiptCount": 3,
+      "repeats": [
+        {
+          "repeatLabel": "repeat-01",
+          "traceMetaPath": "bench/out/apple-metal-sampled-decode-fragility/20260331T193843Z/decode-demo-sampled/repeat-01/sampled-decode.trace-meta.json",
+          "traceJsonlPath": "bench/out/apple-metal-sampled-decode-fragility/20260331T193843Z/decode-demo-sampled/repeat-01/sampled-decode.trace.jsonl",
+          "status": "success",
+          "elapsedNs": 107892666,
+          "numericReceiptPath": "bench/out/apple-metal-sampled-decode-fragility/20260331T193843Z/decode-demo-sampled/repeat-01/sampled-decode.trace-meta.json.numeric-stability.jsonl",
+          "decodeReceiptCount": 1,
+          "decodeReceiptPaths": [
+            "bench/out/apple-metal-sampled-decode-fragility/20260331T193843Z/decode-demo-sampled/receipts/repeat-01/decode-demo-sampled.t0__decode.sample_token.receipt.json"
+          ]
+        },
+        {
+          "repeatLabel": "repeat-02",
+          "traceMetaPath": "bench/out/apple-metal-sampled-decode-fragility/20260331T193843Z/decode-demo-sampled/repeat-02/sampled-decode.trace-meta.json",
+          "traceJsonlPath": "bench/out/apple-metal-sampled-decode-fragility/20260331T193843Z/decode-demo-sampled/repeat-02/sampled-decode.trace.jsonl",
+          "status": "success",
+          "elapsedNs": 54445333,
+          "numericReceiptPath": "bench/out/apple-metal-sampled-decode-fragility/20260331T193843Z/decode-demo-sampled/repeat-02/sampled-decode.trace-meta.json.numeric-stability.jsonl",
+          "decodeReceiptCount": 1,
+          "decodeReceiptPaths": [
+            "bench/out/apple-metal-sampled-decode-fragility/20260331T193843Z/decode-demo-sampled/receipts/repeat-02/decode-demo-sampled.t0__decode.sample_token.receipt.json"
+          ]
+        },
+        {
+          "repeatLabel": "repeat-03",
+          "traceMetaPath": "bench/out/apple-metal-sampled-decode-fragility/20260331T193843Z/decode-demo-sampled/repeat-03/sampled-decode.trace-meta.json",
+          "traceJsonlPath": "bench/out/apple-metal-sampled-decode-fragility/20260331T193843Z/decode-demo-sampled/repeat-03/sampled-decode.trace.jsonl",
+          "status": "success",
+          "elapsedNs": 57429792,
+          "numericReceiptPath": "bench/out/apple-metal-sampled-decode-fragility/20260331T193843Z/decode-demo-sampled/repeat-03/sampled-decode.trace-meta.json.numeric-stability.jsonl",
+          "decodeReceiptCount": 1,
+          "decodeReceiptPaths": [
+            "bench/out/apple-metal-sampled-decode-fragility/20260331T193843Z/decode-demo-sampled/receipts/repeat-03/decode-demo-sampled.t0__decode.sample_token.receipt.json"
+          ]
+        }
+      ],
+      "maxSampleStepsToCapture": 1,
+      "caseReportPath": "bench/out/apple-metal-sampled-decode-fragility/20260331T193843Z/decode-demo-sampled/sampled-decode.case.json"
+    },
+    {
+      "schemaVersion": 1,
+      "artifactKind": "sampled-decode-fragility-case",
+      "caseId": "gemma3-270m-prefill64-decode64-sampled",
+      "commandsPath": "examples/inference_gemma3_270m_prefill_64tok_decode_64tok_commands.json",
+      "patchedCommandsPath": "bench/out/apple-metal-sampled-decode-fragility/20260331T193843Z/gemma3-270m-prefill64-decode64-sampled/sampled-decode.commands.json",
+      "kernelRoot": "bench/inference-pipeline/kernels",
+      "promptText": "Gemma 3 270M ordinary execution sampled harvest over the first decode steps.",
+      "semanticPriorityClass": "other",
+      "sampleConfig": {
+        "temperature": 1.0,
+        "topK": 8,
+        "topP": 0.95,
+        "rngSeed": 17,
+        "rngDraw": 0.5
+      },
+      "backend": {
+        "vendor": "apple",
+        "api": "metal",
+        "family": "apple-gpu",
+        "driver": "1.0.0",
+        "backendLane": "metal_doe_app"
+      },
+      "repeatCount": 3,
+      "status": "success",
+      "decodeReceiptCount": 15,
+      "repeats": [
+        {
+          "repeatLabel": "repeat-01",
+          "traceMetaPath": "bench/out/apple-metal-sampled-decode-fragility/20260331T193843Z/gemma3-270m-prefill64-decode64-sampled/repeat-01/sampled-decode.trace-meta.json",
+          "traceJsonlPath": "bench/out/apple-metal-sampled-decode-fragility/20260331T193843Z/gemma3-270m-prefill64-decode64-sampled/repeat-01/sampled-decode.trace.jsonl",
+          "status": "success",
+          "elapsedNs": 730428375,
+          "numericReceiptPath": "bench/out/apple-metal-sampled-decode-fragility/20260331T193843Z/gemma3-270m-prefill64-decode64-sampled/repeat-01/sampled-decode.trace-meta.json.numeric-stability.jsonl",
+          "decodeReceiptCount": 5,
+          "decodeReceiptPaths": [
+            "bench/out/apple-metal-sampled-decode-fragility/20260331T193843Z/gemma3-270m-prefill64-decode64-sampled/receipts/repeat-01/gemma3-270m-prefill64-decode64-sampled.t0__decode.sample_token.receipt.json",
+            "bench/out/apple-metal-sampled-decode-fragility/20260331T193843Z/gemma3-270m-prefill64-decode64-sampled/receipts/repeat-01/gemma3-270m-prefill64-decode64-sampled.t1__decode.sample_token.receipt.json",
+            "bench/out/apple-metal-sampled-decode-fragility/20260331T193843Z/gemma3-270m-prefill64-decode64-sampled/receipts/repeat-01/gemma3-270m-prefill64-decode64-sampled.t2__decode.sample_token.receipt.json",
+            "bench/out/apple-metal-sampled-decode-fragility/20260331T193843Z/gemma3-270m-prefill64-decode64-sampled/receipts/repeat-01/gemma3-270m-prefill64-decode64-sampled.t3__decode.sample_token.receipt.json",
+            "bench/out/apple-metal-sampled-decode-fragility/20260331T193843Z/gemma3-270m-prefill64-decode64-sampled/receipts/repeat-01/gemma3-270m-prefill64-decode64-sampled.t4__decode.sample_token.receipt.json"
+          ]
+        },
+        {
+          "repeatLabel": "repeat-02",
+          "traceMetaPath": "bench/out/apple-metal-sampled-decode-fragility/20260331T193843Z/gemma3-270m-prefill64-decode64-sampled/repeat-02/sampled-decode.trace-meta.json",
+          "traceJsonlPath": "bench/out/apple-metal-sampled-decode-fragility/20260331T193843Z/gemma3-270m-prefill64-decode64-sampled/repeat-02/sampled-decode.trace.jsonl",
+          "status": "success",
+          "elapsedNs": 772512583,
+          "numericReceiptPath": "bench/out/apple-metal-sampled-decode-fragility/20260331T193843Z/gemma3-270m-prefill64-decode64-sampled/repeat-02/sampled-decode.trace-meta.json.numeric-stability.jsonl",
+          "decodeReceiptCount": 5,
+          "decodeReceiptPaths": [
+            "bench/out/apple-metal-sampled-decode-fragility/20260331T193843Z/gemma3-270m-prefill64-decode64-sampled/receipts/repeat-02/gemma3-270m-prefill64-decode64-sampled.t0__decode.sample_token.receipt.json",
+            "bench/out/apple-metal-sampled-decode-fragility/20260331T193843Z/gemma3-270m-prefill64-decode64-sampled/receipts/repeat-02/gemma3-270m-prefill64-decode64-sampled.t1__decode.sample_token.receipt.json",
+            "bench/out/apple-metal-sampled-decode-fragility/20260331T193843Z/gemma3-270m-prefill64-decode64-sampled/receipts/repeat-02/gemma3-270m-prefill64-decode64-sampled.t2__decode.sample_token.receipt.json",
+            "bench/out/apple-metal-sampled-decode-fragility/20260331T193843Z/gemma3-270m-prefill64-decode64-sampled/receipts/repeat-02/gemma3-270m-prefill64-decode64-sampled.t3__decode.sample_token.receipt.json",
+            "bench/out/apple-metal-sampled-decode-fragility/20260331T193843Z/gemma3-270m-prefill64-decode64-sampled/receipts/repeat-02/gemma3-270m-prefill64-decode64-sampled.t4__decode.sample_token.receipt.json"
+          ]
+        },
+        {
+          "repeatLabel": "repeat-03",
+          "traceMetaPath": "bench/out/apple-metal-sampled-decode-fragility/20260331T193843Z/gemma3-270m-prefill64-decode64-sampled/repeat-03/sampled-decode.trace-meta.json",
+          "traceJsonlPath": "bench/out/apple-metal-sampled-decode-fragility/20260331T193843Z/gemma3-270m-prefill64-decode64-sampled/repeat-03/sampled-decode.trace.jsonl",
+          "status": "success",
+          "elapsedNs": 853264208,
+          "numericReceiptPath": "bench/out/apple-metal-sampled-decode-fragility/20260331T193843Z/gemma3-270m-prefill64-decode64-sampled/repeat-03/sampled-decode.trace-meta.json.numeric-stability.jsonl",
+          "decodeReceiptCount": 5,
+          "decodeReceiptPaths": [
+            "bench/out/apple-metal-sampled-decode-fragility/20260331T193843Z/gemma3-270m-prefill64-decode64-sampled/receipts/repeat-03/gemma3-270m-prefill64-decode64-sampled.t0__decode.sample_token.receipt.json",
+            "bench/out/apple-metal-sampled-decode-fragility/20260331T193843Z/gemma3-270m-prefill64-decode64-sampled/receipts/repeat-03/gemma3-270m-prefill64-decode64-sampled.t1__decode.sample_token.receipt.json",
+            "bench/out/apple-metal-sampled-decode-fragility/20260331T193843Z/gemma3-270m-prefill64-decode64-sampled/receipts/repeat-03/gemma3-270m-prefill64-decode64-sampled.t2__decode.sample_token.receipt.json",
+            "bench/out/apple-metal-sampled-decode-fragility/20260331T193843Z/gemma3-270m-prefill64-decode64-sampled/receipts/repeat-03/gemma3-270m-prefill64-decode64-sampled.t3__decode.sample_token.receipt.json",
+            "bench/out/apple-metal-sampled-decode-fragility/20260331T193843Z/gemma3-270m-prefill64-decode64-sampled/receipts/repeat-03/gemma3-270m-prefill64-decode64-sampled.t4__decode.sample_token.receipt.json"
+          ]
+        }
+      ],
+      "maxSampleStepsToCapture": 5,
+      "caseReportPath": "bench/out/apple-metal-sampled-decode-fragility/20260331T193843Z/gemma3-270m-prefill64-decode64-sampled/sampled-decode.case.json"
+    }
+  ],
+  "summary": {
+    "caseCount": 2,
+    "totalDecodeReceiptCount": 18,
+    "countsByStatus": {
+      "success": 2
+    }
+  }
+}
