@@ -47,7 +47,7 @@ for i in 0 1 2 3 4; do
   python3 bench/runners/run_real_logit_hunt.py \
     --fixture "bench/fixtures/determinism/amd-vulkan-full-greedy-10step.gemma270m.batch${i}.json" \
     --output-root bench/out/amd-vulkan-full-greedy-10step \
-    --persist-logits 2>&1 | tail -1
+    2>&1 | tail -1
 done
 echo
 
@@ -58,7 +58,7 @@ for i in 0 1 2 3 4; do
   python3 bench/runners/run_real_logit_hunt.py \
     --fixture "bench/fixtures/determinism/amd-vulkan-full-greedy-10step.gemma1b.batch${i}.json" \
     --output-root bench/out/amd-vulkan-full-greedy-10step \
-    --persist-logits 2>&1 | tail -1
+    2>&1 | tail -1
 done
 echo
 
@@ -69,7 +69,7 @@ for i in 0 1 2 3 4 5 6 7 8; do
   python3 bench/runners/run_real_logit_hunt.py \
     --fixture "bench/fixtures/determinism/amd-vulkan-full-greedy-32step.gemma270m.batch${i}.json" \
     --output-root bench/out/amd-vulkan-full-greedy-32step \
-    --persist-logits 2>&1 | tail -1
+    2>&1 | tail -1
 done
 echo
 
