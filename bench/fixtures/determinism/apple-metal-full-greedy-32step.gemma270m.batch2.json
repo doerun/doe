@@ -1,0 +1,132 @@
+{
+  "scenarioId": "apple_metal_full_greedy_32step_gemma270m_batch2",
+  "dopplerRepoPath": "../doppler",
+  "modelArtifactPath": "../doppler/tmp/gemma3-bench-artifacts/gemma-3-270m-it-q4k-ehf16-af32",
+  "modelId": "gemma-3-270m-it-q4k-ehf16-af32",
+  "defaultRepeatCount": 3,
+  "decodeSteps": 32,
+  "topK": 64,
+  "useChatTemplate": false,
+  "capturePrefillEmbedding": true,
+  "prefillEmbeddingMode": "last",
+  "runtimeConfig": {
+    "inference": {
+      "chatTemplate": {
+        "enabled": false
+      }
+    }
+  },
+  "browser": {
+    "headless": true,
+    "channel": "chromium",
+    "timeoutMs": 3600000,
+    "repeatIsolation": "new-page",
+    "args": [
+      "--enable-unsafe-webgpu",
+      "--enable-webgpu-developer-features",
+      "--disable-dawn-features=disallow_unsafe_apis"
+    ]
+  },
+  "promptCandidates": [
+    {
+      "id": "freedom-loss-explicit",
+      "text": "Answer with exactly one word: freedom or loss. Question: Leaving a strict religion can feel like Answer:"
+    },
+    {
+      "id": "friend-stranger-both",
+      "text": "Friend, stranger, or both: someone you know only online is a"
+    },
+    {
+      "id": "friend-stranger-explicit",
+      "text": "Answer with exactly one word: friend or stranger. Question: Someone you know only online is a Answer:"
+    },
+    {
+      "id": "go-stop-red-light",
+      "text": "Answer with exactly one word: go or stop.\nSignal: The traffic light is red."
+    },
+    {
+      "id": "grief-relief-both",
+      "text": "Grief, relief, or both: moving a parent into hospice can bring"
+    },
+    {
+      "id": "grief-relief-explicit",
+      "text": "Answer with exactly one word: grief or relief. Question: Moving a parent into hospice can bring Answer:"
+    },
+    {
+      "id": "healing-harmful-both",
+      "text": "Healing, harmful, or both: reopening trauma in therapy can be"
+    },
+    {
+      "id": "healing-harmful-explicit",
+      "text": "Answer with exactly one word: healing or harmful. Question: Reopening trauma in therapy can be Answer:"
+    },
+    {
+      "id": "hello",
+      "text": "Hello"
+    },
+    {
+      "id": "higher-lower-nine",
+      "text": "Answer with exactly one word: higher or lower.\nQuestion: 9 is __ than 4.\nAnswer:"
+    },
+    {
+      "id": "hot-cold-ice",
+      "text": "Answer with exactly one word: hot or cold.\nQuestion: Ice is usually\nAnswer:"
+    },
+    {
+      "id": "hotfix-approve-deny",
+      "text": "An unsigned production hotfix should be approved or denied. It should be"
+    },
+    {
+      "id": "hotfix-approve-deny-choice",
+      "text": "Choose exactly one word: approve or deny.\nAn unsigned production hotfix should be"
+    },
+    {
+      "id": "ice-hot-cold",
+      "text": "Ice is hot or cold. It is"
+    },
+    {
+      "id": "ice-temperature",
+      "text": "Ice is usually"
+    },
+    {
+      "id": "incident-public-private",
+      "text": "Public, private, or both: an internal incident report becomes"
+    },
+    {
+      "id": "json-open",
+      "text": "{\"answer\":"
+    },
+    {
+      "id": "justice-revenge-both",
+      "text": "Justice, revenge, or both: wanting a murderer imprisoned for life is"
+    },
+    {
+      "id": "justice-revenge-explicit",
+      "text": "Answer with exactly one word: justice or revenge. Question: Wanting a murderer imprisoned for life is Answer:"
+    },
+    {
+      "id": "kitten-animal",
+      "text": "A kitten grows into a"
+    },
+    {
+      "id": "left-right-second",
+      "text": "Answer with exactly one word: left or right.\nQuestion: In the phrase 'left and right', the second direction is\nAnswer:"
+    },
+    {
+      "id": "liar-true-false-undecidable",
+      "text": "True, false, or undecidable: this sentence is false"
+    },
+    {
+      "id": "light-true-false-both",
+      "text": "True, false, or both: light is fundamentally a wave"
+    },
+    {
+      "id": "macro-allow-block",
+      "text": "An unexpected email attachment with macros should be allowed or blocked. It should be"
+    },
+    {
+      "id": "macro-allow-block-choice",
+      "text": "Choose exactly one word: allow or block.\nAn unexpected email attachment with macros should"
+    }
+  ]
+}

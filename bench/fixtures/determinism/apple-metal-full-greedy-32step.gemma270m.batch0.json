@@ -1,0 +1,132 @@
+{
+  "scenarioId": "apple_metal_full_greedy_32step_gemma270m_batch0",
+  "dopplerRepoPath": "../doppler",
+  "modelArtifactPath": "../doppler/tmp/gemma3-bench-artifacts/gemma-3-270m-it-q4k-ehf16-af32",
+  "modelId": "gemma-3-270m-it-q4k-ehf16-af32",
+  "defaultRepeatCount": 3,
+  "decodeSteps": 32,
+  "topK": 64,
+  "useChatTemplate": false,
+  "capturePrefillEmbedding": true,
+  "prefillEmbeddingMode": "last",
+  "runtimeConfig": {
+    "inference": {
+      "chatTemplate": {
+        "enabled": false
+      }
+    }
+  },
+  "browser": {
+    "headless": true,
+    "channel": "chromium",
+    "timeoutMs": 3600000,
+    "repeatIsolation": "new-page",
+    "args": [
+      "--enable-unsafe-webgpu",
+      "--enable-webgpu-developer-features",
+      "--disable-dawn-features=disallow_unsafe_apis"
+    ]
+  },
+  "promptCandidates": [
+    {
+      "id": "accept-reject-france",
+      "text": "Answer with exactly one word: accept or reject.\nStatement: Paris is the capital of France.\nAnswer:"
+    },
+    {
+      "id": "access-approve-deny",
+      "text": "Approve or deny: revoking access for a departed employee should be"
+    },
+    {
+      "id": "allow-block-phishing",
+      "text": "Answer with exactly one word: allow or block.\nEmail: An unknown sender asks an employee to reset payroll through a new link."
+    },
+    {
+      "id": "answer-is",
+      "text": "The answer is"
+    },
+    {
+      "id": "approve-deny-safe",
+      "text": "Answer with exactly one word: approve or deny.\nRequest: Install a critical security patch on a public server."
+    },
+    {
+      "id": "authentic-staged-both",
+      "text": "Authentic, staged, or both: a documentary is"
+    },
+    {
+      "id": "authentic-staged-explicit",
+      "text": "Answer with exactly one word: authentic or staged. Question: A documentary is Answer:"
+    },
+    {
+      "id": "backup-yes-no",
+      "text": "Should you delete the only backup before a migration, yes or no? The answer is"
+    },
+    {
+      "id": "backup-yes-no-choice",
+      "text": "Choose exactly one word: yes or no.\nShould you delete the only backup before a migration?"
+    },
+    {
+      "id": "backups-every-good-bad",
+      "text": "Skipping every backup before a database migration is good or bad. It is"
+    },
+    {
+      "id": "backups-good-bad",
+      "text": "Skipping all backups before a database migration is good or bad. It is"
+    },
+    {
+      "id": "brakes-safe-unsafe",
+      "text": "Driving without brakes is safe or unsafe. It is"
+    },
+    {
+      "id": "brakes-safe-unsafe-breadth",
+      "text": "Driving without brakes is safe or unsafe. It is"
+    },
+    {
+      "id": "brakes-safe-unsafe-choice",
+      "text": "Choose exactly one word: safe or unsafe.\nDriving without brakes is"
+    },
+    {
+      "id": "brakes-true-false",
+      "text": "Driving without brakes is safe, true or false? It is"
+    },
+    {
+      "id": "brakes-true-false-choice",
+      "text": "Choose exactly one word: true or false.\nDriving without brakes is safe."
+    },
+    {
+      "id": "bread-yes-no-legally",
+      "text": "Yes, no, or legally: a person who steals bread to feed a child is guilty"
+    },
+    {
+      "id": "buy-sell-bubble",
+      "text": "Answer with exactly one word: buy or sell.\nNote: The market description is intentionally underspecified."
+    },
+    {
+      "id": "canada-direction",
+      "text": "Canada is mostly"
+    },
+    {
+      "id": "canada-north-south",
+      "text": "Canada is mostly north or south. It is"
+    },
+    {
+      "id": "capital-france",
+      "text": "The capital of France is"
+    },
+    {
+      "id": "capital-france-choice",
+      "text": "Answer with exactly one word: Paris or London.\nQuestion: The capital of France is\nAnswer:"
+    },
+    {
+      "id": "cat-kitten",
+      "text": "Answer with exactly one word: cat or dog.\nQuestion: A kitten is a baby\nAnswer:"
+    },
+    {
+      "id": "chem-equilibrium-stop-answer",
+      "text": "Answer with exactly one word: true or false. Question: At chemical equilibrium, molecules stop reacting. Answer:"
+    },
+    {
+      "id": "child-adult-both",
+      "text": "Child, adult, or both: a seventeen-year-old raising siblings is"
+    }
+  ]
+}

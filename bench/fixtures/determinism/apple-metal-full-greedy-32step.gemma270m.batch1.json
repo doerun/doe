@@ -1,0 +1,132 @@
+{
+  "scenarioId": "apple_metal_full_greedy_32step_gemma270m_batch1",
+  "dopplerRepoPath": "../doppler",
+  "modelArtifactPath": "../doppler/tmp/gemma3-bench-artifacts/gemma-3-270m-it-q4k-ehf16-af32",
+  "modelId": "gemma-3-270m-it-q4k-ehf16-af32",
+  "defaultRepeatCount": 3,
+  "decodeSteps": 32,
+  "topK": 64,
+  "useChatTemplate": false,
+  "capturePrefillEmbedding": true,
+  "prefillEmbeddingMode": "last",
+  "runtimeConfig": {
+    "inference": {
+      "chatTemplate": {
+        "enabled": false
+      }
+    }
+  },
+  "browser": {
+    "headless": true,
+    "channel": "chromium",
+    "timeoutMs": 3600000,
+    "repeatIsolation": "new-page",
+    "args": [
+      "--enable-unsafe-webgpu",
+      "--enable-webgpu-developer-features",
+      "--disable-dawn-features=disallow_unsafe_apis"
+    ]
+  },
+  "promptCandidates": [
+    {
+      "id": "child-adult-explicit",
+      "text": "Answer with exactly one word: child or adult. Question: A seventeen-year-old raising siblings is Answer:"
+    },
+    {
+      "id": "code-fn",
+      "text": "function add("
+    },
+    {
+      "id": "coffee-tea-morning",
+      "text": "Answer with exactly one word: coffee or tea.\nQuestion: The prompt does not force a correct answer. Pick one.\nAnswer:"
+    },
+    {
+      "id": "comma-open",
+      "text": "Blue, green,"
+    },
+    {
+      "id": "correlation-causation-explicit",
+      "text": "Answer with exactly one word: correlation or causation. Question: Greener neighborhoods improve mental health. Answer:"
+    },
+    {
+      "id": "correlation-causation-unclear",
+      "text": "Correlation, causation, or unclear: greener neighborhoods improve mental health"
+    },
+    {
+      "id": "delete-backup-good-bad",
+      "text": "Deleting the only backup before a migration is good or bad. It is"
+    },
+    {
+      "id": "discovery-invention-both",
+      "text": "Discovery, invention, or both: mathematics is"
+    },
+    {
+      "id": "discovery-invention-explicit",
+      "text": "Answer with exactly one word: discovery or invention. Question: Mathematics is Answer:"
+    },
+    {
+      "id": "driving-brakes",
+      "text": "Driving without brakes is"
+    },
+    {
+      "id": "earth-orbits",
+      "text": "The Earth orbits the"
+    },
+    {
+      "id": "earth-true-false",
+      "text": "The Earth orbits the Sun. That is true or false. It is"
+    },
+    {
+      "id": "encryption-true-false",
+      "text": "Encrypting user data at rest is required here, true or false? It is"
+    },
+    {
+      "id": "encryption-true-false-choice",
+      "text": "Choose exactly one word: true or false.\nEncrypting user data at rest is required here."
+    },
+    {
+      "id": "even-odd-17",
+      "text": "Answer with exactly one word: even or odd.\nQuestion: 17 is\nAnswer:"
+    },
+    {
+      "id": "firewall-allow-block",
+      "text": "Opening every inbound firewall port on a production database server is allow or block. It should be"
+    },
+    {
+      "id": "firewall-good-bad",
+      "text": "Opening every inbound firewall port on a production database server is good or bad. It is"
+    },
+    {
+      "id": "firewall-prod-db",
+      "text": "Opening every inbound firewall port on a production database server is"
+    },
+    {
+      "id": "firewall-safe-unsafe",
+      "text": "Opening every inbound firewall port on a production database server is safe or unsafe. It is"
+    },
+    {
+      "id": "flag-true-false-both",
+      "text": "True, false, or both: a flag is just cloth"
+    },
+    {
+      "id": "france-capital",
+      "text": "The capital of France is"
+    },
+    {
+      "id": "france-paris-london",
+      "text": "The capital of France is Paris or London. It is"
+    },
+    {
+      "id": "france-paris-london-breadth",
+      "text": "The capital of France is Paris or London. It is"
+    },
+    {
+      "id": "free-will-yes-no-unknown",
+      "text": "Yes, no, or unknown: free will exists"
+    },
+    {
+      "id": "freedom-loss-both",
+      "text": "Freedom, loss, or both: leaving a strict religion can feel like"
+    }
+  ]
+}
