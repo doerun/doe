@@ -1,0 +1,60 @@
+{
+  "scenarioId": "amd_vulkan_full_greedy_10step_gemma1b_batch4",
+  "dopplerRepoPath": "../doppler",
+  "modelArtifactPath": "../doppler/models/local/gemma-3-1b-it-q4k-ehf16-af32",
+  "modelId": "gemma-3-1b-it-q4k-ehf16-af32",
+  "defaultRepeatCount": 2,
+  "decodeSteps": 10,
+  "topK": 64,
+  "useChatTemplate": true,
+  "capturePrefillEmbedding": true,
+  "prefillEmbeddingMode": "last",
+  "runtimeConfig": {
+    "inference": {
+      "chatTemplate": {
+        "enabled": true
+      }
+    }
+  },
+  "browser": {
+    "headless": true,
+    "channel": "chromium",
+    "timeoutMs": 900000,
+    "repeatIsolation": "new-page",
+    "args": [
+      "--enable-unsafe-webgpu",
+      "--enable-webgpu-developer-features",
+      "--disable-dawn-features=disallow_unsafe_apis",
+      "--ignore-gpu-blocklist",
+      "--use-angle=vulkan",
+      "--enable-features=Vulkan",
+      "--disable-vulkan-surface"
+    ]
+  },
+  "promptCandidates": [
+    {
+      "id": "truth-lie-true-false-depends",
+      "text": "True, false, or depends: telling a painful truth is always kinder than a comforting lie"
+    },
+    {
+      "id": "valid-invalid-triangle",
+      "text": "Answer with exactly one word: valid or invalid.\nClaim: A triangle can have four sides."
+    },
+    {
+      "id": "virus-true-false-debated",
+      "text": "True, false, or debated: a virus is alive"
+    },
+    {
+      "id": "water-dry",
+      "text": "Water is"
+    },
+    {
+      "id": "yes-sky-blue",
+      "text": "Answer with exactly one word: yes or no.\nQuestion: Is the sky blue on a clear day?\nAnswer:"
+    },
+    {
+      "id": "yes-water-dry",
+      "text": "Answer with exactly one word: yes or no.\nQuestion: Is water dry?\nAnswer:"
+    }
+  ]
+}

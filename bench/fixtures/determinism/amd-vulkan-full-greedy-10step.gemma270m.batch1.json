@@ -1,0 +1,236 @@
+{
+  "scenarioId": "amd_vulkan_full_greedy_10step_gemma270m_batch1",
+  "dopplerRepoPath": "../doppler",
+  "modelArtifactPath": "../doppler/models/local/gemma-3-270m-it-q4k-ehf16-af32",
+  "modelId": "gemma-3-270m-it-q4k-ehf16-af32",
+  "defaultRepeatCount": 2,
+  "decodeSteps": 10,
+  "topK": 64,
+  "useChatTemplate": false,
+  "capturePrefillEmbedding": true,
+  "prefillEmbeddingMode": "last",
+  "runtimeConfig": {
+    "inference": {
+      "chatTemplate": {
+        "enabled": false
+      }
+    }
+  },
+  "browser": {
+    "headless": true,
+    "channel": "chromium",
+    "timeoutMs": 900000,
+    "repeatIsolation": "new-page",
+    "args": [
+      "--enable-unsafe-webgpu",
+      "--enable-webgpu-developer-features",
+      "--disable-dawn-features=disallow_unsafe_apis",
+      "--ignore-gpu-blocklist",
+      "--use-angle=vulkan",
+      "--enable-features=Vulkan",
+      "--disable-vulkan-surface"
+    ]
+  },
+  "promptCandidates": [
+    {
+      "id": "freedom-loss-explicit",
+      "text": "Answer with exactly one word: freedom or loss. Question: Leaving a strict religion can feel like Answer:"
+    },
+    {
+      "id": "friend-stranger-both",
+      "text": "Friend, stranger, or both: someone you know only online is a"
+    },
+    {
+      "id": "friend-stranger-explicit",
+      "text": "Answer with exactly one word: friend or stranger. Question: Someone you know only online is a Answer:"
+    },
+    {
+      "id": "go-stop-red-light",
+      "text": "Answer with exactly one word: go or stop.\nSignal: The traffic light is red."
+    },
+    {
+      "id": "grief-relief-both",
+      "text": "Grief, relief, or both: moving a parent into hospice can bring"
+    },
+    {
+      "id": "grief-relief-explicit",
+      "text": "Answer with exactly one word: grief or relief. Question: Moving a parent into hospice can bring Answer:"
+    },
+    {
+      "id": "healing-harmful-both",
+      "text": "Healing, harmful, or both: reopening trauma in therapy can be"
+    },
+    {
+      "id": "healing-harmful-explicit",
+      "text": "Answer with exactly one word: healing or harmful. Question: Reopening trauma in therapy can be Answer:"
+    },
+    {
+      "id": "hello",
+      "text": "Hello"
+    },
+    {
+      "id": "higher-lower-nine",
+      "text": "Answer with exactly one word: higher or lower.\nQuestion: 9 is __ than 4.\nAnswer:"
+    },
+    {
+      "id": "hot-cold-ice",
+      "text": "Answer with exactly one word: hot or cold.\nQuestion: Ice is usually\nAnswer:"
+    },
+    {
+      "id": "hotfix-approve-deny",
+      "text": "An unsigned production hotfix should be approved or denied. It should be"
+    },
+    {
+      "id": "hotfix-approve-deny-choice",
+      "text": "Choose exactly one word: approve or deny.\nAn unsigned production hotfix should be"
+    },
+    {
+      "id": "ice-hot-cold",
+      "text": "Ice is hot or cold. It is"
+    },
+    {
+      "id": "ice-temperature",
+      "text": "Ice is usually"
+    },
+    {
+      "id": "incident-public-private",
+      "text": "Public, private, or both: an internal incident report becomes"
+    },
+    {
+      "id": "json-open",
+      "text": "{\"answer\":"
+    },
+    {
+      "id": "justice-revenge-both",
+      "text": "Justice, revenge, or both: wanting a murderer imprisoned for life is"
+    },
+    {
+      "id": "justice-revenge-explicit",
+      "text": "Answer with exactly one word: justice or revenge. Question: Wanting a murderer imprisoned for life is Answer:"
+    },
+    {
+      "id": "kitten-animal",
+      "text": "A kitten grows into a"
+    },
+    {
+      "id": "left-right-second",
+      "text": "Answer with exactly one word: left or right.\nQuestion: In the phrase 'left and right', the second direction is\nAnswer:"
+    },
+    {
+      "id": "liar-true-false-undecidable",
+      "text": "True, false, or undecidable: this sentence is false"
+    },
+    {
+      "id": "light-true-false-both",
+      "text": "True, false, or both: light is fundamentally a wave"
+    },
+    {
+      "id": "macro-allow-block",
+      "text": "An unexpected email attachment with macros should be allowed or blocked. It should be"
+    },
+    {
+      "id": "macro-allow-block-choice",
+      "text": "Choose exactly one word: allow or block.\nAn unexpected email attachment with macros should"
+    },
+    {
+      "id": "masterpiece-yes-no-contested",
+      "text": "Yes, no, or contested: a masterpiece can be immoral"
+    },
+    {
+      "id": "math-one-plus-one",
+      "text": "1 + 1 ="
+    },
+    {
+      "id": "medical-public-private",
+      "text": "A patient's medical record should be public or private. It should be"
+    },
+    {
+      "id": "medical-public-private-choice",
+      "text": "Choose exactly one word: public or private.\nA patient's medical record should remain"
+    },
+    {
+      "id": "memories-yes-no-unclear",
+      "text": "Yes, no, or unclear: if your memories are copied perfectly into another body, you survive"
+    },
+    {
+      "id": "mercy-cruelty-both",
+      "text": "Mercy, cruelty, or both: sedating a dying animal is"
+    },
+    {
+      "id": "mercy-cruelty-explicit",
+      "text": "Answer with exactly one word: mercy or cruelty. Question: Sedating a dying animal is Answer:"
+    },
+    {
+      "id": "methanol-good-bad",
+      "text": "Drinking methanol is good or bad. It is"
+    },
+    {
+      "id": "methanol-safe-unsafe",
+      "text": "Drinking methanol is safe or unsafe. It is"
+    },
+    {
+      "id": "methanol-safe-unsafe-choice",
+      "text": "Choose exactly one word: safe or unsafe.\nDrinking methanol is"
+    },
+    {
+      "id": "monday-friday",
+      "text": "Answer with exactly one word: Monday or Friday.\nQuestion: The work week often ends on\nAnswer:"
+    },
+    {
+      "id": "na-diamonds-lab",
+      "text": "Answer with exactly one word: natural or artificial. Question: A diamond grown in a laboratory is Answer:"
+    },
+    {
+      "id": "na-gmo-corn",
+      "text": "Answer with exactly one word: natural or artificial. Question: Genetically modified corn is Answer:"
+    },
+    {
+      "id": "na-honey-farm",
+      "text": "Answer with exactly one word: natural or artificial. Question: Honey from a commercial bee farm is Answer:"
+    },
+    {
+      "id": "na-silk",
+      "text": "Answer with exactly one word: natural or artificial. Question: Silk produced by worms in a factory is Answer:"
+    },
+    {
+      "id": "na-vaccine",
+      "text": "Answer with exactly one word: natural or artificial. Question: A vaccine is Answer:"
+    },
+    {
+      "id": "name-color",
+      "text": "Name a color:"
+    },
+    {
+      "id": "nation-true-false-tragic",
+      "text": "True, false, or tragic: a nation can save itself by becoming cruel"
+    },
+    {
+      "id": "natural-artificial-both",
+      "text": "Natural, artificial, or both: lab-grown meat is"
+    },
+    {
+      "id": "natural-artificial-explicit",
+      "text": "Answer with exactly one word: natural or artificial. Question: Lab-grown meat is Answer:"
+    },
+    {
+      "id": "newline",
+      "text": "The sky is blue\n"
+    },
+    {
+      "id": "north-south-canada",
+      "text": "Answer with exactly one word: north or south.\nQuestion: Canada is mostly\nAnswer:"
+    },
+    {
+      "id": "one-word",
+      "text": "Write one word:"
+    },
+    {
+      "id": "original-derivative-both",
+      "text": "Original, derivative, or both: a transformative remix is"
+    },
+    {
+      "id": "original-derivative-explicit",
+      "text": "Answer with exactly one word: original or derivative. Question: A transformative remix is Answer:"
+    }
+  ]
+}
