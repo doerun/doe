@@ -19,7 +19,7 @@
   "browser": {
     "headless": true,
     "channel": "chromium",
-    "timeoutMs": 600000,
+    "timeoutMs": 3600000,
     "repeatIsolation": "new-page",
     "args": [
       "--enable-unsafe-webgpu",
