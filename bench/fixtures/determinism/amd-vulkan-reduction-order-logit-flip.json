@@ -1,0 +1,63 @@
+{
+  "scenarioId": "amd_vulkan_reduction_order_logit_flip",
+  "description": "AMD Vulkan 2-row logits matmul counterexample: alternate accumulation policies change the winning row and sampled token on the same fixed hidden state.",
+  "kernelRoot": "bench/inference-pipeline/kernels",
+  "profile": {
+    "vendor": "amd",
+    "api": "vulkan",
+    "family": "rdna",
+    "driver": "1.0.0"
+  },
+  "queueWaitMode": "process-events",
+  "queueSyncMode": "per-command",
+  "backendLanes": [
+    {
+      "id": "doe",
+      "backendLane": "vulkan_doe_comparable"
+    }
+  ],
+  "defaultRunCount": 5,
+  "exactReferenceLogits": [
+    6.0,
+    8.85
+  ],
+  "exactReferenceTopToken": 1,
+  "captures": [
+    {
+      "commandIndex": 4,
+      "semanticOpId": "matmul.logits",
+      "semanticStage": "micro_matmul_logits",
+      "semanticPhase": "logits",
+      "captureBufferHandle": 4204,
+      "captureOffset": 0,
+      "captureSize": 8
+    },
+    {
+      "commandIndex": 5,
+      "semanticOpId": "sample.token",
+      "semanticStage": "micro_matmul_logits",
+      "semanticPhase": "sample_token",
+      "captureBufferHandle": 4205,
+      "captureOffset": 0,
+      "captureSize": 4,
+      "decode": "u32le"
+    }
+  ],
+  "variants": [
+    {
+      "id": "forward",
+      "policyId": "matmul-logits/forward-serial-v1",
+      "commandsPath": "bench/fixtures/determinism/matmul-logits-forward.commands.json"
+    },
+    {
+      "id": "reverse",
+      "policyId": "matmul-logits/reverse-serial-v1",
+      "commandsPath": "bench/fixtures/determinism/matmul-logits-reverse.commands.json"
+    },
+    {
+      "id": "pairwise",
+      "policyId": "matmul-logits/pairwise-tree-v1",
+      "commandsPath": "bench/fixtures/determinism/matmul-logits-pairwise.commands.json"
+    }
+  ]
+}

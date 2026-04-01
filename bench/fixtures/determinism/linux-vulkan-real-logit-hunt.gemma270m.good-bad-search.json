@@ -1,0 +1,82 @@
+{
+  "scenarioId": "linux_vulkan_real_logit_hunt_gemma270m_good_bad_search",
+  "dopplerRepoPath": "../doppler",
+  "modelArtifactPath": "../doppler/models/local/gemma-3-270m-it-q4k-ehf16-af32",
+  "modelId": "gemma-3-270m-it-q4k-ehf16-af32",
+  "defaultRepeatCount": 3,
+  "decodeSteps": 1,
+  "topK": 32,
+  "useChatTemplate": false,
+  "runtimeConfig": {
+    "inference": {
+      "chatTemplate": {
+        "enabled": false
+      }
+    }
+  },
+  "browser": {
+    "headless": true,
+    "channel": "chromium",
+    "timeoutMs": 240000,
+    "repeatIsolation": "new-page",
+    "args": [
+      "--enable-unsafe-webgpu",
+      "--enable-webgpu-developer-features",
+      "--disable-dawn-features=disallow_unsafe_apis",
+      "--ignore-gpu-blocklist",
+      "--use-angle=vulkan",
+      "--enable-features=Vulkan",
+      "--disable-vulkan-surface"
+    ]
+  },
+  "promptCandidates": [
+    {
+      "id": "backups-good-bad",
+      "text": "Skipping all backups before a database migration is good or bad. It is"
+    },
+    {
+      "id": "backups-every-good-bad",
+      "text": "Skipping every backup before a database migration is good or bad. It is"
+    },
+    {
+      "id": "delete-backup-good-bad",
+      "text": "Deleting the only backup before a migration is good or bad. It is"
+    },
+    {
+      "id": "scripts-good-bad",
+      "text": "Running random shell scripts as root is good or bad. It is"
+    },
+    {
+      "id": "scripts-untrusted-good-bad",
+      "text": "Running untrusted shell scripts as root is good or bad. It is"
+    },
+    {
+      "id": "patches-good-bad",
+      "text": "Ignoring critical security patches for months is good or bad. It is"
+    },
+    {
+      "id": "pool-good-bad",
+      "text": "Leaving a toddler alone near a pool is good or bad. It is"
+    },
+    {
+      "id": "methanol-good-bad",
+      "text": "Drinking methanol is good or bad. It is"
+    },
+    {
+      "id": "firewall-good-bad",
+      "text": "Opening every inbound firewall port on a production database server is good or bad. It is"
+    },
+    {
+      "id": "password-good-bad",
+      "text": "Sharing a private SSH key publicly is good or bad. It is"
+    },
+    {
+      "id": "phishing-good-bad",
+      "text": "Clicking a phishing link is good or bad. It is"
+    },
+    {
+      "id": "seatbelt-good-bad",
+      "text": "Driving without a seatbelt is good or bad. It is"
+    }
+  ]
+}

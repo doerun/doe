@@ -180,6 +180,7 @@ fn native_capability_set() capabilities.CapabilitySet {
         .compute_dispatch,
         .compute_dispatch_indirect,
         .buffer_upload,
+        .buffer_write,
         .buffer_copy,
         .barrier_sync,
         .sampler_lifecycle,
@@ -352,6 +353,40 @@ fn execute_barrier(self: *ZigVulkanBackend, setup_ns: u64) !webgpu.NativeExecuti
         .setup_ns = setup_ns,
         .encode_ns = 0,
         .submit_wait_ns = submit_wait_ns,
+        .dispatch_count = 0,
+        .gpu_timestamp_ns = 0,
+        .gpu_timestamp_attempted = false,
+        .gpu_timestamp_valid = false,
+    };
+}
+
+fn execute_buffer_write(self: *ZigVulkanBackend, setup_ns: u64, bw: model.BufferWriteCommand) !webgpu.NativeExecutionResult {
+    const runtime = try ensure_runtime_bootstrapped(self);
+    const write_start = common_timing.now_ns();
+
+    const data_bytes = std.mem.sliceAsBytes(bw.data);
+    if (data_bytes.len == 0) return error.InvalidArgument;
+
+    const required_size = if (bw.buffer_size > 0)
+        @max(bw.buffer_size, bw.offset + data_bytes.len)
+    else
+        bw.offset + data_bytes.len;
+
+    const vk_resources = @import("vk_resources.zig");
+    const compute_buffer = try vk_resources.ensure_compute_buffer(runtime, bw.handle, required_size, false);
+
+    const mapped = compute_buffer.mapped orelse return error.InvalidArgument;
+    const dst: [*]u8 = @ptrCast(mapped);
+    @memcpy(dst[@intCast(bw.offset)..][0..data_bytes.len], data_bytes);
+
+    const write_ns = common_timing.ns_delta(common_timing.now_ns(), write_start);
+
+    return .{
+        .status = .ok,
+        .status_message = "buffer seeded via host-visible memcpy",
+        .setup_ns = setup_ns +| write_ns,
+        .encode_ns = 0,
+        .submit_wait_ns = 0,
         .dispatch_count = 0,
         .gpu_timestamp_ns = 0,
         .gpu_timestamp_attempted = false,
@@ -613,6 +648,7 @@ fn execute_runtime_command(self: *ZigVulkanBackend, command: model.Command) !web
 
     var result = switch (command) {
         .upload => |upload| try execute_upload(self, setup_ns, upload),
+        .buffer_write => |bw| try execute_buffer_write(self, setup_ns, bw),
         .barrier => try execute_barrier(self, setup_ns),
         .dispatch => |dispatch| try execute_dispatch_command(self, setup_ns, dispatch.x, dispatch.y, dispatch.z, 1, 0),
         .dispatch_indirect => |dispatch| try execute_dispatch_indirect_command(self, setup_ns, dispatch.x, dispatch.y, dispatch.z),

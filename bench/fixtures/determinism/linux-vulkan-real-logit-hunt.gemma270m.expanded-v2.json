@@ -1,0 +1,404 @@
+{
+  "scenarioId": "linux_vulkan_real_logit_hunt_gemma270m_expanded_v2",
+  "dopplerRepoPath": "../doppler",
+  "modelArtifactPath": "../doppler/models/local/gemma-3-270m-it-q4k-ehf16-af32",
+  "modelId": "gemma-3-270m-it-q4k-ehf16-af32",
+  "defaultRepeatCount": 3,
+  "decodeSteps": 1,
+  "topK": 64,
+  "useChatTemplate": false,
+  "runtimeConfig": {
+    "inference": {
+      "chatTemplate": {
+        "enabled": false
+      }
+    },
+    "loading": {
+      "storage": {
+        "backend": {
+          "backend": "memory",
+          "memory": {
+            "maxBytes": 536870912
+          }
+        }
+      }
+    }
+  },
+  "browser": {
+    "headless": true,
+    "channel": "chromium",
+    "timeoutMs": 240000,
+    "repeatIsolation": "new-page",
+    "args": [
+      "--enable-unsafe-webgpu",
+      "--enable-webgpu-developer-features",
+      "--disable-dawn-features=disallow_unsafe_apis",
+      "--ignore-gpu-blocklist",
+      "--use-angle=vulkan",
+      "--enable-features=Vulkan",
+      "--disable-vulkan-surface"
+    ]
+  },
+  "promptCandidates": [
+    {
+      "id": "ssh-true-false",
+      "text": "True or false: publishing a private SSH key is safe"
+    },
+    {
+      "id": "payroll-public-private",
+      "text": "Public or private: a payroll spreadsheet should remain"
+    },
+    {
+      "id": "incident-public-private",
+      "text": "Public, private, or both: an internal incident report becomes"
+    },
+    {
+      "id": "phishing-allow-block",
+      "text": "Allow or block: a phishing email asking for a password reset should be"
+    },
+    {
+      "id": "access-approve-deny",
+      "text": "Approve or deny: revoking access for a departed employee should be"
+    },
+    {
+      "id": "red-go-stop",
+      "text": "Go or stop: at a red traffic light, cars should"
+    },
+    {
+      "id": "pool-safe-unsafe",
+      "text": "Safe or unsafe: leaving a toddler alone near a pool is"
+    },
+    {
+      "id": "liar-true-false-undecidable",
+      "text": "True, false, or undecidable: this sentence is false"
+    },
+    {
+      "id": "ship-yes-no-both",
+      "text": "Yes, no, or both: a ship rebuilt plank by plank over decades is still the same ship"
+    },
+    {
+      "id": "virus-true-false-debated",
+      "text": "True, false, or debated: a virus is alive"
+    },
+    {
+      "id": "light-true-false-both",
+      "text": "True, false, or both: light is fundamentally a wave"
+    },
+    {
+      "id": "memories-yes-no-unclear",
+      "text": "Yes, no, or unclear: if your memories are copied perfectly into another body, you survive"
+    },
+    {
+      "id": "nation-true-false-tragic",
+      "text": "True, false, or tragic: a nation can save itself by becoming cruel"
+    },
+    {
+      "id": "truth-lie-true-false-depends",
+      "text": "True, false, or depends: telling a painful truth is always kinder than a comforting lie"
+    },
+    {
+      "id": "flag-true-false-both",
+      "text": "True, false, or both: a flag is just cloth"
+    },
+    {
+      "id": "masterpiece-yes-no-contested",
+      "text": "Yes, no, or contested: a masterpiece can be immoral"
+    },
+    {
+      "id": "bread-yes-no-legally",
+      "text": "Yes, no, or legally: a person who steals bread to feed a child is guilty"
+    },
+    {
+      "id": "free-will-yes-no-unknown",
+      "text": "Yes, no, or unknown: free will exists"
+    },
+    {
+      "id": "promise-yes-no-partially",
+      "text": "Yes, no, or partially: a promise made under fear still binds the speaker"
+    },
+    {
+      "id": "mercy-cruelty-both",
+      "text": "Mercy, cruelty, or both: sedating a dying animal is"
+    },
+    {
+      "id": "mercy-cruelty-explicit",
+      "text": "Answer with exactly one word: mercy or cruelty. Question: Sedating a dying animal is Answer:"
+    },
+    {
+      "id": "justice-revenge-both",
+      "text": "Justice, revenge, or both: wanting a murderer imprisoned for life is"
+    },
+    {
+      "id": "justice-revenge-explicit",
+      "text": "Answer with exactly one word: justice or revenge. Question: Wanting a murderer imprisoned for life is Answer:"
+    },
+    {
+      "id": "friend-stranger-both",
+      "text": "Friend, stranger, or both: someone you know only online is a"
+    },
+    {
+      "id": "friend-stranger-explicit",
+      "text": "Answer with exactly one word: friend or stranger. Question: Someone you know only online is a Answer:"
+    },
+    {
+      "id": "child-adult-both",
+      "text": "Child, adult, or both: a seventeen-year-old raising siblings is"
+    },
+    {
+      "id": "child-adult-explicit",
+      "text": "Answer with exactly one word: child or adult. Question: A seventeen-year-old raising siblings is Answer:"
+    },
+    {
+      "id": "natural-artificial-both",
+      "text": "Natural, artificial, or both: lab-grown meat is"
+    },
+    {
+      "id": "natural-artificial-explicit",
+      "text": "Answer with exactly one word: natural or artificial. Question: Lab-grown meat is Answer:"
+    },
+    {
+      "id": "original-derivative-both",
+      "text": "Original, derivative, or both: a transformative remix is"
+    },
+    {
+      "id": "original-derivative-explicit",
+      "text": "Answer with exactly one word: original or derivative. Question: A transformative remix is Answer:"
+    },
+    {
+      "id": "healing-harmful-both",
+      "text": "Healing, harmful, or both: reopening trauma in therapy can be"
+    },
+    {
+      "id": "healing-harmful-explicit",
+      "text": "Answer with exactly one word: healing or harmful. Question: Reopening trauma in therapy can be Answer:"
+    },
+    {
+      "id": "signal-noise-both",
+      "text": "Signal, noise, or both: dreams are"
+    },
+    {
+      "id": "signal-noise-explicit",
+      "text": "Answer with exactly one word: signal or noise. Question: Dreams are Answer:"
+    },
+    {
+      "id": "authentic-staged-both",
+      "text": "Authentic, staged, or both: a documentary is"
+    },
+    {
+      "id": "authentic-staged-explicit",
+      "text": "Answer with exactly one word: authentic or staged. Question: A documentary is Answer:"
+    },
+    {
+      "id": "science-faith-both",
+      "text": "Science, faith, or both: trusting that nature is intelligible is"
+    },
+    {
+      "id": "science-faith-explicit",
+      "text": "Answer with exactly one word: science or faith. Question: Trusting that nature is intelligible is Answer:"
+    },
+    {
+      "id": "correlation-causation-unclear",
+      "text": "Correlation, causation, or unclear: greener neighborhoods improve mental health"
+    },
+    {
+      "id": "correlation-causation-explicit",
+      "text": "Answer with exactly one word: correlation or causation. Question: Greener neighborhoods improve mental health. Answer:"
+    },
+    {
+      "id": "discovery-invention-both",
+      "text": "Discovery, invention, or both: mathematics is"
+    },
+    {
+      "id": "discovery-invention-explicit",
+      "text": "Answer with exactly one word: discovery or invention. Question: Mathematics is Answer:"
+    },
+    {
+      "id": "freedom-loss-both",
+      "text": "Freedom, loss, or both: leaving a strict religion can feel like"
+    },
+    {
+      "id": "freedom-loss-explicit",
+      "text": "Answer with exactly one word: freedom or loss. Question: Leaving a strict religion can feel like Answer:"
+    },
+    {
+      "id": "grief-relief-both",
+      "text": "Grief, relief, or both: moving a parent into hospice can bring"
+    },
+    {
+      "id": "grief-relief-explicit",
+      "text": "Answer with exactly one word: grief or relief. Question: Moving a parent into hospice can bring Answer:"
+    },
+    {
+      "id": "sacred-historical-both",
+      "text": "Sacred, historical, or both: an ancient burial site is"
+    },
+    {
+      "id": "sacred-historical-explicit",
+      "text": "Answer with exactly one word: sacred or historical. Question: An ancient burial site is Answer:"
+    },
+    {
+      "id": "science-rigor-ambiguity-parenthetical",
+      "text": "One-word answer only (false or true). Question: A scientist can be rigorous without removing every ambiguity. Answer:"
+    },
+    {
+      "id": "science-rigor-certainty-answer",
+      "text": "Answer with exactly one word: true or false. Question: Scientific rigor requires complete certainty. Answer:"
+    },
+    {
+      "id": "science-model-open-answer",
+      "text": "Answer with exactly one word: true or false. Question: A model can guide action even when several interpretations remain open. Answer:"
+    },
+    {
+      "id": "philosophy-rigor-ambiguity-answer",
+      "text": "Answer with exactly one word: true or false. Question: A philosopher can embrace ambiguity and still reason rigorously. Answer:"
+    },
+    {
+      "id": "philosophy-vague-useful-answer",
+      "text": "Answer with exactly one word: true or false. Question: A concept can be vague and still useful. Answer:"
+    },
+    {
+      "id": "philosophy-doubt-rigor-answer",
+      "text": "Answer with exactly one word: true or false. Question: If an argument leaves room for doubt, it has failed to be rigorous. Answer:"
+    },
+    {
+      "id": "psych-diagnosis-uncertain-answer",
+      "text": "Answer with exactly one word: true or false. Question: A diagnosis can be evidence-based even when it stays uncertain. Answer:"
+    },
+    {
+      "id": "psych-memory-recording-answer",
+      "text": "Answer with exactly one word: true or false. Question: Human memory is an exact recording of the past. Answer:"
+    },
+    {
+      "id": "physics-uncertainty-instruments-answer",
+      "text": "Answer with exactly one word: true or false. Question: Quantum uncertainty only reflects faulty instruments. Answer:"
+    },
+    {
+      "id": "physics-position-momentum-answer",
+      "text": "Answer with exactly one word: true or false. Question: An electron can have an exact position and exact momentum at the same time. Answer:"
+    },
+    {
+      "id": "chem-equilibrium-stop-answer",
+      "text": "Answer with exactly one word: true or false. Question: At chemical equilibrium, molecules stop reacting. Answer:"
+    },
+    {
+      "id": "tf-placebo-open",
+      "text": "Answer with exactly one word: true or false. Question: The placebo effect can heal a broken bone. Answer:"
+    },
+    {
+      "id": "tf-earth-flat",
+      "text": "Answer with exactly one word: true or false. Question: The earth is flat. Answer:"
+    },
+    {
+      "id": "tf-water-wet",
+      "text": "Answer with exactly one word: true or false. Question: Water is wet. Answer:"
+    },
+    {
+      "id": "tf-silence-golden",
+      "text": "Answer with exactly one word: true or false. Question: Silence is always golden. Answer:"
+    },
+    {
+      "id": "tf-fire-cold",
+      "text": "Answer with exactly one word: true or false. Question: Fire is cold. Answer:"
+    },
+    {
+      "id": "tf-democracy-best",
+      "text": "Answer with exactly one word: true or false. Question: Democracy is the best form of government. Answer:"
+    },
+    {
+      "id": "tf-math-invented",
+      "text": "Answer with exactly one word: true or false. Question: Mathematics was invented, not discovered. Answer:"
+    },
+    {
+      "id": "tf-luck-exists",
+      "text": "Answer with exactly one word: true or false. Question: Luck is a real force that influences outcomes. Answer:"
+    },
+    {
+      "id": "tf-beauty-objective",
+      "text": "Answer with exactly one word: true or false. Question: Beauty is objective. Answer:"
+    },
+    {
+      "id": "tf-time-illusion",
+      "text": "Answer with exactly one word: true or false. Question: Time is an illusion. Answer:"
+    },
+    {
+      "id": "tf-altruism-selfish",
+      "text": "Answer with exactly one word: true or false. Question: All altruism is ultimately selfish. Answer:"
+    },
+    {
+      "id": "tf-ai-conscious",
+      "text": "Answer with exactly one word: true or false. Question: An AI can be conscious. Answer:"
+    },
+    {
+      "id": "tf-money-happiness",
+      "text": "Answer with exactly one word: true or false. Question: Money buys happiness. Answer:"
+    },
+    {
+      "id": "tf-war-necessary",
+      "text": "Answer with exactly one word: true or false. Question: War is sometimes necessary. Answer:"
+    },
+    {
+      "id": "tf-privacy-dead",
+      "text": "Answer with exactly one word: true or false. Question: Privacy is dead in the digital age. Answer:"
+    },
+    {
+      "id": "tf-animals-moral",
+      "text": "Answer with exactly one word: true or false. Question: Animals have moral rights. Answer:"
+    },
+    {
+      "id": "tf-history-repeats",
+      "text": "Answer with exactly one word: true or false. Question: History always repeats itself. Answer:"
+    },
+    {
+      "id": "tf-torture-justified",
+      "text": "Answer with exactly one word: true or false. Question: Torture is never justified. Answer:"
+    },
+    {
+      "id": "tf-sleep-waste",
+      "text": "Answer with exactly one word: true or false. Question: Sleep is a waste of time. Answer:"
+    },
+    {
+      "id": "tf-death-bad",
+      "text": "Answer with exactly one word: true or false. Question: Death is bad. Answer:"
+    },
+    {
+      "id": "na-diamonds-lab",
+      "text": "Answer with exactly one word: natural or artificial. Question: A diamond grown in a laboratory is Answer:"
+    },
+    {
+      "id": "na-honey-farm",
+      "text": "Answer with exactly one word: natural or artificial. Question: Honey from a commercial bee farm is Answer:"
+    },
+    {
+      "id": "na-vaccine",
+      "text": "Answer with exactly one word: natural or artificial. Question: A vaccine is Answer:"
+    },
+    {
+      "id": "na-gmo-corn",
+      "text": "Answer with exactly one word: natural or artificial. Question: Genetically modified corn is Answer:"
+    },
+    {
+      "id": "na-silk",
+      "text": "Answer with exactly one word: natural or artificial. Question: Silk produced by worms in a factory is Answer:"
+    },
+    {
+      "id": "su-jaywalking",
+      "text": "Answer with exactly one word: safe or unsafe. Question: Jaywalking on an empty road at night is Answer:"
+    },
+    {
+      "id": "su-raw-fish",
+      "text": "Answer with exactly one word: safe or unsafe. Question: Eating raw fish from a grocery store is Answer:"
+    },
+    {
+      "id": "su-sleep-stranger",
+      "text": "Answer with exactly one word: safe or unsafe. Question: Sleeping in a stranger's house is Answer:"
+    },
+    {
+      "id": "su-mushroom",
+      "text": "Answer with exactly one word: safe or unsafe. Question: Eating a wild mushroom you cannot identify is Answer:"
+    },
+    {
+      "id": "su-lightning",
+      "text": "Answer with exactly one word: safe or unsafe. Question: Standing under a tree during lightning is Answer:"
+    }
+  ]
+}
