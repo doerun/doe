@@ -88,6 +88,7 @@ test "dispatchWithMode active propagates uses_temporary_buffer to command" {
     const profile = model.DeviceProfile{
         .vendor = "intel",
         .api = .vulkan,
+        .driver_version = .{ .major = 0, .minor = 0, .patch = 0 },
     };
     const quirks = [_]model.Quirk{.{
         .schema_version = model.CURRENT_SCHEMA_VERSION,
@@ -130,6 +131,7 @@ test "dispatchWithMode active propagates uses_temporary_render_texture to render
     const profile = model.DeviceProfile{
         .vendor = "intel",
         .api = .metal,
+        .driver_version = .{ .major = 0, .minor = 0, .patch = 0 },
     };
     const quirks = [_]model.Quirk{.{
         .schema_version = model.CURRENT_SCHEMA_VERSION,

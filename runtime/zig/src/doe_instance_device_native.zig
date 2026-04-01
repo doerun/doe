@@ -76,7 +76,7 @@ fn parse_requested_backend(raw: []const u8) ?RequestedBackend {
 fn requested_backend_from_lane(raw: []const u8) ?RequestedBackend {
     const lane = backend_policy.parse_lane(raw) orelse return null;
     return switch (lane) {
-        .metal_doe_app, .metal_doe_directional, .metal_doe_comparable, .metal_doe_release, .metal_dawn_release => .metal,
+        .metal_doe_app, .metal_doe_directional, .metal_doe_comparable, .metal_doe_release, .metal_dawn_release, .metal_webkit_release => .metal,
         .vulkan_doe_app, .vulkan_doe_comparable, .vulkan_doe_release, .vulkan_dawn_release => .vulkan,
         .d3d12_doe_app, .d3d12_doe_directional, .d3d12_doe_comparable, .d3d12_doe_release, .d3d12_dawn_release => .d3d12,
     };
