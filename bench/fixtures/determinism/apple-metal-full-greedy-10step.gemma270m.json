@@ -1,7 +1,7 @@
 {
   "scenarioId": "apple_metal_full_greedy_10step_gemma270m",
   "dopplerRepoPath": "../doppler",
-  "modelArtifactPath": "../doppler/models/local/gemma-3-270m-it-q4k-ehf16-af32",
+  "modelArtifactPath": "../doppler/tmp/gemma3-bench-artifacts/gemma-3-270m-it-q4k-ehf16-af32",
   "modelId": "gemma-3-270m-it-q4k-ehf16-af32",
   "defaultRepeatCount": 3,
   "decodeSteps": 10,
