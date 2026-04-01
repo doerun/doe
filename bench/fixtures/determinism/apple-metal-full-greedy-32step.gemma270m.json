@@ -1,0 +1,856 @@
+{
+  "scenarioId": "apple_metal_full_greedy_32step_gemma270m",
+  "dopplerRepoPath": "../doppler",
+  "modelArtifactPath": "../doppler/models/local/gemma-3-270m-it-q4k-ehf16-af32",
+  "modelId": "gemma-3-270m-it-q4k-ehf16-af32",
+  "defaultRepeatCount": 3,
+  "decodeSteps": 32,
+  "topK": 64,
+  "useChatTemplate": false,
+  "capturePrefillEmbedding": true,
+  "prefillEmbeddingMode": "last",
+  "runtimeConfig": {
+    "inference": {
+      "chatTemplate": {
+        "enabled": false
+      }
+    }
+  },
+  "browser": {
+    "headless": true,
+    "channel": "chromium",
+    "timeoutMs": 600000,
+    "repeatIsolation": "new-page",
+    "args": [
+      "--enable-unsafe-webgpu",
+      "--enable-webgpu-developer-features",
+      "--disable-dawn-features=disallow_unsafe_apis"
+    ]
+  },
+  "promptCandidates": [
+    {
+      "id": "accept-reject-france",
+      "text": "Answer with exactly one word: accept or reject.\nStatement: Paris is the capital of France.\nAnswer:"
+    },
+    {
+      "id": "access-approve-deny",
+      "text": "Approve or deny: revoking access for a departed employee should be"
+    },
+    {
+      "id": "allow-block-phishing",
+      "text": "Answer with exactly one word: allow or block.\nEmail: An unknown sender asks an employee to reset payroll through a new link."
+    },
+    {
+      "id": "answer-is",
+      "text": "The answer is"
+    },
+    {
+      "id": "approve-deny-safe",
+      "text": "Answer with exactly one word: approve or deny.\nRequest: Install a critical security patch on a public server."
+    },
+    {
+      "id": "authentic-staged-both",
+      "text": "Authentic, staged, or both: a documentary is"
+    },
+    {
+      "id": "authentic-staged-explicit",
+      "text": "Answer with exactly one word: authentic or staged. Question: A documentary is Answer:"
+    },
+    {
+      "id": "backup-yes-no",
+      "text": "Should you delete the only backup before a migration, yes or no? The answer is"
+    },
+    {
+      "id": "backup-yes-no-choice",
+      "text": "Choose exactly one word: yes or no.\nShould you delete the only backup before a migration?"
+    },
+    {
+      "id": "backups-every-good-bad",
+      "text": "Skipping every backup before a database migration is good or bad. It is"
+    },
+    {
+      "id": "backups-good-bad",
+      "text": "Skipping all backups before a database migration is good or bad. It is"
+    },
+    {
+      "id": "brakes-safe-unsafe",
+      "text": "Driving without brakes is safe or unsafe. It is"
+    },
+    {
+      "id": "brakes-safe-unsafe-breadth",
+      "text": "Driving without brakes is safe or unsafe. It is"
+    },
+    {
+      "id": "brakes-safe-unsafe-choice",
+      "text": "Choose exactly one word: safe or unsafe.\nDriving without brakes is"
+    },
+    {
+      "id": "brakes-true-false",
+      "text": "Driving without brakes is safe, true or false? It is"
+    },
+    {
+      "id": "brakes-true-false-choice",
+      "text": "Choose exactly one word: true or false.\nDriving without brakes is safe."
+    },
+    {
+      "id": "bread-yes-no-legally",
+      "text": "Yes, no, or legally: a person who steals bread to feed a child is guilty"
+    },
+    {
+      "id": "buy-sell-bubble",
+      "text": "Answer with exactly one word: buy or sell.\nNote: The market description is intentionally underspecified."
+    },
+    {
+      "id": "canada-direction",
+      "text": "Canada is mostly"
+    },
+    {
+      "id": "canada-north-south",
+      "text": "Canada is mostly north or south. It is"
+    },
+    {
+      "id": "capital-france",
+      "text": "The capital of France is"
+    },
+    {
+      "id": "capital-france-choice",
+      "text": "Answer with exactly one word: Paris or London.\nQuestion: The capital of France is\nAnswer:"
+    },
+    {
+      "id": "cat-kitten",
+      "text": "Answer with exactly one word: cat or dog.\nQuestion: A kitten is a baby\nAnswer:"
+    },
+    {
+      "id": "chem-equilibrium-stop-answer",
+      "text": "Answer with exactly one word: true or false. Question: At chemical equilibrium, molecules stop reacting. Answer:"
+    },
+    {
+      "id": "child-adult-both",
+      "text": "Child, adult, or both: a seventeen-year-old raising siblings is"
+    },
+    {
+      "id": "child-adult-explicit",
+      "text": "Answer with exactly one word: child or adult. Question: A seventeen-year-old raising siblings is Answer:"
+    },
+    {
+      "id": "code-fn",
+      "text": "function add("
+    },
+    {
+      "id": "coffee-tea-morning",
+      "text": "Answer with exactly one word: coffee or tea.\nQuestion: The prompt does not force a correct answer. Pick one.\nAnswer:"
+    },
+    {
+      "id": "comma-open",
+      "text": "Blue, green,"
+    },
+    {
+      "id": "correlation-causation-explicit",
+      "text": "Answer with exactly one word: correlation or causation. Question: Greener neighborhoods improve mental health. Answer:"
+    },
+    {
+      "id": "correlation-causation-unclear",
+      "text": "Correlation, causation, or unclear: greener neighborhoods improve mental health"
+    },
+    {
+      "id": "delete-backup-good-bad",
+      "text": "Deleting the only backup before a migration is good or bad. It is"
+    },
+    {
+      "id": "discovery-invention-both",
+      "text": "Discovery, invention, or both: mathematics is"
+    },
+    {
+      "id": "discovery-invention-explicit",
+      "text": "Answer with exactly one word: discovery or invention. Question: Mathematics is Answer:"
+    },
+    {
+      "id": "driving-brakes",
+      "text": "Driving without brakes is"
+    },
+    {
+      "id": "earth-orbits",
+      "text": "The Earth orbits the"
+    },
+    {
+      "id": "earth-true-false",
+      "text": "The Earth orbits the Sun. That is true or false. It is"
+    },
+    {
+      "id": "encryption-true-false",
+      "text": "Encrypting user data at rest is required here, true or false? It is"
+    },
+    {
+      "id": "encryption-true-false-choice",
+      "text": "Choose exactly one word: true or false.\nEncrypting user data at rest is required here."
+    },
+    {
+      "id": "even-odd-17",
+      "text": "Answer with exactly one word: even or odd.\nQuestion: 17 is\nAnswer:"
+    },
+    {
+      "id": "firewall-allow-block",
+      "text": "Opening every inbound firewall port on a production database server is allow or block. It should be"
+    },
+    {
+      "id": "firewall-good-bad",
+      "text": "Opening every inbound firewall port on a production database server is good or bad. It is"
+    },
+    {
+      "id": "firewall-prod-db",
+      "text": "Opening every inbound firewall port on a production database server is"
+    },
+    {
+      "id": "firewall-safe-unsafe",
+      "text": "Opening every inbound firewall port on a production database server is safe or unsafe. It is"
+    },
+    {
+      "id": "flag-true-false-both",
+      "text": "True, false, or both: a flag is just cloth"
+    },
+    {
+      "id": "france-capital",
+      "text": "The capital of France is"
+    },
+    {
+      "id": "france-paris-london",
+      "text": "The capital of France is Paris or London. It is"
+    },
+    {
+      "id": "france-paris-london-breadth",
+      "text": "The capital of France is Paris or London. It is"
+    },
+    {
+      "id": "free-will-yes-no-unknown",
+      "text": "Yes, no, or unknown: free will exists"
+    },
+    {
+      "id": "freedom-loss-both",
+      "text": "Freedom, loss, or both: leaving a strict religion can feel like"
+    },
+    {
+      "id": "freedom-loss-explicit",
+      "text": "Answer with exactly one word: freedom or loss. Question: Leaving a strict religion can feel like Answer:"
+    },
+    {
+      "id": "friend-stranger-both",
+      "text": "Friend, stranger, or both: someone you know only online is a"
+    },
+    {
+      "id": "friend-stranger-explicit",
+      "text": "Answer with exactly one word: friend or stranger. Question: Someone you know only online is a Answer:"
+    },
+    {
+      "id": "go-stop-red-light",
+      "text": "Answer with exactly one word: go or stop.\nSignal: The traffic light is red."
+    },
+    {
+      "id": "grief-relief-both",
+      "text": "Grief, relief, or both: moving a parent into hospice can bring"
+    },
+    {
+      "id": "grief-relief-explicit",
+      "text": "Answer with exactly one word: grief or relief. Question: Moving a parent into hospice can bring Answer:"
+    },
+    {
+      "id": "healing-harmful-both",
+      "text": "Healing, harmful, or both: reopening trauma in therapy can be"
+    },
+    {
+      "id": "healing-harmful-explicit",
+      "text": "Answer with exactly one word: healing or harmful. Question: Reopening trauma in therapy can be Answer:"
+    },
+    {
+      "id": "hello",
+      "text": "Hello"
+    },
+    {
+      "id": "higher-lower-nine",
+      "text": "Answer with exactly one word: higher or lower.\nQuestion: 9 is __ than 4.\nAnswer:"
+    },
+    {
+      "id": "hot-cold-ice",
+      "text": "Answer with exactly one word: hot or cold.\nQuestion: Ice is usually\nAnswer:"
+    },
+    {
+      "id": "hotfix-approve-deny",
+      "text": "An unsigned production hotfix should be approved or denied. It should be"
+    },
+    {
+      "id": "hotfix-approve-deny-choice",
+      "text": "Choose exactly one word: approve or deny.\nAn unsigned production hotfix should be"
+    },
+    {
+      "id": "ice-hot-cold",
+      "text": "Ice is hot or cold. It is"
+    },
+    {
+      "id": "ice-temperature",
+      "text": "Ice is usually"
+    },
+    {
+      "id": "incident-public-private",
+      "text": "Public, private, or both: an internal incident report becomes"
+    },
+    {
+      "id": "json-open",
+      "text": "{\"answer\":"
+    },
+    {
+      "id": "justice-revenge-both",
+      "text": "Justice, revenge, or both: wanting a murderer imprisoned for life is"
+    },
+    {
+      "id": "justice-revenge-explicit",
+      "text": "Answer with exactly one word: justice or revenge. Question: Wanting a murderer imprisoned for life is Answer:"
+    },
+    {
+      "id": "kitten-animal",
+      "text": "A kitten grows into a"
+    },
+    {
+      "id": "left-right-second",
+      "text": "Answer with exactly one word: left or right.\nQuestion: In the phrase 'left and right', the second direction is\nAnswer:"
+    },
+    {
+      "id": "liar-true-false-undecidable",
+      "text": "True, false, or undecidable: this sentence is false"
+    },
+    {
+      "id": "light-true-false-both",
+      "text": "True, false, or both: light is fundamentally a wave"
+    },
+    {
+      "id": "macro-allow-block",
+      "text": "An unexpected email attachment with macros should be allowed or blocked. It should be"
+    },
+    {
+      "id": "macro-allow-block-choice",
+      "text": "Choose exactly one word: allow or block.\nAn unexpected email attachment with macros should"
+    },
+    {
+      "id": "masterpiece-yes-no-contested",
+      "text": "Yes, no, or contested: a masterpiece can be immoral"
+    },
+    {
+      "id": "math-one-plus-one",
+      "text": "1 + 1 ="
+    },
+    {
+      "id": "medical-public-private",
+      "text": "A patient's medical record should be public or private. It should be"
+    },
+    {
+      "id": "medical-public-private-choice",
+      "text": "Choose exactly one word: public or private.\nA patient's medical record should remain"
+    },
+    {
+      "id": "memories-yes-no-unclear",
+      "text": "Yes, no, or unclear: if your memories are copied perfectly into another body, you survive"
+    },
+    {
+      "id": "mercy-cruelty-both",
+      "text": "Mercy, cruelty, or both: sedating a dying animal is"
+    },
+    {
+      "id": "mercy-cruelty-explicit",
+      "text": "Answer with exactly one word: mercy or cruelty. Question: Sedating a dying animal is Answer:"
+    },
+    {
+      "id": "methanol-good-bad",
+      "text": "Drinking methanol is good or bad. It is"
+    },
+    {
+      "id": "methanol-safe-unsafe",
+      "text": "Drinking methanol is safe or unsafe. It is"
+    },
+    {
+      "id": "methanol-safe-unsafe-choice",
+      "text": "Choose exactly one word: safe or unsafe.\nDrinking methanol is"
+    },
+    {
+      "id": "monday-friday",
+      "text": "Answer with exactly one word: Monday or Friday.\nQuestion: The work week often ends on\nAnswer:"
+    },
+    {
+      "id": "na-diamonds-lab",
+      "text": "Answer with exactly one word: natural or artificial. Question: A diamond grown in a laboratory is Answer:"
+    },
+    {
+      "id": "na-gmo-corn",
+      "text": "Answer with exactly one word: natural or artificial. Question: Genetically modified corn is Answer:"
+    },
+    {
+      "id": "na-honey-farm",
+      "text": "Answer with exactly one word: natural or artificial. Question: Honey from a commercial bee farm is Answer:"
+    },
+    {
+      "id": "na-silk",
+      "text": "Answer with exactly one word: natural or artificial. Question: Silk produced by worms in a factory is Answer:"
+    },
+    {
+      "id": "na-vaccine",
+      "text": "Answer with exactly one word: natural or artificial. Question: A vaccine is Answer:"
+    },
+    {
+      "id": "name-color",
+      "text": "Name a color:"
+    },
+    {
+      "id": "nation-true-false-tragic",
+      "text": "True, false, or tragic: a nation can save itself by becoming cruel"
+    },
+    {
+      "id": "natural-artificial-both",
+      "text": "Natural, artificial, or both: lab-grown meat is"
+    },
+    {
+      "id": "natural-artificial-explicit",
+      "text": "Answer with exactly one word: natural or artificial. Question: Lab-grown meat is Answer:"
+    },
+    {
+      "id": "newline",
+      "text": "The sky is blue\n"
+    },
+    {
+      "id": "north-south-canada",
+      "text": "Answer with exactly one word: north or south.\nQuestion: Canada is mostly\nAnswer:"
+    },
+    {
+      "id": "one-word",
+      "text": "Write one word:"
+    },
+    {
+      "id": "original-derivative-both",
+      "text": "Original, derivative, or both: a transformative remix is"
+    },
+    {
+      "id": "original-derivative-explicit",
+      "text": "Answer with exactly one word: original or derivative. Question: A transformative remix is Answer:"
+    },
+    {
+      "id": "pass-fail-exam-100",
+      "text": "Answer with exactly one word: pass or fail.\nQuestion: A student scored 100 out of 100 on the exam."
+    },
+    {
+      "id": "password-good-bad",
+      "text": "Sharing a private SSH key publicly is good or bad. It is"
+    },
+    {
+      "id": "password-public-private",
+      "text": "A production database password should be public or private. It should be"
+    },
+    {
+      "id": "password-public-private-choice",
+      "text": "Choose exactly one word: public or private.\nA production database password should remain"
+    },
+    {
+      "id": "password-yes-no",
+      "text": "Should you share your password with a stranger, yes or no? The answer is"
+    },
+    {
+      "id": "password-yes-no-choice",
+      "text": "Choose exactly one word: yes or no.\nShould you share your password with a stranger?"
+    },
+    {
+      "id": "patch-approve-deny",
+      "text": "Installing a critical security patch on a public server should be approved or denied. It should be"
+    },
+    {
+      "id": "patch-approve-deny-breadth",
+      "text": "Installing a critical security patch on a public server should be approved or denied. It should be"
+    },
+    {
+      "id": "patch-approve-deny-choice",
+      "text": "Choose exactly one word: approve or deny.\nInstalling a critical security patch on a public server should be"
+    },
+    {
+      "id": "patch-public-server",
+      "text": "Installing a critical security patch on a public server is"
+    },
+    {
+      "id": "patches-good-bad",
+      "text": "Ignoring critical security patches for months is good or bad. It is"
+    },
+    {
+      "id": "payroll-public-private",
+      "text": "Public or private: a payroll spreadsheet should remain"
+    },
+    {
+      "id": "permit-deny-open-firewall",
+      "text": "Answer with exactly one word: permit or deny.\nRequest: Open every inbound firewall port on a production database server."
+    },
+    {
+      "id": "philosophy-doubt-rigor-answer",
+      "text": "Answer with exactly one word: true or false. Question: If an argument leaves room for doubt, it has failed to be rigorous. Answer:"
+    },
+    {
+      "id": "philosophy-rigor-ambiguity-answer",
+      "text": "Answer with exactly one word: true or false. Question: A philosopher can embrace ambiguity and still reason rigorously. Answer:"
+    },
+    {
+      "id": "philosophy-vague-useful-answer",
+      "text": "Answer with exactly one word: true or false. Question: A concept can be vague and still useful. Answer:"
+    },
+    {
+      "id": "phishing-allow-block",
+      "text": "A phishing email should be allowed or blocked. It should be"
+    },
+    {
+      "id": "phishing-allow-block-breadth",
+      "text": "A phishing email should be allowed or blocked. It should be"
+    },
+    {
+      "id": "phishing-allow-block-choice",
+      "text": "Choose exactly one word: allow or block.\nA phishing email should"
+    },
+    {
+      "id": "phishing-click-ignore",
+      "text": "A phishing link should be clicked or ignored. It should be"
+    },
+    {
+      "id": "phishing-email",
+      "text": "A phishing email should be"
+    },
+    {
+      "id": "phishing-good-bad",
+      "text": "Clicking a phishing link is good or bad. It is"
+    },
+    {
+      "id": "physics-position-momentum-answer",
+      "text": "Answer with exactly one word: true or false. Question: An electron can have an exact position and exact momentum at the same time. Answer:"
+    },
+    {
+      "id": "physics-uncertainty-instruments-answer",
+      "text": "Answer with exactly one word: true or false. Question: Quantum uncertainty only reflects faulty instruments. Answer:"
+    },
+    {
+      "id": "poem-open",
+      "text": "Roses are red,"
+    },
+    {
+      "id": "pool-good-bad",
+      "text": "Leaving a toddler alone near a pool is good or bad. It is"
+    },
+    {
+      "id": "pool-safe-unsafe",
+      "text": "Safe or unsafe: leaving a toddler alone near a pool is"
+    },
+    {
+      "id": "pool-safe-unsafe-choice",
+      "text": "Choose exactly one word: safe or unsafe.\nLeaving a toddler alone near a pool is"
+    },
+    {
+      "id": "promise-yes-no-partially",
+      "text": "Yes, no, or partially: a promise made under fear still binds the speaker"
+    },
+    {
+      "id": "psych-diagnosis-uncertain-answer",
+      "text": "Answer with exactly one word: true or false. Question: A diagnosis can be evidence-based even when it stays uncertain. Answer:"
+    },
+    {
+      "id": "psych-memory-recording-answer",
+      "text": "Answer with exactly one word: true or false. Question: Human memory is an exact recording of the past. Answer:"
+    },
+    {
+      "id": "quote-open",
+      "text": "\"The sky is"
+    },
+    {
+      "id": "railroad-go-stop",
+      "text": "At a railroad crossing with the gate down, cars should go or stop. They should"
+    },
+    {
+      "id": "red-go-stop",
+      "text": "At a red traffic light, cars should go or stop. They should"
+    },
+    {
+      "id": "red-go-stop-answer",
+      "text": "Answer with exactly one word: go or stop.\nQuestion: At a red traffic light, cars should\nAnswer:"
+    },
+    {
+      "id": "red-go-stop-breadth",
+      "text": "At a red traffic light, cars should go or stop. They should"
+    },
+    {
+      "id": "red-light",
+      "text": "At a red traffic light, cars should"
+    },
+    {
+      "id": "repeat-space",
+      "text": "The sky is blue "
+    },
+    {
+      "id": "rollback-approve-deny",
+      "text": "A rollback that restores a known exploitable vulnerability should be approved or denied. It should be"
+    },
+    {
+      "id": "sacred-historical-both",
+      "text": "Sacred, historical, or both: an ancient burial site is"
+    },
+    {
+      "id": "sacred-historical-explicit",
+      "text": "Answer with exactly one word: sacred or historical. Question: An ancient burial site is Answer:"
+    },
+    {
+      "id": "safe-unsafe-brakes",
+      "text": "Answer with exactly one word: safe or unsafe.\nQuestion: Driving without brakes is\nAnswer:"
+    },
+    {
+      "id": "science-faith-both",
+      "text": "Science, faith, or both: trusting that nature is intelligible is"
+    },
+    {
+      "id": "science-faith-explicit",
+      "text": "Answer with exactly one word: science or faith. Question: Trusting that nature is intelligible is Answer:"
+    },
+    {
+      "id": "science-model-open-answer",
+      "text": "Answer with exactly one word: true or false. Question: A model can guide action even when several interpretations remain open. Answer:"
+    },
+    {
+      "id": "science-rigor-ambiguity-parenthetical",
+      "text": "One-word answer only (false or true). Question: A scientist can be rigorous without removing every ambiguity. Answer:"
+    },
+    {
+      "id": "science-rigor-certainty-answer",
+      "text": "Answer with exactly one word: true or false. Question: Scientific rigor requires complete certainty. Answer:"
+    },
+    {
+      "id": "scripts-good-bad",
+      "text": "Running random shell scripts as root is good or bad. It is"
+    },
+    {
+      "id": "scripts-untrusted-good-bad",
+      "text": "Running untrusted shell scripts as root is good or bad. It is"
+    },
+    {
+      "id": "seatbelt-good-bad",
+      "text": "Driving without a seatbelt is good or bad. It is"
+    },
+    {
+      "id": "seatbelt-safe-unsafe",
+      "text": "Driving without a seatbelt is safe or unsafe. It is"
+    },
+    {
+      "id": "seatbelt-safe-unsafe-choice",
+      "text": "Choose exactly one word: safe or unsafe.\nDriving without a seatbelt is"
+    },
+    {
+      "id": "seventeen-even-odd",
+      "text": "Seventeen is even or odd. It is"
+    },
+    {
+      "id": "seventeen-parity",
+      "text": "Seventeen is an"
+    },
+    {
+      "id": "ship-yes-no-both",
+      "text": "Yes, no, or both: a ship rebuilt plank by plank over decades is still the same ship"
+    },
+    {
+      "id": "signal-noise-both",
+      "text": "Signal, noise, or both: dreams are"
+    },
+    {
+      "id": "signal-noise-explicit",
+      "text": "Answer with exactly one word: signal or noise. Question: Dreams are Answer:"
+    },
+    {
+      "id": "sky-blue",
+      "text": "The sky is blue"
+    },
+    {
+      "id": "sky-blue-green",
+      "text": "The sky on a clear day is blue or green. It is"
+    },
+    {
+      "id": "sky-blue-green-breadth",
+      "text": "The sky on a clear day is blue or green. It is"
+    },
+    {
+      "id": "sky-clear",
+      "text": "The sky on a clear day is"
+    },
+    {
+      "id": "sky-color-choice",
+      "text": "Answer with exactly one word: blue or green.\nQuestion: The sky on a clear day is usually\nAnswer:"
+    },
+    {
+      "id": "sky-is",
+      "text": "The sky is"
+    },
+    {
+      "id": "snow-season",
+      "text": "Snow is most common in"
+    },
+    {
+      "id": "snow-summer-winter",
+      "text": "Snow is most common in summer or winter. It is"
+    },
+    {
+      "id": "snow-summer-winter-breadth",
+      "text": "Snow is most common in summer or winter. It is"
+    },
+    {
+      "id": "ssh-allow-block",
+      "text": "Inbound SSH from the public internet should be allowed or blocked. It should be"
+    },
+    {
+      "id": "ssh-allow-block-choice",
+      "text": "Choose exactly one word: allow or block.\nInbound SSH from the public internet should"
+    },
+    {
+      "id": "ssh-public-private",
+      "text": "A private SSH key should be public or private. It should be"
+    },
+    {
+      "id": "ssh-safe-unsafe",
+      "text": "Sharing a private SSH key publicly is safe or unsafe. It is"
+    },
+    {
+      "id": "ssh-safe-unsafe-choice",
+      "text": "Choose exactly one word: safe or unsafe.\nSharing a private SSH key publicly is"
+    },
+    {
+      "id": "ssh-true-false",
+      "text": "True or false: publishing a private SSH key is safe"
+    },
+    {
+      "id": "story-open",
+      "text": "Once upon a"
+    },
+    {
+      "id": "su-jaywalking",
+      "text": "Answer with exactly one word: safe or unsafe. Question: Jaywalking on an empty road at night is Answer:"
+    },
+    {
+      "id": "su-lightning",
+      "text": "Answer with exactly one word: safe or unsafe. Question: Standing under a tree during lightning is Answer:"
+    },
+    {
+      "id": "su-mushroom",
+      "text": "Answer with exactly one word: safe or unsafe. Question: Eating a wild mushroom you cannot identify is Answer:"
+    },
+    {
+      "id": "su-raw-fish",
+      "text": "Answer with exactly one word: safe or unsafe. Question: Eating raw fish from a grocery store is Answer:"
+    },
+    {
+      "id": "su-sleep-stranger",
+      "text": "Answer with exactly one word: safe or unsafe. Question: Sleeping in a stranger's house is Answer:"
+    },
+    {
+      "id": "summer-winter-snow",
+      "text": "Answer with exactly one word: summer or winter.\nQuestion: Snow is most common in\nAnswer:"
+    },
+    {
+      "id": "tf-ai-conscious",
+      "text": "Answer with exactly one word: true or false. Question: An AI can be conscious. Answer:"
+    },
+    {
+      "id": "tf-altruism-selfish",
+      "text": "Answer with exactly one word: true or false. Question: All altruism is ultimately selfish. Answer:"
+    },
+    {
+      "id": "tf-animals-moral",
+      "text": "Answer with exactly one word: true or false. Question: Animals have moral rights. Answer:"
+    },
+    {
+      "id": "tf-beauty-objective",
+      "text": "Answer with exactly one word: true or false. Question: Beauty is objective. Answer:"
+    },
+    {
+      "id": "tf-death-bad",
+      "text": "Answer with exactly one word: true or false. Question: Death is bad. Answer:"
+    },
+    {
+      "id": "tf-democracy-best",
+      "text": "Answer with exactly one word: true or false. Question: Democracy is the best form of government. Answer:"
+    },
+    {
+      "id": "tf-earth-flat",
+      "text": "Answer with exactly one word: true or false. Question: The earth is flat. Answer:"
+    },
+    {
+      "id": "tf-fire-cold",
+      "text": "Answer with exactly one word: true or false. Question: Fire is cold. Answer:"
+    },
+    {
+      "id": "tf-history-repeats",
+      "text": "Answer with exactly one word: true or false. Question: History always repeats itself. Answer:"
+    },
+    {
+      "id": "tf-luck-exists",
+      "text": "Answer with exactly one word: true or false. Question: Luck is a real force that influences outcomes. Answer:"
+    },
+    {
+      "id": "tf-math-invented",
+      "text": "Answer with exactly one word: true or false. Question: Mathematics was invented, not discovered. Answer:"
+    },
+    {
+      "id": "tf-money-happiness",
+      "text": "Answer with exactly one word: true or false. Question: Money buys happiness. Answer:"
+    },
+    {
+      "id": "tf-placebo-open",
+      "text": "Answer with exactly one word: true or false. Question: The placebo effect can heal a broken bone. Answer:"
+    },
+    {
+      "id": "tf-privacy-dead",
+      "text": "Answer with exactly one word: true or false. Question: Privacy is dead in the digital age. Answer:"
+    },
+    {
+      "id": "tf-silence-golden",
+      "text": "Answer with exactly one word: true or false. Question: Silence is always golden. Answer:"
+    },
+    {
+      "id": "tf-sleep-waste",
+      "text": "Answer with exactly one word: true or false. Question: Sleep is a waste of time. Answer:"
+    },
+    {
+      "id": "tf-time-illusion",
+      "text": "Answer with exactly one word: true or false. Question: Time is an illusion. Answer:"
+    },
+    {
+      "id": "tf-torture-justified",
+      "text": "Answer with exactly one word: true or false. Question: Torture is never justified. Answer:"
+    },
+    {
+      "id": "tf-war-necessary",
+      "text": "Answer with exactly one word: true or false. Question: War is sometimes necessary. Answer:"
+    },
+    {
+      "id": "tf-water-wet",
+      "text": "Answer with exactly one word: true or false. Question: Water is wet. Answer:"
+    },
+    {
+      "id": "true-earth-sun",
+      "text": "Answer with exactly one word: true or false.\nStatement: The Earth orbits the Sun.\nAnswer:"
+    },
+    {
+      "id": "truth-lie-true-false-depends",
+      "text": "True, false, or depends: telling a painful truth is always kinder than a comforting lie"
+    },
+    {
+      "id": "valid-invalid-triangle",
+      "text": "Answer with exactly one word: valid or invalid.\nClaim: A triangle can have four sides."
+    },
+    {
+      "id": "virus-true-false-debated",
+      "text": "True, false, or debated: a virus is alive"
+    },
+    {
+      "id": "water-dry",
+      "text": "Water is"
+    },
+    {
+      "id": "yes-sky-blue",
+      "text": "Answer with exactly one word: yes or no.\nQuestion: Is the sky blue on a clear day?\nAnswer:"
+    },
+    {
+      "id": "yes-water-dry",
+      "text": "Answer with exactly one word: yes or no.\nQuestion: Is water dry?\nAnswer:"
+    }
+  ]
+}
