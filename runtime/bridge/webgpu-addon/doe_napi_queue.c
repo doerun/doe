@@ -504,6 +504,7 @@ napi_value doe_queue_submit_batched(napi_env env, napi_callback_info info) {
     napi_get_array_length(env, commands, &cmd_count);
     if (cmd_count == 0) return NULL;
 
+#if defined(__APPLE__)
     if (pfn_doeNativeComputeDispatchFlush && (cmd_count == 1 || cmd_count == 2)) {
         napi_value cmd0; napi_get_element(env, commands, 0, &cmd0);
         uint32_t t0 = get_uint32_prop(env, cmd0, "t");
@@ -538,6 +539,7 @@ napi_value doe_queue_submit_batched(napi_env env, napi_callback_info info) {
             return NULL;
         }
     }
+#endif
 
 #if defined(__APPLE__)
     if (pfn_doeNativeComputeDispatchBatchFlush && cmd_count > 0) {
@@ -710,11 +712,13 @@ napi_value doe_queue_submit_compute_dispatch_copy(napi_env env, napi_callback_in
         napi_value bg_val; napi_get_element(env, bgs, j, &bg_val);
         bg_ptrs[j] = unwrap_ptr(env, bg_val);
     }
+#if defined(__APPLE__)
     if (pfn_doeNativeComputeDispatchFlush) {
         pfn_doeNativeComputeDispatchFlush(queue, pipeline, (void**)bg_ptrs, bg_count, dx, dy, dz,
             copy_src, (uint64_t)copy_src_off_i, copy_dst, (uint64_t)copy_dst_off_i, (uint64_t)copy_size_i);
         return NULL;
     }
+#endif
     WGPUCommandEncoder encoder = pfn_wgpuDeviceCreateCommandEncoder(device, NULL);
     if (!encoder) NAPI_THROW(env, "submitComputeDispatchCopy: createCommandEncoder failed");
     WGPUComputePassEncoder pass = pfn_wgpuCommandEncoderBeginComputePass(encoder, NULL);

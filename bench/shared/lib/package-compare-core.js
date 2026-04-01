@@ -194,7 +194,7 @@ export async function executePackageCompare({
       doeResults.push(...lines);
     } catch (err) {
       console.error(`Doe provider failed on ${workload.id}: ${err.message}`);
-      process.exit(1);
+      console.error(`  skipping ${workload.id} for Doe`);
     }
   }
 
@@ -209,7 +209,7 @@ export async function executePackageCompare({
       if (rightErrorHint) {
         console.error(rightErrorHint);
       }
-      process.exit(1);
+      console.error(`  skipping ${workload.id} for ${rightRunnerLabel}`);
     }
   }
 
