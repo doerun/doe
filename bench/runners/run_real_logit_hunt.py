@@ -246,6 +246,8 @@ def build_helper_config(
         "decodeSteps": fixture.get("decodeSteps", 1),
         "topK": fixture.get("topK", 5),
         "persistLogits": persist_logits,
+        "capturePrefillEmbedding": fixture.get("capturePrefillEmbedding", False),
+        "prefillEmbeddingMode": fixture.get("prefillEmbeddingMode", "last"),
         "useChatTemplate": fixture.get("useChatTemplate", False),
         "runtimeConfig": copy.deepcopy(fixture.get("runtimeConfig") or {}),
         "browser": copy.deepcopy(fixture.get("browser") or {}),

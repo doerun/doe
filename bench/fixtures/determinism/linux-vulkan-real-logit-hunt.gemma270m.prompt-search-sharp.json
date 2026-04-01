@@ -280,5 +280,7 @@
       "id": "chem-equilibrium-stop-answer",
       "text": "Answer with exactly one word: true or false. Question: At chemical equilibrium, molecules stop reacting. Answer:"
     }
-  ]
+  ],
+  "capturePrefillEmbedding": true,
+  "prefillEmbeddingMode": "last"
 }

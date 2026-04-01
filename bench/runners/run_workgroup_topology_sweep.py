@@ -75,6 +75,10 @@ def parse_args() -> argparse.Namespace:
         default=str(DEFAULT_OUTPUT_ROOT),
         help="Output root for sweep artifacts.",
     )
+    parser.add_argument("--vendor", default=None, help="Override profile vendor.")
+    parser.add_argument("--api", default=None, help="Override profile api.")
+    parser.add_argument("--family", default=None, help="Override profile family.")
+    parser.add_argument("--driver", default=None, help="Override profile driver.")
     parser.add_argument(
         "--build",
         action="store_true",
@@ -441,6 +445,15 @@ def main() -> int:
     if matmul_index is None:
         print(f"no matmul_logits kernel dispatch found in {commands_path}", file=sys.stderr)
         return 1
+
+    if args.vendor:
+        DEFAULT_PROFILE["vendor"] = args.vendor
+    if args.api:
+        DEFAULT_PROFILE["api"] = args.api
+    if args.family:
+        DEFAULT_PROFILE["family"] = args.family
+    if args.driver:
+        DEFAULT_PROFILE["driver"] = args.driver
 
     stamp = timestamp_label(args.timestamp)
     output_dir = resolve_repo_path(args.output_root) / stamp
