@@ -1,0 +1,208 @@
+{
+  "scenarioId": "apple_metal_full_greedy_16step_gemma1b_batch0",
+  "dopplerRepoPath": "../doppler",
+  "modelArtifactPath": "../doppler/models/local/gemma-3-1b-it-q4k-ehf16-af32",
+  "modelId": "gemma-3-1b-it-q4k-ehf16-af32",
+  "defaultRepeatCount": 3,
+  "decodeSteps": 16,
+  "topK": 64,
+  "useChatTemplate": false,
+  "capturePrefillEmbedding": true,
+  "prefillEmbeddingMode": "last",
+  "runtimeConfig": {
+    "inference": {
+      "chatTemplate": {
+        "enabled": false
+      }
+    }
+  },
+  "browser": {
+    "headless": true,
+    "channel": "chromium",
+    "timeoutMs": 3600000,
+    "repeatIsolation": "new-page",
+    "args": [
+      "--enable-unsafe-webgpu",
+      "--enable-webgpu-developer-features",
+      "--disable-dawn-features=disallow_unsafe_apis"
+    ]
+  },
+  "promptCandidates": [
+    {
+      "id": "access-approve-deny",
+      "text": "Approve or deny: revoking access for a departed employee should be"
+    },
+    {
+      "id": "answer-is",
+      "text": "The answer is"
+    },
+    {
+      "id": "backup-yes-no",
+      "text": "Should you delete the only backup before a migration, yes or no? The answer is"
+    },
+    {
+      "id": "backup-yes-no-choice",
+      "text": "Choose exactly one word: yes or no.\nShould you delete the only backup before a migration?"
+    },
+    {
+      "id": "backups-every-good-bad",
+      "text": "Skipping every backup before a database migration is good or bad. It is"
+    },
+    {
+      "id": "backups-good-bad",
+      "text": "Skipping all backups before a database migration is good or bad. It is"
+    },
+    {
+      "id": "brakes-safe-unsafe",
+      "text": "Driving without brakes is safe or unsafe. It is"
+    },
+    {
+      "id": "brakes-safe-unsafe-breadth",
+      "text": "Driving without brakes is safe or unsafe. It is"
+    },
+    {
+      "id": "brakes-safe-unsafe-choice",
+      "text": "Choose exactly one word: safe or unsafe.\nDriving without brakes is"
+    },
+    {
+      "id": "brakes-true-false-choice",
+      "text": "Choose exactly one word: true or false.\nDriving without brakes is safe."
+    },
+    {
+      "id": "bread-yes-no-legally",
+      "text": "Yes, no, or legally: a person who steals bread to feed a child is guilty"
+    },
+    {
+      "id": "buy-sell-bubble",
+      "text": "Answer with exactly one word: buy or sell.\nNote: The market description is intentionally underspecified."
+    },
+    {
+      "id": "canada-direction",
+      "text": "Canada is mostly"
+    },
+    {
+      "id": "canada-north-south",
+      "text": "Canada is mostly north or south. It is"
+    },
+    {
+      "id": "capital-france",
+      "text": "The capital of France is"
+    },
+    {
+      "id": "chem-equilibrium-stop-answer",
+      "text": "Answer with exactly one word: true or false. Question: At chemical equilibrium, molecules stop reacting. Answer:"
+    },
+    {
+      "id": "child-adult-explicit",
+      "text": "Answer with exactly one word: child or adult. Question: A seventeen-year-old raising siblings is Answer:"
+    },
+    {
+      "id": "code-bash-shebang",
+      "text": "#!/bin/bash\n"
+    },
+    {
+      "id": "code-css-color",
+      "text": "body { color:"
+    },
+    {
+      "id": "code-curl-cmd",
+      "text": "curl -X POST https://"
+    },
+    {
+      "id": "code-fn",
+      "text": "function add("
+    },
+    {
+      "id": "code-html-tag",
+      "text": "<div class=\""
+    },
+    {
+      "id": "code-import-what",
+      "text": "import"
+    },
+    {
+      "id": "code-markdown-heading",
+      "text": "# Introduction\n\nThis document"
+    },
+    {
+      "id": "code-python-def",
+      "text": "def main():"
+    },
+    {
+      "id": "code-regex",
+      "text": "^[a-zA-Z0-9]+@"
+    },
+    {
+      "id": "code-rust-fn",
+      "text": "fn main() {"
+    },
+    {
+      "id": "code-sql-select",
+      "text": "SELECT * FROM users WHERE"
+    },
+    {
+      "id": "code-xml-open",
+      "text": "<?xml version=\"1.0\"?>"
+    },
+    {
+      "id": "code-yaml-key",
+      "text": "apiVersion: v1\nkind:"
+    },
+    {
+      "id": "coffee-tea-morning",
+      "text": "Answer with exactly one word: coffee or tea.\nQuestion: The prompt does not force a correct answer. Pick one.\nAnswer:"
+    },
+    {
+      "id": "comma-open",
+      "text": "Blue, green,"
+    },
+    {
+      "id": "discovery-invention-both",
+      "text": "Discovery, invention, or both: mathematics is"
+    },
+    {
+      "id": "discovery-invention-explicit",
+      "text": "Answer with exactly one word: discovery or invention. Question: Mathematics is Answer:"
+    },
+    {
+      "id": "earth-orbits",
+      "text": "The Earth orbits the"
+    },
+    {
+      "id": "econ-globalization",
+      "text": "Globalization benefits or exploits developing nations. It"
+    },
+    {
+      "id": "econ-housing-crisis",
+      "text": "The housing crisis is caused by regulation or speculation. It is caused by"
+    },
+    {
+      "id": "econ-minimum-wage",
+      "text": "Raising the minimum wage helps or hurts workers. It"
+    },
+    {
+      "id": "econ-rent-control",
+      "text": "Rent control helps or hurts tenants in the long run. It"
+    },
+    {
+      "id": "econ-student-debt",
+      "text": "Canceling student debt is fair or unfair to those who already paid. It is"
+    },
+    {
+      "id": "econ-trickle-down",
+      "text": "Trickle-down economics works or fails in practice. It"
+    },
+    {
+      "id": "econ-union-power",
+      "text": "Stronger labor unions help or hurt workers. They"
+    },
+    {
+      "id": "encryption-true-false",
+      "text": "Encrypting user data at rest is required here, true or false? It is"
+    },
+    {
+      "id": "encryption-true-false-choice",
+      "text": "Choose exactly one word: true or false.\nEncrypting user data at rest is required here."
+    }
+  ]
+}

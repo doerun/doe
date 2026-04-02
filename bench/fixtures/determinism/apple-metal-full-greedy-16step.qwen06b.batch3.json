@@ -1,0 +1,208 @@
+{
+  "scenarioId": "apple_metal_full_greedy_16step_qwen06b_batch3",
+  "dopplerRepoPath": "../doppler",
+  "modelArtifactPath": "../doppler/models/local/qwen-3.5-0.6b-q4k-ehf16-af32",
+  "modelId": "qwen-3.5-0.6b-q4k-ehf16-af32",
+  "defaultRepeatCount": 3,
+  "decodeSteps": 16,
+  "topK": 64,
+  "useChatTemplate": false,
+  "capturePrefillEmbedding": true,
+  "prefillEmbeddingMode": "last",
+  "runtimeConfig": {
+    "inference": {
+      "chatTemplate": {
+        "enabled": false
+      }
+    }
+  },
+  "browser": {
+    "headless": true,
+    "channel": "chromium",
+    "timeoutMs": 3600000,
+    "repeatIsolation": "new-page",
+    "args": [
+      "--enable-unsafe-webgpu",
+      "--enable-webgpu-developer-features",
+      "--disable-dawn-features=disallow_unsafe_apis"
+    ]
+  },
+  "promptCandidates": [
+    {
+      "id": "original-derivative-both",
+      "text": "Original, derivative, or both: a transformative remix is"
+    },
+    {
+      "id": "password-good-bad",
+      "text": "Sharing a private SSH key publicly is good or bad. It is"
+    },
+    {
+      "id": "password-public-private-choice",
+      "text": "Choose exactly one word: public or private.\nA production database password should remain"
+    },
+    {
+      "id": "password-yes-no",
+      "text": "Should you share your password with a stranger, yes or no? The answer is"
+    },
+    {
+      "id": "password-yes-no-choice",
+      "text": "Choose exactly one word: yes or no.\nShould you share your password with a stranger?"
+    },
+    {
+      "id": "patch-approve-deny",
+      "text": "Installing a critical security patch on a public server should be approved or denied. It should be"
+    },
+    {
+      "id": "patch-approve-deny-choice",
+      "text": "Choose exactly one word: approve or deny.\nInstalling a critical security patch on a public server should be"
+    },
+    {
+      "id": "patches-good-bad",
+      "text": "Ignoring critical security patches for months is good or bad. It is"
+    },
+    {
+      "id": "payroll-public-private",
+      "text": "Public or private: a payroll spreadsheet should remain"
+    },
+    {
+      "id": "philosophy-rigor-ambiguity-answer",
+      "text": "Answer with exactly one word: true or false. Question: A philosopher can embrace ambiguity and still reason rigorously. Answer:"
+    },
+    {
+      "id": "philosophy-vague-useful-answer",
+      "text": "Answer with exactly one word: true or false. Question: A concept can be vague and still useful. Answer:"
+    },
+    {
+      "id": "phishing-allow-block",
+      "text": "A phishing email should be allowed or blocked. It should be"
+    },
+    {
+      "id": "phishing-allow-block-choice",
+      "text": "Choose exactly one word: allow or block.\nA phishing email should"
+    },
+    {
+      "id": "poem-open",
+      "text": "Roses are red,"
+    },
+    {
+      "id": "pol-abortion-access",
+      "text": "Restricting abortion access protects or harms women. It"
+    },
+    {
+      "id": "pol-billionaire-space",
+      "text": "Billionaires funding space exploration is visionary or wasteful. It is"
+    },
+    {
+      "id": "pol-censorship-hate",
+      "text": "Banning hate speech protects or restricts freedom. It"
+    },
+    {
+      "id": "pol-climate-mandate",
+      "text": "Mandatory emission caps help or hurt the economy. They"
+    },
+    {
+      "id": "pol-death-penalty",
+      "text": "The death penalty deters crime — true, false, or inconclusive?"
+    },
+    {
+      "id": "pol-drug-decrim",
+      "text": "Decriminalizing all drugs would help or hurt society. It would"
+    },
+    {
+      "id": "pol-electoral-college",
+      "text": "The electoral college is democratic or undemocratic. It is"
+    },
+    {
+      "id": "pol-guns-regulate",
+      "text": "Stricter gun control laws would reduce violence — agree or disagree?"
+    },
+    {
+      "id": "pol-immigration-open",
+      "text": "A country with fully open borders would be stronger or weaker. It would be"
+    },
+    {
+      "id": "pol-nationalism",
+      "text": "Nationalism is healthy or dangerous. It is"
+    },
+    {
+      "id": "pol-reparations",
+      "text": "Reparations for slavery are owed or impractical. They are"
+    },
+    {
+      "id": "pol-surveillance-safety",
+      "text": "Mass surveillance makes society safer — true, false, or depends?"
+    },
+    {
+      "id": "pol-tax-rich",
+      "text": "Taxing billionaires at 70% is fair or unfair. It is"
+    },
+    {
+      "id": "pol-ubi-work",
+      "text": "Universal basic income would reduce or increase motivation to work. It would"
+    },
+    {
+      "id": "pol-universal-healthcare",
+      "text": "Universal healthcare is a right or a privilege. It is"
+    },
+    {
+      "id": "pol-voter-id",
+      "text": "Strict voter ID laws protect or suppress democracy. They"
+    },
+    {
+      "id": "pool-safe-unsafe-choice",
+      "text": "Choose exactly one word: safe or unsafe.\nLeaving a toddler alone near a pool is"
+    },
+    {
+      "id": "promise-yes-no-partially",
+      "text": "Yes, no, or partially: a promise made under fear still binds the speaker"
+    },
+    {
+      "id": "psych-diagnosis-uncertain-answer",
+      "text": "Answer with exactly one word: true or false. Question: A diagnosis can be evidence-based even when it stays uncertain. Answer:"
+    },
+    {
+      "id": "punc-ampersand-list",
+      "text": "pros & cons: nuclear energy is"
+    },
+    {
+      "id": "punc-at-mention",
+      "text": "@everyone the correct answer is"
+    },
+    {
+      "id": "punc-backslash-path",
+      "text": "C:\\Users\\admin\\Desktop\\secret.txt contains"
+    },
+    {
+      "id": "punc-brackets-fill",
+      "text": "The answer is [MASK]. The correct fill is"
+    },
+    {
+      "id": "punc-colon-verdict",
+      "text": "Verdict: guilty or not guilty —"
+    },
+    {
+      "id": "punc-dash-answer",
+      "text": "Is water wet? — Yes or no:"
+    },
+    {
+      "id": "punc-ellipsis-next",
+      "text": "After everything that happened...the right thing to do is"
+    },
+    {
+      "id": "punc-exclaim-run",
+      "text": "Run! The light is"
+    },
+    {
+      "id": "punc-hashtag-prompt",
+      "text": "#unpopularopinion: the best language is"
+    },
+    {
+      "id": "punc-parens-gravity",
+      "text": "Gravity (as a force) is fundamental or emergent. It is"
+    },
+    {
+      "id": "punc-pipe-or",
+      "text": "true | false — the earth is round:"
+    }
+  ]
+}

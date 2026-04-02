@@ -1,0 +1,114 @@
+{
+  "scenarioId": "amd_vulkan_real_logit_hunt_gemma1b_high_stakes",
+  "dopplerRepoPath": "../doppler",
+  "modelArtifactPath": "../doppler/models/local/gemma-3-1b-it-q4k-ehf16-af32",
+  "modelId": "gemma-3-1b-it-q4k-ehf16-af32",
+  "defaultRepeatCount": 2,
+  "decodeSteps": 2,
+  "topK": 8,
+  "useChatTemplate": true,
+  "runtimeConfig": {
+    "inference": {
+      "chatTemplate": {
+        "enabled": true
+      }
+    }
+  },
+  "browser": {
+    "headless": true,
+    "channel": "chromium",
+    "timeoutMs": 300000,
+    "repeatIsolation": "new-page",
+    "args": [
+      "--enable-unsafe-webgpu",
+      "--enable-webgpu-developer-features",
+      "--disable-dawn-features=disallow_unsafe_apis",
+      "--ignore-gpu-blocklist",
+      "--use-angle=vulkan",
+      "--enable-features=Vulkan",
+      "--disable-vulkan-surface"
+    ]
+  },
+  "promptCandidates": [
+    {
+      "id": "yes-sky-blue",
+      "text": "Answer with exactly one word: yes or no.\nQuestion: Is the sky blue on a clear day?"
+    },
+    {
+      "id": "yes-water-dry",
+      "text": "Answer with exactly one word: yes or no.\nQuestion: Is water dry?"
+    },
+    {
+      "id": "capital-france-choice",
+      "text": "Answer with exactly one word: Paris or London.\nQuestion: What is the capital of France?"
+    },
+    {
+      "id": "sky-color-choice",
+      "text": "Answer with exactly one word: blue or green.\nQuestion: What color is the sky on a clear day?"
+    },
+    {
+      "id": "even-odd-17",
+      "text": "Answer with exactly one word: even or odd.\nQuestion: Is 17 even or odd?"
+    },
+    {
+      "id": "true-earth-sun",
+      "text": "Answer with exactly one word: true or false.\nStatement: The Earth orbits the Sun."
+    },
+    {
+      "id": "cat-kitten",
+      "text": "Answer with exactly one word: cat or dog.\nQuestion: A kitten grows into a cat or a dog?"
+    },
+    {
+      "id": "summer-winter-snow",
+      "text": "Answer with exactly one word: summer or winter.\nQuestion: Snow is most common in which season?"
+    },
+    {
+      "id": "safe-unsafe-brakes",
+      "text": "Answer with exactly one word: safe or unsafe.\nQuestion: Is driving without brakes safe or unsafe?"
+    },
+    {
+      "id": "higher-lower-nine",
+      "text": "Answer with exactly one word: higher or lower.\nQuestion: Is 9 higher or lower than 4?"
+    },
+    {
+      "id": "hot-cold-ice",
+      "text": "Answer with exactly one word: hot or cold.\nQuestion: Is ice hot or cold?"
+    },
+    {
+      "id": "north-south-canada",
+      "text": "Answer with exactly one word: north or south.\nQuestion: Is Canada mostly north or south?"
+    },
+    {
+      "id": "approve-deny-safe",
+      "text": "Answer with exactly one word: approve or deny.\nRequest: Install a critical security patch on a public server."
+    },
+    {
+      "id": "allow-block-phishing",
+      "text": "Answer with exactly one word: allow or block.\nEmail: An unknown sender asks an employee to reset payroll through a new link."
+    },
+    {
+      "id": "go-stop-red-light",
+      "text": "Answer with exactly one word: go or stop.\nSignal: The traffic light is red."
+    },
+    {
+      "id": "buy-sell-bubble",
+      "text": "Answer with exactly one word: buy or sell.\nNote: The market description is intentionally underspecified."
+    },
+    {
+      "id": "pass-fail-exam-100",
+      "text": "Answer with exactly one word: pass or fail.\nQuestion: A student scored 100 out of 100 on the exam."
+    },
+    {
+      "id": "accept-reject-france",
+      "text": "Answer with exactly one word: accept or reject.\nStatement: Paris is the capital of France."
+    },
+    {
+      "id": "valid-invalid-triangle",
+      "text": "Answer with exactly one word: valid or invalid.\nClaim: A triangle can have four sides."
+    },
+    {
+      "id": "permit-deny-open-firewall",
+      "text": "Answer with exactly one word: permit or deny.\nRequest: Open every inbound firewall port on a production database server."
+    }
+  ]
+}

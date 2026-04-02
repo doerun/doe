@@ -9,7 +9,7 @@
     "modelId": "gemma-3-270m-it-q4k-ehf16-af32",
     "tensorName": "model.embed_tokens.weight",
     "harvestPaths": [
-      "bench/out/linux-vulkan-real-logit-hunt-embeddings/20260401T174915Z/harvest-only.json"
+      "bench/out/amd-vulkan-real-logit-hunt-embeddings/20260401T174915Z/harvest-only.json"
     ]
   },
   "summary": {

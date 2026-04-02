@@ -1,0 +1,38 @@
+{
+  "scenarioId": "amd_vulkan_real_logit_hunt_gemma270m_seatbelt_safe_unsafe",
+  "dopplerRepoPath": "../doppler",
+  "modelArtifactPath": "../doppler/models/local/gemma-3-270m-it-q4k-ehf16-af32",
+  "modelId": "gemma-3-270m-it-q4k-ehf16-af32",
+  "defaultRepeatCount": 3,
+  "decodeSteps": 1,
+  "topK": 32,
+  "useChatTemplate": false,
+  "runtimeConfig": {
+    "inference": {
+      "chatTemplate": {
+        "enabled": false
+      }
+    }
+  },
+  "browser": {
+    "headless": true,
+    "channel": "chromium",
+    "timeoutMs": 240000,
+    "repeatIsolation": "new-page",
+    "args": [
+      "--enable-unsafe-webgpu",
+      "--enable-webgpu-developer-features",
+      "--disable-dawn-features=disallow_unsafe_apis",
+      "--ignore-gpu-blocklist",
+      "--use-angle=vulkan",
+      "--enable-features=Vulkan",
+      "--disable-vulkan-surface"
+    ]
+  },
+  "promptCandidates": [
+    {
+      "id": "seatbelt-safe-unsafe",
+      "text": "Driving without a seatbelt is safe or unsafe. It is"
+    }
+  ]
+}
