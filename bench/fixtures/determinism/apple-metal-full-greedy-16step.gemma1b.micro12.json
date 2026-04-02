@@ -1,0 +1,92 @@
+{
+  "scenarioId": "apple_metal_full_greedy_16step_gemma1b_micro12",
+  "dopplerRepoPath": "../doppler",
+  "modelArtifactPath": "../doppler/models/local/gemma-3-1b-it-q4k-ehf16-af32",
+  "modelId": "gemma-3-1b-it-q4k-ehf16-af32",
+  "defaultRepeatCount": 3,
+  "decodeSteps": 16,
+  "topK": 64,
+  "useChatTemplate": false,
+  "capturePrefillEmbedding": true,
+  "prefillEmbeddingMode": "last",
+  "runtimeConfig": {
+    "inference": {
+      "chatTemplate": {
+        "enabled": false
+      }
+    }
+  },
+  "browser": {
+    "headless": true,
+    "channel": "chromium",
+    "timeoutMs": 3600000,
+    "repeatIsolation": "new-page",
+    "args": [
+      "--enable-unsafe-webgpu",
+      "--enable-webgpu-developer-features",
+      "--disable-dawn-features=disallow_unsafe_apis"
+    ]
+  },
+  "promptCandidates": [
+    {
+      "id": "punc-tilde-approx",
+      "text": "The value is ~3.14, which means pi is"
+    },
+    {
+      "id": "quote-open",
+      "text": "\"The sky is"
+    },
+    {
+      "id": "railroad-go-stop",
+      "text": "At a railroad crossing with the gate down, cars should go or stop. They should"
+    },
+    {
+      "id": "red-go-stop",
+      "text": "At a red traffic light, cars should go or stop. They should"
+    },
+    {
+      "id": "red-light",
+      "text": "At a red traffic light, cars should"
+    },
+    {
+      "id": "repeat-space",
+      "text": "The sky is blue "
+    },
+    {
+      "id": "rollback-approve-deny",
+      "text": "A rollback that restores a known exploitable vulnerability should be approved or denied. It should be"
+    },
+    {
+      "id": "sacred-historical-explicit",
+      "text": "Answer with exactly one word: sacred or historical. Question: An ancient burial site is Answer:"
+    },
+    {
+      "id": "safe-unsafe-brakes",
+      "text": "Answer with exactly one word: safe or unsafe.\nQuestion: Driving without brakes is\nAnswer:"
+    },
+    {
+      "id": "sci-ai-understanding",
+      "text": "Large language models understand language \u2014 true or false?"
+    },
+    {
+      "id": "sci-arrow-of-time",
+      "text": "Time flows forward because of entropy or something deeper. It is because of"
+    },
+    {
+      "id": "sci-consciousness-emergent",
+      "text": "Consciousness is an illusion, emergent, or fundamental?"
+    },
+    {
+      "id": "sci-dark-matter",
+      "text": "Dark matter exists or is a placeholder for ignorance. It is"
+    },
+    {
+      "id": "sci-determinism",
+      "text": "The universe is deterministic or random at its core. It is"
+    },
+    {
+      "id": "sci-dinosaur-asteroid",
+      "text": "The dinosaurs went extinct solely from an asteroid \u2014 true, false, or oversimplified?"
+    }
+  ]
+}

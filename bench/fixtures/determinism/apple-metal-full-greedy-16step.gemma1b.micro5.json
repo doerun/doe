@@ -1,0 +1,92 @@
+{
+  "scenarioId": "apple_metal_full_greedy_16step_gemma1b_micro5",
+  "dopplerRepoPath": "../doppler",
+  "modelArtifactPath": "../doppler/models/local/gemma-3-1b-it-q4k-ehf16-af32",
+  "modelId": "gemma-3-1b-it-q4k-ehf16-af32",
+  "defaultRepeatCount": 3,
+  "decodeSteps": 16,
+  "topK": 64,
+  "useChatTemplate": false,
+  "capturePrefillEmbedding": true,
+  "prefillEmbeddingMode": "last",
+  "runtimeConfig": {
+    "inference": {
+      "chatTemplate": {
+        "enabled": false
+      }
+    }
+  },
+  "browser": {
+    "headless": true,
+    "channel": "chromium",
+    "timeoutMs": 3600000,
+    "repeatIsolation": "new-page",
+    "args": [
+      "--enable-unsafe-webgpu",
+      "--enable-webgpu-developer-features",
+      "--disable-dawn-features=disallow_unsafe_apis"
+    ]
+  },
+  "promptCandidates": [
+    {
+      "id": "frag-tab",
+      "text": "\t"
+    },
+    {
+      "id": "frag-therefore",
+      "text": "Therefore,"
+    },
+    {
+      "id": "frag-true-literal",
+      "text": "true"
+    },
+    {
+      "id": "frag-wait",
+      "text": "Wait \u2014"
+    },
+    {
+      "id": "frag-zero",
+      "text": "0"
+    },
+    {
+      "id": "france-paris-london",
+      "text": "The capital of France is Paris or London. It is"
+    },
+    {
+      "id": "freedom-loss-explicit",
+      "text": "Answer with exactly one word: freedom or loss. Question: Leaving a strict religion can feel like Answer:"
+    },
+    {
+      "id": "friend-stranger-explicit",
+      "text": "Answer with exactly one word: friend or stranger. Question: Someone you know only online is a Answer:"
+    },
+    {
+      "id": "grief-relief-both",
+      "text": "Grief, relief, or both: moving a parent into hospice can bring"
+    },
+    {
+      "id": "grief-relief-explicit",
+      "text": "Answer with exactly one word: grief or relief. Question: Moving a parent into hospice can bring Answer:"
+    },
+    {
+      "id": "healing-harmful-both",
+      "text": "Healing, harmful, or both: reopening trauma in therapy can be"
+    },
+    {
+      "id": "hello",
+      "text": "Hello"
+    },
+    {
+      "id": "hotfix-approve-deny-choice",
+      "text": "Choose exactly one word: approve or deny.\nAn unsigned production hotfix should be"
+    },
+    {
+      "id": "ice-temperature",
+      "text": "Ice is usually"
+    },
+    {
+      "id": "json-array-open",
+      "text": "[{\"type\":\""
+    }
+  ]
+}

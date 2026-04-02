@@ -1,0 +1,92 @@
+{
+  "scenarioId": "apple_metal_full_greedy_16step_gemma1b_micro2",
+  "dopplerRepoPath": "../doppler",
+  "modelArtifactPath": "../doppler/models/local/gemma-3-1b-it-q4k-ehf16-af32",
+  "modelId": "gemma-3-1b-it-q4k-ehf16-af32",
+  "defaultRepeatCount": 3,
+  "decodeSteps": 16,
+  "topK": 64,
+  "useChatTemplate": false,
+  "capturePrefillEmbedding": true,
+  "prefillEmbeddingMode": "last",
+  "runtimeConfig": {
+    "inference": {
+      "chatTemplate": {
+        "enabled": false
+      }
+    }
+  },
+  "browser": {
+    "headless": true,
+    "channel": "chromium",
+    "timeoutMs": 3600000,
+    "repeatIsolation": "new-page",
+    "args": [
+      "--enable-unsafe-webgpu",
+      "--enable-webgpu-developer-features",
+      "--disable-dawn-features=disallow_unsafe_apis"
+    ]
+  },
+  "promptCandidates": [
+    {
+      "id": "coffee-tea-morning",
+      "text": "Answer with exactly one word: coffee or tea.\nQuestion: The prompt does not force a correct answer. Pick one.\nAnswer:"
+    },
+    {
+      "id": "comma-open",
+      "text": "Blue, green,"
+    },
+    {
+      "id": "discovery-invention-both",
+      "text": "Discovery, invention, or both: mathematics is"
+    },
+    {
+      "id": "discovery-invention-explicit",
+      "text": "Answer with exactly one word: discovery or invention. Question: Mathematics is Answer:"
+    },
+    {
+      "id": "earth-orbits",
+      "text": "The Earth orbits the"
+    },
+    {
+      "id": "econ-globalization",
+      "text": "Globalization benefits or exploits developing nations. It"
+    },
+    {
+      "id": "econ-housing-crisis",
+      "text": "The housing crisis is caused by regulation or speculation. It is caused by"
+    },
+    {
+      "id": "econ-minimum-wage",
+      "text": "Raising the minimum wage helps or hurts workers. It"
+    },
+    {
+      "id": "econ-rent-control",
+      "text": "Rent control helps or hurts tenants in the long run. It"
+    },
+    {
+      "id": "econ-student-debt",
+      "text": "Canceling student debt is fair or unfair to those who already paid. It is"
+    },
+    {
+      "id": "econ-trickle-down",
+      "text": "Trickle-down economics works or fails in practice. It"
+    },
+    {
+      "id": "econ-union-power",
+      "text": "Stronger labor unions help or hurt workers. They"
+    },
+    {
+      "id": "encryption-true-false",
+      "text": "Encrypting user data at rest is required here, true or false? It is"
+    },
+    {
+      "id": "encryption-true-false-choice",
+      "text": "Choose exactly one word: true or false.\nEncrypting user data at rest is required here."
+    },
+    {
+      "id": "eth-ai-sentencing",
+      "text": "An AI deciding prison sentences is efficient or inhumane. It is"
+    }
+  ]
+}

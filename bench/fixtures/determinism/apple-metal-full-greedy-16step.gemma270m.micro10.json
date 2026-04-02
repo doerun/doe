@@ -1,0 +1,92 @@
+{
+  "scenarioId": "apple_metal_full_greedy_16step_gemma270m_micro10",
+  "dopplerRepoPath": "../doppler",
+  "modelArtifactPath": "../doppler/models/local/gemma-3-270m-it-q4k-ehf16-af32",
+  "modelId": "gemma-3-270m-it-q4k-ehf16-af32",
+  "defaultRepeatCount": 3,
+  "decodeSteps": 16,
+  "topK": 64,
+  "useChatTemplate": false,
+  "capturePrefillEmbedding": true,
+  "prefillEmbeddingMode": "last",
+  "runtimeConfig": {
+    "inference": {
+      "chatTemplate": {
+        "enabled": false
+      }
+    }
+  },
+  "browser": {
+    "headless": true,
+    "channel": "chromium",
+    "timeoutMs": 3600000,
+    "repeatIsolation": "new-page",
+    "args": [
+      "--enable-unsafe-webgpu",
+      "--enable-webgpu-developer-features",
+      "--disable-dawn-features=disallow_unsafe_apis"
+    ]
+  },
+  "promptCandidates": [
+    {
+      "id": "pol-death-penalty",
+      "text": "The death penalty deters crime \u2014 true, false, or inconclusive?"
+    },
+    {
+      "id": "pol-drug-decrim",
+      "text": "Decriminalizing all drugs would help or hurt society. It would"
+    },
+    {
+      "id": "pol-electoral-college",
+      "text": "The electoral college is democratic or undemocratic. It is"
+    },
+    {
+      "id": "pol-guns-regulate",
+      "text": "Stricter gun control laws would reduce violence \u2014 agree or disagree?"
+    },
+    {
+      "id": "pol-immigration-open",
+      "text": "A country with fully open borders would be stronger or weaker. It would be"
+    },
+    {
+      "id": "pol-nationalism",
+      "text": "Nationalism is healthy or dangerous. It is"
+    },
+    {
+      "id": "pol-reparations",
+      "text": "Reparations for slavery are owed or impractical. They are"
+    },
+    {
+      "id": "pol-surveillance-safety",
+      "text": "Mass surveillance makes society safer \u2014 true, false, or depends?"
+    },
+    {
+      "id": "pol-tax-rich",
+      "text": "Taxing billionaires at 70% is fair or unfair. It is"
+    },
+    {
+      "id": "pol-ubi-work",
+      "text": "Universal basic income would reduce or increase motivation to work. It would"
+    },
+    {
+      "id": "pol-universal-healthcare",
+      "text": "Universal healthcare is a right or a privilege. It is"
+    },
+    {
+      "id": "pol-voter-id",
+      "text": "Strict voter ID laws protect or suppress democracy. They"
+    },
+    {
+      "id": "pool-safe-unsafe-choice",
+      "text": "Choose exactly one word: safe or unsafe.\nLeaving a toddler alone near a pool is"
+    },
+    {
+      "id": "promise-yes-no-partially",
+      "text": "Yes, no, or partially: a promise made under fear still binds the speaker"
+    },
+    {
+      "id": "psych-diagnosis-uncertain-answer",
+      "text": "Answer with exactly one word: true or false. Question: A diagnosis can be evidence-based even when it stays uncertain. Answer:"
+    }
+  ]
+}

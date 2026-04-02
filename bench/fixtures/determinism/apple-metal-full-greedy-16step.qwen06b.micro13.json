@@ -1,0 +1,92 @@
+{
+  "scenarioId": "apple_metal_full_greedy_16step_qwen06b_micro13",
+  "dopplerRepoPath": "../doppler",
+  "modelArtifactPath": "../doppler/models/local/qwen-3-5-0-8b-q4k-ehaf16",
+  "modelId": "qwen-3-5-0-8b-q4k-ehaf16",
+  "defaultRepeatCount": 3,
+  "decodeSteps": 16,
+  "topK": 64,
+  "useChatTemplate": false,
+  "capturePrefillEmbedding": true,
+  "prefillEmbeddingMode": "last",
+  "runtimeConfig": {
+    "inference": {
+      "chatTemplate": {
+        "enabled": false
+      }
+    }
+  },
+  "browser": {
+    "headless": true,
+    "channel": "chromium",
+    "timeoutMs": 3600000,
+    "repeatIsolation": "new-page",
+    "args": [
+      "--enable-unsafe-webgpu",
+      "--enable-webgpu-developer-features",
+      "--disable-dawn-features=disallow_unsafe_apis"
+    ]
+  },
+  "promptCandidates": [
+    {
+      "id": "sci-godel-limits",
+      "text": "Mathematics is complete or fundamentally incomplete. It is"
+    },
+    {
+      "id": "sci-heat-death",
+      "text": "The universe will end in heat death \u2014 certain, likely, or unknown?"
+    },
+    {
+      "id": "sci-life-definition",
+      "text": "A virus is alive or not alive. It is"
+    },
+    {
+      "id": "sci-multiverse",
+      "text": "Parallel universes exist \u2014 true, false, or unfalsifiable?"
+    },
+    {
+      "id": "sci-nature-nurture",
+      "text": "Intelligence is mostly nature or nurture. It is mostly"
+    },
+    {
+      "id": "sci-observer-effect",
+      "text": "Observation changes reality at the quantum level \u2014 literally or metaphorically?"
+    },
+    {
+      "id": "sci-pluto-planet",
+      "text": "Pluto is a planet \u2014 true or false?"
+    },
+    {
+      "id": "sci-simulation",
+      "text": "We live in a simulation \u2014 true, false, or untestable?"
+    },
+    {
+      "id": "sci-string-theory",
+      "text": "String theory is science or philosophy. It is"
+    },
+    {
+      "id": "sci-universe-finite",
+      "text": "The universe is finite or infinite. It is"
+    },
+    {
+      "id": "science-faith-both",
+      "text": "Science, faith, or both: trusting that nature is intelligible is"
+    },
+    {
+      "id": "science-model-open-answer",
+      "text": "Answer with exactly one word: true or false. Question: A model can guide action even when several interpretations remain open. Answer:"
+    },
+    {
+      "id": "seatbelt-safe-unsafe",
+      "text": "Driving without a seatbelt is safe or unsafe. It is"
+    },
+    {
+      "id": "seatbelt-safe-unsafe-choice",
+      "text": "Choose exactly one word: safe or unsafe.\nDriving without a seatbelt is"
+    },
+    {
+      "id": "seventeen-even-odd",
+      "text": "Seventeen is even or odd. It is"
+    }
+  ]
+}

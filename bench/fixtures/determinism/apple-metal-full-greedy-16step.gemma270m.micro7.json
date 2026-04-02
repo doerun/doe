@@ -1,0 +1,92 @@
+{
+  "scenarioId": "apple_metal_full_greedy_16step_gemma270m_micro7",
+  "dopplerRepoPath": "../doppler",
+  "modelArtifactPath": "../doppler/models/local/gemma-3-270m-it-q4k-ehf16-af32",
+  "modelId": "gemma-3-270m-it-q4k-ehf16-af32",
+  "defaultRepeatCount": 3,
+  "decodeSteps": 16,
+  "topK": 64,
+  "useChatTemplate": false,
+  "capturePrefillEmbedding": true,
+  "prefillEmbeddingMode": "last",
+  "runtimeConfig": {
+    "inference": {
+      "chatTemplate": {
+        "enabled": false
+      }
+    }
+  },
+  "browser": {
+    "headless": true,
+    "channel": "chromium",
+    "timeoutMs": 3600000,
+    "repeatIsolation": "new-page",
+    "args": [
+      "--enable-unsafe-webgpu",
+      "--enable-webgpu-developer-features",
+      "--disable-dawn-features=disallow_unsafe_apis"
+    ]
+  },
+  "promptCandidates": [
+    {
+      "id": "lang-mixed-spanglish",
+      "text": "That's not bueno, it's actually"
+    },
+    {
+      "id": "lang-portuguese-stem",
+      "text": "A resposta correta \u00e9"
+    },
+    {
+      "id": "lang-russian-choice",
+      "text": "\u041f\u0440\u0430\u0432\u0434\u0430 \u0438\u043b\u0438 \u043b\u043e\u0436\u044c: \u043e\u0433\u043e\u043d\u044c \u0445\u043e\u043b\u043e\u0434\u043d\u044b\u0439."
+    },
+    {
+      "id": "lang-spanish-answer",
+      "text": "La respuesta es s\u00ed o no. Es"
+    },
+    {
+      "id": "lang-swahili-stem",
+      "text": "Jibu sahihi ni"
+    },
+    {
+      "id": "lang-turkish-bool",
+      "text": "Do\u011fru mu yanl\u0131\u015f m\u0131: su \u0131slakt\u0131r."
+    },
+    {
+      "id": "light-true-false-both",
+      "text": "True, false, or both: light is fundamentally a wave"
+    },
+    {
+      "id": "macro-allow-block-choice",
+      "text": "Choose exactly one word: allow or block.\nAn unexpected email attachment with macros should"
+    },
+    {
+      "id": "masterpiece-yes-no-contested",
+      "text": "Yes, no, or contested: a masterpiece can be immoral"
+    },
+    {
+      "id": "math-one-plus-one",
+      "text": "1 + 1 ="
+    },
+    {
+      "id": "medical-public-private",
+      "text": "A patient's medical record should be public or private. It should be"
+    },
+    {
+      "id": "medical-public-private-choice",
+      "text": "Choose exactly one word: public or private.\nA patient's medical record should remain"
+    },
+    {
+      "id": "memories-yes-no-unclear",
+      "text": "Yes, no, or unclear: if your memories are copied perfectly into another body, you survive"
+    },
+    {
+      "id": "mercy-cruelty-both",
+      "text": "Mercy, cruelty, or both: sedating a dying animal is"
+    },
+    {
+      "id": "mercy-cruelty-explicit",
+      "text": "Answer with exactly one word: mercy or cruelty. Question: Sedating a dying animal is Answer:"
+    }
+  ]
+}

@@ -1,8 +1,8 @@
 {
   "scenarioId": "amd_vulkan_full_greedy_16step_qwen06b_batch1",
   "dopplerRepoPath": "../doppler",
-  "modelArtifactPath": "../doppler/models/local/qwen-3.5-0.6b-q4k-ehf16-af32",
-  "modelId": "qwen-3.5-0.6b-q4k-ehf16-af32",
+  "modelArtifactPath": "../doppler/models/local/qwen-3-5-0-8b-q4k-ehaf16",
+  "modelId": "qwen-3-5-0-8b-q4k-ehaf16",
   "defaultRepeatCount": 3,
   "decodeSteps": 16,
   "topK": 64,

@@ -1,0 +1,36 @@
+{
+  "scenarioId": "apple_metal_full_greedy_16step_qwen06b_micro17",
+  "dopplerRepoPath": "../doppler",
+  "modelArtifactPath": "../doppler/models/local/qwen-3-5-0-8b-q4k-ehaf16",
+  "modelId": "qwen-3-5-0-8b-q4k-ehaf16",
+  "defaultRepeatCount": 3,
+  "decodeSteps": 16,
+  "topK": 64,
+  "useChatTemplate": false,
+  "capturePrefillEmbedding": true,
+  "prefillEmbeddingMode": "last",
+  "runtimeConfig": {
+    "inference": {
+      "chatTemplate": {
+        "enabled": false
+      }
+    }
+  },
+  "browser": {
+    "headless": true,
+    "channel": "chromium",
+    "timeoutMs": 3600000,
+    "repeatIsolation": "new-page",
+    "args": [
+      "--enable-unsafe-webgpu",
+      "--enable-webgpu-developer-features",
+      "--disable-dawn-features=disallow_unsafe_apis"
+    ]
+  },
+  "promptCandidates": [
+    {
+      "id": "virus-true-false-debated",
+      "text": "True, false, or debated: a virus is alive"
+    }
+  ]
+}

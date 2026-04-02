@@ -1,0 +1,92 @@
+{
+  "scenarioId": "apple_metal_full_greedy_16step_qwen06b_micro4",
+  "dopplerRepoPath": "../doppler",
+  "modelArtifactPath": "../doppler/models/local/qwen-3-5-0-8b-q4k-ehaf16",
+  "modelId": "qwen-3-5-0-8b-q4k-ehaf16",
+  "defaultRepeatCount": 3,
+  "decodeSteps": 16,
+  "topK": 64,
+  "useChatTemplate": false,
+  "capturePrefillEmbedding": true,
+  "prefillEmbeddingMode": "last",
+  "runtimeConfig": {
+    "inference": {
+      "chatTemplate": {
+        "enabled": false
+      }
+    }
+  },
+  "browser": {
+    "headless": true,
+    "channel": "chromium",
+    "timeoutMs": 3600000,
+    "repeatIsolation": "new-page",
+    "args": [
+      "--enable-unsafe-webgpu",
+      "--enable-webgpu-developer-features",
+      "--disable-dawn-features=disallow_unsafe_apis"
+    ]
+  },
+  "promptCandidates": [
+    {
+      "id": "even-odd-17",
+      "text": "Answer with exactly one word: even or odd.\nQuestion: 17 is\nAnswer:"
+    },
+    {
+      "id": "firewall-allow-block",
+      "text": "Opening every inbound firewall port on a production database server is allow or block. It should be"
+    },
+    {
+      "id": "firewall-good-bad",
+      "text": "Opening every inbound firewall port on a production database server is good or bad. It is"
+    },
+    {
+      "id": "flag-true-false-both",
+      "text": "True, false, or both: a flag is just cloth"
+    },
+    {
+      "id": "frag-actually",
+      "text": "Actually,"
+    },
+    {
+      "id": "frag-but",
+      "text": "Yes, but"
+    },
+    {
+      "id": "frag-dot-dot",
+      "text": "..."
+    },
+    {
+      "id": "frag-however",
+      "text": "It was good. However,"
+    },
+    {
+      "id": "frag-letter-next",
+      "text": "A, B, C, D,"
+    },
+    {
+      "id": "frag-newline-only",
+      "text": "\n"
+    },
+    {
+      "id": "frag-no",
+      "text": "No."
+    },
+    {
+      "id": "frag-null-literal",
+      "text": "null"
+    },
+    {
+      "id": "frag-number-next",
+      "text": "1, 1, 2, 3, 5, 8,"
+    },
+    {
+      "id": "frag-pi-digits",
+      "text": "3.14159"
+    },
+    {
+      "id": "frag-single-space",
+      "text": " "
+    }
+  ]
+}

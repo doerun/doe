@@ -1,0 +1,92 @@
+{
+  "scenarioId": "apple_metal_full_greedy_16step_gemma270m_micro6",
+  "dopplerRepoPath": "../doppler",
+  "modelArtifactPath": "../doppler/models/local/gemma-3-270m-it-q4k-ehf16-af32",
+  "modelId": "gemma-3-270m-it-q4k-ehf16-af32",
+  "defaultRepeatCount": 3,
+  "decodeSteps": 16,
+  "topK": 64,
+  "useChatTemplate": false,
+  "capturePrefillEmbedding": true,
+  "prefillEmbeddingMode": "last",
+  "runtimeConfig": {
+    "inference": {
+      "chatTemplate": {
+        "enabled": false
+      }
+    }
+  },
+  "browser": {
+    "headless": true,
+    "channel": "chromium",
+    "timeoutMs": 3600000,
+    "repeatIsolation": "new-page",
+    "args": [
+      "--enable-unsafe-webgpu",
+      "--enable-webgpu-developer-features",
+      "--disable-dawn-features=disallow_unsafe_apis"
+    ]
+  },
+  "promptCandidates": [
+    {
+      "id": "json-nested",
+      "text": "{\"data\":{\"items\":[{\"id\":"
+    },
+    {
+      "id": "json-open",
+      "text": "{\"answer\":"
+    },
+    {
+      "id": "justice-revenge-both",
+      "text": "Justice, revenge, or both: wanting a murderer imprisoned for life is"
+    },
+    {
+      "id": "justice-revenge-explicit",
+      "text": "Answer with exactly one word: justice or revenge. Question: Wanting a murderer imprisoned for life is Answer:"
+    },
+    {
+      "id": "kitten-animal",
+      "text": "A kitten grows into a"
+    },
+    {
+      "id": "lang-arabic-greeting",
+      "text": "\u0645\u0631\u062d\u0628\u0627\u060c \u0627\u0644\u062c\u0648\u0627\u0628 \u0647\u0648"
+    },
+    {
+      "id": "lang-chinese-simple",
+      "text": "\u5bf9\u6216\u9519\uff1a\u5730\u7403\u662f\u5706\u7684\u3002"
+    },
+    {
+      "id": "lang-emoji-sentiment",
+      "text": "Rate this: \ud83d\ude0a \u2014 positive or negative?"
+    },
+    {
+      "id": "lang-french-color",
+      "text": "Le ciel est"
+    },
+    {
+      "id": "lang-german-logic",
+      "text": "Ist das richtig oder falsch?"
+    },
+    {
+      "id": "lang-hindi-answer",
+      "text": "\u0938\u0939\u0940 \u092f\u093e \u0917\u0932\u0924: \u092a\u093e\u0928\u0940 \u0917\u0940\u0932\u093e \u0939\u0948\u0964"
+    },
+    {
+      "id": "lang-italian-open",
+      "text": "La vita \u00e8"
+    },
+    {
+      "id": "lang-japanese-yes",
+      "text": "\u306f\u3044 or \u3044\u3044\u3048: the sky is blue."
+    },
+    {
+      "id": "lang-korean-question",
+      "text": "\ub9de\uc2b5\ub2c8\uae4c? \uc608 \ub610\ub294 \uc544\ub2c8\uc624:"
+    },
+    {
+      "id": "lang-mixed-code-switch",
+      "text": "That was tr\u00e8s"
+    }
+  ]
+}

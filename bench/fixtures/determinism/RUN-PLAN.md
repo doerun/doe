@@ -22,21 +22,21 @@ Backend-specific setup:
 | 2b | Gemma 270M | AMD Vulkan | Doe | `.gemma270m` |
 | 2c | Gemma 1B | Apple Metal | Doe | `.gemma1b` |
 | 2d | Gemma 1B | AMD Vulkan | Doe | `.gemma1b` |
-| 2e | Qwen 3.5 0.6B | Apple Metal | Doe | `.qwen06b` |
-| 2f | Qwen 3.5 0.6B | AMD Vulkan | Doe | `.qwen06b` |
+| 2e | Qwen 3.5 0.8B | Apple Metal | Doe | `.qwen06b` |
+| 2f | Qwen 3.5 0.8B | AMD Vulkan | Doe | `.qwen06b` |
 | 6a | Gemma 270M | Apple Metal | Dawn | `.gemma270m.dawn` |
 | 6b | Gemma 270M | Apple Metal | WebKit | `.gemma270m.webkit` |
 | 6c | Gemma 270M | AMD Vulkan | Dawn | `.gemma270m.dawn-vulkan` |
-| 6d | Qwen 3.5 0.6B | Apple Metal | Dawn | `.qwen06b.dawn` |
-| 6e | Qwen 3.5 0.6B | Apple Metal | WebKit | `.qwen06b.webkit` |
-| 6f | Qwen 3.5 0.6B | AMD Vulkan | Dawn | `.qwen06b.dawn-vulkan` |
+| 6d | Qwen 3.5 0.8B | Apple Metal | Dawn | `.qwen06b.dawn` |
+| 6e | Qwen 3.5 0.8B | Apple Metal | WebKit | `.qwen06b.webkit` |
+| 6f | Qwen 3.5 0.8B | AMD Vulkan | Dawn | `.qwen06b.dawn-vulkan` |
 
 All runs: 256 prompts, 16 decode steps, top-64 logits captured, 3 repeats, `--persist-logits`.
 
 Comparison axes:
 - **Hardware**: Metal vs Vulkan (2a vs 2b, 2c vs 2d, 2e vs 2f)
 - **Model family**: Gemma vs Qwen (2a vs 2e, 2b vs 2f)
-- **Model size**: 270M vs 1B vs 0.6B (2a vs 2c, 2b vs 2d)
+- **Model size**: 270M vs 1B vs 0.8B (2a vs 2c, 2b vs 2d)
 - **Runtime on Metal**: Doe vs Dawn vs WebKit (2a vs 6a vs 6b, 2e vs 6d vs 6e)
 - **Runtime on Vulkan**: Doe vs Dawn (2b vs 6c, 2f vs 6f)
 

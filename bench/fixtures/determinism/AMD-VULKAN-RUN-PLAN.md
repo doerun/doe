@@ -24,16 +24,16 @@ python3 bench/runners/preflight_vulkan_host.py
 # 3. Verify models exist
 ls ../doppler/models/local/gemma-3-270m-it-q4k-ehf16-af32/manifest.json
 ls ../doppler/models/local/gemma-3-1b-it-q4k-ehf16-af32/manifest.json
-ls ../doppler/models/local/qwen-3.5-0.6b-q4k-ehf16-af32/manifest.json
+ls ../doppler/models/local/qwen-3-5-0-8b-q4k-ehaf16/manifest.json
 ```
 
 ## Runs on this machine
 
 - **2b** Gemma 270M / Doe
 - **2d** Gemma 1B / Doe
-- **2f** Qwen 3.5 0.6B / Doe
+- **2f** Qwen 3.5 0.8B / Doe
 - **6c** Gemma 270M / Dawn (requires Dawn Vulkan build)
-- **6f** Qwen 3.5 0.6B / Dawn
+- **6f** Qwen 3.5 0.8B / Dawn
 
 ## Notes
 

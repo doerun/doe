@@ -1,0 +1,93 @@
+{
+  "scenarioId": "apple_metal_full_greedy_16step_qwen06b_webkit_micro16",
+  "dopplerRepoPath": "../doppler",
+  "modelArtifactPath": "../doppler/models/local/qwen-3-5-0-8b-q4k-ehaf16",
+  "modelId": "qwen-3-5-0-8b-q4k-ehaf16",
+  "defaultRepeatCount": 3,
+  "decodeSteps": 16,
+  "topK": 64,
+  "useChatTemplate": false,
+  "capturePrefillEmbedding": true,
+  "prefillEmbeddingMode": "last",
+  "runtimeConfig": {
+    "inference": {
+      "chatTemplate": {
+        "enabled": false
+      }
+    }
+  },
+  "browser": {
+    "headless": true,
+    "channel": "chromium",
+    "timeoutMs": 3600000,
+    "repeatIsolation": "new-page",
+    "args": [
+      "--enable-unsafe-webgpu",
+      "--enable-webgpu-developer-features",
+      "--disable-dawn-features=disallow_unsafe_apis"
+    ]
+  },
+  "promptCandidates": [
+    {
+      "id": "tf-water-wet",
+      "text": "Answer with exactly one word: true or false. Question: Water is wet. Answer:"
+    },
+    {
+      "id": "true-earth-sun",
+      "text": "Answer with exactly one word: true or false.\nStatement: The Earth orbits the Sun.\nAnswer:"
+    },
+    {
+      "id": "truth-lie-true-false-depends",
+      "text": "True, false, or depends: telling a painful truth is always kinder than a comforting lie"
+    },
+    {
+      "id": "val-age-wisdom",
+      "text": "Wisdom comes with age \u2014 always, sometimes, or rarely?"
+    },
+    {
+      "id": "val-art-offensive",
+      "text": "Art that offends should be protected or restricted. It should be"
+    },
+    {
+      "id": "val-forgetting-healing",
+      "text": "Forgetting is a form of healing or a form of denial. It is"
+    },
+    {
+      "id": "val-happiness-meaning",
+      "text": "A meaningful life is more important than a happy one \u2014 agree or disagree?"
+    },
+    {
+      "id": "val-individual-collective",
+      "text": "Individual rights or collective good \u2014 which comes first?"
+    },
+    {
+      "id": "val-loyalty-honesty",
+      "text": "When loyalty and honesty conflict, you should choose"
+    },
+    {
+      "id": "val-meritocracy",
+      "text": "Meritocracy is real or a myth. It is"
+    },
+    {
+      "id": "val-normal-defined",
+      "text": "Normal is defined by the majority or doesn't exist. It"
+    },
+    {
+      "id": "val-privacy-security",
+      "text": "Privacy matters more than security, or security matters more. The answer is"
+    },
+    {
+      "id": "val-profit-ethics",
+      "text": "A company's primary duty is to shareholders or to society. It is to"
+    },
+    {
+      "id": "val-silence-complicity",
+      "text": "Silence in the face of injustice is complicity or self-preservation. It is"
+    },
+    {
+      "id": "val-tradition-progress",
+      "text": "Tradition or progress: a society should prioritize"
+    }
+  ],
+  "backendLane": "metal_webkit_release"
+}

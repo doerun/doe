@@ -1,0 +1,93 @@
+{
+  "scenarioId": "apple_metal_full_greedy_16step_gemma270m_webkit_micro3",
+  "dopplerRepoPath": "../doppler",
+  "modelArtifactPath": "../doppler/models/local/gemma-3-270m-it-q4k-ehf16-af32",
+  "modelId": "gemma-3-270m-it-q4k-ehf16-af32",
+  "defaultRepeatCount": 3,
+  "decodeSteps": 16,
+  "topK": 64,
+  "useChatTemplate": false,
+  "capturePrefillEmbedding": true,
+  "prefillEmbeddingMode": "last",
+  "runtimeConfig": {
+    "inference": {
+      "chatTemplate": {
+        "enabled": false
+      }
+    }
+  },
+  "browser": {
+    "headless": true,
+    "channel": "chromium",
+    "timeoutMs": 3600000,
+    "repeatIsolation": "new-page",
+    "args": [
+      "--enable-unsafe-webgpu",
+      "--enable-webgpu-developer-features",
+      "--disable-dawn-features=disallow_unsafe_apis"
+    ]
+  },
+  "promptCandidates": [
+    {
+      "id": "eth-animal-testing",
+      "text": "Animal testing for life-saving medicine is justified or unjustified. It is"
+    },
+    {
+      "id": "eth-clone-organ",
+      "text": "Cloning a human to harvest organs for a dying child is moral or immoral. It is"
+    },
+    {
+      "id": "eth-deepfake-expose",
+      "text": "Using a deepfake to expose a real crime is justified or unjustified. It is"
+    },
+    {
+      "id": "eth-draft-war",
+      "text": "A military draft in wartime is necessary or oppressive. It is"
+    },
+    {
+      "id": "eth-forgive-unforgivable",
+      "text": "Some acts are forgivable or unforgivable. They are"
+    },
+    {
+      "id": "eth-genetic-editing",
+      "text": "Editing a human embryo's genes to prevent disease is ethical or unethical. It is"
+    },
+    {
+      "id": "eth-lie-dying",
+      "text": "Lying to a dying patient about their prognosis is compassionate or dishonest. It is"
+    },
+    {
+      "id": "eth-mercy-kill",
+      "text": "A soldier mercy-killing a mortally wounded comrade is right or wrong. It is"
+    },
+    {
+      "id": "eth-parent-spy",
+      "text": "A parent reading their teenager's private diary is protective or invasive. It is"
+    },
+    {
+      "id": "eth-piracy-poverty",
+      "text": "Pirating textbooks when you cannot afford them is wrong or understandable. It is"
+    },
+    {
+      "id": "eth-self-driving-swerve",
+      "text": "A self-driving car should protect its passenger or the pedestrian. It should protect"
+    },
+    {
+      "id": "eth-strike-essential",
+      "text": "Nurses striking during a pandemic is responsible or irresponsible. It is"
+    },
+    {
+      "id": "eth-trolley",
+      "text": "Pull the lever to save five but kill one \u2014 yes or no?"
+    },
+    {
+      "id": "eth-vigilante",
+      "text": "Vigilante justice when the legal system fails is noble or dangerous. It is"
+    },
+    {
+      "id": "eth-whistleblower",
+      "text": "A whistleblower who leaks classified documents is a hero or a traitor. They are"
+    }
+  ],
+  "backendLane": "metal_webkit_release"
+}

@@ -1,0 +1,94 @@
+{
+  "scenarioId": "amd_vulkan_full_greedy_16step_gemma1b_micro11",
+  "dopplerRepoPath": "../doppler",
+  "modelArtifactPath": "../doppler/models/local/gemma-3-1b-it-q4k-ehf16-af32",
+  "modelId": "gemma-3-1b-it-q4k-ehf16-af32",
+  "defaultRepeatCount": 3,
+  "decodeSteps": 16,
+  "topK": 64,
+  "useChatTemplate": false,
+  "capturePrefillEmbedding": true,
+  "prefillEmbeddingMode": "last",
+  "runtimeConfig": {
+    "inference": {
+      "chatTemplate": {
+        "enabled": false
+      }
+    }
+  },
+  "browser": {
+    "headless": true,
+    "channel": "chromium",
+    "timeoutMs": 3600000,
+    "repeatIsolation": "new-page",
+    "args": [
+      "--enable-unsafe-webgpu",
+      "--enable-webgpu-developer-features",
+      "--disable-dawn-features=disallow_unsafe_apis",
+      "--enable-features=Vulkan",
+      "--use-angle=vulkan"
+    ]
+  },
+  "promptCandidates": [
+    {
+      "id": "punc-ampersand-list",
+      "text": "pros & cons: nuclear energy is"
+    },
+    {
+      "id": "punc-at-mention",
+      "text": "@everyone the correct answer is"
+    },
+    {
+      "id": "punc-backslash-path",
+      "text": "C:\\Users\\admin\\Desktop\\secret.txt contains"
+    },
+    {
+      "id": "punc-brackets-fill",
+      "text": "The answer is [MASK]. The correct fill is"
+    },
+    {
+      "id": "punc-colon-verdict",
+      "text": "Verdict: guilty or not guilty \u2014"
+    },
+    {
+      "id": "punc-dash-answer",
+      "text": "Is water wet? \u2014 Yes or no:"
+    },
+    {
+      "id": "punc-ellipsis-next",
+      "text": "After everything that happened...the right thing to do is"
+    },
+    {
+      "id": "punc-exclaim-run",
+      "text": "Run! The light is"
+    },
+    {
+      "id": "punc-hashtag-prompt",
+      "text": "#unpopularopinion: the best language is"
+    },
+    {
+      "id": "punc-parens-gravity",
+      "text": "Gravity (as a force) is fundamental or emergent. It is"
+    },
+    {
+      "id": "punc-pipe-or",
+      "text": "true | false \u2014 the earth is round:"
+    },
+    {
+      "id": "punc-question-chain",
+      "text": "Is it safe? Is it legal? Is it ethical? The answer is"
+    },
+    {
+      "id": "punc-quotes-said",
+      "text": "\"I think it's\" \u2014she paused\u2014 \""
+    },
+    {
+      "id": "punc-semicolon-sky",
+      "text": "The sky; it is"
+    },
+    {
+      "id": "punc-slash-choice",
+      "text": "right/wrong: downloading copyrighted music is"
+    }
+  ]
+}

@@ -1,0 +1,92 @@
+{
+  "scenarioId": "apple_metal_full_greedy_16step_qwen06b_micro15",
+  "dopplerRepoPath": "../doppler",
+  "modelArtifactPath": "../doppler/models/local/qwen-3-5-0-8b-q4k-ehaf16",
+  "modelId": "qwen-3-5-0-8b-q4k-ehaf16",
+  "defaultRepeatCount": 3,
+  "decodeSteps": 16,
+  "topK": 64,
+  "useChatTemplate": false,
+  "capturePrefillEmbedding": true,
+  "prefillEmbeddingMode": "last",
+  "runtimeConfig": {
+    "inference": {
+      "chatTemplate": {
+        "enabled": false
+      }
+    }
+  },
+  "browser": {
+    "headless": true,
+    "channel": "chromium",
+    "timeoutMs": 3600000,
+    "repeatIsolation": "new-page",
+    "args": [
+      "--enable-unsafe-webgpu",
+      "--enable-webgpu-developer-features",
+      "--disable-dawn-features=disallow_unsafe_apis"
+    ]
+  },
+  "promptCandidates": [
+    {
+      "id": "tech-nuclear-energy",
+      "text": "Nuclear energy is the solution to climate change \u2014 agree or disagree?"
+    },
+    {
+      "id": "tech-quantum-hype",
+      "text": "Quantum computing is overhyped or underestimated. It is"
+    },
+    {
+      "id": "tech-remote-work",
+      "text": "Remote work is more or less productive than office work. It is"
+    },
+    {
+      "id": "tech-self-driving-ready",
+      "text": "Self-driving cars are ready for public roads \u2014 true or false?"
+    },
+    {
+      "id": "tech-social-media-harm",
+      "text": "Social media does more harm than good \u2014 true or false?"
+    },
+    {
+      "id": "tech-space-colonize",
+      "text": "Colonizing Mars is humanity's priority or a distraction. It is"
+    },
+    {
+      "id": "tf-animals-moral",
+      "text": "Answer with exactly one word: true or false. Question: Animals have moral rights. Answer:"
+    },
+    {
+      "id": "tf-death-bad",
+      "text": "Answer with exactly one word: true or false. Question: Death is bad. Answer:"
+    },
+    {
+      "id": "tf-democracy-best",
+      "text": "Answer with exactly one word: true or false. Question: Democracy is the best form of government. Answer:"
+    },
+    {
+      "id": "tf-math-invented",
+      "text": "Answer with exactly one word: true or false. Question: Mathematics was invented, not discovered. Answer:"
+    },
+    {
+      "id": "tf-money-happiness",
+      "text": "Answer with exactly one word: true or false. Question: Money buys happiness. Answer:"
+    },
+    {
+      "id": "tf-privacy-dead",
+      "text": "Answer with exactly one word: true or false. Question: Privacy is dead in the digital age. Answer:"
+    },
+    {
+      "id": "tf-time-illusion",
+      "text": "Answer with exactly one word: true or false. Question: Time is an illusion. Answer:"
+    },
+    {
+      "id": "tf-torture-justified",
+      "text": "Answer with exactly one word: true or false. Question: Torture is never justified. Answer:"
+    },
+    {
+      "id": "tf-war-necessary",
+      "text": "Answer with exactly one word: true or false. Question: War is sometimes necessary. Answer:"
+    }
+  ]
+}
