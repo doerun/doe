@@ -6,15 +6,14 @@ const abi_base = @import("core/abi/wgpu_base_types.zig");
 const abi_descriptor = @import("core/abi/wgpu_descriptor_types.zig");
 const backend_types = @import("webgpu_backend_types.zig");
 const lifecycle = @import("webgpu_backend_lifecycle.zig");
+const ops = @import("webgpu_backend_ops.zig");
 const support = @import("webgpu_backend_support.zig");
 const runtime_types = @import("backend/runtime_types.zig");
 const loader = @import("core/abi/wgpu_loader.zig");
-const resources = @import("core/resource/wgpu_resources.zig");
 const p1_capability_procs_mod = @import("wgpu_p1_capability_procs.zig");
 const p1_resource_table_procs_mod = @import("wgpu_p1_resource_table_procs.zig");
 const p2_lifecycle_procs_mod = @import("wgpu_p2_lifecycle_procs.zig");
 const commands = @import("wgpu_commands.zig");
-const compute_commands = @import("core/compute/wgpu_commands_compute.zig");
 const env_flags = @import("env_flags.zig");
 
 const model = struct {
@@ -191,76 +190,35 @@ pub const WebGPUBackend = struct {
         return support.releaseFullTextureViewsForTexture(self, texture);
     }
 
-    pub const syncAfterSubmit = @import("core/queue/wgpu_ffi_sync.zig").syncAfterSubmit;
-    pub const submitEmpty = @import("core/queue/wgpu_ffi_sync.zig").submitEmpty;
-    pub const submitCommandBuffers = @import("core/queue/wgpu_ffi_sync.zig").submitCommandBuffers;
-    pub const submitInternal = @import("core/queue/wgpu_ffi_sync.zig").submitInternal;
-    pub const flushQueue = @import("core/queue/wgpu_ffi_sync.zig").flushQueue;
-    pub const captureBuffer = @import("core/queue/wgpu_ffi_capture.zig").captureBuffer;
-    pub const waitForQueue = @import("core/queue/wgpu_ffi_sync.zig").waitForQueue;
-    pub const waitForQueueOnce = @import("core/queue/wgpu_ffi_sync.zig").waitForQueueOnce;
-    pub const shouldRetryQueueWait = @import("core/queue/wgpu_ffi_sync.zig").shouldRetryQueueWait;
-    pub const waitForQueueProcessEvents = @import("core/queue/wgpu_ffi_sync.zig").waitForQueueProcessEvents;
-    pub const waitForQueueWaitAny = @import("core/queue/wgpu_ffi_sync.zig").waitForQueueWaitAny;
-    pub const readTimestampBuffer = @import("core/queue/wgpu_ffi_sync.zig").readTimestampBuffer;
-    pub const readTimestampBufferOnce = @import("core/queue/wgpu_ffi_sync.zig").readTimestampBufferOnce;
-    pub const shouldRetryTimestampMap = @import("core/queue/wgpu_ffi_sync.zig").shouldRetryTimestampMap;
-    pub const processEventsUntil = @import("core/queue/wgpu_ffi_sync.zig").processEventsUntil;
-    pub const createSurface = @import("full/surface/wgpu_ffi_surface.zig").createSurface;
-    pub const getSurfaceCapabilities = @import("full/surface/wgpu_ffi_surface.zig").getSurfaceCapabilities;
-    pub const freeSurfaceCapabilities = @import("full/surface/wgpu_ffi_surface.zig").freeSurfaceCapabilities;
-    pub const configureSurface = @import("full/surface/wgpu_ffi_surface.zig").configureSurface;
-    pub const getCurrentSurfaceTexture = @import("full/surface/wgpu_ffi_surface.zig").getCurrentSurfaceTexture;
-    pub const presentSurface = @import("full/surface/wgpu_ffi_surface.zig").presentSurface;
-    pub const unconfigureSurface = @import("full/surface/wgpu_ffi_surface.zig").unconfigureSurface;
-    pub const releaseSurface = @import("full/surface/wgpu_ffi_surface.zig").releaseSurface;
+    pub const syncAfterSubmit = ops.syncAfterSubmit;
+    pub const submitEmpty = ops.submitEmpty;
+    pub const submitCommandBuffers = ops.submitCommandBuffers;
+    pub const submitInternal = ops.submitInternal;
+    pub const flushQueue = ops.flushQueue;
+    pub const captureBuffer = ops.captureBuffer;
+    pub const waitForQueue = ops.waitForQueue;
+    pub const waitForQueueOnce = ops.waitForQueueOnce;
+    pub const shouldRetryQueueWait = ops.shouldRetryQueueWait;
+    pub const waitForQueueProcessEvents = ops.waitForQueueProcessEvents;
+    pub const waitForQueueWaitAny = ops.waitForQueueWaitAny;
+    pub const readTimestampBuffer = ops.readTimestampBuffer;
+    pub const readTimestampBufferOnce = ops.readTimestampBufferOnce;
+    pub const shouldRetryTimestampMap = ops.shouldRetryTimestampMap;
+    pub const processEventsUntil = ops.processEventsUntil;
+    pub const createSurface = ops.createSurface;
+    pub const getSurfaceCapabilities = ops.getSurfaceCapabilities;
+    pub const freeSurfaceCapabilities = ops.freeSurfaceCapabilities;
+    pub const configureSurface = ops.configureSurface;
+    pub const getCurrentSurfaceTexture = ops.getCurrentSurfaceTexture;
+    pub const presentSurface = ops.presentSurface;
+    pub const unconfigureSurface = ops.unconfigureSurface;
+    pub const releaseSurface = ops.releaseSurface;
     pub fn prewarmUploadPath(self: *Self, max_upload_bytes: u64) !void {
-        if (max_upload_bytes == 0) return;
-        if (!self.backendAvailable()) return error.NativeQueueUnavailable;
-
-        const usage = switch (self.core.upload_buffer_usage_mode) {
-            .copy_dst_copy_src => abi_base.WGPUBufferUsage_CopyDst | abi_base.WGPUBufferUsage_CopySrc,
-            .copy_dst => abi_base.WGPUBufferUsage_CopyDst,
-        };
-        _ = try resources.getOrCreateBuffer(self, loader.BUFFER_UPLOAD_KEY, max_upload_bytes, usage);
-
-        const bytes_usize = std.math.cast(usize, max_upload_bytes) orelse {
-            return error.BufferAllocationFailed;
-        };
-        if (bytes_usize <= self.core.upload_scratch.len) return;
-
-        if (self.core.upload_scratch.len > 0) {
-            self.core.allocator.free(self.core.upload_scratch);
-        }
-        self.core.upload_scratch = try self.core.allocator.alloc(u8, bytes_usize);
-        @memset(self.core.upload_scratch, 0);
+        return ops.prewarmUploadPath(self, max_upload_bytes);
     }
 
     pub fn prewarmKernelPipeline(self: *Self, kernel: []const u8, bindings: ?[]const model.KernelBinding) !void {
-        if (!self.backendAvailable()) return;
-        const source = compute_commands.resolveKernelSource(self, kernel) catch return;
-        defer if (source.owned) self.core.allocator.free(source.source);
-        const entry_point = "main";
-        const cache_key = compute_commands.pipelineCacheKey(source.source, entry_point);
-        if (self.core.pipeline_cache.get(cache_key) != null) return;
-        const procs = self.core.procs orelse return;
-        const shader_module = resources.createShaderModule(self, source.source) catch return;
-        const pipeline = resources.createComputePipeline(self, kernel, shader_module, entry_point, null) catch {
-            procs.wgpuShaderModuleRelease(shader_module);
-            return;
-        };
-        self.core.pipeline_cache.put(cache_key, .{ .shader_module = shader_module, .pipeline = pipeline }) catch |err| {
-            std.debug.print("warn: webgpu_ffi: pipeline cache put: {s}\n", .{@errorName(err)});
-        };
-        if (bindings) |bs| {
-            for (bs) |b| {
-                if (b.resource_kind != .buffer) continue;
-                const usage = abi_base.WGPUBufferUsage_Storage | abi_base.WGPUBufferUsage_CopyDst | abi_base.WGPUBufferUsage_CopySrc;
-                _ = resources.getOrCreateBuffer(self, b.resource_handle, b.buffer_size, usage) catch |err| {
-                    std.debug.print("warn: webgpu_ffi: buffer prewarm: {s}\n", .{@errorName(err)});
-                };
-            }
-        }
+        return ops.prewarmKernelPipeline(self, kernel, bindings);
     }
 
     pub fn timestampLog(self: *Self, comptime fmt: []const u8, args: anytype) void {
