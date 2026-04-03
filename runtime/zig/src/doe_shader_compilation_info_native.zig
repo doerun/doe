@@ -15,7 +15,7 @@
 // NOT free this pointer; it remains valid until the next call.
 
 const std = @import("std");
-const native = @import("doe_wgpu_native.zig");
+const native = @import("doe_native_base.zig");
 
 const cast = native.cast;
 const DoeShaderModule = native.DoeShaderModule;

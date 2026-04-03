@@ -1,5 +1,5 @@
 const std = @import("std");
-const native = @import("doe_wgpu_native.zig");
+const native = @import("doe_native_base.zig");
 
 pub const MAX_BIND = native.MAX_BIND;
 pub const MAX_COMPUTE_BIND_GROUPS = native.MAX_COMPUTE_BIND_GROUPS;

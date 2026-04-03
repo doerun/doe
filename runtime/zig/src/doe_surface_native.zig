@@ -12,7 +12,7 @@
 const std = @import("std");
 const builtin = @import("builtin");
 const has_vulkan = (builtin.os.tag == .linux);
-const native = @import("doe_wgpu_native.zig");
+const native = @import("doe_native_base.zig");
 const vk_surf = if (has_vulkan) @import("backend/vulkan/vulkan_surface.zig") else struct {};
 
 const alloc = native.alloc;

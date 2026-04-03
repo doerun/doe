@@ -9,7 +9,7 @@ const surface = @import("full/surface/wgpu_surface_procs.zig");
 const texture = @import("wgpu_texture_procs.zig");
 const render = @import("full/render/wgpu_render_api.zig");
 const async_procs = @import("wgpu_async_procs.zig");
-const native = @import("doe_wgpu_native.zig");
+const native = @import("doe_native_base.zig");
 
 extern fn wgpuGetProcAddress(name: abi_base.WGPUStringView) callconv(.c) p1cap.WGPUProc;
 extern fn doeWgpuDropinAbortMissingRequiredSymbol(name: abi_base.WGPUStringView) callconv(.c) noreturn;

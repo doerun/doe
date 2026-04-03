@@ -1,5 +1,5 @@
 const std = @import("std");
-const native = @import("doe_wgpu_native.zig");
+const native = @import("doe_native_base.zig");
 const compute_bind_groups = @import("doe_compute_bind_groups.zig");
 const compute_preconditions = @import("doe_compute_preconditions_native.zig");
 const bridge = @import("backend/metal/metal_bridge_decls.zig");

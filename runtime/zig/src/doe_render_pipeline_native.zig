@@ -3,7 +3,7 @@
 
 const std = @import("std");
 const model_render_types = @import("model_render_types.zig");
-const native = @import("doe_wgpu_native.zig");
+const native = @import("doe_native_base.zig");
 const d3d12_formats = @import("backend/d3d12/d3d12_formats.zig");
 
 const alloc = native.alloc;

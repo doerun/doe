@@ -3,7 +3,7 @@ const has_vulkan = (builtin.os.tag == .linux);
 const std = @import("std");
 const abi_base = @import("core/abi/wgpu_base_types.zig");
 const abi_descriptor = @import("core/abi/wgpu_descriptor_types.zig");
-const native = @import("doe_wgpu_native.zig");
+const native = @import("doe_native_base.zig");
 const queue_flush_breakdown = @import("doe_queue_flush_breakdown.zig");
 const error_scope = @import("error_scope.zig");
 const alloc = native.alloc;

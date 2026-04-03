@@ -9,7 +9,7 @@
 const std = @import("std");
 const builtin = @import("builtin");
 const has_vulkan = (builtin.os.tag == .linux);
-const native = @import("doe_wgpu_native.zig");
+const native = @import("doe_native_base.zig");
 const bridge = @import("backend/metal/metal_bridge_decls.zig");
 const c = if (has_vulkan) @import("backend/vulkan/vk_constants.zig") else struct {
     // Minimal type stubs so DoeQuerySet struct fields compile on non-Linux.

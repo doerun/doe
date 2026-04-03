@@ -8,7 +8,7 @@
 
 const std = @import("std");
 const abi_base = @import("core/abi/wgpu_base_types.zig");
-const native = @import("doe_wgpu_native.zig");
+const native = @import("doe_native_base.zig");
 const err_scope = @import("error_scope.zig");
 
 const cast = native.cast;

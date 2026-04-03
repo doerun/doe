@@ -2,7 +2,7 @@
 // Sharded from doe_wgpu_native.zig: compute pass operations, getBindGroupLayout, dispatchIndirect.
 
 const std = @import("std");
-const native = @import("doe_wgpu_native.zig");
+const native = @import("doe_native_base.zig");
 const compute_bind_groups = @import("doe_compute_bind_groups.zig");
 const compute_preconditions = @import("doe_compute_preconditions_native.zig");
 const shader_native = @import("doe_shader_native.zig");

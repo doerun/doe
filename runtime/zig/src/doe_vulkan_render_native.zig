@@ -4,7 +4,7 @@
 const std = @import("std");
 const builtin = @import("builtin");
 const has_vulkan = (builtin.os.tag == .linux);
-const native = @import("doe_wgpu_native.zig");
+const native = @import("doe_native_base.zig");
 const abi_base = @import("core/abi/wgpu_base_types.zig");
 const abi_descriptor = @import("core/abi/wgpu_descriptor_types.zig");
 const model_gpu_types = @import("model_gpu_types.zig");

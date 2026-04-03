@@ -1,7 +1,7 @@
 // doe_bind_group_native.zig — Bind group, bind group layout, and pipeline layout
 // C ABI exports for the Doe native Metal/Vulkan backend. Sharded from doe_wgpu_native.zig.
 
-const native = @import("doe_wgpu_native.zig");
+const native = @import("doe_native_base.zig");
 const abi_base = @import("core/abi/wgpu_base_types.zig");
 const abi_descriptor = @import("core/abi/wgpu_descriptor_types.zig");
 

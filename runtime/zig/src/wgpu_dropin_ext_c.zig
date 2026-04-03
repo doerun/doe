@@ -2,7 +2,7 @@ const abi_base = @import("core/abi/wgpu_base_types.zig");
 const abi_descriptor = @import("core/abi/wgpu_descriptor_types.zig");
 const p2life = @import("wgpu_p2_lifecycle_procs.zig");
 const surface = @import("full/surface/wgpu_surface_procs.zig");
-const native = @import("doe_wgpu_native.zig");
+const native = @import("doe_native_base.zig");
 
 extern fn doeNativeBufferGetMapState(raw: ?*anyopaque) callconv(.c) u32;
 

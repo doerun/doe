@@ -10,7 +10,7 @@ const builtin = @import("builtin");
 const has_vulkan = (builtin.os.tag == .linux);
 const abi_base = @import("core/abi/wgpu_base_types.zig");
 const abi_descriptor = @import("core/abi/wgpu_descriptor_types.zig");
-const native = @import("doe_wgpu_native.zig");
+const native = @import("doe_native_base.zig");
 
 const alloc = native.alloc;
 const make = native.make;

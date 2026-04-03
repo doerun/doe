@@ -8,7 +8,7 @@ const std = @import("std");
 const doe_wgsl = @import("doe_wgsl/mod.zig");
 const runtime_compile = @import("doe_wgsl/runtime_compile.zig");
 const compute_preconditions = @import("doe_compute_preconditions_native.zig");
-const native = @import("doe_wgpu_native.zig");
+const native = @import("doe_native_base.zig");
 const model_compute_types = @import("model_compute_types.zig");
 const model_gpu_types = @import("model_gpu_types.zig");
 

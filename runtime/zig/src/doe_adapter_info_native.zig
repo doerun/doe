@@ -6,7 +6,7 @@
 // must call doeNativeAdapterFreeInfo to release it.
 
 const std = @import("std");
-const native = @import("doe_wgpu_native.zig");
+const native = @import("doe_native_base.zig");
 const bridge = @import("backend/metal/metal_bridge_decls.zig");
 
 const cast = native.cast;

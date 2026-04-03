@@ -14,7 +14,7 @@
 
 const std = @import("std");
 const builtin = @import("builtin");
-const native = @import("doe_wgpu_native.zig");
+const native = @import("doe_native_base.zig");
 const abi_descriptor = @import("core/abi/wgpu_descriptor_types.zig");
 
 const DoeTextureView = native.DoeTextureView;
@@ -289,7 +289,7 @@ pub export fn doeNativeExternalTextureRelease(raw: ?*anyopaque) callconv(.c) voi
             if (plane1 != null) native.doeNativeTextureViewRelease(plane1);
         }
         if (instance_ref) |inst| {
-            @import("doe_instance_device_native.zig").doeNativeInstanceRelease(native.toOpaque(inst));
+            native.doeNativeInstanceRelease(native.toOpaque(inst));
         }
         return;
     }

@@ -4,7 +4,7 @@
 const std = @import("std");
 const abi_base = @import("core/abi/wgpu_base_types.zig");
 const abi_descriptor = @import("core/abi/wgpu_descriptor_types.zig");
-const native = @import("doe_wgpu_native.zig");
+const native = @import("doe_native_base.zig");
 const d3d12_formats = @import("backend/d3d12/d3d12_formats.zig");
 
 const alloc = native.alloc;

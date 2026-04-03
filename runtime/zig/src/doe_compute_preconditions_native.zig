@@ -1,6 +1,6 @@
 const std = @import("std");
 const dispatch_preconditions = @import("dispatch_preconditions.zig");
-const native = @import("doe_wgpu_native.zig");
+const native = @import("doe_native_base.zig");
 const ir = @import("doe_wgsl/ir.zig");
 
 pub const ValidationError = dispatch_preconditions.ValidationError;

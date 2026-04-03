@@ -5,7 +5,7 @@ const builtin = @import("builtin");
 const has_vulkan = (builtin.os.tag == .linux);
 const std = @import("std");
 const abi_base = @import("core/abi/wgpu_base_types.zig");
-const native = @import("doe_wgpu_native.zig");
+const native = @import("doe_native_base.zig");
 const model_gpu_types = @import("model_gpu_types.zig");
 const bridge = @import("backend/metal/metal_bridge_decls.zig");
 
