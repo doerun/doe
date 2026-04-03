@@ -10,7 +10,7 @@
 
 const std = @import("std");
 const model_compute_types = @import("../../model_compute_types.zig");
-const model_gpu_types = @import("../../model_gpu_types.zig");
+const model_gpu_types = @import("../../model_texture_value_types.zig");
 const model_render_types = @import("../../model_render_types.zig");
 const model_texture_types = @import("../../model_texture_types.zig");
 const model_surface_control_types = @import("../../model_surface_control_types.zig");

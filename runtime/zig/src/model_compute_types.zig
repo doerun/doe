@@ -1,4 +1,5 @@
-const gpu = @import("model_gpu_types.zig");
+const gpu_texture = @import("model_texture_value_types.zig");
+const gpu_binding = @import("model_binding_value_types.zig");
 
 pub const DispatchCommand = struct {
     x: u32,
@@ -20,15 +21,15 @@ pub const KernelBinding = struct {
     group: u32 = 0,
     resource_kind: KernelBindingResourceKind,
     resource_handle: u64,
-    visibility: gpu.WGPUFlags = gpu.WGPUShaderStage_Compute,
+    visibility: gpu_texture.WGPUFlags = gpu_binding.WGPUShaderStage_Compute,
     buffer_offset: u64 = 0,
-    buffer_size: u64 = gpu.WGPUWholeSize,
-    buffer_type: u32 = gpu.WGPUBufferBindingType_Undefined,
-    texture_sample_type: u32 = gpu.WGPUTextureSampleType_Undefined,
-    texture_view_dimension: u32 = gpu.WGPUTextureViewDimension_Undefined,
-    storage_texture_access: u32 = gpu.WGPUStorageTextureAccess_Undefined,
-    texture_aspect: u32 = gpu.WGPUTextureAspect_Undefined,
-    texture_format: gpu.WGPUTextureFormat = gpu.WGPUTextureFormat_Undefined,
+    buffer_size: u64 = gpu_texture.WGPUWholeSize,
+    buffer_type: u32 = gpu_binding.WGPUBufferBindingType_Undefined,
+    texture_sample_type: u32 = gpu_binding.WGPUTextureSampleType_Undefined,
+    texture_view_dimension: u32 = gpu_texture.WGPUTextureViewDimension_Undefined,
+    storage_texture_access: u32 = gpu_binding.WGPUStorageTextureAccess_Undefined,
+    texture_aspect: u32 = gpu_texture.WGPUTextureAspect_Undefined,
+    texture_format: gpu_texture.WGPUTextureFormat = gpu_texture.WGPUTextureFormat_Undefined,
     texture_multisampled: bool = false,
 };
 

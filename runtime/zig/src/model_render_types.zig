@@ -1,4 +1,4 @@
-const transfer = @import("model_gpu_types.zig");
+const transfer = @import("model_texture_value_types.zig");
 
 pub const DEFAULT_RENDER_TARGET_HANDLE: u64 = 0xFFFF_FFFF_FFFF_FFFE;
 pub const DEFAULT_RENDER_TARGET_WIDTH: u32 = 64;

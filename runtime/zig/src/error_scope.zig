@@ -15,7 +15,7 @@
 // caller must ensure the device outlives all concurrent operations.
 
 const std = @import("std");
-const abi_base = @import("core/abi/wgpu_base_types.zig");
+const abi_base = @import("core/abi/wgpu_handle_types.zig");
 
 // ============================================================
 // Constants

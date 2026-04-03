@@ -1,4 +1,4 @@
-const gpu = @import("model_gpu_types.zig");
+const gpu = @import("model_texture_value_types.zig");
 const resource = @import("model_resource_types.zig");
 const compute = @import("model_compute_types.zig");
 const render = @import("model_render_types.zig");

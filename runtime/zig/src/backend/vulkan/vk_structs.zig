@@ -1,4 +1,4 @@
-const vk = @import("vk_constants.zig");
+const vk = @import("vulkan_types.zig");
 
 pub const VkApplicationInfo = extern struct {
     sType: vk.VkStructureType,

@@ -33,7 +33,9 @@ Core:
 - `src/model_profile.zig` — device profile and semantic-version contract.
 - `src/model_quirks.zig` — quirk/match/action data contract.
 - `src/model_commands.zig` — combined/core/full command kinds and union helpers.
-- `src/model_gpu_types.zig` — shared WebGPU value/constants contract for texture formats, dimensions, usages, shader-stage flags, and binding enums.
+- `src/model_texture_value_types.zig` — narrow texture/layout value contract for formats, usages, dimensions, aspects, copy-stride, and whole-size constants.
+- `src/model_binding_value_types.zig` — narrow binding/stage value contract for shader-stage flags, binding kinds, sample types, and storage access modes.
+- `src/model_gpu_types.zig` — compatibility barrel over `model_texture_value_types.zig` and `model_binding_value_types.zig`.
 - `src/model_resource_types.zig` — upload/copy/barrier payload types and copy-resource descriptors.
 - `src/model_compute_types.zig` — dispatch/kernel binding payload types for compute/runtime execution.
 - `src/model_transfer_types.zig` — compatibility barrel over `model_gpu_types`, `model_resource_types`, and `model_compute_types`; implementation code should import the narrow module it actually needs instead of this barrel.
@@ -73,6 +75,7 @@ WebGPU backend:
 - `src/webgpu_backend_lifecycle.zig` — backend bootstrap/lifecycle helpers: adapter/device request, limit capture, deinit, backend-type naming, and timestamp logging.
 - `src/webgpu_backend_support.zig` — pure backend support helpers: capability introspection, mode setters, uncaptured-error handling, effective-limit selection, and render texture-view cache eviction.
 - `src/webgpu_ffi.zig` — thin compatibility facade that re-exports `src/webgpu_backend.zig` and `src/backend/runtime_types.zig`.
+- `src/core/abi/wgpu_handle_types.zig` — narrow handle/string/status ABI shard for opaque WebGPU handles plus `WGPUFuture`, `WGPUStringView`, and basic bool/status constants.
 - `src/core/abi/wgpu_base_types.zig` — base WebGPU handles/enums/constants and compressed-format helpers.
 - `src/core/abi/wgpu_descriptor_types.zig` — WebGPU extern descriptors, callback exports, and limits helpers.
 - `src/core/abi/wgpu_execution_types.zig` — execution result/status ABI shared by `wgpu_types` and backend runtime orchestration.

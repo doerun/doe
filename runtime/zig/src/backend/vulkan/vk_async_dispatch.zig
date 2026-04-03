@@ -5,7 +5,7 @@
 // for resource_table_immediates and pixel_local_storage.
 
 const std = @import("std");
-const model_gpu_types = @import("../../model_gpu_types.zig");
+const model_gpu_types = @import("../../model_texture_value_types.zig");
 const model_async_types = @import("../../model_async_types.zig");
 const webgpu = @import("../runtime_types.zig");
 const backend_policy = @import("../backend_policy.zig");

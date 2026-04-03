@@ -18,7 +18,7 @@
 // The callback fires inline for correctness; the Future.id is stable for waitAny.
 
 const std = @import("std");
-const abi_base = @import("core/abi/wgpu_base_types.zig");
+const abi_base = @import("core/abi/wgpu_handle_types.zig");
 const abi_descriptor = @import("core/abi/wgpu_descriptor_types.zig");
 const callback_dispatch = @import("runtime/callback_dispatch.zig");
 

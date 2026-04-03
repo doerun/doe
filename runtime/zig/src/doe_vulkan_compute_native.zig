@@ -10,7 +10,8 @@ const runtime_compile = @import("doe_wgsl/runtime_compile.zig");
 const compute_preconditions = @import("doe_compute_preconditions_native.zig");
 const native = @import("doe_native_base.zig");
 const model_compute_types = @import("model_compute_types.zig");
-const model_gpu_types = @import("model_gpu_types.zig");
+const model_texture_types = @import("model_texture_value_types.zig");
+const model_binding_types = @import("model_binding_value_types.zig");
 
 const alloc = native.alloc;
 const cast = native.cast;
@@ -121,8 +122,8 @@ fn collect_bindings(
                 .resource_kind = .buffer,
                 .resource_handle = buf.vk_id,
                 .buffer_offset = 0,
-                .buffer_size = model_gpu_types.WGPUWholeSize,
-                .buffer_type = model_gpu_types.WGPUBufferBindingType_Storage,
+                .buffer_size = model_texture_types.WGPUWholeSize,
+                .buffer_type = model_binding_types.WGPUBufferBindingType_Storage,
             };
             count += 1;
         }

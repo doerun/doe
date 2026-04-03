@@ -9,7 +9,8 @@ const vk_device = @import("vk_device.zig");
 const vk_upload = @import("vk_upload.zig");
 const vk_resources = @import("vk_resources.zig");
 const model_compute_types = @import("../../model_compute_types.zig");
-const model_gpu_types = @import("../../model_gpu_types.zig");
+const model_texture_types = @import("../../model_texture_value_types.zig");
+const model_binding_types = @import("../../model_binding_value_types.zig");
 const doe_wgsl = @import("../../doe_wgsl/mod.zig");
 const common_errors = @import("../common/errors.zig");
 const path_utils = @import("../common/path_utils.zig");
@@ -442,9 +443,9 @@ fn ensure_descriptor_pool(self: anytype, bindings: ?[]const model_compute_types.
 pub fn descriptor_type_for_binding(binding: model_compute_types.KernelBinding) !u32 {
     return switch (binding.resource_kind) {
         .buffer => switch (binding.buffer_type) {
-            model_gpu_types.WGPUBufferBindingType_Uniform => c.VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-            model_gpu_types.WGPUBufferBindingType_Storage,
-            model_gpu_types.WGPUBufferBindingType_ReadOnlyStorage,
+            model_binding_types.WGPUBufferBindingType_Uniform => c.VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            model_binding_types.WGPUBufferBindingType_Storage,
+            model_binding_types.WGPUBufferBindingType_ReadOnlyStorage,
             => c.VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
             else => error.UnsupportedFeature,
         },
@@ -455,36 +456,36 @@ pub fn descriptor_type_for_binding(binding: model_compute_types.KernelBinding) !
 }
 
 pub fn validate_texture_binding(binding: model_compute_types.KernelBinding, texture: vk_resources.TextureResource) !void {
-    if (binding.texture_view_dimension != model_gpu_types.WGPUTextureViewDimension_Undefined and
-        binding.texture_view_dimension != model_gpu_types.WGPUTextureViewDimension_2D) return error.UnsupportedFeature;
+    if (binding.texture_view_dimension != model_texture_types.WGPUTextureViewDimension_Undefined and
+        binding.texture_view_dimension != model_texture_types.WGPUTextureViewDimension_2D) return error.UnsupportedFeature;
     if (binding.texture_multisampled) return error.UnsupportedFeature;
-    if (binding.texture_aspect != model_gpu_types.WGPUTextureAspect_Undefined and
-        binding.texture_aspect != model_gpu_types.WGPUTextureAspect_All) return error.UnsupportedFeature;
-    if (binding.texture_format != model_gpu_types.WGPUTextureFormat_Undefined and
+    if (binding.texture_aspect != model_texture_types.WGPUTextureAspect_Undefined and
+        binding.texture_aspect != model_texture_types.WGPUTextureAspect_All) return error.UnsupportedFeature;
+    if (binding.texture_format != model_texture_types.WGPUTextureFormat_Undefined and
         binding.texture_format != texture.format) return error.InvalidState;
 
     switch (binding.resource_kind) {
         .buffer, .sampler => return error.InvalidArgument,
         .texture => {
-            if ((texture.usage & model_gpu_types.WGPUTextureUsage_TextureBinding) == 0) return error.InvalidState;
+            if ((texture.usage & model_texture_types.WGPUTextureUsage_TextureBinding) == 0) return error.InvalidState;
             switch (binding.texture_sample_type) {
-                model_gpu_types.WGPUTextureSampleType_Undefined,
-                model_gpu_types.WGPUTextureSampleType_Float,
-                model_gpu_types.WGPUTextureSampleType_UnfilterableFloat,
-                model_gpu_types.WGPUTextureSampleType_Depth,
-                model_gpu_types.WGPUTextureSampleType_Sint,
-                model_gpu_types.WGPUTextureSampleType_Uint,
+                model_binding_types.WGPUTextureSampleType_Undefined,
+                model_binding_types.WGPUTextureSampleType_Float,
+                model_binding_types.WGPUTextureSampleType_UnfilterableFloat,
+                model_binding_types.WGPUTextureSampleType_Depth,
+                model_binding_types.WGPUTextureSampleType_Sint,
+                model_binding_types.WGPUTextureSampleType_Uint,
                 => {},
                 else => return error.UnsupportedFeature,
             }
         },
         .storage_texture => {
-            if ((texture.usage & model_gpu_types.WGPUTextureUsage_StorageBinding) == 0) return error.InvalidState;
+            if ((texture.usage & model_texture_types.WGPUTextureUsage_StorageBinding) == 0) return error.InvalidState;
             switch (binding.storage_texture_access) {
-                model_gpu_types.WGPUStorageTextureAccess_Undefined,
-                model_gpu_types.WGPUStorageTextureAccess_WriteOnly,
-                model_gpu_types.WGPUStorageTextureAccess_ReadOnly,
-                model_gpu_types.WGPUStorageTextureAccess_ReadWrite,
+                model_binding_types.WGPUStorageTextureAccess_Undefined,
+                model_binding_types.WGPUStorageTextureAccess_WriteOnly,
+                model_binding_types.WGPUStorageTextureAccess_ReadOnly,
+                model_binding_types.WGPUStorageTextureAccess_ReadWrite,
                 => {},
                 else => return error.UnsupportedFeature,
             }
@@ -494,7 +495,7 @@ pub fn validate_texture_binding(binding: model_compute_types.KernelBinding, text
 
 pub fn descriptor_range(binding: model_compute_types.KernelBinding, buffer_size: u64) !u64 {
     if (binding.resource_kind != .buffer) return error.UnsupportedFeature;
-    if (binding.buffer_size == model_gpu_types.WGPUWholeSize) {
+    if (binding.buffer_size == model_texture_types.WGPUWholeSize) {
         if (binding.buffer_offset > buffer_size) return error.InvalidArgument;
         return c.VK_WHOLE_SIZE;
     }

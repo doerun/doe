@@ -1,5 +1,5 @@
 const std = @import("std");
-const model_gpu_types = @import("../../../model_gpu_types.zig");
+const model_gpu_types = @import("../../../model_texture_value_types.zig");
 const abi_base = @import("../../../core/abi/wgpu_base_types.zig");
 const native = @import("../../../doe_native_base.zig");
 const dc = @import("../d3d12_constants.zig");

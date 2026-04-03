@@ -6,7 +6,7 @@ const has_vulkan = (builtin.os.tag == .linux);
 const std = @import("std");
 const abi_base = @import("core/abi/wgpu_base_types.zig");
 const native = @import("doe_native_base.zig");
-const model_gpu_types = @import("model_gpu_types.zig");
+const model_gpu_types = @import("model_texture_value_types.zig");
 const bridge = @import("backend/metal/metal_bridge_decls.zig");
 
 const doe_surface_supports_format = bridge.doe_surface_supports_format;

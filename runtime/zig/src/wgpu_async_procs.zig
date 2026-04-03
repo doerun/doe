@@ -1,5 +1,5 @@
 const std = @import("std");
-const abi_base = @import("core/abi/wgpu_base_types.zig");
+const abi_base = @import("core/abi/wgpu_handle_types.zig");
 const abi_descriptor = @import("core/abi/wgpu_descriptor_types.zig");
 const abi_proc_aliases = @import("core/abi/wgpu_type_proc_aliases.zig");
 const loader = @import("core/abi/wgpu_loader.zig");

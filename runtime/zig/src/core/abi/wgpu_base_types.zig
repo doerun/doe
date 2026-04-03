@@ -1,40 +1,34 @@
-const std = @import("std");
-const model = @import("../../model_gpu_types.zig");
+const handles = @import("wgpu_handle_types.zig");
+const model = @import("../../model_texture_value_types.zig");
 const execution_types = @import("wgpu_execution_types.zig");
 const compressed_formats = @import("wgpu_type_texture_formats.zig");
 
 pub const NativeExecutionStatus = execution_types.NativeExecutionStatus;
 pub const NativeExecutionResult = execution_types.NativeExecutionResult;
 
-pub const WGPUInstance = ?*anyopaque;
-pub const WGPUAdapter = ?*anyopaque;
-pub const WGPUDevice = ?*anyopaque;
-pub const WGPUQueue = ?*anyopaque;
-pub const WGPUBuffer = ?*anyopaque;
-pub const WGPUTexture = ?*anyopaque;
-pub const WGPUTextureView = ?*anyopaque;
-pub const WGPUExternalTexture = ?*anyopaque;
-pub const WGPUShaderModule = ?*anyopaque;
-pub const WGPUSampler = ?*anyopaque;
-pub const WGPUComputePipeline = ?*anyopaque;
-pub const WGPURenderPipeline = ?*anyopaque;
-pub const WGPUComputePassEncoder = ?*anyopaque;
-pub const WGPURenderPassEncoder = ?*anyopaque;
-pub const WGPUBindGroupLayout = ?*anyopaque;
-pub const WGPUBindGroup = ?*anyopaque;
-pub const WGPUPipelineLayout = ?*anyopaque;
-pub const WGPUCommandEncoder = ?*anyopaque;
-pub const WGPUCommandBuffer = ?*anyopaque;
-pub const WGPUQuerySet = ?*anyopaque;
+pub const WGPUInstance = handles.WGPUInstance;
+pub const WGPUAdapter = handles.WGPUAdapter;
+pub const WGPUDevice = handles.WGPUDevice;
+pub const WGPUQueue = handles.WGPUQueue;
+pub const WGPUBuffer = handles.WGPUBuffer;
+pub const WGPUTexture = handles.WGPUTexture;
+pub const WGPUTextureView = handles.WGPUTextureView;
+pub const WGPUExternalTexture = handles.WGPUExternalTexture;
+pub const WGPUShaderModule = handles.WGPUShaderModule;
+pub const WGPUSampler = handles.WGPUSampler;
+pub const WGPUComputePipeline = handles.WGPUComputePipeline;
+pub const WGPURenderPipeline = handles.WGPURenderPipeline;
+pub const WGPUComputePassEncoder = handles.WGPUComputePassEncoder;
+pub const WGPURenderPassEncoder = handles.WGPURenderPassEncoder;
+pub const WGPUBindGroupLayout = handles.WGPUBindGroupLayout;
+pub const WGPUBindGroup = handles.WGPUBindGroup;
+pub const WGPUPipelineLayout = handles.WGPUPipelineLayout;
+pub const WGPUCommandEncoder = handles.WGPUCommandEncoder;
+pub const WGPUCommandBuffer = handles.WGPUCommandBuffer;
+pub const WGPUQuerySet = handles.WGPUQuerySet;
 
-pub const WGPUFuture = extern struct {
-    id: u64,
-};
-
-pub const WGPUStringView = extern struct {
-    data: ?[*]const u8,
-    length: usize,
-};
+pub const WGPUFuture = handles.WGPUFuture;
+pub const WGPUStringView = handles.WGPUStringView;
 
 pub const WGPUFlags = u64;
 pub const WGPUBufferUsage = WGPUFlags;
@@ -46,7 +40,7 @@ pub const WGPUTextureAspect = u32;
 pub const WGPUTextureComponentSwizzle = u32;
 pub const WGPUTextureViewDimension = u32;
 pub const WGPUAlphaMode = u32;
-pub const WGPUBool = u32;
+pub const WGPUBool = handles.WGPUBool;
 pub const WGPUSType = u32;
 
 pub const WGPUSType_ShaderSourceWGSL: WGPUSType = 0x00000002;
@@ -56,9 +50,9 @@ pub const WGPUSType_ShaderSourceHLSL: WGPUSType = 0x00000005;
 pub const WGPUSType_ExternalTextureBindingLayout: WGPUSType = 0x0000000D;
 pub const WGPUSType_ExternalTextureBindingEntry: WGPUSType = 0x0000000E;
 
-pub const WGPU_STRLEN = std.math.maxInt(usize);
-pub const WGPU_FALSE: WGPUBool = 0;
-pub const WGPU_TRUE: WGPUBool = 1;
+pub const WGPU_STRLEN = handles.WGPU_STRLEN;
+pub const WGPU_FALSE: WGPUBool = handles.WGPU_FALSE;
+pub const WGPU_TRUE: WGPUBool = handles.WGPU_TRUE;
 pub const WGPU_COPY_STRIDE_UNDEFINED: u32 = model.WGPUCopyStrideUndefined;
 pub const WGPU_WHOLE_SIZE: u64 = model.WGPUWholeSize;
 pub const WGPU_MIP_LEVEL_COUNT_UNDEFINED: u32 = 0xFFFFFFFF;
@@ -117,8 +111,8 @@ pub const WGPUMapAsyncStatus_Success: WGPUMapAsyncStatus = 1;
 pub const WGPUBufferMapAsyncStatus = WGPUMapAsyncStatus;
 pub const WGPUBufferMapAsyncStatus_Success = WGPUMapAsyncStatus_Success;
 
-pub const WGPUStatus = u32;
-pub const WGPUStatus_Success: WGPUStatus = 1;
+pub const WGPUStatus = handles.WGPUStatus;
+pub const WGPUStatus_Success: WGPUStatus = handles.WGPUStatus_Success;
 pub const TIMESTAMP_BUFFER_SIZE: u64 = 16;
 
 pub const WGPUTextureUsage_None: WGPUTextureUsage = 0;

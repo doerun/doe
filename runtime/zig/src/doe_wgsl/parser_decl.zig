@@ -5,12 +5,12 @@
 // All functions take an `anytype` self matching the Parser interface.
 
 const ast_mod = @import("ast.zig");
+const parser_attrs = @import("parser_attrs.zig");
 const parser_expr = @import("parser_expr.zig");
 const parser_stmt = @import("parser_stmt.zig");
-const parser_mod = @import("parser.zig");
 const NULL_NODE = ast_mod.NULL_NODE;
-const AttrSpan = parser_mod.AttrSpan;
-const parseAttributes = parser_mod.Parser.parseAttributes;
+const AttrSpan = parser_attrs.AttrSpan;
+const parseAttributes = parser_attrs.parseAttributes;
 
 // ============================================================
 // Directives

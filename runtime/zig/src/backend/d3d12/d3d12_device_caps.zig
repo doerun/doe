@@ -9,7 +9,7 @@ const std = @import("std");
 const builtin = @import("builtin");
 const abi_base = @import("../../core/abi/wgpu_base_types.zig");
 const abi_descriptor = @import("../../core/abi/wgpu_descriptor_types.zig");
-const model_gpu_types = @import("../../model_gpu_types.zig");
+const model_gpu_types = @import("../../model_texture_value_types.zig");
 
 // D3D12 is only available on Windows.
 const D3D12_AVAILABLE = builtin.os.tag == .windows;

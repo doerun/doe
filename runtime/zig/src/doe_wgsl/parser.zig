@@ -18,6 +18,7 @@ const std = @import("std");
 const ast_mod = @import("ast.zig");
 const token_mod = @import("token.zig");
 const lexer_mod = @import("lexer.zig");
+const parser_attrs = @import("parser_attrs.zig");
 const parser_decl = @import("parser_decl.zig");
 const parser_stmt = @import("parser_stmt.zig");
 const parser_expr = @import("parser_expr.zig");
@@ -55,10 +56,7 @@ pub const ParseError = error{
     OutOfMemory,
 };
 
-pub const AttrSpan = struct {
-    start: u32,
-    len: u32,
-};
+pub const AttrSpan = parser_attrs.AttrSpan;
 
 pub const Parser = struct {
     tree: *Ast,
@@ -126,7 +124,7 @@ pub const Parser = struct {
 
     fn parseTopLevelDecl(self: *Parser) ParseError!u32 {
         // Collect leading attributes.
-        const attrs = try parseAttributes(self);
+        const attrs = try parser_attrs.parseAttributes(self);
 
         return switch (self.peekTag()) {
             .kw_enable => parser_decl.parseEnableDirective(self),
@@ -172,50 +170,6 @@ pub const Parser = struct {
     // ============================================================
     // Attributes
     // ============================================================
-
-    pub fn parseAttributes(self: anytype) @TypeOf(self.*).Error!AttrSpan {
-        const scratch_top = self.scratch.items.len;
-        defer self.scratch.shrinkRetainingCapacity(scratch_top);
-
-        while (self.peekTag() == .@"@") {
-            const at_token = self.token_idx;
-            self.advance(); // consume `@`
-            const name_token = self.token_idx;
-            self.advance(); // consume attribute name
-
-            var args_start: u32 = 0;
-            var args_len: u32 = 0;
-            if (self.peekTag() == .@"(") {
-                self.advance(); // consume `(`
-                const scratch_args_top = self.scratch.items.len;
-
-                while (self.peekTag() != .@")" and self.peekTag() != .eof) {
-                    const arg = try parser_expr.parseExpr(self);
-                    try self.scratch.append(self.allocator, arg);
-                    if (self.peekTag() == .@",") self.advance();
-                }
-                _ = try self.expect(.@")");
-
-                const args = self.scratch.items[scratch_args_top..];
-                args_start = try self.tree.addExtraSlice(args);
-                args_len = @intCast(args.len);
-                self.scratch.shrinkRetainingCapacity(scratch_args_top);
-            }
-
-            const attr_node = try self.tree.addNode(.{
-                .tag = .attribute,
-                .main_token = at_token,
-                .data = .{ .lhs = name_token, .rhs = args_start | (args_len << 16) },
-            });
-            try self.scratch.append(self.allocator, attr_node);
-        }
-
-        const attrs = self.scratch.items[scratch_top..];
-        if (attrs.len == 0) return .{ .start = 0, .len = 0 };
-
-        const start = try self.tree.addExtraSlice(attrs);
-        return .{ .start = start, .len = @intCast(attrs.len) };
-    }
 
     // ============================================================
     // Token helpers

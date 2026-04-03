@@ -2,7 +2,8 @@ const std = @import("std");
 const model_commands = @import("model_commands.zig");
 const model_resource_types = @import("model_resource_types.zig");
 const model_compute_types = @import("model_compute_types.zig");
-const model_gpu_types = @import("model_gpu_types.zig");
+const model_texture_types = @import("model_texture_value_types.zig");
+const model_binding_types = @import("model_binding_value_types.zig");
 const model_render_types = @import("model_render_types.zig");
 const model_async_types = @import("model_async_types.zig");
 const parse_helpers = @import("command_parse_helpers.zig");
@@ -28,9 +29,9 @@ const model = struct {
     pub const KernelBinding = model_compute_types.KernelBinding;
     pub const MapAsyncMode = model_async_types.MapAsyncMode;
     pub const RenderDrawCommand = model_render_types.RenderDrawCommand;
-    pub const WGPUShaderStage_Compute = model_gpu_types.WGPUShaderStage_Compute;
-    pub const WGPUTextureFormat_Undefined = model_gpu_types.WGPUTextureFormat_Undefined;
-    pub const WGPUWholeSize = model_gpu_types.WGPUWholeSize;
+    pub const WGPUShaderStage_Compute = model_binding_types.WGPUShaderStage_Compute;
+    pub const WGPUTextureFormat_Undefined = model_texture_types.WGPUTextureFormat_Undefined;
+    pub const WGPUWholeSize = model_texture_types.WGPUWholeSize;
 };
 
 pub fn parseCommands(allocator: Allocator, text: []const u8) ![]model.Command {

@@ -1,6 +1,6 @@
 const std = @import("std");
 const testing = std.testing;
-const gpu_types = @import("model_gpu_types.zig");
+const gpu_types = @import("model_texture_value_types.zig");
 
 test "texture usage flags are distinct powers of two" {
     const flags = [_]gpu_types.WGPUFlags{

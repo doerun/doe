@@ -1,0 +1,2 @@
+pub const SMALL_UPLOAD_CAPACITY: usize = 1024 * 1024;
+pub const FAST_WAIT_UPLOAD_THRESHOLD: usize = 256 * 1024;

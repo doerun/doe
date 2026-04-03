@@ -19,7 +19,7 @@ const alloc = native.alloc;
 const make = native.make;
 const cast = native.cast;
 const toOpaque = native.toOpaque;
-const model_gpu_types = @import("model_gpu_types.zig");
+const model_gpu_types = @import("model_texture_value_types.zig");
 const model_surface_control_types = @import("model_surface_control_types.zig");
 
 const DoeDevice = native.DoeDevice;

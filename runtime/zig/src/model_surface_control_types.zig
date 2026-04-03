@@ -1,4 +1,4 @@
-const gpu = @import("model_gpu_types.zig");
+const gpu = @import("model_texture_value_types.zig");
 
 pub const SurfaceCreateCommand = struct {
     handle: u64,

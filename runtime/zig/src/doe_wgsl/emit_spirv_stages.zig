@@ -7,16 +7,14 @@
 const std = @import("std");
 const ir = @import("ir.zig");
 const spirv = @import("spirv_builder.zig");
-const emit_spirv = @import("emit_spirv.zig");
-
-const Emitter = emit_spirv.Emitter;
-const EmitError = emit_spirv.EmitError;
+const emit_spirv_shared = @import("emit_spirv_shared.zig");
+const EmitError = emit_spirv_shared.EmitError;
 
 /// Maximum number of I/O variables per entry point (params + return fields).
 const MAX_IO_VARS: usize = 64;
 
 /// Emit a module-scope Input or Output variable with IO decorations.
-pub fn emit_io_global(emitter: *Emitter, global: ir.Global) EmitError!u32 {
+pub fn emit_io_global(emitter: anytype, global: ir.Global) EmitError!u32 {
     const storage_class = try emitter.global_storage_class(global);
     const value_type = try emitter.lower_type(global.ty);
     const ptr_type = try emitter.builder.type_pointer(storage_class, value_type);
@@ -51,7 +49,7 @@ pub fn emit_io_global(emitter: *Emitter, global: ir.Global) EmitError!u32 {
 ///   with descriptor-bound UniformConstant variables without conflict because
 ///   they occupy different storage classes.
 /// - No issues found: graphics-stage texture/sampler promotion is correct.
-pub fn emit_stage_entry_wrapper(emitter: *Emitter, entry: ir.EntryPoint) EmitError!void {
+pub fn emit_stage_entry_wrapper(emitter: anytype, entry: ir.EntryPoint) EmitError!void {
     const function = &emitter.module.functions.items[entry.function];
     const wrapper_id = emitter.entry_wrapper_ids[entry.function];
     const void_type = try emitter.builder.type_void();
@@ -166,7 +164,7 @@ const IoRange = struct {
 
 /// Create individual Input or Output variables for each field of a struct type.
 fn emit_struct_io_vars(
-    emitter: *Emitter,
+    emitter: anytype,
     ty: ir.TypeId,
     storage_class: u32,
     interface_ids: *std.ArrayListUnmanaged(u32),
@@ -191,7 +189,7 @@ fn emit_struct_io_vars(
 /// Emit Output variables for the return type. For struct returns, one Output
 /// variable per field. For non-struct returns with return_io, a single Output.
 fn emit_return_output_vars(
-    emitter: *Emitter,
+    emitter: anytype,
     return_type: ir.TypeId,
     return_io: ?ir.IoAttr,
     interface_ids: *std.ArrayListUnmanaged(u32),
@@ -224,7 +222,7 @@ fn emit_return_output_vars(
 
 /// Load each field from individual Input variables and CompositeConstruct.
 fn load_and_construct_struct(
-    emitter: *Emitter,
+    emitter: anytype,
     ty: ir.TypeId,
     field_var_ids: []const u32,
 ) EmitError!u32 {
@@ -254,7 +252,7 @@ fn load_and_construct_struct(
 /// Store a function return value into Output variables. For struct returns,
 /// decompose via CompositeExtract. For non-struct, store directly.
 fn store_return_to_outputs(
-    emitter: *Emitter,
+    emitter: anytype,
     return_type: ir.TypeId,
     return_io: ?ir.IoAttr,
     value_id: u32,
@@ -292,7 +290,7 @@ fn decorate_io_var(builder: *spirv.Builder, var_id: u32, io: ir.IoAttr) EmitErro
         if (io.builtin == .clip_distances) {
             try builder.emit_capability(spirv.Capability.ClipDistance);
         }
-        try builder.emit_builtin_decoration(var_id, try emit_spirv.builtin_to_spirv(io.builtin));
+        try builder.emit_builtin_decoration(var_id, try emit_spirv_shared.builtin_to_spirv(io.builtin));
     }
     if (io.location) |loc| {
         try builder.emit_location_decoration(var_id, loc);
@@ -331,7 +329,7 @@ fn stage_to_execution_model(stage: ir.ShaderStage) u32 {
 }
 
 /// Check whether the return type includes a frag_depth field.
-fn return_has_frag_depth(emitter: *Emitter, return_type: ir.TypeId) bool {
+fn return_has_frag_depth(emitter: anytype, return_type: ir.TypeId) bool {
     switch (emitter.module.types.get(return_type)) {
         .struct_ => |struct_id| {
             const struct_def = emitter.module.structs.items[struct_id];

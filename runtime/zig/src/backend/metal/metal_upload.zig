@@ -16,16 +16,16 @@ const metal_bridge_render_encoder_end = bridge.metal_bridge_render_encoder_end;
 
 const metal_buffer_pool = @import("metal_buffer_pool.zig");
 const metal_copy_queue = @import("metal_copy_queue.zig");
-const native_runtime = @import("metal_native_runtime.zig");
+const metal_runtime_limits = @import("metal_runtime_limits.zig");
 
-const SMALL_UPLOAD_CAPACITY = native_runtime.SMALL_UPLOAD_CAPACITY;
+const SMALL_UPLOAD_CAPACITY = metal_runtime_limits.SMALL_UPLOAD_CAPACITY;
 
 pub fn upload_bytes(self: anytype, bytes: u64, mode: webgpu.UploadBufferUsageMode) !void {
     if (bytes == 0) return error.InvalidArgument;
     const len: usize = @intCast(bytes);
     const use_small_staging = len <= SMALL_UPLOAD_CAPACITY and
         self.staging_src != null and self.staging_dst != null and self.staging_src_ptr != null;
-    const pooled_src = if (use_small_staging) null else native_runtime.pool_pop(&self.shared_pool, len);
+    const pooled_src = if (use_small_staging) null else metal_buffer_pool.pool_pop(&self.shared_pool, len);
     const src = if (use_small_staging)
         self.staging_src.?
     else
@@ -53,7 +53,7 @@ pub fn upload_bytes(self: anytype, bytes: u64, mode: webgpu.UploadBufferUsageMod
     const dst = if (use_small_staging)
         self.staging_dst.?
     else
-        native_runtime.pool_pop(&self.private_pool, len) orelse
+        metal_buffer_pool.pool_pop(&self.private_pool, len) orelse
             (metal_bridge_device_new_buffer_private(self.device, len) orelse return error.InvalidState);
 
     // Route upload blits to the copy queue when available; fall back
@@ -112,6 +112,6 @@ pub fn prewarm_upload_path(self: anytype, max_upload_bytes: u64, mode: webgpu.Up
     _ = try self.flush_queue();
 }
 
-fn pool_push_or_release(pool: *native_runtime.BufferPool, allocator: std.mem.Allocator, size: usize, buf: ?*anyopaque) void {
+fn pool_push_or_release(pool: *metal_buffer_pool.BufferPool, allocator: std.mem.Allocator, size: usize, buf: ?*anyopaque) void {
     metal_buffer_pool.pool_push_or_release(pool, allocator, size, buf);
 }

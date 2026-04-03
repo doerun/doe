@@ -1,12 +1,11 @@
 const std = @import("std");
 const ir = @import("ir.zig");
 const spirv = @import("spirv_builder.zig");
+const emit_spirv_shared = @import("emit_spirv_shared.zig");
 const emit_spirv_fn = @import("emit_spirv_fn.zig");
 const emit_spirv_stages = @import("emit_spirv_stages.zig");
 
-pub const EmitError = spirv.EmitError || error{
-    InvalidIr,
-};
+pub const EmitError = emit_spirv_shared.EmitError;
 
 pub const MAX_OUTPUT: usize = 256 * 1024;
 
@@ -218,7 +217,7 @@ pub const Emitter = struct {
 
         _ = try self.builder.label();
 
-        var state = try emit_spirv_fn.FunctionState.init(self, function_index);
+        var state = try emit_spirv_fn.FunctionState(Emitter).init(self, function_index);
         defer state.deinit();
 
         for (function.params.items, 0..) |param, param_index| {
@@ -286,7 +285,7 @@ pub const Emitter = struct {
             const ptr_type = try self.builder.type_pointer(spirv.StorageClass.Input, value_type);
             const var_id = try self.builder.variable_global(ptr_type, spirv.StorageClass.Input);
             try self.builder.emit_name(var_id, param.name);
-            try self.builder.emit_builtin_decoration(var_id, try builtin_to_spirv(io_attr.builtin));
+            try self.builder.emit_builtin_decoration(var_id, try emit_spirv_shared.builtin_to_spirv(io_attr.builtin));
             try interface_ids.append(self.alloc, var_id);
         }
         const param_interface_len = interface_ids.items.len;
@@ -395,7 +394,7 @@ pub const Emitter = struct {
     pub fn lower_param_type(self: *Emitter, ty: ir.TypeId) EmitError!u32 {
         return switch (self.module.types.get(ty)) {
             .ref => |ref_ty| try self.builder.type_pointer(
-                addr_space_to_storage_class(ref_ty.addr_space),
+                emit_spirv_shared.addr_space_to_storage_class(ref_ty.addr_space),
                 try self.lower_type(ref_ty.elem),
             ),
             else => try self.lower_type(ty),
@@ -635,16 +634,8 @@ fn round_up(alignment: u32, value: u32) u32 {
     return value + alignment - remainder;
 }
 
-pub fn addr_space_to_storage_class(addr_space: ir.AddressSpace) u32 {
-    return switch (addr_space) {
-        .function => spirv.StorageClass.Function,
-        .private => spirv.StorageClass.Private,
-        .workgroup => spirv.StorageClass.Workgroup,
-        .uniform => spirv.StorageClass.Uniform,
-        .storage => spirv.StorageClass.StorageBuffer,
-        .handle => spirv.StorageClass.UniformConstant,
-    };
-}
+pub const addr_space_to_storage_class = emit_spirv_shared.addr_space_to_storage_class;
+pub const builtin_to_spirv = emit_spirv_shared.builtin_to_spirv;
 
 fn storage_texture_sampled_type(self: *Emitter, format: ir.TextureFormat) EmitError!u32 {
     return switch (format) {
@@ -672,27 +663,5 @@ fn storage_texture_format_to_spirv(format: ir.TextureFormat) u32 {
         .rgba32uint => spirv.ImageFormat.Rgba32ui,
         .rgba32sint => spirv.ImageFormat.Rgba32i,
         .rgba32float => spirv.ImageFormat.Rgba32f,
-    };
-}
-
-pub fn builtin_to_spirv(builtin: ir.Builtin) EmitError!u32 {
-    return switch (builtin) {
-        .position => spirv.Builtin.Position,
-        .vertex_index => spirv.Builtin.VertexIndex,
-        .instance_index => spirv.Builtin.InstanceIndex,
-        .frag_depth => spirv.Builtin.FragDepth,
-        .front_facing => spirv.Builtin.FrontFacing,
-        .sample_index => spirv.Builtin.SampleIndex,
-        .sample_mask => spirv.Builtin.SampleMask,
-        .global_invocation_id => spirv.Builtin.GlobalInvocationId,
-        .local_invocation_id => spirv.Builtin.LocalInvocationId,
-        .local_invocation_index => spirv.Builtin.LocalInvocationIndex,
-        .workgroup_id => spirv.Builtin.WorkgroupId,
-        .num_workgroups => spirv.Builtin.NumWorkgroups,
-        .subgroup_size => spirv.Builtin.SubgroupSize,
-        .subgroup_invocation_id => spirv.Builtin.SubgroupLocalInvocationId,
-        .clip_distances => spirv.Builtin.ClipDistance,
-        .primitive_index => spirv.Builtin.PrimitiveId,
-        .none => error.InvalidIr,
     };
 }

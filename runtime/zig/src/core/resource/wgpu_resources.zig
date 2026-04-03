@@ -1,7 +1,8 @@
 const std = @import("std");
 const model_resource_types = @import("../../model_resource_types.zig");
 const model_compute_types = @import("../../model_compute_types.zig");
-const model_gpu_types = @import("../../model_gpu_types.zig");
+const model_gpu_types = @import("../../model_texture_value_types.zig");
+const model_binding_types = @import("../../model_binding_value_types.zig");
 const abi_base = @import("../abi/wgpu_base_types.zig");
 const abi_descriptor = @import("../abi/wgpu_descriptor_types.zig");
 const abi_records = @import("../abi/wgpu_runtime_records.zig");
@@ -655,9 +656,9 @@ pub fn createPipelineLayout(self: anytype, bind_group_layouts: []const abi_base.
 
 pub fn bindingUsageForBufferKind(binding: model_compute_types.KernelBinding) abi_base.WGPUBufferUsage {
     return switch (binding.buffer_type) {
-        model_gpu_types.WGPUBufferBindingType_Uniform => abi_base.WGPUBufferUsage_Uniform | abi_base.WGPUBufferUsage_CopySrc | abi_base.WGPUBufferUsage_CopyDst,
-        model_gpu_types.WGPUBufferBindingType_ReadOnlyStorage => abi_base.WGPUBufferUsage_Storage | abi_base.WGPUBufferUsage_CopySrc | abi_base.WGPUBufferUsage_CopyDst,
-        model_gpu_types.WGPUBufferBindingType_Storage => abi_base.WGPUBufferUsage_Storage | abi_base.WGPUBufferUsage_CopySrc | abi_base.WGPUBufferUsage_CopyDst,
+        model_binding_types.WGPUBufferBindingType_Uniform => abi_base.WGPUBufferUsage_Uniform | abi_base.WGPUBufferUsage_CopySrc | abi_base.WGPUBufferUsage_CopyDst,
+        model_binding_types.WGPUBufferBindingType_ReadOnlyStorage => abi_base.WGPUBufferUsage_Storage | abi_base.WGPUBufferUsage_CopySrc | abi_base.WGPUBufferUsage_CopyDst,
+        model_binding_types.WGPUBufferBindingType_Storage => abi_base.WGPUBufferUsage_Storage | abi_base.WGPUBufferUsage_CopySrc | abi_base.WGPUBufferUsage_CopyDst,
         else => abi_base.WGPUBufferUsage_Storage | abi_base.WGPUBufferUsage_Uniform | abi_base.WGPUBufferUsage_CopySrc | abi_base.WGPUBufferUsage_CopyDst,
     };
 }

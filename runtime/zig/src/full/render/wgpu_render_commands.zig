@@ -1,6 +1,6 @@
 const std = @import("std");
 const model_resource_types = @import("../../model_resource_types.zig");
-const model_gpu_types = @import("../../model_gpu_types.zig");
+const model_gpu_types = @import("../../model_texture_value_types.zig");
 const model_render_types = @import("../../model_render_types.zig");
 const abi_base = @import("../../core/abi/wgpu_base_types.zig");
 const abi_descriptor = @import("../../core/abi/wgpu_descriptor_types.zig");

@@ -7,6 +7,7 @@ pub const trace = @import("trace/mod.zig");
 pub const command_partition = @import("command_partition.zig");
 pub const command_dispatch = @import("command_dispatch.zig");
 pub const surface = @import("surface.zig");
+pub const wgpu_handle_types = @import("abi/wgpu_handle_types.zig");
 pub const wgpu_base_types = @import("abi/wgpu_base_types.zig");
 pub const wgpu_descriptor_types = @import("abi/wgpu_descriptor_types.zig");
 pub const wgpu_execution_types = @import("abi/wgpu_execution_types.zig");

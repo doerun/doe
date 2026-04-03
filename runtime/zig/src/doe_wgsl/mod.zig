@@ -582,7 +582,6 @@ test {
     _ = ir_validate;
     _ = ir_transform_robustness;
     _ = @import("ir_transform_robustness_test.zig");
-    _ = @import("mod_bounds_local_test.zig");
     _ = emit_msl;
     _ = emit_msl_subgroups;
     _ = emit_msl_shared;

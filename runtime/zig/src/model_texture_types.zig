@@ -1,4 +1,4 @@
-const gpu = @import("model_gpu_types.zig");
+const gpu = @import("model_texture_value_types.zig");
 const resource = @import("model_resource_types.zig");
 
 pub const TextureWriteCommand = struct {

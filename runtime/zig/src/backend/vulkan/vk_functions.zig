@@ -1,4 +1,4 @@
-const vk = @import("vk_constants.zig");
+const vk = @import("vulkan_types.zig");
 const vulkan_errors = @import("vulkan_errors.zig");
 const structs = @import("vk_structs.zig");
 const capability_structs = @import("vk_capability_structs.zig");

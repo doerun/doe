@@ -2,11 +2,19 @@ const std = @import("std");
 const abi_base = @import("../core/abi/wgpu_base_types.zig");
 const abi_descriptor = @import("../core/abi/wgpu_descriptor_types.zig");
 const ptypes = @import("../wgpu_types_procs.zig");
-const dropin_lib = @import("../wgpu_dropin_lib.zig");
 const native = @import("../doe_wgpu_native.zig");
 
-const loadRequiredProc = dropin_lib.loadRequiredProc;
 const BUFFER_MAP_SYNC_TIMEOUT_NS = 5 * std.time.ns_per_s;
+
+extern fn wgpuGetProcAddress(name: abi_base.WGPUStringView) callconv(.c) ?*const fn () callconv(.c) void;
+
+fn loadRequiredProc(comptime FnType: type, comptime symbol_name: [:0]const u8) FnType {
+    const proc = wgpuGetProcAddress(.{
+        .data = symbol_name.ptr,
+        .length = abi_base.WGPU_STRLEN,
+    }) orelse std.debug.panic("missing required WebGPU symbol: {s}", .{symbol_name});
+    return @ptrCast(proc);
+}
 
 const BufferMapSyncResult = struct {
     done: bool = false,

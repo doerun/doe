@@ -17,6 +17,7 @@ const dispatch_runtime = @import("metal_dispatch_runtime.zig");
 const metal_buffer_pool = @import("metal_buffer_pool.zig");
 const metal_gpu_timestamps = @import("metal_gpu_timestamps.zig");
 const metal_pipeline_cache = @import("metal_pipeline_cache.zig");
+const metal_runtime_limits = @import("metal_runtime_limits.zig");
 const metal_upload = @import("metal_upload.zig");
 const resource_commands = @import("metal_resource_commands.zig");
 const resource_runtime = @import("metal_runtime_resources.zig");
@@ -47,8 +48,8 @@ const metal_bridge_shared_event_wait = bridge.metal_bridge_shared_event_wait;
 
 pub const MAX_UPLOAD_BYTES: u64 = 0; // unused; retained for prewarm clamp only
 pub const MAX_BINDING_SLOTS: usize = 32;
-pub const SMALL_UPLOAD_CAPACITY: usize = 1024 * 1024;
-pub const FAST_WAIT_UPLOAD_THRESHOLD: usize = 256 * 1024;
+pub const SMALL_UPLOAD_CAPACITY: usize = metal_runtime_limits.SMALL_UPLOAD_CAPACITY;
+pub const FAST_WAIT_UPLOAD_THRESHOLD: usize = metal_runtime_limits.FAST_WAIT_UPLOAD_THRESHOLD;
 pub const MAX_POOL_ENTRIES_PER_SIZE: usize = metal_buffer_pool.MAX_POOL_ENTRIES_PER_SIZE;
 pub const DispatchMetrics = kernel_dispatch.DispatchMetrics;
 

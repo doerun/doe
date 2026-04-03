@@ -53,8 +53,11 @@ This guide is the Zig style contract for `zig`.
   `model_webgpu_types.zig`, `wgpu_types.zig`, or `webgpu_ffi.zig`. Use the
   narrow source modules directly; keep the compatibility barrels for export and
   transition surfaces only.
-- When a caller only needs shared WebGPU value/constants surfaces, import
-  `model_gpu_types.zig`.
+- When a caller only needs shared texture/layout values, import
+  `model_texture_value_types.zig`. When it only needs shader-stage or
+  binding/sample/access values, import `model_binding_value_types.zig`.
+  Reserve `model_gpu_types.zig` for compatibility or transition callers that
+  genuinely need both value families at once.
 - Prefer `model_resource_types.zig` for upload/copy/barrier payloads and
   `model_compute_types.zig` for dispatch/kernel-binding payloads instead of
   routing through the compatibility `model_transfer_types.zig` barrel.
@@ -88,7 +91,8 @@ This guide is the Zig style contract for `zig`.
 ```zig
 const std = @import("std");
 const builtin = @import("builtin");
-const model_gpu = @import("model_gpu_types.zig");
+const model_texture = @import("model_texture_value_types.zig");
+const model_binding = @import("model_binding_value_types.zig");
 const model_compute = @import("model_compute_types.zig");
 const wgpu_base = @import("core/abi/wgpu_base_types.zig");
 const wgpu_descriptor = @import("core/abi/wgpu_descriptor_types.zig");
@@ -115,7 +119,9 @@ const backend_ids = @import("backend/backend_ids.zig");
 - No bare numeric literals in runtime code.
 - Use named `UPPER_SNAKE_CASE` comptime constants or config values.
 - Place constants at file top, after imports.
-- Domain-shared constants belong in `model.zig` or `wgpu_types.zig`.
+- Domain-shared constants belong in the narrow contract module that owns their
+  semantics, such as `model_texture_value_types.zig`,
+  `model_binding_value_types.zig`, or `wgpu_base_types.zig`.
 - Module-specific constants stay in the module that uses them.
 - If a value appears in more than one file, it must have a single source of truth.
 

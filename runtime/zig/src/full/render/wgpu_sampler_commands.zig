@@ -1,5 +1,5 @@
 const model_render_types = @import("../../model_render_types.zig");
-const abi_base = @import("../../core/abi/wgpu_base_types.zig");
+const abi_base = @import("../../core/abi/wgpu_handle_types.zig");
 const abi_execution = @import("../../core/abi/wgpu_execution_types.zig");
 const loader = @import("../../core/abi/wgpu_loader.zig");
 const texture_procs_mod = @import("../../wgpu_texture_procs.zig");

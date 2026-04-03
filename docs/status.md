@@ -1,4 +1,16 @@
 # Doe status
+## Narrow handle and model-value contracts split out of broad ABI/value barrels (2026-04-03 UTC)
+
+- New ABI shard: `runtime/zig/src/core/abi/wgpu_handle_types.zig`
+  - owns WebGPU opaque handles plus `WGPUFuture`, `WGPUStringView`, `WGPUBool`, `WGPUStatus`, and the basic string/status constants shared across async, drop-in, render API, callback, and backend-state callers
+- `runtime/zig/src/core/abi/wgpu_base_types.zig` is now a narrower value/enum barrel over that handle shard plus the remaining base constants, and pure handle/string/status callers were retargeted away from the broader base module
+- New model value shards:
+  - `runtime/zig/src/model_texture_value_types.zig`
+  - `runtime/zig/src/model_binding_value_types.zig`
+- `runtime/zig/src/model_gpu_types.zig` is now a compatibility barrel over those texture and binding value shards rather than the owner of both concerns
+- Format/layout-only backend, render, async-diagnostic, parser, and model contract callers now import `model_texture_value_types.zig` or `model_binding_value_types.zig` directly when they do not need the combined barrel
+- Static `@import(...)` graph under `runtime/zig/src` remains acyclic after the split; see the local graph measurement used in this change for current importer counts
+
 ## Surface compatibility barrel split into texture, surface-control, and async contracts (2026-04-03 UTC)
 
 - New narrow model contracts:
