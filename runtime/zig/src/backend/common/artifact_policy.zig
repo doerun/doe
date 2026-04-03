@@ -1,5 +1,5 @@
-const model = @import("../../model.zig");
-const webgpu = @import("../../webgpu_ffi.zig");
+const model = @import("../../model_commands.zig");
+const runtime_types = @import("../runtime_types.zig");
 
 pub fn should_emit_shader_artifact(command: model.Command) bool {
     return switch (command) {
@@ -15,7 +15,7 @@ pub fn should_emit_shader_artifact(command: model.Command) bool {
     };
 }
 
-pub fn artifact_status_code(result: webgpu.NativeExecutionResult) []const u8 {
+pub fn artifact_status_code(result: runtime_types.NativeExecutionResult) []const u8 {
     if (result.status_message.len != 0) return result.status_message;
     return switch (result.status) {
         .ok => "ok",

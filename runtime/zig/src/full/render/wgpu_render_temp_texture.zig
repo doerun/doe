@@ -1,10 +1,10 @@
-const model = @import("../../model.zig");
+const model = @import("../../model_webgpu_types.zig");
 const types = @import("../../core/abi/wgpu_types.zig");
 const loader = @import("../../core/abi/wgpu_loader.zig");
 const resources = @import("../../core/resource/wgpu_resources.zig");
 const render_resource_mod = @import("wgpu_render_resources.zig");
 const rc = @import("wgpu_render_constants.zig");
-const ffi = @import("../../webgpu_ffi.zig");
+const ffi = @import("../../webgpu_backend.zig");
 const Backend = ffi.WebGPUBackend;
 
 pub const TempRenderTextureResult = struct {

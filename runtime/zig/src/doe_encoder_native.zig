@@ -120,8 +120,8 @@ pub export fn doeNativeCommandEncoderCopyBufferToTexture(
                         const byte_count: usize = @intCast(@as(u64, src_bytes_per_row) * rows * depth_or_array_layers);
                         const base_off: usize = @intCast(src_offset);
                         const raw: [*]const u8 = @ptrCast(mapped_ptr);
-                        const model = @import("model.zig");
-                        const copy_res = model.CopyTextureResource{
+                        const model_webgpu_types = @import("model_webgpu_types.zig");
+                        const copy_res = model_webgpu_types.CopyTextureResource{
                             .handle = dst_texture.vk_id,
                             .width = width,
                             .height = height,

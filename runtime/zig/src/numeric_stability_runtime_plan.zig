@@ -1,12 +1,19 @@
 const std = @import("std");
 const command_stream = @import("command_stream.zig");
 const execution = @import("execution.zig");
-const model = @import("model.zig");
+const model_commands = @import("model_commands.zig");
+const model_webgpu_types = @import("model_webgpu_types.zig");
 const numeric_stability_annotation = @import("numeric_stability_annotation.zig");
 const numeric_stability_policy = @import("numeric_stability_policy.zig");
 const semantic_trace = @import("semantic_trace.zig");
 const common = @import("full/modules/common.zig");
 const numeric_stability_service = @import("full/modules/services/numeric_stability.zig");
+
+const model = struct {
+    pub const Command = model_commands.Command;
+    pub const KernelBinding = model_webgpu_types.KernelBinding;
+    pub const KernelDispatchCommand = model_webgpu_types.KernelDispatchCommand;
+};
 
 const F32_BYTE_WIDTH: u64 = @sizeOf(f32);
 pub const MATMUL_CAPTURE_PLAN_ID = "matmul-logits-bindings-v1";

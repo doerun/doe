@@ -1,11 +1,11 @@
 const std = @import("std");
-const model = @import("../../model.zig");
+const model = @import("../../model_webgpu_types.zig");
 const types = @import("../../core/abi/wgpu_types.zig");
 const loader = @import("../../core/abi/wgpu_loader.zig");
 const resources = @import("../../core/resource/wgpu_resources.zig");
 const render_assets = @import("wgpu_render_assets.zig");
 const texture_procs_mod = @import("../../wgpu_texture_procs.zig");
-const ffi = @import("../../webgpu_ffi.zig");
+const ffi = @import("../../webgpu_backend.zig");
 const Backend = ffi.WebGPUBackend;
 
 pub const RENDER_UNIFORM_BINDING_INDEX: u32 = 0;

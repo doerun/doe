@@ -1,9 +1,9 @@
 const std = @import("std");
-const model = @import("../../model.zig");
+const model = @import("../../model_webgpu_types.zig");
 const types = @import("../abi/wgpu_types.zig");
 const loader = @import("../abi/wgpu_loader.zig");
 const resources = @import("wgpu_resources.zig");
-const ffi = @import("../../webgpu_ffi.zig");
+const ffi = @import("../../webgpu_backend.zig");
 const Backend = ffi.WebGPUBackend;
 const TEMP_BUFFER_TO_TEXTURE_KEY_OFFSET: u64 = 0xFFFF_0000_0000_0001;
 const TEMP_TEXTURE_TO_TEXTURE_KEY_OFFSET: u64 = 0xFFFF_0000_0000_0002;

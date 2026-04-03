@@ -11,13 +11,43 @@ This guide is the Zig style contract for `zig`.
 
 ## Repository conventions
 
-- Put shared command/profile contracts in `model.zig`.
+- Anchor shared command/profile contracts in `model.zig`. When they grow into
+  independent domains, shard them into feature-scoped modules and re-export
+  through `model.zig` until callers can be migrated safely.
 - Put quirk parsing in `quirk/quirk_json.zig` and command parsing in `command_json.zig`.
 - Keep deterministic selection logic in `runtime.zig`.
 - Keep execution orchestration in `execution.zig`.
 - Keep pipeline/trace/replay behavior in `trace.zig` and `replay.zig`.
-- Keep WebGPU proc/table contracts in `wgpu_types.zig` and loader glue in `wgpu_loader.zig`.
+- Anchor WebGPU proc/table contracts in `wgpu_types.zig` and loader glue in
+  `wgpu_loader.zig`. When those files become broad hubs, split contracts by
+  feature and keep the old file as a compatibility re-export surface.
 - Add new API clusters as feature-scoped `wgpu_*_procs.zig` modules.
+
+## Architectural decoupling
+
+- Treat directories as subsystem boundaries, not just file buckets.
+- Prefer dependency direction: contracts -> helpers -> subsystem
+  implementation -> facade/orchestration.
+- Root-level `src/*.zig` files should be thin facades, entrypoints, or stable
+  contract barrels. Do not grow new feature logic there when it can live in a
+  feature subtree.
+- `core` must remain one-way with respect to `full`. If shared behavior is
+  needed, extract it into `core`, `backend/common`, or a new contract module
+  rather than importing upward.
+- Backend-specific code must not import sibling backends directly. Cross-backend
+  sharing belongs in `backend/common`.
+- Keep `doe_wgsl` self-contained except for explicit shared proof/contracts.
+- Keep `quirk` limited to quirk logic plus shared contracts/proof inputs; it
+  should not depend on backend execution modules.
+- Prefer narrow context/state types over monolithic runtime structs when
+  crossing subsystem boundaries.
+- Avoid introducing new import cycles. If an import would create one, extract a
+  smaller contract/state module and depend on that instead.
+- When splitting a high-fan-in file, move definitions first, keep a
+  compatibility re-export facade, and migrate callers incrementally rather than
+  forcing a big-bang rename.
+- Shared types should live with the subsystem that owns their semantics, not in
+  whichever orchestration file currently imports them most often.
 
 ## File size
 
@@ -48,11 +78,16 @@ const backend_ids = @import("backend/backend_ids.zig");
 ```
 
 - Prefer small feature-scoped modules over catch-all utility files.
+- Prefer importing feature-local contract/state modules over whole runtime
+  orchestrators.
+- Before importing a broad hub such as a facade or backend runtime, check
+  whether a narrower contract module is the real dependency.
 
 ## Naming
 
 - Types and enums: `PascalCase`
-- Functions, variables, fields: `snake_case`
+- Functions: `camelCase`
+- Variables and fields: `snake_case`
 - Compile-time constants: `UPPER_SNAKE_CASE`
 - File names: `snake_case.zig`
 

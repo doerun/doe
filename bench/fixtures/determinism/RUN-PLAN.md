@@ -22,14 +22,14 @@ Backend-specific setup:
 | 2b | Gemma 270M | AMD Vulkan | Doe | `.gemma270m` |
 | 2c | Gemma 1B | Apple Metal | Doe | `.gemma1b` |
 | 2d | Gemma 1B | AMD Vulkan | Doe | `.gemma1b` |
-| 2e | Qwen 3.5 0.8B | Apple Metal | Doe | `.qwen06b` |
-| 2f | Qwen 3.5 0.8B | AMD Vulkan | Doe | `.qwen06b` |
+| 2e | Qwen 3.5 0.8B | Apple Metal | Doe | `.qwen08b` |
+| 2f | Qwen 3.5 0.8B | AMD Vulkan | Doe | `.qwen08b` |
 | 6a | Gemma 270M | Apple Metal | Dawn | `.gemma270m.dawn` |
 | 6b | Gemma 270M | Apple Metal | WebKit | `.gemma270m.webkit` |
 | 6c | Gemma 270M | AMD Vulkan | Dawn | `.gemma270m.dawn-vulkan` |
-| 6d | Qwen 3.5 0.8B | Apple Metal | Dawn | `.qwen06b.dawn` |
-| 6e | Qwen 3.5 0.8B | Apple Metal | WebKit | `.qwen06b.webkit` |
-| 6f | Qwen 3.5 0.8B | AMD Vulkan | Dawn | `.qwen06b.dawn-vulkan` |
+| 6d | Qwen 3.5 0.8B | Apple Metal | Dawn | `.qwen08b.dawn` |
+| 6e | Qwen 3.5 0.8B | Apple Metal | WebKit | `.qwen08b.webkit` |
+| 6f | Qwen 3.5 0.8B | AMD Vulkan | Dawn | `.qwen08b.dawn-vulkan` |
 
 All runs: 256 prompts, 16 decode steps, top-64 logits captured, 3 repeats, `--persist-logits`.
 
@@ -83,7 +83,7 @@ python3 bench/runners/run_real_logit_hunt.py \
   --persist-logits
 ```
 
-Replace `MODEL` with `gemma270m`, `gemma1b`, or `qwen06b`.
+Replace `MODEL` with `gemma270m`, `gemma1b`, or `qwen08b`.
 
 ### Batch splits (for resumability)
 
@@ -122,7 +122,7 @@ python3 bench/runners/run_real_logit_hunt.py \
   --persist-logits
 ```
 
-Same pattern for `qwen06b.dawn`, `qwen06b.webkit`, `qwen06b.dawn-vulkan`.
+Same pattern for `qwen08b.dawn`, `qwen08b.webkit`, `qwen08b.dawn-vulkan`.
 
 ---
 

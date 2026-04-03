@@ -1,6 +1,6 @@
 const std = @import("std");
 const model = @import("../model.zig");
-const webgpu = @import("../webgpu_ffi.zig");
+const webgpu = @import("../webgpu_backend.zig");
 const backend_ids = @import("backend_ids.zig");
 const backend_iface = @import("backend_iface.zig");
 const backend_telemetry = @import("backend_telemetry.zig");

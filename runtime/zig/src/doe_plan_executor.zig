@@ -1,5 +1,8 @@
 const std = @import("std");
-const model = @import("model.zig");
+const model_commands = @import("model_commands.zig");
+const model_policy = @import("model_policy.zig");
+const model_profile = @import("model_profile.zig");
+const model_webgpu_types = @import("model_webgpu_types.zig");
 const execution = @import("execution.zig");
 const backend_policy = @import("backend/backend_policy.zig");
 const main_print = @import("main_print.zig");
@@ -8,6 +11,17 @@ const semantic_trace = @import("semantic_trace.zig");
 const trace = @import("trace.zig");
 const trace_jsonl_emit = @import("trace_jsonl_emit.zig");
 const dawn_plan_types = @import("dawn_plan_types.zig");
+
+const model = struct {
+    pub const Command = model_commands.Command;
+    pub const DeviceProfile = model_profile.DeviceProfile;
+    pub const KernelBinding = model_webgpu_types.KernelBinding;
+    pub const SemVer = model_profile.SemVer;
+    pub const WGPUBufferBindingType_Uniform = model_webgpu_types.WGPUBufferBindingType_Uniform;
+    pub const WGPUBufferBindingType_Storage = model_webgpu_types.WGPUBufferBindingType_Storage;
+    pub const WGPUBufferBindingType_ReadOnlyStorage = model_webgpu_types.WGPUBufferBindingType_ReadOnlyStorage;
+    pub const parse_api = model_policy.parse_api;
+};
 
 const Allocator = std.mem.Allocator;
 

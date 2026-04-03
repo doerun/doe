@@ -1,8 +1,8 @@
 const std = @import("std");
-const model = @import("../../model.zig");
+const model = @import("../../model_webgpu_types.zig");
 const types = @import("../../core/abi/wgpu_types.zig");
 const resources = @import("../../core/resource/wgpu_resources.zig");
-const ffi = @import("../../webgpu_ffi.zig");
+const ffi = @import("../../webgpu_backend.zig");
 const Backend = ffi.WebGPUBackend;
 
 pub const DEFAULT_INDEX_BUFFER_HANDLE: u64 = 0x8C9F_2700_0000_0000;

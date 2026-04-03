@@ -1,4 +1,3 @@
-const model = @import("../../model.zig");
 const wgpu_types = @import("../../core/abi/wgpu_types.zig");
 
 pub const BackendNativeError = error{

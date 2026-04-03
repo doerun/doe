@@ -1,5 +1,5 @@
 const std = @import("std");
-const model = @import("model.zig");
+const model = @import("model_commands.zig");
 
 /// SandboxViolation is raised when a command attempts an operation that exceeds
 /// dynamic runtime bounds, potentially compromising memory or expected state.
@@ -29,7 +29,7 @@ pub fn validateCommand(command: model.Command) !void {
         },
         .copy_buffer_to_texture => |copy| {
             if (copy.bytes == 0) return error.CopyZeroBytes;
-            
+
             // Validate resource matching based on direction
             switch (copy.direction) {
                 .buffer_to_buffer => if (copy.src.kind != .buffer or copy.dst.kind != .buffer) return error.CopyInvalidDirection,

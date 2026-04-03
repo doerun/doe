@@ -1,9 +1,26 @@
 const std = @import("std");
-const model = @import("model.zig");
+const model_commands = @import("model_commands.zig");
+const model_policy = @import("model_policy.zig");
+const model_quirks = @import("model_quirks.zig");
 const execution = @import("execution.zig");
 const semantic_trace = @import("semantic_trace.zig");
 const trace_determinism = @import("trace_determinism.zig");
 const trace_numeric_stability = @import("trace_numeric_stability.zig");
+
+const model = struct {
+    pub const Api = model_policy.Api;
+    pub const Command = model_commands.Command;
+    pub const ProofLevel = model_policy.ProofLevel;
+    pub const QuirkAction = model_quirks.QuirkAction;
+    pub const SafetyClass = model_policy.SafetyClass;
+    pub const Scope = model_policy.Scope;
+    pub const VerificationMode = model_policy.VerificationMode;
+    pub const command_kind = model_commands.command_kind;
+    pub const proof_level_name = model_policy.proof_level_name;
+    pub const safety_class_name = model_policy.safety_class_name;
+    pub const scope_name = model_policy.scope_name;
+    pub const verification_mode_name = model_policy.verification_mode_name;
+};
 
 pub const TraceState = struct {
     previous_hash: u64 = 0x9e3779b97f4a7c15,

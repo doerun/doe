@@ -1,5 +1,5 @@
 const std = @import("std");
-const model = @import("model.zig");
+const model = @import("model_webgpu_types.zig");
 const types = @import("core/abi/wgpu_types.zig");
 const loader = @import("core/abi/wgpu_loader.zig");
 const resources = @import("core/resource/wgpu_resources.zig");
@@ -7,7 +7,7 @@ const pls_layout = @import("full/render/wgpu_pipeline_layout_pls.zig");
 const async_procs_mod = @import("wgpu_async_procs.zig");
 const render_api_mod = @import("full/render/wgpu_render_api.zig");
 const render_types_mod = @import("full/render/wgpu_render_types.zig");
-const ffi = @import("webgpu_ffi.zig");
+const ffi = @import("webgpu_backend.zig");
 const rc = @import("full/render/wgpu_render_constants.zig");
 const Backend = ffi.WebGPUBackend;
 const DIAG_RENDER_TARGET_HANDLE: u64 = 0x8C9F_2C00_0000_0000;

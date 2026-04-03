@@ -1,5 +1,5 @@
 const common_timing = @import("../common/timing.zig");
-const model = @import("../../model.zig");
+const model = @import("../../model_webgpu_types.zig");
 const bridge = @import("metal_bridge_decls.zig");
 const metal_bridge_command_buffer_wait_completed = bridge.metal_bridge_command_buffer_wait_completed;
 const metal_bridge_create_command_buffer = bridge.metal_bridge_create_command_buffer;

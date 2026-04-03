@@ -1,7 +1,7 @@
 const types = @import("../../core/abi/wgpu_types.zig");
 const loader = @import("../../core/abi/wgpu_loader.zig");
 const render_types_mod = @import("wgpu_render_types.zig");
-const ffi = @import("../../webgpu_ffi.zig");
+const ffi = @import("../../webgpu_backend.zig");
 const Backend = ffi.WebGPUBackend;
 
 pub fn createPipelineLayoutWithPixelLocalStorage(

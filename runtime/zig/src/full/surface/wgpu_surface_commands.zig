@@ -1,12 +1,12 @@
 const std = @import("std");
 const common_timing = @import("../../backend/common/timing.zig");
-const model = @import("../../model.zig");
+const model = @import("../../model_webgpu_types.zig");
 const types = @import("../../core/abi/wgpu_types.zig");
 const loader = @import("../../core/abi/wgpu_loader.zig");
 const resources = @import("../../core/resource/wgpu_resources.zig");
 const surface_macos_mod = @import("wgpu_surface_macos.zig");
 const surface_procs_mod = @import("wgpu_surface_procs.zig");
-const ffi = @import("../../webgpu_ffi.zig");
+const ffi = @import("../../webgpu_backend.zig");
 const Backend = ffi.WebGPUBackend;
 
 const SURFACE_TEXTURE_STATUS_SUCCESS_OPTIMAL: u32 = 0x00000001;

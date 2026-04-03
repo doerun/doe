@@ -1,5 +1,5 @@
 const std = @import("std");
-const model = @import("../../model.zig");
+const model = @import("../../model_webgpu_types.zig");
 const types = @import("../../core/abi/wgpu_types.zig");
 const loader = @import("../../core/abi/wgpu_loader.zig");
 const resources = @import("../../core/resource/wgpu_resources.zig");
@@ -13,7 +13,7 @@ const render_resource_mod = @import("../render/wgpu_render_resources.zig");
 const render_types_mod = @import("../render/wgpu_render_types.zig");
 const surface_procs_mod = @import("../surface/wgpu_surface_procs.zig");
 const texture_procs_mod = @import("../../wgpu_texture_procs.zig");
-const ffi = @import("../../webgpu_ffi.zig");
+const ffi = @import("../../webgpu_backend.zig");
 const rc = @import("../render/wgpu_render_constants.zig");
 const Backend = ffi.WebGPUBackend;
 const DIAG_RESOURCE_TABLE_BUFFER_HANDLE: u64 = 0x8C9F_2B00_0000_0000;

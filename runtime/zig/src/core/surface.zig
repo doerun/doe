@@ -1,5 +1,5 @@
 const std = @import("std");
-const model = @import("../model.zig");
+const model = @import("../model_commands.zig");
 const command_partition = @import("command_partition.zig");
 const command_dispatch = @import("command_dispatch.zig");
 
@@ -12,7 +12,6 @@ const command_dispatch = @import("command_dispatch.zig");
 /// Consumers that need only compute/upload/copy workloads (headless AI/ML,
 /// benchmarking, CI) should use this surface to get a smaller dependency
 /// footprint and faster compilation.
-
 pub const SURFACE_ID = "doe-core";
 pub const SURFACE_VERSION: u32 = 1;
 

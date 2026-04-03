@@ -1,6 +1,12 @@
 const std = @import("std");
-const model = @import("model.zig");
+const model_commands = @import("model_commands.zig");
 const execution = @import("execution.zig");
+
+const model = struct {
+    pub const Command = model_commands.Command;
+    pub const command_kind = model_commands.command_kind;
+    pub const command_kind_name = model_commands.command_kind_name;
+};
 
 fn printJsonU16Array(stdout: anytype, values: []const u16) !void {
     try stdout.writeByte('[');

@@ -9,11 +9,11 @@
 //   vk_render     — render pass, graphics pipeline, and draw call execution
 
 const std = @import("std");
-const model = @import("../../model.zig");
+const model = @import("../../model_webgpu_types.zig");
 const backend_policy = @import("../backend_policy.zig");
 const common_errors = @import("../common/errors.zig");
 const common_timing = @import("../common/timing.zig");
-const webgpu = @import("../../webgpu_ffi.zig");
+const webgpu = @import("../runtime_types.zig");
 const vulkan_surface = @import("vulkan_surface.zig");
 
 const c = @import("vk_constants.zig");
@@ -618,17 +618,27 @@ pub const NativeVulkanRuntime = struct {
 
     // --- Texture commands (delegated to vk_texture_commands.zig) ---
 
-    pub fn texture_write(self: *NativeVulkanRuntime, cmd_arg: model.TextureWriteCommand) !void { return vk_texture_commands.texture_write(self, cmd_arg); }
+    pub fn texture_write(self: *NativeVulkanRuntime, cmd_arg: model.TextureWriteCommand) !void {
+        return vk_texture_commands.texture_write(self, cmd_arg);
+    }
     pub fn texture_read(self: *NativeVulkanRuntime, args: anytype) !void {
         return vk_texture_commands.texture_read(self, .{ .handle = args.handle, .mip_level = args.mip_level, .width = args.width, .height = args.height, .format = args.format, .dst_buffer = args.dst_buffer, .dst_offset = args.dst_offset, .dst_bytes_per_row = args.dst_bytes_per_row, .dst_rows_per_image = args.dst_rows_per_image });
     }
     pub fn texture_copy(self: *NativeVulkanRuntime, args: anytype) !void {
         return vk_texture_commands.texture_copy(self, .{ .src_handle = args.src_handle, .src_mip = args.src_mip, .src_x = args.src_x, .src_y = args.src_y, .src_z = args.src_z, .dst_handle = args.dst_handle, .dst_mip = args.dst_mip, .dst_x = args.dst_x, .dst_y = args.dst_y, .dst_z = args.dst_z, .width = args.width, .height = args.height, .depth_or_layers = args.depth_or_layers });
     }
-    pub fn texture_query(self: *NativeVulkanRuntime, cmd_arg: model.TextureQueryCommand) !void { return vk_texture_commands.texture_query(self, cmd_arg); }
-    pub fn texture_destroy(self: *NativeVulkanRuntime, cmd_arg: model.TextureDestroyCommand) !void { return vk_texture_commands.texture_destroy(self, cmd_arg); }
-    pub fn sampler_create(self: *NativeVulkanRuntime, cmd: model.SamplerCreateCommand) !void { return vk_texture_commands.sampler_create(self, cmd); }
-    pub fn sampler_destroy(self: *NativeVulkanRuntime, cmd: model.SamplerDestroyCommand) !void { return vk_texture_commands.sampler_destroy(self, cmd); }
+    pub fn texture_query(self: *NativeVulkanRuntime, cmd_arg: model.TextureQueryCommand) !void {
+        return vk_texture_commands.texture_query(self, cmd_arg);
+    }
+    pub fn texture_destroy(self: *NativeVulkanRuntime, cmd_arg: model.TextureDestroyCommand) !void {
+        return vk_texture_commands.texture_destroy(self, cmd_arg);
+    }
+    pub fn sampler_create(self: *NativeVulkanRuntime, cmd: model.SamplerCreateCommand) !void {
+        return vk_texture_commands.sampler_create(self, cmd);
+    }
+    pub fn sampler_destroy(self: *NativeVulkanRuntime, cmd: model.SamplerDestroyCommand) !void {
+        return vk_texture_commands.sampler_destroy(self, cmd);
+    }
 
     // --- Surface lifecycle ---
 
@@ -743,7 +753,9 @@ pub const NativeVulkanRuntime = struct {
         return self.queue_family_index_value_cache != null and self.timestamp_query_supported_value;
     }
 
-    fn collect_dispatch_gpu_timestamp(self: *NativeVulkanRuntime) !u64 { return vk_texture_commands.collect_dispatch_gpu_timestamp(self); }
+    fn collect_dispatch_gpu_timestamp(self: *NativeVulkanRuntime) !u64 {
+        return vk_texture_commands.collect_dispatch_gpu_timestamp(self);
+    }
 };
 
 const DISPATCH_INDIRECT_ARGS_BYTES = @sizeOf([3]u32);

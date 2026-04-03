@@ -1,5 +1,5 @@
 const std = @import("std");
-const model = @import("../../../model.zig");
+const model = @import("../../../model_webgpu_types.zig");
 const common_timing = @import("../../common/timing.zig");
 
 extern fn d3d12_bridge_device_create_sampler_heap(device: ?*anyopaque, num_descriptors: u32) callconv(.c) ?*anyopaque;

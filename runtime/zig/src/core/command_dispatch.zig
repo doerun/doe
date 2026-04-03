@@ -1,9 +1,9 @@
-const model = @import("../model.zig");
+const model = @import("../model_commands.zig");
 const types = @import("abi/wgpu_types.zig");
 const copy_commands = @import("resource/wgpu_commands_copy.zig");
 const compute_commands = @import("compute/wgpu_commands_compute.zig");
 const texture_commands = @import("resource/wgpu_texture_commands.zig");
-const ffi = @import("../webgpu_ffi.zig");
+const ffi = @import("../webgpu_backend.zig");
 const Backend = ffi.WebGPUBackend;
 
 pub fn execute(self: *Backend, command: model.Command) !?types.NativeExecutionResult {

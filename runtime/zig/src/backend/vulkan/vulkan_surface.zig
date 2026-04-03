@@ -7,7 +7,7 @@
 
 const std = @import("std");
 const builtin = @import("builtin");
-const model = @import("../../model.zig");
+const model = @import("../../model_webgpu_types.zig");
 const common_errors = @import("../common/errors.zig");
 const common_timing = @import("../common/timing.zig");
 const vk = @import("vulkan_types.zig");
@@ -525,10 +525,7 @@ fn map_present_mode(wgpu_mode: u32) u32 {
 /// Map the requested WebGPU alpha mode to a Vulkan composite-alpha mode.
 fn map_composite_alpha(requested: u32, supported: VkFlags) u32 {
     const requested_mode: u32 = switch (requested) {
-        VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
-        VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR,
-        VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR,
-        VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR => requested,
+        VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR, VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR, VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR, VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR => requested,
         else => VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
     };
     if ((supported & requested_mode) != 0) return requested_mode;

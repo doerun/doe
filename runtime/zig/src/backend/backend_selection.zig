@@ -1,5 +1,5 @@
 const std = @import("std");
-const model = @import("../model.zig");
+const model = @import("../model_profile.zig");
 const backend_ids = @import("backend_ids.zig");
 const backend_policy = @import("backend_policy.zig");
 

@@ -1,7 +1,7 @@
 const std = @import("std");
 const types = @import("../../core/abi/wgpu_types.zig");
 const surface_procs_mod = @import("wgpu_surface_procs.zig");
-const WebGPUBackend = @import("../../webgpu_ffi.zig").WebGPUBackend;
+const WebGPUBackend = @import("../../webgpu_backend.zig").WebGPUBackend;
 
 pub fn createSurface(
     self: *WebGPUBackend,

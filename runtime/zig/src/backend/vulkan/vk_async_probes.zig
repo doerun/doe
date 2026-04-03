@@ -13,7 +13,7 @@ const vk_device = @import("vk_device.zig");
 const vk_resources = @import("vk_resources.zig");
 const vk_formats = @import("vk_formats.zig");
 const vk_upload = @import("vk_upload.zig");
-const model = @import("../../model.zig");
+const model = @import("../../model_webgpu_types.zig");
 const common_timing = @import("../common/timing.zig");
 
 const VK_NULL_U64 = c.VK_NULL_U64;

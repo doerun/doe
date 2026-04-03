@@ -1,4 +1,4 @@
-const model = @import("../../model.zig");
+const model = @import("../../model_commands.zig");
 
 pub const Capability = enum {
     compute_dispatch,

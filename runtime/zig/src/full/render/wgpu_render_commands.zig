@@ -1,5 +1,5 @@
 const std = @import("std");
-const model = @import("../../model.zig");
+const model = @import("../../model_webgpu_types.zig");
 const types = @import("../../core/abi/wgpu_types.zig");
 const loader = @import("../../core/abi/wgpu_loader.zig");
 const resources = @import("../../core/resource/wgpu_resources.zig");
@@ -12,7 +12,7 @@ const render_resource_mod = @import("wgpu_render_resources.zig");
 const render_draw_loops = @import("wgpu_render_draw_loops.zig");
 const render_types_mod = @import("wgpu_render_types.zig");
 const render_temp_texture = @import("wgpu_render_temp_texture.zig");
-const ffi = @import("../../webgpu_ffi.zig");
+const ffi = @import("../../webgpu_backend.zig");
 const rc = @import("wgpu_render_constants.zig");
 const Backend = ffi.WebGPUBackend;
 const DEFAULT_MAX_DRAW_COUNT: u64 = 50_000_000;

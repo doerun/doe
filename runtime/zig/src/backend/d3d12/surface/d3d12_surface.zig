@@ -1,5 +1,5 @@
 const std = @import("std");
-const model = @import("../../../model.zig");
+const model = @import("../../../model_webgpu_types.zig");
 const common_timing = @import("../../common/timing.zig");
 
 extern fn d3d12_bridge_create_swap_chain(queue: ?*anyopaque, width: u32, height: u32, format: u32, alpha_mode: u32, tone_mapping_mode: u32) callconv(.c) ?*anyopaque;

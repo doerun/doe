@@ -1,11 +1,11 @@
 const std = @import("std");
-const model = @import("../../model.zig");
+const model = @import("../../model_webgpu_types.zig");
 const types = @import("../abi/wgpu_types.zig");
 const normalizers = @import("wgpu_resource_normalizers.zig");
 const loader = @import("../abi/wgpu_loader.zig");
 const p0_procs_mod = @import("../../wgpu_p0_procs.zig");
 const texture_procs_mod = @import("../../wgpu_texture_procs.zig");
-const ffi = @import("../../webgpu_ffi.zig");
+const ffi = @import("../../webgpu_backend.zig");
 const Backend = ffi.WebGPUBackend;
 const BUFFER_ZERO_INIT_CHUNK_BYTES: usize = 64 * 1024;
 const BUFFER_MIN_ALIGNMENT: u64 = 4;

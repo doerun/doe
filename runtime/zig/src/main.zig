@@ -1,5 +1,7 @@
 const std = @import("std");
-const model = @import("model.zig");
+const model_commands = @import("model_commands.zig");
+const model_policy = @import("model_policy.zig");
+const model_profile = @import("model_profile.zig");
 const quirk = @import("quirk/mod.zig");
 const command_stream = @import("command_stream.zig");
 const execution = @import("execution.zig");
@@ -12,6 +14,13 @@ const main_print = @import("main_print.zig");
 const main_usage = @import("main_usage.zig");
 const numeric_stability_runtime = @import("numeric_stability_runtime.zig");
 const lean_proof = @import("lean_proof.zig");
+
+const model = struct {
+    pub const Command = model_commands.Command;
+    pub const DeviceProfile = model_profile.DeviceProfile;
+    pub const SemVer = model_profile.SemVer;
+    pub const parse_api = model_policy.parse_api;
+};
 
 const sample_quirks =
     \\[

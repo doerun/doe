@@ -4,7 +4,7 @@
 const std = @import("std");
 const builtin = @import("builtin");
 const has_vulkan = (builtin.os.tag == .linux);
-const model = @import("model.zig");
+const model = @import("model_webgpu_types.zig");
 const types = @import("core/abi/wgpu_types.zig");
 const wgsl_compiler = @import("doe_wgsl/mod.zig");
 const error_scope = @import("error_scope.zig");

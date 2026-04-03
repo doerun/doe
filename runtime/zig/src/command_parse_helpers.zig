@@ -1,5 +1,5 @@
 const std = @import("std");
-const model = @import("model.zig");
+const model = @import("model_webgpu_types.zig");
 const compressed_formats = @import("core/abi/wgpu_type_texture_formats.zig");
 
 pub const ParseError = error{

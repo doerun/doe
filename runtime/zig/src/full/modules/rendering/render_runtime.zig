@@ -1,8 +1,8 @@
 const std = @import("std");
-const model = @import("../../../model.zig");
+const model = @import("../../../model_webgpu_types.zig");
 const types = @import("../../../core/abi/wgpu_types.zig");
 const render_commands = @import("../../render/wgpu_render_commands.zig");
-const webgpu = @import("../../../webgpu_ffi.zig");
+const webgpu = @import("../../../webgpu_backend.zig");
 const common = @import("../common.zig");
 
 pub const RenderRuntimeError = error{

@@ -87,6 +87,14 @@ For v0, success is trend-based rather than slogan-based:
 - improving CTS and benchmark evidence
 - proof coverage only where it deletes meaningful runtime logic
 
+## Related docs
+
+- [`problems-addressed.md`](./problems-addressed.md) for specific practitioner
+  pain points and how Doe handles them
+- [`architecture.md`](./architecture.md) for system surfaces
+- [`performance-strategy.md`](./performance-strategy.md) for Dawn comparison
+  methodology
+
 ## Non-goals
 
 Doe is not trying to:

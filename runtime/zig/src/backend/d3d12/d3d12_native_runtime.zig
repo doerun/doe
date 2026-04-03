@@ -3,8 +3,8 @@ const std = @import("std");
 const common_timing = @import("../common/timing.zig");
 const common_errors = @import("../common/errors.zig");
 const path_utils = @import("../common/path_utils.zig");
-const webgpu = @import("../../webgpu_ffi.zig");
-const model = @import("../../model.zig");
+const webgpu = @import("../runtime_types.zig");
+const model = @import("../../model_webgpu_types.zig");
 const doe_wgsl = @import("../../doe_wgsl/mod.zig");
 const hlsl_dispatch_contract = @import("../../doe_wgsl/hlsl_dispatch_contract.zig");
 

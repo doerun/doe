@@ -1,7 +1,7 @@
 const std = @import("std");
 const types = @import("../abi/wgpu_types.zig");
 const loader = @import("../abi/wgpu_loader.zig");
-const WebGPUBackend = @import("../../webgpu_ffi.zig").WebGPUBackend;
+const WebGPUBackend = @import("../../webgpu_backend.zig").WebGPUBackend;
 
 const QUEUE_SYNC_RETRY_LIMIT: u32 = 3;
 const QUEUE_SYNC_RETRY_BACKOFF_NS: u64 = 1_000_000;

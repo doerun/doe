@@ -9,7 +9,7 @@ const doe_wgsl = @import("doe_wgsl/mod.zig");
 const runtime_compile = @import("doe_wgsl/runtime_compile.zig");
 const compute_preconditions = @import("doe_compute_preconditions_native.zig");
 const native = @import("doe_wgpu_native.zig");
-const model = @import("model.zig");
+const model = @import("model_webgpu_types.zig");
 
 const alloc = native.alloc;
 const cast = native.cast;
@@ -172,7 +172,7 @@ pub fn vulkan_compute_pass_dispatch(pass: *DoeComputePass, x: u32, y: u32, z: u3
         return;
     };
 
-    const webgpu = @import("webgpu_ffi.zig");
+    const webgpu = @import("backend/runtime_types.zig");
     _ = rt.run_dispatch(
         x,
         y,
@@ -239,7 +239,7 @@ pub fn vulkan_compute_pass_dispatch_indirect(
         return;
     };
 
-    const webgpu = @import("webgpu_ffi.zig");
+    const webgpu = @import("backend/runtime_types.zig");
     _ = rt.run_dispatch(
         dispatch_x,
         dispatch_y,

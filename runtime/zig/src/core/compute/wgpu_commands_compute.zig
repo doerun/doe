@@ -1,10 +1,10 @@
 const std = @import("std");
-const model = @import("../../model.zig");
+const model = @import("../../model_webgpu_types.zig");
 const types = @import("../abi/wgpu_types.zig");
 const loader = @import("../abi/wgpu_loader.zig");
 const p0_procs_mod = @import("../../wgpu_p0_procs.zig");
 const resources = @import("../resource/wgpu_resources.zig");
-const ffi = @import("../../webgpu_ffi.zig");
+const ffi = @import("../../webgpu_backend.zig");
 const Backend = ffi.WebGPUBackend;
 
 const BARRIER_SCRATCH_BUFFER_HANDLE: u64 = 0xFFFF_FFFF_FFFF_FFFB;

@@ -1,5 +1,5 @@
 const std = @import("std");
-const model = @import("../../model.zig");
+const model = @import("../../model_webgpu_types.zig");
 pub const NativeExecutionStatus = enum {
     ok,
     unsupported,

@@ -1,4 +1,4 @@
-const model = @import("../../model.zig");
+const model = @import("../../model_commands.zig");
 
 pub fn manifest_module(command: model.Command) []const u8 {
     return switch (command) {

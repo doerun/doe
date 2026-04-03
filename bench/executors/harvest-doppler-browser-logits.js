@@ -15,6 +15,7 @@ const DEFAULT_MODEL_MOUNT = "/__doe_probe_model";
 const DEFAULT_BROWSER_CHANNEL = "chromium";
 const DEFAULT_TIMEOUT_MS = 180_000;
 const DEFAULT_REPEAT_ISOLATION = "reuse-page";
+const DEFAULT_PERSIST_LOGITS_PROMPT_CHUNK_SIZE = 15;
 const REPEAT_ISOLATION_OPTIONS = new Set(["reuse-page", "new-page", "new-browser"]);
 const MIME_BY_EXTENSION = Object.freeze({
   ".bin": "application/octet-stream",
@@ -638,7 +639,7 @@ async function harvestRepeat(page, spec, timeoutMs) {
                 status: "ok",
                 id: prompt.id ?? null,
                 text: prompt.text,
-                promptIndex,
+                promptIndex: Number.isFinite(prompt.promptIndex) ? prompt.promptIndex : promptIndex,
                 promptTokenIds,
                 greedyTokenSequence,
                 prefillEmbedding: prefillEmbeddingSummary,
@@ -649,7 +650,7 @@ async function harvestRepeat(page, spec, timeoutMs) {
                 status: "error",
                 id: prompt.id ?? null,
                 text: prompt.text,
-                promptIndex,
+                promptIndex: Number.isFinite(prompt.promptIndex) ? prompt.promptIndex : promptIndex,
                 error: String(error?.stack ?? error),
               });
             }
@@ -674,6 +675,17 @@ async function harvestRepeat(page, spec, timeoutMs) {
   );
 }
 
+function chunkPromptCandidates(promptCandidates, chunkSize) {
+  if (!Number.isFinite(chunkSize) || chunkSize <= 0 || promptCandidates.length <= chunkSize) {
+    return [promptCandidates];
+  }
+  const chunks = [];
+  for (let index = 0; index < promptCandidates.length; index += chunkSize) {
+    chunks.push(promptCandidates.slice(index, index + chunkSize));
+  }
+  return chunks;
+}
+
 async function runProbe(config) {
   const dopplerRepoPath = resolvePath(config.dopplerRepoPath, "dopplerRepoPath");
   const modelArtifactPath = resolvePath(config.modelArtifactPath, "modelArtifactPath");
@@ -688,6 +700,7 @@ async function runProbe(config) {
     : "last";
   const useChatTemplate = asBoolean(config.useChatTemplate, false);
   const repeatIsolation = browserRepeatIsolation(config);
+  const persistPromptChunkSize = persistLogits ? DEFAULT_PERSIST_LOGITS_PROMPT_CHUNK_SIZE : Number.POSITIVE_INFINITY;
   const mounts = [{ urlPrefix: DEFAULT_MODEL_MOUNT, rootDir: modelArtifactPath }];
   const staticServer = await createStaticServer(dopplerRepoPath, mounts);
   const timeoutMs = browserTimeoutMs(config);
@@ -702,7 +715,10 @@ async function runProbe(config) {
     const runSpec = {
       modelUrl: DEFAULT_MODEL_MOUNT,
       runtimeConfig: config.runtimeConfig ?? {},
-      promptCandidates: config.promptCandidates,
+      promptCandidates: config.promptCandidates.map((prompt, promptIndex) => ({
+        ...prompt,
+        promptIndex,
+      })),
       decodeSteps,
       topK,
       persistLogits,
@@ -738,21 +754,30 @@ async function runProbe(config) {
           repeatPage = await createProbePage(repeatBrowser, staticServer.baseUrl, timeoutMs);
           ownsPage = repeatIsolation !== "reuse-page";
         }
-        const repeatResult = await harvestRepeat(
-          repeatPage,
-          {
-            ...runSpec,
-            repeatIndex,
-          },
-          timeoutMs
-        );
-        browserUserAgent ??= repeatResult.browserUserAgent;
-        adapterInfo ??= repeatResult.adapterInfo;
-        resolvedTokens ??= repeatResult.resolvedTokens ?? null;
+        const promptChunks = chunkPromptCandidates(runSpec.promptCandidates, persistPromptChunkSize);
+        let repeatElapsedMs = 0;
+        const repeatPromptResults = [];
+        for (const promptChunk of promptChunks) {
+          const repeatResult = await harvestRepeat(
+            repeatPage,
+            {
+              ...runSpec,
+              promptCandidates: promptChunk,
+              repeatIndex,
+            },
+            timeoutMs
+          );
+          browserUserAgent ??= repeatResult.browserUserAgent;
+          adapterInfo ??= repeatResult.adapterInfo;
+          resolvedTokens ??= repeatResult.resolvedTokens ?? null;
+          repeatElapsedMs += repeatResult.elapsedMs;
+          repeatPromptResults.push(...repeatResult.promptResults);
+        }
+        repeatPromptResults.sort((left, right) => left.promptIndex - right.promptIndex);
         runs.push({
-          repeatIndex: repeatResult.repeatIndex,
-          elapsedMs: repeatResult.elapsedMs,
-          promptResults: repeatResult.promptResults,
+          repeatIndex,
+          elapsedMs: repeatElapsedMs,
+          promptResults: repeatPromptResults,
         });
       } finally {
         if (ownsPage && repeatPage) {

@@ -4,7 +4,7 @@
 // per-format metadata (bytes per pixel, aspect mask).
 // Also maps WebGPU vertex format enum values to VkFormat for vertex input.
 
-const model = @import("../../model.zig");
+const model = @import("../../model_webgpu_types.zig");
 
 // --- VkFormat constants (Vulkan 1.0 spec values) ---
 

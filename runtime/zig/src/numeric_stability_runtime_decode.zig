@@ -1,8 +1,14 @@
 const std = @import("std");
 const execution = @import("execution.zig");
-const model = @import("model.zig");
+const model_commands = @import("model_commands.zig");
+const model_webgpu_types = @import("model_webgpu_types.zig");
 const numeric_stability_service = @import("full/modules/services/numeric_stability.zig");
 const runtime_plan = @import("numeric_stability_runtime_plan.zig");
+
+const model = struct {
+    pub const Command = model_commands.Command;
+    pub const KernelDispatchCommand = model_webgpu_types.KernelDispatchCommand;
+};
 
 pub const GREEDY_DECODE_MODE = "greedy-argmax";
 pub const SAMPLED_DECODE_MODE = "sampled-cdf";

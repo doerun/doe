@@ -116,6 +116,7 @@ when they are tied back to those emitted contracts.
 
 ## Related docs
 
+- [`docs/problems-addressed.md`](./problems-addressed.md) for practitioner pain points and how Doe handles them
 - [`docs/thesis.md`](./thesis.md) for project rationale
 - [`docs/process.md`](./process.md) for stage order and gates
 - [`docs/numeric-stability-runtime-roadmap.md`](./numeric-stability-runtime-roadmap.md) for the numeric-stability integration path from bench evidence to live runtime contract

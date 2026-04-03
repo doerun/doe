@@ -1,11 +1,20 @@
 const std = @import("std");
-const model = @import("model.zig");
-const webgpu = @import("webgpu_ffi.zig");
+const model_commands = @import("model_commands.zig");
+const model_profile = @import("model_profile.zig");
+const model_webgpu_types = @import("model_webgpu_types.zig");
 const backend_runtime = @import("backend/backend_runtime.zig");
 const backend_ids = @import("backend/backend_ids.zig");
 const backend_policy = @import("backend/backend_policy.zig");
 const backend_telemetry = @import("backend/backend_telemetry.zig");
+const runtime_types = @import("backend/runtime_types.zig");
 const semantic_trace = @import("semantic_trace.zig");
+
+const model = struct {
+    pub const Command = model_commands.Command;
+    pub const DeviceProfile = model_profile.DeviceProfile;
+    pub const KernelBinding = model_webgpu_types.KernelBinding;
+    pub const SemVer = model_profile.SemVer;
+};
 
 pub const BackendMode = enum {
     trace,
@@ -341,10 +350,10 @@ pub const ExecutionContext = struct {
     }
 };
 
-pub const UploadBufferUsageMode = webgpu.UploadBufferUsageMode;
-pub const QueueWaitMode = webgpu.QueueWaitMode;
-pub const QueueSyncMode = webgpu.QueueSyncMode;
-pub const GpuTimestampMode = webgpu.GpuTimestampMode;
+pub const UploadBufferUsageMode = runtime_types.UploadBufferUsageMode;
+pub const QueueWaitMode = runtime_types.QueueWaitMode;
+pub const QueueSyncMode = runtime_types.QueueSyncMode;
+pub const GpuTimestampMode = runtime_types.GpuTimestampMode;
 
 pub fn parseUploadBufferUsage(raw: []const u8) ?UploadBufferUsageMode {
     if (std.ascii.eqlIgnoreCase(raw, "copy-dst-copy-src")) return .copy_dst_copy_src;

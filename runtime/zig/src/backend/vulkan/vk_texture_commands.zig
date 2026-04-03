@@ -2,7 +2,7 @@
 // commands for the NativeVulkanRuntime. Sharded from native_runtime.zig.
 
 const std = @import("std");
-const model = @import("../../model.zig");
+const model = @import("../../model_webgpu_types.zig");
 const c = @import("vk_constants.zig");
 const vk_sync = @import("vk_sync.zig");
 const vk_upload = @import("vk_upload.zig");
@@ -33,9 +33,14 @@ pub fn texture_write(self: *NativeVulkanRuntime, cmd_arg: model.TextureWriteComm
     };
     try c.check_vk(c.vkBeginCommandBuffer(self.primary_command_buffer, &begin_info));
     vk_resources.transition_texture_layout(
-        self.primary_command_buffer, resource.*, resource.layout,
-        c.VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 0, c.VK_ACCESS_TRANSFER_WRITE_BIT,
-        c.VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, c.VK_PIPELINE_STAGE_TRANSFER_BIT,
+        self.primary_command_buffer,
+        resource.*,
+        resource.layout,
+        c.VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        0,
+        c.VK_ACCESS_TRANSFER_WRITE_BIT,
+        c.VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+        c.VK_PIPELINE_STAGE_TRANSFER_BIT,
     );
     var region = c.VkBufferImageCopy{
         .bufferOffset = 0,
@@ -59,10 +64,14 @@ pub fn texture_write(self: *NativeVulkanRuntime, cmd_arg: model.TextureWriteComm
     };
     c.vkCmdCopyBufferToImage(self.primary_command_buffer, staging.buffer, resource.image, c.VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, @ptrCast(&region));
     vk_resources.transition_texture_layout(
-        self.primary_command_buffer, resource.*, c.VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-        c.VK_IMAGE_LAYOUT_GENERAL, c.VK_ACCESS_TRANSFER_WRITE_BIT,
+        self.primary_command_buffer,
+        resource.*,
+        c.VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        c.VK_IMAGE_LAYOUT_GENERAL,
+        c.VK_ACCESS_TRANSFER_WRITE_BIT,
         c.VK_ACCESS_SHADER_READ_BIT | c.VK_ACCESS_SHADER_WRITE_BIT,
-        c.VK_PIPELINE_STAGE_TRANSFER_BIT, c.VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+        c.VK_PIPELINE_STAGE_TRANSFER_BIT,
+        c.VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
     );
     try c.check_vk(c.vkEndCommandBuffer(self.primary_command_buffer));
     try submit_and_wait_timeline(self);
@@ -99,7 +108,9 @@ pub fn texture_read(self: *NativeVulkanRuntime, args: struct {
     try c.check_vk(c.vkBeginCommandBuffer(self.primary_command_buffer, &begin_info));
     const prev_layout = texture.layout;
     vk_resources.transition_texture_layout(
-        self.primary_command_buffer, texture.*, prev_layout,
+        self.primary_command_buffer,
+        texture.*,
+        prev_layout,
         c.VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
         vk_resources.texture_transition_source(prev_layout).src_access_mask,
         c.VK_ACCESS_TRANSFER_READ_BIT,
@@ -125,10 +136,14 @@ pub fn texture_read(self: *NativeVulkanRuntime, args: struct {
     };
     c.vkCmdCopyImageToBuffer(self.primary_command_buffer, texture.image, c.VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, staging.buffer, 1, @ptrCast(&region));
     vk_resources.transition_texture_layout(
-        self.primary_command_buffer, texture.*, c.VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-        c.VK_IMAGE_LAYOUT_GENERAL, c.VK_ACCESS_TRANSFER_READ_BIT,
+        self.primary_command_buffer,
+        texture.*,
+        c.VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+        c.VK_IMAGE_LAYOUT_GENERAL,
+        c.VK_ACCESS_TRANSFER_READ_BIT,
         c.VK_ACCESS_SHADER_READ_BIT | c.VK_ACCESS_SHADER_WRITE_BIT,
-        c.VK_PIPELINE_STAGE_TRANSFER_BIT, c.VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+        c.VK_PIPELINE_STAGE_TRANSFER_BIT,
+        c.VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
     );
     try c.check_vk(c.vkEndCommandBuffer(self.primary_command_buffer));
     try submit_and_wait_timeline(self);
@@ -222,14 +237,20 @@ pub fn collect_dispatch_gpu_timestamp(self: *NativeVulkanRuntime) !u64 {
     var query_pool: c.VkQueryPool = c.VK_NULL_U64;
     defer if (query_pool != c.VK_NULL_U64) c.vkDestroyQueryPool(self.device, query_pool, null);
     var create_info = c.VkQueryPoolCreateInfo{
-        .sType = c.VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO, .pNext = null, .flags = 0,
-        .queryType = c.VK_QUERY_TYPE_TIMESTAMP, .queryCount = 2, .pipelineStatistics = 0,
+        .sType = c.VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,
+        .pNext = null,
+        .flags = 0,
+        .queryType = c.VK_QUERY_TYPE_TIMESTAMP,
+        .queryCount = 2,
+        .pipelineStatistics = 0,
     };
     try c.check_vk(c.vkCreateQueryPool(self.device, &create_info, null, &query_pool));
     try c.check_vk(c.vkResetCommandPool(self.device, self.command_pool, 0));
     var begin_info = c.VkCommandBufferBeginInfo{
-        .sType = c.VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, .pNext = null,
-        .flags = c.VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT, .pInheritanceInfo = null,
+        .sType = c.VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+        .pNext = null,
+        .flags = c.VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+        .pInheritanceInfo = null,
     };
     try c.check_vk(c.vkBeginCommandBuffer(self.primary_command_buffer, &begin_info));
     c.vkCmdWriteTimestamp(self.primary_command_buffer, c.VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, query_pool, 0);

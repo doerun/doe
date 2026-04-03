@@ -52,7 +52,9 @@ Trace and replay:
 - `src/replay.zig` — replay expectation parsing and hash-chain validation.
 
 WebGPU backend:
-- `src/webgpu_ffi.zig` — WebGPUBackend struct, lifecycle (init/deinit), adapter/device request, queue sync, timestamp readback.
+- `src/backend/runtime_types.zig` — narrow backend-facing execution/result and queue/upload mode contract shared by backend lanes and orchestration; `src/webgpu_ffi.zig` re-exports the same types for compatibility.
+- `src/webgpu_backend.zig` — WebGPUBackend implementation and state ownership: lifecycle (init/deinit), adapter/device request, queue sync, timestamp readback, and the shared backend state structs.
+- `src/webgpu_ffi.zig` — thin compatibility facade that re-exports `src/webgpu_backend.zig` and `src/backend/runtime_types.zig`.
 - `src/core/abi/wgpu_types.zig` — all WebGPU C API types, constants, function pointer types, Procs table, record types.
 - `src/core/abi/wgpu_loader.zig` — dynamic library loading, C callbacks, helper functions.
 - `src/wgpu_commands.zig` — command execution orchestration for upload/copy/barrier/dispatch/kernel dispatch plus render command delegation.

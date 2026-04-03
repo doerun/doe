@@ -6,7 +6,7 @@ const builtin = @import("builtin");
 const has_vulkan = (builtin.os.tag == .linux);
 const native = @import("doe_wgpu_native.zig");
 const types = @import("core/abi/wgpu_types.zig");
-const model = @import("model.zig");
+const model = @import("model_webgpu_types.zig");
 const query_native = @import("doe_query_native.zig");
 const c = if (has_vulkan) @import("backend/vulkan/vk_constants.zig") else struct {};
 const vk_resources = if (has_vulkan) @import("backend/vulkan/vk_resources.zig") else struct {};

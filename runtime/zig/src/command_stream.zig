@@ -1,5 +1,5 @@
 const std = @import("std");
-const model = @import("model.zig");
+const model = @import("model_commands.zig");
 const command_json = @import("command_json.zig");
 const command_json_raw = @import("command_json_raw.zig");
 const numeric_stability_annotation = @import("numeric_stability_annotation.zig");

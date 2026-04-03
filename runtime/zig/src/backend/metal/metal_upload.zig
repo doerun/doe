@@ -2,7 +2,7 @@
 // Sharded from metal_native_runtime.zig to stay under the 777-line limit.
 
 const std = @import("std");
-const webgpu = @import("../../webgpu_ffi.zig");
+const webgpu = @import("../runtime_types.zig");
 const bridge = @import("metal_bridge_decls.zig");
 const metal_bridge_begin_blit_encoding = bridge.metal_bridge_begin_blit_encoding;
 const metal_bridge_blit_encoder_copy = bridge.metal_bridge_blit_encoder_copy;

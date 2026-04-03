@@ -4,7 +4,7 @@ const render_api_mod = @import("wgpu_render_api.zig");
 const render_types_mod = @import("wgpu_render_types.zig");
 const resources = @import("../../core/resource/wgpu_resources.zig");
 const types = @import("../../core/abi/wgpu_types.zig");
-const ffi = @import("../../webgpu_ffi.zig");
+const ffi = @import("../../webgpu_backend.zig");
 
 const Backend = ffi.WebGPUBackend;
 const BUFFER_USAGE_INDIRECT: types.WGPUBufferUsage = 0x0000000000000100;

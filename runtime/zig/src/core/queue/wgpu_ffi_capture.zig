@@ -1,7 +1,7 @@
 const std = @import("std");
 const types = @import("../abi/wgpu_types.zig");
 const loader = @import("../abi/wgpu_loader.zig");
-const WebGPUBackend = @import("../../webgpu_ffi.zig").WebGPUBackend;
+const WebGPUBackend = @import("../../webgpu_backend.zig").WebGPUBackend;
 
 const CAPTURE_ALIGNMENT_BYTES: u64 = 4;
 

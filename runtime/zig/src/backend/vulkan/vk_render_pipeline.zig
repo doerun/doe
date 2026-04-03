@@ -5,7 +5,7 @@ const std = @import("std");
 const c = @import("vk_constants.zig");
 const vk_formats = @import("vk_formats.zig");
 const vk_resources = @import("vk_resources.zig");
-const model = @import("../../model.zig");
+const model = @import("../../model_webgpu_types.zig");
 
 const VK_NULL_U64 = c.VK_NULL_U64;
 

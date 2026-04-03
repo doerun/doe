@@ -1,12 +1,12 @@
 const std = @import("std");
 const builtin = @import("builtin");
 const model = @import("../model.zig");
-const webgpu = @import("../webgpu_ffi.zig");
 const backend_iface = @import("backend_iface.zig");
 const backend_policy = @import("backend_policy.zig");
 const backend_registry = @import("backend_registry.zig");
 const backend_selection = @import("backend_selection.zig");
 const backend_telemetry = @import("backend_telemetry.zig");
+const runtime_types = @import("runtime_types.zig");
 const vulkan_backend = if (builtin.os.tag == .linux) @import("vulkan/mod.zig") else struct {};
 const metal_backend = if (builtin.os.tag == .macos) @import("metal/mod.zig") else struct {};
 const d3d12_backend = if (builtin.os.tag == .windows) @import("d3d12/mod.zig") else struct {};
@@ -99,23 +99,23 @@ pub const BackendRuntime = struct {
         }
     }
 
-    pub fn execute_command(self: *BackendRuntime, command: model.Command) !webgpu.NativeExecutionResult {
+    pub fn execute_command(self: *BackendRuntime, command: model.Command) !runtime_types.NativeExecutionResult {
         return try self.backend.execute_command(command);
     }
 
-    pub fn set_upload_behavior(self: *BackendRuntime, mode: webgpu.UploadBufferUsageMode, submit_every: u32) void {
+    pub fn set_upload_behavior(self: *BackendRuntime, mode: runtime_types.UploadBufferUsageMode, submit_every: u32) void {
         self.backend.set_upload_behavior(mode, submit_every);
     }
 
-    pub fn set_queue_wait_mode(self: *BackendRuntime, mode: webgpu.QueueWaitMode) void {
+    pub fn set_queue_wait_mode(self: *BackendRuntime, mode: runtime_types.QueueWaitMode) void {
         self.backend.set_queue_wait_mode(mode);
     }
 
-    pub fn set_queue_sync_mode(self: *BackendRuntime, mode: webgpu.QueueSyncMode) void {
+    pub fn set_queue_sync_mode(self: *BackendRuntime, mode: runtime_types.QueueSyncMode) void {
         self.backend.set_queue_sync_mode(mode);
     }
 
-    pub fn set_gpu_timestamp_mode(self: *BackendRuntime, mode: webgpu.GpuTimestampMode) void {
+    pub fn set_gpu_timestamp_mode(self: *BackendRuntime, mode: runtime_types.GpuTimestampMode) void {
         self.backend.set_gpu_timestamp_mode(mode);
     }
 

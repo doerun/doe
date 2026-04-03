@@ -1,5 +1,5 @@
 const std = @import("std");
-const model = @import("model.zig");
+const model = @import("model_webgpu_types.zig");
 const parse_helpers = @import("command_parse_helpers.zig");
 
 pub const ParseError = error{

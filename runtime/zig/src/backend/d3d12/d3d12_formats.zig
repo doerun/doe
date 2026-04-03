@@ -5,7 +5,7 @@
 // Also maps WebGPU vertex format enum values to DXGI_FORMAT for vertex input.
 // Mirrors the structure of vk_formats.zig for the D3D12 backend.
 
-const model = @import("../../model.zig");
+const model = @import("../../model_webgpu_types.zig");
 const compressed_formats = @import("../../core/abi/wgpu_type_texture_formats.zig");
 
 // --- DXGI_FORMAT constants (Microsoft DXGI 1.0+ spec values) ---

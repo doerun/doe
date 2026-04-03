@@ -1,5 +1,5 @@
 {
-  "scenarioId": "apple_metal_full_greedy_16step_qwen06b_dawn",
+  "scenarioId": "amd_vulkan_full_greedy_16step_qwen08b_dawn_vulkan",
   "dopplerRepoPath": "../doppler",
   "modelArtifactPath": "../doppler/models/local/qwen-3-5-0-8b-q4k-ehaf16",
   "modelId": "qwen-3-5-0-8b-q4k-ehaf16",
@@ -24,7 +24,9 @@
     "args": [
       "--enable-unsafe-webgpu",
       "--enable-webgpu-developer-features",
-      "--disable-dawn-features=disallow_unsafe_apis"
+      "--disable-dawn-features=disallow_unsafe_apis",
+      "--enable-features=Vulkan",
+      "--use-angle=vulkan"
     ]
   },
   "promptCandidates": [
@@ -1053,5 +1055,5 @@
       "text": "True, false, or debated: a virus is alive"
     }
   ],
-  "backendLane": "metal_dawn_release"
+  "backendLane": "vulkan_dawn_release"
 }

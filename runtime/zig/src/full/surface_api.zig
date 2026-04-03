@@ -1,5 +1,5 @@
 const std = @import("std");
-const model = @import("../model.zig");
+const model = @import("../model_commands.zig");
 const core_surface = @import("../core/surface.zig");
 const command_partition = @import("command_partition.zig");
 const command_dispatch = @import("command_dispatch.zig");
@@ -13,7 +13,6 @@ const command_dispatch = @import("command_dispatch.zig");
 ///
 /// The full surface re-exports core surface types so callers do not need to
 /// import both modules.
-
 pub const SURFACE_ID = "doe-full";
 pub const SURFACE_VERSION: u32 = 1;
 

@@ -8,7 +8,7 @@ const c = @import("vk_constants.zig");
 const vk_device = @import("vk_device.zig");
 const vk_upload = @import("vk_upload.zig");
 const vk_formats = @import("vk_formats.zig");
-const model = @import("../../model.zig");
+const model = @import("../../model_webgpu_types.zig");
 const common_errors = @import("../common/errors.zig");
 const common_timing = @import("../common/timing.zig");
 

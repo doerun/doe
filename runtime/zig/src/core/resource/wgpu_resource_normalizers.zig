@@ -1,4 +1,4 @@
-const model = @import("../../model.zig");
+const model = @import("../../model_webgpu_types.zig");
 const types = @import("../abi/wgpu_types.zig");
 
 pub fn normalizeBufferBindingType(value: u32) u32 {

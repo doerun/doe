@@ -1,7 +1,7 @@
 const std = @import("std");
 const command_stream = @import("command_stream.zig");
 const execution = @import("execution.zig");
-const model = @import("model.zig");
+const model_commands = @import("model_commands.zig");
 const numeric_stability_annotation = @import("numeric_stability_annotation.zig");
 const numeric_stability_policy = @import("numeric_stability_policy.zig");
 const semantic_trace = @import("semantic_trace.zig");
@@ -11,6 +11,10 @@ const numeric_stability_service = @import("full/modules/services/numeric_stabili
 const runtime_decode = @import("numeric_stability_runtime_decode.zig");
 const runtime_eval = @import("numeric_stability_runtime_eval.zig");
 const runtime_plan = @import("numeric_stability_runtime_plan.zig");
+
+const model = struct {
+    pub const Command = model_commands.Command;
+};
 
 const RECEIPT_PATH_SUFFIX = ".numeric-stability.jsonl";
 

@@ -155,7 +155,7 @@ pub export fn doeNativeQueueWriteTexture(
             const rt = native.device_vk_runtime(q.?.dev) orelse return;
             const tex = cast(DoeTexture, texture_raw) orelse return;
             if (tex.vk_id != 0) {
-                const model = @import("model.zig");
+                const model = @import("model_webgpu_types.zig");
                 const rows = if (rows_per_image > 0) rows_per_image else height;
                 const copy_res = model.CopyTextureResource{
                     .handle = tex.vk_id,

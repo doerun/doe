@@ -2,7 +2,7 @@
 // Sharded from doe_render_native.zig for file-size compliance.
 
 const std = @import("std");
-const model = @import("model.zig");
+const model = @import("model_webgpu_types.zig");
 const types = @import("core/abi/wgpu_types.zig");
 const native = @import("doe_wgpu_native.zig");
 const d3d12_formats = @import("backend/d3d12/d3d12_formats.zig");

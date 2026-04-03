@@ -7,7 +7,7 @@ const vk_sync = @import("vk_sync.zig");
 const vk_formats = @import("vk_formats.zig");
 const vk_upload = @import("vk_upload.zig");
 const vk_resources = @import("vk_resources.zig");
-const model = @import("../../model.zig");
+const model = @import("../../model_webgpu_types.zig");
 const common_timing = @import("../common/timing.zig");
 const render_bundle = @import("../../render_bundle.zig");
 const vk_render_pipeline = @import("vk_render_pipeline.zig");
@@ -513,7 +513,11 @@ fn record_and_submit_draws(
             self.primary_command_buffer,
             c.VK_PIPELINE_BIND_POINT_GRAPHICS,
             state.graphics_pipeline_layout,
-            0, 1, &sets, 0, null,
+            0,
+            1,
+            &sets,
+            0,
+            null,
         );
     }
 

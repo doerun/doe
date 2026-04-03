@@ -1,5 +1,5 @@
 {
-  "scenarioId": "apple_metal_full_greedy_16step_qwen06b",
+  "scenarioId": "apple_metal_full_greedy_16step_qwen08b_webkit",
   "dopplerRepoPath": "../doppler",
   "modelArtifactPath": "../doppler/models/local/qwen-3-5-0-8b-q4k-ehaf16",
   "modelId": "qwen-3-5-0-8b-q4k-ehaf16",
@@ -1052,5 +1052,6 @@
       "id": "virus-true-false-debated",
       "text": "True, false, or debated: a virus is alive"
     }
-  ]
+  ],
+  "backendLane": "metal_webkit_release"
 }

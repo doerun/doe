@@ -1,6 +1,7 @@
 const builtin = @import("builtin");
 const std = @import("std");
-const model = @import("../../model.zig");
+const model_policy = @import("../../model_policy.zig");
+const model_profile = @import("../../model_profile.zig");
 const backend_policy = @import("../../backend/backend_policy.zig");
 
 extern "c" fn setenv(name: [*:0]const u8, value: [*:0]const u8, overwrite: c_int) c_int;
@@ -16,7 +17,7 @@ pub const TraceLink = struct {
     resultHash: []const u8,
 };
 
-pub fn hostProfile() HostRuntimeError!model.DeviceProfile {
+pub fn hostProfile() HostRuntimeError!model_profile.DeviceProfile {
     return switch (builtin.os.tag) {
         .macos => .{
             .vendor = "apple",
@@ -114,7 +115,7 @@ pub fn kernelRootPath() []const u8 {
     return "bench/kernels";
 }
 
-pub fn hostBackendLane(api: model.Api) backend_policy.BackendLane {
+pub fn hostBackendLane(api: model_policy.Api) backend_policy.BackendLane {
     return switch (api) {
         .metal => .metal_doe_app,
         .d3d12 => .d3d12_doe_app,

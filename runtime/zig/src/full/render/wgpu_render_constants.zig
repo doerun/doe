@@ -1,5 +1,5 @@
 const std = @import("std");
-const model = @import("../../model.zig");
+const model = @import("../../model_webgpu_types.zig");
 const types = @import("../../core/abi/wgpu_types.zig");
 const render_resource_mod = @import("wgpu_render_resources.zig");
 const render_types_mod = @import("wgpu_render_types.zig");

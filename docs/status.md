@@ -1,4 +1,16 @@
 # Doe status
+## WebGPU backend implementation moved behind a thin root facade (2026-04-02 UTC)
+
+- New implementation owner: `runtime/zig/src/webgpu_backend.zig` now holds the `WebGPUBackend` implementation and shared backend state structs
+- `runtime/zig/src/webgpu_ffi.zig` is now a thin compatibility facade instead of a mixed implementation hub
+- Internal core/full/runtime callers were retargeted to `webgpu_backend.zig`; compatibility imports can continue to use `webgpu_ffi.zig`
+
+## Backend runtime contract extracted from the WebGPU FFI hub (2026-04-02 UTC)
+
+- New narrow shared contract: `runtime/zig/src/backend/runtime_types.zig` now owns backend-facing execution result and queue/upload mode types
+- Backend orchestration and native backend lanes now depend on that narrow contract instead of importing `runtime/zig/src/webgpu_ffi.zig` directly when they only need execution/result mode types
+- `runtime/zig/src/webgpu_ffi.zig` remains the compatibility facade for those types while the remaining root-level hub responsibilities are split more carefully in later slices
+
 ## WebKit WebGPU is a first-class backend: runtime probe, verifiable metadata, shim enum hardening, and main runtime integration (2026-03-30 UTC)
 
 - Runtime identity probe: `dawn-plan-executor` now detects WebKit shim at load time via `dlsym("doe_shim_get_backend_identity")` and records the correct `backendId`, `backendLane`, and `profile.driver` in all trace metadata and JSONL artifacts

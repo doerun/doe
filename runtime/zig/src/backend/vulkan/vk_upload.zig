@@ -8,7 +8,7 @@ const c = @import("vk_constants.zig");
 const vk_device = @import("vk_device.zig");
 const vk_sync = @import("vk_sync.zig");
 const backend_policy = @import("../backend_policy.zig");
-const webgpu = @import("../../webgpu_ffi.zig");
+const webgpu = @import("../runtime_types.zig");
 const common_errors = @import("../common/errors.zig");
 const common_timing = @import("../common/timing.zig");
 
