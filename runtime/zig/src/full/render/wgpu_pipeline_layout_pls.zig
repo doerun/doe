@@ -2,11 +2,9 @@ const abi_base = @import("../../core/abi/wgpu_base_types.zig");
 const abi_descriptor = @import("../../core/abi/wgpu_descriptor_types.zig");
 const loader = @import("../../core/abi/wgpu_loader.zig");
 const render_types_mod = @import("wgpu_render_types.zig");
-const ffi = @import("../../webgpu_backend.zig");
-const Backend = ffi.WebGPUBackend;
 
 pub fn createPipelineLayoutWithPixelLocalStorage(
-    self: *Backend,
+    self: anytype,
     bind_group_layouts: []const abi_base.WGPUBindGroupLayout,
     total_size_bytes: u64,
     storage_attachments: []const render_types_mod.PipelineLayoutStorageAttachment,

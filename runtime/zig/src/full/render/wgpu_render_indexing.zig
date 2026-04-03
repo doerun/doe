@@ -2,8 +2,6 @@ const std = @import("std");
 const model_render_types = @import("../../model_render_types.zig");
 const abi_base = @import("../../core/abi/wgpu_base_types.zig");
 const resources = @import("../../core/resource/wgpu_resources.zig");
-const ffi = @import("../../webgpu_backend.zig");
-const Backend = ffi.WebGPUBackend;
 
 pub const DEFAULT_INDEX_BUFFER_HANDLE: u64 = 0x8C9F_2700_0000_0000;
 pub const INDEX_FORMAT_UINT16: u32 = 0x00000001;
@@ -14,7 +12,7 @@ pub const PreparedIndexBuffer = struct {
     format: u32,
 };
 
-pub fn prepareIndexBuffer(self: *Backend, render: model_render_types.RenderDrawCommand) !?PreparedIndexBuffer {
+pub fn prepareIndexBuffer(self: anytype, render: model_render_types.RenderDrawCommand) !?PreparedIndexBuffer {
     const requested_count = render.index_count orelse return null;
     if (requested_count == 0) return error.InvalidIndexedDrawData;
 

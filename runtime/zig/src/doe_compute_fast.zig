@@ -2,6 +2,7 @@ const std = @import("std");
 const native = @import("doe_native_base.zig");
 const compute_bind_groups = @import("doe_compute_bind_groups.zig");
 const compute_preconditions = @import("doe_compute_preconditions_native.zig");
+const queue_submit = @import("doe_queue_submit_native.zig");
 const bridge = @import("backend/metal/metal_bridge_decls.zig");
 const emit_msl = @import("doe_wgsl/emit_msl_ir.zig");
 const metal_bridge_compute_dispatch_copy_signal_commit = bridge.metal_bridge_compute_dispatch_copy_signal_commit;
@@ -96,7 +97,7 @@ pub export fn doeNativeComputeDispatchFlush(
 ) callconv(.c) void {
     const q = native.cast(native.DoeQueue, q_raw) orelse return;
     const pipe = native.cast(native.DoeComputePipeline, pipe_raw) orelse return;
-    native.flush_pending_work(q);
+    queue_submit.flush_pending_work(q);
 
     var bind_groups: [MAX_COMPUTE_BIND_GROUPS]?*native.DoeBindGroup = [_]?*native.DoeBindGroup{null} ** MAX_COMPUTE_BIND_GROUPS;
     for (0..@min(bg_count, MAX_COMPUTE_BIND_GROUPS)) |i| {
@@ -140,7 +141,7 @@ pub export fn doeNativeComputeDispatchFlush(
     var copy_dst_off_local = copy_dst_off;
     var copy_size_local = copy_size;
     if (copy_size_local > 0) {
-        if (native.try_schedule_deferred_copy(q, copy_src, copy_src_off_local, copy_dst, copy_dst_off_local, copy_size_local)) {
+        if (queue_submit.try_schedule_deferred_copy(q, copy_src, copy_src_off_local, copy_dst, copy_dst_off_local, copy_size_local)) {
             copy_src_off_local = 0;
             copy_dst_off_local = 0;
             copy_size_local = 0;
@@ -172,7 +173,7 @@ pub export fn doeNativeComputeDispatchFlush(
     ) orelse return;
     q.pending_cmd = mtl_cmd;
     if (copy_size > 0) {
-        native.flush_pending_work(q);
+        queue_submit.flush_pending_work(q);
     }
 }
 
@@ -188,7 +189,7 @@ pub export fn doeNativeComputeDispatchBatchFlush(
     if (q.dev.backend != .metal) return;
     if (dispatch_count == 0) return;
 
-    native.flush_pending_work(q);
+    queue_submit.flush_pending_work(q);
     const mtl_cmd = metal_bridge_create_command_buffer(q.dev.mtl_queue) orelse return;
     var has_gpu_work = false;
 

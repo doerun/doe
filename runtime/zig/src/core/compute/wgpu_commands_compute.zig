@@ -10,8 +10,6 @@ const runtime_state = @import("../abi/wgpu_runtime_state_defs.zig");
 const loader = @import("../abi/wgpu_loader.zig");
 const p0_procs_mod = @import("../../wgpu_p0_procs.zig");
 const resources = @import("../resource/wgpu_resources.zig");
-const ffi = @import("../../webgpu_backend.zig");
-const Backend = ffi.WebGPUBackend;
 
 const BARRIER_SCRATCH_BUFFER_HANDLE: u64 = 0xFFFF_FFFF_FFFF_FFFB;
 const DISPATCH_INDIRECT_ARGS_HANDLE: u64 = 0xFFFF_FFFF_FFFF_FFFA;
@@ -20,7 +18,7 @@ const MAX_KERNEL_SOURCE_BYTES: usize = 4 * 1024 * 1024;
 const WHOLE_BUFFER_BINDING_MIN_BYTES: u64 = 4;
 const DEFAULT_DISPATCH_WGSL_KERNEL = "dispatch_noop.wgsl";
 
-pub fn executeBarrier(self: *Backend, barrier: model_resource_types.BarrierCommand) !abi_execution.NativeExecutionResult {
+pub fn executeBarrier(self: anytype, barrier: model_resource_types.BarrierCommand) !abi_execution.NativeExecutionResult {
     const procs = self.core.procs orelse return error.ProceduralNotReady;
     const p0_procs = p0_procs_mod.loadP0Procs(self.core.dyn_lib);
     const clear_buffer = if (p0_procs) |loaded| loaded.command_encoder_clear_buffer else null;
@@ -63,7 +61,7 @@ pub fn executeBarrier(self: *Backend, barrier: model_resource_types.BarrierComma
     };
 }
 
-pub fn executeDispatch(self: *Backend, dispatch: model_compute_types.DispatchCommand) !abi_execution.NativeExecutionResult {
+pub fn executeDispatch(self: anytype, dispatch: model_compute_types.DispatchCommand) !abi_execution.NativeExecutionResult {
     return executeKernelDispatchKernel(
         self,
         DEFAULT_DISPATCH_WGSL_KERNEL,
@@ -79,7 +77,7 @@ pub fn executeDispatch(self: *Backend, dispatch: model_compute_types.DispatchCom
     );
 }
 
-pub fn executeDispatchIndirect(self: *Backend, dispatch: model_compute_types.DispatchIndirectCommand) !abi_execution.NativeExecutionResult {
+pub fn executeDispatchIndirect(self: anytype, dispatch: model_compute_types.DispatchIndirectCommand) !abi_execution.NativeExecutionResult {
     return executeKernelDispatchKernel(
         self,
         DEFAULT_DISPATCH_WGSL_KERNEL,
@@ -95,7 +93,7 @@ pub fn executeDispatchIndirect(self: *Backend, dispatch: model_compute_types.Dis
     );
 }
 
-pub fn executeKernelDispatch(self: *Backend, kernel: model_compute_types.KernelDispatchCommand) !abi_execution.NativeExecutionResult {
+pub fn executeKernelDispatch(self: anytype, kernel: model_compute_types.KernelDispatchCommand) !abi_execution.NativeExecutionResult {
     const source = resolveKernelSource(self, kernel.kernel) catch |err| {
         const message = switch (err) {
             error.MissingKernelSource => "kernel_dispatch has no resolvable WGSL source",
@@ -131,7 +129,7 @@ pub fn pipelineCacheKey(source_bytes: []const u8, entry_point: []const u8) u64 {
 }
 
 pub fn executeKernelDispatchKernel(
-    self: *Backend,
+    self: anytype,
     kernel_name: []const u8,
     entry_point: []const u8,
     x: u32,
@@ -555,7 +553,7 @@ pub fn executeKernelDispatchKernel(
     };
 }
 
-pub fn validateKernelBindingsAgainstLimits(self: *Backend, bindings: []const model_compute_types.KernelBinding) ?[]const u8 {
+pub fn validateKernelBindingsAgainstLimits(self: anytype, bindings: []const model_compute_types.KernelBinding) ?[]const u8 {
     const limits_ptr = self.effectiveLimits() orelse {
         return "kernel_dispatch requires negotiated WebGPU limits for binding validation";
     };
@@ -589,7 +587,7 @@ pub fn validateKernelBindingsAgainstLimits(self: *Backend, bindings: []const mod
     return null;
 }
 
-pub fn bindingRangeSize(self: *Backend, binding: model_compute_types.KernelBinding) u64 {
+pub fn bindingRangeSize(self: anytype, binding: model_compute_types.KernelBinding) u64 {
     if (binding.buffer_size == 0) return 0;
     if (binding.buffer_size == abi_base.WGPU_WHOLE_SIZE) {
         if (self.core.buffers.get(binding.resource_handle)) |record| {
@@ -627,7 +625,7 @@ pub fn timestampReadbackStatus(err: anyerror) []const u8 {
     };
 }
 
-pub fn resolveKernelSource(self: *Backend, kernel_name: []const u8) !runtime_state.KernelSource {
+pub fn resolveKernelSource(self: anytype, kernel_name: []const u8) !runtime_state.KernelSource {
     if (kernel_name.len == 0) return error.MissingKernelSource;
     if (openKernelFile(self, kernel_name)) |source| return source;
     if (self.core.kernel_root) |root| {
@@ -636,7 +634,7 @@ pub fn resolveKernelSource(self: *Backend, kernel_name: []const u8) !runtime_sta
     return error.MissingKernelSource;
 }
 
-pub fn openKernelFile(self: *Backend, path: []const u8) ?runtime_state.KernelSource {
+pub fn openKernelFile(self: anytype, path: []const u8) ?runtime_state.KernelSource {
     const maybe_file = std.fs.cwd().openFile(path, .{}) catch |err| {
         if (err == error.FileNotFound or err == error.NoSuchFileOrDirectory) {
             return null;
@@ -652,7 +650,7 @@ pub fn openKernelFile(self: *Backend, path: []const u8) ?runtime_state.KernelSou
     return .{ .source = text, .owned = true, .mode = .file };
 }
 
-pub fn openKernelFromRoot(self: *Backend, kernel_name: []const u8, root: []const u8) ?runtime_state.KernelSource {
+pub fn openKernelFromRoot(self: anytype, kernel_name: []const u8, root: []const u8) ?runtime_state.KernelSource {
     if (kernel_name.len == 0) return null;
     const direct = std.fs.path.join(self.core.allocator, &[_][]const u8{ root, kernel_name }) catch return null;
     defer self.core.allocator.free(direct);

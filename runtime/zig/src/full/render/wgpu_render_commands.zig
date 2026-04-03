@@ -16,12 +16,10 @@ const render_resource_mod = @import("wgpu_render_resources.zig");
 const render_draw_loops = @import("wgpu_render_draw_loops.zig");
 const render_types_mod = @import("wgpu_render_types.zig");
 const render_temp_texture = @import("wgpu_render_temp_texture.zig");
-const ffi = @import("../../webgpu_backend.zig");
 const rc = @import("wgpu_render_constants.zig");
-const Backend = ffi.WebGPUBackend;
 const DEFAULT_MAX_DRAW_COUNT: u64 = 50_000_000;
 
-pub fn executeRenderDraw(self: *Backend, render: model_render_types.RenderDrawCommand) !abi_execution.NativeExecutionResult {
+pub fn executeRenderDraw(self: anytype, render: model_render_types.RenderDrawCommand) !abi_execution.NativeExecutionResult {
     if (render.draw_count == 0) {
         return .{ .status = .unsupported, .status_message = "render_draw draw_count must be > 0" };
     }

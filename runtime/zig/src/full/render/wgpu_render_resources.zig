@@ -8,8 +8,6 @@ const loader = @import("../../core/abi/wgpu_loader.zig");
 const resources = @import("../../core/resource/wgpu_resources.zig");
 const render_assets = @import("wgpu_render_assets.zig");
 const texture_procs_mod = @import("../../wgpu_texture_procs.zig");
-const ffi = @import("../../webgpu_backend.zig");
-const Backend = ffi.WebGPUBackend;
 
 pub const RENDER_UNIFORM_BINDING_INDEX: u32 = 0;
 pub const RENDER_TEXTURE_BINDING_INDEX: u32 = 1;
@@ -27,7 +25,7 @@ pub const RenderUniformBindingResources = struct {
     bind_group: abi_base.WGPUBindGroup,
 };
 
-pub fn getOrCreateRenderUniformBindingResources(self: *Backend) !RenderUniformBindingResources {
+pub fn getOrCreateRenderUniformBindingResources(self: anytype) !RenderUniformBindingResources {
     const procs = self.core.procs orelse return error.ProceduralNotReady;
     const texture_procs = texture_procs_mod.loadTextureProcs(self.core.dyn_lib) orelse return error.TextureProcUnavailable;
 
@@ -286,7 +284,7 @@ pub fn getOrCreateRenderUniformBindingResources(self: *Backend) !RenderUniformBi
 }
 
 pub fn getOrCreateCachedRenderTextureView(
-    self: *Backend,
+    self: anytype,
     cache: *std.AutoHashMap(u64, abi_records.RenderTextureViewCacheEntry),
     key: u64,
     texture: abi_base.WGPUTexture,

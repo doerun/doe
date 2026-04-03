@@ -4,29 +4,28 @@ const abi_descriptor = @import("../abi/wgpu_descriptor_types.zig");
 const abi_proc_aliases = @import("../abi/wgpu_type_proc_aliases.zig");
 const runtime_state = @import("../abi/wgpu_runtime_state_defs.zig");
 const loader = @import("../abi/wgpu_loader.zig");
-const WebGPUBackend = @import("../../webgpu_backend.zig").WebGPUBackend;
 
 const QUEUE_SYNC_RETRY_LIMIT: u32 = 3;
 const QUEUE_SYNC_RETRY_BACKOFF_NS: u64 = 1_000_000;
 const TIMESTAMP_MAP_RETRY_LIMIT: u32 = 3;
 const TIMESTAMP_MAP_RETRY_BACKOFF_NS: u64 = 1_000_000;
 
-pub fn syncAfterSubmit(self: *WebGPUBackend) !void {
+pub fn syncAfterSubmit(self: anytype) !void {
     if (self.core.queue_sync_mode == .per_command) {
         try self.waitForQueue();
     }
 }
 
-pub fn submitEmpty(self: *WebGPUBackend) !u64 {
+pub fn submitEmpty(self: anytype) !u64 {
     return try self.submitInternal(0, null);
 }
 
-pub fn submitCommandBuffers(self: *WebGPUBackend, command_buffers: []abi_base.WGPUCommandBuffer) !u64 {
+pub fn submitCommandBuffers(self: anytype, command_buffers: []abi_base.WGPUCommandBuffer) !u64 {
     return try self.submitInternal(command_buffers.len, command_buffers.ptr);
 }
 
 pub fn submitInternal(
-    self: *WebGPUBackend,
+    self: anytype,
     command_count: usize,
     command_ptr: ?[*]abi_base.WGPUCommandBuffer,
 ) !u64 {
@@ -41,14 +40,14 @@ pub fn submitInternal(
         0;
 }
 
-pub fn flushQueue(self: *WebGPUBackend) !u64 {
+pub fn flushQueue(self: anytype) !u64 {
     const start = std.time.nanoTimestamp();
     try self.waitForQueue();
     const end = std.time.nanoTimestamp();
     return if (end > start) @as(u64, @intCast(end - start)) else 0;
 }
 
-pub fn waitForQueue(self: *WebGPUBackend) !void {
+pub fn waitForQueue(self: anytype) !void {
     var attempt: u32 = 0;
     while (attempt < QUEUE_SYNC_RETRY_LIMIT) : (attempt += 1) {
         if (self.waitForQueueOnce()) |_| {
@@ -64,7 +63,7 @@ pub fn waitForQueue(self: *WebGPUBackend) !void {
     return error.QueueSubmitTimeout;
 }
 
-pub fn waitForQueueOnce(self: *WebGPUBackend) !void {
+pub fn waitForQueueOnce(self: anytype) !void {
     switch (self.core.queue_wait_mode) {
         .process_events => try self.waitForQueueProcessEvents(),
         .wait_any => try self.waitForQueueWaitAny(),
@@ -81,7 +80,7 @@ pub fn shouldRetryQueueWait(err: anyerror) bool {
     };
 }
 
-pub fn waitForQueueProcessEvents(self: *WebGPUBackend) !void {
+pub fn waitForQueueProcessEvents(self: anytype) !void {
     if (self.core.procs == null) return error.ProceduralNotReady;
 
     var done_state = runtime_state.QueueSubmitState{};
@@ -105,7 +104,7 @@ pub fn waitForQueueProcessEvents(self: *WebGPUBackend) !void {
     }
 }
 
-pub fn waitForQueueWaitAny(self: *WebGPUBackend) !void {
+pub fn waitForQueueWaitAny(self: anytype) !void {
     const procs = self.core.procs orelse return error.ProceduralNotReady;
 
     var done_state = runtime_state.QueueSubmitState{};
@@ -150,7 +149,7 @@ pub fn waitForQueueWaitAny(self: *WebGPUBackend) !void {
     }
 }
 
-pub fn readTimestampBuffer(self: *WebGPUBackend, readback_buffer: abi_base.WGPUBuffer) !u64 {
+pub fn readTimestampBuffer(self: anytype, readback_buffer: abi_base.WGPUBuffer) !u64 {
     const procs = self.core.procs orelse return error.ProceduralNotReady;
     var attempt: u32 = 0;
     while (attempt < TIMESTAMP_MAP_RETRY_LIMIT) : (attempt += 1) {
@@ -172,7 +171,7 @@ pub fn readTimestampBuffer(self: *WebGPUBackend, readback_buffer: abi_base.WGPUB
 }
 
 pub fn readTimestampBufferOnce(
-    self: *WebGPUBackend,
+    self: anytype,
     procs: abi_proc_aliases.Procs,
     readback_buffer: abi_base.WGPUBuffer,
 ) !u64 {
@@ -232,7 +231,7 @@ pub fn shouldRetryTimestampMap(err: anyerror) bool {
     };
 }
 
-pub fn processEventsUntil(self: *WebGPUBackend, done: *const bool, timeout_ns: u64) !void {
+pub fn processEventsUntil(self: anytype, done: *const bool, timeout_ns: u64) !void {
     const start = std.time.nanoTimestamp();
     var spins: u32 = 0;
     while (!done.*) {

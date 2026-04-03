@@ -7,8 +7,6 @@ const loader = @import("../../core/abi/wgpu_loader.zig");
 const resources = @import("../../core/resource/wgpu_resources.zig");
 const render_resource_mod = @import("wgpu_render_resources.zig");
 const rc = @import("wgpu_render_constants.zig");
-const ffi = @import("../../webgpu_backend.zig");
-const Backend = ffi.WebGPUBackend;
 
 pub const TempRenderTextureResult = struct {
     view: ?abi_base.WGPUTextureView,
@@ -20,7 +18,7 @@ pub const TempRenderTextureResult = struct {
 /// by the mip-level workaround are redirected through a scratch texture at
 /// mip 0 so the render attachment requirement is satisfied.
 pub fn setupTempRenderTexture(
-    self: *Backend,
+    self: anytype,
     render: model_render_types.RenderDrawCommand,
     target_format: abi_base.WGPUTextureFormat,
     target_resource: model_resource_types.CopyTextureResource,
@@ -75,7 +73,7 @@ pub fn setupTempRenderTexture(
 /// the render pass. The copy goes from mip 0 of the temp texture to the
 /// original mip level of the target.
 pub fn copyBackTempRenderTexture(
-    self: *Backend,
+    self: anytype,
     procs: anytype,
     encoder: anytype,
     render: model_render_types.RenderDrawCommand,

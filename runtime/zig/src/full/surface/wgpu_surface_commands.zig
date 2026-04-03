@@ -7,15 +7,13 @@ const loader = @import("../../core/abi/wgpu_loader.zig");
 const resources = @import("../../core/resource/wgpu_resources.zig");
 const surface_macos_mod = @import("wgpu_surface_macos.zig");
 const surface_procs_mod = @import("wgpu_surface_procs.zig");
-const ffi = @import("../../webgpu_backend.zig");
-const Backend = ffi.WebGPUBackend;
 
 const SURFACE_TEXTURE_STATUS_SUCCESS_OPTIMAL: u32 = 0x00000001;
 const SURFACE_TEXTURE_STATUS_SUCCESS_SUBOPTIMAL: u32 = 0x00000002;
 const SURFACE_ALPHA_MODE_AUTO: u32 = 0x00000000;
 const SURFACE_PRESENT_MODE_FIFO: u32 = 0x00000001;
 
-pub fn executeSurfaceCreate(self: *Backend, surface_cmd: model_surface_control_types.SurfaceCreateCommand) !abi_execution.NativeExecutionResult {
+pub fn executeSurfaceCreate(self: anytype, surface_cmd: model_surface_control_types.SurfaceCreateCommand) !abi_execution.NativeExecutionResult {
     const encode_start = common_timing.now_ns();
     if (self.full.surfaces.contains(surface_cmd.handle)) {
         return unsupported_encode_result("surface handle already exists", encode_start);
@@ -45,7 +43,7 @@ pub fn executeSurfaceCreate(self: *Backend, surface_cmd: model_surface_control_t
     return ok_encode_result("surface created", encode_start);
 }
 
-pub fn executeSurfaceCapabilities(self: *Backend, surface_cmd: model_surface_control_types.SurfaceCapabilitiesCommand) !abi_execution.NativeExecutionResult {
+pub fn executeSurfaceCapabilities(self: anytype, surface_cmd: model_surface_control_types.SurfaceCapabilitiesCommand) !abi_execution.NativeExecutionResult {
     const encode_start = common_timing.now_ns();
     const managed = self.full.surfaces.get(surface_cmd.handle) orelse {
         return unsupported_encode_result("surface handle not found", encode_start);
@@ -60,7 +58,7 @@ pub fn executeSurfaceCapabilities(self: *Backend, surface_cmd: model_surface_con
     return ok_encode_result("surface capabilities queried", encode_start);
 }
 
-pub fn executeSurfaceConfigure(self: *Backend, surface_cmd: model_surface_control_types.SurfaceConfigureCommand) !abi_execution.NativeExecutionResult {
+pub fn executeSurfaceConfigure(self: anytype, surface_cmd: model_surface_control_types.SurfaceConfigureCommand) !abi_execution.NativeExecutionResult {
     const encode_start = common_timing.now_ns();
     const managed = self.full.surfaces.getPtr(surface_cmd.handle) orelse {
         return unsupported_encode_result("surface handle not found", encode_start);
@@ -91,7 +89,7 @@ pub fn executeSurfaceConfigure(self: *Backend, surface_cmd: model_surface_contro
     return ok_encode_result("surface configured", encode_start);
 }
 
-pub fn executeSurfaceAcquire(self: *Backend, surface_cmd: model_surface_control_types.SurfaceAcquireCommand) !abi_execution.NativeExecutionResult {
+pub fn executeSurfaceAcquire(self: anytype, surface_cmd: model_surface_control_types.SurfaceAcquireCommand) !abi_execution.NativeExecutionResult {
     const encode_start = common_timing.now_ns();
     const managed = self.full.surfaces.getPtr(surface_cmd.handle) orelse {
         return unsupported_encode_result("surface handle not found", encode_start);
@@ -116,7 +114,7 @@ pub fn executeSurfaceAcquire(self: *Backend, surface_cmd: model_surface_control_
     return ok_encode_result("surface texture acquired", encode_start);
 }
 
-pub fn executeSurfacePresent(self: *Backend, surface_cmd: model_surface_control_types.SurfacePresentCommand) !abi_execution.NativeExecutionResult {
+pub fn executeSurfacePresent(self: anytype, surface_cmd: model_surface_control_types.SurfacePresentCommand) !abi_execution.NativeExecutionResult {
     const submit_wait_start = common_timing.now_ns();
     const managed = self.full.surfaces.getPtr(surface_cmd.handle) orelse {
         return unsupported_submit_result("surface handle not found", submit_wait_start);
@@ -132,7 +130,7 @@ pub fn executeSurfacePresent(self: *Backend, surface_cmd: model_surface_control_
     return ok_submit_result("surface presented", submit_wait_start);
 }
 
-pub fn executeSurfaceUnconfigure(self: *Backend, surface_cmd: model_surface_control_types.SurfaceUnconfigureCommand) !abi_execution.NativeExecutionResult {
+pub fn executeSurfaceUnconfigure(self: anytype, surface_cmd: model_surface_control_types.SurfaceUnconfigureCommand) !abi_execution.NativeExecutionResult {
     const encode_start = common_timing.now_ns();
     const managed = self.full.surfaces.getPtr(surface_cmd.handle) orelse {
         return unsupported_encode_result("surface handle not found", encode_start);
@@ -148,7 +146,7 @@ pub fn executeSurfaceUnconfigure(self: *Backend, surface_cmd: model_surface_cont
     return ok_encode_result("surface unconfigured", encode_start);
 }
 
-pub fn executeSurfaceRelease(self: *Backend, surface_cmd: model_surface_control_types.SurfaceReleaseCommand) !abi_execution.NativeExecutionResult {
+pub fn executeSurfaceRelease(self: anytype, surface_cmd: model_surface_control_types.SurfaceReleaseCommand) !abi_execution.NativeExecutionResult {
     const encode_start = common_timing.now_ns();
     const removed = self.full.surfaces.fetchRemove(surface_cmd.handle) orelse {
         return unsupported_encode_result("surface handle not found", encode_start);

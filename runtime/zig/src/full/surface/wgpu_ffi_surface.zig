@@ -1,10 +1,9 @@
 const std = @import("std");
 const abi_base = @import("../../core/abi/wgpu_base_types.zig");
 const surface_procs_mod = @import("wgpu_surface_procs.zig");
-const WebGPUBackend = @import("../../webgpu_backend.zig").WebGPUBackend;
 
 pub fn createSurface(
-    self: *WebGPUBackend,
+    self: anytype,
     descriptor: surface_procs_mod.SurfaceDescriptor,
 ) !surface_procs_mod.Surface {
     const surface_procs = surface_procs_mod.loadSurfaceProcs(self.core.dyn_lib) orelse return error.SurfaceProcUnavailable;
@@ -14,7 +13,7 @@ pub fn createSurface(
 }
 
 pub fn getSurfaceCapabilities(
-    self: *WebGPUBackend,
+    self: anytype,
     surface: surface_procs_mod.Surface,
 ) !surface_procs_mod.SurfaceCapabilities {
     const surface_procs = surface_procs_mod.loadSurfaceProcs(self.core.dyn_lib) orelse return error.SurfaceProcUnavailable;
@@ -34,7 +33,7 @@ pub fn getSurfaceCapabilities(
 }
 
 pub fn freeSurfaceCapabilities(
-    self: *WebGPUBackend,
+    self: anytype,
     capabilities: surface_procs_mod.SurfaceCapabilities,
 ) void {
     if (surface_procs_mod.loadSurfaceProcs(self.core.dyn_lib)) |surface_procs| {
@@ -43,7 +42,7 @@ pub fn freeSurfaceCapabilities(
 }
 
 pub fn configureSurface(
-    self: *WebGPUBackend,
+    self: anytype,
     surface: surface_procs_mod.Surface,
     config: surface_procs_mod.SurfaceConfiguration,
 ) !void {
@@ -52,7 +51,7 @@ pub fn configureSurface(
 }
 
 pub fn getCurrentSurfaceTexture(
-    self: *WebGPUBackend,
+    self: anytype,
     surface: surface_procs_mod.Surface,
 ) !surface_procs_mod.SurfaceTexture {
     const surface_procs = surface_procs_mod.loadSurfaceProcs(self.core.dyn_lib) orelse return error.SurfaceProcUnavailable;
@@ -65,18 +64,18 @@ pub fn getCurrentSurfaceTexture(
     return surface_texture;
 }
 
-pub fn presentSurface(self: *WebGPUBackend, surface: surface_procs_mod.Surface) !void {
+pub fn presentSurface(self: anytype, surface: surface_procs_mod.Surface) !void {
     const surface_procs = surface_procs_mod.loadSurfaceProcs(self.core.dyn_lib) orelse return error.SurfaceProcUnavailable;
     const status = surface_procs.surface_present(surface);
     if (status != abi_base.WGPUStatus_Success) return error.SurfacePresentFailed;
 }
 
-pub fn unconfigureSurface(self: *WebGPUBackend, surface: surface_procs_mod.Surface) !void {
+pub fn unconfigureSurface(self: anytype, surface: surface_procs_mod.Surface) !void {
     const surface_procs = surface_procs_mod.loadSurfaceProcs(self.core.dyn_lib) orelse return error.SurfaceProcUnavailable;
     surface_procs.surface_unconfigure(surface);
 }
 
-pub fn releaseSurface(self: *WebGPUBackend, surface: surface_procs_mod.Surface) void {
+pub fn releaseSurface(self: anytype, surface: surface_procs_mod.Surface) void {
     if (surface_procs_mod.loadSurfaceProcs(self.core.dyn_lib)) |surface_procs| {
         surface_procs.surface_release(surface);
     }

@@ -17,9 +17,7 @@ const render_resource_mod = @import("../render/wgpu_render_resources.zig");
 const render_types_mod = @import("../render/wgpu_render_types.zig");
 const surface_procs_mod = @import("../surface/wgpu_surface_procs.zig");
 const texture_procs_mod = @import("../../wgpu_texture_procs.zig");
-const ffi = @import("../../webgpu_backend.zig");
 const rc = @import("../render/wgpu_render_constants.zig");
-const Backend = ffi.WebGPUBackend;
 const DIAG_RESOURCE_TABLE_BUFFER_HANDLE: u64 = 0x8C9F_2B00_0000_0000;
 const DIAG_RESOURCE_TABLE_BUFFER_SIZE: u64 = 256;
 const DIAG_RESOURCE_TABLE_SIZE: u32 = 8;
@@ -51,7 +49,7 @@ const DIAGNOSTIC_COMPUTE_SHADER_SOURCE =
     \\fn main() {}
 ;
 
-pub fn executeAsyncDiagnostics(self: *Backend, diagnostics: model_async_types.AsyncDiagnosticsCommand) !abi_execution.NativeExecutionResult {
+pub fn executeAsyncDiagnostics(self: anytype, diagnostics: model_async_types.AsyncDiagnosticsCommand) !abi_execution.NativeExecutionResult {
     const setup_start_ns = std.time.nanoTimestamp();
     var iteration: u32 = 0;
     while (iteration < diagnostics.iterations) : (iteration += 1) {
@@ -133,7 +131,7 @@ pub fn executeAsyncDiagnostics(self: *Backend, diagnostics: model_async_types.As
 }
 
 fn runFullDiagnostics(
-    self: *Backend,
+    self: anytype,
     target_format: abi_base.WGPUTextureFormat,
     feature_policy: model_async_types.AsyncDiagnosticsFeaturePolicy,
 ) !void {
@@ -156,18 +154,18 @@ fn runFullDiagnostics(
     };
 }
 
-fn runCapabilityIntrospectionDiagnostics(self: *Backend) !void {
+fn runCapabilityIntrospectionDiagnostics(self: anytype) !void {
     try self.runCapabilityIntrospection();
 }
 
-fn runPipelineAsyncDiagnostics(self: *Backend, target_format: abi_base.WGPUTextureFormat) !void {
+fn runPipelineAsyncDiagnostics(self: anytype, target_format: abi_base.WGPUTextureFormat) !void {
     const procs = self.core.procs orelse return error.ProceduralNotReady;
     const render_api = render_api_mod.loadRenderApi(procs, self.core.dyn_lib) orelse return error.RenderApiUnavailable;
     const pipeline = try createRenderPipelineForDiagnostics(self, target_format);
     render_api.render_pipeline_release(pipeline);
 }
 
-fn runResourceTableImmediatesDiagnostics(self: *Backend, target_format: abi_base.WGPUTextureFormat) !void {
+fn runResourceTableImmediatesDiagnostics(self: anytype, target_format: abi_base.WGPUTextureFormat) !void {
     const procs = self.core.procs orelse return error.ProceduralNotReady;
     const render_api = render_api_mod.loadRenderApi(procs, self.core.dyn_lib) orelse return error.RenderApiUnavailable;
     const resource_table_procs = self.getResourceTableProcs() orelse return error.ResourceTableProcUnavailable;
@@ -292,7 +290,7 @@ fn runResourceTableImmediatesDiagnostics(self: *Backend, target_format: abi_base
     procs.wgpuCommandBufferRelease(command_buffer);
 }
 
-fn runResourceTableImmediatesDiagnosticsEmulated(self: *Backend, target_format: abi_base.WGPUTextureFormat) !void {
+fn runResourceTableImmediatesDiagnosticsEmulated(self: anytype, target_format: abi_base.WGPUTextureFormat) !void {
     const procs = self.core.procs orelse return error.ProceduralNotReady;
     const render_api = render_api_mod.loadRenderApi(procs, self.core.dyn_lib) orelse return error.RenderApiUnavailable;
 
@@ -383,7 +381,7 @@ fn runResourceTableImmediatesDiagnosticsEmulated(self: *Backend, target_format: 
     procs.wgpuCommandBufferRelease(command_buffer);
 }
 
-fn runLifecycleRefcountDiagnostics(self: *Backend, target_format: abi_base.WGPUTextureFormat) !void {
+fn runLifecycleRefcountDiagnostics(self: anytype, target_format: abi_base.WGPUTextureFormat) !void {
     const procs = self.core.procs orelse return error.ProceduralNotReady;
     const render_api = render_api_mod.loadRenderApi(procs, self.core.dyn_lib) orelse return error.RenderApiUnavailable;
     const lifecycle = self.getLifecycleProcs() orelse return error.LifecycleProcUnavailable;
@@ -544,7 +542,7 @@ fn runLifecycleRefcountDiagnostics(self: *Backend, target_format: abi_base.WGPUT
     }
 }
 
-fn createRenderPipelineForDiagnostics(self: *Backend, target_format: abi_base.WGPUTextureFormat) !abi_base.WGPURenderPipeline {
+fn createRenderPipelineForDiagnostics(self: anytype, target_format: abi_base.WGPUTextureFormat) !abi_base.WGPURenderPipeline {
     const procs = self.core.procs orelse return error.ProceduralNotReady;
     const render_api = render_api_mod.loadRenderApi(procs, self.core.dyn_lib) orelse return error.RenderApiUnavailable;
     const async_procs = async_procs_mod.loadAsyncProcs(self.core.dyn_lib) orelse return error.AsyncProcUnavailable;
@@ -656,7 +654,7 @@ fn createRenderPipelineForDiagnostics(self: *Backend, target_format: abi_base.WG
     return pipeline;
 }
 
-fn getOrCreateDiagnosticTexture(self: *Backend, target_format: abi_base.WGPUTextureFormat) !abi_base.WGPUTexture {
+fn getOrCreateDiagnosticTexture(self: anytype, target_format: abi_base.WGPUTextureFormat) !abi_base.WGPUTexture {
     return resources.getOrCreateTexture(
         self,
         .{

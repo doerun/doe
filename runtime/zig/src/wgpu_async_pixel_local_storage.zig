@@ -9,9 +9,7 @@ const pls_layout = @import("full/render/wgpu_pipeline_layout_pls.zig");
 const async_procs_mod = @import("wgpu_async_procs.zig");
 const render_api_mod = @import("full/render/wgpu_render_api.zig");
 const render_types_mod = @import("full/render/wgpu_render_types.zig");
-const ffi = @import("webgpu_backend.zig");
 const rc = @import("full/render/wgpu_render_constants.zig");
-const Backend = ffi.WebGPUBackend;
 const DIAG_RENDER_TARGET_HANDLE: u64 = 0x8C9F_2C00_0000_0000;
 const DIAG_RENDER_TARGET_WIDTH: u32 = 4;
 const DIAG_RENDER_TARGET_HEIGHT: u32 = 4;
@@ -61,7 +59,7 @@ const DIAGNOSTIC_PIXEL_LOCAL_EMULATED_SHADER_SOURCE =
     \\}
 ;
 
-pub fn runPixelLocalStorageDiagnostics(self: *Backend, target_format: abi_base.WGPUTextureFormat) !void {
+pub fn runPixelLocalStorageDiagnostics(self: anytype, target_format: abi_base.WGPUTextureFormat) !void {
     const procs = self.core.procs orelse return error.ProceduralNotReady;
     const render_api = render_api_mod.loadRenderApi(procs, self.core.dyn_lib) orelse return error.RenderApiUnavailable;
     const pixel_local_storage_barrier = render_api.render_pass_encoder_pixel_local_storage_barrier orelse {
@@ -180,7 +178,7 @@ pub fn runPixelLocalStorageDiagnostics(self: *Backend, target_format: abi_base.W
     procs.wgpuCommandBufferRelease(command_buffer);
 }
 
-pub fn runPixelLocalStorageDiagnosticsEmulated(self: *Backend, target_format: abi_base.WGPUTextureFormat) !void {
+pub fn runPixelLocalStorageDiagnosticsEmulated(self: anytype, target_format: abi_base.WGPUTextureFormat) !void {
     const procs = self.core.procs orelse return error.ProceduralNotReady;
     const render_api = render_api_mod.loadRenderApi(procs, self.core.dyn_lib) orelse return error.RenderApiUnavailable;
 
@@ -241,7 +239,7 @@ pub fn runPixelLocalStorageDiagnosticsEmulated(self: *Backend, target_format: ab
 }
 
 fn createPixelLocalStorageRenderPipelineForDiagnostics(
-    self: *Backend,
+    self: anytype,
     target_format: abi_base.WGPUTextureFormat,
     storage_attachments: []const render_types_mod.PipelineLayoutStorageAttachment,
 ) !abi_base.WGPURenderPipeline {
@@ -329,7 +327,7 @@ fn createPixelLocalStorageRenderPipelineForDiagnostics(
 }
 
 fn createPixelLocalStorageEmulatedRenderPipelineForDiagnostics(
-    self: *Backend,
+    self: anytype,
     target_format: abi_base.WGPUTextureFormat,
 ) !abi_base.WGPURenderPipeline {
     const procs = self.core.procs orelse return error.ProceduralNotReady;
@@ -407,7 +405,7 @@ fn createPixelLocalStorageEmulatedRenderPipelineForDiagnostics(
     ) catch error.DiagnosticPipelineCreationFailed;
 }
 
-fn getOrCreateDiagnosticRenderTexture(self: *Backend, target_format: abi_base.WGPUTextureFormat) !abi_base.WGPUTexture {
+fn getOrCreateDiagnosticRenderTexture(self: anytype, target_format: abi_base.WGPUTextureFormat) !abi_base.WGPUTexture {
     return resources.getOrCreateTexture(
         self,
         .{

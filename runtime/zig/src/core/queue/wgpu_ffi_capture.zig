@@ -4,12 +4,11 @@ const abi_descriptor = @import("../abi/wgpu_descriptor_types.zig");
 const abi_proc_aliases = @import("../abi/wgpu_type_proc_aliases.zig");
 const runtime_state = @import("../abi/wgpu_runtime_state_defs.zig");
 const loader = @import("../abi/wgpu_loader.zig");
-const WebGPUBackend = @import("../../webgpu_backend.zig").WebGPUBackend;
 
 const CAPTURE_ALIGNMENT_BYTES: u64 = 4;
 
 pub fn captureBuffer(
-    self: *WebGPUBackend,
+    self: anytype,
     allocator: std.mem.Allocator,
     handle: u64,
     offset: u64,
@@ -69,7 +68,7 @@ pub fn captureBuffer(
 }
 
 fn mapReadbackBytes(
-    self: *WebGPUBackend,
+    self: anytype,
     allocator: std.mem.Allocator,
     procs: abi_proc_aliases.Procs,
     readback_buffer: abi_base.WGPUBuffer,

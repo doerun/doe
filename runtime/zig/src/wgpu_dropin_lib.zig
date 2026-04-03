@@ -30,7 +30,7 @@ comptime {
     _ = dropin_router;
     _ = dropin_diagnostics;
     _ = dropin_build_info;
-    _ = @import("doe_native_base.zig");
+    _ = @import("doe_wgpu_native.zig");
     if (@import("builtin").os.tag == .macos) {
         // Multi-queue management: doeNativeMultiQueueDevice*, doeNativeQueueSubmit, etc.
         _ = @import("multi_queue.zig");
@@ -281,7 +281,7 @@ fn nativeFromSymbol(comptime FnType: type, comptime symbol_name: [:0]const u8) ?
 /// Resolve a standard wgpu* symbol to the corresponding doeNative* implementation.
 /// Returns null for symbols not yet implemented natively.
 fn resolveDoeNativeProc(comptime FnType: type, comptime symbol_name: [:0]const u8) ?FnType {
-    const N = @import("doe_native_base.zig");
+    const N = @import("doe_wgpu_native.zig");
     // Instance / Adapter / Device lifecycle
     if (comptime std.mem.eql(u8, symbol_name, "wgpuCreateInstance")) return @ptrCast(&N.doeNativeCreateInstance);
     if (comptime std.mem.eql(u8, symbol_name, "wgpuInstanceAddRef")) return @ptrCast(&N.doeNativeInstanceAddRef);
@@ -557,7 +557,7 @@ fn resolveLocalProc(name: abi_base.WGPUStringView) p1_capability_procs.WGPUProc 
     if (symbolViewEq(name, "wgpuBindGroupLayoutSetLabel")) return fnPtr(&dropin_ext_c.wgpuBindGroupLayoutSetLabel);
     if (symbolViewEq(name, "wgpuBindGroupSetLabel")) return fnPtr(&dropin_ext_c.wgpuBindGroupSetLabel);
     if (symbolViewEq(name, "wgpuBufferAddRef")) return fnPtr(&dropin_ext_a.exports.wgpuBufferAddRef);
-    if (symbolViewEq(name, "wgpuBufferGetMappedRange")) return fnPtr(&@import("doe_native_base.zig").doeNativeBufferGetMappedRange);
+    if (symbolViewEq(name, "wgpuBufferGetMappedRange")) return fnPtr(&@import("doe_wgpu_native.zig").doeNativeBufferGetMappedRange);
     if (symbolViewEq(name, "wgpuBufferSetLabel")) return fnPtr(&dropin_ext_c.wgpuBufferSetLabel);
     if (symbolViewEq(name, "wgpuDeviceAddRef")) return fnPtr(&dropin_ext_a.exports.wgpuDeviceAddRef);
     if (symbolViewEq(name, "wgpuDeviceCreateBuffer")) return fnPtr(&P.wgpuDeviceCreateBuffer);
@@ -571,7 +571,7 @@ fn resolveLocalProc(name: abi_base.WGPUStringView) p1_capability_procs.WGPUProc 
     if (symbolViewEq(name, "wgpuComputePassEncoderSetLabel")) return fnPtr(&dropin_ext_c.wgpuComputePassEncoderSetLabel);
     if (symbolViewEq(name, "wgpuDeviceCreateComputePipeline")) return fnPtr(&P.wgpuDeviceCreateComputePipeline);
     if (symbolViewEq(name, "wgpuComputePipelineAddRef")) return fnPtr(&dropin_ext_a.exports.wgpuComputePipelineAddRef);
-    if (symbolViewEq(name, "wgpuComputePipelineGetBindGroupLayout")) return fnPtr(&@import("doe_native_base.zig").doeNativeComputePipelineGetBindGroupLayout);
+    if (symbolViewEq(name, "wgpuComputePipelineGetBindGroupLayout")) return fnPtr(&@import("doe_wgpu_native.zig").doeNativeComputePipelineGetBindGroupLayout);
     if (symbolViewEq(name, "wgpuComputePipelineSetLabel")) return fnPtr(&dropin_ext_c.wgpuComputePipelineSetLabel);
     if (symbolViewEq(name, "wgpuComputePipelineRelease")) return fnPtr(&P.wgpuComputePipelineRelease);
     if (symbolViewEq(name, "wgpuRenderPipelineRelease")) return fnPtr(&P.wgpuRenderPipelineRelease);
@@ -625,7 +625,7 @@ fn resolveLocalProc(name: abi_base.WGPUStringView) p1_capability_procs.WGPUProc 
     if (symbolViewEq(name, "wgpuQueueOnSubmittedWorkDone")) return fnPtr(&P.wgpuQueueOnSubmittedWorkDone);
     if (symbolViewEq(name, "wgpuQueueWriteBuffer")) return fnPtr(&P.wgpuQueueWriteBuffer);
     if (symbolViewEq(name, "wgpuQueueWriteTexture")) return fnPtr(&dropin_ext_c.wgpuQueueWriteTexture);
-    if (symbolViewEq(name, "wgpuQueueCopyExternalImageToTexture")) return fnPtr(&@import("doe_native_base.zig").doeNativeQueueCopyExternalImageToTexture);
+    if (symbolViewEq(name, "wgpuQueueCopyExternalImageToTexture")) return fnPtr(&@import("doe_wgpu_native.zig").doeNativeQueueCopyExternalImageToTexture);
     if (symbolViewEq(name, "wgpuQueueCopyTextureForBrowser")) return fnPtr(&dropin_ext_c.wgpuQueueCopyTextureForBrowser);
     if (symbolViewEq(name, "wgpuQueueCopyExternalTextureForBrowser")) return fnPtr(&dropin_ext_c.wgpuQueueCopyExternalTextureForBrowser);
     if (symbolViewEq(name, "wgpuDeviceCreateTexture")) return fnPtr(&P.wgpuDeviceCreateTexture);
@@ -633,7 +633,7 @@ fn resolveLocalProc(name: abi_base.WGPUStringView) p1_capability_procs.WGPUProc 
     if (symbolViewEq(name, "wgpuRenderPassEncoderAddRef")) return fnPtr(&dropin_ext_b.wgpuRenderPassEncoderAddRef);
     if (symbolViewEq(name, "wgpuRenderPassEncoderSetLabel")) return fnPtr(&dropin_ext_c.wgpuRenderPassEncoderSetLabel);
     if (symbolViewEq(name, "wgpuRenderPipelineAddRef")) return fnPtr(&dropin_ext_b.wgpuRenderPipelineAddRef);
-    if (symbolViewEq(name, "wgpuRenderPipelineGetBindGroupLayout")) return fnPtr(&@import("doe_native_base.zig").doeNativeRenderPipelineGetBindGroupLayout);
+    if (symbolViewEq(name, "wgpuRenderPipelineGetBindGroupLayout")) return fnPtr(&@import("doe_wgpu_native.zig").doeNativeRenderPipelineGetBindGroupLayout);
     if (symbolViewEq(name, "wgpuRenderPipelineSetLabel")) return fnPtr(&dropin_ext_c.wgpuRenderPipelineSetLabel);
     if (symbolViewEq(name, "wgpuSamplerAddRef")) return fnPtr(&dropin_ext_b.wgpuSamplerAddRef);
     if (symbolViewEq(name, "wgpuDeviceCreateBindGroupLayout")) return fnPtr(&P.wgpuDeviceCreateBindGroupLayout);
@@ -647,7 +647,7 @@ fn resolveLocalProc(name: abi_base.WGPUStringView) p1_capability_procs.WGPUProc 
     if (symbolViewEq(name, "wgpuShaderModuleSetLabel")) return fnPtr(&dropin_ext_c.wgpuShaderModuleSetLabel);
     if (symbolViewEq(name, "wgpuTextureAddRef")) return fnPtr(&dropin_ext_b.wgpuTextureAddRef);
     if (symbolViewEq(name, "wgpuTextureSetLabel")) return fnPtr(&dropin_ext_c.wgpuTextureSetLabel);
-    if (symbolViewEq(name, "wgpuTextureDestroy")) return fnPtr(&@import("doe_native_base.zig").doeNativeTextureDestroy);
+    if (symbolViewEq(name, "wgpuTextureDestroy")) return fnPtr(&@import("doe_wgpu_native.zig").doeNativeTextureDestroy);
     if (symbolViewEq(name, "wgpuTextureRelease")) return fnPtr(&P.wgpuTextureRelease);
     if (symbolViewEq(name, "wgpuTextureViewAddRef")) return fnPtr(&dropin_ext_b.wgpuTextureViewAddRef);
     if (symbolViewEq(name, "wgpuTextureViewSetLabel")) return fnPtr(&dropin_ext_c.wgpuTextureViewSetLabel);

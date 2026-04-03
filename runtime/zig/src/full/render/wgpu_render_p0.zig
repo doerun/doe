@@ -5,9 +5,7 @@ const render_types_mod = @import("wgpu_render_types.zig");
 const resources = @import("../../core/resource/wgpu_resources.zig");
 const abi_base = @import("../../core/abi/wgpu_base_types.zig");
 const abi_proc_aliases = @import("../../core/abi/wgpu_type_proc_aliases.zig");
-const ffi = @import("../../webgpu_backend.zig");
 
-const Backend = ffi.WebGPUBackend;
 const BUFFER_USAGE_INDIRECT: abi_base.WGPUBufferUsage = 0x0000000000000100;
 
 pub const RenderP0State = struct {
@@ -19,7 +17,7 @@ pub const RenderP0State = struct {
 };
 
 pub fn prepare(
-    self: *Backend,
+    self: anytype,
     procs: abi_proc_aliases.Procs,
     render_api: render_api_mod.RenderApi,
     indexed_draw: bool,

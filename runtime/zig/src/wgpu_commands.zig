@@ -1,12 +1,11 @@
 const model = @import("model_commands.zig");
 const runtime_types = @import("backend/runtime_types.zig");
-const ffi = @import("webgpu_backend.zig");
+const backend_support = @import("webgpu_backend_support.zig");
 const sandbox = @import("wgpu_sandbox_guard.zig");
 const core_dispatch = @import("core/command_dispatch.zig");
 const full_dispatch = @import("full/command_dispatch.zig");
-const Backend = ffi.WebGPUBackend;
 
-pub fn executeCommand(self: *Backend, command: model.Command) !runtime_types.NativeExecutionResult {
+pub fn executeCommand(self: anytype, command: model.Command) !runtime_types.NativeExecutionResult {
     if (!self.backendAvailable()) {
         return .{
             .status = .@"error",
@@ -51,7 +50,7 @@ pub fn executeCommand(self: *Backend, command: model.Command) !runtime_types.Nat
     if (self.takeUncapturedError()) |error_type| {
         return .{
             .status = .@"error",
-            .status_message = Backend.uncapturedErrorStatusMessage(error_type),
+            .status_message = backend_support.uncapturedErrorStatusMessage(error_type),
             .setup_ns = result.setup_ns,
             .encode_ns = result.encode_ns,
             .submit_wait_ns = result.submit_wait_ns,
@@ -65,7 +64,7 @@ pub fn executeCommand(self: *Backend, command: model.Command) !runtime_types.Nat
     return result;
 }
 
-fn flushPendingUploads(self: *Backend) !void {
+fn flushPendingUploads(self: anytype) !void {
     if (self.core.upload_submit_pending == 0) return;
     _ = try self.submitEmpty();
     self.core.upload_submit_pending = 0;

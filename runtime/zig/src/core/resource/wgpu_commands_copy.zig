@@ -6,8 +6,6 @@ const abi_descriptor = @import("../abi/wgpu_descriptor_types.zig");
 const abi_execution = @import("../abi/wgpu_execution_types.zig");
 const loader = @import("../abi/wgpu_loader.zig");
 const resources = @import("wgpu_resources.zig");
-const ffi = @import("../../webgpu_backend.zig");
-const Backend = ffi.WebGPUBackend;
 const TEMP_BUFFER_TO_TEXTURE_KEY_OFFSET: u64 = 0xFFFF_0000_0000_0001;
 const TEMP_TEXTURE_TO_TEXTURE_KEY_OFFSET: u64 = 0xFFFF_0000_0000_0002;
 
@@ -31,7 +29,7 @@ fn onMapBufferCallback(
     }
 }
 
-pub fn executeMapAsync(self: *Backend, command: model_async_types.MapAsyncCommand) !abi_execution.NativeExecutionResult {
+pub fn executeMapAsync(self: anytype, command: model_async_types.MapAsyncCommand) !abi_execution.NativeExecutionResult {
     const setup_start_ns = std.time.nanoTimestamp();
     const bytes = @as(u64, command.bytes);
 
@@ -102,7 +100,7 @@ pub fn executeMapAsync(self: *Backend, command: model_async_types.MapAsyncComman
     };
 }
 
-pub fn executeUpload(self: *Backend, upload: model_transfer_types.UploadCommand) !abi_execution.NativeExecutionResult {
+pub fn executeUpload(self: anytype, upload: model_transfer_types.UploadCommand) !abi_execution.NativeExecutionResult {
     const setup_start_ns = std.time.nanoTimestamp();
     const bytes = @as(u64, upload.bytes);
 
@@ -144,7 +142,7 @@ pub fn executeUpload(self: *Backend, upload: model_transfer_types.UploadCommand)
     };
 }
 
-pub fn executeBufferWrite(self: *Backend, command: model_transfer_types.BufferWriteCommand) !abi_execution.NativeExecutionResult {
+pub fn executeBufferWrite(self: anytype, command: model_transfer_types.BufferWriteCommand) !abi_execution.NativeExecutionResult {
     const setup_start_ns = std.time.nanoTimestamp();
     if (command.data.len == 0) return error.InvalidArgument;
 
@@ -187,7 +185,7 @@ pub fn executeBufferWrite(self: *Backend, command: model_transfer_types.BufferWr
     };
 }
 
-pub fn executeCopy(self: *Backend, copy: model_transfer_types.CopyCommand) !abi_execution.NativeExecutionResult {
+pub fn executeCopy(self: anytype, copy: model_transfer_types.CopyCommand) !abi_execution.NativeExecutionResult {
     const bytes = @as(u64, copy.bytes);
 
     const procs = self.core.procs orelse return error.ProceduralNotReady;

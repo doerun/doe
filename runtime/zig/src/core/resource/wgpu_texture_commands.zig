@@ -7,10 +7,8 @@ const abi_execution = @import("../abi/wgpu_execution_types.zig");
 const loader = @import("../abi/wgpu_loader.zig");
 const resources = @import("wgpu_resources.zig");
 const texture_procs_mod = @import("../../wgpu_texture_procs.zig");
-const ffi = @import("../../webgpu_backend.zig");
-const Backend = ffi.WebGPUBackend;
 
-pub fn executeTextureWrite(self: *Backend, texture_cmd: model_texture_types.TextureWriteCommand) !abi_execution.NativeExecutionResult {
+pub fn executeTextureWrite(self: anytype, texture_cmd: model_texture_types.TextureWriteCommand) !abi_execution.NativeExecutionResult {
     const texture_procs = texture_procs_mod.loadTextureProcs(self.core.dyn_lib) orelse return error.TextureProcUnavailable;
     const required_usage = abi_base.WGPUTextureUsage_CopyDst;
     if (texture_cmd.data.len == 0) {
@@ -64,7 +62,7 @@ pub fn executeTextureWrite(self: *Backend, texture_cmd: model_texture_types.Text
     return .{ .status = .ok, .status_message = "texture write submitted" };
 }
 
-pub fn executeTextureQuery(self: *Backend, texture_cmd: model_texture_types.TextureQueryCommand) !abi_execution.NativeExecutionResult {
+pub fn executeTextureQuery(self: anytype, texture_cmd: model_texture_types.TextureQueryCommand) !abi_execution.NativeExecutionResult {
     const texture_procs = texture_procs_mod.loadTextureProcs(self.core.dyn_lib) orelse return error.TextureProcUnavailable;
     if (self.core.textures.getPtr(texture_cmd.handle)) |record| {
         const info = texture_procs_mod.queryTextureInfo(texture_procs, record.texture);
@@ -107,7 +105,7 @@ pub fn executeTextureQuery(self: *Backend, texture_cmd: model_texture_types.Text
     return .{ .status = .unsupported, .status_message = "texture handle not found" };
 }
 
-pub fn executeTextureDestroy(self: *Backend, texture_cmd: model_texture_types.TextureDestroyCommand) !abi_execution.NativeExecutionResult {
+pub fn executeTextureDestroy(self: anytype, texture_cmd: model_texture_types.TextureDestroyCommand) !abi_execution.NativeExecutionResult {
     const procs = self.core.procs orelse return error.ProceduralNotReady;
     const texture_procs = texture_procs_mod.loadTextureProcs(self.core.dyn_lib) orelse return error.TextureProcUnavailable;
     const removed = self.core.textures.fetchRemove(texture_cmd.handle) orelse {
