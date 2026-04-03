@@ -1,6 +1,8 @@
 const std = @import("std");
 const builtin = @import("builtin");
-const model = @import("../../model.zig");
+const model_commands = @import("../../model_commands.zig");
+const model_profile = @import("../../model_profile.zig");
+const model_webgpu_types = @import("../../model_webgpu_types.zig");
 const webgpu = @import("../runtime_types.zig");
 const backend_iface = @import("../backend_iface.zig");
 const backend_policy = @import("../backend_policy.zig");
@@ -23,6 +25,17 @@ const MANIFEST_STATUS_CODE_CAPACITY: usize = 256;
 const STATUS_MESSAGE_BYTES: usize = 256;
 const BOOTSTRAP_MANIFEST_MODULE = "bootstrap";
 const BOOTSTRAP_MANIFEST_STATUS_CODE = "backend_initialized";
+
+const model = struct {
+    pub const AsyncDiagnosticsCommand = model_webgpu_types.AsyncDiagnosticsCommand;
+    pub const BufferWriteCommand = model_webgpu_types.BufferWriteCommand;
+    pub const Command = model_commands.Command;
+    pub const DeviceProfile = model_profile.DeviceProfile;
+    pub const KernelBinding = model_webgpu_types.KernelBinding;
+    pub const KernelDispatchCommand = model_webgpu_types.KernelDispatchCommand;
+    pub const RenderDrawCommand = model_webgpu_types.RenderDrawCommand;
+    pub const UploadCommand = model_webgpu_types.UploadCommand;
+};
 
 // Uploads accumulate and flush lazily: flush_pending_uploads_if_required fires
 // once before the first non-upload command that needs to see the written data.

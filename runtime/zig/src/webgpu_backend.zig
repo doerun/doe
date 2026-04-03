@@ -1,5 +1,7 @@
 const std = @import("std");
-const model = @import("model.zig");
+const model_commands = @import("model_commands.zig");
+const model_profile = @import("model_profile.zig");
+const model_webgpu_types = @import("model_webgpu_types.zig");
 const types = @import("core/abi/wgpu_types.zig");
 const runtime_types = @import("backend/runtime_types.zig");
 const loader = @import("core/abi/wgpu_loader.zig");
@@ -15,6 +17,12 @@ const commands = @import("wgpu_commands.zig");
 const compute_commands = @import("core/compute/wgpu_commands_compute.zig");
 const env_flags = @import("env_flags.zig");
 const surface_macos_mod = @import("full/surface/wgpu_surface_macos.zig");
+
+const model = struct {
+    pub const Command = model_commands.Command;
+    pub const DeviceProfile = model_profile.DeviceProfile;
+    pub const KernelBinding = model_webgpu_types.KernelBinding;
+};
 
 pub const NativeExecutionStatus = runtime_types.NativeExecutionStatus;
 pub const NativeExecutionResult = runtime_types.NativeExecutionResult;

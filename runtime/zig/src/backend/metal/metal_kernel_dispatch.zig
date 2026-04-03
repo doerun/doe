@@ -1,5 +1,5 @@
 const common_timing = @import("../common/timing.zig");
-const model = @import("../../model.zig");
+const model_webgpu_types = @import("../../model_webgpu_types.zig");
 const bridge = @import("metal_bridge_decls.zig");
 
 const metal_bridge_command_buffer_commit = bridge.metal_bridge_command_buffer_commit;
@@ -7,6 +7,10 @@ const metal_bridge_command_buffer_wait_completed = bridge.metal_bridge_command_b
 const metal_bridge_create_command_buffer = bridge.metal_bridge_create_command_buffer;
 const metal_bridge_encode_compute_dispatch_batch = bridge.metal_bridge_encode_compute_dispatch_batch;
 const metal_bridge_release = bridge.metal_bridge_release;
+
+const model = struct {
+    pub const KernelBinding = model_webgpu_types.KernelBinding;
+};
 
 pub const MAX_BINDING_SLOTS: usize = 32;
 

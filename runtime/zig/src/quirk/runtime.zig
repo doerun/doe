@@ -1,8 +1,26 @@
 const std = @import("std");
-const model = @import("../model.zig");
+const model_commands = @import("../model_commands.zig");
+const model_policy = @import("../model_policy.zig");
+const model_profile = @import("../model_profile.zig");
+const model_quirks = @import("../model_quirks.zig");
 const toggle_registry = @import("toggle_registry.zig");
 const quirk_actions = @import("quirk_actions.zig");
 const lean_proof = @import("../lean_proof.zig");
+
+const model = struct {
+    pub const Command = model_commands.Command;
+    pub const CommandKind = model_commands.CommandKind;
+    pub const DeviceProfile = model_profile.DeviceProfile;
+    pub const ProofLevel = model_policy.ProofLevel;
+    pub const Quirk = model_quirks.Quirk;
+    pub const QuirkAction = model_quirks.QuirkAction;
+    pub const SafetyClass = model_policy.SafetyClass;
+    pub const Scope = model_policy.Scope;
+    pub const SemVer = model_profile.SemVer;
+    pub const VerificationMode = model_policy.VerificationMode;
+    pub const command_kind = model_commands.command_kind;
+    pub const requiresProof = model_policy.requiresProof;
+};
 
 pub const DispatchDecision = struct {
     matched_quirk_id: ?[]const u8,

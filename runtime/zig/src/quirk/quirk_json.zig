@@ -1,7 +1,22 @@
 const std = @import("std");
-const model = @import("../model.zig");
+const model_policy = @import("../model_policy.zig");
+const model_quirks = @import("../model_quirks.zig");
 
 const Allocator = std.mem.Allocator;
+
+const model = struct {
+    pub const CURRENT_SCHEMA_VERSION = model_policy.CURRENT_SCHEMA_VERSION;
+    pub const Quirk = model_quirks.Quirk;
+    pub const QuirkAction = model_quirks.QuirkAction;
+    pub const ToggleAction = model_quirks.ToggleAction;
+    pub const UseTemporaryBufferAction = model_quirks.UseTemporaryBufferAction;
+    pub const UseTemporaryRenderTextureAction = model_quirks.UseTemporaryRenderTextureAction;
+    pub const parse_api = model_policy.parse_api;
+    pub const parse_proof_level = model_policy.parse_proof_level;
+    pub const parse_safety = model_policy.parse_safety;
+    pub const parse_scope = model_policy.parse_scope;
+    pub const parse_verification_mode = model_policy.parse_verification_mode;
+};
 
 const ParseError = error{
     UnsupportedActionKind,

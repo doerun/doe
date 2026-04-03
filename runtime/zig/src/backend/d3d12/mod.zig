@@ -1,6 +1,8 @@
 const builtin = @import("builtin");
 const std = @import("std");
-const model = @import("../../model.zig");
+const model_commands = @import("../../model_commands.zig");
+const model_profile = @import("../../model_profile.zig");
+const model_webgpu_types = @import("../../model_webgpu_types.zig");
 const webgpu = @import("../runtime_types.zig");
 const backend_iface = @import("../backend_iface.zig");
 const common_errors = @import("../common/errors.zig");
@@ -22,6 +24,25 @@ const MANIFEST_PATH_CAPACITY: usize = 256;
 const UPLOAD_BATCH_LAZY: u32 = std.math.maxInt(u32);
 const HASH_HEX_SIZE: usize = hash_utils.SHA256_HEX_SIZE;
 const MANIFEST_MODULE_CAPACITY: usize = 64;
+
+const model = struct {
+    pub const AsyncDiagnosticsCommand = model_webgpu_types.AsyncDiagnosticsCommand;
+    pub const Command = model_commands.Command;
+    pub const CopyCommand = model_webgpu_types.CopyCommand;
+    pub const DeviceProfile = model_profile.DeviceProfile;
+    pub const DispatchCommand = model_webgpu_types.DispatchCommand;
+    pub const DispatchIndirectCommand = model_webgpu_types.DispatchIndirectCommand;
+    pub const KernelBinding = model_webgpu_types.KernelBinding;
+    pub const KernelDispatchCommand = model_webgpu_types.KernelDispatchCommand;
+    pub const MapAsyncCommand = model_webgpu_types.MapAsyncCommand;
+    pub const RenderDrawCommand = model_webgpu_types.RenderDrawCommand;
+    pub const SamplerCreateCommand = model_webgpu_types.SamplerCreateCommand;
+    pub const SamplerDestroyCommand = model_webgpu_types.SamplerDestroyCommand;
+    pub const TextureDestroyCommand = model_webgpu_types.TextureDestroyCommand;
+    pub const TextureQueryCommand = model_webgpu_types.TextureQueryCommand;
+    pub const TextureWriteCommand = model_webgpu_types.TextureWriteCommand;
+    pub const UploadCommand = model_webgpu_types.UploadCommand;
+};
 const MANIFEST_STATUS_CODE_CAPACITY: usize = 256;
 const STATUS_MESSAGE_BYTES: usize = 256;
 const BOOTSTRAP_MANIFEST_MODULE = "bootstrap";

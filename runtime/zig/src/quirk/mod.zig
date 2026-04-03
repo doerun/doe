@@ -1,4 +1,14 @@
-const model = @import("../model.zig");
+const model_commands = @import("../model_commands.zig");
+const model_policy = @import("../model_policy.zig");
+const model_profile = @import("../model_profile.zig");
+const model_quirks = @import("../model_quirks.zig");
+
+const model = struct {
+    pub const CURRENT_SCHEMA_VERSION = model_policy.CURRENT_SCHEMA_VERSION;
+    pub const Command = model_commands.Command;
+    pub const DeviceProfile = model_profile.DeviceProfile;
+    pub const Quirk = model_quirks.Quirk;
+};
 
 pub const runtime = @import("runtime.zig");
 pub const actions = @import("quirk_actions.zig");

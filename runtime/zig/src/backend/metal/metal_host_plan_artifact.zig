@@ -1,5 +1,5 @@
 const std = @import("std");
-const model = @import("../../model.zig");
+const model_webgpu_types = @import("../../model_webgpu_types.zig");
 const hash_utils = @import("../common/hash_utils.zig");
 const doe_wgsl = @import("../../doe_wgsl/mod.zig");
 const host = @import("../../doe_wgsl/emit_csl_host.zig");
@@ -10,6 +10,10 @@ const DEFAULT_KERNEL_ROOT: []const u8 = "bench/kernels";
 const HOST_PLAN_ARTIFACT_DIR: []const u8 = "bench/out/csl-host-plans";
 const ARTIFACT_JSON_FILENAME: []const u8 = "host-plan.json";
 const MAX_WGSL_SOURCE_BYTES: usize = 2 * 1024 * 1024;
+
+const model = struct {
+    pub const KernelDispatchCommand = model_webgpu_types.KernelDispatchCommand;
+};
 
 pub fn hostPlanPath(self: anytype) ?[]const u8 {
     if (self.host_plan_path_len == 0) return null;

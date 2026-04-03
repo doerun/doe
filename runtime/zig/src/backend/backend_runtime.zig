@@ -1,6 +1,8 @@
 const std = @import("std");
 const builtin = @import("builtin");
-const model = @import("../model.zig");
+const model_commands = @import("../model_commands.zig");
+const model_profile = @import("../model_profile.zig");
+const model_webgpu_types = @import("../model_webgpu_types.zig");
 const backend_iface = @import("backend_iface.zig");
 const backend_policy = @import("backend_policy.zig");
 const backend_registry = @import("backend_registry.zig");
@@ -10,6 +12,12 @@ const runtime_types = @import("runtime_types.zig");
 const vulkan_backend = if (builtin.os.tag == .linux) @import("vulkan/mod.zig") else struct {};
 const metal_backend = if (builtin.os.tag == .macos) @import("metal/mod.zig") else struct {};
 const d3d12_backend = if (builtin.os.tag == .windows) @import("d3d12/mod.zig") else struct {};
+
+const model = struct {
+    pub const Command = model_commands.Command;
+    pub const DeviceProfile = model_profile.DeviceProfile;
+    pub const KernelBinding = model_webgpu_types.KernelBinding;
+};
 
 pub const BackendRuntime = struct {
     allocator: std.mem.Allocator,

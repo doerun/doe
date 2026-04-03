@@ -1,5 +1,6 @@
 const std = @import("std");
-const model = @import("model.zig");
+const model_commands = @import("model_commands.zig");
+const model_webgpu_types = @import("model_webgpu_types.zig");
 const parse_helpers = @import("command_parse_helpers.zig");
 const parse_extra = @import("command_json_extra.zig");
 
@@ -9,6 +10,24 @@ const command_json_raw = @import("command_json_raw.zig");
 const RawCommand = command_json_raw.RawCommand;
 const RawKernelBinding = command_json_raw.RawKernelBinding;
 pub const ParseError = command_json_raw.ParseError;
+
+const model = struct {
+    pub const Command = model_commands.Command;
+    pub const CopyDirection = model_webgpu_types.CopyDirection;
+    pub const CopyResourceKind = model_webgpu_types.CopyResourceKind;
+    pub const CopyTextureResource = model_webgpu_types.CopyTextureResource;
+    pub const DEFAULT_RENDER_TARGET_FORMAT = model_webgpu_types.DEFAULT_RENDER_TARGET_FORMAT;
+    pub const DEFAULT_RENDER_TARGET_HANDLE = model_webgpu_types.DEFAULT_RENDER_TARGET_HANDLE;
+    pub const DEFAULT_RENDER_TARGET_HEIGHT = model_webgpu_types.DEFAULT_RENDER_TARGET_HEIGHT;
+    pub const DEFAULT_RENDER_TARGET_WIDTH = model_webgpu_types.DEFAULT_RENDER_TARGET_WIDTH;
+    pub const DispatchCommand = model_webgpu_types.DispatchCommand;
+    pub const KernelBinding = model_webgpu_types.KernelBinding;
+    pub const MapAsyncMode = model_webgpu_types.MapAsyncMode;
+    pub const RenderDrawCommand = model_webgpu_types.RenderDrawCommand;
+    pub const WGPUShaderStage_Compute = model_webgpu_types.WGPUShaderStage_Compute;
+    pub const WGPUTextureFormat_Undefined = model_webgpu_types.WGPUTextureFormat_Undefined;
+    pub const WGPUWholeSize = model_webgpu_types.WGPUWholeSize;
+};
 
 pub fn parseCommands(allocator: Allocator, text: []const u8) ![]model.Command {
     if (std.mem.eql(u8, std.mem.trim(u8, text, " \n\r\t"), "[]")) {
