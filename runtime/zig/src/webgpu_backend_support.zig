@@ -1,6 +1,6 @@
 const std = @import("std");
 const abi_base = @import("core/abi/wgpu_handle_types.zig");
-const abi_descriptor = @import("core/abi/wgpu_descriptor_types.zig");
+const abi_callback = @import("core/abi/wgpu_callback_descriptor_types.zig");
 const runtime_types = @import("backend/runtime_types.zig");
 const capability_runtime_mod = @import("wgpu_capability_runtime.zig");
 const p1_resource_table_procs_mod = @import("wgpu_p1_resource_table_procs.zig");
@@ -86,17 +86,17 @@ pub fn gpuTimestampsRequired(self: anytype) bool {
 }
 
 pub fn clearUncapturedError(self: anytype) void {
-    self.core.uncaptured_error_state.error_type.store(@intFromEnum(abi_descriptor.WGPUErrorType.noError), .release);
+    self.core.uncaptured_error_state.error_type.store(@intFromEnum(abi_callback.WGPUErrorType.noError), .release);
     self.core.uncaptured_error_state.pending.store(0, .release);
 }
 
-pub fn takeUncapturedError(self: anytype) ?abi_descriptor.WGPUErrorType {
+pub fn takeUncapturedError(self: anytype) ?abi_callback.WGPUErrorType {
     if (self.core.uncaptured_error_state.pending.swap(0, .acq_rel) == 0) return null;
     const raw = self.core.uncaptured_error_state.error_type.load(.acquire);
     return @enumFromInt(raw);
 }
 
-pub fn uncapturedErrorStatusMessage(error_type: abi_descriptor.WGPUErrorType) []const u8 {
+pub fn uncapturedErrorStatusMessage(error_type: abi_callback.WGPUErrorType) []const u8 {
     return switch (error_type) {
         .validation => "uncaptured WebGPU validation error",
         .outOfMemory => "uncaptured WebGPU out-of-memory error",
@@ -106,7 +106,7 @@ pub fn uncapturedErrorStatusMessage(error_type: abi_descriptor.WGPUErrorType) []
     };
 }
 
-pub fn effectiveLimits(self: anytype) ?*const abi_descriptor.WGPULimits {
+pub fn effectiveLimits(self: anytype) ?*const abi_callback.WGPULimits {
     if (self.core.has_device_limits) return &self.core.device_limits;
     if (self.core.has_adapter_limits) return &self.core.adapter_limits;
     return null;

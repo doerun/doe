@@ -1,4 +1,11 @@
 # Doe status
+## Broad native and WebGPU ABI barrels retargeted behind narrower ownership modules (2026-04-03 UTC)
+
+- `runtime/zig/src/doe_native_types.zig` and `runtime/zig/src/doe_native_helpers.zig` remain as compatibility-facing native barrels, but a first batch of implementation files now imports `doe_native_object_types.zig`, `doe_native_shared_types.zig`, `doe_native_object_helpers.zig`, and `doe_native_runtime_helpers.zig` directly instead of depending on the broader native facades
+- `runtime/zig/src/core/abi/wgpu_base_types.zig` and `runtime/zig/src/core/abi/wgpu_descriptor_types.zig` are still available as combined ABI surfaces, but multiple runtime callers now import narrower ABI shards such as `wgpu_core_base_types.zig`, `wgpu_feature_base_types.zig`, `wgpu_texture_base_types.zig`, `wgpu_callback_descriptor_types.zig`, and `wgpu_pipeline_descriptor_types.zig` directly
+- `runtime/zig/src/core/abi/model_exports.zig` no longer imports the compatibility model facades for the runtime/webgpu aggregate surface; `runtime/zig/src/core/abi/model_runtime_exports.zig` now owns that explicit export surface without routing through the legacy combined model modules
+- `runtime/zig/src/webgpu_backend.zig`, `runtime/zig/src/webgpu_backend_ops.zig`, `runtime/zig/src/webgpu_backend_support.zig`, `runtime/zig/src/webgpu_backend_types.zig`, and `runtime/zig/src/backend/d3d12/d3d12_native_runtime.zig` remain the main orchestration modules for their lanes, but their dependency paths are now materially narrower than the earlier monolithic state/barrel layout
+
 ## Zig runtime line-limit policy raised to 999 lines and enforcement updated (2026-04-03 UTC)
 
 - The Zig runtime file-size policy in `AGENTS.md` and `runtime/zig/STYLE.md` now uses a `999`-line cap instead of `777`

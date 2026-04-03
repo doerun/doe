@@ -3,9 +3,9 @@
 
 const std = @import("std");
 const abi_base = @import("core/abi/wgpu_handle_types.zig");
-const abi_descriptor = @import("core/abi/wgpu_descriptor_types.zig");
-const native_types = @import("doe_native_types.zig");
-const native_helpers = @import("doe_native_helpers.zig");
+const abi_callback = @import("core/abi/wgpu_callback_descriptor_types.zig");
+const native_types = @import("doe_native_object_types.zig");
+const native_helpers = @import("doe_native_object_helpers.zig");
 
 const alloc = native_helpers.alloc;
 const cast = native_helpers.cast;
@@ -110,7 +110,7 @@ pub export fn doeNativeBufferMapAsync(
     mode: u64,
     offset: usize,
     size: usize,
-    cb_info: abi_descriptor.WGPUBufferMapCallbackInfo,
+    cb_info: abi_callback.WGPUBufferMapCallbackInfo,
 ) callconv(.c) abi_base.WGPUFuture {
     const buf = cast(DoeBuffer, buf_raw) orelse {
         if (cb_info.callback) |callback| {

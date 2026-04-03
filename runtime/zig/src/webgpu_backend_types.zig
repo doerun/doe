@@ -1,6 +1,6 @@
 const std = @import("std");
-const abi_base = @import("core/abi/wgpu_handle_types.zig");
-const abi_descriptor = @import("core/abi/wgpu_descriptor_types.zig");
+const abi_callback = @import("core/abi/wgpu_callback_descriptor_types.zig");
+const abi_handle = @import("core/abi/wgpu_handle_types.zig");
 const abi_records = @import("core/abi/wgpu_runtime_records.zig");
 const abi_proc_aliases = @import("core/abi/wgpu_type_proc_aliases.zig");
 const runtime_state = @import("core/abi/wgpu_runtime_state_defs.zig");
@@ -26,7 +26,7 @@ pub const ManagedSurface = struct {
     surface: surface_procs_mod.Surface,
     platform_surface: ?surface_macos_mod.ManagedPlatformSurface = null,
     configured: bool = false,
-    acquired_texture: abi_base.WGPUTexture = null,
+    acquired_texture: abi_handle.WGPUTexture = null,
     last_texture_status: u32 = 0,
 };
 
@@ -37,10 +37,10 @@ pub const CoreWebGPUBackend = struct {
     capability_procs: ?p1_capability_procs_mod.CapabilityProcs = null,
     resource_table_procs: ?p1_resource_table_procs_mod.ResourceTableProcs = null,
     lifecycle_procs: ?p2_lifecycle_procs_mod.LifecycleProcs = null,
-    instance: abi_base.WGPUInstance = null,
-    adapter: abi_base.WGPUAdapter = null,
-    device: abi_base.WGPUDevice = null,
-    queue: abi_base.WGPUQueue = null,
+    instance: abi_handle.WGPUInstance = null,
+    adapter: abi_handle.WGPUAdapter = null,
+    device: abi_handle.WGPUDevice = null,
+    queue: abi_handle.WGPUQueue = null,
     buffers: std.AutoHashMap(u64, BufferRecord),
     textures: std.AutoHashMap(u64, TextureRecord),
     pipeline_cache: std.AutoHashMap(u64, PipelineCacheEntry),
@@ -53,7 +53,7 @@ pub const CoreWebGPUBackend = struct {
     gpu_timestamp_mode: GpuTimestampMode = .auto,
     kernel_root: ?[]const u8 = null,
     library_error: []const u8 = "",
-    requested_backend_type: abi_descriptor.WGPUBackendType = .undefined,
+    requested_backend_type: abi_callback.WGPUBackendType = .undefined,
     adapter_has_timestamp_query: bool = false,
     adapter_has_multi_draw_indirect: bool = false,
     adapter_has_pixel_local_storage_coherent: bool = false,
@@ -67,8 +67,8 @@ pub const CoreWebGPUBackend = struct {
     has_shader_f16: bool = false,
     has_adapter_limits: bool = false,
     has_device_limits: bool = false,
-    adapter_limits: abi_descriptor.WGPULimits = std.mem.zeroes(abi_descriptor.WGPULimits),
-    device_limits: abi_descriptor.WGPULimits = std.mem.zeroes(abi_descriptor.WGPULimits),
+    adapter_limits: abi_callback.WGPULimits = std.mem.zeroes(abi_callback.WGPULimits),
+    device_limits: abi_callback.WGPULimits = std.mem.zeroes(abi_callback.WGPULimits),
     uncaptured_error_state: UncapturedErrorState = .{},
     timestamp_debug: bool = false,
 };
@@ -77,11 +77,11 @@ pub const FullWebGPUBackendState = struct {
     render_pipeline_cache: std.AutoHashMap(u32, RenderPipelineCacheEntry),
     render_target_view_cache: std.AutoHashMap(u64, RenderTextureViewCacheEntry),
     render_depth_view_cache: std.AutoHashMap(u64, RenderTextureViewCacheEntry),
-    samplers: std.AutoHashMap(u64, abi_base.WGPUSampler),
+    samplers: std.AutoHashMap(u64, abi_handle.WGPUSampler),
     surfaces: std.AutoHashMap(u64, ManagedSurface),
-    render_uniform_bind_group_layout: abi_base.WGPUBindGroupLayout = null,
-    render_uniform_bind_group: abi_base.WGPUBindGroup = null,
-    render_sampler: abi_base.WGPUSampler = null,
-    render_occlusion_query_set: abi_base.WGPUQuerySet = null,
-    render_timestamp_query_set: abi_base.WGPUQuerySet = null,
+    render_uniform_bind_group_layout: abi_handle.WGPUBindGroupLayout = null,
+    render_uniform_bind_group: abi_handle.WGPUBindGroup = null,
+    render_sampler: abi_handle.WGPUSampler = null,
+    render_occlusion_query_set: abi_handle.WGPUQuerySet = null,
+    render_timestamp_query_set: abi_handle.WGPUQuerySet = null,
 };

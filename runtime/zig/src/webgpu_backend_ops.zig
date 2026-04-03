@@ -1,5 +1,5 @@
 const std = @import("std");
-const abi_base = @import("core/abi/wgpu_base_types.zig");
+const abi_core = @import("core/abi/wgpu_core_base_types.zig");
 const loader = @import("core/abi/wgpu_loader.zig");
 const resources = @import("core/resource/wgpu_resources.zig");
 const compute_commands = @import("core/compute/wgpu_commands_compute.zig");
@@ -36,8 +36,8 @@ pub fn prewarmUploadPath(self: anytype, max_upload_bytes: u64) !void {
     if (!self.backendAvailable()) return error.NativeQueueUnavailable;
 
     const usage = switch (self.core.upload_buffer_usage_mode) {
-        .copy_dst_copy_src => abi_base.WGPUBufferUsage_CopyDst | abi_base.WGPUBufferUsage_CopySrc,
-        .copy_dst => abi_base.WGPUBufferUsage_CopyDst,
+        .copy_dst_copy_src => abi_core.WGPUBufferUsage_CopyDst | abi_core.WGPUBufferUsage_CopySrc,
+        .copy_dst => abi_core.WGPUBufferUsage_CopyDst,
     };
     _ = try resources.getOrCreateBuffer(self, loader.BUFFER_UPLOAD_KEY, max_upload_bytes, usage);
 
@@ -72,7 +72,7 @@ pub fn prewarmKernelPipeline(self: anytype, kernel: []const u8, bindings: anytyp
     if (bindings) |bs| {
         for (bs) |b| {
             if (b.resource_kind != .buffer) continue;
-            const usage = abi_base.WGPUBufferUsage_Storage | abi_base.WGPUBufferUsage_CopyDst | abi_base.WGPUBufferUsage_CopySrc;
+            const usage = abi_core.WGPUBufferUsage_Storage | abi_core.WGPUBufferUsage_CopyDst | abi_core.WGPUBufferUsage_CopySrc;
             _ = resources.getOrCreateBuffer(self, b.resource_handle, b.buffer_size, usage) catch |err| {
                 std.debug.print("warn: webgpu_ffi: buffer prewarm: {s}\n", .{@errorName(err)});
             };

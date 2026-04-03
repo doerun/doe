@@ -2,8 +2,10 @@ const std = @import("std");
 const model_commands = @import("model_commands.zig");
 const model_profile = @import("model_profile.zig");
 const model_transfer_types = @import("model_compute_types.zig");
-const abi_base = @import("core/abi/wgpu_base_types.zig");
-const abi_descriptor = @import("core/abi/wgpu_descriptor_types.zig");
+const abi_callback = @import("core/abi/wgpu_callback_descriptor_types.zig");
+const abi_core = @import("core/abi/wgpu_core_base_types.zig");
+const abi_feature = @import("core/abi/wgpu_feature_base_types.zig");
+const abi_handle = @import("core/abi/wgpu_handle_types.zig");
 const backend_types = @import("webgpu_backend_types.zig");
 const lifecycle = @import("webgpu_backend_lifecycle.zig");
 const ops = @import("webgpu_backend_ops.zig");
@@ -57,7 +59,7 @@ pub const WebGPUBackend = struct {
                 .render_pipeline_cache = std.AutoHashMap(u32, backend_types.RenderPipelineCacheEntry).init(allocator),
                 .render_target_view_cache = std.AutoHashMap(u64, backend_types.RenderTextureViewCacheEntry).init(allocator),
                 .render_depth_view_cache = std.AutoHashMap(u64, backend_types.RenderTextureViewCacheEntry).init(allocator),
-                .samplers = std.AutoHashMap(u64, abi_base.WGPUSampler).init(allocator),
+                .samplers = std.AutoHashMap(u64, abi_handle.WGPUSampler).init(allocator),
                 .surfaces = std.AutoHashMap(u64, ManagedSurface).init(allocator),
             },
         };
@@ -74,24 +76,24 @@ pub const WebGPUBackend = struct {
             // Bootstrap only from the stable feature/limit path; richer capability
             // introspection stays behind the explicit diagnostics entrypoint.
             self.core.adapter = try lifecycle.requestAdapter(&self);
-            self.core.adapter_has_timestamp_query = procs.wgpuAdapterHasFeature(self.core.adapter.?, abi_base.WGPUFeatureName_TimestampQuery) != abi_base.WGPU_FALSE;
-            self.core.adapter_has_multi_draw_indirect = procs.wgpuAdapterHasFeature(self.core.adapter.?, abi_base.WGPUFeatureName_MultiDrawIndirect) != abi_base.WGPU_FALSE;
-            self.core.adapter_has_pixel_local_storage_coherent = procs.wgpuAdapterHasFeature(self.core.adapter.?, abi_base.WGPUFeatureName_PixelLocalStorageCoherent) != abi_base.WGPU_FALSE;
-            self.core.adapter_has_pixel_local_storage_non_coherent = procs.wgpuAdapterHasFeature(self.core.adapter.?, abi_base.WGPUFeatureName_PixelLocalStorageNonCoherent) != abi_base.WGPU_FALSE;
-            self.core.adapter_has_shader_f16 = procs.wgpuAdapterHasFeature(self.core.adapter.?, abi_base.WGPUFeatureName_ShaderF16) != abi_base.WGPU_FALSE;
+            self.core.adapter_has_timestamp_query = procs.wgpuAdapterHasFeature(self.core.adapter.?, abi_feature.WGPUFeatureName_TimestampQuery) != abi_core.WGPU_FALSE;
+            self.core.adapter_has_multi_draw_indirect = procs.wgpuAdapterHasFeature(self.core.adapter.?, abi_feature.WGPUFeatureName_MultiDrawIndirect) != abi_core.WGPU_FALSE;
+            self.core.adapter_has_pixel_local_storage_coherent = procs.wgpuAdapterHasFeature(self.core.adapter.?, abi_feature.WGPUFeatureName_PixelLocalStorageCoherent) != abi_core.WGPU_FALSE;
+            self.core.adapter_has_pixel_local_storage_non_coherent = procs.wgpuAdapterHasFeature(self.core.adapter.?, abi_feature.WGPUFeatureName_PixelLocalStorageNonCoherent) != abi_core.WGPU_FALSE;
+            self.core.adapter_has_shader_f16 = procs.wgpuAdapterHasFeature(self.core.adapter.?, abi_feature.WGPUFeatureName_ShaderF16) != abi_core.WGPU_FALSE;
             self.core.has_timestamp_query = self.core.adapter_has_timestamp_query;
             self.core.has_multi_draw_indirect = self.core.adapter_has_multi_draw_indirect;
             self.core.has_pixel_local_storage_coherent = self.core.adapter_has_pixel_local_storage_coherent;
             self.core.has_pixel_local_storage_non_coherent = self.core.adapter_has_pixel_local_storage_non_coherent;
             self.core.has_shader_f16 = self.core.adapter_has_shader_f16;
-            self.core.has_timestamp_inside_passes = procs.wgpuAdapterHasFeature(self.core.adapter.?, abi_base.WGPUFeatureName_ChromiumExperimentalTimestampQueryInsidePasses) != abi_base.WGPU_FALSE;
+            self.core.has_timestamp_inside_passes = procs.wgpuAdapterHasFeature(self.core.adapter.?, abi_feature.WGPUFeatureName_ChromiumExperimentalTimestampQueryInsidePasses) != abi_core.WGPU_FALSE;
             self.core.device = try lifecycle.requestDevice(&self);
             if (procs.wgpuDeviceHasFeature) |device_has_feature| {
-                self.core.has_timestamp_query = device_has_feature(self.core.device.?, abi_base.WGPUFeatureName_TimestampQuery) != abi_base.WGPU_FALSE;
-                self.core.has_multi_draw_indirect = device_has_feature(self.core.device.?, abi_base.WGPUFeatureName_MultiDrawIndirect) != abi_base.WGPU_FALSE;
-                self.core.has_pixel_local_storage_coherent = device_has_feature(self.core.device.?, abi_base.WGPUFeatureName_PixelLocalStorageCoherent) != abi_base.WGPU_FALSE;
-                self.core.has_pixel_local_storage_non_coherent = device_has_feature(self.core.device.?, abi_base.WGPUFeatureName_PixelLocalStorageNonCoherent) != abi_base.WGPU_FALSE;
-                self.core.has_shader_f16 = device_has_feature(self.core.device.?, abi_base.WGPUFeatureName_ShaderF16) != abi_base.WGPU_FALSE;
+                self.core.has_timestamp_query = device_has_feature(self.core.device.?, abi_feature.WGPUFeatureName_TimestampQuery) != abi_core.WGPU_FALSE;
+                self.core.has_multi_draw_indirect = device_has_feature(self.core.device.?, abi_feature.WGPUFeatureName_MultiDrawIndirect) != abi_core.WGPU_FALSE;
+                self.core.has_pixel_local_storage_coherent = device_has_feature(self.core.device.?, abi_feature.WGPUFeatureName_PixelLocalStorageCoherent) != abi_core.WGPU_FALSE;
+                self.core.has_pixel_local_storage_non_coherent = device_has_feature(self.core.device.?, abi_feature.WGPUFeatureName_PixelLocalStorageNonCoherent) != abi_core.WGPU_FALSE;
+                self.core.has_shader_f16 = device_has_feature(self.core.device.?, abi_feature.WGPUFeatureName_ShaderF16) != abi_core.WGPU_FALSE;
             }
             self.core.queue = procs.wgpuDeviceGetQueue(self.core.device.?);
             if (self.core.queue == null) return error.NativeQueueUnavailable;
@@ -174,19 +176,19 @@ pub const WebGPUBackend = struct {
         return support.clearUncapturedError(self);
     }
 
-    pub fn takeUncapturedError(self: *Self) ?abi_descriptor.WGPUErrorType {
+    pub fn takeUncapturedError(self: *Self) ?abi_callback.WGPUErrorType {
         return support.takeUncapturedError(self);
     }
 
-    pub fn uncapturedErrorStatusMessage(error_type: abi_descriptor.WGPUErrorType) []const u8 {
+    pub fn uncapturedErrorStatusMessage(error_type: abi_callback.WGPUErrorType) []const u8 {
         return support.uncapturedErrorStatusMessage(error_type);
     }
 
-    pub fn effectiveLimits(self: *const Self) ?*const abi_descriptor.WGPULimits {
+    pub fn effectiveLimits(self: *const Self) ?*const abi_callback.WGPULimits {
         return support.effectiveLimits(self);
     }
 
-    pub fn releaseFullTextureViewsForTexture(self: *Self, texture: abi_base.WGPUTexture) void {
+    pub fn releaseFullTextureViewsForTexture(self: *Self, texture: abi_handle.WGPUTexture) void {
         return support.releaseFullTextureViewsForTexture(self, texture);
     }
 

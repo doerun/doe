@@ -16,8 +16,8 @@
 const std = @import("std");
 const abi_base = @import("core/abi/wgpu_handle_types.zig");
 const abi_descriptor = @import("core/abi/wgpu_descriptor_types.zig");
-const native_types = @import("doe_native_types.zig");
-const native_helpers = @import("doe_native_helpers.zig");
+const native_types = @import("doe_native_object_types.zig");
+const native_helpers = @import("doe_native_object_helpers.zig");
 const timeline = @import("gpu_timeline.zig");
 
 const cast = native_helpers.cast;

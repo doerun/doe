@@ -15,8 +15,8 @@
 // NOT free this pointer; it remains valid until the next call.
 
 const std = @import("std");
-const native_types = @import("doe_native_types.zig");
-const native_helpers = @import("doe_native_helpers.zig");
+const native_types = @import("doe_native_object_types.zig");
+const native_helpers = @import("doe_native_object_helpers.zig");
 
 const cast = native_helpers.cast;
 const DoeShaderModule = native_types.DoeShaderModule;

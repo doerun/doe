@@ -4,10 +4,13 @@
 const std = @import("std");
 const builtin = @import("builtin");
 const has_vulkan = (builtin.os.tag == .linux);
-const abi_base = @import("core/abi/wgpu_base_types.zig");
-const abi_descriptor = @import("core/abi/wgpu_descriptor_types.zig");
-const native_types = @import("doe_native_types.zig");
-const native_helpers = @import("doe_native_helpers.zig");
+const abi_callback = @import("core/abi/wgpu_callback_descriptor_types.zig");
+const abi_core = @import("core/abi/wgpu_core_base_types.zig");
+const abi_pipeline = @import("core/abi/wgpu_pipeline_descriptor_types.zig");
+const native_shared = @import("doe_native_shared_types.zig");
+const native_types = @import("doe_native_object_types.zig");
+const native_helpers = @import("doe_native_object_helpers.zig");
+const runtime_helpers = @import("doe_native_runtime_helpers.zig");
 const d3d12_constants = @import("backend/d3d12/d3d12_constants.zig");
 const bridge = @import("backend/metal/metal_bridge_decls.zig");
 const metal_bridge_buffer_contents = bridge.metal_bridge_buffer_contents;
@@ -22,7 +25,7 @@ const object_should_destroy = native_helpers.object_should_destroy;
 const label_store = native_helpers.label_store;
 const DoeDevice = native_types.DoeDevice;
 const DoeBuffer = native_types.DoeBuffer;
-const NativeVulkanRuntime = native_types.NativeVulkanRuntime;
+const NativeVulkanRuntime = native_shared.NativeVulkanRuntime;
 
 const WGPU_MAP_ASYNC_STATUS_SUCCESS: u32 = 1;
 const WGPU_MAP_ASYNC_STATUS_VALIDATION_ERROR: u32 = 4;
@@ -43,14 +46,14 @@ fn buffer_map_range_ok(buf: *const DoeBuffer, offset: usize, size: usize) bool {
 }
 
 fn d3d12_upload_heap_usage_supported(usage: u64) bool {
-    const disallowed = abi_base.WGPUBufferUsage_MapRead | abi_base.WGPUBufferUsage_CopyDst | abi_base.WGPUBufferUsage_Storage | abi_base.WGPUBufferUsage_QueryResolve;
+    const disallowed = abi_core.WGPUBufferUsage_MapRead | abi_core.WGPUBufferUsage_CopyDst | abi_core.WGPUBufferUsage_Storage | abi_core.WGPUBufferUsage_QueryResolve;
     return (usage & disallowed) == 0;
 }
 
-fn d3d12_buffer_heap_type(desc: *const abi_descriptor.WGPUBufferDescriptor) ?c_int {
+fn d3d12_buffer_heap_type(desc: *const abi_pipeline.WGPUBufferDescriptor) ?c_int {
     const usage = desc.usage;
-    const wants_map_read = (usage & abi_base.WGPUBufferUsage_MapRead) != 0;
-    const wants_map_write = (usage & abi_base.WGPUBufferUsage_MapWrite) != 0;
+    const wants_map_read = (usage & abi_core.WGPUBufferUsage_MapRead) != 0;
+    const wants_map_write = (usage & abi_core.WGPUBufferUsage_MapWrite) != 0;
     if (wants_map_read and wants_map_write) return null;
     if (wants_map_read) {
         if (desc.mappedAtCreation != 0) return null;
@@ -69,14 +72,14 @@ extern fn d3d12_bridge_resource_map(resource: ?*anyopaque) callconv(.c) ?*anyopa
 extern fn d3d12_bridge_resource_unmap(resource: ?*anyopaque) callconv(.c) void;
 extern fn d3d12_bridge_release(obj: ?*anyopaque) callconv(.c) void;
 
-pub export fn doeNativeDeviceCreateBuffer(dev_raw: ?*anyopaque, desc: ?*const abi_descriptor.WGPUBufferDescriptor) callconv(.c) ?*anyopaque {
+pub export fn doeNativeDeviceCreateBuffer(dev_raw: ?*anyopaque, desc: ?*const abi_pipeline.WGPUBufferDescriptor) callconv(.c) ?*anyopaque {
     const dev = cast(DoeDevice, dev_raw) orelse return null;
     const d = desc orelse return null;
     const buf = make(DoeBuffer) orelse return null;
     buf.* = .{ .backend = dev.backend, .size = d.size, .usage = d.usage };
     if (comptime has_vulkan) {
         if (dev.backend == .vulkan) {
-            const rt = native_helpers.device_vk_runtime(dev) orelse {
+            const rt = runtime_helpers.device_vk_runtime(dev) orelse {
                 alloc.destroy(buf);
                 return null;
             };
@@ -102,7 +105,7 @@ pub export fn doeNativeDeviceCreateBuffer(dev_raw: ?*anyopaque, desc: ?*const ab
         }
     }
     if (dev.backend == .d3d12) {
-        const rt = native_helpers.device_d3d12_runtime(dev) orelse {
+        const rt = runtime_helpers.device_d3d12_runtime(dev) orelse {
             alloc.destroy(buf);
             return null;
         };
@@ -188,7 +191,7 @@ pub export fn doeNativeBufferGetMapState(raw: ?*anyopaque) callconv(.c) u32 {
     return if (b.mapped) DOE_BUFFER_MAP_STATE_MAPPED else DOE_BUFFER_MAP_STATE_UNMAPPED;
 }
 
-pub export fn doeNativeBufferMapAsync(buf_raw: ?*anyopaque, mode: u64, offset: usize, size: usize, cb_info: abi_descriptor.WGPUBufferMapCallbackInfo) callconv(.c) abi_base.WGPUFuture {
+pub export fn doeNativeBufferMapAsync(buf_raw: ?*anyopaque, mode: u64, offset: usize, size: usize, cb_info: abi_callback.WGPUBufferMapCallbackInfo) callconv(.c) abi_core.WGPUFuture {
     const b = cast(DoeBuffer, buf_raw) orelse {
         if (cb_info.callback) |callback| callback(WGPU_MAP_ASYNC_STATUS_VALIDATION_ERROR, .{ .data = null, .length = 0 }, cb_info.userdata1, cb_info.userdata2);
         return .{ .id = 3 };
@@ -198,8 +201,8 @@ pub export fn doeNativeBufferMapAsync(buf_raw: ?*anyopaque, mode: u64, offset: u
         return .{ .id = 3 };
     }
     if (b.backend == .d3d12) {
-        const wants_read = (mode & abi_base.WGPUMapMode_Read) != 0;
-        const wants_write = (mode & abi_base.WGPUMapMode_Write) != 0;
+        const wants_read = (mode & abi_core.WGPUMapMode_Read) != 0;
+        const wants_write = (mode & abi_core.WGPUMapMode_Write) != 0;
         const expect_heap: c_int = if (wants_read and !wants_write) d3d12_constants.HEAP_TYPE_READBACK else if (wants_write and !wants_read) d3d12_constants.HEAP_TYPE_UPLOAD else 0;
         if (expect_heap == 0 or b.d3d12_heap_type != expect_heap or b.mtl == null) {
             if (cb_info.callback) |callback| callback(WGPU_MAP_ASYNC_STATUS_VALIDATION_ERROR, .{ .data = null, .length = 0 }, cb_info.userdata1, cb_info.userdata2);

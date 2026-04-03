@@ -1,5 +1,5 @@
 const std = @import("std");
-const native_types = @import("doe_native_types.zig");
+const native_types = @import("doe_native_object_types.zig");
 const bridge = @import("backend/metal/metal_bridge_decls.zig");
 
 const DoeQueue = native_types.DoeQueue;

@@ -14,8 +14,8 @@
 
 const std = @import("std");
 const builtin = @import("builtin");
-const native_types = @import("doe_native_types.zig");
-const native_helpers = @import("doe_native_helpers.zig");
+const native_types = @import("doe_native_object_types.zig");
+const native_helpers = @import("doe_native_object_helpers.zig");
 const native_exports = @import("doe_native_exports.zig");
 const abi_descriptor = @import("core/abi/wgpu_descriptor_types.zig");
 
