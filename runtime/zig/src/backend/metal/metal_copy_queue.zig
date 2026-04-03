@@ -1,5 +1,5 @@
 // metal_copy_queue.zig — Dedicated copy queue encoder and lifecycle management.
-// Sharded from metal_native_runtime.zig to stay under the 777-line limit.
+// Sharded from metal_native_runtime.zig to stay under the line-limit policy.
 
 const bridge = @import("metal_bridge_decls.zig");
 const metal_bridge_begin_blit_encoding = bridge.metal_bridge_begin_blit_encoding;

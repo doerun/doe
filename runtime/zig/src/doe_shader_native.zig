@@ -8,7 +8,8 @@ const wgsl_compiler = @import("doe_wgsl/mod.zig");
 const wgsl_ir = @import("doe_wgsl/ir.zig");
 const wgsl_runtime_compile = @import("doe_wgsl/runtime_compile.zig");
 const shader_translation_cache = @import("doe_shader_translation_cache.zig");
-const native = @import("doe_native_base.zig");
+const native_types = @import("doe_native_types.zig");
+const native_helpers = @import("doe_native_helpers.zig");
 const bind_group = @import("doe_bind_group_native.zig");
 const bridge = @import("backend/metal/metal_bridge_decls.zig");
 const metal_bridge_device_new_compute_pipeline = bridge.metal_bridge_device_new_compute_pipeline;
@@ -16,19 +17,19 @@ const metal_bridge_device_new_library_msl = bridge.metal_bridge_device_new_libra
 const metal_bridge_library_new_function = bridge.metal_bridge_library_new_function;
 const metal_bridge_release = bridge.metal_bridge_release;
 
-const alloc = native.alloc;
-const make = native.make;
-const cast = native.cast;
-const toOpaque = native.toOpaque;
-const ERR_CAP = native.ERR_CAP;
-const label_store = native.label_store;
+const alloc = native_helpers.alloc;
+const make = native_helpers.make;
+const cast = native_helpers.cast;
+const toOpaque = native_helpers.toOpaque;
+const ERR_CAP = native_types.ERR_CAP;
+const label_store = native_helpers.label_store;
 
-const DoeDevice = native.DoeDevice;
-const DoeShaderModule = native.DoeShaderModule;
-const DoeComputePipeline = native.DoeComputePipeline;
-const DoePipelineLayout = native.DoePipelineLayout;
-const DoeBindGroupLayout = native.DoeBindGroupLayout;
-const CompilationMessageKind = native.CompilationMessageKind;
+const DoeDevice = native_types.DoeDevice;
+const DoeShaderModule = native_types.DoeShaderModule;
+const DoeComputePipeline = native_types.DoeComputePipeline;
+const DoePipelineLayout = native_types.DoePipelineLayout;
+const DoeBindGroupLayout = native_types.DoeBindGroupLayout;
+const CompilationMessageKind = native_types.CompilationMessageKind;
 const LAST_ERROR_CAP: usize = 512;
 const LAST_ERROR_META_CAP: usize = 64;
 const DIAGNOSTIC_DIRECTIVE_INFO: []const u8 =
@@ -153,7 +154,7 @@ pub export fn doeNativeCheckShaderSource(code_ptr: ?[*]const u8, code_len: usize
     return 1;
 }
 
-pub export fn doeNativeShaderModuleGetBindings(raw: ?*anyopaque, out_ptr: ?[*]native.BindingInfo, out_len: usize) callconv(.c) usize {
+pub export fn doeNativeShaderModuleGetBindings(raw: ?*anyopaque, out_ptr: ?[*]native_types.BindingInfo, out_len: usize) callconv(.c) usize {
     const sm = cast(DoeShaderModule, raw) orelse return 0;
     ensureShaderBindings(sm);
     const count: usize = sm.binding_count;
@@ -238,7 +239,7 @@ pub fn ensureShaderBindings(sm: *DoeShaderModule) void {
     const wgsl = sm.wgsl_source orelse return;
     sm.bindings_ready = true;
     sm.binding_count = 0;
-    var bind_meta: [native.MAX_SHADER_BINDINGS]wgsl_compiler.BindingMeta = undefined;
+    var bind_meta: [native_types.MAX_SHADER_BINDINGS]wgsl_compiler.BindingMeta = undefined;
     const bind_count = wgsl_compiler.extractBindings(alloc, wgsl, &bind_meta) catch |bind_err| blk: {
         std.log.warn("doe: createShaderModule: lazy binding extraction failed ({s}); proceeding with 0 bindings", .{@errorName(bind_err)});
         set_module_warning_from_compiler_state(sm, "binding extraction failed after successful shader compilation");
@@ -546,7 +547,7 @@ fn compileMslToLibrary(dev: *DoeDevice, msl_buf: [*]const u8, msl_len: usize, er
 
 pub export fn doeNativeShaderModuleRelease(raw: ?*anyopaque) callconv(.c) void {
     if (cast(DoeShaderModule, raw)) |sm| {
-        if (!native.object_should_destroy(sm)) return;
+        if (!native_helpers.object_should_destroy(sm)) return;
         label_store.remove(raw);
         if (sm.mtl_library) |l| metal_bridge_release(l);
         if (sm.dispatch_preconditions.len > 0) alloc.free(sm.dispatch_preconditions);
@@ -568,10 +569,10 @@ fn createComputePipelineVulkan(sm: *DoeShaderModule, layout: ?*DoePipelineLayout
     const cp = make(DoeComputePipeline) orelse return null;
     cp.* = .{};
     if (layout) |pipeline_layout| {
-        native.object_add_ref(DoePipelineLayout, toOpaque(pipeline_layout));
+        native_helpers.object_add_ref(DoePipelineLayout, toOpaque(pipeline_layout));
         cp.layout = pipeline_layout;
     }
-    native.object_add_ref(DoeShaderModule, toOpaque(sm));
+    native_helpers.object_add_ref(DoeShaderModule, toOpaque(sm));
     cp.shader_module = sm;
     cp.wg_x = sm.wg_x;
     cp.wg_y = sm.wg_y;
@@ -744,10 +745,10 @@ pub export fn doeNativeDeviceCreateComputePipeline(dev_raw: ?*anyopaque, desc: ?
     };
     cp.* = .{ .mtl_pso = pso };
     if (cast(DoePipelineLayout, d.layout)) |pipeline_layout| {
-        native.object_add_ref(DoePipelineLayout, toOpaque(pipeline_layout));
+        native_helpers.object_add_ref(DoePipelineLayout, toOpaque(pipeline_layout));
         cp.layout = pipeline_layout;
     }
-    native.object_add_ref(DoeShaderModule, toOpaque(sm));
+    native_helpers.object_add_ref(DoeShaderModule, toOpaque(sm));
     cp.shader_module = sm;
     cp.wg_x = sm.wg_x;
     cp.wg_y = sm.wg_y;

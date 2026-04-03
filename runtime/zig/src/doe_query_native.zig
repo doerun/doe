@@ -9,7 +9,8 @@
 const std = @import("std");
 const builtin = @import("builtin");
 const has_vulkan = (builtin.os.tag == .linux);
-const native = @import("doe_native_base.zig");
+const native_types = @import("doe_native_types.zig");
+const native_helpers = @import("doe_native_helpers.zig");
 const bridge = @import("backend/metal/metal_bridge_decls.zig");
 const c = if (has_vulkan) @import("backend/vulkan/vk_constants.zig") else struct {
     // Minimal type stubs so DoeQuerySet struct fields compile on non-Linux.
@@ -30,7 +31,7 @@ pub const DoeQuerySet = struct {
     ref_count: u32 = 1,
     count: u32 = 0,
     query_type: u32 = WGPU_QUERY_TYPE_TIMESTAMP,
-    backend: native.BackendKind = .metal,
+    backend: native_types.BackendKind = .metal,
     /// Metal: opaque handle to MTLCounterSampleBuffer for GPU timestamp sampling.
     counter_sample_buffer: ?*anyopaque = null,
     /// Vulkan: VkQueryPool handle for timestamp queries.
@@ -53,7 +54,7 @@ pub export fn doeNativeDeviceCreateQuerySet(
     if (query_type != WGPU_QUERY_TYPE_TIMESTAMP and query_type != WGPU_QUERY_TYPE_OCCLUSION) return null;
     if (count == 0) return null;
 
-    const dev = native.cast(native.DoeDevice, dev_raw) orelse return null;
+    const dev = native_helpers.cast(native_types.DoeDevice, dev_raw) orelse return null;
 
     if (comptime has_vulkan) {
         if (dev.backend == .vulkan) {
@@ -66,16 +67,16 @@ pub export fn doeNativeDeviceCreateQuerySet(
     }
 
     // Metal path.
-    const qs = native.make(DoeQuerySet) orelse return null;
+    const qs = native_helpers.make(DoeQuerySet) orelse return null;
     qs.* = .{ .count = count, .query_type = query_type, .backend = .metal };
 
     qs.counter_sample_buffer = bridge.metal_bridge_create_counter_sample_buffer(dev.mtl_device, count);
     if (qs.counter_sample_buffer == null) {
-        native.alloc.destroy(qs);
+        native_helpers.alloc.destroy(qs);
         return null;
     }
 
-    return native.toOpaque(qs);
+    return native_helpers.toOpaque(qs);
 }
 
 // ============================================================
@@ -87,8 +88,8 @@ pub export fn doeNativeCommandEncoderWriteTimestamp(
     qs_raw: ?*anyopaque,
     query_index: u32,
 ) callconv(.c) void {
-    const enc = native.cast(native.DoeCommandEncoder, enc_raw) orelse return;
-    const qs = native.cast(DoeQuerySet, qs_raw) orelse return;
+    const enc = native_helpers.cast(native_types.DoeCommandEncoder, enc_raw) orelse return;
+    const qs = native_helpers.cast(DoeQuerySet, qs_raw) orelse return;
     if (query_index >= qs.count) return;
 
     if (comptime has_vulkan) {
@@ -99,7 +100,7 @@ pub export fn doeNativeCommandEncoderWriteTimestamp(
     }
 
     // Metal: record for deferred execution at submit.
-    enc.cmds.append(native.alloc, .{ .write_timestamp = .{
+    enc.cmds.append(native_helpers.alloc, .{ .write_timestamp = .{
         .counter_buffer = qs.counter_sample_buffer,
         .query_index = query_index,
     } }) catch std.debug.panic("doe_query_native: OOM recording write_timestamp", .{});
@@ -117,9 +118,9 @@ pub export fn doeNativeCommandEncoderResolveQuerySet(
     dst_raw: ?*anyopaque,
     dst_offset: u64,
 ) callconv(.c) void {
-    const enc = native.cast(native.DoeCommandEncoder, enc_raw) orelse return;
-    const qs = native.cast(DoeQuerySet, qs_raw) orelse return;
-    const dst = native.cast(native.DoeBuffer, dst_raw) orelse return;
+    const enc = native_helpers.cast(native_types.DoeCommandEncoder, enc_raw) orelse return;
+    const qs = native_helpers.cast(DoeQuerySet, qs_raw) orelse return;
+    const dst = native_helpers.cast(native_types.DoeBuffer, dst_raw) orelse return;
 
     if (first_query + query_count > qs.count) return;
 
@@ -135,7 +136,7 @@ pub export fn doeNativeCommandEncoderResolveQuerySet(
     }
 
     // Metal: record for deferred execution at submit.
-    enc.cmds.append(native.alloc, .{ .resolve_query_set = .{
+    enc.cmds.append(native_helpers.alloc, .{ .resolve_query_set = .{
         .counter_buffer = qs.counter_sample_buffer,
         .first_query = first_query,
         .query_count = query_count,
@@ -149,23 +150,23 @@ pub export fn doeNativeCommandEncoderResolveQuerySet(
 // ============================================================
 
 pub export fn doeNativeQuerySetDestroy(qs_raw: ?*anyopaque) callconv(.c) void {
-    const qs = native.cast(DoeQuerySet, qs_raw) orelse return;
-    if (!native.object_should_destroy(qs)) return;
-    native.label_store.remove(qs_raw);
+    const qs = native_helpers.cast(DoeQuerySet, qs_raw) orelse return;
+    if (!native_helpers.object_should_destroy(qs)) return;
+    native_helpers.label_store.remove(qs_raw);
 
     if (comptime has_vulkan) {
         if (qs.backend == .vulkan) {
             if (qs.vk_query_pool != c.VK_NULL_U64) {
                 c.vkDestroyQueryPool(qs.vk_device, qs.vk_query_pool, null);
             }
-            native.alloc.destroy(qs);
+            native_helpers.alloc.destroy(qs);
             return;
         }
     }
 
     // Metal path.
     if (qs.counter_sample_buffer) |csb| bridge.metal_bridge_destroy_counter_sample_buffer(csb);
-    native.alloc.destroy(qs);
+    native_helpers.alloc.destroy(qs);
 }
 
 pub export fn doeNativeQuerySetRelease(qs_raw: ?*anyopaque) callconv(.c) void {
@@ -173,12 +174,12 @@ pub export fn doeNativeQuerySetRelease(qs_raw: ?*anyopaque) callconv(.c) void {
 }
 
 pub export fn doeNativeQuerySetGetCount(qs_raw: ?*anyopaque) callconv(.c) u32 {
-    const qs = native.cast(DoeQuerySet, qs_raw) orelse return 0;
+    const qs = native_helpers.cast(DoeQuerySet, qs_raw) orelse return 0;
     return qs.count;
 }
 
 pub export fn doeNativeQuerySetGetType(qs_raw: ?*anyopaque) callconv(.c) u32 {
-    const qs = native.cast(DoeQuerySet, qs_raw) orelse return 0;
+    const qs = native_helpers.cast(DoeQuerySet, qs_raw) orelse return 0;
     return qs.query_type;
 }
 
@@ -188,8 +189,8 @@ pub export fn doeNativeQuerySetGetType(qs_raw: ?*anyopaque) callconv(.c) u32 {
 
 const WAIT_TIMEOUT_NS: u64 = std.math.maxInt(u64);
 
-fn vulkan_create_query_set(dev: *native.DoeDevice, query_type: u32, count: u32) ?*anyopaque {
-    const rt = native.device_vk_runtime(dev) orelse return null;
+fn vulkan_create_query_set(dev: *native_types.DoeDevice, query_type: u32, count: u32) ?*anyopaque {
+    const rt = native_helpers.device_vk_runtime(dev) orelse return null;
     if (!rt.has_device) return null;
 
     var query_pool: c.VkQueryPool = c.VK_NULL_U64;
@@ -207,7 +208,7 @@ fn vulkan_create_query_set(dev: *native.DoeDevice, query_type: u32, count: u32) 
         return null;
     }
 
-    const qs = native.make(DoeQuerySet) orelse {
+    const qs = native_helpers.make(DoeQuerySet) orelse {
         c.vkDestroyQueryPool(rt.device, query_pool, null);
         return null;
     };
@@ -224,18 +225,18 @@ fn vulkan_create_query_set(dev: *native.DoeDevice, query_type: u32, count: u32) 
     vk_reset_query_pool(rt, query_pool, 0, count) catch |err| {
         std.log.err("doe_query_native: initial query pool reset failed: {s}", .{@errorName(err)});
         c.vkDestroyQueryPool(rt.device, query_pool, null);
-        native.alloc.destroy(qs);
+        native_helpers.alloc.destroy(qs);
         return null;
     };
 
-    return native.toOpaque(qs);
+    return native_helpers.toOpaque(qs);
 }
 
 /// Reset query pool entries via a transient one-shot command buffer.
 /// The query helpers allocate their own command buffer so they do not borrow
 /// or mutate the runtime's primary command buffer.
 fn vk_reset_query_pool(
-    rt: *native.NativeVulkanRuntime,
+    rt: *native_types.NativeVulkanRuntime,
     query_pool: c.VkQueryPool,
     first_query: u32,
     query_count: u32,
@@ -279,7 +280,7 @@ fn vulkan_resolve_query_set(
     qs: *DoeQuerySet,
     first_query: u32,
     query_count: u32,
-    dst: *native.DoeBuffer,
+    dst: *native_types.DoeBuffer,
     dst_offset: u64,
 ) void {
     const rt = vk_runtime_from_qs(qs) orelse return;
@@ -323,19 +324,19 @@ fn vulkan_resolve_query_set(
 // ============================================================
 
 /// Extract NativeVulkanRuntime from a DoeQuerySet's vk_runtime_ref.
-fn vk_runtime_from_qs(qs: *const DoeQuerySet) ?*native.NativeVulkanRuntime {
+fn vk_runtime_from_qs(qs: *const DoeQuerySet) ?*native_types.NativeVulkanRuntime {
     const ptr = qs.vk_runtime_ref orelse return null;
-    return @as(*native.NativeVulkanRuntime, @ptrCast(@alignCast(ptr)));
+    return @as(*native_types.NativeVulkanRuntime, @ptrCast(@alignCast(ptr)));
 }
 
 /// Look up the VkBuffer handle for a DoeBuffer via the runtime's compute_buffers map.
-fn vk_buffer_from_doe_buffer(rt: *native.NativeVulkanRuntime, buf: *const native.DoeBuffer) ?c.VkBuffer {
+fn vk_buffer_from_doe_buffer(rt: *native_types.NativeVulkanRuntime, buf: *const native_types.DoeBuffer) ?c.VkBuffer {
     if (buf.vk_id == 0) return null;
     const cb = rt.compute_buffers.get(buf.vk_id) orelse return null;
     return cb.buffer;
 }
 
-fn begin_one_shot_command_buffer(rt: *native.NativeVulkanRuntime) !c.VkCommandBuffer {
+fn begin_one_shot_command_buffer(rt: *native_types.NativeVulkanRuntime) !c.VkCommandBuffer {
     if (!rt.has_command_pool or !rt.has_fence or rt.device == null or rt.queue == null) return error.InvalidState;
 
     var command_buffer: c.VkCommandBuffer = null;
@@ -359,7 +360,7 @@ fn begin_one_shot_command_buffer(rt: *native.NativeVulkanRuntime) !c.VkCommandBu
     return command_buffer;
 }
 
-fn submit_one_shot_command_buffer(rt: *native.NativeVulkanRuntime, command_buffer: c.VkCommandBuffer) !void {
+fn submit_one_shot_command_buffer(rt: *native_types.NativeVulkanRuntime, command_buffer: c.VkCommandBuffer) !void {
     if (!rt.has_fence or rt.device == null or rt.queue == null) return error.InvalidState;
 
     defer c.vkFreeCommandBuffers(rt.device, rt.command_pool, 1, @ptrCast(&command_buffer));
@@ -386,9 +387,9 @@ pub export fn doeNativeRenderPassBeginOcclusionQuery(
     pass_raw: ?*anyopaque,
     query_index: u32,
 ) callconv(.c) void {
-    const pass = native.cast(native.DoeRenderPass, pass_raw) orelse return;
+    const pass = native_helpers.cast(native_types.DoeRenderPass, pass_raw) orelse return;
     const qs_raw = pass.occlusion_query_set orelse return;
-    const qs = native.cast(DoeQuerySet, qs_raw) orelse return;
+    const qs = native_helpers.cast(DoeQuerySet, qs_raw) orelse return;
     if (qs.query_type != WGPU_QUERY_TYPE_OCCLUSION) return;
     if (query_index >= qs.count) return;
     pass.occlusion_query_active = true;
@@ -398,6 +399,6 @@ pub export fn doeNativeRenderPassBeginOcclusionQuery(
 pub export fn doeNativeRenderPassEndOcclusionQuery(
     pass_raw: ?*anyopaque,
 ) callconv(.c) void {
-    const pass = native.cast(native.DoeRenderPass, pass_raw) orelse return;
+    const pass = native_helpers.cast(native_types.DoeRenderPass, pass_raw) orelse return;
     pass.occlusion_query_active = false;
 }

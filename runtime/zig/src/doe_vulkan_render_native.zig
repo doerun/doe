@@ -4,7 +4,8 @@
 const std = @import("std");
 const builtin = @import("builtin");
 const has_vulkan = (builtin.os.tag == .linux);
-const native = @import("doe_native_base.zig");
+const native_types = @import("doe_native_types.zig");
+const native_helpers = @import("doe_native_helpers.zig");
 const abi_base = @import("core/abi/wgpu_handle_types.zig");
 const abi_descriptor = @import("core/abi/wgpu_descriptor_types.zig");
 const model_gpu_types = @import("model_texture_value_types.zig");
@@ -14,16 +15,16 @@ const c = if (has_vulkan) @import("backend/vulkan/vk_constants.zig") else struct
 const vk_resources = if (has_vulkan) @import("backend/vulkan/vk_resources.zig") else struct {};
 const doe_wgsl = @import("doe_wgsl/mod.zig");
 const runtime_compile = @import("doe_wgsl/runtime_compile.zig");
-const NativeVulkanRuntime = native.NativeVulkanRuntime;
+const NativeVulkanRuntime = native_types.NativeVulkanRuntime;
 
-const DoeDevice = native.DoeDevice;
-const DoeShaderModule = native.DoeShaderModule;
-const DoeTexture = native.DoeTexture;
-const DoeTextureView = native.DoeTextureView;
-const DoeSampler = native.DoeSampler;
-const DoeRenderPipeline = native.DoeRenderPipeline;
-const DoeRenderPass = native.DoeRenderPass;
-const DoeBuffer = native.DoeBuffer;
+const DoeDevice = native_types.DoeDevice;
+const DoeShaderModule = native_types.DoeShaderModule;
+const DoeTexture = native_types.DoeTexture;
+const DoeTextureView = native_types.DoeTextureView;
+const DoeSampler = native_types.DoeSampler;
+const DoeRenderPipeline = native_types.DoeRenderPipeline;
+const DoeRenderPass = native_types.DoeRenderPass;
+const DoeBuffer = native_types.DoeBuffer;
 
 // WebGPU filter values (from the WebGPU spec enum order used by doe_napi.c).
 const WGPU_FILTER_NEAREST: u32 = 1;
@@ -51,7 +52,7 @@ const VK_COMPARE_OP_ALWAYS: u32 = 7;
 
 fn get_runtime(dev: *DoeDevice) ?*NativeVulkanRuntime {
     if (comptime !has_vulkan) return null;
-    return native.device_vk_runtime(dev);
+    return native_helpers.device_vk_runtime(dev);
 }
 fn wgpu_filter_to_vk(filter: u32) u32 {
     return if (filter == WGPU_FILTER_LINEAR) VK_FILTER_LINEAR else c.VK_FILTER_NEAREST;
@@ -386,7 +387,7 @@ pub fn vulkan_create_render_pipeline(
     pip.vertex_buffer_count = 0;
     pip.vertex_attribute_count = 0;
     if (d.vertex_bufferCount > 0 and d.vertex_buffers != null) {
-        const buffer_count = @min(d.vertex_bufferCount, native.MAX_VERTEX_BUFFERS);
+        const buffer_count = @min(d.vertex_bufferCount, native_types.MAX_VERTEX_BUFFERS);
         const buffers = @as([*]const RenderVertexBufferLayout, @ptrCast(@alignCast(d.vertex_buffers)));
         var buffer_index: usize = 0;
         while (buffer_index < buffer_count) : (buffer_index += 1) {
@@ -395,7 +396,7 @@ pub fn vulkan_create_render_pipeline(
             pip.vertex_step_modes[buffer_index] = layout.stepMode;
             pip.vertex_buffer_count += 1;
             if (layout.attributes) |attrs| {
-                const available = native.MAX_VERTEX_ATTRIBUTES - pip.vertex_attribute_count;
+                const available = native_types.MAX_VERTEX_ATTRIBUTES - pip.vertex_attribute_count;
                 const attr_count = @min(layout.attributeCount, available);
                 var attr_index: usize = 0;
                 while (attr_index < attr_count) : (attr_index += 1) {
@@ -446,15 +447,15 @@ pub fn vulkan_create_render_pipeline(
 
     // Copy per-stage SPIR-V from shader modules onto the pipeline so the Vulkan
     // render path can create VkShaderModules from user-provided WGSL shaders.
-    if (native.cast(DoeShaderModule, d.vertex_module)) |vert_sm| {
+    if (native_helpers.cast(DoeShaderModule, d.vertex_module)) |vert_sm| {
         if (vert_sm.vertex_spirv_data) |vs| {
-            pip.vertex_spirv_data = native.alloc.dupe(u32, vs) catch null;
+            pip.vertex_spirv_data = native_helpers.alloc.dupe(u32, vs) catch null;
         }
     }
     if (d.fragment) |frag| {
-        if (native.cast(DoeShaderModule, frag.module)) |frag_sm| {
+        if (native_helpers.cast(DoeShaderModule, frag.module)) |frag_sm| {
             if (frag_sm.fragment_spirv_data) |fs| {
-                pip.fragment_spirv_data = native.alloc.dupe(u32, fs) catch null;
+                pip.fragment_spirv_data = native_helpers.alloc.dupe(u32, fs) catch null;
             }
         }
     }
@@ -467,7 +468,7 @@ pub fn vulkan_create_render_pipeline(
         else
             d.vertex_ep_length;
         if (ep_len > 0) {
-            pip.vertex_entry_point = native.alloc.dupe(u8, ep_data[0..ep_len]) catch null;
+            pip.vertex_entry_point = native_helpers.alloc.dupe(u8, ep_data[0..ep_len]) catch null;
         }
     }
     if (d.fragment) |frag| {
@@ -477,7 +478,7 @@ pub fn vulkan_create_render_pipeline(
             else
                 frag.entryPoint.length;
             if (ep_len > 0) {
-                pip.fragment_entry_point = native.alloc.dupe(u8, ep_data[0..ep_len]) catch null;
+                pip.fragment_entry_point = native_helpers.alloc.dupe(u8, ep_data[0..ep_len]) catch null;
             }
         }
     }
@@ -505,7 +506,7 @@ pub fn vulkan_create_graphics_shader_module(
     sm: *DoeShaderModule,
     wgsl: []const u8,
 ) error{ OutOfMemory, ShaderCompileFailed }!void {
-    const alloc = native.alloc;
+    const alloc = native_helpers.alloc;
     var result = runtime_compile.translateToSpirvForGraphicsRuntime(alloc, wgsl) catch {
         std.log.err("doe_vulkan_render: WGSL→SPIR-V graphics translation failed: {s}", .{doe_wgsl.lastErrorMessage()});
         return error.ShaderCompileFailed;
@@ -556,7 +557,7 @@ fn populate_draw_cmd_from_pass(cmd: *model_render_types.RenderDrawCommand, pass:
 
     // Render target: resolve vk_id from pass texture view chain.
     if (pass.target_view_handle != 0) {
-        if (native.cast(DoeTextureView, @ptrFromInt(pass.target_view_handle))) |tv| {
+        if (native_helpers.cast(DoeTextureView, @ptrFromInt(pass.target_view_handle))) |tv| {
             cmd.target_handle = tv.tex.vk_id;
             cmd.target_view_handle = if (tv.handle) |h| @intFromPtr(h) else tv.tex.vk_id;
         }
@@ -573,7 +574,7 @@ fn populate_draw_cmd_from_pass(cmd: *model_render_types.RenderDrawCommand, pass:
     // Vertex buffer handles from pass state.
     var bound_vertex_count: u32 = 0;
     var bound_slot: usize = 0;
-    while (bound_slot < native.MAX_VERTEX_BUFFERS) : (bound_slot += 1) {
+    while (bound_slot < native_types.MAX_VERTEX_BUFFERS) : (bound_slot += 1) {
         if (pass.vertex_buffers[bound_slot]) |buffer| {
             cmd.vertex_buffer_handles[bound_slot] = buffer.vk_id;
             cmd.vertex_buffer_offsets[bound_slot] = pass.vertex_buffer_offsets[bound_slot];
@@ -617,7 +618,7 @@ fn populate_draw_cmd_from_pass(cmd: *model_render_types.RenderDrawCommand, pass:
 /// (everything except per-draw geometry and indirect parameters).
 fn base_vulkan_render_cmd(pass: *DoeRenderPass) model_render_types.RenderDrawCommand {
     const occlusion_qs = if (pass.occlusion_query_active and pass.occlusion_query_set != null)
-        native.cast(query_native.DoeQuerySet, pass.occlusion_query_set)
+        native_helpers.cast(query_native.DoeQuerySet, pass.occlusion_query_set)
     else
         null;
     const pip_unclipped = if (pass.pipeline) |pip| pip.unclipped_depth else false;
@@ -736,7 +737,7 @@ pub fn vulkan_render_pass_draw_indexed(
 
 pub fn vulkan_render_pass_draw_indirect(pass: *DoeRenderPass, indirect_buffer_raw: ?*anyopaque, indirect_offset: u64) void {
     if (comptime !has_vulkan) return;
-    const indirect_buf = native.cast(DoeBuffer, indirect_buffer_raw) orelse return;
+    const indirect_buf = native_helpers.cast(DoeBuffer, indirect_buffer_raw) orelse return;
     if (indirect_buf.vk_id == 0) return;
     const rt = get_runtime(pass.enc.dev) orelse return;
 
@@ -752,7 +753,7 @@ pub fn vulkan_render_pass_draw_indirect(pass: *DoeRenderPass, indirect_buffer_ra
 
 pub fn vulkan_render_pass_draw_indexed_indirect(pass: *DoeRenderPass, indirect_buffer_raw: ?*anyopaque, indirect_offset: u64) void {
     if (comptime !has_vulkan) return;
-    const indirect_buf = native.cast(DoeBuffer, indirect_buffer_raw) orelse return;
+    const indirect_buf = native_helpers.cast(DoeBuffer, indirect_buffer_raw) orelse return;
     if (indirect_buf.vk_id == 0) return;
     const rt = get_runtime(pass.enc.dev) orelse return;
 

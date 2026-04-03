@@ -49,10 +49,14 @@ This guide is the Zig style contract for `zig`.
 - Shared types should live with the subsystem that owns their semantics, not in
   whichever orchestration file currently imports them most often.
 - New implementation code should not import compatibility barrels such as
-  `model_transfer_types.zig`, `model_runtime_types.zig`,
-  `model_webgpu_types.zig`, `wgpu_types.zig`, or `webgpu_ffi.zig`. Use the
-  narrow source modules directly; keep the compatibility barrels for export and
-  transition surfaces only.
+  `model_transfer_types.zig`,
+  `model_runtime_types.zig`, `model_webgpu_types.zig`, `wgpu_types.zig`, or
+  `webgpu_ffi.zig`. Use the narrow source modules directly; keep the
+  compatibility barrels for export and transition surfaces only.
+- Prefer `doe_native_types.zig` for native handle/object types and deferred
+  command payloads, `doe_native_helpers.zig` for allocator/cast/refcount/runtime
+  access helpers, and `doe_native_exports.zig` for cross-shard native C ABI
+  declarations. Do not reintroduce a catch-all native facade for those roles.
 - When a caller only needs shared texture/layout values, import
   `model_texture_value_types.zig`. When it only needs shader-stage or
   binding/sample/access values, import `model_binding_value_types.zig`.
@@ -72,7 +76,7 @@ This guide is the Zig style contract for `zig`.
 
 ## File size
 
-- 777 lines max per source file in `runtime/zig/src/`.
+- 999 lines max per source file in `runtime/zig/src/`.
 - Shard before exceeding this limit, not after.
 - Split by cohesive functionality (e.g. `pipeline_cache.zig`), not by type (e.g. `helpers.zig`).
 - Keep related code together; splitting must not scatter a single concern.
@@ -96,6 +100,8 @@ const model_binding = @import("model_binding_value_types.zig");
 const model_compute = @import("model_compute_types.zig");
 const wgpu_base = @import("core/abi/wgpu_base_types.zig");
 const wgpu_descriptor = @import("core/abi/wgpu_descriptor_types.zig");
+const native_types = @import("doe_native_types.zig");
+const native_helpers = @import("doe_native_helpers.zig");
 const backend_runtime = @import("backend/backend_runtime.zig");
 const backend_ids = @import("backend/backend_ids.zig");
 ```

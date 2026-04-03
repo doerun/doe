@@ -1,28 +1,29 @@
 // doe_encoder_native.zig — Bind group layout, bind group, pipeline layout,
 // command encoder, and command buffer exports for Doe native Metal backend.
-// Sharded from doe_wgpu_native.zig to stay under the 777-line limit.
+// Sharded from doe_wgpu_native.zig to stay under the line-limit policy.
 
 const builtin = @import("builtin");
 const has_vulkan = (builtin.os.tag == .linux);
 const std = @import("std");
 const model_transfer_types = @import("model_resource_types.zig");
 const abi_descriptor = @import("core/abi/wgpu_descriptor_types.zig");
-const native = @import("doe_native_base.zig");
+const native_types = @import("doe_native_types.zig");
+const native_helpers = @import("doe_native_helpers.zig");
 
-const alloc = native.alloc;
-const make = native.make;
-const cast = native.cast;
-const toOpaque = native.toOpaque;
-const MAX_BIND = native.MAX_BIND;
-const label_store = native.label_store;
+const alloc = native_helpers.alloc;
+const make = native_helpers.make;
+const cast = native_helpers.cast;
+const toOpaque = native_helpers.toOpaque;
+const MAX_BIND = native_types.MAX_BIND;
+const label_store = native_helpers.label_store;
 
-const DoeDevice = native.DoeDevice;
-const DoeBuffer = native.DoeBuffer;
-const DoeBindGroup = native.DoeBindGroup;
-const DoeCommandEncoder = native.DoeCommandEncoder;
-const DoeCommandBuffer = native.DoeCommandBuffer;
-const DoeComputePass = native.DoeComputePass;
-const DoeTexture = native.DoeTexture;
+const DoeDevice = native_types.DoeDevice;
+const DoeBuffer = native_types.DoeBuffer;
+const DoeBindGroup = native_types.DoeBindGroup;
+const DoeCommandEncoder = native_types.DoeCommandEncoder;
+const DoeCommandBuffer = native_types.DoeCommandBuffer;
+const DoeComputePass = native_types.DoeComputePass;
+const DoeTexture = native_types.DoeTexture;
 
 // DoePipelineLayout is private in doe_wgpu_native; redeclare compatible layout here.
 // Magic must match MAGIC_PIPE_LAYOUT = 0xD0E1_0009.
@@ -46,7 +47,7 @@ pub export fn doeNativeDeviceCreateCommandEncoder(dev_raw: ?*anyopaque, desc: ?*
 
 pub export fn doeNativeCommandEncoderRelease(raw: ?*anyopaque) callconv(.c) void {
     if (cast(DoeCommandEncoder, raw)) |e| {
-        if (!native.object_should_destroy(e)) return;
+        if (!native_helpers.object_should_destroy(e)) return;
         label_store.remove(raw);
         e.cmds.deinit(alloc);
         alloc.destroy(e);
@@ -67,7 +68,7 @@ pub export fn doeNativeCopyBufferToBuffer(enc_raw: ?*anyopaque, src_raw: ?*anyop
     const dst = cast(DoeBuffer, dst_raw) orelse return;
     if (enc.dev.backend == .vulkan) {
         if (comptime has_vulkan) {
-            const rt = native.device_vk_runtime(enc.dev) orelse return;
+            const rt = native_helpers.device_vk_runtime(enc.dev) orelse return;
             if (src.vk_id != 0 and dst.vk_id != 0) {
                 if (rt.compute_buffers.get(src.vk_id)) |scb| {
                     if (rt.compute_buffers.get(dst.vk_id)) |dcb| {
@@ -113,7 +114,7 @@ pub export fn doeNativeCommandEncoderCopyBufferToTexture(
     const dst_texture = cast(DoeTexture, dst_texture_raw) orelse return;
     if (enc.dev.backend == .vulkan) {
         if (comptime has_vulkan) {
-            const rt = native.device_vk_runtime(enc.dev) orelse return;
+            const rt = native_helpers.device_vk_runtime(enc.dev) orelse return;
             if (src_buffer.vk_id != 0 and dst_texture.vk_id != 0) {
                 if (rt.compute_buffers.get(src_buffer.vk_id)) |scb| {
                     if (scb.mapped) |mapped_ptr| {
@@ -169,7 +170,7 @@ pub export fn doeNativeCommandEncoderCopyTextureToBuffer(
     const dst_buffer = cast(DoeBuffer, dst_buffer_raw) orelse return;
     if (enc.dev.backend == .vulkan) {
         if (comptime has_vulkan) {
-            const rt = native.device_vk_runtime(enc.dev) orelse return;
+            const rt = native_helpers.device_vk_runtime(enc.dev) orelse return;
             if (src_texture.vk_id != 0 and dst_buffer.vk_id != 0) {
                 if (rt.compute_buffers.get(dst_buffer.vk_id)) |dcb| {
                     if (dcb.mapped) |mapped_ptr| {
@@ -217,7 +218,7 @@ pub export fn doeNativeCommandEncoderFinish(enc_raw: ?*anyopaque, desc: ?*const 
 
 pub export fn doeNativeCommandBufferRelease(raw: ?*anyopaque) callconv(.c) void {
     if (cast(DoeCommandBuffer, raw)) |cb| {
-        if (!native.object_should_destroy(cb)) return;
+        if (!native_helpers.object_should_destroy(cb)) return;
         label_store.remove(raw);
         cb.cmds.deinit(alloc);
         alloc.destroy(cb);

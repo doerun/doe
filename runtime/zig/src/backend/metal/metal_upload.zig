@@ -1,5 +1,5 @@
 // metal_upload.zig — Upload path: staging buffer management and upload_bytes.
-// Sharded from metal_native_runtime.zig to stay under the 777-line limit.
+// Sharded from metal_native_runtime.zig to stay under the line-limit policy.
 
 const std = @import("std");
 const webgpu = @import("../runtime_types.zig");

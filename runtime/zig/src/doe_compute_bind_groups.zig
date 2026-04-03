@@ -1,11 +1,11 @@
 const std = @import("std");
-const native = @import("doe_native_base.zig");
+const native_types = @import("doe_native_types.zig");
 
-pub const MAX_BIND = native.MAX_BIND;
-pub const MAX_COMPUTE_BIND_GROUPS = native.MAX_COMPUTE_BIND_GROUPS;
-pub const MAX_FLAT_BIND = native.MAX_FLAT_BIND;
+pub const MAX_BIND = native_types.MAX_BIND;
+pub const MAX_COMPUTE_BIND_GROUPS = native_types.MAX_COMPUTE_BIND_GROUPS;
+pub const MAX_FLAT_BIND = native_types.MAX_FLAT_BIND;
 
-pub const DoeBindGroup = native.DoeBindGroup;
+pub const DoeBindGroup = native_types.DoeBindGroup;
 
 comptime {
     if (MAX_FLAT_BIND != MAX_BIND * MAX_COMPUTE_BIND_GROUPS) {

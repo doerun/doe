@@ -1,5 +1,5 @@
 // doe_device_caps.zig — Device capability queries: feature reporting and limits.
-// Sharded from doe_wgpu_native.zig to stay under 777-line limit.
+// Sharded from doe_wgpu_native.zig to stay under the line-limit policy.
 //
 // Limits are queried from the hardware at runtime where possible, then cached.
 // Static fallbacks apply on non-Metal targets or when hardware query fails.
@@ -8,13 +8,14 @@ const builtin = @import("builtin");
 const has_vulkan = (builtin.os.tag == .linux);
 const abi_base = @import("core/abi/wgpu_base_types.zig");
 const abi_descriptor = @import("core/abi/wgpu_descriptor_types.zig");
-const native = @import("doe_native_base.zig");
+const native_types = @import("doe_native_types.zig");
+const native_helpers = @import("doe_native_helpers.zig");
 const d3d12_device_caps = @import("backend/d3d12/d3d12_device_caps.zig");
 const vk_feature_caps = if (has_vulkan) @import("backend/vulkan/vk_feature_caps.zig") else struct {};
 const vk_device_caps = if (has_vulkan) @import("backend/vulkan/vk_device_caps.zig") else struct {};
 const vulkan_feature_cache = if (has_vulkan) @import("doe_vulkan_feature_cache.zig") else struct {};
-const DoeDevice = native.DoeDevice;
-const DoeAdapter = native.DoeAdapter;
+const DoeDevice = native_types.DoeDevice;
+const DoeAdapter = native_types.DoeAdapter;
 
 // Metal bridge — only linked on macOS; guarded by comptime platform check.
 const BRIDGE_AVAILABLE = builtin.os.tag == .macos;
@@ -245,13 +246,13 @@ fn is_vulkan_feature_supported(
     };
 }
 
-fn d3d12_runtime(device: *DoeDevice) ?*native.NativeD3D12Runtime {
+fn d3d12_runtime(device: *DoeDevice) ?*native_types.NativeD3D12Runtime {
     const ptr = device.d3d12_runtime orelse return null;
     return @ptrCast(@alignCast(ptr));
 }
 
 pub export fn doeNativeAdapterHasFeature(raw: ?*anyopaque, feature: u32) callconv(.c) u32 {
-    if (native.cast(DoeAdapter, raw)) |a| {
+    if (native_helpers.cast(DoeAdapter, raw)) |a| {
         if (comptime has_vulkan) {
             if (a.backend == .vulkan) {
                 const caps = vulkan_feature_cache.get_adapter(raw);
@@ -270,7 +271,7 @@ pub export fn doeNativeAdapterHasFeature(raw: ?*anyopaque, feature: u32) callcon
 }
 
 pub export fn doeNativeDeviceHasFeature(raw: ?*anyopaque, feature: u32) callconv(.c) u32 {
-    if (native.cast(DoeDevice, raw)) |d| {
+    if (native_helpers.cast(DoeDevice, raw)) |d| {
         if (comptime has_vulkan) {
             if (d.backend == .vulkan) {
                 const caps = vulkan_feature_cache.get_device(raw);
@@ -296,7 +297,7 @@ pub export fn doeNativeDeviceHasFeature(raw: ?*anyopaque, feature: u32) callconv
 // Vulkan limits are hardware-queried at adapter/device creation and cached; falls
 // back to conservative static limits when the cache entry is absent.
 pub export fn doeNativeDeviceGetLimits(raw: ?*anyopaque, limits: ?*abi_descriptor.WGPULimits) callconv(.c) abi_base.WGPUStatus {
-    if (native.cast(DoeDevice, raw)) |d| {
+    if (native_helpers.cast(DoeDevice, raw)) |d| {
         if (comptime has_vulkan) {
             if (d.backend == .vulkan) {
                 if (limits) |l| {
@@ -325,7 +326,7 @@ pub export fn doeNativeDeviceGetLimits(raw: ?*anyopaque, limits: ?*abi_descripto
 }
 
 pub export fn doeNativeAdapterGetLimits(raw: ?*anyopaque, limits: ?*abi_descriptor.WGPULimits) callconv(.c) abi_base.WGPUStatus {
-    if (native.cast(DoeAdapter, raw)) |a| {
+    if (native_helpers.cast(DoeAdapter, raw)) |a| {
         if (comptime has_vulkan) {
             if (a.backend == .vulkan) {
                 if (limits) |l| {
@@ -359,7 +360,7 @@ pub export fn doeNativeDeviceGetLimitsFromMtl(mtl_device: ?*anyopaque, limits: ?
 // ============================================================
 
 pub export fn doeNativeDeviceSubgroupSize(raw: ?*anyopaque) callconv(.c) u32 {
-    if (native.cast(DoeDevice, raw)) |d| {
+    if (native_helpers.cast(DoeDevice, raw)) |d| {
         if (d.backend == .d3d12) {
             if (d3d12_runtime(d)) |rt| {
                 return d3d12_device_caps.d3d12_device_subgroup_size_from_caps(rt.device_caps);

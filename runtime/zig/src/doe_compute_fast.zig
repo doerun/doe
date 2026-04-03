@@ -1,5 +1,6 @@
 const std = @import("std");
-const native = @import("doe_native_base.zig");
+const native_types = @import("doe_native_types.zig");
+const native_helpers = @import("doe_native_helpers.zig");
 const compute_bind_groups = @import("doe_compute_bind_groups.zig");
 const compute_preconditions = @import("doe_compute_preconditions_native.zig");
 const queue_submit = @import("doe_queue_submit_native.zig");
@@ -19,18 +20,18 @@ const MSL_SIZES_SLOT: u32 = emit_msl.MSL_SIZES_SLOT;
 const SIZES_BUF_BYTES: usize = (MSL_SIZES_SLOT + 1) * @sizeOf(u32);
 
 fn encodeDispatchToCommandBuffer(
-    q: *native.DoeQueue,
+    q: *native_types.DoeQueue,
     mtl_cmd: ?*anyopaque,
-    pipe: *native.DoeComputePipeline,
+    pipe: *native_types.DoeComputePipeline,
     bg_ptrs: [*]const ?*anyopaque,
     bg_count: u32,
     dx: u32,
     dy: u32,
     dz: u32,
 ) bool {
-    var bind_groups: [MAX_COMPUTE_BIND_GROUPS]?*native.DoeBindGroup = [_]?*native.DoeBindGroup{null} ** MAX_COMPUTE_BIND_GROUPS;
+    var bind_groups: [MAX_COMPUTE_BIND_GROUPS]?*native_types.DoeBindGroup = [_]?*native_types.DoeBindGroup{null} ** MAX_COMPUTE_BIND_GROUPS;
     for (0..@min(bg_count, MAX_COMPUTE_BIND_GROUPS)) |i| {
-        bind_groups[i] = native.cast(native.DoeBindGroup, bg_ptrs[i]);
+        bind_groups[i] = native_helpers.cast(native_types.DoeBindGroup, bg_ptrs[i]);
     }
     compute_preconditions.validate_bind_groups(
         pipe.dispatch_preconditions,
@@ -95,13 +96,13 @@ pub export fn doeNativeComputeDispatchFlush(
     copy_dst_off: u64,
     copy_size: u64,
 ) callconv(.c) void {
-    const q = native.cast(native.DoeQueue, q_raw) orelse return;
-    const pipe = native.cast(native.DoeComputePipeline, pipe_raw) orelse return;
+    const q = native_helpers.cast(native_types.DoeQueue, q_raw) orelse return;
+    const pipe = native_helpers.cast(native_types.DoeComputePipeline, pipe_raw) orelse return;
     queue_submit.flush_pending_work(q);
 
-    var bind_groups: [MAX_COMPUTE_BIND_GROUPS]?*native.DoeBindGroup = [_]?*native.DoeBindGroup{null} ** MAX_COMPUTE_BIND_GROUPS;
+    var bind_groups: [MAX_COMPUTE_BIND_GROUPS]?*native_types.DoeBindGroup = [_]?*native_types.DoeBindGroup{null} ** MAX_COMPUTE_BIND_GROUPS;
     for (0..@min(bg_count, MAX_COMPUTE_BIND_GROUPS)) |i| {
-        bind_groups[i] = native.cast(native.DoeBindGroup, bg_ptrs[i]);
+        bind_groups[i] = native_helpers.cast(native_types.DoeBindGroup, bg_ptrs[i]);
     }
     compute_preconditions.validate_bind_groups(
         pipe.dispatch_preconditions,
@@ -146,8 +147,8 @@ pub export fn doeNativeComputeDispatchFlush(
             copy_dst_off_local = 0;
             copy_size_local = 0;
         } else {
-            if (native.cast(native.DoeBuffer, copy_src)) |sb| mtl_copy_src = sb.mtl;
-            if (native.cast(native.DoeBuffer, copy_dst)) |db| mtl_copy_dst = db.mtl;
+            if (native_helpers.cast(native_types.DoeBuffer, copy_src)) |sb| mtl_copy_src = sb.mtl;
+            if (native_helpers.cast(native_types.DoeBuffer, copy_dst)) |db| mtl_copy_dst = db.mtl;
         }
     }
 
@@ -185,7 +186,7 @@ pub export fn doeNativeComputeDispatchBatchFlush(
     bg_counts: [*]const u32,
     dispatch_dims: [*]const u32,
 ) callconv(.c) void {
-    const q = native.cast(native.DoeQueue, q_raw) orelse return;
+    const q = native_helpers.cast(native_types.DoeQueue, q_raw) orelse return;
     if (q.dev.backend != .metal) return;
     if (dispatch_count == 0) return;
 
@@ -194,7 +195,7 @@ pub export fn doeNativeComputeDispatchBatchFlush(
     var has_gpu_work = false;
 
     for (0..dispatch_count) |index| {
-        const pipe = native.cast(native.DoeComputePipeline, pipe_ptrs[index]) orelse continue;
+        const pipe = native_helpers.cast(native_types.DoeComputePipeline, pipe_ptrs[index]) orelse continue;
         const bg_offset = index * MAX_COMPUTE_BIND_GROUPS;
         const dim_offset = index * 3;
         has_gpu_work = encodeDispatchToCommandBuffer(

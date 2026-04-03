@@ -1,21 +1,22 @@
 // doe_bundle_native.zig — C ABI exports for GPURenderBundle and GPURenderBundleEncoder.
-// Sharded from doe_wgpu_native.zig to stay under the 777-line limit.
+// Sharded from doe_wgpu_native.zig to stay under the line-limit policy.
 
 const std = @import("std");
 const abi_base = @import("core/abi/wgpu_base_types.zig");
-const native = @import("doe_native_base.zig");
+const native_types = @import("doe_native_types.zig");
+const native_helpers = @import("doe_native_helpers.zig");
 const bundle = @import("render_bundle.zig");
 
-const alloc = native.alloc;
-const make = native.make;
-const cast = native.cast;
-const toOpaque = native.toOpaque;
-const DoeDevice = native.DoeDevice;
-const DoeBuffer = native.DoeBuffer;
-const DoeRenderPipeline = native.DoeRenderPipeline;
-const DoeBindGroup = native.DoeBindGroup;
-const DoeBindGroupLayout = native.DoeBindGroupLayout;
-const DoeRenderPass = native.DoeRenderPass;
+const alloc = native_helpers.alloc;
+const make = native_helpers.make;
+const cast = native_helpers.cast;
+const toOpaque = native_helpers.toOpaque;
+const DoeDevice = native_types.DoeDevice;
+const DoeBuffer = native_types.DoeBuffer;
+const DoeRenderPipeline = native_types.DoeRenderPipeline;
+const DoeBindGroup = native_types.DoeBindGroup;
+const DoeBindGroupLayout = native_types.DoeBindGroupLayout;
+const DoeRenderPass = native_types.DoeRenderPass;
 
 const RenderBundleEncoderDescriptor = @import("full/render/wgpu_render_types.zig").RenderBundleEncoderDescriptor;
 const RenderBundleDescriptor = @import("full/render/wgpu_render_types.zig").RenderBundleDescriptor;
@@ -49,7 +50,7 @@ pub export fn doeNativeDeviceCreateRenderBundleEncoder(
 
 pub export fn doeNativeRenderBundleEncoderRelease(raw: ?*anyopaque) callconv(.c) void {
     const enc = bundle.cast_bundle_encoder(raw) orelse return;
-    native.label_store.remove(raw);
+    native_helpers.label_store.remove(raw);
     const a = enc.allocator;
     enc.cmds.deinit(a);
     a.destroy(enc);
@@ -208,7 +209,7 @@ pub export fn doeNativeRenderBundleEncoderFinish(
 
 pub export fn doeNativeRenderBundleRelease(raw: ?*anyopaque) callconv(.c) void {
     const b = bundle.cast_bundle(raw) orelse return;
-    native.label_store.remove(raw);
+    native_helpers.label_store.remove(raw);
     bundle.bundle_destroy(b);
 }
 
@@ -252,9 +253,9 @@ pub export fn doeNativeRenderBundleEncoderPopDebugGroup(
 // Render pass: executeBundles
 // ============================================================
 
-const MAX_BIND = native.MAX_BIND;
-const MAX_FLAT_BIND = native.MAX_FLAT_BIND;
-const MAX_VERTEX_BUFFERS = native.MAX_VERTEX_BUFFERS;
+const MAX_BIND = native_types.MAX_BIND;
+const MAX_FLAT_BIND = native_types.MAX_FLAT_BIND;
+const MAX_VERTEX_BUFFERS = native_types.MAX_VERTEX_BUFFERS;
 
 // Accumulated render state for bundle replay. Tracks pipeline, bind groups,
 // vertex buffers, and index buffer across commands within a bundle so that
@@ -287,7 +288,7 @@ const BundleReplayState = struct {
 fn bundleRenderPassCmd(
     state: *const BundleReplayState,
     pass: *const DoeRenderPass,
-) native.RecordedCmd {
+) native_types.RecordedCmd {
     const pipeline = pass.pipeline;
     return .{ .render_pass = .{
         .pso = state.pso,

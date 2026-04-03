@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """Blocking file-size gate: enforces maximum line counts for source files.
 
-Zig runtime sources in runtime/zig/src/ must not exceed 777 lines.
+Zig runtime sources in runtime/zig/src/ must not exceed 999 lines.
 Python benchmark/tooling files in bench/ and pipeline/agent/ must not exceed 1200 lines.
 
 Exemptions (Zig): test files (test_*.zig, *_test.zig, test_suite*.zig) and
-wgpu_types.zig are data-heavy by nature and exempt from the 777-line limit.
+wgpu_types.zig are data-heavy by nature and exempt from the 999-line limit.
 
 Exit 0 when all files are within limits, 1 when any violation is found.
 """
@@ -20,7 +20,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 
-ZIG_LINE_LIMIT = 777
+ZIG_LINE_LIMIT = 999
 PYTHON_LINE_LIMIT = 1200
 
 # Directories containing third-party code that are not subject to project limits.

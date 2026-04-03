@@ -4,10 +4,11 @@
 
 const std = @import("std");
 const resource_table_procs = @import("wgpu_p1_resource_table_procs.zig");
-const native = @import("doe_native_base.zig");
+const native_types = @import("doe_native_types.zig");
+const native_helpers = @import("doe_native_helpers.zig");
 const render_bundle = @import("render_bundle.zig");
 
-const DoePipelineLayout = native.DoePipelineLayout;
+const DoePipelineLayout = native_types.DoePipelineLayout;
 
 fn validate_immediate_data(data_ptr: ?[*]const u8, data_len: usize) bool {
     if (data_len == 0) return true;
@@ -55,7 +56,7 @@ pub export fn doeNativeComputePassSetImmediates(
     data_ptr: ?[*]const u8,
     data_len: usize,
 ) callconv(.c) void {
-    const encoder = native.cast(native.DoeComputePass, encoder_raw) orelse return;
+    const encoder = native_helpers.cast(native_types.DoeComputePass, encoder_raw) orelse return;
     if (!validate_immediate_data(data_ptr, data_len)) {
         std.log.err("doe: compute setImmediates rejected null data pointer for non-zero size", .{});
         return;
@@ -76,7 +77,7 @@ pub export fn doeNativeRenderPassSetImmediates(
     data_ptr: ?[*]const u8,
     data_len: usize,
 ) callconv(.c) void {
-    const encoder = native.cast(native.DoeRenderPass, encoder_raw) orelse return;
+    const encoder = native_helpers.cast(native_types.DoeRenderPass, encoder_raw) orelse return;
     if (!validate_immediate_data(data_ptr, data_len)) {
         std.log.err("doe: render pass setImmediates rejected null data pointer for non-zero size", .{});
         return;

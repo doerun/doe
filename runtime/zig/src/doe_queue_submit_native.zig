@@ -3,20 +3,22 @@ const has_vulkan = (builtin.os.tag == .linux);
 const std = @import("std");
 const abi_base = @import("core/abi/wgpu_base_types.zig");
 const abi_descriptor = @import("core/abi/wgpu_descriptor_types.zig");
-const native = @import("doe_native_base.zig");
+const native_types = @import("doe_native_types.zig");
+const native_helpers = @import("doe_native_helpers.zig");
+const native_exports = @import("doe_native_exports.zig");
 const queue_flush_breakdown = @import("doe_queue_flush_breakdown.zig");
 const error_scope = @import("error_scope.zig");
-const alloc = native.alloc;
-const cast = native.cast;
-const toOpaque = native.toOpaque;
-const DoeQueue = native.DoeQueue;
-const DoeBuffer = native.DoeBuffer;
-const DoeCommandBuffer = native.DoeCommandBuffer;
-const DoeTexture = native.DoeTexture;
-const MAX_DEFERRED_COPIES = native.MAX_DEFERRED_COPIES;
-const MAX_DEFERRED_RESOLVES = native.MAX_DEFERRED_RESOLVES;
-const VERTEX_BUFFER_SLOT_BASE = native.VERTEX_BUFFER_SLOT_BASE;
-const MAX_FLAT_BIND = native.MAX_FLAT_BIND;
+const alloc = native_helpers.alloc;
+const cast = native_helpers.cast;
+const toOpaque = native_helpers.toOpaque;
+const DoeQueue = native_types.DoeQueue;
+const DoeBuffer = native_types.DoeBuffer;
+const DoeCommandBuffer = native_types.DoeCommandBuffer;
+const DoeTexture = native_types.DoeTexture;
+const MAX_DEFERRED_COPIES = native_types.MAX_DEFERRED_COPIES;
+const MAX_DEFERRED_RESOLVES = native_types.MAX_DEFERRED_RESOLVES;
+const VERTEX_BUFFER_SLOT_BASE = native_types.VERTEX_BUFFER_SLOT_BASE;
+const MAX_FLAT_BIND = native_types.MAX_FLAT_BIND;
 const d3d12_native_render_pass = @import("backend/d3d12/commands/d3d12_native_render_pass.zig");
 const emit_msl = @import("doe_wgsl/emit_msl_ir.zig");
 const MSL_SIZES_SLOT: u32 = emit_msl.MSL_SIZES_SLOT;
@@ -88,7 +90,7 @@ fn read_indirect_dispatch_counts(buffer_raw: ?*anyopaque, offset: u64) ?struct {
 }
 
 fn submit_d3d12_commands(q: *DoeQueue, count: usize, cmd_bufs: [*]const ?*anyopaque) void {
-    const rt = native.device_d3d12_runtime(q.dev) orelse return;
+    const rt = native_helpers.device_d3d12_runtime(q.dev) orelse return;
     _ = rt.flush_queue() catch return;
 
     const cmd_allocator = d3d12_bridge_device_create_command_allocator(rt.device) orelse return;
@@ -473,7 +475,7 @@ pub export fn doeNativeQueueFlush(q_raw: ?*anyopaque) callconv(.c) void {
     const q = cast(DoeQueue, q_raw) orelse return;
     if (q.dev.backend == .vulkan) {
         if (comptime has_vulkan) {
-            const rt = native.device_vk_runtime(q.dev) orelse return;
+            const rt = native_helpers.device_vk_runtime(q.dev) orelse return;
             _ = rt.flush_queue() catch |err| {
                 std.debug.print("warn: doe_queue_submit: queue flush: {s}\n", .{@errorName(err)});
             };
@@ -530,7 +532,7 @@ pub export fn doeNativeQueueWriteBuffer(q_raw: ?*anyopaque, buf_raw: ?*anyopaque
             }
             // Fallback: HashMap lookup for buffers created before cached-pointer support.
             if (buf.vk_id != 0) {
-                const rt = native.device_vk_runtime(q.dev) orelse return;
+                const rt = native_helpers.device_vk_runtime(q.dev) orelse return;
                 if (rt.compute_buffers.get(buf.vk_id)) |cb| {
                     if (cb.mapped) |ptr| {
                         const o: usize = @intCast(offset);
@@ -558,7 +560,7 @@ fn copy_texture_for_browser_passthrough(
 
     if (q.dev.backend == .vulkan) {
         if (comptime has_vulkan) {
-            const rt = native.device_vk_runtime(q.dev) orelse return;
+            const rt = native_helpers.device_vk_runtime(q.dev) orelse return;
             if (src_texture.vk_id == 0 or dst_texture.vk_id == 0) return;
             rt.texture_copy(.{
                 .src_handle = src_texture.vk_id,
@@ -581,8 +583,8 @@ fn copy_texture_for_browser_passthrough(
         return;
     }
 
-    const encoder = native.doeNativeDeviceCreateCommandEncoder(toOpaque(q.dev), null) orelse return;
-    defer native.doeNativeCommandEncoderRelease(encoder);
+    const encoder = native_exports.doeNativeDeviceCreateCommandEncoder(toOpaque(q.dev), null) orelse return;
+    defer native_exports.doeNativeCommandEncoderRelease(encoder);
 
     @import("doe_command_texture_native.zig").doeNativeCommandEncoderCopyTextureToTexture(
         encoder,
@@ -603,8 +605,8 @@ fn copy_texture_for_browser_passthrough(
         copy_size.depthOrArrayLayers,
     );
 
-    const command_buffer = native.doeNativeCommandEncoderFinish(encoder, null) orelse return;
-    defer native.doeNativeCommandBufferRelease(command_buffer);
+    const command_buffer = native_exports.doeNativeCommandEncoderFinish(encoder, null) orelse return;
+    defer native_exports.doeNativeCommandBufferRelease(command_buffer);
     var command_buffers = [1]?*anyopaque{command_buffer};
     doeNativeQueueSubmit(toOpaque(q), command_buffers.len, &command_buffers);
 }
@@ -630,13 +632,13 @@ pub export fn doeNativeQueueRelease(raw: ?*anyopaque) callconv(.c) void {
             q.ref_count -= 1;
             return;
         }
-        native.label_store.remove(raw);
+        native_helpers.label_store.remove(raw);
         if (q.dev.queue == q) {
             q.dev.queue = null;
         }
         if (q.dev.backend == .vulkan) {
             if (comptime has_vulkan) {
-                if (native.device_vk_runtime(q.dev)) |rt| {
+                if (native_helpers.device_vk_runtime(q.dev)) |rt| {
                     _ = rt.flush_queue() catch |err| {
                         std.debug.print("warn: doe_queue_submit: flush on queue release: {s}\n", .{@errorName(err)});
                     };
@@ -644,7 +646,7 @@ pub export fn doeNativeQueueRelease(raw: ?*anyopaque) callconv(.c) void {
             }
             const dev = q.dev;
             alloc.destroy(q);
-            native.doeNativeDeviceRelease(toOpaque(dev));
+            native_exports.doeNativeDeviceRelease(toOpaque(dev));
             return;
         }
         // Queue teardown is outside the measured package hot path. Prefer the
@@ -655,7 +657,7 @@ pub export fn doeNativeQueueRelease(raw: ?*anyopaque) callconv(.c) void {
         if (q.mtl_event) |ev| metal_bridge_release(ev);
         const dev = q.dev;
         alloc.destroy(q);
-        native.doeNativeDeviceRelease(toOpaque(dev));
+        native_exports.doeNativeDeviceRelease(toOpaque(dev));
     }
 }
 
@@ -667,7 +669,7 @@ pub export fn doeNativeQueueAddRef(raw: ?*anyopaque) callconv(.c) void {
 fn flush_pending_work_dropin_sync(q: *DoeQueue) void {
     if (q.dev.backend == .vulkan) {
         if (comptime has_vulkan) {
-            if (native.device_vk_runtime(q.dev)) |rt| {
+            if (native_helpers.device_vk_runtime(q.dev)) |rt| {
                 _ = rt.flush_queue() catch |err| {
                     std.debug.print("warn: doe_queue_submit: dropin sync flush: {s}\n", .{@errorName(err)});
                 };
@@ -751,7 +753,7 @@ fn copy_external_texture_to_dst(
 ) void {
     if (ext_texture_mod.resolvePlane0DoeTexture(ext)) |src_tex| {
         const source_copy = abi_descriptor.WGPUTexelCopyTextureInfo{
-            .texture = native.toOpaque(src_tex),
+            .texture = native_helpers.toOpaque(src_tex),
             .mipLevel = 0,
             .origin = origin,
             .aspect = abi_base.WGPUTextureAspect_All,

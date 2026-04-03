@@ -16,6 +16,7 @@ FORBIDDEN_SYNTHETIC_IMPORTS = {
     "vulkan_runtime_state.zig",
 }
 FORBIDDEN_COMPAT_IMPORTS = {
+    "doe_native_base.zig",
     "model.zig",
     "model_transfer_types.zig",
     "model_runtime_types.zig",

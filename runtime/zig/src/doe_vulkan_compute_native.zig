@@ -8,22 +8,23 @@ const std = @import("std");
 const doe_wgsl = @import("doe_wgsl/mod.zig");
 const runtime_compile = @import("doe_wgsl/runtime_compile.zig");
 const compute_preconditions = @import("doe_compute_preconditions_native.zig");
-const native = @import("doe_native_base.zig");
+const native_types = @import("doe_native_types.zig");
+const native_helpers = @import("doe_native_helpers.zig");
 const model_compute_types = @import("model_compute_types.zig");
 const model_texture_types = @import("model_texture_value_types.zig");
 const model_binding_types = @import("model_binding_value_types.zig");
 
-const alloc = native.alloc;
-const cast = native.cast;
-const device_vk_runtime = native.device_vk_runtime;
-const MAX_COMPUTE_BIND_GROUPS = native.MAX_COMPUTE_BIND_GROUPS;
-const MAX_BIND = native.MAX_BIND;
+const alloc = native_helpers.alloc;
+const cast = native_helpers.cast;
+const device_vk_runtime = native_helpers.device_vk_runtime;
+const MAX_COMPUTE_BIND_GROUPS = native_types.MAX_COMPUTE_BIND_GROUPS;
+const MAX_BIND = native_types.MAX_BIND;
 
-const NativeVulkanRuntime = native.NativeVulkanRuntime;
-const DoeShaderModule = native.DoeShaderModule;
-const DoeComputePipeline = native.DoeComputePipeline;
-const DoeComputePass = native.DoeComputePass;
-const DoeBuffer = native.DoeBuffer;
+const NativeVulkanRuntime = native_types.NativeVulkanRuntime;
+const DoeShaderModule = native_types.DoeShaderModule;
+const DoeComputePipeline = native_types.DoeComputePipeline;
+const DoeComputePass = native_types.DoeComputePass;
+const DoeBuffer = native_types.DoeBuffer;
 
 // Maximum KernelBinding slots: groups × bindings per group.
 const MAX_KERNEL_BINDINGS: usize = MAX_COMPUTE_BIND_GROUPS * MAX_BIND;

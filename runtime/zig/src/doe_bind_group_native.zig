@@ -1,27 +1,29 @@
 // doe_bind_group_native.zig — Bind group, bind group layout, and pipeline layout
 // C ABI exports for the Doe native Metal/Vulkan backend. Sharded from doe_wgpu_native.zig.
 
-const native = @import("doe_native_base.zig");
+const native_types = @import("doe_native_types.zig");
+const native_helpers = @import("doe_native_helpers.zig");
+const native_exports = @import("doe_native_exports.zig");
 const abi_base = @import("core/abi/wgpu_base_types.zig");
 const abi_descriptor = @import("core/abi/wgpu_descriptor_types.zig");
 
-const alloc = native.alloc;
-const make = native.make;
-const cast = native.cast;
-const toOpaque = native.toOpaque;
-const MAX_BIND = native.MAX_BIND;
-const MAX_COMPUTE_BIND_GROUPS = native.MAX_COMPUTE_BIND_GROUPS;
-const label_store = native.label_store;
+const alloc = native_helpers.alloc;
+const make = native_helpers.make;
+const cast = native_helpers.cast;
+const toOpaque = native_helpers.toOpaque;
+const MAX_BIND = native_types.MAX_BIND;
+const MAX_COMPUTE_BIND_GROUPS = native_types.MAX_COMPUTE_BIND_GROUPS;
+const label_store = native_helpers.label_store;
 
-const DoeDevice = native.DoeDevice;
-const DoeBuffer = native.DoeBuffer;
-const DoeTexture = native.DoeTexture;
-const DoeSampler = native.DoeSampler;
-const DoeBindGroupLayoutEntry = native.DoeBindGroupLayoutEntry;
-const DoeBindGroupLayout = native.DoeBindGroupLayout;
-const DoeBindGroup = native.DoeBindGroup;
-const DoePipelineLayout = native.DoePipelineLayout;
-const DoeTextureView = native.DoeTextureView;
+const DoeDevice = native_types.DoeDevice;
+const DoeBuffer = native_types.DoeBuffer;
+const DoeTexture = native_types.DoeTexture;
+const DoeSampler = native_types.DoeSampler;
+const DoeBindGroupLayoutEntry = native_types.DoeBindGroupLayoutEntry;
+const DoeBindGroupLayout = native_types.DoeBindGroupLayout;
+const DoeBindGroup = native_types.DoeBindGroup;
+const DoePipelineLayout = native_types.DoePipelineLayout;
+const DoeTextureView = native_types.DoeTextureView;
 const DoeExternalTexture = @import("doe_external_texture_native.zig").DoeExternalTexture;
 
 const RESOURCE_KIND_NONE: u32 = 0;
@@ -189,22 +191,22 @@ fn find_layout_entry(layout: *DoeBindGroupLayout, binding: u32) ?DoeBindGroupLay
 }
 
 fn retain_buffer(bg: *DoeBindGroup, binding: usize, buffer: *DoeBuffer) void {
-    native.object_add_ref(DoeBuffer, toOpaque(buffer));
+    native_helpers.object_add_ref(DoeBuffer, toOpaque(buffer));
     bg.retained_buffers[binding] = buffer;
 }
 
 fn retain_texture_view(bg: *DoeBindGroup, binding: usize, view: *DoeTextureView) void {
-    native.object_add_ref(DoeTextureView, toOpaque(view));
+    native_helpers.object_add_ref(DoeTextureView, toOpaque(view));
     bg.retained_texture_views[binding] = view;
 }
 
 fn retain_sampler(bg: *DoeBindGroup, binding: usize, sampler: *DoeSampler) void {
-    native.object_add_ref(DoeSampler, toOpaque(sampler));
+    native_helpers.object_add_ref(DoeSampler, toOpaque(sampler));
     bg.retained_samplers[binding] = sampler;
 }
 
 fn retain_external_texture(bg: *DoeBindGroup, binding: usize, external_texture: abi_base.WGPUExternalTexture) void {
-    native.object_add_ref(DoeExternalTexture, external_texture);
+    native_helpers.object_add_ref(DoeExternalTexture, external_texture);
     bg.retained_external_textures[binding] = external_texture;
 }
 
@@ -247,7 +249,7 @@ pub export fn doeNativeDeviceCreateBindGroupLayout(dev_raw: ?*anyopaque, desc: ?
 
 pub export fn doeNativeBindGroupLayoutRelease(raw: ?*anyopaque) callconv(.c) void {
     if (cast(DoeBindGroupLayout, raw)) |l| {
-        if (!native.object_should_destroy(l)) return;
+        if (!native_helpers.object_should_destroy(l)) return;
         label_store.remove(raw);
         if (l.entries) |entries| alloc.free(entries);
         alloc.destroy(l);
@@ -290,7 +292,7 @@ pub export fn doeNativeDeviceCreateBindGroup(dev_raw: ?*anyopaque, desc: ?*const
                         alloc.destroy(bg);
                         return null;
                     };
-                    const ext = native.cast(DoeExternalTexture, external_texture) orelse {
+                    const ext = native_helpers.cast(DoeExternalTexture, external_texture) orelse {
                         alloc.destroy(bg);
                         return null;
                     };
@@ -321,7 +323,7 @@ pub export fn doeNativeDeviceCreateBindGroup(dev_raw: ?*anyopaque, desc: ?*const
                 retain_sampler(bg, e.binding, sampler);
             } else if (resolve_external_texture(e)) |external_texture| {
                 const ext_mod = @import("doe_external_texture_native.zig");
-                const ext = native.cast(DoeExternalTexture, external_texture) orelse continue;
+                const ext = native_helpers.cast(DoeExternalTexture, external_texture) orelse continue;
                 // Resolve the MTL handle from plane0 (works for both DoeTextureView
                 // and native-imported paths).
                 const p0_mtl = ext_mod.resolvePlane0MtlHandle(ext);
@@ -347,19 +349,19 @@ pub export fn doeNativeDeviceCreateBindGroup(dev_raw: ?*anyopaque, desc: ?*const
 
 pub export fn doeNativeBindGroupRelease(raw: ?*anyopaque) callconv(.c) void {
     if (cast(DoeBindGroup, raw)) |g| {
-        if (!native.object_should_destroy(g)) return;
+        if (!native_helpers.object_should_destroy(g)) return;
         label_store.remove(raw);
         for (g.retained_buffers) |maybe_buffer| {
-            if (maybe_buffer) |buffer| native.doeNativeBufferRelease(toOpaque(buffer));
+            if (maybe_buffer) |buffer| native_exports.doeNativeBufferRelease(toOpaque(buffer));
         }
         for (g.retained_texture_views) |maybe_view| {
-            if (maybe_view) |view| native.doeNativeTextureViewRelease(toOpaque(view));
+            if (maybe_view) |view| native_exports.doeNativeTextureViewRelease(toOpaque(view));
         }
         for (g.retained_samplers) |maybe_sampler| {
-            if (maybe_sampler) |sampler| native.doeNativeSamplerRelease(toOpaque(sampler));
+            if (maybe_sampler) |sampler| native_exports.doeNativeSamplerRelease(toOpaque(sampler));
         }
         for (g.retained_external_textures) |external_texture| {
-            if (external_texture != null) native.doeNativeExternalTextureRelease(external_texture);
+            if (external_texture != null) native_exports.doeNativeExternalTextureRelease(external_texture);
         }
         alloc.destroy(g);
     }
@@ -382,7 +384,7 @@ pub export fn doeNativeDeviceCreatePipelineLayout(dev_raw: ?*anyopaque, desc: ?*
                 doeNativePipelineLayoutRelease(pl_result);
                 return null;
             };
-            native.object_add_ref(DoeBindGroupLayout, toOpaque(layout));
+            native_helpers.object_add_ref(DoeBindGroupLayout, toOpaque(layout));
             pl.bind_group_layouts[index] = layout;
         }
         label_store.set(pl_result, pd.label.data, pd.label.length);
@@ -392,7 +394,7 @@ pub export fn doeNativeDeviceCreatePipelineLayout(dev_raw: ?*anyopaque, desc: ?*
 
 pub export fn doeNativePipelineLayoutRelease(raw: ?*anyopaque) callconv(.c) void {
     if (cast(DoePipelineLayout, raw)) |l| {
-        if (!native.object_should_destroy(l)) return;
+        if (!native_helpers.object_should_destroy(l)) return;
         label_store.remove(raw);
         for (l.bind_group_layouts[0..l.bind_group_layout_count]) |layout| {
             if (layout) |bgl| doeNativeBindGroupLayoutRelease(toOpaque(bgl));

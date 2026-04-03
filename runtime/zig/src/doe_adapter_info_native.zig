@@ -6,11 +6,12 @@
 // must call doeNativeAdapterFreeInfo to release it.
 
 const std = @import("std");
-const native = @import("doe_native_base.zig");
+const native_types = @import("doe_native_types.zig");
+const native_helpers = @import("doe_native_helpers.zig");
 const bridge = @import("backend/metal/metal_bridge_decls.zig");
 
-const cast = native.cast;
-const DoeAdapter = native.DoeAdapter;
+const cast = native_helpers.cast;
+const DoeAdapter = native_types.DoeAdapter;
 
 // ============================================================
 // Bridge imports

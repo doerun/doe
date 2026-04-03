@@ -1,5 +1,5 @@
 // metal_buffer_pool.zig — Buffer pool helpers for NativeMetalRuntime.
-// Sharded from metal_native_runtime.zig to stay under the 777-line limit.
+// Sharded from metal_native_runtime.zig to stay under the line-limit policy.
 
 const std = @import("std");
 

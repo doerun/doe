@@ -1,16 +1,17 @@
 const std = @import("std");
 const model_gpu_types = @import("../../../model_texture_value_types.zig");
 const abi_base = @import("../../../core/abi/wgpu_base_types.zig");
-const native = @import("../../../doe_native_base.zig");
+const native_types = @import("../../../doe_native_types.zig");
+const native_helpers = @import("../../../doe_native_helpers.zig");
 const dc = @import("../d3d12_constants.zig");
 const d3d12_descriptors = @import("../d3d12_descriptors.zig");
 const d3d12_texture_view = @import("../resources/d3d12_texture_view.zig");
 const d3d12_sampler = @import("../resources/d3d12_sampler.zig");
 const d3d12_render_bind_groups = @import("d3d12_render_bind_groups.zig");
 
-const RecordedRenderPass = std.meta.TagPayload(native.RecordedCmd, .render_pass);
-const DoeTextureView = native.DoeTextureView;
-const DoeTexture = native.DoeTexture;
+const RecordedRenderPass = std.meta.TagPayload(native_types.RecordedCmd, .render_pass);
+const DoeTextureView = native_types.DoeTextureView;
+const DoeTexture = native_types.DoeTexture;
 
 extern fn d3d12_bridge_device_create_rtv_heap(device: ?*anyopaque, num_descriptors: u32) callconv(.c) ?*anyopaque;
 extern fn d3d12_bridge_device_create_dsv_heap(device: ?*anyopaque, num_descriptors: u32) callconv(.c) ?*anyopaque;
@@ -255,7 +256,7 @@ fn bind_index_buffer(cmd_list: ?*anyopaque, cmd: RecordedRenderPass) void {
 
 fn texture_view_from_handle(handle: u64) ?*const DoeTextureView {
     if (handle == 0) return null;
-    return native.cast(DoeTextureView, @ptrFromInt(handle));
+    return native_helpers.cast(DoeTextureView, @ptrFromInt(handle));
 }
 
 fn resolved_layer_count(view: *const DoeTextureView) u32 {

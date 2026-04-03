@@ -1,5 +1,5 @@
 // doe_cache_adapter_native.zig — C ABI re-exports for pipeline cache and multi-adapter.
-// Sharded from doe_wgpu_native.zig to stay under the 777-line limit.
+// Sharded from doe_wgpu_native.zig to stay under the line-limit policy.
 
 const pipeline_cache = @import("pipeline_cache.zig");
 const multi_adapter = @import("multi_adapter.zig");

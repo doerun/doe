@@ -5,13 +5,14 @@
 const std = @import("std");
 const abi_base = @import("core/abi/wgpu_base_types.zig");
 const abi_descriptor = @import("core/abi/wgpu_descriptor_types.zig");
-const native = @import("doe_native_base.zig");
+const native_types = @import("doe_native_types.zig");
+const native_helpers = @import("doe_native_helpers.zig");
 
-const alloc = native.alloc;
-const make = native.make;
-const cast = native.cast;
-const toOpaque = native.toOpaque;
-const label_store = native.label_store;
+const alloc = native_helpers.alloc;
+const make = native_helpers.make;
+const cast = native_helpers.cast;
+const toOpaque = native_helpers.toOpaque;
+const label_store = native_helpers.label_store;
 
 // D3D12 texture view swizzle classification for descriptor binding.
 pub const D3D12TextureViewSwizzleMode = enum { identity, swizzled_sampled, unsupported_storage };
@@ -34,14 +35,14 @@ pub fn d3d12TextureViewSwizzleMode(
     return .swizzled_sampled;
 }
 
-const DoeDevice = native.DoeDevice;
-const DoeBuffer = native.DoeBuffer;
-const DoeTexture = native.DoeTexture;
-const DoeTextureView = native.DoeTextureView;
-const DoeBindGroup = native.DoeBindGroup;
-const DoeRenderPipeline = native.DoeRenderPipeline;
-const DoeRenderPass = native.DoeRenderPass;
-const DoeCommandEncoder = native.DoeCommandEncoder;
+const DoeDevice = native_types.DoeDevice;
+const DoeBuffer = native_types.DoeBuffer;
+const DoeTexture = native_types.DoeTexture;
+const DoeTextureView = native_types.DoeTextureView;
+const DoeBindGroup = native_types.DoeBindGroup;
+const DoeRenderPipeline = native_types.DoeRenderPipeline;
+const DoeRenderPass = native_types.DoeRenderPass;
+const DoeCommandEncoder = native_types.DoeCommandEncoder;
 
 const texture_sampler = @import("doe_texture_sampler_native.zig");
 const render_pipeline = @import("doe_render_pipeline_native.zig");
@@ -224,9 +225,9 @@ pub export fn doeNativeRenderPassDraw(pass_raw: ?*anyopaque, vertex_count: u32, 
         .first_vertex = first_vertex,
         .first_instance = first_instance,
         .vertex_buffers = blk: {
-            var buffers: [native.MAX_VERTEX_BUFFERS]?*anyopaque = [_]?*anyopaque{null} ** native.MAX_VERTEX_BUFFERS;
+            var buffers: [native_types.MAX_VERTEX_BUFFERS]?*anyopaque = [_]?*anyopaque{null} ** native_types.MAX_VERTEX_BUFFERS;
             var i: usize = 0;
-            while (i < native.MAX_VERTEX_BUFFERS) : (i += 1) {
+            while (i < native_types.MAX_VERTEX_BUFFERS) : (i += 1) {
                 buffers[i] = if (pass.vertex_buffers[i]) |buffer| buffer.mtl else null;
             }
             break :blk buffers;
@@ -247,7 +248,7 @@ pub export fn doeNativeRenderPassDraw(pass_raw: ?*anyopaque, vertex_count: u32, 
 
 pub export fn doeNativeRenderPassSetVertexBuffer(pass_raw: ?*anyopaque, slot: u32, buffer_raw: ?*anyopaque, offset: u64, size: u64) callconv(.c) void {
     const pass = cast(DoeRenderPass, pass_raw) orelse return;
-    if (slot >= native.MAX_VERTEX_BUFFERS) return;
+    if (slot >= native_types.MAX_VERTEX_BUFFERS) return;
     pass.vertex_buffers[slot] = cast(DoeBuffer, buffer_raw);
     pass.vertex_buffer_offsets[slot] = offset;
     pass.vertex_buffer_sizes[slot] = size;
@@ -263,7 +264,7 @@ pub export fn doeNativeRenderPassSetIndexBuffer(pass_raw: ?*anyopaque, buffer_ra
 
 pub export fn doeNativeRenderPassSetBindGroup(pass_raw: ?*anyopaque, group_index: u32, group_raw: ?*anyopaque, dynamic_offset_count: usize, dynamic_offsets: ?[*]const u32) callconv(.c) void {
     const pass = cast(DoeRenderPass, pass_raw) orelse return;
-    if (group_index >= native.MAX_RENDER_BIND_GROUPS) return;
+    if (group_index >= native_types.MAX_RENDER_BIND_GROUPS) return;
     pass.bind_groups[group_index] = cast(DoeBindGroup, group_raw);
     _ = dynamic_offset_count;
     _ = dynamic_offsets;
@@ -311,9 +312,9 @@ pub export fn doeNativeRenderPassDrawIndexed(pass_raw: ?*anyopaque, index_count:
         .first_index = first_index,
         .base_vertex = base_vertex,
         .vertex_buffers = blk: {
-            var buffers: [native.MAX_VERTEX_BUFFERS]?*anyopaque = [_]?*anyopaque{null} ** native.MAX_VERTEX_BUFFERS;
+            var buffers: [native_types.MAX_VERTEX_BUFFERS]?*anyopaque = [_]?*anyopaque{null} ** native_types.MAX_VERTEX_BUFFERS;
             var i: usize = 0;
-            while (i < native.MAX_VERTEX_BUFFERS) : (i += 1) {
+            while (i < native_types.MAX_VERTEX_BUFFERS) : (i += 1) {
                 buffers[i] = if (pass.vertex_buffers[i]) |buffer| buffer.mtl else null;
             }
             break :blk buffers;
@@ -332,7 +333,7 @@ pub export fn doeNativeRenderPassDrawIndexed(pass_raw: ?*anyopaque, index_count:
     } }) catch std.debug.panic("doe_render_native: OOM recording indexed render command", .{});
 }
 
-fn base_render_cmd(pass: *DoeRenderPass, pip: *DoeRenderPipeline) std.meta.TagPayloadByName(native.RecordedCmd, "render_pass") {
+fn base_render_cmd(pass: *DoeRenderPass, pip: *DoeRenderPipeline) std.meta.TagPayloadByName(native_types.RecordedCmd, "render_pass") {
     return .{
         .pso = pip.mtl_pso,
         .root_signature = pip.backend_root_signature,
@@ -358,9 +359,9 @@ fn base_render_cmd(pass: *DoeRenderPass, pip: *DoeRenderPipeline) std.meta.TagPa
         .first_vertex = 0,
         .first_instance = 0,
         .vertex_buffers = blk: {
-            var buffers: [native.MAX_VERTEX_BUFFERS]?*anyopaque = [_]?*anyopaque{null} ** native.MAX_VERTEX_BUFFERS;
+            var buffers: [native_types.MAX_VERTEX_BUFFERS]?*anyopaque = [_]?*anyopaque{null} ** native_types.MAX_VERTEX_BUFFERS;
             var i: usize = 0;
-            while (i < native.MAX_VERTEX_BUFFERS) : (i += 1) {
+            while (i < native_types.MAX_VERTEX_BUFFERS) : (i += 1) {
                 buffers[i] = if (pass.vertex_buffers[i]) |buffer| buffer.mtl else null;
             }
             break :blk buffers;

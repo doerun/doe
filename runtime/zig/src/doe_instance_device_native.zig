@@ -1,5 +1,5 @@
 // doe_instance_device_native.zig — Instance, adapter, and device lifecycle exports.
-// Sharded from doe_wgpu_native.zig to stay under the 777-line limit.
+// Sharded from doe_wgpu_native.zig to stay under the line-limit policy.
 //
 // Backend selection: DOE_BACKEND explicitly selects the runtime backend. When
 // DOE_BACKEND is absent, FAWN_BACKEND_LANE provides the Chromium/browser lane
@@ -10,20 +10,21 @@ const builtin = @import("builtin");
 const has_vulkan = (builtin.os.tag == .linux);
 const abi_base = @import("core/abi/wgpu_handle_types.zig");
 const abi_descriptor = @import("core/abi/wgpu_descriptor_types.zig");
-const native = @import("doe_native_base.zig");
+const native_types = @import("doe_native_types.zig");
+const native_helpers = @import("doe_native_helpers.zig");
 
-const alloc = native.alloc;
-const make = native.make;
-const cast = native.cast;
-const toOpaque = native.toOpaque;
-const label_store = native.label_store;
+const alloc = native_helpers.alloc;
+const make = native_helpers.make;
+const cast = native_helpers.cast;
+const toOpaque = native_helpers.toOpaque;
+const label_store = native_helpers.label_store;
 
-const DoeInstance = native.DoeInstance;
-const DoeAdapter = native.DoeAdapter;
-const DoeDevice = native.DoeDevice;
-const DoeQueue = native.DoeQueue;
-const NativeVulkanRuntime = native.NativeVulkanRuntime;
-const NativeD3D12Runtime = native.NativeD3D12Runtime;
+const DoeInstance = native_types.DoeInstance;
+const DoeAdapter = native_types.DoeAdapter;
+const DoeDevice = native_types.DoeDevice;
+const DoeQueue = native_types.DoeQueue;
+const NativeVulkanRuntime = native_types.NativeVulkanRuntime;
+const NativeD3D12Runtime = native_types.NativeD3D12Runtime;
 const d3d12_device_caps = @import("backend/d3d12/d3d12_device_caps.zig");
 const vk_feature_caps = if (has_vulkan) @import("backend/vulkan/vk_feature_caps.zig") else struct {};
 const vk_device_caps = if (has_vulkan) @import("backend/vulkan/vk_device_caps.zig") else struct {};
@@ -261,8 +262,8 @@ pub export fn doeNativeInstanceRelease(raw: ?*anyopaque) callconv(.c) void {
             if (inst.ref_count > 1) inst.ref_count -= 1;
             return;
         }
-        if (!native.object_should_destroy(inst)) return;
-        native.label_store.remove(raw);
+        if (!native_helpers.object_should_destroy(inst)) return;
+        native_helpers.label_store.remove(raw);
         alloc.destroy(inst);
     }
 }

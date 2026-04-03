@@ -5,7 +5,8 @@ const builtin = @import("builtin");
 const has_vulkan = (builtin.os.tag == .linux);
 const std = @import("std");
 const abi_base = @import("core/abi/wgpu_base_types.zig");
-const native = @import("doe_native_base.zig");
+const native_types = @import("doe_native_types.zig");
+const native_helpers = @import("doe_native_helpers.zig");
 const model_gpu_types = @import("model_texture_value_types.zig");
 const bridge = @import("backend/metal/metal_bridge_decls.zig");
 
@@ -26,13 +27,13 @@ const PREFERRED_CANVAS_FORMAT: u32 = abi_base.WGPUTextureFormat_BGRA8Unorm;
 // NativeVulkanRuntime is attached; otherwise it falls back to BGRA8Unorm,
 // matching the repo-local Vulkan surface preference order.
 pub export fn doeNativeAdapterGetPreferredCanvasFormat(raw: ?*anyopaque) callconv(.c) u32 {
-    if (native.cast(native.DoeAdapter, raw)) |adapter| {
+    if (native_helpers.cast(native_types.DoeAdapter, raw)) |adapter| {
         if (adapter.backend == .vulkan) return model_gpu_types.WGPUTextureFormat_BGRA8Unorm;
     }
-    if (native.cast(native.DoeDevice, raw)) |device| {
+    if (native_helpers.cast(native_types.DoeDevice, raw)) |device| {
         if (device.backend == .vulkan) {
             if (comptime has_vulkan) {
-                if (native.device_vk_runtime(device)) |rt| return rt.preferred_canvas_format();
+                if (native_helpers.device_vk_runtime(device)) |rt| return rt.preferred_canvas_format();
             }
             return model_gpu_types.WGPUTextureFormat_BGRA8Unorm;
         }

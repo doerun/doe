@@ -1,6 +1,6 @@
 // ir_transform_robustness_test.zig — tests for the robustness IR transform pass.
 //
-// Split from ir_transform_robustness.zig for 777-line limit compliance.
+// Split from ir_transform_robustness.zig for line-limit compliance.
 
 const std = @import("std");
 const testing = std.testing;

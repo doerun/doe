@@ -4,20 +4,22 @@
 const std = @import("std");
 const abi_base = @import("core/abi/wgpu_base_types.zig");
 const abi_descriptor = @import("core/abi/wgpu_descriptor_types.zig");
-const native = @import("doe_native_base.zig");
+const native_types = @import("doe_native_types.zig");
+const native_helpers = @import("doe_native_helpers.zig");
+const native_exports = @import("doe_native_exports.zig");
 const d3d12_formats = @import("backend/d3d12/d3d12_formats.zig");
 
-const alloc = native.alloc;
-const make = native.make;
-const cast = native.cast;
-const toOpaque = native.toOpaque;
-const label_store = native.label_store;
+const alloc = native_helpers.alloc;
+const make = native_helpers.make;
+const cast = native_helpers.cast;
+const toOpaque = native_helpers.toOpaque;
+const label_store = native_helpers.label_store;
 
-const DoeDevice = native.DoeDevice;
-const DoeBuffer = native.DoeBuffer;
-const DoeTexture = native.DoeTexture;
-const DoeTextureView = native.DoeTextureView;
-const DoeSampler = native.DoeSampler;
+const DoeDevice = native_types.DoeDevice;
+const DoeBuffer = native_types.DoeBuffer;
+const DoeTexture = native_types.DoeTexture;
+const DoeTextureView = native_types.DoeTextureView;
+const DoeSampler = native_types.DoeSampler;
 
 // Metal bridge externs (resolved at link time from metal_bridge.m).
 extern fn metal_bridge_release(obj: ?*anyopaque) callconv(.c) void;
@@ -300,7 +302,7 @@ pub export fn doeNativeDeviceCreateTexture(dev_raw: ?*anyopaque, desc: ?*const a
 pub export fn doeNativeTextureCreateView(tex_raw: ?*anyopaque, desc: ?*const abi_descriptor.WGPUTextureViewDescriptor) callconv(.c) ?*anyopaque {
     const tex = cast(DoeTexture, tex_raw) orelse return null;
     const tv = make(DoeTextureView) orelse return null;
-    native.object_add_ref(DoeTexture, tex_raw);
+    native_helpers.object_add_ref(DoeTexture, tex_raw);
     const d = desc orelse &abi_descriptor.WGPUTextureViewDescriptor{
         .nextInChain = null,
         .label = .{ .data = null, .length = 0 },
@@ -329,7 +331,7 @@ pub export fn doeNativeTextureCreateView(tex_raw: ?*anyopaque, desc: ?*const abi
     if (tex.mtl == null and tex.vk_id != 0) {
         const vk_render = @import("doe_vulkan_render_native.zig");
         if (!vk_render.vulkan_create_texture_view(tex, tv, d)) {
-            native.doeNativeTextureRelease(tex_raw);
+            native_exports.doeNativeTextureRelease(tex_raw);
             alloc.destroy(tv);
             return null;
         }
@@ -347,7 +349,7 @@ pub export fn doeNativeTextureCreateView(tex_raw: ?*anyopaque, desc: ?*const abi
             !d3d12_view_dimension_supported(tex, resolved_dimension) or
             !view_aspect_supported(tex.format, resolved_aspect))
         {
-            native.doeNativeTextureRelease(tex_raw);
+            native_exports.doeNativeTextureRelease(tex_raw);
             alloc.destroy(tv);
             return null;
         }
@@ -355,20 +357,20 @@ pub export fn doeNativeTextureCreateView(tex_raw: ?*anyopaque, desc: ?*const abi
             resolved_dimension == abi_base.WGPUTextureViewDimension_CubeArray) and
             ((d.baseArrayLayer % 6) != 0 or (resolved_array_layer_count % 6) != 0))
         {
-            native.doeNativeTextureRelease(tex_raw);
+            native_exports.doeNativeTextureRelease(tex_raw);
             alloc.destroy(tv);
             return null;
         }
         if ((resolved_usage & abi_base.WGPUTextureUsage_StorageBinding) != 0 and
             (resolved_usage & abi_base.WGPUTextureUsage_TextureBinding) != 0)
         {
-            native.doeNativeTextureRelease(tex_raw);
+            native_exports.doeNativeTextureRelease(tex_raw);
             alloc.destroy(tv);
             return null;
         }
         if (wants_storage_only) {
             if (tex.sample_count > 1 or is_depth_format(tex.format) or resolved_mip_level_count != 1) {
-                native.doeNativeTextureRelease(tex_raw);
+                native_exports.doeNativeTextureRelease(tex_raw);
                 alloc.destroy(tv);
                 return null;
             }
@@ -383,7 +385,7 @@ pub export fn doeNativeTextureCreateView(tex_raw: ?*anyopaque, desc: ?*const abi
                 resolved_array_layer_count,
                 abi_base.WGPUTextureUsage_StorageBinding,
             ) orelse {
-                native.doeNativeTextureRelease(tex_raw);
+                native_exports.doeNativeTextureRelease(tex_raw);
                 alloc.destroy(tv);
                 return null;
             };
@@ -432,7 +434,7 @@ pub export fn doeNativeTextureCreateView(tex_raw: ?*anyopaque, desc: ?*const abi
     const result = toOpaque(tv);
     if (is_d3d12_texture and !d3d12_register_texture_view(result)) {
         if (view_handle) |handle| d3d12_bridge_release(handle);
-        native.doeNativeTextureRelease(tex_raw);
+        native_exports.doeNativeTextureRelease(tex_raw);
         alloc.destroy(tv);
         return null;
     }
@@ -446,7 +448,7 @@ pub export fn doeNativeTextureDestroy(raw: ?*anyopaque) callconv(.c) void {
 
 pub export fn doeNativeTextureRelease(raw: ?*anyopaque) callconv(.c) void {
     if (cast(DoeTexture, raw)) |t| {
-        if (!native.object_should_destroy(t)) return;
+        if (!native_helpers.object_should_destroy(t)) return;
         label_store.remove(raw);
         if (d3d12_texture_registry.contains(raw)) {
             d3d12_texture_registry.remove(raw);
@@ -467,28 +469,28 @@ pub export fn doeNativeTextureRelease(raw: ?*anyopaque) callconv(.c) void {
 
 pub export fn doeNativeTextureViewRelease(raw: ?*anyopaque) callconv(.c) void {
     if (cast(DoeTextureView, raw)) |tv| {
-        if (!native.object_should_destroy(tv)) return;
+        if (!native_helpers.object_should_destroy(tv)) return;
         const texture = tv.tex;
         label_store.remove(raw);
         if (d3d12_texture_view_registry.contains(raw)) {
             d3d12_texture_view_registry.remove(raw);
             if (tv.handle) |handle| d3d12_bridge_release(handle);
             alloc.destroy(tv);
-            native.doeNativeTextureRelease(toOpaque(texture));
+            native_exports.doeNativeTextureRelease(toOpaque(texture));
             return;
         }
         if (tv.tex.vk_id != 0) {
             const vk_render = @import("doe_vulkan_render_native.zig");
             vk_render.vulkan_destroy_texture_view(tv);
             alloc.destroy(tv);
-            native.doeNativeTextureRelease(toOpaque(texture));
+            native_exports.doeNativeTextureRelease(toOpaque(texture));
             return;
         }
         if (tv.handle) |handle| {
             if (tv.tex.mtl == null or handle != tv.tex.mtl) metal_bridge_release(handle);
         }
         alloc.destroy(tv);
-        native.doeNativeTextureRelease(toOpaque(texture));
+        native_exports.doeNativeTextureRelease(toOpaque(texture));
     }
 }
 
@@ -551,7 +553,7 @@ pub export fn doeNativeDeviceCreateSampler(dev_raw: ?*anyopaque, desc: ?*const a
 
 pub export fn doeNativeSamplerRelease(raw: ?*anyopaque) callconv(.c) void {
     if (cast(DoeSampler, raw)) |s| {
-        if (!native.object_should_destroy(s)) return;
+        if (!native_helpers.object_should_destroy(s)) return;
         label_store.remove(raw);
         if (d3d12_sampler_registry.contains(raw)) {
             d3d12_sampler_registry.remove(raw);
@@ -560,7 +562,7 @@ pub export fn doeNativeSamplerRelease(raw: ?*anyopaque) callconv(.c) void {
             return;
         }
         if (s.vk_runtime_ref) |rt_ptr| {
-            const NativeVulkanRuntime = native.NativeVulkanRuntime;
+            const NativeVulkanRuntime = native_types.NativeVulkanRuntime;
             const rt: *NativeVulkanRuntime = @ptrCast(@alignCast(rt_ptr));
             const vk_render = @import("doe_vulkan_render_native.zig");
             vk_render.vulkan_destroy_sampler(s, rt);

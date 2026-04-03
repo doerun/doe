@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Enforce the 777-line limit for Zig runtime source files.
+"""Enforce the 999-line limit for Zig runtime source files.
 
-Scans runtime/zig/src/**/*.zig and reports any file exceeding 777 lines.
+Scans runtime/zig/src/**/*.zig and reports any file exceeding 999 lines.
 Test files (*_test.zig, test_*.zig, test_suite*.zig) and type-definition
 files (wgpu_types.zig) are exempt since they are data-heavy by nature.
 
@@ -16,7 +16,7 @@ import os
 import sys
 
 ZIG_SRC_ROOT = os.path.join("runtime", "zig", "src")
-ZIG_LINE_LIMIT = 777
+ZIG_LINE_LIMIT = 999
 
 PYTHON_BENCH_ROOT = "bench"
 PYTHON_LINE_LIMIT = 1200

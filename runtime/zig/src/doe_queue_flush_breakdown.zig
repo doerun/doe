@@ -1,8 +1,8 @@
 const std = @import("std");
-const native = @import("doe_native_base.zig");
+const native_types = @import("doe_native_types.zig");
 const bridge = @import("backend/metal/metal_bridge_decls.zig");
 
-const DoeQueue = native.DoeQueue;
+const DoeQueue = native_types.DoeQueue;
 const metal_bridge_buffer_contents = bridge.metal_bridge_buffer_contents;
 const metal_bridge_command_buffer_wait_completed = bridge.metal_bridge_command_buffer_wait_completed;
 const metal_bridge_release = bridge.metal_bridge_release;

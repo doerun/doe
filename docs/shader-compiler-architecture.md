@@ -280,7 +280,7 @@ Currently blocked by availability: nir_to_dxil is internal to Mesa's Vulkan ICD 
 
 5. **File-size debt still exists, but the old list is stale.**
    - `sema.zig` was already sharded and should not be listed as the original blocker anymore.
-   - `parser.zig` and likely `emit_spirv.zig` still need sharding to stay aligned with the 777-line policy.
+   - `parser.zig` and likely `emit_spirv.zig` still need sharding to stay aligned with the 999-line policy.
 
 6. **Native DXIL is implemented but needs broader validation.**
    - The primary D3D12 path is now `IR -> native DXIL bytecode` (no external DXC).

@@ -47,6 +47,9 @@ Core:
 - `src/model_runtime_types.zig` — compatibility barrel over the split model payload shards; implementation code should import the specific shard it needs instead.
 - `src/model_webgpu_types.zig` — legacy compatibility barrel over the split model payload shards.
 - `src/model.zig` — legacy compatibility shell retained only as a narrow test/transition stub; new code should import the split contract modules above directly.
+- `src/doe_native_types.zig` — narrow native object/value contract for drop-in handle types, deferred command payloads, backend enums, and shared native constants.
+- `src/doe_native_helpers.zig` — allocator, typed opaque-cast/refcount helpers, label-store access, and backend-runtime downcasts shared across native implementation shards.
+- `src/doe_native_exports.zig` — cross-shard native C ABI declarations used by implementation shards that need to call sibling exports without importing a facade.
 - `src/quirk/mod.zig` — quirk module entry: `QuirkMode` enum (`off`/`trace`/`active`), `dispatchWithMode()`, re-exports sub-modules.
 - `src/quirk/runtime.zig` — deterministic matcher, selector, and action application with profile-indexed command buckets.
 - `src/quirk/quirk_json.zig` — deterministic JSON parser for quirk records with strict schema checks.

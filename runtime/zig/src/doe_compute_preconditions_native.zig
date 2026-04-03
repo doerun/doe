@@ -1,6 +1,7 @@
 const std = @import("std");
 const dispatch_preconditions = @import("dispatch_preconditions.zig");
-const native = @import("doe_native_base.zig");
+const native_types = @import("doe_native_types.zig");
+const native_helpers = @import("doe_native_helpers.zig");
 const ir = @import("doe_wgsl/ir.zig");
 
 pub const ValidationError = dispatch_preconditions.ValidationError;
@@ -8,7 +9,7 @@ pub const ValidationError = dispatch_preconditions.ValidationError;
 pub fn validate_bind_groups(
     preconditions: []const ir.DispatchPrecondition,
     texture_preconditions: []const ir.TextureDispatchPrecondition,
-    bind_groups: []const ?*native.DoeBindGroup,
+    bind_groups: []const ?*native_types.DoeBindGroup,
     dispatch_workgroups: [3]u32,
     workgroup_size: [3]u32,
 ) ValidationError!void {
@@ -29,7 +30,7 @@ pub fn validate_bind_groups(
         const bind_group = bind_groups[group] orelse return error.DispatchPreconditionFailed;
         if (binding >= bind_group.texture_views.len) return error.DispatchPreconditionFailed;
         const raw_view = bind_group.texture_views[binding] orelse return error.DispatchPreconditionFailed;
-        const view = native.cast(native.DoeTextureView, raw_view) orelse return error.DispatchPreconditionFailed;
+        const view = native_helpers.cast(native_types.DoeTextureView, raw_view) orelse return error.DispatchPreconditionFailed;
         const required_x = try dispatch_preconditions.invocation_extent(dispatch_workgroups[0], workgroup_size[0]);
         if (required_x > mip_extent(view.tex.width, precondition.mip_level)) return error.DispatchPreconditionFailed;
         switch (precondition.kind) {
@@ -62,7 +63,7 @@ fn mip_extent(base: u32, level: u32) u64 {
 }
 
 test "validate_bind_groups accepts matching gid component coverage" {
-    var bind_group = native.DoeBindGroup{};
+    var bind_group = native_types.DoeBindGroup{};
     bind_group.buffers[0] = @ptrFromInt(1);
     bind_group.buffer_sizes[0] = 2048;
 
@@ -77,7 +78,7 @@ test "validate_bind_groups accepts matching gid component coverage" {
 }
 
 test "validate_bind_groups rejects undersized 2d flat coverage" {
-    var bind_group = native.DoeBindGroup{};
+    var bind_group = native_types.DoeBindGroup{};
     bind_group.buffers[1] = @ptrFromInt(1);
     bind_group.buffer_sizes[1] = 2047;
 
@@ -92,7 +93,7 @@ test "validate_bind_groups rejects undersized 2d flat coverage" {
 }
 
 test "validate_bind_groups accepts affine gid multiplier coverage" {
-    var bind_group = native.DoeBindGroup{};
+    var bind_group = native_types.DoeBindGroup{};
     bind_group.buffers[0] = @ptrFromInt(1);
     bind_group.buffer_sizes[0] = 8200;
 
@@ -107,7 +108,7 @@ test "validate_bind_groups accepts affine gid multiplier coverage" {
 }
 
 test "validate_bind_groups accepts tiled gid coverage" {
-    var bind_group = native.DoeBindGroup{};
+    var bind_group = native_types.DoeBindGroup{};
     bind_group.buffers[0] = @ptrFromInt(1);
     bind_group.buffer_sizes[0] = 524;
 
@@ -123,15 +124,15 @@ test "validate_bind_groups accepts tiled gid coverage" {
 }
 
 test "validate_bind_groups accepts matching 2d texture coverage" {
-    var texture = native.DoeTexture{
+    var texture = native_types.DoeTexture{
         .width = 64,
         .height = 32,
     };
-    var view = native.DoeTextureView{
+    var view = native_types.DoeTextureView{
         .tex = &texture,
     };
-    var bind_group = native.DoeBindGroup{};
-    bind_group.texture_views[0] = native.toOpaque(&view);
+    var bind_group = native_types.DoeBindGroup{};
+    bind_group.texture_views[0] = native_helpers.toOpaque(&view);
 
     try validate_bind_groups(&.{}, &.{.{
         .kind = .gid_coords_2d,
@@ -141,15 +142,15 @@ test "validate_bind_groups accepts matching 2d texture coverage" {
 }
 
 test "validate_bind_groups rejects undersized 2d texture coverage" {
-    var texture = native.DoeTexture{
+    var texture = native_types.DoeTexture{
         .width = 63,
         .height = 32,
     };
-    var view = native.DoeTextureView{
+    var view = native_types.DoeTextureView{
         .tex = &texture,
     };
-    var bind_group = native.DoeBindGroup{};
-    bind_group.texture_views[0] = native.toOpaque(&view);
+    var bind_group = native_types.DoeBindGroup{};
+    bind_group.texture_views[0] = native_helpers.toOpaque(&view);
 
     try std.testing.expectError(error.DispatchPreconditionFailed, validate_bind_groups(&.{}, &.{.{
         .kind = .gid_coords_2d,
@@ -159,7 +160,7 @@ test "validate_bind_groups rejects undersized 2d texture coverage" {
 }
 
 test "validate_bind_groups rejects missing storage binding" {
-    var bind_group = native.DoeBindGroup{};
+    var bind_group = native_types.DoeBindGroup{};
 
     try std.testing.expectError(error.DispatchPreconditionFailed, validate_bind_groups(&.{.{
         .kind = .gid_component,
@@ -172,14 +173,14 @@ test "validate_bind_groups rejects missing storage binding" {
 }
 
 test "validate_bind_groups accepts matching 1d texture coverage" {
-    var texture = native.DoeTexture{
+    var texture = native_types.DoeTexture{
         .width = 64,
     };
-    var view = native.DoeTextureView{
+    var view = native_types.DoeTextureView{
         .tex = &texture,
     };
-    var bind_group = native.DoeBindGroup{};
-    bind_group.texture_views[0] = native.toOpaque(&view);
+    var bind_group = native_types.DoeBindGroup{};
+    bind_group.texture_views[0] = native_helpers.toOpaque(&view);
 
     try validate_bind_groups(&.{}, &.{.{
         .kind = .gid_coords_1d,
@@ -189,16 +190,16 @@ test "validate_bind_groups accepts matching 1d texture coverage" {
 }
 
 test "validate_bind_groups rejects undersized 3d texture mip coverage" {
-    var texture = native.DoeTexture{
+    var texture = native_types.DoeTexture{
         .width = 64,
         .height = 64,
         .depth_or_array_layers = 3,
     };
-    var view = native.DoeTextureView{
+    var view = native_types.DoeTextureView{
         .tex = &texture,
     };
-    var bind_group = native.DoeBindGroup{};
-    bind_group.texture_views[0] = native.toOpaque(&view);
+    var bind_group = native_types.DoeBindGroup{};
+    bind_group.texture_views[0] = native_helpers.toOpaque(&view);
 
     try std.testing.expectError(error.DispatchPreconditionFailed, validate_bind_groups(&.{}, &.{.{
         .kind = .gid_coords_3d,

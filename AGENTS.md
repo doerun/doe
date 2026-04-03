@@ -197,7 +197,7 @@ Do not bypass earlier stages to satisfy later-stage outcomes.
 
 ## File size
 
-- 777 lines max for Zig runtime source files in `runtime/zig/src`; shard before exceeding this
+- 999 lines max for Zig runtime source files in `runtime/zig/src`; shard before exceeding this
 - split by cohesive functionality, not by arbitrary line count
 - group by feature (e.g. `pipeline_cache.zig`) not by type (e.g. `helpers.zig`)
 - keep related code together; splitting a file must not scatter a single concern

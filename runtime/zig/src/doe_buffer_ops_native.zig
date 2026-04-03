@@ -6,22 +6,23 @@ const builtin = @import("builtin");
 const has_vulkan = (builtin.os.tag == .linux);
 const abi_base = @import("core/abi/wgpu_base_types.zig");
 const abi_descriptor = @import("core/abi/wgpu_descriptor_types.zig");
-const native = @import("doe_native_base.zig");
+const native_types = @import("doe_native_types.zig");
+const native_helpers = @import("doe_native_helpers.zig");
 const d3d12_constants = @import("backend/d3d12/d3d12_constants.zig");
 const bridge = @import("backend/metal/metal_bridge_decls.zig");
 const metal_bridge_buffer_contents = bridge.metal_bridge_buffer_contents;
 const metal_bridge_device_new_buffer_shared = bridge.metal_bridge_device_new_buffer_shared;
 const metal_bridge_release = bridge.metal_bridge_release;
 
-const alloc = native.alloc;
-const make = native.make;
-const cast = native.cast;
-const toOpaque = native.toOpaque;
-const object_should_destroy = native.object_should_destroy;
-const label_store = native.label_store;
-const DoeDevice = native.DoeDevice;
-const DoeBuffer = native.DoeBuffer;
-const NativeVulkanRuntime = native.NativeVulkanRuntime;
+const alloc = native_helpers.alloc;
+const make = native_helpers.make;
+const cast = native_helpers.cast;
+const toOpaque = native_helpers.toOpaque;
+const object_should_destroy = native_helpers.object_should_destroy;
+const label_store = native_helpers.label_store;
+const DoeDevice = native_types.DoeDevice;
+const DoeBuffer = native_types.DoeBuffer;
+const NativeVulkanRuntime = native_types.NativeVulkanRuntime;
 
 const WGPU_MAP_ASYNC_STATUS_SUCCESS: u32 = 1;
 const WGPU_MAP_ASYNC_STATUS_VALIDATION_ERROR: u32 = 4;
@@ -75,7 +76,7 @@ pub export fn doeNativeDeviceCreateBuffer(dev_raw: ?*anyopaque, desc: ?*const ab
     buf.* = .{ .backend = dev.backend, .size = d.size, .usage = d.usage };
     if (comptime has_vulkan) {
         if (dev.backend == .vulkan) {
-            const rt = native.device_vk_runtime(dev) orelse {
+            const rt = native_helpers.device_vk_runtime(dev) orelse {
                 alloc.destroy(buf);
                 return null;
             };
@@ -101,7 +102,7 @@ pub export fn doeNativeDeviceCreateBuffer(dev_raw: ?*anyopaque, desc: ?*const ab
         }
     }
     if (dev.backend == .d3d12) {
-        const rt = native.device_d3d12_runtime(dev) orelse {
+        const rt = native_helpers.device_d3d12_runtime(dev) orelse {
             alloc.destroy(buf);
             return null;
         };

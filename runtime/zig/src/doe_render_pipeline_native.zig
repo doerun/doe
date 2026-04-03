@@ -3,19 +3,20 @@
 
 const std = @import("std");
 const model_render_types = @import("model_render_types.zig");
-const native = @import("doe_native_base.zig");
+const native_types = @import("doe_native_types.zig");
+const native_helpers = @import("doe_native_helpers.zig");
 const d3d12_formats = @import("backend/d3d12/d3d12_formats.zig");
 
-const alloc = native.alloc;
-const make = native.make;
-const cast = native.cast;
-const toOpaque = native.toOpaque;
-const ERR_CAP = native.ERR_CAP;
+const alloc = native_helpers.alloc;
+const make = native_helpers.make;
+const cast = native_helpers.cast;
+const toOpaque = native_helpers.toOpaque;
+const ERR_CAP = native_types.ERR_CAP;
 
-const DoeDevice = native.DoeDevice;
-const DoeShaderModule = native.DoeShaderModule;
-const DoePipelineLayout = native.DoePipelineLayout;
-const DoeRenderPipeline = native.DoeRenderPipeline;
+const DoeDevice = native_types.DoeDevice;
+const DoeShaderModule = native_types.DoeShaderModule;
+const DoePipelineLayout = native_types.DoePipelineLayout;
+const DoeRenderPipeline = native_types.DoeRenderPipeline;
 
 extern fn metal_bridge_release(obj: ?*anyopaque) callconv(.c) void;
 extern fn d3d12_bridge_release(obj: ?*anyopaque) callconv(.c) void;
@@ -555,7 +556,7 @@ pub export fn doeNativeDeviceCreateRenderPipeline(dev_raw: ?*anyopaque, desc_raw
 
 pub export fn doeNativeRenderPipelineRelease(raw: ?*anyopaque) callconv(.c) void {
     if (cast(DoeRenderPipeline, raw)) |p| {
-        native.label_store.remove(raw);
+        native_helpers.label_store.remove(raw);
         if (p.backend_root_signature != null) {
             if (p.mtl_pso) |pso| d3d12_bridge_release(pso);
             if (p.backend_root_signature) |root_sig| d3d12_bridge_release(root_sig);

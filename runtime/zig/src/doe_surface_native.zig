@@ -12,19 +12,20 @@
 const std = @import("std");
 const builtin = @import("builtin");
 const has_vulkan = (builtin.os.tag == .linux);
-const native = @import("doe_native_base.zig");
+const native_types = @import("doe_native_types.zig");
+const native_helpers = @import("doe_native_helpers.zig");
 const vk_surf = if (has_vulkan) @import("backend/vulkan/vulkan_surface.zig") else struct {};
 
-const alloc = native.alloc;
-const make = native.make;
-const cast = native.cast;
-const toOpaque = native.toOpaque;
+const alloc = native_helpers.alloc;
+const make = native_helpers.make;
+const cast = native_helpers.cast;
+const toOpaque = native_helpers.toOpaque;
 const model_gpu_types = @import("model_texture_value_types.zig");
 const model_surface_control_types = @import("model_surface_control_types.zig");
 
-const DoeDevice = native.DoeDevice;
-const DoeTexture = native.DoeTexture;
-const NativeVulkanRuntime = native.NativeVulkanRuntime;
+const DoeDevice = native_types.DoeDevice;
+const DoeTexture = native_types.DoeTexture;
+const NativeVulkanRuntime = native_types.NativeVulkanRuntime;
 
 const MAGIC_SURFACE: u32 = 0xD0E1_0013;
 
@@ -35,7 +36,7 @@ pub const DoeSurface = struct {
     pub const TYPE_MAGIC = MAGIC_SURFACE;
     magic: u32 = TYPE_MAGIC,
     ref_count: u32 = 1,
-    backend: native.BackendKind = .metal,
+    backend: native_types.BackendKind = .metal,
     handle: u64 = 0,
     vk_runtime_ref: ?*anyopaque = null,
     current_tex: ?*DoeTexture = null,
@@ -67,7 +68,7 @@ pub export fn doeNativeInstanceCreateSurface(
         .handle = handle,
     };
 
-    const rt = native.device_vk_runtime(dev) orelse {
+    const rt = native_helpers.device_vk_runtime(dev) orelse {
         alloc.destroy(surf);
         return null;
     };
@@ -234,7 +235,7 @@ pub export fn doeNativeSurfaceUnconfigure(surf_raw: ?*anyopaque) callconv(.c) vo
 pub export fn doeNativeSurfaceRelease(surf_raw: ?*anyopaque) callconv(.c) void {
     if (comptime !has_vulkan) return;
     const surf = cast(DoeSurface, surf_raw) orelse return;
-    if (!native.object_should_destroy(surf)) return;
+    if (!native_helpers.object_should_destroy(surf)) return;
     if (surf.backend == .vulkan) {
         if (surf.vk_runtime_ref) |rt_ptr| {
             const rt: *NativeVulkanRuntime = @ptrCast(@alignCast(rt_ptr));

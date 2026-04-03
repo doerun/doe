@@ -1,4 +1,30 @@
 # Doe status
+## Zig runtime line-limit policy raised to 999 lines and enforcement updated (2026-04-03 UTC)
+
+- The Zig runtime file-size policy in `AGENTS.md` and `runtime/zig/STYLE.md` now uses a `999`-line cap instead of `777`
+- The live enforcement scripts were updated in:
+  - `bench/gates/file_size_gate.py`
+  - `scripts/check-health.py`
+  - `scripts/check_zig_line_limit.py`
+- Historical status entries that mention the earlier `777` limit remain unchanged as time-stamped history
+
+## Obsolete native base facade removed after importer cleanup (2026-04-03 UTC)
+
+- `runtime/zig/src/doe_native_base.zig` was removed because no code in this repo imported it anymore
+- `runtime/zig/src/doe_native_types.zig`, `runtime/zig/src/doe_native_helpers.zig`, and `runtime/zig/src/doe_native_exports.zig` are now the only supported native contract surfaces
+- `runtime/zig/tools/check_core_import_fence.py` still rejects any future attempt to reintroduce `doe_native_base.zig` as an implementation dependency
+
+## Native base contract split into type/helper/export shards; implementation imports no longer depend on the base facade (2026-04-03 UTC)
+
+- New native shards:
+  - `runtime/zig/src/doe_native_types.zig`
+  - `runtime/zig/src/doe_native_helpers.zig`
+  - `runtime/zig/src/doe_native_exports.zig`
+- Native implementation files now import those narrow modules directly instead of `runtime/zig/src/doe_native_base.zig`
+- `runtime/zig/src/doe_native_base.zig` is now a compatibility barrel only
+- `runtime/zig/tools/check_core_import_fence.py` now rejects any future implementation import of `doe_native_base.zig`
+- Verification for this split passed with `zig build import-fence`, `zig test src/execution.zig`, `zig build test-wgsl`, and `zig build`
+
 ## Narrow handle and model-value contracts split out of broad ABI/value barrels (2026-04-03 UTC)
 
 - New ABI shard: `runtime/zig/src/core/abi/wgpu_handle_types.zig`

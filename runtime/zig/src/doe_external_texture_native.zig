@@ -14,10 +14,12 @@
 
 const std = @import("std");
 const builtin = @import("builtin");
-const native = @import("doe_native_base.zig");
+const native_types = @import("doe_native_types.zig");
+const native_helpers = @import("doe_native_helpers.zig");
+const native_exports = @import("doe_native_exports.zig");
 const abi_descriptor = @import("core/abi/wgpu_descriptor_types.zig");
 
-const DoeTextureView = native.DoeTextureView;
+const DoeTextureView = native_types.DoeTextureView;
 
 const MAGIC_EXTERNAL_TEXTURE: u32 = 0xD0E1_0013;
 
@@ -46,11 +48,11 @@ const NATIVE_DESC_HANDLE_OFFSET: usize = 24;
 
 var instance_ext_counts: std.AutoHashMapUnmanaged(usize, u32) = .{};
 
-fn registry_key(inst: *native.DoeInstance) usize {
+fn registry_key(inst: *native_types.DoeInstance) usize {
     return @intFromPtr(inst);
 }
 
-fn instance_register(inst: *native.DoeInstance) void {
+fn instance_register(inst: *native_types.DoeInstance) void {
     const key = registry_key(inst);
     if (instance_ext_counts.getPtr(key)) |slot| {
         slot.* +|= 1;
@@ -59,7 +61,7 @@ fn instance_register(inst: *native.DoeInstance) void {
     }
 }
 
-fn instance_deregister(inst: *native.DoeInstance) void {
+fn instance_deregister(inst: *native_types.DoeInstance) void {
     const key = registry_key(inst);
     if (instance_ext_counts.getPtr(key)) |slot| {
         if (slot.* <= 1) {
@@ -71,7 +73,7 @@ fn instance_deregister(inst: *native.DoeInstance) void {
 }
 
 pub fn instance_external_texture_count(inst_raw: ?*anyopaque) u32 {
-    const inst = native.cast(native.DoeInstance, inst_raw) orelse return 0;
+    const inst = native_helpers.cast(native_types.DoeInstance, inst_raw) orelse return 0;
     return instance_ext_counts.get(registry_key(inst)) orelse 0;
 }
 
@@ -88,11 +90,11 @@ pub const DoeExternalTexture = struct {
     // True when plane0/plane1 are raw MTLTexture handles from the Metal import
     // bridge rather than DoeTextureView pointers. Affects release path.
     native_imported: bool = false,
-    instance: ?*native.DoeInstance = null,
+    instance: ?*native_types.DoeInstance = null,
 };
 
 pub fn cast(raw: ?*anyopaque) ?*DoeExternalTexture {
-    return native.cast(DoeExternalTexture, raw);
+    return native_helpers.cast(DoeExternalTexture, raw);
 }
 
 /// Check whether an external texture has multiple planes.
@@ -106,7 +108,7 @@ pub fn isMultiPlane(ext: *const DoeExternalTexture) bool {
 pub fn resolvePlane0MtlHandle(ext: *const DoeExternalTexture) ?*anyopaque {
     const p0 = ext.plane0 orelse return null;
     if (ext.native_imported) return p0;
-    const view = native.cast(DoeTextureView, p0) orelse return null;
+    const view = native_helpers.cast(DoeTextureView, p0) orelse return null;
     return if (view.handle) |h| h else view.tex.mtl;
 }
 
@@ -114,15 +116,15 @@ pub fn resolvePlane0MtlHandle(ext: *const DoeExternalTexture) ?*anyopaque {
 pub fn resolvePlane1MtlHandle(ext: *const DoeExternalTexture) ?*anyopaque {
     const p1 = ext.plane1 orelse return null;
     if (ext.native_imported) return p1;
-    const view = native.cast(DoeTextureView, p1) orelse return null;
+    const view = native_helpers.cast(DoeTextureView, p1) orelse return null;
     return if (view.handle) |h| h else view.tex.mtl;
 }
 
 /// Resolve plane0 to a DoeTexture pointer (for texture-to-texture copy paths).
 /// Returns null for native-imported textures (they have no DoeTexture wrapper).
-pub fn resolvePlane0DoeTexture(ext: *const DoeExternalTexture) ?*native.DoeTexture {
+pub fn resolvePlane0DoeTexture(ext: *const DoeExternalTexture) ?*native_types.DoeTexture {
     if (ext.native_imported) return null;
-    const view = native.cast(DoeTextureView, ext.plane0) orelse return null;
+    const view = native_helpers.cast(DoeTextureView, ext.plane0) orelse return null;
     return view.tex;
 }
 
@@ -144,14 +146,14 @@ const NEXT_IN_CHAIN_OFFSET: usize = 0;
 const PLANE0_OFFSET: usize = 24;
 const PLANE1_OFFSET: usize = 32;
 
-fn resolve_device_instance(dev_raw: ?*anyopaque) ?*native.DoeInstance {
-    const dev = native.cast(native.DoeDevice, dev_raw) orelse return null;
+fn resolve_device_instance(dev_raw: ?*anyopaque) ?*native_types.DoeInstance {
+    const dev = native_helpers.cast(native_types.DoeDevice, dev_raw) orelse return null;
     const adapter = dev.adapter orelse return null;
     return adapter.instance;
 }
 
 fn resolve_device_mtl(dev_raw: ?*anyopaque) ?*anyopaque {
-    const dev = native.cast(native.DoeDevice, dev_raw) orelse return null;
+    const dev = native_helpers.cast(native_types.DoeDevice, dev_raw) orelse return null;
     return dev.mtl_device;
 }
 
@@ -204,7 +206,7 @@ pub export fn doeNativeDeviceCreateExternalTexture(
 
 fn createFromNativeImport(
     imported: NativePlaneLayout,
-    instance_ref: ?*native.DoeInstance,
+    instance_ref: ?*native_types.DoeInstance,
 ) ?*anyopaque {
     if (instance_ref) |inst| inst.ref_count +|= 1;
 
@@ -231,23 +233,23 @@ fn createFromNativeImport(
 
 fn createFromTextureViews(
     desc_ptr: [*]const u8,
-    instance_ref: ?*native.DoeInstance,
+    instance_ref: ?*native_types.DoeInstance,
 ) ?*anyopaque {
     const plane0 = @as(*const ?*anyopaque, @ptrCast(@alignCast(desc_ptr + PLANE0_OFFSET))).*;
     const plane1 = @as(*const ?*anyopaque, @ptrCast(@alignCast(desc_ptr + PLANE1_OFFSET))).*;
-    const plane0_view = native.cast(DoeTextureView, plane0) orelse return null;
-    const plane1_view = native.cast(DoeTextureView, plane1);
+    const plane0_view = native_helpers.cast(DoeTextureView, plane0) orelse return null;
+    const plane1_view = native_helpers.cast(DoeTextureView, plane1);
 
     if (instance_ref) |inst| inst.ref_count +|= 1;
-    native.object_add_ref(DoeTextureView, native.toOpaque(plane0_view));
-    if (plane1_view) |view| native.object_add_ref(DoeTextureView, native.toOpaque(view));
+    native_helpers.object_add_ref(DoeTextureView, native_helpers.toOpaque(plane0_view));
+    if (plane1_view) |view| native_helpers.object_add_ref(DoeTextureView, native_helpers.toOpaque(view));
 
     const ext = std.heap.c_allocator.create(DoeExternalTexture) catch {
         if (instance_ref) |inst| {
             if (inst.ref_count > 1) inst.ref_count -= 1;
         }
-        native.doeNativeTextureViewRelease(native.toOpaque(plane0_view));
-        if (plane1_view) |view| native.doeNativeTextureViewRelease(native.toOpaque(view));
+        native_exports.doeNativeTextureViewRelease(native_helpers.toOpaque(plane0_view));
+        if (plane1_view) |view| native_exports.doeNativeTextureViewRelease(native_helpers.toOpaque(view));
         return null;
     };
     ext.* = .{
@@ -285,11 +287,11 @@ pub export fn doeNativeExternalTextureRelease(raw: ?*anyopaque) callconv(.c) voi
             }
         } else {
             // DoeTextureView path: release via the standard view lifecycle.
-            if (plane0 != null) native.doeNativeTextureViewRelease(plane0);
-            if (plane1 != null) native.doeNativeTextureViewRelease(plane1);
+            if (plane0 != null) native_exports.doeNativeTextureViewRelease(plane0);
+            if (plane1 != null) native_exports.doeNativeTextureViewRelease(plane1);
         }
         if (instance_ref) |inst| {
-            native.doeNativeInstanceRelease(native.toOpaque(inst));
+            native_exports.doeNativeInstanceRelease(native_helpers.toOpaque(inst));
         }
         return;
     }

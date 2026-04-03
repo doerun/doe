@@ -15,10 +15,11 @@
 // NOT free this pointer; it remains valid until the next call.
 
 const std = @import("std");
-const native = @import("doe_native_base.zig");
+const native_types = @import("doe_native_types.zig");
+const native_helpers = @import("doe_native_helpers.zig");
 
-const cast = native.cast;
-const DoeShaderModule = native.DoeShaderModule;
+const cast = native_helpers.cast;
+const DoeShaderModule = native_types.DoeShaderModule;
 
 // ============================================================
 // Imports from the WGSL compiler — error metadata query

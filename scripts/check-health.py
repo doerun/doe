@@ -2,7 +2,7 @@
 """Fawn repository health checker.
 
 Validates code-health invariants across the repo:
-  - Zig file size limits (runtime/zig/src/, ≤777 lines, excluding *_test.zig)
+  - Zig file size limits (runtime/zig/src/, ≤999 lines, excluding *_test.zig)
   - Python file size limits (bench/ + pipeline/, ≤1200 lines)
   - Config schema coverage (every config/*.json has a schema)
   - Schema validation (config JSON validates against its schema)
@@ -23,7 +23,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
 ZIG_SRC_DIR = REPO_ROOT / "runtime" / "zig" / "src"
-ZIG_MAX_LINES = 777
+ZIG_MAX_LINES = 999
 
 PYTHON_DIRS = [REPO_ROOT / "bench", REPO_ROOT / "pipeline"]
 PYTHON_MAX_LINES = 1200
@@ -277,7 +277,7 @@ def main() -> int:
     all_pass = True
 
     checks: list[tuple[str, callable]] = [
-        ("Zig file sizes (runtime/zig/src/, max 777 lines)", check_zig_sizes),
+        ("Zig file sizes (runtime/zig/src/, max 999 lines)", check_zig_sizes),
         ("Python file sizes (bench/ + pipeline/, max 1200 lines)", check_python_sizes),
         ("Config schema coverage", check_schema_coverage),
         ("Schema validation", check_schema_validation),

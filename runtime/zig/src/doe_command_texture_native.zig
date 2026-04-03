@@ -5,16 +5,17 @@ const builtin = @import("builtin");
 const has_vulkan = (builtin.os.tag == .linux);
 const std = @import("std");
 const model_transfer_types = @import("model_resource_types.zig");
-const native = @import("doe_native_base.zig");
+const native_types = @import("doe_native_types.zig");
+const native_helpers = @import("doe_native_helpers.zig");
 const bridge = @import("backend/metal/metal_bridge_decls.zig");
 
-const alloc = native.alloc;
-const cast = native.cast;
+const alloc = native_helpers.alloc;
+const cast = native_helpers.cast;
 
-const DoeBuffer = native.DoeBuffer;
-const DoeCommandEncoder = native.DoeCommandEncoder;
-const DoeQueue = native.DoeQueue;
-const DoeTexture = native.DoeTexture;
+const DoeBuffer = native_types.DoeBuffer;
+const DoeCommandEncoder = native_types.DoeCommandEncoder;
+const DoeQueue = native_types.DoeQueue;
+const DoeTexture = native_types.DoeTexture;
 
 // ============================================================
 // GPUCommandEncoder.clearBuffer(buffer, offset, size)
@@ -37,7 +38,7 @@ pub export fn doeNativeCommandEncoderClearBuffer(
     if (fill_size == 0) return;
     if (enc.dev.backend == .vulkan) {
         if (comptime has_vulkan) {
-            const rt = native.device_vk_runtime(enc.dev) orelse return;
+            const rt = native_helpers.device_vk_runtime(enc.dev) orelse return;
             if (buf.vk_id != 0) {
                 if (rt.compute_buffers.get(buf.vk_id)) |cb| {
                     if (cb.mapped) |ptr| {
@@ -86,7 +87,7 @@ pub export fn doeNativeCommandEncoderCopyTextureToTexture(
     const dst = cast(DoeTexture, dst_texture_raw) orelse return;
     if (enc.dev.backend == .vulkan) {
         if (comptime has_vulkan) {
-            const rt = native.device_vk_runtime(enc.dev) orelse return;
+            const rt = native_helpers.device_vk_runtime(enc.dev) orelse return;
             if (src.vk_id != 0 and dst.vk_id != 0) {
                 rt.texture_copy(.{
                     .src_handle = src.vk_id,
@@ -153,7 +154,7 @@ pub export fn doeNativeQueueWriteTexture(
     const q = cast(DoeQueue, queue_raw);
     if (q != null and q.?.dev.backend == .vulkan) {
         if (comptime has_vulkan) {
-            const rt = native.device_vk_runtime(q.?.dev) orelse return;
+            const rt = native_helpers.device_vk_runtime(q.?.dev) orelse return;
             const tex = cast(DoeTexture, texture_raw) orelse return;
             if (tex.vk_id != 0) {
                 const rows = if (rows_per_image > 0) rows_per_image else height;

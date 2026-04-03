@@ -1,5 +1,5 @@
 // metal_resource_commands.zig — Texture and sampler lifecycle commands.
-// Sharded from metal_native_runtime.zig to stay under the 777-line limit.
+// Sharded from metal_native_runtime.zig to stay under the line-limit policy.
 //
 // Performance: sampler create/destroy uses a descriptor cache to avoid
 // redundant MTLSamplerState allocations. Texture and uncached sampler

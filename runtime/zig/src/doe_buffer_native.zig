@@ -1,15 +1,16 @@
 // doe_buffer_native.zig — Buffer lifecycle, mapping, and queue-flush helpers.
-// Sharded from doe_wgpu_native.zig to stay under the 777-line limit.
+// Sharded from doe_wgpu_native.zig to stay under the line-limit policy.
 
 const std = @import("std");
 const abi_base = @import("core/abi/wgpu_handle_types.zig");
 const abi_descriptor = @import("core/abi/wgpu_descriptor_types.zig");
-const native = @import("doe_native_base.zig");
+const native_types = @import("doe_native_types.zig");
+const native_helpers = @import("doe_native_helpers.zig");
 
-const alloc = native.alloc;
-const cast = native.cast;
-const DoeBuffer = native.DoeBuffer;
-const DoeQueue = native.DoeQueue;
+const alloc = native_helpers.alloc;
+const cast = native_helpers.cast;
+const DoeBuffer = native_types.DoeBuffer;
+const DoeQueue = native_types.DoeQueue;
 
 const WGPU_MAP_ASYNC_STATUS_SUCCESS: u32 = 1;
 const WGPU_MAP_ASYNC_STATUS_VALIDATION_ERROR: u32 = 4;

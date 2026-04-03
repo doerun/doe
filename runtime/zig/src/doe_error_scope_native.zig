@@ -8,11 +8,12 @@
 
 const std = @import("std");
 const abi_base = @import("core/abi/wgpu_handle_types.zig");
-const native = @import("doe_native_base.zig");
+const native_types = @import("doe_native_types.zig");
+const native_helpers = @import("doe_native_helpers.zig");
 const err_scope = @import("error_scope.zig");
 
-const cast = native.cast;
-const DoeDevice = native.DoeDevice;
+const cast = native_helpers.cast;
+const DoeDevice = native_types.DoeDevice;
 
 // ============================================================
 // C ABI: pushErrorScope
