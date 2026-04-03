@@ -1,7 +1,8 @@
 const builtin = @import("builtin");
 const has_vulkan = (builtin.os.tag == .linux);
 const std = @import("std");
-const types = @import("core/abi/wgpu_types.zig");
+const abi_base = @import("core/abi/wgpu_base_types.zig");
+const abi_descriptor = @import("core/abi/wgpu_descriptor_types.zig");
 const native = @import("doe_wgpu_native.zig");
 const queue_flush_breakdown = @import("doe_queue_flush_breakdown.zig");
 const error_scope = @import("error_scope.zig");
@@ -548,9 +549,9 @@ pub export fn doeNativeQueueWriteBuffer(q_raw: ?*anyopaque, buf_raw: ?*anyopaque
 
 fn copy_texture_for_browser_passthrough(
     q: *DoeQueue,
-    source: *const types.WGPUTexelCopyTextureInfo,
-    destination: *const types.WGPUTexelCopyTextureInfo,
-    copy_size: *const types.WGPUExtent3D,
+    source: *const abi_descriptor.WGPUTexelCopyTextureInfo,
+    destination: *const abi_descriptor.WGPUTexelCopyTextureInfo,
+    copy_size: *const abi_descriptor.WGPUExtent3D,
 ) void {
     const src_texture = cast(DoeTexture, source.texture) orelse return;
     const dst_texture = cast(DoeTexture, destination.texture) orelse return;
@@ -610,10 +611,10 @@ fn copy_texture_for_browser_passthrough(
 
 pub export fn doeNativeQueueCopyTextureForBrowser(
     queue_raw: ?*anyopaque,
-    source_raw: ?*const types.WGPUTexelCopyTextureInfo,
-    destination_raw: ?*const types.WGPUTexelCopyTextureInfo,
-    copy_size_raw: ?*const types.WGPUExtent3D,
-    options_raw: ?*const types.WGPUCopyTextureForBrowserOptions,
+    source_raw: ?*const abi_descriptor.WGPUTexelCopyTextureInfo,
+    destination_raw: ?*const abi_descriptor.WGPUTexelCopyTextureInfo,
+    copy_size_raw: ?*const abi_descriptor.WGPUExtent3D,
+    options_raw: ?*const abi_descriptor.WGPUCopyTextureForBrowserOptions,
 ) callconv(.c) void {
     _ = options_raw;
     const queue = cast(DoeQueue, queue_raw) orelse return;
@@ -699,7 +700,7 @@ fn flush_pending_work_dropin_sync(q: *DoeQueue) void {
 const MAX_GLOBAL_WORK_DONE: usize = 128;
 
 const WorkDoneEntry = struct {
-    cb: ?*const fn (types.WGPUQueueWorkDoneStatus, types.WGPUStringView, ?*anyopaque, ?*anyopaque) callconv(.c) void,
+    cb: ?*const fn (abi_descriptor.WGPUQueueWorkDoneStatus, abi_base.WGPUStringView, ?*anyopaque, ?*anyopaque) callconv(.c) void,
     userdata1: ?*anyopaque,
     userdata2: ?*anyopaque,
 };
@@ -720,7 +721,7 @@ pub fn drain_global_work_done() void {
 
 /// For the native drop-in ABI, flush before invoking the callback so
 /// standalone consumers observe real completion before they map/read back.
-pub export fn doeNativeQueueOnSubmittedWorkDone(q_raw: ?*anyopaque, info: types.WGPUQueueWorkDoneCallbackInfo) callconv(.c) types.WGPUFuture {
+pub export fn doeNativeQueueOnSubmittedWorkDone(q_raw: ?*anyopaque, info: abi_descriptor.WGPUQueueWorkDoneCallbackInfo) callconv(.c) abi_base.WGPUFuture {
     if (cast(DoeQueue, q_raw)) |q| {
         flush_pending_work_dropin_sync(q);
     }
@@ -744,16 +745,16 @@ const DoeExternalTexture = ext_texture_mod.DoeExternalTexture;
 fn copy_external_texture_to_dst(
     queue: *DoeQueue,
     ext: *const DoeExternalTexture,
-    origin: types.WGPUOrigin3D,
-    destination: *const types.WGPUTexelCopyTextureInfo,
-    copy_size: *const types.WGPUExtent3D,
+    origin: abi_descriptor.WGPUOrigin3D,
+    destination: *const abi_descriptor.WGPUTexelCopyTextureInfo,
+    copy_size: *const abi_descriptor.WGPUExtent3D,
 ) void {
     if (ext_texture_mod.resolvePlane0DoeTexture(ext)) |src_tex| {
-        const source_copy = types.WGPUTexelCopyTextureInfo{
+        const source_copy = abi_descriptor.WGPUTexelCopyTextureInfo{
             .texture = native.toOpaque(src_tex),
             .mipLevel = 0,
             .origin = origin,
-            .aspect = types.WGPUTextureAspect_All,
+            .aspect = abi_base.WGPUTextureAspect_All,
         };
         copy_texture_for_browser_passthrough(queue, &source_copy, destination, copy_size);
         return;
@@ -766,10 +767,19 @@ fn copy_external_texture_to_dst(
     const cmd_buf = bridge.metal_bridge_create_command_buffer(queue.dev.mtl_queue);
     if (cmd_buf == null) return;
     const blit = bridge.metal_bridge_cmd_buf_blit_encoder(cmd_buf);
-    if (blit == null) { bridge.metal_bridge_release(cmd_buf); return; }
+    if (blit == null) {
+        bridge.metal_bridge_release(cmd_buf);
+        return;
+    }
     bridge.metal_bridge_blit_encoder_copy_texture_to_texture(
-        blit, src_mtl, 0, dst_mtl, destination.mipLevel,
-        copy_size.width, copy_size.height, copy_size.depthOrArrayLayers,
+        blit,
+        src_mtl,
+        0,
+        dst_mtl,
+        destination.mipLevel,
+        copy_size.width,
+        copy_size.height,
+        copy_size.depthOrArrayLayers,
     );
     bridge.metal_bridge_end_blit_encoding(blit);
     bridge.metal_bridge_command_buffer_commit(cmd_buf);
@@ -779,9 +789,9 @@ fn copy_external_texture_to_dst(
 
 pub export fn doeNativeQueueCopyExternalImageToTexture(
     queue_raw: ?*anyopaque,
-    source_raw: ?*const types.WGPUImageCopyExternalTexture,
-    destination_raw: ?*const types.WGPUTexelCopyTextureInfo,
-    copy_size_raw: ?*const types.WGPUExtent3D,
+    source_raw: ?*const abi_descriptor.WGPUImageCopyExternalTexture,
+    destination_raw: ?*const abi_descriptor.WGPUTexelCopyTextureInfo,
+    copy_size_raw: ?*const abi_descriptor.WGPUExtent3D,
 ) callconv(.c) void {
     const source = source_raw orelse return;
     const destination = destination_raw orelse return;
@@ -794,10 +804,10 @@ pub export fn doeNativeQueueCopyExternalImageToTexture(
 
 pub export fn doeNativeQueueCopyExternalTextureForBrowser(
     queue_raw: ?*anyopaque,
-    source_raw: ?*const types.WGPUImageCopyExternalTexture,
-    destination_raw: ?*const types.WGPUTexelCopyTextureInfo,
-    copy_size_raw: ?*const types.WGPUExtent3D,
-    options_raw: ?*const types.WGPUCopyTextureForBrowserOptions,
+    source_raw: ?*const abi_descriptor.WGPUImageCopyExternalTexture,
+    destination_raw: ?*const abi_descriptor.WGPUTexelCopyTextureInfo,
+    copy_size_raw: ?*const abi_descriptor.WGPUExtent3D,
+    options_raw: ?*const abi_descriptor.WGPUCopyTextureForBrowserOptions,
 ) callconv(.c) void {
     _ = options_raw;
     const source = source_raw orelse return;

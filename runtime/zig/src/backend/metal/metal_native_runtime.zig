@@ -1,7 +1,12 @@
 const builtin = @import("builtin");
 const std = @import("std");
 const common_timing = @import("../common/timing.zig");
-const model = @import("../../model_webgpu_types.zig");
+const model_resource_types = @import("../../model_resource_types.zig");
+const model_compute_types = @import("../../model_compute_types.zig");
+const model_render_types = @import("../../model_render_types.zig");
+const model_texture_types = @import("../../model_texture_types.zig");
+const model_surface_control_types = @import("../../model_surface_control_types.zig");
+const model_async_types = @import("../../model_async_types.zig");
 const webgpu = @import("../runtime_types.zig");
 const async_runtime = @import("metal_async_runtime.zig");
 const cleanup = @import("metal_cleanup.zig");
@@ -390,7 +395,7 @@ pub const NativeMetalRuntime = struct {
         repeat: u32,
         warmup: u32,
         initialize_buffers_on_create: bool,
-        bindings: ?[]const model.KernelBinding,
+        bindings: ?[]const model_compute_types.KernelBinding,
     ) !DispatchMetrics {
         return kernel_dispatch.run_kernel_dispatch(self, kernel, entry_point, x, y, z, repeat, warmup, initialize_buffers_on_create, bindings);
     }
@@ -405,7 +410,7 @@ pub const NativeMetalRuntime = struct {
         repeat: u32,
         warmup: u32,
         initialize_buffers_on_create: bool,
-        bindings: ?[]const model.KernelBinding,
+        bindings: ?[]const model_compute_types.KernelBinding,
         record_timestamps: bool,
     ) !KernelDispatchResult {
         return kernel_dispatch.run_kernel_dispatch_timed(self, kernel, entry_point, x, y, z, repeat, warmup, initialize_buffers_on_create, bindings, record_timestamps);
@@ -421,35 +426,35 @@ pub const NativeMetalRuntime = struct {
         return .{ .setup_ns = 0, .encode_ns = metrics.encode_ns, .submit_wait_ns = metrics.submit_wait_ns, .dispatch_count = metrics.dispatch_count };
     }
 
-    pub fn execute_map_async(self: *NativeMetalRuntime, cmd: model.MapAsyncCommand) !u64 {
+    pub fn execute_map_async(self: *NativeMetalRuntime, cmd: model_async_types.MapAsyncCommand) !u64 {
         return async_runtime.execute_map_async(self, cmd);
     }
 
-    pub fn sampler_create(self: *NativeMetalRuntime, cmd: model.SamplerCreateCommand) !void {
+    pub fn sampler_create(self: *NativeMetalRuntime, cmd: model_render_types.SamplerCreateCommand) !void {
         return resource_commands.sampler_create(self, cmd);
     }
 
-    pub fn sampler_destroy(self: *NativeMetalRuntime, cmd: model.SamplerDestroyCommand) !void {
+    pub fn sampler_destroy(self: *NativeMetalRuntime, cmd: model_render_types.SamplerDestroyCommand) !void {
         return resource_commands.sampler_destroy(self, cmd);
     }
 
-    pub fn texture_write(self: *NativeMetalRuntime, cmd: model.TextureWriteCommand) !void {
+    pub fn texture_write(self: *NativeMetalRuntime, cmd: model_texture_types.TextureWriteCommand) !void {
         return resource_commands.texture_write(self, cmd);
     }
 
-    pub fn write_buffer(self: *NativeMetalRuntime, cmd: model.BufferWriteCommand) !void {
+    pub fn write_buffer(self: *NativeMetalRuntime, cmd: model_resource_types.BufferWriteCommand) !void {
         return resource_runtime.write_compute_buffer_words(self, cmd.handle, cmd.offset, cmd.buffer_size, cmd.data);
     }
 
-    pub fn texture_query(self: *NativeMetalRuntime, cmd: model.TextureQueryCommand) !void {
+    pub fn texture_query(self: *NativeMetalRuntime, cmd: model_texture_types.TextureQueryCommand) !void {
         return resource_commands.texture_query(self, cmd);
     }
 
-    pub fn texture_destroy(self: *NativeMetalRuntime, cmd: model.TextureDestroyCommand) !void {
+    pub fn texture_destroy(self: *NativeMetalRuntime, cmd: model_texture_types.TextureDestroyCommand) !void {
         return resource_commands.texture_destroy(self, cmd);
     }
 
-    pub fn render_draw(self: *NativeMetalRuntime, cmd: model.RenderDrawCommand, queue_sync_mode: webgpu.QueueSyncMode) !RenderMetrics {
+    pub fn render_draw(self: *NativeMetalRuntime, cmd: model_render_types.RenderDrawCommand, queue_sync_mode: webgpu.QueueSyncMode) !RenderMetrics {
         const fmt = cmd.target_format;
         const is_bundle = cmd.encode_mode == .render_bundle;
         const red_pl: c_int = if (cmd.pipeline_mode == .redundant) 1 else 0;
@@ -556,35 +561,35 @@ pub const NativeMetalRuntime = struct {
         };
     }
 
-    pub fn copy_command(self: *NativeMetalRuntime, cmd: model.CopyCommand, queue_sync_mode: webgpu.QueueSyncMode) !copy_runtime.CopyMetrics {
+    pub fn copy_command(self: *NativeMetalRuntime, cmd: model_resource_types.CopyCommand, queue_sync_mode: webgpu.QueueSyncMode) !copy_runtime.CopyMetrics {
         return try copy_runtime.execute_copy(self, cmd, queue_sync_mode);
     }
 
-    pub fn surface_create(self: *NativeMetalRuntime, cmd: model.SurfaceCreateCommand) !void {
+    pub fn surface_create(self: *NativeMetalRuntime, cmd: model_surface_control_types.SurfaceCreateCommand) !void {
         return try surface_runtime.create_surface(self, cmd);
     }
 
-    pub fn surface_capabilities(self: *NativeMetalRuntime, cmd: model.SurfaceCapabilitiesCommand) !void {
+    pub fn surface_capabilities(self: *NativeMetalRuntime, cmd: model_surface_control_types.SurfaceCapabilitiesCommand) !void {
         return try surface_runtime.surface_capabilities(self, cmd);
     }
 
-    pub fn surface_configure(self: *NativeMetalRuntime, cmd: model.SurfaceConfigureCommand) !void {
+    pub fn surface_configure(self: *NativeMetalRuntime, cmd: model_surface_control_types.SurfaceConfigureCommand) !void {
         return try surface_runtime.configure_surface(self, cmd);
     }
 
-    pub fn surface_acquire(self: *NativeMetalRuntime, cmd: model.SurfaceAcquireCommand) !void {
+    pub fn surface_acquire(self: *NativeMetalRuntime, cmd: model_surface_control_types.SurfaceAcquireCommand) !void {
         return try surface_runtime.acquire_surface(self, cmd);
     }
 
-    pub fn surface_present(self: *NativeMetalRuntime, cmd: model.SurfacePresentCommand) !u64 {
+    pub fn surface_present(self: *NativeMetalRuntime, cmd: model_surface_control_types.SurfacePresentCommand) !u64 {
         return try surface_runtime.present_surface(self, cmd);
     }
 
-    pub fn surface_unconfigure(self: *NativeMetalRuntime, cmd: model.SurfaceUnconfigureCommand) !void {
+    pub fn surface_unconfigure(self: *NativeMetalRuntime, cmd: model_surface_control_types.SurfaceUnconfigureCommand) !void {
         return try surface_runtime.unconfigure_surface(self, cmd);
     }
 
-    pub fn surface_release(self: *NativeMetalRuntime, cmd: model.SurfaceReleaseCommand) !void {
+    pub fn surface_release(self: *NativeMetalRuntime, cmd: model_surface_control_types.SurfaceReleaseCommand) !void {
         return try surface_runtime.release_surface(self, cmd);
     }
 

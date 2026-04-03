@@ -3,8 +3,8 @@
 // Render Pipeline ops sharded to doe_render_pipeline_native.zig.
 
 const std = @import("std");
-const model = @import("model_webgpu_types.zig");
-const types = @import("core/abi/wgpu_types.zig");
+const abi_base = @import("core/abi/wgpu_base_types.zig");
+const abi_descriptor = @import("core/abi/wgpu_descriptor_types.zig");
 const native = @import("doe_wgpu_native.zig");
 
 const alloc = native.alloc;
@@ -23,12 +23,12 @@ pub fn d3d12TextureViewSwizzleMode(
     swizzle_b: u32,
     swizzle_a: u32,
 ) D3D12TextureViewSwizzleMode {
-    const is_identity = (swizzle_r == types.WGPUTextureComponentSwizzle_Red or swizzle_r == 0) and
-        (swizzle_g == types.WGPUTextureComponentSwizzle_Green or swizzle_g == 0) and
-        (swizzle_b == types.WGPUTextureComponentSwizzle_Blue or swizzle_b == 0) and
-        (swizzle_a == types.WGPUTextureComponentSwizzle_Alpha or swizzle_a == 0);
-    const wants_storage = (usage & types.WGPUTextureUsage_StorageBinding) != 0 and
-        (usage & types.WGPUTextureUsage_TextureBinding) == 0;
+    const is_identity = (swizzle_r == abi_base.WGPUTextureComponentSwizzle_Red or swizzle_r == 0) and
+        (swizzle_g == abi_base.WGPUTextureComponentSwizzle_Green or swizzle_g == 0) and
+        (swizzle_b == abi_base.WGPUTextureComponentSwizzle_Blue or swizzle_b == 0) and
+        (swizzle_a == abi_base.WGPUTextureComponentSwizzle_Alpha or swizzle_a == 0);
+    const wants_storage = (usage & abi_base.WGPUTextureUsage_StorageBinding) != 0 and
+        (usage & abi_base.WGPUTextureUsage_TextureBinding) == 0;
     if (wants_storage and !is_identity) return .unsupported_storage;
     if (is_identity) return .identity;
     return .swizzled_sampled;
@@ -74,7 +74,7 @@ fn reserve_render_draw(pass: *DoeRenderPass) bool {
 // Render Pass
 // ============================================================
 
-pub export fn doeNativeCommandEncoderBeginRenderPass(enc_raw: ?*anyopaque, desc: ?*const types.WGPURenderPassDescriptor) callconv(.c) ?*anyopaque {
+pub export fn doeNativeCommandEncoderBeginRenderPass(enc_raw: ?*anyopaque, desc: ?*const abi_descriptor.WGPURenderPassDescriptor) callconv(.c) ?*anyopaque {
     const enc = cast(DoeCommandEncoder, enc_raw) orelse return null;
     const pass = make(DoeRenderPass) orelse return null;
     pass.* = .{ .enc = enc };

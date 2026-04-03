@@ -19,7 +19,8 @@ const alloc = native.alloc;
 const make = native.make;
 const cast = native.cast;
 const toOpaque = native.toOpaque;
-const model = @import("model_webgpu_types.zig");
+const model_gpu_types = @import("model_gpu_types.zig");
+const model_surface_control_types = @import("model_surface_control_types.zig");
 
 const DoeDevice = native.DoeDevice;
 const DoeTexture = native.DoeTexture;
@@ -146,7 +147,7 @@ pub export fn doeNativeSurfaceConfigure(
     if (surf.backend != .vulkan) return;
     const rt_ptr = surf.vk_runtime_ref orelse return;
     const rt: *NativeVulkanRuntime = @ptrCast(@alignCast(rt_ptr));
-    rt.configure_surface(model.SurfaceConfigureCommand{
+    rt.configure_surface(model_surface_control_types.SurfaceConfigureCommand{
         .handle = surf.handle,
         .width = width,
         .height = height,
@@ -191,11 +192,11 @@ pub export fn doeNativeSurfaceGetCurrentTexture(
         .width = surface_state.swapchain_extent.width,
         .height = surface_state.swapchain_extent.height,
         .depth_or_array_layers = 1,
-        .dimension = model.WGPUTextureDimension_2D,
+        .dimension = model_gpu_types.WGPUTextureDimension_2D,
         .mip_level_count = 1,
         .sample_count = 1,
         .usage = surface_state.usage,
-        .texture_binding_view_dimension = model.WGPUTextureViewDimension_2D,
+        .texture_binding_view_dimension = model_gpu_types.WGPUTextureViewDimension_2D,
         .vk_runtime_ref = surf.vk_runtime_ref,
     };
     surf.current_tex = tex;
@@ -253,7 +254,7 @@ pub export fn doeNativeSurfaceRelease(surf_raw: ?*anyopaque) callconv(.c) void {
 const surface_procs = @import("full/surface/wgpu_surface_procs.zig");
 
 // Default surface format for Doe Vulkan surfaces.
-const DOE_SURFACE_DEFAULT_FORMAT: u32 = model.WGPUTextureFormat_BGRA8Unorm;
+const DOE_SURFACE_DEFAULT_FORMAT: u32 = model_gpu_types.WGPUTextureFormat_BGRA8Unorm;
 
 // Present mode constants matching WGPUPresentMode values.
 const DOE_PRESENT_MODE_FIFO: u32 = 0x00000003;

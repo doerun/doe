@@ -1,5 +1,5 @@
 const std = @import("std");
-const model = @import("../../../model_webgpu_types.zig");
+const model_compute_types = @import("../../../model_compute_types.zig");
 const common_timing = @import("../../common/timing.zig");
 const dc = @import("../d3d12_constants.zig");
 
@@ -44,7 +44,7 @@ pub const DispatchState = struct {
         queue: ?*anyopaque,
         fence: ?*anyopaque,
         fence_value: *u64,
-        cmd: model.DispatchCommand,
+        cmd: model_compute_types.DispatchCommand,
     ) !DispatchMetrics {
         if (cmd.x == 0 or cmd.y == 0 or cmd.z == 0) return error.InvalidArgument;
 
@@ -79,7 +79,7 @@ pub const DispatchState = struct {
         queue: ?*anyopaque,
         fence: ?*anyopaque,
         fence_value: *u64,
-        cmd: model.DispatchIndirectCommand,
+        cmd: model_compute_types.DispatchIndirectCommand,
     ) !DispatchMetrics {
         _ = cmd;
         try self.ensure_noop_pipeline(device);

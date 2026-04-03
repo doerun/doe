@@ -1,5 +1,8 @@
 const std = @import("std");
-const types = @import("../abi/wgpu_types.zig");
+const abi_base = @import("../abi/wgpu_base_types.zig");
+const abi_descriptor = @import("../abi/wgpu_descriptor_types.zig");
+const abi_proc_aliases = @import("../abi/wgpu_type_proc_aliases.zig");
+const runtime_state = @import("../abi/wgpu_runtime_state_defs.zig");
 const loader = @import("../abi/wgpu_loader.zig");
 const WebGPUBackend = @import("../../webgpu_backend.zig").WebGPUBackend;
 
@@ -18,14 +21,14 @@ pub fn submitEmpty(self: *WebGPUBackend) !u64 {
     return try self.submitInternal(0, null);
 }
 
-pub fn submitCommandBuffers(self: *WebGPUBackend, command_buffers: []types.WGPUCommandBuffer) !u64 {
+pub fn submitCommandBuffers(self: *WebGPUBackend, command_buffers: []abi_base.WGPUCommandBuffer) !u64 {
     return try self.submitInternal(command_buffers.len, command_buffers.ptr);
 }
 
 pub fn submitInternal(
     self: *WebGPUBackend,
     command_count: usize,
-    command_ptr: ?[*]types.WGPUCommandBuffer,
+    command_ptr: ?[*]abi_base.WGPUCommandBuffer,
 ) !u64 {
     const procs = self.core.procs orelse return error.ProceduralNotReady;
     const submit_start_ns = std.time.nanoTimestamp();
@@ -81,11 +84,11 @@ pub fn shouldRetryQueueWait(err: anyerror) bool {
 pub fn waitForQueueProcessEvents(self: *WebGPUBackend) !void {
     if (self.core.procs == null) return error.ProceduralNotReady;
 
-    var done_state = types.QueueSubmitState{};
+    var done_state = runtime_state.QueueSubmitState{};
 
-    const queue_done_callback_info = types.WGPUQueueWorkDoneCallbackInfo{
+    const queue_done_callback_info = abi_descriptor.WGPUQueueWorkDoneCallbackInfo{
         .nextInChain = null,
-        .mode = types.WGPUCallbackMode_AllowProcessEvents,
+        .mode = abi_descriptor.WGPUCallbackMode_AllowProcessEvents,
         .callback = loader.queueWorkDoneCallback,
         .userdata1 = &done_state,
         .userdata2 = null,
@@ -105,10 +108,10 @@ pub fn waitForQueueProcessEvents(self: *WebGPUBackend) !void {
 pub fn waitForQueueWaitAny(self: *WebGPUBackend) !void {
     const procs = self.core.procs orelse return error.ProceduralNotReady;
 
-    var done_state = types.QueueSubmitState{};
-    const queue_done_callback_info = types.WGPUQueueWorkDoneCallbackInfo{
+    var done_state = runtime_state.QueueSubmitState{};
+    const queue_done_callback_info = abi_descriptor.WGPUQueueWorkDoneCallbackInfo{
         .nextInChain = null,
-        .mode = types.WGPUCallbackMode_WaitAnyOnly,
+        .mode = abi_descriptor.WGPUCallbackMode_WaitAnyOnly,
         .callback = loader.queueWorkDoneCallback,
         .userdata1 = &done_state,
         .userdata2 = null,
@@ -119,10 +122,10 @@ pub fn waitForQueueWaitAny(self: *WebGPUBackend) !void {
     );
     if (queue_done_future.id == 0) return error.QueueFutureUnavailable;
 
-    var wait_infos = [_]types.WGPUFutureWaitInfo{
+    var wait_infos = [_]abi_descriptor.WGPUFutureWaitInfo{
         .{
             .future = queue_done_future,
-            .completed = types.WGPU_FALSE,
+            .completed = abi_base.WGPU_FALSE,
         },
     };
     const wait_status = procs.wgpuInstanceWaitAny(
@@ -147,7 +150,7 @@ pub fn waitForQueueWaitAny(self: *WebGPUBackend) !void {
     }
 }
 
-pub fn readTimestampBuffer(self: *WebGPUBackend, readback_buffer: types.WGPUBuffer) !u64 {
+pub fn readTimestampBuffer(self: *WebGPUBackend, readback_buffer: abi_base.WGPUBuffer) !u64 {
     const procs = self.core.procs orelse return error.ProceduralNotReady;
     var attempt: u32 = 0;
     while (attempt < TIMESTAMP_MAP_RETRY_LIMIT) : (attempt += 1) {
@@ -170,22 +173,22 @@ pub fn readTimestampBuffer(self: *WebGPUBackend, readback_buffer: types.WGPUBuff
 
 pub fn readTimestampBufferOnce(
     self: *WebGPUBackend,
-    procs: types.Procs,
-    readback_buffer: types.WGPUBuffer,
+    procs: abi_proc_aliases.Procs,
+    readback_buffer: abi_base.WGPUBuffer,
 ) !u64 {
-    var map_state = types.BufferMapState{};
-    const map_callback_info = types.WGPUBufferMapCallbackInfo{
+    var map_state = runtime_state.BufferMapState{};
+    const map_callback_info = abi_descriptor.WGPUBufferMapCallbackInfo{
         .nextInChain = null,
-        .mode = types.WGPUCallbackMode_AllowProcessEvents,
+        .mode = abi_descriptor.WGPUCallbackMode_AllowProcessEvents,
         .callback = loader.bufferMapCallback,
         .userdata1 = &map_state,
         .userdata2 = null,
     };
     const map_future = procs.wgpuBufferMapAsync(
         readback_buffer,
-        types.WGPUMapMode_Read,
+        abi_base.WGPUMapMode_Read,
         0,
-        types.TIMESTAMP_BUFFER_SIZE,
+        abi_base.TIMESTAMP_BUFFER_SIZE,
         map_callback_info,
     );
     if (map_future.id == 0) {
@@ -197,12 +200,12 @@ pub fn readTimestampBufferOnce(
         self.timestampLog("map_async_timeout\n", .{});
         return error.BufferMapTimeout;
     }
-    if (map_state.status != types.WGPUMapAsyncStatus_Success) {
+    if (map_state.status != abi_base.WGPUMapAsyncStatus_Success) {
         self.timestampLog("map_async_status={}\n", .{map_state.status});
         return error.BufferMapFailed;
     }
 
-    const mapped_ptr = procs.wgpuBufferGetConstMappedRange(readback_buffer, 0, types.TIMESTAMP_BUFFER_SIZE);
+    const mapped_ptr = procs.wgpuBufferGetConstMappedRange(readback_buffer, 0, abi_base.TIMESTAMP_BUFFER_SIZE);
     if (mapped_ptr == null) {
         self.timestampLog("mapped_range=null\n", .{});
         return error.BufferMapFailed;

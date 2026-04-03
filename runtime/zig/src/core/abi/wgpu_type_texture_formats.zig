@@ -1,5 +1,5 @@
 // wgpu_type_texture_formats.zig — Compressed texture format constants (BC + ETC2/EAC + ASTC)
-// Sharded from wgpu_types.zig to keep file size under limit.
+// Sharded from wgpu_runtime_abi.zig to keep file size under limit.
 
 pub const WGPUTextureFormat = u32;
 

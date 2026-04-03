@@ -1,5 +1,5 @@
 const std = @import("std");
-const model = @import("../../../model_webgpu_types.zig");
+const model_render_types = @import("../../../model_render_types.zig");
 const common_timing = @import("../../common/timing.zig");
 
 extern fn d3d12_bridge_device_create_sampler_heap(device: ?*anyopaque, num_descriptors: u32) callconv(.c) ?*anyopaque;
@@ -33,7 +33,7 @@ pub const SamplerState = struct {
         self: *SamplerState,
         device: ?*anyopaque,
         allocator: std.mem.Allocator,
-        cmd: model.SamplerCreateCommand,
+        cmd: model_render_types.SamplerCreateCommand,
     ) !u64 {
         const encode_start = common_timing.now_ns();
 
@@ -66,7 +66,7 @@ pub const SamplerState = struct {
 
     pub fn sampler_destroy(
         self: *SamplerState,
-        cmd: model.SamplerDestroyCommand,
+        cmd: model_render_types.SamplerDestroyCommand,
     ) !u64 {
         const encode_start = common_timing.now_ns();
         _ = self.map.fetchRemove(cmd.handle);

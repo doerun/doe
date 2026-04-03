@@ -1,5 +1,5 @@
 // wgpu_type_callbacks.zig — Callback types, status enums, and callback info structs.
-// Sharded from wgpu_types.zig to keep file size under limit.
+// Sharded from wgpu_runtime_abi.zig to keep file size under limit.
 // Uses comptime parent type pattern to reference handle/string types without circular imports.
 pub fn definitions(comptime parent: type) type {
     return struct {

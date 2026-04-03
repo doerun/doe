@@ -7,7 +7,7 @@
 
 const std = @import("std");
 const builtin = @import("builtin");
-const model = @import("../../model_webgpu_types.zig");
+const model_gpu_types = @import("../../model_gpu_types.zig");
 const common_errors = @import("../common/errors.zig");
 const common_timing = @import("../common/timing.zig");
 const vk = @import("vulkan_types.zig");
@@ -200,9 +200,9 @@ pub const VulkanSurface = struct {
     current_image_index: u32 = 0,
     width: u32 = 0,
     height: u32 = 0,
-    requested_format: model.WGPUTextureFormat = model.WGPUTextureFormat_BGRA8Unorm,
-    format: model.WGPUTextureFormat = model.WGPUTextureFormat_RGBA8Unorm,
-    usage: model.WGPUFlags = model.WGPUTextureUsage_RenderAttachment,
+    requested_format: model_gpu_types.WGPUTextureFormat = model_gpu_types.WGPUTextureFormat_BGRA8Unorm,
+    format: model_gpu_types.WGPUTextureFormat = model_gpu_types.WGPUTextureFormat_RGBA8Unorm,
+    usage: model_gpu_types.WGPUFlags = model_gpu_types.WGPUTextureUsage_RenderAttachment,
     alpha_mode: u32 = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
     present_mode: u32 = WGPU_PRESENT_MODE_FIFO,
     tone_mapping_mode: u32 = WGPU_CANVAS_TONE_MAPPING_MODE_STANDARD,
@@ -402,7 +402,7 @@ pub fn destroy_sync_objects(
 /// Select the best surface format from available formats.
 fn select_surface_format(
     formats: []const VkSurfaceFormatKHR,
-    requested_format: model.WGPUTextureFormat,
+    requested_format: model_gpu_types.WGPUTextureFormat,
     tone_mapping_mode: u32,
 ) VkSurfaceFormatKHR {
     if (tone_mapping_mode == WGPU_CANVAS_TONE_MAPPING_MODE_EXTENDED) {
@@ -417,7 +417,7 @@ fn select_surface_format(
             if (fmt.colorSpace == VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT) return fmt;
         }
     }
-    if (requested_format == model.WGPUTextureFormat_BGRA8Unorm) {
+    if (requested_format == model_gpu_types.WGPUTextureFormat_BGRA8Unorm) {
         for (formats) |fmt| {
             if (fmt.format == VK_FORMAT_B8G8R8A8_UNORM and
                 fmt.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
@@ -426,7 +426,7 @@ fn select_surface_format(
             }
         }
     }
-    if (requested_format == model.WGPUTextureFormat_RGBA8Unorm) {
+    if (requested_format == model_gpu_types.WGPUTextureFormat_RGBA8Unorm) {
         for (formats) |fmt| {
             if (fmt.format == VK_FORMAT_R8G8B8A8_UNORM and
                 fmt.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
@@ -435,7 +435,7 @@ fn select_surface_format(
             }
         }
     }
-    if (requested_format == model.WGPUTextureFormat_BGRA8UnormSrgb) {
+    if (requested_format == model_gpu_types.WGPUTextureFormat_BGRA8UnormSrgb) {
         for (formats) |fmt| {
             if (fmt.format == VK_FORMAT_B8G8R8A8_SRGB and
                 fmt.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
@@ -444,7 +444,7 @@ fn select_surface_format(
             }
         }
     }
-    if (requested_format == model.WGPUTextureFormat_RGBA8UnormSrgb) {
+    if (requested_format == model_gpu_types.WGPUTextureFormat_RGBA8UnormSrgb) {
         for (formats) |fmt| {
             if (fmt.format == VK_FORMAT_R8G8B8A8_UNORM and
                 fmt.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
@@ -473,40 +473,40 @@ fn select_surface_format(
     return .{ .format = VK_FORMAT_B8G8R8A8_SRGB, .colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR };
 }
 
-pub fn preferred_canvas_format_from_surface_formats(formats: []const VkSurfaceFormatKHR) model.WGPUTextureFormat {
+pub fn preferred_canvas_format_from_surface_formats(formats: []const VkSurfaceFormatKHR) model_gpu_types.WGPUTextureFormat {
     for (formats) |fmt| {
         if (fmt.format == VK_FORMAT_B8G8R8A8_UNORM and fmt.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
-            return model.WGPUTextureFormat_BGRA8Unorm;
+            return model_gpu_types.WGPUTextureFormat_BGRA8Unorm;
         }
     }
     for (formats) |fmt| {
         if (fmt.format == VK_FORMAT_R8G8B8A8_UNORM and fmt.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
-            return model.WGPUTextureFormat_RGBA8Unorm;
+            return model_gpu_types.WGPUTextureFormat_RGBA8Unorm;
         }
     }
     for (formats) |fmt| {
         if (fmt.format == VK_FORMAT_B8G8R8A8_SRGB and fmt.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
-            return model.WGPUTextureFormat_BGRA8Unorm;
+            return model_gpu_types.WGPUTextureFormat_BGRA8Unorm;
         }
     }
     for (formats) |fmt| {
-        if (fmt.format == VK_FORMAT_R8G8B8A8_UNORM) return model.WGPUTextureFormat_RGBA8Unorm;
-        if (fmt.format == VK_FORMAT_B8G8R8A8_UNORM) return model.WGPUTextureFormat_BGRA8Unorm;
+        if (fmt.format == VK_FORMAT_R8G8B8A8_UNORM) return model_gpu_types.WGPUTextureFormat_RGBA8Unorm;
+        if (fmt.format == VK_FORMAT_B8G8R8A8_UNORM) return model_gpu_types.WGPUTextureFormat_BGRA8Unorm;
     }
-    return model.WGPUTextureFormat_BGRA8Unorm;
+    return model_gpu_types.WGPUTextureFormat_BGRA8Unorm;
 }
 
 fn canvas_format_for_selected_surface_format(
-    requested_format: model.WGPUTextureFormat,
+    requested_format: model_gpu_types.WGPUTextureFormat,
     selected_format: VkSurfaceFormatKHR,
-) model.WGPUTextureFormat {
+) model_gpu_types.WGPUTextureFormat {
     switch (selected_format.format) {
-        VK_FORMAT_B8G8R8A8_UNORM => return model.WGPUTextureFormat_BGRA8Unorm,
-        VK_FORMAT_B8G8R8A8_SRGB => return if (requested_format == model.WGPUTextureFormat_BGRA8UnormSrgb)
-            model.WGPUTextureFormat_BGRA8UnormSrgb
+        VK_FORMAT_B8G8R8A8_UNORM => return model_gpu_types.WGPUTextureFormat_BGRA8Unorm,
+        VK_FORMAT_B8G8R8A8_SRGB => return if (requested_format == model_gpu_types.WGPUTextureFormat_BGRA8UnormSrgb)
+            model_gpu_types.WGPUTextureFormat_BGRA8UnormSrgb
         else
-            model.WGPUTextureFormat_BGRA8Unorm,
-        VK_FORMAT_R8G8B8A8_UNORM => return model.WGPUTextureFormat_RGBA8Unorm,
+            model_gpu_types.WGPUTextureFormat_BGRA8Unorm,
+        VK_FORMAT_R8G8B8A8_UNORM => return model_gpu_types.WGPUTextureFormat_RGBA8Unorm,
         VK_FORMAT_R16G16B16A16_SFLOAT => return requested_format,
         else => return requested_format,
     }
@@ -551,12 +551,12 @@ fn clamp_extent(
     };
 }
 
-fn map_surface_usage_flags(wgpu_usage: model.WGPUFlags) VkFlags {
+fn map_surface_usage_flags(wgpu_usage: model_gpu_types.WGPUFlags) VkFlags {
     var usage: VkFlags = 0;
-    if ((wgpu_usage & model.WGPUTextureUsage_RenderAttachment) != 0) usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-    if ((wgpu_usage & model.WGPUTextureUsage_CopySrc) != 0) usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-    if ((wgpu_usage & model.WGPUTextureUsage_CopyDst) != 0) usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-    if ((wgpu_usage & model.WGPUTextureUsage_TextureBinding) != 0) usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
+    if ((wgpu_usage & model_gpu_types.WGPUTextureUsage_RenderAttachment) != 0) usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    if ((wgpu_usage & model_gpu_types.WGPUTextureUsage_CopySrc) != 0) usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+    if ((wgpu_usage & model_gpu_types.WGPUTextureUsage_CopyDst) != 0) usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    if ((wgpu_usage & model_gpu_types.WGPUTextureUsage_TextureBinding) != 0) usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
     if (usage == 0) usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
     return usage;
 }

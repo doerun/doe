@@ -3,7 +3,6 @@
 // the core command/resource path modules.
 
 const std = @import("std");
-const types = @import("core/abi/wgpu_types.zig");
 const resource_table_procs = @import("wgpu_p1_resource_table_procs.zig");
 const native = @import("doe_wgpu_native.zig");
 const render_bundle = @import("render_bundle.zig");

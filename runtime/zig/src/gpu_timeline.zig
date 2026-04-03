@@ -18,7 +18,8 @@
 // The callback fires inline for correctness; the Future.id is stable for waitAny.
 
 const std = @import("std");
-const types = @import("core/abi/wgpu_types.zig");
+const abi_base = @import("core/abi/wgpu_base_types.zig");
+const abi_descriptor = @import("core/abi/wgpu_descriptor_types.zig");
 const callback_dispatch = @import("runtime/callback_dispatch.zig");
 
 // ============================================================
@@ -51,7 +52,7 @@ const PendingMap = struct {
     mode: u64,
     offset: usize,
     size: usize,
-    cb: ?*const fn (u32, types.WGPUStringView, ?*anyopaque, ?*anyopaque) callconv(.c) void,
+    cb: ?*const fn (u32, abi_base.WGPUStringView, ?*anyopaque, ?*anyopaque) callconv(.c) void,
     userdata1: ?*anyopaque,
     userdata2: ?*anyopaque,
     // Pointer to the DoeBuffer.mapped field — set to true once GPU work is done.
@@ -64,7 +65,7 @@ const PendingMap = struct {
 
 const PendingWorkDone = struct {
     required_value: u64,
-    cb: ?*const fn (types.WGPUQueueWorkDoneStatus, types.WGPUStringView, ?*anyopaque, ?*anyopaque) callconv(.c) void,
+    cb: ?*const fn (abi_descriptor.WGPUQueueWorkDoneStatus, abi_base.WGPUStringView, ?*anyopaque, ?*anyopaque) callconv(.c) void,
     userdata1: ?*anyopaque,
     userdata2: ?*anyopaque,
 };
@@ -124,7 +125,7 @@ pub const GpuTimeline = struct {
         mode: u64,
         offset: usize,
         size: usize,
-        cb: ?*const fn (u32, types.WGPUStringView, ?*anyopaque, ?*anyopaque) callconv(.c) void,
+        cb: ?*const fn (u32, abi_base.WGPUStringView, ?*anyopaque, ?*anyopaque) callconv(.c) void,
         userdata1: ?*anyopaque,
         userdata2: ?*anyopaque,
         mapped_flag: *bool,
@@ -165,7 +166,7 @@ pub const GpuTimeline = struct {
     // Register an onSubmittedWorkDone callback for the current timeline value.
     pub fn register_work_done(
         self: *GpuTimeline,
-        cb: ?*const fn (types.WGPUQueueWorkDoneStatus, types.WGPUStringView, ?*anyopaque, ?*anyopaque) callconv(.c) void,
+        cb: ?*const fn (abi_descriptor.WGPUQueueWorkDoneStatus, abi_base.WGPUStringView, ?*anyopaque, ?*anyopaque) callconv(.c) void,
         userdata1: ?*anyopaque,
         userdata2: ?*anyopaque,
     ) void {

@@ -2,7 +2,10 @@ const std = @import("std");
 const builtin = @import("builtin");
 const model_commands = @import("../../model_commands.zig");
 const model_profile = @import("../../model_profile.zig");
-const model_webgpu_types = @import("../../model_webgpu_types.zig");
+const model_resource_types = @import("../../model_resource_types.zig");
+const model_compute_types = @import("../../model_compute_types.zig");
+const model_render_types = @import("../../model_render_types.zig");
+const model_async_types = @import("../../model_async_types.zig");
 const webgpu = @import("../runtime_types.zig");
 const backend_iface = @import("../backend_iface.zig");
 const backend_policy = @import("../backend_policy.zig");
@@ -27,14 +30,14 @@ const BOOTSTRAP_MANIFEST_MODULE = "bootstrap";
 const BOOTSTRAP_MANIFEST_STATUS_CODE = "backend_initialized";
 
 const model = struct {
-    pub const AsyncDiagnosticsCommand = model_webgpu_types.AsyncDiagnosticsCommand;
-    pub const BufferWriteCommand = model_webgpu_types.BufferWriteCommand;
+    pub const AsyncDiagnosticsCommand = model_async_types.AsyncDiagnosticsCommand;
+    pub const BufferWriteCommand = model_resource_types.BufferWriteCommand;
     pub const Command = model_commands.Command;
     pub const DeviceProfile = model_profile.DeviceProfile;
-    pub const KernelBinding = model_webgpu_types.KernelBinding;
-    pub const KernelDispatchCommand = model_webgpu_types.KernelDispatchCommand;
-    pub const RenderDrawCommand = model_webgpu_types.RenderDrawCommand;
-    pub const UploadCommand = model_webgpu_types.UploadCommand;
+    pub const KernelBinding = model_compute_types.KernelBinding;
+    pub const KernelDispatchCommand = model_compute_types.KernelDispatchCommand;
+    pub const RenderDrawCommand = model_render_types.RenderDrawCommand;
+    pub const UploadCommand = model_resource_types.UploadCommand;
 };
 
 // Uploads accumulate and flush lazily: flush_pending_uploads_if_required fires

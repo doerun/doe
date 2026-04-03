@@ -1,7 +1,7 @@
 const std = @import("std");
 const model_commands = @import("../model_commands.zig");
 const model_profile = @import("../model_profile.zig");
-const model_webgpu_types = @import("../model_webgpu_types.zig");
+const model_transfer_types = @import("../model_compute_types.zig");
 const webgpu = @import("../webgpu_backend.zig");
 const backend_ids = @import("backend_ids.zig");
 const backend_iface = @import("backend_iface.zig");
@@ -10,7 +10,7 @@ const backend_telemetry = @import("backend_telemetry.zig");
 const model = struct {
     pub const Command = model_commands.Command;
     pub const DeviceProfile = model_profile.DeviceProfile;
-    pub const KernelBinding = model_webgpu_types.KernelBinding;
+    pub const KernelBinding = model_transfer_types.KernelBinding;
 };
 
 pub const DawnDelegateBackend = struct {

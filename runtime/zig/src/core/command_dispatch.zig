@@ -1,12 +1,12 @@
 const model = @import("../model_commands.zig");
-const types = @import("abi/wgpu_types.zig");
+const runtime_types = @import("../backend/runtime_types.zig");
 const copy_commands = @import("resource/wgpu_commands_copy.zig");
 const compute_commands = @import("compute/wgpu_commands_compute.zig");
 const texture_commands = @import("resource/wgpu_texture_commands.zig");
 const ffi = @import("../webgpu_backend.zig");
 const Backend = ffi.WebGPUBackend;
 
-pub fn execute(self: *Backend, command: model.Command) !?types.NativeExecutionResult {
+pub fn execute(self: *Backend, command: model.Command) !?runtime_types.NativeExecutionResult {
     const core_command = model.as_core_command(command) orelse return null;
     return switch (core_command) {
         .upload => |payload| try copy_commands.executeUpload(self, payload),

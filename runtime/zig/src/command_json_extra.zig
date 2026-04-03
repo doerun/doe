@@ -1,5 +1,9 @@
 const std = @import("std");
-const model = @import("model_webgpu_types.zig");
+const model_gpu_types = @import("model_gpu_types.zig");
+const model_render_types = @import("model_render_types.zig");
+const model_texture_types = @import("model_texture_types.zig");
+const model_surface_control_types = @import("model_surface_control_types.zig");
+const model_async_types = @import("model_async_types.zig");
 const parse_helpers = @import("command_parse_helpers.zig");
 
 pub const ParseError = error{
@@ -76,13 +80,13 @@ fn parseSurfacePresentMode(raw: ?[]const u8) ParseError!u32 {
 }
 
 fn parseSurfaceToneMappingMode(raw: ?[]const u8) ParseError!u32 {
-    const value = raw orelse return model.WGPUCanvasToneMappingMode_Standard;
-    if (commandKindEqualsFn(value, "standard")) return model.WGPUCanvasToneMappingMode_Standard;
-    if (commandKindEqualsFn(value, "extended")) return model.WGPUCanvasToneMappingMode_Extended;
+    const value = raw orelse return model_surface_control_types.WGPUCanvasToneMappingMode_Standard;
+    if (commandKindEqualsFn(value, "standard")) return model_surface_control_types.WGPUCanvasToneMappingMode_Standard;
+    if (commandKindEqualsFn(value, "extended")) return model_surface_control_types.WGPUCanvasToneMappingMode_Extended;
     return ParseError.InvalidCommandPayload;
 }
 
-fn parseAsyncDiagnosticsMode(raw: ?[]const u8) ParseError!model.AsyncDiagnosticsMode {
+fn parseAsyncDiagnosticsMode(raw: ?[]const u8) ParseError!model_async_types.AsyncDiagnosticsMode {
     const value = raw orelse return .pipeline_async;
     if (commandKindEqualsFn(value, "pipeline_async") or commandKindEqualsFn(value, "pipeline-async")) return .pipeline_async;
     if (commandKindEqualsFn(value, "capability_introspection") or commandKindEqualsFn(value, "capability-introspection")) return .capability_introspection;
@@ -93,7 +97,7 @@ fn parseAsyncDiagnosticsMode(raw: ?[]const u8) ParseError!model.AsyncDiagnostics
     return ParseError.InvalidCommandPayload;
 }
 
-fn parseAsyncDiagnosticsFeaturePolicy(raw: ?[]const u8) ParseError!model.AsyncDiagnosticsFeaturePolicy {
+fn parseAsyncDiagnosticsFeaturePolicy(raw: ?[]const u8) ParseError!model_async_types.AsyncDiagnosticsFeaturePolicy {
     const value = raw orelse return .strict;
     if (commandKindEqualsFn(value, "strict")) return .strict;
     if (commandKindEqualsFn(value, "emulate_when_unavailable") or
@@ -115,14 +119,14 @@ fn parseBytesU32ToU8(allocator: std.mem.Allocator, values: []const u32) ParseErr
     return bytes;
 }
 
-pub fn parseRenderDrawEncodeMode(raw: ?[]const u8) ParseError!model.RenderDrawEncodeMode {
+pub fn parseRenderDrawEncodeMode(raw: ?[]const u8) ParseError!model_render_types.RenderDrawEncodeMode {
     const value = raw orelse return .render_bundle;
     if (commandKindEqualsFn(value, "render-bundle") or commandKindEqualsFn(value, "render_bundle") or commandKindEqualsFn(value, "bundle")) return .render_bundle;
     if (commandKindEqualsFn(value, "render-pass") or commandKindEqualsFn(value, "render_pass") or commandKindEqualsFn(value, "pass")) return .render_pass;
     return ParseError.InvalidCommandPayload;
 }
 
-pub fn parseSamplerCreateCommand(raw: anytype) ParseError!model.SamplerCreateCommand {
+pub fn parseSamplerCreateCommand(raw: anytype) ParseError!model_render_types.SamplerCreateCommand {
     const handle = parseSamplerHandle(raw) orelse return ParseError.InvalidCommandPayload;
     const address_mode_u = try parseSamplerAddressMode(raw.address_mode_u orelse raw.addressModeU);
     const address_mode_v = try parseSamplerAddressMode(raw.address_mode_v orelse raw.addressModeV);
@@ -149,12 +153,12 @@ pub fn parseSamplerCreateCommand(raw: anytype) ParseError!model.SamplerCreateCom
     };
 }
 
-pub fn parseSamplerDestroyCommand(raw: anytype) ParseError!model.SamplerDestroyCommand {
+pub fn parseSamplerDestroyCommand(raw: anytype) ParseError!model_render_types.SamplerDestroyCommand {
     const handle = parseSamplerHandle(raw) orelse return ParseError.InvalidCommandPayload;
     return .{ .handle = handle };
 }
 
-pub fn parseTextureWriteCommand(allocator: std.mem.Allocator, raw: anytype) ParseError!model.TextureWriteCommand {
+pub fn parseTextureWriteCommand(allocator: std.mem.Allocator, raw: anytype) ParseError!model_texture_types.TextureWriteCommand {
     const handle = parseTextureHandle(raw) orelse return ParseError.InvalidCommandPayload;
     const width = raw.width orelse raw.target_width orelse raw.targetWidth orelse 1;
     const height = raw.height orelse raw.target_height orelse raw.targetHeight orelse 1;
@@ -164,8 +168,8 @@ pub fn parseTextureWriteCommand(allocator: std.mem.Allocator, raw: anytype) Pars
     const format = if (raw.format orelse raw.target_format orelse raw.targetFormat) |raw_format|
         parse_helpers.parseTextureFormat(raw_format) catch return ParseError.InvalidCommandPayload
     else
-        model.WGPUTextureFormat_RGBA8Unorm;
-    const usage = raw.usage orelse (model.WGPUTextureUsage_CopyDst | model.WGPUTextureUsage_TextureBinding);
+        model_gpu_types.WGPUTextureFormat_RGBA8Unorm;
+    const usage = raw.usage orelse (model_gpu_types.WGPUTextureUsage_CopyDst | model_gpu_types.WGPUTextureUsage_TextureBinding);
     const dimension = parse_helpers.parseTextureDimension(raw.dimension);
     const view_dimension = parse_helpers.parseTextureViewDimension(raw.view_dimension orelse raw.viewDimension);
     const aspect = parse_helpers.parseTextureAspect(raw.aspect);
@@ -199,7 +203,7 @@ pub fn parseTextureWriteCommand(allocator: std.mem.Allocator, raw: anytype) Pars
     };
 }
 
-pub fn parseTextureQueryCommand(raw: anytype) ParseError!model.TextureQueryCommand {
+pub fn parseTextureQueryCommand(raw: anytype) ParseError!model_texture_types.TextureQueryCommand {
     const handle = parseTextureHandle(raw) orelse return ParseError.InvalidCommandPayload;
     const format = if (raw.format orelse raw.target_format orelse raw.targetFormat) |raw_format|
         parse_helpers.parseTextureFormat(raw_format) catch return ParseError.InvalidCommandPayload
@@ -221,30 +225,30 @@ pub fn parseTextureQueryCommand(raw: anytype) ParseError!model.TextureQueryComma
     };
 }
 
-pub fn parseTextureDestroyCommand(raw: anytype) ParseError!model.TextureDestroyCommand {
+pub fn parseTextureDestroyCommand(raw: anytype) ParseError!model_texture_types.TextureDestroyCommand {
     const handle = parseTextureHandle(raw) orelse return ParseError.InvalidCommandPayload;
     return .{ .handle = handle };
 }
 
-pub fn parseSurfaceCreateCommand(raw: anytype) ParseError!model.SurfaceCreateCommand {
+pub fn parseSurfaceCreateCommand(raw: anytype) ParseError!model_surface_control_types.SurfaceCreateCommand {
     const handle = parseSurfaceHandle(raw) orelse return ParseError.InvalidCommandPayload;
     return .{ .handle = handle };
 }
 
-pub fn parseSurfaceCapabilitiesCommand(raw: anytype) ParseError!model.SurfaceCapabilitiesCommand {
+pub fn parseSurfaceCapabilitiesCommand(raw: anytype) ParseError!model_surface_control_types.SurfaceCapabilitiesCommand {
     const handle = parseSurfaceHandle(raw) orelse return ParseError.InvalidCommandPayload;
     return .{ .handle = handle };
 }
 
-pub fn parseSurfaceConfigureCommand(raw: anytype) ParseError!model.SurfaceConfigureCommand {
+pub fn parseSurfaceConfigureCommand(raw: anytype) ParseError!model_surface_control_types.SurfaceConfigureCommand {
     const handle = parseSurfaceHandle(raw) orelse return ParseError.InvalidCommandPayload;
     const width = raw.width orelse raw.target_width orelse raw.targetWidth orelse return ParseError.InvalidCommandPayload;
     const height = raw.height orelse raw.target_height orelse raw.targetHeight orelse return ParseError.InvalidCommandPayload;
     const format = if (raw.format orelse raw.target_format orelse raw.targetFormat) |raw_format|
         parse_helpers.parseTextureFormat(raw_format) catch return ParseError.InvalidCommandPayload
     else
-        model.WGPUTextureFormat_RGBA8Unorm;
-    const usage = raw.usage orelse model.WGPUTextureUsage_RenderAttachment;
+        model_gpu_types.WGPUTextureFormat_RGBA8Unorm;
+    const usage = raw.usage orelse model_gpu_types.WGPUTextureUsage_RenderAttachment;
     const alpha_mode = try parseSurfaceAlphaMode(raw.alpha_mode orelse raw.alphaMode);
     const present_mode = try parseSurfacePresentMode(raw.present_mode orelse raw.presentMode);
     const tone_mapping_mode = try parseSurfaceToneMappingMode(raw.tone_mapping_mode orelse raw.toneMappingMode);
@@ -264,31 +268,31 @@ pub fn parseSurfaceConfigureCommand(raw: anytype) ParseError!model.SurfaceConfig
     };
 }
 
-pub fn parseSurfaceAcquireCommand(raw: anytype) ParseError!model.SurfaceAcquireCommand {
+pub fn parseSurfaceAcquireCommand(raw: anytype) ParseError!model_surface_control_types.SurfaceAcquireCommand {
     const handle = parseSurfaceHandle(raw) orelse return ParseError.InvalidCommandPayload;
     return .{ .handle = handle };
 }
 
-pub fn parseSurfacePresentCommand(raw: anytype) ParseError!model.SurfacePresentCommand {
+pub fn parseSurfacePresentCommand(raw: anytype) ParseError!model_surface_control_types.SurfacePresentCommand {
     const handle = parseSurfaceHandle(raw) orelse return ParseError.InvalidCommandPayload;
     return .{ .handle = handle };
 }
 
-pub fn parseSurfaceUnconfigureCommand(raw: anytype) ParseError!model.SurfaceUnconfigureCommand {
+pub fn parseSurfaceUnconfigureCommand(raw: anytype) ParseError!model_surface_control_types.SurfaceUnconfigureCommand {
     const handle = parseSurfaceHandle(raw) orelse return ParseError.InvalidCommandPayload;
     return .{ .handle = handle };
 }
 
-pub fn parseSurfaceReleaseCommand(raw: anytype) ParseError!model.SurfaceReleaseCommand {
+pub fn parseSurfaceReleaseCommand(raw: anytype) ParseError!model_surface_control_types.SurfaceReleaseCommand {
     const handle = parseSurfaceHandle(raw) orelse return ParseError.InvalidCommandPayload;
     return .{ .handle = handle };
 }
 
-pub fn parseAsyncDiagnosticsCommand(raw: anytype) ParseError!model.AsyncDiagnosticsCommand {
+pub fn parseAsyncDiagnosticsCommand(raw: anytype) ParseError!model_async_types.AsyncDiagnosticsCommand {
     const target_format = if (raw.format orelse raw.target_format orelse raw.targetFormat) |raw_format|
         parse_helpers.parseTextureFormat(raw_format) catch return ParseError.InvalidCommandPayload
     else
-        model.WGPUTextureFormat_RGBA8Unorm;
+        model_gpu_types.WGPUTextureFormat_RGBA8Unorm;
     const mode = try parseAsyncDiagnosticsMode(raw.mode);
     const iterations = raw.iterations orelse raw.repeat orelse 1;
     const feature_policy = try parseAsyncDiagnosticsFeaturePolicy(raw.feature_policy orelse raw.featurePolicy);

@@ -2,7 +2,8 @@
 // Sharded from doe_wgpu_native.zig to stay under the 777-line limit.
 
 const std = @import("std");
-const types = @import("core/abi/wgpu_types.zig");
+const abi_base = @import("core/abi/wgpu_base_types.zig");
+const abi_descriptor = @import("core/abi/wgpu_descriptor_types.zig");
 const native = @import("doe_wgpu_native.zig");
 
 const alloc = native.alloc;
@@ -108,8 +109,8 @@ pub export fn doeNativeBufferMapAsync(
     mode: u64,
     offset: usize,
     size: usize,
-    cb_info: types.WGPUBufferMapCallbackInfo,
-) callconv(.c) types.WGPUFuture {
+    cb_info: abi_descriptor.WGPUBufferMapCallbackInfo,
+) callconv(.c) abi_base.WGPUFuture {
     const buf = cast(DoeBuffer, buf_raw) orelse {
         if (cb_info.callback) |callback| {
             callback(WGPU_MAP_ASYNC_STATUS_VALIDATION_ERROR, .{ .data = null, .length = 0 }, cb_info.userdata1, cb_info.userdata2);

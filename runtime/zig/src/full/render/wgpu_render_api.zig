@@ -1,5 +1,6 @@
 const std = @import("std");
-const types = @import("../../core/abi/wgpu_types.zig");
+const abi_base = @import("../../core/abi/wgpu_base_types.zig");
+const abi_proc_aliases = @import("../../core/abi/wgpu_type_proc_aliases.zig");
 const p0_procs_mod = @import("../../wgpu_p0_procs.zig");
 const render_types_mod = @import("wgpu_render_types.zig");
 
@@ -8,47 +9,47 @@ pub const RenderBundleEncoder = ?*anyopaque;
 
 pub const BlendColor = render_types_mod.RenderColor;
 
-const FnRenderPassEncoderSetViewport = *const fn (types.WGPURenderPassEncoder, f32, f32, f32, f32, f32, f32) callconv(.c) void;
-const FnRenderPassEncoderSetScissorRect = *const fn (types.WGPURenderPassEncoder, u32, u32, u32, u32) callconv(.c) void;
-const FnRenderPassEncoderSetBlendConstant = *const fn (types.WGPURenderPassEncoder, *const BlendColor) callconv(.c) void;
-const FnRenderPassEncoderSetStencilReference = *const fn (types.WGPURenderPassEncoder, u32) callconv(.c) void;
-const FnRenderPipelineGetBindGroupLayout = *const fn (types.WGPURenderPipeline, u32) callconv(.c) types.WGPUBindGroupLayout;
+const FnRenderPassEncoderSetViewport = *const fn (abi_base.WGPURenderPassEncoder, f32, f32, f32, f32, f32, f32) callconv(.c) void;
+const FnRenderPassEncoderSetScissorRect = *const fn (abi_base.WGPURenderPassEncoder, u32, u32, u32, u32) callconv(.c) void;
+const FnRenderPassEncoderSetBlendConstant = *const fn (abi_base.WGPURenderPassEncoder, *const BlendColor) callconv(.c) void;
+const FnRenderPassEncoderSetStencilReference = *const fn (abi_base.WGPURenderPassEncoder, u32) callconv(.c) void;
+const FnRenderPipelineGetBindGroupLayout = *const fn (abi_base.WGPURenderPipeline, u32) callconv(.c) abi_base.WGPUBindGroupLayout;
 
-const FnDeviceCreateRenderBundleEncoder = *const fn (types.WGPUDevice, *const anyopaque) callconv(.c) RenderBundleEncoder;
+const FnDeviceCreateRenderBundleEncoder = *const fn (abi_base.WGPUDevice, *const anyopaque) callconv(.c) RenderBundleEncoder;
 const FnRenderBundleEncoderDraw = *const fn (RenderBundleEncoder, u32, u32, u32, u32) callconv(.c) void;
 const FnRenderBundleEncoderDrawIndexed = *const fn (RenderBundleEncoder, u32, u32, u32, i32, u32) callconv(.c) void;
-const FnRenderBundleEncoderDrawIndirect = *const fn (RenderBundleEncoder, types.WGPUBuffer, u64) callconv(.c) void;
-const FnRenderBundleEncoderDrawIndexedIndirect = *const fn (RenderBundleEncoder, types.WGPUBuffer, u64) callconv(.c) void;
+const FnRenderBundleEncoderDrawIndirect = *const fn (RenderBundleEncoder, abi_base.WGPUBuffer, u64) callconv(.c) void;
+const FnRenderBundleEncoderDrawIndexedIndirect = *const fn (RenderBundleEncoder, abi_base.WGPUBuffer, u64) callconv(.c) void;
 const FnRenderBundleEncoderFinish = *const fn (RenderBundleEncoder, ?*const anyopaque) callconv(.c) RenderBundle;
-const FnRenderBundleEncoderInsertDebugMarker = *const fn (RenderBundleEncoder, types.WGPUStringView) callconv(.c) void;
+const FnRenderBundleEncoderInsertDebugMarker = *const fn (RenderBundleEncoder, abi_base.WGPUStringView) callconv(.c) void;
 const FnRenderBundleEncoderPopDebugGroup = *const fn (RenderBundleEncoder) callconv(.c) void;
-const FnRenderBundleEncoderPushDebugGroup = *const fn (RenderBundleEncoder, types.WGPUStringView) callconv(.c) void;
-const FnRenderBundleEncoderSetBindGroup = *const fn (RenderBundleEncoder, u32, types.WGPUBindGroup, usize, ?[*]const u32) callconv(.c) void;
-const FnRenderBundleEncoderSetIndexBuffer = *const fn (RenderBundleEncoder, types.WGPUBuffer, u32, u64, u64) callconv(.c) void;
-const FnRenderBundleEncoderSetLabel = *const fn (RenderBundleEncoder, types.WGPUStringView) callconv(.c) void;
-const FnRenderBundleEncoderSetPipeline = *const fn (RenderBundleEncoder, types.WGPURenderPipeline) callconv(.c) void;
-const FnRenderBundleEncoderSetVertexBuffer = *const fn (RenderBundleEncoder, u32, types.WGPUBuffer, u64, u64) callconv(.c) void;
+const FnRenderBundleEncoderPushDebugGroup = *const fn (RenderBundleEncoder, abi_base.WGPUStringView) callconv(.c) void;
+const FnRenderBundleEncoderSetBindGroup = *const fn (RenderBundleEncoder, u32, abi_base.WGPUBindGroup, usize, ?[*]const u32) callconv(.c) void;
+const FnRenderBundleEncoderSetIndexBuffer = *const fn (RenderBundleEncoder, abi_base.WGPUBuffer, u32, u64, u64) callconv(.c) void;
+const FnRenderBundleEncoderSetLabel = *const fn (RenderBundleEncoder, abi_base.WGPUStringView) callconv(.c) void;
+const FnRenderBundleEncoderSetPipeline = *const fn (RenderBundleEncoder, abi_base.WGPURenderPipeline) callconv(.c) void;
+const FnRenderBundleEncoderSetVertexBuffer = *const fn (RenderBundleEncoder, u32, abi_base.WGPUBuffer, u64, u64) callconv(.c) void;
 const FnRenderBundleEncoderAddRef = *const fn (RenderBundleEncoder) callconv(.c) void;
 const FnRenderBundleEncoderRelease = *const fn (RenderBundleEncoder) callconv(.c) void;
-const FnRenderPassEncoderExecuteBundles = *const fn (types.WGPURenderPassEncoder, usize, [*]const RenderBundle) callconv(.c) void;
-const FnRenderBundleSetLabel = *const fn (RenderBundle, types.WGPUStringView) callconv(.c) void;
+const FnRenderPassEncoderExecuteBundles = *const fn (abi_base.WGPURenderPassEncoder, usize, [*]const RenderBundle) callconv(.c) void;
+const FnRenderBundleSetLabel = *const fn (RenderBundle, abi_base.WGPUStringView) callconv(.c) void;
 const FnRenderBundleAddRef = *const fn (RenderBundle) callconv(.c) void;
 const FnRenderBundleRelease = *const fn (RenderBundle) callconv(.c) void;
 
 pub const RenderApi = struct {
-    device_create_render_pipeline: types.FnWgpuDeviceCreateRenderPipeline,
-    command_encoder_begin_render_pass: types.FnWgpuCommandEncoderBeginRenderPass,
-    render_pass_encoder_set_pipeline: types.FnWgpuRenderPassEncoderSetPipeline,
-    render_pass_encoder_set_vertex_buffer: types.FnWgpuRenderPassEncoderSetVertexBuffer,
-    render_pass_encoder_set_index_buffer: types.FnWgpuRenderPassEncoderSetIndexBuffer,
-    render_pass_encoder_set_bind_group: types.FnWgpuRenderPassEncoderSetBindGroup,
-    render_pass_encoder_draw: types.FnWgpuRenderPassEncoderDraw,
-    render_pass_encoder_draw_indexed: types.FnWgpuRenderPassEncoderDrawIndexed,
-    render_pass_encoder_draw_indirect: types.FnWgpuRenderPassEncoderDrawIndirect,
-    render_pass_encoder_draw_indexed_indirect: types.FnWgpuRenderPassEncoderDrawIndexedIndirect,
-    render_pass_encoder_end: types.FnWgpuRenderPassEncoderEnd,
-    render_pass_encoder_release: types.FnWgpuRenderPassEncoderRelease,
-    render_pipeline_release: types.FnWgpuRenderPipelineRelease,
+    device_create_render_pipeline: abi_proc_aliases.FnWgpuDeviceCreateRenderPipeline,
+    command_encoder_begin_render_pass: abi_proc_aliases.FnWgpuCommandEncoderBeginRenderPass,
+    render_pass_encoder_set_pipeline: abi_proc_aliases.FnWgpuRenderPassEncoderSetPipeline,
+    render_pass_encoder_set_vertex_buffer: abi_proc_aliases.FnWgpuRenderPassEncoderSetVertexBuffer,
+    render_pass_encoder_set_index_buffer: abi_proc_aliases.FnWgpuRenderPassEncoderSetIndexBuffer,
+    render_pass_encoder_set_bind_group: abi_proc_aliases.FnWgpuRenderPassEncoderSetBindGroup,
+    render_pass_encoder_draw: abi_proc_aliases.FnWgpuRenderPassEncoderDraw,
+    render_pass_encoder_draw_indexed: abi_proc_aliases.FnWgpuRenderPassEncoderDrawIndexed,
+    render_pass_encoder_draw_indirect: abi_proc_aliases.FnWgpuRenderPassEncoderDrawIndirect,
+    render_pass_encoder_draw_indexed_indirect: abi_proc_aliases.FnWgpuRenderPassEncoderDrawIndexedIndirect,
+    render_pass_encoder_end: abi_proc_aliases.FnWgpuRenderPassEncoderEnd,
+    render_pass_encoder_release: abi_proc_aliases.FnWgpuRenderPassEncoderRelease,
+    render_pipeline_release: abi_proc_aliases.FnWgpuRenderPipelineRelease,
     render_pass_encoder_set_viewport: FnRenderPassEncoderSetViewport,
     render_pass_encoder_set_scissor_rect: FnRenderPassEncoderSetScissorRect,
     render_pass_encoder_set_blend_constant: FnRenderPassEncoderSetBlendConstant,
@@ -96,7 +97,7 @@ fn loadProc(comptime T: type, lib: std.DynLib, comptime name: [:0]const u8) ?T {
     return mutable.lookup(T, name);
 }
 
-pub fn loadRenderApi(procs: types.Procs, dyn_lib: ?std.DynLib) ?RenderApi {
+pub fn loadRenderApi(procs: abi_proc_aliases.Procs, dyn_lib: ?std.DynLib) ?RenderApi {
     switch (load_state) {
         .ready => return cached_render_api,
         .unavailable => return null,

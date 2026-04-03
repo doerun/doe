@@ -1,5 +1,7 @@
 const std = @import("std");
-const types = @import("core/abi/wgpu_types.zig");
+const abi_base = @import("core/abi/wgpu_base_types.zig");
+const abi_descriptor = @import("core/abi/wgpu_descriptor_types.zig");
+const abi_proc_aliases = @import("core/abi/wgpu_type_proc_aliases.zig");
 const loader = @import("core/abi/wgpu_loader.zig");
 
 pub const CREATE_PIPELINE_ASYNC_STATUS_SUCCESS: u32 = 1;
@@ -9,13 +11,13 @@ pub const ERROR_FILTER_VALIDATION: u32 = 1;
 pub const ERROR_FILTER_OUT_OF_MEMORY: u32 = 2;
 pub const ERROR_FILTER_INTERNAL: u32 = 3;
 
-const CreateRenderPipelineAsyncCallback = *const fn (u32, types.WGPURenderPipeline, types.WGPUStringView, ?*anyopaque, ?*anyopaque) callconv(.c) void;
-const PopErrorScopeCallback = *const fn (u32, u32, types.WGPUStringView, ?*anyopaque, ?*anyopaque) callconv(.c) void;
+const CreateRenderPipelineAsyncCallback = *const fn (u32, abi_base.WGPURenderPipeline, abi_base.WGPUStringView, ?*anyopaque, ?*anyopaque) callconv(.c) void;
+const PopErrorScopeCallback = *const fn (u32, u32, abi_base.WGPUStringView, ?*anyopaque, ?*anyopaque) callconv(.c) void;
 const CompilationInfoCallback = *const fn (u32, ?*const anyopaque, ?*anyopaque, ?*anyopaque) callconv(.c) void;
 
 pub const CreateRenderPipelineAsyncCallbackInfo = extern struct {
     nextInChain: ?*anyopaque,
-    mode: types.WGPUCallbackMode,
+    mode: abi_descriptor.WGPUCallbackMode,
     callback: ?CreateRenderPipelineAsyncCallback,
     userdata1: ?*anyopaque,
     userdata2: ?*anyopaque,
@@ -23,7 +25,7 @@ pub const CreateRenderPipelineAsyncCallbackInfo = extern struct {
 
 pub const PopErrorScopeCallbackInfo = extern struct {
     nextInChain: ?*anyopaque,
-    mode: types.WGPUCallbackMode,
+    mode: abi_descriptor.WGPUCallbackMode,
     callback: ?PopErrorScopeCallback,
     userdata1: ?*anyopaque,
     userdata2: ?*anyopaque,
@@ -31,16 +33,16 @@ pub const PopErrorScopeCallbackInfo = extern struct {
 
 pub const CompilationInfoCallbackInfo = extern struct {
     nextInChain: ?*anyopaque,
-    mode: types.WGPUCallbackMode,
+    mode: abi_descriptor.WGPUCallbackMode,
     callback: ?CompilationInfoCallback,
     userdata1: ?*anyopaque,
     userdata2: ?*anyopaque,
 };
 
-const FnDeviceCreateRenderPipelineAsync = *const fn (types.WGPUDevice, *const anyopaque, CreateRenderPipelineAsyncCallbackInfo) callconv(.c) types.WGPUFuture;
-const FnDevicePushErrorScope = *const fn (types.WGPUDevice, u32) callconv(.c) void;
-const FnDevicePopErrorScope = *const fn (types.WGPUDevice, PopErrorScopeCallbackInfo) callconv(.c) types.WGPUFuture;
-const FnShaderModuleGetCompilationInfo = *const fn (types.WGPUShaderModule, CompilationInfoCallbackInfo) callconv(.c) types.WGPUFuture;
+const FnDeviceCreateRenderPipelineAsync = *const fn (abi_base.WGPUDevice, *const anyopaque, CreateRenderPipelineAsyncCallbackInfo) callconv(.c) abi_base.WGPUFuture;
+const FnDevicePushErrorScope = *const fn (abi_base.WGPUDevice, u32) callconv(.c) void;
+const FnDevicePopErrorScope = *const fn (abi_base.WGPUDevice, PopErrorScopeCallbackInfo) callconv(.c) abi_base.WGPUFuture;
+const FnShaderModuleGetCompilationInfo = *const fn (abi_base.WGPUShaderModule, CompilationInfoCallbackInfo) callconv(.c) abi_base.WGPUFuture;
 
 pub const AsyncProcs = struct {
     device_create_render_pipeline_async: FnDeviceCreateRenderPipelineAsync,
@@ -52,7 +54,7 @@ pub const AsyncProcs = struct {
 pub const RenderPipelineAsyncState = struct {
     done: bool = false,
     status: u32 = 0,
-    pipeline: types.WGPURenderPipeline = null,
+    pipeline: abi_base.WGPURenderPipeline = null,
 };
 
 pub const PopErrorScopeState = struct {
@@ -83,15 +85,15 @@ pub fn loadAsyncProcs(dyn_lib: ?std.DynLib) ?AsyncProcs {
 
 pub fn createRenderPipelineAsyncAndWait(
     async_procs: AsyncProcs,
-    instance: types.WGPUInstance,
-    procs: types.Procs,
-    device: types.WGPUDevice,
+    instance: abi_base.WGPUInstance,
+    procs: abi_proc_aliases.Procs,
+    device: abi_base.WGPUDevice,
     descriptor: *const anyopaque,
-) !types.WGPURenderPipeline {
+) !abi_base.WGPURenderPipeline {
     var state = RenderPipelineAsyncState{};
     const callback_info = CreateRenderPipelineAsyncCallbackInfo{
         .nextInChain = null,
-        .mode = types.WGPUCallbackMode_AllowProcessEvents,
+        .mode = abi_descriptor.WGPUCallbackMode_AllowProcessEvents,
         .callback = renderPipelineAsyncCallback,
         .userdata1 = &state,
         .userdata2 = null,
@@ -104,20 +106,20 @@ pub fn createRenderPipelineAsyncAndWait(
     return state.pipeline orelse error.AsyncPipelineCreationFailed;
 }
 
-pub fn pushErrorScope(async_procs: AsyncProcs, device: types.WGPUDevice, filter: u32) void {
+pub fn pushErrorScope(async_procs: AsyncProcs, device: abi_base.WGPUDevice, filter: u32) void {
     async_procs.device_push_error_scope(device, filter);
 }
 
 pub fn popErrorScopeAndWait(
     async_procs: AsyncProcs,
-    instance: types.WGPUInstance,
-    procs: types.Procs,
-    device: types.WGPUDevice,
+    instance: abi_base.WGPUInstance,
+    procs: abi_proc_aliases.Procs,
+    device: abi_base.WGPUDevice,
 ) !PopErrorScopeState {
     var state = PopErrorScopeState{};
     const callback_info = PopErrorScopeCallbackInfo{
         .nextInChain = null,
-        .mode = types.WGPUCallbackMode_AllowProcessEvents,
+        .mode = abi_descriptor.WGPUCallbackMode_AllowProcessEvents,
         .callback = popErrorScopeCallback,
         .userdata1 = &state,
         .userdata2 = null,
@@ -131,14 +133,14 @@ pub fn popErrorScopeAndWait(
 
 pub fn requestShaderCompilationInfoAndWait(
     async_procs: AsyncProcs,
-    instance: types.WGPUInstance,
-    procs: types.Procs,
-    shader_module: types.WGPUShaderModule,
+    instance: abi_base.WGPUInstance,
+    procs: abi_proc_aliases.Procs,
+    shader_module: abi_base.WGPUShaderModule,
 ) !CompilationInfoState {
     var state = CompilationInfoState{};
     const callback_info = CompilationInfoCallbackInfo{
         .nextInChain = null,
-        .mode = types.WGPUCallbackMode_AllowProcessEvents,
+        .mode = abi_descriptor.WGPUCallbackMode_AllowProcessEvents,
         .callback = compilationInfoCallback,
         .userdata1 = &state,
         .userdata2 = null,
@@ -151,8 +153,8 @@ pub fn requestShaderCompilationInfoAndWait(
 }
 
 fn processEventsUntil(
-    instance: types.WGPUInstance,
-    procs: types.Procs,
+    instance: abi_base.WGPUInstance,
+    procs: abi_proc_aliases.Procs,
     done: *const bool,
     timeout_ns: u64,
 ) !void {
@@ -169,8 +171,8 @@ fn processEventsUntil(
 
 fn renderPipelineAsyncCallback(
     status: u32,
-    pipeline: types.WGPURenderPipeline,
-    message: types.WGPUStringView,
+    pipeline: abi_base.WGPURenderPipeline,
+    message: abi_base.WGPUStringView,
     userdata1: ?*anyopaque,
     userdata2: ?*anyopaque,
 ) callconv(.c) void {
@@ -185,7 +187,7 @@ fn renderPipelineAsyncCallback(
 fn popErrorScopeCallback(
     status: u32,
     error_type: u32,
-    message: types.WGPUStringView,
+    message: abi_base.WGPUStringView,
     userdata1: ?*anyopaque,
     userdata2: ?*anyopaque,
 ) callconv(.c) void {

@@ -1,6 +1,6 @@
 const std = @import("std");
-const model = @import("../../model_webgpu_types.zig");
-const types = @import("../../core/abi/wgpu_types.zig");
+const model_gpu_types = @import("../../model_gpu_types.zig");
+const abi_base = @import("../../core/abi/wgpu_base_types.zig");
 const render_resource_mod = @import("wgpu_render_resources.zig");
 const render_types_mod = @import("wgpu_render_types.zig");
 
@@ -12,7 +12,7 @@ pub const RENDER_CULL_MODE_NONE: u32 = 0x00000001;
 pub const RENDER_COLOR_WRITE_MASK_ALL: u64 = 0x000000000000000F;
 pub const RENDER_TARGET_DEPTH_SLICE_UNDEFINED: u32 = std.math.maxInt(u32);
 pub const RENDER_MULTISAMPLE_MASK_ALL: u32 = 0xFFFF_FFFF;
-pub const RENDER_DEPTH_STENCIL_FORMAT: types.WGPUTextureFormat = model.WGPUTextureFormat_Depth24PlusStencil8;
+pub const RENDER_DEPTH_STENCIL_FORMAT: abi_base.WGPUTextureFormat = model_gpu_types.WGPUTextureFormat_Depth24PlusStencil8;
 pub const RENDER_DEPTH_STENCIL_CLEAR_VALUE: f32 = 1.0;
 pub const RENDER_STENCIL_CLEAR_VALUE: u32 = 0;
 pub const RENDER_COMPARE_FUNCTION_ALWAYS: u32 = 0x00000008;
@@ -46,31 +46,31 @@ pub const RenderDepthStencilState = render_types_mod.RenderDepthStencilState;
 pub const RenderPipelineDescriptor = render_types_mod.RenderPipelineDescriptor;
 pub const RenderUniformBindingResources = render_resource_mod.RenderUniformBindingResources;
 
-pub fn is_affected_render_format(format: types.WGPUTextureFormat) bool {
-    return format == model.WGPUTextureFormat_R8Unorm or
-        format == model.WGPUTextureFormat_RG8Unorm;
+pub fn is_affected_render_format(format: abi_base.WGPUTextureFormat) bool {
+    return format == model_gpu_types.WGPUTextureFormat_R8Unorm or
+        format == model_gpu_types.WGPUTextureFormat_RG8Unorm;
 }
 
 const testing = std.testing;
 
 test "is_affected_render_format returns true for R8Unorm" {
-    try testing.expect(is_affected_render_format(model.WGPUTextureFormat_R8Unorm));
+    try testing.expect(is_affected_render_format(model_gpu_types.WGPUTextureFormat_R8Unorm));
 }
 
 test "is_affected_render_format returns true for RG8Unorm" {
-    try testing.expect(is_affected_render_format(model.WGPUTextureFormat_RG8Unorm));
+    try testing.expect(is_affected_render_format(model_gpu_types.WGPUTextureFormat_RG8Unorm));
 }
 
 test "is_affected_render_format returns false for RGBA8Unorm" {
-    try testing.expect(!is_affected_render_format(model.WGPUTextureFormat_RGBA8Unorm));
+    try testing.expect(!is_affected_render_format(model_gpu_types.WGPUTextureFormat_RGBA8Unorm));
 }
 
 test "is_affected_render_format returns false for BGRA8Unorm" {
-    try testing.expect(!is_affected_render_format(model.WGPUTextureFormat_BGRA8Unorm));
+    try testing.expect(!is_affected_render_format(model_gpu_types.WGPUTextureFormat_BGRA8Unorm));
 }
 
 test "is_affected_render_format returns false for Undefined" {
-    try testing.expect(!is_affected_render_format(model.WGPUTextureFormat_Undefined));
+    try testing.expect(!is_affected_render_format(model_gpu_types.WGPUTextureFormat_Undefined));
 }
 
 test "RENDER_LOAD_OP_CLEAR is nonzero" {

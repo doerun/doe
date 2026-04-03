@@ -15,6 +15,15 @@ FORBIDDEN_SYNTHETIC_IMPORTS = {
     "metal_runtime_state.zig",
     "vulkan_runtime_state.zig",
 }
+FORBIDDEN_COMPAT_IMPORTS = {
+    "model.zig",
+    "model_transfer_types.zig",
+    "model_runtime_types.zig",
+    "model_webgpu_types.zig",
+    "model_surface_types.zig",
+    "webgpu_ffi.zig",
+    "wgpu_types.zig",
+}
 
 
 def is_stub_file(candidate: Path) -> bool:
@@ -33,8 +42,6 @@ def is_within(path: Path, root: Path) -> bool:
         return True
     except ValueError:
         return False
-
-
 def scan_zig_core(errors: list[str]) -> None:
     core_dir = ZIG_SRC / "core"
     full_dir = ZIG_SRC / "full"
@@ -87,6 +94,20 @@ def scan_stub_imports(errors: list[str]) -> None:
                     errors.append(f"{path}:{line_no}: stub import not allowed: {import_path}")
 
 
+def scan_compat_facade_imports(errors: list[str]) -> None:
+    for path in sorted(ZIG_SRC.rglob("*.zig")):
+        rel_path = path.relative_to(ZIG_SRC)
+        for line_no, line in enumerate(path.read_text().splitlines(), start=1):
+            for match in ZIG_IMPORT_RE.finditer(line):
+                import_path = match.group(1)
+                candidate = (path.parent / import_path).resolve(strict=False)
+                if candidate.name not in FORBIDDEN_COMPAT_IMPORTS:
+                    continue
+                if candidate.name in {"model_transfer_types.zig", "model_runtime_types.zig", "model_surface_types.zig"} and rel_path == Path("core/abi/mod.zig"):
+                    continue
+                errors.append(f"{path}:{line_no}: compatibility facade import not allowed: {import_path}")
+
+
 def scan_forbidden_runtime_state_files(errors: list[str]) -> None:
     for file_path in sorted(ZIG_SRC.rglob("*.zig")):
         if is_synthetic_runtime_state_file(file_path):
@@ -101,6 +122,7 @@ def main() -> int:
     scan_forbidden_runtime_state_files(errors)
     scan_stub_file_presence(errors)
     scan_stub_imports(errors)
+    scan_compat_facade_imports(errors)
     if not errors:
         return 0
 

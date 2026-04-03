@@ -5,7 +5,8 @@
 // for resource_table_immediates and pixel_local_storage.
 
 const std = @import("std");
-const model = @import("../../model_webgpu_types.zig");
+const model_gpu_types = @import("../../model_gpu_types.zig");
+const model_async_types = @import("../../model_async_types.zig");
 const webgpu = @import("../runtime_types.zig");
 const backend_policy = @import("../backend_policy.zig");
 const common_timing = @import("../common/timing.zig");
@@ -17,7 +18,7 @@ pub fn execute(
     runtime: *native_runtime.NativeVulkanRuntime,
     allocator: std.mem.Allocator,
     setup_ns: u64,
-    diagnostics: model.AsyncDiagnosticsCommand,
+    diagnostics: model_async_types.AsyncDiagnosticsCommand,
     upload_path_policy: backend_policy.UploadPathPolicy,
 ) !webgpu.NativeExecutionResult {
     const iterations = if (diagnostics.iterations > 0) diagnostics.iterations else 1;
@@ -70,7 +71,7 @@ fn execute_resource_table_immediates(
     runtime: *native_runtime.NativeVulkanRuntime,
     setup_ns: u64,
     iterations: u32,
-    feature_policy: model.AsyncDiagnosticsFeaturePolicy,
+    feature_policy: model_async_types.AsyncDiagnosticsFeaturePolicy,
     upload_path_policy: backend_policy.UploadPathPolicy,
 ) !webgpu.NativeExecutionResult {
     switch (feature_policy) {
@@ -94,8 +95,8 @@ fn execute_pixel_local_storage(
     runtime: *native_runtime.NativeVulkanRuntime,
     setup_ns: u64,
     iterations: u32,
-    feature_policy: model.AsyncDiagnosticsFeaturePolicy,
-    target_format: model.WGPUTextureFormat,
+    feature_policy: model_async_types.AsyncDiagnosticsFeaturePolicy,
+    target_format: model_gpu_types.WGPUTextureFormat,
     upload_path_policy: backend_policy.UploadPathPolicy,
 ) !webgpu.NativeExecutionResult {
     switch (feature_policy) {
@@ -120,8 +121,8 @@ fn execute_full(
     allocator: std.mem.Allocator,
     setup_ns: u64,
     iterations: u32,
-    feature_policy: model.AsyncDiagnosticsFeaturePolicy,
-    target_format: model.WGPUTextureFormat,
+    feature_policy: model_async_types.AsyncDiagnosticsFeaturePolicy,
+    target_format: model_gpu_types.WGPUTextureFormat,
     upload_path_policy: backend_policy.UploadPathPolicy,
 ) !webgpu.NativeExecutionResult {
     const capability_ns = blk: {

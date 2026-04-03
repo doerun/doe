@@ -1,15 +1,18 @@
 const std = @import("std");
-const model = @import("../../model_webgpu_types.zig");
-const types = @import("../abi/wgpu_types.zig");
+const model_gpu_types = @import("../../model_gpu_types.zig");
+const model_texture_types = @import("../../model_texture_types.zig");
+const abi_base = @import("../abi/wgpu_base_types.zig");
+const abi_descriptor = @import("../abi/wgpu_descriptor_types.zig");
+const abi_execution = @import("../abi/wgpu_execution_types.zig");
 const loader = @import("../abi/wgpu_loader.zig");
 const resources = @import("wgpu_resources.zig");
 const texture_procs_mod = @import("../../wgpu_texture_procs.zig");
 const ffi = @import("../../webgpu_backend.zig");
 const Backend = ffi.WebGPUBackend;
 
-pub fn executeTextureWrite(self: *Backend, texture_cmd: model.TextureWriteCommand) !types.NativeExecutionResult {
+pub fn executeTextureWrite(self: *Backend, texture_cmd: model_texture_types.TextureWriteCommand) !abi_execution.NativeExecutionResult {
     const texture_procs = texture_procs_mod.loadTextureProcs(self.core.dyn_lib) orelse return error.TextureProcUnavailable;
-    const required_usage = types.WGPUTextureUsage_CopyDst;
+    const required_usage = abi_base.WGPUTextureUsage_CopyDst;
     if (texture_cmd.data.len == 0) {
         _ = try resources.getOrCreateTextureInitialized(self, texture_cmd.texture, required_usage);
         return .{ .status = .ok, .status_message = "texture created and zero initialized" };
@@ -39,7 +42,7 @@ pub fn executeTextureWrite(self: *Backend, texture_cmd: model.TextureWriteComman
 
     texture_procs.queue_write_texture(
         self.core.queue.?,
-        &types.WGPUTexelCopyTextureInfo{
+        &abi_descriptor.WGPUTexelCopyTextureInfo{
             .texture = texture,
             .mipLevel = texture_cmd.texture.mip_level,
             .origin = .{ .x = 0, .y = 0, .z = 0 },
@@ -47,12 +50,12 @@ pub fn executeTextureWrite(self: *Backend, texture_cmd: model.TextureWriteComman
         },
         texture_cmd.data.ptr,
         texture_cmd.data.len,
-        &types.WGPUTexelCopyBufferLayout{
+        &abi_descriptor.WGPUTexelCopyBufferLayout{
             .offset = texture_cmd.texture.offset,
             .bytesPerRow = @as(u32, @intCast(bytes_per_row)),
             .rowsPerImage = @as(u32, @intCast(rows_per_image)),
         },
-        &types.WGPUExtent3D{
+        &abi_descriptor.WGPUExtent3D{
             .width = texture_cmd.texture.width,
             .height = texture_cmd.texture.height,
             .depthOrArrayLayers = texture_cmd.texture.depth_or_array_layers,
@@ -61,7 +64,7 @@ pub fn executeTextureWrite(self: *Backend, texture_cmd: model.TextureWriteComman
     return .{ .status = .ok, .status_message = "texture write submitted" };
 }
 
-pub fn executeTextureQuery(self: *Backend, texture_cmd: model.TextureQueryCommand) !types.NativeExecutionResult {
+pub fn executeTextureQuery(self: *Backend, texture_cmd: model_texture_types.TextureQueryCommand) !abi_execution.NativeExecutionResult {
     const texture_procs = texture_procs_mod.loadTextureProcs(self.core.dyn_lib) orelse return error.TextureProcUnavailable;
     if (self.core.textures.getPtr(texture_cmd.handle)) |record| {
         const info = texture_procs_mod.queryTextureInfo(texture_procs, record.texture);
@@ -104,7 +107,7 @@ pub fn executeTextureQuery(self: *Backend, texture_cmd: model.TextureQueryComman
     return .{ .status = .unsupported, .status_message = "texture handle not found" };
 }
 
-pub fn executeTextureDestroy(self: *Backend, texture_cmd: model.TextureDestroyCommand) !types.NativeExecutionResult {
+pub fn executeTextureDestroy(self: *Backend, texture_cmd: model_texture_types.TextureDestroyCommand) !abi_execution.NativeExecutionResult {
     const procs = self.core.procs orelse return error.ProceduralNotReady;
     const texture_procs = texture_procs_mod.loadTextureProcs(self.core.dyn_lib) orelse return error.TextureProcUnavailable;
     const removed = self.core.textures.fetchRemove(texture_cmd.handle) orelse {
@@ -116,42 +119,42 @@ pub fn executeTextureDestroy(self: *Backend, texture_cmd: model.TextureDestroyCo
     return .{ .status = .ok, .status_message = "texture destroyed" };
 }
 
-fn textureBytesPerTexel(format: types.WGPUTextureFormat) !u64 {
+fn textureBytesPerTexel(format: abi_base.WGPUTextureFormat) !u64 {
     return switch (format) {
-        model.WGPUTextureFormat_R8Unorm,
-        model.WGPUTextureFormat_R8Snorm,
-        model.WGPUTextureFormat_R8Uint,
-        model.WGPUTextureFormat_R8Sint,
+        model_gpu_types.WGPUTextureFormat_R8Unorm,
+        model_gpu_types.WGPUTextureFormat_R8Snorm,
+        model_gpu_types.WGPUTextureFormat_R8Uint,
+        model_gpu_types.WGPUTextureFormat_R8Sint,
         => 1,
-        model.WGPUTextureFormat_R16Unorm,
-        model.WGPUTextureFormat_R16Snorm,
-        model.WGPUTextureFormat_R16Uint,
-        model.WGPUTextureFormat_R16Sint,
-        model.WGPUTextureFormat_R16Float,
-        model.WGPUTextureFormat_RG8Unorm,
-        model.WGPUTextureFormat_RG8Snorm,
-        model.WGPUTextureFormat_RG8Uint,
-        model.WGPUTextureFormat_RG8Sint,
+        model_gpu_types.WGPUTextureFormat_R16Unorm,
+        model_gpu_types.WGPUTextureFormat_R16Snorm,
+        model_gpu_types.WGPUTextureFormat_R16Uint,
+        model_gpu_types.WGPUTextureFormat_R16Sint,
+        model_gpu_types.WGPUTextureFormat_R16Float,
+        model_gpu_types.WGPUTextureFormat_RG8Unorm,
+        model_gpu_types.WGPUTextureFormat_RG8Snorm,
+        model_gpu_types.WGPUTextureFormat_RG8Uint,
+        model_gpu_types.WGPUTextureFormat_RG8Sint,
         => 2,
-        model.WGPUTextureFormat_R32Float,
-        model.WGPUTextureFormat_R32Uint,
-        model.WGPUTextureFormat_R32Sint,
-        model.WGPUTextureFormat_RG16Unorm,
-        model.WGPUTextureFormat_RG16Snorm,
-        model.WGPUTextureFormat_RG16Uint,
-        model.WGPUTextureFormat_RG16Sint,
-        model.WGPUTextureFormat_RG16Float,
-        model.WGPUTextureFormat_RGBA8Unorm,
-        model.WGPUTextureFormat_RGBA8UnormSrgb,
-        model.WGPUTextureFormat_RGBA8Snorm,
-        model.WGPUTextureFormat_RGBA8Uint,
-        model.WGPUTextureFormat_RGBA8Sint,
-        model.WGPUTextureFormat_BGRA8Unorm,
-        model.WGPUTextureFormat_BGRA8UnormSrgb,
-        model.WGPUTextureFormat_Depth24Plus,
-        model.WGPUTextureFormat_Depth24PlusStencil8,
-        model.WGPUTextureFormat_Depth32Float,
-        model.WGPUTextureFormat_Depth32FloatStencil8,
+        model_gpu_types.WGPUTextureFormat_R32Float,
+        model_gpu_types.WGPUTextureFormat_R32Uint,
+        model_gpu_types.WGPUTextureFormat_R32Sint,
+        model_gpu_types.WGPUTextureFormat_RG16Unorm,
+        model_gpu_types.WGPUTextureFormat_RG16Snorm,
+        model_gpu_types.WGPUTextureFormat_RG16Uint,
+        model_gpu_types.WGPUTextureFormat_RG16Sint,
+        model_gpu_types.WGPUTextureFormat_RG16Float,
+        model_gpu_types.WGPUTextureFormat_RGBA8Unorm,
+        model_gpu_types.WGPUTextureFormat_RGBA8UnormSrgb,
+        model_gpu_types.WGPUTextureFormat_RGBA8Snorm,
+        model_gpu_types.WGPUTextureFormat_RGBA8Uint,
+        model_gpu_types.WGPUTextureFormat_RGBA8Sint,
+        model_gpu_types.WGPUTextureFormat_BGRA8Unorm,
+        model_gpu_types.WGPUTextureFormat_BGRA8UnormSrgb,
+        model_gpu_types.WGPUTextureFormat_Depth24Plus,
+        model_gpu_types.WGPUTextureFormat_Depth24PlusStencil8,
+        model_gpu_types.WGPUTextureFormat_Depth32Float,
+        model_gpu_types.WGPUTextureFormat_Depth32FloatStencil8,
         => 4,
         else => error.UnsupportedTextureFormat,
     };

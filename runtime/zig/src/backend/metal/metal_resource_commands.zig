@@ -6,7 +6,8 @@
 // destroys go through the deferred release pool, which batch-drains at
 // command buffer boundaries instead of per-call CFRelease.
 
-const model_webgpu_types = @import("../../model_webgpu_types.zig");
+const model_render_types = @import("../../model_render_types.zig");
+const model_texture_types = @import("../../model_texture_types.zig");
 const bridge = @import("metal_bridge_decls.zig");
 const metal_bridge_device_new_texture = bridge.metal_bridge_device_new_texture;
 const metal_bridge_texture_depth = bridge.metal_bridge_texture_depth;
@@ -16,11 +17,11 @@ const metal_bridge_texture_sample_count = bridge.metal_bridge_texture_sample_cou
 const metal_bridge_texture_width = bridge.metal_bridge_texture_width;
 
 const model = struct {
-    pub const SamplerCreateCommand = model_webgpu_types.SamplerCreateCommand;
-    pub const SamplerDestroyCommand = model_webgpu_types.SamplerDestroyCommand;
-    pub const TextureDestroyCommand = model_webgpu_types.TextureDestroyCommand;
-    pub const TextureQueryCommand = model_webgpu_types.TextureQueryCommand;
-    pub const TextureWriteCommand = model_webgpu_types.TextureWriteCommand;
+    pub const SamplerCreateCommand = model_render_types.SamplerCreateCommand;
+    pub const SamplerDestroyCommand = model_render_types.SamplerDestroyCommand;
+    pub const TextureDestroyCommand = model_texture_types.TextureDestroyCommand;
+    pub const TextureQueryCommand = model_texture_types.TextureQueryCommand;
+    pub const TextureWriteCommand = model_texture_types.TextureWriteCommand;
 };
 
 pub fn sampler_create(self: anytype, cmd: model.SamplerCreateCommand) !void {

@@ -2,7 +2,7 @@ const std = @import("std");
 const command_stream = @import("command_stream.zig");
 const execution = @import("execution.zig");
 const model_commands = @import("model_commands.zig");
-const model_webgpu_types = @import("model_webgpu_types.zig");
+const model_transfer_types = @import("model_compute_types.zig");
 const numeric_stability_annotation = @import("numeric_stability_annotation.zig");
 const numeric_stability_policy = @import("numeric_stability_policy.zig");
 const semantic_trace = @import("semantic_trace.zig");
@@ -11,8 +11,8 @@ const numeric_stability_service = @import("full/modules/services/numeric_stabili
 
 const model = struct {
     pub const Command = model_commands.Command;
-    pub const KernelBinding = model_webgpu_types.KernelBinding;
-    pub const KernelDispatchCommand = model_webgpu_types.KernelDispatchCommand;
+    pub const KernelBinding = model_transfer_types.KernelBinding;
+    pub const KernelDispatchCommand = model_transfer_types.KernelDispatchCommand;
 };
 
 const F32_BYTE_WIDTH: u64 = @sizeOf(f32);

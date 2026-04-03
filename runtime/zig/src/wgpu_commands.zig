@@ -1,12 +1,12 @@
 const model = @import("model_commands.zig");
-const types = @import("core/abi/wgpu_types.zig");
+const runtime_types = @import("backend/runtime_types.zig");
 const ffi = @import("webgpu_backend.zig");
 const sandbox = @import("wgpu_sandbox_guard.zig");
 const core_dispatch = @import("core/command_dispatch.zig");
 const full_dispatch = @import("full/command_dispatch.zig");
 const Backend = ffi.WebGPUBackend;
 
-pub fn executeCommand(self: *Backend, command: model.Command) !types.NativeExecutionResult {
+pub fn executeCommand(self: *Backend, command: model.Command) !runtime_types.NativeExecutionResult {
     if (!self.backendAvailable()) {
         return .{
             .status = .@"error",

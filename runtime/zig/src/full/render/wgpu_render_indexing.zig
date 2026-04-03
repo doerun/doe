@@ -1,6 +1,6 @@
 const std = @import("std");
-const model = @import("../../model_webgpu_types.zig");
-const types = @import("../../core/abi/wgpu_types.zig");
+const model_render_types = @import("../../model_render_types.zig");
+const abi_base = @import("../../core/abi/wgpu_base_types.zig");
 const resources = @import("../../core/resource/wgpu_resources.zig");
 const ffi = @import("../../webgpu_backend.zig");
 const Backend = ffi.WebGPUBackend;
@@ -10,16 +10,16 @@ pub const INDEX_FORMAT_UINT16: u32 = 0x00000001;
 pub const INDEX_FORMAT_UINT32: u32 = 0x00000002;
 
 pub const PreparedIndexBuffer = struct {
-    buffer: types.WGPUBuffer,
+    buffer: abi_base.WGPUBuffer,
     format: u32,
 };
 
-pub fn prepareIndexBuffer(self: *Backend, render: model.RenderDrawCommand) !?PreparedIndexBuffer {
+pub fn prepareIndexBuffer(self: *Backend, render: model_render_types.RenderDrawCommand) !?PreparedIndexBuffer {
     const requested_count = render.index_count orelse return null;
     if (requested_count == 0) return error.InvalidIndexedDrawData;
 
     const index_data = render.index_data orelse return error.InvalidIndexedDrawData;
-    const index_usage = types.WGPUBufferUsage_Index | types.WGPUBufferUsage_CopyDst;
+    const index_usage = abi_base.WGPUBufferUsage_Index | abi_base.WGPUBufferUsage_CopyDst;
     const Selected = struct {
         format: u32,
         bytes: []const u8,

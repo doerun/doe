@@ -5,7 +5,8 @@ const std = @import("std");
 const c = @import("vk_constants.zig");
 const vk_formats = @import("vk_formats.zig");
 const vk_resources = @import("vk_resources.zig");
-const model = @import("../../model_webgpu_types.zig");
+const model_gpu_types = @import("../../model_gpu_types.zig");
+const model_render_types = @import("../../model_render_types.zig");
 
 const VK_NULL_U64 = c.VK_NULL_U64;
 
@@ -85,11 +86,11 @@ pub fn wgpu_stencil_op_to_vk(op: u32) u32 {
     };
 }
 
-pub fn format_has_stencil(format: model.WGPUTextureFormat) bool {
+pub fn format_has_stencil(format: model_gpu_types.WGPUTextureFormat) bool {
     return switch (format) {
-        model.WGPUTextureFormat_Stencil8,
-        model.WGPUTextureFormat_Depth24PlusStencil8,
-        model.WGPUTextureFormat_Depth32FloatStencil8,
+        model_gpu_types.WGPUTextureFormat_Stencil8,
+        model_gpu_types.WGPUTextureFormat_Depth24PlusStencil8,
+        model_gpu_types.WGPUTextureFormat_Depth32FloatStencil8,
         => true,
         else => false,
     };
@@ -114,7 +115,7 @@ pub fn topology_to_vk(topology: u32) u32 {
 }
 
 pub fn vertex_step_mode_to_vk(step_mode: u32) u32 {
-    return if (step_mode == model.WGPUVertexStepMode_Instance) VK_VERTEX_INPUT_RATE_INSTANCE else VK_VERTEX_INPUT_RATE_VERTEX;
+    return if (step_mode == model_render_types.WGPUVertexStepMode_Instance) VK_VERTEX_INPUT_RATE_INSTANCE else VK_VERTEX_INPUT_RATE_VERTEX;
 }
 
 pub fn front_face_to_vk(front_face: u32) u32 {
@@ -188,7 +189,7 @@ pub fn create_graphics_pipeline(
     self: anytype,
     state: anytype,
     vk_format: u32,
-    cmd: model.RenderDrawCommand,
+    cmd: model_render_types.RenderDrawCommand,
 ) !void {
     _ = vk_format;
     const vertex_spirv_words = cmd.vertex_spirv orelse return error.ShaderCompileFailed;
@@ -254,12 +255,12 @@ pub fn create_graphics_pipeline(
         },
     };
 
-    var vertex_binding_descriptions: [model.MAX_VERTEX_BUFFERS]c.VkVertexInputBindingDescription = undefined;
-    var vertex_attribute_descriptions: [model.MAX_VERTEX_BUFFERS * model.MAX_VERTEX_ATTRIBUTES]c.VkVertexInputAttributeDescription = undefined;
+    var vertex_binding_descriptions: [model_render_types.MAX_VERTEX_BUFFERS]c.VkVertexInputBindingDescription = undefined;
+    var vertex_attribute_descriptions: [model_render_types.MAX_VERTEX_BUFFERS * model_render_types.MAX_VERTEX_ATTRIBUTES]c.VkVertexInputAttributeDescription = undefined;
     var vertex_binding_count: usize = 0;
     var vertex_attribute_count: usize = 0;
     if (cmd.vertex_layouts) |layouts| {
-        const layout_count = @min(layouts.len, model.MAX_VERTEX_BUFFERS);
+        const layout_count = @min(layouts.len, model_render_types.MAX_VERTEX_BUFFERS);
         var layout_index: usize = 0;
         while (layout_index < layout_count) : (layout_index += 1) {
             const layout = layouts[layout_index];
@@ -270,7 +271,7 @@ pub fn create_graphics_pipeline(
             };
             vertex_binding_count += 1;
 
-            const attr_count = @min(@as(usize, layout.attribute_count), model.MAX_VERTEX_ATTRIBUTES);
+            const attr_count = @min(@as(usize, layout.attribute_count), model_render_types.MAX_VERTEX_ATTRIBUTES);
             var attr_index: usize = 0;
             while (attr_index < attr_count and vertex_attribute_count < vertex_attribute_descriptions.len) : (attr_index += 1) {
                 const attr = layout.attributes[attr_index];
@@ -379,7 +380,7 @@ pub fn create_graphics_pipeline(
         .blendConstants = cmd.blend_constant,
     };
 
-    const has_depth_stencil = cmd.depth_stencil_format != model.WGPUTextureFormat_Undefined;
+    const has_depth_stencil = cmd.depth_stencil_format != model_gpu_types.WGPUTextureFormat_Undefined;
     const depth_bias_enabled = cmd.depth_bias != 0 or cmd.depth_bias_slope_scale != 0 or cmd.depth_bias_clamp != 0;
     const dynamic_states_full = [_]u32{
         c.VK_DYNAMIC_STATE_VIEWPORT,
@@ -462,7 +463,7 @@ pub fn create_graphics_pipeline(
     ));
 }
 
-const MAX_RENDER_DESCRIPTOR_BINDINGS: usize = model.MAX_RENDER_BIND_ENTRIES * 2;
+const MAX_RENDER_DESCRIPTOR_BINDINGS: usize = model_render_types.MAX_RENDER_BIND_ENTRIES * 2;
 const VK_SHADER_STAGE_ALL_GRAPHICS: u32 = c.VK_SHADER_STAGE_VERTEX_BIT | c.VK_SHADER_STAGE_FRAGMENT_BIT;
 
 /// Build descriptor set layout, pool, and set for render pipeline texture/sampler bindings.
@@ -471,7 +472,7 @@ const VK_SHADER_STAGE_ALL_GRAPHICS: u32 = c.VK_SHADER_STAGE_VERTEX_BIT | c.VK_SH
 fn createRenderDescriptorState(
     self: anytype,
     state: anytype,
-    cmd: model.RenderDrawCommand,
+    cmd: model_render_types.RenderDrawCommand,
 ) !void {
     const tex_count: u32 = cmd.bind_texture_count;
     const samp_count: u32 = cmd.bind_sampler_count;

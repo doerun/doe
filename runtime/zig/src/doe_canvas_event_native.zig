@@ -4,9 +4,9 @@
 const builtin = @import("builtin");
 const has_vulkan = (builtin.os.tag == .linux);
 const std = @import("std");
-const types = @import("core/abi/wgpu_types.zig");
+const abi_base = @import("core/abi/wgpu_base_types.zig");
 const native = @import("doe_wgpu_native.zig");
-const model = @import("model_webgpu_types.zig");
+const model_gpu_types = @import("model_gpu_types.zig");
 const bridge = @import("backend/metal/metal_bridge_decls.zig");
 
 const doe_surface_supports_format = bridge.doe_surface_supports_format;
@@ -14,7 +14,7 @@ const doe_surface_supports_format = bridge.doe_surface_supports_format;
 // BGRA8Unorm is the Metal-native swapchain format on Apple Silicon.
 // All modern macOS display hardware uses BGRA byte order for CAMetalLayer.
 // The WebGPU spec allows the adapter to pick; Metal's preferred format is bgra8unorm.
-const PREFERRED_CANVAS_FORMAT: u32 = types.WGPUTextureFormat_BGRA8Unorm;
+const PREFERRED_CANVAS_FORMAT: u32 = abi_base.WGPUTextureFormat_BGRA8Unorm;
 
 // ============================================================
 // Adapter: getPreferredCanvasFormat
@@ -27,19 +27,19 @@ const PREFERRED_CANVAS_FORMAT: u32 = types.WGPUTextureFormat_BGRA8Unorm;
 // matching the repo-local Vulkan surface preference order.
 pub export fn doeNativeAdapterGetPreferredCanvasFormat(raw: ?*anyopaque) callconv(.c) u32 {
     if (native.cast(native.DoeAdapter, raw)) |adapter| {
-        if (adapter.backend == .vulkan) return model.WGPUTextureFormat_BGRA8Unorm;
+        if (adapter.backend == .vulkan) return model_gpu_types.WGPUTextureFormat_BGRA8Unorm;
     }
     if (native.cast(native.DoeDevice, raw)) |device| {
         if (device.backend == .vulkan) {
             if (comptime has_vulkan) {
                 if (native.device_vk_runtime(device)) |rt| return rt.preferred_canvas_format();
             }
-            return model.WGPUTextureFormat_BGRA8Unorm;
+            return model_gpu_types.WGPUTextureFormat_BGRA8Unorm;
         }
     }
     if (builtin.os.tag == .macos) {
         if (doe_surface_supports_format(PREFERRED_CANVAS_FORMAT) != 0) return PREFERRED_CANVAS_FORMAT;
-        const rgba8: u32 = types.WGPUTextureFormat_RGBA8Unorm;
+        const rgba8: u32 = abi_base.WGPUTextureFormat_RGBA8Unorm;
         if (doe_surface_supports_format(rgba8) != 0) return rgba8;
     }
     return PREFERRED_CANVAS_FORMAT;

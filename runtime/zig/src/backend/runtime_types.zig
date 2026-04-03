@@ -1,7 +1,7 @@
-const types = @import("../core/abi/wgpu_types.zig");
+const execution_types = @import("../core/abi/wgpu_execution_types.zig");
 
-pub const NativeExecutionStatus = types.NativeExecutionStatus;
-pub const NativeExecutionResult = types.NativeExecutionResult;
+pub const NativeExecutionStatus = execution_types.NativeExecutionStatus;
+pub const NativeExecutionResult = execution_types.NativeExecutionResult;
 
 pub const UploadBufferUsageMode = enum {
     copy_dst_copy_src,

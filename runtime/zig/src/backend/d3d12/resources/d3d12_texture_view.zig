@@ -1,5 +1,5 @@
 const std = @import("std");
-const model = @import("../../../model_webgpu_types.zig");
+const model_gpu_types = @import("../../../model_gpu_types.zig");
 const common_timing = @import("../../common/timing.zig");
 
 // --- Bridge externs ---
@@ -27,9 +27,9 @@ const TEXTURE_ASPECT_DEPTH_ONLY: u32 = 2;
 
 fn normalize_aspect(aspect: u32) ?u32 {
     return switch (aspect) {
-        TEXTURE_ASPECT_ALL, model.WGPUTextureAspect_All => TEXTURE_ASPECT_ALL,
-        TEXTURE_ASPECT_STENCIL_ONLY, model.WGPUTextureAspect_StencilOnly => TEXTURE_ASPECT_STENCIL_ONLY,
-        TEXTURE_ASPECT_DEPTH_ONLY, model.WGPUTextureAspect_DepthOnly => TEXTURE_ASPECT_DEPTH_ONLY,
+        TEXTURE_ASPECT_ALL, model_gpu_types.WGPUTextureAspect_All => TEXTURE_ASPECT_ALL,
+        TEXTURE_ASPECT_STENCIL_ONLY, model_gpu_types.WGPUTextureAspect_StencilOnly => TEXTURE_ASPECT_STENCIL_ONLY,
+        TEXTURE_ASPECT_DEPTH_ONLY, model_gpu_types.WGPUTextureAspect_DepthOnly => TEXTURE_ASPECT_DEPTH_ONLY,
         else => null,
     };
 }
@@ -39,12 +39,12 @@ fn texture_aspect_supported(format: u32, aspect: u32) bool {
     return switch (normalized) {
         TEXTURE_ASPECT_ALL => true,
         TEXTURE_ASPECT_DEPTH_ONLY => switch (format) {
-            model.WGPUTextureFormat_Stencil8 => false,
-            model.WGPUTextureFormat_Depth16Unorm, model.WGPUTextureFormat_Depth24Plus, model.WGPUTextureFormat_Depth24PlusStencil8, model.WGPUTextureFormat_Depth32Float, model.WGPUTextureFormat_Depth32FloatStencil8 => true,
+            model_gpu_types.WGPUTextureFormat_Stencil8 => false,
+            model_gpu_types.WGPUTextureFormat_Depth16Unorm, model_gpu_types.WGPUTextureFormat_Depth24Plus, model_gpu_types.WGPUTextureFormat_Depth24PlusStencil8, model_gpu_types.WGPUTextureFormat_Depth32Float, model_gpu_types.WGPUTextureFormat_Depth32FloatStencil8 => true,
             else => false,
         },
         TEXTURE_ASPECT_STENCIL_ONLY => switch (format) {
-            model.WGPUTextureFormat_Stencil8, model.WGPUTextureFormat_Depth24PlusStencil8, model.WGPUTextureFormat_Depth32FloatStencil8 => true,
+            model_gpu_types.WGPUTextureFormat_Stencil8, model_gpu_types.WGPUTextureFormat_Depth24PlusStencil8, model_gpu_types.WGPUTextureFormat_Depth32FloatStencil8 => true,
             else => false,
         },
         else => false,
@@ -53,8 +53,8 @@ fn texture_aspect_supported(format: u32, aspect: u32) bool {
 
 fn texture_supports_storage_binding(format: u32) bool {
     return switch (format) {
-        model.WGPUTextureFormat_Stencil8, model.WGPUTextureFormat_Depth16Unorm, model.WGPUTextureFormat_Depth24Plus, model.WGPUTextureFormat_Depth24PlusStencil8, model.WGPUTextureFormat_Depth32Float, model.WGPUTextureFormat_Depth32FloatStencil8, model.WGPUTextureFormat_BGRA8Unorm, model.WGPUTextureFormat_BGRA8UnormSrgb, model.WGPUTextureFormat_RGB10A2Uint, model.WGPUTextureFormat_RGB10A2Unorm, model.WGPUTextureFormat_RG11B10Ufloat, model.WGPUTextureFormat_RGB9E5Ufloat, model.WGPUTextureFormat_BC1RGBAUnorm, model.WGPUTextureFormat_BC1RGBAUnormSrgb, model.WGPUTextureFormat_BC2RGBAUnorm, model.WGPUTextureFormat_BC2RGBAUnormSrgb, model.WGPUTextureFormat_BC3RGBAUnorm, model.WGPUTextureFormat_BC3RGBAUnormSrgb, model.WGPUTextureFormat_BC4RUnorm, model.WGPUTextureFormat_BC4RSnorm, model.WGPUTextureFormat_BC5RGUnorm, model.WGPUTextureFormat_BC5RGSnorm, model.WGPUTextureFormat_BC6HRGBUfloat, model.WGPUTextureFormat_BC6HRGBFloat, model.WGPUTextureFormat_BC7RGBAUnorm, model.WGPUTextureFormat_BC7RGBAUnormSrgb, model.WGPUTextureFormat_ETC2RGB8Unorm, model.WGPUTextureFormat_ETC2RGB8UnormSrgb, model.WGPUTextureFormat_ETC2RGB8A1Unorm, model.WGPUTextureFormat_ETC2RGB8A1UnormSrgb, model.WGPUTextureFormat_ETC2RGBA8Unorm, model.WGPUTextureFormat_ETC2RGBA8UnormSrgb, model.WGPUTextureFormat_EACR11Unorm, model.WGPUTextureFormat_EACR11Snorm, model.WGPUTextureFormat_EACRG11Unorm, model.WGPUTextureFormat_EACRG11Snorm, model.WGPUTextureFormat_ASTC4x4Unorm, model.WGPUTextureFormat_ASTC4x4UnormSrgb, model.WGPUTextureFormat_ASTC5x4Unorm, model.WGPUTextureFormat_ASTC5x4UnormSrgb, model.WGPUTextureFormat_ASTC5x5Unorm, model.WGPUTextureFormat_ASTC5x5UnormSrgb, model.WGPUTextureFormat_ASTC6x5Unorm, model.WGPUTextureFormat_ASTC6x5UnormSrgb => false,
-        model.WGPUTextureFormat_ASTC6x6Unorm, model.WGPUTextureFormat_ASTC6x6UnormSrgb, model.WGPUTextureFormat_ASTC8x5Unorm, model.WGPUTextureFormat_ASTC8x5UnormSrgb, model.WGPUTextureFormat_ASTC8x6Unorm, model.WGPUTextureFormat_ASTC8x6UnormSrgb, model.WGPUTextureFormat_ASTC8x8Unorm, model.WGPUTextureFormat_ASTC8x8UnormSrgb, model.WGPUTextureFormat_ASTC10x5Unorm, model.WGPUTextureFormat_ASTC10x5UnormSrgb, model.WGPUTextureFormat_ASTC10x6Unorm, model.WGPUTextureFormat_ASTC10x6UnormSrgb, model.WGPUTextureFormat_ASTC10x8Unorm, model.WGPUTextureFormat_ASTC10x8UnormSrgb, model.WGPUTextureFormat_ASTC10x10Unorm, model.WGPUTextureFormat_ASTC10x10UnormSrgb, model.WGPUTextureFormat_ASTC12x10Unorm, model.WGPUTextureFormat_ASTC12x10UnormSrgb, model.WGPUTextureFormat_ASTC12x12Unorm, model.WGPUTextureFormat_ASTC12x12UnormSrgb => false,
+        model_gpu_types.WGPUTextureFormat_Stencil8, model_gpu_types.WGPUTextureFormat_Depth16Unorm, model_gpu_types.WGPUTextureFormat_Depth24Plus, model_gpu_types.WGPUTextureFormat_Depth24PlusStencil8, model_gpu_types.WGPUTextureFormat_Depth32Float, model_gpu_types.WGPUTextureFormat_Depth32FloatStencil8, model_gpu_types.WGPUTextureFormat_BGRA8Unorm, model_gpu_types.WGPUTextureFormat_BGRA8UnormSrgb, model_gpu_types.WGPUTextureFormat_RGB10A2Uint, model_gpu_types.WGPUTextureFormat_RGB10A2Unorm, model_gpu_types.WGPUTextureFormat_RG11B10Ufloat, model_gpu_types.WGPUTextureFormat_RGB9E5Ufloat, model_gpu_types.WGPUTextureFormat_BC1RGBAUnorm, model_gpu_types.WGPUTextureFormat_BC1RGBAUnormSrgb, model_gpu_types.WGPUTextureFormat_BC2RGBAUnorm, model_gpu_types.WGPUTextureFormat_BC2RGBAUnormSrgb, model_gpu_types.WGPUTextureFormat_BC3RGBAUnorm, model_gpu_types.WGPUTextureFormat_BC3RGBAUnormSrgb, model_gpu_types.WGPUTextureFormat_BC4RUnorm, model_gpu_types.WGPUTextureFormat_BC4RSnorm, model_gpu_types.WGPUTextureFormat_BC5RGUnorm, model_gpu_types.WGPUTextureFormat_BC5RGSnorm, model_gpu_types.WGPUTextureFormat_BC6HRGBUfloat, model_gpu_types.WGPUTextureFormat_BC6HRGBFloat, model_gpu_types.WGPUTextureFormat_BC7RGBAUnorm, model_gpu_types.WGPUTextureFormat_BC7RGBAUnormSrgb, model_gpu_types.WGPUTextureFormat_ETC2RGB8Unorm, model_gpu_types.WGPUTextureFormat_ETC2RGB8UnormSrgb, model_gpu_types.WGPUTextureFormat_ETC2RGB8A1Unorm, model_gpu_types.WGPUTextureFormat_ETC2RGB8A1UnormSrgb, model_gpu_types.WGPUTextureFormat_ETC2RGBA8Unorm, model_gpu_types.WGPUTextureFormat_ETC2RGBA8UnormSrgb, model_gpu_types.WGPUTextureFormat_EACR11Unorm, model_gpu_types.WGPUTextureFormat_EACR11Snorm, model_gpu_types.WGPUTextureFormat_EACRG11Unorm, model_gpu_types.WGPUTextureFormat_EACRG11Snorm, model_gpu_types.WGPUTextureFormat_ASTC4x4Unorm, model_gpu_types.WGPUTextureFormat_ASTC4x4UnormSrgb, model_gpu_types.WGPUTextureFormat_ASTC5x4Unorm, model_gpu_types.WGPUTextureFormat_ASTC5x4UnormSrgb, model_gpu_types.WGPUTextureFormat_ASTC5x5Unorm, model_gpu_types.WGPUTextureFormat_ASTC5x5UnormSrgb, model_gpu_types.WGPUTextureFormat_ASTC6x5Unorm, model_gpu_types.WGPUTextureFormat_ASTC6x5UnormSrgb => false,
+        model_gpu_types.WGPUTextureFormat_ASTC6x6Unorm, model_gpu_types.WGPUTextureFormat_ASTC6x6UnormSrgb, model_gpu_types.WGPUTextureFormat_ASTC8x5Unorm, model_gpu_types.WGPUTextureFormat_ASTC8x5UnormSrgb, model_gpu_types.WGPUTextureFormat_ASTC8x6Unorm, model_gpu_types.WGPUTextureFormat_ASTC8x6UnormSrgb, model_gpu_types.WGPUTextureFormat_ASTC8x8Unorm, model_gpu_types.WGPUTextureFormat_ASTC8x8UnormSrgb, model_gpu_types.WGPUTextureFormat_ASTC10x5Unorm, model_gpu_types.WGPUTextureFormat_ASTC10x5UnormSrgb, model_gpu_types.WGPUTextureFormat_ASTC10x6Unorm, model_gpu_types.WGPUTextureFormat_ASTC10x6UnormSrgb, model_gpu_types.WGPUTextureFormat_ASTC10x8Unorm, model_gpu_types.WGPUTextureFormat_ASTC10x8UnormSrgb, model_gpu_types.WGPUTextureFormat_ASTC10x10Unorm, model_gpu_types.WGPUTextureFormat_ASTC10x10UnormSrgb, model_gpu_types.WGPUTextureFormat_ASTC12x10Unorm, model_gpu_types.WGPUTextureFormat_ASTC12x10UnormSrgb, model_gpu_types.WGPUTextureFormat_ASTC12x12Unorm, model_gpu_types.WGPUTextureFormat_ASTC12x12UnormSrgb => false,
         else => true,
     };
 }
@@ -115,7 +115,7 @@ pub const TextureViewState = struct {
         if (!texture_aspect_supported(format, aspect)) return error.UnsupportedFeature;
 
         // Storage bindings use UAV descriptors; sampled bindings use SRVs.
-        if ((texture_usage & model.WGPUTextureUsage_StorageBinding) != 0) {
+        if ((texture_usage & model_gpu_types.WGPUTextureUsage_StorageBinding) != 0) {
             if (!texture_supports_storage_binding(format)) return error.UnsupportedFeature;
             const normalized_aspect = normalize_aspect(aspect) orelse return error.UnsupportedFeature;
             if (normalized_aspect != TEXTURE_ASPECT_ALL) return error.UnsupportedFeature;

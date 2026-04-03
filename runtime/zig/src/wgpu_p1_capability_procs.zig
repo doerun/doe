@@ -1,5 +1,6 @@
 const std = @import("std");
-const types = @import("core/abi/wgpu_types.zig");
+const abi_base = @import("core/abi/wgpu_base_types.zig");
+const abi_descriptor = @import("core/abi/wgpu_descriptor_types.zig");
 
 pub const WGPUInstanceFeatureName = u32;
 pub const WGPUWGSLLanguageFeatureName = u32;
@@ -7,13 +8,13 @@ pub const WGPUProc = ?*const fn () callconv(.c) void;
 
 pub const WGPUInstanceFeatureName_TimedWaitAny: WGPUInstanceFeatureName = 0x00000001;
 pub const WGPUWGSLLanguageFeatureName_ReadonlyAndReadwriteStorageTextures: WGPUWGSLLanguageFeatureName = 0x00000001;
-pub const WGPUFeatureName_AdapterPropertiesMemoryHeaps: types.WGPUFeatureName = 0x00050014;
-pub const WGPUFeatureName_DawnDrmFormatCapabilities: types.WGPUFeatureName = 0x00050018;
-pub const WGPUFeatureName_ChromiumExperimentalSubgroupMatrix: types.WGPUFeatureName = 0x00050034;
+pub const WGPUFeatureName_AdapterPropertiesMemoryHeaps: abi_base.WGPUFeatureName = 0x00050014;
+pub const WGPUFeatureName_DawnDrmFormatCapabilities: abi_base.WGPUFeatureName = 0x00050018;
+pub const WGPUFeatureName_ChromiumExperimentalSubgroupMatrix: abi_base.WGPUFeatureName = 0x00050034;
 
-pub const WGPUSType_AdapterPropertiesMemoryHeaps: types.WGPUSType = 0x00050013;
-pub const WGPUSType_DawnDrmFormatCapabilities: types.WGPUSType = 0x00050018;
-pub const WGPUSType_AdapterPropertiesSubgroupMatrixConfigs: types.WGPUSType = 0x0005003B;
+pub const WGPUSType_AdapterPropertiesMemoryHeaps: abi_base.WGPUSType = 0x00050013;
+pub const WGPUSType_DawnDrmFormatCapabilities: abi_base.WGPUSType = 0x00050018;
+pub const WGPUSType_AdapterPropertiesSubgroupMatrixConfigs: abi_base.WGPUSType = 0x0005003B;
 
 pub const MemoryHeapInfo = extern struct {
     properties: u64,
@@ -35,7 +36,7 @@ pub const DawnDrmFormatProperties = extern struct {
 
 pub const SupportedFeatures = extern struct {
     featureCount: usize,
-    features: ?[*]const types.WGPUFeatureName,
+    features: ?[*]const abi_base.WGPUFeatureName,
 };
 
 pub const SupportedInstanceFeatures = extern struct {
@@ -53,22 +54,22 @@ pub const InstanceLimits = extern struct {
     timedWaitAnyMaxCount: usize,
 };
 
-pub const Limits = types.WGPULimits;
+pub const Limits = abi_descriptor.WGPULimits;
 
 pub const AdapterPropertiesMemoryHeaps = extern struct {
-    chain: types.WGPUChainedStruct,
+    chain: abi_descriptor.WGPUChainedStruct,
     heapCount: usize,
     heapInfo: ?[*]const MemoryHeapInfo,
 };
 
 pub const AdapterPropertiesSubgroupMatrixConfigs = extern struct {
-    chain: types.WGPUChainedStruct,
+    chain: abi_descriptor.WGPUChainedStruct,
     configCount: usize,
     configs: ?[*]const SubgroupMatrixConfig,
 };
 
 pub const DawnDrmFormatCapabilities = extern struct {
-    chain: types.WGPUChainedStruct,
+    chain: abi_descriptor.WGPUChainedStruct,
     propertiesCount: usize,
     properties: ?[*]const DawnDrmFormatProperties,
 };
@@ -79,11 +80,11 @@ pub const DawnFormatCapabilities = extern struct {
 
 pub const AdapterInfo = extern struct {
     nextInChain: ?*anyopaque,
-    vendor: types.WGPUStringView,
-    architecture: types.WGPUStringView,
-    device: types.WGPUStringView,
-    description: types.WGPUStringView,
-    backendType: types.WGPUBackendType,
+    vendor: abi_base.WGPUStringView,
+    architecture: abi_base.WGPUStringView,
+    device: abi_base.WGPUStringView,
+    description: abi_base.WGPUStringView,
+    backendType: abi_descriptor.WGPUBackendType,
     adapterType: u32,
     vendorID: u32,
     deviceID: u32,
@@ -91,25 +92,25 @@ pub const AdapterInfo = extern struct {
     subgroupMaxSize: u32,
 };
 
-pub const FnAdapterGetFeatures = *const fn (types.WGPUAdapter, *SupportedFeatures) callconv(.c) void;
-pub const FnAdapterGetFormatCapabilities = *const fn (types.WGPUAdapter, types.WGPUTextureFormat, *DawnFormatCapabilities) callconv(.c) types.WGPUStatus;
-pub const FnAdapterGetInfo = *const fn (types.WGPUAdapter, *AdapterInfo) callconv(.c) types.WGPUStatus;
-pub const FnAdapterGetInstance = *const fn (types.WGPUAdapter) callconv(.c) types.WGPUInstance;
-pub const FnAdapterGetLimits = *const fn (types.WGPUAdapter, *Limits) callconv(.c) types.WGPUStatus;
+pub const FnAdapterGetFeatures = *const fn (abi_base.WGPUAdapter, *SupportedFeatures) callconv(.c) void;
+pub const FnAdapterGetFormatCapabilities = *const fn (abi_base.WGPUAdapter, abi_base.WGPUTextureFormat, *DawnFormatCapabilities) callconv(.c) abi_base.WGPUStatus;
+pub const FnAdapterGetInfo = *const fn (abi_base.WGPUAdapter, *AdapterInfo) callconv(.c) abi_base.WGPUStatus;
+pub const FnAdapterGetInstance = *const fn (abi_base.WGPUAdapter) callconv(.c) abi_base.WGPUInstance;
+pub const FnAdapterGetLimits = *const fn (abi_base.WGPUAdapter, *Limits) callconv(.c) abi_base.WGPUStatus;
 pub const FnAdapterInfoFreeMembers = *const fn (AdapterInfo) callconv(.c) void;
 pub const FnAdapterPropertiesMemoryHeapsFreeMembers = *const fn (AdapterPropertiesMemoryHeaps) callconv(.c) void;
 pub const FnAdapterPropertiesSubgroupMatrixConfigsFreeMembers = *const fn (AdapterPropertiesSubgroupMatrixConfigs) callconv(.c) void;
 pub const FnDawnDrmFormatCapabilitiesFreeMembers = *const fn (DawnDrmFormatCapabilities) callconv(.c) void;
-pub const FnDeviceGetAdapter = *const fn (types.WGPUDevice) callconv(.c) types.WGPUAdapter;
-pub const FnDeviceGetAdapterInfo = *const fn (types.WGPUDevice, *AdapterInfo) callconv(.c) types.WGPUStatus;
-pub const FnDeviceGetFeatures = *const fn (types.WGPUDevice, *SupportedFeatures) callconv(.c) void;
-pub const FnDeviceGetLimits = *const fn (types.WGPUDevice, *Limits) callconv(.c) types.WGPUStatus;
+pub const FnDeviceGetAdapter = *const fn (abi_base.WGPUDevice) callconv(.c) abi_base.WGPUAdapter;
+pub const FnDeviceGetAdapterInfo = *const fn (abi_base.WGPUDevice, *AdapterInfo) callconv(.c) abi_base.WGPUStatus;
+pub const FnDeviceGetFeatures = *const fn (abi_base.WGPUDevice, *SupportedFeatures) callconv(.c) void;
+pub const FnDeviceGetLimits = *const fn (abi_base.WGPUDevice, *Limits) callconv(.c) abi_base.WGPUStatus;
 pub const FnGetInstanceFeatures = *const fn (*SupportedInstanceFeatures) callconv(.c) void;
-pub const FnGetInstanceLimits = *const fn (*InstanceLimits) callconv(.c) types.WGPUStatus;
-pub const FnGetProcAddress = *const fn (types.WGPUStringView) callconv(.c) WGPUProc;
-pub const FnHasInstanceFeature = *const fn (WGPUInstanceFeatureName) callconv(.c) types.WGPUBool;
-pub const FnInstanceGetWGSLLanguageFeatures = *const fn (types.WGPUInstance, *SupportedWGSLLanguageFeatures) callconv(.c) void;
-pub const FnInstanceHasWGSLLanguageFeature = *const fn (types.WGPUInstance, WGPUWGSLLanguageFeatureName) callconv(.c) types.WGPUBool;
+pub const FnGetInstanceLimits = *const fn (*InstanceLimits) callconv(.c) abi_base.WGPUStatus;
+pub const FnGetProcAddress = *const fn (abi_base.WGPUStringView) callconv(.c) WGPUProc;
+pub const FnHasInstanceFeature = *const fn (WGPUInstanceFeatureName) callconv(.c) abi_base.WGPUBool;
+pub const FnInstanceGetWGSLLanguageFeatures = *const fn (abi_base.WGPUInstance, *SupportedWGSLLanguageFeatures) callconv(.c) void;
+pub const FnInstanceHasWGSLLanguageFeature = *const fn (abi_base.WGPUInstance, WGPUWGSLLanguageFeatureName) callconv(.c) abi_base.WGPUBool;
 pub const FnSupportedFeaturesFreeMembers = *const fn (SupportedFeatures) callconv(.c) void;
 pub const FnSupportedInstanceFeaturesFreeMembers = *const fn (SupportedInstanceFeatures) callconv(.c) void;
 pub const FnSupportedWGSLLanguageFeaturesFreeMembers = *const fn (SupportedWGSLLanguageFeatures) callconv(.c) void;
@@ -192,16 +193,16 @@ pub fn initInstanceLimits() InstanceLimits {
 }
 
 pub fn initLimits() Limits {
-    return types.initLimits();
+    return abi_descriptor.initLimits();
 }
 
 pub fn initAdapterInfo(next_in_chain: ?*anyopaque) AdapterInfo {
     return .{
         .nextInChain = next_in_chain,
-        .vendor = .{ .data = null, .length = types.WGPU_STRLEN },
-        .architecture = .{ .data = null, .length = types.WGPU_STRLEN },
-        .device = .{ .data = null, .length = types.WGPU_STRLEN },
-        .description = .{ .data = null, .length = types.WGPU_STRLEN },
+        .vendor = .{ .data = null, .length = abi_base.WGPU_STRLEN },
+        .architecture = .{ .data = null, .length = abi_base.WGPU_STRLEN },
+        .device = .{ .data = null, .length = abi_base.WGPU_STRLEN },
+        .description = .{ .data = null, .length = abi_base.WGPU_STRLEN },
         .backendType = .undefined,
         .adapterType = 0,
         .vendorID = 0,
@@ -250,7 +251,7 @@ pub fn initDawnFormatCapabilities(next_in_chain: ?*anyopaque) DawnFormatCapabili
     };
 }
 
-pub fn hasFeature(features: SupportedFeatures, feature: types.WGPUFeatureName) bool {
+pub fn hasFeature(features: SupportedFeatures, feature: abi_base.WGPUFeatureName) bool {
     const list_ptr = features.features orelse return false;
     const list = list_ptr[0..features.featureCount];
     for (list) |candidate| {

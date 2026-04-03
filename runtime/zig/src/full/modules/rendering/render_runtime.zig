@@ -1,6 +1,7 @@
 const std = @import("std");
-const model = @import("../../../model_webgpu_types.zig");
-const types = @import("../../../core/abi/wgpu_types.zig");
+const model_gpu_types = @import("../../../model_gpu_types.zig");
+const model_render_types = @import("../../../model_render_types.zig");
+const runtime_types = @import("../../../backend/runtime_types.zig");
 const render_commands = @import("../../render/wgpu_render_commands.zig");
 const webgpu = @import("../../../webgpu_backend.zig");
 const common = @import("../common.zig");
@@ -18,21 +19,21 @@ pub const RenderExecutionConfig = struct {
     vertex_count: u32 = 3,
     instance_count: u32 = 1,
     target_handle: u64,
-    pipeline_mode: model.RenderDrawPipelineMode = .static,
-    bind_group_mode: model.RenderDrawBindGroupMode = .no_change,
-    encode_mode: model.RenderDrawEncodeMode = .render_bundle,
+    pipeline_mode: model_render_types.RenderDrawPipelineMode = .static,
+    bind_group_mode: model_render_types.RenderDrawBindGroupMode = .no_change,
+    encode_mode: model_render_types.RenderDrawEncodeMode = .render_bundle,
     uses_temporary_render_texture: bool = false,
     dynamic_offset_slot: ?u32 = null,
 };
 
-pub fn textureFormatFromString(value: []const u8) RenderRuntimeError!model.WGPUTextureFormat {
-    if (std.mem.eql(u8, value, "rgba8unorm")) return model.WGPUTextureFormat_RGBA8Unorm;
-    if (std.mem.eql(u8, value, "rgba8unorm-srgb")) return model.WGPUTextureFormat_RGBA8UnormSrgb;
-    if (std.mem.eql(u8, value, "bgra8unorm")) return model.WGPUTextureFormat_BGRA8Unorm;
+pub fn textureFormatFromString(value: []const u8) RenderRuntimeError!model_gpu_types.WGPUTextureFormat {
+    if (std.mem.eql(u8, value, "rgba8unorm")) return model_gpu_types.WGPUTextureFormat_RGBA8Unorm;
+    if (std.mem.eql(u8, value, "rgba8unorm-srgb")) return model_gpu_types.WGPUTextureFormat_RGBA8UnormSrgb;
+    if (std.mem.eql(u8, value, "bgra8unorm")) return model_gpu_types.WGPUTextureFormat_BGRA8Unorm;
     return RenderRuntimeError.UnsupportedTextureFormat;
 }
 
-pub fn execute(allocator: std.mem.Allocator, config: RenderExecutionConfig) !types.NativeExecutionResult {
+pub fn execute(allocator: std.mem.Allocator, config: RenderExecutionConfig) !runtime_types.NativeExecutionResult {
     common.ensureLocalLibrarySearchPath(allocator) catch |err| {
         std.debug.print("warn: render_runtime: library search path: {s}\n", .{@errorName(err)});
     };
@@ -49,7 +50,7 @@ pub fn execute(allocator: std.mem.Allocator, config: RenderExecutionConfig) !typ
         break :blk dynamic_offsets_storage[0..];
     } else null;
 
-    const command = model.RenderDrawCommand{
+    const command = model_render_types.RenderDrawCommand{
         .draw_count = config.draw_count,
         .vertex_count = config.vertex_count,
         .instance_count = config.instance_count,

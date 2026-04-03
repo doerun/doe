@@ -1,5 +1,6 @@
 const loader = @import("core/abi/wgpu_loader.zig");
-const types = @import("core/abi/wgpu_types.zig");
+const abi_base = @import("core/abi/wgpu_base_types.zig");
+const abi_proc_aliases = @import("core/abi/wgpu_type_proc_aliases.zig");
 const p1_capability_procs_mod = @import("wgpu_p1_capability_procs.zig");
 const p2_lifecycle_procs_mod = @import("wgpu_p2_lifecycle_procs.zig");
 
@@ -20,7 +21,7 @@ pub const DeviceProbeResult = struct {
 
 pub fn probeInstanceCapabilities(
     capability_procs: ?p1_capability_procs_mod.CapabilityProcs,
-    instance: types.WGPUInstance,
+    instance: abi_base.WGPUInstance,
 ) !void {
     const cap = capability_procs orelse return;
     if (instance == null) return;
@@ -36,7 +37,7 @@ pub fn probeInstanceCapabilities(
     }
     if (cap.get_instance_limits) |get_instance_limits| {
         var limits = p1_capability_procs_mod.initInstanceLimits();
-        if (get_instance_limits(&limits) != types.WGPUStatus_Success) return error.InstanceLimitsQueryFailed;
+        if (get_instance_limits(&limits) != abi_base.WGPUStatus_Success) return error.InstanceLimitsQueryFailed;
     }
     if (cap.has_instance_feature) |has_instance_feature| {
         _ = has_instance_feature(p1_capability_procs_mod.WGPUInstanceFeatureName_TimedWaitAny);
@@ -64,8 +65,8 @@ pub fn probeInstanceCapabilities(
 
 pub fn probeAdapterCapabilities(
     capability_procs: ?p1_capability_procs_mod.CapabilityProcs,
-    adapter: types.WGPUAdapter,
-    instance: types.WGPUInstance,
+    adapter: abi_base.WGPUAdapter,
+    instance: abi_base.WGPUInstance,
     defaults: AdapterProbeResult,
 ) !AdapterProbeResult {
     const cap = capability_procs orelse return defaults;
@@ -79,23 +80,23 @@ pub fn probeAdapterCapabilities(
         get_features(active_adapter, &features);
         result.adapter_has_timestamp_query = p1_capability_procs_mod.hasFeature(
             features,
-            types.WGPUFeatureName_TimestampQuery,
+            abi_base.WGPUFeatureName_TimestampQuery,
         );
         result.has_timestamp_inside_passes = p1_capability_procs_mod.hasFeature(
             features,
-            types.WGPUFeatureName_ChromiumExperimentalTimestampQueryInsidePasses,
+            abi_base.WGPUFeatureName_ChromiumExperimentalTimestampQueryInsidePasses,
         );
         result.adapter_has_multi_draw_indirect = p1_capability_procs_mod.hasFeature(
             features,
-            types.WGPUFeatureName_MultiDrawIndirect,
+            abi_base.WGPUFeatureName_MultiDrawIndirect,
         );
         result.adapter_has_pixel_local_storage_coherent = p1_capability_procs_mod.hasFeature(
             features,
-            types.WGPUFeatureName_PixelLocalStorageCoherent,
+            abi_base.WGPUFeatureName_PixelLocalStorageCoherent,
         );
         result.adapter_has_pixel_local_storage_non_coherent = p1_capability_procs_mod.hasFeature(
             features,
-            types.WGPUFeatureName_PixelLocalStorageNonCoherent,
+            abi_base.WGPUFeatureName_PixelLocalStorageNonCoherent,
         );
         has_adapter_properties_memory_heaps = p1_capability_procs_mod.hasFeature(
             features,
@@ -126,7 +127,7 @@ pub fn probeAdapterCapabilities(
             }
         }
         var info = p1_capability_procs_mod.initAdapterInfo(info_chain);
-        if (get_info(active_adapter, &info) != types.WGPUStatus_Success) return error.AdapterInfoQueryFailed;
+        if (get_info(active_adapter, &info) != abi_base.WGPUStatus_Success) return error.AdapterInfoQueryFailed;
         if (cap.adapter_info_free_members) |free_members| free_members(info);
         if (has_adapter_properties_memory_heaps) {
             if (cap.adapter_properties_memory_heaps_free_members) |free_members| {
@@ -145,7 +146,7 @@ pub fn probeAdapterCapabilities(
     }
     if (cap.adapter_get_limits) |get_limits| {
         var limits = p1_capability_procs_mod.initLimits();
-        if (get_limits(active_adapter, &limits) != types.WGPUStatus_Success) return error.AdapterLimitsQueryFailed;
+        if (get_limits(active_adapter, &limits) != abi_base.WGPUStatus_Success) return error.AdapterLimitsQueryFailed;
     }
 
     return result;
@@ -153,8 +154,8 @@ pub fn probeAdapterCapabilities(
 
 pub fn probeDeviceCapabilities(
     capability_procs: ?p1_capability_procs_mod.CapabilityProcs,
-    device: types.WGPUDevice,
-    adapter: types.WGPUAdapter,
+    device: abi_base.WGPUDevice,
+    adapter: abi_base.WGPUAdapter,
     defaults: DeviceProbeResult,
 ) !DeviceProbeResult {
     const cap = capability_procs orelse return defaults;
@@ -172,19 +173,19 @@ pub fn probeDeviceCapabilities(
         get_features(active_device, &features);
         result.has_timestamp_query = p1_capability_procs_mod.hasFeature(
             features,
-            types.WGPUFeatureName_TimestampQuery,
+            abi_base.WGPUFeatureName_TimestampQuery,
         );
         result.has_multi_draw_indirect = p1_capability_procs_mod.hasFeature(
             features,
-            types.WGPUFeatureName_MultiDrawIndirect,
+            abi_base.WGPUFeatureName_MultiDrawIndirect,
         );
         result.has_pixel_local_storage_coherent = p1_capability_procs_mod.hasFeature(
             features,
-            types.WGPUFeatureName_PixelLocalStorageCoherent,
+            abi_base.WGPUFeatureName_PixelLocalStorageCoherent,
         );
         result.has_pixel_local_storage_non_coherent = p1_capability_procs_mod.hasFeature(
             features,
-            types.WGPUFeatureName_PixelLocalStorageNonCoherent,
+            abi_base.WGPUFeatureName_PixelLocalStorageNonCoherent,
         );
         has_adapter_properties_memory_heaps = p1_capability_procs_mod.hasFeature(
             features,
@@ -211,7 +212,7 @@ pub fn probeDeviceCapabilities(
             }
         }
         var info = p1_capability_procs_mod.initAdapterInfo(info_chain);
-        if (get_adapter_info(active_device, &info) != types.WGPUStatus_Success) return error.DeviceAdapterInfoQueryFailed;
+        if (get_adapter_info(active_device, &info) != abi_base.WGPUStatus_Success) return error.DeviceAdapterInfoQueryFailed;
         if (cap.adapter_info_free_members) |free_members| free_members(info);
         if (has_adapter_properties_memory_heaps) {
             if (cap.adapter_properties_memory_heaps_free_members) |free_members| {
@@ -226,7 +227,7 @@ pub fn probeDeviceCapabilities(
     }
     if (cap.device_get_limits) |get_limits| {
         var limits = p1_capability_procs_mod.initLimits();
-        if (get_limits(active_device, &limits) != types.WGPUStatus_Success) return error.DeviceLimitsQueryFailed;
+        if (get_limits(active_device, &limits) != abi_base.WGPUStatus_Success) return error.DeviceLimitsQueryFailed;
     }
 
     return result;
@@ -234,27 +235,27 @@ pub fn probeDeviceCapabilities(
 
 pub fn touchPrimaryObjectRefs(
     lifecycle_procs: ?p2_lifecycle_procs_mod.LifecycleProcs,
-    procs: types.Procs,
-    instance: types.WGPUInstance,
-    adapter: types.WGPUAdapter,
-    device: types.WGPUDevice,
-    queue: types.WGPUQueue,
+    procs: abi_proc_aliases.Procs,
+    instance: abi_base.WGPUInstance,
+    adapter: abi_base.WGPUAdapter,
+    device: abi_base.WGPUDevice,
+    queue: abi_base.WGPUQueue,
 ) void {
     const life = lifecycle_procs orelse return;
     if (instance) |active_instance| {
-        p2_lifecycle_procs_mod.addRefIfPresent(types.WGPUInstance, life.instance_add_ref, active_instance);
+        p2_lifecycle_procs_mod.addRefIfPresent(abi_base.WGPUInstance, life.instance_add_ref, active_instance);
         procs.wgpuInstanceRelease(active_instance);
     }
     if (adapter) |active_adapter| {
-        p2_lifecycle_procs_mod.addRefIfPresent(types.WGPUAdapter, life.adapter_add_ref, active_adapter);
+        p2_lifecycle_procs_mod.addRefIfPresent(abi_base.WGPUAdapter, life.adapter_add_ref, active_adapter);
         procs.wgpuAdapterRelease(active_adapter);
     }
     if (device) |active_device| {
-        p2_lifecycle_procs_mod.addRefIfPresent(types.WGPUDevice, life.device_add_ref, active_device);
+        p2_lifecycle_procs_mod.addRefIfPresent(abi_base.WGPUDevice, life.device_add_ref, active_device);
         procs.wgpuDeviceRelease(active_device);
     }
     if (queue) |active_queue| {
-        p2_lifecycle_procs_mod.addRefIfPresent(types.WGPUQueue, life.queue_add_ref, active_queue);
+        p2_lifecycle_procs_mod.addRefIfPresent(abi_base.WGPUQueue, life.queue_add_ref, active_queue);
         procs.wgpuQueueRelease(active_queue);
     }
 }

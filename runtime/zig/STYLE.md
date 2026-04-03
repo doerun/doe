@@ -48,6 +48,24 @@ This guide is the Zig style contract for `zig`.
   forcing a big-bang rename.
 - Shared types should live with the subsystem that owns their semantics, not in
   whichever orchestration file currently imports them most often.
+- New implementation code should not import compatibility barrels such as
+  `model_transfer_types.zig`, `model_runtime_types.zig`,
+  `model_webgpu_types.zig`, `wgpu_types.zig`, or `webgpu_ffi.zig`. Use the
+  narrow source modules directly; keep the compatibility barrels for export and
+  transition surfaces only.
+- When a caller only needs shared WebGPU value/constants surfaces, import
+  `model_gpu_types.zig`.
+- Prefer `model_resource_types.zig` for upload/copy/barrier payloads and
+  `model_compute_types.zig` for dispatch/kernel-binding payloads instead of
+  routing through the compatibility `model_transfer_types.zig` barrel.
+- Prefer `model_texture_types.zig` for texture read/write/query payloads,
+  `model_surface_control_types.zig` for surface lifecycle/configuration
+  payloads, and `model_async_types.zig` for async-diagnostics or map-async
+  payloads instead of routing through the compatibility `model_surface_types.zig`
+  barrel.
+- Prefer `wgpu_base_types.zig`, `wgpu_descriptor_types.zig`,
+  `wgpu_execution_types.zig`, `wgpu_record_types.zig`, and
+  `wgpu_state_types.zig` over the compatibility `wgpu_types.zig` barrel.
 
 ## File size
 
@@ -70,9 +88,10 @@ This guide is the Zig style contract for `zig`.
 ```zig
 const std = @import("std");
 const builtin = @import("builtin");
-const model = @import("model.zig");
-const types = @import("wgpu_types.zig");
-const webgpu = @import("webgpu_ffi.zig");
+const model_gpu = @import("model_gpu_types.zig");
+const model_compute = @import("model_compute_types.zig");
+const wgpu_base = @import("core/abi/wgpu_base_types.zig");
+const wgpu_descriptor = @import("core/abi/wgpu_descriptor_types.zig");
 const backend_runtime = @import("backend/backend_runtime.zig");
 const backend_ids = @import("backend/backend_ids.zig");
 ```

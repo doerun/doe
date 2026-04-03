@@ -1,6 +1,6 @@
 const std = @import("std");
 const common_timing = @import("../common/timing.zig");
-const model = @import("../../model_webgpu_types.zig");
+const model_async_types = @import("../../model_async_types.zig");
 const bridge = @import("metal_bridge_decls.zig");
 
 const metal_bridge_buffer_contents = bridge.metal_bridge_buffer_contents;
@@ -9,7 +9,7 @@ const metal_bridge_release = bridge.metal_bridge_release;
 
 const MAX_MAP_BYTES: usize = 256 * 1024 * 1024;
 
-pub fn execute_map_async(runtime: anytype, cmd: model.MapAsyncCommand) !u64 {
+pub fn execute_map_async(runtime: anytype, cmd: model_async_types.MapAsyncCommand) !u64 {
     if (cmd.bytes == 0) return error.InvalidArgument;
     if (cmd.bytes > MAX_MAP_BYTES) return error.UnsupportedFeature;
     if (runtime.streaming_cmd_buf != null or runtime.has_deferred_submissions or runtime.outstanding_cmd_buf != null) {

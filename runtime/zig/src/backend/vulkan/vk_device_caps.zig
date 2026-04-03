@@ -7,7 +7,8 @@
 
 const std = @import("std");
 const c = @import("vk_constants.zig");
-const types = @import("../../core/abi/wgpu_types.zig");
+const abi_base = @import("../../core/abi/wgpu_base_types.zig");
+const abi_descriptor = @import("../../core/abi/wgpu_descriptor_types.zig");
 
 // WebGPU spec minimum limits — used as floor values to guarantee spec compliance.
 const WEBGPU_MIN_MAX_TEXTURE_DIMENSION_1D: u32 = 8192;
@@ -42,18 +43,18 @@ const WEBGPU_MIN_MAX_COMPUTE_WORKGROUP_SIZE_Z: u32 = 64;
 const WEBGPU_MIN_MAX_COMPUTE_WORKGROUPS_PER_DIMENSION: u32 = 65535;
 
 // WebGPU feature name constants.
-const FEATURE_DEPTH_CLIP_CONTROL: u32 = types.WGPUFeatureName_DepthClipControl;
-const FEATURE_DEPTH32FLOAT_STENCIL8: u32 = types.WGPUFeatureName_Depth32FloatStencil8;
-const FEATURE_TEXTURE_COMPRESSION_BC: u32 = types.WGPUFeatureName_TextureCompressionBC;
-const FEATURE_TEXTURE_COMPRESSION_ETC2: u32 = types.WGPUFeatureName_TextureCompressionETC2;
-const FEATURE_TEXTURE_COMPRESSION_ASTC: u32 = types.WGPUFeatureName_TextureCompressionASTC;
-const FEATURE_INDIRECT_FIRST_INSTANCE: u32 = types.WGPUFeatureName_IndirectFirstInstance;
-const FEATURE_FLOAT32_FILTERABLE: u32 = types.WGPUFeatureName_Float32Filterable;
-const FEATURE_TIMESTAMP_QUERY: u32 = types.WGPUFeatureName_TimestampQuery;
+const FEATURE_DEPTH_CLIP_CONTROL: u32 = abi_base.WGPUFeatureName_DepthClipControl;
+const FEATURE_DEPTH32FLOAT_STENCIL8: u32 = abi_base.WGPUFeatureName_Depth32FloatStencil8;
+const FEATURE_TEXTURE_COMPRESSION_BC: u32 = abi_base.WGPUFeatureName_TextureCompressionBC;
+const FEATURE_TEXTURE_COMPRESSION_ETC2: u32 = abi_base.WGPUFeatureName_TextureCompressionETC2;
+const FEATURE_TEXTURE_COMPRESSION_ASTC: u32 = abi_base.WGPUFeatureName_TextureCompressionASTC;
+const FEATURE_INDIRECT_FIRST_INSTANCE: u32 = abi_base.WGPUFeatureName_IndirectFirstInstance;
+const FEATURE_FLOAT32_FILTERABLE: u32 = abi_base.WGPUFeatureName_Float32Filterable;
+const FEATURE_TIMESTAMP_QUERY: u32 = abi_base.WGPUFeatureName_TimestampQuery;
 
 /// Cached result from querying a Vulkan physical device's limits and features.
 pub const VulkanDeviceCaps = struct {
-    limits: types.WGPULimits,
+    limits: abi_descriptor.WGPULimits,
     has_depth_clip_control: bool,
     has_texture_compression_bc: bool,
     has_texture_compression_etc2: bool,
@@ -109,8 +110,8 @@ pub fn query_device_caps(
 /// Map VkPhysicalDeviceLimits to WGPULimits using WebGPU spec minimum guarantees as floor.
 fn map_vulkan_to_wgpu_limits(
     vk_limits: c.VkPhysicalDeviceLimits,
-) types.WGPULimits {
-    return types.WGPULimits{
+) abi_descriptor.WGPULimits {
+    return abi_descriptor.WGPULimits{
         .nextInChain = null,
         .maxTextureDimension1D = @max(vk_limits.maxImageDimension1D, WEBGPU_MIN_MAX_TEXTURE_DIMENSION_1D),
         .maxTextureDimension2D = @max(vk_limits.maxImageDimension2D, WEBGPU_MIN_MAX_TEXTURE_DIMENSION_2D),

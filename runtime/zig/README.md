@@ -29,7 +29,22 @@ Style guide:
 ## Source modules (runtime + backend lanes)
 
 Core:
-- `src/model.zig` — typed contract for API, scope, safety, proof mode, match spec, actions, command kinds, device profile.
+- `src/model_policy.zig` — API/scope/safety/proof contract and parsing helpers.
+- `src/model_profile.zig` — device profile and semantic-version contract.
+- `src/model_quirks.zig` — quirk/match/action data contract.
+- `src/model_commands.zig` — combined/core/full command kinds and union helpers.
+- `src/model_gpu_types.zig` — shared WebGPU value/constants contract for texture formats, dimensions, usages, shader-stage flags, and binding enums.
+- `src/model_resource_types.zig` — upload/copy/barrier payload types and copy-resource descriptors.
+- `src/model_compute_types.zig` — dispatch/kernel binding payload types for compute/runtime execution.
+- `src/model_transfer_types.zig` — compatibility barrel over `model_gpu_types`, `model_resource_types`, and `model_compute_types`; implementation code should import the narrow module it actually needs instead of this barrel.
+- `src/model_render_types.zig` — render/sampler payload and value types.
+- `src/model_texture_types.zig` — texture write/query/destroy payload types.
+- `src/model_surface_control_types.zig` — surface lifecycle/configuration payload types and tone-mapping constants.
+- `src/model_async_types.zig` — async-diagnostics and map-async payload/value types.
+- `src/model_surface_types.zig` — compatibility barrel over `model_texture_types`, `model_surface_control_types`, and `model_async_types`.
+- `src/model_runtime_types.zig` — compatibility barrel over the split model payload shards; implementation code should import the specific shard it needs instead.
+- `src/model_webgpu_types.zig` — legacy compatibility barrel over the split model payload shards.
+- `src/model.zig` — legacy compatibility shell retained only as a narrow test/transition stub; new code should import the split contract modules above directly.
 - `src/quirk/mod.zig` — quirk module entry: `QuirkMode` enum (`off`/`trace`/`active`), `dispatchWithMode()`, re-exports sub-modules.
 - `src/quirk/runtime.zig` — deterministic matcher, selector, and action application with profile-indexed command buckets.
 - `src/quirk/quirk_json.zig` — deterministic JSON parser for quirk records with strict schema checks.
@@ -53,9 +68,18 @@ Trace and replay:
 
 WebGPU backend:
 - `src/backend/runtime_types.zig` — narrow backend-facing execution/result and queue/upload mode contract shared by backend lanes and orchestration; `src/webgpu_ffi.zig` re-exports the same types for compatibility.
-- `src/webgpu_backend.zig` — WebGPUBackend implementation and state ownership: lifecycle (init/deinit), adapter/device request, queue sync, timestamp readback, and the shared backend state structs.
+- `src/webgpu_backend.zig` — WebGPUBackend assembly and compatibility surface over the split backend state/lifecycle/support modules plus prewarm/command delegation that still needs the concrete backend type.
+- `src/webgpu_backend_types.zig` — shared backend state structs: `ManagedSurface`, `CoreWebGPUBackend`, and `FullWebGPUBackendState`.
+- `src/webgpu_backend_lifecycle.zig` — backend bootstrap/lifecycle helpers: adapter/device request, limit capture, deinit, backend-type naming, and timestamp logging.
+- `src/webgpu_backend_support.zig` — pure backend support helpers: capability introspection, mode setters, uncaptured-error handling, effective-limit selection, and render texture-view cache eviction.
 - `src/webgpu_ffi.zig` — thin compatibility facade that re-exports `src/webgpu_backend.zig` and `src/backend/runtime_types.zig`.
-- `src/core/abi/wgpu_types.zig` — all WebGPU C API types, constants, function pointer types, Procs table, record types.
+- `src/core/abi/wgpu_base_types.zig` — base WebGPU handles/enums/constants and compressed-format helpers.
+- `src/core/abi/wgpu_descriptor_types.zig` — WebGPU extern descriptors, callback exports, and limits helpers.
+- `src/core/abi/wgpu_execution_types.zig` — execution result/status ABI shared by `wgpu_types` and backend runtime orchestration.
+- `src/core/abi/wgpu_proc_types.zig` — narrow proc-signature dependency surface over base and descriptor ABI shards, used to keep procedure typedefs out of the main ABI barrel cycle.
+- `src/core/abi/wgpu_state_types.zig` — queue/map/kernel-source/backend-state helper structs shared by the WebGPU runtime path.
+- `src/core/abi/wgpu_runtime_abi.zig` — combined runtime ABI barrel reserved for callers that need proc aliases or runtime-owned state contracts; implementation code should prefer the narrower ABI shards above when possible.
+- `src/core/abi/wgpu_types.zig` — compatibility barrel over the split ABI shards above.
 - `src/core/abi/wgpu_loader.zig` — dynamic library loading, C callbacks, helper functions.
 - `src/wgpu_commands.zig` — command execution orchestration for upload/copy/barrier/dispatch/kernel dispatch plus render command delegation.
 - `src/wgpu_render_commands.zig` — native `render_draw` lowering via render pass, async pipeline diagnostics, and render-bundle execution.

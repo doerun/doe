@@ -1,776 +1,425 @@
-const std = @import("std");
-const model = @import("../../model_webgpu_types.zig");
-pub const NativeExecutionStatus = enum {
-    ok,
-    unsupported,
-    @"error",
-};
-pub const NativeExecutionResult = struct {
-    status: NativeExecutionStatus,
-    status_message: []const u8,
-    setup_ns: u64 = 0,
-    encode_ns: u64 = 0,
-    submit_wait_ns: u64 = 0,
-    dispatch_count: u32 = 0,
-    gpu_timestamp_ns: u64 = 0,
-    gpu_timestamp_attempted: bool = false,
-    gpu_timestamp_valid: bool = false,
-};
-pub const WGPUInstance = ?*anyopaque;
-pub const WGPUAdapter = ?*anyopaque;
-pub const WGPUDevice = ?*anyopaque;
-pub const WGPUQueue = ?*anyopaque;
-pub const WGPUBuffer = ?*anyopaque;
-pub const WGPUTexture = ?*anyopaque;
-pub const WGPUTextureView = ?*anyopaque;
-pub const WGPUExternalTexture = ?*anyopaque;
-pub const WGPUShaderModule = ?*anyopaque;
-pub const WGPUSampler = ?*anyopaque;
-pub const WGPUComputePipeline = ?*anyopaque;
-pub const WGPURenderPipeline = ?*anyopaque;
-pub const WGPUComputePassEncoder = ?*anyopaque;
-pub const WGPURenderPassEncoder = ?*anyopaque;
-pub const WGPUBindGroupLayout = ?*anyopaque;
-pub const WGPUBindGroup = ?*anyopaque;
-pub const WGPUPipelineLayout = ?*anyopaque;
-pub const WGPUCommandEncoder = ?*anyopaque;
-pub const WGPUCommandBuffer = ?*anyopaque;
-pub const WGPUQuerySet = ?*anyopaque;
-pub const WGPUFuture = extern struct {
-    id: u64,
-};
-pub const WGPUStringView = extern struct {
-    data: ?[*]const u8,
-    length: usize,
-};
-pub const WGPUFlags = u64;
-pub const WGPUBufferUsage = WGPUFlags;
-pub const WGPUTextureUsage = WGPUFlags;
-pub const WGPUTextureFormat = u32;
-pub const WGPUShaderStageFlags = WGPUFlags;
-pub const WGPUTextureDimension = u32;
-pub const WGPUTextureAspect = u32;
-pub const WGPUTextureComponentSwizzle = u32;
-pub const WGPUTextureViewDimension = u32;
-pub const WGPUAlphaMode = u32;
-pub const WGPUBool = u32;
-pub const WGPUSType = u32;
-pub const WGPUSType_ShaderSourceWGSL: WGPUSType = 0x00000002;
-pub const WGPUSType_ShaderSourceMSL: WGPUSType = 0x00000003;
-pub const WGPUSType_ShaderSourceSPIRV: WGPUSType = 0x00000004;
-pub const WGPUSType_ShaderSourceHLSL: WGPUSType = 0x00000005;
-pub const WGPUSType_ExternalTextureBindingLayout: WGPUSType = 0x0000000D;
-pub const WGPUSType_ExternalTextureBindingEntry: WGPUSType = 0x0000000E;
-pub const WGPU_STRLEN = std.math.maxInt(usize);
-pub const WGPU_FALSE: WGPUBool = 0;
-pub const WGPU_TRUE: WGPUBool = 1;
-pub const WGPU_COPY_STRIDE_UNDEFINED: u32 = model.WGPUCopyStrideUndefined;
-pub const WGPU_WHOLE_SIZE: u64 = model.WGPUWholeSize;
-pub const WGPU_MIP_LEVEL_COUNT_UNDEFINED: u32 = 0xFFFFFFFF;
-pub const WGPU_ARRAY_LAYER_COUNT_UNDEFINED: u32 = 0xFFFFFFFF;
-pub const WGPUBufferUsage_None: WGPUBufferUsage = 0;
-pub const WGPUBufferUsage_MapWrite: WGPUBufferUsage = 0x0000000000000002;
-pub const WGPUBufferUsage_CopySrc: WGPUBufferUsage = 0x0000000000000004;
-pub const WGPUBufferUsage_CopyDst: WGPUBufferUsage = 0x0000000000000008;
-pub const WGPUBufferUsage_Index: WGPUBufferUsage = 0x0000000000000010;
-pub const WGPUBufferUsage_Vertex: WGPUBufferUsage = 0x0000000000000020;
-pub const WGPUBufferUsage_Uniform: WGPUBufferUsage = 0x0000000000000040;
-pub const WGPUBufferUsage_Storage: WGPUBufferUsage = 0x0000000000000080;
-pub const WGPUBufferUsage_MapRead: WGPUBufferUsage = 0x0000000000000001;
-pub const WGPUBufferUsage_QueryResolve: WGPUBufferUsage = 0x0000000000000200;
-pub const WGPUFeatureName = u32;
-pub const WGPUFeatureName_DepthClipControl: WGPUFeatureName = 0x00000001;
-pub const WGPUFeatureName_Depth32FloatStencil8: WGPUFeatureName = 0x00000002;
-pub const WGPUFeatureName_TextureCompressionBC: WGPUFeatureName = 0x00000003;
-pub const WGPUFeatureName_TextureCompressionBCSliced3D: WGPUFeatureName = 0x00000004;
-pub const WGPUFeatureName_TextureCompressionETC2: WGPUFeatureName = 0x00000005;
-pub const WGPUFeatureName_TextureCompressionASTC: WGPUFeatureName = 0x00000006;
-pub const WGPUFeatureName_TextureCompressionASTCSliced3D: WGPUFeatureName = 0x00000007;
-pub const WGPUFeatureName_RG11B10UfloatRenderable: WGPUFeatureName = 0x00000008;
-pub const WGPUFeatureName_TimestampQuery: WGPUFeatureName = 0x00000009;
-pub const WGPUFeatureName_BGRA8UnormStorage: WGPUFeatureName = 0x0000000A;
-pub const WGPUFeatureName_ShaderF16: WGPUFeatureName = 0x0000000B;
-pub const WGPUFeatureName_IndirectFirstInstance: WGPUFeatureName = 0x0000000C;
-pub const WGPUFeatureName_Float32Filterable: WGPUFeatureName = 0x0000000D;
-pub const WGPUFeatureName_Subgroups: WGPUFeatureName = 0x0000000E;
-pub const WGPUFeatureName_SubgroupsF16: WGPUFeatureName = 0x0000000F;
-pub const WGPUFeatureName_Float32Blendable: WGPUFeatureName = 0x00000010;
-pub const WGPUFeatureName_ClipDistances: WGPUFeatureName = 0x00000011;
-pub const WGPUFeatureName_DualSourceBlending: WGPUFeatureName = 0x00000012;
-pub const WGPUFeatureName_CoreFeaturesAndLimits: WGPUFeatureName = 0x00000013;
-pub const WGPUFeatureName_TextureFormatsTier1: WGPUFeatureName = 0x00000014;
-pub const WGPUFeatureName_TextureFormatsTier2: WGPUFeatureName = 0x00000015;
-pub const WGPUFeatureName_PrimitiveIndex: WGPUFeatureName = 0x00000016;
-pub const WGPUFeatureName_TextureComponentSwizzle: WGPUFeatureName = 0x00000017;
-pub const WGPUFeatureName_ChromiumExperimentalTimestampQueryInsidePasses: WGPUFeatureName = 0x00050003;
-pub const WGPUFeatureName_PixelLocalStorageCoherent: WGPUFeatureName = 0x0005000A;
-pub const WGPUFeatureName_PixelLocalStorageNonCoherent: WGPUFeatureName = 0x0005000B;
-pub const WGPUFeatureName_MultiDrawIndirect: WGPUFeatureName = 0x00050031;
-pub const WGPUFeatureName_ChromiumExperimentalSamplingResourceTable: WGPUFeatureName = 0x0005003A;
-pub const WGPUQueryType = u32;
-pub const WGPUQueryType_Timestamp: WGPUQueryType = 0x00000002;
-pub const WGPUMapMode = WGPUFlags;
-pub const WGPUMapMode_Read: WGPUMapMode = 0x0000000000000001;
-pub const WGPUMapMode_Write: WGPUMapMode = 0x0000000000000002;
-pub const WGPUMapAsyncStatus = u32;
-pub const WGPUMapAsyncStatus_Success: WGPUMapAsyncStatus = 1;
-pub const WGPUBufferMapAsyncStatus = WGPUMapAsyncStatus;
-pub const WGPUBufferMapAsyncStatus_Success = WGPUMapAsyncStatus_Success;
-pub const WGPUStatus = u32;
-pub const WGPUStatus_Success: WGPUStatus = 1;
-pub const TIMESTAMP_BUFFER_SIZE: u64 = 16;
-pub const WGPUTextureUsage_None: WGPUTextureUsage = 0;
-pub const WGPUTextureUsage_CopySrc: WGPUTextureUsage = 0x0000000000000001;
-pub const WGPUTextureUsage_CopyDst: WGPUTextureUsage = 0x0000000000000002;
-pub const WGPUTextureUsage_TextureBinding: WGPUTextureUsage = 0x0000000000000004;
-pub const WGPUTextureUsage_StorageBinding: WGPUTextureUsage = 0x0000000000000008;
-pub const WGPUTextureUsage_RenderAttachment: WGPUTextureUsage = 0x0000000000000010;
-pub const WGPUTextureUsage_TransientAttachment: WGPUTextureUsage = 0x0000000000000020;
-pub const WGPUTextureUsage_StorageAttachment: WGPUTextureUsage = 0x0000000000000040;
-pub const WGPUTextureFormat_Undefined: WGPUTextureFormat = 0;
-pub const WGPUTextureFormat_R8Unorm: WGPUTextureFormat = 0x00000001;
-pub const WGPUTextureFormat_R8Snorm: WGPUTextureFormat = 0x00000002;
-pub const WGPUTextureFormat_R8Uint: WGPUTextureFormat = 0x00000003;
-pub const WGPUTextureFormat_R8Sint: WGPUTextureFormat = 0x00000004;
-pub const WGPUTextureFormat_R16Uint: WGPUTextureFormat = 0x00000007;
-pub const WGPUTextureFormat_R16Sint: WGPUTextureFormat = 0x00000008;
-pub const WGPUTextureFormat_R16Float: WGPUTextureFormat = 0x00000009;
-pub const WGPUTextureFormat_RG8Unorm: WGPUTextureFormat = 0x0000000A;
-pub const WGPUTextureFormat_RG8Snorm: WGPUTextureFormat = 0x0000000B;
-pub const WGPUTextureFormat_RG8Uint: WGPUTextureFormat = 0x0000000C;
-pub const WGPUTextureFormat_RG8Sint: WGPUTextureFormat = 0x0000000D;
-pub const WGPUTextureFormat_R32Float: WGPUTextureFormat = 0x0000000E;
-pub const WGPUTextureFormat_R32Uint: WGPUTextureFormat = 0x0000000F;
-pub const WGPUTextureFormat_R32Sint: WGPUTextureFormat = 0x00000010;
-pub const WGPUTextureFormat_RG16Uint: WGPUTextureFormat = 0x00000013;
-pub const WGPUTextureFormat_RG16Sint: WGPUTextureFormat = 0x00000014;
-pub const WGPUTextureFormat_RG16Float: WGPUTextureFormat = 0x00000015;
-pub const WGPUTextureFormat_RGBA8Unorm: WGPUTextureFormat = 0x00000016;
-pub const WGPUTextureFormat_RGBA8UnormSrgb: WGPUTextureFormat = 0x00000017;
-pub const WGPUTextureFormat_RGBA8Snorm: WGPUTextureFormat = 0x00000018;
-pub const WGPUTextureFormat_RGBA8Uint: WGPUTextureFormat = 0x00000019;
-pub const WGPUTextureFormat_RGBA8Sint: WGPUTextureFormat = 0x0000001A;
-pub const WGPUTextureFormat_BGRA8Unorm: WGPUTextureFormat = 0x0000001B;
-pub const WGPUTextureFormat_BGRA8UnormSrgb: WGPUTextureFormat = 0x0000001C;
-pub const WGPUTextureFormat_RGB10A2Uint: WGPUTextureFormat = 0x0000001D;
-pub const WGPUTextureFormat_RGB10A2Unorm: WGPUTextureFormat = 0x0000001E;
-pub const WGPUTextureFormat_RG11B10Ufloat: WGPUTextureFormat = 0x0000001F;
-pub const WGPUTextureFormat_RGB9E5Ufloat: WGPUTextureFormat = 0x00000020;
-pub const WGPUTextureFormat_RG32Float: WGPUTextureFormat = 0x00000021;
-pub const WGPUTextureFormat_RG32Uint: WGPUTextureFormat = 0x00000022;
-pub const WGPUTextureFormat_RG32Sint: WGPUTextureFormat = 0x00000023;
-pub const WGPUTextureFormat_RGBA16Uint: WGPUTextureFormat = 0x00000024;
-pub const WGPUTextureFormat_RGBA16Sint: WGPUTextureFormat = 0x00000025;
-pub const WGPUTextureFormat_RGBA16Float: WGPUTextureFormat = 0x00000026;
-pub const WGPUTextureFormat_RGBA32Float: WGPUTextureFormat = 0x00000027;
-pub const WGPUTextureFormat_RGBA32Uint: WGPUTextureFormat = 0x00000028;
-pub const WGPUTextureFormat_RGBA32Sint: WGPUTextureFormat = 0x00000029;
-pub const WGPUTextureFormat_Stencil8: WGPUTextureFormat = 0x0000002C;
-pub const WGPUTextureFormat_Depth16Unorm: WGPUTextureFormat = 0x0000002D;
-pub const WGPUTextureFormat_Depth24Plus: WGPUTextureFormat = 0x0000002E;
-pub const WGPUTextureFormat_Depth24PlusStencil8: WGPUTextureFormat = 0x0000002F;
-pub const WGPUTextureFormat_Depth32Float: WGPUTextureFormat = 0x00000030;
-pub const WGPUTextureFormat_Depth32FloatStencil8: WGPUTextureFormat = 0x00000031;
-const compressed_formats = @import("wgpu_type_texture_formats.zig");
-pub const WGPUTextureFormat_BC1RGBAUnorm = compressed_formats.WGPUTextureFormat_BC1RGBAUnorm;
-pub const WGPUTextureFormat_BC1RGBAUnormSrgb = compressed_formats.WGPUTextureFormat_BC1RGBAUnormSrgb;
-pub const WGPUTextureFormat_BC2RGBAUnorm = compressed_formats.WGPUTextureFormat_BC2RGBAUnorm;
-pub const WGPUTextureFormat_BC2RGBAUnormSrgb = compressed_formats.WGPUTextureFormat_BC2RGBAUnormSrgb;
-pub const WGPUTextureFormat_BC3RGBAUnorm = compressed_formats.WGPUTextureFormat_BC3RGBAUnorm;
-pub const WGPUTextureFormat_BC3RGBAUnormSrgb = compressed_formats.WGPUTextureFormat_BC3RGBAUnormSrgb;
-pub const WGPUTextureFormat_BC4RUnorm = compressed_formats.WGPUTextureFormat_BC4RUnorm;
-pub const WGPUTextureFormat_BC4RSnorm = compressed_formats.WGPUTextureFormat_BC4RSnorm;
-pub const WGPUTextureFormat_BC5RGUnorm = compressed_formats.WGPUTextureFormat_BC5RGUnorm;
-pub const WGPUTextureFormat_BC5RGSnorm = compressed_formats.WGPUTextureFormat_BC5RGSnorm;
-pub const WGPUTextureFormat_BC6HRGBUfloat = compressed_formats.WGPUTextureFormat_BC6HRGBUfloat;
-pub const WGPUTextureFormat_BC6HRGBFloat = compressed_formats.WGPUTextureFormat_BC6HRGBFloat;
-pub const WGPUTextureFormat_BC7RGBAUnorm = compressed_formats.WGPUTextureFormat_BC7RGBAUnorm;
-pub const WGPUTextureFormat_BC7RGBAUnormSrgb = compressed_formats.WGPUTextureFormat_BC7RGBAUnormSrgb;
-pub const BC_FORMAT_FIRST = compressed_formats.BC_FORMAT_FIRST;
-pub const BC_FORMAT_LAST = compressed_formats.BC_FORMAT_LAST;
-pub const isBCFormat = compressed_formats.isBCFormat;
-pub const WGPUTextureFormat_ETC2RGB8Unorm = compressed_formats.WGPUTextureFormat_ETC2RGB8Unorm;
-pub const WGPUTextureFormat_ETC2RGB8UnormSrgb = compressed_formats.WGPUTextureFormat_ETC2RGB8UnormSrgb;
-pub const WGPUTextureFormat_ETC2RGB8A1Unorm = compressed_formats.WGPUTextureFormat_ETC2RGB8A1Unorm;
-pub const WGPUTextureFormat_ETC2RGB8A1UnormSrgb = compressed_formats.WGPUTextureFormat_ETC2RGB8A1UnormSrgb;
-pub const WGPUTextureFormat_ETC2RGBA8Unorm = compressed_formats.WGPUTextureFormat_ETC2RGBA8Unorm;
-pub const WGPUTextureFormat_ETC2RGBA8UnormSrgb = compressed_formats.WGPUTextureFormat_ETC2RGBA8UnormSrgb;
-pub const WGPUTextureFormat_EACR11Unorm = compressed_formats.WGPUTextureFormat_EACR11Unorm;
-pub const WGPUTextureFormat_EACR11Snorm = compressed_formats.WGPUTextureFormat_EACR11Snorm;
-pub const WGPUTextureFormat_EACRG11Unorm = compressed_formats.WGPUTextureFormat_EACRG11Unorm;
-pub const WGPUTextureFormat_EACRG11Snorm = compressed_formats.WGPUTextureFormat_EACRG11Snorm;
-pub const ETC2_FORMAT_FIRST = compressed_formats.ETC2_FORMAT_FIRST;
-pub const ETC2_FORMAT_LAST = compressed_formats.ETC2_FORMAT_LAST;
-pub const isETC2Format = compressed_formats.isETC2Format;
-pub const WGPUTextureFormat_ASTC4x4Unorm = compressed_formats.WGPUTextureFormat_ASTC4x4Unorm;
-pub const WGPUTextureFormat_ASTC4x4UnormSrgb = compressed_formats.WGPUTextureFormat_ASTC4x4UnormSrgb;
-pub const WGPUTextureFormat_ASTC5x4Unorm = compressed_formats.WGPUTextureFormat_ASTC5x4Unorm;
-pub const WGPUTextureFormat_ASTC5x4UnormSrgb = compressed_formats.WGPUTextureFormat_ASTC5x4UnormSrgb;
-pub const WGPUTextureFormat_ASTC5x5Unorm = compressed_formats.WGPUTextureFormat_ASTC5x5Unorm;
-pub const WGPUTextureFormat_ASTC5x5UnormSrgb = compressed_formats.WGPUTextureFormat_ASTC5x5UnormSrgb;
-pub const WGPUTextureFormat_ASTC6x5Unorm = compressed_formats.WGPUTextureFormat_ASTC6x5Unorm;
-pub const WGPUTextureFormat_ASTC6x5UnormSrgb = compressed_formats.WGPUTextureFormat_ASTC6x5UnormSrgb;
-pub const WGPUTextureFormat_ASTC6x6Unorm = compressed_formats.WGPUTextureFormat_ASTC6x6Unorm;
-pub const WGPUTextureFormat_ASTC6x6UnormSrgb = compressed_formats.WGPUTextureFormat_ASTC6x6UnormSrgb;
-pub const WGPUTextureFormat_ASTC8x5Unorm = compressed_formats.WGPUTextureFormat_ASTC8x5Unorm;
-pub const WGPUTextureFormat_ASTC8x5UnormSrgb = compressed_formats.WGPUTextureFormat_ASTC8x5UnormSrgb;
-pub const WGPUTextureFormat_ASTC8x6Unorm = compressed_formats.WGPUTextureFormat_ASTC8x6Unorm;
-pub const WGPUTextureFormat_ASTC8x6UnormSrgb = compressed_formats.WGPUTextureFormat_ASTC8x6UnormSrgb;
-pub const WGPUTextureFormat_ASTC8x8Unorm = compressed_formats.WGPUTextureFormat_ASTC8x8Unorm;
-pub const WGPUTextureFormat_ASTC8x8UnormSrgb = compressed_formats.WGPUTextureFormat_ASTC8x8UnormSrgb;
-pub const WGPUTextureFormat_ASTC10x5Unorm = compressed_formats.WGPUTextureFormat_ASTC10x5Unorm;
-pub const WGPUTextureFormat_ASTC10x5UnormSrgb = compressed_formats.WGPUTextureFormat_ASTC10x5UnormSrgb;
-pub const WGPUTextureFormat_ASTC10x6Unorm = compressed_formats.WGPUTextureFormat_ASTC10x6Unorm;
-pub const WGPUTextureFormat_ASTC10x6UnormSrgb = compressed_formats.WGPUTextureFormat_ASTC10x6UnormSrgb;
-pub const WGPUTextureFormat_ASTC10x8Unorm = compressed_formats.WGPUTextureFormat_ASTC10x8Unorm;
-pub const WGPUTextureFormat_ASTC10x8UnormSrgb = compressed_formats.WGPUTextureFormat_ASTC10x8UnormSrgb;
-pub const WGPUTextureFormat_ASTC10x10Unorm = compressed_formats.WGPUTextureFormat_ASTC10x10Unorm;
-pub const WGPUTextureFormat_ASTC10x10UnormSrgb = compressed_formats.WGPUTextureFormat_ASTC10x10UnormSrgb;
-pub const WGPUTextureFormat_ASTC12x10Unorm = compressed_formats.WGPUTextureFormat_ASTC12x10Unorm;
-pub const WGPUTextureFormat_ASTC12x10UnormSrgb = compressed_formats.WGPUTextureFormat_ASTC12x10UnormSrgb;
-pub const WGPUTextureFormat_ASTC12x12Unorm = compressed_formats.WGPUTextureFormat_ASTC12x12Unorm;
-pub const WGPUTextureFormat_ASTC12x12UnormSrgb = compressed_formats.WGPUTextureFormat_ASTC12x12UnormSrgb;
-pub const ASTC_FORMAT_FIRST = compressed_formats.ASTC_FORMAT_FIRST;
-pub const ASTC_FORMAT_LAST = compressed_formats.ASTC_FORMAT_LAST;
-pub const isASTCFormat = compressed_formats.isASTCFormat;
-pub const isDepthStencilFormat = compressed_formats.isDepthStencilFormat;
-pub const hasStencilAspect = compressed_formats.hasStencilAspect;
-pub const isFloat32Format = compressed_formats.isFloat32Format;
-pub const isBaseStorageTextureFormat = compressed_formats.isBaseStorageTextureFormat;
-pub const isStorageTextureFormat = compressed_formats.isStorageTextureFormat;
-pub const WGPUTextureSampleType_BindingNotUsed: u32 = 0x00000000;
-pub const WGPUTextureSampleType_Undefined: u32 = 0x00000001;
-pub const WGPUTextureSampleType_Float: u32 = 0x00000002;
-pub const WGPUTextureSampleType_UnfilterableFloat: u32 = 0x00000003;
-pub const WGPUTextureSampleType_Depth: u32 = 0x00000004;
-pub const WGPUTextureSampleType_Sint: u32 = 0x00000005;
-pub const WGPUTextureSampleType_Uint: u32 = 0x00000006;
-pub const WGPUTextureSampleType_UndefinedDefault: u32 = WGPUTextureSampleType_Undefined;
-pub const WGPUTextureAspect_Undefined: u32 = 0;
-pub const WGPUTextureAspect_All: u32 = 1;
-pub const WGPUTextureAspect_StencilOnly: u32 = 2;
-pub const WGPUTextureAspect_DepthOnly: u32 = 3;
-pub const WGPUTextureComponentSwizzle_Undefined: u32 = 0;
-pub const WGPUTextureComponentSwizzle_Zero: u32 = 1;
-pub const WGPUTextureComponentSwizzle_One: u32 = 2;
-pub const WGPUTextureComponentSwizzle_Red: u32 = 3;
-pub const WGPUTextureComponentSwizzle_Green: u32 = 4;
-pub const WGPUTextureComponentSwizzle_Blue: u32 = 5;
-pub const WGPUTextureComponentSwizzle_Alpha: u32 = 6;
-pub const WGPUStorageTextureAccess_BindingNotUsed: u32 = 0x00000000;
-pub const WGPUStorageTextureAccess_Undefined: u32 = 0x00000001;
-pub const WGPUStorageTextureAccess_WriteOnly: u32 = 0x00000002;
-pub const WGPUStorageTextureAccess_ReadOnly: u32 = 0x00000003;
-pub const WGPUStorageTextureAccess_ReadWrite: u32 = 0x00000004;
-pub const WGPUBufferBindingType_BindingNotUsed: u32 = 0x00000000;
-pub const WGPUBufferBindingType_Undefined: u32 = 0x00000001;
-pub const WGPUBufferBindingType_Uniform: u32 = 0x00000002;
-pub const WGPUBufferBindingType_Storage: u32 = 0x00000003;
-pub const WGPUBufferBindingType_ReadOnlyStorage: u32 = 0x00000004;
-pub const WGPUTextureViewDimension_Undefined: u32 = 0x00000000;
-pub const WGPUTextureViewDimension_1D: u32 = 0x00000001;
-pub const WGPUTextureViewDimension_2D: u32 = 0x00000002;
-pub const WGPUTextureViewDimension_2DArray: u32 = 0x00000003;
-pub const WGPUTextureViewDimension_Cube: u32 = 0x00000004;
-pub const WGPUTextureViewDimension_CubeArray: u32 = 0x00000005;
-pub const WGPUTextureViewDimension_3D: u32 = 0x00000006;
-pub const WGPUTextureViewDimension_2DDepth: u32 = 0x00000007;
-pub const WGPUTextureViewDimension_2DArrayDepth: u32 = 0x00000008;
-pub const WGPUTextureDimension_Undefined: u32 = 0;
-pub const WGPUTextureDimension_1D: u32 = 1;
-pub const WGPUTextureDimension_2D: u32 = 2;
-pub const WGPUTextureDimension_3D: u32 = 3;
-pub const WGPUShaderStage_None: WGPUFlags = 0x0000000000000000;
-pub const WGPUShaderStage_Vertex: WGPUFlags = 0x0000000000000001;
-pub const WGPUShaderStage_Fragment: WGPUFlags = 0x0000000000000002;
-pub const WGPUShaderStage_Compute: WGPUFlags = 0x0000000000000004;
-pub const WGPUSamplerBindingType_BindingNotUsed: u32 = 0x00000000;
-pub const WGPUSamplerBindingType_Undefined: u32 = 0x00000001;
-pub const WGPUSamplerBindingType_Filtering: u32 = 0x00000002;
-pub const WGPUSamplerBindingType_NonFiltering: u32 = 0x00000003;
-pub const WGPUSamplerBindingType_Comparison: u32 = 0x00000004;
-pub const WGPUExtent3D = extern struct {
-    width: u32,
-    height: u32,
-    depthOrArrayLayers: u32,
-};
-pub const WGPUExtent2D = extern struct {
-    width: u32,
-    height: u32,
-};
-pub const WGPUOrigin3D = extern struct {
-    x: u32,
-    y: u32,
-    z: u32,
-};
-pub const WGPUTexelCopyBufferLayout = extern struct {
-    offset: u64,
-    bytesPerRow: u32,
-    rowsPerImage: u32,
-};
-pub const WGPUTexelCopyBufferInfo = extern struct {
-    layout: WGPUTexelCopyBufferLayout,
-    buffer: WGPUBuffer,
-};
-pub const WGPUTexelCopyTextureInfo = extern struct {
-    texture: WGPUTexture,
-    mipLevel: u32,
-    origin: WGPUOrigin3D,
-    aspect: WGPUTextureAspect,
-};
-pub const WGPUTextureViewDescriptor = extern struct {
-    nextInChain: ?*anyopaque,
-    label: WGPUStringView,
-    format: WGPUTextureFormat,
-    dimension: WGPUTextureViewDimension,
-    baseMipLevel: u32,
-    mipLevelCount: u32,
-    baseArrayLayer: u32,
-    arrayLayerCount: u32,
-    aspect: WGPUTextureAspect,
-    usage: WGPUTextureUsage,
-    swizzleR: WGPUTextureComponentSwizzle,
-    swizzleG: WGPUTextureComponentSwizzle,
-    swizzleB: WGPUTextureComponentSwizzle,
-    swizzleA: WGPUTextureComponentSwizzle,
-};
-pub const WGPUTextureDescriptor = extern struct {
-    nextInChain: ?*anyopaque,
-    label: WGPUStringView,
-    usage: WGPUTextureUsage,
-    dimension: WGPUTextureDimension,
-    size: WGPUExtent3D,
-    format: WGPUTextureFormat,
-    mipLevelCount: u32,
-    sampleCount: u32,
-    viewFormatCount: usize,
-    viewFormats: ?[*]const WGPUTextureFormat,
-};
-pub const WGPUBufferBindingLayout = extern struct {
-    nextInChain: ?*anyopaque,
-    type: u32,
-    hasDynamicOffset: WGPUBool,
-    minBindingSize: u64,
-};
-pub const WGPUSamplerBindingLayout = extern struct {
-    nextInChain: ?*anyopaque,
-    type: u32,
-};
-pub const WGPUTextureBindingLayout = extern struct {
-    nextInChain: ?*anyopaque,
-    sampleType: u32,
-    viewDimension: WGPUTextureViewDimension,
-    multisampled: WGPUBool,
-};
-pub const WGPUStorageTextureBindingLayout = extern struct {
-    nextInChain: ?*anyopaque,
-    access: u32,
-    format: WGPUTextureFormat,
-    viewDimension: WGPUTextureViewDimension,
-};
-pub const WGPUBindGroupLayoutEntry = extern struct {
-    nextInChain: ?*anyopaque,
-    binding: u32,
-    visibility: WGPUShaderStageFlags,
-    bindingArraySize: u32,
-    buffer: WGPUBufferBindingLayout,
-    sampler: WGPUSamplerBindingLayout,
-    texture: WGPUTextureBindingLayout,
-    storageTexture: WGPUStorageTextureBindingLayout,
-};
-pub const WGPUBindGroupEntry = extern struct {
-    nextInChain: ?*anyopaque,
-    binding: u32,
-    buffer: WGPUBuffer,
-    offset: u64,
-    size: u64,
-    sampler: WGPUSampler,
-    textureView: WGPUTextureView,
-};
-pub const WGPUExternalTextureBindingLayout = extern struct {
-    chain: WGPUChainedStruct,
-};
-pub const WGPUExternalTextureBindingEntry = extern struct {
-    chain: WGPUChainedStruct,
-    externalTexture: WGPUExternalTexture,
-};
-pub const WGPUCopyTextureForBrowserOptions = extern struct {
-    nextInChain: ?*WGPUChainedStruct,
-    flipY: WGPUBool,
-    needsColorSpaceConversion: WGPUBool,
-    srcAlphaMode: WGPUAlphaMode,
-    srcTransferFunctionParameters: ?[*]const f32,
-    conversionMatrix: ?[*]const f32,
-    dstTransferFunctionParameters: ?[*]const f32,
-    dstAlphaMode: WGPUAlphaMode,
-    internalUsage: WGPUBool,
-};
-pub const WGPUImageCopyExternalTexture = extern struct {
-    nextInChain: ?*WGPUChainedStruct,
-    externalTexture: WGPUExternalTexture,
-    origin: WGPUOrigin3D,
-    naturalSize: WGPUExtent2D,
-};
-pub const WGPUBindGroupLayoutDescriptor = extern struct {
-    nextInChain: ?*anyopaque,
-    label: WGPUStringView,
-    entryCount: usize,
-    entries: ?[*]const WGPUBindGroupLayoutEntry,
-};
-pub const WGPUBindGroupDescriptor = extern struct {
-    nextInChain: ?*anyopaque,
-    label: WGPUStringView,
-    layout: WGPUBindGroupLayout,
-    entryCount: usize,
-    entries: [*]const WGPUBindGroupEntry,
-};
-pub const WGPUPipelineLayoutDescriptor = extern struct {
-    nextInChain: ?*anyopaque,
-    label: WGPUStringView,
-    bindGroupLayoutCount: usize,
-    bindGroupLayouts: [*]const WGPUBindGroupLayout,
-    immediateSize: u32,
-};
-const callback_types = @import("wgpu_type_callbacks.zig").definitions(@This());
-pub const WGPUCallbackMode = callback_types.WGPUCallbackMode;
-pub const WGPUCallbackMode_WaitAnyOnly = callback_types.WGPUCallbackMode_WaitAnyOnly;
-pub const WGPUCallbackMode_AllowProcessEvents = callback_types.WGPUCallbackMode_AllowProcessEvents;
-pub const WGPUCallbackMode_AllowSpontaneous = callback_types.WGPUCallbackMode_AllowSpontaneous;
-pub const WGPUWaitStatus = callback_types.WGPUWaitStatus;
-pub const WGPURequestAdapterStatus = callback_types.WGPURequestAdapterStatus;
-pub const WGPURequestDeviceStatus = callback_types.WGPURequestDeviceStatus;
-pub const WGPUQueueWorkDoneStatus = callback_types.WGPUQueueWorkDoneStatus;
-pub const WGPUPowerPreference = callback_types.WGPUPowerPreference;
-pub const WGPUFeatureLevel = callback_types.WGPUFeatureLevel;
-pub const WGPUBackendType = callback_types.WGPUBackendType;
-pub const WGPURequestAdapterCallback = callback_types.WGPURequestAdapterCallback;
-pub const WGPURequestDeviceCallback = callback_types.WGPURequestDeviceCallback;
-pub const WGPUQueueWorkDoneCallback = callback_types.WGPUQueueWorkDoneCallback;
-pub const WGPUDeviceLostReason = callback_types.WGPUDeviceLostReason;
-pub const WGPUErrorType = callback_types.WGPUErrorType;
-pub const WGPUDeviceLostCallback = callback_types.WGPUDeviceLostCallback;
-pub const WGPUUncapturedErrorCallback = callback_types.WGPUUncapturedErrorCallback;
-pub const WGPURequestAdapterCallbackInfo = callback_types.WGPURequestAdapterCallbackInfo;
-pub const WGPURequestDeviceCallbackInfo = callback_types.WGPURequestDeviceCallbackInfo;
-pub const WGPUQueueWorkDoneCallbackInfo = callback_types.WGPUQueueWorkDoneCallbackInfo;
-pub const WGPUDeviceLostCallbackInfo = callback_types.WGPUDeviceLostCallbackInfo;
-pub const WGPUUncapturedErrorCallbackInfo = callback_types.WGPUUncapturedErrorCallbackInfo;
-pub const WGPUChainedStruct = extern struct {
-    next: ?*WGPUChainedStruct,
-    sType: WGPUSType,
-};
-pub const WGPURequestAdapterOptions = extern struct {
-    nextInChain: ?*anyopaque,
-    featureLevel: WGPUFeatureLevel,
-    powerPreference: WGPUPowerPreference,
-    forceFallbackAdapter: WGPUBool,
-    backendType: WGPUBackendType,
-    compatibleSurface: ?*anyopaque,
-};
-pub const WGPUBufferDescriptor = extern struct {
-    nextInChain: ?*anyopaque,
-    label: WGPUStringView,
-    usage: WGPUBufferUsage,
-    size: u64,
-    mappedAtCreation: WGPUBool,
-};
-pub const WGPUShaderModuleDescriptor = extern struct {
-    nextInChain: ?*WGPUChainedStruct,
-    label: WGPUStringView,
-};
-pub const WGPUShaderSourceWGSL = extern struct {
-    chain: WGPUChainedStruct,
-    code: WGPUStringView,
-};
-pub const WGPUShaderSourceMSL = extern struct {
-    chain: WGPUChainedStruct,
-    code: WGPUStringView,
-    workgroup_size_x: u32, // 0 = unknown (defaults to 1)
-    workgroup_size_y: u32,
-    workgroup_size_z: u32,
-};
-pub const WGPUShaderSourceSPIRV = extern struct {
-    chain: WGPUChainedStruct,
-    code: [*]const u32,
-    code_size: u32,
-    workgroup_size_x: u32,
-    workgroup_size_y: u32,
-    workgroup_size_z: u32,
-};
-pub const WGPUShaderSourceHLSL = extern struct {
-    chain: WGPUChainedStruct,
-    code: WGPUStringView,
-    workgroup_size_x: u32,
-    workgroup_size_y: u32,
-    workgroup_size_z: u32,
-};
-pub const WGPUConstantEntry = extern struct {
-    nextInChain: ?*anyopaque,
-    key: WGPUStringView,
-    value: f64,
-};
-pub const WGPUComputeState = extern struct {
-    nextInChain: ?*anyopaque,
-    module: WGPUShaderModule,
-    entryPoint: WGPUStringView,
-    constantCount: usize,
-    constants: ?[*]const WGPUConstantEntry,
-};
-pub const WGPUComputePipelineDescriptor = extern struct {
-    nextInChain: ?*anyopaque,
-    label: WGPUStringView,
-    layout: ?*anyopaque,
-    compute: WGPUComputeState,
-};
-pub const WGPUComputePassDescriptor = extern struct {
-    nextInChain: ?*anyopaque,
-    label: WGPUStringView,
-    timestampWrites: ?*const WGPUPassTimestampWrites,
-};
-pub const WGPUPassTimestampWrites = extern struct {
-    nextInChain: ?*anyopaque,
-    querySet: WGPUQuerySet,
-    beginningOfPassWriteIndex: u32,
-    endOfPassWriteIndex: u32,
-};
-pub const WGPUQuerySetDescriptor = extern struct {
-    nextInChain: ?*anyopaque,
-    label: WGPUStringView,
-    type: WGPUQueryType,
-    count: u32,
-};
-pub const WGPUBufferMapCallbackInfo = extern struct {
-    nextInChain: ?*anyopaque,
-    mode: WGPUCallbackMode,
-    callback: ?WGPUBufferMapCallback,
-    userdata1: ?*anyopaque,
-    userdata2: ?*anyopaque,
-};
-pub const WGPUBufferMapCallback = *const fn (
-    status: WGPUMapAsyncStatus,
-    message: WGPUStringView,
-    userdata1: ?*anyopaque,
-    userdata2: ?*anyopaque,
-) callconv(.c) void;
-pub const WGPUCommandEncoderDescriptor = extern struct {
-    nextInChain: ?*anyopaque,
-    label: WGPUStringView,
-};
-pub const WGPUCommandBufferDescriptor = extern struct {
-    nextInChain: ?*anyopaque,
-    label: WGPUStringView,
-};
-pub const WGPUFutureWaitInfo = extern struct {
-    future: WGPUFuture,
-    completed: WGPUBool,
-};
-pub const WGPUQueueDescriptor = extern struct {
-    nextInChain: ?*anyopaque,
-    label: WGPUStringView,
-};
-pub const WGPULimits = extern struct {
-    nextInChain: ?*anyopaque,
-    maxTextureDimension1D: u32,
-    maxTextureDimension2D: u32,
-    maxTextureDimension3D: u32,
-    maxTextureArrayLayers: u32,
-    maxBindGroups: u32,
-    maxBindGroupsPlusVertexBuffers: u32,
-    maxBindingsPerBindGroup: u32,
-    maxDynamicUniformBuffersPerPipelineLayout: u32,
-    maxDynamicStorageBuffersPerPipelineLayout: u32,
-    maxSampledTexturesPerShaderStage: u32,
-    maxSamplersPerShaderStage: u32,
-    maxStorageBuffersPerShaderStage: u32,
-    maxStorageTexturesPerShaderStage: u32,
-    maxUniformBuffersPerShaderStage: u32,
-    maxUniformBufferBindingSize: u64,
-    maxStorageBufferBindingSize: u64,
-    minUniformBufferOffsetAlignment: u32,
-    minStorageBufferOffsetAlignment: u32,
-    maxVertexBuffers: u32,
-    maxBufferSize: u64,
-    maxVertexAttributes: u32,
-    maxVertexBufferArrayStride: u32,
-    maxInterStageShaderVariables: u32,
-    maxColorAttachments: u32,
-    maxColorAttachmentBytesPerSample: u32,
-    maxComputeWorkgroupStorageSize: u32,
-    maxComputeInvocationsPerWorkgroup: u32,
-    maxComputeWorkgroupSizeX: u32,
-    maxComputeWorkgroupSizeY: u32,
-    maxComputeWorkgroupSizeZ: u32,
-    maxComputeWorkgroupsPerDimension: u32,
-    maxImmediateSize: u32,
-};
-pub const WGPUDeviceDescriptor = extern struct {
-    nextInChain: ?*anyopaque,
-    label: WGPUStringView,
-    requiredFeatureCount: usize,
-    requiredFeatures: ?[*]const WGPUFeatureName,
-    requiredLimits: ?*const WGPULimits,
-    defaultQueue: WGPUQueueDescriptor,
-    deviceLostCallbackInfo: WGPUDeviceLostCallbackInfo,
-    uncapturedErrorCallbackInfo: WGPUUncapturedErrorCallbackInfo,
-};
-pub const WGPUSamplerDescriptor = extern struct {
-    nextInChain: ?*anyopaque,
-    label: WGPUStringView,
-    addressModeU: u32,
-    addressModeV: u32,
-    addressModeW: u32,
-    magFilter: u32,
-    minFilter: u32,
-    mipmapFilter: u32,
-    lodMinClamp: f32,
-    lodMaxClamp: f32,
-    compare: u32,
-    maxAnisotropy: u16,
-};
-pub const WGPUColor = extern struct {
-    r: f64,
-    g: f64,
-    b: f64,
-    a: f64,
-};
-pub const WGPURenderPassColorAttachment = extern struct {
-    nextInChain: ?*anyopaque,
-    view: WGPUTextureView,
-    depthSlice: u32,
-    resolveTarget: WGPUTextureView,
-    loadOp: u32,
-    storeOp: u32,
-    clearValue: WGPUColor,
-};
-pub const WGPURenderPassDepthStencilAttachment = extern struct {
-    view: WGPUTextureView,
-    depthLoadOp: u32,
-    depthStoreOp: u32,
-    depthClearValue: f32,
-    depthReadOnly: WGPUBool,
-    stencilLoadOp: u32,
-    stencilStoreOp: u32,
-    stencilClearValue: u32,
-    stencilReadOnly: WGPUBool,
-};
-pub const WGPURenderPassDescriptor = extern struct {
-    nextInChain: ?*anyopaque,
-    label: WGPUStringView,
-    colorAttachmentCount: usize,
-    colorAttachments: ?[*]const WGPURenderPassColorAttachment,
-    depthStencilAttachment: ?*const WGPURenderPassDepthStencilAttachment,
-    occlusionQuerySet: WGPUQuerySet,
-    timestampWrites: ?*const WGPUPassTimestampWrites,
-    maxDrawCount: u64,
-};
-pub fn initLimits() WGPULimits {
-    var limits = std.mem.zeroes(WGPULimits);
-    limits.nextInChain = null;
-    return limits;
-}
-const proc_aliases = @import("wgpu_type_proc_aliases.zig");
-pub const FnWgpuCreateInstance = proc_aliases.FnWgpuCreateInstance;
-pub const FnWgpuInstanceRequestAdapter = proc_aliases.FnWgpuInstanceRequestAdapter;
-pub const FnWgpuInstanceWaitAny = proc_aliases.FnWgpuInstanceWaitAny;
-pub const FnWgpuInstanceProcessEvents = proc_aliases.FnWgpuInstanceProcessEvents;
-pub const FnWgpuAdapterRequestDevice = proc_aliases.FnWgpuAdapterRequestDevice;
-pub const FnWgpuDeviceCreateBuffer = proc_aliases.FnWgpuDeviceCreateBuffer;
-pub const FnWgpuDeviceCreateShaderModule = proc_aliases.FnWgpuDeviceCreateShaderModule;
-pub const FnWgpuShaderModuleRelease = proc_aliases.FnWgpuShaderModuleRelease;
-pub const FnWgpuDeviceCreateComputePipeline = proc_aliases.FnWgpuDeviceCreateComputePipeline;
-pub const FnWgpuComputePipelineRelease = proc_aliases.FnWgpuComputePipelineRelease;
-pub const FnWgpuRenderPipelineRelease = proc_aliases.FnWgpuRenderPipelineRelease;
-pub const FnWgpuDeviceCreateCommandEncoder = proc_aliases.FnWgpuDeviceCreateCommandEncoder;
-pub const FnWgpuCommandEncoderBeginComputePass = proc_aliases.FnWgpuCommandEncoderBeginComputePass;
-pub const FnWgpuDeviceCreateRenderPipeline = proc_aliases.FnWgpuDeviceCreateRenderPipeline;
-pub const FnWgpuCommandEncoderBeginRenderPass = proc_aliases.FnWgpuCommandEncoderBeginRenderPass;
-pub const FnWgpuCommandEncoderWriteTimestamp = proc_aliases.FnWgpuCommandEncoderWriteTimestamp;
-pub const FnWgpuCommandEncoderCopyBufferToBuffer = proc_aliases.FnWgpuCommandEncoderCopyBufferToBuffer;
-pub const FnWgpuCommandEncoderCopyBufferToTexture = proc_aliases.FnWgpuCommandEncoderCopyBufferToTexture;
-pub const FnWgpuCommandEncoderCopyTextureToBuffer = proc_aliases.FnWgpuCommandEncoderCopyTextureToBuffer;
-pub const FnWgpuCommandEncoderCopyTextureToTexture = proc_aliases.FnWgpuCommandEncoderCopyTextureToTexture;
-pub const FnWgpuComputePassEncoderSetPipeline = proc_aliases.FnWgpuComputePassEncoderSetPipeline;
-pub const FnWgpuComputePassEncoderSetBindGroup = proc_aliases.FnWgpuComputePassEncoderSetBindGroup;
-pub const FnWgpuComputePassEncoderDispatchWorkgroups = proc_aliases.FnWgpuComputePassEncoderDispatchWorkgroups;
-pub const FnWgpuComputePassEncoderEnd = proc_aliases.FnWgpuComputePassEncoderEnd;
-pub const FnWgpuComputePassEncoderRelease = proc_aliases.FnWgpuComputePassEncoderRelease;
-pub const FnWgpuRenderPassEncoderSetPipeline = proc_aliases.FnWgpuRenderPassEncoderSetPipeline;
-pub const FnWgpuRenderPassEncoderSetVertexBuffer = proc_aliases.FnWgpuRenderPassEncoderSetVertexBuffer;
-pub const FnWgpuRenderPassEncoderSetIndexBuffer = proc_aliases.FnWgpuRenderPassEncoderSetIndexBuffer;
-pub const FnWgpuRenderPassEncoderSetBindGroup = proc_aliases.FnWgpuRenderPassEncoderSetBindGroup;
-pub const FnWgpuRenderPassEncoderDraw = proc_aliases.FnWgpuRenderPassEncoderDraw;
-pub const FnWgpuRenderPassEncoderDrawIndexed = proc_aliases.FnWgpuRenderPassEncoderDrawIndexed;
-pub const FnWgpuRenderPassEncoderDrawIndirect = proc_aliases.FnWgpuRenderPassEncoderDrawIndirect;
-pub const FnWgpuRenderPassEncoderDrawIndexedIndirect = proc_aliases.FnWgpuRenderPassEncoderDrawIndexedIndirect;
-pub const FnWgpuRenderPassEncoderEnd = proc_aliases.FnWgpuRenderPassEncoderEnd;
-pub const FnWgpuRenderPassEncoderRelease = proc_aliases.FnWgpuRenderPassEncoderRelease;
-pub const FnWgpuCommandEncoderFinish = proc_aliases.FnWgpuCommandEncoderFinish;
-pub const FnWgpuDeviceGetQueue = proc_aliases.FnWgpuDeviceGetQueue;
-pub const FnWgpuQueueSubmit = proc_aliases.FnWgpuQueueSubmit;
-pub const FnWgpuQueueOnSubmittedWorkDone = proc_aliases.FnWgpuQueueOnSubmittedWorkDone;
-pub const FnWgpuQueueWriteBuffer = proc_aliases.FnWgpuQueueWriteBuffer;
-pub const FnWgpuDeviceCreateTexture = proc_aliases.FnWgpuDeviceCreateTexture;
-pub const FnWgpuTextureCreateView = proc_aliases.FnWgpuTextureCreateView;
-pub const FnWgpuDeviceCreateBindGroupLayout = proc_aliases.FnWgpuDeviceCreateBindGroupLayout;
-pub const FnWgpuBindGroupLayoutRelease = proc_aliases.FnWgpuBindGroupLayoutRelease;
-pub const FnWgpuDeviceCreateBindGroup = proc_aliases.FnWgpuDeviceCreateBindGroup;
-pub const FnWgpuBindGroupRelease = proc_aliases.FnWgpuBindGroupRelease;
-pub const FnWgpuDeviceCreatePipelineLayout = proc_aliases.FnWgpuDeviceCreatePipelineLayout;
-pub const FnWgpuPipelineLayoutRelease = proc_aliases.FnWgpuPipelineLayoutRelease;
-pub const FnWgpuTextureRelease = proc_aliases.FnWgpuTextureRelease;
-pub const FnWgpuTextureViewRelease = proc_aliases.FnWgpuTextureViewRelease;
-pub const FnWgpuInstanceRelease = proc_aliases.FnWgpuInstanceRelease;
-pub const FnWgpuAdapterRelease = proc_aliases.FnWgpuAdapterRelease;
-pub const FnWgpuDeviceRelease = proc_aliases.FnWgpuDeviceRelease;
-pub const FnWgpuQueueRelease = proc_aliases.FnWgpuQueueRelease;
-pub const FnWgpuCommandEncoderRelease = proc_aliases.FnWgpuCommandEncoderRelease;
-pub const FnWgpuCommandBufferRelease = proc_aliases.FnWgpuCommandBufferRelease;
-pub const FnWgpuBufferRelease = proc_aliases.FnWgpuBufferRelease;
-pub const FnWgpuAdapterHasFeature = proc_aliases.FnWgpuAdapterHasFeature;
-pub const FnWgpuDeviceHasFeature = proc_aliases.FnWgpuDeviceHasFeature;
-pub const FnWgpuDeviceCreateQuerySet = proc_aliases.FnWgpuDeviceCreateQuerySet;
-pub const FnWgpuCommandEncoderResolveQuerySet = proc_aliases.FnWgpuCommandEncoderResolveQuerySet;
-pub const FnWgpuQuerySetRelease = proc_aliases.FnWgpuQuerySetRelease;
-pub const FnWgpuBufferMapAsync = proc_aliases.FnWgpuBufferMapAsync;
-pub const FnWgpuBufferGetConstMappedRange = proc_aliases.FnWgpuBufferGetConstMappedRange;
-pub const FnWgpuBufferGetMappedRange = proc_aliases.FnWgpuBufferGetMappedRange;
-pub const FnWgpuBufferUnmap = proc_aliases.FnWgpuBufferUnmap;
-pub const FnWgpuDeviceCreateSampler = proc_aliases.FnWgpuDeviceCreateSampler;
-pub const FnWgpuSamplerRelease = proc_aliases.FnWgpuSamplerRelease;
-pub const Procs = proc_aliases.Procs;
-const records = @import("wgpu_type_records.zig").definitions(@This());
-pub const BufferRecord = records.BufferRecord;
-pub const TextureRecord = records.TextureRecord;
-pub const DispatchPassArtifacts = records.DispatchPassArtifacts;
-pub const RenderPipelineCacheEntry = records.RenderPipelineCacheEntry;
-pub const RenderTextureViewCacheEntry = records.RenderTextureViewCacheEntry;
-pub const DispatchPassGroup = records.DispatchPassGroup;
-pub const RequestState = records.RequestState;
-pub const DeviceRequestState = records.DeviceRequestState;
-pub const QueueSubmitState = struct {
-    done: bool = false,
-    status: WGPUQueueWorkDoneStatus = .@"error",
-    status_message: []const u8 = "",
-};
-pub const BufferMapState = struct {
-    done: bool = false,
-    status: WGPUMapAsyncStatus = 0,
-};
-pub const UncapturedErrorState = struct {
-    pending: std.atomic.Value(u32) = std.atomic.Value(u32).init(0),
-    error_type: std.atomic.Value(u32) = std.atomic.Value(u32).init(@intFromEnum(WGPUErrorType.noError)),
-};
-pub const KernelSource = struct {
-    source: []const u8,
-    owned: bool,
-    mode: KernelLookupResult,
-};
-pub const KernelLookupResult = enum {
-    fallback,
-    builtin,
-    file,
-};
-pub const PipelineCacheEntry = struct {
-    shader_module: WGPUShaderModule,
-    pipeline: WGPUComputePipeline,
-};
+const runtime_abi = @import("wgpu_runtime_abi.zig");
+pub const BufferRecord = runtime_abi.BufferRecord;
+pub const TextureRecord = runtime_abi.TextureRecord;
+pub const DispatchPassArtifacts = runtime_abi.DispatchPassArtifacts;
+pub const RenderPipelineCacheEntry = runtime_abi.RenderPipelineCacheEntry;
+pub const RenderTextureViewCacheEntry = runtime_abi.RenderTextureViewCacheEntry;
+pub const DispatchPassGroup = runtime_abi.DispatchPassGroup;
+pub const RequestState = runtime_abi.RequestState;
+pub const DeviceRequestState = runtime_abi.DeviceRequestState;
+pub const QueueSubmitState = runtime_abi.QueueSubmitState;
+pub const BufferMapState = runtime_abi.BufferMapState;
+pub const UncapturedErrorState = runtime_abi.UncapturedErrorState;
+pub const KernelSource = runtime_abi.KernelSource;
+pub const KernelLookupResult = runtime_abi.KernelLookupResult;
+pub const PipelineCacheEntry = runtime_abi.PipelineCacheEntry;
+pub const NativeExecutionStatus = runtime_abi.NativeExecutionStatus;
+pub const NativeExecutionResult = runtime_abi.NativeExecutionResult;
+pub const WGPUInstance = runtime_abi.WGPUInstance;
+pub const WGPUAdapter = runtime_abi.WGPUAdapter;
+pub const WGPUDevice = runtime_abi.WGPUDevice;
+pub const WGPUQueue = runtime_abi.WGPUQueue;
+pub const WGPUBuffer = runtime_abi.WGPUBuffer;
+pub const WGPUTexture = runtime_abi.WGPUTexture;
+pub const WGPUTextureView = runtime_abi.WGPUTextureView;
+pub const WGPUExternalTexture = runtime_abi.WGPUExternalTexture;
+pub const WGPUShaderModule = runtime_abi.WGPUShaderModule;
+pub const WGPUSampler = runtime_abi.WGPUSampler;
+pub const WGPUComputePipeline = runtime_abi.WGPUComputePipeline;
+pub const WGPURenderPipeline = runtime_abi.WGPURenderPipeline;
+pub const WGPUComputePassEncoder = runtime_abi.WGPUComputePassEncoder;
+pub const WGPURenderPassEncoder = runtime_abi.WGPURenderPassEncoder;
+pub const WGPUBindGroupLayout = runtime_abi.WGPUBindGroupLayout;
+pub const WGPUBindGroup = runtime_abi.WGPUBindGroup;
+pub const WGPUPipelineLayout = runtime_abi.WGPUPipelineLayout;
+pub const WGPUCommandEncoder = runtime_abi.WGPUCommandEncoder;
+pub const WGPUCommandBuffer = runtime_abi.WGPUCommandBuffer;
+pub const WGPUQuerySet = runtime_abi.WGPUQuerySet;
+pub const WGPUFuture = runtime_abi.WGPUFuture;
+pub const WGPUStringView = runtime_abi.WGPUStringView;
+pub const WGPUFlags = runtime_abi.WGPUFlags;
+pub const WGPUBufferUsage = runtime_abi.WGPUBufferUsage;
+pub const WGPUTextureUsage = runtime_abi.WGPUTextureUsage;
+pub const WGPUTextureFormat = runtime_abi.WGPUTextureFormat;
+pub const WGPUShaderStageFlags = runtime_abi.WGPUShaderStageFlags;
+pub const WGPUTextureDimension = runtime_abi.WGPUTextureDimension;
+pub const WGPUTextureAspect = runtime_abi.WGPUTextureAspect;
+pub const WGPUTextureComponentSwizzle = runtime_abi.WGPUTextureComponentSwizzle;
+pub const WGPUTextureViewDimension = runtime_abi.WGPUTextureViewDimension;
+pub const WGPUAlphaMode = runtime_abi.WGPUAlphaMode;
+pub const WGPUBool = runtime_abi.WGPUBool;
+pub const WGPUSType = runtime_abi.WGPUSType;
+pub const WGPUSType_ShaderSourceWGSL = runtime_abi.WGPUSType_ShaderSourceWGSL;
+pub const WGPUSType_ShaderSourceMSL = runtime_abi.WGPUSType_ShaderSourceMSL;
+pub const WGPUSType_ShaderSourceSPIRV = runtime_abi.WGPUSType_ShaderSourceSPIRV;
+pub const WGPUSType_ShaderSourceHLSL = runtime_abi.WGPUSType_ShaderSourceHLSL;
+pub const WGPUSType_ExternalTextureBindingLayout = runtime_abi.WGPUSType_ExternalTextureBindingLayout;
+pub const WGPUSType_ExternalTextureBindingEntry = runtime_abi.WGPUSType_ExternalTextureBindingEntry;
+pub const WGPU_STRLEN = runtime_abi.WGPU_STRLEN;
+pub const WGPU_FALSE = runtime_abi.WGPU_FALSE;
+pub const WGPU_TRUE = runtime_abi.WGPU_TRUE;
+pub const WGPU_COPY_STRIDE_UNDEFINED = runtime_abi.WGPU_COPY_STRIDE_UNDEFINED;
+pub const WGPU_WHOLE_SIZE = runtime_abi.WGPU_WHOLE_SIZE;
+pub const WGPU_MIP_LEVEL_COUNT_UNDEFINED = runtime_abi.WGPU_MIP_LEVEL_COUNT_UNDEFINED;
+pub const WGPU_ARRAY_LAYER_COUNT_UNDEFINED = runtime_abi.WGPU_ARRAY_LAYER_COUNT_UNDEFINED;
+pub const WGPUBufferUsage_None = runtime_abi.WGPUBufferUsage_None;
+pub const WGPUBufferUsage_MapWrite = runtime_abi.WGPUBufferUsage_MapWrite;
+pub const WGPUBufferUsage_CopySrc = runtime_abi.WGPUBufferUsage_CopySrc;
+pub const WGPUBufferUsage_CopyDst = runtime_abi.WGPUBufferUsage_CopyDst;
+pub const WGPUBufferUsage_Index = runtime_abi.WGPUBufferUsage_Index;
+pub const WGPUBufferUsage_Vertex = runtime_abi.WGPUBufferUsage_Vertex;
+pub const WGPUBufferUsage_Uniform = runtime_abi.WGPUBufferUsage_Uniform;
+pub const WGPUBufferUsage_Storage = runtime_abi.WGPUBufferUsage_Storage;
+pub const WGPUBufferUsage_MapRead = runtime_abi.WGPUBufferUsage_MapRead;
+pub const WGPUBufferUsage_QueryResolve = runtime_abi.WGPUBufferUsage_QueryResolve;
+pub const WGPUFeatureName = runtime_abi.WGPUFeatureName;
+pub const WGPUFeatureName_DepthClipControl = runtime_abi.WGPUFeatureName_DepthClipControl;
+pub const WGPUFeatureName_Depth32FloatStencil8 = runtime_abi.WGPUFeatureName_Depth32FloatStencil8;
+pub const WGPUFeatureName_TextureCompressionBC = runtime_abi.WGPUFeatureName_TextureCompressionBC;
+pub const WGPUFeatureName_TextureCompressionBCSliced3D = runtime_abi.WGPUFeatureName_TextureCompressionBCSliced3D;
+pub const WGPUFeatureName_TextureCompressionETC2 = runtime_abi.WGPUFeatureName_TextureCompressionETC2;
+pub const WGPUFeatureName_TextureCompressionASTC = runtime_abi.WGPUFeatureName_TextureCompressionASTC;
+pub const WGPUFeatureName_TextureCompressionASTCSliced3D = runtime_abi.WGPUFeatureName_TextureCompressionASTCSliced3D;
+pub const WGPUFeatureName_RG11B10UfloatRenderable = runtime_abi.WGPUFeatureName_RG11B10UfloatRenderable;
+pub const WGPUFeatureName_TimestampQuery = runtime_abi.WGPUFeatureName_TimestampQuery;
+pub const WGPUFeatureName_BGRA8UnormStorage = runtime_abi.WGPUFeatureName_BGRA8UnormStorage;
+pub const WGPUFeatureName_ShaderF16 = runtime_abi.WGPUFeatureName_ShaderF16;
+pub const WGPUFeatureName_IndirectFirstInstance = runtime_abi.WGPUFeatureName_IndirectFirstInstance;
+pub const WGPUFeatureName_Float32Filterable = runtime_abi.WGPUFeatureName_Float32Filterable;
+pub const WGPUFeatureName_Subgroups = runtime_abi.WGPUFeatureName_Subgroups;
+pub const WGPUFeatureName_SubgroupsF16 = runtime_abi.WGPUFeatureName_SubgroupsF16;
+pub const WGPUFeatureName_Float32Blendable = runtime_abi.WGPUFeatureName_Float32Blendable;
+pub const WGPUFeatureName_ClipDistances = runtime_abi.WGPUFeatureName_ClipDistances;
+pub const WGPUFeatureName_DualSourceBlending = runtime_abi.WGPUFeatureName_DualSourceBlending;
+pub const WGPUFeatureName_CoreFeaturesAndLimits = runtime_abi.WGPUFeatureName_CoreFeaturesAndLimits;
+pub const WGPUFeatureName_TextureFormatsTier1 = runtime_abi.WGPUFeatureName_TextureFormatsTier1;
+pub const WGPUFeatureName_TextureFormatsTier2 = runtime_abi.WGPUFeatureName_TextureFormatsTier2;
+pub const WGPUFeatureName_PrimitiveIndex = runtime_abi.WGPUFeatureName_PrimitiveIndex;
+pub const WGPUFeatureName_TextureComponentSwizzle = runtime_abi.WGPUFeatureName_TextureComponentSwizzle;
+pub const WGPUFeatureName_ChromiumExperimentalTimestampQueryInsidePasses = runtime_abi.WGPUFeatureName_ChromiumExperimentalTimestampQueryInsidePasses;
+pub const WGPUFeatureName_PixelLocalStorageCoherent = runtime_abi.WGPUFeatureName_PixelLocalStorageCoherent;
+pub const WGPUFeatureName_PixelLocalStorageNonCoherent = runtime_abi.WGPUFeatureName_PixelLocalStorageNonCoherent;
+pub const WGPUFeatureName_MultiDrawIndirect = runtime_abi.WGPUFeatureName_MultiDrawIndirect;
+pub const WGPUFeatureName_ChromiumExperimentalSamplingResourceTable = runtime_abi.WGPUFeatureName_ChromiumExperimentalSamplingResourceTable;
+pub const WGPUQueryType = runtime_abi.WGPUQueryType;
+pub const WGPUQueryType_Timestamp = runtime_abi.WGPUQueryType_Timestamp;
+pub const WGPUMapMode = runtime_abi.WGPUMapMode;
+pub const WGPUMapMode_Read = runtime_abi.WGPUMapMode_Read;
+pub const WGPUMapMode_Write = runtime_abi.WGPUMapMode_Write;
+pub const WGPUMapAsyncStatus = runtime_abi.WGPUMapAsyncStatus;
+pub const WGPUMapAsyncStatus_Success = runtime_abi.WGPUMapAsyncStatus_Success;
+pub const WGPUBufferMapAsyncStatus = runtime_abi.WGPUBufferMapAsyncStatus;
+pub const WGPUBufferMapAsyncStatus_Success = runtime_abi.WGPUBufferMapAsyncStatus_Success;
+pub const WGPUStatus = runtime_abi.WGPUStatus;
+pub const WGPUStatus_Success = runtime_abi.WGPUStatus_Success;
+pub const TIMESTAMP_BUFFER_SIZE = runtime_abi.TIMESTAMP_BUFFER_SIZE;
+pub const WGPUTextureUsage_None = runtime_abi.WGPUTextureUsage_None;
+pub const WGPUTextureUsage_CopySrc = runtime_abi.WGPUTextureUsage_CopySrc;
+pub const WGPUTextureUsage_CopyDst = runtime_abi.WGPUTextureUsage_CopyDst;
+pub const WGPUTextureUsage_TextureBinding = runtime_abi.WGPUTextureUsage_TextureBinding;
+pub const WGPUTextureUsage_StorageBinding = runtime_abi.WGPUTextureUsage_StorageBinding;
+pub const WGPUTextureUsage_RenderAttachment = runtime_abi.WGPUTextureUsage_RenderAttachment;
+pub const WGPUTextureUsage_TransientAttachment = runtime_abi.WGPUTextureUsage_TransientAttachment;
+pub const WGPUTextureUsage_StorageAttachment = runtime_abi.WGPUTextureUsage_StorageAttachment;
+pub const WGPUTextureFormat_Undefined = runtime_abi.WGPUTextureFormat_Undefined;
+pub const WGPUTextureFormat_R8Unorm = runtime_abi.WGPUTextureFormat_R8Unorm;
+pub const WGPUTextureFormat_R8Snorm = runtime_abi.WGPUTextureFormat_R8Snorm;
+pub const WGPUTextureFormat_R8Uint = runtime_abi.WGPUTextureFormat_R8Uint;
+pub const WGPUTextureFormat_R8Sint = runtime_abi.WGPUTextureFormat_R8Sint;
+pub const WGPUTextureFormat_R16Uint = runtime_abi.WGPUTextureFormat_R16Uint;
+pub const WGPUTextureFormat_R16Sint = runtime_abi.WGPUTextureFormat_R16Sint;
+pub const WGPUTextureFormat_R16Float = runtime_abi.WGPUTextureFormat_R16Float;
+pub const WGPUTextureFormat_RG8Unorm = runtime_abi.WGPUTextureFormat_RG8Unorm;
+pub const WGPUTextureFormat_RG8Snorm = runtime_abi.WGPUTextureFormat_RG8Snorm;
+pub const WGPUTextureFormat_RG8Uint = runtime_abi.WGPUTextureFormat_RG8Uint;
+pub const WGPUTextureFormat_RG8Sint = runtime_abi.WGPUTextureFormat_RG8Sint;
+pub const WGPUTextureFormat_R32Float = runtime_abi.WGPUTextureFormat_R32Float;
+pub const WGPUTextureFormat_R32Uint = runtime_abi.WGPUTextureFormat_R32Uint;
+pub const WGPUTextureFormat_R32Sint = runtime_abi.WGPUTextureFormat_R32Sint;
+pub const WGPUTextureFormat_RG16Uint = runtime_abi.WGPUTextureFormat_RG16Uint;
+pub const WGPUTextureFormat_RG16Sint = runtime_abi.WGPUTextureFormat_RG16Sint;
+pub const WGPUTextureFormat_RG16Float = runtime_abi.WGPUTextureFormat_RG16Float;
+pub const WGPUTextureFormat_RGBA8Unorm = runtime_abi.WGPUTextureFormat_RGBA8Unorm;
+pub const WGPUTextureFormat_RGBA8UnormSrgb = runtime_abi.WGPUTextureFormat_RGBA8UnormSrgb;
+pub const WGPUTextureFormat_RGBA8Snorm = runtime_abi.WGPUTextureFormat_RGBA8Snorm;
+pub const WGPUTextureFormat_RGBA8Uint = runtime_abi.WGPUTextureFormat_RGBA8Uint;
+pub const WGPUTextureFormat_RGBA8Sint = runtime_abi.WGPUTextureFormat_RGBA8Sint;
+pub const WGPUTextureFormat_BGRA8Unorm = runtime_abi.WGPUTextureFormat_BGRA8Unorm;
+pub const WGPUTextureFormat_BGRA8UnormSrgb = runtime_abi.WGPUTextureFormat_BGRA8UnormSrgb;
+pub const WGPUTextureFormat_RGB10A2Uint = runtime_abi.WGPUTextureFormat_RGB10A2Uint;
+pub const WGPUTextureFormat_RGB10A2Unorm = runtime_abi.WGPUTextureFormat_RGB10A2Unorm;
+pub const WGPUTextureFormat_RG11B10Ufloat = runtime_abi.WGPUTextureFormat_RG11B10Ufloat;
+pub const WGPUTextureFormat_RGB9E5Ufloat = runtime_abi.WGPUTextureFormat_RGB9E5Ufloat;
+pub const WGPUTextureFormat_RG32Float = runtime_abi.WGPUTextureFormat_RG32Float;
+pub const WGPUTextureFormat_RG32Uint = runtime_abi.WGPUTextureFormat_RG32Uint;
+pub const WGPUTextureFormat_RG32Sint = runtime_abi.WGPUTextureFormat_RG32Sint;
+pub const WGPUTextureFormat_RGBA16Uint = runtime_abi.WGPUTextureFormat_RGBA16Uint;
+pub const WGPUTextureFormat_RGBA16Sint = runtime_abi.WGPUTextureFormat_RGBA16Sint;
+pub const WGPUTextureFormat_RGBA16Float = runtime_abi.WGPUTextureFormat_RGBA16Float;
+pub const WGPUTextureFormat_RGBA32Float = runtime_abi.WGPUTextureFormat_RGBA32Float;
+pub const WGPUTextureFormat_RGBA32Uint = runtime_abi.WGPUTextureFormat_RGBA32Uint;
+pub const WGPUTextureFormat_RGBA32Sint = runtime_abi.WGPUTextureFormat_RGBA32Sint;
+pub const WGPUTextureFormat_Stencil8 = runtime_abi.WGPUTextureFormat_Stencil8;
+pub const WGPUTextureFormat_Depth16Unorm = runtime_abi.WGPUTextureFormat_Depth16Unorm;
+pub const WGPUTextureFormat_Depth24Plus = runtime_abi.WGPUTextureFormat_Depth24Plus;
+pub const WGPUTextureFormat_Depth24PlusStencil8 = runtime_abi.WGPUTextureFormat_Depth24PlusStencil8;
+pub const WGPUTextureFormat_Depth32Float = runtime_abi.WGPUTextureFormat_Depth32Float;
+pub const WGPUTextureFormat_Depth32FloatStencil8 = runtime_abi.WGPUTextureFormat_Depth32FloatStencil8;
+pub const WGPUTextureFormat_BC1RGBAUnorm = runtime_abi.WGPUTextureFormat_BC1RGBAUnorm;
+pub const WGPUTextureFormat_BC1RGBAUnormSrgb = runtime_abi.WGPUTextureFormat_BC1RGBAUnormSrgb;
+pub const WGPUTextureFormat_BC2RGBAUnorm = runtime_abi.WGPUTextureFormat_BC2RGBAUnorm;
+pub const WGPUTextureFormat_BC2RGBAUnormSrgb = runtime_abi.WGPUTextureFormat_BC2RGBAUnormSrgb;
+pub const WGPUTextureFormat_BC3RGBAUnorm = runtime_abi.WGPUTextureFormat_BC3RGBAUnorm;
+pub const WGPUTextureFormat_BC3RGBAUnormSrgb = runtime_abi.WGPUTextureFormat_BC3RGBAUnormSrgb;
+pub const WGPUTextureFormat_BC4RUnorm = runtime_abi.WGPUTextureFormat_BC4RUnorm;
+pub const WGPUTextureFormat_BC4RSnorm = runtime_abi.WGPUTextureFormat_BC4RSnorm;
+pub const WGPUTextureFormat_BC5RGUnorm = runtime_abi.WGPUTextureFormat_BC5RGUnorm;
+pub const WGPUTextureFormat_BC5RGSnorm = runtime_abi.WGPUTextureFormat_BC5RGSnorm;
+pub const WGPUTextureFormat_BC6HRGBUfloat = runtime_abi.WGPUTextureFormat_BC6HRGBUfloat;
+pub const WGPUTextureFormat_BC6HRGBFloat = runtime_abi.WGPUTextureFormat_BC6HRGBFloat;
+pub const WGPUTextureFormat_BC7RGBAUnorm = runtime_abi.WGPUTextureFormat_BC7RGBAUnorm;
+pub const WGPUTextureFormat_BC7RGBAUnormSrgb = runtime_abi.WGPUTextureFormat_BC7RGBAUnormSrgb;
+pub const BC_FORMAT_FIRST = runtime_abi.BC_FORMAT_FIRST;
+pub const BC_FORMAT_LAST = runtime_abi.BC_FORMAT_LAST;
+pub const isBCFormat = runtime_abi.isBCFormat;
+pub const WGPUTextureFormat_ETC2RGB8Unorm = runtime_abi.WGPUTextureFormat_ETC2RGB8Unorm;
+pub const WGPUTextureFormat_ETC2RGB8UnormSrgb = runtime_abi.WGPUTextureFormat_ETC2RGB8UnormSrgb;
+pub const WGPUTextureFormat_ETC2RGB8A1Unorm = runtime_abi.WGPUTextureFormat_ETC2RGB8A1Unorm;
+pub const WGPUTextureFormat_ETC2RGB8A1UnormSrgb = runtime_abi.WGPUTextureFormat_ETC2RGB8A1UnormSrgb;
+pub const WGPUTextureFormat_ETC2RGBA8Unorm = runtime_abi.WGPUTextureFormat_ETC2RGBA8Unorm;
+pub const WGPUTextureFormat_ETC2RGBA8UnormSrgb = runtime_abi.WGPUTextureFormat_ETC2RGBA8UnormSrgb;
+pub const WGPUTextureFormat_EACR11Unorm = runtime_abi.WGPUTextureFormat_EACR11Unorm;
+pub const WGPUTextureFormat_EACR11Snorm = runtime_abi.WGPUTextureFormat_EACR11Snorm;
+pub const WGPUTextureFormat_EACRG11Unorm = runtime_abi.WGPUTextureFormat_EACRG11Unorm;
+pub const WGPUTextureFormat_EACRG11Snorm = runtime_abi.WGPUTextureFormat_EACRG11Snorm;
+pub const ETC2_FORMAT_FIRST = runtime_abi.ETC2_FORMAT_FIRST;
+pub const ETC2_FORMAT_LAST = runtime_abi.ETC2_FORMAT_LAST;
+pub const isETC2Format = runtime_abi.isETC2Format;
+pub const WGPUTextureFormat_ASTC4x4Unorm = runtime_abi.WGPUTextureFormat_ASTC4x4Unorm;
+pub const WGPUTextureFormat_ASTC4x4UnormSrgb = runtime_abi.WGPUTextureFormat_ASTC4x4UnormSrgb;
+pub const WGPUTextureFormat_ASTC5x4Unorm = runtime_abi.WGPUTextureFormat_ASTC5x4Unorm;
+pub const WGPUTextureFormat_ASTC5x4UnormSrgb = runtime_abi.WGPUTextureFormat_ASTC5x4UnormSrgb;
+pub const WGPUTextureFormat_ASTC5x5Unorm = runtime_abi.WGPUTextureFormat_ASTC5x5Unorm;
+pub const WGPUTextureFormat_ASTC5x5UnormSrgb = runtime_abi.WGPUTextureFormat_ASTC5x5UnormSrgb;
+pub const WGPUTextureFormat_ASTC6x5Unorm = runtime_abi.WGPUTextureFormat_ASTC6x5Unorm;
+pub const WGPUTextureFormat_ASTC6x5UnormSrgb = runtime_abi.WGPUTextureFormat_ASTC6x5UnormSrgb;
+pub const WGPUTextureFormat_ASTC6x6Unorm = runtime_abi.WGPUTextureFormat_ASTC6x6Unorm;
+pub const WGPUTextureFormat_ASTC6x6UnormSrgb = runtime_abi.WGPUTextureFormat_ASTC6x6UnormSrgb;
+pub const WGPUTextureFormat_ASTC8x5Unorm = runtime_abi.WGPUTextureFormat_ASTC8x5Unorm;
+pub const WGPUTextureFormat_ASTC8x5UnormSrgb = runtime_abi.WGPUTextureFormat_ASTC8x5UnormSrgb;
+pub const WGPUTextureFormat_ASTC8x6Unorm = runtime_abi.WGPUTextureFormat_ASTC8x6Unorm;
+pub const WGPUTextureFormat_ASTC8x6UnormSrgb = runtime_abi.WGPUTextureFormat_ASTC8x6UnormSrgb;
+pub const WGPUTextureFormat_ASTC8x8Unorm = runtime_abi.WGPUTextureFormat_ASTC8x8Unorm;
+pub const WGPUTextureFormat_ASTC8x8UnormSrgb = runtime_abi.WGPUTextureFormat_ASTC8x8UnormSrgb;
+pub const WGPUTextureFormat_ASTC10x5Unorm = runtime_abi.WGPUTextureFormat_ASTC10x5Unorm;
+pub const WGPUTextureFormat_ASTC10x5UnormSrgb = runtime_abi.WGPUTextureFormat_ASTC10x5UnormSrgb;
+pub const WGPUTextureFormat_ASTC10x6Unorm = runtime_abi.WGPUTextureFormat_ASTC10x6Unorm;
+pub const WGPUTextureFormat_ASTC10x6UnormSrgb = runtime_abi.WGPUTextureFormat_ASTC10x6UnormSrgb;
+pub const WGPUTextureFormat_ASTC10x8Unorm = runtime_abi.WGPUTextureFormat_ASTC10x8Unorm;
+pub const WGPUTextureFormat_ASTC10x8UnormSrgb = runtime_abi.WGPUTextureFormat_ASTC10x8UnormSrgb;
+pub const WGPUTextureFormat_ASTC10x10Unorm = runtime_abi.WGPUTextureFormat_ASTC10x10Unorm;
+pub const WGPUTextureFormat_ASTC10x10UnormSrgb = runtime_abi.WGPUTextureFormat_ASTC10x10UnormSrgb;
+pub const WGPUTextureFormat_ASTC12x10Unorm = runtime_abi.WGPUTextureFormat_ASTC12x10Unorm;
+pub const WGPUTextureFormat_ASTC12x10UnormSrgb = runtime_abi.WGPUTextureFormat_ASTC12x10UnormSrgb;
+pub const WGPUTextureFormat_ASTC12x12Unorm = runtime_abi.WGPUTextureFormat_ASTC12x12Unorm;
+pub const WGPUTextureFormat_ASTC12x12UnormSrgb = runtime_abi.WGPUTextureFormat_ASTC12x12UnormSrgb;
+pub const ASTC_FORMAT_FIRST = runtime_abi.ASTC_FORMAT_FIRST;
+pub const ASTC_FORMAT_LAST = runtime_abi.ASTC_FORMAT_LAST;
+pub const isASTCFormat = runtime_abi.isASTCFormat;
+pub const isDepthStencilFormat = runtime_abi.isDepthStencilFormat;
+pub const hasStencilAspect = runtime_abi.hasStencilAspect;
+pub const isFloat32Format = runtime_abi.isFloat32Format;
+pub const isBaseStorageTextureFormat = runtime_abi.isBaseStorageTextureFormat;
+pub const isStorageTextureFormat = runtime_abi.isStorageTextureFormat;
+pub const WGPUTextureSampleType_BindingNotUsed = runtime_abi.WGPUTextureSampleType_BindingNotUsed;
+pub const WGPUTextureSampleType_Undefined = runtime_abi.WGPUTextureSampleType_Undefined;
+pub const WGPUTextureSampleType_Float = runtime_abi.WGPUTextureSampleType_Float;
+pub const WGPUTextureSampleType_UnfilterableFloat = runtime_abi.WGPUTextureSampleType_UnfilterableFloat;
+pub const WGPUTextureSampleType_Depth = runtime_abi.WGPUTextureSampleType_Depth;
+pub const WGPUTextureSampleType_Sint = runtime_abi.WGPUTextureSampleType_Sint;
+pub const WGPUTextureSampleType_Uint = runtime_abi.WGPUTextureSampleType_Uint;
+pub const WGPUTextureSampleType_UndefinedDefault = runtime_abi.WGPUTextureSampleType_UndefinedDefault;
+pub const WGPUTextureAspect_Undefined = runtime_abi.WGPUTextureAspect_Undefined;
+pub const WGPUTextureAspect_All = runtime_abi.WGPUTextureAspect_All;
+pub const WGPUTextureAspect_StencilOnly = runtime_abi.WGPUTextureAspect_StencilOnly;
+pub const WGPUTextureAspect_DepthOnly = runtime_abi.WGPUTextureAspect_DepthOnly;
+pub const WGPUTextureComponentSwizzle_Undefined = runtime_abi.WGPUTextureComponentSwizzle_Undefined;
+pub const WGPUTextureComponentSwizzle_Zero = runtime_abi.WGPUTextureComponentSwizzle_Zero;
+pub const WGPUTextureComponentSwizzle_One = runtime_abi.WGPUTextureComponentSwizzle_One;
+pub const WGPUTextureComponentSwizzle_Red = runtime_abi.WGPUTextureComponentSwizzle_Red;
+pub const WGPUTextureComponentSwizzle_Green = runtime_abi.WGPUTextureComponentSwizzle_Green;
+pub const WGPUTextureComponentSwizzle_Blue = runtime_abi.WGPUTextureComponentSwizzle_Blue;
+pub const WGPUTextureComponentSwizzle_Alpha = runtime_abi.WGPUTextureComponentSwizzle_Alpha;
+pub const WGPUStorageTextureAccess_BindingNotUsed = runtime_abi.WGPUStorageTextureAccess_BindingNotUsed;
+pub const WGPUStorageTextureAccess_Undefined = runtime_abi.WGPUStorageTextureAccess_Undefined;
+pub const WGPUStorageTextureAccess_WriteOnly = runtime_abi.WGPUStorageTextureAccess_WriteOnly;
+pub const WGPUStorageTextureAccess_ReadOnly = runtime_abi.WGPUStorageTextureAccess_ReadOnly;
+pub const WGPUStorageTextureAccess_ReadWrite = runtime_abi.WGPUStorageTextureAccess_ReadWrite;
+pub const WGPUBufferBindingType_BindingNotUsed = runtime_abi.WGPUBufferBindingType_BindingNotUsed;
+pub const WGPUBufferBindingType_Undefined = runtime_abi.WGPUBufferBindingType_Undefined;
+pub const WGPUBufferBindingType_Uniform = runtime_abi.WGPUBufferBindingType_Uniform;
+pub const WGPUBufferBindingType_Storage = runtime_abi.WGPUBufferBindingType_Storage;
+pub const WGPUBufferBindingType_ReadOnlyStorage = runtime_abi.WGPUBufferBindingType_ReadOnlyStorage;
+pub const WGPUTextureViewDimension_Undefined = runtime_abi.WGPUTextureViewDimension_Undefined;
+pub const WGPUTextureViewDimension_1D = runtime_abi.WGPUTextureViewDimension_1D;
+pub const WGPUTextureViewDimension_2D = runtime_abi.WGPUTextureViewDimension_2D;
+pub const WGPUTextureViewDimension_2DArray = runtime_abi.WGPUTextureViewDimension_2DArray;
+pub const WGPUTextureViewDimension_Cube = runtime_abi.WGPUTextureViewDimension_Cube;
+pub const WGPUTextureViewDimension_CubeArray = runtime_abi.WGPUTextureViewDimension_CubeArray;
+pub const WGPUTextureViewDimension_3D = runtime_abi.WGPUTextureViewDimension_3D;
+pub const WGPUTextureViewDimension_2DDepth = runtime_abi.WGPUTextureViewDimension_2DDepth;
+pub const WGPUTextureViewDimension_2DArrayDepth = runtime_abi.WGPUTextureViewDimension_2DArrayDepth;
+pub const WGPUTextureDimension_Undefined = runtime_abi.WGPUTextureDimension_Undefined;
+pub const WGPUTextureDimension_1D = runtime_abi.WGPUTextureDimension_1D;
+pub const WGPUTextureDimension_2D = runtime_abi.WGPUTextureDimension_2D;
+pub const WGPUTextureDimension_3D = runtime_abi.WGPUTextureDimension_3D;
+pub const WGPUShaderStage_None = runtime_abi.WGPUShaderStage_None;
+pub const WGPUShaderStage_Vertex = runtime_abi.WGPUShaderStage_Vertex;
+pub const WGPUShaderStage_Fragment = runtime_abi.WGPUShaderStage_Fragment;
+pub const WGPUShaderStage_Compute = runtime_abi.WGPUShaderStage_Compute;
+pub const WGPUSamplerBindingType_BindingNotUsed = runtime_abi.WGPUSamplerBindingType_BindingNotUsed;
+pub const WGPUSamplerBindingType_Undefined = runtime_abi.WGPUSamplerBindingType_Undefined;
+pub const WGPUSamplerBindingType_Filtering = runtime_abi.WGPUSamplerBindingType_Filtering;
+pub const WGPUSamplerBindingType_NonFiltering = runtime_abi.WGPUSamplerBindingType_NonFiltering;
+pub const WGPUSamplerBindingType_Comparison = runtime_abi.WGPUSamplerBindingType_Comparison;
+pub const WGPUExtent3D = runtime_abi.WGPUExtent3D;
+pub const WGPUExtent2D = runtime_abi.WGPUExtent2D;
+pub const WGPUOrigin3D = runtime_abi.WGPUOrigin3D;
+pub const WGPUTexelCopyBufferLayout = runtime_abi.WGPUTexelCopyBufferLayout;
+pub const WGPUTexelCopyBufferInfo = runtime_abi.WGPUTexelCopyBufferInfo;
+pub const WGPUTexelCopyTextureInfo = runtime_abi.WGPUTexelCopyTextureInfo;
+pub const WGPUTextureViewDescriptor = runtime_abi.WGPUTextureViewDescriptor;
+pub const WGPUTextureDescriptor = runtime_abi.WGPUTextureDescriptor;
+pub const WGPUBufferBindingLayout = runtime_abi.WGPUBufferBindingLayout;
+pub const WGPUSamplerBindingLayout = runtime_abi.WGPUSamplerBindingLayout;
+pub const WGPUTextureBindingLayout = runtime_abi.WGPUTextureBindingLayout;
+pub const WGPUStorageTextureBindingLayout = runtime_abi.WGPUStorageTextureBindingLayout;
+pub const WGPUBindGroupLayoutEntry = runtime_abi.WGPUBindGroupLayoutEntry;
+pub const WGPUBindGroupEntry = runtime_abi.WGPUBindGroupEntry;
+pub const WGPUExternalTextureBindingLayout = runtime_abi.WGPUExternalTextureBindingLayout;
+pub const WGPUExternalTextureBindingEntry = runtime_abi.WGPUExternalTextureBindingEntry;
+pub const WGPUCopyTextureForBrowserOptions = runtime_abi.WGPUCopyTextureForBrowserOptions;
+pub const WGPUImageCopyExternalTexture = runtime_abi.WGPUImageCopyExternalTexture;
+pub const WGPUBindGroupLayoutDescriptor = runtime_abi.WGPUBindGroupLayoutDescriptor;
+pub const WGPUBindGroupDescriptor = runtime_abi.WGPUBindGroupDescriptor;
+pub const WGPUPipelineLayoutDescriptor = runtime_abi.WGPUPipelineLayoutDescriptor;
+pub const WGPUCallbackMode = runtime_abi.WGPUCallbackMode;
+pub const WGPUCallbackMode_WaitAnyOnly = runtime_abi.WGPUCallbackMode_WaitAnyOnly;
+pub const WGPUCallbackMode_AllowProcessEvents = runtime_abi.WGPUCallbackMode_AllowProcessEvents;
+pub const WGPUCallbackMode_AllowSpontaneous = runtime_abi.WGPUCallbackMode_AllowSpontaneous;
+pub const WGPUWaitStatus = runtime_abi.WGPUWaitStatus;
+pub const WGPURequestAdapterStatus = runtime_abi.WGPURequestAdapterStatus;
+pub const WGPURequestDeviceStatus = runtime_abi.WGPURequestDeviceStatus;
+pub const WGPUQueueWorkDoneStatus = runtime_abi.WGPUQueueWorkDoneStatus;
+pub const WGPUPowerPreference = runtime_abi.WGPUPowerPreference;
+pub const WGPUFeatureLevel = runtime_abi.WGPUFeatureLevel;
+pub const WGPUBackendType = runtime_abi.WGPUBackendType;
+pub const WGPURequestAdapterCallback = runtime_abi.WGPURequestAdapterCallback;
+pub const WGPURequestDeviceCallback = runtime_abi.WGPURequestDeviceCallback;
+pub const WGPUQueueWorkDoneCallback = runtime_abi.WGPUQueueWorkDoneCallback;
+pub const WGPUDeviceLostReason = runtime_abi.WGPUDeviceLostReason;
+pub const WGPUErrorType = runtime_abi.WGPUErrorType;
+pub const WGPUDeviceLostCallback = runtime_abi.WGPUDeviceLostCallback;
+pub const WGPUUncapturedErrorCallback = runtime_abi.WGPUUncapturedErrorCallback;
+pub const WGPURequestAdapterCallbackInfo = runtime_abi.WGPURequestAdapterCallbackInfo;
+pub const WGPURequestDeviceCallbackInfo = runtime_abi.WGPURequestDeviceCallbackInfo;
+pub const WGPUQueueWorkDoneCallbackInfo = runtime_abi.WGPUQueueWorkDoneCallbackInfo;
+pub const WGPUDeviceLostCallbackInfo = runtime_abi.WGPUDeviceLostCallbackInfo;
+pub const WGPUUncapturedErrorCallbackInfo = runtime_abi.WGPUUncapturedErrorCallbackInfo;
+pub const WGPUChainedStruct = runtime_abi.WGPUChainedStruct;
+pub const WGPURequestAdapterOptions = runtime_abi.WGPURequestAdapterOptions;
+pub const WGPUBufferDescriptor = runtime_abi.WGPUBufferDescriptor;
+pub const WGPUShaderModuleDescriptor = runtime_abi.WGPUShaderModuleDescriptor;
+pub const WGPUShaderSourceWGSL = runtime_abi.WGPUShaderSourceWGSL;
+pub const WGPUShaderSourceMSL = runtime_abi.WGPUShaderSourceMSL;
+pub const WGPUShaderSourceSPIRV = runtime_abi.WGPUShaderSourceSPIRV;
+pub const WGPUShaderSourceHLSL = runtime_abi.WGPUShaderSourceHLSL;
+pub const WGPUConstantEntry = runtime_abi.WGPUConstantEntry;
+pub const WGPUComputeState = runtime_abi.WGPUComputeState;
+pub const WGPUComputePipelineDescriptor = runtime_abi.WGPUComputePipelineDescriptor;
+pub const WGPUComputePassDescriptor = runtime_abi.WGPUComputePassDescriptor;
+pub const WGPUPassTimestampWrites = runtime_abi.WGPUPassTimestampWrites;
+pub const WGPUQuerySetDescriptor = runtime_abi.WGPUQuerySetDescriptor;
+pub const WGPUBufferMapCallbackInfo = runtime_abi.WGPUBufferMapCallbackInfo;
+pub const WGPUBufferMapCallback = runtime_abi.WGPUBufferMapCallback;
+pub const WGPUCommandEncoderDescriptor = runtime_abi.WGPUCommandEncoderDescriptor;
+pub const WGPUCommandBufferDescriptor = runtime_abi.WGPUCommandBufferDescriptor;
+pub const WGPUFutureWaitInfo = runtime_abi.WGPUFutureWaitInfo;
+pub const WGPUQueueDescriptor = runtime_abi.WGPUQueueDescriptor;
+pub const WGPULimits = runtime_abi.WGPULimits;
+pub const WGPUDeviceDescriptor = runtime_abi.WGPUDeviceDescriptor;
+pub const WGPUSamplerDescriptor = runtime_abi.WGPUSamplerDescriptor;
+pub const WGPUColor = runtime_abi.WGPUColor;
+pub const WGPURenderPassColorAttachment = runtime_abi.WGPURenderPassColorAttachment;
+pub const WGPURenderPassDepthStencilAttachment = runtime_abi.WGPURenderPassDepthStencilAttachment;
+pub const WGPURenderPassDescriptor = runtime_abi.WGPURenderPassDescriptor;
+pub const initLimits = runtime_abi.initLimits;
+pub const FnWgpuCreateInstance = runtime_abi.FnWgpuCreateInstance;
+pub const FnWgpuInstanceRequestAdapter = runtime_abi.FnWgpuInstanceRequestAdapter;
+pub const FnWgpuInstanceWaitAny = runtime_abi.FnWgpuInstanceWaitAny;
+pub const FnWgpuInstanceProcessEvents = runtime_abi.FnWgpuInstanceProcessEvents;
+pub const FnWgpuAdapterRequestDevice = runtime_abi.FnWgpuAdapterRequestDevice;
+pub const FnWgpuDeviceCreateBuffer = runtime_abi.FnWgpuDeviceCreateBuffer;
+pub const FnWgpuDeviceCreateShaderModule = runtime_abi.FnWgpuDeviceCreateShaderModule;
+pub const FnWgpuShaderModuleRelease = runtime_abi.FnWgpuShaderModuleRelease;
+pub const FnWgpuDeviceCreateComputePipeline = runtime_abi.FnWgpuDeviceCreateComputePipeline;
+pub const FnWgpuComputePipelineRelease = runtime_abi.FnWgpuComputePipelineRelease;
+pub const FnWgpuRenderPipelineRelease = runtime_abi.FnWgpuRenderPipelineRelease;
+pub const FnWgpuDeviceCreateCommandEncoder = runtime_abi.FnWgpuDeviceCreateCommandEncoder;
+pub const FnWgpuCommandEncoderBeginComputePass = runtime_abi.FnWgpuCommandEncoderBeginComputePass;
+pub const FnWgpuDeviceCreateRenderPipeline = runtime_abi.FnWgpuDeviceCreateRenderPipeline;
+pub const FnWgpuCommandEncoderBeginRenderPass = runtime_abi.FnWgpuCommandEncoderBeginRenderPass;
+pub const FnWgpuCommandEncoderWriteTimestamp = runtime_abi.FnWgpuCommandEncoderWriteTimestamp;
+pub const FnWgpuCommandEncoderCopyBufferToBuffer = runtime_abi.FnWgpuCommandEncoderCopyBufferToBuffer;
+pub const FnWgpuCommandEncoderCopyBufferToTexture = runtime_abi.FnWgpuCommandEncoderCopyBufferToTexture;
+pub const FnWgpuCommandEncoderCopyTextureToBuffer = runtime_abi.FnWgpuCommandEncoderCopyTextureToBuffer;
+pub const FnWgpuCommandEncoderCopyTextureToTexture = runtime_abi.FnWgpuCommandEncoderCopyTextureToTexture;
+pub const FnWgpuComputePassEncoderSetPipeline = runtime_abi.FnWgpuComputePassEncoderSetPipeline;
+pub const FnWgpuComputePassEncoderSetBindGroup = runtime_abi.FnWgpuComputePassEncoderSetBindGroup;
+pub const FnWgpuComputePassEncoderDispatchWorkgroups = runtime_abi.FnWgpuComputePassEncoderDispatchWorkgroups;
+pub const FnWgpuComputePassEncoderEnd = runtime_abi.FnWgpuComputePassEncoderEnd;
+pub const FnWgpuComputePassEncoderRelease = runtime_abi.FnWgpuComputePassEncoderRelease;
+pub const FnWgpuRenderPassEncoderSetPipeline = runtime_abi.FnWgpuRenderPassEncoderSetPipeline;
+pub const FnWgpuRenderPassEncoderSetVertexBuffer = runtime_abi.FnWgpuRenderPassEncoderSetVertexBuffer;
+pub const FnWgpuRenderPassEncoderSetIndexBuffer = runtime_abi.FnWgpuRenderPassEncoderSetIndexBuffer;
+pub const FnWgpuRenderPassEncoderSetBindGroup = runtime_abi.FnWgpuRenderPassEncoderSetBindGroup;
+pub const FnWgpuRenderPassEncoderDraw = runtime_abi.FnWgpuRenderPassEncoderDraw;
+pub const FnWgpuRenderPassEncoderDrawIndexed = runtime_abi.FnWgpuRenderPassEncoderDrawIndexed;
+pub const FnWgpuRenderPassEncoderDrawIndirect = runtime_abi.FnWgpuRenderPassEncoderDrawIndirect;
+pub const FnWgpuRenderPassEncoderDrawIndexedIndirect = runtime_abi.FnWgpuRenderPassEncoderDrawIndexedIndirect;
+pub const FnWgpuRenderPassEncoderEnd = runtime_abi.FnWgpuRenderPassEncoderEnd;
+pub const FnWgpuRenderPassEncoderRelease = runtime_abi.FnWgpuRenderPassEncoderRelease;
+pub const FnWgpuCommandEncoderFinish = runtime_abi.FnWgpuCommandEncoderFinish;
+pub const FnWgpuDeviceGetQueue = runtime_abi.FnWgpuDeviceGetQueue;
+pub const FnWgpuQueueSubmit = runtime_abi.FnWgpuQueueSubmit;
+pub const FnWgpuQueueOnSubmittedWorkDone = runtime_abi.FnWgpuQueueOnSubmittedWorkDone;
+pub const FnWgpuQueueWriteBuffer = runtime_abi.FnWgpuQueueWriteBuffer;
+pub const FnWgpuDeviceCreateTexture = runtime_abi.FnWgpuDeviceCreateTexture;
+pub const FnWgpuTextureCreateView = runtime_abi.FnWgpuTextureCreateView;
+pub const FnWgpuDeviceCreateBindGroupLayout = runtime_abi.FnWgpuDeviceCreateBindGroupLayout;
+pub const FnWgpuBindGroupLayoutRelease = runtime_abi.FnWgpuBindGroupLayoutRelease;
+pub const FnWgpuDeviceCreateBindGroup = runtime_abi.FnWgpuDeviceCreateBindGroup;
+pub const FnWgpuBindGroupRelease = runtime_abi.FnWgpuBindGroupRelease;
+pub const FnWgpuDeviceCreatePipelineLayout = runtime_abi.FnWgpuDeviceCreatePipelineLayout;
+pub const FnWgpuPipelineLayoutRelease = runtime_abi.FnWgpuPipelineLayoutRelease;
+pub const FnWgpuTextureRelease = runtime_abi.FnWgpuTextureRelease;
+pub const FnWgpuTextureViewRelease = runtime_abi.FnWgpuTextureViewRelease;
+pub const FnWgpuInstanceRelease = runtime_abi.FnWgpuInstanceRelease;
+pub const FnWgpuAdapterRelease = runtime_abi.FnWgpuAdapterRelease;
+pub const FnWgpuDeviceRelease = runtime_abi.FnWgpuDeviceRelease;
+pub const FnWgpuQueueRelease = runtime_abi.FnWgpuQueueRelease;
+pub const FnWgpuCommandEncoderRelease = runtime_abi.FnWgpuCommandEncoderRelease;
+pub const FnWgpuCommandBufferRelease = runtime_abi.FnWgpuCommandBufferRelease;
+pub const FnWgpuBufferRelease = runtime_abi.FnWgpuBufferRelease;
+pub const FnWgpuAdapterHasFeature = runtime_abi.FnWgpuAdapterHasFeature;
+pub const FnWgpuDeviceHasFeature = runtime_abi.FnWgpuDeviceHasFeature;
+pub const FnWgpuDeviceCreateQuerySet = runtime_abi.FnWgpuDeviceCreateQuerySet;
+pub const FnWgpuCommandEncoderResolveQuerySet = runtime_abi.FnWgpuCommandEncoderResolveQuerySet;
+pub const FnWgpuQuerySetRelease = runtime_abi.FnWgpuQuerySetRelease;
+pub const FnWgpuBufferMapAsync = runtime_abi.FnWgpuBufferMapAsync;
+pub const FnWgpuBufferGetConstMappedRange = runtime_abi.FnWgpuBufferGetConstMappedRange;
+pub const FnWgpuBufferGetMappedRange = runtime_abi.FnWgpuBufferGetMappedRange;
+pub const FnWgpuBufferUnmap = runtime_abi.FnWgpuBufferUnmap;
+pub const FnWgpuDeviceCreateSampler = runtime_abi.FnWgpuDeviceCreateSampler;
+pub const FnWgpuSamplerRelease = runtime_abi.FnWgpuSamplerRelease;
+pub const Procs = runtime_abi.Procs;

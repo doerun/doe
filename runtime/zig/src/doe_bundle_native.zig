@@ -2,7 +2,7 @@
 // Sharded from doe_wgpu_native.zig to stay under the 777-line limit.
 
 const std = @import("std");
-const types = @import("core/abi/wgpu_types.zig");
+const abi_base = @import("core/abi/wgpu_base_types.zig");
 const native = @import("doe_wgpu_native.zig");
 const bundle = @import("render_bundle.zig");
 
@@ -31,7 +31,7 @@ pub export fn doeNativeDeviceCreateRenderBundleEncoder(
     _ = cast(DoeDevice, dev_raw) orelse return null;
     const d = desc orelse return null;
 
-    const color_fmt: types.WGPUTextureFormat = if (d.colorFormatCount > 0)
+    const color_fmt: abi_base.WGPUTextureFormat = if (d.colorFormatCount > 0)
         d.colorFormats[0]
     else
         0;

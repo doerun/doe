@@ -4,8 +4,9 @@
 const std = @import("std");
 const builtin = @import("builtin");
 const has_vulkan = (builtin.os.tag == .linux);
-const model = @import("model_webgpu_types.zig");
-const types = @import("core/abi/wgpu_types.zig");
+const model_render_types = @import("model_render_types.zig");
+const abi_base = @import("core/abi/wgpu_base_types.zig");
+const abi_descriptor = @import("core/abi/wgpu_descriptor_types.zig");
 const wgsl_compiler = @import("doe_wgsl/mod.zig");
 const error_scope = @import("error_scope.zig");
 const gpu_timeline = @import("gpu_timeline.zig");
@@ -77,7 +78,7 @@ pub const DoeDevice = struct {
     // Per-device error scope stack for pushErrorScope/popErrorScope.
     error_scopes: error_scope.ErrorScopeStack = error_scope.ErrorScopeStack.init(),
     // Device lost callback — stored for future delivery; not yet auto-fired.
-    device_lost_callback: ?types.WGPUDeviceLostCallback = null,
+    device_lost_callback: ?abi_descriptor.WGPUDeviceLostCallback = null,
     device_lost_userdata1: ?*anyopaque = null,
     device_lost_userdata2: ?*anyopaque = null,
     backend: BackendKind = .metal,
@@ -202,8 +203,8 @@ pub const DoeBindGroupLayout = struct {
 pub const DoeBindGroupLayoutEntry = struct {
     binding: u32 = 0,
     resource_kind: u32 = 0,
-    texture_sample_type: u32 = types.WGPUTextureSampleType_Undefined,
-    texture_view_dimension: u32 = types.WGPUTextureViewDimension_Undefined,
+    texture_sample_type: u32 = abi_base.WGPUTextureSampleType_Undefined,
+    texture_view_dimension: u32 = abi_base.WGPUTextureViewDimension_Undefined,
     texture_multisampled: bool = false,
     binding_array_size: u32 = 0,
 };
@@ -226,7 +227,7 @@ pub const DoeBindGroup = struct {
     retained_buffers: [MAX_BIND]?*DoeBuffer = [_]?*DoeBuffer{null} ** MAX_BIND,
     retained_texture_views: [MAX_BIND]?*DoeTextureView = [_]?*DoeTextureView{null} ** MAX_BIND,
     retained_samplers: [MAX_BIND]?*DoeSampler = [_]?*DoeSampler{null} ** MAX_BIND,
-    retained_external_textures: [MAX_BIND]types.WGPUExternalTexture = [_]types.WGPUExternalTexture{null} ** MAX_BIND,
+    retained_external_textures: [MAX_BIND]abi_base.WGPUExternalTexture = [_]abi_base.WGPUExternalTexture{null} ** MAX_BIND,
     offsets: [MAX_BIND]u64 = [_]u64{0} ** MAX_BIND,
     // Byte size of each buffer — used to fill _doe_sizes for arrayLength.
     buffer_sizes: [MAX_BIND]u64 = [_]u64{0} ** MAX_BIND,
@@ -412,7 +413,7 @@ pub const DoeRenderPipeline = struct {
     backend_root_signature: ?*anyopaque = null,
     layout: ?*DoePipelineLayout = null,
     vertex_layout_count: u32 = 0,
-    vertex_layouts: [model.MAX_VERTEX_BUFFERS]model.RenderVertexBufferLayout = [_]model.RenderVertexBufferLayout{.{}} ** model.MAX_VERTEX_BUFFERS,
+    vertex_layouts: [model_render_types.MAX_VERTEX_BUFFERS]model_render_types.RenderVertexBufferLayout = [_]model_render_types.RenderVertexBufferLayout{.{}} ** model_render_types.MAX_VERTEX_BUFFERS,
     depth_state: ?*anyopaque = null,
     topology: u32 = 0x00000004,
     front_face: u32 = 0x00000001,

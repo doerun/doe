@@ -51,6 +51,7 @@ Before changing Doe behavior, read:
 - `pipeline/agent/README.md`
 - `pipeline/lean/README.md`
 - `runtime/zig/README.md`
+- `runtime/zig/STYLE.md`
 - `bench/README.md`
 - `pipeline/trace/README.md`
 

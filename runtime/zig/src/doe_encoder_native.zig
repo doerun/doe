@@ -5,7 +5,8 @@
 const builtin = @import("builtin");
 const has_vulkan = (builtin.os.tag == .linux);
 const std = @import("std");
-const types = @import("core/abi/wgpu_types.zig");
+const model_transfer_types = @import("model_resource_types.zig");
+const abi_descriptor = @import("core/abi/wgpu_descriptor_types.zig");
 const native = @import("doe_wgpu_native.zig");
 
 const alloc = native.alloc;
@@ -34,7 +35,7 @@ const DoePipelineLayoutLocal = struct {
 // ============================================================
 // Command Encoder / Command Buffer
 
-pub export fn doeNativeDeviceCreateCommandEncoder(dev_raw: ?*anyopaque, desc: ?*const types.WGPUCommandEncoderDescriptor) callconv(.c) ?*anyopaque {
+pub export fn doeNativeDeviceCreateCommandEncoder(dev_raw: ?*anyopaque, desc: ?*const abi_descriptor.WGPUCommandEncoderDescriptor) callconv(.c) ?*anyopaque {
     const dev = cast(DoeDevice, dev_raw) orelse return null;
     const enc = make(DoeCommandEncoder) orelse return null;
     enc.* = .{ .dev = dev };
@@ -52,7 +53,7 @@ pub export fn doeNativeCommandEncoderRelease(raw: ?*anyopaque) callconv(.c) void
     }
 }
 
-pub export fn doeNativeCommandEncoderBeginComputePass(enc_raw: ?*anyopaque, desc: ?*const types.WGPUComputePassDescriptor) callconv(.c) ?*anyopaque {
+pub export fn doeNativeCommandEncoderBeginComputePass(enc_raw: ?*anyopaque, desc: ?*const abi_descriptor.WGPUComputePassDescriptor) callconv(.c) ?*anyopaque {
     _ = desc;
     const enc = cast(DoeCommandEncoder, enc_raw) orelse return null;
     const pass = make(DoeComputePass) orelse return null;
@@ -120,8 +121,7 @@ pub export fn doeNativeCommandEncoderCopyBufferToTexture(
                         const byte_count: usize = @intCast(@as(u64, src_bytes_per_row) * rows * depth_or_array_layers);
                         const base_off: usize = @intCast(src_offset);
                         const raw: [*]const u8 = @ptrCast(mapped_ptr);
-                        const model_webgpu_types = @import("model_webgpu_types.zig");
-                        const copy_res = model_webgpu_types.CopyTextureResource{
+                        const copy_res = model_transfer_types.CopyTextureResource{
                             .handle = dst_texture.vk_id,
                             .width = width,
                             .height = height,
@@ -205,7 +205,7 @@ pub export fn doeNativeCommandEncoderCopyTextureToBuffer(
     } }) catch std.debug.panic("doe_encoder_native: OOM recording texture copy command", .{});
 }
 
-pub export fn doeNativeCommandEncoderFinish(enc_raw: ?*anyopaque, desc: ?*const types.WGPUCommandBufferDescriptor) callconv(.c) ?*anyopaque {
+pub export fn doeNativeCommandEncoderFinish(enc_raw: ?*anyopaque, desc: ?*const abi_descriptor.WGPUCommandBufferDescriptor) callconv(.c) ?*anyopaque {
     const enc = cast(DoeCommandEncoder, enc_raw) orelse return null;
     const cb = make(DoeCommandBuffer) orelse return null;
     cb.* = .{ .dev = enc.dev, .cmds = enc.cmds };

@@ -2,8 +2,7 @@
 // Sharded from doe_render_native.zig for file-size compliance.
 
 const std = @import("std");
-const model = @import("model_webgpu_types.zig");
-const types = @import("core/abi/wgpu_types.zig");
+const model_render_types = @import("model_render_types.zig");
 const native = @import("doe_wgpu_native.zig");
 const d3d12_formats = @import("backend/d3d12/d3d12_formats.zig");
 
@@ -230,7 +229,7 @@ pub export fn doeNativeDeviceCreateRenderPipeline(dev_raw: ?*anyopaque, desc_raw
     pip.* = .{};
     pip.layout = cast(DoePipelineLayout, d.layout);
 
-    const buf_count = @min(d.vertex.bufferCount, @as(usize, model.MAX_VERTEX_BUFFERS));
+    const buf_count = @min(d.vertex.bufferCount, @as(usize, model_render_types.MAX_VERTEX_BUFFERS));
     if (buf_count > 0) {
         const bufs = @as(?[*]const RenderVertexBufferLayout, @ptrCast(@alignCast(d.vertex.buffers)));
         if (bufs) |layouts| {
@@ -242,10 +241,10 @@ pub export fn doeNativeDeviceCreateRenderPipeline(dev_raw: ?*anyopaque, desc_raw
                 dst.* = .{
                     .array_stride = layout.arrayStride,
                     .step_mode = layout.stepMode,
-                    .attribute_count = @intCast(@min(layout.attributeCount, @as(usize, model.MAX_VERTEX_ATTRIBUTES))),
+                    .attribute_count = @intCast(@min(layout.attributeCount, @as(usize, model_render_types.MAX_VERTEX_ATTRIBUTES))),
                 };
                 if (layout.attributes) |attrs| {
-                    const attr_count = @min(layout.attributeCount, @as(usize, model.MAX_VERTEX_ATTRIBUTES));
+                    const attr_count = @min(layout.attributeCount, @as(usize, model_render_types.MAX_VERTEX_ATTRIBUTES));
                     var j: usize = 0;
                     while (j < attr_count) : (j += 1) {
                         const attr = attrs[j];
@@ -326,21 +325,21 @@ pub export fn doeNativeDeviceCreateRenderPipeline(dev_raw: ?*anyopaque, desc_raw
         };
         errdefer d3d12_bridge_release(root_sig);
 
-        var input_elements: [model.MAX_VERTEX_ATTRIBUTES]D3D12InputElementDesc =
-            [_]D3D12InputElementDesc{std.mem.zeroes(D3D12InputElementDesc)} ** model.MAX_VERTEX_ATTRIBUTES;
+        var input_elements: [model_render_types.MAX_VERTEX_ATTRIBUTES]D3D12InputElementDesc =
+            [_]D3D12InputElementDesc{std.mem.zeroes(D3D12InputElementDesc)} ** model_render_types.MAX_VERTEX_ATTRIBUTES;
         var input_count: u32 = 0;
         var vb_count: u32 = 0;
         var attr_count: u32 = 0;
         var i: usize = 0;
-        while (i < @as(usize, pip.vertex_layout_count) and i < model.MAX_VERTEX_BUFFERS) : (i += 1) {
+        while (i < @as(usize, pip.vertex_layout_count) and i < model_render_types.MAX_VERTEX_BUFFERS) : (i += 1) {
             const layout = pip.vertex_layouts[i];
             vb_count += 1;
             pip.vertex_buffer_strides[i] = layout.array_stride;
             pip.vertex_step_modes[i] = layout.step_mode;
             var j: usize = 0;
-            while (j < @as(usize, layout.attribute_count) and attr_count < @as(u32, model.MAX_VERTEX_ATTRIBUTES)) : (j += 1) {
+            while (j < @as(usize, layout.attribute_count) and attr_count < @as(u32, model_render_types.MAX_VERTEX_ATTRIBUTES)) : (j += 1) {
                 const attr = layout.attributes[j];
-                const input_slot_class = if (layout.step_mode == model.WGPUVertexStepMode_Instance)
+                const input_slot_class = if (layout.step_mode == model_render_types.WGPUVertexStepMode_Instance)
                     D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA
                 else
                     D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;

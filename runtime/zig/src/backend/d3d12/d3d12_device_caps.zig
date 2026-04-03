@@ -7,35 +7,37 @@
 
 const std = @import("std");
 const builtin = @import("builtin");
-const types = @import("../../core/abi/wgpu_types.zig");
+const abi_base = @import("../../core/abi/wgpu_base_types.zig");
+const abi_descriptor = @import("../../core/abi/wgpu_descriptor_types.zig");
+const model_gpu_types = @import("../../model_gpu_types.zig");
 
 // D3D12 is only available on Windows.
 const D3D12_AVAILABLE = builtin.os.tag == .windows;
 
-// Feature name constants — match wgpu_types.zig
-const FEATURE_DEPTH_CLIP_CONTROL: u32 = types.WGPUFeatureName_DepthClipControl;
-const FEATURE_DEPTH32FLOAT_STENCIL8: u32 = types.WGPUFeatureName_Depth32FloatStencil8;
-const FEATURE_TEXTURE_COMPRESSION_BC: u32 = types.WGPUFeatureName_TextureCompressionBC;
-const FEATURE_TEXTURE_COMPRESSION_BC_SLICED_3D: u32 = types.WGPUFeatureName_TextureCompressionBCSliced3D;
-const FEATURE_TEXTURE_COMPRESSION_ETC2: u32 = types.WGPUFeatureName_TextureCompressionETC2;
-const FEATURE_TEXTURE_COMPRESSION_ASTC: u32 = types.WGPUFeatureName_TextureCompressionASTC;
-const FEATURE_TEXTURE_COMPRESSION_ASTC_SLICED_3D: u32 = types.WGPUFeatureName_TextureCompressionASTCSliced3D;
-const FEATURE_BGRA8UNORM_STORAGE: u32 = types.WGPUFeatureName_BGRA8UnormStorage;
-const FEATURE_INDIRECT_FIRST_INSTANCE: u32 = types.WGPUFeatureName_IndirectFirstInstance;
-const FEATURE_FLOAT32_FILTERABLE: u32 = types.WGPUFeatureName_Float32Filterable;
-const FEATURE_FLOAT32_BLENDABLE: u32 = types.WGPUFeatureName_Float32Blendable;
-const FEATURE_TIMESTAMP_QUERY: u32 = types.WGPUFeatureName_TimestampQuery;
-const FEATURE_RG11B10UFLOAT_RENDERABLE: u32 = types.WGPUFeatureName_RG11B10UfloatRenderable;
-const FEATURE_CLIP_DISTANCES: u32 = types.WGPUFeatureName_ClipDistances;
-const FEATURE_DUAL_SOURCE_BLENDING: u32 = types.WGPUFeatureName_DualSourceBlending;
-const FEATURE_CORE_FEATURES_AND_LIMITS: u32 = types.WGPUFeatureName_CoreFeaturesAndLimits;
-const FEATURE_TEXTURE_FORMATS_TIER1: u32 = types.WGPUFeatureName_TextureFormatsTier1;
-const FEATURE_TEXTURE_FORMATS_TIER2: u32 = types.WGPUFeatureName_TextureFormatsTier2;
-const FEATURE_PRIMITIVE_INDEX: u32 = types.WGPUFeatureName_PrimitiveIndex;
-const FEATURE_TEXTURE_COMPONENT_SWIZZLE: u32 = types.WGPUFeatureName_TextureComponentSwizzle;
-const FEATURE_SHADER_F16: u32 = types.WGPUFeatureName_ShaderF16;
-const FEATURE_SUBGROUPS: u32 = types.WGPUFeatureName_Subgroups;
-const FEATURE_SUBGROUPS_F16: u32 = types.WGPUFeatureName_SubgroupsF16;
+// Feature name constants — match wgpu_runtime_abi.zig
+const FEATURE_DEPTH_CLIP_CONTROL: u32 = abi_base.WGPUFeatureName_DepthClipControl;
+const FEATURE_DEPTH32FLOAT_STENCIL8: u32 = abi_base.WGPUFeatureName_Depth32FloatStencil8;
+const FEATURE_TEXTURE_COMPRESSION_BC: u32 = abi_base.WGPUFeatureName_TextureCompressionBC;
+const FEATURE_TEXTURE_COMPRESSION_BC_SLICED_3D: u32 = abi_base.WGPUFeatureName_TextureCompressionBCSliced3D;
+const FEATURE_TEXTURE_COMPRESSION_ETC2: u32 = abi_base.WGPUFeatureName_TextureCompressionETC2;
+const FEATURE_TEXTURE_COMPRESSION_ASTC: u32 = abi_base.WGPUFeatureName_TextureCompressionASTC;
+const FEATURE_TEXTURE_COMPRESSION_ASTC_SLICED_3D: u32 = abi_base.WGPUFeatureName_TextureCompressionASTCSliced3D;
+const FEATURE_BGRA8UNORM_STORAGE: u32 = abi_base.WGPUFeatureName_BGRA8UnormStorage;
+const FEATURE_INDIRECT_FIRST_INSTANCE: u32 = abi_base.WGPUFeatureName_IndirectFirstInstance;
+const FEATURE_FLOAT32_FILTERABLE: u32 = abi_base.WGPUFeatureName_Float32Filterable;
+const FEATURE_FLOAT32_BLENDABLE: u32 = abi_base.WGPUFeatureName_Float32Blendable;
+const FEATURE_TIMESTAMP_QUERY: u32 = abi_base.WGPUFeatureName_TimestampQuery;
+const FEATURE_RG11B10UFLOAT_RENDERABLE: u32 = abi_base.WGPUFeatureName_RG11B10UfloatRenderable;
+const FEATURE_CLIP_DISTANCES: u32 = abi_base.WGPUFeatureName_ClipDistances;
+const FEATURE_DUAL_SOURCE_BLENDING: u32 = abi_base.WGPUFeatureName_DualSourceBlending;
+const FEATURE_CORE_FEATURES_AND_LIMITS: u32 = abi_base.WGPUFeatureName_CoreFeaturesAndLimits;
+const FEATURE_TEXTURE_FORMATS_TIER1: u32 = abi_base.WGPUFeatureName_TextureFormatsTier1;
+const FEATURE_TEXTURE_FORMATS_TIER2: u32 = abi_base.WGPUFeatureName_TextureFormatsTier2;
+const FEATURE_PRIMITIVE_INDEX: u32 = abi_base.WGPUFeatureName_PrimitiveIndex;
+const FEATURE_TEXTURE_COMPONENT_SWIZZLE: u32 = abi_base.WGPUFeatureName_TextureComponentSwizzle;
+const FEATURE_SHADER_F16: u32 = abi_base.WGPUFeatureName_ShaderF16;
+const FEATURE_SUBGROUPS: u32 = abi_base.WGPUFeatureName_Subgroups;
+const FEATURE_SUBGROUPS_F16: u32 = abi_base.WGPUFeatureName_SubgroupsF16;
 
 // Shader model thresholds for feature gating.
 const SM_6_0: c_int = 0x60; // Wave intrinsics (subgroups)
@@ -47,7 +49,7 @@ const SM_6_2: c_int = 0x62; // Native 16-bit shader ops
 const FALLBACK_MAX_BUFFER_SIZE: u64 = 268_435_456; // 256 MB — spec minimum
 const D3D12_MAX_UNIFORM_BUFFER_BINDING_SIZE: u64 = 65_536; // 64 KB (D3D12 constant buffer limit)
 
-const D3D12_LIMITS_STATIC = types.WGPULimits{
+const D3D12_LIMITS_STATIC = abi_descriptor.WGPULimits{
     .nextInChain = null,
     .maxTextureDimension1D = 16384,
     .maxTextureDimension2D = 16384,
@@ -83,7 +85,7 @@ const D3D12_LIMITS_STATIC = types.WGPULimits{
     .maxImmediateSize = 0,
 };
 
-fn build_limits() types.WGPULimits {
+fn build_limits() abi_descriptor.WGPULimits {
     return D3D12_LIMITS_STATIC;
 }
 
@@ -130,59 +132,59 @@ pub const D3D12DeviceCaps = struct {
 };
 
 const TIER1_STORAGE_FORMATS = [_]u32{
-    types.WGPUTextureFormat_R8Unorm,
-    types.WGPUTextureFormat_R8Snorm,
-    types.WGPUTextureFormat_R8Uint,
-    types.WGPUTextureFormat_R8Sint,
-    types.WGPUTextureFormat_R16Unorm,
-    types.WGPUTextureFormat_R16Snorm,
-    types.WGPUTextureFormat_R16Uint,
-    types.WGPUTextureFormat_R16Sint,
-    types.WGPUTextureFormat_R16Float,
-    types.WGPUTextureFormat_RG8Unorm,
-    types.WGPUTextureFormat_RG8Snorm,
-    types.WGPUTextureFormat_RG8Uint,
-    types.WGPUTextureFormat_RG8Sint,
-    types.WGPUTextureFormat_RG16Unorm,
-    types.WGPUTextureFormat_RG16Snorm,
-    types.WGPUTextureFormat_RG16Uint,
-    types.WGPUTextureFormat_RG16Sint,
-    types.WGPUTextureFormat_RG16Float,
-    types.WGPUTextureFormat_RGBA16Unorm,
-    types.WGPUTextureFormat_RGBA16Snorm,
-    types.WGPUTextureFormat_RGB10A2Uint,
-    types.WGPUTextureFormat_RGB10A2Unorm,
-    types.WGPUTextureFormat_RG11B10Ufloat,
+    model_gpu_types.WGPUTextureFormat_R8Unorm,
+    model_gpu_types.WGPUTextureFormat_R8Snorm,
+    model_gpu_types.WGPUTextureFormat_R8Uint,
+    model_gpu_types.WGPUTextureFormat_R8Sint,
+    model_gpu_types.WGPUTextureFormat_R16Unorm,
+    model_gpu_types.WGPUTextureFormat_R16Snorm,
+    model_gpu_types.WGPUTextureFormat_R16Uint,
+    model_gpu_types.WGPUTextureFormat_R16Sint,
+    model_gpu_types.WGPUTextureFormat_R16Float,
+    model_gpu_types.WGPUTextureFormat_RG8Unorm,
+    model_gpu_types.WGPUTextureFormat_RG8Snorm,
+    model_gpu_types.WGPUTextureFormat_RG8Uint,
+    model_gpu_types.WGPUTextureFormat_RG8Sint,
+    model_gpu_types.WGPUTextureFormat_RG16Unorm,
+    model_gpu_types.WGPUTextureFormat_RG16Snorm,
+    model_gpu_types.WGPUTextureFormat_RG16Uint,
+    model_gpu_types.WGPUTextureFormat_RG16Sint,
+    model_gpu_types.WGPUTextureFormat_RG16Float,
+    model_gpu_types.WGPUTextureFormat_RGBA16Unorm,
+    model_gpu_types.WGPUTextureFormat_RGBA16Snorm,
+    model_gpu_types.WGPUTextureFormat_RGB10A2Uint,
+    model_gpu_types.WGPUTextureFormat_RGB10A2Unorm,
+    model_gpu_types.WGPUTextureFormat_RG11B10Ufloat,
 };
 
 const TIER2_READ_WRITE_FORMATS = [_]u32{
-    types.WGPUTextureFormat_R8Unorm,
-    types.WGPUTextureFormat_R8Uint,
-    types.WGPUTextureFormat_R8Sint,
-    types.WGPUTextureFormat_RGBA8Unorm,
-    types.WGPUTextureFormat_RGBA8Uint,
-    types.WGPUTextureFormat_RGBA8Sint,
-    types.WGPUTextureFormat_R16Uint,
-    types.WGPUTextureFormat_R16Sint,
-    types.WGPUTextureFormat_R16Float,
-    types.WGPUTextureFormat_RGBA16Uint,
-    types.WGPUTextureFormat_RGBA16Sint,
-    types.WGPUTextureFormat_RGBA16Float,
-    types.WGPUTextureFormat_R32Uint,
-    types.WGPUTextureFormat_R32Sint,
-    types.WGPUTextureFormat_R32Float,
-    types.WGPUTextureFormat_RG32Uint,
-    types.WGPUTextureFormat_RG32Sint,
-    types.WGPUTextureFormat_RG32Float,
-    types.WGPUTextureFormat_RGBA32Uint,
-    types.WGPUTextureFormat_RGBA32Sint,
-    types.WGPUTextureFormat_RGBA32Float,
+    model_gpu_types.WGPUTextureFormat_R8Unorm,
+    model_gpu_types.WGPUTextureFormat_R8Uint,
+    model_gpu_types.WGPUTextureFormat_R8Sint,
+    model_gpu_types.WGPUTextureFormat_RGBA8Unorm,
+    model_gpu_types.WGPUTextureFormat_RGBA8Uint,
+    model_gpu_types.WGPUTextureFormat_RGBA8Sint,
+    model_gpu_types.WGPUTextureFormat_R16Uint,
+    model_gpu_types.WGPUTextureFormat_R16Sint,
+    model_gpu_types.WGPUTextureFormat_R16Float,
+    model_gpu_types.WGPUTextureFormat_RGBA16Uint,
+    model_gpu_types.WGPUTextureFormat_RGBA16Sint,
+    model_gpu_types.WGPUTextureFormat_RGBA16Float,
+    model_gpu_types.WGPUTextureFormat_R32Uint,
+    model_gpu_types.WGPUTextureFormat_R32Sint,
+    model_gpu_types.WGPUTextureFormat_R32Float,
+    model_gpu_types.WGPUTextureFormat_RG32Uint,
+    model_gpu_types.WGPUTextureFormat_RG32Sint,
+    model_gpu_types.WGPUTextureFormat_RG32Float,
+    model_gpu_types.WGPUTextureFormat_RGBA32Uint,
+    model_gpu_types.WGPUTextureFormat_RGBA32Sint,
+    model_gpu_types.WGPUTextureFormat_RGBA32Float,
 };
 
 const FLOAT32_BLENDABLE_FORMATS = [_]u32{
-    types.WGPUTextureFormat_R32Float,
-    types.WGPUTextureFormat_RG32Float,
-    types.WGPUTextureFormat_RGBA32Float,
+    model_gpu_types.WGPUTextureFormat_R32Float,
+    model_gpu_types.WGPUTextureFormat_RG32Float,
+    model_gpu_types.WGPUTextureFormat_RGBA32Float,
 };
 
 // Conservative static defaults when no device handle is available.
@@ -234,7 +236,7 @@ pub fn query_device_caps(device: ?*anyopaque) D3D12DeviceCaps {
     const tier1 = supports_all_storage_formats(device, &TIER1_STORAGE_FORMATS);
     const tier2 = tier1 and
         supports_all_storage_read_write_formats(device, &TIER2_READ_WRITE_FORMATS) and
-        d3d12_bridge_device_supports_render_target(device, types.WGPUTextureFormat_RG11B10Ufloat) == 1;
+        d3d12_bridge_device_supports_render_target(device, model_gpu_types.WGPUTextureFormat_RG11B10Ufloat) == 1;
     const texture_component_swizzle = d3d12_bridge_device_supports_texture_component_swizzle(device) == 1;
 
     return .{
@@ -318,11 +320,11 @@ pub fn d3d12_device_has_feature_with_caps(feature: u32, caps: D3D12DeviceCaps) b
     return is_feature_supported_with_caps(feature, caps);
 }
 
-pub fn d3d12_device_get_limits(limits: *types.WGPULimits) void {
+pub fn d3d12_device_get_limits(limits: *abi_descriptor.WGPULimits) void {
     limits.* = build_limits();
 }
 
-pub fn d3d12_adapter_get_limits(limits: *types.WGPULimits) void {
+pub fn d3d12_adapter_get_limits(limits: *abi_descriptor.WGPULimits) void {
     limits.* = build_limits();
 }
 

@@ -7,7 +7,7 @@
 // error_scope.deliver() so the correct scope captures them.
 
 const std = @import("std");
-const types = @import("core/abi/wgpu_types.zig");
+const abi_base = @import("core/abi/wgpu_base_types.zig");
 const native = @import("doe_wgpu_native.zig");
 const err_scope = @import("error_scope.zig");
 
@@ -42,7 +42,7 @@ pub const WGPUPopErrorScopeCallbackInfo2 = extern struct {
 pub export fn doeNativeDevicePopErrorScope(
     dev_raw: ?*anyopaque,
     cb_info: WGPUPopErrorScopeCallbackInfo2,
-) callconv(.c) types.WGPUFuture {
+) callconv(.c) abi_base.WGPUFuture {
     const dev = cast(DoeDevice, dev_raw) orelse {
         // Invalid device — deliver an internal error via callback if provided.
         if (cb_info.callback) |cb| {
@@ -65,7 +65,7 @@ pub export fn doeNativeDevicePopErrorScopeFlat(
     callback: ?err_scope.PopErrorScopeCallback,
     userdata1: ?*anyopaque,
     userdata2: ?*anyopaque,
-) callconv(.c) types.WGPUFuture {
+) callconv(.c) abi_base.WGPUFuture {
     return doeNativeDevicePopErrorScope(dev_raw, .{
         .next_in_chain = null,
         .mode = 0,
@@ -79,7 +79,7 @@ pub export fn doeNativeDevicePopErrorScopeFlat(
 // C ABI: setUncapturedErrorCallback
 // ============================================================
 
-// Matches WGPUUncapturedErrorCallbackInfo from wgpu_types.zig but we take the
+// Matches WGPUUncapturedErrorCallbackInfo from wgpu_runtime_abi.zig but we take the
 // raw function pointer directly for the common single-callback case used by doe_napi.c.
 
 pub export fn doeNativeDeviceSetUncapturedErrorCallback(

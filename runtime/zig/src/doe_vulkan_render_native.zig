@@ -5,8 +5,10 @@ const std = @import("std");
 const builtin = @import("builtin");
 const has_vulkan = (builtin.os.tag == .linux);
 const native = @import("doe_wgpu_native.zig");
-const types = @import("core/abi/wgpu_types.zig");
-const model = @import("model_webgpu_types.zig");
+const abi_base = @import("core/abi/wgpu_base_types.zig");
+const abi_descriptor = @import("core/abi/wgpu_descriptor_types.zig");
+const model_gpu_types = @import("model_gpu_types.zig");
+const model_render_types = @import("model_render_types.zig");
 const query_native = @import("doe_query_native.zig");
 const c = if (has_vulkan) @import("backend/vulkan/vk_constants.zig") else struct {};
 const vk_resources = if (has_vulkan) @import("backend/vulkan/vk_resources.zig") else struct {};
@@ -84,7 +86,7 @@ fn wgpu_compare_to_vk(compare: u32) u32 {
 // Texture
 // ============================================================
 
-pub fn vulkan_create_texture(dev: *DoeDevice, tex: *DoeTexture, desc: *const types.WGPUTextureDescriptor) bool {
+pub fn vulkan_create_texture(dev: *DoeDevice, tex: *DoeTexture, desc: *const abi_descriptor.WGPUTextureDescriptor) bool {
     if (comptime !has_vulkan) return false;
     const rt = get_runtime(dev) orelse {
         std.debug.print("doe_vulkan_render_native: device has no Vulkan runtime\n", .{});
@@ -136,16 +138,16 @@ pub fn vulkan_destroy_texture(tex: *DoeTexture) void {
     tex.vk_runtime_ref = null;
 }
 
-pub fn vulkan_create_texture_view(tex: *DoeTexture, tv: *DoeTextureView, desc: *const types.WGPUTextureViewDescriptor) bool {
+pub fn vulkan_create_texture_view(tex: *DoeTexture, tv: *DoeTextureView, desc: *const abi_descriptor.WGPUTextureViewDescriptor) bool {
     if (comptime !has_vulkan) return false;
     if (tex.vk_id == 0) return false;
     const rt_ptr = tex.vk_runtime_ref orelse return false;
     const rt: *NativeVulkanRuntime = @ptrCast(@alignCast(rt_ptr));
     const texture = rt.textures.get(tex.vk_id) orelse return false;
-    const resolved_format: model.WGPUTextureFormat = @intCast(if (desc.format != 0) desc.format else tex.format);
+    const resolved_format: model_gpu_types.WGPUTextureFormat = @intCast(if (desc.format != 0) desc.format else tex.format);
     const resolved_dimension = if (desc.dimension != 0) desc.dimension else if (tex.texture_binding_view_dimension != 0) tex.texture_binding_view_dimension else tex.dimension;
     const resolved_mip_level_count = if (desc.mipLevelCount != 0) desc.mipLevelCount else tex.mip_level_count - desc.baseMipLevel;
-    const resolved_array_layer_count = if (desc.arrayLayerCount != 0) desc.arrayLayerCount else if (tex.dimension == model.WGPUTextureDimension_3D) 1 else tex.depth_or_array_layers - desc.baseArrayLayer;
+    const resolved_array_layer_count = if (desc.arrayLayerCount != 0) desc.arrayLayerCount else if (tex.dimension == model_gpu_types.WGPUTextureDimension_3D) 1 else tex.depth_or_array_layers - desc.baseArrayLayer;
     const vk_view = vk_resources.create_texture_view(
         rt,
         texture,
@@ -200,7 +202,7 @@ pub fn vulkan_destroy_texture_view(tv: *DoeTextureView) void {
 // Sampler
 // ============================================================
 
-pub fn vulkan_create_sampler(dev: *DoeDevice, sampler: *DoeSampler, desc: *const types.WGPUSamplerDescriptor) bool {
+pub fn vulkan_create_sampler(dev: *DoeDevice, sampler: *DoeSampler, desc: *const abi_descriptor.WGPUSamplerDescriptor) bool {
     if (comptime !has_vulkan) return false;
     const rt = get_runtime(dev) orelse {
         std.debug.print("doe_vulkan_render_native: device has no Vulkan runtime for sampler\n", .{});
@@ -460,7 +462,7 @@ pub fn vulkan_create_render_pipeline(
     // Copy entry point names from the descriptor so the Vulkan pipeline
     // creation uses the correct SPIR-V entry point (not always "main").
     if (d.vertex_ep_data) |ep_data| {
-        const ep_len = if (d.vertex_ep_length == types.WGPU_STRLEN)
+        const ep_len = if (d.vertex_ep_length == abi_base.WGPU_STRLEN)
             std.mem.len(@as([*:0]const u8, @ptrCast(ep_data)))
         else
             d.vertex_ep_length;
@@ -470,7 +472,7 @@ pub fn vulkan_create_render_pipeline(
     }
     if (d.fragment) |frag| {
         if (frag.entryPoint.data) |ep_data| {
-            const ep_len = if (frag.entryPoint.length == types.WGPU_STRLEN)
+            const ep_len = if (frag.entryPoint.length == abi_base.WGPU_STRLEN)
                 std.mem.len(@as([*:0]const u8, @ptrCast(ep_data)))
             else
                 frag.entryPoint.length;
@@ -534,7 +536,7 @@ pub fn vulkan_create_graphics_shader_module(
 /// Populate SPIR-V, render target, clear color, vertex attributes, vertex
 /// buffer handles, index buffer, and bind group texture/sampler handles on a
 /// RenderDrawCommand from the current pass and pipeline state.
-fn populate_draw_cmd_from_pass(cmd: *model.RenderDrawCommand, pass: *DoeRenderPass) void {
+fn populate_draw_cmd_from_pass(cmd: *model_render_types.RenderDrawCommand, pass: *DoeRenderPass) void {
     // SPIR-V from pipeline for Vulkan graphics pipeline creation.
     if (pass.pipeline) |pip| {
         cmd.vertex_spirv = pip.vertex_spirv_data;
@@ -594,14 +596,14 @@ fn populate_draw_cmd_from_pass(cmd: *model.RenderDrawCommand, pass: *DoeRenderPa
         const bg = maybe_bg orelse continue;
         for (bg.texture_views) |maybe_tv| {
             if (maybe_tv == null) continue;
-            if (tex_count < model.MAX_RENDER_BIND_ENTRIES) {
+            if (tex_count < model_render_types.MAX_RENDER_BIND_ENTRIES) {
                 cmd.bind_texture_handles[tex_count] = @intFromPtr(maybe_tv.?);
                 tex_count += 1;
             }
         }
         for (bg.samplers) |maybe_s| {
             if (maybe_s == null) continue;
-            if (samp_count < model.MAX_RENDER_BIND_ENTRIES) {
+            if (samp_count < model_render_types.MAX_RENDER_BIND_ENTRIES) {
                 cmd.bind_sampler_handles[samp_count] = @intFromPtr(maybe_s.?);
                 samp_count += 1;
             }
@@ -613,7 +615,7 @@ fn populate_draw_cmd_from_pass(cmd: *model.RenderDrawCommand, pass: *DoeRenderPa
 
 /// Build the base RenderDrawCommand from current pass pipeline state
 /// (everything except per-draw geometry and indirect parameters).
-fn base_vulkan_render_cmd(pass: *DoeRenderPass) model.RenderDrawCommand {
+fn base_vulkan_render_cmd(pass: *DoeRenderPass) model_render_types.RenderDrawCommand {
     const occlusion_qs = if (pass.occlusion_query_active and pass.occlusion_query_set != null)
         native.cast(query_native.DoeQuerySet, pass.occlusion_query_set)
     else

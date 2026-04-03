@@ -1,6 +1,9 @@
 const std = @import("std");
-const model = @import("../../model_webgpu_types.zig");
-const types = @import("../../core/abi/wgpu_types.zig");
+const model_resource_types = @import("../../model_resource_types.zig");
+const model_gpu_types = @import("../../model_gpu_types.zig");
+const abi_base = @import("../../core/abi/wgpu_base_types.zig");
+const abi_descriptor = @import("../../core/abi/wgpu_descriptor_types.zig");
+const abi_records = @import("../../core/abi/wgpu_runtime_records.zig");
 const loader = @import("../../core/abi/wgpu_loader.zig");
 const resources = @import("../../core/resource/wgpu_resources.zig");
 const render_assets = @import("wgpu_render_assets.zig");
@@ -20,8 +23,8 @@ pub const RENDER_UNIFORM_TOTAL_BYTES: u64 = RENDER_UNIFORM_DYNAMIC_STRIDE_BYTES 
 const RENDER_SAMPLED_TEXTURE_HANDLE: u64 = 0x8C9F_2800_0000_0000;
 
 pub const RenderUniformBindingResources = struct {
-    bind_group_layout: types.WGPUBindGroupLayout,
-    bind_group: types.WGPUBindGroup,
+    bind_group_layout: abi_base.WGPUBindGroupLayout,
+    bind_group: abi_base.WGPUBindGroup,
 };
 
 pub fn getOrCreateRenderUniformBindingResources(self: *Backend) !RenderUniformBindingResources {
@@ -45,7 +48,7 @@ pub fn getOrCreateRenderUniformBindingResources(self: *Backend) !RenderUniformBi
     }
 
     const uniform_bytes = std.mem.sliceAsBytes(render_assets.RENDER_DRAW_UNIFORM_COLOR[0..]);
-    const uniform_usage = types.WGPUBufferUsage_Uniform | types.WGPUBufferUsage_CopyDst;
+    const uniform_usage = abi_base.WGPUBufferUsage_Uniform | abi_base.WGPUBufferUsage_CopyDst;
     const should_upload_uniform_data = blk: {
         if (self.core.buffers.get(RENDER_UNIFORM_BUFFER_HANDLE)) |existing| {
             if (existing.size >= RENDER_UNIFORM_TOTAL_BYTES and
@@ -78,20 +81,20 @@ pub fn getOrCreateRenderUniformBindingResources(self: *Backend) !RenderUniformBi
         );
     }
 
-    const sampled_usage = types.WGPUTextureUsage_TextureBinding | types.WGPUTextureUsage_CopyDst;
-    const sampled_resource = model.CopyTextureResource{
+    const sampled_usage = abi_base.WGPUTextureUsage_TextureBinding | abi_base.WGPUTextureUsage_CopyDst;
+    const sampled_resource = model_resource_types.CopyTextureResource{
         .handle = RENDER_SAMPLED_TEXTURE_HANDLE,
         .kind = .texture,
         .width = render_assets.RENDER_DRAW_TEXTURE_WIDTH,
         .height = render_assets.RENDER_DRAW_TEXTURE_HEIGHT,
         .depth_or_array_layers = 1,
-        .format = model.WGPUTextureFormat_RGBA8Unorm,
+        .format = model_gpu_types.WGPUTextureFormat_RGBA8Unorm,
         .usage = sampled_usage,
-        .dimension = model.WGPUTextureDimension_2D,
-        .view_dimension = model.WGPUTextureViewDimension_2D,
+        .dimension = model_gpu_types.WGPUTextureDimension_2D,
+        .view_dimension = model_gpu_types.WGPUTextureViewDimension_2D,
         .mip_level = 0,
         .sample_count = 1,
-        .aspect = model.WGPUTextureAspect_All,
+        .aspect = model_gpu_types.WGPUTextureAspect_All,
         .bytes_per_row = 0,
         .rows_per_image = 0,
         .offset = 0,
@@ -101,8 +104,8 @@ pub fn getOrCreateRenderUniformBindingResources(self: *Backend) !RenderUniformBi
             if (existing.width == render_assets.RENDER_DRAW_TEXTURE_WIDTH and
                 existing.height == render_assets.RENDER_DRAW_TEXTURE_HEIGHT and
                 existing.depth_or_array_layers == 1 and
-                existing.format == model.WGPUTextureFormat_RGBA8Unorm and
-                existing.dimension == model.WGPUTextureDimension_2D and
+                existing.format == model_gpu_types.WGPUTextureFormat_RGBA8Unorm and
+                existing.dimension == model_gpu_types.WGPUTextureDimension_2D and
                 existing.sample_count == 1 and
                 (existing.usage & sampled_usage) == sampled_usage)
             {
@@ -115,20 +118,20 @@ pub fn getOrCreateRenderUniformBindingResources(self: *Backend) !RenderUniformBi
     if (should_upload_texture_data) {
         texture_procs.queue_write_texture(
             self.core.queue.?,
-            &types.WGPUTexelCopyTextureInfo{
+            &abi_descriptor.WGPUTexelCopyTextureInfo{
                 .texture = sampled_texture,
                 .mipLevel = 0,
                 .origin = .{ .x = 0, .y = 0, .z = 0 },
-                .aspect = types.WGPUTextureAspect_All,
+                .aspect = abi_base.WGPUTextureAspect_All,
             },
             render_assets.RENDER_DRAW_TEXTURE_DATA[0..].ptr,
             render_assets.RENDER_DRAW_TEXTURE_DATA.len,
-            &types.WGPUTexelCopyBufferLayout{
+            &abi_descriptor.WGPUTexelCopyBufferLayout{
                 .offset = 0,
                 .bytesPerRow = render_assets.RENDER_DRAW_TEXTURE_BYTES_PER_ROW,
                 .rowsPerImage = render_assets.RENDER_DRAW_TEXTURE_HEIGHT,
             },
-            &types.WGPUExtent3D{
+            &abi_descriptor.WGPUExtent3D{
                 .width = render_assets.RENDER_DRAW_TEXTURE_WIDTH,
                 .height = render_assets.RENDER_DRAW_TEXTURE_HEIGHT,
                 .depthOrArrayLayers = 1,
@@ -143,8 +146,8 @@ pub fn getOrCreateRenderUniformBindingResources(self: *Backend) !RenderUniformBi
         sampled_texture,
         render_assets.RENDER_DRAW_TEXTURE_WIDTH,
         render_assets.RENDER_DRAW_TEXTURE_HEIGHT,
-        model.WGPUTextureFormat_RGBA8Unorm,
-        types.WGPUTextureUsage_TextureBinding,
+        model_gpu_types.WGPUTextureFormat_RGBA8Unorm,
+        abi_base.WGPUTextureUsage_TextureBinding,
     );
 
     if (self.full.render_sampler == null) {
@@ -153,89 +156,89 @@ pub fn getOrCreateRenderUniformBindingResources(self: *Backend) !RenderUniformBi
         self.full.render_sampler = sampler;
     }
 
-    const layout_entries = [_]types.WGPUBindGroupLayoutEntry{
+    const layout_entries = [_]abi_descriptor.WGPUBindGroupLayoutEntry{
         .{
             .nextInChain = null,
             .binding = RENDER_UNIFORM_BINDING_INDEX,
-            .visibility = types.WGPUShaderStage_Fragment,
+            .visibility = abi_base.WGPUShaderStage_Fragment,
             .bindingArraySize = 0,
             .buffer = .{
                 .nextInChain = null,
-                .type = types.WGPUBufferBindingType_Uniform,
-                .hasDynamicOffset = types.WGPU_TRUE,
+                .type = abi_base.WGPUBufferBindingType_Uniform,
+                .hasDynamicOffset = abi_base.WGPU_TRUE,
                 .minBindingSize = RENDER_UNIFORM_MIN_BINDING_SIZE_BYTES,
             },
             .sampler = .{
                 .nextInChain = null,
-                .type = types.WGPUSamplerBindingType_BindingNotUsed,
+                .type = abi_base.WGPUSamplerBindingType_BindingNotUsed,
             },
             .texture = .{
                 .nextInChain = null,
-                .sampleType = types.WGPUTextureSampleType_BindingNotUsed,
-                .viewDimension = types.WGPUTextureViewDimension_Undefined,
-                .multisampled = types.WGPU_FALSE,
+                .sampleType = abi_base.WGPUTextureSampleType_BindingNotUsed,
+                .viewDimension = abi_base.WGPUTextureViewDimension_Undefined,
+                .multisampled = abi_base.WGPU_FALSE,
             },
             .storageTexture = .{
                 .nextInChain = null,
-                .access = types.WGPUStorageTextureAccess_BindingNotUsed,
-                .format = types.WGPUTextureFormat_Undefined,
-                .viewDimension = types.WGPUTextureViewDimension_Undefined,
+                .access = abi_base.WGPUStorageTextureAccess_BindingNotUsed,
+                .format = abi_base.WGPUTextureFormat_Undefined,
+                .viewDimension = abi_base.WGPUTextureViewDimension_Undefined,
             },
         },
         .{
             .nextInChain = null,
             .binding = RENDER_TEXTURE_BINDING_INDEX,
-            .visibility = types.WGPUShaderStage_Fragment,
+            .visibility = abi_base.WGPUShaderStage_Fragment,
             .bindingArraySize = 0,
             .buffer = .{
                 .nextInChain = null,
-                .type = types.WGPUBufferBindingType_BindingNotUsed,
-                .hasDynamicOffset = types.WGPU_FALSE,
+                .type = abi_base.WGPUBufferBindingType_BindingNotUsed,
+                .hasDynamicOffset = abi_base.WGPU_FALSE,
                 .minBindingSize = 0,
             },
             .sampler = .{
                 .nextInChain = null,
-                .type = types.WGPUSamplerBindingType_BindingNotUsed,
+                .type = abi_base.WGPUSamplerBindingType_BindingNotUsed,
             },
             .texture = .{
                 .nextInChain = null,
-                .sampleType = types.WGPUTextureSampleType_Float,
-                .viewDimension = types.WGPUTextureViewDimension_2D,
-                .multisampled = types.WGPU_FALSE,
+                .sampleType = abi_base.WGPUTextureSampleType_Float,
+                .viewDimension = abi_base.WGPUTextureViewDimension_2D,
+                .multisampled = abi_base.WGPU_FALSE,
             },
             .storageTexture = .{
                 .nextInChain = null,
-                .access = types.WGPUStorageTextureAccess_BindingNotUsed,
-                .format = types.WGPUTextureFormat_Undefined,
-                .viewDimension = types.WGPUTextureViewDimension_Undefined,
+                .access = abi_base.WGPUStorageTextureAccess_BindingNotUsed,
+                .format = abi_base.WGPUTextureFormat_Undefined,
+                .viewDimension = abi_base.WGPUTextureViewDimension_Undefined,
             },
         },
         .{
             .nextInChain = null,
             .binding = RENDER_SAMPLER_BINDING_INDEX,
-            .visibility = types.WGPUShaderStage_Fragment,
+            .visibility = abi_base.WGPUShaderStage_Fragment,
             .bindingArraySize = 0,
             .buffer = .{
                 .nextInChain = null,
-                .type = types.WGPUBufferBindingType_BindingNotUsed,
-                .hasDynamicOffset = types.WGPU_FALSE,
+                .type = abi_base.WGPUBufferBindingType_BindingNotUsed,
+                .hasDynamicOffset = abi_base.WGPU_FALSE,
                 .minBindingSize = 0,
             },
             .sampler = .{
                 .nextInChain = null,
-                .type = types.WGPUSamplerBindingType_Filtering,
+                .type = abi_base.WGPUSamplerBindingType_Filtering,
             },
             .texture = .{
                 .nextInChain = null,
-                .sampleType = types.WGPUTextureSampleType_BindingNotUsed,
-                .viewDimension = types.WGPUTextureViewDimension_Undefined,
-                .multisampled = types.WGPU_FALSE,
+                .sampleType = abi_base.WGPUTextureSampleType_BindingNotUsed,
+                .viewDimension = abi_base.WGPUTextureViewDimension_Undefined,
+                .multisampled = abi_base.WGPU_FALSE,
             },
             .storageTexture = .{
                 .nextInChain = null,
-                .access = types.WGPUStorageTextureAccess_BindingNotUsed,
-                .format = types.WGPUTextureFormat_Undefined,
-                .viewDimension = types.WGPUTextureViewDimension_Undefined,
+                .access = abi_base.WGPUStorageTextureAccess_BindingNotUsed,
+                .format = abi_base.WGPUTextureFormat_Undefined,
+                .viewDimension = abi_base.WGPUTextureViewDimension_Undefined,
             },
         },
     };
@@ -243,7 +246,7 @@ pub fn getOrCreateRenderUniformBindingResources(self: *Backend) !RenderUniformBi
     const bind_group_layout = try resources.createBindGroupLayout(self, layout_entries[0..]);
     errdefer procs.wgpuBindGroupLayoutRelease(bind_group_layout);
 
-    const bind_entries = [_]types.WGPUBindGroupEntry{
+    const bind_entries = [_]abi_descriptor.WGPUBindGroupEntry{
         .{
             .nextInChain = null,
             .binding = RENDER_UNIFORM_BINDING_INDEX,
@@ -284,14 +287,14 @@ pub fn getOrCreateRenderUniformBindingResources(self: *Backend) !RenderUniformBi
 
 pub fn getOrCreateCachedRenderTextureView(
     self: *Backend,
-    cache: *std.AutoHashMap(u64, types.RenderTextureViewCacheEntry),
+    cache: *std.AutoHashMap(u64, abi_records.RenderTextureViewCacheEntry),
     key: u64,
-    texture: types.WGPUTexture,
+    texture: abi_base.WGPUTexture,
     width: u32,
     height: u32,
-    format: types.WGPUTextureFormat,
-    usage: types.WGPUTextureUsage,
-) !types.WGPUTextureView {
+    format: abi_base.WGPUTextureFormat,
+    usage: abi_base.WGPUTextureUsage,
+) !abi_base.WGPUTextureView {
     const procs = self.core.procs orelse return error.ProceduralNotReady;
     if (cache.get(key)) |existing| {
         if (existing.texture == texture and
@@ -305,21 +308,21 @@ pub fn getOrCreateCachedRenderTextureView(
         _ = cache.remove(key);
     }
 
-    const view = procs.wgpuTextureCreateView(texture, &types.WGPUTextureViewDescriptor{
+    const view = procs.wgpuTextureCreateView(texture, &abi_descriptor.WGPUTextureViewDescriptor{
         .nextInChain = null,
         .label = loader.emptyStringView(),
         .format = format,
-        .dimension = types.WGPUTextureViewDimension_2D,
+        .dimension = abi_base.WGPUTextureViewDimension_2D,
         .baseMipLevel = 0,
         .mipLevelCount = 1,
         .baseArrayLayer = 0,
         .arrayLayerCount = 1,
-        .aspect = types.WGPUTextureAspect_All,
+        .aspect = abi_base.WGPUTextureAspect_All,
         .usage = usage,
-        .swizzleR = types.WGPUTextureComponentSwizzle_Red,
-        .swizzleG = types.WGPUTextureComponentSwizzle_Green,
-        .swizzleB = types.WGPUTextureComponentSwizzle_Blue,
-        .swizzleA = types.WGPUTextureComponentSwizzle_Alpha,
+        .swizzleR = abi_base.WGPUTextureComponentSwizzle_Red,
+        .swizzleG = abi_base.WGPUTextureComponentSwizzle_Green,
+        .swizzleB = abi_base.WGPUTextureComponentSwizzle_Blue,
+        .swizzleA = abi_base.WGPUTextureComponentSwizzle_Alpha,
     });
     if (view == null) return error.TextureViewCreationFailed;
     cache.put(key, .{

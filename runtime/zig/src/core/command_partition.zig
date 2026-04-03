@@ -1,5 +1,8 @@
 const std = @import("std");
-const types = @import("../model_webgpu_types.zig");
+const model_resource_types = @import("../model_resource_types.zig");
+const model_compute_types = @import("../model_compute_types.zig");
+const model_texture_types = @import("../model_texture_types.zig");
+const model_async_types = @import("../model_async_types.zig");
 
 pub const CommandKind = enum(u8) {
     upload,
@@ -18,17 +21,17 @@ pub const CommandKind = enum(u8) {
 /// Core command union — owns compute, copy, resource, and queue-sync commands.
 /// This is the authoritative definition; model.zig re-exports it.
 pub const Command = union(CommandKind) {
-    upload: types.UploadCommand,
-    buffer_write: types.BufferWriteCommand,
-    copy_buffer_to_texture: types.CopyCommand,
-    barrier: types.BarrierCommand,
-    dispatch: types.DispatchCommand,
-    dispatch_indirect: types.DispatchIndirectCommand,
-    kernel_dispatch: types.KernelDispatchCommand,
-    texture_write: types.TextureWriteCommand,
-    texture_query: types.TextureQueryCommand,
-    texture_destroy: types.TextureDestroyCommand,
-    map_async: types.MapAsyncCommand,
+    upload: model_resource_types.UploadCommand,
+    buffer_write: model_resource_types.BufferWriteCommand,
+    copy_buffer_to_texture: model_resource_types.CopyCommand,
+    barrier: model_resource_types.BarrierCommand,
+    dispatch: model_compute_types.DispatchCommand,
+    dispatch_indirect: model_compute_types.DispatchIndirectCommand,
+    kernel_dispatch: model_compute_types.KernelDispatchCommand,
+    texture_write: model_texture_types.TextureWriteCommand,
+    texture_query: model_texture_types.TextureQueryCommand,
+    texture_destroy: model_texture_types.TextureDestroyCommand,
+    map_async: model_async_types.MapAsyncCommand,
 };
 
 pub fn fromCombined(kind: anytype) ?CommandKind {

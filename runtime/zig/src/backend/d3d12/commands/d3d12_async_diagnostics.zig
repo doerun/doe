@@ -1,5 +1,5 @@
 const std = @import("std");
-const model = @import("../../../model_webgpu_types.zig");
+const model_async_types = @import("../../../model_async_types.zig");
 const common_timing = @import("../../common/timing.zig");
 
 extern fn d3d12_bridge_device_create_root_signature_empty(device: ?*anyopaque) callconv(.c) ?*anyopaque;
@@ -14,7 +14,7 @@ pub const AsyncDiagnosticsMetrics = struct {
 
 pub fn execute_async_diagnostics(
     device: ?*anyopaque,
-    cmd: model.AsyncDiagnosticsCommand,
+    cmd: model_async_types.AsyncDiagnosticsCommand,
 ) !AsyncDiagnosticsMetrics {
     const iterations = if (cmd.iterations == 0) @as(u32, 1) else cmd.iterations;
 

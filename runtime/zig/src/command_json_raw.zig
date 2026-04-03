@@ -1,4 +1,4 @@
-const model_webgpu_types = @import("model_webgpu_types.zig");
+const model_async_types = @import("model_async_types.zig");
 
 pub const RawKernelBinding = struct {
     binding: ?u32 = null,
@@ -295,7 +295,7 @@ pub const RawCommand = struct {
     bindings: ?[]RawKernelBinding = null,
     map_mode: ?[]const u8 = null,
     mapMode: ?[]const u8 = null,
-    map_async: ?model_webgpu_types.MapAsyncCommand = null,
+    map_async: ?model_async_types.MapAsyncCommand = null,
     semantic_op_id: ?[]const u8 = null,
     semanticOpId: ?[]const u8 = null,
     semantic_stage: ?[]const u8 = null,

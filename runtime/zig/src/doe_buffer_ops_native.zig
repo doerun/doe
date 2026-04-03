@@ -4,7 +4,8 @@
 const std = @import("std");
 const builtin = @import("builtin");
 const has_vulkan = (builtin.os.tag == .linux);
-const types = @import("core/abi/wgpu_types.zig");
+const abi_base = @import("core/abi/wgpu_base_types.zig");
+const abi_descriptor = @import("core/abi/wgpu_descriptor_types.zig");
 const native = @import("doe_wgpu_native.zig");
 const d3d12_constants = @import("backend/d3d12/d3d12_constants.zig");
 const bridge = @import("backend/metal/metal_bridge_decls.zig");
@@ -41,14 +42,14 @@ fn buffer_map_range_ok(buf: *const DoeBuffer, offset: usize, size: usize) bool {
 }
 
 fn d3d12_upload_heap_usage_supported(usage: u64) bool {
-    const disallowed = types.WGPUBufferUsage_MapRead | types.WGPUBufferUsage_CopyDst | types.WGPUBufferUsage_Storage | types.WGPUBufferUsage_QueryResolve;
+    const disallowed = abi_base.WGPUBufferUsage_MapRead | abi_base.WGPUBufferUsage_CopyDst | abi_base.WGPUBufferUsage_Storage | abi_base.WGPUBufferUsage_QueryResolve;
     return (usage & disallowed) == 0;
 }
 
-fn d3d12_buffer_heap_type(desc: *const types.WGPUBufferDescriptor) ?c_int {
+fn d3d12_buffer_heap_type(desc: *const abi_descriptor.WGPUBufferDescriptor) ?c_int {
     const usage = desc.usage;
-    const wants_map_read = (usage & types.WGPUBufferUsage_MapRead) != 0;
-    const wants_map_write = (usage & types.WGPUBufferUsage_MapWrite) != 0;
+    const wants_map_read = (usage & abi_base.WGPUBufferUsage_MapRead) != 0;
+    const wants_map_write = (usage & abi_base.WGPUBufferUsage_MapWrite) != 0;
     if (wants_map_read and wants_map_write) return null;
     if (wants_map_read) {
         if (desc.mappedAtCreation != 0) return null;
@@ -67,20 +68,30 @@ extern fn d3d12_bridge_resource_map(resource: ?*anyopaque) callconv(.c) ?*anyopa
 extern fn d3d12_bridge_resource_unmap(resource: ?*anyopaque) callconv(.c) void;
 extern fn d3d12_bridge_release(obj: ?*anyopaque) callconv(.c) void;
 
-pub export fn doeNativeDeviceCreateBuffer(dev_raw: ?*anyopaque, desc: ?*const types.WGPUBufferDescriptor) callconv(.c) ?*anyopaque {
+pub export fn doeNativeDeviceCreateBuffer(dev_raw: ?*anyopaque, desc: ?*const abi_descriptor.WGPUBufferDescriptor) callconv(.c) ?*anyopaque {
     const dev = cast(DoeDevice, dev_raw) orelse return null;
     const d = desc orelse return null;
     const buf = make(DoeBuffer) orelse return null;
     buf.* = .{ .backend = dev.backend, .size = d.size, .usage = d.usage };
     if (comptime has_vulkan) {
         if (dev.backend == .vulkan) {
-            const rt = native.device_vk_runtime(dev) orelse { alloc.destroy(buf); return null; };
+            const rt = native.device_vk_runtime(dev) orelse {
+                alloc.destroy(buf);
+                return null;
+            };
             const id: u64 = @intFromPtr(buf);
             buf.vk_id = id;
             buf.vk_runtime_ref = @ptrCast(rt);
             const vk_resources = @import("backend/vulkan/vk_resources.zig");
-            const cb = vk_resources.create_compute_buffer(rt, d.size, false) catch { alloc.destroy(buf); return null; };
-            rt.compute_buffers.put(rt.allocator, id, cb) catch { vk_resources.release_compute_buffer(rt, cb); alloc.destroy(buf); return null; };
+            const cb = vk_resources.create_compute_buffer(rt, d.size, false) catch {
+                alloc.destroy(buf);
+                return null;
+            };
+            rt.compute_buffers.put(rt.allocator, id, cb) catch {
+                vk_resources.release_compute_buffer(rt, cb);
+                alloc.destroy(buf);
+                return null;
+            };
             // Cache host-visible mapped pointer to skip HashMap lookup on writeBuffer.
             if (cb.mapped) |m| buf.vk_mapped_ptr = @ptrCast(m);
             if (d.mappedAtCreation != 0) buf.mapped = true;
@@ -90,13 +101,26 @@ pub export fn doeNativeDeviceCreateBuffer(dev_raw: ?*anyopaque, desc: ?*const ty
         }
     }
     if (dev.backend == .d3d12) {
-        const rt = native.device_d3d12_runtime(dev) orelse { alloc.destroy(buf); return null; };
-        const heap_type = d3d12_buffer_heap_type(d) orelse { alloc.destroy(buf); return null; };
+        const rt = native.device_d3d12_runtime(dev) orelse {
+            alloc.destroy(buf);
+            return null;
+        };
+        const heap_type = d3d12_buffer_heap_type(d) orelse {
+            alloc.destroy(buf);
+            return null;
+        };
         buf.mtl = d3d12_bridge_device_create_buffer(rt.device, @intCast(d.size), heap_type);
-        if (buf.mtl == null) { alloc.destroy(buf); return null; }
+        if (buf.mtl == null) {
+            alloc.destroy(buf);
+            return null;
+        }
         buf.d3d12_heap_type = heap_type;
         if (d.mappedAtCreation != 0) {
-            buf.d3d12_mapped_ptr = d3d12_bridge_resource_map(buf.mtl) orelse { d3d12_bridge_release(buf.mtl); alloc.destroy(buf); return null; };
+            buf.d3d12_mapped_ptr = d3d12_bridge_resource_map(buf.mtl) orelse {
+                d3d12_bridge_release(buf.mtl);
+                alloc.destroy(buf);
+                return null;
+            };
             buf.mapped = true;
         }
         const result = toOpaque(buf);
@@ -104,7 +128,10 @@ pub export fn doeNativeDeviceCreateBuffer(dev_raw: ?*anyopaque, desc: ?*const ty
         return result;
     }
     buf.mtl = metal_bridge_device_new_buffer_shared(dev.mtl_device, @intCast(d.size));
-    if (buf.mtl == null) { alloc.destroy(buf); return null; }
+    if (buf.mtl == null) {
+        alloc.destroy(buf);
+        return null;
+    }
     if (d.mappedAtCreation != 0) buf.mapped = true;
     const result = toOpaque(buf);
     label_store.set(result, d.label.data, d.label.length);
@@ -120,14 +147,19 @@ pub export fn doeNativeBufferRelease(raw: ?*anyopaque) callconv(.c) void {
                 if (b.vk_runtime_ref) |rt_ptr| {
                     const rt: *NativeVulkanRuntime = @ptrCast(@alignCast(rt_ptr));
                     const vk_resources = @import("backend/vulkan/vk_resources.zig");
-                    if (rt.compute_buffers.fetchRemove(b.vk_id)) |entry| { vk_resources.release_compute_buffer(rt, entry.value); }
+                    if (rt.compute_buffers.fetchRemove(b.vk_id)) |entry| {
+                        vk_resources.release_compute_buffer(rt, entry.value);
+                    }
                 }
                 alloc.destroy(b);
                 return;
             }
         }
         if (b.backend == .d3d12) {
-            if (b.d3d12_mapped_ptr != null and b.mtl != null) { d3d12_bridge_resource_unmap(b.mtl); b.d3d12_mapped_ptr = null; }
+            if (b.d3d12_mapped_ptr != null and b.mtl != null) {
+                d3d12_bridge_resource_unmap(b.mtl);
+                b.d3d12_mapped_ptr = null;
+            }
             if (b.mtl) |handle| d3d12_bridge_release(handle);
             alloc.destroy(b);
             return;
@@ -139,7 +171,10 @@ pub export fn doeNativeBufferRelease(raw: ?*anyopaque) callconv(.c) void {
 
 pub export fn doeNativeBufferUnmap(raw: ?*anyopaque) callconv(.c) void {
     if (cast(DoeBuffer, raw)) |b| {
-        if (b.backend == .d3d12 and b.d3d12_mapped_ptr != null and b.mtl != null) { d3d12_bridge_resource_unmap(b.mtl); b.d3d12_mapped_ptr = null; }
+        if (b.backend == .d3d12 and b.d3d12_mapped_ptr != null and b.mtl != null) {
+            d3d12_bridge_resource_unmap(b.mtl);
+            b.d3d12_mapped_ptr = null;
+        }
         b.mapped = false;
     }
 }
@@ -152,7 +187,7 @@ pub export fn doeNativeBufferGetMapState(raw: ?*anyopaque) callconv(.c) u32 {
     return if (b.mapped) DOE_BUFFER_MAP_STATE_MAPPED else DOE_BUFFER_MAP_STATE_UNMAPPED;
 }
 
-pub export fn doeNativeBufferMapAsync(buf_raw: ?*anyopaque, mode: u64, offset: usize, size: usize, cb_info: types.WGPUBufferMapCallbackInfo) callconv(.c) types.WGPUFuture {
+pub export fn doeNativeBufferMapAsync(buf_raw: ?*anyopaque, mode: u64, offset: usize, size: usize, cb_info: abi_descriptor.WGPUBufferMapCallbackInfo) callconv(.c) abi_base.WGPUFuture {
     const b = cast(DoeBuffer, buf_raw) orelse {
         if (cb_info.callback) |callback| callback(WGPU_MAP_ASYNC_STATUS_VALIDATION_ERROR, .{ .data = null, .length = 0 }, cb_info.userdata1, cb_info.userdata2);
         return .{ .id = 3 };
@@ -162,8 +197,8 @@ pub export fn doeNativeBufferMapAsync(buf_raw: ?*anyopaque, mode: u64, offset: u
         return .{ .id = 3 };
     }
     if (b.backend == .d3d12) {
-        const wants_read = (mode & types.WGPUMapMode_Read) != 0;
-        const wants_write = (mode & types.WGPUMapMode_Write) != 0;
+        const wants_read = (mode & abi_base.WGPUMapMode_Read) != 0;
+        const wants_write = (mode & abi_base.WGPUMapMode_Write) != 0;
         const expect_heap: c_int = if (wants_read and !wants_write) d3d12_constants.HEAP_TYPE_READBACK else if (wants_write and !wants_read) d3d12_constants.HEAP_TYPE_UPLOAD else 0;
         if (expect_heap == 0 or b.d3d12_heap_type != expect_heap or b.mtl == null) {
             if (cb_info.callback) |callback| callback(WGPU_MAP_ASYNC_STATUS_VALIDATION_ERROR, .{ .data = null, .length = 0 }, cb_info.userdata1, cb_info.userdata2);

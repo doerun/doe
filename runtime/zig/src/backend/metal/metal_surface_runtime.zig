@@ -1,5 +1,5 @@
 const common_timing = @import("../common/timing.zig");
-const model = @import("../../model_webgpu_types.zig");
+const model_surface_control_types = @import("../../model_surface_control_types.zig");
 const bridge = @import("metal_bridge_decls.zig");
 const metal_bridge_command_buffer_wait_completed = bridge.metal_bridge_command_buffer_wait_completed;
 const metal_bridge_create_command_buffer = bridge.metal_bridge_create_command_buffer;
@@ -29,14 +29,14 @@ pub const SurfaceState = struct {
     acquired: bool = false,
 };
 
-pub fn create_surface(self: anytype, cmd: model.SurfaceCreateCommand) !void {
+pub fn create_surface(self: anytype, cmd: model_surface_control_types.SurfaceCreateCommand) !void {
     var entry = try surface_entry(self, cmd.handle);
     if (entry.surface_host == null) {
         entry.surface_host = doe_surface_create_offscreen() orelse return error.InvalidState;
     }
 }
 
-pub fn surface_capabilities(self: anytype, cmd: model.SurfaceCapabilitiesCommand) !void {
+pub fn surface_capabilities(self: anytype, cmd: model_surface_control_types.SurfaceCapabilitiesCommand) !void {
     _ = try surface_entry(self, cmd.handle);
 }
 
@@ -70,10 +70,10 @@ pub fn update_surface_size(self: anytype, handle: u64, width: u32, height: u32, 
     entry.height = height;
 }
 
-pub fn configure_surface(self: anytype, cmd: model.SurfaceConfigureCommand) !void {
+pub fn configure_surface(self: anytype, cmd: model_surface_control_types.SurfaceConfigureCommand) !void {
     var entry = try surface_entry(self, cmd.handle);
     if (cmd.width == 0 or cmd.height == 0) return error.InvalidArgument;
-    if (cmd.tone_mapping_mode != model.WGPUCanvasToneMappingMode_Standard) return error.UnsupportedFeature;
+    if (cmd.tone_mapping_mode != model_surface_control_types.WGPUCanvasToneMappingMode_Standard) return error.UnsupportedFeature;
     if (doe_surface_supports_format(cmd.format) == 0) return error.UnsupportedFeature;
 
     if (entry.surface_host == null) {
@@ -105,7 +105,7 @@ pub fn configure_surface(self: anytype, cmd: model.SurfaceConfigureCommand) !voi
     entry.acquired = false;
 }
 
-pub fn acquire_surface(self: anytype, cmd: model.SurfaceAcquireCommand) !void {
+pub fn acquire_surface(self: anytype, cmd: model_surface_control_types.SurfaceAcquireCommand) !void {
     var entry = try surface_entry(self, cmd.handle);
     if (!entry.configured) return error.SurfaceUnavailable;
     const host = entry.surface_host orelse return error.SurfaceUnavailable;
@@ -125,7 +125,7 @@ pub fn acquire_surface(self: anytype, cmd: model.SurfaceAcquireCommand) !void {
     entry.acquired = true;
 }
 
-pub fn present_surface(self: anytype, cmd: model.SurfacePresentCommand) !u64 {
+pub fn present_surface(self: anytype, cmd: model_surface_control_types.SurfacePresentCommand) !u64 {
     var entry = try surface_entry(self, cmd.handle);
     if (!entry.configured or !entry.acquired or entry.texture == null or entry.drawable == null) return error.SurfaceUnavailable;
     const start_ns = common_timing.now_ns();
@@ -148,7 +148,7 @@ pub fn present_surface(self: anytype, cmd: model.SurfacePresentCommand) !u64 {
     return common_timing.ns_delta(common_timing.now_ns(), start_ns);
 }
 
-pub fn unconfigure_surface(self: anytype, cmd: model.SurfaceUnconfigureCommand) !void {
+pub fn unconfigure_surface(self: anytype, cmd: model_surface_control_types.SurfaceUnconfigureCommand) !void {
     var entry = try surface_entry(self, cmd.handle);
     if (entry.drawable) |drawable| {
         doe_surface_discard_drawable(drawable);
@@ -171,7 +171,7 @@ pub fn unconfigure_surface(self: anytype, cmd: model.SurfaceUnconfigureCommand) 
     entry.tone_mapping_mode = 0;
 }
 
-pub fn release_surface(self: anytype, cmd: model.SurfaceReleaseCommand) !void {
+pub fn release_surface(self: anytype, cmd: model_surface_control_types.SurfaceReleaseCommand) !void {
     if (self.surfaces.fetchRemove(cmd.handle)) |removed| {
         if (removed.value.drawable) |drawable| {
             doe_surface_discard_drawable(drawable);

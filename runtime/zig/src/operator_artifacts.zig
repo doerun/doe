@@ -1,6 +1,6 @@
 const std = @import("std");
 const model_commands = @import("model_commands.zig");
-const model_webgpu_types = @import("model_webgpu_types.zig");
+const model_gpu_types = @import("model_gpu_types.zig");
 const execution = @import("execution.zig");
 const main_print = @import("main_print.zig");
 const semantic_trace = @import("semantic_trace.zig");
@@ -9,7 +9,7 @@ const hash_utils = @import("backend/common/hash_utils.zig");
 
 const model = struct {
     pub const Command = model_commands.Command;
-    pub const WGPUWholeSize = model_webgpu_types.WGPUWholeSize;
+    pub const WGPUWholeSize = model_gpu_types.WGPUWholeSize;
 };
 
 const MANIFEST_PATH_SUFFIX = ".operators.json";

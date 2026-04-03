@@ -1,7 +1,54 @@
 const std = @import("std");
-const types = @import("core/abi/wgpu_types.zig");
-
-
+const proc_types = @import("core/abi/wgpu_proc_types.zig");
+const types = struct {
+    pub const WGPUAdapter = proc_types.base.WGPUAdapter;
+    pub const WGPUBindGroup = proc_types.base.WGPUBindGroup;
+    pub const WGPUBindGroupDescriptor = proc_types.descriptor.WGPUBindGroupDescriptor;
+    pub const WGPUBindGroupLayout = proc_types.base.WGPUBindGroupLayout;
+    pub const WGPUBindGroupLayoutDescriptor = proc_types.descriptor.WGPUBindGroupLayoutDescriptor;
+    pub const WGPUBool = proc_types.base.WGPUBool;
+    pub const WGPUBuffer = proc_types.base.WGPUBuffer;
+    pub const WGPUBufferDescriptor = proc_types.descriptor.WGPUBufferDescriptor;
+    pub const WGPUBufferMapCallbackInfo = proc_types.descriptor.WGPUBufferMapCallbackInfo;
+    pub const WGPUCommandBuffer = proc_types.base.WGPUCommandBuffer;
+    pub const WGPUCommandBufferDescriptor = proc_types.descriptor.WGPUCommandBufferDescriptor;
+    pub const WGPUCommandEncoder = proc_types.base.WGPUCommandEncoder;
+    pub const WGPUCommandEncoderDescriptor = proc_types.descriptor.WGPUCommandEncoderDescriptor;
+    pub const WGPUComputePassDescriptor = proc_types.descriptor.WGPUComputePassDescriptor;
+    pub const WGPUComputePassEncoder = proc_types.base.WGPUComputePassEncoder;
+    pub const WGPUComputePipeline = proc_types.base.WGPUComputePipeline;
+    pub const WGPUComputePipelineDescriptor = proc_types.descriptor.WGPUComputePipelineDescriptor;
+    pub const WGPUDevice = proc_types.base.WGPUDevice;
+    pub const WGPUDeviceDescriptor = proc_types.descriptor.WGPUDeviceDescriptor;
+    pub const WGPUExtent3D = proc_types.descriptor.WGPUExtent3D;
+    pub const WGPUFeatureName = proc_types.base.WGPUFeatureName;
+    pub const WGPUFuture = proc_types.base.WGPUFuture;
+    pub const WGPUFutureWaitInfo = proc_types.descriptor.WGPUFutureWaitInfo;
+    pub const WGPUInstance = proc_types.base.WGPUInstance;
+    pub const WGPUMapMode = proc_types.base.WGPUMapMode;
+    pub const WGPUPipelineLayout = proc_types.base.WGPUPipelineLayout;
+    pub const WGPUPipelineLayoutDescriptor = proc_types.descriptor.WGPUPipelineLayoutDescriptor;
+    pub const WGPUQuerySet = proc_types.base.WGPUQuerySet;
+    pub const WGPUQuerySetDescriptor = proc_types.descriptor.WGPUQuerySetDescriptor;
+    pub const WGPUQueue = proc_types.base.WGPUQueue;
+    pub const WGPUQueueWorkDoneCallbackInfo = proc_types.descriptor.WGPUQueueWorkDoneCallbackInfo;
+    pub const WGPURenderPassEncoder = proc_types.base.WGPURenderPassEncoder;
+    pub const WGPURenderPipeline = proc_types.base.WGPURenderPipeline;
+    pub const WGPURequestAdapterCallbackInfo = proc_types.descriptor.WGPURequestAdapterCallbackInfo;
+    pub const WGPURequestAdapterOptions = proc_types.descriptor.WGPURequestAdapterOptions;
+    pub const WGPURequestDeviceCallbackInfo = proc_types.descriptor.WGPURequestDeviceCallbackInfo;
+    pub const WGPUSampler = proc_types.base.WGPUSampler;
+    pub const WGPUSamplerDescriptor = proc_types.descriptor.WGPUSamplerDescriptor;
+    pub const WGPUShaderModule = proc_types.base.WGPUShaderModule;
+    pub const WGPUShaderModuleDescriptor = proc_types.descriptor.WGPUShaderModuleDescriptor;
+    pub const WGPUTexelCopyBufferInfo = proc_types.descriptor.WGPUTexelCopyBufferInfo;
+    pub const WGPUTexelCopyTextureInfo = proc_types.descriptor.WGPUTexelCopyTextureInfo;
+    pub const WGPUTexture = proc_types.base.WGPUTexture;
+    pub const WGPUTextureDescriptor = proc_types.descriptor.WGPUTextureDescriptor;
+    pub const WGPUTextureView = proc_types.base.WGPUTextureView;
+    pub const WGPUTextureViewDescriptor = proc_types.descriptor.WGPUTextureViewDescriptor;
+    pub const WGPUWaitStatus = proc_types.descriptor.WGPUWaitStatus;
+};
 
 pub const FnWgpuCreateInstance = *const fn (?*anyopaque) callconv(.c) types.WGPUInstance;
 pub const FnWgpuInstanceRequestAdapter = *const fn (types.WGPUInstance, ?*const types.WGPURequestAdapterOptions, types.WGPURequestAdapterCallbackInfo) callconv(.c) types.WGPUFuture;

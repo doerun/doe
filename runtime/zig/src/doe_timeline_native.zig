@@ -14,7 +14,8 @@
 // the queue is only constructed by doeNativeDeviceGetQueue, which we update here.
 
 const std = @import("std");
-const types = @import("core/abi/wgpu_types.zig");
+const abi_base = @import("core/abi/wgpu_base_types.zig");
+const abi_descriptor = @import("core/abi/wgpu_descriptor_types.zig");
 const native = @import("doe_wgpu_native.zig");
 const timeline = @import("gpu_timeline.zig");
 
@@ -37,8 +38,8 @@ extern fn metal_bridge_release(obj: ?*anyopaque) callconv(.c) void;
 // The exported function name must match what doe_napi.c calls.
 pub export fn doeNativeQueueOnSubmittedWorkDoneAsync(
     q_raw: ?*anyopaque,
-    info: types.WGPUQueueWorkDoneCallbackInfo,
-) callconv(.c) types.WGPUFuture {
+    info: abi_descriptor.WGPUQueueWorkDoneCallbackInfo,
+) callconv(.c) abi_base.WGPUFuture {
     const q = cast(DoeQueue, q_raw) orelse {
         if (info.callback) |cb| cb(.@"error", .{ .data = null, .length = 0 }, info.userdata1, info.userdata2);
         return .{ .id = 4 };
@@ -64,8 +65,8 @@ pub export fn doeNativeBufferMapAsyncReal(
     mode: u64,
     offset: usize,
     size: usize,
-    cb_info: types.WGPUBufferMapCallbackInfo,
-) callconv(.c) types.WGPUFuture {
+    cb_info: abi_descriptor.WGPUBufferMapCallbackInfo,
+) callconv(.c) abi_base.WGPUFuture {
     const buf = cast(DoeBuffer, buf_raw) orelse {
         if (cb_info.callback) |cb| cb(WGPU_MAP_ASYNC_STATUS_VALIDATION_ERROR, .{ .data = null, .length = 0 }, cb_info.userdata1, cb_info.userdata2);
         return .{ .id = 3 };

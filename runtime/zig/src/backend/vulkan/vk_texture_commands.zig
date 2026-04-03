@@ -2,7 +2,9 @@
 // commands for the NativeVulkanRuntime. Sharded from native_runtime.zig.
 
 const std = @import("std");
-const model = @import("../../model_webgpu_types.zig");
+const model_gpu_types = @import("../../model_gpu_types.zig");
+const model_render_types = @import("../../model_render_types.zig");
+const model_texture_types = @import("../../model_texture_types.zig");
 const c = @import("vk_constants.zig");
 const vk_sync = @import("vk_sync.zig");
 const vk_upload = @import("vk_upload.zig");
@@ -10,7 +12,7 @@ const vk_resources = @import("vk_resources.zig");
 const vk_formats = @import("vk_formats.zig");
 const NativeVulkanRuntime = @import("native_runtime.zig").NativeVulkanRuntime;
 
-pub fn texture_write(self: *NativeVulkanRuntime, cmd_arg: model.TextureWriteCommand) !void {
+pub fn texture_write(self: *NativeVulkanRuntime, cmd_arg: model_texture_types.TextureWriteCommand) !void {
     const resource = try vk_resources.ensure_texture_resource(self, cmd_arg.texture);
     if (cmd_arg.data.len == 0) {
         try vk_resources.ensure_texture_shader_layout(self, resource);
@@ -83,7 +85,7 @@ pub fn texture_read(self: *NativeVulkanRuntime, args: struct {
     mip_level: u32,
     width: u32,
     height: u32,
-    format: model.WGPUTextureFormat,
+    format: model_gpu_types.WGPUTextureFormat,
     dst_buffer: *anyopaque,
     dst_offset: u64,
     dst_bytes_per_row: u32,
@@ -205,29 +207,29 @@ pub fn texture_copy(self: *NativeVulkanRuntime, args: struct {
     dst.layout = c.VK_IMAGE_LAYOUT_GENERAL;
 }
 
-pub fn texture_query(self: *NativeVulkanRuntime, cmd_arg: model.TextureQueryCommand) !void {
+pub fn texture_query(self: *NativeVulkanRuntime, cmd_arg: model_texture_types.TextureQueryCommand) !void {
     const texture = self.textures.get(cmd_arg.handle) orelse return error.InvalidState;
     if (cmd_arg.expected_width) |width| if (texture.width != width) return error.InvalidState;
     if (cmd_arg.expected_height) |height| if (texture.height != height) return error.InvalidState;
     if (cmd_arg.expected_depth_or_array_layers) |layers| if (layers != 1) return error.InvalidState;
     if (cmd_arg.expected_format) |format| if (texture.format != format) return error.InvalidState;
-    if (cmd_arg.expected_dimension) |dimension| if (dimension != model.WGPUTextureDimension_2D) return error.InvalidState;
-    if (cmd_arg.expected_view_dimension) |view_dimension| if (view_dimension != model.WGPUTextureViewDimension_2D) return error.InvalidState;
+    if (cmd_arg.expected_dimension) |dimension| if (dimension != model_gpu_types.WGPUTextureDimension_2D) return error.InvalidState;
+    if (cmd_arg.expected_view_dimension) |view_dimension| if (view_dimension != model_gpu_types.WGPUTextureViewDimension_2D) return error.InvalidState;
     if (cmd_arg.expected_sample_count) |sample_count| if (sample_count != 1) return error.InvalidState;
     if (cmd_arg.expected_usage) |usage| if ((texture.usage & usage) != usage) return error.InvalidState;
 }
 
-pub fn texture_destroy(self: *NativeVulkanRuntime, cmd_arg: model.TextureDestroyCommand) !void {
+pub fn texture_destroy(self: *NativeVulkanRuntime, cmd_arg: model_texture_types.TextureDestroyCommand) !void {
     if (self.textures.fetchRemove(cmd_arg.handle)) |entry| {
         vk_resources.release_texture_resource(self, entry.value);
     }
 }
 
-pub fn sampler_create(self: *NativeVulkanRuntime, cmd: model.SamplerCreateCommand) !void {
+pub fn sampler_create(self: *NativeVulkanRuntime, cmd: model_render_types.SamplerCreateCommand) !void {
     _ = try vk_resources.create_sampler(self, cmd);
 }
 
-pub fn sampler_destroy(self: *NativeVulkanRuntime, cmd: model.SamplerDestroyCommand) !void {
+pub fn sampler_destroy(self: *NativeVulkanRuntime, cmd: model_render_types.SamplerDestroyCommand) !void {
     vk_resources.destroy_sampler(self, cmd.handle);
 }
 

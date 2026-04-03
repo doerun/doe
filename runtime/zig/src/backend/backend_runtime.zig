@@ -2,7 +2,7 @@ const std = @import("std");
 const builtin = @import("builtin");
 const model_commands = @import("../model_commands.zig");
 const model_profile = @import("../model_profile.zig");
-const model_webgpu_types = @import("../model_webgpu_types.zig");
+const model_transfer_types = @import("../model_compute_types.zig");
 const backend_iface = @import("backend_iface.zig");
 const backend_policy = @import("backend_policy.zig");
 const backend_registry = @import("backend_registry.zig");
@@ -16,7 +16,7 @@ const d3d12_backend = if (builtin.os.tag == .windows) @import("d3d12/mod.zig") e
 const model = struct {
     pub const Command = model_commands.Command;
     pub const DeviceProfile = model_profile.DeviceProfile;
-    pub const KernelBinding = model_webgpu_types.KernelBinding;
+    pub const KernelBinding = model_transfer_types.KernelBinding;
 };
 
 pub const BackendRuntime = struct {

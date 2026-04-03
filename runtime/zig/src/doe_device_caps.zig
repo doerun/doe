@@ -6,7 +6,8 @@
 
 const builtin = @import("builtin");
 const has_vulkan = (builtin.os.tag == .linux);
-const types = @import("core/abi/wgpu_types.zig");
+const abi_base = @import("core/abi/wgpu_base_types.zig");
+const abi_descriptor = @import("core/abi/wgpu_descriptor_types.zig");
 const native = @import("doe_wgpu_native.zig");
 const d3d12_device_caps = @import("backend/d3d12/d3d12_device_caps.zig");
 const vk_feature_caps = if (has_vulkan) @import("backend/vulkan/vk_feature_caps.zig") else struct {};
@@ -19,32 +20,32 @@ const DoeAdapter = native.DoeAdapter;
 const BRIDGE_AVAILABLE = builtin.os.tag == .macos;
 
 // ============================================================
-// Feature name constants — match wgpu_types.zig and capabilities.js
+// Feature name constants — match wgpu_runtime_abi.zig and capabilities.js
 // ============================================================
 
-const FEATURE_DEPTH_CLIP_CONTROL: u32 = types.WGPUFeatureName_DepthClipControl;
-const FEATURE_DEPTH32FLOAT_STENCIL8: u32 = types.WGPUFeatureName_Depth32FloatStencil8;
-const FEATURE_TEXTURE_COMPRESSION_ASTC: u32 = types.WGPUFeatureName_TextureCompressionASTC;
-const FEATURE_TEXTURE_COMPRESSION_BC_SLICED_3D: u32 = types.WGPUFeatureName_TextureCompressionBCSliced3D;
-const FEATURE_TEXTURE_COMPRESSION_ASTC_SLICED_3D: u32 = types.WGPUFeatureName_TextureCompressionASTCSliced3D;
-const FEATURE_BGRA8UNORM_STORAGE: u32 = types.WGPUFeatureName_BGRA8UnormStorage;
-const FEATURE_SHADER_F16: u32 = types.WGPUFeatureName_ShaderF16;
-const FEATURE_INDIRECT_FIRST_INSTANCE: u32 = types.WGPUFeatureName_IndirectFirstInstance;
-const FEATURE_FLOAT32_FILTERABLE: u32 = types.WGPUFeatureName_Float32Filterable;
-const FEATURE_FLOAT32_BLENDABLE: u32 = types.WGPUFeatureName_Float32Blendable;
-pub const FEATURE_SUBGROUPS: u32 = types.WGPUFeatureName_Subgroups;
-const FEATURE_TEXTURE_COMPRESSION_BC: u32 = types.WGPUFeatureName_TextureCompressionBC;
-const FEATURE_TEXTURE_COMPRESSION_ETC2: u32 = types.WGPUFeatureName_TextureCompressionETC2;
-const FEATURE_RG11B10UFLOAT_RENDERABLE: u32 = types.WGPUFeatureName_RG11B10UfloatRenderable;
-const FEATURE_TIMESTAMP_QUERY: u32 = types.WGPUFeatureName_TimestampQuery;
-const FEATURE_SUBGROUPS_F16: u32 = types.WGPUFeatureName_SubgroupsF16;
-const FEATURE_CLIP_DISTANCES: u32 = types.WGPUFeatureName_ClipDistances;
-const FEATURE_DUAL_SOURCE_BLENDING: u32 = types.WGPUFeatureName_DualSourceBlending;
-const FEATURE_CORE_FEATURES_AND_LIMITS: u32 = types.WGPUFeatureName_CoreFeaturesAndLimits;
-const FEATURE_TEXTURE_FORMATS_TIER1: u32 = types.WGPUFeatureName_TextureFormatsTier1;
-const FEATURE_TEXTURE_FORMATS_TIER2: u32 = types.WGPUFeatureName_TextureFormatsTier2;
-const FEATURE_PRIMITIVE_INDEX: u32 = types.WGPUFeatureName_PrimitiveIndex;
-const FEATURE_TEXTURE_COMPONENT_SWIZZLE: u32 = types.WGPUFeatureName_TextureComponentSwizzle;
+const FEATURE_DEPTH_CLIP_CONTROL: u32 = abi_base.WGPUFeatureName_DepthClipControl;
+const FEATURE_DEPTH32FLOAT_STENCIL8: u32 = abi_base.WGPUFeatureName_Depth32FloatStencil8;
+const FEATURE_TEXTURE_COMPRESSION_ASTC: u32 = abi_base.WGPUFeatureName_TextureCompressionASTC;
+const FEATURE_TEXTURE_COMPRESSION_BC_SLICED_3D: u32 = abi_base.WGPUFeatureName_TextureCompressionBCSliced3D;
+const FEATURE_TEXTURE_COMPRESSION_ASTC_SLICED_3D: u32 = abi_base.WGPUFeatureName_TextureCompressionASTCSliced3D;
+const FEATURE_BGRA8UNORM_STORAGE: u32 = abi_base.WGPUFeatureName_BGRA8UnormStorage;
+const FEATURE_SHADER_F16: u32 = abi_base.WGPUFeatureName_ShaderF16;
+const FEATURE_INDIRECT_FIRST_INSTANCE: u32 = abi_base.WGPUFeatureName_IndirectFirstInstance;
+const FEATURE_FLOAT32_FILTERABLE: u32 = abi_base.WGPUFeatureName_Float32Filterable;
+const FEATURE_FLOAT32_BLENDABLE: u32 = abi_base.WGPUFeatureName_Float32Blendable;
+pub const FEATURE_SUBGROUPS: u32 = abi_base.WGPUFeatureName_Subgroups;
+const FEATURE_TEXTURE_COMPRESSION_BC: u32 = abi_base.WGPUFeatureName_TextureCompressionBC;
+const FEATURE_TEXTURE_COMPRESSION_ETC2: u32 = abi_base.WGPUFeatureName_TextureCompressionETC2;
+const FEATURE_RG11B10UFLOAT_RENDERABLE: u32 = abi_base.WGPUFeatureName_RG11B10UfloatRenderable;
+const FEATURE_TIMESTAMP_QUERY: u32 = abi_base.WGPUFeatureName_TimestampQuery;
+const FEATURE_SUBGROUPS_F16: u32 = abi_base.WGPUFeatureName_SubgroupsF16;
+const FEATURE_CLIP_DISTANCES: u32 = abi_base.WGPUFeatureName_ClipDistances;
+const FEATURE_DUAL_SOURCE_BLENDING: u32 = abi_base.WGPUFeatureName_DualSourceBlending;
+const FEATURE_CORE_FEATURES_AND_LIMITS: u32 = abi_base.WGPUFeatureName_CoreFeaturesAndLimits;
+const FEATURE_TEXTURE_FORMATS_TIER1: u32 = abi_base.WGPUFeatureName_TextureFormatsTier1;
+const FEATURE_TEXTURE_FORMATS_TIER2: u32 = abi_base.WGPUFeatureName_TextureFormatsTier2;
+const FEATURE_PRIMITIVE_INDEX: u32 = abi_base.WGPUFeatureName_PrimitiveIndex;
+const FEATURE_TEXTURE_COMPONENT_SWIZZLE: u32 = abi_base.WGPUFeatureName_TextureComponentSwizzle;
 
 // ============================================================
 // Limits: Apple Silicon hardware-specific defaults.
@@ -67,7 +68,7 @@ pub const METAL_SIMD_GROUP_SIZE: u32 = 32;
 const METAL_MAX_IMMEDIATE_SIZE: u32 = 64;
 
 // Default Metal limits (used when no device handle is available).
-const METAL_LIMITS_STATIC = types.WGPULimits{
+const METAL_LIMITS_STATIC = abi_descriptor.WGPULimits{
     .nextInChain = null,
     .maxTextureDimension1D = 16384,
     .maxTextureDimension2D = 16384,
@@ -110,7 +111,7 @@ const VULKAN_MAX_STORAGE_BUFFER_BINDING_SIZE: u64 = 134_217_728; // 128 MB
 const VULKAN_MAX_BUFFER_SIZE: u64 = 268_435_456; // 256 MB
 const VULKAN_MIN_STORAGE_BUFFER_OFFSET_ALIGNMENT: u32 = 64;
 
-pub const VULKAN_LIMITS_STATIC = types.WGPULimits{
+pub const VULKAN_LIMITS_STATIC = abi_descriptor.WGPULimits{
     .nextInChain = null,
     .maxTextureDimension1D = 16384,
     .maxTextureDimension2D = 16384,
@@ -161,7 +162,7 @@ fn query_max_buffer_length(mtl_device: ?*anyopaque) u64 {
 
 // Build a WGPULimits struct with runtime-queried buffer sizes.
 // mtl_device may be null — in that case static fallback values apply.
-fn build_limits(mtl_device: ?*anyopaque) types.WGPULimits {
+fn build_limits(mtl_device: ?*anyopaque) abi_descriptor.WGPULimits {
     const buf_limit = query_max_buffer_length(mtl_device);
     var limits = METAL_LIMITS_STATIC;
     limits.maxBufferSize = buf_limit;
@@ -294,7 +295,7 @@ pub export fn doeNativeDeviceHasFeature(raw: ?*anyopaque, feature: u32) callconv
 // doeNativeDeviceGetLimits — dispatches to Vulkan or Metal limits based on backend.
 // Vulkan limits are hardware-queried at adapter/device creation and cached; falls
 // back to conservative static limits when the cache entry is absent.
-pub export fn doeNativeDeviceGetLimits(raw: ?*anyopaque, limits: ?*types.WGPULimits) callconv(.c) types.WGPUStatus {
+pub export fn doeNativeDeviceGetLimits(raw: ?*anyopaque, limits: ?*abi_descriptor.WGPULimits) callconv(.c) abi_base.WGPUStatus {
     if (native.cast(DoeDevice, raw)) |d| {
         if (comptime has_vulkan) {
             if (d.backend == .vulkan) {
@@ -305,7 +306,7 @@ pub export fn doeNativeDeviceGetLimits(raw: ?*anyopaque, limits: ?*types.WGPULim
                         l.* = VULKAN_LIMITS_STATIC;
                     }
                 }
-                return types.WGPUStatus_Success;
+                return abi_base.WGPUStatus_Success;
             }
         }
         if (d.backend == .d3d12) {
@@ -316,14 +317,14 @@ pub export fn doeNativeDeviceGetLimits(raw: ?*anyopaque, limits: ?*types.WGPULim
                     d3d12_device_caps.d3d12_device_get_limits(l);
                 }
             }
-            return types.WGPUStatus_Success;
+            return abi_base.WGPUStatus_Success;
         }
     }
     if (limits) |l| l.* = build_limits(null);
-    return types.WGPUStatus_Success;
+    return abi_base.WGPUStatus_Success;
 }
 
-pub export fn doeNativeAdapterGetLimits(raw: ?*anyopaque, limits: ?*types.WGPULimits) callconv(.c) types.WGPUStatus {
+pub export fn doeNativeAdapterGetLimits(raw: ?*anyopaque, limits: ?*abi_descriptor.WGPULimits) callconv(.c) abi_base.WGPUStatus {
     if (native.cast(DoeAdapter, raw)) |a| {
         if (comptime has_vulkan) {
             if (a.backend == .vulkan) {
@@ -334,23 +335,23 @@ pub export fn doeNativeAdapterGetLimits(raw: ?*anyopaque, limits: ?*types.WGPULi
                         l.* = VULKAN_LIMITS_STATIC;
                     }
                 }
-                return types.WGPUStatus_Success;
+                return abi_base.WGPUStatus_Success;
             }
         }
         if (a.backend == .d3d12) {
             if (limits) |l| d3d12_device_caps.d3d12_adapter_get_limits(l);
-            return types.WGPUStatus_Success;
+            return abi_base.WGPUStatus_Success;
         }
     }
     if (limits) |l| l.* = build_limits(null);
-    return types.WGPUStatus_Success;
+    return abi_base.WGPUStatus_Success;
 }
 
 // doeNativeDeviceGetLimitsFromMtl — accepts a raw MTLDevice pointer and
 // queries maxBufferLength at runtime for accurate large-buffer reporting.
-pub export fn doeNativeDeviceGetLimitsFromMtl(mtl_device: ?*anyopaque, limits: ?*types.WGPULimits) callconv(.c) types.WGPUStatus {
+pub export fn doeNativeDeviceGetLimitsFromMtl(mtl_device: ?*anyopaque, limits: ?*abi_descriptor.WGPULimits) callconv(.c) abi_base.WGPUStatus {
     if (limits) |l| l.* = build_limits(mtl_device);
-    return types.WGPUStatus_Success;
+    return abi_base.WGPUStatus_Success;
 }
 
 // ============================================================

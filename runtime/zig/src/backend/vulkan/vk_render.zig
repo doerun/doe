@@ -7,7 +7,9 @@ const vk_sync = @import("vk_sync.zig");
 const vk_formats = @import("vk_formats.zig");
 const vk_upload = @import("vk_upload.zig");
 const vk_resources = @import("vk_resources.zig");
-const model = @import("../../model_webgpu_types.zig");
+const model_resource_types = @import("../../model_resource_types.zig");
+const model_gpu_types = @import("../../model_gpu_types.zig");
+const model_render_types = @import("../../model_render_types.zig");
 const common_timing = @import("../common/timing.zig");
 const render_bundle = @import("../../render_bundle.zig");
 const vk_render_pipeline = @import("vk_render_pipeline.zig");
@@ -76,11 +78,11 @@ pub fn release_render_state(device: c.VkDevice, state: *RenderState) void {
 }
 pub fn execute_render_draw(
     self: *Runtime,
-    cmd: model.RenderDrawCommand,
+    cmd: model_render_types.RenderDrawCommand,
 ) !DispatchMetrics {
     const draw_count = if (cmd.draw_count > 0) cmd.draw_count else 1;
-    const target_width = if (cmd.target_width > 0) cmd.target_width else model.DEFAULT_RENDER_TARGET_WIDTH;
-    const target_height = if (cmd.target_height > 0) cmd.target_height else model.DEFAULT_RENDER_TARGET_HEIGHT;
+    const target_width = if (cmd.target_width > 0) cmd.target_width else model_render_types.DEFAULT_RENDER_TARGET_WIDTH;
+    const target_height = if (cmd.target_height > 0) cmd.target_height else model_render_types.DEFAULT_RENDER_TARGET_HEIGHT;
     const vk_format = try vk_resources.texture_format_to_vk(cmd.target_format);
 
     if (self.has_deferred_submissions or self.pending_uploads.items.len > 0) {
@@ -91,7 +93,7 @@ pub fn execute_render_draw(
     defer release_render_state(self.device, &render_state);
     const encode_start = common_timing.now_ns();
     try ensure_render_target(self, &render_state, cmd, target_width, target_height, cmd.target_format, cmd.depth_stencil_format);
-    const has_depth_stencil = cmd.depth_stencil_format != model.WGPUTextureFormat_Undefined;
+    const has_depth_stencil = cmd.depth_stencil_format != model_gpu_types.WGPUTextureFormat_Undefined;
     const depth_stencil_vk_format = if (has_depth_stencil) try vk_resources.texture_format_to_vk(cmd.depth_stencil_format) else 0;
     try create_render_pass(self, &render_state, vk_format, has_depth_stencil, depth_stencil_vk_format);
     try create_framebuffer(self, &render_state, target_width, target_height);
@@ -113,20 +115,20 @@ pub fn execute_render_draw(
 fn ensure_render_target(
     self: *Runtime,
     state: *RenderState,
-    cmd: model.RenderDrawCommand,
+    cmd: model_render_types.RenderDrawCommand,
     width: u32,
     height: u32,
-    format: model.WGPUTextureFormat,
-    depth_stencil_format: model.WGPUTextureFormat,
+    format: model_gpu_types.WGPUTextureFormat,
+    depth_stencil_format: model_gpu_types.WGPUTextureFormat,
 ) !void {
     if (try bind_existing_render_target(self, state, cmd, width, height, format)) {
-        if (depth_stencil_format != model.WGPUTextureFormat_Undefined) {
-            const depth_texture_spec = model.CopyTextureResource{
+        if (depth_stencil_format != model_gpu_types.WGPUTextureFormat_Undefined) {
+            const depth_texture_spec = model_resource_types.CopyTextureResource{
                 .handle = 0,
                 .width = width,
                 .height = height,
                 .format = depth_stencil_format,
-                .usage = model.WGPUTextureUsage_RenderAttachment,
+                .usage = model_gpu_types.WGPUTextureUsage_RenderAttachment,
                 .mip_level = 0,
                 .bytes_per_row = 0,
                 .rows_per_image = 0,
@@ -139,8 +141,8 @@ fn ensure_render_target(
         return;
     }
 
-    const usage = model.WGPUTextureUsage_RenderAttachment | model.WGPUTextureUsage_CopyDst;
-    const texture_spec = model.CopyTextureResource{
+    const usage = model_gpu_types.WGPUTextureUsage_RenderAttachment | model_gpu_types.WGPUTextureUsage_CopyDst;
+    const texture_spec = model_resource_types.CopyTextureResource{
         .handle = 0,
         .width = width,
         .height = height,
@@ -152,13 +154,13 @@ fn ensure_render_target(
     };
     state.render_target = try create_render_target_texture(self, texture_spec);
     state.owns_render_target = true;
-    if (depth_stencil_format != model.WGPUTextureFormat_Undefined) {
-        const depth_texture_spec = model.CopyTextureResource{
+    if (depth_stencil_format != model_gpu_types.WGPUTextureFormat_Undefined) {
+        const depth_texture_spec = model_resource_types.CopyTextureResource{
             .handle = 0,
             .width = width,
             .height = height,
             .format = depth_stencil_format,
-            .usage = model.WGPUTextureUsage_RenderAttachment,
+            .usage = model_gpu_types.WGPUTextureUsage_RenderAttachment,
             .mip_level = 0,
             .bytes_per_row = 0,
             .rows_per_image = 0,
@@ -173,12 +175,12 @@ fn ensure_render_target(
 fn bind_existing_render_target(
     self: *Runtime,
     state: *RenderState,
-    cmd: model.RenderDrawCommand,
+    cmd: model_render_types.RenderDrawCommand,
     width: u32,
     height: u32,
-    format: model.WGPUTextureFormat,
+    format: model_gpu_types.WGPUTextureFormat,
 ) !bool {
-    if (cmd.target_handle == 0 or cmd.target_handle == model.DEFAULT_RENDER_TARGET_HANDLE) return false;
+    if (cmd.target_handle == 0 or cmd.target_handle == model_render_types.DEFAULT_RENDER_TARGET_HANDLE) return false;
     const texture = self.textures.get(cmd.target_handle) orelse return error.InvalidState;
     const view_resource = if (cmd.target_view_handle != 0)
         self.textures.get(cmd.target_view_handle) orelse return error.InvalidState
@@ -202,7 +204,7 @@ fn bind_existing_render_target(
 
 fn create_render_target_texture(
     self: *Runtime,
-    spec: model.CopyTextureResource,
+    spec: model_resource_types.CopyTextureResource,
 ) !vk_resources.TextureResource {
     var image: c.VkImage = VK_NULL_U64;
     var memory: c.VkDeviceMemory = VK_NULL_U64;
@@ -407,7 +409,7 @@ fn create_graphics_pipeline(
     self: *Runtime,
     state: *RenderState,
     vk_format: u32,
-    cmd: model.RenderDrawCommand,
+    cmd: model_render_types.RenderDrawCommand,
 ) !void {
     return vk_render_pipeline.create_graphics_pipeline(self, state, vk_format, cmd);
 }
@@ -421,7 +423,7 @@ fn resolve_vk_buffer_handle(self: *Runtime, handle: ?*anyopaque) ?c.VkBuffer {
 fn record_and_submit_draws(
     self: *Runtime,
     state: *RenderState,
-    cmd: model.RenderDrawCommand,
+    cmd: model_render_types.RenderDrawCommand,
     draw_count: u32,
     target_width: u32,
     target_height: u32,
@@ -496,7 +498,7 @@ fn record_and_submit_draws(
         );
     }
 
-    if (cmd.depth_stencil_format != model.WGPUTextureFormat_Undefined) {
+    if (cmd.depth_stencil_format != model_gpu_types.WGPUTextureFormat_Undefined) {
         c.vkCmdSetStencilReference(
             self.primary_command_buffer,
             c.VK_STENCIL_FACE_FRONT_AND_BACK,
@@ -645,7 +647,7 @@ fn submit_and_wait(self: *Runtime) !void {
 
 fn record_indexed_draws(
     self: *Runtime,
-    cmd: model.RenderDrawCommand,
+    cmd: model_render_types.RenderDrawCommand,
     draw_count: u32,
 ) !void {
     if (cmd.index_binding) |ib| {
@@ -725,19 +727,19 @@ pub fn execute_render_bundles(
     if (bundles.len == 0) return .{};
     if (self.has_deferred_submissions or self.pending_uploads.items.len > 0)
         _ = try vk_upload.flush_queue(self);
-    const width = if (target_width > 0) target_width else model.DEFAULT_RENDER_TARGET_WIDTH;
-    const height = if (target_height > 0) target_height else model.DEFAULT_RENDER_TARGET_HEIGHT;
+    const width = if (target_width > 0) target_width else model_render_types.DEFAULT_RENDER_TARGET_WIDTH;
+    const height = if (target_height > 0) target_height else model_render_types.DEFAULT_RENDER_TARGET_HEIGHT;
     const vk_format = try vk_resources.texture_format_to_vk(color_format);
     const pass_sample_count = if (sample_count == 0) @as(u32, 1) else sample_count;
     var state = RenderState{};
     defer release_render_state(self.device, &state);
     const encode_start = common_timing.now_ns();
-    const bundle_cmd = model.RenderDrawCommand{
+    const bundle_cmd = model_render_types.RenderDrawCommand{
         .target_width = width,
         .target_height = height,
         .target_format = @intCast(color_format),
     };
-    try ensure_render_target(self, &state, bundle_cmd, width, height, @intCast(color_format), model.WGPUTextureFormat_Undefined);
+    try ensure_render_target(self, &state, bundle_cmd, width, height, @intCast(color_format), model_gpu_types.WGPUTextureFormat_Undefined);
     try create_render_pass(self, &state, vk_format, false, 0);
     try create_framebuffer(self, &state, width, height);
     const encode_end = common_timing.now_ns();

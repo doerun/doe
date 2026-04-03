@@ -1,7 +1,11 @@
 const std = @import("std");
 const builtin = @import("builtin");
-const model = @import("../../model_webgpu_types.zig");
-const types = @import("wgpu_types.zig");
+const model_gpu_types = @import("../../model_gpu_types.zig");
+const abi_base = @import("wgpu_base_types.zig");
+const abi_descriptor = @import("wgpu_descriptor_types.zig");
+const abi_records = @import("wgpu_runtime_records.zig");
+const abi_proc_aliases = @import("wgpu_type_proc_aliases.zig");
+const runtime_state = @import("wgpu_runtime_state_defs.zig");
 
 pub const BUFFER_MAP_ASYNC_KEY: u64 = 0xFFFF_FFFF_FFFF_FFE0;
 
@@ -216,74 +220,74 @@ pub fn openDropinTargetLibrary() !std.DynLib {
     return error.LibraryOpenFailed;
 }
 
-pub fn loadProcs(lib: std.DynLib) !types.Procs {
-    const procs: types.Procs = .{
-        .wgpuCreateInstance = try loadProc(lib, "wgpuCreateInstance", types.FnWgpuCreateInstance),
-        .wgpuInstanceRequestAdapter = try loadProc(lib, "wgpuInstanceRequestAdapter", types.FnWgpuInstanceRequestAdapter),
-        .wgpuInstanceWaitAny = try loadProc(lib, "wgpuInstanceWaitAny", types.FnWgpuInstanceWaitAny),
-        .wgpuInstanceProcessEvents = try loadProc(lib, "wgpuInstanceProcessEvents", types.FnWgpuInstanceProcessEvents),
-        .wgpuAdapterRequestDevice = try loadProc(lib, "wgpuAdapterRequestDevice", types.FnWgpuAdapterRequestDevice),
-        .wgpuDeviceCreateBuffer = try loadProc(lib, "wgpuDeviceCreateBuffer", types.FnWgpuDeviceCreateBuffer),
-        .wgpuDeviceCreateShaderModule = try loadProc(lib, "wgpuDeviceCreateShaderModule", types.FnWgpuDeviceCreateShaderModule),
-        .wgpuShaderModuleRelease = try loadProc(lib, "wgpuShaderModuleRelease", types.FnWgpuShaderModuleRelease),
-        .wgpuDeviceCreateComputePipeline = try loadProc(lib, "wgpuDeviceCreateComputePipeline", types.FnWgpuDeviceCreateComputePipeline),
-        .wgpuComputePipelineRelease = try loadProc(lib, "wgpuComputePipelineRelease", types.FnWgpuComputePipelineRelease),
-        .wgpuRenderPipelineRelease = try loadOptionalProc(lib, "wgpuRenderPipelineRelease", types.FnWgpuRenderPipelineRelease),
-        .wgpuDeviceCreateCommandEncoder = try loadProc(lib, "wgpuDeviceCreateCommandEncoder", types.FnWgpuDeviceCreateCommandEncoder),
-        .wgpuCommandEncoderBeginComputePass = try loadProc(lib, "wgpuCommandEncoderBeginComputePass", types.FnWgpuCommandEncoderBeginComputePass),
-        .wgpuDeviceCreateRenderPipeline = try loadOptionalProc(lib, "wgpuDeviceCreateRenderPipeline", types.FnWgpuDeviceCreateRenderPipeline),
-        .wgpuCommandEncoderBeginRenderPass = try loadOptionalProc(lib, "wgpuCommandEncoderBeginRenderPass", types.FnWgpuCommandEncoderBeginRenderPass),
-        .wgpuCommandEncoderWriteTimestamp = try loadOptionalProc(lib, "wgpuCommandEncoderWriteTimestamp", types.FnWgpuCommandEncoderWriteTimestamp),
-        .wgpuCommandEncoderCopyBufferToBuffer = try loadProc(lib, "wgpuCommandEncoderCopyBufferToBuffer", types.FnWgpuCommandEncoderCopyBufferToBuffer),
-        .wgpuCommandEncoderCopyBufferToTexture = try loadProc(lib, "wgpuCommandEncoderCopyBufferToTexture", types.FnWgpuCommandEncoderCopyBufferToTexture),
-        .wgpuCommandEncoderCopyTextureToBuffer = try loadProc(lib, "wgpuCommandEncoderCopyTextureToBuffer", types.FnWgpuCommandEncoderCopyTextureToBuffer),
-        .wgpuCommandEncoderCopyTextureToTexture = try loadProc(lib, "wgpuCommandEncoderCopyTextureToTexture", types.FnWgpuCommandEncoderCopyTextureToTexture),
-        .wgpuComputePassEncoderSetBindGroup = try loadProc(lib, "wgpuComputePassEncoderSetBindGroup", types.FnWgpuComputePassEncoderSetBindGroup),
-        .wgpuComputePassEncoderSetPipeline = try loadProc(lib, "wgpuComputePassEncoderSetPipeline", types.FnWgpuComputePassEncoderSetPipeline),
-        .wgpuComputePassEncoderDispatchWorkgroups = try loadProc(lib, "wgpuComputePassEncoderDispatchWorkgroups", types.FnWgpuComputePassEncoderDispatchWorkgroups),
-        .wgpuComputePassEncoderEnd = try loadProc(lib, "wgpuComputePassEncoderEnd", types.FnWgpuComputePassEncoderEnd),
-        .wgpuComputePassEncoderRelease = try loadProc(lib, "wgpuComputePassEncoderRelease", types.FnWgpuComputePassEncoderRelease),
-        .wgpuRenderPassEncoderSetPipeline = try loadOptionalProc(lib, "wgpuRenderPassEncoderSetPipeline", types.FnWgpuRenderPassEncoderSetPipeline),
-        .wgpuRenderPassEncoderSetVertexBuffer = try loadOptionalProc(lib, "wgpuRenderPassEncoderSetVertexBuffer", types.FnWgpuRenderPassEncoderSetVertexBuffer),
-        .wgpuRenderPassEncoderSetIndexBuffer = try loadOptionalProc(lib, "wgpuRenderPassEncoderSetIndexBuffer", types.FnWgpuRenderPassEncoderSetIndexBuffer),
-        .wgpuRenderPassEncoderSetBindGroup = try loadOptionalProc(lib, "wgpuRenderPassEncoderSetBindGroup", types.FnWgpuRenderPassEncoderSetBindGroup),
-        .wgpuRenderPassEncoderDraw = try loadOptionalProc(lib, "wgpuRenderPassEncoderDraw", types.FnWgpuRenderPassEncoderDraw),
-        .wgpuRenderPassEncoderDrawIndexed = try loadOptionalProc(lib, "wgpuRenderPassEncoderDrawIndexed", types.FnWgpuRenderPassEncoderDrawIndexed),
-        .wgpuRenderPassEncoderDrawIndirect = try loadOptionalProc(lib, "wgpuRenderPassEncoderDrawIndirect", types.FnWgpuRenderPassEncoderDrawIndirect),
-        .wgpuRenderPassEncoderDrawIndexedIndirect = try loadOptionalProc(lib, "wgpuRenderPassEncoderDrawIndexedIndirect", types.FnWgpuRenderPassEncoderDrawIndexedIndirect),
-        .wgpuRenderPassEncoderEnd = try loadOptionalProc(lib, "wgpuRenderPassEncoderEnd", types.FnWgpuRenderPassEncoderEnd),
-        .wgpuRenderPassEncoderRelease = try loadOptionalProc(lib, "wgpuRenderPassEncoderRelease", types.FnWgpuRenderPassEncoderRelease),
-        .wgpuDeviceCreateTexture = try loadProc(lib, "wgpuDeviceCreateTexture", types.FnWgpuDeviceCreateTexture),
-        .wgpuTextureCreateView = try loadProc(lib, "wgpuTextureCreateView", types.FnWgpuTextureCreateView),
-        .wgpuDeviceCreateBindGroupLayout = try loadProc(lib, "wgpuDeviceCreateBindGroupLayout", types.FnWgpuDeviceCreateBindGroupLayout),
-        .wgpuBindGroupLayoutRelease = try loadProc(lib, "wgpuBindGroupLayoutRelease", types.FnWgpuBindGroupLayoutRelease),
-        .wgpuDeviceCreateBindGroup = try loadProc(lib, "wgpuDeviceCreateBindGroup", types.FnWgpuDeviceCreateBindGroup),
-        .wgpuBindGroupRelease = try loadProc(lib, "wgpuBindGroupRelease", types.FnWgpuBindGroupRelease),
-        .wgpuDeviceCreatePipelineLayout = try loadProc(lib, "wgpuDeviceCreatePipelineLayout", types.FnWgpuDeviceCreatePipelineLayout),
-        .wgpuPipelineLayoutRelease = try loadProc(lib, "wgpuPipelineLayoutRelease", types.FnWgpuPipelineLayoutRelease),
-        .wgpuTextureRelease = try loadProc(lib, "wgpuTextureRelease", types.FnWgpuTextureRelease),
-        .wgpuTextureViewRelease = try loadProc(lib, "wgpuTextureViewRelease", types.FnWgpuTextureViewRelease),
-        .wgpuCommandEncoderFinish = try loadProc(lib, "wgpuCommandEncoderFinish", types.FnWgpuCommandEncoderFinish),
-        .wgpuDeviceGetQueue = try loadProc(lib, "wgpuDeviceGetQueue", types.FnWgpuDeviceGetQueue),
-        .wgpuQueueSubmit = try loadProc(lib, "wgpuQueueSubmit", types.FnWgpuQueueSubmit),
-        .wgpuQueueOnSubmittedWorkDone = try loadProc(lib, "wgpuQueueOnSubmittedWorkDone", types.FnWgpuQueueOnSubmittedWorkDone),
-        .wgpuQueueWriteBuffer = try loadProc(lib, "wgpuQueueWriteBuffer", types.FnWgpuQueueWriteBuffer),
-        .wgpuInstanceRelease = try loadProc(lib, "wgpuInstanceRelease", types.FnWgpuInstanceRelease),
-        .wgpuAdapterRelease = try loadProc(lib, "wgpuAdapterRelease", types.FnWgpuAdapterRelease),
-        .wgpuDeviceRelease = try loadProc(lib, "wgpuDeviceRelease", types.FnWgpuDeviceRelease),
-        .wgpuQueueRelease = try loadProc(lib, "wgpuQueueRelease", types.FnWgpuQueueRelease),
-        .wgpuCommandEncoderRelease = try loadProc(lib, "wgpuCommandEncoderRelease", types.FnWgpuCommandEncoderRelease),
-        .wgpuCommandBufferRelease = try loadProc(lib, "wgpuCommandBufferRelease", types.FnWgpuCommandBufferRelease),
-        .wgpuBufferRelease = try loadProc(lib, "wgpuBufferRelease", types.FnWgpuBufferRelease),
-        .wgpuAdapterHasFeature = try loadProc(lib, "wgpuAdapterHasFeature", types.FnWgpuAdapterHasFeature),
-        .wgpuDeviceHasFeature = try loadOptionalProc(lib, "wgpuDeviceHasFeature", types.FnWgpuDeviceHasFeature),
-        .wgpuDeviceCreateQuerySet = try loadProc(lib, "wgpuDeviceCreateQuerySet", types.FnWgpuDeviceCreateQuerySet),
-        .wgpuCommandEncoderResolveQuerySet = try loadProc(lib, "wgpuCommandEncoderResolveQuerySet", types.FnWgpuCommandEncoderResolveQuerySet),
-        .wgpuQuerySetRelease = try loadProc(lib, "wgpuQuerySetRelease", types.FnWgpuQuerySetRelease),
-        .wgpuBufferMapAsync = try loadProc(lib, "wgpuBufferMapAsync", types.FnWgpuBufferMapAsync),
-        .wgpuBufferGetConstMappedRange = try loadProc(lib, "wgpuBufferGetConstMappedRange", types.FnWgpuBufferGetConstMappedRange),
-        .wgpuBufferGetMappedRange = try loadProc(lib, "wgpuBufferGetMappedRange", types.FnWgpuBufferGetMappedRange),
-        .wgpuBufferUnmap = try loadProc(lib, "wgpuBufferUnmap", types.FnWgpuBufferUnmap),
+pub fn loadProcs(lib: std.DynLib) !abi_proc_aliases.Procs {
+    const procs: abi_proc_aliases.Procs = .{
+        .wgpuCreateInstance = try loadProc(lib, "wgpuCreateInstance", abi_proc_aliases.FnWgpuCreateInstance),
+        .wgpuInstanceRequestAdapter = try loadProc(lib, "wgpuInstanceRequestAdapter", abi_proc_aliases.FnWgpuInstanceRequestAdapter),
+        .wgpuInstanceWaitAny = try loadProc(lib, "wgpuInstanceWaitAny", abi_proc_aliases.FnWgpuInstanceWaitAny),
+        .wgpuInstanceProcessEvents = try loadProc(lib, "wgpuInstanceProcessEvents", abi_proc_aliases.FnWgpuInstanceProcessEvents),
+        .wgpuAdapterRequestDevice = try loadProc(lib, "wgpuAdapterRequestDevice", abi_proc_aliases.FnWgpuAdapterRequestDevice),
+        .wgpuDeviceCreateBuffer = try loadProc(lib, "wgpuDeviceCreateBuffer", abi_proc_aliases.FnWgpuDeviceCreateBuffer),
+        .wgpuDeviceCreateShaderModule = try loadProc(lib, "wgpuDeviceCreateShaderModule", abi_proc_aliases.FnWgpuDeviceCreateShaderModule),
+        .wgpuShaderModuleRelease = try loadProc(lib, "wgpuShaderModuleRelease", abi_proc_aliases.FnWgpuShaderModuleRelease),
+        .wgpuDeviceCreateComputePipeline = try loadProc(lib, "wgpuDeviceCreateComputePipeline", abi_proc_aliases.FnWgpuDeviceCreateComputePipeline),
+        .wgpuComputePipelineRelease = try loadProc(lib, "wgpuComputePipelineRelease", abi_proc_aliases.FnWgpuComputePipelineRelease),
+        .wgpuRenderPipelineRelease = try loadOptionalProc(lib, "wgpuRenderPipelineRelease", abi_proc_aliases.FnWgpuRenderPipelineRelease),
+        .wgpuDeviceCreateCommandEncoder = try loadProc(lib, "wgpuDeviceCreateCommandEncoder", abi_proc_aliases.FnWgpuDeviceCreateCommandEncoder),
+        .wgpuCommandEncoderBeginComputePass = try loadProc(lib, "wgpuCommandEncoderBeginComputePass", abi_proc_aliases.FnWgpuCommandEncoderBeginComputePass),
+        .wgpuDeviceCreateRenderPipeline = try loadOptionalProc(lib, "wgpuDeviceCreateRenderPipeline", abi_proc_aliases.FnWgpuDeviceCreateRenderPipeline),
+        .wgpuCommandEncoderBeginRenderPass = try loadOptionalProc(lib, "wgpuCommandEncoderBeginRenderPass", abi_proc_aliases.FnWgpuCommandEncoderBeginRenderPass),
+        .wgpuCommandEncoderWriteTimestamp = try loadOptionalProc(lib, "wgpuCommandEncoderWriteTimestamp", abi_proc_aliases.FnWgpuCommandEncoderWriteTimestamp),
+        .wgpuCommandEncoderCopyBufferToBuffer = try loadProc(lib, "wgpuCommandEncoderCopyBufferToBuffer", abi_proc_aliases.FnWgpuCommandEncoderCopyBufferToBuffer),
+        .wgpuCommandEncoderCopyBufferToTexture = try loadProc(lib, "wgpuCommandEncoderCopyBufferToTexture", abi_proc_aliases.FnWgpuCommandEncoderCopyBufferToTexture),
+        .wgpuCommandEncoderCopyTextureToBuffer = try loadProc(lib, "wgpuCommandEncoderCopyTextureToBuffer", abi_proc_aliases.FnWgpuCommandEncoderCopyTextureToBuffer),
+        .wgpuCommandEncoderCopyTextureToTexture = try loadProc(lib, "wgpuCommandEncoderCopyTextureToTexture", abi_proc_aliases.FnWgpuCommandEncoderCopyTextureToTexture),
+        .wgpuComputePassEncoderSetBindGroup = try loadProc(lib, "wgpuComputePassEncoderSetBindGroup", abi_proc_aliases.FnWgpuComputePassEncoderSetBindGroup),
+        .wgpuComputePassEncoderSetPipeline = try loadProc(lib, "wgpuComputePassEncoderSetPipeline", abi_proc_aliases.FnWgpuComputePassEncoderSetPipeline),
+        .wgpuComputePassEncoderDispatchWorkgroups = try loadProc(lib, "wgpuComputePassEncoderDispatchWorkgroups", abi_proc_aliases.FnWgpuComputePassEncoderDispatchWorkgroups),
+        .wgpuComputePassEncoderEnd = try loadProc(lib, "wgpuComputePassEncoderEnd", abi_proc_aliases.FnWgpuComputePassEncoderEnd),
+        .wgpuComputePassEncoderRelease = try loadProc(lib, "wgpuComputePassEncoderRelease", abi_proc_aliases.FnWgpuComputePassEncoderRelease),
+        .wgpuRenderPassEncoderSetPipeline = try loadOptionalProc(lib, "wgpuRenderPassEncoderSetPipeline", abi_proc_aliases.FnWgpuRenderPassEncoderSetPipeline),
+        .wgpuRenderPassEncoderSetVertexBuffer = try loadOptionalProc(lib, "wgpuRenderPassEncoderSetVertexBuffer", abi_proc_aliases.FnWgpuRenderPassEncoderSetVertexBuffer),
+        .wgpuRenderPassEncoderSetIndexBuffer = try loadOptionalProc(lib, "wgpuRenderPassEncoderSetIndexBuffer", abi_proc_aliases.FnWgpuRenderPassEncoderSetIndexBuffer),
+        .wgpuRenderPassEncoderSetBindGroup = try loadOptionalProc(lib, "wgpuRenderPassEncoderSetBindGroup", abi_proc_aliases.FnWgpuRenderPassEncoderSetBindGroup),
+        .wgpuRenderPassEncoderDraw = try loadOptionalProc(lib, "wgpuRenderPassEncoderDraw", abi_proc_aliases.FnWgpuRenderPassEncoderDraw),
+        .wgpuRenderPassEncoderDrawIndexed = try loadOptionalProc(lib, "wgpuRenderPassEncoderDrawIndexed", abi_proc_aliases.FnWgpuRenderPassEncoderDrawIndexed),
+        .wgpuRenderPassEncoderDrawIndirect = try loadOptionalProc(lib, "wgpuRenderPassEncoderDrawIndirect", abi_proc_aliases.FnWgpuRenderPassEncoderDrawIndirect),
+        .wgpuRenderPassEncoderDrawIndexedIndirect = try loadOptionalProc(lib, "wgpuRenderPassEncoderDrawIndexedIndirect", abi_proc_aliases.FnWgpuRenderPassEncoderDrawIndexedIndirect),
+        .wgpuRenderPassEncoderEnd = try loadOptionalProc(lib, "wgpuRenderPassEncoderEnd", abi_proc_aliases.FnWgpuRenderPassEncoderEnd),
+        .wgpuRenderPassEncoderRelease = try loadOptionalProc(lib, "wgpuRenderPassEncoderRelease", abi_proc_aliases.FnWgpuRenderPassEncoderRelease),
+        .wgpuDeviceCreateTexture = try loadProc(lib, "wgpuDeviceCreateTexture", abi_proc_aliases.FnWgpuDeviceCreateTexture),
+        .wgpuTextureCreateView = try loadProc(lib, "wgpuTextureCreateView", abi_proc_aliases.FnWgpuTextureCreateView),
+        .wgpuDeviceCreateBindGroupLayout = try loadProc(lib, "wgpuDeviceCreateBindGroupLayout", abi_proc_aliases.FnWgpuDeviceCreateBindGroupLayout),
+        .wgpuBindGroupLayoutRelease = try loadProc(lib, "wgpuBindGroupLayoutRelease", abi_proc_aliases.FnWgpuBindGroupLayoutRelease),
+        .wgpuDeviceCreateBindGroup = try loadProc(lib, "wgpuDeviceCreateBindGroup", abi_proc_aliases.FnWgpuDeviceCreateBindGroup),
+        .wgpuBindGroupRelease = try loadProc(lib, "wgpuBindGroupRelease", abi_proc_aliases.FnWgpuBindGroupRelease),
+        .wgpuDeviceCreatePipelineLayout = try loadProc(lib, "wgpuDeviceCreatePipelineLayout", abi_proc_aliases.FnWgpuDeviceCreatePipelineLayout),
+        .wgpuPipelineLayoutRelease = try loadProc(lib, "wgpuPipelineLayoutRelease", abi_proc_aliases.FnWgpuPipelineLayoutRelease),
+        .wgpuTextureRelease = try loadProc(lib, "wgpuTextureRelease", abi_proc_aliases.FnWgpuTextureRelease),
+        .wgpuTextureViewRelease = try loadProc(lib, "wgpuTextureViewRelease", abi_proc_aliases.FnWgpuTextureViewRelease),
+        .wgpuCommandEncoderFinish = try loadProc(lib, "wgpuCommandEncoderFinish", abi_proc_aliases.FnWgpuCommandEncoderFinish),
+        .wgpuDeviceGetQueue = try loadProc(lib, "wgpuDeviceGetQueue", abi_proc_aliases.FnWgpuDeviceGetQueue),
+        .wgpuQueueSubmit = try loadProc(lib, "wgpuQueueSubmit", abi_proc_aliases.FnWgpuQueueSubmit),
+        .wgpuQueueOnSubmittedWorkDone = try loadProc(lib, "wgpuQueueOnSubmittedWorkDone", abi_proc_aliases.FnWgpuQueueOnSubmittedWorkDone),
+        .wgpuQueueWriteBuffer = try loadProc(lib, "wgpuQueueWriteBuffer", abi_proc_aliases.FnWgpuQueueWriteBuffer),
+        .wgpuInstanceRelease = try loadProc(lib, "wgpuInstanceRelease", abi_proc_aliases.FnWgpuInstanceRelease),
+        .wgpuAdapterRelease = try loadProc(lib, "wgpuAdapterRelease", abi_proc_aliases.FnWgpuAdapterRelease),
+        .wgpuDeviceRelease = try loadProc(lib, "wgpuDeviceRelease", abi_proc_aliases.FnWgpuDeviceRelease),
+        .wgpuQueueRelease = try loadProc(lib, "wgpuQueueRelease", abi_proc_aliases.FnWgpuQueueRelease),
+        .wgpuCommandEncoderRelease = try loadProc(lib, "wgpuCommandEncoderRelease", abi_proc_aliases.FnWgpuCommandEncoderRelease),
+        .wgpuCommandBufferRelease = try loadProc(lib, "wgpuCommandBufferRelease", abi_proc_aliases.FnWgpuCommandBufferRelease),
+        .wgpuBufferRelease = try loadProc(lib, "wgpuBufferRelease", abi_proc_aliases.FnWgpuBufferRelease),
+        .wgpuAdapterHasFeature = try loadProc(lib, "wgpuAdapterHasFeature", abi_proc_aliases.FnWgpuAdapterHasFeature),
+        .wgpuDeviceHasFeature = try loadOptionalProc(lib, "wgpuDeviceHasFeature", abi_proc_aliases.FnWgpuDeviceHasFeature),
+        .wgpuDeviceCreateQuerySet = try loadProc(lib, "wgpuDeviceCreateQuerySet", abi_proc_aliases.FnWgpuDeviceCreateQuerySet),
+        .wgpuCommandEncoderResolveQuerySet = try loadProc(lib, "wgpuCommandEncoderResolveQuerySet", abi_proc_aliases.FnWgpuCommandEncoderResolveQuerySet),
+        .wgpuQuerySetRelease = try loadProc(lib, "wgpuQuerySetRelease", abi_proc_aliases.FnWgpuQuerySetRelease),
+        .wgpuBufferMapAsync = try loadProc(lib, "wgpuBufferMapAsync", abi_proc_aliases.FnWgpuBufferMapAsync),
+        .wgpuBufferGetConstMappedRange = try loadProc(lib, "wgpuBufferGetConstMappedRange", abi_proc_aliases.FnWgpuBufferGetConstMappedRange),
+        .wgpuBufferGetMappedRange = try loadProc(lib, "wgpuBufferGetMappedRange", abi_proc_aliases.FnWgpuBufferGetMappedRange),
+        .wgpuBufferUnmap = try loadProc(lib, "wgpuBufferUnmap", abi_proc_aliases.FnWgpuBufferUnmap),
     };
     preloadOptionalApiSurfaceSymbols(lib);
     return procs;
@@ -315,71 +319,71 @@ fn loadOptionalProc(
 }
 
 pub fn queueWorkDoneCallback(
-    status: types.WGPUQueueWorkDoneStatus,
-    message: types.WGPUStringView,
+    status: abi_descriptor.WGPUQueueWorkDoneStatus,
+    message: abi_base.WGPUStringView,
     userdata1: ?*anyopaque,
     userdata2: ?*anyopaque,
 ) callconv(.c) void {
     _ = message;
     _ = userdata2;
-    const state = @as(*types.QueueSubmitState, @ptrCast(@alignCast(userdata1.?)));
+    const state = @as(*runtime_state.QueueSubmitState, @ptrCast(@alignCast(userdata1.?)));
     state.done = true;
     state.status = status;
 }
 
 pub fn adapterCallback(
-    status: types.WGPURequestAdapterStatus,
-    adapter: types.WGPUAdapter,
-    message: types.WGPUStringView,
+    status: abi_descriptor.WGPURequestAdapterStatus,
+    adapter: abi_base.WGPUAdapter,
+    message: abi_base.WGPUStringView,
     userdata1: ?*anyopaque,
     userdata2: ?*anyopaque,
 ) callconv(.c) void {
     _ = message;
     _ = userdata2;
-    const state = @as(*types.RequestState, @ptrCast(@alignCast(userdata1.?)));
+    const state = @as(*abi_records.RequestState, @ptrCast(@alignCast(userdata1.?)));
     state.done = true;
     state.status = status;
     state.adapter = adapter;
 }
 
 pub fn deviceRequestCallback(
-    status: types.WGPURequestDeviceStatus,
-    device: types.WGPUDevice,
-    message: types.WGPUStringView,
+    status: abi_descriptor.WGPURequestDeviceStatus,
+    device: abi_base.WGPUDevice,
+    message: abi_base.WGPUStringView,
     userdata1: ?*anyopaque,
     userdata2: ?*anyopaque,
 ) callconv(.c) void {
     _ = message;
     _ = userdata2;
-    const state = @as(*types.DeviceRequestState, @ptrCast(@alignCast(userdata1.?)));
+    const state = @as(*abi_records.DeviceRequestState, @ptrCast(@alignCast(userdata1.?)));
     state.done = true;
     state.status = status;
     state.device = device;
 }
 
 pub fn bufferMapCallback(
-    status: types.WGPUMapAsyncStatus,
-    message: types.WGPUStringView,
+    status: abi_base.WGPUMapAsyncStatus,
+    message: abi_base.WGPUStringView,
     userdata1: ?*anyopaque,
     userdata2: ?*anyopaque,
 ) callconv(.c) void {
     _ = message;
     _ = userdata2;
-    const state = @as(*types.BufferMapState, @ptrCast(@alignCast(userdata1.?)));
+    const state = @as(*runtime_state.BufferMapState, @ptrCast(@alignCast(userdata1.?)));
     state.done = true;
     state.status = status;
 }
 
 pub fn uncapturedErrorCallback(
     _: ?*const anyopaque,
-    error_type: types.WGPUErrorType,
-    message: types.WGPUStringView,
+    error_type: abi_descriptor.WGPUErrorType,
+    message: abi_base.WGPUStringView,
     userdata1: ?*anyopaque,
     _: ?*anyopaque,
 ) callconv(.c) void {
     _ = message;
     const state_ptr = userdata1 orelse return;
-    const state = @as(*types.UncapturedErrorState, @ptrCast(@alignCast(state_ptr)));
+    const state = @as(*runtime_state.UncapturedErrorState, @ptrCast(@alignCast(state_ptr)));
     state.error_type.store(@intFromEnum(error_type), .release);
     state.pending.store(1, .release);
 }
@@ -390,27 +394,27 @@ pub fn alignTo(value: u64, alignment: u64) u64 {
     return (value + mask) & ~mask;
 }
 
-pub fn emptyStringView() types.WGPUStringView {
-    return types.WGPUStringView{ .data = null, .length = types.WGPU_STRLEN };
+pub fn emptyStringView() abi_base.WGPUStringView {
+    return abi_base.WGPUStringView{ .data = null, .length = abi_base.WGPU_STRLEN };
 }
 
-pub fn stringView(source: []const u8) types.WGPUStringView {
+pub fn stringView(source: []const u8) abi_base.WGPUStringView {
     if (source.len == 0) return emptyStringView();
-    return types.WGPUStringView{
+    return abi_base.WGPUStringView{
         .data = source.ptr,
         .length = source.len,
     };
 }
 
 pub fn normalizeCopyLayoutValue(raw_layout: u32) u32 {
-    if (raw_layout == 0 or raw_layout == model.WGPUCopyStrideUndefined) return types.WGPU_COPY_STRIDE_UNDEFINED;
+    if (raw_layout == 0 or raw_layout == model_gpu_types.WGPUCopyStrideUndefined) return abi_base.WGPU_COPY_STRIDE_UNDEFINED;
     return raw_layout;
 }
 
-pub fn normalizeTextureAspect(raw_aspect: u32) types.WGPUTextureAspect {
+pub fn normalizeTextureAspect(raw_aspect: u32) abi_base.WGPUTextureAspect {
     return switch (raw_aspect) {
-        model.WGPUTextureAspect_DepthOnly => types.WGPUTextureAspect_DepthOnly,
-        model.WGPUTextureAspect_StencilOnly => types.WGPUTextureAspect_StencilOnly,
-        else => types.WGPUTextureAspect_All,
+        model_gpu_types.WGPUTextureAspect_DepthOnly => abi_base.WGPUTextureAspect_DepthOnly,
+        model_gpu_types.WGPUTextureAspect_StencilOnly => abi_base.WGPUTextureAspect_StencilOnly,
+        else => abi_base.WGPUTextureAspect_All,
     };
 }

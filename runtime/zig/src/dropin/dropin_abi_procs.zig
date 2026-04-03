@@ -1,5 +1,6 @@
 const std = @import("std");
-const types = @import("../core/abi/wgpu_types.zig");
+const abi_base = @import("../core/abi/wgpu_base_types.zig");
+const abi_descriptor = @import("../core/abi/wgpu_descriptor_types.zig");
 const ptypes = @import("../wgpu_types_procs.zig");
 const dropin_lib = @import("../wgpu_dropin_lib.zig");
 const native = @import("../doe_wgpu_native.zig");
@@ -9,12 +10,12 @@ const BUFFER_MAP_SYNC_TIMEOUT_NS = 5 * std.time.ns_per_s;
 
 const BufferMapSyncResult = struct {
     done: bool = false,
-    status: types.WGPUMapAsyncStatus = 0,
+    status: abi_base.WGPUMapAsyncStatus = 0,
 };
 
 fn buffer_map_sync_callback(
-    status: types.WGPUMapAsyncStatus,
-    message: types.WGPUStringView,
+    status: abi_base.WGPUMapAsyncStatus,
+    message: abi_base.WGPUStringView,
     userdata1: ?*anyopaque,
     userdata2: ?*anyopaque,
 ) callconv(.c) void {
@@ -26,27 +27,27 @@ fn buffer_map_sync_callback(
     result.done = true;
 }
 
-pub export fn wgpuCreateInstance(a0: ?*anyopaque) callconv(.c) types.WGPUInstance {
+pub export fn wgpuCreateInstance(a0: ?*anyopaque) callconv(.c) abi_base.WGPUInstance {
     return native.doeNativeCreateInstance(a0);
 }
 
-pub export fn wgpuInstanceRequestAdapter(a0: types.WGPUInstance, a1: ?*const types.WGPURequestAdapterOptions, a2: types.WGPURequestAdapterCallbackInfo) callconv(.c) types.WGPUFuture {
+pub export fn wgpuInstanceRequestAdapter(a0: abi_base.WGPUInstance, a1: ?*const abi_descriptor.WGPURequestAdapterOptions, a2: abi_descriptor.WGPURequestAdapterCallbackInfo) callconv(.c) abi_base.WGPUFuture {
     return native.doeNativeInstanceRequestAdapter(a0, a1, a2);
 }
 
-pub export fn wgpuInstanceWaitAny(a0: types.WGPUInstance, a1: usize, a2: [*]types.WGPUFutureWaitInfo, a3: u64) callconv(.c) types.WGPUWaitStatus {
+pub export fn wgpuInstanceWaitAny(a0: abi_base.WGPUInstance, a1: usize, a2: [*]abi_descriptor.WGPUFutureWaitInfo, a3: u64) callconv(.c) abi_descriptor.WGPUWaitStatus {
     return @enumFromInt(native.doeNativeInstanceWaitAny(a0, a1, a2, a3));
 }
 
-pub export fn wgpuInstanceProcessEvents(a0: types.WGPUInstance) callconv(.c) void {
+pub export fn wgpuInstanceProcessEvents(a0: abi_base.WGPUInstance) callconv(.c) void {
     native.doeNativeInstanceProcessEvents(a0);
 }
 
-pub export fn wgpuAdapterRequestDevice(a0: types.WGPUAdapter, a1: ?*const types.WGPUDeviceDescriptor, a2: types.WGPURequestDeviceCallbackInfo) callconv(.c) types.WGPUFuture {
+pub export fn wgpuAdapterRequestDevice(a0: abi_base.WGPUAdapter, a1: ?*const abi_descriptor.WGPUDeviceDescriptor, a2: abi_descriptor.WGPURequestDeviceCallbackInfo) callconv(.c) abi_base.WGPUFuture {
     return native.doeNativeAdapterRequestDevice(a0, a1, a2);
 }
 
-pub export fn wgpuAdapterCreateDevice(a0: types.WGPUAdapter, a1: ?*const types.WGPUDeviceDescriptor) callconv(.c) types.WGPUDevice {
+pub export fn wgpuAdapterCreateDevice(a0: abi_base.WGPUAdapter, a1: ?*const abi_descriptor.WGPUDeviceDescriptor) callconv(.c) abi_base.WGPUDevice {
     return native.doeNativeAdapterCreateDevice(a0, a1);
 }
 
@@ -54,14 +55,14 @@ pub export fn wgpuAdapterCreateDevice(a0: types.WGPUAdapter, a1: ?*const types.W
 // These assemble the CallbackInfo struct from scalar args and delegate to the standard C ABI functions.
 
 pub export fn doeRequestAdapterFlat(
-    instance: types.WGPUInstance,
-    options: ?*const types.WGPURequestAdapterOptions,
-    mode: types.WGPUCallbackMode,
-    callback: types.WGPURequestAdapterCallback,
+    instance: abi_base.WGPUInstance,
+    options: ?*const abi_descriptor.WGPURequestAdapterOptions,
+    mode: abi_descriptor.WGPUCallbackMode,
+    callback: abi_descriptor.WGPURequestAdapterCallback,
     userdata1: ?*anyopaque,
     userdata2: ?*anyopaque,
-) callconv(.c) types.WGPUFuture {
-    const info = types.WGPURequestAdapterCallbackInfo{
+) callconv(.c) abi_base.WGPUFuture {
+    const info = abi_descriptor.WGPURequestAdapterCallbackInfo{
         .nextInChain = null,
         .mode = mode,
         .callback = callback,
@@ -72,14 +73,14 @@ pub export fn doeRequestAdapterFlat(
 }
 
 pub export fn doeRequestDeviceFlat(
-    adapter: types.WGPUAdapter,
-    descriptor: ?*const types.WGPUDeviceDescriptor,
-    mode: types.WGPUCallbackMode,
-    callback: types.WGPURequestDeviceCallback,
+    adapter: abi_base.WGPUAdapter,
+    descriptor: ?*const abi_descriptor.WGPUDeviceDescriptor,
+    mode: abi_descriptor.WGPUCallbackMode,
+    callback: abi_descriptor.WGPURequestDeviceCallback,
     userdata1: ?*anyopaque,
     userdata2: ?*anyopaque,
-) callconv(.c) types.WGPUFuture {
-    const info = types.WGPURequestDeviceCallbackInfo{
+) callconv(.c) abi_base.WGPUFuture {
+    const info = abi_descriptor.WGPURequestDeviceCallbackInfo{
         .nextInChain = null,
         .mode = mode,
         .callback = callback,
@@ -89,283 +90,283 @@ pub export fn doeRequestDeviceFlat(
     return native.doeNativeAdapterRequestDevice(adapter, descriptor, info);
 }
 
-pub export fn wgpuDeviceCreateBuffer(a0: types.WGPUDevice, a1: ?*const types.WGPUBufferDescriptor) callconv(.c) types.WGPUBuffer {
+pub export fn wgpuDeviceCreateBuffer(a0: abi_base.WGPUDevice, a1: ?*const abi_descriptor.WGPUBufferDescriptor) callconv(.c) abi_base.WGPUBuffer {
     const proc = loadRequiredProc(ptypes.FnWgpuDeviceCreateBuffer, "wgpuDeviceCreateBuffer");
     return proc(a0, a1);
 }
 
-pub export fn wgpuDeviceCreateShaderModule(a0: types.WGPUDevice, a1: ?*const types.WGPUShaderModuleDescriptor) callconv(.c) types.WGPUShaderModule {
+pub export fn wgpuDeviceCreateShaderModule(a0: abi_base.WGPUDevice, a1: ?*const abi_descriptor.WGPUShaderModuleDescriptor) callconv(.c) abi_base.WGPUShaderModule {
     const proc = loadRequiredProc(ptypes.FnWgpuDeviceCreateShaderModule, "wgpuDeviceCreateShaderModule");
     return proc(a0, a1);
 }
 
-pub export fn wgpuShaderModuleRelease(a0: types.WGPUShaderModule) callconv(.c) void {
+pub export fn wgpuShaderModuleRelease(a0: abi_base.WGPUShaderModule) callconv(.c) void {
     native.doeNativeShaderModuleRelease(a0);
 }
 
-pub export fn wgpuDeviceCreateComputePipeline(a0: types.WGPUDevice, a1: ?*const types.WGPUComputePipelineDescriptor) callconv(.c) types.WGPUComputePipeline {
+pub export fn wgpuDeviceCreateComputePipeline(a0: abi_base.WGPUDevice, a1: ?*const abi_descriptor.WGPUComputePipelineDescriptor) callconv(.c) abi_base.WGPUComputePipeline {
     const proc = loadRequiredProc(ptypes.FnWgpuDeviceCreateComputePipeline, "wgpuDeviceCreateComputePipeline");
     return proc(a0, a1);
 }
 
-pub export fn wgpuComputePipelineRelease(a0: types.WGPUComputePipeline) callconv(.c) void {
+pub export fn wgpuComputePipelineRelease(a0: abi_base.WGPUComputePipeline) callconv(.c) void {
     native.doeNativeComputePipelineRelease(a0);
 }
 
-pub export fn wgpuRenderPipelineRelease(a0: types.WGPURenderPipeline) callconv(.c) void {
+pub export fn wgpuRenderPipelineRelease(a0: abi_base.WGPURenderPipeline) callconv(.c) void {
     native.doeNativeRenderPipelineRelease(a0);
 }
 
-pub export fn wgpuDeviceCreateCommandEncoder(a0: types.WGPUDevice, a1: ?*const types.WGPUCommandEncoderDescriptor) callconv(.c) types.WGPUCommandEncoder {
+pub export fn wgpuDeviceCreateCommandEncoder(a0: abi_base.WGPUDevice, a1: ?*const abi_descriptor.WGPUCommandEncoderDescriptor) callconv(.c) abi_base.WGPUCommandEncoder {
     const proc = loadRequiredProc(ptypes.FnWgpuDeviceCreateCommandEncoder, "wgpuDeviceCreateCommandEncoder");
     return proc(a0, a1);
 }
 
-pub export fn wgpuCommandEncoderBeginComputePass(a0: types.WGPUCommandEncoder, a1: ?*const types.WGPUComputePassDescriptor) callconv(.c) types.WGPUComputePassEncoder {
+pub export fn wgpuCommandEncoderBeginComputePass(a0: abi_base.WGPUCommandEncoder, a1: ?*const abi_descriptor.WGPUComputePassDescriptor) callconv(.c) abi_base.WGPUComputePassEncoder {
     const proc = loadRequiredProc(ptypes.FnWgpuCommandEncoderBeginComputePass, "wgpuCommandEncoderBeginComputePass");
     return proc(a0, a1);
 }
 
-pub export fn wgpuDeviceCreateRenderPipeline(a0: types.WGPUDevice, a1: *const anyopaque) callconv(.c) types.WGPURenderPipeline {
+pub export fn wgpuDeviceCreateRenderPipeline(a0: abi_base.WGPUDevice, a1: *const anyopaque) callconv(.c) abi_base.WGPURenderPipeline {
     const proc = loadRequiredProc(ptypes.FnWgpuDeviceCreateRenderPipeline, "wgpuDeviceCreateRenderPipeline");
     return proc(a0, a1);
 }
 
-pub export fn wgpuCommandEncoderBeginRenderPass(a0: types.WGPUCommandEncoder, a1: *const anyopaque) callconv(.c) types.WGPURenderPassEncoder {
+pub export fn wgpuCommandEncoderBeginRenderPass(a0: abi_base.WGPUCommandEncoder, a1: *const anyopaque) callconv(.c) abi_base.WGPURenderPassEncoder {
     const proc = loadRequiredProc(ptypes.FnWgpuCommandEncoderBeginRenderPass, "wgpuCommandEncoderBeginRenderPass");
     return proc(a0, a1);
 }
 
-pub export fn wgpuCommandEncoderWriteTimestamp(a0: types.WGPUCommandEncoder, a1: types.WGPUQuerySet, a2: u32) callconv(.c) void {
+pub export fn wgpuCommandEncoderWriteTimestamp(a0: abi_base.WGPUCommandEncoder, a1: abi_base.WGPUQuerySet, a2: u32) callconv(.c) void {
     native.doeNativeCommandEncoderWriteTimestamp(a0, a1, a2);
 }
 
-pub export fn wgpuCommandEncoderCopyBufferToBuffer(a0: types.WGPUCommandEncoder, a1: types.WGPUBuffer, a2: u64, a3: types.WGPUBuffer, a4: u64, a5: u64) callconv(.c) void {
+pub export fn wgpuCommandEncoderCopyBufferToBuffer(a0: abi_base.WGPUCommandEncoder, a1: abi_base.WGPUBuffer, a2: u64, a3: abi_base.WGPUBuffer, a4: u64, a5: u64) callconv(.c) void {
     const proc = loadRequiredProc(ptypes.FnWgpuCommandEncoderCopyBufferToBuffer, "wgpuCommandEncoderCopyBufferToBuffer");
     proc(a0, a1, a2, a3, a4, a5);
 }
 
-pub export fn wgpuCommandEncoderCopyBufferToTexture(a0: types.WGPUCommandEncoder, a1: *const types.WGPUTexelCopyBufferInfo, a2: *const types.WGPUTexelCopyTextureInfo, a3: *const types.WGPUExtent3D) callconv(.c) void {
+pub export fn wgpuCommandEncoderCopyBufferToTexture(a0: abi_base.WGPUCommandEncoder, a1: *const abi_descriptor.WGPUTexelCopyBufferInfo, a2: *const abi_descriptor.WGPUTexelCopyTextureInfo, a3: *const abi_descriptor.WGPUExtent3D) callconv(.c) void {
     const proc = loadRequiredProc(ptypes.FnWgpuCommandEncoderCopyBufferToTexture, "wgpuCommandEncoderCopyBufferToTexture");
     proc(a0, a1, a2, a3);
 }
 
-pub export fn wgpuCommandEncoderCopyTextureToBuffer(a0: types.WGPUCommandEncoder, a1: *const types.WGPUTexelCopyTextureInfo, a2: *const types.WGPUTexelCopyBufferInfo, a3: *const types.WGPUExtent3D) callconv(.c) void {
+pub export fn wgpuCommandEncoderCopyTextureToBuffer(a0: abi_base.WGPUCommandEncoder, a1: *const abi_descriptor.WGPUTexelCopyTextureInfo, a2: *const abi_descriptor.WGPUTexelCopyBufferInfo, a3: *const abi_descriptor.WGPUExtent3D) callconv(.c) void {
     const proc = loadRequiredProc(ptypes.FnWgpuCommandEncoderCopyTextureToBuffer, "wgpuCommandEncoderCopyTextureToBuffer");
     proc(a0, a1, a2, a3);
 }
 
-pub export fn wgpuCommandEncoderCopyTextureToTexture(a0: types.WGPUCommandEncoder, a1: *const types.WGPUTexelCopyTextureInfo, a2: *const types.WGPUTexelCopyTextureInfo, a3: *const types.WGPUExtent3D) callconv(.c) void {
+pub export fn wgpuCommandEncoderCopyTextureToTexture(a0: abi_base.WGPUCommandEncoder, a1: *const abi_descriptor.WGPUTexelCopyTextureInfo, a2: *const abi_descriptor.WGPUTexelCopyTextureInfo, a3: *const abi_descriptor.WGPUExtent3D) callconv(.c) void {
     const proc = loadRequiredProc(ptypes.FnWgpuCommandEncoderCopyTextureToTexture, "wgpuCommandEncoderCopyTextureToTexture");
     proc(a0, a1, a2, a3);
 }
 
-pub export fn wgpuComputePassEncoderSetPipeline(a0: types.WGPUComputePassEncoder, a1: types.WGPUComputePipeline) callconv(.c) void {
+pub export fn wgpuComputePassEncoderSetPipeline(a0: abi_base.WGPUComputePassEncoder, a1: abi_base.WGPUComputePipeline) callconv(.c) void {
     const proc = loadRequiredProc(ptypes.FnWgpuComputePassEncoderSetPipeline, "wgpuComputePassEncoderSetPipeline");
     proc(a0, a1);
 }
 
-pub export fn wgpuComputePassEncoderSetBindGroup(a0: types.WGPUComputePassEncoder, a1: u32, a2: types.WGPUBindGroup, a3: usize, a4: ?[*]const u32) callconv(.c) void {
+pub export fn wgpuComputePassEncoderSetBindGroup(a0: abi_base.WGPUComputePassEncoder, a1: u32, a2: abi_base.WGPUBindGroup, a3: usize, a4: ?[*]const u32) callconv(.c) void {
     const proc = loadRequiredProc(ptypes.FnWgpuComputePassEncoderSetBindGroup, "wgpuComputePassEncoderSetBindGroup");
     proc(a0, a1, a2, a3, a4);
 }
 
-pub export fn wgpuComputePassEncoderDispatchWorkgroups(a0: types.WGPUComputePassEncoder, a1: u32, a2: u32, a3: u32) callconv(.c) void {
+pub export fn wgpuComputePassEncoderDispatchWorkgroups(a0: abi_base.WGPUComputePassEncoder, a1: u32, a2: u32, a3: u32) callconv(.c) void {
     const proc = loadRequiredProc(ptypes.FnWgpuComputePassEncoderDispatchWorkgroups, "wgpuComputePassEncoderDispatchWorkgroups");
     proc(a0, a1, a2, a3);
 }
 
-pub export fn wgpuComputePassEncoderEnd(a0: types.WGPUComputePassEncoder) callconv(.c) void {
+pub export fn wgpuComputePassEncoderEnd(a0: abi_base.WGPUComputePassEncoder) callconv(.c) void {
     const proc = loadRequiredProc(ptypes.FnWgpuComputePassEncoderEnd, "wgpuComputePassEncoderEnd");
     proc(a0);
 }
 
-pub export fn wgpuComputePassEncoderRelease(a0: types.WGPUComputePassEncoder) callconv(.c) void {
+pub export fn wgpuComputePassEncoderRelease(a0: abi_base.WGPUComputePassEncoder) callconv(.c) void {
     native.doeNativeComputePassRelease(a0);
 }
 
-pub export fn wgpuRenderPassEncoderSetPipeline(a0: types.WGPURenderPassEncoder, a1: types.WGPURenderPipeline) callconv(.c) void {
+pub export fn wgpuRenderPassEncoderSetPipeline(a0: abi_base.WGPURenderPassEncoder, a1: abi_base.WGPURenderPipeline) callconv(.c) void {
     const proc = loadRequiredProc(ptypes.FnWgpuRenderPassEncoderSetPipeline, "wgpuRenderPassEncoderSetPipeline");
     proc(a0, a1);
 }
 
-pub export fn wgpuRenderPassEncoderSetVertexBuffer(a0: types.WGPURenderPassEncoder, a1: u32, a2: types.WGPUBuffer, a3: u64, a4: u64) callconv(.c) void {
+pub export fn wgpuRenderPassEncoderSetVertexBuffer(a0: abi_base.WGPURenderPassEncoder, a1: u32, a2: abi_base.WGPUBuffer, a3: u64, a4: u64) callconv(.c) void {
     const proc = loadRequiredProc(ptypes.FnWgpuRenderPassEncoderSetVertexBuffer, "wgpuRenderPassEncoderSetVertexBuffer");
     proc(a0, a1, a2, a3, a4);
 }
 
-pub export fn wgpuRenderPassEncoderSetIndexBuffer(a0: types.WGPURenderPassEncoder, a1: types.WGPUBuffer, a2: u32, a3: u64, a4: u64) callconv(.c) void {
+pub export fn wgpuRenderPassEncoderSetIndexBuffer(a0: abi_base.WGPURenderPassEncoder, a1: abi_base.WGPUBuffer, a2: u32, a3: u64, a4: u64) callconv(.c) void {
     const proc = loadRequiredProc(ptypes.FnWgpuRenderPassEncoderSetIndexBuffer, "wgpuRenderPassEncoderSetIndexBuffer");
     proc(a0, a1, a2, a3, a4);
 }
 
-pub export fn wgpuRenderPassEncoderSetBindGroup(a0: types.WGPURenderPassEncoder, a1: u32, a2: types.WGPUBindGroup, a3: usize, a4: ?[*]const u32) callconv(.c) void {
+pub export fn wgpuRenderPassEncoderSetBindGroup(a0: abi_base.WGPURenderPassEncoder, a1: u32, a2: abi_base.WGPUBindGroup, a3: usize, a4: ?[*]const u32) callconv(.c) void {
     const proc = loadRequiredProc(ptypes.FnWgpuRenderPassEncoderSetBindGroup, "wgpuRenderPassEncoderSetBindGroup");
     proc(a0, a1, a2, a3, a4);
 }
 
-pub export fn wgpuRenderPassEncoderDraw(a0: types.WGPURenderPassEncoder, a1: u32, a2: u32, a3: u32, a4: u32) callconv(.c) void {
+pub export fn wgpuRenderPassEncoderDraw(a0: abi_base.WGPURenderPassEncoder, a1: u32, a2: u32, a3: u32, a4: u32) callconv(.c) void {
     const proc = loadRequiredProc(ptypes.FnWgpuRenderPassEncoderDraw, "wgpuRenderPassEncoderDraw");
     proc(a0, a1, a2, a3, a4);
 }
 
-pub export fn wgpuRenderPassEncoderDrawIndexed(a0: types.WGPURenderPassEncoder, a1: u32, a2: u32, a3: u32, a4: i32, a5: u32) callconv(.c) void {
+pub export fn wgpuRenderPassEncoderDrawIndexed(a0: abi_base.WGPURenderPassEncoder, a1: u32, a2: u32, a3: u32, a4: i32, a5: u32) callconv(.c) void {
     const proc = loadRequiredProc(ptypes.FnWgpuRenderPassEncoderDrawIndexed, "wgpuRenderPassEncoderDrawIndexed");
     proc(a0, a1, a2, a3, a4, a5);
 }
 
-pub export fn wgpuRenderPassEncoderDrawIndirect(a0: types.WGPURenderPassEncoder, a1: types.WGPUBuffer, a2: u64) callconv(.c) void {
+pub export fn wgpuRenderPassEncoderDrawIndirect(a0: abi_base.WGPURenderPassEncoder, a1: abi_base.WGPUBuffer, a2: u64) callconv(.c) void {
     const proc = loadRequiredProc(ptypes.FnWgpuRenderPassEncoderDrawIndirect, "wgpuRenderPassEncoderDrawIndirect");
     proc(a0, a1, a2);
 }
 
-pub export fn wgpuRenderPassEncoderDrawIndexedIndirect(a0: types.WGPURenderPassEncoder, a1: types.WGPUBuffer, a2: u64) callconv(.c) void {
+pub export fn wgpuRenderPassEncoderDrawIndexedIndirect(a0: abi_base.WGPURenderPassEncoder, a1: abi_base.WGPUBuffer, a2: u64) callconv(.c) void {
     const proc = loadRequiredProc(ptypes.FnWgpuRenderPassEncoderDrawIndexedIndirect, "wgpuRenderPassEncoderDrawIndexedIndirect");
     proc(a0, a1, a2);
 }
 
-pub export fn wgpuRenderPassEncoderEnd(a0: types.WGPURenderPassEncoder) callconv(.c) void {
+pub export fn wgpuRenderPassEncoderEnd(a0: abi_base.WGPURenderPassEncoder) callconv(.c) void {
     const proc = loadRequiredProc(ptypes.FnWgpuRenderPassEncoderEnd, "wgpuRenderPassEncoderEnd");
     proc(a0);
 }
 
-pub export fn wgpuRenderPassEncoderRelease(a0: types.WGPURenderPassEncoder) callconv(.c) void {
+pub export fn wgpuRenderPassEncoderRelease(a0: abi_base.WGPURenderPassEncoder) callconv(.c) void {
     native.doeNativeRenderPassRelease(a0);
 }
 
-pub export fn wgpuCommandEncoderFinish(a0: types.WGPUCommandEncoder, a1: ?*const types.WGPUCommandBufferDescriptor) callconv(.c) types.WGPUCommandBuffer {
+pub export fn wgpuCommandEncoderFinish(a0: abi_base.WGPUCommandEncoder, a1: ?*const abi_descriptor.WGPUCommandBufferDescriptor) callconv(.c) abi_base.WGPUCommandBuffer {
     const proc = loadRequiredProc(ptypes.FnWgpuCommandEncoderFinish, "wgpuCommandEncoderFinish");
     return proc(a0, a1);
 }
 
-pub export fn wgpuDeviceGetQueue(a0: types.WGPUDevice) callconv(.c) types.WGPUQueue {
+pub export fn wgpuDeviceGetQueue(a0: abi_base.WGPUDevice) callconv(.c) abi_base.WGPUQueue {
     return native.doeNativeDeviceGetQueue(a0);
 }
 
-pub export fn wgpuQueueSubmit(a0: types.WGPUQueue, a1: usize, a2: [*c]types.WGPUCommandBuffer) callconv(.c) void {
+pub export fn wgpuQueueSubmit(a0: abi_base.WGPUQueue, a1: usize, a2: [*c]abi_base.WGPUCommandBuffer) callconv(.c) void {
     native.doeNativeQueueSubmit(a0, a1, a2);
 }
 
-pub export fn wgpuQueueOnSubmittedWorkDone(a0: types.WGPUQueue, a1: types.WGPUQueueWorkDoneCallbackInfo) callconv(.c) types.WGPUFuture {
+pub export fn wgpuQueueOnSubmittedWorkDone(a0: abi_base.WGPUQueue, a1: abi_descriptor.WGPUQueueWorkDoneCallbackInfo) callconv(.c) abi_base.WGPUFuture {
     return native.doeNativeQueueOnSubmittedWorkDone(a0, a1);
 }
 
-pub export fn wgpuQueueWriteBuffer(a0: types.WGPUQueue, a1: types.WGPUBuffer, a2: u64, a3: ?*const anyopaque, a4: usize) callconv(.c) void {
+pub export fn wgpuQueueWriteBuffer(a0: abi_base.WGPUQueue, a1: abi_base.WGPUBuffer, a2: u64, a3: ?*const anyopaque, a4: usize) callconv(.c) void {
     const data = a3 orelse return;
     native.doeNativeQueueWriteBuffer(a0, a1, a2, @ptrCast(data), a4);
 }
 
-pub export fn wgpuDeviceCreateTexture(a0: types.WGPUDevice, a1: ?*const types.WGPUTextureDescriptor) callconv(.c) types.WGPUTexture {
+pub export fn wgpuDeviceCreateTexture(a0: abi_base.WGPUDevice, a1: ?*const abi_descriptor.WGPUTextureDescriptor) callconv(.c) abi_base.WGPUTexture {
     const proc = loadRequiredProc(ptypes.FnWgpuDeviceCreateTexture, "wgpuDeviceCreateTexture");
     return proc(a0, a1);
 }
 
-pub export fn wgpuTextureCreateView(a0: types.WGPUTexture, a1: ?*const types.WGPUTextureViewDescriptor) callconv(.c) types.WGPUTextureView {
+pub export fn wgpuTextureCreateView(a0: abi_base.WGPUTexture, a1: ?*const abi_descriptor.WGPUTextureViewDescriptor) callconv(.c) abi_base.WGPUTextureView {
     const proc = loadRequiredProc(ptypes.FnWgpuTextureCreateView, "wgpuTextureCreateView");
     return proc(a0, a1);
 }
 
-pub export fn wgpuDeviceCreateBindGroupLayout(a0: types.WGPUDevice, a1: ?*const types.WGPUBindGroupLayoutDescriptor) callconv(.c) types.WGPUBindGroupLayout {
+pub export fn wgpuDeviceCreateBindGroupLayout(a0: abi_base.WGPUDevice, a1: ?*const abi_descriptor.WGPUBindGroupLayoutDescriptor) callconv(.c) abi_base.WGPUBindGroupLayout {
     const proc = loadRequiredProc(ptypes.FnWgpuDeviceCreateBindGroupLayout, "wgpuDeviceCreateBindGroupLayout");
     return proc(a0, a1);
 }
 
-pub export fn wgpuBindGroupLayoutRelease(a0: types.WGPUBindGroupLayout) callconv(.c) void {
+pub export fn wgpuBindGroupLayoutRelease(a0: abi_base.WGPUBindGroupLayout) callconv(.c) void {
     native.doeNativeBindGroupLayoutRelease(a0);
 }
 
-pub export fn wgpuDeviceCreateBindGroup(a0: types.WGPUDevice, a1: ?*const types.WGPUBindGroupDescriptor) callconv(.c) types.WGPUBindGroup {
+pub export fn wgpuDeviceCreateBindGroup(a0: abi_base.WGPUDevice, a1: ?*const abi_descriptor.WGPUBindGroupDescriptor) callconv(.c) abi_base.WGPUBindGroup {
     const proc = loadRequiredProc(ptypes.FnWgpuDeviceCreateBindGroup, "wgpuDeviceCreateBindGroup");
     return proc(a0, a1);
 }
 
-pub export fn wgpuBindGroupRelease(a0: types.WGPUBindGroup) callconv(.c) void {
+pub export fn wgpuBindGroupRelease(a0: abi_base.WGPUBindGroup) callconv(.c) void {
     native.doeNativeBindGroupRelease(a0);
 }
 
-pub export fn wgpuDeviceCreatePipelineLayout(a0: types.WGPUDevice, a1: *const types.WGPUPipelineLayoutDescriptor) callconv(.c) types.WGPUPipelineLayout {
+pub export fn wgpuDeviceCreatePipelineLayout(a0: abi_base.WGPUDevice, a1: *const abi_descriptor.WGPUPipelineLayoutDescriptor) callconv(.c) abi_base.WGPUPipelineLayout {
     const proc = loadRequiredProc(ptypes.FnWgpuDeviceCreatePipelineLayout, "wgpuDeviceCreatePipelineLayout");
     return proc(a0, a1);
 }
 
-pub export fn wgpuPipelineLayoutRelease(a0: types.WGPUPipelineLayout) callconv(.c) void {
+pub export fn wgpuPipelineLayoutRelease(a0: abi_base.WGPUPipelineLayout) callconv(.c) void {
     native.doeNativePipelineLayoutRelease(a0);
 }
 
-pub export fn wgpuTextureRelease(a0: types.WGPUTexture) callconv(.c) void {
+pub export fn wgpuTextureRelease(a0: abi_base.WGPUTexture) callconv(.c) void {
     native.doeNativeTextureRelease(a0);
 }
 
-pub export fn wgpuTextureViewRelease(a0: types.WGPUTextureView) callconv(.c) void {
+pub export fn wgpuTextureViewRelease(a0: abi_base.WGPUTextureView) callconv(.c) void {
     native.doeNativeTextureViewRelease(a0);
 }
 
-pub export fn wgpuInstanceRelease(a0: types.WGPUInstance) callconv(.c) void {
+pub export fn wgpuInstanceRelease(a0: abi_base.WGPUInstance) callconv(.c) void {
     native.doeNativeInstanceRelease(a0);
 }
 
-pub export fn wgpuAdapterRelease(a0: types.WGPUAdapter) callconv(.c) void {
+pub export fn wgpuAdapterRelease(a0: abi_base.WGPUAdapter) callconv(.c) void {
     native.doeNativeAdapterRelease(a0);
 }
 
-pub export fn wgpuDeviceRelease(a0: types.WGPUDevice) callconv(.c) void {
+pub export fn wgpuDeviceRelease(a0: abi_base.WGPUDevice) callconv(.c) void {
     native.doeNativeDeviceRelease(a0);
 }
 
-pub export fn wgpuQueueRelease(a0: types.WGPUQueue) callconv(.c) void {
+pub export fn wgpuQueueRelease(a0: abi_base.WGPUQueue) callconv(.c) void {
     native.doeNativeQueueRelease(a0);
 }
 
-pub export fn wgpuCommandEncoderRelease(a0: types.WGPUCommandEncoder) callconv(.c) void {
+pub export fn wgpuCommandEncoderRelease(a0: abi_base.WGPUCommandEncoder) callconv(.c) void {
     native.doeNativeCommandEncoderRelease(a0);
 }
 
-pub export fn wgpuCommandBufferRelease(a0: types.WGPUCommandBuffer) callconv(.c) void {
+pub export fn wgpuCommandBufferRelease(a0: abi_base.WGPUCommandBuffer) callconv(.c) void {
     native.doeNativeCommandBufferRelease(a0);
 }
 
-pub export fn wgpuBufferRelease(a0: types.WGPUBuffer) callconv(.c) void {
+pub export fn wgpuBufferRelease(a0: abi_base.WGPUBuffer) callconv(.c) void {
     native.doeNativeBufferRelease(a0);
 }
 
-pub export fn wgpuAdapterHasFeature(a0: types.WGPUAdapter, a1: types.WGPUFeatureName) callconv(.c) types.WGPUBool {
+pub export fn wgpuAdapterHasFeature(a0: abi_base.WGPUAdapter, a1: abi_base.WGPUFeatureName) callconv(.c) abi_base.WGPUBool {
     return native.doeNativeAdapterHasFeature(a0, a1);
 }
 
-pub export fn wgpuDeviceHasFeature(a0: types.WGPUDevice, a1: types.WGPUFeatureName) callconv(.c) types.WGPUBool {
+pub export fn wgpuDeviceHasFeature(a0: abi_base.WGPUDevice, a1: abi_base.WGPUFeatureName) callconv(.c) abi_base.WGPUBool {
     return native.doeNativeDeviceHasFeature(a0, a1);
 }
 
-pub export fn wgpuDeviceCreateQuerySet(a0: types.WGPUDevice, a1: *const types.WGPUQuerySetDescriptor) callconv(.c) types.WGPUQuerySet {
+pub export fn wgpuDeviceCreateQuerySet(a0: abi_base.WGPUDevice, a1: *const abi_descriptor.WGPUQuerySetDescriptor) callconv(.c) abi_base.WGPUQuerySet {
     const proc = loadRequiredProc(ptypes.FnWgpuDeviceCreateQuerySet, "wgpuDeviceCreateQuerySet");
     return proc(a0, a1);
 }
 
-pub export fn wgpuCommandEncoderResolveQuerySet(a0: types.WGPUCommandEncoder, a1: types.WGPUQuerySet, a2: u32, a3: u32, a4: types.WGPUBuffer, a5: u64) callconv(.c) void {
+pub export fn wgpuCommandEncoderResolveQuerySet(a0: abi_base.WGPUCommandEncoder, a1: abi_base.WGPUQuerySet, a2: u32, a3: u32, a4: abi_base.WGPUBuffer, a5: u64) callconv(.c) void {
     native.doeNativeCommandEncoderResolveQuerySet(a0, a1, a2, a3, a4, a5);
 }
 
-pub export fn wgpuQuerySetRelease(a0: types.WGPUQuerySet) callconv(.c) void {
+pub export fn wgpuQuerySetRelease(a0: abi_base.WGPUQuerySet) callconv(.c) void {
     native.doeNativeQuerySetRelease(a0);
 }
 
-pub export fn wgpuBufferMapAsync(a0: types.WGPUBuffer, a1: types.WGPUMapMode, a2: usize, a3: usize, a4: types.WGPUBufferMapCallbackInfo) callconv(.c) types.WGPUFuture {
+pub export fn wgpuBufferMapAsync(a0: abi_base.WGPUBuffer, a1: abi_base.WGPUMapMode, a2: usize, a3: usize, a4: abi_descriptor.WGPUBufferMapCallbackInfo) callconv(.c) abi_base.WGPUFuture {
     const proc = loadRequiredProc(ptypes.FnWgpuBufferMapAsync, "wgpuBufferMapAsync");
     return proc(a0, a1, a2, a3, a4);
 }
 
 // FFI-friendly buffer map: flattened args for runtimes that cannot pass WGPUBufferMapCallbackInfo by value.
 pub export fn doeBufferMapAsyncFlat(
-    buffer: types.WGPUBuffer,
-    mode: types.WGPUMapMode,
+    buffer: abi_base.WGPUBuffer,
+    mode: abi_base.WGPUMapMode,
     offset: usize,
     size: usize,
-    cb_mode: types.WGPUCallbackMode,
-    callback: types.WGPUBufferMapCallback,
+    cb_mode: abi_descriptor.WGPUCallbackMode,
+    callback: abi_descriptor.WGPUBufferMapCallback,
     userdata1: ?*anyopaque,
     userdata2: ?*anyopaque,
-) callconv(.c) types.WGPUFuture {
-    const info = types.WGPUBufferMapCallbackInfo{
+) callconv(.c) abi_base.WGPUFuture {
+    const info = abi_descriptor.WGPUBufferMapCallbackInfo{
         .nextInChain = null,
         .mode = cb_mode,
         .callback = callback,
@@ -377,16 +378,16 @@ pub export fn doeBufferMapAsyncFlat(
 }
 
 pub export fn doeBufferMapSyncFlat(
-    instance: types.WGPUInstance,
-    buffer: types.WGPUBuffer,
-    mode: types.WGPUMapMode,
+    instance: abi_base.WGPUInstance,
+    buffer: abi_base.WGPUBuffer,
+    mode: abi_base.WGPUMapMode,
     offset: usize,
     size: usize,
-) callconv(.c) types.WGPUMapAsyncStatus {
+) callconv(.c) abi_base.WGPUMapAsyncStatus {
     var result = BufferMapSyncResult{};
-    const info = types.WGPUBufferMapCallbackInfo{
+    const info = abi_descriptor.WGPUBufferMapCallbackInfo{
         .nextInChain = null,
-        .mode = types.WGPUCallbackMode_AllowProcessEvents,
+        .mode = abi_descriptor.WGPUCallbackMode_AllowProcessEvents,
         .callback = buffer_map_sync_callback,
         .userdata1 = @ptrCast(&result),
         .userdata2 = null,
@@ -405,13 +406,13 @@ pub export fn doeBufferMapSyncFlat(
 
 // FFI-friendly queue work-done: flattened args for runtimes that cannot pass WGPUQueueWorkDoneCallbackInfo by value.
 pub export fn doeQueueOnSubmittedWorkDoneFlat(
-    queue: types.WGPUQueue,
-    cb_mode: types.WGPUCallbackMode,
-    callback: types.WGPUQueueWorkDoneCallback,
+    queue: abi_base.WGPUQueue,
+    cb_mode: abi_descriptor.WGPUCallbackMode,
+    callback: abi_descriptor.WGPUQueueWorkDoneCallback,
     userdata1: ?*anyopaque,
     userdata2: ?*anyopaque,
-) callconv(.c) types.WGPUFuture {
-    const info = types.WGPUQueueWorkDoneCallbackInfo{
+) callconv(.c) abi_base.WGPUFuture {
+    const info = abi_descriptor.WGPUQueueWorkDoneCallbackInfo{
         .nextInChain = null,
         .mode = cb_mode,
         .callback = callback,
@@ -422,21 +423,21 @@ pub export fn doeQueueOnSubmittedWorkDoneFlat(
     return proc(queue, info);
 }
 
-pub export fn wgpuBufferGetConstMappedRange(a0: types.WGPUBuffer, a1: usize, a2: usize) callconv(.c) ?*const anyopaque {
+pub export fn wgpuBufferGetConstMappedRange(a0: abi_base.WGPUBuffer, a1: usize, a2: usize) callconv(.c) ?*const anyopaque {
     const proc = loadRequiredProc(ptypes.FnWgpuBufferGetConstMappedRange, "wgpuBufferGetConstMappedRange");
     return proc(a0, a1, a2);
 }
 
-pub export fn wgpuBufferUnmap(a0: types.WGPUBuffer) callconv(.c) void {
+pub export fn wgpuBufferUnmap(a0: abi_base.WGPUBuffer) callconv(.c) void {
     const proc = loadRequiredProc(ptypes.FnWgpuBufferUnmap, "wgpuBufferUnmap");
     proc(a0);
 }
 
-pub export fn wgpuDeviceCreateSampler(a0: types.WGPUDevice, a1: ?*const types.WGPUSamplerDescriptor) callconv(.c) types.WGPUSampler {
+pub export fn wgpuDeviceCreateSampler(a0: abi_base.WGPUDevice, a1: ?*const abi_descriptor.WGPUSamplerDescriptor) callconv(.c) abi_base.WGPUSampler {
     const proc = loadRequiredProc(ptypes.FnWgpuDeviceCreateSampler, "wgpuDeviceCreateSampler");
     return proc(a0, a1);
 }
 
-pub export fn wgpuSamplerRelease(a0: types.WGPUSampler) callconv(.c) void {
+pub export fn wgpuSamplerRelease(a0: abi_base.WGPUSampler) callconv(.c) void {
     native.doeNativeSamplerRelease(a0);
 }

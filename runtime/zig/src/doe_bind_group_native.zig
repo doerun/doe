@@ -2,7 +2,8 @@
 // C ABI exports for the Doe native Metal/Vulkan backend. Sharded from doe_wgpu_native.zig.
 
 const native = @import("doe_wgpu_native.zig");
-const types = @import("core/abi/wgpu_types.zig");
+const abi_base = @import("core/abi/wgpu_base_types.zig");
+const abi_descriptor = @import("core/abi/wgpu_descriptor_types.zig");
 
 const alloc = native.alloc;
 const make = native.make;
@@ -30,29 +31,29 @@ const RESOURCE_KIND_TEXTURE: u32 = 3;
 const RESOURCE_KIND_STORAGE_TEXTURE: u32 = 4;
 const RESOURCE_KIND_EXTERNAL_TEXTURE: u32 = 5;
 
-fn chained_struct(raw: ?*anyopaque) ?*const types.WGPUChainedStruct {
+fn chained_struct(raw: ?*anyopaque) ?*const abi_descriptor.WGPUChainedStruct {
     const ptr = raw orelse return null;
     return @ptrCast(@alignCast(ptr));
 }
 
-fn has_chain_type(raw: ?*anyopaque, s_type: types.WGPUSType) bool {
+fn has_chain_type(raw: ?*anyopaque, s_type: abi_base.WGPUSType) bool {
     const chain = chained_struct(raw) orelse return false;
     return chain.sType == s_type;
 }
 
-fn external_texture_layout_chain(raw: ?*anyopaque) ?*const types.WGPUExternalTextureBindingLayout {
-    if (!has_chain_type(raw, types.WGPUSType_ExternalTextureBindingLayout)) return null;
+fn external_texture_layout_chain(raw: ?*anyopaque) ?*const abi_descriptor.WGPUExternalTextureBindingLayout {
+    if (!has_chain_type(raw, abi_base.WGPUSType_ExternalTextureBindingLayout)) return null;
     const ptr = raw orelse return null;
     return @ptrCast(@alignCast(ptr));
 }
 
-fn external_texture_entry_chain(raw: ?*anyopaque) ?*const types.WGPUExternalTextureBindingEntry {
-    if (!has_chain_type(raw, types.WGPUSType_ExternalTextureBindingEntry)) return null;
+fn external_texture_entry_chain(raw: ?*anyopaque) ?*const abi_descriptor.WGPUExternalTextureBindingEntry {
+    if (!has_chain_type(raw, abi_base.WGPUSType_ExternalTextureBindingEntry)) return null;
     const ptr = raw orelse return null;
     return @ptrCast(@alignCast(ptr));
 }
 
-fn classify_layout_entry(entry: types.WGPUBindGroupLayoutEntry) DoeBindGroupLayoutEntry {
+fn classify_layout_entry(entry: abi_descriptor.WGPUBindGroupLayoutEntry) DoeBindGroupLayoutEntry {
     var out = DoeBindGroupLayoutEntry{
         .binding = entry.binding,
         .resource_kind = RESOURCE_KIND_NONE,
@@ -87,34 +88,34 @@ fn classify_layout_entry(entry: types.WGPUBindGroupLayoutEntry) DoeBindGroupLayo
 
 fn infer_texture_sample_type(tex: *DoeTexture) u32 {
     return switch (tex.format) {
-        types.WGPUTextureFormat_Depth16Unorm,
-        types.WGPUTextureFormat_Depth24Plus,
-        types.WGPUTextureFormat_Depth24PlusStencil8,
-        types.WGPUTextureFormat_Depth32Float,
-        types.WGPUTextureFormat_Depth32FloatStencil8,
-        => types.WGPUTextureSampleType_Depth,
-        types.WGPUTextureFormat_R8Uint,
-        types.WGPUTextureFormat_R16Uint,
-        types.WGPUTextureFormat_RG8Uint,
-        types.WGPUTextureFormat_R32Uint,
-        types.WGPUTextureFormat_RG16Uint,
-        types.WGPUTextureFormat_RGBA8Uint,
-        types.WGPUTextureFormat_RGB10A2Uint,
-        types.WGPUTextureFormat_RG32Uint,
-        types.WGPUTextureFormat_RGBA16Uint,
-        types.WGPUTextureFormat_RGBA32Uint,
-        => types.WGPUTextureSampleType_Uint,
-        types.WGPUTextureFormat_R8Sint,
-        types.WGPUTextureFormat_R16Sint,
-        types.WGPUTextureFormat_RG8Sint,
-        types.WGPUTextureFormat_R32Sint,
-        types.WGPUTextureFormat_RG16Sint,
-        types.WGPUTextureFormat_RGBA8Sint,
-        types.WGPUTextureFormat_RG32Sint,
-        types.WGPUTextureFormat_RGBA16Sint,
-        types.WGPUTextureFormat_RGBA32Sint,
-        => types.WGPUTextureSampleType_Sint,
-        else => types.WGPUTextureSampleType_Float,
+        abi_base.WGPUTextureFormat_Depth16Unorm,
+        abi_base.WGPUTextureFormat_Depth24Plus,
+        abi_base.WGPUTextureFormat_Depth24PlusStencil8,
+        abi_base.WGPUTextureFormat_Depth32Float,
+        abi_base.WGPUTextureFormat_Depth32FloatStencil8,
+        => abi_base.WGPUTextureSampleType_Depth,
+        abi_base.WGPUTextureFormat_R8Uint,
+        abi_base.WGPUTextureFormat_R16Uint,
+        abi_base.WGPUTextureFormat_RG8Uint,
+        abi_base.WGPUTextureFormat_R32Uint,
+        abi_base.WGPUTextureFormat_RG16Uint,
+        abi_base.WGPUTextureFormat_RGBA8Uint,
+        abi_base.WGPUTextureFormat_RGB10A2Uint,
+        abi_base.WGPUTextureFormat_RG32Uint,
+        abi_base.WGPUTextureFormat_RGBA16Uint,
+        abi_base.WGPUTextureFormat_RGBA32Uint,
+        => abi_base.WGPUTextureSampleType_Uint,
+        abi_base.WGPUTextureFormat_R8Sint,
+        abi_base.WGPUTextureFormat_R16Sint,
+        abi_base.WGPUTextureFormat_RG8Sint,
+        abi_base.WGPUTextureFormat_R32Sint,
+        abi_base.WGPUTextureFormat_RG16Sint,
+        abi_base.WGPUTextureFormat_RGBA8Sint,
+        abi_base.WGPUTextureFormat_RG32Sint,
+        abi_base.WGPUTextureFormat_RGBA16Sint,
+        abi_base.WGPUTextureFormat_RGBA32Sint,
+        => abi_base.WGPUTextureSampleType_Sint,
+        else => abi_base.WGPUTextureSampleType_Float,
     };
 }
 
@@ -122,23 +123,23 @@ fn resolve_view_dimension(view: *DoeTextureView) u32 {
     if (view.dimension != 0) return view.dimension;
     if (view.tex.texture_binding_view_dimension != 0) return view.tex.texture_binding_view_dimension;
     return switch (view.tex.dimension) {
-        types.WGPUTextureDimension_1D => types.WGPUTextureViewDimension_1D,
-        types.WGPUTextureDimension_3D => types.WGPUTextureViewDimension_3D,
-        else => types.WGPUTextureViewDimension_2D,
+        abi_base.WGPUTextureDimension_1D => abi_base.WGPUTextureViewDimension_1D,
+        abi_base.WGPUTextureDimension_3D => abi_base.WGPUTextureViewDimension_3D,
+        else => abi_base.WGPUTextureViewDimension_2D,
     };
 }
 
 fn texture_aspect_matches(tex: *DoeTexture, view: *DoeTextureView) bool {
-    const aspect = if (view.aspect != 0) view.aspect else types.WGPUTextureAspect_All;
+    const aspect = if (view.aspect != 0) view.aspect else abi_base.WGPUTextureAspect_All;
     return switch (aspect) {
-        types.WGPUTextureAspect_All => true,
-        types.WGPUTextureAspect_DepthOnly => switch (tex.format) {
-            types.WGPUTextureFormat_Stencil8 => false,
-            types.WGPUTextureFormat_Depth16Unorm, types.WGPUTextureFormat_Depth24Plus, types.WGPUTextureFormat_Depth24PlusStencil8, types.WGPUTextureFormat_Depth32Float, types.WGPUTextureFormat_Depth32FloatStencil8 => true,
+        abi_base.WGPUTextureAspect_All => true,
+        abi_base.WGPUTextureAspect_DepthOnly => switch (tex.format) {
+            abi_base.WGPUTextureFormat_Stencil8 => false,
+            abi_base.WGPUTextureFormat_Depth16Unorm, abi_base.WGPUTextureFormat_Depth24Plus, abi_base.WGPUTextureFormat_Depth24PlusStencil8, abi_base.WGPUTextureFormat_Depth32Float, abi_base.WGPUTextureFormat_Depth32FloatStencil8 => true,
             else => false,
         },
-        types.WGPUTextureAspect_StencilOnly => switch (tex.format) {
-            types.WGPUTextureFormat_Stencil8, types.WGPUTextureFormat_Depth24PlusStencil8, types.WGPUTextureFormat_Depth32FloatStencil8 => true,
+        abi_base.WGPUTextureAspect_StencilOnly => switch (tex.format) {
+            abi_base.WGPUTextureFormat_Stencil8, abi_base.WGPUTextureFormat_Depth24PlusStencil8, abi_base.WGPUTextureFormat_Depth32FloatStencil8 => true,
             else => false,
         },
         else => false,
@@ -147,7 +148,7 @@ fn texture_aspect_matches(tex: *DoeTexture, view: *DoeTextureView) bool {
 
 fn storage_texture_access_supported(access: u32) bool {
     return switch (access) {
-        types.WGPUStorageTextureAccess_Undefined, types.WGPUStorageTextureAccess_WriteOnly, types.WGPUStorageTextureAccess_ReadOnly, types.WGPUStorageTextureAccess_ReadWrite => true,
+        abi_base.WGPUStorageTextureAccess_Undefined, abi_base.WGPUStorageTextureAccess_WriteOnly, abi_base.WGPUStorageTextureAccess_ReadOnly, abi_base.WGPUStorageTextureAccess_ReadWrite => true,
         else => false,
     };
 }
@@ -156,10 +157,10 @@ fn texture_view_matches_layout(layout_entry: DoeBindGroupLayoutEntry, view: *Doe
     const tex = view.tex;
     if (layout_entry.texture_multisampled != (tex.sample_count > 1)) return false;
     if (layout_entry.texture_view_dimension != 0 and
-        layout_entry.texture_view_dimension != types.WGPUTextureViewDimension_Undefined and
+        layout_entry.texture_view_dimension != abi_base.WGPUTextureViewDimension_Undefined and
         layout_entry.texture_view_dimension != resolve_view_dimension(view)) return false;
     if (layout_entry.texture_sample_type != 0 and
-        layout_entry.texture_sample_type != types.WGPUTextureSampleType_Undefined and
+        layout_entry.texture_sample_type != abi_base.WGPUTextureSampleType_Undefined and
         layout_entry.texture_sample_type != infer_texture_sample_type(tex)) return false;
     if (!texture_aspect_matches(tex, view)) return false;
     return true;
@@ -167,13 +168,13 @@ fn texture_view_matches_layout(layout_entry: DoeBindGroupLayoutEntry, view: *Doe
 
 fn storage_texture_matches_layout(layout_entry: DoeBindGroupLayoutEntry, view: *DoeTextureView) bool {
     switch (view.tex.format) {
-        types.WGPUTextureFormat_Stencil8, types.WGPUTextureFormat_Depth16Unorm, types.WGPUTextureFormat_Depth24Plus, types.WGPUTextureFormat_Depth24PlusStencil8, types.WGPUTextureFormat_Depth32Float, types.WGPUTextureFormat_Depth32FloatStencil8 => return false,
+        abi_base.WGPUTextureFormat_Stencil8, abi_base.WGPUTextureFormat_Depth16Unorm, abi_base.WGPUTextureFormat_Depth24Plus, abi_base.WGPUTextureFormat_Depth24PlusStencil8, abi_base.WGPUTextureFormat_Depth32Float, abi_base.WGPUTextureFormat_Depth32FloatStencil8 => return false,
         else => {},
     }
     const usage = view.usage | view.tex.usage;
-    if ((usage & types.WGPUTextureUsage_StorageBinding) == 0) return false;
+    if ((usage & abi_base.WGPUTextureUsage_StorageBinding) == 0) return false;
     if (layout_entry.texture_view_dimension != 0 and
-        layout_entry.texture_view_dimension != types.WGPUTextureViewDimension_Undefined and
+        layout_entry.texture_view_dimension != abi_base.WGPUTextureViewDimension_Undefined and
         layout_entry.texture_view_dimension != resolve_view_dimension(view)) return false;
     if (!texture_aspect_matches(view.tex, view)) return false;
     return storage_texture_access_supported(layout_entry.texture_sample_type);
@@ -202,12 +203,12 @@ fn retain_sampler(bg: *DoeBindGroup, binding: usize, sampler: *DoeSampler) void 
     bg.retained_samplers[binding] = sampler;
 }
 
-fn retain_external_texture(bg: *DoeBindGroup, binding: usize, external_texture: types.WGPUExternalTexture) void {
+fn retain_external_texture(bg: *DoeBindGroup, binding: usize, external_texture: abi_base.WGPUExternalTexture) void {
     native.object_add_ref(DoeExternalTexture, external_texture);
     bg.retained_external_textures[binding] = external_texture;
 }
 
-fn resolve_external_texture(entry: types.WGPUBindGroupEntry) ?types.WGPUExternalTexture {
+fn resolve_external_texture(entry: abi_descriptor.WGPUBindGroupEntry) ?abi_base.WGPUExternalTexture {
     if (external_texture_entry_chain(entry.nextInChain)) |chain| {
         return chain.externalTexture;
     }
@@ -218,7 +219,7 @@ fn resolve_external_texture(entry: types.WGPUBindGroupEntry) ?types.WGPUExternal
 // Bind Group Layout / Bind Group / Pipeline Layout
 // ============================================================
 
-pub export fn doeNativeDeviceCreateBindGroupLayout(dev_raw: ?*anyopaque, desc: ?*const types.WGPUBindGroupLayoutDescriptor) callconv(.c) ?*anyopaque {
+pub export fn doeNativeDeviceCreateBindGroupLayout(dev_raw: ?*anyopaque, desc: ?*const abi_descriptor.WGPUBindGroupLayoutDescriptor) callconv(.c) ?*anyopaque {
     _ = dev_raw;
     const d = desc orelse return null;
     if (d.entryCount > 0 and d.entries == null) {
@@ -253,7 +254,7 @@ pub export fn doeNativeBindGroupLayoutRelease(raw: ?*anyopaque) callconv(.c) voi
     }
 }
 
-pub export fn doeNativeDeviceCreateBindGroup(dev_raw: ?*anyopaque, desc: ?*const types.WGPUBindGroupDescriptor) callconv(.c) ?*anyopaque {
+pub export fn doeNativeDeviceCreateBindGroup(dev_raw: ?*anyopaque, desc: ?*const abi_descriptor.WGPUBindGroupDescriptor) callconv(.c) ?*anyopaque {
     const d = desc orelse return null;
     const bg = make(DoeBindGroup) orelse return null;
     bg.* = .{};
@@ -364,7 +365,7 @@ pub export fn doeNativeBindGroupRelease(raw: ?*anyopaque) callconv(.c) void {
     }
 }
 
-pub export fn doeNativeDeviceCreatePipelineLayout(dev_raw: ?*anyopaque, desc: ?*const types.WGPUPipelineLayoutDescriptor) callconv(.c) ?*anyopaque {
+pub export fn doeNativeDeviceCreatePipelineLayout(dev_raw: ?*anyopaque, desc: ?*const abi_descriptor.WGPUPipelineLayoutDescriptor) callconv(.c) ?*anyopaque {
     _ = dev_raw;
     const pl = make(DoePipelineLayout) orelse return null;
     pl.* = .{};

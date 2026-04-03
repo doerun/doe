@@ -1,14 +1,14 @@
 const std = @import("std");
 const testing = std.testing;
-const webgpu_types = @import("model_webgpu_types.zig");
+const gpu_types = @import("model_gpu_types.zig");
 
 test "texture usage flags are distinct powers of two" {
-    const flags = [_]webgpu_types.WGPUFlags{
-        webgpu_types.WGPUTextureUsage_CopySrc,
-        webgpu_types.WGPUTextureUsage_CopyDst,
-        webgpu_types.WGPUTextureUsage_TextureBinding,
-        webgpu_types.WGPUTextureUsage_StorageBinding,
-        webgpu_types.WGPUTextureUsage_RenderAttachment,
+    const flags = [_]gpu_types.WGPUFlags{
+        gpu_types.WGPUTextureUsage_CopySrc,
+        gpu_types.WGPUTextureUsage_CopyDst,
+        gpu_types.WGPUTextureUsage_TextureBinding,
+        gpu_types.WGPUTextureUsage_StorageBinding,
+        gpu_types.WGPUTextureUsage_RenderAttachment,
     };
     for (flags, 0..) |a, i| {
         try testing.expect(a != 0);

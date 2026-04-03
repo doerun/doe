@@ -1,5 +1,5 @@
 const std = @import("std");
-const types = @import("core/abi/wgpu_types.zig");
+const abi_base = @import("core/abi/wgpu_base_types.zig");
 const loader = @import("core/abi/wgpu_loader.zig");
 
 pub const WGPUResourceTable = ?*anyopaque;
@@ -7,31 +7,31 @@ pub const WGPURenderBundleEncoder = ?*anyopaque;
 
 pub const ResourceTableDescriptor = extern struct {
     nextInChain: ?*anyopaque,
-    label: types.WGPUStringView,
+    label: abi_base.WGPUStringView,
     size: u32,
 };
 
 pub const BindingResource = extern struct {
     nextInChain: ?*anyopaque,
-    buffer: types.WGPUBuffer,
+    buffer: abi_base.WGPUBuffer,
     offset: u64,
     size: u64,
-    sampler: types.WGPUSampler,
-    textureView: types.WGPUTextureView,
+    sampler: abi_base.WGPUSampler,
+    textureView: abi_base.WGPUTextureView,
 };
 
-pub const FnComputePassEncoderSetImmediates = *const fn (types.WGPUComputePassEncoder, u32, ?*const anyopaque, usize) callconv(.c) void;
-pub const FnComputePassEncoderSetResourceTable = *const fn (types.WGPUComputePassEncoder, WGPUResourceTable) callconv(.c) void;
-pub const FnDeviceCreateResourceTable = *const fn (types.WGPUDevice, *const ResourceTableDescriptor) callconv(.c) WGPUResourceTable;
+pub const FnComputePassEncoderSetImmediates = *const fn (abi_base.WGPUComputePassEncoder, u32, ?*const anyopaque, usize) callconv(.c) void;
+pub const FnComputePassEncoderSetResourceTable = *const fn (abi_base.WGPUComputePassEncoder, WGPUResourceTable) callconv(.c) void;
+pub const FnDeviceCreateResourceTable = *const fn (abi_base.WGPUDevice, *const ResourceTableDescriptor) callconv(.c) WGPUResourceTable;
 pub const FnRenderBundleEncoderSetImmediates = *const fn (WGPURenderBundleEncoder, u32, ?*const anyopaque, usize) callconv(.c) void;
 pub const FnRenderBundleEncoderSetResourceTable = *const fn (WGPURenderBundleEncoder, WGPUResourceTable) callconv(.c) void;
-pub const FnRenderPassEncoderSetImmediates = *const fn (types.WGPURenderPassEncoder, u32, ?*const anyopaque, usize) callconv(.c) void;
-pub const FnRenderPassEncoderSetResourceTable = *const fn (types.WGPURenderPassEncoder, WGPUResourceTable) callconv(.c) void;
+pub const FnRenderPassEncoderSetImmediates = *const fn (abi_base.WGPURenderPassEncoder, u32, ?*const anyopaque, usize) callconv(.c) void;
+pub const FnRenderPassEncoderSetResourceTable = *const fn (abi_base.WGPURenderPassEncoder, WGPUResourceTable) callconv(.c) void;
 pub const FnResourceTableDestroy = *const fn (WGPUResourceTable) callconv(.c) void;
 pub const FnResourceTableGetSize = *const fn (WGPUResourceTable) callconv(.c) u32;
 pub const FnResourceTableInsertBinding = *const fn (WGPUResourceTable, *const BindingResource) callconv(.c) u32;
-pub const FnResourceTableRemoveBinding = *const fn (WGPUResourceTable, u32) callconv(.c) types.WGPUStatus;
-pub const FnResourceTableUpdate = *const fn (WGPUResourceTable, u32, *const BindingResource) callconv(.c) types.WGPUStatus;
+pub const FnResourceTableRemoveBinding = *const fn (WGPUResourceTable, u32) callconv(.c) abi_base.WGPUStatus;
+pub const FnResourceTableUpdate = *const fn (WGPUResourceTable, u32, *const BindingResource) callconv(.c) abi_base.WGPUStatus;
 pub const FnResourceTableAddRef = *const fn (WGPUResourceTable) callconv(.c) void;
 pub const FnResourceTableRelease = *const fn (WGPUResourceTable) callconv(.c) void;
 
@@ -85,7 +85,7 @@ pub fn initResourceTableDescriptor(size: u32) ResourceTableDescriptor {
     };
 }
 
-pub fn initBindingResource(buffer: types.WGPUBuffer, offset: u64, size: u64) BindingResource {
+pub fn initBindingResource(buffer: abi_base.WGPUBuffer, offset: u64, size: u64) BindingResource {
     return .{
         .nextInChain = null,
         .buffer = buffer,
@@ -106,28 +106,28 @@ pub fn isResourceTableReady(procs: ResourceTableProcs) bool {
         procs.resource_table_release != null;
 }
 
-pub fn setComputeResourceTable(procs: ResourceTableProcs, compute_pass: types.WGPUComputePassEncoder, table: WGPUResourceTable) void {
+pub fn setComputeResourceTable(procs: ResourceTableProcs, compute_pass: abi_base.WGPUComputePassEncoder, table: WGPUResourceTable) void {
     if (compute_pass == null) return;
     if (procs.compute_pass_encoder_set_resource_table) |set_table| {
         set_table(compute_pass, table);
     }
 }
 
-pub fn setComputeImmediates(procs: ResourceTableProcs, compute_pass: types.WGPUComputePassEncoder, offset: u32, data: ?*const anyopaque, size: usize) void {
+pub fn setComputeImmediates(procs: ResourceTableProcs, compute_pass: abi_base.WGPUComputePassEncoder, offset: u32, data: ?*const anyopaque, size: usize) void {
     if (compute_pass == null) return;
     if (procs.compute_pass_encoder_set_immediates) |set_immediates| {
         set_immediates(compute_pass, offset, data, size);
     }
 }
 
-pub fn setRenderPassResourceTable(procs: ResourceTableProcs, render_pass: types.WGPURenderPassEncoder, table: WGPUResourceTable) void {
+pub fn setRenderPassResourceTable(procs: ResourceTableProcs, render_pass: abi_base.WGPURenderPassEncoder, table: WGPUResourceTable) void {
     if (render_pass == null) return;
     if (procs.render_pass_encoder_set_resource_table) |set_table| {
         set_table(render_pass, table);
     }
 }
 
-pub fn setRenderPassImmediates(procs: ResourceTableProcs, render_pass: types.WGPURenderPassEncoder, offset: u32, data: ?*const anyopaque, size: usize) void {
+pub fn setRenderPassImmediates(procs: ResourceTableProcs, render_pass: abi_base.WGPURenderPassEncoder, offset: u32, data: ?*const anyopaque, size: usize) void {
     if (render_pass == null) return;
     if (procs.render_pass_encoder_set_immediates) |set_immediates| {
         set_immediates(render_pass, offset, data, size);

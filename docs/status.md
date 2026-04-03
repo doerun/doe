@@ -1,4 +1,94 @@
 # Doe status
+## Surface compatibility barrel split into texture, surface-control, and async contracts (2026-04-03 UTC)
+
+- New narrow model contracts:
+  - `runtime/zig/src/model_texture_types.zig`
+  - `runtime/zig/src/model_surface_control_types.zig`
+  - `runtime/zig/src/model_async_types.zig`
+- Texture execution paths, surface lifecycle paths, async-diagnostics lanes, map-async callers, command partitions, parser helpers, and backend facades/runtime modules now import those narrow contracts directly instead of depending on `runtime/zig/src/model_surface_types.zig`
+- `runtime/zig/src/model_surface_types.zig` is now a compatibility barrel over the split texture/surface-control/async modules
+- `runtime/zig/tools/check_core_import_fence.py` now rejects any new direct implementation import of `model_surface_types.zig`; `runtime/zig/src/core/abi/mod.zig` remains the single export-surface exception
+
+## Compatibility model transfer barrel fully removed from implementation imports (2026-04-03 UTC)
+
+- `runtime/zig/src/model_surface_types.zig`, `runtime/zig/src/model_runtime_types.zig`, and `runtime/zig/src/model_webgpu_types.zig` now import `model_gpu_types.zig`, `model_resource_types.zig`, and `model_compute_types.zig` directly instead of depending on `model_transfer_types.zig`
+- `runtime/zig/src/model.zig` now tests against `model_gpu_types.zig` directly
+- `runtime/zig/tools/check_core_import_fence.py` now rejects any new direct implementation import of `model_transfer_types.zig`; `runtime/zig/src/core/abi/mod.zig` remains the single export-surface exception
+
+## Transfer payloads split into resource and compute contracts; compatibility barrel is now effectively cold (2026-04-03 UTC)
+
+- New narrow model contracts:
+  - `runtime/zig/src/model_resource_types.zig`
+  - `runtime/zig/src/model_compute_types.zig`
+- Central command unions, backend facades, parser/front-door modules, render helpers, and core resource/compute paths now import `model_resource_types.zig`, `model_compute_types.zig`, and `model_gpu_types.zig` directly instead of depending on `model_transfer_types.zig`
+- The only remaining direct imports of `runtime/zig/src/model_transfer_types.zig` are compatibility/export barrels:
+  - `runtime/zig/src/core/abi/mod.zig`
+  - `runtime/zig/src/model.zig`
+  - `runtime/zig/src/model_runtime_types.zig`
+  - `runtime/zig/src/model_surface_types.zig`
+  - `runtime/zig/src/model_webgpu_types.zig`
+- `runtime/zig/src/model_transfer_types.zig` is now a compatibility barrel over `model_gpu_types.zig`, `model_resource_types.zig`, and `model_compute_types.zig`
+
+## GPU value/constants contract split away from transfer payload callers (2026-04-03 UTC)
+
+- New narrow model contract: `runtime/zig/src/model_gpu_types.zig`
+- Value-only callers that only need WebGPU formats, dimensions, usages, binding enums, or shader-stage flags now import `model_gpu_types.zig` instead of `model_transfer_types.zig`
+- `runtime/zig/src/model_transfer_types.zig` remains the transfer/dispatch/binding payload contract for callers that actually need command structs such as `CopyCommand`, `KernelBinding`, or `KernelDispatchCommand`
+- `runtime/zig/src/core/abi/mod.zig`, `runtime/zig/README.md`, `runtime/zig/STYLE.md`, and `AGENTS.md` now document that split so future callers do not drift back to the broader transfer contract by default
+
+## Combined ABI barrel narrowed to proc/state-heavy callers (2026-04-03 UTC)
+
+- Implementation files that only need WebGPU handles, descriptors, or execution-result types now import `wgpu_base_types.zig`, `wgpu_descriptor_types.zig`, and `wgpu_execution_types.zig` directly instead of routing through `wgpu_runtime_abi.zig`
+- `runtime/zig/src/wgpu_types_procs.zig` still depends on `wgpu_proc_types.zig`, keeping proc typedefs out of the main ABI barrel cycle while preserving the existing public/export surfaces
+- The remaining direct imports of `wgpu_runtime_abi.zig` are concentrated in callers that still need runtime-owned state structs, proc aliases, or compatibility/export barrels
+
+## Combined model barrel is now compatibility-only and ABI proc typedefs no longer cycle through the runtime ABI barrel (2026-04-03 UTC)
+
+- Implementation files under `runtime/zig/src` now import `model_transfer_types.zig`, `model_render_types.zig`, and `model_surface_types.zig` directly instead of using `model_runtime_types.zig` as a catch-all barrel
+- `runtime/zig/src/core/abi/mod.zig` remains the single export-surface exception that re-exports `model_runtime_types.zig` and `model_webgpu_types.zig` for compatibility
+- `runtime/zig/tools/check_core_import_fence.py` now rejects any new direct import of `model_runtime_types.zig` inside `runtime/zig/src` outside that explicit `core/abi/mod.zig` exception
+- New proc-type shard: `runtime/zig/src/core/abi/wgpu_proc_types.zig`
+- `runtime/zig/src/wgpu_types_procs.zig` now depends on `wgpu_proc_types.zig` instead of `wgpu_runtime_abi.zig`, removing the small ABI proc typedef cycle from the main runtime ABI barrel
+
+## Compatibility facades are now fully cold inside runtime/zig/src (2026-04-03 UTC)
+
+- `runtime/zig/src/model.zig` now tests against `runtime/zig/src/model_transfer_types.zig` directly instead of importing the `model_webgpu_types.zig` compatibility barrel
+- `runtime/zig/src/core/abi/mod.zig` and `runtime/zig/src/core/mod.zig` now route their legacy `model_webgpu_types` and `wgpu_types` export names to the internal shard barrels rather than importing the compatibility facade files
+- There are no remaining `@import(...)` sites for `model_webgpu_types.zig`, `wgpu_types.zig`, `webgpu_ffi.zig`, or `model.zig` anywhere under `runtime/zig/src`
+- `runtime/zig/tools/check_core_import_fence.py` now rejects any reintroduction of those compatibility facades into implementation code without exceptions
+
+## Runtime implementation retargeted to split model and WebGPU ABI shards (2026-04-03 UTC)
+
+- `runtime/zig/src/model_transfer_types.zig`, `runtime/zig/src/model_render_types.zig`, and `runtime/zig/src/model_surface_types.zig` now hold the actual command payload/value definitions that used to live only in `runtime/zig/src/model_webgpu_types.zig`
+- `runtime/zig/src/model_runtime_types.zig` is now the internal runtime-facing barrel for those split model shards; implementation modules no longer import `model_webgpu_types.zig` directly
+- `runtime/zig/src/core/abi/wgpu_base_types.zig` and `runtime/zig/src/core/abi/wgpu_descriptor_types.zig` now hold the concrete WebGPU handle/enum/descriptor definitions that used to be monolithic in `runtime/zig/src/core/abi/wgpu_types.zig`
+- `runtime/zig/src/core/abi/wgpu_runtime_abi.zig` is now the internal runtime-facing ABI barrel; implementation modules no longer import `wgpu_types.zig` directly
+- `runtime/zig/src/model_webgpu_types.zig` and `runtime/zig/src/core/abi/wgpu_types.zig` remain as thin compatibility barrels only
+- `runtime/zig/tools/check_core_import_fence.py` now treats direct imports of the compatibility facades as violations outside the explicit compatibility/export allowlist
+
+## WebGPU backend state, lifecycle, and support helpers split out of the root runtime file (2026-04-03 UTC)
+
+- `runtime/zig/src/webgpu_backend.zig` is no longer the single owner of both backend state declarations and lifecycle/support behavior
+- New state-contract module: `runtime/zig/src/webgpu_backend_types.zig`
+  - owns `ManagedSurface`, `CoreWebGPUBackend`, and `FullWebGPUBackendState`
+- New lifecycle/bootstrap helper module: `runtime/zig/src/webgpu_backend_lifecycle.zig`
+  - owns deinit, adapter/device request, limit capture, backend-type naming, and timestamp logging helpers
+- New pure support helper module: `runtime/zig/src/webgpu_backend_support.zig`
+  - owns capability-introspection routing, queue/timestamp mode setters, uncaptured-error helpers, effective-limit selection, and full-render texture-view eviction
+- `runtime/zig/src/webgpu_backend.zig` now stays focused on `WebGPUBackend` assembly, command/prewarm delegation, and compatibility re-exports for the extracted backend modules above
+
+## Model contract and WebGPU ABI shards decoupled from root hubs (2026-04-02 UTC)
+
+- `runtime/zig/src/model.zig` is no longer used as an internal catch-all contract barrel; internal callers now import the narrower split modules directly:
+  - `runtime/zig/src/model_policy.zig`
+  - `runtime/zig/src/model_profile.zig`
+  - `runtime/zig/src/model_quirks.zig`
+  - `runtime/zig/src/model_commands.zig`
+  - `runtime/zig/src/model_webgpu_types.zig`
+- `runtime/zig/src/core/abi/wgpu_execution_types.zig` now owns `NativeExecutionStatus` and `NativeExecutionResult`, removing those execution-result types from `wgpu_types.zig` as the source of truth
+- `runtime/zig/src/core/abi/wgpu_state_types.zig` now owns queue/map/kernel-source/backend-state helper structs, with `wgpu_types.zig` retaining compatibility re-exports
+- queue sync/capture, kernel-source resolution, and WebGPU backend state now consume the extracted ABI shards directly instead of treating `wgpu_types.zig` as the only entry point
+
 ## WebGPU backend implementation moved behind a thin root facade (2026-04-02 UTC)
 
 - New implementation owner: `runtime/zig/src/webgpu_backend.zig` now holds the `WebGPUBackend` implementation and shared backend state structs

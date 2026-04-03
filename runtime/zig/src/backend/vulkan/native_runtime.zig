@@ -9,7 +9,11 @@
 //   vk_render     — render pass, graphics pipeline, and draw call execution
 
 const std = @import("std");
-const model = @import("../../model_webgpu_types.zig");
+const model_compute_types = @import("../../model_compute_types.zig");
+const model_gpu_types = @import("../../model_gpu_types.zig");
+const model_render_types = @import("../../model_render_types.zig");
+const model_texture_types = @import("../../model_texture_types.zig");
+const model_surface_control_types = @import("../../model_surface_control_types.zig");
 const backend_policy = @import("../backend_policy.zig");
 const common_errors = @import("../common/errors.zig");
 const common_timing = @import("../common/timing.zig");
@@ -191,7 +195,7 @@ pub const NativeVulkanRuntime = struct {
         self: *NativeVulkanRuntime,
         words: []const u32,
         entry_point: ?[]const u8,
-        bindings: ?[]const model.KernelBinding,
+        bindings: ?[]const model_compute_types.KernelBinding,
         initialize_buffers_on_create: bool,
     ) !void {
         return vk_pipeline.set_compute_shader_spirv(self, words, entry_point, bindings, initialize_buffers_on_create);
@@ -474,7 +478,7 @@ pub const NativeVulkanRuntime = struct {
 
     // --- Render ---
 
-    pub fn run_render_draw(self: *NativeVulkanRuntime, cmd: model.RenderDrawCommand) !DispatchMetrics {
+    pub fn run_render_draw(self: *NativeVulkanRuntime, cmd: model_render_types.RenderDrawCommand) !DispatchMetrics {
         return vk_render.execute_render_draw(self, cmd);
     }
 
@@ -597,7 +601,7 @@ pub const NativeVulkanRuntime = struct {
     pub fn pixel_local_storage_probe(
         self: *NativeVulkanRuntime,
         iterations: u32,
-        target_format: model.WGPUTextureFormat,
+        target_format: model_gpu_types.WGPUTextureFormat,
     ) !vk_async_probes.AsyncProbeResult {
         return vk_async_probes.pixel_local_storage_probe(self, iterations, target_format);
     }
@@ -618,7 +622,7 @@ pub const NativeVulkanRuntime = struct {
 
     // --- Texture commands (delegated to vk_texture_commands.zig) ---
 
-    pub fn texture_write(self: *NativeVulkanRuntime, cmd_arg: model.TextureWriteCommand) !void {
+    pub fn texture_write(self: *NativeVulkanRuntime, cmd_arg: model_texture_types.TextureWriteCommand) !void {
         return vk_texture_commands.texture_write(self, cmd_arg);
     }
     pub fn texture_read(self: *NativeVulkanRuntime, args: anytype) !void {
@@ -627,16 +631,16 @@ pub const NativeVulkanRuntime = struct {
     pub fn texture_copy(self: *NativeVulkanRuntime, args: anytype) !void {
         return vk_texture_commands.texture_copy(self, .{ .src_handle = args.src_handle, .src_mip = args.src_mip, .src_x = args.src_x, .src_y = args.src_y, .src_z = args.src_z, .dst_handle = args.dst_handle, .dst_mip = args.dst_mip, .dst_x = args.dst_x, .dst_y = args.dst_y, .dst_z = args.dst_z, .width = args.width, .height = args.height, .depth_or_layers = args.depth_or_layers });
     }
-    pub fn texture_query(self: *NativeVulkanRuntime, cmd_arg: model.TextureQueryCommand) !void {
+    pub fn texture_query(self: *NativeVulkanRuntime, cmd_arg: model_texture_types.TextureQueryCommand) !void {
         return vk_texture_commands.texture_query(self, cmd_arg);
     }
-    pub fn texture_destroy(self: *NativeVulkanRuntime, cmd_arg: model.TextureDestroyCommand) !void {
+    pub fn texture_destroy(self: *NativeVulkanRuntime, cmd_arg: model_texture_types.TextureDestroyCommand) !void {
         return vk_texture_commands.texture_destroy(self, cmd_arg);
     }
-    pub fn sampler_create(self: *NativeVulkanRuntime, cmd: model.SamplerCreateCommand) !void {
+    pub fn sampler_create(self: *NativeVulkanRuntime, cmd: model_render_types.SamplerCreateCommand) !void {
         return vk_texture_commands.sampler_create(self, cmd);
     }
-    pub fn sampler_destroy(self: *NativeVulkanRuntime, cmd: model.SamplerDestroyCommand) !void {
+    pub fn sampler_destroy(self: *NativeVulkanRuntime, cmd: model_render_types.SamplerDestroyCommand) !void {
         return vk_texture_commands.sampler_destroy(self, cmd);
     }
 
@@ -662,7 +666,7 @@ pub const NativeVulkanRuntime = struct {
         }
     }
 
-    pub fn preferred_canvas_format(self: *NativeVulkanRuntime) model.WGPUTextureFormat {
+    pub fn preferred_canvas_format(self: *NativeVulkanRuntime) model_gpu_types.WGPUTextureFormat {
         var it = self.surfaces.valueIterator();
         while (it.next()) |surface| {
             if (!surface.capabilities_queried or surface.cached_capabilities.format_count == 0) continue;
@@ -670,10 +674,10 @@ pub const NativeVulkanRuntime = struct {
                 surface.cached_capabilities.formats[0..@as(usize, surface.cached_capabilities.format_count)],
             );
         }
-        return model.WGPUTextureFormat_BGRA8Unorm;
+        return model_gpu_types.WGPUTextureFormat_BGRA8Unorm;
     }
 
-    pub fn configure_surface(self: *NativeVulkanRuntime, cmd_arg: model.SurfaceConfigureCommand) !void {
+    pub fn configure_surface(self: *NativeVulkanRuntime, cmd_arg: model_surface_control_types.SurfaceConfigureCommand) !void {
         if (cmd_arg.width == 0 or cmd_arg.height == 0) return error.InvalidArgument;
         const surface = self.surfaces.getPtr(cmd_arg.handle) orelse return error.SurfaceUnavailable;
         if (surface.vk_surface == 0) return error.SurfaceUnavailable;
@@ -687,10 +691,10 @@ pub const NativeVulkanRuntime = struct {
         surface.height = cmd_arg.height;
         surface.requested_format = if (cmd_arg.format == 0) self.preferred_canvas_format() else cmd_arg.format;
         surface.format = surface.requested_format;
-        surface.usage = if (cmd_arg.usage == 0) model.WGPUTextureUsage_RenderAttachment else cmd_arg.usage;
+        surface.usage = if (cmd_arg.usage == 0) model_gpu_types.WGPUTextureUsage_RenderAttachment else cmd_arg.usage;
         surface.alpha_mode = if (cmd_arg.alpha_mode == 0) c.VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR else cmd_arg.alpha_mode;
         surface.present_mode = if (cmd_arg.present_mode == 0) c.VK_PRESENT_MODE_FIFO_KHR else cmd_arg.present_mode;
-        surface.tone_mapping_mode = if (cmd_arg.tone_mapping_mode == 0) model.WGPUCanvasToneMappingMode_Standard else cmd_arg.tone_mapping_mode;
+        surface.tone_mapping_mode = if (cmd_arg.tone_mapping_mode == 0) model_surface_control_types.WGPUCanvasToneMappingMode_Standard else cmd_arg.tone_mapping_mode;
         surface.desired_maximum_frame_latency = if (cmd_arg.desired_maximum_frame_latency == 0) c.DEFAULT_SURFACE_MAX_FRAME_LATENCY else cmd_arg.desired_maximum_frame_latency;
         try self.get_surface_capabilities(cmd_arg.handle);
         try vulkan_surface.create_swapchain(

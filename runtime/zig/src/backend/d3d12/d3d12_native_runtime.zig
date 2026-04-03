@@ -4,7 +4,13 @@ const common_timing = @import("../common/timing.zig");
 const common_errors = @import("../common/errors.zig");
 const path_utils = @import("../common/path_utils.zig");
 const webgpu = @import("../runtime_types.zig");
-const model = @import("../../model_webgpu_types.zig");
+const abi_descriptor = @import("../../core/abi/wgpu_descriptor_types.zig");
+const model_resource_types = @import("../../model_resource_types.zig");
+const model_compute_types = @import("../../model_compute_types.zig");
+const model_render_types = @import("../../model_render_types.zig");
+const model_texture_types = @import("../../model_texture_types.zig");
+const model_surface_control_types = @import("../../model_surface_control_types.zig");
+const model_async_types = @import("../../model_async_types.zig");
 const doe_wgsl = @import("../../doe_wgsl/mod.zig");
 const hlsl_dispatch_contract = @import("../../doe_wgsl/hlsl_dispatch_contract.zig");
 
@@ -334,35 +340,35 @@ pub const NativeD3D12Runtime = struct {
 
     // --- Forwarding to sub-modules ---
 
-    pub fn texture_write(self: *NativeD3D12Runtime, cmd: model.TextureWriteCommand) !u64 {
+    pub fn texture_write(self: *NativeD3D12Runtime, cmd: model_texture_types.TextureWriteCommand) !u64 {
         return d3d12_texture.texture_write(self.device, self.queue, &self.texture_map, self.allocator, cmd);
     }
 
-    pub fn texture_query(self: *const NativeD3D12Runtime, cmd: model.TextureQueryCommand) !u64 {
+    pub fn texture_query(self: *const NativeD3D12Runtime, cmd: model_texture_types.TextureQueryCommand) !u64 {
         return d3d12_texture.texture_query(&self.texture_map, cmd);
     }
 
-    pub fn texture_destroy(self: *NativeD3D12Runtime, cmd: model.TextureDestroyCommand) !u64 {
+    pub fn texture_destroy(self: *NativeD3D12Runtime, cmd: model_texture_types.TextureDestroyCommand) !u64 {
         return d3d12_texture.texture_destroy(&self.texture_map, cmd);
     }
 
-    pub fn sampler_create(self: *NativeD3D12Runtime, cmd: model.SamplerCreateCommand) !u64 {
+    pub fn sampler_create(self: *NativeD3D12Runtime, cmd: model_render_types.SamplerCreateCommand) !u64 {
         return self.sampler_state.sampler_create(self.device, self.allocator, cmd);
     }
 
-    pub fn sampler_destroy(self: *NativeD3D12Runtime, cmd: model.SamplerDestroyCommand) !u64 {
+    pub fn sampler_destroy(self: *NativeD3D12Runtime, cmd: model_render_types.SamplerDestroyCommand) !u64 {
         return self.sampler_state.sampler_destroy(cmd);
     }
 
-    pub fn execute_compute_dispatch(self: *NativeD3D12Runtime, cmd: model.DispatchCommand) !d3d12_dispatch.DispatchMetrics {
+    pub fn execute_compute_dispatch(self: *NativeD3D12Runtime, cmd: model_compute_types.DispatchCommand) !d3d12_dispatch.DispatchMetrics {
         return self.dispatch_state.execute_dispatch(self.device, self.queue, self.fence, &self.fence_value, cmd);
     }
 
-    pub fn execute_dispatch_indirect(self: *NativeD3D12Runtime, cmd: model.DispatchIndirectCommand) !d3d12_dispatch.DispatchMetrics {
+    pub fn execute_dispatch_indirect(self: *NativeD3D12Runtime, cmd: model_compute_types.DispatchIndirectCommand) !d3d12_dispatch.DispatchMetrics {
         return self.dispatch_state.execute_dispatch_indirect(self.device, self.queue, self.fence, &self.fence_value, cmd);
     }
 
-    pub fn execute_copy(self: *NativeD3D12Runtime, cmd: model.CopyCommand, queue_sync_mode: webgpu.QueueSyncMode) !d3d12_streaming_copy.CopyMetrics {
+    pub fn execute_copy(self: *NativeD3D12Runtime, cmd: model_resource_types.CopyCommand, queue_sync_mode: webgpu.QueueSyncMode) !d3d12_streaming_copy.CopyMetrics {
         var metrics = try self.streaming_copy_state.record_copy(self.device, &self.texture_map, self.allocator, cmd);
         self.has_deferred_submissions = true;
         if (queue_sync_mode == .per_command) {
@@ -372,7 +378,7 @@ pub const NativeD3D12Runtime = struct {
         return metrics;
     }
 
-    pub fn execute_render_draw(self: *NativeD3D12Runtime, cmd: model.RenderDrawCommand, is_indirect: bool, is_indexed_indirect: bool) !d3d12_render.RenderMetrics {
+    pub fn execute_render_draw(self: *NativeD3D12Runtime, cmd: model_render_types.RenderDrawCommand, is_indirect: bool, is_indexed_indirect: bool) !d3d12_render.RenderMetrics {
         return self.render_state.execute_render_draw(self.device, self.queue, self.fence, &self.fence_value, cmd, is_indirect, is_indexed_indirect, &self.descriptor_state);
     }
 
@@ -389,39 +395,39 @@ pub const NativeD3D12Runtime = struct {
         return self.render_state.execute_render_bundles(self.device, self.queue, self.fence, &self.fence_value, bundles, target_width, target_height, color_format, sample_count);
     }
 
-    pub fn surface_create(self: *NativeD3D12Runtime, cmd: model.SurfaceCreateCommand) !u64 {
+    pub fn surface_create(self: *NativeD3D12Runtime, cmd: model_surface_control_types.SurfaceCreateCommand) !u64 {
         return self.surface_state.create_surface(self.allocator, cmd);
     }
 
-    pub fn surface_capabilities(self: *NativeD3D12Runtime, cmd: model.SurfaceCapabilitiesCommand) !u64 {
+    pub fn surface_capabilities(self: *NativeD3D12Runtime, cmd: model_surface_control_types.SurfaceCapabilitiesCommand) !u64 {
         return self.surface_state.surface_capabilities(self.allocator, cmd);
     }
 
-    pub fn surface_configure(self: *NativeD3D12Runtime, cmd: model.SurfaceConfigureCommand) !u64 {
+    pub fn surface_configure(self: *NativeD3D12Runtime, cmd: model_surface_control_types.SurfaceConfigureCommand) !u64 {
         return self.surface_state.configure_surface(self.device, self.queue, self.allocator, cmd);
     }
 
-    pub fn surface_acquire(self: *NativeD3D12Runtime, cmd: model.SurfaceAcquireCommand) !u64 {
+    pub fn surface_acquire(self: *NativeD3D12Runtime, cmd: model_surface_control_types.SurfaceAcquireCommand) !u64 {
         return self.surface_state.acquire_surface(self.allocator, cmd);
     }
 
-    pub fn surface_present(self: *NativeD3D12Runtime, cmd: model.SurfacePresentCommand) !u64 {
+    pub fn surface_present(self: *NativeD3D12Runtime, cmd: model_surface_control_types.SurfacePresentCommand) !u64 {
         return self.surface_state.present_surface(cmd);
     }
 
-    pub fn surface_unconfigure(self: *NativeD3D12Runtime, cmd: model.SurfaceUnconfigureCommand) !u64 {
+    pub fn surface_unconfigure(self: *NativeD3D12Runtime, cmd: model_surface_control_types.SurfaceUnconfigureCommand) !u64 {
         return self.surface_state.unconfigure_surface(self.allocator, cmd);
     }
 
-    pub fn surface_release(self: *NativeD3D12Runtime, cmd: model.SurfaceReleaseCommand) !u64 {
+    pub fn surface_release(self: *NativeD3D12Runtime, cmd: model_surface_control_types.SurfaceReleaseCommand) !u64 {
         return self.surface_state.release_surface(cmd);
     }
 
-    pub fn execute_async_diagnostics(self: *NativeD3D12Runtime, cmd: model.AsyncDiagnosticsCommand) !d3d12_async.AsyncDiagnosticsMetrics {
+    pub fn execute_async_diagnostics(self: *NativeD3D12Runtime, cmd: model_async_types.AsyncDiagnosticsCommand) !d3d12_async.AsyncDiagnosticsMetrics {
         return d3d12_async.execute_async_diagnostics(self.device, cmd);
     }
 
-    pub fn execute_map_async(self: *NativeD3D12Runtime, cmd: model.MapAsyncCommand) !u64 {
+    pub fn execute_map_async(self: *NativeD3D12Runtime, cmd: model_async_types.MapAsyncCommand) !u64 {
         return d3d12_map.execute_map_async(self.device, cmd);
     }
 
@@ -444,7 +450,7 @@ pub const NativeD3D12Runtime = struct {
         return d3d12_device_caps.d3d12_device_has_feature(feature);
     }
 
-    pub fn get_limits(self: *const NativeD3D12Runtime, limits: *@import("../../core/abi/wgpu_types.zig").WGPULimits) void {
+    pub fn get_limits(self: *const NativeD3D12Runtime, limits: *abi_descriptor.WGPULimits) void {
         _ = self;
         d3d12_device_caps.d3d12_device_get_limits(limits);
     }

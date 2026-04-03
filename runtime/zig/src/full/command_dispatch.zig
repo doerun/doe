@@ -1,5 +1,5 @@
 const model = @import("../model_commands.zig");
-const types = @import("../core/abi/wgpu_types.zig");
+const runtime_types = @import("../backend/runtime_types.zig");
 const render_commands = @import("render/wgpu_render_commands.zig");
 const sampler_commands = @import("render/wgpu_sampler_commands.zig");
 const surface_commands = @import("surface/wgpu_surface_commands.zig");
@@ -7,7 +7,7 @@ const async_diagnostics_command = @import("lifecycle/wgpu_async_diagnostics_comm
 const ffi = @import("../webgpu_backend.zig");
 const Backend = ffi.WebGPUBackend;
 
-pub fn execute(self: *Backend, command: model.Command) !?types.NativeExecutionResult {
+pub fn execute(self: *Backend, command: model.Command) !?runtime_types.NativeExecutionResult {
     const full_command = model.as_full_command(command) orelse return null;
     return switch (full_command) {
         .render_draw => |payload| try render_commands.executeRenderDraw(self, payload),

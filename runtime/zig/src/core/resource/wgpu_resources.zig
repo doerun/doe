@@ -1,6 +1,10 @@
 const std = @import("std");
-const model = @import("../../model_webgpu_types.zig");
-const types = @import("../abi/wgpu_types.zig");
+const model_resource_types = @import("../../model_resource_types.zig");
+const model_compute_types = @import("../../model_compute_types.zig");
+const model_gpu_types = @import("../../model_gpu_types.zig");
+const abi_base = @import("../abi/wgpu_base_types.zig");
+const abi_descriptor = @import("../abi/wgpu_descriptor_types.zig");
+const abi_records = @import("../abi/wgpu_runtime_records.zig");
 const normalizers = @import("wgpu_resource_normalizers.zig");
 const loader = @import("../abi/wgpu_loader.zig");
 const p0_procs_mod = @import("../../wgpu_p0_procs.zig");
@@ -10,7 +14,7 @@ const Backend = ffi.WebGPUBackend;
 const BUFFER_ZERO_INIT_CHUNK_BYTES: usize = 64 * 1024;
 const BUFFER_MIN_ALIGNMENT: u64 = 4;
 
-pub fn normalizeTextureFormat(value: u32) types.WGPUTextureFormat {
+pub fn normalizeTextureFormat(value: u32) abi_base.WGPUTextureFormat {
     return normalizers.normalizeTextureFormat(value);
 }
 
@@ -18,8 +22,8 @@ pub fn getOrCreateBuffer(
     self: *Backend,
     handle: u64,
     requested_size: u64,
-    required_usage: types.WGPUBufferUsage,
-) !types.WGPUBuffer {
+    required_usage: abi_base.WGPUBufferUsage,
+) !abi_base.WGPUBuffer {
     return getOrCreateBufferWithOptions(self, handle, requested_size, required_usage, false);
 }
 
@@ -27,8 +31,8 @@ pub fn getOrCreateBufferInitialized(
     self: *Backend,
     handle: u64,
     requested_size: u64,
-    required_usage: types.WGPUBufferUsage,
-) !types.WGPUBuffer {
+    required_usage: abi_base.WGPUBufferUsage,
+) !abi_base.WGPUBuffer {
     return getOrCreateBufferWithOptions(self, handle, requested_size, required_usage, true);
 }
 
@@ -36,9 +40,9 @@ fn getOrCreateBufferWithOptions(
     self: *Backend,
     handle: u64,
     requested_size: u64,
-    required_usage: types.WGPUBufferUsage,
+    required_usage: abi_base.WGPUBufferUsage,
     initialize_on_create: bool,
-) !types.WGPUBuffer {
+) !abi_base.WGPUBuffer {
     const procs = self.core.procs orelse return error.ProceduralNotReady;
     const p0_procs = p0_procs_mod.loadP0Procs(self.core.dyn_lib);
 
@@ -52,12 +56,12 @@ fn getOrCreateBufferWithOptions(
 
     const size = loader.alignTo(requested_size, BUFFER_MIN_ALIGNMENT);
 
-    const desc = types.WGPUBufferDescriptor{
+    const desc = abi_descriptor.WGPUBufferDescriptor{
         .nextInChain = null,
         .label = loader.emptyStringView(),
         .usage = required_usage,
         .size = size,
-        .mappedAtCreation = types.WGPU_FALSE,
+        .mappedAtCreation = abi_base.WGPU_FALSE,
     };
     const buffer = procs.wgpuDeviceCreateBuffer(self.core.device.?, &desc);
     if (buffer == null) {
@@ -75,7 +79,7 @@ fn getOrCreateBufferWithOptions(
     return buffer;
 }
 
-fn zeroInitializeBuffer(self: *Backend, buffer: types.WGPUBuffer, size: u64) !void {
+fn zeroInitializeBuffer(self: *Backend, buffer: abi_base.WGPUBuffer, size: u64) !void {
     if (size == 0) return;
     const procs = self.core.procs orelse return error.ProceduralNotReady;
     const queue = self.core.queue orelse return error.ProceduralNotReady;
@@ -114,20 +118,20 @@ pub fn requiredBytes(bytes: u64, offset: u64) !u64 {
     return loader.alignTo(checked, 4);
 }
 
-pub fn getOrCreateTexture(self: *Backend, resource: model.CopyTextureResource, required_usage: types.WGPUTextureUsage) !types.WGPUTexture {
+pub fn getOrCreateTexture(self: *Backend, resource: model_resource_types.CopyTextureResource, required_usage: abi_base.WGPUTextureUsage) !abi_base.WGPUTexture {
     return getOrCreateTextureWithOptions(self, resource, required_usage, false);
 }
 
-pub fn getOrCreateTextureInitialized(self: *Backend, resource: model.CopyTextureResource, required_usage: types.WGPUTextureUsage) !types.WGPUTexture {
+pub fn getOrCreateTextureInitialized(self: *Backend, resource: model_resource_types.CopyTextureResource, required_usage: abi_base.WGPUTextureUsage) !abi_base.WGPUTexture {
     return getOrCreateTextureWithOptions(self, resource, required_usage, true);
 }
 
 fn getOrCreateTextureWithOptions(
     self: *Backend,
-    resource: model.CopyTextureResource,
-    required_usage: types.WGPUTextureUsage,
+    resource: model_resource_types.CopyTextureResource,
+    required_usage: abi_base.WGPUTextureUsage,
     initialize_on_create: bool,
-) !types.WGPUTexture {
+) !abi_base.WGPUTexture {
     if (resource.kind != .texture) return error.InvalidTextureResourceKind;
     const procs = self.core.procs orelse return error.ProceduralNotReady;
 
@@ -136,12 +140,12 @@ fn getOrCreateTextureWithOptions(
     const height = if (resource.height == 0) 1 else resource.height;
     const depth = if (resource.depth_or_array_layers == 0) 1 else resource.depth_or_array_layers;
     const sample_count = if (resource.sample_count == 0) 1 else resource.sample_count;
-    const dimension = if (resource.dimension == model.WGPUTextureDimension_Undefined or resource.dimension == 0)
-        types.WGPUTextureDimension_2D
+    const dimension = if (resource.dimension == model_gpu_types.WGPUTextureDimension_Undefined or resource.dimension == 0)
+        abi_base.WGPUTextureDimension_2D
     else
         resource.dimension;
     const raw_format = normalizers.normalizeTextureFormat(resource.format);
-    const format = if (raw_format == types.WGPUTextureFormat_Undefined) types.WGPUTextureFormat_R8Unorm else raw_format;
+    const format = if (raw_format == abi_base.WGPUTextureFormat_Undefined) abi_base.WGPUTextureFormat_R8Unorm else raw_format;
     const usage = required_usage | resource.usage;
 
     if (self.core.textures.get(handle)) |existing| {
@@ -161,7 +165,7 @@ fn getOrCreateTextureWithOptions(
         _ = self.core.textures.remove(handle);
     }
 
-    const descriptor = types.WGPUTextureDescriptor{
+    const descriptor = abi_descriptor.WGPUTextureDescriptor{
         .nextInChain = null,
         .label = loader.emptyStringView(),
         .usage = usage,
@@ -217,8 +221,8 @@ fn getOrCreateTextureWithOptions(
 
 fn zeroInitializeTexture(
     self: *Backend,
-    texture: types.WGPUTexture,
-    resource: model.CopyTextureResource,
+    texture: abi_base.WGPUTexture,
+    resource: model_resource_types.CopyTextureResource,
 ) !void {
     const texture_procs = texture_procs_mod.loadTextureProcs(self.core.dyn_lib) orelse return error.TextureProcUnavailable;
     const queue = self.core.queue orelse return error.ProceduralNotReady;
@@ -239,7 +243,7 @@ fn zeroInitializeTexture(
 
     texture_procs.queue_write_texture(
         queue,
-        &types.WGPUTexelCopyTextureInfo{
+        &abi_descriptor.WGPUTexelCopyTextureInfo{
             .texture = texture,
             .mipLevel = resource.mip_level,
             .origin = .{ .x = 0, .y = 0, .z = 0 },
@@ -247,12 +251,12 @@ fn zeroInitializeTexture(
         },
         @ptrCast(zero_bytes.ptr),
         zero_bytes.len,
-        &types.WGPUTexelCopyBufferLayout{
+        &abi_descriptor.WGPUTexelCopyBufferLayout{
             .offset = 0,
             .bytesPerRow = bytes_per_row,
             .rowsPerImage = rows_per_image,
         },
-        &types.WGPUExtent3D{
+        &abi_descriptor.WGPUExtent3D{
             .width = width,
             .height = height,
             .depthOrArrayLayers = depth,
@@ -260,7 +264,7 @@ fn zeroInitializeTexture(
     );
 }
 
-pub fn getOrCreateTextureFromBinding(self: *Backend, binding: model.KernelBinding, required_usage: types.WGPUTextureUsage) !types.WGPUTexture {
+pub fn getOrCreateTextureFromBinding(self: *Backend, binding: model_compute_types.KernelBinding, required_usage: abi_base.WGPUTextureUsage) !abi_base.WGPUTexture {
     const procs = self.core.procs orelse return error.ProceduralNotReady;
     const handle = binding.resource_handle;
     const requested_format = normalizers.normalizeTextureFormat(binding.texture_format);
@@ -271,10 +275,10 @@ pub fn getOrCreateTextureFromBinding(self: *Backend, binding: model.KernelBindin
     var fallback_height: u32 = 1;
     var fallback_depth: u32 = 1;
     var fallback_sample_count: u32 = 1;
-    var fallback_usage: types.WGPUTextureUsage = types.WGPUTextureUsage_None;
+    var fallback_usage: abi_base.WGPUTextureUsage = abi_base.WGPUTextureUsage_None;
 
     if (self.core.textures.get(handle)) |existing| {
-        fallback_format = if (requested_format == types.WGPUTextureFormat_Undefined) existing.format else requested_format;
+        fallback_format = if (requested_format == abi_base.WGPUTextureFormat_Undefined) existing.format else requested_format;
         fallback_dimension = existing.dimension;
         fallback_width = existing.width;
         fallback_height = existing.height;
@@ -283,8 +287,8 @@ pub fn getOrCreateTextureFromBinding(self: *Backend, binding: model.KernelBindin
         fallback_usage = existing.usage;
 
         if ((existing.usage & required_usage) == required_usage) {
-            if ((requested_format == types.WGPUTextureFormat_Undefined or requested_format == existing.format) and
-                (requested_dimension == types.WGPUTextureDimension_Undefined or requested_dimension == existing.dimension))
+            if ((requested_format == abi_base.WGPUTextureFormat_Undefined or requested_format == existing.format) and
+                (requested_dimension == abi_base.WGPUTextureDimension_Undefined or requested_dimension == existing.dimension))
             {
                 return existing.texture;
             }
@@ -295,10 +299,10 @@ pub fn getOrCreateTextureFromBinding(self: *Backend, binding: model.KernelBindin
         _ = self.core.textures.remove(handle);
     }
 
-    const dimension = if (requested_dimension == types.WGPUTextureDimension_Undefined) fallback_dimension else requested_dimension;
-    const format = if (fallback_format == types.WGPUTextureFormat_Undefined) types.WGPUTextureFormat_R8Unorm else fallback_format;
+    const dimension = if (requested_dimension == abi_base.WGPUTextureDimension_Undefined) fallback_dimension else requested_dimension;
+    const format = if (fallback_format == abi_base.WGPUTextureFormat_Undefined) abi_base.WGPUTextureFormat_R8Unorm else fallback_format;
     const usage = fallback_usage | required_usage;
-    const resource = model.CopyTextureResource{
+    const resource = model_resource_types.CopyTextureResource{
         .handle = handle,
         .kind = .texture,
         .width = fallback_width,
@@ -318,32 +322,32 @@ pub fn getOrCreateTextureFromBinding(self: *Backend, binding: model.KernelBindin
     return try getOrCreateTexture(self, resource, usage);
 }
 
-pub fn createTextureViewForBinding(self: *Backend, texture: types.WGPUTexture, binding: model.KernelBinding) !types.WGPUTextureView {
+pub fn createTextureViewForBinding(self: *Backend, texture: abi_base.WGPUTexture, binding: model_compute_types.KernelBinding) !abi_base.WGPUTextureView {
     const procs = self.core.procs orelse return error.ProceduralNotReady;
     const format = blk: {
         if (self.core.textures.get(binding.resource_handle)) |record| {
             const normalized = normalizers.normalizeTextureFormat(binding.texture_format);
-            break :blk if (normalized == types.WGPUTextureFormat_Undefined) record.format else normalized;
+            break :blk if (normalized == abi_base.WGPUTextureFormat_Undefined) record.format else normalized;
         }
         const normalized = normalizers.normalizeTextureFormat(binding.texture_format);
-        break :blk if (normalized == types.WGPUTextureFormat_Undefined) types.WGPUTextureFormat_R8Unorm else normalized;
+        break :blk if (normalized == abi_base.WGPUTextureFormat_Undefined) abi_base.WGPUTextureFormat_R8Unorm else normalized;
     };
     const dimension = normalizers.normalizeTextureViewDimension(binding.texture_view_dimension);
-    const descriptor = types.WGPUTextureViewDescriptor{
+    const descriptor = abi_descriptor.WGPUTextureViewDescriptor{
         .nextInChain = null,
         .label = loader.emptyStringView(),
         .format = format,
-        .dimension = if (dimension == types.WGPUTextureViewDimension_Undefined) types.WGPUTextureViewDimension_2D else dimension,
+        .dimension = if (dimension == abi_base.WGPUTextureViewDimension_Undefined) abi_base.WGPUTextureViewDimension_2D else dimension,
         .baseMipLevel = 0,
-        .mipLevelCount = types.WGPU_MIP_LEVEL_COUNT_UNDEFINED,
+        .mipLevelCount = abi_base.WGPU_MIP_LEVEL_COUNT_UNDEFINED,
         .baseArrayLayer = 0,
-        .arrayLayerCount = types.WGPU_ARRAY_LAYER_COUNT_UNDEFINED,
+        .arrayLayerCount = abi_base.WGPU_ARRAY_LAYER_COUNT_UNDEFINED,
         .aspect = loader.normalizeTextureAspect(binding.texture_aspect),
         .usage = 0,
-        .swizzleR = types.WGPUTextureComponentSwizzle_Red,
-        .swizzleG = types.WGPUTextureComponentSwizzle_Green,
-        .swizzleB = types.WGPUTextureComponentSwizzle_Blue,
-        .swizzleA = types.WGPUTextureComponentSwizzle_Alpha,
+        .swizzleR = abi_base.WGPUTextureComponentSwizzle_Red,
+        .swizzleG = abi_base.WGPUTextureComponentSwizzle_Green,
+        .swizzleB = abi_base.WGPUTextureComponentSwizzle_Blue,
+        .swizzleA = abi_base.WGPUTextureComponentSwizzle_Alpha,
     };
 
     const view = procs.wgpuTextureCreateView(texture, &descriptor);
@@ -353,9 +357,9 @@ pub fn createTextureViewForBinding(self: *Backend, texture: types.WGPUTexture, b
 
 pub fn buildDispatchPassGroups(
     self: *Backend,
-    bindings: []const model.KernelBinding,
+    bindings: []const model_compute_types.KernelBinding,
     initialize_buffers_on_create: bool,
-) !types.DispatchPassArtifacts {
+) !abi_records.DispatchPassArtifacts {
     const procs = self.core.procs orelse return error.ProceduralNotReady;
     var max_group: u32 = 0;
     for (bindings) |binding| {
@@ -365,18 +369,18 @@ pub fn buildDispatchPassGroups(
     const group_count_u32 = max_group + 1;
     const group_count = @as(usize, group_count_u32);
 
-    var groups = try self.core.allocator.alloc(types.DispatchPassGroup, group_count);
+    var groups = try self.core.allocator.alloc(abi_records.DispatchPassGroup, group_count);
     for (groups) |*group| {
-        group.layout_entries = std.ArrayList(types.WGPUBindGroupLayoutEntry).empty;
-        group.bind_entries = std.ArrayList(types.WGPUBindGroupEntry).empty;
+        group.layout_entries = std.ArrayList(abi_descriptor.WGPUBindGroupLayoutEntry).empty;
+        group.bind_entries = std.ArrayList(abi_descriptor.WGPUBindGroupEntry).empty;
     }
 
-    var pending_group_layouts = try self.core.allocator.alloc(?types.WGPUBindGroupLayout, group_count);
-    var pass_bind_groups = try self.core.allocator.alloc(?types.WGPUBindGroup, group_count);
+    var pending_group_layouts = try self.core.allocator.alloc(?abi_base.WGPUBindGroupLayout, group_count);
+    var pass_bind_groups = try self.core.allocator.alloc(?abi_base.WGPUBindGroup, group_count);
     for (pending_group_layouts) |*pending| pending.* = null;
     for (pass_bind_groups) |*pending| pending.* = null;
 
-    var texture_views = std.ArrayList(types.WGPUTextureView).empty;
+    var texture_views = std.ArrayList(abi_base.WGPUTextureView).empty;
     var clean_after = true;
     defer {
         if (clean_after) {
@@ -423,7 +427,7 @@ pub fn buildDispatchPassGroups(
         }
     }
 
-    var group_layouts = try self.core.allocator.alloc(types.WGPUBindGroupLayout, group_count);
+    var group_layouts = try self.core.allocator.alloc(abi_base.WGPUBindGroupLayout, group_count);
     for (pending_group_layouts, 0..) |maybe_layout, index| {
         group_layouts[index] = maybe_layout orelse return error.InvalidKernelDispatchBinding;
     }
@@ -444,41 +448,41 @@ pub fn buildDispatchPassGroups(
     };
 }
 
-fn dispatchPassLayoutEntry(binding: model.KernelBinding) types.WGPUBindGroupLayoutEntry {
-    const visibility = if (binding.visibility != 0) binding.visibility else types.WGPUShaderStage_Compute;
-    var layout_entry = types.WGPUBindGroupLayoutEntry{
+fn dispatchPassLayoutEntry(binding: model_compute_types.KernelBinding) abi_descriptor.WGPUBindGroupLayoutEntry {
+    const visibility = if (binding.visibility != 0) binding.visibility else abi_base.WGPUShaderStage_Compute;
+    var layout_entry = abi_descriptor.WGPUBindGroupLayoutEntry{
         .nextInChain = null,
         .binding = binding.binding,
         .visibility = visibility,
         .bindingArraySize = 0,
         .buffer = .{
             .nextInChain = null,
-            .type = types.WGPUBufferBindingType_BindingNotUsed,
-            .hasDynamicOffset = types.WGPU_FALSE,
+            .type = abi_base.WGPUBufferBindingType_BindingNotUsed,
+            .hasDynamicOffset = abi_base.WGPU_FALSE,
             .minBindingSize = 0,
         },
         .sampler = .{
             .nextInChain = null,
-            .type = types.WGPUSamplerBindingType_BindingNotUsed,
+            .type = abi_base.WGPUSamplerBindingType_BindingNotUsed,
         },
         .texture = .{
             .nextInChain = null,
-            .sampleType = types.WGPUTextureSampleType_BindingNotUsed,
-            .viewDimension = types.WGPUTextureViewDimension_Undefined,
-            .multisampled = types.WGPU_FALSE,
+            .sampleType = abi_base.WGPUTextureSampleType_BindingNotUsed,
+            .viewDimension = abi_base.WGPUTextureViewDimension_Undefined,
+            .multisampled = abi_base.WGPU_FALSE,
         },
         .storageTexture = .{
             .nextInChain = null,
-            .access = types.WGPUStorageTextureAccess_BindingNotUsed,
-            .format = types.WGPUTextureFormat_Undefined,
-            .viewDimension = types.WGPUTextureViewDimension_Undefined,
+            .access = abi_base.WGPUStorageTextureAccess_BindingNotUsed,
+            .format = abi_base.WGPUTextureFormat_Undefined,
+            .viewDimension = abi_base.WGPUTextureViewDimension_Undefined,
         },
     };
 
     switch (binding.resource_kind) {
         .buffer => {
             layout_entry.buffer.type = normalizers.normalizeBufferBindingType(binding.buffer_type);
-            layout_entry.buffer.minBindingSize = if (binding.buffer_size == types.WGPU_WHOLE_SIZE or binding.buffer_size == 0)
+            layout_entry.buffer.minBindingSize = if (binding.buffer_size == abi_base.WGPU_WHOLE_SIZE or binding.buffer_size == 0)
                 0
             else
                 binding.buffer_size;
@@ -486,18 +490,18 @@ fn dispatchPassLayoutEntry(binding: model.KernelBinding) types.WGPUBindGroupLayo
         .texture => {
             layout_entry.texture.sampleType = normalizers.normalizeTextureSampleType(binding.texture_sample_type);
             layout_entry.texture.viewDimension = normalizers.normalizeTextureViewDimension(binding.texture_view_dimension);
-            layout_entry.texture.multisampled = if (binding.texture_multisampled) types.WGPU_TRUE else types.WGPU_FALSE;
+            layout_entry.texture.multisampled = if (binding.texture_multisampled) abi_base.WGPU_TRUE else abi_base.WGPU_FALSE;
         },
         .storage_texture => {
             layout_entry.storageTexture.access = normalizers.normalizeStorageTextureAccess(binding.storage_texture_access);
             layout_entry.storageTexture.format = normalizers.normalizeTextureFormat(binding.texture_format);
-            if (layout_entry.storageTexture.format == types.WGPUTextureFormat_Undefined) {
-                layout_entry.storageTexture.format = types.WGPUTextureFormat_R8Unorm;
+            if (layout_entry.storageTexture.format == abi_base.WGPUTextureFormat_Undefined) {
+                layout_entry.storageTexture.format = abi_base.WGPUTextureFormat_R8Unorm;
             }
             layout_entry.storageTexture.viewDimension = normalizers.normalizeTextureViewDimension(binding.texture_view_dimension);
         },
         .sampler => {
-            layout_entry.sampler.type = types.WGPUSamplerBindingType_Filtering;
+            layout_entry.sampler.type = abi_base.WGPUSamplerBindingType_Filtering;
         },
     }
 
@@ -506,16 +510,16 @@ fn dispatchPassLayoutEntry(binding: model.KernelBinding) types.WGPUBindGroupLayo
 
 fn dispatchPassBindEntry(
     self: *Backend,
-    binding: model.KernelBinding,
-    texture_views: *std.ArrayList(types.WGPUTextureView),
+    binding: model_compute_types.KernelBinding,
+    texture_views: *std.ArrayList(abi_base.WGPUTextureView),
     initialize_buffers_on_create: bool,
-) !types.WGPUBindGroupEntry {
-    var bind_entry = types.WGPUBindGroupEntry{
+) !abi_descriptor.WGPUBindGroupEntry {
+    var bind_entry = abi_descriptor.WGPUBindGroupEntry{
         .nextInChain = null,
         .binding = binding.binding,
         .buffer = null,
         .offset = binding.buffer_offset,
-        .size = if (binding.buffer_size == 0) types.WGPU_WHOLE_SIZE else binding.buffer_size,
+        .size = if (binding.buffer_size == 0) abi_base.WGPU_WHOLE_SIZE else binding.buffer_size,
         .sampler = null,
         .textureView = null,
     };
@@ -523,7 +527,7 @@ fn dispatchPassBindEntry(
     switch (binding.resource_kind) {
         .buffer => {
             const usage = bindingUsageForBufferKind(binding);
-            const requested_size = if (binding.buffer_size == types.WGPU_WHOLE_SIZE)
+            const requested_size = if (binding.buffer_size == abi_base.WGPU_WHOLE_SIZE)
                 try requiredBytes(4, binding.buffer_offset)
             else
                 try requiredBytes(binding.buffer_size, binding.buffer_offset);
@@ -536,9 +540,9 @@ fn dispatchPassBindEntry(
         },
         .texture, .storage_texture => {
             const required_usage = if (binding.resource_kind == .storage_texture)
-                (types.WGPUTextureUsage_StorageBinding | types.WGPUTextureUsage_CopySrc | types.WGPUTextureUsage_CopyDst)
+                (abi_base.WGPUTextureUsage_StorageBinding | abi_base.WGPUTextureUsage_CopySrc | abi_base.WGPUTextureUsage_CopyDst)
             else
-                (types.WGPUTextureUsage_TextureBinding | types.WGPUTextureUsage_CopySrc | types.WGPUTextureUsage_CopyDst);
+                (abi_base.WGPUTextureUsage_TextureBinding | abi_base.WGPUTextureUsage_CopySrc | abi_base.WGPUTextureUsage_CopyDst);
             const texture = try getOrCreateTextureFromBinding(self, binding, required_usage);
             const view = try createTextureViewForBinding(self, texture, binding);
             try texture_views.append(self.core.allocator, view);
@@ -554,9 +558,9 @@ fn dispatchPassBindEntry(
     return bind_entry;
 }
 
-pub fn createBindGroupLayout(self: *Backend, entries: []const types.WGPUBindGroupLayoutEntry) !types.WGPUBindGroupLayout {
+pub fn createBindGroupLayout(self: *Backend, entries: []const abi_descriptor.WGPUBindGroupLayoutEntry) !abi_base.WGPUBindGroupLayout {
     const procs = self.core.procs orelse return error.ProceduralNotReady;
-    const descriptor = types.WGPUBindGroupLayoutDescriptor{
+    const descriptor = abi_descriptor.WGPUBindGroupLayoutDescriptor{
         .nextInChain = null,
         .label = loader.emptyStringView(),
         .entryCount = entries.len,
@@ -567,9 +571,9 @@ pub fn createBindGroupLayout(self: *Backend, entries: []const types.WGPUBindGrou
     return layout;
 }
 
-pub fn createBindGroup(self: *Backend, layout: types.WGPUBindGroupLayout, entries: []const types.WGPUBindGroupEntry) !types.WGPUBindGroup {
+pub fn createBindGroup(self: *Backend, layout: abi_base.WGPUBindGroupLayout, entries: []const abi_descriptor.WGPUBindGroupEntry) !abi_base.WGPUBindGroup {
     const procs = self.core.procs orelse return error.ProceduralNotReady;
-    const descriptor = types.WGPUBindGroupDescriptor{
+    const descriptor = abi_descriptor.WGPUBindGroupDescriptor{
         .nextInChain = null,
         .label = loader.emptyStringView(),
         .layout = layout,
@@ -581,16 +585,16 @@ pub fn createBindGroup(self: *Backend, layout: types.WGPUBindGroupLayout, entrie
     return bind_group;
 }
 
-pub fn createShaderModule(self: *Backend, source: []const u8) !types.WGPUShaderModule {
+pub fn createShaderModule(self: *Backend, source: []const u8) !abi_base.WGPUShaderModule {
     const procs = self.core.procs orelse return error.ProceduralNotReady;
-    var chained_source = types.WGPUShaderSourceWGSL{
+    var chained_source = abi_descriptor.WGPUShaderSourceWGSL{
         .chain = .{
             .next = null,
-            .sType = types.WGPUSType_ShaderSourceWGSL,
+            .sType = abi_base.WGPUSType_ShaderSourceWGSL,
         },
         .code = loader.stringView(source),
     };
-    const descriptor = types.WGPUShaderModuleDescriptor{
+    const descriptor = abi_descriptor.WGPUShaderModuleDescriptor{
         .nextInChain = &chained_source.chain,
         .label = loader.emptyStringView(),
     };
@@ -602,20 +606,20 @@ pub fn createShaderModule(self: *Backend, source: []const u8) !types.WGPUShaderM
 pub fn createComputePipeline(
     self: *Backend,
     kernel_name: []const u8,
-    module: types.WGPUShaderModule,
+    module: abi_base.WGPUShaderModule,
     entry_point: []const u8,
-    pipeline_layout: types.WGPUPipelineLayout,
-) !types.WGPUComputePipeline {
+    pipeline_layout: abi_base.WGPUPipelineLayout,
+) !abi_base.WGPUComputePipeline {
     const procs = self.core.procs orelse return error.ProceduralNotReady;
     const p0_procs = p0_procs_mod.loadP0Procs(self.core.dyn_lib);
-    const compute_state = types.WGPUComputeState{
+    const compute_state = abi_descriptor.WGPUComputeState{
         .nextInChain = null,
         .module = module,
         .entryPoint = loader.stringView(entry_point),
         .constantCount = 0,
         .constants = null,
     };
-    const descriptor = types.WGPUComputePipelineDescriptor{
+    const descriptor = abi_descriptor.WGPUComputePipelineDescriptor{
         .nextInChain = null,
         .label = loader.stringView(kernel_name),
         .layout = pipeline_layout,
@@ -637,9 +641,9 @@ pub fn createComputePipeline(
     return pipeline;
 }
 
-pub fn createPipelineLayout(self: *Backend, bind_group_layouts: []const types.WGPUBindGroupLayout) !types.WGPUPipelineLayout {
+pub fn createPipelineLayout(self: *Backend, bind_group_layouts: []const abi_base.WGPUBindGroupLayout) !abi_base.WGPUPipelineLayout {
     const procs = self.core.procs orelse return error.ProceduralNotReady;
-    const descriptor = types.WGPUPipelineLayoutDescriptor{
+    const descriptor = abi_descriptor.WGPUPipelineLayoutDescriptor{
         .nextInChain = null,
         .label = loader.emptyStringView(),
         .bindGroupLayoutCount = bind_group_layouts.len,
@@ -651,11 +655,11 @@ pub fn createPipelineLayout(self: *Backend, bind_group_layouts: []const types.WG
     return layout;
 }
 
-pub fn bindingUsageForBufferKind(binding: model.KernelBinding) types.WGPUBufferUsage {
+pub fn bindingUsageForBufferKind(binding: model_compute_types.KernelBinding) abi_base.WGPUBufferUsage {
     return switch (binding.buffer_type) {
-        model.WGPUBufferBindingType_Uniform => types.WGPUBufferUsage_Uniform | types.WGPUBufferUsage_CopySrc | types.WGPUBufferUsage_CopyDst,
-        model.WGPUBufferBindingType_ReadOnlyStorage => types.WGPUBufferUsage_Storage | types.WGPUBufferUsage_CopySrc | types.WGPUBufferUsage_CopyDst,
-        model.WGPUBufferBindingType_Storage => types.WGPUBufferUsage_Storage | types.WGPUBufferUsage_CopySrc | types.WGPUBufferUsage_CopyDst,
-        else => types.WGPUBufferUsage_Storage | types.WGPUBufferUsage_Uniform | types.WGPUBufferUsage_CopySrc | types.WGPUBufferUsage_CopyDst,
+        model_gpu_types.WGPUBufferBindingType_Uniform => abi_base.WGPUBufferUsage_Uniform | abi_base.WGPUBufferUsage_CopySrc | abi_base.WGPUBufferUsage_CopyDst,
+        model_gpu_types.WGPUBufferBindingType_ReadOnlyStorage => abi_base.WGPUBufferUsage_Storage | abi_base.WGPUBufferUsage_CopySrc | abi_base.WGPUBufferUsage_CopyDst,
+        model_gpu_types.WGPUBufferBindingType_Storage => abi_base.WGPUBufferUsage_Storage | abi_base.WGPUBufferUsage_CopySrc | abi_base.WGPUBufferUsage_CopyDst,
+        else => abi_base.WGPUBufferUsage_Storage | abi_base.WGPUBufferUsage_Uniform | abi_base.WGPUBufferUsage_CopySrc | abi_base.WGPUBufferUsage_CopyDst,
     };
 }

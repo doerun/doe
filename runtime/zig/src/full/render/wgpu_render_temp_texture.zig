@@ -1,5 +1,8 @@
-const model = @import("../../model_webgpu_types.zig");
-const types = @import("../../core/abi/wgpu_types.zig");
+const model_resource_types = @import("../../model_resource_types.zig");
+const model_gpu_types = @import("../../model_gpu_types.zig");
+const model_render_types = @import("../../model_render_types.zig");
+const abi_base = @import("../../core/abi/wgpu_base_types.zig");
+const abi_descriptor = @import("../../core/abi/wgpu_descriptor_types.zig");
 const loader = @import("../../core/abi/wgpu_loader.zig");
 const resources = @import("../../core/resource/wgpu_resources.zig");
 const render_resource_mod = @import("wgpu_render_resources.zig");
@@ -8,7 +11,7 @@ const ffi = @import("../../webgpu_backend.zig");
 const Backend = ffi.WebGPUBackend;
 
 pub const TempRenderTextureResult = struct {
-    view: ?types.WGPUTextureView,
+    view: ?abi_base.WGPUTextureView,
     needs_copy_back: bool,
 };
 
@@ -18,9 +21,9 @@ pub const TempRenderTextureResult = struct {
 /// mip 0 so the render attachment requirement is satisfied.
 pub fn setupTempRenderTexture(
     self: *Backend,
-    render: model.RenderDrawCommand,
-    target_format: types.WGPUTextureFormat,
-    target_resource: model.CopyTextureResource,
+    render: model_render_types.RenderDrawCommand,
+    target_format: abi_base.WGPUTextureFormat,
+    target_resource: model_resource_types.CopyTextureResource,
 ) !TempRenderTextureResult {
     const needs_temp = render.uses_temporary_render_texture and
         rc.is_affected_render_format(target_format) and
@@ -31,19 +34,19 @@ pub fn setupTempRenderTexture(
     }
 
     const temp_handle = render.target_handle +% rc.TEMP_RENDER_TEXTURE_OFFSET;
-    const temp_resource = model.CopyTextureResource{
+    const temp_resource = model_resource_types.CopyTextureResource{
         .handle = temp_handle,
         .kind = .texture,
         .width = render.target_width,
         .height = render.target_height,
         .depth_or_array_layers = 1,
         .format = render.target_format,
-        .usage = types.WGPUTextureUsage_RenderAttachment | types.WGPUTextureUsage_CopySrc | types.WGPUTextureUsage_CopyDst,
-        .dimension = model.WGPUTextureDimension_2D,
-        .view_dimension = model.WGPUTextureViewDimension_2D,
+        .usage = abi_base.WGPUTextureUsage_RenderAttachment | abi_base.WGPUTextureUsage_CopySrc | abi_base.WGPUTextureUsage_CopyDst,
+        .dimension = model_gpu_types.WGPUTextureDimension_2D,
+        .view_dimension = model_gpu_types.WGPUTextureViewDimension_2D,
         .mip_level = 0,
         .sample_count = 1,
-        .aspect = model.WGPUTextureAspect_All,
+        .aspect = model_gpu_types.WGPUTextureAspect_All,
         .bytes_per_row = 0,
         .rows_per_image = 0,
         .offset = 0,
@@ -51,7 +54,7 @@ pub fn setupTempRenderTexture(
     const temp_texture = try resources.getOrCreateTexture(
         self,
         temp_resource,
-        types.WGPUTextureUsage_RenderAttachment | types.WGPUTextureUsage_CopySrc | types.WGPUTextureUsage_CopyDst,
+        abi_base.WGPUTextureUsage_RenderAttachment | abi_base.WGPUTextureUsage_CopySrc | abi_base.WGPUTextureUsage_CopyDst,
     );
     const temp_view = render_resource_mod.getOrCreateCachedRenderTextureView(
         self,
@@ -61,7 +64,7 @@ pub fn setupTempRenderTexture(
         render.target_width,
         render.target_height,
         target_format,
-        types.WGPUTextureUsage_RenderAttachment,
+        abi_base.WGPUTextureUsage_RenderAttachment,
     ) catch {
         return error.TempRenderTextureViewFailed;
     };
@@ -75,47 +78,47 @@ pub fn copyBackTempRenderTexture(
     self: *Backend,
     procs: anytype,
     encoder: anytype,
-    render: model.RenderDrawCommand,
-    target_texture: types.WGPUTexture,
-    target_resource: model.CopyTextureResource,
+    render: model_render_types.RenderDrawCommand,
+    target_texture: abi_base.WGPUTexture,
+    target_resource: model_resource_types.CopyTextureResource,
 ) !void {
     const temp_handle = render.target_handle +% rc.TEMP_RENDER_TEXTURE_OFFSET;
-    const temp_resource_src = model.CopyTextureResource{
+    const temp_resource_src = model_resource_types.CopyTextureResource{
         .handle = temp_handle,
         .kind = .texture,
         .width = render.target_width,
         .height = render.target_height,
         .depth_or_array_layers = 1,
         .format = render.target_format,
-        .usage = types.WGPUTextureUsage_CopySrc,
-        .dimension = model.WGPUTextureDimension_2D,
-        .view_dimension = model.WGPUTextureViewDimension_2D,
+        .usage = abi_base.WGPUTextureUsage_CopySrc,
+        .dimension = model_gpu_types.WGPUTextureDimension_2D,
+        .view_dimension = model_gpu_types.WGPUTextureViewDimension_2D,
         .mip_level = 0,
         .sample_count = 1,
-        .aspect = model.WGPUTextureAspect_All,
+        .aspect = model_gpu_types.WGPUTextureAspect_All,
         .bytes_per_row = 0,
         .rows_per_image = 0,
         .offset = 0,
     };
-    const temp_src = try resources.getOrCreateTexture(self, temp_resource_src, types.WGPUTextureUsage_CopySrc);
-    const copy_extent = types.WGPUExtent3D{
+    const temp_src = try resources.getOrCreateTexture(self, temp_resource_src, abi_base.WGPUTextureUsage_CopySrc);
+    const copy_extent = abi_descriptor.WGPUExtent3D{
         .width = render.target_width,
         .height = render.target_height,
         .depthOrArrayLayers = 1,
     };
     procs.wgpuCommandEncoderCopyTextureToTexture(
         encoder,
-        &types.WGPUTexelCopyTextureInfo{
+        &abi_descriptor.WGPUTexelCopyTextureInfo{
             .texture = temp_src,
             .mipLevel = 0,
             .origin = .{ .x = 0, .y = 0, .z = 0 },
-            .aspect = loader.normalizeTextureAspect(model.WGPUTextureAspect_All),
+            .aspect = loader.normalizeTextureAspect(model_gpu_types.WGPUTextureAspect_All),
         },
-        &types.WGPUTexelCopyTextureInfo{
+        &abi_descriptor.WGPUTexelCopyTextureInfo{
             .texture = target_texture,
             .mipLevel = target_resource.mip_level,
             .origin = .{ .x = 0, .y = 0, .z = 0 },
-            .aspect = loader.normalizeTextureAspect(model.WGPUTextureAspect_All),
+            .aspect = loader.normalizeTextureAspect(model_gpu_types.WGPUTextureAspect_All),
         },
         &copy_extent,
     );

@@ -1,5 +1,8 @@
 const std = @import("std");
-const types = @import("../abi/wgpu_types.zig");
+const abi_base = @import("../abi/wgpu_base_types.zig");
+const abi_descriptor = @import("../abi/wgpu_descriptor_types.zig");
+const abi_proc_aliases = @import("../abi/wgpu_type_proc_aliases.zig");
+const runtime_state = @import("../abi/wgpu_runtime_state_defs.zig");
 const loader = @import("../abi/wgpu_loader.zig");
 const WebGPUBackend = @import("../../webgpu_backend.zig").WebGPUBackend;
 
@@ -23,19 +26,19 @@ pub fn captureBuffer(
     const source_record = self.core.buffers.get(handle) orelse return error.InvalidArgument;
     const end = std.math.add(u64, offset, size) catch return error.InvalidArgument;
     if (end > source_record.size) return error.InvalidArgument;
-    if ((source_record.usage & types.WGPUBufferUsage_CopySrc) == 0) return error.UnsupportedFeature;
+    if ((source_record.usage & abi_base.WGPUBufferUsage_CopySrc) == 0) return error.UnsupportedFeature;
 
-    const readback_buffer = procs.wgpuDeviceCreateBuffer(device, &types.WGPUBufferDescriptor{
+    const readback_buffer = procs.wgpuDeviceCreateBuffer(device, &abi_descriptor.WGPUBufferDescriptor{
         .nextInChain = null,
         .label = loader.emptyStringView(),
-        .usage = types.WGPUBufferUsage_MapRead | types.WGPUBufferUsage_CopyDst,
+        .usage = abi_base.WGPUBufferUsage_MapRead | abi_base.WGPUBufferUsage_CopyDst,
         .size = size,
-        .mappedAtCreation = types.WGPU_FALSE,
+        .mappedAtCreation = abi_base.WGPU_FALSE,
     });
     if (readback_buffer == null) return error.BufferAllocationFailed;
     defer procs.wgpuBufferRelease(readback_buffer);
 
-    const encoder = procs.wgpuDeviceCreateCommandEncoder(device, &types.WGPUCommandEncoderDescriptor{
+    const encoder = procs.wgpuDeviceCreateCommandEncoder(device, &abi_descriptor.WGPUCommandEncoderDescriptor{
         .nextInChain = null,
         .label = loader.emptyStringView(),
     });
@@ -51,14 +54,14 @@ pub fn captureBuffer(
         size,
     );
 
-    const command_buffer = procs.wgpuCommandEncoderFinish(encoder, &types.WGPUCommandBufferDescriptor{
+    const command_buffer = procs.wgpuCommandEncoderFinish(encoder, &abi_descriptor.WGPUCommandBufferDescriptor{
         .nextInChain = null,
         .label = loader.emptyStringView(),
     });
     if (command_buffer == null) return error.CommandEncoderFinishFailed;
     defer procs.wgpuCommandBufferRelease(command_buffer);
 
-    var command_buffers = [_]types.WGPUCommandBuffer{command_buffer};
+    var command_buffers = [_]abi_base.WGPUCommandBuffer{command_buffer};
     procs.wgpuQueueSubmit(queue, command_buffers.len, &command_buffers);
     try self.waitForQueue();
 
@@ -68,22 +71,22 @@ pub fn captureBuffer(
 fn mapReadbackBytes(
     self: *WebGPUBackend,
     allocator: std.mem.Allocator,
-    procs: types.Procs,
-    readback_buffer: types.WGPUBuffer,
+    procs: abi_proc_aliases.Procs,
+    readback_buffer: abi_base.WGPUBuffer,
     size: u64,
 ) ![]u8 {
     const size_usize = std.math.cast(usize, size) orelse return error.InvalidArgument;
-    var map_state = types.BufferMapState{};
-    const map_callback_info = types.WGPUBufferMapCallbackInfo{
+    var map_state = runtime_state.BufferMapState{};
+    const map_callback_info = abi_descriptor.WGPUBufferMapCallbackInfo{
         .nextInChain = null,
-        .mode = types.WGPUCallbackMode_AllowProcessEvents,
+        .mode = abi_descriptor.WGPUCallbackMode_AllowProcessEvents,
         .callback = loader.bufferMapCallback,
         .userdata1 = &map_state,
         .userdata2 = null,
     };
     const map_future = procs.wgpuBufferMapAsync(
         readback_buffer,
-        types.WGPUMapMode_Read,
+        abi_base.WGPUMapMode_Read,
         0,
         size_usize,
         map_callback_info,
@@ -92,7 +95,7 @@ fn mapReadbackBytes(
 
     try self.processEventsUntil(&map_state.done, loader.DEFAULT_TIMEOUT_NS);
     if (!map_state.done) return error.BufferMapTimeout;
-    if (map_state.status != types.WGPUMapAsyncStatus_Success) return error.BufferMapFailed;
+    if (map_state.status != abi_base.WGPUMapAsyncStatus_Success) return error.BufferMapFailed;
 
     const mapped_ptr = procs.wgpuBufferGetConstMappedRange(readback_buffer, 0, size_usize) orelse {
         return error.BufferMapFailed;

@@ -1,5 +1,5 @@
-const model = @import("../../model_webgpu_types.zig");
-const types = @import("../../core/abi/wgpu_types.zig");
+const model_render_types = @import("../../model_render_types.zig");
+const abi_base = @import("../../core/abi/wgpu_base_types.zig");
 const render_api_mod = @import("wgpu_render_api.zig");
 const render_resource_mod = @import("wgpu_render_resources.zig");
 
@@ -9,8 +9,8 @@ const RenderUniformBindingResources = render_resource_mod.RenderUniformBindingRe
 pub fn encode_render_bundle_draw_nonindexed(
     render_api: render_api_mod.RenderApi,
     render_bundle_encoder: render_api_mod.RenderBundleEncoder,
-    render: model.RenderDrawCommand,
-    render_pipeline: types.WGPURenderPipeline,
+    render: model_render_types.RenderDrawCommand,
+    render_pipeline: abi_base.WGPURenderPipeline,
     render_uniform_resources: RenderUniformBindingResources,
     dynamic_offsets: []const u32,
 ) void {
@@ -78,8 +78,8 @@ pub fn encode_render_bundle_draw_nonindexed(
 pub fn encode_render_bundle_draw_indexed(
     render_api: render_api_mod.RenderApi,
     render_bundle_encoder: render_api_mod.RenderBundleEncoder,
-    render: model.RenderDrawCommand,
-    render_pipeline: types.WGPURenderPipeline,
+    render: model_render_types.RenderDrawCommand,
+    render_pipeline: abi_base.WGPURenderPipeline,
     render_uniform_resources: RenderUniformBindingResources,
     dynamic_offsets: []const u32,
     index_count: u32,
@@ -151,9 +151,9 @@ pub fn encode_render_bundle_draw_indexed(
 
 pub fn encode_render_pass_draw_nonindexed(
     render_api: render_api_mod.RenderApi,
-    render_pass: types.WGPURenderPassEncoder,
-    render: model.RenderDrawCommand,
-    render_pipeline: types.WGPURenderPipeline,
+    render_pass: abi_base.WGPURenderPassEncoder,
+    render: model_render_types.RenderDrawCommand,
+    render_pipeline: abi_base.WGPURenderPipeline,
     render_uniform_resources: RenderUniformBindingResources,
     dynamic_offsets: []const u32,
 ) void {
@@ -220,9 +220,9 @@ pub fn encode_render_pass_draw_nonindexed(
 
 pub fn encode_render_pass_draw_indexed(
     render_api: render_api_mod.RenderApi,
-    render_pass: types.WGPURenderPassEncoder,
-    render: model.RenderDrawCommand,
-    render_pipeline: types.WGPURenderPipeline,
+    render_pass: abi_base.WGPURenderPassEncoder,
+    render: model_render_types.RenderDrawCommand,
+    render_pipeline: abi_base.WGPURenderPipeline,
     render_uniform_resources: RenderUniformBindingResources,
     dynamic_offsets: []const u32,
     index_count: u32,

@@ -1,6 +1,10 @@
 const std = @import("std");
-const model = @import("../../model_webgpu_types.zig");
-const types = @import("../../core/abi/wgpu_types.zig");
+const model_resource_types = @import("../../model_resource_types.zig");
+const model_gpu_types = @import("../../model_gpu_types.zig");
+const model_render_types = @import("../../model_render_types.zig");
+const abi_base = @import("../../core/abi/wgpu_base_types.zig");
+const abi_descriptor = @import("../../core/abi/wgpu_descriptor_types.zig");
+const abi_execution = @import("../../core/abi/wgpu_execution_types.zig");
 const loader = @import("../../core/abi/wgpu_loader.zig");
 const resources = @import("../../core/resource/wgpu_resources.zig");
 const async_procs_mod = @import("../../wgpu_async_procs.zig");
@@ -17,7 +21,7 @@ const rc = @import("wgpu_render_constants.zig");
 const Backend = ffi.WebGPUBackend;
 const DEFAULT_MAX_DRAW_COUNT: u64 = 50_000_000;
 
-pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types.NativeExecutionResult {
+pub fn executeRenderDraw(self: *Backend, render: model_render_types.RenderDrawCommand) !abi_execution.NativeExecutionResult {
     if (render.draw_count == 0) {
         return .{ .status = .unsupported, .status_message = "render_draw draw_count must be > 0" };
     }
@@ -40,19 +44,19 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
     };
 
     const setup_start_ns = std.time.nanoTimestamp();
-    const target_resource = model.CopyTextureResource{
+    const target_resource = model_resource_types.CopyTextureResource{
         .handle = render.target_handle,
         .kind = .texture,
         .width = render.target_width,
         .height = render.target_height,
         .depth_or_array_layers = 1,
         .format = render.target_format,
-        .usage = types.WGPUTextureUsage_RenderAttachment | types.WGPUTextureUsage_CopySrc | types.WGPUTextureUsage_CopyDst,
-        .dimension = model.WGPUTextureDimension_2D,
-        .view_dimension = model.WGPUTextureViewDimension_2D,
+        .usage = abi_base.WGPUTextureUsage_RenderAttachment | abi_base.WGPUTextureUsage_CopySrc | abi_base.WGPUTextureUsage_CopyDst,
+        .dimension = model_gpu_types.WGPUTextureDimension_2D,
+        .view_dimension = model_gpu_types.WGPUTextureViewDimension_2D,
         .mip_level = 0,
         .sample_count = 1,
-        .aspect = model.WGPUTextureAspect_All,
+        .aspect = model_gpu_types.WGPUTextureAspect_All,
         .bytes_per_row = 0,
         .rows_per_image = 0,
         .offset = 0,
@@ -60,10 +64,10 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
     const target_texture = try resources.getOrCreateTexture(
         self,
         target_resource,
-        types.WGPUTextureUsage_RenderAttachment | types.WGPUTextureUsage_CopySrc | types.WGPUTextureUsage_CopyDst,
+        abi_base.WGPUTextureUsage_RenderAttachment | abi_base.WGPUTextureUsage_CopySrc | abi_base.WGPUTextureUsage_CopyDst,
     );
     const render_vertex_bytes = std.mem.sliceAsBytes(render_assets.RENDER_DRAW_VERTEX_DATA[0..]);
-    const render_vertex_usage = types.WGPUBufferUsage_Vertex | types.WGPUBufferUsage_CopyDst;
+    const render_vertex_usage = abi_base.WGPUBufferUsage_Vertex | abi_base.WGPUBufferUsage_CopyDst;
     const render_vertex_bytes_u64 = @as(u64, @intCast(render_vertex_bytes.len));
     const should_upload_vertex_data = blk: {
         if (self.core.buffers.get(rc.RENDER_VERTEX_BUFFER_HANDLE)) |existing| {
@@ -126,24 +130,24 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
     }
 
     const normalized_target_format = resources.normalizeTextureFormat(render.target_format);
-    const target_format = if (normalized_target_format == types.WGPUTextureFormat_Undefined)
-        model.WGPUTextureFormat_RGBA8Unorm
+    const target_format = if (normalized_target_format == abi_base.WGPUTextureFormat_Undefined)
+        model_gpu_types.WGPUTextureFormat_RGBA8Unorm
     else
         normalized_target_format;
     const depth_handle = render.target_handle ^ rc.RENDER_DEPTH_ATTACHMENT_HANDLE_MASK;
-    const depth_resource = model.CopyTextureResource{
+    const depth_resource = model_resource_types.CopyTextureResource{
         .handle = depth_handle,
         .kind = .texture,
         .width = render.target_width,
         .height = render.target_height,
         .depth_or_array_layers = 1,
         .format = rc.RENDER_DEPTH_STENCIL_FORMAT,
-        .usage = types.WGPUTextureUsage_RenderAttachment,
-        .dimension = model.WGPUTextureDimension_2D,
-        .view_dimension = model.WGPUTextureViewDimension_2D,
+        .usage = abi_base.WGPUTextureUsage_RenderAttachment,
+        .dimension = model_gpu_types.WGPUTextureDimension_2D,
+        .view_dimension = model_gpu_types.WGPUTextureViewDimension_2D,
         .mip_level = 0,
         .sample_count = 1,
-        .aspect = model.WGPUTextureAspect_All,
+        .aspect = model_gpu_types.WGPUTextureAspect_All,
         .bytes_per_row = 0,
         .rows_per_image = 0,
         .offset = 0,
@@ -151,7 +155,7 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
     const depth_texture = try resources.getOrCreateTexture(
         self,
         depth_resource,
-        types.WGPUTextureUsage_RenderAttachment,
+        abi_base.WGPUTextureUsage_RenderAttachment,
     );
     const target_view = render_resource_mod.getOrCreateCachedRenderTextureView(
         self,
@@ -161,7 +165,7 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
         render.target_width,
         render.target_height,
         target_format,
-        types.WGPUTextureUsage_RenderAttachment,
+        abi_base.WGPUTextureUsage_RenderAttachment,
     ) catch |err| {
         return .{
             .status = .@"error",
@@ -180,7 +184,7 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
         render.target_width,
         render.target_height,
         rc.RENDER_DEPTH_STENCIL_FORMAT,
-        types.WGPUTextureUsage_RenderAttachment,
+        abi_base.WGPUTextureUsage_RenderAttachment,
     ) catch |err| {
         return .{
             .status = .@"error",
@@ -268,7 +272,7 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
         };
         const render_pipeline_layout = resources.createPipelineLayout(
             self,
-            &[_]types.WGPUBindGroupLayout{render_uniform_resources.bind_group_layout},
+            &[_]abi_base.WGPUBindGroupLayout{render_uniform_resources.bind_group_layout},
         ) catch {
             procs.wgpuShaderModuleRelease(shader_module);
             return .{ .status = .@"error", .status_message = "render_draw pipeline layout creation failed" };
@@ -316,14 +320,14 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
                 .stripIndexFormat = 0,
                 .frontFace = rc.RENDER_FRONT_FACE_CCW,
                 .cullMode = rc.RENDER_CULL_MODE_NONE,
-                .unclippedDepth = types.WGPU_FALSE,
+                .unclippedDepth = abi_base.WGPU_FALSE,
             },
             .depthStencil = &depth_stencil_state,
             .multisample = .{
                 .nextInChain = null,
                 .count = 1,
                 .mask = rc.RENDER_MULTISAMPLE_MASK_ALL,
-                .alphaToCoverageEnabled = types.WGPU_FALSE,
+                .alphaToCoverageEnabled = abi_base.WGPU_FALSE,
             },
             .fragment = &fragment_state,
         };
@@ -362,7 +366,7 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
             procs.wgpuShaderModuleRelease(shader_module);
             return .{ .status = .@"error", .status_message = "render_draw validation scope pop failed" };
         };
-        const no_error = @as(u32, @intFromEnum(types.WGPUErrorType.noError));
+        const no_error = @as(u32, @intFromEnum(abi_descriptor.WGPUErrorType.noError));
         if (out_of_memory_scope.status != async_procs_mod.POP_ERROR_SCOPE_STATUS_SUCCESS or
             internal_scope.status != async_procs_mod.POP_ERROR_SCOPE_STATUS_SUCCESS or
             validation_scope.status != async_procs_mod.POP_ERROR_SCOPE_STATUS_SUCCESS or
@@ -400,7 +404,7 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
         render_api.render_bundle_release(prepared_render_bundle);
     };
     if (render.encode_mode != .render_pass) {
-        const bundle_color_formats = [_]types.WGPUTextureFormat{target_format};
+        const bundle_color_formats = [_]abi_base.WGPUTextureFormat{target_format};
         const render_bundle_encoder = render_api.device_create_render_bundle_encoder(
             self.core.device.?,
             &rc.RenderBundleEncoderDescriptor{
@@ -410,8 +414,8 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
                 .colorFormats = bundle_color_formats[0..].ptr,
                 .depthStencilFormat = rc.RENDER_DEPTH_STENCIL_FORMAT,
                 .sampleCount = 1,
-                .depthReadOnly = types.WGPU_FALSE,
-                .stencilReadOnly = types.WGPU_FALSE,
+                .depthReadOnly = abi_base.WGPU_FALSE,
+                .stencilReadOnly = abi_base.WGPU_FALSE,
             },
         );
         if (render_bundle_encoder == null) {
@@ -427,7 +431,7 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
             0,
             render_vertex_buffer,
             0,
-            types.WGPU_WHOLE_SIZE,
+            abi_base.WGPU_WHOLE_SIZE,
         );
         if (indexed_draw) {
             render_api.render_bundle_encoder_set_index_buffer(
@@ -435,7 +439,7 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
                 prepared_index.?.buffer,
                 prepared_index.?.format,
                 0,
-                types.WGPU_WHOLE_SIZE,
+                abi_base.WGPU_WHOLE_SIZE,
             );
         }
         if (render.bind_group_mode == .no_change) {
@@ -474,7 +478,7 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
             return .{ .status = .@"error", .status_message = "render_draw bundle finish failed" };
         }
     }
-    const encoder = procs.wgpuDeviceCreateCommandEncoder(self.core.device.?, &types.WGPUCommandEncoderDescriptor{
+    const encoder = procs.wgpuDeviceCreateCommandEncoder(self.core.device.?, &abi_descriptor.WGPUCommandEncoderDescriptor{
         .nextInChain = null,
         .label = loader.emptyStringView(),
     });
@@ -543,11 +547,11 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
         .depthLoadOp = rc.RENDER_LOAD_OP_CLEAR,
         .depthStoreOp = rc.RENDER_STORE_OP_STORE,
         .depthClearValue = rc.RENDER_DEPTH_STENCIL_CLEAR_VALUE,
-        .depthReadOnly = types.WGPU_FALSE,
+        .depthReadOnly = abi_base.WGPU_FALSE,
         .stencilLoadOp = rc.RENDER_LOAD_OP_CLEAR,
         .stencilStoreOp = rc.RENDER_STORE_OP_STORE,
         .stencilClearValue = rc.RENDER_STENCIL_CLEAR_VALUE,
-        .stencilReadOnly = types.WGPU_FALSE,
+        .stencilReadOnly = abi_base.WGPU_FALSE,
     };
     const render_pass = render_api.command_encoder_begin_render_pass(encoder, &rc.RenderPassDescriptor{
         .nextInChain = null,
@@ -602,7 +606,7 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
         0,
         render_vertex_buffer,
         0,
-        types.WGPU_WHOLE_SIZE,
+        abi_base.WGPU_WHOLE_SIZE,
     );
     if (indexed_draw) {
         render_api.render_pass_encoder_set_index_buffer(
@@ -610,7 +614,7 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
             prepared_index.?.buffer,
             prepared_index.?.format,
             0,
-            types.WGPU_WHOLE_SIZE,
+            abi_base.WGPU_WHOLE_SIZE,
         );
     }
     if (render.encode_mode == .render_pass and render.pipeline_mode == .static) {
@@ -684,7 +688,7 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
         );
     }
 
-    const command_buffer = procs.wgpuCommandEncoderFinish(encoder, &types.WGPUCommandBufferDescriptor{
+    const command_buffer = procs.wgpuCommandEncoderFinish(encoder, &abi_descriptor.WGPUCommandBufferDescriptor{
         .nextInChain = null,
         .label = loader.emptyStringView(),
     });
@@ -694,7 +698,7 @@ pub fn executeRenderDraw(self: *Backend, render: model.RenderDrawCommand) !types
     defer procs.wgpuCommandBufferRelease(command_buffer);
     const encode_end_ns = std.time.nanoTimestamp();
 
-    var commands = [_]types.WGPUCommandBuffer{command_buffer};
+    var commands = [_]abi_base.WGPUCommandBuffer{command_buffer};
     const submit_wait_ns = try self.submitCommandBuffers(commands[0..]);
 
     const setup_ns = if (setup_end_ns > setup_start_ns)

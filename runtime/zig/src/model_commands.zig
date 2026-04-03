@@ -1,5 +1,10 @@
 const std = @import("std");
-const webgpu_types = @import("model_webgpu_types.zig");
+const model_resource_types = @import("model_resource_types.zig");
+const model_compute_types = @import("model_compute_types.zig");
+const model_render_types = @import("model_render_types.zig");
+const model_texture_types = @import("model_texture_types.zig");
+const model_surface_control_types = @import("model_surface_control_types.zig");
+const model_async_types = @import("model_async_types.zig");
 const core_partition = @import("core/command_partition.zig");
 const full_partition = @import("full/command_partition.zig");
 
@@ -37,31 +42,31 @@ pub const CommandKind = enum(u8) {
 };
 
 pub const Command = union(CommandKind) {
-    upload: webgpu_types.UploadCommand,
-    buffer_write: webgpu_types.BufferWriteCommand,
-    copy_buffer_to_texture: webgpu_types.CopyCommand,
-    barrier: webgpu_types.BarrierCommand,
-    dispatch: webgpu_types.DispatchCommand,
-    dispatch_indirect: webgpu_types.DispatchIndirectCommand,
-    kernel_dispatch: webgpu_types.KernelDispatchCommand,
-    render_draw: webgpu_types.RenderDrawCommand,
-    draw_indirect: webgpu_types.DrawIndirectCommand,
-    draw_indexed_indirect: webgpu_types.DrawIndexedIndirectCommand,
-    render_pass: webgpu_types.RenderPassCommand,
-    sampler_create: webgpu_types.SamplerCreateCommand,
-    sampler_destroy: webgpu_types.SamplerDestroyCommand,
-    texture_write: webgpu_types.TextureWriteCommand,
-    texture_query: webgpu_types.TextureQueryCommand,
-    texture_destroy: webgpu_types.TextureDestroyCommand,
-    surface_create: webgpu_types.SurfaceCreateCommand,
-    surface_capabilities: webgpu_types.SurfaceCapabilitiesCommand,
-    surface_configure: webgpu_types.SurfaceConfigureCommand,
-    surface_acquire: webgpu_types.SurfaceAcquireCommand,
-    surface_present: webgpu_types.SurfacePresentCommand,
-    surface_unconfigure: webgpu_types.SurfaceUnconfigureCommand,
-    surface_release: webgpu_types.SurfaceReleaseCommand,
-    async_diagnostics: webgpu_types.AsyncDiagnosticsCommand,
-    map_async: webgpu_types.MapAsyncCommand,
+    upload: model_resource_types.UploadCommand,
+    buffer_write: model_resource_types.BufferWriteCommand,
+    copy_buffer_to_texture: model_resource_types.CopyCommand,
+    barrier: model_resource_types.BarrierCommand,
+    dispatch: model_compute_types.DispatchCommand,
+    dispatch_indirect: model_compute_types.DispatchIndirectCommand,
+    kernel_dispatch: model_compute_types.KernelDispatchCommand,
+    render_draw: model_render_types.RenderDrawCommand,
+    draw_indirect: model_render_types.DrawIndirectCommand,
+    draw_indexed_indirect: model_render_types.DrawIndexedIndirectCommand,
+    render_pass: model_render_types.RenderPassCommand,
+    sampler_create: model_render_types.SamplerCreateCommand,
+    sampler_destroy: model_render_types.SamplerDestroyCommand,
+    texture_write: model_texture_types.TextureWriteCommand,
+    texture_query: model_texture_types.TextureQueryCommand,
+    texture_destroy: model_texture_types.TextureDestroyCommand,
+    surface_create: model_surface_control_types.SurfaceCreateCommand,
+    surface_capabilities: model_surface_control_types.SurfaceCapabilitiesCommand,
+    surface_configure: model_surface_control_types.SurfaceConfigureCommand,
+    surface_acquire: model_surface_control_types.SurfaceAcquireCommand,
+    surface_present: model_surface_control_types.SurfacePresentCommand,
+    surface_unconfigure: model_surface_control_types.SurfaceUnconfigureCommand,
+    surface_release: model_surface_control_types.SurfaceReleaseCommand,
+    async_diagnostics: model_async_types.AsyncDiagnosticsCommand,
+    map_async: model_async_types.MapAsyncCommand,
 };
 
 comptime {

@@ -1,6 +1,8 @@
 const std = @import("std");
-const model = @import("model_webgpu_types.zig");
-const types = @import("core/abi/wgpu_types.zig");
+const model_gpu_types = @import("model_gpu_types.zig");
+const abi_base = @import("core/abi/wgpu_base_types.zig");
+const abi_descriptor = @import("core/abi/wgpu_descriptor_types.zig");
+const abi_proc_aliases = @import("core/abi/wgpu_type_proc_aliases.zig");
 const loader = @import("core/abi/wgpu_loader.zig");
 const resources = @import("core/resource/wgpu_resources.zig");
 const pls_layout = @import("full/render/wgpu_pipeline_layout_pls.zig");
@@ -17,7 +19,7 @@ const DIAG_PLS_ATTACHMENT_HANDLE: u64 = 0x8C9F_2D00_0000_0000;
 const DIAG_PLS_TOTAL_SIZE_BYTES: u64 = 4;
 const DIAG_PLS_SLOT_OFFSET_BYTES: u64 = 0;
 const DIAG_MAX_DRAW_COUNT: u64 = 50_000_000;
-const DIAG_PLS_ATTACHMENT_FORMAT: types.WGPUTextureFormat = model.WGPUTextureFormat_R32Uint;
+const DIAG_PLS_ATTACHMENT_FORMAT: abi_base.WGPUTextureFormat = model_gpu_types.WGPUTextureFormat_R32Uint;
 
 const DIAGNOSTIC_PIXEL_LOCAL_SHADER_SOURCE =
     \\enable chromium_experimental_pixel_local;
@@ -59,7 +61,7 @@ const DIAGNOSTIC_PIXEL_LOCAL_EMULATED_SHADER_SOURCE =
     \\}
 ;
 
-pub fn runPixelLocalStorageDiagnostics(self: *Backend, target_format: types.WGPUTextureFormat) !void {
+pub fn runPixelLocalStorageDiagnostics(self: *Backend, target_format: abi_base.WGPUTextureFormat) !void {
     const procs = self.core.procs orelse return error.ProceduralNotReady;
     const render_api = render_api_mod.loadRenderApi(procs, self.core.dyn_lib) orelse return error.RenderApiUnavailable;
     const pixel_local_storage_barrier = render_api.render_pass_encoder_pixel_local_storage_barrier orelse {
@@ -81,17 +83,17 @@ pub fn runPixelLocalStorageDiagnostics(self: *Backend, target_format: types.WGPU
             .height = DIAG_RENDER_TARGET_HEIGHT,
             .depth_or_array_layers = 1,
             .format = DIAG_PLS_ATTACHMENT_FORMAT,
-            .usage = types.WGPUTextureUsage_RenderAttachment | types.WGPUTextureUsage_StorageAttachment,
-            .dimension = model.WGPUTextureDimension_2D,
-            .view_dimension = model.WGPUTextureViewDimension_2D,
+            .usage = abi_base.WGPUTextureUsage_RenderAttachment | abi_base.WGPUTextureUsage_StorageAttachment,
+            .dimension = model_gpu_types.WGPUTextureDimension_2D,
+            .view_dimension = model_gpu_types.WGPUTextureViewDimension_2D,
             .mip_level = 0,
             .sample_count = 1,
-            .aspect = model.WGPUTextureAspect_All,
+            .aspect = model_gpu_types.WGPUTextureAspect_All,
             .bytes_per_row = 0,
             .rows_per_image = 0,
             .offset = 0,
         },
-        types.WGPUTextureUsage_RenderAttachment | types.WGPUTextureUsage_StorageAttachment,
+        abi_base.WGPUTextureUsage_RenderAttachment | abi_base.WGPUTextureUsage_StorageAttachment,
     );
     const storage_view = try createStorageAttachmentTextureView(procs, storage_texture, DIAG_PLS_ATTACHMENT_FORMAT);
     defer procs.wgpuTextureViewRelease(storage_view);
@@ -110,7 +112,7 @@ pub fn runPixelLocalStorageDiagnostics(self: *Backend, target_format: types.WGPU
     );
     defer render_api.render_pipeline_release(render_pipeline);
 
-    const encoder = procs.wgpuDeviceCreateCommandEncoder(self.core.device.?, &types.WGPUCommandEncoderDescriptor{
+    const encoder = procs.wgpuDeviceCreateCommandEncoder(self.core.device.?, &abi_descriptor.WGPUCommandEncoderDescriptor{
         .nextInChain = null,
         .label = loader.emptyStringView(),
     });
@@ -169,7 +171,7 @@ pub fn runPixelLocalStorageDiagnostics(self: *Backend, target_format: types.WGPU
 
     const command_buffer = procs.wgpuCommandEncoderFinish(
         encoder,
-        &types.WGPUCommandBufferDescriptor{
+        &abi_descriptor.WGPUCommandBufferDescriptor{
             .nextInChain = null,
             .label = loader.emptyStringView(),
         },
@@ -178,7 +180,7 @@ pub fn runPixelLocalStorageDiagnostics(self: *Backend, target_format: types.WGPU
     procs.wgpuCommandBufferRelease(command_buffer);
 }
 
-pub fn runPixelLocalStorageDiagnosticsEmulated(self: *Backend, target_format: types.WGPUTextureFormat) !void {
+pub fn runPixelLocalStorageDiagnosticsEmulated(self: *Backend, target_format: abi_base.WGPUTextureFormat) !void {
     const procs = self.core.procs orelse return error.ProceduralNotReady;
     const render_api = render_api_mod.loadRenderApi(procs, self.core.dyn_lib) orelse return error.RenderApiUnavailable;
 
@@ -190,7 +192,7 @@ pub fn runPixelLocalStorageDiagnosticsEmulated(self: *Backend, target_format: ty
     const render_pipeline = try createPixelLocalStorageEmulatedRenderPipelineForDiagnostics(self, normalized_target_format);
     defer render_api.render_pipeline_release(render_pipeline);
 
-    const encoder = procs.wgpuDeviceCreateCommandEncoder(self.core.device.?, &types.WGPUCommandEncoderDescriptor{
+    const encoder = procs.wgpuDeviceCreateCommandEncoder(self.core.device.?, &abi_descriptor.WGPUCommandEncoderDescriptor{
         .nextInChain = null,
         .label = loader.emptyStringView(),
     });
@@ -229,7 +231,7 @@ pub fn runPixelLocalStorageDiagnosticsEmulated(self: *Backend, target_format: ty
 
     const command_buffer = procs.wgpuCommandEncoderFinish(
         encoder,
-        &types.WGPUCommandBufferDescriptor{
+        &abi_descriptor.WGPUCommandBufferDescriptor{
             .nextInChain = null,
             .label = loader.emptyStringView(),
         },
@@ -240,9 +242,9 @@ pub fn runPixelLocalStorageDiagnosticsEmulated(self: *Backend, target_format: ty
 
 fn createPixelLocalStorageRenderPipelineForDiagnostics(
     self: *Backend,
-    target_format: types.WGPUTextureFormat,
+    target_format: abi_base.WGPUTextureFormat,
     storage_attachments: []const render_types_mod.PipelineLayoutStorageAttachment,
-) !types.WGPURenderPipeline {
+) !abi_base.WGPURenderPipeline {
     const procs = self.core.procs orelse return error.ProceduralNotReady;
     const async_procs = async_procs_mod.loadAsyncProcs(self.core.dyn_lib) orelse return error.AsyncProcUnavailable;
 
@@ -266,7 +268,7 @@ fn createPixelLocalStorageRenderPipelineForDiagnostics(
 
     const pipeline_layout = pls_layout.createPipelineLayoutWithPixelLocalStorage(
         self,
-        &[_]types.WGPUBindGroupLayout{},
+        &[_]abi_base.WGPUBindGroupLayout{},
         DIAG_PLS_TOTAL_SIZE_BYTES,
         storage_attachments,
     ) catch return error.DiagnosticPipelineCreationFailed;
@@ -306,14 +308,14 @@ fn createPixelLocalStorageRenderPipelineForDiagnostics(
             .stripIndexFormat = 0,
             .frontFace = rc.RENDER_FRONT_FACE_CCW,
             .cullMode = rc.RENDER_CULL_MODE_NONE,
-            .unclippedDepth = types.WGPU_FALSE,
+            .unclippedDepth = abi_base.WGPU_FALSE,
         },
         .depthStencil = null,
         .multisample = .{
             .nextInChain = null,
             .count = 1,
             .mask = rc.RENDER_MULTISAMPLE_MASK_ALL,
-            .alphaToCoverageEnabled = types.WGPU_FALSE,
+            .alphaToCoverageEnabled = abi_base.WGPU_FALSE,
         },
         .fragment = &fragment_state,
     };
@@ -328,8 +330,8 @@ fn createPixelLocalStorageRenderPipelineForDiagnostics(
 
 fn createPixelLocalStorageEmulatedRenderPipelineForDiagnostics(
     self: *Backend,
-    target_format: types.WGPUTextureFormat,
-) !types.WGPURenderPipeline {
+    target_format: abi_base.WGPUTextureFormat,
+) !abi_base.WGPURenderPipeline {
     const procs = self.core.procs orelse return error.ProceduralNotReady;
     const async_procs = async_procs_mod.loadAsyncProcs(self.core.dyn_lib) orelse return error.AsyncProcUnavailable;
 
@@ -385,14 +387,14 @@ fn createPixelLocalStorageEmulatedRenderPipelineForDiagnostics(
             .stripIndexFormat = 0,
             .frontFace = rc.RENDER_FRONT_FACE_CCW,
             .cullMode = rc.RENDER_CULL_MODE_NONE,
-            .unclippedDepth = types.WGPU_FALSE,
+            .unclippedDepth = abi_base.WGPU_FALSE,
         },
         .depthStencil = null,
         .multisample = .{
             .nextInChain = null,
             .count = 1,
             .mask = rc.RENDER_MULTISAMPLE_MASK_ALL,
-            .alphaToCoverageEnabled = types.WGPU_FALSE,
+            .alphaToCoverageEnabled = abi_base.WGPU_FALSE,
         },
         .fragment = &fragment_state,
     };
@@ -405,7 +407,7 @@ fn createPixelLocalStorageEmulatedRenderPipelineForDiagnostics(
     ) catch error.DiagnosticPipelineCreationFailed;
 }
 
-fn getOrCreateDiagnosticRenderTexture(self: *Backend, target_format: types.WGPUTextureFormat) !types.WGPUTexture {
+fn getOrCreateDiagnosticRenderTexture(self: *Backend, target_format: abi_base.WGPUTextureFormat) !abi_base.WGPUTexture {
     return resources.getOrCreateTexture(
         self,
         .{
@@ -415,78 +417,78 @@ fn getOrCreateDiagnosticRenderTexture(self: *Backend, target_format: types.WGPUT
             .height = DIAG_RENDER_TARGET_HEIGHT,
             .depth_or_array_layers = 1,
             .format = target_format,
-            .usage = types.WGPUTextureUsage_RenderAttachment | types.WGPUTextureUsage_CopyDst | types.WGPUTextureUsage_CopySrc | types.WGPUTextureUsage_TextureBinding,
-            .dimension = model.WGPUTextureDimension_2D,
-            .view_dimension = model.WGPUTextureViewDimension_2D,
+            .usage = abi_base.WGPUTextureUsage_RenderAttachment | abi_base.WGPUTextureUsage_CopyDst | abi_base.WGPUTextureUsage_CopySrc | abi_base.WGPUTextureUsage_TextureBinding,
+            .dimension = model_gpu_types.WGPUTextureDimension_2D,
+            .view_dimension = model_gpu_types.WGPUTextureViewDimension_2D,
             .mip_level = 0,
             .sample_count = 1,
-            .aspect = model.WGPUTextureAspect_All,
+            .aspect = model_gpu_types.WGPUTextureAspect_All,
             .bytes_per_row = 0,
             .rows_per_image = 0,
             .offset = 0,
         },
-        types.WGPUTextureUsage_RenderAttachment | types.WGPUTextureUsage_CopyDst | types.WGPUTextureUsage_CopySrc | types.WGPUTextureUsage_TextureBinding,
+        abi_base.WGPUTextureUsage_RenderAttachment | abi_base.WGPUTextureUsage_CopyDst | abi_base.WGPUTextureUsage_CopySrc | abi_base.WGPUTextureUsage_TextureBinding,
     );
 }
 
 fn createRenderAttachmentTextureView(
-    procs: types.Procs,
-    texture: types.WGPUTexture,
-    target_format: types.WGPUTextureFormat,
-) !types.WGPUTextureView {
-    const view = procs.wgpuTextureCreateView(texture, &types.WGPUTextureViewDescriptor{
+    procs: abi_proc_aliases.Procs,
+    texture: abi_base.WGPUTexture,
+    target_format: abi_base.WGPUTextureFormat,
+) !abi_base.WGPUTextureView {
+    const view = procs.wgpuTextureCreateView(texture, &abi_descriptor.WGPUTextureViewDescriptor{
         .nextInChain = null,
         .label = loader.emptyStringView(),
         .format = target_format,
-        .dimension = types.WGPUTextureViewDimension_2D,
+        .dimension = abi_base.WGPUTextureViewDimension_2D,
         .baseMipLevel = 0,
         .mipLevelCount = 1,
         .baseArrayLayer = 0,
         .arrayLayerCount = 1,
-        .aspect = types.WGPUTextureAspect_All,
-        .usage = types.WGPUTextureUsage_RenderAttachment,
-        .swizzleR = types.WGPUTextureComponentSwizzle_Red,
-        .swizzleG = types.WGPUTextureComponentSwizzle_Green,
-        .swizzleB = types.WGPUTextureComponentSwizzle_Blue,
-        .swizzleA = types.WGPUTextureComponentSwizzle_Alpha,
+        .aspect = abi_base.WGPUTextureAspect_All,
+        .usage = abi_base.WGPUTextureUsage_RenderAttachment,
+        .swizzleR = abi_base.WGPUTextureComponentSwizzle_Red,
+        .swizzleG = abi_base.WGPUTextureComponentSwizzle_Green,
+        .swizzleB = abi_base.WGPUTextureComponentSwizzle_Blue,
+        .swizzleA = abi_base.WGPUTextureComponentSwizzle_Alpha,
     });
     if (view == null) return error.TextureViewCreationFailed;
     return view;
 }
 
 fn createStorageAttachmentTextureView(
-    procs: types.Procs,
-    texture: types.WGPUTexture,
-    target_format: types.WGPUTextureFormat,
-) !types.WGPUTextureView {
-    const view = procs.wgpuTextureCreateView(texture, &types.WGPUTextureViewDescriptor{
+    procs: abi_proc_aliases.Procs,
+    texture: abi_base.WGPUTexture,
+    target_format: abi_base.WGPUTextureFormat,
+) !abi_base.WGPUTextureView {
+    const view = procs.wgpuTextureCreateView(texture, &abi_descriptor.WGPUTextureViewDescriptor{
         .nextInChain = null,
         .label = loader.emptyStringView(),
         .format = target_format,
-        .dimension = types.WGPUTextureViewDimension_2D,
+        .dimension = abi_base.WGPUTextureViewDimension_2D,
         .baseMipLevel = 0,
         .mipLevelCount = 1,
         .baseArrayLayer = 0,
         .arrayLayerCount = 1,
-        .aspect = types.WGPUTextureAspect_All,
-        .usage = types.WGPUTextureUsage_RenderAttachment | types.WGPUTextureUsage_StorageAttachment,
-        .swizzleR = types.WGPUTextureComponentSwizzle_Red,
-        .swizzleG = types.WGPUTextureComponentSwizzle_Green,
-        .swizzleB = types.WGPUTextureComponentSwizzle_Blue,
-        .swizzleA = types.WGPUTextureComponentSwizzle_Alpha,
+        .aspect = abi_base.WGPUTextureAspect_All,
+        .usage = abi_base.WGPUTextureUsage_RenderAttachment | abi_base.WGPUTextureUsage_StorageAttachment,
+        .swizzleR = abi_base.WGPUTextureComponentSwizzle_Red,
+        .swizzleG = abi_base.WGPUTextureComponentSwizzle_Green,
+        .swizzleB = abi_base.WGPUTextureComponentSwizzle_Blue,
+        .swizzleA = abi_base.WGPUTextureComponentSwizzle_Alpha,
     });
     if (view == null) return error.TextureViewCreationFailed;
     return view;
 }
 
-fn normalizeDiagnosticFormat(raw: types.WGPUTextureFormat) types.WGPUTextureFormat {
+fn normalizeDiagnosticFormat(raw: abi_base.WGPUTextureFormat) abi_base.WGPUTextureFormat {
     const normalized = resources.normalizeTextureFormat(raw);
-    return if (normalized == types.WGPUTextureFormat_Undefined) model.WGPUTextureFormat_RGBA8Unorm else normalized;
+    return if (normalized == abi_base.WGPUTextureFormat_Undefined) model_gpu_types.WGPUTextureFormat_RGBA8Unorm else normalized;
 }
 
-fn requirePixelLocalStorageFeature(procs: types.Procs, device: types.WGPUDevice) !void {
+fn requirePixelLocalStorageFeature(procs: abi_proc_aliases.Procs, device: abi_base.WGPUDevice) !void {
     const has_feature = procs.wgpuDeviceHasFeature orelse return error.PixelLocalStorageFeatureUnavailable;
-    if (has_feature(device, types.WGPUFeatureName_PixelLocalStorageNonCoherent) == types.WGPU_FALSE) {
+    if (has_feature(device, abi_base.WGPUFeatureName_PixelLocalStorageNonCoherent) == abi_base.WGPU_FALSE) {
         return error.PixelLocalStorageFeatureUnavailable;
     }
 }

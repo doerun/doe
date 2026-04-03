@@ -1,6 +1,7 @@
 const std = @import("std");
 const common_timing = @import("../common/timing.zig");
-const model = @import("../../model_webgpu_types.zig");
+const model_resource_types = @import("../../model_resource_types.zig");
+const model_gpu_types = @import("../../model_gpu_types.zig");
 const webgpu = @import("../runtime_types.zig");
 const bridge = @import("metal_bridge_decls.zig");
 const metal_bridge_blit_encoder_copy_buffer_to_texture = bridge.metal_bridge_blit_encoder_copy_buffer_to_texture;
@@ -25,7 +26,7 @@ pub const CopyMetrics = struct {
     gpu_timestamps_valid: bool = false,
 };
 
-pub fn execute_copy(self: anytype, cmd: model.CopyCommand, queue_sync_mode: webgpu.QueueSyncMode) !CopyMetrics {
+pub fn execute_copy(self: anytype, cmd: model_resource_types.CopyCommand, queue_sync_mode: webgpu.QueueSyncMode) !CopyMetrics {
     const setup_start = common_timing.now_ns();
     const src_buffer = if (cmd.direction == .buffer_to_buffer or cmd.direction == .buffer_to_texture)
         try ensure_buffer(self, cmd.src.handle, required_buffer_size(cmd.bytes, cmd.src.offset))
@@ -36,11 +37,11 @@ pub fn execute_copy(self: anytype, cmd: model.CopyCommand, queue_sync_mode: webg
     else
         null;
     const src_texture = if (cmd.direction == .texture_to_buffer or cmd.direction == .texture_to_texture)
-        try ensure_texture(self, cmd.src, model.WGPUTextureUsage_CopySrc)
+        try ensure_texture(self, cmd.src, model_gpu_types.WGPUTextureUsage_CopySrc)
     else
         null;
     const dst_texture = if (cmd.direction == .buffer_to_texture or cmd.direction == .texture_to_texture)
-        try ensure_texture(self, cmd.dst, model.WGPUTextureUsage_CopyDst)
+        try ensure_texture(self, cmd.dst, model_gpu_types.WGPUTextureUsage_CopyDst)
     else
         null;
     const setup_ns = common_timing.ns_delta(common_timing.now_ns(), setup_start);
@@ -170,7 +171,7 @@ fn ensure_buffer(self: anytype, handle: u64, size: u64) !?*anyopaque {
     return buffer;
 }
 
-fn ensure_texture(self: anytype, resource: model.CopyTextureResource, required_usage: model.WGPUFlags) !?*anyopaque {
+fn ensure_texture(self: anytype, resource: model_resource_types.CopyTextureResource, required_usage: model_gpu_types.WGPUFlags) !?*anyopaque {
     if (self.textures.get(resource.handle)) |tex| return tex;
     const usage = if (resource.usage != 0) resource.usage else required_usage;
     const mip_levels: u32 = if (resource.mip_level > 0) resource.mip_level + 1 else 1;
@@ -222,7 +223,7 @@ fn normalize_copy_depth(value: u32) u32 {
     return if (value == 0) 1 else value;
 }
 
-fn alignedStagingSize(cmd: model.CopyCommand) u64 {
+fn alignedStagingSize(cmd: model_resource_types.CopyCommand) u64 {
     const raw: u64 = if (cmd.bytes > 0) @intCast(cmd.bytes) else blk: {
         const w: u64 = if (cmd.src.width > 0) cmd.src.width else 1;
         const h: u64 = if (cmd.src.height > 0) cmd.src.height else 1;

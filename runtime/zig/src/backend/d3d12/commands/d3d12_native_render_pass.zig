@@ -1,6 +1,6 @@
 const std = @import("std");
-const model = @import("../../../model_webgpu_types.zig");
-const types = @import("../../../core/abi/wgpu_types.zig");
+const model_gpu_types = @import("../../../model_gpu_types.zig");
+const abi_base = @import("../../../core/abi/wgpu_base_types.zig");
 const native = @import("../../../doe_wgpu_native.zig");
 const dc = @import("../d3d12_constants.zig");
 const d3d12_descriptors = @import("../d3d12_descriptors.zig");
@@ -200,8 +200,8 @@ fn maybe_record_resolve(
     if (cmd.sample_count <= 1) return error.InvalidArgument;
 
     const resolve_view = texture_view_from_handle(cmd.resolve_target_view_handle) orelse return error.InvalidArgument;
-    if (resolve_render_view_dimension(target_view) == model.WGPUTextureViewDimension_3D or
-        resolve_render_view_dimension(resolve_view) == model.WGPUTextureViewDimension_3D)
+    if (resolve_render_view_dimension(target_view) == model_gpu_types.WGPUTextureViewDimension_3D or
+        resolve_render_view_dimension(resolve_view) == model_gpu_types.WGPUTextureViewDimension_3D)
     {
         return error.UnsupportedFeature;
     }
@@ -261,7 +261,7 @@ fn texture_view_from_handle(handle: u64) ?*const DoeTextureView {
 fn resolved_layer_count(view: *const DoeTextureView) u32 {
     if (view.array_layer_count != 0) return view.array_layer_count;
     return switch (view.dimension) {
-        model.WGPUTextureViewDimension_2DArray, model.WGPUTextureViewDimension_CubeArray => blk: {
+        model_gpu_types.WGPUTextureViewDimension_2DArray, model_gpu_types.WGPUTextureViewDimension_CubeArray => blk: {
             if (view.tex.depth_or_array_layers <= view.base_array_layer) break :blk 1;
             break :blk view.tex.depth_or_array_layers - view.base_array_layer;
         },
@@ -277,18 +277,18 @@ fn resolve_view_format(view: *const DoeTextureView, fallback: u32) u32 {
 
 fn resolve_render_view_dimension(view: *const DoeTextureView) u32 {
     if (view.dimension != 0) return view.dimension;
-    return if (view.tex.dimension == model.WGPUTextureDimension_3D)
-        model.WGPUTextureViewDimension_3D
+    return if (view.tex.dimension == model_gpu_types.WGPUTextureDimension_3D)
+        model_gpu_types.WGPUTextureViewDimension_3D
     else if (view.base_array_layer > 0 or resolved_layer_count(view) > 1)
-        model.WGPUTextureViewDimension_2DArray
+        model_gpu_types.WGPUTextureViewDimension_2DArray
     else
-        model.WGPUTextureViewDimension_2D;
+        model_gpu_types.WGPUTextureViewDimension_2D;
 }
 
 fn resolve_depth_view_dimension(view: *const DoeTextureView) u32 {
     return switch (resolve_render_view_dimension(view)) {
-        model.WGPUTextureViewDimension_2DArray => types.WGPUTextureViewDimension_2DArrayDepth,
-        else => types.WGPUTextureViewDimension_2DDepth,
+        model_gpu_types.WGPUTextureViewDimension_2DArray => abi_base.WGPUTextureViewDimension_2DArrayDepth,
+        else => abi_base.WGPUTextureViewDimension_2DDepth,
     };
 }
 
@@ -317,7 +317,7 @@ test "resolved_layer_count respects explicit and implicit view layers" {
     var tex = DoeTexture{ .depth_or_array_layers = 6 };
     var view = DoeTextureView{
         .tex = &tex,
-        .dimension = model.WGPUTextureViewDimension_2DArray,
+        .dimension = model_gpu_types.WGPUTextureViewDimension_2DArray,
         .base_array_layer = 2,
         .array_layer_count = 0,
     };

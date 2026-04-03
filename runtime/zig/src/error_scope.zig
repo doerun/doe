@@ -15,7 +15,7 @@
 // caller must ensure the device outlives all concurrent operations.
 
 const std = @import("std");
-const types = @import("core/abi/wgpu_types.zig");
+const abi_base = @import("core/abi/wgpu_base_types.zig");
 
 // ============================================================
 // Constants
@@ -81,7 +81,7 @@ const Scope = struct {
 // callback(type, message, userdata1, userdata2)
 pub const PopErrorScopeCallback = *const fn (
     error_type: u32,
-    msg: types.WGPUStringView,
+    msg: abi_base.WGPUStringView,
     userdata1: ?*anyopaque,
     userdata2: ?*anyopaque,
 ) callconv(.c) void;
@@ -101,7 +101,7 @@ pub const WGPUPopErrorScopeCallbackInfo = extern struct {
 
 pub const UncapturedErrorCallback = *const fn (
     error_type: u32,
-    msg: types.WGPUStringView,
+    msg: abi_base.WGPUStringView,
     userdata1: ?*anyopaque,
     userdata2: ?*anyopaque,
 ) callconv(.c) void;
@@ -156,7 +156,7 @@ pub const ErrorScopeStack = struct {
 
         const cb = cb_info.callback orelse return true;
         if (scope.captured) |err| {
-            const sv = types.WGPUStringView{
+            const sv = abi_base.WGPUStringView{
                 .data = &err.msg_buf,
                 .length = err.msg_len,
             };

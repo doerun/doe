@@ -1,4 +1,4 @@
-const wgpu_types = @import("../../core/abi/wgpu_types.zig");
+const runtime_types = @import("../runtime_types.zig");
 
 pub const BackendNativeError = error{
     InvalidArgument,
@@ -12,7 +12,7 @@ pub const BackendNativeError = error{
     SurfaceUnavailable,
 };
 
-pub fn map_error_status(err: anyerror) wgpu_types.NativeExecutionStatus {
+pub fn map_error_status(err: anyerror) runtime_types.NativeExecutionStatus {
     return switch (err) {
         error.Unsupported,
         error.UnsupportedFeature,

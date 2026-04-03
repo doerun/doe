@@ -1,5 +1,6 @@
 const std = @import("std");
-const model = @import("../../../model_webgpu_types.zig");
+const model_resource_types = @import("../../../model_resource_types.zig");
+const model_gpu_types = @import("../../../model_gpu_types.zig");
 const common_timing = @import("../../common/timing.zig");
 const d3d12_texture = @import("../resources/d3d12_texture.zig");
 
@@ -34,7 +35,7 @@ pub const CopyState = struct {
         queue: ?*anyopaque,
         texture_map: *d3d12_texture.TextureMap,
         allocator: std.mem.Allocator,
-        cmd: model.CopyCommand,
+        cmd: model_resource_types.CopyCommand,
     ) !CopyMetrics {
         if (cmd.bytes == 0) return error.InvalidArgument;
 
@@ -60,7 +61,7 @@ pub const CopyState = struct {
                 const width = if (cmd.dst.width > 0) cmd.dst.width else 1;
                 const height = if (cmd.dst.height > 0) cmd.dst.height else 1;
                 const bpr = if (cmd.dst.bytes_per_row > 0) cmd.dst.bytes_per_row else @as(u32, @intCast(cmd.bytes / height));
-                const format: u32 = if (cmd.dst.format != model.WGPUTextureFormat_Undefined) cmd.dst.format else model.WGPUTextureFormat_RGBA8Unorm;
+                const format: u32 = if (cmd.dst.format != model_gpu_types.WGPUTextureFormat_Undefined) cmd.dst.format else model_gpu_types.WGPUTextureFormat_RGBA8Unorm;
                 d3d12_bridge_command_list_copy_texture_region(self.cmd_list, dst_resource, src_resource, cmd.src.offset, width, height, bpr, format);
             },
             .texture_to_buffer => {
@@ -128,13 +129,13 @@ fn resolve_resource(
     device: ?*anyopaque,
     texture_map: *d3d12_texture.TextureMap,
     allocator: std.mem.Allocator,
-    res: model.CopyTextureResource,
+    res: model_resource_types.CopyTextureResource,
 ) ?*anyopaque {
     if (res.kind == .texture) {
         if (texture_map.get(res.handle)) |entry| return entry.resource;
         const width = if (res.width > 0) res.width else 1;
         const height = if (res.height > 0) res.height else 1;
-        const format: u32 = if (res.format != model.WGPUTextureFormat_Undefined) res.format else model.WGPUTextureFormat_RGBA8Unorm;
+        const format: u32 = if (res.format != model_gpu_types.WGPUTextureFormat_Undefined) res.format else model_gpu_types.WGPUTextureFormat_RGBA8Unorm;
         _ = @as(u32, @truncate(res.usage));
         const tex = d3d12_bridge_device_create_buffer(device, @as(usize, width) * @as(usize, height) * 4, HEAP_TYPE_DEFAULT) orelse return null;
         texture_map.put(allocator, res.handle, .{

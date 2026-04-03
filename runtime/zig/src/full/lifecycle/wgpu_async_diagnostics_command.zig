@@ -1,6 +1,10 @@
 const std = @import("std");
-const model = @import("../../model_webgpu_types.zig");
-const types = @import("../../core/abi/wgpu_types.zig");
+const model_gpu_types = @import("../../model_gpu_types.zig");
+const model_async_types = @import("../../model_async_types.zig");
+const abi_base = @import("../../core/abi/wgpu_base_types.zig");
+const abi_descriptor = @import("../../core/abi/wgpu_descriptor_types.zig");
+const abi_execution = @import("../../core/abi/wgpu_execution_types.zig");
+const abi_proc_aliases = @import("../../core/abi/wgpu_type_proc_aliases.zig");
 const loader = @import("../../core/abi/wgpu_loader.zig");
 const resources = @import("../../core/resource/wgpu_resources.zig");
 const p0_procs_mod = @import("../../wgpu_p0_procs.zig");
@@ -23,7 +27,7 @@ const DIAG_RENDER_TARGET_HANDLE: u64 = 0x8C9F_2C00_0000_0000;
 const DIAG_RENDER_TARGET_WIDTH: u32 = 4;
 const DIAG_RENDER_TARGET_HEIGHT: u32 = 4;
 const DIAG_MAX_DRAW_COUNT: u64 = 50_000_000;
-const WGPUFeatureName_ChromiumExperimentalSamplingResourceTable: types.WGPUFeatureName = 0x0005003A;
+const WGPUFeatureName_ChromiumExperimentalSamplingResourceTable: abi_base.WGPUFeatureName = 0x0005003A;
 
 const DIAGNOSTIC_SHADER_SOURCE =
     \\@vertex
@@ -47,7 +51,7 @@ const DIAGNOSTIC_COMPUTE_SHADER_SOURCE =
     \\fn main() {}
 ;
 
-pub fn executeAsyncDiagnostics(self: *Backend, diagnostics: model.AsyncDiagnosticsCommand) !types.NativeExecutionResult {
+pub fn executeAsyncDiagnostics(self: *Backend, diagnostics: model_async_types.AsyncDiagnosticsCommand) !abi_execution.NativeExecutionResult {
     const setup_start_ns = std.time.nanoTimestamp();
     var iteration: u32 = 0;
     while (iteration < diagnostics.iterations) : (iteration += 1) {
@@ -130,8 +134,8 @@ pub fn executeAsyncDiagnostics(self: *Backend, diagnostics: model.AsyncDiagnosti
 
 fn runFullDiagnostics(
     self: *Backend,
-    target_format: types.WGPUTextureFormat,
-    feature_policy: model.AsyncDiagnosticsFeaturePolicy,
+    target_format: abi_base.WGPUTextureFormat,
+    feature_policy: model_async_types.AsyncDiagnosticsFeaturePolicy,
 ) !void {
     try runPipelineAsyncDiagnostics(self, target_format);
     try runCapabilityIntrospectionDiagnostics(self);
@@ -156,14 +160,14 @@ fn runCapabilityIntrospectionDiagnostics(self: *Backend) !void {
     try self.runCapabilityIntrospection();
 }
 
-fn runPipelineAsyncDiagnostics(self: *Backend, target_format: types.WGPUTextureFormat) !void {
+fn runPipelineAsyncDiagnostics(self: *Backend, target_format: abi_base.WGPUTextureFormat) !void {
     const procs = self.core.procs orelse return error.ProceduralNotReady;
     const render_api = render_api_mod.loadRenderApi(procs, self.core.dyn_lib) orelse return error.RenderApiUnavailable;
     const pipeline = try createRenderPipelineForDiagnostics(self, target_format);
     render_api.render_pipeline_release(pipeline);
 }
 
-fn runResourceTableImmediatesDiagnostics(self: *Backend, target_format: types.WGPUTextureFormat) !void {
+fn runResourceTableImmediatesDiagnostics(self: *Backend, target_format: abi_base.WGPUTextureFormat) !void {
     const procs = self.core.procs orelse return error.ProceduralNotReady;
     const render_api = render_api_mod.loadRenderApi(procs, self.core.dyn_lib) orelse return error.RenderApiUnavailable;
     const resource_table_procs = self.getResourceTableProcs() orelse return error.ResourceTableProcUnavailable;
@@ -174,7 +178,7 @@ fn runResourceTableImmediatesDiagnostics(self: *Backend, target_format: types.WG
         self,
         DIAG_RESOURCE_TABLE_BUFFER_HANDLE,
         DIAG_RESOURCE_TABLE_BUFFER_SIZE,
-        types.WGPUBufferUsage_Storage | types.WGPUBufferUsage_CopyDst,
+        abi_base.WGPUBufferUsage_Storage | abi_base.WGPUBufferUsage_CopyDst,
     );
     var table_descriptor = p1_resource_table_procs_mod.initResourceTableDescriptor(DIAG_RESOURCE_TABLE_SIZE);
     const create_resource_table = resource_table_procs.device_create_resource_table orelse return error.ResourceTableProcUnavailable;
@@ -190,12 +194,12 @@ fn runResourceTableImmediatesDiagnostics(self: *Backend, target_format: types.WG
     const insert_binding = resource_table_procs.resource_table_insert_binding orelse return error.ResourceTableProcUnavailable;
     const slot = insert_binding(table, &binding_resource);
     const update_binding = resource_table_procs.resource_table_update orelse return error.ResourceTableProcUnavailable;
-    if (update_binding(table, slot, &binding_resource) != types.WGPUStatus_Success) return error.ResourceTableUpdateFailed;
+    if (update_binding(table, slot, &binding_resource) != abi_base.WGPUStatus_Success) return error.ResourceTableUpdateFailed;
     const remove_binding = resource_table_procs.resource_table_remove_binding orelse return error.ResourceTableProcUnavailable;
-    if (remove_binding(table, slot) != types.WGPUStatus_Success) return error.ResourceTableRemoveFailed;
+    if (remove_binding(table, slot) != abi_base.WGPUStatus_Success) return error.ResourceTableRemoveFailed;
     _ = insert_binding(table, &binding_resource);
 
-    const encoder = procs.wgpuDeviceCreateCommandEncoder(self.core.device.?, &types.WGPUCommandEncoderDescriptor{
+    const encoder = procs.wgpuDeviceCreateCommandEncoder(self.core.device.?, &abi_descriptor.WGPUCommandEncoderDescriptor{
         .nextInChain = null,
         .label = loader.emptyStringView(),
     });
@@ -205,7 +209,7 @@ fn runResourceTableImmediatesDiagnostics(self: *Backend, target_format: types.WG
     const immediate_data = [_]u8{ 0, 0, 0, 0 };
     const compute_pass = procs.wgpuCommandEncoderBeginComputePass(
         encoder,
-        &types.WGPUComputePassDescriptor{
+        &abi_descriptor.WGPUComputePassDescriptor{
             .nextInChain = null,
             .label = loader.emptyStringView(),
             .timestampWrites = null,
@@ -249,7 +253,7 @@ fn runResourceTableImmediatesDiagnostics(self: *Backend, target_format: types.WG
     p1_resource_table_procs_mod.setRenderPassImmediates(resource_table_procs, render_pass, 0, immediate_data[0..].ptr, 0);
     render_api.render_pass_encoder_end(render_pass);
 
-    const color_formats = [_]types.WGPUTextureFormat{normalizeDiagnosticFormat(target_format)};
+    const color_formats = [_]abi_base.WGPUTextureFormat{normalizeDiagnosticFormat(target_format)};
     const render_bundle_encoder = render_api.device_create_render_bundle_encoder(
         self.core.device.?,
         &render_types_mod.RenderBundleEncoderDescriptor{
@@ -257,10 +261,10 @@ fn runResourceTableImmediatesDiagnostics(self: *Backend, target_format: types.WG
             .label = loader.stringView("doe.resource_table.bundle"),
             .colorFormatCount = 1,
             .colorFormats = color_formats[0..].ptr,
-            .depthStencilFormat = types.WGPUTextureFormat_Undefined,
+            .depthStencilFormat = abi_base.WGPUTextureFormat_Undefined,
             .sampleCount = 1,
-            .depthReadOnly = types.WGPU_FALSE,
-            .stencilReadOnly = types.WGPU_FALSE,
+            .depthReadOnly = abi_base.WGPU_FALSE,
+            .stencilReadOnly = abi_base.WGPU_FALSE,
         },
     );
     if (render_bundle_encoder == null) return error.RenderBundleEncoderCreationFailed;
@@ -279,7 +283,7 @@ fn runResourceTableImmediatesDiagnostics(self: *Backend, target_format: types.WG
 
     const command_buffer = procs.wgpuCommandEncoderFinish(
         encoder,
-        &types.WGPUCommandBufferDescriptor{
+        &abi_descriptor.WGPUCommandBufferDescriptor{
             .nextInChain = null,
             .label = loader.emptyStringView(),
         },
@@ -288,11 +292,11 @@ fn runResourceTableImmediatesDiagnostics(self: *Backend, target_format: types.WG
     procs.wgpuCommandBufferRelease(command_buffer);
 }
 
-fn runResourceTableImmediatesDiagnosticsEmulated(self: *Backend, target_format: types.WGPUTextureFormat) !void {
+fn runResourceTableImmediatesDiagnosticsEmulated(self: *Backend, target_format: abi_base.WGPUTextureFormat) !void {
     const procs = self.core.procs orelse return error.ProceduralNotReady;
     const render_api = render_api_mod.loadRenderApi(procs, self.core.dyn_lib) orelse return error.RenderApiUnavailable;
 
-    const encoder = procs.wgpuDeviceCreateCommandEncoder(self.core.device.?, &types.WGPUCommandEncoderDescriptor{
+    const encoder = procs.wgpuDeviceCreateCommandEncoder(self.core.device.?, &abi_descriptor.WGPUCommandEncoderDescriptor{
         .nextInChain = null,
         .label = loader.emptyStringView(),
     });
@@ -301,7 +305,7 @@ fn runResourceTableImmediatesDiagnosticsEmulated(self: *Backend, target_format: 
 
     const compute_pass = procs.wgpuCommandEncoderBeginComputePass(
         encoder,
-        &types.WGPUComputePassDescriptor{
+        &abi_descriptor.WGPUComputePassDescriptor{
             .nextInChain = null,
             .label = loader.emptyStringView(),
             .timestampWrites = null,
@@ -342,7 +346,7 @@ fn runResourceTableImmediatesDiagnosticsEmulated(self: *Backend, target_format: 
     defer render_api.render_pass_encoder_release(render_pass);
     render_api.render_pass_encoder_end(render_pass);
 
-    const color_formats = [_]types.WGPUTextureFormat{normalized_target_format};
+    const color_formats = [_]abi_base.WGPUTextureFormat{normalized_target_format};
     const render_bundle_encoder = render_api.device_create_render_bundle_encoder(
         self.core.device.?,
         &render_types_mod.RenderBundleEncoderDescriptor{
@@ -350,10 +354,10 @@ fn runResourceTableImmediatesDiagnosticsEmulated(self: *Backend, target_format: 
             .label = loader.stringView("doe.resource_table.bundle.emulated"),
             .colorFormatCount = 1,
             .colorFormats = color_formats[0..].ptr,
-            .depthStencilFormat = types.WGPUTextureFormat_Undefined,
+            .depthStencilFormat = abi_base.WGPUTextureFormat_Undefined,
             .sampleCount = 1,
-            .depthReadOnly = types.WGPU_FALSE,
-            .stencilReadOnly = types.WGPU_FALSE,
+            .depthReadOnly = abi_base.WGPU_FALSE,
+            .stencilReadOnly = abi_base.WGPU_FALSE,
         },
     );
     if (render_bundle_encoder == null) return error.RenderBundleEncoderCreationFailed;
@@ -370,7 +374,7 @@ fn runResourceTableImmediatesDiagnosticsEmulated(self: *Backend, target_format: 
 
     const command_buffer = procs.wgpuCommandEncoderFinish(
         encoder,
-        &types.WGPUCommandBufferDescriptor{
+        &abi_descriptor.WGPUCommandBufferDescriptor{
             .nextInChain = null,
             .label = loader.emptyStringView(),
         },
@@ -379,44 +383,44 @@ fn runResourceTableImmediatesDiagnosticsEmulated(self: *Backend, target_format: 
     procs.wgpuCommandBufferRelease(command_buffer);
 }
 
-fn runLifecycleRefcountDiagnostics(self: *Backend, target_format: types.WGPUTextureFormat) !void {
+fn runLifecycleRefcountDiagnostics(self: *Backend, target_format: abi_base.WGPUTextureFormat) !void {
     const procs = self.core.procs orelse return error.ProceduralNotReady;
     const render_api = render_api_mod.loadRenderApi(procs, self.core.dyn_lib) orelse return error.RenderApiUnavailable;
     const lifecycle = self.getLifecycleProcs() orelse return error.LifecycleProcUnavailable;
     const resource_table_procs = self.getResourceTableProcs();
 
-    touchAddRefAndRelease(types.WGPUInstance, lifecycle.instance_add_ref, procs.wgpuInstanceRelease, self.core.instance);
-    touchAddRefAndRelease(types.WGPUAdapter, lifecycle.adapter_add_ref, procs.wgpuAdapterRelease, self.core.adapter);
-    touchAddRefAndRelease(types.WGPUDevice, lifecycle.device_add_ref, procs.wgpuDeviceRelease, self.core.device);
-    touchAddRefAndRelease(types.WGPUQueue, lifecycle.queue_add_ref, procs.wgpuQueueRelease, self.core.queue);
+    touchAddRefAndRelease(abi_base.WGPUInstance, lifecycle.instance_add_ref, procs.wgpuInstanceRelease, self.core.instance);
+    touchAddRefAndRelease(abi_base.WGPUAdapter, lifecycle.adapter_add_ref, procs.wgpuAdapterRelease, self.core.adapter);
+    touchAddRefAndRelease(abi_base.WGPUDevice, lifecycle.device_add_ref, procs.wgpuDeviceRelease, self.core.device);
+    touchAddRefAndRelease(abi_base.WGPUQueue, lifecycle.queue_add_ref, procs.wgpuQueueRelease, self.core.queue);
 
     const binding_resources = try render_resource_mod.getOrCreateRenderUniformBindingResources(self);
-    touchAddRefAndRelease(types.WGPUBindGroupLayout, lifecycle.bind_group_layout_add_ref, procs.wgpuBindGroupLayoutRelease, binding_resources.bind_group_layout);
-    touchAddRefAndRelease(types.WGPUBindGroup, lifecycle.bind_group_add_ref, procs.wgpuBindGroupRelease, binding_resources.bind_group);
+    touchAddRefAndRelease(abi_base.WGPUBindGroupLayout, lifecycle.bind_group_layout_add_ref, procs.wgpuBindGroupLayoutRelease, binding_resources.bind_group_layout);
+    touchAddRefAndRelease(abi_base.WGPUBindGroup, lifecycle.bind_group_add_ref, procs.wgpuBindGroupRelease, binding_resources.bind_group);
     const texture_procs = texture_procs_mod.loadTextureProcs(self.core.dyn_lib) orelse return error.TextureProcUnavailable;
-    touchAddRefAndRelease(types.WGPUSampler, lifecycle.sampler_add_ref, texture_procs.sampler_release, self.full.render_sampler);
+    touchAddRefAndRelease(abi_base.WGPUSampler, lifecycle.sampler_add_ref, texture_procs.sampler_release, self.full.render_sampler);
 
     const buffer = try resources.getOrCreateBuffer(
         self,
         DIAG_RESOURCE_TABLE_BUFFER_HANDLE,
         DIAG_RESOURCE_TABLE_BUFFER_SIZE,
-        types.WGPUBufferUsage_Storage | types.WGPUBufferUsage_CopyDst,
+        abi_base.WGPUBufferUsage_Storage | abi_base.WGPUBufferUsage_CopyDst,
     );
-    touchAddRefAndRelease(types.WGPUBuffer, lifecycle.buffer_add_ref, procs.wgpuBufferRelease, buffer);
+    touchAddRefAndRelease(abi_base.WGPUBuffer, lifecycle.buffer_add_ref, procs.wgpuBufferRelease, buffer);
 
     const texture = try getOrCreateDiagnosticTexture(self, normalizeDiagnosticFormat(target_format));
-    touchAddRefAndRelease(types.WGPUTexture, lifecycle.texture_add_ref, procs.wgpuTextureRelease, texture);
+    touchAddRefAndRelease(abi_base.WGPUTexture, lifecycle.texture_add_ref, procs.wgpuTextureRelease, texture);
     const texture_view = try createDiagnosticTextureView(procs, texture, normalizeDiagnosticFormat(target_format));
     defer procs.wgpuTextureViewRelease(texture_view);
-    touchAddRefAndRelease(types.WGPUTextureView, lifecycle.texture_view_add_ref, procs.wgpuTextureViewRelease, texture_view);
+    touchAddRefAndRelease(abi_base.WGPUTextureView, lifecycle.texture_view_add_ref, procs.wgpuTextureViewRelease, texture_view);
 
     const shader_module = try resources.createShaderModule(self, DIAGNOSTIC_COMPUTE_SHADER_SOURCE);
     defer procs.wgpuShaderModuleRelease(shader_module);
-    touchAddRefAndRelease(types.WGPUShaderModule, lifecycle.shader_module_add_ref, procs.wgpuShaderModuleRelease, shader_module);
+    touchAddRefAndRelease(abi_base.WGPUShaderModule, lifecycle.shader_module_add_ref, procs.wgpuShaderModuleRelease, shader_module);
 
-    const pipeline_layout = try resources.createPipelineLayout(self, &[_]types.WGPUBindGroupLayout{binding_resources.bind_group_layout});
+    const pipeline_layout = try resources.createPipelineLayout(self, &[_]abi_base.WGPUBindGroupLayout{binding_resources.bind_group_layout});
     defer procs.wgpuPipelineLayoutRelease(pipeline_layout);
-    touchAddRefAndRelease(types.WGPUPipelineLayout, lifecycle.pipeline_layout_add_ref, procs.wgpuPipelineLayoutRelease, pipeline_layout);
+    touchAddRefAndRelease(abi_base.WGPUPipelineLayout, lifecycle.pipeline_layout_add_ref, procs.wgpuPipelineLayoutRelease, pipeline_layout);
 
     const compute_pipeline = try resources.createComputePipeline(
         self,
@@ -426,19 +430,19 @@ fn runLifecycleRefcountDiagnostics(self: *Backend, target_format: types.WGPUText
         pipeline_layout,
     );
     defer procs.wgpuComputePipelineRelease(compute_pipeline);
-    touchAddRefAndRelease(types.WGPUComputePipeline, lifecycle.compute_pipeline_add_ref, procs.wgpuComputePipelineRelease, compute_pipeline);
+    touchAddRefAndRelease(abi_base.WGPUComputePipeline, lifecycle.compute_pipeline_add_ref, procs.wgpuComputePipelineRelease, compute_pipeline);
 
-    const encoder = procs.wgpuDeviceCreateCommandEncoder(self.core.device.?, &types.WGPUCommandEncoderDescriptor{
+    const encoder = procs.wgpuDeviceCreateCommandEncoder(self.core.device.?, &abi_descriptor.WGPUCommandEncoderDescriptor{
         .nextInChain = null,
         .label = loader.emptyStringView(),
     });
     if (encoder == null) return error.CommandEncoderCreationFailed;
     defer procs.wgpuCommandEncoderRelease(encoder);
-    touchAddRefAndRelease(types.WGPUCommandEncoder, lifecycle.command_encoder_add_ref, procs.wgpuCommandEncoderRelease, encoder);
+    touchAddRefAndRelease(abi_base.WGPUCommandEncoder, lifecycle.command_encoder_add_ref, procs.wgpuCommandEncoderRelease, encoder);
 
     const compute_pass = procs.wgpuCommandEncoderBeginComputePass(
         encoder,
-        &types.WGPUComputePassDescriptor{
+        &abi_descriptor.WGPUComputePassDescriptor{
             .nextInChain = null,
             .label = loader.emptyStringView(),
             .timestampWrites = null,
@@ -446,7 +450,7 @@ fn runLifecycleRefcountDiagnostics(self: *Backend, target_format: types.WGPUText
     );
     if (compute_pass == null) return error.ComputePassCreationFailed;
     defer procs.wgpuComputePassEncoderRelease(compute_pass);
-    touchAddRefAndRelease(types.WGPUComputePassEncoder, lifecycle.compute_pass_encoder_add_ref, procs.wgpuComputePassEncoderRelease, compute_pass);
+    touchAddRefAndRelease(abi_base.WGPUComputePassEncoder, lifecycle.compute_pass_encoder_add_ref, procs.wgpuComputePassEncoderRelease, compute_pass);
     procs.wgpuComputePassEncoderSetPipeline(compute_pass, compute_pipeline);
     procs.wgpuComputePassEncoderEnd(compute_pass);
 
@@ -474,36 +478,36 @@ fn runLifecycleRefcountDiagnostics(self: *Backend, target_format: types.WGPUText
     );
     if (render_pass == null) return error.RenderPassCreationFailed;
     defer render_api.render_pass_encoder_release(render_pass);
-    touchAddRefAndRelease(types.WGPURenderPassEncoder, lifecycle.render_pass_encoder_add_ref, render_api.render_pass_encoder_release, render_pass);
+    touchAddRefAndRelease(abi_base.WGPURenderPassEncoder, lifecycle.render_pass_encoder_add_ref, render_api.render_pass_encoder_release, render_pass);
     render_api.render_pass_encoder_end(render_pass);
 
     const command_buffer = procs.wgpuCommandEncoderFinish(
         encoder,
-        &types.WGPUCommandBufferDescriptor{
+        &abi_descriptor.WGPUCommandBufferDescriptor{
             .nextInChain = null,
             .label = loader.emptyStringView(),
         },
     );
     if (command_buffer == null) return error.CommandBufferFinishFailed;
     defer procs.wgpuCommandBufferRelease(command_buffer);
-    touchAddRefAndRelease(types.WGPUCommandBuffer, lifecycle.command_buffer_add_ref, procs.wgpuCommandBufferRelease, command_buffer);
+    touchAddRefAndRelease(abi_base.WGPUCommandBuffer, lifecycle.command_buffer_add_ref, procs.wgpuCommandBufferRelease, command_buffer);
 
-    const query_set = procs.wgpuDeviceCreateQuerySet(self.core.device.?, &types.WGPUQuerySetDescriptor{
+    const query_set = procs.wgpuDeviceCreateQuerySet(self.core.device.?, &abi_descriptor.WGPUQuerySetDescriptor{
         .nextInChain = null,
         .label = loader.emptyStringView(),
-        .type = types.WGPUQueryType_Timestamp,
+        .type = abi_base.WGPUQueryType_Timestamp,
         .count = 1,
     });
     if (query_set != null) {
         defer procs.wgpuQuerySetRelease(query_set);
-        touchAddRefAndRelease(types.WGPUQuerySet, lifecycle.query_set_add_ref, procs.wgpuQuerySetRelease, query_set);
+        touchAddRefAndRelease(abi_base.WGPUQuerySet, lifecycle.query_set_add_ref, procs.wgpuQuerySetRelease, query_set);
         const p0_procs = p0_procs_mod.loadP0Procs(self.core.dyn_lib);
         p0_procs_mod.destroyQuerySet(p0_procs, query_set);
     }
 
     const render_pipeline = try createRenderPipelineForDiagnostics(self, normalizeDiagnosticFormat(target_format));
     defer render_api.render_pipeline_release(render_pipeline);
-    touchAddRefAndOptionalRelease(types.WGPURenderPipeline, lifecycle.render_pipeline_add_ref, render_api.render_pipeline_release, render_pipeline);
+    touchAddRefAndOptionalRelease(abi_base.WGPURenderPipeline, lifecycle.render_pipeline_add_ref, render_api.render_pipeline_release, render_pipeline);
 
     if (resource_table_procs) |table_procs| {
         if (p1_resource_table_procs_mod.isResourceTableReady(table_procs)) {
@@ -540,7 +544,7 @@ fn runLifecycleRefcountDiagnostics(self: *Backend, target_format: types.WGPUText
     }
 }
 
-fn createRenderPipelineForDiagnostics(self: *Backend, target_format: types.WGPUTextureFormat) !types.WGPURenderPipeline {
+fn createRenderPipelineForDiagnostics(self: *Backend, target_format: abi_base.WGPUTextureFormat) !abi_base.WGPURenderPipeline {
     const procs = self.core.procs orelse return error.ProceduralNotReady;
     const render_api = render_api_mod.loadRenderApi(procs, self.core.dyn_lib) orelse return error.RenderApiUnavailable;
     const async_procs = async_procs_mod.loadAsyncProcs(self.core.dyn_lib) orelse return error.AsyncProcUnavailable;
@@ -601,14 +605,14 @@ fn createRenderPipelineForDiagnostics(self: *Backend, target_format: types.WGPUT
             .stripIndexFormat = 0,
             .frontFace = rc.RENDER_FRONT_FACE_CCW,
             .cullMode = rc.RENDER_CULL_MODE_NONE,
-            .unclippedDepth = types.WGPU_FALSE,
+            .unclippedDepth = abi_base.WGPU_FALSE,
         },
         .depthStencil = null,
         .multisample = .{
             .nextInChain = null,
             .count = 1,
             .mask = rc.RENDER_MULTISAMPLE_MASK_ALL,
-            .alphaToCoverageEnabled = types.WGPU_FALSE,
+            .alphaToCoverageEnabled = abi_base.WGPU_FALSE,
         },
         .fragment = &fragment_state,
     };
@@ -638,7 +642,7 @@ fn createRenderPipelineForDiagnostics(self: *Backend, target_format: types.WGPUT
         render_api.render_pipeline_release(pipeline);
         return error.DiagnosticErrorScopeFailed;
     };
-    const no_error = @as(u32, @intFromEnum(types.WGPUErrorType.noError));
+    const no_error = @as(u32, @intFromEnum(abi_descriptor.WGPUErrorType.noError));
     if (out_of_memory_scope.status != async_procs_mod.POP_ERROR_SCOPE_STATUS_SUCCESS or
         internal_scope.status != async_procs_mod.POP_ERROR_SCOPE_STATUS_SUCCESS or
         validation_scope.status != async_procs_mod.POP_ERROR_SCOPE_STATUS_SUCCESS or
@@ -652,7 +656,7 @@ fn createRenderPipelineForDiagnostics(self: *Backend, target_format: types.WGPUT
     return pipeline;
 }
 
-fn getOrCreateDiagnosticTexture(self: *Backend, target_format: types.WGPUTextureFormat) !types.WGPUTexture {
+fn getOrCreateDiagnosticTexture(self: *Backend, target_format: abi_base.WGPUTextureFormat) !abi_base.WGPUTexture {
     return resources.getOrCreateTexture(
         self,
         .{
@@ -662,59 +666,59 @@ fn getOrCreateDiagnosticTexture(self: *Backend, target_format: types.WGPUTexture
             .height = DIAG_RENDER_TARGET_HEIGHT,
             .depth_or_array_layers = 1,
             .format = target_format,
-            .usage = types.WGPUTextureUsage_RenderAttachment | types.WGPUTextureUsage_CopyDst | types.WGPUTextureUsage_CopySrc | types.WGPUTextureUsage_TextureBinding,
-            .dimension = model.WGPUTextureDimension_2D,
-            .view_dimension = model.WGPUTextureViewDimension_2D,
+            .usage = abi_base.WGPUTextureUsage_RenderAttachment | abi_base.WGPUTextureUsage_CopyDst | abi_base.WGPUTextureUsage_CopySrc | abi_base.WGPUTextureUsage_TextureBinding,
+            .dimension = model_gpu_types.WGPUTextureDimension_2D,
+            .view_dimension = model_gpu_types.WGPUTextureViewDimension_2D,
             .mip_level = 0,
             .sample_count = 1,
-            .aspect = model.WGPUTextureAspect_All,
+            .aspect = model_gpu_types.WGPUTextureAspect_All,
             .bytes_per_row = 0,
             .rows_per_image = 0,
             .offset = 0,
         },
-        types.WGPUTextureUsage_RenderAttachment | types.WGPUTextureUsage_CopyDst | types.WGPUTextureUsage_CopySrc | types.WGPUTextureUsage_TextureBinding,
+        abi_base.WGPUTextureUsage_RenderAttachment | abi_base.WGPUTextureUsage_CopyDst | abi_base.WGPUTextureUsage_CopySrc | abi_base.WGPUTextureUsage_TextureBinding,
     );
 }
 
 fn createDiagnosticTextureView(
-    procs: types.Procs,
-    texture: types.WGPUTexture,
-    target_format: types.WGPUTextureFormat,
-) !types.WGPUTextureView {
-    const view = procs.wgpuTextureCreateView(texture, &types.WGPUTextureViewDescriptor{
+    procs: abi_proc_aliases.Procs,
+    texture: abi_base.WGPUTexture,
+    target_format: abi_base.WGPUTextureFormat,
+) !abi_base.WGPUTextureView {
+    const view = procs.wgpuTextureCreateView(texture, &abi_descriptor.WGPUTextureViewDescriptor{
         .nextInChain = null,
         .label = loader.emptyStringView(),
         .format = target_format,
-        .dimension = types.WGPUTextureViewDimension_2D,
+        .dimension = abi_base.WGPUTextureViewDimension_2D,
         .baseMipLevel = 0,
         .mipLevelCount = 1,
         .baseArrayLayer = 0,
         .arrayLayerCount = 1,
-        .aspect = types.WGPUTextureAspect_All,
-        .usage = types.WGPUTextureUsage_RenderAttachment,
-        .swizzleR = types.WGPUTextureComponentSwizzle_Red,
-        .swizzleG = types.WGPUTextureComponentSwizzle_Green,
-        .swizzleB = types.WGPUTextureComponentSwizzle_Blue,
-        .swizzleA = types.WGPUTextureComponentSwizzle_Alpha,
+        .aspect = abi_base.WGPUTextureAspect_All,
+        .usage = abi_base.WGPUTextureUsage_RenderAttachment,
+        .swizzleR = abi_base.WGPUTextureComponentSwizzle_Red,
+        .swizzleG = abi_base.WGPUTextureComponentSwizzle_Green,
+        .swizzleB = abi_base.WGPUTextureComponentSwizzle_Blue,
+        .swizzleA = abi_base.WGPUTextureComponentSwizzle_Alpha,
     });
     if (view == null) return error.TextureViewCreationFailed;
     return view;
 }
 
-fn normalizeDiagnosticFormat(raw: types.WGPUTextureFormat) types.WGPUTextureFormat {
+fn normalizeDiagnosticFormat(raw: abi_base.WGPUTextureFormat) abi_base.WGPUTextureFormat {
     const normalized = resources.normalizeTextureFormat(raw);
-    return if (normalized == types.WGPUTextureFormat_Undefined) model.WGPUTextureFormat_RGBA8Unorm else normalized;
+    return if (normalized == abi_base.WGPUTextureFormat_Undefined) model_gpu_types.WGPUTextureFormat_RGBA8Unorm else normalized;
 }
-fn requireResourceTableFeature(procs: types.Procs, device: types.WGPUDevice) !void {
+fn requireResourceTableFeature(procs: abi_proc_aliases.Procs, device: abi_base.WGPUDevice) !void {
     const has_feature = procs.wgpuDeviceHasFeature orelse return error.ResourceTableFeatureUnavailable;
-    if (has_feature(device, WGPUFeatureName_ChromiumExperimentalSamplingResourceTable) == types.WGPU_FALSE) {
+    if (has_feature(device, WGPUFeatureName_ChromiumExperimentalSamplingResourceTable) == abi_base.WGPU_FALSE) {
         return error.ResourceTableFeatureUnavailable;
     }
 }
 
 fn shouldEmulateUnavailableFeature(
-    feature_policy: model.AsyncDiagnosticsFeaturePolicy,
-    mode: model.AsyncDiagnosticsMode,
+    feature_policy: model_async_types.AsyncDiagnosticsFeaturePolicy,
+    mode: model_async_types.AsyncDiagnosticsMode,
     err: anyerror,
 ) bool {
     if (feature_policy != .emulate_when_unavailable) return false;

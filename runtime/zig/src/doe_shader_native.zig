@@ -2,7 +2,8 @@
 // Sharded from doe_wgpu_native.zig: WGSL→MSL translation, MTLLibrary/MTLComputePipelineState creation.
 
 const std = @import("std");
-const types = @import("core/abi/wgpu_types.zig");
+const abi_base = @import("core/abi/wgpu_base_types.zig");
+const abi_descriptor = @import("core/abi/wgpu_descriptor_types.zig");
 const wgsl_compiler = @import("doe_wgsl/mod.zig");
 const wgsl_ir = @import("doe_wgsl/ir.zig");
 const wgsl_runtime_compile = @import("doe_wgsl/runtime_compile.zig");
@@ -168,9 +169,9 @@ pub export fn doeNativeShaderModuleGetBindings(raw: ?*anyopaque, out_ptr: ?[*]na
 // ============================================================
 
 /// Resolve a WGPUStringView to a byte slice, handling WGPU_STRLEN sentinel.
-fn resolveStringView(sv: types.WGPUStringView) ?[]const u8 {
+fn resolveStringView(sv: abi_base.WGPUStringView) ?[]const u8 {
     const data = sv.data orelse return null;
-    const len = if (sv.length == types.WGPU_STRLEN)
+    const len = if (sv.length == abi_base.WGPU_STRLEN)
         std.mem.len(@as([*:0]const u8, @ptrCast(data)))
     else
         sv.length;
@@ -254,17 +255,17 @@ pub fn ensureShaderBindings(sm: *DoeShaderModule) void {
     }
     sm.binding_count = @intCast(bind_count);
 }
-pub export fn doeNativeDeviceCreateShaderModule(dev_raw: ?*anyopaque, desc: ?*const types.WGPUShaderModuleDescriptor) callconv(.c) ?*anyopaque {
+pub export fn doeNativeDeviceCreateShaderModule(dev_raw: ?*anyopaque, desc: ?*const abi_descriptor.WGPUShaderModuleDescriptor) callconv(.c) ?*anyopaque {
     clear_last_error();
     const dev = cast(DoeDevice, dev_raw) orelse return null;
     const d = desc orelse return null;
     const chain = d.nextInChain orelse return null;
 
     const result = switch (chain.sType) {
-        types.WGPUSType_ShaderSourceWGSL => createFromWGSL(dev, chain),
-        types.WGPUSType_ShaderSourceMSL => createFromMSL(dev, chain),
-        types.WGPUSType_ShaderSourceSPIRV => createFromSPIRV(chain),
-        types.WGPUSType_ShaderSourceHLSL => createFromHLSL(chain),
+        abi_base.WGPUSType_ShaderSourceWGSL => createFromWGSL(dev, chain),
+        abi_base.WGPUSType_ShaderSourceMSL => createFromMSL(dev, chain),
+        abi_base.WGPUSType_ShaderSourceSPIRV => createFromSPIRV(chain),
+        abi_base.WGPUSType_ShaderSourceHLSL => createFromHLSL(chain),
         else => blk: {
             set_last_error_stage_name("native_shader_create");
             set_last_error_kind("UnsupportedShaderFormat");
@@ -287,8 +288,8 @@ pub export fn doeNativeDeviceCreateShaderModule(dev_raw: ?*anyopaque, desc: ?*co
 // ============================================================
 // WGSL path (existing behavior, refactored into helper)
 // ============================================================
-fn createFromWGSL(dev: *DoeDevice, chain: *const types.WGPUChainedStruct) ?*anyopaque {
-    const wgsl_chain: *const types.WGPUShaderSourceWGSL = @ptrCast(@alignCast(chain));
+fn createFromWGSL(dev: *DoeDevice, chain: *const abi_descriptor.WGPUChainedStruct) ?*anyopaque {
+    const wgsl_chain: *const abi_descriptor.WGPUShaderSourceWGSL = @ptrCast(@alignCast(chain));
     const wgsl = resolveStringView(wgsl_chain.code) orelse return null;
 
     if (dev.backend == .vulkan) return createFromWGSLVulkan(dev, wgsl);
@@ -396,13 +397,12 @@ fn createFromWGSLVulkan(dev: *DoeDevice, wgsl: []const u8) ?*anyopaque {
     return toOpaque(sm);
 }
 
-
 // ============================================================
 // MSL path — pre-translated Metal Shading Language source
 // ============================================================
 
-fn createFromMSL(dev: *DoeDevice, chain: *const types.WGPUChainedStruct) ?*anyopaque {
-    const msl_chain: *const types.WGPUShaderSourceMSL = @ptrCast(@alignCast(chain));
+fn createFromMSL(dev: *DoeDevice, chain: *const abi_descriptor.WGPUChainedStruct) ?*anyopaque {
+    const msl_chain: *const abi_descriptor.WGPUShaderSourceMSL = @ptrCast(@alignCast(chain));
     const msl_src = resolveStringView(msl_chain.code) orelse {
         set_last_error_stage_name("native_shader_create");
         set_last_error_kind("InvalidInput");
@@ -450,8 +450,8 @@ fn createFromMSL(dev: *DoeDevice, chain: *const types.WGPUChainedStruct) ?*anyop
 // SPIR-V path — store binary for Vulkan pipeline creation
 // ============================================================
 
-fn createFromSPIRV(chain: *const types.WGPUChainedStruct) ?*anyopaque {
-    const spirv_chain: *const types.WGPUShaderSourceSPIRV = @ptrCast(@alignCast(chain));
+fn createFromSPIRV(chain: *const abi_descriptor.WGPUChainedStruct) ?*anyopaque {
+    const spirv_chain: *const abi_descriptor.WGPUShaderSourceSPIRV = @ptrCast(@alignCast(chain));
 
     if (spirv_chain.code_size == 0 or spirv_chain.code_size % 4 != 0) {
         set_last_error_stage_name("native_shader_create");
@@ -487,8 +487,8 @@ fn createFromSPIRV(chain: *const types.WGPUChainedStruct) ?*anyopaque {
 // HLSL path — store source for D3D12 DXC compilation
 // ============================================================
 
-fn createFromHLSL(chain: *const types.WGPUChainedStruct) ?*anyopaque {
-    const hlsl_chain: *const types.WGPUShaderSourceHLSL = @ptrCast(@alignCast(chain));
+fn createFromHLSL(chain: *const abi_descriptor.WGPUChainedStruct) ?*anyopaque {
+    const hlsl_chain: *const abi_descriptor.WGPUShaderSourceHLSL = @ptrCast(@alignCast(chain));
     const hlsl_src = resolveStringView(hlsl_chain.code) orelse {
         set_last_error_stage_name("native_shader_create");
         set_last_error_kind("InvalidInput");
@@ -603,7 +603,7 @@ const MAX_OVERRIDE_ENTRIES: usize = 64;
 /// Convert WGPUConstantEntry C ABI array to wgsl_ir.OverrideEntry slice for the compiler.
 /// Returns null if any key pointer is invalid.
 fn buildOverrideEntries(
-    constants: [*]const types.WGPUConstantEntry,
+    constants: [*]const abi_descriptor.WGPUConstantEntry,
     count: usize,
     out: *[MAX_OVERRIDE_ENTRIES]wgsl_ir.OverrideEntry,
 ) ?[]const wgsl_ir.OverrideEntry {
@@ -611,7 +611,7 @@ fn buildOverrideEntries(
     for (0..count) |i| {
         const c = constants[i];
         const key_data = c.key.data orelse return null;
-        const key_len = if (c.key.length == types.WGPU_STRLEN)
+        const key_len = if (c.key.length == abi_base.WGPU_STRLEN)
             std.mem.len(@as([*:0]const u8, @ptrCast(key_data)))
         else
             c.key.length;
@@ -628,7 +628,7 @@ fn buildOverrideEntries(
 fn recompileWithOverrides(
     dev: *DoeDevice,
     sm: *DoeShaderModule,
-    constants: [*]const types.WGPUConstantEntry,
+    constants: [*]const abi_descriptor.WGPUConstantEntry,
     count: usize,
 ) ?*anyopaque {
     const wgsl = sm.wgsl_source orelse {
@@ -671,7 +671,7 @@ fn recompileWithOverrides(
     return compileMslToLibrary(dev, &msl_buf, translation.len, &err_buf);
 }
 
-pub export fn doeNativeDeviceCreateComputePipeline(dev_raw: ?*anyopaque, desc: ?*const types.WGPUComputePipelineDescriptor) callconv(.c) ?*anyopaque {
+pub export fn doeNativeDeviceCreateComputePipeline(dev_raw: ?*anyopaque, desc: ?*const abi_descriptor.WGPUComputePipelineDescriptor) callconv(.c) ?*anyopaque {
     clear_last_error();
     const dev = cast(DoeDevice, dev_raw) orelse return null;
     const d = desc orelse return null;

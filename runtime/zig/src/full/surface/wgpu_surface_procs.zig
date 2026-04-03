@@ -1,5 +1,5 @@
 const std = @import("std");
-const types = @import("../../core/abi/wgpu_types.zig");
+const abi_base = @import("../../core/abi/wgpu_base_types.zig");
 
 pub const Surface = ?*anyopaque;
 pub const SurfaceSourceMetalLayerSType: u32 = 0x00000004;
@@ -11,7 +11,7 @@ pub const ChainedStruct = extern struct {
 
 pub const SurfaceDescriptor = extern struct {
     nextInChain: ?*const ChainedStruct,
-    label: types.WGPUStringView,
+    label: abi_base.WGPUStringView,
 };
 
 pub const SurfaceSourceMetalLayer = extern struct {
@@ -21,9 +21,9 @@ pub const SurfaceSourceMetalLayer = extern struct {
 
 pub const SurfaceCapabilities = extern struct {
     nextInChain: ?*anyopaque,
-    usages: types.WGPUTextureUsage,
+    usages: abi_base.WGPUTextureUsage,
     formatCount: usize,
-    formats: ?[*]const types.WGPUTextureFormat,
+    formats: ?[*]const abi_base.WGPUTextureFormat,
     presentModeCount: usize,
     presentModes: ?[*]const u32,
     alphaModeCount: usize,
@@ -32,25 +32,25 @@ pub const SurfaceCapabilities = extern struct {
 
 pub const SurfaceConfiguration = extern struct {
     nextInChain: ?*anyopaque,
-    device: types.WGPUDevice,
-    format: types.WGPUTextureFormat,
-    usage: types.WGPUTextureUsage,
+    device: abi_base.WGPUDevice,
+    format: abi_base.WGPUTextureFormat,
+    usage: abi_base.WGPUTextureUsage,
     width: u32,
     height: u32,
     viewFormatCount: usize,
-    viewFormats: ?[*]const types.WGPUTextureFormat,
+    viewFormats: ?[*]const abi_base.WGPUTextureFormat,
     alphaMode: u32,
     presentMode: u32,
 };
 
 pub const SurfaceTexture = extern struct {
     nextInChain: ?*anyopaque,
-    texture: types.WGPUTexture,
+    texture: abi_base.WGPUTexture,
     status: u32,
 };
 
-const FnInstanceCreateSurface = *const fn (types.WGPUInstance, *const SurfaceDescriptor) callconv(.c) Surface;
-const FnSurfaceGetCapabilities = *const fn (Surface, types.WGPUAdapter, *SurfaceCapabilities) callconv(.c) u32;
+const FnInstanceCreateSurface = *const fn (abi_base.WGPUInstance, *const SurfaceDescriptor) callconv(.c) Surface;
+const FnSurfaceGetCapabilities = *const fn (Surface, abi_base.WGPUAdapter, *SurfaceCapabilities) callconv(.c) u32;
 const FnSurfaceConfigure = *const fn (Surface, *const SurfaceConfiguration) callconv(.c) void;
 const FnSurfaceGetCurrentTexture = *const fn (Surface, *SurfaceTexture) callconv(.c) void;
 const FnSurfacePresent = *const fn (Surface) callconv(.c) u32;

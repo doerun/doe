@@ -8,7 +8,8 @@
 const std = @import("std");
 const builtin = @import("builtin");
 const has_vulkan = (builtin.os.tag == .linux);
-const types = @import("core/abi/wgpu_types.zig");
+const abi_base = @import("core/abi/wgpu_base_types.zig");
+const abi_descriptor = @import("core/abi/wgpu_descriptor_types.zig");
 const native = @import("doe_wgpu_native.zig");
 
 const alloc = native.alloc;
@@ -123,30 +124,30 @@ fn probe_vulkan_device_caps_fallback() if (has_vulkan) vk_device_caps.VulkanDevi
     };
 }
 
-fn vulkan_limits_static_fallback() types.WGPULimits {
+fn vulkan_limits_static_fallback() abi_descriptor.WGPULimits {
     const doe_device_caps = @import("doe_device_caps.zig");
     return doe_device_caps.VULKAN_LIMITS_STATIC;
 }
 
-fn stringView(comptime message: []const u8) types.WGPUStringView {
+fn stringView(comptime message: []const u8) abi_base.WGPUStringView {
     return .{ .data = message.ptr, .length = message.len };
 }
 
 fn call_request_adapter_callback(
-    info: types.WGPURequestAdapterCallbackInfo,
-    status: types.WGPURequestAdapterStatus,
+    info: abi_descriptor.WGPURequestAdapterCallbackInfo,
+    status: abi_descriptor.WGPURequestAdapterStatus,
     adapter: ?*anyopaque,
-    message: types.WGPUStringView,
+    message: abi_base.WGPUStringView,
 ) void {
     const callback = info.callback orelse return;
     callback(status, adapter, message, info.userdata1, info.userdata2);
 }
 
 fn call_request_device_callback(
-    info: types.WGPURequestDeviceCallbackInfo,
-    status: types.WGPURequestDeviceStatus,
+    info: abi_descriptor.WGPURequestDeviceCallbackInfo,
+    status: abi_descriptor.WGPURequestDeviceStatus,
     device: ?*anyopaque,
-    message: types.WGPUStringView,
+    message: abi_base.WGPUStringView,
 ) void {
     const callback = info.callback orelse return;
     callback(status, device, message, info.userdata1, info.userdata2);
@@ -159,7 +160,7 @@ const CreateDeviceError = error{
     D3D12RuntimeInitFailed,
 };
 
-fn create_device_error_message(err: CreateDeviceError) types.WGPUStringView {
+fn create_device_error_message(err: CreateDeviceError) abi_base.WGPUStringView {
     return switch (err) {
         error.QueueUnavailable => stringView(MSG_QUEUE_UNAVAILABLE),
         error.DeviceAllocationFailed => stringView(MSG_DEVICE_ALLOCATION_FAILED),
@@ -266,7 +267,7 @@ pub export fn doeNativeInstanceRelease(raw: ?*anyopaque) callconv(.c) void {
     }
 }
 
-pub export fn doeNativeInstanceWaitAny(inst: ?*anyopaque, count: usize, infos: [*]types.WGPUFutureWaitInfo, timeout_ns: u64) callconv(.c) u32 {
+pub export fn doeNativeInstanceWaitAny(inst: ?*anyopaque, count: usize, infos: [*]abi_descriptor.WGPUFutureWaitInfo, timeout_ns: u64) callconv(.c) u32 {
     _ = inst;
     _ = timeout_ns;
     for (infos[0..count]) |*info| info.completed = 1;
@@ -282,10 +283,10 @@ pub export fn doeNativeRequestAdapterFlat(
     inst: ?*anyopaque,
     _: ?*anyopaque, // options
     _: u32, // callback mode
-    callback: ?*const fn (u32, ?*anyopaque, types.WGPUStringView, ?*anyopaque, ?*anyopaque) callconv(.c) void,
+    callback: ?*const fn (u32, ?*anyopaque, abi_base.WGPUStringView, ?*anyopaque, ?*anyopaque) callconv(.c) void,
     userdata1: ?*anyopaque,
     userdata2: ?*anyopaque,
-) callconv(.c) types.WGPUFuture {
+) callconv(.c) abi_base.WGPUFuture {
     const retained_instance = cast(DoeInstance, inst);
 
     switch (selected_backend()) {
@@ -340,9 +341,9 @@ pub export fn doeNativeRequestAdapterFlat(
 // Standard-signature wrapper for routing layer compatibility.
 pub export fn doeNativeInstanceRequestAdapter(
     inst: ?*anyopaque,
-    options: ?*const types.WGPURequestAdapterOptions,
-    info: types.WGPURequestAdapterCallbackInfo,
-) callconv(.c) types.WGPUFuture {
+    options: ?*const abi_descriptor.WGPURequestAdapterOptions,
+    info: abi_descriptor.WGPURequestAdapterCallbackInfo,
+) callconv(.c) abi_base.WGPUFuture {
     _ = options;
     const retained_instance = cast(DoeInstance, inst);
 
@@ -430,9 +431,9 @@ pub export fn doeNativeAdapterRelease(raw: ?*anyopaque) callconv(.c) void {
 
 pub export fn doeNativeAdapterRequestDevice(
     adapter_raw: ?*anyopaque,
-    desc: ?*const types.WGPUDeviceDescriptor,
-    info: types.WGPURequestDeviceCallbackInfo,
-) callconv(.c) types.WGPUFuture {
+    desc: ?*const abi_descriptor.WGPUDeviceDescriptor,
+    info: abi_descriptor.WGPURequestDeviceCallbackInfo,
+) callconv(.c) abi_base.WGPUFuture {
     _ = desc;
     const adapter = cast(DoeAdapter, adapter_raw) orelse {
         call_request_device_callback(info, .@"error", null, stringView(MSG_INVALID_ADAPTER));
@@ -448,7 +449,7 @@ pub export fn doeNativeAdapterRequestDevice(
 
 pub export fn doeNativeAdapterCreateDevice(
     adapter_raw: ?*anyopaque,
-    desc: ?*const types.WGPUDeviceDescriptor,
+    desc: ?*const abi_descriptor.WGPUDeviceDescriptor,
 ) callconv(.c) ?*anyopaque {
     _ = desc;
     const adapter = cast(DoeAdapter, adapter_raw) orelse return null;
@@ -461,10 +462,10 @@ pub export fn doeNativeRequestDeviceFlat(
     adapter_raw: ?*anyopaque,
     _: ?*anyopaque,
     _: u32,
-    callback: ?*const fn (u32, ?*anyopaque, types.WGPUStringView, ?*anyopaque, ?*anyopaque) callconv(.c) void,
+    callback: ?*const fn (u32, ?*anyopaque, abi_base.WGPUStringView, ?*anyopaque, ?*anyopaque) callconv(.c) void,
     userdata1: ?*anyopaque,
     userdata2: ?*anyopaque,
-) callconv(.c) types.WGPUFuture {
+) callconv(.c) abi_base.WGPUFuture {
     const adapter = cast(DoeAdapter, adapter_raw) orelse {
         if (callback) |cb| cb(WGPU_REQUEST_STATUS_ERROR, null, stringView(MSG_INVALID_ADAPTER), userdata1, userdata2);
         return .{ .id = 2 };

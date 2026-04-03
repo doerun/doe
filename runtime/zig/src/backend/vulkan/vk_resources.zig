@@ -8,7 +8,10 @@ const c = @import("vk_constants.zig");
 const vk_device = @import("vk_device.zig");
 const vk_upload = @import("vk_upload.zig");
 const vk_formats = @import("vk_formats.zig");
-const model = @import("../../model_webgpu_types.zig");
+const model_resource_types = @import("../../model_resource_types.zig");
+const model_compute_types = @import("../../model_compute_types.zig");
+const model_gpu_types = @import("../../model_gpu_types.zig");
+const model_render_types = @import("../../model_render_types.zig");
 const common_errors = @import("../common/errors.zig");
 const common_timing = @import("../common/timing.zig");
 
@@ -19,11 +22,11 @@ const VkImageView = c.VkImageView;
 const VK_NULL_U64 = c.VK_NULL_U64;
 const VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT: u32 = 0x00000020;
 
-pub const DEFAULT_RUNTIME_TEXTURE_USAGE: model.WGPUFlags =
-    model.WGPUTextureUsage_TextureBinding |
-    model.WGPUTextureUsage_StorageBinding |
-    model.WGPUTextureUsage_CopyDst;
-pub const REQUIRED_TEXTURE_UPLOAD_USAGE: model.WGPUFlags = model.WGPUTextureUsage_CopyDst;
+pub const DEFAULT_RUNTIME_TEXTURE_USAGE: model_gpu_types.WGPUFlags =
+    model_gpu_types.WGPUTextureUsage_TextureBinding |
+    model_gpu_types.WGPUTextureUsage_StorageBinding |
+    model_gpu_types.WGPUTextureUsage_CopyDst;
+pub const REQUIRED_TEXTURE_UPLOAD_USAGE: model_gpu_types.WGPUFlags = model_gpu_types.WGPUTextureUsage_CopyDst;
 
 pub const ComputeBuffer = struct {
     buffer: VkBuffer,
@@ -39,8 +42,8 @@ pub const TextureResource = struct {
     width: u32,
     height: u32,
     mip_levels: u32,
-    format: model.WGPUTextureFormat,
-    usage: model.WGPUFlags,
+    format: model_gpu_types.WGPUTextureFormat,
+    usage: model_gpu_types.WGPUFlags,
     layout: u32,
 };
 
@@ -53,20 +56,20 @@ const Runtime = @import("native_runtime.zig").NativeVulkanRuntime;
 
 fn texture_dimension_to_vk_image_type(dimension: u32) u32 {
     return switch (dimension) {
-        model.WGPUTextureDimension_1D => c.VK_IMAGE_TYPE_1D,
-        model.WGPUTextureDimension_3D => c.VK_IMAGE_TYPE_3D,
+        model_gpu_types.WGPUTextureDimension_1D => c.VK_IMAGE_TYPE_1D,
+        model_gpu_types.WGPUTextureDimension_3D => c.VK_IMAGE_TYPE_3D,
         else => c.VK_IMAGE_TYPE_2D,
     };
 }
 
 fn texture_view_dimension_to_vk_view_type(dimension: u32, array_layers: u32) u32 {
     return switch (dimension) {
-        model.WGPUTextureViewDimension_1D => c.VK_IMAGE_VIEW_TYPE_1D,
-        model.WGPUTextureViewDimension_2D => c.VK_IMAGE_VIEW_TYPE_2D,
-        model.WGPUTextureViewDimension_2DArray => c.VK_IMAGE_VIEW_TYPE_2D_ARRAY,
-        model.WGPUTextureViewDimension_Cube => c.VK_IMAGE_VIEW_TYPE_CUBE,
-        model.WGPUTextureViewDimension_CubeArray => c.VK_IMAGE_VIEW_TYPE_CUBE_ARRAY,
-        model.WGPUTextureViewDimension_3D => c.VK_IMAGE_VIEW_TYPE_3D,
+        model_gpu_types.WGPUTextureViewDimension_1D => c.VK_IMAGE_VIEW_TYPE_1D,
+        model_gpu_types.WGPUTextureViewDimension_2D => c.VK_IMAGE_VIEW_TYPE_2D,
+        model_gpu_types.WGPUTextureViewDimension_2DArray => c.VK_IMAGE_VIEW_TYPE_2D_ARRAY,
+        model_gpu_types.WGPUTextureViewDimension_Cube => c.VK_IMAGE_VIEW_TYPE_CUBE,
+        model_gpu_types.WGPUTextureViewDimension_CubeArray => c.VK_IMAGE_VIEW_TYPE_CUBE_ARRAY,
+        model_gpu_types.WGPUTextureViewDimension_3D => c.VK_IMAGE_VIEW_TYPE_3D,
         else => if (array_layers > 1) c.VK_IMAGE_VIEW_TYPE_2D_ARRAY else c.VK_IMAGE_VIEW_TYPE_2D,
     };
 }
@@ -82,10 +85,10 @@ fn texture_sample_count_to_vk(sample_count: u32) !u32 {
     };
 }
 
-fn texture_view_aspect_mask(format: model.WGPUTextureFormat, aspect: u32) u32 {
+fn texture_view_aspect_mask(format: model_gpu_types.WGPUTextureFormat, aspect: u32) u32 {
     return switch (aspect) {
-        model.WGPUTextureAspect_DepthOnly => vk_formats.VK_IMAGE_ASPECT_DEPTH_BIT,
-        model.WGPUTextureAspect_StencilOnly => vk_formats.VK_IMAGE_ASPECT_STENCIL_BIT,
+        model_gpu_types.WGPUTextureAspect_DepthOnly => vk_formats.VK_IMAGE_ASPECT_DEPTH_BIT,
+        model_gpu_types.WGPUTextureAspect_StencilOnly => vk_formats.VK_IMAGE_ASPECT_STENCIL_BIT,
         else => vk_formats.aspect_mask_for_format(format),
     };
 }
@@ -125,10 +128,10 @@ pub fn ensure_compute_buffer(
 
 pub fn required_compute_buffer_size(
     self: *const Runtime,
-    binding: model.KernelBinding,
+    binding: model_compute_types.KernelBinding,
 ) !u64 {
     if (binding.resource_kind != .buffer) return error.UnsupportedFeature;
-    if (binding.buffer_size == model.WGPUWholeSize) {
+    if (binding.buffer_size == model_gpu_types.WGPUWholeSize) {
         if (self.compute_buffers.get(binding.resource_handle)) |existing| {
             return existing.size;
         }
@@ -296,7 +299,7 @@ pub fn create_destroy_lifecycle_buffer(self: *Runtime, bytes: u64) !void {
 
 // --- Texture resource management ---
 
-pub fn ensure_texture_resource(self: *Runtime, texture: model.CopyTextureResource) !*TextureResource {
+pub fn ensure_texture_resource(self: *Runtime, texture: model_resource_types.CopyTextureResource) !*TextureResource {
     if (texture.handle == 0) return error.InvalidArgument;
     if (texture.width == 0 or texture.height == 0) return error.InvalidArgument;
     const mip_levels: u32 = if (texture.mip_level > 0) texture.mip_level + 1 else 1;
@@ -365,7 +368,7 @@ pub fn ensure_texture_shader_layout(self: *Runtime, texture: *TextureResource) !
 
 pub fn create_texture_resource(
     self: *Runtime,
-    texture: model.CopyTextureResource,
+    texture: model_resource_types.CopyTextureResource,
     mip_levels: u32,
 ) !TextureResource {
     return create_texture_resource_full(
@@ -375,7 +378,7 @@ pub fn create_texture_resource(
         1,
         mip_levels,
         1,
-        model.WGPUTextureDimension_2D,
+        model_gpu_types.WGPUTextureDimension_2D,
         texture.format,
         texture.usage,
     );
@@ -389,8 +392,8 @@ pub fn create_texture_resource_full(
     mip_levels: u32,
     sample_count: u32,
     dimension: u32,
-    format: model.WGPUTextureFormat,
-    usage: model.WGPUFlags,
+    format: model_gpu_types.WGPUTextureFormat,
+    usage: model_gpu_types.WGPUFlags,
 ) !TextureResource {
     var image: VkImage = VK_NULL_U64;
     var memory: VkDeviceMemory = VK_NULL_U64;
@@ -398,20 +401,20 @@ pub fn create_texture_resource_full(
     const effective_usage = effective_texture_usage(usage);
     const layers = if (depth_or_array_layers > 0) depth_or_array_layers else 1;
     const resolved_mip_levels = if (mip_levels > 0) mip_levels else 1;
-    const resolved_dimension = if (dimension != 0) dimension else model.WGPUTextureDimension_2D;
+    const resolved_dimension = if (dimension != 0) dimension else model_gpu_types.WGPUTextureDimension_2D;
     const image_type = texture_dimension_to_vk_image_type(resolved_dimension);
-    const image_depth: u32 = if (resolved_dimension == model.WGPUTextureDimension_3D) layers else 1;
-    const image_array_layers: u32 = if (resolved_dimension == model.WGPUTextureDimension_3D) 1 else layers;
+    const image_depth: u32 = if (resolved_dimension == model_gpu_types.WGPUTextureDimension_3D) layers else 1;
+    const image_array_layers: u32 = if (resolved_dimension == model_gpu_types.WGPUTextureDimension_3D) 1 else layers;
     const sample_count_vk = try texture_sample_count_to_vk(sample_count);
     const view_type = texture_view_dimension_to_vk_view_type(
-        if (resolved_dimension == model.WGPUTextureDimension_1D) model.WGPUTextureViewDimension_1D else if (resolved_dimension == model.WGPUTextureDimension_3D) model.WGPUTextureViewDimension_3D else if (image_array_layers > 1) model.WGPUTextureViewDimension_2DArray else model.WGPUTextureViewDimension_2D,
+        if (resolved_dimension == model_gpu_types.WGPUTextureDimension_1D) model_gpu_types.WGPUTextureViewDimension_1D else if (resolved_dimension == model_gpu_types.WGPUTextureDimension_3D) model_gpu_types.WGPUTextureViewDimension_3D else if (image_array_layers > 1) model_gpu_types.WGPUTextureViewDimension_2DArray else model_gpu_types.WGPUTextureViewDimension_2D,
         image_array_layers,
     );
 
     var image_info = c.VkImageCreateInfo{
         .sType = c.VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
         .pNext = null,
-        .flags = if (image_array_layers >= 6 and resolved_dimension == model.WGPUTextureDimension_2D) c.VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT else 0,
+        .flags = if (image_array_layers >= 6 and resolved_dimension == model_gpu_types.WGPUTextureDimension_2D) c.VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT else 0,
         .imageType = image_type,
         .format = try texture_format_to_vk(format),
         .extent = .{ .width = width, .height = height, .depth = image_depth },
@@ -487,7 +490,7 @@ pub fn create_texture_resource_full(
 pub fn create_texture_view(
     self: *Runtime,
     texture: TextureResource,
-    format: model.WGPUTextureFormat,
+    format: model_gpu_types.WGPUTextureFormat,
     dimension: u32,
     base_mip_level: u32,
     mip_level_count: u32,
@@ -620,22 +623,22 @@ pub fn texture_transition_source(layout: u32) TextureTransitionSource {
     };
 }
 
-pub fn effective_texture_usage(requested: model.WGPUFlags) model.WGPUFlags {
+pub fn effective_texture_usage(requested: model_gpu_types.WGPUFlags) model_gpu_types.WGPUFlags {
     if (requested == 0) return DEFAULT_RUNTIME_TEXTURE_USAGE;
     return requested | REQUIRED_TEXTURE_UPLOAD_USAGE;
 }
 
-pub fn texture_format_to_vk(format: model.WGPUTextureFormat) !u32 {
+pub fn texture_format_to_vk(format: model_gpu_types.WGPUTextureFormat) !u32 {
     return vk_formats.wgpu_format_to_vk_format(format);
 }
 
-pub fn image_usage_for_texture(usage: model.WGPUFlags, format: model.WGPUTextureFormat) u32 {
+pub fn image_usage_for_texture(usage: model_gpu_types.WGPUFlags, format: model_gpu_types.WGPUTextureFormat) u32 {
     var out: u32 = c.VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-    if ((usage & model.WGPUTextureUsage_TextureBinding) != 0) out |= c.VK_IMAGE_USAGE_SAMPLED_BIT;
-    if ((usage & model.WGPUTextureUsage_StorageBinding) != 0) out |= c.VK_IMAGE_USAGE_STORAGE_BIT;
-    if ((usage & model.WGPUTextureUsage_CopySrc) != 0) out |= c.VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-    if ((usage & model.WGPUTextureUsage_CopyDst) != 0) out |= c.VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-    if ((usage & model.WGPUTextureUsage_RenderAttachment) != 0) {
+    if ((usage & model_gpu_types.WGPUTextureUsage_TextureBinding) != 0) out |= c.VK_IMAGE_USAGE_SAMPLED_BIT;
+    if ((usage & model_gpu_types.WGPUTextureUsage_StorageBinding) != 0) out |= c.VK_IMAGE_USAGE_STORAGE_BIT;
+    if ((usage & model_gpu_types.WGPUTextureUsage_CopySrc) != 0) out |= c.VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+    if ((usage & model_gpu_types.WGPUTextureUsage_CopyDst) != 0) out |= c.VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    if ((usage & model_gpu_types.WGPUTextureUsage_RenderAttachment) != 0) {
         out |= if (vk_formats.is_depth_stencil(format))
             VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
         else
@@ -644,7 +647,7 @@ pub fn image_usage_for_texture(usage: model.WGPUFlags, format: model.WGPUTexture
     return out;
 }
 
-pub fn bytes_per_pixel_for_texture_format(format: model.WGPUTextureFormat) u32 {
+pub fn bytes_per_pixel_for_texture_format(format: model_gpu_types.WGPUTextureFormat) u32 {
     return vk_formats.bytes_per_pixel(format) catch 4;
 }
 
@@ -704,7 +707,7 @@ fn wgpu_compare_to_vk(compare: u32) u32 {
     };
 }
 
-pub fn create_sampler(self: *Runtime, cmd: model.SamplerCreateCommand) !c.VkSampler {
+pub fn create_sampler(self: *Runtime, cmd: model_render_types.SamplerCreateCommand) !c.VkSampler {
     var create_info = c.VkSamplerCreateInfo{
         .sType = c.VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
         .pNext = null,

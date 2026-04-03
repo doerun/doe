@@ -1,16 +1,17 @@
 const std = @import("std");
-const types = @import("../core/abi/wgpu_types.zig");
+const abi_base = @import("../core/abi/wgpu_base_types.zig");
+const abi_descriptor = @import("../core/abi/wgpu_descriptor_types.zig");
 const task_pool = @import("task_pool.zig");
 
 const MapCallbackJob = struct {
     status: u32,
-    cb: ?*const fn (u32, types.WGPUStringView, ?*anyopaque, ?*anyopaque) callconv(.c) void,
+    cb: ?*const fn (u32, abi_base.WGPUStringView, ?*anyopaque, ?*anyopaque) callconv(.c) void,
     userdata1: ?*anyopaque,
     userdata2: ?*anyopaque,
 };
 
 const WorkDoneCallbackJob = struct {
-    cb: ?*const fn (types.WGPUQueueWorkDoneStatus, types.WGPUStringView, ?*anyopaque, ?*anyopaque) callconv(.c) void,
+    cb: ?*const fn (abi_descriptor.WGPUQueueWorkDoneStatus, abi_base.WGPUStringView, ?*anyopaque, ?*anyopaque) callconv(.c) void,
     userdata1: ?*anyopaque,
     userdata2: ?*anyopaque,
 };
@@ -29,7 +30,7 @@ fn run_work_done_callback_job(ctx_raw: ?*anyopaque) void {
 
 pub fn fire_map_callback_inline(
     status: u32,
-    cb: ?*const fn (u32, types.WGPUStringView, ?*anyopaque, ?*anyopaque) callconv(.c) void,
+    cb: ?*const fn (u32, abi_base.WGPUStringView, ?*anyopaque, ?*anyopaque) callconv(.c) void,
     userdata1: ?*anyopaque,
     userdata2: ?*anyopaque,
 ) void {
@@ -37,7 +38,7 @@ pub fn fire_map_callback_inline(
 }
 
 pub fn fire_work_done_callback_inline(
-    cb: ?*const fn (types.WGPUQueueWorkDoneStatus, types.WGPUStringView, ?*anyopaque, ?*anyopaque) callconv(.c) void,
+    cb: ?*const fn (abi_descriptor.WGPUQueueWorkDoneStatus, abi_base.WGPUStringView, ?*anyopaque, ?*anyopaque) callconv(.c) void,
     userdata1: ?*anyopaque,
     userdata2: ?*anyopaque,
 ) void {
@@ -46,7 +47,7 @@ pub fn fire_work_done_callback_inline(
 
 pub fn dispatch_map_callback(
     status: u32,
-    cb: ?*const fn (u32, types.WGPUStringView, ?*anyopaque, ?*anyopaque) callconv(.c) void,
+    cb: ?*const fn (u32, abi_base.WGPUStringView, ?*anyopaque, ?*anyopaque) callconv(.c) void,
     userdata1: ?*anyopaque,
     userdata2: ?*anyopaque,
 ) void {
@@ -62,7 +63,7 @@ pub fn dispatch_map_callback(
 }
 
 pub fn dispatch_work_done_callback(
-    cb: ?*const fn (types.WGPUQueueWorkDoneStatus, types.WGPUStringView, ?*anyopaque, ?*anyopaque) callconv(.c) void,
+    cb: ?*const fn (abi_descriptor.WGPUQueueWorkDoneStatus, abi_base.WGPUStringView, ?*anyopaque, ?*anyopaque) callconv(.c) void,
     userdata1: ?*anyopaque,
     userdata2: ?*anyopaque,
 ) void {

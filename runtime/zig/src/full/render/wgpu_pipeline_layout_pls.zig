@@ -1,4 +1,5 @@
-const types = @import("../../core/abi/wgpu_types.zig");
+const abi_base = @import("../../core/abi/wgpu_base_types.zig");
+const abi_descriptor = @import("../../core/abi/wgpu_descriptor_types.zig");
 const loader = @import("../../core/abi/wgpu_loader.zig");
 const render_types_mod = @import("wgpu_render_types.zig");
 const ffi = @import("../../webgpu_backend.zig");
@@ -6,10 +7,10 @@ const Backend = ffi.WebGPUBackend;
 
 pub fn createPipelineLayoutWithPixelLocalStorage(
     self: *Backend,
-    bind_group_layouts: []const types.WGPUBindGroupLayout,
+    bind_group_layouts: []const abi_base.WGPUBindGroupLayout,
     total_size_bytes: u64,
     storage_attachments: []const render_types_mod.PipelineLayoutStorageAttachment,
-) !types.WGPUPipelineLayout {
+) !abi_base.WGPUPipelineLayout {
     if (storage_attachments.len == 0 or total_size_bytes == 0) return error.PipelineLayoutCreationFailed;
     const procs = self.core.procs orelse return error.ProceduralNotReady;
     var pls_chain = render_types_mod.PipelineLayoutPixelLocalStorage{
@@ -21,7 +22,7 @@ pub fn createPipelineLayoutWithPixelLocalStorage(
         .storageAttachmentCount = storage_attachments.len,
         .storageAttachments = storage_attachments.ptr,
     };
-    const descriptor = types.WGPUPipelineLayoutDescriptor{
+    const descriptor = abi_descriptor.WGPUPipelineLayoutDescriptor{
         .nextInChain = @ptrCast(&pls_chain.chain),
         .label = loader.emptyStringView(),
         .bindGroupLayoutCount = bind_group_layouts.len,

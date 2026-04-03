@@ -18,7 +18,7 @@
 // actionable error rather than a silent misfire.
 
 const std = @import("std");
-const types = @import("core/abi/wgpu_types.zig");
+const abi_base = @import("core/abi/wgpu_base_types.zig");
 
 // ============================================================
 // Constants
@@ -115,8 +115,8 @@ pub const DoeBundleEncoder = struct {
     magic: u32 = TYPE_MAGIC,
     allocator: std.mem.Allocator,
     // Compatibility signature — validated against render pass at executeBundles time.
-    color_format: types.WGPUTextureFormat,
-    depth_stencil_format: types.WGPUTextureFormat,
+    color_format: abi_base.WGPUTextureFormat,
+    depth_stencil_format: abi_base.WGPUTextureFormat,
     sample_count: u32,
     depth_read_only: bool,
     stencil_read_only: bool,
@@ -132,8 +132,8 @@ pub const DoeRenderBundle = struct {
     pub const TYPE_MAGIC = MAGIC_BUNDLE;
     magic: u32 = TYPE_MAGIC,
     allocator: std.mem.Allocator,
-    color_format: types.WGPUTextureFormat,
-    depth_stencil_format: types.WGPUTextureFormat,
+    color_format: abi_base.WGPUTextureFormat,
+    depth_stencil_format: abi_base.WGPUTextureFormat,
     sample_count: u32,
     cmds: []BundleCmd, // owned slice
 };
@@ -205,7 +205,7 @@ pub const ReplayError = error{
 // Validate bundle compatibility against a render pass without replaying commands.
 pub fn check_compatibility(
     b: *const DoeRenderBundle,
-    pass_color_format: types.WGPUTextureFormat,
+    pass_color_format: abi_base.WGPUTextureFormat,
     pass_sample_count: u32,
 ) ReplayError!void {
     if (b.color_format != 0 and b.color_format != pass_color_format) {
@@ -223,7 +223,7 @@ pub fn check_compatibility(
 pub fn replay_bundle_metal(
     b: *const DoeRenderBundle,
     encoder: ?*anyopaque,
-    pass_color_format: types.WGPUTextureFormat,
+    pass_color_format: abi_base.WGPUTextureFormat,
     pass_sample_count: u32,
 ) ReplayError!void {
     try check_compatibility(b, pass_color_format, pass_sample_count);
@@ -342,7 +342,7 @@ const VK_DRAW_INDEXED_INDIRECT_STRIDE: u32 = 20;
 pub fn replay_bundle_vk(
     b: *const DoeRenderBundle,
     cmd_buf: VkCommandBuffer,
-    pass_color_format: types.WGPUTextureFormat,
+    pass_color_format: abi_base.WGPUTextureFormat,
     pass_sample_count: u32,
 ) ReplayError!void {
     try check_compatibility(b, pass_color_format, pass_sample_count);
@@ -442,7 +442,7 @@ fn wgpu_index_format_to_dxgi(format: u32) u32 {
 pub fn replay_bundle_d3d12(
     b: *const DoeRenderBundle,
     cmd_list: D3D12Handle,
-    pass_color_format: types.WGPUTextureFormat,
+    pass_color_format: abi_base.WGPUTextureFormat,
     pass_sample_count: u32,
     draw_cmd_sig: D3D12Handle,
     draw_indexed_cmd_sig: D3D12Handle,
@@ -525,8 +525,8 @@ fn alloc() std.mem.Allocator {
 }
 
 pub fn make_bundle_encoder(
-    color_format: types.WGPUTextureFormat,
-    depth_stencil_format: types.WGPUTextureFormat,
+    color_format: abi_base.WGPUTextureFormat,
+    depth_stencil_format: abi_base.WGPUTextureFormat,
     sample_count: u32,
     depth_read_only: bool,
     stencil_read_only: bool,

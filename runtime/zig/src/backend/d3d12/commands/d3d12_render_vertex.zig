@@ -1,5 +1,5 @@
 const std = @import("std");
-const model = @import("../../../model_webgpu_types.zig");
+const model_render_types = @import("../../../model_render_types.zig");
 
 pub const ResolvedVertexAttribute = struct {
     format: u32,
@@ -40,16 +40,16 @@ pub const PipelineKey = struct {
     depth_bias_clamp: f32 = 0,
     unclipped_depth: bool = false,
     vertex_buffer_count: u32 = 0,
-    vertex_buffer_strides: [model.MAX_VERTEX_BUFFERS]u64 = [_]u64{0} ** model.MAX_VERTEX_BUFFERS,
-    vertex_step_modes: [model.MAX_VERTEX_BUFFERS]u32 = [_]u32{0} ** model.MAX_VERTEX_BUFFERS,
+    vertex_buffer_strides: [model_render_types.MAX_VERTEX_BUFFERS]u64 = [_]u64{0} ** model_render_types.MAX_VERTEX_BUFFERS,
+    vertex_step_modes: [model_render_types.MAX_VERTEX_BUFFERS]u32 = [_]u32{0} ** model_render_types.MAX_VERTEX_BUFFERS,
     vertex_attribute_count: u32 = 0,
-    vertex_attribute_formats: [model.MAX_VERTEX_ATTRIBUTES]u32 = [_]u32{0} ** model.MAX_VERTEX_ATTRIBUTES,
-    vertex_attribute_offsets: [model.MAX_VERTEX_ATTRIBUTES]u64 = [_]u64{0} ** model.MAX_VERTEX_ATTRIBUTES,
-    vertex_attribute_locations: [model.MAX_VERTEX_ATTRIBUTES]u32 = [_]u32{0} ** model.MAX_VERTEX_ATTRIBUTES,
-    vertex_attribute_buffer_slots: [model.MAX_VERTEX_ATTRIBUTES]u32 = [_]u32{0} ** model.MAX_VERTEX_ATTRIBUTES,
+    vertex_attribute_formats: [model_render_types.MAX_VERTEX_ATTRIBUTES]u32 = [_]u32{0} ** model_render_types.MAX_VERTEX_ATTRIBUTES,
+    vertex_attribute_offsets: [model_render_types.MAX_VERTEX_ATTRIBUTES]u64 = [_]u64{0} ** model_render_types.MAX_VERTEX_ATTRIBUTES,
+    vertex_attribute_locations: [model_render_types.MAX_VERTEX_ATTRIBUTES]u32 = [_]u32{0} ** model_render_types.MAX_VERTEX_ATTRIBUTES,
+    vertex_attribute_buffer_slots: [model_render_types.MAX_VERTEX_ATTRIBUTES]u32 = [_]u32{0} ** model_render_types.MAX_VERTEX_ATTRIBUTES,
 };
 
-pub fn build_pipeline_key(cmd: model.RenderDrawCommand) PipelineKey {
+pub fn build_pipeline_key(cmd: model_render_types.RenderDrawCommand) PipelineKey {
     var key = PipelineKey{
         .target_format = cmd.target_format,
         .depth_stencil_format = cmd.depth_stencil_format,
@@ -86,7 +86,7 @@ pub fn build_pipeline_key(cmd: model.RenderDrawCommand) PipelineKey {
     };
 
     var slot: u32 = 0;
-    while (slot < key.vertex_buffer_count and slot < @as(u32, model.MAX_VERTEX_BUFFERS)) : (slot += 1) {
+    while (slot < key.vertex_buffer_count and slot < @as(u32, model_render_types.MAX_VERTEX_BUFFERS)) : (slot += 1) {
         key.vertex_buffer_strides[slot] = resolve_vertex_buffer_stride_fallback(cmd, slot);
         key.vertex_step_modes[slot] = resolve_vertex_step_mode(cmd, slot);
     }
@@ -94,7 +94,7 @@ pub fn build_pipeline_key(cmd: model.RenderDrawCommand) PipelineKey {
     return key;
 }
 
-pub fn resolve_vertex_attribute(cmd: model.RenderDrawCommand, index: u32) ?ResolvedVertexAttribute {
+pub fn resolve_vertex_attribute(cmd: model_render_types.RenderDrawCommand, index: u32) ?ResolvedVertexAttribute {
     if (index < cmd.vertex_attribute_count) {
         return .{
             .format = cmd.vertex_attribute_formats[index],
@@ -106,7 +106,7 @@ pub fn resolve_vertex_attribute(cmd: model.RenderDrawCommand, index: u32) ?Resol
     if (cmd.vertex_layouts) |layouts| {
         var base: u32 = 0;
         var slot: usize = 0;
-        while (slot < @min(layouts.len, model.MAX_VERTEX_BUFFERS)) : (slot += 1) {
+        while (slot < @min(layouts.len, model_render_types.MAX_VERTEX_BUFFERS)) : (slot += 1) {
             const layout = layouts[slot];
             if (index < base + layout.attribute_count) {
                 const attr = layout.attributes[index - base];
@@ -123,9 +123,9 @@ pub fn resolve_vertex_attribute(cmd: model.RenderDrawCommand, index: u32) ?Resol
     return null;
 }
 
-fn fill_vertex_attributes_into_key(cmd: model.RenderDrawCommand, key: *PipelineKey) void {
+fn fill_vertex_attributes_into_key(cmd: model_render_types.RenderDrawCommand, key: *PipelineKey) void {
     var i: u32 = 0;
-    while (i < key.vertex_attribute_count and i < @as(u32, model.MAX_VERTEX_ATTRIBUTES)) : (i += 1) {
+    while (i < key.vertex_attribute_count and i < @as(u32, model_render_types.MAX_VERTEX_ATTRIBUTES)) : (i += 1) {
         const attr = resolve_vertex_attribute(cmd, i) orelse break;
         key.vertex_attribute_formats[i] = attr.format;
         key.vertex_attribute_offsets[i] = attr.offset;
@@ -134,26 +134,26 @@ fn fill_vertex_attributes_into_key(cmd: model.RenderDrawCommand, key: *PipelineK
     }
 }
 
-pub fn resolve_vertex_buffer_count(cmd: model.RenderDrawCommand) u32 {
-    if (cmd.vertex_buffer_count != 0) return @min(cmd.vertex_buffer_count, @as(u32, model.MAX_VERTEX_BUFFERS));
-    if (cmd.vertex_binding_count != 0) return @min(cmd.vertex_binding_count, @as(u32, model.MAX_VERTEX_BUFFERS));
-    if (cmd.vertex_layout_count != 0) return @min(cmd.vertex_layout_count, @as(u32, model.MAX_VERTEX_BUFFERS));
-    if (cmd.vertex_layouts) |layouts| return @min(@as(u32, @intCast(layouts.len)), @as(u32, model.MAX_VERTEX_BUFFERS));
+pub fn resolve_vertex_buffer_count(cmd: model_render_types.RenderDrawCommand) u32 {
+    if (cmd.vertex_buffer_count != 0) return @min(cmd.vertex_buffer_count, @as(u32, model_render_types.MAX_VERTEX_BUFFERS));
+    if (cmd.vertex_binding_count != 0) return @min(cmd.vertex_binding_count, @as(u32, model_render_types.MAX_VERTEX_BUFFERS));
+    if (cmd.vertex_layout_count != 0) return @min(cmd.vertex_layout_count, @as(u32, model_render_types.MAX_VERTEX_BUFFERS));
+    if (cmd.vertex_layouts) |layouts| return @min(@as(u32, @intCast(layouts.len)), @as(u32, model_render_types.MAX_VERTEX_BUFFERS));
     return 0;
 }
 
-pub fn resolve_vertex_attribute_count(cmd: model.RenderDrawCommand) u32 {
-    if (cmd.vertex_attribute_count != 0) return @min(cmd.vertex_attribute_count, @as(u32, model.MAX_VERTEX_ATTRIBUTES));
+pub fn resolve_vertex_attribute_count(cmd: model_render_types.RenderDrawCommand) u32 {
+    if (cmd.vertex_attribute_count != 0) return @min(cmd.vertex_attribute_count, @as(u32, model_render_types.MAX_VERTEX_ATTRIBUTES));
     if (cmd.vertex_layouts) |layouts| {
         var total: u32 = 0;
         var i: usize = 0;
-        while (i < @min(layouts.len, model.MAX_VERTEX_BUFFERS)) : (i += 1) total += layouts[i].attribute_count;
-        return @min(total, @as(u32, model.MAX_VERTEX_ATTRIBUTES));
+        while (i < @min(layouts.len, model_render_types.MAX_VERTEX_BUFFERS)) : (i += 1) total += layouts[i].attribute_count;
+        return @min(total, @as(u32, model_render_types.MAX_VERTEX_ATTRIBUTES));
     }
     return 0;
 }
 
-pub fn resolve_vertex_buffer_handle(cmd: model.RenderDrawCommand, slot: u32) ?*anyopaque {
+pub fn resolve_vertex_buffer_handle(cmd: model_render_types.RenderDrawCommand, slot: u32) ?*anyopaque {
     if (slot < cmd.vertex_buffer_count and cmd.vertex_buffer_handles[slot] != 0) {
         return @ptrFromInt(cmd.vertex_buffer_handles[slot]);
     }
@@ -165,7 +165,7 @@ pub fn resolve_vertex_buffer_handle(cmd: model.RenderDrawCommand, slot: u32) ?*a
     return null;
 }
 
-pub fn resolve_vertex_buffer_offset(cmd: model.RenderDrawCommand, slot: u32) u64 {
+pub fn resolve_vertex_buffer_offset(cmd: model_render_types.RenderDrawCommand, slot: u32) u64 {
     if (slot < cmd.vertex_buffer_count and cmd.vertex_buffer_handles[slot] != 0) {
         return cmd.vertex_buffer_offsets[slot];
     }
@@ -177,12 +177,12 @@ pub fn resolve_vertex_buffer_offset(cmd: model.RenderDrawCommand, slot: u32) u64
     return 0;
 }
 
-pub fn resolve_vertex_step_mode(cmd: model.RenderDrawCommand, slot: u32) u32 {
+pub fn resolve_vertex_step_mode(cmd: model_render_types.RenderDrawCommand, slot: u32) u32 {
     const fallback = resolve_vertex_step_mode_fallback(cmd, slot);
-    return if (fallback != 0) fallback else model.WGPUVertexStepMode_Vertex;
+    return if (fallback != 0) fallback else model_render_types.WGPUVertexStepMode_Vertex;
 }
 
-fn resolve_vertex_step_mode_fallback(cmd: model.RenderDrawCommand, slot: u32) u32 {
+fn resolve_vertex_step_mode_fallback(cmd: model_render_types.RenderDrawCommand, slot: u32) u32 {
     if (slot < cmd.vertex_layout_count and cmd.vertex_step_modes[slot] != 0) {
         return cmd.vertex_step_modes[slot];
     }
@@ -192,7 +192,7 @@ fn resolve_vertex_step_mode_fallback(cmd: model.RenderDrawCommand, slot: u32) u3
     return 0;
 }
 
-pub fn resolve_vertex_buffer_stride_fallback(cmd: model.RenderDrawCommand, slot: u32) u64 {
+pub fn resolve_vertex_buffer_stride_fallback(cmd: model_render_types.RenderDrawCommand, slot: u32) u64 {
     if (slot < cmd.vertex_layout_count and cmd.vertex_buffer_strides[slot] != 0) {
         return cmd.vertex_buffer_strides[slot];
     }
@@ -202,7 +202,7 @@ pub fn resolve_vertex_buffer_stride_fallback(cmd: model.RenderDrawCommand, slot:
     return 0;
 }
 
-pub fn resolve_vertex_buffer_stride(cmd: model.RenderDrawCommand, slot: u32) !u32 {
+pub fn resolve_vertex_buffer_stride(cmd: model_render_types.RenderDrawCommand, slot: u32) !u32 {
     var stride = resolve_vertex_buffer_stride_fallback(cmd, slot);
     if (stride == 0) {
         const attribute_count = resolve_vertex_attribute_count(cmd);
@@ -217,19 +217,19 @@ pub fn resolve_vertex_buffer_stride(cmd: model.RenderDrawCommand, slot: u32) !u3
     return @intCast(stride);
 }
 
-pub fn resolve_index_buffer_handle(cmd: model.RenderDrawCommand) ?*anyopaque {
+pub fn resolve_index_buffer_handle(cmd: model_render_types.RenderDrawCommand) ?*anyopaque {
     if (cmd.index_buffer_handle != 0) return @ptrFromInt(cmd.index_buffer_handle);
     if (cmd.index_binding) |binding| return binding.handle;
     return null;
 }
 
-pub fn resolve_index_buffer_offset(cmd: model.RenderDrawCommand) u64 {
+pub fn resolve_index_buffer_offset(cmd: model_render_types.RenderDrawCommand) u64 {
     if (cmd.index_buffer_handle != 0) return cmd.index_buffer_offset;
     if (cmd.index_binding) |binding| return binding.offset;
     return 0;
 }
 
-pub fn resolve_index_format(cmd: model.RenderDrawCommand) ?u32 {
+pub fn resolve_index_format(cmd: model_render_types.RenderDrawCommand) ?u32 {
     if (cmd.index_format != 0) return cmd.index_format;
     if (cmd.index_binding) |binding| return binding.format;
     return null;
@@ -259,7 +259,7 @@ test "PipelineKey defaults" {
 }
 
 test "build_pipeline_key from default RenderDrawCommand" {
-    const cmd = model.RenderDrawCommand{ .draw_count = 1 };
+    const cmd = model_render_types.RenderDrawCommand{ .draw_count = 1 };
     const key = build_pipeline_key(cmd);
     try std.testing.expectEqual(cmd.target_format, key.target_format);
     try std.testing.expectEqual(@as(u32, 1), key.sample_count);
@@ -267,12 +267,12 @@ test "build_pipeline_key from default RenderDrawCommand" {
 }
 
 test "resolve_vertex_buffer_count returns 0 for default" {
-    const cmd = model.RenderDrawCommand{ .draw_count = 1 };
+    const cmd = model_render_types.RenderDrawCommand{ .draw_count = 1 };
     try std.testing.expectEqual(@as(u32, 0), resolve_vertex_buffer_count(cmd));
 }
 
 test "resolve_vertex_attribute_count returns 0 for default" {
-    const cmd = model.RenderDrawCommand{ .draw_count = 1 };
+    const cmd = model_render_types.RenderDrawCommand{ .draw_count = 1 };
     try std.testing.expectEqual(@as(u32, 0), resolve_vertex_attribute_count(cmd));
 }
 

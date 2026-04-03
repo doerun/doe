@@ -1,5 +1,6 @@
 const std = @import("std");
-const model = @import("../../../model_webgpu_types.zig");
+const model_gpu_types = @import("../../../model_gpu_types.zig");
+const model_texture_types = @import("../../../model_texture_types.zig");
 const common_timing = @import("../../common/timing.zig");
 const dc = @import("../d3d12_constants.zig");
 
@@ -26,7 +27,7 @@ pub const TextureEntry = struct {
     depth_or_array_layers: u32 = 1,
     format: u32,
     usage: u64 = 0,
-    dimension: u32 = model.WGPUTextureDimension_2D,
+    dimension: u32 = model_gpu_types.WGPUTextureDimension_2D,
     sample_count: u32 = 1,
     mip_levels: u32 = 1,
 };
@@ -38,7 +39,7 @@ pub fn texture_write(
     queue: ?*anyopaque,
     texture_map: *TextureMap,
     allocator: std.mem.Allocator,
-    cmd: model.TextureWriteCommand,
+    cmd: model_texture_types.TextureWriteCommand,
 ) !u64 {
     const tex_res = &cmd.texture;
     const data = cmd.data;
@@ -48,20 +49,20 @@ pub fn texture_write(
     const width = if (tex_res.width > 0) tex_res.width else 1;
     const height = if (tex_res.height > 0) tex_res.height else 1;
     const depth_or_layers = if (tex_res.depth_or_array_layers > 0) tex_res.depth_or_array_layers else 1;
-    const format: u32 = if (tex_res.format != model.WGPUTextureFormat_Undefined) tex_res.format else model.WGPUTextureFormat_RGBA8Unorm;
+    const format: u32 = if (tex_res.format != model_gpu_types.WGPUTextureFormat_Undefined) tex_res.format else model_gpu_types.WGPUTextureFormat_RGBA8Unorm;
     const usage: u32 = @truncate(tex_res.usage);
     const rows_per_image = if (tex_res.rows_per_image > 0) tex_res.rows_per_image else height;
 
     if (tex_res.sample_count > 1) return error.UnsupportedFeature;
-    if (tex_res.dimension == model.WGPUTextureDimension_1D) return error.UnsupportedFeature;
-    if (tex_res.dimension == model.WGPUTextureDimension_3D and rows_per_image != height) return error.UnsupportedFeature;
+    if (tex_res.dimension == model_gpu_types.WGPUTextureDimension_1D) return error.UnsupportedFeature;
+    if (tex_res.dimension == model_gpu_types.WGPUTextureDimension_3D and rows_per_image != height) return error.UnsupportedFeature;
 
     const encode_start = common_timing.now_ns();
 
     var entry = texture_map.get(tex_res.handle);
     if (entry == null) {
         const tex_handle = switch (tex_res.dimension) {
-            model.WGPUTextureDimension_3D => d3d12_bridge_device_create_texture_3d(
+            model_gpu_types.WGPUTextureDimension_3D => d3d12_bridge_device_create_texture_3d(
                 device,
                 width,
                 height,
@@ -89,7 +90,7 @@ pub fn texture_write(
             .depth_or_array_layers = depth_or_layers,
             .format = format,
             .usage = tex_res.usage,
-            .dimension = if (tex_res.dimension != model.WGPUTextureDimension_Undefined) tex_res.dimension else model.WGPUTextureDimension_2D,
+            .dimension = if (tex_res.dimension != model_gpu_types.WGPUTextureDimension_Undefined) tex_res.dimension else model_gpu_types.WGPUTextureDimension_2D,
             .sample_count = if (tex_res.sample_count > 0) tex_res.sample_count else 1,
             .mip_levels = if (tex_res.mip_level > 0) tex_res.mip_level + 1 else 1,
         };
@@ -111,7 +112,7 @@ pub fn texture_write(
 
     const bytes_per_row = if (tex_res.bytes_per_row > 0) tex_res.bytes_per_row else @as(u32, @intCast(data.len / @as(usize, rows_per_image * depth_or_layers)));
 
-    if (tex_res.dimension == model.WGPUTextureDimension_3D) {
+    if (tex_res.dimension == model_gpu_types.WGPUTextureDimension_3D) {
         d3d12_bridge_command_list_copy_texture_region_subresource(
             cmd_list,
             entry.?.resource,
@@ -153,7 +154,7 @@ pub fn texture_write(
 
 pub fn texture_query(
     texture_map: *const TextureMap,
-    cmd: model.TextureQueryCommand,
+    cmd: model_texture_types.TextureQueryCommand,
 ) !u64 {
     const encode_start = common_timing.now_ns();
 
@@ -180,7 +181,7 @@ pub fn texture_query(
 
 pub fn texture_destroy(
     texture_map: *TextureMap,
-    cmd: model.TextureDestroyCommand,
+    cmd: model_texture_types.TextureDestroyCommand,
 ) !u64 {
     const encode_start = common_timing.now_ns();
 

@@ -1,5 +1,6 @@
 const std = @import("std");
-const model = @import("../../../model_webgpu_types.zig");
+const model_gpu_types = @import("../../../model_gpu_types.zig");
+const model_surface_control_types = @import("../../../model_surface_control_types.zig");
 const common_timing = @import("../../common/timing.zig");
 
 extern fn d3d12_bridge_create_swap_chain(queue: ?*anyopaque, width: u32, height: u32, format: u32, alpha_mode: u32, tone_mapping_mode: u32) callconv(.c) ?*anyopaque;
@@ -18,9 +19,9 @@ pub const SurfaceEntry = struct {
     status: SurfaceStatus = .created,
     width: u32 = 0,
     height: u32 = 0,
-    format: u32 = model.WGPUTextureFormat_RGBA8Unorm,
+    format: u32 = model_gpu_types.WGPUTextureFormat_RGBA8Unorm,
     alpha_mode: u32 = 0x00000001,
-    tone_mapping_mode: u32 = model.WGPUCanvasToneMappingMode_Standard,
+    tone_mapping_mode: u32 = model_surface_control_types.WGPUCanvasToneMappingMode_Standard,
     swap_chain: ?*anyopaque = null,
     render_target: ?*anyopaque = null,
     rtv_heap: ?*anyopaque = null,
@@ -31,13 +32,13 @@ pub const SurfaceMap = std.AutoHashMapUnmanaged(u64, SurfaceEntry);
 pub const SurfaceState = struct {
     map: SurfaceMap = .{},
 
-    pub fn create_surface(self: *SurfaceState, allocator: std.mem.Allocator, cmd: model.SurfaceCreateCommand) !u64 {
+    pub fn create_surface(self: *SurfaceState, allocator: std.mem.Allocator, cmd: model_surface_control_types.SurfaceCreateCommand) !u64 {
         const encode_start = common_timing.now_ns();
         self.map.put(allocator, cmd.handle, .{ .handle = cmd.handle }) catch return error.InvalidState;
         return common_timing.ns_delta(common_timing.now_ns(), encode_start);
     }
 
-    pub fn surface_capabilities(self: *SurfaceState, allocator: std.mem.Allocator, cmd: model.SurfaceCapabilitiesCommand) !u64 {
+    pub fn surface_capabilities(self: *SurfaceState, allocator: std.mem.Allocator, cmd: model_surface_control_types.SurfaceCapabilitiesCommand) !u64 {
         const encode_start = common_timing.now_ns();
         if (!self.map.contains(cmd.handle)) {
             self.map.put(allocator, cmd.handle, .{ .handle = cmd.handle }) catch return error.InvalidState;
@@ -50,7 +51,7 @@ pub const SurfaceState = struct {
         device: ?*anyopaque,
         queue: ?*anyopaque,
         allocator: std.mem.Allocator,
-        cmd: model.SurfaceConfigureCommand,
+        cmd: model_surface_control_types.SurfaceConfigureCommand,
     ) !u64 {
         const encode_start = common_timing.now_ns();
 
@@ -68,7 +69,7 @@ pub const SurfaceState = struct {
             entry.swap_chain = null;
         }
 
-        const usage_render: u32 = @truncate(model.WGPUTextureUsage_RenderAttachment);
+        const usage_render: u32 = @truncate(model_gpu_types.WGPUTextureUsage_RenderAttachment);
         entry.render_target = d3d12_bridge_device_create_texture_2d(device, cmd.width, cmd.height, 1, cmd.format, usage_render) orelse return error.InvalidState;
 
         if (entry.rtv_heap == null) {
@@ -98,7 +99,7 @@ pub const SurfaceState = struct {
         return common_timing.ns_delta(common_timing.now_ns(), encode_start);
     }
 
-    pub fn acquire_surface(self: *SurfaceState, allocator: std.mem.Allocator, cmd: model.SurfaceAcquireCommand) !u64 {
+    pub fn acquire_surface(self: *SurfaceState, allocator: std.mem.Allocator, cmd: model_surface_control_types.SurfaceAcquireCommand) !u64 {
         const encode_start = common_timing.now_ns();
         _ = allocator;
         const entry = self.map.getPtr(cmd.handle) orelse return error.InvalidState;
@@ -107,7 +108,7 @@ pub const SurfaceState = struct {
         return common_timing.ns_delta(common_timing.now_ns(), encode_start);
     }
 
-    pub fn present_surface(self: *SurfaceState, cmd: model.SurfacePresentCommand) !u64 {
+    pub fn present_surface(self: *SurfaceState, cmd: model_surface_control_types.SurfacePresentCommand) !u64 {
         const submit_start = common_timing.now_ns();
         const entry = self.map.getPtr(cmd.handle) orelse return error.InvalidState;
         if (entry.swap_chain) |sc| {
@@ -119,7 +120,7 @@ pub const SurfaceState = struct {
         return common_timing.ns_delta(common_timing.now_ns(), submit_start);
     }
 
-    pub fn unconfigure_surface(self: *SurfaceState, allocator: std.mem.Allocator, cmd: model.SurfaceUnconfigureCommand) !u64 {
+    pub fn unconfigure_surface(self: *SurfaceState, allocator: std.mem.Allocator, cmd: model_surface_control_types.SurfaceUnconfigureCommand) !u64 {
         const encode_start = common_timing.now_ns();
         if (self.map.getPtr(cmd.handle)) |entry| {
             if (entry.render_target) |rt| {
@@ -140,7 +141,7 @@ pub const SurfaceState = struct {
         return common_timing.ns_delta(common_timing.now_ns(), encode_start);
     }
 
-    pub fn release_surface(self: *SurfaceState, cmd: model.SurfaceReleaseCommand) !u64 {
+    pub fn release_surface(self: *SurfaceState, cmd: model_surface_control_types.SurfaceReleaseCommand) !u64 {
         const encode_start = common_timing.now_ns();
         if (self.map.fetchRemove(cmd.handle)) |kv| {
             var entry = kv.value;

@@ -15,7 +15,7 @@
 const std = @import("std");
 const builtin = @import("builtin");
 const native = @import("doe_wgpu_native.zig");
-const types = @import("core/abi/wgpu_types.zig");
+const abi_descriptor = @import("core/abi/wgpu_descriptor_types.zig");
 
 const DoeTextureView = native.DoeTextureView;
 
@@ -169,7 +169,7 @@ fn tryNativeImport(desc_ptr: [*]const u8, mtl_device: ?*anyopaque) ?NativePlaneL
     const chain_ptr = chain_ptr_raw orelse return null;
 
     // Interpret as WGPUChainedStruct to check sType.
-    const chain: *const types.WGPUChainedStruct = @ptrCast(@alignCast(chain_ptr));
+    const chain: *const abi_descriptor.WGPUChainedStruct = @ptrCast(@alignCast(chain_ptr));
     if (chain.sType != STYPE_EXTERNAL_TEXTURE_NATIVE) return null;
 
     // Read source type and handle from the native descriptor.

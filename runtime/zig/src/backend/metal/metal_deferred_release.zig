@@ -18,12 +18,12 @@
 
 const std = @import("std");
 const bridge = @import("metal_bridge_decls.zig");
-const model_webgpu_types = @import("../../model_webgpu_types.zig");
+const model_render_types = @import("../../model_render_types.zig");
 const metal_bridge_release = bridge.metal_bridge_release;
 const metal_bridge_device_new_sampler = bridge.metal_bridge_device_new_sampler;
 
 const model = struct {
-    pub const SamplerCreateCommand = model_webgpu_types.SamplerCreateCommand;
+    pub const SamplerCreateCommand = model_render_types.SamplerCreateCommand;
 };
 
 // ============================================================

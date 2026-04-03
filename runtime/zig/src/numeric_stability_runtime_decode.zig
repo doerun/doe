@@ -1,13 +1,13 @@
 const std = @import("std");
 const execution = @import("execution.zig");
 const model_commands = @import("model_commands.zig");
-const model_webgpu_types = @import("model_webgpu_types.zig");
+const model_transfer_types = @import("model_compute_types.zig");
 const numeric_stability_service = @import("full/modules/services/numeric_stability.zig");
 const runtime_plan = @import("numeric_stability_runtime_plan.zig");
 
 const model = struct {
     pub const Command = model_commands.Command;
-    pub const KernelDispatchCommand = model_webgpu_types.KernelDispatchCommand;
+    pub const KernelDispatchCommand = model_transfer_types.KernelDispatchCommand;
 };
 
 pub const GREEDY_DECODE_MODE = "greedy-argmax";
@@ -284,8 +284,7 @@ pub fn readDecodeReceipt(
                 .topPBoundaryGap = replay.fast.top_p_boundary_gap,
                 .cdfDistanceToDraw = replay.fast.cdf_distance_to_draw,
                 .adjacentDecodePersistence = null,
-                .actualSelectedTokenChanged =
-                    replay_selected_token.fast != replay_selected_token.stable or
+                .actualSelectedTokenChanged = replay_selected_token.fast != replay_selected_token.stable or
                     replay_selected_token.fast != replay_selected_token.reference,
                 .liveSelectedMatchesFast = live_selected_token == replay_selected_token.fast,
                 .liveSelectedMatchesStable = live_selected_token == replay_selected_token.stable,

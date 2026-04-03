@@ -1,21 +1,23 @@
 const std = @import("std");
 const loader = @import("core/abi/wgpu_loader.zig");
-const types = @import("core/abi/wgpu_types.zig");
+const abi_base = @import("core/abi/wgpu_base_types.zig");
+const abi_descriptor = @import("core/abi/wgpu_descriptor_types.zig");
+const abi_proc_aliases = @import("core/abi/wgpu_type_proc_aliases.zig");
 
 pub const CREATE_COMPUTE_PIPELINE_ASYNC_STATUS_SUCCESS: u32 = 1;
-pub const QUERY_TYPE_OCCLUSION: types.WGPUQueryType = 0x00000001;
+pub const QUERY_TYPE_OCCLUSION: abi_base.WGPUQueryType = 0x00000001;
 
 const CreateComputePipelineAsyncCallback = *const fn (
     status: u32,
-    pipeline: types.WGPUComputePipeline,
-    message: types.WGPUStringView,
+    pipeline: abi_base.WGPUComputePipeline,
+    message: abi_base.WGPUStringView,
     userdata1: ?*anyopaque,
     userdata2: ?*anyopaque,
 ) callconv(.c) void;
 
 pub const CreateComputePipelineAsyncCallbackInfo = extern struct {
     nextInChain: ?*anyopaque,
-    mode: types.WGPUCallbackMode,
+    mode: abi_descriptor.WGPUCallbackMode,
     callback: ?CreateComputePipelineAsyncCallback,
     userdata1: ?*anyopaque,
     userdata2: ?*anyopaque,
@@ -24,25 +26,25 @@ pub const CreateComputePipelineAsyncCallbackInfo = extern struct {
 pub const ComputePipelineAsyncState = struct {
     done: bool = false,
     status: u32 = 0,
-    pipeline: types.WGPUComputePipeline = null,
+    pipeline: abi_base.WGPUComputePipeline = null,
 };
 
-pub const FnBufferDestroy = *const fn (types.WGPUBuffer) callconv(.c) void;
-pub const FnCommandEncoderClearBuffer = *const fn (types.WGPUCommandEncoder, types.WGPUBuffer, u64, u64) callconv(.c) void;
-pub const FnCommandEncoderWriteBuffer = *const fn (types.WGPUCommandEncoder, types.WGPUBuffer, u64, [*]const u8, u64) callconv(.c) void;
-pub const FnComputePassEncoderDispatchWorkgroupsIndirect = *const fn (types.WGPUComputePassEncoder, types.WGPUBuffer, u64) callconv(.c) void;
-pub const FnComputePassEncoderWriteTimestamp = *const fn (types.WGPUComputePassEncoder, types.WGPUQuerySet, u32) callconv(.c) void;
-pub const FnDeviceCreateComputePipelineAsync = *const fn (types.WGPUDevice, *const types.WGPUComputePipelineDescriptor, CreateComputePipelineAsyncCallbackInfo) callconv(.c) types.WGPUFuture;
-pub const FnDeviceDestroy = *const fn (types.WGPUDevice) callconv(.c) void;
-pub const FnQuerySetDestroy = *const fn (types.WGPUQuerySet) callconv(.c) void;
-pub const FnQuerySetGetCount = *const fn (types.WGPUQuerySet) callconv(.c) u32;
-pub const FnQuerySetGetType = *const fn (types.WGPUQuerySet) callconv(.c) types.WGPUQueryType;
-pub const FnRenderPassEncoderBeginOcclusionQuery = *const fn (types.WGPURenderPassEncoder, u32) callconv(.c) void;
-pub const FnRenderPassEncoderEndOcclusionQuery = *const fn (types.WGPURenderPassEncoder) callconv(.c) void;
-pub const FnRenderPassEncoderMultiDrawIndexedIndirect = *const fn (types.WGPURenderPassEncoder, types.WGPUBuffer, u64, u32, types.WGPUBuffer, u64) callconv(.c) void;
-pub const FnRenderPassEncoderMultiDrawIndirect = *const fn (types.WGPURenderPassEncoder, types.WGPUBuffer, u64, u32, types.WGPUBuffer, u64) callconv(.c) void;
-pub const FnRenderPassEncoderPixelLocalStorageBarrier = *const fn (types.WGPURenderPassEncoder) callconv(.c) void;
-pub const FnRenderPassEncoderWriteTimestamp = *const fn (types.WGPURenderPassEncoder, types.WGPUQuerySet, u32) callconv(.c) void;
+pub const FnBufferDestroy = *const fn (abi_base.WGPUBuffer) callconv(.c) void;
+pub const FnCommandEncoderClearBuffer = *const fn (abi_base.WGPUCommandEncoder, abi_base.WGPUBuffer, u64, u64) callconv(.c) void;
+pub const FnCommandEncoderWriteBuffer = *const fn (abi_base.WGPUCommandEncoder, abi_base.WGPUBuffer, u64, [*]const u8, u64) callconv(.c) void;
+pub const FnComputePassEncoderDispatchWorkgroupsIndirect = *const fn (abi_base.WGPUComputePassEncoder, abi_base.WGPUBuffer, u64) callconv(.c) void;
+pub const FnComputePassEncoderWriteTimestamp = *const fn (abi_base.WGPUComputePassEncoder, abi_base.WGPUQuerySet, u32) callconv(.c) void;
+pub const FnDeviceCreateComputePipelineAsync = *const fn (abi_base.WGPUDevice, *const abi_descriptor.WGPUComputePipelineDescriptor, CreateComputePipelineAsyncCallbackInfo) callconv(.c) abi_base.WGPUFuture;
+pub const FnDeviceDestroy = *const fn (abi_base.WGPUDevice) callconv(.c) void;
+pub const FnQuerySetDestroy = *const fn (abi_base.WGPUQuerySet) callconv(.c) void;
+pub const FnQuerySetGetCount = *const fn (abi_base.WGPUQuerySet) callconv(.c) u32;
+pub const FnQuerySetGetType = *const fn (abi_base.WGPUQuerySet) callconv(.c) abi_base.WGPUQueryType;
+pub const FnRenderPassEncoderBeginOcclusionQuery = *const fn (abi_base.WGPURenderPassEncoder, u32) callconv(.c) void;
+pub const FnRenderPassEncoderEndOcclusionQuery = *const fn (abi_base.WGPURenderPassEncoder) callconv(.c) void;
+pub const FnRenderPassEncoderMultiDrawIndexedIndirect = *const fn (abi_base.WGPURenderPassEncoder, abi_base.WGPUBuffer, u64, u32, abi_base.WGPUBuffer, u64) callconv(.c) void;
+pub const FnRenderPassEncoderMultiDrawIndirect = *const fn (abi_base.WGPURenderPassEncoder, abi_base.WGPUBuffer, u64, u32, abi_base.WGPUBuffer, u64) callconv(.c) void;
+pub const FnRenderPassEncoderPixelLocalStorageBarrier = *const fn (abi_base.WGPURenderPassEncoder) callconv(.c) void;
+pub const FnRenderPassEncoderWriteTimestamp = *const fn (abi_base.WGPURenderPassEncoder, abi_base.WGPUQuerySet, u32) callconv(.c) void;
 
 pub const P0Procs = struct {
     buffer_destroy: ?FnBufferDestroy = null,
@@ -102,14 +104,14 @@ pub fn loadP0Procs(dyn_lib: ?std.DynLib) ?P0Procs {
     return loaded;
 }
 
-pub fn destroyBuffer(p0_procs: ?P0Procs, buffer: types.WGPUBuffer) void {
+pub fn destroyBuffer(p0_procs: ?P0Procs, buffer: abi_base.WGPUBuffer) void {
     if (buffer == null) return;
     const loaded = p0_procs orelse return;
     const destroy_buffer = loaded.buffer_destroy orelse return;
     destroy_buffer(buffer);
 }
 
-pub fn destroyQuerySet(p0_procs: ?P0Procs, query_set: types.WGPUQuerySet) void {
+pub fn destroyQuerySet(p0_procs: ?P0Procs, query_set: abi_base.WGPUQuerySet) void {
     if (query_set == null) return;
     const loaded = p0_procs orelse return;
     const destroy_query_set = loaded.query_set_destroy orelse return;
@@ -118,9 +120,9 @@ pub fn destroyQuerySet(p0_procs: ?P0Procs, query_set: types.WGPUQuerySet) void {
 
 pub fn querySetMatches(
     p0_procs: ?P0Procs,
-    query_set: types.WGPUQuerySet,
+    query_set: abi_base.WGPUQuerySet,
     expected_count: u32,
-    expected_type: types.WGPUQueryType,
+    expected_type: abi_base.WGPUQueryType,
 ) bool {
     if (query_set == null) return false;
     const loaded = p0_procs orelse return true;
@@ -135,16 +137,16 @@ pub fn querySetMatches(
 
 pub fn createComputePipelineAsyncAndWait(
     p0_procs: P0Procs,
-    instance: types.WGPUInstance,
-    procs: types.Procs,
-    device: types.WGPUDevice,
-    descriptor: *const types.WGPUComputePipelineDescriptor,
-) !types.WGPUComputePipeline {
+    instance: abi_base.WGPUInstance,
+    procs: abi_proc_aliases.Procs,
+    device: abi_base.WGPUDevice,
+    descriptor: *const abi_descriptor.WGPUComputePipelineDescriptor,
+) !abi_base.WGPUComputePipeline {
     const create_async = p0_procs.device_create_compute_pipeline_async orelse return error.AsyncProcUnavailable;
     var state = ComputePipelineAsyncState{};
     const callback_info = CreateComputePipelineAsyncCallbackInfo{
         .nextInChain = null,
-        .mode = types.WGPUCallbackMode_AllowProcessEvents,
+        .mode = abi_descriptor.WGPUCallbackMode_AllowProcessEvents,
         .callback = computePipelineAsyncCallback,
         .userdata1 = &state,
         .userdata2 = null,
@@ -158,8 +160,8 @@ pub fn createComputePipelineAsyncAndWait(
 }
 
 fn processEventsUntil(
-    instance: types.WGPUInstance,
-    procs: types.Procs,
+    instance: abi_base.WGPUInstance,
+    procs: abi_proc_aliases.Procs,
     done: *const bool,
     timeout_ns: u64,
 ) !void {
@@ -176,8 +178,8 @@ fn processEventsUntil(
 
 fn computePipelineAsyncCallback(
     status: u32,
-    pipeline: types.WGPUComputePipeline,
-    message: types.WGPUStringView,
+    pipeline: abi_base.WGPUComputePipeline,
+    message: abi_base.WGPUStringView,
     userdata1: ?*anyopaque,
     userdata2: ?*anyopaque,
 ) callconv(.c) void {

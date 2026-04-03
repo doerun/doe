@@ -1,5 +1,5 @@
 const std = @import("std");
-const model = @import("../../../model_webgpu_types.zig");
+const model_async_types = @import("../../../model_async_types.zig");
 const common_timing = @import("../../common/timing.zig");
 const dc = @import("../d3d12_constants.zig");
 
@@ -13,7 +13,7 @@ extern fn d3d12_bridge_release(obj: ?*anyopaque) callconv(.c) void;
 
 pub fn execute_map_async(
     device: ?*anyopaque,
-    cmd: model.MapAsyncCommand,
+    cmd: model_async_types.MapAsyncCommand,
 ) !u64 {
     if (cmd.bytes == 0) return error.InvalidArgument;
     if (cmd.bytes > MAX_MAP_BYTES) return error.UnsupportedFeature;

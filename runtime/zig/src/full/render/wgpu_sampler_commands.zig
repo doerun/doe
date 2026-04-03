@@ -1,5 +1,6 @@
-const model = @import("../../model_webgpu_types.zig");
-const types = @import("../../core/abi/wgpu_types.zig");
+const model_render_types = @import("../../model_render_types.zig");
+const abi_base = @import("../../core/abi/wgpu_base_types.zig");
+const abi_execution = @import("../../core/abi/wgpu_execution_types.zig");
 const loader = @import("../../core/abi/wgpu_loader.zig");
 const texture_procs_mod = @import("../../wgpu_texture_procs.zig");
 const ffi = @import("../../webgpu_backend.zig");
@@ -7,7 +8,7 @@ const Backend = ffi.WebGPUBackend;
 
 const SamplerDescriptor = extern struct {
     nextInChain: ?*anyopaque,
-    label: types.WGPUStringView,
+    label: abi_base.WGPUStringView,
     addressModeU: u32,
     addressModeV: u32,
     addressModeW: u32,
@@ -20,7 +21,7 @@ const SamplerDescriptor = extern struct {
     maxAnisotropy: u16,
 };
 
-pub fn executeSamplerCreate(self: *Backend, sampler_cmd: model.SamplerCreateCommand) !types.NativeExecutionResult {
+pub fn executeSamplerCreate(self: *Backend, sampler_cmd: model_render_types.SamplerCreateCommand) !abi_execution.NativeExecutionResult {
     const texture_procs = texture_procs_mod.loadTextureProcs(self.core.dyn_lib) orelse return error.TextureProcUnavailable;
     if (self.full.samplers.get(sampler_cmd.handle)) |existing| {
         texture_procs.sampler_release(existing);
@@ -49,7 +50,7 @@ pub fn executeSamplerCreate(self: *Backend, sampler_cmd: model.SamplerCreateComm
     return .{ .status = .ok, .status_message = "sampler created" };
 }
 
-pub fn executeSamplerDestroy(self: *Backend, sampler_cmd: model.SamplerDestroyCommand) !types.NativeExecutionResult {
+pub fn executeSamplerDestroy(self: *Backend, sampler_cmd: model_render_types.SamplerDestroyCommand) !abi_execution.NativeExecutionResult {
     const texture_procs = texture_procs_mod.loadTextureProcs(self.core.dyn_lib) orelse return error.TextureProcUnavailable;
     const removed = self.full.samplers.fetchRemove(sampler_cmd.handle) orelse {
         return .{ .status = .unsupported, .status_message = "sampler handle not found" };

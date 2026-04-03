@@ -4,6 +4,7 @@
 const builtin = @import("builtin");
 const has_vulkan = (builtin.os.tag == .linux);
 const std = @import("std");
+const model_transfer_types = @import("model_resource_types.zig");
 const native = @import("doe_wgpu_native.zig");
 const bridge = @import("backend/metal/metal_bridge_decls.zig");
 
@@ -155,9 +156,8 @@ pub export fn doeNativeQueueWriteTexture(
             const rt = native.device_vk_runtime(q.?.dev) orelse return;
             const tex = cast(DoeTexture, texture_raw) orelse return;
             if (tex.vk_id != 0) {
-                const model = @import("model_webgpu_types.zig");
                 const rows = if (rows_per_image > 0) rows_per_image else height;
-                const copy_res = model.CopyTextureResource{
+                const copy_res = model_transfer_types.CopyTextureResource{
                     .handle = tex.vk_id,
                     .width = width,
                     .height = height,

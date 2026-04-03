@@ -8,7 +8,8 @@ const c = @import("vk_constants.zig");
 const vk_device = @import("vk_device.zig");
 const vk_upload = @import("vk_upload.zig");
 const vk_resources = @import("vk_resources.zig");
-const model = @import("../../model_webgpu_types.zig");
+const model_compute_types = @import("../../model_compute_types.zig");
+const model_gpu_types = @import("../../model_gpu_types.zig");
 const doe_wgsl = @import("../../doe_wgsl/mod.zig");
 const common_errors = @import("../common/errors.zig");
 const path_utils = @import("../common/path_utils.zig");
@@ -97,7 +98,7 @@ pub fn set_compute_shader_spirv(
     self: *Runtime,
     words: []const u32,
     entry_point: ?[]const u8,
-    bindings: ?[]const model.KernelBinding,
+    bindings: ?[]const model_compute_types.KernelBinding,
     initialize_buffers_on_create: bool,
 ) !void {
     if (words.len == 0 or words[0] != SPIRV_MAGIC) return error.ShaderCompileFailed;
@@ -119,7 +120,7 @@ pub fn build_pipeline_for_words(
     words: []const u32,
     pipeline_hash: u64,
     entry_point: ?[]const u8,
-    bindings: ?[]const model.KernelBinding,
+    bindings: ?[]const model_compute_types.KernelBinding,
 ) !void {
     if (self.has_deferred_submissions or self.pending_uploads.items.len > 0) {
         _ = try vk_upload.flush_queue(self);
@@ -205,7 +206,7 @@ pub fn bind_descriptor_sets(self: *Runtime, command_buffer: c.VkCommandBuffer) v
     );
 }
 
-fn ensure_pipeline_layout(self: *Runtime, bindings: ?[]const model.KernelBinding) !void {
+fn ensure_pipeline_layout(self: *Runtime, bindings: ?[]const model_compute_types.KernelBinding) !void {
     const layout_hash = compute_layout_hash(bindings);
     if (self.has_pipeline_layout and layout_hash == self.current_layout_hash) return;
 
@@ -270,7 +271,7 @@ fn ensure_pipeline_layout(self: *Runtime, bindings: ?[]const model.KernelBinding
 
 fn prepare_descriptor_sets(
     self: *Runtime,
-    bindings: ?[]const model.KernelBinding,
+    bindings: ?[]const model_compute_types.KernelBinding,
     initialize_buffers_on_create: bool,
 ) !void {
     if (self.descriptor_set_count == 0) return;
@@ -368,7 +369,7 @@ fn prepare_descriptor_sets(
     }
 }
 
-fn ensure_descriptor_pool(self: *Runtime, bindings: ?[]const model.KernelBinding) !void {
+fn ensure_descriptor_pool(self: *Runtime, bindings: ?[]const model_compute_types.KernelBinding) !void {
     if (self.has_descriptor_pool) return;
     if (self.descriptor_set_count == 0) return;
 
@@ -440,12 +441,12 @@ fn ensure_descriptor_pool(self: *Runtime, bindings: ?[]const model.KernelBinding
 
 // --- Pure helpers ---
 
-pub fn descriptor_type_for_binding(binding: model.KernelBinding) !u32 {
+pub fn descriptor_type_for_binding(binding: model_compute_types.KernelBinding) !u32 {
     return switch (binding.resource_kind) {
         .buffer => switch (binding.buffer_type) {
-            model.WGPUBufferBindingType_Uniform => c.VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-            model.WGPUBufferBindingType_Storage,
-            model.WGPUBufferBindingType_ReadOnlyStorage,
+            model_gpu_types.WGPUBufferBindingType_Uniform => c.VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            model_gpu_types.WGPUBufferBindingType_Storage,
+            model_gpu_types.WGPUBufferBindingType_ReadOnlyStorage,
             => c.VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
             else => error.UnsupportedFeature,
         },
@@ -455,37 +456,37 @@ pub fn descriptor_type_for_binding(binding: model.KernelBinding) !u32 {
     };
 }
 
-pub fn validate_texture_binding(binding: model.KernelBinding, texture: vk_resources.TextureResource) !void {
-    if (binding.texture_view_dimension != model.WGPUTextureViewDimension_Undefined and
-        binding.texture_view_dimension != model.WGPUTextureViewDimension_2D) return error.UnsupportedFeature;
+pub fn validate_texture_binding(binding: model_compute_types.KernelBinding, texture: vk_resources.TextureResource) !void {
+    if (binding.texture_view_dimension != model_gpu_types.WGPUTextureViewDimension_Undefined and
+        binding.texture_view_dimension != model_gpu_types.WGPUTextureViewDimension_2D) return error.UnsupportedFeature;
     if (binding.texture_multisampled) return error.UnsupportedFeature;
-    if (binding.texture_aspect != model.WGPUTextureAspect_Undefined and
-        binding.texture_aspect != model.WGPUTextureAspect_All) return error.UnsupportedFeature;
-    if (binding.texture_format != model.WGPUTextureFormat_Undefined and
+    if (binding.texture_aspect != model_gpu_types.WGPUTextureAspect_Undefined and
+        binding.texture_aspect != model_gpu_types.WGPUTextureAspect_All) return error.UnsupportedFeature;
+    if (binding.texture_format != model_gpu_types.WGPUTextureFormat_Undefined and
         binding.texture_format != texture.format) return error.InvalidState;
 
     switch (binding.resource_kind) {
         .buffer, .sampler => return error.InvalidArgument,
         .texture => {
-            if ((texture.usage & model.WGPUTextureUsage_TextureBinding) == 0) return error.InvalidState;
+            if ((texture.usage & model_gpu_types.WGPUTextureUsage_TextureBinding) == 0) return error.InvalidState;
             switch (binding.texture_sample_type) {
-                model.WGPUTextureSampleType_Undefined,
-                model.WGPUTextureSampleType_Float,
-                model.WGPUTextureSampleType_UnfilterableFloat,
-                model.WGPUTextureSampleType_Depth,
-                model.WGPUTextureSampleType_Sint,
-                model.WGPUTextureSampleType_Uint,
+                model_gpu_types.WGPUTextureSampleType_Undefined,
+                model_gpu_types.WGPUTextureSampleType_Float,
+                model_gpu_types.WGPUTextureSampleType_UnfilterableFloat,
+                model_gpu_types.WGPUTextureSampleType_Depth,
+                model_gpu_types.WGPUTextureSampleType_Sint,
+                model_gpu_types.WGPUTextureSampleType_Uint,
                 => {},
                 else => return error.UnsupportedFeature,
             }
         },
         .storage_texture => {
-            if ((texture.usage & model.WGPUTextureUsage_StorageBinding) == 0) return error.InvalidState;
+            if ((texture.usage & model_gpu_types.WGPUTextureUsage_StorageBinding) == 0) return error.InvalidState;
             switch (binding.storage_texture_access) {
-                model.WGPUStorageTextureAccess_Undefined,
-                model.WGPUStorageTextureAccess_WriteOnly,
-                model.WGPUStorageTextureAccess_ReadOnly,
-                model.WGPUStorageTextureAccess_ReadWrite,
+                model_gpu_types.WGPUStorageTextureAccess_Undefined,
+                model_gpu_types.WGPUStorageTextureAccess_WriteOnly,
+                model_gpu_types.WGPUStorageTextureAccess_ReadOnly,
+                model_gpu_types.WGPUStorageTextureAccess_ReadWrite,
                 => {},
                 else => return error.UnsupportedFeature,
             }
@@ -493,9 +494,9 @@ pub fn validate_texture_binding(binding: model.KernelBinding, texture: vk_resour
     }
 }
 
-pub fn descriptor_range(binding: model.KernelBinding, buffer_size: u64) !u64 {
+pub fn descriptor_range(binding: model_compute_types.KernelBinding, buffer_size: u64) !u64 {
     if (binding.resource_kind != .buffer) return error.UnsupportedFeature;
-    if (binding.buffer_size == model.WGPUWholeSize) {
+    if (binding.buffer_size == model_gpu_types.WGPUWholeSize) {
         if (binding.buffer_offset > buffer_size) return error.InvalidArgument;
         return c.VK_WHOLE_SIZE;
     }
@@ -505,7 +506,7 @@ pub fn descriptor_range(binding: model.KernelBinding, buffer_size: u64) !u64 {
     return binding.buffer_size;
 }
 
-pub fn compute_layout_hash(bindings: ?[]const model.KernelBinding) u64 {
+pub fn compute_layout_hash(bindings: ?[]const model_compute_types.KernelBinding) u64 {
     var hasher = std.hash.Wyhash.init(0);
     if (bindings) |bs| {
         for (bs) |binding| {
@@ -526,7 +527,7 @@ pub fn compute_layout_hash(bindings: ?[]const model.KernelBinding) u64 {
 pub fn compute_pipeline_hash(
     words: []const u32,
     entry_point: ?[]const u8,
-    bindings: ?[]const model.KernelBinding,
+    bindings: ?[]const model_compute_types.KernelBinding,
 ) u64 {
     var hasher = std.hash.Wyhash.init(0);
     const layout_hash = compute_layout_hash(bindings);

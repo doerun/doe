@@ -1,37 +1,38 @@
 const std = @import("std");
-const types = @import("core/abi/wgpu_types.zig");
+const abi_base = @import("core/abi/wgpu_base_types.zig");
+const abi_descriptor = @import("core/abi/wgpu_descriptor_types.zig");
 
-const FnDeviceCreateSampler = *const fn (types.WGPUDevice, ?*const anyopaque) callconv(.c) types.WGPUSampler;
-const FnSamplerRelease = *const fn (types.WGPUSampler) callconv(.c) void;
+const FnDeviceCreateSampler = *const fn (abi_base.WGPUDevice, ?*const anyopaque) callconv(.c) abi_base.WGPUSampler;
+const FnSamplerRelease = *const fn (abi_base.WGPUSampler) callconv(.c) void;
 const FnQueueWriteTexture = *const fn (
-    types.WGPUQueue,
-    *const types.WGPUTexelCopyTextureInfo,
+    abi_base.WGPUQueue,
+    *const abi_descriptor.WGPUTexelCopyTextureInfo,
     ?*const anyopaque,
     usize,
-    *const types.WGPUTexelCopyBufferLayout,
-    *const types.WGPUExtent3D,
+    *const abi_descriptor.WGPUTexelCopyBufferLayout,
+    *const abi_descriptor.WGPUExtent3D,
 ) callconv(.c) void;
-const FnTextureDestroy = *const fn (types.WGPUTexture) callconv(.c) void;
-const FnTextureGetWidth = *const fn (types.WGPUTexture) callconv(.c) u32;
-const FnTextureGetHeight = *const fn (types.WGPUTexture) callconv(.c) u32;
-const FnTextureGetDepthOrArrayLayers = *const fn (types.WGPUTexture) callconv(.c) u32;
-const FnTextureGetDimension = *const fn (types.WGPUTexture) callconv(.c) types.WGPUTextureDimension;
-const FnTextureGetFormat = *const fn (types.WGPUTexture) callconv(.c) types.WGPUTextureFormat;
-const FnTextureGetMipLevelCount = *const fn (types.WGPUTexture) callconv(.c) u32;
-const FnTextureGetSampleCount = *const fn (types.WGPUTexture) callconv(.c) u32;
-const FnTextureGetTextureBindingViewDimension = *const fn (types.WGPUTexture) callconv(.c) types.WGPUTextureViewDimension;
-const FnTextureGetUsage = *const fn (types.WGPUTexture) callconv(.c) types.WGPUTextureUsage;
+const FnTextureDestroy = *const fn (abi_base.WGPUTexture) callconv(.c) void;
+const FnTextureGetWidth = *const fn (abi_base.WGPUTexture) callconv(.c) u32;
+const FnTextureGetHeight = *const fn (abi_base.WGPUTexture) callconv(.c) u32;
+const FnTextureGetDepthOrArrayLayers = *const fn (abi_base.WGPUTexture) callconv(.c) u32;
+const FnTextureGetDimension = *const fn (abi_base.WGPUTexture) callconv(.c) abi_base.WGPUTextureDimension;
+const FnTextureGetFormat = *const fn (abi_base.WGPUTexture) callconv(.c) abi_base.WGPUTextureFormat;
+const FnTextureGetMipLevelCount = *const fn (abi_base.WGPUTexture) callconv(.c) u32;
+const FnTextureGetSampleCount = *const fn (abi_base.WGPUTexture) callconv(.c) u32;
+const FnTextureGetTextureBindingViewDimension = *const fn (abi_base.WGPUTexture) callconv(.c) abi_base.WGPUTextureViewDimension;
+const FnTextureGetUsage = *const fn (abi_base.WGPUTexture) callconv(.c) abi_base.WGPUTextureUsage;
 
 pub const TextureInfo = struct {
     width: u32,
     height: u32,
     depth_or_array_layers: u32,
-    dimension: types.WGPUTextureDimension,
-    format: types.WGPUTextureFormat,
+    dimension: abi_base.WGPUTextureDimension,
+    format: abi_base.WGPUTextureFormat,
     mip_level_count: u32,
     sample_count: u32,
-    view_dimension: types.WGPUTextureViewDimension,
-    usage: types.WGPUTextureUsage,
+    view_dimension: abi_base.WGPUTextureViewDimension,
+    usage: abi_base.WGPUTextureUsage,
 };
 
 pub const TextureProcs = struct {
@@ -91,7 +92,7 @@ pub fn loadTextureProcs(dyn_lib: ?std.DynLib) ?TextureProcs {
     return loaded;
 }
 
-pub fn queryTextureInfo(procs: TextureProcs, texture: types.WGPUTexture) TextureInfo {
+pub fn queryTextureInfo(procs: TextureProcs, texture: abi_base.WGPUTexture) TextureInfo {
     return .{
         .width = procs.texture_get_width(texture),
         .height = procs.texture_get_height(texture),

@@ -13,7 +13,7 @@ const vk_device = @import("vk_device.zig");
 const vk_resources = @import("vk_resources.zig");
 const vk_formats = @import("vk_formats.zig");
 const vk_upload = @import("vk_upload.zig");
-const model = @import("../../model_webgpu_types.zig");
+const model_gpu_types = @import("../../model_gpu_types.zig");
 const common_timing = @import("../common/timing.zig");
 
 const VK_NULL_U64 = c.VK_NULL_U64;
@@ -25,13 +25,13 @@ const Runtime = @import("native_runtime.zig").NativeVulkanRuntime;
 const RTI_BUFFER_BYTES: u64 = 256;
 const RTI_TEXTURE_WIDTH: u32 = 16;
 const RTI_TEXTURE_HEIGHT: u32 = 16;
-const RTI_TEXTURE_FORMAT: model.WGPUTextureFormat = model.WGPUTextureFormat_RGBA8Unorm;
+const RTI_TEXTURE_FORMAT: model_gpu_types.WGPUTextureFormat = model_gpu_types.WGPUTextureFormat_RGBA8Unorm;
 const RTI_TEXTURE_BPP: u64 = 4;
 const RTI_TEXTURE_DATA_BYTES: u64 = @as(u64, RTI_TEXTURE_WIDTH) * RTI_TEXTURE_HEIGHT * RTI_TEXTURE_BPP;
 
 const PLS_ATTACHMENT_WIDTH: u32 = 64;
 const PLS_ATTACHMENT_HEIGHT: u32 = 64;
-const PLS_COLOR_FORMAT: model.WGPUTextureFormat = model.WGPUTextureFormat_RGBA8Unorm;
+const PLS_COLOR_FORMAT: model_gpu_types.WGPUTextureFormat = model_gpu_types.WGPUTextureFormat_RGBA8Unorm;
 
 pub const AsyncProbeResult = struct {
     setup_ns: u64 = 0,
@@ -74,9 +74,9 @@ pub fn resource_table_immediates_probe(
             1,
             1,
             1,
-            model.WGPUTextureDimension_2D,
+            model_gpu_types.WGPUTextureDimension_2D,
             RTI_TEXTURE_FORMAT,
-            model.WGPUTextureUsage_CopyDst | model.WGPUTextureUsage_TextureBinding,
+            model_gpu_types.WGPUTextureUsage_CopyDst | model_gpu_types.WGPUTextureUsage_TextureBinding,
         );
         defer vk_resources.release_texture_resource(self, texture);
 
@@ -189,10 +189,10 @@ pub fn resource_table_immediates_probe(
 pub fn pixel_local_storage_probe(
     self: *Runtime,
     iterations: u32,
-    target_format: model.WGPUTextureFormat,
+    target_format: model_gpu_types.WGPUTextureFormat,
 ) !AsyncProbeResult {
     const count = if (iterations > 0) iterations else 1;
-    const format = if (target_format != model.WGPUTextureFormat_Undefined) target_format else PLS_COLOR_FORMAT;
+    const format = if (target_format != model_gpu_types.WGPUTextureFormat_Undefined) target_format else PLS_COLOR_FORMAT;
     var setup_ns: u64 = 0;
     var encode_ns: u64 = 0;
     var submit_wait_ns: u64 = 0;
@@ -209,9 +209,9 @@ pub fn pixel_local_storage_probe(
             1,
             1,
             1,
-            model.WGPUTextureDimension_2D,
+            model_gpu_types.WGPUTextureDimension_2D,
             format,
-            model.WGPUTextureUsage_RenderAttachment | model.WGPUTextureUsage_TextureBinding,
+            model_gpu_types.WGPUTextureUsage_RenderAttachment | model_gpu_types.WGPUTextureUsage_TextureBinding,
         );
         defer vk_resources.release_texture_resource(self, color_attachment);
 

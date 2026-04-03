@@ -1,6 +1,9 @@
 const std = @import("std");
-const model = @import("../../model_webgpu_types.zig");
-const types = @import("../abi/wgpu_types.zig");
+const model_transfer_types = @import("../../model_resource_types.zig");
+const model_async_types = @import("../../model_async_types.zig");
+const abi_base = @import("../abi/wgpu_base_types.zig");
+const abi_descriptor = @import("../abi/wgpu_descriptor_types.zig");
+const abi_execution = @import("../abi/wgpu_execution_types.zig");
 const loader = @import("../abi/wgpu_loader.zig");
 const resources = @import("wgpu_resources.zig");
 const ffi = @import("../../webgpu_backend.zig");
@@ -10,12 +13,12 @@ const TEMP_TEXTURE_TO_TEXTURE_KEY_OFFSET: u64 = 0xFFFF_0000_0000_0002;
 
 const MapAsyncContext = struct {
     resolved: bool = false,
-    status: types.WGPUBufferMapAsyncStatus = undefined,
+    status: abi_base.WGPUBufferMapAsyncStatus = undefined,
 };
 
 fn onMapBufferCallback(
-    status: types.WGPUMapAsyncStatus,
-    message: types.WGPUStringView,
+    status: abi_base.WGPUMapAsyncStatus,
+    message: abi_base.WGPUStringView,
     userdata1: ?*anyopaque,
     userdata2: ?*anyopaque,
 ) callconv(.c) void {
@@ -28,14 +31,14 @@ fn onMapBufferCallback(
     }
 }
 
-pub fn executeMapAsync(self: *Backend, command: model.MapAsyncCommand) !types.NativeExecutionResult {
+pub fn executeMapAsync(self: *Backend, command: model_async_types.MapAsyncCommand) !abi_execution.NativeExecutionResult {
     const setup_start_ns = std.time.nanoTimestamp();
     const bytes = @as(u64, command.bytes);
 
-    const usage: types.WGPUBufferUsage = if (command.mode == .read)
-        types.WGPUBufferUsage_MapRead | types.WGPUBufferUsage_CopyDst
+    const usage: abi_base.WGPUBufferUsage = if (command.mode == .read)
+        abi_base.WGPUBufferUsage_MapRead | abi_base.WGPUBufferUsage_CopyDst
     else
-        types.WGPUBufferUsage_MapWrite | types.WGPUBufferUsage_CopySrc;
+        abi_base.WGPUBufferUsage_MapWrite | abi_base.WGPUBufferUsage_CopySrc;
 
     const buffer = try resources.getOrCreateBuffer(self, loader.BUFFER_MAP_ASYNC_KEY, bytes, usage);
 
@@ -43,7 +46,7 @@ pub fn executeMapAsync(self: *Backend, command: model.MapAsyncCommand) !types.Na
     self.core.procs.?.wgpuBufferUnmap(buffer);
 
     var map_context = MapAsyncContext{};
-    const mode_flag: types.WGPUMapMode = if (command.mode == .read) types.WGPUMapMode_Read else types.WGPUMapMode_Write;
+    const mode_flag: abi_base.WGPUMapMode = if (command.mode == .read) abi_base.WGPUMapMode_Read else abi_base.WGPUMapMode_Write;
 
     // Map the buffer
     _ = self.core.procs.?.wgpuBufferMapAsync(
@@ -53,7 +56,7 @@ pub fn executeMapAsync(self: *Backend, command: model.MapAsyncCommand) !types.Na
         bytes,
         .{
             .nextInChain = null,
-            .mode = types.WGPUCallbackMode_WaitAnyOnly,
+            .mode = abi_descriptor.WGPUCallbackMode_WaitAnyOnly,
             .callback = onMapBufferCallback,
             .userdata1 = &map_context,
             .userdata2 = null,
@@ -70,7 +73,7 @@ pub fn executeMapAsync(self: *Backend, command: model.MapAsyncCommand) !types.Na
     }
     const submit_wait_end_ns = std.time.nanoTimestamp();
 
-    if (map_context.status != types.WGPUBufferMapAsyncStatus_Success) {
+    if (map_context.status != abi_base.WGPUBufferMapAsyncStatus_Success) {
         return .{
             .status = .@"error",
             .status_message = "buffer map async failed",
@@ -99,13 +102,13 @@ pub fn executeMapAsync(self: *Backend, command: model.MapAsyncCommand) !types.Na
     };
 }
 
-pub fn executeUpload(self: *Backend, upload: model.UploadCommand) !types.NativeExecutionResult {
+pub fn executeUpload(self: *Backend, upload: model_transfer_types.UploadCommand) !abi_execution.NativeExecutionResult {
     const setup_start_ns = std.time.nanoTimestamp();
     const bytes = @as(u64, upload.bytes);
 
     const usage = switch (self.core.upload_buffer_usage_mode) {
-        .copy_dst_copy_src => types.WGPUBufferUsage_CopyDst | types.WGPUBufferUsage_CopySrc,
-        .copy_dst => types.WGPUBufferUsage_CopyDst,
+        .copy_dst_copy_src => abi_base.WGPUBufferUsage_CopyDst | abi_base.WGPUBufferUsage_CopySrc,
+        .copy_dst => abi_base.WGPUBufferUsage_CopyDst,
     };
     const upload_buffer = try resources.getOrCreateBuffer(self, loader.BUFFER_UPLOAD_KEY, bytes, usage);
     const bytes_usize = std.math.cast(usize, bytes) orelse unreachable;
@@ -141,7 +144,7 @@ pub fn executeUpload(self: *Backend, upload: model.UploadCommand) !types.NativeE
     };
 }
 
-pub fn executeBufferWrite(self: *Backend, command: model.BufferWriteCommand) !types.NativeExecutionResult {
+pub fn executeBufferWrite(self: *Backend, command: model_transfer_types.BufferWriteCommand) !abi_execution.NativeExecutionResult {
     const setup_start_ns = std.time.nanoTimestamp();
     if (command.data.len == 0) return error.InvalidArgument;
 
@@ -150,10 +153,10 @@ pub fn executeBufferWrite(self: *Backend, command: model.BufferWriteCommand) !ty
         @max(command.buffer_size, try resources.requiredBytes(data_bytes.len, command.offset))
     else
         try resources.requiredBytes(data_bytes.len, command.offset);
-    const usage = types.WGPUBufferUsage_Storage |
-        types.WGPUBufferUsage_Uniform |
-        types.WGPUBufferUsage_CopyDst |
-        types.WGPUBufferUsage_CopySrc;
+    const usage = abi_base.WGPUBufferUsage_Storage |
+        abi_base.WGPUBufferUsage_Uniform |
+        abi_base.WGPUBufferUsage_CopyDst |
+        abi_base.WGPUBufferUsage_CopySrc;
     const buffer = try resources.getOrCreateBuffer(self, command.handle, required_size, usage);
     self.core.procs.?.wgpuQueueWriteBuffer(
         self.core.queue.?,
@@ -184,12 +187,12 @@ pub fn executeBufferWrite(self: *Backend, command: model.BufferWriteCommand) !ty
     };
 }
 
-pub fn executeCopy(self: *Backend, copy: model.CopyCommand) !types.NativeExecutionResult {
+pub fn executeCopy(self: *Backend, copy: model_transfer_types.CopyCommand) !abi_execution.NativeExecutionResult {
     const bytes = @as(u64, copy.bytes);
 
     const procs = self.core.procs orelse return error.ProceduralNotReady;
 
-    const encoder = procs.wgpuDeviceCreateCommandEncoder(self.core.device.?, &types.WGPUCommandEncoderDescriptor{
+    const encoder = procs.wgpuDeviceCreateCommandEncoder(self.core.device.?, &abi_descriptor.WGPUCommandEncoderDescriptor{
         .nextInChain = null,
         .label = loader.emptyStringView(),
     });
@@ -206,19 +209,19 @@ pub fn executeCopy(self: *Backend, copy: model.CopyCommand) !types.NativeExecuti
                 self,
                 copy.src.handle,
                 src_size,
-                types.WGPUBufferUsage_CopySrc | types.WGPUBufferUsage_CopyDst,
+                abi_base.WGPUBufferUsage_CopySrc | abi_base.WGPUBufferUsage_CopyDst,
             );
-            const dst = try resources.getOrCreateBuffer(self, copy.dst.handle, dst_size, types.WGPUBufferUsage_CopyDst);
+            const dst = try resources.getOrCreateBuffer(self, copy.dst.handle, dst_size, abi_base.WGPUBufferUsage_CopyDst);
             procs.wgpuCommandEncoderCopyBufferToBuffer(encoder, src, copy.src.offset, dst, copy.dst.offset, bytes);
         },
         .buffer_to_texture => {
-            const copy_extent = types.WGPUExtent3D{
+            const copy_extent = abi_descriptor.WGPUExtent3D{
                 .width = copy.dst.width,
                 .height = copy.dst.height,
                 .depthOrArrayLayers = copy.dst.depth_or_array_layers,
             };
             const src_size = try resources.requiredBytes(bytes, copy.src.offset);
-            const dst = try resources.getOrCreateTexture(self, copy.dst, types.WGPUTextureUsage_CopyDst);
+            const dst = try resources.getOrCreateTexture(self, copy.dst, abi_base.WGPUTextureUsage_CopyDst);
 
             if (copy.uses_temporary_buffer) {
                 const alignment: u64 = @max(copy.temporary_buffer_alignment, 1);
@@ -227,14 +230,14 @@ pub fn executeCopy(self: *Backend, copy: model.CopyCommand) !types.NativeExecuti
                     self,
                     copy.src.handle,
                     src_size,
-                    types.WGPUBufferUsage_CopySrc | types.WGPUBufferUsage_CopyDst,
+                    abi_base.WGPUBufferUsage_CopySrc | abi_base.WGPUBufferUsage_CopyDst,
                 );
                 const temp_key = copy.src.handle +% TEMP_BUFFER_TO_TEXTURE_KEY_OFFSET;
-                const temp = try resources.getOrCreateBuffer(self, temp_key, aligned_size, types.WGPUBufferUsage_CopySrc | types.WGPUBufferUsage_CopyDst);
+                const temp = try resources.getOrCreateBuffer(self, temp_key, aligned_size, abi_base.WGPUBufferUsage_CopySrc | abi_base.WGPUBufferUsage_CopyDst);
                 procs.wgpuCommandEncoderCopyBufferToBuffer(encoder, src, copy.src.offset, temp, 0, bytes);
                 procs.wgpuCommandEncoderCopyBufferToTexture(
                     encoder,
-                    &types.WGPUTexelCopyBufferInfo{
+                    &abi_descriptor.WGPUTexelCopyBufferInfo{
                         .layout = .{
                             .offset = 0,
                             .bytesPerRow = copyBufferBytesPerRow(copy),
@@ -242,7 +245,7 @@ pub fn executeCopy(self: *Backend, copy: model.CopyCommand) !types.NativeExecuti
                         },
                         .buffer = temp,
                     },
-                    &types.WGPUTexelCopyTextureInfo{
+                    &abi_descriptor.WGPUTexelCopyTextureInfo{
                         .texture = dst,
                         .mipLevel = copy.dst.mip_level,
                         .origin = .{ .x = 0, .y = 0, .z = 0 },
@@ -255,11 +258,11 @@ pub fn executeCopy(self: *Backend, copy: model.CopyCommand) !types.NativeExecuti
                     self,
                     copy.src.handle,
                     src_size,
-                    types.WGPUBufferUsage_CopySrc | types.WGPUBufferUsage_CopyDst,
+                    abi_base.WGPUBufferUsage_CopySrc | abi_base.WGPUBufferUsage_CopyDst,
                 );
                 procs.wgpuCommandEncoderCopyBufferToTexture(
                     encoder,
-                    &types.WGPUTexelCopyBufferInfo{
+                    &abi_descriptor.WGPUTexelCopyBufferInfo{
                         .layout = .{
                             .offset = copy.src.offset,
                             .bytesPerRow = copyBufferBytesPerRow(copy),
@@ -267,7 +270,7 @@ pub fn executeCopy(self: *Backend, copy: model.CopyCommand) !types.NativeExecuti
                         },
                         .buffer = src,
                     },
-                    &types.WGPUTexelCopyTextureInfo{
+                    &abi_descriptor.WGPUTexelCopyTextureInfo{
                         .texture = dst,
                         .mipLevel = copy.dst.mip_level,
                         .origin = .{ .x = 0, .y = 0, .z = 0 },
@@ -278,7 +281,7 @@ pub fn executeCopy(self: *Backend, copy: model.CopyCommand) !types.NativeExecuti
             }
         },
         .texture_to_buffer => {
-            const copy_extent = types.WGPUExtent3D{
+            const copy_extent = abi_descriptor.WGPUExtent3D{
                 .width = copy.src.width,
                 .height = copy.src.height,
                 .depthOrArrayLayers = copy.src.depth_or_array_layers,
@@ -287,18 +290,18 @@ pub fn executeCopy(self: *Backend, copy: model.CopyCommand) !types.NativeExecuti
             const src = try resources.getOrCreateTextureInitialized(
                 self,
                 copy.src,
-                types.WGPUTextureUsage_CopySrc | types.WGPUTextureUsage_CopyDst,
+                abi_base.WGPUTextureUsage_CopySrc | abi_base.WGPUTextureUsage_CopyDst,
             );
-            const dst = try resources.getOrCreateBuffer(self, copy.dst.handle, dst_size, types.WGPUBufferUsage_CopyDst);
+            const dst = try resources.getOrCreateBuffer(self, copy.dst.handle, dst_size, abi_base.WGPUBufferUsage_CopyDst);
             procs.wgpuCommandEncoderCopyTextureToBuffer(
                 encoder,
-                &types.WGPUTexelCopyTextureInfo{
+                &abi_descriptor.WGPUTexelCopyTextureInfo{
                     .texture = src,
                     .mipLevel = copy.src.mip_level,
                     .origin = .{ .x = 0, .y = 0, .z = 0 },
                     .aspect = loader.normalizeTextureAspect(copy.src.aspect),
                 },
-                &types.WGPUTexelCopyBufferInfo{
+                &abi_descriptor.WGPUTexelCopyBufferInfo{
                     .layout = .{
                         .offset = copy.dst.offset,
                         .bytesPerRow = copyBufferBytesPerRow(copy),
@@ -310,7 +313,7 @@ pub fn executeCopy(self: *Backend, copy: model.CopyCommand) !types.NativeExecuti
             );
         },
         .texture_to_texture => {
-            const copy_extent = types.WGPUExtent3D{
+            const copy_extent = abi_descriptor.WGPUExtent3D{
                 .width = copy.src.width,
                 .height = copy.src.height,
                 .depthOrArrayLayers = copy.src.depth_or_array_layers,
@@ -320,23 +323,23 @@ pub fn executeCopy(self: *Backend, copy: model.CopyCommand) !types.NativeExecuti
                 const alignment: u64 = @max(copy.temporary_buffer_alignment, 1);
                 const aligned_size = ((bytes + alignment - 1) / alignment) * alignment;
                 const temp_key = copy.src.handle +% TEMP_TEXTURE_TO_TEXTURE_KEY_OFFSET;
-                const temp = try resources.getOrCreateBuffer(self, temp_key, aligned_size, types.WGPUBufferUsage_CopySrc | types.WGPUBufferUsage_CopyDst);
+                const temp = try resources.getOrCreateBuffer(self, temp_key, aligned_size, abi_base.WGPUBufferUsage_CopySrc | abi_base.WGPUBufferUsage_CopyDst);
                 const src = try resources.getOrCreateTextureInitialized(
                     self,
                     copy.src,
-                    types.WGPUTextureUsage_CopySrc | types.WGPUTextureUsage_CopyDst,
+                    abi_base.WGPUTextureUsage_CopySrc | abi_base.WGPUTextureUsage_CopyDst,
                 );
-                const dst = try resources.getOrCreateTexture(self, copy.dst, types.WGPUTextureUsage_CopyDst);
+                const dst = try resources.getOrCreateTexture(self, copy.dst, abi_base.WGPUTextureUsage_CopyDst);
 
                 procs.wgpuCommandEncoderCopyTextureToBuffer(
                     encoder,
-                    &types.WGPUTexelCopyTextureInfo{
+                    &abi_descriptor.WGPUTexelCopyTextureInfo{
                         .texture = src,
                         .mipLevel = copy.src.mip_level,
                         .origin = .{ .x = 0, .y = 0, .z = 0 },
                         .aspect = loader.normalizeTextureAspect(copy.src.aspect),
                     },
-                    &types.WGPUTexelCopyBufferInfo{
+                    &abi_descriptor.WGPUTexelCopyBufferInfo{
                         .layout = .{
                             .offset = 0,
                             .bytesPerRow = copyTextureSourceBytesPerRow(copy),
@@ -349,7 +352,7 @@ pub fn executeCopy(self: *Backend, copy: model.CopyCommand) !types.NativeExecuti
 
                 procs.wgpuCommandEncoderCopyBufferToTexture(
                     encoder,
-                    &types.WGPUTexelCopyBufferInfo{
+                    &abi_descriptor.WGPUTexelCopyBufferInfo{
                         .layout = .{
                             .offset = 0,
                             .bytesPerRow = copyTextureDestinationBytesPerRow(copy),
@@ -357,13 +360,13 @@ pub fn executeCopy(self: *Backend, copy: model.CopyCommand) !types.NativeExecuti
                         },
                         .buffer = temp,
                     },
-                    &types.WGPUTexelCopyTextureInfo{
+                    &abi_descriptor.WGPUTexelCopyTextureInfo{
                         .texture = dst,
                         .mipLevel = copy.dst.mip_level,
                         .origin = .{ .x = 0, .y = 0, .z = 0 },
                         .aspect = loader.normalizeTextureAspect(copy.dst.aspect),
                     },
-                    &types.WGPUExtent3D{
+                    &abi_descriptor.WGPUExtent3D{
                         .width = copy.dst.width,
                         .height = copy.dst.height,
                         .depthOrArrayLayers = copy.dst.depth_or_array_layers,
@@ -373,18 +376,18 @@ pub fn executeCopy(self: *Backend, copy: model.CopyCommand) !types.NativeExecuti
                 const src = try resources.getOrCreateTextureInitialized(
                     self,
                     copy.src,
-                    types.WGPUTextureUsage_CopySrc | types.WGPUTextureUsage_CopyDst,
+                    abi_base.WGPUTextureUsage_CopySrc | abi_base.WGPUTextureUsage_CopyDst,
                 );
-                const dst = try resources.getOrCreateTexture(self, copy.dst, types.WGPUTextureUsage_CopyDst);
+                const dst = try resources.getOrCreateTexture(self, copy.dst, abi_base.WGPUTextureUsage_CopyDst);
                 procs.wgpuCommandEncoderCopyTextureToTexture(
                     encoder,
-                    &types.WGPUTexelCopyTextureInfo{
+                    &abi_descriptor.WGPUTexelCopyTextureInfo{
                         .texture = src,
                         .mipLevel = copy.src.mip_level,
                         .origin = .{ .x = 0, .y = 0, .z = 0 },
                         .aspect = loader.normalizeTextureAspect(copy.src.aspect),
                     },
-                    &types.WGPUTexelCopyTextureInfo{
+                    &abi_descriptor.WGPUTexelCopyTextureInfo{
                         .texture = dst,
                         .mipLevel = copy.dst.mip_level,
                         .origin = .{ .x = 0, .y = 0, .z = 0 },
@@ -396,7 +399,7 @@ pub fn executeCopy(self: *Backend, copy: model.CopyCommand) !types.NativeExecuti
         },
     }
 
-    const command_buffer = procs.wgpuCommandEncoderFinish(encoder, &types.WGPUCommandBufferDescriptor{
+    const command_buffer = procs.wgpuCommandEncoderFinish(encoder, &abi_descriptor.WGPUCommandBufferDescriptor{
         .nextInChain = null,
         .label = loader.emptyStringView(),
     });
@@ -405,7 +408,7 @@ pub fn executeCopy(self: *Backend, copy: model.CopyCommand) !types.NativeExecuti
     }
     defer procs.wgpuCommandBufferRelease(command_buffer);
 
-    var commands = [_]types.WGPUCommandBuffer{command_buffer};
+    var commands = [_]abi_base.WGPUCommandBuffer{command_buffer};
     const submit_wait_ns = try self.submitCommandBuffers(commands[0..]);
 
     return .{
@@ -420,7 +423,7 @@ pub fn executeCopy(self: *Backend, copy: model.CopyCommand) !types.NativeExecuti
     };
 }
 
-fn copyBufferBytesPerRow(copy: model.CopyCommand) u32 {
+fn copyBufferBytesPerRow(copy: model_transfer_types.CopyCommand) u32 {
     return loader.normalizeCopyLayoutValue(switch (copy.direction) {
         .buffer_to_texture => firstNonZeroU32(copy.src.bytes_per_row, copy.dst.bytes_per_row),
         .texture_to_buffer => firstNonZeroU32(copy.dst.bytes_per_row, copy.src.bytes_per_row),
@@ -428,7 +431,7 @@ fn copyBufferBytesPerRow(copy: model.CopyCommand) u32 {
     });
 }
 
-fn copyBufferRowsPerImage(copy: model.CopyCommand) u32 {
+fn copyBufferRowsPerImage(copy: model_transfer_types.CopyCommand) u32 {
     return loader.normalizeCopyLayoutValue(switch (copy.direction) {
         .buffer_to_texture => firstNonZeroU32(copy.src.rows_per_image, copy.dst.rows_per_image),
         .texture_to_buffer => firstNonZeroU32(copy.dst.rows_per_image, copy.src.rows_per_image),
@@ -436,19 +439,19 @@ fn copyBufferRowsPerImage(copy: model.CopyCommand) u32 {
     });
 }
 
-fn copyTextureSourceBytesPerRow(copy: model.CopyCommand) u32 {
+fn copyTextureSourceBytesPerRow(copy: model_transfer_types.CopyCommand) u32 {
     return loader.normalizeCopyLayoutValue(firstNonZeroU32(copy.src.bytes_per_row, copy.dst.bytes_per_row));
 }
 
-fn copyTextureSourceRowsPerImage(copy: model.CopyCommand) u32 {
+fn copyTextureSourceRowsPerImage(copy: model_transfer_types.CopyCommand) u32 {
     return loader.normalizeCopyLayoutValue(firstNonZeroU32(copy.src.rows_per_image, copy.dst.rows_per_image));
 }
 
-fn copyTextureDestinationBytesPerRow(copy: model.CopyCommand) u32 {
+fn copyTextureDestinationBytesPerRow(copy: model_transfer_types.CopyCommand) u32 {
     return loader.normalizeCopyLayoutValue(firstNonZeroU32(copy.dst.bytes_per_row, copy.src.bytes_per_row));
 }
 
-fn copyTextureDestinationRowsPerImage(copy: model.CopyCommand) u32 {
+fn copyTextureDestinationRowsPerImage(copy: model_transfer_types.CopyCommand) u32 {
     return loader.normalizeCopyLayoutValue(firstNonZeroU32(copy.dst.rows_per_image, copy.src.rows_per_image));
 }
 

@@ -1,6 +1,12 @@
 const std = @import("std");
-const model = @import("../../model_webgpu_types.zig");
-const types = @import("../abi/wgpu_types.zig");
+const model_resource_types = @import("../../model_resource_types.zig");
+const model_compute_types = @import("../../model_compute_types.zig");
+const model_gpu_types = @import("../../model_gpu_types.zig");
+const abi_base = @import("../abi/wgpu_base_types.zig");
+const abi_descriptor = @import("../abi/wgpu_descriptor_types.zig");
+const abi_execution = @import("../abi/wgpu_execution_types.zig");
+const abi_records = @import("../abi/wgpu_runtime_records.zig");
+const runtime_state = @import("../abi/wgpu_runtime_state_defs.zig");
 const loader = @import("../abi/wgpu_loader.zig");
 const p0_procs_mod = @import("../../wgpu_p0_procs.zig");
 const resources = @import("../resource/wgpu_resources.zig");
@@ -9,12 +15,12 @@ const Backend = ffi.WebGPUBackend;
 
 const BARRIER_SCRATCH_BUFFER_HANDLE: u64 = 0xFFFF_FFFF_FFFF_FFFB;
 const DISPATCH_INDIRECT_ARGS_HANDLE: u64 = 0xFFFF_FFFF_FFFF_FFFA;
-const BUFFER_USAGE_INDIRECT: types.WGPUBufferUsage = 0x0000000000000100;
+const BUFFER_USAGE_INDIRECT: abi_base.WGPUBufferUsage = 0x0000000000000100;
 const MAX_KERNEL_SOURCE_BYTES: usize = 4 * 1024 * 1024;
 const WHOLE_BUFFER_BINDING_MIN_BYTES: u64 = 4;
 const DEFAULT_DISPATCH_WGSL_KERNEL = "dispatch_noop.wgsl";
 
-pub fn executeBarrier(self: *Backend, barrier: model.BarrierCommand) !types.NativeExecutionResult {
+pub fn executeBarrier(self: *Backend, barrier: model_resource_types.BarrierCommand) !abi_execution.NativeExecutionResult {
     const procs = self.core.procs orelse return error.ProceduralNotReady;
     const p0_procs = p0_procs_mod.loadP0Procs(self.core.dyn_lib);
     const clear_buffer = if (p0_procs) |loaded| loaded.command_encoder_clear_buffer else null;
@@ -29,9 +35,9 @@ pub fn executeBarrier(self: *Backend, barrier: model.BarrierCommand) !types.Nati
         self,
         BARRIER_SCRATCH_BUFFER_HANDLE,
         clear_size,
-        types.WGPUBufferUsage_CopyDst,
+        abi_base.WGPUBufferUsage_CopyDst,
     );
-    const encoder = procs.wgpuDeviceCreateCommandEncoder(self.core.device.?, &types.WGPUCommandEncoderDescriptor{
+    const encoder = procs.wgpuDeviceCreateCommandEncoder(self.core.device.?, &abi_descriptor.WGPUCommandEncoderDescriptor{
         .nextInChain = null,
         .label = loader.emptyStringView(),
     });
@@ -40,7 +46,7 @@ pub fn executeBarrier(self: *Backend, barrier: model.BarrierCommand) !types.Nati
     }
     defer procs.wgpuCommandEncoderRelease(encoder);
     clear_buffer.?(encoder, scratch_buffer, 0, clear_size);
-    const command_buffer = procs.wgpuCommandEncoderFinish(encoder, &types.WGPUCommandBufferDescriptor{
+    const command_buffer = procs.wgpuCommandEncoderFinish(encoder, &abi_descriptor.WGPUCommandBufferDescriptor{
         .nextInChain = null,
         .label = loader.emptyStringView(),
     });
@@ -48,7 +54,7 @@ pub fn executeBarrier(self: *Backend, barrier: model.BarrierCommand) !types.Nati
         return .{ .status = .@"error", .status_message = "commandEncoderFinish returned null" };
     }
     defer procs.wgpuCommandBufferRelease(command_buffer);
-    var commands = [_]types.WGPUCommandBuffer{command_buffer};
+    var commands = [_]abi_base.WGPUCommandBuffer{command_buffer};
     const submit_wait_ns = try self.submitCommandBuffers(commands[0..]);
     return .{
         .status = .ok,
@@ -57,7 +63,7 @@ pub fn executeBarrier(self: *Backend, barrier: model.BarrierCommand) !types.Nati
     };
 }
 
-pub fn executeDispatch(self: *Backend, dispatch: model.DispatchCommand) !types.NativeExecutionResult {
+pub fn executeDispatch(self: *Backend, dispatch: model_compute_types.DispatchCommand) !abi_execution.NativeExecutionResult {
     return executeKernelDispatchKernel(
         self,
         DEFAULT_DISPATCH_WGSL_KERNEL,
@@ -73,7 +79,7 @@ pub fn executeDispatch(self: *Backend, dispatch: model.DispatchCommand) !types.N
     );
 }
 
-pub fn executeDispatchIndirect(self: *Backend, dispatch: model.DispatchIndirectCommand) !types.NativeExecutionResult {
+pub fn executeDispatchIndirect(self: *Backend, dispatch: model_compute_types.DispatchIndirectCommand) !abi_execution.NativeExecutionResult {
     return executeKernelDispatchKernel(
         self,
         DEFAULT_DISPATCH_WGSL_KERNEL,
@@ -89,7 +95,7 @@ pub fn executeDispatchIndirect(self: *Backend, dispatch: model.DispatchIndirectC
     );
 }
 
-pub fn executeKernelDispatch(self: *Backend, kernel: model.KernelDispatchCommand) !types.NativeExecutionResult {
+pub fn executeKernelDispatch(self: *Backend, kernel: model_compute_types.KernelDispatchCommand) !abi_execution.NativeExecutionResult {
     const source = resolveKernelSource(self, kernel.kernel) catch |err| {
         const message = switch (err) {
             error.MissingKernelSource => "kernel_dispatch has no resolvable WGSL source",
@@ -134,9 +140,9 @@ pub fn executeKernelDispatchKernel(
     repeat_count: u32,
     warmup_dispatch_count: u32,
     initialize_buffers_on_create: bool,
-    source: types.KernelSource,
-    bindings: ?[]const model.KernelBinding,
-) !types.NativeExecutionResult {
+    source: runtime_state.KernelSource,
+    bindings: ?[]const model_compute_types.KernelBinding,
+) !abi_execution.NativeExecutionResult {
     const setup_start_ns = std.time.nanoTimestamp();
     defer if (source.owned) self.core.allocator.free(source.source);
     if (!sourceContainsComputeStage(source.source)) {
@@ -152,7 +158,7 @@ pub fn executeKernelDispatchKernel(
     const cache_key = pipelineCacheKey(source.source, entry_point);
     const cached = self.core.pipeline_cache.get(cache_key);
 
-    var artifacts: ?types.DispatchPassArtifacts = null;
+    var artifacts: ?abi_records.DispatchPassArtifacts = null;
     if (bindings) |bound| {
         if (bound.len > 0) {
             if (validateKernelBindingsAgainstLimits(self, bound)) |status_message| {
@@ -185,7 +191,7 @@ pub fn executeKernelDispatchKernel(
         }
     }
 
-    var pipeline_layout: types.WGPUPipelineLayout = null;
+    var pipeline_layout: abi_base.WGPUPipelineLayout = null;
     var owns_pipeline_layout = false;
     if (cached == null) {
         if (artifacts) |dispatch_artifacts| {
@@ -234,42 +240,42 @@ pub fn executeKernelDispatchKernel(
         "dispatch kernel={s} repeat={} adapter_timestamp_query={} device_timestamp_query={}\n",
         .{ kernel_name, repeat_count, self.core.adapter_has_timestamp_query, self.core.has_timestamp_query },
     );
-    var query_set: types.WGPUQuerySet = null;
-    var resolve_buffer: types.WGPUBuffer = null;
-    var readback_buffer: types.WGPUBuffer = null;
+    var query_set: abi_base.WGPUQuerySet = null;
+    var resolve_buffer: abi_base.WGPUBuffer = null;
+    var readback_buffer: abi_base.WGPUBuffer = null;
     const dispatch_indirect_proc = if (p0_procs) |loaded| loaded.compute_pass_encoder_dispatch_workgroups_indirect else null;
     const command_encoder_write_buffer = if (p0_procs) |loaded| loaded.command_encoder_write_buffer else null;
     const compute_pass_write_timestamp = if (p0_procs) |loaded| loaded.compute_pass_encoder_write_timestamp else null;
-    var dispatch_indirect_buffer: types.WGPUBuffer = null;
+    var dispatch_indirect_buffer: abi_base.WGPUBuffer = null;
 
     if (use_timestamps) {
-        query_set = procs.wgpuDeviceCreateQuerySet(self.core.device.?, &types.WGPUQuerySetDescriptor{
+        query_set = procs.wgpuDeviceCreateQuerySet(self.core.device.?, &abi_descriptor.WGPUQuerySetDescriptor{
             .nextInChain = null,
             .label = loader.emptyStringView(),
-            .type = types.WGPUQueryType_Timestamp,
+            .type = abi_base.WGPUQueryType_Timestamp,
             .count = 2,
         });
         if (query_set != null) {
-            if (!p0_procs_mod.querySetMatches(p0_procs, query_set, 2, types.WGPUQueryType_Timestamp)) {
+            if (!p0_procs_mod.querySetMatches(p0_procs, query_set, 2, abi_base.WGPUQueryType_Timestamp)) {
                 p0_procs_mod.destroyQuerySet(p0_procs, query_set);
                 procs.wgpuQuerySetRelease(query_set);
                 query_set = null;
             }
         }
         if (query_set != null) {
-            resolve_buffer = procs.wgpuDeviceCreateBuffer(self.core.device.?, &types.WGPUBufferDescriptor{
+            resolve_buffer = procs.wgpuDeviceCreateBuffer(self.core.device.?, &abi_descriptor.WGPUBufferDescriptor{
                 .nextInChain = null,
                 .label = loader.emptyStringView(),
-                .usage = types.WGPUBufferUsage_QueryResolve | types.WGPUBufferUsage_CopySrc,
-                .size = types.TIMESTAMP_BUFFER_SIZE,
-                .mappedAtCreation = types.WGPU_FALSE,
+                .usage = abi_base.WGPUBufferUsage_QueryResolve | abi_base.WGPUBufferUsage_CopySrc,
+                .size = abi_base.TIMESTAMP_BUFFER_SIZE,
+                .mappedAtCreation = abi_base.WGPU_FALSE,
             });
-            readback_buffer = procs.wgpuDeviceCreateBuffer(self.core.device.?, &types.WGPUBufferDescriptor{
+            readback_buffer = procs.wgpuDeviceCreateBuffer(self.core.device.?, &abi_descriptor.WGPUBufferDescriptor{
                 .nextInChain = null,
                 .label = loader.emptyStringView(),
-                .usage = types.WGPUBufferUsage_MapRead | types.WGPUBufferUsage_CopyDst,
-                .size = types.TIMESTAMP_BUFFER_SIZE,
-                .mappedAtCreation = types.WGPU_FALSE,
+                .usage = abi_base.WGPUBufferUsage_MapRead | abi_base.WGPUBufferUsage_CopyDst,
+                .size = abi_base.TIMESTAMP_BUFFER_SIZE,
+                .mappedAtCreation = abi_base.WGPU_FALSE,
             });
         }
     }
@@ -278,7 +284,7 @@ pub fn executeKernelDispatchKernel(
             self,
             DISPATCH_INDIRECT_ARGS_HANDLE,
             @sizeOf([3]u32),
-            BUFFER_USAGE_INDIRECT | types.WGPUBufferUsage_CopyDst,
+            BUFFER_USAGE_INDIRECT | abi_base.WGPUBufferUsage_CopyDst,
         ) catch null;
     }
     const timestamps_active = query_set != null and resolve_buffer != null and readback_buffer != null;
@@ -313,7 +319,7 @@ pub fn executeKernelDispatchKernel(
     }
 
     if (warmup_dispatch_count > 0) {
-        const warmup_encoder = procs.wgpuDeviceCreateCommandEncoder(self.core.device.?, &types.WGPUCommandEncoderDescriptor{
+        const warmup_encoder = procs.wgpuDeviceCreateCommandEncoder(self.core.device.?, &abi_descriptor.WGPUCommandEncoderDescriptor{
             .nextInChain = null,
             .label = loader.emptyStringView(),
         });
@@ -330,7 +336,7 @@ pub fn executeKernelDispatchKernel(
 
         const warmup_pass = procs.wgpuCommandEncoderBeginComputePass(
             warmup_encoder,
-            &types.WGPUComputePassDescriptor{
+            &abi_descriptor.WGPUComputePassDescriptor{
                 .nextInChain = null,
                 .label = loader.emptyStringView(),
                 .timestampWrites = null,
@@ -365,7 +371,7 @@ pub fn executeKernelDispatchKernel(
         }
         procs.wgpuComputePassEncoderEnd(warmup_pass);
 
-        const warmup_command_buffer = procs.wgpuCommandEncoderFinish(warmup_encoder, &types.WGPUCommandBufferDescriptor{
+        const warmup_command_buffer = procs.wgpuCommandEncoderFinish(warmup_encoder, &abi_descriptor.WGPUCommandBufferDescriptor{
             .nextInChain = null,
             .label = loader.emptyStringView(),
         });
@@ -374,14 +380,14 @@ pub fn executeKernelDispatchKernel(
         }
         defer procs.wgpuCommandBufferRelease(warmup_command_buffer);
 
-        var warmup_commands = [_]types.WGPUCommandBuffer{warmup_command_buffer};
+        var warmup_commands = [_]abi_base.WGPUCommandBuffer{warmup_command_buffer};
         _ = try self.submitCommandBuffers(warmup_commands[0..]);
     }
 
     const setup_end_ns = std.time.nanoTimestamp();
 
     const encode_start_ns = std.time.nanoTimestamp();
-    const encoder = procs.wgpuDeviceCreateCommandEncoder(self.core.device.?, &types.WGPUCommandEncoderDescriptor{
+    const encoder = procs.wgpuDeviceCreateCommandEncoder(self.core.device.?, &abi_descriptor.WGPUCommandEncoderDescriptor{
         .nextInChain = null,
         .label = loader.emptyStringView(),
     });
@@ -400,7 +406,7 @@ pub fn executeKernelDispatchKernel(
             .{mode},
         );
     }
-    var timestamp_writes = types.WGPUPassTimestampWrites{
+    var timestamp_writes = abi_descriptor.WGPUPassTimestampWrites{
         .nextInChain = null,
         .querySet = query_set,
         .beginningOfPassWriteIndex = 0,
@@ -418,7 +424,7 @@ pub fn executeKernelDispatchKernel(
 
     const pass = procs.wgpuCommandEncoderBeginComputePass(
         encoder,
-        &types.WGPUComputePassDescriptor{
+        &abi_descriptor.WGPUComputePassDescriptor{
             .nextInChain = null,
             .label = loader.emptyStringView(),
             .timestampWrites = if (timestamps_active and !use_command_encoder_timestamps and !use_compute_pass_timestamps) &timestamp_writes else null,
@@ -464,10 +470,10 @@ pub fn executeKernelDispatchKernel(
 
     if (timestamps_active) {
         procs.wgpuCommandEncoderResolveQuerySet(encoder, query_set, 0, 2, resolve_buffer, 0);
-        procs.wgpuCommandEncoderCopyBufferToBuffer(encoder, resolve_buffer, 0, readback_buffer, 0, types.TIMESTAMP_BUFFER_SIZE);
+        procs.wgpuCommandEncoderCopyBufferToBuffer(encoder, resolve_buffer, 0, readback_buffer, 0, abi_base.TIMESTAMP_BUFFER_SIZE);
     }
 
-    const command_buffer = procs.wgpuCommandEncoderFinish(encoder, &types.WGPUCommandBufferDescriptor{
+    const command_buffer = procs.wgpuCommandEncoderFinish(encoder, &abi_descriptor.WGPUCommandBufferDescriptor{
         .nextInChain = null,
         .label = loader.emptyStringView(),
     });
@@ -477,7 +483,7 @@ pub fn executeKernelDispatchKernel(
     defer procs.wgpuCommandBufferRelease(command_buffer);
     const encode_end_ns = std.time.nanoTimestamp();
 
-    var commands = [_]types.WGPUCommandBuffer{command_buffer};
+    var commands = [_]abi_base.WGPUCommandBuffer{command_buffer};
     const submit_wait_ns = try self.submitCommandBuffers(commands[0..]);
 
     const setup_ns = if (setup_end_ns > setup_start_ns)
@@ -549,7 +555,7 @@ pub fn executeKernelDispatchKernel(
     };
 }
 
-pub fn validateKernelBindingsAgainstLimits(self: *Backend, bindings: []const model.KernelBinding) ?[]const u8 {
+pub fn validateKernelBindingsAgainstLimits(self: *Backend, bindings: []const model_compute_types.KernelBinding) ?[]const u8 {
     const limits_ptr = self.effectiveLimits() orelse {
         return "kernel_dispatch requires negotiated WebGPU limits for binding validation";
     };
@@ -575,7 +581,7 @@ pub fn validateKernelBindingsAgainstLimits(self: *Backend, bindings: []const mod
         const binding_limit = bindingBufferLimit(binding, limits);
         if (binding_limit > 0 and range_size > binding_limit) {
             return switch (binding.buffer_type) {
-                model.WGPUBufferBindingType_Uniform => "kernel_dispatch uniform binding exceeds maxUniformBufferBindingSize",
+                model_gpu_types.WGPUBufferBindingType_Uniform => "kernel_dispatch uniform binding exceeds maxUniformBufferBindingSize",
                 else => "kernel_dispatch storage binding exceeds maxStorageBufferBindingSize",
             };
         }
@@ -583,9 +589,9 @@ pub fn validateKernelBindingsAgainstLimits(self: *Backend, bindings: []const mod
     return null;
 }
 
-pub fn bindingRangeSize(self: *Backend, binding: model.KernelBinding) u64 {
+pub fn bindingRangeSize(self: *Backend, binding: model_compute_types.KernelBinding) u64 {
     if (binding.buffer_size == 0) return 0;
-    if (binding.buffer_size == types.WGPU_WHOLE_SIZE) {
+    if (binding.buffer_size == abi_base.WGPU_WHOLE_SIZE) {
         if (self.core.buffers.get(binding.resource_handle)) |record| {
             if (record.size <= binding.buffer_offset) return 0;
             return record.size - binding.buffer_offset;
@@ -595,11 +601,11 @@ pub fn bindingRangeSize(self: *Backend, binding: model.KernelBinding) u64 {
     return binding.buffer_size;
 }
 
-pub fn bindingBufferLimit(binding: model.KernelBinding, limits: types.WGPULimits) u64 {
+pub fn bindingBufferLimit(binding: model_compute_types.KernelBinding, limits: abi_descriptor.WGPULimits) u64 {
     return switch (binding.buffer_type) {
-        model.WGPUBufferBindingType_Uniform => limits.maxUniformBufferBindingSize,
-        model.WGPUBufferBindingType_Storage,
-        model.WGPUBufferBindingType_ReadOnlyStorage,
+        model_gpu_types.WGPUBufferBindingType_Uniform => limits.maxUniformBufferBindingSize,
+        model_gpu_types.WGPUBufferBindingType_Storage,
+        model_gpu_types.WGPUBufferBindingType_ReadOnlyStorage,
         => limits.maxStorageBufferBindingSize,
         else => minPositiveLimit(limits.maxStorageBufferBindingSize, limits.maxUniformBufferBindingSize),
     };
@@ -621,7 +627,7 @@ pub fn timestampReadbackStatus(err: anyerror) []const u8 {
     };
 }
 
-pub fn resolveKernelSource(self: *Backend, kernel_name: []const u8) !types.KernelSource {
+pub fn resolveKernelSource(self: *Backend, kernel_name: []const u8) !runtime_state.KernelSource {
     if (kernel_name.len == 0) return error.MissingKernelSource;
     if (openKernelFile(self, kernel_name)) |source| return source;
     if (self.core.kernel_root) |root| {
@@ -630,7 +636,7 @@ pub fn resolveKernelSource(self: *Backend, kernel_name: []const u8) !types.Kerne
     return error.MissingKernelSource;
 }
 
-pub fn openKernelFile(self: *Backend, path: []const u8) ?types.KernelSource {
+pub fn openKernelFile(self: *Backend, path: []const u8) ?runtime_state.KernelSource {
     const maybe_file = std.fs.cwd().openFile(path, .{}) catch |err| {
         if (err == error.FileNotFound or err == error.NoSuchFileOrDirectory) {
             return null;
@@ -646,7 +652,7 @@ pub fn openKernelFile(self: *Backend, path: []const u8) ?types.KernelSource {
     return .{ .source = text, .owned = true, .mode = .file };
 }
 
-pub fn openKernelFromRoot(self: *Backend, kernel_name: []const u8, root: []const u8) ?types.KernelSource {
+pub fn openKernelFromRoot(self: *Backend, kernel_name: []const u8, root: []const u8) ?runtime_state.KernelSource {
     if (kernel_name.len == 0) return null;
     const direct = std.fs.path.join(self.core.allocator, &[_][]const u8{ root, kernel_name }) catch return null;
     defer self.core.allocator.free(direct);
@@ -662,11 +668,11 @@ pub fn openKernelFromRoot(self: *Backend, kernel_name: []const u8, root: []const
     return null;
 }
 
-pub fn hasValidTextureExtent(resource: model.CopyTextureResource) bool {
+pub fn hasValidTextureExtent(resource: model_resource_types.CopyTextureResource) bool {
     return resource.width > 0 and resource.height > 0 and resource.depth_or_array_layers > 0;
 }
 
-pub fn hasMatchingTextureExtent(src: model.CopyTextureResource, dst: model.CopyTextureResource) bool {
+pub fn hasMatchingTextureExtent(src: model_resource_types.CopyTextureResource, dst: model_resource_types.CopyTextureResource) bool {
     return src.width == dst.width and
         src.height == dst.height and
         src.depth_or_array_layers == dst.depth_or_array_layers;

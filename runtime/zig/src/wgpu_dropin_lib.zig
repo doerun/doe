@@ -1,5 +1,5 @@
 const std = @import("std");
-const types = @import("core/abi/wgpu_types.zig");
+const abi_base = @import("core/abi/wgpu_base_types.zig");
 const loader = @import("core/abi/wgpu_loader.zig");
 const backend_policy = @import("backend/backend_policy.zig");
 const p1_capability_procs = @import("wgpu_p1_capability_procs.zig");
@@ -147,9 +147,9 @@ fn symbolRouteForName(symbol: []const u8) dropin_router.RouteDecision {
     );
 }
 
-fn symbolNameSlice(name: types.WGPUStringView) ?[]const u8 {
+fn symbolNameSlice(name: abi_base.WGPUStringView) ?[]const u8 {
     const data = name.data orelse return null;
-    if (name.length == types.WGPU_STRLEN) {
+    if (name.length == abi_base.WGPU_STRLEN) {
         const z = @as([*:0]const u8, @ptrCast(data));
         return std.mem.sliceTo(z, 0);
     }
@@ -157,7 +157,7 @@ fn symbolNameSlice(name: types.WGPUStringView) ?[]const u8 {
     return data[0..name.length];
 }
 
-fn symbolRouteForView(name: types.WGPUStringView) dropin_router.RouteDecision {
+fn symbolRouteForView(name: abi_base.WGPUStringView) dropin_router.RouteDecision {
     if (symbolNameSlice(name)) |symbol| {
         return symbolRouteForName(symbol);
     }
@@ -250,7 +250,7 @@ fn abortMissingRequiredSymbol(symbol_name: []const u8) noreturn {
     std.debug.panic("missing required WebGPU symbol: {s}", .{symbol_name});
 }
 
-pub export fn doeWgpuDropinAbortMissingRequiredSymbol(name: types.WGPUStringView) callconv(.c) noreturn {
+pub export fn doeWgpuDropinAbortMissingRequiredSymbol(name: abi_base.WGPUStringView) callconv(.c) noreturn {
     const symbol_name = symbolNameSlice(name) orelse {
         setLastError(.invalid_symbol_name);
         std.debug.panic("missing required WebGPU symbol: <invalid>", .{});
@@ -497,9 +497,9 @@ fn fnPtr(value: anytype) p1_capability_procs.WGPUProc {
     return @as(p1_capability_procs.WGPUProc, @ptrCast(value));
 }
 
-fn symbolViewEq(name: types.WGPUStringView, comptime expected: []const u8) bool {
+fn symbolViewEq(name: abi_base.WGPUStringView, comptime expected: []const u8) bool {
     const data = name.data orelse return false;
-    if (name.length == types.WGPU_STRLEN) {
+    if (name.length == abi_base.WGPU_STRLEN) {
         const z = @as([*:0]const u8, @ptrCast(data));
         return std.mem.eql(u8, std.mem.span(z), expected);
     }
@@ -508,7 +508,7 @@ fn symbolViewEq(name: types.WGPUStringView, comptime expected: []const u8) bool 
 }
 
 fn toZeroTerminatedSymbolName(
-    name: types.WGPUStringView,
+    name: abi_base.WGPUStringView,
     buffer: *[256]u8,
 ) ?[:0]const u8 {
     const data = name.data orelse {
@@ -516,7 +516,7 @@ fn toZeroTerminatedSymbolName(
         return null;
     };
 
-    if (name.length == types.WGPU_STRLEN) {
+    if (name.length == abi_base.WGPU_STRLEN) {
         const z = @as([*:0]const u8, @ptrCast(data));
         return std.mem.span(z);
     }
@@ -536,7 +536,7 @@ fn toZeroTerminatedSymbolName(
     return buffer[0..name.length :0];
 }
 
-fn resolveLocalProc(name: types.WGPUStringView) p1_capability_procs.WGPUProc {
+fn resolveLocalProc(name: abi_base.WGPUStringView) p1_capability_procs.WGPUProc {
     const P = dropin_abi_procs;
     if (symbolViewEq(name, "wgpuGetProcAddress")) return fnPtr(&wgpuGetProcAddress);
     if (symbolViewEq(name, "wgpuCreateInstance")) return fnPtr(&P.wgpuCreateInstance);
@@ -722,7 +722,7 @@ fn resolveLocalProc(name: types.WGPUStringView) p1_capability_procs.WGPUProc {
     return null;
 }
 
-fn resolveNativeProc(name: types.WGPUStringView) p1_capability_procs.WGPUProc {
+fn resolveNativeProc(name: abi_base.WGPUStringView) p1_capability_procs.WGPUProc {
     if (!ensureNativeLibrary()) return null;
 
     if (loadOptionalProc(p1_capability_procs.FnGetProcAddress, "wgpuGetProcAddress")) |native_get_proc_address| {
@@ -742,7 +742,7 @@ fn resolveNativeProc(name: types.WGPUStringView) p1_capability_procs.WGPUProc {
     return @as(p1_capability_procs.WGPUProc, resolved);
 }
 
-pub export fn wgpuGetProcAddress(name: types.WGPUStringView) callconv(.c) p1_capability_procs.WGPUProc {
+pub export fn wgpuGetProcAddress(name: abi_base.WGPUStringView) callconv(.c) p1_capability_procs.WGPUProc {
     const route = symbolRouteForView(name);
     const symbol_name = symbolNameSlice(name) orelse {
         setLastError(.invalid_symbol_name);
@@ -774,4 +774,6 @@ pub export fn wgpuGetProcAddress(name: types.WGPUStringView) callconv(.c) p1_cap
     setLastError(.symbol_missing);
     return null;
 }
-comptime { _ = @import("dropin/dropin_abi_procs.zig"); }
+comptime {
+    _ = @import("dropin/dropin_abi_procs.zig");
+}

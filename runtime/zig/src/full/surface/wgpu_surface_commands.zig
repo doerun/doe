@@ -1,7 +1,8 @@
 const std = @import("std");
 const common_timing = @import("../../backend/common/timing.zig");
-const model = @import("../../model_webgpu_types.zig");
-const types = @import("../../core/abi/wgpu_types.zig");
+const model_surface_control_types = @import("../../model_surface_control_types.zig");
+const abi_base = @import("../../core/abi/wgpu_base_types.zig");
+const abi_execution = @import("../../core/abi/wgpu_execution_types.zig");
 const loader = @import("../../core/abi/wgpu_loader.zig");
 const resources = @import("../../core/resource/wgpu_resources.zig");
 const surface_macos_mod = @import("wgpu_surface_macos.zig");
@@ -14,7 +15,7 @@ const SURFACE_TEXTURE_STATUS_SUCCESS_SUBOPTIMAL: u32 = 0x00000002;
 const SURFACE_ALPHA_MODE_AUTO: u32 = 0x00000000;
 const SURFACE_PRESENT_MODE_FIFO: u32 = 0x00000001;
 
-pub fn executeSurfaceCreate(self: *Backend, surface_cmd: model.SurfaceCreateCommand) !types.NativeExecutionResult {
+pub fn executeSurfaceCreate(self: *Backend, surface_cmd: model_surface_control_types.SurfaceCreateCommand) !abi_execution.NativeExecutionResult {
     const encode_start = common_timing.now_ns();
     if (self.full.surfaces.contains(surface_cmd.handle)) {
         return unsupported_encode_result("surface handle already exists", encode_start);
@@ -44,7 +45,7 @@ pub fn executeSurfaceCreate(self: *Backend, surface_cmd: model.SurfaceCreateComm
     return ok_encode_result("surface created", encode_start);
 }
 
-pub fn executeSurfaceCapabilities(self: *Backend, surface_cmd: model.SurfaceCapabilitiesCommand) !types.NativeExecutionResult {
+pub fn executeSurfaceCapabilities(self: *Backend, surface_cmd: model_surface_control_types.SurfaceCapabilitiesCommand) !abi_execution.NativeExecutionResult {
     const encode_start = common_timing.now_ns();
     const managed = self.full.surfaces.get(surface_cmd.handle) orelse {
         return unsupported_encode_result("surface handle not found", encode_start);
@@ -59,7 +60,7 @@ pub fn executeSurfaceCapabilities(self: *Backend, surface_cmd: model.SurfaceCapa
     return ok_encode_result("surface capabilities queried", encode_start);
 }
 
-pub fn executeSurfaceConfigure(self: *Backend, surface_cmd: model.SurfaceConfigureCommand) !types.NativeExecutionResult {
+pub fn executeSurfaceConfigure(self: *Backend, surface_cmd: model_surface_control_types.SurfaceConfigureCommand) !abi_execution.NativeExecutionResult {
     const encode_start = common_timing.now_ns();
     const managed = self.full.surfaces.getPtr(surface_cmd.handle) orelse {
         return unsupported_encode_result("surface handle not found", encode_start);
@@ -75,7 +76,7 @@ pub fn executeSurfaceConfigure(self: *Backend, surface_cmd: model.SurfaceConfigu
         .nextInChain = null,
         .device = self.core.device.?,
         .format = resources.normalizeTextureFormat(surface_cmd.format),
-        .usage = if (surface_cmd.usage == 0) types.WGPUTextureUsage_RenderAttachment else surface_cmd.usage,
+        .usage = if (surface_cmd.usage == 0) abi_base.WGPUTextureUsage_RenderAttachment else surface_cmd.usage,
         .width = surface_cmd.width,
         .height = surface_cmd.height,
         .viewFormatCount = 0,
@@ -90,7 +91,7 @@ pub fn executeSurfaceConfigure(self: *Backend, surface_cmd: model.SurfaceConfigu
     return ok_encode_result("surface configured", encode_start);
 }
 
-pub fn executeSurfaceAcquire(self: *Backend, surface_cmd: model.SurfaceAcquireCommand) !types.NativeExecutionResult {
+pub fn executeSurfaceAcquire(self: *Backend, surface_cmd: model_surface_control_types.SurfaceAcquireCommand) !abi_execution.NativeExecutionResult {
     const encode_start = common_timing.now_ns();
     const managed = self.full.surfaces.getPtr(surface_cmd.handle) orelse {
         return unsupported_encode_result("surface handle not found", encode_start);
@@ -115,7 +116,7 @@ pub fn executeSurfaceAcquire(self: *Backend, surface_cmd: model.SurfaceAcquireCo
     return ok_encode_result("surface texture acquired", encode_start);
 }
 
-pub fn executeSurfacePresent(self: *Backend, surface_cmd: model.SurfacePresentCommand) !types.NativeExecutionResult {
+pub fn executeSurfacePresent(self: *Backend, surface_cmd: model_surface_control_types.SurfacePresentCommand) !abi_execution.NativeExecutionResult {
     const submit_wait_start = common_timing.now_ns();
     const managed = self.full.surfaces.getPtr(surface_cmd.handle) orelse {
         return unsupported_submit_result("surface handle not found", submit_wait_start);
@@ -131,7 +132,7 @@ pub fn executeSurfacePresent(self: *Backend, surface_cmd: model.SurfacePresentCo
     return ok_submit_result("surface presented", submit_wait_start);
 }
 
-pub fn executeSurfaceUnconfigure(self: *Backend, surface_cmd: model.SurfaceUnconfigureCommand) !types.NativeExecutionResult {
+pub fn executeSurfaceUnconfigure(self: *Backend, surface_cmd: model_surface_control_types.SurfaceUnconfigureCommand) !abi_execution.NativeExecutionResult {
     const encode_start = common_timing.now_ns();
     const managed = self.full.surfaces.getPtr(surface_cmd.handle) orelse {
         return unsupported_encode_result("surface handle not found", encode_start);
@@ -147,7 +148,7 @@ pub fn executeSurfaceUnconfigure(self: *Backend, surface_cmd: model.SurfaceUncon
     return ok_encode_result("surface unconfigured", encode_start);
 }
 
-pub fn executeSurfaceRelease(self: *Backend, surface_cmd: model.SurfaceReleaseCommand) !types.NativeExecutionResult {
+pub fn executeSurfaceRelease(self: *Backend, surface_cmd: model_surface_control_types.SurfaceReleaseCommand) !abi_execution.NativeExecutionResult {
     const encode_start = common_timing.now_ns();
     const removed = self.full.surfaces.fetchRemove(surface_cmd.handle) orelse {
         return unsupported_encode_result("surface handle not found", encode_start);
@@ -170,7 +171,7 @@ fn isSuccessfulSurfaceTextureStatus(status: u32) bool {
         status == SURFACE_TEXTURE_STATUS_SUCCESS_SUBOPTIMAL;
 }
 
-fn ok_encode_result(message: []const u8, encode_start: u64) types.NativeExecutionResult {
+fn ok_encode_result(message: []const u8, encode_start: u64) abi_execution.NativeExecutionResult {
     return .{
         .status = .ok,
         .status_message = message,
@@ -178,7 +179,7 @@ fn ok_encode_result(message: []const u8, encode_start: u64) types.NativeExecutio
     };
 }
 
-fn error_encode_result(message: []const u8, encode_start: u64) types.NativeExecutionResult {
+fn error_encode_result(message: []const u8, encode_start: u64) abi_execution.NativeExecutionResult {
     return .{
         .status = .@"error",
         .status_message = message,
@@ -186,7 +187,7 @@ fn error_encode_result(message: []const u8, encode_start: u64) types.NativeExecu
     };
 }
 
-fn unsupported_encode_result(message: []const u8, encode_start: u64) types.NativeExecutionResult {
+fn unsupported_encode_result(message: []const u8, encode_start: u64) abi_execution.NativeExecutionResult {
     return .{
         .status = .unsupported,
         .status_message = message,
@@ -194,7 +195,7 @@ fn unsupported_encode_result(message: []const u8, encode_start: u64) types.Nativ
     };
 }
 
-fn ok_submit_result(message: []const u8, submit_wait_start: u64) types.NativeExecutionResult {
+fn ok_submit_result(message: []const u8, submit_wait_start: u64) abi_execution.NativeExecutionResult {
     return .{
         .status = .ok,
         .status_message = message,
@@ -202,7 +203,7 @@ fn ok_submit_result(message: []const u8, submit_wait_start: u64) types.NativeExe
     };
 }
 
-fn error_submit_result(message: []const u8, submit_wait_start: u64) types.NativeExecutionResult {
+fn error_submit_result(message: []const u8, submit_wait_start: u64) abi_execution.NativeExecutionResult {
     return .{
         .status = .@"error",
         .status_message = message,
@@ -210,7 +211,7 @@ fn error_submit_result(message: []const u8, submit_wait_start: u64) types.Native
     };
 }
 
-fn unsupported_submit_result(message: []const u8, submit_wait_start: u64) types.NativeExecutionResult {
+fn unsupported_submit_result(message: []const u8, submit_wait_start: u64) abi_execution.NativeExecutionResult {
     return .{
         .status = .unsupported,
         .status_message = message,

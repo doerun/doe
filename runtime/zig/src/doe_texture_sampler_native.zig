@@ -2,8 +2,8 @@
 // Sharded from doe_render_native.zig for file-size compliance.
 
 const std = @import("std");
-const model = @import("model_webgpu_types.zig");
-const types = @import("core/abi/wgpu_types.zig");
+const abi_base = @import("core/abi/wgpu_base_types.zig");
+const abi_descriptor = @import("core/abi/wgpu_descriptor_types.zig");
 const native = @import("doe_wgpu_native.zig");
 const d3d12_formats = @import("backend/d3d12/d3d12_formats.zig");
 
@@ -102,23 +102,23 @@ pub var d3d12_sampler_registry: OpaqueRegistry = .{};
 pub fn default_texture_view_dimension(tex: *const DoeTexture) u32 {
     if (tex.texture_binding_view_dimension != 0) return tex.texture_binding_view_dimension;
     return switch (tex.dimension) {
-        types.WGPUTextureDimension_1D => types.WGPUTextureViewDimension_1D,
-        types.WGPUTextureDimension_3D => types.WGPUTextureViewDimension_3D,
+        abi_base.WGPUTextureDimension_1D => abi_base.WGPUTextureViewDimension_1D,
+        abi_base.WGPUTextureDimension_3D => abi_base.WGPUTextureViewDimension_3D,
         else => if (tex.depth_or_array_layers > 1)
-            types.WGPUTextureViewDimension_2DArray
+            abi_base.WGPUTextureViewDimension_2DArray
         else
-            types.WGPUTextureViewDimension_2D,
+            abi_base.WGPUTextureViewDimension_2D,
     };
 }
 
 fn is_depth_format(format: u32) bool {
     return switch (format) {
-        types.WGPUTextureFormat_Stencil8,
-        types.WGPUTextureFormat_Depth16Unorm,
-        types.WGPUTextureFormat_Depth24Plus,
-        types.WGPUTextureFormat_Depth24PlusStencil8,
-        types.WGPUTextureFormat_Depth32Float,
-        types.WGPUTextureFormat_Depth32FloatStencil8,
+        abi_base.WGPUTextureFormat_Stencil8,
+        abi_base.WGPUTextureFormat_Depth16Unorm,
+        abi_base.WGPUTextureFormat_Depth24Plus,
+        abi_base.WGPUTextureFormat_Depth24PlusStencil8,
+        abi_base.WGPUTextureFormat_Depth32Float,
+        abi_base.WGPUTextureFormat_Depth32FloatStencil8,
         => true,
         else => false,
     };
@@ -126,23 +126,23 @@ fn is_depth_format(format: u32) bool {
 
 fn is_combined_depth_stencil_format(format: u32) bool {
     return switch (format) {
-        types.WGPUTextureFormat_Depth24PlusStencil8,
-        types.WGPUTextureFormat_Depth32FloatStencil8,
+        abi_base.WGPUTextureFormat_Depth24PlusStencil8,
+        abi_base.WGPUTextureFormat_Depth32FloatStencil8,
         => true,
         else => false,
     };
 }
 
 fn view_aspect_supported(format: u32, aspect: u32) bool {
-    const resolved_aspect = if (aspect == 0) types.WGPUTextureAspect_All else aspect;
+    const resolved_aspect = if (aspect == 0) abi_base.WGPUTextureAspect_All else aspect;
     return switch (resolved_aspect) {
-        types.WGPUTextureAspect_All => true,
-        types.WGPUTextureAspect_DepthOnly => switch (format) {
-            types.WGPUTextureFormat_Depth16Unorm, types.WGPUTextureFormat_Depth24Plus, types.WGPUTextureFormat_Depth24PlusStencil8, types.WGPUTextureFormat_Depth32Float, types.WGPUTextureFormat_Depth32FloatStencil8 => true,
+        abi_base.WGPUTextureAspect_All => true,
+        abi_base.WGPUTextureAspect_DepthOnly => switch (format) {
+            abi_base.WGPUTextureFormat_Depth16Unorm, abi_base.WGPUTextureFormat_Depth24Plus, abi_base.WGPUTextureFormat_Depth24PlusStencil8, abi_base.WGPUTextureFormat_Depth32Float, abi_base.WGPUTextureFormat_Depth32FloatStencil8 => true,
             else => false,
         },
-        types.WGPUTextureAspect_StencilOnly => switch (format) {
-            types.WGPUTextureFormat_Stencil8, types.WGPUTextureFormat_Depth24PlusStencil8, types.WGPUTextureFormat_Depth32FloatStencil8 => true,
+        abi_base.WGPUTextureAspect_StencilOnly => switch (format) {
+            abi_base.WGPUTextureFormat_Stencil8, abi_base.WGPUTextureFormat_Depth24PlusStencil8, abi_base.WGPUTextureFormat_Depth32FloatStencil8 => true,
             else => false,
         },
         else => false,
@@ -150,28 +150,28 @@ fn view_aspect_supported(format: u32, aspect: u32) bool {
 }
 
 fn d3d12_sampled_aspect(format: u32, aspect: u32) u32 {
-    const resolved_aspect = if (aspect == 0) types.WGPUTextureAspect_All else aspect;
+    const resolved_aspect = if (aspect == 0) abi_base.WGPUTextureAspect_All else aspect;
     if (is_combined_depth_stencil_format(format)) {
-        return if (resolved_aspect == types.WGPUTextureAspect_StencilOnly)
-            types.WGPUTextureAspect_StencilOnly
+        return if (resolved_aspect == abi_base.WGPUTextureAspect_StencilOnly)
+            abi_base.WGPUTextureAspect_StencilOnly
         else
-            types.WGPUTextureAspect_DepthOnly;
+            abi_base.WGPUTextureAspect_DepthOnly;
     }
-    if (format == types.WGPUTextureFormat_Stencil8) return types.WGPUTextureAspect_StencilOnly;
+    if (format == abi_base.WGPUTextureFormat_Stencil8) return abi_base.WGPUTextureAspect_StencilOnly;
     return resolved_aspect;
 }
 
 fn identity_swizzle(swizzle_r: u32, swizzle_g: u32, swizzle_b: u32, swizzle_a: u32) bool {
-    return swizzle_r == types.WGPUTextureComponentSwizzle_Red and
-        swizzle_g == types.WGPUTextureComponentSwizzle_Green and
-        swizzle_b == types.WGPUTextureComponentSwizzle_Blue and
-        swizzle_a == types.WGPUTextureComponentSwizzle_Alpha;
+    return swizzle_r == abi_base.WGPUTextureComponentSwizzle_Red and
+        swizzle_g == abi_base.WGPUTextureComponentSwizzle_Green and
+        swizzle_b == abi_base.WGPUTextureComponentSwizzle_Blue and
+        swizzle_a == abi_base.WGPUTextureComponentSwizzle_Alpha;
 }
 
-fn d3d12_texture_descriptor_supported(desc: *const types.WGPUTextureDescriptor) bool {
-    if ((desc.usage & (types.WGPUTextureUsage_TransientAttachment | types.WGPUTextureUsage_StorageAttachment)) != 0) return false;
-    if (desc.dimension == types.WGPUTextureDimension_1D) return false;
-    if (desc.dimension == types.WGPUTextureDimension_3D and desc.sampleCount > 1) return false;
+fn d3d12_texture_descriptor_supported(desc: *const abi_descriptor.WGPUTextureDescriptor) bool {
+    if ((desc.usage & (abi_base.WGPUTextureUsage_TransientAttachment | abi_base.WGPUTextureUsage_StorageAttachment)) != 0) return false;
+    if (desc.dimension == abi_base.WGPUTextureDimension_1D) return false;
+    if (desc.dimension == abi_base.WGPUTextureDimension_3D and desc.sampleCount > 1) return false;
     if (desc.viewFormatCount > 0) {
         const view_formats = desc.viewFormats orelse return false;
         var i: usize = 0;
@@ -184,16 +184,16 @@ fn d3d12_texture_descriptor_supported(desc: *const types.WGPUTextureDescriptor) 
 
 fn d3d12_view_dimension_supported(tex: *const DoeTexture, view_dimension: u32) bool {
     return switch (tex.dimension) {
-        types.WGPUTextureDimension_3D => view_dimension == types.WGPUTextureViewDimension_3D,
-        types.WGPUTextureDimension_2D => switch (view_dimension) {
-            types.WGPUTextureViewDimension_2D,
-            types.WGPUTextureViewDimension_2DArray,
+        abi_base.WGPUTextureDimension_3D => view_dimension == abi_base.WGPUTextureViewDimension_3D,
+        abi_base.WGPUTextureDimension_2D => switch (view_dimension) {
+            abi_base.WGPUTextureViewDimension_2D,
+            abi_base.WGPUTextureViewDimension_2DArray,
             => true,
-            types.WGPUTextureViewDimension_2DDepth,
-            types.WGPUTextureViewDimension_2DArrayDepth,
+            abi_base.WGPUTextureViewDimension_2DDepth,
+            abi_base.WGPUTextureViewDimension_2DArrayDepth,
             => is_depth_format(tex.format),
-            types.WGPUTextureViewDimension_Cube,
-            types.WGPUTextureViewDimension_CubeArray,
+            abi_base.WGPUTextureViewDimension_Cube,
+            abi_base.WGPUTextureViewDimension_CubeArray,
             => tex.depth_or_array_layers >= 6 and (tex.depth_or_array_layers % 6) == 0,
             else => false,
         },
@@ -220,7 +220,7 @@ fn d3d12_register_sampler(raw: ?*anyopaque) bool {
 // Texture
 // ============================================================
 
-pub export fn doeNativeDeviceCreateTexture(dev_raw: ?*anyopaque, desc: ?*const types.WGPUTextureDescriptor) callconv(.c) ?*anyopaque {
+pub export fn doeNativeDeviceCreateTexture(dev_raw: ?*anyopaque, desc: ?*const abi_descriptor.WGPUTextureDescriptor) callconv(.c) ?*anyopaque {
     const dev = cast(DoeDevice, dev_raw) orelse return null;
     const d = desc orelse return null;
     const tex = make(DoeTexture) orelse return null;
@@ -252,7 +252,7 @@ pub export fn doeNativeDeviceCreateTexture(dev_raw: ?*anyopaque, desc: ?*const t
             return null;
         }
         const d3d12_texture = switch (d.dimension) {
-            types.WGPUTextureDimension_2D => d3d12_bridge_device_create_texture_2d_layered(
+            abi_base.WGPUTextureDimension_2D => d3d12_bridge_device_create_texture_2d_layered(
                 dev.mtl_device,
                 d.size.width,
                 d.size.height,
@@ -262,7 +262,7 @@ pub export fn doeNativeDeviceCreateTexture(dev_raw: ?*anyopaque, desc: ?*const t
                 d.format,
                 @intCast(d.usage),
             ),
-            types.WGPUTextureDimension_3D => d3d12_bridge_device_create_texture_3d(
+            abi_base.WGPUTextureDimension_3D => d3d12_bridge_device_create_texture_3d(
                 dev.mtl_device,
                 d.size.width,
                 d.size.height,
@@ -297,11 +297,11 @@ pub export fn doeNativeDeviceCreateTexture(dev_raw: ?*anyopaque, desc: ?*const t
     return result;
 }
 
-pub export fn doeNativeTextureCreateView(tex_raw: ?*anyopaque, desc: ?*const types.WGPUTextureViewDescriptor) callconv(.c) ?*anyopaque {
+pub export fn doeNativeTextureCreateView(tex_raw: ?*anyopaque, desc: ?*const abi_descriptor.WGPUTextureViewDescriptor) callconv(.c) ?*anyopaque {
     const tex = cast(DoeTexture, tex_raw) orelse return null;
     const tv = make(DoeTextureView) orelse return null;
     native.object_add_ref(DoeTexture, tex_raw);
-    const d = desc orelse &types.WGPUTextureViewDescriptor{
+    const d = desc orelse &abi_descriptor.WGPUTextureViewDescriptor{
         .nextInChain = null,
         .label = .{ .data = null, .length = 0 },
         .format = tex.format,
@@ -309,23 +309,23 @@ pub export fn doeNativeTextureCreateView(tex_raw: ?*anyopaque, desc: ?*const typ
         .baseMipLevel = 0,
         .mipLevelCount = tex.mip_level_count,
         .baseArrayLayer = 0,
-        .arrayLayerCount = if (tex.dimension == types.WGPUTextureDimension_3D) 1 else tex.depth_or_array_layers,
-        .aspect = types.WGPUTextureAspect_All,
+        .arrayLayerCount = if (tex.dimension == abi_base.WGPUTextureDimension_3D) 1 else tex.depth_or_array_layers,
+        .aspect = abi_base.WGPUTextureAspect_All,
         .usage = tex.usage,
-        .swizzleR = types.WGPUTextureComponentSwizzle_Red,
-        .swizzleG = types.WGPUTextureComponentSwizzle_Green,
-        .swizzleB = types.WGPUTextureComponentSwizzle_Blue,
-        .swizzleA = types.WGPUTextureComponentSwizzle_Alpha,
+        .swizzleR = abi_base.WGPUTextureComponentSwizzle_Red,
+        .swizzleG = abi_base.WGPUTextureComponentSwizzle_Green,
+        .swizzleB = abi_base.WGPUTextureComponentSwizzle_Blue,
+        .swizzleA = abi_base.WGPUTextureComponentSwizzle_Alpha,
     };
     const resolved_format = if (d.format != 0) d.format else tex.format;
     const resolved_dimension = if (d.dimension != 0) d.dimension else default_texture_view_dimension(tex);
     const resolved_mip_level_count = if (d.mipLevelCount != 0) d.mipLevelCount else tex.mip_level_count - d.baseMipLevel;
-    const resolved_array_layer_count = if (d.arrayLayerCount != 0) d.arrayLayerCount else if (tex.dimension == types.WGPUTextureDimension_3D) 1 else tex.depth_or_array_layers - d.baseArrayLayer;
+    const resolved_array_layer_count = if (d.arrayLayerCount != 0) d.arrayLayerCount else if (tex.dimension == abi_base.WGPUTextureDimension_3D) 1 else tex.depth_or_array_layers - d.baseArrayLayer;
     const resolved_usage = if (d.usage != 0) d.usage else tex.usage;
-    const resolved_swizzle_r = if (d.swizzleR != 0) d.swizzleR else types.WGPUTextureComponentSwizzle_Red;
-    const resolved_swizzle_g = if (d.swizzleG != 0) d.swizzleG else types.WGPUTextureComponentSwizzle_Green;
-    const resolved_swizzle_b = if (d.swizzleB != 0) d.swizzleB else types.WGPUTextureComponentSwizzle_Blue;
-    const resolved_swizzle_a = if (d.swizzleA != 0) d.swizzleA else types.WGPUTextureComponentSwizzle_Alpha;
+    const resolved_swizzle_r = if (d.swizzleR != 0) d.swizzleR else abi_base.WGPUTextureComponentSwizzle_Red;
+    const resolved_swizzle_g = if (d.swizzleG != 0) d.swizzleG else abi_base.WGPUTextureComponentSwizzle_Green;
+    const resolved_swizzle_b = if (d.swizzleB != 0) d.swizzleB else abi_base.WGPUTextureComponentSwizzle_Blue;
+    const resolved_swizzle_a = if (d.swizzleA != 0) d.swizzleA else abi_base.WGPUTextureComponentSwizzle_Alpha;
     if (tex.mtl == null and tex.vk_id != 0) {
         const vk_render = @import("doe_vulkan_render_native.zig");
         if (!vk_render.vulkan_create_texture_view(tex, tv, d)) {
@@ -337,10 +337,10 @@ pub export fn doeNativeTextureCreateView(tex_raw: ?*anyopaque, desc: ?*const typ
     const is_d3d12_texture = d3d12_texture_registry.contains(tex_raw);
     var view_handle: ?*anyopaque = tv.handle;
     if (is_d3d12_texture) {
-        const resolved_aspect = if (d.aspect != 0) d.aspect else types.WGPUTextureAspect_All;
+        const resolved_aspect = if (d.aspect != 0) d.aspect else abi_base.WGPUTextureAspect_All;
         const wants_storage_only =
-            (resolved_usage & types.WGPUTextureUsage_StorageBinding) != 0 and
-            (resolved_usage & types.WGPUTextureUsage_TextureBinding) == 0;
+            (resolved_usage & abi_base.WGPUTextureUsage_StorageBinding) != 0 and
+            (resolved_usage & abi_base.WGPUTextureUsage_TextureBinding) == 0;
 
         if (resolved_format != tex.format or
             !identity_swizzle(resolved_swizzle_r, resolved_swizzle_g, resolved_swizzle_b, resolved_swizzle_a) or
@@ -351,16 +351,16 @@ pub export fn doeNativeTextureCreateView(tex_raw: ?*anyopaque, desc: ?*const typ
             alloc.destroy(tv);
             return null;
         }
-        if ((resolved_dimension == types.WGPUTextureViewDimension_Cube or
-            resolved_dimension == types.WGPUTextureViewDimension_CubeArray) and
+        if ((resolved_dimension == abi_base.WGPUTextureViewDimension_Cube or
+            resolved_dimension == abi_base.WGPUTextureViewDimension_CubeArray) and
             ((d.baseArrayLayer % 6) != 0 or (resolved_array_layer_count % 6) != 0))
         {
             native.doeNativeTextureRelease(tex_raw);
             alloc.destroy(tv);
             return null;
         }
-        if ((resolved_usage & types.WGPUTextureUsage_StorageBinding) != 0 and
-            (resolved_usage & types.WGPUTextureUsage_TextureBinding) != 0)
+        if ((resolved_usage & abi_base.WGPUTextureUsage_StorageBinding) != 0 and
+            (resolved_usage & abi_base.WGPUTextureUsage_TextureBinding) != 0)
         {
             native.doeNativeTextureRelease(tex_raw);
             alloc.destroy(tv);
@@ -381,7 +381,7 @@ pub export fn doeNativeTextureCreateView(tex_raw: ?*anyopaque, desc: ?*const typ
                 resolved_mip_level_count,
                 d.baseArrayLayer,
                 resolved_array_layer_count,
-                types.WGPUTextureUsage_StorageBinding,
+                abi_base.WGPUTextureUsage_StorageBinding,
             ) orelse {
                 native.doeNativeTextureRelease(tex_raw);
                 alloc.destroy(tv);
@@ -397,7 +397,7 @@ pub export fn doeNativeTextureCreateView(tex_raw: ?*anyopaque, desc: ?*const typ
                 resolved_mip_level_count,
                 d.baseArrayLayer,
                 resolved_array_layer_count,
-                types.WGPUTextureUsage_TextureBinding,
+                abi_base.WGPUTextureUsage_TextureBinding,
             );
         } else {
             view_handle = null;
@@ -426,7 +426,7 @@ pub export fn doeNativeTextureCreateView(tex_raw: ?*anyopaque, desc: ?*const typ
         .mip_level_count = resolved_mip_level_count,
         .base_array_layer = d.baseArrayLayer,
         .array_layer_count = resolved_array_layer_count,
-        .aspect = if (d.aspect != 0) d.aspect else types.WGPUTextureAspect_All,
+        .aspect = if (d.aspect != 0) d.aspect else abi_base.WGPUTextureAspect_All,
         .usage = resolved_usage,
     };
     const result = toOpaque(tv);
@@ -496,7 +496,7 @@ pub export fn doeNativeTextureViewRelease(raw: ?*anyopaque) callconv(.c) void {
 // Sampler
 // ============================================================
 
-pub export fn doeNativeDeviceCreateSampler(dev_raw: ?*anyopaque, desc: ?*const types.WGPUSamplerDescriptor) callconv(.c) ?*anyopaque {
+pub export fn doeNativeDeviceCreateSampler(dev_raw: ?*anyopaque, desc: ?*const abi_descriptor.WGPUSamplerDescriptor) callconv(.c) ?*anyopaque {
     const dev = cast(DoeDevice, dev_raw) orelse return null;
     const d = desc orelse return null;
     const s = make(DoeSampler) orelse return null;

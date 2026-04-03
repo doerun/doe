@@ -9,7 +9,8 @@ const doe_wgsl = @import("doe_wgsl/mod.zig");
 const runtime_compile = @import("doe_wgsl/runtime_compile.zig");
 const compute_preconditions = @import("doe_compute_preconditions_native.zig");
 const native = @import("doe_wgpu_native.zig");
-const model = @import("model_webgpu_types.zig");
+const model_compute_types = @import("model_compute_types.zig");
+const model_gpu_types = @import("model_gpu_types.zig");
 
 const alloc = native.alloc;
 const cast = native.cast;
@@ -104,7 +105,7 @@ pub fn vulkan_release_compute_pipeline(pip: *DoeComputePipeline) void {
 /// Returns the number of bindings populated in out_bindings.
 fn collect_bindings(
     pass: *const DoeComputePass,
-    out_bindings: []model.KernelBinding,
+    out_bindings: []model_compute_types.KernelBinding,
 ) usize {
     var count: usize = 0;
     for (pass.bind_groups, 0..) |maybe_bg, group_i| {
@@ -120,8 +121,8 @@ fn collect_bindings(
                 .resource_kind = .buffer,
                 .resource_handle = buf.vk_id,
                 .buffer_offset = 0,
-                .buffer_size = model.WGPUWholeSize,
-                .buffer_type = model.WGPUBufferBindingType_Storage,
+                .buffer_size = model_gpu_types.WGPUWholeSize,
+                .buffer_type = model_gpu_types.WGPUBufferBindingType_Storage,
             };
             count += 1;
         }
@@ -160,9 +161,9 @@ pub fn vulkan_compute_pass_dispatch(pass: *DoeComputePass, x: u32, y: u32, z: u3
         return;
     };
 
-    var binding_storage: [MAX_KERNEL_BINDINGS]model.KernelBinding = undefined;
+    var binding_storage: [MAX_KERNEL_BINDINGS]model_compute_types.KernelBinding = undefined;
     const binding_count = collect_bindings(pass, &binding_storage);
-    const bindings: ?[]const model.KernelBinding = if (binding_count > 0)
+    const bindings: ?[]const model_compute_types.KernelBinding = if (binding_count > 0)
         binding_storage[0..binding_count]
     else
         null;
@@ -208,9 +209,9 @@ pub fn vulkan_compute_pass_dispatch_indirect(
         return;
     };
 
-    var binding_storage: [MAX_KERNEL_BINDINGS]model.KernelBinding = undefined;
+    var binding_storage: [MAX_KERNEL_BINDINGS]model_compute_types.KernelBinding = undefined;
     const binding_count = collect_bindings(pass, &binding_storage);
-    const bindings: ?[]const model.KernelBinding = if (binding_count > 0)
+    const bindings: ?[]const model_compute_types.KernelBinding = if (binding_count > 0)
         binding_storage[0..binding_count]
     else
         null;

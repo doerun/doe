@@ -1,5 +1,8 @@
 const std = @import("std");
-const model = @import("model_webgpu_types.zig");
+const model_resource_types = @import("model_resource_types.zig");
+const model_compute_types = @import("model_compute_types.zig");
+const model_gpu_types = @import("model_gpu_types.zig");
+const model_render_types = @import("model_render_types.zig");
 const compressed_formats = @import("core/abi/wgpu_type_texture_formats.zig");
 
 pub const ParseError = error{
@@ -11,14 +14,14 @@ fn eqIgnoreCase(lhs: []const u8, rhs: []const u8) bool {
     return std.ascii.eqlIgnoreCase(lhs, rhs);
 }
 
-pub fn parseCopyResourceKind(raw_kind: ?[]const u8) ?model.CopyResourceKind {
+pub fn parseCopyResourceKind(raw_kind: ?[]const u8) ?model_resource_types.CopyResourceKind {
     const raw_value = raw_kind orelse return null;
     if (eqIgnoreCase(raw_value, "buffer")) return .buffer;
     if (eqIgnoreCase(raw_value, "texture")) return .texture;
     return null;
 }
 
-pub fn parseCopyDirection(raw_direction: ?[]const u8, command_name: ?[]const u8) ParseError!model.CopyDirection {
+pub fn parseCopyDirection(raw_direction: ?[]const u8, command_name: ?[]const u8) ParseError!model_resource_types.CopyDirection {
     if (raw_direction) |raw_value| {
         if (eqIgnoreCase(raw_value, "buffer_to_buffer")) return .buffer_to_buffer;
         if (eqIgnoreCase(raw_value, "buffer_to_texture")) return .buffer_to_texture;
@@ -40,7 +43,7 @@ pub fn parseCopyDirection(raw_direction: ?[]const u8, command_name: ?[]const u8)
     return .buffer_to_buffer;
 }
 
-pub fn parseKernelBindingKind(raw_kind: ?[]const u8) ?model.KernelBindingResourceKind {
+pub fn parseKernelBindingKind(raw_kind: ?[]const u8) ?model_compute_types.KernelBindingResourceKind {
     const value = raw_kind orelse return .buffer;
     if (eqIgnoreCase(value, "buffer") or eqIgnoreCase(value, "uniform") or eqIgnoreCase(value, "storage_buffer") or eqIgnoreCase(value, "readonly_storage_buffer")) {
         return .buffer;
@@ -57,123 +60,123 @@ pub fn parseKernelBindingKind(raw_kind: ?[]const u8) ?model.KernelBindingResourc
     return null;
 }
 
-pub fn parseShaderStage(raw_stage: ?[]const u8) ?model.WGPUFlags {
+pub fn parseShaderStage(raw_stage: ?[]const u8) ?model_gpu_types.WGPUFlags {
     const value = raw_stage orelse return null;
     if (eqIgnoreCase(value, "compute") or eqIgnoreCase(value, "compute-only") or eqIgnoreCase(value, "computeOnly")) {
-        return model.WGPUShaderStage_Compute;
+        return model_gpu_types.WGPUShaderStage_Compute;
     }
-    if (eqIgnoreCase(value, "vertex")) return model.WGPUShaderStage_Vertex;
-    if (eqIgnoreCase(value, "fragment")) return model.WGPUShaderStage_Fragment;
-    if (eqIgnoreCase(value, "all") or eqIgnoreCase(value, "*")) return model.WGPUShaderStage_Vertex | model.WGPUShaderStage_Fragment | model.WGPUShaderStage_Compute;
+    if (eqIgnoreCase(value, "vertex")) return model_gpu_types.WGPUShaderStage_Vertex;
+    if (eqIgnoreCase(value, "fragment")) return model_gpu_types.WGPUShaderStage_Fragment;
+    if (eqIgnoreCase(value, "all") or eqIgnoreCase(value, "*")) return model_gpu_types.WGPUShaderStage_Vertex | model_gpu_types.WGPUShaderStage_Fragment | model_gpu_types.WGPUShaderStage_Compute;
     return null;
 }
 
-pub fn parseWGPUBits(raw_bits: ?u64) ?model.WGPUFlags {
+pub fn parseWGPUBits(raw_bits: ?u64) ?model_gpu_types.WGPUFlags {
     return raw_bits;
 }
 
 pub fn parseBufferBindingType(raw: ?[]const u8) u32 {
-    const value = raw orelse return model.WGPUBufferBindingType_Undefined;
-    if (eqIgnoreCase(value, "uniform")) return model.WGPUBufferBindingType_Uniform;
-    if (eqIgnoreCase(value, "storage")) return model.WGPUBufferBindingType_Storage;
-    if (eqIgnoreCase(value, "readonly") or eqIgnoreCase(value, "read_only_storage")) return model.WGPUBufferBindingType_ReadOnlyStorage;
-    return model.WGPUBufferBindingType_Undefined;
+    const value = raw orelse return model_gpu_types.WGPUBufferBindingType_Undefined;
+    if (eqIgnoreCase(value, "uniform")) return model_gpu_types.WGPUBufferBindingType_Uniform;
+    if (eqIgnoreCase(value, "storage")) return model_gpu_types.WGPUBufferBindingType_Storage;
+    if (eqIgnoreCase(value, "readonly") or eqIgnoreCase(value, "read_only_storage")) return model_gpu_types.WGPUBufferBindingType_ReadOnlyStorage;
+    return model_gpu_types.WGPUBufferBindingType_Undefined;
 }
 
 pub fn parseTextureSampleType(raw: ?[]const u8) u32 {
-    const value = raw orelse return model.WGPUTextureSampleType_Undefined;
-    if (eqIgnoreCase(value, "float")) return model.WGPUTextureSampleType_Float;
-    if (eqIgnoreCase(value, "unfilterable-float") or eqIgnoreCase(value, "unfilterable_float")) return model.WGPUTextureSampleType_UnfilterableFloat;
-    if (eqIgnoreCase(value, "depth")) return model.WGPUTextureSampleType_Depth;
-    if (eqIgnoreCase(value, "sint")) return model.WGPUTextureSampleType_Sint;
-    if (eqIgnoreCase(value, "uint")) return model.WGPUTextureSampleType_Uint;
-    return model.WGPUTextureSampleType_Undefined;
+    const value = raw orelse return model_gpu_types.WGPUTextureSampleType_Undefined;
+    if (eqIgnoreCase(value, "float")) return model_gpu_types.WGPUTextureSampleType_Float;
+    if (eqIgnoreCase(value, "unfilterable-float") or eqIgnoreCase(value, "unfilterable_float")) return model_gpu_types.WGPUTextureSampleType_UnfilterableFloat;
+    if (eqIgnoreCase(value, "depth")) return model_gpu_types.WGPUTextureSampleType_Depth;
+    if (eqIgnoreCase(value, "sint")) return model_gpu_types.WGPUTextureSampleType_Sint;
+    if (eqIgnoreCase(value, "uint")) return model_gpu_types.WGPUTextureSampleType_Uint;
+    return model_gpu_types.WGPUTextureSampleType_Undefined;
 }
 
 pub fn parseTextureViewDimension(raw: ?[]const u8) u32 {
-    const value = raw orelse return model.WGPUTextureViewDimension_Undefined;
-    if (eqIgnoreCase(value, "1d") or eqIgnoreCase(value, "1D") or eqIgnoreCase(value, "1d-array")) return model.WGPUTextureViewDimension_1D;
-    if (eqIgnoreCase(value, "2d") or eqIgnoreCase(value, "2D")) return model.WGPUTextureViewDimension_2D;
-    if (eqIgnoreCase(value, "2d-array")) return model.WGPUTextureViewDimension_2DArray;
-    if (eqIgnoreCase(value, "cube")) return model.WGPUTextureViewDimension_Cube;
-    if (eqIgnoreCase(value, "cube-array")) return model.WGPUTextureViewDimension_CubeArray;
-    if (eqIgnoreCase(value, "3d") or eqIgnoreCase(value, "3D")) return model.WGPUTextureViewDimension_3D;
-    return model.WGPUTextureViewDimension_Undefined;
+    const value = raw orelse return model_gpu_types.WGPUTextureViewDimension_Undefined;
+    if (eqIgnoreCase(value, "1d") or eqIgnoreCase(value, "1D") or eqIgnoreCase(value, "1d-array")) return model_gpu_types.WGPUTextureViewDimension_1D;
+    if (eqIgnoreCase(value, "2d") or eqIgnoreCase(value, "2D")) return model_gpu_types.WGPUTextureViewDimension_2D;
+    if (eqIgnoreCase(value, "2d-array")) return model_gpu_types.WGPUTextureViewDimension_2DArray;
+    if (eqIgnoreCase(value, "cube")) return model_gpu_types.WGPUTextureViewDimension_Cube;
+    if (eqIgnoreCase(value, "cube-array")) return model_gpu_types.WGPUTextureViewDimension_CubeArray;
+    if (eqIgnoreCase(value, "3d") or eqIgnoreCase(value, "3D")) return model_gpu_types.WGPUTextureViewDimension_3D;
+    return model_gpu_types.WGPUTextureViewDimension_Undefined;
 }
 
 pub fn parseTextureDimension(raw: ?[]const u8) u32 {
-    const value = raw orelse return model.WGPUTextureDimension_Undefined;
-    if (eqIgnoreCase(value, "1d")) return model.WGPUTextureDimension_1D;
-    if (eqIgnoreCase(value, "2d")) return model.WGPUTextureDimension_2D;
-    if (eqIgnoreCase(value, "3d")) return model.WGPUTextureDimension_3D;
-    return model.WGPUTextureDimension_Undefined;
+    const value = raw orelse return model_gpu_types.WGPUTextureDimension_Undefined;
+    if (eqIgnoreCase(value, "1d")) return model_gpu_types.WGPUTextureDimension_1D;
+    if (eqIgnoreCase(value, "2d")) return model_gpu_types.WGPUTextureDimension_2D;
+    if (eqIgnoreCase(value, "3d")) return model_gpu_types.WGPUTextureDimension_3D;
+    return model_gpu_types.WGPUTextureDimension_Undefined;
 }
 
 pub fn parseStorageTextureAccess(raw: ?[]const u8) u32 {
-    const value = raw orelse return model.WGPUStorageTextureAccess_Undefined;
-    if (eqIgnoreCase(value, "write_only") or eqIgnoreCase(value, "write-only")) return model.WGPUStorageTextureAccess_WriteOnly;
-    if (eqIgnoreCase(value, "read_only") or eqIgnoreCase(value, "read-only")) return model.WGPUStorageTextureAccess_ReadOnly;
-    if (eqIgnoreCase(value, "read_write") or eqIgnoreCase(value, "read-write")) return model.WGPUStorageTextureAccess_ReadWrite;
-    return model.WGPUStorageTextureAccess_Undefined;
+    const value = raw orelse return model_gpu_types.WGPUStorageTextureAccess_Undefined;
+    if (eqIgnoreCase(value, "write_only") or eqIgnoreCase(value, "write-only")) return model_gpu_types.WGPUStorageTextureAccess_WriteOnly;
+    if (eqIgnoreCase(value, "read_only") or eqIgnoreCase(value, "read-only")) return model_gpu_types.WGPUStorageTextureAccess_ReadOnly;
+    if (eqIgnoreCase(value, "read_write") or eqIgnoreCase(value, "read-write")) return model_gpu_types.WGPUStorageTextureAccess_ReadWrite;
+    return model_gpu_types.WGPUStorageTextureAccess_Undefined;
 }
 
 pub fn parseTextureAspect(raw: ?[]const u8) u32 {
-    const value = raw orelse return model.WGPUTextureAspect_Undefined;
-    if (eqIgnoreCase(value, "all")) return model.WGPUTextureAspect_All;
-    if (eqIgnoreCase(value, "depth-only") or eqIgnoreCase(value, "depth_only") or eqIgnoreCase(value, "depth")) return model.WGPUTextureAspect_DepthOnly;
-    if (eqIgnoreCase(value, "stencil-only") or eqIgnoreCase(value, "stencil_only") or eqIgnoreCase(value, "stencil")) return model.WGPUTextureAspect_StencilOnly;
-    return model.WGPUTextureAspect_Undefined;
+    const value = raw orelse return model_gpu_types.WGPUTextureAspect_Undefined;
+    if (eqIgnoreCase(value, "all")) return model_gpu_types.WGPUTextureAspect_All;
+    if (eqIgnoreCase(value, "depth-only") or eqIgnoreCase(value, "depth_only") or eqIgnoreCase(value, "depth")) return model_gpu_types.WGPUTextureAspect_DepthOnly;
+    if (eqIgnoreCase(value, "stencil-only") or eqIgnoreCase(value, "stencil_only") or eqIgnoreCase(value, "stencil")) return model_gpu_types.WGPUTextureAspect_StencilOnly;
+    return model_gpu_types.WGPUTextureAspect_Undefined;
 }
 
 pub fn parseTextureFormat(raw: []const u8) ParseError!u32 {
-    if (raw.len == 0) return model.WGPUTextureFormat_Undefined;
-    if (eqIgnoreCase(raw, "r8unorm")) return model.WGPUTextureFormat_R8Unorm;
-    if (eqIgnoreCase(raw, "r8snorm")) return model.WGPUTextureFormat_R8Snorm;
-    if (eqIgnoreCase(raw, "r8uint")) return model.WGPUTextureFormat_R8Uint;
-    if (eqIgnoreCase(raw, "r8sint")) return model.WGPUTextureFormat_R8Sint;
-    if (eqIgnoreCase(raw, "r16unorm")) return model.WGPUTextureFormat_R16Unorm;
-    if (eqIgnoreCase(raw, "r16snorm")) return model.WGPUTextureFormat_R16Snorm;
-    if (eqIgnoreCase(raw, "r16uint")) return model.WGPUTextureFormat_R16Uint;
-    if (eqIgnoreCase(raw, "r16sint")) return model.WGPUTextureFormat_R16Sint;
-    if (eqIgnoreCase(raw, "r16float")) return model.WGPUTextureFormat_R16Float;
-    if (eqIgnoreCase(raw, "rg8unorm")) return model.WGPUTextureFormat_RG8Unorm;
-    if (eqIgnoreCase(raw, "rg8snorm")) return model.WGPUTextureFormat_RG8Snorm;
-    if (eqIgnoreCase(raw, "rg8uint")) return model.WGPUTextureFormat_RG8Uint;
-    if (eqIgnoreCase(raw, "rg8sint")) return model.WGPUTextureFormat_RG8Sint;
-    if (eqIgnoreCase(raw, "r32float")) return model.WGPUTextureFormat_R32Float;
-    if (eqIgnoreCase(raw, "r32uint")) return model.WGPUTextureFormat_R32Uint;
-    if (eqIgnoreCase(raw, "r32sint")) return model.WGPUTextureFormat_R32Sint;
-    if (eqIgnoreCase(raw, "rg16unorm")) return model.WGPUTextureFormat_RG16Unorm;
-    if (eqIgnoreCase(raw, "rg16snorm")) return model.WGPUTextureFormat_RG16Snorm;
-    if (eqIgnoreCase(raw, "rg16uint")) return model.WGPUTextureFormat_RG16Uint;
-    if (eqIgnoreCase(raw, "rg16sint")) return model.WGPUTextureFormat_RG16Sint;
-    if (eqIgnoreCase(raw, "rg16float")) return model.WGPUTextureFormat_RG16Float;
-    if (eqIgnoreCase(raw, "rgba8unorm")) return model.WGPUTextureFormat_RGBA8Unorm;
-    if (eqIgnoreCase(raw, "rgba8unorm-srgb") or eqIgnoreCase(raw, "rgba8unormsrgb")) return model.WGPUTextureFormat_RGBA8UnormSrgb;
-    if (eqIgnoreCase(raw, "rgba8snorm")) return model.WGPUTextureFormat_RGBA8Snorm;
-    if (eqIgnoreCase(raw, "rgba8uint")) return model.WGPUTextureFormat_RGBA8Uint;
-    if (eqIgnoreCase(raw, "rgba8sint")) return model.WGPUTextureFormat_RGBA8Sint;
-    if (eqIgnoreCase(raw, "bgra8unorm")) return model.WGPUTextureFormat_BGRA8Unorm;
-    if (eqIgnoreCase(raw, "bgra8unorm-srgb") or eqIgnoreCase(raw, "bgra8unormsrgb")) return model.WGPUTextureFormat_BGRA8UnormSrgb;
-    if (eqIgnoreCase(raw, "rgb10a2uint")) return model.WGPUTextureFormat_RGB10A2Uint;
-    if (eqIgnoreCase(raw, "rgb10a2unorm")) return model.WGPUTextureFormat_RGB10A2Unorm;
-    if (eqIgnoreCase(raw, "rg11b10ufloat")) return model.WGPUTextureFormat_RG11B10Ufloat;
-    if (eqIgnoreCase(raw, "rgb9e5ufloat")) return model.WGPUTextureFormat_RGB9E5Ufloat;
-    if (eqIgnoreCase(raw, "rg32float")) return model.WGPUTextureFormat_RG32Float;
-    if (eqIgnoreCase(raw, "rg32uint")) return model.WGPUTextureFormat_RG32Uint;
-    if (eqIgnoreCase(raw, "rg32sint")) return model.WGPUTextureFormat_RG32Sint;
-    if (eqIgnoreCase(raw, "rgba16uint")) return model.WGPUTextureFormat_RGBA16Uint;
-    if (eqIgnoreCase(raw, "rgba16sint")) return model.WGPUTextureFormat_RGBA16Sint;
-    if (eqIgnoreCase(raw, "rgba16float")) return model.WGPUTextureFormat_RGBA16Float;
-    if (eqIgnoreCase(raw, "rgba32float")) return model.WGPUTextureFormat_RGBA32Float;
-    if (eqIgnoreCase(raw, "rgba32uint")) return model.WGPUTextureFormat_RGBA32Uint;
-    if (eqIgnoreCase(raw, "rgba32sint")) return model.WGPUTextureFormat_RGBA32Sint;
-    if (eqIgnoreCase(raw, "stencil8")) return model.WGPUTextureFormat_Stencil8;
-    if (eqIgnoreCase(raw, "depth16unorm")) return model.WGPUTextureFormat_Depth16Unorm;
-    if (eqIgnoreCase(raw, "depth24plus")) return model.WGPUTextureFormat_Depth24Plus;
-    if (eqIgnoreCase(raw, "depth24plus-stencil8")) return model.WGPUTextureFormat_Depth24PlusStencil8;
-    if (eqIgnoreCase(raw, "depth32float")) return model.WGPUTextureFormat_Depth32Float;
-    if (eqIgnoreCase(raw, "depth32float-stencil8")) return model.WGPUTextureFormat_Depth32FloatStencil8;
+    if (raw.len == 0) return model_gpu_types.WGPUTextureFormat_Undefined;
+    if (eqIgnoreCase(raw, "r8unorm")) return model_gpu_types.WGPUTextureFormat_R8Unorm;
+    if (eqIgnoreCase(raw, "r8snorm")) return model_gpu_types.WGPUTextureFormat_R8Snorm;
+    if (eqIgnoreCase(raw, "r8uint")) return model_gpu_types.WGPUTextureFormat_R8Uint;
+    if (eqIgnoreCase(raw, "r8sint")) return model_gpu_types.WGPUTextureFormat_R8Sint;
+    if (eqIgnoreCase(raw, "r16unorm")) return model_gpu_types.WGPUTextureFormat_R16Unorm;
+    if (eqIgnoreCase(raw, "r16snorm")) return model_gpu_types.WGPUTextureFormat_R16Snorm;
+    if (eqIgnoreCase(raw, "r16uint")) return model_gpu_types.WGPUTextureFormat_R16Uint;
+    if (eqIgnoreCase(raw, "r16sint")) return model_gpu_types.WGPUTextureFormat_R16Sint;
+    if (eqIgnoreCase(raw, "r16float")) return model_gpu_types.WGPUTextureFormat_R16Float;
+    if (eqIgnoreCase(raw, "rg8unorm")) return model_gpu_types.WGPUTextureFormat_RG8Unorm;
+    if (eqIgnoreCase(raw, "rg8snorm")) return model_gpu_types.WGPUTextureFormat_RG8Snorm;
+    if (eqIgnoreCase(raw, "rg8uint")) return model_gpu_types.WGPUTextureFormat_RG8Uint;
+    if (eqIgnoreCase(raw, "rg8sint")) return model_gpu_types.WGPUTextureFormat_RG8Sint;
+    if (eqIgnoreCase(raw, "r32float")) return model_gpu_types.WGPUTextureFormat_R32Float;
+    if (eqIgnoreCase(raw, "r32uint")) return model_gpu_types.WGPUTextureFormat_R32Uint;
+    if (eqIgnoreCase(raw, "r32sint")) return model_gpu_types.WGPUTextureFormat_R32Sint;
+    if (eqIgnoreCase(raw, "rg16unorm")) return model_gpu_types.WGPUTextureFormat_RG16Unorm;
+    if (eqIgnoreCase(raw, "rg16snorm")) return model_gpu_types.WGPUTextureFormat_RG16Snorm;
+    if (eqIgnoreCase(raw, "rg16uint")) return model_gpu_types.WGPUTextureFormat_RG16Uint;
+    if (eqIgnoreCase(raw, "rg16sint")) return model_gpu_types.WGPUTextureFormat_RG16Sint;
+    if (eqIgnoreCase(raw, "rg16float")) return model_gpu_types.WGPUTextureFormat_RG16Float;
+    if (eqIgnoreCase(raw, "rgba8unorm")) return model_gpu_types.WGPUTextureFormat_RGBA8Unorm;
+    if (eqIgnoreCase(raw, "rgba8unorm-srgb") or eqIgnoreCase(raw, "rgba8unormsrgb")) return model_gpu_types.WGPUTextureFormat_RGBA8UnormSrgb;
+    if (eqIgnoreCase(raw, "rgba8snorm")) return model_gpu_types.WGPUTextureFormat_RGBA8Snorm;
+    if (eqIgnoreCase(raw, "rgba8uint")) return model_gpu_types.WGPUTextureFormat_RGBA8Uint;
+    if (eqIgnoreCase(raw, "rgba8sint")) return model_gpu_types.WGPUTextureFormat_RGBA8Sint;
+    if (eqIgnoreCase(raw, "bgra8unorm")) return model_gpu_types.WGPUTextureFormat_BGRA8Unorm;
+    if (eqIgnoreCase(raw, "bgra8unorm-srgb") or eqIgnoreCase(raw, "bgra8unormsrgb")) return model_gpu_types.WGPUTextureFormat_BGRA8UnormSrgb;
+    if (eqIgnoreCase(raw, "rgb10a2uint")) return model_gpu_types.WGPUTextureFormat_RGB10A2Uint;
+    if (eqIgnoreCase(raw, "rgb10a2unorm")) return model_gpu_types.WGPUTextureFormat_RGB10A2Unorm;
+    if (eqIgnoreCase(raw, "rg11b10ufloat")) return model_gpu_types.WGPUTextureFormat_RG11B10Ufloat;
+    if (eqIgnoreCase(raw, "rgb9e5ufloat")) return model_gpu_types.WGPUTextureFormat_RGB9E5Ufloat;
+    if (eqIgnoreCase(raw, "rg32float")) return model_gpu_types.WGPUTextureFormat_RG32Float;
+    if (eqIgnoreCase(raw, "rg32uint")) return model_gpu_types.WGPUTextureFormat_RG32Uint;
+    if (eqIgnoreCase(raw, "rg32sint")) return model_gpu_types.WGPUTextureFormat_RG32Sint;
+    if (eqIgnoreCase(raw, "rgba16uint")) return model_gpu_types.WGPUTextureFormat_RGBA16Uint;
+    if (eqIgnoreCase(raw, "rgba16sint")) return model_gpu_types.WGPUTextureFormat_RGBA16Sint;
+    if (eqIgnoreCase(raw, "rgba16float")) return model_gpu_types.WGPUTextureFormat_RGBA16Float;
+    if (eqIgnoreCase(raw, "rgba32float")) return model_gpu_types.WGPUTextureFormat_RGBA32Float;
+    if (eqIgnoreCase(raw, "rgba32uint")) return model_gpu_types.WGPUTextureFormat_RGBA32Uint;
+    if (eqIgnoreCase(raw, "rgba32sint")) return model_gpu_types.WGPUTextureFormat_RGBA32Sint;
+    if (eqIgnoreCase(raw, "stencil8")) return model_gpu_types.WGPUTextureFormat_Stencil8;
+    if (eqIgnoreCase(raw, "depth16unorm")) return model_gpu_types.WGPUTextureFormat_Depth16Unorm;
+    if (eqIgnoreCase(raw, "depth24plus")) return model_gpu_types.WGPUTextureFormat_Depth24Plus;
+    if (eqIgnoreCase(raw, "depth24plus-stencil8")) return model_gpu_types.WGPUTextureFormat_Depth24PlusStencil8;
+    if (eqIgnoreCase(raw, "depth32float")) return model_gpu_types.WGPUTextureFormat_Depth32Float;
+    if (eqIgnoreCase(raw, "depth32float-stencil8")) return model_gpu_types.WGPUTextureFormat_Depth32FloatStencil8;
     // BC compressed formats
     if (eqIgnoreCase(raw, "bc1-rgba-unorm")) return compressed_formats.WGPUTextureFormat_BC1RGBAUnorm;
     if (eqIgnoreCase(raw, "bc1-rgba-unorm-srgb")) return compressed_formats.WGPUTextureFormat_BC1RGBAUnormSrgb;
@@ -229,32 +232,32 @@ pub fn parseTextureFormat(raw: []const u8) ParseError!u32 {
     if (eqIgnoreCase(raw, "eac-r11snorm")) return compressed_formats.WGPUTextureFormat_EACR11Snorm;
     if (eqIgnoreCase(raw, "eac-rg11unorm")) return compressed_formats.WGPUTextureFormat_EACRG11Unorm;
     if (eqIgnoreCase(raw, "eac-rg11snorm")) return compressed_formats.WGPUTextureFormat_EACRG11Snorm;
-    if (eqIgnoreCase(raw, "undefined")) return model.WGPUTextureFormat_Undefined;
+    if (eqIgnoreCase(raw, "undefined")) return model_gpu_types.WGPUTextureFormat_Undefined;
     return std.fmt.parseInt(u32, raw, 10) catch ParseError.InvalidCommandPayload;
 }
 
-pub fn parseRenderDrawPipelineMode(raw: ?[]const u8) ParseError!model.RenderDrawPipelineMode {
+pub fn parseRenderDrawPipelineMode(raw: ?[]const u8) ParseError!model_render_types.RenderDrawPipelineMode {
     const value = raw orelse return .static;
     if (eqIgnoreCase(value, "static")) return .static;
     if (eqIgnoreCase(value, "redundant")) return .redundant;
     return ParseError.InvalidCommandPayload;
 }
 
-pub fn parseRenderDrawBindGroupMode(raw: ?[]const u8) ParseError!model.RenderDrawBindGroupMode {
+pub fn parseRenderDrawBindGroupMode(raw: ?[]const u8) ParseError!model_render_types.RenderDrawBindGroupMode {
     const value = raw orelse return .no_change;
     if (eqIgnoreCase(value, "no-change") or eqIgnoreCase(value, "no_change")) return .no_change;
     if (eqIgnoreCase(value, "redundant")) return .redundant;
     return ParseError.InvalidCommandPayload;
 }
 
-pub fn parseRenderIndexFormat(raw: ?[]const u8) ParseError!?model.RenderIndexFormat {
+pub fn parseRenderIndexFormat(raw: ?[]const u8) ParseError!?model_render_types.RenderIndexFormat {
     const value = raw orelse return null;
     if (eqIgnoreCase(value, "uint16") or eqIgnoreCase(value, "u16")) return .uint16;
     if (eqIgnoreCase(value, "uint32") or eqIgnoreCase(value, "u32")) return .uint32;
     return ParseError.InvalidCommandPayload;
 }
 
-fn inferRenderIndexFormat(indices: []const u32) model.RenderIndexFormat {
+fn inferRenderIndexFormat(indices: []const u32) model_render_types.RenderIndexFormat {
     for (indices) |value| {
         if (value > std.math.maxInt(u16)) return .uint32;
     }
@@ -264,8 +267,8 @@ fn inferRenderIndexFormat(indices: []const u32) model.RenderIndexFormat {
 pub fn parseRenderIndexData(
     allocator: std.mem.Allocator,
     raw_indices: []const u32,
-    requested_format: ?model.RenderIndexFormat,
-) ParseError!model.RenderIndexData {
+    requested_format: ?model_render_types.RenderIndexFormat,
+) ParseError!model_render_types.RenderIndexData {
     const chosen_format = requested_format orelse inferRenderIndexFormat(raw_indices);
     return switch (chosen_format) {
         .uint16 => blk: {

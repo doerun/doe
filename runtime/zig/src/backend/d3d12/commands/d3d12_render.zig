@@ -1,5 +1,5 @@
 const std = @import("std");
-const model = @import("../../../model_webgpu_types.zig");
+const model_render_types = @import("../../../model_render_types.zig");
 const common_timing = @import("../../common/timing.zig");
 const dc = @import("../d3d12_constants.zig");
 const d3d12_formats = @import("../d3d12_formats.zig");
@@ -176,7 +176,7 @@ pub const RenderState = struct {
         queue: ?*anyopaque,
         fence: ?*anyopaque,
         fence_value: *u64,
-        cmd: model.RenderDrawCommand,
+        cmd: model_render_types.RenderDrawCommand,
         is_indirect: bool,
         is_indexed_indirect: bool,
         descriptor_state: *d3d12_descriptors.DescriptorHeapState,
@@ -268,11 +268,11 @@ pub const RenderState = struct {
         return .{ .setup_ns = setup_ns, .encode_ns = encode_ns, .submit_wait_ns = submit_wait_ns, .draw_count = draw_count };
     }
 
-    fn ensure_pipeline_with_bindings(self: *RenderState, device: ?*anyopaque, cmd: model.RenderDrawCommand, has_bind_groups: bool) !void {
+    fn ensure_pipeline_with_bindings(self: *RenderState, device: ?*anyopaque, cmd: model_render_types.RenderDrawCommand, has_bind_groups: bool) !void {
         return self.ensure_pipeline(device, cmd, has_bind_groups);
     }
 
-    fn ensure_pipeline(self: *RenderState, device: ?*anyopaque, cmd: model.RenderDrawCommand, has_bind_groups: bool) !void {
+    fn ensure_pipeline(self: *RenderState, device: ?*anyopaque, cmd: model_render_types.RenderDrawCommand, has_bind_groups: bool) !void {
         const width = cmd.target_width;
         const height = cmd.target_height;
         const format = cmd.target_format;
@@ -296,7 +296,7 @@ pub const RenderState = struct {
         if (self.graphics_pipeline) |old| d3d12_bridge_release(old);
         if (self.render_target) |old| d3d12_bridge_release(old);
 
-        var input_elements: [model.MAX_VERTEX_ATTRIBUTES]D3D12InputElementDesc = [_]D3D12InputElementDesc{std.mem.zeroes(D3D12InputElementDesc)} ** model.MAX_VERTEX_ATTRIBUTES;
+        var input_elements: [model_render_types.MAX_VERTEX_ATTRIBUTES]D3D12InputElementDesc = [_]D3D12InputElementDesc{std.mem.zeroes(D3D12InputElementDesc)} ** model_render_types.MAX_VERTEX_ATTRIBUTES;
         const input_count = try build_input_elements(cmd, &input_elements);
         const desc = D3D12GraphicsPipelineDesc{
             .target_format = key.target_format,
@@ -387,7 +387,7 @@ pub const RenderState = struct {
         }
     }
 
-    fn write_indirect_args(self: *RenderState, cmd: model.RenderDrawCommand, indexed: bool) !void {
+    fn write_indirect_args(self: *RenderState, cmd: model_render_types.RenderDrawCommand, indexed: bool) !void {
         const ptr = d3d12_bridge_resource_map(self.indirect_arg_buffer) orelse return error.InvalidState;
         defer d3d12_bridge_resource_unmap(self.indirect_arg_buffer);
         if (indexed) {
@@ -422,10 +422,10 @@ pub const RenderState = struct {
         self.* = .{};
     }
 
-    fn bind_vertex_and_index_buffers(self: *RenderState, cmd: model.RenderDrawCommand) !void {
+    fn bind_vertex_and_index_buffers(self: *RenderState, cmd: model_render_types.RenderDrawCommand) !void {
         const vb_count = resolve_vertex_buffer_count(cmd);
         var slot: u32 = 0;
-        while (slot < vb_count and slot < @as(u32, model.MAX_VERTEX_BUFFERS)) : (slot += 1) {
+        while (slot < vb_count and slot < @as(u32, model_render_types.MAX_VERTEX_BUFFERS)) : (slot += 1) {
             const buffer = resolve_vertex_buffer_handle(cmd, slot) orelse continue;
             const offset = resolve_vertex_buffer_offset(cmd, slot);
             const total_size = d3d12_bridge_buffer_get_size(buffer);
@@ -457,10 +457,10 @@ pub const RenderState = struct {
     }
 };
 
-fn build_input_elements(cmd: model.RenderDrawCommand, out: *[model.MAX_VERTEX_ATTRIBUTES]D3D12InputElementDesc) !u32 {
+fn build_input_elements(cmd: model_render_types.RenderDrawCommand, out: *[model_render_types.MAX_VERTEX_ATTRIBUTES]D3D12InputElementDesc) !u32 {
     const attribute_count = resolve_vertex_attribute_count(cmd);
     var i: u32 = 0;
-    while (i < attribute_count and i < @as(u32, model.MAX_VERTEX_ATTRIBUTES)) : (i += 1) {
+    while (i < attribute_count and i < @as(u32, model_render_types.MAX_VERTEX_ATTRIBUTES)) : (i += 1) {
         const attr = resolve_vertex_attribute(cmd, i) orelse continue;
         const slot = attr.buffer_slot;
         out[i] = .{
@@ -468,17 +468,17 @@ fn build_input_elements(cmd: model.RenderDrawCommand, out: *[model.MAX_VERTEX_AT
             .input_slot = slot,
             .aligned_byte_offset = @intCast(attr.offset),
             .semantic_index = attr.shader_location,
-            .input_slot_class = if (resolve_vertex_step_mode(cmd, slot) == model.WGPUVertexStepMode_Instance)
+            .input_slot_class = if (resolve_vertex_step_mode(cmd, slot) == model_render_types.WGPUVertexStepMode_Instance)
                 D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA
             else
                 D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA,
-            .instance_data_step_rate = if (resolve_vertex_step_mode(cmd, slot) == model.WGPUVertexStepMode_Instance) 1 else 0,
+            .instance_data_step_rate = if (resolve_vertex_step_mode(cmd, slot) == model_render_types.WGPUVertexStepMode_Instance) 1 else 0,
         };
     }
-    return @min(attribute_count, @as(u32, model.MAX_VERTEX_ATTRIBUTES));
+    return @min(attribute_count, @as(u32, model_render_types.MAX_VERTEX_ATTRIBUTES));
 }
 
-fn has_depth_attachment(cmd: model.RenderDrawCommand) bool {
+fn has_depth_attachment(cmd: model_render_types.RenderDrawCommand) bool {
     return cmd.depth_stencil_format != 0;
 }
 
@@ -498,11 +498,11 @@ const ROOT_PARAM_SAMPLER_TABLE: u32 = 1;
 
 /// Create a root signature with SRV and sampler descriptor table slots matching
 /// the bind group entries in the render draw command.
-fn create_render_root_signature(device: ?*anyopaque, cmd: model.RenderDrawCommand) !?*anyopaque {
+fn create_render_root_signature(device: ?*anyopaque, cmd: model_render_types.RenderDrawCommand) !?*anyopaque {
     var layout = d3d12_descriptors.RootSignatureLayout{
         .allow_input_assembler = true,
     };
-    const max_entries = model.MAX_RENDER_BIND_ENTRIES * 2;
+    const max_entries = model_render_types.MAX_RENDER_BIND_ENTRIES * 2;
     var entries_buf: [max_entries]d3d12_descriptors.BindingEntry = undefined;
     var entry_count: usize = 0;
 
@@ -538,7 +538,7 @@ fn bind_model_descriptor_tables(
     cmd_list: ?*anyopaque,
     device: ?*anyopaque,
     descriptor_state: *d3d12_descriptors.DescriptorHeapState,
-    cmd: model.RenderDrawCommand,
+    cmd: model_render_types.RenderDrawCommand,
 ) !void {
     try descriptor_state.ensure_heaps(device);
     const srv_base = descriptor_state.cbv_srv_uav_next;
@@ -621,7 +621,7 @@ pub fn execute_render_bundles(
     const width = if (target_width > 0) target_width else 256;
     const height = if (target_height > 0) target_height else 256;
     const pass_sample_count: u32 = if (sample_count == 0) 1 else sample_count;
-    const pipeline_cmd = model.RenderDrawCommand{
+    const pipeline_cmd = model_render_types.RenderDrawCommand{
         .draw_count = 1,
         .target_width = width,
         .target_height = height,
