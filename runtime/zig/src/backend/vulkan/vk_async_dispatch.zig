@@ -10,12 +10,11 @@ const model_async_types = @import("../../model_async_types.zig");
 const webgpu = @import("../runtime_types.zig");
 const backend_policy = @import("../backend_policy.zig");
 const common_timing = @import("../common/timing.zig");
-const native_runtime = @import("native_runtime.zig");
 
 const PIPELINE_STRESS_KERNEL = "shader_compile_pipeline_stress.spv";
 
 pub fn execute(
-    runtime: *native_runtime.NativeVulkanRuntime,
+    runtime: anytype,
     allocator: std.mem.Allocator,
     setup_ns: u64,
     diagnostics: model_async_types.AsyncDiagnosticsCommand,
@@ -68,7 +67,7 @@ pub fn execute(
 }
 
 fn execute_resource_table_immediates(
-    runtime: *native_runtime.NativeVulkanRuntime,
+    runtime: anytype,
     setup_ns: u64,
     iterations: u32,
     feature_policy: model_async_types.AsyncDiagnosticsFeaturePolicy,
@@ -92,7 +91,7 @@ fn execute_resource_table_immediates(
 }
 
 fn execute_pixel_local_storage(
-    runtime: *native_runtime.NativeVulkanRuntime,
+    runtime: anytype,
     setup_ns: u64,
     iterations: u32,
     feature_policy: model_async_types.AsyncDiagnosticsFeaturePolicy,
@@ -117,7 +116,7 @@ fn execute_pixel_local_storage(
 }
 
 fn execute_full(
-    runtime: *native_runtime.NativeVulkanRuntime,
+    runtime: anytype,
     allocator: std.mem.Allocator,
     setup_ns: u64,
     iterations: u32,

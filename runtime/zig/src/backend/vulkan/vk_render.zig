@@ -13,9 +13,7 @@ const model_render_types = @import("../../model_render_types.zig");
 const common_timing = @import("../common/timing.zig");
 const render_bundle = @import("../../render_bundle.zig");
 const vk_render_pipeline = @import("vk_render_pipeline.zig");
-const native_runtime = @import("native_runtime.zig");
-const Runtime = native_runtime.NativeVulkanRuntime;
-const DispatchMetrics = native_runtime.DispatchMetrics;
+const DispatchMetrics = @import("vk_metrics.zig").DispatchMetrics;
 const VK_NULL_U64 = c.VK_NULL_U64;
 const VK_QUERY_CONTROL_NONE: u32 = 0;
 const VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT: u32 = 0x00000020;
@@ -77,7 +75,7 @@ pub fn release_render_state(device: c.VkDevice, state: *RenderState) void {
     state.depth_stencil_target = null;
 }
 pub fn execute_render_draw(
-    self: *Runtime,
+    self: anytype,
     cmd: model_render_types.RenderDrawCommand,
 ) !DispatchMetrics {
     const draw_count = if (cmd.draw_count > 0) cmd.draw_count else 1;
@@ -113,7 +111,7 @@ pub fn execute_render_draw(
 }
 
 fn ensure_render_target(
-    self: *Runtime,
+    self: anytype,
     state: *RenderState,
     cmd: model_render_types.RenderDrawCommand,
     width: u32,
@@ -173,7 +171,7 @@ fn ensure_render_target(
 }
 
 fn bind_existing_render_target(
-    self: *Runtime,
+    self: anytype,
     state: *RenderState,
     cmd: model_render_types.RenderDrawCommand,
     width: u32,
@@ -203,7 +201,7 @@ fn bind_existing_render_target(
 }
 
 fn create_render_target_texture(
-    self: *Runtime,
+    self: anytype,
     spec: model_resource_types.CopyTextureResource,
 ) !vk_resources.TextureResource {
     var image: c.VkImage = VK_NULL_U64;
@@ -290,7 +288,7 @@ fn create_render_target_texture(
 }
 
 fn create_render_pass(
-    self: *Runtime,
+    self: anytype,
     state: *RenderState,
     vk_format: u32,
     has_depth_stencil: bool,
@@ -380,7 +378,7 @@ fn create_render_pass(
 }
 
 fn create_framebuffer(
-    self: *Runtime,
+    self: anytype,
     state: *RenderState,
     width: u32,
     height: u32,
@@ -406,7 +404,7 @@ fn create_framebuffer(
 }
 
 fn create_graphics_pipeline(
-    self: *Runtime,
+    self: anytype,
     state: *RenderState,
     vk_format: u32,
     cmd: model_render_types.RenderDrawCommand,
@@ -414,14 +412,14 @@ fn create_graphics_pipeline(
     return vk_render_pipeline.create_graphics_pipeline(self, state, vk_format, cmd);
 }
 
-fn resolve_vk_buffer_handle(self: *Runtime, handle: ?*anyopaque) ?c.VkBuffer {
+fn resolve_vk_buffer_handle(self: anytype, handle: ?*anyopaque) ?c.VkBuffer {
     const ptr = handle orelse return null;
     const cb = self.compute_buffers.get(@intFromPtr(ptr)) orelse return null;
     return cb.buffer;
 }
 
 fn record_and_submit_draws(
-    self: *Runtime,
+    self: anytype,
     state: *RenderState,
     cmd: model_render_types.RenderDrawCommand,
     draw_count: u32,
@@ -607,7 +605,7 @@ fn record_and_submit_draws(
     }
 }
 
-fn begin_primary_recording(self: *Runtime) !void {
+fn begin_primary_recording(self: anytype) !void {
     try c.check_vk(c.vkResetCommandPool(self.device, self.command_pool, 0));
     var begin_info = c.VkCommandBufferBeginInfo{
         .sType = c.VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
@@ -618,7 +616,7 @@ fn begin_primary_recording(self: *Runtime) !void {
     try c.check_vk(c.vkBeginCommandBuffer(self.primary_command_buffer, &begin_info));
 }
 
-fn submit_and_wait(self: *Runtime) !void {
+fn submit_and_wait(self: anytype) !void {
     var submit_info = c.VkSubmitInfo{
         .sType = c.VK_STRUCTURE_TYPE_SUBMIT_INFO,
         .pNext = null,
@@ -646,7 +644,7 @@ fn submit_and_wait(self: *Runtime) !void {
 }
 
 fn record_indexed_draws(
-    self: *Runtime,
+    self: anytype,
     cmd: model_render_types.RenderDrawCommand,
     draw_count: u32,
 ) !void {
@@ -717,7 +715,7 @@ fn record_indexed_draws(
 // Replay render bundles into a standalone render pass. Creates render target,
 // render pass + framebuffer, then replays each bundle's command list.
 pub fn execute_render_bundles(
-    self: *Runtime,
+    self: anytype,
     bundles: []const *const render_bundle.DoeRenderBundle,
     target_width: u32,
     target_height: u32,

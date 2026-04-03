@@ -28,7 +28,7 @@ const d3d12_device_caps = @import("backend/d3d12/d3d12_device_caps.zig");
 const vk_feature_caps = if (has_vulkan) @import("backend/vulkan/vk_feature_caps.zig") else struct {};
 const vk_device_caps = if (has_vulkan) @import("backend/vulkan/vk_device_caps.zig") else struct {};
 const vulkan_feature_cache = if (has_vulkan) @import("doe_vulkan_feature_cache.zig") else struct {};
-const vk_device = if (has_vulkan) @import("backend/vulkan/vk_device.zig") else struct {};
+const vk_feature_probe = if (has_vulkan) @import("backend/vulkan/vk_feature_probe.zig") else struct {};
 const backend_policy = @import("backend/backend_policy.zig");
 
 const bridge = @import("backend/metal/metal_bridge_decls.zig");
@@ -304,7 +304,7 @@ pub export fn doeNativeRequestAdapterFlat(
         .vulkan => {
             if (comptime has_vulkan) {
                 const feature_caps: vk_feature_caps.VulkanFeatureCaps =
-                    vk_device.probe_default_feature_caps(alloc) catch .{};
+                    vk_feature_probe.probe_default_feature_caps(alloc) catch .{};
                 const hw_caps: vk_device_caps.VulkanDeviceCaps =
                     vk_device_caps.probe_device_caps(alloc) catch probe_vulkan_device_caps_fallback();
                 const adapter = make(DoeAdapter) orelse {
@@ -362,7 +362,7 @@ pub export fn doeNativeInstanceRequestAdapter(
         .vulkan => {
             if (comptime has_vulkan) {
                 const feature_caps: vk_feature_caps.VulkanFeatureCaps =
-                    vk_device.probe_default_feature_caps(alloc) catch .{};
+                    vk_feature_probe.probe_default_feature_caps(alloc) catch .{};
                 const hw_caps: vk_device_caps.VulkanDeviceCaps =
                     vk_device_caps.probe_device_caps(alloc) catch probe_vulkan_device_caps_fallback();
                 const adapter = make(DoeAdapter) orelse {

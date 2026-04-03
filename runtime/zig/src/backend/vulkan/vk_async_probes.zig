@@ -18,8 +18,6 @@ const common_timing = @import("../common/timing.zig");
 
 const VK_NULL_U64 = c.VK_NULL_U64;
 
-const Runtime = @import("native_runtime.zig").NativeVulkanRuntime;
-
 // --- Named constants ---
 
 const RTI_BUFFER_BYTES: u64 = 256;
@@ -43,7 +41,7 @@ pub const AsyncProbeResult = struct {
 /// staging copy, submit, wait, then destroy. Measures real Vulkan resource
 /// creation throughput across buffer and texture paths per iteration.
 pub fn resource_table_immediates_probe(
-    self: *Runtime,
+    self: anytype,
     iterations: u32,
 ) !AsyncProbeResult {
     const count = if (iterations > 0) iterations else 1;
@@ -187,7 +185,7 @@ pub fn resource_table_immediates_probe(
 /// input attachment). This exercises the framebuffer-fetch barrier path
 /// that real pixel-local-storage workloads rely on in Vulkan.
 pub fn pixel_local_storage_probe(
-    self: *Runtime,
+    self: anytype,
     iterations: u32,
     target_format: model_gpu_types.WGPUTextureFormat,
 ) !AsyncProbeResult {

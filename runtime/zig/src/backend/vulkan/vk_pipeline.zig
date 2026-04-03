@@ -58,16 +58,14 @@ pub const PendingDescriptorWrite = struct {
     info_index: usize,
 };
 
-const Runtime = @import("native_runtime.zig").NativeVulkanRuntime;
-
-pub fn load_kernel_source(self: *const Runtime, allocator: std.mem.Allocator, kernel_name: []const u8) ![]u8 {
+pub fn load_kernel_source(self: anytype, allocator: std.mem.Allocator, kernel_name: []const u8) ![]u8 {
     if (kernel_name.len == 0) return error.InvalidArgument;
     const path = try resolve_kernel_path(self, allocator, kernel_name);
     defer allocator.free(path);
     return std.fs.cwd().readFileAlloc(allocator, path, MAX_KERNEL_SOURCE_BYTES) catch error.ShaderCompileFailed;
 }
 
-pub fn load_kernel_spirv(self: *const Runtime, allocator: std.mem.Allocator, kernel_name: []const u8) ![]u32 {
+pub fn load_kernel_spirv(self: anytype, allocator: std.mem.Allocator, kernel_name: []const u8) ![]u32 {
     if (kernel_name.len == 0) return error.InvalidArgument;
     const path = resolve_kernel_spirv_path(self, allocator, kernel_name) catch |err| switch (err) {
         error.UnsupportedFeature => return try compile_kernel_wgsl_to_spirv(self, allocator, kernel_name),
@@ -80,7 +78,7 @@ pub fn load_kernel_spirv(self: *const Runtime, allocator: std.mem.Allocator, ker
     return try words_from_spirv_bytes(allocator, bytes);
 }
 
-fn compile_kernel_wgsl_to_spirv(self: *const Runtime, allocator: std.mem.Allocator, kernel_name: []const u8) ![]u32 {
+fn compile_kernel_wgsl_to_spirv(self: anytype, allocator: std.mem.Allocator, kernel_name: []const u8) ![]u32 {
     const source_path = try resolve_kernel_path(self, allocator, kernel_name);
     defer allocator.free(source_path);
     if (!std.mem.endsWith(u8, source_path, ".wgsl")) return error.UnsupportedFeature;
@@ -95,7 +93,7 @@ fn compile_kernel_wgsl_to_spirv(self: *const Runtime, allocator: std.mem.Allocat
 }
 
 pub fn set_compute_shader_spirv(
-    self: *Runtime,
+    self: anytype,
     words: []const u32,
     entry_point: ?[]const u8,
     bindings: ?[]const model_compute_types.KernelBinding,
@@ -109,14 +107,14 @@ pub fn set_compute_shader_spirv(
     try prepare_descriptor_sets(self, bindings, initialize_buffers_on_create);
 }
 
-pub fn rebuild_compute_shader_spirv(self: *Runtime, words: []const u32) !void {
+pub fn rebuild_compute_shader_spirv(self: anytype, words: []const u32) !void {
     if (words.len == 0 or words[0] != SPIRV_MAGIC) return error.ShaderCompileFailed;
     const hash = std.hash.Wyhash.hash(0, std.mem.sliceAsBytes(words));
     try build_pipeline_for_words(self, words, hash +% 1, null, null);
 }
 
 pub fn build_pipeline_for_words(
-    self: *Runtime,
+    self: anytype,
     words: []const u32,
     pipeline_hash: u64,
     entry_point: ?[]const u8,
@@ -151,7 +149,7 @@ pub fn build_pipeline_for_words(
     self.current_pipeline_hash = pipeline_hash;
 }
 
-pub fn destroy_pipeline_objects(self: *Runtime) void {
+pub fn destroy_pipeline_objects(self: anytype) void {
     if (self.has_pipeline) {
         c.vkDestroyPipeline(self.device, self.pipeline, null);
         self.has_pipeline = false;
@@ -169,7 +167,7 @@ pub fn destroy_pipeline_objects(self: *Runtime) void {
     self.current_pipeline_hash = 0;
 }
 
-pub fn destroy_descriptor_state(self: *Runtime) void {
+pub fn destroy_descriptor_state(self: anytype) void {
     if (self.has_descriptor_pool) {
         c.vkDestroyDescriptorPool(self.device, self.descriptor_pool, null);
         self.has_descriptor_pool = false;
@@ -192,7 +190,7 @@ pub fn destroy_descriptor_state(self: *Runtime) void {
     self.current_layout_hash = 0;
 }
 
-pub fn bind_descriptor_sets(self: *Runtime, command_buffer: c.VkCommandBuffer) void {
+pub fn bind_descriptor_sets(self: anytype, command_buffer: c.VkCommandBuffer) void {
     if (!self.has_descriptor_pool or self.descriptor_set_count == 0) return;
     c.vkCmdBindDescriptorSets(
         command_buffer,
@@ -206,7 +204,7 @@ pub fn bind_descriptor_sets(self: *Runtime, command_buffer: c.VkCommandBuffer) v
     );
 }
 
-fn ensure_pipeline_layout(self: *Runtime, bindings: ?[]const model_compute_types.KernelBinding) !void {
+fn ensure_pipeline_layout(self: anytype, bindings: ?[]const model_compute_types.KernelBinding) !void {
     const layout_hash = compute_layout_hash(bindings);
     if (self.has_pipeline_layout and layout_hash == self.current_layout_hash) return;
 
@@ -270,7 +268,7 @@ fn ensure_pipeline_layout(self: *Runtime, bindings: ?[]const model_compute_types
 }
 
 fn prepare_descriptor_sets(
-    self: *Runtime,
+    self: anytype,
     bindings: ?[]const model_compute_types.KernelBinding,
     initialize_buffers_on_create: bool,
 ) !void {
@@ -369,7 +367,7 @@ fn prepare_descriptor_sets(
     }
 }
 
-fn ensure_descriptor_pool(self: *Runtime, bindings: ?[]const model_compute_types.KernelBinding) !void {
+fn ensure_descriptor_pool(self: anytype, bindings: ?[]const model_compute_types.KernelBinding) !void {
     if (self.has_descriptor_pool) return;
     if (self.descriptor_set_count == 0) return;
 
@@ -551,7 +549,7 @@ pub fn words_from_spirv_bytes(allocator: std.mem.Allocator, bytes: []const u8) !
     return words;
 }
 
-fn resolve_kernel_path(self: *const Runtime, allocator: std.mem.Allocator, kernel_name: []const u8) ![]u8 {
+fn resolve_kernel_path(self: anytype, allocator: std.mem.Allocator, kernel_name: []const u8) ![]u8 {
     const direct = try allocator.dupe(u8, kernel_name);
     if (path_utils.file_exists(direct)) return direct;
     allocator.free(direct);
@@ -569,7 +567,7 @@ fn resolve_kernel_path(self: *const Runtime, allocator: std.mem.Allocator, kerne
     return error.ShaderToolchainUnavailable;
 }
 
-fn resolve_kernel_spirv_path(self: *const Runtime, allocator: std.mem.Allocator, kernel_name: []const u8) ![]u8 {
+fn resolve_kernel_spirv_path(self: anytype, allocator: std.mem.Allocator, kernel_name: []const u8) ![]u8 {
     const source_path = try resolve_kernel_path(self, allocator, kernel_name);
     defer allocator.free(source_path);
 

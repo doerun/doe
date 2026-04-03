@@ -29,6 +29,7 @@ const vk_resources = @import("vk_resources.zig");
 const vk_formats = @import("vk_formats.zig");
 const vk_render = @import("vk_render.zig");
 const vk_async_probes = @import("vk_async_probes.zig");
+const vk_metrics = @import("vk_metrics.zig");
 const render_bundle = @import("../../render_bundle.zig");
 const vk_texture_commands = @import("vk_texture_commands.zig");
 
@@ -38,13 +39,7 @@ const VK_NULL_U64 = c.VK_NULL_U64;
 pub const upload_uses_fast_path = vk_upload.upload_uses_fast_path;
 pub const upload_uses_direct_path = vk_upload.upload_uses_direct_path;
 
-pub const DispatchMetrics = struct {
-    encode_ns: u64 = 0,
-    submit_wait_ns: u64 = 0,
-    gpu_timestamp_ns: u64 = 0,
-    gpu_timestamp_attempted: bool = false,
-    gpu_timestamp_valid: bool = false,
-};
+pub const DispatchMetrics = vk_metrics.DispatchMetrics;
 
 pub const NativeVulkanRuntime = struct {
     allocator: std.mem.Allocator,

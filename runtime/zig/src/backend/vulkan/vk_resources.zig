@@ -52,8 +52,6 @@ const TextureTransitionSource = struct {
     src_stage: u32,
 };
 
-const Runtime = @import("native_runtime.zig").NativeVulkanRuntime;
-
 fn texture_dimension_to_vk_image_type(dimension: u32) u32 {
     return switch (dimension) {
         model_gpu_types.WGPUTextureDimension_1D => c.VK_IMAGE_TYPE_1D,
@@ -107,7 +105,7 @@ fn texture_component_swizzle_to_vk(component: u32, identity_component: u32) u32 
 }
 
 pub fn ensure_compute_buffer(
-    self: *Runtime,
+    self: anytype,
     handle: u64,
     required_size: u64,
     initialize_buffers_on_create: bool,
@@ -127,7 +125,7 @@ pub fn ensure_compute_buffer(
 }
 
 pub fn required_compute_buffer_size(
-    self: *const Runtime,
+    self: anytype,
     binding: model_compute_types.KernelBinding,
 ) !u64 {
     if (binding.resource_kind != .buffer) return error.UnsupportedFeature;
@@ -141,7 +139,7 @@ pub fn required_compute_buffer_size(
 }
 
 pub fn create_compute_buffer(
-    self: *Runtime,
+    self: anytype,
     bytes: u64,
     initialize_buffers_on_create: bool,
 ) !ComputeBuffer {
@@ -197,7 +195,7 @@ pub fn create_compute_buffer(
     };
 }
 
-pub fn release_compute_buffer(self: *Runtime, compute_buffer: ComputeBuffer) void {
+pub fn release_compute_buffer(self: anytype, compute_buffer: ComputeBuffer) void {
     if (compute_buffer.mapped != null) {
         c.vkUnmapMemory(self.device, compute_buffer.memory);
     }
@@ -205,7 +203,7 @@ pub fn release_compute_buffer(self: *Runtime, compute_buffer: ComputeBuffer) voi
     c.vkFreeMemory(self.device, compute_buffer.memory, null);
 }
 
-pub fn release_compute_buffers(self: *Runtime) void {
+pub fn release_compute_buffers(self: anytype) void {
     var iterator = self.compute_buffers.valueIterator();
     while (iterator.next()) |buffer| {
         release_compute_buffer(self, buffer.*);
@@ -213,7 +211,7 @@ pub fn release_compute_buffers(self: *Runtime) void {
     self.compute_buffers.deinit(self.allocator);
 }
 
-pub fn create_host_visible_buffer(self: *Runtime, bytes: u64, usage: u32) !ComputeBuffer {
+pub fn create_host_visible_buffer(self: anytype, bytes: u64, usage: u32) !ComputeBuffer {
     var buffer: VkBuffer = VK_NULL_U64;
     var memory: VkDeviceMemory = VK_NULL_U64;
     var mapped: ?*anyopaque = null;
@@ -259,11 +257,11 @@ pub fn create_host_visible_buffer(self: *Runtime, bytes: u64, usage: u32) !Compu
     };
 }
 
-pub fn destroy_host_visible_buffer(self: *Runtime, buffer: ComputeBuffer) void {
+pub fn destroy_host_visible_buffer(self: anytype, buffer: ComputeBuffer) void {
     release_compute_buffer(self, buffer);
 }
 
-pub fn create_destroy_lifecycle_buffer(self: *Runtime, bytes: u64) !void {
+pub fn create_destroy_lifecycle_buffer(self: anytype, bytes: u64) !void {
     var buffer: VkBuffer = VK_NULL_U64;
     var memory: VkDeviceMemory = VK_NULL_U64;
     var buffer_info = c.VkBufferCreateInfo{
@@ -299,7 +297,7 @@ pub fn create_destroy_lifecycle_buffer(self: *Runtime, bytes: u64) !void {
 
 // --- Texture resource management ---
 
-pub fn ensure_texture_resource(self: *Runtime, texture: model_resource_types.CopyTextureResource) !*TextureResource {
+pub fn ensure_texture_resource(self: anytype, texture: model_resource_types.CopyTextureResource) !*TextureResource {
     if (texture.handle == 0) return error.InvalidArgument;
     if (texture.width == 0 or texture.height == 0) return error.InvalidArgument;
     const mip_levels: u32 = if (texture.mip_level > 0) texture.mip_level + 1 else 1;
@@ -322,7 +320,7 @@ pub fn ensure_texture_resource(self: *Runtime, texture: model_resource_types.Cop
     return self.textures.getPtr(texture.handle).?;
 }
 
-pub fn ensure_texture_shader_layout(self: *Runtime, texture: *TextureResource) !void {
+pub fn ensure_texture_shader_layout(self: anytype, texture: *TextureResource) !void {
     if (texture.layout == c.VK_IMAGE_LAYOUT_GENERAL) return;
     if (self.has_deferred_submissions or self.pending_uploads.items.len > 0) {
         _ = try vk_upload.flush_queue(self);
@@ -367,7 +365,7 @@ pub fn ensure_texture_shader_layout(self: *Runtime, texture: *TextureResource) !
 }
 
 pub fn create_texture_resource(
-    self: *Runtime,
+    self: anytype,
     texture: model_resource_types.CopyTextureResource,
     mip_levels: u32,
 ) !TextureResource {
@@ -385,7 +383,7 @@ pub fn create_texture_resource(
 }
 
 pub fn create_texture_resource_full(
-    self: *Runtime,
+    self: anytype,
     width: u32,
     height: u32,
     depth_or_array_layers: u32,
@@ -488,7 +486,7 @@ pub fn create_texture_resource_full(
 }
 
 pub fn create_texture_view(
-    self: *Runtime,
+    self: anytype,
     texture: TextureResource,
     format: model_gpu_types.WGPUTextureFormat,
     dimension: u32,
@@ -532,7 +530,7 @@ pub fn create_texture_view(
     return view;
 }
 
-pub fn release_texture_resource(self: *Runtime, texture: TextureResource) void {
+pub fn release_texture_resource(self: anytype, texture: TextureResource) void {
     release_texture_resource_with_device(self.device, texture);
 }
 
@@ -546,7 +544,7 @@ pub fn release_texture_view_with_device(device: c.VkDevice, view: VkImageView) v
     if (view != VK_NULL_U64) c.vkDestroyImageView(device, view, null);
 }
 
-pub fn release_textures(self: *Runtime) void {
+pub fn release_textures(self: anytype) void {
     var iterator = self.textures.valueIterator();
     while (iterator.next()) |texture| {
         release_texture_resource(self, texture.*);
@@ -707,7 +705,7 @@ fn wgpu_compare_to_vk(compare: u32) u32 {
     };
 }
 
-pub fn create_sampler(self: *Runtime, cmd: model_render_types.SamplerCreateCommand) !c.VkSampler {
+pub fn create_sampler(self: anytype, cmd: model_render_types.SamplerCreateCommand) !c.VkSampler {
     var create_info = c.VkSamplerCreateInfo{
         .sType = c.VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
         .pNext = null,
@@ -740,7 +738,7 @@ pub fn create_sampler(self: *Runtime, cmd: model_render_types.SamplerCreateComma
     return vk_sampler;
 }
 
-pub fn destroy_sampler(self: *Runtime, handle: u64) void {
+pub fn destroy_sampler(self: anytype, handle: u64) void {
     if (self.samplers.fetchRemove(handle)) |entry| {
         if (entry.value != c.VK_NULL_U64) {
             c.vkDestroySampler(self.device, entry.value, null);
@@ -748,7 +746,7 @@ pub fn destroy_sampler(self: *Runtime, handle: u64) void {
     }
 }
 
-pub fn release_samplers(self: *Runtime) void {
+pub fn release_samplers(self: anytype) void {
     var iterator = self.samplers.valueIterator();
     while (iterator.next()) |vk_sampler| {
         if (vk_sampler.* != c.VK_NULL_U64) {

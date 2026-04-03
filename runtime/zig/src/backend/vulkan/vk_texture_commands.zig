@@ -10,9 +10,8 @@ const vk_sync = @import("vk_sync.zig");
 const vk_upload = @import("vk_upload.zig");
 const vk_resources = @import("vk_resources.zig");
 const vk_formats = @import("vk_formats.zig");
-const NativeVulkanRuntime = @import("native_runtime.zig").NativeVulkanRuntime;
 
-pub fn texture_write(self: *NativeVulkanRuntime, cmd_arg: model_texture_types.TextureWriteCommand) !void {
+pub fn texture_write(self: anytype, cmd_arg: model_texture_types.TextureWriteCommand) !void {
     const resource = try vk_resources.ensure_texture_resource(self, cmd_arg.texture);
     if (cmd_arg.data.len == 0) {
         try vk_resources.ensure_texture_shader_layout(self, resource);
@@ -80,7 +79,7 @@ pub fn texture_write(self: *NativeVulkanRuntime, cmd_arg: model_texture_types.Te
     resource.layout = c.VK_IMAGE_LAYOUT_GENERAL;
 }
 
-pub fn texture_read(self: *NativeVulkanRuntime, args: struct {
+pub fn texture_read(self: anytype, args: struct {
     handle: u64,
     mip_level: u32,
     width: u32,
@@ -158,7 +157,7 @@ pub fn texture_read(self: *NativeVulkanRuntime, args: struct {
     }
 }
 
-pub fn texture_copy(self: *NativeVulkanRuntime, args: struct {
+pub fn texture_copy(self: anytype, args: struct {
     src_handle: u64,
     src_mip: u32,
     src_x: u32,
@@ -207,7 +206,7 @@ pub fn texture_copy(self: *NativeVulkanRuntime, args: struct {
     dst.layout = c.VK_IMAGE_LAYOUT_GENERAL;
 }
 
-pub fn texture_query(self: *NativeVulkanRuntime, cmd_arg: model_texture_types.TextureQueryCommand) !void {
+pub fn texture_query(self: anytype, cmd_arg: model_texture_types.TextureQueryCommand) !void {
     const texture = self.textures.get(cmd_arg.handle) orelse return error.InvalidState;
     if (cmd_arg.expected_width) |width| if (texture.width != width) return error.InvalidState;
     if (cmd_arg.expected_height) |height| if (texture.height != height) return error.InvalidState;
@@ -219,23 +218,23 @@ pub fn texture_query(self: *NativeVulkanRuntime, cmd_arg: model_texture_types.Te
     if (cmd_arg.expected_usage) |usage| if ((texture.usage & usage) != usage) return error.InvalidState;
 }
 
-pub fn texture_destroy(self: *NativeVulkanRuntime, cmd_arg: model_texture_types.TextureDestroyCommand) !void {
+pub fn texture_destroy(self: anytype, cmd_arg: model_texture_types.TextureDestroyCommand) !void {
     if (self.textures.fetchRemove(cmd_arg.handle)) |entry| {
         vk_resources.release_texture_resource(self, entry.value);
     }
 }
 
-pub fn sampler_create(self: *NativeVulkanRuntime, cmd: model_render_types.SamplerCreateCommand) !void {
+pub fn sampler_create(self: anytype, cmd: model_render_types.SamplerCreateCommand) !void {
     _ = try vk_resources.create_sampler(self, cmd);
 }
 
-pub fn sampler_destroy(self: *NativeVulkanRuntime, cmd: model_render_types.SamplerDestroyCommand) !void {
+pub fn sampler_destroy(self: anytype, cmd: model_render_types.SamplerDestroyCommand) !void {
     vk_resources.destroy_sampler(self, cmd.handle);
 }
 
 const vk_pipeline = @import("vk_pipeline.zig");
 
-pub fn collect_dispatch_gpu_timestamp(self: *NativeVulkanRuntime) !u64 {
+pub fn collect_dispatch_gpu_timestamp(self: anytype) !u64 {
     var query_pool: c.VkQueryPool = c.VK_NULL_U64;
     defer if (query_pool != c.VK_NULL_U64) c.vkDestroyQueryPool(self.device, query_pool, null);
     var create_info = c.VkQueryPoolCreateInfo{
@@ -269,7 +268,7 @@ pub fn collect_dispatch_gpu_timestamp(self: *NativeVulkanRuntime) !u64 {
 }
 
 // Submit current command buffer and wait (timeline or fence).
-fn submit_and_wait_timeline(self: *NativeVulkanRuntime) !void {
+fn submit_and_wait_timeline(self: anytype) !void {
     var submit_info = c.VkSubmitInfo{
         .sType = c.VK_STRUCTURE_TYPE_SUBMIT_INFO,
         .pNext = null,

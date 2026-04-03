@@ -27,11 +27,7 @@ pub const PhysicalDeviceSelection = struct {
     score: u64,
 };
 
-/// Opaque NativeVulkanRuntime reference; fields accessed through this module
-/// are the device/instance lifecycle subset.
-const Runtime = @import("native_runtime.zig").NativeVulkanRuntime;
-
-pub fn bootstrap(self: *Runtime) !void {
+pub fn bootstrap(self: anytype) !void {
     try create_instance(self);
     try select_physical_device(self);
     try create_device_and_queue(self);
@@ -41,20 +37,7 @@ pub fn bootstrap(self: *Runtime) !void {
     create_timeline_semaphore(self);
 }
 
-pub fn probe_default_feature_caps(allocator: std.mem.Allocator) !vk_feature_caps.VulkanFeatureCaps {
-    var probe = Runtime{ .allocator = allocator, .kernel_root = null };
-    try create_instance(&probe);
-    defer if (probe.has_instance) {
-        c.vkDestroyInstance(probe.instance, null);
-        probe.instance = null;
-        probe.has_instance = false;
-        probe.physical_device = null;
-    };
-    try select_physical_device(&probe);
-    return vk_feature_caps.query(probe.physical_device).caps;
-}
-
-pub fn create_instance(self: *Runtime) !void {
+pub fn create_instance(self: anytype) !void {
     const surface_exts = vulkan_surface.required_instance_extensions();
     var enabled_exts: [4][*:0]const u8 = undefined;
     var enabled_ext_count: usize = 0;
@@ -92,7 +75,15 @@ pub fn create_instance(self: *Runtime) !void {
     self.has_instance = true;
 }
 
-pub fn select_physical_device(self: *Runtime) !void {
+pub fn destroy_instance_only(self: anytype) void {
+    if (!self.has_instance) return;
+    c.vkDestroyInstance(self.instance, null);
+    self.instance = null;
+    self.has_instance = false;
+    self.physical_device = null;
+}
+
+pub fn select_physical_device(self: anytype) !void {
     var count: u32 = 0;
     try c.check_vk(c.vkEnumeratePhysicalDevices(self.instance, &count, null));
     if (count == 0) return error.UnsupportedFeature;
@@ -108,7 +99,7 @@ pub fn select_physical_device(self: *Runtime) !void {
     self.timestamp_query_supported_value = selection.queue.timestamp_valid_bits > 0;
 }
 
-pub fn create_device_and_queue(self: *Runtime) !void {
+pub fn create_device_and_queue(self: anytype) !void {
     const requested_device_exts = vulkan_surface.required_device_extensions();
     const depth_clip_available = detect_device_extension(
         self.physical_device,
@@ -156,7 +147,7 @@ pub fn create_device_and_queue(self: *Runtime) !void {
     if (self.queue == null) return error.InvalidState;
 }
 
-pub fn create_command_pool_and_primary_buffer(self: *Runtime) !void {
+pub fn create_command_pool_and_primary_buffer(self: anytype) !void {
     var pool_info = c.VkCommandPoolCreateInfo{
         .sType = c.VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
         .pNext = null,
@@ -177,7 +168,7 @@ pub fn create_command_pool_and_primary_buffer(self: *Runtime) !void {
     self.has_primary_command_buffer = true;
 }
 
-pub fn create_fence(self: *Runtime) !void {
+pub fn create_fence(self: anytype) !void {
     var fence_info = c.VkFenceCreateInfo{
         .sType = c.VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
         .pNext = null,
@@ -187,7 +178,7 @@ pub fn create_fence(self: *Runtime) !void {
     self.has_fence = true;
 }
 
-pub fn find_memory_type_index(self: *Runtime, type_bits: u32, required_flags: u32) !u32 {
+pub fn find_memory_type_index(self: anytype, type_bits: u32, required_flags: u32) !u32 {
     var memory_props = std.mem.zeroes(c.VkPhysicalDeviceMemoryProperties);
     c.vkGetPhysicalDeviceMemoryProperties(self.physical_device, &memory_props);
     var i: u32 = 0;
@@ -199,7 +190,7 @@ pub fn find_memory_type_index(self: *Runtime, type_bits: u32, required_flags: u3
     return error.UnsupportedFeature;
 }
 
-fn select_preferred_physical_device(self: *Runtime, devices: []const VkPhysicalDevice) !PhysicalDeviceSelection {
+fn select_preferred_physical_device(self: anytype, devices: []const VkPhysicalDevice) !PhysicalDeviceSelection {
     var best: ?PhysicalDeviceSelection = null;
     for (devices, 0..) |device, index| {
         const queue = select_queue_family_for_device(self, device) catch continue;
@@ -216,7 +207,7 @@ fn select_preferred_physical_device(self: *Runtime, devices: []const VkPhysicalD
     return best orelse error.UnsupportedFeature;
 }
 
-fn select_queue_family_for_device(self: *Runtime, device: VkPhysicalDevice) !QueueFamilySelection {
+fn select_queue_family_for_device(self: anytype, device: VkPhysicalDevice) !QueueFamilySelection {
     var count: u32 = 0;
     c.vkGetPhysicalDeviceQueueFamilyProperties(device, &count, null);
     if (count == 0) return error.UnsupportedFeature;
@@ -264,12 +255,12 @@ pub fn queue_selection_score(selection: QueueFamilySelection) u64 {
     return score;
 }
 
-pub fn create_fence_pool(self: *Runtime) !void {
+pub fn create_fence_pool(self: anytype) !void {
     self.fence_pool_state = try vk_sync.FencePool.init(self.device);
     self.has_fence_pool = true;
 }
 
-pub fn create_timeline_semaphore(self: *Runtime) void {
+pub fn create_timeline_semaphore(self: anytype) void {
     const supported = vk_sync.detect_timeline_semaphore_support(self.physical_device);
     self.timeline_semaphore = vk_sync.TimelineSemaphore.init(self.device, supported);
     self.has_timeline_semaphore = self.timeline_semaphore.available;

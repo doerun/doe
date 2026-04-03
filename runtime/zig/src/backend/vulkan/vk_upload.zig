@@ -52,9 +52,7 @@ pub const UploadPathKind = enum {
 
 pub const VkPool = std.AutoHashMapUnmanaged(u64, std.ArrayListUnmanaged(VkPoolEntry));
 
-const Runtime = @import("native_runtime.zig").NativeVulkanRuntime;
-
-pub fn flush_queue(self: *Runtime) !u64 {
+pub fn flush_queue(self: anytype) !u64 {
     if (!self.has_device) return 0;
     const start_ns = common_timing.now_ns();
     const has_pending = self.hot_pending_upload != null or self.pending_uploads.items.len > 0;
@@ -104,7 +102,7 @@ pub fn flush_queue(self: *Runtime) !u64 {
     return common_timing.ns_delta(end_ns, start_ns);
 }
 
-pub fn record_upload_copy(self: *Runtime, bytes: u64, dst_usage: u32) !PendingUpload {
+pub fn record_upload_copy(self: anytype, bytes: u64, dst_usage: u32) !PendingUpload {
     try ensure_upload_recording(self);
 
     var src_buffer: VkBuffer = VK_NULL_U64;
@@ -186,7 +184,7 @@ pub fn record_upload_copy(self: *Runtime, bytes: u64, dst_usage: u32) !PendingUp
     };
 }
 
-pub fn try_direct_upload(self: *Runtime, bytes: u64, dst_usage: u32) !bool {
+pub fn try_direct_upload(self: anytype, bytes: u64, dst_usage: u32) !bool {
     record_direct_upload(self, bytes, dst_usage) catch |err| switch (err) {
         error.UnsupportedFeature => return false,
         else => return err,
@@ -194,7 +192,7 @@ pub fn try_direct_upload(self: *Runtime, bytes: u64, dst_usage: u32) !bool {
     return true;
 }
 
-fn record_direct_upload(self: *Runtime, bytes: u64, dst_usage: u32) !void {
+fn record_direct_upload(self: anytype, bytes: u64, dst_usage: u32) !void {
     var dst_buffer: VkBuffer = VK_NULL_U64;
     var dst_memory: VkDeviceMemory = VK_NULL_U64;
     var dst_mapped: ?*anyopaque = null;
@@ -273,7 +271,7 @@ fn record_direct_upload(self: *Runtime, bytes: u64, dst_usage: u32) !void {
     );
 }
 
-pub fn ensure_upload_recording(self: *Runtime) !void {
+pub fn ensure_upload_recording(self: anytype) !void {
     if (self.upload_recording_active) return;
     // The command pool was created with VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
     // so vkBeginCommandBuffer implicitly resets the buffer from executable/invalid state.
@@ -288,13 +286,13 @@ pub fn ensure_upload_recording(self: *Runtime) !void {
     self.upload_recording_active = true;
 }
 
-pub fn finish_pending_upload_recording(self: *Runtime) !void {
+pub fn finish_pending_upload_recording(self: anytype) !void {
     if (!self.upload_recording_active) return;
     try c.check_vk(c.vkEndCommandBuffer(self.primary_command_buffer));
     self.upload_recording_active = false;
 }
 
-pub fn ensure_fast_upload_buffer(self: *Runtime, bytes: u64) !void {
+pub fn ensure_fast_upload_buffer(self: anytype, bytes: u64) !void {
     if (self.fast_upload_capacity >= bytes and self.fast_upload_mapped != null) return;
     release_fast_upload_buffer(self);
 
@@ -330,7 +328,7 @@ pub fn ensure_fast_upload_buffer(self: *Runtime, bytes: u64) !void {
     self.fast_upload_capacity = bytes;
 }
 
-pub fn release_fast_upload_buffer(self: *Runtime) void {
+pub fn release_fast_upload_buffer(self: anytype) void {
     if (self.fast_upload_mapped != null) {
         c.vkUnmapMemory(self.device, self.fast_upload_memory);
         self.fast_upload_mapped = null;
@@ -346,7 +344,7 @@ pub fn release_fast_upload_buffer(self: *Runtime) void {
     self.fast_upload_capacity = 0;
 }
 
-pub fn release_pending_uploads(self: *Runtime) void {
+pub fn release_pending_uploads(self: anytype) void {
     // Release the hot slot first (common single-upload-per-flush path).
     if (self.hot_pending_upload) |hot| {
         release_upload(self, hot);
@@ -358,7 +356,7 @@ pub fn release_pending_uploads(self: *Runtime) void {
     self.pending_uploads.clearRetainingCapacity();
 }
 
-pub fn release_upload(self: *Runtime, item: PendingUpload) void {
+pub fn release_upload(self: anytype, item: PendingUpload) void {
     // Carry src_mapped through the pool so staging buffers stay
     // persistently mapped, eliminating per-upload map/unmap overhead.
     if (item.src_buffer != VK_NULL_U64 and item.src_memory != VK_NULL_U64) {
@@ -481,7 +479,7 @@ pub fn release_pool_entry(device: c.VkDevice, entry: ?VkPoolEntry) void {
 /// Begin a streaming copy session. Allocates a dedicated command buffer
 /// if needed and begins recording. Multiple copy operations can be
 /// batched into a single submission.
-pub fn begin_streaming_copy(self: *Runtime) !void {
+pub fn begin_streaming_copy(self: anytype) !void {
     if (self.streaming_copy_active) return;
     if (!self.has_streaming_copy_buffer) {
         var alloc_info = c.VkCommandBufferAllocateInfo{
@@ -508,7 +506,7 @@ pub fn begin_streaming_copy(self: *Runtime) !void {
 }
 
 /// Record a buffer-to-buffer copy into the streaming command buffer.
-pub fn streaming_copy_buffer_to_buffer(self: *Runtime, src: c.VkBuffer, dst: c.VkBuffer, size: u64) !void {
+pub fn streaming_copy_buffer_to_buffer(self: anytype, src: c.VkBuffer, dst: c.VkBuffer, size: u64) !void {
     if (!self.streaming_copy_active) try begin_streaming_copy(self);
     var region = c.VkBufferCopy{ .srcOffset = 0, .dstOffset = 0, .size = size };
     c.vkCmdCopyBuffer(self.streaming_copy_buffer, src, dst, 1, @ptrCast(&region));
@@ -518,7 +516,7 @@ pub fn streaming_copy_buffer_to_buffer(self: *Runtime, src: c.VkBuffer, dst: c.V
 /// Finish recording and submit the streaming copy command buffer.
 /// Uses a fence-pool fence for deferred tracking or the primary fence
 /// for immediate wait, depending on `wait`.
-pub fn flush_streaming_copy(self: *Runtime, wait: bool) !void {
+pub fn flush_streaming_copy(self: anytype, wait: bool) !void {
     if (!self.streaming_copy_active) return;
     try c.check_vk(c.vkEndCommandBuffer(self.streaming_copy_buffer));
     self.streaming_copy_active = false;
