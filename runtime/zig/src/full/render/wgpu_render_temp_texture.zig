@@ -6,18 +6,18 @@ const abi_feature = @import("../../core/abi/wgpu_feature_base_types.zig");
 const abi_texture = @import("../../core/abi/wgpu_texture_base_types.zig");
 const abi_binding = @import("../../core/abi/wgpu_binding_base_types.zig");
 const abi_base = struct {
-    usingnamespace abi_core;
-    usingnamespace abi_feature;
-    usingnamespace abi_texture;
-    usingnamespace abi_binding;
+    pub usingnamespace abi_core;
+    pub usingnamespace abi_feature;
+    pub usingnamespace abi_texture;
+    pub usingnamespace abi_binding;
 };
 const abi_callback = @import("../../core/abi/wgpu_callback_descriptor_types.zig");
 const abi_copy = @import("../../core/abi/wgpu_copy_descriptor_types.zig");
 const abi_pipeline = @import("../../core/abi/wgpu_pipeline_descriptor_types.zig");
 const abi_descriptor = struct {
-    usingnamespace abi_callback;
-    usingnamespace abi_copy;
-    usingnamespace abi_pipeline;
+    pub usingnamespace abi_callback;
+    pub usingnamespace abi_copy;
+    pub usingnamespace abi_pipeline;
 };
 const loader = @import("../../core/abi/wgpu_loader.zig");
 const resources = @import("../../core/resource/wgpu_resources.zig");
