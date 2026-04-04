@@ -50,6 +50,17 @@ Core:
 - `src/doe_native_types.zig` — narrow native object/value contract for drop-in handle types, deferred command payloads, backend enums, and shared native constants.
 - `src/doe_native_helpers.zig` — allocator, typed opaque-cast/refcount helpers, label-store access, and backend-runtime downcasts shared across native implementation shards.
 - `src/doe_native_exports.zig` — cross-shard native C ABI declarations used by implementation shards that need to call sibling exports without importing a facade.
+- `src/backend/dropin_capabilities.zig` and
+  `src/backend/dropin_lifecycle.zig` — backend-owned seams for capability
+  probes, runtime aliases, and native lifecycle helpers used by the drop-in
+  lane.
+- `src/backend/dropin_resource_ops.zig`,
+  `src/backend/dropin_queue_submit.zig`,
+  `src/backend/dropin_external_texture.zig`,
+  `src/backend/dropin_surface_ops.zig`, and
+  `src/backend/dropin_render_state.zig` — backend-owned seams that keep
+  root `doe_*` implementation files off backend-private Metal/Vulkan/D3D12
+  modules.
 - `src/quirk/mod.zig` — quirk module entry: `QuirkMode` enum (`off`/`trace`/`active`), `dispatchWithMode()`, re-exports sub-modules.
 - `src/quirk/runtime.zig` — deterministic matcher, selector, and action application with profile-indexed command buckets.
 - `src/quirk/quirk_json.zig` — deterministic JSON parser for quirk records with strict schema checks.
@@ -73,6 +84,10 @@ Trace and replay:
 
 WebGPU backend:
 - `src/backend/runtime_types.zig` — narrow backend-facing execution/result and queue/upload mode contract shared by backend lanes and orchestration; `src/webgpu_ffi.zig` re-exports the same types for compatibility.
+- `src/backend/dropin_*.zig` — backend-owned seam modules for drop-in/native
+  callers that need backend-specific capability, resource, queue-submit,
+  surface, render-state, or external-texture behavior without importing backend
+  implementation directories directly.
 - `src/webgpu_backend.zig` — WebGPUBackend assembly and compatibility surface over the split backend state/lifecycle/support modules plus prewarm/command delegation that still needs the concrete backend type.
 - `src/webgpu_backend_types.zig` — shared backend state structs: `ManagedSurface`, `CoreWebGPUBackend`, and `FullWebGPUBackendState`.
 - `src/webgpu_backend_lifecycle.zig` — backend bootstrap/lifecycle helpers: adapter/device request, limit capture, deinit, backend-type naming, and timestamp logging.

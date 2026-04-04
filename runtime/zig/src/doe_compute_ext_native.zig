@@ -2,13 +2,16 @@
 // Sharded from doe_wgpu_native.zig: compute pass operations, getBindGroupLayout, dispatchIndirect.
 
 const std = @import("std");
-const native_types = @import("doe_native_types.zig");
-const native_helpers = @import("doe_native_helpers.zig");
+const native_types = @import("doe_native_object_types.zig");
+const native_shared = @import("doe_native_shared_types.zig");
+const native_cmds = @import("doe_native_command_types.zig");
+const native_helpers = @import("doe_native_object_helpers.zig");
 const compute_bind_groups = @import("doe_compute_bind_groups.zig");
 const compute_preconditions = @import("doe_compute_preconditions_native.zig");
 const shader_native = @import("doe_shader_native.zig");
 const wgsl_compiler = @import("doe_wgsl/mod.zig");
-const bridge = @import("backend/metal/metal_bridge_decls.zig");
+const resource_ops = @import("backend/dropin_resource_ops.zig");
+const bridge = resource_ops.metal_bridge;
 
 const alloc = native_helpers.alloc;
 const make = native_helpers.make;
@@ -21,13 +24,13 @@ const DoeComputePass = native_types.DoeComputePass;
 const DoeBuffer = native_types.DoeBuffer;
 const DoeBindGroup = native_types.DoeBindGroup;
 const DoeBindGroupLayout = native_types.DoeBindGroupLayout;
-const DoeBindGroupLayoutEntry = native_types.DoeBindGroupLayoutEntry;
+const DoeBindGroupLayoutEntry = native_shared.DoeBindGroupLayoutEntry;
 const DoePipelineLayout = native_types.DoePipelineLayout;
 const DoeShaderModule = native_types.DoeShaderModule;
-const RecordedCmd = native_types.RecordedCmd;
+const RecordedCmd = native_cmds.RecordedCmd;
 const MAX_COMPUTE_BIND_GROUPS = compute_bind_groups.MAX_COMPUTE_BIND_GROUPS;
 const MAX_FLAT_BIND = compute_bind_groups.MAX_FLAT_BIND;
-const MAX_SHADER_BINDINGS = native_types.MAX_SHADER_BINDINGS;
+const MAX_SHADER_BINDINGS = native_shared.MAX_SHADER_BINDINGS;
 
 const RESOURCE_KIND_NONE: u32 = 0;
 const RESOURCE_KIND_BUFFER: u32 = 1;
@@ -67,7 +70,7 @@ fn clamped_binding_count(pip: *const DoeComputePipeline) usize {
     return MAX_SHADER_BINDINGS;
 }
 
-fn synthesize_layout_entry(binding: native_types.BindingInfo) DoeBindGroupLayoutEntry {
+fn synthesize_layout_entry(binding: native_shared.BindingInfo) DoeBindGroupLayoutEntry {
     var entry = DoeBindGroupLayoutEntry{
         .binding = binding.binding,
         .resource_kind = RESOURCE_KIND_NONE,

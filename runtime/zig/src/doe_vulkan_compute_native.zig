@@ -8,19 +8,21 @@ const std = @import("std");
 const doe_wgsl = @import("doe_wgsl/mod.zig");
 const runtime_compile = @import("doe_wgsl/runtime_compile.zig");
 const compute_preconditions = @import("doe_compute_preconditions_native.zig");
-const native_types = @import("doe_native_types.zig");
-const native_helpers = @import("doe_native_helpers.zig");
+const native_types = @import("doe_native_object_types.zig");
+const native_shared = @import("doe_native_shared_types.zig");
+const native_helpers = @import("doe_native_object_helpers.zig");
+const native_rt_helpers = @import("doe_native_runtime_helpers.zig");
 const model_compute_types = @import("model_compute_types.zig");
 const model_texture_types = @import("model_texture_value_types.zig");
 const model_binding_types = @import("model_binding_value_types.zig");
 
 const alloc = native_helpers.alloc;
 const cast = native_helpers.cast;
-const device_vk_runtime = native_helpers.device_vk_runtime;
-const MAX_COMPUTE_BIND_GROUPS = native_types.MAX_COMPUTE_BIND_GROUPS;
-const MAX_BIND = native_types.MAX_BIND;
+const device_vk_runtime = native_rt_helpers.device_vk_runtime;
+const MAX_COMPUTE_BIND_GROUPS = native_shared.MAX_COMPUTE_BIND_GROUPS;
+const MAX_BIND = native_shared.MAX_BIND;
 
-const NativeVulkanRuntime = native_types.NativeVulkanRuntime;
+const NativeVulkanRuntime = native_shared.NativeVulkanRuntime;
 const DoeShaderModule = native_types.DoeShaderModule;
 const DoeComputePipeline = native_types.DoeComputePipeline;
 const DoeComputePass = native_types.DoeComputePass;

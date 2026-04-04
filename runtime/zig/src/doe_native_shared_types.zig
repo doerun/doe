@@ -1,7 +1,9 @@
 const builtin = @import("builtin");
 const has_vulkan = builtin.os.tag == .linux;
 
-const abi_base = @import("core/abi/wgpu_base_types.zig");
+const backend_lifecycle = @import("backend/dropin_lifecycle.zig");
+const abi_binding = @import("core/abi/wgpu_binding_base_types.zig");
+const abi_texture = @import("core/abi/wgpu_texture_base_types.zig");
 const wgsl_compiler = @import("doe_wgsl/mod.zig");
 
 pub const BackendKind = enum(u8) {
@@ -10,8 +12,8 @@ pub const BackendKind = enum(u8) {
     d3d12 = 2,
 };
 
-pub const NativeVulkanRuntime = if (has_vulkan) @import("backend/vulkan/native_runtime.zig").NativeVulkanRuntime else void;
-pub const NativeD3D12Runtime = @import("backend/d3d12/d3d12_native_runtime.zig").NativeD3D12Runtime;
+pub const NativeVulkanRuntime = if (has_vulkan) backend_lifecycle.NativeVulkanRuntime else void;
+pub const NativeD3D12Runtime = backend_lifecycle.NativeD3D12Runtime;
 
 pub const MAX_BIND: usize = 16;
 pub const MAX_RENDER_BIND_GROUPS: usize = 4;
@@ -44,8 +46,8 @@ pub const CompilationMessageKind = enum(u8) {
 pub const DoeBindGroupLayoutEntry = struct {
     binding: u32 = 0,
     resource_kind: u32 = 0,
-    texture_sample_type: u32 = abi_base.WGPUTextureSampleType_Undefined,
-    texture_view_dimension: u32 = abi_base.WGPUTextureViewDimension_Undefined,
+    texture_sample_type: u32 = abi_binding.WGPUTextureSampleType_Undefined,
+    texture_view_dimension: u32 = abi_texture.WGPUTextureViewDimension_Undefined,
     texture_multisampled: bool = false,
     binding_array_size: u32 = 0,
 };

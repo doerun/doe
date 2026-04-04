@@ -9,7 +9,8 @@ const native_types = @import("doe_native_object_types.zig");
 const native_helpers = @import("doe_native_object_helpers.zig");
 const runtime_helpers = @import("doe_native_runtime_helpers.zig");
 const texture_formats = @import("model_texture_format_value_types.zig");
-const bridge = @import("backend/metal/metal_bridge_decls.zig");
+const resource_ops = @import("backend/dropin_resource_ops.zig");
+const bridge = resource_ops.metal_bridge;
 
 const doe_surface_supports_format = bridge.doe_surface_supports_format;
 

@@ -9,10 +9,13 @@
 const std = @import("std");
 const builtin = @import("builtin");
 const has_vulkan = (builtin.os.tag == .linux);
-const native_types = @import("doe_native_types.zig");
-const native_helpers = @import("doe_native_helpers.zig");
-const bridge = @import("backend/metal/metal_bridge_decls.zig");
-const c = if (has_vulkan) @import("backend/vulkan/vk_constants.zig") else struct {
+const resource_ops = @import("backend/dropin_resource_ops.zig");
+const native_types = @import("doe_native_object_types.zig");
+const native_shared = @import("doe_native_shared_types.zig");
+const native_helpers = @import("doe_native_object_helpers.zig");
+const native_rt_helpers = @import("doe_native_runtime_helpers.zig");
+const bridge = resource_ops.metal_bridge;
+const c = if (has_vulkan) resource_ops.vk_constants else struct {
     // Minimal type stubs so DoeQuerySet struct fields compile on non-Linux.
     pub const VkQueryPool = u64;
     pub const VkDevice = ?*anyopaque;
@@ -31,7 +34,7 @@ pub const DoeQuerySet = struct {
     ref_count: u32 = 1,
     count: u32 = 0,
     query_type: u32 = WGPU_QUERY_TYPE_TIMESTAMP,
-    backend: native_types.BackendKind = .metal,
+    backend: native_shared.BackendKind = .metal,
     /// Metal: opaque handle to MTLCounterSampleBuffer for GPU timestamp sampling.
     counter_sample_buffer: ?*anyopaque = null,
     /// Vulkan: VkQueryPool handle for timestamp queries.
@@ -190,7 +193,7 @@ pub export fn doeNativeQuerySetGetType(qs_raw: ?*anyopaque) callconv(.c) u32 {
 const WAIT_TIMEOUT_NS: u64 = std.math.maxInt(u64);
 
 fn vulkan_create_query_set(dev: *native_types.DoeDevice, query_type: u32, count: u32) ?*anyopaque {
-    const rt = native_helpers.device_vk_runtime(dev) orelse return null;
+    const rt = native_rt_helpers.device_vk_runtime(dev) orelse return null;
     if (!rt.has_device) return null;
 
     var query_pool: c.VkQueryPool = c.VK_NULL_U64;
@@ -236,7 +239,7 @@ fn vulkan_create_query_set(dev: *native_types.DoeDevice, query_type: u32, count:
 /// The query helpers allocate their own command buffer so they do not borrow
 /// or mutate the runtime's primary command buffer.
 fn vk_reset_query_pool(
-    rt: *native_types.NativeVulkanRuntime,
+    rt: *native_shared.NativeVulkanRuntime,
     query_pool: c.VkQueryPool,
     first_query: u32,
     query_count: u32,
@@ -324,19 +327,19 @@ fn vulkan_resolve_query_set(
 // ============================================================
 
 /// Extract NativeVulkanRuntime from a DoeQuerySet's vk_runtime_ref.
-fn vk_runtime_from_qs(qs: *const DoeQuerySet) ?*native_types.NativeVulkanRuntime {
+fn vk_runtime_from_qs(qs: *const DoeQuerySet) ?*native_shared.NativeVulkanRuntime {
     const ptr = qs.vk_runtime_ref orelse return null;
-    return @as(*native_types.NativeVulkanRuntime, @ptrCast(@alignCast(ptr)));
+    return @as(*native_shared.NativeVulkanRuntime, @ptrCast(@alignCast(ptr)));
 }
 
 /// Look up the VkBuffer handle for a DoeBuffer via the runtime's compute_buffers map.
-fn vk_buffer_from_doe_buffer(rt: *native_types.NativeVulkanRuntime, buf: *const native_types.DoeBuffer) ?c.VkBuffer {
+fn vk_buffer_from_doe_buffer(rt: *native_shared.NativeVulkanRuntime, buf: *const native_types.DoeBuffer) ?c.VkBuffer {
     if (buf.vk_id == 0) return null;
     const cb = rt.compute_buffers.get(buf.vk_id) orelse return null;
     return cb.buffer;
 }
 
-fn begin_one_shot_command_buffer(rt: *native_types.NativeVulkanRuntime) !c.VkCommandBuffer {
+fn begin_one_shot_command_buffer(rt: *native_shared.NativeVulkanRuntime) !c.VkCommandBuffer {
     if (!rt.has_command_pool or !rt.has_fence or rt.device == null or rt.queue == null) return error.InvalidState;
 
     var command_buffer: c.VkCommandBuffer = null;
@@ -360,7 +363,7 @@ fn begin_one_shot_command_buffer(rt: *native_types.NativeVulkanRuntime) !c.VkCom
     return command_buffer;
 }
 
-fn submit_one_shot_command_buffer(rt: *native_types.NativeVulkanRuntime, command_buffer: c.VkCommandBuffer) !void {
+fn submit_one_shot_command_buffer(rt: *native_shared.NativeVulkanRuntime, command_buffer: c.VkCommandBuffer) !void {
     if (!rt.has_fence or rt.device == null or rt.queue == null) return error.InvalidState;
 
     defer c.vkFreeCommandBuffers(rt.device, rt.command_pool, 1, @ptrCast(&command_buffer));

@@ -9,12 +9,13 @@ const has_vulkan = (builtin.os.tag == .linux);
 const abi_callback = @import("core/abi/wgpu_callback_descriptor_types.zig");
 const abi_core = @import("core/abi/wgpu_core_base_types.zig");
 const abi_feature = @import("core/abi/wgpu_feature_base_types.zig");
+const backend_capabilities = @import("backend/dropin_capabilities.zig");
 const native_shared = @import("doe_native_shared_types.zig");
 const native_types = @import("doe_native_object_types.zig");
 const native_helpers = @import("doe_native_object_helpers.zig");
-const d3d12_device_caps = @import("backend/d3d12/d3d12_device_caps.zig");
-const vk_feature_caps = if (has_vulkan) @import("backend/vulkan/vk_feature_caps.zig") else struct {};
-const vk_device_caps = if (has_vulkan) @import("backend/vulkan/vk_device_caps.zig") else struct {};
+const d3d12_device_caps = backend_capabilities.d3d12_device_caps;
+const vk_feature_caps = if (has_vulkan) backend_capabilities.vk_feature_caps else struct {};
+const vk_device_caps = if (has_vulkan) backend_capabilities.vk_device_caps else struct {};
 const vulkan_feature_cache = if (has_vulkan) @import("doe_vulkan_feature_cache.zig") else struct {};
 const DoeDevice = native_types.DoeDevice;
 const DoeAdapter = native_types.DoeAdapter;
@@ -54,8 +55,8 @@ const FEATURE_TEXTURE_COMPONENT_SWIZZLE: u32 = abi_feature.WGPUFeatureName_Textu
 // Limits: Apple Silicon hardware-specific defaults.
 //
 // maxBufferSize and maxStorageBufferBindingSize are queried from the
-// device at runtime (via metal_bridge_device_max_buffer_length) when a
-// device handle is available.  The constants below are conservative
+// device at runtime through the backend capability seam when a device
+// handle is available. The constants below are conservative
 // fallbacks for static/headless contexts.
 // ============================================================
 
@@ -152,14 +153,12 @@ pub const VULKAN_LIMITS_STATIC = abi_callback.WGPULimits{
 
 // Resolved by metal_bridge.m at link time. This file is only compiled on
 // macOS (doe_wgpu_native.zig — its only importer — is platform-guarded).
-extern fn metal_bridge_device_max_buffer_length(device: ?*anyopaque) callconv(.c) u64;
-
 // Query the actual device max buffer length from a raw MTLDevice handle.
 // The `raw` argument here must be an MTLDevice (not a DoeDevice wrapper).
 // Falls back to the static conservative value when unavailable.
 fn query_max_buffer_length(mtl_device: ?*anyopaque) u64 {
     if (mtl_device == null) return FALLBACK_MAX_BUFFER_SIZE;
-    const hw_limit = metal_bridge_device_max_buffer_length(mtl_device);
+    const hw_limit = backend_capabilities.metal_device_max_buffer_length(mtl_device);
     return if (hw_limit > 0) hw_limit else FALLBACK_MAX_BUFFER_SIZE;
 }
 

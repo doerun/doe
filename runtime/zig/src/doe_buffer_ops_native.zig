@@ -7,12 +7,14 @@ const has_vulkan = (builtin.os.tag == .linux);
 const abi_callback = @import("core/abi/wgpu_callback_descriptor_types.zig");
 const abi_core = @import("core/abi/wgpu_core_base_types.zig");
 const abi_pipeline = @import("core/abi/wgpu_pipeline_descriptor_types.zig");
+const resource_ops = @import("backend/dropin_resource_ops.zig");
 const native_shared = @import("doe_native_shared_types.zig");
 const native_types = @import("doe_native_object_types.zig");
 const native_helpers = @import("doe_native_object_helpers.zig");
 const runtime_helpers = @import("doe_native_runtime_helpers.zig");
-const d3d12_constants = @import("backend/d3d12/d3d12_constants.zig");
-const bridge = @import("backend/metal/metal_bridge_decls.zig");
+const d3d12_constants = resource_ops.d3d12_constants;
+const bridge = resource_ops.metal_bridge;
+const vk_resources = if (has_vulkan) resource_ops.vk_resources else struct {};
 const metal_bridge_buffer_contents = bridge.metal_bridge_buffer_contents;
 const metal_bridge_device_new_buffer_shared = bridge.metal_bridge_device_new_buffer_shared;
 const metal_bridge_release = bridge.metal_bridge_release;
@@ -86,7 +88,6 @@ pub export fn doeNativeDeviceCreateBuffer(dev_raw: ?*anyopaque, desc: ?*const ab
             const id: u64 = @intFromPtr(buf);
             buf.vk_id = id;
             buf.vk_runtime_ref = @ptrCast(rt);
-            const vk_resources = @import("backend/vulkan/vk_resources.zig");
             const cb = vk_resources.create_compute_buffer(rt, d.size, false) catch {
                 alloc.destroy(buf);
                 return null;
@@ -150,7 +151,6 @@ pub export fn doeNativeBufferRelease(raw: ?*anyopaque) callconv(.c) void {
             if (b.backend == .vulkan and b.vk_id != 0) {
                 if (b.vk_runtime_ref) |rt_ptr| {
                     const rt: *NativeVulkanRuntime = @ptrCast(@alignCast(rt_ptr));
-                    const vk_resources = @import("backend/vulkan/vk_resources.zig");
                     if (rt.compute_buffers.fetchRemove(b.vk_id)) |entry| {
                         vk_resources.release_compute_buffer(rt, entry.value);
                     }

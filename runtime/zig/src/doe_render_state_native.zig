@@ -1,14 +1,16 @@
 // doe_render_state_native.zig — C ABI re-exports for full render state support:
 // viewport, scissor, blend, MSAA, stencil, and depth/stencil pipeline.
 //
-// The implementations live in backend/metal/render_state.zig. On non-macOS
-// targets these exports must fail explicitly instead of silently degrading.
+// The implementations route through backend-owned drop-in render-state seams.
+// On non-macOS targets these exports must fail explicitly instead of silently
+// degrading.
 
 const builtin = @import("builtin");
 const std = @import("std");
+const backend_render_state = @import("backend/dropin_render_state.zig");
 
 const impl = if (builtin.os.tag == .macos)
-    @import("backend/metal/render_state.zig")
+    backend_render_state.metal_render_state
 else
     struct {
         fn unsupported_void(comptime name: []const u8) void {

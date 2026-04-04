@@ -14,10 +14,11 @@
 
 const std = @import("std");
 const builtin = @import("builtin");
+const external_texture_ops = @import("backend/dropin_external_texture.zig");
 const native_types = @import("doe_native_object_types.zig");
 const native_helpers = @import("doe_native_object_helpers.zig");
 const native_exports = @import("doe_native_exports.zig");
-const abi_descriptor = @import("core/abi/wgpu_descriptor_types.zig");
+const abi_callback = @import("core/abi/wgpu_callback_descriptor_types.zig");
 
 const DoeTextureView = native_types.DoeTextureView;
 
@@ -157,8 +158,7 @@ fn resolve_device_mtl(dev_raw: ?*anyopaque) ?*anyopaque {
     return dev.mtl_device;
 }
 
-const metal_ext = @import("backend/metal/metal_external_texture.zig");
-const NativePlaneLayout = metal_ext.PlaneLayout;
+const NativePlaneLayout = external_texture_ops.PlaneLayout;
 
 /// Try to extract a native handle (IOSurface/CVPixelBuffer) from the
 /// descriptor's nextInChain. Returns null if no native chain is present.
@@ -171,7 +171,7 @@ fn tryNativeImport(desc_ptr: [*]const u8, mtl_device: ?*anyopaque) ?NativePlaneL
     const chain_ptr = chain_ptr_raw orelse return null;
 
     // Interpret as WGPUChainedStruct to check sType.
-    const chain: *const abi_descriptor.WGPUChainedStruct = @ptrCast(@alignCast(chain_ptr));
+    const chain: *const abi_callback.WGPUChainedStruct = @ptrCast(@alignCast(chain_ptr));
     if (chain.sType != STYPE_EXTERNAL_TEXTURE_NATIVE) return null;
 
     // Read source type and handle from the native descriptor.
@@ -181,8 +181,8 @@ fn tryNativeImport(desc_ptr: [*]const u8, mtl_device: ?*anyopaque) ?NativePlaneL
     if (handle == null) return null;
 
     return switch (source_type) {
-        NATIVE_SOURCE_IOSURFACE => metal_ext.importIOSurface(mtl_device, handle),
-        NATIVE_SOURCE_CVPIXELBUFFER => metal_ext.importCVPixelBuffer(mtl_device, handle),
+        NATIVE_SOURCE_IOSURFACE => external_texture_ops.importIOSurface(mtl_device, handle),
+        NATIVE_SOURCE_CVPIXELBUFFER => external_texture_ops.importCVPixelBuffer(mtl_device, handle),
         else => null,
     };
 }
@@ -215,7 +215,7 @@ fn createFromNativeImport(
             if (inst.ref_count > 1) inst.ref_count -= 1;
         }
         // Release the imported MTLTexture handles on allocation failure.
-        metal_ext.releasePlanes(imported);
+        external_texture_ops.releasePlanes(imported);
         return null;
     };
     ext.* = .{
@@ -281,9 +281,8 @@ pub export fn doeNativeExternalTextureRelease(raw: ?*anyopaque) callconv(.c) voi
         if (is_native) {
             // Native-imported: plane0/plane1 are raw MTLTexture handles.
             if (comptime builtin.os.tag == .macos) {
-                const bridge = @import("backend/metal/metal_bridge_decls.zig");
-                if (plane0 != null) bridge.metal_bridge_release(plane0);
-                if (plane1 != null) bridge.metal_bridge_release(plane1);
+                if (plane0 != null) external_texture_ops.metal_bridge_release(plane0);
+                if (plane1 != null) external_texture_ops.metal_bridge_release(plane1);
             }
         } else {
             // DoeTextureView path: release via the standard view lifecycle.

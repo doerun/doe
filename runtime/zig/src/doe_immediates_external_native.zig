@@ -4,8 +4,8 @@
 
 const std = @import("std");
 const resource_table_procs = @import("wgpu_p1_resource_table_procs.zig");
-const native_types = @import("doe_native_types.zig");
-const native_helpers = @import("doe_native_helpers.zig");
+const native_types = @import("doe_native_object_types.zig");
+const native_helpers = @import("doe_native_object_helpers.zig");
 const render_bundle = @import("render_bundle.zig");
 
 const DoePipelineLayout = native_types.DoePipelineLayout;

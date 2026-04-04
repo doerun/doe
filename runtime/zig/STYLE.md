@@ -36,6 +36,13 @@ This guide is the Zig style contract for `zig`.
   rather than importing upward.
 - Backend-specific code must not import sibling backends directly. Cross-backend
   sharing belongs in `backend/common`.
+- Non-backend implementation files must not import `backend/metal/*`,
+  `backend/vulkan/*`, or `backend/d3d12/*` directly. Route those dependencies
+  through backend-owned seam modules under `src/backend/`.
+- Non-backend implementation files must reach backend-specific behavior through
+  backend-owned seam modules such as `backend/dropin_*.zig`, not by importing
+  `backend/metal/*`, `backend/vulkan/*`, or `backend/d3d12/*` directly. The
+  import fence enforces this boundary.
 - Keep `doe_wgsl` self-contained except for explicit shared proof/contracts.
 - Keep `quirk` limited to quirk logic plus shared contracts/proof inputs; it
   should not depend on backend execution modules.

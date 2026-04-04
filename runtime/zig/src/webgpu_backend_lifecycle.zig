@@ -1,7 +1,8 @@
 const std = @import("std");
 const model_profile = @import("model_profile.zig");
-const abi_base = @import("core/abi/wgpu_base_types.zig");
-const abi_descriptor = @import("core/abi/wgpu_descriptor_types.zig");
+const abi_core = @import("core/abi/wgpu_core_base_types.zig");
+const abi_feature = @import("core/abi/wgpu_feature_base_types.zig");
+const abi_callback = @import("core/abi/wgpu_callback_descriptor_types.zig");
 const abi_records = @import("core/abi/wgpu_runtime_records.zig");
 const loader = @import("core/abi/wgpu_loader.zig");
 const p0_procs_mod = @import("wgpu_p0_procs.zig");
@@ -9,7 +10,7 @@ const surface_procs_mod = @import("full/surface/wgpu_surface_procs.zig");
 const texture_procs_mod = @import("wgpu_texture_procs.zig");
 const surface_macos_mod = @import("full/surface/wgpu_surface_macos.zig");
 
-pub fn preferredBackendType(profile: model_profile.DeviceProfile) abi_descriptor.WGPUBackendType {
+pub fn preferredBackendType(profile: model_profile.DeviceProfile) abi_callback.WGPUBackendType {
     return switch (profile.api) {
         .vulkan => .vulkan,
         .metal => .metal,
@@ -18,7 +19,7 @@ pub fn preferredBackendType(profile: model_profile.DeviceProfile) abi_descriptor
     };
 }
 
-pub fn backendTypeName(backend_type: abi_descriptor.WGPUBackendType) []const u8 {
+pub fn backendTypeName(backend_type: abi_callback.WGPUBackendType) []const u8 {
     return switch (backend_type) {
         .vulkan => "vulkan",
         .metal => "metal",
@@ -173,11 +174,11 @@ pub fn deinit(self: anytype) void {
 
 pub fn captureAdapterLimits(self: anytype) !void {
     self.core.has_adapter_limits = false;
-    self.core.adapter_limits = abi_descriptor.initLimits();
+    self.core.adapter_limits = abi_callback.initLimits();
     const cap = self.core.capability_procs orelse return;
     const get_limits = cap.adapter_get_limits orelse return;
     if (self.core.adapter == null) return;
-    if (get_limits(self.core.adapter.?, &self.core.adapter_limits) != abi_base.WGPUStatus_Success) {
+    if (get_limits(self.core.adapter.?, &self.core.adapter_limits) != abi_core.WGPUStatus_Success) {
         return error.AdapterLimitsQueryFailed;
     }
     self.core.has_adapter_limits = true;
@@ -185,30 +186,30 @@ pub fn captureAdapterLimits(self: anytype) !void {
 
 pub fn captureDeviceLimits(self: anytype) !void {
     self.core.has_device_limits = false;
-    self.core.device_limits = abi_descriptor.initLimits();
+    self.core.device_limits = abi_callback.initLimits();
     const cap = self.core.capability_procs orelse return;
     const get_limits = cap.device_get_limits orelse return;
     if (self.core.device == null) return;
-    if (get_limits(self.core.device.?, &self.core.device_limits) != abi_base.WGPUStatus_Success) {
+    if (get_limits(self.core.device.?, &self.core.device_limits) != abi_core.WGPUStatus_Success) {
         return error.DeviceLimitsQueryFailed;
     }
     self.core.has_device_limits = true;
 }
 
-pub fn requestAdapter(self: anytype) !abi_base.WGPUAdapter {
+pub fn requestAdapter(self: anytype) !abi_core.WGPUAdapter {
     var state = abi_records.RequestState{};
-    const request_info = abi_descriptor.WGPURequestAdapterCallbackInfo{
+    const request_info = abi_callback.WGPURequestAdapterCallbackInfo{
         .nextInChain = null,
-        .mode = abi_descriptor.WGPUCallbackMode_AllowProcessEvents,
+        .mode = abi_callback.WGPUCallbackMode_AllowProcessEvents,
         .callback = loader.adapterCallback,
         .userdata1 = &state,
         .userdata2 = null,
     };
-    const options = abi_descriptor.WGPURequestAdapterOptions{
+    const options = abi_callback.WGPURequestAdapterOptions{
         .nextInChain = null,
         .featureLevel = .undefined,
         .powerPreference = .undefined,
-        .forceFallbackAdapter = abi_base.WGPU_FALSE,
+        .forceFallbackAdapter = abi_core.WGPU_FALSE,
         .backendType = self.core.requested_backend_type,
         .compatibleSurface = null,
     };
@@ -238,45 +239,45 @@ pub fn requestAdapter(self: anytype) !abi_base.WGPUAdapter {
     };
 }
 
-pub fn requestDevice(self: anytype) !abi_base.WGPUDevice {
+pub fn requestDevice(self: anytype) !abi_core.WGPUDevice {
     self.clearUncapturedError();
     var state = abi_records.DeviceRequestState{};
-    const request_info = abi_descriptor.WGPURequestDeviceCallbackInfo{
+    const request_info = abi_callback.WGPURequestDeviceCallbackInfo{
         .nextInChain = null,
-        .mode = abi_descriptor.WGPUCallbackMode_AllowProcessEvents,
+        .mode = abi_callback.WGPUCallbackMode_AllowProcessEvents,
         .callback = loader.deviceRequestCallback,
         .userdata1 = &state,
         .userdata2 = null,
     };
-    var required_features = [_]abi_base.WGPUFeatureName{undefined} ** 7;
+    var required_features = [_]abi_feature.WGPUFeatureName{undefined} ** 7;
     var feature_count: usize = 0;
-    const has_resource_table_feature = self.core.procs.?.wgpuAdapterHasFeature(self.core.adapter.?, abi_base.WGPUFeatureName_ChromiumExperimentalSamplingResourceTable) != abi_base.WGPU_FALSE;
+    const has_resource_table_feature = self.core.procs.?.wgpuAdapterHasFeature(self.core.adapter.?, abi_feature.WGPUFeatureName_ChromiumExperimentalSamplingResourceTable) != abi_core.WGPU_FALSE;
     if (self.core.has_timestamp_query) {
-        required_features[feature_count] = abi_base.WGPUFeatureName_TimestampQuery;
+        required_features[feature_count] = abi_feature.WGPUFeatureName_TimestampQuery;
         feature_count += 1;
     }
     if (self.core.has_timestamp_inside_passes) {
-        required_features[feature_count] = abi_base.WGPUFeatureName_ChromiumExperimentalTimestampQueryInsidePasses;
+        required_features[feature_count] = abi_feature.WGPUFeatureName_ChromiumExperimentalTimestampQueryInsidePasses;
         feature_count += 1;
     }
     if (self.core.has_multi_draw_indirect) {
-        required_features[feature_count] = abi_base.WGPUFeatureName_MultiDrawIndirect;
+        required_features[feature_count] = abi_feature.WGPUFeatureName_MultiDrawIndirect;
         feature_count += 1;
     }
     if (self.core.has_pixel_local_storage_coherent) {
-        required_features[feature_count] = abi_base.WGPUFeatureName_PixelLocalStorageCoherent;
+        required_features[feature_count] = abi_feature.WGPUFeatureName_PixelLocalStorageCoherent;
         feature_count += 1;
     }
     if (self.core.has_pixel_local_storage_non_coherent) {
-        required_features[feature_count] = abi_base.WGPUFeatureName_PixelLocalStorageNonCoherent;
+        required_features[feature_count] = abi_feature.WGPUFeatureName_PixelLocalStorageNonCoherent;
         feature_count += 1;
     }
     if (self.core.adapter_has_shader_f16) {
-        required_features[feature_count] = abi_base.WGPUFeatureName_ShaderF16;
+        required_features[feature_count] = abi_feature.WGPUFeatureName_ShaderF16;
         feature_count += 1;
     }
     if (has_resource_table_feature) {
-        required_features[feature_count] = abi_base.WGPUFeatureName_ChromiumExperimentalSamplingResourceTable;
+        required_features[feature_count] = abi_feature.WGPUFeatureName_ChromiumExperimentalSamplingResourceTable;
         feature_count += 1;
     }
     timestampLog(self, "request_device required_features timestamp={} inside_passes={} multi_draw={} pls_coherent={} pls_noncoherent={} shader_f16={} resource_table={} count={} adapter_limits={} max_storage_binding={} max_uniform_binding={} max_buffer={}\n", .{
@@ -293,7 +294,7 @@ pub fn requestDevice(self: anytype) !abi_base.WGPUDevice {
         self.core.adapter_limits.maxUniformBufferBindingSize,
         self.core.adapter_limits.maxBufferSize,
     });
-    const device_desc = abi_descriptor.WGPUDeviceDescriptor{
+    const device_desc = abi_callback.WGPUDeviceDescriptor{
         .nextInChain = null,
         .label = loader.emptyStringView(),
         .requiredFeatureCount = feature_count,
@@ -302,7 +303,7 @@ pub fn requestDevice(self: anytype) !abi_base.WGPUDevice {
         .defaultQueue = .{ .nextInChain = null, .label = loader.emptyStringView() },
         .deviceLostCallbackInfo = .{
             .nextInChain = null,
-            .mode = abi_descriptor.WGPUCallbackMode_AllowProcessEvents,
+            .mode = abi_callback.WGPUCallbackMode_AllowProcessEvents,
             .callback = null,
             .userdata1 = null,
             .userdata2 = null,

@@ -12,9 +12,12 @@
 const std = @import("std");
 const builtin = @import("builtin");
 const has_vulkan = (builtin.os.tag == .linux);
-const native_types = @import("doe_native_types.zig");
-const native_helpers = @import("doe_native_helpers.zig");
-const vk_surf = if (has_vulkan) @import("backend/vulkan/vulkan_surface.zig") else struct {};
+const backend_surface_ops = @import("backend/dropin_surface_ops.zig");
+const native_types = @import("doe_native_object_types.zig");
+const native_shared = @import("doe_native_shared_types.zig");
+const native_helpers = @import("doe_native_object_helpers.zig");
+const native_rt_helpers = @import("doe_native_runtime_helpers.zig");
+const vk_surf = backend_surface_ops;
 
 const alloc = native_helpers.alloc;
 const make = native_helpers.make;
@@ -25,7 +28,7 @@ const model_surface_control_types = @import("model_surface_control_types.zig");
 
 const DoeDevice = native_types.DoeDevice;
 const DoeTexture = native_types.DoeTexture;
-const NativeVulkanRuntime = native_types.NativeVulkanRuntime;
+const NativeVulkanRuntime = native_shared.NativeVulkanRuntime;
 
 const MAGIC_SURFACE: u32 = 0xD0E1_0013;
 
@@ -36,7 +39,7 @@ pub const DoeSurface = struct {
     pub const TYPE_MAGIC = MAGIC_SURFACE;
     magic: u32 = TYPE_MAGIC,
     ref_count: u32 = 1,
-    backend: native_types.BackendKind = .metal,
+    backend: native_shared.BackendKind = .metal,
     handle: u64 = 0,
     vk_runtime_ref: ?*anyopaque = null,
     current_tex: ?*DoeTexture = null,
@@ -68,7 +71,7 @@ pub export fn doeNativeInstanceCreateSurface(
         .handle = handle,
     };
 
-    const rt = native_helpers.device_vk_runtime(dev) orelse {
+    const rt = native_rt_helpers.device_vk_runtime(dev) orelse {
         alloc.destroy(surf);
         return null;
     };

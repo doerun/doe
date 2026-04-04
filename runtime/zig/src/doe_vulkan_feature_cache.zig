@@ -1,10 +1,11 @@
 const std = @import("std");
 const builtin = @import("builtin");
 const has_vulkan = (builtin.os.tag == .linux);
-const vk_feature_caps = if (has_vulkan) @import("backend/vulkan/vk_feature_caps.zig") else struct {
+const backend_capabilities = @import("backend/dropin_capabilities.zig");
+const vk_feature_caps = if (has_vulkan) backend_capabilities.vk_feature_caps else struct {
     pub const VulkanFeatureCaps = struct {};
 };
-const vk_device_caps = if (has_vulkan) @import("backend/vulkan/vk_device_caps.zig") else struct {
+const vk_device_caps = if (has_vulkan) backend_capabilities.vk_device_caps else struct {
     pub const VulkanDeviceCaps = struct {};
 };
 

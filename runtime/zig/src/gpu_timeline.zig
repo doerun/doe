@@ -19,7 +19,7 @@
 
 const std = @import("std");
 const abi_base = @import("core/abi/wgpu_handle_types.zig");
-const abi_descriptor = @import("core/abi/wgpu_descriptor_types.zig");
+const abi_callback = @import("core/abi/wgpu_callback_descriptor_types.zig");
 const callback_dispatch = @import("runtime/callback_dispatch.zig");
 
 // ============================================================
@@ -65,7 +65,7 @@ const PendingMap = struct {
 
 const PendingWorkDone = struct {
     required_value: u64,
-    cb: ?*const fn (abi_descriptor.WGPUQueueWorkDoneStatus, abi_base.WGPUStringView, ?*anyopaque, ?*anyopaque) callconv(.c) void,
+    cb: ?*const fn (abi_callback.WGPUQueueWorkDoneStatus, abi_base.WGPUStringView, ?*anyopaque, ?*anyopaque) callconv(.c) void,
     userdata1: ?*anyopaque,
     userdata2: ?*anyopaque,
 };
@@ -166,7 +166,7 @@ pub const GpuTimeline = struct {
     // Register an onSubmittedWorkDone callback for the current timeline value.
     pub fn register_work_done(
         self: *GpuTimeline,
-        cb: ?*const fn (abi_descriptor.WGPUQueueWorkDoneStatus, abi_base.WGPUStringView, ?*anyopaque, ?*anyopaque) callconv(.c) void,
+        cb: ?*const fn (abi_callback.WGPUQueueWorkDoneStatus, abi_base.WGPUStringView, ?*anyopaque, ?*anyopaque) callconv(.c) void,
         userdata1: ?*anyopaque,
         userdata2: ?*anyopaque,
     ) void {

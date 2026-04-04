@@ -2,9 +2,11 @@
 // Sharded from doe_wgpu_native.zig to stay under the line-limit policy.
 
 const std = @import("std");
-const abi_base = @import("core/abi/wgpu_base_types.zig");
-const native_types = @import("doe_native_types.zig");
-const native_helpers = @import("doe_native_helpers.zig");
+const abi_texture = @import("core/abi/wgpu_texture_base_types.zig");
+const native_types = @import("doe_native_object_types.zig");
+const native_shared = @import("doe_native_shared_types.zig");
+const native_cmds = @import("doe_native_command_types.zig");
+const native_helpers = @import("doe_native_object_helpers.zig");
 const bundle = @import("render_bundle.zig");
 
 const alloc = native_helpers.alloc;
@@ -32,7 +34,7 @@ pub export fn doeNativeDeviceCreateRenderBundleEncoder(
     _ = cast(DoeDevice, dev_raw) orelse return null;
     const d = desc orelse return null;
 
-    const color_fmt: abi_base.WGPUTextureFormat = if (d.colorFormatCount > 0)
+    const color_fmt: abi_texture.WGPUTextureFormat = if (d.colorFormatCount > 0)
         d.colorFormats[0]
     else
         0;
@@ -253,9 +255,9 @@ pub export fn doeNativeRenderBundleEncoderPopDebugGroup(
 // Render pass: executeBundles
 // ============================================================
 
-const MAX_BIND = native_types.MAX_BIND;
-const MAX_FLAT_BIND = native_types.MAX_FLAT_BIND;
-const MAX_VERTEX_BUFFERS = native_types.MAX_VERTEX_BUFFERS;
+const MAX_BIND = native_shared.MAX_BIND;
+const MAX_FLAT_BIND = native_shared.MAX_FLAT_BIND;
+const MAX_VERTEX_BUFFERS = native_shared.MAX_VERTEX_BUFFERS;
 
 // Accumulated render state for bundle replay. Tracks pipeline, bind groups,
 // vertex buffers, and index buffer across commands within a bundle so that
@@ -288,7 +290,7 @@ const BundleReplayState = struct {
 fn bundleRenderPassCmd(
     state: *const BundleReplayState,
     pass: *const DoeRenderPass,
-) native_types.RecordedCmd {
+) native_cmds.RecordedCmd {
     const pipeline = pass.pipeline;
     return .{ .render_pass = .{
         .pso = state.pso,

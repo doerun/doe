@@ -2,16 +2,18 @@
 // Sharded from doe_render_native.zig for file-size compliance.
 
 const std = @import("std");
+const resource_ops = @import("backend/dropin_resource_ops.zig");
 const model_render_types = @import("model_render_types.zig");
-const native_types = @import("doe_native_types.zig");
-const native_helpers = @import("doe_native_helpers.zig");
-const d3d12_formats = @import("backend/d3d12/d3d12_formats.zig");
+const native_types = @import("doe_native_object_types.zig");
+const native_shared = @import("doe_native_shared_types.zig");
+const native_helpers = @import("doe_native_object_helpers.zig");
+const d3d12_formats = resource_ops.d3d12_formats;
 
 const alloc = native_helpers.alloc;
 const make = native_helpers.make;
 const cast = native_helpers.cast;
 const toOpaque = native_helpers.toOpaque;
-const ERR_CAP = native_types.ERR_CAP;
+const ERR_CAP = native_shared.ERR_CAP;
 
 const DoeDevice = native_types.DoeDevice;
 const DoeShaderModule = native_types.DoeShaderModule;

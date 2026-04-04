@@ -3,10 +3,12 @@
 // Render Pipeline ops sharded to doe_render_pipeline_native.zig.
 
 const std = @import("std");
-const abi_base = @import("core/abi/wgpu_base_types.zig");
-const abi_descriptor = @import("core/abi/wgpu_descriptor_types.zig");
-const native_types = @import("doe_native_types.zig");
-const native_helpers = @import("doe_native_helpers.zig");
+const abi_texture = @import("core/abi/wgpu_texture_base_types.zig");
+const abi_pipeline = @import("core/abi/wgpu_pipeline_descriptor_types.zig");
+const native_types = @import("doe_native_object_types.zig");
+const native_shared = @import("doe_native_shared_types.zig");
+const native_cmds = @import("doe_native_command_types.zig");
+const native_helpers = @import("doe_native_object_helpers.zig");
 
 const alloc = native_helpers.alloc;
 const make = native_helpers.make;
@@ -24,12 +26,12 @@ pub fn d3d12TextureViewSwizzleMode(
     swizzle_b: u32,
     swizzle_a: u32,
 ) D3D12TextureViewSwizzleMode {
-    const is_identity = (swizzle_r == abi_base.WGPUTextureComponentSwizzle_Red or swizzle_r == 0) and
-        (swizzle_g == abi_base.WGPUTextureComponentSwizzle_Green or swizzle_g == 0) and
-        (swizzle_b == abi_base.WGPUTextureComponentSwizzle_Blue or swizzle_b == 0) and
-        (swizzle_a == abi_base.WGPUTextureComponentSwizzle_Alpha or swizzle_a == 0);
-    const wants_storage = (usage & abi_base.WGPUTextureUsage_StorageBinding) != 0 and
-        (usage & abi_base.WGPUTextureUsage_TextureBinding) == 0;
+    const is_identity = (swizzle_r == abi_texture.WGPUTextureComponentSwizzle_Red or swizzle_r == 0) and
+        (swizzle_g == abi_texture.WGPUTextureComponentSwizzle_Green or swizzle_g == 0) and
+        (swizzle_b == abi_texture.WGPUTextureComponentSwizzle_Blue or swizzle_b == 0) and
+        (swizzle_a == abi_texture.WGPUTextureComponentSwizzle_Alpha or swizzle_a == 0);
+    const wants_storage = (usage & abi_texture.WGPUTextureUsage_StorageBinding) != 0 and
+        (usage & abi_texture.WGPUTextureUsage_TextureBinding) == 0;
     if (wants_storage and !is_identity) return .unsupported_storage;
     if (is_identity) return .identity;
     return .swizzled_sampled;
@@ -75,7 +77,7 @@ fn reserve_render_draw(pass: *DoeRenderPass) bool {
 // Render Pass
 // ============================================================
 
-pub export fn doeNativeCommandEncoderBeginRenderPass(enc_raw: ?*anyopaque, desc: ?*const abi_descriptor.WGPURenderPassDescriptor) callconv(.c) ?*anyopaque {
+pub export fn doeNativeCommandEncoderBeginRenderPass(enc_raw: ?*anyopaque, desc: ?*const abi_pipeline.WGPURenderPassDescriptor) callconv(.c) ?*anyopaque {
     const enc = cast(DoeCommandEncoder, enc_raw) orelse return null;
     const pass = make(DoeRenderPass) orelse return null;
     pass.* = .{ .enc = enc };
@@ -225,9 +227,9 @@ pub export fn doeNativeRenderPassDraw(pass_raw: ?*anyopaque, vertex_count: u32, 
         .first_vertex = first_vertex,
         .first_instance = first_instance,
         .vertex_buffers = blk: {
-            var buffers: [native_types.MAX_VERTEX_BUFFERS]?*anyopaque = [_]?*anyopaque{null} ** native_types.MAX_VERTEX_BUFFERS;
+            var buffers: [native_shared.MAX_VERTEX_BUFFERS]?*anyopaque = [_]?*anyopaque{null} ** native_shared.MAX_VERTEX_BUFFERS;
             var i: usize = 0;
-            while (i < native_types.MAX_VERTEX_BUFFERS) : (i += 1) {
+            while (i < native_shared.MAX_VERTEX_BUFFERS) : (i += 1) {
                 buffers[i] = if (pass.vertex_buffers[i]) |buffer| buffer.mtl else null;
             }
             break :blk buffers;
@@ -248,7 +250,7 @@ pub export fn doeNativeRenderPassDraw(pass_raw: ?*anyopaque, vertex_count: u32, 
 
 pub export fn doeNativeRenderPassSetVertexBuffer(pass_raw: ?*anyopaque, slot: u32, buffer_raw: ?*anyopaque, offset: u64, size: u64) callconv(.c) void {
     const pass = cast(DoeRenderPass, pass_raw) orelse return;
-    if (slot >= native_types.MAX_VERTEX_BUFFERS) return;
+    if (slot >= native_shared.MAX_VERTEX_BUFFERS) return;
     pass.vertex_buffers[slot] = cast(DoeBuffer, buffer_raw);
     pass.vertex_buffer_offsets[slot] = offset;
     pass.vertex_buffer_sizes[slot] = size;
@@ -264,7 +266,7 @@ pub export fn doeNativeRenderPassSetIndexBuffer(pass_raw: ?*anyopaque, buffer_ra
 
 pub export fn doeNativeRenderPassSetBindGroup(pass_raw: ?*anyopaque, group_index: u32, group_raw: ?*anyopaque, dynamic_offset_count: usize, dynamic_offsets: ?[*]const u32) callconv(.c) void {
     const pass = cast(DoeRenderPass, pass_raw) orelse return;
-    if (group_index >= native_types.MAX_RENDER_BIND_GROUPS) return;
+    if (group_index >= native_shared.MAX_RENDER_BIND_GROUPS) return;
     pass.bind_groups[group_index] = cast(DoeBindGroup, group_raw);
     _ = dynamic_offset_count;
     _ = dynamic_offsets;
@@ -312,9 +314,9 @@ pub export fn doeNativeRenderPassDrawIndexed(pass_raw: ?*anyopaque, index_count:
         .first_index = first_index,
         .base_vertex = base_vertex,
         .vertex_buffers = blk: {
-            var buffers: [native_types.MAX_VERTEX_BUFFERS]?*anyopaque = [_]?*anyopaque{null} ** native_types.MAX_VERTEX_BUFFERS;
+            var buffers: [native_shared.MAX_VERTEX_BUFFERS]?*anyopaque = [_]?*anyopaque{null} ** native_shared.MAX_VERTEX_BUFFERS;
             var i: usize = 0;
-            while (i < native_types.MAX_VERTEX_BUFFERS) : (i += 1) {
+            while (i < native_shared.MAX_VERTEX_BUFFERS) : (i += 1) {
                 buffers[i] = if (pass.vertex_buffers[i]) |buffer| buffer.mtl else null;
             }
             break :blk buffers;
@@ -333,7 +335,7 @@ pub export fn doeNativeRenderPassDrawIndexed(pass_raw: ?*anyopaque, index_count:
     } }) catch std.debug.panic("doe_render_native: OOM recording indexed render command", .{});
 }
 
-fn base_render_cmd(pass: *DoeRenderPass, pip: *DoeRenderPipeline) std.meta.TagPayloadByName(native_types.RecordedCmd, "render_pass") {
+fn base_render_cmd(pass: *DoeRenderPass, pip: *DoeRenderPipeline) std.meta.TagPayloadByName(native_cmds.RecordedCmd, "render_pass") {
     return .{
         .pso = pip.mtl_pso,
         .root_signature = pip.backend_root_signature,
@@ -359,9 +361,9 @@ fn base_render_cmd(pass: *DoeRenderPass, pip: *DoeRenderPipeline) std.meta.TagPa
         .first_vertex = 0,
         .first_instance = 0,
         .vertex_buffers = blk: {
-            var buffers: [native_types.MAX_VERTEX_BUFFERS]?*anyopaque = [_]?*anyopaque{null} ** native_types.MAX_VERTEX_BUFFERS;
+            var buffers: [native_shared.MAX_VERTEX_BUFFERS]?*anyopaque = [_]?*anyopaque{null} ** native_shared.MAX_VERTEX_BUFFERS;
             var i: usize = 0;
-            while (i < native_types.MAX_VERTEX_BUFFERS) : (i += 1) {
+            while (i < native_shared.MAX_VERTEX_BUFFERS) : (i += 1) {
                 buffers[i] = if (pass.vertex_buffers[i]) |buffer| buffer.mtl else null;
             }
             break :blk buffers;

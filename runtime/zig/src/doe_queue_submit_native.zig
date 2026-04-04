@@ -1,10 +1,16 @@
 const builtin = @import("builtin");
 const has_vulkan = (builtin.os.tag == .linux);
 const std = @import("std");
-const abi_base = @import("core/abi/wgpu_base_types.zig");
-const abi_descriptor = @import("core/abi/wgpu_descriptor_types.zig");
-const native_types = @import("doe_native_types.zig");
-const native_helpers = @import("doe_native_helpers.zig");
+const abi_core = @import("core/abi/wgpu_core_base_types.zig");
+const abi_callback = @import("core/abi/wgpu_callback_descriptor_types.zig");
+const abi_copy = @import("core/abi/wgpu_copy_descriptor_types.zig");
+const abi_texture = @import("core/abi/wgpu_texture_base_types.zig");
+const queue_submit_ops = @import("backend/dropin_queue_submit.zig");
+const native_types = @import("doe_native_object_types.zig");
+const native_shared = @import("doe_native_shared_types.zig");
+const native_cmds = @import("doe_native_command_types.zig");
+const native_helpers = @import("doe_native_object_helpers.zig");
+const native_rt_helpers = @import("doe_native_runtime_helpers.zig");
 const native_exports = @import("doe_native_exports.zig");
 const queue_flush_breakdown = @import("doe_queue_flush_breakdown.zig");
 const error_scope = @import("error_scope.zig");
@@ -15,15 +21,15 @@ const DoeQueue = native_types.DoeQueue;
 const DoeBuffer = native_types.DoeBuffer;
 const DoeCommandBuffer = native_types.DoeCommandBuffer;
 const DoeTexture = native_types.DoeTexture;
-const MAX_DEFERRED_COPIES = native_types.MAX_DEFERRED_COPIES;
-const MAX_DEFERRED_RESOLVES = native_types.MAX_DEFERRED_RESOLVES;
-const VERTEX_BUFFER_SLOT_BASE = native_types.VERTEX_BUFFER_SLOT_BASE;
-const MAX_FLAT_BIND = native_types.MAX_FLAT_BIND;
-const d3d12_native_render_pass = @import("backend/d3d12/commands/d3d12_native_render_pass.zig");
+const MAX_DEFERRED_COPIES = native_cmds.MAX_DEFERRED_COPIES;
+const MAX_DEFERRED_RESOLVES = native_cmds.MAX_DEFERRED_RESOLVES;
+const VERTEX_BUFFER_SLOT_BASE = native_shared.VERTEX_BUFFER_SLOT_BASE;
+const MAX_FLAT_BIND = native_shared.MAX_FLAT_BIND;
+const d3d12_native_render_pass = queue_submit_ops.d3d12_native_render_pass;
 const emit_msl = @import("doe_wgsl/emit_msl_ir.zig");
 const MSL_SIZES_SLOT: u32 = emit_msl.MSL_SIZES_SLOT;
 const SIZES_BUF_BYTES: usize = (MSL_SIZES_SLOT + 1) * @sizeOf(u32);
-const bridge = @import("backend/metal/metal_bridge_decls.zig");
+const bridge = queue_submit_ops.metal_bridge;
 const metal_bridge_buffer_contents = bridge.metal_bridge_buffer_contents;
 const metal_bridge_blit_encoder_copy_buffer_to_texture = bridge.metal_bridge_blit_encoder_copy_buffer_to_texture;
 const metal_bridge_blit_encoder_copy_texture_to_buffer = bridge.metal_bridge_blit_encoder_copy_texture_to_buffer;
@@ -90,7 +96,7 @@ fn read_indirect_dispatch_counts(buffer_raw: ?*anyopaque, offset: u64) ?struct {
 }
 
 fn submit_d3d12_commands(q: *DoeQueue, count: usize, cmd_bufs: [*]const ?*anyopaque) void {
-    const rt = native_helpers.device_d3d12_runtime(q.dev) orelse return;
+    const rt = native_rt_helpers.device_d3d12_runtime(q.dev) orelse return;
     _ = rt.flush_queue() catch return;
 
     const cmd_allocator = d3d12_bridge_device_create_command_allocator(rt.device) orelse return;
@@ -475,7 +481,7 @@ pub export fn doeNativeQueueFlush(q_raw: ?*anyopaque) callconv(.c) void {
     const q = cast(DoeQueue, q_raw) orelse return;
     if (q.dev.backend == .vulkan) {
         if (comptime has_vulkan) {
-            const rt = native_helpers.device_vk_runtime(q.dev) orelse return;
+            const rt = native_rt_helpers.device_vk_runtime(q.dev) orelse return;
             _ = rt.flush_queue() catch |err| {
                 std.debug.print("warn: doe_queue_submit: queue flush: {s}\n", .{@errorName(err)});
             };
@@ -532,7 +538,7 @@ pub export fn doeNativeQueueWriteBuffer(q_raw: ?*anyopaque, buf_raw: ?*anyopaque
             }
             // Fallback: HashMap lookup for buffers created before cached-pointer support.
             if (buf.vk_id != 0) {
-                const rt = native_helpers.device_vk_runtime(q.dev) orelse return;
+                const rt = native_rt_helpers.device_vk_runtime(q.dev) orelse return;
                 if (rt.compute_buffers.get(buf.vk_id)) |cb| {
                     if (cb.mapped) |ptr| {
                         const o: usize = @intCast(offset);
@@ -551,16 +557,16 @@ pub export fn doeNativeQueueWriteBuffer(q_raw: ?*anyopaque, buf_raw: ?*anyopaque
 
 fn copy_texture_for_browser_passthrough(
     q: *DoeQueue,
-    source: *const abi_descriptor.WGPUTexelCopyTextureInfo,
-    destination: *const abi_descriptor.WGPUTexelCopyTextureInfo,
-    copy_size: *const abi_descriptor.WGPUExtent3D,
+    source: *const abi_copy.WGPUTexelCopyTextureInfo,
+    destination: *const abi_copy.WGPUTexelCopyTextureInfo,
+    copy_size: *const abi_copy.WGPUExtent3D,
 ) void {
     const src_texture = cast(DoeTexture, source.texture) orelse return;
     const dst_texture = cast(DoeTexture, destination.texture) orelse return;
 
     if (q.dev.backend == .vulkan) {
         if (comptime has_vulkan) {
-            const rt = native_helpers.device_vk_runtime(q.dev) orelse return;
+            const rt = native_rt_helpers.device_vk_runtime(q.dev) orelse return;
             if (src_texture.vk_id == 0 or dst_texture.vk_id == 0) return;
             rt.texture_copy(.{
                 .src_handle = src_texture.vk_id,
@@ -613,10 +619,10 @@ fn copy_texture_for_browser_passthrough(
 
 pub export fn doeNativeQueueCopyTextureForBrowser(
     queue_raw: ?*anyopaque,
-    source_raw: ?*const abi_descriptor.WGPUTexelCopyTextureInfo,
-    destination_raw: ?*const abi_descriptor.WGPUTexelCopyTextureInfo,
-    copy_size_raw: ?*const abi_descriptor.WGPUExtent3D,
-    options_raw: ?*const abi_descriptor.WGPUCopyTextureForBrowserOptions,
+    source_raw: ?*const abi_copy.WGPUTexelCopyTextureInfo,
+    destination_raw: ?*const abi_copy.WGPUTexelCopyTextureInfo,
+    copy_size_raw: ?*const abi_copy.WGPUExtent3D,
+    options_raw: ?*const abi_copy.WGPUCopyTextureForBrowserOptions,
 ) callconv(.c) void {
     _ = options_raw;
     const queue = cast(DoeQueue, queue_raw) orelse return;
@@ -638,7 +644,7 @@ pub export fn doeNativeQueueRelease(raw: ?*anyopaque) callconv(.c) void {
         }
         if (q.dev.backend == .vulkan) {
             if (comptime has_vulkan) {
-                if (native_helpers.device_vk_runtime(q.dev)) |rt| {
+                if (native_rt_helpers.device_vk_runtime(q.dev)) |rt| {
                     _ = rt.flush_queue() catch |err| {
                         std.debug.print("warn: doe_queue_submit: flush on queue release: {s}\n", .{@errorName(err)});
                     };
@@ -669,7 +675,7 @@ pub export fn doeNativeQueueAddRef(raw: ?*anyopaque) callconv(.c) void {
 fn flush_pending_work_dropin_sync(q: *DoeQueue) void {
     if (q.dev.backend == .vulkan) {
         if (comptime has_vulkan) {
-            if (native_helpers.device_vk_runtime(q.dev)) |rt| {
+            if (native_rt_helpers.device_vk_runtime(q.dev)) |rt| {
                 _ = rt.flush_queue() catch |err| {
                     std.debug.print("warn: doe_queue_submit: dropin sync flush: {s}\n", .{@errorName(err)});
                 };
@@ -702,7 +708,7 @@ fn flush_pending_work_dropin_sync(q: *DoeQueue) void {
 const MAX_GLOBAL_WORK_DONE: usize = 128;
 
 const WorkDoneEntry = struct {
-    cb: ?*const fn (abi_descriptor.WGPUQueueWorkDoneStatus, abi_base.WGPUStringView, ?*anyopaque, ?*anyopaque) callconv(.c) void,
+    cb: ?*const fn (abi_callback.WGPUQueueWorkDoneStatus, abi_core.WGPUStringView, ?*anyopaque, ?*anyopaque) callconv(.c) void,
     userdata1: ?*anyopaque,
     userdata2: ?*anyopaque,
 };
@@ -723,7 +729,7 @@ pub fn drain_global_work_done() void {
 
 /// For the native drop-in ABI, flush before invoking the callback so
 /// standalone consumers observe real completion before they map/read back.
-pub export fn doeNativeQueueOnSubmittedWorkDone(q_raw: ?*anyopaque, info: abi_descriptor.WGPUQueueWorkDoneCallbackInfo) callconv(.c) abi_base.WGPUFuture {
+pub export fn doeNativeQueueOnSubmittedWorkDone(q_raw: ?*anyopaque, info: abi_callback.WGPUQueueWorkDoneCallbackInfo) callconv(.c) abi_core.WGPUFuture {
     if (cast(DoeQueue, q_raw)) |q| {
         flush_pending_work_dropin_sync(q);
     }
@@ -747,16 +753,16 @@ const DoeExternalTexture = ext_texture_mod.DoeExternalTexture;
 fn copy_external_texture_to_dst(
     queue: *DoeQueue,
     ext: *const DoeExternalTexture,
-    origin: abi_descriptor.WGPUOrigin3D,
-    destination: *const abi_descriptor.WGPUTexelCopyTextureInfo,
-    copy_size: *const abi_descriptor.WGPUExtent3D,
+    origin: abi_copy.WGPUOrigin3D,
+    destination: *const abi_copy.WGPUTexelCopyTextureInfo,
+    copy_size: *const abi_copy.WGPUExtent3D,
 ) void {
     if (ext_texture_mod.resolvePlane0DoeTexture(ext)) |src_tex| {
-        const source_copy = abi_descriptor.WGPUTexelCopyTextureInfo{
+        const source_copy = abi_copy.WGPUTexelCopyTextureInfo{
             .texture = native_helpers.toOpaque(src_tex),
             .mipLevel = 0,
             .origin = origin,
-            .aspect = abi_base.WGPUTextureAspect_All,
+            .aspect = abi_texture.WGPUTextureAspect_All,
         };
         copy_texture_for_browser_passthrough(queue, &source_copy, destination, copy_size);
         return;
@@ -791,9 +797,9 @@ fn copy_external_texture_to_dst(
 
 pub export fn doeNativeQueueCopyExternalImageToTexture(
     queue_raw: ?*anyopaque,
-    source_raw: ?*const abi_descriptor.WGPUImageCopyExternalTexture,
-    destination_raw: ?*const abi_descriptor.WGPUTexelCopyTextureInfo,
-    copy_size_raw: ?*const abi_descriptor.WGPUExtent3D,
+    source_raw: ?*const abi_copy.WGPUImageCopyExternalTexture,
+    destination_raw: ?*const abi_copy.WGPUTexelCopyTextureInfo,
+    copy_size_raw: ?*const abi_copy.WGPUExtent3D,
 ) callconv(.c) void {
     const source = source_raw orelse return;
     const destination = destination_raw orelse return;
@@ -806,10 +812,10 @@ pub export fn doeNativeQueueCopyExternalImageToTexture(
 
 pub export fn doeNativeQueueCopyExternalTextureForBrowser(
     queue_raw: ?*anyopaque,
-    source_raw: ?*const abi_descriptor.WGPUImageCopyExternalTexture,
-    destination_raw: ?*const abi_descriptor.WGPUTexelCopyTextureInfo,
-    copy_size_raw: ?*const abi_descriptor.WGPUExtent3D,
-    options_raw: ?*const abi_descriptor.WGPUCopyTextureForBrowserOptions,
+    source_raw: ?*const abi_copy.WGPUImageCopyExternalTexture,
+    destination_raw: ?*const abi_copy.WGPUTexelCopyTextureInfo,
+    copy_size_raw: ?*const abi_copy.WGPUExtent3D,
+    options_raw: ?*const abi_copy.WGPUCopyTextureForBrowserOptions,
 ) callconv(.c) void {
     _ = options_raw;
     const source = source_raw orelse return;

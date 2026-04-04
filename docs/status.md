@@ -1,4 +1,59 @@
 # Doe status
+## Broad ABI barrels and native facades fully eliminated; dropin seams flattened (2026-04-03 UTC)
+
+- `core/abi/wgpu_base_types.zig` and `core/abi/wgpu_descriptor_types.zig` now have
+  0 direct importers. All callers use narrow ABI shards:
+  `wgpu_core_base_types.zig`, `wgpu_feature_base_types.zig`,
+  `wgpu_texture_base_types.zig`, `wgpu_callback_descriptor_types.zig`,
+  `wgpu_copy_descriptor_types.zig`, `wgpu_pipeline_descriptor_types.zig`
+- `doe_native_types.zig` and `doe_native_helpers.zig` now have 0 direct
+  importers. All callers use narrow native shards:
+  `doe_native_object_types.zig`, `doe_native_shared_types.zig`,
+  `doe_native_command_types.zig`, `doe_native_object_helpers.zig`,
+  `doe_native_runtime_helpers.zig`
+- Dropin seams `dropin_lifecycle.zig`, `dropin_external_texture.zig`, and
+  `dropin_surface_ops.zig` now expose narrow direct APIs instead of
+  re-exporting whole backend sub-modules
+- `dropin_capabilities.zig` keeps backend sub-module gateways for d3d12/vulkan
+  capability probing (11+ items each) plus the existing metal wrapper
+- `dropin_resource_ops.zig` and `dropin_queue_submit.zig` intentionally keep
+  sub-module gateways due to heterogeneous backend surfaces (45+ vk_constants,
+  36 metal_bridge functions)
+- Verification: `zig build`, `zig build import-fence`, `zig test src/execution.zig`
+  all pass. Non-backend direct backend imports: 0. Nontrivial SCCs: 0
+
+## Backend-private drop-in dependencies finalized behind backend-owned seam modules (2026-04-03 UTC)
+
+- The final backend-owned seam set for the drop-in lane is:
+  `runtime/zig/src/backend/dropin_capabilities.zig`,
+  `runtime/zig/src/backend/dropin_lifecycle.zig`,
+  `runtime/zig/src/backend/dropin_resource_ops.zig`,
+  `runtime/zig/src/backend/dropin_queue_submit.zig`,
+  `runtime/zig/src/backend/dropin_external_texture.zig`,
+  `runtime/zig/src/backend/dropin_surface_ops.zig`, and
+  `runtime/zig/src/backend/dropin_render_state.zig`
+- Non-backend Zig implementation files under `runtime/zig/src` now route
+  backend-specific capability/resource/queue-submit/external-texture/surface
+  work through those seams instead of importing `backend/metal/*`,
+  `backend/vulkan/*`, or `backend/d3d12/*` directly
+- `runtime/zig/tools/check_core_import_fence.py` now rejects any future
+  non-backend import that reaches those backend-private implementation
+  directories directly
+- The same pass also moved several hot-path callers off the broader
+  `core/abi/wgpu_base_types.zig` and `core/abi/wgpu_descriptor_types.zig`
+  barrels onto narrower ABI shards such as
+  `wgpu_core_base_types.zig`, `wgpu_texture_base_types.zig`,
+  `wgpu_binding_base_types.zig`, `wgpu_callback_descriptor_types.zig`,
+  `wgpu_copy_descriptor_types.zig`, and
+  `wgpu_pipeline_descriptor_types.zig`
+
+## Backend drop-in seams now own backend-specific imports, and the import fence blocks direct backend implementation reach-through (2026-04-03 UTC)
+
+- Non-backend Zig implementation files under `runtime/zig/src` no longer import `backend/metal/*`, `backend/vulkan/*`, or `backend/d3d12/*` directly; they now route those dependencies through backend-owned seam modules such as `backend/dropin_capabilities.zig`, `backend/dropin_resource_ops.zig`, `backend/dropin_queue_submit.zig`, `backend/dropin_external_texture.zig`, `backend/dropin_render_state.zig`, `backend/dropin_surface.zig`, and `backend/dropin_runtime_types.zig`
+- `runtime/zig/tools/check_core_import_fence.py` now treats any new non-backend import of those backend implementation directories as a hard violation
+- Root/native callers also shed additional broad ABI dependencies in this pass by moving selected handle/callback/texture-descriptor users from `core/abi/wgpu_base_types.zig` and `core/abi/wgpu_descriptor_types.zig` onto narrower ABI shards such as `wgpu_handle_types.zig`, `wgpu_callback_descriptor_types.zig`, `wgpu_pipeline_descriptor_types.zig`, `wgpu_texture_base_types.zig`, and `wgpu_binding_base_types.zig`
+- Verification for this seam/fence pass passed with `zig build import-fence`, `zig test src/execution.zig`, and `zig build`
+
 ## Broad native and WebGPU ABI barrels retargeted behind narrower ownership modules (2026-04-03 UTC)
 
 - `runtime/zig/src/doe_native_types.zig` and `runtime/zig/src/doe_native_helpers.zig` remain as compatibility-facing native barrels, but a first batch of implementation files now imports `doe_native_object_types.zig`, `doe_native_shared_types.zig`, `doe_native_object_helpers.zig`, and `doe_native_runtime_helpers.zig` directly instead of depending on the broader native facades

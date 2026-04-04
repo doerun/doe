@@ -8,7 +8,8 @@
 const std = @import("std");
 const native_types = @import("doe_native_object_types.zig");
 const native_helpers = @import("doe_native_object_helpers.zig");
-const bridge = @import("backend/metal/metal_bridge_decls.zig");
+const resource_ops = @import("backend/dropin_resource_ops.zig");
+const bridge = resource_ops.metal_bridge;
 
 const cast = native_helpers.cast;
 const DoeAdapter = native_types.DoeAdapter;

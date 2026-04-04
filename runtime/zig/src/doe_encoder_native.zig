@@ -6,15 +6,17 @@ const builtin = @import("builtin");
 const has_vulkan = (builtin.os.tag == .linux);
 const std = @import("std");
 const model_transfer_types = @import("model_resource_types.zig");
-const abi_descriptor = @import("core/abi/wgpu_descriptor_types.zig");
-const native_types = @import("doe_native_types.zig");
-const native_helpers = @import("doe_native_helpers.zig");
+const abi_pipeline = @import("core/abi/wgpu_pipeline_descriptor_types.zig");
+const native_types = @import("doe_native_object_types.zig");
+const native_shared = @import("doe_native_shared_types.zig");
+const native_helpers = @import("doe_native_object_helpers.zig");
+const native_rt_helpers = @import("doe_native_runtime_helpers.zig");
 
 const alloc = native_helpers.alloc;
 const make = native_helpers.make;
 const cast = native_helpers.cast;
 const toOpaque = native_helpers.toOpaque;
-const MAX_BIND = native_types.MAX_BIND;
+const MAX_BIND = native_shared.MAX_BIND;
 const label_store = native_helpers.label_store;
 
 const DoeDevice = native_types.DoeDevice;
@@ -36,7 +38,7 @@ const DoePipelineLayoutLocal = struct {
 // ============================================================
 // Command Encoder / Command Buffer
 
-pub export fn doeNativeDeviceCreateCommandEncoder(dev_raw: ?*anyopaque, desc: ?*const abi_descriptor.WGPUCommandEncoderDescriptor) callconv(.c) ?*anyopaque {
+pub export fn doeNativeDeviceCreateCommandEncoder(dev_raw: ?*anyopaque, desc: ?*const abi_pipeline.WGPUCommandEncoderDescriptor) callconv(.c) ?*anyopaque {
     const dev = cast(DoeDevice, dev_raw) orelse return null;
     const enc = make(DoeCommandEncoder) orelse return null;
     enc.* = .{ .dev = dev };
@@ -54,7 +56,7 @@ pub export fn doeNativeCommandEncoderRelease(raw: ?*anyopaque) callconv(.c) void
     }
 }
 
-pub export fn doeNativeCommandEncoderBeginComputePass(enc_raw: ?*anyopaque, desc: ?*const abi_descriptor.WGPUComputePassDescriptor) callconv(.c) ?*anyopaque {
+pub export fn doeNativeCommandEncoderBeginComputePass(enc_raw: ?*anyopaque, desc: ?*const abi_pipeline.WGPUComputePassDescriptor) callconv(.c) ?*anyopaque {
     _ = desc;
     const enc = cast(DoeCommandEncoder, enc_raw) orelse return null;
     const pass = make(DoeComputePass) orelse return null;
@@ -68,7 +70,7 @@ pub export fn doeNativeCopyBufferToBuffer(enc_raw: ?*anyopaque, src_raw: ?*anyop
     const dst = cast(DoeBuffer, dst_raw) orelse return;
     if (enc.dev.backend == .vulkan) {
         if (comptime has_vulkan) {
-            const rt = native_helpers.device_vk_runtime(enc.dev) orelse return;
+            const rt = native_rt_helpers.device_vk_runtime(enc.dev) orelse return;
             if (src.vk_id != 0 and dst.vk_id != 0) {
                 if (rt.compute_buffers.get(src.vk_id)) |scb| {
                     if (rt.compute_buffers.get(dst.vk_id)) |dcb| {
@@ -114,7 +116,7 @@ pub export fn doeNativeCommandEncoderCopyBufferToTexture(
     const dst_texture = cast(DoeTexture, dst_texture_raw) orelse return;
     if (enc.dev.backend == .vulkan) {
         if (comptime has_vulkan) {
-            const rt = native_helpers.device_vk_runtime(enc.dev) orelse return;
+            const rt = native_rt_helpers.device_vk_runtime(enc.dev) orelse return;
             if (src_buffer.vk_id != 0 and dst_texture.vk_id != 0) {
                 if (rt.compute_buffers.get(src_buffer.vk_id)) |scb| {
                     if (scb.mapped) |mapped_ptr| {
@@ -170,7 +172,7 @@ pub export fn doeNativeCommandEncoderCopyTextureToBuffer(
     const dst_buffer = cast(DoeBuffer, dst_buffer_raw) orelse return;
     if (enc.dev.backend == .vulkan) {
         if (comptime has_vulkan) {
-            const rt = native_helpers.device_vk_runtime(enc.dev) orelse return;
+            const rt = native_rt_helpers.device_vk_runtime(enc.dev) orelse return;
             if (src_texture.vk_id != 0 and dst_buffer.vk_id != 0) {
                 if (rt.compute_buffers.get(dst_buffer.vk_id)) |dcb| {
                     if (dcb.mapped) |mapped_ptr| {
@@ -206,7 +208,7 @@ pub export fn doeNativeCommandEncoderCopyTextureToBuffer(
     } }) catch std.debug.panic("doe_encoder_native: OOM recording texture copy command", .{});
 }
 
-pub export fn doeNativeCommandEncoderFinish(enc_raw: ?*anyopaque, desc: ?*const abi_descriptor.WGPUCommandBufferDescriptor) callconv(.c) ?*anyopaque {
+pub export fn doeNativeCommandEncoderFinish(enc_raw: ?*anyopaque, desc: ?*const abi_pipeline.WGPUCommandBufferDescriptor) callconv(.c) ?*anyopaque {
     const enc = cast(DoeCommandEncoder, enc_raw) orelse return null;
     const cb = make(DoeCommandBuffer) orelse return null;
     cb.* = .{ .dev = enc.dev, .cmds = enc.cmds };

@@ -9,9 +9,11 @@ const std = @import("std");
 const builtin = @import("builtin");
 const has_vulkan = (builtin.os.tag == .linux);
 const abi_base = @import("core/abi/wgpu_handle_types.zig");
-const abi_descriptor = @import("core/abi/wgpu_descriptor_types.zig");
-const native_types = @import("doe_native_types.zig");
-const native_helpers = @import("doe_native_helpers.zig");
+const abi_callback = @import("core/abi/wgpu_callback_descriptor_types.zig");
+const backend_capabilities = @import("backend/dropin_capabilities.zig");
+const backend_lifecycle = @import("backend/dropin_lifecycle.zig");
+const native_types = @import("doe_native_object_types.zig");
+const native_helpers = @import("doe_native_object_helpers.zig");
 
 const alloc = native_helpers.alloc;
 const make = native_helpers.make;
@@ -23,20 +25,19 @@ const DoeInstance = native_types.DoeInstance;
 const DoeAdapter = native_types.DoeAdapter;
 const DoeDevice = native_types.DoeDevice;
 const DoeQueue = native_types.DoeQueue;
-const NativeVulkanRuntime = native_types.NativeVulkanRuntime;
-const NativeD3D12Runtime = native_types.NativeD3D12Runtime;
-const d3d12_device_caps = @import("backend/d3d12/d3d12_device_caps.zig");
-const vk_feature_caps = if (has_vulkan) @import("backend/vulkan/vk_feature_caps.zig") else struct {};
-const vk_device_caps = if (has_vulkan) @import("backend/vulkan/vk_device_caps.zig") else struct {};
+const NativeVulkanRuntime = backend_lifecycle.NativeVulkanRuntime;
+const NativeD3D12Runtime = backend_lifecycle.NativeD3D12Runtime;
+const d3d12_device_caps = backend_capabilities.d3d12_device_caps;
+const vk_feature_caps = if (has_vulkan) backend_capabilities.vk_feature_caps else struct {};
+const vk_device_caps = if (has_vulkan) backend_capabilities.vk_device_caps else struct {};
 const vulkan_feature_cache = if (has_vulkan) @import("doe_vulkan_feature_cache.zig") else struct {};
-const vk_feature_probe = if (has_vulkan) @import("backend/vulkan/vk_feature_probe.zig") else struct {};
+const vk_feature_probe = if (has_vulkan) backend_capabilities.vk_feature_probe else struct {};
 const backend_policy = @import("backend/backend_policy.zig");
 
-const bridge = @import("backend/metal/metal_bridge_decls.zig");
-const metal_bridge_create_default_device = bridge.metal_bridge_create_default_device;
-const metal_bridge_device_new_command_queue = bridge.metal_bridge_device_new_command_queue;
-const metal_bridge_device_new_shared_event = bridge.metal_bridge_device_new_shared_event;
-const metal_bridge_release = bridge.metal_bridge_release;
+const metal_bridge_create_default_device = backend_lifecycle.metal_bridge_create_default_device;
+const metal_bridge_device_new_command_queue = backend_lifecycle.metal_bridge_device_new_command_queue;
+const metal_bridge_device_new_shared_event = backend_lifecycle.metal_bridge_device_new_shared_event;
+const metal_bridge_release = backend_lifecycle.metal_bridge_release;
 
 const WGPU_WAIT_STATUS_SUCCESS: u32 = 1;
 const WGPU_REQUEST_STATUS_SUCCESS: u32 = 1;
@@ -125,7 +126,7 @@ fn probe_vulkan_device_caps_fallback() if (has_vulkan) vk_device_caps.VulkanDevi
     };
 }
 
-fn vulkan_limits_static_fallback() abi_descriptor.WGPULimits {
+fn vulkan_limits_static_fallback() abi_callback.WGPULimits {
     const doe_device_caps = @import("doe_device_caps.zig");
     return doe_device_caps.VULKAN_LIMITS_STATIC;
 }
@@ -135,8 +136,8 @@ fn stringView(comptime message: []const u8) abi_base.WGPUStringView {
 }
 
 fn call_request_adapter_callback(
-    info: abi_descriptor.WGPURequestAdapterCallbackInfo,
-    status: abi_descriptor.WGPURequestAdapterStatus,
+    info: abi_callback.WGPURequestAdapterCallbackInfo,
+    status: abi_callback.WGPURequestAdapterStatus,
     adapter: ?*anyopaque,
     message: abi_base.WGPUStringView,
 ) void {
@@ -145,8 +146,8 @@ fn call_request_adapter_callback(
 }
 
 fn call_request_device_callback(
-    info: abi_descriptor.WGPURequestDeviceCallbackInfo,
-    status: abi_descriptor.WGPURequestDeviceStatus,
+    info: abi_callback.WGPURequestDeviceCallbackInfo,
+    status: abi_callback.WGPURequestDeviceStatus,
     device: ?*anyopaque,
     message: abi_base.WGPUStringView,
 ) void {
@@ -268,7 +269,7 @@ pub export fn doeNativeInstanceRelease(raw: ?*anyopaque) callconv(.c) void {
     }
 }
 
-pub export fn doeNativeInstanceWaitAny(inst: ?*anyopaque, count: usize, infos: [*]abi_descriptor.WGPUFutureWaitInfo, timeout_ns: u64) callconv(.c) u32 {
+pub export fn doeNativeInstanceWaitAny(inst: ?*anyopaque, count: usize, infos: [*]abi_callback.WGPUFutureWaitInfo, timeout_ns: u64) callconv(.c) u32 {
     _ = inst;
     _ = timeout_ns;
     for (infos[0..count]) |*info| info.completed = 1;
@@ -342,8 +343,8 @@ pub export fn doeNativeRequestAdapterFlat(
 // Standard-signature wrapper for routing layer compatibility.
 pub export fn doeNativeInstanceRequestAdapter(
     inst: ?*anyopaque,
-    options: ?*const abi_descriptor.WGPURequestAdapterOptions,
-    info: abi_descriptor.WGPURequestAdapterCallbackInfo,
+    options: ?*const abi_callback.WGPURequestAdapterOptions,
+    info: abi_callback.WGPURequestAdapterCallbackInfo,
 ) callconv(.c) abi_base.WGPUFuture {
     _ = options;
     const retained_instance = cast(DoeInstance, inst);
@@ -432,8 +433,8 @@ pub export fn doeNativeAdapterRelease(raw: ?*anyopaque) callconv(.c) void {
 
 pub export fn doeNativeAdapterRequestDevice(
     adapter_raw: ?*anyopaque,
-    desc: ?*const abi_descriptor.WGPUDeviceDescriptor,
-    info: abi_descriptor.WGPURequestDeviceCallbackInfo,
+    desc: ?*const abi_callback.WGPUDeviceDescriptor,
+    info: abi_callback.WGPURequestDeviceCallbackInfo,
 ) callconv(.c) abi_base.WGPUFuture {
     _ = desc;
     const adapter = cast(DoeAdapter, adapter_raw) orelse {
@@ -450,7 +451,7 @@ pub export fn doeNativeAdapterRequestDevice(
 
 pub export fn doeNativeAdapterCreateDevice(
     adapter_raw: ?*anyopaque,
-    desc: ?*const abi_descriptor.WGPUDeviceDescriptor,
+    desc: ?*const abi_callback.WGPUDeviceDescriptor,
 ) callconv(.c) ?*anyopaque {
     _ = desc;
     const adapter = cast(DoeAdapter, adapter_raw) orelse return null;

@@ -1,6 +1,6 @@
 const std = @import("std");
 const abi_base = @import("core/abi/wgpu_handle_types.zig");
-const abi_descriptor = @import("core/abi/wgpu_descriptor_types.zig");
+const abi_callback = @import("core/abi/wgpu_callback_descriptor_types.zig");
 const abi_proc_aliases = @import("core/abi/wgpu_type_proc_aliases.zig");
 const loader = @import("core/abi/wgpu_loader.zig");
 
@@ -17,7 +17,7 @@ const CompilationInfoCallback = *const fn (u32, ?*const anyopaque, ?*anyopaque, 
 
 pub const CreateRenderPipelineAsyncCallbackInfo = extern struct {
     nextInChain: ?*anyopaque,
-    mode: abi_descriptor.WGPUCallbackMode,
+    mode: abi_callback.WGPUCallbackMode,
     callback: ?CreateRenderPipelineAsyncCallback,
     userdata1: ?*anyopaque,
     userdata2: ?*anyopaque,
@@ -25,7 +25,7 @@ pub const CreateRenderPipelineAsyncCallbackInfo = extern struct {
 
 pub const PopErrorScopeCallbackInfo = extern struct {
     nextInChain: ?*anyopaque,
-    mode: abi_descriptor.WGPUCallbackMode,
+    mode: abi_callback.WGPUCallbackMode,
     callback: ?PopErrorScopeCallback,
     userdata1: ?*anyopaque,
     userdata2: ?*anyopaque,
@@ -33,7 +33,7 @@ pub const PopErrorScopeCallbackInfo = extern struct {
 
 pub const CompilationInfoCallbackInfo = extern struct {
     nextInChain: ?*anyopaque,
-    mode: abi_descriptor.WGPUCallbackMode,
+    mode: abi_callback.WGPUCallbackMode,
     callback: ?CompilationInfoCallback,
     userdata1: ?*anyopaque,
     userdata2: ?*anyopaque,
@@ -93,7 +93,7 @@ pub fn createRenderPipelineAsyncAndWait(
     var state = RenderPipelineAsyncState{};
     const callback_info = CreateRenderPipelineAsyncCallbackInfo{
         .nextInChain = null,
-        .mode = abi_descriptor.WGPUCallbackMode_AllowProcessEvents,
+        .mode = abi_callback.WGPUCallbackMode_AllowProcessEvents,
         .callback = renderPipelineAsyncCallback,
         .userdata1 = &state,
         .userdata2 = null,
@@ -119,7 +119,7 @@ pub fn popErrorScopeAndWait(
     var state = PopErrorScopeState{};
     const callback_info = PopErrorScopeCallbackInfo{
         .nextInChain = null,
-        .mode = abi_descriptor.WGPUCallbackMode_AllowProcessEvents,
+        .mode = abi_callback.WGPUCallbackMode_AllowProcessEvents,
         .callback = popErrorScopeCallback,
         .userdata1 = &state,
         .userdata2 = null,
@@ -140,7 +140,7 @@ pub fn requestShaderCompilationInfoAndWait(
     var state = CompilationInfoState{};
     const callback_info = CompilationInfoCallbackInfo{
         .nextInChain = null,
-        .mode = abi_descriptor.WGPUCallbackMode_AllowProcessEvents,
+        .mode = abi_callback.WGPUCallbackMode_AllowProcessEvents,
         .callback = compilationInfoCallback,
         .userdata1 = &state,
         .userdata2 = null,

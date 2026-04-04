@@ -1,4 +1,4 @@
-const abi_descriptor = @import("core/abi/wgpu_descriptor_types.zig");
+const abi_pipeline = @import("core/abi/wgpu_pipeline_descriptor_types.zig");
 
 pub extern fn doeNativeBufferRelease(raw: ?*anyopaque) callconv(.c) void;
 pub extern fn doeNativeDeviceRelease(raw: ?*anyopaque) callconv(.c) void;
@@ -12,7 +12,7 @@ pub extern fn doeNativeExternalTextureDestroy(raw: ?*anyopaque) callconv(.c) voi
 pub extern fn doeNativeExternalTextureExpire(raw: ?*anyopaque) callconv(.c) void;
 pub extern fn doeNativeExternalTextureRefresh(raw: ?*anyopaque) callconv(.c) void;
 pub extern fn doeNativeExternalTextureSetLabel(raw: ?*anyopaque, label_ptr: [*]const u8, label_len: usize) callconv(.c) void;
-pub extern fn doeNativeDeviceCreateCommandEncoder(dev_raw: ?*anyopaque, desc: ?*const abi_descriptor.WGPUCommandEncoderDescriptor) callconv(.c) ?*anyopaque;
+pub extern fn doeNativeDeviceCreateCommandEncoder(dev_raw: ?*anyopaque, desc: ?*const abi_pipeline.WGPUCommandEncoderDescriptor) callconv(.c) ?*anyopaque;
 pub extern fn doeNativeCommandEncoderRelease(raw: ?*anyopaque) callconv(.c) void;
-pub extern fn doeNativeCommandEncoderFinish(enc_raw: ?*anyopaque, desc: ?*const abi_descriptor.WGPUCommandBufferDescriptor) callconv(.c) ?*anyopaque;
+pub extern fn doeNativeCommandEncoderFinish(enc_raw: ?*anyopaque, desc: ?*const abi_pipeline.WGPUCommandBufferDescriptor) callconv(.c) ?*anyopaque;
 pub extern fn doeNativeCommandBufferRelease(raw: ?*anyopaque) callconv(.c) void;

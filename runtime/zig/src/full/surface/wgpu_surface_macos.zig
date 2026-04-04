@@ -1,5 +1,6 @@
 const builtin = @import("builtin");
-const bridge = @import("../../backend/metal/metal_bridge_decls.zig");
+const surface_ops = @import("../../backend/dropin_surface_ops.zig");
+const bridge = surface_ops.metal_bridge;
 const metal_bridge_configure_surface_host = bridge.metal_bridge_configure_surface_host;
 const metal_bridge_create_surface_host = bridge.metal_bridge_create_surface_host;
 const metal_bridge_release = bridge.metal_bridge_release;

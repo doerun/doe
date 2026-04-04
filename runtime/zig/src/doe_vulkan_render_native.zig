@@ -4,18 +4,21 @@
 const std = @import("std");
 const builtin = @import("builtin");
 const has_vulkan = (builtin.os.tag == .linux);
-const native_types = @import("doe_native_types.zig");
-const native_helpers = @import("doe_native_helpers.zig");
-const abi_base = @import("core/abi/wgpu_handle_types.zig");
-const abi_descriptor = @import("core/abi/wgpu_descriptor_types.zig");
+const native_types = @import("doe_native_object_types.zig");
+const native_shared = @import("doe_native_shared_types.zig");
+const native_helpers = @import("doe_native_object_helpers.zig");
+const native_rt_helpers = @import("doe_native_runtime_helpers.zig");
+const abi_core = @import("core/abi/wgpu_core_base_types.zig");
+const abi_pipeline = @import("core/abi/wgpu_pipeline_descriptor_types.zig");
+const resource_ops = @import("backend/dropin_resource_ops.zig");
 const model_gpu_types = @import("model_texture_value_types.zig");
 const model_render_types = @import("model_render_types.zig");
 const query_native = @import("doe_query_native.zig");
-const c = if (has_vulkan) @import("backend/vulkan/vk_constants.zig") else struct {};
-const vk_resources = if (has_vulkan) @import("backend/vulkan/vk_resources.zig") else struct {};
+const c = if (has_vulkan) resource_ops.vk_constants else struct {};
+const vk_resources = if (has_vulkan) resource_ops.vk_resources else struct {};
 const doe_wgsl = @import("doe_wgsl/mod.zig");
 const runtime_compile = @import("doe_wgsl/runtime_compile.zig");
-const NativeVulkanRuntime = native_types.NativeVulkanRuntime;
+const NativeVulkanRuntime = native_shared.NativeVulkanRuntime;
 
 const DoeDevice = native_types.DoeDevice;
 const DoeShaderModule = native_types.DoeShaderModule;
@@ -52,7 +55,7 @@ const VK_COMPARE_OP_ALWAYS: u32 = 7;
 
 fn get_runtime(dev: *DoeDevice) ?*NativeVulkanRuntime {
     if (comptime !has_vulkan) return null;
-    return native_helpers.device_vk_runtime(dev);
+    return native_rt_helpers.device_vk_runtime(dev);
 }
 fn wgpu_filter_to_vk(filter: u32) u32 {
     return if (filter == WGPU_FILTER_LINEAR) VK_FILTER_LINEAR else c.VK_FILTER_NEAREST;
@@ -87,7 +90,7 @@ fn wgpu_compare_to_vk(compare: u32) u32 {
 // Texture
 // ============================================================
 
-pub fn vulkan_create_texture(dev: *DoeDevice, tex: *DoeTexture, desc: *const abi_descriptor.WGPUTextureDescriptor) bool {
+pub fn vulkan_create_texture(dev: *DoeDevice, tex: *DoeTexture, desc: *const abi_pipeline.WGPUTextureDescriptor) bool {
     if (comptime !has_vulkan) return false;
     const rt = get_runtime(dev) orelse {
         std.debug.print("doe_vulkan_render_native: device has no Vulkan runtime\n", .{});
@@ -139,7 +142,7 @@ pub fn vulkan_destroy_texture(tex: *DoeTexture) void {
     tex.vk_runtime_ref = null;
 }
 
-pub fn vulkan_create_texture_view(tex: *DoeTexture, tv: *DoeTextureView, desc: *const abi_descriptor.WGPUTextureViewDescriptor) bool {
+pub fn vulkan_create_texture_view(tex: *DoeTexture, tv: *DoeTextureView, desc: *const abi_pipeline.WGPUTextureViewDescriptor) bool {
     if (comptime !has_vulkan) return false;
     if (tex.vk_id == 0) return false;
     const rt_ptr = tex.vk_runtime_ref orelse return false;
@@ -203,7 +206,7 @@ pub fn vulkan_destroy_texture_view(tv: *DoeTextureView) void {
 // Sampler
 // ============================================================
 
-pub fn vulkan_create_sampler(dev: *DoeDevice, sampler: *DoeSampler, desc: *const abi_descriptor.WGPUSamplerDescriptor) bool {
+pub fn vulkan_create_sampler(dev: *DoeDevice, sampler: *DoeSampler, desc: *const abi_pipeline.WGPUSamplerDescriptor) bool {
     if (comptime !has_vulkan) return false;
     const rt = get_runtime(dev) orelse {
         std.debug.print("doe_vulkan_render_native: device has no Vulkan runtime for sampler\n", .{});
@@ -387,7 +390,7 @@ pub fn vulkan_create_render_pipeline(
     pip.vertex_buffer_count = 0;
     pip.vertex_attribute_count = 0;
     if (d.vertex_bufferCount > 0 and d.vertex_buffers != null) {
-        const buffer_count = @min(d.vertex_bufferCount, native_types.MAX_VERTEX_BUFFERS);
+        const buffer_count = @min(d.vertex_bufferCount, native_shared.MAX_VERTEX_BUFFERS);
         const buffers = @as([*]const RenderVertexBufferLayout, @ptrCast(@alignCast(d.vertex_buffers)));
         var buffer_index: usize = 0;
         while (buffer_index < buffer_count) : (buffer_index += 1) {
@@ -396,7 +399,7 @@ pub fn vulkan_create_render_pipeline(
             pip.vertex_step_modes[buffer_index] = layout.stepMode;
             pip.vertex_buffer_count += 1;
             if (layout.attributes) |attrs| {
-                const available = native_types.MAX_VERTEX_ATTRIBUTES - pip.vertex_attribute_count;
+                const available = native_shared.MAX_VERTEX_ATTRIBUTES - pip.vertex_attribute_count;
                 const attr_count = @min(layout.attributeCount, available);
                 var attr_index: usize = 0;
                 while (attr_index < attr_count) : (attr_index += 1) {
@@ -463,7 +466,7 @@ pub fn vulkan_create_render_pipeline(
     // Copy entry point names from the descriptor so the Vulkan pipeline
     // creation uses the correct SPIR-V entry point (not always "main").
     if (d.vertex_ep_data) |ep_data| {
-        const ep_len = if (d.vertex_ep_length == abi_base.WGPU_STRLEN)
+        const ep_len = if (d.vertex_ep_length == abi_core.WGPU_STRLEN)
             std.mem.len(@as([*:0]const u8, @ptrCast(ep_data)))
         else
             d.vertex_ep_length;
@@ -473,7 +476,7 @@ pub fn vulkan_create_render_pipeline(
     }
     if (d.fragment) |frag| {
         if (frag.entryPoint.data) |ep_data| {
-            const ep_len = if (frag.entryPoint.length == abi_base.WGPU_STRLEN)
+            const ep_len = if (frag.entryPoint.length == abi_core.WGPU_STRLEN)
                 std.mem.len(@as([*:0]const u8, @ptrCast(ep_data)))
             else
                 frag.entryPoint.length;
@@ -574,7 +577,7 @@ fn populate_draw_cmd_from_pass(cmd: *model_render_types.RenderDrawCommand, pass:
     // Vertex buffer handles from pass state.
     var bound_vertex_count: u32 = 0;
     var bound_slot: usize = 0;
-    while (bound_slot < native_types.MAX_VERTEX_BUFFERS) : (bound_slot += 1) {
+    while (bound_slot < native_shared.MAX_VERTEX_BUFFERS) : (bound_slot += 1) {
         if (pass.vertex_buffers[bound_slot]) |buffer| {
             cmd.vertex_buffer_handles[bound_slot] = buffer.vk_id;
             cmd.vertex_buffer_offsets[bound_slot] = pass.vertex_buffer_offsets[bound_slot];

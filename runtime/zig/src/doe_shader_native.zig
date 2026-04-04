@@ -2,16 +2,19 @@
 // Sharded from doe_wgpu_native.zig: WGSL→MSL translation, MTLLibrary/MTLComputePipelineState creation.
 
 const std = @import("std");
-const abi_base = @import("core/abi/wgpu_base_types.zig");
-const abi_descriptor = @import("core/abi/wgpu_descriptor_types.zig");
+const abi_core = @import("core/abi/wgpu_core_base_types.zig");
+const abi_callback = @import("core/abi/wgpu_callback_descriptor_types.zig");
+const abi_pipeline = @import("core/abi/wgpu_pipeline_descriptor_types.zig");
 const wgsl_compiler = @import("doe_wgsl/mod.zig");
 const wgsl_ir = @import("doe_wgsl/ir.zig");
 const wgsl_runtime_compile = @import("doe_wgsl/runtime_compile.zig");
 const shader_translation_cache = @import("doe_shader_translation_cache.zig");
-const native_types = @import("doe_native_types.zig");
-const native_helpers = @import("doe_native_helpers.zig");
+const native_types = @import("doe_native_object_types.zig");
+const native_shared = @import("doe_native_shared_types.zig");
+const native_helpers = @import("doe_native_object_helpers.zig");
 const bind_group = @import("doe_bind_group_native.zig");
-const bridge = @import("backend/metal/metal_bridge_decls.zig");
+const resource_ops = @import("backend/dropin_resource_ops.zig");
+const bridge = resource_ops.metal_bridge;
 const metal_bridge_device_new_compute_pipeline = bridge.metal_bridge_device_new_compute_pipeline;
 const metal_bridge_device_new_library_msl = bridge.metal_bridge_device_new_library_msl;
 const metal_bridge_library_new_function = bridge.metal_bridge_library_new_function;
@@ -21,7 +24,7 @@ const alloc = native_helpers.alloc;
 const make = native_helpers.make;
 const cast = native_helpers.cast;
 const toOpaque = native_helpers.toOpaque;
-const ERR_CAP = native_types.ERR_CAP;
+const ERR_CAP = native_shared.ERR_CAP;
 const label_store = native_helpers.label_store;
 
 const DoeDevice = native_types.DoeDevice;
@@ -29,7 +32,7 @@ const DoeShaderModule = native_types.DoeShaderModule;
 const DoeComputePipeline = native_types.DoeComputePipeline;
 const DoePipelineLayout = native_types.DoePipelineLayout;
 const DoeBindGroupLayout = native_types.DoeBindGroupLayout;
-const CompilationMessageKind = native_types.CompilationMessageKind;
+const CompilationMessageKind = native_shared.CompilationMessageKind;
 const LAST_ERROR_CAP: usize = 512;
 const LAST_ERROR_META_CAP: usize = 64;
 const DIAGNOSTIC_DIRECTIVE_INFO: []const u8 =
@@ -154,7 +157,7 @@ pub export fn doeNativeCheckShaderSource(code_ptr: ?[*]const u8, code_len: usize
     return 1;
 }
 
-pub export fn doeNativeShaderModuleGetBindings(raw: ?*anyopaque, out_ptr: ?[*]native_types.BindingInfo, out_len: usize) callconv(.c) usize {
+pub export fn doeNativeShaderModuleGetBindings(raw: ?*anyopaque, out_ptr: ?[*]native_shared.BindingInfo, out_len: usize) callconv(.c) usize {
     const sm = cast(DoeShaderModule, raw) orelse return 0;
     ensureShaderBindings(sm);
     const count: usize = sm.binding_count;
@@ -170,9 +173,9 @@ pub export fn doeNativeShaderModuleGetBindings(raw: ?*anyopaque, out_ptr: ?[*]na
 // ============================================================
 
 /// Resolve a WGPUStringView to a byte slice, handling WGPU_STRLEN sentinel.
-fn resolveStringView(sv: abi_base.WGPUStringView) ?[]const u8 {
+fn resolveStringView(sv: abi_core.WGPUStringView) ?[]const u8 {
     const data = sv.data orelse return null;
-    const len = if (sv.length == abi_base.WGPU_STRLEN)
+    const len = if (sv.length == abi_core.WGPU_STRLEN)
         std.mem.len(@as([*:0]const u8, @ptrCast(data)))
     else
         sv.length;
@@ -239,7 +242,7 @@ pub fn ensureShaderBindings(sm: *DoeShaderModule) void {
     const wgsl = sm.wgsl_source orelse return;
     sm.bindings_ready = true;
     sm.binding_count = 0;
-    var bind_meta: [native_types.MAX_SHADER_BINDINGS]wgsl_compiler.BindingMeta = undefined;
+    var bind_meta: [native_shared.MAX_SHADER_BINDINGS]wgsl_compiler.BindingMeta = undefined;
     const bind_count = wgsl_compiler.extractBindings(alloc, wgsl, &bind_meta) catch |bind_err| blk: {
         std.log.warn("doe: createShaderModule: lazy binding extraction failed ({s}); proceeding with 0 bindings", .{@errorName(bind_err)});
         set_module_warning_from_compiler_state(sm, "binding extraction failed after successful shader compilation");
@@ -256,17 +259,17 @@ pub fn ensureShaderBindings(sm: *DoeShaderModule) void {
     }
     sm.binding_count = @intCast(bind_count);
 }
-pub export fn doeNativeDeviceCreateShaderModule(dev_raw: ?*anyopaque, desc: ?*const abi_descriptor.WGPUShaderModuleDescriptor) callconv(.c) ?*anyopaque {
+pub export fn doeNativeDeviceCreateShaderModule(dev_raw: ?*anyopaque, desc: ?*const abi_pipeline.WGPUShaderModuleDescriptor) callconv(.c) ?*anyopaque {
     clear_last_error();
     const dev = cast(DoeDevice, dev_raw) orelse return null;
     const d = desc orelse return null;
     const chain = d.nextInChain orelse return null;
 
     const result = switch (chain.sType) {
-        abi_base.WGPUSType_ShaderSourceWGSL => createFromWGSL(dev, chain),
-        abi_base.WGPUSType_ShaderSourceMSL => createFromMSL(dev, chain),
-        abi_base.WGPUSType_ShaderSourceSPIRV => createFromSPIRV(chain),
-        abi_base.WGPUSType_ShaderSourceHLSL => createFromHLSL(chain),
+        abi_core.WGPUSType_ShaderSourceWGSL => createFromWGSL(dev, chain),
+        abi_core.WGPUSType_ShaderSourceMSL => createFromMSL(dev, chain),
+        abi_core.WGPUSType_ShaderSourceSPIRV => createFromSPIRV(chain),
+        abi_core.WGPUSType_ShaderSourceHLSL => createFromHLSL(chain),
         else => blk: {
             set_last_error_stage_name("native_shader_create");
             set_last_error_kind("UnsupportedShaderFormat");
@@ -289,8 +292,8 @@ pub export fn doeNativeDeviceCreateShaderModule(dev_raw: ?*anyopaque, desc: ?*co
 // ============================================================
 // WGSL path (existing behavior, refactored into helper)
 // ============================================================
-fn createFromWGSL(dev: *DoeDevice, chain: *const abi_descriptor.WGPUChainedStruct) ?*anyopaque {
-    const wgsl_chain: *const abi_descriptor.WGPUShaderSourceWGSL = @ptrCast(@alignCast(chain));
+fn createFromWGSL(dev: *DoeDevice, chain: *const abi_callback.WGPUChainedStruct) ?*anyopaque {
+    const wgsl_chain: *const abi_pipeline.WGPUShaderSourceWGSL = @ptrCast(@alignCast(chain));
     const wgsl = resolveStringView(wgsl_chain.code) orelse return null;
 
     if (dev.backend == .vulkan) return createFromWGSLVulkan(dev, wgsl);
@@ -402,8 +405,8 @@ fn createFromWGSLVulkan(dev: *DoeDevice, wgsl: []const u8) ?*anyopaque {
 // MSL path — pre-translated Metal Shading Language source
 // ============================================================
 
-fn createFromMSL(dev: *DoeDevice, chain: *const abi_descriptor.WGPUChainedStruct) ?*anyopaque {
-    const msl_chain: *const abi_descriptor.WGPUShaderSourceMSL = @ptrCast(@alignCast(chain));
+fn createFromMSL(dev: *DoeDevice, chain: *const abi_callback.WGPUChainedStruct) ?*anyopaque {
+    const msl_chain: *const abi_pipeline.WGPUShaderSourceMSL = @ptrCast(@alignCast(chain));
     const msl_src = resolveStringView(msl_chain.code) orelse {
         set_last_error_stage_name("native_shader_create");
         set_last_error_kind("InvalidInput");
@@ -451,8 +454,8 @@ fn createFromMSL(dev: *DoeDevice, chain: *const abi_descriptor.WGPUChainedStruct
 // SPIR-V path — store binary for Vulkan pipeline creation
 // ============================================================
 
-fn createFromSPIRV(chain: *const abi_descriptor.WGPUChainedStruct) ?*anyopaque {
-    const spirv_chain: *const abi_descriptor.WGPUShaderSourceSPIRV = @ptrCast(@alignCast(chain));
+fn createFromSPIRV(chain: *const abi_callback.WGPUChainedStruct) ?*anyopaque {
+    const spirv_chain: *const abi_pipeline.WGPUShaderSourceSPIRV = @ptrCast(@alignCast(chain));
 
     if (spirv_chain.code_size == 0 or spirv_chain.code_size % 4 != 0) {
         set_last_error_stage_name("native_shader_create");
@@ -488,8 +491,8 @@ fn createFromSPIRV(chain: *const abi_descriptor.WGPUChainedStruct) ?*anyopaque {
 // HLSL path — store source for D3D12 DXC compilation
 // ============================================================
 
-fn createFromHLSL(chain: *const abi_descriptor.WGPUChainedStruct) ?*anyopaque {
-    const hlsl_chain: *const abi_descriptor.WGPUShaderSourceHLSL = @ptrCast(@alignCast(chain));
+fn createFromHLSL(chain: *const abi_callback.WGPUChainedStruct) ?*anyopaque {
+    const hlsl_chain: *const abi_pipeline.WGPUShaderSourceHLSL = @ptrCast(@alignCast(chain));
     const hlsl_src = resolveStringView(hlsl_chain.code) orelse {
         set_last_error_stage_name("native_shader_create");
         set_last_error_kind("InvalidInput");
@@ -604,7 +607,7 @@ const MAX_OVERRIDE_ENTRIES: usize = 64;
 /// Convert WGPUConstantEntry C ABI array to wgsl_ir.OverrideEntry slice for the compiler.
 /// Returns null if any key pointer is invalid.
 fn buildOverrideEntries(
-    constants: [*]const abi_descriptor.WGPUConstantEntry,
+    constants: [*]const abi_pipeline.WGPUConstantEntry,
     count: usize,
     out: *[MAX_OVERRIDE_ENTRIES]wgsl_ir.OverrideEntry,
 ) ?[]const wgsl_ir.OverrideEntry {
@@ -612,7 +615,7 @@ fn buildOverrideEntries(
     for (0..count) |i| {
         const c = constants[i];
         const key_data = c.key.data orelse return null;
-        const key_len = if (c.key.length == abi_base.WGPU_STRLEN)
+        const key_len = if (c.key.length == abi_core.WGPU_STRLEN)
             std.mem.len(@as([*:0]const u8, @ptrCast(key_data)))
         else
             c.key.length;
@@ -629,7 +632,7 @@ fn buildOverrideEntries(
 fn recompileWithOverrides(
     dev: *DoeDevice,
     sm: *DoeShaderModule,
-    constants: [*]const abi_descriptor.WGPUConstantEntry,
+    constants: [*]const abi_pipeline.WGPUConstantEntry,
     count: usize,
 ) ?*anyopaque {
     const wgsl = sm.wgsl_source orelse {
@@ -672,7 +675,7 @@ fn recompileWithOverrides(
     return compileMslToLibrary(dev, &msl_buf, translation.len, &err_buf);
 }
 
-pub export fn doeNativeDeviceCreateComputePipeline(dev_raw: ?*anyopaque, desc: ?*const abi_descriptor.WGPUComputePipelineDescriptor) callconv(.c) ?*anyopaque {
+pub export fn doeNativeDeviceCreateComputePipeline(dev_raw: ?*anyopaque, desc: ?*const abi_pipeline.WGPUComputePipelineDescriptor) callconv(.c) ?*anyopaque {
     clear_last_error();
     const dev = cast(DoeDevice, dev_raw) orelse return null;
     const d = desc orelse return null;
