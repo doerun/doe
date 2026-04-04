@@ -112,7 +112,7 @@ pub const BackendRuntime = struct {
     }
 
     pub fn telemetry(self: *BackendRuntime) backend_telemetry.BackendTelemetry {
-        backend_runtime_telemetry.refresh(self);
+        backend_runtime_telemetry.refresh(&self.backend);
         return self.backend.telemetry;
     }
 };

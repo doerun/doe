@@ -1,4 +1,20 @@
 # Doe status
+## Model compatibility shell restored, backend policy path loading hardened, and AMD Vulkan compare-dev contracts repaired (2026-04-04 UTC)
+
+- `runtime/zig/src/model.zig` is now back to being the narrow compatibility shell the Zig test suites still compile against, re-exporting the split runtime/command/profile/policy/quirk surface without reintroducing the forbidden `model_runtime_types.zig` barrel import
+- `runtime/zig/src/backend/metal/metal_native_runtime.zig` again exports `FAST_WAIT_UPLOAD_THRESHOLD` for the existing unit tests, and `runtime/zig/src/webgpu_backend.zig` now captures adapter limits before `requestDevice()` so Dawn Vulkan device creation requests the adapter-advertised limits instead of defaulting to a smaller storage-buffer ceiling during strict compare runs
+- `runtime/zig/src/backend/backend_policy.zig` now resolves repo policy files deterministically by searching upward from the current working directory, which fixes the D3D12 policy tests when the Zig test runner executes from `runtime/zig`
+- `bench/workloads/metadata/backend-workload-catalog.json` and regenerated `bench/workloads/workloads.amd.vulkan.json` now remove stale `pathAsymmetry` flags from the governed AMD Vulkan upload rows (`upload_write_buffer_{1kb,64kb,1mb,4mb}`) and demote `surface_presentation` back to directional in the `amd_vulkan_superset` lane so the compare-dev preset once again materializes a valid strict apples-to-apples contract set
+- Regression coverage was added in `bench/tests/test_backend_workload_catalog.py` for both repaired states: governed AMD Vulkan comparable upload rows may not carry `pathAsymmetry`, and non-vetted non-app apples-to-apples domains in the `amd_vulkan` materialization must remain directional
+- Verification from this workspace passed with `zig build test`, `zig build test-core`, `zig build test-full`, `zig build test-d3d12`, `zig build test-wgsl`, `zig build import-fence`, `zig build -Doptimize=ReleaseFast`, and `python3 -m unittest bench.tests.test_backend_workload_catalog`; the fresh AMD Vulkan compare-dev artifact is `bench/out/amd-vulkan/compare-dev/20260404T134531Z/dawn-vs-doe.amd.vulkan.compare-dev.json`, which now reports `comparisonStatus=comparable` and `claimStatus=diagnostic` (diagnostic because compare-dev still runs only 2 timed samples per side against a claim floor of 7, and several rows remain performance-negative on this host)
+
+## Backend runtime coordinators now delegate telemetry, queue and render mechanics, and Vulkan surface/probe policy to narrower helper modules (2026-04-03 UTC)
+
+- `runtime/zig/src/backend/backend_runtime.zig` now keeps backend policy/load/dispatch flow in one place while backend-specific telemetry refresh moved into `runtime/zig/src/backend/backend_runtime_telemetry.zig`
+- `runtime/zig/src/backend/metal/metal_native_runtime.zig` now delegates queue flush/barrier mechanics to `runtime/zig/src/backend/metal/metal_runtime_queue_ops.zig` and render-draw orchestration to `runtime/zig/src/backend/metal/metal_runtime_render_ops.zig`, leaving the runtime root focused on lifecycle, resource entrypoints, and backend-owned state
+- `runtime/zig/src/backend/vulkan/native_runtime.zig` now delegates async probe coordination to `runtime/zig/src/backend/vulkan/vk_runtime_probe_ops.zig` and surface lifecycle/canvas-format logic to `runtime/zig/src/backend/vulkan/vk_runtime_surface_ops.zig`, so the runtime root stays centered on bootstrap, dispatch, upload, and resource-facing entrypoints
+- Verification for this pass passed with `zig build`, `zig build import-fence`, `zig test src/execution.zig`, empty direct-import greps for the compatibility barrels, empty direct backend-implementation reach-through greps from non-backend files, and an acyclic local import-graph audit over `runtime/zig/src`
+
 ## Broad ABI and native compatibility barrels are now truly cold, macOS surface seam restored, and the fence enforces both states (2026-04-03 UTC)
 
 - `runtime/zig/src/core/abi/wgpu_base_types.zig` and

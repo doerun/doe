@@ -13,18 +13,16 @@ const model_compute_types = @import("../../model_compute_types.zig");
 const model_render_types = @import("../../model_render_types.zig");
 const model_texture_types = @import("../../model_texture_types.zig");
 const backend_policy = @import("../backend_policy.zig");
-const common_errors = @import("../common/errors.zig");
 const common_timing = @import("../common/timing.zig");
 const webgpu = @import("../runtime_types.zig");
 
 const c = @import("vk_constants.zig");
-const probe_ops = @import("vk_runtime_probes.zig");
+const probe_ops = @import("vk_runtime_probe_ops.zig");
 const vk_device = @import("vk_device.zig");
 const vk_sync = @import("vk_sync.zig");
 const vk_upload = @import("vk_upload.zig");
 const vk_pipeline = @import("vk_pipeline.zig");
 const vk_resources = @import("vk_resources.zig");
-const vk_formats = @import("vk_formats.zig");
 const vk_render = @import("vk_render.zig");
 const vk_metrics = @import("vk_metrics.zig");
 const surface_ops = @import("vk_runtime_surface_ops.zig");
@@ -38,6 +36,7 @@ pub const upload_uses_fast_path = vk_upload.upload_uses_fast_path;
 pub const upload_uses_direct_path = vk_upload.upload_uses_direct_path;
 
 pub const DispatchMetrics = vk_metrics.DispatchMetrics;
+pub const AsyncProbeResult = probe_ops.AsyncProbeResult;
 
 pub const NativeVulkanRuntime = struct {
     allocator: std.mem.Allocator,
@@ -555,7 +554,7 @@ pub const NativeVulkanRuntime = struct {
     pub fn resource_table_immediates_probe(
         self: *NativeVulkanRuntime,
         iterations: u32,
-    ) !probe_ops.AsyncProbeResult {
+    ) !AsyncProbeResult {
         return probe_ops.resource_table_immediates_probe(self, iterations);
     }
 
@@ -563,7 +562,7 @@ pub const NativeVulkanRuntime = struct {
         self: *NativeVulkanRuntime,
         iterations: u32,
         target_format: probe_ops.WGPUTextureFormat,
-    ) !probe_ops.AsyncProbeResult {
+    ) !AsyncProbeResult {
         return probe_ops.pixel_local_storage_probe(self, iterations, target_format);
     }
 
@@ -619,7 +618,7 @@ pub const NativeVulkanRuntime = struct {
         return surface_ops.preferred_canvas_format(self);
     }
 
-    pub fn configure_surface(self: *NativeVulkanRuntime, cmd_arg: anytype) !void {
+    pub fn configure_surface(self: *NativeVulkanRuntime, cmd_arg: surface_ops.SurfaceConfigureCommand) !void {
         return surface_ops.configure_surface(self, cmd_arg);
     }
 

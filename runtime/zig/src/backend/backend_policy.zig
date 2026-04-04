@@ -40,6 +40,7 @@ pub const LoadedSelectionPolicy = struct {
 
 pub const DEFAULT_RUNTIME_POLICY_PATH = "config/backend-runtime-policy.json";
 const MAX_RUNTIME_POLICY_BYTES: usize = 64 * 1024;
+const MAX_RUNTIME_POLICY_SEARCH_DEPTH: usize = 4;
 const EXPECTED_SCHEMA_VERSION: i64 = 2;
 const DEFAULT_POLICY_HASH = "backend-runtime-policy-v3";
 
@@ -92,7 +93,7 @@ pub fn load_policy_for_lane(
     policy_path: []const u8,
     lane: BackendLane,
 ) !LoadedSelectionPolicy {
-    const bytes = try std.fs.cwd().readFileAlloc(allocator, policy_path, MAX_RUNTIME_POLICY_BYTES);
+    const bytes = try read_policy_file_alloc(allocator, policy_path);
     defer allocator.free(bytes);
 
     var arena = std.heap.ArenaAllocator.init(allocator);
@@ -182,6 +183,29 @@ pub fn load_policy_for_lane(
         },
         .owned_policy_hash = owned_policy_hash,
     };
+}
+
+fn read_policy_file_alloc(allocator: std.mem.Allocator, policy_path: []const u8) ![]u8 {
+    var candidate_buffer: [std.fs.max_path_bytes]u8 = undefined;
+    var depth: usize = 0;
+    while (depth <= MAX_RUNTIME_POLICY_SEARCH_DEPTH) : (depth += 1) {
+        const candidate = if (depth == 0) policy_path else blk: {
+            const prefix_len = depth * "../".len;
+            if (prefix_len + policy_path.len > candidate_buffer.len) return error.NameTooLong;
+            var index: usize = 0;
+            while (index < depth) : (index += 1) {
+                const start = index * "../".len;
+                @memcpy(candidate_buffer[start .. start + "../".len], "../");
+            }
+            @memcpy(candidate_buffer[prefix_len .. prefix_len + policy_path.len], policy_path);
+            break :blk candidate_buffer[0 .. prefix_len + policy_path.len];
+        };
+        return std.fs.cwd().readFileAlloc(allocator, candidate, MAX_RUNTIME_POLICY_BYTES) catch |err| switch (err) {
+            error.FileNotFound => continue,
+            else => return err,
+        };
+    }
+    return error.FileNotFound;
 }
 
 pub fn default_policy_for_lane(lane: BackendLane) SelectionPolicy {

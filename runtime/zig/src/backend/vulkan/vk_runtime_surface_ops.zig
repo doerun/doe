@@ -1,10 +1,10 @@
-const std = @import("std");
 const model_gpu_types = @import("../../model_texture_value_types.zig");
 const model_surface_control_types = @import("../../model_surface_control_types.zig");
 const c = @import("vk_constants.zig");
 const vulkan_surface = @import("vulkan_surface.zig");
 
 pub const SurfaceState = vulkan_surface.VulkanSurface;
+pub const SurfaceConfigureCommand = model_surface_control_types.SurfaceConfigureCommand;
 pub const WGPUTextureFormat = model_gpu_types.WGPUTextureFormat;
 
 pub fn create_surface(self: anytype, handle: u64) !void {
@@ -17,17 +17,17 @@ pub fn create_surface(self: anytype, handle: u64) !void {
 pub fn get_surface_capabilities(self: anytype, handle: u64) !void {
     const surface = self.surfaces.getPtr(handle) orelse return error.SurfaceUnavailable;
     if (surface.vk_surface != 0) {
-        const caps = vulkan_surface.query_surface_capabilities(
+        const caps = try vulkan_surface.query_surface_capabilities(
             self.physical_device,
             self.queue_family_index,
             surface.vk_surface,
-        ) catch |err| return err;
+        );
         surface.cached_capabilities = caps;
         surface.capabilities_queried = true;
     }
 }
 
-pub fn preferred_canvas_format(self: anytype) WGPUTextureFormat {
+pub fn preferred_canvas_format(self: anytype) model_gpu_types.WGPUTextureFormat {
     var it = self.surfaces.valueIterator();
     while (it.next()) |surface| {
         if (!surface.capabilities_queried or surface.cached_capabilities.format_count == 0) continue;
@@ -54,8 +54,14 @@ pub fn configure_surface(self: anytype, cmd_arg: model_surface_control_types.Sur
     surface.usage = if (cmd_arg.usage == 0) model_gpu_types.WGPUTextureUsage_RenderAttachment else cmd_arg.usage;
     surface.alpha_mode = if (cmd_arg.alpha_mode == 0) c.VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR else cmd_arg.alpha_mode;
     surface.present_mode = if (cmd_arg.present_mode == 0) c.VK_PRESENT_MODE_FIFO_KHR else cmd_arg.present_mode;
-    surface.tone_mapping_mode = if (cmd_arg.tone_mapping_mode == 0) model_surface_control_types.WGPUCanvasToneMappingMode_Standard else cmd_arg.tone_mapping_mode;
-    surface.desired_maximum_frame_latency = if (cmd_arg.desired_maximum_frame_latency == 0) c.DEFAULT_SURFACE_MAX_FRAME_LATENCY else cmd_arg.desired_maximum_frame_latency;
+    surface.tone_mapping_mode = if (cmd_arg.tone_mapping_mode == 0)
+        model_surface_control_types.WGPUCanvasToneMappingMode_Standard
+    else
+        cmd_arg.tone_mapping_mode;
+    surface.desired_maximum_frame_latency = if (cmd_arg.desired_maximum_frame_latency == 0)
+        c.DEFAULT_SURFACE_MAX_FRAME_LATENCY
+    else
+        cmd_arg.desired_maximum_frame_latency;
     try get_surface_capabilities(self, cmd_arg.handle);
     try vulkan_surface.create_swapchain(
         self.device,

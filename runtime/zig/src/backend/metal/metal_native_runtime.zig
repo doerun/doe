@@ -27,8 +27,6 @@ const surface_runtime = @import("metal_surface_runtime.zig");
 const kernel_dispatch = @import("metal_kernel_dispatch.zig");
 const bridge = @import("metal_bridge_decls.zig");
 const HAS_PIPELINE_CACHE = builtin.os.tag == .macos;
-const metal_bridge_command_buffer_commit = bridge.metal_bridge_command_buffer_commit;
-const metal_bridge_command_buffer_wait_completed = bridge.metal_bridge_command_buffer_wait_completed;
 const metal_bridge_create_default_device = bridge.metal_bridge_create_default_device;
 const metal_bridge_device_new_command_queue = bridge.metal_bridge_device_new_command_queue;
 const metal_bridge_device_new_command_queue_with_priority = bridge.metal_bridge_device_new_command_queue_with_priority;
@@ -225,7 +223,7 @@ pub const NativeMetalRuntime = struct {
     }
 
     pub fn prewarm_upload_path(self: *NativeMetalRuntime, max_upload_bytes: u64, mode: webgpu.UploadBufferUsageMode) !void {
-        return metal_upload.prewarm_upload_path(self, max_upload_bytes, mode);
+        return queue_ops.prewarm_upload_path(self, max_upload_bytes, mode);
     }
 
     pub const KernelDispatchResult = kernel_dispatch.KernelDispatchResult;
@@ -380,7 +378,7 @@ pub const NativeMetalRuntime = struct {
         }
     }
 
-    fn release_deferred_releases(self: *NativeMetalRuntime) void {
+    pub fn release_deferred_releases(self: *NativeMetalRuntime) void {
         cleanup.release_deferred(&self.deferred_releases);
     }
 
@@ -400,15 +398,15 @@ pub const NativeMetalRuntime = struct {
         return resource_runtime.ensure_render_pipeline(self, fmt);
     }
 
-    fn ensure_render_target(self: *NativeMetalRuntime, width: u32, height: u32, fmt: u32) !void {
+    pub fn ensure_render_target(self: *NativeMetalRuntime, width: u32, height: u32, fmt: u32) !void {
         return resource_runtime.ensure_render_target(self, width, height, fmt);
     }
 
-    fn ensure_streaming_render_encoder(self: *NativeMetalRuntime) !void {
+    pub fn ensure_streaming_render_encoder(self: *NativeMetalRuntime) !void {
         return resource_runtime.ensure_streaming_render_encoder(self);
     }
 
-    fn ensure_icb(self: *NativeMetalRuntime, draw_count: u32, vertex_count: u32, instance_count: u32, redundant_pl: c_int) !?*anyopaque {
+    pub fn ensure_icb(self: *NativeMetalRuntime, draw_count: u32, vertex_count: u32, instance_count: u32, redundant_pl: c_int) !?*anyopaque {
         return resource_runtime.ensure_icb(self, draw_count, vertex_count, instance_count, redundant_pl);
     }
 
@@ -416,7 +414,7 @@ pub const NativeMetalRuntime = struct {
         return copy_queue.ensure_copy_blit_encoder(self);
     }
 
-    fn flush_copy_queue(self: *NativeMetalRuntime) void {
+    pub fn flush_copy_queue(self: *NativeMetalRuntime) void {
         return copy_queue.flush_copy_queue(self);
     }
 

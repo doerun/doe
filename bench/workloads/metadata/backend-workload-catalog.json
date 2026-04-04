@@ -2954,15 +2954,15 @@
           "timingNormalizationNote": "Directional lifecycle-only contract workload."
         },
         "amd_vulkan_superset": {
-          "description": "Surface presentation contract mapped for apples-to-apples lane validation across create/release and concurrent surface sequencing.",
-          "comparabilityNotes": "Strict lane for surface lifecycle protocol visibility in the extended comparable suite. Mapped through concurrent presentation coordination to keep fixed command shape while protocol parity is developed.",
+          "description": "Directional surface lifecycle proxy benchmark covering create/release surface path on headless adapters.",
+          "comparabilityNotes": "Directional-only surface lifecycle proxy. This workload is not comparable for strict claim lanes because Dawn perf coverage does not expose a matching create/release-surface benchmark contract.",
           "commandsPath": "examples/surface_presentation_commands.json",
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
           "vendor": "amd",
           "family": "gfx11",
           "driver": "24.0.0",
-          "comparable": true,
-          "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+          "comparable": false,
+          "timingNormalizationNote": "Directional proxy only: normalize per create/release operation pair."
         },
         "amd_vulkan_superset_native_supported": {
           "description": "Directional-only surface lifecycle contract for the AMD native Vulkan subset. Doe now owns a native headless surface lifecycle/present state machine for this contract.",
@@ -4133,8 +4133,6 @@
           "rightCommandRepeat": 50000,
           "rightIgnoreFirstOps": 1,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-          "pathAsymmetry": true,
-          "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored.",
           "leftCommandRepeat": 50000,
           "leftIgnoreFirstOps": 1
         },
@@ -4336,8 +4334,6 @@
           "rightCommandRepeat": 50,
           "rightIgnoreFirstOps": 1,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-          "pathAsymmetry": true,
-          "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored.",
           "leftCommandRepeat": 50,
           "leftIgnoreFirstOps": 1
         },
@@ -4878,8 +4874,6 @@
           "rightCommandRepeat": 50,
           "rightIgnoreFirstOps": 1,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-          "pathAsymmetry": true,
-          "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored.",
           "leftCommandRepeat": 50,
           "leftIgnoreFirstOps": 1
         },
@@ -5091,8 +5085,6 @@
           "rightCommandRepeat": 10000,
           "rightIgnoreFirstOps": 0,
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
-          "pathAsymmetry": true,
-          "pathAsymmetryNote": "Doe upload may resolve to host-visible CPU writes without an equivalent GPU copy, while Dawn performs staging+copy. This hardware-path-specific advantage is non-transferable and non-claimable until structural equivalence is restored.",
           "leftCommandRepeat": 10000,
           "leftIgnoreFirstOps": 0
         },
