@@ -1,5 +1,6 @@
 const abi_callback = @import("../../core/abi/wgpu_callback_descriptor_types.zig");
 const abi_core = @import("../../core/abi/wgpu_core_base_types.zig");
+const abi_pipeline = @import("../../core/abi/wgpu_pipeline_descriptor_types.zig");
 const abi_texture = @import("../../core/abi/wgpu_texture_base_types.zig");
 
 pub const WGPUSType_RenderPassPixelLocalStorage: abi_core.WGPUSType = 0x00050010;
@@ -89,7 +90,7 @@ pub const RenderPassDescriptor = extern struct {
     colorAttachments: [*]const RenderPassColorAttachment,
     depthStencilAttachment: ?*const anyopaque,
     occlusionQuerySet: abi_core.WGPUQuerySet,
-    timestampWrites: ?*const abi_callback.WGPUPassTimestampWrites,
+    timestampWrites: ?*const abi_pipeline.WGPUPassTimestampWrites,
     maxDrawCount: u64,
 };
 

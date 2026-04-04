@@ -87,7 +87,7 @@ pub const WGPUExternalTextureBindingLayout = extern struct {
 
 pub const WGPUExternalTextureBindingEntry = extern struct {
     chain: callbacks.WGPUChainedStruct,
-    externalTexture: base.WGPUExternalTexture,
+    externalTexture: core.WGPUExternalTexture,
 };
 
 pub const WGPUBindGroupLayoutDescriptor = extern struct {

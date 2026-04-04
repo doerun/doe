@@ -320,11 +320,11 @@ pub fn d3d12_device_has_feature_with_caps(feature: u32, caps: D3D12DeviceCaps) b
     return is_feature_supported_with_caps(feature, caps);
 }
 
-pub fn d3d12_device_get_limits(limits: *abi_descriptor.WGPULimits) void {
+pub fn d3d12_device_get_limits(limits: *abi_callback.WGPULimits) void {
     limits.* = build_limits();
 }
 
-pub fn d3d12_adapter_get_limits(limits: *abi_descriptor.WGPULimits) void {
+pub fn d3d12_adapter_get_limits(limits: *abi_callback.WGPULimits) void {
     limits.* = build_limits();
 }
 
