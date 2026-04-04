@@ -18,6 +18,8 @@ const metal_buffer_pool = @import("metal_buffer_pool.zig");
 const metal_gpu_timestamps = @import("metal_gpu_timestamps.zig");
 const metal_pipeline_cache = @import("metal_pipeline_cache.zig");
 const metal_runtime_limits = @import("metal_runtime_limits.zig");
+const queue_ops = @import("metal_runtime_queue_ops.zig");
+const render_ops = @import("metal_runtime_render_ops.zig");
 const metal_upload = @import("metal_upload.zig");
 const resource_commands = @import("metal_resource_commands.zig");
 const resource_runtime = @import("metal_runtime_resources.zig");
@@ -26,25 +28,14 @@ const kernel_dispatch = @import("metal_kernel_dispatch.zig");
 const bridge = @import("metal_bridge_decls.zig");
 const HAS_PIPELINE_CACHE = builtin.os.tag == .macos;
 const metal_bridge_command_buffer_commit = bridge.metal_bridge_command_buffer_commit;
-const metal_bridge_command_buffer_encode_signal_event = bridge.metal_bridge_command_buffer_encode_signal_event;
-const metal_bridge_command_buffer_encode_wait_event = bridge.metal_bridge_command_buffer_encode_wait_event;
-const metal_bridge_command_buffer_setup_fast_wait = bridge.metal_bridge_command_buffer_setup_fast_wait;
 const metal_bridge_command_buffer_wait_completed = bridge.metal_bridge_command_buffer_wait_completed;
-const metal_bridge_command_buffer_wait_fast = bridge.metal_bridge_command_buffer_wait_fast;
-const metal_bridge_create_command_buffer = bridge.metal_bridge_create_command_buffer;
 const metal_bridge_create_default_device = bridge.metal_bridge_create_default_device;
 const metal_bridge_device_new_command_queue = bridge.metal_bridge_device_new_command_queue;
 const metal_bridge_device_new_command_queue_with_priority = bridge.metal_bridge_device_new_command_queue_with_priority;
 const metal_bridge_device_new_shared_event = bridge.metal_bridge_device_new_shared_event;
-const metal_bridge_blit_encoder_copy_texture_to_texture = bridge.metal_bridge_blit_encoder_copy_texture_to_texture;
-const metal_bridge_cmd_buf_blit_encoder = bridge.metal_bridge_cmd_buf_blit_encoder;
-const metal_bridge_device_new_render_target = bridge.metal_bridge_device_new_render_target;
 const metal_bridge_end_blit_encoding = bridge.metal_bridge_end_blit_encoding;
 const metal_bridge_release = bridge.metal_bridge_release;
-const metal_bridge_render_encoder_draw = bridge.metal_bridge_render_encoder_draw;
 const metal_bridge_render_encoder_end = bridge.metal_bridge_render_encoder_end;
-const metal_bridge_render_encoder_execute_icb = bridge.metal_bridge_render_encoder_execute_icb;
-const metal_bridge_shared_event_wait = bridge.metal_bridge_shared_event_wait;
 
 pub const MAX_UPLOAD_BYTES: u64 = 0; // unused; retained for prewarm clamp only
 pub const MAX_BINDING_SLOTS: usize = 32;
@@ -52,16 +43,8 @@ pub const SMALL_UPLOAD_CAPACITY: usize = metal_runtime_limits.SMALL_UPLOAD_CAPAC
 pub const FAST_WAIT_UPLOAD_THRESHOLD: usize = metal_runtime_limits.FAST_WAIT_UPLOAD_THRESHOLD;
 pub const MAX_POOL_ENTRIES_PER_SIZE: usize = metal_buffer_pool.MAX_POOL_ENTRIES_PER_SIZE;
 pub const DispatchMetrics = kernel_dispatch.DispatchMetrics;
-
-pub const RenderMetrics = struct {
-    setup_ns: u64,
-    encode_ns: u64,
-    submit_wait_ns: u64,
-    draw_count: u32,
-    gpu_elapsed_ns: u64 = 0,
-    gpu_timestamps_attempted: bool = false,
-    gpu_timestamps_valid: bool = false,
-};
+pub const FlushResult = queue_ops.FlushResult;
+pub const RenderMetrics = render_ops.RenderMetrics;
 
 pub const PendingUpload = struct {
     src_buffer: ?*anyopaque,
@@ -80,13 +63,6 @@ pub const IcbKey = struct {
     vertex_count: u32,
     instance_count: u32,
     redundant: bool,
-};
-
-pub const FlushResult = struct {
-    submit_wait_ns: u64 = 0,
-    gpu_elapsed_ns: u64 = 0,
-    gpu_timestamps_attempted: bool = false,
-    gpu_timestamps_valid: bool = false,
 };
 
 pub const NativeMetalRuntime = struct {
@@ -174,7 +150,7 @@ pub const NativeMetalRuntime = struct {
 
     pub fn deinit(self: *NativeMetalRuntime) void {
         _ = self.flush_queue() catch {};
-        self.wait_outstanding();
+        queue_ops.wait_outstanding(self);
         // Release any remaining streaming uploads (if flush_queue failed).
         for (self.streaming_uploads.items) |item| {
             metal_bridge_release(item.src_buffer);
@@ -237,147 +213,15 @@ pub const NativeMetalRuntime = struct {
     }
 
     pub fn flush_queue(self: *NativeMetalRuntime) !u64 {
-        const result = try self.flush_queue_timed();
-        return result.submit_wait_ns;
+        return queue_ops.flush_queue(self);
     }
 
     pub fn flush_queue_timed(self: *NativeMetalRuntime) !FlushResult {
-        if (!self.has_device) return .{};
-        const has_streaming = self.streaming_cmd_buf != null;
-        if (!has_streaming and !self.has_deferred_submissions) return .{};
-        const start_ns = common_timing.now_ns();
-        self.wait_outstanding();
-        var gpu_timestamps_attempted = false;
-        var gpu_elapsed_ns: u64 = 0;
-        if (has_streaming) {
-            // Flush copy queue first so its signal precedes the main queue's wait.
-            if (self.has_pending_copies) self.flush_copy_queue();
-
-            if (self.streaming_render_encoder) |enc| {
-                metal_bridge_render_encoder_end(enc);
-                metal_bridge_release(enc);
-                self.streaming_render_encoder = null;
-            }
-            if (self.streaming_blit_encoder) |enc| {
-                metal_bridge_end_blit_encoding(enc);
-                self.streaming_blit_encoder = null;
-            }
-
-            const cmd_buf = self.streaming_cmd_buf.?;
-
-            // If the copy queue signaled, encode a GPU-side wait on the main
-            // queue so compute/render work waits for copy completion.
-            if (self.copy_fence_value > 0) {
-                if (self.shared_event) |ev| {
-                    metal_bridge_command_buffer_encode_wait_event(cmd_buf, ev, self.copy_fence_value);
-                }
-            }
-
-            // Record end GPU timestamp before commit (after all other encoders).
-            gpu_timestamps_attempted = self.streaming_gpu_timestamps_active;
-            if (self.streaming_gpu_timestamps_active) {
-                self.timestamp_state.record_end(cmd_buf);
-            }
-
-            self.fence_value +%= 1;
-            const use_fast_wait =
-                !self.streaming_has_render and
-                (self.streaming_has_copy or self.streaming_max_upload_bytes >= FAST_WAIT_UPLOAD_THRESHOLD);
-            if (use_fast_wait) {
-                if (self.shared_event) |ev| {
-                    metal_bridge_command_buffer_encode_signal_event(cmd_buf, ev, self.fence_value);
-                }
-                metal_bridge_command_buffer_setup_fast_wait(cmd_buf);
-            }
-            metal_bridge_command_buffer_commit(cmd_buf);
-            // When using fast wait with GPU timestamps, fall back to
-            // waitUntilCompleted so counter data is guaranteed resolvable.
-            if (gpu_timestamps_attempted) {
-                metal_bridge_command_buffer_wait_completed(cmd_buf);
-            } else if (use_fast_wait) {
-                metal_bridge_command_buffer_wait_fast();
-            } else {
-                metal_bridge_command_buffer_wait_completed(cmd_buf);
-            }
-
-            // Resolve GPU timestamps after command buffer completion.
-            if (gpu_timestamps_attempted) {
-                gpu_elapsed_ns = self.timestamp_state.resolve_elapsed_ns();
-            }
-
-            metal_bridge_release(cmd_buf);
-            self.streaming_cmd_buf = null;
-            self.streaming_has_render = false;
-            self.streaming_has_copy = false;
-            self.streaming_max_upload_bytes = 0;
-            self.streaming_gpu_timestamps_active = false;
-            for (self.streaming_uploads.items) |item| {
-                pool_push_or_release(&self.shared_pool, self.allocator, item.byte_count, item.src_buffer);
-                pool_push_or_release(&self.private_pool, self.allocator, item.byte_count, item.dst_buffer);
-            }
-            self.streaming_uploads.clearRetainingCapacity();
-        } else if (self.has_deferred_submissions) {
-            if (self.outstanding_cmd_buf != null) {
-                self.wait_outstanding();
-            } else {
-                const empty_cmd = metal_bridge_create_command_buffer(self.queue) orelse return error.InvalidState;
-                metal_bridge_command_buffer_commit(empty_cmd);
-                metal_bridge_command_buffer_wait_completed(empty_cmd);
-                metal_bridge_release(empty_cmd);
-            }
-        }
-
-        self.has_deferred_submissions = false;
-        const end_ns = common_timing.now_ns();
-        self.release_deferred_releases();
-        // Batch-drain deferred texture/sampler releases collected since last flush.
-        self.deferred_pool.drain();
-        return .{
-            .submit_wait_ns = common_timing.ns_delta(end_ns, start_ns),
-            .gpu_elapsed_ns = gpu_elapsed_ns,
-            .gpu_timestamps_attempted = gpu_timestamps_attempted,
-            .gpu_timestamps_valid = gpu_timestamps_attempted and gpu_elapsed_ns > 0,
-        };
-    }
-
-    fn wait_outstanding(self: *NativeMetalRuntime) void {
-        if (self.outstanding_cmd_buf) |cb| {
-            if (self.shared_event) |ev| {
-                metal_bridge_shared_event_wait(ev, self.fence_value);
-            } else {
-                metal_bridge_command_buffer_wait_completed(cb);
-            }
-            metal_bridge_release(cb);
-            self.outstanding_cmd_buf = null;
-        }
+        return queue_ops.flush_queue_timed(self);
     }
 
     pub fn barrier(self: *NativeMetalRuntime, queue_wait_mode: webgpu.QueueWaitMode, queue_sync_mode: webgpu.QueueSyncMode) !u64 {
-        _ = queue_wait_mode;
-        if (self.has_pending_copies) self.flush_copy_queue();
-        if (queue_sync_mode == .deferred and self.streaming_cmd_buf == null and self.has_deferred_submissions) {
-            const start_ns = common_timing.now_ns();
-            if (self.outstanding_cmd_buf) |cb| {
-                metal_bridge_release(cb);
-                self.outstanding_cmd_buf = null;
-            }
-            const empty_cmd = metal_bridge_create_command_buffer(self.queue) orelse return error.InvalidState;
-            self.fence_value +%= 1;
-            if (self.shared_event) |ev| {
-                metal_bridge_command_buffer_encode_signal_event(empty_cmd, ev, self.fence_value);
-            }
-            metal_bridge_command_buffer_commit(empty_cmd);
-            self.outstanding_cmd_buf = empty_cmd;
-            return common_timing.ns_delta(common_timing.now_ns(), start_ns);
-        }
-
-        const start_ns = common_timing.now_ns();
-        if (self.streaming_cmd_buf != null or self.has_deferred_submissions) {
-            _ = try self.flush_queue();
-        }
-        self.wait_outstanding();
-        const end_ns = common_timing.now_ns();
-        return common_timing.ns_delta(end_ns, start_ns);
+        return queue_ops.barrier(self, queue_wait_mode, queue_sync_mode);
     }
 
     pub fn prewarm_upload_path(self: *NativeMetalRuntime, max_upload_bytes: u64, mode: webgpu.UploadBufferUsageMode) !void {
@@ -456,110 +300,7 @@ pub const NativeMetalRuntime = struct {
     }
 
     pub fn render_draw(self: *NativeMetalRuntime, cmd: model_render_types.RenderDrawCommand, queue_sync_mode: webgpu.QueueSyncMode) !RenderMetrics {
-        const fmt = cmd.target_format;
-        const is_bundle = cmd.encode_mode == .render_bundle;
-        const red_pl: c_int = if (cmd.pipeline_mode == .redundant) 1 else 0;
-
-        // Quirk: Intel Metal R8/RG8Unorm small-mip workaround. When the flag
-        // is set, render to a temporary texture then blit to the real target,
-        // avoiding driver corruption on affected mip levels.
-        const needs_temp_texture = cmd.uses_temporary_render_texture;
-
-        // Setup: pipeline compile, texture alloc, ICB creation, encoder creation.
-        const setup_start = common_timing.now_ns();
-        try self.ensure_render_pipeline(fmt);
-        try self.ensure_render_target(cmd.target_width, cmd.target_height, fmt);
-
-        var temp_texture: ?*anyopaque = null;
-        var saved_target: ?*anyopaque = null;
-        if (needs_temp_texture) {
-            saved_target = self.render_target;
-            temp_texture = metal_bridge_device_new_render_target(
-                self.device,
-                cmd.target_width,
-                cmd.target_height,
-                fmt,
-            ) orelse return error.InvalidState;
-            self.render_target = temp_texture;
-            // Force fresh render encoder targeting the temporary texture.
-            if (self.streaming_render_encoder) |enc| {
-                metal_bridge_render_encoder_end(enc);
-                metal_bridge_release(enc);
-                self.streaming_render_encoder = null;
-            }
-        }
-
-        const icb = if (is_bundle) try self.ensure_icb(cmd.draw_count, cmd.vertex_count, cmd.instance_count, red_pl) else null;
-        try self.ensure_streaming_render_encoder();
-        const setup_ns = common_timing.ns_delta(common_timing.now_ns(), setup_start);
-
-        // Encode: draw/execute calls.
-        const encode_start = common_timing.now_ns();
-        if (is_bundle) {
-            metal_bridge_render_encoder_execute_icb(
-                self.streaming_render_encoder,
-                icb,
-                cmd.draw_count,
-            );
-        } else {
-            metal_bridge_render_encoder_draw(
-                self.streaming_render_encoder,
-                0x00000004,
-                cmd.draw_count,
-                cmd.vertex_count,
-                cmd.instance_count,
-                0,
-                0,
-                red_pl,
-                self.render_pipeline,
-            );
-        }
-
-        // Blit temporary texture to the real render target.
-        if (needs_temp_texture) {
-            if (self.streaming_render_encoder) |enc| {
-                metal_bridge_render_encoder_end(enc);
-                metal_bridge_release(enc);
-                self.streaming_render_encoder = null;
-            }
-            self.render_target = saved_target.?;
-            // Ensure blit encoder for the copy.
-            if (self.streaming_blit_encoder == null) {
-                if (self.streaming_cmd_buf == null) {
-                    self.streaming_cmd_buf = metal_bridge_create_command_buffer(self.queue) orelse return error.InvalidState;
-                }
-                self.streaming_blit_encoder = metal_bridge_cmd_buf_blit_encoder(self.streaming_cmd_buf) orelse return error.InvalidState;
-            }
-            metal_bridge_blit_encoder_copy_texture_to_texture(
-                self.streaming_blit_encoder,
-                temp_texture,
-                0,
-                self.render_target,
-                0,
-                cmd.target_width,
-                cmd.target_height,
-                1,
-            );
-            metal_bridge_release(temp_texture.?);
-            self.streaming_has_copy = true;
-        }
-
-        const encode_ns = common_timing.ns_delta(common_timing.now_ns(), encode_start);
-
-        // Submit+wait: commit command buffer and wait for GPU completion.
-        if (queue_sync_mode == .deferred) {
-            return .{ .setup_ns = setup_ns, .encode_ns = encode_ns, .submit_wait_ns = 0, .draw_count = cmd.draw_count };
-        }
-        const flush = try self.flush_queue_timed();
-        return .{
-            .setup_ns = setup_ns,
-            .encode_ns = encode_ns,
-            .submit_wait_ns = flush.submit_wait_ns,
-            .draw_count = cmd.draw_count,
-            .gpu_elapsed_ns = flush.gpu_elapsed_ns,
-            .gpu_timestamps_attempted = flush.gpu_timestamps_attempted,
-            .gpu_timestamps_valid = flush.gpu_timestamps_valid,
-        };
+        return render_ops.render_draw(self, cmd, queue_sync_mode);
     }
 
     pub fn copy_command(self: *NativeMetalRuntime, cmd: model_resource_types.CopyCommand, queue_sync_mode: webgpu.QueueSyncMode) !copy_runtime.CopyMetrics {
@@ -698,8 +439,4 @@ pub const release_ref = cleanup.release_ref;
 
 pub fn pool_pop(pool: *BufferPool, size: usize) ?*anyopaque {
     return metal_buffer_pool.pool_pop(pool, size);
-}
-
-fn pool_push_or_release(pool: *BufferPool, allocator: std.mem.Allocator, size: usize, buf: ?*anyopaque) void {
-    metal_buffer_pool.pool_push_or_release(pool, allocator, size, buf);
 }

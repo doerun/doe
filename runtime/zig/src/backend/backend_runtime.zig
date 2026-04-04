@@ -1,17 +1,14 @@
 const std = @import("std");
-const builtin = @import("builtin");
 const model_commands = @import("../model_commands.zig");
 const model_profile = @import("../model_profile.zig");
 const model_transfer_types = @import("../model_compute_types.zig");
 const backend_iface = @import("backend_iface.zig");
 const backend_policy = @import("backend_policy.zig");
 const backend_registry = @import("backend_registry.zig");
+const backend_runtime_telemetry = @import("backend_runtime_telemetry.zig");
 const backend_selection = @import("backend_selection.zig");
 const backend_telemetry = @import("backend_telemetry.zig");
 const runtime_types = @import("runtime_types.zig");
-const vulkan_backend = if (builtin.os.tag == .linux) @import("vulkan/mod.zig") else struct {};
-const metal_backend = if (builtin.os.tag == .macos) @import("metal/mod.zig") else struct {};
-const d3d12_backend = if (builtin.os.tag == .windows) @import("d3d12/mod.zig") else struct {};
 
 const model = struct {
     pub const Command = model_commands.Command;
@@ -78,35 +75,6 @@ pub const BackendRuntime = struct {
         }
     }
 
-    fn refreshBackendTelemetry(self: *BackendRuntime) void {
-        switch (self.backend.id) {
-            .doe_vulkan => {
-                if (comptime builtin.os.tag == .linux) {
-                    self.backend.telemetry.shader_artifact_manifest_path = vulkan_backend.manifest_path_from_context(self.backend.context);
-                    self.backend.telemetry.shader_artifact_manifest_hash = vulkan_backend.manifest_hash_from_context(self.backend.context);
-                    self.backend.telemetry.adapter_ordinal = vulkan_backend.adapter_ordinal_from_context(self.backend.context);
-                    self.backend.telemetry.queue_family_index = vulkan_backend.queue_family_index_from_context(self.backend.context);
-                    self.backend.telemetry.present_capable = vulkan_backend.present_capable_from_context(self.backend.context);
-                }
-            },
-            .doe_metal => {
-                if (comptime builtin.os.tag == .macos) {
-                    self.backend.telemetry.shader_artifact_manifest_path = metal_backend.manifest_path_from_context(self.backend.context);
-                    self.backend.telemetry.shader_artifact_manifest_hash = metal_backend.manifest_hash_from_context(self.backend.context);
-                    self.backend.telemetry.host_plan_artifact_path = metal_backend.host_plan_path_from_context(self.backend.context);
-                    self.backend.telemetry.host_plan_artifact_hash = metal_backend.host_plan_hash_from_context(self.backend.context);
-                }
-            },
-            .doe_d3d12 => {
-                if (comptime builtin.os.tag == .windows) {
-                    self.backend.telemetry.shader_artifact_manifest_path = d3d12_backend.manifest_path_from_context(self.backend.context);
-                    self.backend.telemetry.shader_artifact_manifest_hash = d3d12_backend.manifest_hash_from_context(self.backend.context);
-                }
-            },
-            else => {},
-        }
-    }
-
     pub fn execute_command(self: *BackendRuntime, command: model.Command) !runtime_types.NativeExecutionResult {
         return try self.backend.execute_command(command);
     }
@@ -144,7 +112,7 @@ pub const BackendRuntime = struct {
     }
 
     pub fn telemetry(self: *BackendRuntime) backend_telemetry.BackendTelemetry {
-        self.refreshBackendTelemetry();
+        backend_runtime_telemetry.refresh(self);
         return self.backend.telemetry;
     }
 };

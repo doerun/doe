@@ -10,17 +10,15 @@
 
 const std = @import("std");
 const model_compute_types = @import("../../model_compute_types.zig");
-const model_gpu_types = @import("../../model_texture_value_types.zig");
 const model_render_types = @import("../../model_render_types.zig");
 const model_texture_types = @import("../../model_texture_types.zig");
-const model_surface_control_types = @import("../../model_surface_control_types.zig");
 const backend_policy = @import("../backend_policy.zig");
 const common_errors = @import("../common/errors.zig");
 const common_timing = @import("../common/timing.zig");
 const webgpu = @import("../runtime_types.zig");
-const vulkan_surface = @import("vulkan_surface.zig");
 
 const c = @import("vk_constants.zig");
+const probe_ops = @import("vk_runtime_probes.zig");
 const vk_device = @import("vk_device.zig");
 const vk_sync = @import("vk_sync.zig");
 const vk_upload = @import("vk_upload.zig");
@@ -28,8 +26,8 @@ const vk_pipeline = @import("vk_pipeline.zig");
 const vk_resources = @import("vk_resources.zig");
 const vk_formats = @import("vk_formats.zig");
 const vk_render = @import("vk_render.zig");
-const vk_async_probes = @import("vk_async_probes.zig");
 const vk_metrics = @import("vk_metrics.zig");
+const surface_ops = @import("vk_runtime_surface_ops.zig");
 const render_bundle = @import("../../render_bundle.zig");
 const vk_texture_commands = @import("vk_texture_commands.zig");
 
@@ -84,7 +82,7 @@ pub const NativeVulkanRuntime = struct {
     // Single-entry fast slot for the common case of one upload between flushes.
     // Avoids ArrayList append/iterate/clear overhead on the hot path.
     hot_pending_upload: ?vk_upload.PendingUpload = null,
-    surfaces: std.AutoHashMapUnmanaged(u64, vulkan_surface.VulkanSurface) = .{},
+    surfaces: std.AutoHashMapUnmanaged(u64, surface_ops.SurfaceState) = .{},
 
     src_pool: vk_upload.VkPool = .{},
     dst_pool: vk_upload.VkPool = .{},
@@ -124,7 +122,7 @@ pub const NativeVulkanRuntime = struct {
         _ = self.flush_queue() catch {};
         vk_upload.release_pending_uploads(self);
         self.pending_uploads.deinit(self.allocator);
-        self.release_all_surfaces();
+        surface_ops.release_all_surfaces(self);
         vk_upload.release_pool_entry(self.device, self.hot_src_pool_entry);
         vk_upload.release_pool_entry(self.device, self.hot_dst_pool_entry);
         self.hot_src_pool_entry = null;
@@ -531,26 +529,11 @@ pub const NativeVulkanRuntime = struct {
     // --- Async diagnostics probes ---
 
     pub fn lifecycle_probe(self: *NativeVulkanRuntime, iterations: u32) !u64 {
-        const count = if (iterations > 0) iterations else 1;
-        const start_ns = common_timing.now_ns();
-        var index: u32 = 0;
-        while (index < count) : (index += 1) {
-            try vk_resources.create_destroy_lifecycle_buffer(self, 256);
-        }
-        return common_timing.ns_delta(common_timing.now_ns(), start_ns);
+        return probe_ops.lifecycle_probe(self, iterations);
     }
 
     pub fn pipeline_async_probe(self: *NativeVulkanRuntime, allocator: std.mem.Allocator, kernel_name: []const u8, iterations: u32) !u64 {
-        const spirv_words = try self.load_kernel_spirv(allocator, kernel_name);
-        defer allocator.free(spirv_words);
-
-        const count = if (iterations > 0) iterations else 1;
-        const start_ns = common_timing.now_ns();
-        var index: u32 = 0;
-        while (index < count) : (index += 1) {
-            try self.rebuild_compute_shader_spirv(spirv_words);
-        }
-        return common_timing.ns_delta(common_timing.now_ns(), start_ns);
+        return probe_ops.pipeline_async_probe(self, allocator, kernel_name, iterations);
     }
 
     pub fn resource_table_immediates_emulation_probe(
@@ -558,15 +541,7 @@ pub const NativeVulkanRuntime = struct {
         iterations: u32,
         upload_path_policy: backend_policy.UploadPathPolicy,
     ) !u64 {
-        const count = if (iterations > 0) iterations else 1;
-        const start_ns = common_timing.now_ns();
-        var index: u32 = 0;
-        while (index < count) : (index += 1) {
-            try vk_resources.create_destroy_lifecycle_buffer(self, 256);
-            try self.upload_bytes(64, .copy_dst, upload_path_policy);
-            _ = try self.flush_queue();
-        }
-        return common_timing.ns_delta(common_timing.now_ns(), start_ns);
+        return probe_ops.resource_table_immediates_emulation_probe(self, iterations, upload_path_policy);
     }
 
     pub fn pixel_local_storage_emulation_probe(
@@ -574,31 +549,22 @@ pub const NativeVulkanRuntime = struct {
         iterations: u32,
         upload_path_policy: backend_policy.UploadPathPolicy,
     ) !u64 {
-        const count = if (iterations > 0) iterations else 1;
-        const start_ns = common_timing.now_ns();
-        var index: u32 = 0;
-        while (index < count) : (index += 1) {
-            try vk_resources.create_destroy_lifecycle_buffer(self, 512);
-            try self.upload_bytes(128, .copy_dst, upload_path_policy);
-            _ = try self.barrier(.process_events);
-        }
-        _ = try self.flush_queue();
-        return common_timing.ns_delta(common_timing.now_ns(), start_ns);
+        return probe_ops.pixel_local_storage_emulation_probe(self, iterations, upload_path_policy);
     }
 
     pub fn resource_table_immediates_probe(
         self: *NativeVulkanRuntime,
         iterations: u32,
-    ) !vk_async_probes.AsyncProbeResult {
-        return vk_async_probes.resource_table_immediates_probe(self, iterations);
+    ) !probe_ops.AsyncProbeResult {
+        return probe_ops.resource_table_immediates_probe(self, iterations);
     }
 
     pub fn pixel_local_storage_probe(
         self: *NativeVulkanRuntime,
         iterations: u32,
-        target_format: model_gpu_types.WGPUTextureFormat,
-    ) !vk_async_probes.AsyncProbeResult {
-        return vk_async_probes.pixel_local_storage_probe(self, iterations, target_format);
+        target_format: probe_ops.WGPUTextureFormat,
+    ) !probe_ops.AsyncProbeResult {
+        return probe_ops.pixel_local_storage_probe(self, iterations, target_format);
     }
 
     // --- Adapter info ---
@@ -642,107 +608,35 @@ pub const NativeVulkanRuntime = struct {
     // --- Surface lifecycle ---
 
     pub fn create_surface(self: *NativeVulkanRuntime, handle: u64) !void {
-        if (handle == 0) return error.InvalidArgument;
-        const result = try self.surfaces.getOrPut(self.allocator, handle);
-        if (result.found_existing) return error.InvalidState;
-        result.value_ptr.* = .{};
+        return surface_ops.create_surface(self, handle);
     }
 
     pub fn get_surface_capabilities(self: *NativeVulkanRuntime, handle: u64) !void {
-        const surface = self.surfaces.getPtr(handle) orelse return error.SurfaceUnavailable;
-        if (surface.vk_surface != 0) {
-            const caps = vulkan_surface.query_surface_capabilities(
-                self.physical_device,
-                self.queue_family_index,
-                surface.vk_surface,
-            ) catch |err| return err;
-            surface.cached_capabilities = caps;
-            surface.capabilities_queried = true;
-        }
+        return surface_ops.get_surface_capabilities(self, handle);
     }
 
-    pub fn preferred_canvas_format(self: *NativeVulkanRuntime) model_gpu_types.WGPUTextureFormat {
-        var it = self.surfaces.valueIterator();
-        while (it.next()) |surface| {
-            if (!surface.capabilities_queried or surface.cached_capabilities.format_count == 0) continue;
-            return vulkan_surface.preferred_canvas_format_from_surface_formats(
-                surface.cached_capabilities.formats[0..@as(usize, surface.cached_capabilities.format_count)],
-            );
-        }
-        return model_gpu_types.WGPUTextureFormat_BGRA8Unorm;
+    pub fn preferred_canvas_format(self: *NativeVulkanRuntime) surface_ops.WGPUTextureFormat {
+        return surface_ops.preferred_canvas_format(self);
     }
 
-    pub fn configure_surface(self: *NativeVulkanRuntime, cmd_arg: model_surface_control_types.SurfaceConfigureCommand) !void {
-        if (cmd_arg.width == 0 or cmd_arg.height == 0) return error.InvalidArgument;
-        const surface = self.surfaces.getPtr(cmd_arg.handle) orelse return error.SurfaceUnavailable;
-        if (surface.vk_surface == 0) return error.SurfaceUnavailable;
-        // Unconfigure before reconfiguring to release stale swapchain state
-        if (surface.configured and surface.swapchain != 0) {
-            vulkan_surface.destroy_swapchain(self.device, surface);
-        }
-        surface.configured = true;
-        surface.acquired = false;
-        surface.width = cmd_arg.width;
-        surface.height = cmd_arg.height;
-        surface.requested_format = if (cmd_arg.format == 0) self.preferred_canvas_format() else cmd_arg.format;
-        surface.format = surface.requested_format;
-        surface.usage = if (cmd_arg.usage == 0) model_gpu_types.WGPUTextureUsage_RenderAttachment else cmd_arg.usage;
-        surface.alpha_mode = if (cmd_arg.alpha_mode == 0) c.VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR else cmd_arg.alpha_mode;
-        surface.present_mode = if (cmd_arg.present_mode == 0) c.VK_PRESENT_MODE_FIFO_KHR else cmd_arg.present_mode;
-        surface.tone_mapping_mode = if (cmd_arg.tone_mapping_mode == 0) model_surface_control_types.WGPUCanvasToneMappingMode_Standard else cmd_arg.tone_mapping_mode;
-        surface.desired_maximum_frame_latency = if (cmd_arg.desired_maximum_frame_latency == 0) c.DEFAULT_SURFACE_MAX_FRAME_LATENCY else cmd_arg.desired_maximum_frame_latency;
-        try self.get_surface_capabilities(cmd_arg.handle);
-        try vulkan_surface.create_swapchain(
-            self.device,
-            self.physical_device,
-            surface,
-            self.queue_family_index,
-        );
+    pub fn configure_surface(self: *NativeVulkanRuntime, cmd_arg: anytype) !void {
+        return surface_ops.configure_surface(self, cmd_arg);
     }
 
     pub fn acquire_surface(self: *NativeVulkanRuntime, handle: u64) !void {
-        const surface = self.surfaces.getPtr(handle) orelse return error.SurfaceUnavailable;
-        if (!surface.configured or surface.acquired) return error.SurfaceUnavailable;
-        if (surface.swapchain == 0) return error.SurfaceUnavailable;
-        _ = try vulkan_surface.acquire_next_image(self.device, surface);
+        return surface_ops.acquire_surface(self, handle);
     }
 
     pub fn present_surface(self: *NativeVulkanRuntime, handle: u64) !void {
-        const surface = self.surfaces.getPtr(handle) orelse return error.SurfaceUnavailable;
-        if (!surface.configured or !surface.acquired) return error.SurfaceUnavailable;
-        if (surface.swapchain == 0) return error.SurfaceUnavailable;
-        try vulkan_surface.present_image(self.queue, surface);
+        return surface_ops.present_surface(self, handle);
     }
 
     pub fn unconfigure_surface(self: *NativeVulkanRuntime, handle: u64) !void {
-        const surface = self.surfaces.getPtr(handle) orelse return error.SurfaceUnavailable;
-        if (surface.swapchain != 0) {
-            vulkan_surface.destroy_swapchain(self.device, surface);
-        }
-        surface.configured = false;
-        surface.acquired = false;
-        surface.width = 0;
-        surface.height = 0;
-        surface.last_acquire_suboptimal = false;
-        surface.last_present_suboptimal = false;
+        return surface_ops.unconfigure_surface(self, handle);
     }
 
     pub fn release_surface(self: *NativeVulkanRuntime, handle: u64) !void {
-        const removed = self.surfaces.fetchRemove(handle) orelse return error.SurfaceUnavailable;
-        var surface_copy = removed.value;
-        if (surface_copy.vk_surface != 0 or surface_copy.swapchain != 0) {
-            vulkan_surface.destroy_all(self.instance, self.device, &surface_copy);
-        }
-    }
-
-    fn release_all_surfaces(self: *NativeVulkanRuntime) void {
-        var it = self.surfaces.valueIterator();
-        while (it.next()) |surface| {
-            if (surface.vk_surface != 0 or surface.swapchain != 0) {
-                vulkan_surface.destroy_all(self.instance, self.device, surface);
-            }
-        }
-        self.surfaces.deinit(self.allocator);
+        return surface_ops.release_surface(self, handle);
     }
 
     // --- Internal ---
