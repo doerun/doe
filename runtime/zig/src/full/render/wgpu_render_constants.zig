@@ -1,6 +1,5 @@
 const std = @import("std");
 const model_gpu_types = @import("../../model_texture_value_types.zig");
-const abi_base = @import("../../core/abi/wgpu_base_types.zig");
 const render_resource_mod = @import("wgpu_render_resources.zig");
 const render_types_mod = @import("wgpu_render_types.zig");
 
@@ -12,7 +11,7 @@ pub const RENDER_CULL_MODE_NONE: u32 = 0x00000001;
 pub const RENDER_COLOR_WRITE_MASK_ALL: u64 = 0x000000000000000F;
 pub const RENDER_TARGET_DEPTH_SLICE_UNDEFINED: u32 = std.math.maxInt(u32);
 pub const RENDER_MULTISAMPLE_MASK_ALL: u32 = 0xFFFF_FFFF;
-pub const RENDER_DEPTH_STENCIL_FORMAT: abi_base.WGPUTextureFormat = model_gpu_types.WGPUTextureFormat_Depth24PlusStencil8;
+pub const RENDER_DEPTH_STENCIL_FORMAT: model_gpu_types.WGPUTextureFormat = model_gpu_types.WGPUTextureFormat_Depth24PlusStencil8;
 pub const RENDER_DEPTH_STENCIL_CLEAR_VALUE: f32 = 1.0;
 pub const RENDER_STENCIL_CLEAR_VALUE: u32 = 0;
 pub const RENDER_COMPARE_FUNCTION_ALWAYS: u32 = 0x00000008;
@@ -46,7 +45,7 @@ pub const RenderDepthStencilState = render_types_mod.RenderDepthStencilState;
 pub const RenderPipelineDescriptor = render_types_mod.RenderPipelineDescriptor;
 pub const RenderUniformBindingResources = render_resource_mod.RenderUniformBindingResources;
 
-pub fn is_affected_render_format(format: abi_base.WGPUTextureFormat) bool {
+pub fn is_affected_render_format(format: model_gpu_types.WGPUTextureFormat) bool {
     return format == model_gpu_types.WGPUTextureFormat_R8Unorm or
         format == model_gpu_types.WGPUTextureFormat_RG8Unorm;
 }

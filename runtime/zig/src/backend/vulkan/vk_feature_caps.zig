@@ -1,13 +1,13 @@
 const std = @import("std");
-const abi_base = @import("../../core/abi/wgpu_base_types.zig");
+const abi_feature = @import("../../core/abi/wgpu_feature_base_types.zig");
 const c = @import("vk_constants.zig");
 
-const FEATURE_SHADER_F16: u32 = abi_base.WGPUFeatureName_ShaderF16;
-const FEATURE_FLOAT32_BLENDABLE: u32 = abi_base.WGPUFeatureName_Float32Blendable;
-const FEATURE_SUBGROUPS: u32 = abi_base.WGPUFeatureName_Subgroups;
-const FEATURE_DUAL_SOURCE_BLENDING: u32 = abi_base.WGPUFeatureName_DualSourceBlending;
-const FEATURE_TEXTURE_FORMATS_TIER1: u32 = abi_base.WGPUFeatureName_TextureFormatsTier1;
-const FEATURE_TEXTURE_FORMATS_TIER2: u32 = abi_base.WGPUFeatureName_TextureFormatsTier2;
+const FEATURE_SHADER_F16: u32 = abi_feature.WGPUFeatureName_ShaderF16;
+const FEATURE_FLOAT32_BLENDABLE: u32 = abi_feature.WGPUFeatureName_Float32Blendable;
+const FEATURE_SUBGROUPS: u32 = abi_feature.WGPUFeatureName_Subgroups;
+const FEATURE_DUAL_SOURCE_BLENDING: u32 = abi_feature.WGPUFeatureName_DualSourceBlending;
+const FEATURE_TEXTURE_FORMATS_TIER1: u32 = abi_feature.WGPUFeatureName_TextureFormatsTier1;
+const FEATURE_TEXTURE_FORMATS_TIER2: u32 = abi_feature.WGPUFeatureName_TextureFormatsTier2;
 
 const VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT: u32 = 0x00000002;
 const VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT: u32 = 0x00000080;

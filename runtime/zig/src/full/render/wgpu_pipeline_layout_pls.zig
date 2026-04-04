@@ -1,5 +1,5 @@
 const abi_base = @import("../../core/abi/wgpu_handle_types.zig");
-const abi_descriptor = @import("../../core/abi/wgpu_descriptor_types.zig");
+const abi_pipeline = @import("../../core/abi/wgpu_pipeline_descriptor_types.zig");
 const loader = @import("../../core/abi/wgpu_loader.zig");
 const render_types_mod = @import("wgpu_render_types.zig");
 
@@ -20,7 +20,7 @@ pub fn createPipelineLayoutWithPixelLocalStorage(
         .storageAttachmentCount = storage_attachments.len,
         .storageAttachments = storage_attachments.ptr,
     };
-    const descriptor = abi_descriptor.WGPUPipelineLayoutDescriptor{
+    const descriptor = abi_pipeline.WGPUPipelineLayoutDescriptor{
         .nextInChain = @ptrCast(&pls_chain.chain),
         .label = loader.emptyStringView(),
         .bindGroupLayoutCount = bind_group_layouts.len,

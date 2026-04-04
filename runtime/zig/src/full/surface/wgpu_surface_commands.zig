@@ -1,8 +1,8 @@
 const std = @import("std");
 const common_timing = @import("../../backend/common/timing.zig");
 const model_surface_control_types = @import("../../model_surface_control_types.zig");
-const abi_base = @import("../../core/abi/wgpu_base_types.zig");
 const abi_execution = @import("../../core/abi/wgpu_execution_types.zig");
+const abi_texture = @import("../../core/abi/wgpu_texture_base_types.zig");
 const loader = @import("../../core/abi/wgpu_loader.zig");
 const resources = @import("../../core/resource/wgpu_resources.zig");
 const surface_macos_mod = @import("wgpu_surface_macos.zig");
@@ -74,7 +74,7 @@ pub fn executeSurfaceConfigure(self: anytype, surface_cmd: model_surface_control
         .nextInChain = null,
         .device = self.core.device.?,
         .format = resources.normalizeTextureFormat(surface_cmd.format),
-        .usage = if (surface_cmd.usage == 0) abi_base.WGPUTextureUsage_RenderAttachment else surface_cmd.usage,
+        .usage = if (surface_cmd.usage == 0) abi_texture.WGPUTextureUsage_RenderAttachment else surface_cmd.usage,
         .width = surface_cmd.width,
         .height = surface_cmd.height,
         .viewFormatCount = 0,

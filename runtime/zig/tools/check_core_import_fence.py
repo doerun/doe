@@ -20,12 +20,16 @@ FORBIDDEN_SYNTHETIC_IMPORTS = {
 }
 FORBIDDEN_COMPAT_IMPORTS = {
     "doe_native_base.zig",
+    "doe_native_types.zig",
+    "doe_native_helpers.zig",
     "model.zig",
     "model_transfer_types.zig",
     "model_runtime_types.zig",
     "model_webgpu_types.zig",
     "model_surface_types.zig",
     "webgpu_ffi.zig",
+    "wgpu_base_types.zig",
+    "wgpu_descriptor_types.zig",
     "wgpu_types.zig",
 }
 BACKEND_PRIVATE_DIRS = (

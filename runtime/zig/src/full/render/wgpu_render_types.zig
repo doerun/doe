@@ -1,8 +1,9 @@
-const abi_base = @import("../../core/abi/wgpu_base_types.zig");
-const abi_descriptor = @import("../../core/abi/wgpu_descriptor_types.zig");
+const abi_callback = @import("../../core/abi/wgpu_callback_descriptor_types.zig");
+const abi_core = @import("../../core/abi/wgpu_core_base_types.zig");
+const abi_texture = @import("../../core/abi/wgpu_texture_base_types.zig");
 
-pub const WGPUSType_RenderPassPixelLocalStorage: abi_base.WGPUSType = 0x00050010;
-pub const WGPUSType_PipelineLayoutPixelLocalStorage: abi_base.WGPUSType = 0x00050011;
+pub const WGPUSType_RenderPassPixelLocalStorage: abi_core.WGPUSType = 0x00050010;
+pub const WGPUSType_PipelineLayoutPixelLocalStorage: abi_core.WGPUSType = 0x00050011;
 
 pub const RenderColor = extern struct {
     r: f64,
@@ -13,18 +14,18 @@ pub const RenderColor = extern struct {
 
 pub const RenderBundleDescriptor = extern struct {
     nextInChain: ?*anyopaque,
-    label: abi_base.WGPUStringView,
+    label: abi_core.WGPUStringView,
 };
 
 pub const RenderBundleEncoderDescriptor = extern struct {
     nextInChain: ?*anyopaque,
-    label: abi_base.WGPUStringView,
+    label: abi_core.WGPUStringView,
     colorFormatCount: usize,
-    colorFormats: [*]const abi_base.WGPUTextureFormat,
-    depthStencilFormat: abi_base.WGPUTextureFormat,
+    colorFormats: [*]const abi_texture.WGPUTextureFormat,
+    depthStencilFormat: abi_texture.WGPUTextureFormat,
     sampleCount: u32,
-    depthReadOnly: abi_base.WGPUBool,
-    stencilReadOnly: abi_base.WGPUBool,
+    depthReadOnly: abi_core.WGPUBool,
+    stencilReadOnly: abi_core.WGPUBool,
 };
 
 pub const RenderDrawIndirectArgs = extern struct {
@@ -44,9 +45,9 @@ pub const RenderDrawIndexedIndirectArgs = extern struct {
 
 pub const RenderPassColorAttachment = extern struct {
     nextInChain: ?*anyopaque,
-    view: abi_base.WGPUTextureView,
+    view: abi_core.WGPUTextureView,
     depthSlice: u32,
-    resolveTarget: abi_base.WGPUTextureView,
+    resolveTarget: abi_core.WGPUTextureView,
     loadOp: u32,
     storeOp: u32,
     clearValue: RenderColor,
@@ -55,7 +56,7 @@ pub const RenderPassColorAttachment = extern struct {
 pub const RenderPassStorageAttachment = extern struct {
     nextInChain: ?*anyopaque,
     offset: u64,
-    storage: abi_base.WGPUTextureView,
+    storage: abi_core.WGPUTextureView,
     loadOp: u32,
     storeOp: u32,
     clearValue: RenderColor,
@@ -64,18 +65,18 @@ pub const RenderPassStorageAttachment = extern struct {
 pub const PipelineLayoutStorageAttachment = extern struct {
     nextInChain: ?*anyopaque,
     offset: u64,
-    format: abi_base.WGPUTextureFormat,
+    format: abi_texture.WGPUTextureFormat,
 };
 
 pub const PipelineLayoutPixelLocalStorage = extern struct {
-    chain: abi_descriptor.WGPUChainedStruct,
+    chain: abi_callback.WGPUChainedStruct,
     totalPixelLocalStorageSize: u64,
     storageAttachmentCount: usize,
     storageAttachments: [*]const PipelineLayoutStorageAttachment,
 };
 
 pub const RenderPassPixelLocalStorage = extern struct {
-    chain: abi_descriptor.WGPUChainedStruct,
+    chain: abi_callback.WGPUChainedStruct,
     totalPixelLocalStorageSize: u64,
     storageAttachmentCount: usize,
     storageAttachments: [*]const RenderPassStorageAttachment,
@@ -83,38 +84,38 @@ pub const RenderPassPixelLocalStorage = extern struct {
 
 pub const RenderPassDescriptor = extern struct {
     nextInChain: ?*anyopaque,
-    label: abi_base.WGPUStringView,
+    label: abi_core.WGPUStringView,
     colorAttachmentCount: usize,
     colorAttachments: [*]const RenderPassColorAttachment,
     depthStencilAttachment: ?*const anyopaque,
-    occlusionQuerySet: abi_base.WGPUQuerySet,
-    timestampWrites: ?*const abi_descriptor.WGPUPassTimestampWrites,
+    occlusionQuerySet: abi_core.WGPUQuerySet,
+    timestampWrites: ?*const abi_callback.WGPUPassTimestampWrites,
     maxDrawCount: u64,
 };
 
 pub const RenderPassDepthStencilAttachment = extern struct {
     nextInChain: ?*anyopaque,
-    view: abi_base.WGPUTextureView,
+    view: abi_core.WGPUTextureView,
     depthLoadOp: u32,
     depthStoreOp: u32,
     depthClearValue: f32,
-    depthReadOnly: abi_base.WGPUBool,
+    depthReadOnly: abi_core.WGPUBool,
     stencilLoadOp: u32,
     stencilStoreOp: u32,
     stencilClearValue: u32,
-    stencilReadOnly: abi_base.WGPUBool,
+    stencilReadOnly: abi_core.WGPUBool,
 };
 
 pub const RenderConstantEntry = extern struct {
     nextInChain: ?*anyopaque,
-    key: abi_base.WGPUStringView,
+    key: abi_core.WGPUStringView,
     value: f64,
 };
 
 pub const RenderVertexState = extern struct {
     nextInChain: ?*anyopaque,
-    module: abi_base.WGPUShaderModule,
-    entryPoint: abi_base.WGPUStringView,
+    module: abi_core.WGPUShaderModule,
+    entryPoint: abi_core.WGPUStringView,
     constantCount: usize,
     constants: ?[*]const RenderConstantEntry,
     bufferCount: usize,
@@ -138,15 +139,15 @@ pub const RenderVertexBufferLayout = extern struct {
 
 pub const RenderColorTargetState = extern struct {
     nextInChain: ?*anyopaque,
-    format: abi_base.WGPUTextureFormat,
+    format: abi_texture.WGPUTextureFormat,
     blend: ?*const anyopaque,
     writeMask: u64,
 };
 
 pub const RenderFragmentState = extern struct {
     nextInChain: ?*anyopaque,
-    module: abi_base.WGPUShaderModule,
-    entryPoint: abi_base.WGPUStringView,
+    module: abi_core.WGPUShaderModule,
+    entryPoint: abi_core.WGPUStringView,
     constantCount: usize,
     constants: ?[*]const RenderConstantEntry,
     targetCount: usize,
@@ -159,14 +160,14 @@ pub const RenderPrimitiveState = extern struct {
     stripIndexFormat: u32,
     frontFace: u32,
     cullMode: u32,
-    unclippedDepth: abi_base.WGPUBool,
+    unclippedDepth: abi_core.WGPUBool,
 };
 
 pub const RenderMultisampleState = extern struct {
     nextInChain: ?*anyopaque,
     count: u32,
     mask: u32,
-    alphaToCoverageEnabled: abi_base.WGPUBool,
+    alphaToCoverageEnabled: abi_core.WGPUBool,
 };
 
 pub const RenderStencilFaceState = extern struct {
@@ -178,7 +179,7 @@ pub const RenderStencilFaceState = extern struct {
 
 pub const RenderDepthStencilState = extern struct {
     nextInChain: ?*anyopaque,
-    format: abi_base.WGPUTextureFormat,
+    format: abi_texture.WGPUTextureFormat,
     depthWriteEnabled: u32,
     depthCompare: u32,
     stencilFront: RenderStencilFaceState,
@@ -192,8 +193,8 @@ pub const RenderDepthStencilState = extern struct {
 
 pub const RenderPipelineDescriptor = extern struct {
     nextInChain: ?*anyopaque,
-    label: abi_base.WGPUStringView,
-    layout: abi_base.WGPUPipelineLayout,
+    label: abi_core.WGPUStringView,
+    layout: abi_core.WGPUPipelineLayout,
     vertex: RenderVertexState,
     primitive: RenderPrimitiveState,
     depthStencil: ?*const RenderDepthStencilState,

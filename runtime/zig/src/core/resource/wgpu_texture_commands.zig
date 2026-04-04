@@ -1,8 +1,24 @@
 const std = @import("std");
 const model_gpu_types = @import("../../model_texture_value_types.zig");
 const model_texture_types = @import("../../model_texture_types.zig");
-const abi_base = @import("../abi/wgpu_base_types.zig");
-const abi_descriptor = @import("../abi/wgpu_descriptor_types.zig");
+const abi_core = @import("../abi/wgpu_core_base_types.zig");
+const abi_feature = @import("../abi/wgpu_feature_base_types.zig");
+const abi_texture = @import("../abi/wgpu_texture_base_types.zig");
+const abi_binding = @import("../abi/wgpu_binding_base_types.zig");
+const abi_base = struct {
+    pub usingnamespace abi_core;
+    pub usingnamespace abi_feature;
+    pub usingnamespace abi_texture;
+    pub usingnamespace abi_binding;
+};
+const abi_callback = @import("../abi/wgpu_callback_descriptor_types.zig");
+const abi_copy = @import("../abi/wgpu_copy_descriptor_types.zig");
+const abi_pipeline = @import("../abi/wgpu_pipeline_descriptor_types.zig");
+const abi_descriptor = struct {
+    pub usingnamespace abi_callback;
+    pub usingnamespace abi_copy;
+    pub usingnamespace abi_pipeline;
+};
 const abi_execution = @import("../abi/wgpu_execution_types.zig");
 const loader = @import("../abi/wgpu_loader.zig");
 const resources = @import("wgpu_resources.zig");

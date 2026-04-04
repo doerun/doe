@@ -1,15 +1,16 @@
 const std = @import("std");
 const model_gpu_types = @import("../../../model_texture_value_types.zig");
-const abi_base = @import("../../../core/abi/wgpu_base_types.zig");
-const native_types = @import("../../../doe_native_types.zig");
-const native_helpers = @import("../../../doe_native_helpers.zig");
+const abi_texture = @import("../../../core/abi/wgpu_texture_base_types.zig");
+const native_cmds = @import("../../../doe_native_command_types.zig");
+const native_types = @import("../../../doe_native_object_types.zig");
+const native_helpers = @import("../../../doe_native_object_helpers.zig");
 const dc = @import("../d3d12_constants.zig");
 const d3d12_descriptors = @import("../d3d12_descriptors.zig");
 const d3d12_texture_view = @import("../resources/d3d12_texture_view.zig");
 const d3d12_sampler = @import("../resources/d3d12_sampler.zig");
 const d3d12_render_bind_groups = @import("d3d12_render_bind_groups.zig");
 
-const RecordedRenderPass = std.meta.TagPayload(native_types.RecordedCmd, .render_pass);
+const RecordedRenderPass = std.meta.TagPayload(native_cmds.RecordedCmd, .render_pass);
 const DoeTextureView = native_types.DoeTextureView;
 const DoeTexture = native_types.DoeTexture;
 
@@ -288,8 +289,8 @@ fn resolve_render_view_dimension(view: *const DoeTextureView) u32 {
 
 fn resolve_depth_view_dimension(view: *const DoeTextureView) u32 {
     return switch (resolve_render_view_dimension(view)) {
-        model_gpu_types.WGPUTextureViewDimension_2DArray => abi_base.WGPUTextureViewDimension_2DArrayDepth,
-        else => abi_base.WGPUTextureViewDimension_2DDepth,
+        model_gpu_types.WGPUTextureViewDimension_2DArray => abi_texture.WGPUTextureViewDimension_2DArrayDepth,
+        else => abi_texture.WGPUTextureViewDimension_2DDepth,
     };
 }
 

@@ -7,37 +7,37 @@
 
 const std = @import("std");
 const builtin = @import("builtin");
-const abi_base = @import("../../core/abi/wgpu_base_types.zig");
-const abi_descriptor = @import("../../core/abi/wgpu_descriptor_types.zig");
+const abi_callback = @import("../../core/abi/wgpu_callback_descriptor_types.zig");
+const abi_feature = @import("../../core/abi/wgpu_feature_base_types.zig");
 const model_gpu_types = @import("../../model_texture_value_types.zig");
 
 // D3D12 is only available on Windows.
 const D3D12_AVAILABLE = builtin.os.tag == .windows;
 
 // Feature name constants — match wgpu_runtime_abi.zig
-const FEATURE_DEPTH_CLIP_CONTROL: u32 = abi_base.WGPUFeatureName_DepthClipControl;
-const FEATURE_DEPTH32FLOAT_STENCIL8: u32 = abi_base.WGPUFeatureName_Depth32FloatStencil8;
-const FEATURE_TEXTURE_COMPRESSION_BC: u32 = abi_base.WGPUFeatureName_TextureCompressionBC;
-const FEATURE_TEXTURE_COMPRESSION_BC_SLICED_3D: u32 = abi_base.WGPUFeatureName_TextureCompressionBCSliced3D;
-const FEATURE_TEXTURE_COMPRESSION_ETC2: u32 = abi_base.WGPUFeatureName_TextureCompressionETC2;
-const FEATURE_TEXTURE_COMPRESSION_ASTC: u32 = abi_base.WGPUFeatureName_TextureCompressionASTC;
-const FEATURE_TEXTURE_COMPRESSION_ASTC_SLICED_3D: u32 = abi_base.WGPUFeatureName_TextureCompressionASTCSliced3D;
-const FEATURE_BGRA8UNORM_STORAGE: u32 = abi_base.WGPUFeatureName_BGRA8UnormStorage;
-const FEATURE_INDIRECT_FIRST_INSTANCE: u32 = abi_base.WGPUFeatureName_IndirectFirstInstance;
-const FEATURE_FLOAT32_FILTERABLE: u32 = abi_base.WGPUFeatureName_Float32Filterable;
-const FEATURE_FLOAT32_BLENDABLE: u32 = abi_base.WGPUFeatureName_Float32Blendable;
-const FEATURE_TIMESTAMP_QUERY: u32 = abi_base.WGPUFeatureName_TimestampQuery;
-const FEATURE_RG11B10UFLOAT_RENDERABLE: u32 = abi_base.WGPUFeatureName_RG11B10UfloatRenderable;
-const FEATURE_CLIP_DISTANCES: u32 = abi_base.WGPUFeatureName_ClipDistances;
-const FEATURE_DUAL_SOURCE_BLENDING: u32 = abi_base.WGPUFeatureName_DualSourceBlending;
-const FEATURE_CORE_FEATURES_AND_LIMITS: u32 = abi_base.WGPUFeatureName_CoreFeaturesAndLimits;
-const FEATURE_TEXTURE_FORMATS_TIER1: u32 = abi_base.WGPUFeatureName_TextureFormatsTier1;
-const FEATURE_TEXTURE_FORMATS_TIER2: u32 = abi_base.WGPUFeatureName_TextureFormatsTier2;
-const FEATURE_PRIMITIVE_INDEX: u32 = abi_base.WGPUFeatureName_PrimitiveIndex;
-const FEATURE_TEXTURE_COMPONENT_SWIZZLE: u32 = abi_base.WGPUFeatureName_TextureComponentSwizzle;
-const FEATURE_SHADER_F16: u32 = abi_base.WGPUFeatureName_ShaderF16;
-const FEATURE_SUBGROUPS: u32 = abi_base.WGPUFeatureName_Subgroups;
-const FEATURE_SUBGROUPS_F16: u32 = abi_base.WGPUFeatureName_SubgroupsF16;
+const FEATURE_DEPTH_CLIP_CONTROL: u32 = abi_feature.WGPUFeatureName_DepthClipControl;
+const FEATURE_DEPTH32FLOAT_STENCIL8: u32 = abi_feature.WGPUFeatureName_Depth32FloatStencil8;
+const FEATURE_TEXTURE_COMPRESSION_BC: u32 = abi_feature.WGPUFeatureName_TextureCompressionBC;
+const FEATURE_TEXTURE_COMPRESSION_BC_SLICED_3D: u32 = abi_feature.WGPUFeatureName_TextureCompressionBCSliced3D;
+const FEATURE_TEXTURE_COMPRESSION_ETC2: u32 = abi_feature.WGPUFeatureName_TextureCompressionETC2;
+const FEATURE_TEXTURE_COMPRESSION_ASTC: u32 = abi_feature.WGPUFeatureName_TextureCompressionASTC;
+const FEATURE_TEXTURE_COMPRESSION_ASTC_SLICED_3D: u32 = abi_feature.WGPUFeatureName_TextureCompressionASTCSliced3D;
+const FEATURE_BGRA8UNORM_STORAGE: u32 = abi_feature.WGPUFeatureName_BGRA8UnormStorage;
+const FEATURE_INDIRECT_FIRST_INSTANCE: u32 = abi_feature.WGPUFeatureName_IndirectFirstInstance;
+const FEATURE_FLOAT32_FILTERABLE: u32 = abi_feature.WGPUFeatureName_Float32Filterable;
+const FEATURE_FLOAT32_BLENDABLE: u32 = abi_feature.WGPUFeatureName_Float32Blendable;
+const FEATURE_TIMESTAMP_QUERY: u32 = abi_feature.WGPUFeatureName_TimestampQuery;
+const FEATURE_RG11B10UFLOAT_RENDERABLE: u32 = abi_feature.WGPUFeatureName_RG11B10UfloatRenderable;
+const FEATURE_CLIP_DISTANCES: u32 = abi_feature.WGPUFeatureName_ClipDistances;
+const FEATURE_DUAL_SOURCE_BLENDING: u32 = abi_feature.WGPUFeatureName_DualSourceBlending;
+const FEATURE_CORE_FEATURES_AND_LIMITS: u32 = abi_feature.WGPUFeatureName_CoreFeaturesAndLimits;
+const FEATURE_TEXTURE_FORMATS_TIER1: u32 = abi_feature.WGPUFeatureName_TextureFormatsTier1;
+const FEATURE_TEXTURE_FORMATS_TIER2: u32 = abi_feature.WGPUFeatureName_TextureFormatsTier2;
+const FEATURE_PRIMITIVE_INDEX: u32 = abi_feature.WGPUFeatureName_PrimitiveIndex;
+const FEATURE_TEXTURE_COMPONENT_SWIZZLE: u32 = abi_feature.WGPUFeatureName_TextureComponentSwizzle;
+const FEATURE_SHADER_F16: u32 = abi_feature.WGPUFeatureName_ShaderF16;
+const FEATURE_SUBGROUPS: u32 = abi_feature.WGPUFeatureName_Subgroups;
+const FEATURE_SUBGROUPS_F16: u32 = abi_feature.WGPUFeatureName_SubgroupsF16;
 
 // Shader model thresholds for feature gating.
 const SM_6_0: c_int = 0x60; // Wave intrinsics (subgroups)
@@ -49,7 +49,7 @@ const SM_6_2: c_int = 0x62; // Native 16-bit shader ops
 const FALLBACK_MAX_BUFFER_SIZE: u64 = 268_435_456; // 256 MB — spec minimum
 const D3D12_MAX_UNIFORM_BUFFER_BINDING_SIZE: u64 = 65_536; // 64 KB (D3D12 constant buffer limit)
 
-const D3D12_LIMITS_STATIC = abi_descriptor.WGPULimits{
+const D3D12_LIMITS_STATIC = abi_callback.WGPULimits{
     .nextInChain = null,
     .maxTextureDimension1D = 16384,
     .maxTextureDimension2D = 16384,
@@ -85,7 +85,7 @@ const D3D12_LIMITS_STATIC = abi_descriptor.WGPULimits{
     .maxImmediateSize = 0,
 };
 
-fn build_limits() abi_descriptor.WGPULimits {
+fn build_limits() abi_callback.WGPULimits {
     return D3D12_LIMITS_STATIC;
 }
 

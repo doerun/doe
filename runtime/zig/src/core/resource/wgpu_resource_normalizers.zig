@@ -1,6 +1,15 @@
 const model_texture_types = @import("../../model_texture_value_types.zig");
 const model_binding_types = @import("../../model_binding_value_types.zig");
-const abi_base = @import("../abi/wgpu_base_types.zig");
+const abi_core = @import("../abi/wgpu_core_base_types.zig");
+const abi_feature = @import("../abi/wgpu_feature_base_types.zig");
+const abi_texture = @import("../abi/wgpu_texture_base_types.zig");
+const abi_binding = @import("../abi/wgpu_binding_base_types.zig");
+const abi_base = struct {
+    pub usingnamespace abi_core;
+    pub usingnamespace abi_feature;
+    pub usingnamespace abi_texture;
+    pub usingnamespace abi_binding;
+};
 
 pub fn normalizeBufferBindingType(value: u32) u32 {
     return switch (value) {

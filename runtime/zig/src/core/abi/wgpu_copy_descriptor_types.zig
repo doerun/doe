@@ -1,4 +1,5 @@
-const base = @import("wgpu_base_types.zig");
+const core = @import("wgpu_core_base_types.zig");
+const texture = @import("wgpu_texture_base_types.zig");
 const callbacks = @import("wgpu_callback_descriptor_types.zig");
 
 pub const WGPUExtent3D = extern struct {
@@ -26,31 +27,31 @@ pub const WGPUTexelCopyBufferLayout = extern struct {
 
 pub const WGPUTexelCopyBufferInfo = extern struct {
     layout: WGPUTexelCopyBufferLayout,
-    buffer: base.WGPUBuffer,
+    buffer: core.WGPUBuffer,
 };
 
 pub const WGPUTexelCopyTextureInfo = extern struct {
-    texture: base.WGPUTexture,
+    texture: core.WGPUTexture,
     mipLevel: u32,
     origin: WGPUOrigin3D,
-    aspect: base.WGPUTextureAspect,
+    aspect: texture.WGPUTextureAspect,
 };
 
 pub const WGPUCopyTextureForBrowserOptions = extern struct {
     nextInChain: ?*callbacks.WGPUChainedStruct,
-    flipY: base.WGPUBool,
-    needsColorSpaceConversion: base.WGPUBool,
-    srcAlphaMode: base.WGPUAlphaMode,
+    flipY: core.WGPUBool,
+    needsColorSpaceConversion: core.WGPUBool,
+    srcAlphaMode: core.WGPUAlphaMode,
     srcTransferFunctionParameters: ?[*]const f32,
     conversionMatrix: ?[*]const f32,
     dstTransferFunctionParameters: ?[*]const f32,
-    dstAlphaMode: base.WGPUAlphaMode,
-    internalUsage: base.WGPUBool,
+    dstAlphaMode: core.WGPUAlphaMode,
+    internalUsage: core.WGPUBool,
 };
 
 pub const WGPUImageCopyExternalTexture = extern struct {
     nextInChain: ?*callbacks.WGPUChainedStruct,
-    externalTexture: base.WGPUExternalTexture,
+    externalTexture: core.WGPUExternalTexture,
     origin: WGPUOrigin3D,
     naturalSize: WGPUExtent2D,
 };

@@ -1,7 +1,7 @@
 const std = @import("std");
 const common_errors = @import("../common/errors.zig");
 const webgpu = @import("../runtime_types.zig");
-const abi_descriptor = @import("../../core/abi/wgpu_descriptor_types.zig");
+const abi_callback = @import("../../core/abi/wgpu_callback_descriptor_types.zig");
 const model_resource_types = @import("../../model_resource_types.zig");
 const model_compute_types = @import("../../model_compute_types.zig");
 const model_render_types = @import("../../model_render_types.zig");
@@ -276,7 +276,7 @@ pub const NativeD3D12Runtime = struct {
         return d3d12_device_caps.d3d12_device_has_feature(feature);
     }
 
-    pub fn get_limits(self: *const NativeD3D12Runtime, limits: *abi_descriptor.WGPULimits) void {
+    pub fn get_limits(self: *const NativeD3D12Runtime, limits: *abi_callback.WGPULimits) void {
         _ = self;
         d3d12_device_caps.d3d12_device_get_limits(limits);
     }

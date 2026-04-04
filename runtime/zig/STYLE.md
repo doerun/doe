@@ -60,10 +60,12 @@ This guide is the Zig style contract for `zig`.
   `model_runtime_types.zig`, `model_webgpu_types.zig`, `wgpu_types.zig`, or
   `webgpu_ffi.zig`. Use the narrow source modules directly; keep the
   compatibility barrels for export and transition surfaces only.
-- Prefer `doe_native_types.zig` for native handle/object types and deferred
-  command payloads, `doe_native_helpers.zig` for allocator/cast/refcount/runtime
-  access helpers, and `doe_native_exports.zig` for cross-shard native C ABI
-  declarations. Do not reintroduce a catch-all native facade for those roles.
+- `doe_native_types.zig` and `doe_native_helpers.zig` are compatibility
+  barrels only. Implementation code should import
+  `doe_native_object_types.zig`, `doe_native_shared_types.zig`,
+  `doe_native_command_types.zig`, `doe_native_object_helpers.zig`, and
+  `doe_native_runtime_helpers.zig` directly; keep `doe_native_exports.zig`
+  for cross-shard native C ABI declarations.
 - When a caller only needs shared texture/layout values, import
   `model_texture_value_types.zig`. When it only needs shader-stage or
   binding/sample/access values, import `model_binding_value_types.zig`.
@@ -77,9 +79,13 @@ This guide is the Zig style contract for `zig`.
   payloads, and `model_async_types.zig` for async-diagnostics or map-async
   payloads instead of routing through the compatibility `model_surface_types.zig`
   barrel.
-- Prefer `wgpu_base_types.zig`, `wgpu_descriptor_types.zig`,
-  `wgpu_execution_types.zig`, `wgpu_record_types.zig`, and
-  `wgpu_state_types.zig` over the compatibility `wgpu_types.zig` barrel.
+- `wgpu_base_types.zig` and `wgpu_descriptor_types.zig` are broad
+  compatibility barrels. Implementation code should import
+  `wgpu_core_base_types.zig`, `wgpu_feature_base_types.zig`,
+  `wgpu_texture_base_types.zig`, `wgpu_binding_base_types.zig`,
+  `wgpu_callback_descriptor_types.zig`, `wgpu_copy_descriptor_types.zig`,
+  `wgpu_pipeline_descriptor_types.zig`, `wgpu_execution_types.zig`,
+  `wgpu_record_types.zig`, and `wgpu_state_types.zig` directly as needed.
 
 ## File size
 
@@ -105,10 +111,11 @@ const builtin = @import("builtin");
 const model_texture = @import("model_texture_value_types.zig");
 const model_binding = @import("model_binding_value_types.zig");
 const model_compute = @import("model_compute_types.zig");
-const wgpu_base = @import("core/abi/wgpu_base_types.zig");
-const wgpu_descriptor = @import("core/abi/wgpu_descriptor_types.zig");
-const native_types = @import("doe_native_types.zig");
-const native_helpers = @import("doe_native_helpers.zig");
+const wgpu_core = @import("core/abi/wgpu_core_base_types.zig");
+const wgpu_texture = @import("core/abi/wgpu_texture_base_types.zig");
+const wgpu_pipeline = @import("core/abi/wgpu_pipeline_descriptor_types.zig");
+const native_object_types = @import("doe_native_object_types.zig");
+const native_object_helpers = @import("doe_native_object_helpers.zig");
 const backend_runtime = @import("backend/backend_runtime.zig");
 const backend_ids = @import("backend/backend_ids.zig");
 ```
@@ -134,7 +141,8 @@ const backend_ids = @import("backend/backend_ids.zig");
 - Place constants at file top, after imports.
 - Domain-shared constants belong in the narrow contract module that owns their
   semantics, such as `model_texture_value_types.zig`,
-  `model_binding_value_types.zig`, or `wgpu_base_types.zig`.
+  `model_binding_value_types.zig`, `wgpu_core_base_types.zig`, or
+  `wgpu_texture_base_types.zig`.
 - Module-specific constants stay in the module that uses them.
 - If a value appears in more than one file, it must have a single source of truth.
 

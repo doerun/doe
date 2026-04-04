@@ -1,6 +1,6 @@
 const std = @import("std");
 const model_render_types = @import("../../model_render_types.zig");
-const abi_base = @import("../../core/abi/wgpu_base_types.zig");
+const abi_core = @import("../../core/abi/wgpu_core_base_types.zig");
 const resources = @import("../../core/resource/wgpu_resources.zig");
 
 pub const DEFAULT_INDEX_BUFFER_HANDLE: u64 = 0x8C9F_2700_0000_0000;
@@ -8,7 +8,7 @@ pub const INDEX_FORMAT_UINT16: u32 = 0x00000001;
 pub const INDEX_FORMAT_UINT32: u32 = 0x00000002;
 
 pub const PreparedIndexBuffer = struct {
-    buffer: abi_base.WGPUBuffer,
+    buffer: abi_core.WGPUBuffer,
     format: u32,
 };
 
@@ -17,7 +17,7 @@ pub fn prepareIndexBuffer(self: anytype, render: model_render_types.RenderDrawCo
     if (requested_count == 0) return error.InvalidIndexedDrawData;
 
     const index_data = render.index_data orelse return error.InvalidIndexedDrawData;
-    const index_usage = abi_base.WGPUBufferUsage_Index | abi_base.WGPUBufferUsage_CopyDst;
+    const index_usage = abi_core.WGPUBufferUsage_Index | abi_core.WGPUBufferUsage_CopyDst;
     const Selected = struct {
         format: u32,
         bytes: []const u8,

@@ -1,9 +1,8 @@
 const builtin = @import("builtin");
 const surface_ops = @import("../../backend/dropin_surface_ops.zig");
-const bridge = surface_ops.metal_bridge;
-const metal_bridge_configure_surface_host = bridge.metal_bridge_configure_surface_host;
-const metal_bridge_create_surface_host = bridge.metal_bridge_create_surface_host;
-const metal_bridge_release = bridge.metal_bridge_release;
+const metal_bridge_configure_surface_host = surface_ops.metal_bridge_configure_surface_host;
+const metal_bridge_create_surface_host = surface_ops.metal_bridge_create_surface_host;
+const metal_bridge_release = surface_ops.metal_bridge_release;
 
 pub const ManagedPlatformSurface = struct {
     retained_host: ?*anyopaque,

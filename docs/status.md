@@ -1,4 +1,28 @@
 # Doe status
+## Broad ABI and native compatibility barrels are now truly cold, macOS surface seam restored, and the fence enforces both states (2026-04-03 UTC)
+
+- `runtime/zig/src/core/abi/wgpu_base_types.zig` and
+  `runtime/zig/src/core/abi/wgpu_descriptor_types.zig` now have zero direct
+  `@import(...)` sites anywhere under `runtime/zig/src`; remaining callers use
+  the narrow base/descriptor shards directly or compose file-local shard views
+  instead of depending on the broad barrel files
+- `runtime/zig/src/doe_native_types.zig` and
+  `runtime/zig/src/doe_native_helpers.zig` also remain at zero direct
+  `@import(...)` sites under `runtime/zig/src`
+- `runtime/zig/tools/check_core_import_fence.py` now rejects any new
+  implementation import of `wgpu_base_types.zig`,
+  `wgpu_descriptor_types.zig`, `doe_native_types.zig`, or
+  `doe_native_helpers.zig`, alongside the older compatibility facade bans
+- `runtime/zig/src/backend/dropin_surface_ops.zig` again exports the narrow
+  Metal bridge entrypoints used by `runtime/zig/src/full/surface/
+  wgpu_surface_macos.zig`, restoring the macOS surface seam after the earlier
+  drop-in flattening pass
+- Verification for the corrected state passed with `zig build`,
+  `zig build import-fence`, `zig test src/execution.zig`, zero direct
+  implementation imports of the broad ABI/native barrels, zero non-backend
+  backend-implementation leaks, and zero nontrivial SCCs under
+  `runtime/zig/src`
+
 ## Broad ABI barrels and native facades fully eliminated; dropin seams flattened (2026-04-03 UTC)
 
 - `core/abi/wgpu_base_types.zig` and `core/abi/wgpu_descriptor_types.zig` now have

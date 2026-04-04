@@ -47,8 +47,8 @@ Core:
 - `src/model_runtime_types.zig` — compatibility barrel over the split model payload shards; implementation code should import the specific shard it needs instead.
 - `src/model_webgpu_types.zig` — legacy compatibility barrel over the split model payload shards.
 - `src/model.zig` — legacy compatibility shell retained only as a narrow test/transition stub; new code should import the split contract modules above directly.
-- `src/doe_native_types.zig` — narrow native object/value contract for drop-in handle types, deferred command payloads, backend enums, and shared native constants.
-- `src/doe_native_helpers.zig` — allocator, typed opaque-cast/refcount helpers, label-store access, and backend-runtime downcasts shared across native implementation shards.
+- `src/doe_native_types.zig` — compatibility barrel over `doe_native_object_types.zig`, `doe_native_shared_types.zig`, and `doe_native_command_types.zig`; implementation code should import the specific shard it needs instead.
+- `src/doe_native_helpers.zig` — compatibility barrel over `doe_native_object_helpers.zig` and `doe_native_runtime_helpers.zig`; implementation code should import the specific helper shard it needs instead.
 - `src/doe_native_exports.zig` — cross-shard native C ABI declarations used by implementation shards that need to call sibling exports without importing a facade.
 - `src/backend/dropin_capabilities.zig` and
   `src/backend/dropin_lifecycle.zig` — backend-owned seams for capability
@@ -94,8 +94,15 @@ WebGPU backend:
 - `src/webgpu_backend_support.zig` — pure backend support helpers: capability introspection, mode setters, uncaptured-error handling, effective-limit selection, and render texture-view cache eviction.
 - `src/webgpu_ffi.zig` — thin compatibility facade that re-exports `src/webgpu_backend.zig` and `src/backend/runtime_types.zig`.
 - `src/core/abi/wgpu_handle_types.zig` — narrow handle/string/status ABI shard for opaque WebGPU handles plus `WGPUFuture`, `WGPUStringView`, and basic bool/status constants.
-- `src/core/abi/wgpu_base_types.zig` — base WebGPU handles/enums/constants and compressed-format helpers.
-- `src/core/abi/wgpu_descriptor_types.zig` — WebGPU extern descriptors, callback exports, and limits helpers.
+- `src/core/abi/wgpu_core_base_types.zig` — narrow core handle/status/usage/query/timing ABI shard.
+- `src/core/abi/wgpu_feature_base_types.zig` — narrow feature-name ABI shard.
+- `src/core/abi/wgpu_texture_base_types.zig` — narrow texture format/usage/aspect/view-dimension ABI shard.
+- `src/core/abi/wgpu_binding_base_types.zig` — narrow shader-stage and binding-layout enum/value ABI shard.
+- `src/core/abi/wgpu_base_types.zig` — compatibility barrel over the split base shards above; implementation code should import the specific shard it needs instead.
+- `src/core/abi/wgpu_callback_descriptor_types.zig` — callback/status/limits/device-request descriptor shard.
+- `src/core/abi/wgpu_copy_descriptor_types.zig` — copy-extent and texel-copy descriptor shard.
+- `src/core/abi/wgpu_pipeline_descriptor_types.zig` — texture/buffer/shader/pipeline/pass descriptor shard.
+- `src/core/abi/wgpu_descriptor_types.zig` — compatibility barrel over the split descriptor shards above; implementation code should import the specific shard it needs instead.
 - `src/core/abi/wgpu_execution_types.zig` — execution result/status ABI shared by `wgpu_types` and backend runtime orchestration.
 - `src/core/abi/wgpu_proc_types.zig` — narrow proc-signature dependency surface over base and descriptor ABI shards, used to keep procedure typedefs out of the main ABI barrel cycle.
 - `src/core/abi/wgpu_state_types.zig` — queue/map/kernel-source/backend-state helper structs shared by the WebGPU runtime path.

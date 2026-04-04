@@ -1,5 +1,6 @@
 const std = @import("std");
-const abi_base = @import("../../core/abi/wgpu_base_types.zig");
+const abi_core = @import("../../core/abi/wgpu_core_base_types.zig");
+const abi_texture = @import("../../core/abi/wgpu_texture_base_types.zig");
 const surface_procs_mod = @import("wgpu_surface_procs.zig");
 
 pub fn createSurface(
@@ -19,7 +20,7 @@ pub fn getSurfaceCapabilities(
     const surface_procs = surface_procs_mod.loadSurfaceProcs(self.core.dyn_lib) orelse return error.SurfaceProcUnavailable;
     var capabilities = surface_procs_mod.SurfaceCapabilities{
         .nextInChain = null,
-        .usages = abi_base.WGPUTextureUsage_None,
+        .usages = abi_texture.WGPUTextureUsage_None,
         .formatCount = 0,
         .formats = null,
         .presentModeCount = 0,
@@ -28,7 +29,7 @@ pub fn getSurfaceCapabilities(
         .alphaModes = null,
     };
     const status = surface_procs.surface_get_capabilities(surface, self.core.adapter.?, &capabilities);
-    if (status != abi_base.WGPUStatus_Success) return error.SurfaceCapabilitiesFailed;
+    if (status != abi_core.WGPUStatus_Success) return error.SurfaceCapabilitiesFailed;
     return capabilities;
 }
 
@@ -67,7 +68,7 @@ pub fn getCurrentSurfaceTexture(
 pub fn presentSurface(self: anytype, surface: surface_procs_mod.Surface) !void {
     const surface_procs = surface_procs_mod.loadSurfaceProcs(self.core.dyn_lib) orelse return error.SurfaceProcUnavailable;
     const status = surface_procs.surface_present(surface);
-    if (status != abi_base.WGPUStatus_Success) return error.SurfacePresentFailed;
+    if (status != abi_core.WGPUStatus_Success) return error.SurfacePresentFailed;
 }
 
 pub fn unconfigureSurface(self: anytype, surface: surface_procs_mod.Surface) !void {

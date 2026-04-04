@@ -1,8 +1,7 @@
-const base = @import("wgpu_base_types.zig");
-const descriptor = @import("wgpu_descriptor_types.zig");
+const proc_types = @import("wgpu_proc_types.zig");
 
-pub const WGPUQueueWorkDoneStatus = descriptor.WGPUQueueWorkDoneStatus;
-pub const WGPUMapAsyncStatus = base.WGPUMapAsyncStatus;
-pub const WGPUErrorType = descriptor.WGPUErrorType;
-pub const WGPUShaderModule = base.WGPUShaderModule;
-pub const WGPUComputePipeline = base.WGPUComputePipeline;
+pub const WGPUQueueWorkDoneStatus = proc_types.descriptor.WGPUQueueWorkDoneStatus;
+pub const WGPUMapAsyncStatus = proc_types.base.WGPUMapAsyncStatus;
+pub const WGPUErrorType = proc_types.descriptor.WGPUErrorType;
+pub const WGPUShaderModule = proc_types.base.WGPUShaderModule;
+pub const WGPUComputePipeline = proc_types.base.WGPUComputePipeline;

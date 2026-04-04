@@ -3,17 +3,17 @@ const p0_procs_mod = @import("../../wgpu_p0_procs.zig");
 const render_api_mod = @import("wgpu_render_api.zig");
 const render_types_mod = @import("wgpu_render_types.zig");
 const resources = @import("../../core/resource/wgpu_resources.zig");
-const abi_base = @import("../../core/abi/wgpu_base_types.zig");
+const abi_core = @import("../../core/abi/wgpu_core_base_types.zig");
 const abi_proc_aliases = @import("../../core/abi/wgpu_type_proc_aliases.zig");
 
-const BUFFER_USAGE_INDIRECT: abi_base.WGPUBufferUsage = 0x0000000000000100;
+const BUFFER_USAGE_INDIRECT: abi_core.WGPUBufferUsage = 0x0000000000000100;
 
 pub const RenderP0State = struct {
     p0_procs: ?p0_procs_mod.P0Procs = null,
     command_encoder_write_buffer: ?p0_procs_mod.FnCommandEncoderWriteBuffer = null,
-    occlusion_query_set: abi_base.WGPUQuerySet = null,
-    timestamp_query_set: abi_base.WGPUQuerySet = null,
-    indirect_buffer: abi_base.WGPUBuffer = null,
+    occlusion_query_set: abi_core.WGPUQuerySet = null,
+    timestamp_query_set: abi_core.WGPUQuerySet = null,
+    indirect_buffer: abi_core.WGPUBuffer = null,
 };
 
 pub fn prepare(
@@ -40,7 +40,7 @@ pub fn prepare(
             self,
             indirect_buffer_handle,
             indirect_size,
-            BUFFER_USAGE_INDIRECT | abi_base.WGPUBufferUsage_CopyDst,
+            BUFFER_USAGE_INDIRECT | abi_core.WGPUBufferUsage_CopyDst,
         ) catch null;
     }
 
@@ -55,7 +55,7 @@ pub fn deinit(state: RenderP0State, procs: abi_proc_aliases.Procs) void {
 pub fn beginPass(
     state: RenderP0State,
     render_api: render_api_mod.RenderApi,
-    render_pass: abi_base.WGPURenderPassEncoder,
+    render_pass: abi_core.WGPURenderPassEncoder,
 ) void {
     if (render_api.render_pass_encoder_begin_occlusion_query) |begin_occlusion_query| {
         if (state.occlusion_query_set != null) begin_occlusion_query(render_pass, 0);
@@ -68,7 +68,7 @@ pub fn beginPass(
 pub fn endPass(
     state: RenderP0State,
     render_api: render_api_mod.RenderApi,
-    render_pass: abi_base.WGPURenderPassEncoder,
+    render_pass: abi_core.WGPURenderPassEncoder,
 ) void {
     if (render_api.render_pass_encoder_write_timestamp) |write_timestamp| {
         if (state.timestamp_query_set != null) write_timestamp(render_pass, state.timestamp_query_set, 1);
