@@ -274,27 +274,27 @@ fn emitSramPreCheck(buf: []u8, pos: *usize) EmitError!void {
 fn emitLaunchHelpers(buf: []u8, pos: *usize, rt: RuntimeConfig) EmitError!void {
     try write(buf, pos, "# --- Launch sequences ---\nPREFILL_LAUNCHES = [\n");
     for (rt.plan.prefill_launches) |launch| {
-        try write(buf, pos, "    ('");
-        try write(buf, pos, launch.kernel_name);
-        try write(buf, pos, "', ");
-        try writeInt(buf, pos, launch.repeat);
-        try write(buf, pos, "),\n");
+        try writeLaunchDict(buf, pos, launch);
     }
     try write(buf, pos, "]\n\nDECODE_LAUNCHES = [\n");
     for (rt.plan.decode_launches) |launch| {
-        try write(buf, pos, "    ('");
-        try write(buf, pos, launch.kernel_name);
-        try write(buf, pos, "', ");
-        try writeInt(buf, pos, launch.repeat);
-        try write(buf, pos, "),\n");
+        try writeLaunchDict(buf, pos, launch);
     }
     try write(buf, pos,
         \\]
         \\
-        \\def run_launches(runner, launches):
+        \\def run_launches(runner, launches, current_pos=None):
         \\    """Execute a sequence of kernel launches with repeat counts."""
-        \\    for kernel_name, repeat in launches:
+        \\    for launch in launches:
+        \\        kernel_name = launch['kernelName']
+        \\        repeat = launch['repeat']
         \\        for _ in range(repeat):
+        \\            if 'slidingWindowSize' in launch:
+        \\                runner.memcpy_h2d('sliding_window', np.array([launch['slidingWindowSize']], dtype=np.uint32))
+        \\            if launch.get('currentPosSource') == 'decode_position':
+        \\                if current_pos is None:
+        \\                    raise ValueError('decode_position launch requires current_pos')
+        \\                runner.memcpy_h2d('position', np.array([current_pos], dtype=np.uint32))
         \\            runner.launch(kernel_name)
         \\
         \\
@@ -309,6 +309,8 @@ fn emitDecodeOrchestration(buf: []u8, pos: *usize, rt: RuntimeConfig) EmitError!
         \\    """Run prefill phase: stage full prompt, execute prefill launches."""
         \\    runner.memcpy_h2d('indices', np.array(token_ids, dtype=np.uint32))
         \\    runner.memcpy_h2d('position', np.array([len(token_ids)], dtype=np.uint32))
+        \\    if any('slidingWindowSize' in launch for launch in PREFILL_LAUNCHES):
+        \\        raise ValueError('prefill launches must not request sliding window state')
         \\    run_launches(runner, PREFILL_LAUNCHES)
         \\    return len(token_ids)
         \\
@@ -316,7 +318,7 @@ fn emitDecodeOrchestration(buf: []u8, pos: *usize, rt: RuntimeConfig) EmitError!
         \\    """Run one decode step: stage token + position, execute, readback."""
         \\    runner.memcpy_h2d('indices', np.array([token_id], dtype=np.uint32))
         \\    runner.memcpy_h2d('position', np.array([position], dtype=np.uint32))
-        \\    run_launches(runner, DECODE_LAUNCHES)
+        \\    run_launches(runner, DECODE_LAUNCHES, current_pos=position)
         \\    logits = runner.memcpy_d2h('output', dtype=np.float32)
         \\    return int(np.argmax(logits))
         \\
@@ -429,6 +431,33 @@ fn write(buf: []u8, pos: *usize, text: []const u8) EmitError!void {
     pos.* += text.len;
 }
 
+fn writeLaunchDict(buf: []u8, pos: *usize, launch: host.LaunchSpec) EmitError!void {
+    try write(buf, pos, "    {'kernelName': '");
+    try write(buf, pos, launch.kernel_name);
+    try write(buf, pos, "', 'repeat': ");
+    try writeInt(buf, pos, launch.repeat);
+    if (launch.attention_type) |attention_type| {
+        try write(buf, pos, ", 'attentionType': '");
+        try write(buf, pos, @tagName(attention_type));
+        try write(buf, pos, "'");
+    }
+    if (launch.sliding_window_size) |sliding_window_size| {
+        try write(buf, pos, ", 'slidingWindowSize': ");
+        try writeInt(buf, pos, sliding_window_size);
+    }
+    if (launch.current_pos_source) |current_pos_source| {
+        try write(buf, pos, ", 'currentPosSource': '");
+        try write(buf, pos, @tagName(current_pos_source));
+        try write(buf, pos, "'");
+    }
+    if (launch.kv_cache_alias) |kv_cache_alias| {
+        try write(buf, pos, ", 'kvCacheAlias': '");
+        try write(buf, pos, kv_cache_alias);
+        try write(buf, pos, "'");
+    }
+    try write(buf, pos, "},\n");
+}
+
 fn writeInt(buf: []u8, pos: *usize, value: anytype) EmitError!void {
     var tmp: [32]u8 = undefined;
     const slice = std.fmt.bufPrint(&tmp, "{d}", .{value}) catch return error.OutputTooLarge;
@@ -487,14 +516,18 @@ test "runtime config JSON emits weight mappings and state buffers" {
 test "full Python runner emits staging, state init, and decode" {
     const kernels = [_]host.KernelSpec{
         .{ .name = "embed", .pattern = "gather" },
-        .{ .name = "sample", .pattern = "sample" },
+        .{ .name = "attn_decode", .pattern = "attention_decode" },
     };
     const prefill = [_]host.LaunchSpec{
         .{ .kernel_name = "embed" },
     };
     const decode = [_]host.LaunchSpec{
-        .{ .kernel_name = "embed" },
-        .{ .kernel_name = "sample" },
+        .{
+            .kernel_name = "attn_decode",
+            .attention_type = .sliding,
+            .sliding_window_size = 512,
+            .current_pos_source = .decode_position,
+        },
     };
     const wm = [_]WeightMapping{
         .{ .shard_name = "embed.bin", .pe_buffer = "weights", .pe_start = 0, .pe_end = 8 },
@@ -538,6 +571,7 @@ test "full Python runner emits staging, state init, and decode" {
     // Decode orchestration
     try std.testing.expect(std.mem.indexOf(u8, script, "decode_loop") != null);
     try std.testing.expect(std.mem.indexOf(u8, script, "position") != null);
+    try std.testing.expect(std.mem.indexOf(u8, script, "sliding_window") != null);
     try std.testing.expect(std.mem.indexOf(u8, script, "EOS_TOKEN_ID") != null);
     // Failure handling
     try std.testing.expect(std.mem.indexOf(u8, script, "safe_run") != null);

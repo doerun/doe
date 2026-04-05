@@ -106,6 +106,10 @@
       "data": "examples/doe-wgsl-host-plan.gemma-3-270m-smoke.json"
     },
     {
+      "schema": "config/doe-wgsl-host-plan.schema.json",
+      "data": "examples/doe-wgsl-host-plan.gemma-4-e2b-smoke.json"
+    },
+    {
       "schema": "config/doe-wgsl-simulator-plan.schema.json",
       "data": "examples/doe-wgsl-simulator-plan.sample.json"
     },

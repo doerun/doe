@@ -256,11 +256,10 @@ fn validateAttention(csl: []const u8, result: *ValidationResult) void {
     if (!has_qkv) {
         addError(result, "attention pattern missing Q/K/V buffer references");
     }
-    // Sliding window: if present, current_pos must also be present.
-    const has_sliding = std.mem.indexOf(u8, csl, "sliding_window") != null;
-    const has_pos = std.mem.indexOf(u8, csl, "current_pos") != null;
+    const has_sliding = std.mem.indexOf(u8, csl, "decode_sliding_window") != null;
+    const has_pos = std.mem.indexOf(u8, csl, "decode_position") != null;
     if (has_sliding and !has_pos) {
-        addError(result, "attention with sliding_window must also declare current_pos param");
+        addError(result, "attention with sliding window state must also declare decode position state");
     }
 }
 

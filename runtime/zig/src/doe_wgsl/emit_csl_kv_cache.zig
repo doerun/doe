@@ -8,6 +8,7 @@
 
 const ir = @import("ir.zig");
 const classify = @import("emit_csl_classify.zig");
+const spec = @import("csl_spec.zig");
 const W = @import("emit_csl_ir_walk.zig");
 
 pub const EmitError = W.EmitError;
@@ -31,14 +32,15 @@ pub fn emitWrite(
     try W.write(buf, pos, "param num_pes: i16;\n");
     try W.write(buf, pos, "param head_dim: i16;\n");
     try W.write(buf, pos, "param max_seq_len: i16;\n");
-    try W.write(buf, pos, "param write_pos: i16 = 0;\n\n");
+    try W.write(buf, pos, "\n");
 
     try W.write(buf, pos, "const sys_mod = @import_module(\"<memcpy/memcpy>\", memcpy_params);\n\n");
 
     try emitStoragePtrs(buf, pos, module);
+    try emitDecodePositionState(buf, pos);
 
     try W.write(buf, pos, "fn compute() void {\n");
-    try W.write(buf, pos, "    const base = @as(u32, write_pos) * @as(u32, head_dim);\n");
+    try W.write(buf, pos, "    const base = decode_position[0] * @as(u32, @intCast(head_dim));\n");
     try W.write(buf, pos, "    for (@range(i16, head_dim)) |d| {\n");
     try W.write(buf, pos, "        const idx = base + @as(u32, d);\n");
     try W.write(buf, pos, "        ");
@@ -55,7 +57,7 @@ pub fn emitWrite(
     try W.write(buf, pos, "    sys_mod.unblock_cmd_stream();\n");
     try W.write(buf, pos, "}\n\n");
 
-    try emitComptime(buf, pos, module);
+    try emitComptime(buf, pos, module, true);
 }
 
 pub fn emitRead(
@@ -103,7 +105,7 @@ pub fn emitRead(
     try W.write(buf, pos, "    sys_mod.unblock_cmd_stream();\n");
     try W.write(buf, pos, "}\n\n");
 
-    try emitComptime(buf, pos, module);
+    try emitComptime(buf, pos, module, false);
 }
 
 fn emitStoragePtrs(buf: []u8, pos: *usize, module: *const ir.Module) EmitError!void {
@@ -113,17 +115,26 @@ fn emitStoragePtrs(buf: []u8, pos: *usize, module: *const ir.Module) EmitError!v
         if (space != .storage) continue;
         try W.write(buf, pos, "var ");
         try W.write(buf, pos, global.name);
-        try W.write(buf, pos, ": [*]f32 = undefined;\n");
+        try W.write(buf, pos, ": [*]");
+        try writeScalarType(buf, pos, module, global.ty);
+        try W.write(buf, pos, " = undefined;\n");
         try W.write(buf, pos, "var ");
         try W.write(buf, pos, global.name);
-        try W.write(buf, pos, "_ptr: [*]f32 = &");
+        try W.write(buf, pos, "_ptr: [*]");
+        try writeScalarType(buf, pos, module, global.ty);
+        try W.write(buf, pos, " = &");
         try W.write(buf, pos, global.name);
         try W.write(buf, pos, ";\n");
     }
     try W.write(buf, pos, "\n");
 }
 
-fn emitComptime(buf: []u8, pos: *usize, module: *const ir.Module) EmitError!void {
+fn emitDecodePositionState(buf: []u8, pos: *usize) EmitError!void {
+    try W.write(buf, pos, "var decode_position: [1]u32 = @zeros([1]u32);\n");
+    try W.write(buf, pos, "var decode_position_ptr: [*]u32 = &decode_position;\n\n");
+}
+
+fn emitComptime(buf: []u8, pos: *usize, module: *const ir.Module, include_position: bool) EmitError!void {
     try W.write(buf, pos, "comptime {\n");
     for (module.globals.items) |global| {
         if (global.binding == null) continue;
@@ -135,6 +146,18 @@ fn emitComptime(buf: []u8, pos: *usize, module: *const ir.Module) EmitError!void
         try W.write(buf, pos, global.name);
         try W.write(buf, pos, "\");\n");
     }
+    if (include_position) {
+        try W.write(buf, pos, "    @export_symbol(decode_position_ptr, \"position\");\n");
+    }
     try W.write(buf, pos, "    @export_symbol(compute);\n");
     try W.write(buf, pos, "}\n");
+}
+
+fn writeScalarType(buf: []u8, pos: *usize, module: *const ir.Module, ty: ir.TypeId) EmitError!void {
+    const resolved = module.types.get(ty);
+    switch (resolved) {
+        .scalar => |scalar| try W.write(buf, pos, spec.scalarTypeName(scalar)),
+        .array => |array| try writeScalarType(buf, pos, module, array.elem),
+        else => try W.write(buf, pos, "u32"),
+    }
 }

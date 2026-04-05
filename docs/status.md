@@ -1,4 +1,66 @@
 # Doe status
+## Gemma 4 CSL lowering now uses explicit decode device state, derives hybrid attention from layer metadata, and rejects unsupported manifest shortcuts (2026-04-05 UTC)
+
+- `runtime/zig/src/doe_wgsl/emit_csl_attention.zig`,
+  `runtime/zig/src/doe_wgsl/emit_csl_kv_cache.zig`, and
+  `runtime/zig/src/doe_wgsl/emit_csl_layout.zig` now model decode position and
+  sliding-window width as exported device-state buffers (`position` and
+  `sliding_window`) instead of pretending Cerebras launch kwargs mutate CSL
+  compile-time params at runtime
+- `runtime/zig/src/doe_wgsl/emit_csl_host.zig` and
+  `runtime/zig/src/doe_wgsl/emit_csl_host_runtime.zig` now stage that decode
+  state with explicit `memcpy_h2d(...)` calls before launches rather than
+  passing fake `current_pos` / `sliding_window` launch kwargs
+- `runtime/zig/src/doe_wgsl/emit_csl_exec_v1.zig` now:
+  - lowers `ple_project` as the general `tiled_matmul` pattern instead of the
+    Q4K-only `fused_gemv_dequant` path
+  - derives decode `attentionType` from `layerPattern` when Gemma 4 steps omit
+    it explicitly
+  - marks decode `kv_write` / `kv_write_shared` launches as consuming
+    `currentPosSource: decode_position`
+  - rejects manifest-lowering requests that try to smuggle Gemma 4-only launch
+    metadata through the older manifest execution contract
+- `runtime/zig/src/doe_wgsl/emit_csl_host_plan.zig` and
+  `config/doe-wgsl-host-plan.schema.json` now allow `currentPosSource` on
+  decode `kv_write` launches while still failing closed on sliding attention in
+  prefill
+- `runtime/zig/src/doe_wgsl/emit_csl_host.zig` now computes manifest SRAM
+  estimates against the chosen PE grid and deduplicates shared-KV aliases in
+  decode launches instead of assuming every model gets the full wafer and one
+  KV cache per layer
+- `runtime/zig/src/doe_wgsl/emit_csl_exec_v1.zig` has been sharded back under
+  the Doe 999-line Zig-source limit via
+  `runtime/zig/src/doe_wgsl/emit_csl_exec_v1_test.zig`
+- Verification passed with `zig build test-wgsl` and the targeted schema checks
+  for the checked host-plan artifacts
+- External closure is still pending: this workspace does not currently provide
+  `cslc` or a configured `DOE_CSL_SIM_EXECUTABLE`, so compile/simulator parity
+  remains blocked on the Cerebras SDK/toolchain lane
+
+## CSL host-plan v2 now carries launch-scoped Gemma 4 routing metadata, and Gemma 4 lowering has a checked golden artifact (2026-04-05 UTC)
+
+- `runtime/zig/src/doe_wgsl/emit_csl_exec_v1.zig` now fails closed on invalid
+  `attentionType` values, parses `slidingWindowSize`, `layerPattern`, and
+  `numKvSharedLayers`, and lowers sliding-window routing plus shared-KV aliasing
+  onto launch specs instead of kernel specs
+- `runtime/zig/src/doe_wgsl/emit_csl_host.zig`,
+  `runtime/zig/src/doe_wgsl/emit_csl_host_plan.zig`, and
+  `runtime/zig/src/doe_wgsl/emit_csl_host_runtime.zig` now serialize and
+  consume per-launch metadata:
+  `attentionType`, `slidingWindowSize`, `currentPosSource`, and
+  `kvCacheAlias`
+- `config/doe-wgsl-host-plan.schema.json` and
+  `runtime/zig/src/doe_wgsl/csl_spec.zig` now define host-plan schema version
+  `2`, with migration notes recorded in `config/migration-notes.md`
+- `runtime/zig/examples/doe-wgsl-host-plan.gemma-4-e2b-smoke.json` and
+  `examples/doe-wgsl-host-plan.gemma-4-e2b-smoke.json` add the checked Gemma 4
+  host-plan golden artifact, and `config/schema-targets.json` now validates the
+  top-level checked example against the schema
+- `runtime/zig/src/doe_wgsl/emit_csl_layout.zig` now forwards
+  `sliding_window` and `current_pos` through the decode-attention layout tile
+  parameters instead of dropping them before PE-program emission
+- Verification passed with `zig build test-wgsl`
+
 ## Broad ABI and native compatibility barrels are now truly cold, macOS surface seam restored, and the fence enforces both states (2026-04-03 UTC)
 
 - `runtime/zig/src/core/abi/wgpu_base_types.zig` and

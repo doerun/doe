@@ -87,8 +87,6 @@ pub const AttentionDecodeInfo = struct {
     shared_count: u32,
     input_count: u32,
     output_count: u32,
-    /// When >0, decode uses a sliding window of this size instead of full history.
-    sliding_window_size: u32 = 0,
 };
 
 pub const AttentionTiledInfo = struct {
@@ -472,7 +470,10 @@ fn analyzeGlobals(module: *const ir.Module, props: *AnalysisProps) void {
         const is_rw = if (global.access) |a| (a == .read_write or a == .write) else false;
         if (is_rw) {
             props.output_count += 1;
-            if (!found_rw) { props.first_rw_global = gi; found_rw = true; }
+            if (!found_rw) {
+                props.first_rw_global = gi;
+                found_rw = true;
+            }
             // Track cache-like read_write buffers
             if (nameContains(global.name, "cache") or nameContains(global.name, "kv_")) {
                 if (props.cache_rw_count < 4) {
@@ -483,7 +484,10 @@ fn analyzeGlobals(module: *const ir.Module, props: *AnalysisProps) void {
             }
         } else {
             props.input_count += 1;
-            if (!found_read) { props.first_read_global = gi; found_read = true; }
+            if (!found_read) {
+                props.first_read_global = gi;
+                found_read = true;
+            }
             // Track all read globals for FFN detection
             if (props.total_read_globals < 8) {
                 props.read_global_indices[props.total_read_globals] = gi;
@@ -567,7 +571,10 @@ fn analyzeGlobals(module: *const ir.Module, props: *AnalysisProps) void {
             switch (read_idx) {
                 0 => props.q_global = @intCast(idx),
                 1 => props.k_global = @intCast(idx),
-                2 => { props.v_global = @intCast(idx); props.has_qkv_buffers = true; },
+                2 => {
+                    props.v_global = @intCast(idx);
+                    props.has_qkv_buffers = true;
+                },
                 else => {},
             }
             read_idx += 1;

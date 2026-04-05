@@ -46,6 +46,7 @@ pub const emit_csl_host_runtime = @import("emit_csl_host_runtime.zig");
 pub const emit_csl_decode = @import("emit_csl_decode.zig");
 pub const emit_csl_validate = @import("emit_csl_validate.zig");
 const csl_tests = @import("doe_wgsl_csl_tests.zig");
+const exec_v1_tests = @import("emit_csl_exec_v1_test.zig");
 pub const layout_utils = @import("layout_utils.zig");
 const legacy_msl = @import("doe_wgsl_msl.zig");
 const lean_proof = @import("../lean_proof.zig");

@@ -40,14 +40,24 @@ pub const KernelSpec = struct {
     name: []const u8,
     pattern: []const u8,
     count: u32 = 1,
-    /// When set, this kernel's KV cache buffers alias the named source kernel's
-    /// buffers instead of allocating independent storage. Used for Gemma 4 shared KV.
-    kv_cache_alias: ?[]const u8 = null,
+};
+
+pub const LaunchAttentionType = enum {
+    global,
+    sliding,
+};
+
+pub const CurrentPosSource = enum {
+    decode_position,
 };
 
 pub const LaunchSpec = struct {
     kernel_name: []const u8,
     repeat: u32 = 1,
+    attention_type: ?LaunchAttentionType = null,
+    sliding_window_size: ?u32 = null,
+    current_pos_source: ?CurrentPosSource = null,
+    kv_cache_alias: ?[]const u8 = null,
 };
 
 /// Explicit host-side execution scaffold. Callers are responsible for deriving
@@ -88,12 +98,24 @@ fn conservativeBytesPerWeight(format: ModelConfig.QuantFormat) u64 {
 
 /// Conservative per-layer estimate. This is not a placement proof.
 pub fn estimateLayerSramBytes(config: ModelConfig) u64 {
+    return estimateWeightLayerBytes(config) +
+        estimateKvCacheBytesForLayers(config, config.num_layers) / @as(u64, config.num_layers);
+}
+
+fn estimateWeightLayerBytes(config: ModelConfig) u64 {
     const hd: u64 = config.hidden_dim;
     const bytes_per_weight = conservativeBytesPerWeight(config.quant_format);
     const proj_bytes = PROJECTION_COUNT * hd * hd * bytes_per_weight;
     const ffn_bytes = FFN_WEIGHT_MATRICES * hd * FFN_EXPANSION_FACTOR * hd * bytes_per_weight;
-    const kv_bytes = 2 * @as(u64, config.max_seq_len) * hd * KV_CACHE_F16_BYTES_PER_VALUE;
-    return proj_bytes + ffn_bytes + kv_bytes;
+    return proj_bytes + ffn_bytes;
+}
+
+fn estimateKvCacheBytesForLayers(config: ModelConfig, layer_count: u32) u64 {
+    return 2 *
+        @as(u64, layer_count) *
+        @as(u64, config.max_seq_len) *
+        @as(u64, config.hidden_dim) *
+        KV_CACHE_F16_BYTES_PER_VALUE;
 }
 
 pub fn estimateModelSram(config: ModelConfig) SramEstimate {
@@ -110,13 +132,69 @@ pub fn estimateModelSram(config: ModelConfig) SramEstimate {
     };
 }
 
+pub fn estimateModelSramForPlan(config: ModelConfig, plan: HostPlan) SramEstimate {
+    const effective_kv_layers = effectiveKvCacheLayerCount(config, plan);
+    const weight_per_layer = estimateWeightLayerBytes(config);
+    const kv_total = estimateKvCacheBytesForLayers(config, effective_kv_layers);
+    const kv_per_layer = if (effective_kv_layers == 0) 0 else kv_total / @as(u64, effective_kv_layers);
+    const per_layer = weight_per_layer + kv_per_layer;
+    const embed_bytes: u64 = @as(u64, config.vocab_size) * config.hidden_dim * F16_BYTES_PER_WEIGHT;
+    const total = weight_per_layer * @as(u64, config.num_layers) + kv_total + embed_bytes;
+    const capacity = @as(u64, plan.pe_grid_width) *
+        @as(u64, plan.pe_grid_height) *
+        @as(u64, WSE3.PE_SRAM_BYTES);
+    return .{
+        .per_layer_estimated_bytes = per_layer,
+        .embedding_estimated_bytes = embed_bytes,
+        .total_estimated_bytes = total,
+        .capacity_bytes = capacity,
+        .fits_within_capacity = total <= capacity,
+        .estimate_kind = "plan_aware_upper_bound",
+    };
+}
+
+fn effectiveKvCacheLayerCount(config: ModelConfig, plan: HostPlan) u32 {
+    var unaliased_layers: u32 = 0;
+    var aliased_layers: u32 = 0;
+
+    for (plan.decode_launches, 0..) |launch, idx| {
+        const kernel = findKernel(plan.kernels, launch.kernel_name) orelse continue;
+        if (!std.mem.eql(u8, kernel.pattern, "kv_write")) continue;
+
+        if (launch.kv_cache_alias) |alias| {
+            var seen = false;
+            for (plan.decode_launches[0..idx]) |prior_launch| {
+                if (prior_launch.kv_cache_alias) |prior_alias| {
+                    if (std.mem.eql(u8, alias, prior_alias)) {
+                        seen = true;
+                        break;
+                    }
+                }
+            }
+            if (!seen) aliased_layers += 1;
+        } else {
+            unaliased_layers += 1;
+        }
+    }
+
+    const effective_layers = unaliased_layers + aliased_layers;
+    return if (effective_layers == 0) config.num_layers else effective_layers;
+}
+
+fn findKernel(kernels: []const KernelSpec, kernel_name: []const u8) ?KernelSpec {
+    for (kernels) |kernel| {
+        if (std.mem.eql(u8, kernel.name, kernel_name)) return kernel;
+    }
+    return null;
+}
+
 pub fn emitCompilationManifest(
     buf: []u8,
     pos: *usize,
     config: ModelConfig,
     plan: HostPlan,
 ) EmitError!void {
-    const estimate = estimateModelSram(config);
+    const estimate = estimateModelSramForPlan(config, plan);
 
     try write(buf, pos, "{\n  \"target\": \"wse3\",\n");
     try write(buf, pos, "  \"contract\": \"explicit_host_plan\",\n");
@@ -256,9 +334,17 @@ pub fn emitPythonRunner(
     );
 
     try write(buf, pos,
-        \\def run_launches(runner, launches):
-        \\    for kernel_name, repeat in launches:
+        \\def run_launches(runner, launches, current_pos=None):
+        \\    for launch in launches:
+        \\        kernel_name = launch['kernelName']
+        \\        repeat = launch['repeat']
         \\        for _ in range(repeat):
+        \\            if 'slidingWindowSize' in launch:
+        \\                runner.memcpy_h2d('sliding_window', np.array([launch['slidingWindowSize']], dtype=np.uint32))
+        \\            if launch.get('currentPosSource') == 'decode_position':
+        \\                if current_pos is None:
+        \\                    raise ValueError('decode_position launch requires current_pos')
+        \\                runner.memcpy_h2d('position', np.array([current_pos], dtype=np.uint32))
         \\            runner.launch(kernel_name)
         \\
         \\
@@ -267,15 +353,17 @@ pub fn emitPythonRunner(
     try write(buf, pos,
         \\def run_prefill(runner, token_ids):
         \\    runner.memcpy_h2d('indices', np.array(token_ids, dtype=np.uint32))
+        \\    runner.memcpy_h2d('position', np.array([len(token_ids)], dtype=np.uint32))
         \\    run_launches(runner, PREFILL_LAUNCHES)
+        \\    return len(token_ids)
         \\
         \\
     );
 
     try write(buf, pos,
-        \\def run_decode_step(runner, token_id):
+        \\def run_decode_step(runner, token_id, current_pos):
         \\    runner.memcpy_h2d('indices', np.array([token_id], dtype=np.uint32))
-        \\    run_launches(runner, DECODE_LAUNCHES)
+        \\    run_launches(runner, DECODE_LAUNCHES, current_pos=current_pos)
         \\    return runner.memcpy_d2h('output', dtype=np.uint32)
         \\
         \\
@@ -285,13 +373,14 @@ pub fn emitPythonRunner(
         \\def decode_loop(runner, prompt_ids, max_tokens=128):
         \\    """Autoregressive decode scaffold from the explicit host plan."""
         \\    generated = list(prompt_ids)
-        \\    run_prefill(runner, prompt_ids)
+        \\    position = run_prefill(runner, prompt_ids)
         \\    while len(generated) < len(prompt_ids) + max_tokens:
-        \\        token = run_decode_step(runner, generated[-1])
+        \\        token = run_decode_step(runner, generated[-1], position)
         \\        next_token = int(token[0])
         \\        if EOS_TOKEN_ID is not None and next_token == EOS_TOKEN_ID:
         \\            break
         \\        generated.append(next_token)
+        \\        position += 1
         \\    return generated
         \\
         \\
@@ -319,6 +408,22 @@ fn emitLaunchSpecsJson(buf: []u8, pos: *usize, launches: []const LaunchSpec) Emi
         try writeJsonString(buf, pos, launch.kernel_name);
         try write(buf, pos, ", \"repeat\": ");
         try writeInt(buf, pos, launch.repeat);
+        if (launch.attention_type) |attention_type| {
+            try write(buf, pos, ", \"attentionType\": ");
+            try writeJsonString(buf, pos, @tagName(attention_type));
+        }
+        if (launch.sliding_window_size) |sliding_window_size| {
+            try write(buf, pos, ", \"slidingWindowSize\": ");
+            try writeInt(buf, pos, sliding_window_size);
+        }
+        if (launch.current_pos_source) |current_pos_source| {
+            try write(buf, pos, ", \"currentPosSource\": ");
+            try writeJsonString(buf, pos, @tagName(current_pos_source));
+        }
+        if (launch.kv_cache_alias) |kv_cache_alias| {
+            try write(buf, pos, ", \"kvCacheAlias\": ");
+            try writeJsonString(buf, pos, kv_cache_alias);
+        }
         try write(buf, pos, " }");
         if (idx + 1 < launches.len) try write(buf, pos, ",");
         try write(buf, pos, "\n");
@@ -327,11 +432,27 @@ fn emitLaunchSpecsJson(buf: []u8, pos: *usize, launches: []const LaunchSpec) Emi
 
 fn emitLaunchSpecsPython(buf: []u8, pos: *usize, launches: []const LaunchSpec) EmitError!void {
     for (launches) |launch| {
-        try write(buf, pos, "    (");
+        try write(buf, pos, "    {\"kernelName\": ");
         try writeJsonString(buf, pos, launch.kernel_name);
-        try write(buf, pos, ", ");
+        try write(buf, pos, ", \"repeat\": ");
         try writeInt(buf, pos, launch.repeat);
-        try write(buf, pos, "),\n");
+        if (launch.attention_type) |attention_type| {
+            try write(buf, pos, ", \"attentionType\": ");
+            try writeJsonString(buf, pos, @tagName(attention_type));
+        }
+        if (launch.sliding_window_size) |sliding_window_size| {
+            try write(buf, pos, ", \"slidingWindowSize\": ");
+            try writeInt(buf, pos, sliding_window_size);
+        }
+        if (launch.current_pos_source) |current_pos_source| {
+            try write(buf, pos, ", \"currentPosSource\": ");
+            try writeJsonString(buf, pos, @tagName(current_pos_source));
+        }
+        if (launch.kv_cache_alias) |kv_cache_alias| {
+            try write(buf, pos, ", \"kvCacheAlias\": ");
+            try writeJsonString(buf, pos, kv_cache_alias);
+        }
+        try write(buf, pos, "},\n");
     }
 }
 
@@ -382,6 +503,37 @@ test "SRAM estimate is explicit and conservative" {
     try std.testing.expect(estimate.total_estimated_bytes > 0);
     try std.testing.expectEqualStrings("conservative_upper_bound", estimate.estimate_kind);
     try std.testing.expectEqual(WSE3.TOTAL_SRAM_BYTES, estimate.capacity_bytes);
+}
+
+test "plan-aware SRAM estimate accounts for shared kv aliasing and grid capacity" {
+    const config = ModelConfig{
+        .hidden_dim = 1024,
+        .num_heads = 16,
+        .head_dim = 64,
+        .num_layers = 24,
+        .vocab_size = 151936,
+        .max_seq_len = 2048,
+        .quant_format = .q4k,
+    };
+    const plan = HostPlan{
+        .pe_grid_width = 32,
+        .pe_grid_height = 4,
+        .kernels = &[_]KernelSpec{
+            .{ .name = "kv_write", .pattern = "kv_write", .count = 1 },
+            .{ .name = "kv_write_shared", .pattern = "kv_write", .count = 2 },
+        },
+        .prefill_launches = &[_]LaunchSpec{},
+        .decode_launches = &[_]LaunchSpec{
+            .{ .kernel_name = "kv_write" },
+            .{ .kernel_name = "kv_write_shared", .kv_cache_alias = "layer.0.kv" },
+            .{ .kernel_name = "kv_write_shared", .kv_cache_alias = "layer.0.kv" },
+        },
+    };
+
+    const estimate = estimateModelSramForPlan(config, plan);
+    try std.testing.expectEqualStrings("plan_aware_upper_bound", estimate.estimate_kind);
+    try std.testing.expectEqual(@as(u64, 32 * 4) * @as(u64, WSE3.PE_SRAM_BYTES), estimate.capacity_bytes);
+    try std.testing.expect(estimate.total_estimated_bytes < estimateModelSram(config).total_estimated_bytes);
 }
 
 test "compilation manifest emits explicit host plan phases" {
@@ -437,13 +589,19 @@ test "Python runner uses filename-based shard loading and explicit launches" {
     };
     const kernels = [_]KernelSpec{
         .{ .name = "embed_gather", .pattern = "gather", .count = 1 },
-        .{ .name = "sample", .pattern = "sample", .count = 1 },
+        .{ .name = "attn_decode", .pattern = "attention_decode", .count = 1 },
     };
     const prefill = [_]LaunchSpec{
         .{ .kernel_name = "embed_gather", .repeat = 1 },
     };
     const decode = [_]LaunchSpec{
-        .{ .kernel_name = "sample", .repeat = 1 },
+        .{
+            .kernel_name = "attn_decode",
+            .repeat = 1,
+            .attention_type = .sliding,
+            .sliding_window_size = 512,
+            .current_pos_source = .decode_position,
+        },
     };
     const plan = HostPlan{
         .pe_grid_width = 16,
@@ -461,4 +619,7 @@ test "Python runner uses filename-based shard loading and explicit launches" {
     try std.testing.expect(std.mem.indexOf(u8, script, "PREFILL_LAUNCHES") != null);
     try std.testing.expect(std.mem.indexOf(u8, script, "DECODE_LAUNCHES") != null);
     try std.testing.expect(std.mem.indexOf(u8, script, "EOS_TOKEN_ID = None") != null);
+    try std.testing.expect(std.mem.indexOf(u8, script, "memcpy_h2d('position'") != null);
+    try std.testing.expect(std.mem.indexOf(u8, script, "memcpy_h2d('sliding_window'") != null);
+    try std.testing.expect(std.mem.indexOf(u8, script, "runner.launch(kernel_name)") != null);
 }

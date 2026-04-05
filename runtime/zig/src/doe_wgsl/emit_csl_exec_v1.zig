@@ -64,7 +64,19 @@ pub const ExecStep = struct {
     kernel_key: []const u8,
     weights_key: ?[]const u8 = null,
     attention_type: ?AttentionType = null,
+    sliding_window_size: ?u32 = null,
     kv_cache_alias: ?[]const u8 = null,
+};
+
+const LayerPattern = struct {
+    period: u32,
+    offset: u32,
+};
+
+const LowerMetadata = struct {
+    layer_pattern: ?LayerPattern = null,
+    num_kv_shared_layers: ?u32 = null,
+    sliding_window_size: ?u32 = null,
 };
 
 const OpSpec = struct {
@@ -102,7 +114,7 @@ pub fn opToSpec(op: []const u8) ?OpSpec {
         // Gemma 4: PLE composite — decomposes into gather + matmul + reduction + element_wise.
         // The host plan expands this into the four sub-steps; exec-v1 uses it as a scheduling marker.
         .{ .op = "ple_gather", .spec = .{ .pattern = "gather", .allow_prefill = true, .allow_decode = true, .kind = .compute } },
-        .{ .op = "ple_project", .spec = .{ .pattern = "fused_gemv_dequant", .allow_prefill = true, .allow_decode = true, .kind = .compute } },
+        .{ .op = "ple_project", .spec = .{ .pattern = "tiled_matmul", .allow_prefill = true, .allow_decode = true, .kind = .compute } },
         .{ .op = "ple_norm", .spec = .{ .pattern = "reduction", .allow_prefill = true, .allow_decode = true, .kind = .compute } },
         .{ .op = "ple_modulate", .spec = .{ .pattern = "element_wise", .allow_prefill = true, .allow_decode = true, .kind = .compute } },
         // Gemma 4: hybrid attention — uses attention_decode with sliding window
@@ -130,6 +142,12 @@ fn parsePhase(text: []const u8) LowerError!ExecPhase {
 fn parseKind(text: []const u8) LowerError!ExecStepKind {
     if (std.mem.eql(u8, text, "compute")) return .compute;
     if (std.mem.eql(u8, text, "sample")) return .sample;
+    return error.InvalidJson;
+}
+
+fn parseAttentionType(text: []const u8) LowerError!AttentionType {
+    if (std.mem.eql(u8, text, "global")) return .global;
+    if (std.mem.eql(u8, text, "sliding")) return .sliding;
     return error.InvalidJson;
 }
 
@@ -171,6 +189,28 @@ fn parseGrid(value: std.json.Value) LowerError!GridDims {
     };
 }
 
+fn parseLayerPattern(value: ?std.json.Value) LowerError!?LayerPattern {
+    const raw = value orelse return null;
+    const object = try expectObject(raw);
+    const pattern_type = try expectString(object.get("type") orelse return error.InvalidJson);
+    if (!std.mem.eql(u8, pattern_type, "every_n")) return error.InvalidJson;
+    const period = try expectU32(object.get("period") orelse return error.InvalidJson);
+    const offset = try expectU32(object.get("offset") orelse return error.InvalidJson);
+    if (period == 0 or offset >= period) return error.InvalidJson;
+    return .{
+        .period = period,
+        .offset = offset,
+    };
+}
+
+fn parseOptionalU32(value: ?std.json.Value) LowerError!?u32 {
+    const raw = value orelse return null;
+    return switch (raw) {
+        .null => null,
+        else => try expectU32(raw),
+    };
+}
+
 fn parseNullableStringDup(allocator: std.mem.Allocator, value: ?std.json.Value) LowerError!?[]const u8 {
     const raw = value orelse return null;
     return switch (raw) {
@@ -191,13 +231,12 @@ fn parseStepObject(allocator: std.mem.Allocator, object: std.json.ObjectMap) Low
 
     const weights_key = try parseNullableStringDup(allocator, object.get("weightsKey"));
 
-    const attention_type: ?AttentionType = if (object.get("attentionType")) |attn_val| blk: {
-        const attn_text = try expectString(attn_val);
-        if (std.mem.eql(u8, attn_text, "global")) break :blk .global;
-        if (std.mem.eql(u8, attn_text, "sliding")) break :blk .sliding;
-        break :blk null;
-    } else null;
+    const attention_type: ?AttentionType = if (object.get("attentionType")) |attn_val|
+        try parseAttentionType(try expectString(attn_val))
+    else
+        null;
 
+    const sliding_window_size = try parseOptionalU32(object.get("slidingWindowSize"));
     const kv_cache_alias = try parseNullableStringDup(allocator, object.get("kvCacheAlias"));
 
     return .{
@@ -207,6 +246,7 @@ fn parseStepObject(allocator: std.mem.Allocator, object: std.json.ObjectMap) Low
         .kernel_key = kernel_key,
         .weights_key = weights_key,
         .attention_type = attention_type,
+        .sliding_window_size = sliding_window_size,
         .kv_cache_alias = kv_cache_alias,
     };
 }
@@ -365,6 +405,52 @@ fn validateStep(step: ExecStep, spec: OpSpec) LowerError!void {
     }
 
     if (step.kind == .sample and step.weights_key != null) return error.MalformedStep;
+    if (step.attention_type != null and !std.mem.eql(u8, spec.pattern, "attention_decode")) return error.MalformedStep;
+    if (step.sliding_window_size) |sliding_window_size| {
+        if (sliding_window_size == 0 or !std.mem.eql(u8, spec.pattern, "attention_decode")) return error.MalformedStep;
+    }
+    if (std.mem.eql(u8, step.op, "attention_sliding")) {
+        if (step.attention_type) |attention_type| {
+            if (attention_type != .sliding) return error.MalformedStep;
+        }
+    }
+    if (std.mem.eql(u8, step.op, "kv_write_shared")) {
+        if (step.kv_cache_alias == null) return error.MalformedStep;
+    } else if (step.kv_cache_alias != null) {
+        return error.MalformedStep;
+    }
+}
+
+fn deriveAttentionTypeFromLayerPattern(layer_pattern: LayerPattern, layer_index: u32) host.LaunchAttentionType {
+    if (layer_index % layer_pattern.period == layer_pattern.offset) return .global;
+    return .sliding;
+}
+
+fn deriveLaunchAttentionType(
+    step: ExecStep,
+    metadata: LowerMetadata,
+    decode_attention_index: ?u32,
+) ?host.LaunchAttentionType {
+    if (std.mem.eql(u8, step.op, "attention_sliding")) return .sliding;
+    if (step.attention_type) |attention_type| {
+        return switch (attention_type) {
+            .global => .global,
+            .sliding => .sliding,
+        };
+    }
+    if (decode_attention_index) |layer_index| {
+        if (metadata.layer_pattern) |layer_pattern| {
+            return deriveAttentionTypeFromLayerPattern(layer_pattern, layer_index);
+        }
+    }
+    return null;
+}
+
+fn deriveSlidingWindowSize(step: ExecStep, metadata: LowerMetadata, attention_type: ?host.LaunchAttentionType) LowerError!?u32 {
+    if (attention_type != .sliding) return null;
+    const sliding_window_size = step.sliding_window_size orelse metadata.sliding_window_size orelse return error.MalformedStep;
+    if (sliding_window_size == 0) return error.MalformedStep;
+    return sliding_window_size;
 }
 
 /// Lower a sequence of execution-v1 steps into a HostPlan.
@@ -373,6 +459,17 @@ fn validateStep(step: ExecStep, spec: OpSpec) LowerError!void {
 pub fn lowerToHostPlan(
     steps: []const ExecStep,
     grid: GridDims,
+    kernel_buf: []host.KernelSpec,
+    prefill_buf: []host.LaunchSpec,
+    decode_buf: []host.LaunchSpec,
+) LowerError!host.HostPlan {
+    return lowerToHostPlanWithMetadata(steps, grid, .{}, kernel_buf, prefill_buf, decode_buf);
+}
+
+fn lowerToHostPlanWithMetadata(
+    steps: []const ExecStep,
+    grid: GridDims,
+    metadata: LowerMetadata,
     kernel_buf: []host.KernelSpec,
     prefill_buf: []host.LaunchSpec,
     decode_buf: []host.LaunchSpec,
@@ -388,6 +485,7 @@ pub fn lowerToHostPlan(
     var saw_decode_step = false;
     var saw_decode_compute = false;
     var saw_sample_step = false;
+    var decode_attention_index: u32 = 0;
 
     for (steps) |step| {
         if (saw_sample_step) return error.MalformedStep;
@@ -410,6 +508,22 @@ pub fn lowerToHostPlan(
         }
 
         const pattern = spec.pattern;
+        const attention_layer_index: ?u32 = if (step.phase == .decode and std.mem.eql(u8, pattern, "attention_decode")) blk: {
+            const index = decode_attention_index;
+            decode_attention_index += 1;
+            break :blk index;
+        } else null;
+        const attention_type = deriveLaunchAttentionType(step, metadata, attention_layer_index);
+        const sliding_window_size = try deriveSlidingWindowSize(step, metadata, attention_type);
+        const current_pos_source: ?host.CurrentPosSource = if (attention_type == .sliding or
+            (step.phase == .decode and std.mem.eql(u8, pattern, "kv_write")))
+            .decode_position
+        else
+            null;
+        const kv_cache_alias = if (std.mem.eql(u8, step.op, "kv_write_shared")) blk: {
+            if ((metadata.num_kv_shared_layers orelse 0) == 0) return error.MalformedStep;
+            break :blk step.kv_cache_alias;
+        } else null;
 
         // Add kernel if not already present.
         var found = false;
@@ -427,7 +541,6 @@ pub fn lowerToHostPlan(
                 .name = step.kernel_key,
                 .pattern = pattern,
                 .count = 1,
-                .kv_cache_alias = step.kv_cache_alias,
             };
             kernel_count += 1;
         }
@@ -438,6 +551,10 @@ pub fn lowerToHostPlan(
                 prefill_buf[prefill_count] = .{
                     .kernel_name = step.kernel_key,
                     .repeat = LAUNCH_REPEAT,
+                    .attention_type = attention_type,
+                    .sliding_window_size = sliding_window_size,
+                    .current_pos_source = current_pos_source,
+                    .kv_cache_alias = kv_cache_alias,
                 };
                 prefill_count += 1;
             },
@@ -446,6 +563,10 @@ pub fn lowerToHostPlan(
                 decode_buf[decode_count] = .{
                     .kernel_name = step.kernel_key,
                     .repeat = LAUNCH_REPEAT,
+                    .attention_type = attention_type,
+                    .sliding_window_size = sliding_window_size,
+                    .current_pos_source = current_pos_source,
+                    .kv_cache_alias = kv_cache_alias,
                 };
                 decode_count += 1;
                 if (step.kind == .sample) {
@@ -482,6 +603,11 @@ pub fn lowerJsonToHostPlan(
 
     const root = try expectObject(parsed.value);
     const grid = try parseGrid(root.get("grid") orelse return error.InvalidJson);
+    const metadata = LowerMetadata{
+        .layer_pattern = try parseLayerPattern(root.get("layerPattern")),
+        .num_kv_shared_layers = try parseOptionalU32(root.get("numKvSharedLayers")),
+        .sliding_window_size = try parseOptionalU32(root.get("slidingWindowSize")),
+    };
     const steps_value = root.get("steps") orelse return error.InvalidJson;
     const steps_array = try expectArray(steps_value);
 
@@ -492,7 +618,7 @@ pub fn lowerJsonToHostPlan(
         steps[idx] = try parseStepValue(allocator, step_value);
     }
 
-    var plan = try lowerToHostPlan(steps, grid, kernel_buf, prefill_buf, decode_buf);
+    var plan = try lowerToHostPlanWithMetadata(steps, grid, metadata, kernel_buf, prefill_buf, decode_buf);
     if (root.get("eosTokenId")) |eos_value| {
         plan.eos_token_id = switch (eos_value) {
             .null => null,
@@ -516,6 +642,12 @@ pub fn lowerManifestExecutionToHostPlan(
     defer parsed.deinit();
 
     const root = try expectObject(parsed.value);
+    if (root.get("layerPattern") != null or
+        root.get("numKvSharedLayers") != null or
+        root.get("slidingWindowSize") != null)
+    {
+        return error.MalformedStep;
+    }
     const grid = try parseGrid(root.get("grid") orelse return error.InvalidJson);
     const execution = try expectObject(root.get("execution") orelse return error.InvalidJson);
     const kernels = try expectObject(execution.get("kernels") orelse return error.InvalidJson);
@@ -544,7 +676,7 @@ pub fn lowerManifestExecutionToHostPlan(
     @memcpy(steps[0..prefill_steps.items.len], prefill_steps.items);
     @memcpy(steps[prefill_steps.items.len..], decode_steps.items);
 
-    var plan = try lowerToHostPlan(steps, grid, kernel_buf, prefill_buf, decode_buf);
+    var plan = try lowerToHostPlanWithMetadata(steps, grid, .{}, kernel_buf, prefill_buf, decode_buf);
     if (root.get("eosTokenId")) |eos_value| {
         plan.eos_token_id = switch (eos_value) {
             .null => null,
@@ -552,233 +684,4 @@ pub fn lowerManifestExecutionToHostPlan(
         };
     }
     return plan;
-}
-
-test "opToPattern maps known ops" {
-    try std.testing.expectEqualStrings("gather", opToPattern("embed").?);
-    try std.testing.expectEqualStrings("attention_decode", opToPattern("attention").?);
-    try std.testing.expectEqualStrings("element_wise", opToPattern("gelu").?);
-    try std.testing.expectEqualStrings("reduction", opToPattern("rmsnorm").?);
-    try std.testing.expectEqualStrings("fused_ffn", opToPattern("ffn").?);
-    try std.testing.expectEqualStrings("kv_write", opToPattern("kv_write").?);
-    try std.testing.expect(opToPattern("unknown_op") == null);
-}
-
-test "opToPattern maps Gemma 4 PLE ops" {
-    try std.testing.expectEqualStrings("gather", opToPattern("ple_gather").?);
-    try std.testing.expectEqualStrings("fused_gemv_dequant", opToPattern("ple_project").?);
-    try std.testing.expectEqualStrings("reduction", opToPattern("ple_norm").?);
-    try std.testing.expectEqualStrings("element_wise", opToPattern("ple_modulate").?);
-}
-
-test "opToPattern maps Gemma 4 hybrid attention and shared KV ops" {
-    try std.testing.expectEqualStrings("attention_decode", opToPattern("attention_sliding").?);
-    try std.testing.expectEqualStrings("kv_write", opToPattern("kv_write_shared").?);
-}
-
-test "ExecStep carries attention type and kv cache alias" {
-    const step = ExecStep{
-        .phase = .decode,
-        .kind = .compute,
-        .op = "attention_sliding",
-        .kernel_key = "attn_sliding",
-        .attention_type = .sliding,
-        .kv_cache_alias = "layer.0.kv",
-    };
-    try std.testing.expect(step.attention_type.? == .sliding);
-    try std.testing.expectEqualStrings("layer.0.kv", step.kv_cache_alias.?);
-}
-
-test "lowerToHostPlan builds valid plan" {
-    const steps = [_]ExecStep{
-        .{ .phase = .prefill, .kind = .compute, .op = "embed", .kernel_key = "embed_gather" },
-        .{ .phase = .prefill, .kind = .compute, .op = "rmsnorm", .kernel_key = "norm_0" },
-        .{ .phase = .decode, .kind = .compute, .op = "attention", .kernel_key = "attn_0" },
-        .{ .phase = .decode, .kind = .sample, .op = "sample", .kernel_key = "sampler" },
-    };
-
-    var kernels: [16]host.KernelSpec = undefined;
-    var prefill: [16]host.LaunchSpec = undefined;
-    var decode: [16]host.LaunchSpec = undefined;
-
-    const plan = try lowerToHostPlan(&steps, .{ .width = 32, .height = 4 }, &kernels, &prefill, &decode);
-
-    try std.testing.expectEqual(@as(u32, 32), plan.pe_grid_width);
-    try std.testing.expectEqual(@as(u32, 4), plan.pe_grid_height);
-    try std.testing.expect(plan.kernels.len == 4);
-    try std.testing.expect(plan.prefill_launches.len == 2);
-    try std.testing.expect(plan.decode_launches.len == 2);
-}
-
-test "lowerToHostPlan rejects decode before prefill" {
-    const steps = [_]ExecStep{
-        .{ .phase = .decode, .kind = .compute, .op = "attention", .kernel_key = "attn_0" },
-    };
-
-    var kernels: [4]host.KernelSpec = undefined;
-    var prefill: [4]host.LaunchSpec = undefined;
-    var decode: [4]host.LaunchSpec = undefined;
-
-    try std.testing.expectError(error.MalformedStep, lowerToHostPlan(&steps, .{ .width = 32, .height = 1 }, &kernels, &prefill, &decode));
-}
-
-test "lowerJsonToHostPlan builds valid plan from object steps" {
-    const json_payload =
-        \\{
-        \\  "grid": { "width": 16, "height": 2 },
-        \\  "eosTokenId": 7,
-        \\  "steps": [
-        \\    { "phase": "prefill", "op": "embed", "kernelKey": "embed_gather" },
-        \\    { "phase": "prefill", "op": "rmsnorm", "kernelKey": "norm_0" },
-        \\    { "phase": "decode", "op": "attention", "kernelKey": "attn_0" },
-        \\    { "phase": "decode", "op": "sample", "kernelKey": "sampler", "kind": "sample" }
-        \\  ]
-        \\}
-    ;
-
-    var kernels: [16]host.KernelSpec = undefined;
-    var prefill: [16]host.LaunchSpec = undefined;
-    var decode: [16]host.LaunchSpec = undefined;
-    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
-    defer arena.deinit();
-
-    const plan = try lowerJsonToHostPlan(arena.allocator(), json_payload, &kernels, &prefill, &decode);
-
-    try std.testing.expectEqual(@as(u32, 16), plan.pe_grid_width);
-    try std.testing.expectEqual(@as(u32, 2), plan.pe_grid_height);
-    try std.testing.expectEqual(@as(?u32, 7), plan.eos_token_id);
-    try std.testing.expect(plan.kernels.len == 4);
-    try std.testing.expect(plan.prefill_launches.len == 2);
-    try std.testing.expect(plan.decode_launches.len == 2);
-}
-
-test "lowerJsonToHostPlan accepts tuple steps" {
-    const json_payload =
-        \\{
-        \\  "grid": { "width": 8, "height": 1 },
-        \\  "steps": [
-        \\    ["prefill", "embed", "embed_gather"],
-        \\    ["decode", "attention", "attn_0"],
-        \\    ["decode", "sample", "sampler", null, "sample"]
-        \\  ]
-        \\}
-    ;
-
-    var kernels: [16]host.KernelSpec = undefined;
-    var prefill: [16]host.LaunchSpec = undefined;
-    var decode: [16]host.LaunchSpec = undefined;
-    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
-    defer arena.deinit();
-
-    const plan = try lowerJsonToHostPlan(arena.allocator(), json_payload, &kernels, &prefill, &decode);
-
-    try std.testing.expectEqual(@as(u32, 8), plan.pe_grid_width);
-    try std.testing.expectEqual(@as(u32, 1), plan.pe_grid_height);
-    try std.testing.expectEqual(@as(?u32, null), plan.eos_token_id);
-    try std.testing.expect(plan.prefill_launches.len == 1);
-    try std.testing.expect(plan.decode_launches.len == 2);
-}
-
-test "lowerJsonToHostPlan rejects mismatched explicit kind" {
-    const json_payload =
-        \\{
-        \\  "grid": { "width": 8, "height": 1 },
-        \\  "steps": [
-        \\    { "phase": "prefill", "op": "embed", "kernelKey": "embed_gather", "kind": "sample" }
-        \\  ]
-        \\}
-    ;
-
-    var kernels: [4]host.KernelSpec = undefined;
-    var prefill: [4]host.LaunchSpec = undefined;
-    var decode: [4]host.LaunchSpec = undefined;
-    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
-    defer arena.deinit();
-
-    try std.testing.expectError(error.MalformedStep, lowerJsonToHostPlan(arena.allocator(), json_payload, &kernels, &prefill, &decode));
-}
-
-test "lowerJsonToHostPlan rejects decode before prefill" {
-    const json_payload =
-        \\{
-        \\  "grid": { "width": 8, "height": 1 },
-        \\  "steps": [
-        \\    { "phase": "decode", "op": "attention", "kernelKey": "attn_0" }
-        \\  ]
-        \\}
-    ;
-
-    var kernels: [4]host.KernelSpec = undefined;
-    var prefill: [4]host.LaunchSpec = undefined;
-    var decode: [4]host.LaunchSpec = undefined;
-    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
-    defer arena.deinit();
-
-    try std.testing.expectError(error.MalformedStep, lowerJsonToHostPlan(arena.allocator(), json_payload, &kernels, &prefill, &decode));
-}
-
-test "Gemma 3 smoke fixture lowers to golden host plan artifact" {
-    const fixture_json = @embedFile("../../examples/execution-v1/gemma-3-270m-smoke.json");
-    const golden_artifact = @embedFile("../../examples/doe-wgsl-host-plan.gemma-3-270m-smoke.json");
-
-    var kernels: [32]host.KernelSpec = undefined;
-    var prefill: [32]host.LaunchSpec = undefined;
-    var decode: [32]host.LaunchSpec = undefined;
-    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
-    defer arena.deinit();
-
-    const plan = try lowerJsonToHostPlan(arena.allocator(), fixture_json, &kernels, &prefill, &decode);
-
-    const targets = [_]host_plan.CompileTarget{
-        .{ .kernel_name = "embed", .layout_path = "embed/layout.csl", .pe_program_path = "embed/pe_program.csl" },
-        .{ .kernel_name = "rmsnorm", .layout_path = "rmsnorm/layout.csl", .pe_program_path = "rmsnorm/pe_program.csl" },
-        .{ .kernel_name = "tiled", .layout_path = "tiled/layout.csl", .pe_program_path = "tiled/pe_program.csl" },
-        .{ .kernel_name = "rope", .layout_path = "rope/layout.csl", .pe_program_path = "rope/pe_program.csl" },
-        .{ .kernel_name = "attn_small", .layout_path = "attn_small/layout.csl", .pe_program_path = "attn_small/pe_program.csl" },
-        .{ .kernel_name = "residual", .layout_path = "residual/layout.csl", .pe_program_path = "residual/pe_program.csl" },
-        .{ .kernel_name = "gelu", .layout_path = "gelu/layout.csl", .pe_program_path = "gelu/pe_program.csl" },
-        .{ .kernel_name = "gemv", .layout_path = "gemv/layout.csl", .pe_program_path = "gemv/pe_program.csl" },
-        .{ .kernel_name = "attn_decode", .layout_path = "attn_decode/layout.csl", .pe_program_path = "attn_decode/pe_program.csl" },
-        .{ .kernel_name = "sample", .layout_path = "sample/layout.csl", .pe_program_path = "sample/pe_program.csl" },
-    };
-    const cslc_plan = try host_plan.makeCslcPlan(null);
-
-    var artifact_buf: [TEST_ARTIFACT_CAPACITY]u8 = undefined;
-    var artifact_pos: usize = 0;
-    try host_plan.emitHostPlanArtifactJson(&artifact_buf, &artifact_pos, plan, &targets, cslc_plan);
-    try host_plan.validateHostPlanArtifactJson(std.testing.allocator, artifact_buf[0..artifact_pos]);
-    try std.testing.expectEqualStrings(golden_artifact, artifact_buf[0..artifact_pos]);
-}
-
-test "Gemma 3 manifest fixture lowers to the same golden host plan artifact" {
-    const fixture_json = @embedFile("../../examples/execution-v1/gemma-3-270m-manifest-smoke.json");
-    const golden_artifact = @embedFile("../../examples/doe-wgsl-host-plan.gemma-3-270m-manifest-smoke.json");
-
-    var kernels: [32]host.KernelSpec = undefined;
-    var prefill: [32]host.LaunchSpec = undefined;
-    var decode: [32]host.LaunchSpec = undefined;
-    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
-    defer arena.deinit();
-
-    const plan = try lowerManifestExecutionToHostPlan(arena.allocator(), fixture_json, &kernels, &prefill, &decode);
-
-    const targets = [_]host_plan.CompileTarget{
-        .{ .kernel_name = "embed", .layout_path = "embed/layout.csl", .pe_program_path = "embed/pe_program.csl" },
-        .{ .kernel_name = "rmsnorm", .layout_path = "rmsnorm/layout.csl", .pe_program_path = "rmsnorm/pe_program.csl" },
-        .{ .kernel_name = "tiled", .layout_path = "tiled/layout.csl", .pe_program_path = "tiled/pe_program.csl" },
-        .{ .kernel_name = "rope", .layout_path = "rope/layout.csl", .pe_program_path = "rope/pe_program.csl" },
-        .{ .kernel_name = "attn_small", .layout_path = "attn_small/layout.csl", .pe_program_path = "attn_small/pe_program.csl" },
-        .{ .kernel_name = "residual", .layout_path = "residual/layout.csl", .pe_program_path = "residual/pe_program.csl" },
-        .{ .kernel_name = "gelu", .layout_path = "gelu/layout.csl", .pe_program_path = "gelu/pe_program.csl" },
-        .{ .kernel_name = "gemv", .layout_path = "gemv/layout.csl", .pe_program_path = "gemv/pe_program.csl" },
-        .{ .kernel_name = "attn_decode", .layout_path = "attn_decode/layout.csl", .pe_program_path = "attn_decode/pe_program.csl" },
-        .{ .kernel_name = "sample", .layout_path = "sample/layout.csl", .pe_program_path = "sample/pe_program.csl" },
-    };
-    const cslc_plan = try host_plan.makeCslcPlan(null);
-
-    var artifact_buf: [TEST_ARTIFACT_CAPACITY]u8 = undefined;
-    var artifact_pos: usize = 0;
-    try host_plan.emitHostPlanArtifactJson(&artifact_buf, &artifact_pos, plan, &targets, cslc_plan);
-    try host_plan.validateHostPlanArtifactJson(std.testing.allocator, artifact_buf[0..artifact_pos]);
-    try std.testing.expectEqualStrings(golden_artifact, artifact_buf[0..artifact_pos]);
 }

@@ -14,7 +14,7 @@
   "properties": {
     "schemaVersion": {
       "type": "integer",
-      "const": 1
+      "const": 2
     },
     "artifactKind": {
       "type": "string",
@@ -131,8 +131,65 @@
       "required": ["kernelName", "repeat"],
       "properties": {
         "kernelName": { "type": "string", "minLength": 1 },
-        "repeat": { "type": "integer", "minimum": 1 }
-      }
+        "repeat": { "type": "integer", "minimum": 1 },
+        "attentionType": {
+          "type": "string",
+          "enum": ["global", "sliding"]
+        },
+        "slidingWindowSize": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "currentPosSource": {
+          "type": "string",
+          "enum": ["decode_position"]
+        },
+        "kvCacheAlias": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "attentionType": { "const": "sliding" }
+            },
+            "required": ["attentionType"]
+          },
+          "then": {
+            "required": ["slidingWindowSize", "currentPosSource"]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "attentionType": { "const": "global" }
+            },
+            "required": ["attentionType"]
+          },
+          "then": {
+            "not": {
+              "anyOf": [
+                { "required": ["slidingWindowSize"] },
+                { "required": ["currentPosSource"] }
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "not": {
+              "required": ["attentionType"]
+            }
+          },
+          "then": {
+            "not": {
+              "required": ["slidingWindowSize"]
+            }
+          }
+        }
+      ]
     }
   }
 }

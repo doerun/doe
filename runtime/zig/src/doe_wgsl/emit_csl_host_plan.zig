@@ -90,10 +90,6 @@ pub fn emitHostPlanArtifactJson(
         try writeJsonString(buf, pos, kernel.pattern);
         try write(buf, pos, ", \"count\": ");
         try writeInt(buf, pos, kernel.count);
-        if (kernel.kv_cache_alias) |alias| {
-            try write(buf, pos, ", \"kvCacheAlias\": ");
-            try writeJsonString(buf, pos, alias);
-        }
         try write(buf, pos, " }");
         if (idx + 1 < plan.kernels.len) try write(buf, pos, ",");
         try write(buf, pos, "\n");
@@ -228,6 +224,41 @@ fn validateLaunchArray(raw: std.json.Value) EmitError!void {
                 const kernel_name = expectString(obj.get("kernelName"), "launch.kernelName") orelse return error.InvalidSchema;
                 const repeat = jsonToU32(obj.get("repeat")) orelse return error.InvalidSchema;
                 if (kernel_name.len == 0 or repeat == 0) return error.InvalidSchema;
+
+                const attention_type = if (obj.get("attentionType")) |raw_attention_type|
+                    expectString(raw_attention_type, "launch.attentionType") orelse return error.InvalidSchema
+                else
+                    null;
+                if (attention_type) |value| {
+                    const is_global = std.mem.eql(u8, value, @tagName(host.LaunchAttentionType.global));
+                    const is_sliding = std.mem.eql(u8, value, @tagName(host.LaunchAttentionType.sliding));
+                    if (!is_global and !is_sliding) return error.InvalidSchema;
+                    if (is_sliding) {
+                        const sliding_window_size = jsonToU32(obj.get("slidingWindowSize")) orelse return error.InvalidSchema;
+                        if (sliding_window_size == 0) return error.InvalidSchema;
+                        const current_pos_source = expectString(obj.get("currentPosSource"), "launch.currentPosSource") orelse return error.InvalidSchema;
+                        if (!std.mem.eql(u8, current_pos_source, @tagName(host.CurrentPosSource.decode_position))) {
+                            return error.InvalidSchema;
+                        }
+                    } else {
+                        if (obj.get("slidingWindowSize") != null or obj.get("currentPosSource") != null) {
+                            return error.InvalidSchema;
+                        }
+                    }
+                } else {
+                    if (obj.get("slidingWindowSize") != null) return error.InvalidSchema;
+                    if (obj.get("currentPosSource")) |raw_current_pos_source| {
+                        const current_pos_source = expectString(raw_current_pos_source, "launch.currentPosSource") orelse return error.InvalidSchema;
+                        if (!std.mem.eql(u8, current_pos_source, @tagName(host.CurrentPosSource.decode_position))) {
+                            return error.InvalidSchema;
+                        }
+                    }
+                }
+
+                if (obj.get("kvCacheAlias")) |raw_kv_cache_alias| {
+                    const kv_cache_alias = expectString(raw_kv_cache_alias, "launch.kvCacheAlias") orelse return error.InvalidSchema;
+                    if (kv_cache_alias.len == 0) return error.InvalidSchema;
+                }
             }
         },
         else => return error.InvalidSchema,
@@ -287,12 +318,10 @@ fn validateHostPlan(
         if (kernel.name.len == 0 or kernel.pattern.len == 0 or kernel.count == 0) return error.InvalidIr;
     }
     for (plan.prefill_launches) |launch| {
-        if (launch.kernel_name.len == 0 or launch.repeat == 0) return error.InvalidIr;
-        if (!hasKernel(plan.kernels, launch.kernel_name)) return error.InvalidIr;
+        try validateLaunch(plan.kernels, launch, .prefill);
     }
     for (plan.decode_launches) |launch| {
-        if (launch.kernel_name.len == 0 or launch.repeat == 0) return error.InvalidIr;
-        if (!hasKernel(plan.kernels, launch.kernel_name)) return error.InvalidIr;
+        try validateLaunch(plan.kernels, launch, .decode);
     }
 
     for (targets) |target| {
@@ -314,12 +343,71 @@ fn hasKernel(kernels: []const host.KernelSpec, kernel_name: []const u8) bool {
     return false;
 }
 
+const Phase = enum {
+    prefill,
+    decode,
+};
+
+fn validateLaunch(kernels: []const host.KernelSpec, launch: host.LaunchSpec, phase: Phase) EmitError!void {
+    if (launch.kernel_name.len == 0 or launch.repeat == 0) return error.InvalidIr;
+    const kernel = findKernel(kernels, launch.kernel_name) orelse return error.InvalidIr;
+
+    if (launch.attention_type) |attention_type| {
+        if (!std.mem.eql(u8, kernel.pattern, "attention_decode")) return error.InvalidIr;
+        switch (attention_type) {
+            .global => {
+                if (launch.sliding_window_size != null or launch.current_pos_source != null) return error.InvalidIr;
+            },
+            .sliding => {
+                if (phase != .decode) return error.InvalidIr;
+                if ((launch.sliding_window_size orelse 0) == 0) return error.InvalidIr;
+                if (launch.current_pos_source != .decode_position) return error.InvalidIr;
+            },
+        }
+    } else {
+        if (launch.sliding_window_size != null) return error.InvalidIr;
+        if (launch.current_pos_source) |current_pos_source| {
+            if (current_pos_source != .decode_position) return error.InvalidIr;
+            if (phase != .decode) return error.InvalidIr;
+            if (!std.mem.eql(u8, kernel.pattern, "kv_write")) return error.InvalidIr;
+        }
+    }
+
+    if (launch.kv_cache_alias) |kv_cache_alias| {
+        if (kv_cache_alias.len == 0) return error.InvalidIr;
+        if (!std.mem.eql(u8, kernel.pattern, "kv_write")) return error.InvalidIr;
+    }
+}
+
+fn findKernel(kernels: []const host.KernelSpec, kernel_name: []const u8) ?host.KernelSpec {
+    for (kernels) |kernel| {
+        if (std.mem.eql(u8, kernel.name, kernel_name)) return kernel;
+    }
+    return null;
+}
+
 fn emitLaunchSpecsJson(buf: []u8, pos: *usize, launches: []const host.LaunchSpec) EmitError!void {
     for (launches, 0..) |launch, idx| {
         try write(buf, pos, "        { \"kernelName\": ");
         try writeJsonString(buf, pos, launch.kernel_name);
         try write(buf, pos, ", \"repeat\": ");
         try writeInt(buf, pos, launch.repeat);
+        if (launch.attention_type) |attention_type| {
+            try write(buf, pos, ", \"attentionType\": ");
+            try writeJsonString(buf, pos, @tagName(attention_type));
+        }
+        if (launch.sliding_window_size) |sliding_window_size| {
+            try write(buf, pos, ", \"slidingWindowSize\": ");
+            try writeInt(buf, pos, sliding_window_size);
+        }
+        if (launch.current_pos_source) |current_pos_source| {
+            try write(buf, pos, ", \"currentPosSource\": ");
+            try writeJsonString(buf, pos, @tagName(current_pos_source));
+        }
+        if (launch.kv_cache_alias) |kv_cache_alias| {
+            try write(buf, pos, ", \"kvCacheAlias\": ");
+            try writeJsonString(buf, pos, kv_cache_alias);
+        }
         try write(buf, pos, " }");
         if (idx + 1 < launches.len) try write(buf, pos, ",");
         try write(buf, pos, "\n");
@@ -399,19 +487,25 @@ fn writeInt(buf: []u8, pos: *usize, value: anytype) EmitError!void {
 
 test "host plan artifact emits schema and cslc plan" {
     const targets = [_]CompileTarget{
-        .{ .kernel_name = "gelu", .layout_path = "gelu/layout.csl", .pe_program_path = "gelu/pe_program.csl" },
+        .{ .kernel_name = "attn_decode", .layout_path = "attn_decode/layout.csl", .pe_program_path = "attn_decode/pe_program.csl" },
     };
     const plan = host.HostPlan{
         .pe_grid_width = 16,
         .pe_grid_height = 1,
         .kernels = &[_]host.KernelSpec{
-            .{ .name = "gelu", .pattern = "element_wise", .count = 1 },
+            .{ .name = "attn_decode", .pattern = "attention_decode", .count = 1 },
         },
         .prefill_launches = &[_]host.LaunchSpec{
-            .{ .kernel_name = "gelu", .repeat = 1 },
+            .{ .kernel_name = "attn_decode", .repeat = 1, .attention_type = .global },
         },
         .decode_launches = &[_]host.LaunchSpec{
-            .{ .kernel_name = "gelu", .repeat = 1 },
+            .{
+                .kernel_name = "attn_decode",
+                .repeat = 1,
+                .attention_type = .sliding,
+                .sliding_window_size = 512,
+                .current_pos_source = .decode_position,
+            },
         },
     };
     var buf: [8192]u8 = undefined;
@@ -419,7 +513,60 @@ test "host plan artifact emits schema and cslc plan" {
     const cslc_plan = try makeCslcPlan(null);
     try emitHostPlanArtifactJson(&buf, &pos, plan, &targets, cslc_plan);
     const text = buf[0..pos];
-    try std.testing.expect(std.mem.indexOf(u8, text, "\"schemaVersion\": 1") != null);
+    try std.testing.expect(std.mem.indexOf(u8, text, "\"schemaVersion\": 2") != null);
     try std.testing.expect(std.mem.indexOf(u8, text, "\"artifactKind\": \"csl_host_plan\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, text, "\"discovery\": \"implicit_path_lookup\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, text, "\"slidingWindowSize\": 512") != null);
+    try validateHostPlanArtifactJson(std.testing.allocator, text);
+}
+
+test "host plan accepts decode position state on kv writes" {
+    const plan = host.HostPlan{
+        .pe_grid_width = 16,
+        .pe_grid_height = 1,
+        .kernels = &[_]host.KernelSpec{
+            .{ .name = "kv_write", .pattern = "kv_write", .count = 1 },
+        },
+        .prefill_launches = &[_]host.LaunchSpec{},
+        .decode_launches = &[_]host.LaunchSpec{
+            .{
+                .kernel_name = "kv_write",
+                .repeat = 1,
+                .current_pos_source = .decode_position,
+            },
+        },
+    };
+    const targets = [_]CompileTarget{
+        .{ .kernel_name = "kv_write", .layout_path = "kv_write/layout.csl", .pe_program_path = "kv_write/pe_program.csl" },
+    };
+    var buf: [4096]u8 = undefined;
+    var pos: usize = 0;
+    try emitHostPlanArtifactJson(&buf, &pos, plan, &targets, null);
+    try validateHostPlanArtifactJson(std.testing.allocator, buf[0..pos]);
+}
+
+test "host plan rejects sliding attention in prefill" {
+    const plan = host.HostPlan{
+        .pe_grid_width = 16,
+        .pe_grid_height = 1,
+        .kernels = &[_]host.KernelSpec{
+            .{ .name = "attn_decode", .pattern = "attention_decode", .count = 1 },
+        },
+        .prefill_launches = &[_]host.LaunchSpec{
+            .{
+                .kernel_name = "attn_decode",
+                .repeat = 1,
+                .attention_type = .sliding,
+                .sliding_window_size = 512,
+                .current_pos_source = .decode_position,
+            },
+        },
+        .decode_launches = &[_]host.LaunchSpec{},
+    };
+    const targets = [_]CompileTarget{
+        .{ .kernel_name = "attn_decode", .layout_path = "attn_decode/layout.csl", .pe_program_path = "attn_decode/pe_program.csl" },
+    };
+    var buf: [4096]u8 = undefined;
+    var pos: usize = 0;
+    try std.testing.expectError(error.InvalidIr, emitHostPlanArtifactJson(&buf, &pos, plan, &targets, null));
 }

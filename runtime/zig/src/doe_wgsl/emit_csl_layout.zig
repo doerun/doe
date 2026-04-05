@@ -312,6 +312,7 @@ pub fn emitDecodeAttentionLayout(
     try write(buf, pos, "layout {\n    @set_rectangle(width, 1);\n\n");
     try emitReduceRowTileLoop(buf, pos, ".head_dim = head_dim, .kv_chunk = kv_chunk,\n");
     try emitStorageExports(buf, pos, module);
+    try emitDecodeStateExports(buf, pos);
     try write(buf, pos, "    @export_name(\"compute\", fn()void);\n}\n");
 }
 
@@ -425,6 +426,7 @@ pub fn emitKvWriteLayout(
     try write(buf, pos, "layout {\n    @set_rectangle(width, 1);\n\n");
     try emitRowTileLoop(buf, pos, ".head_dim = head_dim, .max_seq_len = max_seq_len,\n");
     try emitStorageExports(buf, pos, module);
+    try emitPositionExport(buf, pos);
     try write(buf, pos, "    @export_name(\"compute\", fn()void);\n}\n");
 }
 
@@ -542,6 +544,15 @@ fn emitStorageExports(buf: []u8, pos: *usize, module: *const ir.Module) EmitErro
         try writeScalarType(buf, pos, module, global.ty);
         try write(buf, pos, ", true);\n");
     }
+}
+
+fn emitDecodeStateExports(buf: []u8, pos: *usize) EmitError!void {
+    try emitPositionExport(buf, pos);
+    try write(buf, pos, "    @export_name(\"sliding_window\", [*]u32, true);\n");
+}
+
+fn emitPositionExport(buf: []u8, pos: *usize) EmitError!void {
+    try write(buf, pos, "    @export_name(\"position\", [*]u32, true);\n");
 }
 
 // ---------------------------------------------------------------------------

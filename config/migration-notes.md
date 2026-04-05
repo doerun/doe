@@ -1,5 +1,40 @@
 # Config Migration Notes
 
+## 2026-04-05
+
+### CSL decode device state and broader `currentPosSource` host-plan semantics
+
+- `config/doe-wgsl-host-plan.schema.json`
+  - keeps `schemaVersion: 2`
+  - now allows `currentPosSource` on launches that do not carry
+    `attentionType`, so decode `kv_write` / `kv_write_shared` launches can
+    declare explicit position-state consumption
+  - still forbids `slidingWindowSize` unless `attentionType: "sliding"` is
+    present
+- producers that lower Gemma 4 decode `kv_write` or `kv_write_shared` steps
+  should now emit `currentPosSource: "decode_position"` on those launches
+- Cerebras host scaffolds no longer rely on fake `runner.launch(...,
+  current_pos=..., sliding_window=...)` kwargs; they now stage `position` and
+  `sliding_window` as explicit device-state buffers before launches
+
+### CSL host-plan launch metadata schema v2
+
+- `config/doe-wgsl-host-plan.schema.json`
+  - bumps `schemaVersion` from `1` to `2`
+  - moves Gemma 4 execution metadata to launch scope instead of kernel scope
+  - launch specs may now carry:
+    - `attentionType`
+    - `slidingWindowSize`
+    - `currentPosSource`
+    - `kvCacheAlias`
+  - sliding attention launches now require both `slidingWindowSize` and
+    `currentPosSource`
+- host-plan artifacts and checked examples must now emit `schemaVersion: 2`
+- producers that previously wrote `kvCacheAlias` on kernel entries must move it
+  to the corresponding launch entry instead
+- consumers must reject unknown `attentionType` values and must not infer
+  sliding-window behavior when the launch metadata is absent
+
 ## 2026-03-30
 
 ### Diverse prompt-search seeds and wider pair registry

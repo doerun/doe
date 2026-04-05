@@ -15,6 +15,7 @@
 
 const ir = @import("ir.zig");
 const classify = @import("emit_csl_classify.zig");
+const spec = @import("csl_spec.zig");
 const W = @import("emit_csl_ir_walk.zig");
 
 pub const EmitError = W.EmitError;
@@ -141,13 +142,13 @@ pub fn emitDecode(
     try W.write(buf, pos, "param head_dim: i16;\n");
     try W.write(buf, pos, "param kv_chunk: i16;\n");
     try W.write(buf, pos, "param scale: f32 = 0.125;\n");
-    try W.write(buf, pos, "param sliding_window: i16 = 0;\n");
-    try W.write(buf, pos, "param current_pos: i16 = 0;\n\n");
+    try W.write(buf, pos, "\n");
 
     try W.write(buf, pos, "const sys_mod = @import_module(\"<memcpy/memcpy>\", memcpy_params);\n");
     try W.write(buf, pos, "const math = @import_module(\"<math>\");\n\n");
 
     try emitStoragePtrs(buf, pos, module);
+    try emitDecodeRuntimeState(buf, pos);
 
     // Local accumulators
     try W.write(buf, pos, "var local_max: f32 = -3.4028235e+38;\n");
@@ -183,6 +184,7 @@ pub fn emitDecode(
     try W.write(buf, pos, "[@as(u32, d)] = 0.0; }\n");
     try W.write(buf, pos, "    var sum_exp: f32 = 0.0;\n");
     try W.write(buf, pos, "    for (@range(i16, kv_chunk)) |kv_i| {\n");
+    try emitSlidingWindowGuard(buf, pos, "        ", "kv_i");
     try W.write(buf, pos, "        var score: f32 = 0.0;\n");
     try W.write(buf, pos, "        for (@range(i16, head_dim)) |d| {\n");
     try W.write(buf, pos, "            score += ");
@@ -214,6 +216,7 @@ pub fn emitDecode(
     try W.write(buf, pos, "    @bind_local_task(normalize, norm_task_id);\n");
     try W.write(buf, pos, "    @set_local_color_config(reduce_color, .{ .recv_task = reduce_task_id });\n");
     try emitStorageExports(buf, pos, module);
+    try emitDecodeRuntimeExports(buf, pos);
     try W.write(buf, pos, "    @export_symbol(compute);\n");
     try W.write(buf, pos, "}\n");
 }
@@ -343,12 +346,7 @@ fn emitScoreLoop(buf: []u8, pos: *usize, q: []const u8, k: []const u8, len_param
     try W.write(buf, pos, "    for (@range(i16, ");
     try W.write(buf, pos, len_param);
     try W.write(buf, pos, ")) |kv_i| {\n");
-    // Sliding window mask: skip positions outside the window.
-    // When sliding_window == 0, the condition is always false (full attention).
-    try W.write(buf, pos, "        if (sliding_window > 0) {\n");
-    try W.write(buf, pos, "            const abs_key = pe_id * kv_chunk + kv_i;\n");
-    try W.write(buf, pos, "            if (current_pos >= sliding_window and abs_key < current_pos - sliding_window + 1) continue;\n");
-    try W.write(buf, pos, "        }\n");
+    try emitSlidingWindowGuard(buf, pos, "        ", "kv_i");
     try W.write(buf, pos, "        var score: f32 = 0.0;\n");
     try W.write(buf, pos, "        for (@range(i16, head_dim)) |d| {\n");
     try W.write(buf, pos, "            score += ");
@@ -367,6 +365,35 @@ fn emitScoreLoop(buf: []u8, pos: *usize, q: []const u8, k: []const u8, len_param
     try W.write(buf, pos, "    }\n");
 }
 
+fn emitSlidingWindowGuard(buf: []u8, pos: *usize, indent: []const u8, loop_var: []const u8) EmitError!void {
+    try W.write(buf, pos, indent);
+    try W.write(buf, pos, "if (decode_sliding_window[0] > 0) {\n");
+    try W.write(buf, pos, indent);
+    try W.write(buf, pos, "    const current_pos = @as(i32, @intCast(decode_position[0]));\n");
+    try W.write(buf, pos, indent);
+    try W.write(buf, pos, "    const sliding_window = @as(i32, @intCast(decode_sliding_window[0]));\n");
+    try W.write(buf, pos, indent);
+    try W.write(buf, pos, "    const abs_key = @as(i32, pe_id) * @as(i32, kv_chunk) + @as(i32, ");
+    try W.write(buf, pos, loop_var);
+    try W.write(buf, pos, ");\n");
+    try W.write(buf, pos, indent);
+    try W.write(buf, pos, "    if (current_pos >= sliding_window and abs_key < current_pos - sliding_window + 1) continue;\n");
+    try W.write(buf, pos, indent);
+    try W.write(buf, pos, "}\n");
+}
+
+fn emitDecodeRuntimeState(buf: []u8, pos: *usize) EmitError!void {
+    try W.write(buf, pos, "var decode_position: [1]u32 = @zeros([1]u32);\n");
+    try W.write(buf, pos, "var decode_position_ptr: [*]u32 = &decode_position;\n");
+    try W.write(buf, pos, "var decode_sliding_window: [1]u32 = @zeros([1]u32);\n");
+    try W.write(buf, pos, "var decode_sliding_window_ptr: [*]u32 = &decode_sliding_window;\n\n");
+}
+
+fn emitDecodeRuntimeExports(buf: []u8, pos: *usize) EmitError!void {
+    try W.write(buf, pos, "    @export_symbol(decode_position_ptr, \"position\");\n");
+    try W.write(buf, pos, "    @export_symbol(decode_sliding_window_ptr, \"sliding_window\");\n");
+}
+
 fn emitStoragePtrs(buf: []u8, pos: *usize, module: *const ir.Module) EmitError!void {
     for (module.globals.items) |global| {
         if (global.binding == null) continue;
@@ -374,10 +401,14 @@ fn emitStoragePtrs(buf: []u8, pos: *usize, module: *const ir.Module) EmitError!v
         if (space != .storage) continue;
         try W.write(buf, pos, "var ");
         try W.write(buf, pos, global.name);
-        try W.write(buf, pos, ": [*]f32 = undefined;\n");
+        try W.write(buf, pos, ": [*]");
+        try writeScalarType(buf, pos, module, global.ty);
+        try W.write(buf, pos, " = undefined;\n");
         try W.write(buf, pos, "var ");
         try W.write(buf, pos, global.name);
-        try W.write(buf, pos, "_ptr: [*]f32 = &");
+        try W.write(buf, pos, "_ptr: [*]");
+        try writeScalarType(buf, pos, module, global.ty);
+        try W.write(buf, pos, " = &");
         try W.write(buf, pos, global.name);
         try W.write(buf, pos, ";\n");
     }
@@ -402,4 +433,13 @@ fn emitComptime(buf: []u8, pos: *usize, module: *const ir.Module) EmitError!void
     try emitStorageExports(buf, pos, module);
     try W.write(buf, pos, "    @export_symbol(compute);\n");
     try W.write(buf, pos, "}\n");
+}
+
+fn writeScalarType(buf: []u8, pos: *usize, module: *const ir.Module, ty: ir.TypeId) EmitError!void {
+    const resolved = module.types.get(ty);
+    switch (resolved) {
+        .scalar => |scalar| try W.write(buf, pos, spec.scalarTypeName(scalar)),
+        .array => |array| try writeScalarType(buf, pos, module, array.elem),
+        else => try W.write(buf, pos, "u32"),
+    }
 }

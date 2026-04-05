@@ -6,6 +6,7 @@
     "height": 4
   },
   "eosTokenId": 1,
+  "slidingWindowSize": 512,
   "layerPattern": {
     "type": "every_n",
     "period": 5,
