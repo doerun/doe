@@ -103,7 +103,7 @@ def infer_lane(report: dict[str, Any], explicit_lane: str) -> str:
         return "d3d12_doe_app"
     if ".amd.vulkan.smoke" in config_path:
         return "vulkan_doe_app"
-    if ".amd.vulkan.release" in config_path or ".amd.vulkan.extended.strict.release" in config_path or ".amd.vulkan.superset.native-supported.release" in config_path or ".local.vulkan.release" in config_path:
+    if ".amd.vulkan.release" in config_path or ".amd.vulkan.extended.strict.release" in config_path or ".local.vulkan.release" in config_path:
         return "vulkan_doe_release"
     if (
         ".amd.vulkan.compare-dev" in config_path
@@ -116,7 +116,6 @@ def infer_lane(report: dict[str, Any], explicit_lane: str) -> str:
         or ".amd.vulkan.extended.comparable" in config_path
         or ".amd.vulkan.extended.strict.comparable" in config_path
         or ".amd.vulkan.superset.comparable" in config_path
-        or ".amd.vulkan.superset.native-supported.comparable" in config_path
         or ".local.vulkan.comparable" in config_path
         or ".local.vulkan.extended.comparable" in config_path
     ):

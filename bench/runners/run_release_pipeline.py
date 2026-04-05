@@ -441,7 +441,6 @@ def infer_amd_vulkan_lane(config_path: Path, explicit_lane: str) -> str:
     if (
         ".amd.vulkan.release" in config_name
         or ".amd.vulkan.extended.strict.release" in config_name
-        or ".amd.vulkan.superset.native-supported.release" in config_name
         or ".local.vulkan.release" in config_name
     ):
         return "vulkan_doe_release"
@@ -457,7 +456,6 @@ def infer_amd_vulkan_lane(config_path: Path, explicit_lane: str) -> str:
         or ".amd.vulkan.extended.comparable" in config_name
         or ".amd.vulkan.extended.strict.comparable" in config_name
         or ".amd.vulkan.superset.comparable" in config_name
-        or ".amd.vulkan.superset.native-supported.comparable" in config_name
         or ".local.vulkan.extended" in config_name
         or ".local.vulkan.comparable" in config_name
     ):

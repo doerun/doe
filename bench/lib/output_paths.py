@@ -186,10 +186,6 @@ def derive_bench_out_group(path: str | Path) -> Path | None:
         return Path("local-vulkan") / "singles"
     if stripped.startswith("amd.vulkan.extended.comparable"):
         return Path("amd-vulkan") / "extended-comparable"
-    if stripped.startswith("amd.vulkan.superset.native-supported.comparable"):
-        return Path("amd-vulkan") / "superset-native-supported-comparable"
-    if stripped.startswith("amd.vulkan.superset.native-supported.release"):
-        return Path("amd-vulkan") / "superset-native-supported-release"
     if stripped.startswith("amd.vulkan.superset.comparable"):
         return Path("amd-vulkan") / "superset-comparable"
     if stripped.startswith("apple.metal.compare-dev"):
