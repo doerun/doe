@@ -42,6 +42,13 @@
         "copy_buffer_to_texture",
         "copy_protocol",
         "copy_texture_to_texture",
+        "inference_gemma3_1b_decode_1tok",
+        "inference_gemma3_1b_prefill_32tok",
+        "inference_gemma3_1b_prefill_64tok_decode_64tok",
+        "inference_gemma3_270m_decode_1tok",
+        "inference_gemma3_270m_literal_prefill_32tok_decode_1tok",
+        "inference_gemma3_270m_prefill_32tok",
+        "inference_gemma3_270m_prefill_64tok_decode_64tok",
         "render_bundle_dynamic_bindings",
         "render_bundle_dynamic_pipeline_bindings_200k",
         "render_draw_redundant_pipeline_bindings_200k",
@@ -80,13 +87,13 @@
     "counts": {
       "across_all_three_backends": 4,
       "only_vulkan": 7,
-      "only_metal": 24,
+      "only_metal": 31,
       "only_d3d12": 1,
       "vulkan_and_metal_only": 0,
       "metal_and_d3d12_only": 1,
       "vulkan_and_d3d12_only": 5,
       "distinctComparable": {
-        "metal": 29,
+        "metal": 36,
         "vulkan": 16,
         "d3d12": 11
       }
@@ -117,6 +124,9 @@
         "copy_buffer_to_texture",
         "copy_protocol",
         "copy_texture_to_texture",
+        "inference_gemma3_270m_decode_1tok",
+        "inference_gemma3_270m_prefill_32tok",
+        "inference_gemma3_270m_prefill_64tok_decode_64tok",
         "render_bundle_dynamic_bindings",
         "render_bundle_dynamic_pipeline_bindings_200k",
         "render_draw_redundant_pipeline_bindings_200k",
@@ -153,13 +163,13 @@
     "counts": {
       "across_all_three_backends": 4,
       "only_vulkan": 3,
-      "only_metal": 22,
+      "only_metal": 25,
       "only_d3d12": 2,
       "vulkan_and_metal_only": 0,
       "metal_and_d3d12_only": 1,
       "vulkan_and_d3d12_only": 4,
       "distinctComparable": {
-        "metal": 27,
+        "metal": 30,
         "vulkan": 11,
         "d3d12": 11
       }

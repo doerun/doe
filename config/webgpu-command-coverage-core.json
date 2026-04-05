@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "surfaceId": "doe-core",
   "surfaceVersion": 1,
-  "lastUpdated": "2026-03-11",
-  "commandCount": 10,
+  "lastUpdated": "2026-04-05",
+  "commandCount": 11,
   "coverage": [
     {
       "commandKind": "upload",
@@ -13,6 +13,15 @@
       "benchmarkClass": "comparable",
       "gateStatus": "blocking",
       "notes": "Buffer upload with configurable usage flags and submit cadence."
+    },
+    {
+      "commandKind": "buffer_write",
+      "domain": "copy",
+      "status": "implemented",
+      "owner": "runtime-core",
+      "benchmarkClass": "comparable",
+      "gateStatus": "blocking",
+      "notes": "Immediate queue.writeBuffer-style host-to-buffer update."
     },
     {
       "commandKind": "copy_buffer_to_texture",

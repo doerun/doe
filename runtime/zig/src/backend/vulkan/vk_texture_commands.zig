@@ -210,11 +210,11 @@ pub fn texture_query(self: anytype, cmd_arg: model_texture_types.TextureQueryCom
     const texture = self.textures.get(cmd_arg.handle) orelse return error.InvalidState;
     if (cmd_arg.expected_width) |width| if (texture.width != width) return error.InvalidState;
     if (cmd_arg.expected_height) |height| if (texture.height != height) return error.InvalidState;
-    if (cmd_arg.expected_depth_or_array_layers) |layers| if (layers != 1) return error.InvalidState;
+    if (cmd_arg.expected_depth_or_array_layers) |layers| if (texture.depth_or_array_layers != layers) return error.InvalidState;
     if (cmd_arg.expected_format) |format| if (texture.format != format) return error.InvalidState;
-    if (cmd_arg.expected_dimension) |dimension| if (dimension != model_gpu_types.WGPUTextureDimension_2D) return error.InvalidState;
-    if (cmd_arg.expected_view_dimension) |view_dimension| if (view_dimension != model_gpu_types.WGPUTextureViewDimension_2D) return error.InvalidState;
-    if (cmd_arg.expected_sample_count) |sample_count| if (sample_count != 1) return error.InvalidState;
+    if (cmd_arg.expected_dimension) |dimension| if (texture.dimension != dimension) return error.InvalidState;
+    if (cmd_arg.expected_view_dimension) |view_dimension| if (texture.view_dimension != view_dimension) return error.InvalidState;
+    if (cmd_arg.expected_sample_count) |sample_count| if (texture.sample_count != sample_count) return error.InvalidState;
     if (cmd_arg.expected_usage) |usage| if ((texture.usage & usage) != usage) return error.InvalidState;
 }
 

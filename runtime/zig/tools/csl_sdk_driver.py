@@ -26,6 +26,7 @@ import jsonschema
 REPO_ROOT = Path(__file__).resolve().parents[3]
 SIM_PLAN_SCHEMA = REPO_ROOT / "config" / "doe-wgsl-simulator-plan.schema.json"
 DRIVER_RESULT_SCHEMA = REPO_ROOT / "config" / "doe-wgsl-simulator-driver-result.schema.json"
+RUNTIME_CONFIG_SCHEMA = REPO_ROOT / "config" / "doe-wgsl-runtime-config.schema.json"
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -66,7 +67,11 @@ def write_text(path: Path, text: str) -> None:
 def read_runtime_config(path: Path) -> dict[str, Any]:
     if not path.exists():
         raise FileNotFoundError(f"missing runtime config: {path}")
-    return load_json(path)
+    payload = load_json(path)
+    if payload.get("artifactKind") == "csl_runtime_config":
+        schema = load_json(RUNTIME_CONFIG_SCHEMA)
+        jsonschema.Draft202012Validator(schema).validate(payload)
+    return payload
 
 
 def derive_driver_result_path(trace_path: Path) -> Path:

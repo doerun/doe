@@ -106,6 +106,8 @@ pub fn vulkan_create_texture(dev: *DoeDevice, tex: *DoeTexture, desc: *const abi
         desc.mipLevelCount,
         desc.sampleCount,
         desc.dimension,
+        model_gpu_types.WGPUTextureViewDimension_Undefined,
+        model_gpu_types.WGPUTextureAspect_Undefined,
         desc.format,
         @intCast(desc.usage),
     ) catch |err| {

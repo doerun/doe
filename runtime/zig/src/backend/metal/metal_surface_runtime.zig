@@ -1,5 +1,7 @@
+const std = @import("std");
 const common_timing = @import("../common/timing.zig");
 const model_surface_control_types = @import("../../model_surface_control_types.zig");
+const model_texture_types = @import("../../model_texture_value_types.zig");
 const bridge = @import("metal_bridge_decls.zig");
 const metal_bridge_command_buffer_wait_completed = bridge.metal_bridge_command_buffer_wait_completed;
 const metal_bridge_create_command_buffer = bridge.metal_bridge_create_command_buffer;
@@ -73,8 +75,7 @@ pub fn update_surface_size(self: anytype, handle: u64, width: u32, height: u32, 
 pub fn configure_surface(self: anytype, cmd: model_surface_control_types.SurfaceConfigureCommand) !void {
     var entry = try surface_entry(self, cmd.handle);
     if (cmd.width == 0 or cmd.height == 0) return error.InvalidArgument;
-    if (cmd.tone_mapping_mode != model_surface_control_types.WGPUCanvasToneMappingMode_Standard) return error.UnsupportedFeature;
-    if (doe_surface_supports_format(cmd.format) == 0) return error.UnsupportedFeature;
+    if (!surface_configuration_supported(cmd.format, cmd.tone_mapping_mode)) return error.UnsupportedFeature;
 
     if (entry.surface_host == null) {
         entry.surface_host = doe_surface_create_offscreen() orelse return error.InvalidState;
@@ -93,7 +94,17 @@ pub fn configure_surface(self: anytype, cmd: model_surface_control_types.Surface
     const present_mode = map_present_mode(cmd.present_mode) orelse return error.InvalidArgument;
 
     doe_surface_unconfigure(entry.surface_host);
-    doe_surface_configure(entry.surface_host, self.device, cmd.width, cmd.height, cmd.format, present_mode, if (alpha_opaque) 1 else 0, 1.0);
+    if (doe_surface_configure(
+        entry.surface_host,
+        self.device,
+        cmd.width,
+        cmd.height,
+        cmd.format,
+        present_mode,
+        cmd.tone_mapping_mode,
+        if (alpha_opaque) 1 else 0,
+        1.0,
+    ) == 0) return error.UnsupportedFeature;
 
     entry.width = cmd.width;
     entry.height = cmd.height;
@@ -209,4 +220,31 @@ fn map_present_mode(present_mode: u32) ?u32 {
         0x00000004 => 0x00000002, // mailbox
         else => null,
     };
+}
+
+fn surface_configuration_supported(format: u32, tone_mapping_mode: u32) bool {
+    if (doe_surface_supports_format(format) == 0) return false;
+    return tone_mapping_mode_compatible_with_format(format, tone_mapping_mode);
+}
+
+fn tone_mapping_mode_compatible_with_format(format: u32, tone_mapping_mode: u32) bool {
+    return switch (tone_mapping_mode) {
+        0, model_surface_control_types.WGPUCanvasToneMappingMode_Standard => true,
+        model_surface_control_types.WGPUCanvasToneMappingMode_Extended => format == model_texture_types.WGPUTextureFormat_RGBA16Float,
+        else => false,
+    };
+}
+
+test "tone_mapping_mode_compatible_with_format rejects extended tone mapping on 8-bit surface formats" {
+    try std.testing.expect(!tone_mapping_mode_compatible_with_format(
+        model_texture_types.WGPUTextureFormat_BGRA8Unorm,
+        model_surface_control_types.WGPUCanvasToneMappingMode_Extended,
+    ));
+}
+
+test "tone_mapping_mode_compatible_with_format accepts extended tone mapping on rgba16float" {
+    try std.testing.expect(tone_mapping_mode_compatible_with_format(
+        model_texture_types.WGPUTextureFormat_RGBA16Float,
+        model_surface_control_types.WGPUCanvasToneMappingMode_Extended,
+    ));
 }

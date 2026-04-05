@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "config/doe-wgsl-memory-plan.schema.json",
+  "title": "DOE WGSL CSL memory plan artifact",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "target",
+    "contract",
+    "grid",
+    "peCount",
+    "residencyMode",
+    "totalModelBytes",
+    "totalPersistentBytes",
+    "totalStreamedBytes",
+    "persistentBytesPerPe",
+    "streamedWorkingSetBytesPerPe",
+    "totalSramAvailable",
+    "utilizationPct",
+    "fits",
+    "buffers",
+    "streamStages"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "artifactKind": { "type": "string", "const": "csl_memory_plan" },
+    "target": { "type": "string", "const": "wse3" },
+    "contract": { "type": "string", "const": "explicit_memory_plan" },
+    "grid": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["width", "height"],
+      "properties": {
+        "width": { "type": "integer", "minimum": 1 },
+        "height": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "peCount": { "type": "integer", "minimum": 1 },
+    "residencyMode": {
+      "type": "string",
+      "enum": ["full_resident", "layer_streaming"]
+    },
+    "totalModelBytes": { "type": "integer", "minimum": 0 },
+    "totalPersistentBytes": { "type": "integer", "minimum": 0 },
+    "totalStreamedBytes": { "type": "integer", "minimum": 0 },
+    "persistentBytesPerPe": { "type": "integer", "minimum": 0 },
+    "streamedWorkingSetBytesPerPe": { "type": "integer", "minimum": 0 },
+    "totalSramAvailable": { "type": "integer", "minimum": 0 },
+    "utilizationPct": { "type": "integer", "minimum": 0, "maximum": 100 },
+    "fits": { "type": "boolean" },
+    "buffers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "kind", "placement", "bytesTotal", "bytesPerPe"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "embeddings",
+              "ple_table",
+              "ple_projection",
+              "ple_norm",
+              "layer_weights",
+              "kv_cache",
+              "activation_scratch",
+              "decode_position",
+              "sliding_window",
+              "output_logits"
+            ]
+          },
+          "placement": {
+            "type": "string",
+            "enum": ["persistent", "streamed", "kv_cache"]
+          },
+          "bytesTotal": { "type": "integer", "minimum": 0 },
+          "bytesPerPe": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "streamStages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "kind", "repeatCount", "bytesTotal", "bytesPerPe"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "kind": {
+            "type": "string",
+            "enum": ["embedding_rows", "ple_rows", "ple_projection", "layer_weights"]
+          },
+          "repeatCount": { "type": "integer", "minimum": 0 },
+          "bytesTotal": { "type": "integer", "minimum": 0 },
+          "bytesPerPe": { "type": "integer", "minimum": 0 }
+        }
+      }
+    }
+  }
+}

@@ -201,7 +201,7 @@ class BackendWorkloadCatalogTests(unittest.TestCase):
                 25,
                 7,
                 18,
-                {"governed"},
+                {"regression"},
             ),
             "inference_gemma3_270m_decode_1tok": (
                 "bench/ir/gemma3_270m.json",
@@ -210,7 +210,7 @@ class BackendWorkloadCatalogTests(unittest.TestCase):
                 24,
                 6,
                 18,
-                {"governed"},
+                {"regression"},
             ),
             "inference_gemma3_270m_prefill_64tok_decode_64tok": (
                 "bench/ir/gemma3_270m.json",
@@ -219,7 +219,7 @@ class BackendWorkloadCatalogTests(unittest.TestCase):
                 1561,
                 391,
                 1170,
-                {"governed"},
+                {"regression"},
             ),
             "inference_gemma3_270m_literal_prefill_32tok_decode_1tok": (
                 "bench/ir/gemma3_270m_literal.json",

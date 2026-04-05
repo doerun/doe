@@ -114,8 +114,9 @@ pub fn emitSimulatorPlanJson(
     runtime: host_runtime.RuntimeConfig,
     targets: []const CompileTarget,
     paths: SimulatorArtifactPaths,
+    driver: simulator.DriverConfig,
 ) EmitError!void {
-    try simulator.emitSimulatorPlanArtifactJson(buf, pos, runtime, targets, paths);
+    try simulator.emitSimulatorPlanArtifactJson(buf, pos, runtime, targets, paths, driver);
 }
 
 fn write(buf: []u8, pos: *usize, text: []const u8) EmitError!void {
@@ -186,6 +187,6 @@ test "simulator plan wrapper emits JSON" {
     };
     var buf: [4096]u8 = undefined;
     var pos: usize = 0;
-    try emitSimulatorPlanJson(&buf, &pos, runtime, &targets, paths);
+    try emitSimulatorPlanJson(&buf, &pos, runtime, &targets, paths, .{});
     try std.testing.expect(std.mem.indexOf(u8, buf[0..pos], spec.SIMULATOR_DRIVER_ENV_VAR) != null);
 }

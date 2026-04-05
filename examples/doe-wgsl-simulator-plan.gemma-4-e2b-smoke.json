@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 2,
+  "artifactKind": "csl_simulator_plan",
+  "target": "wse3",
+  "contract": "explicit_simulator_launch",
+  "driver": {
+    "protocol": "doe.csl.simulator/v1",
+    "executableEnvVar": "DOE_CSL_SIM_EXECUTABLE",
+    "failClosedIfMissing": true,
+    "executablePath": "../runtime/zig/tools/csl_sdk_driver.py"
+  },
+  "inputs": {
+    "hostPlanArtifactPath": "host-plan.json",
+    "runtimeConfigPath": "runtime-config.json",
+    "compileRootPath": "compile",
+    "compileTargets": [
+      { "name": "embed", "layout": "embed/layout.csl", "peProgram": "embed/pe_program.csl" },
+      { "name": "ple_embed", "layout": "ple_embed/layout.csl", "peProgram": "ple_embed/pe_program.csl" },
+      { "name": "ple_proj", "layout": "ple_proj/layout.csl", "peProgram": "ple_proj/pe_program.csl" },
+      { "name": "ple_rmsnorm", "layout": "ple_rmsnorm/layout.csl", "peProgram": "ple_rmsnorm/pe_program.csl" },
+      { "name": "ple_residual", "layout": "ple_residual/layout.csl", "peProgram": "ple_residual/pe_program.csl" },
+      { "name": "rmsnorm", "layout": "rmsnorm/layout.csl", "peProgram": "rmsnorm/pe_program.csl" },
+      { "name": "tiled", "layout": "tiled/layout.csl", "peProgram": "tiled/pe_program.csl" },
+      { "name": "rope", "layout": "rope/layout.csl", "peProgram": "rope/pe_program.csl" },
+      { "name": "attn_small", "layout": "attn_small/layout.csl", "peProgram": "attn_small/pe_program.csl" },
+      { "name": "residual", "layout": "residual/layout.csl", "peProgram": "residual/pe_program.csl" },
+      { "name": "gelu", "layout": "gelu/layout.csl", "peProgram": "gelu/pe_program.csl" },
+      { "name": "gemv", "layout": "gemv/layout.csl", "peProgram": "gemv/pe_program.csl" },
+      { "name": "kv_write", "layout": "kv_write/layout.csl", "peProgram": "kv_write/pe_program.csl" },
+      { "name": "attn_decode_sliding", "layout": "attn_decode_sliding/layout.csl", "peProgram": "attn_decode_sliding/pe_program.csl" },
+      { "name": "kv_write_shared", "layout": "kv_write_shared/layout.csl", "peProgram": "kv_write_shared/pe_program.csl" },
+      { "name": "attn_decode", "layout": "attn_decode/layout.csl", "peProgram": "attn_decode/pe_program.csl" },
+      { "name": "sample", "layout": "sample/layout.csl", "peProgram": "sample/pe_program.csl" }
+    ]
+  },
+  "runtime": {
+    "peGrid": { "width": 149, "height": 117 },
+    "prefillLaunchCount": 20,
+    "decodeLaunchCount": 23,
+    "weightMappingCount": 0,
+    "stateBufferCount": 5,
+    "maxDecodeTokens": 128,
+    "timeoutMs": 30000,
+    "batchSize": 1,
+    "eosTokenId": 1
+  },
+  "outputs": {
+    "stdoutPath": "stdout.log",
+    "stderrPath": "stderr.log",
+    "tracePath": "trace.json"
+  }
+}

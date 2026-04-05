@@ -28,15 +28,17 @@ void doe_surface_release(MetalHandle surf_h);
 
 // Configure the CAMetalLayer swapchain.
 // present_mode: 0x1=immediate, 0x2=mailbox, 0x3=fifo.
+// tone_mapping_mode: 0x1=standard, 0x2=extended (RGBA16Float only).
 // alpha_opaque: 1 = opaque (no alpha blending with compositor).
 // dpi_scale: pass 1.0 for standard DPI; 2.0 for Retina.
-void doe_surface_configure(
+int doe_surface_configure(
     MetalHandle surf_h,
     MetalHandle device_h,
     uint32_t    width,
     uint32_t    height,
     uint32_t    pixel_format,
     uint32_t    present_mode,
+    uint32_t    tone_mapping_mode,
     int         alpha_opaque,
     float       dpi_scale);
 

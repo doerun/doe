@@ -14,14 +14,14 @@ const native = @import("doe_wgpu_native.zig");
 
 extern fn wgpuGetProcAddress(name: abi_core.WGPUStringView) callconv(.c) p1cap.WGPUProc;
 extern fn doeWgpuDropinAbortMissingRequiredSymbol(name: abi_core.WGPUStringView) callconv(.c) noreturn;
-extern fn doeNativeRenderPassBeginOcclusionQuery(pass_raw: ?*anyopaque, query_index: u32) callconv(.c) void;
-extern fn doeNativeRenderPassEndOcclusionQuery(pass_raw: ?*anyopaque) callconv(.c) void;
-extern fn doeNativeRenderPassSetBlendConstant(pass_raw: ?*anyopaque, r: f64, g: f64, b: f64, a: f64) callconv(.c) void;
-extern fn doeNativeRenderPassSetImmediates(pass_raw: ?*anyopaque, index: u32, data_ptr: ?[*]const u8, data_len: usize) callconv(.c) void;
-extern fn doeNativeRenderPassSetScissorRect(pass_raw: ?*anyopaque, x: u32, y: u32, width: u32, height: u32) callconv(.c) void;
-extern fn doeNativeRenderPassSetStencilReference(pass_raw: ?*anyopaque, reference: u32) callconv(.c) void;
-extern fn doeNativeRenderPassSetViewport(pass_raw: ?*anyopaque, x: f64, y: f64, width: f64, height: f64, min_depth: f64, max_depth: f64) callconv(.c) void;
-extern fn doeNativeRenderBundleEncoderSetImmediates(encoder_raw: ?*anyopaque, index: u32, data_ptr: ?[*]const u8, data_len: usize) callconv(.c) void;
+const doeNativeRenderPassBeginOcclusionQuery = native.doeNativeRenderPassBeginOcclusionQuery;
+const doeNativeRenderPassEndOcclusionQuery = native.doeNativeRenderPassEndOcclusionQuery;
+const doeNativeRenderPassSetBlendConstant = native.doeNativeRenderPassSetBlendConstant;
+const doeNativeRenderPassSetImmediates = native.doeNativeRenderPassSetImmediates;
+const doeNativeRenderPassSetScissorRect = native.doeNativeRenderPassSetScissorRect;
+const doeNativeRenderPassSetStencilReference = native.doeNativeRenderPassSetStencilReference;
+const doeNativeRenderPassSetViewport = native.doeNativeRenderPassSetViewport;
+const doeNativeRenderBundleEncoderSetImmediates = native.doeNativeRenderBundleEncoderSetImmediates;
 
 const CompilationInfoABI = extern struct {
     nextInChain: ?*anyopaque,

@@ -46,15 +46,10 @@ pub const pipeline_cache_integration = @import("runtime/pipeline_cache_integrati
 
 pub extern fn wgpuGetProcAddress(name: abi_core.WGPUStringView) callconv(.c) p1cap.WGPUProc;
 pub extern fn doeWgpuDropinAbortMissingRequiredSymbol(name: abi_core.WGPUStringView) callconv(.c) noreturn;
-pub extern fn doeNativeComputePassSetImmediates(
-    encoder_raw: ?*anyopaque,
-    index: u32,
-    data_ptr: ?[*]const u8,
-    data_len: usize,
-) callconv(.c) void;
-pub extern fn doeNativeQuerySetDestroy(qs_raw: ?*anyopaque) callconv(.c) void;
-pub extern fn doeNativeQuerySetGetCount(qs_raw: ?*anyopaque) callconv(.c) u32;
-pub extern fn doeNativeQuerySetGetType(qs_raw: ?*anyopaque) callconv(.c) abi_core.WGPUQueryType;
+pub const doeNativeComputePassSetImmediates = native.doeNativeComputePassSetImmediates;
+pub const doeNativeQuerySetDestroy = native.doeNativeQuerySetDestroy;
+pub const doeNativeQuerySetGetCount = native.doeNativeQuerySetGetCount;
+pub const doeNativeQuerySetGetType = native.doeNativeQuerySetGetType;
 
 pub const FEATURE_CANDIDATES = [_]abi_feature.WGPUFeatureName{
     abi_feature.WGPUFeatureName_CoreFeaturesAndLimits,

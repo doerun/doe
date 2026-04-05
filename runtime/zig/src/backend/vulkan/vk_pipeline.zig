@@ -6,6 +6,7 @@
 const std = @import("std");
 const c = @import("vk_constants.zig");
 const vk_device = @import("vk_device.zig");
+const vk_formats = @import("vk_formats.zig");
 const vk_upload = @import("vk_upload.zig");
 const vk_resources = @import("vk_resources.zig");
 const model_compute_types = @import("../../model_compute_types.zig");
@@ -457,10 +458,9 @@ pub fn descriptor_type_for_binding(binding: model_compute_types.KernelBinding) !
 
 pub fn validate_texture_binding(binding: model_compute_types.KernelBinding, texture: vk_resources.TextureResource) !void {
     if (binding.texture_view_dimension != model_texture_types.WGPUTextureViewDimension_Undefined and
-        binding.texture_view_dimension != model_texture_types.WGPUTextureViewDimension_2D) return error.UnsupportedFeature;
-    if (binding.texture_multisampled) return error.UnsupportedFeature;
-    if (binding.texture_aspect != model_texture_types.WGPUTextureAspect_Undefined and
-        binding.texture_aspect != model_texture_types.WGPUTextureAspect_All) return error.UnsupportedFeature;
+        binding.texture_view_dimension != texture.view_dimension) return error.InvalidState;
+    if (binding.texture_multisampled != (texture.sample_count > 1)) return error.InvalidState;
+    try validate_texture_binding_aspect(binding.texture_aspect, texture);
     if (binding.texture_format != model_texture_types.WGPUTextureFormat_Undefined and
         binding.texture_format != texture.format) return error.InvalidState;
 
@@ -491,6 +491,19 @@ pub fn validate_texture_binding(binding: model_compute_types.KernelBinding, text
             }
         },
     }
+}
+
+fn validate_texture_binding_aspect(binding_aspect: u32, texture: vk_resources.TextureResource) !void {
+    if (binding_aspect == model_texture_types.WGPUTextureAspect_Undefined or
+        binding_aspect == model_texture_types.WGPUTextureAspect_All) return;
+
+    const full_mask = vk_formats.aspect_mask_for_format(texture.format);
+    const requested_mask = switch (binding_aspect) {
+        model_texture_types.WGPUTextureAspect_DepthOnly => vk_formats.VK_IMAGE_ASPECT_DEPTH_BIT,
+        model_texture_types.WGPUTextureAspect_StencilOnly => vk_formats.VK_IMAGE_ASPECT_STENCIL_BIT,
+        else => return error.UnsupportedFeature,
+    };
+    if (requested_mask != full_mask) return error.UnsupportedFeature;
 }
 
 pub fn descriptor_range(binding: model_compute_types.KernelBinding, buffer_size: u64) !u64 {
@@ -534,6 +547,60 @@ pub fn compute_pipeline_hash(
     hasher.update(entry_point orelse "main");
     hasher.update(std.mem.asBytes(&layout_hash));
     return hasher.final();
+}
+
+test "validate_texture_binding accepts matching array texture metadata" {
+    const binding = model_compute_types.KernelBinding{
+        .binding = 0,
+        .resource_kind = .texture,
+        .resource_handle = 1,
+        .texture_view_dimension = model_texture_types.WGPUTextureViewDimension_2DArray,
+        .texture_sample_type = model_binding_types.WGPUTextureSampleType_Float,
+    };
+    const texture = vk_resources.TextureResource{
+        .image = VK_NULL_U64,
+        .memory = VK_NULL_U64,
+        .view = VK_NULL_U64,
+        .width = 32,
+        .height = 32,
+        .depth_or_array_layers = 4,
+        .mip_levels = 1,
+        .sample_count = 1,
+        .dimension = model_texture_types.WGPUTextureDimension_2D,
+        .view_dimension = model_texture_types.WGPUTextureViewDimension_2DArray,
+        .aspect = model_texture_types.WGPUTextureAspect_All,
+        .format = model_texture_types.WGPUTextureFormat_RGBA8Unorm,
+        .usage = model_texture_types.WGPUTextureUsage_TextureBinding,
+        .layout = 0,
+    };
+    try validate_texture_binding(binding, texture);
+}
+
+test "validate_texture_binding rejects multisample mismatch" {
+    const binding = model_compute_types.KernelBinding{
+        .binding = 0,
+        .resource_kind = .texture,
+        .resource_handle = 1,
+        .texture_multisampled = true,
+        .texture_sample_type = model_binding_types.WGPUTextureSampleType_Float,
+    };
+    const texture = vk_resources.TextureResource{
+        .image = VK_NULL_U64,
+        .memory = VK_NULL_U64,
+        .view = VK_NULL_U64,
+        .width = 16,
+        .height = 16,
+        .depth_or_array_layers = 1,
+        .mip_levels = 1,
+        .sample_count = 1,
+        .dimension = model_texture_types.WGPUTextureDimension_2D,
+        .view_dimension = model_texture_types.WGPUTextureViewDimension_2D,
+        .aspect = model_texture_types.WGPUTextureAspect_All,
+        .format = model_texture_types.WGPUTextureFormat_RGBA8Unorm,
+        .usage = model_texture_types.WGPUTextureUsage_TextureBinding,
+        .layout = 0,
+    };
+    try std.testing.expectError(error.InvalidState, validate_texture_binding(binding, texture));
 }
 
 pub fn words_from_spirv_bytes(allocator: std.mem.Allocator, bytes: []const u8) ![]u32 {

@@ -1,12 +1,13 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "artifactKind": "csl_simulator_plan",
   "target": "wse3",
   "contract": "explicit_simulator_launch",
   "driver": {
     "protocol": "doe.csl.simulator/v1",
     "executableEnvVar": "DOE_CSL_SIM_EXECUTABLE",
-    "failClosedIfMissing": true
+    "failClosedIfMissing": true,
+    "executablePath": "../runtime/zig/tools/csl_sdk_driver.py"
   },
   "inputs": {
     "hostPlanArtifactPath": "artifacts/host-plan.json",

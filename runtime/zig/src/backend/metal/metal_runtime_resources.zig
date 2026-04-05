@@ -280,7 +280,7 @@ test "resolveMslComputeFunctionName maps main to main_kernel" {
     try std.testing.expectEqualStrings("main_vec4", resolveMslComputeFunctionName("main_vec4"));
 }
 
-test "get_kernel_workgroup_size returns cached metadata for keyed pipeline" {
+test "get_kernel_workgroup_size returns cached metadata for normalized default entrypoint" {
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena.deinit();
     const alloc = arena.allocator();
@@ -295,7 +295,7 @@ test "get_kernel_workgroup_size returns cached metadata for keyed pipeline" {
     };
 
     var fake = FakeRuntime{};
-    const key = try alloc.dupe(u8, "matmul_f16w_f32a_tiled#main");
+    const key = try alloc.dupe(u8, "matmul_f16w_f32a_tiled");
     try fake.kernel_pipelines.put(alloc, key, .{
         .library = null,
         .pipeline = null,

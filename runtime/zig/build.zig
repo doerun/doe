@@ -2,6 +2,7 @@ const std = @import("std");
 const APP_BUNDLE_NAME = "Doe Runtime.app";
 const APP_ICON_BASENAME = "DoeRuntime";
 const APP_ICON_SOURCE_SVG = "../../browser/chromium/assets/logo/source/fawn-icon-main.svg";
+const APP_ICON_PRECOMPILED_ICNS = "../../browser/chromium/assets/logo/compiled/macos/fawn-icon-main.icns";
 
 fn fileExists(path: []const u8) bool {
     std.fs.cwd().access(path, .{}) catch return false;
@@ -408,14 +409,22 @@ pub fn build(b: *std.Build) void {
         const app_files = b.addWriteFiles();
         const info_plist = app_files.add("Info.plist", app_info_plist);
 
-        if (!fileExists(APP_ICON_SOURCE_SVG)) {
-            const missing_icon = b.addFail("Missing required macOS icon source: " ++ APP_ICON_SOURCE_SVG);
+        if (!fileExists(APP_ICON_PRECOMPILED_ICNS) and !fileExists(APP_ICON_SOURCE_SVG)) {
+            const missing_icon = b.addFail(
+                "Missing required macOS icon asset: " ++ APP_ICON_PRECOMPILED_ICNS ++
+                    " (or source SVG " ++ APP_ICON_SOURCE_SVG ++ ")",
+            );
             app_step.dependOn(&missing_icon.step);
         } else {
-            const make_icon = b.addSystemCommand(&.{ "python3", "tools/generate_macos_icon.py", "--out" });
-            const icon_icns = make_icon.addOutputFileArg(APP_ICON_BASENAME ++ ".icns");
-            make_icon.addArgs(&.{ "--source-svg", APP_ICON_SOURCE_SVG });
-            make_icon.setCwd(b.path("."));
+            const icon_icns = if (fileExists(APP_ICON_PRECOMPILED_ICNS))
+                b.path(APP_ICON_PRECOMPILED_ICNS)
+            else blk: {
+                const make_icon = b.addSystemCommand(&.{ "python3", "tools/generate_macos_icon.py", "--out" });
+                const generated_icns = make_icon.addOutputFileArg(APP_ICON_BASENAME ++ ".icns");
+                make_icon.addArgs(&.{ "--source-svg", APP_ICON_SOURCE_SVG });
+                make_icon.setCwd(b.path("."));
+                break :blk generated_icns;
+            };
 
             const app_prefix = "app/" ++ APP_BUNDLE_NAME ++ "/Contents";
             const install_app_exe = b.addInstallFileWithDir(
@@ -589,7 +598,7 @@ pub fn build(b: *std.Build) void {
     const import_fence_step = b.step("import-fence", "Validate core/full one-way import boundaries");
     import_fence_step.dependOn(&import_fence_check.step);
 
-    const coverage_gate_check = b.addSystemCommand(&.{ "python3", "bench/split_coverage_gate.py", "--surface", "both" });
+    const coverage_gate_check = b.addSystemCommand(&.{ "python3", "bench/gates/split_coverage_gate.py", "--surface", "both" });
     coverage_gate_check.setCwd(b.path("../.."));
     const coverage_gate_step = b.step("coverage-gate", "Validate split core/full coverage ledgers against Zig partitions");
     coverage_gate_step.dependOn(&coverage_gate_check.step);
@@ -896,5 +905,4 @@ pub fn build(b: *std.Build) void {
     const compilation_bench_run_step = b.step("bench-compilation-run", "Build and run the WGSL compilation latency benchmark");
     compilation_bench_run_step.dependOn(&install_compilation_bench.step);
     compilation_bench_run_step.dependOn(&run_compilation_bench.step);
-
 }

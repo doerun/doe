@@ -23,6 +23,8 @@
 const std = @import("std");
 const host = @import("emit_csl_host.zig");
 const host_plan = @import("emit_csl_host_plan.zig");
+const mem_plan = @import("emit_csl_mem_plan.zig");
+const csl_spec = @import("csl_spec.zig");
 
 pub const LowerError = error{
     OutputTooLarge,
@@ -189,6 +191,11 @@ fn parseGrid(value: std.json.Value) LowerError!GridDims {
     };
 }
 
+fn parseOptionalGrid(value: ?std.json.Value) LowerError!?GridDims {
+    const raw = value orelse return null;
+    return try parseGrid(raw);
+}
+
 fn parseLayerPattern(value: ?std.json.Value) LowerError!?LayerPattern {
     const raw = value orelse return null;
     const object = try expectObject(raw);
@@ -211,6 +218,51 @@ fn parseOptionalU32(value: ?std.json.Value) LowerError!?u32 {
     };
 }
 
+fn parseBool(value: std.json.Value) LowerError!bool {
+    return switch (value) {
+        .bool => |flag| flag,
+        else => error.InvalidJson,
+    };
+}
+
+fn parseQuantFormat(text: []const u8) LowerError!host.ModelConfig.QuantFormat {
+    if (std.mem.eql(u8, text, "f16")) return .f16;
+    if (std.mem.eql(u8, text, "q4k")) return .q4k;
+    if (std.mem.eql(u8, text, "q8_0")) return .q8_0;
+    return error.InvalidJson;
+}
+
+fn parseModelConfig(value: ?std.json.Value) LowerError!?host.ModelConfig {
+    const raw = value orelse return null;
+    const object = try expectObject(raw);
+    return .{
+        .hidden_dim = try expectU32(object.get("hiddenDim") orelse return error.InvalidJson),
+        .num_heads = try expectU32(object.get("numHeads") orelse return error.InvalidJson),
+        .head_dim = try expectU32(object.get("headDim") orelse return error.InvalidJson),
+        .num_layers = try expectU32(object.get("numLayers") orelse return error.InvalidJson),
+        .vocab_size = try expectU32(object.get("vocabSize") orelse return error.InvalidJson),
+        .max_seq_len = try expectU32(object.get("maxSeqLen") orelse return error.InvalidJson),
+        .quant_format = try parseQuantFormat(try expectString(object.get("quantFormat") orelse return error.InvalidJson)),
+        .ffn_expansion_factor = (try parseOptionalU32(object.get("ffnExpansionFactor"))) orelse 4,
+        .ffn_matrix_count = (try parseOptionalU32(object.get("ffnMatrixCount"))) orelse 3,
+        .ple_width = try parseOptionalU32(object.get("pleWidth")),
+        .ple_vocab_size = try parseOptionalU32(object.get("pleVocabSize")),
+    };
+}
+
+fn parsePlacementPolicy(value: ?std.json.Value) LowerError!mem_plan.PlacementPolicy {
+    const raw = value orelse return .{};
+    const object = try expectObject(raw);
+    return .{
+        .max_grid_width = (try parseOptionalU32(object.get("maxGridWidth"))) orelse @as(u32, csl_spec.MAX_RECT_DIM),
+        .max_grid_height = (try parseOptionalU32(object.get("maxGridHeight"))) orelse @as(u32, csl_spec.MAX_RECT_DIM),
+        .prefer_square = if (object.get("preferSquare")) |prefer_square|
+            try parseBool(prefer_square)
+        else
+            true,
+    };
+}
+
 fn parseNullableStringDup(allocator: std.mem.Allocator, value: ?std.json.Value) LowerError!?[]const u8 {
     const raw = value orelse return null;
     return switch (raw) {
@@ -223,11 +275,11 @@ fn parseStepObject(allocator: std.mem.Allocator, object: std.json.ObjectMap) Low
     const phase_text = try expectString(object.get("phase") orelse return error.InvalidJson);
     const op = try expectString(object.get("op") orelse return error.InvalidJson);
     const kernel_key = try allocator.dupe(u8, try expectString(object.get("kernelKey") orelse return error.InvalidJson));
-    const spec = opToSpec(op) orelse return error.UnknownOp;
+    const op_spec = opToSpec(op) orelse return error.UnknownOp;
     const kind = if (object.get("kind")) |kind_value|
         try parseKind(try expectString(kind_value))
     else
-        spec.kind;
+        op_spec.kind;
 
     const weights_key = try parseNullableStringDup(allocator, object.get("weightsKey"));
 
@@ -257,7 +309,7 @@ fn parseStepTuple(allocator: std.mem.Allocator, array: std.json.Array) LowerErro
     const phase = try parsePhase(try expectString(array.items[0]));
     const op = try expectString(array.items[1]);
     const kernel_key = try allocator.dupe(u8, try expectString(array.items[2]));
-    const spec = opToSpec(op) orelse return error.UnknownOp;
+    const op_spec = opToSpec(op) orelse return error.UnknownOp;
 
     const weights_key = if (array.items.len >= 4)
         try parseNullableStringDup(allocator, array.items[3])
@@ -267,7 +319,7 @@ fn parseStepTuple(allocator: std.mem.Allocator, array: std.json.Array) LowerErro
     const kind = if (array.items.len == 5)
         try parseKind(try expectString(array.items[4]))
     else
-        spec.kind;
+        op_spec.kind;
 
     return .{
         .phase = phase,
@@ -329,11 +381,11 @@ fn parseManifestPhaseTuple(
 
     const kernel_key_raw = try expectString(tuple.items[1]);
     const op = kernel_ops.get(kernel_key_raw) orelse return error.InvalidJson;
-    const spec = opToSpec(op) orelse return error.UnknownOp;
+    const op_spec = opToSpec(op) orelse return error.UnknownOp;
 
     return .{
         .phase = phase,
-        .kind = spec.kind,
+        .kind = op_spec.kind,
         .op = op,
         .kernel_key = try allocator.dupe(u8, kernel_key_raw),
         .weights_key = if (tuple.items.len == 3)
@@ -387,27 +439,27 @@ fn appendManifestPostLayerSteps(
     }
 }
 
-fn validateStep(step: ExecStep, spec: OpSpec) LowerError!void {
+fn validateStep(step: ExecStep, op_spec: OpSpec) LowerError!void {
     if (step.op.len == 0 or step.kernel_key.len == 0) return error.MalformedStep;
     if (step.weights_key) |weights_key| {
         if (weights_key.len == 0) return error.MalformedStep;
     }
-    if (step.kind != spec.kind) return error.MalformedStep;
+    if (step.kind != op_spec.kind) return error.MalformedStep;
 
     switch (step.phase) {
         .prefill => {
-            if (!spec.allow_prefill) return error.MalformedStep;
+            if (!op_spec.allow_prefill) return error.MalformedStep;
             if (step.kind == .sample) return error.MalformedStep;
         },
         .decode => {
-            if (!spec.allow_decode) return error.MalformedStep;
+            if (!op_spec.allow_decode) return error.MalformedStep;
         },
     }
 
     if (step.kind == .sample and step.weights_key != null) return error.MalformedStep;
-    if (step.attention_type != null and !std.mem.eql(u8, spec.pattern, "attention_decode")) return error.MalformedStep;
+    if (step.attention_type != null and !std.mem.eql(u8, op_spec.pattern, "attention_decode")) return error.MalformedStep;
     if (step.sliding_window_size) |sliding_window_size| {
-        if (sliding_window_size == 0 or !std.mem.eql(u8, spec.pattern, "attention_decode")) return error.MalformedStep;
+        if (sliding_window_size == 0 or !std.mem.eql(u8, op_spec.pattern, "attention_decode")) return error.MalformedStep;
     }
     if (std.mem.eql(u8, step.op, "attention_sliding")) {
         if (step.attention_type) |attention_type| {
@@ -490,8 +542,8 @@ fn lowerToHostPlanWithMetadata(
     for (steps) |step| {
         if (saw_sample_step) return error.MalformedStep;
 
-        const spec = opToSpec(step.op) orelse return error.UnknownOp;
-        try validateStep(step, spec);
+        const op_spec = opToSpec(step.op) orelse return error.UnknownOp;
+        try validateStep(step, op_spec);
 
         switch (step.phase) {
             .prefill => {
@@ -507,7 +559,7 @@ fn lowerToHostPlanWithMetadata(
             },
         }
 
-        const pattern = spec.pattern;
+        const pattern = op_spec.pattern;
         const attention_layer_index: ?u32 = if (step.phase == .decode and std.mem.eql(u8, pattern, "attention_decode")) blk: {
             const index = decode_attention_index;
             decode_attention_index += 1;
@@ -602,7 +654,9 @@ pub fn lowerJsonToHostPlan(
     defer parsed.deinit();
 
     const root = try expectObject(parsed.value);
-    const grid = try parseGrid(root.get("grid") orelse return error.InvalidJson);
+    const grid = try parseOptionalGrid(root.get("grid"));
+    const model_config = try parseModelConfig(root.get("modelConfig"));
+    const placement_policy = try parsePlacementPolicy(root.get("placementPolicy"));
     const metadata = LowerMetadata{
         .layer_pattern = try parseLayerPattern(root.get("layerPattern")),
         .num_kv_shared_layers = try parseOptionalU32(root.get("numKvSharedLayers")),
@@ -618,7 +672,14 @@ pub fn lowerJsonToHostPlan(
         steps[idx] = try parseStepValue(allocator, step_value);
     }
 
-    var plan = try lowerToHostPlanWithMetadata(steps, grid, metadata, kernel_buf, prefill_buf, decode_buf);
+    const initial_grid: GridDims = grid orelse .{ .width = 1, .height = 1 };
+    var plan = try lowerToHostPlanWithMetadata(steps, initial_grid, metadata, kernel_buf, prefill_buf, decode_buf);
+    if (grid == null) {
+        const resolved_model_config = model_config orelse return error.InvalidJson;
+        const derived_grid = try mem_plan.deriveGrid(resolved_model_config, plan, placement_policy);
+        plan.pe_grid_width = derived_grid.width;
+        plan.pe_grid_height = derived_grid.height;
+    }
     if (root.get("eosTokenId")) |eos_value| {
         plan.eos_token_id = switch (eos_value) {
             .null => null,
@@ -644,7 +705,9 @@ pub fn lowerManifestExecutionToHostPlan(
     const root = try expectObject(parsed.value);
     if (root.get("layerPattern") != null or
         root.get("numKvSharedLayers") != null or
-        root.get("slidingWindowSize") != null)
+        root.get("slidingWindowSize") != null or
+        root.get("modelConfig") != null or
+        root.get("placementPolicy") != null)
     {
         return error.MalformedStep;
     }

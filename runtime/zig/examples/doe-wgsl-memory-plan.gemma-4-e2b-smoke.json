@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "csl_memory_plan",
+  "target": "wse3",
+  "contract": "explicit_memory_plan",
+  "grid": { "width": 149, "height": 117 },
+  "peCount": 17433,
+  "residencyMode": "layer_streaming",
+  "totalModelBytes": 6888244736,
+  "totalPersistentBytes": 51404808,
+  "totalStreamedBytes": 6837913088,
+  "persistentBytesPerPe": 2949,
+  "streamedWorkingSetBytesPerPe": 46195,
+  "totalSramAvailable": 856866816,
+  "utilizationPct": 99,
+  "fits": true,
+  "buffers": [
+    { "name": "kv_cache", "kind": "kv_cache", "placement": "kv_cache", "bytesTotal": 50331648, "bytesPerPe": 2888 },
+    { "name": "activation_scratch", "kind": "activation_scratch", "placement": "persistent", "bytesTotal": 24576, "bytesPerPe": 2 },
+    { "name": "decode_position", "kind": "decode_position", "placement": "persistent", "bytesTotal": 4, "bytesPerPe": 1 },
+    { "name": "sliding_window", "kind": "sliding_window", "placement": "persistent", "bytesTotal": 4, "bytesPerPe": 1 },
+    { "name": "output_logits", "kind": "output_logits", "placement": "persistent", "bytesTotal": 1048576, "bytesPerPe": 61 },
+    { "name": "token_embeddings", "kind": "embeddings", "placement": "streamed", "bytesTotal": 805306368, "bytesPerPe": 46195 },
+    { "name": "ple_table", "kind": "ple_table", "placement": "streamed", "bytesTotal": 4697620480, "bytesPerPe": 269468 },
+    { "name": "ple_projection", "kind": "ple_projection", "placement": "streamed", "bytesTotal": 13762560, "bytesPerPe": 790 },
+    { "name": "ple_norm", "kind": "ple_norm", "placement": "streamed", "bytesTotal": 17920, "bytesPerPe": 2 },
+    { "name": "layer_weights", "kind": "layer_weights", "placement": "streamed", "bytesTotal": 1321205760, "bytesPerPe": 2166 }
+  ],
+  "streamStages": [
+    { "name": "embedding_rows", "kind": "embedding_rows", "repeatCount": 1, "bytesTotal": 805306368, "bytesPerPe": 46195 },
+    { "name": "ple_rows", "kind": "ple_rows", "repeatCount": 1, "bytesTotal": 17920, "bytesPerPe": 2 },
+    { "name": "ple_projection", "kind": "ple_projection", "repeatCount": 35, "bytesTotal": 393216, "bytesPerPe": 23 },
+    { "name": "layer_weights", "kind": "layer_weights", "repeatCount": 35, "bytesTotal": 37748736, "bytesPerPe": 2166 }
+  ]
+}

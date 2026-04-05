@@ -1,9 +1,23 @@
 {
   "modelFamily": "gemma4",
   "modelId": "gemma-4-e2b-it-text-q4k-ehf16-af32",
-  "grid": {
-    "width": 32,
-    "height": 4
+  "modelConfig": {
+    "hiddenDim": 1536,
+    "numHeads": 8,
+    "headDim": 512,
+    "numLayers": 35,
+    "vocabSize": 262144,
+    "maxSeqLen": 4096,
+    "quantFormat": "q4k",
+    "ffnExpansionFactor": 4,
+    "ffnMatrixCount": 3,
+    "pleWidth": 256,
+    "pleVocabSize": 262144
+  },
+  "placementPolicy": {
+    "maxGridWidth": 512,
+    "maxGridHeight": 512,
+    "preferSquare": true
   },
   "eosTokenId": 1,
   "slidingWindowSize": 512,

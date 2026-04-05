@@ -2,13 +2,21 @@
   "schemaVersion": 1,
   "surfaceId": "doe-full",
   "surfaceVersion": 1,
-  "lastUpdated": "2026-03-11",
-  "coreCommandCount": 10,
+  "lastUpdated": "2026-04-05",
+  "coreCommandCount": 11,
   "fullOnlyCommandCount": 14,
-  "totalCommandCount": 24,
+  "totalCommandCount": 25,
   "coreCoverage": [
     {
       "commandKind": "upload",
+      "domain": "copy",
+      "status": "implemented",
+      "owner": "runtime-core",
+      "benchmarkClass": "comparable",
+      "gateStatus": "blocking"
+    },
+    {
+      "commandKind": "buffer_write",
       "domain": "copy",
       "status": "implemented",
       "owner": "runtime-core",

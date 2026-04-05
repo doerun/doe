@@ -20,6 +20,10 @@ pub const ArtifactPaths = struct {
     trace_path: []const u8,
 };
 
+pub const DriverConfig = struct {
+    executable_path: ?[]const u8 = null,
+};
+
 pub const SimulatorPlan = struct {
     schemaVersion: u32,
     artifactKind: []const u8,
@@ -34,6 +38,7 @@ pub const SimulatorPlan = struct {
         protocol: []const u8,
         executableEnvVar: []const u8,
         failClosedIfMissing: bool,
+        executablePath: ?[]const u8 = null,
     };
 
     pub const Inputs = struct {
@@ -104,6 +109,7 @@ pub fn emitSimulatorPlanArtifactJson(
     runtime: host_runtime.RuntimeConfig,
     targets: []const host_plan.CompileTarget,
     paths: ArtifactPaths,
+    driver: DriverConfig,
 ) EmitError!void {
     try validateArtifactInputs(runtime, targets, paths);
 
@@ -121,8 +127,12 @@ pub fn emitSimulatorPlanArtifactJson(
     try writeJsonString(buf, pos, spec.SIMULATOR_DRIVER_PROTOCOL);
     try write(buf, pos, ",\n    \"executableEnvVar\": ");
     try writeJsonString(buf, pos, spec.SIMULATOR_DRIVER_ENV_VAR);
-    try write(buf, pos, ",\n    \"failClosedIfMissing\": true\n  },\n");
-
+    try write(buf, pos, ",\n    \"failClosedIfMissing\": true");
+    if (driver.executable_path) |executable_path| {
+        try write(buf, pos, ",\n    \"executablePath\": ");
+        try writeJsonString(buf, pos, executable_path);
+    }
+    try write(buf, pos, "\n  },\n");
     try write(buf, pos, "  \"inputs\": {\n");
     try write(buf, pos, "    \"hostPlanArtifactPath\": ");
     try writeJsonString(buf, pos, paths.host_plan_artifact_path);
@@ -186,19 +196,30 @@ pub fn emitLauncherScript(
     buf: []u8,
     pos: *usize,
     simulator_plan_path: []const u8,
+    driver: DriverConfig,
 ) EmitError!void {
     if (simulator_plan_path.len == 0) return error.InvalidIr;
     try write(buf, pos, "#!/usr/bin/env bash\nset -euo pipefail\n\n");
-    try write(buf, pos, "if [[ -z \"${");
-    try write(buf, pos, spec.SIMULATOR_DRIVER_ENV_VAR);
-    try write(buf, pos, ":-}\" ]]; then\n");
-    try write(buf, pos, "  echo \"Missing ");
-    try write(buf, pos, spec.SIMULATOR_DRIVER_ENV_VAR);
-    try write(buf, pos, "; Doe CSL simulator launch is explicit-only.\" >&2\n");
-    try write(buf, pos, "  exit 2\nfi\n\n");
-    try write(buf, pos, "exec \"${");
-    try write(buf, pos, spec.SIMULATOR_DRIVER_ENV_VAR);
-    try write(buf, pos, "}\" ");
+    if (driver.executable_path) |executable_path| {
+        try write(buf, pos, "driver_executable=");
+        try writeJsonStringShell(buf, pos, executable_path);
+        try write(buf, pos, "\n");
+        try write(buf, pos, "if [[ ! -x \"$driver_executable\" ]]; then\n");
+        try write(buf, pos, "  echo \"Configured simulator driver is not executable: $driver_executable\" >&2\n");
+        try write(buf, pos, "  exit 2\nfi\n\n");
+        try write(buf, pos, "exec \"$driver_executable\" ");
+    } else {
+        try write(buf, pos, "if [[ -z \"${");
+        try write(buf, pos, spec.SIMULATOR_DRIVER_ENV_VAR);
+        try write(buf, pos, ":-}\" ]]; then\n");
+        try write(buf, pos, "  echo \"Missing ");
+        try write(buf, pos, spec.SIMULATOR_DRIVER_ENV_VAR);
+        try write(buf, pos, "; Doe CSL simulator launch is explicit-only.\" >&2\n");
+        try write(buf, pos, "  exit 2\nfi\n\n");
+        try write(buf, pos, "exec \"${");
+        try write(buf, pos, spec.SIMULATOR_DRIVER_ENV_VAR);
+        try write(buf, pos, "}\" ");
+    }
     try writeJsonStringShell(buf, pos, simulator_plan_path);
     try write(buf, pos, "\n");
 }
@@ -223,6 +244,9 @@ pub fn validateSimulatorPlanArtifactJson(
     if (!expectConstString(driver.get("protocol"), spec.SIMULATOR_DRIVER_PROTOCOL)) return error.InvalidSchema;
     if (!expectConstString(driver.get("executableEnvVar"), spec.SIMULATOR_DRIVER_ENV_VAR)) return error.InvalidSchema;
     if (!expectBool(driver.get("failClosedIfMissing"), true)) return error.InvalidSchema;
+    if (driver.get("executablePath")) |raw_executable_path| {
+        if (raw_executable_path == .null or !expectNonEmptyString(driver.get("executablePath"))) return error.InvalidSchema;
+    }
 
     const inputs = expectObject(root.get("inputs")) orelse return error.InvalidSchema;
     if (!expectNonEmptyString(inputs.get("hostPlanArtifactPath"))) return error.InvalidSchema;
@@ -515,14 +539,14 @@ test "simulator plan artifact emits and validates" {
     };
     var buf: [8192]u8 = undefined;
     var pos: usize = 0;
-    try emitSimulatorPlanArtifactJson(&buf, &pos, plan, &targets, paths);
+    try emitSimulatorPlanArtifactJson(&buf, &pos, plan, &targets, paths, .{});
     try validateSimulatorPlanArtifactJson(std.testing.allocator, buf[0..pos]);
 }
 
 test "launcher script fails closed on missing driver env var" {
     var buf: [1024]u8 = undefined;
     var pos: usize = 0;
-    try emitLauncherScript(&buf, &pos, "artifacts/simulator-plan.json");
+    try emitLauncherScript(&buf, &pos, "artifacts/simulator-plan.json", .{});
     const text = buf[0..pos];
     try std.testing.expect(std.mem.indexOf(u8, text, spec.SIMULATOR_DRIVER_ENV_VAR) != null);
     try std.testing.expect(std.mem.indexOf(u8, text, "explicit-only") != null);
@@ -531,7 +555,7 @@ test "launcher script fails closed on missing driver env var" {
 test "simulator plan artifact parses to typed contract" {
     const sample =
         \\{
-        \\  "schemaVersion": 1,
+        \\  "schemaVersion": 2,
         \\  "artifactKind": "csl_simulator_plan",
         \\  "target": "wse3",
         \\  "contract": "explicit_simulator_launch",
@@ -569,6 +593,17 @@ test "simulator plan artifact parses to typed contract" {
     var parsed = try parseSimulatorPlanArtifact(std.testing.allocator, sample);
     defer parsed.deinit();
     try std.testing.expectEqualStrings("artifacts/trace.json", parsed.value.outputs.tracePath);
+}
+
+test "launcher script uses explicit driver path when configured" {
+    var buf: [1024]u8 = undefined;
+    var pos: usize = 0;
+    try emitLauncherScript(&buf, &pos, "artifacts/simulator-plan.json", .{
+        .executable_path = "/Users/xyz/deco/doe/runtime/zig/tools/csl_sdk_driver.py",
+    });
+    const text = buf[0..pos];
+    try std.testing.expect(std.mem.indexOf(u8, text, "driver_executable=") != null);
+    try std.testing.expect(std.mem.indexOf(u8, text, "csl_sdk_driver.py") != null);
 }
 
 test "simulator result artifact emits and validates" {

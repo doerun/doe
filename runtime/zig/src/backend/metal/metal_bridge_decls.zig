@@ -70,7 +70,7 @@ pub extern fn metal_bridge_configure_surface_host(host: ?*anyopaque, width: u32,
 pub extern fn doe_surface_create_offscreen() callconv(.c) ?*anyopaque;
 pub extern fn doe_surface_create_from_layer(layer_h: ?*anyopaque) callconv(.c) ?*anyopaque;
 pub extern fn doe_surface_release(surf_h: ?*anyopaque) callconv(.c) void;
-pub extern fn doe_surface_configure(surf_h: ?*anyopaque, device_h: ?*anyopaque, width: u32, height: u32, pixel_format: u32, present_mode: u32, alpha_opaque: c_int, dpi_scale: f32) callconv(.c) void;
+pub extern fn doe_surface_configure(surf_h: ?*anyopaque, device_h: ?*anyopaque, width: u32, height: u32, pixel_format: u32, present_mode: u32, tone_mapping_mode: u32, alpha_opaque: c_int, dpi_scale: f32) callconv(.c) c_int;
 pub extern fn doe_surface_unconfigure(surf_h: ?*anyopaque) callconv(.c) void;
 pub extern fn doe_surface_supports_format(wgpu_format: u32) callconv(.c) c_int;
 pub extern fn doe_surface_acquire_drawable(surf_h: ?*anyopaque, drawable_out: *?*anyopaque) callconv(.c) ?*anyopaque;

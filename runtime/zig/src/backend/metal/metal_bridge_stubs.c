@@ -696,15 +696,17 @@ MetalHandle doe_surface_create_from_layer(MetalHandle layer_h) {
     return NULL;
 }
 void doe_surface_release(MetalHandle surf_h) { (void)surf_h; }
-void doe_surface_configure(MetalHandle surf_h, MetalHandle device_h, uint32_t width, uint32_t height, uint32_t pixel_format, uint32_t present_mode, int alpha_opaque, float dpi_scale) {
+int doe_surface_configure(MetalHandle surf_h, MetalHandle device_h, uint32_t width, uint32_t height, uint32_t pixel_format, uint32_t present_mode, uint32_t tone_mapping_mode, int alpha_opaque, float dpi_scale) {
     (void)surf_h;
     (void)device_h;
     (void)width;
     (void)height;
     (void)pixel_format;
     (void)present_mode;
+    (void)tone_mapping_mode;
     (void)alpha_opaque;
     (void)dpi_scale;
+    return 0;
 }
 void doe_surface_unconfigure(MetalHandle surf_h) { (void)surf_h; }
 int doe_surface_supports_format(uint32_t wgpu_format) {

@@ -69,7 +69,7 @@ pub const HOST_PLAN_DISCOVERY_EXPLICIT_CONFIG: []const u8 = "explicit_config";
 pub const HOST_PLAN_DISCOVERY_IMPLICIT_PATH_LOOKUP: []const u8 = "implicit_path_lookup";
 pub const CSLC_SDK_MIN_VERSION: []const u8 = "1.4.0";
 pub const CSLC_VERSION_ARG: []const u8 = "--version";
-pub const SIMULATOR_PLAN_SCHEMA_VERSION: u32 = 1;
+pub const SIMULATOR_PLAN_SCHEMA_VERSION: u32 = 2;
 pub const SIMULATOR_PLAN_ARTIFACT_KIND: []const u8 = "csl_simulator_plan";
 pub const SIMULATOR_PLAN_TARGET: []const u8 = "wse3";
 pub const SIMULATOR_PLAN_CONTRACT: []const u8 = "explicit_simulator_launch";
@@ -79,6 +79,14 @@ pub const SIMULATOR_RESULT_SCHEMA_VERSION: u32 = 1;
 pub const SIMULATOR_RESULT_ARTIFACT_KIND: []const u8 = "csl_simulator_result";
 pub const SIMULATOR_RESULT_TARGET: []const u8 = "wse3";
 pub const SIMULATOR_RESULT_CONTRACT: []const u8 = "explicit_simulator_outcome";
+pub const MEMORY_PLAN_SCHEMA_VERSION: u32 = 1;
+pub const MEMORY_PLAN_ARTIFACT_KIND: []const u8 = "csl_memory_plan";
+pub const MEMORY_PLAN_TARGET: []const u8 = "wse3";
+pub const MEMORY_PLAN_CONTRACT: []const u8 = "explicit_memory_plan";
+pub const RUNTIME_CONFIG_SCHEMA_VERSION: u32 = 1;
+pub const RUNTIME_CONFIG_ARTIFACT_KIND: []const u8 = "csl_runtime_config";
+pub const RUNTIME_CONFIG_TARGET: []const u8 = "wse3";
+pub const RUNTIME_CONFIG_CONTRACT: []const u8 = "explicit_runtime_config";
 
 // ---------------------------------------------------------------------------
 // CSL scalar type names

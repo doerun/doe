@@ -4,7 +4,7 @@
   "target": "wse3",
   "contract": "explicit_host_plan",
   "hostPlan": {
-    "peGrid": { "width": 32, "height": 4 },
+    "peGrid": { "width": 149, "height": 117 },
     "kernels": [
       { "name": "embed", "pattern": "gather", "count": 1 },
       { "name": "ple_embed", "pattern": "gather", "count": 2 },

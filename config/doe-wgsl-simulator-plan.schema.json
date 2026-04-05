@@ -14,7 +14,7 @@
     "outputs"
   ],
   "properties": {
-    "schemaVersion": { "type": "integer", "const": 1 },
+    "schemaVersion": { "type": "integer", "const": 2 },
     "artifactKind": { "type": "string", "const": "csl_simulator_plan" },
     "target": { "type": "string", "const": "wse3" },
     "contract": { "type": "string", "const": "explicit_simulator_launch" },
@@ -25,7 +25,8 @@
       "properties": {
         "protocol": { "type": "string", "const": "doe.csl.simulator/v1" },
         "executableEnvVar": { "type": "string", "const": "DOE_CSL_SIM_EXECUTABLE" },
-        "failClosedIfMissing": { "type": "boolean", "const": true }
+        "failClosedIfMissing": { "type": "boolean", "const": true },
+        "executablePath": { "type": "string", "minLength": 1 }
       }
     },
     "inputs": {

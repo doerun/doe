@@ -1,6 +1,7 @@
 #import <Metal/Metal.h>
 #import <Foundation/Foundation.h>
 #import <AppKit/AppKit.h>
+#import <CoreGraphics/CoreGraphics.h>
 #import <QuartzCore/QuartzCore.h>
 #include "metal_surface_bridge.h"
 #include <string.h>
@@ -17,6 +18,8 @@
 #define DOE_PRESENT_MODE_IMMEDIATE 0x00000001
 #define DOE_PRESENT_MODE_MAILBOX   0x00000002
 #define DOE_PRESENT_MODE_FIFO      0x00000003
+#define DOE_TONE_MAPPING_STANDARD  0x00000001
+#define DOE_TONE_MAPPING_EXTENDED  0x00000002
 
 // ============================================================
 // Pixel format translation (shared with metal_bridge.m)
@@ -28,6 +31,7 @@ static MTLPixelFormat doe_surface_wgpu_to_mtl_format(uint32_t wgpu) {
         case 0x00000017: return MTLPixelFormatRGBA8Unorm_sRGB;
         case 0x0000001B: return MTLPixelFormatBGRA8Unorm;
         case 0x0000001C: return MTLPixelFormatBGRA8Unorm_sRGB;
+        case 0x00000026: return MTLPixelFormatRGBA16Float;
         default:         return MTLPixelFormatBGRA8Unorm; // most common swapchain default
     }
 }
@@ -99,6 +103,33 @@ static MTLPixelFormat doe_surface_wgpu_to_mtl_format(uint32_t wgpu) {
 
 @end
 
+static BOOL doe_surface_apply_tone_mapping(
+    DoeSurfaceLayer* surf,
+    uint32_t         pixel_format,
+    uint32_t         tone_mapping_mode)
+{
+    if (surf == nil || surf.layer == nil) return NO;
+
+    CGColorSpaceRef color_space = NULL;
+    if (tone_mapping_mode == DOE_TONE_MAPPING_EXTENDED) {
+        if (pixel_format != 0x00000026) return NO;
+        color_space = CGColorSpaceCreateWithName(kCGColorSpaceExtendedLinearSRGB);
+        if (color_space == NULL) return NO;
+    } else {
+        color_space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+    }
+
+    if (color_space != NULL) {
+        surf.layer.colorspace = color_space;
+        CGColorSpaceRelease(color_space);
+    }
+
+    if (@available(macOS 13.0, *)) {
+        surf.layer.wantsExtendedDynamicRangeContent = (tone_mapping_mode == DOE_TONE_MAPPING_EXTENDED);
+    }
+    return YES;
+}
+
 // ============================================================
 // Create / destroy surface
 // ============================================================
@@ -129,19 +160,20 @@ void doe_surface_release(MetalHandle surf_h) {
 // present_mode: 0x1=immediate, 0x2=mailbox, 0x3=fifo.
 // alpha_opaque: 1 = opaque layer (framebufferOnly=YES, no alpha).
 // dpi_scale: contentsScale for HiDPI. Pass 1.0 for non-Retina.
-void doe_surface_configure(
+int doe_surface_configure(
     MetalHandle surf_h,
     MetalHandle device_h,
     uint32_t    width,
     uint32_t    height,
     uint32_t    pixel_format,
     uint32_t    present_mode,
+    uint32_t    tone_mapping_mode,
     int         alpha_opaque,
     float       dpi_scale)
 {
     DoeSurfaceLayer* surf   = (__bridge DoeSurfaceLayer*)surf_h;
     id<MTLDevice>    device = (__bridge id<MTLDevice>)device_h;
-    if (surf == nil || device == nil) return;
+    if (surf == nil || device == nil) return 0;
 
     MTLPixelFormat mtl_fmt = doe_surface_wgpu_to_mtl_format(pixel_format);
 
@@ -153,6 +185,9 @@ void doe_surface_configure(
     surf.layer.contentsScale   = (dpi_scale > 0.0f) ? (CGFloat)dpi_scale : 1.0;
     surf.layer.opaque          = (alpha_opaque != 0);
     surf.layer.framebufferOnly = (alpha_opaque != 0);
+    if (!doe_surface_apply_tone_mapping(surf, pixel_format, tone_mapping_mode)) {
+        return 0;
+    }
 
     // Display synchronization: fifo uses displaySyncEnabled=YES (vsync on).
     // Immediate and mailbox both disable vsync.
@@ -174,6 +209,7 @@ void doe_surface_configure(
     surf.configured_height = height;
     surf.configured_format = mtl_fmt;
     surf.is_configured     = YES;
+    return 1;
 }
 
 // ============================================================
@@ -189,6 +225,7 @@ int doe_surface_supports_format(uint32_t wgpu_format) {
         case 0x0000001C: return 1; // BGRA8UnormSrgb
         case 0x00000016: return 1; // RGBA8Unorm — Apple Silicon / macOS 13+
         case 0x00000017: return 1; // RGBA8UnormSrgb
+        case 0x00000026: return 1; // RGBA16Float — extended tone mapping path
         default:         return 0;
     }
 }

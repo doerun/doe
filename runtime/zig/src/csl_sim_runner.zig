@@ -20,7 +20,8 @@ fn printUsage(stdout: anytype) !void {
         \\Reads a Doe CSL simulator plan artifact, validates it, and launches the explicit simulator driver.
         \\Driver resolution order:
         \\  1. --driver-executable
-        \\  2. $DOE_CSL_SIM_EXECUTABLE
+        \\  2. plan.driver.executablePath
+        \\  3. $DOE_CSL_SIM_EXECUTABLE
         \\The runner writes stdout/stderr to the paths declared by the simulator plan and emits a result artifact.
         \\
     );
@@ -64,9 +65,12 @@ fn defaultResultPath(allocator: std.mem.Allocator, trace_path: []const u8) ![]u8
 
 fn resolveDriverExecutable(
     allocator: std.mem.Allocator,
+    plan_path: []const u8,
     cli_value: ?[]const u8,
+    plan_value: ?[]const u8,
 ) RunnerError![]const u8 {
     if (cli_value) |value| return value;
+    if (plan_value) |value| return resolveArtifactPath(allocator, plan_path, value) catch return error.MissingDriverExecutable;
     return std.process.getEnvVarOwned(allocator, spec.SIMULATOR_DRIVER_ENV_VAR) catch return error.MissingDriverExecutable;
 }
 
@@ -169,7 +173,7 @@ pub fn main() !void {
     var parsed = simulator.parseSimulatorPlanArtifact(allocator, plan_bytes) catch return error.InvalidPlan;
     defer parsed.deinit();
 
-    const driver_executable = try resolveDriverExecutable(allocator, driver_executable_arg);
+    const driver_executable = try resolveDriverExecutable(allocator, resolved_plan_path, driver_executable_arg, parsed.value.driver.executablePath);
     const plan = parsed.value;
     const resolved_stdout_path = try resolveArtifactPath(allocator, resolved_plan_path, plan.outputs.stdoutPath);
     const resolved_stderr_path = try resolveArtifactPath(allocator, resolved_plan_path, plan.outputs.stderrPath);

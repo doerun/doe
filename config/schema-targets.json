@@ -110,8 +110,20 @@
       "data": "examples/doe-wgsl-host-plan.gemma-4-e2b-smoke.json"
     },
     {
+      "schema": "config/doe-wgsl-memory-plan.schema.json",
+      "data": "examples/doe-wgsl-memory-plan.gemma-4-e2b-smoke.json"
+    },
+    {
+      "schema": "config/doe-wgsl-runtime-config.schema.json",
+      "data": "examples/doe-wgsl-runtime-config.gemma-4-e2b-smoke.json"
+    },
+    {
       "schema": "config/doe-wgsl-simulator-plan.schema.json",
       "data": "examples/doe-wgsl-simulator-plan.sample.json"
+    },
+    {
+      "schema": "config/doe-wgsl-simulator-plan.schema.json",
+      "data": "examples/doe-wgsl-simulator-plan.gemma-4-e2b-smoke.json"
     },
     {
       "schema": "config/doe-wgsl-simulator-result.schema.json",

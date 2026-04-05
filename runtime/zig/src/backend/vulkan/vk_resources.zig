@@ -41,7 +41,12 @@ pub const TextureResource = struct {
     view: VkImageView,
     width: u32,
     height: u32,
+    depth_or_array_layers: u32,
     mip_levels: u32,
+    sample_count: u32,
+    dimension: u32,
+    view_dimension: u32,
+    aspect: u32,
     format: model_gpu_types.WGPUTextureFormat,
     usage: model_gpu_types.WGPUFlags,
     layout: u32,
@@ -69,6 +74,27 @@ fn texture_view_dimension_to_vk_view_type(dimension: u32, array_layers: u32) u32
         model_gpu_types.WGPUTextureViewDimension_CubeArray => c.VK_IMAGE_VIEW_TYPE_CUBE_ARRAY,
         model_gpu_types.WGPUTextureViewDimension_3D => c.VK_IMAGE_VIEW_TYPE_3D,
         else => if (array_layers > 1) c.VK_IMAGE_VIEW_TYPE_2D_ARRAY else c.VK_IMAGE_VIEW_TYPE_2D,
+    };
+}
+
+fn default_texture_view_dimension(dimension: u32, depth_or_array_layers: u32) u32 {
+    return switch (dimension) {
+        model_gpu_types.WGPUTextureDimension_1D => model_gpu_types.WGPUTextureViewDimension_1D,
+        model_gpu_types.WGPUTextureDimension_3D => model_gpu_types.WGPUTextureViewDimension_3D,
+        else => if (depth_or_array_layers > 1)
+            model_gpu_types.WGPUTextureViewDimension_2DArray
+        else
+            model_gpu_types.WGPUTextureViewDimension_2D,
+    };
+}
+
+fn default_texture_view_layer_count(view_dimension: u32, depth_or_array_layers: u32) u32 {
+    return switch (view_dimension) {
+        model_gpu_types.WGPUTextureViewDimension_2DArray,
+        model_gpu_types.WGPUTextureViewDimension_Cube,
+        model_gpu_types.WGPUTextureViewDimension_CubeArray,
+        => if (depth_or_array_layers > 0) depth_or_array_layers else 1,
+        else => 1,
     };
 }
 
@@ -304,7 +330,12 @@ pub fn ensure_texture_resource(self: anytype, texture: model_resource_types.Copy
     if (self.textures.getPtr(texture.handle)) |existing| {
         if (existing.width == texture.width and
             existing.height == texture.height and
+            existing.depth_or_array_layers == normalized_texture_layer_count(texture.depth_or_array_layers) and
             existing.mip_levels == mip_levels and
+            existing.sample_count == normalized_texture_sample_count(texture.sample_count) and
+            existing.dimension == normalized_texture_dimension(texture.dimension) and
+            existing.view_dimension == normalized_texture_view_dimension(texture.dimension, texture.view_dimension, texture.depth_or_array_layers) and
+            existing.aspect == normalized_texture_aspect(texture.aspect) and
             existing.format == texture.format and
             existing.usage == texture.usage)
         {
@@ -369,14 +400,18 @@ pub fn create_texture_resource(
     texture: model_resource_types.CopyTextureResource,
     mip_levels: u32,
 ) !TextureResource {
+    const resolved_dimension = normalized_texture_dimension(texture.dimension);
+    const resolved_layer_count = normalized_texture_layer_count(texture.depth_or_array_layers);
     return create_texture_resource_full(
         self,
         texture.width,
         texture.height,
-        1,
+        resolved_layer_count,
         mip_levels,
-        1,
-        model_gpu_types.WGPUTextureDimension_2D,
+        normalized_texture_sample_count(texture.sample_count),
+        resolved_dimension,
+        normalized_texture_view_dimension(resolved_dimension, texture.view_dimension, texture.depth_or_array_layers),
+        normalized_texture_aspect(texture.aspect),
         texture.format,
         texture.usage,
     );
@@ -390,6 +425,8 @@ pub fn create_texture_resource_full(
     mip_levels: u32,
     sample_count: u32,
     dimension: u32,
+    view_dimension: u32,
+    aspect: u32,
     format: model_gpu_types.WGPUTextureFormat,
     usage: model_gpu_types.WGPUFlags,
 ) !TextureResource {
@@ -400,14 +437,13 @@ pub fn create_texture_resource_full(
     const layers = if (depth_or_array_layers > 0) depth_or_array_layers else 1;
     const resolved_mip_levels = if (mip_levels > 0) mip_levels else 1;
     const resolved_dimension = if (dimension != 0) dimension else model_gpu_types.WGPUTextureDimension_2D;
+    const resolved_view_dimension = if (view_dimension != 0) view_dimension else default_texture_view_dimension(resolved_dimension, layers);
+    const resolved_aspect = if (aspect != 0) aspect else model_gpu_types.WGPUTextureAspect_All;
     const image_type = texture_dimension_to_vk_image_type(resolved_dimension);
     const image_depth: u32 = if (resolved_dimension == model_gpu_types.WGPUTextureDimension_3D) layers else 1;
     const image_array_layers: u32 = if (resolved_dimension == model_gpu_types.WGPUTextureDimension_3D) 1 else layers;
     const sample_count_vk = try texture_sample_count_to_vk(sample_count);
-    const view_type = texture_view_dimension_to_vk_view_type(
-        if (resolved_dimension == model_gpu_types.WGPUTextureDimension_1D) model_gpu_types.WGPUTextureViewDimension_1D else if (resolved_dimension == model_gpu_types.WGPUTextureDimension_3D) model_gpu_types.WGPUTextureViewDimension_3D else if (image_array_layers > 1) model_gpu_types.WGPUTextureViewDimension_2DArray else model_gpu_types.WGPUTextureViewDimension_2D,
-        image_array_layers,
-    );
+    const view_type = texture_view_dimension_to_vk_view_type(resolved_view_dimension, image_array_layers);
 
     var image_info = c.VkImageCreateInfo{
         .sType = c.VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
@@ -447,7 +483,7 @@ pub fn create_texture_resource_full(
 
     try c.check_vk(c.vkBindImageMemory(self.device, image, memory, 0));
 
-    const aspect_mask = vk_formats.aspect_mask_for_format(format);
+    const aspect_mask = texture_view_aspect_mask(format, resolved_aspect);
     var view_info = c.VkImageViewCreateInfo{
         .sType = c.VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
         .pNext = null,
@@ -478,7 +514,12 @@ pub fn create_texture_resource_full(
         .view = view,
         .width = width,
         .height = height,
+        .depth_or_array_layers = layers,
         .mip_levels = resolved_mip_levels,
+        .sample_count = if (sample_count > 0) sample_count else 1,
+        .dimension = resolved_dimension,
+        .view_dimension = resolved_view_dimension,
+        .aspect = resolved_aspect,
         .format = format,
         .usage = effective_usage,
         .layout = c.VK_IMAGE_LAYOUT_UNDEFINED,
@@ -503,8 +544,12 @@ pub fn create_texture_view(
     var view: VkImageView = VK_NULL_U64;
     const resolved_format = if (format != 0) format else texture.format;
     const resolved_level_count = if (mip_level_count != 0) mip_level_count else texture.mip_levels - base_mip_level;
-    const resolved_layer_count = if (array_layer_count != 0) array_layer_count else 1;
-    const view_type = texture_view_dimension_to_vk_view_type(dimension, resolved_layer_count);
+    const resolved_view_dimension = if (dimension != 0) dimension else texture.view_dimension;
+    const resolved_layer_count = if (array_layer_count != 0)
+        array_layer_count
+    else
+        default_texture_view_layer_count(resolved_view_dimension, texture.depth_or_array_layers);
+    const view_type = texture_view_dimension_to_vk_view_type(resolved_view_dimension, resolved_layer_count);
     var view_info = c.VkImageViewCreateInfo{
         .sType = c.VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
         .pNext = null,
@@ -577,7 +622,7 @@ pub fn transition_texture_layout(
             .baseMipLevel = 0,
             .levelCount = texture.mip_levels,
             .baseArrayLayer = 0,
-            .layerCount = 1,
+            .layerCount = texture_barrier_layer_count(texture),
         },
     };
     c.vkCmdPipelineBarrier(
@@ -591,6 +636,45 @@ pub fn transition_texture_layout(
         null,
         1,
         @ptrCast(&image_barrier),
+    );
+}
+
+fn texture_barrier_layer_count(texture: TextureResource) u32 {
+    if (texture.view_dimension == model_gpu_types.WGPUTextureViewDimension_3D) return 1;
+    return if (texture.depth_or_array_layers > 0) texture.depth_or_array_layers else 1;
+}
+
+fn normalized_texture_layer_count(depth_or_array_layers: u32) u32 {
+    return if (depth_or_array_layers > 0) depth_or_array_layers else 1;
+}
+
+fn normalized_texture_sample_count(sample_count: u32) u32 {
+    return if (sample_count > 0) sample_count else 1;
+}
+
+fn normalized_texture_dimension(dimension: u32) u32 {
+    return if (dimension != 0) dimension else model_gpu_types.WGPUTextureDimension_2D;
+}
+
+fn normalized_texture_view_dimension(dimension: u32, view_dimension: u32, depth_or_array_layers: u32) u32 {
+    return if (view_dimension != 0)
+        view_dimension
+    else
+        default_texture_view_dimension(normalized_texture_dimension(dimension), normalized_texture_layer_count(depth_or_array_layers));
+}
+
+fn normalized_texture_aspect(aspect: u32) u32 {
+    return if (aspect != 0) aspect else model_gpu_types.WGPUTextureAspect_All;
+}
+
+test "default_texture_view_dimension preserves non-2d resources" {
+    try std.testing.expectEqual(
+        model_gpu_types.WGPUTextureViewDimension_3D,
+        default_texture_view_dimension(model_gpu_types.WGPUTextureDimension_3D, 4),
+    );
+    try std.testing.expectEqual(
+        model_gpu_types.WGPUTextureViewDimension_2DArray,
+        default_texture_view_dimension(model_gpu_types.WGPUTextureDimension_2D, 6),
     );
 }
 

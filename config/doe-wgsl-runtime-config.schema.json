@@ -1,0 +1,133 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "config/doe-wgsl-runtime-config.schema.json",
+  "title": "DOE WGSL CSL runtime config artifact",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "target",
+    "contract",
+    "mode",
+    "runtimeExecutableEnvVar",
+    "modelConfig",
+    "maxDecodeTokens",
+    "timeoutMs",
+    "batchSize",
+    "weightMappings",
+    "stateBuffers"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "artifactKind": { "type": "string", "const": "csl_runtime_config" },
+    "target": { "type": "string", "const": "wse3" },
+    "contract": { "type": "string", "const": "explicit_runtime_config" },
+    "mode": { "type": "string", "const": "compile-only" },
+    "runtimeExecutableEnvVar": {
+      "type": "string",
+      "const": "DOE_CSL_RUNTIME_EXECUTABLE"
+    },
+    "modelConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "hiddenDim",
+        "numHeads",
+        "headDim",
+        "numLayers",
+        "vocabSize",
+        "maxSeqLen",
+        "quantFormat",
+        "ffnExpansionFactor",
+        "ffnMatrixCount"
+      ],
+      "properties": {
+        "hiddenDim": { "type": "integer", "minimum": 1 },
+        "numHeads": { "type": "integer", "minimum": 1 },
+        "headDim": { "type": "integer", "minimum": 1 },
+        "numLayers": { "type": "integer", "minimum": 1 },
+        "vocabSize": { "type": "integer", "minimum": 1 },
+        "maxSeqLen": { "type": "integer", "minimum": 1 },
+        "quantFormat": { "type": "string", "enum": ["f16", "q4k", "q8_0"] },
+        "ffnExpansionFactor": { "type": "integer", "minimum": 1 },
+        "ffnMatrixCount": { "type": "integer", "minimum": 1 },
+        "pleWidth": { "type": "integer", "minimum": 1 },
+        "pleVocabSize": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "maxDecodeTokens": { "type": "integer", "minimum": 0 },
+    "timeoutMs": { "type": "integer", "minimum": 0 },
+    "batchSize": { "type": "integer", "minimum": 1 },
+    "weightMappings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["shard", "peBuffer", "peRange", "dtype"],
+        "properties": {
+          "shard": { "type": "string", "minLength": 1 },
+          "peBuffer": { "type": "string", "minLength": 1 },
+          "peRange": {
+            "type": "array",
+            "prefixItems": [
+              { "type": "integer", "minimum": 0 },
+              { "type": "integer", "minimum": 0 }
+            ],
+            "minItems": 2,
+            "maxItems": 2
+          },
+          "dtype": { "type": "string", "enum": ["f16", "u8_q4k", "u8_q8"] }
+        }
+      }
+    },
+    "memoryPlan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "grid",
+        "residencyMode",
+        "totalModelBytes",
+        "totalPersistentBytes",
+        "totalStreamedBytes",
+        "persistentBytesPerPe",
+        "streamedWorkingSetBytesPerPe",
+        "fits"
+      ],
+      "properties": {
+        "grid": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["width", "height"],
+          "properties": {
+            "width": { "type": "integer", "minimum": 1 },
+            "height": { "type": "integer", "minimum": 1 }
+          }
+        },
+        "residencyMode": {
+          "type": "string",
+          "enum": ["full_resident", "layer_streaming"]
+        },
+        "totalModelBytes": { "type": "integer", "minimum": 0 },
+        "totalPersistentBytes": { "type": "integer", "minimum": 0 },
+        "totalStreamedBytes": { "type": "integer", "minimum": 0 },
+        "persistentBytesPerPe": { "type": "integer", "minimum": 0 },
+        "streamedWorkingSetBytesPerPe": { "type": "integer", "minimum": 0 },
+        "fits": { "type": "boolean" }
+      }
+    },
+    "stateBuffers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "kind", "bytesPerPe"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "kind": { "type": "string", "enum": ["kv_cache", "position", "scratch"] },
+          "bytesPerPe": { "type": "integer", "minimum": 0 }
+        }
+      }
+    }
+  }
+}

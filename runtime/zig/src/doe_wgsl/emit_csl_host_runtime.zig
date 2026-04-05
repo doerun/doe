@@ -12,6 +12,7 @@
 const std = @import("std");
 const host = @import("emit_csl_host.zig");
 const spec = @import("csl_spec.zig");
+const mem_plan = @import("emit_csl_mem_plan.zig");
 
 pub const EmitError = error{
     OutputTooLarge,
@@ -46,6 +47,7 @@ pub const RuntimeConfig = struct {
     weight_mapping_count: u32,
     state_buffers: []const StateBuffer,
     state_buffer_count: u32,
+    memory_plan: ?mem_plan.MemoryPlan = null,
     max_decode_tokens: u32 = 128,
     timeout_ms: u32 = 30_000,
     batch_size: u32 = 1,
@@ -53,7 +55,46 @@ pub const RuntimeConfig = struct {
 
 /// Emit a JSON runtime configuration for programmatic consumers.
 pub fn emitRuntimeConfigJson(buf: []u8, pos: *usize, rt: RuntimeConfig) EmitError!void {
-    try write(buf, pos, "{\n  \"target\": \"wse3\",\n");
+    try write(buf, pos, "{\n");
+    try write(buf, pos, "  \"schemaVersion\": ");
+    try writeInt(buf, pos, spec.RUNTIME_CONFIG_SCHEMA_VERSION);
+    try write(buf, pos, ",\n  \"artifactKind\": \"");
+    try write(buf, pos, spec.RUNTIME_CONFIG_ARTIFACT_KIND);
+    try write(buf, pos, "\",\n  \"target\": \"");
+    try write(buf, pos, spec.RUNTIME_CONFIG_TARGET);
+    try write(buf, pos, "\",\n  \"contract\": \"");
+    try write(buf, pos, spec.RUNTIME_CONFIG_CONTRACT);
+    try write(buf, pos, "\",\n");
+    try write(buf, pos, "  \"mode\": \"compile-only\",\n");
+    try write(buf, pos, "  \"runtimeExecutableEnvVar\": \"DOE_CSL_RUNTIME_EXECUTABLE\",\n");
+    try write(buf, pos, "  \"modelConfig\": {\n");
+    try write(buf, pos, "    \"hiddenDim\": ");
+    try writeInt(buf, pos, rt.config.hidden_dim);
+    try write(buf, pos, ",\n    \"numHeads\": ");
+    try writeInt(buf, pos, rt.config.num_heads);
+    try write(buf, pos, ",\n    \"headDim\": ");
+    try writeInt(buf, pos, rt.config.head_dim);
+    try write(buf, pos, ",\n    \"numLayers\": ");
+    try writeInt(buf, pos, rt.config.num_layers);
+    try write(buf, pos, ",\n    \"vocabSize\": ");
+    try writeInt(buf, pos, rt.config.vocab_size);
+    try write(buf, pos, ",\n    \"maxSeqLen\": ");
+    try writeInt(buf, pos, rt.config.max_seq_len);
+    try write(buf, pos, ",\n    \"quantFormat\": \"");
+    try write(buf, pos, @tagName(rt.config.quant_format));
+    try write(buf, pos, "\",\n    \"ffnExpansionFactor\": ");
+    try writeInt(buf, pos, rt.config.ffn_expansion_factor);
+    try write(buf, pos, ",\n    \"ffnMatrixCount\": ");
+    try writeInt(buf, pos, rt.config.ffn_matrix_count);
+    if (rt.config.ple_width) |ple_width| {
+        try write(buf, pos, ",\n    \"pleWidth\": ");
+        try writeInt(buf, pos, ple_width);
+    }
+    if (rt.config.ple_vocab_size) |ple_vocab_size| {
+        try write(buf, pos, ",\n    \"pleVocabSize\": ");
+        try writeInt(buf, pos, ple_vocab_size);
+    }
+    try write(buf, pos, "\n  },\n");
     try write(buf, pos, "  \"maxDecodeTokens\": ");
     try writeInt(buf, pos, rt.max_decode_tokens);
     try write(buf, pos, ",\n  \"timeoutMs\": ");
@@ -81,6 +122,30 @@ pub fn emitRuntimeConfigJson(buf: []u8, pos: *usize, rt: RuntimeConfig) EmitErro
         try write(buf, pos, "\n");
     }
     try write(buf, pos, "  ],\n");
+
+    if (rt.memory_plan) |memory_plan_value| {
+        try write(buf, pos, "  \"memoryPlan\": {\n");
+        try write(buf, pos, "    \"grid\": { \"width\": ");
+        try writeInt(buf, pos, memory_plan_value.grid_width);
+        try write(buf, pos, ", \"height\": ");
+        try writeInt(buf, pos, memory_plan_value.grid_height);
+        try write(buf, pos, " },\n");
+        try write(buf, pos, "    \"residencyMode\": \"");
+        try write(buf, pos, @tagName(memory_plan_value.residency_mode));
+        try write(buf, pos, "\",\n    \"totalModelBytes\": ");
+        try writeInt(buf, pos, memory_plan_value.total_model_bytes);
+        try write(buf, pos, ",\n    \"totalPersistentBytes\": ");
+        try writeInt(buf, pos, memory_plan_value.total_persistent_bytes);
+        try write(buf, pos, ",\n    \"totalStreamedBytes\": ");
+        try writeInt(buf, pos, memory_plan_value.total_streamed_bytes);
+        try write(buf, pos, ",\n    \"persistentBytesPerPe\": ");
+        try writeInt(buf, pos, memory_plan_value.persistent_bytes_per_pe);
+        try write(buf, pos, ",\n    \"streamedWorkingSetBytesPerPe\": ");
+        try writeInt(buf, pos, memory_plan_value.streamed_working_set_bytes_per_pe);
+        try write(buf, pos, ",\n    \"fits\": ");
+        try write(buf, pos, if (memory_plan_value.fits) "true" else "false");
+        try write(buf, pos, "\n  },\n");
+    }
 
     // State buffers
     try write(buf, pos, "  \"stateBuffers\": [\n");
@@ -507,6 +572,8 @@ test "runtime config JSON emits weight mappings and state buffers" {
     var pos: usize = 0;
     try emitRuntimeConfigJson(&buf, &pos, rt);
     const json_str = buf[0..pos];
+    try std.testing.expect(std.mem.indexOf(u8, json_str, "\"artifactKind\": \"csl_runtime_config\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, json_str, "\"mode\": \"compile-only\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, json_str, "\"weightMappings\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, json_str, "embed.bin") != null);
     try std.testing.expect(std.mem.indexOf(u8, json_str, "\"stateBuffers\"") != null);

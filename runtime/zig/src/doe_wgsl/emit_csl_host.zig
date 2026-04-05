@@ -32,6 +32,10 @@ pub const ModelConfig = struct {
     vocab_size: u32,
     max_seq_len: u32,
     quant_format: QuantFormat,
+    ffn_expansion_factor: u32 = 4,
+    ffn_matrix_count: u32 = 3,
+    ple_width: ?u32 = null,
+    ple_vocab_size: ?u32 = null,
 
     pub const QuantFormat = enum { f16, q4k, q8_0 };
 };
@@ -84,9 +88,8 @@ const Q4K_UPPER_BOUND_BYTES_PER_WEIGHT: u64 = 1;
 const Q8_0_BYTES_PER_WEIGHT: u64 = 1;
 const F16_BYTES_PER_WEIGHT: u64 = 2;
 const KV_CACHE_F16_BYTES_PER_VALUE: u64 = 2;
-const FFN_EXPANSION_FACTOR: u64 = 4;
 const PROJECTION_COUNT: u64 = 4;
-const FFN_WEIGHT_MATRICES: u64 = 2;
+const PLE_NORM_F16_BYTES_PER_VALUE: u64 = 2;
 
 fn conservativeBytesPerWeight(format: ModelConfig.QuantFormat) u64 {
     return switch (format) {
@@ -106,7 +109,11 @@ fn estimateWeightLayerBytes(config: ModelConfig) u64 {
     const hd: u64 = config.hidden_dim;
     const bytes_per_weight = conservativeBytesPerWeight(config.quant_format);
     const proj_bytes = PROJECTION_COUNT * hd * hd * bytes_per_weight;
-    const ffn_bytes = FFN_WEIGHT_MATRICES * hd * FFN_EXPANSION_FACTOR * hd * bytes_per_weight;
+    const ffn_bytes = @as(u64, config.ffn_matrix_count) *
+        hd *
+        @as(u64, config.ffn_expansion_factor) *
+        hd *
+        bytes_per_weight;
     return proj_bytes + ffn_bytes;
 }
 
@@ -118,10 +125,20 @@ fn estimateKvCacheBytesForLayers(config: ModelConfig, layer_count: u32) u64 {
         KV_CACHE_F16_BYTES_PER_VALUE;
 }
 
+fn estimatePleBytes(config: ModelConfig) u64 {
+    const ple_width = config.ple_width orelse return 0;
+    const ple_vocab_size = config.ple_vocab_size orelse config.vocab_size;
+    const total_ple_width = @as(u64, config.num_layers) * @as(u64, ple_width);
+    const table_bytes = @as(u64, ple_vocab_size) * total_ple_width * F16_BYTES_PER_WEIGHT;
+    const projection_bytes = @as(u64, config.hidden_dim) * total_ple_width * conservativeBytesPerWeight(config.quant_format);
+    const norm_bytes = total_ple_width * PLE_NORM_F16_BYTES_PER_VALUE;
+    return table_bytes + projection_bytes + norm_bytes;
+}
+
 pub fn estimateModelSram(config: ModelConfig) SramEstimate {
     const per_layer = estimateLayerSramBytes(config);
     const embed_bytes: u64 = @as(u64, config.vocab_size) * config.hidden_dim * F16_BYTES_PER_WEIGHT;
-    const total = per_layer * config.num_layers + embed_bytes;
+    const total = per_layer * config.num_layers + embed_bytes + estimatePleBytes(config);
     return .{
         .per_layer_estimated_bytes = per_layer,
         .embedding_estimated_bytes = embed_bytes,
@@ -139,7 +156,7 @@ pub fn estimateModelSramForPlan(config: ModelConfig, plan: HostPlan) SramEstimat
     const kv_per_layer = if (effective_kv_layers == 0) 0 else kv_total / @as(u64, effective_kv_layers);
     const per_layer = weight_per_layer + kv_per_layer;
     const embed_bytes: u64 = @as(u64, config.vocab_size) * config.hidden_dim * F16_BYTES_PER_WEIGHT;
-    const total = weight_per_layer * @as(u64, config.num_layers) + kv_total + embed_bytes;
+    const total = weight_per_layer * @as(u64, config.num_layers) + kv_total + embed_bytes + estimatePleBytes(config);
     const capacity = @as(u64, plan.pe_grid_width) *
         @as(u64, plan.pe_grid_height) *
         @as(u64, WSE3.PE_SRAM_BYTES);
@@ -153,7 +170,7 @@ pub fn estimateModelSramForPlan(config: ModelConfig, plan: HostPlan) SramEstimat
     };
 }
 
-fn effectiveKvCacheLayerCount(config: ModelConfig, plan: HostPlan) u32 {
+pub fn effectiveKvCacheLayerCount(config: ModelConfig, plan: HostPlan) u32 {
     var unaliased_layers: u32 = 0;
     var aliased_layers: u32 = 0;
 

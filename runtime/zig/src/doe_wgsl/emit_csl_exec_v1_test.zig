@@ -227,6 +227,43 @@ test "lowerJsonToHostPlan derives Gemma 4 routing from layerPattern and decode p
     try std.testing.expect(plan.decode_launches[2].sliding_window_size == null);
 }
 
+test "lowerJsonToHostPlan derives grid from model config when grid is omitted" {
+    const json_payload =
+        \\{
+        \\  "modelConfig": {
+        \\    "hiddenDim": 1536,
+        \\    "numHeads": 8,
+        \\    "headDim": 512,
+        \\    "numLayers": 35,
+        \\    "vocabSize": 262144,
+        \\    "maxSeqLen": 4096,
+        \\    "quantFormat": "q4k",
+        \\    "ffnExpansionFactor": 4,
+        \\    "ffnMatrixCount": 3,
+        \\    "pleWidth": 256,
+        \\    "pleVocabSize": 262144
+        \\  },
+        \\  "slidingWindowSize": 512,
+        \\  "steps": [
+        \\    { "phase": "prefill", "op": "embed", "kernelKey": "embed_gather" },
+        \\    { "phase": "decode", "op": "attention_sliding", "kernelKey": "attn_local", "attentionType": "sliding" },
+        \\    { "phase": "decode", "op": "kv_write", "kernelKey": "kv_write" },
+        \\    { "phase": "decode", "op": "sample", "kernelKey": "sampler", "kind": "sample" }
+        \\  ]
+        \\}
+    ;
+
+    var kernels: [8]host.KernelSpec = undefined;
+    var prefill: [8]host.LaunchSpec = undefined;
+    var decode: [8]host.LaunchSpec = undefined;
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+
+    const plan = try exec_v1.lowerJsonToHostPlan(arena.allocator(), json_payload, &kernels, &prefill, &decode);
+    try std.testing.expectEqual(@as(u32, 149), plan.pe_grid_width);
+    try std.testing.expectEqual(@as(u32, 117), plan.pe_grid_height);
+}
+
 test "lowerJsonToHostPlan lowers shared kv launch metadata" {
     const json_payload =
         \\{

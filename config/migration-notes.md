@@ -2,6 +2,79 @@
 
 ## 2026-04-05
 
+### Metal strict workload lane drops legacy Gemma3 plan workloads from the governed cohort and restores `buffer_write` coverage accounting
+
+- `config/backend-workload-cohorts.json`
+  - removes the Apple Metal Gemma3 270M plan-backed inference rows from the
+    governed cohort
+  - keeps those rows available as regression coverage instead of treating them
+    as governed strict-compare evidence
+  - rationale: the Apple strict compare preset is a commands-boundary lane, and
+    comparable plan-backed workloads must now use the normalized plan boundary
+- `config/webgpu-command-coverage-core.json`
+  - restores the missing `buffer_write` core ledger entry
+  - bumps `commandCount` from `10` to `11`
+- `config/webgpu-command-coverage-full.json`
+  - restores the missing `buffer_write` entry in `coreCoverage`
+  - bumps `coreCommandCount` from `10` to `11`
+  - bumps `totalCommandCount` from `24` to `25`
+- `runtime/zig/build.zig`
+  - fixes the `coverage-gate` build step to call
+    `bench/gates/split_coverage_gate.py`
+    instead of the stale repo-root path
+
+### Gemma 4 CSL bundle contracts add explicit memory/runtime artifacts and derived-grid lowering
+
+- `config/doe-wgsl-memory-plan.schema.json`
+  - adds the checked `csl_memory_plan` artifact contract
+  - records:
+    - derived PE grid
+    - PE count
+    - residency mode
+    - total/persistent/streamed byte counts
+    - per-PE working-set estimates
+    - explicit buffer placements
+    - explicit stream stages
+- `config/doe-wgsl-runtime-config.schema.json`
+  - adds the checked `csl_runtime_config` artifact contract
+  - fixes:
+    - `schemaVersion: 1`
+    - `artifactKind: "csl_runtime_config"`
+    - `target: "wse3"`
+    - `contract: "explicit_runtime_config"`
+    - `mode: "compile-only"`
+    - explicit `modelConfig`
+    - optional embedded `memoryPlan` summary
+    - explicit `stateBuffers`
+- `config/doe-wgsl-simulator-plan.schema.json`
+  - bumps `schemaVersion` from `1` to `2`
+  - adds optional `driver.executablePath` so checked plans and generated
+    bundles can point at a concrete driver executable without relying on the
+    env var alone
+- `runtime/zig/src/doe_wgsl/emit_csl_exec_v1.zig`
+  - now accepts missing `grid` in step-based execution-v1 lowering when
+    `modelConfig` is present
+  - derives the grid from the memory planner instead of requiring a hardcoded
+    `{ width, height }` in the execution contract
+  - still rejects `modelConfig` / `placementPolicy` on the legacy manifest
+    lowering path
+- `runtime/zig/src/csl_host_plan_tool.zig`
+  - now supports emitting a full checked bundle rooted at `--bundle-root`
+    instead of only `host-plan.json`
+  - generated bundles now include:
+    - `host-plan.json`
+    - `memory-plan.json`
+    - `runtime-config.json`
+    - `simulator-plan.json`
+    - `launch-simulator.sh`
+- consumers of checked examples should treat the new memory-plan and
+  runtime-config artifacts as part of the Gemma 4 CSL contract surface; these
+  are no longer implicit side calculations in host code
+- simulator-plan consumers should now resolve the driver in this order:
+  - explicit CLI override
+  - `driver.executablePath` from the plan
+  - `DOE_CSL_SIM_EXECUTABLE`
+
 ### CSL decode device state and broader `currentPosSource` host-plan semantics
 
 - `config/doe-wgsl-host-plan.schema.json`

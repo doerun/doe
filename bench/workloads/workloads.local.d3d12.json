@@ -171,8 +171,8 @@
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "rightTimingDivisor": 1.0,
       "claimEligible": false,
-      "benchmarkClass": "directional",
       "applesToApplesVetted": false,
+      "benchmarkClass": "directional",
       "workloadOrigin": "dawn_autodiscovered",
       "cohorts": [
         "exploration"
@@ -228,8 +228,8 @@
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "rightTimingDivisor": 1.0,
       "claimEligible": true,
-      "benchmarkClass": "directional",
       "applesToApplesVetted": false,
+      "benchmarkClass": "directional",
       "workloadOrigin": "dawn_autodiscovered",
       "cohorts": [
         "exploration"
@@ -254,10 +254,10 @@
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "rightTimingDivisor": 1.0,
       "claimEligible": true,
+      "applesToApplesVetted": false,
+      "benchmarkClass": "directional",
       "leftCommandRepeat": 10,
       "rightCommandRepeat": 10,
-      "benchmarkClass": "directional",
-      "applesToApplesVetted": false,
       "workloadOrigin": "dawn_autodiscovered",
       "cohorts": [
         "exploration"
@@ -282,8 +282,8 @@
       "timingNormalizationNote": "Directional macro workload: measure the full 200k-draw bundle command directly.",
       "rightTimingDivisor": 1.0,
       "claimEligible": true,
-      "benchmarkClass": "directional",
       "applesToApplesVetted": false,
+      "benchmarkClass": "directional",
       "workloadOrigin": "dawn_autodiscovered",
       "cohorts": [
         "exploration"
@@ -311,8 +311,8 @@
       "driver": "1.0.0",
       "timingNormalizationNote": "Directional-only: Apples-to-apples macro workload: normalize to per-draw units over 200k indexed draws with deferred queue sync.",
       "claimEligible": false,
-      "benchmarkClass": "directional",
       "applesToApplesVetted": false,
+      "benchmarkClass": "directional",
       "workloadOrigin": "dawn_autodiscovered",
       "cohorts": [
         "exploration"
@@ -341,8 +341,8 @@
       "leftTimingDivisor": 20000,
       "timingNormalizationNote": "Directional-only: Both sides report per-draw throughput units; Fawn issues indexed draws and Dawn uses the closest draw-call throughput proxy variant. Repeat=10 plus deferred queue sync reduces per-sample setup/sync overhead while preserving per-draw normalization.",
       "claimEligible": true,
-      "benchmarkClass": "directional",
       "applesToApplesVetted": false,
+      "benchmarkClass": "directional",
       "workloadOrigin": "dawn_autodiscovered",
       "cohorts": [
         "exploration"
@@ -367,10 +367,10 @@
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "rightTimingDivisor": 1.0,
       "claimEligible": true,
+      "applesToApplesVetted": false,
+      "benchmarkClass": "directional",
       "leftCommandRepeat": 10,
       "rightCommandRepeat": 10,
-      "benchmarkClass": "directional",
-      "applesToApplesVetted": false,
       "workloadOrigin": "dawn_autodiscovered",
       "cohorts": [
         "exploration"
@@ -395,8 +395,8 @@
       "timingNormalizationNote": "Directional macro workload: measure the full 200k-draw redundant-pipeline command directly.",
       "rightTimingDivisor": 1.0,
       "claimEligible": true,
-      "benchmarkClass": "directional",
       "applesToApplesVetted": false,
+      "benchmarkClass": "directional",
       "workloadOrigin": "dawn_autodiscovered",
       "cohorts": [
         "exploration"
@@ -421,8 +421,8 @@
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "rightTimingDivisor": 1.0,
       "claimEligible": true,
-      "benchmarkClass": "directional",
       "applesToApplesVetted": false,
+      "benchmarkClass": "directional",
       "workloadOrigin": "dawn_autodiscovered",
       "cohorts": [
         "exploration"
@@ -446,8 +446,8 @@
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "claimEligible": true,
-      "benchmarkClass": "directional",
       "applesToApplesVetted": false,
+      "benchmarkClass": "directional",
       "workloadOrigin": "dawn_autodiscovered",
       "cohorts": [
         "exploration"
@@ -472,8 +472,8 @@
       "dawnFilter": "@autodiscover",
       "rightTimingDivisor": 1.0,
       "claimEligible": true,
-      "benchmarkClass": "directional",
       "applesToApplesVetted": false,
+      "benchmarkClass": "directional",
       "workloadOrigin": "dawn_autodiscovered",
       "cohorts": [
         "exploration"
@@ -496,8 +496,8 @@
       "comparable": false,
       "timingNormalizationNote": "Directional proxy only: normalize per create/release operation pair.",
       "claimEligible": true,
-      "benchmarkClass": "directional",
       "applesToApplesVetted": false,
+      "benchmarkClass": "directional",
       "workloadOrigin": "dawn_autodiscovered",
       "cohorts": [
         "exploration"
@@ -523,9 +523,9 @@
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "rightTimingDivisor": 1.0,
       "claimEligible": true,
-      "rightCommandRepeat": 10,
-      "benchmarkClass": "directional",
       "applesToApplesVetted": false,
+      "benchmarkClass": "directional",
+      "rightCommandRepeat": 10,
       "workloadOrigin": "dawn_autodiscovered",
       "cohorts": [
         "exploration"
@@ -549,8 +549,8 @@
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "claimEligible": true,
-      "benchmarkClass": "directional",
       "applesToApplesVetted": false,
+      "benchmarkClass": "directional",
       "workloadOrigin": "dawn_autodiscovered",
       "cohorts": [
         "exploration"
@@ -576,9 +576,9 @@
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "rightTimingDivisor": 1.0,
       "claimEligible": true,
-      "rightCommandRepeat": 10,
-      "benchmarkClass": "directional",
       "applesToApplesVetted": false,
+      "benchmarkClass": "directional",
+      "rightCommandRepeat": 10,
       "workloadOrigin": "dawn_autodiscovered",
       "cohorts": [
         "exploration"
@@ -610,9 +610,9 @@
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "rightTimingDivisor": 1.0,
       "claimEligible": true,
-      "rightCommandRepeat": 500,
-      "benchmarkClass": "directional",
       "applesToApplesVetted": false,
+      "benchmarkClass": "directional",
+      "rightCommandRepeat": 500,
       "workloadOrigin": "dawn_autodiscovered",
       "cohorts": [
         "exploration"
@@ -989,8 +989,8 @@
       "commandsPath": "examples/dispatch_workgroups_commands.json",
       "comparabilityCandidate": {
         "enabled": true,
-        "tier": "targeted-dawn-parity",
-        "notes": "Promotable once a Dawn compute-dispatch parity contract is established."
+        "notes": "Promotable once a Dawn compute-dispatch parity contract is established.",
+        "tier": "targeted-dawn-parity"
       },
       "comparabilityNotes": "Directional-only D3D12 parity scaffold. This workload is included in local_d3d12_extended to mirror the common Metal/Vulkan extended set, but it is excluded from governed strict D3D12 comparable lanes pending Windows-backed evidence and D3D12-specific Dawn mapping validation.",
       "comparable": false,
@@ -1006,8 +1006,8 @@
       "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
       "timingNormalizationNote": "Directional dispatch contract only: normalize per fallback dispatch operation.",
       "vendor": "generic",
-      "workloadOrigin": "doe_contract_with_dawn_mapping",
       "claimEligible": false,
+      "workloadOrigin": "doe_contract_with_dawn_mapping",
       "cohorts": [
         "exploration"
       ]
@@ -1020,8 +1020,8 @@
       "commandsPath": "examples/compute_dispatch_grid_commands.json",
       "comparabilityCandidate": {
         "enabled": true,
-        "tier": "targeted-dawn-parity",
-        "notes": "Promotable once a Dawn multi-shape dispatch parity contract is established."
+        "notes": "Promotable once a Dawn multi-shape dispatch parity contract is established.",
+        "tier": "targeted-dawn-parity"
       },
       "comparabilityNotes": "Directional-only D3D12 parity scaffold. This workload is included in local_d3d12_extended to mirror the common Metal/Vulkan extended set, but it is excluded from governed strict D3D12 comparable lanes pending Windows-backed evidence and D3D12-specific Dawn mapping validation.",
       "comparable": false,
@@ -1037,8 +1037,8 @@
       "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
       "timingNormalizationNote": "Directional dispatch grid contract only: normalize across both-dispatch-sequence workload steps.",
       "vendor": "generic",
-      "workloadOrigin": "doe_contract_with_dawn_mapping",
       "claimEligible": false,
+      "workloadOrigin": "doe_contract_with_dawn_mapping",
       "cohorts": [
         "exploration"
       ]
@@ -1107,8 +1107,8 @@
       "commandsPath": "examples/copy_buffer_to_texture_commands.json",
       "comparabilityCandidate": {
         "enabled": true,
-        "tier": "targeted-dawn-parity",
-        "notes": "Promotable once a Dawn map exists for direct copy-path parity."
+        "notes": "Promotable once a Dawn map exists for direct copy-path parity.",
+        "tier": "targeted-dawn-parity"
       },
       "comparabilityNotes": "Directional-only D3D12 parity scaffold. This workload is included in local_d3d12_extended to mirror the common Metal/Vulkan extended set, but it is excluded from governed strict D3D12 comparable lanes pending Windows-backed evidence and D3D12-specific Dawn mapping validation.",
       "comparable": false,
@@ -1124,8 +1124,8 @@
       "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
       "timingNormalizationNote": "Directional copy contract only: normalize per copy command sequence.",
       "vendor": "generic",
-      "workloadOrigin": "doe_contract_with_dawn_mapping",
       "claimEligible": false,
+      "workloadOrigin": "doe_contract_with_dawn_mapping",
       "cohorts": [
         "exploration"
       ]
@@ -1138,8 +1138,8 @@
       "commandsPath": "examples/copy_protocol_commands.json",
       "comparabilityCandidate": {
         "enabled": true,
-        "tier": "targeted-dawn-parity",
-        "notes": "Promotable once Dawn benchmark coverage includes the same mixed protocol command sequence."
+        "notes": "Promotable once Dawn benchmark coverage includes the same mixed protocol command sequence.",
+        "tier": "targeted-dawn-parity"
       },
       "comparabilityNotes": "Directional-only D3D12 parity scaffold. This workload is included in local_d3d12_extended to mirror the common Metal/Vulkan extended set, but it is excluded from governed strict D3D12 comparable lanes pending Windows-backed evidence and D3D12-specific Dawn mapping validation.",
       "comparable": false,
@@ -1155,8 +1155,8 @@
       "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
       "timingNormalizationNote": "Directional mixed protocol contract only: normalize across one full mixed API sequence.",
       "vendor": "generic",
-      "workloadOrigin": "doe_contract_with_dawn_mapping",
       "claimEligible": false,
+      "workloadOrigin": "doe_contract_with_dawn_mapping",
       "cohorts": [
         "exploration"
       ]
@@ -1169,8 +1169,8 @@
       "commandsPath": "examples/copy_texture_to_buffer_commands.json",
       "comparabilityCandidate": {
         "enabled": true,
-        "tier": "targeted-dawn-parity",
-        "notes": "Promotable once a Dawn texture-to-buffer copy-path contract is established."
+        "notes": "Promotable once a Dawn texture-to-buffer copy-path contract is established.",
+        "tier": "targeted-dawn-parity"
       },
       "comparabilityNotes": "Directional-only D3D12 parity scaffold. This workload is included in local_d3d12_extended to mirror the common Metal/Vulkan extended set, but it is excluded from governed strict D3D12 comparable lanes pending Windows-backed evidence and D3D12-specific Dawn mapping validation.",
       "comparable": false,
@@ -1186,8 +1186,8 @@
       "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
       "timingNormalizationNote": "Directional texture-to-buffer copy contract only: normalize per copy command sequence.",
       "vendor": "generic",
-      "workloadOrigin": "doe_contract_with_dawn_mapping",
       "claimEligible": false,
+      "workloadOrigin": "doe_contract_with_dawn_mapping",
       "cohorts": [
         "exploration"
       ]
@@ -1200,8 +1200,8 @@
       "commandsPath": "examples/copy_texture_to_texture_commands.json",
       "comparabilityCandidate": {
         "enabled": true,
-        "tier": "targeted-dawn-parity",
-        "notes": "Promotable once a Dawn texture-to-texture copy-path contract is established."
+        "notes": "Promotable once a Dawn texture-to-texture copy-path contract is established.",
+        "tier": "targeted-dawn-parity"
       },
       "comparabilityNotes": "Directional-only D3D12 parity scaffold. This workload is included in local_d3d12_extended to mirror the common Metal/Vulkan extended set, but it is excluded from governed strict D3D12 comparable lanes pending Windows-backed evidence and D3D12-specific Dawn mapping validation.",
       "comparable": false,
@@ -1217,8 +1217,8 @@
       "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
       "timingNormalizationNote": "Directional texture-to-texture copy contract only: normalize per copy command sequence.",
       "vendor": "generic",
-      "workloadOrigin": "doe_contract_with_dawn_mapping",
       "claimEligible": false,
+      "workloadOrigin": "doe_contract_with_dawn_mapping",
       "cohorts": [
         "exploration"
       ]
@@ -1399,8 +1399,8 @@
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "benchmarkClass": "directional",
       "claimEligible": true,
-      "rightCommandRepeat": 100,
       "applesToApplesVetted": false,
+      "rightCommandRepeat": 100,
       "workloadOrigin": "dawn_autodiscovered",
       "cohorts": [
         "exploration"
@@ -1497,8 +1497,8 @@
       "commandsPath": "examples/surface_full_presentation_commands.json",
       "comparabilityCandidate": {
         "enabled": true,
-        "tier": "targeted-dawn-parity",
-        "notes": "Promotable once Dawn and platform surface-present parity is contractually mapped."
+        "notes": "Promotable once Dawn and platform surface-present parity is contractually mapped.",
+        "tier": "targeted-dawn-parity"
       },
       "comparabilityNotes": "Directional-only D3D12 parity scaffold. This workload is included in local_d3d12_extended to mirror the common Metal/Vulkan extended set, but it is excluded from governed strict D3D12 comparable lanes pending Windows-backed evidence and D3D12-specific Dawn mapping validation.",
       "comparable": false,

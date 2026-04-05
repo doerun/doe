@@ -1,4 +1,159 @@
 # Doe status
+## Metal coverage-gate wiring is repaired and the governed strict Metal lane no longer overclaims legacy Gemma3 plan workloads (2026-04-05 UTC)
+
+- `runtime/zig/build.zig` now points the `coverage-gate` build step at the
+  canonical `bench/gates/split_coverage_gate.py` path, so
+  `zig build coverage-gate` again exercises the real split-surface coverage
+  contract instead of failing on a stale script location
+- `config/webgpu-command-coverage-core.json` and
+  `config/webgpu-command-coverage-full.json` now include the previously missing
+  `buffer_write` core command:
+  - core coverage accounting once again matches the Zig core partition enum
+  - the full-surface ledger once again matches the core + full-only partition
+    counts
+- `config/backend-workload-cohorts.json` removes the Gemma3 270M plan-backed
+  inference workloads from the Apple Metal governed cohort:
+  - those workloads remain available as regression/exploration coverage
+  - the governed strict Apple compare lane now limits itself to the
+    commands-boundary workloads it is actually configured to execute
+  - this avoids strict compare failures from plan-backed rows until the Apple
+    Metal governed preset is upgraded to a plan-boundary executor pair
+- verification target for this contract/gating fix:
+  - `zig build coverage-gate`
+  - `python3 bench/tools/generate_backend_workloads.py`
+  - `python3 bench/tools/generate_workload_overlap_map.py`
+  - `python3 bench/native-compare/compare_dawn_vs_doe.py --config bench/native-compare/compare_dawn_vs_doe.config.apple.metal.compare.json`
+
+## Runtime build/test closure is restored on macOS and the drop-in library now links its native immediates/render-control shims without unresolved `doeNative*` symbols (2026-04-05 UTC)
+
+- `runtime/zig/src/wgpu_dropin_ext_a_core.zig` and
+  `runtime/zig/src/wgpu_dropin_ext_b.zig` no longer declare the local Doe
+  immediates/render-control entry points as unresolved `extern fn`s inside the
+  same link unit:
+  - the drop-in layer now calls the imported Doe native functions directly
+  - `zig build dropin` and the default `zig build` now complete on macOS
+    without the earlier unresolved
+    `doeNativeComputePassSetImmediates` /
+    `doeNativeRenderPassSetViewport` family
+- `runtime/zig/src/model.zig` now rebuilds the compatibility export surface
+  from the shard modules directly instead of importing the banned
+  `model_runtime_types.zig` facade:
+  - the aggregate model surface again exposes the quirk types used by
+    `trace.zig`, `quirk/*`, and the core model tests
+  - the core/full import-fence check no longer fails on `src/model.zig`
+- `runtime/zig/src/backend/vulkan/vk_render.zig` now carries the widened
+  texture metadata (`depth_or_array_layers`, `sample_count`, `dimension`,
+  `view_dimension`, `aspect`) through render-target binding/allocation paths so
+  the newer `TextureResource` shape is consistent across both runtime and tests
+- `runtime/zig/build.zig` now prefers the checked-in precompiled macOS `.icns`
+  asset for the app bundle and only falls back to SVG conversion if that asset
+  is absent:
+  - plain `zig build` no longer depends on ImageMagick `convert` just to build
+    the app bundle on hosts that already have the committed icon artifact
+- `runtime/zig/test_suite.zig` now scopes the Vulkan aggregate test imports to
+  Linux, matching the repo’s current Vulkan runtime scope instead of attempting
+  to link Vulkan loader symbols on macOS hosts with no loader installed
+- `runtime/zig/src/backend/metal/metal_runtime_resources.zig` updates the
+  keyed-workgroup-size unit test to match the normalized default-entrypoint
+  cache-key contract (`kernel` instead of `kernel#main`)
+- verification for this closure pass:
+  - `zig build dropin`
+  - `zig build`
+  - `zig build test`
+
+## Metal runtime removes the hard deferred-dispatch/map cap and Vulkan texture validation now respects real resource metadata (2026-04-05 UTC)
+
+- `runtime/zig/src/backend/metal/metal_dispatch_runtime.zig` no longer hard
+  rejects `queueSyncMode: "deferred"` for plain and indirect compute dispatch:
+  - deferred dispatches now encode onto a real command buffer, commit without a
+    CPU wait, and track the latest in-flight submission through the existing
+    shared-event / `outstanding_cmd_buf` path
+  - dispatch commits now also honor pending copy-queue fences before compute
+    execution instead of bypassing the existing copy-to-main-queue ordering
+    contract
+- `runtime/zig/src/backend/metal/metal_async_runtime.zig` no longer blocks
+  `map_async` at a hardcoded `256 MiB`; it now checks the actual Metal device
+  `maxBufferLength` via the bridge and fails only when the requested map size
+  exceeds the device-reported buffer limit
+- `runtime/zig/src/backend/metal/metal_surface_runtime.zig`,
+  `runtime/zig/src/backend/metal/metal_surface_bridge.m`, and
+  `runtime/zig/src/backend/metal/metal_surface_bridge.h` now plumb
+  `toneMappingMode` through native Metal surface configuration:
+  - standard tone mapping still works on the existing 8-bit swapchain formats
+  - extended tone mapping is now accepted on `RGBA16Float` surfaces and sets an
+    explicit extended-linear-sRGB surface colorspace instead of failing closed
+    at the Zig entrypoint
+- `runtime/zig/src/backend/vulkan/vk_resources.zig`,
+  `runtime/zig/src/backend/vulkan/vk_pipeline.zig`, and
+  `runtime/zig/src/backend/vulkan/vk_texture_commands.zig` now preserve and use
+  actual Vulkan texture metadata:
+  - texture resources now retain `depth_or_array_layers`, `sample_count`,
+    `dimension`, `view_dimension`, and `aspect`
+  - `texture_query` now validates against those real stored values instead of
+    assuming every texture is `2D`, single-layer, and sample-count `1`
+  - compute binding validation now checks the actual resource view-dimension and
+    multisample state instead of blanket-rejecting every non-`2D` /
+    multisampled texture binding
+- verification for this runtime pass:
+  - `zig build test-wgsl`
+  - `zig build doe-runtime`
+- repo-wide `zig build test` is still failing for an unrelated baseline problem
+  in `src/model.zig` / `test_suite.zig`; this backend work did not attempt to
+  repair that broader test harness break
+
+## Gemma 4 CSL bundle lowering now emits explicit memory/runtime artifacts, derives the PE grid from model config, and can launch the checked simulator plan without env-only driver wiring (2026-04-05 UTC)
+
+- `runtime/zig/src/doe_wgsl/emit_csl_mem_plan.zig` now emits an explicit
+  memory-plan artifact instead of a coarse SRAM guess:
+  - derives the smallest fitting PE rectangle from `modelConfig` plus optional
+    `placementPolicy`
+  - chooses an explicit residency mode (`full_resident` or
+    `layer_streaming`)
+  - models persistent buffers, streamed buffers, and stream stages separately
+  - accounts for Gemma 4 PLE tables/projection/norm, KV cache, activation
+    scratch, decode-position state, sliding-window state, and output logits
+- `runtime/zig/src/doe_wgsl/emit_csl_host.zig` now includes configurable FFN
+  matrix count plus Gemma 4 PLE bytes in the model/SRAM estimates, and exports
+  shared-KV layer counting so the memory planner can deduplicate aliased KV
+  state instead of charging one cache per layer unconditionally
+- `runtime/zig/src/doe_wgsl/emit_csl_exec_v1.zig` now accepts step plans with
+  no explicit `grid` when they provide `modelConfig`; lowering derives the grid
+  from the memory planner and fails closed on manifest-mode attempts to smuggle
+  the newer placement/model metadata through the legacy path
+- `runtime/zig/src/doe_wgsl/emit_csl_host_runtime.zig`,
+  `runtime/zig/src/doe_wgsl/emit_csl_simulator.zig`, and
+  `runtime/zig/src/csl_host_plan_tool.zig` now emit a complete compile-only
+  bundle contract:
+  - `host-plan.json`
+  - `memory-plan.json`
+  - `runtime-config.json`
+  - `simulator-plan.json`
+  - `launch-simulator.sh`
+- `runtime/zig/src/csl_sim_runner.zig` now resolves the driver in the actual
+  documented order:
+  - `--driver-executable`
+  - `plan.driver.executablePath`
+  - `DOE_CSL_SIM_EXECUTABLE`
+- new checked artifacts and schemas landed for:
+  - `config/doe-wgsl-memory-plan.schema.json`
+  - `config/doe-wgsl-runtime-config.schema.json`
+  - `config/doe-wgsl-simulator-plan.schema.json` schema version `2`
+  - `examples/doe-wgsl-memory-plan.gemma-4-e2b-smoke.json`
+  - `examples/doe-wgsl-runtime-config.gemma-4-e2b-smoke.json`
+  - `examples/doe-wgsl-simulator-plan.gemma-4-e2b-smoke.json`
+- verification now covers:
+  - `zig build test-wgsl`
+  - `zig build csl-host-plan-tool`
+  - targeted positive schema checks for the Gemma 4 memory-plan,
+    runtime-config, and simulator-plan artifacts
+- local closure is now split cleanly:
+  - repo-side compile/simulator contracts are closed and locally executable
+    through the checked bundle and driver path
+  - actual Cerebras compilation still requires an installed `cslc`
+  - actual simulator/runtime parity still requires the external Cerebras SDK
+    lane; Doe now records those missing externals explicitly instead of failing
+    on missing in-repo wiring
+
 ## Gemma 4 CSL lowering now uses explicit decode device state, derives hybrid attention from layer metadata, and rejects unsupported manifest shortcuts (2026-04-05 UTC)
 
 - `runtime/zig/src/doe_wgsl/emit_csl_attention.zig`,

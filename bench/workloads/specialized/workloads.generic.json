@@ -17,11 +17,11 @@
       "name": "kernel-dispatch stress",
       "quirksPath": "examples/quirks/intel_gen12_temp_buffer_list.json",
       "vendor": "intel",
+      "claimEligible": false,
       "suiteTags": [
         "exploration",
         "extended"
       ],
-      "claimEligible": false,
       "benchmarkClass": "directional",
       "workloadOrigin": "dawn_benchmark"
     },
@@ -47,11 +47,11 @@
       ],
       "comparable": true,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "claimEligible": true,
       "suiteTags": [
         "release",
         "extended"
       ],
-      "claimEligible": true,
       "benchmarkClass": "comparable",
       "workloadOrigin": "dawn_benchmark"
     },
@@ -77,11 +77,11 @@
       ],
       "comparable": true,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "claimEligible": true,
       "suiteTags": [
         "release",
         "extended"
       ],
-      "claimEligible": true,
       "benchmarkClass": "comparable",
       "workloadOrigin": "dawn_benchmark"
     },
@@ -107,11 +107,11 @@
       ],
       "comparable": true,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "claimEligible": true,
       "suiteTags": [
         "release",
         "extended"
       ],
-      "claimEligible": true,
       "benchmarkClass": "comparable",
       "workloadOrigin": "dawn_benchmark"
     },
@@ -137,10 +137,10 @@
       "default": true,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "dawnFilter": "WorkgroupAtomicPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151__WorkgroupUsageType_WorkgroupTypeAtomic",
+      "claimEligible": true,
       "suiteTags": [
         "release"
       ],
-      "claimEligible": true,
       "benchmarkClass": "comparable",
       "workloadOrigin": "dawn_benchmark"
     },
@@ -166,10 +166,10 @@
       "comparable": true,
       "default": true,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "claimEligible": true,
       "suiteTags": [
         "release"
       ],
-      "claimEligible": true,
       "benchmarkClass": "comparable",
       "workloadOrigin": "dawn_benchmark"
     },
@@ -193,11 +193,11 @@
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "rightTimingDivisor": 1.0,
+      "claimEligible": false,
       "suiteTags": [
         "exploration",
         "extended"
       ],
-      "claimEligible": false,
       "benchmarkClass": "directional",
       "workloadOrigin": "dawn_benchmark"
     },
@@ -223,11 +223,11 @@
       ],
       "comparable": true,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
+      "claimEligible": true,
       "suiteTags": [
         "release",
         "extended"
       ],
-      "claimEligible": true,
       "benchmarkClass": "comparable",
       "workloadOrigin": "dawn_benchmark"
     },
@@ -250,11 +250,11 @@
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "rightTimingDivisor": 1.0,
+      "claimEligible": true,
       "suiteTags": [
         "release",
         "extended"
       ],
-      "claimEligible": true,
       "leftCommandRepeat": 10,
       "rightCommandRepeat": 10,
       "benchmarkClass": "comparable",
@@ -279,11 +279,11 @@
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "rightTimingDivisor": 1.0,
+      "claimEligible": true,
       "suiteTags": [
         "release",
         "extended"
       ],
-      "claimEligible": true,
       "leftCommandRepeat": 10,
       "rightCommandRepeat": 10,
       "benchmarkClass": "comparable",
@@ -308,13 +308,13 @@
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Directional macro workload: measure the full 200k-draw bundle command directly.",
       "rightTimingDivisor": 1.0,
+      "claimEligible": true,
       "suiteTags": [
         "release",
         "extended"
       ],
-      "claimEligible": true,
-      "benchmarkClass": "directional",
       "applesToApplesVetted": false,
+      "benchmarkClass": "directional",
       "workloadOrigin": "dawn_benchmark"
     },
     {
@@ -338,11 +338,11 @@
       "family": "gen12",
       "driver": "31.0.101",
       "timingNormalizationNote": "Directional macro workload: normalize to per-draw units over 200k indexed draws with deferred queue sync.",
+      "claimEligible": false,
       "suiteTags": [
         "exploration",
         "extended"
       ],
-      "claimEligible": false,
       "benchmarkClass": "directional",
       "workloadOrigin": "dawn_benchmark"
     },
@@ -369,11 +369,11 @@
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "rightTimingDivisor": 1.0,
+      "claimEligible": true,
       "suiteTags": [
         "release",
         "extended"
       ],
-      "claimEligible": true,
       "rightCommandRepeat": 10,
       "benchmarkClass": "directional",
       "workloadOrigin": "dawn_benchmark"
@@ -397,11 +397,11 @@
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "rightTimingDivisor": 1.0,
+      "claimEligible": true,
       "suiteTags": [
         "release",
         "extended"
       ],
-      "claimEligible": true,
       "benchmarkClass": "comparable",
       "workloadOrigin": "dawn_benchmark"
     },
@@ -424,13 +424,13 @@
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Directional macro workload: measure the full 200k-draw redundant-pipeline command directly.",
       "rightTimingDivisor": 1.0,
+      "claimEligible": true,
       "suiteTags": [
         "release",
         "extended"
       ],
-      "claimEligible": true,
-      "benchmarkClass": "directional",
       "applesToApplesVetted": false,
+      "benchmarkClass": "directional",
       "workloadOrigin": "dawn_benchmark"
     },
     {
@@ -452,11 +452,11 @@
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "rightTimingDivisor": 1.0,
+      "claimEligible": true,
       "suiteTags": [
         "release",
         "extended"
       ],
-      "claimEligible": true,
       "benchmarkClass": "comparable",
       "workloadOrigin": "dawn_benchmark"
     },
@@ -478,11 +478,11 @@
       "comparable": false,
       "leftTimingDivisor": 200000,
       "timingNormalizationNote": "Directional macro workload: normalize to per-draw units over 200k draws.",
+      "claimEligible": true,
       "suiteTags": [
         "release",
         "extended"
       ],
-      "claimEligible": true,
       "benchmarkClass": "directional",
       "workloadOrigin": "dawn_benchmark"
     },
@@ -504,11 +504,11 @@
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "dawnFilter": "DrawCallPerf.Run/Vulkan_AMD_Radeon_Graphics__RADV_GFX1151",
       "rightTimingDivisor": 1.0,
+      "claimEligible": true,
       "suiteTags": [
         "release",
         "extended"
       ],
-      "claimEligible": true,
       "benchmarkClass": "comparable",
       "workloadOrigin": "dawn_benchmark"
     },
@@ -529,11 +529,11 @@
       "extraArgs": [],
       "comparable": false,
       "timingNormalizationNote": "Directional lifecycle-only contract workload.",
+      "claimEligible": true,
       "suiteTags": [
         "release",
         "extended"
       ],
-      "claimEligible": true,
       "benchmarkClass": "directional",
       "workloadOrigin": "dawn_benchmark"
     },
@@ -557,11 +557,11 @@
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "rightTimingDivisor": 1.0,
+      "claimEligible": true,
       "suiteTags": [
         "release",
         "extended"
       ],
-      "claimEligible": true,
       "rightCommandRepeat": 10,
       "benchmarkClass": "comparable",
       "workloadOrigin": "dawn_benchmark"
@@ -584,11 +584,11 @@
       "comparable": false,
       "leftTimingDivisor": 500,
       "timingNormalizationNote": "Directional macro workload: normalize to per-iteration units over a 500-draw texture lifecycle command stream.",
+      "claimEligible": true,
       "suiteTags": [
         "release",
         "extended"
       ],
-      "claimEligible": true,
       "benchmarkClass": "directional",
       "workloadOrigin": "dawn_benchmark"
     },
@@ -612,11 +612,11 @@
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "rightTimingDivisor": 1.0,
+      "claimEligible": true,
       "suiteTags": [
         "release",
         "extended"
       ],
-      "claimEligible": true,
       "rightCommandRepeat": 10,
       "benchmarkClass": "comparable",
       "workloadOrigin": "dawn_benchmark"
@@ -644,11 +644,11 @@
       "leftTimingDivisor": 1.0,
       "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0).",
       "rightTimingDivisor": 1.0,
+      "claimEligible": true,
       "suiteTags": [
         "release",
         "extended"
       ],
-      "claimEligible": true,
       "rightCommandRepeat": 50,
       "benchmarkClass": "comparable",
       "workloadOrigin": "dawn_benchmark"

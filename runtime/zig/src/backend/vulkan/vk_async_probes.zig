@@ -73,6 +73,8 @@ pub fn resource_table_immediates_probe(
             1,
             1,
             model_gpu_types.WGPUTextureDimension_2D,
+            model_gpu_types.WGPUTextureViewDimension_Undefined,
+            model_gpu_types.WGPUTextureAspect_Undefined,
             RTI_TEXTURE_FORMAT,
             model_gpu_types.WGPUTextureUsage_CopyDst | model_gpu_types.WGPUTextureUsage_TextureBinding,
         );
@@ -208,6 +210,8 @@ pub fn pixel_local_storage_probe(
             1,
             1,
             model_gpu_types.WGPUTextureDimension_2D,
+            model_gpu_types.WGPUTextureViewDimension_Undefined,
+            model_gpu_types.WGPUTextureAspect_Undefined,
             format,
             model_gpu_types.WGPUTextureUsage_RenderAttachment | model_gpu_types.WGPUTextureUsage_TextureBinding,
         );
