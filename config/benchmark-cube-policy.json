@@ -89,6 +89,9 @@
         "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback.",
         "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity.",
         "Windows D3D12 strict comparable coverage is currently limited to compute, upload, pipeline, and p0-resource contracts; render and texture rows remain out of scope until native D3D12 coverage expands."
+      ],
+      "comparisonViews": [
+        "doe_vs_dawn"
       ]
     },
     {
@@ -119,6 +122,9 @@
       "notes": [
         "Node is the primary supported package surface for doe-gpu.",
         "Node package comparisons are runtime/package evidence and do not replace strict backend reports."
+      ],
+      "comparisonViews": [
+        "doe_node_vs_dawn_node"
       ]
     },
     {
@@ -149,6 +155,9 @@
       "notes": [
         "Bun has API parity with Node through the package-default Bun runtime entry. Compare lane: bench/package-compare/bun/compare.js against the bun-webgpu package.",
         "Do not cite Bun cells as package parity until they are populated by comparable artifacts."
+      ],
+      "comparisonViews": [
+        "doe_bun_vs_bun_webgpu"
       ]
     }
   ],
@@ -218,6 +227,54 @@
       "domains": [
         "overhead"
       ]
+    }
+  ],
+  "providerSets": [
+    {
+      "id": "backend_native_providers",
+      "providers": [
+        "doe",
+        "dawn",
+        "webkit",
+        "wgpu-native"
+      ]
+    },
+    {
+      "id": "package_node_providers",
+      "providers": [
+        "doe",
+        "dawn-node-webgpu"
+      ]
+    },
+    {
+      "id": "package_bun_providers",
+      "providers": [
+        "doe",
+        "bun-webgpu"
+      ]
+    }
+  ],
+  "comparisonViews": [
+    {
+      "id": "doe_vs_dawn",
+      "providerSet": "backend_native_providers",
+      "displayName": "Doe vs Dawn",
+      "left": "doe",
+      "right": "dawn"
+    },
+    {
+      "id": "doe_node_vs_dawn_node",
+      "providerSet": "package_node_providers",
+      "displayName": "Doe Node vs Dawn Node",
+      "left": "doe",
+      "right": "dawn-node-webgpu"
+    },
+    {
+      "id": "doe_bun_vs_bun_webgpu",
+      "providerSet": "package_bun_providers",
+      "displayName": "Doe Bun vs bun-webgpu",
+      "left": "doe",
+      "right": "bun-webgpu"
     }
   ]
 }

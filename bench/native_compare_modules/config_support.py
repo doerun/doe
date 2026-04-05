@@ -166,6 +166,13 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument("--workloads", default=DEFAULT_WORKLOADS_PATH)
+    parser.add_argument("--boundary", default="")
+    parser.add_argument("--runtime-host", default="")
+    parser.add_argument("--temperature", default="")
+    parser.add_argument("--comparison-view", default="")
+    parser.add_argument("--provider-set", default="")
+    parser.add_argument("--left-provider-id", default="")
+    parser.add_argument("--right-provider-id", default="")
     parser.add_argument(
         "--left-name",
         default=DEFAULT_LEFT_NAME,
@@ -393,6 +400,53 @@ def apply_config_defaults(args: argparse.Namespace) -> argparse.Namespace:
         value = first_config_value(payload, ["workloads"])
         if value is not None:
             args.workloads = as_str(value, field="workloads")
+
+    if not args.boundary:
+        value = first_config_value(payload, ["comparison.boundary", "comparisonAxes.boundary"])
+        if value is not None:
+            args.boundary = as_str(value, field="comparison.boundary")
+    if not args.runtime_host:
+        value = first_config_value(
+            payload,
+            ["comparison.runtimeHost", "comparisonAxes.runtimeHost"],
+        )
+        if value is not None:
+            args.runtime_host = as_str(value, field="comparison.runtimeHost")
+    if not args.temperature:
+        value = first_config_value(
+            payload,
+            ["comparison.temperature", "comparisonAxes.temperature"],
+        )
+        if value is not None:
+            args.temperature = as_str(value, field="comparison.temperature")
+    if not args.comparison_view:
+        value = first_config_value(
+            payload,
+            ["comparison.view", "comparison.comparisonView", "comparisonAxes.comparisonView"],
+        )
+        if value is not None:
+            args.comparison_view = as_str(value, field="comparison.view")
+    if not args.provider_set:
+        value = first_config_value(
+            payload,
+            ["comparison.providerSet", "comparisonAxes.providerSet"],
+        )
+        if value is not None:
+            args.provider_set = as_str(value, field="comparison.providerSet")
+    if not args.left_provider_id:
+        value = first_config_value(
+            payload,
+            ["comparison.leftProviderId", "comparison.participants.left.id"],
+        )
+        if value is not None:
+            args.left_provider_id = as_str(value, field="comparison.leftProviderId")
+    if not args.right_provider_id:
+        value = first_config_value(
+            payload,
+            ["comparison.rightProviderId", "comparison.participants.right.id"],
+        )
+        if value is not None:
+            args.right_provider_id = as_str(value, field="comparison.rightProviderId")
 
     if args.left_name == DEFAULT_LEFT_NAME:
         value = first_config_value(payload, ["left.name", "leftName"])

@@ -6,7 +6,7 @@ Doe Zig runtime inside Chromium to replace Dawn at `navigator.gpu`.
 This is **not** the browser wrapper in `packages/doe-gpu/src/browser.js`. That
 wrapper is a JS shim inside the `doe-gpu` package that delegates to
 the browser's own WebGPU implementation. It exists today and runs no Doe code.
-See the root `README.md` stack diagram for the wrapper's role.
+See the "Package layer stack" diagram in the root `README.md` for the wrapper's role.
 
 ```text
 ┌──────────────────────────────────────────────────────────────┐

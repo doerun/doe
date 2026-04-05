@@ -4,6 +4,15 @@
     {
       "id": "amd-vulkan-native-smoke",
       "backend": "amd-vulkan",
+      "boundary": "backend_native",
+      "runtimeHost": "none",
+      "temperature": "default",
+      "comparisonView": "doe_vs_dawn_delegate",
+      "providerSet": "backend_native_providers",
+      "providers": [
+        "doe",
+        "dawn"
+      ],
       "surface": "native",
       "preset": "smoke",
       "mode": "default",
@@ -16,6 +25,15 @@
     {
       "id": "amd-vulkan-native-smoke-gpu",
       "backend": "amd-vulkan",
+      "boundary": "backend_native",
+      "runtimeHost": "none",
+      "temperature": "default",
+      "comparisonView": "doe_vs_dawn_delegate",
+      "providerSet": "backend_native_providers",
+      "providers": [
+        "doe",
+        "dawn"
+      ],
       "surface": "native",
       "preset": "smoke-gpu",
       "mode": "default",
@@ -28,6 +46,15 @@
     {
       "id": "amd-vulkan-native-compare-dev",
       "backend": "amd-vulkan",
+      "boundary": "backend_native",
+      "runtimeHost": "none",
+      "temperature": "default",
+      "comparisonView": "doe_vs_dawn_delegate",
+      "providerSet": "backend_native_providers",
+      "providers": [
+        "doe",
+        "dawn"
+      ],
       "surface": "native",
       "preset": "compare-dev",
       "mode": "default",
@@ -40,6 +67,15 @@
     {
       "id": "amd-vulkan-native-compare",
       "backend": "amd-vulkan",
+      "boundary": "backend_native",
+      "runtimeHost": "none",
+      "temperature": "default",
+      "comparisonView": "doe_vs_dawn_delegate",
+      "providerSet": "backend_native_providers",
+      "providers": [
+        "doe",
+        "dawn"
+      ],
       "surface": "native",
       "preset": "compare",
       "mode": "default",
@@ -52,6 +88,15 @@
     {
       "id": "amd-vulkan-native-frontier",
       "backend": "amd-vulkan",
+      "boundary": "backend_native",
+      "runtimeHost": "none",
+      "temperature": "default",
+      "comparisonView": "doe_vs_dawn_delegate",
+      "providerSet": "backend_native_providers",
+      "providers": [
+        "doe",
+        "dawn"
+      ],
       "surface": "native",
       "preset": "frontier",
       "mode": "default",
@@ -64,6 +109,15 @@
     {
       "id": "amd-vulkan-native-explore",
       "backend": "amd-vulkan",
+      "boundary": "backend_native",
+      "runtimeHost": "none",
+      "temperature": "default",
+      "comparisonView": "doe_vs_dawn_delegate",
+      "providerSet": "backend_native_providers",
+      "providers": [
+        "doe",
+        "dawn"
+      ],
       "surface": "native",
       "preset": "explore",
       "mode": "default",
@@ -76,6 +130,15 @@
     {
       "id": "amd-vulkan-native-release",
       "backend": "amd-vulkan",
+      "boundary": "backend_native",
+      "runtimeHost": "none",
+      "temperature": "default",
+      "comparisonView": "doe_vs_dawn_delegate",
+      "providerSet": "backend_native_providers",
+      "providers": [
+        "doe",
+        "dawn"
+      ],
       "surface": "native",
       "preset": "release",
       "mode": "default",
@@ -88,6 +151,15 @@
     {
       "id": "apple-metal-native-smoke",
       "backend": "apple-metal",
+      "boundary": "backend_native",
+      "runtimeHost": "none",
+      "temperature": "default",
+      "comparisonView": "doe_vs_dawn_delegate",
+      "providerSet": "backend_native_providers",
+      "providers": [
+        "doe",
+        "dawn"
+      ],
       "surface": "native",
       "preset": "smoke",
       "mode": "default",
@@ -100,6 +172,15 @@
     {
       "id": "apple-metal-native-compare-dev",
       "backend": "apple-metal",
+      "boundary": "backend_native",
+      "runtimeHost": "none",
+      "temperature": "default",
+      "comparisonView": "doe_vs_dawn_delegate",
+      "providerSet": "backend_native_providers",
+      "providers": [
+        "doe",
+        "dawn"
+      ],
       "surface": "native",
       "preset": "compare-dev",
       "mode": "default",
@@ -112,6 +193,15 @@
     {
       "id": "apple-metal-native-compare",
       "backend": "apple-metal",
+      "boundary": "backend_native",
+      "runtimeHost": "none",
+      "temperature": "default",
+      "comparisonView": "doe_vs_dawn_delegate",
+      "providerSet": "backend_native_providers",
+      "providers": [
+        "doe",
+        "dawn"
+      ],
       "surface": "native",
       "preset": "compare",
       "mode": "default",
@@ -124,6 +214,15 @@
     {
       "id": "apple-metal-native-frontier",
       "backend": "apple-metal",
+      "boundary": "backend_native",
+      "runtimeHost": "none",
+      "temperature": "default",
+      "comparisonView": "doe_vs_dawn_delegate",
+      "providerSet": "backend_native_providers",
+      "providers": [
+        "doe",
+        "dawn"
+      ],
       "surface": "native",
       "preset": "frontier",
       "mode": "default",
@@ -136,6 +235,15 @@
     {
       "id": "apple-metal-native-explore",
       "backend": "apple-metal",
+      "boundary": "backend_native",
+      "runtimeHost": "none",
+      "temperature": "default",
+      "comparisonView": "doe_vs_dawn_delegate",
+      "providerSet": "backend_native_providers",
+      "providers": [
+        "doe",
+        "dawn"
+      ],
       "surface": "native",
       "preset": "explore",
       "mode": "default",
@@ -148,6 +256,15 @@
     {
       "id": "apple-metal-native-release",
       "backend": "apple-metal",
+      "boundary": "backend_native",
+      "runtimeHost": "none",
+      "temperature": "default",
+      "comparisonView": "doe_vs_dawn_delegate",
+      "providerSet": "backend_native_providers",
+      "providers": [
+        "doe",
+        "dawn"
+      ],
       "surface": "native",
       "preset": "release",
       "mode": "default",
@@ -160,6 +277,15 @@
     {
       "id": "apple-metal-native-breadth",
       "backend": "apple-metal",
+      "boundary": "backend_native",
+      "runtimeHost": "none",
+      "temperature": "default",
+      "comparisonView": "doe_vs_dawn_delegate",
+      "providerSet": "backend_native_providers",
+      "providers": [
+        "doe",
+        "dawn"
+      ],
       "surface": "native",
       "preset": "breadth",
       "mode": "default",
@@ -172,6 +298,15 @@
     {
       "id": "apple-metal-gemma64-direct",
       "backend": "apple-metal",
+      "boundary": "direct_plan",
+      "runtimeHost": "none",
+      "temperature": "default",
+      "comparisonView": "doe_vs_dawn_direct",
+      "providerSet": "direct_plan_providers",
+      "providers": [
+        "doe",
+        "dawn"
+      ],
       "surface": "direct",
       "workload": "gemma64",
       "mode": "default",
@@ -184,6 +319,15 @@
     {
       "id": "apple-metal-gemma1b-direct",
       "backend": "apple-metal",
+      "boundary": "direct_plan",
+      "runtimeHost": "none",
+      "temperature": "default",
+      "comparisonView": "doe_vs_dawn_direct",
+      "providerSet": "direct_plan_providers",
+      "providers": [
+        "doe",
+        "dawn"
+      ],
       "surface": "direct",
       "workload": "gemma1b",
       "mode": "default",
@@ -196,6 +340,15 @@
     {
       "id": "apple-metal-gemma270m-literal-direct",
       "backend": "apple-metal",
+      "boundary": "direct_plan",
+      "runtimeHost": "none",
+      "temperature": "default",
+      "comparisonView": "doe_vs_dawn_direct",
+      "providerSet": "direct_plan_providers",
+      "providers": [
+        "doe",
+        "dawn"
+      ],
       "surface": "direct",
       "workload": "gemma270m-literal",
       "mode": "default",
@@ -208,10 +361,19 @@
     {
       "id": "apple-metal-gemma64-package-cold",
       "backend": "apple-metal",
+      "boundary": "package_surface",
+      "runtimeHost": "node",
+      "temperature": "cold",
+      "comparisonView": "doe_vs_dawn_node_webgpu",
+      "providerSet": "package_node_providers",
+      "providers": [
+        "doe",
+        "dawn-node-webgpu"
+      ],
       "surface": "package",
-      "packageRuntime": "node",
       "workload": "gemma64",
       "mode": "cold",
+      "packageRuntime": "node",
       "benchmarkClass": "package-surface",
       "leftExecutorId": "doe_node_webgpu",
       "rightExecutorId": "dawn_node_webgpu",
@@ -221,10 +383,19 @@
     {
       "id": "apple-metal-gemma64-package-warm",
       "backend": "apple-metal",
+      "boundary": "package_surface",
+      "runtimeHost": "node",
+      "temperature": "warm",
+      "comparisonView": "doe_vs_dawn_node_webgpu",
+      "providerSet": "package_node_providers",
+      "providers": [
+        "doe",
+        "dawn-node-webgpu"
+      ],
       "surface": "package",
-      "packageRuntime": "node",
       "workload": "gemma64",
       "mode": "warm",
+      "packageRuntime": "node",
       "benchmarkClass": "package-surface",
       "leftExecutorId": "doe_node_webgpu_prepared",
       "rightExecutorId": "dawn_node_webgpu_prepared",
@@ -234,10 +405,19 @@
     {
       "id": "apple-metal-gemma1b-package-cold",
       "backend": "apple-metal",
+      "boundary": "package_surface",
+      "runtimeHost": "node",
+      "temperature": "cold",
+      "comparisonView": "doe_vs_dawn_node_webgpu",
+      "providerSet": "package_node_providers",
+      "providers": [
+        "doe",
+        "dawn-node-webgpu"
+      ],
       "surface": "package",
-      "packageRuntime": "node",
       "workload": "gemma1b",
       "mode": "cold",
+      "packageRuntime": "node",
       "benchmarkClass": "package-surface",
       "leftExecutorId": "doe_node_webgpu",
       "rightExecutorId": "dawn_node_webgpu",
@@ -247,10 +427,19 @@
     {
       "id": "apple-metal-gemma1b-package-warm",
       "backend": "apple-metal",
+      "boundary": "package_surface",
+      "runtimeHost": "node",
+      "temperature": "warm",
+      "comparisonView": "doe_vs_dawn_node_webgpu",
+      "providerSet": "package_node_providers",
+      "providers": [
+        "doe",
+        "dawn-node-webgpu"
+      ],
       "surface": "package",
-      "packageRuntime": "node",
       "workload": "gemma1b",
       "mode": "warm",
+      "packageRuntime": "node",
       "benchmarkClass": "package-surface",
       "leftExecutorId": "doe_node_webgpu_prepared",
       "rightExecutorId": "dawn_node_webgpu_prepared",
@@ -260,10 +449,19 @@
     {
       "id": "apple-metal-gemma64-bun-package-cold",
       "backend": "apple-metal",
+      "boundary": "package_surface",
+      "runtimeHost": "bun",
+      "temperature": "cold",
+      "comparisonView": "doe_vs_bun_webgpu",
+      "providerSet": "package_bun_providers",
+      "providers": [
+        "doe",
+        "bun-webgpu"
+      ],
       "surface": "package",
-      "packageRuntime": "bun",
       "workload": "gemma64",
       "mode": "cold",
+      "packageRuntime": "bun",
       "benchmarkClass": "package-surface",
       "leftExecutorId": "doe_bun_package",
       "rightExecutorId": "bun_webgpu_package",
@@ -273,10 +471,19 @@
     {
       "id": "apple-metal-gemma64-bun-package-warm",
       "backend": "apple-metal",
+      "boundary": "package_surface",
+      "runtimeHost": "bun",
+      "temperature": "warm",
+      "comparisonView": "doe_vs_bun_webgpu",
+      "providerSet": "package_bun_providers",
+      "providers": [
+        "doe",
+        "bun-webgpu"
+      ],
       "surface": "package",
-      "packageRuntime": "bun",
       "workload": "gemma64",
       "mode": "warm",
+      "packageRuntime": "bun",
       "benchmarkClass": "package-surface",
       "leftExecutorId": "doe_bun_package_prepared",
       "rightExecutorId": "bun_webgpu_package_prepared",
@@ -286,10 +493,19 @@
     {
       "id": "apple-metal-gemma1b-bun-package-cold",
       "backend": "apple-metal",
+      "boundary": "package_surface",
+      "runtimeHost": "bun",
+      "temperature": "cold",
+      "comparisonView": "doe_vs_bun_webgpu",
+      "providerSet": "package_bun_providers",
+      "providers": [
+        "doe",
+        "bun-webgpu"
+      ],
       "surface": "package",
-      "packageRuntime": "bun",
       "workload": "gemma1b",
       "mode": "cold",
+      "packageRuntime": "bun",
       "benchmarkClass": "package-surface",
       "leftExecutorId": "doe_bun_package",
       "rightExecutorId": "bun_webgpu_package",
@@ -299,10 +515,19 @@
     {
       "id": "apple-metal-gemma1b-bun-package-warm",
       "backend": "apple-metal",
+      "boundary": "package_surface",
+      "runtimeHost": "bun",
+      "temperature": "warm",
+      "comparisonView": "doe_vs_bun_webgpu",
+      "providerSet": "package_bun_providers",
+      "providers": [
+        "doe",
+        "bun-webgpu"
+      ],
       "surface": "package",
-      "packageRuntime": "bun",
       "workload": "gemma1b",
       "mode": "warm",
+      "packageRuntime": "bun",
       "benchmarkClass": "package-surface",
       "leftExecutorId": "doe_bun_package_prepared",
       "rightExecutorId": "bun_webgpu_package_prepared",
@@ -312,6 +537,15 @@
     {
       "id": "local-d3d12-native-smoke",
       "backend": "local-d3d12",
+      "boundary": "backend_native",
+      "runtimeHost": "none",
+      "temperature": "default",
+      "comparisonView": "doe_vs_dawn_delegate",
+      "providerSet": "backend_native_providers",
+      "providers": [
+        "doe",
+        "dawn"
+      ],
       "surface": "native",
       "preset": "smoke",
       "mode": "default",
@@ -324,6 +558,15 @@
     {
       "id": "local-d3d12-native-compare-dev",
       "backend": "local-d3d12",
+      "boundary": "backend_native",
+      "runtimeHost": "none",
+      "temperature": "default",
+      "comparisonView": "doe_vs_dawn_delegate",
+      "providerSet": "backend_native_providers",
+      "providers": [
+        "doe",
+        "dawn"
+      ],
       "surface": "native",
       "preset": "compare-dev",
       "mode": "default",
@@ -336,6 +579,15 @@
     {
       "id": "local-d3d12-native-compare",
       "backend": "local-d3d12",
+      "boundary": "backend_native",
+      "runtimeHost": "none",
+      "temperature": "default",
+      "comparisonView": "doe_vs_dawn_delegate",
+      "providerSet": "backend_native_providers",
+      "providers": [
+        "doe",
+        "dawn"
+      ],
       "surface": "native",
       "preset": "compare",
       "mode": "default",
@@ -348,6 +600,15 @@
     {
       "id": "local-d3d12-native-frontier",
       "backend": "local-d3d12",
+      "boundary": "backend_native",
+      "runtimeHost": "none",
+      "temperature": "default",
+      "comparisonView": "doe_vs_dawn_delegate",
+      "providerSet": "backend_native_providers",
+      "providers": [
+        "doe",
+        "dawn"
+      ],
       "surface": "native",
       "preset": "frontier",
       "mode": "default",
@@ -360,6 +621,15 @@
     {
       "id": "local-d3d12-native-explore",
       "backend": "local-d3d12",
+      "boundary": "backend_native",
+      "runtimeHost": "none",
+      "temperature": "default",
+      "comparisonView": "doe_vs_dawn_delegate",
+      "providerSet": "backend_native_providers",
+      "providers": [
+        "doe",
+        "dawn"
+      ],
       "surface": "native",
       "preset": "explore",
       "mode": "default",
@@ -372,6 +642,15 @@
     {
       "id": "local-d3d12-native-release",
       "backend": "local-d3d12",
+      "boundary": "backend_native",
+      "runtimeHost": "none",
+      "temperature": "default",
+      "comparisonView": "doe_vs_dawn_delegate",
+      "providerSet": "backend_native_providers",
+      "providers": [
+        "doe",
+        "dawn"
+      ],
       "surface": "native",
       "preset": "release",
       "mode": "default",

@@ -79,6 +79,27 @@ def build_report_header(
             "warmup": args.warmup,
             "workloadCooldownMs": args.workload_cooldown_ms,
         },
+        "comparisonAxes": {
+            "boundary": getattr(args, "boundary", "") or None,
+            "runtimeHost": getattr(args, "runtime_host", "") or None,
+            "temperature": getattr(args, "temperature", "") or None,
+            "comparisonView": getattr(args, "comparison_view", "") or None,
+            "providerSet": getattr(args, "provider_set", "") or None,
+        },
+        "participants": {
+            "left": {
+                "name": args.left_name,
+                "id": getattr(args, "left_provider_id", "") or None,
+                "executorId": getattr(args, "left_executor_id", "") or None,
+                "role": "baseline",
+            },
+            "right": {
+                "name": args.right_name,
+                "id": getattr(args, "right_provider_id", "") or None,
+                "executorId": getattr(args, "right_executor_id", "") or None,
+                "role": "comparison",
+            },
+        },
         "left": {"name": args.left_name},
         "right": {"name": args.right_name},
         "deltaPercentConvention": {

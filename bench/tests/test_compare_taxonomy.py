@@ -78,6 +78,9 @@ class CompareTaxonomyTests(unittest.TestCase):
             warm_bun_row["promotedCompareProfileIds"],
             ["apple-metal-gemma1b-bun-package-warm", "apple-metal-gemma64-bun-package-warm"],
         )
+        self.assertEqual(warm_bun_row["comparisonView"], "doe_vs_bun_webgpu")
+        self.assertEqual(warm_bun_row["providerSet"], "package_bun_providers")
+        self.assertEqual(warm_bun_row["providers"], ["doe", "bun-webgpu"])
         invalid_row = next(
             row
             for row in rows

@@ -11,6 +11,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Sequence
 
+from bench.lib import compare_axes as compare_axes_mod
+
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CATALOG_PATH = REPO_ROOT / "config" / "promoted-compare-catalog.json"
@@ -29,6 +31,12 @@ DEFAULT_PACKAGE_RUNTIME = "node"
 class PromotedCompareEntry:
     id: str
     backend: str
+    boundary: str
+    runtime_host: str
+    temperature: str
+    comparison_view: str
+    provider_set: str
+    providers: tuple[str, ...]
     surface: str
     package_runtime: str
     preset: str
@@ -46,15 +54,50 @@ def load_catalog(path: Path) -> list[PromotedCompareEntry]:
     entries = payload.get("entries", [])
     result: list[PromotedCompareEntry] = []
     for raw in entries:
+        surface = raw["surface"]
+        package_runtime = raw.get(
+            "packageRuntime",
+            DEFAULT_PACKAGE_RUNTIME if surface == PACKAGE_SURFACE else "",
+        )
+        boundary = raw.get("boundary", compare_axes_mod.boundary_for_surface(surface))
+        runtime_host = raw.get(
+            "runtimeHost",
+            compare_axes_mod.runtime_host_for_surface(surface, package_runtime),
+        )
+        temperature = raw.get("temperature", raw.get("mode", "default"))
+        comparison_view = raw.get(
+            "comparisonView",
+            compare_axes_mod.derive_comparison_view(
+                surface=surface,
+                runtime_host=runtime_host,
+                provider_pair=raw.get("providerPair", ""),
+            ),
+        )
+        provider_set = raw.get(
+            "providerSet",
+            compare_axes_mod.derive_provider_set(
+                boundary=boundary,
+                runtime_host=runtime_host,
+                comparison_view=comparison_view,
+            ),
+        )
+        providers = tuple(
+            raw.get("providers")
+            or compare_axes_mod.providers_for_comparison_view(comparison_view)
+            or compare_axes_mod.providers_for_provider_set(provider_set)
+        )
         result.append(
             PromotedCompareEntry(
                 id=raw["id"],
                 backend=raw["backend"],
-                surface=raw["surface"],
-                package_runtime=raw.get(
-                    "packageRuntime",
-                    DEFAULT_PACKAGE_RUNTIME if raw["surface"] == PACKAGE_SURFACE else "",
-                ),
+                boundary=boundary,
+                runtime_host=runtime_host,
+                temperature=temperature,
+                comparison_view=comparison_view,
+                provider_set=provider_set,
+                providers=providers,
+                surface=surface,
+                package_runtime=package_runtime,
                 preset=raw.get("preset", ""),
                 workload=raw.get("workload", ""),
                 mode=raw["mode"],
@@ -81,6 +124,9 @@ def resolve_entry(
     *,
     profile_id: str = "",
     backend: str = "",
+    boundary: str = "",
+    runtime_host: str = "",
+    temperature: str = "",
     surface: str = "",
     preset: str = "",
     workload: str = "",
@@ -93,34 +139,57 @@ def resolve_entry(
                 return entry
         raise ValueError(f"unknown promoted compare profile {profile_id!r}")
 
-    if not backend or not surface:
+    if not backend or (not surface and not boundary):
         raise ValueError(
             "resolve_entry requires either --profile or the tuple "
             "that identifies one catalog entry"
         )
 
+    if boundary and surface:
+        expected_surface = compare_axes_mod.surface_for_boundary(boundary)
+        if expected_surface != surface:
+            raise ValueError(
+                "surface/boundary mismatch: "
+                f"surface={surface!r} implies boundary={expected_surface!r}, "
+                f"received boundary={boundary!r}"
+            )
+    effective_surface = surface or (
+        compare_axes_mod.surface_for_boundary(boundary) if boundary else ""
+    )
+    effective_boundary = boundary or (
+        compare_axes_mod.boundary_for_surface(surface) if surface else ""
+    )
+    if runtime_host and effective_surface and effective_surface != PACKAGE_SURFACE and runtime_host != "none":
+        raise ValueError("--runtime-host applies only to package surfaces")
     if preset and workload:
         raise ValueError("resolve_entry accepts only one of --preset or --workload")
     if not preset and not workload:
         raise ValueError(
             "resolve_entry requires either --preset or --workload when --profile is omitted"
         )
-    if package_runtime and surface != PACKAGE_SURFACE:
+    if package_runtime and effective_surface != PACKAGE_SURFACE:
         raise ValueError("--package-runtime applies only to --surface package")
 
-    effective_mode = mode or default_mode_for_surface(surface)
+    effective_mode = temperature or mode or default_mode_for_surface(effective_surface)
     effective_package_runtime = (
-        package_runtime or (DEFAULT_PACKAGE_RUNTIME if surface == PACKAGE_SURFACE else "")
+        package_runtime
+        or (runtime_host if effective_surface == PACKAGE_SURFACE and runtime_host and runtime_host != "none" else "")
+        or (DEFAULT_PACKAGE_RUNTIME if effective_surface == PACKAGE_SURFACE else "")
     )
     matches = [
         entry
         for entry in entries
         if entry.backend == backend
-        and entry.surface == surface
+        and entry.surface == effective_surface
+        and entry.boundary == effective_boundary
+        and entry.runtime_host == compare_axes_mod.runtime_host_for_surface(
+            effective_surface,
+            effective_package_runtime,
+        )
         and entry.package_runtime == effective_package_runtime
         and entry.preset == preset
         and entry.workload == workload
-        and entry.mode == effective_mode
+        and entry.temperature == effective_mode
     ]
     if len(matches) == 1:
         return matches[0]
@@ -129,14 +198,15 @@ def resolve_entry(
         target_value = preset or workload
         raise ValueError(
             "no promoted compare profile matches "
-            f"backend={backend!r}, surface={surface!r}, {target_name}={target_value!r}, "
-            f"mode={effective_mode!r}, package_runtime={effective_package_runtime!r}"
+            f"backend={backend!r}, boundary={effective_boundary!r}, "
+            f"runtime_host={compare_axes_mod.runtime_host_for_surface(effective_surface, effective_package_runtime)!r}, "
+            f"{target_name}={target_value!r}, temperature={effective_mode!r}"
         )
     raise ValueError(
         "multiple promoted compare profiles matched "
-        f"backend={backend!r}, surface={surface!r}, preset={preset!r}, "
-        f"workload={workload!r}, mode={effective_mode!r}, "
-        f"package_runtime={effective_package_runtime!r}"
+        f"backend={backend!r}, boundary={effective_boundary!r}, preset={preset!r}, "
+        f"workload={workload!r}, temperature={effective_mode!r}, "
+        f"runtime_host={compare_axes_mod.runtime_host_for_surface(effective_surface, effective_package_runtime)!r}"
     )
 
 
@@ -166,6 +236,20 @@ def build_compare_argv(
         str(compare_script),
         "--config",
         str(resolved_config_path),
+        "--boundary",
+        entry.boundary,
+        "--runtime-host",
+        entry.runtime_host,
+        "--temperature",
+        entry.temperature,
+        "--comparison-view",
+        entry.comparison_view,
+        "--provider-set",
+        entry.provider_set,
+        "--left-provider-id",
+        entry.providers[0],
+        "--right-provider-id",
+        entry.providers[1],
         *passthrough,
     ]
 
@@ -182,10 +266,16 @@ def parse_args(argv: Sequence[str]) -> tuple[argparse.Namespace, list[str]]:
     parser.add_argument("--profile", default="", help="Exact promoted profile id.")
     parser.add_argument("--backend", default="", help="Promoted backend id, e.g. apple-metal.")
     parser.add_argument(
+        "--boundary",
+        choices=["backend_native", "direct_plan", "package_surface"],
+        default="",
+        help="Canonical compare boundary. Preferred over --surface.",
+    )
+    parser.add_argument(
         "--surface",
         choices=[NATIVE_SURFACE, DIRECT_SURFACE, PACKAGE_SURFACE],
         default="",
-        help="Promoted compare surface.",
+        help="Legacy promoted compare surface alias.",
     )
     parser.add_argument(
         "--preset",
@@ -194,16 +284,28 @@ def parse_args(argv: Sequence[str]) -> tuple[argparse.Namespace, list[str]]:
     )
     parser.add_argument("--workload", default="", help="Promoted workload alias, e.g. gemma64.")
     parser.add_argument(
-        "--package-runtime",
-        choices=[DEFAULT_PACKAGE_RUNTIME, "bun"],
+        "--runtime-host",
+        choices=["none", DEFAULT_PACKAGE_RUNTIME, "bun", "deno"],
         default="",
-        help="Package runtime for package surfaces. Defaults to 'node'.",
+        help="Canonical runtime host. Preferred over --package-runtime.",
+    )
+    parser.add_argument(
+        "--package-runtime",
+        choices=[DEFAULT_PACKAGE_RUNTIME, "bun", "deno"],
+        default="",
+        help="Legacy package runtime selector for package surfaces. Defaults to 'node'.",
+    )
+    parser.add_argument(
+        "--temperature",
+        choices=[DEFAULT_DIRECT_MODE, "cold", "warm"],
+        default="",
+        help="Canonical startup temperature. Preferred over --mode.",
     )
     parser.add_argument(
         "--mode",
         choices=[DEFAULT_DIRECT_MODE, "cold", "warm"],
         default="",
-        help="Promoted compare mode. Direct defaults to 'default'; package defaults to 'cold'.",
+        help="Legacy promoted compare temperature alias.",
     )
     parser.add_argument(
         "--list",
@@ -224,8 +326,10 @@ def format_entry(entry: PromotedCompareEntry) -> str:
         f" packageRuntime={entry.package_runtime}" if entry.package_runtime else ""
     )
     return (
-        f"{entry.id}: backend={entry.backend} surface={entry.surface} "
-        f"{target_field}{package_runtime_field} mode={entry.mode} class={entry.benchmark_class} "
+        f"{entry.id}: backend={entry.backend} boundary={entry.boundary} "
+        f"runtimeHost={entry.runtime_host} temperature={entry.temperature} "
+        f"comparisonView={entry.comparison_view} providerSet={entry.provider_set} "
+        f"{target_field}{package_runtime_field} class={entry.benchmark_class} "
         f"left={entry.left_executor_id} right={entry.right_executor_id} "
         f"config={entry.config_path}"
     )
@@ -235,6 +339,9 @@ def filter_entries(
     entries: Sequence[PromotedCompareEntry],
     *,
     backend: str = "",
+    boundary: str = "",
+    runtime_host: str = "",
+    temperature: str = "",
     surface: str = "",
     preset: str = "",
     workload: str = "",
@@ -245,10 +352,13 @@ def filter_entries(
         entry
         for entry in entries
         if (not backend or entry.backend == backend)
+        and (not boundary or entry.boundary == boundary)
+        and (not runtime_host or entry.runtime_host == runtime_host)
         and (not surface or entry.surface == surface)
         and (not preset or entry.preset == preset)
         and (not workload or entry.workload == workload)
-        and (not mode or entry.mode == mode)
+        and (not temperature or entry.temperature == temperature)
+        and (not mode or entry.temperature == mode)
         and (not package_runtime or entry.package_runtime == package_runtime)
     ]
 
@@ -262,6 +372,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         filtered = filter_entries(
             entries,
             backend=ns.backend,
+            boundary=ns.boundary,
+            runtime_host=ns.runtime_host,
+            temperature=ns.temperature,
             surface=ns.surface,
             preset=ns.preset,
             workload=ns.workload,
@@ -272,9 +385,10 @@ def main(argv: Sequence[str] | None = None) -> int:
             filtered,
             key=lambda item: (
                 item.backend,
-                item.surface,
+                item.boundary,
+                item.runtime_host,
                 item.preset or item.workload,
-                item.mode,
+                item.temperature,
                 item.id,
             ),
         ):
@@ -285,6 +399,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         entries,
         profile_id=ns.profile,
         backend=ns.backend,
+        boundary=ns.boundary,
+        runtime_host=ns.runtime_host,
+        temperature=ns.temperature,
         surface=ns.surface,
         preset=ns.preset,
         workload=ns.workload,

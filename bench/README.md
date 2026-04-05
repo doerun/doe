@@ -287,6 +287,10 @@ Config-backed compare wrappers now sit above those raw configs. The catalog live
 
 - `config/promoted-compare-catalog.json`
 
+That catalog is front-door wiring only. The single taxonomy source of truth is:
+
+- `config/compare-taxonomy.json`
+
 And the front door is:
 
 - `python3 bench/run_compare.py --list`
@@ -311,9 +315,10 @@ The matrix is explicit in config:
   - package-surface compare rows for `packageRuntime=node` or `packageRuntime=bun`, with `mode=cold` or `mode=warm`
 
 The canonical axis vocabulary underneath those front doors is defined in
-`config/compare-taxonomy.json`. Use that file, plus the generated expansion in
-`config/generated/compare-taxonomy-expanded.jsonl`, when you need the unified
-cartesian-product view instead of the promoted wrapper subset.
+`config/compare-taxonomy.json`. The generated expansion in
+`config/generated/compare-taxonomy-expanded.jsonl` is a derived artifact, and
+`config/promoted-compare-catalog.json` is front-door wiring. Do not treat those
+as parallel taxonomy sources.
 
 This wrapper does not replace `compare_dawn_vs_doe.py`; it resolves a friendly
 config-backed matrix entry and then delegates to the existing compare runner

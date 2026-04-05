@@ -16,15 +16,29 @@ Use this taxonomy when you need to answer questions like:
 
 ## Canonical source of truth
 
-The canonical taxonomy lives in:
+The single source of truth for compare taxonomy is:
 
 - `config/compare-taxonomy.json`
+
+The schema that validates that source of truth is:
+
 - `config/compare-taxonomy.schema.json`
 
 The generated machine-readable expansion lives in:
 
 - `config/generated/compare-taxonomy-expanded.jsonl`
 - `config/compare-taxonomy-expanded-row.schema.json`
+
+Those generated files are derived artifacts, not parallel taxonomy sources.
+
+The promoted wrapper catalog and governed-lane catalog are also downstream
+consumers of the taxonomy, not independent definitions of it:
+
+- `config/promoted-compare-catalog.json`
+- `config/governed-lanes.json`
+
+If any of those disagree with `config/compare-taxonomy.json`, the taxonomy file
+is authoritative and the derived wiring must be updated to match it.
 
 The expansion enumerates the naive cartesian product of the canonical axes and
 annotates each row with:
@@ -46,7 +60,7 @@ The canonical axis names are:
 - `platformLane`
 - `comparisonBoundary`
 - `runtimeHost`
-- `providerPair`
+- `comparisonView`
 - `temperature`
 - `targetKind`
 
@@ -54,14 +68,24 @@ The important distinction is:
 
 - `comparisonBoundary` names the benchmark boundary
 - `runtimeHost` names the JS host runtime
+- `comparisonView` names the currently promoted view over a broader provider set
 
 So:
 
 - `backend_native`, `direct_plan`, and `package_surface` are boundary values
 - `none`, `node`, `bun`, and `deno` are runtime-host values
+- `doe_vs_dawn_delegate`, `doe_vs_dawn_direct`, and package runtime views are comparison-view values
 
 This avoids overloading `native` to mean both "non-package" and "backend-native
 compare family."
+
+The taxonomy also records:
+
+- `providerSet` on each structural family
+- `providers` on each structural family and expanded row
+
+`providerPair` remains in the generated expansion as a compatibility alias for
+pair-shaped consumers. New control-plane code should prefer `comparisonView`.
 
 ## Alias maps
 
@@ -82,8 +106,9 @@ When you want the current promoted compare matrix:
    promoted.
 3. Use `config/generated/compare-taxonomy-expanded.jsonl` if you need the full
    expanded matrix with row-level annotations.
-4. Use `config/promoted-compare-catalog.json` only for the remaining wiring
-   details such as executor ids, config paths, and descriptions.
+4. Use `config/promoted-compare-catalog.json` only for remaining wiring details
+   such as executor ids, config paths, and descriptions. Do not treat it as a
+   second taxonomy source.
 
 When you want the broader repo surface vocabulary:
 
@@ -98,7 +123,7 @@ If you add or rename a compare axis, boundary, host runtime, promoted subset,
 or alias vocabulary:
 
 1. Edit `config/compare-taxonomy.json`.
-2. Update any dependent wiring:
+2. Treat every other file as derived from that edit, then update dependent wiring:
    - `config/promoted-compare-catalog.json`
    - `config/governed-lanes.json`
    - `bench/workloads/metadata/workload-registry.json`

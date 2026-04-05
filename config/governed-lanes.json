@@ -6,196 +6,360 @@
       "displayName": "Metal Doe app",
       "governanceKind": "backend_runtime",
       "surface": "backend_native",
-      "hostProfiles": ["mac_apple_silicon"],
-      "providerPairs": ["doe_vs_dawn"],
-      "sourceReportTypes": ["backend_compare_report"],
+      "hostProfiles": [
+        "mac_apple_silicon"
+      ],
+      "providerPairs": [
+        "doe_vs_dawn"
+      ],
+      "sourceReportTypes": [
+        "backend_compare_report"
+      ],
       "cubeEligible": true,
-      "notes": "Controlled Metal app-lane cutover target."
+      "notes": "Controlled Metal app-lane cutover target.",
+      "comparisonViews": [
+        "doe_vs_dawn"
+      ]
     },
     {
       "id": "metal_doe_directional",
       "displayName": "Metal Doe directional",
       "governanceKind": "backend_runtime",
       "surface": "backend_native",
-      "hostProfiles": ["mac_apple_silicon"],
-      "providerPairs": ["doe_vs_dawn"],
-      "sourceReportTypes": ["backend_compare_report"],
+      "hostProfiles": [
+        "mac_apple_silicon"
+      ],
+      "providerPairs": [
+        "doe_vs_dawn"
+      ],
+      "sourceReportTypes": [
+        "backend_compare_report"
+      ],
       "cubeEligible": true,
-      "notes": "Metal directional diagnostics lane."
+      "notes": "Metal directional diagnostics lane.",
+      "comparisonViews": [
+        "doe_vs_dawn"
+      ]
     },
     {
       "id": "metal_doe_comparable",
       "displayName": "Metal Doe comparable",
       "governanceKind": "backend_runtime",
       "surface": "backend_native",
-      "hostProfiles": ["mac_apple_silicon"],
-      "providerPairs": ["doe_vs_dawn"],
-      "sourceReportTypes": ["backend_compare_report"],
+      "hostProfiles": [
+        "mac_apple_silicon"
+      ],
+      "providerPairs": [
+        "doe_vs_dawn"
+      ],
+      "sourceReportTypes": [
+        "backend_compare_report"
+      ],
       "cubeEligible": true,
-      "notes": "Strict apples-to-apples comparable Metal lane."
+      "notes": "Strict apples-to-apples comparable Metal lane.",
+      "comparisonViews": [
+        "doe_vs_dawn"
+      ]
     },
     {
       "id": "metal_doe_release",
       "displayName": "Metal Doe release",
       "governanceKind": "backend_runtime",
       "surface": "backend_native",
-      "hostProfiles": ["mac_apple_silicon"],
-      "providerPairs": ["doe_vs_dawn"],
-      "sourceReportTypes": ["backend_compare_report"],
+      "hostProfiles": [
+        "mac_apple_silicon"
+      ],
+      "providerPairs": [
+        "doe_vs_dawn"
+      ],
+      "sourceReportTypes": [
+        "backend_compare_report"
+      ],
       "cubeEligible": true,
-      "notes": "Strict Apple Metal release lane."
+      "notes": "Strict Apple Metal release lane.",
+      "comparisonViews": [
+        "doe_vs_dawn"
+      ]
     },
     {
       "id": "metal_dawn_release",
       "displayName": "Metal Dawn baseline",
       "governanceKind": "backend_runtime",
       "surface": "backend_native",
-      "hostProfiles": ["mac_apple_silicon"],
-      "providerPairs": ["doe_vs_dawn"],
-      "sourceReportTypes": ["backend_compare_report"],
+      "hostProfiles": [
+        "mac_apple_silicon"
+      ],
+      "providerPairs": [
+        "doe_vs_dawn"
+      ],
+      "sourceReportTypes": [
+        "backend_compare_report"
+      ],
       "cubeEligible": true,
-      "notes": "Metal Dawn delegate baseline lane."
+      "notes": "Metal Dawn delegate baseline lane.",
+      "comparisonViews": [
+        "doe_vs_dawn"
+      ]
     },
     {
       "id": "vulkan_doe_app",
       "displayName": "Vulkan Doe app",
       "governanceKind": "backend_runtime",
       "surface": "backend_native",
-      "hostProfiles": ["linux_amd_vulkan"],
-      "providerPairs": ["doe_vs_dawn"],
-      "sourceReportTypes": ["backend_compare_report"],
+      "hostProfiles": [
+        "linux_amd_vulkan"
+      ],
+      "providerPairs": [
+        "doe_vs_dawn"
+      ],
+      "sourceReportTypes": [
+        "backend_compare_report"
+      ],
       "cubeEligible": true,
-      "notes": "Controlled Vulkan app lane."
+      "notes": "Controlled Vulkan app lane.",
+      "comparisonViews": [
+        "doe_vs_dawn"
+      ]
     },
     {
       "id": "vulkan_doe_comparable",
       "displayName": "Vulkan Doe comparable",
       "governanceKind": "backend_runtime",
       "surface": "backend_native",
-      "hostProfiles": ["linux_amd_vulkan"],
-      "providerPairs": ["doe_vs_dawn"],
-      "sourceReportTypes": ["backend_compare_report"],
+      "hostProfiles": [
+        "linux_amd_vulkan"
+      ],
+      "providerPairs": [
+        "doe_vs_dawn"
+      ],
+      "sourceReportTypes": [
+        "backend_compare_report"
+      ],
       "cubeEligible": true,
-      "notes": "Strict apples-to-apples comparable Vulkan lane."
+      "notes": "Strict apples-to-apples comparable Vulkan lane.",
+      "comparisonViews": [
+        "doe_vs_dawn"
+      ]
     },
     {
       "id": "vulkan_doe_release",
       "displayName": "Vulkan Doe release",
       "governanceKind": "backend_runtime",
       "surface": "backend_native",
-      "hostProfiles": ["linux_amd_vulkan"],
-      "providerPairs": ["doe_vs_dawn"],
-      "sourceReportTypes": ["backend_compare_report"],
+      "hostProfiles": [
+        "linux_amd_vulkan"
+      ],
+      "providerPairs": [
+        "doe_vs_dawn"
+      ],
+      "sourceReportTypes": [
+        "backend_compare_report"
+      ],
       "cubeEligible": true,
-      "notes": "Strict Vulkan release lane."
+      "notes": "Strict Vulkan release lane.",
+      "comparisonViews": [
+        "doe_vs_dawn"
+      ]
     },
     {
       "id": "vulkan_dawn_release",
       "displayName": "Vulkan Dawn baseline",
       "governanceKind": "backend_runtime",
       "surface": "backend_native",
-      "hostProfiles": ["linux_amd_vulkan"],
-      "providerPairs": ["doe_vs_dawn"],
-      "sourceReportTypes": ["backend_compare_report"],
+      "hostProfiles": [
+        "linux_amd_vulkan"
+      ],
+      "providerPairs": [
+        "doe_vs_dawn"
+      ],
+      "sourceReportTypes": [
+        "backend_compare_report"
+      ],
       "cubeEligible": true,
-      "aliases": ["vulkan_dawn_directional"],
-      "notes": "Canonical Vulkan Dawn delegate baseline lane; legacy Dawn directional alias now resolves here."
+      "aliases": [
+        "vulkan_dawn_directional"
+      ],
+      "notes": "Canonical Vulkan Dawn delegate baseline lane; legacy Dawn directional alias now resolves here.",
+      "comparisonViews": [
+        "doe_vs_dawn"
+      ]
     },
     {
       "id": "d3d12_doe_app",
       "displayName": "D3D12 Doe app",
       "governanceKind": "backend_runtime",
       "surface": "backend_native",
-      "hostProfiles": ["windows_d3d12"],
-      "providerPairs": ["doe_vs_dawn"],
-      "sourceReportTypes": ["backend_compare_report"],
+      "hostProfiles": [
+        "windows_d3d12"
+      ],
+      "providerPairs": [
+        "doe_vs_dawn"
+      ],
+      "sourceReportTypes": [
+        "backend_compare_report"
+      ],
       "cubeEligible": true,
-      "notes": "Controlled D3D12 app lane."
+      "notes": "Controlled D3D12 app lane.",
+      "comparisonViews": [
+        "doe_vs_dawn"
+      ]
     },
     {
       "id": "d3d12_doe_directional",
       "displayName": "D3D12 Doe directional",
       "governanceKind": "backend_runtime",
       "surface": "backend_native",
-      "hostProfiles": ["windows_d3d12"],
-      "providerPairs": ["doe_vs_dawn"],
-      "sourceReportTypes": ["backend_compare_report"],
+      "hostProfiles": [
+        "windows_d3d12"
+      ],
+      "providerPairs": [
+        "doe_vs_dawn"
+      ],
+      "sourceReportTypes": [
+        "backend_compare_report"
+      ],
       "cubeEligible": true,
-      "notes": "D3D12 directional diagnostics lane."
+      "notes": "D3D12 directional diagnostics lane.",
+      "comparisonViews": [
+        "doe_vs_dawn"
+      ]
     },
     {
       "id": "d3d12_doe_comparable",
       "displayName": "D3D12 Doe comparable",
       "governanceKind": "backend_runtime",
       "surface": "backend_native",
-      "hostProfiles": ["windows_d3d12"],
-      "providerPairs": ["doe_vs_dawn"],
-      "sourceReportTypes": ["backend_compare_report"],
+      "hostProfiles": [
+        "windows_d3d12"
+      ],
+      "providerPairs": [
+        "doe_vs_dawn"
+      ],
+      "sourceReportTypes": [
+        "backend_compare_report"
+      ],
       "cubeEligible": true,
-      "notes": "Strict apples-to-apples comparable D3D12 lane for the first governed compute/upload/pipeline/p0-resource subset."
+      "notes": "Strict apples-to-apples comparable D3D12 lane for the first governed compute/upload/pipeline/p0-resource subset.",
+      "comparisonViews": [
+        "doe_vs_dawn"
+      ]
     },
     {
       "id": "d3d12_doe_release",
       "displayName": "D3D12 Doe release",
       "governanceKind": "backend_runtime",
       "surface": "backend_native",
-      "hostProfiles": ["windows_d3d12"],
-      "providerPairs": ["doe_vs_dawn"],
-      "sourceReportTypes": ["backend_compare_report"],
+      "hostProfiles": [
+        "windows_d3d12"
+      ],
+      "providerPairs": [
+        "doe_vs_dawn"
+      ],
+      "sourceReportTypes": [
+        "backend_compare_report"
+      ],
       "cubeEligible": true,
-      "notes": "Strict D3D12 release lane for the first governed compute/upload/pipeline/p0-resource subset."
+      "notes": "Strict D3D12 release lane for the first governed compute/upload/pipeline/p0-resource subset.",
+      "comparisonViews": [
+        "doe_vs_dawn"
+      ]
     },
     {
       "id": "d3d12_dawn_release",
       "displayName": "D3D12 Dawn baseline",
       "governanceKind": "backend_runtime",
       "surface": "backend_native",
-      "hostProfiles": ["windows_d3d12"],
-      "providerPairs": ["doe_vs_dawn"],
-      "sourceReportTypes": ["backend_compare_report"],
+      "hostProfiles": [
+        "windows_d3d12"
+      ],
+      "providerPairs": [
+        "doe_vs_dawn"
+      ],
+      "sourceReportTypes": [
+        "backend_compare_report"
+      ],
       "cubeEligible": true,
-      "notes": "D3D12 Dawn delegate baseline lane."
+      "notes": "D3D12 Dawn delegate baseline lane.",
+      "comparisonViews": [
+        "doe_vs_dawn"
+      ]
     },
     {
       "id": "node_package_compare",
       "displayName": "Node package compare",
       "governanceKind": "package_compare",
       "surface": "node_package",
-      "hostProfiles": ["mac_apple_silicon", "linux_x64", "windows_x64"],
-      "providerPairs": ["doe_node_vs_dawn_node"],
-      "sourceReportTypes": ["node_package_compare_report"],
+      "hostProfiles": [
+        "mac_apple_silicon",
+        "linux_x64",
+        "windows_x64"
+      ],
+      "providerPairs": [
+        "doe_node_vs_dawn_node"
+      ],
+      "sourceReportTypes": [
+        "node_package_compare_report"
+      ],
       "cubeEligible": true,
-      "notes": "Governed package-surface compare lane for Doe Node vs Dawn Node."
+      "notes": "Governed package-surface compare lane for Doe Node vs Dawn Node.",
+      "comparisonViews": [
+        "doe_node_vs_dawn_node"
+      ]
     },
     {
       "id": "bun_package_compare",
       "displayName": "Bun package compare",
       "governanceKind": "package_compare",
       "surface": "bun_package",
-      "hostProfiles": ["mac_apple_silicon", "linux_x64", "windows_x64"],
-      "providerPairs": ["doe_bun_vs_bun_webgpu"],
-      "sourceReportTypes": ["bun_package_compare_report"],
+      "hostProfiles": [
+        "mac_apple_silicon",
+        "linux_x64",
+        "windows_x64"
+      ],
+      "providerPairs": [
+        "doe_bun_vs_bun_webgpu"
+      ],
+      "sourceReportTypes": [
+        "bun_package_compare_report"
+      ],
       "cubeEligible": true,
-      "notes": "Governed package-surface compare lane for Doe Bun vs bun-webgpu."
+      "notes": "Governed package-surface compare lane for Doe Bun vs bun-webgpu.",
+      "comparisonViews": [
+        "doe_bun_vs_bun_webgpu"
+      ]
     },
     {
       "id": "deno_package_compare",
       "displayName": "Deno package compare",
       "governanceKind": "package_compare",
       "surface": "deno_package",
-      "hostProfiles": ["mac_apple_silicon", "linux_x64"],
-      "providerPairs": ["doe_deno_vs_deno_webgpu"],
-      "sourceReportTypes": ["deno_package_compare_report"],
+      "hostProfiles": [
+        "mac_apple_silicon",
+        "linux_x64"
+      ],
+      "providerPairs": [
+        "doe_deno_vs_deno_webgpu"
+      ],
+      "sourceReportTypes": [
+        "deno_package_compare_report"
+      ],
       "cubeEligible": true,
-      "notes": "Deno package compare lane. Doe provider loaded via Deno node-compat N-API layer. First verified run: 2026-03-17 (19/19 comparable claimable, macOS Apple Silicon, Deno 2.7.5)."
+      "notes": "Deno package compare lane. Doe provider loaded via Deno node-compat N-API layer. First verified run: 2026-03-17 (19/19 comparable claimable, macOS Apple Silicon, Deno 2.7.5).",
+      "comparisonViews": [
+        "doe_deno_vs_deno_webgpu"
+      ]
     },
     {
       "id": "browser_diagnostic",
       "displayName": "Browser diagnostic gate",
       "governanceKind": "browser_gate",
       "surface": "browser",
-      "hostProfiles": ["mac_apple_silicon"],
-      "sourceReportTypes": ["browser_gate_report"],
+      "hostProfiles": [
+        "mac_apple_silicon"
+      ],
+      "sourceReportTypes": [
+        "browser_gate_report"
+      ],
       "cubeEligible": false,
       "notes": "Governed Track A browser diagnostic gate."
     },
@@ -204,8 +368,12 @@
       "displayName": "Browser local claim",
       "governanceKind": "browser_claim",
       "surface": "browser",
-      "hostProfiles": ["mac_apple_silicon"],
-      "sourceReportTypes": ["browser_claim_report"],
+      "hostProfiles": [
+        "mac_apple_silicon"
+      ],
+      "sourceReportTypes": [
+        "browser_claim_report"
+      ],
       "cubeEligible": false,
       "notes": "Governed repeated-window local browser claim lane."
     }

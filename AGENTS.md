@@ -222,23 +222,16 @@ Do not bypass earlier stages to satisfy later-stage outcomes.
 - do not add comments that restate the code
 - do not add ad-hoc debug logging; use structured trace output
 
-## Naming (Zig)
+## Style guides
 
-- camelCase for functions (matches official Zig style guide and std library)
-- snake_case for variables, fields, and non-callable identifiers
-- PascalCase for types and structs
-- UPPER_SNAKE_CASE for comptime constants
-- file names: snake_case.zig (TitleCase.zig for files that define a top-level struct with fields)
+Each language has a dedicated style guide. Read the relevant guide before
+editing code in that surface:
 
-## Naming (JavaScript)
-
-- file names: kebab-case.js — do not use `.mjs`; all modules are ESM via `"type": "module"` in package.json
-
-## Naming (config/JSON)
-
-- camelCase for JSON fields
-- snake_case for workload/artifact identifiers
-- kebab-case for file names
+- Zig: [`runtime/zig/STYLE.md`](runtime/zig/STYLE.md)
+- JavaScript: [`packages/doe-gpu/STYLE.md`](packages/doe-gpu/STYLE.md)
+- JSON/config: [`config/STYLE.md`](config/STYLE.md)
+- Python: [`bench/STYLE.md`](bench/STYLE.md)
+- Lean: [`pipeline/lean/STYLE.md`](pipeline/lean/STYLE.md)
 
 ## Benchmark style
 

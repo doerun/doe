@@ -43,6 +43,12 @@
       "required": [
         "id",
         "backend",
+        "boundary",
+        "runtimeHost",
+        "temperature",
+        "comparisonView",
+        "providerSet",
+        "providers",
         "surface",
         "mode",
         "benchmarkClass",
@@ -59,6 +65,34 @@
         "backend": {
           "type": "string",
           "minLength": 1
+        },
+        "boundary": {
+          "type": "string",
+          "minLength": 1
+        },
+        "runtimeHost": {
+          "type": "string",
+          "minLength": 1
+        },
+        "temperature": {
+          "$ref": "#/$defs/mode"
+        },
+        "comparisonView": {
+          "type": "string",
+          "minLength": 1
+        },
+        "providerSet": {
+          "type": "string",
+          "minLength": 1
+        },
+        "providers": {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
         },
         "surface": {
           "$ref": "#/$defs/surface"
@@ -78,7 +112,8 @@
           "type": "string",
           "enum": [
             "node",
-            "bun"
+            "bun",
+            "deno"
           ]
         },
         "benchmarkClass": {

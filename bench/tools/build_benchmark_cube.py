@@ -23,6 +23,7 @@ from statistics import median
 from typing import Any
 
 from bench.lib import benchmark_cube_reports as cube_reports_mod
+from bench.lib import compare_axes as compare_axes_mod
 from bench.lib import benchmark_cube_dashboard_html
 from bench.lib import output_paths
 from bench.lib import report_conformance
@@ -362,8 +363,12 @@ def eligible_governed_lane_ids(
             continue
         if host_profile not in lane.get("hostProfiles", []):
             continue
-        provider_pairs = lane.get("providerPairs")
-        if isinstance(provider_pairs, list) and provider_pairs and provider_pair not in provider_pairs:
+        comparison_views = lane.get("comparisonViews", lane.get("providerPairs"))
+        if (
+            isinstance(comparison_views, list)
+            and comparison_views
+            and provider_pair not in comparison_views
+        ):
             continue
         lane_ids.append(lane["id"])
     return lane_ids
@@ -390,7 +395,22 @@ def make_placeholder_cell(
     )
     return {
         "surface": surface["id"],
+        "comparisonView": provider_pair,
         "providerPair": provider_pair,
+        "providerSet": compare_axes_mod.derive_provider_set(
+            boundary=(
+                "backend_native"
+                if surface["id"] == "backend_native"
+                else "package_surface"
+            ),
+            runtime_host=(
+                "bun"
+                if surface["id"] == "bun_package"
+                else ("deno" if surface["id"] == "deno_package" else "node")
+            ) if surface["id"].endswith("_package") else "none",
+            comparison_view=provider_pair,
+        ),
+        "providers": list(compare_axes_mod.providers_for_comparison_view(provider_pair)),
         "governedLaneIds": lane_ids,
         "hostProfile": host_profile,
         "workloadSet": workload_set,
@@ -475,7 +495,7 @@ def build_cells(
 
     cells: list[dict[str, Any]] = []
     for surface in policy["raw"]["surfaces"]:
-        for provider_pair in surface["providerPairs"]:
+        for provider_pair in (surface.get("comparisonViews") or surface["providerPairs"]):
             for host_profile in surface["expectedHostProfiles"]:
                 for workload_set in surface["workloadSets"]:
                     tuple_key = (surface["id"], provider_pair, host_profile, workload_set)
@@ -507,7 +527,22 @@ def build_cells(
                         cells.append(
                             {
                                 "surface": surface["id"],
+                                "comparisonView": provider_pair,
                                 "providerPair": provider_pair,
+                                "providerSet": compare_axes_mod.derive_provider_set(
+                                    boundary=(
+                                        "backend_native"
+                                        if surface["id"] == "backend_native"
+                                        else "package_surface"
+                                    ),
+                                    runtime_host=(
+                                        "bun"
+                                        if surface["id"] == "bun_package"
+                                        else ("deno" if surface["id"] == "deno_package" else "node")
+                                    ) if surface["id"].endswith("_package") else "none",
+                                    comparison_view=provider_pair,
+                                ),
+                                "providers": list(compare_axes_mod.providers_for_comparison_view(provider_pair)),
                                 "governedLaneIds": latest.get("governedLaneIds", []),
                                 "hostProfile": host_profile,
                                 "workloadSet": workload_set,
@@ -562,7 +597,22 @@ def build_cells(
                     cells.append(
                         {
                             "surface": surface["id"],
+                            "comparisonView": provider_pair,
                             "providerPair": provider_pair,
+                            "providerSet": compare_axes_mod.derive_provider_set(
+                                boundary=(
+                                    "backend_native"
+                                    if surface["id"] == "backend_native"
+                                    else "package_surface"
+                                ),
+                                runtime_host=(
+                                    "bun"
+                                    if surface["id"] == "bun_package"
+                                    else ("deno" if surface["id"] == "deno_package" else "node")
+                                ) if surface["id"].endswith("_package") else "none",
+                                comparison_view=provider_pair,
+                            ),
+                            "providers": list(compare_axes_mod.providers_for_comparison_view(provider_pair)),
                             "governedLaneIds": latest_rows[0].get("governedLaneIds", []),
                             "hostProfile": host_profile,
                             "workloadSet": workload_set,

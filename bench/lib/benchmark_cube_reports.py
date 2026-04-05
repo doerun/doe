@@ -3,13 +3,15 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 import jsonschema
 
+from bench.lib import output_paths
 from bench.lib import report_conformance
+from bench.lib import compare_axes as compare_axes_mod
 from bench.lib.bench_utils import load_json, load_json_object
 from native_compare_modules import timing_sanity
 
@@ -111,7 +113,9 @@ def load_policy(root: Path, policy_path: Path) -> dict[str, Any]:
     payload = load_json_object(policy_path)
     validate_schema(root / "config" / "benchmark-cube-policy.schema.json", payload)
     host_profiles = {item["id"]: item for item in payload["hostProfiles"]}
-    provider_pairs = {item["id"]: item for item in payload["providerPairs"]}
+    raw_comparison_views = payload.get("comparisonViews") or payload["providerPairs"]
+    comparison_views = {item["id"]: item for item in raw_comparison_views}
+    provider_pairs = comparison_views
     workload_sets = {item["id"]: item for item in payload["workloadSets"]}
     surfaces = {item["id"]: item for item in payload["surfaces"]}
 
@@ -119,9 +123,9 @@ def load_policy(root: Path, policy_path: Path) -> dict[str, Any]:
         for host_profile in surface["expectedHostProfiles"]:
             if host_profile not in host_profiles:
                 raise ValueError(f"unknown host profile in surface policy: {host_profile}")
-        for provider_pair in surface["providerPairs"]:
-            if provider_pair not in provider_pairs:
-                raise ValueError(f"unknown provider pair in surface policy: {provider_pair}")
+        for comparison_view in (surface.get("comparisonViews") or surface["providerPairs"]):
+            if comparison_view not in comparison_views:
+                raise ValueError(f"unknown comparison view in surface policy: {comparison_view}")
         for workload_set in surface["workloadSets"]:
             if workload_set not in workload_sets:
                 raise ValueError(f"unknown workload set in surface policy: {workload_set}")
@@ -144,6 +148,7 @@ def load_policy(root: Path, policy_path: Path) -> dict[str, Any]:
     return {
         "raw": payload,
         "hostProfiles": host_profiles,
+        "comparisonViews": comparison_views,
         "providerPairs": provider_pairs,
         "workloadSets": workload_sets,
         "surfaces": surfaces,
@@ -252,10 +257,14 @@ def validate_governed_lane_binding(
         raise ValueError(
             f"governed lane {lane_id} does not allow source report type {source_report_type}"
         )
-    provider_pairs = lane.get("providerPairs")
-    if isinstance(provider_pairs, list) and provider_pairs and provider_pair not in provider_pairs:
+    comparison_views = lane.get("comparisonViews", lane.get("providerPairs"))
+    if (
+        isinstance(comparison_views, list)
+        and comparison_views
+        and provider_pair not in comparison_views
+    ):
         raise ValueError(
-            f"governed lane {lane_id} does not allow provider pair {provider_pair}"
+            f"governed lane {lane_id} does not allow comparison view {provider_pair}"
         )
 
 
@@ -495,7 +504,14 @@ def normalize_backend_report(
                 "sourceConformanceReason": source_conformance_reason,
                 "host": host,
                 "surface": "backend_native",
+                "comparisonView": "doe_vs_dawn",
                 "providerPair": "doe_vs_dawn",
+                "providerSet": compare_axes_mod.derive_provider_set(
+                    boundary="backend_native",
+                    runtime_host="none",
+                    comparison_view="doe_vs_dawn",
+                ),
+                "providers": list(compare_axes_mod.providers_for_comparison_view("doe_vs_dawn")),
                 "governedLaneIds": [left_lane_id, right_lane_id],
                 "workloadSet": workload_set,
                 "workloadId": workload_id,
@@ -525,7 +541,14 @@ def normalize_backend_report(
 
     return rows, {
         "surface": "backend_native",
+        "comparisonView": "doe_vs_dawn",
         "providerPair": "doe_vs_dawn",
+        "providerSet": compare_axes_mod.derive_provider_set(
+            boundary="backend_native",
+            runtime_host="none",
+            comparison_view="doe_vs_dawn",
+        ),
+        "providers": list(compare_axes_mod.providers_for_comparison_view("doe_vs_dawn")),
         "governedLaneIds": rows[0]["governedLaneIds"] if rows else [],
         "hostProfile": host["profileId"],
         "runId": run_id,
@@ -617,7 +640,20 @@ def normalize_package_report(
                 "sourceConformanceReason": "",
                 "host": host,
                 "surface": surface,
+                "comparisonView": provider_pair,
                 "providerPair": provider_pair,
+                "providerSet": compare_axes_mod.derive_provider_set(
+                    boundary=compare_axes_mod.boundary_for_surface(
+                        "package" if surface.endswith("_package") else "native"
+                    ),
+                    runtime_host=(
+                        "bun"
+                        if surface == "bun_package"
+                        else ("deno" if surface == "deno_package" else "node")
+                    ),
+                    comparison_view=provider_pair,
+                ),
+                "providers": list(compare_axes_mod.providers_for_comparison_view(provider_pair)),
                 "governedLaneIds": [lane_id],
                 "workloadSet": workload_set,
                 "workloadId": workload_id,
@@ -647,7 +683,20 @@ def normalize_package_report(
 
     return rows, {
         "surface": surface,
+        "comparisonView": provider_pair,
         "providerPair": provider_pair,
+        "providerSet": compare_axes_mod.derive_provider_set(
+            boundary=compare_axes_mod.boundary_for_surface(
+                "package" if surface.endswith("_package") else "native"
+            ),
+            runtime_host=(
+                "bun"
+                if surface == "bun_package"
+                else ("deno" if surface == "deno_package" else "node")
+            ),
+            comparison_view=provider_pair,
+        ),
+        "providers": list(compare_axes_mod.providers_for_comparison_view(provider_pair)),
         "governedLaneIds": [lane_id],
         "hostProfile": host["profileId"],
         "runId": run_id,

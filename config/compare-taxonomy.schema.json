@@ -24,6 +24,7 @@
         "comparisonBoundaries",
         "runtimeHosts",
         "providerPairs",
+        "comparisonViews",
         "temperatures",
         "targetKinds",
         "presetIds",
@@ -41,6 +42,9 @@
           "$ref": "#/$defs/nonEmptyStringArray"
         },
         "providerPairs": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "comparisonViews": {
           "$ref": "#/$defs/nonEmptyStringArray"
         },
         "temperatures": {
@@ -184,6 +188,9 @@
         "comparisonBoundary",
         "runtimeHost",
         "providerPair",
+        "comparisonView",
+        "providerSet",
+        "providers",
         "temperature",
         "targetKind",
         "executorInputBoundary",
@@ -206,6 +213,17 @@
         "providerPair": {
           "type": "string",
           "minLength": 1
+        },
+        "comparisonView": {
+          "type": "string",
+          "minLength": 1
+        },
+        "providerSet": {
+          "type": "string",
+          "minLength": 1
+        },
+        "providers": {
+          "$ref": "#/$defs/nonEmptyStringArray"
         },
         "temperature": {
           "type": "string",

@@ -169,6 +169,9 @@
       "required": [
         "surface",
         "providerPair",
+        "comparisonView",
+        "providerSet",
+        "providers",
         "hostProfile",
         "workloadSet",
         "scopeType",
@@ -187,6 +190,23 @@
         "providerPair": {
           "type": "string",
           "minLength": 1
+        },
+        "comparisonView": {
+          "type": "string",
+          "minLength": 1
+        },
+        "providerSet": {
+          "type": "string",
+          "minLength": 1
+        },
+        "providers": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
         },
         "governedLaneIds": {
           "type": "array",

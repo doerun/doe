@@ -14,7 +14,8 @@
       "entrypoints": [
         "packages/doe-gpu/src/index.js",
         "packages/doe-gpu/src/compute.js",
-        "packages/doe-gpu/src/browser.js"
+        "packages/doe-gpu/src/browser.js",
+        "packages/doe-gpu/src/hybrid.js"
       ],
       "docs": [
         "packages/doe-gpu/README.md",
@@ -32,7 +33,8 @@
         "packages/doe-gpu/src"
       ],
       "entrypoints": [
-        "packages/doe-gpu/src/index.js"
+        "packages/doe-gpu/src/index.js",
+        "packages/doe-gpu/src/hybrid.js"
       ],
       "docs": [
         "packages/doe-gpu/README.md",

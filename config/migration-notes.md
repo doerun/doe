@@ -1112,9 +1112,14 @@
   - `platformLane`
   - `comparisonBoundary`
   - `runtimeHost`
-  - `providerPair`
+  - `comparisonView`
   - `temperature`
   - `targetKind`
+- Structural families and expanded rows now also carry:
+  - `providerSet`
+  - `providers`
+- `providerPair` remains in expanded rows as a compatibility alias for older
+  pair-shaped consumers.
 - The generated expansion annotates the naive cartesian product with:
   - type-correct structural membership
   - theoretical concrete target ids
@@ -1141,7 +1146,9 @@
   - `bench/native-compare/compare_dawn_vs_doe.config.apple.metal.gemma1b.bun-package.warm.ir.json`
 - `config/promoted-compare-catalog.json` and
   `config/promoted-compare-catalog.schema.json` now include an explicit
-  `packageRuntime` axis for `surface=package` entries.
+  `boundary`, `runtimeHost`, `temperature`, `comparisonView`, `providerSet`,
+  and `providers` contract alongside the legacy `surface` / `mode` /
+  `packageRuntime` aliases used by older pair runners.
 - `schemaVersion` is now `3`.
 - `bench/run_compare.py` keeps Node as the default package runtime for backward
   compatibility, and Bun rows are selected explicitly with

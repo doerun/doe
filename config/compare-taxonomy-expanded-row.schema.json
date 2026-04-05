@@ -10,6 +10,9 @@
     "comparisonBoundary",
     "runtimeHost",
     "providerPair",
+    "comparisonView",
+    "providerSet",
+    "providers",
     "temperature",
     "targetKind",
     "promotedCompareSurface",
@@ -49,6 +52,23 @@
     "providerPair": {
       "type": "string",
       "minLength": 1
+    },
+    "comparisonView": {
+      "type": "string",
+      "minLength": 1
+    },
+    "providerSet": {
+      "type": "string",
+      "minLength": 1
+    },
+    "providers": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
     },
     "temperature": {
       "type": "string",

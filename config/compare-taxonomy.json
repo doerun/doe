@@ -51,6 +51,13 @@
     "executorInputBoundaries": [
       "commands",
       "plan"
+    ],
+    "comparisonViews": [
+      "doe_vs_dawn_delegate",
+      "doe_vs_dawn_direct",
+      "doe_vs_dawn_node_webgpu",
+      "doe_vs_bun_webgpu",
+      "doe_vs_deno_webgpu"
     ]
   },
   "aliases": {
@@ -105,6 +112,12 @@
         "explore",
         "release",
         "breadth"
+      ],
+      "comparisonView": "doe_vs_dawn_delegate",
+      "providerSet": "backend_native_providers",
+      "providers": [
+        "doe",
+        "dawn"
       ]
     },
     {
@@ -124,6 +137,12 @@
         "gemma64",
         "gemma1b",
         "gemma270m-literal"
+      ],
+      "comparisonView": "doe_vs_dawn_direct",
+      "providerSet": "direct_plan_providers",
+      "providers": [
+        "doe",
+        "dawn"
       ]
     },
     {
@@ -143,6 +162,12 @@
         "gemma64",
         "gemma1b",
         "gemma270m-literal"
+      ],
+      "comparisonView": "doe_vs_dawn_node_webgpu",
+      "providerSet": "package_node_providers",
+      "providers": [
+        "doe",
+        "dawn-node-webgpu"
       ]
     },
     {
@@ -162,6 +187,12 @@
         "gemma64",
         "gemma1b",
         "gemma270m-literal"
+      ],
+      "comparisonView": "doe_vs_dawn_node_webgpu",
+      "providerSet": "package_node_providers",
+      "providers": [
+        "doe",
+        "dawn-node-webgpu"
       ]
     },
     {
@@ -181,6 +212,12 @@
         "gemma64",
         "gemma1b",
         "gemma270m-literal"
+      ],
+      "comparisonView": "doe_vs_bun_webgpu",
+      "providerSet": "package_bun_providers",
+      "providers": [
+        "doe",
+        "bun-webgpu"
       ]
     },
     {
@@ -200,6 +237,12 @@
         "gemma64",
         "gemma1b",
         "gemma270m-literal"
+      ],
+      "comparisonView": "doe_vs_bun_webgpu",
+      "providerSet": "package_bun_providers",
+      "providers": [
+        "doe",
+        "bun-webgpu"
       ]
     },
     {
@@ -219,6 +262,12 @@
         "gemma64",
         "gemma1b",
         "gemma270m-literal"
+      ],
+      "comparisonView": "doe_vs_deno_webgpu",
+      "providerSet": "package_deno_providers",
+      "providers": [
+        "doe",
+        "deno-webgpu"
       ]
     },
     {
@@ -238,6 +287,12 @@
         "gemma64",
         "gemma1b",
         "gemma270m-literal"
+      ],
+      "comparisonView": "doe_vs_deno_webgpu",
+      "providerSet": "package_deno_providers",
+      "providers": [
+        "doe",
+        "deno-webgpu"
       ]
     }
   ],

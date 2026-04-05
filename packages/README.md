@@ -11,8 +11,8 @@ contract is the package exports plus
 [`packages/doe-gpu/README.md`](./doe-gpu/README.md), not the scripts under
 `bench/`, `browser/`, or `pipeline/`.
 
-Within `doe-gpu`, subpaths such as `compute` and `browser` are subpath
-entrypoints of one package, not separate products.
+Within `doe-gpu`, subpaths such as `compute`, `browser`, and `hybrid` are
+subpath entrypoints of one package, not separate products.
 
 ## Deprecated
 

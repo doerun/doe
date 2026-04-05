@@ -91,6 +91,8 @@ This guide is the Zig style contract for `zig`.
 
 - 999 lines max per source file in `runtime/zig/src/`.
 - Shard before exceeding this limit, not after.
+- A small number of test-only WGSL files currently exceed this cap; treat those
+  as temporary sharding follow-ups, not precedent for new files.
 - Split by cohesive functionality (e.g. `pipeline_cache.zig`), not by type (e.g. `helpers.zig`).
 - Keep related code together; splitting must not scatter a single concern.
 

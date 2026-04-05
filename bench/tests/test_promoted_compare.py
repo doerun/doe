@@ -40,6 +40,11 @@ class PromotedCompareTests(unittest.TestCase):
             preset="compare",
         )
         self.assertEqual(entry.id, "apple-metal-native-compare")
+        self.assertEqual(entry.boundary, "backend_native")
+        self.assertEqual(entry.runtime_host, "none")
+        self.assertEqual(entry.temperature, "default")
+        self.assertEqual(entry.comparison_view, "doe_vs_dawn_delegate")
+        self.assertEqual(entry.provider_set, "backend_native_providers")
         self.assertEqual(entry.left_executor_id, "doe_direct_metal")
         self.assertEqual(entry.right_executor_id, "dawn_delegate_metal")
 
@@ -66,6 +71,9 @@ class PromotedCompareTests(unittest.TestCase):
         )
         self.assertEqual(entry.id, "apple-metal-gemma64-package-warm")
         self.assertEqual(entry.package_runtime, "node")
+        self.assertEqual(entry.runtime_host, "node")
+        self.assertEqual(entry.temperature, "warm")
+        self.assertEqual(entry.comparison_view, "doe_vs_dawn_node_webgpu")
         self.assertEqual(entry.left_executor_id, "doe_node_webgpu_prepared")
         self.assertEqual(entry.right_executor_id, "dawn_node_webgpu_prepared")
 
@@ -81,6 +89,8 @@ class PromotedCompareTests(unittest.TestCase):
         )
         self.assertEqual(entry.id, "apple-metal-gemma64-bun-package-warm")
         self.assertEqual(entry.package_runtime, "bun")
+        self.assertEqual(entry.runtime_host, "bun")
+        self.assertEqual(entry.comparison_view, "doe_vs_bun_webgpu")
         self.assertEqual(entry.left_executor_id, "doe_bun_package_prepared")
         self.assertEqual(entry.right_executor_id, "bun_webgpu_package_prepared")
 
@@ -103,6 +113,14 @@ class PromotedCompareTests(unittest.TestCase):
         self.assertEqual(argv[0], sys.executable)
         self.assertEqual(argv[1], str(DEFAULT_COMPARE_SCRIPT))
         self.assertIn("--config", argv)
+        self.assertIn("--boundary", argv)
+        self.assertIn("package_surface", argv)
+        self.assertIn("--runtime-host", argv)
+        self.assertIn("node", argv)
+        self.assertIn("--temperature", argv)
+        self.assertIn("cold", argv)
+        self.assertIn("--comparison-view", argv)
+        self.assertIn("doe_vs_dawn_node_webgpu", argv)
         self.assertIn("--iterations", argv)
         self.assertIn("20", argv)
         self.assertIn(
@@ -147,7 +165,7 @@ class PromotedCompareTests(unittest.TestCase):
             resolve_entry(
                 entries,
                 backend="apple-metal",
-                surface="package",
+                boundary="package_surface",
                 workload="gemma270m-literal",
             )
 

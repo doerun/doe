@@ -5,12 +5,19 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from dataclasses import dataclass
 from itertools import product
 from pathlib import Path
 
-
 REPO_ROOT = Path(__file__).resolve().parents[2]
+BENCH_ROOT = REPO_ROOT / "bench"
+for _path_entry in (str(REPO_ROOT), str(BENCH_ROOT)):
+    if _path_entry not in sys.path:
+        sys.path.insert(0, _path_entry)
+
+from bench.lib import compare_axes as compare_axes_mod
+
 DEFAULT_TAXONOMY_PATH = REPO_ROOT / "config" / "compare-taxonomy.json"
 DEFAULT_PROMOTED_CATALOG_PATH = REPO_ROOT / "config" / "promoted-compare-catalog.json"
 DEFAULT_OUTPUT_PATH = REPO_ROOT / "config" / "generated" / "compare-taxonomy-expanded.jsonl"
@@ -21,7 +28,9 @@ class StructuralFamily:
     id: str
     comparison_boundary: str
     runtime_host: str
-    provider_pair: str
+    comparison_view: str
+    provider_set: str
+    providers: tuple[str, ...]
     temperature: str
     target_kind: str
     executor_input_boundary: str
@@ -83,7 +92,31 @@ def parse_structural_families(payload: dict) -> list[StructuralFamily]:
                 id=family_id,
                 comparison_boundary=raw["comparisonBoundary"],
                 runtime_host=raw["runtimeHost"],
-                provider_pair=raw["providerPair"],
+                comparison_view=raw.get("comparisonView", raw["providerPair"]),
+                provider_set=raw.get(
+                    "providerSet",
+                    compare_axes_mod.derive_provider_set(
+                        boundary=raw["comparisonBoundary"],
+                        runtime_host=raw["runtimeHost"],
+                        comparison_view=raw.get("comparisonView", raw["providerPair"]),
+                    ),
+                ),
+                providers=tuple(
+                    raw.get("providers")
+                    or compare_axes_mod.providers_for_comparison_view(
+                        raw.get("comparisonView", raw["providerPair"])
+                    )
+                    or compare_axes_mod.providers_for_provider_set(
+                        raw.get(
+                            "providerSet",
+                            compare_axes_mod.derive_provider_set(
+                                boundary=raw["comparisonBoundary"],
+                                runtime_host=raw["runtimeHost"],
+                                comparison_view=raw.get("comparisonView", raw["providerPair"]),
+                            ),
+                        )
+                    )
+                ),
                 temperature=raw["temperature"],
                 target_kind=raw["targetKind"],
                 executor_input_boundary=raw["executorInputBoundary"],
@@ -143,19 +176,34 @@ def actual_promoted_profile_map(
     promoted_catalog: dict,
     *,
     surface_alias_to_boundary: dict[str, str],
-) -> dict[tuple[str, str, str, str, str, str], list[str]]:
-    profile_map: dict[tuple[str, str, str, str, str, str], list[str]] = {}
+) -> dict[tuple[str, str, str, str, str, str, str], list[str]]:
+    profile_map: dict[tuple[str, str, str, str, str, str, str], list[str]] = {}
     for raw in promoted_catalog["entries"]:
-        surface = raw["surface"]
-        boundary = surface_alias_to_boundary[surface]
-        runtime_host = raw.get("packageRuntime", "none") if boundary == "package_surface" else "none"
+        surface = raw.get(
+            "surface",
+            compare_axes_mod.surface_for_boundary(raw["boundary"]),
+        )
+        boundary = raw.get("boundary", surface_alias_to_boundary[surface])
+        runtime_host = raw.get(
+            "runtimeHost",
+            raw.get("packageRuntime", "none") if boundary == "package_surface" else "none",
+        )
+        comparison_view = raw.get(
+            "comparisonView",
+            compare_axes_mod.derive_comparison_view(
+                surface=surface,
+                runtime_host=runtime_host,
+                provider_pair=raw.get("providerPair", ""),
+            ),
+        )
         target_kind = "preset" if "preset" in raw else "workload"
         target_id = raw["preset"] if target_kind == "preset" else raw["workload"]
         key = (
             raw["backend"],
             boundary,
             runtime_host,
-            raw["mode"],
+            comparison_view,
+            raw.get("temperature", raw["mode"]),
             target_kind,
             target_id,
         )
@@ -169,8 +217,8 @@ def expected_promoted_keys(
     coverage_entries: list[PromotedCoverage],
     *,
     family_by_id: dict[str, StructuralFamily],
-) -> set[tuple[str, str, str, str, str, str]]:
-    keys: set[tuple[str, str, str, str, str, str]] = set()
+) -> set[tuple[str, str, str, str, str, str, str]]:
+    keys: set[tuple[str, str, str, str, str, str, str]] = set()
     for coverage in coverage_entries:
         family = family_by_id[coverage.family_id]
         for target_id in coverage.target_ids:
@@ -179,6 +227,7 @@ def expected_promoted_keys(
                     coverage.platform_lane,
                     family.comparison_boundary,
                     family.runtime_host,
+                    family.comparison_view,
                     family.temperature,
                     family.target_kind,
                     target_id,
@@ -192,7 +241,7 @@ def validate_promoted_subset_alignment(
     promoted_catalog: dict,
     *,
     family_by_id: dict[str, StructuralFamily],
-) -> dict[tuple[str, str, str, str, str, str], list[str]]:
+) -> dict[tuple[str, str, str, str, str, str, str], list[str]]:
     coverage_entries = parse_promoted_coverage(payload, family_by_id)
     surface_aliases = surface_alias_by_boundary(payload)
     actual = actual_promoted_profile_map(
@@ -219,7 +268,7 @@ def matching_family(
     platform_lane: str,
     comparison_boundary: str,
     runtime_host: str,
-    provider_pair: str,
+    comparison_view: str,
     temperature: str,
     target_kind: str,
 ) -> StructuralFamily | None:
@@ -228,7 +277,7 @@ def matching_family(
         for family in families
         if family.comparison_boundary == comparison_boundary
         and family.runtime_host == runtime_host
-        and family.provider_pair == provider_pair
+        and family.comparison_view == comparison_view
         and family.temperature == temperature
         and family.target_kind == target_kind
         and platform_lane in family.structural_platform_lanes
@@ -237,7 +286,7 @@ def matching_family(
         raise ValueError(
             "multiple structural families matched "
             f"platformLane={platform_lane}, comparisonBoundary={comparison_boundary}, "
-            f"runtimeHost={runtime_host}, providerPair={provider_pair}, "
+            f"runtimeHost={runtime_host}, comparisonView={comparison_view}, "
             f"temperature={temperature}, targetKind={target_kind}"
         )
     return matches[0] if matches else None
@@ -246,7 +295,7 @@ def matching_family(
 def build_rows(
     payload: dict,
     *,
-    promoted_profile_map: dict[tuple[str, str, str, str, str, str], list[str]],
+    promoted_profile_map: dict[tuple[str, str, str, str, str, str, str], list[str]],
 ) -> list[dict]:
     families = parse_structural_families(payload)
     family_by_id = {family.id: family for family in families}
@@ -264,14 +313,14 @@ def build_rows(
         platform_lane,
         comparison_boundary,
         runtime_host,
-        provider_pair,
+        comparison_view,
         temperature,
         target_kind,
     ) in product(
         axes["platformLanes"],
         axes["comparisonBoundaries"],
         axes["runtimeHosts"],
-        axes["providerPairs"],
+        axes.get("comparisonViews") or axes["providerPairs"],
         axes["temperatures"],
         axes["targetKinds"],
     ):
@@ -280,7 +329,7 @@ def build_rows(
             platform_lane=platform_lane,
             comparison_boundary=comparison_boundary,
             runtime_host=runtime_host,
-            provider_pair=provider_pair,
+            comparison_view=comparison_view,
             temperature=temperature,
             target_kind=target_kind,
         )
@@ -293,6 +342,7 @@ def build_rows(
                     platform_lane,
                     comparison_boundary,
                     runtime_host,
+                    comparison_view,
                     temperature,
                     target_kind,
                     target_id,
@@ -306,7 +356,7 @@ def build_rows(
                     platform_lane,
                     comparison_boundary,
                     runtime_host,
-                    provider_pair,
+                    comparison_view,
                     temperature,
                     target_kind,
                 ]
@@ -314,7 +364,31 @@ def build_rows(
             "platformLane": platform_lane,
             "comparisonBoundary": comparison_boundary,
             "runtimeHost": runtime_host,
-            "providerPair": provider_pair,
+            "comparisonView": comparison_view,
+            "providerPair": comparison_view,
+            "providerSet": (
+                family.provider_set
+                if family is not None
+                else compare_axes_mod.derive_provider_set(
+                    boundary=comparison_boundary,
+                    runtime_host=runtime_host,
+                    comparison_view=comparison_view,
+                )
+            ),
+            "providers": list(
+                family.providers
+                if family is not None
+                else (
+                    compare_axes_mod.providers_for_comparison_view(comparison_view)
+                    or compare_axes_mod.providers_for_provider_set(
+                        compare_axes_mod.derive_provider_set(
+                            boundary=comparison_boundary,
+                            runtime_host=runtime_host,
+                            comparison_view=comparison_view,
+                        )
+                    )
+                )
+            ),
             "temperature": temperature,
             "targetKind": target_kind,
             "promotedCompareSurface": promoted_surface_aliases[comparison_boundary],

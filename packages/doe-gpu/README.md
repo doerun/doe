@@ -7,8 +7,8 @@
 Zig-first WebGPU runtime for Node.js, Bun, and Deno.
 
 `doe-gpu` is the npm package surface for Doe. It ships a JavaScript layer over
-the Doe native runtime, plus narrower subpath exports for compute-focused and
-browser-facing use cases.
+the Doe native runtime, plus narrower subpath exports for compute-focused,
+browser-facing, and hybrid-local fallback use cases.
 
 ## Install
 
@@ -33,6 +33,8 @@ runtime. It includes:
 - WebGPU-style entrypoints such as `requestAdapter()`, `requestDevice()`, and `setupGlobals()`
 - the higher-level `gpu` namespace for one-shot compute and helper-oriented workflows
 - runtime helpers such as `providerInfo()` and `createDoeRuntime()`
+- subpath entrypoints such as `doe-gpu/compute`, `doe-gpu/browser`, and
+  `doe-gpu/hybrid`
 
 ## Usage
 

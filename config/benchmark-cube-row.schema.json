@@ -13,6 +13,9 @@
     "host",
     "surface",
     "providerPair",
+    "comparisonView",
+    "providerSet",
+    "providers",
     "governedLaneIds",
     "workloadSet",
     "workloadId",
@@ -99,6 +102,23 @@
     "providerPair": {
       "type": "string",
       "minLength": 1
+    },
+    "comparisonView": {
+      "type": "string",
+      "minLength": 1
+    },
+    "providerSet": {
+      "type": "string",
+      "minLength": 1
+    },
+    "providers": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
     },
     "governedLaneIds": {
       "type": "array",

@@ -67,6 +67,13 @@
               "minLength": 1
             }
           },
+          "comparisonViews": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
           "sourceReportTypes": {
             "type": "array",
             "minItems": 1,
