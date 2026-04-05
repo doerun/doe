@@ -1,221 +1,96 @@
-# Benchmark harness taxonomy
+# Benchmark taxonomy
 
 ## Purpose
 
-This document defines the benchmark and comparison harness classes in Doe, the question each class answers, and which classes may share code versus remain separate.
+This document defines the benchmark model for Doe: how products are run,
+how results are compared, and which surfaces exist.
 
-For the canonical compare-axis language (`platformLane`, `comparisonBoundary`,
-`runtimeHost`, and the generated cartesian-product expansion), use
-`docs/compare-taxonomy.md` and `config/compare-taxonomy.json`.
+For the canonical axis language, use `docs/compare-taxonomy.md` and
+`config/compare-taxonomy.json`.
 
-The key rule is:
+## Core model
 
-- keep separate anything that changes the contract under test
-- share code only where the contract stays the same
+Two operations, not specialized per-pair harnesses:
 
-Do not collapse these harnesses into one generic runner. That would blur evidence classes and make failures harder to interpret.
+1. **Run** — execute one product on one workload under one axis combination.
+   Produces an independent run artifact.
+2. **Compare** — ingest N independent run artifacts for the same workload and
+   axes and produce comparison evidence under comparability and claimability
+   contracts.
 
-## Harness classes
+Products are pluggable. Adding a new product means registering an executor,
+not writing a new harness. "Compare A vs B" is never a harness — it is
+"run A, run B, compare."
 
-### 1. Single-runtime measurement
+## Products
 
-- Primary entrypoint: `bench/single-runtime/run_bench.py`
-- Question: "How does one runtime perform on a configured workload?"
-- Contract: one runtime, one workload template, measured timing artifact
-- Allowed outputs:
-  - single-runtime benchmark artifacts
-  - baseline-relative measurement
-- Not for:
-  - claimable Doe-vs-Dawn comparison
-  - package-surface comparison
-  - browser projection evidence
+A product is an independently runnable WebGPU implementation or toolchain:
 
-### 2. Left/right runtime comparison
+- `doe` — Doe direct backend (Zig runtime)
+- `dawn` — Dawn delegate or standalone Dawn executor
+- `tint` — Dawn's WGSL compiler (compilation surface only)
+- `dawn_node_webgpu` — Dawn's Node WebGPU binding
+- `bun_webgpu` — Bun's native WebGPU
+- `deno_webgpu` — Deno's native WebGPU
 
-- Primary entrypoint: `bench/native-compare/compare_dawn_vs_doe.py`
-- Question: "Given the same workload contract, is Doe comparable to and faster/slower than Dawn?"
-- Contract:
-  - explicit left/right executors or runtime templates
-  - left is normally Doe's direct backend implementation path
-  - right may be either Doe's Dawn delegate path or a standalone non-Doe WebGPU executor
-  - timing-source selection
-  - comparability obligations
-  - claimability status
-- Allowed outputs:
-  - canonical Doe-vs-Dawn compare reports
-  - `comparisonStatus`
-  - `claimStatus`
-- This is the main claim-grade compare harness.
-- The current executor architecture is:
-  - authored neutral benchmark IR
-  - normalized executable plan
-  - executor-specific implementation
-  - shared compare/report contract
+Each product has one or more executors that implement the run contract for
+a given surface.
 
-### 3. Generic ad hoc runtime comparison
+## Surfaces
 
-- Primary entrypoint: `bench/native-compare/compare_runtimes.py`
-- Question: "How do these two commands compare if I just want repeated wall-time measurements?"
-- Contract: generic two-command repeated execution
-- Allowed outputs:
-  - diagnostic left/right comparison artifacts
-- Not for:
-  - claim-grade comparability
-  - workload-contract substantiation
+A surface is the execution boundary being tested:
 
-### 4. Package-surface comparison
+- `backend_native` — direct backend implementation (Zig/C++ runtime CLI)
+- `direct_plan` — normalized plan executor (plan-backed comparable rows)
+- `package` — JS package API (Node/Bun/Deno providers)
+- `abi_dropin` — shared-library ABI surface
+- `browser` — real browser process (Playwright)
+- `compiler` — WGSL compilation toolchain
 
-- Primary entrypoints:
-  - `bench/package-compare/node/compare.js`
-  - `bench/package-compare/bun/compare.js`
-  - `bench/package-compare/deno/compare.js`
-- Question: "How does the package surface behave and perform for users of Node/Bun/Deno WebGPU APIs?"
-- Contract:
-  - provider-level validation prepass
-  - package runtime execution through per-provider runners
-  - package compare report
-- Allowed outputs:
-  - package-surface compare reports
-  - cube-ingestable package rows
-- Separate from runtime compare because the execution surface is the package API, not the Doe runtime CLI.
+## Comparison is post-hoc
 
-### 5. Targeted JS attribution experiments
+Comparison is never baked into a runner. A runner produces an artifact for
+one product. The comparison framework:
 
-- Primary entrypoints:
-  - `bench/diagnostics/node/bench-headless-webgpu-comparison.mjs`
-  - `bench/diagnostics/node/bench-streaming-webgpu-comparison.mjs`
-  - `bench/diagnostics/node/bench-doe-routines-vs-cpu.mjs`
-- Question: "Why is this path fast or slow?"
-- Contract:
-  - targeted experiment
-  - often multi-runner or CPU-vs-GPU
-  - phase-attribution output
-- Allowed outputs:
-  - engineering diagnosis
-  - wrapper-model comparisons
-  - phase breakdowns
-- Not for:
-  - canonical claim lanes
-  - release substantiation
+1. Ingests independent run artifacts for the same workload and axes
+2. Enforces comparability contracts (timing class, structural equivalence,
+   normalization parity)
+3. Produces comparison reports with claimability status
 
-### 6. ABI / drop-in benchmark validation
+Adding product C to an existing A-vs-B comparison is just "run C, feed
+all three to compare" — no new harness needed.
 
-- Primary entrypoint: `bench/drop-in/dropin_benchmark_suite.py`
-- Question: "How does the drop-in shared-library surface behave and perform?"
-- Contract:
-  - artifact-linked ABI surface
-  - micro and end-to-end drop-in benchmarks
-- Allowed outputs:
-  - drop-in benchmark reports
-  - drop-in gate evidence
-- Separate from native/package/browser lanes because the test surface is the shared-library ABI.
+## Correctness surfaces
 
-### 7. Browser smoke correctness
+Correctness gates are separate from performance:
 
-- Primary entrypoints:
-  - `browser/chromium/scripts/run-smoke.sh`
-  - `browser/chromium/scripts/webgpu-playwright-smoke.mjs`
-- Question: "Does WebGPU work correctly in a real Chromium browser process?"
-- Contract:
-  - Playwright-driven real browser execution
-  - compute and render smoke checks
-- Allowed outputs:
-  - browser correctness evidence
-  - browser gate evidence
-- Separate from browser benchmark lanes because smoke is correctness-first, not performance projection.
+- Browser smoke (Playwright) — "does WebGPU work in a real browser?"
+- ABI drop-in validation — "does the shared-library surface behave correctly?"
+- Runtime test suites — `zig build test`, `zig build test-wgsl`
 
-### 8. Browser benchmark projection
-
-- Primary entrypoints:
-  - `browser/chromium/scripts/run-bench.sh`
-  - `browser/chromium/scripts/run-browser-benchmark-superset.py`
-  - `browser/chromium/scripts/webgpu-playwright-layered-bench.mjs`
-- Question: "How do browser-layer projections of core workloads behave in real Chromium execution?"
-- Contract:
-  - generated projections from core workloads
-  - layered browser benchmark classes (`L1`, `L2`)
-  - browser-local diagnostic evidence unless explicitly promoted
-- Allowed outputs:
-  - layered browser benchmark reports
-  - browser promotion evidence
-- Separate from package-surface and native lanes because the execution surface is an actual browser process with browser lifecycle overhead.
-
-### 9. WGSL compilation comparison
-
-- Primary entrypoints:
-  - `bench/native-compare/compare_doe_vs_tint_compilation.py`
-  - also dispatchable via `compare_dawn_vs_doe.py` with `runnerType: "compilation"` catalog entries
-- Question: "How does Doe's WGSL compiler compare to Tint (Dawn's compiler) for shader compilation speed?"
-- Contract:
-  - left: Doe `doe-compilation-bench` binary
-  - right: Tint CLI for raw process-wall timings
-  - optional right-side warm view from Dawn's `tint_benchmark` target
-  - per-shader WGSL-to-target (MSL/SPIR-V) compilation timing
-  - named workload rows from `bench/workloads/*.json` are the canonical source
-    for what gets compiled
-  - compiler rows may point at the standalone compilation corpus or at real
-    `bench/inference-pipeline/kernels/*.wgsl` model kernels
-- Allowed outputs:
-  - per-shader compilation time deltas
-  - raw Tint process-wall results plus a startup-corrected derived view
-  - real warm/in-process Tint benchmark results when the compare config points
-    at Dawn's benchmark corpus and `tint_benchmark`
-  - directional Doe-vs-Tint compilation reports
-- Not for:
-  - claim-grade runtime performance comparison
-  - runtime dispatch or execution evidence
-- Separate from runtime compare because the surface is the compiler toolchain, not the GPU runtime. Different codebases (Doe ~13.7K LOC vs Tint ~200K LOC) make strict comparability structurally impossible; all results are directional.
-
-## What may share code
-
-These are valid consolidation targets because they keep the same contract class:
-
-- Node, Bun, and Deno compare orchestration
-  - shared package-compare core
-  - thin `bench/package-compare/node/compare.js`, `bench/package-compare/bun/compare.js`, and `bench/package-compare/deno/compare.js` wrappers
-- Targeted JS attribution benches
-  - shared experiment driver
-  - workload-specific scenario modules
-- Internal helper modules inside `bench/native-compare/modules/`
-  - timing/reporting/comparability/claimability are already the right level of sharing
+These produce correctness evidence, not performance artifacts.
 
 ## What must remain separate
 
-Do not merge these classes:
-
-- `run_bench.py` with `compare_dawn_vs_doe.py`
-- runtime compare with package compare
-- package compare with browser Playwright harnesses
-- browser smoke with browser benchmark projection
-- claim lanes with targeted attribution experiments
-- drop-in benchmark suite with runtime/package/browser harnesses
-- compilation comparison with runtime comparison
-
-If these are merged, the same artifact format would start mixing different contracts, which makes status interpretation unreliable.
-
-## Retirement criteria
-
-The only obvious retirement candidate is `bench/native-compare/compare_runtimes.py`.
-
-Keep it only if it still has an active niche:
-
-- fast ad hoc left/right diagnostics
-- situations where full workload-contract comparability is unnecessary
-
-If all active users actually need workload-contract evidence, it can be retired in favor of `bench/native-compare/compare_dawn_vs_doe.py`.
+- Run and compare operations (a runner never contains comparison logic)
+- Performance and correctness surfaces
+- Claim-grade evidence and diagnostic/attribution experiments
 
 ## Practical decision rule
 
-When adding a new harness, decide by the first question:
+When adding a new benchmark:
 
-1. What surface is being tested?
-   - runtime implementation path
-   - package API
-   - browser
-   - ABI/drop-in
-   - compiler toolchain
-2. Is this correctness smoke, canonical comparison, or diagnostic attribution?
-3. Does it need claim-grade status, or only engineering guidance?
+1. Is this a new product? Register an executor.
+2. Is this a new surface? Define the run contract.
+3. Is this a new comparison? Run both products and feed to compare.
 
-If the answer changes any of those three, add a separate harness class.
-If not, extend or refactor within the existing class.
+If you find yourself writing a new `compare_X_vs_Y` script, stop — that is
+the old model. Run X, run Y, compare.
+
+## Migration status
+
+The current harness code (`compare_dawn_vs_doe.py`, package compare scripts,
+etc.) still uses the old pair-based model internally. Migration to the
+product-based model is tracked in `docs/status.md`. The taxonomy and axis
+language defined here and in `docs/compare-taxonomy.md` are the target
+architecture.

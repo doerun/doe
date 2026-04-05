@@ -1,664 +1,974 @@
 {
-  "schemaVersion": 3,
   "entries": [
     {
-      "id": "amd-vulkan-native-smoke",
       "backend": "amd-vulkan",
-      "boundary": "backend_native",
-      "runtimeHost": "none",
-      "temperature": "default",
-      "comparisonView": "doe_vs_dawn_delegate",
-      "providerSet": "backend_native_providers",
-      "providers": [
-        "doe",
-        "dawn"
-      ],
-      "surface": "native",
-      "preset": "smoke",
-      "mode": "default",
       "benchmarkClass": "native-runtime-preset",
-      "leftExecutorId": "doe_direct_vulkan",
-      "rightExecutorId": "dawn_delegate_vulkan",
+      "boundary": "backend_native",
+      "comparisonView": "doe_vs_dawn_delegate",
       "configPath": "bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.smoke.json",
-      "description": "Doe native Vulkan vs Dawn delegate Vulkan smoke preset."
-    },
-    {
-      "id": "amd-vulkan-native-smoke-gpu",
-      "backend": "amd-vulkan",
-      "boundary": "backend_native",
-      "runtimeHost": "none",
-      "temperature": "default",
-      "comparisonView": "doe_vs_dawn_delegate",
+      "description": "Doe native Vulkan vs Dawn delegate Vulkan smoke preset.",
+      "id": "amd-vulkan-native-smoke",
+      "leftExecutorId": "doe_direct_vulkan",
+      "mode": "default",
+      "preset": "smoke",
+      "products": {
+        "baseline": {
+          "executorId": "doe_direct_vulkan",
+          "product": "doe"
+        },
+        "comparison": {
+          "executorId": "dawn_delegate_vulkan",
+          "product": "dawn"
+        }
+      },
       "providerSet": "backend_native_providers",
       "providers": [
         "doe",
         "dawn"
       ],
-      "surface": "native",
-      "preset": "smoke-gpu",
-      "mode": "default",
-      "benchmarkClass": "native-runtime-preset",
-      "leftExecutorId": "doe_direct_vulkan",
       "rightExecutorId": "dawn_delegate_vulkan",
+      "runtimeHost": "none",
+      "surface": "native",
+      "temperature": "default"
+    },
+    {
+      "backend": "amd-vulkan",
+      "benchmarkClass": "native-runtime-preset",
+      "boundary": "backend_native",
+      "comparisonView": "doe_vs_dawn_delegate",
       "configPath": "bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.smoke.gpu.json",
-      "description": "Doe native Vulkan vs Dawn delegate Vulkan GPU smoke preset."
-    },
-    {
-      "id": "amd-vulkan-native-compare-dev",
-      "backend": "amd-vulkan",
-      "boundary": "backend_native",
-      "runtimeHost": "none",
-      "temperature": "default",
-      "comparisonView": "doe_vs_dawn_delegate",
+      "description": "Doe native Vulkan vs Dawn delegate Vulkan GPU smoke preset.",
+      "id": "amd-vulkan-native-smoke-gpu",
+      "leftExecutorId": "doe_direct_vulkan",
+      "mode": "default",
+      "preset": "smoke-gpu",
+      "products": {
+        "baseline": {
+          "executorId": "doe_direct_vulkan",
+          "product": "doe"
+        },
+        "comparison": {
+          "executorId": "dawn_delegate_vulkan",
+          "product": "dawn"
+        }
+      },
       "providerSet": "backend_native_providers",
       "providers": [
         "doe",
         "dawn"
       ],
-      "surface": "native",
-      "preset": "compare-dev",
-      "mode": "default",
-      "benchmarkClass": "native-runtime-preset",
-      "leftExecutorId": "doe_direct_vulkan",
       "rightExecutorId": "dawn_delegate_vulkan",
+      "runtimeHost": "none",
+      "surface": "native",
+      "temperature": "default"
+    },
+    {
+      "backend": "amd-vulkan",
+      "benchmarkClass": "native-runtime-preset",
+      "boundary": "backend_native",
+      "comparisonView": "doe_vs_dawn_delegate",
       "configPath": "bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.compare-dev.json",
-      "description": "Doe native Vulkan vs Dawn delegate Vulkan compare-dev preset."
-    },
-    {
-      "id": "amd-vulkan-native-compare",
-      "backend": "amd-vulkan",
-      "boundary": "backend_native",
-      "runtimeHost": "none",
-      "temperature": "default",
-      "comparisonView": "doe_vs_dawn_delegate",
+      "description": "Doe native Vulkan vs Dawn delegate Vulkan compare-dev preset.",
+      "id": "amd-vulkan-native-compare-dev",
+      "leftExecutorId": "doe_direct_vulkan",
+      "mode": "default",
+      "preset": "compare-dev",
+      "products": {
+        "baseline": {
+          "executorId": "doe_direct_vulkan",
+          "product": "doe"
+        },
+        "comparison": {
+          "executorId": "dawn_delegate_vulkan",
+          "product": "dawn"
+        }
+      },
       "providerSet": "backend_native_providers",
       "providers": [
         "doe",
         "dawn"
       ],
-      "surface": "native",
-      "preset": "compare",
-      "mode": "default",
-      "benchmarkClass": "native-runtime-preset",
-      "leftExecutorId": "doe_direct_vulkan",
       "rightExecutorId": "dawn_delegate_vulkan",
+      "runtimeHost": "none",
+      "surface": "native",
+      "temperature": "default"
+    },
+    {
+      "backend": "amd-vulkan",
+      "benchmarkClass": "native-runtime-preset",
+      "boundary": "backend_native",
+      "comparisonView": "doe_vs_dawn_delegate",
       "configPath": "bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.compare.json",
-      "description": "Doe native Vulkan vs Dawn delegate Vulkan compare preset."
-    },
-    {
-      "id": "amd-vulkan-native-frontier",
-      "backend": "amd-vulkan",
-      "boundary": "backend_native",
-      "runtimeHost": "none",
-      "temperature": "default",
-      "comparisonView": "doe_vs_dawn_delegate",
+      "description": "Doe native Vulkan vs Dawn delegate Vulkan compare preset.",
+      "id": "amd-vulkan-native-compare",
+      "leftExecutorId": "doe_direct_vulkan",
+      "mode": "default",
+      "preset": "compare",
+      "products": {
+        "baseline": {
+          "executorId": "doe_direct_vulkan",
+          "product": "doe"
+        },
+        "comparison": {
+          "executorId": "dawn_delegate_vulkan",
+          "product": "dawn"
+        }
+      },
       "providerSet": "backend_native_providers",
       "providers": [
         "doe",
         "dawn"
       ],
-      "surface": "native",
-      "preset": "frontier",
-      "mode": "default",
-      "benchmarkClass": "native-runtime-preset",
-      "leftExecutorId": "doe_direct_vulkan",
       "rightExecutorId": "dawn_delegate_vulkan",
+      "runtimeHost": "none",
+      "surface": "native",
+      "temperature": "default"
+    },
+    {
+      "backend": "amd-vulkan",
+      "benchmarkClass": "native-runtime-preset",
+      "boundary": "backend_native",
+      "comparisonView": "doe_vs_dawn_delegate",
       "configPath": "bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.frontier.json",
-      "description": "Doe native Vulkan vs Dawn delegate Vulkan frontier preset."
-    },
-    {
-      "id": "amd-vulkan-native-explore",
-      "backend": "amd-vulkan",
-      "boundary": "backend_native",
-      "runtimeHost": "none",
-      "temperature": "default",
-      "comparisonView": "doe_vs_dawn_delegate",
+      "description": "Doe native Vulkan vs Dawn delegate Vulkan frontier preset.",
+      "id": "amd-vulkan-native-frontier",
+      "leftExecutorId": "doe_direct_vulkan",
+      "mode": "default",
+      "preset": "frontier",
+      "products": {
+        "baseline": {
+          "executorId": "doe_direct_vulkan",
+          "product": "doe"
+        },
+        "comparison": {
+          "executorId": "dawn_delegate_vulkan",
+          "product": "dawn"
+        }
+      },
       "providerSet": "backend_native_providers",
       "providers": [
         "doe",
         "dawn"
       ],
-      "surface": "native",
-      "preset": "explore",
-      "mode": "default",
-      "benchmarkClass": "native-runtime-preset",
-      "leftExecutorId": "doe_direct_vulkan",
       "rightExecutorId": "dawn_delegate_vulkan",
+      "runtimeHost": "none",
+      "surface": "native",
+      "temperature": "default"
+    },
+    {
+      "backend": "amd-vulkan",
+      "benchmarkClass": "native-runtime-preset",
+      "boundary": "backend_native",
+      "comparisonView": "doe_vs_dawn_delegate",
       "configPath": "bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.explore.json",
-      "description": "Doe native Vulkan vs Dawn delegate Vulkan explore preset."
-    },
-    {
-      "id": "amd-vulkan-native-release",
-      "backend": "amd-vulkan",
-      "boundary": "backend_native",
-      "runtimeHost": "none",
-      "temperature": "default",
-      "comparisonView": "doe_vs_dawn_delegate",
-      "providerSet": "backend_native_providers",
-      "providers": [
-        "doe",
-        "dawn"
-      ],
-      "surface": "native",
-      "preset": "release",
-      "mode": "default",
-      "benchmarkClass": "native-runtime-preset",
+      "description": "Doe native Vulkan vs Dawn delegate Vulkan explore preset.",
+      "id": "amd-vulkan-native-explore",
       "leftExecutorId": "doe_direct_vulkan",
+      "mode": "default",
+      "preset": "explore",
+      "products": {
+        "baseline": {
+          "executorId": "doe_direct_vulkan",
+          "product": "doe"
+        },
+        "comparison": {
+          "executorId": "dawn_delegate_vulkan",
+          "product": "dawn"
+        }
+      },
+      "providerSet": "backend_native_providers",
+      "providers": [
+        "doe",
+        "dawn"
+      ],
       "rightExecutorId": "dawn_delegate_vulkan",
+      "runtimeHost": "none",
+      "surface": "native",
+      "temperature": "default"
+    },
+    {
+      "backend": "amd-vulkan",
+      "benchmarkClass": "native-runtime-preset",
+      "boundary": "backend_native",
+      "comparisonView": "doe_vs_dawn_delegate",
       "configPath": "bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.release.json",
-      "description": "Doe native Vulkan vs Dawn delegate Vulkan release preset."
-    },
-    {
-      "id": "apple-metal-native-smoke",
-      "backend": "apple-metal",
-      "boundary": "backend_native",
-      "runtimeHost": "none",
-      "temperature": "default",
-      "comparisonView": "doe_vs_dawn_delegate",
+      "description": "Doe native Vulkan vs Dawn delegate Vulkan release preset.",
+      "id": "amd-vulkan-native-release",
+      "leftExecutorId": "doe_direct_vulkan",
+      "mode": "default",
+      "preset": "release",
+      "products": {
+        "baseline": {
+          "executorId": "doe_direct_vulkan",
+          "product": "doe"
+        },
+        "comparison": {
+          "executorId": "dawn_delegate_vulkan",
+          "product": "dawn"
+        }
+      },
       "providerSet": "backend_native_providers",
       "providers": [
         "doe",
         "dawn"
       ],
+      "rightExecutorId": "dawn_delegate_vulkan",
+      "runtimeHost": "none",
       "surface": "native",
-      "preset": "smoke",
-      "mode": "default",
+      "temperature": "default"
+    },
+    {
+      "backend": "apple-metal",
       "benchmarkClass": "native-runtime-preset",
-      "leftExecutorId": "doe_direct_metal",
-      "rightExecutorId": "dawn_delegate_metal",
+      "boundary": "backend_native",
+      "comparisonView": "doe_vs_dawn_delegate",
       "configPath": "bench/native-compare/compare_dawn_vs_doe.config.apple.metal.smoke.json",
-      "description": "Doe native Metal vs Dawn delegate Metal smoke preset."
-    },
-    {
-      "id": "apple-metal-native-compare-dev",
-      "backend": "apple-metal",
-      "boundary": "backend_native",
-      "runtimeHost": "none",
-      "temperature": "default",
-      "comparisonView": "doe_vs_dawn_delegate",
-      "providerSet": "backend_native_providers",
-      "providers": [
-        "doe",
-        "dawn"
-      ],
-      "surface": "native",
-      "preset": "compare-dev",
-      "mode": "default",
-      "benchmarkClass": "native-runtime-preset",
+      "description": "Doe native Metal vs Dawn delegate Metal smoke preset.",
+      "id": "apple-metal-native-smoke",
       "leftExecutorId": "doe_direct_metal",
-      "rightExecutorId": "dawn_delegate_metal",
-      "configPath": "bench/native-compare/compare_dawn_vs_doe.config.apple.metal.compare-dev.json",
-      "description": "Doe native Metal vs Dawn delegate Metal compare-dev preset."
-    },
-    {
-      "id": "apple-metal-native-compare",
-      "backend": "apple-metal",
-      "boundary": "backend_native",
-      "runtimeHost": "none",
-      "temperature": "default",
-      "comparisonView": "doe_vs_dawn_delegate",
-      "providerSet": "backend_native_providers",
-      "providers": [
-        "doe",
-        "dawn"
-      ],
-      "surface": "native",
-      "preset": "compare",
       "mode": "default",
-      "benchmarkClass": "native-runtime-preset",
-      "leftExecutorId": "doe_direct_metal",
-      "rightExecutorId": "dawn_delegate_metal",
-      "configPath": "bench/native-compare/compare_dawn_vs_doe.config.apple.metal.compare.json",
-      "description": "Doe native Metal vs Dawn delegate Metal compare preset."
-    },
-    {
-      "id": "apple-metal-native-frontier",
-      "backend": "apple-metal",
-      "boundary": "backend_native",
-      "runtimeHost": "none",
-      "temperature": "default",
-      "comparisonView": "doe_vs_dawn_delegate",
-      "providerSet": "backend_native_providers",
-      "providers": [
-        "doe",
-        "dawn"
-      ],
-      "surface": "native",
-      "preset": "frontier",
-      "mode": "default",
-      "benchmarkClass": "native-runtime-preset",
-      "leftExecutorId": "doe_direct_metal",
-      "rightExecutorId": "dawn_delegate_metal",
-      "configPath": "bench/native-compare/compare_dawn_vs_doe.config.apple.metal.frontier.json",
-      "description": "Doe native Metal vs Dawn delegate Metal frontier preset."
-    },
-    {
-      "id": "apple-metal-native-explore",
-      "backend": "apple-metal",
-      "boundary": "backend_native",
-      "runtimeHost": "none",
-      "temperature": "default",
-      "comparisonView": "doe_vs_dawn_delegate",
-      "providerSet": "backend_native_providers",
-      "providers": [
-        "doe",
-        "dawn"
-      ],
-      "surface": "native",
-      "preset": "explore",
-      "mode": "default",
-      "benchmarkClass": "native-runtime-preset",
-      "leftExecutorId": "doe_direct_metal",
-      "rightExecutorId": "dawn_delegate_metal",
-      "configPath": "bench/native-compare/compare_dawn_vs_doe.config.apple.metal.explore.json",
-      "description": "Doe native Metal vs Dawn delegate Metal explore preset."
-    },
-    {
-      "id": "apple-metal-native-release",
-      "backend": "apple-metal",
-      "boundary": "backend_native",
-      "runtimeHost": "none",
-      "temperature": "default",
-      "comparisonView": "doe_vs_dawn_delegate",
-      "providerSet": "backend_native_providers",
-      "providers": [
-        "doe",
-        "dawn"
-      ],
-      "surface": "native",
-      "preset": "release",
-      "mode": "default",
-      "benchmarkClass": "native-runtime-preset",
-      "leftExecutorId": "doe_direct_metal",
-      "rightExecutorId": "dawn_delegate_metal",
-      "configPath": "bench/native-compare/compare_dawn_vs_doe.config.apple.metal.release.json",
-      "description": "Doe native Metal vs Dawn delegate Metal release preset."
-    },
-    {
-      "id": "apple-metal-native-breadth",
-      "backend": "apple-metal",
-      "boundary": "backend_native",
-      "runtimeHost": "none",
-      "temperature": "default",
-      "comparisonView": "doe_vs_dawn_delegate",
-      "providerSet": "backend_native_providers",
-      "providers": [
-        "doe",
-        "dawn"
-      ],
-      "surface": "native",
-      "preset": "breadth",
-      "mode": "default",
-      "benchmarkClass": "native-runtime-preset",
-      "leftExecutorId": "doe_direct_metal",
-      "rightExecutorId": "dawn_delegate_metal",
-      "configPath": "bench/native-compare/compare_dawn_vs_doe.config.apple.metal.breadth.json",
-      "description": "Doe native Metal vs Dawn delegate Metal breadth preset."
-    },
-    {
-      "id": "apple-metal-gemma64-direct",
-      "backend": "apple-metal",
-      "boundary": "direct_plan",
-      "runtimeHost": "none",
-      "temperature": "default",
-      "comparisonView": "doe_vs_dawn_direct",
-      "providerSet": "direct_plan_providers",
-      "providers": [
-        "doe",
-        "dawn"
-      ],
-      "surface": "direct",
-      "workload": "gemma64",
-      "mode": "default",
-      "benchmarkClass": "direct-runtime",
-      "leftExecutorId": "doe_direct_plan_metal",
-      "rightExecutorId": "dawn_direct_metal",
-      "configPath": "bench/native-compare/compare_dawn_vs_doe.config.apple.metal.gemma64.ir.json",
-      "description": "Standalone Doe direct Metal vs standalone Dawn direct Metal on the Gemma64 shaped runtime row."
-    },
-    {
-      "id": "apple-metal-gemma1b-direct",
-      "backend": "apple-metal",
-      "boundary": "direct_plan",
-      "runtimeHost": "none",
-      "temperature": "default",
-      "comparisonView": "doe_vs_dawn_direct",
-      "providerSet": "direct_plan_providers",
-      "providers": [
-        "doe",
-        "dawn"
-      ],
-      "surface": "direct",
-      "workload": "gemma1b",
-      "mode": "default",
-      "benchmarkClass": "direct-runtime",
-      "leftExecutorId": "doe_direct_plan_metal",
-      "rightExecutorId": "dawn_direct_metal",
-      "configPath": "bench/native-compare/compare_dawn_vs_doe.config.apple.metal.gemma1b.ir.json",
-      "description": "Standalone Doe direct Metal vs standalone Dawn direct Metal on the Gemma1B shaped runtime row."
-    },
-    {
-      "id": "apple-metal-gemma270m-literal-direct",
-      "backend": "apple-metal",
-      "boundary": "direct_plan",
-      "runtimeHost": "none",
-      "temperature": "default",
-      "comparisonView": "doe_vs_dawn_direct",
-      "providerSet": "direct_plan_providers",
-      "providers": [
-        "doe",
-        "dawn"
-      ],
-      "surface": "direct",
-      "workload": "gemma270m-literal",
-      "mode": "default",
-      "benchmarkClass": "direct-runtime",
-      "leftExecutorId": "doe_direct_plan_metal",
-      "rightExecutorId": "dawn_direct_metal",
-      "configPath": "bench/native-compare/compare_dawn_vs_doe.config.apple.metal.gemma270m.literal.ir.json",
-      "description": "Standalone Doe direct Metal vs standalone Dawn direct Metal on the more literal Gemma270M row."
-    },
-    {
-      "id": "apple-metal-gemma64-package-cold",
-      "backend": "apple-metal",
-      "boundary": "package_surface",
-      "runtimeHost": "node",
-      "temperature": "cold",
-      "comparisonView": "doe_vs_dawn_node_webgpu",
-      "providerSet": "package_node_providers",
-      "providers": [
-        "doe",
-        "dawn-node-webgpu"
-      ],
-      "surface": "package",
-      "workload": "gemma64",
-      "mode": "cold",
-      "packageRuntime": "node",
-      "benchmarkClass": "package-surface",
-      "leftExecutorId": "doe_node_webgpu",
-      "rightExecutorId": "dawn_node_webgpu",
-      "configPath": "bench/native-compare/compare_dawn_vs_doe.config.apple.metal.gemma64.node-package.ir.json",
-      "description": "Cold package-surface compare for doe-gpu vs Dawn Node WebGPU on the Gemma64 shaped row."
-    },
-    {
-      "id": "apple-metal-gemma64-package-warm",
-      "backend": "apple-metal",
-      "boundary": "package_surface",
-      "runtimeHost": "node",
-      "temperature": "warm",
-      "comparisonView": "doe_vs_dawn_node_webgpu",
-      "providerSet": "package_node_providers",
-      "providers": [
-        "doe",
-        "dawn-node-webgpu"
-      ],
-      "surface": "package",
-      "workload": "gemma64",
-      "mode": "warm",
-      "packageRuntime": "node",
-      "benchmarkClass": "package-surface",
-      "leftExecutorId": "doe_node_webgpu_prepared",
-      "rightExecutorId": "dawn_node_webgpu_prepared",
-      "configPath": "bench/native-compare/compare_dawn_vs_doe.config.apple.metal.gemma64.node-package.warm.ir.json",
-      "description": "Prepared-session package-surface compare for doe-gpu vs Dawn Node WebGPU on the Gemma64 shaped row."
-    },
-    {
-      "id": "apple-metal-gemma1b-package-cold",
-      "backend": "apple-metal",
-      "boundary": "package_surface",
-      "runtimeHost": "node",
-      "temperature": "cold",
-      "comparisonView": "doe_vs_dawn_node_webgpu",
-      "providerSet": "package_node_providers",
-      "providers": [
-        "doe",
-        "dawn-node-webgpu"
-      ],
-      "surface": "package",
-      "workload": "gemma1b",
-      "mode": "cold",
-      "packageRuntime": "node",
-      "benchmarkClass": "package-surface",
-      "leftExecutorId": "doe_node_webgpu",
-      "rightExecutorId": "dawn_node_webgpu",
-      "configPath": "bench/native-compare/compare_dawn_vs_doe.config.apple.metal.gemma1b.node-package.ir.json",
-      "description": "Cold package-surface compare for doe-gpu vs Dawn Node WebGPU on the Gemma1B shaped row."
-    },
-    {
-      "id": "apple-metal-gemma1b-package-warm",
-      "backend": "apple-metal",
-      "boundary": "package_surface",
-      "runtimeHost": "node",
-      "temperature": "warm",
-      "comparisonView": "doe_vs_dawn_node_webgpu",
-      "providerSet": "package_node_providers",
-      "providers": [
-        "doe",
-        "dawn-node-webgpu"
-      ],
-      "surface": "package",
-      "workload": "gemma1b",
-      "mode": "warm",
-      "packageRuntime": "node",
-      "benchmarkClass": "package-surface",
-      "leftExecutorId": "doe_node_webgpu_prepared",
-      "rightExecutorId": "dawn_node_webgpu_prepared",
-      "configPath": "bench/native-compare/compare_dawn_vs_doe.config.apple.metal.gemma1b.node-package.warm.ir.json",
-      "description": "Prepared-session package-surface compare for doe-gpu vs Dawn Node WebGPU on the Gemma1B shaped row."
-    },
-    {
-      "id": "apple-metal-gemma64-bun-package-cold",
-      "backend": "apple-metal",
-      "boundary": "package_surface",
-      "runtimeHost": "bun",
-      "temperature": "cold",
-      "comparisonView": "doe_vs_bun_webgpu",
-      "providerSet": "package_bun_providers",
-      "providers": [
-        "doe",
-        "bun-webgpu"
-      ],
-      "surface": "package",
-      "workload": "gemma64",
-      "mode": "cold",
-      "packageRuntime": "bun",
-      "benchmarkClass": "package-surface",
-      "leftExecutorId": "doe_bun_package",
-      "rightExecutorId": "bun_webgpu_package",
-      "configPath": "bench/native-compare/compare_dawn_vs_doe.config.apple.metal.gemma64.bun-package.ir.json",
-      "description": "Cold package-surface compare for doe-gpu vs bun-webgpu on the Gemma64 shaped row."
-    },
-    {
-      "id": "apple-metal-gemma64-bun-package-warm",
-      "backend": "apple-metal",
-      "boundary": "package_surface",
-      "runtimeHost": "bun",
-      "temperature": "warm",
-      "comparisonView": "doe_vs_bun_webgpu",
-      "providerSet": "package_bun_providers",
-      "providers": [
-        "doe",
-        "bun-webgpu"
-      ],
-      "surface": "package",
-      "workload": "gemma64",
-      "mode": "warm",
-      "packageRuntime": "bun",
-      "benchmarkClass": "package-surface",
-      "leftExecutorId": "doe_bun_package_prepared",
-      "rightExecutorId": "bun_webgpu_package_prepared",
-      "configPath": "bench/native-compare/compare_dawn_vs_doe.config.apple.metal.gemma64.bun-package.warm.ir.json",
-      "description": "Prepared-session package-surface compare for doe-gpu vs bun-webgpu on the Gemma64 shaped row."
-    },
-    {
-      "id": "apple-metal-gemma1b-bun-package-cold",
-      "backend": "apple-metal",
-      "boundary": "package_surface",
-      "runtimeHost": "bun",
-      "temperature": "cold",
-      "comparisonView": "doe_vs_bun_webgpu",
-      "providerSet": "package_bun_providers",
-      "providers": [
-        "doe",
-        "bun-webgpu"
-      ],
-      "surface": "package",
-      "workload": "gemma1b",
-      "mode": "cold",
-      "packageRuntime": "bun",
-      "benchmarkClass": "package-surface",
-      "leftExecutorId": "doe_bun_package",
-      "rightExecutorId": "bun_webgpu_package",
-      "configPath": "bench/native-compare/compare_dawn_vs_doe.config.apple.metal.gemma1b.bun-package.ir.json",
-      "description": "Cold package-surface compare for doe-gpu vs bun-webgpu on the Gemma1B shaped row."
-    },
-    {
-      "id": "apple-metal-gemma1b-bun-package-warm",
-      "backend": "apple-metal",
-      "boundary": "package_surface",
-      "runtimeHost": "bun",
-      "temperature": "warm",
-      "comparisonView": "doe_vs_bun_webgpu",
-      "providerSet": "package_bun_providers",
-      "providers": [
-        "doe",
-        "bun-webgpu"
-      ],
-      "surface": "package",
-      "workload": "gemma1b",
-      "mode": "warm",
-      "packageRuntime": "bun",
-      "benchmarkClass": "package-surface",
-      "leftExecutorId": "doe_bun_package_prepared",
-      "rightExecutorId": "bun_webgpu_package_prepared",
-      "configPath": "bench/native-compare/compare_dawn_vs_doe.config.apple.metal.gemma1b.bun-package.warm.ir.json",
-      "description": "Prepared-session package-surface compare for doe-gpu vs bun-webgpu on the Gemma1B shaped row."
-    },
-    {
-      "id": "local-d3d12-native-smoke",
-      "backend": "local-d3d12",
-      "boundary": "backend_native",
-      "runtimeHost": "none",
-      "temperature": "default",
-      "comparisonView": "doe_vs_dawn_delegate",
-      "providerSet": "backend_native_providers",
-      "providers": [
-        "doe",
-        "dawn"
-      ],
-      "surface": "native",
       "preset": "smoke",
-      "mode": "default",
-      "benchmarkClass": "native-runtime-preset",
-      "leftExecutorId": "doe_direct_d3d12",
-      "rightExecutorId": "dawn_delegate_d3d12",
-      "configPath": "bench/native-compare/compare_dawn_vs_doe.config.local.d3d12.smoke.json",
-      "description": "Doe native D3D12 vs Dawn delegate D3D12 smoke preset."
-    },
-    {
-      "id": "local-d3d12-native-compare-dev",
-      "backend": "local-d3d12",
-      "boundary": "backend_native",
-      "runtimeHost": "none",
-      "temperature": "default",
-      "comparisonView": "doe_vs_dawn_delegate",
+      "products": {
+        "baseline": {
+          "executorId": "doe_direct_metal",
+          "product": "doe"
+        },
+        "comparison": {
+          "executorId": "dawn_delegate_metal",
+          "product": "dawn"
+        }
+      },
       "providerSet": "backend_native_providers",
       "providers": [
         "doe",
         "dawn"
       ],
+      "rightExecutorId": "dawn_delegate_metal",
+      "runtimeHost": "none",
       "surface": "native",
+      "temperature": "default"
+    },
+    {
+      "backend": "apple-metal",
+      "benchmarkClass": "native-runtime-preset",
+      "boundary": "backend_native",
+      "comparisonView": "doe_vs_dawn_delegate",
+      "configPath": "bench/native-compare/compare_dawn_vs_doe.config.apple.metal.compare-dev.json",
+      "description": "Doe native Metal vs Dawn delegate Metal compare-dev preset.",
+      "id": "apple-metal-native-compare-dev",
+      "leftExecutorId": "doe_direct_metal",
+      "mode": "default",
       "preset": "compare-dev",
-      "mode": "default",
-      "benchmarkClass": "native-runtime-preset",
-      "leftExecutorId": "doe_direct_d3d12",
-      "rightExecutorId": "dawn_delegate_d3d12",
-      "configPath": "bench/native-compare/compare_dawn_vs_doe.config.local.d3d12.compare-dev.json",
-      "description": "Doe native D3D12 vs Dawn delegate D3D12 compare-dev preset."
-    },
-    {
-      "id": "local-d3d12-native-compare",
-      "backend": "local-d3d12",
-      "boundary": "backend_native",
-      "runtimeHost": "none",
-      "temperature": "default",
-      "comparisonView": "doe_vs_dawn_delegate",
+      "products": {
+        "baseline": {
+          "executorId": "doe_direct_metal",
+          "product": "doe"
+        },
+        "comparison": {
+          "executorId": "dawn_delegate_metal",
+          "product": "dawn"
+        }
+      },
       "providerSet": "backend_native_providers",
       "providers": [
         "doe",
         "dawn"
       ],
+      "rightExecutorId": "dawn_delegate_metal",
+      "runtimeHost": "none",
       "surface": "native",
+      "temperature": "default"
+    },
+    {
+      "backend": "apple-metal",
+      "benchmarkClass": "native-runtime-preset",
+      "boundary": "backend_native",
+      "comparisonView": "doe_vs_dawn_delegate",
+      "configPath": "bench/native-compare/compare_dawn_vs_doe.config.apple.metal.compare.json",
+      "description": "Doe native Metal vs Dawn delegate Metal compare preset.",
+      "id": "apple-metal-native-compare",
+      "leftExecutorId": "doe_direct_metal",
+      "mode": "default",
       "preset": "compare",
-      "mode": "default",
-      "benchmarkClass": "native-runtime-preset",
-      "leftExecutorId": "doe_direct_d3d12",
-      "rightExecutorId": "dawn_delegate_d3d12",
-      "configPath": "bench/native-compare/compare_dawn_vs_doe.config.local.d3d12.compare.json",
-      "description": "Doe native D3D12 vs Dawn delegate D3D12 compare preset."
-    },
-    {
-      "id": "local-d3d12-native-frontier",
-      "backend": "local-d3d12",
-      "boundary": "backend_native",
-      "runtimeHost": "none",
-      "temperature": "default",
-      "comparisonView": "doe_vs_dawn_delegate",
+      "products": {
+        "baseline": {
+          "executorId": "doe_direct_metal",
+          "product": "doe"
+        },
+        "comparison": {
+          "executorId": "dawn_delegate_metal",
+          "product": "dawn"
+        }
+      },
       "providerSet": "backend_native_providers",
       "providers": [
         "doe",
         "dawn"
       ],
+      "rightExecutorId": "dawn_delegate_metal",
+      "runtimeHost": "none",
       "surface": "native",
+      "temperature": "default"
+    },
+    {
+      "backend": "apple-metal",
+      "benchmarkClass": "native-runtime-preset",
+      "boundary": "backend_native",
+      "comparisonView": "doe_vs_dawn_delegate",
+      "configPath": "bench/native-compare/compare_dawn_vs_doe.config.apple.metal.frontier.json",
+      "description": "Doe native Metal vs Dawn delegate Metal frontier preset.",
+      "id": "apple-metal-native-frontier",
+      "leftExecutorId": "doe_direct_metal",
+      "mode": "default",
       "preset": "frontier",
-      "mode": "default",
-      "benchmarkClass": "native-runtime-preset",
-      "leftExecutorId": "doe_direct_d3d12",
-      "rightExecutorId": "dawn_delegate_d3d12",
-      "configPath": "bench/native-compare/compare_dawn_vs_doe.config.local.d3d12.frontier.json",
-      "description": "Doe native D3D12 vs Dawn delegate D3D12 frontier preset."
-    },
-    {
-      "id": "local-d3d12-native-explore",
-      "backend": "local-d3d12",
-      "boundary": "backend_native",
-      "runtimeHost": "none",
-      "temperature": "default",
-      "comparisonView": "doe_vs_dawn_delegate",
+      "products": {
+        "baseline": {
+          "executorId": "doe_direct_metal",
+          "product": "doe"
+        },
+        "comparison": {
+          "executorId": "dawn_delegate_metal",
+          "product": "dawn"
+        }
+      },
       "providerSet": "backend_native_providers",
       "providers": [
         "doe",
         "dawn"
       ],
+      "rightExecutorId": "dawn_delegate_metal",
+      "runtimeHost": "none",
       "surface": "native",
+      "temperature": "default"
+    },
+    {
+      "backend": "apple-metal",
+      "benchmarkClass": "native-runtime-preset",
+      "boundary": "backend_native",
+      "comparisonView": "doe_vs_dawn_delegate",
+      "configPath": "bench/native-compare/compare_dawn_vs_doe.config.apple.metal.explore.json",
+      "description": "Doe native Metal vs Dawn delegate Metal explore preset.",
+      "id": "apple-metal-native-explore",
+      "leftExecutorId": "doe_direct_metal",
+      "mode": "default",
       "preset": "explore",
-      "mode": "default",
-      "benchmarkClass": "native-runtime-preset",
-      "leftExecutorId": "doe_direct_d3d12",
-      "rightExecutorId": "dawn_delegate_d3d12",
-      "configPath": "bench/native-compare/compare_dawn_vs_doe.config.local.d3d12.explore.json",
-      "description": "Doe native D3D12 vs Dawn delegate D3D12 explore preset."
-    },
-    {
-      "id": "local-d3d12-native-release",
-      "backend": "local-d3d12",
-      "boundary": "backend_native",
-      "runtimeHost": "none",
-      "temperature": "default",
-      "comparisonView": "doe_vs_dawn_delegate",
+      "products": {
+        "baseline": {
+          "executorId": "doe_direct_metal",
+          "product": "doe"
+        },
+        "comparison": {
+          "executorId": "dawn_delegate_metal",
+          "product": "dawn"
+        }
+      },
       "providerSet": "backend_native_providers",
       "providers": [
         "doe",
         "dawn"
       ],
+      "rightExecutorId": "dawn_delegate_metal",
+      "runtimeHost": "none",
       "surface": "native",
-      "preset": "release",
-      "mode": "default",
+      "temperature": "default"
+    },
+    {
+      "backend": "apple-metal",
       "benchmarkClass": "native-runtime-preset",
+      "boundary": "backend_native",
+      "comparisonView": "doe_vs_dawn_delegate",
+      "configPath": "bench/native-compare/compare_dawn_vs_doe.config.apple.metal.release.json",
+      "description": "Doe native Metal vs Dawn delegate Metal release preset.",
+      "id": "apple-metal-native-release",
+      "leftExecutorId": "doe_direct_metal",
+      "mode": "default",
+      "preset": "release",
+      "products": {
+        "baseline": {
+          "executorId": "doe_direct_metal",
+          "product": "doe"
+        },
+        "comparison": {
+          "executorId": "dawn_delegate_metal",
+          "product": "dawn"
+        }
+      },
+      "providerSet": "backend_native_providers",
+      "providers": [
+        "doe",
+        "dawn"
+      ],
+      "rightExecutorId": "dawn_delegate_metal",
+      "runtimeHost": "none",
+      "surface": "native",
+      "temperature": "default"
+    },
+    {
+      "backend": "apple-metal",
+      "benchmarkClass": "native-runtime-preset",
+      "boundary": "backend_native",
+      "comparisonView": "doe_vs_dawn_delegate",
+      "configPath": "bench/native-compare/compare_dawn_vs_doe.config.apple.metal.breadth.json",
+      "description": "Doe native Metal vs Dawn delegate Metal breadth preset.",
+      "id": "apple-metal-native-breadth",
+      "leftExecutorId": "doe_direct_metal",
+      "mode": "default",
+      "preset": "breadth",
+      "products": {
+        "baseline": {
+          "executorId": "doe_direct_metal",
+          "product": "doe"
+        },
+        "comparison": {
+          "executorId": "dawn_delegate_metal",
+          "product": "dawn"
+        }
+      },
+      "providerSet": "backend_native_providers",
+      "providers": [
+        "doe",
+        "dawn"
+      ],
+      "rightExecutorId": "dawn_delegate_metal",
+      "runtimeHost": "none",
+      "surface": "native",
+      "temperature": "default"
+    },
+    {
+      "backend": "apple-metal",
+      "benchmarkClass": "direct-runtime",
+      "boundary": "direct_plan",
+      "comparisonView": "doe_vs_dawn_direct",
+      "configPath": "bench/native-compare/compare_dawn_vs_doe.config.apple.metal.gemma64.ir.json",
+      "description": "Standalone Doe direct Metal vs standalone Dawn direct Metal on the Gemma64 shaped runtime row.",
+      "id": "apple-metal-gemma64-direct",
+      "leftExecutorId": "doe_direct_plan_metal",
+      "mode": "default",
+      "products": {
+        "baseline": {
+          "executorId": "doe_direct_plan_metal",
+          "product": "doe"
+        },
+        "comparison": {
+          "executorId": "dawn_direct_metal",
+          "product": "dawn"
+        }
+      },
+      "providerSet": "direct_plan_providers",
+      "providers": [
+        "doe",
+        "dawn"
+      ],
+      "rightExecutorId": "dawn_direct_metal",
+      "runtimeHost": "none",
+      "surface": "direct",
+      "temperature": "default",
+      "workload": "gemma64"
+    },
+    {
+      "backend": "apple-metal",
+      "benchmarkClass": "direct-runtime",
+      "boundary": "direct_plan",
+      "comparisonView": "doe_vs_dawn_direct",
+      "configPath": "bench/native-compare/compare_dawn_vs_doe.config.apple.metal.gemma1b.ir.json",
+      "description": "Standalone Doe direct Metal vs standalone Dawn direct Metal on the Gemma1B shaped runtime row.",
+      "id": "apple-metal-gemma1b-direct",
+      "leftExecutorId": "doe_direct_plan_metal",
+      "mode": "default",
+      "products": {
+        "baseline": {
+          "executorId": "doe_direct_plan_metal",
+          "product": "doe"
+        },
+        "comparison": {
+          "executorId": "dawn_direct_metal",
+          "product": "dawn"
+        }
+      },
+      "providerSet": "direct_plan_providers",
+      "providers": [
+        "doe",
+        "dawn"
+      ],
+      "rightExecutorId": "dawn_direct_metal",
+      "runtimeHost": "none",
+      "surface": "direct",
+      "temperature": "default",
+      "workload": "gemma1b"
+    },
+    {
+      "backend": "apple-metal",
+      "benchmarkClass": "direct-runtime",
+      "boundary": "direct_plan",
+      "comparisonView": "doe_vs_dawn_direct",
+      "configPath": "bench/native-compare/compare_dawn_vs_doe.config.apple.metal.gemma270m.literal.ir.json",
+      "description": "Standalone Doe direct Metal vs standalone Dawn direct Metal on the more literal Gemma270M row.",
+      "id": "apple-metal-gemma270m-literal-direct",
+      "leftExecutorId": "doe_direct_plan_metal",
+      "mode": "default",
+      "products": {
+        "baseline": {
+          "executorId": "doe_direct_plan_metal",
+          "product": "doe"
+        },
+        "comparison": {
+          "executorId": "dawn_direct_metal",
+          "product": "dawn"
+        }
+      },
+      "providerSet": "direct_plan_providers",
+      "providers": [
+        "doe",
+        "dawn"
+      ],
+      "rightExecutorId": "dawn_direct_metal",
+      "runtimeHost": "none",
+      "surface": "direct",
+      "temperature": "default",
+      "workload": "gemma270m-literal"
+    },
+    {
+      "backend": "apple-metal",
+      "benchmarkClass": "package-surface",
+      "boundary": "package_surface",
+      "comparisonView": "doe_vs_dawn_node_webgpu",
+      "configPath": "bench/native-compare/compare_dawn_vs_doe.config.apple.metal.gemma64.node-package.ir.json",
+      "description": "Cold package-surface compare for doe-gpu vs Dawn Node WebGPU on the Gemma64 shaped row.",
+      "id": "apple-metal-gemma64-package-cold",
+      "leftExecutorId": "doe_node_webgpu",
+      "mode": "cold",
+      "packageRuntime": "node",
+      "products": {
+        "baseline": {
+          "executorId": "doe_node_webgpu",
+          "product": "doe"
+        },
+        "comparison": {
+          "executorId": "dawn_node_webgpu",
+          "product": "dawn_node_webgpu"
+        }
+      },
+      "providerSet": "package_node_providers",
+      "providers": [
+        "doe",
+        "dawn-node-webgpu"
+      ],
+      "rightExecutorId": "dawn_node_webgpu",
+      "runtimeHost": "node",
+      "surface": "package",
+      "temperature": "cold",
+      "workload": "gemma64"
+    },
+    {
+      "backend": "apple-metal",
+      "benchmarkClass": "package-surface",
+      "boundary": "package_surface",
+      "comparisonView": "doe_vs_dawn_node_webgpu",
+      "configPath": "bench/native-compare/compare_dawn_vs_doe.config.apple.metal.gemma64.node-package.warm.ir.json",
+      "description": "Prepared-session package-surface compare for doe-gpu vs Dawn Node WebGPU on the Gemma64 shaped row.",
+      "id": "apple-metal-gemma64-package-warm",
+      "leftExecutorId": "doe_node_webgpu_prepared",
+      "mode": "warm",
+      "packageRuntime": "node",
+      "products": {
+        "baseline": {
+          "executorId": "doe_node_webgpu_prepared",
+          "product": "doe"
+        },
+        "comparison": {
+          "executorId": "dawn_node_webgpu_prepared",
+          "product": "dawn_node_webgpu"
+        }
+      },
+      "providerSet": "package_node_providers",
+      "providers": [
+        "doe",
+        "dawn-node-webgpu"
+      ],
+      "rightExecutorId": "dawn_node_webgpu_prepared",
+      "runtimeHost": "node",
+      "surface": "package",
+      "temperature": "warm",
+      "workload": "gemma64"
+    },
+    {
+      "backend": "apple-metal",
+      "benchmarkClass": "package-surface",
+      "boundary": "package_surface",
+      "comparisonView": "doe_vs_dawn_node_webgpu",
+      "configPath": "bench/native-compare/compare_dawn_vs_doe.config.apple.metal.gemma1b.node-package.ir.json",
+      "description": "Cold package-surface compare for doe-gpu vs Dawn Node WebGPU on the Gemma1B shaped row.",
+      "id": "apple-metal-gemma1b-package-cold",
+      "leftExecutorId": "doe_node_webgpu",
+      "mode": "cold",
+      "packageRuntime": "node",
+      "products": {
+        "baseline": {
+          "executorId": "doe_node_webgpu",
+          "product": "doe"
+        },
+        "comparison": {
+          "executorId": "dawn_node_webgpu",
+          "product": "dawn_node_webgpu"
+        }
+      },
+      "providerSet": "package_node_providers",
+      "providers": [
+        "doe",
+        "dawn-node-webgpu"
+      ],
+      "rightExecutorId": "dawn_node_webgpu",
+      "runtimeHost": "node",
+      "surface": "package",
+      "temperature": "cold",
+      "workload": "gemma1b"
+    },
+    {
+      "backend": "apple-metal",
+      "benchmarkClass": "package-surface",
+      "boundary": "package_surface",
+      "comparisonView": "doe_vs_dawn_node_webgpu",
+      "configPath": "bench/native-compare/compare_dawn_vs_doe.config.apple.metal.gemma1b.node-package.warm.ir.json",
+      "description": "Prepared-session package-surface compare for doe-gpu vs Dawn Node WebGPU on the Gemma1B shaped row.",
+      "id": "apple-metal-gemma1b-package-warm",
+      "leftExecutorId": "doe_node_webgpu_prepared",
+      "mode": "warm",
+      "packageRuntime": "node",
+      "products": {
+        "baseline": {
+          "executorId": "doe_node_webgpu_prepared",
+          "product": "doe"
+        },
+        "comparison": {
+          "executorId": "dawn_node_webgpu_prepared",
+          "product": "dawn_node_webgpu"
+        }
+      },
+      "providerSet": "package_node_providers",
+      "providers": [
+        "doe",
+        "dawn-node-webgpu"
+      ],
+      "rightExecutorId": "dawn_node_webgpu_prepared",
+      "runtimeHost": "node",
+      "surface": "package",
+      "temperature": "warm",
+      "workload": "gemma1b"
+    },
+    {
+      "backend": "apple-metal",
+      "benchmarkClass": "package-surface",
+      "boundary": "package_surface",
+      "comparisonView": "doe_vs_bun_webgpu",
+      "configPath": "bench/native-compare/compare_dawn_vs_doe.config.apple.metal.gemma64.bun-package.ir.json",
+      "description": "Cold package-surface compare for doe-gpu vs bun-webgpu on the Gemma64 shaped row.",
+      "id": "apple-metal-gemma64-bun-package-cold",
+      "leftExecutorId": "doe_bun_package",
+      "mode": "cold",
+      "packageRuntime": "bun",
+      "products": {
+        "baseline": {
+          "executorId": "doe_bun_package",
+          "product": "doe"
+        },
+        "comparison": {
+          "executorId": "bun_webgpu_package",
+          "product": "bun_webgpu"
+        }
+      },
+      "providerSet": "package_bun_providers",
+      "providers": [
+        "doe",
+        "bun-webgpu"
+      ],
+      "rightExecutorId": "bun_webgpu_package",
+      "runtimeHost": "bun",
+      "surface": "package",
+      "temperature": "cold",
+      "workload": "gemma64"
+    },
+    {
+      "backend": "apple-metal",
+      "benchmarkClass": "package-surface",
+      "boundary": "package_surface",
+      "comparisonView": "doe_vs_bun_webgpu",
+      "configPath": "bench/native-compare/compare_dawn_vs_doe.config.apple.metal.gemma64.bun-package.warm.ir.json",
+      "description": "Prepared-session package-surface compare for doe-gpu vs bun-webgpu on the Gemma64 shaped row.",
+      "id": "apple-metal-gemma64-bun-package-warm",
+      "leftExecutorId": "doe_bun_package_prepared",
+      "mode": "warm",
+      "packageRuntime": "bun",
+      "products": {
+        "baseline": {
+          "executorId": "doe_bun_package_prepared",
+          "product": "doe"
+        },
+        "comparison": {
+          "executorId": "bun_webgpu_package_prepared",
+          "product": "bun_webgpu"
+        }
+      },
+      "providerSet": "package_bun_providers",
+      "providers": [
+        "doe",
+        "bun-webgpu"
+      ],
+      "rightExecutorId": "bun_webgpu_package_prepared",
+      "runtimeHost": "bun",
+      "surface": "package",
+      "temperature": "warm",
+      "workload": "gemma64"
+    },
+    {
+      "backend": "apple-metal",
+      "benchmarkClass": "package-surface",
+      "boundary": "package_surface",
+      "comparisonView": "doe_vs_bun_webgpu",
+      "configPath": "bench/native-compare/compare_dawn_vs_doe.config.apple.metal.gemma1b.bun-package.ir.json",
+      "description": "Cold package-surface compare for doe-gpu vs bun-webgpu on the Gemma1B shaped row.",
+      "id": "apple-metal-gemma1b-bun-package-cold",
+      "leftExecutorId": "doe_bun_package",
+      "mode": "cold",
+      "packageRuntime": "bun",
+      "products": {
+        "baseline": {
+          "executorId": "doe_bun_package",
+          "product": "doe"
+        },
+        "comparison": {
+          "executorId": "bun_webgpu_package",
+          "product": "bun_webgpu"
+        }
+      },
+      "providerSet": "package_bun_providers",
+      "providers": [
+        "doe",
+        "bun-webgpu"
+      ],
+      "rightExecutorId": "bun_webgpu_package",
+      "runtimeHost": "bun",
+      "surface": "package",
+      "temperature": "cold",
+      "workload": "gemma1b"
+    },
+    {
+      "backend": "apple-metal",
+      "benchmarkClass": "package-surface",
+      "boundary": "package_surface",
+      "comparisonView": "doe_vs_bun_webgpu",
+      "configPath": "bench/native-compare/compare_dawn_vs_doe.config.apple.metal.gemma1b.bun-package.warm.ir.json",
+      "description": "Prepared-session package-surface compare for doe-gpu vs bun-webgpu on the Gemma1B shaped row.",
+      "id": "apple-metal-gemma1b-bun-package-warm",
+      "leftExecutorId": "doe_bun_package_prepared",
+      "mode": "warm",
+      "packageRuntime": "bun",
+      "products": {
+        "baseline": {
+          "executorId": "doe_bun_package_prepared",
+          "product": "doe"
+        },
+        "comparison": {
+          "executorId": "bun_webgpu_package_prepared",
+          "product": "bun_webgpu"
+        }
+      },
+      "providerSet": "package_bun_providers",
+      "providers": [
+        "doe",
+        "bun-webgpu"
+      ],
+      "rightExecutorId": "bun_webgpu_package_prepared",
+      "runtimeHost": "bun",
+      "surface": "package",
+      "temperature": "warm",
+      "workload": "gemma1b"
+    },
+    {
+      "backend": "local-d3d12",
+      "benchmarkClass": "native-runtime-preset",
+      "boundary": "backend_native",
+      "comparisonView": "doe_vs_dawn_delegate",
+      "configPath": "bench/native-compare/compare_dawn_vs_doe.config.local.d3d12.smoke.json",
+      "description": "Doe native D3D12 vs Dawn delegate D3D12 smoke preset.",
+      "id": "local-d3d12-native-smoke",
       "leftExecutorId": "doe_direct_d3d12",
+      "mode": "default",
+      "preset": "smoke",
+      "products": {
+        "baseline": {
+          "executorId": "doe_direct_d3d12",
+          "product": "doe"
+        },
+        "comparison": {
+          "executorId": "dawn_delegate_d3d12",
+          "product": "dawn"
+        }
+      },
+      "providerSet": "backend_native_providers",
+      "providers": [
+        "doe",
+        "dawn"
+      ],
       "rightExecutorId": "dawn_delegate_d3d12",
+      "runtimeHost": "none",
+      "surface": "native",
+      "temperature": "default"
+    },
+    {
+      "backend": "local-d3d12",
+      "benchmarkClass": "native-runtime-preset",
+      "boundary": "backend_native",
+      "comparisonView": "doe_vs_dawn_delegate",
+      "configPath": "bench/native-compare/compare_dawn_vs_doe.config.local.d3d12.compare-dev.json",
+      "description": "Doe native D3D12 vs Dawn delegate D3D12 compare-dev preset.",
+      "id": "local-d3d12-native-compare-dev",
+      "leftExecutorId": "doe_direct_d3d12",
+      "mode": "default",
+      "preset": "compare-dev",
+      "products": {
+        "baseline": {
+          "executorId": "doe_direct_d3d12",
+          "product": "doe"
+        },
+        "comparison": {
+          "executorId": "dawn_delegate_d3d12",
+          "product": "dawn"
+        }
+      },
+      "providerSet": "backend_native_providers",
+      "providers": [
+        "doe",
+        "dawn"
+      ],
+      "rightExecutorId": "dawn_delegate_d3d12",
+      "runtimeHost": "none",
+      "surface": "native",
+      "temperature": "default"
+    },
+    {
+      "backend": "local-d3d12",
+      "benchmarkClass": "native-runtime-preset",
+      "boundary": "backend_native",
+      "comparisonView": "doe_vs_dawn_delegate",
+      "configPath": "bench/native-compare/compare_dawn_vs_doe.config.local.d3d12.compare.json",
+      "description": "Doe native D3D12 vs Dawn delegate D3D12 compare preset.",
+      "id": "local-d3d12-native-compare",
+      "leftExecutorId": "doe_direct_d3d12",
+      "mode": "default",
+      "preset": "compare",
+      "products": {
+        "baseline": {
+          "executorId": "doe_direct_d3d12",
+          "product": "doe"
+        },
+        "comparison": {
+          "executorId": "dawn_delegate_d3d12",
+          "product": "dawn"
+        }
+      },
+      "providerSet": "backend_native_providers",
+      "providers": [
+        "doe",
+        "dawn"
+      ],
+      "rightExecutorId": "dawn_delegate_d3d12",
+      "runtimeHost": "none",
+      "surface": "native",
+      "temperature": "default"
+    },
+    {
+      "backend": "local-d3d12",
+      "benchmarkClass": "native-runtime-preset",
+      "boundary": "backend_native",
+      "comparisonView": "doe_vs_dawn_delegate",
+      "configPath": "bench/native-compare/compare_dawn_vs_doe.config.local.d3d12.frontier.json",
+      "description": "Doe native D3D12 vs Dawn delegate D3D12 frontier preset.",
+      "id": "local-d3d12-native-frontier",
+      "leftExecutorId": "doe_direct_d3d12",
+      "mode": "default",
+      "preset": "frontier",
+      "products": {
+        "baseline": {
+          "executorId": "doe_direct_d3d12",
+          "product": "doe"
+        },
+        "comparison": {
+          "executorId": "dawn_delegate_d3d12",
+          "product": "dawn"
+        }
+      },
+      "providerSet": "backend_native_providers",
+      "providers": [
+        "doe",
+        "dawn"
+      ],
+      "rightExecutorId": "dawn_delegate_d3d12",
+      "runtimeHost": "none",
+      "surface": "native",
+      "temperature": "default"
+    },
+    {
+      "backend": "local-d3d12",
+      "benchmarkClass": "native-runtime-preset",
+      "boundary": "backend_native",
+      "comparisonView": "doe_vs_dawn_delegate",
+      "configPath": "bench/native-compare/compare_dawn_vs_doe.config.local.d3d12.explore.json",
+      "description": "Doe native D3D12 vs Dawn delegate D3D12 explore preset.",
+      "id": "local-d3d12-native-explore",
+      "leftExecutorId": "doe_direct_d3d12",
+      "mode": "default",
+      "preset": "explore",
+      "products": {
+        "baseline": {
+          "executorId": "doe_direct_d3d12",
+          "product": "doe"
+        },
+        "comparison": {
+          "executorId": "dawn_delegate_d3d12",
+          "product": "dawn"
+        }
+      },
+      "providerSet": "backend_native_providers",
+      "providers": [
+        "doe",
+        "dawn"
+      ],
+      "rightExecutorId": "dawn_delegate_d3d12",
+      "runtimeHost": "none",
+      "surface": "native",
+      "temperature": "default"
+    },
+    {
+      "backend": "local-d3d12",
+      "benchmarkClass": "native-runtime-preset",
+      "boundary": "backend_native",
+      "comparisonView": "doe_vs_dawn_delegate",
       "configPath": "bench/native-compare/compare_dawn_vs_doe.config.local.d3d12.release.json",
-      "description": "Doe native D3D12 vs Dawn delegate D3D12 release preset."
+      "description": "Doe native D3D12 vs Dawn delegate D3D12 release preset.",
+      "id": "local-d3d12-native-release",
+      "leftExecutorId": "doe_direct_d3d12",
+      "mode": "default",
+      "preset": "release",
+      "products": {
+        "baseline": {
+          "executorId": "doe_direct_d3d12",
+          "product": "doe"
+        },
+        "comparison": {
+          "executorId": "dawn_delegate_d3d12",
+          "product": "dawn"
+        }
+      },
+      "providerSet": "backend_native_providers",
+      "providers": [
+        "doe",
+        "dawn"
+      ],
+      "rightExecutorId": "dawn_delegate_d3d12",
+      "runtimeHost": "none",
+      "surface": "native",
+      "temperature": "default"
     }
-  ]
+  ],
+  "schemaVersion": 3
 }

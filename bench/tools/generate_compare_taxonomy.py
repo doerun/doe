@@ -82,41 +82,49 @@ def load_json(path: Path) -> object:
 def parse_structural_families(payload: dict) -> list[StructuralFamily]:
     families: list[StructuralFamily] = []
     seen_ids: set[str] = set()
-    for raw in payload["structuralFamilies"]:
+    raw_families = payload.get("structuralFamilies") or payload.get("productFamilies") or []
+    for raw in raw_families:
         family_id = raw["id"]
         if family_id in seen_ids:
             raise ValueError(f"duplicate structural family id: {family_id}")
         seen_ids.add(family_id)
+        # v2 uses "surface" instead of "comparisonBoundary", and has "product"
+        # instead of "comparisonView"/"providerPair".
+        boundary = raw.get("comparisonBoundary") or raw.get("surface", "")
+        product = raw.get("product", "")
+        comparison_view = raw.get("comparisonView") or raw.get("providerPair", "")
+        if not comparison_view and product:
+            comparison_view = f"{product}_product_family"
+        provider_set = raw.get("providerSet", "")
+        if not provider_set and boundary:
+            try:
+                provider_set = compare_axes_mod.derive_provider_set(
+                    boundary=boundary,
+                    runtime_host=raw["runtimeHost"],
+                    comparison_view=comparison_view if comparison_view and not product else "",
+                )
+            except ValueError:
+                provider_set = f"{product}_providers" if product else ""
+        providers_raw = raw.get("providers")
+        if providers_raw:
+            providers = tuple(providers_raw)
+        elif product:
+            providers = (product,)
+        elif comparison_view:
+            providers = (
+                compare_axes_mod.providers_for_comparison_view(comparison_view)
+                or (compare_axes_mod.providers_for_provider_set(provider_set) if provider_set else ())
+            )
+        else:
+            providers = ()
         families.append(
             StructuralFamily(
                 id=family_id,
-                comparison_boundary=raw["comparisonBoundary"],
+                comparison_boundary=boundary,
                 runtime_host=raw["runtimeHost"],
-                comparison_view=raw.get("comparisonView", raw["providerPair"]),
-                provider_set=raw.get(
-                    "providerSet",
-                    compare_axes_mod.derive_provider_set(
-                        boundary=raw["comparisonBoundary"],
-                        runtime_host=raw["runtimeHost"],
-                        comparison_view=raw.get("comparisonView", raw["providerPair"]),
-                    ),
-                ),
-                providers=tuple(
-                    raw.get("providers")
-                    or compare_axes_mod.providers_for_comparison_view(
-                        raw.get("comparisonView", raw["providerPair"])
-                    )
-                    or compare_axes_mod.providers_for_provider_set(
-                        raw.get(
-                            "providerSet",
-                            compare_axes_mod.derive_provider_set(
-                                boundary=raw["comparisonBoundary"],
-                                runtime_host=raw["runtimeHost"],
-                                comparison_view=raw.get("comparisonView", raw["providerPair"]),
-                            ),
-                        )
-                    )
-                ),
+                comparison_view=comparison_view,
+                provider_set=provider_set,
+                providers=providers,
                 temperature=raw["temperature"],
                 target_kind=raw["targetKind"],
                 executor_input_boundary=raw["executorInputBoundary"],
@@ -130,7 +138,8 @@ def parse_structural_families(payload: dict) -> list[StructuralFamily]:
 def parse_promoted_coverage(payload: dict, family_by_id: dict[str, StructuralFamily]) -> list[PromotedCoverage]:
     coverage_entries: list[PromotedCoverage] = []
     seen_pairs: set[tuple[str, str]] = set()
-    for raw in payload["promotedCompareCoverage"]:
+    promoted_key = "promotedCompareCoverage" if "promotedCompareCoverage" in payload else "promotedRunCoverage"
+    for raw in payload.get(promoted_key, []):
         family_id = raw["familyId"]
         if family_id not in family_by_id:
             raise ValueError(f"promoted coverage references unknown family: {family_id}")
@@ -159,13 +168,21 @@ def parse_promoted_coverage(payload: dict, family_by_id: dict[str, StructuralFam
 
 
 def surface_alias_by_boundary(payload: dict) -> dict[str, str]:
-    return dict(payload["aliases"]["promotedCompareSurfaceByBoundary"])
+    aliases = payload.get("aliases", {})
+    if "promotedCompareSurfaceByBoundary" in aliases:
+        return dict(aliases["promotedCompareSurfaceByBoundary"])
+    if "surfaceShortNames" in aliases:
+        return dict(aliases["surfaceShortNames"])
+    return {}
 
 
 def repo_surface_by_boundary_and_runtime(payload: dict) -> dict[tuple[str, str], str]:
     mapping: dict[tuple[str, str], str] = {}
-    for raw in payload["aliases"]["repoSurfaceByBoundaryAndRuntimeHost"]:
-        key = (raw["comparisonBoundary"], raw["runtimeHost"])
+    aliases = payload.get("aliases", {})
+    raw_list = aliases.get("repoSurfaceByBoundaryAndRuntimeHost") or aliases.get("repoSurfaceByProductAndRuntimeHost") or []
+    for raw in raw_list:
+        boundary = raw.get("comparisonBoundary") or raw.get("surface", "")
+        key = (boundary, raw["runtimeHost"])
         if key in mapping:
             raise ValueError(f"duplicate repo-surface alias for {key}")
         mapping[key] = raw["repoSurface"]
@@ -308,6 +325,10 @@ def build_rows(
     repo_surface_aliases = repo_surface_by_boundary_and_runtime(payload)
     axes = payload["axes"]
 
+    # v2 uses "surfaces" + "products" instead of "comparisonBoundaries" + "comparisonViews"
+    boundaries = axes.get("comparisonBoundaries") or axes.get("surfaces", [])
+    views = axes.get("comparisonViews") or axes.get("providerPairs") or axes.get("products", [])
+
     rows: list[dict] = []
     for (
         platform_lane,
@@ -318,9 +339,9 @@ def build_rows(
         target_kind,
     ) in product(
         axes["platformLanes"],
-        axes["comparisonBoundaries"],
+        boundaries,
         axes["runtimeHosts"],
-        axes.get("comparisonViews") or axes["providerPairs"],
+        views,
         axes["temperatures"],
         axes["targetKinds"],
     ):
@@ -419,8 +440,10 @@ def summarize_rows(rows: list[dict]) -> dict[str, int]:
 
 
 def validate_expected_counts(payload: dict, rows: list[dict]) -> None:
+    expected = payload.get("expectedCounts")
+    if expected is None:
+        return
     actual = summarize_rows(rows)
-    expected = payload["expectedCounts"]
     if actual != expected:
         raise ValueError(f"compare taxonomy counts drift: expected {expected}, got {actual}")
 

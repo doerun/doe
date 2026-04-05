@@ -7,24 +7,22 @@
     "schemaVersion",
     "axes",
     "aliases",
-    "structuralFamilies",
-    "promotedCompareCoverage",
-    "expectedCounts"
+    "productFamilies",
+    "promotedRunCoverage"
   ],
   "properties": {
     "schemaVersion": {
       "type": "integer",
-      "const": 1
+      "const": 2
     },
     "axes": {
       "type": "object",
       "additionalProperties": false,
       "required": [
         "platformLanes",
-        "comparisonBoundaries",
+        "surfaces",
+        "products",
         "runtimeHosts",
-        "providerPairs",
-        "comparisonViews",
         "temperatures",
         "targetKinds",
         "presetIds",
@@ -35,16 +33,13 @@
         "platformLanes": {
           "$ref": "#/$defs/nonEmptyStringArray"
         },
-        "comparisonBoundaries": {
+        "surfaces": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "products": {
           "$ref": "#/$defs/nonEmptyStringArray"
         },
         "runtimeHosts": {
-          "$ref": "#/$defs/nonEmptyStringArray"
-        },
-        "providerPairs": {
-          "$ref": "#/$defs/nonEmptyStringArray"
-        },
-        "comparisonViews": {
           "$ref": "#/$defs/nonEmptyStringArray"
         },
         "temperatures": {
@@ -68,34 +63,18 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "promotedCompareSurfaceByBoundary",
-        "repoSurfaceByBoundaryAndRuntimeHost"
+        "surfaceShortNames",
+        "repoSurfaceByProductAndRuntimeHost"
       ],
       "properties": {
-        "promotedCompareSurfaceByBoundary": {
+        "surfaceShortNames": {
           "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "backend_native",
-            "direct_plan",
-            "package_surface"
-          ],
-          "properties": {
-            "backend_native": {
-              "type": "string",
-              "const": "native"
-            },
-            "direct_plan": {
-              "type": "string",
-              "const": "direct"
-            },
-            "package_surface": {
-              "type": "string",
-              "const": "package"
-            }
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1
           }
         },
-        "repoSurfaceByBoundaryAndRuntimeHost": {
+        "repoSurfaceByProductAndRuntimeHost": {
           "type": "array",
           "items": {
             "$ref": "#/$defs/repoSurfaceAlias"
@@ -104,47 +83,19 @@
         }
       }
     },
-    "structuralFamilies": {
+    "productFamilies": {
       "type": "array",
       "items": {
-        "$ref": "#/$defs/structuralFamily"
+        "$ref": "#/$defs/productFamily"
       },
       "minItems": 1
     },
-    "promotedCompareCoverage": {
+    "promotedRunCoverage": {
       "type": "array",
       "items": {
         "$ref": "#/$defs/promotedCoverage"
       },
       "minItems": 1
-    },
-    "expectedCounts": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "naiveCartesianRows",
-        "typeCorrectStructuralRows",
-        "typeCorrectConcreteRowSlots",
-        "promotedCompareRows"
-      ],
-      "properties": {
-        "naiveCartesianRows": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "typeCorrectStructuralRows": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "typeCorrectConcreteRowSlots": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "promotedCompareRows": {
-          "type": "integer",
-          "minimum": 0
-        }
-      }
     }
   },
   "$defs": {
@@ -161,12 +112,17 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "comparisonBoundary",
+        "surface",
+        "product",
         "runtimeHost",
         "repoSurface"
       ],
       "properties": {
-        "comparisonBoundary": {
+        "surface": {
+          "type": "string",
+          "minLength": 1
+        },
+        "product": {
           "type": "string",
           "minLength": 1
         },
@@ -180,17 +136,14 @@
         }
       }
     },
-    "structuralFamily": {
+    "productFamily": {
       "type": "object",
       "additionalProperties": false,
       "required": [
         "id",
-        "comparisonBoundary",
+        "surface",
+        "product",
         "runtimeHost",
-        "providerPair",
-        "comparisonView",
-        "providerSet",
-        "providers",
         "temperature",
         "targetKind",
         "executorInputBoundary",
@@ -202,28 +155,17 @@
           "type": "string",
           "minLength": 1
         },
-        "comparisonBoundary": {
+        "surface": {
+          "type": "string",
+          "minLength": 1
+        },
+        "product": {
           "type": "string",
           "minLength": 1
         },
         "runtimeHost": {
           "type": "string",
           "minLength": 1
-        },
-        "providerPair": {
-          "type": "string",
-          "minLength": 1
-        },
-        "comparisonView": {
-          "type": "string",
-          "minLength": 1
-        },
-        "providerSet": {
-          "type": "string",
-          "minLength": 1
-        },
-        "providers": {
-          "$ref": "#/$defs/nonEmptyStringArray"
         },
         "temperature": {
           "type": "string",

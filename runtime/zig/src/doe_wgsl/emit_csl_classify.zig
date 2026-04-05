@@ -87,6 +87,8 @@ pub const AttentionDecodeInfo = struct {
     shared_count: u32,
     input_count: u32,
     output_count: u32,
+    /// When >0, decode uses a sliding window of this size instead of full history.
+    sliding_window_size: u32 = 0,
 };
 
 pub const AttentionTiledInfo = struct {

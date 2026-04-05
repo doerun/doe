@@ -38,7 +38,6 @@ Applies to:
 
 - Workload contracts:
   - `bench/workloads*.json`
-  - DOE-vs-DOE strict fullsuite contract: `bench/workloads/specialized/workloads.amd.vulkan.superset.doe-vs-doe.json`
 - Compare harness:
   - `bench/native-compare/compare_dawn_vs_doe.py`
   - `bench/native_compare_modules/comparability.py`
@@ -226,7 +225,7 @@ Runtime timing scope reminder:
 
 For strict Dawn-vs-Doe claim lanes, required timing class is `operation` by default.
 
-For same-runtime parity lanes (Doe-vs-Doe or Dawn-vs-Dawn), operation timing remains
+For same-runtime parity lanes (e.g. Dawn-vs-Dawn), operation timing remains
 allowed under their lane contracts.
 
 Current selection priorities in compare harness:
@@ -279,7 +278,7 @@ Do not confuse total catalog inventory with one config run subset.
 
 Example:
 - active workload catalogs may contain more IDs overall
-- a specific strict fullsuite config may intentionally execute a subset (for example, the 31-item DOE-vs-DOE fullsuite contract)
+- a specific strict fullsuite config may intentionally execute a subset
 
 When reporting counts, always state:
 - source workload file

@@ -1,232 +1,91 @@
 {
-  "schemaVersion": 1,
-  "hostProfiles": [
+  "comparisonViews": [
     {
-      "id": "mac_apple_silicon",
-      "displayName": "Apple Silicon macOS",
-      "os": "darwin",
-      "arch": "arm64",
-      "backend": "metal",
-      "gpuVendor": "apple"
-    },
-    {
-      "id": "linux_amd_vulkan",
-      "displayName": "AMD Linux Vulkan",
-      "os": "linux",
-      "arch": "x64",
-      "backend": "vulkan",
-      "gpuVendor": "amd"
-    },
-    {
-      "id": "linux_x64",
-      "displayName": "Linux x64",
-      "os": "linux",
-      "arch": "x64"
-    },
-    {
-      "id": "windows_d3d12",
-      "displayName": "Windows D3D12",
-      "os": "win32",
-      "arch": "x64",
-      "backend": "d3d12"
-    },
-    {
-      "id": "windows_x64",
-      "displayName": "Windows x64",
-      "os": "win32",
-      "arch": "x64"
-    }
-  ],
-  "providerPairs": [
-    {
-      "id": "doe_vs_dawn",
-      "surface": "backend_native",
       "displayName": "Doe vs Dawn",
+      "id": "doe_vs_dawn",
       "left": "doe",
+      "providerSet": "backend_native_providers",
       "right": "dawn"
     },
     {
-      "id": "doe_node_vs_dawn_node",
-      "surface": "node_package",
       "displayName": "Doe Node vs Dawn Node",
-      "left": "doe_node",
-      "right": "dawn_node"
+      "id": "doe_node_vs_dawn_node",
+      "left": "doe",
+      "providerSet": "package_node_providers",
+      "right": "dawn-node-webgpu"
     },
     {
+      "displayName": "Doe Bun vs bun-webgpu",
       "id": "doe_bun_vs_bun_webgpu",
-      "surface": "bun_package",
+      "left": "doe",
+      "providerSet": "package_bun_providers",
+      "right": "bun-webgpu"
+    }
+  ],
+  "hostProfiles": [
+    {
+      "arch": "arm64",
+      "backend": "metal",
+      "displayName": "Apple Silicon macOS",
+      "gpuVendor": "apple",
+      "id": "mac_apple_silicon",
+      "os": "darwin"
+    },
+    {
+      "arch": "x64",
+      "backend": "vulkan",
+      "displayName": "AMD Linux Vulkan",
+      "gpuVendor": "amd",
+      "id": "linux_amd_vulkan",
+      "os": "linux"
+    },
+    {
+      "arch": "x64",
+      "displayName": "Linux x64",
+      "id": "linux_x64",
+      "os": "linux"
+    },
+    {
+      "arch": "x64",
+      "backend": "d3d12",
+      "displayName": "Windows D3D12",
+      "id": "windows_d3d12",
+      "os": "win32"
+    },
+    {
+      "arch": "x64",
+      "displayName": "Windows x64",
+      "id": "windows_x64",
+      "os": "win32"
+    }
+  ],
+  "products": [
+    {
+      "displayName": "Doe vs Dawn",
+      "id": "doe_vs_dawn",
+      "products": [
+        "doe",
+        "dawn"
+      ],
+      "surface": "backend_native"
+    },
+    {
+      "displayName": "Doe Node vs Dawn Node",
+      "id": "doe_node_vs_dawn_node",
+      "products": [
+        "doe",
+        "dawn_node_webgpu"
+      ],
+      "surface": "node_package"
+    },
+    {
       "displayName": "Doe Bun vs bun webgpu",
-      "left": "doe_bun",
-      "right": "bun_webgpu"
-    }
-  ],
-  "surfaces": [
-    {
-      "id": "backend_native",
-      "displayName": "Backend Native",
-      "maturity": "primary",
-      "primarySupport": "backend",
-      "defaultMissingStatus": "unimplemented",
-      "expectedHostProfiles": [
-        "mac_apple_silicon",
-        "linux_amd_vulkan",
-        "windows_d3d12"
+      "id": "doe_bun_vs_bun_webgpu",
+      "products": [
+        "doe",
+        "bun_webgpu"
       ],
-      "providerPairs": [
-        "doe_vs_dawn"
-      ],
-      "workloadSets": [
-        "full_comparable",
-        "uploads",
-        "compute_e2e",
-        "render",
-        "pipeline",
-        "texture",
-        "contracts"
-      ],
-      "notes": [
-        "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
-        "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback.",
-        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity.",
-        "Windows D3D12 strict comparable coverage is currently limited to compute, upload, pipeline, and p0-resource contracts; render and texture rows remain out of scope until native D3D12 coverage expands."
-      ],
-      "comparisonViews": [
-        "doe_vs_dawn"
-      ]
-    },
-    {
-      "id": "node_package",
-      "displayName": "Node Package",
-      "maturity": "primary",
-      "primarySupport": "node",
-      "defaultMissingStatus": "unimplemented",
-      "expectedHostProfiles": [
-        "mac_apple_silicon",
-        "linux_x64",
-        "windows_x64"
-      ],
-      "providerPairs": [
-        "doe_node_vs_dawn_node"
-      ],
-      "workloadSets": [
-        "full_comparable",
-        "uploads",
-        "compute_e2e",
-        "dispatch_only",
-        "pipeline",
-        "overhead"
-      ],
-      "workloadIdOverrides": {
-        "compute_dispatch_simple": "dispatch_only"
-      },
-      "notes": [
-        "Node is the primary supported package surface for doe-gpu.",
-        "Node package comparisons are runtime/package evidence and do not replace strict backend reports."
-      ],
-      "comparisonViews": [
-        "doe_node_vs_dawn_node"
-      ]
-    },
-    {
-      "id": "bun_package",
-      "displayName": "Bun Package",
-      "maturity": "prototype",
-      "primarySupport": "bun",
-      "defaultMissingStatus": "unimplemented",
-      "expectedHostProfiles": [
-        "mac_apple_silicon",
-        "linux_x64",
-        "windows_x64"
-      ],
-      "providerPairs": [
-        "doe_bun_vs_bun_webgpu"
-      ],
-      "workloadSets": [
-        "full_comparable",
-        "uploads",
-        "compute_e2e",
-        "dispatch_only",
-        "pipeline",
-        "overhead"
-      ],
-      "workloadIdOverrides": {
-        "compute_dispatch_simple": "dispatch_only"
-      },
-      "notes": [
-        "Bun has API parity with Node through the package-default Bun runtime entry. Compare lane: bench/package-compare/bun/compare.js against the bun-webgpu package.",
-        "Do not cite Bun cells as package parity until they are populated by comparable artifacts."
-      ],
-      "comparisonViews": [
-        "doe_bun_vs_bun_webgpu"
-      ]
-    }
-  ],
-  "workloadSets": [
-    {
-      "id": "full_comparable",
-      "displayName": "Full Comparable",
-      "domains": []
-    },
-    {
-      "id": "uploads",
-      "displayName": "Uploads",
-      "domains": [
-        "upload"
-      ]
-    },
-    {
-      "id": "compute_e2e",
-      "displayName": "Compute",
-      "domains": [
-        "compute"
-      ]
-    },
-    {
-      "id": "dispatch_only",
-      "displayName": "Dispatch Only",
-      "domains": []
-    },
-    {
-      "id": "render",
-      "displayName": "Render",
-      "domains": [
-        "render",
-        "render-bundle",
-        "render-macro"
-      ]
-    },
-    {
-      "id": "pipeline",
-      "displayName": "Pipeline",
-      "domains": [
-        "pipeline",
-        "pipeline-async"
-      ]
-    },
-    {
-      "id": "texture",
-      "displayName": "Texture",
-      "domains": [
-        "texture-contract",
-        "texture-macro"
-      ]
-    },
-    {
-      "id": "contracts",
-      "displayName": "Contracts",
-      "domains": [
-        "surface",
-        "p0-resource",
-        "p0-render-macro",
-        "p1-resource-table-macro"
-      ]
-    },
-    {
-      "id": "overhead",
-      "displayName": "Overhead",
-      "domains": [
-        "overhead"
-      ]
+      "surface": "bun_package"
     }
   ],
   "providerSets": [
@@ -254,27 +113,168 @@
       ]
     }
   ],
-  "comparisonViews": [
+  "schemaVersion": 1,
+  "surfaces": [
     {
-      "id": "doe_vs_dawn",
-      "providerSet": "backend_native_providers",
-      "displayName": "Doe vs Dawn",
-      "left": "doe",
-      "right": "dawn"
+      "defaultMissingStatus": "unimplemented",
+      "displayName": "Backend Native",
+      "expectedHostProfiles": [
+        "mac_apple_silicon",
+        "linux_amd_vulkan",
+        "windows_d3d12"
+      ],
+      "id": "backend_native",
+      "maturity": "primary",
+      "notes": [
+        "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
+        "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback.",
+        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity.",
+        "Windows D3D12 strict comparable coverage is currently limited to compute, upload, pipeline, and p0-resource contracts; render and texture rows remain out of scope until native D3D12 coverage expands."
+      ],
+      "primarySupport": "backend",
+      "products": [
+        "doe",
+        "dawn"
+      ],
+      "workloadSets": [
+        "full_comparable",
+        "uploads",
+        "compute_e2e",
+        "render",
+        "pipeline",
+        "texture",
+        "contracts"
+      ]
     },
     {
-      "id": "doe_node_vs_dawn_node",
-      "providerSet": "package_node_providers",
-      "displayName": "Doe Node vs Dawn Node",
-      "left": "doe",
-      "right": "dawn-node-webgpu"
+      "defaultMissingStatus": "unimplemented",
+      "displayName": "Node Package",
+      "expectedHostProfiles": [
+        "mac_apple_silicon",
+        "linux_x64",
+        "windows_x64"
+      ],
+      "id": "node_package",
+      "maturity": "primary",
+      "notes": [
+        "Node is the primary supported package surface for doe-gpu.",
+        "Node package comparisons are runtime/package evidence and do not replace strict backend reports."
+      ],
+      "primarySupport": "node",
+      "products": [
+        "doe",
+        "dawn_node_webgpu"
+      ],
+      "workloadIdOverrides": {
+        "compute_dispatch_simple": "dispatch_only"
+      },
+      "workloadSets": [
+        "full_comparable",
+        "uploads",
+        "compute_e2e",
+        "dispatch_only",
+        "pipeline",
+        "overhead"
+      ]
     },
     {
-      "id": "doe_bun_vs_bun_webgpu",
-      "providerSet": "package_bun_providers",
-      "displayName": "Doe Bun vs bun-webgpu",
-      "left": "doe",
-      "right": "bun-webgpu"
+      "defaultMissingStatus": "unimplemented",
+      "displayName": "Bun Package",
+      "expectedHostProfiles": [
+        "mac_apple_silicon",
+        "linux_x64",
+        "windows_x64"
+      ],
+      "id": "bun_package",
+      "maturity": "prototype",
+      "notes": [
+        "Bun has API parity with Node through the package-default Bun runtime entry. Compare lane: bench/package-compare/bun/compare.js against the bun-webgpu package.",
+        "Do not cite Bun cells as package parity until they are populated by comparable artifacts."
+      ],
+      "primarySupport": "bun",
+      "products": [
+        "doe",
+        "bun_webgpu"
+      ],
+      "workloadIdOverrides": {
+        "compute_dispatch_simple": "dispatch_only"
+      },
+      "workloadSets": [
+        "full_comparable",
+        "uploads",
+        "compute_e2e",
+        "dispatch_only",
+        "pipeline",
+        "overhead"
+      ]
+    }
+  ],
+  "workloadSets": [
+    {
+      "displayName": "Full Comparable",
+      "domains": [],
+      "id": "full_comparable"
+    },
+    {
+      "displayName": "Uploads",
+      "domains": [
+        "upload"
+      ],
+      "id": "uploads"
+    },
+    {
+      "displayName": "Compute",
+      "domains": [
+        "compute"
+      ],
+      "id": "compute_e2e"
+    },
+    {
+      "displayName": "Dispatch Only",
+      "domains": [],
+      "id": "dispatch_only"
+    },
+    {
+      "displayName": "Render",
+      "domains": [
+        "render",
+        "render-bundle",
+        "render-macro"
+      ],
+      "id": "render"
+    },
+    {
+      "displayName": "Pipeline",
+      "domains": [
+        "pipeline",
+        "pipeline-async"
+      ],
+      "id": "pipeline"
+    },
+    {
+      "displayName": "Texture",
+      "domains": [
+        "texture-contract",
+        "texture-macro"
+      ],
+      "id": "texture"
+    },
+    {
+      "displayName": "Contracts",
+      "domains": [
+        "surface",
+        "p0-resource",
+        "p0-render-macro",
+        "p1-resource-table-macro"
+      ],
+      "id": "contracts"
+    },
+    {
+      "displayName": "Overhead",
+      "domains": [
+        "overhead"
+      ],
+      "id": "overhead"
     }
   ]
 }

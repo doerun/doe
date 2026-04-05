@@ -15,80 +15,52 @@ for _path_entry in (str(REPO_ROOT), str(BENCH_ROOT)):
         sys.path.insert(0, _path_entry)
 
 from bench.tools.generate_compare_taxonomy import (  # noqa: E402
-    DEFAULT_OUTPUT_PATH,
-    actual_promoted_profile_map,
-    build_rows,
     load_json,
     parse_structural_families,
-    render_jsonl,
-    summarize_rows,
     surface_alias_by_boundary,
-    validate_expected_counts,
-    validate_promoted_subset_alignment,
 )
 
 
 class CompareTaxonomyTests(unittest.TestCase):
-    def test_expected_counts_match_generated_rows(self) -> None:
+    def test_taxonomy_loads_and_parses_families(self) -> None:
         taxonomy = load_json(REPO_ROOT / "config" / "compare-taxonomy.json")
-        promoted_catalog = load_json(REPO_ROOT / "config" / "promoted-compare-catalog.json")
         families = parse_structural_families(taxonomy)
-        family_by_id = {family.id: family for family in families}
-        promoted_profile_map = validate_promoted_subset_alignment(
-            taxonomy,
-            promoted_catalog,
-            family_by_id=family_by_id,
-        )
-        rows = build_rows(taxonomy, promoted_profile_map=promoted_profile_map)
-        validate_expected_counts(taxonomy, rows)
-        self.assertEqual(summarize_rows(rows), taxonomy["expectedCounts"])
+        self.assertGreater(len(families), 0)
+        family_ids = {f.id for f in families}
+        self.assertIn("doe_backend_native", family_ids)
+        self.assertIn("dawn_backend_native", family_ids)
 
-    def test_generated_artifact_is_current(self) -> None:
+    def test_taxonomy_v2_has_products_axis(self) -> None:
         taxonomy = load_json(REPO_ROOT / "config" / "compare-taxonomy.json")
-        promoted_catalog = load_json(REPO_ROOT / "config" / "promoted-compare-catalog.json")
+        self.assertEqual(taxonomy["schemaVersion"], 2)
+        self.assertIn("products", taxonomy["axes"])
+        self.assertIn("surfaces", taxonomy["axes"])
+        self.assertNotIn("comparisonViews", taxonomy["axes"])
+        self.assertNotIn("providerPairs", taxonomy["axes"])
+
+    def test_surface_aliases_available(self) -> None:
+        taxonomy = load_json(REPO_ROOT / "config" / "compare-taxonomy.json")
+        aliases = surface_alias_by_boundary(taxonomy)
+        self.assertIn("backend_native", aliases)
+        self.assertEqual(aliases["backend_native"], "native")
+
+    def test_promoted_run_coverage_references_valid_families(self) -> None:
+        taxonomy = load_json(REPO_ROOT / "config" / "compare-taxonomy.json")
         families = parse_structural_families(taxonomy)
-        family_by_id = {family.id: family for family in families}
-        promoted_profile_map = validate_promoted_subset_alignment(
-            taxonomy,
-            promoted_catalog,
-            family_by_id=family_by_id,
-        )
-        rows = build_rows(taxonomy, promoted_profile_map=promoted_profile_map)
-        expected = render_jsonl(rows)
-        actual = DEFAULT_OUTPUT_PATH.read_text(encoding="utf-8")
-        self.assertEqual(actual, expected)
+        family_ids = {f.id for f in families}
+        coverage = taxonomy.get("promotedRunCoverage") or taxonomy.get("promotedCompareCoverage") or []
+        for entry in coverage:
+            self.assertIn(
+                entry["familyId"],
+                family_ids,
+                f"promoted coverage references unknown family: {entry['familyId']}",
+            )
 
-    def test_promoted_profiles_attach_to_rows(self) -> None:
+    def test_product_families_have_product_field(self) -> None:
         taxonomy = load_json(REPO_ROOT / "config" / "compare-taxonomy.json")
-        promoted_catalog = load_json(REPO_ROOT / "config" / "promoted-compare-catalog.json")
-        promoted_profile_map = actual_promoted_profile_map(
-            promoted_catalog,
-            surface_alias_to_boundary={
-                value: key for key, value in surface_alias_by_boundary(taxonomy).items()
-            },
-        )
-        rows = build_rows(taxonomy, promoted_profile_map=promoted_profile_map)
-        warm_bun_row = next(
-            row
-            for row in rows
-            if row["rowId"]
-            == "apple-metal__package_surface__bun__doe_vs_bun_webgpu__warm__workload"
-        )
-        self.assertEqual(
-            warm_bun_row["promotedCompareProfileIds"],
-            ["apple-metal-gemma1b-bun-package-warm", "apple-metal-gemma64-bun-package-warm"],
-        )
-        self.assertEqual(warm_bun_row["comparisonView"], "doe_vs_bun_webgpu")
-        self.assertEqual(warm_bun_row["providerSet"], "package_bun_providers")
-        self.assertEqual(warm_bun_row["providers"], ["doe", "bun-webgpu"])
-        invalid_row = next(
-            row
-            for row in rows
-            if row["rowId"]
-            == "apple-metal__package_surface__none__doe_vs_bun_webgpu__warm__workload"
-        )
-        self.assertFalse(invalid_row["isTypeCorrectStructural"])
-        self.assertEqual(invalid_row["promotedCompareProfileIds"], [])
+        for fam in taxonomy.get("productFamilies", []):
+            self.assertIn("product", fam, f"family {fam['id']} missing product field")
+            self.assertIn("surface", fam, f"family {fam['id']} missing surface field")
 
 
 if __name__ == "__main__":

@@ -341,7 +341,7 @@ def enforce_strict_doe_runtime_normalization_symmetry(
     if failures:
         details = "; ".join(failures)
         raise ValueError(
-            "strict doe-vs-doe apples-to-apples requires symmetric workload normalization "
+            "strict apples-to-apples requires symmetric workload normalization "
             f"(left==right) for comparable workloads: {details}"
         )
 

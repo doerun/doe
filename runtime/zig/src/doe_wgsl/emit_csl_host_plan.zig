@@ -90,6 +90,10 @@ pub fn emitHostPlanArtifactJson(
         try writeJsonString(buf, pos, kernel.pattern);
         try write(buf, pos, ", \"count\": ");
         try writeInt(buf, pos, kernel.count);
+        if (kernel.kv_cache_alias) |alias| {
+            try write(buf, pos, ", \"kvCacheAlias\": ");
+            try writeJsonString(buf, pos, alias);
+        }
         try write(buf, pos, " }");
         if (idx + 1 < plan.kernels.len) try write(buf, pos, ",");
         try write(buf, pos, "\n");

@@ -1,0 +1,208 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Doe run artifact",
+  "description": "Output of a single-product benchmark run. Input to post-hoc comparison.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "generatedAt",
+    "product",
+    "executorId",
+    "workload",
+    "runParameters",
+    "host",
+    "commandSamples",
+    "stats",
+    "timingsMs",
+    "timingSources",
+    "timingClasses",
+    "lastMeta"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "artifactKind": {
+      "type": "string",
+      "const": "run"
+    },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "product": {
+      "type": "string",
+      "minLength": 1
+    },
+    "executorId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "workload": {
+      "type": "object",
+      "required": [
+        "id",
+        "domain"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "domain": {
+          "type": "string",
+          "minLength": 1
+        },
+        "commandsPath": {
+          "type": "string"
+        },
+        "quirksPath": {
+          "type": "string"
+        },
+        "vendor": {
+          "type": "string"
+        },
+        "api": {
+          "type": "string"
+        },
+        "family": {
+          "type": "string"
+        },
+        "driver": {
+          "type": "string"
+        },
+        "comparable": {
+          "type": "boolean"
+        },
+        "benchmarkClass": {
+          "type": "string"
+        },
+        "comparabilityNotes": {
+          "type": "string"
+        },
+        "pathAsymmetry": {
+          "type": "boolean"
+        },
+        "pathAsymmetryNote": {
+          "type": "string"
+        },
+        "claimEligible": {
+          "type": "boolean"
+        },
+        "cohorts": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "runParameters": {
+      "type": "object",
+      "required": [
+        "iterations",
+        "warmup",
+        "commandRepeat",
+        "timingDivisor"
+      ],
+      "properties": {
+        "iterations": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "warmup": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "commandRepeat": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "ignoreFirstOps": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "timingDivisor": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "uploadBufferUsage": {
+          "type": "string"
+        },
+        "uploadSubmitEvery": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "resourceProbe": {
+          "type": "string"
+        },
+        "resourceSampleMs": {
+          "type": "integer"
+        },
+        "resourceSampleTargetCount": {
+          "type": "integer"
+        }
+      }
+    },
+    "host": {
+      "type": "object",
+      "required": [
+        "os",
+        "arch"
+      ],
+      "properties": {
+        "os": {
+          "type": "string"
+        },
+        "arch": {
+          "type": "string"
+        }
+      }
+    },
+    "commandSamples": {
+      "type": "array"
+    },
+    "stats": {
+      "type": "object"
+    },
+    "timingsMs": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      }
+    },
+    "timingSources": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "timingClasses": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "lastMeta": {
+      "type": "object"
+    },
+    "resourceStats": {
+      "type": "object"
+    },
+    "timingMetricsRawStatsMs": {
+      "type": "object"
+    },
+    "timingMetricsNormalizedStatsMs": {
+      "type": "object"
+    }
+  }
+}

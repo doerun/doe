@@ -143,6 +143,70 @@ class Workload:
     shader_path: str = ""
     compilation_target: str = ""
 
+    def to_spec_and_configs(
+        self,
+        left_product: str = "doe",
+        right_product: str = "dawn",
+    ) -> tuple:
+        """Split legacy pair Workload into WorkloadSpec + per-product configs.
+
+        Returns (WorkloadSpec, dict[str, ProductRunConfig]).
+        """
+        from native_compare_modules.workload_spec import ProductRunConfig, WorkloadSpec
+
+        spec = WorkloadSpec(
+            id=self.id,
+            name=self.name,
+            description=self.description,
+            domain=self.domain,
+            commands_path=self.commands_path,
+            quirks_path=self.quirks_path,
+            vendor=self.vendor,
+            api=self.api,
+            family=self.family,
+            driver=self.driver,
+            extra_args=list(self.extra_args),
+            comparable=self.comparable,
+            benchmark_class=self.benchmark_class,
+            comparability_notes=self.comparability_notes,
+            path_asymmetry=self.path_asymmetry,
+            path_asymmetry_note=self.path_asymmetry_note,
+            strict_normalization_unit=self.strict_normalization_unit,
+            cohorts=list(self.cohorts),
+            claim_eligible=self.claim_eligible,
+            runner_type=self.runner_type,
+            ir_path=self.ir_path,
+            plan_path=self.plan_path,
+            shader_path=self.shader_path,
+            compilation_target=self.compilation_target,
+            async_diagnostics_mode=self.async_diagnostics_mode,
+        )
+        configs = {
+            left_product: ProductRunConfig(
+                product=left_product,
+                command_repeat=self.left_command_repeat,
+                ignore_first_ops=self.left_ignore_first_ops,
+                upload_buffer_usage=self.left_upload_buffer_usage,
+                upload_submit_every=self.left_upload_submit_every,
+                timing_divisor=self.left_timing_divisor,
+                allow_no_execution=self.allow_left_no_execution,
+                dawn_filter=self.dawn_filter if left_product == "dawn" else "",
+                timing_normalization_note=self.timing_normalization_note,
+            ),
+            right_product: ProductRunConfig(
+                product=right_product,
+                command_repeat=self.right_command_repeat,
+                ignore_first_ops=self.right_ignore_first_ops,
+                upload_buffer_usage=self.right_upload_buffer_usage,
+                upload_submit_every=self.right_upload_submit_every,
+                timing_divisor=self.right_timing_divisor,
+                allow_no_execution=False,
+                dawn_filter=self.dawn_filter if right_product == "dawn" else "",
+                timing_normalization_note=self.timing_normalization_note,
+            ),
+        }
+        return spec, configs
+
 
 @dataclass(frozen=True)
 class BenchmarkMethodologyPolicy:

@@ -40,6 +40,9 @@ pub const KernelSpec = struct {
     name: []const u8,
     pattern: []const u8,
     count: u32 = 1,
+    /// When set, this kernel's KV cache buffers alias the named source kernel's
+    /// buffers instead of allocating independent storage. Used for Gemma 4 shared KV.
+    kv_cache_alias: ?[]const u8 = null,
 };
 
 pub const LaunchSpec = struct {

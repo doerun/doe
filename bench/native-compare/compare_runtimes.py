@@ -2,6 +2,10 @@
 """
 Side-by-side runtime benchmark runner for non-placeholder replacement.
 
+LEGACY: For the product-based CLI, use:
+
+    python3 bench/cli.py compare <artifact1> <artifact2> ...
+
 Runs two command invocations over the same workload command line and reports
 wall-time deltas plus metadata summary if provided.
 """

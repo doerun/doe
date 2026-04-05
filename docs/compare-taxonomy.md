@@ -2,17 +2,14 @@
 
 ## Purpose
 
-This document defines the canonical axis language for Doe compare lanes so
-humans and agents do not have to reverse-engineer the vocabulary from several
-near-duplicate configs.
+This document defines the canonical axis language for Doe benchmark lanes so
+humans and agents do not have to reverse-engineer the vocabulary from configs.
 
 Use this taxonomy when you need to answer questions like:
 
-- what is a valid compare tuple?
-- which combinations are only theoretical?
-- which combinations are currently promoted through `bench/run_compare.py`?
-- how do `native` / `direct` / `package` relate to `backend_native` /
-  `node_package` / `bun_package` / `deno_package`?
+- what is a valid run tuple?
+- which product x surface x platform combinations are promoted?
+- how do `native` / `direct` / `package` relate to repo surface names?
 
 ## Canonical source of truth
 
@@ -31,8 +28,8 @@ The generated machine-readable expansion lives in:
 
 Those generated files are derived artifacts, not parallel taxonomy sources.
 
-The promoted wrapper catalog and governed-lane catalog are also downstream
-consumers of the taxonomy, not independent definitions of it:
+The promoted catalog and governed-lane catalog are downstream consumers of the
+taxonomy, not independent definitions:
 
 - `config/promoted-compare-catalog.json`
 - `config/governed-lanes.json`
@@ -40,90 +37,70 @@ consumers of the taxonomy, not independent definitions of it:
 If any of those disagree with `config/compare-taxonomy.json`, the taxonomy file
 is authoritative and the derived wiring must be updated to match it.
 
-The expansion enumerates the naive cartesian product of the canonical axes and
-annotates each row with:
-
-- whether it is type-correct structural
-- which theoretical concrete target ids apply
-- whether it is reachable through the current promoted compare subset
-- which promoted compare profile ids map to that row
-
-For current counts, use:
-
-- `config/compare-taxonomy.json` `expectedCounts`
-- `config/generated/compare-taxonomy-expanded.jsonl`
-
 ## Axis language
 
-The canonical axis names are:
+The canonical axes are:
 
-- `platformLane`
-- `comparisonBoundary`
-- `runtimeHost`
-- `comparisonView`
-- `temperature`
-- `targetKind`
+| # | Axis | Values | What it names |
+|---|------|--------|---------------|
+| 1 | `platformLane` | apple-metal, amd-vulkan, local-d3d12 | Hardware/driver target |
+| 2 | `surface` | backend_native, direct_plan, package, abi_dropin, browser, compiler | Execution boundary |
+| 3 | `product` | doe, dawn, tint, dawn_node_webgpu, bun_webgpu, deno_webgpu | Implementation under test |
+| 4 | `runtimeHost` | none, node, bun, deno, chromium | JS host runtime (none for native) |
+| 5 | `temperature` | default, cold, warm | Session warmth |
+| +1 | `targetKind` | preset, workload | Target selection mode |
 
-The important distinction is:
+Key distinctions:
 
-- `comparisonBoundary` names the benchmark boundary
-- `runtimeHost` names the JS host runtime
-- `comparisonView` names the currently promoted view over a broader provider set
+- `surface` names the benchmark boundary, not the product
+- `product` names what is being benchmarked, independently
+- `runtimeHost` names the JS host; `none` for native/direct surfaces
+- Comparison is derived from choosing which products to compare over the
+  same axes — it is not an axis itself
 
-So:
+### What changed from v1
 
-- `backend_native`, `direct_plan`, and `package_surface` are boundary values
-- `none`, `node`, `bun`, and `deno` are runtime-host values
-- `doe_vs_dawn_delegate`, `doe_vs_dawn_direct`, and package runtime views are comparison-view values
-
-This avoids overloading `native` to mean both "non-package" and "backend-native
-compare family."
-
-The taxonomy also records:
-
-- `providerSet` on each structural family
-- `providers` on each structural family and expanded row
-
-`providerPair` remains in the generated expansion as a compatibility alias for
-pair-shaped consumers. New control-plane code should prefer `comparisonView`.
+The v1 taxonomy had `comparisonBoundary` (renamed to `surface`),
+`comparisonView`, and `providerPairs` as axes. The last two baked product
+pairs into the taxonomy, which meant adding a new product required taxonomy
+changes and a new harness instead of just registering an executor. Those
+axes are removed in v2 and replaced by the single `product` axis.
 
 ## Alias maps
 
-The taxonomy also records the current alias maps for the two main user-facing
-vocabularies:
+The taxonomy records alias maps for user-facing vocabularies:
 
-- promoted compare front door aliases used by `bench/run_compare.py`
-- broader repo surface aliases used by governed lanes and workload registry
+- Surface short names used by `bench/run_compare.py`: `native`, `direct`,
+  `package`, `dropin`, `browser`, `compiler`
+- Repo surface names used by governed lanes and workload registry:
+  `backend_native`, `node_package`, `bun_package`, `deno_package`
 
 That mapping lives under `aliases` in `config/compare-taxonomy.json`.
 
 ## How to use it
 
-When you want the current promoted compare matrix:
+When you want to run a benchmark:
+
+1. Pick the product, surface, platform, temperature, and target.
+2. Run the product's executor for that axis combination.
+3. To compare: run additional products under the same axes, then feed all
+   independent run artifacts to the comparison framework.
+
+When you want the current promoted run matrix:
 
 1. Start from `config/compare-taxonomy.json`.
-2. Use `promotedCompareCoverage` to see which type-correct rows are currently
-   promoted.
-3. Use `config/generated/compare-taxonomy-expanded.jsonl` if you need the full
+2. Use `promotedRunCoverage` to see which product x surface x platform
+   combinations are currently promoted.
+3. Use `config/generated/compare-taxonomy-expanded.jsonl` for the full
    expanded matrix with row-level annotations.
-4. Use `config/promoted-compare-catalog.json` only for remaining wiring details
-   such as executor ids, config paths, and descriptions. Do not treat it as a
-   second taxonomy source.
-
-When you want the broader repo surface vocabulary:
-
-1. Start from `config/compare-taxonomy.json` aliases.
-2. Then use:
-   - `config/governed-lanes.json`
-   - `bench/workloads/metadata/workload-registry.json`
 
 ## How to update it
 
-If you add or rename a compare axis, boundary, host runtime, promoted subset,
-or alias vocabulary:
+If you add or rename a product, surface, platform, or temperature:
 
 1. Edit `config/compare-taxonomy.json`.
-2. Treat every other file as derived from that edit, then update dependent wiring:
+2. Treat every other file as derived from that edit, then update dependent
+   wiring:
    - `config/promoted-compare-catalog.json`
    - `config/governed-lanes.json`
    - `bench/workloads/metadata/workload-registry.json`
@@ -143,6 +120,6 @@ python3 bench/gates/schema_gate.py
 
 ## Relationship to other docs
 
-- `bench/README.md` explains how to run compare lanes.
-- `docs/benchmark-taxonomy.md` explains harness classes.
-- This document defines the axis language and subset vocabulary underneath both.
+- `docs/benchmark-taxonomy.md` explains the run/compare model.
+- `bench/README.md` explains how to run benchmarks.
+- This document defines the axis language underneath both.

@@ -1,45 +1,178 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Doe promoted compare catalog",
-  "type": "object",
-  "additionalProperties": false,
-  "required": [
-    "schemaVersion",
-    "entries"
-  ],
-  "properties": {
-    "schemaVersion": {
-      "type": "integer",
-      "const": 3
-    },
-    "entries": {
-      "type": "array",
-      "items": {
-        "$ref": "#/$defs/entry"
-      },
-      "minItems": 1
-    }
-  },
   "$defs": {
-    "surface": {
-      "type": "string",
-      "enum": [
-        "native",
-        "direct",
-        "package"
-      ]
-    },
-    "mode": {
-      "type": "string",
-      "enum": [
-        "default",
-        "cold",
-        "warm"
-      ]
-    },
     "entry": {
-      "type": "object",
       "additionalProperties": false,
+      "allOf": [
+        {
+          "else": {
+            "not": {
+              "required": [
+                "packageRuntime"
+              ]
+            }
+          },
+          "if": {
+            "properties": {
+              "surface": {
+                "const": "package"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "packageRuntime"
+            ]
+          }
+        }
+      ],
+      "oneOf": [
+        {
+          "not": {
+            "required": [
+              "workload"
+            ]
+          },
+          "required": [
+            "preset"
+          ]
+        },
+        {
+          "not": {
+            "required": [
+              "preset"
+            ]
+          },
+          "required": [
+            "workload"
+          ]
+        }
+      ],
+      "properties": {
+        "backend": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "benchmarkClass": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "boundary": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "comparisonView": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "configPath": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "description": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "id": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "leftExecutorId": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "mode": {
+          "$ref": "#/$defs/mode"
+        },
+        "packageRuntime": {
+          "enum": [
+            "node",
+            "bun",
+            "deno"
+          ],
+          "type": "string"
+        },
+        "preset": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "products": {
+          "additionalProperties": false,
+          "properties": {
+            "baseline": {
+              "additionalProperties": false,
+              "properties": {
+                "executorId": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "product": {
+                  "minLength": 1,
+                  "type": "string"
+                }
+              },
+              "required": [
+                "product",
+                "executorId"
+              ],
+              "type": "object"
+            },
+            "comparison": {
+              "additionalProperties": false,
+              "properties": {
+                "executorId": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "product": {
+                  "minLength": 1,
+                  "type": "string"
+                }
+              },
+              "required": [
+                "product",
+                "executorId"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "baseline",
+            "comparison"
+          ],
+          "type": "object"
+        },
+        "providerSet": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "providers": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 2,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "rightExecutorId": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "runtimeHost": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "surface": {
+          "$ref": "#/$defs/surface"
+        },
+        "temperature": {
+          "$ref": "#/$defs/mode"
+        },
+        "workload": {
+          "minLength": 1,
+          "type": "string"
+        }
+      },
       "required": [
         "id",
         "backend",
@@ -57,131 +190,44 @@
         "configPath",
         "description"
       ],
-      "properties": {
-        "id": {
-          "type": "string",
-          "minLength": 1
-        },
-        "backend": {
-          "type": "string",
-          "minLength": 1
-        },
-        "boundary": {
-          "type": "string",
-          "minLength": 1
-        },
-        "runtimeHost": {
-          "type": "string",
-          "minLength": 1
-        },
-        "temperature": {
-          "$ref": "#/$defs/mode"
-        },
-        "comparisonView": {
-          "type": "string",
-          "minLength": 1
-        },
-        "providerSet": {
-          "type": "string",
-          "minLength": 1
-        },
-        "providers": {
-          "type": "array",
-          "minItems": 2,
-          "items": {
-            "type": "string",
-            "minLength": 1
-          },
-          "uniqueItems": true
-        },
-        "surface": {
-          "$ref": "#/$defs/surface"
-        },
-        "preset": {
-          "type": "string",
-          "minLength": 1
-        },
-        "workload": {
-          "type": "string",
-          "minLength": 1
-        },
-        "mode": {
-          "$ref": "#/$defs/mode"
-        },
-        "packageRuntime": {
-          "type": "string",
-          "enum": [
-            "node",
-            "bun",
-            "deno"
-          ]
-        },
-        "benchmarkClass": {
-          "type": "string",
-          "minLength": 1
-        },
-        "leftExecutorId": {
-          "type": "string",
-          "minLength": 1
-        },
-        "rightExecutorId": {
-          "type": "string",
-          "minLength": 1
-        },
-        "configPath": {
-          "type": "string",
-          "minLength": 1
-        },
-        "description": {
-          "type": "string",
-          "minLength": 1
-        }
-      },
-      "allOf": [
-        {
-          "if": {
-            "properties": {
-              "surface": {
-                "const": "package"
-              }
-            }
-          },
-          "then": {
-            "required": [
-              "packageRuntime"
-            ]
-          },
-          "else": {
-            "not": {
-              "required": [
-                "packageRuntime"
-              ]
-            }
-          }
-        }
+      "type": "object"
+    },
+    "mode": {
+      "enum": [
+        "default",
+        "cold",
+        "warm"
       ],
-      "oneOf": [
-        {
-          "required": [
-            "preset"
-          ],
-          "not": {
-            "required": [
-              "workload"
-            ]
-          }
-        },
-        {
-          "required": [
-            "workload"
-          ],
-          "not": {
-            "required": [
-              "preset"
-            ]
-          }
-        }
-      ]
+      "type": "string"
+    },
+    "surface": {
+      "enum": [
+        "native",
+        "direct",
+        "package"
+      ],
+      "type": "string"
     }
-  }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "entries": {
+      "items": {
+        "$ref": "#/$defs/entry"
+      },
+      "minItems": 1,
+      "type": "array"
+    },
+    "schemaVersion": {
+      "const": 3,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "entries"
+  ],
+  "title": "Doe promoted compare catalog",
+  "type": "object"
 }

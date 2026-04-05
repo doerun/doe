@@ -1,18 +1,107 @@
-"""Canonical compare-axis helpers shared across bench control-plane tools."""
+"""Canonical compare-axis helpers shared across bench control-plane tools.
+
+v2 taxonomy: product-based axes.  Legacy pair-based helpers preserved for
+backward compatibility during migration.
+"""
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
+from pathlib import Path
 
+# -- v2 surface aliases (match config/compare-taxonomy.json) ----------------
 
+SURFACE_SHORT_NAMES: dict[str, str] = {
+    "backend_native": "native",
+    "direct_plan": "direct",
+    "package": "package",
+    "abi_dropin": "dropin",
+    "browser": "browser",
+    "compiler": "compiler",
+}
+
+SURFACE_FROM_SHORT: dict[str, str] = {v: k for k, v in SURFACE_SHORT_NAMES.items()}
+
+# Legacy aliases kept for callers that still use the old vocabulary
 SURFACE_TO_BOUNDARY = {
     "native": "backend_native",
     "direct": "direct_plan",
     "package": "package_surface",
 }
+BOUNDARY_TO_SURFACE = {v: k for k, v in SURFACE_TO_BOUNDARY.items()}
 
-BOUNDARY_TO_SURFACE = {value: key for key, value in SURFACE_TO_BOUNDARY.items()}
 
+def surface_for_short(short: str) -> str:
+    normalized = short.strip()
+    if normalized in SURFACE_FROM_SHORT:
+        return SURFACE_FROM_SHORT[normalized]
+    if normalized in SURFACE_SHORT_NAMES:
+        return normalized
+    raise ValueError(f"unknown surface {short!r}")
+
+
+def short_for_surface(surface: str) -> str:
+    normalized = surface.strip()
+    if normalized in SURFACE_SHORT_NAMES:
+        return SURFACE_SHORT_NAMES[normalized]
+    if normalized in SURFACE_FROM_SHORT:
+        return normalized
+    raise ValueError(f"unknown surface {surface!r}")
+
+
+# Legacy compat
+def boundary_for_surface(surface: str) -> str:
+    normalized = surface.strip()
+    try:
+        return SURFACE_TO_BOUNDARY[normalized]
+    except KeyError as exc:
+        raise ValueError(f"unknown compare surface {surface!r}") from exc
+
+
+def surface_for_boundary(boundary: str) -> str:
+    normalized = boundary.strip()
+    try:
+        return BOUNDARY_TO_SURFACE[normalized]
+    except KeyError as exc:
+        raise ValueError(f"unknown compare boundary {boundary!r}") from exc
+
+
+# -- Runtime host helpers ---------------------------------------------------
+
+def runtime_host_for_surface(surface: str, package_runtime: str = "") -> str:
+    normalized_surface = surface.strip()
+    if normalized_surface in {"package", "package_surface"}:
+        return package_runtime.strip() or "node"
+    if normalized_surface in {"native", "direct", "backend_native", "direct_plan",
+                               "abi_dropin", "browser", "compiler"}:
+        return "none"
+    raise ValueError(f"unknown compare surface {surface!r}")
+
+
+def derive_temperature(*, mode: str = "", temperature: str = "") -> str:
+    return temperature.strip() or mode.strip() or "default"
+
+
+# -- Product helpers (v2 taxonomy) ------------------------------------------
+
+def load_taxonomy_products(taxonomy_path: str | Path = "config/compare-taxonomy.json") -> list[str]:
+    p = Path(taxonomy_path)
+    if not p.exists():
+        return []
+    data = json.loads(p.read_text(encoding="utf-8"))
+    return data.get("axes", {}).get("products", [])
+
+
+def load_taxonomy_surfaces(taxonomy_path: str | Path = "config/compare-taxonomy.json") -> list[str]:
+    p = Path(taxonomy_path)
+    if not p.exists():
+        return []
+    data = json.loads(p.read_text(encoding="utf-8"))
+    return data.get("axes", {}).get("surfaces", [])
+
+
+# -- Legacy pair-based helpers (preserved for migration) --------------------
 
 @dataclass(frozen=True)
 class ComparisonViewMeta:
@@ -62,35 +151,6 @@ COMPARISON_VIEWS: dict[str, ComparisonViewMeta] = {
         providers=("doe", "bun-webgpu"),
     ),
 }
-
-
-def boundary_for_surface(surface: str) -> str:
-    normalized = surface.strip()
-    try:
-        return SURFACE_TO_BOUNDARY[normalized]
-    except KeyError as exc:
-        raise ValueError(f"unknown compare surface {surface!r}") from exc
-
-
-def surface_for_boundary(boundary: str) -> str:
-    normalized = boundary.strip()
-    try:
-        return BOUNDARY_TO_SURFACE[normalized]
-    except KeyError as exc:
-        raise ValueError(f"unknown compare boundary {boundary!r}") from exc
-
-
-def runtime_host_for_surface(surface: str, package_runtime: str = "") -> str:
-    normalized_surface = surface.strip()
-    if normalized_surface == "package":
-        return package_runtime.strip() or "node"
-    if normalized_surface in {"native", "direct"}:
-        return "none"
-    raise ValueError(f"unknown compare surface {surface!r}")
-
-
-def derive_temperature(*, mode: str = "", temperature: str = "") -> str:
-    return temperature.strip() or mode.strip() or "default"
 
 
 def derive_comparison_view(

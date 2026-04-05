@@ -52,12 +52,19 @@ pub const ExecStepKind = enum {
     sample,
 };
 
+pub const AttentionType = enum {
+    global,
+    sliding,
+};
+
 pub const ExecStep = struct {
     phase: ExecPhase,
     kind: ExecStepKind,
     op: []const u8,
     kernel_key: []const u8,
     weights_key: ?[]const u8 = null,
+    attention_type: ?AttentionType = null,
+    kv_cache_alias: ?[]const u8 = null,
 };
 
 const OpSpec = struct {
@@ -92,6 +99,16 @@ pub fn opToSpec(op: []const u8) ?OpSpec {
         .{ .op = "kv_write", .spec = .{ .pattern = "kv_write", .allow_prefill = true, .allow_decode = true, .kind = .compute } },
         .{ .op = "kv_read", .spec = .{ .pattern = "kv_read", .allow_prefill = true, .allow_decode = true, .kind = .compute } },
         .{ .op = "sample", .spec = .{ .pattern = "sample", .allow_prefill = false, .allow_decode = true, .kind = .sample } },
+        // Gemma 4: PLE composite — decomposes into gather + matmul + reduction + element_wise.
+        // The host plan expands this into the four sub-steps; exec-v1 uses it as a scheduling marker.
+        .{ .op = "ple_gather", .spec = .{ .pattern = "gather", .allow_prefill = true, .allow_decode = true, .kind = .compute } },
+        .{ .op = "ple_project", .spec = .{ .pattern = "fused_gemv_dequant", .allow_prefill = true, .allow_decode = true, .kind = .compute } },
+        .{ .op = "ple_norm", .spec = .{ .pattern = "reduction", .allow_prefill = true, .allow_decode = true, .kind = .compute } },
+        .{ .op = "ple_modulate", .spec = .{ .pattern = "element_wise", .allow_prefill = true, .allow_decode = true, .kind = .compute } },
+        // Gemma 4: hybrid attention — uses attention_decode with sliding window
+        .{ .op = "attention_sliding", .spec = .{ .pattern = "attention_decode", .allow_prefill = false, .allow_decode = true, .kind = .compute } },
+        // Gemma 4: shared KV write — same pattern as kv_write, aliased buffer resolved at host-plan level
+        .{ .op = "kv_write_shared", .spec = .{ .pattern = "kv_write", .allow_prefill = true, .allow_decode = true, .kind = .compute } },
     };
     inline for (map) |entry| {
         if (std.mem.eql(u8, op, entry.op)) return entry.spec;
@@ -174,12 +191,23 @@ fn parseStepObject(allocator: std.mem.Allocator, object: std.json.ObjectMap) Low
 
     const weights_key = try parseNullableStringDup(allocator, object.get("weightsKey"));
 
+    const attention_type: ?AttentionType = if (object.get("attentionType")) |attn_val| blk: {
+        const attn_text = try expectString(attn_val);
+        if (std.mem.eql(u8, attn_text, "global")) break :blk .global;
+        if (std.mem.eql(u8, attn_text, "sliding")) break :blk .sliding;
+        break :blk null;
+    } else null;
+
+    const kv_cache_alias = try parseNullableStringDup(allocator, object.get("kvCacheAlias"));
+
     return .{
         .phase = try parsePhase(phase_text),
         .kind = kind,
         .op = op,
         .kernel_key = kernel_key,
         .weights_key = weights_key,
+        .attention_type = attention_type,
+        .kv_cache_alias = kv_cache_alias,
     };
 }
 
@@ -399,6 +427,7 @@ pub fn lowerToHostPlan(
                 .name = step.kernel_key,
                 .pattern = pattern,
                 .count = 1,
+                .kv_cache_alias = step.kv_cache_alias,
             };
             kernel_count += 1;
         }
@@ -533,6 +562,31 @@ test "opToPattern maps known ops" {
     try std.testing.expectEqualStrings("fused_ffn", opToPattern("ffn").?);
     try std.testing.expectEqualStrings("kv_write", opToPattern("kv_write").?);
     try std.testing.expect(opToPattern("unknown_op") == null);
+}
+
+test "opToPattern maps Gemma 4 PLE ops" {
+    try std.testing.expectEqualStrings("gather", opToPattern("ple_gather").?);
+    try std.testing.expectEqualStrings("fused_gemv_dequant", opToPattern("ple_project").?);
+    try std.testing.expectEqualStrings("reduction", opToPattern("ple_norm").?);
+    try std.testing.expectEqualStrings("element_wise", opToPattern("ple_modulate").?);
+}
+
+test "opToPattern maps Gemma 4 hybrid attention and shared KV ops" {
+    try std.testing.expectEqualStrings("attention_decode", opToPattern("attention_sliding").?);
+    try std.testing.expectEqualStrings("kv_write", opToPattern("kv_write_shared").?);
+}
+
+test "ExecStep carries attention type and kv cache alias" {
+    const step = ExecStep{
+        .phase = .decode,
+        .kind = .compute,
+        .op = "attention_sliding",
+        .kernel_key = "attn_sliding",
+        .attention_type = .sliding,
+        .kv_cache_alias = "layer.0.kv",
+    };
+    try std.testing.expect(step.attention_type.? == .sliding);
+    try std.testing.expectEqualStrings("layer.0.kv", step.kv_cache_alias.?);
 }
 
 test "lowerToHostPlan builds valid plan" {

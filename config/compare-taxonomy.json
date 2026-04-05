@@ -1,28 +1,33 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "axes": {
     "platformLanes": [
       "apple-metal",
       "amd-vulkan",
       "local-d3d12"
     ],
-    "comparisonBoundaries": [
+    "surfaces": [
       "backend_native",
       "direct_plan",
-      "package_surface"
+      "package",
+      "abi_dropin",
+      "browser",
+      "compiler"
+    ],
+    "products": [
+      "doe",
+      "dawn",
+      "tint",
+      "dawn_node_webgpu",
+      "bun_webgpu",
+      "deno_webgpu"
     ],
     "runtimeHosts": [
       "none",
       "node",
       "bun",
-      "deno"
-    ],
-    "providerPairs": [
-      "doe_vs_dawn_delegate",
-      "doe_vs_dawn_direct",
-      "doe_vs_dawn_node_webgpu",
-      "doe_vs_bun_webgpu",
-      "doe_vs_deno_webgpu"
+      "deno",
+      "chromium"
     ],
     "temperatures": [
       "default",
@@ -51,50 +56,74 @@
     "executorInputBoundaries": [
       "commands",
       "plan"
-    ],
-    "comparisonViews": [
-      "doe_vs_dawn_delegate",
-      "doe_vs_dawn_direct",
-      "doe_vs_dawn_node_webgpu",
-      "doe_vs_bun_webgpu",
-      "doe_vs_deno_webgpu"
     ]
   },
   "aliases": {
-    "promotedCompareSurfaceByBoundary": {
+    "surfaceShortNames": {
       "backend_native": "native",
       "direct_plan": "direct",
-      "package_surface": "package"
+      "package": "package",
+      "abi_dropin": "dropin",
+      "browser": "browser",
+      "compiler": "compiler"
     },
-    "repoSurfaceByBoundaryAndRuntimeHost": [
+    "repoSurfaceByProductAndRuntimeHost": [
       {
-        "comparisonBoundary": "backend_native",
+        "surface": "backend_native",
+        "product": "doe",
         "runtimeHost": "none",
         "repoSurface": "backend_native"
       },
       {
-        "comparisonBoundary": "package_surface",
+        "surface": "backend_native",
+        "product": "dawn",
+        "runtimeHost": "none",
+        "repoSurface": "backend_native"
+      },
+      {
+        "surface": "package",
+        "product": "doe",
         "runtimeHost": "node",
         "repoSurface": "node_package"
       },
       {
-        "comparisonBoundary": "package_surface",
+        "surface": "package",
+        "product": "dawn_node_webgpu",
+        "runtimeHost": "node",
+        "repoSurface": "node_package"
+      },
+      {
+        "surface": "package",
+        "product": "doe",
         "runtimeHost": "bun",
         "repoSurface": "bun_package"
       },
       {
-        "comparisonBoundary": "package_surface",
+        "surface": "package",
+        "product": "bun_webgpu",
+        "runtimeHost": "bun",
+        "repoSurface": "bun_package"
+      },
+      {
+        "surface": "package",
+        "product": "doe",
+        "runtimeHost": "deno",
+        "repoSurface": "deno_package"
+      },
+      {
+        "surface": "package",
+        "product": "deno_webgpu",
         "runtimeHost": "deno",
         "repoSurface": "deno_package"
       }
     ]
   },
-  "structuralFamilies": [
+  "productFamilies": [
     {
-      "id": "backend_native",
-      "comparisonBoundary": "backend_native",
+      "id": "doe_backend_native",
+      "surface": "backend_native",
+      "product": "doe",
       "runtimeHost": "none",
-      "providerPair": "doe_vs_dawn_delegate",
       "temperature": "default",
       "targetKind": "preset",
       "executorInputBoundary": "commands",
@@ -112,19 +141,37 @@
         "explore",
         "release",
         "breadth"
-      ],
-      "comparisonView": "doe_vs_dawn_delegate",
-      "providerSet": "backend_native_providers",
-      "providers": [
-        "doe",
-        "dawn"
       ]
     },
     {
-      "id": "direct_plan",
-      "comparisonBoundary": "direct_plan",
+      "id": "dawn_backend_native",
+      "surface": "backend_native",
+      "product": "dawn",
       "runtimeHost": "none",
-      "providerPair": "doe_vs_dawn_direct",
+      "temperature": "default",
+      "targetKind": "preset",
+      "executorInputBoundary": "commands",
+      "structuralPlatformLanes": [
+        "apple-metal",
+        "amd-vulkan",
+        "local-d3d12"
+      ],
+      "theoreticalConcreteTargetIds": [
+        "smoke",
+        "smoke-gpu",
+        "compare-dev",
+        "compare",
+        "frontier",
+        "explore",
+        "release",
+        "breadth"
+      ]
+    },
+    {
+      "id": "doe_direct_plan",
+      "surface": "direct_plan",
+      "product": "doe",
+      "runtimeHost": "none",
       "temperature": "default",
       "targetKind": "workload",
       "executorInputBoundary": "plan",
@@ -137,19 +184,32 @@
         "gemma64",
         "gemma1b",
         "gemma270m-literal"
-      ],
-      "comparisonView": "doe_vs_dawn_direct",
-      "providerSet": "direct_plan_providers",
-      "providers": [
-        "doe",
-        "dawn"
       ]
     },
     {
-      "id": "package_node_cold",
-      "comparisonBoundary": "package_surface",
+      "id": "dawn_direct_plan",
+      "surface": "direct_plan",
+      "product": "dawn",
+      "runtimeHost": "none",
+      "temperature": "default",
+      "targetKind": "workload",
+      "executorInputBoundary": "plan",
+      "structuralPlatformLanes": [
+        "apple-metal",
+        "amd-vulkan",
+        "local-d3d12"
+      ],
+      "theoreticalConcreteTargetIds": [
+        "gemma64",
+        "gemma1b",
+        "gemma270m-literal"
+      ]
+    },
+    {
+      "id": "doe_package_node_cold",
+      "surface": "package",
+      "product": "doe",
       "runtimeHost": "node",
-      "providerPair": "doe_vs_dawn_node_webgpu",
       "temperature": "cold",
       "targetKind": "workload",
       "executorInputBoundary": "plan",
@@ -162,19 +222,13 @@
         "gemma64",
         "gemma1b",
         "gemma270m-literal"
-      ],
-      "comparisonView": "doe_vs_dawn_node_webgpu",
-      "providerSet": "package_node_providers",
-      "providers": [
-        "doe",
-        "dawn-node-webgpu"
       ]
     },
     {
-      "id": "package_node_warm",
-      "comparisonBoundary": "package_surface",
+      "id": "doe_package_node_warm",
+      "surface": "package",
+      "product": "doe",
       "runtimeHost": "node",
-      "providerPair": "doe_vs_dawn_node_webgpu",
       "temperature": "warm",
       "targetKind": "workload",
       "executorInputBoundary": "plan",
@@ -187,19 +241,13 @@
         "gemma64",
         "gemma1b",
         "gemma270m-literal"
-      ],
-      "comparisonView": "doe_vs_dawn_node_webgpu",
-      "providerSet": "package_node_providers",
-      "providers": [
-        "doe",
-        "dawn-node-webgpu"
       ]
     },
     {
-      "id": "package_bun_cold",
-      "comparisonBoundary": "package_surface",
-      "runtimeHost": "bun",
-      "providerPair": "doe_vs_bun_webgpu",
+      "id": "dawn_node_webgpu_package_node_cold",
+      "surface": "package",
+      "product": "dawn_node_webgpu",
+      "runtimeHost": "node",
       "temperature": "cold",
       "targetKind": "workload",
       "executorInputBoundary": "plan",
@@ -212,19 +260,13 @@
         "gemma64",
         "gemma1b",
         "gemma270m-literal"
-      ],
-      "comparisonView": "doe_vs_bun_webgpu",
-      "providerSet": "package_bun_providers",
-      "providers": [
-        "doe",
-        "bun-webgpu"
       ]
     },
     {
-      "id": "package_bun_warm",
-      "comparisonBoundary": "package_surface",
-      "runtimeHost": "bun",
-      "providerPair": "doe_vs_bun_webgpu",
+      "id": "dawn_node_webgpu_package_node_warm",
+      "surface": "package",
+      "product": "dawn_node_webgpu",
+      "runtimeHost": "node",
       "temperature": "warm",
       "targetKind": "workload",
       "executorInputBoundary": "plan",
@@ -237,19 +279,13 @@
         "gemma64",
         "gemma1b",
         "gemma270m-literal"
-      ],
-      "comparisonView": "doe_vs_bun_webgpu",
-      "providerSet": "package_bun_providers",
-      "providers": [
-        "doe",
-        "bun-webgpu"
       ]
     },
     {
-      "id": "package_deno_cold",
-      "comparisonBoundary": "package_surface",
-      "runtimeHost": "deno",
-      "providerPair": "doe_vs_deno_webgpu",
+      "id": "doe_package_bun_cold",
+      "surface": "package",
+      "product": "doe",
+      "runtimeHost": "bun",
       "temperature": "cold",
       "targetKind": "workload",
       "executorInputBoundary": "plan",
@@ -262,19 +298,13 @@
         "gemma64",
         "gemma1b",
         "gemma270m-literal"
-      ],
-      "comparisonView": "doe_vs_deno_webgpu",
-      "providerSet": "package_deno_providers",
-      "providers": [
-        "doe",
-        "deno-webgpu"
       ]
     },
     {
-      "id": "package_deno_warm",
-      "comparisonBoundary": "package_surface",
-      "runtimeHost": "deno",
-      "providerPair": "doe_vs_deno_webgpu",
+      "id": "doe_package_bun_warm",
+      "surface": "package",
+      "product": "doe",
+      "runtimeHost": "bun",
       "temperature": "warm",
       "targetKind": "workload",
       "executorInputBoundary": "plan",
@@ -287,18 +317,164 @@
         "gemma64",
         "gemma1b",
         "gemma270m-literal"
+      ]
+    },
+    {
+      "id": "bun_webgpu_package_bun_cold",
+      "surface": "package",
+      "product": "bun_webgpu",
+      "runtimeHost": "bun",
+      "temperature": "cold",
+      "targetKind": "workload",
+      "executorInputBoundary": "plan",
+      "structuralPlatformLanes": [
+        "apple-metal",
+        "amd-vulkan",
+        "local-d3d12"
       ],
-      "comparisonView": "doe_vs_deno_webgpu",
-      "providerSet": "package_deno_providers",
-      "providers": [
-        "doe",
-        "deno-webgpu"
+      "theoreticalConcreteTargetIds": [
+        "gemma64",
+        "gemma1b",
+        "gemma270m-literal"
+      ]
+    },
+    {
+      "id": "bun_webgpu_package_bun_warm",
+      "surface": "package",
+      "product": "bun_webgpu",
+      "runtimeHost": "bun",
+      "temperature": "warm",
+      "targetKind": "workload",
+      "executorInputBoundary": "plan",
+      "structuralPlatformLanes": [
+        "apple-metal",
+        "amd-vulkan",
+        "local-d3d12"
+      ],
+      "theoreticalConcreteTargetIds": [
+        "gemma64",
+        "gemma1b",
+        "gemma270m-literal"
+      ]
+    },
+    {
+      "id": "doe_package_deno_cold",
+      "surface": "package",
+      "product": "doe",
+      "runtimeHost": "deno",
+      "temperature": "cold",
+      "targetKind": "workload",
+      "executorInputBoundary": "plan",
+      "structuralPlatformLanes": [
+        "apple-metal",
+        "amd-vulkan",
+        "local-d3d12"
+      ],
+      "theoreticalConcreteTargetIds": [
+        "gemma64",
+        "gemma1b",
+        "gemma270m-literal"
+      ]
+    },
+    {
+      "id": "doe_package_deno_warm",
+      "surface": "package",
+      "product": "doe",
+      "runtimeHost": "deno",
+      "temperature": "warm",
+      "targetKind": "workload",
+      "executorInputBoundary": "plan",
+      "structuralPlatformLanes": [
+        "apple-metal",
+        "amd-vulkan",
+        "local-d3d12"
+      ],
+      "theoreticalConcreteTargetIds": [
+        "gemma64",
+        "gemma1b",
+        "gemma270m-literal"
+      ]
+    },
+    {
+      "id": "deno_webgpu_package_deno_cold",
+      "surface": "package",
+      "product": "deno_webgpu",
+      "runtimeHost": "deno",
+      "temperature": "cold",
+      "targetKind": "workload",
+      "executorInputBoundary": "plan",
+      "structuralPlatformLanes": [
+        "apple-metal",
+        "amd-vulkan",
+        "local-d3d12"
+      ],
+      "theoreticalConcreteTargetIds": [
+        "gemma64",
+        "gemma1b",
+        "gemma270m-literal"
+      ]
+    },
+    {
+      "id": "deno_webgpu_package_deno_warm",
+      "surface": "package",
+      "product": "deno_webgpu",
+      "runtimeHost": "deno",
+      "temperature": "warm",
+      "targetKind": "workload",
+      "executorInputBoundary": "plan",
+      "structuralPlatformLanes": [
+        "apple-metal",
+        "amd-vulkan",
+        "local-d3d12"
+      ],
+      "theoreticalConcreteTargetIds": [
+        "gemma64",
+        "gemma1b",
+        "gemma270m-literal"
+      ]
+    },
+    {
+      "id": "doe_compiler",
+      "surface": "compiler",
+      "product": "doe",
+      "runtimeHost": "none",
+      "temperature": "default",
+      "targetKind": "workload",
+      "executorInputBoundary": "commands",
+      "structuralPlatformLanes": [
+        "apple-metal",
+        "amd-vulkan",
+        "local-d3d12"
+      ],
+      "theoreticalConcreteTargetIds": [
+        "gemma64",
+        "gemma1b",
+        "gemma270m-literal"
+      ]
+    },
+    {
+      "id": "tint_compiler",
+      "surface": "compiler",
+      "product": "tint",
+      "runtimeHost": "none",
+      "temperature": "default",
+      "targetKind": "workload",
+      "executorInputBoundary": "commands",
+      "structuralPlatformLanes": [
+        "apple-metal",
+        "amd-vulkan",
+        "local-d3d12"
+      ],
+      "theoreticalConcreteTargetIds": [
+        "gemma64",
+        "gemma1b",
+        "gemma270m-literal"
       ]
     }
   ],
-  "promotedCompareCoverage": [
+  "promotedRunCoverage": [
     {
-      "familyId": "backend_native",
+      "familyId": "doe_backend_native",
       "platformLane": "apple-metal",
       "targetIds": [
         "smoke",
@@ -311,7 +487,20 @@
       ]
     },
     {
-      "familyId": "backend_native",
+      "familyId": "dawn_backend_native",
+      "platformLane": "apple-metal",
+      "targetIds": [
+        "smoke",
+        "compare-dev",
+        "compare",
+        "frontier",
+        "explore",
+        "release",
+        "breadth"
+      ]
+    },
+    {
+      "familyId": "doe_backend_native",
       "platformLane": "amd-vulkan",
       "targetIds": [
         "smoke",
@@ -324,7 +513,20 @@
       ]
     },
     {
-      "familyId": "backend_native",
+      "familyId": "dawn_backend_native",
+      "platformLane": "amd-vulkan",
+      "targetIds": [
+        "smoke",
+        "smoke-gpu",
+        "compare-dev",
+        "compare",
+        "frontier",
+        "explore",
+        "release"
+      ]
+    },
+    {
+      "familyId": "doe_backend_native",
       "platformLane": "local-d3d12",
       "targetIds": [
         "smoke",
@@ -336,7 +538,19 @@
       ]
     },
     {
-      "familyId": "direct_plan",
+      "familyId": "dawn_backend_native",
+      "platformLane": "local-d3d12",
+      "targetIds": [
+        "smoke",
+        "compare-dev",
+        "compare",
+        "frontier",
+        "explore",
+        "release"
+      ]
+    },
+    {
+      "familyId": "doe_direct_plan",
       "platformLane": "apple-metal",
       "targetIds": [
         "gemma64",
@@ -345,7 +559,16 @@
       ]
     },
     {
-      "familyId": "package_node_cold",
+      "familyId": "dawn_direct_plan",
+      "platformLane": "apple-metal",
+      "targetIds": [
+        "gemma64",
+        "gemma1b",
+        "gemma270m-literal"
+      ]
+    },
+    {
+      "familyId": "doe_package_node_cold",
       "platformLane": "apple-metal",
       "targetIds": [
         "gemma64",
@@ -353,7 +576,7 @@
       ]
     },
     {
-      "familyId": "package_node_warm",
+      "familyId": "doe_package_node_warm",
       "platformLane": "apple-metal",
       "targetIds": [
         "gemma64",
@@ -361,7 +584,7 @@
       ]
     },
     {
-      "familyId": "package_bun_cold",
+      "familyId": "dawn_node_webgpu_package_node_cold",
       "platformLane": "apple-metal",
       "targetIds": [
         "gemma64",
@@ -369,18 +592,44 @@
       ]
     },
     {
-      "familyId": "package_bun_warm",
+      "familyId": "dawn_node_webgpu_package_node_warm",
+      "platformLane": "apple-metal",
+      "targetIds": [
+        "gemma64",
+        "gemma1b"
+      ]
+    },
+    {
+      "familyId": "doe_package_bun_cold",
+      "platformLane": "apple-metal",
+      "targetIds": [
+        "gemma64",
+        "gemma1b"
+      ]
+    },
+    {
+      "familyId": "doe_package_bun_warm",
+      "platformLane": "apple-metal",
+      "targetIds": [
+        "gemma64",
+        "gemma1b"
+      ]
+    },
+    {
+      "familyId": "bun_webgpu_package_bun_cold",
+      "platformLane": "apple-metal",
+      "targetIds": [
+        "gemma64",
+        "gemma1b"
+      ]
+    },
+    {
+      "familyId": "bun_webgpu_package_bun_warm",
       "platformLane": "apple-metal",
       "targetIds": [
         "gemma64",
         "gemma1b"
       ]
     }
-  ],
-  "expectedCounts": {
-    "naiveCartesianRows": 1080,
-    "typeCorrectStructuralRows": 24,
-    "typeCorrectConcreteRowSlots": 87,
-    "promotedCompareRows": 31
-  }
+  ]
 }

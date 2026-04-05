@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
-"""Config-backed front door for compare lanes."""
+"""Config-backed front door for compare lanes.
+
+LEGACY: This is the pair-based dispatcher. For the product-based CLI, use:
+
+    python3 bench/cli.py run     --product <product> --executor-id <id> ...
+    python3 bench/cli.py compare <artifact1> <artifact2> ...
+    python3 bench/cli.py list    --products | --executors | --workloads FILE
+"""
 
 from __future__ import annotations
 

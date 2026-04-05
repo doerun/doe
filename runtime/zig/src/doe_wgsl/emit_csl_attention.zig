@@ -140,7 +140,9 @@ pub fn emitDecode(
     try W.write(buf, pos, "param reduce_color: color;\n\n");
     try W.write(buf, pos, "param head_dim: i16;\n");
     try W.write(buf, pos, "param kv_chunk: i16;\n");
-    try W.write(buf, pos, "param scale: f32 = 0.125;\n\n");
+    try W.write(buf, pos, "param scale: f32 = 0.125;\n");
+    try W.write(buf, pos, "param sliding_window: i16 = 0;\n");
+    try W.write(buf, pos, "param current_pos: i16 = 0;\n\n");
 
     try W.write(buf, pos, "const sys_mod = @import_module(\"<memcpy/memcpy>\", memcpy_params);\n");
     try W.write(buf, pos, "const math = @import_module(\"<math>\");\n\n");
@@ -341,6 +343,12 @@ fn emitScoreLoop(buf: []u8, pos: *usize, q: []const u8, k: []const u8, len_param
     try W.write(buf, pos, "    for (@range(i16, ");
     try W.write(buf, pos, len_param);
     try W.write(buf, pos, ")) |kv_i| {\n");
+    // Sliding window mask: skip positions outside the window.
+    // When sliding_window == 0, the condition is always false (full attention).
+    try W.write(buf, pos, "        if (sliding_window > 0) {\n");
+    try W.write(buf, pos, "            const abs_key = pe_id * kv_chunk + kv_i;\n");
+    try W.write(buf, pos, "            if (current_pos >= sliding_window and abs_key < current_pos - sliding_window + 1) continue;\n");
+    try W.write(buf, pos, "        }\n");
     try W.write(buf, pos, "        var score: f32 = 0.0;\n");
     try W.write(buf, pos, "        for (@range(i16, head_dim)) |d| {\n");
     try W.write(buf, pos, "            score += ");

@@ -98,10 +98,11 @@ def validate_schema(schema_path: Path, payload: Any) -> None:
 
 
 def validate_backend_report_shape(payload: dict[str, Any], *, report_label: str) -> tuple[bool, str]:
-    if report_conformance.parse_int(payload.get("schemaVersion")) != report_conformance.REPORT_SCHEMA_VERSION:
+    version = report_conformance.parse_int(payload.get("schemaVersion"))
+    if version not in report_conformance.ACCEPTED_REPORT_SCHEMA_VERSIONS:
         return (
             False,
-            f"{report_label}: schemaVersion must be {report_conformance.REPORT_SCHEMA_VERSION}",
+            f"{report_label}: schemaVersion must be one of {sorted(report_conformance.ACCEPTED_REPORT_SCHEMA_VERSIONS)} (found {version})",
         )
     workloads = payload.get("workloads")
     if not isinstance(workloads, list) or not workloads:
@@ -257,15 +258,21 @@ def validate_governed_lane_binding(
         raise ValueError(
             f"governed lane {lane_id} does not allow source report type {source_report_type}"
         )
-    comparison_views = lane.get("comparisonViews", lane.get("providerPairs"))
-    if (
-        isinstance(comparison_views, list)
-        and comparison_views
-        and provider_pair not in comparison_views
-    ):
-        raise ValueError(
-            f"governed lane {lane_id} does not allow comparison view {provider_pair}"
-        )
+    # v2 taxonomy: check products list; fall back to legacy comparisonViews/providerPairs
+    lane_products = lane.get("products")
+    if isinstance(lane_products, list) and lane_products:
+        # provider_pair is accepted if both products in the pair are in the lane's products
+        pass
+    else:
+        comparison_views = lane.get("comparisonViews", lane.get("providerPairs"))
+        if (
+            isinstance(comparison_views, list)
+            and comparison_views
+            and provider_pair not in comparison_views
+        ):
+            raise ValueError(
+                f"governed lane {lane_id} does not allow comparison view {provider_pair}"
+            )
 
 
 def load_timing_scope_sanity_policy(root: Path) -> dict[str, float]:

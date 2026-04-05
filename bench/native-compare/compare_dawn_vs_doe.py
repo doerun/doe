@@ -2,6 +2,12 @@
 """
 Dawn/Doe side-by-side benchmark runner.
 
+LEGACY: This is the pair-based harness. For the product-based CLI, use:
+
+    python3 bench/cli.py run     --product doe ...
+    python3 bench/cli.py run     --product dawn ...
+    python3 bench/cli.py compare <doe-artifact> <dawn-artifact> ...
+
 This script executes shared workload contracts for both sides using either
 explicit executor ids or raw command templates, then emits timing traces where
 available, with wall-time as a fallback.

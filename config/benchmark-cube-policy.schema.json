@@ -1,129 +1,32 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Fawn Benchmark Cube Policy",
-  "type": "object",
   "additionalProperties": false,
-  "required": [
-    "schemaVersion",
-    "hostProfiles",
-    "providerPairs",
-    "surfaces",
-    "workloadSets"
-  ],
-    "properties": {
-      "schemaVersion": {
-        "type": "integer",
-        "const": 1
-      },
-    "hostProfiles": {
-      "type": "array",
-      "minItems": 1,
+  "properties": {
+    "comparisonViews": {
       "items": {
-        "type": "object",
         "additionalProperties": false,
-        "required": [
-          "id",
-          "displayName",
-          "os",
-          "arch"
-        ],
         "properties": {
-          "id": {
-            "type": "string",
-            "minLength": 1
-          },
           "displayName": {
-            "type": "string",
-            "minLength": 1
+            "minLength": 1,
+            "type": "string"
           },
-          "os": {
-            "type": "string",
-            "minLength": 1
-          },
-          "arch": {
-            "type": "string",
-            "minLength": 1
-          },
-          "backend": {
-            "type": "string",
-            "minLength": 1
-          },
-          "gpuVendor": {
-            "type": "string",
-            "minLength": 1
-          }
-        }
-      }
-    },
-    "providerSets": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "id",
-          "providers"
-        ],
-        "properties": {
           "id": {
-            "type": "string",
-            "minLength": 1
-          },
-          "providers": {
-            "type": "array",
-            "minItems": 1,
-            "items": {
-              "type": "string",
-              "minLength": 1
-            },
-            "uniqueItems": true
-          }
-        }
-      }
-    },
-    "providerPairs": {
-      "type": "array",
-      "minItems": 1,
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "id",
-          "surface",
-          "displayName",
-          "left",
-          "right"
-        ],
-        "properties": {
-          "id": {
-            "type": "string",
-            "minLength": 1
-          },
-          "surface": {
-            "type": "string",
-            "minLength": 1
-          },
-          "displayName": {
-            "type": "string",
-            "minLength": 1
+            "minLength": 1,
+            "type": "string"
           },
           "left": {
-            "type": "string",
-            "minLength": 1
+            "minLength": 1,
+            "type": "string"
+          },
+          "providerSet": {
+            "minLength": 1,
+            "type": "string"
           },
           "right": {
-            "type": "string",
-            "minLength": 1
+            "minLength": 1,
+            "type": "string"
           }
-        }
-      }
-    },
-    "comparisonViews": {
-      "type": "array",
-      "minItems": 1,
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
+        },
         "required": [
           "id",
           "providerSet",
@@ -131,36 +34,200 @@
           "left",
           "right"
         ],
+        "type": "object"
+      },
+      "minItems": 1,
+      "type": "array"
+    },
+    "hostProfiles": {
+      "items": {
+        "additionalProperties": false,
         "properties": {
-          "id": {
-            "type": "string",
-            "minLength": 1
+          "arch": {
+            "minLength": 1,
+            "type": "string"
           },
-          "providerSet": {
-            "type": "string",
-            "minLength": 1
+          "backend": {
+            "minLength": 1,
+            "type": "string"
           },
           "displayName": {
-            "type": "string",
-            "minLength": 1
+            "minLength": 1,
+            "type": "string"
           },
-          "left": {
-            "type": "string",
-            "minLength": 1
+          "gpuVendor": {
+            "minLength": 1,
+            "type": "string"
           },
-          "right": {
-            "type": "string",
-            "minLength": 1
+          "id": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "os": {
+            "minLength": 1,
+            "type": "string"
           }
-        }
-      }
+        },
+        "required": [
+          "id",
+          "displayName",
+          "os",
+          "arch"
+        ],
+        "type": "object"
+      },
+      "minItems": 1,
+      "type": "array"
+    },
+    "products": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "displayName": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "id": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "products": {
+            "items": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "minItems": 1,
+            "type": "array",
+            "uniqueItems": true
+          },
+          "surface": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "surface",
+          "displayName",
+          "products"
+        ],
+        "type": "object"
+      },
+      "minItems": 1,
+      "type": "array"
+    },
+    "providerSets": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "providers": {
+            "items": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "minItems": 1,
+            "type": "array",
+            "uniqueItems": true
+          }
+        },
+        "required": [
+          "id",
+          "providers"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "schemaVersion": {
+      "const": 1,
+      "type": "integer"
     },
     "surfaces": {
-      "type": "array",
-      "minItems": 1,
       "items": {
-        "type": "object",
         "additionalProperties": false,
+        "properties": {
+          "defaultMissingStatus": {
+            "enum": [
+              "unsupported",
+              "unimplemented",
+              "diagnostic",
+              "comparable",
+              "claimable"
+            ],
+            "type": "string"
+          },
+          "displayName": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "expectedHostProfiles": {
+            "items": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "minItems": 1,
+            "type": "array"
+          },
+          "id": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "maturity": {
+            "enum": [
+              "primary",
+              "secondary",
+              "prototype"
+            ],
+            "type": "string"
+          },
+          "notes": {
+            "items": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "minItems": 1,
+            "type": "array"
+          },
+          "primarySupport": {
+            "enum": [
+              "backend",
+              "node",
+              "bun"
+            ],
+            "type": "string"
+          },
+          "products": {
+            "items": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "minItems": 1,
+            "type": "array"
+          },
+          "workloadIdOverrides": {
+            "additionalProperties": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "propertyNames": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "workloadSets": {
+            "items": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "minItems": 1,
+            "type": "array"
+          }
+        },
         "required": [
           "id",
           "displayName",
@@ -168,128 +235,53 @@
           "primarySupport",
           "defaultMissingStatus",
           "expectedHostProfiles",
-          "providerPairs",
+          "products",
           "workloadSets",
           "notes"
         ],
-        "properties": {
-          "id": {
-            "type": "string",
-            "minLength": 1
-          },
-          "displayName": {
-            "type": "string",
-            "minLength": 1
-          },
-          "maturity": {
-            "type": "string",
-            "enum": [
-              "primary",
-              "secondary",
-              "prototype"
-            ]
-          },
-          "primarySupport": {
-            "type": "string",
-            "enum": [
-              "backend",
-              "node",
-              "bun"
-            ]
-          },
-          "defaultMissingStatus": {
-            "type": "string",
-            "enum": [
-              "unsupported",
-              "unimplemented",
-              "diagnostic",
-              "comparable",
-              "claimable"
-            ]
-          },
-          "expectedHostProfiles": {
-            "type": "array",
-            "minItems": 1,
-            "items": {
-              "type": "string",
-              "minLength": 1
-            }
-          },
-          "providerPairs": {
-            "type": "array",
-            "minItems": 1,
-            "items": {
-              "type": "string",
-              "minLength": 1
-            }
-          },
-          "comparisonViews": {
-            "type": "array",
-            "minItems": 1,
-            "items": {
-              "type": "string",
-              "minLength": 1
-            }
-          },
-          "workloadSets": {
-            "type": "array",
-            "minItems": 1,
-            "items": {
-              "type": "string",
-              "minLength": 1
-            }
-          },
-          "workloadIdOverrides": {
-            "type": "object",
-            "propertyNames": {
-              "type": "string",
-              "minLength": 1
-            },
-            "additionalProperties": {
-              "type": "string",
-              "minLength": 1
-            }
-          },
-          "notes": {
-            "type": "array",
-            "minItems": 1,
-            "items": {
-              "type": "string",
-              "minLength": 1
-            }
-          }
-        }
-      }
+        "type": "object"
+      },
+      "minItems": 1,
+      "type": "array"
     },
     "workloadSets": {
-      "type": "array",
-      "minItems": 1,
       "items": {
-        "type": "object",
         "additionalProperties": false,
+        "properties": {
+          "displayName": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "domains": {
+            "items": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "id": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
         "required": [
           "id",
           "displayName",
           "domains"
         ],
-        "properties": {
-          "id": {
-            "type": "string",
-            "minLength": 1
-          },
-          "displayName": {
-            "type": "string",
-            "minLength": 1
-          },
-          "domains": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "minLength": 1
-            }
-          }
-        }
-      }
+        "type": "object"
+      },
+      "minItems": 1,
+      "type": "array"
     }
-  }
+  },
+  "required": [
+    "schemaVersion",
+    "hostProfiles",
+    "products",
+    "surfaces",
+    "workloadSets"
+  ],
+  "title": "Fawn Benchmark Cube Policy",
+  "type": "object"
 }
