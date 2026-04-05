@@ -35,6 +35,7 @@ pub fn bootstrap(self: anytype) !void {
     try create_fence(self);
     try create_fence_pool(self);
     create_timeline_semaphore(self);
+    try create_timestamp_query_pool(self);
 }
 
 pub fn create_instance(self: anytype) !void {
@@ -264,6 +265,25 @@ pub fn create_timeline_semaphore(self: anytype) void {
     const supported = vk_sync.detect_timeline_semaphore_support(self.physical_device);
     self.timeline_semaphore = vk_sync.TimelineSemaphore.init(self.device, supported);
     self.has_timeline_semaphore = self.timeline_semaphore.available;
+}
+
+pub fn create_timestamp_query_pool(self: anytype) !void {
+    if (!self.timestamp_query_supported_value) return;
+    // Query timestampPeriod from physical device properties.
+    var properties2 = std.mem.zeroes(c.VkPhysicalDeviceProperties2);
+    properties2.sType = c.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+    c.vkGetPhysicalDeviceProperties2(self.physical_device, &properties2);
+    self.timestamp_period = properties2.properties.limits.timestampPeriod;
+    // Create a persistent 2-slot timestamp query pool.
+    var create_info = c.VkQueryPoolCreateInfo{
+        .sType = c.VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,
+        .pNext = null,
+        .flags = 0,
+        .queryType = c.VK_QUERY_TYPE_TIMESTAMP,
+        .queryCount = 2,
+        .pipelineStatistics = 0,
+    };
+    try c.check_vk(c.vkCreateQueryPool(self.device, &create_info, null, &self.timestamp_query_pool));
 }
 
 const MAX_DEVICE_EXTENSIONS: u32 = 512;

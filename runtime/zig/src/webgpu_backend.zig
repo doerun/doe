@@ -87,6 +87,7 @@ pub const WebGPUBackend = struct {
             self.core.has_pixel_local_storage_non_coherent = self.core.adapter_has_pixel_local_storage_non_coherent;
             self.core.has_shader_f16 = self.core.adapter_has_shader_f16;
             self.core.has_timestamp_inside_passes = procs.wgpuAdapterHasFeature(self.core.adapter.?, abi_feature.WGPUFeatureName_ChromiumExperimentalTimestampQueryInsidePasses) != abi_core.WGPU_FALSE;
+            try lifecycle.captureAdapterLimits(&self);
             self.core.device = try lifecycle.requestDevice(&self);
             if (procs.wgpuDeviceHasFeature) |device_has_feature| {
                 self.core.has_timestamp_query = device_has_feature(self.core.device.?, abi_feature.WGPUFeatureName_TimestampQuery) != abi_core.WGPU_FALSE;
@@ -97,7 +98,6 @@ pub const WebGPUBackend = struct {
             }
             self.core.queue = procs.wgpuDeviceGetQueue(self.core.device.?);
             if (self.core.queue == null) return error.NativeQueueUnavailable;
-            try lifecycle.captureAdapterLimits(&self);
             try lifecycle.captureDeviceLimits(&self);
             lifecycle.timestampLog(
                 &self,

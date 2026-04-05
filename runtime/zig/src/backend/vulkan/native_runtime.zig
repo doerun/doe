@@ -53,6 +53,8 @@ pub const NativeVulkanRuntime = struct {
     queue_family_index_value_cache: ?u32 = null,
     present_capable_value: ?bool = null,
     timestamp_query_supported_value: bool = false,
+    timestamp_query_pool: c.VkQueryPool = VK_NULL_U64,
+    timestamp_period: f32 = 1.0,
     command_pool: c.VkCommandPool = VK_NULL_U64,
     primary_command_buffer: c.VkCommandBuffer = null,
     fence: c.VkFence = VK_NULL_U64,
@@ -147,6 +149,10 @@ pub const NativeVulkanRuntime = struct {
         if (self.has_fence_pool) {
             self.fence_pool_state.deinit(self.device);
             self.has_fence_pool = false;
+        }
+        if (self.timestamp_query_pool != VK_NULL_U64) {
+            c.vkDestroyQueryPool(self.device, self.timestamp_query_pool, null);
+            self.timestamp_query_pool = VK_NULL_U64;
         }
         if (self.has_fence) {
             c.vkDestroyFence(self.device, self.fence, null);
@@ -273,6 +279,11 @@ pub const NativeVulkanRuntime = struct {
         if (x == 0 or y == 0 or z == 0) return error.InvalidArgument;
         if (!self.has_pipeline) return error.Unsupported;
 
+        const want_timestamps = gpu_timestamp_mode != .off and
+            queue_sync_mode == .per_command and
+            self.timestamp_query_supported() and
+            self.timestamp_query_pool != VK_NULL_U64;
+
         const encode_start = common_timing.now_ns();
         var command_buffer: c.VkCommandBuffer = null;
 
@@ -298,9 +309,16 @@ pub const NativeVulkanRuntime = struct {
             .pInheritanceInfo = null,
         };
         try c.check_vk(c.vkBeginCommandBuffer(command_buffer, &begin_info));
+        if (want_timestamps) {
+            c.vkCmdResetQueryPool(command_buffer, self.timestamp_query_pool, 0, 2);
+            c.vkCmdWriteTimestamp(command_buffer, c.VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, self.timestamp_query_pool, 0);
+        }
         c.vkCmdBindPipeline(command_buffer, c.VK_PIPELINE_BIND_POINT_COMPUTE, self.pipeline);
         vk_pipeline.bind_descriptor_sets(self, command_buffer);
         c.vkCmdDispatch(command_buffer, x, y, z);
+        if (want_timestamps) {
+            c.vkCmdWriteTimestamp(command_buffer, c.VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, self.timestamp_query_pool, 1);
+        }
         try c.check_vk(c.vkEndCommandBuffer(command_buffer));
 
         const encode_end = common_timing.now_ns();
@@ -320,9 +338,6 @@ pub const NativeVulkanRuntime = struct {
 
         const submit_start = common_timing.now_ns();
         if (self.has_timeline_semaphore) {
-            // Timeline semaphore path: signal the timeline on every
-            // submission. For per_command mode, follow with a CPU wait
-            // on the signaled value; deferred mode lets drain handle it.
             var tsi = vk_sync.TimelineSubmitHelper.prepare(&self.timeline_semaphore);
             tsi.patch();
             submit_info.pNext = @ptrCast(&tsi.timeline_info);
@@ -340,7 +355,6 @@ pub const NativeVulkanRuntime = struct {
             const wait_all: c.VkBool32 = if (queue_wait_mode == .wait_any) c.VK_FALSE else c.VK_TRUE;
             try c.check_vk(c.vkWaitForFences(self.device, 1, @ptrCast(&self.fence), wait_all, vk_upload.WAIT_TIMEOUT_NS));
         } else {
-            // Deferred: use fence pool so drain can wait per-submission
             const deferred_fence = if (self.has_fence_pool)
                 try self.fence_pool_state.acquire(self.device)
             else
@@ -353,17 +367,28 @@ pub const NativeVulkanRuntime = struct {
         var gpu_timestamp_ns: u64 = 0;
         var gpu_timestamp_attempted = false;
         var gpu_timestamp_valid = false;
-        if (gpu_timestamp_mode != .off) {
-            if (queue_sync_mode != .per_command) {
-                if (gpu_timestamp_mode == .require) return error.TimingPolicyMismatch;
-            } else if (self.timestamp_query_supported()) {
-                gpu_timestamp_attempted = true;
-                gpu_timestamp_ns = try self.collect_dispatch_gpu_timestamp();
+        if (want_timestamps) {
+            gpu_timestamp_attempted = true;
+            var results: [2]u64 = .{ 0, 0 };
+            try c.check_vk(c.vkGetQueryPoolResults(
+                self.device,
+                self.timestamp_query_pool,
+                0,
+                2,
+                @sizeOf(@TypeOf(results)),
+                &results,
+                @sizeOf(u64),
+                c.VK_QUERY_RESULT_64_BIT | c.VK_QUERY_RESULT_WAIT_BIT,
+            ));
+            if (results[1] > results[0]) {
+                const vk_timing = @import("vulkan_timing.zig");
+                gpu_timestamp_ns = vk_timing.computeElapsedNs(results[0], results[1], self.timestamp_period);
                 gpu_timestamp_valid = gpu_timestamp_ns > 0;
-                if (gpu_timestamp_mode == .require and !gpu_timestamp_valid) return error.TimingPolicyMismatch;
-            } else if (gpu_timestamp_mode == .require) {
-                return error.TimingPolicyMismatch;
             }
+            if (gpu_timestamp_mode == .require and !gpu_timestamp_valid) return error.TimingPolicyMismatch;
+        } else if (gpu_timestamp_mode != .off) {
+            if (queue_sync_mode != .per_command and gpu_timestamp_mode == .require) return error.TimingPolicyMismatch;
+            if (queue_sync_mode == .per_command and gpu_timestamp_mode == .require) return error.TimingPolicyMismatch;
         }
         return .{
             .encode_ns = encode_ns,
@@ -644,10 +669,6 @@ pub const NativeVulkanRuntime = struct {
     fn timestamp_query_supported(self: *const NativeVulkanRuntime) bool {
         if (!self.has_device or self.queue == null) return false;
         return self.queue_family_index_value_cache != null and self.timestamp_query_supported_value;
-    }
-
-    fn collect_dispatch_gpu_timestamp(self: *NativeVulkanRuntime) !u64 {
-        return vk_texture_commands.collect_dispatch_gpu_timestamp(self);
     }
 };
 
