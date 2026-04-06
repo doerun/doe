@@ -2,95 +2,237 @@
 
 ## Purpose
 
-This document defines the benchmark model for Doe: how products are run,
-how results are compared, and which surfaces exist.
+This document defines the least-confusing benchmark model for Doe.
 
-For the canonical axis language, use `docs/compare-taxonomy.md` and
-`config/compare-taxonomy.json`.
+Use it when you need to answer:
+
+- what is a workload?
+- what is a surface?
+- what is an executor?
+- how do isolated runs and compare reports relate?
+
+For the canonical axis language that powers promoted compare profiles, use
+`docs/compare-taxonomy.md` and `config/compare-taxonomy.json`.
+
+## 30-second mental model
+
+Doe benchmarking has two operations:
+
+1. **Run** one product on one workload with one executor.
+2. **Compare** two or more run artifacts for the same workload and surface.
+
+The benchmark primitive is always the isolated run artifact. Comparison is
+post-hoc analysis over those artifacts.
+
+## Glossary
+
+- **Workload**
+  - One benchmark definition.
+  - Example: `compute_dispatch_grid` or
+    `inference_gemma3_270m_prefill_32tok`.
+- **Surface**
+  - The execution boundary being tested.
+  - Example: `backend`, `plan`, `package`.
+- **Executor**
+  - The concrete runner for one product on one surface.
+  - Example: `doe_direct_metal`, `dawn_direct_metal`,
+    `doe_node_webgpu`.
+- **Run artifact**
+  - The output of one isolated run.
+  - It records timing, trace metadata, workload identity, and executor identity.
+- **Compare report**
+  - The output of joining two or more run artifacts for the same workload.
+- **Cohort**
+  - A named subset of workloads such as `smoke`, `regression`, or `governed`.
+
+## Terms to avoid in benchmark docs
+
+These terms are not banned from machine contracts, but they are not the
+canonical human model:
+
+- `row`
+- `baseline/comparison`
+- `lane`
+
+Use these instead:
+
+- `workload`
+- `surface`
+- `executor`
+- `run artifact`
+- `compare report`
+- `baseline/comparison` only when you specifically mean a compare report role
 
 ## Core model
 
-Two operations, not specialized per-pair harnesses:
-
-1. **Run** — execute one product on one workload under one axis combination.
-   Produces an independent run artifact.
-2. **Compare** — ingest N independent run artifacts for the same workload and
-   axes and produce comparison evidence under comparability and claimability
-   contracts.
-
 Products are pluggable. Adding a new product means registering an executor,
-not writing a new harness. "Compare A vs B" is never a harness — it is
-"run A, run B, compare."
+not writing a new pair-specific harness.
+
+"Compare Doe vs Dawn" is never a special runner. It always means:
+
+1. run Doe
+2. run Dawn
+3. compare the resulting run artifacts
 
 ## Products
 
 A product is an independently runnable WebGPU implementation or toolchain:
 
-- `doe` — Doe direct backend (Zig runtime)
+- `doe` — Doe backend runtime or package/runtime surface
 - `dawn` — Dawn delegate or standalone Dawn executor
-- `tint` — Dawn's WGSL compiler (compilation surface only)
-- `dawn_node_webgpu` — Dawn's Node WebGPU binding
-- `bun_webgpu` — Bun's native WebGPU
-- `deno_webgpu` — Deno's native WebGPU
+- `tint` — Dawn WGSL compiler
+- `node_webgpu_package` — `node-webgpu` package surface
+- `bun_webgpu_package` — Bun WebGPU binding
+- `deno_webgpu_package` — Deno WebGPU binding
 
-Each product has one or more executors that implement the run contract for
-a given surface.
+Each product can have multiple executors, because the same product may run on
+multiple surfaces.
 
 ## Surfaces
 
 A surface is the execution boundary being tested:
 
-- `backend_native` — direct backend implementation (Zig/C++ runtime CLI)
-- `direct_plan` — normalized plan executor (plan-backed comparable rows)
-- `package` — JS package API (Node/Bun/Deno providers)
-- `abi_dropin` — shared-library ABI surface
-- `browser` — real browser process (Playwright)
+- `backend` — Doe or Dawn running at the backend/runtime command level
+- `plan` — Doe or Dawn running the normalized plan executor
+- `package` — package-facing JS execution through Node, Bun, or Deno
+- `dropin` — shared-library ABI surface
+- `browser` — browser process execution
 - `compiler` — WGSL compilation toolchain
+
+## Example workflows
+
+### 1. Doe-only backend benchmark
+
+You want to measure Doe Metal directly on `render_draw_throughput_200k`.
+
+- workload: `render_draw_throughput_200k`
+- surface: `backend`
+- executor: `doe_direct_metal`
+- output: one Doe run artifact
+
+No comparison is involved.
+
+### 2. Doe vs Dawn backend benchmark
+
+You want an apples-to-apples backend compare for the same workload.
+
+- workload: `render_draw_throughput_200k`
+- surface: `backend`
+- Doe executor: `doe_direct_metal`
+- Dawn executor: `dawn_delegate_metal`
+
+Run both products independently, then compare the two run artifacts.
+
+### 3. Plan-backed Gemma benchmark on plan executors
+
+You want to compare Gemma inference on Metal using the normalized plan surface.
+
+- workload: `inference_gemma3_270m_prefill_32tok`
+- surface: `plan`
+- Doe executor: `doe_direct_plan_metal`
+- comparison executors:
+  - `dawn_direct_metal`
+  - `webkit_webgpu_native_metal`
+
+This workload is plan-backed because the benchmark contract exposes a
+`planPath`. The fair surface is the normalized plan on both sides.
+
+### 4. The same Gemma workload on the Node package surface
+
+You want the package-user view of the same benchmark.
+
+- workload: `inference_gemma3_270m_prefill_32tok`
+- surface: `package`
+- Doe executor: `doe_node_webgpu`
+- comparison executor: `node_webgpu_package`
+
+The workload is the same. The surface is different.
+
+### 5. Prepared-session package benchmark
+
+You want the same Node package benchmark, but excluding initial session setup.
+
+- workload: `inference_gemma3_270m_prefill_32tok`
+- surface: `package`
+- Doe executor: `doe_node_webgpu_prepared`
+- comparison executor: `node_webgpu_package_prepared`
+- temperature: `warm`
+
+Again, the workload stays the same. The session temperature changes.
+
+## Plan-backed workloads
+
+A workload is **plan-backed** when its benchmark contract exposes `planPath`.
+
+That means:
+
+- the authored benchmark unit is the normalized plan
+- the comparable execution boundary is the normalized plan
+- compatibility `commandsPath` artifacts may still exist for debugging or
+  legacy runtime tooling, but they are not the claim-oriented benchmark
+  boundary for that workload
 
 ## Comparison is post-hoc
 
-Comparison is never baked into a runner. A runner produces an artifact for
-one product. The comparison framework:
+Comparison is never baked into a runner. The comparison framework:
 
-1. Ingests independent run artifacts for the same workload and axes
-2. Enforces comparability contracts (timing class, structural equivalence,
-   normalization parity)
-3. Produces comparison reports with claimability status
+1. ingests independent run artifacts for the same workload and surface
+2. enforces comparability and claimability contracts
+3. produces one compare report
 
-Adding product C to an existing A-vs-B comparison is just "run C, feed
-all three to compare" — no new harness needed.
+Adding a third product never requires a new compare harness. It is just:
 
-## Correctness surfaces
+1. run the third product
+2. feed its run artifact into compare
 
-Correctness gates are separate from performance:
+## Correctness surfaces stay separate
 
-- Browser smoke (Playwright) — "does WebGPU work in a real browser?"
-- ABI drop-in validation — "does the shared-library surface behave correctly?"
-- Runtime test suites — `zig build test`, `zig build test-wgsl`
+Correctness evidence is not performance evidence.
 
-These produce correctness evidence, not performance artifacts.
+Examples:
 
-## What must remain separate
+- browser smoke
+- ABI drop-in validation
+- `zig build test`
+- `zig build test-wgsl`
 
-- Run and compare operations (a runner never contains comparison logic)
-- Performance and correctness surfaces
-- Claim-grade evidence and diagnostic/attribution experiments
+These produce correctness artifacts, not benchmark comparisons.
 
 ## Practical decision rule
 
-When adding a new benchmark:
+When adding a benchmark-related feature:
 
-1. Is this a new product? Register an executor.
-2. Is this a new surface? Define the run contract.
-3. Is this a new comparison? Run both products and feed to compare.
+1. Is this a new workload?
+   Add or update a workload contract.
+2. Is this a new surface?
+   Define the run contract for that surface.
+3. Is this a new product?
+   Register an executor.
+4. Is this a new comparison?
+   Do not write a new pair-specific harness. Run both products and compare the
+   resulting artifacts.
 
-If you find yourself writing a new `compare_X_vs_Y` script, stop — that is
-the old model. Run X, run Y, compare.
+## Boundaries underneath surfaces
+
+Surface is the human-facing benchmark term.
+
+Some tooling also carries a lower-level executor boundary field:
+
+- `backend` surface -> `backend_native` boundary
+- `plan` surface -> `direct_plan` boundary
+- `package` surface -> `package_surface` boundary
+
+That boundary field exists so executors and older artifacts can describe the
+exact runtime contract. It is not the primary vocabulary for benchmark docs or
+front doors.
 
 ## Migration status
 
-The current harness code (`compare_dawn_vs_doe.py`, package compare scripts,
-etc.) still uses the old pair-based model internally. Migration to the
-product-based model is tracked in `docs/status.md`. The taxonomy and axis
-language defined here and in `docs/compare-taxonomy.md` are the target
-architecture.
+The canonical benchmark flow already follows this model:
+
+1. isolated runs emit immutable run artifacts
+2. compare joins those artifacts post-hoc into a compare report
+
+`bench/cli.py` is the only live benchmark front door. Release scripts and
+governed profiles resolve through `bench/cli.py compare`, but the execution
+model is still the same artifact-first run/compare flow.

@@ -1,4 +1,290 @@
 # Doe status
+## Canonical benchmark workflow is now `bench/cli.py` only; legacy compare wrappers were removed (2026-04-06 UTC)
+
+- the only live benchmark front door is now `bench/cli.py`:
+  - `bench/cli.py run`
+  - `bench/cli.py compare`
+  - `bench/cli.py list`
+- removed the extra compare/front-door wrappers:
+  - `bench/run_compare.py`
+  - `bench/runners/run.py`
+- compare config files now use the canonical prefix:
+  - `bench/native-compare/compare.config.*.json`
+- release and bench scripts now invoke `bench/cli.py compare` directly instead
+  of shelling through deleted wrappers
+- promoted compare profile resolution still exists, but it now lives as an
+  internal module under `bench/native_compare_modules/promoted_compare.py`
+  rather than as a separate CLI surface
+
+## Package benchmarking is now artifact-first only; legacy package-compare runners were removed (2026-04-06 UTC)
+
+- the canonical package benchmark flow is now the same as every other Doe
+  benchmark surface:
+  - run one product with `bench/cli.py run`
+  - emit a run artifact
+  - compare artifacts post-hoc with `bench/cli.py compare`
+- package surfaces now run only through the standalone package plan executors:
+  - `bench/executors/run-node-webgpu-plan.js`
+  - `bench/executors/run-bun-webgpu-plan.js`
+- removed the old parallel package benchmark subsystem source files:
+  - `bench/package-compare/node/*`
+  - `bench/package-compare/bun/*`
+  - `bench/package-compare/deno/*`
+  - `bench/package-compare/doe-api/*`
+  - `bench/shared/lib/package-runner-core.js`
+  - `bench/shared/lib/package-compare-core.js`
+- fixed the artifact-first package run path in
+  `bench/native_compare_modules/artifact_benchmarking.py` so standalone package
+  runs no longer crash on the old `left_product` / `right_product` call shape
+- active docs/configs were updated to stop pointing at deleted package-compare
+  entrypoints; historical references remain below in append-only status history
+
+## Benchmark executor and compare-taxonomy naming now reflect the actual provider surfaces (2026-04-06 UTC)
+
+- the generic direct WebGPU plan runner is now named:
+  - `webgpu-plan-executor`
+  - Zig sources:
+    - `runtime/zig/src/webgpu_plan_executor.zig`
+    - `runtime/zig/src/webgpu_plan_executor_support.zig`
+    - `runtime/zig/src/main_webgpu_plan_executor.zig`
+- rationale:
+  - the old `dawn-plan-executor` name was inaccurate because the same direct
+    plan runner can execute against Dawn or the WebKit shim depending on the
+    loaded library / `--backend-id`
+- the Node package comparison surface now uses:
+  - executor ids:
+    - `dawn_node_webgpu`
+    - `dawn_node_webgpu_prepared`
+  - provider token:
+    - `node-webgpu`
+- the WebKit direct-plan executor id is now:
+  - `webkit_webgpu_native_metal`
+- package-surface compare taxonomy now uses provider/package-oriented names:
+  - `doe_vs_dawn_node_webgpu`
+  - `doe_vs_bun_webgpu_package`
+  - `doe_vs_deno_webgpu_package`
+  - products:
+    - `dawn_node_webgpu`
+    - `bun_webgpu_package`
+    - `deno_webgpu_package`
+- active benchmark docs/configs/tests were updated in the same change:
+  - `bench/README.md`
+  - `docs/benchmark-taxonomy.md`
+  - `docs/compare-taxonomy.md`
+  - `config/compare-taxonomy.json`
+  - `config/promoted-compare-catalog.json`
+  - `config/benchmark-cube-policy.json`
+  - `config/governed-lanes.json`
+
+## Active benchmark contracts now use baseline/comparison terminology instead of left/right terminology (2026-04-06 UTC)
+
+- active benchmark/front-door docs now describe comparison roles as
+  `baseline` and `comparison`, not `left` and `right`
+- trace semantic-parity tooling now uses:
+  - `pipeline/trace/compare_dispatch_traces.py --baseline ... --comparison ...`
+- benchmark-cube policy/config now uses:
+  - `comparisonViews[].baseline`
+  - `comparisonViews[].comparison`
+- benchmark cube/report normalization now reads compare reports from:
+  - `workloads[].baseline`
+  - `workloads[].comparison`
+  - `traceMetaHashes.baseline`
+  - `traceMetaHashes.comparison`
+- browser claim reports and the WGSL compilation compare report now emit
+  baseline/comparison payloads instead of left/right payloads
+- rationale:
+  - `left` / `right` was report-wrapper vocabulary that obscured the actual
+    benchmark model
+  - the canonical benchmark taxonomy is now:
+    - `workload`
+    - `surface`
+    - `executor`
+    - `run artifact`
+    - `compare report`
+    - with compare roles named `baseline` and `comparison`
+
+## Compare taxonomy expansion now uses entry terminology instead of row terminology (2026-04-06 UTC)
+
+- the generated compare-taxonomy expansion contract now uses `entry` naming:
+  - schema: `config/compare-taxonomy-expanded-entry.schema.json`
+  - generated data: `config/generated/compare-taxonomy-expanded.jsonl`
+- the old `row`-based field names were renamed in the generated artifact:
+  - `rowId` -> `entryId`
+  - `theoreticalConcreteRowSlotCount` -> `theoreticalConcreteTargetSlotCount`
+  - `promotedCompareRowCount` -> `promotedCompareProfileCount`
+- `bench/tools/generate_compare_taxonomy.py` and the schema-target registry now
+  use the same entry terminology
+- rationale:
+  - the benchmark taxonomy now treats `workload`, `surface`, `executor`,
+    `run artifact`, and `compare report` as the canonical human model
+  - leaving `row` as the generated taxonomy unit kept reintroducing the older,
+    less clear benchmark vocabulary
+
+## Benchmark taxonomy now uses workload / surface / executor / run artifact / compare report as the canonical vocabulary (2026-04-06 UTC)
+
+- the active benchmark docs and front doors now treat isolated run artifacts
+  as the benchmark primitive and compare reports as post-hoc joins
+- the canonical compare surfaces are now:
+  - `backend`
+  - `plan`
+  - `package`
+  - `dropin`
+  - `browser`
+  - `compiler`
+- lower-level executor boundaries still exist where needed
+  (`backend_native`, `direct_plan`, `package_surface`, `abi_dropin`), but they
+  are no longer the primary human-facing benchmark vocabulary
+- `config/compare-taxonomy.json` now records those canonical surface names
+  directly, and `config/promoted-compare-catalog.json` now uses:
+  - `backend-runtime-preset`
+  - `plan-runtime-workload`
+  - `package-runtime-workload`
+- active docs updated in the same change:
+  - `docs/benchmark-taxonomy.md`
+  - `docs/compare-taxonomy.md`
+  - `bench/README.md`
+  - `bench/docs/benchmark-writing-guide.md`
+  - `docs/performance-strategy.md`
+
+## Metal comparable plan uploads now stage `buffer_load` / `buffer_write` data instead of bypassing the upload policy (2026-04-06 UTC)
+
+- fixed a native Metal direct-plan comparability bug where plan `buffer_load`
+  and byte-backed `buffer_write` operations wrote directly into mapped compute
+  buffers even when the lane required `uploadPathPolicy=staged_copy_only`
+- comparable and release Metal lanes now route those bytes through the
+  streaming blit path before execution timing is finalized
+- focused evidence for the fix is at:
+  `/tmp/doe-gemma3-270m-prefill-compare-10-staged.json`
+
+## Gemma IR-backed inference rows now use deterministic cached synthetic readonly assets and explicit timed `buffer_load` commands (2026-04-06 UTC)
+
+- the Gemma IR rows under `bench/ir/` no longer rely on implicit first-use
+  zero-filled readonly buffers for large synthetic tensors
+- authored IR now declares a deterministic synthetic readonly asset policy, and
+  plan generation injects explicit `buffer_load` commands for those tensors
+- cache-backed asset warming now happens before timed iterations begin:
+  - default cache root:
+    `~/.cache/doe/bench_synthetic_assets`
+  - override:
+    `DOE_BENCH_ASSET_CACHE_DIR`
+- the timed execution boundary now includes:
+  - host cache read for the warmed asset
+  - upload / staging into device-visible memory
+  - the real inference dispatch sequence
+- the timed execution boundary does not include:
+  - synthetic asset generation
+  - cache warmup
+- rationale:
+  - the old rows were useful for command-shape coverage, but weak as
+    compute-content benchmarks because the large readonly tensors were not
+    deterministic non-zero model-like payloads
+  - the new contract keeps the rows synthetic and reproducible while making
+    them materially closer to a device-load-inclusive inference session
+
+## Heavy package stress workloads now use multi-stage integer kernels instead of trivial float math (2026-04-06 UTC)
+
+- strengthened `compute_multistage_e2e_1048576`:
+  - now runs six ping-pong stages, not three
+  - each stage executes an exact integer stress loop per invocation
+- strengthened `pipeline_multistage_first_use_e2e`:
+  - now creates six unique pipelines per timed iteration, not three
+  - each stage uses the same exact integer stress kernel shape
+- rationale:
+  - the first version was “more stages” but still too light on arithmetic
+  - the upgraded variants are still comparable, but they now better exercise
+    ALU-heavy compute and first-use pipeline churn on the package surface
+
+## Heavier package end-to-end compute and pipeline workloads are now part of the Node/Bun/Deno package surface (2026-04-06 UTC)
+
+- added `compute_multistage_e2e_1048576`:
+  - three ping-pong compute passes over `1048576` threads
+  - full completion wait plus readback validation
+- added `pipeline_multistage_first_use_e2e`:
+  - unique WGSL per timed iteration
+  - three pipeline creations, three compute passes, one readback validation
+- package workload factories live in:
+  - `bench/package-compare/node/workloads.js`
+- canonical workload contracts now exist in:
+  - `bench/workloads/metadata/workload-registry.json`
+- rationale:
+  - `compute_dispatch_and_wait_simple` is a valid smoke/completion workload, but
+    it is intentionally tiny
+  - the package surface now has a heavier pure-compute path and a heavier
+    WebGPU-object/pipeline-churn path for Doe-only and package compare runs
+
+## The legacy `compare_dawn_vs_doe.py` front door is removed, and `bench/run_compare.py` is the only live config-backed compare entrypoint (2026-04-05 UTC)
+
+- deleted `bench/native-compare/compare_dawn_vs_doe.py`
+- `bench/run_compare.py` now owns both current compare surfaces:
+  - direct config mode: `python3 bench/run_compare.py --config ...`
+  - promoted profile mode: resolve catalog entry, then re-enter direct config mode
+- live repo runners now invoke `bench/run_compare.py` instead of the deleted
+  script:
+  - `bench/runners/run.py`
+  - `bench/runners/run_release_pipeline.py`
+  - `bench/runners/publish_apple_runtime_release.py`
+  - `bench/runners/run_local_d3d12_lane.py`
+  - `bench/runners/run_single_workload_sweep.py`
+- the internal tooling manifest and current bench docs now treat
+  `bench/run_compare.py` as the compare front door
+- rationale:
+  - the canonical benchmark contract is isolated run artifacts plus post-hoc
+    join
+  - keeping a second script-shaped compatibility wrapper around the same logic
+    was unnecessary surface area and contradicted the simplified model
+
+## The ad hoc pair-command runtime comparator is removed from the live bench surface (2026-04-05 UTC)
+
+- deleted `bench/native-compare/compare_runtimes.py`
+- `bench/runners/run.py` no longer exposes the unsupported `adhoc` harness:
+  - the live harness set is now `compare`, `single`, and `compile`
+- `bench/README.md` no longer documents the removed ad hoc comparator as part
+  of the current bench surface
+- `bench/tools/backfill_run_manifests.py` no longer treats
+  `runtime-comparison*.json` as a first-class active run type:
+  - those folders now fall through to legacy/unknown inference instead of
+    preserving a removed harness as if it were still part of the supported
+    surface
+- rationale:
+  - the canonical benchmark model is isolated run artifacts plus post-hoc join
+  - the removed script was a free-form pair-command timer with no workload
+    contract, executor registry, artifact join discipline, or claimability
+    semantics
+
+## Native benchmark execution is now artifact-first internally, and the legacy compare lanes are compatibility wrappers over isolated per-product bundles (2026-04-05 UTC)
+
+- `bench/native_compare_modules/artifact_benchmarking.py` now owns the shared
+  isolated-run execution path:
+  - one product runs across the selected workload set
+  - each workload emits a standalone run artifact
+  - a run-manifest is written for the emitted bundle
+- `bench/native_compare_modules/run_artifact.py` and
+  `config/run-artifact.schema.json` now treat the run artifact as the
+  post-hoc-join source of truth:
+  - `schemaVersion` is now `2`
+  - new artifacts require `workloadContract` metadata
+  - new artifacts also carry the workload-side comparability metadata and the
+    per-product normalization knobs needed to reconstruct the legacy compare
+    report
+  - legacy `schemaVersion: 1` artifacts still load, but the artifact-first join
+    rejects them because they cannot prove the workload-contract hash
+- `bench/native_compare_modules/compare_from_artifacts.py` now rebuilds the
+  canonical schema-version-5 compare report directly from run artifacts instead
+  of relying on a pair-coupled in-memory compare loop
+- `bench/cli.py`
+  - `run` now executes through the shared isolated-bundle path
+  - `compare` now joins run artifacts into the canonical compare report instead
+    of emitting the older sidecar compare-only report shape
+- `bench/native-compare/compare_dawn_vs_doe.py` and `bench/run_compare.py`
+  remain as compatibility front doors for existing configs, gates, and release
+  scripts, but they now execute:
+  - isolated left-product bundle
+  - isolated right-product bundle
+  - post-hoc artifact join
+- targeted verification for this refactor:
+  - `python3 -m unittest bench.tests.test_run_artifact bench.tests.test_compare_from_artifacts`
+  - `python3 -m unittest bench.tests.test_backend_workload_catalog`
+
 ## Metal coverage-gate wiring is repaired and the governed strict Metal lane no longer overclaims legacy Gemma3 plan workloads (2026-04-05 UTC)
 
 - `runtime/zig/build.zig` now points the `coverage-gate` build step at the

@@ -241,6 +241,11 @@ pub fn ensure_compute_buffer(self: anytype, handle: u64, size: u64, initialize_b
 pub fn write_compute_buffer_words(self: anytype, handle: u64, offset: u64, buffer_size: u64, data: []const u32) !void {
     if (data.len == 0) return error.InvalidArgument;
     const data_bytes = std.mem.sliceAsBytes(data);
+    return write_compute_buffer_bytes(self, handle, offset, buffer_size, data_bytes);
+}
+
+pub fn write_compute_buffer_bytes(self: anytype, handle: u64, offset: u64, buffer_size: u64, data_bytes: []const u8) !void {
+    if (data_bytes.len == 0) return error.InvalidArgument;
     const required_size = if (buffer_size > 0)
         @max(buffer_size, offset + data_bytes.len)
     else

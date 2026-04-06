@@ -100,7 +100,7 @@ runtime inside Chromium itself as a Dawn replacement.
 │ (CLI runtime)     (C ABI drop-in)         (shader tool)          │
 │                   csl_bundle_emitter.zig                         │
 │                   main_doe_plan_executor.zig                     │
-│                   main_dawn_plan_executor.zig                    │
+│                   main_webgpu_plan_executor.zig                    │
 └──────────────────────────┬───────────────────────────────────────┘
                            │
               ┌────────────┴────────────┐

@@ -9,6 +9,29 @@ fn fileExists(path: []const u8) bool {
     return true;
 }
 
+fn firstExistingPath(candidates: []const []const u8) []const u8 {
+    for (candidates) |candidate| {
+        if (fileExists(candidate)) return candidate;
+    }
+    @panic("required include path not found");
+}
+
+fn addExistingIncludePaths(
+    artifact: *std.Build.Step.Compile,
+    b: *std.Build,
+    candidates: []const []const u8,
+) void {
+    for (candidates) |candidate| {
+        if (fileExists(candidate)) {
+            if (std.fs.path.isAbsolute(candidate)) {
+                artifact.addIncludePath(.{ .cwd_relative = candidate });
+            } else {
+                artifact.addIncludePath(b.path(candidate));
+            }
+        }
+    }
+}
+
 fn sha256HexAlloc(allocator: std.mem.Allocator, input: []const u8) []u8 {
     var digest: [32]u8 = undefined;
     std.crypto.hash.sha2.Sha256.hash(input, &digest, .{});
@@ -507,20 +530,33 @@ pub fn build(b: *std.Build) void {
     emit_msl_step.dependOn(&install_emit_msl.step);
     b.getInstallStep().dependOn(emit_msl_step);
 
-    const dawn_plan_executor = b.addExecutable(.{
-        .name = "dawn-plan-executor",
+    const webgpu_plan_executor = b.addExecutable(.{
+        .name = "webgpu-plan-executor",
         .root_module = b.createModule(.{
-            .root_source_file = b.path("src/main_dawn_plan_executor.zig"),
+            .root_source_file = b.path("src/main_webgpu_plan_executor.zig"),
             .target = target,
             .optimize = optimize,
         }),
     });
-    dawn_plan_executor.linkLibC();
-    dawn_plan_executor.addIncludePath(b.path("../../bench/vendor/dawn/third_party/webgpu-headers/src"));
-    const install_dawn_plan_executor = b.addInstallArtifact(dawn_plan_executor, .{});
-    const dawn_plan_executor_step = b.step("dawn-plan-executor", "Build the standalone Dawn plan executor");
-    dawn_plan_executor_step.dependOn(&install_dawn_plan_executor.step);
-    b.getInstallStep().dependOn(dawn_plan_executor_step);
+    webgpu_plan_executor.linkLibC();
+    const dawn_webgpu_include = firstExistingPath(&.{
+        "../../bench/vendor/dawn/third_party/webgpu-headers/src",
+        "../../browser/chromium_webgpu_lane/.local_volume/chromium_webgpu_lane/src/third_party/dawn/include/webgpu",
+        "/Volumes/MACOS/fawn-browser/src/third_party/dawn/include/webgpu",
+    });
+    const dawn_shared_include_candidates = [_][]const u8{
+        "../../bench/vendor/dawn/third_party/webgpu-headers/src",
+        "../../browser/chromium_webgpu_lane/.local_volume/chromium_webgpu_lane/src/third_party/dawn/include",
+        "../../browser/chromium_webgpu_lane/.local_volume/chromium_webgpu_lane/src/out/fawn_release/gen/third_party/dawn/include",
+        "/Volumes/MACOS/fawn-browser/src/third_party/dawn/include",
+        "/Volumes/MACOS/fawn-browser/src/out/fawn_release/gen/third_party/dawn/include",
+    };
+    webgpu_plan_executor.addIncludePath(b.path(dawn_webgpu_include));
+    addExistingIncludePaths(webgpu_plan_executor, b, &dawn_shared_include_candidates);
+    const install_webgpu_plan_executor = b.addInstallArtifact(webgpu_plan_executor, .{});
+    const webgpu_plan_executor_step = b.step("webgpu-plan-executor", "Build the standalone direct WebGPU plan executor");
+    webgpu_plan_executor_step.dependOn(&install_webgpu_plan_executor.step);
+    b.getInstallStep().dependOn(webgpu_plan_executor_step);
 
     const doe_plan_executor = b.addExecutable(.{
         .name = "doe-plan-executor",

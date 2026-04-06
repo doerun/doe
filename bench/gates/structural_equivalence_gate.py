@@ -109,8 +109,8 @@ def collect_phase_fractions(command_samples: list[dict[str, Any]]) -> dict[str, 
 
 def check_dispatch_parity(workload: dict[str, Any]) -> list[str]:
     failures: list[str] = []
-    left_samples = workload.get("left", {}).get("commandSamples", [])
-    right_samples = workload.get("right", {}).get("commandSamples", [])
+    left_samples = workload.get("baseline", {}).get("commandSamples", [])
+    right_samples = workload.get("comparison", {}).get("commandSamples", [])
 
     left_dispatches: set[int] = set()
     right_dispatches: set[int] = set()
@@ -129,8 +129,8 @@ def check_dispatch_parity(workload: dict[str, Any]) -> list[str]:
         return failures
     if left_dispatches != right_dispatches:
         failures.append(
-            f"dispatch count mismatch: left={sorted(left_dispatches)} "
-            f"right={sorted(right_dispatches)}"
+            f"dispatch count mismatch: baseline={sorted(left_dispatches)} "
+            f"comparison={sorted(right_dispatches)}"
         )
     return failures
 
@@ -142,8 +142,8 @@ def check_phase_equivalence(workload: dict[str, Any]) -> list[str]:
         "encode": "executionEncodeTotalNs",
         "submitWait": "executionSubmitWaitTotalNs",
     }
-    left_fracs = collect_phase_fractions(workload.get("left", {}).get("commandSamples", []))
-    right_fracs = collect_phase_fractions(workload.get("right", {}).get("commandSamples", []))
+    left_fracs = collect_phase_fractions(workload.get("baseline", {}).get("commandSamples", []))
+    right_fracs = collect_phase_fractions(workload.get("comparison", {}).get("commandSamples", []))
 
     for phase_key, field_name in phase_fields.items():
         left_vals = left_fracs.get(phase_key, [])
@@ -154,12 +154,12 @@ def check_phase_equivalence(workload: dict[str, Any]) -> list[str]:
         right_median = sorted(right_vals)[len(right_vals) // 2]
         if left_median == 0.0 and right_median >= _PHASE_ASYMMETRY_THRESHOLD:
             failures.append(
-                f"phase asymmetry: left reports zero {field_name} but right spends "
+                f"phase asymmetry: baseline reports zero {field_name} but comparison spends "
                 f"{right_median:.1%} of execution there"
             )
         elif right_median == 0.0 and left_median >= _PHASE_ASYMMETRY_THRESHOLD:
             failures.append(
-                f"phase asymmetry: right reports zero {field_name} but left spends "
+                f"phase asymmetry: comparison reports zero {field_name} but baseline spends "
                 f"{left_median:.1%} of execution there"
             )
     return failures
@@ -188,12 +188,12 @@ def check_throughput_plausibility(workload: dict[str, Any]) -> list[str]:
             legacy_workload_unit_wall = timing_interpretation.get("headlineProcessWall", {})
             if isinstance(legacy_workload_unit_wall, dict):
                 workload_unit_wall = legacy_workload_unit_wall
-    headline_left_p50 = safe_float(workload_unit_wall.get("leftStatsMs", {}).get("p50Ms"))
-    headline_right_p50 = safe_float(workload_unit_wall.get("rightStatsMs", {}).get("p50Ms"))
+    headline_left_p50 = safe_float(workload_unit_wall.get("baselineStatsMs", {}).get("p50Ms"))
+    headline_right_p50 = safe_float(workload_unit_wall.get("comparisonStatsMs", {}).get("p50Ms"))
 
-    for side_name in ("left", "right"):
+    for side_name in ("baseline", "comparison"):
         p50_ms = safe_float(workload.get(side_name, {}).get("stats", {}).get("p50Ms"))
-        headline_p50_ms = headline_left_p50 if side_name == "left" else headline_right_p50
+        headline_p50_ms = headline_left_p50 if side_name == "baseline" else headline_right_p50
         if p50_ms is None or p50_ms <= 0.0:
             continue
         throughput = upload_bytes / (p50_ms / 1000.0)
@@ -236,7 +236,7 @@ def check_path_asymmetry(
     if not path_asymmetry:
         return []
     reason = (
-        "workload contract marks pathAsymmetry=true: left/right use hardware-specific "
+        "workload contract marks pathAsymmetry=true: baseline/comparison use hardware-specific "
         "execution paths that are not structurally equivalent"
     )
     if note:
@@ -259,8 +259,8 @@ def workload_is_dawn_vs_doe(workload: dict[str, Any]) -> bool:
             if isinstance(trace_meta, dict) and trace_meta.get("executionBackend")
         }
 
-    left_backends = collect_execution_backends(workload.get("left"))
-    right_backends = collect_execution_backends(workload.get("right"))
+    left_backends = collect_execution_backends(workload.get("baseline"))
+    right_backends = collect_execution_backends(workload.get("comparison"))
     left_dawn = "dawn_delegate" in left_backends or "dawn-perf-tests" in left_backends
     right_dawn = "dawn_delegate" in right_backends or "dawn-perf-tests" in right_backends
     left_doe = any(

@@ -1,6 +1,262 @@
 # Config Migration Notes
 
+## 2026-04-06
+
+### `bench/cli.py` is now the only live benchmark front door
+
+- removed the live wrapper CLIs:
+  - `bench/run_compare.py`
+  - `bench/runners/run.py`
+- canonical benchmark entrypoints are now only:
+  - `bench/cli.py run`
+  - `bench/cli.py compare`
+  - `bench/cli.py list`
+- compare config files were renamed from:
+  - `bench/native-compare/compare_dawn_vs_doe.config.*.json`
+  to:
+  - `bench/native-compare/compare.config.*.json`
+- promoted compare profile resolution still exists, but only as an internal
+  module:
+  - `bench/native_compare_modules/promoted_compare.py`
+- release runners and bench scripts were rewired to invoke `bench/cli.py
+  compare` directly; there are no compatibility shims for the removed wrapper
+  CLIs
+
+### Package benchmarking is now artifact-first only
+
+- removed the legacy package benchmark source surface:
+  - `bench/package-compare/node/*`
+  - `bench/package-compare/bun/*`
+  - `bench/package-compare/deno/*`
+  - `bench/package-compare/doe-api/*`
+  - `bench/shared/lib/package-runner-core.js`
+  - `bench/shared/lib/package-compare-core.js`
+- canonical package benchmarking now runs only through:
+  - `bench/cli.py run`
+  - `bench/cli.py compare`
+  - `bench/executors/run-node-webgpu-plan.js`
+  - `bench/executors/run-bun-webgpu-plan.js`
+- package provider modules now live under:
+  - `bench/vendor/node-webgpu-package/`
+  - `bench/vendor/bun-webgpu-package/`
+  rather than under the removed `bench/package-compare/` tree
+- the artifact-first package runner now uses the canonical
+  `baseline_product` / `comparison_product` workload split; the removed
+  `left_product` / `right_product` call shape is no longer accepted anywhere
+  in the live benchmark surface
+
+### Benchmark executor/provider naming now matches the actual benchmark surfaces
+
+- renamed the generic direct WebGPU plan runner:
+  - build target / binary:
+    - `webgpu-plan-executor`
+  - source modules:
+    - `runtime/zig/src/webgpu_plan_executor.zig`
+    - `runtime/zig/src/webgpu_plan_executor_support.zig`
+    - `runtime/zig/src/main_webgpu_plan_executor.zig`
+- removed the old live Node package comparison ids:
+  - `dawn_node_webgpu`
+  - `dawn_node_webgpu_prepared`
+- replacement Node package comparison ids:
+  - `node_webgpu_package`
+  - `node_webgpu_package_prepared`
+- removed the old WebKit executor id:
+  - `apple_webgpu_native_metal`
+- replacement WebKit executor id:
+  - `webkit_webgpu_native_metal`
+- compare-taxonomy/package product ids now use package-oriented names:
+  - `node_webgpu_package`
+  - `bun_webgpu_package`
+  - `deno_webgpu_package`
+- compare-view ids now use provider/package-oriented names:
+  - `doe_vs_node_webgpu_package`
+  - `doe_vs_bun_webgpu_package`
+  - `doe_vs_deno_webgpu_package`
+- there are no compatibility aliases in the live benchmark surface for the
+  removed names above; local scripts/configs must be updated to the
+  replacement ids before running the current benchmark front doors
+
+### Active benchmark contracts now use `baseline` / `comparison` terminology instead of `left` / `right`
+
+- compare-facing config/doc contracts now use:
+  - `baseline`
+  - `comparison`
+- `config/benchmark-cube-policy.schema.json`
+  - `comparisonViews[]` now requires:
+    - `baseline`
+    - `comparison`
+  - old `left` / `right` keys are removed
+- `config/benchmark-cube-policy.json`
+  - updated to the same `baseline` / `comparison` keys
+- active compare-report consumers now expect:
+  - `workloads[].baseline`
+  - `workloads[].comparison`
+  - `traceMetaHashes.baseline`
+  - `traceMetaHashes.comparison`
+- trace semantic-parity CLI now uses:
+  - `--baseline`
+  - `--comparison`
+- benchmark docs/examples now use:
+  - `--baseline-command-template`
+  - `--comparison-command-template`
+  - `--baseline-name`
+  - `--comparison-name`
+  - `--allow-baseline-no-execution`
+
+### Compare taxonomy expansion now uses `entry` naming instead of `row` naming
+
+- `config/compare-taxonomy-expanded-entry.schema.json`
+  - replaces `config/compare-taxonomy-expanded-row.schema.json`
+  - generated compare-taxonomy expansion artifacts now use:
+    - `entryId`
+    - `theoreticalConcreteTargetSlotCount`
+    - `promotedCompareProfileCount`
+- `config/schema-targets.json`
+  - now validates `config/generated/compare-taxonomy-expanded.jsonl` against
+    `config/compare-taxonomy-expanded-entry.schema.json`
+- `bench/tools/generate_compare_taxonomy.py`
+  - now emits the renamed entry fields
+  - internal reporting also now uses entry/count terminology:
+    - `expandedEntryCount`
+    - `typeCorrectStructuralEntries`
+    - `typeCorrectConcreteTargetSlots`
+    - `promotedCompareProfiles`
+- regeneration required:
+  - `python3 bench/tools/generate_compare_taxonomy.py --write`
+
+### Compare taxonomy now uses canonical `surface` names (`backend`, `plan`, `package`, `dropin`, `browser`, `compiler`)
+
+- `config/compare-taxonomy.json`
+  - bumps `schemaVersion` from `2` to `3`
+  - `axes.surfaces` now records the canonical human-facing benchmark surface
+    names directly:
+    - `backend`
+    - `plan`
+    - `package`
+    - `dropin`
+    - `browser`
+    - `compiler`
+  - product-family IDs were normalized accordingly:
+    - `doe_backend_native` -> `doe_backend`
+    - `dawn_backend_native` -> `dawn_backend`
+    - `doe_direct_plan` -> `doe_plan`
+    - `dawn_direct_plan` -> `dawn_plan`
+  - lower-level executor boundary strings remain separate in generated artifacts
+    and compare-run wiring:
+    - `backend_native`
+    - `direct_plan`
+    - `package_surface`
+    - `abi_dropin`
+- `config/promoted-compare-catalog.json`
+  - bumps `schemaVersion` from `3` to `4`
+  - promoted compare entries already used `surface=backend|plan|package`; the
+    schema now matches that contract
+  - benchmark-class labels were normalized:
+    - `native-runtime-preset` -> `backend-runtime-preset`
+    - `direct-runtime` -> `plan-runtime-workload`
+    - `package-surface` -> `package-runtime-workload`
+- `config/promoted-compare-catalog.schema.json`
+  - surface enum now accepts:
+    - `backend`
+    - `plan`
+    - `package`
+- regeneration required:
+  - `python3 bench/tools/generate_compare_taxonomy.py --write`
+
+### Gemma IR-backed inference rows now use deterministic cached synthetic readonly assets with explicit `buffer_load` commands
+
+- `bench/ir/benchmark_ir.schema.json`
+  - adds optional `shared.syntheticReadonlyBufferPolicy`
+  - the authored IR can now declare:
+    - cache namespace
+    - deterministic generator
+    - seed
+    - optional scale
+- `bench/plans/normalized_plan.schema.json`
+  - adds optional `bufferLoadCount`
+  - normalized plans may now include explicit `buffer_load` commands alongside
+    `buffer_write` and `kernel_dispatch`
+- `bench/lib/benchmark_ir.py`
+  - now injects `buffer_load` commands for readonly-only dispatch bindings that
+    are not otherwise written in the authored scenario
+- `bench/lib/synthetic_assets.py`
+  - adds deterministic cache-backed payload generation for synthetic readonly
+    assets
+  - default cache root:
+    `~/.cache/doe/bench_synthetic_assets`
+  - override with `DOE_BENCH_ASSET_CACHE_DIR`
+- `bench/tools/materialize_plan_assets.py`
+  - warms plan assets outside timed execution
+- `bench/native_compare_modules/runner.py`
+  - now materializes plan assets before timed iterations start
+- `runtime/zig/src/dawn_plan_types.zig`
+  - now parses `buffer_load`
+  - validates `bufferLoadCount`
+- `runtime/zig/src/doe_plan_executor.zig`
+  - now executes `buffer_load` by reading the warmed asset from the local cache
+    and emitting the corresponding device write
+- `runtime/zig/src/dawn_plan_executor.zig`
+  - now supports the same normalized `buffer_load` plan command when the local
+    Dawn/WebGPU headers are available
+- timing contract:
+  - deterministic asset generation and cache warming are outside timed samples
+  - the explicit `buffer_load` command stays inside the timed operation so the
+    Gemma rows measure device-load-inclusive inference instead of only an
+    already-resident hot path
+
 ## 2026-04-05
+
+### `bench/run_compare.py` replaces `bench/native-compare/compare_dawn_vs_doe.py` as the only live config-backed compare front door
+
+- `bench/native-compare/compare_dawn_vs_doe.py`
+  - removed from the active repo surface
+- `bench/run_compare.py`
+  - now handles both:
+    - direct config mode (`--config ...`)
+    - promoted profile resolution (`--surface/--backend/--preset` etc.), which
+      re-enters direct config mode
+- current compare callers were rewired to invoke `bench/run_compare.py`
+- `config/tool-surfaces.json` and current bench/docs prose now mark
+  `bench/run_compare.py` as the active operator entrypoint
+- compare report contracts remain unchanged; this is an entrypoint reduction,
+  not a report-schema migration
+
+### Native compare lanes now execute as isolated run bundles plus post-hoc artifact joins
+
+- `config/run-artifact.schema.json`
+  - bumps `schemaVersion` from `1` to `2`
+  - run artifacts must now carry explicit `workloadContract` metadata
+  - run artifacts may now carry:
+    - `benchmarkPolicy`
+    - workload-side comparability metadata
+    - per-product normalization/allow-no-execution metadata
+- `bench/native_compare_modules/run_artifact.py`
+  - now emits `schemaVersion: 2` run artifacts
+  - rejects attempts to build new artifacts without `workloadContract` metadata
+  - still loads legacy `schemaVersion: 1` artifacts for compatibility, but
+    artifact-first compare joins reject them because they cannot prove the
+    workload contract hash
+- `bench/native_compare_modules/compare_from_artifacts.py`
+  - now reconstructs the legacy compare report directly from v2 run artifacts
+  - requires matching workload-contract hashes before joining
+- `bench/native_compare_modules/artifact_benchmarking.py`
+  - adds the shared isolated-run bundle executor used by both the CLI and the
+    legacy compare wrapper
+- `bench/native-compare/compare_dawn_vs_doe.py`
+  - remains the legacy config/report front door, but now runs:
+    - left product bundle
+    - right product bundle
+    - post-hoc artifact join
+  - it no longer treats pair-coupled execution as the primitive
+- `bench/cli.py`
+  - `run` now uses the shared isolated-run bundle executor
+  - `compare` now emits the canonical legacy compare report by joining run
+    artifacts instead of producing the older sidecar v6 compare-only report
+- consumers that still hold `schemaVersion: 1` run artifacts should rerun the
+  isolated product step before using the new post-hoc compare join
+- verification for this migration:
+  - `python3 -m unittest bench.tests.test_run_artifact bench.tests.test_compare_from_artifacts`
+  - `python3 -m unittest bench.tests.test_backend_workload_catalog`
 
 ### Metal strict workload lane drops legacy Gemma3 plan workloads from the governed cohort and restores `buffer_write` coverage accounting
 

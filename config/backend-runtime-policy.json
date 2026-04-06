@@ -43,6 +43,13 @@
       "strictNoFallback": true,
       "notes": "Metal WebKit WebGPU baseline benchmark lane via struct-translating shim"
     },
+    "metal_webkit_comparable": {
+      "defaultBackend": "webkit_delegate",
+      "allowFallback": false,
+      "strictNoFallback": true,
+      "uploadPathPolicy": "staged_copy_only",
+      "notes": "Strict comparable WebKit lane: staged upload-copy path required to match Doe comparable upload work"
+    },
     "vulkan_doe_app": {
       "defaultBackend": "doe_vulkan",
       "allowFallback": false,

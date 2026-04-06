@@ -171,7 +171,7 @@ def main() -> int:
         "failedCount": len(failed),
         "checks": checks,
         "recommendations": [
-            "Run this preflight on a Windows x64 host before compare_dawn_vs_doe local D3D12 lanes.",
+            "Run this preflight on a Windows x64 host before local D3D12 compare lanes.",
             "Keep dxc.exe on PATH for live WGSL-backed compute and pipeline workloads.",
             "Treat render and texture contracts as out of scope for the first D3D12 governed comparable lane.",
         ],

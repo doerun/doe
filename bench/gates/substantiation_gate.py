@@ -29,9 +29,9 @@ class ReleaseEvidencePolicy:
     min_claimable_comparable_reports: int
     required_comparison_status: str
     required_claim_status: str
-    min_unique_left_profiles: int
-    target_unique_left_profiles: int | None
-    enforce_target_unique_left_profiles: bool
+    min_unique_baseline_profiles: int
+    target_unique_baseline_profiles: int | None
+    enforce_target_unique_baseline_profiles: bool
 
 
 def parse_args() -> argparse.Namespace:
@@ -76,12 +76,12 @@ def parse_args() -> argparse.Namespace:
         help="Stamp output report path with a UTC timestamp suffix.",
     )
     parser.add_argument(
-        "--enforce-target-unique-left-profiles",
+        "--enforce-target-unique-baseline-profiles",
         action=argparse.BooleanOptionalAction,
         default=None,
         help=(
-            "Override policy behavior for targetUniqueLeftProfiles enforcement. "
-            "By default, follows releaseEvidence.enforceTargetUniqueLeftProfiles."
+            "Override policy behavior for targetUniqueBaselineProfiles enforcement. "
+            "By default, follows releaseEvidence.enforceTargetUniqueBaselineProfiles."
         ),
     )
     return parser.parse_args()
@@ -100,21 +100,21 @@ def load_policy(path: Path) -> ReleaseEvidencePolicy:
     if not isinstance(release_evidence, dict):
         raise ValueError("invalid policy: missing object field releaseEvidence")
 
-    target_unique_left_profiles = release_evidence.get("targetUniqueLeftProfiles")
-    if target_unique_left_profiles is not None and not isinstance(target_unique_left_profiles, int):
-        raise ValueError("invalid policy: targetUniqueLeftProfiles must be int when present")
-    enforce_target_unique_left_profiles = release_evidence.get("enforceTargetUniqueLeftProfiles")
-    if not isinstance(enforce_target_unique_left_profiles, bool):
-        raise ValueError("invalid policy: enforceTargetUniqueLeftProfiles must be boolean")
+    target_unique_baseline_profiles = release_evidence.get("targetUniqueBaselineProfiles")
+    if target_unique_baseline_profiles is not None and not isinstance(target_unique_baseline_profiles, int):
+        raise ValueError("invalid policy: targetUniqueBaselineProfiles must be int when present")
+    enforce_target_unique_baseline_profiles = release_evidence.get("enforceTargetUniqueBaselineProfiles")
+    if not isinstance(enforce_target_unique_baseline_profiles, bool):
+        raise ValueError("invalid policy: enforceTargetUniqueBaselineProfiles must be boolean")
 
     return ReleaseEvidencePolicy(
         min_reports=int(release_evidence.get("minReports", 0)),
         min_claimable_comparable_reports=int(release_evidence.get("minClaimableComparableReports", 0)),
         required_comparison_status=str(release_evidence.get("requiredComparisonStatus", "")),
         required_claim_status=str(release_evidence.get("requiredClaimStatus", "")),
-        min_unique_left_profiles=int(release_evidence.get("minUniqueLeftProfiles", 0)),
-        target_unique_left_profiles=target_unique_left_profiles,
-        enforce_target_unique_left_profiles=enforce_target_unique_left_profiles,
+        min_unique_baseline_profiles=int(release_evidence.get("minUniqueBaselineProfiles", 0)),
+        target_unique_baseline_profiles=target_unique_baseline_profiles,
+        enforce_target_unique_baseline_profiles=enforce_target_unique_baseline_profiles,
     )
 
 
@@ -190,7 +190,7 @@ def extract_profile_from_meta(meta: dict[str, Any]) -> str | None:
     return "|".join([vendor.strip(), api.strip(), family_value, driver.strip()])
 
 
-def extract_left_profile_ids(report_payload: dict[str, Any]) -> set[str]:
+def extract_baseline_profile_ids(report_payload: dict[str, Any]) -> set[str]:
     profile_ids: set[str] = set()
     workloads = report_payload.get("workloads")
     if not isinstance(workloads, list):
@@ -199,10 +199,10 @@ def extract_left_profile_ids(report_payload: dict[str, Any]) -> set[str]:
     for workload in workloads:
         if not isinstance(workload, dict):
             continue
-        left = workload.get("left")
-        if not isinstance(left, dict):
+        baseline = workload.get("baseline")
+        if not isinstance(baseline, dict):
             continue
-        samples = left.get("commandSamples")
+        samples = baseline.get("commandSamples")
         if not isinstance(samples, list):
             continue
         for sample in samples:
@@ -249,25 +249,25 @@ def main() -> int:
     if not policy.required_claim_status:
         print("FAIL: invalid policy requiredClaimStatus must be non-empty")
         return 1
-    if policy.min_unique_left_profiles <= 0:
+    if policy.min_unique_baseline_profiles <= 0:
         print(
-            "FAIL: invalid policy minUniqueLeftProfiles="
-            f"{policy.min_unique_left_profiles} expected > 0"
+            "FAIL: invalid policy minUniqueBaselineProfiles="
+            f"{policy.min_unique_baseline_profiles} expected > 0"
         )
         return 1
     if (
-        policy.target_unique_left_profiles is not None
-        and policy.target_unique_left_profiles < policy.min_unique_left_profiles
+        policy.target_unique_baseline_profiles is not None
+        and policy.target_unique_baseline_profiles < policy.min_unique_baseline_profiles
     ):
         print(
-            "FAIL: invalid policy targetUniqueLeftProfiles must be >= minUniqueLeftProfiles "
-            f"(target={policy.target_unique_left_profiles} min={policy.min_unique_left_profiles})"
+            "FAIL: invalid policy targetUniqueBaselineProfiles must be >= minUniqueBaselineProfiles "
+            f"(target={policy.target_unique_baseline_profiles} min={policy.min_unique_baseline_profiles})"
         )
         return 1
-    effective_enforce_target_unique_left_profiles = (
-        policy.enforce_target_unique_left_profiles
-        if args.enforce_target_unique_left_profiles is None
-        else bool(args.enforce_target_unique_left_profiles)
+    effective_enforce_target_unique_baseline_profiles = (
+        policy.enforce_target_unique_baseline_profiles
+        if args.enforce_target_unique_baseline_profiles is None
+        else bool(args.enforce_target_unique_baseline_profiles)
     )
 
     report_paths, collection_failures = collect_report_paths(args.summary, args.report)
@@ -276,7 +276,7 @@ def main() -> int:
     report_summaries: list[dict[str, Any]] = []
 
     qualifying_reports = 0
-    aggregated_left_profiles: set[str] = set()
+    aggregated_baseline_profiles: set[str] = set()
     for report_path in report_paths:
         if not report_path.exists():
             failures.append(f"missing comparison report: {report_path}")
@@ -296,16 +296,16 @@ def main() -> int:
         if status_pass:
             qualifying_reports += 1
 
-        left_profiles = extract_left_profile_ids(report_payload)
-        aggregated_left_profiles.update(left_profiles)
+        baseline_profiles = extract_baseline_profile_ids(report_payload)
+        aggregated_baseline_profiles.update(baseline_profiles)
         report_summaries.append(
             {
                 "path": str(report_path),
                 "comparisonStatus": comparison_status,
                 "claimStatus": claim_status,
                 "statusPass": status_pass,
-                "leftProfileCount": len(left_profiles),
-                "leftProfiles": sorted(left_profiles),
+                "baselineProfileCount": len(baseline_profiles),
+                "baselineProfiles": sorted(baseline_profiles),
             }
         )
 
@@ -319,20 +319,20 @@ def main() -> int:
             "insufficient claimable+comparable reports: "
             f"required>={policy.min_claimable_comparable_reports} actual={qualifying_reports}"
         )
-    if len(aggregated_left_profiles) < policy.min_unique_left_profiles:
+    if len(aggregated_baseline_profiles) < policy.min_unique_baseline_profiles:
         failures.append(
-            "insufficient unique left profiles for device/driver confidence: "
-            f"required>={policy.min_unique_left_profiles} actual={len(aggregated_left_profiles)}"
+            "insufficient unique baseline profiles for device/driver confidence: "
+            f"required>={policy.min_unique_baseline_profiles} actual={len(aggregated_baseline_profiles)}"
         )
     if (
-        policy.target_unique_left_profiles is not None
-        and len(aggregated_left_profiles) < policy.target_unique_left_profiles
+        policy.target_unique_baseline_profiles is not None
+        and len(aggregated_baseline_profiles) < policy.target_unique_baseline_profiles
     ):
         target_failure = (
-            "target unique left profile diversity not reached: "
-            f"target={policy.target_unique_left_profiles} actual={len(aggregated_left_profiles)}"
+            "target unique baseline profile diversity not reached: "
+            f"target={policy.target_unique_baseline_profiles} actual={len(aggregated_baseline_profiles)}"
         )
-        if effective_enforce_target_unique_left_profiles:
+        if effective_enforce_target_unique_baseline_profiles:
             failures.append(target_failure)
         else:
             warnings.append(target_failure)
@@ -357,15 +357,15 @@ def main() -> int:
             "minClaimableComparableReports": policy.min_claimable_comparable_reports,
             "requiredComparisonStatus": policy.required_comparison_status,
             "requiredClaimStatus": policy.required_claim_status,
-            "minUniqueLeftProfiles": policy.min_unique_left_profiles,
-            "targetUniqueLeftProfiles": policy.target_unique_left_profiles,
-            "enforceTargetUniqueLeftProfiles": policy.enforce_target_unique_left_profiles,
-            "effectiveEnforceTargetUniqueLeftProfiles": effective_enforce_target_unique_left_profiles,
+            "minUniqueBaselineProfiles": policy.min_unique_baseline_profiles,
+            "targetUniqueBaselineProfiles": policy.target_unique_baseline_profiles,
+            "enforceTargetUniqueBaselineProfiles": policy.enforce_target_unique_baseline_profiles,
+            "effectiveEnforceTargetUniqueBaselineProfiles": effective_enforce_target_unique_baseline_profiles,
         },
         "reportCount": len(report_paths),
         "qualifyingReportCount": qualifying_reports,
-        "uniqueLeftProfileCount": len(aggregated_left_profiles),
-        "uniqueLeftProfiles": sorted(aggregated_left_profiles),
+        "uniqueBaselineProfileCount": len(aggregated_baseline_profiles),
+        "uniqueBaselineProfiles": sorted(aggregated_baseline_profiles),
         "reports": report_summaries,
         "warnings": warnings,
         "failures": failures,
@@ -380,7 +380,7 @@ def main() -> int:
                 "policy": str(policy_path),
                 "summaryCount": len(args.summary),
                 "reportCount": len(args.report),
-                "effectiveEnforceTargetUniqueLeftProfiles": effective_enforce_target_unique_left_profiles,
+                "effectiveEnforceTargetUniqueBaselineProfiles": effective_enforce_target_unique_baseline_profiles,
             },
             "fullRun": True,
             "claimGateRan": False,

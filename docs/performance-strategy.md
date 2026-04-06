@@ -40,7 +40,7 @@ Recommended distribution-comparison stack for claim support:
 
 1. ECDF overlays
 2. bootstrap CI for delta `p50`/`p95`/`p99`
-3. superiority probability `P(left<right)`
+3. superiority probability `P(baseline<comparison)`
 4. KS statistic + p-value
 5. Wasserstein distance
 6. workload×percentile delta heatmap
@@ -64,34 +64,34 @@ Use two labels only:
 - for upload claims, use a single operation-scope timing method consistently and document it in workload/report artifacts
 5. operation-vs-wall sanity:
 - selected operation timing must not cover an implausibly tiny share of process wall on one side while the peer side shows materially higher operation-to-wall coverage
-- treat large left/right operation-to-wall coverage asymmetry as diagnostic until the timing scope is audited
+- treat large baseline/comparison operation-to-wall coverage asymmetry as diagnostic until the timing scope is audited
 6. no execution errors and no filter/adapter validity failures.
 7. structural work equivalence:
 - both sides must execute the same commands with non-zero work output. If one side reports 0 dispatches while the other reports >0, the comparison is invalid regardless of other metadata.
 - both sides must report non-trivial timing in the same phases (setup, encode, submit_wait). If one side reports zero across an entire phase while the other reports material cost, the timing scopes do not match and the result is diagnostic.
-- if LEFT setup_ns=0 for all rows AND RIGHT setup_ns>0 for a material fraction: flag as timing-instrumentation asymmetry.
-- if LEFT submit_wait_ns=0 for all rows AND RIGHT submit_wait_ns>0: flag as scope mismatch (LEFT is not measuring GPU submission cost).
+- if baseline setup_ns=0 for all workloads AND comparison setup_ns>0 for a material fraction: flag as timing-instrumentation asymmetry.
+- if baseline submit_wait_ns=0 for all workloads AND comparison submit_wait_ns>0: flag as scope mismatch (baseline is not measuring GPU submission cost).
 8. hardware-path equivalence:
 - both sides must perform structurally equivalent GPU operations. If one side takes a hardware-specific shortcut (e.g. UMA shared-memory memset) that bypasses operations the other side performs (e.g. staging buffer allocation + GPU blit copy), the delta measures architectural path choice on specific hardware, not implementation quality.
-- such workloads must carry `pathAsymmetry: true` and a transferability caveat. In strict Dawn-vs-Doe claim lanes they are blocking comparability failures until structural equivalence is restored.
+- such workloads must carry `pathAsymmetry: true` and a transferability caveat. In strict Dawn-vs-Doe claim surfaces they are blocking comparability failures until structural equivalence is restored.
 - the gap from path asymmetry would vanish or invert on hardware where the shortcut does not apply (e.g. discrete GPUs with separate VRAM).
 
 If any condition fails, classify the run as `diagnostic`.
 
 Harness support:
 
-- `compare_dawn_vs_doe.py --claimability local|release` enforces this contract and emits `claimStatus`.
+- `bench/cli.py compare --claimability local|release` enforces this contract and emits `claimStatus`.
 
-## Delta Sign Convention
+## Delta sign convention
 
-Performance delta percent is reported from left-runtime perspective with right baseline:
+Performance delta percent is reported from the compare report's baseline role:
 
-- formula: `((rightMs - leftMs) / rightMs) * 100`
-- positive: left runtime faster
-- negative: left runtime slower
+- formula: `((comparisonMs - baselineMs) / comparisonMs) * 100`
+- positive: baseline runtime faster
+- negative: baseline runtime slower
 - zero: parity
 
-For default Dawn-vs-Doe runs (`left=doe`, `right=dawn`):
+For the usual Doe-vs-Dawn compare report (`baseline=doe`, `comparison=dawn`):
 
 - positive: Doe faster than Dawn
 - negative: Doe slower than Dawn
@@ -121,10 +121,10 @@ For default Dawn-vs-Doe runs (`left=doe`, `right=dawn`):
 
 Investigation outcome for AMD Vulkan `upload_write_buffer_64kb`:
 
-1. `leftCommandRepeat=50`, `leftUploadSubmitEvery=50`, `leftIgnoreFirstOps=1` showed strong bimodality and negative tails in repeated runs.
-2. Switching `leftIgnoreFirstOps` changed deltas dramatically, confirming high measurement-policy sensitivity.
-3. Increasing `leftCommandRepeat` to 500 with explicit per-op normalization produced strong positive diagnostics, indicating heavy batching/setup sensitivity.
-4. Local follow-up on operation-scope upload submit-wait metric showed `leftUploadSubmitEvery=100` outperformed `50` for the 64KB contract (`repeat=500`) in `bench/out/upload_64kb_submit_wait_100_vs_50.local.json` (`executionSubmitWaitTotalNs`, `n=30` per side): `p50 +19.52%`, `p95 +14.21%`; AMD Vulkan claim-mode recheck is still required on adapter-backed host.
+1. `baselineCommandRepeat=50`, `baselineUploadSubmitEvery=50`, `baselineIgnoreFirstOps=1` showed strong bimodality and negative tails in repeated runs.
+2. Switching `baselineIgnoreFirstOps` changed deltas dramatically, confirming high measurement-policy sensitivity.
+3. Increasing `baselineCommandRepeat` to 500 with explicit per-op normalization produced strong positive diagnostics, indicating heavy batching/setup sensitivity.
+4. Local follow-up on operation-scope upload submit-wait metric showed `baselineUploadSubmitEvery=100` outperformed `50` for the 64KB contract (`repeat=500`) in `bench/out/upload_64kb_submit_wait_100_vs_50.local.json` (`executionSubmitWaitTotalNs`, `n=30` per side): `p50 +19.52%`, `p95 +14.21%`; AMD Vulkan claim-mode recheck is still required on adapter-backed host.
 
 Interpretation:
 
@@ -153,7 +153,7 @@ Target advantage is not "Zig magic"; it is lower hot-path complexity plus faster
 - hiding methodology knobs in code instead of workload/config
 - reporting deltas when execution/adapter/filter validity failed
 - claiming speed when one side reports 0 dispatches and the other dispatches >0
-- claiming speed from zero-phase asymmetry (e.g. LEFT submit_wait=0, RIGHT submit_wait=40ms — the "win" is that LEFT didn't measure GPU submission, not that it was faster)
+- claiming speed from zero-phase asymmetry (e.g. baseline submit_wait=0, comparison submit_wait=40ms — the "win" is that baseline did not measure GPU submission, not that it was faster)
 - claiming speed from hardware-path shortcuts (e.g. UMA memset vs staging+copy) without transferability caveats
 - treating zero setup_ns across all workloads as genuine when the comparison side reports material setup cost — this indicates an instrumentation gap
 - marking a workload `comparable: true` when the two sides perform structurally different GPU operations, even if methodology metadata matches

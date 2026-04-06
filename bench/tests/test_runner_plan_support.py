@@ -52,8 +52,8 @@ class _UploadWorkload(_Workload):
     commands_path = "bench/commands/upload_alpha.commands.json"
     plan_path = "bench/plans/upload_alpha.plan.json"
     extra_args: list[str] = []
-    left_upload_buffer_usage = "copy-dst"
-    left_upload_submit_every = 1
+    baseline_upload_buffer_usage = "copy-dst"
+    baseline_upload_submit_every = 1
 
 
 class RunnerPlanSupportTests(unittest.TestCase):
@@ -67,7 +67,9 @@ class RunnerPlanSupportTests(unittest.TestCase):
                 "operationCount": 2,
                 "dispatchCount": 1,
                 "bufferWriteCount": 1,
+                "bufferLoadCount": 1,
             },
+            "bufferLoadCount": 1,
         }
         with tempfile.TemporaryDirectory(prefix="doe-runner-plan-") as tmpdir:
             source = Path(tmpdir) / "alpha.plan.json"
@@ -77,13 +79,15 @@ class RunnerPlanSupportTests(unittest.TestCase):
                 str(source),
                 repeat=3,
                 out_dir=out_dir,
-                side_name="right",
+                side_name="comparison",
             )
             repeated = json.loads(Path(repeated_path).read_text(encoding="utf-8"))
             self.assertEqual(len(repeated["steps"]), 6)
             self.assertEqual(repeated["summary"]["stepCount"], 6)
             self.assertEqual(repeated["summary"]["dispatchCount"], 3)
             self.assertEqual(repeated["summary"]["bufferWriteCount"], 3)
+            self.assertEqual(repeated["summary"]["bufferLoadCount"], 3)
+            self.assertEqual(repeated["bufferLoadCount"], 3)
 
     def test_command_for_supports_plan_placeholder(self) -> None:
         command = command_for(
@@ -141,8 +145,8 @@ class RunnerPlanSupportTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "plan-backed workload requires plan executors"):
             enforce_strict_plan_boundary_symmetry(
                 workloads=[workload],
-                left_command_template="runtime/zig/zig-out/bin/doe-zig-runtime --commands {commands}",
-                right_command_template="runtime/zig/zig-out/bin/dawn-plan-executor --plan {plan}",
+                baseline_command_template="runtime/zig/zig-out/bin/doe-zig-runtime --commands {commands}",
+                comparison_command_template="runtime/zig/zig-out/bin/webgpu-plan-executor --plan {plan}",
                 comparability_mode="strict",
             )
 
@@ -238,12 +242,12 @@ class RunnerPlanSupportTests(unittest.TestCase):
                 tint_bin=str(tint_bin),
             )
 
-        right = result["right"]
-        self.assertEqual(right["stats"]["p50Ms"], 11.0)
-        self.assertEqual(right["startupBaselineStatsMs"]["p50Ms"], 4.0)
-        self.assertEqual(right["startupCorrectionMethod"], "subtract-trivial-shader-baseline-p50")
-        self.assertEqual(right["startupCorrectedStatsMs"]["p50Ms"], 7.0)
-        self.assertIn("startup-corrected", right["lastMeta"]["timingNote"])
+        comparison = result["comparison"]
+        self.assertEqual(comparison["stats"]["p50Ms"], 11.0)
+        self.assertEqual(comparison["startupBaselineStatsMs"]["p50Ms"], 4.0)
+        self.assertEqual(comparison["startupCorrectionMethod"], "subtract-trivial-shader-baseline-p50")
+        self.assertEqual(comparison["startupCorrectedStatsMs"]["p50Ms"], 7.0)
+        self.assertIn("startup-corrected", comparison["lastMeta"]["timingNote"])
 
 
 if __name__ == "__main__":

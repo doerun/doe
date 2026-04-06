@@ -66,7 +66,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--compare-config",
-        default="bench/native-compare/compare_dawn_vs_doe.config.apple.metal.compare-dev.json",
+        default="bench/native-compare/compare.config.apple.metal.compare-dev.json",
         help="Runtime compare config used for Metal sync/timing gate receipts.",
     )
     parser.add_argument(
@@ -421,7 +421,8 @@ def main() -> int:
             "apple-metal-compare-dev",
             [
                 sys.executable,
-                "bench/native-compare/compare_dawn_vs_doe.py",
+                "bench/cli.py",
+                "compare",
                 "--config",
                 args.compare_config,
                 "--out",

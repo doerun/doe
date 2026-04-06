@@ -292,15 +292,15 @@ def derive_overall_delta_p50(payload: dict[str, Any]) -> float | None:
         parsed = safe_float(delta.get("p50Approx"))
         if parsed is not None:
             return parsed
-    left = overall.get("left")
-    right = overall.get("right")
-    if not isinstance(left, dict) or not isinstance(right, dict):
+    baseline = overall.get("baseline")
+    comparison = overall.get("comparison")
+    if not isinstance(baseline, dict) or not isinstance(comparison, dict):
         return None
-    left_p50 = safe_float(left.get("p50Ms"))
-    right_p50 = safe_float(right.get("p50Ms"))
-    if left_p50 is None or right_p50 is None or right_p50 <= 0.0:
+    baseline_p50 = safe_float(baseline.get("p50Ms"))
+    comparison_p50 = safe_float(comparison.get("p50Ms"))
+    if baseline_p50 is None or comparison_p50 is None or comparison_p50 <= 0.0:
         return None
-    return ((right_p50 - left_p50) / right_p50) * 100.0
+    return ((comparison_p50 - baseline_p50) / comparison_p50) * 100.0
 
 
 def get_count(summary: Any, key: str) -> int:
@@ -464,20 +464,20 @@ def main() -> int:
         overall_p50_delta = derive_overall_delta_p50(payload)
         non_comparable_count = count_non_comparable(payload)
         non_claimable_count = count_non_claimable(payload)
-        left_name = side_name(payload, "left")
-        right_name = side_name(payload, "right")
+        baseline_name = side_name(payload, "baseline")
+        comparison_name = side_name(payload, "comparison")
 
-        left_profiles, left_samples = extract_side_profiles(payload, "left", meta_cache)
-        right_profiles, right_samples = extract_side_profiles(payload, "right", meta_cache)
+        baseline_profiles, baseline_samples = extract_side_profiles(payload, "baseline", meta_cache)
+        comparison_profiles, comparison_samples = extract_side_profiles(payload, "comparison", meta_cache)
 
-        if left_profiles and right_profiles:
-            left_apis = {profile.api for profile in left_profiles}
-            right_apis = {profile.api for profile in right_profiles}
-            if left_apis != right_apis:
+        if baseline_profiles and comparison_profiles:
+            baseline_apis = {profile.api for profile in baseline_profiles}
+            comparison_apis = {profile.api for profile in comparison_profiles}
+            if baseline_apis != comparison_apis:
                 skipped_files.append(
                     {
                         "path": str(source_path),
-                        "reason": f"API mismatch: left={left_apis}, right={right_apis}",
+                        "reason": f"API mismatch: baseline={baseline_apis}, comparison={comparison_apis}",
                     }
                 )
                 continue
@@ -494,19 +494,19 @@ def main() -> int:
             "nonComparableCount": non_comparable_count,
             "nonClaimableCount": non_claimable_count,
             "overallP50DeltaPercent": overall_p50_delta,
-            "leftName": left_name,
-            "rightName": right_name,
-            "leftProfiles": [profile.profile_id for profile in left_profiles],
-            "rightProfiles": [profile.profile_id for profile in right_profiles],
-            "leftProfileSampleCount": left_samples,
-            "rightProfileSampleCount": right_samples,
+            "baselineName": baseline_name,
+            "comparisonName": comparison_name,
+            "baselineProfiles": [profile.profile_id for profile in baseline_profiles],
+            "comparisonProfiles": [profile.profile_id for profile in comparison_profiles],
+            "baselineProfileSampleCount": baseline_samples,
+            "comparisonProfileSampleCount": comparison_samples,
         }
         report_entries.append(entry)
         matrix_agg.setdefault(matrix_id, []).append(entry)
 
         for side_label, runtime_name, side_profiles, sample_count in (
-            ("left", left_name, left_profiles, left_samples),
-            ("right", right_name, right_profiles, right_samples),
+            ("baseline", baseline_name, baseline_profiles, baseline_samples),
+            ("comparison", comparison_name, comparison_profiles, comparison_samples),
         ):
             per_profile_samples = sample_count // max(len(side_profiles), 1) if side_profiles else 0
             for profile in side_profiles:

@@ -407,6 +407,35 @@
       ]
     },
     {
+      "canonicalId": "compute_multistage_e2e_1048576",
+      "displayName": "Compute multistage E2E 1048576",
+      "domain": "compute",
+      "description": "Package-surface heavy end-to-end compute benchmark: six ping-pong integer-stress compute passes over 1048576 threads, one completion wait, and readback validation.",
+      "surfaces": [
+        {
+          "surface": "node_package",
+          "workloadIds": [
+            "compute_multistage_e2e_1048576"
+          ],
+          "implementationKind": "webgpu_factory"
+        },
+        {
+          "surface": "bun_package",
+          "workloadIds": [
+            "compute_multistage_e2e_1048576"
+          ],
+          "implementationKind": "webgpu_factory"
+        },
+        {
+          "surface": "deno_package",
+          "workloadIds": [
+            "compute_multistage_e2e_1048576"
+          ],
+          "implementationKind": "webgpu_factory"
+        }
+      ]
+    },
+    {
       "canonicalId": "compute_dispatch_simple",
       "displayName": "Compute dispatch simple",
       "domain": "compute",
@@ -575,6 +604,35 @@
           "surface": "deno_package",
           "workloadIds": [
             "pipeline_first_use_e2e"
+          ],
+          "implementationKind": "webgpu_factory"
+        }
+      ]
+    },
+    {
+      "canonicalId": "pipeline_multistage_first_use_e2e",
+      "displayName": "Pipeline multistage first use E2E",
+      "domain": "pipeline",
+      "description": "Package-surface heavy first-use pipeline benchmark: unique WGSL per timed iteration, six pipeline creations, six integer-stress compute passes, one completion wait, and readback validation.",
+      "surfaces": [
+        {
+          "surface": "node_package",
+          "workloadIds": [
+            "pipeline_multistage_first_use_e2e"
+          ],
+          "implementationKind": "webgpu_factory"
+        },
+        {
+          "surface": "bun_package",
+          "workloadIds": [
+            "pipeline_multistage_first_use_e2e"
+          ],
+          "implementationKind": "webgpu_factory"
+        },
+        {
+          "surface": "deno_package",
+          "workloadIds": [
+            "pipeline_multistage_first_use_e2e"
           ],
           "implementationKind": "webgpu_factory"
         }

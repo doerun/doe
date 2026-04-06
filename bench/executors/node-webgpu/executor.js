@@ -18,7 +18,7 @@ import {
 const REPO_ROOT = resolve(fileURLToPath(new URL('../../..', import.meta.url)));
 const FALLBACK_WEBGPU_PATH = join(
   REPO_ROOT,
-  'bench/package-compare/node/node_modules/webgpu/index.js',
+  'bench/vendor/node-webgpu-package/index.js',
 );
 const DOE_PACKAGE_PATH = join(
   REPO_ROOT,
@@ -26,7 +26,7 @@ const DOE_PACKAGE_PATH = join(
 );
 const FALLBACK_BUN_WEBGPU_PATH = join(
   REPO_ROOT,
-  'bench/package-compare/bun/node_modules/bun-webgpu/index.js',
+  'bench/vendor/bun-webgpu-package/index.js',
 );
 const DOE_BUN_PACKAGE_PATH = join(
   REPO_ROOT,
@@ -39,10 +39,10 @@ const PACKAGE_EXECUTION_POLICY_PATH = join(
 
 const PROVIDERS_BY_RUNTIME = Object.freeze({
   node: Object.freeze({
-    dawn: {
-      provider: 'dawn',
-      providerName: 'webgpu',
-      executionBackend: 'dawn_node_webgpu',
+    'node-webgpu': {
+      provider: 'node-webgpu',
+      providerName: 'node-webgpu',
+      executionBackend: 'node_webgpu_package',
       loader: 'node-dawn',
     },
     doe: {
@@ -107,7 +107,7 @@ function createDebugLogger(enabled) {
       return;
     }
     process.stderr.write(`${JSON.stringify({
-      kind: 'node_webgpu_debug',
+      kind: 'package_webgpu_debug',
       phase,
       ...fields,
     })}\n`);
@@ -303,7 +303,7 @@ function fallbackPlanSummary({ workloadId, planPath }) {
     planSummary: {
       schemaVersion: 1,
       planId,
-      executorId: 'node-webgpu',
+      executorId: 'node_webgpu_package',
       workloadId: workloadId || '',
       domain: 'unknown',
       comparable: false,

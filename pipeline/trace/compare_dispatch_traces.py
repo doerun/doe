@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Compare two NDJSON trace streams row-by-row using the decision envelope contract.
+Compare two NDJSON trace streams entry-by-entry using the decision envelope contract.
 """
 
 from __future__ import annotations
@@ -43,31 +43,36 @@ def pick_fields(row: dict[str, Any]) -> dict[str, Any]:
     return {k: row.get(k) for k in TRACE_FIELDS if k in row}
 
 
-def validate_sequences(left: list[dict[str, Any]], right: list[dict[str, Any]]) -> list[str]:
+def validate_sequences(
+    baseline: list[dict[str, Any]],
+    comparison: list[dict[str, Any]],
+) -> list[str]:
     errors: list[str] = []
-    left_len = len(left)
-    right_len = len(right)
-    if left_len != right_len:
-        errors.append(f"row_count mismatch: left={left_len} right={right_len}")
+    baseline_len = len(baseline)
+    comparison_len = len(comparison)
+    if baseline_len != comparison_len:
+        errors.append(
+            f"entry_count mismatch: baseline={baseline_len} comparison={comparison_len}"
+        )
 
-    checked = min(left_len, right_len)
+    checked = min(baseline_len, comparison_len)
     for i in range(checked):
-        a = pick_fields(left[i])
-        b = pick_fields(right[i])
+        a = pick_fields(baseline[i])
+        b = pick_fields(comparison[i])
         if a != b:
-            errors.append(f"row[{i}] diff\nleft={a}\nright={b}")
+            errors.append(f"entry[{i}] diff\nbaseline={a}\ncomparison={b}")
     return errors
 
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--left", required=True, type=Path)
-    parser.add_argument("--right", required=True, type=Path)
+    parser.add_argument("--baseline", required=True, type=Path)
+    parser.add_argument("--comparison", required=True, type=Path)
     args = parser.parse_args()
 
-    left = read_ndjson(args.left)
-    right = read_ndjson(args.right)
-    diffs = validate_sequences(left, right)
+    baseline = read_ndjson(args.baseline)
+    comparison = read_ndjson(args.comparison)
+    diffs = validate_sequences(baseline, comparison)
     if diffs:
         print("FAIL")
         for item in diffs:

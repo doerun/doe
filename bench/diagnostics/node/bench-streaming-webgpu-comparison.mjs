@@ -702,7 +702,7 @@ async function main() {
       ? 256 * Float32Array.BYTES_PER_ELEMENT
       : workload.outputBytes;
   console.log(
-    `Versions: doe-gpu 0.3.4, webgpu 0.3.8`
+    `Versions: doe-gpu 0.3.4, webgpu 0.4.0`
   );
   console.log(
     `Workload: streaming affine transform elements=${elements.toLocaleString()} rounds=${rounds} iterations=${iterations} warmup=${warmupRuns}`

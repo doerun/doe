@@ -8,6 +8,7 @@ pub const BackendLane = enum {
     metal_doe_release,
     metal_dawn_release,
     metal_webkit_release,
+    metal_webkit_comparable,
     vulkan_doe_app,
     vulkan_doe_comparable,
     vulkan_doe_release,
@@ -55,6 +56,7 @@ pub fn lane_name(lane: BackendLane) []const u8 {
         .metal_doe_release => "metal_doe_release",
         .metal_dawn_release => "metal_dawn_release",
         .metal_webkit_release => "metal_webkit_release",
+        .metal_webkit_comparable => "metal_webkit_comparable",
         .vulkan_doe_app => "vulkan_doe_app",
         .vulkan_doe_comparable => "vulkan_doe_comparable",
         .vulkan_doe_release => "vulkan_doe_release",
@@ -74,6 +76,7 @@ pub fn parse_lane(raw: []const u8) ?BackendLane {
     if (std.ascii.eqlIgnoreCase(raw, "metal_doe_release") or std.ascii.eqlIgnoreCase(raw, "metal_doe_release")) return .metal_doe_release;
     if (std.ascii.eqlIgnoreCase(raw, "metal_dawn_release")) return .metal_dawn_release;
     if (std.ascii.eqlIgnoreCase(raw, "metal_webkit_release")) return .metal_webkit_release;
+    if (std.ascii.eqlIgnoreCase(raw, "metal_webkit_comparable")) return .metal_webkit_comparable;
     if (std.ascii.eqlIgnoreCase(raw, "vulkan_doe_app") or std.ascii.eqlIgnoreCase(raw, "vulkan_doe_app")) return .vulkan_doe_app;
     if (std.ascii.eqlIgnoreCase(raw, "vulkan_doe_comparable") or std.ascii.eqlIgnoreCase(raw, "vulkan_doe_comparable")) return .vulkan_doe_comparable;
     if (std.ascii.eqlIgnoreCase(raw, "vulkan_doe_release") or std.ascii.eqlIgnoreCase(raw, "vulkan_doe_release")) return .vulkan_doe_release;
@@ -226,6 +229,14 @@ pub fn default_policy_for_lane(lane: BackendLane) SelectionPolicy {
             .policy_hash = DEFAULT_POLICY_HASH,
             .upload_path_policy = .allow_mapped_shortcuts,
         },
+        .metal_webkit_comparable => .{
+            .lane = lane,
+            .default_backend = .webkit_delegate,
+            .allow_fallback = false,
+            .strict_no_fallback = true,
+            .policy_hash = DEFAULT_POLICY_HASH,
+            .upload_path_policy = .staged_copy_only,
+        },
         .vulkan_doe_app => .{
             .lane = lane,
             .default_backend = .doe_vulkan,
@@ -295,6 +306,7 @@ fn strict_staged_upload_policy_required(lane: BackendLane) bool {
     return switch (lane) {
         .metal_doe_comparable,
         .metal_doe_release,
+        .metal_webkit_comparable,
         .vulkan_doe_comparable,
         .vulkan_doe_release,
         .d3d12_doe_comparable,

@@ -35,11 +35,11 @@ class ExecutorRegistryTests(unittest.TestCase):
         self.assertEqual(resolve_executor_boundary("doe_direct_plan_metal"), "plan")
 
     def test_resolves_node_webgpu_executor(self) -> None:
-        template = resolve_executor_command_template("dawn_node_webgpu")
+        template = resolve_executor_command_template("node_webgpu_package")
         self.assertIn("run-node-webgpu-plan.js", template)
         self.assertIn("--plan {plan}", template)
-        self.assertIn("--provider dawn", template)
-        self.assertEqual(resolve_executor_boundary("dawn_node_webgpu"), "plan")
+        self.assertIn("--provider node-webgpu", template)
+        self.assertEqual(resolve_executor_boundary("node_webgpu_package"), "plan")
 
     def test_resolves_doe_node_webgpu_executor(self) -> None:
         template = resolve_executor_command_template("doe_node_webgpu")
@@ -49,13 +49,13 @@ class ExecutorRegistryTests(unittest.TestCase):
         self.assertEqual(resolve_executor_boundary("doe_node_webgpu"), "plan")
 
     def test_resolves_prepared_node_webgpu_executors(self) -> None:
-        dawn_template = resolve_executor_command_template("dawn_node_webgpu_prepared")
+        dawn_template = resolve_executor_command_template("node_webgpu_package_prepared")
         doe_template = resolve_executor_command_template("doe_node_webgpu_prepared")
-        self.assertIn("--provider dawn", dawn_template)
+        self.assertIn("--provider node-webgpu", dawn_template)
         self.assertIn("--provider doe", doe_template)
         self.assertIn("--prepared-session", dawn_template)
         self.assertIn("--prepared-session", doe_template)
-        self.assertEqual(resolve_executor_boundary("dawn_node_webgpu_prepared"), "plan")
+        self.assertEqual(resolve_executor_boundary("node_webgpu_package_prepared"), "plan")
         self.assertEqual(resolve_executor_boundary("doe_node_webgpu_prepared"), "plan")
 
     def test_resolves_bun_webgpu_executors(self) -> None:
@@ -80,7 +80,7 @@ class ExecutorRegistryTests(unittest.TestCase):
 
     def test_resolves_direct_dawn_executor(self) -> None:
         template = resolve_executor_command_template("dawn_direct_metal")
-        self.assertIn("dawn-plan-executor", template)
+        self.assertIn("webgpu-plan-executor", template)
         self.assertIn("--plan {plan}", template)
         self.assertIn("--trace-meta {trace_meta}", template)
         self.assertEqual(resolve_executor_boundary("dawn_direct_metal"), "plan")

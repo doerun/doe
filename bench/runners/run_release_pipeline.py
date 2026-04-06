@@ -26,8 +26,8 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--config",
-        default="bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.release.json",
-        help="compare_dawn_vs_doe.py config path for this pipeline run.",
+        default="bench/native-compare/compare.config.amd.vulkan.release.json",
+        help="Compare-lane config path for this pipeline run.",
     )
     parser.add_argument(
         "--report",
@@ -320,7 +320,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--skip-compare",
         action="store_true",
-        help="Skip compare_dawn_vs_doe.py execution.",
+        help="Skip compare-lane execution.",
     )
     parser.add_argument(
         "--skip-gates",
@@ -683,7 +683,7 @@ def main() -> int:
     preflight = runners_dir / "preflight_bench_host.py"
     preflight_metal = runners_dir / "preflight_metal_host.py"
     preflight_vulkan = runners_dir / "preflight_vulkan_host.py"
-    compare = compare_dir / "compare_dawn_vs_doe.py"
+    compare = BENCH_ROOT / "cli.py"
     visualize = compare_dir / "visualize_dawn_vs_doe.py"
     smoke_verify = gates_dir / "verify_smoke_gpu_usage.py"
     gates = runners_dir / "run_blocking_gates.py"
@@ -731,6 +731,7 @@ def main() -> int:
             compare_command = [
                 python_exe,
                 str(compare),
+                "compare",
                 "--config",
                 str(config_path),
                 "--out",

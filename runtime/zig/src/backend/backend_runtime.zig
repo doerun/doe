@@ -79,6 +79,10 @@ pub const BackendRuntime = struct {
         return try self.backend.execute_command(command);
     }
 
+    pub fn execute_buffer_write_bytes(self: *BackendRuntime, handle: u64, offset: u64, buffer_size: u64, data: []const u8) !runtime_types.NativeExecutionResult {
+        return try self.backend.execute_buffer_write_bytes(handle, offset, buffer_size, data);
+    }
+
     pub fn set_upload_behavior(self: *BackendRuntime, mode: runtime_types.UploadBufferUsageMode, submit_every: u32) void {
         self.backend.set_upload_behavior(mode, submit_every);
     }

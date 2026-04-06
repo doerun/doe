@@ -1,4 +1,4 @@
-"""Runner helpers for compare_dawn_vs_doe."""
+"""Runner helpers for the compare lane."""
 
 import json
 import subprocess
@@ -10,13 +10,13 @@ import shutil
 from pathlib import Path
 from typing import Any
 
+from native_compare_modules import compilation_runner as compilation_runner_mod
+from bench.lib import synthetic_assets as synthetic_assets_mod
 from native_compare_modules.reporting import (
     NS_PER_MS,
-    median_sample,
     parse_int,
     safe_float,
     safe_int,
-    subtract_baseline_ms,
 )
 from native_compare_modules.timing_selection import (
     pick_measured_timing_ms,
@@ -25,10 +25,41 @@ from native_compare_modules.timing_selection import (
 
 MAX_RSS_MARKER = "__DOE_MAXRSS_KB__:"
 TRACE_META_PROCESS_WALL_SOURCE = "trace-meta-process-wall"
-_TINT_STARTUP_BASELINE_CACHE: dict[tuple[str, str, int, int], list[float]] = {}
-_TINT_STARTUP_BASELINE_WGSL = """@compute @workgroup_size(1)
-fn main() {}
-"""
+
+_parse_compilation_ndjson = compilation_runner_mod._parse_compilation_ndjson
+_tint_compile_samples = compilation_runner_mod._tint_compile_samples
+_tint_startup_baseline_samples = compilation_runner_mod._tint_startup_baseline_samples
+
+
+def _with_compilation_runner_hooks(callback: Any, *args: Any, **kwargs: Any) -> dict[str, Any]:
+    original_parse = compilation_runner_mod._parse_compilation_ndjson
+    original_compile = compilation_runner_mod._tint_compile_samples
+    original_startup = compilation_runner_mod._tint_startup_baseline_samples
+    compilation_runner_mod._parse_compilation_ndjson = _parse_compilation_ndjson
+    compilation_runner_mod._tint_compile_samples = _tint_compile_samples
+    compilation_runner_mod._tint_startup_baseline_samples = _tint_startup_baseline_samples
+    try:
+        return callback(*args, **kwargs)
+    finally:
+        compilation_runner_mod._parse_compilation_ndjson = original_parse
+        compilation_runner_mod._tint_compile_samples = original_compile
+        compilation_runner_mod._tint_startup_baseline_samples = original_startup
+
+
+def run_compilation_product_workload(*args: Any, **kwargs: Any) -> dict[str, Any]:
+    return _with_compilation_runner_hooks(
+        compilation_runner_mod.run_compilation_product_workload,
+        *args,
+        **kwargs,
+    )
+
+
+def run_compilation_workload(*args: Any, **kwargs: Any) -> dict[str, Any]:
+    return _with_compilation_runner_hooks(
+        compilation_runner_mod.run_compilation_workload,
+        *args,
+        **kwargs,
+    )
 
 def file_sha256(path: Path) -> str:
     import hashlib
@@ -391,12 +422,12 @@ def materialize_repeated_plan(
     repeated[list_field] = raw_commands * repeat
     if isinstance(repeated.get("summary"), dict):
         summary = dict(repeated["summary"])
-        for key in ("stepCount", "operationCount", "dispatchCount", "bufferWriteCount"):
+        for key in ("stepCount", "operationCount", "dispatchCount", "bufferWriteCount", "bufferLoadCount"):
             value = summary.get(key)
             if isinstance(value, int) and value >= 0:
                 summary[key] = value * repeat
         repeated["summary"] = summary
-    for key in ("commandCount", "dispatchCount", "bufferWriteCount"):
+    for key in ("commandCount", "dispatchCount", "bufferWriteCount", "bufferLoadCount"):
         value = repeated.get(key)
         if isinstance(value, int) and value >= 0:
             repeated[key] = value * repeat
@@ -657,6 +688,8 @@ def run_workload(
         out_dir=out_dir,
         side_name=name,
     )
+    if plan_path:
+        synthetic_assets_mod.ensure_plan_assets(Path(plan_path))
     timings: list[float] = []
     run_records: list[dict[str, Any]] = []
     sample_meta: dict[str, Any] = {}
@@ -921,213 +954,6 @@ def run_workload(
         "timingMetricsRawStatsMs": reporting_mod.summarize_timing_metric_stats(run_records, "timingMetricsRawMs"),
         "timingMetricsNormalizedStatsMs": reporting_mod.summarize_timing_metric_stats(run_records, "timingMetricsNormalizedMs"),
     }
-
-
-# ============================================================
-# Compilation runner
-# ============================================================
-
-VALID_COMPILATION_TARGETS = {"msl", "hlsl", "spirv"}
-TINT_FORMAT_MAP = {"msl": "msl", "hlsl": "hlsl", "spirv": "spv"}
-
-
-def _parse_compilation_ndjson(path: Path, shader_name: str) -> dict[str, Any]:
-    """Extract a single shader's compilation_bench record from NDJSON output."""
-    if not path.exists():
-        return {}
-    for line in path.read_text(encoding="utf-8").splitlines():
-        line = line.strip()
-        if not line:
-            continue
-        try:
-            record = json.loads(line)
-        except json.JSONDecodeError:
-            continue
-        if record.get("kind") == "compilation_bench" and record.get("shader") == shader_name:
-            return record
-    return {}
-
-
-def _tint_compile_samples(
-    tint_bin: Path,
-    shader_path: Path,
-    target: str,
-    iterations: int,
-    warmup: int,
-) -> list[float]:
-    """Time Tint compilation of a single shader, return list of timing samples in ms."""
-    tint_format = TINT_FORMAT_MAP.get(target, target)
-    total_runs = warmup + iterations
-    samples: list[float] = []
-
-    for i in range(total_runs):
-        start = time.perf_counter()
-        proc = subprocess.run(
-            [str(tint_bin), f"--format={tint_format}", str(shader_path)],
-            capture_output=True,
-        )
-        elapsed_ms = (time.perf_counter() - start) * 1000.0
-
-        if proc.returncode != 0:
-            raise RuntimeError(
-                f"tint compilation failed for {shader_path.name}: "
-                f"{proc.stderr.decode('utf-8', errors='replace')[:300]}"
-            )
-        if i >= warmup:
-            samples.append(elapsed_ms)
-
-    return samples
-
-
-def _tint_startup_baseline_samples(
-    tint_bin: Path,
-    target: str,
-    iterations: int,
-    warmup: int,
-) -> list[float]:
-    cache_key = (str(tint_bin), target, iterations, warmup)
-    cached = _TINT_STARTUP_BASELINE_CACHE.get(cache_key)
-    if cached is not None:
-        return list(cached)
-
-    with tempfile.TemporaryDirectory(prefix="doe-tint-startup-") as tmpdir:
-        shader_path = Path(tmpdir) / "startup-baseline.wgsl"
-        shader_path.write_text(_TINT_STARTUP_BASELINE_WGSL, encoding="utf-8")
-        samples = _tint_compile_samples(tint_bin, shader_path, target, iterations, warmup)
-    _TINT_STARTUP_BASELINE_CACHE[cache_key] = list(samples)
-    return list(samples)
-
-
-def run_compilation_workload(
-    workload: Any,
-    iterations: int,
-    warmup: int,
-    out_dir: Path,
-    doe_compilation_bin: str,
-    tint_bin: str,
-) -> dict[str, Any]:
-    """Run compilation benchmark for a single shader: Doe vs Tint.
-
-    Returns the same shape as run_workload() so the compare harness can
-    consume it uniformly.
-    """
-    out_dir.mkdir(parents=True, exist_ok=True)
-
-    shader_path = Path(workload.shader_path)
-    shader_name = workload.id
-    shader_tier = "inference" if "/bench/inference-pipeline/kernels/" in str(shader_path).replace("\\", "/") else "external"
-    target = workload.compilation_target or "msl"
-
-    if target not in VALID_COMPILATION_TARGETS:
-        raise ValueError(
-            f"invalid compilation target {target!r} for workload {workload.id}: "
-            f"expected one of {sorted(VALID_COMPILATION_TARGETS)}"
-        )
-
-    # --- Left: Doe compilation bench ---
-    doe_out = out_dir / "left.compilation.ndjson"
-    doe_bin_path = Path(doe_compilation_bin)
-    if not doe_bin_path.exists():
-        raise RuntimeError(
-            f"Doe compilation binary not found: {doe_compilation_bin}. "
-            "Build with: cd runtime/zig && zig build bench-compilation"
-        )
-    doe_cmd = [
-        str(doe_bin_path),
-        "--target", target,
-        "--iterations", str(iterations),
-        "--warmup", str(warmup),
-        "--shader-path", str(shader_path),
-        "--shader-name", shader_name,
-        "--shader-tier", shader_tier,
-        "--out", str(doe_out),
-    ]
-    subprocess.run(doe_cmd, check=True)
-    doe_record = _parse_compilation_ndjson(doe_out, shader_name)
-    doe_p50_ms = float(doe_record.get("p50_ns", 0)) / 1_000_000.0
-
-    # --- Right: Tint ---
-    tint_bin_path = Path(tint_bin)
-    if not tint_bin_path.exists():
-        raise RuntimeError(
-            f"Tint binary not found: {tint_bin}. "
-            "Build Dawn in Release mode and place tint at the configured path."
-        )
-    tint_samples = _tint_compile_samples(
-        tint_bin_path, shader_path, target, iterations, warmup,
-    )
-    tint_startup_baseline_samples = _tint_startup_baseline_samples(
-        tint_bin_path,
-        target,
-        iterations,
-        warmup,
-    )
-    tint_startup_baseline_stats = reporting_mod.format_stats(tint_startup_baseline_samples)
-    tint_startup_baseline_p50_ms = median_sample(tint_startup_baseline_samples)
-    tint_startup_corrected_samples = subtract_baseline_ms(
-        tint_samples,
-        tint_startup_baseline_p50_ms,
-    )
-    tint_startup_corrected_stats = reporting_mod.format_stats(tint_startup_corrected_samples)
-
-    # Build trace meta compatible with the harness expectations
-    doe_trace_meta = {
-        "runnerType": "compilation",
-        "compiler": "doe_wgsl",
-        "shader": shader_name,
-        "target": target,
-        "p50_ns": doe_record.get("p50_ns", 0),
-        "p95_ns": doe_record.get("p95_ns", 0),
-        "p99_ns": doe_record.get("p99_ns", 0),
-        "bytesOut": doe_record.get("bytesOut", 0),
-        "executionDispatchCount": 1,
-        "executionRowCount": 1,
-        "executionSuccessCount": 1,
-    }
-
-    tint_trace_meta = {
-        "runnerType": "compilation",
-        "compiler": "tint",
-        "shader": shader_name,
-        "target": target,
-        "timingNote": (
-            "process-level timing includes tint startup overhead; "
-            "compare report publishes raw process-wall stats plus a startup-corrected "
-            "view that subtracts the trivial-shader baseline p50 from each raw sample"
-        ),
-        "executionDispatchCount": 1,
-        "executionRowCount": 1,
-        "executionSuccessCount": 1,
-    }
-
-    # Write trace meta files for comparability module consumption
-    left_meta_path = out_dir / "left.meta.json"
-    right_meta_path = out_dir / "right.meta.json"
-    left_meta_path.write_text(json.dumps(doe_trace_meta, separators=(",", ":")) + "\n", encoding="utf-8")
-    right_meta_path.write_text(json.dumps(tint_trace_meta, separators=(",", ":")) + "\n", encoding="utf-8")
-
-    return {
-        "left": {
-            "commandSamples": [],
-            "stats": reporting_mod.format_stats([doe_p50_ms]),
-            "timingsMs": [doe_p50_ms],
-            "lastMeta": doe_trace_meta,
-            "timingSources": ["compilation-bench-in-process"],
-            "timingClasses": ["operation"],
-        },
-        "right": {
-            "commandSamples": [],
-            "stats": reporting_mod.format_stats(tint_samples),
-            "timingsMs": tint_samples,
-            "lastMeta": tint_trace_meta,
-            "timingSources": ["compilation-process-wall"],
-            "timingClasses": ["process-wall"],
-            "startupBaselineStatsMs": tint_startup_baseline_stats,
-            "startupCorrectionMethod": "subtract-trivial-shader-baseline-p50",
-            "startupCorrectedStatsMs": tint_startup_corrected_stats,
-        },
-    }
-
 
 # ============================================================
 # JS pipeline runner

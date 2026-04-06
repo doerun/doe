@@ -26,12 +26,12 @@ The npm package does not ship compare, bench, or release pipeline CLIs.
 
 These are repo-only contributor/operator surfaces:
 
-- [`bench/native-compare/compare_dawn_vs_doe.py`](../bench/native-compare/compare_dawn_vs_doe.py)
+- [`bench/cli.py`](../bench/cli.py)
 - [`bench/runners/run_release_pipeline.py`](../bench/runners/run_release_pipeline.py)
 - [`bench/runners/run_blocking_gates.py`](../bench/runners/run_blocking_gates.py)
 - [`bench/tools/generate_backend_workloads.py`](../bench/tools/generate_backend_workloads.py)
 - [`runtime/zig/README.md`](../runtime/zig/README.md) and `doe-zig-runtime`
-- browser lane scripts under [`browser/chromium`](../browser/chromium/README.md)
+- browser benchmark scripts under [`browser/chromium`](../browser/chromium/README.md)
 
 Repo-only directories should not be treated as public product commitments unless
 `config/tool-surfaces.json` marks them `audience=public`.

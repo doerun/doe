@@ -4,14 +4,15 @@
   "workloadId": "inference_gemma3_270m_literal_prefill_32tok_decode_1tok",
   "irPath": "bench/ir/gemma3_270m_literal.json",
   "irScenario": "inference_gemma3_270m_literal_prefill_32tok_decode_1tok",
-  "description": "Minimal Doe-owned Gemma-3-270M literal-production-style inference unit with a 32-token prefill followed by a single decode token. The kernels and entry points track the production path more closely than the shaped row, while dense synthetic buffers stand in for real q4k and f16kv payloads.",
+  "description": "Minimal Doe-owned Gemma-3-270M literal-production-style inference unit with a 32-token prefill followed by a single decode token. The kernels and entry points track the production path more closely than the shaped row, while deterministic cache-backed non-zero synthetic readonly buffers stand in for real q4k and f16kv payloads and are timed as device loads.",
   "planPath": "bench/plans/generated/inference_gemma3_270m_literal_prefill_32tok_decode_1tok.plan.json",
   "commandsPath": "bench/plans/generated/compat/inference_gemma3_270m_literal_prefill_32tok_decode_1tok_commands.json",
-  "commandCount": 49,
+  "commandCount": 69,
   "bufferWriteCount": 13,
+  "bufferLoadCount": 20,
   "dispatchCount": 36,
-  "sourceIrSha256": "c036703134803c34304bf61a7a4a3c35d7581a1c8e676136620b78cca1958b15",
-  "compatibilityCommandsSha256": "cf5990abd008017eee0b91ff68f6c3de8058812fa398451d8f6c2a19fe3bef4d",
+  "sourceIrSha256": "54c7ebb6e28e42e4b8d2f5df764c285ce40e3c55c6e17a894d0908b487ca5dad",
+  "compatibilityCommandsSha256": "2789f94f8d8e60df29123e4dd691290ca57ffb581899ae0bbaa19b013ef578cd",
   "commands": [
     {
       "kind": "buffer_write",
@@ -119,6 +120,19 @@
       ]
     },
     {
+      "kind": "buffer_load",
+      "handle": 2002,
+      "offset": 0,
+      "bufferSize": 25165824,
+      "byteLength": 25165824,
+      "cacheNamespace": "gemma3_270m_literal",
+      "cacheKey": "2b53f010a1c33213251a0f5285a628b0dfc27771463892c90ff48e5100487627",
+      "assetKey": "inference_gemma3_270m_literal_prefill_32tok_decode_1tok:handle-2002",
+      "generator": "splitmix64_f16_nonzero_v1",
+      "seed": 2177342782468691250,
+      "scale": 0.125
+    },
+    {
       "kind": "kernel_dispatch",
       "kernel": "gather.wgsl",
       "x": 6,
@@ -163,6 +177,19 @@
           "visibility": "compute"
         }
       ]
+    },
+    {
+      "kind": "buffer_load",
+      "handle": 2004,
+      "offset": 0,
+      "bufferSize": 6144,
+      "byteLength": 6144,
+      "cacheNamespace": "gemma3_270m_literal",
+      "cacheKey": "41edac3e8b7261f051cfd883e9b3658c44292e310f8037b77909cbf556bed274",
+      "assetKey": "inference_gemma3_270m_literal_prefill_32tok_decode_1tok:handle-2004",
+      "generator": "splitmix64_f16_nonzero_v1",
+      "seed": 2177342782468691248,
+      "scale": 0.125
     },
     {
       "kind": "kernel_dispatch",
@@ -212,6 +239,19 @@
       "entryPoint": "main_weight_offset"
     },
     {
+      "kind": "buffer_load",
+      "handle": 2005,
+      "offset": 0,
+      "bufferSize": 9437184,
+      "byteLength": 9437184,
+      "cacheNamespace": "gemma3_270m_literal",
+      "cacheKey": "248c4efd5dfd1dc6b62592f51398372981d15441989a7f04b2fd7fe9ca336fa2",
+      "assetKey": "inference_gemma3_270m_literal_prefill_32tok_decode_1tok:handle-2005",
+      "generator": "splitmix64_f16_nonzero_v1",
+      "seed": 2177342782468691247,
+      "scale": 0.125
+    },
+    {
       "kind": "kernel_dispatch",
       "kernel": "matmul_f16w_f32a_tiled.wgsl",
       "x": 24,
@@ -257,6 +297,19 @@
         }
       ],
       "entryPoint": "main"
+    },
+    {
+      "kind": "buffer_load",
+      "handle": 2006,
+      "offset": 0,
+      "bufferSize": 9437184,
+      "byteLength": 9437184,
+      "cacheNamespace": "gemma3_270m_literal",
+      "cacheKey": "4d4a7cedb61cf77a33f19eadba4f7f263c55507cdcf796a20af14eb0f4b1cf14",
+      "assetKey": "inference_gemma3_270m_literal_prefill_32tok_decode_1tok:handle-2006",
+      "generator": "splitmix64_f16_nonzero_v1",
+      "seed": 2177342782468691246,
+      "scale": 0.125
     },
     {
       "kind": "kernel_dispatch",
@@ -306,6 +359,19 @@
       "entryPoint": "main"
     },
     {
+      "kind": "buffer_load",
+      "handle": 2007,
+      "offset": 0,
+      "bufferSize": 9437184,
+      "byteLength": 9437184,
+      "cacheNamespace": "gemma3_270m_literal",
+      "cacheKey": "ba4494d3b516da0d6c55fb4d3da232dda9c539edc1b7dceb2b16979efa3499fc",
+      "assetKey": "inference_gemma3_270m_literal_prefill_32tok_decode_1tok:handle-2007",
+      "generator": "splitmix64_f16_nonzero_v1",
+      "seed": 2177342782468691245,
+      "scale": 0.125
+    },
+    {
       "kind": "kernel_dispatch",
       "kernel": "matmul_f16w_f32a_tiled.wgsl",
       "x": 24,
@@ -351,6 +417,19 @@
         }
       ],
       "entryPoint": "main"
+    },
+    {
+      "kind": "buffer_load",
+      "handle": 2011,
+      "offset": 0,
+      "bufferSize": 16384,
+      "byteLength": 16384,
+      "cacheNamespace": "gemma3_270m_literal",
+      "cacheKey": "d67f6ef05475f9c94af031bccf0053b9f1607073d2a91034f2765ff79a5a22b5",
+      "assetKey": "inference_gemma3_270m_literal_prefill_32tok_decode_1tok:handle-2011",
+      "generator": "splitmix64_f16_nonzero_v1",
+      "seed": 2177342782468691241,
+      "scale": 0.125
     },
     {
       "kind": "kernel_dispatch",
@@ -481,6 +560,19 @@
         }
       ],
       "entryPoint": "main"
+    },
+    {
+      "kind": "buffer_load",
+      "handle": 2013,
+      "offset": 0,
+      "bufferSize": 9437184,
+      "byteLength": 9437184,
+      "cacheNamespace": "gemma3_270m_literal",
+      "cacheKey": "5ee84945a70fb0767ff30020a8ad8a35135297d43349fe1de260d72c53bc6c7a",
+      "assetKey": "inference_gemma3_270m_literal_prefill_32tok_decode_1tok:handle-2013",
+      "generator": "splitmix64_f16_nonzero_v1",
+      "seed": 2177342782468691239,
+      "scale": 0.125
     },
     {
       "kind": "kernel_dispatch",
@@ -614,6 +706,19 @@
       "entryPoint": "main_weight_offset"
     },
     {
+      "kind": "buffer_load",
+      "handle": 2016,
+      "offset": 0,
+      "bufferSize": 9437184,
+      "byteLength": 9437184,
+      "cacheNamespace": "gemma3_270m_literal",
+      "cacheKey": "ccfa2d752ffd752e32bd077b28e33ea75b233664768b24a968508ee9ccfd3ea9",
+      "assetKey": "inference_gemma3_270m_literal_prefill_32tok_decode_1tok:handle-2016",
+      "generator": "splitmix64_f16_nonzero_v1",
+      "seed": 2177342782468691268,
+      "scale": 0.125
+    },
+    {
       "kind": "kernel_dispatch",
       "kernel": "matmul_f16w_f32a_tiled.wgsl",
       "x": 24,
@@ -659,6 +764,19 @@
         }
       ],
       "entryPoint": "main"
+    },
+    {
+      "kind": "buffer_load",
+      "handle": 2017,
+      "offset": 0,
+      "bufferSize": 9437184,
+      "byteLength": 9437184,
+      "cacheNamespace": "gemma3_270m_literal",
+      "cacheKey": "c92300e83e4eea527840e2f2671051fa3c85e8a5024328c2c50119cab595d318",
+      "assetKey": "inference_gemma3_270m_literal_prefill_32tok_decode_1tok:handle-2017",
+      "generator": "splitmix64_f16_nonzero_v1",
+      "seed": 2177342782468691267,
+      "scale": 0.125
     },
     {
       "kind": "kernel_dispatch",
@@ -744,6 +862,19 @@
         }
       ],
       "entryPoint": "main"
+    },
+    {
+      "kind": "buffer_load",
+      "handle": 2021,
+      "offset": 0,
+      "bufferSize": 9437184,
+      "byteLength": 9437184,
+      "cacheNamespace": "gemma3_270m_literal",
+      "cacheKey": "9bc56aaa510c2a3e489aa378e35a8c6d8e4d88ceb1aef20b1eb39e08a942099b",
+      "assetKey": "inference_gemma3_270m_literal_prefill_32tok_decode_1tok:handle-2021",
+      "generator": "splitmix64_f16_nonzero_v1",
+      "seed": 2177342782468691263,
+      "scale": 0.125
     },
     {
       "kind": "kernel_dispatch",
@@ -990,6 +1121,32 @@
       ]
     },
     {
+      "kind": "buffer_load",
+      "handle": 2201,
+      "offset": 0,
+      "bufferSize": 6144,
+      "byteLength": 6144,
+      "cacheNamespace": "gemma3_270m_literal",
+      "cacheKey": "6194b7cc712074eb654ffde55ad5af2167bee5804eb761e21bf578962e88fc13",
+      "assetKey": "inference_gemma3_270m_literal_prefill_32tok_decode_1tok:handle-2201",
+      "generator": "splitmix64_f16_nonzero_v1",
+      "seed": 2177342782468690539,
+      "scale": 0.125
+    },
+    {
+      "kind": "buffer_load",
+      "handle": 2202,
+      "offset": 0,
+      "bufferSize": 6144,
+      "byteLength": 6144,
+      "cacheNamespace": "gemma3_270m_literal",
+      "cacheKey": "a0b95bb95ce9f82792976ca0acfafa22a5b97b2a08d28af651e852a2c5ec1529",
+      "assetKey": "inference_gemma3_270m_literal_prefill_32tok_decode_1tok:handle-2202",
+      "generator": "splitmix64_f16_nonzero_v1",
+      "seed": 2177342782468690538,
+      "scale": 0.125
+    },
+    {
       "kind": "kernel_dispatch",
       "kernel": "rmsnorm.wgsl",
       "x": 1,
@@ -1035,6 +1192,19 @@
         }
       ],
       "entryPoint": "main_weight_offset"
+    },
+    {
+      "kind": "buffer_load",
+      "handle": 2204,
+      "offset": 0,
+      "bufferSize": 9437184,
+      "byteLength": 9437184,
+      "cacheNamespace": "gemma3_270m_literal",
+      "cacheKey": "2ac8d0ffe107f4d61e266623998d582a76d592a2123e0ffad7803388e186eaa8",
+      "assetKey": "inference_gemma3_270m_literal_prefill_32tok_decode_1tok:handle-2204",
+      "generator": "splitmix64_f16_nonzero_v1",
+      "seed": 2177342782468690536,
+      "scale": 0.125
     },
     {
       "kind": "kernel_dispatch",
@@ -1084,6 +1254,19 @@
       "entryPoint": "main_vec4"
     },
     {
+      "kind": "buffer_load",
+      "handle": 2206,
+      "offset": 0,
+      "bufferSize": 9437184,
+      "byteLength": 9437184,
+      "cacheNamespace": "gemma3_270m_literal",
+      "cacheKey": "a8c9500e790fdfa489be9dfa3cd33ce1d5a8fc5748da73256d67ae5431902730",
+      "assetKey": "inference_gemma3_270m_literal_prefill_32tok_decode_1tok:handle-2206",
+      "generator": "splitmix64_f16_nonzero_v1",
+      "seed": 2177342782468690534,
+      "scale": 0.125
+    },
+    {
       "kind": "kernel_dispatch",
       "kernel": "matmul_gemv_subgroup.wgsl",
       "x": 24,
@@ -1131,6 +1314,19 @@
       "entryPoint": "main_vec4"
     },
     {
+      "kind": "buffer_load",
+      "handle": 2208,
+      "offset": 0,
+      "bufferSize": 9437184,
+      "byteLength": 9437184,
+      "cacheNamespace": "gemma3_270m_literal",
+      "cacheKey": "ff6e962be80864185071f3a01c5b6d654f26535dc68ccb99df192542f94fe7ac",
+      "assetKey": "inference_gemma3_270m_literal_prefill_32tok_decode_1tok:handle-2208",
+      "generator": "splitmix64_f16_nonzero_v1",
+      "seed": 2177342782468690564,
+      "scale": 0.125
+    },
+    {
       "kind": "kernel_dispatch",
       "kernel": "matmul_gemv_subgroup.wgsl",
       "x": 24,
@@ -1176,6 +1372,19 @@
         }
       ],
       "entryPoint": "main_vec4"
+    },
+    {
+      "kind": "buffer_load",
+      "handle": 2210,
+      "offset": 0,
+      "bufferSize": 16384,
+      "byteLength": 16384,
+      "cacheNamespace": "gemma3_270m_literal",
+      "cacheKey": "aee8cf6d38685325baf73b7a4bcdde1f0132c4b1af61c3120917b0d673b478c8",
+      "assetKey": "inference_gemma3_270m_literal_prefill_32tok_decode_1tok:handle-2210",
+      "generator": "splitmix64_f16_nonzero_v1",
+      "seed": 2177342782468690562,
+      "scale": 0.125
     },
     {
       "kind": "kernel_dispatch",
@@ -1326,6 +1535,19 @@
       "entryPoint": "main"
     },
     {
+      "kind": "buffer_load",
+      "handle": 2214,
+      "offset": 0,
+      "bufferSize": 9437184,
+      "byteLength": 9437184,
+      "cacheNamespace": "gemma3_270m_literal",
+      "cacheKey": "6ec0fb43180e87ef4cb0d8fd0893bbbe9549badc0fb3c51be6407da7f797c521",
+      "assetKey": "inference_gemma3_270m_literal_prefill_32tok_decode_1tok:handle-2214",
+      "generator": "splitmix64_f16_nonzero_v1",
+      "seed": 2177342782468690558,
+      "scale": 0.125
+    },
+    {
       "kind": "kernel_dispatch",
       "kernel": "matmul_gemv_subgroup.wgsl",
       "x": 24,
@@ -1457,6 +1679,19 @@
       "entryPoint": "main_weight_offset"
     },
     {
+      "kind": "buffer_load",
+      "handle": 2218,
+      "offset": 0,
+      "bufferSize": 9437184,
+      "byteLength": 9437184,
+      "cacheNamespace": "gemma3_270m_literal",
+      "cacheKey": "d9d46a03bff02cf00066efb1f94778a3fcb0b3b171abd58ac544f07bfd605a46",
+      "assetKey": "inference_gemma3_270m_literal_prefill_32tok_decode_1tok:handle-2218",
+      "generator": "splitmix64_f16_nonzero_v1",
+      "seed": 2177342782468690554,
+      "scale": 0.125
+    },
+    {
       "kind": "kernel_dispatch",
       "kernel": "matmul_gemv_subgroup.wgsl",
       "x": 24,
@@ -1502,6 +1737,19 @@
         }
       ],
       "entryPoint": "main_vec4"
+    },
+    {
+      "kind": "buffer_load",
+      "handle": 2220,
+      "offset": 0,
+      "bufferSize": 9437184,
+      "byteLength": 9437184,
+      "cacheNamespace": "gemma3_270m_literal",
+      "cacheKey": "88053d06979c46b3588883e416d774f12f9c21b454d86c51c94d20c5007bfe65",
+      "assetKey": "inference_gemma3_270m_literal_prefill_32tok_decode_1tok:handle-2220",
+      "generator": "splitmix64_f16_nonzero_v1",
+      "seed": 2177342782468690552,
+      "scale": 0.125
     },
     {
       "kind": "kernel_dispatch",
@@ -1587,6 +1835,19 @@
         }
       ],
       "entryPoint": "main"
+    },
+    {
+      "kind": "buffer_load",
+      "handle": 2223,
+      "offset": 0,
+      "bufferSize": 9437184,
+      "byteLength": 9437184,
+      "cacheNamespace": "gemma3_270m_literal",
+      "cacheKey": "685ffd560fac101e5fc73ec6b849ec8a3962b945c4b9367b1bdefb37107b6374",
+      "assetKey": "inference_gemma3_270m_literal_prefill_32tok_decode_1tok:handle-2223",
+      "generator": "splitmix64_f16_nonzero_v1",
+      "seed": 2177342782468690549,
+      "scale": 0.125
     },
     {
       "kind": "kernel_dispatch",
@@ -1805,5 +2066,5 @@
       "entryPoint": "sample_single_pass"
     }
   ],
-  "planSha256": "f289d483b4899bfe0f98a111e3f1da6b123f9218a47bc4279ee43574b2fd27bd"
+  "planSha256": "41a4f8ec0af3efb3a422ee2a08c8c6d797bdaa8092f2aa03d53c17cb4595af4c"
 }

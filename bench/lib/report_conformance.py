@@ -401,31 +401,31 @@ def validate_claim_row_hash_links(
     elif require_config_contract:
         return False, "missing configContract object"
 
-    hash_chain = payload.get("claimRowHashChain")
+    hash_chain = payload.get("claimWorkloadHashChain")
     if not isinstance(hash_chain, dict):
-        return False, "missing claimRowHashChain object"
+        return False, "missing claimWorkloadHashChain object"
     if hash_chain.get("algorithm") != "sha256":
-        return False, "claimRowHashChain.algorithm must be 'sha256'"
+        return False, "claimWorkloadHashChain.algorithm must be 'sha256'"
     chain_count = parse_int(hash_chain.get("count"))
     if chain_count is None:
-        return False, "claimRowHashChain.count missing/invalid"
+        return False, "claimWorkloadHashChain.count missing/invalid"
     if chain_count != len(workloads):
         return (
             False,
-            "claimRowHashChain.count mismatch "
+            "claimWorkloadHashChain.count mismatch "
             f"(chain={chain_count} workloads={len(workloads)})",
         )
     start_previous_hash = hash_chain.get("startPreviousHash")
     if not is_sha256_hex(start_previous_hash):
-        return False, "claimRowHashChain.startPreviousHash missing/invalid"
+        return False, "claimWorkloadHashChain.startPreviousHash missing/invalid"
     if str(start_previous_hash) != SHA256_ZERO:
-        return False, "claimRowHashChain.startPreviousHash must be 64 zeroes"
+        return False, "claimWorkloadHashChain.startPreviousHash must be 64 zeroes"
     final_hash = hash_chain.get("finalHash")
     if workloads:
         if not is_sha256_hex(final_hash):
-            return False, "claimRowHashChain.finalHash missing/invalid"
+            return False, "claimWorkloadHashChain.finalHash missing/invalid"
     elif final_hash not in ("", None):
-        return False, "claimRowHashChain.finalHash must be empty for zero workloads"
+        return False, "claimWorkloadHashChain.finalHash must be empty for zero workloads"
 
     previous_hash = str(start_previous_hash)
     for index, workload in enumerate(workloads):
@@ -438,102 +438,102 @@ def validate_claim_row_hash_links(
         trace_meta_hashes = workload.get("traceMetaHashes")
         if not isinstance(trace_meta_hashes, dict):
             return False, f"{workload_id}: missing traceMetaHashes object"
-        left_ok, left_hashes, left_error = _extract_trace_meta_hashes(
+        baseline_ok, baseline_hashes, baseline_error = _extract_trace_meta_hashes(
             workload_id=workload_id,
-            side_name="left",
-            trace_meta_hashes=trace_meta_hashes.get("left"),
+            side_name="baseline",
+            trace_meta_hashes=trace_meta_hashes.get("baseline"),
         )
-        if not left_ok:
-            return False, left_error
-        right_ok, right_hashes, right_error = _extract_trace_meta_hashes(
+        if not baseline_ok:
+            return False, baseline_error
+        comparison_ok, comparison_hashes, comparison_error = _extract_trace_meta_hashes(
             workload_id=workload_id,
-            side_name="right",
-            trace_meta_hashes=trace_meta_hashes.get("right"),
+            side_name="comparison",
+            trace_meta_hashes=trace_meta_hashes.get("comparison"),
         )
-        if not right_ok:
-            return False, right_error
-        if require_non_empty_trace_hashes and (not left_hashes or not right_hashes):
+        if not comparison_ok:
+            return False, comparison_error
+        if require_non_empty_trace_hashes and (not baseline_hashes or not comparison_hashes):
             return (
                 False,
-                f"{workload_id}: claimable rows require non-empty traceMetaHashes left/right",
+                f"{workload_id}: claimable rows require non-empty traceMetaHashes baseline/comparison",
             )
 
-        claim_row_hash = workload.get("claimRowHash")
+        claim_row_hash = workload.get("claimWorkloadHash")
         if not isinstance(claim_row_hash, dict):
-            return False, f"{workload_id}: missing claimRowHash object"
+            return False, f"{workload_id}: missing claimWorkloadHash object"
         if claim_row_hash.get("algorithm") != "sha256":
-            return False, f"{workload_id}: claimRowHash.algorithm must be 'sha256'"
+            return False, f"{workload_id}: claimWorkloadHash.algorithm must be 'sha256'"
         row_previous_hash = claim_row_hash.get("previousHash")
         if not is_sha256_hex(row_previous_hash):
-            return False, f"{workload_id}: claimRowHash.previousHash missing/invalid"
+            return False, f"{workload_id}: claimWorkloadHash.previousHash missing/invalid"
         if str(row_previous_hash) != previous_hash:
             return (
                 False,
-                f"{workload_id}: claimRowHash.previousHash mismatch "
+                f"{workload_id}: claimWorkloadHash.previousHash mismatch "
                 f"(row={row_previous_hash} expected={previous_hash})",
             )
         row_hash_value = claim_row_hash.get("hash")
         if not is_sha256_hex(row_hash_value):
-            return False, f"{workload_id}: claimRowHash.hash missing/invalid"
+            return False, f"{workload_id}: claimWorkloadHash.hash missing/invalid"
         context = claim_row_hash.get("context")
         if not isinstance(context, dict):
-            return False, f"{workload_id}: claimRowHash.context missing/invalid"
+            return False, f"{workload_id}: claimWorkloadHash.context missing/invalid"
         if context.get("workloadId") != workload_id:
-            return False, f"{workload_id}: claimRowHash.context.workloadId mismatch"
+            return False, f"{workload_id}: claimWorkloadHash.context.workloadId mismatch"
         if context.get("workloadContractSha256") != workload_contract_sha:
             return False, (
-                f"{workload_id}: claimRowHash.context.workloadContractSha256 mismatch"
+                f"{workload_id}: claimWorkloadHash.context.workloadContractSha256 mismatch"
             )
         if context.get("benchmarkPolicySha256") != benchmark_policy_sha:
             return False, (
-                f"{workload_id}: claimRowHash.context.benchmarkPolicySha256 mismatch"
+                f"{workload_id}: claimWorkloadHash.context.benchmarkPolicySha256 mismatch"
             )
         expected_config_sha = config_contract_sha
         context_config_sha = context.get("configContractSha256")
         if not isinstance(context_config_sha, str):
             return False, (
-                f"{workload_id}: claimRowHash.context.configContractSha256 missing/invalid"
+                f"{workload_id}: claimWorkloadHash.context.configContractSha256 missing/invalid"
             )
         if context_config_sha != expected_config_sha:
             return False, (
-                f"{workload_id}: claimRowHash.context.configContractSha256 mismatch"
+                f"{workload_id}: claimWorkloadHash.context.configContractSha256 mismatch"
             )
 
-        context_left_hashes = context.get("leftTraceMetaSha256")
-        context_right_hashes = context.get("rightTraceMetaSha256")
+        context_left_hashes = context.get("baselineTraceMetaSha256")
+        context_right_hashes = context.get("comparisonTraceMetaSha256")
         if (
             not isinstance(context_left_hashes, list)
             or any(not is_sha256_hex(item) for item in context_left_hashes)
         ):
             return False, (
-                f"{workload_id}: claimRowHash.context.leftTraceMetaSha256 missing/invalid"
+                f"{workload_id}: claimWorkloadHash.context.baselineTraceMetaSha256 missing/invalid"
             )
         if (
             not isinstance(context_right_hashes, list)
             or any(not is_sha256_hex(item) for item in context_right_hashes)
         ):
             return False, (
-                f"{workload_id}: claimRowHash.context.rightTraceMetaSha256 missing/invalid"
+                f"{workload_id}: claimWorkloadHash.context.comparisonTraceMetaSha256 missing/invalid"
             )
         if context_left_hashes != left_hashes:
             return False, (
-                f"{workload_id}: claimRowHash.context.leftTraceMetaSha256 mismatch"
+                f"{workload_id}: claimWorkloadHash.context.baselineTraceMetaSha256 mismatch"
             )
         if context_right_hashes != right_hashes:
             return False, (
-                f"{workload_id}: claimRowHash.context.rightTraceMetaSha256 mismatch"
+                f"{workload_id}: claimWorkloadHash.context.comparisonTraceMetaSha256 mismatch"
             )
 
         if context.get("deltaPercent") != workload.get("deltaPercent"):
-            return False, f"{workload_id}: claimRowHash.context.deltaPercent mismatch"
+            return False, f"{workload_id}: claimWorkloadHash.context.deltaPercent mismatch"
         if "workloadPathAsymmetry" in context and context.get("workloadPathAsymmetry") != workload.get(
             "pathAsymmetry"
         ):
-            return False, f"{workload_id}: claimRowHash.context.workloadPathAsymmetry mismatch"
+            return False, f"{workload_id}: claimWorkloadHash.context.workloadPathAsymmetry mismatch"
         if "workloadPathAsymmetryNote" in context and context.get(
             "workloadPathAsymmetryNote"
         ) != workload.get("pathAsymmetryNote"):
-            return False, f"{workload_id}: claimRowHash.context.workloadPathAsymmetryNote mismatch"
+            return False, f"{workload_id}: claimWorkloadHash.context.workloadPathAsymmetryNote mismatch"
 
         comparability = workload.get("comparability")
         context_comparability = context.get("comparability")
@@ -541,13 +541,13 @@ def validate_claim_row_hash_links(
             return False, f"{workload_id}: comparability snapshot missing/invalid"
         if context_comparability.get("comparable") != comparability.get("comparable"):
             return False, (
-                f"{workload_id}: claimRowHash.context.comparability.comparable mismatch"
+                f"{workload_id}: claimWorkloadHash.context.comparability.comparable mismatch"
             )
         if context_comparability.get("blockingFailedObligations", []) != comparability.get(
             "blockingFailedObligations", []
         ):
             return False, (
-                f"{workload_id}: claimRowHash.context.comparability.blockingFailedObligations mismatch"
+                f"{workload_id}: claimWorkloadHash.context.comparability.blockingFailedObligations mismatch"
             )
 
         claimability = workload.get("claimability")
@@ -556,15 +556,15 @@ def validate_claim_row_hash_links(
             return False, f"{workload_id}: claimability snapshot missing/invalid"
         if context_claimability.get("evaluated") != claimability.get("evaluated"):
             return False, (
-                f"{workload_id}: claimRowHash.context.claimability.evaluated mismatch"
+                f"{workload_id}: claimWorkloadHash.context.claimability.evaluated mismatch"
             )
         if context_claimability.get("claimable") != claimability.get("claimable"):
             return False, (
-                f"{workload_id}: claimRowHash.context.claimability.claimable mismatch"
+                f"{workload_id}: claimWorkloadHash.context.claimability.claimable mismatch"
             )
         if context_claimability.get("reasons", []) != claimability.get("reasons", []):
             return False, (
-                f"{workload_id}: claimRowHash.context.claimability.reasons mismatch"
+                f"{workload_id}: claimWorkloadHash.context.claimability.reasons mismatch"
             )
 
         recomputed_hash = json_sha256(
@@ -575,7 +575,7 @@ def validate_claim_row_hash_links(
         )
         if recomputed_hash != row_hash_value:
             return False, (
-                f"{workload_id}: claimRowHash.hash mismatch "
+                f"{workload_id}: claimWorkloadHash.hash mismatch "
                 f"(report={row_hash_value} recomputed={recomputed_hash})"
             )
         previous_hash = str(row_hash_value)
@@ -583,7 +583,7 @@ def validate_claim_row_hash_links(
     if workloads and str(final_hash) != previous_hash:
         return (
             False,
-            "claimRowHashChain.finalHash mismatch "
+            "claimWorkloadHashChain.finalHash mismatch "
             f"(chain={final_hash} expected={previous_hash})",
         )
     return True, ""

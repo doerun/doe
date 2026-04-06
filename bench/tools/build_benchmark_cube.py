@@ -771,7 +771,7 @@ def main() -> None:
                 governed_lanes=governed_lanes,
                 maturity=surface_policy["maturity"],
                 surface="node_package",
-                provider_pair="doe_node_vs_dawn_node",
+                provider_pair="doe_vs_node_webgpu_package",
                 source_report_type="node_package_compare_report",
             )
         except ValueError:
@@ -807,7 +807,7 @@ def main() -> None:
                 governed_lanes=governed_lanes,
                 maturity=surface_policy["maturity"],
                 surface="bun_package",
-                provider_pair="doe_bun_vs_bun_webgpu",
+                provider_pair="doe_vs_bun_webgpu_package",
                 source_report_type="bun_package_compare_report",
             )
         except ValueError:

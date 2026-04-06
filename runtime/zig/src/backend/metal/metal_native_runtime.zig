@@ -291,6 +291,19 @@ pub const NativeMetalRuntime = struct {
         return resource_runtime.write_compute_buffer_words(self, cmd.handle, cmd.offset, cmd.buffer_size, cmd.data);
     }
 
+    pub fn write_buffer_bytes(self: *NativeMetalRuntime, handle: u64, offset: u64, buffer_size: u64, data: []const u8) !void {
+        return resource_runtime.write_compute_buffer_bytes(self, handle, offset, buffer_size, data);
+    }
+
+    pub fn stage_buffer_write_bytes(self: *NativeMetalRuntime, handle: u64, offset: u64, buffer_size: u64, data: []const u8) !void {
+        const required_size = if (buffer_size > 0)
+            @max(buffer_size, offset + data.len)
+        else
+            offset + data.len;
+        const dst_buffer = try resource_runtime.ensure_compute_buffer(self, handle, required_size, false);
+        try metal_upload.stage_buffer_write_bytes(self, dst_buffer, offset, data);
+    }
+
     pub fn texture_query(self: *NativeMetalRuntime, cmd: model_texture_types.TextureQueryCommand) !void {
         return resource_commands.texture_query(self, cmd);
     }

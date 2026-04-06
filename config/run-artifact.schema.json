@@ -10,6 +10,7 @@
     "generatedAt",
     "product",
     "executorId",
+    "workloadContract",
     "workload",
     "runParameters",
     "host",
@@ -23,7 +24,7 @@
   "properties": {
     "schemaVersion": {
       "type": "integer",
-      "const": 1
+      "const": 2
     },
     "artifactKind": {
       "type": "string",
@@ -41,8 +42,50 @@
       "type": "string",
       "minLength": 1
     },
+    "workloadContract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "sha256"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "type": "string",
+          "minLength": 64
+        }
+      }
+    },
+    "benchmarkPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "schemaVersion",
+        "sha256"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "schemaVersion": {
+          "type": "integer",
+          "const": 1
+        },
+        "sha256": {
+          "type": "string",
+          "minLength": 64
+        }
+      }
+    },
     "workload": {
       "type": "object",
+      "additionalProperties": false,
       "required": [
         "id",
         "domain"
@@ -89,11 +132,43 @@
         "comparabilityNotes": {
           "type": "string"
         },
+        "directionalReason": {
+          "type": "string"
+        },
         "pathAsymmetry": {
           "type": "boolean"
         },
         "pathAsymmetryNote": {
           "type": "string"
+        },
+        "includeByDefault": {
+          "type": "boolean"
+        },
+        "asyncDiagnosticsMode": {
+          "type": "string"
+        },
+        "strictNormalizationUnit": {
+          "type": "string"
+        },
+        "comparabilityCandidate": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "enabled",
+            "tier",
+            "notes"
+          ],
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "tier": {
+              "type": "string"
+            },
+            "notes": {
+              "type": "string"
+            }
+          }
         },
         "claimEligible": {
           "type": "boolean"
@@ -108,6 +183,7 @@
     },
     "runParameters": {
       "type": "object",
+      "additionalProperties": false,
       "required": [
         "iterations",
         "warmup",
@@ -142,6 +218,12 @@
           "type": "integer",
           "minimum": 1
         },
+        "allowNoExecution": {
+          "type": "boolean"
+        },
+        "timingNormalizationNote": {
+          "type": "string"
+        },
         "resourceProbe": {
           "type": "string"
         },
@@ -150,11 +232,18 @@
         },
         "resourceSampleTargetCount": {
           "type": "integer"
+        },
+        "comparabilityMode": {
+          "type": "string"
+        },
+        "requiredTimingClass": {
+          "type": "string"
         }
       }
     },
     "host": {
       "type": "object",
+      "additionalProperties": false,
       "required": [
         "os",
         "arch"

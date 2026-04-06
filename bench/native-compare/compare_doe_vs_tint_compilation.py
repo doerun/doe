@@ -44,7 +44,7 @@ TINT_BENCHMARK_TARGET_MAP = {"msl": "GenerateMSL", "spirv": "GenerateSPIRV", "hl
 DEFAULT_TINT_WARM_MIN_TIME = "0.01s"
 DEFAULT_TINT_WARM_REPETITIONS = 9
 SCHEMA_VERSION = 3
-DELTA_PERCENT_CONVENTION = "((rightNs / leftNs) - 1) * 100; positive = left (Doe) faster"
+DELTA_PERCENT_CONVENTION = "((comparisonNs / baselineNs) - 1) * 100; positive = baseline (Doe) faster"
 _TINT_STARTUP_BASELINE_WGSL = """@compute @workgroup_size(1)
 fn main() {}
 """
@@ -287,7 +287,7 @@ def duration_to_ns(value, unit):
 
 def run_doe_bench(cfg, shaders, target, out_path, dry_run):
     """Run Doe's compilation benchmark on the selected shader rows."""
-    doe_bin = REPO_ROOT / cfg["left"]["binaryPath"]
+    doe_bin = REPO_ROOT / cfg["baseline"]["binaryPath"]
     if not doe_bin.exists() and not dry_run:
         print(f"error: Doe binary not found: {doe_bin}", file=sys.stderr)
         print("  Build with: cd runtime/zig && zig build bench-compilation", file=sys.stderr)
@@ -368,7 +368,7 @@ def measure_tint_startup_baseline(tint_bin, tint_format, iterations, warmup, dry
 
 def run_tint_bench(cfg, shaders, target, iterations, warmup, dry_run):
     """Time Tint compilation for each shader in the corpus."""
-    tint_bin = REPO_ROOT / cfg["right"]["binaryPath"]
+    tint_bin = REPO_ROOT / cfg["comparison"]["binaryPath"]
     tint_format = TARGET_MAP.get(target, target)
 
     if not tint_bin.exists() and not dry_run:
@@ -453,7 +453,7 @@ def run_tint_bench(cfg, shaders, target, iterations, warmup, dry_run):
 
 
 def run_tint_warm_bench(cfg, shaders, target, dry_run):
-    warm_binary_path = cfg["right"].get("warmBinaryPath")
+    warm_binary_path = cfg["comparison"].get("warmBinaryPath")
     if not warm_binary_path:
         return {}
 
@@ -521,11 +521,11 @@ def run_tint_warm_bench(cfg, shaders, target, dry_run):
     return results
 
 
-def compute_delta(left_ns, right_ns):
-    """Positive = left (Doe) is faster."""
-    if left_ns == 0:
+def compute_delta(baseline_ns, comparison_ns):
+    """Positive = baseline (Doe) is faster."""
+    if baseline_ns == 0:
         return None
-    return ((right_ns / left_ns) - 1) * 100
+    return ((comparison_ns / baseline_ns) - 1) * 100
 
 
 def build_report(cfg, shaders, target, doe_results, tint_results):
@@ -554,20 +554,20 @@ def build_report(cfg, shaders, target, doe_results, tint_results):
             )
             continue
 
-        left_p50 = doe.get("p50_ns", 0)
-        right_p50 = tint.get("p50_ns", 0)
-        left_p95 = doe.get("p95_ns", 0)
-        right_p95 = tint.get("p95_ns", 0)
-        left_p99 = doe.get("p99_ns", 0)
-        right_p99 = tint.get("p99_ns", 0)
-        right_corrected = tint.get("startupCorrected", {})
-        right_corrected_p50 = right_corrected.get("p50_ns", 0)
-        right_corrected_p95 = right_corrected.get("p95_ns", 0)
-        right_corrected_p99 = right_corrected.get("p99_ns", 0)
-        right_warm = tint.get("warm", {})
-        right_warm_p50 = right_warm.get("p50_ns", 0)
-        right_warm_p95 = right_warm.get("p95_ns", 0)
-        right_warm_p99 = right_warm.get("p99_ns", 0)
+        baseline_p50 = doe.get("p50_ns", 0)
+        comparison_p50 = tint.get("p50_ns", 0)
+        baseline_p95 = doe.get("p95_ns", 0)
+        comparison_p95 = tint.get("p95_ns", 0)
+        baseline_p99 = doe.get("p99_ns", 0)
+        comparison_p99 = tint.get("p99_ns", 0)
+        comparison_corrected = tint.get("startupCorrected", {})
+        comparison_corrected_p50 = comparison_corrected.get("p50_ns", 0)
+        comparison_corrected_p95 = comparison_corrected.get("p95_ns", 0)
+        comparison_corrected_p99 = comparison_corrected.get("p99_ns", 0)
+        comparison_warm = tint.get("warm", {})
+        comparison_warm_p50 = comparison_warm.get("p50_ns", 0)
+        comparison_warm_p95 = comparison_warm.get("p95_ns", 0)
+        comparison_warm_p99 = comparison_warm.get("p99_ns", 0)
 
         records.append(
             {
@@ -580,74 +580,74 @@ def build_report(cfg, shaders, target, doe_results, tint_results):
                 "tier": shader["tier"],
                 "target": target,
                 "sourceLines": shader["sourceLines"],
-                "left": {
+                "baseline": {
                     "compiler": "doe_wgsl",
-                    "p50_ns": left_p50,
-                    "p95_ns": left_p95,
-                    "p99_ns": left_p99,
+                    "p50_ns": baseline_p50,
+                    "p95_ns": baseline_p95,
+                    "p99_ns": baseline_p99,
                     "bytesOut": doe.get("bytesOut", 0),
                     "timingNote": "in-process measurement, no startup overhead",
                 },
-                "right": {
+                "comparison": {
                     "compiler": "tint",
-                    "p50_ns": right_p50,
-                    "p95_ns": right_p95,
-                    "p99_ns": right_p99,
+                    "p50_ns": comparison_p50,
+                    "p95_ns": comparison_p95,
+                    "p99_ns": comparison_p99,
                     "timingNote": tint.get(
                         "timingNote",
                         "process-level timing includes startup overhead",
                     ),
                     "startupBaseline": tint.get("startupBaseline", {}),
                     "startupCorrected": {
-                        "p50_ns": right_corrected_p50,
-                        "p95_ns": right_corrected_p95,
-                        "p99_ns": right_corrected_p99,
-                        "timingNote": right_corrected.get(
+                        "p50_ns": comparison_corrected_p50,
+                        "p95_ns": comparison_corrected_p95,
+                        "p99_ns": comparison_corrected_p99,
+                        "timingNote": comparison_corrected.get(
                             "timingNote",
                             "raw tint process-wall samples with the trivial-shader baseline p50 subtracted",
                         ),
                     },
                     "warm": {
-                        "p50_ns": right_warm_p50,
-                        "p95_ns": right_warm_p95,
-                        "p99_ns": right_warm_p99,
-                        "timingNote": right_warm.get(
+                        "p50_ns": comparison_warm_p50,
+                        "p95_ns": comparison_warm_p95,
+                        "p99_ns": comparison_warm_p99,
+                        "timingNote": comparison_warm.get(
                             "timingNote",
                             "in-process tint_benchmark real_time samples",
                         ),
                     },
                 },
                 "deltaPercent": {
-                    "p50": round(compute_delta(left_p50, right_p50), 2)
-                    if left_p50 > 0 and right_p50 > 0
+                    "p50": round(compute_delta(baseline_p50, comparison_p50), 2)
+                    if baseline_p50 > 0 and comparison_p50 > 0
                     else None,
-                    "p95": round(compute_delta(left_p95, right_p95), 2)
-                    if left_p95 > 0 and right_p95 > 0
+                    "p95": round(compute_delta(baseline_p95, comparison_p95), 2)
+                    if baseline_p95 > 0 and comparison_p95 > 0
                     else None,
-                    "p99": round(compute_delta(left_p99, right_p99), 2)
-                    if left_p99 > 0 and right_p99 > 0
+                    "p99": round(compute_delta(baseline_p99, comparison_p99), 2)
+                    if baseline_p99 > 0 and comparison_p99 > 0
                     else None,
                 },
                 "startupCorrectedDeltaPercent": {
-                    "p50": round(compute_delta(left_p50, right_corrected_p50), 2)
-                    if left_p50 > 0 and right_corrected_p50 > 0
+                    "p50": round(compute_delta(baseline_p50, comparison_corrected_p50), 2)
+                    if baseline_p50 > 0 and comparison_corrected_p50 > 0
                     else None,
-                    "p95": round(compute_delta(left_p95, right_corrected_p95), 2)
-                    if left_p95 > 0 and right_corrected_p95 > 0
+                    "p95": round(compute_delta(baseline_p95, comparison_corrected_p95), 2)
+                    if baseline_p95 > 0 and comparison_corrected_p95 > 0
                     else None,
-                    "p99": round(compute_delta(left_p99, right_corrected_p99), 2)
-                    if left_p99 > 0 and right_corrected_p99 > 0
+                    "p99": round(compute_delta(baseline_p99, comparison_corrected_p99), 2)
+                    if baseline_p99 > 0 and comparison_corrected_p99 > 0
                     else None,
                 },
                 "warmDeltaPercent": {
-                    "p50": round(compute_delta(left_p50, right_warm_p50), 2)
-                    if left_p50 > 0 and right_warm_p50 > 0
+                    "p50": round(compute_delta(baseline_p50, comparison_warm_p50), 2)
+                    if baseline_p50 > 0 and comparison_warm_p50 > 0
                     else None,
-                    "p95": round(compute_delta(left_p95, right_warm_p95), 2)
-                    if left_p95 > 0 and right_warm_p95 > 0
+                    "p95": round(compute_delta(baseline_p95, comparison_warm_p95), 2)
+                    if baseline_p95 > 0 and comparison_warm_p95 > 0
                     else None,
-                    "p99": round(compute_delta(left_p99, right_warm_p99), 2)
-                    if left_p99 > 0 and right_warm_p99 > 0
+                    "p99": round(compute_delta(baseline_p99, comparison_warm_p99), 2)
+                    if baseline_p99 > 0 and comparison_warm_p99 > 0
                     else None,
                 },
                 "status": "compared",
@@ -656,7 +656,7 @@ def build_report(cfg, shaders, target, doe_results, tint_results):
                     "which includes OS process startup. startupCorrectedDeltaPercent is a "
                     "derived view that subtracts the trivial-shader baseline p50 from each "
                     "Tint raw sample; raw timings remain the auditable source metric. "
-                    "When right.warm is present it comes from the in-process Dawn "
+                    "When comparison.warm is present it comes from the in-process Dawn "
                     "tint_benchmark target on the Tint benchmark corpus."
                 ),
             }
@@ -687,10 +687,10 @@ def print_summary(records, target):
     print("-" * 140)
 
     for r in compared:
-        doe_us = r["left"]["p50_ns"] / 1000
-        tint_raw_us = r["right"]["p50_ns"] / 1000
-        tint_corr_us = r["right"]["startupCorrected"]["p50_ns"] / 1000
-        tint_warm_us = r["right"]["warm"]["p50_ns"] / 1000
+        doe_us = r["baseline"]["p50_ns"] / 1000
+        tint_raw_us = r["comparison"]["p50_ns"] / 1000
+        tint_corr_us = r["comparison"]["startupCorrected"]["p50_ns"] / 1000
+        tint_warm_us = r["comparison"]["warm"]["p50_ns"] / 1000
         raw_delta = r["deltaPercent"]["p50"]
         corr_delta = r["startupCorrectedDeltaPercent"]["p50"]
         warm_delta = r["warmDeltaPercent"]["p50"]
@@ -704,10 +704,10 @@ def print_summary(records, target):
         )
 
     # aggregate
-    doe_total = sum(r["left"]["p50_ns"] for r in compared)
-    tint_total = sum(r["right"]["p50_ns"] for r in compared)
-    tint_corrected_total = sum(r["right"]["startupCorrected"]["p50_ns"] for r in compared)
-    tint_warm_total = sum(r["right"]["warm"]["p50_ns"] for r in compared)
+    doe_total = sum(r["baseline"]["p50_ns"] for r in compared)
+    tint_total = sum(r["comparison"]["p50_ns"] for r in compared)
+    tint_corrected_total = sum(r["comparison"]["startupCorrected"]["p50_ns"] for r in compared)
+    tint_warm_total = sum(r["comparison"]["warm"]["p50_ns"] for r in compared)
     overall_delta = compute_delta(doe_total, tint_total)
     overall_corrected_delta = compute_delta(doe_total, tint_corrected_total)
     overall_warm_delta = compute_delta(doe_total, tint_warm_total)

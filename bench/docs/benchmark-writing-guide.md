@@ -3,12 +3,17 @@
 This guide defines how to add and evolve benchmarks so results stay reproducible, apples-to-apples, and claim-safe.
 
 Terminology note:
-- Doe is the implementation under test. When this guide says "Doe runtime
-  path" or "Doe direct backend path", that means Doe implementing WebGPU
-  semantics itself on the target backend.
-- Dawn is the comparison implementation. In Doe-vs-Dawn runtime reports, the
-  useful split is "Doe direct backend path" versus "Dawn delegate path".
-- Runtime workloads usually mix API/setup work, first-use shader
+- use the benchmark taxonomy from `docs/benchmark-taxonomy.md`:
+  - workload
+  - surface
+  - executor
+  - run artifact
+  - compare report
+- when this guide says `backend` surface, it means Doe or Dawn implementing
+  WebGPU semantics on the target backend runtime.
+- when this guide says `plan` surface, it means both products executing the
+  same normalized plan contract.
+- runtime workloads usually mix API/setup work, first-use shader
   compilation/pipeline creation, and GPU execution unless the workload is
   explicitly scoped to isolate one of those layers.
 
@@ -20,7 +25,7 @@ Applies to:
 - `bench/ir/*.json`
 - `bench/plans/generated/*.plan.json`
 - `examples/*_commands.json`
-- `bench/native-compare/compare_dawn_vs_doe.config.*.json`
+- `bench/native-compare/compare.config.*.json`
 - `config/comparability-obligations.json`
 - `config/backend-timing-policy.json`
 - `config/webgpu-capability-inventory.json`
@@ -28,7 +33,7 @@ Applies to:
 
 ## 1) Non-negotiables
 
-- Comparable lanes must be apples-to-apples by default.
+- Comparable benchmark surfaces must be apples-to-apples by default.
 - Any runtime-visible benchmark contract change must be schema/config-backed.
 - Strict comparability must fail fast on mismatch, not silently report timings.
 - Directional and claimable evidence must stay explicitly separated.
@@ -39,7 +44,7 @@ Applies to:
 - Workload contracts:
   - `bench/workloads*.json`
 - Compare harness:
-  - `bench/native-compare/compare_dawn_vs_doe.py`
+  - `bench/cli.py compare`
   - `bench/native_compare_modules/comparability.py`
   - `bench/native_compare_modules/timing_selection.py`
 - Comparability obligation contract:
@@ -55,18 +60,18 @@ Applies to:
 Required checkpoints for benchmark contract changes:
 - `python3 bench/comparability_obligation_parity_gate.py`
 - `python3 bench/gates/schema_gate.py`
-- targeted compare run for the modified lane/config
-- timing policy gate on that report (`bench/vulkan_timing_policy_gate.py` for Vulkan timing-policy-bound lanes)
+- targeted compare run for the modified workload set / surface config
+- timing policy gate on that report (`bench/vulkan_timing_policy_gate.py` for Vulkan timing-policy-bound benchmark surfaces)
 
 ## 3) Workload contract format (`bench/workloads*.json`)
 
-Each workload entry is parsed by `bench/native-compare/compare_dawn_vs_doe.py`.
+Each workload entry is parsed by `bench/cli.py compare`.
 
 Authoring rule:
-- do not hand-edit the generated backend lane files under `bench/workloads*.json`.
+- do not hand-edit the generated backend workload files under `bench/workloads*.json`.
 - edit `bench/workloads/metadata/backend-workload-catalog.json` instead, then regenerate with:
   `python3 bench/tools/generate_backend_workloads.py`
-- the catalog is the canonical backend workload source of truth; the lane files are generated execution views.
+- the catalog is the canonical backend workload source of truth; the generated files are execution views.
 
 Required fields:
 - `id`
@@ -86,17 +91,17 @@ Common comparability fields:
 - `default`
 - `comparabilityNotes`
 - `timingNormalizationNote`
-- `leftCommandRepeat`
-- `rightCommandRepeat`
-- `leftIgnoreFirstOps`
-- `rightIgnoreFirstOps`
-- `leftUploadBufferUsage`
-- `rightUploadBufferUsage`
-- `leftUploadSubmitEvery`
-- `rightUploadSubmitEvery`
-- `leftTimingDivisor`
-- `rightTimingDivisor`
-- `allowLeftNoExecution`
+- `baselineCommandRepeat`
+- `comparisonCommandRepeat`
+- `baselineIgnoreFirstOps`
+- `comparisonIgnoreFirstOps`
+- `baselineUploadBufferUsage`
+- `comparisonUploadBufferUsage`
+- `baselineUploadSubmitEvery`
+- `comparisonUploadSubmitEvery`
+- `baselineTimingDivisor`
+- `comparisonTimingDivisor`
+- `allowBaselineNoExecution`
 - `extraArgs`
 
 IR-backed workload fields:
@@ -106,22 +111,45 @@ IR-backed workload fields:
 
 IR-backed authoring rule:
 - authored benchmark meaning belongs in `bench/ir/*.json`
-- generated backend workload lanes may still carry `commandsPath`, but for
-  IR-backed rows those command files are compatibility artifacts, not the
+- generated backend workload files may still carry `commandsPath`, but for
+  IR-backed workloads those command files are compatibility artifacts, not the
   authored source of truth
+
+### 3.2 Synthetic readonly assets for IR-backed inference workloads
+
+When an IR-backed workload needs large synthetic readonly tensors that would be
+impractical to inline as `buffer_write` data:
+
+- author the deterministic asset policy in `shared.syntheticReadonlyBufferPolicy`
+  inside the IR source
+- use a deterministic generator + seed + scale so the payload hash is stable
+  across reruns on the same contract
+- materialize those payloads into the local asset cache, not Git:
+  - `DOE_BENCH_ASSET_CACHE_DIR`
+  - default: `~/.cache/doe/bench_synthetic_assets`
+- let plan generation inject explicit `buffer_load` commands for readonly-only
+  buffers instead of relying on implicit zero-filled buffer creation
+- keep asset generation and cache warming outside timed samples
+- keep the timed `buffer_load` command itself inside the benchmark when the workload
+  is meant to be device-load-inclusive; that command measures:
+  - host cache read
+  - device-visible upload / staging
+
+If you want an already-resident steady-state inference variant, author it as a
+separate workload contract instead of silently changing the timing boundary.
 
 Strict Dawn-vs-Doe operation comparability rule:
 - when `comparability=strict` and `requireTimingClass=operation`, comparable workloads must use direct timing:
-  `leftTimingDivisor=1.0` and `rightTimingDivisor=1.0`.
+  `baselineTimingDivisor=1.0` and `comparisonTimingDivisor=1.0`.
 
 Parser-level field constraints:
 - `id` must be non-empty and unique per file.
-- `left/rightCommandRepeat >= 1`
-- `left/rightIgnoreFirstOps >= 0`
-- `left/rightUploadSubmitEvery >= 1`
-- `left/rightTimingDivisor > 0`
-- strict Dawn-vs-Doe operation runs require `left/rightTimingDivisor == 1.0` for `comparable=true` workloads
-- `left/rightUploadBufferUsage` must be `copy-dst-copy-src` or `copy-dst`
+- `baseline/comparisonCommandRepeat >= 1`
+- `baseline/comparisonIgnoreFirstOps >= 0`
+- `baseline/comparisonUploadSubmitEvery >= 1`
+- `baseline/comparisonTimingDivisor > 0`
+- strict Dawn-vs-Doe operation runs require `baseline/comparisonTimingDivisor == 1.0` for `comparable=true` workloads
+- `baseline/comparisonUploadBufferUsage` must be `copy-dst-copy-src` or `copy-dst`
 - `comparabilityCandidate.enabled=true` requires `comparabilityCandidate.tier`
 - `comparabilityCandidate.enabled=true` cannot be combined with `comparable=true`
 
@@ -136,7 +164,7 @@ Required rules:
 - include domain first (for example: `upload`, `compute`, `render`, `pipeline`, `resource`, `surface`, `capability`, `lifecycle`, `texture`)
 - encode operation semantics and stable shape descriptors (`1kb`, `200k`, `mip8`, matrix geometry, etc.)
 - keep IDs status-free and lifecycle-free; do not encode maturity tier or rollout state
-- do not rename an existing ID when it moves between directional/comparable/claim lanes; change metadata fields instead
+- do not rename an existing ID when it moves between directional/comparable/claim surfaces; change metadata fields instead
 - avoid overloaded shorthand prefixes (`par_`, `exp_`, `ctr_`) and status tokens (`contract`, `proxy`, `macro`) in new IDs
 
 Classification and methodology belong in fields, not ID text:
@@ -151,22 +179,22 @@ Classification and methodology belong in fields, not ID text:
 Comparable workloads (`comparable=true`) in strict mode must satisfy both:
 
 1. Contract symmetry:
-- left/right command repeat match
-- left/right ignore-first match
-- left/right upload usage + submit cadence match
-- left/right timing divisor match
+- baseline/comparison command repeat match (`left*`/`right*` fields in the contract)
+- baseline/comparison ignore-first match
+- baseline/comparison upload usage + submit cadence match
+- baseline/comparison timing divisor match
 
 2. Measured comparability obligations:
-- `left_right_trace_meta_source_match`
-- `left_right_timing_selection_policy_match`
-- `left_right_queue_sync_mode_match`
-- `left_right_timing_phase_match`
-- `left_right_execution_shape_match`
-- `left_right_hardware_path_match`
-- `left_right_upload_buffer_usage_match`
-- `left_right_upload_submit_cadence_match`
-- `left_upload_ignore_first_scope_consistent`
-- `right_upload_ignore_first_scope_consistent`
+- `baseline_comparison_trace_meta_source_match`
+- `baseline_comparison_timing_selection_policy_match`
+- `baseline_comparison_queue_sync_mode_match`
+- `baseline_comparison_timing_phase_match`
+- `baseline_comparison_execution_shape_match`
+- `baseline_comparison_hardware_path_match`
+- `baseline_comparison_upload_buffer_usage_match`
+- `baseline_comparison_upload_submit_cadence_match`
+- `baseline_upload_ignore_first_scope_consistent`
+- `comparison_upload_ignore_first_scope_consistent`
 
 Obligation IDs are contract-controlled by `config/comparability-obligations.json`.
 
@@ -179,9 +207,9 @@ Strict comparability for ALL domains (compute, render, upload, resource, pipelin
 - `executionRowCount`
 - `executionSuccessCount`
 
-If these differ left/right, strict comparable classification must fail.
+If these differ between baseline and comparison, strict comparable classification must fail.
 
-This is not optional for non-compute domains. A render workload where LEFT dispatches 500 draws and RIGHT dispatches 0 is not comparable regardless of what `comparable: true` says in the workload contract.
+This is not optional for non-compute domains. A render workload where the baseline executor dispatches 500 draws and the comparison executor dispatches 0 is not comparable regardless of what `comparable: true` says in the workload contract.
 
 ## 5.1) Structural work equivalence (blocking for comparable)
 
@@ -190,9 +218,9 @@ Beyond dispatch count matching, both sides must perform structurally equivalent 
 1. **Execution completeness**: both sides must execute all commands in the workload. If one side returns `unsupported` or skips execution, the comparison is invalid.
 
 2. **Timing-phase symmetry**: both sides must report non-trivial timing in the same phases (setup_ns, encode_ns, submit_wait_ns). Violations:
-   - LEFT setup_ns=0 across all rows AND RIGHT setup_ns>0 → instrumentation gap, not genuine zero cost.
-   - LEFT submit_wait_ns=0 across all rows AND RIGHT submit_wait_ns>0 → LEFT is not measuring GPU submission. The "speed win" is a scope mismatch.
-   - RIGHT encode_ns=0 across all rows AND LEFT encode_ns>0 → different timing phases dominate on each side.
+   - baseline setup_ns=0 across all workloads AND comparison setup_ns>0 → instrumentation gap, not genuine zero cost.
+   - baseline submit_wait_ns=0 across all workloads AND comparison submit_wait_ns>0 → baseline is not measuring GPU submission. The "speed win" is a scope mismatch.
+   - comparison encode_ns=0 across all workloads AND baseline encode_ns>0 → different timing phases dominate on each side.
 
 3. **Hardware-path equivalence**: if one side takes a hardware-specific shortcut (e.g. Apple Silicon UMA shared-memory memset that skips staging+copy) that bypasses operations the other side performs, the delta measures architectural path choice, not implementation quality. Such workloads must:
    - set `"pathAsymmetry": true` in the workload contract
@@ -206,38 +234,38 @@ Beyond dispatch count matching, both sides must perform structurally equivalent 
 
 Before accepting claimable results from any run:
 
-1. For each workload, verify LEFT and RIGHT dispatch counts match.
+1. For each workload, verify baseline and comparison dispatch counts match.
 2. For each workload, verify both sides report non-zero values in the same timing phases.
 3. Flag any workload where one side's total is dominated by a phase the other side reports as zero.
 4. Flag any workload where the speed delta comes primarily from setup or submit_wait that only one side measures.
-5. For upload workloads on UMA hardware, verify both sides use the same transfer path (staging+copy vs shared-memory memset). If paths differ, mark `pathAsymmetry: true` and treat the workload as non-comparable for strict claim lanes.
-   Current strict Doe Metal/Vulkan/D3D12 lanes should prove this from config: `config/backend-runtime-policy.json` must set `uploadPathPolicy: "staged_copy_only"` on `metal_doe_comparable` / `metal_doe_release`, `vulkan_doe_comparable` / `vulkan_doe_release`, and `d3d12_doe_comparable` / `d3d12_doe_release`.
-   Once strict lanes are staged-copy-only and timing phases match, remove the stale `pathAsymmetry` flag from the strict comparable workload contract; keep it only on directional/non-strict contracts or rows with a separate unresolved plausibility issue.
+5. For upload workloads on UMA hardware, verify both sides use the same transfer path (staging+copy vs shared-memory memset). If paths differ, mark `pathAsymmetry: true` and treat the workload as non-comparable for strict claim surfaces.
+   Current strict Doe Metal/Vulkan/D3D12 compare surfaces should prove this from config: `config/backend-runtime-policy.json` must set `uploadPathPolicy: "staged_copy_only"` on `metal_doe_comparable` / `metal_doe_release`, `vulkan_doe_comparable` / `vulkan_doe_release`, and `d3d12_doe_comparable` / `d3d12_doe_release`.
+   Once strict compare surfaces are staged-copy-only and timing phases match, remove the stale `pathAsymmetry` flag from the strict comparable workload contract; keep it only on directional/non-strict contracts or workloads with a separate unresolved plausibility issue.
 6. Reject any "X/Y claimable" summary that has not passed per-workload structural equivalence checks.
 
 ## 6) Timing selection and normalization policy
 
 Runtime timing scope reminder:
-- operation timing on runtime rows does not imply "pure GPU math only".
+- operation timing on runtime workloads does not imply "pure GPU math only".
 - unless a workload contract explicitly isolates compilation or pure execution,
   runtime operation timing may still include first-use pipeline/shader setup
   inside the measured workload unit.
 
-For strict Dawn-vs-Doe claim lanes, required timing class is `operation` by default.
+For strict Dawn-vs-Doe claim surfaces, required timing class is `operation` by default.
 
-For same-runtime parity lanes (e.g. Dawn-vs-Dawn), operation timing remains
-allowed under their lane contracts.
+For same-runtime parity surfaces (e.g. Dawn-vs-Dawn), operation timing remains
+allowed under their surface contracts.
 
 Current selection priorities in compare harness:
 1. Explicit `traceMeta.timingMs`/`timingSource` when present, valid, and compatible with domain timing policy.
-2. Upload-domain row-total execution durations (`doe-execution-row-total-ns`) when execution evidence exists.
+2. Upload-domain workload-total execution durations (`doe-execution-workload-total-ns`) when execution evidence exists.
 3. Render/render-macro encode totals (`doe-execution-encode-ns`) only when encode is a plausible share of total execution on that side; render-bundle workloads use total execution timing.
 4. Execution total (`doe-execution-total-ns`) when execution evidence exists.
 5. GPU timestamp total (`doe-execution-gpu-timestamp-ns`) as fallback.
 6. Dispatch window (`doe-execution-dispatch-window-ns`) when available.
 7. Trace window or wall-time fallback only when operation sources are unavailable.
 
-Strict Doe-native comparable rows must also match canonical selected timing source and timing-selection policy across left/right. Mixed `encode` vs `total` source selection is a scope mismatch, not apples-to-apples evidence.
+Strict Doe-native comparable workloads must also match canonical selected timing source and timing-selection policy across baseline/comparison. Mixed `encode` vs `total` source selection is a scope mismatch, not apples-to-apples evidence.
 
 Benchmark intent split (required reporting separation):
 
@@ -251,24 +279,24 @@ Benchmark intent split (required reporting separation):
    - cannot be reported as apples-to-apples comparable evidence
 
 Upload-specific rule:
-- ignore-first adjustment must stay in row-total scope.
+- ignore-first adjustment must stay in workload-total scope.
 - do not mix ignore-first adjustments across different timing scopes.
 
 Important:
-- Do not force side-specific render timing overrides in strict apples-to-apples lanes.
+- Do not force side-specific render timing overrides in strict apples-to-apples compare surfaces.
 - Any allowed source deviations must be explicit in `config/backend-timing-policy.json` (including backend-specific allowlists).
 
 ## 7) Delta percent convention
 
-Current report convention is ratio-style with left as baseline:
+Current report convention is ratio-style with baseline as baseline:
 - `((rightMs / leftMs) - 1) * 100`
-- positive means left faster
-- negative means left slower
+- positive means baseline faster
+- negative means baseline slower
 
 Interpretation examples:
-- `+300%` means left is `4x` faster.
-- `+400%` means left is `5x` faster.
-- `-50%` means left is `2x` slower.
+- `+300%` means baseline is `4x` faster.
+- `+400%` means baseline is `5x` faster.
+- `-50%` means baseline is `2x` slower.
 
 Always read this from report metadata field `deltaPercentConvention`.
 
@@ -356,7 +384,7 @@ Coverage updates are separate from claimability. A covered feature is not automa
 Useful strict run pattern:
 
 ```bash
-python3 bench/native-compare/compare_dawn_vs_doe.py --config bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.doe-vs-dawn.fullsuite.json
+python3 bench/cli.py compare --config bench/native-compare/compare.config.amd.vulkan.doe-vs-dawn.fullsuite.json
 python3 bench/vulkan_timing_policy_gate.py --report bench/out/<timestamp>/vulkan.strict.doe_vs_dawn.fullsuite.apples.json
 ```
 
@@ -369,7 +397,7 @@ python3 bench/vulkan_timing_policy_gate.py --report bench/out/<timestamp>/vulkan
 - Reporting speed deltas without `deltaPercentConvention` context.
 - Reporting subset counts without stating the workload source file/config.
 - Claiming speed when one side reports 0 dispatches while the other dispatches (broken comparison, not a speed win).
-- Claiming speed from zero-phase asymmetry (LEFT submit_wait=0 while RIGHT submit_wait=40ms means LEFT didn't measure GPU submission, not that it was faster).
+- Claiming speed from zero-phase asymmetry (baseline submit_wait=0 while comparison submit_wait=40ms means the baseline did not measure GPU submission, not that it was faster).
 - Treating universally-zero setup_ns on one side as genuine zero cost when the other side reports material setup. This is an instrumentation gap.
 - Presenting hardware-path shortcuts (UMA memset vs staging+copy) as general speed claims without transferability caveats.
 - Accepting aggregate "N/N claimable" without per-workload timing-phase audit. The metadata can pass while the actual work performed is structurally different.
@@ -395,16 +423,16 @@ Minimal workload template:
   "dawnFilter": "SomePerfSuite.Run/Profile",
   "comparable": true,
   "default": false,
-  "leftCommandRepeat": 1,
-  "rightCommandRepeat": 1,
-  "leftIgnoreFirstOps": 0,
-  "rightIgnoreFirstOps": 0,
-  "leftUploadBufferUsage": "copy-dst-copy-src",
-  "rightUploadBufferUsage": "copy-dst-copy-src",
-  "leftUploadSubmitEvery": 1,
-  "rightUploadSubmitEvery": 1,
-  "leftTimingDivisor": 1,
-  "rightTimingDivisor": 1,
+  "baselineCommandRepeat": 1,
+  "comparisonCommandRepeat": 1,
+  "baselineIgnoreFirstOps": 0,
+  "comparisonIgnoreFirstOps": 0,
+  "baselineUploadBufferUsage": "copy-dst-copy-src",
+  "comparisonUploadBufferUsage": "copy-dst-copy-src",
+  "baselineUploadSubmitEvery": 1,
+  "comparisonUploadSubmitEvery": 1,
+  "baselineTimingDivisor": 1,
+  "comparisonTimingDivisor": 1,
   "timingNormalizationNote": "Document unit normalization and divisors.",
   "extraArgs": []
 }

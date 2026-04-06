@@ -16,8 +16,8 @@
         "minClaimableComparableReports",
         "requiredComparisonStatus",
         "requiredClaimStatus",
-        "minUniqueLeftProfiles",
-        "enforceTargetUniqueLeftProfiles"
+        "minUniqueBaselineProfiles",
+        "enforceTargetUniqueBaselineProfiles"
       ],
       "additionalProperties": false,
       "properties": {
@@ -25,9 +25,9 @@
         "minClaimableComparableReports": { "type": "integer", "minimum": 1 },
         "requiredComparisonStatus": { "type": "string", "minLength": 1 },
         "requiredClaimStatus": { "type": "string", "minLength": 1 },
-        "minUniqueLeftProfiles": { "type": "integer", "minimum": 1 },
-        "targetUniqueLeftProfiles": { "type": "integer", "minimum": 1 },
-        "enforceTargetUniqueLeftProfiles": { "type": "boolean" },
+        "minUniqueBaselineProfiles": { "type": "integer", "minimum": 1 },
+        "targetUniqueBaselineProfiles": { "type": "integer", "minimum": 1 },
+        "enforceTargetUniqueBaselineProfiles": { "type": "boolean" },
         "notes": { "type": "string" }
       }
     }

@@ -1,4 +1,4 @@
-"""Runtime comparability checks for compare_dawn_vs_doe."""
+"""Runtime comparability checks for the compare lane."""
 
 from __future__ import annotations
 
@@ -91,29 +91,29 @@ def assess_timing_phase_equivalence(
         left_medians[phase_key] = left_median
         right_medians[phase_key] = right_median
         phase_sample_counts[phase_key] = {
-            "left": len(left_values),
-            "right": len(right_values),
+            "baseline": len(left_values),
+            "comparison": len(right_values),
         }
         if left_median is None or right_median is None:
             continue
         if left_median == 0.0 and right_median >= _PHASE_ASYMMETRY_THRESHOLD:
             mismatches.append(
-                f"left reports zero {field_name} median while right spends {right_median:.1%} "
+                f"baseline reports zero {field_name} median while comparison spends {right_median:.1%} "
                 "of execution in that phase"
             )
         elif right_median == 0.0 and left_median >= _PHASE_ASYMMETRY_THRESHOLD:
             mismatches.append(
-                f"right reports zero {field_name} median while left spends {left_median:.1%} "
+                f"comparison reports zero {field_name} median while baseline spends {left_median:.1%} "
                 "of execution in that phase"
             )
 
     applies = any(
-        counts["left"] > 0 and counts["right"] > 0 for counts in phase_sample_counts.values()
+        counts["baseline"] > 0 and counts["comparison"] > 0 for counts in phase_sample_counts.values()
     )
     details: dict[str, Any] = {
         "phaseAsymmetryThreshold": _PHASE_ASYMMETRY_THRESHOLD,
-        "leftMedianPhaseFractions": left_medians,
-        "rightMedianPhaseFractions": right_medians,
+        "baselineMedianPhaseFractions": left_medians,
+        "comparisonMedianPhaseFractions": right_medians,
         "phaseSampleCounts": phase_sample_counts,
         "phaseMismatchCount": len(mismatches),
         "phaseMismatches": mismatches,
@@ -128,18 +128,18 @@ def compare_assessment(
     workload_domain: str,
     workload_path_asymmetry: bool,
     workload_path_asymmetry_note: str,
-    left_command_repeat: int,
-    right_command_repeat: int,
-    left: dict[str, Any],
-    right: dict[str, Any],
+    baseline_command_repeat: int,
+    comparison_command_repeat: int,
+    baseline: dict[str, Any],
+    comparison: dict[str, Any],
     required_timing_class: str,
-    allow_left_no_execution: bool,
+    allow_baseline_no_execution: bool,
     resource_probe: str,
     comparability_mode: str,
     resource_sample_target_count: int,
 ) -> dict[str, Any]:
-    left_samples_raw = left.get("commandSamples", [])
-    right_samples_raw = right.get("commandSamples", [])
+    left_samples_raw = baseline.get("commandSamples", [])
+    right_samples_raw = comparison.get("commandSamples", [])
     left_samples = left_samples_raw if isinstance(left_samples_raw, list) else []
     right_samples = right_samples_raw if isinstance(right_samples_raw, list) else []
 
@@ -271,11 +271,11 @@ def compare_assessment(
     )
     is_left_dawn_delegate = (
         "dawn_delegate" in left_execution_backends
-        or "dawn_node_webgpu" in left_execution_backends
+        or "node_webgpu_package" in left_execution_backends
     )
     is_right_dawn_delegate = (
         "dawn_delegate" in right_execution_backends
-        or "dawn_node_webgpu" in right_execution_backends
+        or "node_webgpu_package" in right_execution_backends
     )
     is_left_dawn = is_left_dawn_delegate or is_left_dawn_direct or is_left_dawn_perf
     is_right_dawn = is_right_dawn_delegate or is_right_dawn_direct or is_right_dawn_perf
@@ -304,8 +304,8 @@ def compare_assessment(
         blocking=True,
         applicable=True,
         passes=len(left_samples) > 0,
-        failure_reason="left side has no measured samples",
-        details={"leftSampleCount": len(left_samples)},
+        failure_reason="baseline side has no measured samples",
+        details={"baselineSampleCount": len(left_samples)},
     )
     _record_obligation(
         obligations,
@@ -314,8 +314,8 @@ def compare_assessment(
         blocking=True,
         applicable=True,
         passes=len(right_samples) > 0,
-        failure_reason="right side has no measured samples",
-        details={"rightSampleCount": len(right_samples)},
+        failure_reason="comparison side has no measured samples",
+        details={"comparisonSampleCount": len(right_samples)},
     )
     _record_obligation(
         obligations,
@@ -324,8 +324,8 @@ def compare_assessment(
         blocking=True,
         applicable=True,
         passes=len(left_classes) == 1,
-        failure_reason=f"left side uses mixed timing classes: {left_classes}",
-        details={"leftTimingClasses": left_classes},
+        failure_reason=f"baseline side uses mixed timing classes: {left_classes}",
+        details={"baselineTimingClasses": left_classes},
     )
     _record_obligation(
         obligations,
@@ -334,8 +334,8 @@ def compare_assessment(
         blocking=True,
         applicable=True,
         passes=len(right_classes) == 1,
-        failure_reason=f"right side uses mixed timing classes: {right_classes}",
-        details={"rightTimingClasses": right_classes},
+        failure_reason=f"comparison side uses mixed timing classes: {right_classes}",
+        details={"comparisonTimingClasses": right_classes},
     )
 
     required_timing_class_applies = required_timing_class != "any"
@@ -346,10 +346,10 @@ def compare_assessment(
         blocking=True,
         applicable=required_timing_class_applies,
         passes=left_class == required_timing_class,
-        failure_reason=f"left timing class is {left_class}, required {required_timing_class}",
+        failure_reason=f"baseline timing class is {left_class}, required {required_timing_class}",
         details={
             "requiredTimingClass": required_timing_class,
-            "leftTimingClass": left_class,
+            "baselineTimingClass": left_class,
         },
     )
     _record_obligation(
@@ -359,10 +359,10 @@ def compare_assessment(
         blocking=True,
         applicable=required_timing_class_applies,
         passes=right_class == required_timing_class,
-        failure_reason=f"right timing class is {right_class}, required {required_timing_class}",
+        failure_reason=f"comparison timing class is {right_class}, required {required_timing_class}",
         details={
             "requiredTimingClass": required_timing_class,
-            "rightTimingClass": right_class,
+            "comparisonTimingClass": right_class,
         },
     )
 
@@ -370,20 +370,20 @@ def compare_assessment(
     _record_obligation(
         obligations,
         reasons,
-        obligation_id="left_right_timing_class_match",
+        obligation_id="baseline_comparison_timing_class_match",
         blocking=True,
         applicable=timing_match_applies,
         passes=left_class == right_class,
-        failure_reason=f"left/right timing class mismatch: {left_class} vs {right_class}",
+        failure_reason=f"baseline/comparison timing class mismatch: {left_class} vs {right_class}",
         details={
-            "leftTimingClass": left_class,
-            "rightTimingClass": right_class,
+            "baselineTimingClass": left_class,
+            "comparisonTimingClass": right_class,
         },
     )
     _record_obligation(
         obligations,
         reasons,
-        obligation_id="left_right_trace_meta_source_match",
+        obligation_id="baseline_comparison_trace_meta_source_match",
         blocking=True,
         applicable=len(left_samples) > 0 and len(right_samples) > 0,
         passes=_sources_match_with_runtime_compatibility(
@@ -411,20 +411,20 @@ def compare_assessment(
             is_right_doe=is_right_doe,
         ),
         failure_reason=(
-            "left/right trace meta source mismatch or incompatible runtime families: "
+            "baseline/comparison trace meta source mismatch or incompatible runtime families: "
             f"{left_trace_meta_sources} vs {right_trace_meta_sources}"
         ),
         details={
-            "leftTraceMetaSources": left_trace_meta_sources,
-            "rightTraceMetaSources": right_trace_meta_sources,
-            "leftSelectedSources": left_selected_sources,
-            "rightSelectedSources": right_selected_sources,
+            "baselineTraceMetaSources": left_trace_meta_sources,
+            "comparisonTraceMetaSources": right_trace_meta_sources,
+            "baselineSelectedSources": left_selected_sources,
+            "comparisonSelectedSources": right_selected_sources,
         },
     )
     _record_obligation(
         obligations,
         reasons,
-        obligation_id="left_right_timing_selection_policy_match",
+        obligation_id="baseline_comparison_timing_selection_policy_match",
         blocking=True,
         applicable=len(left_samples) > 0 and len(right_samples) > 0,
         passes=_timing_selection_policy_match_with_runtime_compatibility(
@@ -444,28 +444,28 @@ def compare_assessment(
             is_right_doe=is_right_doe,
         ),
         failure_reason=(
-            "left/right timing selection policy mismatch or incompatible runtime policies: "
+            "baseline/comparison timing selection policy mismatch or incompatible runtime policies: "
             f"{left_timing_selection_policies} vs {right_timing_selection_policies}"
         ),
         details={
-            "leftTimingSelectionPolicies": left_timing_selection_policies,
-            "rightTimingSelectionPolicies": right_timing_selection_policies,
+            "baselineTimingSelectionPolicies": left_timing_selection_policies,
+            "comparisonTimingSelectionPolicies": right_timing_selection_policies,
         },
     )
     _record_obligation(
         obligations,
         reasons,
-        obligation_id="left_right_queue_sync_mode_match",
+        obligation_id="baseline_comparison_queue_sync_mode_match",
         blocking=True,
         applicable=len(left_samples) > 0 and len(right_samples) > 0,
         passes=left_queue_sync_modes == right_queue_sync_modes,
         failure_reason=(
-            "left/right queue sync mode mismatch: "
+            "baseline/comparison queue sync mode mismatch: "
             f"{left_queue_sync_modes} vs {right_queue_sync_modes}"
         ),
         details={
-            "leftQueueSyncModes": left_queue_sync_modes,
-            "rightQueueSyncModes": right_queue_sync_modes,
+            "baselineQueueSyncModes": left_queue_sync_modes,
+            "comparisonQueueSyncModes": right_queue_sync_modes,
         },
     )
     (
@@ -480,12 +480,12 @@ def compare_assessment(
     _record_obligation(
         obligations,
         reasons,
-        obligation_id="left_right_timing_phase_match",
+        obligation_id="baseline_comparison_timing_phase_match",
         blocking=True,
         applicable=timing_phase_match_applies,
         passes=timing_phase_match,
         failure_reason=(
-            "left/right timing phase mismatch: " + timing_phase_failure_reason
+            "baseline/comparison timing phase mismatch: " + timing_phase_failure_reason
             if timing_phase_failure_reason
             else ""
         ),
@@ -552,13 +552,13 @@ def compare_assessment(
 
     normalized_left_execution_shapes, left_execution_shape_reason = normalize_execution_shapes(
         left_execution_shapes,
-        side_name="left",
-        command_repeat=left_command_repeat,
+        side_name="baseline",
+        command_repeat=baseline_command_repeat,
     )
     normalized_right_execution_shapes, right_execution_shape_reason = normalize_execution_shapes(
         right_execution_shapes,
-        side_name="right",
-        command_repeat=right_command_repeat,
+        side_name="comparison",
+        command_repeat=comparison_command_repeat,
     )
     execution_shape_match = False
     execution_shape_mismatch_reason = ""
@@ -574,30 +574,30 @@ def compare_assessment(
     _record_obligation(
         obligations,
         reasons,
-        obligation_id="left_right_execution_shape_match",
+        obligation_id="baseline_comparison_execution_shape_match",
         blocking=True,
         applicable=dispatch_shape_domain and len(left_execution_shapes) > 0 and len(right_execution_shapes) > 0,
         passes=execution_shape_match,
         failure_reason=(
-            "left/right execution shape mismatch (dispatch/row/success counts): "
+            "baseline/comparison execution shape mismatch (dispatch/row/success counts): "
             f"{left_execution_shapes} vs {right_execution_shapes}; "
             f"reason={execution_shape_mismatch_reason}"
         ),
         details={
             "workloadDomain": workload_domain,
             "dispatchShapeDomain": dispatch_shape_domain,
-            "leftExecutionShapes": left_execution_shapes,
-            "rightExecutionShapes": right_execution_shapes,
-            "leftNormalizedExecutionShapes": normalized_left_execution_shapes,
-            "rightNormalizedExecutionShapes": normalized_right_execution_shapes,
-            "leftCommandRepeat": left_command_repeat,
-            "rightCommandRepeat": right_command_repeat,
+            "baselineExecutionShapes": left_execution_shapes,
+            "comparisonExecutionShapes": right_execution_shapes,
+            "baselineNormalizedExecutionShapes": normalized_left_execution_shapes,
+            "comparisonNormalizedExecutionShapes": normalized_right_execution_shapes,
+            "baselineCommandRepeat": baseline_command_repeat,
+            "comparisonCommandRepeat": comparison_command_repeat,
             "comparisonReason": execution_shape_mismatch_reason,
         },
     )
     hardware_path_match_applies = comparability_mode == "strict" and is_dawn_vs_doe
     hardware_path_failure_reason = (
-        "workload contract marks pathAsymmetry=true: left/right use hardware-specific "
+        "workload contract marks pathAsymmetry=true: baseline/comparison use hardware-specific "
         "execution paths that are not structurally equivalent"
     )
     if workload_path_asymmetry_note:
@@ -605,7 +605,7 @@ def compare_assessment(
     _record_obligation(
         obligations,
         reasons,
-        obligation_id="left_right_hardware_path_match",
+        obligation_id="baseline_comparison_hardware_path_match",
         blocking=True,
         applicable=hardware_path_match_applies,
         passes=not workload_path_asymmetry,
@@ -628,7 +628,7 @@ def compare_assessment(
             "webgpu-ffi",
             "dawn_delegate",
             "dawn_direct_metal",
-            "dawn_node_webgpu",
+            "node_webgpu_package",
             "doe_node_webgpu",
             "doe_metal",
             "doe_vulkan",
@@ -650,12 +650,12 @@ def compare_assessment(
     _record_obligation(
         obligations,
         reasons,
-        obligation_id="left_native_operation_timing_for_webgpu_ffi",
+        obligation_id="baseline_native_operation_timing_for_webgpu_ffi",
         blocking=True,
         applicable=required_timing_class == "operation",
         passes=len(invalid_native_execution_sources) == 0,
         failure_reason=(
-            "left side uses non-native operation timing source(s) for native execution: "
+            "baseline side uses non-native operation timing source(s) for native execution: "
             + ", ".join(sorted(invalid_native_execution_sources))
         ),
         details={
@@ -684,10 +684,10 @@ def compare_assessment(
             canonical_base = canonical_timing_source(base_source)
             canonical_adjusted = canonical_timing_source(adjusted_source)
             canonical_selected = canonical_timing_source(str(sample.get("timingSource", "")))
-            if canonical_adjusted != "doe-execution-row-total-ns":
+            if canonical_adjusted != "doe-execution-workload-total-ns":
                 side_reasons.append(
                     f"{side_name} {run_label} ignore-first adjusted source is "
-                    f"{canonical_adjusted}; require doe-execution-row-total-ns"
+                    f"{canonical_adjusted}; require doe-execution-workload-total-ns"
                 )
             if canonical_base and canonical_adjusted and canonical_base != canonical_adjusted:
                 side_reasons.append(
@@ -715,12 +715,12 @@ def compare_assessment(
 
     upload_scope_applies = workload_domain == "upload"
     left_upload_scope_reasons = (
-        collect_upload_ignore_first_violations(side_name="left", samples=left_samples)
+        collect_upload_ignore_first_violations(side_name="baseline", samples=left_samples)
         if upload_scope_applies
         else []
     )
     right_upload_scope_reasons = (
-        collect_upload_ignore_first_violations(side_name="right", samples=right_samples)
+        collect_upload_ignore_first_violations(side_name="comparison", samples=right_samples)
         if upload_scope_applies
         else []
     )
@@ -729,7 +729,7 @@ def compare_assessment(
     _record_obligation(
         obligations,
         reasons,
-        obligation_id="left_upload_ignore_first_scope_consistent",
+        obligation_id="baseline_upload_ignore_first_scope_consistent",
         blocking=True,
         applicable=upload_scope_applies,
         passes=len(left_upload_scope_reasons) == 0,
@@ -738,7 +738,7 @@ def compare_assessment(
     _record_obligation(
         obligations,
         reasons,
-        obligation_id="right_upload_ignore_first_scope_consistent",
+        obligation_id="comparison_upload_ignore_first_scope_consistent",
         blocking=True,
         applicable=upload_scope_applies,
         passes=len(right_upload_scope_reasons) == 0,
@@ -747,26 +747,26 @@ def compare_assessment(
     _record_obligation(
         obligations,
         reasons,
-        obligation_id="left_right_upload_buffer_usage_match",
+        obligation_id="baseline_comparison_upload_buffer_usage_match",
         blocking=True,
         applicable=upload_scope_applies and len(left_samples) > 0 and len(right_samples) > 0,
         passes=left_upload_usages == right_upload_usages,
         failure_reason=(
-            f"left/right upload usage mismatch: {left_upload_usages} vs {right_upload_usages}"
+            f"baseline/comparison upload usage mismatch: {left_upload_usages} vs {right_upload_usages}"
         ),
-        details={"leftUploadUsages": sorted(list(str(u) for u in left_upload_usages)), "rightUploadUsages": sorted(list(str(u) for u in right_upload_usages))},
+        details={"baselineUploadUsages": sorted(list(str(u) for u in left_upload_usages)), "comparisonUploadUsages": sorted(list(str(u) for u in right_upload_usages))},
     )
     _record_obligation(
         obligations,
         reasons,
-        obligation_id="left_right_upload_submit_cadence_match",
+        obligation_id="baseline_comparison_upload_submit_cadence_match",
         blocking=True,
         applicable=upload_scope_applies and len(left_samples) > 0 and len(right_samples) > 0,
         passes=left_upload_submit_cadence == right_upload_submit_cadence,
         failure_reason=(
-            f"left/right upload submit cadence mismatch: {left_upload_submit_cadence} vs {right_upload_submit_cadence}"
+            f"baseline/comparison upload submit cadence mismatch: {left_upload_submit_cadence} vs {right_upload_submit_cadence}"
         ),
-        details={"leftUploadSubmitCadences": sorted(list(str(c) for c in left_upload_submit_cadence)), "rightUploadSubmitCadences": sorted(list(str(c) for c in right_upload_submit_cadence))},
+        details={"baselineUploadSubmitCadences": sorted(list(str(c) for c in left_upload_submit_cadence)), "comparisonUploadSubmitCadences": sorted(list(str(c) for c in right_upload_submit_cadence))},
     )
 
     left_has_execution = False
@@ -788,41 +788,41 @@ def compare_assessment(
     _record_obligation(
         obligations,
         reasons,
-        obligation_id="left_execution_evidence_present",
+        obligation_id="baseline_execution_evidence_present",
         blocking=True,
-        applicable=not allow_left_no_execution,
+        applicable=not allow_baseline_no_execution,
         passes=left_has_execution,
-        failure_reason="left side has no execution evidence (executionSuccessCount/executionRowCount)",
+        failure_reason="baseline side has no execution evidence (executionSuccessCount/executionRowCount)",
         details={
-            "allowLeftNoExecution": bool(allow_left_no_execution),
-            "leftHasExecutionEvidence": left_has_execution,
+            "allowBaselineNoExecution": bool(allow_baseline_no_execution),
+            "baselineHasExecutionEvidence": left_has_execution,
         },
     )
     _record_obligation(
         obligations,
         reasons,
-        obligation_id="left_successful_execution_present",
+        obligation_id="baseline_successful_execution_present",
         blocking=True,
-        applicable=not allow_left_no_execution,
+        applicable=not allow_baseline_no_execution,
         passes=left_successful_execution,
-        failure_reason="left side has no successful execution samples (executionSuccessCount=0)",
+        failure_reason="baseline side has no successful execution samples (executionSuccessCount=0)",
         details={
-            "leftSuccessfulExecution": left_successful_execution,
+            "baselineSuccessfulExecution": left_successful_execution,
         },
     )
     _record_obligation(
         obligations,
         reasons,
-        obligation_id="left_success_or_unsupported_or_skipped",
+        obligation_id="baseline_success_or_unsupported_or_skipped",
         blocking=True,
-        applicable=allow_left_no_execution,
+        applicable=allow_baseline_no_execution,
         passes=left_successful_execution or left_has_unsupported_or_skipped,
         failure_reason=(
-            "left side has no successful execution samples and no unsupported/skipped execution evidence"
+            "baseline side has no successful execution samples and no unsupported/skipped execution evidence"
         ),
         details={
-            "leftSuccessfulExecution": left_successful_execution,
-            "leftHasUnsupportedOrSkippedEvidence": left_has_unsupported_or_skipped,
+            "baselineSuccessfulExecution": left_successful_execution,
+            "baselineHasUnsupportedOrSkippedEvidence": left_has_unsupported_or_skipped,
         },
     )
 
@@ -840,31 +840,31 @@ def compare_assessment(
     _record_obligation(
         obligations,
         reasons,
-        obligation_id="left_execution_errors_absent",
+        obligation_id="baseline_execution_errors_absent",
         blocking=True,
         applicable=True,
         passes=left_execution_error_samples == 0,
         failure_reason=(
-            f"left side reported execution errors in {left_execution_error_samples}/{len(left_samples)} samples"
+            f"baseline side reported execution errors in {left_execution_error_samples}/{len(left_samples)} samples"
         ),
         details={
-            "leftExecutionErrorSampleCount": left_execution_error_samples,
-            "leftSampleCount": len(left_samples),
+            "baselineExecutionErrorSampleCount": left_execution_error_samples,
+            "baselineSampleCount": len(left_samples),
         },
     )
     _record_obligation(
         obligations,
         reasons,
-        obligation_id="right_execution_errors_absent",
+        obligation_id="comparison_execution_errors_absent",
         blocking=True,
         applicable=True,
         passes=right_execution_error_samples == 0,
         failure_reason=(
-            f"right side reported execution errors in {right_execution_error_samples}/{len(right_samples)} samples"
+            f"comparison side reported execution errors in {right_execution_error_samples}/{len(right_samples)} samples"
         ),
         details={
-            "rightExecutionErrorSampleCount": right_execution_error_samples,
-            "rightSampleCount": len(right_samples),
+            "comparisonExecutionErrorSampleCount": right_execution_error_samples,
+            "comparisonSampleCount": len(right_samples),
         },
     )
 
@@ -913,19 +913,19 @@ def compare_assessment(
     if plausibility_applies:
         if left_ratio is not None and left_ratio < _PLAUSIBILITY_MIN_WALL_RATIO and left_wall >= _PLAUSIBILITY_MIN_WALL_MS:
             plausibility_failures.append(
-                f"left traced timing ({left_traced:.4f}ms) is {left_ratio:.4%} of normalized wall time "
+                f"baseline traced timing ({left_traced:.4f}ms) is {left_ratio:.4%} of normalized wall time "
                 f"({left_wall:.1f}ms); timing source is not measuring the actual operation"
             )
         if right_ratio is not None and right_ratio < _PLAUSIBILITY_MIN_WALL_RATIO and right_wall >= _PLAUSIBILITY_MIN_WALL_MS:
             plausibility_failures.append(
-                f"right traced timing ({right_traced:.4f}ms) is {right_ratio:.4%} of normalized wall time "
+                f"comparison traced timing ({right_traced:.4f}ms) is {right_ratio:.4%} of normalized wall time "
                 f"({right_wall:.1f}ms); timing source is not measuring the actual operation"
             )
 
     _record_obligation(
         obligations,
         reasons,
-        obligation_id="left_right_timing_plausibility",
+        obligation_id="baseline_comparison_timing_plausibility",
         blocking=True,
         applicable=plausibility_applies,
         passes=len(plausibility_failures) == 0,
@@ -933,21 +933,21 @@ def compare_assessment(
         details={
             "minWallRatio": _PLAUSIBILITY_MIN_WALL_RATIO,
             "minWallMs": _PLAUSIBILITY_MIN_WALL_MS,
-            "leftMedianTracedMs": left_traced,
-            "leftMedianWallMs": left_wall,
-            "leftMedianProcessWallMs": left_process_wall,
-            "leftMedianRatio": left_ratio,
-            "rightMedianTracedMs": right_traced,
-            "rightMedianWallMs": right_wall,
-            "rightMedianProcessWallMs": right_process_wall,
-            "rightMedianRatio": right_ratio,
+            "baselineMedianTracedMs": left_traced,
+            "baselineMedianWallMs": left_wall,
+            "baselineMedianProcessWallMs": left_process_wall,
+            "baselineMedianRatio": left_ratio,
+            "comparisonMedianTracedMs": right_traced,
+            "comparisonMedianWallMs": right_wall,
+            "comparisonMedianProcessWallMs": right_process_wall,
+            "comparisonMedianRatio": right_ratio,
         },
     )
 
     left_resource_sample_counts: list[int] = []
     right_resource_sample_counts: list[int] = []
-    left_resource_probe_available = 0
-    right_resource_probe_available = 0
+    baseline_resource_probe_available = 0
+    comparison_resource_probe_available = 0
     left_resource_truncated = 0
     right_resource_truncated = 0
 
@@ -958,7 +958,7 @@ def compare_assessment(
             if count is not None:
                 left_resource_sample_counts.append(count)
             if resource.get("gpuMemoryProbeAvailable") is True:
-                left_resource_probe_available += 1
+                baseline_resource_probe_available += 1
             if resource.get("resourceSamplingTruncated") is True:
                 left_resource_truncated += 1
     for sample in right_samples:
@@ -968,7 +968,7 @@ def compare_assessment(
             if count is not None:
                 right_resource_sample_counts.append(count)
             if resource.get("gpuMemoryProbeAvailable") is True:
-                right_resource_probe_available += 1
+                comparison_resource_probe_available += 1
             if resource.get("resourceSamplingTruncated") is True:
                 right_resource_truncated += 1
 
@@ -1006,18 +1006,18 @@ def compare_assessment(
 
     resource_probe_applies = resource_probe != "none"
     record_resource_obligation(
-        obligation_id="left_resource_probe_available",
+        obligation_id="baseline_resource_probe_available",
         applicable=resource_probe_applies,
-        passes=left_resource_probe_available > 0,
-        failure_reason="left side has no successful GPU resource probe samples",
-        details={"leftResourceProbeAvailableCount": left_resource_probe_available},
+        passes=baseline_resource_probe_available > 0,
+        failure_reason="baseline side has no successful GPU resource probe samples",
+        details={"baselineResourceProbeAvailableCount": baseline_resource_probe_available},
     )
     record_resource_obligation(
-        obligation_id="right_resource_probe_available",
+        obligation_id="comparison_resource_probe_available",
         applicable=resource_probe_applies,
-        passes=right_resource_probe_available > 0,
-        failure_reason="right side has no successful GPU resource probe samples",
-        details={"rightResourceProbeAvailableCount": right_resource_probe_available},
+        passes=comparison_resource_probe_available > 0,
+        failure_reason="comparison side has no successful GPU resource probe samples",
+        details={"comparisonResourceProbeAvailableCount": comparison_resource_probe_available},
     )
 
     if resource_probe_applies and comparability_mode == "strict":
@@ -1034,71 +1034,71 @@ def compare_assessment(
         )
         if target_positive:
             record_resource_obligation(
-                obligation_id="left_resource_sample_target_match",
+                obligation_id="baseline_resource_sample_target_match",
                 applicable=True,
                 passes=left_resource_sample_median == resource_sample_target_count,
                 failure_reason=(
-                    "left side resource sample median does not match target "
+                    "baseline side resource sample median does not match target "
                     f"({left_resource_sample_median} vs target={resource_sample_target_count})"
                 ),
                 details={
-                    "leftResourceSampleMedian": left_resource_sample_median,
+                    "baselineResourceSampleMedian": left_resource_sample_median,
                     "resourceSampleTargetCount": resource_sample_target_count,
                 },
             )
             record_resource_obligation(
-                obligation_id="right_resource_sample_target_match",
+                obligation_id="comparison_resource_sample_target_match",
                 applicable=True,
                 passes=right_resource_sample_median == resource_sample_target_count,
                 failure_reason=(
-                    "right side resource sample median does not match target "
+                    "comparison side resource sample median does not match target "
                     f"({right_resource_sample_median} vs target={resource_sample_target_count})"
                 ),
                 details={
-                    "rightResourceSampleMedian": right_resource_sample_median,
+                    "comparisonResourceSampleMedian": right_resource_sample_median,
                     "resourceSampleTargetCount": resource_sample_target_count,
                 },
             )
             record_resource_obligation(
-                obligation_id="left_resource_sampling_not_truncated",
+                obligation_id="baseline_resource_sampling_not_truncated",
                 applicable=True,
                 passes=left_resource_truncated == 0,
                 failure_reason=(
-                    "left side resource probing truncated before process completion; "
+                    "baseline side resource probing truncated before process completion; "
                     "increase --resource-sample-target-count or reduce --resource-sample-ms"
                 ),
-                details={"leftResourceSamplingTruncatedCount": left_resource_truncated},
+                details={"baselineResourceSamplingTruncatedCount": left_resource_truncated},
             )
             record_resource_obligation(
-                obligation_id="right_resource_sampling_not_truncated",
+                obligation_id="comparison_resource_sampling_not_truncated",
                 applicable=True,
                 passes=right_resource_truncated == 0,
                 failure_reason=(
-                    "right side resource probing truncated before process completion; "
+                    "comparison side resource probing truncated before process completion; "
                     "increase --resource-sample-target-count or reduce --resource-sample-ms"
                 ),
-                details={"rightResourceSamplingTruncatedCount": right_resource_truncated},
+                details={"comparisonResourceSamplingTruncatedCount": right_resource_truncated},
             )
     elif resource_probe_applies:
         record_resource_obligation(
-            obligation_id="left_resource_sample_density_sufficient",
+            obligation_id="baseline_resource_sample_density_sufficient",
             applicable=True,
             passes=left_resource_sample_median >= 5,
             failure_reason=(
-                "left side resource sampling too sparse "
+                "baseline side resource sampling too sparse "
                 f"(median samples={left_resource_sample_median}, require >=5)"
             ),
-            details={"leftResourceSampleMedian": left_resource_sample_median},
+            details={"baselineResourceSampleMedian": left_resource_sample_median},
         )
         record_resource_obligation(
-            obligation_id="right_resource_sample_density_sufficient",
+            obligation_id="comparison_resource_sample_density_sufficient",
             applicable=True,
             passes=right_resource_sample_median >= 5,
             failure_reason=(
-                "right side resource sampling too sparse "
+                "comparison side resource sampling too sparse "
                 f"(median samples={right_resource_sample_median}, require >=5)"
             ),
-            details={"rightResourceSampleMedian": right_resource_sample_median},
+            details={"comparisonResourceSampleMedian": right_resource_sample_median},
         )
 
     blocking_failed_obligations = [
@@ -1123,34 +1123,34 @@ def compare_assessment(
         "obligations": obligations,
         "blockingFailedObligations": blocking_failed_obligations,
         "advisoryFailedObligations": advisory_failed_obligations,
-        "leftTimingSources": left_sources,
-        "rightTimingSources": right_sources,
-        "leftTraceMetaSources": left_trace_meta_sources,
-        "rightTraceMetaSources": right_trace_meta_sources,
-        "leftTimingSelectionPolicies": left_timing_selection_policies,
-        "rightTimingSelectionPolicies": right_timing_selection_policies,
-        "leftQueueSyncModes": left_queue_sync_modes,
-        "rightQueueSyncModes": right_queue_sync_modes,
-        "leftExecutionShapes": left_execution_shapes,
-        "rightExecutionShapes": right_execution_shapes,
-        "leftNormalizedExecutionShapes": normalized_left_execution_shapes,
-        "rightNormalizedExecutionShapes": normalized_right_execution_shapes,
-        "leftCommandRepeat": left_command_repeat,
-        "rightCommandRepeat": right_command_repeat,
+        "baselineTimingSources": left_sources,
+        "comparisonTimingSources": right_sources,
+        "baselineTraceMetaSources": left_trace_meta_sources,
+        "comparisonTraceMetaSources": right_trace_meta_sources,
+        "baselineTimingSelectionPolicies": left_timing_selection_policies,
+        "comparisonTimingSelectionPolicies": right_timing_selection_policies,
+        "baselineQueueSyncModes": left_queue_sync_modes,
+        "comparisonQueueSyncModes": right_queue_sync_modes,
+        "baselineExecutionShapes": left_execution_shapes,
+        "comparisonExecutionShapes": right_execution_shapes,
+        "baselineNormalizedExecutionShapes": normalized_left_execution_shapes,
+        "comparisonNormalizedExecutionShapes": normalized_right_execution_shapes,
+        "baselineCommandRepeat": baseline_command_repeat,
+        "comparisonCommandRepeat": comparison_command_repeat,
         "workloadPathAsymmetry": bool(workload_path_asymmetry),
         "workloadPathAsymmetryNote": workload_path_asymmetry_note,
-        "leftTimingClass": left_class,
-        "rightTimingClass": right_class,
+        "baselineTimingClass": left_class,
+        "comparisonTimingClass": right_class,
         "resourceProbe": resource_probe,
-        "leftResourceSampleMedian": left_resource_sample_median,
-        "rightResourceSampleMedian": right_resource_sample_median,
-        "leftResourceProbeAvailableCount": left_resource_probe_available,
-        "rightResourceProbeAvailableCount": right_resource_probe_available,
+        "baselineResourceSampleMedian": left_resource_sample_median,
+        "comparisonResourceSampleMedian": right_resource_sample_median,
+        "baselineResourceProbeAvailableCount": baseline_resource_probe_available,
+        "comparisonResourceProbeAvailableCount": comparison_resource_probe_available,
         "resourceSampleTargetCount": max(resource_sample_target_count, 0),
-        "leftResourceSamplingTruncatedCount": left_resource_truncated,
-        "rightResourceSamplingTruncatedCount": right_resource_truncated,
-        "leftExecutionErrorSampleCount": left_execution_error_samples,
-        "rightExecutionErrorSampleCount": right_execution_error_samples,
+        "baselineResourceSamplingTruncatedCount": left_resource_truncated,
+        "comparisonResourceSamplingTruncatedCount": right_resource_truncated,
+        "baselineExecutionErrorSampleCount": left_execution_error_samples,
+        "comparisonExecutionErrorSampleCount": right_execution_error_samples,
         "resourceReasons": resource_reasons,
         "reasons": reasons,
     }

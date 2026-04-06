@@ -1,4 +1,4 @@
-"""Timing-source selection helpers for compare_dawn_vs_doe."""
+"""Timing-source selection helpers for the compare lane."""
 
 from __future__ import annotations
 
@@ -89,7 +89,7 @@ def maybe_adjust_timing_for_ignored_first_ops(
         return measured_ms, measured_source, {
             "uploadIgnoreFirstOps": ignore_first_ops,
             "uploadIgnoreFirstApplied": False,
-            "uploadIgnoreFirstReason": "trace has no execution row-total timing rows",
+            "uploadIgnoreFirstReason": "trace has no execution workload-total timing rows",
         }
 
     if len(durations_ns) <= ignore_first_ops:
@@ -111,12 +111,12 @@ def maybe_adjust_timing_for_ignored_first_ops(
     adjusted_ns = sum(durations_ns[ignore_first_ops:])
     adjusted_count = len(durations_ns) - ignore_first_ops
     adjusted_ms = (float(adjusted_ns) / float(adjusted_count)) / NS_PER_MS
-    adjusted_source = "doe-execution-row-total-ns+ignore-first-ops"
+    adjusted_source = "doe-execution-workload-total-ns+ignore-first-ops"
     return adjusted_ms, adjusted_source, {
         "uploadIgnoreFirstOps": ignore_first_ops,
         "uploadIgnoreFirstApplied": True,
-        "uploadIgnoreFirstBaseTimingSource": "doe-execution-row-total-ns",
-        "uploadIgnoreFirstAdjustedTimingSource": "doe-execution-row-total-ns",
+        "uploadIgnoreFirstBaseTimingSource": "doe-execution-workload-total-ns",
+        "uploadIgnoreFirstAdjustedTimingSource": "doe-execution-workload-total-ns",
         "uploadRowsTotal": base_row_count,
         "uploadRowsIncluded": adjusted_count,
         "uploadTimingRawMsBeforeIgnore": base_row_avg_ms,
@@ -138,7 +138,7 @@ def classify_timing_source(source: str) -> str:
     canonical = canonical_timing_source(source)
     if canonical in (
         "doe-execution-total-ns",
-        "doe-execution-row-total-ns",
+        "doe-execution-workload-total-ns",
         "doe-execution-row-average-ns",
         "doe-execution-dispatch-window-ns",
         "doe-execution-encode-ns",
@@ -235,7 +235,7 @@ def pick_measured_timing_ms(
                 "timingSelectionPolicy": "outer-process-wall-time",
             }
             return wall_ms, "wall-time", timing_meta
-        if prefer_upload_row_total and canonical_source != "doe-execution-row-total-ns":
+        if prefer_upload_row_total and canonical_source != "doe-execution-workload-total-ns":
             pass
         elif (
             prefer_render_encode
@@ -257,8 +257,8 @@ def pick_measured_timing_ms(
                 timing_meta,
                 canonical_source=canonical_source,
             )
-            if prefer_upload_row_total and canonical_source == "doe-execution-row-total-ns":
-                timing_meta["timingSelectionPolicy"] = "upload-row-total-preferred"
+            if prefer_upload_row_total and canonical_source == "doe-execution-workload-total-ns":
+                timing_meta["timingSelectionPolicy"] = "upload-workload-total-preferred"
             if prefer_render_encode and canonical_source == "doe-execution-encode-ns":
                 timing_meta["timingSelectionPolicy"] = "render-encode-preferred"
             return measured_ms, source, timing_meta
@@ -273,7 +273,7 @@ def pick_measured_timing_ms(
                 measured_ms = row_average_ns / NS_PER_MS
                 timing_meta = {
                     "source": "trace-meta",
-                    "traceMetaSource": "doe-execution-row-total-ns",
+                    "traceMetaSource": "doe-execution-workload-total-ns",
                     "traceMetaTimingMs": measured_ms,
                     "executionRowTotalNs": row_total_ns,
                     "executionRowDurationCount": row_count,
@@ -282,11 +282,11 @@ def pick_measured_timing_ms(
                     "executionRowCount": execution_row_count,
                     "executionSuccessCount": execution_success_count,
                     "wallTimeMs": wall_ms,
-                    "timingSelectionPolicy": "upload-row-total-preferred",
+                    "timingSelectionPolicy": "upload-workload-total-preferred",
                     "commandRepeat": effective_repeat,
                     "repeatNormalized": False,
                 }
-                return measured_ms, "doe-execution-row-total-ns", timing_meta
+                return measured_ms, "doe-execution-workload-total-ns", timing_meta
 
     if prefer_render_encode and render_encode_plausible:
         measured_ms = float(execution_encode_total_ns) / NS_PER_MS

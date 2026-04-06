@@ -1,4 +1,4 @@
-"""Reporting/statistics helpers for compare_dawn_vs_doe."""
+"""Reporting/statistics helpers for the compare lane."""
 
 from __future__ import annotations
 

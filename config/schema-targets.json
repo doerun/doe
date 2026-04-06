@@ -206,7 +206,7 @@
       "data": "config/compare-taxonomy.json"
     },
     {
-      "schema": "config/compare-taxonomy-expanded-row.schema.json",
+      "schema": "config/compare-taxonomy-expanded-entry.schema.json",
       "data": "config/generated/compare-taxonomy-expanded.jsonl"
     },
     {

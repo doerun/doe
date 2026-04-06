@@ -23,7 +23,7 @@ Modes:
   - fails fast with first mismatch report
   - used by `bench/gates/trace_gate.py` semantic parity mode (`--semantic-parity-mode auto|required`) for runtime-to-runtime parity checks
   - example:
-    - `python3 pipeline/trace/compare_dispatch_traces.py --left zig.ndjson --right lean.ndjson`
+    - `python3 pipeline/trace/compare_dispatch_traces.py --baseline zig.ndjson --comparison lean.ndjson`
 
 ## Contracts
 

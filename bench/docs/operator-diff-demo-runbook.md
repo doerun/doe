@@ -6,7 +6,7 @@ Purpose:
   `/tmp` artifacts into governed benchmark catalogs
 
 This runbook documents a validated ad-hoc flow using the existing
-`bench/native-compare/compare_dawn_vs_doe.py` harness with scratch configs and
+`bench/cli.py compare` harness with scratch configs and
 workloads under `/tmp`.
 
 ## Preconditions

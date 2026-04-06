@@ -29,7 +29,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--require-manifest",
         action="store_true",
-        help="Fail when shader manifest is missing for successful left-side samples.",
+        help="Fail when shader manifest is missing for successful baseline-side samples.",
     )
     parser.add_argument(
         "--spirv-val",
@@ -78,10 +78,10 @@ def main() -> int:
         if not isinstance(workload, dict):
             continue
         workload_id = str(workload.get("id", "unknown"))
-        left = workload.get("left")
-        if not isinstance(left, dict):
+        baseline = workload.get("baseline")
+        if not isinstance(baseline, dict):
             continue
-        samples = left.get("commandSamples")
+        samples = baseline.get("commandSamples")
         if not isinstance(samples, list):
             continue
         for sample in samples:

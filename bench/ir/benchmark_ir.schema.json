@@ -21,7 +21,21 @@
       "type": "string"
     },
     "shared": {
-      "type": "object"
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "kernelRoot": {
+          "type": "string",
+          "minLength": 1
+        },
+        "timingScope": {
+          "type": "string",
+          "minLength": 1
+        },
+        "syntheticReadonlyBufferPolicy": {
+          "$ref": "#/$defs/syntheticReadonlyBufferPolicy"
+        }
+      }
     },
     "scenarios": {
       "type": "array",
@@ -85,6 +99,36 @@
           "items": {
             "$ref": "#/$defs/command"
           }
+        }
+      }
+    },
+    "syntheticReadonlyBufferPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "cacheNamespace",
+        "generator",
+        "seed"
+      ],
+      "properties": {
+        "cacheNamespace": {
+          "type": "string",
+          "minLength": 1
+        },
+        "generator": {
+          "type": "string",
+          "enum": [
+            "splitmix64_f16_nonzero_v1",
+            "splitmix64_f32_nonzero_v1"
+          ]
+        },
+        "seed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "scale": {
+          "type": "number",
+          "exclusiveMinimum": 0
         }
       }
     }

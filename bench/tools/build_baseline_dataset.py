@@ -371,15 +371,15 @@ def main() -> int:
         generated_at = parse_report_timestamp(payload, source_path)
         generated_at_utc = iso_utc(generated_at)
         matrix_id = normalize_matrix_id(payload, source_path)
-        left_name = str((payload.get("left") or {}).get("name", "left"))
-        right_name = str((payload.get("right") or {}).get("name", "right"))
-        runtime_pair = f"{left_name}→{right_name}"
+        baseline_name = str((payload.get("baseline") or {}).get("name", "baseline"))
+        comparison_name = str((payload.get("comparison") or {}).get("name", "comparison"))
+        runtime_pair = f"{baseline_name}→{comparison_name}"
         entry = {
             "sourcePath": str(source_path),
             "matrixId": matrix_id,
             "runtimePair": runtime_pair,
-            "leftName": left_name,
-            "rightName": right_name,
+            "baselineName": baseline_name,
+            "comparisonName": comparison_name,
             "generatedAtUtc": generated_at_utc,
             "comparisonStatus": comparison_status,
             "claimStatus": claim_status,

@@ -176,24 +176,24 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "leftP50Ms",
-        "rightP50Ms",
+        "baselineP50Ms",
+        "comparisonP50Ms",
         "deltaP50Percent",
-        "leftP95Ms",
-        "rightP95Ms",
-        "leftP99Ms",
-        "rightP99Ms",
-        "leftSampleCount",
-        "rightSampleCount"
+        "baselineP95Ms",
+        "comparisonP95Ms",
+        "baselineP99Ms",
+        "comparisonP99Ms",
+        "baselineSampleCount",
+        "comparisonSampleCount"
       ],
       "properties": {
-        "leftP50Ms": {
+        "baselineP50Ms": {
           "type": [
             "number",
             "null"
           ]
         },
-        "rightP50Ms": {
+        "comparisonP50Ms": {
           "type": [
             "number",
             "null"
@@ -205,38 +205,38 @@
             "null"
           ]
         },
-        "leftP95Ms": {
+        "baselineP95Ms": {
           "type": [
             "number",
             "null"
           ]
         },
-        "rightP95Ms": {
+        "comparisonP95Ms": {
           "type": [
             "number",
             "null"
           ]
         },
-        "leftP99Ms": {
+        "baselineP99Ms": {
           "type": [
             "number",
             "null"
           ]
         },
-        "rightP99Ms": {
+        "comparisonP99Ms": {
           "type": [
             "number",
             "null"
           ]
         },
-        "leftSampleCount": {
+        "baselineSampleCount": {
           "type": [
             "integer",
             "null"
           ],
           "minimum": 0
         },
-        "rightSampleCount": {
+        "comparisonSampleCount": {
           "type": [
             "integer",
             "null"

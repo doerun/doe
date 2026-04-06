@@ -1,0 +1,47 @@
+{
+  "workloads": "bench/workloads/workloads.apple.metal.json",
+  "baseline": {
+    "name": "doe_direct_backend",
+    "executorId": "doe_direct_plan_metal"
+  },
+  "comparison": {
+    "name": "dawn_direct_webgpu",
+    "executorId": "dawn_direct_metal"
+  },
+  "run": {
+    "iterations": 16,
+    "warmup": 1,
+    "out": "bench/out/apple-metal/gemma1b.ir.compare.json",
+    "workspace": "bench/out/apple-metal/gemma1b.ir.workspace",
+    "workloadFilter": "",
+    "emitShell": false
+  },
+  "comparability": {
+    "mode": "strict",
+    "requireTimingClass": "operation",
+    "allowBaselineNoExecution": false
+  },
+  "claimability": {
+    "mode": "local",
+    "minTimedSamples": 15
+  },
+  "resource": {
+    "probe": "none",
+    "sampleMs": 100,
+    "sampleTargetCount": 0
+  },
+  "selector": {
+    "cohorts": [
+      "exploration"
+    ],
+    "benchmarkClass": [
+      "comparable"
+    ],
+    "claimEligibleOnly": false,
+    "domains": [],
+    "ids": [
+      "inference_gemma3_1b_prefill_64tok_decode_64tok"
+    ],
+    "excludeIds": []
+  }
+}

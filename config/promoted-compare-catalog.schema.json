@@ -76,7 +76,7 @@
           "minLength": 1,
           "type": "string"
         },
-        "leftExecutorId": {
+        "baselineExecutorId": {
           "minLength": 1,
           "type": "string"
         },
@@ -154,7 +154,7 @@
           "type": "array",
           "uniqueItems": true
         },
-        "rightExecutorId": {
+        "comparisonExecutorId": {
           "minLength": 1,
           "type": "string"
         },
@@ -185,8 +185,8 @@
         "surface",
         "mode",
         "benchmarkClass",
-        "leftExecutorId",
-        "rightExecutorId",
+        "baselineExecutorId",
+        "comparisonExecutorId",
         "configPath",
         "description"
       ],
@@ -202,8 +202,8 @@
     },
     "surface": {
       "enum": [
-        "native",
-        "direct",
+        "backend",
+        "plan",
         "package"
       ],
       "type": "string"
@@ -220,7 +220,7 @@
       "type": "array"
     },
     "schemaVersion": {
-      "const": 3,
+      "const": 4,
       "type": "integer"
     }
   },

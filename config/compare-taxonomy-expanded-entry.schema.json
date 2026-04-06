@@ -1,0 +1,165 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Doe compare taxonomy expanded entry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "entryId",
+    "platformLane",
+    "comparisonBoundary",
+    "runtimeHost",
+    "providerPair",
+    "comparisonView",
+    "providerSet",
+    "providers",
+    "temperature",
+    "targetKind",
+    "promotedCompareSurface",
+    "repoSurface",
+    "structuralFamilyId",
+    "executorInputBoundary",
+    "isTypeCorrectStructural",
+    "isTypeCorrectConcrete",
+    "isPromotedCompareReachable",
+    "theoreticalConcreteTargetIds",
+    "theoreticalConcreteTargetSlotCount",
+    "promotedTargetIds",
+    "promotedCompareProfileIds",
+    "promotedCompareProfileCount"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "entryId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "platformLane": {
+      "type": "string",
+      "minLength": 1
+    },
+    "comparisonBoundary": {
+      "type": "string",
+      "minLength": 1
+    },
+    "runtimeHost": {
+      "type": "string",
+      "minLength": 1
+    },
+    "providerPair": {
+      "type": "string",
+      "minLength": 1
+    },
+    "comparisonView": {
+      "type": "string",
+      "minLength": 1
+    },
+    "providerSet": {
+      "type": "string",
+      "minLength": 1
+    },
+    "providers": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "temperature": {
+      "type": "string",
+      "minLength": 1
+    },
+    "targetKind": {
+      "type": "string",
+      "minLength": 1
+    },
+    "promotedCompareSurface": {
+      "type": "string",
+      "enum": [
+        "backend",
+        "plan",
+        "package",
+        "dropin",
+        "browser",
+        "compiler"
+      ]
+    },
+    "repoSurface": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "backend_native",
+        "node_package",
+        "bun_package",
+        "deno_package",
+        null
+      ]
+    },
+    "structuralFamilyId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "executorInputBoundary": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "commands",
+        "plan",
+        null
+      ]
+    },
+    "isTypeCorrectStructural": {
+      "type": "boolean"
+    },
+    "isTypeCorrectConcrete": {
+      "type": "boolean"
+    },
+    "isPromotedCompareReachable": {
+      "type": "boolean"
+    },
+    "theoreticalConcreteTargetIds": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "theoreticalConcreteTargetSlotCount": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "promotedTargetIds": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "promotedCompareProfileIds": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "promotedCompareProfileCount": {
+      "type": "integer",
+      "minimum": 0
+    }
+  }
+}

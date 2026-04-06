@@ -142,7 +142,7 @@ class BackendWorkloadCatalogTests(unittest.TestCase):
             REPO_ROOT
             / "bench"
             / "native-compare"
-            / "compare_dawn_vs_doe.config.local.d3d12.compare.json"
+            / "compare.config.local.d3d12.compare.json"
         )
         if not config_path.exists():
             self.skipTest("governed D3D12 compare config is not present")
@@ -150,9 +150,9 @@ class BackendWorkloadCatalogTests(unittest.TestCase):
         self.assertEqual(config["workloads"], "bench/workloads/workloads.local.d3d12.json")
         self.assertEqual(config["comparability"]["mode"], "strict")
         self.assertEqual(config["comparability"]["requireTimingClass"], "operation")
-        self.assertFalse(config["comparability"]["allowLeftNoExecution"])
-        self.assertIn("--backend-lane d3d12_doe_comparable", config["left"]["commandTemplate"])
-        self.assertIn("--backend-lane d3d12_dawn_release", config["right"]["commandTemplate"])
+        self.assertFalse(config["comparability"]["allowBaselineNoExecution"])
+        self.assertIn("--backend-lane d3d12_doe_comparable", config["baseline"]["commandTemplate"])
+        self.assertIn("--backend-lane d3d12_dawn_release", config["comparison"]["commandTemplate"])
         self.assertEqual(config["claimability"]["mode"], "local")
         self.assertGreaterEqual(config["claimability"]["minTimedSamples"], 7)
         self.assertEqual(config["selector"]["cohorts"], ["governed"])
@@ -198,8 +198,9 @@ class BackendWorkloadCatalogTests(unittest.TestCase):
                 "bench/ir/gemma3_270m.json",
                 "bench/plans/generated/inference_gemma3_270m_prefill_32tok.plan.json",
                 "bench/plans/generated/compat/inference_gemma3_270m_prefill_32tok_commands.json",
-                25,
+                35,
                 7,
+                10,
                 18,
                 {"regression"},
             ),
@@ -207,8 +208,9 @@ class BackendWorkloadCatalogTests(unittest.TestCase):
                 "bench/ir/gemma3_270m.json",
                 "bench/plans/generated/inference_gemma3_270m_decode_1tok.plan.json",
                 "bench/plans/generated/compat/inference_gemma3_270m_decode_1tok_commands.json",
-                24,
+                37,
                 6,
+                13,
                 18,
                 {"regression"},
             ),
@@ -216,8 +218,9 @@ class BackendWorkloadCatalogTests(unittest.TestCase):
                 "bench/ir/gemma3_270m.json",
                 "bench/plans/generated/inference_gemma3_270m_prefill_64tok_decode_64tok.plan.json",
                 "bench/plans/generated/compat/inference_gemma3_270m_prefill_64tok_decode_64tok_commands.json",
-                1561,
+                1583,
                 391,
+                22,
                 1170,
                 {"regression"},
             ),
@@ -225,8 +228,9 @@ class BackendWorkloadCatalogTests(unittest.TestCase):
                 "bench/ir/gemma3_270m_literal.json",
                 "bench/plans/generated/inference_gemma3_270m_literal_prefill_32tok_decode_1tok.plan.json",
                 "bench/plans/generated/compat/inference_gemma3_270m_literal_prefill_32tok_decode_1tok_commands.json",
-                49,
+                69,
                 13,
+                20,
                 36,
                 {"exploration"},
             ),
@@ -234,8 +238,9 @@ class BackendWorkloadCatalogTests(unittest.TestCase):
                 "bench/ir/gemma3_1b.json",
                 "bench/plans/generated/inference_gemma3_1b_prefill_32tok.plan.json",
                 "bench/plans/generated/compat/inference_gemma3_1b_prefill_32tok_commands.json",
-                25,
+                35,
                 7,
+                10,
                 18,
                 {"exploration"},
             ),
@@ -243,8 +248,9 @@ class BackendWorkloadCatalogTests(unittest.TestCase):
                 "bench/ir/gemma3_1b.json",
                 "bench/plans/generated/inference_gemma3_1b_decode_1tok.plan.json",
                 "bench/plans/generated/compat/inference_gemma3_1b_decode_1tok_commands.json",
-                24,
+                37,
                 6,
+                13,
                 18,
                 {"exploration"},
             ),
@@ -252,8 +258,9 @@ class BackendWorkloadCatalogTests(unittest.TestCase):
                 "bench/ir/gemma3_1b.json",
                 "bench/plans/generated/inference_gemma3_1b_prefill_64tok_decode_64tok.plan.json",
                 "bench/plans/generated/compat/inference_gemma3_1b_prefill_64tok_decode_64tok_commands.json",
-                1561,
+                1583,
                 391,
+                22,
                 1170,
                 {"exploration"},
             ),
@@ -264,6 +271,7 @@ class BackendWorkloadCatalogTests(unittest.TestCase):
             commands_path,
             command_count,
             buffer_write_count,
+            buffer_load_count,
             dispatch_count,
             required_cohorts,
         ) in expected.items():
@@ -275,6 +283,7 @@ class BackendWorkloadCatalogTests(unittest.TestCase):
             self.assertEqual(rows[workload_id]["planSchemaVersion"], 1)
             self.assertEqual(rows[workload_id]["planCommandCount"], command_count)
             self.assertEqual(rows[workload_id]["planBufferWriteCount"], buffer_write_count)
+            self.assertEqual(rows[workload_id]["planBufferLoadCount"], buffer_load_count)
             self.assertEqual(rows[workload_id]["planDispatchCount"], dispatch_count)
             self.assertRegex(rows[workload_id]["planHash"], r"^[0-9a-f]{64}$")
             self.assertRegex(rows[workload_id]["sourceIrSha256"], r"^[0-9a-f]{64}$")
@@ -337,23 +346,23 @@ class BackendWorkloadCatalogTests(unittest.TestCase):
 
     def test_comparable_rows_are_symmetric(self) -> None:
         defaults = {
-            "leftCommandRepeat": 1,
-            "rightCommandRepeat": 1,
-            "leftIgnoreFirstOps": 0,
-            "rightIgnoreFirstOps": 0,
-            "leftUploadSubmitEvery": 1,
-            "rightUploadSubmitEvery": 1,
-            "leftTimingDivisor": 1.0,
-            "rightTimingDivisor": 1.0,
-            "leftUploadBufferUsage": None,
-            "rightUploadBufferUsage": None,
+            "baselineCommandRepeat": 1,
+            "comparisonCommandRepeat": 1,
+            "baselineIgnoreFirstOps": 0,
+            "comparisonIgnoreFirstOps": 0,
+            "baselineUploadSubmitEvery": 1,
+            "comparisonUploadSubmitEvery": 1,
+            "baselineTimingDivisor": 1.0,
+            "comparisonTimingDivisor": 1.0,
+            "baselineUploadBufferUsage": None,
+            "comparisonUploadBufferUsage": None,
         }
         pairs = (
-            ("leftCommandRepeat", "rightCommandRepeat"),
-            ("leftIgnoreFirstOps", "rightIgnoreFirstOps"),
-            ("leftUploadSubmitEvery", "rightUploadSubmitEvery"),
-            ("leftTimingDivisor", "rightTimingDivisor"),
-            ("leftUploadBufferUsage", "rightUploadBufferUsage"),
+            ("baselineCommandRepeat", "comparisonCommandRepeat"),
+            ("baselineIgnoreFirstOps", "comparisonIgnoreFirstOps"),
+            ("baselineUploadSubmitEvery", "comparisonUploadSubmitEvery"),
+            ("baselineTimingDivisor", "comparisonTimingDivisor"),
+            ("baselineUploadBufferUsage", "comparisonUploadBufferUsage"),
         )
         for lane_id in self.catalog["laneOutputs"]:
             materialized = self.generator.materialize_lane(self.catalog, lane_id)
@@ -374,14 +383,14 @@ class BackendWorkloadCatalogTests(unittest.TestCase):
             for item in mutated["workloads"]
             if item["id"] == "render_uniform_buffer_update_writebuffer_partial_single"
         )
-        target["lanes"]["apple_metal_extended"]["rightCommandRepeat"] = 777
+        target["lanes"]["apple_metal_extended"]["comparisonCommandRepeat"] = 777
         with self.assertRaisesRegex(ValueError, "comparable workload contract asymmetry detected"):
             self.generator.validate_catalog(mutated)
 
     def test_d3d12_config_and_policy_invariants(self) -> None:
-        smoke_path = REPO_ROOT / "bench" / "native-compare" / "compare_dawn_vs_doe.config.local.d3d12.smoke.json"
-        comparable_path = REPO_ROOT / "bench" / "native-compare" / "compare_dawn_vs_doe.config.local.d3d12.compare.json"
-        release_path = REPO_ROOT / "bench" / "native-compare" / "compare_dawn_vs_doe.config.local.d3d12.release.json"
+        smoke_path = REPO_ROOT / "bench" / "native-compare" / "compare.config.local.d3d12.smoke.json"
+        comparable_path = REPO_ROOT / "bench" / "native-compare" / "compare.config.local.d3d12.compare.json"
+        release_path = REPO_ROOT / "bench" / "native-compare" / "compare.config.local.d3d12.release.json"
         if not smoke_path.exists() or not comparable_path.exists() or not release_path.exists():
             self.skipTest("local D3D12 compare configs are not present in this checkout")
         smoke_config = load_json(smoke_path)
@@ -395,13 +404,13 @@ class BackendWorkloadCatalogTests(unittest.TestCase):
         self.assertEqual(comparable_config["workloads"], "bench/workloads/workloads.local.d3d12.json")
         self.assertEqual(release_config["workloads"], "bench/workloads/workloads.local.d3d12.json")
 
-        self.assertEqual(smoke_config["left"]["name"], "doe")
-        self.assertIn("--backend-lane d3d12_doe_comparable", smoke_config["left"]["commandTemplate"])
-        self.assertIn("--backend-lane d3d12_dawn_release", smoke_config["right"]["commandTemplate"])
-        self.assertIn("--backend-lane d3d12_doe_comparable", comparable_config["left"]["commandTemplate"])
-        self.assertIn("--backend-lane d3d12_dawn_release", comparable_config["right"]["commandTemplate"])
-        self.assertIn("--backend-lane d3d12_doe_release", release_config["left"]["commandTemplate"])
-        self.assertIn("--backend-lane d3d12_dawn_release", release_config["right"]["commandTemplate"])
+        self.assertEqual(smoke_config["baseline"]["name"], "doe")
+        self.assertIn("--backend-lane d3d12_doe_comparable", smoke_config["baseline"]["commandTemplate"])
+        self.assertIn("--backend-lane d3d12_dawn_release", smoke_config["comparison"]["commandTemplate"])
+        self.assertIn("--backend-lane d3d12_doe_comparable", comparable_config["baseline"]["commandTemplate"])
+        self.assertIn("--backend-lane d3d12_dawn_release", comparable_config["comparison"]["commandTemplate"])
+        self.assertIn("--backend-lane d3d12_doe_release", release_config["baseline"]["commandTemplate"])
+        self.assertIn("--backend-lane d3d12_dawn_release", release_config["comparison"]["commandTemplate"])
         self.assertEqual(release_config["claimability"]["mode"], "release")
         self.assertEqual(release_config["claimability"]["minTimedSamples"], 15)
 
@@ -424,11 +433,11 @@ class BackendWorkloadCatalogTests(unittest.TestCase):
         self.assertIn("windows_d3d12", backend_surface["expectedHostProfiles"])
 
     def test_apple_metal_config_and_policy_invariants(self) -> None:
-        smoke_path = REPO_ROOT / "bench" / "native-compare" / "compare_dawn_vs_doe.config.apple.metal.smoke.json"
-        compare_path = REPO_ROOT / "bench" / "native-compare" / "compare_dawn_vs_doe.config.apple.metal.compare.json"
-        release_path = REPO_ROOT / "bench" / "native-compare" / "compare_dawn_vs_doe.config.apple.metal.release.json"
-        explore_path = REPO_ROOT / "bench" / "native-compare" / "compare_dawn_vs_doe.config.apple.metal.explore.json"
-        breadth_path = REPO_ROOT / "bench" / "native-compare" / "compare_dawn_vs_doe.config.apple.metal.breadth.json"
+        smoke_path = REPO_ROOT / "bench" / "native-compare" / "compare.config.apple.metal.smoke.json"
+        compare_path = REPO_ROOT / "bench" / "native-compare" / "compare.config.apple.metal.compare.json"
+        release_path = REPO_ROOT / "bench" / "native-compare" / "compare.config.apple.metal.release.json"
+        explore_path = REPO_ROOT / "bench" / "native-compare" / "compare.config.apple.metal.explore.json"
+        breadth_path = REPO_ROOT / "bench" / "native-compare" / "compare.config.apple.metal.breadth.json"
         smoke_config = load_json(smoke_path)
         compare_config = load_json(compare_path)
         release_config = load_json(release_path)
@@ -439,11 +448,11 @@ class BackendWorkloadCatalogTests(unittest.TestCase):
         self.assertEqual(smoke_config["workloads"], "bench/workloads/workloads.apple.metal.smoke.json")
         self.assertEqual(compare_config["workloads"], "bench/workloads/workloads.apple.metal.json")
         self.assertEqual(release_config["workloads"], "bench/workloads/workloads.apple.metal.json")
-        self.assertIn("--backend-lane metal_doe_directional", smoke_config["left"]["commandTemplate"])
-        self.assertIn("--backend-lane metal_doe_directional", explore_config["left"]["commandTemplate"])
-        self.assertIn("--backend-lane metal_doe_directional", breadth_config["left"]["commandTemplate"])
-        self.assertIn("--backend-lane metal_doe_comparable", compare_config["left"]["commandTemplate"])
-        self.assertIn("--backend-lane metal_doe_release", release_config["left"]["commandTemplate"])
+        self.assertIn("--backend-lane metal_doe_directional", smoke_config["baseline"]["commandTemplate"])
+        self.assertIn("--backend-lane metal_doe_directional", explore_config["baseline"]["commandTemplate"])
+        self.assertIn("--backend-lane metal_doe_directional", breadth_config["baseline"]["commandTemplate"])
+        self.assertIn("--backend-lane metal_doe_comparable", compare_config["baseline"]["commandTemplate"])
+        self.assertIn("--backend-lane metal_doe_release", release_config["baseline"]["commandTemplate"])
 
         for lane_id in ("metal_doe_comparable", "metal_doe_release"):
             lane = runtime_policy["lanes"][lane_id]

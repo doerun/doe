@@ -252,27 +252,27 @@ class TestDispatchTraceComparison(unittest.TestCase):
         return row
 
     def test_identical_traces_pass(self):
-        left = [self._make_dispatch_row(0), self._make_dispatch_row(1)]
-        right = [self._make_dispatch_row(0), self._make_dispatch_row(1)]
-        errors = compare_mod.validate_sequences(left, right)
+        baseline = [self._make_dispatch_row(0), self._make_dispatch_row(1)]
+        comparison = [self._make_dispatch_row(0), self._make_dispatch_row(1)]
+        errors = compare_mod.validate_sequences(baseline, comparison)
         self.assertEqual(errors, [])
 
     def test_different_command_fails(self):
-        left = [self._make_dispatch_row(0, command="cmd_a")]
-        right = [self._make_dispatch_row(0, command="cmd_b")]
-        errors = compare_mod.validate_sequences(left, right)
+        baseline = [self._make_dispatch_row(0, command="cmd_a")]
+        comparison = [self._make_dispatch_row(0, command="cmd_b")]
+        errors = compare_mod.validate_sequences(baseline, comparison)
         self.assertTrue(len(errors) > 0)
 
     def test_different_length_fails(self):
-        left = [self._make_dispatch_row(0)]
-        right = [self._make_dispatch_row(0), self._make_dispatch_row(1)]
-        errors = compare_mod.validate_sequences(left, right)
-        self.assertTrue(any("row_count" in e for e in errors))
+        baseline = [self._make_dispatch_row(0)]
+        comparison = [self._make_dispatch_row(0), self._make_dispatch_row(1)]
+        errors = compare_mod.validate_sequences(baseline, comparison)
+        self.assertTrue(any("entry_count" in e for e in errors))
 
     def test_different_scope_fails(self):
-        left = [self._make_dispatch_row(0, scope="alignment")]
-        right = [self._make_dispatch_row(0, scope="memory")]
-        errors = compare_mod.validate_sequences(left, right)
+        baseline = [self._make_dispatch_row(0, scope="alignment")]
+        comparison = [self._make_dispatch_row(0, scope="memory")]
+        errors = compare_mod.validate_sequences(baseline, comparison)
         self.assertTrue(len(errors) > 0)
 
     def test_pick_fields_filters_extra(self):
@@ -284,30 +284,30 @@ class TestDispatchTraceComparison(unittest.TestCase):
         self.assertIn("command", picked)
 
     def test_comparison_via_script(self):
-        left = [self._make_dispatch_row(i) for i in range(3)]
-        right = [self._make_dispatch_row(i) for i in range(3)]
+        baseline = [self._make_dispatch_row(i) for i in range(3)]
+        comparison = [self._make_dispatch_row(i) for i in range(3)]
         with tempfile.TemporaryDirectory() as td:
-            lp = Path(td) / "left.jsonl"
-            rp = Path(td) / "right.jsonl"
-            lp.write_text("\n".join(json.dumps(r) for r in left), encoding="utf-8")
-            rp.write_text("\n".join(json.dumps(r) for r in right), encoding="utf-8")
+            lp = Path(td) / "baseline.jsonl"
+            rp = Path(td) / "comparison.jsonl"
+            lp.write_text("\n".join(json.dumps(r) for r in baseline), encoding="utf-8")
+            rp.write_text("\n".join(json.dumps(r) for r in comparison), encoding="utf-8")
             result = subprocess.run(
-                [sys.executable, str(COMPARE_SCRIPT), "--left", str(lp), "--right", str(rp)],
+                [sys.executable, str(COMPARE_SCRIPT), "--baseline", str(lp), "--comparison", str(rp)],
                 capture_output=True, text=True, timeout=30,
             )
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
             self.assertIn("PASS", result.stdout)
 
     def test_comparison_via_script_fails_on_diff(self):
-        left = [self._make_dispatch_row(0, command="cmd_a")]
-        right = [self._make_dispatch_row(0, command="cmd_b")]
+        baseline = [self._make_dispatch_row(0, command="cmd_a")]
+        comparison = [self._make_dispatch_row(0, command="cmd_b")]
         with tempfile.TemporaryDirectory() as td:
-            lp = Path(td) / "left.jsonl"
-            rp = Path(td) / "right.jsonl"
-            lp.write_text(json.dumps(left[0]), encoding="utf-8")
-            rp.write_text(json.dumps(right[0]), encoding="utf-8")
+            lp = Path(td) / "baseline.jsonl"
+            rp = Path(td) / "comparison.jsonl"
+            lp.write_text(json.dumps(baseline[0]), encoding="utf-8")
+            rp.write_text(json.dumps(comparison[0]), encoding="utf-8")
             result = subprocess.run(
-                [sys.executable, str(COMPARE_SCRIPT), "--left", str(lp), "--right", str(rp)],
+                [sys.executable, str(COMPARE_SCRIPT), "--baseline", str(lp), "--comparison", str(rp)],
                 capture_output=True, text=True, timeout=30,
             )
             self.assertNotEqual(result.returncode, 0)

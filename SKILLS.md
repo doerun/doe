@@ -66,4 +66,4 @@ Make Doe faster than Dawn without breaking apples-to-apples methodology.
 - `python3 bench/native-compare/compare_dawn_vs_doe.py`
 - `python3 bench/runners/run.py`
 - `zig build -Doptimize=ReleaseFast`
-- `zig build dawn-plan-executor`
+- `zig build webgpu-plan-executor`

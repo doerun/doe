@@ -81,8 +81,12 @@ pub fn flush_queue_timed(self: anytype) !FlushResult {
         self.streaming_max_upload_bytes = 0;
         self.streaming_gpu_timestamps_active = false;
         for (self.streaming_uploads.items) |item| {
-            pool_push_or_release(&self.shared_pool, self.allocator, item.byte_count, item.src_buffer);
-            pool_push_or_release(&self.private_pool, self.allocator, item.byte_count, item.dst_buffer);
+            if (item.src_buffer != null) {
+                pool_push_or_release(&self.shared_pool, self.allocator, item.byte_count, item.src_buffer);
+            }
+            if (item.dst_buffer != null) {
+                pool_push_or_release(&self.private_pool, self.allocator, item.byte_count, item.dst_buffer);
+            }
         }
         self.streaming_uploads.clearRetainingCapacity();
     } else if (self.has_deferred_submissions) {

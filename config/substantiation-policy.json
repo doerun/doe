@@ -5,9 +5,9 @@
     "minClaimableComparableReports": 3,
     "requiredComparisonStatus": "comparable",
     "requiredClaimStatus": "claimable",
-    "minUniqueLeftProfiles": 1,
-    "targetUniqueLeftProfiles": 3,
-    "enforceTargetUniqueLeftProfiles": true,
+    "minUniqueBaselineProfiles": 1,
+    "targetUniqueBaselineProfiles": 3,
+    "enforceTargetUniqueBaselineProfiles": true,
     "notes": "Blocking minimums are set for single-host CI; target profile diversity is enforced by default and may be override-disabled via substantiation_gate CLI for diagnostic-only runs."
   }
 }

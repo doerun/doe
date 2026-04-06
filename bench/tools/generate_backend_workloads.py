@@ -233,11 +233,11 @@ def build_workload_origin_report(catalog: dict[str, Any]) -> dict[str, Any]:
 
 def validate_catalog_semantics(catalog: dict[str, Any]) -> None:
     symmetry_fields = (
-        ("leftCommandRepeat", "rightCommandRepeat", 1),
-        ("leftIgnoreFirstOps", "rightIgnoreFirstOps", 0),
-        ("leftUploadSubmitEvery", "rightUploadSubmitEvery", 1),
-        ("leftTimingDivisor", "rightTimingDivisor", 1.0),
-        ("leftUploadBufferUsage", "rightUploadBufferUsage", None),
+        ("baselineCommandRepeat", "comparisonCommandRepeat", 1),
+        ("baselineIgnoreFirstOps", "comparisonIgnoreFirstOps", 0),
+        ("baselineUploadSubmitEvery", "comparisonUploadSubmitEvery", 1),
+        ("baselineTimingDivisor", "comparisonTimingDivisor", 1.0),
+        ("baselineUploadBufferUsage", "comparisonUploadBufferUsage", None),
     )
     problems: list[str] = []
     for item in catalog["workloads"]:
@@ -504,6 +504,7 @@ def materialize_lane(catalog: dict[str, Any], lane_id: str) -> dict[str, Any]:
             row["planCommandCount"] = ir_artifacts["commandCount"]
             row["planDispatchCount"] = ir_artifacts["dispatchCount"]
             row["planBufferWriteCount"] = ir_artifacts["bufferWriteCount"]
+            row["planBufferLoadCount"] = ir_artifacts["bufferLoadCount"]
             row["compatibilityCommandHash"] = ir_artifacts["compatibilityCommandsSha256"]
             row["sourceIrSha256"] = ir_artifacts["sourceIrSha256"]
             row["commandsPath"] = ir_artifacts["commandsPath"]

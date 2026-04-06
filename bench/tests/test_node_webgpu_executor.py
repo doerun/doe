@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import tempfile
 import unittest
@@ -19,7 +20,7 @@ def write_plan(path: Path, *, valid: bool = True) -> None:
     plan = {
         "schemaVersion": 1,
         "planId": "simple_compute_roundtrip",
-        "executorId": "node-webgpu",
+        "executorId": "node_webgpu_package",
         "workloadId": "simple_compute_roundtrip",
         "domain": "compute",
         "comparable": True,
@@ -172,6 +173,59 @@ def write_command_plan(path: Path) -> None:
     path.write_text(json.dumps(plan, indent=2), encoding="utf-8")
 
 
+def write_buffer_load_command_plan(path: Path) -> None:
+    plan = {
+        "schemaVersion": 1,
+        "planKind": "benchmark_ir",
+        "workloadId": "buffer_load_roundtrip",
+        "irPath": "bench/ir/test.json",
+        "irScenario": "buffer_load_roundtrip",
+        "commandCount": 2,
+        "bufferWriteCount": 0,
+        "bufferLoadCount": 1,
+        "dispatchCount": 1,
+        "sourceIrSha256": "abc",
+        "compatibilityCommandsSha256": "def",
+        "planSha256": "ghi",
+        "commands": [
+            {
+                "kind": "buffer_load",
+                "handle": 2001,
+                "bufferSize": 64,
+                "byteLength": 64,
+                "cacheNamespace": "unit_test",
+                "cacheKey": "alpha",
+                "assetKey": "buffer_load_roundtrip:handle-2001",
+                "generator": "splitmix64_f32_nonzero_v1",
+                "seed": 7,
+                "scale": 0.125,
+            },
+            {
+                "kind": "kernel_dispatch",
+                "kernel": "rmsnorm.wgsl",
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "bindings": [
+                    {
+                        "binding": 0,
+                        "resource_handle": 2001,
+                        "buffer_size": 64,
+                        "buffer_type": "readonly",
+                    },
+                    {
+                        "binding": 1,
+                        "resource_handle": 2002,
+                        "buffer_size": 64,
+                        "buffer_type": "storage",
+                    },
+                ],
+            },
+        ],
+    }
+    path.write_text(json.dumps(plan, indent=2), encoding="utf-8")
+
+
 class NodeWebGPUExecutorTests(unittest.TestCase):
     def test_classify_bringup_unsupported_recognizes_unavailable_errors(self) -> None:
         script = f"""
@@ -227,7 +281,7 @@ const result = buildUnsupportedExecutionResult({{
   hostExecutorInitTotalNs: 14,
   processWallMs: 1.5,
   unsupportedCode: 'provider_execution_unavailable',
-  unsupportedDetail: 'node-webgpu execution unavailable for provider dawn on this Apple host',
+  unsupportedDetail: 'node-webgpu execution unavailable for provider node-webgpu on this Apple host',
 }});
 console.log(JSON.stringify(result));
 """
@@ -247,7 +301,7 @@ console.log(JSON.stringify(result));
         self.assertEqual(meta["unsupportedCode"], "provider_execution_unavailable")
         self.assertEqual(
             meta["unsupportedDetail"],
-            "node-webgpu execution unavailable for provider dawn on this Apple host",
+            "node-webgpu execution unavailable for provider node-webgpu on this Apple host",
         )
         self.assertEqual(meta["hostInputReadTotalNs"], 0)
         self.assertEqual(meta["hostInputParseTotalNs"], 0)
@@ -263,7 +317,7 @@ import {{ buildErrorExecutionResult }} from {json.dumps(EXECUTOR_MODULE_URL)};
 const result = buildErrorExecutionResult({{
   normalizedPlan: {{
     schemaVersion: 1,
-    executorId: 'dawn_node_webgpu',
+    executorId: 'node_webgpu_package',
     workloadId: 'alpha',
     planId: 'alpha-plan',
     planHash: 'alpha-hash',
@@ -281,9 +335,9 @@ const result = buildErrorExecutionResult({{
     }},
   }},
   spec: {{
-    provider: 'dawn',
+    provider: 'node-webgpu',
     providerName: 'webgpu',
-    executionBackend: 'dawn_node_webgpu',
+    executionBackend: 'node_webgpu_package',
   }},
   preparedSession: false,
   hostInputReadTotalNs: 11,
@@ -547,9 +601,9 @@ const policy = {{
   schemaVersion: 1,
   unsupportedExecutions: [
     {{
-      id: 'apple-node-dawn-gemma1b-mac-lan',
+      id: 'apple-node-node-webgpu-gemma1b-mac-lan',
       runtimeHost: 'node',
-      provider: 'dawn',
+      provider: 'node-webgpu',
       workloadId: 'inference_gemma3_1b_prefill_64tok_decode_64tok',
       host: {{
         platform: 'darwin',
@@ -558,14 +612,14 @@ const policy = {{
         osRelease: '25.3.0',
       }},
       unsupportedCode: 'provider_execution_unavailable',
-      message: 'node-webgpu execution unavailable for provider dawn on this Apple host',
+      message: 'node-webgpu execution unavailable for provider node-webgpu on this Apple host',
       detail: 'diagnostic detail',
     }},
   ],
 }};
 const matched = lookupUnsupportedPackageExecutionEntry(policy, {{
   runtimeHost: 'node',
-  provider: 'dawn',
+  provider: 'node-webgpu',
   workloadId: 'inference_gemma3_1b_prefill_64tok_decode_64tok',
   platform: 'darwin',
   arch: 'arm64',
@@ -574,7 +628,7 @@ const matched = lookupUnsupportedPackageExecutionEntry(policy, {{
 }});
 const missed = lookupUnsupportedPackageExecutionEntry(policy, {{
   runtimeHost: 'node',
-  provider: 'dawn',
+  provider: 'node-webgpu',
   workloadId: 'inference_gemma3_1b_prefill_64tok_decode_64tok',
   platform: 'darwin',
   arch: 'arm64',
@@ -641,7 +695,7 @@ console.log(JSON.stringify(boundaryScopedHostTotals({{
                     "node",
                     str(CLI_PATH),
                     "--provider",
-                    "dawn",
+                    "node-webgpu",
                     "--plan",
                     str(plan_path),
                     "--trace-meta",
@@ -663,9 +717,9 @@ console.log(JSON.stringify(boundaryScopedHostTotals({{
             meta = json.loads(meta_path.read_text(encoding="utf-8"))
             rows = [json.loads(line) for line in trace_path.read_text(encoding="utf-8").splitlines() if line.strip()]
 
-            self.assertEqual(meta["executionBackend"], "dawn_node_webgpu")
-            self.assertEqual(meta["executionProvider"], "dawn")
-            self.assertEqual(meta["executionProviderName"], "webgpu")
+            self.assertEqual(meta["executionBackend"], "node_webgpu_package")
+            self.assertEqual(meta["executionProvider"], "node-webgpu")
+            self.assertEqual(meta["executionProviderName"], "node-webgpu")
             self.assertEqual(meta["timingSource"], "doe-execution-total-ns")
             self.assertEqual(meta["timingClass"], "operation")
             self.assertEqual(meta["executionQueueSyncMode"], "per-command")
@@ -673,7 +727,7 @@ console.log(JSON.stringify(boundaryScopedHostTotals({{
             self.assertEqual(meta["executionRowCount"], 4)
             self.assertEqual(meta["executionSuccessCount"], 4)
             self.assertEqual(meta["executionDispatchCount"], 1)
-            self.assertEqual(meta["provider"], "dawn")
+            self.assertEqual(meta["provider"], "node-webgpu")
             self.assertEqual(meta["hostInputReadTotalNs"], 0)
             self.assertEqual(meta["hostExecutorInitTotalNs"], 0)
             self.assertFalse(meta["packagePreparedSession"])
@@ -681,9 +735,9 @@ console.log(JSON.stringify(boundaryScopedHostTotals({{
             self.assertEqual(meta["packageSetupTotalNs"], 0)
             self.assertEqual(len(rows), 4)
             self.assertEqual([row["stepKind"] for row in rows], ["writeBuffer", "dispatch", "copyBufferToBuffer", "readBuffer"])
-            self.assertTrue(all(row["executionBackend"] == "dawn_node_webgpu" for row in rows))
-            self.assertTrue(all(row["executionProvider"] == "dawn" for row in rows))
-            self.assertTrue(all(row["executionProviderName"] == "webgpu" for row in rows))
+            self.assertTrue(all(row["executionBackend"] == "node_webgpu_package" for row in rows))
+            self.assertTrue(all(row["executionProvider"] == "node-webgpu" for row in rows))
+            self.assertTrue(all(row["executionProviderName"] == "node-webgpu" for row in rows))
 
     def test_dry_run_supports_doe_provider_metadata(self) -> None:
         with tempfile.TemporaryDirectory(prefix="doe-node-webgpu-executor-") as tmpdir:
@@ -741,7 +795,7 @@ console.log(JSON.stringify(boundaryScopedHostTotals({{
                     "node",
                     str(CLI_PATH),
                     "--provider",
-                    "dawn",
+                    "node-webgpu",
                     "--prepared-session",
                     "--plan",
                     str(plan_path),
@@ -777,7 +831,7 @@ console.log(JSON.stringify(boundaryScopedHostTotals({{
                     "node",
                     str(CLI_PATH),
                     "--provider",
-                    "dawn",
+                    "node-webgpu",
                     "--plan",
                     str(plan_path),
                     "--trace-meta",
@@ -815,7 +869,7 @@ console.log(JSON.stringify(boundaryScopedHostTotals({{
                     "node",
                     str(CLI_PATH),
                     "--provider",
-                    "dawn",
+                    "node-webgpu",
                     "--plan",
                     str(plan_path),
                     "--trace-meta",
@@ -852,7 +906,7 @@ console.log(JSON.stringify(boundaryScopedHostTotals({{
                     "node",
                     str(CLI_PATH),
                     "--provider",
-                    "dawn",
+                    "node-webgpu",
                     "--plan",
                     str(plan_path),
                     "--trace-meta",
@@ -890,7 +944,7 @@ console.log(JSON.stringify(boundaryScopedHostTotals({{
                     "node",
                     str(CLI_PATH),
                     "--provider",
-                    "dawn",
+                    "node-webgpu",
                     "--plan",
                     str(plan_path),
                     "--trace-meta",
@@ -908,9 +962,73 @@ console.log(JSON.stringify(boundaryScopedHostTotals({{
             )
             self.assertEqual(result.returncode, 0, result.stderr)
             meta = json.loads(meta_path.read_text(encoding="utf-8"))
-            self.assertEqual(meta["executionBackend"], "dawn_node_webgpu")
+            self.assertEqual(meta["executionBackend"], "node_webgpu_package")
             self.assertEqual(meta["executionRowCount"], 2)
             self.assertEqual(meta["executionDispatchCount"], 1)
+
+    def test_generated_buffer_load_command_plan_is_accepted_in_dry_run(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="doe-node-webgpu-executor-") as tmpdir:
+            tmp = Path(tmpdir)
+            plan_path = tmp / "command-plan.json"
+            meta_path = tmp / "trace-meta.json"
+            trace_path = tmp / "trace.jsonl"
+            write_buffer_load_command_plan(plan_path)
+
+            result = subprocess.run(
+                [
+                    "node",
+                    str(CLI_PATH),
+                    "--provider",
+                    "doe",
+                    "--plan",
+                    str(plan_path),
+                    "--trace-meta",
+                    str(meta_path),
+                    "--trace-jsonl",
+                    str(trace_path),
+                    "--workload",
+                    "buffer_load_roundtrip",
+                    "--dry-run",
+                ],
+                cwd=REPO_ROOT,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            meta = json.loads(meta_path.read_text(encoding="utf-8"))
+            self.assertEqual(meta["executionBackend"], "doe_node_webgpu")
+            self.assertEqual(meta["executionRowCount"], 2)
+            self.assertEqual(meta["executionDispatchCount"], 1)
+
+    def test_materialize_buffer_data_reads_cache_backed_file_descriptor(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="doe-node-webgpu-assets-") as tmpdir:
+            cache_dir = Path(tmpdir)
+            asset_dir = cache_dir / "unit_test"
+            asset_dir.mkdir(parents=True, exist_ok=True)
+            (asset_dir / "alpha.bin").write_bytes(bytes([1, 2, 3, 4]))
+            script = f"""
+import {{ materializeBufferData }} from {json.dumps((REPO_ROOT / "bench" / "executors" / "node-webgpu" / "plan.js").resolve().as_uri())};
+const payload = materializeBufferData({{
+  kind: 'file',
+  cacheNamespace: 'unit_test',
+  cacheKey: 'alpha',
+  sizeBytes: 4,
+}});
+console.log(JSON.stringify(Array.from(payload)));
+"""
+            env = dict(os.environ)
+            env["DOE_BENCH_ASSET_CACHE_DIR"] = str(cache_dir)
+            result = subprocess.run(
+                ["node", "--input-type=module", "-e", script],
+                cwd=REPO_ROOT,
+                capture_output=True,
+                text=True,
+                check=False,
+                env=env,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(json.loads(result.stdout), [1, 2, 3, 4])
 
 
 if __name__ == "__main__":

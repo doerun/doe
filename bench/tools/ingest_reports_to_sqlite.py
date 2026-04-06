@@ -2,7 +2,7 @@
 """
 Fawn SQLite Report Ingestor
 
-This script ingests Fawn benchmark reports (typically emitted by compare_dawn_vs_doe.py)
+This script ingests Fawn benchmark reports (typically emitted by the compare lane)
 into a local SQLite database for historical trend analysis.
 """
 
@@ -75,8 +75,8 @@ def ingest_report(conn: sqlite3.Connection, report_path: Path):
     # Insert workloads
     workloads = data.get("workloads", [])
     for workload in workloads:
-        left_stats = workload.get("left", {}).get("stats", {})
-        right_stats = workload.get("right", {}).get("stats", {})
+        left_stats = workload.get("baseline", {}).get("stats", {})
+        right_stats = workload.get("comparison", {}).get("stats", {})
         delta = workload.get("deltaPercent", {})
         
         cursor.execute('''

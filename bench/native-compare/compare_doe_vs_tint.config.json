@@ -1,18 +1,20 @@
 {
   "schemaVersion": 1,
   "workloads": "bench/workloads/workloads.apple.metal.json",
-  "left": {
+  "baseline": {
     "name": "doe_wgsl",
     "binaryPath": "runtime/zig/zig-out/bin/doe-compilation-bench"
   },
-  "right": {
+  "comparison": {
     "name": "tint",
     "binaryPath": "bench/vendor/dawn/out/Release/tint"
   },
   "run": {
     "iterations": 500,
     "warmup": 50,
-    "targets": ["msl"],
+    "targets": [
+      "msl"
+    ],
     "tiers": [],
     "outDir": "bench/out/compilation"
   }

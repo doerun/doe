@@ -66,14 +66,14 @@
       "kind": "operator_cli",
       "stability": "repo_only",
       "shipped": false,
-      "summary": "Canonical Dawn-vs-Doe compare, release, and workload-catalog operator entrypoints.",
+      "summary": "Canonical benchmark run, compare-report, release, and workload-catalog operator entrypoints.",
       "rootPaths": [
         "bench",
         "bench/native-compare",
         "bench/native_compare_modules"
       ],
       "entrypoints": [
-        "bench/native-compare/compare_dawn_vs_doe.py",
+        "bench/cli.py compare",
         "bench/runners/run_release_pipeline.py",
         "bench/runners/run_blocking_gates.py",
         "bench/tools/generate_backend_workloads.py"
@@ -89,7 +89,7 @@
       "kind": "browser_lane",
       "stability": "experimental",
       "shipped": false,
-      "summary": "Repo-only Chromium integration and browser benchmark lane.",
+      "summary": "Repo-only Chromium integration and browser benchmark surface.",
       "rootPaths": [
         "browser/chromium"
       ],

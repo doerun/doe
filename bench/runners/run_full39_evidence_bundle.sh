@@ -33,7 +33,7 @@ python3 bench/runners/run_blocking_gates.py \
 
 echo "[3/5] running repeated release windows + substantiation gate"
 python3 bench/runners/run_release_claim_windows.py \
-  --config bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.release.json \
+  --config bench/native-compare/compare.config.amd.vulkan.release.json \
   --windows "$windows" \
   --strict-amd-vulkan \
   --with-dropin-gate \

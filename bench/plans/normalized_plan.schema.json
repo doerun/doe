@@ -56,6 +56,10 @@
       "type": "integer",
       "minimum": 0
     },
+    "bufferLoadCount": {
+      "type": "integer",
+      "minimum": 0
+    },
     "dispatchCount": {
       "type": "integer",
       "minimum": 0

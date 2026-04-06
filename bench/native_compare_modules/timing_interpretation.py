@@ -1,4 +1,4 @@
-"""Timing-interpretation helpers for compare_dawn_vs_doe."""
+"""Timing-interpretation helpers for the compare lane."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from native_compare_modules.reporting import safe_float
 
 _OPERATION_TOTAL_SOURCES = {
     "doe-execution-total-ns",
-    "doe-execution-row-total-ns",
+    "doe-execution-workload-total-ns",
     "doe-execution-row-average-ns",
     "doe-execution-gpu-timestamp-ns",
     "dawn-perf-wall-time",
@@ -38,10 +38,10 @@ WORKLOAD_UNIT_WALL_FIELD = "workloadUnitWall"
 LEGACY_WORKLOAD_UNIT_WALL_FIELD = "headlineProcessWall"
 
 
-def percent_delta(left: float, right: float) -> float:
-    if left <= 0.0:
+def percent_delta(baseline: float, comparison: float) -> float:
+    if baseline <= 0.0:
         return 0.0
-    return ((right / left) - 1.0) * 100.0
+    return ((comparison / baseline) - 1.0) * 100.0
 
 
 def parse_string_list(value: Any) -> list[str]:
@@ -294,25 +294,25 @@ def workload_unit_wall_view(timing_interpretation: dict[str, Any]) -> dict[str, 
 
 def build_host_overhead_breakdown(
     *,
-    left_command_samples: list[dict[str, Any]],
-    right_command_samples: list[dict[str, Any]],
+    baseline_command_samples: list[dict[str, Any]],
+    comparison_command_samples: list[dict[str, Any]],
 ) -> dict[str, Any]:
-    left_gap_stats = reporting_mod.format_stats(selected_gap_values_ms(left_command_samples))
-    right_gap_stats = reporting_mod.format_stats(selected_gap_values_ms(right_command_samples))
-    left_attributed_stats = reporting_mod.format_stats(attributed_host_values_ms(left_command_samples))
-    right_attributed_stats = reporting_mod.format_stats(attributed_host_values_ms(right_command_samples))
-    left_remainder_stats = reporting_mod.format_stats(unattributed_gap_remainder_values_ms(left_command_samples))
-    right_remainder_stats = reporting_mod.format_stats(unattributed_gap_remainder_values_ms(right_command_samples))
+    baseline_gap_stats = reporting_mod.format_stats(selected_gap_values_ms(baseline_command_samples))
+    comparison_gap_stats = reporting_mod.format_stats(selected_gap_values_ms(comparison_command_samples))
+    baseline_attributed_stats = reporting_mod.format_stats(attributed_host_values_ms(baseline_command_samples))
+    comparison_attributed_stats = reporting_mod.format_stats(attributed_host_values_ms(comparison_command_samples))
+    baseline_remainder_stats = reporting_mod.format_stats(unattributed_gap_remainder_values_ms(baseline_command_samples))
+    comparison_remainder_stats = reporting_mod.format_stats(unattributed_gap_remainder_values_ms(comparison_command_samples))
 
     buckets: dict[str, Any] = {}
     for bucket_id, field_name, note in _HOST_OVERHEAD_BUCKETS:
-        left_stats = reporting_mod.format_stats(trace_meta_field_values_ms(left_command_samples, field_name))
-        right_stats = reporting_mod.format_stats(trace_meta_field_values_ms(right_command_samples, field_name))
+        baseline_stats = reporting_mod.format_stats(trace_meta_field_values_ms(baseline_command_samples, field_name))
+        comparison_stats = reporting_mod.format_stats(trace_meta_field_values_ms(comparison_command_samples, field_name))
         buckets[bucket_id] = {
             "traceMetaField": field_name,
-            "leftStatsMs": left_stats,
-            "rightStatsMs": right_stats,
-            "deltaPercent": delta_percent_from_stats(left_stats, right_stats),
+            "baselineStatsMs": baseline_stats,
+            "comparisonStatsMs": comparison_stats,
+            "deltaPercent": delta_percent_from_stats(baseline_stats, comparison_stats),
             "note": note,
         }
 
@@ -321,22 +321,22 @@ def build_host_overhead_breakdown(
         "scope": "selected-timing-gap-breakdown",
         "scopeClass": "host-overhead-diagnostic",
         "available": (
-            int(left_gap_stats.get("count", 0)) > 0
-            and int(right_gap_stats.get("count", 0)) > 0
+            int(baseline_gap_stats.get("count", 0)) > 0
+            and int(comparison_gap_stats.get("count", 0)) > 0
         ),
         "selectedGap": {
-            "leftStatsMs": left_gap_stats,
-            "rightStatsMs": right_gap_stats,
-            "deltaPercent": delta_percent_from_stats(left_gap_stats, right_gap_stats),
+            "baselineStatsMs": baseline_gap_stats,
+            "comparisonStatsMs": comparison_gap_stats,
+            "deltaPercent": delta_percent_from_stats(baseline_gap_stats, comparison_gap_stats),
             "note": (
                 "The normalized difference between workloadUnitWall and selected timing "
                 "for each timed sample."
             ),
         },
         "attributedHostOverhead": {
-            "leftStatsMs": left_attributed_stats,
-            "rightStatsMs": right_attributed_stats,
-            "deltaPercent": delta_percent_from_stats(left_attributed_stats, right_attributed_stats),
+            "baselineStatsMs": baseline_attributed_stats,
+            "comparisonStatsMs": comparison_attributed_stats,
+            "deltaPercent": delta_percent_from_stats(baseline_attributed_stats, comparison_attributed_stats),
             "note": (
                 "Sum of coarse host-overhead buckets recorded outside the selected "
                 "execution timing. These buckets are once-per-sample phase timers, not "
@@ -344,9 +344,9 @@ def build_host_overhead_breakdown(
             ),
         },
         "unattributedGapRemainder": {
-            "leftStatsMs": left_remainder_stats,
-            "rightStatsMs": right_remainder_stats,
-            "deltaPercent": delta_percent_from_stats(left_remainder_stats, right_remainder_stats),
+            "baselineStatsMs": baseline_remainder_stats,
+            "comparisonStatsMs": comparison_remainder_stats,
+            "deltaPercent": delta_percent_from_stats(baseline_remainder_stats, comparison_remainder_stats),
             "note": (
                 "Selected-gap remainder after subtracting the coarse host-overhead "
                 "buckets. This typically captures trace-meta emission, process teardown, "
@@ -364,24 +364,24 @@ def build_host_overhead_breakdown(
 
 def build_timing_interpretation(
     *,
-    left: dict[str, Any],
-    right: dict[str, Any],
+    baseline: dict[str, Any],
+    comparison: dict[str, Any],
 ) -> dict[str, Any]:
-    left_sources = parse_string_list(left.get("timingSources"))
-    right_sources = parse_string_list(right.get("timingSources"))
-    left_classes = parse_string_list(left.get("timingClasses"))
-    right_classes = parse_string_list(right.get("timingClasses"))
+    baseline_sources = parse_string_list(baseline.get("timingSources"))
+    comparison_sources = parse_string_list(comparison.get("timingSources"))
+    baseline_classes = parse_string_list(baseline.get("timingClasses"))
+    comparison_classes = parse_string_list(comparison.get("timingClasses"))
 
-    canonical_sources = _canonical_sources(left_sources + right_sources)
-    timing_classes = sorted({value for value in left_classes + right_classes if value})
+    canonical_sources = _canonical_sources(baseline_sources + comparison_sources)
+    timing_classes = sorted({value for value in baseline_classes + comparison_classes if value})
     scope, scope_class, is_narrow, note = _selected_scope(canonical_sources, timing_classes)
 
-    left_workload_unit_stats = summarize_command_sample_field_ms(
-        left.get("commandSamples", []),
+    baseline_workload_unit_stats = summarize_command_sample_field_ms(
+        baseline.get("commandSamples", []),
         "elapsedMs",
     )
-    right_workload_unit_stats = summarize_command_sample_field_ms(
-        right.get("commandSamples", []),
+    comparison_workload_unit_stats = summarize_command_sample_field_ms(
+        comparison.get("commandSamples", []),
         "elapsedMs",
     )
     workload_unit_wall = {
@@ -389,14 +389,14 @@ def build_timing_interpretation(
         "scope": "timed-command-process-wall",
         "scopeClass": "workload-unit-wall",
         "available": (
-            int(left_workload_unit_stats.get("count", 0)) > 0
-            and int(right_workload_unit_stats.get("count", 0)) > 0
+            int(baseline_workload_unit_stats.get("count", 0)) > 0
+            and int(comparison_workload_unit_stats.get("count", 0)) > 0
         ),
-        "leftStatsMs": left_workload_unit_stats,
-        "rightStatsMs": right_workload_unit_stats,
+        "baselineStatsMs": baseline_workload_unit_stats,
+        "comparisonStatsMs": comparison_workload_unit_stats,
         "deltaPercent": delta_percent_from_stats(
-            left_workload_unit_stats,
-            right_workload_unit_stats,
+            baseline_workload_unit_stats,
+            comparison_workload_unit_stats,
         ),
         "note": (
             "Uses timed command process wall normalized by commandRepeat and "
@@ -407,16 +407,16 @@ def build_timing_interpretation(
     legacy_workload_unit_wall = dict(workload_unit_wall)
     legacy_workload_unit_wall["deprecatedAliasFor"] = WORKLOAD_UNIT_WALL_FIELD
     host_overhead_breakdown = build_host_overhead_breakdown(
-        left_command_samples=left.get("commandSamples", []),
-        right_command_samples=right.get("commandSamples", []),
+        baseline_command_samples=baseline.get("commandSamples", []),
+        comparison_command_samples=comparison.get("commandSamples", []),
     )
 
     return {
         "selectedTiming": {
-            "leftSources": left_sources,
-            "rightSources": right_sources,
-            "leftClasses": left_classes,
-            "rightClasses": right_classes,
+            "baselineSources": baseline_sources,
+            "comparisonSources": comparison_sources,
+            "baselineClasses": baseline_classes,
+            "comparisonClasses": comparison_classes,
             "canonicalSources": canonical_sources,
             "timingClasses": timing_classes,
             "scope": scope,

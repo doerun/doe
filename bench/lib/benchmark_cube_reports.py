@@ -319,11 +319,11 @@ def detect_backend_host(payload: dict[str, Any], source_path: Path) -> dict[str,
     for workload in payload.get("workloads", []):
         if not isinstance(workload, dict):
             continue
-        for side in ("left", "right"):
-            side_payload = workload.get(side)
-            if not isinstance(side_payload, dict):
+        for role in ("baseline", "comparison"):
+            role_payload = workload.get(role)
+            if not isinstance(role_payload, dict):
                 continue
-            last_meta = side_payload.get("lastMeta")
+            last_meta = role_payload.get("lastMeta")
             if not isinstance(last_meta, dict):
                 continue
             profile = last_meta.get("profile")
@@ -441,25 +441,25 @@ def normalize_backend_report(
         claimability = workload.get("claimability")
         comparable = isinstance(comparability, dict) and comparability.get("comparable") is True
         claimable = isinstance(claimability, dict) and claimability.get("claimable") is True
-        left_payload = workload.get("left") if isinstance(workload.get("left"), dict) else {}
-        right_payload = workload.get("right") if isinstance(workload.get("right"), dict) else {}
-        left_lane_id = canonical_lane_id(
+        baseline_payload = workload.get("baseline") if isinstance(workload.get("baseline"), dict) else {}
+        comparison_payload = workload.get("comparison") if isinstance(workload.get("comparison"), dict) else {}
+        baseline_lane_id = canonical_lane_id(
             governed_lanes,
-            left_payload.get("lastMeta", {}).get("backendLane")
-            if isinstance(left_payload.get("lastMeta"), dict)
+            baseline_payload.get("lastMeta", {}).get("backendLane")
+            if isinstance(baseline_payload.get("lastMeta"), dict)
             else None,
         )
-        right_lane_id = canonical_lane_id(
+        comparison_lane_id = canonical_lane_id(
             governed_lanes,
-            right_payload.get("lastMeta", {}).get("backendLane")
-            if isinstance(right_payload.get("lastMeta"), dict)
+            comparison_payload.get("lastMeta", {}).get("backendLane")
+            if isinstance(comparison_payload.get("lastMeta"), dict)
             else None,
         )
-        if left_lane_id is None or right_lane_id is None:
+        if baseline_lane_id is None or comparison_lane_id is None:
             raise ValueError(f"{source_path}: workload {workload_id} missing governed backend lane IDs")
         validate_governed_lane_binding(
             governed_lanes,
-            lane_id=left_lane_id,
+            lane_id=baseline_lane_id,
             source_report_type="backend_compare_report",
             surface="backend_native",
             host_profile=host["profileId"],
@@ -467,26 +467,26 @@ def normalize_backend_report(
         )
         validate_governed_lane_binding(
             governed_lanes,
-            lane_id=right_lane_id,
+            lane_id=comparison_lane_id,
             source_report_type="backend_compare_report",
             surface="backend_native",
             host_profile=host["profileId"],
             provider_pair="doe_vs_dawn",
         )
-        left_samples = (
-            left_payload.get("commandSamples")
-            if isinstance(left_payload.get("commandSamples"), list)
+        baseline_samples = (
+            baseline_payload.get("commandSamples")
+            if isinstance(baseline_payload.get("commandSamples"), list)
             else []
         )
-        right_samples = (
-            right_payload.get("commandSamples")
-            if isinstance(right_payload.get("commandSamples"), list)
+        comparison_samples = (
+            comparison_payload.get("commandSamples")
+            if isinstance(comparison_payload.get("commandSamples"), list)
             else []
         )
         if claimable:
             scope_sanity_reasons = timing_sanity.assess_operation_scope_claim_sanity(
-                left_command_samples=left_samples,
-                right_command_samples=right_samples,
+                left_command_samples=baseline_samples,
+                right_command_samples=comparison_samples,
                 min_operation_wall_coverage_ratio=timing_scope_sanity_policy[
                     "minOperationWallCoverageRatio"
                 ],
@@ -496,8 +496,8 @@ def normalize_backend_report(
             )
             if scope_sanity_reasons:
                 claimable = False
-        left_stats = left_payload.get("stats") if isinstance(left_payload.get("stats"), dict) else {}
-        right_stats = right_payload.get("stats") if isinstance(right_payload.get("stats"), dict) else {}
+        baseline_stats = baseline_payload.get("stats") if isinstance(baseline_payload.get("stats"), dict) else {}
+        comparison_stats = comparison_payload.get("stats") if isinstance(comparison_payload.get("stats"), dict) else {}
         delta_percent = workload.get("deltaPercent") if isinstance(workload.get("deltaPercent"), dict) else {}
 
         rows.append(
@@ -519,7 +519,7 @@ def normalize_backend_report(
                     comparison_view="doe_vs_dawn",
                 ),
                 "providers": list(compare_axes_mod.providers_for_comparison_view("doe_vs_dawn")),
-                "governedLaneIds": [left_lane_id, right_lane_id],
+                "governedLaneIds": [baseline_lane_id, comparison_lane_id],
                 "workloadSet": workload_set,
                 "workloadId": workload_id,
                 "sourceWorkloadId": source_workload_id,
@@ -528,15 +528,15 @@ def normalize_backend_report(
                 "claimStatus": "claimable" if claimable else "diagnostic",
                 "maturity": maturity,
                 "metrics": {
-                    "leftP50Ms": safe_float(left_stats.get("p50Ms")),
-                    "rightP50Ms": safe_float(right_stats.get("p50Ms")),
+                    "baselineP50Ms": safe_float(baseline_stats.get("p50Ms")),
+                    "comparisonP50Ms": safe_float(comparison_stats.get("p50Ms")),
                     "deltaP50Percent": safe_float(delta_percent.get("p50Percent")),
-                    "leftP95Ms": safe_float(left_stats.get("p95Ms")),
-                    "rightP95Ms": safe_float(right_stats.get("p95Ms")),
-                    "leftP99Ms": safe_float(left_stats.get("p99Ms")),
-                    "rightP99Ms": safe_float(right_stats.get("p99Ms")),
-                    "leftSampleCount": parse_int(left_stats.get("count")),
-                    "rightSampleCount": parse_int(right_stats.get("count")),
+                    "baselineP95Ms": safe_float(baseline_stats.get("p95Ms")),
+                    "comparisonP95Ms": safe_float(comparison_stats.get("p95Ms")),
+                    "baselineP99Ms": safe_float(baseline_stats.get("p99Ms")),
+                    "comparisonP99Ms": safe_float(comparison_stats.get("p99Ms")),
+                    "baselineSampleCount": parse_int(baseline_stats.get("count")),
+                    "comparisonSampleCount": parse_int(comparison_stats.get("count")),
                 },
             }
         )
@@ -670,15 +670,15 @@ def normalize_package_report(
                 "claimStatus": "claimable" if claimable else "diagnostic",
                 "maturity": maturity,
                 "metrics": {
-                    "leftP50Ms": safe_float(comparison.get("doeMedianMs")),
-                    "rightP50Ms": safe_float(comparison.get("dawnMedianMs")),
+                    "baselineP50Ms": safe_float(comparison.get("doeMedianMs")),
+                    "comparisonP50Ms": safe_float(comparison.get("dawnMedianMs")),
                     "deltaP50Percent": safe_float(comparison.get("pctFaster")),
-                    "leftP95Ms": safe_float(comparison.get("doeP95Ms")),
-                    "rightP95Ms": safe_float(comparison.get("dawnP95Ms")),
-                    "leftP99Ms": safe_float(comparison.get("doeP99Ms")),
-                    "rightP99Ms": safe_float(comparison.get("dawnP99Ms")),
-                    "leftSampleCount": None,
-                    "rightSampleCount": None,
+                    "baselineP95Ms": safe_float(comparison.get("doeP95Ms")),
+                    "comparisonP95Ms": safe_float(comparison.get("dawnP95Ms")),
+                    "baselineP99Ms": safe_float(comparison.get("doeP99Ms")),
+                    "comparisonP99Ms": safe_float(comparison.get("dawnP99Ms")),
+                    "baselineSampleCount": None,
+                    "comparisonSampleCount": None,
                 },
             }
         )

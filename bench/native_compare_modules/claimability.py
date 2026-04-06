@@ -1,4 +1,4 @@
-"""Claimability helpers for compare_dawn_vs_doe."""
+"""Claimability helpers for the compare lane."""
 
 from __future__ import annotations
 
@@ -66,10 +66,10 @@ def assess_upload_timing_scope_consistency(
         run_index = safe_int(sample.get("runIndex"), default=-1)
         run_label = f"run {run_index}" if run_index >= 0 else "sample"
 
-        if ignore_applied and canonical != "doe-execution-row-total-ns":
+        if ignore_applied and canonical != "doe-execution-workload-total-ns":
             reasons.append(
                 f"{side_name} {run_label} uses ignore-first with non-row timing source "
-                f"({canonical}); require doe-execution-row-total-ns"
+                f"({canonical}); require doe-execution-workload-total-ns"
             )
         if ignore_applied:
             base_source_raw = timing.get("uploadIgnoreFirstBaseTimingSource")
@@ -86,10 +86,10 @@ def assess_upload_timing_scope_consistency(
                 reasons.append(
                     f"{side_name} {run_label} missing uploadIgnoreFirstBaseTimingSource while ignore-first is applied"
                 )
-            if canonical_adjusted != "doe-execution-row-total-ns":
+            if canonical_adjusted != "doe-execution-workload-total-ns":
                 reasons.append(
                     f"{side_name} {run_label} uses ignore-first adjusted source "
-                    f"({canonical_adjusted}); require doe-execution-row-total-ns"
+                    f"({canonical_adjusted}); require doe-execution-workload-total-ns"
                 )
             if canonical_base and canonical_adjusted and canonical_base != canonical_adjusted:
                 reasons.append(
@@ -156,13 +156,13 @@ def assess_phase_equivalence(
         right_zero = right_median == 0.0
         if left_zero and not right_zero and right_median >= _PHASE_ASYMMETRY_THRESHOLD:
             reasons.append(
-                f"phase asymmetry: left reports zero {field_name} but right spends "
+                f"phase asymmetry: baseline reports zero {field_name} but comparison spends "
                 f"{right_median:.1%} of execution in that phase; "
                 f"treat as non-claimable until phase equivalence is confirmed"
             )
         elif right_zero and not left_zero and left_median >= _PHASE_ASYMMETRY_THRESHOLD:
             reasons.append(
-                f"phase asymmetry: right reports zero {field_name} but left spends "
+                f"phase asymmetry: comparison reports zero {field_name} but baseline spends "
                 f"{left_median:.1%} of execution in that phase; "
                 f"treat as non-claimable until phase equivalence is confirmed"
             )
@@ -196,7 +196,7 @@ def assess_row_timing_floor(
     reasons: list[str] = []
     left_median_ns = _median_elapsed_ns(left_command_samples)
     right_median_ns = _median_elapsed_ns(right_command_samples)
-    for side_name, median_ns in [("left", left_median_ns), ("right", right_median_ns)]:
+    for side_name, median_ns in [("baseline", left_median_ns), ("comparison", right_median_ns)]:
         if median_ns is not None and median_ns < min_row_timing_floor_ns:
             reasons.append(
                 f"{side_name} median row wall time ({median_ns / 1e6:.3f}ms) is below "
@@ -248,7 +248,7 @@ def assess_throughput_plausibility(
     if upload_bytes is None or upload_bytes == 0:
         return []
     reasons: list[str] = []
-    for side_name, p50_ms in [("left", left_p50_ms), ("right", right_p50_ms)]:
+    for side_name, p50_ms in [("baseline", left_p50_ms), ("comparison", right_p50_ms)]:
         if p50_ms is None or p50_ms <= 0.0:
             continue
         throughput = upload_bytes / (p50_ms / 1000.0)
@@ -320,8 +320,8 @@ def assess_claimability(
     mode: str,
     min_timed_samples: int,
     workload: Any,
-    left: dict[str, Any],
-    right: dict[str, Any],
+    baseline: dict[str, Any],
+    comparison: dict[str, Any],
     delta: dict[str, Any],
     timing_interpretation: dict[str, Any],
     comparability: dict[str, Any],
@@ -347,15 +347,15 @@ def assess_claimability(
     claim_metric_field = "deltaPercent"
     claim_metric_scope = "selectedTiming"
     claim_delta = delta
-    claim_left_stats = left.get("stats", {}) if isinstance(left.get("stats"), dict) else {}
-    claim_right_stats = right.get("stats", {}) if isinstance(right.get("stats"), dict) else {}
+    claim_left_stats = baseline.get("stats", {}) if isinstance(baseline.get("stats"), dict) else {}
+    claim_right_stats = comparison.get("stats", {}) if isinstance(comparison.get("stats"), dict) else {}
 
     if not comparability.get("comparable", False):
         reasons.append("workload is non-comparable; reliability claimability requires comparability")
 
     if getattr(workload, "path_asymmetry", False):
         note = getattr(workload, "path_asymmetry_note", "")
-        reason = "workload has pathAsymmetry: left/right use structurally different execution paths"
+        reason = "workload has pathAsymmetry: baseline/comparison use structurally different execution paths"
         if note:
             reason += f" ({note})"
         reasons.append(reason)
@@ -368,8 +368,8 @@ def assess_claimability(
     if selected_timing.get("scopeClass") == "narrow-hot-path":
         if workload_unit_wall_available:
             workload_unit_wall_delta = workload_unit_wall.get("deltaPercent")
-            workload_unit_wall_left = workload_unit_wall.get("leftStatsMs")
-            workload_unit_wall_right = workload_unit_wall.get("rightStatsMs")
+            workload_unit_wall_left = workload_unit_wall.get("baselineStatsMs")
+            workload_unit_wall_right = workload_unit_wall.get("comparisonStatsMs")
             if (
                 isinstance(workload_unit_wall_delta, dict)
                 and isinstance(workload_unit_wall_left, dict)
@@ -395,10 +395,10 @@ def assess_claimability(
         workload_unit_wall.get("deltaPercent") if isinstance(workload_unit_wall, dict) else None
     )
     workload_unit_wall_left = (
-        workload_unit_wall.get("leftStatsMs") if isinstance(workload_unit_wall, dict) else None
+        workload_unit_wall.get("baselineStatsMs") if isinstance(workload_unit_wall, dict) else None
     )
     workload_unit_wall_right = (
-        workload_unit_wall.get("rightStatsMs") if isinstance(workload_unit_wall, dict) else None
+        workload_unit_wall.get("comparisonStatsMs") if isinstance(workload_unit_wall, dict) else None
     )
     workload_unit_wall_left_p50_ms = (
         safe_float(workload_unit_wall_left.get("p50Ms"))
@@ -521,15 +521,15 @@ def assess_claimability(
     right_count = safe_int(claim_right_stats.get("count"), default=0)
     if left_count < effective_min_samples:
         reasons.append(
-            f"left timed sample count {left_count} is below claim floor {effective_min_samples}"
+            f"baseline timed sample count {left_count} is below claim floor {effective_min_samples}"
         )
     if right_count < effective_min_samples:
         reasons.append(
-            f"right timed sample count {right_count} is below claim floor {effective_min_samples}"
+            f"comparison timed sample count {right_count} is below claim floor {effective_min_samples}"
         )
 
     left_stdev_ms = safe_float(claim_left_stats.get("stdevMs"))
-    left_samples = left.get("commandSamples", [])
+    left_samples = baseline.get("commandSamples", [])
     left_canonical_sources = {
         canonical_timing_source(str(sample.get("timingSource", "")))
         for sample in left_samples
@@ -542,7 +542,7 @@ def assess_claimability(
         and left_canonical_sources
         and left_canonical_sources.issubset(
             {
-                "doe-execution-row-total-ns",
+                "doe-execution-workload-total-ns",
                 "doe-execution-total-ns",
                 "doe-execution-dispatch-window-ns",
                 "doe-execution-encode-ns",
@@ -550,19 +550,19 @@ def assess_claimability(
         )
     ):
         reasons.append(
-            "left timed samples have zero variance across the full claim window; "
+            "baseline timed samples have zero variance across the full claim window; "
             "treat as non-claimable until timing path is proven non-synthetic"
         )
 
     if left_p50_ms is not None and left_p50_ms < 0.0001:
-        reasons.append(f"left p50 timing ({left_p50_ms * 1e6:.1f}ns) is below the 100ns measurement noise floor")
+        reasons.append(f"baseline p50 timing ({left_p50_ms * 1e6:.1f}ns) is below the 100ns measurement noise floor")
     if right_p50_ms is not None and right_p50_ms < 0.0001:
-        reasons.append(f"right p50 timing ({right_p50_ms * 1e6:.1f}ns) is below the 100ns measurement noise floor")
+        reasons.append(f"comparison p50 timing ({right_p50_ms * 1e6:.1f}ns) is below the 100ns measurement noise floor")
 
     min_row_timing_floor_ns = getattr(benchmark_policy, "min_row_timing_floor_ns", 0)
     if min_row_timing_floor_ns > 0:
-        left_samples_for_floor = left.get("commandSamples", [])
-        right_samples_for_floor = right.get("commandSamples", [])
+        left_samples_for_floor = baseline.get("commandSamples", [])
+        right_samples_for_floor = comparison.get("commandSamples", [])
         if isinstance(left_samples_for_floor, list) and isinstance(right_samples_for_floor, list):
             reasons.extend(
                 assess_row_timing_floor(
@@ -588,29 +588,29 @@ def assess_claimability(
             continue
         if value <= 0.0:
             reasons.append(
-                f"{percentile_key}={value:.6f} is not positive (positive means left faster)"
+                f"{percentile_key}={value:.6f} is not positive (positive means baseline faster)"
             )
 
     if workload.domain == "upload":
-        left_samples = left.get("commandSamples", [])
-        right_samples = right.get("commandSamples", [])
+        left_samples = baseline.get("commandSamples", [])
+        right_samples = comparison.get("commandSamples", [])
         if isinstance(left_samples, list):
             reasons.extend(
                 assess_upload_timing_scope_consistency(
-                    side_name="left",
+                    side_name="baseline",
                     command_samples=left_samples,
                 )
             )
         if isinstance(right_samples, list):
             reasons.extend(
                 assess_upload_timing_scope_consistency(
-                    side_name="right",
+                    side_name="comparison",
                     command_samples=right_samples,
                 )
             )
 
-    left_samples = left.get("commandSamples", [])
-    right_samples = right.get("commandSamples", [])
+    left_samples = baseline.get("commandSamples", [])
+    right_samples = comparison.get("commandSamples", [])
     if isinstance(left_samples, list) and isinstance(right_samples, list):
         # Operation-scope sanity only applies when the claim metric is still
         # based on operation timing.  When the claim has already been promoted
@@ -641,7 +641,7 @@ def assess_claimability(
         "requiredPositivePercentiles": required_percentiles,
         "claimMetricField": claim_metric_field,
         "claimMetricScope": claim_metric_scope,
-        "leftTimedSamples": left_count,
-        "rightTimedSamples": right_count,
+        "baselineTimedSamples": left_count,
+        "comparisonTimedSamples": right_count,
         "reasons": reasons,
     }

@@ -91,8 +91,8 @@ def make_prepared_session_side() -> dict[str, object]:
 class TimingInterpretationNamingTests(unittest.TestCase):
     def test_emits_workload_unit_wall_with_legacy_alias(self) -> None:
         interpretation = build_timing_interpretation(
-            left=make_side("doe-execution-total-ns"),
-            right=make_side("doe-execution-total-ns"),
+            baseline=make_side("doe-execution-total-ns"),
+            comparison=make_side("doe-execution-total-ns"),
         )
 
         workload_unit_wall = interpretation.get("workloadUnitWall")
@@ -101,8 +101,8 @@ class TimingInterpretationNamingTests(unittest.TestCase):
         self.assertIsInstance(workload_unit_wall, dict)
         self.assertEqual(workload_unit_wall.get("scopeClass"), "workload-unit-wall")
         self.assertTrue(workload_unit_wall.get("available"))
-        self.assertAlmostEqual(workload_unit_wall["leftStatsMs"]["p50Ms"], 5.0)
-        self.assertAlmostEqual(workload_unit_wall["rightStatsMs"]["p50Ms"], 5.0)
+        self.assertAlmostEqual(workload_unit_wall["baselineStatsMs"]["p50Ms"], 5.0)
+        self.assertAlmostEqual(workload_unit_wall["comparisonStatsMs"]["p50Ms"], 5.0)
 
         self.assertIsInstance(legacy_alias, dict)
         self.assertEqual(legacy_alias.get("deprecatedAliasFor"), "workloadUnitWall")
@@ -114,10 +114,10 @@ class TimingInterpretationNamingTests(unittest.TestCase):
         host_overhead = interpretation.get("hostOverheadBreakdown")
         self.assertIsInstance(host_overhead, dict)
         self.assertTrue(host_overhead.get("available"))
-        self.assertAlmostEqual(host_overhead["selectedGap"]["leftStatsMs"]["p50Ms"], 1.0)
-        self.assertAlmostEqual(host_overhead["attributedHostOverhead"]["leftStatsMs"]["p50Ms"], 1.75)
+        self.assertAlmostEqual(host_overhead["selectedGap"]["baselineStatsMs"]["p50Ms"], 1.0)
+        self.assertAlmostEqual(host_overhead["attributedHostOverhead"]["baselineStatsMs"]["p50Ms"], 1.75)
         self.assertAlmostEqual(
-            host_overhead["unattributedGapRemainder"]["leftStatsMs"]["p50Ms"],
+            host_overhead["unattributedGapRemainder"]["baselineStatsMs"]["p50Ms"],
             -0.75,
         )
         self.assertIn("inputRead", host_overhead.get("buckets", {}))
@@ -128,19 +128,19 @@ class TimingInterpretationNamingTests(unittest.TestCase):
 
     def test_prepared_session_host_overhead_stays_within_selected_gap(self) -> None:
         interpretation = build_timing_interpretation(
-            left=make_prepared_session_side(),
-            right=make_prepared_session_side(),
+            baseline=make_prepared_session_side(),
+            comparison=make_prepared_session_side(),
         )
 
         host_overhead = interpretation.get("hostOverheadBreakdown")
         self.assertIsInstance(host_overhead, dict)
         self.assertTrue(host_overhead.get("available"))
         self.assertLessEqual(
-            host_overhead["attributedHostOverhead"]["leftStatsMs"]["p50Ms"],
-            host_overhead["selectedGap"]["leftStatsMs"]["p50Ms"],
+            host_overhead["attributedHostOverhead"]["baselineStatsMs"]["p50Ms"],
+            host_overhead["selectedGap"]["baselineStatsMs"]["p50Ms"],
         )
         self.assertGreaterEqual(
-            host_overhead["unattributedGapRemainder"]["leftStatsMs"]["p50Ms"],
+            host_overhead["unattributedGapRemainder"]["baselineStatsMs"]["p50Ms"],
             0.0,
         )
 

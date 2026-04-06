@@ -56,7 +56,7 @@ Status vocabulary used below:
 
 - `verified`: fresh evidence or an explicitly promoted governed lane exists
 - `supported`: documented public surface exists, even if it is not itself a
-  left/right claim lane
+  baseline/comparison claim lane
 - `diagnostic`: useful for attribution, debugging, or local comparison, but not
   a canonical claim surface
 - `scaffolded`: config/files/contracts exist, but fresh evidence or release
@@ -75,7 +75,7 @@ Subpath reminder (the `@simulatte/*` scope is deprecated; use `doe-gpu`):
 
 ### Runtime package family: `@simulatte/webgpu` *(deprecated — use `doe-gpu`)*
 
-| Host / platform | Left surface | Right / reference surface | Kind | Current state | Value / note |
+| Host / platform | Doe surface | Reference surface | Kind | Current state | Value / note |
 |------|------|------|------|------|------|
 | Node | `@simulatte/webgpu` / `@simulatte/webgpu/node` | `webgpu` (Dawn) | product + governed compare lane | `diagnostic` | Node package lane exists, but the current Apple Metal Gemma64/Gemma1B Node/Dawn rows are explicitly unsupported on `mac.lan` in `docs/status.md`; read Node package evidence lane- and host-specifically. |
 | Bun | `@simulatte/webgpu` / `@simulatte/webgpu/bun` | `bun-webgpu` (Dawn) | product + governed compare lane | `verified` | Main Bun package niche. The current Apple Metal package headline rows in `docs/status.md` are Bun Gemma64 and Bun Gemma1B cold/warm claimable receipts. |
@@ -86,7 +86,7 @@ Subpath reminder (the `@simulatte/*` scope is deprecated; use `doe-gpu`):
 
 ### Helper package family: `@simulatte/webgpu-doe` *(deprecated — merged into `doe-gpu`)*
 
-| Host / platform | Left surface | Right / reference surface | Kind | Current state | Value / note |
+| Host / platform | Doe surface | Reference surface | Kind | Current state | Value / note |
 |------|------|------|------|------|------|
 | Node / Bun / Deno | `@simulatte/webgpu-doe` bound onto `@simulatte/webgpu` device objects | same underlying Doe runtime | product helper surface | `supported` | Canonical ergonomic helper layer. Valuable because it keeps helper ergonomics separate from transport/runtime selection. |
 | Node | `@simulatte/webgpu-doe` bound onto `webgpu` raw devices | Dawn-backed Node runtime | attribution / compatibility cell | `diagnostic` | Explicitly useful today in Node four-way attribution compares; not a separate marketed runtime. |
@@ -97,7 +97,7 @@ Subpath reminder (the `@simulatte/*` scope is deprecated; use `doe-gpu`):
 
 ### Runtime, ABI, and browser cells
 
-| Host / platform | Left surface | Right / reference surface | Kind | Current state | Value / note |
+| Host / platform | Doe surface | Reference surface | Kind | Current state | Value / note |
 |------|------|------|------|------|------|
 | macOS Apple Silicon | Doe Metal backend | Dawn Metal delegate | governed runtime compare lane | `verified` | Strong Doe-vs-Dawn direct-backend evidence exists, but the current broad full lane remains diagnostic rather than fully claimable. |
 | Linux AMD Vulkan | Doe Vulkan backend | Dawn Vulkan delegate | governed runtime compare lane | `verified` | Real Doe-vs-Dawn runtime evidence exists; the current strict release lane remains diagnostic with one remaining upload blocker. |
@@ -191,7 +191,7 @@ Package boundary:
 | Schema | Blocking | `bench/gates/schema_gate.py` |
 | Correctness | Blocking | `bench/gates/check_correctness.py` |
 | Trace/replay | Blocking | `bench/gates/trace_gate.py` |
-| Comparability | Blocking | `bench/compare_dawn_vs_doe.py --strict` |
+| Comparability | Blocking | `bench/cli.py compare --strict` |
 | Claim | Blocking for claim artifacts | `bench/gates/claim_gate.py` |
 | Performance | Advisory | `gates.json` ratchet |
 

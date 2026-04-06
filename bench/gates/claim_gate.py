@@ -2,7 +2,7 @@
 """
 Release hard-gate for claimability and comparability status.
 
-Validates that a compare_dawn_vs_doe.py report is explicitly release-claimable.
+Validates that a compare-lane report is explicitly release-claimable.
 """
 
 from __future__ import annotations
@@ -38,7 +38,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--report",
         default="bench/out/dawn-vs-doe.json",
-        help="Comparison report produced by compare_dawn_vs_doe.py",
+        help="Comparison report produced by the compare lane.",
     )
     parser.add_argument(
         "--require-comparison-status",
@@ -93,13 +93,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--require-backend-telemetry",
         action="store_true",
-        help="Require backend selection telemetry on successful left-side samples.",
+        help="Require backend selection telemetry on successful baseline-side samples.",
     )
     parser.add_argument(
         "--expected-backend-id",
         default="",
         help=(
-            "Expected left-side backendId for successful samples when "
+            "Expected baseline-side backendId for successful samples when "
             "--require-backend-telemetry is set."
         ),
     )
@@ -149,8 +149,8 @@ def workload_runtime_hint(workload: dict[str, Any]) -> str:
     workload_id = str(workload.get("id", "unknown"))
     claimability = workload.get("claimability")
     delta = workload.get("deltaPercent")
-    left = workload.get("left")
-    right = workload.get("right")
+    baseline = workload.get("baseline")
+    comparison = workload.get("comparison")
 
     reasons: list[str] = []
     if isinstance(claimability, dict):
@@ -164,36 +164,36 @@ def workload_runtime_hint(workload: dict[str, Any]) -> str:
         delta_p50 = parse_float(delta.get("p50Percent"))
         delta_p95 = parse_float(delta.get("p95Percent"))
 
-    left_p50 = None
-    right_p50 = None
-    left_source = "unknown"
-    right_source = "unknown"
-    if isinstance(left, dict):
-        stats = left.get("stats")
+    baseline_p50 = None
+    comparison_p50 = None
+    baseline_source = "unknown"
+    comparison_source = "unknown"
+    if isinstance(baseline, dict):
+        stats = baseline.get("stats")
         if isinstance(stats, dict):
-            left_p50 = parse_float(stats.get("p50Ms"))
-        sources = left.get("timingSources")
+            baseline_p50 = parse_float(stats.get("p50Ms"))
+        sources = baseline.get("timingSources")
         if isinstance(sources, list) and sources:
-            left_source = str(sources[0])
-    if isinstance(right, dict):
-        stats = right.get("stats")
+            baseline_source = str(sources[0])
+    if isinstance(comparison, dict):
+        stats = comparison.get("stats")
         if isinstance(stats, dict):
-            right_p50 = parse_float(stats.get("p50Ms"))
-        sources = right.get("timingSources")
+            comparison_p50 = parse_float(stats.get("p50Ms"))
+        sources = comparison.get("timingSources")
         if isinstance(sources, list) and sources:
-            right_source = str(sources[0])
+            comparison_source = str(sources[0])
 
     parts: list[str] = [f"{workload_id}"]
     if delta_p50 is not None:
         parts.append(f"deltaP50={delta_p50:.6f}%")
     if delta_p95 is not None:
         parts.append(f"deltaP95={delta_p95:.6f}%")
-    if left_p50 is not None:
-        parts.append(f"leftP50Ms={left_p50:.9f}")
-    if right_p50 is not None:
-        parts.append(f"rightP50Ms={right_p50:.9f}")
-    parts.append(f"leftTiming={left_source}")
-    parts.append(f"rightTiming={right_source}")
+    if baseline_p50 is not None:
+        parts.append(f"baselineP50Ms={baseline_p50:.9f}")
+    if comparison_p50 is not None:
+        parts.append(f"comparisonP50Ms={comparison_p50:.9f}")
+    parts.append(f"baselineTiming={baseline_source}")
+    parts.append(f"comparisonTiming={comparison_source}")
     if reasons:
         parts.append("reasons=" + " | ".join(reasons))
     return ", ".join(parts)
@@ -214,19 +214,21 @@ def workload_is_dawn_vs_doe(workload: dict[str, Any]) -> bool:
             if isinstance(trace_meta, dict) and trace_meta.get("executionBackend")
         }
 
-    left_backends = collect_execution_backends(workload.get("left"))
-    right_backends = collect_execution_backends(workload.get("right"))
-    left_dawn = "dawn_delegate" in left_backends or "dawn-perf-tests" in left_backends
-    right_dawn = "dawn_delegate" in right_backends or "dawn-perf-tests" in right_backends
-    left_doe = any(
-        backend in left_backends
+    baseline_backends = collect_execution_backends(workload.get("baseline"))
+    comparison_backends = collect_execution_backends(workload.get("comparison"))
+    baseline_dawn = "dawn_delegate" in baseline_backends or "dawn-perf-tests" in baseline_backends
+    comparison_dawn = (
+        "dawn_delegate" in comparison_backends or "dawn-perf-tests" in comparison_backends
+    )
+    baseline_doe = any(
+        backend in baseline_backends
         for backend in ("doe_metal", "doe_vulkan", "doe_d3d12", "webgpu-ffi", "native")
     )
-    right_doe = any(
-        backend in right_backends
+    comparison_doe = any(
+        backend in comparison_backends
         for backend in ("doe_metal", "doe_vulkan", "doe_d3d12", "webgpu-ffi", "native")
     )
-    return (left_dawn and right_doe) or (left_doe and right_dawn)
+    return (baseline_dawn and comparison_doe) or (baseline_doe and comparison_dawn)
 
 
 def load_report(path: Path) -> dict[str, Any]:
@@ -582,13 +584,13 @@ def main() -> int:
                 if claimable is not True:
                     failures.append(f"{workload_id}: claimability.claimable must be true")
                 left_count = parse_int(
-                    workload.get("left", {}).get("stats", {}).get("count")
-                    if isinstance(workload.get("left"), dict)
+                    workload.get("baseline", {}).get("stats", {}).get("count")
+                    if isinstance(workload.get("baseline"), dict)
                     else None
                 )
                 right_count = parse_int(
-                    workload.get("right", {}).get("stats", {}).get("count")
-                    if isinstance(workload.get("right"), dict)
+                    workload.get("comparison", {}).get("stats", {}).get("count")
+                    if isinstance(workload.get("comparison"), dict)
                     else None
                 )
                 effective_min_timed_samples = (
@@ -598,11 +600,11 @@ def main() -> int:
                 )
                 if left_count is None or left_count < effective_min_timed_samples:
                     failures.append(
-                        f"{workload_id}: left.stats.count must be >= {effective_min_timed_samples}"
+                        f"{workload_id}: baseline.stats.count must be >= {effective_min_timed_samples}"
                     )
                 if right_count is None or right_count < effective_min_timed_samples:
                     failures.append(
-                        f"{workload_id}: right.stats.count must be >= {effective_min_timed_samples}"
+                        f"{workload_id}: comparison.stats.count must be >= {effective_min_timed_samples}"
                     )
                 delta = workload.get("deltaPercent")
                 if not isinstance(delta, dict):
@@ -617,7 +619,7 @@ def main() -> int:
                         elif value <= 0.0:
                             failures.append(
                                 f"{workload_id}: deltaPercent.{percentile} must be > 0 "
-                                "(positive means left faster)"
+                                "(positive means baseline faster)"
                             )
             elif args.require_claim_status == "diagnostic":
                 if evaluated is not True:
@@ -695,13 +697,13 @@ def main() -> int:
                         f"{workload_id}: comparable workload must not have blockingFailedObligations"
                     )
             if args.require_backend_telemetry and args.require_claim_status == "claimable":
-                left_payload = workload.get("left")
+                left_payload = workload.get("baseline")
                 if not isinstance(left_payload, dict):
-                    failures.append(f"{workload_id}: missing left payload for backend telemetry checks")
+                    failures.append(f"{workload_id}: missing baseline payload for backend telemetry checks")
                     continue
                 command_samples = left_payload.get("commandSamples")
                 if not isinstance(command_samples, list) or not command_samples:
-                    failures.append(f"{workload_id}: missing left.commandSamples for backend telemetry checks")
+                    failures.append(f"{workload_id}: missing baseline.commandSamples for backend telemetry checks")
                     continue
                 for sample_idx, sample in enumerate(command_samples):
                     if not isinstance(sample, dict):

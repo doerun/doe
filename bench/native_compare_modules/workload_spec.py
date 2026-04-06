@@ -27,9 +27,14 @@ class WorkloadSpec:
     comparable: bool
     benchmark_class: str
     comparability_notes: str
+    directional_reason: str
     path_asymmetry: bool
     path_asymmetry_note: str
     strict_normalization_unit: str
+    include_by_default: bool = True
+    comparability_candidate_enabled: bool = False
+    comparability_candidate_tier: str = ""
+    comparability_candidate_notes: str = ""
     cohorts: list[str] = field(default_factory=lambda: ["exploration"])
     claim_eligible: bool = True
     runner_type: str = "zig-runtime"

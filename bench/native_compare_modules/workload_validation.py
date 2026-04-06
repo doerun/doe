@@ -178,12 +178,12 @@ def enforce_strict_command_shape_divisor_contracts(
     workloads: list[Workload],
     comparability_mode: str,
     required_timing_class: str,
-    right_command_template: str,
+    comparison_command_template: str,
 ) -> None:
     if comparability_mode != "strict" or required_timing_class == "process-wall":
         return
 
-    lint_right_divisors = template_uses_doe_runtime(right_command_template)
+    lint_comparison_divisors = template_uses_doe_runtime(comparison_command_template)
     command_shape_cache: dict[str, int] = {}
     dispatch_shape_cache: dict[str, int] = {}
     failures: list[str] = []
@@ -211,32 +211,32 @@ def enforce_strict_command_shape_divisor_contracts(
             workload=workload,
             per_stream_ops=per_stream_ops,
             per_stream_dispatch_ops=per_stream_dispatch_ops,
-            command_repeat=workload.left_command_repeat,
+            command_repeat=workload.baseline_command_repeat,
         )
         expected_right_ops = expected_divisor_units(
             workload=workload,
             per_stream_ops=per_stream_ops,
             per_stream_dispatch_ops=per_stream_dispatch_ops,
-            command_repeat=workload.right_command_repeat,
+            command_repeat=workload.comparison_command_repeat,
         )
 
-        if workload.left_timing_divisor > 1.0 and abs(
-            workload.left_timing_divisor - float(expected_left_ops)
+        if workload.baseline_timing_divisor > 1.0 and abs(
+            workload.baseline_timing_divisor - float(expected_left_ops)
         ) > 1e-9:
             failures.append(
-                f"{workload.id}: leftTimingDivisor={workload.left_timing_divisor} "
+                f"{workload.id}: baselineTimingDivisor={workload.baseline_timing_divisor} "
                 f"does not match command-shape operations={expected_left_ops} "
-                f"(commandsPath={workload.commands_path}, leftCommandRepeat={workload.left_command_repeat})"
+                f"(commandsPath={workload.commands_path}, baselineCommandRepeat={workload.baseline_command_repeat})"
             )
         if (
-            lint_right_divisors
-            and workload.right_timing_divisor > 1.0
-            and abs(workload.right_timing_divisor - float(expected_right_ops)) > 1e-9
+            lint_comparison_divisors
+            and workload.comparison_timing_divisor > 1.0
+            and abs(workload.comparison_timing_divisor - float(expected_right_ops)) > 1e-9
         ):
             failures.append(
-                f"{workload.id}: rightTimingDivisor={workload.right_timing_divisor} "
+                f"{workload.id}: comparisonTimingDivisor={workload.comparison_timing_divisor} "
                 f"does not match command-shape operations={expected_right_ops} "
-                f"(commandsPath={workload.commands_path}, rightCommandRepeat={workload.right_command_repeat})"
+                f"(commandsPath={workload.commands_path}, comparisonCommandRepeat={workload.comparison_command_repeat})"
             )
 
     if failures:
@@ -249,17 +249,17 @@ def enforce_strict_command_shape_divisor_contracts(
 def enforce_strict_plan_boundary_symmetry(
     *,
     workloads: list[Workload],
-    left_command_template: str,
-    right_command_template: str,
+    baseline_command_template: str,
+    comparison_command_template: str,
     comparability_mode: str,
 ) -> None:
     if comparability_mode != "strict":
         return
 
-    left_uses_plan = template_uses_plan_boundary(left_command_template)
-    right_uses_plan = template_uses_plan_boundary(right_command_template)
-    left_uses_commands = template_uses_commands_boundary(left_command_template)
-    right_uses_commands = template_uses_commands_boundary(right_command_template)
+    baseline_uses_plan = template_uses_plan_boundary(baseline_command_template)
+    comparison_uses_plan = template_uses_plan_boundary(comparison_command_template)
+    baseline_uses_commands = template_uses_commands_boundary(baseline_command_template)
+    comparison_uses_commands = template_uses_commands_boundary(comparison_command_template)
 
     failures: list[str] = []
     for workload in workloads:
@@ -270,11 +270,11 @@ def enforce_strict_plan_boundary_symmetry(
         if not getattr(workload, "plan_path", "").strip():
             continue
 
-        if not left_uses_plan or not right_uses_plan:
+        if not baseline_uses_plan or not comparison_uses_plan:
             failures.append(
-                f"{workload.id}: comparable plan-backed workload requires plan executors on both sides "
-                f"(leftBoundary={'plan' if left_uses_plan else 'commands' if left_uses_commands else 'unknown'}, "
-                f"rightBoundary={'plan' if right_uses_plan else 'commands' if right_uses_commands else 'unknown'}, "
+                f"{workload.id}: comparable plan-backed workload requires plan executors on both benchmark participants "
+                f"(baselineBoundary={'plan' if baseline_uses_plan else 'commands' if baseline_uses_commands else 'unknown'}, "
+                f"comparisonBoundary={'plan' if comparison_uses_plan else 'commands' if comparison_uses_commands else 'unknown'}, "
                 f"planPath={workload.plan_path})"
             )
 
@@ -294,19 +294,19 @@ def template_backend_lane(template: str) -> str:
 
 def enforce_strict_doe_runtime_normalization_symmetry(
     workloads: list[Workload],
-    left_command_template: str,
-    right_command_template: str,
+    baseline_command_template: str,
+    comparison_command_template: str,
     comparability_mode: str,
 ) -> None:
     if comparability_mode != "strict":
         return
-    if not template_uses_doe_runtime(left_command_template):
+    if not template_uses_doe_runtime(baseline_command_template):
         return
-    if not template_uses_doe_runtime(right_command_template):
+    if not template_uses_doe_runtime(comparison_command_template):
         return
-    left_lane = template_backend_lane(left_command_template)
-    right_lane = template_backend_lane(right_command_template)
-    if "dawn" in left_lane or "dawn" in right_lane:
+    baseline_lane = template_backend_lane(baseline_command_template)
+    comparison_lane = template_backend_lane(comparison_command_template)
+    if "dawn" in baseline_lane or "dawn" in comparison_lane:
         return
 
     failures: list[str] = []
@@ -314,26 +314,26 @@ def enforce_strict_doe_runtime_normalization_symmetry(
         if not workload.comparable:
             continue
         mismatches: list[str] = []
-        if workload.left_command_repeat != workload.right_command_repeat:
+        if workload.baseline_command_repeat != workload.comparison_command_repeat:
             mismatches.append(
-                f"commandRepeat left={workload.left_command_repeat} right={workload.right_command_repeat}"
+                f"commandRepeat baseline={workload.baseline_command_repeat} comparison={workload.comparison_command_repeat}"
             )
-        if workload.left_ignore_first_ops != workload.right_ignore_first_ops:
+        if workload.baseline_ignore_first_ops != workload.comparison_ignore_first_ops:
             mismatches.append(
-                f"ignoreFirstOps left={workload.left_ignore_first_ops} right={workload.right_ignore_first_ops}"
+                f"ignoreFirstOps baseline={workload.baseline_ignore_first_ops} comparison={workload.comparison_ignore_first_ops}"
             )
-        if workload.left_upload_buffer_usage != workload.right_upload_buffer_usage:
+        if workload.baseline_upload_buffer_usage != workload.comparison_upload_buffer_usage:
             mismatches.append(
                 "uploadBufferUsage "
-                f"left={workload.left_upload_buffer_usage} right={workload.right_upload_buffer_usage}"
+                f"baseline={workload.baseline_upload_buffer_usage} comparison={workload.comparison_upload_buffer_usage}"
             )
-        if workload.left_upload_submit_every != workload.right_upload_submit_every:
+        if workload.baseline_upload_submit_every != workload.comparison_upload_submit_every:
             mismatches.append(
-                f"uploadSubmitEvery left={workload.left_upload_submit_every} right={workload.right_upload_submit_every}"
+                f"uploadSubmitEvery baseline={workload.baseline_upload_submit_every} comparison={workload.comparison_upload_submit_every}"
             )
-        if workload.left_timing_divisor != workload.right_timing_divisor:
+        if workload.baseline_timing_divisor != workload.comparison_timing_divisor:
             mismatches.append(
-                f"timingDivisor left={workload.left_timing_divisor} right={workload.right_timing_divisor}"
+                f"timingDivisor baseline={workload.baseline_timing_divisor} comparison={workload.comparison_timing_divisor}"
             )
         if mismatches:
             failures.append(f"{workload.id}: " + ", ".join(mismatches))
@@ -342,14 +342,14 @@ def enforce_strict_doe_runtime_normalization_symmetry(
         details = "; ".join(failures)
         raise ValueError(
             "strict apples-to-apples requires symmetric workload normalization "
-            f"(left==right) for comparable workloads: {details}"
+            f"(baseline==comparison) for comparable workloads: {details}"
         )
 
 
 def enforce_strict_dawn_vs_doe_direct_operation_timing(
     workloads: list[Workload],
-    left_command_template: str,
-    right_command_template: str,
+    baseline_command_template: str,
+    comparison_command_template: str,
     comparability_mode: str,
     required_timing_class: str,
 ) -> None:
@@ -358,10 +358,10 @@ def enforce_strict_dawn_vs_doe_direct_operation_timing(
     if required_timing_class != "operation":
         return
 
-    left_is_doe = template_uses_doe_runtime(left_command_template)
-    right_is_doe = template_uses_doe_runtime(right_command_template)
+    baseline_is_doe = template_uses_doe_runtime(baseline_command_template)
+    comparison_is_doe = template_uses_doe_runtime(comparison_command_template)
     # Dawn-vs-Doe only.
-    if left_is_doe == right_is_doe:
+    if baseline_is_doe == comparison_is_doe:
         return
 
     failures: list[str] = []
@@ -369,10 +369,10 @@ def enforce_strict_dawn_vs_doe_direct_operation_timing(
         if not workload.comparable:
             continue
         mismatches: list[str] = []
-        if workload.left_timing_divisor != 1.0:
-            mismatches.append(f"leftTimingDivisor={workload.left_timing_divisor}")
-        if workload.right_timing_divisor != 1.0:
-            mismatches.append(f"rightTimingDivisor={workload.right_timing_divisor}")
+        if workload.baseline_timing_divisor != 1.0:
+            mismatches.append(f"baselineTimingDivisor={workload.baseline_timing_divisor}")
+        if workload.comparison_timing_divisor != 1.0:
+            mismatches.append(f"comparisonTimingDivisor={workload.comparison_timing_divisor}")
         if mismatches:
             failures.append(f"{workload.id}: " + ", ".join(mismatches))
 
@@ -380,7 +380,7 @@ def enforce_strict_dawn_vs_doe_direct_operation_timing(
         details = "; ".join(failures)
         raise ValueError(
             "strict dawn-vs-doe operation comparability requires direct per-side timing "
-            "normalization (leftTimingDivisor=1 and rightTimingDivisor=1) for comparable workloads: "
+            "normalization (baselineTimingDivisor=1 and comparisonTimingDivisor=1) for comparable workloads: "
             f"{details}"
         )
 
@@ -488,39 +488,39 @@ def infer_workload_queue_sync_mode(workload: Workload) -> str:
 def infer_workload_backends(
     *,
     workload: Workload,
-    left_command_template: str,
-    right_command_template: str,
+    baseline_command_template: str,
+    comparison_command_template: str,
 ) -> set[str]:
     probe_root = Path("bench/out/scratch/host-backend-policy-probe")
     queue_sync_mode = infer_workload_queue_sync_mode(workload)
-    left_command = command_for(
-        left_command_template,
+    baseline_command = command_for(
+        baseline_command_template,
         workload=workload,
         workload_id=workload.id,
         commands_path=workload.commands_path,
         plan_path=getattr(workload, "plan_path", ""),
-        trace_jsonl=probe_root / f"{workload.id}.left.ndjson",
-        trace_meta=probe_root / f"{workload.id}.left.meta.json",
+        trace_jsonl=probe_root / f"{workload.id}.baseline.ndjson",
+        trace_meta=probe_root / f"{workload.id}.baseline.meta.json",
         queue_sync_mode=queue_sync_mode,
-        upload_buffer_usage=workload.left_upload_buffer_usage,
-        upload_submit_every=workload.left_upload_submit_every,
+        upload_buffer_usage=workload.baseline_upload_buffer_usage,
+        upload_submit_every=workload.baseline_upload_submit_every,
         extra_args=workload.extra_args,
     )
-    right_command = command_for(
-        right_command_template,
+    comparison_command = command_for(
+        comparison_command_template,
         workload=workload,
         workload_id=workload.id,
         commands_path=workload.commands_path,
         plan_path=getattr(workload, "plan_path", ""),
-        trace_jsonl=probe_root / f"{workload.id}.right.ndjson",
-        trace_meta=probe_root / f"{workload.id}.right.meta.json",
+        trace_jsonl=probe_root / f"{workload.id}.comparison.ndjson",
+        trace_meta=probe_root / f"{workload.id}.comparison.meta.json",
         queue_sync_mode=queue_sync_mode,
-        upload_buffer_usage=workload.right_upload_buffer_usage,
-        upload_submit_every=workload.right_upload_submit_every,
+        upload_buffer_usage=workload.comparison_upload_buffer_usage,
+        upload_submit_every=workload.comparison_upload_submit_every,
         extra_args=workload.extra_args,
     )
-    detected = extract_backends_from_command(left_command)
-    detected.update(extract_backends_from_command(right_command))
+    detected = extract_backends_from_command(baseline_command)
+    detected.update(extract_backends_from_command(comparison_command))
     if not detected:
         api_backend = backend_from_token(workload.api)
         if api_backend:
@@ -531,8 +531,8 @@ def infer_workload_backends(
 def enforce_host_backend_policy(
     *,
     workloads: list[Workload],
-    left_command_template: str,
-    right_command_template: str,
+    baseline_command_template: str,
+    comparison_command_template: str,
 ) -> None:
     host_name = platform.system().strip()
     host_key = host_name.lower()
@@ -546,8 +546,8 @@ def enforce_host_backend_policy(
             continue
         detected = infer_workload_backends(
             workload=workload,
-            left_command_template=left_command_template,
-            right_command_template=right_command_template,
+            baseline_command_template=baseline_command_template,
+            comparison_command_template=comparison_command_template,
         )
         disallowed = sorted(backend for backend in detected if backend not in allowed_backends)
         if disallowed:

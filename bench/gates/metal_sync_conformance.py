@@ -61,10 +61,10 @@ def main() -> int:
         workload_id = str(workload.get("id", "unknown"))
         domain = str(workload.get("domain", ""))
         expected = expected_sync_mode(policy, domain)
-        left = workload.get("left")
-        if not isinstance(left, dict):
+        baseline = workload.get("baseline")
+        if not isinstance(baseline, dict):
             continue
-        samples = left.get("commandSamples")
+        samples = baseline.get("commandSamples")
         if not isinstance(samples, list):
             continue
         validated_samples = 0
@@ -81,7 +81,7 @@ def main() -> int:
                 failures.append(f"{workload_id}: {err}")
         if validated_samples == 0:
             failures.append(
-                f"{workload_id}: no successful left command samples with traceMeta for sync validation"
+                f"{workload_id}: no successful baseline command samples with traceMeta for sync validation"
             )
 
     if failures:

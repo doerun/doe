@@ -703,7 +703,7 @@ async function main() {
   const workload = createMatmulWorkload(sizeSelection.size);
 
   console.log(
-    `Versions: doe-gpu 0.3.4, webgpu 0.3.8`
+    `Versions: doe-gpu 0.3.4, webgpu 0.4.0`
   );
   console.log(
     `Workload: tiled matmul size=${workload.size}x${workload.size} iterations=${iterations} warmup=${warmupRuns}`

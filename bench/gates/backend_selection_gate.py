@@ -158,10 +158,10 @@ def main() -> int:
         if not isinstance(workload, dict):
             continue
         workload_id = str(workload.get("id", "unknown"))
-        left = workload.get("left")
-        if not isinstance(left, dict):
+        baseline = workload.get("baseline")
+        if not isinstance(baseline, dict):
             continue
-        samples = left.get("commandSamples")
+        samples = baseline.get("commandSamples")
         if not isinstance(samples, list):
             continue
         for sample in samples:

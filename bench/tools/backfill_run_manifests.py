@@ -86,9 +86,6 @@ def infer_run_type(folder: Path) -> tuple[str, list[str]]:
     if any(name.startswith("dropin_benchmark_report") and name.endswith(".json") for name in files):
         signals.append("dropin_benchmark_report*.json")
         return "dropin_benchmark_suite", signals
-    if any(name.startswith("runtime-comparison") and name.endswith(".json") for name in files):
-        signals.append("runtime-comparison*.json")
-        return "compare_runtimes", signals
     if any(name.startswith("perf_report") and name.endswith(".json") for name in files):
         signals.append("perf_report*.json")
         return "run_bench", signals

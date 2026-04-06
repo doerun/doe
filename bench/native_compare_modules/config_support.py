@@ -1,4 +1,4 @@
-"""Config and workload helpers for compare_dawn_vs_doe."""
+"""Config and workload helpers for the compare lane."""
 
 from __future__ import annotations
 
@@ -8,16 +8,16 @@ import shlex
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, Sequence
 
 from native_compare_modules.reporting import parse_int
 
 DEFAULT_WORKLOADS_PATH = "bench/workloads/specialized/workloads.generic.json"
-DEFAULT_LEFT_NAME = "doe"
-DEFAULT_RIGHT_NAME = "dawn"
-DEFAULT_LEFT_EXECUTOR_ID = ""
-DEFAULT_RIGHT_EXECUTOR_ID = ""
-DEFAULT_LEFT_COMMAND_TEMPLATE = (
+DEFAULT_BASELINE_NAME = "doe"
+DEFAULT_COMPARISON_NAME = "dawn"
+DEFAULT_BASELINE_EXECUTOR_ID = ""
+DEFAULT_COMPARISON_EXECUTOR_ID = ""
+DEFAULT_BASELINE_COMMAND_TEMPLATE = (
     "runtime/zig/zig-out/bin/doe-zig-runtime "
     "--commands {commands} --quirks {quirks} "
     "--vendor {vendor} --api {api} --family {family} --driver {driver} "
@@ -80,7 +80,7 @@ FAWN_UPLOAD_RUNTIME_SOURCE_PATHS = (
 )
 NATIVE_EXECUTION_OPERATION_TIMING_SOURCES = {
     "doe-execution-total-ns",
-    "doe-execution-row-total-ns",
+    "doe-execution-workload-total-ns",
     "doe-execution-dispatch-window-ns",
     "doe-execution-encode-ns",
     "doe-execution-gpu-timestamp-ns",
@@ -110,22 +110,22 @@ class Workload:
     family: str
     driver: str
     extra_args: list[str]
-    left_command_repeat: int
-    right_command_repeat: int
-    left_ignore_first_ops: int
-    right_ignore_first_ops: int
-    left_upload_buffer_usage: str
-    right_upload_buffer_usage: str
-    left_upload_submit_every: int
-    right_upload_submit_every: int
+    baseline_command_repeat: int
+    comparison_command_repeat: int
+    baseline_ignore_first_ops: int
+    comparison_ignore_first_ops: int
+    baseline_upload_buffer_usage: str
+    comparison_upload_buffer_usage: str
+    baseline_upload_submit_every: int
+    comparison_upload_submit_every: int
     dawn_filter: str
     comparable: bool
     benchmark_class: str
     directional_reason: str
-    allow_left_no_execution: bool
+    allow_baseline_no_execution: bool
     include_by_default: bool
-    left_timing_divisor: float
-    right_timing_divisor: float
+    baseline_timing_divisor: float
+    comparison_timing_divisor: float
     timing_normalization_note: str
     async_diagnostics_mode: str
     comparability_candidate: bool
@@ -145,10 +145,10 @@ class Workload:
 
     def to_spec_and_configs(
         self,
-        left_product: str = "doe",
-        right_product: str = "dawn",
+        baseline_product: str = "doe",
+        comparison_product: str = "dawn",
     ) -> tuple:
-        """Split legacy pair Workload into WorkloadSpec + per-product configs.
+        """Split workload contract into WorkloadSpec + per-product configs.
 
         Returns (WorkloadSpec, dict[str, ProductRunConfig]).
         """
@@ -169,9 +169,14 @@ class Workload:
             comparable=self.comparable,
             benchmark_class=self.benchmark_class,
             comparability_notes=self.comparability_notes,
+            directional_reason=self.directional_reason,
             path_asymmetry=self.path_asymmetry,
             path_asymmetry_note=self.path_asymmetry_note,
             strict_normalization_unit=self.strict_normalization_unit,
+            include_by_default=self.include_by_default,
+            comparability_candidate_enabled=self.comparability_candidate,
+            comparability_candidate_tier=self.comparability_candidate_tier,
+            comparability_candidate_notes=self.comparability_candidate_notes,
             cohorts=list(self.cohorts),
             claim_eligible=self.claim_eligible,
             runner_type=self.runner_type,
@@ -182,26 +187,26 @@ class Workload:
             async_diagnostics_mode=self.async_diagnostics_mode,
         )
         configs = {
-            left_product: ProductRunConfig(
-                product=left_product,
-                command_repeat=self.left_command_repeat,
-                ignore_first_ops=self.left_ignore_first_ops,
-                upload_buffer_usage=self.left_upload_buffer_usage,
-                upload_submit_every=self.left_upload_submit_every,
-                timing_divisor=self.left_timing_divisor,
-                allow_no_execution=self.allow_left_no_execution,
-                dawn_filter=self.dawn_filter if left_product == "dawn" else "",
+            baseline_product: ProductRunConfig(
+                product=baseline_product,
+                command_repeat=self.baseline_command_repeat,
+                ignore_first_ops=self.baseline_ignore_first_ops,
+                upload_buffer_usage=self.baseline_upload_buffer_usage,
+                upload_submit_every=self.baseline_upload_submit_every,
+                timing_divisor=self.baseline_timing_divisor,
+                allow_no_execution=self.allow_baseline_no_execution,
+                dawn_filter=self.dawn_filter if baseline_product == "dawn" else "",
                 timing_normalization_note=self.timing_normalization_note,
             ),
-            right_product: ProductRunConfig(
-                product=right_product,
-                command_repeat=self.right_command_repeat,
-                ignore_first_ops=self.right_ignore_first_ops,
-                upload_buffer_usage=self.right_upload_buffer_usage,
-                upload_submit_every=self.right_upload_submit_every,
-                timing_divisor=self.right_timing_divisor,
+            comparison_product: ProductRunConfig(
+                product=comparison_product,
+                command_repeat=self.comparison_command_repeat,
+                ignore_first_ops=self.comparison_ignore_first_ops,
+                upload_buffer_usage=self.comparison_upload_buffer_usage,
+                upload_submit_every=self.comparison_upload_submit_every,
+                timing_divisor=self.comparison_timing_divisor,
                 allow_no_execution=False,
-                dawn_filter=self.dawn_filter if right_product == "dawn" else "",
+                dawn_filter=self.dawn_filter if comparison_product == "dawn" else "",
                 timing_normalization_note=self.timing_normalization_note,
             ),
         }
@@ -219,14 +224,14 @@ class BenchmarkMethodologyPolicy:
     max_operation_wall_coverage_asymmetry_ratio: float
     min_row_timing_floor_ns: int = 0
 
-def parse_args() -> argparse.Namespace:
+def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--config",
         default="",
         help=(
             "JSON config for benchmark run. When provided, missing CLI fields are "
-            "loaded from config (for example left/right command templates)."
+            "loaded from config (for example baseline/comparison command templates)."
         ),
     )
     parser.add_argument("--workloads", default=DEFAULT_WORKLOADS_PATH)
@@ -235,39 +240,40 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--temperature", default="")
     parser.add_argument("--comparison-view", default="")
     parser.add_argument("--provider-set", default="")
-    parser.add_argument("--left-provider-id", default="")
-    parser.add_argument("--right-provider-id", default="")
+    parser.add_argument("--baseline-provider-id", default="")
+    parser.add_argument("--comparison-provider-id", default="")
     parser.add_argument(
-        "--left-name",
-        default=DEFAULT_LEFT_NAME,
+        "--baseline-name",
+        default=DEFAULT_BASELINE_NAME,
     )
     parser.add_argument(
-        "--left-executor-id",
-        default=DEFAULT_LEFT_EXECUTOR_ID,
-        help="Optional explicit executor id for the left side.",
+        "--baseline-executor-id",
+        default=DEFAULT_BASELINE_EXECUTOR_ID,
+        help="Optional explicit executor id for the baseline side.",
     )
     parser.add_argument(
-        "--right-name",
-        default=DEFAULT_RIGHT_NAME,
+        "--comparison-name",
+        default=DEFAULT_COMPARISON_NAME,
     )
     parser.add_argument(
-        "--right-executor-id",
-        default=DEFAULT_RIGHT_EXECUTOR_ID,
-        help="Optional explicit executor id for the right side.",
+        "--comparison-executor-id",
+        default=DEFAULT_COMPARISON_EXECUTOR_ID,
+        help="Optional explicit executor id for the comparison side.",
     )
     parser.add_argument(
-        "--left-command-template",
-        default=DEFAULT_LEFT_COMMAND_TEMPLATE,
+        "--baseline-command-template",
+        default=DEFAULT_BASELINE_COMMAND_TEMPLATE,
         help=(
             "Python format template. Supported keys: commands, quirks, vendor, api, family, "
             "driver, workload, dawn_filter, trace_jsonl, trace_meta, extra_args"
         ),
     )
     parser.add_argument(
-        "--right-command-template",
+        "--comparison-command-template",
         default="",
         help=(
-            "Dawn command template using the same placeholders as --left-command-template. "
+            "Comparison command template using the same placeholders as "
+            "--baseline-command-template. "
             "Must target the same workload semantics."
         ),
     )
@@ -310,25 +316,25 @@ def parse_args() -> argparse.Namespace:
         "--comparability",
         choices=("strict", "warn", "off"),
         default=DEFAULT_COMPARABILITY_MODE,
-        help="How to handle non-comparable timing sources between left/right runs.",
+        help="How to handle non-comparable timing sources between baseline/comparison runs.",
     )
     parser.add_argument(
         "--require-timing-class",
         choices=("any", "operation", "process-wall"),
         default=DEFAULT_REQUIRED_TIMING_CLASS,
-        help="Required timing class for both sides to consider a workload comparable.",
+        help="Required timing class for both participants to consider a workload comparable.",
     )
     parser.add_argument(
-        "--allow-left-no-execution",
+        "--allow-baseline-no-execution",
         action="store_true",
-        help="Allow left samples without explicit execution evidence in trace-meta.",
+        help="Allow baseline samples without explicit execution evidence in trace-meta.",
     )
     parser.add_argument(
         "--resource-probe",
         choices=("none", "rocm-smi"),
         default=DEFAULT_RESOURCE_PROBE,
         help=(
-            "Optional resource probe applied equally to both sides. "
+            "Optional resource probe applied equally to both participants. "
             "'rocm-smi' samples global VRAM usage via rocm-smi --showmeminfo vram --json."
         ),
     )
@@ -354,7 +360,7 @@ def parse_args() -> argparse.Namespace:
         default=DEFAULT_WORKLOAD_COOLDOWN_MS,
         help=(
             "Optional host settling delay between workloads in milliseconds (>=0). "
-            "Applies equally between left/right workload pairs and the next workload."
+            "Applies equally between baseline/comparison workload pairs and the next workload."
         ),
     )
     parser.add_argument(
@@ -372,7 +378,7 @@ def parse_args() -> argparse.Namespace:
         type=int,
         default=DEFAULT_CLAIM_MIN_TIMED_SAMPLES,
         help=(
-            "Minimum timed samples required per side for claimability checks. "
+            "Minimum timed samples required per participant for claimability checks. "
             "When 0, defaults by claimability mode (local=7, release=15)."
         ),
     )
@@ -399,7 +405,7 @@ def parse_args() -> argparse.Namespace:
         help="Stamp report/workspace artifact paths with a UTC timestamp suffix.",
     )
     parser.add_argument("--emit-shell", action="store_true", help="Print resolved commands instead of running")
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -497,46 +503,61 @@ def apply_config_defaults(args: argparse.Namespace) -> argparse.Namespace:
         )
         if value is not None:
             args.provider_set = as_str(value, field="comparison.providerSet")
-    if not args.left_provider_id:
+    if not args.baseline_provider_id:
         value = first_config_value(
             payload,
-            ["comparison.leftProviderId", "comparison.participants.left.id"],
+            ["comparison.baselineProviderId", "comparison.participants.baseline.id"],
         )
         if value is not None:
-            args.left_provider_id = as_str(value, field="comparison.leftProviderId")
-    if not args.right_provider_id:
+            args.baseline_provider_id = as_str(value, field="comparison.baselineProviderId")
+    if not args.comparison_provider_id:
         value = first_config_value(
             payload,
-            ["comparison.rightProviderId", "comparison.participants.right.id"],
+            [
+                "comparison.comparisonProviderId",
+                "comparison.participants.comparison.id",
+            ],
         )
         if value is not None:
-            args.right_provider_id = as_str(value, field="comparison.rightProviderId")
+            args.comparison_provider_id = as_str(value, field="comparison.comparisonProviderId")
 
-    if args.left_name == DEFAULT_LEFT_NAME:
-        value = first_config_value(payload, ["left.name", "leftName"])
+    if args.baseline_name == DEFAULT_BASELINE_NAME:
+        value = first_config_value(payload, ["baseline.name", "baselineName"])
         if value is not None:
-            args.left_name = as_str(value, field="left.name")
-    if args.left_executor_id == DEFAULT_LEFT_EXECUTOR_ID:
-        value = first_config_value(payload, ["left.executorId", "leftExecutorId"])
+            args.baseline_name = as_str(value, field="baseline.name")
+    if args.baseline_executor_id == DEFAULT_BASELINE_EXECUTOR_ID:
+        value = first_config_value(payload, ["baseline.executorId", "baselineExecutorId"])
         if value is not None:
-            args.left_executor_id = as_str(value, field="left.executorId")
-    if args.right_name == DEFAULT_RIGHT_NAME:
-        value = first_config_value(payload, ["right.name", "rightName"])
+            args.baseline_executor_id = as_str(value, field="baseline.executorId")
+    if args.comparison_name == DEFAULT_COMPARISON_NAME:
+        value = first_config_value(payload, ["comparison.name", "comparisonName"])
         if value is not None:
-            args.right_name = as_str(value, field="right.name")
-    if args.right_executor_id == DEFAULT_RIGHT_EXECUTOR_ID:
-        value = first_config_value(payload, ["right.executorId", "rightExecutorId"])
+            args.comparison_name = as_str(value, field="comparison.name")
+    if args.comparison_executor_id == DEFAULT_COMPARISON_EXECUTOR_ID:
+        value = first_config_value(payload, ["comparison.executorId", "comparisonExecutorId"])
         if value is not None:
-            args.right_executor_id = as_str(value, field="right.executorId")
+            args.comparison_executor_id = as_str(value, field="comparison.executorId")
 
-    if args.left_command_template == DEFAULT_LEFT_COMMAND_TEMPLATE:
-        value = first_config_value(payload, ["left.commandTemplate", "leftCommandTemplate"])
+    if args.baseline_command_template == DEFAULT_BASELINE_COMMAND_TEMPLATE:
+        value = first_config_value(
+            payload,
+            ["baseline.commandTemplate", "baselineCommandTemplate"],
+        )
         if value is not None:
-            args.left_command_template = as_str(value, field="left.commandTemplate")
-    if args.right_command_template == "":
-        value = first_config_value(payload, ["right.commandTemplate", "rightCommandTemplate"])
+            args.baseline_command_template = as_str(
+                value,
+                field="baseline.commandTemplate",
+            )
+    if args.comparison_command_template == "":
+        value = first_config_value(
+            payload,
+            ["comparison.commandTemplate", "comparisonCommandTemplate"],
+        )
         if value is not None:
-            args.right_command_template = as_str(value, field="right.commandTemplate")
+            args.comparison_command_template = as_str(
+                value,
+                field="comparison.commandTemplate",
+            )
 
     if args.iterations == DEFAULT_ITERATIONS:
         value = first_config_value(payload, ["run.iterations", "iterations"])
@@ -612,15 +633,15 @@ def apply_config_defaults(args: argparse.Namespace) -> argparse.Namespace:
                     f"{candidate}, expected one of {sorted(VALID_REQUIRED_TIMING_CLASSES)}"
                 )
             args.require_timing_class = candidate
-    if args.allow_left_no_execution is False:
+    if args.allow_baseline_no_execution is False:
         value = first_config_value(
             payload,
-            ["comparability.allowLeftNoExecution", "allowLeftNoExecution"],
+            ["comparability.allowBaselineNoExecution", "allowBaselineNoExecution"],
         )
         if value is not None:
-            args.allow_left_no_execution = as_bool(
+            args.allow_baseline_no_execution = as_bool(
                 value,
-                field="comparability.allowLeftNoExecution",
+                field="comparability.allowBaselineNoExecution",
             )
 
     if args.resource_probe == DEFAULT_RESOURCE_PROBE:
@@ -801,10 +822,10 @@ def safe_int(value: Any, default: int = 0) -> int:
     return default
 
 
-def percent_delta(left: float, right: float) -> float:
-    if left <= 0.0:
+def percent_delta(baseline: float, comparison: float) -> float:
+    if baseline <= 0.0:
         return 0.0
-    return ((right / left) - 1.0) * 100.0
+    return ((comparison / baseline) - 1.0) * 100.0
 
 
 def parse_extra_args(value: Any, *, workload_id: str) -> list[str]:
@@ -1027,31 +1048,31 @@ def load_workloads(
         )
         apples_to_apples_vetted = bool(item.get("applesToApplesVetted", False))
         workload_domain = str(item.get("domain", "uncategorized")).strip().lower()
-        left_command_repeat = parse_int(item.get("leftCommandRepeat")) or 1
-        right_command_repeat_raw = parse_int(item.get("rightCommandRepeat"))
-        right_command_repeat = (
-            left_command_repeat
-            if right_command_repeat_raw is None and workload_domain == "upload"
-            else (1 if right_command_repeat_raw is None else int(right_command_repeat_raw or 0))
+        baseline_command_repeat = parse_int(item.get("baselineCommandRepeat")) or 1
+        comparison_command_repeat_raw = parse_int(item.get("comparisonCommandRepeat"))
+        comparison_command_repeat = (
+            baseline_command_repeat
+            if comparison_command_repeat_raw is None and workload_domain == "upload"
+            else (1 if comparison_command_repeat_raw is None else int(comparison_command_repeat_raw or 0))
         )
-        left_ignore_first_ops = parse_int(item.get("leftIgnoreFirstOps")) or 0
-        right_ignore_first_ops_raw = parse_int(item.get("rightIgnoreFirstOps"))
-        right_ignore_first_ops = (
-            left_ignore_first_ops
-            if right_ignore_first_ops_raw is None and workload_domain == "upload"
-            else (0 if right_ignore_first_ops_raw is None else int(right_ignore_first_ops_raw or 0))
+        baseline_ignore_first_ops = parse_int(item.get("baselineIgnoreFirstOps")) or 0
+        comparison_ignore_first_ops_raw = parse_int(item.get("comparisonIgnoreFirstOps"))
+        comparison_ignore_first_ops = (
+            baseline_ignore_first_ops
+            if comparison_ignore_first_ops_raw is None and workload_domain == "upload"
+            else (0 if comparison_ignore_first_ops_raw is None else int(comparison_ignore_first_ops_raw or 0))
         )
-        left_timing_divisor = float(item.get("leftTimingDivisor", 1.0))
-        left_upload_buffer_usage = str(
-            item.get("leftUploadBufferUsage", "copy-dst-copy-src")
+        baseline_timing_divisor = float(item.get("baselineTimingDivisor", 1.0))
+        baseline_upload_buffer_usage = str(
+            item.get("baselineUploadBufferUsage", "copy-dst-copy-src")
         )
-        left_upload_submit_every_raw = parse_int(item.get("leftUploadSubmitEvery"))
-        left_upload_submit_every = (
+        baseline_upload_submit_every_raw = parse_int(item.get("baselineUploadSubmitEvery"))
+        baseline_upload_submit_every = (
             1
-            if left_upload_submit_every_raw is None
-            else int(left_upload_submit_every_raw or 0)
+            if baseline_upload_submit_every_raw is None
+            else int(baseline_upload_submit_every_raw or 0)
         )
-        right_upload_submit_every_raw = parse_int(item.get("rightUploadSubmitEvery"))
+        comparison_upload_submit_every_raw = parse_int(item.get("comparisonUploadSubmitEvery"))
         comparable = bool(item.get("comparable", False))
         path_asymmetry = bool(item.get("pathAsymmetry", False))
         benchmark_class_raw = item.get("benchmarkClass")
@@ -1094,28 +1115,28 @@ def load_workloads(
             family=item.get("family", "gen12"),
             driver=item.get("driver", "31.0.101"),
             extra_args=parse_extra_args(item.get("extraArgs", []), workload_id=workload_id),
-            left_command_repeat=left_command_repeat,
-            right_command_repeat=right_command_repeat,
-            left_ignore_first_ops=left_ignore_first_ops,
-            right_ignore_first_ops=right_ignore_first_ops,
-            left_upload_buffer_usage=left_upload_buffer_usage,
-            right_upload_buffer_usage=str(
-                item.get("rightUploadBufferUsage", left_upload_buffer_usage)
+            baseline_command_repeat=baseline_command_repeat,
+            comparison_command_repeat=comparison_command_repeat,
+            baseline_ignore_first_ops=baseline_ignore_first_ops,
+            comparison_ignore_first_ops=comparison_ignore_first_ops,
+            baseline_upload_buffer_usage=baseline_upload_buffer_usage,
+            comparison_upload_buffer_usage=str(
+                item.get("comparisonUploadBufferUsage", baseline_upload_buffer_usage)
             ),
-            left_upload_submit_every=left_upload_submit_every,
-            right_upload_submit_every=(
-                left_upload_submit_every
-                if right_upload_submit_every_raw is None
-                else int(right_upload_submit_every_raw or 0)
+            baseline_upload_submit_every=baseline_upload_submit_every,
+            comparison_upload_submit_every=(
+                baseline_upload_submit_every
+                if comparison_upload_submit_every_raw is None
+                else int(comparison_upload_submit_every_raw or 0)
             ),
             dawn_filter=item.get("dawnFilter", ""),
             comparable=comparable,
             benchmark_class=benchmark_class,
             directional_reason=directional_reason,
-            allow_left_no_execution=bool(item.get("allowLeftNoExecution", False)),
+            allow_baseline_no_execution=bool(item.get("allowBaselineNoExecution", False)),
             include_by_default=bool(item.get("default", True)),
-            left_timing_divisor=left_timing_divisor,
-            right_timing_divisor=float(item.get("rightTimingDivisor", 1.0)),
+            baseline_timing_divisor=baseline_timing_divisor,
+            comparison_timing_divisor=float(item.get("comparisonTimingDivisor", 1.0)),
             timing_normalization_note=item.get("timingNormalizationNote", ""),
             async_diagnostics_mode=str(item.get("asyncDiagnosticsMode", "")).strip(),
             comparability_candidate=comparability_candidate,
@@ -1144,55 +1165,55 @@ def load_workloads(
                 f"invalid workload {workload.id}: strictNormalizationUnit must be one of "
                 "['command', 'dispatch', 'cycle'] when present"
             )
-        if workload.left_timing_divisor <= 0.0:
+        if workload.baseline_timing_divisor <= 0.0:
             raise ValueError(
-                f"invalid workload {workload.id}: leftTimingDivisor must be > 0"
+                f"invalid workload {workload.id}: baselineTimingDivisor must be > 0"
             )
-        if workload.right_timing_divisor <= 0.0:
+        if workload.comparison_timing_divisor <= 0.0:
             raise ValueError(
-                f"invalid workload {workload.id}: rightTimingDivisor must be > 0"
+                f"invalid workload {workload.id}: comparisonTimingDivisor must be > 0"
             )
-        if workload.left_command_repeat < 1:
+        if workload.baseline_command_repeat < 1:
             raise ValueError(
-                f"invalid workload {workload.id}: leftCommandRepeat must be >= 1"
+                f"invalid workload {workload.id}: baselineCommandRepeat must be >= 1"
             )
-        if workload.right_command_repeat < 1:
+        if workload.comparison_command_repeat < 1:
             raise ValueError(
-                f"invalid workload {workload.id}: rightCommandRepeat must be >= 1"
+                f"invalid workload {workload.id}: comparisonCommandRepeat must be >= 1"
             )
-        if workload.left_ignore_first_ops < 0:
+        if workload.baseline_ignore_first_ops < 0:
             raise ValueError(
-                f"invalid workload {workload.id}: leftIgnoreFirstOps must be >= 0"
+                f"invalid workload {workload.id}: baselineIgnoreFirstOps must be >= 0"
             )
-        if workload.right_ignore_first_ops < 0:
+        if workload.comparison_ignore_first_ops < 0:
             raise ValueError(
-                f"invalid workload {workload.id}: rightIgnoreFirstOps must be >= 0"
+                f"invalid workload {workload.id}: comparisonIgnoreFirstOps must be >= 0"
             )
-        if workload.left_upload_buffer_usage not in VALID_UPLOAD_BUFFER_USAGES:
+        if workload.baseline_upload_buffer_usage not in VALID_UPLOAD_BUFFER_USAGES:
             raise ValueError(
-                f"invalid workload {workload.id}: leftUploadBufferUsage must be one of "
+                f"invalid workload {workload.id}: baselineUploadBufferUsage must be one of "
                 f"{sorted(VALID_UPLOAD_BUFFER_USAGES)}"
             )
-        if workload.right_upload_buffer_usage not in VALID_UPLOAD_BUFFER_USAGES:
+        if workload.comparison_upload_buffer_usage not in VALID_UPLOAD_BUFFER_USAGES:
             raise ValueError(
-                f"invalid workload {workload.id}: rightUploadBufferUsage must be one of "
+                f"invalid workload {workload.id}: comparisonUploadBufferUsage must be one of "
                 f"{sorted(VALID_UPLOAD_BUFFER_USAGES)}"
             )
-        if workload.left_upload_submit_every < 1:
+        if workload.baseline_upload_submit_every < 1:
             raise ValueError(
-                f"invalid workload {workload.id}: leftUploadSubmitEvery must be >= 1"
+                f"invalid workload {workload.id}: baselineUploadSubmitEvery must be >= 1"
             )
-        if workload.right_upload_submit_every < 1:
+        if workload.comparison_upload_submit_every < 1:
             raise ValueError(
-                f"invalid workload {workload.id}: rightUploadSubmitEvery must be >= 1"
+                f"invalid workload {workload.id}: comparisonUploadSubmitEvery must be >= 1"
             )
         if workload.comparable and workload_domain == "upload":
             required_upload_contract_fields = (
-                "rightCommandRepeat",
-                "rightIgnoreFirstOps",
-                "rightUploadBufferUsage",
-                "rightUploadSubmitEvery",
-                "rightTimingDivisor",
+                "comparisonCommandRepeat",
+                "comparisonIgnoreFirstOps",
+                "comparisonUploadBufferUsage",
+                "comparisonUploadSubmitEvery",
+                "comparisonTimingDivisor",
             )
             missing_upload_contract_fields = [
                 field for field in required_upload_contract_fields if field not in item
@@ -1200,7 +1221,7 @@ def load_workloads(
             if missing_upload_contract_fields:
                 raise ValueError(
                     f"invalid workload {workload.id}: comparable upload workloads must "
-                    "declare explicit right-side normalization fields; missing "
+                    "declare explicit comparison-side normalization fields; missing "
                     + ", ".join(missing_upload_contract_fields)
                 )
         if (

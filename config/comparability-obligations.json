@@ -10,44 +10,44 @@
     "left_required_timing_class",
     "right_required_timing_class",
     "timing_class_match_applies",
-    "left_right_timing_class_match",
+    "baseline_comparison_timing_class_match",
     "trace_meta_source_match_applies",
-    "left_right_trace_meta_source_match",
+    "baseline_comparison_trace_meta_source_match",
     "timing_selection_policy_match_applies",
-    "left_right_timing_selection_policy_match",
+    "baseline_comparison_timing_selection_policy_match",
     "queue_sync_mode_match_applies",
-    "left_right_queue_sync_mode_match",
+    "baseline_comparison_queue_sync_mode_match",
     "timing_phase_match_applies",
-    "left_right_timing_phase_match",
+    "baseline_comparison_timing_phase_match",
     "execution_shape_match_applies",
-    "left_right_execution_shape_match",
+    "baseline_comparison_execution_shape_match",
     "hardware_path_match_applies",
-    "left_right_hardware_path_match",
+    "baseline_comparison_hardware_path_match",
     "operation_timing_class_required",
-    "left_native_operation_timing_for_webgpu_ffi",
+    "baseline_native_operation_timing_for_webgpu_ffi",
     "upload_domain",
-    "left_upload_ignore_first_scope_consistent",
-    "right_upload_ignore_first_scope_consistent",
-    "left_right_upload_buffer_usage_match",
-    "left_right_upload_submit_cadence_match",
-    "allow_left_no_execution",
-    "left_execution_evidence_present",
-    "left_successful_execution_present",
-    "left_success_or_unsupported_or_skipped",
-    "left_execution_errors_absent",
-    "right_execution_errors_absent",
-    "left_right_timing_plausibility",
+    "baseline_upload_ignore_first_scope_consistent",
+    "comparison_upload_ignore_first_scope_consistent",
+    "baseline_comparison_upload_buffer_usage_match",
+    "baseline_comparison_upload_submit_cadence_match",
+    "allow_baseline_no_execution",
+    "baseline_execution_evidence_present",
+    "baseline_successful_execution_present",
+    "baseline_success_or_unsupported_or_skipped",
+    "baseline_execution_errors_absent",
+    "comparison_execution_errors_absent",
+    "baseline_comparison_timing_plausibility",
     "resource_probe_enabled",
-    "left_resource_probe_available",
-    "right_resource_probe_available",
+    "baseline_resource_probe_available",
+    "comparison_resource_probe_available",
     "strict_comparability",
     "resource_sample_target_positive",
-    "left_resource_sample_target_match",
-    "right_resource_sample_target_match",
-    "left_resource_sampling_not_truncated",
-    "right_resource_sampling_not_truncated",
-    "left_resource_sample_density_sufficient",
-    "right_resource_sample_density_sufficient"
+    "baseline_resource_sample_target_match",
+    "comparison_resource_sample_target_match",
+    "baseline_resource_sampling_not_truncated",
+    "comparison_resource_sampling_not_truncated",
+    "baseline_resource_sample_density_sufficient",
+    "comparison_resource_sample_density_sufficient"
   ],
   "obligations": [
     {
@@ -93,124 +93,124 @@
       "passesWhen": { "fact": "right_required_timing_class" }
     },
     {
-      "id": "left_right_timing_class_match",
+      "id": "baseline_comparison_timing_class_match",
       "blocking": true,
       "applicableWhen": { "fact": "timing_class_match_applies" },
-      "passesWhen": { "fact": "left_right_timing_class_match" }
+      "passesWhen": { "fact": "baseline_comparison_timing_class_match" }
     },
     {
-      "id": "left_right_trace_meta_source_match",
+      "id": "baseline_comparison_trace_meta_source_match",
       "blocking": true,
       "applicableWhen": { "fact": "trace_meta_source_match_applies" },
-      "passesWhen": { "fact": "left_right_trace_meta_source_match" }
+      "passesWhen": { "fact": "baseline_comparison_trace_meta_source_match" }
     },
     {
-      "id": "left_right_timing_selection_policy_match",
+      "id": "baseline_comparison_timing_selection_policy_match",
       "blocking": true,
       "applicableWhen": { "fact": "timing_selection_policy_match_applies" },
-      "passesWhen": { "fact": "left_right_timing_selection_policy_match" }
+      "passesWhen": { "fact": "baseline_comparison_timing_selection_policy_match" }
     },
     {
-      "id": "left_right_queue_sync_mode_match",
+      "id": "baseline_comparison_queue_sync_mode_match",
       "blocking": true,
       "applicableWhen": { "fact": "queue_sync_mode_match_applies" },
-      "passesWhen": { "fact": "left_right_queue_sync_mode_match" }
+      "passesWhen": { "fact": "baseline_comparison_queue_sync_mode_match" }
     },
     {
-      "id": "left_right_timing_phase_match",
+      "id": "baseline_comparison_timing_phase_match",
       "blocking": true,
       "applicableWhen": { "fact": "timing_phase_match_applies" },
-      "passesWhen": { "fact": "left_right_timing_phase_match" }
+      "passesWhen": { "fact": "baseline_comparison_timing_phase_match" }
     },
     {
-      "id": "left_right_execution_shape_match",
+      "id": "baseline_comparison_execution_shape_match",
       "blocking": true,
       "applicableWhen": { "fact": "execution_shape_match_applies" },
-      "passesWhen": { "fact": "left_right_execution_shape_match" }
+      "passesWhen": { "fact": "baseline_comparison_execution_shape_match" }
     },
     {
-      "id": "left_right_hardware_path_match",
+      "id": "baseline_comparison_hardware_path_match",
       "blocking": true,
       "applicableWhen": { "fact": "hardware_path_match_applies" },
-      "passesWhen": { "fact": "left_right_hardware_path_match" }
+      "passesWhen": { "fact": "baseline_comparison_hardware_path_match" }
     },
     {
-      "id": "left_native_operation_timing_for_webgpu_ffi",
+      "id": "baseline_native_operation_timing_for_webgpu_ffi",
       "blocking": true,
       "applicableWhen": { "fact": "operation_timing_class_required" },
-      "passesWhen": { "fact": "left_native_operation_timing_for_webgpu_ffi" }
+      "passesWhen": { "fact": "baseline_native_operation_timing_for_webgpu_ffi" }
     },
     {
-      "id": "left_upload_ignore_first_scope_consistent",
+      "id": "baseline_upload_ignore_first_scope_consistent",
       "blocking": true,
       "applicableWhen": { "fact": "upload_domain" },
-      "passesWhen": { "fact": "left_upload_ignore_first_scope_consistent" }
+      "passesWhen": { "fact": "baseline_upload_ignore_first_scope_consistent" }
     },
     {
-      "id": "right_upload_ignore_first_scope_consistent",
+      "id": "comparison_upload_ignore_first_scope_consistent",
       "blocking": true,
       "applicableWhen": { "fact": "upload_domain" },
-      "passesWhen": { "fact": "right_upload_ignore_first_scope_consistent" }
+      "passesWhen": { "fact": "comparison_upload_ignore_first_scope_consistent" }
     },
     {
-      "id": "left_right_upload_buffer_usage_match",
+      "id": "baseline_comparison_upload_buffer_usage_match",
       "blocking": true,
       "applicableWhen": { "fact": "upload_domain" },
-      "passesWhen": { "fact": "left_right_upload_buffer_usage_match" }
+      "passesWhen": { "fact": "baseline_comparison_upload_buffer_usage_match" }
     },
     {
-      "id": "left_right_upload_submit_cadence_match",
+      "id": "baseline_comparison_upload_submit_cadence_match",
       "blocking": true,
       "applicableWhen": { "fact": "upload_domain" },
-      "passesWhen": { "fact": "left_right_upload_submit_cadence_match" }
+      "passesWhen": { "fact": "baseline_comparison_upload_submit_cadence_match" }
     },
     {
-      "id": "left_execution_evidence_present",
+      "id": "baseline_execution_evidence_present",
       "blocking": true,
-      "applicableWhen": { "not": { "fact": "allow_left_no_execution" } },
-      "passesWhen": { "fact": "left_execution_evidence_present" }
+      "applicableWhen": { "not": { "fact": "allow_baseline_no_execution" } },
+      "passesWhen": { "fact": "baseline_execution_evidence_present" }
     },
     {
-      "id": "left_successful_execution_present",
+      "id": "baseline_successful_execution_present",
       "blocking": true,
-      "applicableWhen": { "not": { "fact": "allow_left_no_execution" } },
-      "passesWhen": { "fact": "left_successful_execution_present" }
+      "applicableWhen": { "not": { "fact": "allow_baseline_no_execution" } },
+      "passesWhen": { "fact": "baseline_successful_execution_present" }
     },
     {
-      "id": "left_success_or_unsupported_or_skipped",
+      "id": "baseline_success_or_unsupported_or_skipped",
       "blocking": true,
-      "applicableWhen": { "fact": "allow_left_no_execution" },
-      "passesWhen": { "fact": "left_success_or_unsupported_or_skipped" }
+      "applicableWhen": { "fact": "allow_baseline_no_execution" },
+      "passesWhen": { "fact": "baseline_success_or_unsupported_or_skipped" }
     },
     {
-      "id": "left_execution_errors_absent",
+      "id": "baseline_execution_errors_absent",
       "blocking": true,
       "applicableWhen": { "const": true },
-      "passesWhen": { "fact": "left_execution_errors_absent" }
+      "passesWhen": { "fact": "baseline_execution_errors_absent" }
     },
     {
-      "id": "right_execution_errors_absent",
+      "id": "comparison_execution_errors_absent",
       "blocking": true,
       "applicableWhen": { "const": true },
-      "passesWhen": { "fact": "right_execution_errors_absent" }
+      "passesWhen": { "fact": "comparison_execution_errors_absent" }
     },
     {
-      "id": "left_right_timing_plausibility",
+      "id": "baseline_comparison_timing_plausibility",
       "blocking": true,
       "applicableWhen": { "const": true },
-      "passesWhen": { "fact": "left_right_timing_plausibility" }
+      "passesWhen": { "fact": "baseline_comparison_timing_plausibility" }
     },
     {
-      "id": "left_resource_probe_available",
+      "id": "baseline_resource_probe_available",
       "blocking": true,
       "applicableWhen": { "fact": "resource_probe_enabled" },
-      "passesWhen": { "fact": "left_resource_probe_available" }
+      "passesWhen": { "fact": "baseline_resource_probe_available" }
     },
     {
-      "id": "right_resource_probe_available",
+      "id": "comparison_resource_probe_available",
       "blocking": true,
       "applicableWhen": { "fact": "resource_probe_enabled" },
-      "passesWhen": { "fact": "right_resource_probe_available" }
+      "passesWhen": { "fact": "comparison_resource_probe_available" }
     },
     {
       "id": "strict_resource_sample_target_positive",
@@ -224,7 +224,7 @@
       "passesWhen": { "fact": "resource_sample_target_positive" }
     },
     {
-      "id": "left_resource_sample_target_match",
+      "id": "baseline_resource_sample_target_match",
       "blocking": true,
       "applicableWhen": {
         "allOf": [
@@ -233,10 +233,10 @@
           { "fact": "resource_sample_target_positive" }
         ]
       },
-      "passesWhen": { "fact": "left_resource_sample_target_match" }
+      "passesWhen": { "fact": "baseline_resource_sample_target_match" }
     },
     {
-      "id": "right_resource_sample_target_match",
+      "id": "comparison_resource_sample_target_match",
       "blocking": true,
       "applicableWhen": {
         "allOf": [
@@ -245,10 +245,10 @@
           { "fact": "resource_sample_target_positive" }
         ]
       },
-      "passesWhen": { "fact": "right_resource_sample_target_match" }
+      "passesWhen": { "fact": "comparison_resource_sample_target_match" }
     },
     {
-      "id": "left_resource_sampling_not_truncated",
+      "id": "baseline_resource_sampling_not_truncated",
       "blocking": true,
       "applicableWhen": {
         "allOf": [
@@ -257,10 +257,10 @@
           { "fact": "resource_sample_target_positive" }
         ]
       },
-      "passesWhen": { "fact": "left_resource_sampling_not_truncated" }
+      "passesWhen": { "fact": "baseline_resource_sampling_not_truncated" }
     },
     {
-      "id": "right_resource_sampling_not_truncated",
+      "id": "comparison_resource_sampling_not_truncated",
       "blocking": true,
       "applicableWhen": {
         "allOf": [
@@ -269,10 +269,10 @@
           { "fact": "resource_sample_target_positive" }
         ]
       },
-      "passesWhen": { "fact": "right_resource_sampling_not_truncated" }
+      "passesWhen": { "fact": "comparison_resource_sampling_not_truncated" }
     },
     {
-      "id": "left_resource_sample_density_sufficient",
+      "id": "baseline_resource_sample_density_sufficient",
       "blocking": true,
       "applicableWhen": {
         "allOf": [
@@ -280,10 +280,10 @@
           { "not": { "fact": "strict_comparability" } }
         ]
       },
-      "passesWhen": { "fact": "left_resource_sample_density_sufficient" }
+      "passesWhen": { "fact": "baseline_resource_sample_density_sufficient" }
     },
     {
-      "id": "right_resource_sample_density_sufficient",
+      "id": "comparison_resource_sample_density_sufficient",
       "blocking": true,
       "applicableWhen": {
         "allOf": [
@@ -291,7 +291,7 @@
           { "not": { "fact": "strict_comparability" } }
         ]
       },
-      "passesWhen": { "fact": "right_resource_sample_density_sufficient" }
+      "passesWhen": { "fact": "comparison_resource_sample_density_sufficient" }
     }
   ]
 }

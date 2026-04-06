@@ -65,7 +65,7 @@ def main() -> int:
         workload_id = str(workload.get("id", "unknown"))
         workload_domain = str(workload.get("domain", ""))
 
-        for side_name in ("left", "right"):
+        for side_name in ("baseline", "comparison"):
             side = workload.get(side_name)
             if not isinstance(side, dict):
                 continue
@@ -98,9 +98,9 @@ def main() -> int:
                 encode_total_ns = parse_int(trace_meta.get("executionEncodeTotalNs"))
                 submit_wait_total_ns = parse_int(trace_meta.get("executionSubmitWaitTotalNs"))
 
-                # Encode/submit telemetry checks apply only to left (Doe) side.
-                # Right side (Dawn adapter) does not emit these fields.
-                if side_name == "left":
+                # Encode/submit telemetry checks apply only to the baseline
+                # Doe side. The comparison Dawn adapter does not emit them.
+                if side_name == "baseline":
                     if exec_success_count > 0 and encode_total_ns == 0 and submit_wait_total_ns == 0:
                         failures.append(
                             f"{workload_id}: {side_name} both encode and submit/wait totals are zero with successful execution"

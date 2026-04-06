@@ -34,7 +34,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--report",
         default="",
-        help="Optional compare_dawn_vs_doe report path.",
+        help="Optional compare-lane report path.",
     )
     parser.add_argument(
         "--substantiation-report",
@@ -588,21 +588,21 @@ def evaluate_report(
         if not isinstance(workload_id, str) or workload_id not in comparable_ids:
             continue
 
-        success = sum_trace_meta(workload, "left", "executionSuccessCount")
-        unsupported = sum_trace_meta(workload, "left", "executionUnsupportedCount")
-        error = sum_trace_meta(workload, "left", "executionErrorCount")
-        allow_left_no_execution = bool(workload.get("workloadAllowLeftNoExecution", False))
+        success = sum_trace_meta(workload, "baseline", "executionSuccessCount")
+        unsupported = sum_trace_meta(workload, "baseline", "executionUnsupportedCount")
+        error = sum_trace_meta(workload, "baseline", "executionErrorCount")
+        allow_baseline_no_execution = bool(workload.get("workloadAllowBaselineNoExecution", False))
 
         if error > 0:
             rollback_metrics["unexpectedErrorWorkloads"] += 1
         if success <= 0:
-            if allow_left_no_execution:
+            if allow_baseline_no_execution:
                 if unsupported <= 0:
                     rollback_metrics["missingAllowNoExecutionEvidenceWorkloads"] += 1
             else:
                 rollback_metrics["unexpectedNoExecutionWorkloads"] += 1
         if unsupported > 0:
-            if not (allow_left_no_execution and success <= 0 and error == 0):
+            if not (allow_baseline_no_execution and success <= 0 and error == 0):
                 rollback_metrics["unexpectedUnsupportedWorkloads"] += 1
 
         delta = workload.get("deltaPercent")

@@ -26,7 +26,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--report",
         default="bench/out/dawn-vs-doe.json",
-        help="Comparison report produced by compare_dawn_vs_doe.py",
+        help="Comparison report produced by the compare lane.",
     )
     parser.add_argument(
         "--timestamp",

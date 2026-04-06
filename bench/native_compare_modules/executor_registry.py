@@ -30,15 +30,25 @@ _DOE_PLAN_PREFIX = (
 
 _DAWN_DIRECT_PREFIX = (
     "env DYLD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$DYLD_LIBRARY_PATH "
-    "runtime/zig/zig-out/bin/dawn-plan-executor --plan {plan} "
+    "runtime/zig/zig-out/bin/webgpu-plan-executor --plan {plan} "
     "--trace-jsonl {trace_jsonl} --trace-meta {trace_meta} --workload {workload}"
 )
 
 _APPLE_WEBKIT_DIRECT_PREFIX = (
     "env DYLD_LIBRARY_PATH=bench/vendor/webkit-webgpu/out/shim:$DYLD_LIBRARY_PATH "
-    "runtime/zig/zig-out/bin/dawn-plan-executor --plan {plan} "
+    "runtime/zig/zig-out/bin/webgpu-plan-executor --plan {plan} "
     "--trace-jsonl {trace_jsonl} --trace-meta {trace_meta} --workload {workload} "
     "--backend-id webkit_direct_metal"
+)
+
+_WEBKIT_RUNTIME_PREFIX = (
+    "env DYLD_LIBRARY_PATH=bench/vendor/webkit-webgpu/out/shim:bench/vendor/dawn/out/Release:$DYLD_LIBRARY_PATH "
+    "runtime/zig/zig-out/bin/doe-zig-runtime --commands {commands} --quirks {quirks} "
+    "--vendor {vendor} --api {api} --family {family} --driver {driver} "
+    "--backend native --execute --trace --queue-sync-mode {queue_sync_mode} "
+    "--upload-buffer-usage {upload_buffer_usage} --upload-submit-every {upload_submit_every} "
+    "--trace-jsonl {trace_jsonl} --trace-meta {trace_meta} --gpu-timestamp-mode auto "
+    "--kernel-root bench/kernels {extra_args}"
 )
 
 
@@ -87,6 +97,14 @@ _REGISTRY: dict[str, ExecutorSpec] = {
         ),
         execution_boundary="commands",
     ),
+    "webkit_delegate_metal": ExecutorSpec(
+        executor_id="webkit_delegate_metal",
+        command_template=_WEBKIT_RUNTIME_PREFIX.replace(
+            "--backend native --execute",
+            "--backend native --backend-lane metal_webkit_comparable --execute",
+        ),
+        execution_boundary="commands",
+    ),
     "dawn_delegate_vulkan": ExecutorSpec(
         executor_id="dawn_delegate_vulkan",
         command_template=_DOE_RUNTIME_PREFIX.replace(
@@ -108,16 +126,16 @@ _REGISTRY: dict[str, ExecutorSpec] = {
         command_template=_DAWN_DIRECT_PREFIX,
         execution_boundary="plan",
     ),
-    "apple_webgpu_native_metal": ExecutorSpec(
-        executor_id="apple_webgpu_native_metal",
+    "webkit_webgpu_native_metal": ExecutorSpec(
+        executor_id="webkit_webgpu_native_metal",
         command_template=_APPLE_WEBKIT_DIRECT_PREFIX,
         execution_boundary="plan",
     ),
-    "dawn_node_webgpu": ExecutorSpec(
-        executor_id="dawn_node_webgpu",
+    "node_webgpu_package": ExecutorSpec(
+        executor_id="node_webgpu_package",
         command_template=(
             "node bench/executors/run-node-webgpu-plan.js "
-            "--provider dawn --plan {plan} --trace-jsonl {trace_jsonl} "
+            "--provider node-webgpu --plan {plan} --trace-jsonl {trace_jsonl} "
             "--trace-meta {trace_meta} --workload {workload}"
         ),
         execution_boundary="plan",
@@ -131,11 +149,11 @@ _REGISTRY: dict[str, ExecutorSpec] = {
         ),
         execution_boundary="plan",
     ),
-    "dawn_node_webgpu_prepared": ExecutorSpec(
-        executor_id="dawn_node_webgpu_prepared",
+    "node_webgpu_package_prepared": ExecutorSpec(
+        executor_id="node_webgpu_package_prepared",
         command_template=(
             "node bench/executors/run-node-webgpu-plan.js "
-            "--provider dawn --prepared-session --plan {plan} --trace-jsonl {trace_jsonl} "
+            "--provider node-webgpu --prepared-session --plan {plan} --trace-jsonl {trace_jsonl} "
             "--trace-meta {trace_meta} --workload {workload}"
         ),
         execution_boundary="plan",

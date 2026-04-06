@@ -57,9 +57,9 @@ The current Apple package receipts that sit beside the runtime bundle are:
   - `bench/out/apple-metal/20260328T035500Z/gemma1b.bun-package.ir.compare.json`
   - `bench/out/apple-metal/20260328T035500Z/gemma1b.bun-package.warm.ir.compare.json`
 - Node/Dawn Gemma64 explicitly unsupported on `mac.lan`:
-  - `bench/out/apple-metal/20260328T040500Z/gemma64.node-package.ir.workspace/inference_gemma3_270m_prefill_64tok_decode_64tok/right/dawn_node_webgpu.run000.meta.json`
+  - `bench/out/apple-metal/20260328T040500Z/gemma64.node-package.ir.workspace/inference_gemma3_270m_prefill_64tok_decode_64tok/right/node_webgpu_package.run000.meta.json`
 - Node/Dawn Gemma1B explicitly unsupported on `mac.lan`:
-  - `bench/out/apple-metal/20260328T040500Z/gemma1b.node-package.ir.workspace/inference_gemma3_1b_prefill_64tok_decode_64tok/right/dawn_node_webgpu.run000.meta.json`
+  - `bench/out/apple-metal/20260328T040500Z/gemma1b.node-package.ir.workspace/inference_gemma3_1b_prefill_64tok_decode_64tok/right/node_webgpu_package.run000.meta.json`
 
 ## Scope
 

@@ -1,4 +1,4 @@
-"""Upload contract helpers for compare_dawn_vs_doe comparability."""
+"""Upload contract helpers for compare-lane comparability."""
 
 from __future__ import annotations
 
@@ -20,32 +20,32 @@ def validate_upload_apples_to_apples(
     *,
     comparability_mode: str,
 ) -> None:
-    if workload.left_upload_submit_every < 1:
+    if workload.baseline_upload_submit_every < 1:
         raise ValueError(
-            f"invalid workload {workload.id}: leftUploadSubmitEvery must be >= 1"
+            f"invalid workload {workload.id}: baselineUploadSubmitEvery must be >= 1"
         )
-    if workload.right_upload_submit_every < 1:
+    if workload.comparison_upload_submit_every < 1:
         raise ValueError(
-            f"invalid workload {workload.id}: rightUploadSubmitEvery must be >= 1"
+            f"invalid workload {workload.id}: comparisonUploadSubmitEvery must be >= 1"
         )
-    if workload.left_command_repeat % workload.left_upload_submit_every != 0:
+    if workload.baseline_command_repeat % workload.baseline_upload_submit_every != 0:
         raise ValueError(
-            f"invalid workload {workload.id}: leftCommandRepeat ({workload.left_command_repeat}) "
-            f"must be divisible by leftUploadSubmitEvery ({workload.left_upload_submit_every})"
+            f"invalid workload {workload.id}: baselineCommandRepeat ({workload.baseline_command_repeat}) "
+            f"must be divisible by baselineUploadSubmitEvery ({workload.baseline_upload_submit_every})"
         )
-    if workload.right_command_repeat % workload.right_upload_submit_every != 0:
+    if workload.comparison_command_repeat % workload.comparison_upload_submit_every != 0:
         raise ValueError(
-            f"invalid workload {workload.id}: rightCommandRepeat ({workload.right_command_repeat}) "
-            f"must be divisible by rightUploadSubmitEvery ({workload.right_upload_submit_every})"
+            f"invalid workload {workload.id}: comparisonCommandRepeat ({workload.comparison_command_repeat}) "
+            f"must be divisible by comparisonUploadSubmitEvery ({workload.comparison_upload_submit_every})"
         )
 
     if not is_dawn_writebuffer_upload_workload(workload):
         return
 
-    if comparability_mode == "strict" and workload.left_upload_buffer_usage != "copy-dst":
+    if comparability_mode == "strict" and workload.baseline_upload_buffer_usage != "copy-dst":
         raise ValueError(
-            "strict upload comparability requires leftUploadBufferUsage=copy-dst "
-            f"for Dawn WriteBuffer workload {workload.id}; got {workload.left_upload_buffer_usage}"
+            "strict upload comparability requires baselineUploadBufferUsage=copy-dst "
+            f"for Dawn WriteBuffer workload {workload.id}; got {workload.baseline_upload_buffer_usage}"
         )
 
 
@@ -110,9 +110,9 @@ def verify_fawn_upload_runtime_contract(
     preflight_extra_args.extend(
         [
             "--upload-buffer-usage",
-            workload.left_upload_buffer_usage,
+            workload.baseline_upload_buffer_usage,
             "--upload-submit-every",
-            str(workload.left_upload_submit_every),
+            str(workload.baseline_upload_submit_every),
         ]
     )
 
@@ -130,8 +130,8 @@ def verify_fawn_upload_runtime_contract(
         trace_jsonl=preflight_trace_jsonl,
         trace_meta=preflight_trace_meta,
         queue_sync_mode=queue_sync_mode,
-        upload_buffer_usage=workload.left_upload_buffer_usage,
-        upload_submit_every=workload.left_upload_submit_every,
+        upload_buffer_usage=workload.baseline_upload_buffer_usage,
+        upload_submit_every=workload.baseline_upload_submit_every,
         extra_args=preflight_extra_args,
     )
     runtime_index = find_fawn_runtime_index(command)

@@ -38,7 +38,7 @@ products.
 
 - `bench/single-runtime`
 - `bench/native-compare`
-- `bench/package-compare`
+- `bench/executors/package-webgpu`
 - `bench/browser`
 - `bench/diagnostics`
 - `bench/drop-in`

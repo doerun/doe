@@ -397,7 +397,7 @@ def main() -> int:
         "recommendations": [
             "Set LD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$LD_LIBRARY_PATH for native Fawn runs.",
             "If /dev/dri/renderD128 is denied, add your user to group render and re-login.",
-            "Use bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.compare.json on matching AMD hosts; use frontier/explore presets only for diagnostics when governed AMD constraints are unavailable.",
+            "Use bench/native-compare/compare.config.amd.vulkan.compare.json on matching AMD hosts; use frontier/explore presets only for diagnostics when governed AMD constraints are unavailable.",
         ],
     }
 

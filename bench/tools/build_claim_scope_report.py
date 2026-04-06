@@ -15,7 +15,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--report",
         default="bench/out/dawn-vs-doe.json",
-        help="Comparison report produced by compare_dawn_vs_doe.py",
+        help="Comparison report produced by the compare lane.",
     )
     parser.add_argument(
         "--out-json",
@@ -150,12 +150,12 @@ def claim_scope_rows(report: dict[str, Any]) -> list[dict[str, Any]]:
         workload_id = workload.get("id")
         if not isinstance(workload_id, str) or not workload_id:
             continue
-        left = workload.get("left")
-        right = workload.get("right")
-        if not isinstance(left, dict):
-            left = {}
-        if not isinstance(right, dict):
-            right = {}
+        baseline = workload.get("baseline")
+        comparison = workload.get("comparison")
+        if not isinstance(baseline, dict):
+            baseline = {}
+        if not isinstance(comparison, dict):
+            comparison = {}
 
         comparability = workload.get("comparability")
         if not isinstance(comparability, dict):
@@ -180,18 +180,18 @@ def claim_scope_rows(report: dict[str, Any]) -> list[dict[str, Any]]:
         if not isinstance(delta, dict):
             delta = {}
 
-        left_timing_sources = parse_string_list(left.get("timingSources"))
-        right_timing_sources = parse_string_list(right.get("timingSources"))
-        left_timing_classes = parse_string_list(left.get("timingClasses"))
-        right_timing_classes = parse_string_list(right.get("timingClasses"))
-        left_stats = side_stats(left)
-        right_stats = side_stats(right)
-        left_backend = side_backend_id(left)
-        right_backend = side_backend_id(right)
-        left_profile = side_profile(left)
-        right_profile = side_profile(right)
-        left_meta_paths = trace_meta_paths(left)
-        right_meta_paths = trace_meta_paths(right)
+        baseline_timing_sources = parse_string_list(baseline.get("timingSources"))
+        comparison_timing_sources = parse_string_list(comparison.get("timingSources"))
+        baseline_timing_classes = parse_string_list(baseline.get("timingClasses"))
+        comparison_timing_classes = parse_string_list(comparison.get("timingClasses"))
+        baseline_stats = side_stats(baseline)
+        comparison_stats = side_stats(comparison)
+        baseline_backend = side_backend_id(baseline)
+        comparison_backend = side_backend_id(comparison)
+        baseline_profile = side_profile(baseline)
+        comparison_profile = side_profile(comparison)
+        baseline_meta_paths = trace_meta_paths(baseline)
+        comparison_meta_paths = trace_meta_paths(comparison)
 
         delta_p50 = parse_float(delta.get("p50Percent"))
         delta_p95 = parse_float(delta.get("p95Percent"))
@@ -211,8 +211,8 @@ def claim_scope_rows(report: dict[str, Any]) -> list[dict[str, Any]]:
             f"delta(p50/p95/p99)={delta_p50}/{delta_p95}/{delta_p99}, "
             f"workloadUnitWallDelta(p50/p95/p99)={workload_unit_delta_p50}/{workload_unit_delta_p95}/{workload_unit_delta_p99}, "
             f"selectedScope={selected_timing.get('scope')}/{selected_timing.get('scopeClass')}, "
-            f"timingSources(left/right)={left_timing_sources}/{right_timing_sources}, "
-            f"backend(left/right)={left_backend}/{right_backend}, report={report_path_value}"
+            f"timingSources(baseline/comparison)={baseline_timing_sources}/{comparison_timing_sources}, "
+            f"backend(baseline/comparison)={baseline_backend}/{comparison_backend}, report={report_path_value}"
         )
 
         rows.append(
@@ -230,10 +230,10 @@ def claim_scope_rows(report: dict[str, Any]) -> list[dict[str, Any]]:
                     "workloadClaimableNow": claimability.get("claimable"),
                 },
                 "timing": {
-                    "leftSources": left_timing_sources,
-                    "rightSources": right_timing_sources,
-                    "leftClasses": left_timing_classes,
-                    "rightClasses": right_timing_classes,
+                    "baselineSources": baseline_timing_sources,
+                    "comparisonSources": comparison_timing_sources,
+                    "baselineClasses": baseline_timing_classes,
+                    "comparisonClasses": comparison_timing_classes,
                     "selectedScope": selected_timing.get("scope"),
                     "selectedScopeClass": selected_timing.get("scopeClass"),
                     "selectedIsNarrowHotPath": selected_timing.get("isNarrowHotPath"),
@@ -250,21 +250,21 @@ def claim_scope_rows(report: dict[str, Any]) -> list[dict[str, Any]]:
                         "p95Percent": workload_unit_delta_p95,
                         "p99Percent": workload_unit_delta_p99,
                     },
-                    "leftStatsMs": left_stats,
-                    "rightStatsMs": right_stats,
-                    "workloadUnitWallLeftStatsMs": workload_unit_wall.get("leftStatsMs", {}),
-                    "workloadUnitWallRightStatsMs": workload_unit_wall.get("rightStatsMs", {}),
+                    "baselineStatsMs": baseline_stats,
+                    "comparisonStatsMs": comparison_stats,
+                    "workloadUnitWallBaselineStatsMs": workload_unit_wall.get("baselineStatsMs", {}),
+                    "workloadUnitWallComparisonStatsMs": workload_unit_wall.get("comparisonStatsMs", {}),
                 },
                 "runtime": {
-                    "leftBackendId": left_backend,
-                    "rightBackendId": right_backend,
-                    "leftProfile": left_profile,
-                    "rightProfile": right_profile,
+                    "baselineBackendId": baseline_backend,
+                    "comparisonBackendId": comparison_backend,
+                    "baselineProfile": baseline_profile,
+                    "comparisonProfile": comparison_profile,
                 },
                 "artifacts": {
                     "reportPath": report_path_value,
-                    "leftTraceMetaPaths": left_meta_paths,
-                    "rightTraceMetaPaths": right_meta_paths,
+                    "baselineTraceMetaPaths": baseline_meta_paths,
+                    "comparisonTraceMetaPaths": comparison_meta_paths,
                 },
                 "externalCitation": citation,
             }
@@ -303,16 +303,16 @@ def markdown(payload: dict[str, Any]) -> str:
         runtime = row.get("runtime", {})
         if not isinstance(runtime, dict):
             runtime = {}
-        left_sources = ",".join(parse_string_list(timing.get("leftSources")))
-        right_sources = ",".join(parse_string_list(timing.get("rightSources")))
-        left_backend = runtime.get("leftBackendId", "")
-        right_backend = runtime.get("rightBackendId", "")
+        baseline_sources = ",".join(parse_string_list(timing.get("baselineSources")))
+        comparison_sources = ",".join(parse_string_list(timing.get("comparisonSources")))
+        baseline_backend = runtime.get("baselineBackendId", "")
+        comparison_backend = runtime.get("comparisonBackendId", "")
         selected_scope = timing.get("selectedScopeClass") or timing.get("selectedScope") or ""
         lines.append(
             "| "
             f"{row.get('workloadId', '')} | {row.get('domain', '')} | "
             f"{delta.get('p50Percent', '')} | {workload_unit_delta.get('p50Percent', '')} | {selected_scope} | "
-            f"{left_sources} / {right_sources} | {left_backend} / {right_backend} |"
+            f"{baseline_sources} / {comparison_sources} | {baseline_backend} / {comparison_backend} |"
         )
     lines.append("")
     lines.append("## Citation-ready lines")

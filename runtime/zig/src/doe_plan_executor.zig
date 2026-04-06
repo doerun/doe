@@ -1,4 +1,5 @@
 const std = @import("std");
+const bench_synthetic_assets = @import("bench_synthetic_assets.zig");
 const model_commands = @import("model_commands.zig");
 const model_policy = @import("model_policy.zig");
 const model_profile = @import("model_profile.zig");
@@ -49,8 +50,13 @@ const RunOptions = struct {
     dry_run: bool = false,
 };
 
+const ExecutablePayload = union(enum) {
+    runtime: model.Command,
+    buffer_load: dawn_plan_types.BufferLoadCommand,
+};
+
 const ExecutableCommand = struct {
-    command: model.Command,
+    payload: ExecutablePayload,
     semantic_phase: []const u8,
 };
 
@@ -132,15 +138,21 @@ fn lowerPlanCommands(allocator: Allocator, plan: dawn_plan_types.Plan) ![]Execut
     for (plan.commands, 0..) |plan_command, idx| {
         commands[idx] = switch (plan_command) {
             .buffer_write => |bw| .{
-                .command = .{
-                    .buffer_write = .{
-                        .handle = bw.handle,
-                        .offset = bw.offset,
-                        .buffer_size = bw.buffer_size,
-                        .data = bw.data,
+                .payload = .{
+                    .runtime = .{
+                        .buffer_write = .{
+                            .handle = bw.handle,
+                            .offset = bw.offset,
+                            .buffer_size = bw.buffer_size,
+                            .data = bw.data,
+                        },
                     },
                 },
                 .semantic_phase = "buffer_write",
+            },
+            .buffer_load => |bl| .{
+                .payload = .{ .buffer_load = bl },
+                .semantic_phase = "buffer_load",
             },
             .kernel_dispatch => |kd| blk: {
                 const bindings = try allocator.alloc(model.KernelBinding, kd.bindings.len);
@@ -155,15 +167,17 @@ fn lowerPlanCommands(allocator: Allocator, plan: dawn_plan_types.Plan) ![]Execut
                     };
                 }
                 break :blk .{
-                    .command = .{
-                        .kernel_dispatch = .{
-                            .kernel = kd.kernel,
-                            .entry_point = kd.entry_point,
-                            .x = kd.x,
-                            .y = kd.y,
-                            .z = kd.z,
-                            .initialize_buffers_on_create = kd.initialize_buffers_on_create,
-                            .bindings = bindings,
+                    .payload = .{
+                        .runtime = .{
+                            .kernel_dispatch = .{
+                                .kernel = kd.kernel,
+                                .entry_point = kd.entry_point,
+                                .x = kd.x,
+                                .y = kd.y,
+                                .z = kd.z,
+                                .initialize_buffers_on_create = kd.initialize_buffers_on_create,
+                                .bindings = bindings,
+                            },
                         },
                     },
                     .semantic_phase = "kernel_dispatch",
@@ -176,14 +190,20 @@ fn lowerPlanCommands(allocator: Allocator, plan: dawn_plan_types.Plan) ![]Execut
 
 fn validatePlanCounts(plan: dawn_plan_types.Plan) !void {
     var buffer_write_count: u32 = 0;
+    var buffer_load_count: u32 = 0;
     var dispatch_count: u32 = 0;
     for (plan.commands) |command| {
         switch (command) {
             .buffer_write => buffer_write_count += 1,
+            .buffer_load => buffer_load_count += 1,
             .kernel_dispatch => dispatch_count += 1,
         }
     }
-    if (buffer_write_count != plan.buffer_write_count or dispatch_count != plan.dispatch_count or plan.command_count != plan.commands.len) {
+    if (buffer_write_count != plan.buffer_write_count or
+        buffer_load_count != plan.buffer_load_count or
+        dispatch_count != plan.dispatch_count or
+        plan.command_count != plan.commands.len)
+    {
         return error.InvalidPlan;
     }
 }
@@ -214,7 +234,7 @@ fn loadKernelRoot(allocator: Allocator, ir_path: []const u8, override_root: ?[]c
     return allocator.dupe(u8, "bench/inference-pipeline/kernels");
 }
 
-fn makeDryRunExecutionResult(command: model.Command, backend_lane: backend_policy.BackendLane, plan_path: []const u8, plan_hash: []const u8) execution.ExecutionResult {
+fn makeDryRunExecutionResult(dispatch_count: u32, backend_lane: backend_policy.BackendLane, plan_path: []const u8, plan_hash: []const u8) execution.ExecutionResult {
     return .{
         .backend = DEFAULT_EXECUTION_BACKEND,
         .status = .ok,
@@ -223,10 +243,7 @@ fn makeDryRunExecutionResult(command: model.Command, backend_lane: backend_polic
         .setup_ns = 0,
         .encode_ns = 0,
         .submit_wait_ns = 0,
-        .dispatch_count = switch (command) {
-            .kernel_dispatch => 1,
-            else => 0,
-        },
+        .dispatch_count = dispatch_count,
         .gpu_timestamp_ns = 0,
         .gpu_timestamp_attempted = false,
         .gpu_timestamp_valid = false,
@@ -242,6 +259,33 @@ fn makeDryRunExecutionResult(command: model.Command, backend_lane: backend_polic
         .queue_family_index = null,
         .present_capable = null,
     };
+}
+
+fn executeBufferLoadWithSemantic(
+    allocator: Allocator,
+    ctx: *execution.ExecutionContext,
+    command: dawn_plan_types.BufferLoadCommand,
+    semantic: semantic_trace.SemanticContext,
+) !execution.ExecutionResult {
+    const load_start_ns = nowNs();
+    const bytes = try bench_synthetic_assets.readAssetBytes(
+        allocator,
+        command.cache_namespace,
+        command.cache_key,
+        command.byte_length,
+    );
+    defer allocator.free(bytes);
+    const load_setup_ns = elapsedSince(load_start_ns);
+    var result = try ctx.execute_buffer_write_bytes_with_semantic(
+        command.handle,
+        command.offset,
+        command.buffer_size,
+        bytes,
+        semantic,
+    );
+    result.setup_ns += load_setup_ns;
+    result.duration_ns += load_setup_ns;
+    return result;
 }
 
 fn parseArgs(allocator: Allocator) !RunOptions {
@@ -436,13 +480,30 @@ pub fn runPlan(allocator: Allocator, options: RunOptions) !void {
     defer allocator.free(op_id_storage);
     for (executable_commands, 0..) |item, idx| {
         const semantic = semanticContext(idx, item.semantic_phase, loaded.plan.plan_sha256, &op_id_storage[idx]);
-        const command_label = main_print.commandName(item.command);
-        const kernel_name = main_print.commandKernel(item.command);
+        const command_label = switch (item.payload) {
+            .runtime => |command| main_print.commandName(command),
+            .buffer_load => "buffer_load",
+        };
+        const kernel_name = switch (item.payload) {
+            .runtime => |command| main_print.commandKernel(command),
+            .buffer_load => null,
+        };
         const timestamp_ns = nowNs();
-        const execution_result = if (execution_context) |*ctx|
-            try ctx.execute_with_semantic(item.command, semantic)
-        else
-            makeDryRunExecutionResult(item.command, backend_lane, options.plan_path, loaded.plan.plan_sha256);
+        const execution_result = if (execution_context) |*ctx| switch (item.payload) {
+            .runtime => |command| try ctx.execute_with_semantic(command, semantic),
+            .buffer_load => |command| try executeBufferLoadWithSemantic(allocator, ctx, command, semantic),
+        } else switch (item.payload) {
+            .runtime => |command| makeDryRunExecutionResult(
+                switch (command) {
+                    .kernel_dispatch => 1,
+                    else => 0,
+                },
+                backend_lane,
+                options.plan_path,
+                loaded.plan.plan_sha256,
+            ),
+            .buffer_load => makeDryRunExecutionResult(0, backend_lane, options.plan_path, loaded.plan.plan_sha256),
+        };
 
         trace_summary.execution_row_count += 1;
         trace_summary.execution_total_ns += execution_result.duration_ns;
@@ -478,7 +539,17 @@ pub fn runPlan(allocator: Allocator, options: RunOptions) !void {
             trace_state,
             idx,
             command_label,
-            item.command,
+            switch (item.payload) {
+                .runtime => |command| command,
+                .buffer_load => |command| .{
+                    .buffer_write = .{
+                        .handle = command.handle,
+                        .offset = command.offset,
+                        .buffer_size = command.buffer_size,
+                        .data = @constCast(&[_]u32{}),
+                    },
+                },
+            },
             kernel_name,
             semantic,
             TraceDecisionWrapper{ .decision = EMPTY_DECISION },

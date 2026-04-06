@@ -1,15 +1,21 @@
 {
   "schemaVersion": 1,
   "kind": "gemma3_270m_literal",
-  "description": "Neutral benchmark IR for a Doe-owned Gemma-3-270M literal-production-style inference workload. This row keeps synthetic dense buffers but follows the production-style kernel family, entry points, gated FFN, Gemma RMSNorm weight offset, tied LM head, and a prefill-plus-decode command shape.",
+  "description": "Neutral benchmark IR for a Doe-owned Gemma-3-270M literal-production-style inference workload. This row uses deterministic cache-backed non-zero synthetic readonly weights while following the production-style kernel family, entry points, gated FFN, Gemma RMSNorm weight offset, tied LM head, and a prefill-plus-decode command shape.",
   "shared": {
     "kernelRoot": "bench/inference-pipeline/kernels",
-    "timingScope": "operation"
+    "timingScope": "operation",
+    "syntheticReadonlyBufferPolicy": {
+      "cacheNamespace": "gemma3_270m_literal",
+      "generator": "splitmix64_f16_nonzero_v1",
+      "seed": 270031,
+      "scale": 0.125
+    }
   },
   "scenarios": [
     {
       "id": "inference_gemma3_270m_literal_prefill_32tok_decode_1tok",
-      "description": "Minimal Doe-owned Gemma-3-270M literal-production-style inference unit with a 32-token prefill followed by a single decode token. The kernels and entry points track the production path more closely than the shaped row, while dense synthetic buffers stand in for real q4k and f16kv payloads.",
+      "description": "Minimal Doe-owned Gemma-3-270M literal-production-style inference unit with a 32-token prefill followed by a single decode token. The kernels and entry points track the production path more closely than the shaped row, while deterministic cache-backed non-zero synthetic readonly buffers stand in for real q4k and f16kv payloads and are timed as device loads.",
       "planPath": "bench/plans/generated/inference_gemma3_270m_literal_prefill_32tok_decode_1tok.plan.json",
       "commandsPath": "bench/plans/generated/compat/inference_gemma3_270m_literal_prefill_32tok_decode_1tok_commands.json",
       "timingScope": "operation",

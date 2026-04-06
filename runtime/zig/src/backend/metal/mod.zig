@@ -366,7 +366,43 @@ fn execute_upload(self: *ZigMetalBackend, upload: model.UploadCommand) !webgpu.N
 fn execute_buffer_write(self: *ZigMetalBackend, cmd: model.BufferWriteCommand) !webgpu.NativeExecutionResult {
     const rt = get_runtime(self);
     const setup_start = common_timing.now_ns();
-    try rt.write_buffer(cmd);
+    if (self.upload_path_policy == .staged_copy_only) {
+        try rt.stage_buffer_write_bytes(cmd.handle, cmd.offset, cmd.buffer_size, std.mem.sliceAsBytes(cmd.data));
+    } else {
+        try rt.write_buffer(cmd);
+    }
+    const setup_end = common_timing.now_ns();
+
+    self.pending_upload_commands +|= 1;
+    var submit_wait_ns: u64 = 0;
+    if (self.queue_sync_mode == .per_command and self.pending_upload_commands >= self.upload_submit_every) {
+        submit_wait_ns = try rt.flush_queue();
+        self.pending_upload_commands = 0;
+    } else {
+        rt.has_deferred_submissions = true;
+    }
+
+    return .{
+        .status = .ok,
+        .status_message = "",
+        .setup_ns = common_timing.ns_delta(setup_end, setup_start),
+        .encode_ns = 0,
+        .submit_wait_ns = submit_wait_ns,
+        .dispatch_count = 0,
+        .gpu_timestamp_ns = 0,
+        .gpu_timestamp_attempted = false,
+        .gpu_timestamp_valid = false,
+    };
+}
+
+fn execute_buffer_write_bytes(self: *ZigMetalBackend, handle: u64, offset: u64, buffer_size: u64, data: []const u8) !webgpu.NativeExecutionResult {
+    const rt = get_runtime(self);
+    const setup_start = common_timing.now_ns();
+    if (self.upload_path_policy == .staged_copy_only) {
+        try rt.stage_buffer_write_bytes(handle, offset, buffer_size, data);
+    } else {
+        try rt.write_buffer_bytes(handle, offset, buffer_size, data);
+    }
     const setup_end = common_timing.now_ns();
 
     self.pending_upload_commands +|= 1;
@@ -675,6 +711,19 @@ fn execute_command(ctx: *anyopaque, command: model.Command) anyerror!webgpu.Nati
     };
 }
 
+fn execute_buffer_write_bytes_iface(ctx: *anyopaque, handle: u64, offset: u64, buffer_size: u64, data: []const u8) anyerror!webgpu.NativeExecutionResult {
+    const self = cast(ctx);
+    return execute_buffer_write_bytes(self, handle, offset, buffer_size, data) catch |err| {
+        return .{
+            .status = common_errors.map_error_status(err),
+            .status_message = write_status(self, "{s}", .{common_errors.error_code(err)}),
+            .dispatch_count = 0,
+            .gpu_timestamp_attempted = false,
+            .gpu_timestamp_valid = false,
+        };
+    };
+}
+
 fn set_upload_behavior(ctx: *anyopaque, mode: webgpu.UploadBufferUsageMode, submit_every: u32) void {
     const self = cast(ctx);
     const normalized = if (submit_every == 0) @as(u32, 1) else submit_every;
@@ -766,6 +815,7 @@ fn is_runtime_unavailable_for_test(err: anyerror) bool {
 const VTABLE = backend_iface.BackendVTable{
     .deinit = deinit,
     .execute_command = execute_command,
+    .execute_buffer_write_bytes = execute_buffer_write_bytes_iface,
     .set_upload_behavior = set_upload_behavior,
     .set_queue_wait_mode = set_queue_wait_mode,
     .set_queue_sync_mode = set_queue_sync_mode,

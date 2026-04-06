@@ -13,6 +13,7 @@ const model = struct {
 pub const BackendVTable = struct {
     deinit: *const fn (ctx: *anyopaque) void,
     execute_command: *const fn (ctx: *anyopaque, command: model.Command) anyerror!runtime_types.NativeExecutionResult,
+    execute_buffer_write_bytes: *const fn (ctx: *anyopaque, handle: u64, offset: u64, buffer_size: u64, data: []const u8) anyerror!runtime_types.NativeExecutionResult,
     set_upload_behavior: *const fn (ctx: *anyopaque, mode: runtime_types.UploadBufferUsageMode, submit_every: u32) void,
     set_queue_wait_mode: *const fn (ctx: *anyopaque, mode: runtime_types.QueueWaitMode) void,
     set_queue_sync_mode: *const fn (ctx: *anyopaque, mode: runtime_types.QueueSyncMode) void,
@@ -35,6 +36,10 @@ pub const BackendIface = struct {
 
     pub fn execute_command(self: *BackendIface, command: model.Command) !runtime_types.NativeExecutionResult {
         return try self.vtable.execute_command(self.context, command);
+    }
+
+    pub fn execute_buffer_write_bytes(self: *BackendIface, handle: u64, offset: u64, buffer_size: u64, data: []const u8) !runtime_types.NativeExecutionResult {
+        return try self.vtable.execute_buffer_write_bytes(self.context, handle, offset, buffer_size, data);
     }
 
     pub fn set_upload_behavior(self: *BackendIface, mode: runtime_types.UploadBufferUsageMode, submit_every: u32) void {

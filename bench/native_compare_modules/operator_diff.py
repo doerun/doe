@@ -158,12 +158,12 @@ def _compare_manifest_rows(
             return {
                 "found": True,
                 "type": "operator_count_mismatch",
-                "message": "Operator manifests contain different numbers of semantic rows.",
+                "message": "Operator manifests contain different numbers of semantic entries.",
                 "opIndex": op_index,
-                "leftRecordPresent": left_record is not None,
-                "rightRecordPresent": right_record is not None,
-                "leftRecord": _record_excerpt(left_record, left_manifest) if left_record else None,
-                "rightRecord": _record_excerpt(right_record, right_manifest) if right_record else None,
+                "baselineRecordPresent": left_record is not None,
+                "comparisonRecordPresent": right_record is not None,
+                "baselineRecord": _record_excerpt(left_record, left_manifest) if left_record else None,
+                "comparisonRecord": _record_excerpt(right_record, right_manifest) if right_record else None,
                 "comparedOperatorCount": compared_count,
                 "captureComparableOperatorCount": capture_comparable_count,
             }
@@ -174,11 +174,11 @@ def _compare_manifest_rows(
             return {
                 "found": True,
                 "type": "semantic_identity_mismatch",
-                "message": "Semantic operator identity diverged between left and right manifests.",
+                "message": "Semantic operator identity diverged between baseline and comparison manifests.",
                 "opIndex": op_index,
                 "semanticOpId": left_record.get("semanticOpId") or right_record.get("semanticOpId"),
-                "leftRecord": _record_excerpt(left_record, left_manifest),
-                "rightRecord": _record_excerpt(right_record, right_manifest),
+                "baselineRecord": _record_excerpt(left_record, left_manifest),
+                "comparisonRecord": _record_excerpt(right_record, right_manifest),
                 "comparedOperatorCount": compared_count,
                 "captureComparableOperatorCount": capture_comparable_count,
             }
@@ -187,11 +187,11 @@ def _compare_manifest_rows(
             return {
                 "found": True,
                 "type": "command_shape_mismatch",
-                "message": "Semantic operator command shape diverged between left and right manifests.",
+                "message": "Semantic operator command shape diverged between baseline and comparison manifests.",
                 "opIndex": op_index,
                 "semanticOpId": left_record.get("semanticOpId"),
-                "leftRecord": _record_excerpt(left_record, left_manifest),
-                "rightRecord": _record_excerpt(right_record, right_manifest),
+                "baselineRecord": _record_excerpt(left_record, left_manifest),
+                "comparisonRecord": _record_excerpt(right_record, right_manifest),
                 "comparedOperatorCount": compared_count,
                 "captureComparableOperatorCount": capture_comparable_count,
             }
@@ -210,11 +210,11 @@ def _compare_manifest_rows(
             return {
                 "found": True,
                 "type": "execution_status_mismatch",
-                "message": "Semantic operator execution status diverged between left and right manifests.",
+                "message": "Semantic operator execution status diverged between baseline and comparison manifests.",
                 "opIndex": op_index,
                 "semanticOpId": left_record.get("semanticOpId"),
-                "leftRecord": _record_excerpt(left_record, left_manifest),
-                "rightRecord": _record_excerpt(right_record, right_manifest),
+                "baselineRecord": _record_excerpt(left_record, left_manifest),
+                "comparisonRecord": _record_excerpt(right_record, right_manifest),
                 "comparedOperatorCount": compared_count,
                 "captureComparableOperatorCount": capture_comparable_count,
             }
@@ -227,11 +227,11 @@ def _compare_manifest_rows(
             return {
                 "found": True,
                 "type": "capture_presence_mismatch",
-                "message": "Only one side emitted capture metadata for the semantic operator.",
+                "message": "Only one benchmark participant emitted capture metadata for the semantic operator.",
                 "opIndex": op_index,
                 "semanticOpId": left_record.get("semanticOpId"),
-                "leftRecord": _record_excerpt(left_record, left_manifest),
-                "rightRecord": _record_excerpt(right_record, right_manifest),
+                "baselineRecord": _record_excerpt(left_record, left_manifest),
+                "comparisonRecord": _record_excerpt(right_record, right_manifest),
                 "comparedOperatorCount": compared_count,
                 "captureComparableOperatorCount": capture_comparable_count,
             }
@@ -246,8 +246,8 @@ def _compare_manifest_rows(
                 "message": "Capture status diverged for the semantic operator.",
                 "opIndex": op_index,
                 "semanticOpId": left_record.get("semanticOpId"),
-                "leftRecord": _record_excerpt(left_record, left_manifest),
-                "rightRecord": _record_excerpt(right_record, right_manifest),
+                "baselineRecord": _record_excerpt(left_record, left_manifest),
+                "comparisonRecord": _record_excerpt(right_record, right_manifest),
                 "comparedOperatorCount": compared_count,
                 "captureComparableOperatorCount": capture_comparable_count,
             }
@@ -259,8 +259,8 @@ def _compare_manifest_rows(
                 "message": "Capture digests diverged for the semantic operator.",
                 "opIndex": op_index,
                 "semanticOpId": left_record.get("semanticOpId"),
-                "leftRecord": _record_excerpt(left_record, left_manifest),
-                "rightRecord": _record_excerpt(right_record, right_manifest),
+                "baselineRecord": _record_excerpt(left_record, left_manifest),
+                "comparisonRecord": _record_excerpt(right_record, right_manifest),
                 "comparedOperatorCount": compared_count,
                 "captureComparableOperatorCount": capture_comparable_count,
             }
@@ -275,12 +275,12 @@ def _compare_manifest_rows(
 
 
 def summarize_workload_operator_diff(
-    left_run: dict[str, Any],
-    right_run: dict[str, Any],
+    baseline_run: dict[str, Any],
+    comparison_run: dict[str, Any],
 ) -> dict[str, Any]:
-    left_samples = left_run.get("commandSamples", [])
-    right_samples = right_run.get("commandSamples", [])
-    if not isinstance(left_samples, list) or not isinstance(right_samples, list):
+    baseline_samples = baseline_run.get("commandSamples", [])
+    comparison_samples = comparison_run.get("commandSamples", [])
+    if not isinstance(baseline_samples, list) or not isinstance(comparison_samples, list):
         return {
             "available": False,
             "status": "missing_command_samples",
@@ -289,24 +289,24 @@ def summarize_workload_operator_diff(
             "firstDivergence": None,
         }
 
-    pair_count = min(len(left_samples), len(right_samples))
+    pair_count = min(len(baseline_samples), len(comparison_samples))
     eligible_pairs = 0
     compared_pairs = 0
     for sample_index in range(pair_count):
-        left_sample = left_samples[sample_index]
-        right_sample = right_samples[sample_index]
-        if not isinstance(left_sample, dict) or not isinstance(right_sample, dict):
+        baseline_sample = baseline_samples[sample_index]
+        comparison_sample = comparison_samples[sample_index]
+        if not isinstance(baseline_sample, dict) or not isinstance(comparison_sample, dict):
             continue
-        if left_sample.get("returnCode") != 0 or right_sample.get("returnCode") != 0:
+        if baseline_sample.get("returnCode") != 0 or comparison_sample.get("returnCode") != 0:
             continue
-        left_manifest = _resolve_operator_manifest(left_sample)
-        right_manifest = _resolve_operator_manifest(right_sample)
-        if left_manifest is None or right_manifest is None:
+        baseline_manifest = _resolve_operator_manifest(baseline_sample)
+        comparison_manifest = _resolve_operator_manifest(comparison_sample)
+        if baseline_manifest is None or comparison_manifest is None:
             continue
 
         eligible_pairs += 1
         compared_pairs += 1
-        divergence = _compare_manifest_rows(left_manifest, right_manifest)
+        divergence = _compare_manifest_rows(baseline_manifest, comparison_manifest)
         if divergence.get("found"):
             return {
                 "available": True,
@@ -315,10 +315,10 @@ def summarize_workload_operator_diff(
                 "comparedSamplePairCount": compared_pairs,
                 "samplePair": {
                     "sampleIndex": sample_index,
-                    "leftManifestPath": left_manifest["path"],
-                    "leftManifestSha256": left_manifest["sha256"],
-                    "rightManifestPath": right_manifest["path"],
-                    "rightManifestSha256": right_manifest["sha256"],
+                    "baselineManifestPath": baseline_manifest["path"],
+                    "baselineManifestSha256": baseline_manifest["sha256"],
+                    "comparisonManifestPath": comparison_manifest["path"],
+                    "comparisonManifestSha256": comparison_manifest["sha256"],
                 },
                 "firstDivergence": divergence,
             }
@@ -330,10 +330,10 @@ def summarize_workload_operator_diff(
             "comparedSamplePairCount": compared_pairs,
             "samplePair": {
                 "sampleIndex": sample_index,
-                "leftManifestPath": left_manifest["path"],
-                "leftManifestSha256": left_manifest["sha256"],
-                "rightManifestPath": right_manifest["path"],
-                "rightManifestSha256": right_manifest["sha256"],
+                "baselineManifestPath": baseline_manifest["path"],
+                "baselineManifestSha256": baseline_manifest["sha256"],
+                "comparisonManifestPath": comparison_manifest["path"],
+                "comparisonManifestSha256": comparison_manifest["sha256"],
             },
             "firstDivergence": divergence,
         }

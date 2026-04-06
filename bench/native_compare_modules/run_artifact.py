@@ -13,8 +13,24 @@ from pathlib import Path
 from typing import Any
 
 from native_compare_modules.workload_spec import ProductRunConfig, WorkloadSpec
+from native_compare_modules.runner import file_sha256
 
-RUN_ARTIFACT_SCHEMA_VERSION = 1
+RUN_ARTIFACT_SCHEMA_VERSION = 2
+SUPPORTED_RUN_ARTIFACT_SCHEMA_VERSIONS = {1, 2}
+
+
+def _contract_ref(path: str | Path | None) -> dict[str, Any] | None:
+    if path is None:
+        return None
+    if isinstance(path, str) and not path.strip():
+        return None
+    contract_path = Path(path)
+    if not contract_path.exists():
+        return None
+    return {
+        "path": str(contract_path),
+        "sha256": file_sha256(contract_path),
+    }
 
 
 def build_run_artifact(
@@ -29,14 +45,19 @@ def build_run_artifact(
     resource_probe: str = "none",
     resource_sample_ms: int = 100,
     resource_sample_target_count: int = 0,
+    workload_contract_path: str | Path | None = None,
+    benchmark_policy_path: str | Path | None = None,
+    comparability_mode: str = "",
+    required_timing_class: str = "",
 ) -> dict[str, Any]:
     """Wrap a run_workload result dict into a standalone run artifact."""
-    return {
+    artifact = {
         "schemaVersion": RUN_ARTIFACT_SCHEMA_VERSION,
         "artifactKind": "run",
         "generatedAt": datetime.now(timezone.utc).isoformat(),
         "product": product,
         "executorId": executor_id,
+        "workloadContract": _contract_ref(workload_contract_path),
         "workload": {
             "id": workload_spec.id,
             "name": workload_spec.name,
@@ -51,8 +72,17 @@ def build_run_artifact(
             "comparable": workload_spec.comparable,
             "benchmarkClass": workload_spec.benchmark_class,
             "comparabilityNotes": workload_spec.comparability_notes,
+            "directionalReason": workload_spec.directional_reason,
             "pathAsymmetry": workload_spec.path_asymmetry,
             "pathAsymmetryNote": workload_spec.path_asymmetry_note,
+            "includeByDefault": workload_spec.include_by_default,
+            "asyncDiagnosticsMode": workload_spec.async_diagnostics_mode,
+            "strictNormalizationUnit": workload_spec.strict_normalization_unit,
+            "comparabilityCandidate": {
+                "enabled": workload_spec.comparability_candidate_enabled,
+                "tier": workload_spec.comparability_candidate_tier,
+                "notes": workload_spec.comparability_candidate_notes,
+            },
             "claimEligible": workload_spec.claim_eligible,
             "cohorts": list(workload_spec.cohorts),
         },
@@ -64,9 +94,13 @@ def build_run_artifact(
             "timingDivisor": run_config.timing_divisor,
             "uploadBufferUsage": run_config.upload_buffer_usage,
             "uploadSubmitEvery": run_config.upload_submit_every,
+            "allowNoExecution": run_config.allow_no_execution,
+            "timingNormalizationNote": run_config.timing_normalization_note,
             "resourceProbe": resource_probe,
             "resourceSampleMs": resource_sample_ms,
             "resourceSampleTargetCount": resource_sample_target_count,
+            "comparabilityMode": comparability_mode,
+            "requiredTimingClass": required_timing_class,
         },
         "host": {
             "os": platform.system().lower(),
@@ -84,6 +118,21 @@ def build_run_artifact(
             "timingMetricsNormalizedStatsMs", {}
         ),
     }
+    if artifact["workloadContract"] is None:
+        raise ValueError(
+            "run artifacts require workloadContract metadata; "
+            "pass workload_contract_path when building the artifact"
+        )
+    benchmark_policy_contract = _contract_ref(benchmark_policy_path)
+    if benchmark_policy_path and benchmark_policy_contract is None:
+        raise ValueError(
+            "run artifacts received a benchmark_policy_path that could not be "
+            f"resolved: {benchmark_policy_path}"
+        )
+    if benchmark_policy_contract is not None:
+        benchmark_policy_contract["schemaVersion"] = 1
+        artifact["benchmarkPolicy"] = benchmark_policy_contract
+    return artifact
 
 
 def write_run_artifact(artifact: dict[str, Any], path: Path) -> Path:
@@ -109,14 +158,30 @@ def load_run_artifact(path: str | Path) -> dict[str, Any]:
             f"expected artifactKind=run, got {data.get('artifactKind')!r}: {p}"
         )
     version = data.get("schemaVersion")
-    if version != RUN_ARTIFACT_SCHEMA_VERSION:
+    if version not in SUPPORTED_RUN_ARTIFACT_SCHEMA_VERSIONS:
         raise ValueError(
             f"unsupported run artifact schemaVersion={version}, "
-            f"expected {RUN_ARTIFACT_SCHEMA_VERSION}: {p}"
+            f"expected one of {sorted(SUPPORTED_RUN_ARTIFACT_SCHEMA_VERSIONS)}: {p}"
         )
     for key in ("product", "executorId", "workload", "commandSamples", "stats"):
         if key not in data:
             raise ValueError(f"run artifact missing required field {key!r}: {p}")
+    if version == 1:
+        data.setdefault("workloadContract", None)
+        workload = data.setdefault("workload", {})
+        workload.setdefault("directionalReason", "")
+        workload.setdefault("includeByDefault", True)
+        workload.setdefault("asyncDiagnosticsMode", "")
+        workload.setdefault("strictNormalizationUnit", "")
+        workload.setdefault(
+            "comparabilityCandidate",
+            {"enabled": False, "tier": "", "notes": ""},
+        )
+        run_parameters = data.setdefault("runParameters", {})
+        run_parameters.setdefault("allowNoExecution", False)
+        run_parameters.setdefault("timingNormalizationNote", "")
+        run_parameters.setdefault("comparabilityMode", "")
+        run_parameters.setdefault("requiredTimingClass", "")
     return data
 
 

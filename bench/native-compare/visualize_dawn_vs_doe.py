@@ -21,7 +21,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--report",
         default="bench/out/dawn-vs-doe.json",
-        help="Path to compare_dawn_vs_doe.py JSON report",
+        help="Path to a compare-lane JSON report.",
     )
     parser.add_argument(
         "--out",
@@ -85,10 +85,10 @@ def percentile(values: list[float], p: float) -> float:
     return sorted_values[index]
 
 
-def percent_delta(left: float, right: float) -> float:
-    if left <= 0.0:
+def percent_delta(baseline: float, comparison: float) -> float:
+    if baseline <= 0.0:
         return 0.0
-    return ((right / left) - 1.0) * 100.0
+    return ((comparison / baseline) - 1.0) * 100.0
 
 
 def sample_stats(values: list[float]) -> dict[str, float]:
@@ -211,20 +211,20 @@ def wasserstein_1d(left: list[float], right: list[float]) -> float:
     return area
 
 
-def probability_left_faster(left: list[float], right: list[float]) -> float:
-    if not left or not right:
+def probability_baseline_faster(baseline: list[float], comparison: list[float]) -> float:
+    if not baseline or not comparison:
         return 0.0
 
-    right_sorted = sorted(right)
-    m = len(right_sorted)
+    comparison_sorted = sorted(comparison)
+    m = len(comparison_sorted)
     score = 0.0
-    for value in left:
-        lo = bisect.bisect_left(right_sorted, value)
-        hi = bisect.bisect_right(right_sorted, value)
+    for value in baseline:
+        lo = bisect.bisect_left(comparison_sorted, value)
+        hi = bisect.bisect_right(comparison_sorted, value)
         greater = m - hi
         ties = hi - lo
         score += (float(greater) + (0.5 * float(ties))) / float(m)
-    return score / float(len(left))
+    return score / float(len(baseline))
 
 
 def bootstrap_quantile_delta_ci(
@@ -277,40 +277,40 @@ def analyze_workload(
     bootstrap_iterations: int,
     rng: random.Random,
 ) -> dict[str, Any]:
-    left = workload.get("left", {})
-    right = workload.get("right", {})
+    baseline = workload.get("baseline", {})
+    comparison = workload.get("comparison", {})
 
-    left_samples = to_float_list(left.get("timingsMs"))
-    right_samples = to_float_list(right.get("timingsMs"))
+    baseline_samples = to_float_list(baseline.get("timingsMs"))
+    comparison_samples = to_float_list(comparison.get("timingsMs"))
 
-    left_stats_raw = left.get("stats", {}) if isinstance(left.get("stats"), dict) else {}
-    right_stats_raw = right.get("stats", {}) if isinstance(right.get("stats"), dict) else {}
+    baseline_stats_raw = baseline.get("stats", {}) if isinstance(baseline.get("stats"), dict) else {}
+    comparison_stats_raw = comparison.get("stats", {}) if isinstance(comparison.get("stats"), dict) else {}
 
-    left_stats = sample_stats(left_samples)
-    right_stats = sample_stats(right_samples)
+    baseline_stats = sample_stats(baseline_samples)
+    comparison_stats = sample_stats(comparison_samples)
 
     for key, q in (("p10Ms", 0.10), ("p50Ms", 0.5), ("p95Ms", 0.95), ("p99Ms", 0.99)):
-        left_stats[key] = resolve_stat_ms(left_stats_raw, key, left_samples, q)
-        right_stats[key] = resolve_stat_ms(right_stats_raw, key, right_samples, q)
-    left_stats["meanMs"] = resolve_stat_ms(left_stats_raw, "meanMs", left_samples)
-    right_stats["meanMs"] = resolve_stat_ms(right_stats_raw, "meanMs", right_samples)
+        baseline_stats[key] = resolve_stat_ms(baseline_stats_raw, key, baseline_samples, q)
+        comparison_stats[key] = resolve_stat_ms(comparison_stats_raw, key, comparison_samples, q)
+    baseline_stats["meanMs"] = resolve_stat_ms(baseline_stats_raw, "meanMs", baseline_samples)
+    comparison_stats["meanMs"] = resolve_stat_ms(comparison_stats_raw, "meanMs", comparison_samples)
 
     delta = {
-        "p10Percent": percent_delta(left_stats["p10Ms"], right_stats["p10Ms"]),
-        "p50Percent": percent_delta(left_stats["p50Ms"], right_stats["p50Ms"]),
-        "p95Percent": percent_delta(left_stats["p95Ms"], right_stats["p95Ms"]),
-        "p99Percent": percent_delta(left_stats["p99Ms"], right_stats["p99Ms"]),
-        "meanPercent": percent_delta(left_stats["meanMs"], right_stats["meanMs"]),
+        "p10Percent": percent_delta(baseline_stats["p10Ms"], comparison_stats["p10Ms"]),
+        "p50Percent": percent_delta(baseline_stats["p50Ms"], comparison_stats["p50Ms"]),
+        "p95Percent": percent_delta(baseline_stats["p95Ms"], comparison_stats["p95Ms"]),
+        "p99Percent": percent_delta(baseline_stats["p99Ms"], comparison_stats["p99Ms"]),
+        "meanPercent": percent_delta(baseline_stats["meanMs"], comparison_stats["meanMs"]),
     }
 
-    ks_d = ks_statistic(left_samples, right_samples)
-    ks_p = ks_asymptotic_pvalue(ks_d, len(left_samples), len(right_samples))
-    w1 = wasserstein_1d(left_samples, right_samples)
-    superiority = probability_left_faster(left_samples, right_samples)
+    ks_d = ks_statistic(baseline_samples, comparison_samples)
+    ks_p = ks_asymptotic_pvalue(ks_d, len(baseline_samples), len(comparison_samples))
+    w1 = wasserstein_1d(baseline_samples, comparison_samples)
+    superiority = probability_baseline_faster(baseline_samples, comparison_samples)
 
-    ci_p50 = bootstrap_quantile_delta_ci(left_samples, right_samples, 0.5, bootstrap_iterations, rng)
-    ci_p95 = bootstrap_quantile_delta_ci(left_samples, right_samples, 0.95, bootstrap_iterations, rng)
-    ci_p99 = bootstrap_quantile_delta_ci(left_samples, right_samples, 0.99, bootstrap_iterations, rng)
+    ci_p50 = bootstrap_quantile_delta_ci(baseline_samples, comparison_samples, 0.5, bootstrap_iterations, rng)
+    ci_p95 = bootstrap_quantile_delta_ci(baseline_samples, comparison_samples, 0.95, bootstrap_iterations, rng)
+    ci_p99 = bootstrap_quantile_delta_ci(baseline_samples, comparison_samples, 0.99, bootstrap_iterations, rng)
     timing_interpretation = workload.get("timingInterpretation", {})
     if not isinstance(timing_interpretation, dict):
         timing_interpretation = {}
@@ -332,16 +332,16 @@ def analyze_workload(
         "id": workload.get("id"),
         "domain": workload.get("domain"),
         "comparable": workload.get("comparability", {}).get("comparable"),
-        "leftSampleCount": len(left_samples),
-        "rightSampleCount": len(right_samples),
-        "leftStatsMs": left_stats,
-        "rightStatsMs": right_stats,
+        "baselineSampleCount": len(baseline_samples),
+        "comparisonSampleCount": len(comparison_samples),
+        "baselineStatsMs": baseline_stats,
+        "comparisonStatsMs": comparison_stats,
         "deltaPercent": delta,
         "distribution": {
             "ksStatistic": ks_d,
             "ksAsymptoticPValue": ks_p,
             "wassersteinMs": w1,
-            "probabilityLeftFaster": superiority,
+            "probabilityBaselineFaster": superiority,
         },
         "bootstrapDeltaCI95": {
             "p50": ci_p50,
@@ -354,8 +354,8 @@ def analyze_workload(
             "note": selected_timing.get("note"),
         },
         "workloadUnitWallDeltaPercent": workload_unit_delta,
-        "leftSamplesMs": left_samples,
-        "rightSamplesMs": right_samples,
+        "baselineSamplesMs": baseline_samples,
+        "comparisonSamplesMs": comparison_samples,
     }
 
 
@@ -435,13 +435,13 @@ def ecdf_polyline_points(samples: list[float], x_min: float, x_max: float, width
 
 
 def ecdf_svg(analysis: dict[str, Any], width: int = 920, height: int = 220) -> str:
-    left = analysis.get("leftSamplesMs", [])
-    right = analysis.get("rightSamplesMs", [])
-    if not left or not right:
+    baseline = analysis.get("baselineSamplesMs", [])
+    comparison = analysis.get("comparisonSamplesMs", [])
+    if not baseline or not comparison:
         return "<p>No samples for ECDF.</p>"
 
-    x_min = min(min(left), min(right))
-    x_max = max(max(left), max(right))
+    x_min = min(min(baseline), min(comparison))
+    x_max = max(max(baseline), max(comparison))
     if x_max <= x_min:
         x_max = x_min + 1.0
 
@@ -452,8 +452,8 @@ def ecdf_svg(analysis: dict[str, Any], width: int = 920, height: int = 220) -> s
     plot_w = width - margin_left - margin_right
     plot_h = height - margin_top - margin_bottom
 
-    left_points = ecdf_polyline_points(left, x_min, x_max, plot_w, plot_h)
-    right_points = ecdf_polyline_points(right, x_min, x_max, plot_w, plot_h)
+    baseline_points = ecdf_polyline_points(baseline, x_min, x_max, plot_w, plot_h)
+    comparison_points = ecdf_polyline_points(comparison, x_min, x_max, plot_w, plot_h)
 
     return (
         f'<svg viewBox="0 0 {width} {height}" width="100%" height="{height}" role="img" '
@@ -461,12 +461,12 @@ def ecdf_svg(analysis: dict[str, Any], width: int = 920, height: int = 220) -> s
         f'<rect x="{margin_left}" y="{margin_top}" width="{plot_w}" height="{plot_h}" fill="#ffffff" stroke="#dbe3ef"/>'
         f'<line x1="{margin_left}" y1="{margin_top + plot_h}" x2="{margin_left + plot_w}" y2="{margin_top + plot_h}" stroke="#94a3b8"/>'
         f'<line x1="{margin_left}" y1="{margin_top}" x2="{margin_left}" y2="{margin_top + plot_h}" stroke="#94a3b8"/>'
-        f'<polyline fill="none" stroke="#15803d" stroke-width="2" points="{" ".join(f"{margin_left + float(pt.split(",")[0]):.2f},{margin_top + float(pt.split(",")[1]):.2f}" for pt in left_points.split() if pt)}"/>'
-        f'<polyline fill="none" stroke="#2563eb" stroke-width="2" points="{" ".join(f"{margin_left + float(pt.split(",")[0]):.2f},{margin_top + float(pt.split(",")[1]):.2f}" for pt in right_points.split() if pt)}"/>'
+        f'<polyline fill="none" stroke="#15803d" stroke-width="2" points="{" ".join(f"{margin_left + float(pt.split(",")[0]):.2f},{margin_top + float(pt.split(",")[1]):.2f}" for pt in baseline_points.split() if pt)}"/>'
+        f'<polyline fill="none" stroke="#2563eb" stroke-width="2" points="{" ".join(f"{margin_left + float(pt.split(",")[0]):.2f},{margin_top + float(pt.split(",")[1]):.2f}" for pt in comparison_points.split() if pt)}"/>'
         f'<text x="{margin_left}" y="{height - 6}" font-size="11" fill="#334155">{x_min:.6f} ms</text>'
         f'<text x="{margin_left + plot_w - 88}" y="{height - 6}" font-size="11" fill="#334155">{x_max:.6f} ms</text>'
-        f'<text x="{margin_left + 6}" y="{margin_top + 14}" font-size="11" fill="#15803d">left</text>'
-        f'<text x="{margin_left + 46}" y="{margin_top + 14}" font-size="11" fill="#2563eb">right</text>'
+        f'<text x="{margin_left + 6}" y="{margin_top + 14}" font-size="11" fill="#15803d">baseline</text>'
+        f'<text x="{margin_left + 66}" y="{margin_top + 14}" font-size="11" fill="#2563eb">comparison</text>'
         "</svg>"
     )
 
@@ -553,12 +553,12 @@ def generate_html(
         distribution_rows.append(
             "<tr>"
             f"<td>{escape(str(analysis.get('id', '')))}</td>"
-            f"<td>{escape(str(analysis.get('leftSampleCount', 0)))}</td>"
-            f"<td>{escape(str(analysis.get('rightSampleCount', 0)))}</td>"
+            f"<td>{escape(str(analysis.get('baselineSampleCount', 0)))}</td>"
+            f"<td>{escape(str(analysis.get('comparisonSampleCount', 0)))}</td>"
             f"<td style='color:{pick_delta_color(delta.get('p50Percent'))};font-weight:600'>{fmt_pct(delta.get('p50Percent'))}</td>"
             f"<td style='color:{pick_delta_color(delta.get('p95Percent'))};font-weight:600'>{fmt_pct(delta.get('p95Percent'))}</td>"
             f"<td style='color:{pick_delta_color(delta.get('p99Percent'))};font-weight:600'>{fmt_pct(delta.get('p99Percent'))}</td>"
-            f"<td>{fmt_prob(dist.get('probabilityLeftFaster'))}</td>"
+            f"<td>{fmt_prob(dist.get('probabilityBaselineFaster'))}</td>"
             f"<td>{fmt_float(dist.get('ksStatistic'))}</td>"
             f"<td>{fmt_float(dist.get('ksAsymptoticPValue'))}</td>"
             f"<td>{fmt_ms(dist.get('wassersteinMs'))}</td>"
@@ -571,8 +571,8 @@ def generate_html(
     table_rows: list[str] = []
     speedup_rows: list[str] = []
     for analysis in analyses:
-        left_stats = analysis.get("leftStatsMs", {})
-        right_stats = analysis.get("rightStatsMs", {})
+        baseline_stats = analysis.get("baselineStatsMs", {})
+        comparison_stats = analysis.get("comparisonStatsMs", {})
         delta = analysis.get("deltaPercent", {})
         workload_unit_delta = analysis.get("workloadUnitWallDeltaPercent", {})
         if not isinstance(workload_unit_delta, dict):
@@ -589,14 +589,14 @@ def generate_html(
             f"<td>{escape(str(analysis.get('domain', '')))}</td>"
             f"<td>{escape(comparable_text)}</td>"
             f"<td>{escape(str(selected_scope))}</td>"
-            f"<td>{fmt_ms(left_stats.get('p10Ms'))}</td>"
-            f"<td>{fmt_ms(left_stats.get('p50Ms'))}</td>"
-            f"<td>{fmt_ms(left_stats.get('p95Ms'))}</td>"
-            f"<td>{fmt_ms(left_stats.get('p99Ms'))}</td>"
-            f"<td>{fmt_ms(right_stats.get('p10Ms'))}</td>"
-            f"<td>{fmt_ms(right_stats.get('p50Ms'))}</td>"
-            f"<td>{fmt_ms(right_stats.get('p95Ms'))}</td>"
-            f"<td>{fmt_ms(right_stats.get('p99Ms'))}</td>"
+            f"<td>{fmt_ms(baseline_stats.get('p10Ms'))}</td>"
+            f"<td>{fmt_ms(baseline_stats.get('p50Ms'))}</td>"
+            f"<td>{fmt_ms(baseline_stats.get('p95Ms'))}</td>"
+            f"<td>{fmt_ms(baseline_stats.get('p99Ms'))}</td>"
+            f"<td>{fmt_ms(comparison_stats.get('p10Ms'))}</td>"
+            f"<td>{fmt_ms(comparison_stats.get('p50Ms'))}</td>"
+            f"<td>{fmt_ms(comparison_stats.get('p95Ms'))}</td>"
+            f"<td>{fmt_ms(comparison_stats.get('p99Ms'))}</td>"
             f"<td style='color:{pick_delta_color(workload_unit_delta.get('p50Percent'))};font-weight:600'>{fmt_pct(workload_unit_delta.get('p50Percent'))}</td>"
             f"<td style='color:{pick_delta_color(delta.get('p10Percent'))};font-weight:600'>{fmt_pct(delta.get('p10Percent'))}</td>"
             f"<td style='color:{pick_delta_color(delta.get('p50Percent'))};font-weight:600'>{fmt_pct(delta.get('p50Percent'))}</td>"
@@ -623,14 +623,14 @@ def generate_html(
             "          <th>domain</th>\n"
             "          <th>comparable</th>\n"
             "          <th>scope</th>\n"
-            "          <th>left p10 ms</th>\n"
-            "          <th>left p50 ms</th>\n"
-            "          <th>left p95 ms</th>\n"
-            "          <th>left p99 ms</th>\n"
-            "          <th>right p10 ms</th>\n"
-            "          <th>right p50 ms</th>\n"
-            "          <th>right p95 ms</th>\n"
-            "          <th>right p99 ms</th>\n"
+            "          <th>baseline p10 ms</th>\n"
+            "          <th>baseline p50 ms</th>\n"
+            "          <th>baseline p95 ms</th>\n"
+            "          <th>baseline p99 ms</th>\n"
+            "          <th>comparison p10 ms</th>\n"
+            "          <th>comparison p50 ms</th>\n"
+            "          <th>comparison p95 ms</th>\n"
+            "          <th>comparison p99 ms</th>\n"
             "          <th>workload-unit wall p50</th>\n"
             "          <th>delta p10</th>\n"
             "          <th>delta p50</th>\n"
@@ -797,12 +797,12 @@ def generate_html(
           <thead>
             <tr>
               <th>workload</th>
-              <th>n left</th>
-              <th>n right</th>
+              <th>n baseline</th>
+              <th>n comparison</th>
               <th>delta p50</th>
               <th>delta p95</th>
               <th>delta p99</th>
-              <th>P(left&lt;right)</th>
+              <th>P(baseline&lt;comparison)</th>
               <th>KS D</th>
               <th>KS p (asymptotic)</th>
               <th>Wasserstein ms</th>
@@ -828,14 +828,14 @@ def generate_html(
               <th>domain</th>
               <th>comparable</th>
               <th>scope</th>
-              <th>left p10 ms</th>
-              <th>left p50 ms</th>
-              <th>left p95 ms</th>
-              <th>left p99 ms</th>
-              <th>right p10 ms</th>
-              <th>right p50 ms</th>
-              <th>right p95 ms</th>
-              <th>right p99 ms</th>
+              <th>baseline p10 ms</th>
+              <th>baseline p50 ms</th>
+              <th>baseline p95 ms</th>
+              <th>baseline p99 ms</th>
+              <th>comparison p10 ms</th>
+              <th>comparison p50 ms</th>
+              <th>comparison p95 ms</th>
+              <th>comparison p99 ms</th>
               <th>workload-unit wall p50</th>
               <th>delta p10</th>
               <th>delta p50</th>

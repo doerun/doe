@@ -4,7 +4,7 @@
     {
       "id": "apple-node-dawn-gemma64-mac-lan",
       "runtimeHost": "node",
-      "provider": "dawn",
+      "provider": "node-webgpu",
       "workloadId": "inference_gemma3_270m_prefill_64tok_decode_64tok",
       "host": {
         "platform": "darwin",
@@ -13,13 +13,28 @@
         "osRelease": "25.3.0"
       },
       "unsupportedCode": "provider_execution_unavailable",
-      "message": "node-webgpu execution unavailable for provider dawn on this Apple host",
-      "detail": "Gemma64 on Apple Node/Dawn is explicitly unsupported on mac.lan after repeated direct reruns showed an intermittent host-specific Dawn package crash during the first queue.onSubmittedWorkDone wait after full setup. The same workload completes on Bun/bun-webgpu and Doe on this host."
+      "message": "node-webgpu execution unavailable for provider node-webgpu on this Apple host",
+      "detail": "Gemma64 prefill+decode on Apple Node/node-webgpu crashes in queue.onSubmittedWorkDone() during the attention-decode dispatch window on mac.lan. Root cause is the same Dawn Metal backend accumulation failure as decode_1tok: repeated large weight buffer (9MB) writes between dispatches exhaust a Metal resource. Confirmed on webgpu@0.3.8 and @0.4.0. Bun/bun-webgpu is unaffected."
+    },
+    {
+      "id": "apple-node-dawn-gemma64-decode-mac-lan",
+      "runtimeHost": "node",
+      "provider": "node-webgpu",
+      "workloadId": "inference_gemma3_270m_decode_1tok",
+      "host": {
+        "platform": "darwin",
+        "arch": "arm64",
+        "hostname": "mac.lan",
+        "osRelease": "25.3.0"
+      },
+      "unsupportedCode": "provider_execution_unavailable",
+      "message": "node-webgpu execution unavailable for provider node-webgpu on this Apple host",
+      "detail": "Gemma64 decode-1tok on Apple Node/node-webgpu crashes in queue.onSubmittedWorkDone() after the 3rd consecutive matmul-gemv dispatch on mac.lan. Root cause is a Dawn Metal backend accumulation failure with repeated large weight buffer (9MB) writes between dispatches. Confirmed on webgpu@0.3.8 and @0.4.0. Bun/bun-webgpu is unaffected."
     },
     {
       "id": "apple-node-dawn-gemma1b-mac-lan",
       "runtimeHost": "node",
-      "provider": "dawn",
+      "provider": "node-webgpu",
       "workloadId": "inference_gemma3_1b_prefill_64tok_decode_64tok",
       "host": {
         "platform": "darwin",
@@ -28,8 +43,8 @@
         "osRelease": "25.3.0"
       },
       "unsupportedCode": "provider_execution_unavailable",
-      "message": "node-webgpu execution unavailable for provider dawn on this Apple host",
-      "detail": "Gemma1B on Apple Node/Dawn is explicitly unsupported on mac.lan after step-limit bisect and submit-boundary diagnostics showed a host-specific Dawn package crash in the final submit window. The same prefixes complete on Bun/bun-webgpu and Doe on this host."
+      "message": "node-webgpu execution unavailable for provider node-webgpu on this Apple host",
+      "detail": "Gemma1B prefill+decode on Apple Node/node-webgpu crashes in queue.onSubmittedWorkDone() on mac.lan. Same Dawn Metal backend accumulation failure as gemma64: repeated large weight buffer writes between dispatches. Confirmed on webgpu@0.3.8 and @0.4.0. Bun/bun-webgpu is unaffected."
     }
   ]
 }

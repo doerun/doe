@@ -265,10 +265,10 @@
         "windows_x64"
       ],
       "id": "node_package_compare",
-      "notes": "Governed package-surface compare lane for Doe Node vs Dawn Node.",
+      "notes": "Governed package-surface compare lane for Doe vs node-webgpu package.",
       "products": [
-        "dawn_node",
-        "doe_node"
+        "node_webgpu_package",
+        "doe"
       ],
       "sourceReportTypes": [
         "node_package_compare_report"
@@ -285,9 +285,9 @@
         "windows_x64"
       ],
       "id": "bun_package_compare",
-      "notes": "Governed package-surface compare lane for Doe Bun vs bun-webgpu.",
+      "notes": "Governed package-surface compare lane for Doe vs bun-webgpu package.",
       "products": [
-        "bun_webgpu",
+        "bun_webgpu_package",
         "doe_bun"
       ],
       "sourceReportTypes": [
@@ -306,8 +306,8 @@
       "id": "deno_package_compare",
       "notes": "Deno package compare lane. Doe provider loaded via Deno node-compat N-API layer. First verified run: 2026-03-17 (19/19 comparable claimable, macOS Apple Silicon, Deno 2.7.5).",
       "products": [
-        "deno_webgpu",
-        "doe_deno"
+        "deno_webgpu_package",
+        "doe"
       ],
       "sourceReportTypes": [
         "deno_package_compare_report"

@@ -7,11 +7,12 @@
   "description": "Single-token Gemma-3-270M-shaped decode step using Doe-owned retained inference kernels plus explicit cache/position uniform writes.",
   "planPath": "bench/plans/generated/inference_gemma3_270m_decode_1tok.plan.json",
   "commandsPath": "bench/plans/generated/compat/inference_gemma3_270m_decode_1tok_commands.json",
-  "commandCount": 24,
+  "commandCount": 37,
   "bufferWriteCount": 6,
+  "bufferLoadCount": 13,
   "dispatchCount": 18,
-  "sourceIrSha256": "1390e88f21c22f0ae7704bcc144400c0ce094b83392cec673335a08803fc23dc",
-  "compatibilityCommandsSha256": "722377da2662bc9489d1ef8494b5ac5a71e3461ded90e00507faaa17b7bac1d7",
+  "sourceIrSha256": "dbc451744890fdef290ae6466ac3228a5c026c6795276f439167651311209880",
+  "compatibilityCommandsSha256": "d8422d6fde43340e95f543b9a9de151c90b49ee939ba3b96ac61dabdede1134b",
   "commands": [
     {
       "kind": "buffer_write",
@@ -80,6 +81,32 @@
       ]
     },
     {
+      "kind": "buffer_load",
+      "handle": 2201,
+      "offset": 0,
+      "bufferSize": 6144,
+      "byteLength": 6144,
+      "cacheNamespace": "gemma3_270m_shaped",
+      "cacheKey": "b2d6e71ba404bba84c7fadafa38359456e046fb5ed4a46ce1e1f4b32b0984e43",
+      "assetKey": "inference_gemma3_270m_decode_1tok:handle-2201",
+      "generator": "splitmix64_f32_nonzero_v1",
+      "seed": 2177342782468425132,
+      "scale": 0.125
+    },
+    {
+      "kind": "buffer_load",
+      "handle": 2202,
+      "offset": 0,
+      "bufferSize": 6144,
+      "byteLength": 6144,
+      "cacheNamespace": "gemma3_270m_shaped",
+      "cacheKey": "8659ed7ce5d6a98ef078b4b220d9526382c75fdf11798c94ccb0384dcd4537d6",
+      "assetKey": "inference_gemma3_270m_decode_1tok:handle-2202",
+      "generator": "splitmix64_f32_nonzero_v1",
+      "seed": 2177342782468425129,
+      "scale": 0.125
+    },
+    {
       "kind": "kernel_dispatch",
       "kernel": "rmsnorm.wgsl",
       "x": 1,
@@ -124,6 +151,19 @@
           "visibility": "compute"
         }
       ]
+    },
+    {
+      "kind": "buffer_load",
+      "handle": 2204,
+      "offset": 0,
+      "bufferSize": 9437184,
+      "byteLength": 9437184,
+      "cacheNamespace": "gemma3_270m_shaped",
+      "cacheKey": "fa5c6031ee3c6ae79147b5ddaf1bdc48ee6806440b32eb9263576377a8273498",
+      "assetKey": "inference_gemma3_270m_decode_1tok:handle-2204",
+      "generator": "splitmix64_f32_nonzero_v1",
+      "seed": 2177342782468425127,
+      "scale": 0.125
     },
     {
       "kind": "kernel_dispatch",
@@ -172,6 +212,19 @@
       ]
     },
     {
+      "kind": "buffer_load",
+      "handle": 2206,
+      "offset": 0,
+      "bufferSize": 9437184,
+      "byteLength": 9437184,
+      "cacheNamespace": "gemma3_270m_shaped",
+      "cacheKey": "1df9efe16a6cbd94824f760282394c5302b6c957f77aa30466b4bec9195ee51e",
+      "assetKey": "inference_gemma3_270m_decode_1tok:handle-2206",
+      "generator": "splitmix64_f32_nonzero_v1",
+      "seed": 2177342782468425125,
+      "scale": 0.125
+    },
+    {
       "kind": "kernel_dispatch",
       "kernel": "matmul-gemv.wgsl",
       "x": 24,
@@ -218,6 +271,19 @@
       ]
     },
     {
+      "kind": "buffer_load",
+      "handle": 2208,
+      "offset": 0,
+      "bufferSize": 9437184,
+      "byteLength": 9437184,
+      "cacheNamespace": "gemma3_270m_shaped",
+      "cacheKey": "f7809a9ef81cd2ff3acc6ad2e2b1fc09071b052fe34b077c3a187816b766adb2",
+      "assetKey": "inference_gemma3_270m_decode_1tok:handle-2208",
+      "generator": "splitmix64_f32_nonzero_v1",
+      "seed": 2177342782468425155,
+      "scale": 0.125
+    },
+    {
       "kind": "kernel_dispatch",
       "kernel": "matmul-gemv.wgsl",
       "x": 24,
@@ -262,6 +328,19 @@
           "visibility": "compute"
         }
       ]
+    },
+    {
+      "kind": "buffer_load",
+      "handle": 2210,
+      "offset": 0,
+      "bufferSize": 16384,
+      "byteLength": 16384,
+      "cacheNamespace": "gemma3_270m_shaped",
+      "cacheKey": "045c99342ffae7557ca8dcbbf4159ed2ffc9a42f1834e8bd3cd2eb3ef28c1b52",
+      "assetKey": "inference_gemma3_270m_decode_1tok:handle-2210",
+      "generator": "splitmix64_f32_nonzero_v1",
+      "seed": 2177342782468425153,
+      "scale": 0.125
     },
     {
       "kind": "kernel_dispatch",
@@ -336,6 +415,32 @@
           "visibility": "compute"
         }
       ]
+    },
+    {
+      "kind": "buffer_load",
+      "handle": 2211,
+      "offset": 0,
+      "bufferSize": 196608,
+      "byteLength": 196608,
+      "cacheNamespace": "gemma3_270m_shaped",
+      "cacheKey": "f4793af9d631d015cdac23dafc0d91c6b8f1c7ba2996e47286b0c229c3f54801",
+      "assetKey": "inference_gemma3_270m_decode_1tok:handle-2211",
+      "generator": "splitmix64_f32_nonzero_v1",
+      "seed": 2177342782468425154,
+      "scale": 0.125
+    },
+    {
+      "kind": "buffer_load",
+      "handle": 2212,
+      "offset": 0,
+      "bufferSize": 196608,
+      "byteLength": 196608,
+      "cacheNamespace": "gemma3_270m_shaped",
+      "cacheKey": "4ff4baff97dad4d4740916821e8944499edabb26dc68639fc70c5358eb6a1aa3",
+      "assetKey": "inference_gemma3_270m_decode_1tok:handle-2212",
+      "generator": "splitmix64_f32_nonzero_v1",
+      "seed": 2177342782468425151,
+      "scale": 0.125
     },
     {
       "kind": "kernel_dispatch",
@@ -391,6 +496,19 @@
           "visibility": "compute"
         }
       ]
+    },
+    {
+      "kind": "buffer_load",
+      "handle": 2214,
+      "offset": 0,
+      "bufferSize": 9437184,
+      "byteLength": 9437184,
+      "cacheNamespace": "gemma3_270m_shaped",
+      "cacheKey": "4412a8ac2d024cba9194fc582eb86f846cd42a09668ccb9c6da0158163d1a76d",
+      "assetKey": "inference_gemma3_270m_decode_1tok:handle-2214",
+      "generator": "splitmix64_f32_nonzero_v1",
+      "seed": 2177342782468425149,
+      "scale": 0.125
     },
     {
       "kind": "kernel_dispatch",
@@ -522,6 +640,19 @@
       ]
     },
     {
+      "kind": "buffer_load",
+      "handle": 2218,
+      "offset": 0,
+      "bufferSize": 9437184,
+      "byteLength": 9437184,
+      "cacheNamespace": "gemma3_270m_shaped",
+      "cacheKey": "035122f1902b78fea6a1213b9ae863a835af80fcb45ff4c4e4bb1d000ca12d5c",
+      "assetKey": "inference_gemma3_270m_decode_1tok:handle-2218",
+      "generator": "splitmix64_f32_nonzero_v1",
+      "seed": 2177342782468425145,
+      "scale": 0.125
+    },
+    {
       "kind": "kernel_dispatch",
       "kernel": "matmul-gemv.wgsl",
       "x": 24,
@@ -566,6 +697,19 @@
           "visibility": "compute"
         }
       ]
+    },
+    {
+      "kind": "buffer_load",
+      "handle": 2220,
+      "offset": 0,
+      "bufferSize": 9437184,
+      "byteLength": 9437184,
+      "cacheNamespace": "gemma3_270m_shaped",
+      "cacheKey": "61ad367dd9b5c4cb1f6174ebc85dcf31d9f4c245f499abdc92c9ae838a76af94",
+      "assetKey": "inference_gemma3_270m_decode_1tok:handle-2220",
+      "generator": "splitmix64_f32_nonzero_v1",
+      "seed": 2177342782468425143,
+      "scale": 0.125
     },
     {
       "kind": "kernel_dispatch",
@@ -640,6 +784,19 @@
           "visibility": "compute"
         }
       ]
+    },
+    {
+      "kind": "buffer_load",
+      "handle": 2223,
+      "offset": 0,
+      "bufferSize": 9437184,
+      "byteLength": 9437184,
+      "cacheNamespace": "gemma3_270m_shaped",
+      "cacheKey": "b8e23481a1e383b2c08e9c5e7ceddfcb24e2540a2aa6e5cd5d54cdaead992063",
+      "assetKey": "inference_gemma3_270m_decode_1tok:handle-2223",
+      "generator": "splitmix64_f32_nonzero_v1",
+      "seed": 2177342782468425142,
+      "scale": 0.125
     },
     {
       "kind": "kernel_dispatch",
@@ -771,6 +928,19 @@
       ]
     },
     {
+      "kind": "buffer_load",
+      "handle": 2002,
+      "offset": 0,
+      "bufferSize": 25165824,
+      "byteLength": 25165824,
+      "cacheNamespace": "gemma3_270m_shaped",
+      "cacheKey": "2f27c42b39e1167f05401999d0aab32a626ab0b10a475a8c3c4a430ad0f420d6",
+      "assetKey": "inference_gemma3_270m_decode_1tok:handle-2002",
+      "generator": "splitmix64_f32_nonzero_v1",
+      "seed": 2177342782468424433,
+      "scale": 0.125
+    },
+    {
       "kind": "kernel_dispatch",
       "kernel": "matmul-gemv.wgsl",
       "x": 64,
@@ -854,5 +1024,5 @@
       ]
     }
   ],
-  "planSha256": "ca6c139c9a29ff8caae036aee57ced4dcb5da1c555a9fc4d555b3007787e7f82"
+  "planSha256": "83ec012a9ff4a2f489aed5d68f505e45ea896d6d77bf3770dfd21fcf5f87dcc4"
 }

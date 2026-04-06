@@ -1,7 +1,7 @@
-"""Report assembly and timing-interpretation synthesis for compare_dawn_vs_doe.
+"""Report assembly and timing-interpretation synthesis for the compare runner.
 
 Builds report header, per-workload entries, overall summaries, and final
-output artifacts. Extracted from compare_dawn_vs_doe.py per the 1200-line
+output artifacts. Extracted from the former compare wrapper per the 1200-line
 Python tooling file limit.
 """
 
@@ -67,6 +67,74 @@ def build_report_header(
         benchmark_intent = "apples-to-apples"
     else:
         benchmark_intent = "mixed"
+    workload_contract = {
+        "path": str(workloads_path),
+        "sha256": file_sha256(workloads_path),
+    }
+    benchmark_policy_contract = {
+        "path": benchmark_policy.source_path,
+        "schemaVersion": 1,
+        "sha256": file_sha256(Path(benchmark_policy.source_path)),
+    }
+    config_contract = None
+    if args.config:
+        config_path = Path(args.config).resolve()
+        if config_path.exists():
+            config_contract = {
+                "path": str(config_path),
+                "sha256": file_sha256(config_path),
+            }
+    return build_report_header_from_contracts(
+        args=args,
+        workload_contract=workload_contract,
+        benchmark_policy_contract=benchmark_policy_contract,
+        min_dispatch_window_ns_without_encode=(
+            benchmark_policy.min_dispatch_window_ns_without_encode
+        ),
+        min_dispatch_window_coverage_percent_without_encode=(
+            benchmark_policy.min_dispatch_window_coverage_percent_without_encode
+        ),
+        local_claim_min_timed_samples=benchmark_policy.local_claim_min_timed_samples,
+        release_claim_min_timed_samples=benchmark_policy.release_claim_min_timed_samples,
+        output_timestamp=output_timestamp,
+        out=out,
+        workspace=workspace,
+        config_contract=config_contract,
+    )
+
+
+def build_report_header_from_contracts(
+    *,
+    args: Any,
+    workload_contract: dict[str, Any],
+    benchmark_policy_contract: dict[str, Any],
+    min_dispatch_window_ns_without_encode: int,
+    min_dispatch_window_coverage_percent_without_encode: float,
+    local_claim_min_timed_samples: int,
+    release_claim_min_timed_samples: int,
+    output_timestamp: str,
+    out: Path,
+    workspace: Path,
+    config_contract: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    selector = (
+        getattr(args, "selector", {})
+        if isinstance(getattr(args, "selector", {}), dict)
+        else {}
+    )
+    selector_benchmark_classes = selector.get("benchmarkClass", [])
+    selector_comparability = selector.get("comparability", [])
+    if args.workload_cohort == "doe-advantage":
+        benchmark_intent = "doe-advantage"
+    elif args.workload_cohort == "comparability-candidates":
+        benchmark_intent = "comparability-candidates"
+    elif (
+        selector_benchmark_classes == ["comparable"]
+        or selector_comparability == ["comparable"]
+    ):
+        benchmark_intent = "apples-to-apples"
+    else:
+        benchmark_intent = "mixed"
     report: dict[str, Any] = {
         "schemaVersion": 5,
         "generatedAt": datetime.now(timezone.utc).isoformat(),
@@ -87,26 +155,24 @@ def build_report_header(
             "providerSet": getattr(args, "provider_set", "") or None,
         },
         "participants": {
-            "left": {
-                "name": args.left_name,
-                "id": getattr(args, "left_provider_id", "") or None,
-                "executorId": getattr(args, "left_executor_id", "") or None,
+            "baseline": {
+                "name": args.baseline_name,
+                "id": getattr(args, "baseline_provider_id", "") or None,
+                "executorId": getattr(args, "baseline_executor_id", "") or None,
                 "role": "baseline",
             },
-            "right": {
-                "name": args.right_name,
-                "id": getattr(args, "right_provider_id", "") or None,
-                "executorId": getattr(args, "right_executor_id", "") or None,
+            "comparison": {
+                "name": args.comparison_name,
+                "id": getattr(args, "comparison_provider_id", "") or None,
+                "executorId": getattr(args, "comparison_executor_id", "") or None,
                 "role": "comparison",
             },
         },
-        "left": {"name": args.left_name},
-        "right": {"name": args.right_name},
         "deltaPercentConvention": {
-            "baseline": "left",
-            "formula": "((rightMs / leftMs) - 1) * 100",
-            "positive": "left faster",
-            "negative": "left slower",
+            "baseline": "baseline",
+            "formula": "((comparisonMs / baselineMs) - 1) * 100",
+            "positive": "baseline faster",
+            "negative": "baseline slower",
             "zero": "parity",
         },
         "timingInterpretationPolicy": {
@@ -133,13 +199,13 @@ def build_report_header(
         "comparabilityPolicy": {
             "mode": args.comparability,
             "requiredTimingClass": args.require_timing_class,
-            "allowLeftNoExecution": bool(args.allow_left_no_execution),
+            "allowBaselineNoExecution": bool(args.allow_baseline_no_execution),
             "resourceProbe": args.resource_probe,
             "resourceSampleMs": args.resource_sample_ms,
             "resourceSampleTargetCount": args.resource_sample_target_count,
             "workloadCooldownMs": args.workload_cooldown_ms,
             "workloadCohort": args.workload_cohort,
-            "requireNativeExecutionTimingForLeftOperation": (
+            "requireNativeExecutionTimingForBaselineOperation": (
                 args.require_timing_class == "operation"
             ),
             "obligationContract": {
@@ -147,8 +213,12 @@ def build_report_header(
                 "blockingFailureFailsComparability": True,
             },
             "dispatchWindowSelectionThresholds": {
-                "minDispatchWindowNsWithoutEncode": benchmark_policy.min_dispatch_window_ns_without_encode,
-                "minDispatchWindowCoveragePercentWithoutEncode": benchmark_policy.min_dispatch_window_coverage_percent_without_encode,
+                "minDispatchWindowNsWithoutEncode": (
+                    min_dispatch_window_ns_without_encode
+                ),
+                "minDispatchWindowCoveragePercentWithoutEncode": (
+                    min_dispatch_window_coverage_percent_without_encode
+                ),
             },
         },
         "claimabilityPolicy": {
@@ -156,63 +226,60 @@ def build_report_header(
             "minTimedSamples": (
                 args.claim_min_timed_samples
                 if args.claim_min_timed_samples > 0
-                else default_claim_min_timed_samples(args.claimability, benchmark_policy)
+                else (
+                    local_claim_min_timed_samples
+                    if args.claimability == "local"
+                    else (
+                        release_claim_min_timed_samples
+                        if args.claimability == "release"
+                        else 0
+                    )
+                )
             ),
             "requiredPositivePercentiles": required_positive_percentiles(args.claimability),
             "defaults": {
-                "localMinTimedSamples": benchmark_policy.local_claim_min_timed_samples,
-                "releaseMinTimedSamples": benchmark_policy.release_claim_min_timed_samples,
+                "localMinTimedSamples": local_claim_min_timed_samples,
+                "releaseMinTimedSamples": release_claim_min_timed_samples,
             },
         },
-        "benchmarkPolicy": {
-            "path": benchmark_policy.source_path,
-            "schemaVersion": 1,
-            "sha256": file_sha256(Path(benchmark_policy.source_path)),
-        },
-        "workloadContract": {
-            "path": str(workloads_path),
-            "sha256": file_sha256(workloads_path),
-        },
+        "benchmarkPolicy": benchmark_policy_contract,
+        "workloadContract": workload_contract,
         "workloads": [],
     }
     if args.config:
-        config_path = Path(args.config).resolve()
-        report["configPath"] = str(config_path)
-        if config_path.exists():
-            report["configContract"] = {
-                "path": str(config_path),
-                "sha256": file_sha256(config_path),
-            }
+        report["configPath"] = str(Path(args.config).resolve())
+    if isinstance(config_contract, dict):
+        report["configContract"] = config_contract
     return report
 
 
 def compute_workload_delta(
-    left_stats: dict[str, Any],
-    right_stats: dict[str, Any],
+    baseline_stats: dict[str, Any],
+    comparison_stats: dict[str, Any],
 ) -> dict[str, float]:
     return {
-        "p10Percent": percent_delta(safe_float(left_stats["p10Ms"]) or 0.0, safe_float(right_stats["p10Ms"]) or 0.0),
-        "p50Percent": percent_delta(safe_float(left_stats["p50Ms"]) or 0.0, safe_float(right_stats["p50Ms"]) or 0.0),
-        "p95Percent": percent_delta(safe_float(left_stats["p95Ms"]) or 0.0, safe_float(right_stats["p95Ms"]) or 0.0),
-        "p99Percent": percent_delta(safe_float(left_stats["p99Ms"]) or 0.0, safe_float(right_stats["p99Ms"]) or 0.0),
-        "meanPercent": percent_delta(safe_float(left_stats["meanMs"]) or 0.0, safe_float(right_stats["meanMs"]) or 0.0),
+        "p10Percent": percent_delta(safe_float(baseline_stats["p10Ms"]) or 0.0, safe_float(comparison_stats["p10Ms"]) or 0.0),
+        "p50Percent": percent_delta(safe_float(baseline_stats["p50Ms"]) or 0.0, safe_float(comparison_stats["p50Ms"]) or 0.0),
+        "p95Percent": percent_delta(safe_float(baseline_stats["p95Ms"]) or 0.0, safe_float(comparison_stats["p95Ms"]) or 0.0),
+        "p99Percent": percent_delta(safe_float(baseline_stats["p99Ms"]) or 0.0, safe_float(comparison_stats["p99Ms"]) or 0.0),
+        "meanPercent": percent_delta(safe_float(baseline_stats["meanMs"]) or 0.0, safe_float(comparison_stats["meanMs"]) or 0.0),
     }
 
 
 def build_workload_report_entry(
     *,
     workload: Workload,
-    left: dict[str, Any],
-    right: dict[str, Any],
+    baseline: dict[str, Any],
+    comparison: dict[str, Any],
     delta: dict[str, float],
     timing_interpretation: dict[str, Any],
     comparability: dict[str, Any],
     claimability: dict[str, Any],
-    left_trace_meta_hashes: list[dict[str, str]],
-    right_trace_meta_hashes: list[dict[str, str]],
-    claim_row_hash: str,
-    previous_claim_row_hash: str,
-    claim_row_context: dict[str, Any],
+    baseline_trace_meta_hashes: list[dict[str, str]],
+    comparison_trace_meta_hashes: list[dict[str, str]],
+    claim_workload_hash: str,
+    previous_claim_workload_hash: str,
+    claim_workload_context: dict[str, Any],
     operator_diff: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     return {
@@ -223,16 +290,16 @@ def build_workload_report_entry(
         "comparabilityNotes": workload.comparability_notes,
         "asyncDiagnosticsMode": workload.async_diagnostics_mode or None,
         "timingNormalization": {
-            "leftDivisor": workload.left_timing_divisor,
-            "rightDivisor": workload.right_timing_divisor,
-            "leftCommandRepeat": workload.left_command_repeat,
-            "rightCommandRepeat": workload.right_command_repeat,
-            "leftIgnoreFirstOps": workload.left_ignore_first_ops,
-            "rightIgnoreFirstOps": workload.right_ignore_first_ops,
-            "leftUploadBufferUsage": workload.left_upload_buffer_usage,
-            "rightUploadBufferUsage": workload.right_upload_buffer_usage,
-            "leftUploadSubmitEvery": workload.left_upload_submit_every,
-            "rightUploadSubmitEvery": workload.right_upload_submit_every,
+            "baselineDivisor": workload.baseline_timing_divisor,
+            "comparisonDivisor": workload.comparison_timing_divisor,
+            "baselineCommandRepeat": workload.baseline_command_repeat,
+            "comparisonCommandRepeat": workload.comparison_command_repeat,
+            "baselineIgnoreFirstOps": workload.baseline_ignore_first_ops,
+            "comparisonIgnoreFirstOps": workload.comparison_ignore_first_ops,
+            "baselineUploadBufferUsage": workload.baseline_upload_buffer_usage,
+            "comparisonUploadBufferUsage": workload.comparison_upload_buffer_usage,
+            "baselineUploadSubmitEvery": workload.baseline_upload_submit_every,
+            "comparisonUploadSubmitEvery": workload.comparison_upload_submit_every,
             "note": workload.timing_normalization_note,
         },
         "workloadComparable": workload.comparable,
@@ -246,34 +313,34 @@ def build_workload_report_entry(
             "tier": workload.comparability_candidate_tier,
             "notes": workload.comparability_candidate_notes,
         },
-        "workloadAllowLeftNoExecution": workload.allow_left_no_execution,
+        "workloadAllowBaselineNoExecution": workload.allow_baseline_no_execution,
         "workloadDefault": workload.include_by_default,
-        "left": left,
-        "right": right,
+        "baseline": baseline,
+        "comparison": comparison,
         "deltaPercent": delta,
         "timingInterpretation": timing_interpretation,
         "comparability": comparability,
         "claimability": claimability,
         "traceMetaHashes": {
-            "left": left_trace_meta_hashes,
-            "right": right_trace_meta_hashes,
+            "baseline": baseline_trace_meta_hashes,
+            "comparison": comparison_trace_meta_hashes,
         },
-        "claimRowHash": {
+        "claimWorkloadHash": {
             "algorithm": "sha256",
-            "previousHash": previous_claim_row_hash,
-            "hash": claim_row_hash,
-            "context": claim_row_context,
+            "previousHash": previous_claim_workload_hash,
+            "hash": claim_workload_hash,
+            "context": claim_workload_context,
         },
         "operatorDiff": operator_diff if isinstance(operator_diff, dict) else None,
     }
 
 
-def build_claim_row_context(
+def build_claim_workload_context(
     *,
     workload: Workload,
     report: dict[str, Any],
-    left_trace_meta_hashes: list[dict[str, str]],
-    right_trace_meta_hashes: list[dict[str, str]],
+    baseline_trace_meta_hashes: list[dict[str, str]],
+    comparison_trace_meta_hashes: list[dict[str, str]],
     delta: dict[str, float],
     comparability: dict[str, Any],
     claimability: dict[str, Any],
@@ -287,8 +354,12 @@ def build_claim_row_context(
             else ""
         ),
         "benchmarkPolicySha256": report["benchmarkPolicy"]["sha256"],
-        "leftTraceMetaSha256": [entry["sha256"] for entry in left_trace_meta_hashes],
-        "rightTraceMetaSha256": [entry["sha256"] for entry in right_trace_meta_hashes],
+        "baselineTraceMetaSha256": [
+            entry["sha256"] for entry in baseline_trace_meta_hashes
+        ],
+        "comparisonTraceMetaSha256": [
+            entry["sha256"] for entry in comparison_trace_meta_hashes
+        ],
         "benchmarkClass": workload.benchmark_class,
         "directionalReason": workload.directional_reason,
         "workloadPathAsymmetry": workload.path_asymmetry,
@@ -310,49 +381,49 @@ def build_claim_row_context(
 
 def build_overall_stats(
     *,
-    overall_left: list[float],
-    overall_right: list[float],
-    overall_workload_unit_left: list[float],
-    overall_workload_unit_right: list[float],
+    overall_baseline: list[float],
+    overall_comparison: list[float],
+    overall_workload_unit_baseline: list[float],
+    overall_workload_unit_comparison: list[float],
     report: dict[str, Any],
 ) -> None:
-    if overall_left and overall_right:
-        overall_left_stats = format_stats(overall_left)
-        overall_right_stats = format_stats(overall_right)
+    if overall_baseline and overall_comparison:
+        overall_baseline_stats = format_stats(overall_baseline)
+        overall_comparison_stats = format_stats(overall_comparison)
         report["overall"] = {
-            "left": overall_left_stats,
-            "right": overall_right_stats,
+            "baseline": overall_baseline_stats,
+            "comparison": overall_comparison_stats,
             "deltaPercent": {
                 "p10Approx": percent_delta(
-                    safe_float(overall_left_stats["p10Ms"]) or 0.0,
-                    safe_float(overall_right_stats["p10Ms"]) or 0.0,
+                    safe_float(overall_baseline_stats["p10Ms"]) or 0.0,
+                    safe_float(overall_comparison_stats["p10Ms"]) or 0.0,
                 ),
                 "p50Approx": percent_delta(
-                    safe_float(overall_left_stats["p50Ms"]) or 0.0,
-                    safe_float(overall_right_stats["p50Ms"]) or 0.0,
+                    safe_float(overall_baseline_stats["p50Ms"]) or 0.0,
+                    safe_float(overall_comparison_stats["p50Ms"]) or 0.0,
                 ),
                 "p95Approx": percent_delta(
-                    safe_float(overall_left_stats["p95Ms"]) or 0.0,
-                    safe_float(overall_right_stats["p95Ms"]) or 0.0,
+                    safe_float(overall_baseline_stats["p95Ms"]) or 0.0,
+                    safe_float(overall_comparison_stats["p95Ms"]) or 0.0,
                 ),
                 "p99Approx": percent_delta(
-                    safe_float(overall_left_stats["p99Ms"]) or 0.0,
-                    safe_float(overall_right_stats["p99Ms"]) or 0.0,
+                    safe_float(overall_baseline_stats["p99Ms"]) or 0.0,
+                    safe_float(overall_comparison_stats["p99Ms"]) or 0.0,
                 ),
             },
         }
-    if overall_workload_unit_left and overall_workload_unit_right:
-        overall_workload_unit_left_stats = format_stats(overall_workload_unit_left)
-        overall_workload_unit_right_stats = format_stats(overall_workload_unit_right)
+    if overall_workload_unit_baseline and overall_workload_unit_comparison:
+        overall_workload_unit_baseline_stats = format_stats(overall_workload_unit_baseline)
+        overall_workload_unit_comparison_stats = format_stats(overall_workload_unit_comparison)
         overall_workload_unit_wall = {
             "scope": "timed-command-process-wall",
             "scopeClass": "workload-unit-wall",
             "metric": "elapsedMs",
-            "left": overall_workload_unit_left_stats,
-            "right": overall_workload_unit_right_stats,
+            "baseline": overall_workload_unit_baseline_stats,
+            "comparison": overall_workload_unit_comparison_stats,
             "deltaPercent": delta_percent_from_stats(
-                overall_workload_unit_left_stats,
-                overall_workload_unit_right_stats,
+                overall_workload_unit_baseline_stats,
+                overall_workload_unit_comparison_stats,
             ),
         }
         report["overallWorkloadUnitWall"] = overall_workload_unit_wall
@@ -367,7 +438,7 @@ def build_report_summaries(
     workloads: list[Workload],
     comparability_failures: list[dict[str, Any]],
     claimability_failures: list[dict[str, Any]],
-    claim_row_hashes: list[str],
+    claim_workload_hashes: list[str],
     claimability_mode: str,
 ) -> None:
     obligation_failure_counts: dict[str, int] = {}
@@ -447,11 +518,11 @@ def build_report_summaries(
         "missingCount": operator_diff_missing_count,
         "workloads": operator_diff_workloads,
     }
-    report["claimRowHashChain"] = {
+    report["claimWorkloadHashChain"] = {
         "algorithm": "sha256",
-        "count": len(claim_row_hashes),
+        "count": len(claim_workload_hashes),
         "startPreviousHash": "0" * 64,
-        "finalHash": claim_row_hashes[-1] if claim_row_hashes else "",
+        "finalHash": claim_workload_hashes[-1] if claim_workload_hashes else "",
     }
     if claimability_mode == "off":
         report["claimStatus"] = "not-evaluated"
@@ -541,7 +612,7 @@ def write_report_and_determine_status(
 
 
 def summarize_operator_diff(
-    left: dict[str, Any],
-    right: dict[str, Any],
+    baseline: dict[str, Any],
+    comparison: dict[str, Any],
 ) -> dict[str, Any]:
-    return operator_diff_mod.summarize_workload_operator_diff(left, right)
+    return operator_diff_mod.summarize_workload_operator_diff(baseline, comparison)

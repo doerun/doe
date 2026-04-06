@@ -14,7 +14,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--report",
         default="bench/out/dawn-vs-doe.amd.vulkan.smoke.gpu.16mb.json",
-        help="Path to compare_dawn_vs_doe report JSON.",
+        help="Path to a compare-lane report JSON.",
     )
     parser.add_argument(
         "--require-comparable",
@@ -68,7 +68,7 @@ def main() -> int:
     errors: list[str] = []
     for workload in workloads:
         workload_id = workload.get("id", "<unknown>")
-        for side in ("left", "right"):
+        for side in ("baseline", "comparison"):
             ok, reason = _resource_ok(workload, side)
             if not ok:
                 errors.append(f"{workload_id}: {reason}")

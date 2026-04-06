@@ -27,14 +27,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--report",
         default="bench/out/dawn-vs-doe.json",
-        help="Comparison report produced by compare_dawn_vs_doe.py",
+        help="Comparison report produced by the compare lane.",
     )
     parser.add_argument(
         "--semantic-parity-mode",
         choices=["off", "auto", "required"],
         default="auto",
         help=(
-            "Semantic parity check mode for left/right trace pairs. "
+            "Semantic parity check mode for baseline/comparison trace pairs. "
             "off: skip parity checks, auto: compare only when both sides are doe runtime traces, "
             "required: fail when no semantic-eligible pairs are found."
         ),
@@ -61,14 +61,14 @@ def run_replay_check(meta_path: Path, trace_jsonl: Path) -> tuple[bool, str]:
     )
 
 
-def run_semantic_parity_check(left_jsonl: Path, right_jsonl: Path) -> tuple[bool, str]:
+def run_semantic_parity_check(baseline_jsonl: Path, comparison_jsonl: Path) -> tuple[bool, str]:
     cmd = [
         sys.executable,
         str(COMPARE_SCRIPT),
-        "--left",
-        str(left_jsonl),
-        "--right",
-        str(right_jsonl),
+        "--baseline",
+        str(baseline_jsonl),
+        "--comparison",
+        str(comparison_jsonl),
     ]
     result = subprocess.run(cmd, text=True, capture_output=True)
     if result.returncode == 0:
@@ -127,20 +127,31 @@ def sample_return_code(sample: dict[str, Any]) -> int | None:
     return None
 
 
-def semantic_pair_eligible(left_sample: dict[str, Any], right_sample: dict[str, Any]) -> tuple[bool, str]:
-    left_module = sample_module_name(left_sample)
-    right_module = sample_module_name(right_sample)
-    if not left_module or not right_module:
+def semantic_pair_eligible(
+    baseline_sample: dict[str, Any],
+    comparison_sample: dict[str, Any],
+) -> tuple[bool, str]:
+    baseline_module = sample_module_name(baseline_sample)
+    comparison_module = sample_module_name(comparison_sample)
+    if not baseline_module or not comparison_module:
         return False, "missing trace meta module"
-    if not left_module.startswith(DOE_MODULE_PREFIX) or not right_module.startswith(DOE_MODULE_PREFIX):
-        return False, f"non-doe-runtime modules left={left_module or 'unknown'} right={right_module or 'unknown'}"
+    if not baseline_module.startswith(DOE_MODULE_PREFIX) or not comparison_module.startswith(DOE_MODULE_PREFIX):
+        return (
+            False,
+            "non-doe-runtime modules "
+            f"baseline={baseline_module or 'unknown'} comparison={comparison_module or 'unknown'}",
+        )
 
-    left_trace = sample_trace_path(left_sample)
-    right_trace = sample_trace_path(right_sample)
-    if left_trace is None or right_trace is None:
+    baseline_trace = sample_trace_path(baseline_sample)
+    comparison_trace = sample_trace_path(comparison_sample)
+    if baseline_trace is None or comparison_trace is None:
         return False, "missing trace jsonl path"
-    if not left_trace.exists() or not right_trace.exists():
-        return False, f"missing trace file left={left_trace} right={right_trace}"
+    if not baseline_trace.exists() or not comparison_trace.exists():
+        return (
+            False,
+            "missing trace file "
+            f"baseline={baseline_trace} comparison={comparison_trace}",
+        )
 
     return True, ""
 
@@ -176,7 +187,7 @@ def main() -> int:
             failures.append(f"workloads[{workload_idx}] is not an object")
             continue
         workload_id = workload.get("id", "unknown")
-        for side in ("left", "right"):
+        for side in ("baseline", "comparison"):
             side_payload = workload.get(side, {})
             if not isinstance(side_payload, dict):
                 continue
@@ -246,11 +257,11 @@ def main() -> int:
         if args.semantic_parity_mode == "off":
             continue
 
-        left_payload = workload.get("left")
-        right_payload = workload.get("right")
+        left_payload = workload.get("baseline")
+        right_payload = workload.get("comparison")
         if not isinstance(left_payload, dict) or not isinstance(right_payload, dict):
             if args.semantic_parity_mode == "required":
-                failures.append(f"{workload_id} missing left/right payloads for semantic parity checks")
+                failures.append(f"{workload_id} missing baseline/comparison payloads for semantic parity checks")
             continue
         left_samples = left_payload.get("commandSamples", [])
         right_samples = right_payload.get("commandSamples", [])

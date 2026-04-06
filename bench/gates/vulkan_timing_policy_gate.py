@@ -95,18 +95,18 @@ def main() -> int:
 
         comparability = workload.get("comparability")
         if isinstance(comparability, dict):
-            left_class = str(comparability.get("leftTimingClass", ""))
-            right_class = str(comparability.get("rightTimingClass", ""))
+            left_class = str(comparability.get("baselineTimingClass", ""))
+            right_class = str(comparability.get("comparisonTimingClass", ""))
             if required_class != "any" and left_class != required_class:
                 failures.append(
-                    f"{workload_id}: leftTimingClass mismatch expected={required_class} got={left_class}"
+                    f"{workload_id}: baselineTimingClass mismatch expected={required_class} got={left_class}"
                 )
             if required_class != "any" and right_class != required_class:
                 failures.append(
-                    f"{workload_id}: rightTimingClass mismatch expected={required_class} got={right_class}"
+                    f"{workload_id}: comparisonTimingClass mismatch expected={required_class} got={right_class}"
                 )
 
-        for side_name in ("left", "right"):
+        for side_name in ("baseline", "comparison"):
             side = workload.get(side_name)
             if not isinstance(side, dict):
                 continue

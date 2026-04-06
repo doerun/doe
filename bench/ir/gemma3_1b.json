@@ -1,15 +1,21 @@
 {
   "schemaVersion": 1,
   "kind": "gemma3_1b",
-  "description": "Neutral benchmark IR for Gemma-3-1B-shaped Doe runtime workloads.",
+  "description": "Neutral benchmark IR for Gemma-3-1B-shaped Doe runtime workloads with deterministic cache-backed non-zero synthetic weight assets.",
   "shared": {
     "kernelRoot": "bench/inference-pipeline/kernels",
-    "timingScope": "operation"
+    "timingScope": "operation",
+    "syntheticReadonlyBufferPolicy": {
+      "cacheNamespace": "gemma3_1b_shaped",
+      "generator": "splitmix64_f32_nonzero_v1",
+      "seed": 1000,
+      "scale": 0.125
+    }
   },
   "scenarios": [
     {
       "id": "inference_gemma3_1b_prefill_32tok",
-      "description": "Single-block Gemma-3-1B-shaped prefill pass over 32 prompt tokens using Doe-owned retained inference kernels and seeded uniform/token buffer writes.",
+      "description": "Single-block Gemma-3-1B-shaped prefill pass over 32 prompt tokens using Doe-owned retained inference kernels, explicit uniform/token buffer writes, and timed device loads for deterministic cache-backed synthetic readonly weights.",
       "planPath": "bench/plans/generated/inference_gemma3_1b_prefill_32tok.plan.json",
       "commandsPath": "bench/plans/generated/compat/inference_gemma3_1b_prefill_32tok_commands.json",
       "timingScope": "operation",

@@ -3,23 +3,23 @@
     {
       "displayName": "Doe vs Dawn",
       "id": "doe_vs_dawn",
-      "left": "doe",
+      "baseline": "doe",
       "providerSet": "backend_native_providers",
-      "right": "dawn"
+      "comparison": "dawn"
     },
     {
-      "displayName": "Doe Node vs Dawn Node",
-      "id": "doe_node_vs_dawn_node",
-      "left": "doe",
+      "displayName": "Doe vs node-webgpu package",
+      "id": "doe_vs_node_webgpu_package",
+      "baseline": "doe",
       "providerSet": "package_node_providers",
-      "right": "dawn-node-webgpu"
+      "comparison": "node-webgpu"
     },
     {
-      "displayName": "Doe Bun vs bun-webgpu",
-      "id": "doe_bun_vs_bun_webgpu",
-      "left": "doe",
+      "displayName": "Doe vs bun-webgpu package",
+      "id": "doe_vs_bun_webgpu_package",
+      "baseline": "doe",
       "providerSet": "package_bun_providers",
-      "right": "bun-webgpu"
+      "comparison": "bun-webgpu"
     }
   ],
   "hostProfiles": [
@@ -70,20 +70,20 @@
       "surface": "backend_native"
     },
     {
-      "displayName": "Doe Node vs Dawn Node",
-      "id": "doe_node_vs_dawn_node",
+      "displayName": "Doe vs node-webgpu package",
+      "id": "doe_vs_node_webgpu_package",
       "products": [
         "doe",
-        "dawn_node_webgpu"
+        "node_webgpu_package"
       ],
       "surface": "node_package"
     },
     {
-      "displayName": "Doe Bun vs bun webgpu",
-      "id": "doe_bun_vs_bun_webgpu",
+      "displayName": "Doe vs bun-webgpu package",
+      "id": "doe_vs_bun_webgpu_package",
       "products": [
         "doe",
-        "bun_webgpu"
+        "bun_webgpu_package"
       ],
       "surface": "bun_package"
     }
@@ -102,7 +102,7 @@
       "id": "package_node_providers",
       "providers": [
         "doe",
-        "dawn-node-webgpu"
+        "node-webgpu"
       ]
     },
     {
@@ -163,7 +163,7 @@
       "primarySupport": "node",
       "products": [
         "doe",
-        "dawn_node_webgpu"
+        "node_webgpu_package"
       ],
       "workloadIdOverrides": {
         "compute_dispatch_simple": "dispatch_only"
@@ -188,13 +188,13 @@
       "id": "bun_package",
       "maturity": "prototype",
       "notes": [
-        "Bun has API parity with Node through the package-default Bun runtime entry. Compare lane: bench/package-compare/bun/compare.js against the bun-webgpu package.",
+        "Bun has API parity with Node through the package-default Bun runtime entry. Canonical compare flow is artifact-first through bench/cli.py compare with the doe_bun_package and bun_webgpu_package executors.",
         "Do not cite Bun cells as package parity until they are populated by comparable artifacts."
       ],
       "primarySupport": "bun",
       "products": [
         "doe",
-        "bun_webgpu"
+        "bun_webgpu_package"
       ],
       "workloadIdOverrides": {
         "compute_dispatch_simple": "dispatch_only"

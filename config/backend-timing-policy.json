@@ -4,8 +4,8 @@
     "upload": {
       "requiredTimingClass": "operation",
       "allowedTimingSources": [
-        "doe-execution-row-total-ns",
-        "doe-execution-row-total-ns+ignore-first-ops",
+        "doe-execution-workload-total-ns",
+        "doe-execution-workload-total-ns+ignore-first-ops",
         "dawn-perf-wall-time",
         "dawn-perf-cpu-time",
         "dawn-perf-gpu-time",
@@ -23,7 +23,7 @@
         ]
       },
       "requiredSyncModel": "deferred",
-      "requireUploadIgnoreFirstSource": "doe-execution-row-total-ns"
+      "requireUploadIgnoreFirstSource": "doe-execution-workload-total-ns"
     },
     "compute": {
       "requiredTimingClass": "operation",

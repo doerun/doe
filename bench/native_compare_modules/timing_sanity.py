@@ -10,7 +10,7 @@ from native_compare_modules.timing_selection import canonical_timing_source
 
 
 OPERATION_TIMING_SOURCES = {
-    "doe-execution-row-total-ns",
+    "doe-execution-workload-total-ns",
     "doe-execution-total-ns",
     "doe-execution-encode-ns",
     "doe-execution-dispatch-window-ns",
@@ -32,7 +32,7 @@ def _raw_operation_total_ms(sample: dict[str, Any]) -> float | None:
     if raw_ms is not None and raw_ms > 0.0:
         return raw_ms
 
-    if source == "doe-execution-row-total-ns":
+    if source == "doe-execution-workload-total-ns":
         adjusted_ms = safe_float(timing.get("uploadTimingRawMsAfterIgnore"))
         if adjusted_ms is not None and adjusted_ms > 0.0:
             return adjusted_ms
@@ -127,7 +127,7 @@ def assess_operation_scope_claim_sanity(
     ):
         return [
             "operation timing coverage is asymmetric versus process wall "
-            f"(left median {left_coverage:.6f}, right median {right_coverage:.6f}, "
+            f"(baseline median {left_coverage:.6f}, comparison median {right_coverage:.6f}, "
             f"asymmetry {asymmetry_ratio:.2f}x); treat as non-claimable until timing scope is audited"
         ]
 

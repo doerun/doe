@@ -29,7 +29,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--report",
         default="bench/out/dawn-vs-doe.json",
-        help="Comparison report produced by compare_dawn_vs_doe.py",
+        help="Comparison report produced by the compare lane.",
     )
     parser.add_argument(
         "--out-prefix",
@@ -238,9 +238,9 @@ def timing_invariant_audit(report: dict[str, Any]) -> dict[str, Any]:
 
     rows: list[dict[str, Any]] = []
     failure_counts = {
-        "leftSingleTimingClass": 0,
-        "rightSingleTimingClass": 0,
-        "leftRightTimingClassMatch": 0,
+        "baselineSingleTimingClass": 0,
+        "comparisonSingleTimingClass": 0,
+        "baselineComparisonTimingClassMatch": 0,
         "requiredTimingClassSatisfied": 0,
         "normalizationDivisorsPositive": 0,
         "commandRepeatPositive": 0,
@@ -254,80 +254,80 @@ def timing_invariant_audit(report: dict[str, Any]) -> dict[str, Any]:
         workload_id = workload.get("id")
         if not isinstance(workload_id, str) or not workload_id:
             workload_id = "unknown"
-        left = workload.get("left")
-        right = workload.get("right")
+        baseline = workload.get("baseline")
+        comparison = workload.get("comparison")
         normalization = workload.get("timingNormalization")
         comparability = workload.get("comparability")
-        if not isinstance(left, dict):
-            left = {}
-        if not isinstance(right, dict):
-            right = {}
+        if not isinstance(baseline, dict):
+            baseline = {}
+        if not isinstance(comparison, dict):
+            comparison = {}
         if not isinstance(normalization, dict):
             normalization = {}
         if not isinstance(comparability, dict):
             comparability = {}
 
-        left_classes = list_strings(left.get("timingClasses"))
-        right_classes = list_strings(right.get("timingClasses"))
-        left_sources = list_strings(left.get("timingSources"))
-        right_sources = list_strings(right.get("timingSources"))
+        baseline_classes = list_strings(baseline.get("timingClasses"))
+        comparison_classes = list_strings(comparison.get("timingClasses"))
+        baseline_sources = list_strings(baseline.get("timingSources"))
+        comparison_sources = list_strings(comparison.get("timingSources"))
 
-        left_single_timing_class = bool(left_classes) and len(set(left_classes)) == 1
-        right_single_timing_class = bool(right_classes) and len(set(right_classes)) == 1
-        left_right_timing_class_match = (
-            bool(left_classes)
-            and bool(right_classes)
-            and set(left_classes) == set(right_classes)
+        baseline_single_timing_class = bool(baseline_classes) and len(set(baseline_classes)) == 1
+        comparison_single_timing_class = bool(comparison_classes) and len(set(comparison_classes)) == 1
+        baseline_comparison_timing_class_match = (
+            bool(baseline_classes)
+            and bool(comparison_classes)
+            and set(baseline_classes) == set(comparison_classes)
         )
         required_timing_class_satisfied = (
             required_timing_class in ("", "any")
             or (
-                bool(left_classes or right_classes)
+                bool(baseline_classes or comparison_classes)
                 and all(
                     cls == required_timing_class
-                    for cls in [*left_classes, *right_classes]
+                    for cls in [*baseline_classes, *comparison_classes]
                 )
             )
         )
 
-        left_divisor = parse_float(normalization.get("leftDivisor"))
-        right_divisor = parse_float(normalization.get("rightDivisor"))
-        left_repeat = parse_int(normalization.get("leftCommandRepeat"))
-        right_repeat = parse_int(normalization.get("rightCommandRepeat"))
-        left_ignore_first = parse_int(normalization.get("leftIgnoreFirstOps"))
-        right_ignore_first = parse_int(normalization.get("rightIgnoreFirstOps"))
-        left_submit_every = parse_int(normalization.get("leftUploadSubmitEvery"))
-        right_submit_every = parse_int(normalization.get("rightUploadSubmitEvery"))
+        baseline_divisor = parse_float(normalization.get("baselineDivisor"))
+        comparison_divisor = parse_float(normalization.get("comparisonDivisor"))
+        baseline_repeat = parse_int(normalization.get("baselineCommandRepeat"))
+        comparison_repeat = parse_int(normalization.get("comparisonCommandRepeat"))
+        baseline_ignore_first = parse_int(normalization.get("baselineIgnoreFirstOps"))
+        comparison_ignore_first = parse_int(normalization.get("comparisonIgnoreFirstOps"))
+        baseline_submit_every = parse_int(normalization.get("baselineUploadSubmitEvery"))
+        comparison_submit_every = parse_int(normalization.get("comparisonUploadSubmitEvery"))
 
         normalization_divisors_positive = (
-            left_divisor is not None
-            and left_divisor > 0.0
-            and right_divisor is not None
-            and right_divisor > 0.0
+            baseline_divisor is not None
+            and baseline_divisor > 0.0
+            and comparison_divisor is not None
+            and comparison_divisor > 0.0
         )
         command_repeat_positive = (
-            left_repeat is not None
-            and left_repeat >= 1
-            and right_repeat is not None
-            and right_repeat >= 1
+            baseline_repeat is not None
+            and baseline_repeat >= 1
+            and comparison_repeat is not None
+            and comparison_repeat >= 1
         )
         ignore_first_non_negative = (
-            left_ignore_first is not None
-            and left_ignore_first >= 0
-            and right_ignore_first is not None
-            and right_ignore_first >= 0
+            baseline_ignore_first is not None
+            and baseline_ignore_first >= 0
+            and comparison_ignore_first is not None
+            and comparison_ignore_first >= 0
         )
         submit_cadence_positive = (
-            left_submit_every is not None
-            and left_submit_every >= 1
-            and right_submit_every is not None
-            and right_submit_every >= 1
+            baseline_submit_every is not None
+            and baseline_submit_every >= 1
+            and comparison_submit_every is not None
+            and comparison_submit_every >= 1
         )
 
         invariants = {
-            "leftSingleTimingClass": left_single_timing_class,
-            "rightSingleTimingClass": right_single_timing_class,
-            "leftRightTimingClassMatch": left_right_timing_class_match,
+            "baselineSingleTimingClass": baseline_single_timing_class,
+            "comparisonSingleTimingClass": comparison_single_timing_class,
+            "baselineComparisonTimingClassMatch": baseline_comparison_timing_class_match,
             "requiredTimingClassSatisfied": required_timing_class_satisfied,
             "normalizationDivisorsPositive": normalization_divisors_positive,
             "commandRepeatPositive": command_repeat_positive,
@@ -343,19 +343,19 @@ def timing_invariant_audit(report: dict[str, Any]) -> dict[str, Any]:
                 "workloadId": workload_id,
                 "comparable": comparability.get("comparable"),
                 "requiredTimingClass": required_timing_class,
-                "leftTimingClasses": left_classes,
-                "rightTimingClasses": right_classes,
-                "leftTimingSources": left_sources,
-                "rightTimingSources": right_sources,
+                "baselineTimingClasses": baseline_classes,
+                "comparisonTimingClasses": comparison_classes,
+                "baselineTimingSources": baseline_sources,
+                "comparisonTimingSources": comparison_sources,
                 "timingNormalization": {
-                    "leftDivisor": left_divisor,
-                    "rightDivisor": right_divisor,
-                    "leftCommandRepeat": left_repeat,
-                    "rightCommandRepeat": right_repeat,
-                    "leftIgnoreFirstOps": left_ignore_first,
-                    "rightIgnoreFirstOps": right_ignore_first,
-                    "leftUploadSubmitEvery": left_submit_every,
-                    "rightUploadSubmitEvery": right_submit_every,
+                    "baselineDivisor": baseline_divisor,
+                    "comparisonDivisor": comparison_divisor,
+                    "baselineCommandRepeat": baseline_repeat,
+                    "comparisonCommandRepeat": comparison_repeat,
+                    "baselineIgnoreFirstOps": baseline_ignore_first,
+                    "comparisonIgnoreFirstOps": comparison_ignore_first,
+                    "baselineUploadSubmitEvery": baseline_submit_every,
+                    "comparisonUploadSubmitEvery": comparison_submit_every,
                 },
                 "invariants": invariants,
             }
@@ -375,7 +375,7 @@ def contract_hash_manifest(report: dict[str, Any], report_path: Path) -> dict[st
     workload_contract = report.get("workloadContract")
     benchmark_policy = report.get("benchmarkPolicy")
     config_contract = report.get("configContract")
-    claim_row_hash_chain = report.get("claimRowHashChain")
+    claim_workload_hash_chain = report.get("claimWorkloadHashChain")
     run_parameters = report.get("runParameters")
     claimability_policy = report.get("claimabilityPolicy")
     comparability_policy = report.get("comparabilityPolicy")
@@ -389,8 +389,8 @@ def contract_hash_manifest(report: dict[str, Any], report_path: Path) -> dict[st
         benchmark_policy = {}
     if not isinstance(config_contract, dict):
         config_contract = {}
-    if not isinstance(claim_row_hash_chain, dict):
-        claim_row_hash_chain = {}
+    if not isinstance(claim_workload_hash_chain, dict):
+        claim_workload_hash_chain = {}
     if not isinstance(run_parameters, dict):
         run_parameters = {}
     if not isinstance(claimability_policy, dict):
@@ -399,7 +399,7 @@ def contract_hash_manifest(report: dict[str, Any], report_path: Path) -> dict[st
         comparability_policy = {}
 
     trace_hashes: list[dict[str, Any]] = []
-    claim_row_hashes: list[dict[str, Any]] = []
+    claim_workload_hashes: list[dict[str, Any]] = []
     for workload in workloads:
         if not isinstance(workload, dict):
             continue
@@ -407,41 +407,41 @@ def contract_hash_manifest(report: dict[str, Any], report_path: Path) -> dict[st
         if not isinstance(workload_id, str) or not workload_id:
             workload_id = "unknown"
         trace_meta_hashes = workload.get("traceMetaHashes")
-        claim_row_hash = workload.get("claimRowHash")
+        claim_workload_hash = workload.get("claimWorkloadHash")
         if not isinstance(trace_meta_hashes, dict):
             trace_meta_hashes = {}
-        if not isinstance(claim_row_hash, dict):
-            claim_row_hash = {}
-        left_trace_hashes = list_strings(
+        if not isinstance(claim_workload_hash, dict):
+            claim_workload_hash = {}
+        baseline_trace_hashes = list_strings(
             [
                 row.get("sha256")
-                for row in trace_meta_hashes.get("left", [])
+                for row in trace_meta_hashes.get("baseline", [])
                 if isinstance(row, dict)
             ]
-            if isinstance(trace_meta_hashes.get("left"), list)
+            if isinstance(trace_meta_hashes.get("baseline"), list)
             else []
         )
-        right_trace_hashes = list_strings(
+        comparison_trace_hashes = list_strings(
             [
                 row.get("sha256")
-                for row in trace_meta_hashes.get("right", [])
+                for row in trace_meta_hashes.get("comparison", [])
                 if isinstance(row, dict)
             ]
-            if isinstance(trace_meta_hashes.get("right"), list)
+            if isinstance(trace_meta_hashes.get("comparison"), list)
             else []
         )
         trace_hashes.append(
             {
                 "workloadId": workload_id,
-                "leftTraceMetaSha256": left_trace_hashes,
-                "rightTraceMetaSha256": right_trace_hashes,
+                "baselineTraceMetaSha256": baseline_trace_hashes,
+                "comparisonTraceMetaSha256": comparison_trace_hashes,
             }
         )
-        claim_row_hashes.append(
+        claim_workload_hashes.append(
             {
                 "workloadId": workload_id,
-                "previousHash": claim_row_hash.get("previousHash", ""),
-                "hash": claim_row_hash.get("hash", ""),
+                "previousHash": claim_workload_hash.get("previousHash", ""),
+                "hash": claim_workload_hash.get("hash", ""),
             }
         )
 
@@ -490,14 +490,14 @@ def contract_hash_manifest(report: dict[str, Any], report_path: Path) -> dict[st
             "iterations": run_parameters.get("iterations"),
             "warmup": run_parameters.get("warmup"),
         },
-        "claimRowHashChain": {
-            "algorithm": claim_row_hash_chain.get("algorithm", ""),
-            "count": claim_row_hash_chain.get("count", 0),
-            "startPreviousHash": claim_row_hash_chain.get("startPreviousHash", ""),
-            "finalHash": claim_row_hash_chain.get("finalHash", ""),
+        "claimWorkloadHashChain": {
+            "algorithm": claim_workload_hash_chain.get("algorithm", ""),
+            "count": claim_workload_hash_chain.get("count", 0),
+            "startPreviousHash": claim_workload_hash_chain.get("startPreviousHash", ""),
+            "finalHash": claim_workload_hash_chain.get("finalHash", ""),
         },
         "workloadTraceMetaHashes": trace_hashes,
-        "workloadClaimRowHashes": claim_row_hashes,
+        "workloadClaimWorkloadHashes": claim_workload_hashes,
     }
 
 

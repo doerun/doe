@@ -102,6 +102,10 @@
           "type": "integer",
           "minimum": 0
         },
+        "planBufferLoadCount": {
+          "type": "integer",
+          "minimum": 0
+        },
         "compatibilityCommandHash": {
           "type": "string",
           "minLength": 1

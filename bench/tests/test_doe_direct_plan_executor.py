@@ -14,7 +14,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 RUNTIME_DIR = REPO_ROOT / "runtime" / "zig"
 BIN_PATH = RUNTIME_DIR / "zig-out" / "bin" / "doe-plan-executor"
 PLAN_PATH = REPO_ROOT / "bench" / "plans" / "generated" / "inference_gemma3_270m_prefill_32tok.plan.json"
-EXPECTED_PLAN_SHA256 = "b9a68954e24aa8c4c133ed33a6521a26e452688562eab454b9f8732825de8139"
+EXPECTED_PLAN_SHA256 = "47fd52b0ca02a3f3245a80f52143b4230a769b86049f1b1871fe24fde106514b"
 
 
 class DoeDirectPlanExecutorTests(unittest.TestCase):
@@ -71,15 +71,15 @@ class DoeDirectPlanExecutorTests(unittest.TestCase):
             self.assertEqual(meta["module"], "doe-plan-executor")
             self.assertEqual(meta["queueSyncMode"], "per-command")
             self.assertEqual(meta["backendLane"], "metal_doe_comparable")
-            self.assertEqual(meta["executionRowCount"], 25)
-            self.assertEqual(meta["executionSuccessCount"], 25)
+            self.assertEqual(meta["executionRowCount"], 35)
+            self.assertEqual(meta["executionSuccessCount"], 35)
             self.assertEqual(meta["executionDispatchCount"], 18)
             self.assertEqual(meta["hostPlanArtifactHash"], EXPECTED_PLAN_SHA256)
             self.assertEqual(meta["hostPlanArtifactPath"], str(PLAN_PATH))
-            self.assertEqual(len(rows), 25)
+            self.assertEqual(len(rows), 35)
             self.assertEqual(rows[0]["semanticStage"], "runtime_plan")
             self.assertEqual(rows[0]["semanticOpId"], "step-000000")
-            self.assertEqual(rows[-1]["semanticOpId"], "step-000024")
+            self.assertEqual(rows[-1]["semanticOpId"], "step-000034")
             self.assertEqual(rows[0]["executionStatusCode"], "dry_run")
             self.assertNotIn("matched", rows[0])
             self.assertNotIn("executionHostPlanArtifactPath", rows[0])

@@ -128,7 +128,7 @@ def collect_report_samples(report: dict[str, object]) -> list[tuple[str, int, ob
         if not isinstance(workload, dict):
             continue
         workload_id = workload.get("id", "unknown")
-        for side in ("left", "right"):
+        for side in ("baseline", "comparison"):
             side_payload = workload.get(side)
             if not isinstance(side_payload, dict):
                 continue

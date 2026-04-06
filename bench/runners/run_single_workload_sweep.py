@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run repeated strict single-workload compare_dawn_vs_doe sweeps."""
+"""Run repeated strict single-workload compare sweeps."""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--config",
-        default="bench/native-compare/compare_dawn_vs_doe.config.apple.metal.compare.json",
+        default="bench/native-compare/compare.config.apple.metal.compare.json",
     )
     parser.add_argument("--workload", required=True)
     parser.add_argument("--repeats", type=int, default=5)
@@ -55,7 +55,8 @@ def run_once(
 ) -> tuple[int, str]:
     cmd = [
         sys.executable,
-        "bench/native-compare/compare_dawn_vs_doe.py",
+        "bench/cli.py",
+        "compare",
         "--config",
         str(config),
         "--workload-filter",
@@ -85,8 +86,8 @@ def main() -> int:
     run_rows: list[dict[str, Any]] = []
     p50_values: list[float] = []
     p95_values: list[float] = []
-    left_p50_values: list[float] = []
-    right_p50_values: list[float] = []
+    baseline_p50_values: list[float] = []
+    comparison_p50_values: list[float] = []
 
     for index in range(1, args.repeats + 1):
         out_path = out_root / f"run{index}.json"
@@ -106,8 +107,8 @@ def main() -> int:
             "comparisonStatus": "",
             "deltaP50Percent": None,
             "deltaP95Percent": None,
-            "leftP50Ms": None,
-            "rightP50Ms": None,
+            "baselineP50Ms": None,
+            "comparisonP50Ms": None,
             "stderr": output,
         }
 
@@ -118,23 +119,23 @@ def main() -> int:
                 workload_row = workloads[0]
                 if isinstance(workload_row, dict):
                     delta = workload_row.get("deltaPercent", {})
-                    left_stats = workload_row.get("left", {}).get("stats", {})
-                    right_stats = workload_row.get("right", {}).get("stats", {})
+                    baseline_stats = workload_row.get("baseline", {}).get("stats", {})
+                    comparison_stats = workload_row.get("comparison", {}).get("stats", {})
                     row["claimStatus"] = str(payload.get("claimStatus", ""))
                     row["comparisonStatus"] = str(payload.get("comparisonStatus", ""))
                     row["deltaP50Percent"] = safe_float(delta.get("p50Percent"))
                     row["deltaP95Percent"] = safe_float(delta.get("p95Percent"))
-                    row["leftP50Ms"] = safe_float(left_stats.get("p50Ms"))
-                    row["rightP50Ms"] = safe_float(right_stats.get("p50Ms"))
+                    row["baselineP50Ms"] = safe_float(baseline_stats.get("p50Ms"))
+                    row["comparisonP50Ms"] = safe_float(comparison_stats.get("p50Ms"))
 
                     if row["deltaP50Percent"] is not None:
                         p50_values.append(float(row["deltaP50Percent"]))
                     if row["deltaP95Percent"] is not None:
                         p95_values.append(float(row["deltaP95Percent"]))
-                    if row["leftP50Ms"] is not None:
-                        left_p50_values.append(float(row["leftP50Ms"]))
-                    if row["rightP50Ms"] is not None:
-                        right_p50_values.append(float(row["rightP50Ms"]))
+                    if row["baselineP50Ms"] is not None:
+                        baseline_p50_values.append(float(row["baselineP50Ms"]))
+                    if row["comparisonP50Ms"] is not None:
+                        comparison_p50_values.append(float(row["comparisonP50Ms"]))
 
         print(
             f"run {index}/{args.repeats}: rc={row['returnCode']} "
@@ -156,8 +157,8 @@ def main() -> int:
             "successfulReportCount": len(p50_values),
             "medianDeltaP50Percent": median(p50_values),
             "medianDeltaP95Percent": median(p95_values),
-            "medianLeftP50Ms": median(left_p50_values),
-            "medianRightP50Ms": median(right_p50_values),
+            "medianBaselineP50Ms": median(baseline_p50_values),
+            "medianComparisonP50Ms": median(comparison_p50_values),
             "minDeltaP50Percent": min(p50_values) if p50_values else None,
             "maxDeltaP50Percent": max(p50_values) if p50_values else None,
             "minDeltaP95Percent": min(p95_values) if p95_values else None,

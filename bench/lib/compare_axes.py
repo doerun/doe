@@ -1,8 +1,4 @@
-"""Canonical compare-axis helpers shared across bench control-plane tools.
-
-v2 taxonomy: product-based axes.  Legacy pair-based helpers preserved for
-backward compatibility during migration.
-"""
+"""Canonical benchmark-surface helpers shared across bench control-plane tools."""
 
 from __future__ import annotations
 
@@ -10,24 +6,26 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
-# -- v2 surface aliases (match config/compare-taxonomy.json) ----------------
+# -- Canonical benchmark surfaces -------------------------------------------
 
 SURFACE_SHORT_NAMES: dict[str, str] = {
-    "backend_native": "native",
-    "direct_plan": "direct",
+    "backend": "backend",
+    "plan": "plan",
     "package": "package",
-    "abi_dropin": "dropin",
+    "dropin": "dropin",
     "browser": "browser",
     "compiler": "compiler",
 }
 
 SURFACE_FROM_SHORT: dict[str, str] = {v: k for k, v in SURFACE_SHORT_NAMES.items()}
 
-# Legacy aliases kept for callers that still use the old vocabulary
 SURFACE_TO_BOUNDARY = {
-    "native": "backend_native",
-    "direct": "direct_plan",
+    "backend": "backend_native",
+    "plan": "direct_plan",
     "package": "package_surface",
+    "dropin": "abi_dropin",
+    "browser": "browser",
+    "compiler": "compiler",
 }
 BOUNDARY_TO_SURFACE = {v: k for k, v in SURFACE_TO_BOUNDARY.items()}
 
@@ -50,7 +48,6 @@ def short_for_surface(surface: str) -> str:
     raise ValueError(f"unknown surface {surface!r}")
 
 
-# Legacy compat
 def boundary_for_surface(surface: str) -> str:
     normalized = surface.strip()
     try:
@@ -73,8 +70,16 @@ def runtime_host_for_surface(surface: str, package_runtime: str = "") -> str:
     normalized_surface = surface.strip()
     if normalized_surface in {"package", "package_surface"}:
         return package_runtime.strip() or "node"
-    if normalized_surface in {"native", "direct", "backend_native", "direct_plan",
-                               "abi_dropin", "browser", "compiler"}:
+    if normalized_surface in {
+        "backend",
+        "plan",
+        "dropin",
+        "browser",
+        "compiler",
+        "backend_native",
+        "direct_plan",
+        "abi_dropin",
+    }:
         return "none"
     raise ValueError(f"unknown compare surface {surface!r}")
 
@@ -101,7 +106,7 @@ def load_taxonomy_surfaces(taxonomy_path: str | Path = "config/compare-taxonomy.
     return data.get("axes", {}).get("surfaces", [])
 
 
-# -- Legacy pair-based helpers (preserved for migration) --------------------
+# -- Compare-view helpers ---------------------------------------------------
 
 @dataclass(frozen=True)
 class ComparisonViewMeta:
@@ -112,7 +117,7 @@ class ComparisonViewMeta:
 PROVIDER_SETS: dict[str, tuple[str, ...]] = {
     "backend_native_providers": ("doe", "dawn", "webkit", "wgpu-native"),
     "direct_plan_providers": ("doe", "dawn", "webkit", "wgpu-native"),
-    "package_node_providers": ("doe", "dawn-node-webgpu"),
+    "package_node_providers": ("doe", "node-webgpu"),
     "package_bun_providers": ("doe", "bun-webgpu"),
     "package_deno_providers": ("doe", "deno-webgpu"),
 }
@@ -126,29 +131,21 @@ COMPARISON_VIEWS: dict[str, ComparisonViewMeta] = {
         provider_set="direct_plan_providers",
         providers=("doe", "dawn"),
     ),
-    "doe_vs_dawn_node_webgpu": ComparisonViewMeta(
+    "doe_vs_node_webgpu_package": ComparisonViewMeta(
         provider_set="package_node_providers",
-        providers=("doe", "dawn-node-webgpu"),
+        providers=("doe", "node-webgpu"),
     ),
-    "doe_vs_bun_webgpu": ComparisonViewMeta(
+    "doe_vs_bun_webgpu_package": ComparisonViewMeta(
         provider_set="package_bun_providers",
         providers=("doe", "bun-webgpu"),
     ),
-    "doe_vs_deno_webgpu": ComparisonViewMeta(
+    "doe_vs_deno_webgpu_package": ComparisonViewMeta(
         provider_set="package_deno_providers",
         providers=("doe", "deno-webgpu"),
     ),
     "doe_vs_dawn": ComparisonViewMeta(
         provider_set="backend_native_providers",
         providers=("doe", "dawn"),
-    ),
-    "doe_node_vs_dawn_node": ComparisonViewMeta(
-        provider_set="package_node_providers",
-        providers=("doe", "dawn-node-webgpu"),
-    ),
-    "doe_bun_vs_bun_webgpu": ComparisonViewMeta(
-        provider_set="package_bun_providers",
-        providers=("doe", "bun-webgpu"),
     ),
 }
 
@@ -166,16 +163,16 @@ def derive_comparison_view(
         return provider_pair.strip()
     normalized_surface = surface.strip()
     normalized_runtime = runtime_host.strip()
-    if normalized_surface == "native":
+    if normalized_surface == "backend":
         return "doe_vs_dawn_delegate"
-    if normalized_surface == "direct":
+    if normalized_surface == "plan":
         return "doe_vs_dawn_direct"
     if normalized_surface == "package":
         if normalized_runtime == "bun":
-            return "doe_vs_bun_webgpu"
+            return "doe_vs_bun_webgpu_package"
         if normalized_runtime == "deno":
-            return "doe_vs_deno_webgpu"
-        return "doe_vs_dawn_node_webgpu"
+            return "doe_vs_deno_webgpu_package"
+        return "doe_vs_node_webgpu_package"
     raise ValueError(
         "cannot derive comparison view for "
         f"surface={surface!r}, runtime_host={runtime_host!r}"

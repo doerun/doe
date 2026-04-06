@@ -1,4 +1,4 @@
-"""Comparability helpers for compare_dawn_vs_doe."""
+"""Comparability helpers for the compare lane."""
 
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ from native_compare_modules.timing_selection import (
 
 NATIVE_EXECUTION_OPERATION_TIMING_SOURCES = {
     "doe-execution-total-ns",
-    "doe-execution-row-total-ns",
+    "doe-execution-workload-total-ns",
     "doe-execution-dispatch-window-ns",
     "doe-execution-encode-ns",
     "doe-execution-gpu-timestamp-ns",
@@ -57,7 +57,7 @@ def _strict_doe_expected_sources(workload_domain: str) -> set[str]:
     normalized_domain = _normalized_domain(workload_domain)
     gpu = "doe-execution-gpu-timestamp-ns"
     if normalized_domain == "upload":
-        return {"doe-execution-row-total-ns", gpu}
+        return {"doe-execution-workload-total-ns", gpu}
     if normalized_domain in RENDER_ENCODE_TIMING_DOMAINS:
         return {"doe-execution-encode-ns", "doe-execution-total-ns", gpu}
     return {"doe-execution-total-ns", gpu}
@@ -67,7 +67,7 @@ def _strict_doe_expected_policies(workload_domain: str) -> set[str]:
     normalized_domain = _normalized_domain(workload_domain)
     gpu = "gpu-timestamp-fallback"
     if normalized_domain == "upload":
-        return {"upload-row-total-preferred", gpu}
+        return {"upload-workload-total-preferred", gpu}
     if normalized_domain in RENDER_ENCODE_TIMING_DOMAINS:
         return {"render-encode-preferred", "<none>", gpu}
     return {"<none>", gpu}
@@ -237,7 +237,7 @@ def _timing_selection_policy_match_with_runtime_compatibility(
 
     doe_allowed = {"<none>"}
     if normalized_domain == "upload":
-        doe_allowed = {"upload-row-total-preferred"}
+        doe_allowed = {"upload-workload-total-preferred"}
     elif normalized_domain in RENDER_ENCODE_TIMING_DOMAINS:
         doe_allowed = {"<none>", "render-encode-preferred"}
     dawn_perf_allowed = {"<none>"}

@@ -36,6 +36,7 @@ def _make_spec() -> WorkloadSpec:
         comparable=True,
         benchmark_class="comparable",
         comparability_notes="test",
+        directional_reason="",
         path_asymmetry=False,
         path_asymmetry_note="",
         strict_normalization_unit="",
@@ -63,6 +64,10 @@ def _make_run_result() -> dict:
     }
 
 
+def _contract_path() -> Path:
+    return Path(__file__).resolve()
+
+
 class TestRunArtifactRoundTrip(unittest.TestCase):
     def test_build_artifact_has_required_fields(self) -> None:
         artifact = build_run_artifact(
@@ -73,11 +78,16 @@ class TestRunArtifactRoundTrip(unittest.TestCase):
             run_config=_make_run_config(),
             iterations=2,
             warmup=0,
+            workload_contract_path=_contract_path(),
         )
         self.assertEqual(artifact["schemaVersion"], RUN_ARTIFACT_SCHEMA_VERSION)
         self.assertEqual(artifact["artifactKind"], "run")
         self.assertEqual(artifact["product"], "doe")
         self.assertEqual(artifact["executorId"], "doe_direct_vulkan")
+        self.assertEqual(
+            artifact["workloadContract"]["path"],
+            str(_contract_path()),
+        )
         self.assertEqual(artifact["workload"]["id"], "compute_test")
         self.assertEqual(artifact["runParameters"]["iterations"], 2)
         self.assertEqual(len(artifact["commandSamples"]), 2)
@@ -92,6 +102,7 @@ class TestRunArtifactRoundTrip(unittest.TestCase):
             run_config=_make_run_config(),
             iterations=2,
             warmup=0,
+            workload_contract_path=_contract_path(),
         )
         with tempfile.TemporaryDirectory() as tmpdir:
             path = Path(tmpdir) / "test.run.json"
@@ -141,22 +152,22 @@ class TestWorkloadSpecShim(unittest.TestCase):
             family="gfx11",
             driver="24.0.0",
             extra_args=[],
-            left_command_repeat=5,
-            right_command_repeat=10,
-            left_ignore_first_ops=1,
-            right_ignore_first_ops=2,
-            left_upload_buffer_usage="copy-dst",
-            right_upload_buffer_usage="copy-dst-copy-src",
-            left_upload_submit_every=1,
-            right_upload_submit_every=2,
+            baseline_command_repeat=5,
+            comparison_command_repeat=10,
+            baseline_ignore_first_ops=1,
+            comparison_ignore_first_ops=2,
+            baseline_upload_buffer_usage="copy-dst",
+            comparison_upload_buffer_usage="copy-dst-copy-src",
+            baseline_upload_submit_every=1,
+            comparison_upload_submit_every=2,
             dawn_filter="@autodiscover",
             comparable=True,
             benchmark_class="comparable",
             directional_reason="",
-            allow_left_no_execution=True,
+            allow_baseline_no_execution=True,
             include_by_default=True,
-            left_timing_divisor=1.0,
-            right_timing_divisor=2.0,
+            baseline_timing_divisor=1.0,
+            comparison_timing_divisor=2.0,
             timing_normalization_note="test note",
             async_diagnostics_mode="",
             comparability_candidate=False,
@@ -171,6 +182,8 @@ class TestWorkloadSpecShim(unittest.TestCase):
         self.assertEqual(spec.id, "test")
         self.assertEqual(spec.domain, "compute")
         self.assertEqual(spec.comparable, True)
+        self.assertEqual(spec.directional_reason, "")
+        self.assertEqual(spec.include_by_default, True)
         self.assertEqual(configs["doe"].command_repeat, 5)
         self.assertEqual(configs["doe"].ignore_first_ops, 1)
         self.assertEqual(configs["doe"].allow_no_execution, True)

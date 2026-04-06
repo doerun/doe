@@ -105,6 +105,19 @@
     ]
   },
   {
+    "kind": "buffer_load",
+    "handle": 2002,
+    "offset": 0,
+    "bufferSize": 100663296,
+    "byteLength": 100663296,
+    "cacheNamespace": "gemma3_1b_shaped",
+    "cacheKey": "5da7bf413cb194b17be67c44b61c8053a90846229e1e3f4898beba7df0e5902b",
+    "assetKey": "inference_gemma3_1b_prefill_32tok:handle-2002",
+    "generator": "splitmix64_f32_nonzero_v1",
+    "seed": 2177342782468423759,
+    "scale": 0.125
+  },
+  {
     "kind": "kernel_dispatch",
     "kernel": "gather.wgsl",
     "x": 12,
@@ -149,6 +162,19 @@
         "visibility": "compute"
       }
     ]
+  },
+  {
+    "kind": "buffer_load",
+    "handle": 2004,
+    "offset": 0,
+    "bufferSize": 12288,
+    "byteLength": 12288,
+    "cacheNamespace": "gemma3_1b_shaped",
+    "cacheKey": "7c6476b680f98f770d9fdf9928219ecdde5ebc0a76c63e95947aa2cce4e98969",
+    "assetKey": "inference_gemma3_1b_prefill_32tok:handle-2004",
+    "generator": "splitmix64_f32_nonzero_v1",
+    "seed": 2177342782468423761,
+    "scale": 0.125
   },
   {
     "kind": "kernel_dispatch",
@@ -197,6 +223,19 @@
     ]
   },
   {
+    "kind": "buffer_load",
+    "handle": 2005,
+    "offset": 0,
+    "bufferSize": 37748736,
+    "byteLength": 37748736,
+    "cacheNamespace": "gemma3_1b_shaped",
+    "cacheKey": "cd0161a3785fa9e3daccf7854ddf07b74524c0f4ad1905f2e8fa8475cdf4f545",
+    "assetKey": "inference_gemma3_1b_prefill_32tok:handle-2005",
+    "generator": "splitmix64_f32_nonzero_v1",
+    "seed": 2177342782468423762,
+    "scale": 0.125
+  },
+  {
     "kind": "kernel_dispatch",
     "kernel": "matmul-tiled.wgsl",
     "x": 192,
@@ -241,6 +280,19 @@
         "visibility": "compute"
       }
     ]
+  },
+  {
+    "kind": "buffer_load",
+    "handle": 2006,
+    "offset": 0,
+    "bufferSize": 37748736,
+    "byteLength": 37748736,
+    "cacheNamespace": "gemma3_1b_shaped",
+    "cacheKey": "9c25ddd5eb94d639b05d5be258b570365424feeaea8f52ccedb8b774a3992d70",
+    "assetKey": "inference_gemma3_1b_prefill_32tok:handle-2006",
+    "generator": "splitmix64_f32_nonzero_v1",
+    "seed": 2177342782468423763,
+    "scale": 0.125
   },
   {
     "kind": "kernel_dispatch",
@@ -289,6 +341,19 @@
     ]
   },
   {
+    "kind": "buffer_load",
+    "handle": 2007,
+    "offset": 0,
+    "bufferSize": 37748736,
+    "byteLength": 37748736,
+    "cacheNamespace": "gemma3_1b_shaped",
+    "cacheKey": "6394bb05995779a49b074f6899df2783e1b23b8d5a2b299b85dcd92486fba8f9",
+    "assetKey": "inference_gemma3_1b_prefill_32tok:handle-2007",
+    "generator": "splitmix64_f32_nonzero_v1",
+    "seed": 2177342782468423764,
+    "scale": 0.125
+  },
+  {
     "kind": "kernel_dispatch",
     "kernel": "matmul-tiled.wgsl",
     "x": 192,
@@ -333,6 +398,19 @@
         "visibility": "compute"
       }
     ]
+  },
+  {
+    "kind": "buffer_load",
+    "handle": 2011,
+    "offset": 0,
+    "bufferSize": 16384,
+    "byteLength": 16384,
+    "cacheNamespace": "gemma3_1b_shaped",
+    "cacheKey": "4b8f14ccbbc595402fe12c796d1feb3d758bc2f1847a53720ed11446f802771e",
+    "assetKey": "inference_gemma3_1b_prefill_32tok:handle-2011",
+    "generator": "splitmix64_f32_nonzero_v1",
+    "seed": 2177342782468423752,
+    "scale": 0.125
   },
   {
     "kind": "kernel_dispatch",
@@ -464,6 +542,19 @@
     ]
   },
   {
+    "kind": "buffer_load",
+    "handle": 2013,
+    "offset": 0,
+    "bufferSize": 37748736,
+    "byteLength": 37748736,
+    "cacheNamespace": "gemma3_1b_shaped",
+    "cacheKey": "9d53839286fe58d2c2d5ee64fe6038237eca19aacde03ffe8dd317b2aba4891a",
+    "assetKey": "inference_gemma3_1b_prefill_32tok:handle-2013",
+    "generator": "splitmix64_f32_nonzero_v1",
+    "seed": 2177342782468423754,
+    "scale": 0.125
+  },
+  {
     "kind": "kernel_dispatch",
     "kernel": "matmul-tiled.wgsl",
     "x": 192,
@@ -593,6 +684,19 @@
     ]
   },
   {
+    "kind": "buffer_load",
+    "handle": 2016,
+    "offset": 0,
+    "bufferSize": 37748736,
+    "byteLength": 37748736,
+    "cacheNamespace": "gemma3_1b_shaped",
+    "cacheKey": "417eaaf229ef781c0f35555180c7a7e1fb681edc51aeec99371eb02c9db82382",
+    "assetKey": "inference_gemma3_1b_prefill_32tok:handle-2016",
+    "generator": "splitmix64_f32_nonzero_v1",
+    "seed": 2177342782468423709,
+    "scale": 0.125
+  },
+  {
     "kind": "kernel_dispatch",
     "kernel": "matmul-tiled.wgsl",
     "x": 192,
@@ -637,6 +741,19 @@
         "visibility": "compute"
       }
     ]
+  },
+  {
+    "kind": "buffer_load",
+    "handle": 2017,
+    "offset": 0,
+    "bufferSize": 37748736,
+    "byteLength": 37748736,
+    "cacheNamespace": "gemma3_1b_shaped",
+    "cacheKey": "7554ba0a85bd5556f913c030c67e88ef370d6e8af7600cae918cec9a1fcef15f",
+    "assetKey": "inference_gemma3_1b_prefill_32tok:handle-2017",
+    "generator": "splitmix64_f32_nonzero_v1",
+    "seed": 2177342782468423710,
+    "scale": 0.125
   },
   {
     "kind": "kernel_dispatch",
@@ -711,6 +828,19 @@
         "visibility": "compute"
       }
     ]
+  },
+  {
+    "kind": "buffer_load",
+    "handle": 2021,
+    "offset": 0,
+    "bufferSize": 37748736,
+    "byteLength": 37748736,
+    "cacheNamespace": "gemma3_1b_shaped",
+    "cacheKey": "bc3625a81aa6e4a3086a6d7cd1a6937d5787dba6f76d130778fdd4e424501f1e",
+    "assetKey": "inference_gemma3_1b_prefill_32tok:handle-2021",
+    "generator": "splitmix64_f32_nonzero_v1",
+    "seed": 2177342782468423714,
+    "scale": 0.125
   },
   {
     "kind": "kernel_dispatch",

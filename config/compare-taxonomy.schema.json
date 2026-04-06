@@ -13,7 +13,7 @@
   "properties": {
     "schemaVersion": {
       "type": "integer",
-      "const": 2
+      "const": 3
     },
     "axes": {
       "type": "object",

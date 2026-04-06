@@ -149,12 +149,12 @@ def main() -> int:
     ).get("nonComparableCount")
     non_claimable = (payload.get("claimabilitySummary", {}) or {}).get("nonClaimableCount")
 
-    left_success_total = 0
-    left_unsupported_total = 0
-    left_error_total = 0
-    left_success_zero = 0
-    left_unsupported_workloads = 0
-    left_error_workloads = 0
+    baseline_success_total = 0
+    baseline_unsupported_total = 0
+    baseline_error_total = 0
+    baseline_success_zero = 0
+    baseline_unsupported_workloads = 0
+    baseline_error_workloads = 0
     comparability_obligation_missing = 0
     comparability_obligation_blocking_failed = 0
     tail_sorted: list[dict[str, Any]] = []
@@ -162,18 +162,18 @@ def main() -> int:
 
     for workload in workloads:
         workload_id = workload.get("id", "<unknown>")
-        success = sum_trace_meta(workload, "left", "executionSuccessCount")
-        unsupported = sum_trace_meta(workload, "left", "executionUnsupportedCount")
-        error = sum_trace_meta(workload, "left", "executionErrorCount")
-        left_success_total += success
-        left_unsupported_total += unsupported
-        left_error_total += error
+        success = sum_trace_meta(workload, "baseline", "executionSuccessCount")
+        unsupported = sum_trace_meta(workload, "baseline", "executionUnsupportedCount")
+        error = sum_trace_meta(workload, "baseline", "executionErrorCount")
+        baseline_success_total += success
+        baseline_unsupported_total += unsupported
+        baseline_error_total += error
         if success <= 0:
-            left_success_zero += 1
+            baseline_success_zero += 1
         if unsupported > 0:
-            left_unsupported_workloads += 1
+            baseline_unsupported_workloads += 1
         if error > 0:
-            left_error_workloads += 1
+            baseline_error_workloads += 1
 
         delta = workload.get("deltaPercent") or {}
         p95 = delta.get("p95Percent")
@@ -253,13 +253,13 @@ def main() -> int:
     print(f"comparisonStatus={comparison_status} nonComparableCount={non_comparable}")
     print(f"claimStatus={claim_status} nonClaimableCount={non_claimable}")
     print(
-        "left_totals "
-        f"success={left_success_total} unsupported={left_unsupported_total} error={left_error_total}"
+        "baseline_totals "
+        f"success={baseline_success_total} unsupported={baseline_unsupported_total} error={baseline_error_total}"
     )
     print(
-        "left_workloads "
-        f"success_zero={left_success_zero} unsupported_nonzero={left_unsupported_workloads} "
-        f"error_nonzero={left_error_workloads}"
+        "baseline_workloads "
+        f"success_zero={baseline_success_zero} unsupported_nonzero={baseline_unsupported_workloads} "
+        f"error_nonzero={baseline_error_workloads}"
     )
     print(
         "comparability_obligations "
@@ -319,7 +319,7 @@ def main() -> int:
         if not report_contract_hash:
             if not args.allow_missing_workload_contract_hash:
                 failures.append(
-                    "report missing workloadContract.sha256; rerun compare_dawn_vs_doe.py with workload contract metadata"
+                    "report missing workloadContract.sha256; rerun the compare lane with workload contract metadata"
                 )
         elif report_contract_hash != expected_contract_hash:
             failures.append(
@@ -332,12 +332,12 @@ def main() -> int:
         failures.append(f"nonComparableCount is {non_comparable!r}, expected 0")
     if not args.allow_diagnostic_claim and claim_status != "claimable":
         failures.append(f"claimStatus is {claim_status!r}, expected 'claimable'")
-    if left_success_zero != 0:
-        failures.append(f"{left_success_zero} workload(s) have zero left executionSuccessCount")
-    if left_unsupported_workloads != 0 or left_unsupported_total != 0:
-        failures.append("left unsupported counters are non-zero")
-    if left_error_workloads != 0 or left_error_total != 0:
-        failures.append("left error counters are non-zero")
+    if baseline_success_zero != 0:
+        failures.append(f"{baseline_success_zero} workload(s) have zero baseline executionSuccessCount")
+    if baseline_unsupported_workloads != 0 or baseline_unsupported_total != 0:
+        failures.append("baseline unsupported counters are non-zero")
+    if baseline_error_workloads != 0 or baseline_error_total != 0:
+        failures.append("baseline error counters are non-zero")
     if comparability_obligation_missing != 0:
         failures.append(
             f"{comparability_obligation_missing} workload(s) missing/invalid comparability obligations"

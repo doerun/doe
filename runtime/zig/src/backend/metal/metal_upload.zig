@@ -6,6 +6,7 @@ const webgpu = @import("../runtime_types.zig");
 const bridge = @import("metal_bridge_decls.zig");
 const metal_bridge_begin_blit_encoding = bridge.metal_bridge_begin_blit_encoding;
 const metal_bridge_blit_encoder_copy = bridge.metal_bridge_blit_encoder_copy;
+const metal_bridge_blit_encoder_copy_region = bridge.metal_bridge_blit_encoder_copy_region;
 const metal_bridge_buffer_contents = bridge.metal_bridge_buffer_contents;
 const metal_bridge_cmd_buf_blit_encoder = bridge.metal_bridge_cmd_buf_blit_encoder;
 const metal_bridge_device_new_buffer_private = bridge.metal_bridge_device_new_buffer_private;
@@ -94,6 +95,59 @@ pub fn upload_bytes(self: anytype, bytes: u64, mode: webgpu.UploadBufferUsageMod
         metal_bridge_blit_encoder_copy(self.streaming_blit_encoder, src, dst, len);
     }
     self.streaming_max_upload_bytes = @max(self.streaming_max_upload_bytes, len);
+    self.has_deferred_submissions = true;
+}
+
+pub fn stage_buffer_write_bytes(
+    self: anytype,
+    dst_buffer: ?*anyopaque,
+    dst_offset: u64,
+    data_bytes: []const u8,
+) !void {
+    if (data_bytes.len == 0) return error.InvalidArgument;
+    const len = data_bytes.len;
+    const use_small_staging = len <= SMALL_UPLOAD_CAPACITY and
+        self.staging_src != null and self.staging_src_ptr != null;
+    const pooled_src = if (use_small_staging) null else metal_buffer_pool.pool_pop(&self.shared_pool, len);
+    const src = if (use_small_staging)
+        self.staging_src.?
+    else
+        pooled_src orelse
+            (metal_bridge_device_new_buffer_shared(self.device, len) orelse return error.InvalidState);
+
+    const src_ptr: [*]u8 = if (use_small_staging)
+        self.staging_src_ptr.?
+    else blk: {
+        const raw = metal_bridge_buffer_contents(src) orelse return error.InvalidState;
+        break :blk @as([*]u8, @ptrCast(raw));
+    };
+    @memcpy(src_ptr[0..len], data_bytes);
+
+    if (self.streaming_render_encoder) |enc| {
+        metal_bridge_render_encoder_end(enc);
+        metal_bridge_release(enc);
+        self.streaming_render_encoder = null;
+    }
+    if (self.streaming_blit_encoder == null) {
+        if (self.streaming_cmd_buf == null) {
+            var encoder: ?*anyopaque = null;
+            self.streaming_cmd_buf = metal_bridge_begin_blit_encoding(self.queue, &encoder) orelse return error.InvalidState;
+            self.streaming_blit_encoder = encoder;
+        } else {
+            self.streaming_blit_encoder = metal_bridge_cmd_buf_blit_encoder(self.streaming_cmd_buf) orelse return error.InvalidState;
+        }
+    }
+
+    if (!use_small_staging) {
+        try self.streaming_uploads.append(self.allocator, .{
+            .src_buffer = src,
+            .dst_buffer = null,
+            .byte_count = len,
+        });
+    }
+    metal_bridge_blit_encoder_copy_region(self.streaming_blit_encoder, src, 0, dst_buffer, dst_offset, len);
+    self.streaming_max_upload_bytes = @max(self.streaming_max_upload_bytes, len);
+    self.streaming_has_copy = true;
     self.has_deferred_submissions = true;
 }
 

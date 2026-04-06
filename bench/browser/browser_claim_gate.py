@@ -123,10 +123,10 @@ def summarize_values(values: list[float]) -> dict[str, Any]:
     }
 
 
-def percent_delta(left: float | None, right: float | None) -> float | None:
-    if left is None or right is None or left <= 0.0:
+def percent_delta(baseline: float | None, comparison: float | None) -> float | None:
+    if baseline is None or comparison is None or baseline <= 0.0:
         return None
-    return ((left - right) / left) * 100.0
+    return ((baseline - comparison) / baseline) * 100.0
 
 
 def parse_policy(path: Path) -> dict[str, Any]:
@@ -447,8 +447,11 @@ def main() -> int:
         flake_percent = 0.0
         if comparable and metric_number(dawn_stats.get("p50Ms")) and metric_number(doe_stats.get("p50Ms")):
             positive_windows = 0
-            for left, right in zip(dawn_values, doe_values):
-                if percent_delta(left, right) is not None and percent_delta(left, right) > 0.0:
+            for baseline, comparison in zip(dawn_values, doe_values):
+                if (
+                    percent_delta(baseline, comparison) is not None
+                    and percent_delta(baseline, comparison) > 0.0
+                ):
                     positive_windows += 1
             flake_percent = (1.0 - (positive_windows / requested_windows)) * 100.0
             if flake_percent > float(policy["maxFlakePercent"]):
@@ -485,13 +488,13 @@ def main() -> int:
                     "flakePercent": flake_percent,
                 },
                 "deltaPercent": delta_percent,
-                "left": {
+                "baseline": {
                     "runtime": "dawn",
                     "timingSources": ["browser-performance-now"],
                     "stats": dawn_stats,
                     "samplesMs": dawn_values,
                 },
-                "right": {
+                "comparison": {
                     "runtime": "doe",
                     "timingSources": ["browser-performance-now"],
                     "stats": doe_stats,

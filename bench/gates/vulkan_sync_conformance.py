@@ -70,10 +70,10 @@ def main() -> int:
         entry = policy_entry(policy, domain)
         required_timing_class = str(entry.get("requiredTimingClass", "any"))
         required_upload_source = str(entry.get("requireUploadIgnoreFirstSource", ""))
-        left = workload.get("left")
-        if not isinstance(left, dict):
+        baseline = workload.get("baseline")
+        if not isinstance(baseline, dict):
             continue
-        samples = left.get("commandSamples")
+        samples = baseline.get("commandSamples")
         if not isinstance(samples, list):
             continue
         for sample in samples:

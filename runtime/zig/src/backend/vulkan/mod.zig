@@ -377,23 +377,26 @@ fn execute_barrier(self: *ZigVulkanBackend, setup_ns: u64) !webgpu.NativeExecuti
 }
 
 fn execute_buffer_write(self: *ZigVulkanBackend, setup_ns: u64, bw: model.BufferWriteCommand) !webgpu.NativeExecutionResult {
+    const data_bytes = std.mem.sliceAsBytes(bw.data);
+    return execute_buffer_write_bytes(self, setup_ns, bw.handle, bw.offset, bw.buffer_size, data_bytes);
+}
+
+fn execute_buffer_write_bytes(self: *ZigVulkanBackend, setup_ns: u64, handle: u64, offset: u64, buffer_size: u64, data_bytes: []const u8) !webgpu.NativeExecutionResult {
     const runtime = try ensure_runtime_bootstrapped(self);
     const write_start = common_timing.now_ns();
-
-    const data_bytes = std.mem.sliceAsBytes(bw.data);
     if (data_bytes.len == 0) return error.InvalidArgument;
 
-    const required_size = if (bw.buffer_size > 0)
-        @max(bw.buffer_size, bw.offset + data_bytes.len)
+    const required_size = if (buffer_size > 0)
+        @max(buffer_size, offset + data_bytes.len)
     else
-        bw.offset + data_bytes.len;
+        offset + data_bytes.len;
 
     const vk_resources = @import("vk_resources.zig");
-    const compute_buffer = try vk_resources.ensure_compute_buffer(runtime, bw.handle, required_size, false);
+    const compute_buffer = try vk_resources.ensure_compute_buffer(runtime, handle, required_size, false);
 
     const mapped = compute_buffer.mapped orelse return error.InvalidArgument;
     const dst: [*]u8 = @ptrCast(mapped);
-    @memcpy(dst[@intCast(bw.offset)..][0..data_bytes.len], data_bytes);
+    @memcpy(dst[@intCast(offset)..][0..data_bytes.len], data_bytes);
 
     const write_ns = common_timing.ns_delta(common_timing.now_ns(), write_start);
 
@@ -747,6 +750,23 @@ fn execute_command(ctx: *anyopaque, command: model.Command) anyerror!webgpu.Nati
     };
 }
 
+fn execute_buffer_write_bytes_iface(ctx: *anyopaque, handle: u64, offset: u64, buffer_size: u64, data: []const u8) anyerror!webgpu.NativeExecutionResult {
+    const self = cast(ctx);
+    return execute_buffer_write_bytes(self, 0, handle, offset, buffer_size, data) catch |err| {
+        return .{
+            .status = common_errors.map_error_status(err),
+            .status_message = write_status(self, "{s}", .{common_errors.error_code(err)}),
+            .setup_ns = 0,
+            .encode_ns = 0,
+            .submit_wait_ns = 0,
+            .dispatch_count = 0,
+            .gpu_timestamp_ns = 0,
+            .gpu_timestamp_attempted = false,
+            .gpu_timestamp_valid = false,
+        };
+    };
+}
+
 fn set_upload_behavior(ctx: *anyopaque, mode: webgpu.UploadBufferUsageMode, submit_every: u32) void {
     const self = cast(ctx);
     const normalized_submit_every = if (submit_every > 0) submit_every else 1;
@@ -809,6 +829,7 @@ fn capture_buffer(ctx: *anyopaque, allocator: std.mem.Allocator, handle: u64, of
 const VTABLE = backend_iface.BackendVTable{
     .deinit = deinit,
     .execute_command = execute_command,
+    .execute_buffer_write_bytes = execute_buffer_write_bytes_iface,
     .set_upload_behavior = set_upload_behavior,
     .set_queue_wait_mode = set_queue_wait_mode,
     .set_queue_sync_mode = set_queue_sync_mode,

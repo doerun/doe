@@ -4,6 +4,7 @@ import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { basename, extname, resolve } from 'node:path';
 import { normalizeDeterminismConfig } from './determinism.js';
+import { readSyntheticAssetData } from './synthetic-assets.js';
 
 const ALLOWED_BUFFER_USAGES = new Set([
   'storage',
@@ -14,7 +15,7 @@ const ALLOWED_BUFFER_USAGES = new Set([
   'uniform',
 ]);
 
-const ALLOWED_DATA_KINDS = new Set(['u8', 'u32', 'f32', 'bytes', 'utf8']);
+const ALLOWED_DATA_KINDS = new Set(['u8', 'u32', 'f32', 'bytes', 'utf8', 'file']);
 const ALLOWED_STEP_KINDS = new Set(['writeBuffer', 'dispatch', 'copyBufferToBuffer', 'readBuffer']);
 const ALLOWED_BINDING_BUFFER_TYPES = new Set(['storage', 'read-only-storage', 'uniform']);
 const BUFFER_USAGE_ORDER = ['storage', 'copy_dst', 'copy_src', 'map_read', 'map_write', 'uniform'];
@@ -211,6 +212,31 @@ function commandPlanToNeutralPlan(plan) {
       appendCaptureSteps(command, index);
       return;
     }
+    if (kind === 'buffer_load') {
+      const handle = Number(command.handle);
+      const bufferSize = Number(command.bufferSize ?? command.byteLength ?? 0);
+      const offset = Number(command.offset ?? 0);
+      const bufferId = ensureBuffer(handle, bufferSize, { writable: true });
+      steps.push(omitUndefinedFields({
+        id: `step-${index}`,
+        kind: 'writeBuffer',
+        bufferId,
+        offset,
+        data: {
+          kind: 'file',
+          cacheNamespace: typeof command.cacheNamespace === 'string' ? command.cacheNamespace : '',
+          cacheKey: typeof command.cacheKey === 'string' ? command.cacheKey : '',
+          sizeBytes: Number(command.byteLength ?? command.bufferSize ?? 0),
+        },
+        semanticPhase: typeof command.semanticPhase === 'string'
+          ? command.semanticPhase
+          : typeof command.semantic_phase === 'string'
+            ? command.semantic_phase
+            : 'buffer_load',
+      }));
+      appendCaptureSteps(command, index);
+      return;
+    }
     if (kind === 'kernel_dispatch') {
       const kernel = typeof command.kernel === 'string' ? command.kernel : '';
       const moduleId = basename(kernel, extname(kernel)) || `module_${index}`;
@@ -259,7 +285,7 @@ function commandPlanToNeutralPlan(plan) {
   return {
     schemaVersion: 1,
     planId: plan.planSha256 ?? plan.compatibilityCommandsSha256 ?? plan.workloadId,
-    executorId: 'dawn_node_webgpu',
+    executorId: 'node_webgpu_package',
     workloadId: typeof plan.workloadId === 'string' ? plan.workloadId : 'generated_command_plan',
     domain: 'compute',
     comparable: true,
@@ -315,6 +341,15 @@ function normalizeData(data) {
   const kind = typeof data.kind === 'string' ? data.kind : '';
   if (!ALLOWED_DATA_KINDS.has(kind)) {
     return null;
+  }
+  if (kind === 'file') {
+    const cacheNamespace = typeof data.cacheNamespace === 'string' ? data.cacheNamespace : '';
+    const cacheKey = typeof data.cacheKey === 'string' ? data.cacheKey : '';
+    const sizeBytes = Number(data.sizeBytes);
+    if (!cacheNamespace || !cacheKey || !Number.isInteger(sizeBytes) || sizeBytes <= 0) {
+      return null;
+    }
+    return { kind, cacheNamespace, cacheKey, sizeBytes };
   }
   if (kind === 'utf8') {
     return { kind, text: String(data.text ?? '') };
@@ -392,8 +427,12 @@ function normalizeBuffer(buffer, index, problems) {
     problems.push(`buffers[${index}].usage must include at least one valid usage`);
   }
   if (data && data.kind !== 'utf8') {
-    const elementCount = data.values.length;
-    if (data.kind === 'bytes') {
+    const elementCount = Array.isArray(data.values) ? data.values.length : 0;
+    if (data.kind === 'file') {
+      if (data.sizeBytes > size) {
+        problems.push(`buffers[${index}].data exceeds declared size`);
+      }
+    } else if (data.kind === 'bytes') {
       if (elementCount > size) {
         problems.push(`buffers[${index}].data exceeds declared size`);
       }
@@ -920,6 +959,9 @@ export function planSummary(plan) {
 export function materializeBufferData(bufferData) {
   if (!bufferData) {
     return null;
+  }
+  if (bufferData.kind === 'file') {
+    return readSyntheticAssetData(bufferData);
   }
   if (bufferData.kind === 'u8' || bufferData.kind === 'bytes') {
     return Uint8Array.from(bufferData.values);

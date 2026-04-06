@@ -1,6 +1,6 @@
 """Doe benchmark CLI.
 
-Product-based benchmark runner with post-hoc comparison.
+Product-based benchmark runner with isolated runs and post-hoc compare reports.
 
 Usage:
     python3 bench/cli.py run     --product doe --executor-id doe_direct_vulkan ...
@@ -13,13 +13,23 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from argparse import Namespace
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+REPO_ROOT = Path(__file__).resolve().parents[1]
+BENCH_ROOT = Path(__file__).resolve().parent
+
 
 def _utc_timestamp() -> str:
     return datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+
+
+def _ensure_bench_imports() -> None:
+    for path in (str(REPO_ROOT), str(BENCH_ROOT)):
+        if path not in sys.path:
+            sys.path.insert(0, path)
 
 
 # ---------------------------------------------------------------------------
@@ -44,23 +54,23 @@ def _add_run_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--resource-sample-target-count", type=int, default=0)
     parser.add_argument("--comparability-mode", default="strict", choices=["strict", "warn", "off"])
     parser.add_argument("--require-timing-class", default="operation", choices=["any", "operation", "process-wall"])
+    parser.add_argument("--benchmark-policy", default="", help="Benchmark methodology policy path")
     parser.add_argument("--cohort", default="all", help="Workload cohort filter")
     parser.add_argument("--benchmark-class", default="", help="Filter by benchmarkClass (comparable, directional)")
     parser.add_argument("--out", default="bench/out/runs", help="Output directory for run artifacts")
 
 
 def _cmd_run(args: argparse.Namespace) -> int:
-    sys.path.insert(0, str(Path(__file__).resolve().parent))
-    from native_compare_modules.executor_registry import resolve_executor_command_template
-    from native_compare_modules.config_support import load_workloads
-    from native_compare_modules.run_artifact import (
-        artifact_filename,
-        build_run_artifact,
-        write_run_artifact,
+    _ensure_bench_imports()
+    from native_compare_modules.artifact_benchmarking import run_product_bundle
+    from native_compare_modules.config_support import (
+        load_benchmark_methodology_policy,
+        load_workloads,
     )
-    from native_compare_modules.runner import run_workload
+    from native_compare_modules.executor_registry import resolve_executor_command_template
 
     template = resolve_executor_command_template(args.executor_id)
+    benchmark_policy = load_benchmark_methodology_policy(args.benchmark_policy)
     workloads_path = Path(args.workloads)
     workloads = load_workloads(
         workloads_path,
@@ -76,71 +86,36 @@ def _cmd_run(args: argparse.Namespace) -> int:
     timestamp = _utc_timestamp()
     out_dir = Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)
-    written: list[str] = []
-
-    for wl in workloads:
-        spec, configs = wl.to_spec_and_configs(
-            left_product=args.product, right_product=args.product,
-        )
-        cfg = configs[args.product]
-
-        command_repeat = args.command_repeat if args.command_repeat > 0 else cfg.command_repeat
-        timing_divisor = args.timing_divisor if args.timing_divisor > 0 else cfg.timing_divisor
-        upload_buffer_usage = args.upload_buffer_usage or cfg.upload_buffer_usage
-        upload_submit_every = args.upload_submit_every if args.upload_submit_every > 0 else cfg.upload_submit_every
-        ignore_first_ops = args.ignore_first_ops if args.ignore_first_ops > 0 else cfg.ignore_first_ops
-
-        workload_dir = out_dir / f"{args.product}-{wl.id}" / timestamp
-        result = run_workload(
-            name=args.product,
-            template=template,
-            workload=wl,
-            iterations=args.iterations,
-            warmup=args.warmup,
-            out_dir=workload_dir,
-            gpu_memory_probe=args.resource_probe,
-            resource_sample_ms=args.resource_sample_ms,
-            resource_sample_target_count=args.resource_sample_target_count,
-            timing_divisor=timing_divisor,
-            command_repeat=command_repeat,
-            ignore_first_ops=ignore_first_ops,
-            upload_buffer_usage=upload_buffer_usage,
-            upload_submit_every=upload_submit_every,
-            inject_upload_runtime_flags=wl.domain == "upload",
-            required_timing_class=args.require_timing_class,
-            comparability_mode=args.comparability_mode,
-            benchmark_policy=None,
-            emit_shell=False,
-        )
-
-        from native_compare_modules.workload_spec import ProductRunConfig
-
-        run_config = ProductRunConfig(
-            product=args.product,
-            command_repeat=command_repeat,
-            ignore_first_ops=ignore_first_ops,
-            upload_buffer_usage=upload_buffer_usage,
-            upload_submit_every=upload_submit_every,
-            timing_divisor=timing_divisor,
-        )
-        artifact = build_run_artifact(
-            run_result=result,
-            product=args.product,
-            executor_id=args.executor_id,
-            workload_spec=spec,
-            run_config=run_config,
-            iterations=args.iterations,
-            warmup=args.warmup,
-            resource_probe=args.resource_probe,
-            resource_sample_ms=args.resource_sample_ms,
-            resource_sample_target_count=args.resource_sample_target_count,
-        )
-        filename = artifact_filename(args.product, wl.id, timestamp)
-        artifact_path = write_run_artifact(artifact, out_dir / filename)
-        written.append(str(artifact_path))
+    written = run_product_bundle(
+        product=args.product,
+        display_name=args.product,
+        executor_id=args.executor_id,
+        template=template,
+        workloads=workloads,
+        iterations=args.iterations,
+        warmup=args.warmup,
+        workspace=out_dir,
+        workload_contract_path=workloads_path,
+        gpu_memory_probe=args.resource_probe,
+        resource_sample_ms=args.resource_sample_ms,
+        resource_sample_target_count=args.resource_sample_target_count,
+        required_timing_class=args.require_timing_class,
+        comparability_mode=args.comparability_mode,
+        benchmark_policy=benchmark_policy,
+        benchmark_policy_path=args.benchmark_policy,
+        workload_cooldown_ms=0,
+        emit_shell=False,
+        timestamp=timestamp,
+        command_repeat_override=args.command_repeat,
+        ignore_first_ops_override=args.ignore_first_ops,
+        timing_divisor_override=args.timing_divisor,
+        upload_buffer_usage_override=args.upload_buffer_usage,
+        upload_submit_every_override=args.upload_submit_every,
+    )
+    for artifact_path in written:
         print(f"  {artifact_path}")
 
-    print(f"\n{len(written)} run artifact(s) written to {out_dir}/")
+    print(f"\n{len(written)} run artifact(s) written under {out_dir}/")
     return 0
 
 
@@ -151,9 +126,23 @@ def _cmd_run(args: argparse.Namespace) -> int:
 
 def _add_compare_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("artifacts", nargs="*", help="Run artifact JSON paths")
-    parser.add_argument("--products", default="", help="Comma-separated product pair for inline run+compare (e.g. doe,dawn)")
+    parser.add_argument("--config", default="", help="Config-backed compare JSON path")
+    parser.add_argument("--catalog", default="config/promoted-compare-catalog.json", help="Promoted compare catalog path")
+    parser.add_argument("--profile", default="", help="Exact promoted compare profile id")
+    parser.add_argument("--backend", default="", help="Promoted backend id, e.g. apple-metal")
+    parser.add_argument("--boundary", default="", choices=["backend_native", "direct_plan", "package_surface"], help="Execution boundary for promoted compare resolution")
+    parser.add_argument("--surface", default="", choices=["backend", "plan", "package"], help="Promoted surface selector")
+    parser.add_argument("--preset", default="", help="Promoted preset for backend surfaces")
+    parser.add_argument("--workload", default="", help="Promoted workload alias")
+    parser.add_argument("--runtime-host", default="", choices=["none", "node", "bun", "deno"], help="Promoted runtime host selector")
+    parser.add_argument("--package-runtime", default="", choices=["node", "bun", "deno"], help="Promoted package runtime selector")
+    parser.add_argument("--temperature", default="", choices=["default", "cold", "warm"], help="Promoted temperature selector")
+    parser.add_argument("--mode", default="", choices=["default", "cold", "warm"], help="Temperature alias for promoted compare resolution")
+    parser.add_argument("--list-promoted", action="store_true", help="List promoted compare profiles and exit")
+    parser.add_argument("--dry-run", action="store_true", help="Print the resolved compare command and exit")
+    parser.add_argument("--products", default="", help="Comma-separated product pair for inline run + compare report (e.g. doe,dawn)")
     parser.add_argument("--executor-ids", default="", help="Comma-separated executor IDs matching --products")
-    parser.add_argument("--workloads", default="", help="Workload contract JSON (for inline run+compare)")
+    parser.add_argument("--workloads", default="", help="Workload contract JSON for inline run + compare report")
     parser.add_argument("--workload-id", default="", help="Single workload ID filter")
     parser.add_argument("--iterations", type=int, default=10)
     parser.add_argument("--warmup", type=int, default=1)
@@ -162,16 +151,180 @@ def _add_compare_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--claimability", default="off", choices=["off", "local", "release"])
     parser.add_argument("--claim-min-timed-samples", type=int, default=0)
     parser.add_argument("--resource-probe", default="none", choices=["none", "rocm-smi"])
+    parser.add_argument("--resource-sample-ms", type=int, default=100)
     parser.add_argument("--resource-sample-target-count", type=int, default=0)
+    parser.add_argument("--benchmark-policy", default="", help="Benchmark methodology policy path")
+    parser.add_argument("--baseline-product", default="", help="Explicit baseline product id")
+    parser.add_argument("--comparison-product", default="", help="Explicit comparison product id")
+    parser.add_argument("--workspace", default="", help="Workspace path override for config-backed compare")
+    parser.add_argument("--workload-filter", default="", help="Config-backed workload filter override")
+    parser.add_argument("--emit-shell", action="store_true", help="Print commands instead of executing them in config-backed compare")
+    parser.add_argument("--no-timestamp-output", action="store_true", help="Disable timestamped config compare outputs")
+    parser.add_argument("--include-noncomparable-workloads", action="store_true", help="Include non-comparable workloads in config-backed compare")
+    parser.add_argument("--include-extended-workloads", action="store_true", help="Include extended workloads in config-backed compare")
+    parser.add_argument("--workload-cohort", default="", help="Config-backed workload cohort filter")
+    parser.add_argument("--baseline-provider-id", default="", help="Config-backed baseline provider id")
+    parser.add_argument("--comparison-provider-id", default="", help="Config-backed comparison provider id")
+    parser.add_argument("--baseline-name", default="", help="Config-backed baseline display name")
+    parser.add_argument("--comparison-name", default="", help="Config-backed comparison display name")
+    parser.add_argument("--baseline-executor-id", default="", help="Config-backed baseline executor id")
+    parser.add_argument("--comparison-executor-id", default="", help="Config-backed comparison executor id")
+    parser.add_argument("--comparison-view", default="", help="Config-backed comparison view")
+    parser.add_argument("--provider-set", default="", help="Config-backed provider set")
     parser.add_argument("--out", default="bench/out/compare-report.json", help="Output report path")
 
 
-def _cmd_compare(args: argparse.Namespace) -> int:
-    sys.path.insert(0, str(Path(__file__).resolve().parent))
+def _ordered_products(artifacts: list[dict[str, Any]]) -> list[str]:
+    products: list[str] = []
+    for artifact in artifacts:
+        product = str(artifact.get("product", "")).strip()
+        if product and product not in products:
+            products.append(product)
+    return products
+
+
+def _resolve_compare_policy_path(
+    *,
+    args: argparse.Namespace,
+    artifacts: list[dict[str, Any]],
+) -> str:
+    if args.benchmark_policy:
+        return args.benchmark_policy
+    for artifact in artifacts:
+        benchmark_policy = artifact.get("benchmarkPolicy")
+        if not isinstance(benchmark_policy, dict):
+            continue
+        path = str(benchmark_policy.get("path", "")).strip()
+        if path:
+            return path
+    return ""
+
+
+def _legacy_compare_args(
+    *,
+    args: argparse.Namespace,
+    baseline_product: str,
+    comparison_product: str,
+    baseline_executor_id: str,
+    comparison_executor_id: str,
+) -> Namespace:
+    return Namespace(
+        config="",
+        iterations=args.iterations,
+        warmup=args.warmup,
+        workload_cooldown_ms=0,
+        boundary="",
+        runtime_host="",
+        temperature="",
+        comparison_view="",
+        provider_set="",
+        baseline_name=baseline_product,
+        baseline_provider_id="",
+        baseline_executor_id=baseline_executor_id,
+        comparison_name=comparison_product,
+        comparison_provider_id="",
+        comparison_executor_id=comparison_executor_id,
+        comparability=args.comparability,
+        require_timing_class=args.require_timing_class,
+        allow_baseline_no_execution=False,
+        resource_probe=args.resource_probe,
+        resource_sample_ms=args.resource_sample_ms,
+        resource_sample_target_count=args.resource_sample_target_count,
+        workload_cohort="all",
+        selector={},
+        claimability=args.claimability,
+        claim_min_timed_samples=args.claim_min_timed_samples,
+        emit_shell=False,
+    )
+
+
+def _cmd_compare(
+    args: argparse.Namespace,
+    *,
+    raw_compare_argv: list[str] | None = None,
+) -> int:
+    _ensure_bench_imports()
+    raw_compare_argv = list(raw_compare_argv or [])
+
+    if args.config:
+        from native_compare_modules import config_compare_runner as config_compare_runner_mod
+
+        return config_compare_runner_mod.main(raw_compare_argv)
+
+    if (
+        args.list_promoted
+        or args.profile
+        or args.backend
+        or args.surface
+        or args.boundary
+        or args.preset
+        or args.workload
+    ):
+        from native_compare_modules import promoted_compare as promoted_compare_mod
+
+        catalog_path = Path(args.catalog)
+        entries = promoted_compare_mod.load_catalog(catalog_path)
+        if args.list_promoted:
+            filtered = promoted_compare_mod.filter_entries(
+                entries,
+                backend=args.backend,
+                boundary=args.boundary,
+                runtime_host=args.runtime_host,
+                temperature=args.temperature,
+                surface=args.surface,
+                preset=args.preset,
+                workload=args.workload,
+                mode=args.mode,
+                package_runtime=args.package_runtime,
+            )
+            for entry in sorted(
+                filtered,
+                key=lambda item: (
+                    item.backend,
+                    item.boundary,
+                    item.runtime_host,
+                    item.preset or item.workload,
+                    item.temperature,
+                    item.id,
+                ),
+            ):
+                print(promoted_compare_mod.format_entry(entry))
+            return 0
+
+        entry = promoted_compare_mod.resolve_entry(
+            entries,
+            profile_id=args.profile,
+            backend=args.backend,
+            boundary=args.boundary,
+            runtime_host=args.runtime_host,
+            temperature=args.temperature,
+            surface=args.surface,
+            preset=args.preset,
+            workload=args.workload,
+            mode=args.mode,
+            package_runtime=args.package_runtime,
+        )
+        argv_out = promoted_compare_mod.build_compare_argv(
+            entry,
+            catalog_path=catalog_path,
+            passthrough=promoted_compare_mod.filter_selection_passthrough(
+                raw_compare_argv
+            ),
+        )
+        if args.dry_run:
+            print(" ".join(argv_out))
+            return 0
+        import subprocess
+
+        result = subprocess.run(argv_out, check=False)
+        return result.returncode
+
     from native_compare_modules.compare_from_artifacts import (
-        build_compare_report,
-        compare_workload_from_artifacts,
-        write_compare_report,
+        build_legacy_compare_report_from_artifacts,
+    )
+    from native_compare_modules.config_support import load_benchmark_methodology_policy
+    from native_compare_modules.report_assembly import (
+        write_report_and_determine_status,
     )
     from native_compare_modules.run_artifact import load_run_artifact
 
@@ -201,6 +354,12 @@ def _cmd_compare(args: argparse.Namespace) -> int:
                 "--workloads", args.workloads,
                 "--iterations", str(args.iterations),
                 "--warmup", str(args.warmup),
+                "--comparability-mode", args.comparability,
+                "--require-timing-class", args.require_timing_class,
+                "--resource-probe", args.resource_probe,
+                "--resource-sample-ms", str(args.resource_sample_ms),
+                "--resource-sample-target-count", str(args.resource_sample_target_count),
+                "--benchmark-policy", args.benchmark_policy,
                 "--out", str(run_dir),
             ]
             if args.workload_id:
@@ -211,7 +370,7 @@ def _cmd_compare(args: argparse.Namespace) -> int:
                 print(f"error: run for {product} failed with exit code {result.returncode}", file=sys.stderr)
                 return 1
 
-        artifact_paths = sorted(str(p) for p in run_dir.glob("*.run.json"))
+        artifact_paths = sorted(str(p) for p in run_dir.rglob("*.run.json"))
         if len(artifact_paths) < 2:
             print(f"error: expected at least 2 run artifacts, found {len(artifact_paths)}", file=sys.stderr)
             return 1
@@ -220,85 +379,83 @@ def _cmd_compare(args: argparse.Namespace) -> int:
         print("error: compare requires at least 2 run artifact paths (or --products for inline mode)", file=sys.stderr)
         return 1
 
-    # Load artifacts and group by workload ID
     artifacts = [load_run_artifact(p) for p in artifact_paths]
-
-    # For now: 2-product comparison (baseline = first product, comparison = second)
-    by_workload: dict[str, dict[str, dict[str, Any]]] = {}
-    for art, path in zip(artifacts, artifact_paths):
-        wid = art["workload"]["id"]
-        product = art["product"]
-        if wid not in by_workload:
-            by_workload[wid] = {}
-        by_workload[wid][product] = art
-
-    products_seen = sorted({a["product"] for a in artifacts})
+    products_seen = _ordered_products(artifacts)
     if len(products_seen) != 2:
-        print(f"error: compare currently supports exactly 2 products, found {products_seen}", file=sys.stderr)
-        return 1
-    baseline_product, comparison_product = products_seen[0], products_seen[1]
-
-    workload_entries: list[dict[str, Any]] = []
-    first_baseline = None
-    first_comparison = None
-    for wid in sorted(by_workload):
-        group = by_workload[wid]
-        if baseline_product not in group or comparison_product not in group:
-            print(f"  skip {wid}: missing product (have {sorted(group)})")
-            continue
-        baseline = group[baseline_product]
-        comparison = group[comparison_product]
-        if first_baseline is None:
-            first_baseline = baseline
-        if first_comparison is None:
-            first_comparison = comparison
-
-        entry = compare_workload_from_artifacts(
-            baseline=baseline,
-            comparison=comparison,
-            comparability_mode=args.comparability,
-            required_timing_class=args.require_timing_class,
-            claimability_mode=args.claimability,
-            claimability_min_timed_samples=args.claim_min_timed_samples,
-            resource_probe=args.resource_probe,
-            resource_sample_target_count=args.resource_sample_target_count,
+        print(
+            f"error: compare currently supports exactly 2 products, found {products_seen}",
+            file=sys.stderr,
         )
-        status = "comparable" if entry["comparability"].get("comparable") else "diagnostic"
-        claim = ""
-        if entry["claimability"].get("evaluated"):
-            claim = " claimable" if entry["claimability"].get("claimable") else " non-claimable"
-        delta_p50 = entry["deltaPercent"].get("p50Percent", 0)
-        sign = "+" if delta_p50 > 0 else ""
-        print(f"  {wid}: {sign}{delta_p50:.1f}% p50 [{status}{claim}]")
-        workload_entries.append(entry)
-
-    if not workload_entries:
-        print("error: no workloads matched between the two products", file=sys.stderr)
         return 1
-
-    report = build_compare_report(
-        workload_entries=workload_entries,
-        baseline_artifact=first_baseline,
-        comparison_artifact=first_comparison,
-        comparability_mode=args.comparability,
-        required_timing_class=args.require_timing_class,
-        claimability_mode=args.claimability,
-        claimability_min_timed_samples=args.claim_min_timed_samples,
-        out_path=args.out,
-        run_artifact_paths=artifact_paths,
+    baseline_product = args.baseline_product or products_seen[0]
+    comparison_product = args.comparison_product or products_seen[1]
+    if baseline_product == comparison_product:
+        print(
+            "error: baseline and comparison products must differ",
+            file=sys.stderr,
+        )
+        return 1
+    baseline_artifact = next(
+        (
+            artifact
+            for artifact in artifacts
+            if artifact["product"] == baseline_product
+        ),
+        None,
     )
-
-    out_path = Path(args.out)
-    write_compare_report(report, out_path)
-    print(f"\nCompare report: {out_path}")
-
-    n_comparable = sum(1 for e in workload_entries if e["comparability"].get("comparable"))
-    n_claimable = sum(1 for e in workload_entries if e["claimability"].get("claimable"))
-    print(f"{len(workload_entries)} workloads, {n_comparable} comparable, {n_claimable} claimable")
-
-    if args.comparability == "strict" and n_comparable < len(workload_entries):
+    comparison_artifact = next(
+        (
+            artifact
+            for artifact in artifacts
+            if artifact["product"] == comparison_product
+        ),
+        None,
+    )
+    if baseline_artifact is None or comparison_artifact is None:
+        print(
+            "error: selected baseline/comparison products are missing from the artifact set",
+            file=sys.stderr,
+        )
         return 1
-    return 0
+    benchmark_policy = load_benchmark_methodology_policy(
+        _resolve_compare_policy_path(args=args, artifacts=artifacts)
+    )
+    legacy_args = _legacy_compare_args(
+        args=args,
+        baseline_product=baseline_product,
+        comparison_product=comparison_product,
+        baseline_executor_id=str(baseline_artifact.get("executorId", "")),
+        comparison_executor_id=str(comparison_artifact.get("executorId", "")),
+    )
+    out_path = Path(args.out)
+    workspace = out_path.parent / f"{out_path.stem}.workspace"
+    try:
+        report, comparability_failures, claimability_failures = (
+            build_legacy_compare_report_from_artifacts(
+                args=legacy_args,
+                artifacts=artifacts,
+                baseline_product=baseline_product,
+                comparison_product=comparison_product,
+                benchmark_policy=benchmark_policy,
+                output_timestamp=_utc_timestamp(),
+                out=out_path,
+                workspace=workspace,
+                run_artifact_paths=artifact_paths,
+            )
+        )
+    except ValueError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+    print(f"\nCompare report: {out_path}")
+    return write_report_and_determine_status(
+        report=report,
+        out=out_path,
+        workspace=workspace,
+        args=legacy_args,
+        comparability_failures=comparability_failures,
+        claimability_failures=claimability_failures,
+        workload_count=len(report.get("workloads", [])),
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -315,7 +472,7 @@ def _add_list_args(parser: argparse.ArgumentParser) -> None:
 
 
 def _cmd_list(args: argparse.Namespace) -> int:
-    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    _ensure_bench_imports()
 
     if args.products or args.surfaces:
         taxonomy_path = Path("config/compare-taxonomy.json")
@@ -365,28 +522,36 @@ def _cmd_list(args: argparse.Namespace) -> int:
 
 
 def main() -> int:
+    argv = sys.argv[1:]
     parser = argparse.ArgumentParser(
         prog="doe-bench",
-        description="Doe benchmark CLI: run products independently, compare afterward.",
+        description="Doe benchmark CLI: run products independently, then build compare reports from run artifacts.",
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     run_parser = subparsers.add_parser("run", help="Run one product on workload(s)")
     _add_run_args(run_parser)
 
-    compare_parser = subparsers.add_parser("compare", help="Compare run artifacts from two or more products")
+    compare_parser = subparsers.add_parser("compare", help="Compare run artifacts or run config-backed/promoted compare profiles")
     _add_compare_args(compare_parser)
 
     list_parser = subparsers.add_parser("list", help="List products, executors, workloads, or surfaces")
     _add_list_args(list_parser)
 
-    args = parser.parse_args()
+    if argv and argv[0] == "compare":
+        compare_parser = argparse.ArgumentParser(
+            prog="doe-bench compare",
+            description="Compare run artifacts or resolve config-backed/promoted compare profiles.",
+        )
+        _add_compare_args(compare_parser)
+        compare_args, _ = compare_parser.parse_known_args(argv[1:])
+        return _cmd_compare(compare_args, raw_compare_argv=argv[1:])
+
+    args = parser.parse_args(argv)
 
     if args.command == "run":
         return _cmd_run(args)
-    elif args.command == "compare":
-        return _cmd_compare(args)
-    elif args.command == "list":
+    if args.command == "list":
         return _cmd_list(args)
     return 1
 

@@ -28,8 +28,8 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--config",
-        default="bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.release.json",
-        help="compare_dawn_vs_doe release config path.",
+        default="bench/native-compare/compare.config.amd.vulkan.release.json",
+        help="Release compare-lane config path.",
     )
     parser.add_argument(
         "--windows",

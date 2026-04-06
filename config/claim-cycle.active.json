@@ -13,7 +13,7 @@
       "sha256": "32e0942cc8f4114210ee2010f524bcbd4c9548a123fc75d29bc699c698262355"
     },
     "compareConfig": {
-      "path": "bench/native-compare/compare_dawn_vs_doe.config.amd.vulkan.release.json",
+      "path": "bench/native-compare/compare.config.amd.vulkan.release.json",
       "sha256": "c10526db8b75b47e1352fd659bde79a39dfdbe235e4529a44c2a93278f06ca62"
     },
     "substantiationPolicy": {

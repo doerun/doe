@@ -72,6 +72,15 @@ fn execute_command(ctx: *anyopaque, command: model.Command) anyerror!webgpu.Nati
     return try self.inner.executeCommand(command);
 }
 
+fn execute_buffer_write_bytes(ctx: *anyopaque, handle: u64, offset: u64, buffer_size: u64, data: []const u8) anyerror!webgpu.NativeExecutionResult {
+    _ = ctx;
+    _ = handle;
+    _ = offset;
+    _ = buffer_size;
+    _ = data;
+    return error.UnsupportedFeature;
+}
+
 fn set_upload_behavior(ctx: *anyopaque, mode: webgpu.UploadBufferUsageMode, submit_every: u32) void {
     const self = cast(ctx);
     self.inner.setUploadBehavior(mode, submit_every);
@@ -119,6 +128,7 @@ fn capture_buffer(ctx: *anyopaque, allocator: std.mem.Allocator, handle: u64, of
 const VTABLE = backend_iface.BackendVTable{
     .deinit = deinit,
     .execute_command = execute_command,
+    .execute_buffer_write_bytes = execute_buffer_write_bytes,
     .set_upload_behavior = set_upload_behavior,
     .set_queue_wait_mode = set_queue_wait_mode,
     .set_queue_sync_mode = set_queue_sync_mode,

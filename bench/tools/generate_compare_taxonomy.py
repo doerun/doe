@@ -7,7 +7,6 @@ import argparse
 import json
 import sys
 from dataclasses import dataclass
-from itertools import product
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -26,6 +25,8 @@ DEFAULT_OUTPUT_PATH = REPO_ROOT / "config" / "generated" / "compare-taxonomy-exp
 @dataclass(frozen=True)
 class StructuralFamily:
     id: str
+    surface: str
+    product: str
     comparison_boundary: str
     runtime_host: str
     comparison_view: str
@@ -88,13 +89,25 @@ def parse_structural_families(payload: dict) -> list[StructuralFamily]:
         if family_id in seen_ids:
             raise ValueError(f"duplicate structural family id: {family_id}")
         seen_ids.add(family_id)
-        # v2 uses "surface" instead of "comparisonBoundary", and has "product"
-        # instead of "comparisonView"/"providerPair".
-        boundary = raw.get("comparisonBoundary") or raw.get("surface", "")
+        surface = raw.get("surface", "")
+        boundary = raw.get("comparisonBoundary", "")
+        if not boundary and surface:
+            boundary = compare_axes_mod.boundary_for_surface(surface)
         product = raw.get("product", "")
         comparison_view = raw.get("comparisonView") or raw.get("providerPair", "")
         if not comparison_view and product:
-            comparison_view = f"{product}_product_family"
+            if surface == "backend" and product in {"doe", "dawn"}:
+                comparison_view = "doe_vs_dawn_delegate"
+            elif surface == "plan" and product in {"doe", "dawn"}:
+                comparison_view = "doe_vs_dawn_direct"
+            elif surface == "package" and raw["runtimeHost"] == "node" and product in {"doe", "node_webgpu_package"}:
+                comparison_view = "doe_vs_node_webgpu_package"
+            elif surface == "package" and raw["runtimeHost"] == "bun" and product in {"doe", "bun_webgpu_package"}:
+                comparison_view = "doe_vs_bun_webgpu_package"
+            elif surface == "package" and raw["runtimeHost"] == "deno" and product in {"doe", "deno_webgpu_package"}:
+                comparison_view = "doe_vs_deno_webgpu_package"
+            else:
+                comparison_view = f"{product}_product_family"
         provider_set = raw.get("providerSet", "")
         if not provider_set and boundary:
             try:
@@ -120,6 +133,8 @@ def parse_structural_families(payload: dict) -> list[StructuralFamily]:
         families.append(
             StructuralFamily(
                 id=family_id,
+                surface=surface,
+                product=product,
                 comparison_boundary=boundary,
                 runtime_host=raw["runtimeHost"],
                 comparison_view=comparison_view,
@@ -167,13 +182,11 @@ def parse_promoted_coverage(payload: dict, family_by_id: dict[str, StructuralFam
     return coverage_entries
 
 
-def surface_alias_by_boundary(payload: dict) -> dict[str, str]:
-    aliases = payload.get("aliases", {})
-    if "promotedCompareSurfaceByBoundary" in aliases:
-        return dict(aliases["promotedCompareSurfaceByBoundary"])
-    if "surfaceShortNames" in aliases:
-        return dict(aliases["surfaceShortNames"])
-    return {}
+def boundary_by_surface(payload: dict) -> dict[str, str]:
+    mapping: dict[str, str] = {}
+    for surface in payload.get("axes", {}).get("surfaces", []):
+        mapping[surface] = compare_axes_mod.boundary_for_surface(surface)
+    return mapping
 
 
 def repo_surface_by_boundary_and_runtime(payload: dict) -> dict[tuple[str, str], str]:
@@ -181,10 +194,14 @@ def repo_surface_by_boundary_and_runtime(payload: dict) -> dict[tuple[str, str],
     aliases = payload.get("aliases", {})
     raw_list = aliases.get("repoSurfaceByBoundaryAndRuntimeHost") or aliases.get("repoSurfaceByProductAndRuntimeHost") or []
     for raw in raw_list:
-        boundary = raw.get("comparisonBoundary") or raw.get("surface", "")
+        boundary = raw.get("comparisonBoundary", "")
+        if not boundary:
+            boundary = compare_axes_mod.boundary_for_surface(raw.get("surface", ""))
         key = (boundary, raw["runtimeHost"])
         if key in mapping:
-            raise ValueError(f"duplicate repo-surface alias for {key}")
+            if mapping[key] != raw["repoSurface"]:
+                raise ValueError(f"duplicate repo-surface alias for {key}")
+            continue
         mapping[key] = raw["repoSurface"]
     return mapping
 
@@ -192,7 +209,7 @@ def repo_surface_by_boundary_and_runtime(payload: dict) -> dict[tuple[str, str],
 def actual_promoted_profile_map(
     promoted_catalog: dict,
     *,
-    surface_alias_to_boundary: dict[str, str],
+    boundary_for_surface: dict[str, str],
 ) -> dict[tuple[str, str, str, str, str, str, str], list[str]]:
     profile_map: dict[tuple[str, str, str, str, str, str, str], list[str]] = {}
     for raw in promoted_catalog["entries"]:
@@ -200,7 +217,7 @@ def actual_promoted_profile_map(
             "surface",
             compare_axes_mod.surface_for_boundary(raw["boundary"]),
         )
-        boundary = raw.get("boundary", surface_alias_to_boundary[surface])
+        boundary = raw.get("boundary", boundary_for_surface[surface])
         runtime_host = raw.get(
             "runtimeHost",
             raw.get("packageRuntime", "none") if boundary == "package_surface" else "none",
@@ -260,10 +277,10 @@ def validate_promoted_subset_alignment(
     family_by_id: dict[str, StructuralFamily],
 ) -> dict[tuple[str, str, str, str, str, str, str], list[str]]:
     coverage_entries = parse_promoted_coverage(payload, family_by_id)
-    surface_aliases = surface_alias_by_boundary(payload)
+    boundaries_by_surface = boundary_by_surface(payload)
     actual = actual_promoted_profile_map(
         promoted_catalog,
-        surface_alias_to_boundary={value: key for key, value in surface_aliases.items()},
+        boundary_for_surface=boundaries_by_surface,
     )
     expected = expected_promoted_keys(coverage_entries, family_by_id=family_by_id)
     actual_keys = set(actual)
@@ -279,37 +296,7 @@ def validate_promoted_subset_alignment(
     return actual
 
 
-def matching_family(
-    families: list[StructuralFamily],
-    *,
-    platform_lane: str,
-    comparison_boundary: str,
-    runtime_host: str,
-    comparison_view: str,
-    temperature: str,
-    target_kind: str,
-) -> StructuralFamily | None:
-    matches = [
-        family
-        for family in families
-        if family.comparison_boundary == comparison_boundary
-        and family.runtime_host == runtime_host
-        and family.comparison_view == comparison_view
-        and family.temperature == temperature
-        and family.target_kind == target_kind
-        and platform_lane in family.structural_platform_lanes
-    ]
-    if len(matches) > 1:
-        raise ValueError(
-            "multiple structural families matched "
-            f"platformLane={platform_lane}, comparisonBoundary={comparison_boundary}, "
-            f"runtimeHost={runtime_host}, comparisonView={comparison_view}, "
-            f"temperature={temperature}, targetKind={target_kind}"
-        )
-    return matches[0] if matches else None
-
-
-def build_rows(
+def build_entries(
     payload: dict,
     *,
     promoted_profile_map: dict[tuple[str, str, str, str, str, str, str], list[str]],
@@ -321,42 +308,19 @@ def build_rows(
         (entry.family_id, entry.platform_lane): list(entry.target_ids)
         for entry in coverage_entries
     }
-    promoted_surface_aliases = surface_alias_by_boundary(payload)
     repo_surface_aliases = repo_surface_by_boundary_and_runtime(payload)
-    axes = payload["axes"]
-
-    # v2 uses "surfaces" + "products" instead of "comparisonBoundaries" + "comparisonViews"
-    boundaries = axes.get("comparisonBoundaries") or axes.get("surfaces", [])
-    views = axes.get("comparisonViews") or axes.get("providerPairs") or axes.get("products", [])
-
-    rows: list[dict] = []
-    for (
-        platform_lane,
-        comparison_boundary,
-        runtime_host,
-        comparison_view,
-        temperature,
-        target_kind,
-    ) in product(
-        axes["platformLanes"],
-        boundaries,
-        axes["runtimeHosts"],
-        views,
-        axes["temperatures"],
-        axes["targetKinds"],
-    ):
-        family = matching_family(
-            families,
-            platform_lane=platform_lane,
-            comparison_boundary=comparison_boundary,
-            runtime_host=runtime_host,
-            comparison_view=comparison_view,
-            temperature=temperature,
-            target_kind=target_kind,
-        )
-        promoted_target_ids: list[str] = []
-        promoted_profile_ids: list[str] = []
-        if family is not None:
+    entries_by_id: dict[str, dict] = {}
+    for family in families:
+        for platform_lane in family.structural_platform_lanes:
+            comparison_boundary = family.comparison_boundary
+            runtime_host = family.runtime_host
+            comparison_view = family.comparison_view
+            temperature = family.temperature
+            target_kind = family.target_kind
+            derived_provider_set = family.provider_set
+            derived_providers = family.providers
+            promoted_target_ids: list[str] = []
+            promoted_profile_ids: list[str] = []
             promoted_target_ids = promoted_coverage_map.get((family.id, platform_lane), [])
             for target_id in promoted_target_ids:
                 key = (
@@ -370,86 +334,80 @@ def build_rows(
                 )
                 promoted_profile_ids.extend(promoted_profile_map[key])
             promoted_profile_ids.sort()
-        row = {
-            "schemaVersion": 1,
-            "rowId": "__".join(
-                [
-                    platform_lane,
-                    comparison_boundary,
-                    runtime_host,
-                    comparison_view,
-                    temperature,
-                    target_kind,
-                ]
-            ),
-            "platformLane": platform_lane,
-            "comparisonBoundary": comparison_boundary,
-            "runtimeHost": runtime_host,
-            "comparisonView": comparison_view,
-            "providerPair": comparison_view,
-            "providerSet": (
-                family.provider_set
-                if family is not None
-                else compare_axes_mod.derive_provider_set(
-                    boundary=comparison_boundary,
-                    runtime_host=runtime_host,
-                    comparison_view=comparison_view,
-                )
-            ),
-            "providers": list(
-                family.providers
-                if family is not None
-                else (
-                    compare_axes_mod.providers_for_comparison_view(comparison_view)
-                    or compare_axes_mod.providers_for_provider_set(
-                        compare_axes_mod.derive_provider_set(
-                            boundary=comparison_boundary,
-                            runtime_host=runtime_host,
-                            comparison_view=comparison_view,
-                        )
-                    )
-                )
-            ),
-            "temperature": temperature,
-            "targetKind": target_kind,
-            "promotedCompareSurface": promoted_surface_aliases[comparison_boundary],
-            "repoSurface": repo_surface_aliases.get((comparison_boundary, runtime_host)),
-            "structuralFamilyId": family.id if family is not None else None,
-            "executorInputBoundary": family.executor_input_boundary if family is not None else None,
-            "isTypeCorrectStructural": family is not None,
-            "isTypeCorrectConcrete": family is not None and bool(family.theoretical_concrete_target_ids),
-            "isPromotedCompareReachable": bool(promoted_profile_ids),
-            "theoreticalConcreteTargetIds": list(family.theoretical_concrete_target_ids) if family is not None else [],
-            "theoreticalConcreteRowSlotCount": len(family.theoretical_concrete_target_ids) if family is not None else 0,
-            "promotedTargetIds": promoted_target_ids,
-            "promotedCompareProfileIds": promoted_profile_ids,
-            "promotedCompareRowCount": len(promoted_profile_ids),
-        }
-        rows.append(row)
-    rows.sort(key=lambda row: row["rowId"])
-    return rows
+            entry = {
+                "schemaVersion": 1,
+                "entryId": "__".join(
+                    [
+                        platform_lane,
+                        comparison_boundary,
+                        runtime_host,
+                        comparison_view,
+                        temperature,
+                        target_kind,
+                    ]
+                ),
+                "platformLane": platform_lane,
+                "comparisonBoundary": comparison_boundary,
+                "runtimeHost": runtime_host,
+                "comparisonView": comparison_view,
+                "providerPair": comparison_view,
+                "providerSet": derived_provider_set,
+                "providers": list(derived_providers),
+                "temperature": temperature,
+                "targetKind": target_kind,
+                "promotedCompareSurface": family.surface,
+                "repoSurface": repo_surface_aliases.get((comparison_boundary, runtime_host)),
+                "structuralFamilyId": family.id,
+                "executorInputBoundary": family.executor_input_boundary,
+                "isTypeCorrectStructural": True,
+                "isTypeCorrectConcrete": bool(family.theoretical_concrete_target_ids),
+                "isPromotedCompareReachable": bool(promoted_profile_ids),
+                "theoreticalConcreteTargetIds": list(family.theoretical_concrete_target_ids),
+                "theoreticalConcreteTargetSlotCount": len(family.theoretical_concrete_target_ids),
+                "promotedTargetIds": promoted_target_ids,
+                "promotedCompareProfileIds": promoted_profile_ids,
+                "promotedCompareProfileCount": len(promoted_profile_ids),
+            }
+            existing = entries_by_id.get(entry["entryId"])
+            if existing is None:
+                entries_by_id[entry["entryId"]] = entry
+                continue
+            existing["providers"] = sorted(set(existing["providers"]) | set(entry["providers"]))
+            existing["promotedTargetIds"] = sorted(
+                set(existing["promotedTargetIds"]) | set(entry["promotedTargetIds"])
+            )
+            existing["promotedCompareProfileIds"] = sorted(
+                set(existing["promotedCompareProfileIds"]) | set(entry["promotedCompareProfileIds"])
+            )
+            existing["promotedCompareProfileCount"] = len(existing["promotedCompareProfileIds"])
+            existing["isPromotedCompareReachable"] = bool(existing["promotedCompareProfileIds"])
+    entries = list(entries_by_id.values())
+    entries.sort(key=lambda item: item["entryId"])
+    return entries
 
 
-def summarize_rows(rows: list[dict]) -> dict[str, int]:
+def summarize_entries(entries: list[dict]) -> dict[str, int]:
     return {
-        "naiveCartesianRows": len(rows),
-        "typeCorrectStructuralRows": sum(1 for row in rows if row["isTypeCorrectStructural"]),
-        "typeCorrectConcreteRowSlots": sum(row["theoreticalConcreteRowSlotCount"] for row in rows),
-        "promotedCompareRows": sum(row["promotedCompareRowCount"] for row in rows),
+        "expandedEntryCount": len(entries),
+        "typeCorrectStructuralEntries": sum(1 for entry in entries if entry["isTypeCorrectStructural"]),
+        "typeCorrectConcreteTargetSlots": sum(
+            entry["theoreticalConcreteTargetSlotCount"] for entry in entries
+        ),
+        "promotedCompareProfiles": sum(entry["promotedCompareProfileCount"] for entry in entries),
     }
 
 
-def validate_expected_counts(payload: dict, rows: list[dict]) -> None:
+def validate_expected_counts(payload: dict, entries: list[dict]) -> None:
     expected = payload.get("expectedCounts")
     if expected is None:
         return
-    actual = summarize_rows(rows)
+    actual = summarize_entries(entries)
     if actual != expected:
         raise ValueError(f"compare taxonomy counts drift: expected {expected}, got {actual}")
 
 
-def render_jsonl(rows: list[dict]) -> str:
-    return "".join(json.dumps(row, sort_keys=True) + "\n" for row in rows)
+def render_jsonl(entries: list[dict]) -> str:
+    return "".join(json.dumps(entry, sort_keys=True) + "\n" for entry in entries)
 
 
 def main() -> int:
@@ -467,9 +425,9 @@ def main() -> int:
         promoted_catalog,
         family_by_id=family_by_id,
     )
-    rows = build_rows(payload, promoted_profile_map=promoted_profile_map)
-    validate_expected_counts(payload, rows)
-    rendered = render_jsonl(rows)
+    entries = build_entries(payload, promoted_profile_map=promoted_profile_map)
+    validate_expected_counts(payload, entries)
+    rendered = render_jsonl(entries)
 
     if args.write:
         output_path.parent.mkdir(parents=True, exist_ok=True)

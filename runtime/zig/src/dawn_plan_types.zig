@@ -18,6 +18,19 @@ pub const BufferWriteCommand = struct {
     data: []u32,
 };
 
+pub const BufferLoadCommand = struct {
+    handle: u64,
+    offset: u64,
+    buffer_size: u64,
+    cache_namespace: []const u8,
+    cache_key: []const u8,
+    asset_key: ?[]const u8,
+    generator: []const u8,
+    seed: u64,
+    scale: f64,
+    byte_length: u64,
+};
+
 pub const BufferBindingType = enum {
     uniform,
     storage,
@@ -44,6 +57,7 @@ pub const KernelDispatchCommand = struct {
 
 pub const Command = union(enum) {
     buffer_write: BufferWriteCommand,
+    buffer_load: BufferLoadCommand,
     kernel_dispatch: KernelDispatchCommand,
 };
 
@@ -58,6 +72,7 @@ pub const Plan = struct {
     commands_path: ?[]const u8,
     command_count: u32,
     buffer_write_count: u32,
+    buffer_load_count: u32,
     dispatch_count: u32,
     source_ir_sha256: []const u8,
     compatibility_commands_sha256: []const u8,
@@ -116,6 +131,14 @@ fn expectU64(value: Json.Value) PlanLoadError!u64 {
 
 fn expectU32(value: Json.Value) PlanLoadError!u32 {
     return std.math.cast(u32, try expectU64(value)) orelse error.InvalidPlan;
+}
+
+fn expectF64(value: Json.Value) PlanLoadError!f64 {
+    return switch (value) {
+        .integer => |number| @as(f64, @floatFromInt(number)),
+        .float => |number| number,
+        else => error.InvalidPlan,
+    };
 }
 
 fn fieldValue(object: Json.ObjectMap, names: []const []const u8) ?Json.Value {
@@ -191,6 +214,40 @@ fn parseBufferWrite(allocator: Allocator, object: Json.ObjectMap) PlanLoadError!
         .offset = offset,
         .buffer_size = buffer_size,
         .data = data,
+    };
+}
+
+fn parseBufferLoad(allocator: Allocator, object: Json.ObjectMap) PlanLoadError!BufferLoadCommand {
+    const handle = try expectU64(try requiredField(object, &.{"handle", "resource_handle", "resourceHandle"}));
+    const offset = if (fieldValue(object, &.{"offset", "buffer_offset", "bufferOffset"})) |value|
+        try expectU64(value)
+    else
+        0;
+    const byte_length = try expectU64(try requiredField(object, &.{"byteLength", "byte_length", "bufferSize", "buffer_size"}));
+    const buffer_size = if (fieldValue(object, &.{"bufferSize", "buffer_size"})) |value|
+        try expectU64(value)
+    else
+        byte_length;
+    const cache_namespace = try allocator.dupe(u8, try expectString(try requiredField(object, &.{"cacheNamespace", "cache_namespace"})));
+    const cache_key = try allocator.dupe(u8, try expectString(try requiredField(object, &.{"cacheKey", "cache_key"})));
+    const asset_key = if (try optionalString(object, &.{"assetKey", "asset_key"})) |value|
+        try allocator.dupe(u8, value)
+    else
+        null;
+    const generator = try allocator.dupe(u8, try expectString(try requiredField(object, &.{"generator"})));
+    const seed = try expectU64(try requiredField(object, &.{"seed"}));
+    const scale = try expectF64(try requiredField(object, &.{"scale"}));
+    return .{
+        .handle = handle,
+        .offset = offset,
+        .buffer_size = buffer_size,
+        .cache_namespace = cache_namespace,
+        .cache_key = cache_key,
+        .asset_key = asset_key,
+        .generator = generator,
+        .seed = seed,
+        .scale = scale,
+        .byte_length = byte_length,
     };
 }
 
@@ -284,6 +341,9 @@ fn parseCommand(allocator: Allocator, value: Json.Value) PlanLoadError!Command {
     {
         return .{ .buffer_write = try parseBufferWrite(allocator, object) };
     }
+    if (std.ascii.eqlIgnoreCase(kind, "buffer_load")) {
+        return .{ .buffer_load = try parseBufferLoad(allocator, object) };
+    }
     if (std.ascii.eqlIgnoreCase(kind, "kernel_dispatch")) {
         return .{ .kernel_dispatch = try parseKernelDispatch(allocator, object) };
     }
@@ -301,6 +361,10 @@ fn parsePlanObject(allocator: Allocator, object: Json.ObjectMap, plan_sha256: []
     const schema_version = try expectU32(try requiredField(object, &.{"schemaVersion"}));
     const command_count = try expectU32(try requiredField(object, &.{"commandCount"}));
     const buffer_write_count = try expectU32(try requiredField(object, &.{"bufferWriteCount"}));
+    const buffer_load_count = if (fieldValue(object, &.{"bufferLoadCount"})) |value|
+        try expectU32(value)
+    else
+        0;
     const dispatch_count = try expectU32(try requiredField(object, &.{"dispatchCount"}));
 
     return .{
@@ -314,6 +378,7 @@ fn parsePlanObject(allocator: Allocator, object: Json.ObjectMap, plan_sha256: []
         .commands_path = try optionalString(object, &.{"commandsPath"}),
         .command_count = command_count,
         .buffer_write_count = buffer_write_count,
+        .buffer_load_count = buffer_load_count,
         .dispatch_count = dispatch_count,
         .source_ir_sha256 = try expectString(try requiredField(object, &.{"sourceIrSha256"})),
         .compatibility_commands_sha256 = try expectString(try requiredField(object, &.{"compatibilityCommandsSha256"})),
@@ -356,6 +421,7 @@ test "loadPlanFromPath parses a generated Gemma plan" {
     defer loaded.deinit();
     try std.testing.expectEqual(@as(u32, 1), loaded.plan.schema_version);
     try std.testing.expectEqualStrings("inference_gemma3_270m_prefill_32tok", loaded.plan.workload_id);
-    try std.testing.expectEqual(@as(usize, 25), loaded.plan.commands.len);
-    try std.testing.expectEqualStrings("b9a68954e24aa8c4c133ed33a6521a26e452688562eab454b9f8732825de8139", loaded.plan.plan_sha256);
+    try std.testing.expectEqual(@as(u32, 10), loaded.plan.buffer_load_count);
+    try std.testing.expectEqual(@as(usize, 35), loaded.plan.commands.len);
+    try std.testing.expectEqualStrings("47fd52b0ca02a3f3245a80f52143b4230a769b86049f1b1871fe24fde106514b", loaded.plan.plan_sha256);
 }
