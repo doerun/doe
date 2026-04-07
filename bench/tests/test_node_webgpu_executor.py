@@ -723,7 +723,7 @@ console.log(JSON.stringify(boundaryScopedHostTotals({{
             self.assertEqual(meta["timingSource"], "doe-execution-total-ns")
             self.assertEqual(meta["timingClass"], "operation")
             self.assertEqual(meta["executionQueueSyncMode"], "per-command")
-            self.assertEqual(meta["executionQueueWaitMode"], "queue.onSubmittedWorkDone")
+            self.assertEqual(meta["executionQueueWaitMode"], "sync-readback.mapAsync")
             self.assertEqual(meta["executionRowCount"], 4)
             self.assertEqual(meta["executionSuccessCount"], 4)
             self.assertEqual(meta["executionDispatchCount"], 1)

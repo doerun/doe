@@ -1,8 +1,9 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import { performance } from 'node:perf_hooks';
 import { createHash } from 'node:crypto';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { join, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import os from 'node:os';
 
 import {
@@ -71,6 +72,13 @@ const PROVIDERS_BY_RUNTIME = Object.freeze({
 const TRACE_META_PROCESS_WALL_SOURCE = 'trace-meta-process-wall';
 const DEBUG_PROGRESS_INTERVAL = 64;
 const NODE_WEBGPU_UNSUPPORTED_ERROR_CODE = 'NODE_WEBGPU_UNSUPPORTED';
+const PACKAGE_QUEUE_SYNC_MODE = 'per-command';
+const PACKAGE_QUEUE_WAIT_MODE = 'queue.onSubmittedWorkDone';
+const NODE_PACKAGE_QUEUE_WAIT_MODE = 'sync-readback.mapAsync';
+const PACKAGE_QUEUE_WAIT_SCOPE = 'terminal-or-readback';
+const NODE_PACKAGE_QUEUE_WAIT_SCOPE = PACKAGE_QUEUE_WAIT_SCOPE;
+const NODE_PACKAGE_QUEUE_WAIT_SUBMIT_CADENCE = 0;
+const QUEUE_WAIT_FENCE_SIZE_BYTES = 4;
 let packageExecutionPolicyPromise = null;
 
 function nsFromMs(ms) {
@@ -112,6 +120,69 @@ function createDebugLogger(enabled) {
       ...fields,
     })}\n`);
   };
+}
+
+function queueWaitSubmitCadenceForRuntimeHost(runtimeHost) {
+  return runtimeHost === 'node' ? NODE_PACKAGE_QUEUE_WAIT_SUBMIT_CADENCE : 0;
+}
+
+function queueWaitModeForRuntimeHost(runtimeHost) {
+  return runtimeHost === 'node' ? NODE_PACKAGE_QUEUE_WAIT_MODE : PACKAGE_QUEUE_WAIT_MODE;
+}
+
+function providerCreateOptions(spec) {
+  return [];
+}
+
+function queueWaitScopeForRuntimeHost(runtimeHost) {
+  return queueWaitSubmitCadenceForRuntimeHost(runtimeHost) > 0
+    ? NODE_PACKAGE_QUEUE_WAIT_SCOPE
+    : PACKAGE_QUEUE_WAIT_SCOPE;
+}
+
+async function maybeYieldBeforeQueueWait(runtime) {
+  if (runtime.providerSpec.provider !== 'node-webgpu') {
+    return;
+  }
+  await new Promise((resolve) => setTimeout(resolve, 0));
+}
+
+function createQueueWaitFence(device, queue, globals) {
+  const signal = device.createBuffer({
+    size: QUEUE_WAIT_FENCE_SIZE_BYTES,
+    usage: globals.GPUBufferUsage.COPY_SRC | globals.GPUBufferUsage.COPY_DST,
+  });
+  queue.writeBuffer(signal, 0, new Uint32Array(1));
+  const readback = device.createBuffer({
+    size: QUEUE_WAIT_FENCE_SIZE_BYTES,
+    usage: globals.GPUBufferUsage.COPY_DST | globals.GPUBufferUsage.MAP_READ,
+  });
+  return { signal, readback };
+}
+
+function appendQueueWaitFenceCopy(runtime, encoder) {
+  if (!runtime.queueWaitFence) {
+    return;
+  }
+  encoder.copyBufferToBuffer(
+    runtime.queueWaitFence.signal,
+    0,
+    runtime.queueWaitFence.readback,
+    0,
+    QUEUE_WAIT_FENCE_SIZE_BYTES,
+  );
+}
+
+async function awaitQueueCompletion(runtime) {
+  if (runtime.queueWaitMode === NODE_PACKAGE_QUEUE_WAIT_MODE) {
+    await maybeYieldBeforeQueueWait(runtime);
+    await runtime.queueWaitFence.readback.mapAsync(runtime.globals.GPUMapMode.READ);
+    runtime.queueWaitFence.readback.getMappedRange(0, QUEUE_WAIT_FENCE_SIZE_BYTES);
+    runtime.queueWaitFence.readback.unmap();
+    return;
+  }
+  await maybeYieldBeforeQueueWait(runtime);
+  await runtime.queue.onSubmittedWorkDone?.();
 }
 
 function shouldLogProgress(index, total) {
@@ -394,6 +465,9 @@ export function buildUnsupportedExecutionResult({
   unsupportedDetail = '',
   workloadId = '',
   planPath = '',
+  queueWaitMode = PACKAGE_QUEUE_WAIT_MODE,
+  queueWaitScope = PACKAGE_QUEUE_WAIT_SCOPE,
+  queueWaitSubmitCadence = 0,
 }) {
   const planMeta = resolvePlanMetadata({ normalizedPlan, workloadId, planPath });
   const scopedHostTotals = boundaryScopedHostTotals({
@@ -431,10 +505,14 @@ export function buildUnsupportedExecutionResult({
     processWallMs,
     timingSource: 'doe-execution-total-ns',
     timingClass: 'operation',
-    queueSyncMode: 'per-command',
-    queueWaitMode: 'queue.onSubmittedWorkDone',
-    executionQueueSyncMode: 'per-command',
-    executionQueueWaitMode: 'queue.onSubmittedWorkDone',
+    queueSyncMode: PACKAGE_QUEUE_SYNC_MODE,
+    queueWaitMode,
+    queueWaitScope,
+    queueWaitSubmitCadence,
+    executionQueueSyncMode: PACKAGE_QUEUE_SYNC_MODE,
+    executionQueueWaitMode: queueWaitMode,
+    executionQueueWaitScope: queueWaitScope,
+    executionQueueWaitSubmitCadence: queueWaitSubmitCadence,
     ...(unsupportedCode ? { unsupportedCode } : {}),
     ...(unsupportedDetail ? { unsupportedDetail } : {}),
     workload: planMeta.workloadId,
@@ -476,6 +554,9 @@ export function buildErrorExecutionResult({
   processWallMs,
   workloadId = '',
   planPath = '',
+  queueWaitMode = PACKAGE_QUEUE_WAIT_MODE,
+  queueWaitScope = PACKAGE_QUEUE_WAIT_SCOPE,
+  queueWaitSubmitCadence = 0,
 }) {
   const planMeta = resolvePlanMetadata({ normalizedPlan, workloadId, planPath });
   const scopedHostTotals = boundaryScopedHostTotals({
@@ -513,10 +594,14 @@ export function buildErrorExecutionResult({
     processWallMs,
     timingSource: 'doe-execution-total-ns',
     timingClass: 'operation',
-    queueSyncMode: 'per-command',
-    queueWaitMode: 'queue.onSubmittedWorkDone',
-    executionQueueSyncMode: 'per-command',
-    executionQueueWaitMode: 'queue.onSubmittedWorkDone',
+    queueSyncMode: PACKAGE_QUEUE_SYNC_MODE,
+    queueWaitMode,
+    queueWaitScope,
+    queueWaitSubmitCadence,
+    executionQueueSyncMode: PACKAGE_QUEUE_SYNC_MODE,
+    executionQueueWaitMode: queueWaitMode,
+    executionQueueWaitScope: queueWaitScope,
+    executionQueueWaitSubmitCadence: queueWaitSubmitCadence,
     workload: planMeta.workloadId,
     canonicalWorkloadId: planMeta.canonicalWorkloadId,
     planId: planMeta.planId,
@@ -547,15 +632,15 @@ export function buildErrorExecutionResult({
 
 async function writeExecutorArtifacts(traceMetaPath, traceJsonlPath, meta, rows) {
   if (traceMetaPath) {
-    await mkdir(resolve(traceMetaPath, '..'), { recursive: true });
-    await writeFile(traceMetaPath, `${JSON.stringify(meta)}\n`, 'utf8');
+    mkdirSync(dirname(resolve(traceMetaPath)), { recursive: true });
+    writeFileSync(traceMetaPath, `${JSON.stringify(meta)}\n`, 'utf8');
   }
   if (traceJsonlPath) {
-    await mkdir(resolve(traceJsonlPath, '..'), { recursive: true });
+    mkdirSync(dirname(resolve(traceJsonlPath)), { recursive: true });
     const payload = rows.length > 0
       ? `${rows.map((row) => JSON.stringify(row)).join('\n')}\n`
       : '';
-    await writeFile(traceJsonlPath, payload, 'utf8');
+    writeFileSync(traceJsonlPath, payload, 'utf8');
   }
 }
 
@@ -712,7 +797,10 @@ function buildBindingDescriptor(binding, buffers, globals) {
     layout: {
       binding: binding.binding,
       visibility: globals.GPUShaderStage.COMPUTE,
-      buffer: { type: binding.bufferType },
+      buffer: {
+        type: binding.bufferType,
+        ...(binding.size !== undefined ? { minBindingSize: binding.size } : {}),
+      },
     },
     entry: {
       binding: binding.binding,
@@ -737,7 +825,7 @@ export function buildDispatchBindingCacheKey(step) {
   );
 }
 
-async function createRuntime(normalizedPlan, webgpu, spec, { debugLog }) {
+async function createRuntime(normalizedPlan, webgpu, spec, { debugLog, runtimeHost }) {
   const { create, globals } = webgpu;
   debugLog('runtime.create.start', {
     provider: spec.provider,
@@ -745,7 +833,7 @@ async function createRuntime(normalizedPlan, webgpu, spec, { debugLog }) {
     executionShape: normalizedPlan.executionShape,
   });
   const executorInitStartedAt = performance.now();
-  const gpu = create([]);
+  const gpu = create(providerCreateOptions(spec));
   const preferredPower = normalizedPlan.adapter?.powerPreference ?? 'high-performance';
   const adapterRequests = [];
   if (preferredPower) {
@@ -820,6 +908,7 @@ async function createRuntime(normalizedPlan, webgpu, spec, { debugLog }) {
   debugLog('runtime.requestDevice.done', {});
   const hostExecutorInitTotalNs = nsDelta(executorInitStartedAt);
   const queue = device.queue;
+  const queueWaitMode = queueWaitModeForRuntimeHost(runtimeHost);
   const buffers = new Map();
   const shaderModules = new Map();
   const dispatchStates = [];
@@ -953,9 +1042,19 @@ async function createRuntime(normalizedPlan, webgpu, spec, { debugLog }) {
   });
 
   return {
+    // Keep the provider module and JS GPU root alive until the run fully drains.
+    // Dawn's Node AsyncRunner schedules future ProcessEvents() callbacks against
+    // the native Instance reachable from this JS object.
+    providerModule: webgpu,
+    providerRoot: gpu,
     adapter,
     device,
     queue,
+    queueWaitMode,
+    queueWaitFence: queueWaitMode === NODE_PACKAGE_QUEUE_WAIT_MODE &&
+      NODE_PACKAGE_QUEUE_WAIT_MODE !== PACKAGE_QUEUE_WAIT_MODE
+      ? createQueueWaitFence(device, queue, globals)
+      : null,
     globals,
     providerSpec: spec,
     buffers,
@@ -966,7 +1065,16 @@ async function createRuntime(normalizedPlan, webgpu, spec, { debugLog }) {
   };
 }
 
-async function executeSample(normalizedPlan, runtime, { includeSetupInSelectedTiming, debugLog }) {
+async function executeSample(
+  normalizedPlan,
+  runtime,
+  {
+    includeSetupInSelectedTiming,
+    debugLog,
+    queueWaitScope,
+    queueWaitSubmitCadence,
+  },
+) {
   const rows = [];
   const determinismCaptureRows = new Map();
   let executionSetupTotalNs = 0;
@@ -978,9 +1086,39 @@ async function executeSample(normalizedPlan, runtime, { includeSetupInSelectedTi
   let encoder = null;
   let pass = null;
   let dispatchStateIndex = 0;
-  let firstSubmitLogged = false;
-  async function flushEncoder() {
+  let submitCount = 0;
+  async function flushEncoder({ waitForCompletion }) {
     if (!encoder) {
+      if (waitForCompletion && runtime.queueWaitFence) {
+        const submitStartedAt = performance.now();
+        const finishStartedAt = submitStartedAt;
+        submitCount += 1;
+        const syncEncoder = runtime.device.createCommandEncoder();
+        appendQueueWaitFenceCopy(runtime, syncEncoder);
+        const commandBuffer = syncEncoder.finish();
+        const finishNs = nsDelta(finishStartedAt);
+        const queueSubmitStartedAt = performance.now();
+        runtime.queue.submit([commandBuffer]);
+        const queueSubmitNs = nsDelta(queueSubmitStartedAt);
+        const queueWaitStartedAt = performance.now();
+        await awaitQueueCompletion(runtime);
+        const queueWaitNs = nsDelta(queueWaitStartedAt);
+        const submitNs = nsFromMs(performance.now() - submitStartedAt);
+        stepBreakdownNs.submitCommandEncoderFinishTotalNs += finishNs;
+        stepBreakdownNs.submitQueueSubmitTotalNs += queueSubmitNs;
+        stepBreakdownNs.submitQueueWaitTotalNs += queueWaitNs;
+        executionSubmitWaitTotalNs += submitNs;
+        debugLog('execution.submit.done', {
+          submitIndex: submitCount,
+          finishNs,
+          queueSubmitNs,
+          queueWaitNs,
+          submitWaitNs: submitNs,
+          waitedForCompletion: true,
+          waitReason: 'terminal-or-readback',
+          writeOnlyDrain: true,
+        });
+      }
       return;
     }
     if (pass) {
@@ -989,28 +1127,53 @@ async function executeSample(normalizedPlan, runtime, { includeSetupInSelectedTi
     }
     const submitStartedAt = performance.now();
     const finishStartedAt = submitStartedAt;
-    const isFirstSubmit = !firstSubmitLogged;
+    submitCount += 1;
+    const isFirstSubmit = submitCount === 1;
+    const waitReason = waitForCompletion
+      ? 'terminal-or-readback'
+      : (
+        queueWaitSubmitCadence > 0
+        && submitCount % queueWaitSubmitCadence === 0
+          ? 'submit-cadence'
+          : ''
+      );
+    debugLog('execution.submit.finish.start', {
+      submitIndex: submitCount,
+      dispatchesEncoded: dispatchStateIndex,
+      waitForCompletion,
+    });
     if (isFirstSubmit) {
       debugLog('execution.firstSubmit.finish.start', {
         dispatchesEncoded: dispatchStateIndex,
       });
     }
+    if (waitReason && runtime.queueWaitFence) {
+      appendQueueWaitFenceCopy(runtime, encoder);
+    }
     const commandBuffer = encoder.finish();
     const finishNs = nsDelta(finishStartedAt);
     encoder = null;
+    debugLog('execution.submit.finish.done', {
+      submitIndex: submitCount,
+      finishNs,
+      dispatchesEncoded: dispatchStateIndex,
+      waitForCompletion,
+    });
     if (isFirstSubmit) {
       debugLog('execution.firstSubmit.start', {
         dispatchesEncoded: dispatchStateIndex,
       });
-      firstSubmitLogged = true;
-    }
-    if (isFirstSubmit) {
       debugLog('execution.firstSubmit.finish.done', {
         finishNs,
         dispatchesEncoded: dispatchStateIndex,
       });
     }
     const queueSubmitStartedAt = performance.now();
+    debugLog('execution.submit.queueSubmit.start', {
+      submitIndex: submitCount,
+      dispatchesEncoded: dispatchStateIndex,
+      waitForCompletion,
+    });
     if (isFirstSubmit) {
       debugLog('execution.firstSubmit.queueSubmit.start', {
         dispatchesEncoded: dispatchStateIndex,
@@ -1018,46 +1181,85 @@ async function executeSample(normalizedPlan, runtime, { includeSetupInSelectedTi
     }
     runtime.queue.submit([commandBuffer]);
     const queueSubmitNs = nsDelta(queueSubmitStartedAt);
+    debugLog('execution.submit.queueSubmit.done', {
+      submitIndex: submitCount,
+      queueSubmitNs,
+      dispatchesEncoded: dispatchStateIndex,
+      waitForCompletion,
+    });
     if (isFirstSubmit) {
       debugLog('execution.firstSubmit.queueSubmit.done', {
         queueSubmitNs,
         dispatchesEncoded: dispatchStateIndex,
       });
     }
-    const queueWaitStartedAt = performance.now();
-    if (isFirstSubmit) {
-      debugLog('execution.firstSubmit.queueWait.start', {
+    let queueWaitNs = 0;
+    if (waitReason) {
+      const queueWaitStartedAt = performance.now();
+      debugLog('execution.submit.queueWait.start', {
+        submitIndex: submitCount,
         dispatchesEncoded: dispatchStateIndex,
+        waitReason,
       });
-    }
-    await runtime.queue.onSubmittedWorkDone?.();
-    const queueWaitNs = nsDelta(queueWaitStartedAt);
-    if (isFirstSubmit) {
-      debugLog('execution.firstSubmit.queueWait.done', {
+      if (isFirstSubmit) {
+        debugLog('execution.firstSubmit.queueWait.start', {
+          dispatchesEncoded: dispatchStateIndex,
+          waitReason,
+        });
+      }
+      await awaitQueueCompletion(runtime);
+      queueWaitNs = nsDelta(queueWaitStartedAt);
+      debugLog('execution.submit.queueWait.done', {
+        submitIndex: submitCount,
         queueWaitNs,
         dispatchesEncoded: dispatchStateIndex,
+        waitReason,
       });
+      if (isFirstSubmit) {
+        debugLog('execution.firstSubmit.queueWait.done', {
+          queueWaitNs,
+          dispatchesEncoded: dispatchStateIndex,
+          waitReason,
+        });
+      }
     }
     const submitNs = nsFromMs(performance.now() - submitStartedAt);
     stepBreakdownNs.submitCommandEncoderFinishTotalNs += finishNs;
     stepBreakdownNs.submitQueueSubmitTotalNs += queueSubmitNs;
     stepBreakdownNs.submitQueueWaitTotalNs += queueWaitNs;
     executionSubmitWaitTotalNs += submitNs;
-    if (firstSubmitLogged) {
+    debugLog('execution.submit.done', {
+      submitIndex: submitCount,
+      finishNs,
+      queueSubmitNs,
+      queueWaitNs,
+      submitWaitNs: submitNs,
+      waitedForCompletion: Boolean(waitReason),
+      waitReason,
+    });
+    if (isFirstSubmit) {
       debugLog('execution.firstSubmit.done', {
         finishNs,
         queueSubmitNs,
         queueWaitNs,
         submitWaitNs: submitNs,
+        waitedForCompletion: Boolean(waitReason),
+        waitReason,
       });
-      firstSubmitLogged = false;
     }
   }
 
   const commandLoopStartedAt = performance.now();
   for (const [index, step] of normalizedPlan.steps.entries()) {
+    debugLog('execution.step.start', {
+      stepIndex: index,
+      stepCount: normalizedPlan.steps.length,
+      stepKind: step.kind,
+      ...(typeof step.bufferId === 'string' ? { bufferId: step.bufferId } : {}),
+      ...(typeof step.moduleId === 'string' ? { moduleId: step.moduleId } : {}),
+    });
     if (step.kind === 'writeBuffer') {
-      await flushEncoder();
+      await flushEncoder({ waitForCompletion: false });
       const buffer = runtime.buffers.get(step.bufferId);
       if (!buffer) {
         throw new Error(`writeBuffer references unknown buffer: ${step.bufferId}`);
@@ -1190,7 +1392,7 @@ async function executeSample(normalizedPlan, runtime, { includeSetupInSelectedTi
     }
 
     if (step.kind === 'readBuffer') {
-      await flushEncoder();
+      await flushEncoder({ waitForCompletion: true });
       const buffer = runtime.buffers.get(step.bufferId);
       if (!buffer) {
         throw new Error(`readBuffer references unknown buffer: ${step.bufferId}`);
@@ -1249,7 +1451,7 @@ async function executeSample(normalizedPlan, runtime, { includeSetupInSelectedTi
     throw new Error(`unsupported step kind during execution: ${step.kind}`);
   }
 
-  await flushEncoder();
+  await flushEncoder({ waitForCompletion: true });
   if (runtime.queue?._submitBreakdownNs) {
     stepBreakdownNs.submitCommandPrepTotalNs = runtime.queue._submitBreakdownNs.submitCommandPrepTotalNs ?? 0;
     stepBreakdownNs.submitAddonCallTotalNs = runtime.queue._submitBreakdownNs.submitAddonCallTotalNs ?? 0;
@@ -1314,10 +1516,14 @@ async function executeSample(normalizedPlan, runtime, { includeSetupInSelectedTi
     timingMs,
     timingSource: 'doe-execution-total-ns',
     timingClass: 'operation',
-    queueSyncMode: 'per-command',
-    queueWaitMode: 'queue.onSubmittedWorkDone',
-    executionQueueSyncMode: 'per-command',
-    executionQueueWaitMode: 'queue.onSubmittedWorkDone',
+    queueSyncMode: PACKAGE_QUEUE_SYNC_MODE,
+    queueWaitMode: runtime.queueWaitMode,
+    queueWaitScope,
+    queueWaitSubmitCadence,
+    executionQueueSyncMode: PACKAGE_QUEUE_SYNC_MODE,
+    executionQueueWaitMode: runtime.queueWaitMode,
+    executionQueueWaitScope: queueWaitScope,
+    executionQueueWaitSubmitCadence: queueWaitSubmitCadence,
     workload: normalizedPlan.workloadId,
     canonicalWorkloadId: normalizedPlan.workloadId,
     planId: normalizedPlan.planId,
@@ -1366,6 +1572,9 @@ export async function executePlanFile({
     || process.env.DOE_NODE_WEBGPU_DEBUG_BOUNDARIES === '1'
     || (runtimeHost === 'bun' && process.env.DOE_BUN_WEBGPU_DEBUG_BOUNDARIES === '1')
   );
+  const queueWaitSubmitCadence = queueWaitSubmitCadenceForRuntimeHost(runtimeHost);
+  const queueWaitMode = queueWaitModeForRuntimeHost(runtimeHost);
+  const queueWaitScope = queueWaitScopeForRuntimeHost(runtimeHost);
   const effectiveStepLimit = stepLimit || parseOptionalPositiveInt(
     process.env.DOE_NODE_WEBGPU_STEP_LIMIT
       ?? (runtimeHost === 'bun' ? process.env.DOE_BUN_WEBGPU_STEP_LIMIT : '')
@@ -1430,10 +1639,14 @@ export async function executePlanFile({
       processWallMs: 0,
       timingSource: 'doe-execution-total-ns',
       timingClass: 'operation',
-      queueSyncMode: 'per-command',
-      queueWaitMode: 'queue.onSubmittedWorkDone',
-      executionQueueSyncMode: 'per-command',
-      executionQueueWaitMode: 'queue.onSubmittedWorkDone',
+      queueSyncMode: PACKAGE_QUEUE_SYNC_MODE,
+      queueWaitMode,
+      queueWaitScope,
+      queueWaitSubmitCadence,
+      executionQueueSyncMode: PACKAGE_QUEUE_SYNC_MODE,
+      executionQueueWaitMode: queueWaitMode,
+      executionQueueWaitScope: queueWaitScope,
+      executionQueueWaitSubmitCadence: queueWaitSubmitCadence,
       workload: normalizedPlan.workloadId,
       canonicalWorkloadId: normalizedPlan.workloadId,
       planId: normalizedPlan.planId,
@@ -1508,6 +1721,9 @@ export async function executePlanFile({
       processWallMs: performance.now() - executionEnvelopeStartedAt,
       unsupportedCode: unsupportedEntry.unsupportedCode,
       unsupportedDetail: unsupportedEntry.detail ?? '',
+      queueWaitMode,
+      queueWaitScope,
+      queueWaitSubmitCadence,
     });
     const artifactFinalizeStartedAt = performance.now();
     await writeExecutorArtifacts(traceMetaPath, traceJsonlPath, unsupportedResult.meta, unsupportedResult.rows);
@@ -1528,12 +1744,14 @@ export async function executePlanFile({
   });
   let runtime = null;
   try {
-    runtime = await createRuntime(normalizedPlan, webgpu, spec, { debugLog });
+    runtime = await createRuntime(normalizedPlan, webgpu, spec, { debugLog, runtimeHost });
     runtime.hostExecutorInitTotalNs += providerModuleResolveTotalNs;
     const timedEnvelopeStartedAt = performance.now();
     const result = await executeSample(normalizedPlan, runtime, {
       includeSetupInSelectedTiming: !preparedSession,
       debugLog,
+      queueWaitScope,
+      queueWaitSubmitCadence,
     });
     const artifactFinalizeStartedAt = performance.now();
     if (traceJsonlPath) {
@@ -1552,9 +1770,9 @@ export async function executePlanFile({
       hostInputReadTotalNs,
       hostInputParseTotalNs,
       hostWorkloadPrepareTotalNs,
-      hostExecutorInitTotalNs: runtime.hostExecutorInitTotalNs,
-      hostUploadPrewarmTotalNs: result.meta.hostUploadPrewarmTotalNs,
-      hostKernelPrewarmTotalNs: result.meta.hostKernelPrewarmTotalNs,
+        hostExecutorInitTotalNs: runtime.hostExecutorInitTotalNs,
+        hostUploadPrewarmTotalNs: result.meta.hostUploadPrewarmTotalNs,
+        hostKernelPrewarmTotalNs: result.meta.hostKernelPrewarmTotalNs,
       hostCommandOrchestrationTotalNs: result.meta.hostCommandOrchestrationTotalNs,
       hostArtifactFinalizeTotalNs: nsDelta(artifactFinalizeStartedAt),
     }));
@@ -1588,12 +1806,15 @@ export async function executePlanFile({
         preparedSession,
         hostInputReadTotalNs,
         hostInputParseTotalNs,
-        hostWorkloadPrepareTotalNs,
-        hostExecutorInitTotalNs: providerModuleResolveTotalNs + (error.hostExecutorInitTotalNs ?? 0),
-        processWallMs: performance.now() - executionEnvelopeStartedAt,
-        unsupportedCode: error.unsupportedCode ?? '',
-        unsupportedDetail: error.unsupportedDetail ?? '',
-      });
+      hostWorkloadPrepareTotalNs,
+      hostExecutorInitTotalNs: providerModuleResolveTotalNs + (error.hostExecutorInitTotalNs ?? 0),
+      processWallMs: performance.now() - executionEnvelopeStartedAt,
+      unsupportedCode: error.unsupportedCode ?? '',
+      unsupportedDetail: error.unsupportedDetail ?? '',
+      queueWaitMode,
+      queueWaitScope,
+      queueWaitSubmitCadence,
+    });
       const artifactFinalizeStartedAt = performance.now();
       await writeExecutorArtifacts(traceMetaPath, traceJsonlPath, unsupportedResult.meta, unsupportedResult.rows);
       unsupportedResult.meta.hostArtifactFinalizeTotalNs = nsDelta(artifactFinalizeStartedAt);
@@ -1610,6 +1831,9 @@ export async function executePlanFile({
       hostWorkloadPrepareTotalNs,
       hostExecutorInitTotalNs: providerModuleResolveTotalNs + (runtime?.hostExecutorInitTotalNs ?? 0),
       processWallMs: performance.now() - executionEnvelopeStartedAt,
+      queueWaitMode,
+      queueWaitScope,
+      queueWaitSubmitCadence,
     });
     const artifactFinalizeStartedAt = performance.now();
     await writeExecutorArtifacts(traceMetaPath, traceJsonlPath, errorResult.meta, errorResult.rows);

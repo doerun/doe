@@ -31,9 +31,7 @@
     "sampleTargetCount": 0
   },
   "selector": {
-    "cohorts": [
-      "exploration"
-    ],
+    "cohorts": [],
     "benchmarkClass": [
       "comparable"
     ],

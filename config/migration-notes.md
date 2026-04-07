@@ -1,6 +1,45 @@
 # Config Migration Notes
 
+## 2026-04-07
+
+### Apple Node `node-webgpu` package execution on `mac.lan` is no longer policy-blocked
+
+- the package executor now retains the JS provider root for the full execution
+  lifetime in `bench/executors/node-webgpu/executor.js`
+- this prevents async `ProcessEvents()` teardown crashes on `mac.lan` after
+  `requestDevice()`
+- `config/package-execution-policy.json` stays empty; the earlier
+  host/provider block rationale is superseded by the provider-lifetime fix
+- canonical Node package compare is restored for the Apple Metal Gemma package
+  workloads validated in `docs/status.md`
+
+### Package compare configs with explicit workload IDs no longer require cohort agreement
+
+- updated Apple Metal package compare configs for `gemma64` and `gemma1b`
+  across Node and Bun cold/warm profiles
+- those selectors now use explicit `ids` plus `benchmarkClass`, with
+  `cohorts: []`
+- this prevents stale cohort metadata from causing a zero-workload canonical
+  compare when the workload ID is already pinned
+
 ## 2026-04-06
+
+### Package trace-meta now records queue wait scope; `node-webgpu` policy is host-wide on `mac.lan`
+
+- `config/trace-meta.schema.json` now accepts:
+  - `queueWaitMode`
+  - `queueWaitScope`
+  - `executionQueueSyncMode`
+  - `executionQueueWaitMode`
+  - `executionQueueWaitScope`
+- package executor trace-meta now uses:
+  - `queueSyncMode: "per-command"`
+  - `queueWaitMode: "queue.onSubmittedWorkDone"`
+  - `queueWaitScope: "terminal-or-readback"`
+- `config/package-execution-policy.json` no longer carries workload-specific
+  `node-webgpu` Gemma blocks for `mac.lan`; it now blocks the provider
+  host-wide on that machine because minimal bring-up and completed executions
+  still terminate with `rc=139`
 
 ### `bench/cli.py` is now the only live benchmark front door
 

@@ -217,6 +217,10 @@ async function runWorker(args, { runtimeHost }) {
   });
 }
 
+function exitWorkerSuccessfully() {
+  process.exit(0);
+}
+
 async function runWithSupervisor(args, {
   cliPath,
   childEnv,
@@ -261,6 +265,15 @@ async function runWithSupervisor(args, {
   }
 
   const trace_meta_complete = await traceMetaRecordsTerminalOutcome(args['trace-meta']);
+  if (trace_meta_complete) {
+    const signal_suffix = outcome.signal ? `, signal=${outcome.signal}` : '';
+    process.stderr.write(
+      `${label} supervisor accepted child teardown failure after complete terminal trace-meta `
+      + `(code=${outcome.code ?? 'null'}${signal_suffix})\n`,
+    );
+    process.exitCode = 0;
+    return;
+  }
   if (!trace_meta_complete) {
     const unsupported = await probeUnsupportedBringup(args, {
       cliPath,
@@ -301,7 +314,7 @@ export async function runPackageWebGpuPlanCli({
   validateArgs(args, { usageCommand, providerUsage });
   if (process.env[childEnv] === '1') {
     await runWorker(args, { runtimeHost });
-    return;
+    exitWorkerSuccessfully();
   }
   await runWithSupervisor(args, {
     cliPath,

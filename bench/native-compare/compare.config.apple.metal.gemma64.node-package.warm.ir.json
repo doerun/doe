@@ -31,9 +31,7 @@
     "sampleTargetCount": 0
   },
   "selector": {
-    "cohorts": [
-      "governed"
-    ],
+    "cohorts": [],
     "benchmarkClass": [
       "comparable"
     ],

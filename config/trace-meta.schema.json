@@ -51,6 +51,9 @@
     "hostPlanArtifactPath": { "type": "string" },
     "hostPlanArtifactHash": { "type": "string" },
     "queueSyncMode": { "type": "string" },
+    "queueWaitMode": { "type": "string" },
+    "queueWaitScope": { "type": "string" },
+    "queueWaitSubmitCadence": { "type": "integer", "minimum": 0 },
     "executionRowCount": { "type": "integer", "minimum": 0 },
     "executionSuccessCount": { "type": "integer", "minimum": 0 },
     "executionErrorCount": { "type": "integer", "minimum": 0 },
@@ -93,6 +96,10 @@
     "timingMs": { "type": "number", "minimum": 0 },
     "elapsedMs": { "type": "number", "minimum": 0 },
     "processWallMs": { "type": "number", "minimum": 0 },
+    "executionQueueSyncMode": { "type": "string" },
+    "executionQueueWaitMode": { "type": "string" },
+    "executionQueueWaitScope": { "type": "string" },
+    "executionQueueWaitSubmitCadence": { "type": "integer", "minimum": 0 },
     "workloadUnitWallSource": {
       "type": "string",
       "enum": ["trace-meta-process-wall"]

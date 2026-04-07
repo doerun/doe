@@ -1,4 +1,87 @@
 # Doe status
+## Apple Node `node-webgpu` package execution on `mac.lan` is restored; the provider root now stays alive through async completion (2026-04-07 UTC)
+
+- retained the Node package provider root in
+  `bench/executors/node-webgpu/executor.js` for the full sample execution
+- rationale:
+  - the rebuilt external-drive Dawn Node binding schedules future
+    `ProcessEvents()` calls through `AsyncRunner`
+  - our package executor was dropping the JS `gpu` root immediately after
+    `requestDevice()`
+  - retaining that root removes the `ProcessEvents()` teardown crash and
+    restores real execution rows on this host
+- reproduced successful canonical Node package executions on `mac.lan` for:
+  - `inference_gemma3_270m_decode_1tok`
+  - `inference_gemma3_270m_prefill_32tok`
+  - `inference_gemma3_270m_prefill_64tok_decode_64tok`
+  - `inference_gemma3_1b_prefill_64tok_decode_64tok`
+- canonical artifact-first compare also works again:
+  - `/tmp/node-package-prefill32.compare.json`
+- `config/package-execution-policy.json` remains empty; the earlier host-block
+  notes below are superseded by this fix
+
+## Package compare configs with explicit workload IDs no longer self-filter through stale cohort tags (2026-04-07 UTC)
+
+- updated Apple Metal package compare configs for `gemma64` and `gemma1b`
+  across Node and Bun cold/warm surfaces so their selectors now rely on the
+  pinned workload `ids` plus `benchmarkClass=comparable`
+- removed stale cohort filters from:
+  - `bench/native-compare/compare.config.apple.metal.gemma64.bun-package.ir.json`
+  - `bench/native-compare/compare.config.apple.metal.gemma64.bun-package.warm.ir.json`
+  - `bench/native-compare/compare.config.apple.metal.gemma64.node-package.ir.json`
+  - `bench/native-compare/compare.config.apple.metal.gemma64.node-package.warm.ir.json`
+  - `bench/native-compare/compare.config.apple.metal.gemma1b.bun-package.ir.json`
+  - `bench/native-compare/compare.config.apple.metal.gemma1b.bun-package.warm.ir.json`
+  - `bench/native-compare/compare.config.apple.metal.gemma1b.node-package.ir.json`
+  - `bench/native-compare/compare.config.apple.metal.gemma1b.node-package.warm.ir.json`
+- rationale:
+  - package profiles that already pin exact workload IDs should not also
+    depend on a cohort tag that can drift away from the selected workload
+  - `apple-metal-gemma64-bun-package-{cold,warm}` had resolved to zero
+    workloads because `inference_gemma3_270m_prefill_64tok_decode_64tok` is
+    tagged `regression` / `exploration`, not `governed`
+- canonical Bun reruns on this host:
+  - cold:
+    `bench/out/apple-metal/20260407T001537Z/gemma1b.bun-package.ir.compare.json`
+  - warm:
+    `bench/out/apple-metal/20260407T001537Z/gemma1b.bun-package.warm.ir.compare.json`
+
+## Apple `node-webgpu` is now blocked host-wide on `mac.lan`; package trace-meta records wait scope explicitly (2026-04-06 UTC)
+
+- `config/package-execution-policy.json` now blocks Apple/Node `node-webgpu`
+  at the provider level on `mac.lan`, not by individual Gemma workload.
+- rationale:
+  - the earlier workload-level Gemma blocks were too narrow
+  - a minimal `node-webgpu` adapter/device script on `mac.lan` prints
+    successfully and still exits with `rc=139`
+  - real Gemma package executions can make progress, but the provider still
+    tears down with `rc=139` on this host
+  - this is therefore a host/provider availability problem, not just a
+    workload-shape problem
+- package executor updates:
+  - package trace-meta now records `queueWaitScope:
+    "terminal-or-readback"` alongside the existing queue sync/wait mode fields
+  - package artifact writes are now synchronous so a child teardown failure
+    does not silently discard already-computed artifacts
+  - the package executor now retains in-flight `writeBuffer` payloads and
+    submitted command buffers until a real completion wait boundary
+
+## Apple `node-webgpu` package execution on `mac.lan` is now explicitly blocked for reproduced Gemma prefill failures (2026-04-06 UTC)
+
+- `config/package-execution-policy.json` now blocks additional Apple/Node
+  `node-webgpu` executions on `mac.lan` for:
+  - `inference_gemma3_270m_prefill_32tok`
+  - `inference_gemma3_1b_prefill_32tok`
+- rationale:
+  - both workloads were rerun through the canonical artifact-first package path
+    with `bench/cli.py run`
+  - Doe package execution completed on the same host
+  - `node-webgpu` produced zero-execution failure artifacts on both workloads
+  - direct boundary tracing of `bench/executors/run-node-webgpu-plan.js`
+    reproduced hard failures at `queue.onSubmittedWorkDone()`
+- the policy detail text for the existing Apple/Node Gemma blocks was narrowed
+  to observed failure behavior rather than unproven root-cause claims
+
 ## Canonical benchmark workflow is now `bench/cli.py` only; legacy compare wrappers were removed (2026-04-06 UTC)
 
 - the only live benchmark front door is now `bench/cli.py`:
