@@ -11,8 +11,8 @@ stability step:
 4. promote only cases where the real selected token changes
 5. require short suffix consequence before treating a case as a flagship
 
-This is intentionally narrower than the runtime and moat documents. It does not
-change live runtime behavior.
+This is intentionally narrower than the runtime and strategy documents. It does
+not change live runtime behavior.
 
 Planning surfaces:
 

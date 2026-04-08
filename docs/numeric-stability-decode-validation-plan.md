@@ -159,7 +159,7 @@ The rule is simple:
 
 This matters because a cross-policy decode flip on one backend is interesting,
 but a semantically meaningful decode flip that survives backend expansion is
-much closer to a real Doe moat.
+much closer to a real Doe strategy.
 
 ## Relationship to existing planning surfaces
 

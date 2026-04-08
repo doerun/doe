@@ -123,7 +123,7 @@ when they are tied back to those emitted contracts.
 - [`docs/numeric-stability-runtime-roadmap.md`](./numeric-stability-runtime-roadmap.md) for the numeric-stability integration path from bench evidence to live runtime contract
 - [`docs/numeric-stability-claim-ladder.md`](./numeric-stability-claim-ladder.md) for the current and target claim boundary around numeric stability
 - [`docs/numeric-stability-demo-ladder.md`](./numeric-stability-demo-ladder.md) for the first live demo set and promotion rules
-- [`docs/numeric-stability-moat-plan.md`](./numeric-stability-moat-plan.md) for the route-effect boundary between a runtime feature and a moat
+- [`docs/numeric-stability-strategy.md`](./numeric-stability-strategy.md) for the route-effect boundary between a runtime feature and the broader strategy claim
 - [`pipeline/lean/README.md`](../pipeline/lean/README.md) for Lean proof categories and the artifact boundary
 - [`bench/README.md`](../bench/README.md) for compare and claim workflows
 - [`runtime/zig/README.md`](../runtime/zig/README.md) for runtime details

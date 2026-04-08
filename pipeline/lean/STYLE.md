@@ -177,7 +177,8 @@ theorem applyPass_is_prefix (arr : ExprTypeArray) (pass : TransformPass) :
 - Every definition that models runtime behavior must reference the Zig source
   it mirrors in a comment.
 - When the Zig source changes, the Lean model must be updated in the same
-  change or flagged as stale in `docs/status.md`.
+  change or flagged as stale in the status log (`docs/status.md`, with dated
+  entries in the current `docs/status/*.md` shard).
 
 ## Extraction and artifacts
 

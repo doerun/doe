@@ -176,7 +176,7 @@ The remaining v1 demo work is:
 Important caveat:
 
 1. the current native ladder proves live route outcomes and receipts
-2. it does not yet prove moat-grade route effect on downstream execution for
+2. it does not yet prove strategy-grade route effect on downstream execution for
    ordinary callers
 
 ## Target v2 demo mix
@@ -188,9 +188,9 @@ After the first runtime promotion, expand to:
 3. at least two operator families
 4. at least one negative control shown alongside the headline cases
 
-## Target moat demo mix
+## Target strategy demo mix
 
-The first demo set that should count as moat-grade should include:
+The first demo set that should count as strategy-grade should include:
 
 1. one case where `prefer-stable` changes the committed downstream result
 2. one case where `accept-fast` explicitly preserves the fast path in the live
@@ -202,7 +202,7 @@ The first demo set that should count as moat-grade should include:
    contract
 
 Until those exist, treat the current ladder as a strong runtime capability
-demo, not the final moat demo.
+demo, not the final strategy demo.
 
 ## Future decode-boundary demo filter
 

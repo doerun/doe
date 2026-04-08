@@ -90,7 +90,7 @@ Those can be reproduced in principle by:
 4. CUDA
 5. a JS/WebGPU research harness
 
-The corpus is evidence. It is not the moat.
+The corpus is evidence. It is not the strategy.
 
 ## The novelty bar
 
@@ -128,7 +128,7 @@ The following can happen outside Doe:
 
 That work is still useful. It seeds the evidence base.
 
-### Doe-only moat work
+### Doe-only strategy work
 
 The following must land in Doe to become defensible:
 
@@ -329,7 +329,7 @@ Exit bar:
 Status:
 
 1. done for native annotated `matmul.logits`
-2. the remaining moat work is route effect on downstream execution, broader
+2. the remaining strategy work is route effect on downstream execution, broader
    operator families, and ordinary package-caller exposure
 
 ## Phase 4: make the route affect live execution
@@ -410,7 +410,7 @@ The intended sequence is:
 6. ordinary package exposure
 7. browser consumption
 
-That is the shortest path from evidence to moat.
+That is the shortest path from evidence to strategy.
 
 This comes last.
 
@@ -477,11 +477,11 @@ At that point, the runtime-capability claim becomes credible:
 **Doe is not just a harness that finds numeric fragility. It is a WebGPU
 runtime that can govern it.**
 
-## Definition of done for moat v1
+## Definition of done for strategy v1
 
-Moat v1 is a higher bar than runtime v1.
+Strategy v1 is a higher bar than runtime v1.
 
-Moat v1 is done only when all of the following are true:
+Strategy v1 is done only when all of the following are true:
 
 1. at least one in-path route affects downstream execution rather than only
    emitting a receipt
@@ -493,7 +493,7 @@ Moat v1 is done only when all of the following are true:
 5. the cost envelope for automatic or default triggering is measured and
    bounded
 
-At that point, the moat claim becomes credible:
+At that point, the strategy claim becomes credible:
 
 **Doe is the WebGPU runtime that governs numeric fragility for ordinary
 callers, not just the runtime that can detect and receipt it.**

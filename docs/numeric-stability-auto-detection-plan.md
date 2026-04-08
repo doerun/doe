@@ -6,7 +6,7 @@ This document is the B-track runtime-first plan for moving Doe from the live
 ordinary-execution trio toward broader automatic fragility detection and
 bounded rerun across additional operator families.
 
-It is intentionally narrower than the product/moat claim documents.
+It is intentionally narrower than the product/strategy claim documents.
 
 Use it for:
 

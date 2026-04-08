@@ -172,10 +172,10 @@ class TestSchemaCompliance(unittest.TestCase):
 
 - Comments explain why, not what.
 - Section separators: `# ---` or `# ===` for major sections in large files.
-- No TODO/FIXME inline. Track follow-ups in `docs/status.md`.
+- No TODO/FIXME inline. Track follow-ups in the status log (`docs/status.md`, with dated entries in the current `docs/status/*.md` shard).
 
 ## File size
 
 - 1200 lines max per Python file.
-- When exceeded, add a tracked sharding follow-up in `docs/status.md`.
+- When exceeded, add a tracked sharding follow-up in the current status shard.
 - Split by cohesive functionality, not arbitrary line count.

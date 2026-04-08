@@ -18,7 +18,7 @@ The correct high-level statement is:
 **Doe is not just a harness that finds numeric fragility. Doe is trying to
 become the WebGPU runtime that can govern it.**
 
-That distinction matters because the examples alone are not the moat.
+That distinction matters because the examples alone are not the strategy.
 
 ## Claim ladder
 
@@ -83,7 +83,7 @@ Safe claim only after route effect becomes real:
 3. `abstain` can prevent forced continuation and return an explicit governed
    outcome
 
-This is the first level that starts to look like a moat rather than a runtime
+This is the first level that starts to look strategic rather than a runtime
 measurement feature.
 
 ## Level 5: Doe has a package/runtime product surface
@@ -131,7 +131,7 @@ We should currently claim only:
      receipts
 5. Doe has real prompt/control cases that are `runtime-exercised` in native
    ordinary execution.
-6. Doe does not yet claim moat-level execution governance for ordinary
+6. Doe does not yet claim strategy-level execution governance for ordinary
    automatic callers.
 
 ## What we should not claim yet
@@ -179,7 +179,7 @@ The shortest credible product line is:
 only the fragile operator under a stronger declared policy, and govern the
 live outcome with a receipted route decision.**
 
-That sentence is the target moat wording. It is not yet fully true today for
+That sentence is the target strategy wording. It is not yet fully true today for
 generic package callers, browser lanes, or general in-path route effect.
 
 Until then, the safer internal wording is:

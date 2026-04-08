@@ -110,7 +110,7 @@ function failValidation(path, message) {
 - Section separators for large files: `// === Section name ===`.
 - JSDoc `/** */` blocks for public API functions and classes.
 - Inline `//` comments only for non-obvious constraints or rationale.
-- No TODO/FIXME inline; track follow-ups in `docs/status.md`.
+- No TODO/FIXME inline; track follow-ups in the status log (`docs/status.md`, with dated entries in the current `docs/status/*.md` shard).
 
 ```javascript
 // doe-gpu — compute surface
