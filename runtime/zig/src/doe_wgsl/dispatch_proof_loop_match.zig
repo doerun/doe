@@ -232,9 +232,17 @@ fn match_local_break_guard(
         .binary => |value| value,
         else => return null,
     };
-    return switch (step.direction) {
-        .ascending => match_ascending_break_guard(function, binary, local_idx),
-        .descending => match_descending_break_guard(function, binary, local_idx, init_value, step.magnitude),
+    return switch (binary.op) {
+        .logical_or => switch (step.direction) {
+            .ascending => match_local_break_guard(function, binary.lhs, local_idx, init_value, step) orelse
+                match_local_break_guard(function, binary.rhs, local_idx, init_value, step),
+            .descending => match_local_break_guard(function, binary.lhs, local_idx, init_value, step) orelse
+                match_local_break_guard(function, binary.rhs, local_idx, init_value, step),
+        },
+        else => switch (step.direction) {
+            .ascending => match_ascending_break_guard(function, binary, local_idx),
+            .descending => match_descending_break_guard(function, binary, local_idx, init_value, step.magnitude),
+        },
     };
 }
 
@@ -371,6 +379,10 @@ fn match_local_exclusive_limit(function: *const ir.Function, expr_id: ir.ExprId,
         .binary => |value| value,
         else => return null,
     };
+    if (binary.op == .logical_and) {
+        return match_local_exclusive_limit(function, binary.lhs, local_idx) orelse
+            match_local_exclusive_limit(function, binary.rhs, local_idx);
+    }
     if (is_local_ref(function, binary.lhs, local_idx)) {
         return switch (binary.op) {
             .less => match_u32_literal_value(function, binary.rhs),
@@ -400,6 +412,10 @@ fn match_descending_exclusive_limit(
         .binary => |value| value,
         else => return null,
     };
+    if (binary.op == .logical_and) {
+        return match_descending_exclusive_limit(function, binary.lhs, local_idx, init_value, step) orelse
+            match_descending_exclusive_limit(function, binary.rhs, local_idx, init_value, step);
+    }
     const min_body_value = if (is_local_ref(function, binary.lhs, local_idx))
         switch (binary.op) {
             .greater => exclusive_limit_from_inclusive(match_u32_literal_value(function, binary.rhs) orelse return null),

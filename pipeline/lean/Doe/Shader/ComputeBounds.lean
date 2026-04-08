@@ -366,6 +366,58 @@ theorem flat_index_2d_plus_offset_inbounds
     flatIndex2D gid_x gid_y width + offset < width * height + offset := h_offset_lt
     _ ≤ array_length := h_fit
 
+/-- Flat index from 3D global invocation ID. Common pattern:
+    buf[(gid.z * height + gid.y) * width + gid.x]. -/
+def flatIndex3D (gid_x gid_y gid_z width height : Nat) : Nat :=
+  gid_z * (width * height) + flatIndex2D gid_x gid_y width
+
+/-- Flat 3D index is in bounds when all three gid components are independently
+    bounded by the dispatched 3D extent. -/
+theorem flat_index_3d_inbounds
+    (gid_x gid_y gid_z width height depth : Nat)
+    (h_x : gid_x < width)
+    (h_y : gid_y < height)
+    (h_z : gid_z < depth) :
+    flatIndex3D gid_x gid_y gid_z width height < width * height * depth := by
+  have h_plane_lt : flatIndex2D gid_x gid_y width < width * height := by
+    exact flat_index_2d_inbounds gid_x gid_y width height h_x h_y
+  unfold flatIndex3D
+  have h_row :
+      gid_z * (width * height) + flatIndex2D gid_x gid_y width <
+      gid_z * (width * height) + (width * height) := by
+    exact Nat.add_lt_add_left h_plane_lt (gid_z * (width * height))
+  have h_step :
+      gid_z * (width * height) + (width * height) = (gid_z + 1) * (width * height) := by
+    simpa using (Nat.succ_mul gid_z (width * height)).symm
+  have h_depth :
+      (gid_z + 1) * (width * height) ≤ depth * (width * height) := by
+    exact Nat.mul_le_mul_right (width * height) (Nat.succ_le_of_lt h_z)
+  calc
+    gid_z * (width * height) + flatIndex2D gid_x gid_y width <
+        gid_z * (width * height) + (width * height) := h_row
+    _ = (gid_z + 1) * (width * height) := h_step
+    _ ≤ depth * (width * height) := h_depth
+    _ = width * height * depth := by
+      simp [Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm]
+
+/-- Flat 3D index with an additional constant offset. This captures volume
+    kernels that reserve a prefix region before the dispatch-visible window. -/
+theorem flat_index_3d_plus_offset_inbounds
+    (gid_x gid_y gid_z width height depth offset array_length : Nat)
+    (h_x : gid_x < width)
+    (h_y : gid_y < height)
+    (h_z : gid_z < depth)
+    (h_fit : width * height * depth + offset ≤ array_length) :
+    flatIndex3D gid_x gid_y gid_z width height + offset < array_length := by
+  have h_flat_lt : flatIndex3D gid_x gid_y gid_z width height < width * height * depth := by
+    exact flat_index_3d_inbounds gid_x gid_y gid_z width height depth h_x h_y h_z
+  have h_offset_lt :
+      flatIndex3D gid_x gid_y gid_z width height + offset < width * height * depth + offset := by
+    exact Nat.add_lt_add_right h_flat_lt offset
+  calc
+    flatIndex3D gid_x gid_y gid_z width height + offset < width * height * depth + offset := h_offset_lt
+    _ ≤ array_length := h_fit
+
 /-- Early-return texture guard for 2D gid coordinates. If the shader exits when
     either coordinate is out of range, any surviving execution has both
     coordinates strictly below the texture dimensions. This is the proof-backed

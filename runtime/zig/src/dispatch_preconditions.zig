@@ -46,6 +46,15 @@ pub fn required_buffer_bytes(
             const total_elements = try std.math.add(u64, element_count, precondition.element_offset);
             break :blk try std.math.mul(u64, total_elements, precondition.element_stride_bytes);
         },
+        .flat_index_3d_dispatch_xy => blk: {
+            const total_x = try invocation_extent(dispatch_workgroups[0], workgroup_size[0]);
+            const total_y = try invocation_extent(dispatch_workgroups[1], workgroup_size[1]);
+            const total_z = try invocation_extent(dispatch_workgroups[2], workgroup_size[2]);
+            const plane = try std.math.mul(u64, total_x, total_y);
+            const element_count = try std.math.mul(u64, plane, total_z);
+            const total_elements = try std.math.add(u64, element_count, precondition.element_offset);
+            break :blk try std.math.mul(u64, total_elements, precondition.element_stride_bytes);
+        },
     };
 }
 
@@ -87,6 +96,20 @@ test "required_buffer_bytes computes 2d flat dispatch bound in bytes" {
         .element_offset = 0,
     }, .{ 4, 3, 1 }, .{ 8, 2, 1 });
     try std.testing.expectEqual(@as(u64, 3072), required);
+}
+
+test "required_buffer_bytes computes 3d flat dispatch bound in bytes" {
+    const required = try required_buffer_bytes(.{
+        .kind = .flat_index_3d_dispatch_xy,
+        .gid_axis = 0,
+        .storage_binding = .{ .group = 0, .binding = 1 },
+        .element_multiplier = 1,
+        .loop_limit = 0,
+        .loop_limit_multiplier = 0,
+        .element_stride_bytes = 4,
+        .element_offset = 0,
+    }, .{ 2, 3, 4 }, .{ 4, 5, 6 });
+    try std.testing.expectEqual(@as(u64, 11520), required);
 }
 
 test "required_buffer_bytes accounts for affine gid offset" {

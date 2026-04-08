@@ -124,6 +124,30 @@ pub fn try_elide_storage_index(
         }
     }
 
+    if (lean_proof.boundsProven(.gid_3d_flat_storage_buffer_offset)) {
+        if (match_flat_index_3d_dispatch_xy(module, function, function_id, index_data.index)) |offset| {
+            return .{
+                .kind = .flat_index_3d_dispatch_xy,
+                .gid_axis = 0,
+                .storage_binding = binding,
+                .element_multiplier = 1,
+                .element_stride_bytes = element_stride_bytes,
+                .element_offset = offset,
+            };
+        }
+    } else if (lean_proof.boundsProven(.gid_3d_flat_storage_buffer)) {
+        if (match_flat_index_3d_dispatch_xy_base(module, function, function_id, index_data.index)) {
+            return .{
+                .kind = .flat_index_3d_dispatch_xy,
+                .gid_axis = 0,
+                .storage_binding = binding,
+                .element_multiplier = 1,
+                .element_stride_bytes = element_stride_bytes,
+                .element_offset = 0,
+            };
+        }
+    }
+
     return null;
 }
 
@@ -218,6 +242,74 @@ fn match_flat_index_2d_dispatch_x_base(
             match_gid_y_times_dispatch_width(module, function, function_id, binary.lhs));
 }
 
+fn match_flat_index_3d_dispatch_xy(
+    module: *const ir.Module,
+    function: *const ir.Function,
+    function_id: ir.FunctionId,
+    expr_id: ir.ExprId,
+) ?u64 {
+    if (match_flat_index_3d_dispatch_xy_base(module, function, function_id, expr_id)) return 0;
+
+    const canonical = resolve_value_alias(function, expr_id);
+    const expr = function.exprs.items[canonical];
+    const binary = switch (expr.data) {
+        .binary => |value| value,
+        else => return null,
+    };
+    if (binary.op != .add) return null;
+
+    if (match_u32_literal_value(function, binary.lhs)) |offset| {
+        if (match_flat_index_3d_dispatch_xy_base(module, function, function_id, binary.rhs)) return offset;
+    }
+    if (match_u32_literal_value(function, binary.rhs)) |offset| {
+        if (match_flat_index_3d_dispatch_xy_base(module, function, function_id, binary.lhs)) return offset;
+    }
+    return null;
+}
+
+fn match_flat_index_3d_dispatch_xy_base(
+    module: *const ir.Module,
+    function: *const ir.Function,
+    function_id: ir.FunctionId,
+    expr_id: ir.ExprId,
+) bool {
+    const canonical = resolve_value_alias(function, expr_id);
+    const expr = function.exprs.items[canonical];
+    const binary = switch (expr.data) {
+        .binary => |value| value,
+        else => return false,
+    };
+    if (binary.op != .add) return false;
+
+    if (classify_builtin_component(function, binary.lhs, .global_invocation_id) == 0) {
+        return match_flat_index_3d_dispatch_xy_without_x(module, function, function_id, binary.rhs);
+    }
+    if (classify_builtin_component(function, binary.rhs, .global_invocation_id) == 0) {
+        return match_flat_index_3d_dispatch_xy_without_x(module, function, function_id, binary.lhs);
+    }
+    return false;
+}
+
+fn match_flat_index_3d_dispatch_xy_without_x(
+    module: *const ir.Module,
+    function: *const ir.Function,
+    function_id: ir.FunctionId,
+    expr_id: ir.ExprId,
+) bool {
+    const canonical = resolve_value_alias(function, expr_id);
+    const expr = function.exprs.items[canonical];
+    const binary = switch (expr.data) {
+        .binary => |value| value,
+        else => return false,
+    };
+    if (binary.op != .add) return false;
+
+    return (match_gid_z_times_dispatch_area_xy(module, function, function_id, binary.lhs) and
+        match_gid_y_times_dispatch_width(module, function, function_id, binary.rhs)) or
+        (match_gid_z_times_dispatch_area_xy(module, function, function_id, binary.rhs) and
+            match_gid_y_times_dispatch_width(module, function, function_id, binary.lhs));
+}
+
 fn match_gid_y_times_dispatch_width(
     module: *const ir.Module,
     function: *const ir.Function,
@@ -236,6 +328,26 @@ fn match_gid_y_times_dispatch_width(
         match_dispatch_width(module, function, function_id, binary.rhs)) or
         (classify_builtin_component(function, binary.rhs, .global_invocation_id) == 1 and
             match_dispatch_width(module, function, function_id, binary.lhs));
+}
+
+fn match_gid_z_times_dispatch_area_xy(
+    module: *const ir.Module,
+    function: *const ir.Function,
+    function_id: ir.FunctionId,
+    expr_id: ir.ExprId,
+) bool {
+    const canonical = resolve_value_alias(function, expr_id);
+    const expr = function.exprs.items[canonical];
+    const binary = switch (expr.data) {
+        .binary => |value| value,
+        else => return false,
+    };
+    if (binary.op != .mul) return false;
+
+    return (classify_builtin_component(function, binary.lhs, .global_invocation_id) == 2 and
+        match_dispatch_area_xy(module, function, function_id, binary.rhs)) or
+        (classify_builtin_component(function, binary.rhs, .global_invocation_id) == 2 and
+            match_dispatch_area_xy(module, function, function_id, binary.lhs));
 }
 
 fn match_dispatch_width(
@@ -263,6 +375,51 @@ fn match_dispatch_width(
             match_u32_literal(function, binary.lhs, workgroup_size[0]));
 }
 
+fn match_dispatch_height(
+    module: *const ir.Module,
+    function: *const ir.Function,
+    function_id: ir.FunctionId,
+    expr_id: ir.ExprId,
+) bool {
+    const workgroup_size = workgroup_size_for_function(module, function_id);
+    if (classify_builtin_component(function, expr_id, .num_workgroups) == 1) {
+        return workgroup_size[1] == 1;
+    }
+
+    const canonical = resolve_value_alias(function, expr_id);
+    const expr = function.exprs.items[canonical];
+    const binary = switch (expr.data) {
+        .binary => |value| value,
+        else => return false,
+    };
+    if (binary.op != .mul) return false;
+
+    return (classify_builtin_component(function, binary.lhs, .num_workgroups) == 1 and
+        match_u32_literal(function, binary.rhs, workgroup_size[1])) or
+        (classify_builtin_component(function, binary.rhs, .num_workgroups) == 1 and
+            match_u32_literal(function, binary.lhs, workgroup_size[1]));
+}
+
+fn match_dispatch_area_xy(
+    module: *const ir.Module,
+    function: *const ir.Function,
+    function_id: ir.FunctionId,
+    expr_id: ir.ExprId,
+) bool {
+    const canonical = resolve_value_alias(function, expr_id);
+    const expr = function.exprs.items[canonical];
+    const binary = switch (expr.data) {
+        .binary => |value| value,
+        else => return false,
+    };
+    if (binary.op != .mul) return false;
+
+    return (match_dispatch_width(module, function, function_id, binary.lhs) and
+        match_dispatch_height(module, function, function_id, binary.rhs)) or
+        (match_dispatch_width(module, function, function_id, binary.rhs) and
+            match_dispatch_height(module, function, function_id, binary.lhs));
+}
+
 fn workgroup_size_for_function(module: *const ir.Module, function_id: ir.FunctionId) [3]u32 {
     for (module.entry_points.items) |entry| {
         if (entry.function == function_id) return entry.workgroup_size;
@@ -286,7 +443,7 @@ fn match_u32_literal_value(function: *const ir.Function, expr_id: ir.ExprId) ?u6
     };
 }
 
-fn match_gid_component_plus_offset(
+pub fn match_gid_component_plus_offset(
     function: *const ir.Function,
     expr_id: ir.ExprId,
     builtin: ir.Builtin,
@@ -336,7 +493,7 @@ fn match_gid_component_times_stride(
     return null;
 }
 
-fn match_gid_component_times_stride_plus_offset(
+pub fn match_gid_component_times_stride_plus_offset(
     function: *const ir.Function,
     expr_id: ir.ExprId,
     builtin: ir.Builtin,
@@ -365,7 +522,7 @@ fn match_gid_component_times_stride_plus_offset(
     return null;
 }
 
-fn match_gid_component_tiled_plus_offset(
+pub fn match_gid_component_tiled_plus_offset(
     function: *const ir.Function,
     expr_id: ir.ExprId,
     builtin: ir.Builtin,

@@ -42,6 +42,21 @@
       "runtimePath": "runtime/zig/src/doe_wgsl/dispatch_proof_match.zig:try_elide_storage_index"
     },
     {
+      "id": "gid_3d_flat_storage_buffer",
+      "theorem": "flat_index_3d_inbounds",
+      "runtimePath": "runtime/zig/src/doe_wgsl/dispatch_proof_match.zig:try_elide_storage_index"
+    },
+    {
+      "id": "gid_3d_flat_storage_buffer_offset",
+      "theorem": "flat_index_3d_plus_offset_inbounds",
+      "runtimePath": "runtime/zig/src/doe_wgsl/dispatch_proof_match.zig:try_elide_storage_index"
+    },
+    {
+      "id": "gid_texture_1d_dispatch_fit",
+      "theorem": "gid_texture_coord_1d_inbounds_when_dispatch_fits",
+      "runtimePath": "runtime/zig/src/doe_wgsl/ir_transform_robustness.zig:try_elide_dispatch_fit_texture_coords"
+    },
+    {
       "id": "gid_texture_2d_dispatch_fit",
       "theorem": "gid_texture_coords_2d_inbounds_when_dispatch_fits",
       "runtimePath": "runtime/zig/src/doe_wgsl/ir_transform_robustness.zig:try_elide_dispatch_fit_texture_coords"
@@ -49,6 +64,36 @@
     {
       "id": "gid_texture_3d_dispatch_fit",
       "theorem": "gid_texture_coords_3d_inbounds_when_dispatch_fits",
+      "runtimePath": "runtime/zig/src/doe_wgsl/ir_transform_robustness.zig:try_elide_dispatch_fit_texture_coords"
+    },
+    {
+      "id": "gid_texture_1d_affine_dispatch_fit",
+      "theorem": "gid_texture_coord_1d_affine_inbounds_when_dispatch_fits",
+      "runtimePath": "runtime/zig/src/doe_wgsl/ir_transform_robustness.zig:try_elide_dispatch_fit_texture_coords"
+    },
+    {
+      "id": "gid_texture_2d_affine_dispatch_fit",
+      "theorem": "gid_texture_coords_2d_affine_inbounds_when_dispatch_fits",
+      "runtimePath": "runtime/zig/src/doe_wgsl/ir_transform_robustness.zig:try_elide_dispatch_fit_texture_coords"
+    },
+    {
+      "id": "gid_texture_3d_affine_dispatch_fit",
+      "theorem": "gid_texture_coords_3d_affine_inbounds_when_dispatch_fits",
+      "runtimePath": "runtime/zig/src/doe_wgsl/ir_transform_robustness.zig:try_elide_dispatch_fit_texture_coords"
+    },
+    {
+      "id": "gid_texture_1d_tiled_dispatch_fit",
+      "theorem": "gid_texture_coord_1d_tiled_inbounds_when_dispatch_fits",
+      "runtimePath": "runtime/zig/src/doe_wgsl/ir_transform_robustness.zig:try_elide_dispatch_fit_texture_coords"
+    },
+    {
+      "id": "gid_texture_2d_tiled_dispatch_fit",
+      "theorem": "gid_texture_coords_2d_tiled_inbounds_when_dispatch_fits",
+      "runtimePath": "runtime/zig/src/doe_wgsl/ir_transform_robustness.zig:try_elide_dispatch_fit_texture_coords"
+    },
+    {
+      "id": "gid_texture_3d_tiled_dispatch_fit",
+      "theorem": "gid_texture_coords_3d_tiled_inbounds_when_dispatch_fits",
       "runtimePath": "runtime/zig/src/doe_wgsl/ir_transform_robustness.zig:try_elide_dispatch_fit_texture_coords"
     }
   ],

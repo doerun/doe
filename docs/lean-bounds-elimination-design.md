@@ -6,19 +6,22 @@ Design approved. Layer 1 (unconditional clamping) is implemented in
 `ir_transform_robustness.zig`. Layer 2 (Lean-verified elimination) has
 theorem proofs in `pipeline/lean/Doe/Shader/ComputeBounds.lean` and
 now covers both storage-buffer gid indexing and textureLoad/textureStore
-gid-coordinate guards, plus dispatch-fit texture extent proofs for 2D/3D
+gid-coordinate guards, plus dispatch-fit texture extent proofs for 1D/2D/3D
 gid coordinates. The proof-backed pattern recognizers and IR metadata are
 implemented. Storage-buffer elimination is now active on native compute
 runtime translation with dispatch-time precondition enforcement, including
 the existing `flat_index_2d_inbounds` theorem for `gid.y * dispatch_width +
-gid.x`, plus the broader affine `gid + constant`, `gid * constant +
-offset`, canonical counted-loop `gid + i + constant`, `flat_index_2d +
-constant`, and 1D tiled
+gid.x`, the 3D flattened `gid.z * (dispatch_height * dispatch_width) +
+gid.y * dispatch_width + gid.x` family, the broader affine `gid + constant`,
+`gid * constant + offset`, canonical counted-loop `gid + i + constant`,
+`flat_index_2d + constant`, and 1D tiled
 `(gid / tile_width) * tile_stride + (gid % tile_width) + offset`
 families. Dispatch-fit texture
 precondition enforcement is now active on native compute runtime
-translation as well, and `_doe_sizes` is only retained when a real
-runtime `arrayLength` query survives proof-backed clamp elimination.
+translation as well for direct gid, affine gid-derived, and tiled gid-derived
+texture coordinates, including constant non-zero mip accesses; `_doe_sizes` is
+only retained when a real runtime `arrayLength` query survives proof-backed
+clamp elimination.
 Default/public WGSL translation still stays conservative for the
 dispatch-fit texture path; the remaining activation blocker is whether
 non-runtime/public consumers should opt into host-validated proof
@@ -223,7 +226,16 @@ correctness of the analysis itself.
 | `gid_2d_inbounds` | `lean_verified` | Both components bounded independently for 2D dispatch |
 | `flat_index_2d_inbounds` | `lean_verified` | gid.y * width + gid.x < width * height when components bounded |
 | `flat_index_2d_plus_offset_inbounds` | `lean_verified` | gid.y * width + gid.x + offset < buf.length when width * height + offset fits |
+| `flat_index_3d_inbounds` | `lean_verified` | gid.z * (width * height) + gid.y * width + gid.x < width * height * depth when components bounded |
+| `flat_index_3d_plus_offset_inbounds` | `lean_verified` | 3D flat index plus constant offset stays in bounds when width * height * depth + offset fits |
+| `gid_texture_coord_1d_inbounds_when_dispatch_fits` | `lean_verified` | Dispatch-fit precondition implies a 1D gid texture coord is in bounds |
 | `gid_texture_coords_2d_inbounds_when_dispatch_fits` | `lean_verified` | Dispatch-fit precondition implies in-bounds 2D gid texture coords |
+| `gid_texture_coord_1d_affine_inbounds_when_dispatch_fits` | `lean_verified` | 1D affine gid-derived texture coord stays in bounds when the validated extent fits |
+| `gid_texture_coords_2d_affine_inbounds_when_dispatch_fits` | `lean_verified` | 2D affine gid-derived texture coords stay in bounds when per-axis validated extents fit |
+| `gid_texture_coords_3d_affine_inbounds_when_dispatch_fits` | `lean_verified` | 3D affine gid-derived texture coords stay in bounds when per-axis validated extents fit |
+| `gid_texture_coord_1d_tiled_inbounds_when_dispatch_fits` | `lean_verified` | 1D tiled gid-derived texture coord stays in bounds when tiled groups fit the validated extent |
+| `gid_texture_coords_2d_tiled_inbounds_when_dispatch_fits` | `lean_verified` | 2D tiled gid-derived texture coords stay in bounds when per-axis tiled groups fit |
+| `gid_texture_coords_3d_tiled_inbounds_when_dispatch_fits` | `lean_verified` | 3D tiled gid-derived texture coords stay in bounds when per-axis tiled groups fit |
 | `guarded_gid_texture_coords_2d_inbounds` | `lean_verified` | Root early-return guard against `textureDimensions(...).xy` implies in-bounds 2D gid coords |
 | `gid_texture_coords_3d_inbounds_when_dispatch_fits` | `lean_verified` | Dispatch-fit precondition implies in-bounds 3D gid texture coords |
 | `guarded_gid_texture_coords_3d_inbounds` | `lean_verified` | Root early-return guard against `textureDimensions(...).xyz` implies in-bounds 3D gid coords |
@@ -240,12 +252,12 @@ exactly matching the criterion established in `pipeline/lean/README.md`.
 1. **Done**: `ir_transform_robustness.zig` — unconditional clamping (Layer 1)
 2. **Done**: `Doe/Shader/ComputeBounds.lean` — formal proofs
 3. **Done**: `Extract.lean` updated to import Shader module and emit `boundsEliminations`
-4. **Done**: Pattern recognizer in `ir_transform_robustness.zig` — matches gid storage-buffer access patterns, guarded gid texture coordinate patterns, and dispatch-fit gid texture coordinate patterns
+4. **Done**: Pattern recognizer in `ir_transform_robustness.zig` — matches gid storage-buffer access patterns, guarded gid texture coordinate patterns, direct/affine/tiled dispatch-fit texture coordinate patterns, and constant mip-level texture accesses
 5. **Done**: `lean_proof.zig` — validates shader theorem/artifact coverage and exposes the comptime availability flags
 6. **Done/Partial**: explicit proof-aware analysis path now powers native compute runtime translation; default/public translation remains conservative
 7. **Done**: `_doe_sizes` requirement now derives from surviving IR `arrayLength` use, and proof-covered robustness clamps no longer keep `_doe_sizes` alive on Metal
 8. **Done**: host-side storage-buffer and texture dispatch precondition checks in native compute dispatch paths (`doeNativeComputeDispatchFlush`, `doe_compute_ext_native.zig`, `doe_vulkan_compute_native.zig`)
-9. **Future**: broader guarded texture patterns, a policy decision for public/non-runtime proof consumption, and optional non-counted/data-dependent loop range analysis beyond the current counted-loop proof contract
+9. **Future**: broader guarded texture patterns, a policy decision for public/non-runtime proof consumption, mixed affine+tiled texture coord families, and deeper non-counted/data-dependent loop range analysis beyond the current counted-loop proof contract
 
 ## File map
 

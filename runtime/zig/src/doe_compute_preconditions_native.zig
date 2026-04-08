@@ -31,22 +31,22 @@ pub fn validate_bind_groups(
         if (binding >= bind_group.texture_views.len) return error.DispatchPreconditionFailed;
         const raw_view = bind_group.texture_views[binding] orelse return error.DispatchPreconditionFailed;
         const view = native_helpers.cast(native_types.DoeTextureView, raw_view) orelse return error.DispatchPreconditionFailed;
-        const required_x = try dispatch_preconditions.invocation_extent(dispatch_workgroups[0], workgroup_size[0]);
+        const required_x = try required_texture_axis_extent(precondition, 0, dispatch_workgroups, workgroup_size);
         if (required_x > mip_extent(view.tex.width, precondition.mip_level)) return error.DispatchPreconditionFailed;
         switch (precondition.kind) {
             .gid_coords_1d => {},
             .gid_coords_2d => {
-                const required_y = try dispatch_preconditions.invocation_extent(dispatch_workgroups[1], workgroup_size[1]);
+                const required_y = try required_texture_axis_extent(precondition, 1, dispatch_workgroups, workgroup_size);
                 if (required_y > mip_extent(view.tex.height, precondition.mip_level)) {
                     return error.DispatchPreconditionFailed;
                 }
             },
             .gid_coords_3d => {
-                const required_y = try dispatch_preconditions.invocation_extent(dispatch_workgroups[1], workgroup_size[1]);
+                const required_y = try required_texture_axis_extent(precondition, 1, dispatch_workgroups, workgroup_size);
                 if (required_y > mip_extent(view.tex.height, precondition.mip_level)) {
                     return error.DispatchPreconditionFailed;
                 }
-                const required_z = try dispatch_preconditions.invocation_extent(dispatch_workgroups[2], workgroup_size[2]);
+                const required_z = try required_texture_axis_extent(precondition, 2, dispatch_workgroups, workgroup_size);
                 if (required_z > mip_extent(view.tex.depth_or_array_layers, precondition.mip_level)) {
                     return error.DispatchPreconditionFailed;
                 }
@@ -55,11 +55,45 @@ pub fn validate_bind_groups(
     }
 }
 
+fn required_texture_axis_extent(
+    precondition: ir.TextureDispatchPrecondition,
+    axis: usize,
+    dispatch_workgroups: [3]u32,
+    workgroup_size: [3]u32,
+) ValidationError!u64 {
+    if (axis >= dispatch_workgroups.len or axis >= workgroup_size.len) {
+        return error.DispatchPreconditionFailed;
+    }
+    const invocations = try dispatch_preconditions.invocation_extent(dispatch_workgroups[axis], workgroup_size[axis]);
+    return switch (precondition.coord_mode) {
+        .affine => blk: {
+            const scaled = try std.math.mul(u64, invocations, precondition.coord_multipliers[axis]);
+            break :blk try std.math.add(u64, scaled, precondition.coord_offsets[axis]);
+        },
+        .tiled => blk: {
+            const tile_width = precondition.coord_tile_widths[axis];
+            const tile_stride = precondition.coord_tile_strides[axis];
+            if (tile_width == 0 or tile_stride < tile_width) return error.DispatchPreconditionFailed;
+            const tiled_groups = try tiled_group_count(invocations, tile_width);
+            const scaled = try std.math.mul(u64, tiled_groups, tile_stride);
+            break :blk try std.math.add(u64, scaled, precondition.coord_offsets[axis]);
+        },
+    };
+}
+
 fn mip_extent(base: u32, level: u32) u64 {
     if (base == 0) return 0;
     if (level >= 31) return 1;
     const shifted = base >> @intCast(level);
     return if (shifted > 0) shifted else 1;
+}
+
+fn tiled_group_count(total_invocations: u64, tile_width: u64) ValidationError!u64 {
+    if (tile_width == 0) return error.DispatchPreconditionFailed;
+    if (total_invocations == 0) return 0;
+    const truncated = try std.math.sub(u64, total_invocations, 1);
+    const whole_tiles = truncated / tile_width;
+    return std.math.add(u64, whole_tiles, 1) catch error.Overflow;
 }
 
 test "validate_bind_groups accepts matching gid component coverage" {
@@ -139,6 +173,48 @@ test "validate_bind_groups accepts matching 2d texture coverage" {
         .texture_binding = .{ .group = 0, .binding = 0 },
         .mip_level = 0,
     }}, &.{&bind_group}, .{ 8, 4, 1 }, .{ 8, 8, 1 });
+}
+
+test "validate_bind_groups accepts affine 2d texture coverage at mip level" {
+    var texture = native_types.DoeTexture{
+        .width = 256,
+        .height = 128,
+    };
+    var view = native_types.DoeTextureView{
+        .tex = &texture,
+    };
+    var bind_group = native_types.DoeBindGroup{};
+    bind_group.texture_views[0] = native_helpers.toOpaque(&view);
+
+    try validate_bind_groups(&.{}, &.{.{
+        .kind = .gid_coords_2d,
+        .texture_binding = .{ .group = 0, .binding = 0 },
+        .mip_level = 1,
+        .coord_mode = .affine,
+        .coord_multipliers = .{ 2, 3, 1 },
+        .coord_offsets = .{ 4, 5, 0 },
+    }}, &.{&bind_group}, .{ 4, 2, 1 }, .{ 8, 8, 1 });
+}
+
+test "validate_bind_groups accepts tiled 1d texture coverage" {
+    var texture = native_types.DoeTexture{
+        .width = 72,
+    };
+    var view = native_types.DoeTextureView{
+        .tex = &texture,
+    };
+    var bind_group = native_types.DoeBindGroup{};
+    bind_group.texture_views[0] = native_helpers.toOpaque(&view);
+
+    try validate_bind_groups(&.{}, &.{.{
+        .kind = .gid_coords_1d,
+        .texture_binding = .{ .group = 0, .binding = 0 },
+        .mip_level = 0,
+        .coord_mode = .tiled,
+        .coord_offsets = .{ 3, 0, 0 },
+        .coord_tile_widths = .{ 4, 1, 1 },
+        .coord_tile_strides = .{ 8, 1, 1 },
+    }}, &.{&bind_group}, .{ 8, 1, 1 }, .{ 4, 1, 1 });
 }
 
 test "validate_bind_groups rejects undersized 2d texture coverage" {

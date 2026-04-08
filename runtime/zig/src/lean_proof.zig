@@ -124,6 +124,16 @@ pub const BoundsPattern = enum {
     ///               AND width * height + offset <= arrayLength(&buf)
     gid_2d_flat_storage_buffer_offset,
 
+    /// buf[gid.z * (dispatch_height * dispatch_width) + gid.y * dispatch_width
+    ///     + gid.x] on a runtime-sized storage buffer.
+    /// Theorem: flat_index_3d_inbounds
+    gid_3d_flat_storage_buffer,
+
+    /// buf[gid.z * (dispatch_height * dispatch_width) + gid.y * dispatch_width
+    ///     + gid.x + offset] on a runtime-sized storage buffer.
+    /// Theorem: flat_index_3d_plus_offset_inbounds
+    gid_3d_flat_storage_buffer_offset,
+
     /// textureLoad/textureStore with global_invocation_id.x scalar coord on a
     /// bound 1D texture when dispatch extent fits the validated mip level.
     gid_texture_1d_dispatch_fit,
@@ -135,6 +145,30 @@ pub const BoundsPattern = enum {
     /// textureLoad with global_invocation_id.xyz coords on a bound 3D texture
     /// when dispatch extents fit the validated mip level.
     gid_texture_3d_dispatch_fit,
+
+    /// textureLoad/textureStore with affine gid-derived scalar coord on a
+    /// bound 1D texture when the validated mip extent fits the affine axis.
+    gid_texture_1d_affine_dispatch_fit,
+
+    /// textureLoad/textureStore with affine gid-derived vec2 coord on a bound
+    /// 2D texture when validated mip extents fit both affine axes.
+    gid_texture_2d_affine_dispatch_fit,
+
+    /// textureLoad with affine gid-derived vec3 coord on a bound 3D texture
+    /// when validated mip extents fit all affine axes.
+    gid_texture_3d_affine_dispatch_fit,
+
+    /// textureLoad/textureStore with tiled gid-derived scalar coord on a
+    /// bound 1D texture when validated mip extent fits the tiled axis.
+    gid_texture_1d_tiled_dispatch_fit,
+
+    /// textureLoad/textureStore with tiled gid-derived vec2 coord on a bound
+    /// 2D texture when validated mip extents fit both tiled axes.
+    gid_texture_2d_tiled_dispatch_fit,
+
+    /// textureLoad with tiled gid-derived vec3 coord on a bound 3D texture
+    /// when validated mip extents fit all tiled axes.
+    gid_texture_3d_tiled_dispatch_fit,
 };
 
 /// Check whether a specific bounds pattern has a proven elimination.
@@ -172,6 +206,14 @@ pub fn boundsProven(comptime pattern: BoundsPattern) bool {
             @setEvalBranchQuota(JSON_SEARCH_BRANCH_QUOTA);
             break :blk comptimeContains(proof_json.?, "\"flat_index_2d_plus_offset_inbounds\"");
         },
+        .gid_3d_flat_storage_buffer => comptime blk: {
+            @setEvalBranchQuota(JSON_SEARCH_BRANCH_QUOTA);
+            break :blk comptimeContains(proof_json.?, "\"flat_index_3d_inbounds\"");
+        },
+        .gid_3d_flat_storage_buffer_offset => comptime blk: {
+            @setEvalBranchQuota(JSON_SEARCH_BRANCH_QUOTA);
+            break :blk comptimeContains(proof_json.?, "\"flat_index_3d_plus_offset_inbounds\"");
+        },
         .gid_texture_1d_dispatch_fit => comptime blk: {
             @setEvalBranchQuota(JSON_SEARCH_BRANCH_QUOTA);
             break :blk comptimeContains(proof_json.?, "\"gid_texture_coord_1d_inbounds_when_dispatch_fits\"");
@@ -183,6 +225,30 @@ pub fn boundsProven(comptime pattern: BoundsPattern) bool {
         .gid_texture_3d_dispatch_fit => comptime blk: {
             @setEvalBranchQuota(JSON_SEARCH_BRANCH_QUOTA);
             break :blk comptimeContains(proof_json.?, "\"gid_texture_coords_3d_inbounds_when_dispatch_fits\"");
+        },
+        .gid_texture_1d_affine_dispatch_fit => comptime blk: {
+            @setEvalBranchQuota(JSON_SEARCH_BRANCH_QUOTA);
+            break :blk comptimeContains(proof_json.?, "\"gid_texture_coord_1d_affine_inbounds_when_dispatch_fits\"");
+        },
+        .gid_texture_2d_affine_dispatch_fit => comptime blk: {
+            @setEvalBranchQuota(JSON_SEARCH_BRANCH_QUOTA);
+            break :blk comptimeContains(proof_json.?, "\"gid_texture_coords_2d_affine_inbounds_when_dispatch_fits\"");
+        },
+        .gid_texture_3d_affine_dispatch_fit => comptime blk: {
+            @setEvalBranchQuota(JSON_SEARCH_BRANCH_QUOTA);
+            break :blk comptimeContains(proof_json.?, "\"gid_texture_coords_3d_affine_inbounds_when_dispatch_fits\"");
+        },
+        .gid_texture_1d_tiled_dispatch_fit => comptime blk: {
+            @setEvalBranchQuota(JSON_SEARCH_BRANCH_QUOTA);
+            break :blk comptimeContains(proof_json.?, "\"gid_texture_coord_1d_tiled_inbounds_when_dispatch_fits\"");
+        },
+        .gid_texture_2d_tiled_dispatch_fit => comptime blk: {
+            @setEvalBranchQuota(JSON_SEARCH_BRANCH_QUOTA);
+            break :blk comptimeContains(proof_json.?, "\"gid_texture_coords_2d_tiled_inbounds_when_dispatch_fits\"");
+        },
+        .gid_texture_3d_tiled_dispatch_fit => comptime blk: {
+            @setEvalBranchQuota(JSON_SEARCH_BRANCH_QUOTA);
+            break :blk comptimeContains(proof_json.?, "\"gid_texture_coords_3d_tiled_inbounds_when_dispatch_fits\"");
         },
     };
 }
@@ -239,7 +305,16 @@ comptime {
         requireTheorem(json, "\"gid_2d_inbounds\"");
         requireTheorem(json, "\"flat_index_2d_inbounds\"");
         requireTheorem(json, "\"flat_index_2d_plus_offset_inbounds\"");
+        requireTheorem(json, "\"flat_index_3d_inbounds\"");
+        requireTheorem(json, "\"flat_index_3d_plus_offset_inbounds\"");
+        requireTheorem(json, "\"gid_texture_coord_1d_inbounds_when_dispatch_fits\"");
         requireTheorem(json, "\"gid_texture_coords_2d_inbounds_when_dispatch_fits\"");
+        requireTheorem(json, "\"gid_texture_coord_1d_affine_inbounds_when_dispatch_fits\"");
+        requireTheorem(json, "\"gid_texture_coords_2d_affine_inbounds_when_dispatch_fits\"");
+        requireTheorem(json, "\"gid_texture_coords_3d_affine_inbounds_when_dispatch_fits\"");
+        requireTheorem(json, "\"gid_texture_coord_1d_tiled_inbounds_when_dispatch_fits\"");
+        requireTheorem(json, "\"gid_texture_coords_2d_tiled_inbounds_when_dispatch_fits\"");
+        requireTheorem(json, "\"gid_texture_coords_3d_tiled_inbounds_when_dispatch_fits\"");
         requireTheorem(json, "\"gid_texture_coords_3d_inbounds_when_dispatch_fits\"");
 
         // Validate that bounds eliminations section is present when shader

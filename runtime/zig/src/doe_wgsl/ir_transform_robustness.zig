@@ -366,6 +366,14 @@ fn match_u32_literal(function: *const ir.Function, expr_id: ir.ExprId, expected:
     };
 }
 
+fn match_u32_literal_value(function: *const ir.Function, expr_id: ir.ExprId) ?u32 {
+    const expr = function.exprs.items[resolve_value_alias(function, expr_id)];
+    return switch (expr.data) {
+        .int_lit => |value| std.math.cast(u32, value),
+        else => null,
+    };
+}
+
 fn resolve_texture_binding(
     module: *const ir.Module,
     function: *const ir.Function,
@@ -394,43 +402,173 @@ fn resolve_texture_binding(
     }
 }
 
-fn is_identity_gid_coord(function: *const ir.Function, expr_id: ir.ExprId, dim: u8) bool {
+const TextureCoordPatternFamily = enum {
+    affine,
+    tiled,
+};
+
+const TextureCoordPattern = struct {
+    family: TextureCoordPatternFamily = .affine,
+    multipliers: [3]u64 = .{ 1, 1, 1 },
+    offsets: [3]u64 = .{ 0, 0, 0 },
+    tile_widths: [3]u64 = .{ 1, 1, 1 },
+    tile_strides: [3]u64 = .{ 1, 1, 1 },
+};
+
+const TextureCoordComponent = union(enum) {
+    affine: struct {
+        multiplier: u64,
+        offset: u64,
+    },
+    tiled: struct {
+        tile_width: u64,
+        tile_stride: u64,
+        offset: u64,
+    },
+};
+
+fn texture_pattern_is_identity(pattern: TextureCoordPattern, dim: u8) bool {
+    if (pattern.family != .affine) return false;
+    const used_axes: usize = dim;
+    var axis: usize = 0;
+    while (axis < used_axes) : (axis += 1) {
+        if (pattern.multipliers[axis] != 1 or pattern.offsets[axis] != 0) return false;
+    }
+    return true;
+}
+
+fn match_texture_coord_component(
+    function: *const ir.Function,
+    expr_id: ir.ExprId,
+    expected_axis: u8,
+) ?TextureCoordComponent {
+    if (dispatch_proof_match.match_gid_component_tiled_plus_offset(function, expr_id, .global_invocation_id)) |match| {
+        if (match.axis == expected_axis) {
+            return .{ .tiled = .{
+                .tile_width = match.tile_width,
+                .tile_stride = match.tile_stride,
+                .offset = match.offset,
+            } };
+        }
+    }
+    if (dispatch_proof_match.match_gid_component_times_stride_plus_offset(function, expr_id, .global_invocation_id)) |match| {
+        if (match.axis == expected_axis) {
+            return .{ .affine = .{
+                .multiplier = match.multiplier,
+                .offset = match.offset,
+            } };
+        }
+    }
+    if (dispatch_proof_match.match_gid_component_plus_offset(function, expr_id, .global_invocation_id)) |match| {
+        if (match.axis == expected_axis) {
+            return .{ .affine = .{
+                .multiplier = 1,
+                .offset = match.offset,
+            } };
+        }
+    }
+    if (classify_gid_scalar(function, expr_id) == expected_axis) {
+        return .{ .affine = .{
+            .multiplier = 1,
+            .offset = 0,
+        } };
+    }
+    return null;
+}
+
+fn match_texture_coord_pattern(function: *const ir.Function, expr_id: ir.ExprId, dim: u8) ?TextureCoordPattern {
     const expr = function.exprs.items[resolve_value_alias(function, expr_id)];
     switch (expr.data) {
         .member => |member| {
             const base_expr = function.exprs.items[resolve_value_alias(function, member.base)];
             const param_idx = switch (base_expr.data) {
                 .param_ref => |value| value,
-                else => return false,
+                else => return null,
             };
-            if (param_idx >= function.params.items.len) return false;
-            const io = function.params.items[param_idx].io orelse return false;
-            if (io.builtin != .global_invocation_id) return false;
-            return switch (dim) {
+            if (param_idx >= function.params.items.len) return null;
+            const io = function.params.items[param_idx].io orelse return null;
+            if (io.builtin != .global_invocation_id) return null;
+            const field_matches = switch (dim) {
                 1 => std.mem.eql(u8, member.field_name, "x"),
                 2 => std.mem.eql(u8, member.field_name, "xy"),
                 3 => std.mem.eql(u8, member.field_name, "xyz"),
                 else => false,
             };
+            if (!field_matches) return null;
+            return .{};
         },
         .construct => |construct| {
             if (construct.args.len == 1) {
-                return is_identity_gid_coord(function, function.expr_args.items[construct.args.start], dim);
+                return match_texture_coord_pattern(function, function.expr_args.items[construct.args.start], dim);
             }
-            if (construct.args.len != dim) return false;
+            if (construct.args.len != dim) return null;
+            const used_axes: u32 = dim;
+
+            var pattern = TextureCoordPattern{};
+            var saw_tiled = false;
             var arg_index: u32 = 0;
-            while (arg_index < construct.args.len) : (arg_index += 1) {
-                const expected_axis: u8 = @intCast(arg_index);
-                if (classify_gid_scalar(function, function.expr_args.items[construct.args.start + arg_index]) != expected_axis) {
-                    return false;
+            while (arg_index < used_axes) : (arg_index += 1) {
+                const axis: usize = arg_index;
+                const component = match_texture_coord_component(
+                    function,
+                    function.expr_args.items[construct.args.start + arg_index],
+                    @intCast(arg_index),
+                ) orelse return null;
+                switch (component) {
+                    .affine => |affine| {
+                        pattern.multipliers[axis] = affine.multiplier;
+                        pattern.offsets[axis] = affine.offset;
+                    },
+                    .tiled => |tiled| {
+                        saw_tiled = true;
+                        pattern.tile_widths[axis] = tiled.tile_width;
+                        pattern.tile_strides[axis] = tiled.tile_stride;
+                        pattern.offsets[axis] = tiled.offset;
+                    },
                 }
             }
-            return true;
+            if (!saw_tiled) return pattern;
+
+            var tiled_pattern = TextureCoordPattern{
+                .family = .tiled,
+            };
+            var tiled_axis: u32 = 0;
+            while (tiled_axis < used_axes) : (tiled_axis += 1) {
+                const component = match_texture_coord_component(
+                    function,
+                    function.expr_args.items[construct.args.start + tiled_axis],
+                    @intCast(tiled_axis),
+                ) orelse return null;
+                switch (component) {
+                    .tiled => |tiled| {
+                        const axis: usize = tiled_axis;
+                        tiled_pattern.tile_widths[axis] = tiled.tile_width;
+                        tiled_pattern.tile_strides[axis] = tiled.tile_stride;
+                        tiled_pattern.offsets[axis] = tiled.offset;
+                    },
+                    .affine => |affine| {
+                        if (affine.multiplier != 1 or affine.offset != 0) return null;
+                    },
+                }
+            }
+            return tiled_pattern;
         },
         else => {
-            // For 1D dispatch-fit, the coord is a scalar gid.x, not a vector.
-            if (dim == 1) return classify_gid_scalar(function, expr_id) == 0;
-            return false;
+            if (dim != 1) return null;
+            var pattern = TextureCoordPattern{};
+            switch (match_texture_coord_component(function, expr_id, 0) orelse return null) {
+                .affine => |affine| {
+                    pattern.multipliers[0] = affine.multiplier;
+                    pattern.offsets[0] = affine.offset;
+                },
+                .tiled => |tiled| {
+                    pattern.family = .tiled;
+                    pattern.tile_widths[0] = tiled.tile_width;
+                    pattern.tile_strides[0] = tiled.tile_stride;
+                    pattern.offsets[0] = tiled.offset;
+                },
+            }
+            return pattern;
         },
     }
 }
@@ -439,12 +577,12 @@ fn texture_level_is_dispatch_fit_supported(
     function: *const ir.Function,
     tex_ty: ir.Type,
     call_data: @FieldType(ir.Expr, "call"),
-) bool {
-    if (!std.mem.eql(u8, call_data.name, TEXTURE_LOAD_NAME)) return !texture_has_level(tex_ty);
-    if (!texture_has_level(tex_ty)) return true;
-    if (call_data.args.len < 3) return false;
+) ?u32 {
+    if (!std.mem.eql(u8, call_data.name, TEXTURE_LOAD_NAME)) return if (!texture_has_level(tex_ty)) 0 else null;
+    if (!texture_has_level(tex_ty)) return 0;
+    if (call_data.args.len < 3) return null;
     const level_arg = function.expr_args.items[call_data.args.start + 2];
-    return match_u32_literal(function, level_arg, 0);
+    return match_u32_literal_value(function, level_arg);
 }
 
 fn try_elide_dispatch_fit_texture_coords(
@@ -459,21 +597,33 @@ fn try_elide_dispatch_fit_texture_coords(
     const tex_ty = resolve_texture_type(&module.types, function.exprs.items[texture_arg].ty);
     const dim = dispatch_fit_texture_coord_dim(tex_ty) orelse return null;
     if (texture_coord_is_explicitly_guarded(function, coord_arg, dim)) return null;
-    if (!texture_level_is_dispatch_fit_supported(function, tex_ty, call_data)) return null;
-    if (!is_identity_gid_coord(function, coord_arg, dim)) return null;
+    const mip_level = texture_level_is_dispatch_fit_supported(function, tex_ty, call_data) orelse return null;
+    const pattern = match_texture_coord_pattern(function, coord_arg, dim) orelse return null;
 
     const binding = resolve_texture_binding(module, function, texture_arg) orelse return null;
     const kind: ir.TextureDispatchPreconditionKind = switch (dim) {
         1 => blk: {
-            if (!lean_proof.boundsProven(.gid_texture_1d_dispatch_fit)) return null;
+            if (pattern.family == .tiled) {
+                if (!lean_proof.boundsProven(.gid_texture_1d_tiled_dispatch_fit)) return null;
+            } else if (texture_pattern_is_identity(pattern, dim)) {
+                if (!lean_proof.boundsProven(.gid_texture_1d_dispatch_fit)) return null;
+            } else if (!lean_proof.boundsProven(.gid_texture_1d_affine_dispatch_fit)) return null;
             break :blk .gid_coords_1d;
         },
         2 => blk: {
-            if (!lean_proof.boundsProven(.gid_texture_2d_dispatch_fit)) return null;
+            if (pattern.family == .tiled) {
+                if (!lean_proof.boundsProven(.gid_texture_2d_tiled_dispatch_fit)) return null;
+            } else if (texture_pattern_is_identity(pattern, dim)) {
+                if (!lean_proof.boundsProven(.gid_texture_2d_dispatch_fit)) return null;
+            } else if (!lean_proof.boundsProven(.gid_texture_2d_affine_dispatch_fit)) return null;
             break :blk .gid_coords_2d;
         },
         3 => blk: {
-            if (!lean_proof.boundsProven(.gid_texture_3d_dispatch_fit)) return null;
+            if (pattern.family == .tiled) {
+                if (!lean_proof.boundsProven(.gid_texture_3d_tiled_dispatch_fit)) return null;
+            } else if (texture_pattern_is_identity(pattern, dim)) {
+                if (!lean_proof.boundsProven(.gid_texture_3d_dispatch_fit)) return null;
+            } else if (!lean_proof.boundsProven(.gid_texture_3d_affine_dispatch_fit)) return null;
             break :blk .gid_coords_3d;
         },
         else => return null,
@@ -481,7 +631,15 @@ fn try_elide_dispatch_fit_texture_coords(
     return .{
         .kind = kind,
         .texture_binding = binding,
-        .mip_level = 0,
+        .mip_level = mip_level,
+        .coord_mode = switch (pattern.family) {
+            .affine => .affine,
+            .tiled => .tiled,
+        },
+        .coord_multipliers = pattern.multipliers,
+        .coord_offsets = pattern.offsets,
+        .coord_tile_widths = pattern.tile_widths,
+        .coord_tile_strides = pattern.tile_strides,
     };
 }
 

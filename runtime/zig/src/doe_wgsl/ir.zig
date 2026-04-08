@@ -547,6 +547,7 @@ pub const DispatchPreconditionKind = enum {
     gid_component,
     gid_component_tiled,
     flat_index_2d_dispatch_x,
+    flat_index_3d_dispatch_xy,
 };
 
 pub const DispatchPrecondition = struct {
@@ -577,13 +578,27 @@ pub const TextureDispatchPreconditionKind = enum {
     gid_coords_3d,
 };
 
+pub const TextureDispatchCoordMode = enum {
+    affine,
+    tiled,
+};
+
 pub const TextureDispatchPrecondition = struct {
     kind: TextureDispatchPreconditionKind = .gid_coords_2d,
     /// Binding point of the sampled/storage texture whose clamp was elided.
     texture_binding: BindingPoint,
-    /// Mip level validated by the host. Dispatch-fit proof-backed elision
-    /// currently records only base-level accesses.
+    /// Mip level validated by the host.
     mip_level: u32 = 0,
+    /// Proof-covered coordinate family used by the elided texture access.
+    coord_mode: TextureDispatchCoordMode = .affine,
+    /// Per-axis affine multiplier for gid-derived texture coordinates.
+    coord_multipliers: [3]u64 = .{ 1, 1, 1 },
+    /// Per-axis affine/tiled offset added after the gid-derived term.
+    coord_offsets: [3]u64 = .{ 0, 0, 0 },
+    /// Per-axis tile width for proof-covered tiled texture coordinates.
+    coord_tile_widths: [3]u64 = .{ 1, 1, 1 },
+    /// Per-axis tile stride for proof-covered tiled texture coordinates.
+    coord_tile_strides: [3]u64 = .{ 1, 1, 1 },
 };
 
 pub const Module = struct {

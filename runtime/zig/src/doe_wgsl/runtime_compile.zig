@@ -28,7 +28,13 @@ pub fn compute_runtime_robustness_config() mod.ir_transform_robustness.Config {
         // metadata, so it can safely consume proof-backed texture clamp elision.
         .elide_proven_texture_bounds = lean_proof.boundsProven(.gid_texture_1d_dispatch_fit) or
             lean_proof.boundsProven(.gid_texture_2d_dispatch_fit) or
-            lean_proof.boundsProven(.gid_texture_3d_dispatch_fit),
+            lean_proof.boundsProven(.gid_texture_3d_dispatch_fit) or
+            lean_proof.boundsProven(.gid_texture_1d_affine_dispatch_fit) or
+            lean_proof.boundsProven(.gid_texture_2d_affine_dispatch_fit) or
+            lean_proof.boundsProven(.gid_texture_3d_affine_dispatch_fit) or
+            lean_proof.boundsProven(.gid_texture_1d_tiled_dispatch_fit) or
+            lean_proof.boundsProven(.gid_texture_2d_tiled_dispatch_fit) or
+            lean_proof.boundsProven(.gid_texture_3d_tiled_dispatch_fit),
     };
 }
 

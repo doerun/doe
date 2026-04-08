@@ -432,15 +432,16 @@ test "flat 2d: large workgroups cause element count overflow" {
 // DispatchPreconditionKind enum — exhaustiveness
 // ============================================================
 
-test "DispatchPreconditionKind has exactly 3 variants" {
+test "DispatchPreconditionKind has exactly 4 variants" {
     const fields = @typeInfo(ir.DispatchPreconditionKind).@"enum".fields;
-    try testing.expectEqual(@as(usize, 3), fields.len);
+    try testing.expectEqual(@as(usize, 4), fields.len);
 }
 
 test "DispatchPreconditionKind names are stable" {
     try testing.expectEqualStrings("gid_component", @tagName(ir.DispatchPreconditionKind.gid_component));
     try testing.expectEqualStrings("gid_component_tiled", @tagName(ir.DispatchPreconditionKind.gid_component_tiled));
     try testing.expectEqualStrings("flat_index_2d_dispatch_x", @tagName(ir.DispatchPreconditionKind.flat_index_2d_dispatch_x));
+    try testing.expectEqualStrings("flat_index_3d_dispatch_xy", @tagName(ir.DispatchPreconditionKind.flat_index_3d_dispatch_xy));
 }
 
 // ============================================================
@@ -533,4 +534,9 @@ test "TextureDispatchPrecondition default is 2D with mip_level 0" {
     };
     try testing.expectEqual(ir.TextureDispatchPreconditionKind.gid_coords_2d, p.kind);
     try testing.expectEqual(@as(u32, 0), p.mip_level);
+    try testing.expectEqual(ir.TextureDispatchCoordMode.affine, p.coord_mode);
+    try testing.expectEqualSlices(u64, &.{ 1, 1, 1 }, &p.coord_multipliers);
+    try testing.expectEqualSlices(u64, &.{ 0, 0, 0 }, &p.coord_offsets);
+    try testing.expectEqualSlices(u64, &.{ 1, 1, 1 }, &p.coord_tile_widths);
+    try testing.expectEqualSlices(u64, &.{ 1, 1, 1 }, &p.coord_tile_strides);
 }

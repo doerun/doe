@@ -1,4 +1,34 @@
 # Doe status
+## Shader proof-backed robustness now covers 3D flat storage indices plus 1D/mip/affine/tiled texture coord families in the Zig runtime path (2026-04-08 UTC)
+
+- extended the shader proof contract and runtime matcher so native compute
+  translation can now record and enforce additional proof-backed preconditions
+  for:
+  - 3D flat storage-buffer indices:
+    `gid.z * (dispatch_height * dispatch_width) + gid.y * dispatch_width + gid.x`
+    and offset variants
+  - 1D texture dispatch-fit scalar coords
+  - constant-mip texture dispatch-fit coords
+  - affine gid-derived texture coords
+  - tiled gid-derived texture coords
+- widened the counted-loop matcher to tolerate extra dynamic conjuncts in
+  `while` conditions and extra disjuncts in guarded `break` conditions when one
+  branch still carries the proven loop bound
+- updated:
+  - `pipeline/lean/Doe/Shader/ComputeBounds.lean`
+  - `pipeline/lean/Doe/Shader/TextureSampleBounds.lean`
+  - `pipeline/lean/Doe/Extract.lean`
+  - `config/lean-proof-patterns.json`
+  - `runtime/zig/src/doe_wgsl/ir_transform_robustness.zig`
+  - `runtime/zig/src/doe_wgsl/dispatch_proof_match.zig`
+  - `runtime/zig/src/doe_compute_preconditions_native.zig`
+- verification status:
+  - `zig build test-wgsl` now passes in `runtime/zig`
+  - full Lean artifact regeneration is currently blocked by pre-existing
+    `ComparabilityFixtures.lean` / generated comparability-contract drift in the
+    repo, so `-Dlean-verified=true` could not be revalidated end-to-end in this
+    tree during this change
+
 ## Apple Node `node-webgpu` package execution on `mac.lan` is restored; the provider root now stays alive through async completion (2026-04-07 UTC)
 
 - retained the Node package provider root in

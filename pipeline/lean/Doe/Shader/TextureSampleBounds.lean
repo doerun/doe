@@ -48,6 +48,19 @@ theorem tex_coord_lt_dim_when_dispatch_fits
   exact gid_component_lt_total workgroup_id local_id workgroup_size num_workgroups texture_dim
     h_wid h_lid h_fit
 
+/-- Dispatch-fit theorem for 1D gid-derived texture coordinates.
+    This is the scalar texture analogue of the 2D/3D gid-coordinate theorems
+    extracted from ComputeBounds.lean. -/
+theorem gid_texture_coord_1d_inbounds_when_dispatch_fits
+    (workgroup_id local_id workgroup_size num_workgroups texture_dim : Nat)
+    (h_wid : workgroup_id < num_workgroups)
+    (h_lid : local_id < workgroup_size)
+    (h_fit : workgroup_size * num_workgroups ≤ texture_dim) :
+    texCoordFromGid workgroup_id local_id workgroup_size < texture_dim := by
+  exact tex_coord_lt_dim_when_dispatch_fits
+    workgroup_id local_id workgroup_size num_workgroups texture_dim
+    h_wid h_lid h_fit
+
 /-- The clamp min(coord, dim-1) is a no-op when coord < dim.
     This connects the proof to the robustness transform: if the condition holds,
     min(coord, dim-1) = coord, so the injected clamp has no runtime effect
@@ -176,6 +189,141 @@ theorem tex_sample_affine_coord_inbounds_when_dispatch_fits
   exact gid_times_stride_plus_offset_inbounds_when_dispatch_fits
     workgroup_id local_id workgroup_size num_workgroups texture_dim stride offset
     h_stride h_wid h_lid h_fit
+
+/-- 1D affine gid-derived texture coordinates remain in bounds when the
+    dispatch grid fits the validated extent. -/
+theorem gid_texture_coord_1d_affine_inbounds_when_dispatch_fits
+    (workgroup_id local_id workgroup_size num_workgroups texture_dim stride offset : Nat)
+    (h_stride : 0 < stride)
+    (h_wid : workgroup_id < num_workgroups)
+    (h_lid : local_id < workgroup_size)
+    (h_fit : (workgroup_size * num_workgroups) * stride + offset ≤ texture_dim) :
+    texCoordFromGid workgroup_id local_id workgroup_size * stride + offset < texture_dim := by
+  exact tex_sample_affine_coord_inbounds_when_dispatch_fits
+    workgroup_id local_id workgroup_size num_workgroups texture_dim stride offset
+    h_stride h_wid h_lid h_fit
+
+/-- 2D affine gid-derived texture coordinates remain componentwise in bounds
+    when each dispatched axis fits the validated texture extent. -/
+theorem gid_texture_coords_2d_affine_inbounds_when_dispatch_fits
+    (wid_x lid_x ws_x nwg_x width stride_x offset_x : Nat)
+    (wid_y lid_y ws_y nwg_y height stride_y offset_y : Nat)
+    (h_stride_x : 0 < stride_x)
+    (h_stride_y : 0 < stride_y)
+    (h_wid_x : wid_x < nwg_x) (h_lid_x : lid_x < ws_x)
+    (h_wid_y : wid_y < nwg_y) (h_lid_y : lid_y < ws_y)
+    (h_fit_x : (ws_x * nwg_x) * stride_x + offset_x ≤ width)
+    (h_fit_y : (ws_y * nwg_y) * stride_y + offset_y ≤ height) :
+    texCoordFromGid wid_x lid_x ws_x * stride_x + offset_x < width ∧
+    texCoordFromGid wid_y lid_y ws_y * stride_y + offset_y < height := by
+  exact ⟨gid_texture_coord_1d_affine_inbounds_when_dispatch_fits
+            wid_x lid_x ws_x nwg_x width stride_x offset_x
+            h_stride_x h_wid_x h_lid_x h_fit_x,
+         gid_texture_coord_1d_affine_inbounds_when_dispatch_fits
+            wid_y lid_y ws_y nwg_y height stride_y offset_y
+            h_stride_y h_wid_y h_lid_y h_fit_y⟩
+
+/-- 3D affine gid-derived texture coordinates remain componentwise in bounds
+    when each dispatched axis fits the validated texture extent. -/
+theorem gid_texture_coords_3d_affine_inbounds_when_dispatch_fits
+    (wid_x lid_x ws_x nwg_x width stride_x offset_x : Nat)
+    (wid_y lid_y ws_y nwg_y height stride_y offset_y : Nat)
+    (wid_z lid_z ws_z nwg_z depth stride_z offset_z : Nat)
+    (h_stride_x : 0 < stride_x)
+    (h_stride_y : 0 < stride_y)
+    (h_stride_z : 0 < stride_z)
+    (h_wid_x : wid_x < nwg_x) (h_lid_x : lid_x < ws_x)
+    (h_wid_y : wid_y < nwg_y) (h_lid_y : lid_y < ws_y)
+    (h_wid_z : wid_z < nwg_z) (h_lid_z : lid_z < ws_z)
+    (h_fit_x : (ws_x * nwg_x) * stride_x + offset_x ≤ width)
+    (h_fit_y : (ws_y * nwg_y) * stride_y + offset_y ≤ height)
+    (h_fit_z : (ws_z * nwg_z) * stride_z + offset_z ≤ depth) :
+    texCoordFromGid wid_x lid_x ws_x * stride_x + offset_x < width ∧
+    texCoordFromGid wid_y lid_y ws_y * stride_y + offset_y < height ∧
+    texCoordFromGid wid_z lid_z ws_z * stride_z + offset_z < depth := by
+  exact ⟨gid_texture_coord_1d_affine_inbounds_when_dispatch_fits
+            wid_x lid_x ws_x nwg_x width stride_x offset_x
+            h_stride_x h_wid_x h_lid_x h_fit_x,
+         gid_texture_coord_1d_affine_inbounds_when_dispatch_fits
+            wid_y lid_y ws_y nwg_y height stride_y offset_y
+            h_stride_y h_wid_y h_lid_y h_fit_y,
+         gid_texture_coord_1d_affine_inbounds_when_dispatch_fits
+            wid_z lid_z ws_z nwg_z depth stride_z offset_z
+            h_stride_z h_wid_z h_lid_z h_fit_z⟩
+
+/-- 1D tiled gid-derived texture coordinates remain in bounds when the host
+    validates the tiled groups against the texture extent. -/
+theorem gid_texture_coord_1d_tiled_inbounds_when_dispatch_fits
+    (workgroup_id local_id workgroup_size num_workgroups texture_dim tile_width tile_stride offset : Nat)
+    (h_tile_width : 0 < tile_width)
+    (h_tile_fit : tile_width ≤ tile_stride)
+    (h_wid : workgroup_id < num_workgroups)
+    (h_lid : local_id < workgroup_size)
+    (h_fit : (((workgroup_size * num_workgroups - 1) / tile_width) + 1) * tile_stride + offset ≤ texture_dim) :
+    (texCoordFromGid workgroup_id local_id workgroup_size / tile_width) * tile_stride +
+      (texCoordFromGid workgroup_id local_id workgroup_size % tile_width) + offset < texture_dim := by
+  unfold texCoordFromGid
+  exact gid_tiled_index_plus_offset_inbounds_when_dispatch_fits
+    workgroup_id local_id workgroup_size num_workgroups texture_dim tile_width tile_stride offset
+    h_tile_width h_tile_fit h_wid h_lid h_fit
+
+/-- 2D tiled gid-derived texture coordinates remain componentwise in bounds
+    when each tiled axis fits the validated texture extent. -/
+theorem gid_texture_coords_2d_tiled_inbounds_when_dispatch_fits
+    (wid_x lid_x ws_x nwg_x width tile_width_x tile_stride_x offset_x : Nat)
+    (wid_y lid_y ws_y nwg_y height tile_width_y tile_stride_y offset_y : Nat)
+    (h_tile_width_x : 0 < tile_width_x)
+    (h_tile_width_y : 0 < tile_width_y)
+    (h_tile_fit_x : tile_width_x ≤ tile_stride_x)
+    (h_tile_fit_y : tile_width_y ≤ tile_stride_y)
+    (h_wid_x : wid_x < nwg_x) (h_lid_x : lid_x < ws_x)
+    (h_wid_y : wid_y < nwg_y) (h_lid_y : lid_y < ws_y)
+    (h_fit_x : (((ws_x * nwg_x - 1) / tile_width_x) + 1) * tile_stride_x + offset_x ≤ width)
+    (h_fit_y : (((ws_y * nwg_y - 1) / tile_width_y) + 1) * tile_stride_y + offset_y ≤ height) :
+    (texCoordFromGid wid_x lid_x ws_x / tile_width_x) * tile_stride_x +
+      (texCoordFromGid wid_x lid_x ws_x % tile_width_x) + offset_x < width ∧
+    (texCoordFromGid wid_y lid_y ws_y / tile_width_y) * tile_stride_y +
+      (texCoordFromGid wid_y lid_y ws_y % tile_width_y) + offset_y < height := by
+  exact ⟨gid_texture_coord_1d_tiled_inbounds_when_dispatch_fits
+            wid_x lid_x ws_x nwg_x width tile_width_x tile_stride_x offset_x
+            h_tile_width_x h_tile_fit_x h_wid_x h_lid_x h_fit_x,
+         gid_texture_coord_1d_tiled_inbounds_when_dispatch_fits
+            wid_y lid_y ws_y nwg_y height tile_width_y tile_stride_y offset_y
+            h_tile_width_y h_tile_fit_y h_wid_y h_lid_y h_fit_y⟩
+
+/-- 3D tiled gid-derived texture coordinates remain componentwise in bounds
+    when each tiled axis fits the validated texture extent. -/
+theorem gid_texture_coords_3d_tiled_inbounds_when_dispatch_fits
+    (wid_x lid_x ws_x nwg_x width tile_width_x tile_stride_x offset_x : Nat)
+    (wid_y lid_y ws_y nwg_y height tile_width_y tile_stride_y offset_y : Nat)
+    (wid_z lid_z ws_z nwg_z depth tile_width_z tile_stride_z offset_z : Nat)
+    (h_tile_width_x : 0 < tile_width_x)
+    (h_tile_width_y : 0 < tile_width_y)
+    (h_tile_width_z : 0 < tile_width_z)
+    (h_tile_fit_x : tile_width_x ≤ tile_stride_x)
+    (h_tile_fit_y : tile_width_y ≤ tile_stride_y)
+    (h_tile_fit_z : tile_width_z ≤ tile_stride_z)
+    (h_wid_x : wid_x < nwg_x) (h_lid_x : lid_x < ws_x)
+    (h_wid_y : wid_y < nwg_y) (h_lid_y : lid_y < ws_y)
+    (h_wid_z : wid_z < nwg_z) (h_lid_z : lid_z < ws_z)
+    (h_fit_x : (((ws_x * nwg_x - 1) / tile_width_x) + 1) * tile_stride_x + offset_x ≤ width)
+    (h_fit_y : (((ws_y * nwg_y - 1) / tile_width_y) + 1) * tile_stride_y + offset_y ≤ height)
+    (h_fit_z : (((ws_z * nwg_z - 1) / tile_width_z) + 1) * tile_stride_z + offset_z ≤ depth) :
+    (texCoordFromGid wid_x lid_x ws_x / tile_width_x) * tile_stride_x +
+      (texCoordFromGid wid_x lid_x ws_x % tile_width_x) + offset_x < width ∧
+    (texCoordFromGid wid_y lid_y ws_y / tile_width_y) * tile_stride_y +
+      (texCoordFromGid wid_y lid_y ws_y % tile_width_y) + offset_y < height ∧
+    (texCoordFromGid wid_z lid_z ws_z / tile_width_z) * tile_stride_z +
+      (texCoordFromGid wid_z lid_z ws_z % tile_width_z) + offset_z < depth := by
+  exact ⟨gid_texture_coord_1d_tiled_inbounds_when_dispatch_fits
+            wid_x lid_x ws_x nwg_x width tile_width_x tile_stride_x offset_x
+            h_tile_width_x h_tile_fit_x h_wid_x h_lid_x h_fit_x,
+         gid_texture_coord_1d_tiled_inbounds_when_dispatch_fits
+            wid_y lid_y ws_y nwg_y height tile_width_y tile_stride_y offset_y
+            h_tile_width_y h_tile_fit_y h_wid_y h_lid_y h_fit_y,
+         gid_texture_coord_1d_tiled_inbounds_when_dispatch_fits
+            wid_z lid_z ws_z nwg_z depth tile_width_z tile_stride_z offset_z
+            h_tile_width_z h_tile_fit_z h_wid_z h_lid_z h_fit_z⟩
 
 /-- Early-return guard theorem for 2D texture sample coordinates. When the shader
     has `if gid.x >= width || gid.y >= height { return; }`, surviving invocations
