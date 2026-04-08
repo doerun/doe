@@ -1,0 +1,272 @@
+[
+  {
+    "claimStatus": "claimable",
+    "comparisonStatus": "comparable",
+    "comparisonView": "doe_vs_dawn",
+    "generatedAt": "2026-04-08T21:23:35.893068Z",
+    "governedLaneIds": [
+      "vulkan_doe_comparable",
+      "vulkan_dawn_release"
+    ],
+    "host": {
+      "arch": "x64",
+      "backend": "vulkan",
+      "gpuVendor": "amd",
+      "os": "linux",
+      "profileId": "linux_amd_vulkan"
+    },
+    "maturity": "primary",
+    "metrics": {
+      "baselineP50Ms": 0.0019486308926178525,
+      "baselineP95Ms": 0.002243090941818836,
+      "baselineP99Ms": 0.002243090941818836,
+      "baselineSampleCount": 15,
+      "comparisonP50Ms": 0.008525453549070982,
+      "comparisonP95Ms": 0.009688974779495589,
+      "comparisonP99Ms": 0.009688974779495589,
+      "comparisonSampleCount": 15,
+      "deltaP50Percent": 337.50992460237643
+    },
+    "providerPair": "doe_vs_dawn",
+    "providerSet": "backend_native_providers",
+    "providers": [
+      "doe",
+      "dawn"
+    ],
+    "runId": "20260408T212335Z",
+    "schemaVersion": 1,
+    "sourceConformance": "canonical",
+    "sourceConformanceReason": "",
+    "sourceReportPath": "/home/x/deco/doe/bench/out/amd-vulkan/compare/20260408T212313Z/dawn-vs-doe.amd.vulkan.compare.json",
+    "sourceReportType": "backend_compare_report",
+    "sourceWorkloadId": "upload_write_buffer_1kb",
+    "surface": "backend_native",
+    "workloadDomain": "upload",
+    "workloadId": "upload_write_buffer_1kb",
+    "workloadSet": "uploads"
+  },
+  {
+    "claimStatus": "claimable",
+    "comparisonStatus": "comparable",
+    "comparisonView": "doe_vs_dawn",
+    "generatedAt": "2026-04-08T21:23:35.893068Z",
+    "governedLaneIds": [
+      "vulkan_doe_comparable",
+      "vulkan_dawn_release"
+    ],
+    "host": {
+      "arch": "x64",
+      "backend": "vulkan",
+      "gpuVendor": "amd",
+      "os": "linux",
+      "profileId": "linux_amd_vulkan"
+    },
+    "maturity": "primary",
+    "metrics": {
+      "baselineP50Ms": 0.020230734693877553,
+      "baselineP95Ms": 0.020442163265306124,
+      "baselineP99Ms": 0.020442163265306124,
+      "baselineSampleCount": 15,
+      "comparisonP50Ms": 0.03748473469387755,
+      "comparisonP95Ms": 0.04092963265306123,
+      "comparisonP99Ms": 0.04092963265306123,
+      "comparisonSampleCount": 15,
+      "deltaP50Percent": 85.28607715478367
+    },
+    "providerPair": "doe_vs_dawn",
+    "providerSet": "backend_native_providers",
+    "providers": [
+      "doe",
+      "dawn"
+    ],
+    "runId": "20260408T212335Z",
+    "schemaVersion": 1,
+    "sourceConformance": "canonical",
+    "sourceConformanceReason": "",
+    "sourceReportPath": "/home/x/deco/doe/bench/out/amd-vulkan/compare/20260408T212313Z/dawn-vs-doe.amd.vulkan.compare.json",
+    "sourceReportType": "backend_compare_report",
+    "sourceWorkloadId": "upload_write_buffer_1mb",
+    "surface": "backend_native",
+    "workloadDomain": "upload",
+    "workloadId": "upload_write_buffer_1mb",
+    "workloadSet": "uploads"
+  },
+  {
+    "claimStatus": "claimable",
+    "comparisonStatus": "comparable",
+    "comparisonView": "doe_vs_dawn",
+    "generatedAt": "2026-04-08T21:23:35.893068Z",
+    "governedLaneIds": [
+      "vulkan_doe_comparable",
+      "vulkan_dawn_release"
+    ],
+    "host": {
+      "arch": "x64",
+      "backend": "vulkan",
+      "gpuVendor": "amd",
+      "os": "linux",
+      "profileId": "linux_amd_vulkan"
+    },
+    "maturity": "primary",
+    "metrics": {
+      "baselineP50Ms": 0.03859493877551021,
+      "baselineP95Ms": 0.04506577551020408,
+      "baselineP99Ms": 0.04506577551020408,
+      "baselineSampleCount": 15,
+      "comparisonP50Ms": 0.6252977959183673,
+      "comparisonP95Ms": 0.6411722653061225,
+      "comparisonP99Ms": 0.6411722653061225,
+      "comparisonSampleCount": 15,
+      "deltaP50Percent": 1520.154910869142
+    },
+    "providerPair": "doe_vs_dawn",
+    "providerSet": "backend_native_providers",
+    "providers": [
+      "doe",
+      "dawn"
+    ],
+    "runId": "20260408T212335Z",
+    "schemaVersion": 1,
+    "sourceConformance": "canonical",
+    "sourceConformanceReason": "",
+    "sourceReportPath": "/home/x/deco/doe/bench/out/amd-vulkan/compare/20260408T212313Z/dawn-vs-doe.amd.vulkan.compare.json",
+    "sourceReportType": "backend_compare_report",
+    "sourceWorkloadId": "upload_write_buffer_4mb",
+    "surface": "backend_native",
+    "workloadDomain": "upload",
+    "workloadId": "upload_write_buffer_4mb",
+    "workloadSet": "uploads"
+  },
+  {
+    "claimStatus": "claimable",
+    "comparisonStatus": "comparable",
+    "comparisonView": "doe_vs_dawn",
+    "generatedAt": "2026-04-08T21:23:35.893068Z",
+    "governedLaneIds": [
+      "vulkan_doe_comparable",
+      "vulkan_dawn_release"
+    ],
+    "host": {
+      "arch": "x64",
+      "backend": "vulkan",
+      "gpuVendor": "amd",
+      "os": "linux",
+      "profileId": "linux_amd_vulkan"
+    },
+    "maturity": "primary",
+    "metrics": {
+      "baselineP50Ms": 0.0036898727,
+      "baselineP95Ms": 0.0040082895,
+      "baselineP99Ms": 0.0040082895,
+      "baselineSampleCount": 15,
+      "comparisonP50Ms": 0.0112646426,
+      "comparisonP95Ms": 0.0132025517,
+      "comparisonP99Ms": 0.0132025517,
+      "comparisonSampleCount": 15,
+      "deltaP50Percent": 205.2853991412766
+    },
+    "providerPair": "doe_vs_dawn",
+    "providerSet": "backend_native_providers",
+    "providers": [
+      "doe",
+      "dawn"
+    ],
+    "runId": "20260408T212335Z",
+    "schemaVersion": 1,
+    "sourceConformance": "canonical",
+    "sourceConformanceReason": "",
+    "sourceReportPath": "/home/x/deco/doe/bench/out/amd-vulkan/compare/20260408T212313Z/dawn-vs-doe.amd.vulkan.compare.json",
+    "sourceReportType": "backend_compare_report",
+    "sourceWorkloadId": "upload_write_buffer_64kb",
+    "surface": "backend_native",
+    "workloadDomain": "upload",
+    "workloadId": "upload_write_buffer_64kb",
+    "workloadSet": "uploads"
+  },
+  {
+    "claimStatus": "claimable",
+    "comparisonStatus": "comparable",
+    "comparisonView": "doe_vs_node_webgpu_package",
+    "generatedAt": "2026-04-08T21:43:44.021169Z",
+    "governedLaneIds": [
+      "node_package_compare"
+    ],
+    "host": {
+      "arch": "x64",
+      "os": "linux",
+      "profileId": "linux_x64"
+    },
+    "maturity": "primary",
+    "metrics": {
+      "baselineP50Ms": 61.298449,
+      "baselineP95Ms": 67.420678,
+      "baselineP99Ms": 67.420678,
+      "baselineSampleCount": 15,
+      "comparisonP50Ms": 165.748853,
+      "comparisonP95Ms": 217.30127,
+      "comparisonP99Ms": 217.30127,
+      "comparisonSampleCount": 15,
+      "deltaP50Percent": 15.949637383972458
+    },
+    "providerPair": "doe_vs_node_webgpu_package",
+    "providerSet": "package_node_providers",
+    "providers": [
+      "doe",
+      "node-webgpu"
+    ],
+    "runId": "20260408T214344Z",
+    "schemaVersion": 1,
+    "sourceConformance": "canonical",
+    "sourceConformanceReason": "",
+    "sourceReportPath": "/home/x/deco/doe/bench/out/amd-vulkan/20260408T214329Z/gemma270m.node-package.ir.compare.json",
+    "sourceReportType": "node_package_compare_report",
+    "sourceWorkloadId": "inference_gemma3_270m_prefill_64tok_decode_64tok",
+    "surface": "node_package",
+    "workloadDomain": "compute",
+    "workloadId": "inference_gemma3_270m_prefill_64tok_decode_64tok",
+    "workloadSet": "compute_e2e"
+  },
+  {
+    "claimStatus": "claimable",
+    "comparisonStatus": "comparable",
+    "comparisonView": "doe_vs_bun_webgpu_package",
+    "generatedAt": "2026-04-08T21:43:40.908676Z",
+    "governedLaneIds": [
+      "bun_package_compare"
+    ],
+    "host": {
+      "arch": "x64",
+      "os": "linux",
+      "profileId": "linux_x64"
+    },
+    "maturity": "prototype",
+    "metrics": {
+      "baselineP50Ms": 58.746537,
+      "baselineP95Ms": 64.563825,
+      "baselineP99Ms": 64.563825,
+      "baselineSampleCount": 15,
+      "comparisonP50Ms": 165.000111,
+      "comparisonP95Ms": 221.705373,
+      "comparisonP99Ms": 221.705373,
+      "comparisonSampleCount": 15,
+      "deltaP50Percent": 21.21043375197189
+    },
+    "providerPair": "doe_vs_bun_webgpu_package",
+    "providerSet": "package_bun_providers",
+    "providers": [
+      "doe",
+      "bun-webgpu"
+    ],
+    "runId": "20260408T214340Z",
+    "schemaVersion": 1,
+    "sourceConformance": "canonical",
+    "sourceConformanceReason": "",
+    "sourceReportPath": "/home/x/deco/doe/bench/out/amd-vulkan/20260408T214329Z/gemma270m.bun-package.ir.compare.json",
+    "sourceReportType": "bun_package_compare_report",
+    "sourceWorkloadId": "inference_gemma3_270m_prefill_64tok_decode_64tok",
+    "surface": "bun_package",
+    "workloadDomain": "compute",
+    "workloadId": "inference_gemma3_270m_prefill_64tok_decode_64tok",
+    "workloadSet": "compute_e2e"
+  }
+]

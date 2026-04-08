@@ -278,6 +278,14 @@ def source_conformance_rank(source_conformance: str) -> int:
     return 1 if source_conformance == "canonical" else 0
 
 
+def degrade_status_for_conformance(status: str, source_conformance: str) -> str:
+    if source_conformance == "canonical":
+        return status
+    if status in {"claimable", "comparable"}:
+        return "diagnostic"
+    return status
+
+
 def summarize_row_group(rows: list[dict[str, Any]]) -> tuple[str, str, float | None]:
     if not rows:
         return "unimplemented", "unimplemented", None
@@ -425,6 +433,26 @@ def make_placeholder_cell(
     }
 
 
+def surface_comparison_views(
+    policy: dict[str, Any],
+    surface: dict[str, Any],
+) -> list[str]:
+    comparison_views = surface.get("comparisonViews")
+    if isinstance(comparison_views, list) and comparison_views:
+        return [str(item) for item in comparison_views]
+    provider_pairs = surface.get("providerPairs")
+    if isinstance(provider_pairs, list) and provider_pairs:
+        return [str(item) for item in provider_pairs]
+    product_views = [
+        str(product.get("id"))
+        for product in policy["raw"].get("products", [])
+        if product.get("surface") == surface["id"] and isinstance(product.get("id"), str)
+    ]
+    if product_views:
+        return product_views
+    raise ValueError(f"surface {surface['id']} declares no comparison views")
+
+
 def build_cells(
     *,
     policy: dict[str, Any],
@@ -495,7 +523,7 @@ def build_cells(
 
     cells: list[dict[str, Any]] = []
     for surface in policy["raw"]["surfaces"]:
-        for provider_pair in (surface.get("comparisonViews") or surface["providerPairs"]):
+        for provider_pair in surface_comparison_views(policy, surface):
             for host_profile in surface["expectedHostProfiles"]:
                 for workload_set in surface["workloadSets"]:
                     tuple_key = (surface["id"], provider_pair, host_profile, workload_set)
@@ -872,7 +900,11 @@ def main() -> None:
     validate_schema(repo_root / "config" / "benchmark-cube.schema.json", summary_payload)
 
     matrix_markdown = render_matrix_markdown(summary_payload, policy)
-    dashboard_html = benchmark_cube_dashboard_html.build_dashboard_html(summary_payload, policy)
+    dashboard_html = benchmark_cube_dashboard_html.build_dashboard_html(
+        summary_payload,
+        policy,
+        dashboard_path=dashboard_html_out,
+    )
     write_json(rows_out, rows)
     write_json(summary_out, summary_payload)
     write_text(matrix_md_out, matrix_markdown + "\n")

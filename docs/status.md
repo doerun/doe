@@ -1,4 +1,81 @@
 # Doe status
+## Visualization pipeline bundle now ingests the current Node and Bun strict compare reports into the cube, and the final AMD Vulkan native plus package bundle is stamped under `20260408T222247Z` (2026-04-08 UTC)
+
+- final successful visualization bundle:
+  - landing page:
+    `bench/out/visualization/20260408T222247Z/index.html`
+  - summary:
+    `bench/out/visualization/20260408T222247Z/pipeline.summary.json`
+  - cube dashboard:
+    `bench/out/visualization/20260408T222247Z/cube.dashboard.html`
+  - inventory dashboard:
+    `bench/out/visualization/20260408T222247Z/inventory.dashboard.html`
+  - stable latest landing page:
+    `bench/out/visualization/latest/index.html`
+- cube ingestion is now aligned with the current strict compare report shape:
+  - `bench/lib/benchmark_cube_reports.py` now accepts both the legacy
+    `type=comparison_report` package shape and the current strict compare
+    report schema used by the Node/Bun AMD Vulkan receipts
+  - `bench/tools/build_benchmark_cube.py` now includes all three explicit
+    reports in the bundle run instead of silently defaulting back to repo-wide
+    glob sweeps
+- final bundle source counts now reflect the intended three-report scope:
+  - native discovered/included: see
+    `bench/out/visualization/20260408T222247Z/cube.summary.json`
+  - Node discovered/included: see
+    `bench/out/visualization/20260408T222247Z/cube.summary.json`
+  - Bun discovered/included: see
+    `bench/out/visualization/20260408T222247Z/cube.summary.json`
+- verification:
+  - `python3 bench/runners/run_visualization_pipeline.py --backend-report bench/out/amd-vulkan/compare/20260408T212313Z/dawn-vs-doe.amd.vulkan.compare.json --node-report bench/out/amd-vulkan/20260408T214329Z/gemma270m.node-package.ir.compare.json --bun-report bench/out/amd-vulkan/20260408T214329Z/gemma270m.bun-package.ir.compare.json`
+
+## Benchmark visualization is now a real pipeline with a timestamped landing page, branded compare HTML, and current AMD Vulkan native plus package bundle artifacts (2026-04-08 UTC)
+
+- new pipeline runner:
+  - `bench/runners/run_visualization_pipeline.py` now builds a timestamped
+    visualization bundle from explicit native, Node, and Bun compare reports
+  - the bundle includes:
+    - per-report compare HTML and analysis JSON from
+      `bench/native-compare/visualize_dawn_vs_doe.py`
+    - inventory artifacts from
+      `bench/tools/build_test_inventory_dashboard.py`
+    - benchmark cube artifacts from `bench/tools/build_benchmark_cube.py`
+    - a landing `index.html` plus stable latest mirror under
+      `bench/out/visualization/latest/`
+- presentation cleanup:
+  - compare HTML, inventory dashboard HTML, and cube dashboard HTML now share
+    Doe branding and a common visual language instead of the old mixed
+    Fawn/Trail Dash naming
+  - the landing page and compare pages now keep selected timing,
+    workload-unit wall, claimability mode, and operator-diff availability
+    visible instead of collapsing them into one headline number
+- fresh bundle artifacts:
+  - landing page:
+    `bench/out/visualization/20260408T221908Z/index.html`
+  - summary:
+    `bench/out/visualization/20260408T221908Z/pipeline.summary.json`
+  - native compare page:
+    `bench/out/visualization/20260408T221908Z/dawn-vs-doe-amd-vulkan-compare.html`
+  - Node compare page:
+    `bench/out/visualization/20260408T221908Z/gemma270m-node-package-ir-compare.html`
+  - Bun compare page:
+    `bench/out/visualization/20260408T221908Z/gemma270m-bun-package-ir-compare.html`
+  - cube dashboard:
+    `bench/out/visualization/20260408T221908Z/cube.dashboard.html`
+  - inventory dashboard:
+    `bench/out/visualization/20260408T221908Z/inventory.dashboard.html`
+  - stable latest landing page:
+    `bench/out/visualization/latest/index.html`
+- cube-path hardening folded into the same change:
+  - `bench/lib/benchmark_cube_reports.py` now accepts policy surfaces that
+    declare `products` instead of legacy `providerPairs`
+  - `bench/tools/build_benchmark_cube.py` now restores the missing
+    `degrade_status_for_conformance(...)` helper and resolves surface
+    comparison views through the current product-backed policy
+- verification:
+  - `python3 -m py_compile bench/lib/visual_report_theme.py bench/lib/inventory_dashboard_html.py bench/lib/benchmark_cube_dashboard_html.py bench/lib/visualization_pipeline_html.py bench/lib/benchmark_cube_reports.py bench/native-compare/visualize_dawn_vs_doe.py bench/runners/run_visualization_pipeline.py bench/tools/build_test_inventory_dashboard.py bench/tools/build_benchmark_cube.py`
+  - `python3 bench/runners/run_visualization_pipeline.py --backend-report bench/out/amd-vulkan/compare/20260408T212313Z/dawn-vs-doe.amd.vulkan.compare.json --node-report bench/out/amd-vulkan/20260408T214329Z/gemma270m.node-package.ir.compare.json --bun-report bench/out/amd-vulkan/20260408T214329Z/gemma270m.bun-package.ir.compare.json`
+
 ## AMD Vulkan Gemma270M package compute is now a real local claim surface on both Node and Bun, and the claim gate hash-link validator no longer crashes on claimable reports (2026-04-08 UTC)
 
 - package claim-surface contract:

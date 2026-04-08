@@ -1,0 +1,1685 @@
+{
+  "artifacts": {
+    "dashboardHtmlPath": "/home/x/deco/doe/bench/out/visualization/20260408T223116Z/cube.dashboard.html",
+    "matrixMarkdownPath": "/home/x/deco/doe/bench/out/visualization/20260408T223116Z/cube.matrix.md",
+    "rowsPath": "/home/x/deco/doe/bench/out/visualization/20260408T223116Z/cube.rows.json"
+  },
+  "cells": [
+    {
+      "comparisonView": "doe_vs_dawn",
+      "governedLaneIds": [
+        "vulkan_doe_app",
+        "vulkan_doe_comparable",
+        "vulkan_doe_release",
+        "vulkan_dawn_release"
+      ],
+      "hostProfile": "linux_amd_vulkan",
+      "maturity": "primary",
+      "notes": [
+        "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
+        "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback.",
+        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity.",
+        "Windows D3D12 strict comparable coverage is currently limited to compute, upload, pipeline, and p0-resource contracts; render and texture rows remain out of scope until native D3D12 coverage expands."
+      ],
+      "primarySupport": "backend",
+      "providerPair": "doe_vs_dawn",
+      "providerSet": "backend_native_providers",
+      "providers": [
+        "doe",
+        "dawn"
+      ],
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
+      "surface": "backend_native",
+      "workloadSet": "compute_e2e"
+    },
+    {
+      "comparisonView": "doe_vs_dawn",
+      "governedLaneIds": [
+        "vulkan_doe_app",
+        "vulkan_doe_comparable",
+        "vulkan_doe_release",
+        "vulkan_dawn_release"
+      ],
+      "hostProfile": "linux_amd_vulkan",
+      "maturity": "primary",
+      "notes": [
+        "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
+        "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback.",
+        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity.",
+        "Windows D3D12 strict comparable coverage is currently limited to compute, upload, pipeline, and p0-resource contracts; render and texture rows remain out of scope until native D3D12 coverage expands."
+      ],
+      "primarySupport": "backend",
+      "providerPair": "doe_vs_dawn",
+      "providerSet": "backend_native_providers",
+      "providers": [
+        "doe",
+        "dawn"
+      ],
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
+      "surface": "backend_native",
+      "workloadSet": "contracts"
+    },
+    {
+      "claimStatus": "claimable",
+      "comparisonStatus": "comparable",
+      "comparisonView": "doe_vs_dawn",
+      "deltaP50MedianPercent": 271.39766187182653,
+      "governedLaneIds": [
+        "vulkan_doe_comparable",
+        "vulkan_dawn_release"
+      ],
+      "hostProfile": "linux_amd_vulkan",
+      "latestGeneratedAt": "2026-04-08T21:23:35.893068Z",
+      "latestReportPath": "/home/x/deco/doe/bench/out/amd-vulkan/compare/20260408T212313Z/dawn-vs-doe.amd.vulkan.compare.json",
+      "latestRunId": "20260408T212335Z",
+      "maturity": "primary",
+      "notes": [
+        "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
+        "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback.",
+        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity.",
+        "Windows D3D12 strict comparable coverage is currently limited to compute, upload, pipeline, and p0-resource contracts; render and texture rows remain out of scope until native D3D12 coverage expands."
+      ],
+      "primarySupport": "backend",
+      "providerPair": "doe_vs_dawn",
+      "providerSet": "backend_native_providers",
+      "providers": [
+        "doe",
+        "dawn"
+      ],
+      "reportCount": 1,
+      "rowCount": 4,
+      "scopeType": "full_matrix",
+      "sourceConformance": "canonical",
+      "sourceConformanceReason": "",
+      "status": "claimable",
+      "surface": "backend_native",
+      "workloadSet": "full_comparable"
+    },
+    {
+      "comparisonView": "doe_vs_dawn",
+      "governedLaneIds": [
+        "vulkan_doe_app",
+        "vulkan_doe_comparable",
+        "vulkan_doe_release",
+        "vulkan_dawn_release"
+      ],
+      "hostProfile": "linux_amd_vulkan",
+      "maturity": "primary",
+      "notes": [
+        "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
+        "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback.",
+        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity.",
+        "Windows D3D12 strict comparable coverage is currently limited to compute, upload, pipeline, and p0-resource contracts; render and texture rows remain out of scope until native D3D12 coverage expands."
+      ],
+      "primarySupport": "backend",
+      "providerPair": "doe_vs_dawn",
+      "providerSet": "backend_native_providers",
+      "providers": [
+        "doe",
+        "dawn"
+      ],
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
+      "surface": "backend_native",
+      "workloadSet": "pipeline"
+    },
+    {
+      "comparisonView": "doe_vs_dawn",
+      "governedLaneIds": [
+        "vulkan_doe_app",
+        "vulkan_doe_comparable",
+        "vulkan_doe_release",
+        "vulkan_dawn_release"
+      ],
+      "hostProfile": "linux_amd_vulkan",
+      "maturity": "primary",
+      "notes": [
+        "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
+        "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback.",
+        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity.",
+        "Windows D3D12 strict comparable coverage is currently limited to compute, upload, pipeline, and p0-resource contracts; render and texture rows remain out of scope until native D3D12 coverage expands."
+      ],
+      "primarySupport": "backend",
+      "providerPair": "doe_vs_dawn",
+      "providerSet": "backend_native_providers",
+      "providers": [
+        "doe",
+        "dawn"
+      ],
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
+      "surface": "backend_native",
+      "workloadSet": "render"
+    },
+    {
+      "comparisonView": "doe_vs_dawn",
+      "governedLaneIds": [
+        "vulkan_doe_app",
+        "vulkan_doe_comparable",
+        "vulkan_doe_release",
+        "vulkan_dawn_release"
+      ],
+      "hostProfile": "linux_amd_vulkan",
+      "maturity": "primary",
+      "notes": [
+        "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
+        "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback.",
+        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity.",
+        "Windows D3D12 strict comparable coverage is currently limited to compute, upload, pipeline, and p0-resource contracts; render and texture rows remain out of scope until native D3D12 coverage expands."
+      ],
+      "primarySupport": "backend",
+      "providerPair": "doe_vs_dawn",
+      "providerSet": "backend_native_providers",
+      "providers": [
+        "doe",
+        "dawn"
+      ],
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
+      "surface": "backend_native",
+      "workloadSet": "texture"
+    },
+    {
+      "claimStatus": "claimable",
+      "comparisonStatus": "comparable",
+      "comparisonView": "doe_vs_dawn",
+      "deltaP50MedianPercent": 271.39766187182653,
+      "governedLaneIds": [
+        "vulkan_doe_comparable",
+        "vulkan_dawn_release"
+      ],
+      "hostProfile": "linux_amd_vulkan",
+      "latestGeneratedAt": "2026-04-08T21:23:35.893068Z",
+      "latestReportPath": "/home/x/deco/doe/bench/out/amd-vulkan/compare/20260408T212313Z/dawn-vs-doe.amd.vulkan.compare.json",
+      "latestRunId": "20260408T212335Z",
+      "maturity": "primary",
+      "notes": [
+        "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
+        "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback.",
+        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity.",
+        "Windows D3D12 strict comparable coverage is currently limited to compute, upload, pipeline, and p0-resource contracts; render and texture rows remain out of scope until native D3D12 coverage expands."
+      ],
+      "primarySupport": "backend",
+      "providerPair": "doe_vs_dawn",
+      "providerSet": "backend_native_providers",
+      "providers": [
+        "doe",
+        "dawn"
+      ],
+      "reportCount": 1,
+      "rowCount": 4,
+      "scopeType": "workload_set",
+      "sourceConformance": "canonical",
+      "sourceConformanceReason": "",
+      "status": "claimable",
+      "surface": "backend_native",
+      "workloadSet": "uploads"
+    },
+    {
+      "comparisonView": "doe_vs_dawn",
+      "governedLaneIds": [
+        "metal_doe_app",
+        "metal_doe_directional",
+        "metal_doe_comparable",
+        "metal_doe_release",
+        "metal_dawn_release"
+      ],
+      "hostProfile": "mac_apple_silicon",
+      "maturity": "primary",
+      "notes": [
+        "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
+        "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback.",
+        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity.",
+        "Windows D3D12 strict comparable coverage is currently limited to compute, upload, pipeline, and p0-resource contracts; render and texture rows remain out of scope until native D3D12 coverage expands."
+      ],
+      "primarySupport": "backend",
+      "providerPair": "doe_vs_dawn",
+      "providerSet": "backend_native_providers",
+      "providers": [
+        "doe",
+        "dawn"
+      ],
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
+      "surface": "backend_native",
+      "workloadSet": "compute_e2e"
+    },
+    {
+      "comparisonView": "doe_vs_dawn",
+      "governedLaneIds": [
+        "metal_doe_app",
+        "metal_doe_directional",
+        "metal_doe_comparable",
+        "metal_doe_release",
+        "metal_dawn_release"
+      ],
+      "hostProfile": "mac_apple_silicon",
+      "maturity": "primary",
+      "notes": [
+        "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
+        "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback.",
+        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity.",
+        "Windows D3D12 strict comparable coverage is currently limited to compute, upload, pipeline, and p0-resource contracts; render and texture rows remain out of scope until native D3D12 coverage expands."
+      ],
+      "primarySupport": "backend",
+      "providerPair": "doe_vs_dawn",
+      "providerSet": "backend_native_providers",
+      "providers": [
+        "doe",
+        "dawn"
+      ],
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
+      "surface": "backend_native",
+      "workloadSet": "contracts"
+    },
+    {
+      "comparisonView": "doe_vs_dawn",
+      "governedLaneIds": [
+        "metal_doe_app",
+        "metal_doe_directional",
+        "metal_doe_comparable",
+        "metal_doe_release",
+        "metal_dawn_release"
+      ],
+      "hostProfile": "mac_apple_silicon",
+      "maturity": "primary",
+      "notes": [
+        "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
+        "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback.",
+        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity.",
+        "Windows D3D12 strict comparable coverage is currently limited to compute, upload, pipeline, and p0-resource contracts; render and texture rows remain out of scope until native D3D12 coverage expands."
+      ],
+      "primarySupport": "backend",
+      "providerPair": "doe_vs_dawn",
+      "providerSet": "backend_native_providers",
+      "providers": [
+        "doe",
+        "dawn"
+      ],
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "full_matrix",
+      "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
+      "surface": "backend_native",
+      "workloadSet": "full_comparable"
+    },
+    {
+      "comparisonView": "doe_vs_dawn",
+      "governedLaneIds": [
+        "metal_doe_app",
+        "metal_doe_directional",
+        "metal_doe_comparable",
+        "metal_doe_release",
+        "metal_dawn_release"
+      ],
+      "hostProfile": "mac_apple_silicon",
+      "maturity": "primary",
+      "notes": [
+        "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
+        "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback.",
+        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity.",
+        "Windows D3D12 strict comparable coverage is currently limited to compute, upload, pipeline, and p0-resource contracts; render and texture rows remain out of scope until native D3D12 coverage expands."
+      ],
+      "primarySupport": "backend",
+      "providerPair": "doe_vs_dawn",
+      "providerSet": "backend_native_providers",
+      "providers": [
+        "doe",
+        "dawn"
+      ],
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
+      "surface": "backend_native",
+      "workloadSet": "pipeline"
+    },
+    {
+      "comparisonView": "doe_vs_dawn",
+      "governedLaneIds": [
+        "metal_doe_app",
+        "metal_doe_directional",
+        "metal_doe_comparable",
+        "metal_doe_release",
+        "metal_dawn_release"
+      ],
+      "hostProfile": "mac_apple_silicon",
+      "maturity": "primary",
+      "notes": [
+        "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
+        "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback.",
+        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity.",
+        "Windows D3D12 strict comparable coverage is currently limited to compute, upload, pipeline, and p0-resource contracts; render and texture rows remain out of scope until native D3D12 coverage expands."
+      ],
+      "primarySupport": "backend",
+      "providerPair": "doe_vs_dawn",
+      "providerSet": "backend_native_providers",
+      "providers": [
+        "doe",
+        "dawn"
+      ],
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
+      "surface": "backend_native",
+      "workloadSet": "render"
+    },
+    {
+      "comparisonView": "doe_vs_dawn",
+      "governedLaneIds": [
+        "metal_doe_app",
+        "metal_doe_directional",
+        "metal_doe_comparable",
+        "metal_doe_release",
+        "metal_dawn_release"
+      ],
+      "hostProfile": "mac_apple_silicon",
+      "maturity": "primary",
+      "notes": [
+        "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
+        "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback.",
+        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity.",
+        "Windows D3D12 strict comparable coverage is currently limited to compute, upload, pipeline, and p0-resource contracts; render and texture rows remain out of scope until native D3D12 coverage expands."
+      ],
+      "primarySupport": "backend",
+      "providerPair": "doe_vs_dawn",
+      "providerSet": "backend_native_providers",
+      "providers": [
+        "doe",
+        "dawn"
+      ],
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
+      "surface": "backend_native",
+      "workloadSet": "texture"
+    },
+    {
+      "comparisonView": "doe_vs_dawn",
+      "governedLaneIds": [
+        "metal_doe_app",
+        "metal_doe_directional",
+        "metal_doe_comparable",
+        "metal_doe_release",
+        "metal_dawn_release"
+      ],
+      "hostProfile": "mac_apple_silicon",
+      "maturity": "primary",
+      "notes": [
+        "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
+        "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback.",
+        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity.",
+        "Windows D3D12 strict comparable coverage is currently limited to compute, upload, pipeline, and p0-resource contracts; render and texture rows remain out of scope until native D3D12 coverage expands."
+      ],
+      "primarySupport": "backend",
+      "providerPair": "doe_vs_dawn",
+      "providerSet": "backend_native_providers",
+      "providers": [
+        "doe",
+        "dawn"
+      ],
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
+      "surface": "backend_native",
+      "workloadSet": "uploads"
+    },
+    {
+      "comparisonView": "doe_vs_dawn",
+      "governedLaneIds": [
+        "d3d12_doe_app",
+        "d3d12_doe_directional",
+        "d3d12_doe_comparable",
+        "d3d12_doe_release",
+        "d3d12_dawn_release"
+      ],
+      "hostProfile": "windows_d3d12",
+      "maturity": "primary",
+      "notes": [
+        "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
+        "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback.",
+        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity.",
+        "Windows D3D12 strict comparable coverage is currently limited to compute, upload, pipeline, and p0-resource contracts; render and texture rows remain out of scope until native D3D12 coverage expands."
+      ],
+      "primarySupport": "backend",
+      "providerPair": "doe_vs_dawn",
+      "providerSet": "backend_native_providers",
+      "providers": [
+        "doe",
+        "dawn"
+      ],
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
+      "surface": "backend_native",
+      "workloadSet": "compute_e2e"
+    },
+    {
+      "comparisonView": "doe_vs_dawn",
+      "governedLaneIds": [
+        "d3d12_doe_app",
+        "d3d12_doe_directional",
+        "d3d12_doe_comparable",
+        "d3d12_doe_release",
+        "d3d12_dawn_release"
+      ],
+      "hostProfile": "windows_d3d12",
+      "maturity": "primary",
+      "notes": [
+        "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
+        "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback.",
+        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity.",
+        "Windows D3D12 strict comparable coverage is currently limited to compute, upload, pipeline, and p0-resource contracts; render and texture rows remain out of scope until native D3D12 coverage expands."
+      ],
+      "primarySupport": "backend",
+      "providerPair": "doe_vs_dawn",
+      "providerSet": "backend_native_providers",
+      "providers": [
+        "doe",
+        "dawn"
+      ],
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
+      "surface": "backend_native",
+      "workloadSet": "contracts"
+    },
+    {
+      "comparisonView": "doe_vs_dawn",
+      "governedLaneIds": [
+        "d3d12_doe_app",
+        "d3d12_doe_directional",
+        "d3d12_doe_comparable",
+        "d3d12_doe_release",
+        "d3d12_dawn_release"
+      ],
+      "hostProfile": "windows_d3d12",
+      "maturity": "primary",
+      "notes": [
+        "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
+        "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback.",
+        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity.",
+        "Windows D3D12 strict comparable coverage is currently limited to compute, upload, pipeline, and p0-resource contracts; render and texture rows remain out of scope until native D3D12 coverage expands."
+      ],
+      "primarySupport": "backend",
+      "providerPair": "doe_vs_dawn",
+      "providerSet": "backend_native_providers",
+      "providers": [
+        "doe",
+        "dawn"
+      ],
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "full_matrix",
+      "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
+      "surface": "backend_native",
+      "workloadSet": "full_comparable"
+    },
+    {
+      "comparisonView": "doe_vs_dawn",
+      "governedLaneIds": [
+        "d3d12_doe_app",
+        "d3d12_doe_directional",
+        "d3d12_doe_comparable",
+        "d3d12_doe_release",
+        "d3d12_dawn_release"
+      ],
+      "hostProfile": "windows_d3d12",
+      "maturity": "primary",
+      "notes": [
+        "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
+        "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback.",
+        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity.",
+        "Windows D3D12 strict comparable coverage is currently limited to compute, upload, pipeline, and p0-resource contracts; render and texture rows remain out of scope until native D3D12 coverage expands."
+      ],
+      "primarySupport": "backend",
+      "providerPair": "doe_vs_dawn",
+      "providerSet": "backend_native_providers",
+      "providers": [
+        "doe",
+        "dawn"
+      ],
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
+      "surface": "backend_native",
+      "workloadSet": "pipeline"
+    },
+    {
+      "comparisonView": "doe_vs_dawn",
+      "governedLaneIds": [
+        "d3d12_doe_app",
+        "d3d12_doe_directional",
+        "d3d12_doe_comparable",
+        "d3d12_doe_release",
+        "d3d12_dawn_release"
+      ],
+      "hostProfile": "windows_d3d12",
+      "maturity": "primary",
+      "notes": [
+        "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
+        "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback.",
+        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity.",
+        "Windows D3D12 strict comparable coverage is currently limited to compute, upload, pipeline, and p0-resource contracts; render and texture rows remain out of scope until native D3D12 coverage expands."
+      ],
+      "primarySupport": "backend",
+      "providerPair": "doe_vs_dawn",
+      "providerSet": "backend_native_providers",
+      "providers": [
+        "doe",
+        "dawn"
+      ],
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
+      "surface": "backend_native",
+      "workloadSet": "render"
+    },
+    {
+      "comparisonView": "doe_vs_dawn",
+      "governedLaneIds": [
+        "d3d12_doe_app",
+        "d3d12_doe_directional",
+        "d3d12_doe_comparable",
+        "d3d12_doe_release",
+        "d3d12_dawn_release"
+      ],
+      "hostProfile": "windows_d3d12",
+      "maturity": "primary",
+      "notes": [
+        "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
+        "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback.",
+        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity.",
+        "Windows D3D12 strict comparable coverage is currently limited to compute, upload, pipeline, and p0-resource contracts; render and texture rows remain out of scope until native D3D12 coverage expands."
+      ],
+      "primarySupport": "backend",
+      "providerPair": "doe_vs_dawn",
+      "providerSet": "backend_native_providers",
+      "providers": [
+        "doe",
+        "dawn"
+      ],
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
+      "surface": "backend_native",
+      "workloadSet": "texture"
+    },
+    {
+      "comparisonView": "doe_vs_dawn",
+      "governedLaneIds": [
+        "d3d12_doe_app",
+        "d3d12_doe_directional",
+        "d3d12_doe_comparable",
+        "d3d12_doe_release",
+        "d3d12_dawn_release"
+      ],
+      "hostProfile": "windows_d3d12",
+      "maturity": "primary",
+      "notes": [
+        "Strict Dawn-vs-Doe backend reports are the canonical claim lane.",
+        "Missing cells indicate unimplemented or unevidenced host coverage, not silent fallback.",
+        "AMD Vulkan strict comparable/release cells must come from native-supported workload contracts and matching Doe/Dawn adapter identity.",
+        "Windows D3D12 strict comparable coverage is currently limited to compute, upload, pipeline, and p0-resource contracts; render and texture rows remain out of scope until native D3D12 coverage expands."
+      ],
+      "primarySupport": "backend",
+      "providerPair": "doe_vs_dawn",
+      "providerSet": "backend_native_providers",
+      "providers": [
+        "doe",
+        "dawn"
+      ],
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
+      "surface": "backend_native",
+      "workloadSet": "uploads"
+    },
+    {
+      "claimStatus": "claimable",
+      "comparisonStatus": "comparable",
+      "comparisonView": "doe_vs_bun_webgpu_package",
+      "deltaP50MedianPercent": 21.21043375197189,
+      "governedLaneIds": [
+        "bun_package_compare"
+      ],
+      "hostProfile": "linux_x64",
+      "latestGeneratedAt": "2026-04-08T21:43:40.908676Z",
+      "latestReportPath": "/home/x/deco/doe/bench/out/amd-vulkan/20260408T214329Z/gemma270m.bun-package.ir.compare.json",
+      "latestRunId": "20260408T214340Z",
+      "maturity": "prototype",
+      "notes": [
+        "Bun has API parity with Node through the package-default Bun runtime entry. Canonical compare flow is artifact-first through bench/cli.py compare with the doe_bun_package and bun_webgpu_package executors.",
+        "Do not cite Bun cells as package parity until they are populated by comparable artifacts."
+      ],
+      "primarySupport": "bun",
+      "providerPair": "doe_vs_bun_webgpu_package",
+      "providerSet": "package_bun_providers",
+      "providers": [
+        "doe",
+        "bun-webgpu"
+      ],
+      "reportCount": 1,
+      "rowCount": 1,
+      "scopeType": "workload_set",
+      "sourceConformance": "canonical",
+      "sourceConformanceReason": "",
+      "status": "claimable",
+      "surface": "bun_package",
+      "workloadSet": "compute_e2e"
+    },
+    {
+      "comparisonView": "doe_vs_bun_webgpu_package",
+      "governedLaneIds": [
+        "bun_package_compare"
+      ],
+      "hostProfile": "linux_x64",
+      "maturity": "prototype",
+      "notes": [
+        "Bun has API parity with Node through the package-default Bun runtime entry. Canonical compare flow is artifact-first through bench/cli.py compare with the doe_bun_package and bun_webgpu_package executors.",
+        "Do not cite Bun cells as package parity until they are populated by comparable artifacts."
+      ],
+      "primarySupport": "bun",
+      "providerPair": "doe_vs_bun_webgpu_package",
+      "providerSet": "package_bun_providers",
+      "providers": [
+        "doe",
+        "bun-webgpu"
+      ],
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
+      "surface": "bun_package",
+      "workloadSet": "dispatch_only"
+    },
+    {
+      "claimStatus": "claimable",
+      "comparisonStatus": "comparable",
+      "comparisonView": "doe_vs_bun_webgpu_package",
+      "deltaP50MedianPercent": 21.21043375197189,
+      "governedLaneIds": [
+        "bun_package_compare"
+      ],
+      "hostProfile": "linux_x64",
+      "latestGeneratedAt": "2026-04-08T21:43:40.908676Z",
+      "latestReportPath": "/home/x/deco/doe/bench/out/amd-vulkan/20260408T214329Z/gemma270m.bun-package.ir.compare.json",
+      "latestRunId": "20260408T214340Z",
+      "maturity": "prototype",
+      "notes": [
+        "Bun has API parity with Node through the package-default Bun runtime entry. Canonical compare flow is artifact-first through bench/cli.py compare with the doe_bun_package and bun_webgpu_package executors.",
+        "Do not cite Bun cells as package parity until they are populated by comparable artifacts."
+      ],
+      "primarySupport": "bun",
+      "providerPair": "doe_vs_bun_webgpu_package",
+      "providerSet": "package_bun_providers",
+      "providers": [
+        "doe",
+        "bun-webgpu"
+      ],
+      "reportCount": 1,
+      "rowCount": 1,
+      "scopeType": "full_matrix",
+      "sourceConformance": "canonical",
+      "sourceConformanceReason": "",
+      "status": "claimable",
+      "surface": "bun_package",
+      "workloadSet": "full_comparable"
+    },
+    {
+      "comparisonView": "doe_vs_bun_webgpu_package",
+      "governedLaneIds": [
+        "bun_package_compare"
+      ],
+      "hostProfile": "linux_x64",
+      "maturity": "prototype",
+      "notes": [
+        "Bun has API parity with Node through the package-default Bun runtime entry. Canonical compare flow is artifact-first through bench/cli.py compare with the doe_bun_package and bun_webgpu_package executors.",
+        "Do not cite Bun cells as package parity until they are populated by comparable artifacts."
+      ],
+      "primarySupport": "bun",
+      "providerPair": "doe_vs_bun_webgpu_package",
+      "providerSet": "package_bun_providers",
+      "providers": [
+        "doe",
+        "bun-webgpu"
+      ],
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
+      "surface": "bun_package",
+      "workloadSet": "overhead"
+    },
+    {
+      "comparisonView": "doe_vs_bun_webgpu_package",
+      "governedLaneIds": [
+        "bun_package_compare"
+      ],
+      "hostProfile": "linux_x64",
+      "maturity": "prototype",
+      "notes": [
+        "Bun has API parity with Node through the package-default Bun runtime entry. Canonical compare flow is artifact-first through bench/cli.py compare with the doe_bun_package and bun_webgpu_package executors.",
+        "Do not cite Bun cells as package parity until they are populated by comparable artifacts."
+      ],
+      "primarySupport": "bun",
+      "providerPair": "doe_vs_bun_webgpu_package",
+      "providerSet": "package_bun_providers",
+      "providers": [
+        "doe",
+        "bun-webgpu"
+      ],
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
+      "surface": "bun_package",
+      "workloadSet": "pipeline"
+    },
+    {
+      "comparisonView": "doe_vs_bun_webgpu_package",
+      "governedLaneIds": [
+        "bun_package_compare"
+      ],
+      "hostProfile": "linux_x64",
+      "maturity": "prototype",
+      "notes": [
+        "Bun has API parity with Node through the package-default Bun runtime entry. Canonical compare flow is artifact-first through bench/cli.py compare with the doe_bun_package and bun_webgpu_package executors.",
+        "Do not cite Bun cells as package parity until they are populated by comparable artifacts."
+      ],
+      "primarySupport": "bun",
+      "providerPair": "doe_vs_bun_webgpu_package",
+      "providerSet": "package_bun_providers",
+      "providers": [
+        "doe",
+        "bun-webgpu"
+      ],
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
+      "surface": "bun_package",
+      "workloadSet": "uploads"
+    },
+    {
+      "comparisonView": "doe_vs_bun_webgpu_package",
+      "governedLaneIds": [
+        "bun_package_compare"
+      ],
+      "hostProfile": "mac_apple_silicon",
+      "maturity": "prototype",
+      "notes": [
+        "Bun has API parity with Node through the package-default Bun runtime entry. Canonical compare flow is artifact-first through bench/cli.py compare with the doe_bun_package and bun_webgpu_package executors.",
+        "Do not cite Bun cells as package parity until they are populated by comparable artifacts."
+      ],
+      "primarySupport": "bun",
+      "providerPair": "doe_vs_bun_webgpu_package",
+      "providerSet": "package_bun_providers",
+      "providers": [
+        "doe",
+        "bun-webgpu"
+      ],
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
+      "surface": "bun_package",
+      "workloadSet": "compute_e2e"
+    },
+    {
+      "comparisonView": "doe_vs_bun_webgpu_package",
+      "governedLaneIds": [
+        "bun_package_compare"
+      ],
+      "hostProfile": "mac_apple_silicon",
+      "maturity": "prototype",
+      "notes": [
+        "Bun has API parity with Node through the package-default Bun runtime entry. Canonical compare flow is artifact-first through bench/cli.py compare with the doe_bun_package and bun_webgpu_package executors.",
+        "Do not cite Bun cells as package parity until they are populated by comparable artifacts."
+      ],
+      "primarySupport": "bun",
+      "providerPair": "doe_vs_bun_webgpu_package",
+      "providerSet": "package_bun_providers",
+      "providers": [
+        "doe",
+        "bun-webgpu"
+      ],
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
+      "surface": "bun_package",
+      "workloadSet": "dispatch_only"
+    },
+    {
+      "comparisonView": "doe_vs_bun_webgpu_package",
+      "governedLaneIds": [
+        "bun_package_compare"
+      ],
+      "hostProfile": "mac_apple_silicon",
+      "maturity": "prototype",
+      "notes": [
+        "Bun has API parity with Node through the package-default Bun runtime entry. Canonical compare flow is artifact-first through bench/cli.py compare with the doe_bun_package and bun_webgpu_package executors.",
+        "Do not cite Bun cells as package parity until they are populated by comparable artifacts."
+      ],
+      "primarySupport": "bun",
+      "providerPair": "doe_vs_bun_webgpu_package",
+      "providerSet": "package_bun_providers",
+      "providers": [
+        "doe",
+        "bun-webgpu"
+      ],
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "full_matrix",
+      "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
+      "surface": "bun_package",
+      "workloadSet": "full_comparable"
+    },
+    {
+      "comparisonView": "doe_vs_bun_webgpu_package",
+      "governedLaneIds": [
+        "bun_package_compare"
+      ],
+      "hostProfile": "mac_apple_silicon",
+      "maturity": "prototype",
+      "notes": [
+        "Bun has API parity with Node through the package-default Bun runtime entry. Canonical compare flow is artifact-first through bench/cli.py compare with the doe_bun_package and bun_webgpu_package executors.",
+        "Do not cite Bun cells as package parity until they are populated by comparable artifacts."
+      ],
+      "primarySupport": "bun",
+      "providerPair": "doe_vs_bun_webgpu_package",
+      "providerSet": "package_bun_providers",
+      "providers": [
+        "doe",
+        "bun-webgpu"
+      ],
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
+      "surface": "bun_package",
+      "workloadSet": "overhead"
+    },
+    {
+      "comparisonView": "doe_vs_bun_webgpu_package",
+      "governedLaneIds": [
+        "bun_package_compare"
+      ],
+      "hostProfile": "mac_apple_silicon",
+      "maturity": "prototype",
+      "notes": [
+        "Bun has API parity with Node through the package-default Bun runtime entry. Canonical compare flow is artifact-first through bench/cli.py compare with the doe_bun_package and bun_webgpu_package executors.",
+        "Do not cite Bun cells as package parity until they are populated by comparable artifacts."
+      ],
+      "primarySupport": "bun",
+      "providerPair": "doe_vs_bun_webgpu_package",
+      "providerSet": "package_bun_providers",
+      "providers": [
+        "doe",
+        "bun-webgpu"
+      ],
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
+      "surface": "bun_package",
+      "workloadSet": "pipeline"
+    },
+    {
+      "comparisonView": "doe_vs_bun_webgpu_package",
+      "governedLaneIds": [
+        "bun_package_compare"
+      ],
+      "hostProfile": "mac_apple_silicon",
+      "maturity": "prototype",
+      "notes": [
+        "Bun has API parity with Node through the package-default Bun runtime entry. Canonical compare flow is artifact-first through bench/cli.py compare with the doe_bun_package and bun_webgpu_package executors.",
+        "Do not cite Bun cells as package parity until they are populated by comparable artifacts."
+      ],
+      "primarySupport": "bun",
+      "providerPair": "doe_vs_bun_webgpu_package",
+      "providerSet": "package_bun_providers",
+      "providers": [
+        "doe",
+        "bun-webgpu"
+      ],
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
+      "surface": "bun_package",
+      "workloadSet": "uploads"
+    },
+    {
+      "comparisonView": "doe_vs_bun_webgpu_package",
+      "governedLaneIds": [
+        "bun_package_compare"
+      ],
+      "hostProfile": "windows_x64",
+      "maturity": "prototype",
+      "notes": [
+        "Bun has API parity with Node through the package-default Bun runtime entry. Canonical compare flow is artifact-first through bench/cli.py compare with the doe_bun_package and bun_webgpu_package executors.",
+        "Do not cite Bun cells as package parity until they are populated by comparable artifacts."
+      ],
+      "primarySupport": "bun",
+      "providerPair": "doe_vs_bun_webgpu_package",
+      "providerSet": "package_bun_providers",
+      "providers": [
+        "doe",
+        "bun-webgpu"
+      ],
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
+      "surface": "bun_package",
+      "workloadSet": "compute_e2e"
+    },
+    {
+      "comparisonView": "doe_vs_bun_webgpu_package",
+      "governedLaneIds": [
+        "bun_package_compare"
+      ],
+      "hostProfile": "windows_x64",
+      "maturity": "prototype",
+      "notes": [
+        "Bun has API parity with Node through the package-default Bun runtime entry. Canonical compare flow is artifact-first through bench/cli.py compare with the doe_bun_package and bun_webgpu_package executors.",
+        "Do not cite Bun cells as package parity until they are populated by comparable artifacts."
+      ],
+      "primarySupport": "bun",
+      "providerPair": "doe_vs_bun_webgpu_package",
+      "providerSet": "package_bun_providers",
+      "providers": [
+        "doe",
+        "bun-webgpu"
+      ],
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
+      "surface": "bun_package",
+      "workloadSet": "dispatch_only"
+    },
+    {
+      "comparisonView": "doe_vs_bun_webgpu_package",
+      "governedLaneIds": [
+        "bun_package_compare"
+      ],
+      "hostProfile": "windows_x64",
+      "maturity": "prototype",
+      "notes": [
+        "Bun has API parity with Node through the package-default Bun runtime entry. Canonical compare flow is artifact-first through bench/cli.py compare with the doe_bun_package and bun_webgpu_package executors.",
+        "Do not cite Bun cells as package parity until they are populated by comparable artifacts."
+      ],
+      "primarySupport": "bun",
+      "providerPair": "doe_vs_bun_webgpu_package",
+      "providerSet": "package_bun_providers",
+      "providers": [
+        "doe",
+        "bun-webgpu"
+      ],
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "full_matrix",
+      "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
+      "surface": "bun_package",
+      "workloadSet": "full_comparable"
+    },
+    {
+      "comparisonView": "doe_vs_bun_webgpu_package",
+      "governedLaneIds": [
+        "bun_package_compare"
+      ],
+      "hostProfile": "windows_x64",
+      "maturity": "prototype",
+      "notes": [
+        "Bun has API parity with Node through the package-default Bun runtime entry. Canonical compare flow is artifact-first through bench/cli.py compare with the doe_bun_package and bun_webgpu_package executors.",
+        "Do not cite Bun cells as package parity until they are populated by comparable artifacts."
+      ],
+      "primarySupport": "bun",
+      "providerPair": "doe_vs_bun_webgpu_package",
+      "providerSet": "package_bun_providers",
+      "providers": [
+        "doe",
+        "bun-webgpu"
+      ],
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
+      "surface": "bun_package",
+      "workloadSet": "overhead"
+    },
+    {
+      "comparisonView": "doe_vs_bun_webgpu_package",
+      "governedLaneIds": [
+        "bun_package_compare"
+      ],
+      "hostProfile": "windows_x64",
+      "maturity": "prototype",
+      "notes": [
+        "Bun has API parity with Node through the package-default Bun runtime entry. Canonical compare flow is artifact-first through bench/cli.py compare with the doe_bun_package and bun_webgpu_package executors.",
+        "Do not cite Bun cells as package parity until they are populated by comparable artifacts."
+      ],
+      "primarySupport": "bun",
+      "providerPair": "doe_vs_bun_webgpu_package",
+      "providerSet": "package_bun_providers",
+      "providers": [
+        "doe",
+        "bun-webgpu"
+      ],
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
+      "surface": "bun_package",
+      "workloadSet": "pipeline"
+    },
+    {
+      "comparisonView": "doe_vs_bun_webgpu_package",
+      "governedLaneIds": [
+        "bun_package_compare"
+      ],
+      "hostProfile": "windows_x64",
+      "maturity": "prototype",
+      "notes": [
+        "Bun has API parity with Node through the package-default Bun runtime entry. Canonical compare flow is artifact-first through bench/cli.py compare with the doe_bun_package and bun_webgpu_package executors.",
+        "Do not cite Bun cells as package parity until they are populated by comparable artifacts."
+      ],
+      "primarySupport": "bun",
+      "providerPair": "doe_vs_bun_webgpu_package",
+      "providerSet": "package_bun_providers",
+      "providers": [
+        "doe",
+        "bun-webgpu"
+      ],
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
+      "surface": "bun_package",
+      "workloadSet": "uploads"
+    },
+    {
+      "claimStatus": "claimable",
+      "comparisonStatus": "comparable",
+      "comparisonView": "doe_vs_node_webgpu_package",
+      "deltaP50MedianPercent": 15.949637383972458,
+      "governedLaneIds": [
+        "node_package_compare"
+      ],
+      "hostProfile": "linux_x64",
+      "latestGeneratedAt": "2026-04-08T21:43:44.021169Z",
+      "latestReportPath": "/home/x/deco/doe/bench/out/amd-vulkan/20260408T214329Z/gemma270m.node-package.ir.compare.json",
+      "latestRunId": "20260408T214344Z",
+      "maturity": "primary",
+      "notes": [
+        "Node is the primary supported package surface for doe-gpu.",
+        "Node package comparisons are runtime/package evidence and do not replace strict backend reports."
+      ],
+      "primarySupport": "node",
+      "providerPair": "doe_vs_node_webgpu_package",
+      "providerSet": "package_node_providers",
+      "providers": [
+        "doe",
+        "node-webgpu"
+      ],
+      "reportCount": 1,
+      "rowCount": 1,
+      "scopeType": "workload_set",
+      "sourceConformance": "canonical",
+      "sourceConformanceReason": "",
+      "status": "claimable",
+      "surface": "node_package",
+      "workloadSet": "compute_e2e"
+    },
+    {
+      "comparisonView": "doe_vs_node_webgpu_package",
+      "governedLaneIds": [
+        "node_package_compare"
+      ],
+      "hostProfile": "linux_x64",
+      "maturity": "primary",
+      "notes": [
+        "Node is the primary supported package surface for doe-gpu.",
+        "Node package comparisons are runtime/package evidence and do not replace strict backend reports."
+      ],
+      "primarySupport": "node",
+      "providerPair": "doe_vs_node_webgpu_package",
+      "providerSet": "package_node_providers",
+      "providers": [
+        "doe",
+        "node-webgpu"
+      ],
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
+      "surface": "node_package",
+      "workloadSet": "dispatch_only"
+    },
+    {
+      "claimStatus": "claimable",
+      "comparisonStatus": "comparable",
+      "comparisonView": "doe_vs_node_webgpu_package",
+      "deltaP50MedianPercent": 15.949637383972458,
+      "governedLaneIds": [
+        "node_package_compare"
+      ],
+      "hostProfile": "linux_x64",
+      "latestGeneratedAt": "2026-04-08T21:43:44.021169Z",
+      "latestReportPath": "/home/x/deco/doe/bench/out/amd-vulkan/20260408T214329Z/gemma270m.node-package.ir.compare.json",
+      "latestRunId": "20260408T214344Z",
+      "maturity": "primary",
+      "notes": [
+        "Node is the primary supported package surface for doe-gpu.",
+        "Node package comparisons are runtime/package evidence and do not replace strict backend reports."
+      ],
+      "primarySupport": "node",
+      "providerPair": "doe_vs_node_webgpu_package",
+      "providerSet": "package_node_providers",
+      "providers": [
+        "doe",
+        "node-webgpu"
+      ],
+      "reportCount": 1,
+      "rowCount": 1,
+      "scopeType": "full_matrix",
+      "sourceConformance": "canonical",
+      "sourceConformanceReason": "",
+      "status": "claimable",
+      "surface": "node_package",
+      "workloadSet": "full_comparable"
+    },
+    {
+      "comparisonView": "doe_vs_node_webgpu_package",
+      "governedLaneIds": [
+        "node_package_compare"
+      ],
+      "hostProfile": "linux_x64",
+      "maturity": "primary",
+      "notes": [
+        "Node is the primary supported package surface for doe-gpu.",
+        "Node package comparisons are runtime/package evidence and do not replace strict backend reports."
+      ],
+      "primarySupport": "node",
+      "providerPair": "doe_vs_node_webgpu_package",
+      "providerSet": "package_node_providers",
+      "providers": [
+        "doe",
+        "node-webgpu"
+      ],
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
+      "surface": "node_package",
+      "workloadSet": "overhead"
+    },
+    {
+      "comparisonView": "doe_vs_node_webgpu_package",
+      "governedLaneIds": [
+        "node_package_compare"
+      ],
+      "hostProfile": "linux_x64",
+      "maturity": "primary",
+      "notes": [
+        "Node is the primary supported package surface for doe-gpu.",
+        "Node package comparisons are runtime/package evidence and do not replace strict backend reports."
+      ],
+      "primarySupport": "node",
+      "providerPair": "doe_vs_node_webgpu_package",
+      "providerSet": "package_node_providers",
+      "providers": [
+        "doe",
+        "node-webgpu"
+      ],
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
+      "surface": "node_package",
+      "workloadSet": "pipeline"
+    },
+    {
+      "comparisonView": "doe_vs_node_webgpu_package",
+      "governedLaneIds": [
+        "node_package_compare"
+      ],
+      "hostProfile": "linux_x64",
+      "maturity": "primary",
+      "notes": [
+        "Node is the primary supported package surface for doe-gpu.",
+        "Node package comparisons are runtime/package evidence and do not replace strict backend reports."
+      ],
+      "primarySupport": "node",
+      "providerPair": "doe_vs_node_webgpu_package",
+      "providerSet": "package_node_providers",
+      "providers": [
+        "doe",
+        "node-webgpu"
+      ],
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
+      "surface": "node_package",
+      "workloadSet": "uploads"
+    },
+    {
+      "comparisonView": "doe_vs_node_webgpu_package",
+      "governedLaneIds": [
+        "node_package_compare"
+      ],
+      "hostProfile": "mac_apple_silicon",
+      "maturity": "primary",
+      "notes": [
+        "Node is the primary supported package surface for doe-gpu.",
+        "Node package comparisons are runtime/package evidence and do not replace strict backend reports."
+      ],
+      "primarySupport": "node",
+      "providerPair": "doe_vs_node_webgpu_package",
+      "providerSet": "package_node_providers",
+      "providers": [
+        "doe",
+        "node-webgpu"
+      ],
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
+      "surface": "node_package",
+      "workloadSet": "compute_e2e"
+    },
+    {
+      "comparisonView": "doe_vs_node_webgpu_package",
+      "governedLaneIds": [
+        "node_package_compare"
+      ],
+      "hostProfile": "mac_apple_silicon",
+      "maturity": "primary",
+      "notes": [
+        "Node is the primary supported package surface for doe-gpu.",
+        "Node package comparisons are runtime/package evidence and do not replace strict backend reports."
+      ],
+      "primarySupport": "node",
+      "providerPair": "doe_vs_node_webgpu_package",
+      "providerSet": "package_node_providers",
+      "providers": [
+        "doe",
+        "node-webgpu"
+      ],
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
+      "surface": "node_package",
+      "workloadSet": "dispatch_only"
+    },
+    {
+      "comparisonView": "doe_vs_node_webgpu_package",
+      "governedLaneIds": [
+        "node_package_compare"
+      ],
+      "hostProfile": "mac_apple_silicon",
+      "maturity": "primary",
+      "notes": [
+        "Node is the primary supported package surface for doe-gpu.",
+        "Node package comparisons are runtime/package evidence and do not replace strict backend reports."
+      ],
+      "primarySupport": "node",
+      "providerPair": "doe_vs_node_webgpu_package",
+      "providerSet": "package_node_providers",
+      "providers": [
+        "doe",
+        "node-webgpu"
+      ],
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "full_matrix",
+      "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
+      "surface": "node_package",
+      "workloadSet": "full_comparable"
+    },
+    {
+      "comparisonView": "doe_vs_node_webgpu_package",
+      "governedLaneIds": [
+        "node_package_compare"
+      ],
+      "hostProfile": "mac_apple_silicon",
+      "maturity": "primary",
+      "notes": [
+        "Node is the primary supported package surface for doe-gpu.",
+        "Node package comparisons are runtime/package evidence and do not replace strict backend reports."
+      ],
+      "primarySupport": "node",
+      "providerPair": "doe_vs_node_webgpu_package",
+      "providerSet": "package_node_providers",
+      "providers": [
+        "doe",
+        "node-webgpu"
+      ],
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
+      "surface": "node_package",
+      "workloadSet": "overhead"
+    },
+    {
+      "comparisonView": "doe_vs_node_webgpu_package",
+      "governedLaneIds": [
+        "node_package_compare"
+      ],
+      "hostProfile": "mac_apple_silicon",
+      "maturity": "primary",
+      "notes": [
+        "Node is the primary supported package surface for doe-gpu.",
+        "Node package comparisons are runtime/package evidence and do not replace strict backend reports."
+      ],
+      "primarySupport": "node",
+      "providerPair": "doe_vs_node_webgpu_package",
+      "providerSet": "package_node_providers",
+      "providers": [
+        "doe",
+        "node-webgpu"
+      ],
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
+      "surface": "node_package",
+      "workloadSet": "pipeline"
+    },
+    {
+      "comparisonView": "doe_vs_node_webgpu_package",
+      "governedLaneIds": [
+        "node_package_compare"
+      ],
+      "hostProfile": "mac_apple_silicon",
+      "maturity": "primary",
+      "notes": [
+        "Node is the primary supported package surface for doe-gpu.",
+        "Node package comparisons are runtime/package evidence and do not replace strict backend reports."
+      ],
+      "primarySupport": "node",
+      "providerPair": "doe_vs_node_webgpu_package",
+      "providerSet": "package_node_providers",
+      "providers": [
+        "doe",
+        "node-webgpu"
+      ],
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
+      "surface": "node_package",
+      "workloadSet": "uploads"
+    },
+    {
+      "comparisonView": "doe_vs_node_webgpu_package",
+      "governedLaneIds": [
+        "node_package_compare"
+      ],
+      "hostProfile": "windows_x64",
+      "maturity": "primary",
+      "notes": [
+        "Node is the primary supported package surface for doe-gpu.",
+        "Node package comparisons are runtime/package evidence and do not replace strict backend reports."
+      ],
+      "primarySupport": "node",
+      "providerPair": "doe_vs_node_webgpu_package",
+      "providerSet": "package_node_providers",
+      "providers": [
+        "doe",
+        "node-webgpu"
+      ],
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
+      "surface": "node_package",
+      "workloadSet": "compute_e2e"
+    },
+    {
+      "comparisonView": "doe_vs_node_webgpu_package",
+      "governedLaneIds": [
+        "node_package_compare"
+      ],
+      "hostProfile": "windows_x64",
+      "maturity": "primary",
+      "notes": [
+        "Node is the primary supported package surface for doe-gpu.",
+        "Node package comparisons are runtime/package evidence and do not replace strict backend reports."
+      ],
+      "primarySupport": "node",
+      "providerPair": "doe_vs_node_webgpu_package",
+      "providerSet": "package_node_providers",
+      "providers": [
+        "doe",
+        "node-webgpu"
+      ],
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
+      "surface": "node_package",
+      "workloadSet": "dispatch_only"
+    },
+    {
+      "comparisonView": "doe_vs_node_webgpu_package",
+      "governedLaneIds": [
+        "node_package_compare"
+      ],
+      "hostProfile": "windows_x64",
+      "maturity": "primary",
+      "notes": [
+        "Node is the primary supported package surface for doe-gpu.",
+        "Node package comparisons are runtime/package evidence and do not replace strict backend reports."
+      ],
+      "primarySupport": "node",
+      "providerPair": "doe_vs_node_webgpu_package",
+      "providerSet": "package_node_providers",
+      "providers": [
+        "doe",
+        "node-webgpu"
+      ],
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "full_matrix",
+      "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
+      "surface": "node_package",
+      "workloadSet": "full_comparable"
+    },
+    {
+      "comparisonView": "doe_vs_node_webgpu_package",
+      "governedLaneIds": [
+        "node_package_compare"
+      ],
+      "hostProfile": "windows_x64",
+      "maturity": "primary",
+      "notes": [
+        "Node is the primary supported package surface for doe-gpu.",
+        "Node package comparisons are runtime/package evidence and do not replace strict backend reports."
+      ],
+      "primarySupport": "node",
+      "providerPair": "doe_vs_node_webgpu_package",
+      "providerSet": "package_node_providers",
+      "providers": [
+        "doe",
+        "node-webgpu"
+      ],
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
+      "surface": "node_package",
+      "workloadSet": "overhead"
+    },
+    {
+      "comparisonView": "doe_vs_node_webgpu_package",
+      "governedLaneIds": [
+        "node_package_compare"
+      ],
+      "hostProfile": "windows_x64",
+      "maturity": "primary",
+      "notes": [
+        "Node is the primary supported package surface for doe-gpu.",
+        "Node package comparisons are runtime/package evidence and do not replace strict backend reports."
+      ],
+      "primarySupport": "node",
+      "providerPair": "doe_vs_node_webgpu_package",
+      "providerSet": "package_node_providers",
+      "providers": [
+        "doe",
+        "node-webgpu"
+      ],
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
+      "surface": "node_package",
+      "workloadSet": "pipeline"
+    },
+    {
+      "comparisonView": "doe_vs_node_webgpu_package",
+      "governedLaneIds": [
+        "node_package_compare"
+      ],
+      "hostProfile": "windows_x64",
+      "maturity": "primary",
+      "notes": [
+        "Node is the primary supported package surface for doe-gpu.",
+        "Node package comparisons are runtime/package evidence and do not replace strict backend reports."
+      ],
+      "primarySupport": "node",
+      "providerPair": "doe_vs_node_webgpu_package",
+      "providerSet": "package_node_providers",
+      "providers": [
+        "doe",
+        "node-webgpu"
+      ],
+      "reportCount": 0,
+      "rowCount": 0,
+      "scopeType": "workload_set",
+      "status": "unimplemented",
+      "statusDetail": "contract exists, evidence missing",
+      "surface": "node_package",
+      "workloadSet": "uploads"
+    }
+  ],
+  "generatedAt": "2026-04-08T22:31:16.973136Z",
+  "policy": {
+    "path": "config/benchmark-cube-policy.json",
+    "sha256": "b7fa07bd2a91d7f39577094c3c3c3795bbeff5bc9d55ea569eb7181382556197"
+  },
+  "rowCount": 6,
+  "schemaVersion": 1,
+  "sourceCounts": {
+    "backendReports": {
+      "canonicalIncluded": 1,
+      "discovered": 1,
+      "included": 1,
+      "legacyIncluded": 0,
+      "skipped": 0
+    },
+    "bunReports": {
+      "canonicalIncluded": 1,
+      "discovered": 1,
+      "included": 1,
+      "legacyIncluded": 0,
+      "skipped": 0
+    },
+    "nodeReports": {
+      "canonicalIncluded": 1,
+      "discovered": 1,
+      "included": 1,
+      "legacyIncluded": 0,
+      "skipped": 0
+    }
+  },
+  "statusCounts": {
+    "claimable": 6,
+    "comparable": 0,
+    "diagnostic": 0,
+    "unimplemented": 51,
+    "unsupported": 0
+  }
+}

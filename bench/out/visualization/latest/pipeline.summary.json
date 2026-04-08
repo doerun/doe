@@ -1,0 +1,74 @@
+{
+  "dashboards": {
+    "cube": {
+      "dashboardHtmlPath": "/home/x/deco/doe/bench/out/visualization/20260408T223116Z/cube.dashboard.html",
+      "matrixMarkdownPath": "/home/x/deco/doe/bench/out/visualization/20260408T223116Z/cube.matrix.md",
+      "rowsPath": "/home/x/deco/doe/bench/out/visualization/20260408T223116Z/cube.rows.json",
+      "summaryPath": "/home/x/deco/doe/bench/out/visualization/20260408T223116Z/cube.summary.json"
+    },
+    "inventory": {
+      "dashboardHtmlPath": "/home/x/deco/doe/bench/out/visualization/20260408T223116Z/inventory.dashboard.html",
+      "inventoryPath": "/home/x/deco/doe/bench/out/visualization/20260408T223116Z/inventory.json"
+    }
+  },
+  "generatedAtUtc": "2026-04-08T22:31:16.992205Z",
+  "outputTimestamp": "20260408T223116Z",
+  "reports": [
+    {
+      "analysisPath": "/home/x/deco/doe/bench/out/visualization/20260408T223116Z/dawn-vs-doe-amd-vulkan-compare.analysis.json",
+      "claimStatus": "claimable",
+      "claimabilityMode": "local",
+      "comparableCount": 4,
+      "comparisonStatus": "comparable",
+      "htmlPath": "/home/x/deco/doe/bench/out/visualization/20260408T223116Z/dawn-vs-doe-amd-vulkan-compare.html",
+      "label": "AMD Vulkan native",
+      "operatorDiffStatus": "missing_operator_manifests",
+      "reportPath": "/home/x/deco/doe/bench/out/amd-vulkan/compare/20260408T212313Z/dawn-vs-doe.amd.vulkan.compare.json",
+      "selectedP50DeltaPercent": 244.83829732436027,
+      "selectedP95DeltaPercent": 1441.7602425799284,
+      "summary": "Selected timing and workload-unit wall are both surfaced here. Use wall as the conservative end-to-end read when it materially differs.",
+      "timingGuidance": "When timingInterpretation.selectedTiming.scopeClass is narrow-hot-path, deltaPercent remains a phase-specific diagnostic. Claimability evaluates timingInterpretation.workloadUnitWall.deltaPercent when that full metric is available.",
+      "wallP50DeltaPercent": 99.6996617001777,
+      "wallP95DeltaPercent": 216.61716946301465,
+      "workloadCount": 4
+    },
+    {
+      "analysisPath": "/home/x/deco/doe/bench/out/visualization/20260408T223116Z/gemma270m-node-package-ir-compare.analysis.json",
+      "claimStatus": "claimable",
+      "claimabilityMode": "local",
+      "comparableCount": 1,
+      "comparisonStatus": "comparable",
+      "htmlPath": "/home/x/deco/doe/bench/out/visualization/20260408T223116Z/gemma270m-node-package-ir-compare.html",
+      "label": "AMD Vulkan Node package",
+      "operatorDiffStatus": "missing_operator_manifests",
+      "reportPath": "/home/x/deco/doe/bench/out/amd-vulkan/20260408T214329Z/gemma270m.node-package.ir.compare.json",
+      "selectedP50DeltaPercent": 170.39648751961082,
+      "selectedP95DeltaPercent": 222.306562980574,
+      "summary": "Selected timing and workload-unit wall are both surfaced here. Use wall as the conservative end-to-end read when it materially differs.",
+      "timingGuidance": "When timingInterpretation.selectedTiming.scopeClass is narrow-hot-path, deltaPercent remains a phase-specific diagnostic. Claimability evaluates timingInterpretation.workloadUnitWall.deltaPercent when that full metric is available.",
+      "wallP50DeltaPercent": 15.949637383972458,
+      "wallP95DeltaPercent": 25.676772282236747,
+      "workloadCount": 1
+    },
+    {
+      "analysisPath": "/home/x/deco/doe/bench/out/visualization/20260408T223116Z/gemma270m-bun-package-ir-compare.analysis.json",
+      "claimStatus": "claimable",
+      "claimabilityMode": "local",
+      "comparableCount": 1,
+      "comparisonStatus": "comparable",
+      "htmlPath": "/home/x/deco/doe/bench/out/visualization/20260408T223116Z/gemma270m-bun-package-ir-compare.html",
+      "label": "AMD Vulkan Bun package",
+      "operatorDiffStatus": "missing_operator_manifests",
+      "reportPath": "/home/x/deco/doe/bench/out/amd-vulkan/20260408T214329Z/gemma270m.bun-package.ir.compare.json",
+      "selectedP50DeltaPercent": 180.8678084292867,
+      "selectedP95DeltaPercent": 243.3894646111813,
+      "summary": "Selected timing and workload-unit wall are both surfaced here. Use wall as the conservative end-to-end read when it materially differs.",
+      "timingGuidance": "When timingInterpretation.selectedTiming.scopeClass is narrow-hot-path, deltaPercent remains a phase-specific diagnostic. Claimability evaluates timingInterpretation.workloadUnitWall.deltaPercent when that full metric is available.",
+      "wallP50DeltaPercent": 21.21043375197189,
+      "wallP95DeltaPercent": 36.952853252756945,
+      "workloadCount": 1
+    }
+  ],
+  "schemaVersion": 1,
+  "title": "Doe benchmark visualization pipeline"
+}

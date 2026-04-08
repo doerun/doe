@@ -10,10 +10,19 @@ import bisect
 import json
 import math
 import random
+import sys
 from datetime import datetime, timezone
 from html import escape
 from pathlib import Path
 from typing import Any
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+BENCH_ROOT = REPO_ROOT / "bench"
+for _path_entry in (str(REPO_ROOT), str(BENCH_ROOT)):
+    if _path_entry not in sys.path:
+        sys.path.insert(0, _path_entry)
+
+from bench.lib import visual_report_theme
 
 
 def parse_args() -> argparse.Namespace:
@@ -517,6 +526,15 @@ def heatmap_svg(analyses: list[dict[str, Any]]) -> str:
     return "".join(parts)
 
 
+def metric_class(value: Any) -> str:
+    tone = visual_report_theme.delta_tone(value)
+    if tone == "good":
+        return "metric-positive"
+    if tone == "bad":
+        return "metric-negative"
+    return "metric-neutral"
+
+
 def generate_html(
     report: dict[str, Any],
     analyses: list[dict[str, Any]],
@@ -524,22 +542,32 @@ def generate_html(
     max_ecdf_workloads: int,
 ) -> str:
     comparison_status = report.get("comparisonStatus", "unknown")
+    claim_status = report.get("claimStatus", "not-evaluated")
     comparability = report.get("comparabilitySummary", {})
     workload_count = comparability.get("workloadCount", 0)
     non_comparable_count = comparability.get("nonComparableCount", 0)
+    comparable_count = max(int(workload_count) - int(non_comparable_count), 0)
     generated_at = report.get("generatedAt", "")
     schema_version = report.get("schemaVersion", "")
+    output_timestamp = report.get("outputTimestamp", "")
+    timing_policy = report.get("timingInterpretationPolicy", {})
+    if not isinstance(timing_policy, dict):
+        timing_policy = {}
 
     overall_delta = report.get("overall", {}).get("deltaPercent", {})
+    overall_wall_delta = report.get("overallWorkloadUnitWall", {}).get("deltaPercent", {})
     overall_table = (
-        "<table>"
+        "<div class='table-shell'><table>"
         "<thead><tr><th>Metric</th><th>Delta</th></tr></thead>"
         "<tbody>"
-        f"<tr><td>p10Approx</td><td style='color:{pick_delta_color(overall_delta.get('p10Approx'))};font-weight:700'>{fmt_pct(overall_delta.get('p10Approx'))}</td></tr>"
-        f"<tr><td>p50Approx</td><td style='color:{pick_delta_color(overall_delta.get('p50Approx'))};font-weight:700'>{fmt_pct(overall_delta.get('p50Approx'))}</td></tr>"
-        f"<tr><td>p95Approx</td><td style='color:{pick_delta_color(overall_delta.get('p95Approx'))};font-weight:700'>{fmt_pct(overall_delta.get('p95Approx'))}</td></tr>"
-        f"<tr><td>p99Approx</td><td style='color:{pick_delta_color(overall_delta.get('p99Approx'))};font-weight:700'>{fmt_pct(overall_delta.get('p99Approx'))}</td></tr>"
+        f"<tr><td>selected p10</td><td class='{metric_class(overall_delta.get('p10Approx'))}'>{fmt_pct(overall_delta.get('p10Approx'))}</td></tr>"
+        f"<tr><td>selected p50</td><td class='{metric_class(overall_delta.get('p50Approx'))}'>{fmt_pct(overall_delta.get('p50Approx'))}</td></tr>"
+        f"<tr><td>selected p95</td><td class='{metric_class(overall_delta.get('p95Approx'))}'>{fmt_pct(overall_delta.get('p95Approx'))}</td></tr>"
+        f"<tr><td>selected p99</td><td class='{metric_class(overall_delta.get('p99Approx'))}'>{fmt_pct(overall_delta.get('p99Approx'))}</td></tr>"
+        f"<tr><td>wall p50</td><td class='{metric_class(overall_wall_delta.get('p50Percent'))}'>{fmt_pct(overall_wall_delta.get('p50Percent'))}</td></tr>"
+        f"<tr><td>wall p95</td><td class='{metric_class(overall_wall_delta.get('p95Percent'))}'>{fmt_pct(overall_wall_delta.get('p95Percent'))}</td></tr>"
         "</tbody></table>"
+        "</div>"
     )
 
     distribution_rows: list[str] = []
@@ -555,9 +583,9 @@ def generate_html(
             f"<td>{escape(str(analysis.get('id', '')))}</td>"
             f"<td>{escape(str(analysis.get('baselineSampleCount', 0)))}</td>"
             f"<td>{escape(str(analysis.get('comparisonSampleCount', 0)))}</td>"
-            f"<td style='color:{pick_delta_color(delta.get('p50Percent'))};font-weight:600'>{fmt_pct(delta.get('p50Percent'))}</td>"
-            f"<td style='color:{pick_delta_color(delta.get('p95Percent'))};font-weight:600'>{fmt_pct(delta.get('p95Percent'))}</td>"
-            f"<td style='color:{pick_delta_color(delta.get('p99Percent'))};font-weight:600'>{fmt_pct(delta.get('p99Percent'))}</td>"
+            f"<td class='{metric_class(delta.get('p50Percent'))}'>{fmt_pct(delta.get('p50Percent'))}</td>"
+            f"<td class='{metric_class(delta.get('p95Percent'))}'>{fmt_pct(delta.get('p95Percent'))}</td>"
+            f"<td class='{metric_class(delta.get('p99Percent'))}'>{fmt_pct(delta.get('p99Percent'))}</td>"
             f"<td>{fmt_prob(dist.get('probabilityBaselineFaster'))}</td>"
             f"<td>{fmt_float(dist.get('ksStatistic'))}</td>"
             f"<td>{fmt_float(dist.get('ksAsymptoticPValue'))}</td>"
@@ -597,11 +625,11 @@ def generate_html(
             f"<td>{fmt_ms(comparison_stats.get('p50Ms'))}</td>"
             f"<td>{fmt_ms(comparison_stats.get('p95Ms'))}</td>"
             f"<td>{fmt_ms(comparison_stats.get('p99Ms'))}</td>"
-            f"<td style='color:{pick_delta_color(workload_unit_delta.get('p50Percent'))};font-weight:600'>{fmt_pct(workload_unit_delta.get('p50Percent'))}</td>"
-            f"<td style='color:{pick_delta_color(delta.get('p10Percent'))};font-weight:600'>{fmt_pct(delta.get('p10Percent'))}</td>"
-            f"<td style='color:{pick_delta_color(delta.get('p50Percent'))};font-weight:600'>{fmt_pct(delta.get('p50Percent'))}</td>"
-            f"<td style='color:{pick_delta_color(delta.get('p95Percent'))};font-weight:600'>{fmt_pct(delta.get('p95Percent'))}</td>"
-            f"<td style='color:{pick_delta_color(delta.get('p99Percent'))};font-weight:600'>{fmt_pct(delta.get('p99Percent'))}</td>"
+            f"<td class='{metric_class(workload_unit_delta.get('p50Percent'))}'>{fmt_pct(workload_unit_delta.get('p50Percent'))}</td>"
+            f"<td class='{metric_class(delta.get('p10Percent'))}'>{fmt_pct(delta.get('p10Percent'))}</td>"
+            f"<td class='{metric_class(delta.get('p50Percent'))}'>{fmt_pct(delta.get('p50Percent'))}</td>"
+            f"<td class='{metric_class(delta.get('p95Percent'))}'>{fmt_pct(delta.get('p95Percent'))}</td>"
+            f"<td class='{metric_class(delta.get('p99Percent'))}'>{fmt_pct(delta.get('p99Percent'))}</td>"
             "</tr>"
         )
         if not analysis.get("comparable") and safe_float(delta.get("p50Percent", 0)) > 50.0:
@@ -612,10 +640,14 @@ def generate_html(
     speedup_section = ""
     if speedup_rows:
         speedup_section = (
-            "<section class=\"panel\">\n"
-            "  <h2>Fawn Architectural Speedups (Non-Comparable Context)</h2>\n"
-            "  <div class=\"meta\">Workloads where Fawn bypasses C++ API overhead using native WebGPU/Zig features (e.g. multi_draw_indirect). Excluded from the strict Apples-to-Apples metrics.</div>\n"
-            "  <div class=\"table-wrap\">\n"
+            "<section class='section'>\n"
+            "  <div class='section-head'>\n"
+            "    <div>\n"
+            "      <h2>Non-comparable structural wins</h2>\n"
+            "      <div class='section-copy'>Rows where Doe is materially faster in a way that the strict apples-to-apples contract does not permit as a direct Doe-versus-Dawn speed claim. They stay visible, but they stay segregated.</div>\n"
+            "    </div>\n"
+            "  </div>\n"
+            "  <div class='table-shell'>\n"
             "    <table>\n"
             "      <thead>\n"
             "        <tr>\n"
@@ -646,6 +678,25 @@ def generate_html(
             "</section>\n"
         )
 
+    sorted_by_p50 = sorted(
+        analyses,
+        key=lambda item: safe_float(item.get("deltaPercent", {}).get("p50Percent")) or float("-inf"),
+        reverse=True,
+    )
+    spotlight_tiles: list[str] = []
+    for analysis in sorted_by_p50[: min(3, len(sorted_by_p50))]:
+        delta = analysis.get("deltaPercent", {})
+        spotlight_tiles.append(
+            "<article class='tile'>"
+            f"<h3>{escape(str(analysis.get('id', 'workload')))}</h3>"
+            "<div class='badge-row'>"
+            f"{visual_report_theme.badge('comparable' if analysis.get('comparable') else 'non-comparable', tone='good' if analysis.get('comparable') else 'warn')}"
+            f"{visual_report_theme.badge(str(analysis.get('domain', 'domain')), tone='info')}"
+            "</div>"
+            f"<p>Selected scope {escape(str((analysis.get('selectedTiming', {}) or {}).get('scopeClass', '-')))} with p50 {fmt_pct(delta.get('p50Percent'))}, p95 {fmt_pct(delta.get('p95Percent'))}, and p99 {fmt_pct(delta.get('p99Percent'))}.</p>"
+            "</article>"
+        )
+
     ecdf_source = analyses
     if max_ecdf_workloads > 0:
         ecdf_source = analyses[:max_ecdf_workloads]
@@ -659,205 +710,180 @@ def generate_html(
             "</details>"
         )
 
-    return f"""<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>{escape(title)}</title>
-  <style>
-    :root {{
-      --bg: #f6f8fb;
-      --panel: #ffffff;
-      --text: #0f172a;
-      --muted: #475569;
-      --border: #dbe3ef;
-    }}
-    body {{
-      margin: 0;
-      padding: 24px;
-      background: linear-gradient(180deg, #f8fafc 0%, #eef3fb 100%);
-      color: var(--text);
-      font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
-    }}
-    .grid {{
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 16px;
-      max-width: 1500px;
-      margin: 0 auto;
-    }}
-    .panel {{
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 16px;
-      box-shadow: 0 4px 20px rgba(15, 23, 42, 0.05);
-    }}
-    h1, h2 {{
-      margin: 0 0 12px;
-      letter-spacing: 0.2px;
-    }}
-    h1 {{ font-size: 24px; }}
-    h2 {{ font-size: 18px; }}
-    .meta {{
-      color: var(--muted);
-      font-size: 14px;
-      margin-bottom: 10px;
-    }}
-    .kpis {{
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-    }}
-    .kpi {{
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 10px 12px;
-      min-width: 180px;
-      background: #fcfdff;
-    }}
-    .kpi .label {{
-      color: var(--muted);
-      font-size: 12px;
-    }}
-    .kpi .value {{
-      font-size: 18px;
-      font-weight: 700;
-      margin-top: 4px;
-    }}
-    table {{
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
-    }}
-    th, td {{
-      border-bottom: 1px solid var(--border);
-      padding: 6px 8px;
-      text-align: right;
-      white-space: nowrap;
-    }}
-    th:first-child, td:first-child,
-    th:nth-child(2), td:nth-child(2),
-    th:nth-child(3), td:nth-child(3) {{
-      text-align: left;
-    }}
-    thead th {{
-      position: sticky;
-      top: 0;
-      background: #f8fafc;
-      z-index: 1;
-    }}
-    .table-wrap {{
-      overflow: auto;
-      max-height: 560px;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-    }}
-    details {{
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 8px;
-      margin-bottom: 8px;
-      background: #fcfdff;
-    }}
-    summary {{
-      cursor: pointer;
-      font-weight: 600;
-      margin-bottom: 8px;
-    }}
-    @media (max-width: 900px) {{
-      body {{ padding: 12px; }}
-    }}
-  </style>
-</head>
-<body>
-  <div class="grid">
-    <section class="panel">
-      <h1>{escape(title)}</h1>
-      <div class="meta">generatedAt={escape(str(generated_at))} | schemaVersion={escape(str(schema_version))}</div>
-      <div class="kpis">
-        <div class="kpi"><div class="label">comparisonStatus</div><div class="value">{escape(str(comparison_status))}</div></div>
-        <div class="kpi"><div class="label">workloadCount</div><div class="value">{escape(str(workload_count))}</div></div>
-        <div class="kpi"><div class="label">nonComparableCount</div><div class="value">{escape(str(non_comparable_count))}</div></div>
-      </div>
-    </section>
-    <section class="panel">
-      <h2>Overall Delta Summary</h2>
-      {overall_table}
-    </section>
-    <section class="panel">
-      <h2>Workload x Percentile Delta Heatmap</h2>
-      {heatmap_svg(analyses)}
-    </section>
-    <section class="panel">
-      <h2>Distribution Diagnostics</h2>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>workload</th>
-              <th>n baseline</th>
-              <th>n comparison</th>
-              <th>delta p50</th>
-              <th>delta p95</th>
-              <th>delta p99</th>
-              <th>P(baseline&lt;comparison)</th>
-              <th>KS D</th>
-              <th>KS p (asymptotic)</th>
-              <th>Wasserstein ms</th>
-              <th>CI95 delta p50</th>
-              <th>CI95 delta p95</th>
-              <th>CI95 delta p99</th>
-            </tr>
-          </thead>
-          <tbody>
-            {"".join(distribution_rows)}
-          </tbody>
-        </table>
-      </div>
-    </section>
-    <section class="panel">
-      <h2>Workload Table (Strict Baseline)</h2>
-      <div class="meta">Fast-end metric shown is p10. Workload-unit wall p50 is the honest timed-command process-wall view; selected deltas may be narrower in encode-only lanes.</div>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>workload</th>
-              <th>domain</th>
-              <th>comparable</th>
-              <th>scope</th>
-              <th>baseline p10 ms</th>
-              <th>baseline p50 ms</th>
-              <th>baseline p95 ms</th>
-              <th>baseline p99 ms</th>
-              <th>comparison p10 ms</th>
-              <th>comparison p50 ms</th>
-              <th>comparison p95 ms</th>
-              <th>comparison p99 ms</th>
-              <th>workload-unit wall p50</th>
-              <th>delta p10</th>
-              <th>delta p50</th>
-              <th>delta p95</th>
-              <th>delta p99</th>
-            </tr>
-          </thead>
-          <tbody>
-            {"".join(table_rows)}
-          </tbody>
-        </table>
-      </div>
-    </section>
-    {speedup_section}
-    <section class="panel">
-      <h2>ECDF Overlays</h2>
-      {"".join(ecdf_panels)}
-    </section>
-  </div>
-</body>
-</html>
-"""
+    cards_html = "".join(
+        [
+            visual_report_theme.stat_card(
+                "Comparison",
+                str(comparison_status),
+                tone=visual_report_theme.status_tone(str(comparison_status)),
+                detail="Top-level comparability outcome for this compare report.",
+            ),
+            visual_report_theme.stat_card(
+                "Claim",
+                str(claim_status),
+                tone=visual_report_theme.status_tone(str(claim_status), kind="claim"),
+                detail="Top-level claim outcome after policy evaluation.",
+            ),
+            visual_report_theme.stat_card(
+                "Workloads",
+                str(workload_count),
+                detail=f"{comparable_count} comparable, {non_comparable_count} non-comparable.",
+            ),
+            visual_report_theme.stat_card(
+                "Selected p50",
+                fmt_pct(overall_delta.get("p50Approx")),
+                tone=visual_report_theme.delta_tone(overall_delta.get("p50Approx")),
+                detail="Methodology-selected timing scope for this compare report.",
+            ),
+            visual_report_theme.stat_card(
+                "Wall p50",
+                fmt_pct(overall_wall_delta.get("p50Percent")),
+                tone=visual_report_theme.delta_tone(overall_wall_delta.get("p50Percent")),
+                detail="Timed workload-unit wall view when present in the report.",
+            ),
+            visual_report_theme.stat_card(
+                "Wall p95",
+                fmt_pct(overall_wall_delta.get("p95Percent")),
+                tone=visual_report_theme.delta_tone(overall_wall_delta.get("p95Percent")),
+                detail="Workload-unit wall tail behavior, separate from narrow execution timing.",
+            ),
+            visual_report_theme.stat_card(
+                "Selected p95",
+                fmt_pct(overall_delta.get("p95Approx")),
+                tone=visual_report_theme.delta_tone(overall_delta.get("p95Approx")),
+                detail="Selected timing tail behavior, which can be narrower than workload wall.",
+            ),
+            visual_report_theme.stat_card(
+                "Output stamp",
+                str(output_timestamp or "-"),
+                detail=f"Schema v{schema_version}.",
+            ),
+        ]
+    )
+
+    summary_tiles = (
+        "<div class='tile-grid'>"
+        "<article class='tile'>"
+        "<h3>Overall deltas</h3>"
+        "<p>This is the top-line approximation across the selected timing scope recorded in the report. Positive means Doe faster because Doe is the baseline side.</p>"
+        f"{overall_table}"
+        "</article>"
+        "<article class='tile'>"
+        "<h3>Workload spotlights</h3>"
+        "<p>The strongest current rows by p50 delta, regardless of whether the report contains one workload or many.</p>"
+        f"<div class='tile-grid'>{''.join(spotlight_tiles) if spotlight_tiles else '<p>No workload rows.</p>'}</div>"
+        "</article>"
+        "</div>"
+    )
+
+    body_html = (
+        "<section class='section'>"
+        "<div class='section-head'>"
+        "<div>"
+        "<h2>Claim surface snapshot</h2>"
+        "<div class='section-copy'>The compare page is optimized for quickly answering three questions: is the report comparable, is it claimable, and where do the selected timing and workload-unit wall views agree or diverge when both sides execute the same workload contract.</div>"
+        "</div>"
+        "<div class='badge-row'>"
+        f"{visual_report_theme.badge(str(comparison_status), tone=visual_report_theme.status_tone(str(comparison_status)))}"
+        f"{visual_report_theme.badge(str(claim_status), tone=visual_report_theme.status_tone(str(claim_status), kind='claim'))}"
+        f"{visual_report_theme.badge(f'{comparable_count} comparable rows', tone='info')}"
+        "</div>"
+        "</div>"
+        f"<div class='stat-grid'>{cards_html}</div>"
+        f"<div class='fine-print'>Timing policy: {escape(str(timing_policy.get('guidance', 'No extra timing guidance recorded.')))}</div>"
+        "</section>"
+        "<section class='section'>"
+        "<div class='section-head'>"
+        "<div>"
+        "<h2>Summary and standout rows</h2>"
+        "<div class='section-copy'>Use this first when you need the high-level direction before digging into the tables and ECDF overlays below. Selected timing and workload-unit wall are kept side by side so fast-path diagnostics do not silently replace end-to-end timing.</div>"
+        "</div>"
+        "</div>"
+        f"{summary_tiles}"
+        "</section>"
+        "<section class='section'>"
+        "<div class='section-head'>"
+        "<div>"
+        "<h2>Workload by percentile heatmap</h2>"
+        "<div class='section-copy'>A dense view of how each workload moves across p10, p50, p95, and p99 on the selected timing scope.</div>"
+        "</div>"
+        "</div>"
+        "<div class='table-shell' style='padding:12px; overflow:auto; background:rgba(255,255,255,0.6);'>"
+        f"{heatmap_svg(analyses)}"
+        "</div>"
+        "</section>"
+        "<section class='section'>"
+        "<div class='section-head'>"
+        "<div>"
+        "<h2>Distribution diagnostics</h2>"
+        "<div class='section-copy'>These diagnostics show whether the delta is broad-based or only visible in a narrow part of the distribution. Probability of superiority, KS, Wasserstein, and bootstrap intervals all stay on the page because tails matter.</div>"
+        "</div>"
+        "</div>"
+        "<div class='table-shell'>"
+        "<table>"
+        "<thead>"
+        "<tr>"
+        "<th>workload</th><th>n baseline</th><th>n comparison</th><th>delta p50</th><th>delta p95</th><th>delta p99</th><th>P(baseline&lt;comparison)</th><th>KS D</th><th>KS p</th><th>Wasserstein ms</th><th>CI95 delta p50</th><th>CI95 delta p95</th><th>CI95 delta p99</th>"
+        "</tr>"
+        "</thead>"
+        "<tbody>"
+        f"{''.join(distribution_rows)}"
+        "</tbody>"
+        "</table>"
+        "</div>"
+        "</section>"
+        "<section class='section'>"
+        "<div class='section-head'>"
+        "<div>"
+        "<h2>Strict workload table</h2>"
+        "<div class='section-copy'>Fast-end p10 is shown alongside p50, p95, and p99. The workload-unit wall column stays visible so narrow-scope timing can be read against the full timed-command process wall.</div>"
+        "</div>"
+        "</div>"
+        "<div class='table-shell'>"
+        "<table>"
+        "<thead>"
+        "<tr>"
+        "<th>workload</th><th>domain</th><th>comparable</th><th>scope</th><th>baseline p10 ms</th><th>baseline p50 ms</th><th>baseline p95 ms</th><th>baseline p99 ms</th><th>comparison p10 ms</th><th>comparison p50 ms</th><th>comparison p95 ms</th><th>comparison p99 ms</th><th>workload-unit wall p50</th><th>delta p10</th><th>delta p50</th><th>delta p95</th><th>delta p99</th>"
+        "</tr>"
+        "</thead>"
+        "<tbody>"
+        f"{''.join(table_rows)}"
+        "</tbody>"
+        "</table>"
+        "</div>"
+        "</section>"
+        f"{speedup_section}"
+        "<section class='section'>"
+        "<div class='section-head'>"
+        "<div>"
+        "<h2>ECDF overlays</h2>"
+        "<div class='section-copy'>Each overlay shows the full distribution shape for a workload. This is where it becomes obvious whether the advantage is consistent or whether it only appears in one tail.</div>"
+        "</div>"
+        "</div>"
+        f"{''.join(ecdf_panels)}"
+        "</section>"
+    )
+
+    meta_html = " | ".join(
+        [
+            f"generated: <code>{escape(str(generated_at))}</code>",
+            f"schema: <code>{escape(str(schema_version))}</code>",
+            f"output timestamp: <code>{escape(str(output_timestamp or '-'))}</code>",
+        ]
+    )
+
+    return visual_report_theme.render_page(
+        title=title,
+        eyebrow="Doe compare report",
+        headline=title,
+        intro=(
+            "A distribution-first compare view for strict Doe-versus-Dawn benchmarking, "
+            "including tails, comparability state, and explicit separation of non-comparable structural wins."
+        ),
+        meta_html=meta_html,
+        hero_extra_html=f"<div class='stat-grid'>{cards_html}</div>",
+        body_html=body_html,
+    )
 
 
 def analyze_report(

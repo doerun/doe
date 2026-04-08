@@ -916,6 +916,11 @@ resolves its entries against repo root.
 - `visualize_dawn_vs_doe.py`
   - reads a compare report and writes a self-contained HTML visualization plus optional analysis JSON.
   - includes ECDF overlays, workload×percentile delta heatmap, KS statistic/p-value, Wasserstein distance, probability of superiority `P(baseline<comparison)`, and bootstrap CIs for delta `p50`/`p95`/`p99`.
+- `run_visualization_pipeline.py`
+  - builds a timestamped visualization bundle over explicit compare reports:
+    per-report compare HTML + analysis JSON, inventory dashboard, benchmark cube dashboard, and a landing `index.html`.
+  - writes a stable latest mirror under `bench/out/visualization/latest/` so there is one canonical local page to open after a run.
+  - keeps selected timing, workload-unit wall, claimability mode, and operator-diff availability visible on the landing page so the bundle does not silently flatten methodology caveats.
 - `claim_gate.py`
   - validates a comparison report against required claim contract fields (`claimabilityPolicy.mode`, `comparisonStatus`, `claimStatus`, per-workload claimability, and comparability-obligation schema/blocking-pass state) for blocking release CI gates.
   - validates comparability obligation IDs against the canonical contract in `config/comparability-obligations.json`.
