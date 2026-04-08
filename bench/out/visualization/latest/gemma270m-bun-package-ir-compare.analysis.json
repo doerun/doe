@@ -1,0 +1,109 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-04-08T22:31:16.814549+00:00",
+  "sourceReport": "/home/x/deco/doe/bench/out/amd-vulkan/20260408T214329Z/gemma270m.bun-package.ir.compare.json",
+  "bootstrapIterations": 1000,
+  "bootstrapSeed": 1337,
+  "workloads": [
+    {
+      "id": "inference_gemma3_270m_prefill_64tok_decode_64tok",
+      "domain": "compute",
+      "comparable": true,
+      "baselineSampleCount": 15,
+      "comparisonSampleCount": 15,
+      "baselineStatsMs": {
+        "count": 15.0,
+        "minMs": 53.806504,
+        "maxMs": 67.761544,
+        "p10Ms": 53.966256,
+        "p50Ms": 58.746537,
+        "p95Ms": 64.563825,
+        "p99Ms": 64.563825,
+        "meanMs": 59.41230266666666
+      },
+      "comparisonStatsMs": {
+        "count": 15.0,
+        "minMs": 155.540377,
+        "maxMs": 247.867384,
+        "p10Ms": 159.715693,
+        "p50Ms": 165.000111,
+        "p95Ms": 221.705373,
+        "p99Ms": 221.705373,
+        "meanMs": 180.3520986
+      },
+      "deltaPercent": {
+        "p10Percent": 195.95474068091733,
+        "p50Percent": 180.8678084292867,
+        "p95Percent": 243.3894646111813,
+        "p99Percent": 243.3894646111813,
+        "meanPercent": 203.56018956522743
+      },
+      "distribution": {
+        "ksStatistic": 1.0,
+        "ksAsymptoticPValue": 1.0054168109701315e-07,
+        "wassersteinMs": 120.93979593333333,
+        "probabilityBaselineFaster": 1.0
+      },
+      "bootstrapDeltaCI95": {
+        "p50": {
+          "lower": 170.43955690304426,
+          "upper": 209.1460328993565
+        },
+        "p95": {
+          "lower": 165.52650925099363,
+          "upper": 287.02395098804493
+        },
+        "p99": {
+          "lower": 159.7734431789217,
+          "upper": 287.02395098804493
+        }
+      },
+      "selectedTiming": {
+        "scope": "operation-total",
+        "scopeClass": "operation-total",
+        "note": "Selected timing measures the comparable operation scope. workloadUnitWall adds the full timed workload-unit wall interval for the command the harness ran."
+      },
+      "workloadUnitWallDeltaPercent": {
+        "p10Percent": 37.84514879186649,
+        "p50Percent": 21.21043375197189,
+        "p95Percent": 36.952853252756945,
+        "p99Percent": 36.952853252756945,
+        "meanPercent": 31.06695692384296
+      },
+      "baselineSamplesMs": [
+        60.623391,
+        64.044456,
+        53.966256,
+        58.746537,
+        67.761544,
+        58.298834,
+        53.806504,
+        60.18337,
+        64.542959,
+        64.563825,
+        59.240539,
+        56.939594,
+        55.79222,
+        57.403923,
+        55.270588
+      ],
+      "comparisonSamplesMs": [
+        161.82369,
+        163.605671,
+        164.944752,
+        162.902501,
+        170.03574,
+        176.026496,
+        206.712962,
+        214.072433,
+        155.540377,
+        159.715693,
+        171.378666,
+        221.705373,
+        247.867384,
+        165.000111,
+        163.94963
+      ]
+    }
+  ]
+}

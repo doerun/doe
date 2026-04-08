@@ -664,6 +664,7 @@ def main() -> int:
     dashboard_html = inventory_dashboard_html.build_dashboard_html(
         inventory_payload,
         max_recent_reports=args.max_recent_reports,
+        dashboard_path=dashboard_out,
     )
 
     write_json(inventory_out, inventory_payload)

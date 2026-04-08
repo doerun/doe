@@ -1,0 +1,222 @@
+{
+  "generatedAtUtc": "2026-04-08T22:31:16.869629Z",
+  "inventoryPath": "/home/x/deco/doe/bench/out/visualization/20260408T223116Z/inventory.json",
+  "matrices": [
+    {
+      "claimStatusCounts": {
+        "claimable": 1
+      },
+      "comparisonStatusCounts": {
+        "comparable": 1
+      },
+      "lane": "default",
+      "latest": {
+        "baselineName": "baseline",
+        "baselineProfileSampleCount": 60,
+        "baselineProfiles": [
+          "amd|vulkan|gfx11|24.0.0"
+        ],
+        "claimStatus": "claimable",
+        "comparisonName": "comparison",
+        "comparisonProfileSampleCount": 60,
+        "comparisonProfiles": [
+          "amd|vulkan|gfx11|24.0.0"
+        ],
+        "comparisonStatus": "comparable",
+        "generatedAtUtc": "2026-04-08T21:23:35.893068Z",
+        "lane": "default",
+        "matrixId": "dawn-vs-doe.amd.vulkan.compare",
+        "nonClaimableCount": 0,
+        "nonComparableCount": 0,
+        "outPath": "bench/out/amd-vulkan/compare/20260408T212313Z/dawn-vs-doe.amd.vulkan.compare.json",
+        "overallP50DeltaPercent": 244.83829732436027,
+        "sourcePath": "/home/x/deco/doe/bench/out/amd-vulkan/compare/20260408T212313Z/dawn-vs-doe.amd.vulkan.compare.json",
+        "workloadCount": 4
+      },
+      "matrixId": "dawn-vs-doe.amd.vulkan.compare",
+      "reportCount": 1
+    },
+    {
+      "claimStatusCounts": {
+        "claimable": 1
+      },
+      "comparisonStatusCounts": {
+        "comparable": 1
+      },
+      "lane": "default",
+      "latest": {
+        "baselineName": "baseline",
+        "baselineProfileSampleCount": 0,
+        "baselineProfiles": [],
+        "claimStatus": "claimable",
+        "comparisonName": "comparison",
+        "comparisonProfileSampleCount": 0,
+        "comparisonProfiles": [],
+        "comparisonStatus": "comparable",
+        "generatedAtUtc": "2026-04-08T21:43:40.908676Z",
+        "lane": "default",
+        "matrixId": "gemma270m.bun-package.ir.compare",
+        "nonClaimableCount": 0,
+        "nonComparableCount": 0,
+        "outPath": "bench/out/amd-vulkan/20260408T214329Z/gemma270m.bun-package.ir.compare.json",
+        "overallP50DeltaPercent": 180.8678084292867,
+        "sourcePath": "/home/x/deco/doe/bench/out/amd-vulkan/20260408T214329Z/gemma270m.bun-package.ir.compare.json",
+        "workloadCount": 1
+      },
+      "matrixId": "gemma270m.bun-package.ir.compare",
+      "reportCount": 1
+    },
+    {
+      "claimStatusCounts": {
+        "claimable": 1
+      },
+      "comparisonStatusCounts": {
+        "comparable": 1
+      },
+      "lane": "default",
+      "latest": {
+        "baselineName": "baseline",
+        "baselineProfileSampleCount": 0,
+        "baselineProfiles": [],
+        "claimStatus": "claimable",
+        "comparisonName": "comparison",
+        "comparisonProfileSampleCount": 0,
+        "comparisonProfiles": [],
+        "comparisonStatus": "comparable",
+        "generatedAtUtc": "2026-04-08T21:43:44.021169Z",
+        "lane": "default",
+        "matrixId": "gemma270m.node-package.ir.compare",
+        "nonClaimableCount": 0,
+        "nonComparableCount": 0,
+        "outPath": "bench/out/amd-vulkan/20260408T214329Z/gemma270m.node-package.ir.compare.json",
+        "overallP50DeltaPercent": 170.39648751961082,
+        "sourcePath": "/home/x/deco/doe/bench/out/amd-vulkan/20260408T214329Z/gemma270m.node-package.ir.compare.json",
+        "workloadCount": 1
+      },
+      "matrixId": "gemma270m.node-package.ir.compare",
+      "reportCount": 1
+    }
+  ],
+  "outputTimestamp": "",
+  "profiles": [
+    {
+      "api": "vulkan",
+      "deviceFamily": "gfx11",
+      "driver": "24.0.0",
+      "firstSeenUtc": "2026-04-08T21:23:35.893068Z",
+      "lastSeenUtc": "2026-04-08T21:23:35.893068Z",
+      "matrixCount": 1,
+      "matrixIds": [
+        "dawn-vs-doe.amd.vulkan.compare"
+      ],
+      "profileId": "amd|vulkan|gfx11|24.0.0",
+      "reportCount": 1,
+      "reportPaths": [
+        "/home/x/deco/doe/bench/out/amd-vulkan/compare/20260408T212313Z/dawn-vs-doe.amd.vulkan.compare.json"
+      ],
+      "runtimes": [
+        "baseline",
+        "comparison"
+      ],
+      "sampleCount": 120,
+      "sides": [
+        "baseline",
+        "comparison"
+      ],
+      "vendor": "amd"
+    }
+  ],
+  "reports": [
+    {
+      "baselineName": "baseline",
+      "baselineProfileSampleCount": 0,
+      "baselineProfiles": [],
+      "claimStatus": "claimable",
+      "comparisonName": "comparison",
+      "comparisonProfileSampleCount": 0,
+      "comparisonProfiles": [],
+      "comparisonStatus": "comparable",
+      "generatedAtUtc": "2026-04-08T21:43:44.021169Z",
+      "lane": "default",
+      "matrixId": "gemma270m.node-package.ir.compare",
+      "nonClaimableCount": 0,
+      "nonComparableCount": 0,
+      "outPath": "bench/out/amd-vulkan/20260408T214329Z/gemma270m.node-package.ir.compare.json",
+      "overallP50DeltaPercent": 170.39648751961082,
+      "sourcePath": "/home/x/deco/doe/bench/out/amd-vulkan/20260408T214329Z/gemma270m.node-package.ir.compare.json",
+      "workloadCount": 1
+    },
+    {
+      "baselineName": "baseline",
+      "baselineProfileSampleCount": 0,
+      "baselineProfiles": [],
+      "claimStatus": "claimable",
+      "comparisonName": "comparison",
+      "comparisonProfileSampleCount": 0,
+      "comparisonProfiles": [],
+      "comparisonStatus": "comparable",
+      "generatedAtUtc": "2026-04-08T21:43:40.908676Z",
+      "lane": "default",
+      "matrixId": "gemma270m.bun-package.ir.compare",
+      "nonClaimableCount": 0,
+      "nonComparableCount": 0,
+      "outPath": "bench/out/amd-vulkan/20260408T214329Z/gemma270m.bun-package.ir.compare.json",
+      "overallP50DeltaPercent": 180.8678084292867,
+      "sourcePath": "/home/x/deco/doe/bench/out/amd-vulkan/20260408T214329Z/gemma270m.bun-package.ir.compare.json",
+      "workloadCount": 1
+    },
+    {
+      "baselineName": "baseline",
+      "baselineProfileSampleCount": 60,
+      "baselineProfiles": [
+        "amd|vulkan|gfx11|24.0.0"
+      ],
+      "claimStatus": "claimable",
+      "comparisonName": "comparison",
+      "comparisonProfileSampleCount": 60,
+      "comparisonProfiles": [
+        "amd|vulkan|gfx11|24.0.0"
+      ],
+      "comparisonStatus": "comparable",
+      "generatedAtUtc": "2026-04-08T21:23:35.893068Z",
+      "lane": "default",
+      "matrixId": "dawn-vs-doe.amd.vulkan.compare",
+      "nonClaimableCount": 0,
+      "nonComparableCount": 0,
+      "outPath": "bench/out/amd-vulkan/compare/20260408T212313Z/dawn-vs-doe.amd.vulkan.compare.json",
+      "overallP50DeltaPercent": 244.83829732436027,
+      "sourcePath": "/home/x/deco/doe/bench/out/amd-vulkan/compare/20260408T212313Z/dawn-vs-doe.amd.vulkan.compare.json",
+      "workloadCount": 4
+    }
+  ],
+  "schemaVersion": 1,
+  "skippedFiles": [],
+  "source": {
+    "explicitReports": [
+      "/home/x/deco/doe/bench/out/amd-vulkan/compare/20260408T212313Z/dawn-vs-doe.amd.vulkan.compare.json",
+      "/home/x/deco/doe/bench/out/amd-vulkan/20260408T214329Z/gemma270m.node-package.ir.compare.json",
+      "/home/x/deco/doe/bench/out/amd-vulkan/20260408T214329Z/gemma270m.bun-package.ir.compare.json"
+    ],
+    "reportGlobs": [
+      "bench/out/__visualization_pipeline_no_match__/*.json"
+    ]
+  },
+  "summary": {
+    "claimStatusCounts": {
+      "claimable": 3
+    },
+    "claimableComparableReportCount": 3,
+    "claimableReportCount": 3,
+    "comparableReportCount": 3,
+    "comparisonStatusCounts": {
+      "comparable": 3
+    },
+    "includedReports": 3,
+    "latestClaimableMatrixCount": 3,
+    "latestComparableMatrixCount": 3,
+    "matrixCount": 3,
+    "skippedFiles": 0,
+    "totalMatchedFiles": 3,
+    "uniqueProfileCount": 1
+  }
+}

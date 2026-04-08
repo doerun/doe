@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from datetime import datetime, timezone
 from pathlib import Path
+from statistics import median
 from typing import Any
 
 import jsonschema
@@ -83,6 +84,13 @@ def parse_int(value: Any) -> int | None:
         return int(value)
     return None
 
+
+def median_non_null(values: list[float | None]) -> float | None:
+    filtered = [value for value in values if value is not None]
+    if not filtered:
+        return None
+    return float(median(filtered))
+
 def validate_schema(schema_path: Path, payload: Any) -> None:
     schema_payload = load_json(schema_path)
     validator = jsonschema.Draft202012Validator(schema_payload)
@@ -117,6 +125,7 @@ def load_policy(root: Path, policy_path: Path) -> dict[str, Any]:
     raw_comparison_views = payload.get("comparisonViews") or payload["providerPairs"]
     comparison_views = {item["id"]: item for item in raw_comparison_views}
     provider_pairs = comparison_views
+    products = {item["id"]: item for item in payload.get("products", [])}
     workload_sets = {item["id"]: item for item in payload["workloadSets"]}
     surfaces = {item["id"]: item for item in payload["surfaces"]}
 
@@ -124,9 +133,21 @@ def load_policy(root: Path, policy_path: Path) -> dict[str, Any]:
         for host_profile in surface["expectedHostProfiles"]:
             if host_profile not in host_profiles:
                 raise ValueError(f"unknown host profile in surface policy: {host_profile}")
-        for comparison_view in (surface.get("comparisonViews") or surface["providerPairs"]):
-            if comparison_view not in comparison_views:
-                raise ValueError(f"unknown comparison view in surface policy: {comparison_view}")
+        surface_products = surface.get("products")
+        if isinstance(surface_products, list) and surface_products:
+            matching_products = [
+                product
+                for product in products.values()
+                if product.get("surface") == surface["id"]
+            ]
+            if not matching_products:
+                raise ValueError(
+                    f"surface policy {surface['id']} declares products but no matching top-level products"
+                )
+        else:
+            for comparison_view in (surface.get("comparisonViews") or surface["providerPairs"]):
+                if comparison_view not in comparison_views:
+                    raise ValueError(f"unknown comparison view in surface policy: {comparison_view}")
         for workload_set in surface["workloadSets"]:
             if workload_set not in workload_sets:
                 raise ValueError(f"unknown workload set in surface policy: {workload_set}")
@@ -149,6 +170,7 @@ def load_policy(root: Path, policy_path: Path) -> dict[str, Any]:
     return {
         "raw": payload,
         "hostProfiles": host_profiles,
+        "products": products,
         "comparisonViews": comparison_views,
         "providerPairs": provider_pairs,
         "workloadSets": workload_sets,
@@ -573,15 +595,38 @@ def normalize_backend_report(
 
 
 def validate_package_report(payload: dict[str, Any], *, report_label: str) -> tuple[bool, str]:
-    if payload.get("type") != "comparison_report":
-        return False, f"{report_label}: type must be comparison_report"
-    lane_id = payload.get("laneId")
-    if not isinstance(lane_id, str) or not lane_id:
-        return False, f"{report_label}: laneId must be a non-empty string"
-    comparisons = payload.get("comparisons")
-    if not isinstance(comparisons, list) or not comparisons:
-        return False, f"{report_label}: comparisons must be a non-empty list"
+    if payload.get("type") == "comparison_report":
+        lane_id = payload.get("laneId")
+        if not isinstance(lane_id, str) or not lane_id:
+            return False, f"{report_label}: laneId must be a non-empty string"
+        comparisons = payload.get("comparisons")
+        if not isinstance(comparisons, list) or not comparisons:
+            return False, f"{report_label}: comparisons must be a non-empty list"
+        return True, ""
+
+    version = report_conformance.parse_int(payload.get("schemaVersion"))
+    if version not in report_conformance.ACCEPTED_REPORT_SCHEMA_VERSIONS:
+        return (
+            False,
+            f"{report_label}: schemaVersion must be one of {sorted(report_conformance.ACCEPTED_REPORT_SCHEMA_VERSIONS)} (found {version})",
+        )
+    participants = payload.get("participants")
+    if not isinstance(participants, dict):
+        return False, f"{report_label}: participants must be an object"
+    workloads = payload.get("workloads")
+    if not isinstance(workloads, list) or not workloads:
+        return False, f"{report_label}: workloads must be a non-empty list"
     return True, ""
+
+
+def package_governed_lane_id(surface: str) -> str:
+    if surface == "node_package":
+        return "node_package_compare"
+    if surface == "bun_package":
+        return "bun_package_compare"
+    if surface == "deno_package":
+        return "deno_package_compare"
+    raise ValueError(f"unsupported package surface: {surface}")
 
 
 def normalize_package_report(
@@ -602,7 +647,7 @@ def normalize_package_report(
     rows: list[dict[str, Any]] = []
     lane_id = canonical_lane_id(governed_lanes, payload.get("laneId"))
     if lane_id is None:
-        raise ValueError(f"{source_path}: missing governed package lane ID")
+        lane_id = package_governed_lane_id(surface)
     validate_governed_lane_binding(
         governed_lanes,
         lane_id=lane_id,
@@ -612,76 +657,170 @@ def normalize_package_report(
         provider_pair=provider_pair,
     )
 
-    for comparison in payload.get("comparisons", []):
-        if not isinstance(comparison, dict):
-            continue
-        workload_identity = resolve_workload_identity(
-            workload_registry,
-            surface_id=surface,
-            source_workload_id=str(comparison.get("workload") or ""),
-            fallback_domain=str(comparison.get("domain") or "overhead"),
-        )
-        workload_id = (
-            str(comparison.get("canonicalWorkloadId") or "").strip()
-            or workload_identity["workloadId"]
-        )
-        source_workload_id = workload_identity["sourceWorkloadId"]
-        domain = workload_identity["domain"]
-        workload_set = workload_set_for_row(
-            policy,
-            surface_id=surface,
-            workload_id=workload_id,
-            domain=domain,
-        )
-        compared = comparison.get("status") == "compared"
-        comparable = compared and comparison.get("comparable") is not False
-        claimable = comparison.get("claimable") is True
-        rows.append(
-            {
-                "schemaVersion": 1,
-                "runId": run_id,
-                "generatedAt": iso_utc(generated_at),
-                "sourceReportType": source_report_type,
-                "sourceReportPath": str(source_path),
-                "sourceConformance": "canonical",
-                "sourceConformanceReason": "",
-                "host": host,
-                "surface": surface,
-                "comparisonView": provider_pair,
-                "providerPair": provider_pair,
-                "providerSet": compare_axes_mod.derive_provider_set(
-                    boundary=compare_axes_mod.boundary_for_surface(
-                        "package" if surface.endswith("_package") else "native"
+    comparisons = payload.get("comparisons")
+    if isinstance(comparisons, list):
+        for comparison in comparisons:
+            if not isinstance(comparison, dict):
+                continue
+            workload_identity = resolve_workload_identity(
+                workload_registry,
+                surface_id=surface,
+                source_workload_id=str(comparison.get("workload") or ""),
+                fallback_domain=str(comparison.get("domain") or "overhead"),
+            )
+            workload_id = (
+                str(comparison.get("canonicalWorkloadId") or "").strip()
+                or workload_identity["workloadId"]
+            )
+            source_workload_id = workload_identity["sourceWorkloadId"]
+            domain = workload_identity["domain"]
+            workload_set = workload_set_for_row(
+                policy,
+                surface_id=surface,
+                workload_id=workload_id,
+                domain=domain,
+            )
+            compared = comparison.get("status") == "compared"
+            comparable = compared and comparison.get("comparable") is not False
+            claimable = comparison.get("claimable") is True
+            rows.append(
+                {
+                    "schemaVersion": 1,
+                    "runId": run_id,
+                    "generatedAt": iso_utc(generated_at),
+                    "sourceReportType": source_report_type,
+                    "sourceReportPath": str(source_path),
+                    "sourceConformance": "canonical",
+                    "sourceConformanceReason": "",
+                    "host": host,
+                    "surface": surface,
+                    "comparisonView": provider_pair,
+                    "providerPair": provider_pair,
+                    "providerSet": compare_axes_mod.derive_provider_set(
+                        boundary=compare_axes_mod.boundary_for_surface(
+                            "package" if surface.endswith("_package") else "native"
+                        ),
+                        runtime_host=(
+                            "bun"
+                            if surface == "bun_package"
+                            else ("deno" if surface == "deno_package" else "node")
+                        ),
+                        comparison_view=provider_pair,
                     ),
-                    runtime_host=(
-                        "bun"
-                        if surface == "bun_package"
-                        else ("deno" if surface == "deno_package" else "node")
+                    "providers": list(compare_axes_mod.providers_for_comparison_view(provider_pair)),
+                    "governedLaneIds": [lane_id],
+                    "workloadSet": workload_set,
+                    "workloadId": workload_id,
+                    "sourceWorkloadId": source_workload_id,
+                    "workloadDomain": domain,
+                    "comparisonStatus": "comparable" if comparable else "diagnostic",
+                    "claimStatus": "claimable" if claimable else "diagnostic",
+                    "maturity": maturity,
+                    "metrics": {
+                        "baselineP50Ms": safe_float(comparison.get("doeMedianMs")),
+                        "comparisonP50Ms": safe_float(comparison.get("dawnMedianMs")),
+                        "deltaP50Percent": safe_float(comparison.get("pctFaster")),
+                        "baselineP95Ms": safe_float(comparison.get("doeP95Ms")),
+                        "comparisonP95Ms": safe_float(comparison.get("dawnP95Ms")),
+                        "baselineP99Ms": safe_float(comparison.get("doeP99Ms")),
+                        "comparisonP99Ms": safe_float(comparison.get("dawnP99Ms")),
+                        "baselineSampleCount": None,
+                        "comparisonSampleCount": None,
+                    },
+                }
+            )
+    else:
+        for workload in payload.get("workloads", []):
+            if not isinstance(workload, dict):
+                continue
+            workload_identity = resolve_workload_identity(
+                workload_registry,
+                surface_id=surface,
+                source_workload_id=str(workload.get("id") or ""),
+                fallback_domain=str(workload.get("domain") or "overhead"),
+            )
+            workload_id = workload_identity["workloadId"]
+            source_workload_id = workload_identity["sourceWorkloadId"]
+            domain = workload_identity["domain"]
+            workload_set = workload_set_for_row(
+                policy,
+                surface_id=surface,
+                workload_id=workload_id,
+                domain=domain,
+            )
+            baseline = workload.get("baseline", {})
+            comparison = workload.get("comparison", {})
+            baseline_stats = baseline.get("stats", {}) if isinstance(baseline, dict) else {}
+            comparison_stats = comparison.get("stats", {}) if isinstance(comparison, dict) else {}
+            comparability = workload.get("comparability", {})
+            claimability = workload.get("claimability", {})
+            delta_percent = workload.get("deltaPercent", {})
+            timing_interpretation = workload.get("timingInterpretation", {})
+            if not isinstance(timing_interpretation, dict):
+                timing_interpretation = {}
+            workload_unit_wall = timing_interpretation.get("workloadUnitWall", {})
+            if not isinstance(workload_unit_wall, dict):
+                workload_unit_wall = {}
+            workload_unit_wall_delta = workload_unit_wall.get("deltaPercent", {})
+            if not isinstance(workload_unit_wall_delta, dict):
+                workload_unit_wall_delta = {}
+            comparable = (
+                isinstance(comparability, dict)
+                and comparability.get("comparable") is True
+            )
+            claimable = (
+                isinstance(claimability, dict)
+                and claimability.get("claimable") is True
+            )
+            normalized_delta_p50 = safe_float(workload_unit_wall_delta.get("p50Percent"))
+            if normalized_delta_p50 is None:
+                normalized_delta_p50 = safe_float(delta_percent.get("p50Percent"))
+            rows.append(
+                {
+                    "schemaVersion": 1,
+                    "runId": run_id,
+                    "generatedAt": iso_utc(generated_at),
+                    "sourceReportType": source_report_type,
+                    "sourceReportPath": str(source_path),
+                    "sourceConformance": "canonical",
+                    "sourceConformanceReason": "",
+                    "host": host,
+                    "surface": surface,
+                    "comparisonView": provider_pair,
+                    "providerPair": provider_pair,
+                    "providerSet": compare_axes_mod.derive_provider_set(
+                        boundary=compare_axes_mod.boundary_for_surface(
+                            "package" if surface.endswith("_package") else "native"
+                        ),
+                        runtime_host=(
+                            "bun"
+                            if surface == "bun_package"
+                            else ("deno" if surface == "deno_package" else "node")
+                        ),
+                        comparison_view=provider_pair,
                     ),
-                    comparison_view=provider_pair,
-                ),
-                "providers": list(compare_axes_mod.providers_for_comparison_view(provider_pair)),
-                "governedLaneIds": [lane_id],
-                "workloadSet": workload_set,
-                "workloadId": workload_id,
-                "sourceWorkloadId": source_workload_id,
-                "workloadDomain": domain,
-                "comparisonStatus": "comparable" if comparable else "diagnostic",
-                "claimStatus": "claimable" if claimable else "diagnostic",
-                "maturity": maturity,
-                "metrics": {
-                    "baselineP50Ms": safe_float(comparison.get("doeMedianMs")),
-                    "comparisonP50Ms": safe_float(comparison.get("dawnMedianMs")),
-                    "deltaP50Percent": safe_float(comparison.get("pctFaster")),
-                    "baselineP95Ms": safe_float(comparison.get("doeP95Ms")),
-                    "comparisonP95Ms": safe_float(comparison.get("dawnP95Ms")),
-                    "baselineP99Ms": safe_float(comparison.get("doeP99Ms")),
-                    "comparisonP99Ms": safe_float(comparison.get("dawnP99Ms")),
-                    "baselineSampleCount": None,
-                    "comparisonSampleCount": None,
-                },
-            }
-        )
+                    "providers": list(compare_axes_mod.providers_for_comparison_view(provider_pair)),
+                    "governedLaneIds": [lane_id],
+                    "workloadSet": workload_set,
+                    "workloadId": workload_id,
+                    "sourceWorkloadId": source_workload_id,
+                    "workloadDomain": domain,
+                    "comparisonStatus": "comparable" if comparable else "diagnostic",
+                    "claimStatus": "claimable" if claimable else "diagnostic",
+                    "maturity": maturity,
+                    "metrics": {
+                        "baselineP50Ms": safe_float(baseline_stats.get("p50Ms")),
+                        "comparisonP50Ms": safe_float(comparison_stats.get("p50Ms")),
+                        "deltaP50Percent": normalized_delta_p50,
+                        "baselineP95Ms": safe_float(baseline_stats.get("p95Ms")),
+                        "comparisonP95Ms": safe_float(comparison_stats.get("p95Ms")),
+                        "baselineP99Ms": safe_float(baseline_stats.get("p99Ms")),
+                        "comparisonP99Ms": safe_float(comparison_stats.get("p99Ms")),
+                        "baselineSampleCount": parse_int(baseline_stats.get("count")),
+                        "comparisonSampleCount": parse_int(comparison_stats.get("count")),
+                    },
+                }
+            )
 
     compared_rows = [row for row in rows if row["comparisonStatus"] == "comparable"]
     claimable_rows = [row for row in rows if row["claimStatus"] == "claimable"]

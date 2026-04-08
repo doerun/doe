@@ -32,8 +32,13 @@ bench/compare_dawn_vs_doe.config.local.*.json
 !bench/compare_dawn_vs_doe.config.local.vulkan.comparable.json
 !bench/compare_dawn_vs_doe.config.local.vulkan.release.json
 !bench/compare_dawn_vs_doe.config.local.vulkan.directional.json
-# Bench outputs — force-add specific reports with `git add -f`.
-bench/out/
+# Bench outputs — keep timestamped runs disposable, but allow the stable
+# visualization mirror to be tracked.
+bench/out/*
+!bench/out/visualization/
+bench/out/visualization/*
+!bench/out/visualization/latest/
+!bench/out/visualization/latest/**
 nursery/webgpu/out/node-smoke.meta.json
 nursery/webgpu/out/node-smoke.ndjson
 
