@@ -25,6 +25,19 @@ pub const ReplayExpectation = struct {
     previous_hash: u64,
 };
 
+pub const ReplayExpectationSet = struct {
+    artifact_text: []const u8,
+    expectations: []ReplayExpectation,
+    arena: std.heap.ArenaAllocator,
+
+    pub fn deinit(self: *ReplayExpectationSet, allocator: std.mem.Allocator) void {
+        allocator.free(self.expectations);
+        self.arena.deinit();
+        allocator.free(self.artifact_text);
+        self.* = undefined;
+    }
+};
+
 pub const RawReplayRow = struct {
     seq: ?usize = null,
     command: ?[]const u8 = null,
@@ -44,7 +57,7 @@ pub fn parseTraceHash(value: []const u8) ReplayValidationError!u64 {
     return std.fmt.parseInt(u64, value, 16) catch return ReplayValidationError.InvalidReplayHash;
 }
 
-pub fn parseReplayLine(allocator: std.mem.Allocator, expected_module: []const u8, parsed: *const RawReplayRow) !ReplayExpectation {
+pub fn parseReplayLine(expected_module: []const u8, parsed: *const RawReplayRow) !ReplayExpectation {
     if (parsed.opCode) |op_code| {
         if (!std.mem.eql(u8, op_code, "dispatch")) return ReplayValidationError.ReplayArtifactOpCodeMismatch;
     }
@@ -58,51 +71,49 @@ pub fn parseReplayLine(allocator: std.mem.Allocator, expected_module: []const u8
     const hash = parsed.hash orelse return ReplayValidationError.ReplayHashFieldMissing;
     const previous_hash = parsed.previousHash orelse return ReplayValidationError.ReplayPreviousHashFieldMissing;
     const seq = parsed.seq orelse return ReplayValidationError.ReplaySeqFieldMissing;
-    const command_copy = try allocator.dupe(u8, command);
-    errdefer allocator.free(command_copy);
-    const kernel_copy = if (parsed.kernel) |kernel| try allocator.dupe(u8, kernel) else null;
-    errdefer if (kernel_copy) |kernel| allocator.free(kernel);
     const hash_parsed = try parseTraceHash(hash);
     const previous_hash_parsed = try parseTraceHash(previous_hash);
 
     return .{
         .seq = seq,
-        .command = command_copy,
-        .kernel = kernel_copy,
+        .command = command,
+        .kernel = parsed.kernel,
         .hash = hash_parsed,
         .previous_hash = previous_hash_parsed,
     };
 }
 
-pub fn loadReplayExpectations(allocator: std.mem.Allocator, path: []const u8) ![]ReplayExpectation {
+pub fn loadReplayExpectations(allocator: std.mem.Allocator, path: []const u8) !ReplayExpectationSet {
+    var arena = std.heap.ArenaAllocator.init(allocator);
+    errdefer arena.deinit();
+    const parse_allocator = arena.allocator();
     const artifact_text = try readFileAlloc(allocator, path);
-    defer allocator.free(artifact_text);
+    errdefer allocator.free(artifact_text);
 
     var expectations = std.ArrayList(ReplayExpectation).empty;
     errdefer {
-        for (expectations.items) |expectation| {
-            freeReplayExpectation(allocator, expectation);
-        }
         expectations.deinit(allocator);
     }
     var it = std.mem.splitScalar(u8, artifact_text, '\n');
     while (it.next()) |line| {
         const trimmed = std.mem.trim(u8, line, " \t\r\n");
         if (trimmed.len == 0) continue;
-        const parsed = try std.json.parseFromSlice(RawReplayRow, allocator, trimmed, .{ .ignore_unknown_fields = true });
-        defer parsed.deinit();
-        const validated = try parseReplayLine(allocator, "doe-zig-runtime", &parsed.value);
-        errdefer freeReplayExpectation(allocator, validated);
+        const parsed = try std.json.parseFromSliceLeaky(RawReplayRow, parse_allocator, trimmed, .{
+            .ignore_unknown_fields = true,
+            .allocate = .alloc_if_needed,
+        });
+        const validated = try parseReplayLine("doe-zig-runtime", &parsed);
         try expectations.append(allocator, validated);
     }
 
-    return expectations.toOwnedSlice(allocator);
+    return .{
+        .artifact_text = artifact_text,
+        .expectations = try expectations.toOwnedSlice(allocator),
+        .arena = arena,
+    };
 }
 
 pub fn freeReplayExpectations(allocator: std.mem.Allocator, expectations: []ReplayExpectation) void {
-    for (expectations) |expectation| {
-        freeReplayExpectation(allocator, expectation);
-    }
     allocator.free(expectations);
 }
 
@@ -118,9 +129,12 @@ fn readFileAlloc(allocator: std.mem.Allocator, path: []const u8) ![]const u8 {
     return try file.readToEndAlloc(allocator, 16 * 1024 * 1024);
 }
 
-fn freeReplayExpectation(allocator: std.mem.Allocator, expectation: ReplayExpectation) void {
-    allocator.free(expectation.command);
-    if (expectation.kernel) |kernel| allocator.free(kernel);
+fn sliceWithinBuffer(buffer: []const u8, slice: []const u8) bool {
+    const buffer_start = @intFromPtr(buffer.ptr);
+    const buffer_end = buffer_start + buffer.len;
+    const slice_start = @intFromPtr(slice.ptr);
+    const slice_end = slice_start + slice.len;
+    return slice_start >= buffer_start and slice_end <= buffer_end;
 }
 
 test "parseTraceHash parses plain hex string" {
@@ -163,7 +177,6 @@ test "matchOptionalText compares non-null strings" {
 }
 
 test "parseReplayLine returns expectation for valid row" {
-    const allocator = std.testing.allocator;
     const row = RawReplayRow{
         .seq = 0,
         .command = "buffer_upload",
@@ -173,8 +186,7 @@ test "parseReplayLine returns expectation for valid row" {
         .opCode = "dispatch",
         .module = "doe-zig-runtime",
     };
-    const result = try parseReplayLine(allocator, "doe-zig-runtime", &row);
-    defer freeReplayExpectation(allocator, result);
+    const result = try parseReplayLine("doe-zig-runtime", &row);
 
     try std.testing.expectEqual(@as(usize, 0), result.seq);
     try std.testing.expect(std.mem.eql(u8, "buffer_upload", result.command));
@@ -184,7 +196,6 @@ test "parseReplayLine returns expectation for valid row" {
 }
 
 test "parseReplayLine rejects mismatched module" {
-    const allocator = std.testing.allocator;
     const row = RawReplayRow{
         .seq = 1,
         .command = "dispatch",
@@ -192,12 +203,11 @@ test "parseReplayLine rejects mismatched module" {
         .previousHash = "00",
         .module = "wrong-module",
     };
-    const result = parseReplayLine(allocator, "doe-zig-runtime", &row);
+    const result = parseReplayLine("doe-zig-runtime", &row);
     try std.testing.expectError(ReplayValidationError.ReplayArtifactModuleMismatch, result);
 }
 
 test "parseReplayLine rejects mismatched opCode" {
-    const allocator = std.testing.allocator;
     const row = RawReplayRow{
         .seq = 1,
         .command = "dispatch",
@@ -205,26 +215,49 @@ test "parseReplayLine rejects mismatched opCode" {
         .previousHash = "00",
         .opCode = "render",
     };
-    const result = parseReplayLine(allocator, "doe-zig-runtime", &row);
+    const result = parseReplayLine("doe-zig-runtime", &row);
     try std.testing.expectError(ReplayValidationError.ReplayArtifactOpCodeMismatch, result);
 }
 
 test "parseReplayLine returns error for missing required fields" {
-    const allocator = std.testing.allocator;
-
     // missing command
     const no_cmd = RawReplayRow{ .seq = 0, .hash = "aa", .previousHash = "00" };
-    try std.testing.expectError(ReplayValidationError.ReplayCommandFieldMissing, parseReplayLine(allocator, "x", &no_cmd));
+    try std.testing.expectError(ReplayValidationError.ReplayCommandFieldMissing, parseReplayLine("x", &no_cmd));
 
     // missing hash
     const no_hash = RawReplayRow{ .seq = 0, .command = "c", .previousHash = "00" };
-    try std.testing.expectError(ReplayValidationError.ReplayHashFieldMissing, parseReplayLine(allocator, "x", &no_hash));
+    try std.testing.expectError(ReplayValidationError.ReplayHashFieldMissing, parseReplayLine("x", &no_hash));
 
     // missing previousHash
     const no_prev = RawReplayRow{ .seq = 0, .command = "c", .hash = "aa" };
-    try std.testing.expectError(ReplayValidationError.ReplayPreviousHashFieldMissing, parseReplayLine(allocator, "x", &no_prev));
+    try std.testing.expectError(ReplayValidationError.ReplayPreviousHashFieldMissing, parseReplayLine("x", &no_prev));
 
     // missing seq
     const no_seq = RawReplayRow{ .command = "c", .hash = "aa", .previousHash = "00" };
-    try std.testing.expectError(ReplayValidationError.ReplaySeqFieldMissing, parseReplayLine(allocator, "x", &no_seq));
+    try std.testing.expectError(ReplayValidationError.ReplaySeqFieldMissing, parseReplayLine("x", &no_seq));
+}
+
+test "loadReplayExpectations keeps simple field slices inside the owned artifact buffer" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+
+    const path = "replay.ndjson";
+    const contents =
+        \\{"seq":0,"command":"buffer_upload","kernel":"main","hash":"0x1","previousHash":"0x0","opCode":"dispatch","module":"doe-zig-runtime"}
+        \\{"seq":1,"command":"dispatch","hash":"0x2","previousHash":"0x1","opCode":"dispatch","module":"doe-zig-runtime"}
+        \\
+    ;
+    try tmp.dir.writeFile(.{ .sub_path = path, .data = contents });
+
+    const cwd = std.fs.cwd();
+    try tmp.dir.setAsCwd();
+    defer cwd.setAsCwd() catch {};
+
+    var loaded = try loadReplayExpectations(std.testing.allocator, path);
+    defer loaded.deinit(std.testing.allocator);
+
+    try std.testing.expectEqual(@as(usize, 2), loaded.expectations.len);
+    try std.testing.expect(sliceWithinBuffer(loaded.artifact_text, loaded.expectations[0].command));
+    try std.testing.expect(sliceWithinBuffer(loaded.artifact_text, loaded.expectations[0].kernel.?));
+    try std.testing.expect(sliceWithinBuffer(loaded.artifact_text, loaded.expectations[1].command));
 }

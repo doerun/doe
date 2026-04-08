@@ -1,4 +1,228 @@
 # Doe status
+## Backend contract-path test helpers now live under `runtime/zig/tests`, and the queue/Vulkan runtime paths no longer use raw debug prints for the audited warning sites (2026-04-08 UTC)
+
+- backend test-hygiene cleanup:
+  - production backend modules no longer expose `run_contract_path_for_test`
+    or embed test-only profiles/`std.testing.allocator` usage
+  - Vulkan and D3D12 contract-path helpers now live in
+    `runtime/zig/tests/vulkan/vulkan_mod_test_support.zig` and
+    `runtime/zig/tests/d3d12/d3d12_mod_test_support.zig`
+  - the core test target now compiles and runs past those backend harness
+    moves and still stops only on the known unrelated
+    `tests/core/lean_proof_test.zig` enum-count assertion
+- runtime logging cleanup:
+  - `runtime/zig/src/doe_queue_submit_native.zig` now routes the audited
+    Vulkan queue flush/copy/release warnings through the device error-scope
+    stack as internal errors instead of printing directly
+  - `runtime/zig/src/doe_vulkan_render_native.zig` now reports the audited
+    runtime and draw failures through device error scopes, and the texture-view
+    helper no longer prints directly on failure
+  - `runtime/zig/src/webgpu_backend_lifecycle.zig` now uses a scoped logger
+    for timestamp diagnostics instead of ad-hoc `std.debug.print`
+- verification:
+  - `cd runtime/zig && zig build doe-runtime`
+  - `cd runtime/zig && zig build test-core`
+    still fails only on the known unrelated `tests/core/lean_proof_test.zig`
+  - `rg -n 'std.debug.print' runtime/zig/src/doe_queue_submit_native.zig runtime/zig/src/doe_vulkan_render_native.zig runtime/zig/src/webgpu_backend_lifecycle.zig`
+
+## Metal runtime resources now take an explicit optional pipeline-cache handle instead of probing runtime shape with `@hasField` (2026-04-08 UTC)
+
+- reflective-hook cleanup:
+  - `runtime/zig/src/backend/metal/metal_runtime_resources.zig` now takes an
+    explicit optional `*MetalPipelineCache` on the compute and render pipeline
+    helpers
+  - cache registration and compile-or-serve lookups now use that typed handle
+    directly instead of discovering cache participation through
+    `@hasField(@TypeOf(self.*), "pipeline_binary_cache")`
+  - `runtime/zig/src/backend/metal/metal_native_runtime.zig` now exposes a
+    narrow `pipelineBinaryCache()` helper and threads the optional cache
+    handle through warmup and steady-state pipeline resolution
+- verification:
+  - `cd runtime/zig && zig build doe-runtime`
+  - `cd runtime/zig && zig build doe-plan-executor`
+  - `rg -n '@hasField' runtime/zig/src/backend/metal/metal_runtime_resources.zig runtime/zig/src/backend/metal/metal_native_runtime.zig`
+
+## Plan-executor library modules now expose `runCli()`, and `src/doe_wgsl/mod.zig` no longer reaches into the moved WGSL test subtree (2026-04-08 UTC)
+
+- tooling-surface cleanup:
+  - `runtime/zig/src/doe_plan_executor.zig` and
+    `runtime/zig/src/webgpu_plan_executor.zig` now expose `runCli()` instead
+    of `pub fn main()`
+  - `runtime/zig/src/main_doe_plan_executor.zig` and
+    `runtime/zig/src/main_webgpu_plan_executor.zig` remain the thin wrapper
+    entrypoints that own `pub fn main()`
+  - the measured `pub fn main()` count under `runtime/zig/src` is now `10`
+    instead of `12`
+- WGSL tree-shape fallout cleanup:
+  - `runtime/zig/src/doe_wgsl/mod.zig` no longer imports the moved
+    `tests/wgsl/emit_csl_exec_v1_test.zig` file
+  - the dedicated WGSL test tree remains under `runtime/zig/tests/wgsl`, and
+    normal executable builds no longer trip module-path errors because a
+    library module reached into the tests subtree
+- verification:
+  - `cd runtime/zig && zig build doe-plan-executor`
+  - `cd runtime/zig && zig build webgpu-plan-executor`
+  - `cd runtime/zig && zig build test-wgsl`
+
+## Replay expectation loading now uses one owned artifact buffer plus a scoped parse arena instead of per-row string duplication (2026-04-08 UTC)
+
+- completed scoped-allocation cleanup:
+  - `runtime/zig/src/replay.zig` now returns a `ReplayExpectationSet` owner
+    that keeps the replay artifact text, the parsed expectation slice, and a
+    local parse arena together for one explicit teardown point
+  - `parseReplayLine` now validates borrowed slices instead of allocating
+    per-record `command` and `kernel` copies
+  - `runtime/zig/src/main.zig` now keeps replay expectations alive for the
+    run and tears them down through the owner object after replay validation
+- policy/documentation:
+  - `runtime/zig/README.md` now records the tooling pattern explicitly:
+    run-scoped tooling parse state should live under one owner, and parsed
+    records may alias an owned input blob when the blob lifetime dominates
+- verification:
+  - `cd runtime/zig && zig test src/replay.zig`
+  - `python3 runtime/zig/tools/check_line_limits.py`
+  - `cd runtime/zig && zig build test-core`
+    now advances past the replay tests and still fails only on the known
+    unrelated `tests/core/lean_proof_test.zig` enum-count assertion
+
+## Dedicated WGSL `*_test.zig` modules are now fully out of `src/doe_wgsl` and grouped under `runtime/zig/tests/wgsl` (2026-04-08 UTC)
+
+- completed move:
+  - every dedicated `*_test.zig` module previously under
+    `runtime/zig/src/doe_wgsl` now lives under `runtime/zig/tests/wgsl/`
+  - `runtime/zig/test_suite_wgsl.zig` now imports the WGSL coverage, emitter,
+    API, bounds, DXIL, and sema test modules from `tests/wgsl`
+  - `runtime/zig/src/doe_wgsl/mod.zig` keeps its `emit_csl_exec_v1` test hook,
+    but that hook now points into `../../tests/wgsl/emit_csl_exec_v1_test.zig`
+- current tree-shape state:
+  - `runtime/zig/src/doe_wgsl` no longer contains any `*_test.zig` files
+  - the dedicated WGSL implementation subtree is now implementation-only aside
+    from docs and test-related non-`*_test.zig` support like `dxil_validate.zig`
+- verification:
+  - `zig build test-wgsl`
+  - `python3 tools/check_line_limits.py`
+
+## Bulky WGSL suites now live under `runtime/zig/tests/wgsl`, reducing but not fully eliminating the in-tree `src/doe_wgsl` test corpus (2026-04-08 UTC)
+
+- moved test surfaces:
+  - the sharded `mod_api`, `shader_emit`, and `ir_transform_robustness` suites
+    plus their support files now live under `runtime/zig/tests/wgsl/`
+  - `runtime/zig/test_suite_wgsl.zig` now imports those suites directly from
+    `tests/wgsl` instead of `src/doe_wgsl`
+  - `runtime/zig/src/doe_wgsl/mod.zig` no longer reaches through to
+    `ir_transform_robustness_test.zig`
+- current tree-shape state:
+  - the largest WGSL API, robustness, and emitter suites are now grouped under
+    a dedicated test subtree
+  - a smaller residual WGSL test corpus still remains in `runtime/zig/src/doe_wgsl`,
+    so this improves `A017` materially but does not close it yet
+- verification:
+  - `zig build test-wgsl`
+  - `python3 tools/check_line_limits.py`
+
+## WGSL test sharding closes A003 and removes the last temporary line-limit allowlist entries (2026-04-08 UTC)
+
+- sharded WGSL test surfaces:
+  - `runtime/zig/src/doe_wgsl/mod_api_test.zig` is now a thin entrypoint that
+    imports `mod_api_translation_basics_test.zig`,
+    `mod_api_proof_preconditions_test.zig`, and
+    `mod_api_stage_and_pointer_test.zig`, with shared aliases in
+    `mod_api_test_support.zig`
+  - `runtime/zig/src/doe_wgsl/ir_transform_robustness_test.zig` now keeps the
+    core indexing and matrix cases while importing
+    `ir_transform_robustness_resource_test.zig`, with shared helpers in
+    `ir_transform_robustness_test_support.zig`
+  - `runtime/zig/src/doe_wgsl/shader_emit_test.zig` now stays under the policy
+    cap by moving common builders and cleanup into
+    `shader_emit_test_support.zig`
+- current enforcement state:
+  - every Zig source file under `runtime/zig/src` is now below the enforced
+    999-line cap
+  - `runtime/zig/tools/check_line_limits.py` no longer carries the temporary
+    WGSL allowlist entries that previously tracked `A003`
+- verification:
+  - `python3 tools/check_line_limits.py`
+  - `zig build line-limits`
+  - `zig build test-wgsl`
+
+## Zig line-limit enforcement is back in the build graph, with only the current WGSL test overages allowlisted as an explicit sharding follow-up (2026-04-08 UTC)
+
+- enforcement:
+  - `runtime/zig/tools/check_line_limits.py` now checks every Zig source file
+    under `runtime/zig/src` against the 999-line policy
+  - `runtime/zig/build.zig` now exposes a `line-limits` step and makes the
+    install/test graph depend on it
+- current allowlist scope:
+  - only `runtime/zig/src/doe_wgsl/mod_api_test.zig`
+  - only `runtime/zig/src/doe_wgsl/ir_transform_robustness_test.zig`
+  - only `runtime/zig/src/doe_wgsl/shader_emit_test.zig`
+- verification:
+  - `python3 tools/check_line_limits.py`
+  - `zig build line-limits`
+  - both currently pass while printing the temporary `A003` allowlist entries
+
+## Fused package compute dispatch closes the governed encode backlog item, and the exported Metal pipeline cache no longer captures a stack-local allocator (2026-04-08 UTC)
+
+- refreshed strict package artifacts after the fused compute-dispatch change:
+  - `bench/out/amd-vulkan/20260408T184531Z/gemma270m.node-package.ir.compare.json`
+  - `bench/out/amd-vulkan/20260408T184545Z/gemma270m.bun-package.ir.compare.json`
+- current package state on the governed AMD Vulkan Gemma-270M slice:
+  - strict Node and Bun package compares remain `comparisonStatus=comparable`
+  - Doe remains faster overall on both package lanes
+  - the package encode hot path is no longer dominated by separate pipeline,
+    bind-group, and dispatch bridge calls
+- changed encode path:
+  - `packages/doe-gpu/src/vendor/webgpu/shared/encoder-surface.js` now exposes
+    `_dispatchBound(...)` for the common single-bind-group compute hot path
+  - `packages/doe-gpu/src/vendor/webgpu/index.js`,
+    `packages/doe-gpu/src/vendor/webgpu/bun-ffi.js`, and
+    `runtime/bridge/webgpu-addon/doe_napi_queue.c` now route that shape through
+    a fused helper with safe fallbacks
+  - `bench/executors/node-webgpu/executor.js` now uses the fused helper on the
+    governed package slice when the backend provides it
+- allocator-lifetime fix:
+  - `runtime/zig/src/backend/metal/metal_pipeline_cache.zig` now constructs the
+    exported Metal pipeline cache with a process-lifetime allocator instead of a
+    stack-local GPA
+  - the same file now includes a repeated create/use/release regression test for
+    the exported cache ABI
+- verification:
+  - `zig build dropin -Doptimize=ReleaseFast` succeeds after both changes
+  - `zig build test-full` is still blocked by an unrelated existing failure in
+    `tests/core/lean_proof_test.zig`
+
+## AMD Vulkan package single-submit fast path removes the shared Node/Bun submit bottleneck; encode is now the next package target (2026-04-08 UTC)
+
+- `runtime/bridge/webgpu-addon/doe_napi_queue.c` now records direct submit
+  breakdowns and uses a single-command-buffer fast path for the common package
+  submit shape
+- `packages/doe-gpu/src/vendor/webgpu/index.js` now records the direct addon
+  submit breakdown on the Node package lane
+- `packages/doe-gpu/src/vendor/webgpu/bun-ffi.js` now keeps per-run submit
+  breakdown state and reuses pointer scratch storage for direct submit on the
+  Bun package lane
+- refreshed strict package artifacts after the shared submit fix:
+  - `bench/out/amd-vulkan/20260408T182027Z/gemma270m.node-package.ir.compare.json`
+  - `bench/out/amd-vulkan/20260408T182027Z/gemma270m.bun-package.ir.compare.json`
+- current measured impact on AMD Vulkan Gemma-270M package lanes:
+  - Node Doe median `executionTotalNs` drops from about `234.2ms` to about
+    `103.2ms`
+  - Node Doe median `submitQueueSubmitTotalNs` drops from about `105.2ms` to
+    about `1.1ms`
+  - Node Doe median `executionSubmitWaitTotalNs` drops from about `122.4ms` to
+    about `3.3ms`
+  - Bun Doe median `executionTotalNs` drops from about `227.9ms` to about
+    `102.2ms`
+  - Bun Doe median `submitQueueSubmitTotalNs` drops from about `103.5ms` to
+    about `1.05ms`
+  - Bun Doe median `executionSubmitWaitTotalNs` drops from about `119.9ms` to
+    about `4.0ms`
+- current strict-comparability state:
+  - Node and Bun package compares remain `comparisonStatus=comparable`
+  - the remaining package hot spot is encode rather than submit:
+    Doe median `executionEncodeTotalNs` is still about `46.0ms` on Node and
+    about `48.0ms` on Bun versus Dawn about `2.9ms` and `2.3ms`
+
 ## AMD Vulkan strict compare is claimable on the governed slice again after package replay fixes; generated-workload stale warnings now verify content before warning (2026-04-08 UTC)
 
 - refreshed governed comparable artifact:

@@ -111,6 +111,7 @@ pub const drain_global_work_done = m0.drain_global_work_done;
 pub const doeNativeComputePassSetPipeline = m0.doeNativeComputePassSetPipeline;
 pub const doeNativeComputePassSetBindGroup = m0.doeNativeComputePassSetBindGroup;
 pub const doeNativeComputePassDispatch = m0.doeNativeComputePassDispatch;
+pub const doeNativeComputePassDispatchBound = m0.doeNativeComputePassDispatchBound;
 pub const doeNativeComputePassEnd = m0.doeNativeComputePassEnd;
 pub const doeNativeComputePassRelease = m0.doeNativeComputePassRelease;
 pub const doeNativeComputePipelineGetBindGroupLayout = m0.doeNativeComputePipelineGetBindGroupLayout;

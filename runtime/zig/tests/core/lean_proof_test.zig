@@ -16,27 +16,46 @@ const testing = std.testing;
 const lean_proof = @import("../../src/lean_proof.zig");
 const model = @import("../../src/model.zig");
 
+const ExpectedBoundsPattern = struct {
+    pattern: lean_proof.BoundsPattern,
+    name: []const u8,
+};
+
+const expected_bounds_patterns = [_]ExpectedBoundsPattern{
+    .{ .pattern = .gid_1d_storage_buffer, .name = "gid_1d_storage_buffer" },
+    .{ .pattern = .gid_1d_storage_buffer_offset, .name = "gid_1d_storage_buffer_offset" },
+    .{ .pattern = .gid_1d_storage_buffer_stride, .name = "gid_1d_storage_buffer_stride" },
+    .{ .pattern = .gid_1d_storage_buffer_loop_offset, .name = "gid_1d_storage_buffer_loop_offset" },
+    .{ .pattern = .gid_1d_storage_buffer_loop_affine, .name = "gid_1d_storage_buffer_loop_affine" },
+    .{ .pattern = .gid_1d_storage_buffer_tiled, .name = "gid_1d_storage_buffer_tiled" },
+    .{ .pattern = .gid_2d_flat_storage_buffer, .name = "gid_2d_flat_storage_buffer" },
+    .{ .pattern = .gid_2d_flat_storage_buffer_offset, .name = "gid_2d_flat_storage_buffer_offset" },
+    .{ .pattern = .gid_3d_flat_storage_buffer, .name = "gid_3d_flat_storage_buffer" },
+    .{ .pattern = .gid_3d_flat_storage_buffer_offset, .name = "gid_3d_flat_storage_buffer_offset" },
+    .{ .pattern = .gid_texture_1d_dispatch_fit, .name = "gid_texture_1d_dispatch_fit" },
+    .{ .pattern = .gid_texture_2d_dispatch_fit, .name = "gid_texture_2d_dispatch_fit" },
+    .{ .pattern = .gid_texture_3d_dispatch_fit, .name = "gid_texture_3d_dispatch_fit" },
+    .{ .pattern = .gid_texture_1d_affine_dispatch_fit, .name = "gid_texture_1d_affine_dispatch_fit" },
+    .{ .pattern = .gid_texture_2d_affine_dispatch_fit, .name = "gid_texture_2d_affine_dispatch_fit" },
+    .{ .pattern = .gid_texture_3d_affine_dispatch_fit, .name = "gid_texture_3d_affine_dispatch_fit" },
+    .{ .pattern = .gid_texture_1d_tiled_dispatch_fit, .name = "gid_texture_1d_tiled_dispatch_fit" },
+    .{ .pattern = .gid_texture_2d_tiled_dispatch_fit, .name = "gid_texture_2d_tiled_dispatch_fit" },
+    .{ .pattern = .gid_texture_3d_tiled_dispatch_fit, .name = "gid_texture_3d_tiled_dispatch_fit" },
+};
+
 // ============================================================
 // BoundsPattern enum — exhaustiveness and variant count
 // ============================================================
 
-test "BoundsPattern enum has exactly 11 variants" {
+test "BoundsPattern enum has the expected variant count" {
     const fields = @typeInfo(lean_proof.BoundsPattern).@"enum".fields;
-    try testing.expectEqual(@as(usize, 11), fields.len);
+    try testing.expectEqual(expected_bounds_patterns.len, fields.len);
 }
 
 test "BoundsPattern variant names are stable" {
-    try testing.expectEqualStrings("gid_1d_storage_buffer", @tagName(lean_proof.BoundsPattern.gid_1d_storage_buffer));
-    try testing.expectEqualStrings("gid_1d_storage_buffer_offset", @tagName(lean_proof.BoundsPattern.gid_1d_storage_buffer_offset));
-    try testing.expectEqualStrings("gid_1d_storage_buffer_stride", @tagName(lean_proof.BoundsPattern.gid_1d_storage_buffer_stride));
-    try testing.expectEqualStrings("gid_1d_storage_buffer_loop_offset", @tagName(lean_proof.BoundsPattern.gid_1d_storage_buffer_loop_offset));
-    try testing.expectEqualStrings("gid_1d_storage_buffer_loop_affine", @tagName(lean_proof.BoundsPattern.gid_1d_storage_buffer_loop_affine));
-    try testing.expectEqualStrings("gid_1d_storage_buffer_tiled", @tagName(lean_proof.BoundsPattern.gid_1d_storage_buffer_tiled));
-    try testing.expectEqualStrings("gid_2d_flat_storage_buffer", @tagName(lean_proof.BoundsPattern.gid_2d_flat_storage_buffer));
-    try testing.expectEqualStrings("gid_2d_flat_storage_buffer_offset", @tagName(lean_proof.BoundsPattern.gid_2d_flat_storage_buffer_offset));
-    try testing.expectEqualStrings("gid_texture_1d_dispatch_fit", @tagName(lean_proof.BoundsPattern.gid_texture_1d_dispatch_fit));
-    try testing.expectEqualStrings("gid_texture_2d_dispatch_fit", @tagName(lean_proof.BoundsPattern.gid_texture_2d_dispatch_fit));
-    try testing.expectEqualStrings("gid_texture_3d_dispatch_fit", @tagName(lean_proof.BoundsPattern.gid_texture_3d_dispatch_fit));
+    inline for (expected_bounds_patterns) |expected| {
+        try testing.expectEqualStrings(expected.name, @tagName(expected.pattern));
+    }
 }
 
 // ============================================================
@@ -66,17 +85,9 @@ test "boundsProven returns false for all patterns when lean_verified is false" {
     if (lean_proof.lean_verified) return;
     // Exhaustive check over all BoundsPattern variants: none should
     // report proven when build has lean_verified=false.
-    try testing.expect(!lean_proof.boundsProven(.gid_1d_storage_buffer));
-    try testing.expect(!lean_proof.boundsProven(.gid_1d_storage_buffer_offset));
-    try testing.expect(!lean_proof.boundsProven(.gid_1d_storage_buffer_stride));
-    try testing.expect(!lean_proof.boundsProven(.gid_1d_storage_buffer_loop_offset));
-    try testing.expect(!lean_proof.boundsProven(.gid_1d_storage_buffer_loop_affine));
-    try testing.expect(!lean_proof.boundsProven(.gid_1d_storage_buffer_tiled));
-    try testing.expect(!lean_proof.boundsProven(.gid_2d_flat_storage_buffer));
-    try testing.expect(!lean_proof.boundsProven(.gid_2d_flat_storage_buffer_offset));
-    try testing.expect(!lean_proof.boundsProven(.gid_texture_1d_dispatch_fit));
-    try testing.expect(!lean_proof.boundsProven(.gid_texture_2d_dispatch_fit));
-    try testing.expect(!lean_proof.boundsProven(.gid_texture_3d_dispatch_fit));
+    inline for (expected_bounds_patterns) |expected| {
+        try testing.expect(!lean_proof.boundsProven(expected.pattern));
+    }
 }
 
 test "boundsProven exhaustively covers every BoundsPattern variant" {

@@ -60,6 +60,7 @@ PFN_wgpuCommandEncoderFinish pfn_wgpuCommandEncoderFinish = NULL;
 PFN_wgpuComputePassEncoderSetPipeline pfn_wgpuComputePassEncoderSetPipeline = NULL;
 PFN_wgpuComputePassEncoderSetBindGroup pfn_wgpuComputePassEncoderSetBindGroup = NULL;
 PFN_wgpuComputePassEncoderDispatchWorkgroups pfn_wgpuComputePassEncoderDispatchWorkgroups = NULL;
+PFN_doeNativeComputePassDispatchBound pfn_doeNativeComputePassDispatchBound = NULL;
 PFN_wgpuComputePassEncoderDispatchWorkgroupsIndirect pfn_wgpuComputePassEncoderDispatchWorkgroupsIndirect = NULL;
 PFN_doeNativeComputePassDispatchIndirect pfn_doeNativeComputePassDispatchIndirect = NULL;
 PFN_wgpuComputePassEncoderEnd pfn_wgpuComputePassEncoderEnd = NULL;
@@ -304,6 +305,7 @@ napi_value doe_load_library(napi_env env, napi_callback_info info) {
     LOAD_SYM(wgpuComputePassEncoderSetPipeline);
     LOAD_SYM(wgpuComputePassEncoderSetBindGroup);
     LOAD_SYM(wgpuComputePassEncoderDispatchWorkgroups);
+    LOAD_SYM(doeNativeComputePassDispatchBound);
     LOAD_SYM(wgpuComputePassEncoderDispatchWorkgroupsIndirect);
     LOAD_SYM(doeNativeComputePassDispatchIndirect);
     LOAD_SYM(wgpuComputePassEncoderEnd);

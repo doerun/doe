@@ -3,6 +3,7 @@ const builtin = @import("builtin");
 const model = @import("../../src/model.zig");
 const webgpu = @import("../../src/webgpu_ffi.zig");
 const d3d12_mod = @import("../../src/backend/d3d12/mod.zig");
+const d3d12_test_support = @import("d3d12_mod_test_support.zig");
 
 fn test_profile() model.DeviceProfile {
     return .{
@@ -26,7 +27,7 @@ test "d3d12 backend iface advertises doe_d3d12 lane identity" {
 }
 
 test "d3d12 run_contract_path_for_test preserves dispatch operation count" {
-    const result = try d3d12_mod.run_contract_path_for_test(
+    const result = try d3d12_test_support.run_contract_path(
         model.Command{ .dispatch = .{ .x = 1, .y = 1, .z = 1 } },
         webgpu.QueueSyncMode.per_command,
     );

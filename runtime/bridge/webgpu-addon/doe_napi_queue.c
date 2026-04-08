@@ -301,6 +301,25 @@ napi_value doe_compute_pass_dispatch(napi_env env, napi_callback_info info) {
     return NULL;
 }
 
+napi_value doe_compute_pass_dispatch_bound(napi_env env, napi_callback_info info) {
+    NAPI_ASSERT_ARGC(env, info, 6);
+    WGPUComputePassEncoder pass = unwrap_ptr(env, _args[0]);
+    WGPUComputePipeline pipeline = unwrap_ptr(env, _args[1]);
+    WGPUBindGroup bind_group = unwrap_ptr(env, _args[2]);
+    uint32_t x, y, z;
+    napi_get_value_uint32(env, _args[3], &x);
+    napi_get_value_uint32(env, _args[4], &y);
+    napi_get_value_uint32(env, _args[5], &z);
+    if (pfn_doeNativeComputePassDispatchBound) {
+        pfn_doeNativeComputePassDispatchBound(pass, pipeline, bind_group, x, y, z);
+        return NULL;
+    }
+    pfn_wgpuComputePassEncoderSetPipeline(pass, pipeline);
+    pfn_wgpuComputePassEncoderSetBindGroup(pass, 0, bind_group, 0, NULL);
+    pfn_wgpuComputePassEncoderDispatchWorkgroups(pass, x, y, z);
+    return NULL;
+}
+
 /* computePassDispatchWorkgroupsIndirect(pass, buffer, offset) */
 napi_value doe_compute_pass_dispatch_indirect(napi_env env, napi_callback_info info) {
     NAPI_ASSERT_ARGC(env, info, 3);
@@ -378,15 +397,32 @@ napi_value doe_queue_submit(napi_env env, napi_callback_info info) {
     if (!queue) NAPI_THROW(env, "Invalid queue");
     uint32_t cmd_count = 0;
     napi_get_array_length(env, _args[1], &cmd_count);
+    if (cmd_count == 0) {
+        return make_submit_breakdown(env, 0, 0, 0);
+    }
+    const uint64_t command_replay_started_ns = monotonic_now_ns();
+    if (cmd_count == 1) {
+        napi_value elem;
+        napi_get_element(env, _args[1], 0, &elem);
+        WGPUCommandBuffer cmd = unwrap_ptr(env, elem);
+        const uint64_t command_replay_ns = monotonic_now_ns() - command_replay_started_ns;
+        const uint64_t queue_submit_started_ns = monotonic_now_ns();
+        pfn_wgpuQueueSubmit(queue, 1, &cmd);
+        const uint64_t queue_submit_ns = monotonic_now_ns() - queue_submit_started_ns;
+        return make_submit_breakdown(env, command_replay_ns, queue_submit_ns, 0);
+    }
     WGPUCommandBuffer* cmds = (WGPUCommandBuffer*)calloc(cmd_count, sizeof(WGPUCommandBuffer));
     for (uint32_t i = 0; i < cmd_count; i++) {
         napi_value elem;
         napi_get_element(env, _args[1], i, &elem);
         cmds[i] = unwrap_ptr(env, elem);
     }
+    const uint64_t command_replay_ns = monotonic_now_ns() - command_replay_started_ns;
+    const uint64_t queue_submit_started_ns = monotonic_now_ns();
     pfn_wgpuQueueSubmit(queue, cmd_count, cmds);
+    const uint64_t queue_submit_ns = monotonic_now_ns() - queue_submit_started_ns;
     free(cmds);
-    return NULL;
+    return make_submit_breakdown(env, command_replay_ns, queue_submit_ns, 0);
 }
 
 /* queueWriteBuffer(queue, buffer, offset, typedArray) */

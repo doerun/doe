@@ -333,5 +333,5 @@ pub fn requestDevice(self: anytype) !abi_core.WGPUDevice {
 
 pub fn timestampLog(self: anytype, comptime fmt: []const u8, args: anytype) void {
     if (!self.core.timestamp_debug) return;
-    std.debug.print("[doe-timestamp] " ++ fmt, args);
+    std.log.scoped(.doe_timestamp).debug(fmt, args);
 }

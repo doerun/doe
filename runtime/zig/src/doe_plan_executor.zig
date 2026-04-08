@@ -600,7 +600,7 @@ pub fn runPlan(allocator: Allocator, options: RunOptions) !void {
     try trace.writeTraceMeta(options.trace_meta_path, trace_summary);
 }
 
-pub fn main() !void {
+pub fn runCli() !void {
     const allocator = std.heap.page_allocator;
     const options = try parseArgs(allocator);
     try runPlan(allocator, options);

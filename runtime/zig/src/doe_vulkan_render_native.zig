@@ -8,6 +8,7 @@ const native_types = @import("doe_native_object_types.zig");
 const native_shared = @import("doe_native_shared_types.zig");
 const native_helpers = @import("doe_native_object_helpers.zig");
 const native_rt_helpers = @import("doe_native_runtime_helpers.zig");
+const error_scope = @import("error_scope.zig");
 const abi_core = @import("core/abi/wgpu_core_base_types.zig");
 const abi_pipeline = @import("core/abi/wgpu_pipeline_descriptor_types.zig");
 const resource_ops = @import("backend/dropin_resource_ops.zig");
@@ -28,6 +29,12 @@ const DoeSampler = native_types.DoeSampler;
 const DoeRenderPipeline = native_types.DoeRenderPipeline;
 const DoeRenderPass = native_types.DoeRenderPass;
 const DoeBuffer = native_types.DoeBuffer;
+
+fn deliverInternalError(dev: *DoeDevice, comptime fmt: []const u8, args: anytype) void {
+    var buf: [256]u8 = undefined;
+    const msg = std.fmt.bufPrint(&buf, fmt, args) catch "doe_vulkan_render_internal_error";
+    dev.error_scopes.deliver(error_scope.ERROR_TYPE_INTERNAL, msg);
+}
 
 // WebGPU filter values (from the WebGPU spec enum order used by doe_napi.c).
 const WGPU_FILTER_NEAREST: u32 = 1;
@@ -93,7 +100,7 @@ fn wgpu_compare_to_vk(compare: u32) u32 {
 pub fn vulkan_create_texture(dev: *DoeDevice, tex: *DoeTexture, desc: *const abi_pipeline.WGPUTextureDescriptor) bool {
     if (comptime !has_vulkan) return false;
     const rt = get_runtime(dev) orelse {
-        std.debug.print("doe_vulkan_render_native: device has no Vulkan runtime\n", .{});
+        deliverInternalError(dev, "doe_vulkan_render_native: device has no Vulkan runtime", .{});
         return false;
     };
 
@@ -111,7 +118,7 @@ pub fn vulkan_create_texture(dev: *DoeDevice, tex: *DoeTexture, desc: *const abi
         desc.format,
         @intCast(desc.usage),
     ) catch |err| {
-        std.debug.print("doe_vulkan_render_native: create_texture_resource_full failed: {}\n", .{err});
+        deliverInternalError(dev, "doe_vulkan_render_native: create_texture_resource_full failed: {s}", .{@errorName(err)});
         return false;
     };
     const result = rt.textures.getOrPut(rt.allocator, handle) catch {
@@ -168,8 +175,7 @@ pub fn vulkan_create_texture_view(tex: *DoeTexture, tv: *DoeTextureView, desc: *
         desc.swizzleG,
         desc.swizzleB,
         desc.swizzleA,
-    ) catch |err| {
-        std.debug.print("doe_vulkan_render_native: create_texture_view failed: {}\n", .{err});
+    ) catch {
         return false;
     };
     const key: u64 = vk_view;
@@ -216,7 +222,7 @@ pub fn vulkan_destroy_texture_view(tv: *DoeTextureView) void {
 pub fn vulkan_create_sampler(dev: *DoeDevice, sampler: *DoeSampler, desc: *const abi_pipeline.WGPUSamplerDescriptor) bool {
     if (comptime !has_vulkan) return false;
     const rt = get_runtime(dev) orelse {
-        std.debug.print("doe_vulkan_render_native: device has no Vulkan runtime for sampler\n", .{});
+        deliverInternalError(dev, "doe_vulkan_render_native: device has no Vulkan runtime for sampler", .{});
         return false;
     };
 
@@ -243,7 +249,7 @@ pub fn vulkan_create_sampler(dev: *DoeDevice, sampler: *DoeSampler, desc: *const
 
     var vk_sampler: c.VkSampler = c.VK_NULL_U64;
     c.check_vk(c.vkCreateSampler(rt.device, &create_info, null, &vk_sampler)) catch |err| {
-        std.debug.print("doe_vulkan_render_native: vkCreateSampler failed: {}\n", .{err});
+        deliverInternalError(dev, "doe_vulkan_render_native: vkCreateSampler failed: {s}", .{@errorName(err)});
         return false;
     };
 
@@ -255,7 +261,7 @@ pub fn vulkan_create_sampler(dev: *DoeDevice, sampler: *DoeSampler, desc: *const
     // binding can look up the VkSampler by handle.
     const handle: u64 = @intFromPtr(sampler);
     const gop = rt.samplers.getOrPut(rt.allocator, handle) catch {
-        std.debug.print("doe_vulkan_render_native: sampler map put failed\n", .{});
+        deliverInternalError(dev, "doe_vulkan_render_native: sampler map put failed", .{});
         return true;
     };
     if (gop.found_existing and gop.value_ptr.* != c.VK_NULL_U64) {
@@ -696,7 +702,7 @@ pub fn vulkan_render_pass_draw(
 ) void {
     if (comptime !has_vulkan) return;
     const rt = get_runtime(pass.enc.dev) orelse {
-        std.debug.print("doe_vulkan_render_native: render pass draw: no Vulkan runtime\n", .{});
+        deliverInternalError(pass.enc.dev, "doe_vulkan_render_native: render pass draw: no Vulkan runtime", .{});
         return;
     };
 
@@ -708,7 +714,7 @@ pub fn vulkan_render_pass_draw(
     populate_draw_cmd_from_pass(&cmd, pass);
 
     _ = rt.run_render_draw(cmd) catch |err| {
-        std.debug.print("doe_vulkan_render_native: run_render_draw failed: {}\n", .{err});
+        deliverInternalError(pass.enc.dev, "doe_vulkan_render_native: run_render_draw failed: {s}", .{@errorName(err)});
     };
 }
 
@@ -722,7 +728,7 @@ pub fn vulkan_render_pass_draw_indexed(
 ) void {
     if (comptime !has_vulkan) return;
     const rt = get_runtime(pass.enc.dev) orelse {
-        std.debug.print("doe_vulkan_render_native: render pass draw_indexed: no Vulkan runtime\n", .{});
+        deliverInternalError(pass.enc.dev, "doe_vulkan_render_native: render pass draw_indexed: no Vulkan runtime", .{});
         return;
     };
 
@@ -741,7 +747,7 @@ pub fn vulkan_render_pass_draw_indexed(
     populate_draw_cmd_from_pass(&cmd, pass);
 
     _ = rt.run_render_draw(cmd) catch |err| {
-        std.debug.print("doe_vulkan_render_native: run_render_draw (indexed) failed: {}\n", .{err});
+        deliverInternalError(pass.enc.dev, "doe_vulkan_render_native: run_render_draw (indexed) failed: {s}", .{@errorName(err)});
     };
 }
 
@@ -757,7 +763,7 @@ pub fn vulkan_render_pass_draw_indirect(pass: *DoeRenderPass, indirect_buffer_ra
     populate_draw_cmd_from_pass(&cmd, pass);
 
     _ = rt.run_render_draw(cmd) catch |err| {
-        std.debug.print("doe_vulkan_render_native: run_render_draw (indirect) failed: {}\n", .{err});
+        deliverInternalError(pass.enc.dev, "doe_vulkan_render_native: run_render_draw (indirect) failed: {s}", .{@errorName(err)});
     };
 }
 
@@ -779,7 +785,7 @@ pub fn vulkan_render_pass_draw_indexed_indirect(pass: *DoeRenderPass, indirect_b
     populate_draw_cmd_from_pass(&cmd, pass);
 
     _ = rt.run_render_draw(cmd) catch |err| {
-        std.debug.print("doe_vulkan_render_native: run_render_draw (indexed indirect) failed: {}\n", .{err});
+        deliverInternalError(pass.enc.dev, "doe_vulkan_render_native: run_render_draw (indexed indirect) failed: {s}", .{@errorName(err)});
     };
 }
 

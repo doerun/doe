@@ -119,6 +119,7 @@ when they are tied back to those emitted contracts.
 - [`docs/problems-addressed.md`](./problems-addressed.md) for practitioner pain points and how Doe handles them
 - [`docs/thesis.md`](./thesis.md) for project rationale
 - [`docs/process.md`](./process.md) for stage order and gates
+- [`docs/csl-architecture.md`](./csl-architecture.md) for the CSL-specific abstraction boundary and host-plan lowering model
 - [`docs/numeric-stability-runtime-roadmap.md`](./numeric-stability-runtime-roadmap.md) for the numeric-stability integration path from bench evidence to live runtime contract
 - [`docs/numeric-stability-claim-ladder.md`](./numeric-stability-claim-ladder.md) for the current and target claim boundary around numeric stability
 - [`docs/numeric-stability-demo-ladder.md`](./numeric-stability-demo-ladder.md) for the first live demo set and promotion rules

@@ -1,0 +1,153 @@
+// mod_override_test.zig — Override parsing and substitution tests for the public WGSL API.
+
+const std = @import("std");
+const mod = @import("../../src/doe_wgsl/mod.zig");
+const translateToHlsl = mod.translateToHlsl;
+const translateToHlslWithOverrides = mod.translateToHlslWithOverrides;
+const translateToMsl = mod.translateToMsl;
+const translateToMslWithOverrides = mod.translateToMslWithOverrides;
+const analyzeToIr = mod.analyzeToIr;
+const MAX_HLSL_OUTPUT = mod.MAX_HLSL_OUTPUT;
+const MAX_OUTPUT = mod.MAX_OUTPUT;
+const ir = mod.ir;
+const applyOverrides = mod.applyOverrides;
+
+test "override with @id attribute is parsed and stored in IR" {
+    const source =
+        \\@id(0) override workgroup_size: u32 = 64;
+        \\@id(1) override iterations: u32 = 1;
+        \\override untagged: f32 = 1.0;
+        \\@group(0) @binding(0) var<storage, read_write> data: array<f32>;
+        \\@compute @workgroup_size(64)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    data[id.x] = f32(workgroup_size) + f32(iterations) + untagged;
+        \\}
+    ;
+    var module_ir = try analyzeToIr(std.testing.allocator, source);
+    defer module_ir.deinit();
+
+    const g0 = module_ir.globals.items[0];
+    try std.testing.expectEqualStrings("workgroup_size", g0.name);
+    try std.testing.expectEqual(@as(?u32, 0), g0.override_id);
+    try std.testing.expectEqual(ir.GlobalClass.override_, g0.class);
+    try std.testing.expectEqual(@as(u64, 64), g0.initializer.?.int);
+
+    const g1 = module_ir.globals.items[1];
+    try std.testing.expectEqualStrings("iterations", g1.name);
+    try std.testing.expectEqual(@as(?u32, 1), g1.override_id);
+
+    const g2 = module_ir.globals.items[2];
+    try std.testing.expectEqualStrings("untagged", g2.name);
+    try std.testing.expectEqual(@as(?u32, null), g2.override_id);
+}
+
+test "applyOverrides substitutes values by numeric id" {
+    const source =
+        \\@id(0) override workgroup_size: u32 = 64;
+        \\@id(1) override scale: f32 = 1.0;
+        \\@group(0) @binding(0) var<storage, read_write> data: array<f32>;
+        \\@compute @workgroup_size(64)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    data[id.x] = f32(workgroup_size) * scale;
+        \\}
+    ;
+    var module_ir = try analyzeToIr(std.testing.allocator, source);
+    defer module_ir.deinit();
+
+    const overrides = [_]ir.OverrideEntry{
+        .{ .key = "0", .value = 256.0 },
+        .{ .key = "1", .value = 4.0 },
+    };
+    applyOverrides(&module_ir, &overrides);
+
+    // After override, values are substituted and class demoted to const_.
+    try std.testing.expectEqual(@as(u64, 256), module_ir.globals.items[0].initializer.?.int);
+    try std.testing.expectEqual(ir.GlobalClass.const_, module_ir.globals.items[0].class);
+    try std.testing.expectEqual(@as(f64, 4.0), module_ir.globals.items[1].initializer.?.float);
+    try std.testing.expectEqual(ir.GlobalClass.const_, module_ir.globals.items[1].class);
+}
+
+test "applyOverrides substitutes values by name" {
+    const source =
+        \\override scale: f32 = 1.0;
+        \\@group(0) @binding(0) var<storage, read_write> data: array<f32>;
+        \\@compute @workgroup_size(64)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    data[id.x] = scale;
+        \\}
+    ;
+    var module_ir = try analyzeToIr(std.testing.allocator, source);
+    defer module_ir.deinit();
+
+    const overrides = [_]ir.OverrideEntry{
+        .{ .key = "scale", .value = 42.0 },
+    };
+    applyOverrides(&module_ir, &overrides);
+
+    try std.testing.expectEqual(@as(f64, 42.0), module_ir.globals.items[0].initializer.?.float);
+    try std.testing.expectEqual(ir.GlobalClass.const_, module_ir.globals.items[0].class);
+}
+
+test "translateToMslWithOverrides emits overridden constant values" {
+    const source =
+        \\@id(0) override BLOCK_SIZE: u32 = 64;
+        \\@group(0) @binding(0) var<storage, read_write> data: array<f32>;
+        \\@compute @workgroup_size(64)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    data[id.x] = f32(BLOCK_SIZE);
+        \\}
+    ;
+    var out: [MAX_OUTPUT]u8 = undefined;
+
+    // Without overrides: default value 64.
+    const len_default = try translateToMsl(std.testing.allocator, source, &out);
+    const msl_default = out[0..len_default];
+    try std.testing.expect(std.mem.indexOf(u8, msl_default, "constant uint BLOCK_SIZE = 64") != null);
+
+    // With override: value changed to 256.
+    const overrides = [_]ir.OverrideEntry{
+        .{ .key = "0", .value = 256.0 },
+    };
+    const len_overridden = try translateToMslWithOverrides(
+        std.testing.allocator,
+        source,
+        &out,
+        &overrides,
+        overrides.len,
+    );
+    const msl_overridden = out[0..len_overridden];
+    // Overridden: should emit 256, not 64.
+    try std.testing.expect(std.mem.indexOf(u8, msl_overridden, "256") != null);
+    // Should not contain the old default.
+    try std.testing.expect(std.mem.indexOf(u8, msl_overridden, "constant uint BLOCK_SIZE = 64") == null);
+}
+
+test "translateToHlslWithOverrides emits overridden render-stage constant values" {
+    const source =
+        \\@id(0) override SCALE: f32 = 1.0;
+        \\@vertex
+        \\fn vs_main(@builtin(vertex_index) index: u32) -> @builtin(position) vec4f {
+        \\    let x = f32(index) * SCALE;
+        \\    return vec4f(x, 0.0, 0.0, 1.0);
+        \\}
+    ;
+    var out: [MAX_HLSL_OUTPUT]u8 = undefined;
+
+    const len_default = try translateToHlsl(std.testing.allocator, source, &out);
+    const hlsl_default = out[0..len_default];
+    try std.testing.expect(std.mem.indexOf(u8, hlsl_default, "SCALE = 1") != null);
+
+    const overrides = [_]ir.OverrideEntry{
+        .{ .key = "0", .value = 4.0 },
+    };
+    const len_overridden = try translateToHlslWithOverrides(
+        std.testing.allocator,
+        source,
+        &out,
+        &overrides,
+        overrides.len,
+    );
+    const hlsl_overridden = out[0..len_overridden];
+    try std.testing.expect(std.mem.indexOf(u8, hlsl_overridden, "SCALE = 4") != null);
+    try std.testing.expect(std.mem.indexOf(u8, hlsl_overridden, "SCALE = 1") == null);
+}

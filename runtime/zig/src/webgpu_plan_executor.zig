@@ -837,7 +837,7 @@ fn parseArgs(allocator: Allocator) !RunOptions {
     };
 }
 
-pub fn main() !void {
+pub fn runCli() !void {
     const allocator = std.heap.page_allocator;
     const options = try parseArgs(allocator);
     try runPlan(allocator, options);

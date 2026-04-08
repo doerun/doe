@@ -1,6 +1,7 @@
 const _impl = @import("../../replay.zig");
 pub const ReplayValidationError = _impl.ReplayValidationError;
 pub const ReplayExpectation = _impl.ReplayExpectation;
+pub const ReplayExpectationSet = _impl.ReplayExpectationSet;
 pub const RawReplayRow = _impl.RawReplayRow;
 pub const parseTraceHash = _impl.parseTraceHash;
 pub const parseReplayLine = _impl.parseReplayLine;

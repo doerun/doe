@@ -125,6 +125,7 @@ const compute_ext = @import("doe_compute_ext_native.zig");
 pub const doeNativeComputePassSetPipeline = compute_ext.doeNativeComputePassSetPipeline;
 pub const doeNativeComputePassSetBindGroup = compute_ext.doeNativeComputePassSetBindGroup;
 pub const doeNativeComputePassDispatch = compute_ext.doeNativeComputePassDispatch;
+pub const doeNativeComputePassDispatchBound = compute_ext.doeNativeComputePassDispatchBound;
 pub const doeNativeComputePassEnd = compute_ext.doeNativeComputePassEnd;
 pub const doeNativeComputePassRelease = compute_ext.doeNativeComputePassRelease;
 pub const doeNativeComputePipelineGetBindGroupLayout = compute_ext.doeNativeComputePipelineGetBindGroupLayout;

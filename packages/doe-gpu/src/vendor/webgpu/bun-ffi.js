@@ -79,6 +79,7 @@ const REQUEST_DEVICE_STATUS_SUCCESS = 1;
 const MAP_ASYNC_STATUS_SUCCESS = 1;
 const STYPE_SHADER_SOURCE_WGSL = 0x00000002;
 const PROCESS_EVENTS_TIMEOUT_NS = 5_000_000_000;
+const NS_PER_MS = 1_000_000;
 let processEventsTimeoutNs = PROCESS_EVENTS_TIMEOUT_NS;
 const BUFFER_MAP_STATE = Object.freeze({
     unmapped: 0,
@@ -279,6 +280,7 @@ function openLibrary(path) {
         wgpuComputePassEncoderSetPipeline: { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.void },
         wgpuComputePassEncoderSetBindGroup: { args: [FFIType.ptr, FFIType.u32, FFIType.ptr, FFIType.u64, FFIType.ptr], returns: FFIType.void },
         wgpuComputePassEncoderDispatchWorkgroups: { args: [FFIType.ptr, FFIType.u32, FFIType.u32, FFIType.u32], returns: FFIType.void },
+        doeNativeComputePassDispatchBound: { args: [FFIType.ptr, FFIType.ptr, FFIType.ptr, FFIType.u32, FFIType.u32, FFIType.u32], returns: FFIType.void },
         wgpuComputePassEncoderDispatchWorkgroupsIndirect: { args: [FFIType.ptr, FFIType.ptr, FFIType.u64], returns: FFIType.void },
         wgpuComputePassEncoderEnd: { args: [FFIType.ptr], returns: FFIType.void },
         wgpuComputePassEncoderRelease: { args: [FFIType.ptr], returns: FFIType.void },
@@ -572,6 +574,40 @@ function copyNativeErrorMeta(symbolName) {
 }
 
 const fastPathStats = { dispatchFlush: 0, flushAndMap: 0 };
+
+function elapsedNsSince(startedAtMs) {
+    return Math.max(0, Math.round((performance.now() - startedAtMs) * NS_PER_MS));
+}
+
+function zeroQueueSubmitBreakdown() {
+    return {
+        submitCommandPrepTotalNs: 0,
+        submitAddonCallTotalNs: 0,
+        submitAddonCommandReplayTotalNs: 0,
+        submitAddonQueueSubmitTotalNs: 0,
+        submitAddonFlushTotalNs: 0,
+        submitPostSubmitBookkeepingTotalNs: 0,
+        submitQueueFlushTotalNs: 0,
+        submitQueueFlushWaitCompletedTotalNs: 0,
+        submitQueueFlushDeferredCopyTotalNs: 0,
+        submitQueueFlushDeferredResolveTotalNs: 0,
+        submitQueueWaitBookkeepingTotalNs: 0,
+    };
+}
+
+function accumulateQueueSubmitBreakdown(queue, field, startedAtMs) {
+    queue._submitBreakdownNs[field] += elapsedNsSince(startedAtMs);
+}
+
+function ensureSubmitPtrScratch(queue, count) {
+    if (count <= 1) {
+        return queue._singleSubmitPtrArray;
+    }
+    if (!(queue._submitPtrScratch instanceof BigUint64Array) || queue._submitPtrScratch.length < count) {
+        queue._submitPtrScratch = new BigUint64Array(count);
+    }
+    return queue._submitPtrScratch;
+}
 
 /**
  * Read structured error fields (stage, kind, line, column) from the native
@@ -2077,6 +2113,24 @@ const bunEncoderBackend = {
             z,
         );
     },
+    computePassDispatchBound(pass, pipelineNative, bindGroupNative, x, y, z) {
+        pass._pipeline = pipelineNative;
+        const nativePass = assertLiveResource(pass, "GPUComputePassEncoder._dispatchBound", "GPUComputePassEncoder");
+        if (typeof wgpu.symbols.doeNativeComputePassDispatchBound === "function") {
+            wgpu.symbols.doeNativeComputePassDispatchBound(
+                nativePass,
+                pipelineNative,
+                bindGroupNative,
+                x,
+                y,
+                z,
+            );
+            return;
+        }
+        wgpu.symbols.wgpuComputePassEncoderSetPipeline(nativePass, pipelineNative);
+        wgpu.symbols.wgpuComputePassEncoderSetBindGroup(nativePass, 0, bindGroupNative, BigInt(0), null);
+        wgpu.symbols.wgpuComputePassEncoderDispatchWorkgroups(nativePass, x, y, z);
+    },
     computePassDispatchWorkgroupsIndirect(pass, indirectBufferNative, indirectOffset) {
         if (pass._pipeline == null) {
             failValidation("GPUComputePassEncoder.dispatchWorkgroupsIndirect", "setPipeline() must be called before dispatch");
@@ -2519,6 +2573,9 @@ const fullSurfaceBackend = {
     },
     initQueueState(queue) {
         queue._pendingSubmissions = 0;
+        queue._submitBreakdownNs = zeroQueueSubmitBreakdown();
+        queue._singleSubmitPtrArray = new BigUint64Array(1);
+        queue._submitPtrScratch = queue._singleSubmitPtrArray;
     },
     queueHasPendingSubmissions(queue) {
         return queue._pendingSubmissions > 0;
@@ -2596,15 +2653,21 @@ const fullSurfaceBackend = {
             }
             return;
         }
-        const ptrs = new BigUint64Array(buffers.length);
+        const prepStartedAt = performance.now();
+        const ptrs = ensureSubmitPtrScratch(queue, buffers.length);
         for (let index = 0; index < buffers.length; index += 1) {
             ptrs[index] = BigInt(assertLiveResource(buffers[index], "GPUQueue.submit", "GPUCommandBuffer"));
         }
+        accumulateQueueSubmitBreakdown(queue, "submitCommandPrepTotalNs", prepStartedAt);
+        const submitStartedAt = performance.now();
         wgpu.symbols.wgpuQueueSubmit(queueNative, BigInt(buffers.length), ptrs);
+        accumulateQueueSubmitBreakdown(queue, "submitAddonQueueSubmitTotalNs", submitStartedAt);
+        const bookkeepingStartedAt = performance.now();
         for (const commandBuffer of buffers) {
             commandBuffer._submitted = true;
             commandBuffer.destroy?.();
         }
+        accumulateQueueSubmitBreakdown(queue, "submitPostSubmitBookkeepingTotalNs", bookkeepingStartedAt);
     },
     queueWriteBuffer(_queue, native, bufferNative, bufferOffset, view) {
         wgpu.symbols.wgpuQueueWriteBuffer(native, bufferNative, BigInt(bufferOffset), view, BigInt(view.byteLength));

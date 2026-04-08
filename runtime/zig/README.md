@@ -82,6 +82,11 @@ Trace and replay:
 - `src/trace.zig` — TraceState, hash functions, name helpers, trace row and meta output.
 - `src/replay.zig` — replay expectation parsing and hash-chain validation.
 
+Tooling allocation pattern:
+- CLI and tooling entrypoints should keep one explicit run-scoped owner for transient parse state.
+- When parsed records live no longer than an owned input artifact, prefer borrowed slices into that blob or a run arena over per-field `dupe()` allocation.
+- Keep long-lived runtime and backend state on explicit allocator owners rather than run-scoped arenas.
+
 WebGPU backend:
 - `src/backend/runtime_types.zig` — narrow backend-facing execution/result and queue/upload mode contract shared by backend lanes and orchestration; `src/webgpu_ffi.zig` re-exports the same types for compatibility.
 - `src/backend/dropin_*.zig` — backend-owned seam modules for drop-in/native
@@ -237,6 +242,9 @@ runtime contract.
 
 `doe-csl-sim-runner` is the explicit bridge between Doe-emitted
 `csl_simulator_plan` artifacts and a real Cerebras simulator executable.
+
+See [`docs/csl-architecture.md`](../../docs/csl-architecture.md) for the CSL
+abstraction boundary and the current WGSL -> HostPlan -> CSL lowering model.
 
 - It validates the simulator plan artifact before launch.
 - It resolves the simulator driver from:
@@ -535,6 +543,10 @@ Lane policy is contractized in `config/backend-runtime-policy.json`. Trace metad
 - either `kind` or `command` may carry the command name in command JSON.
 
 ## CSL smoke bundle and simulator prep
+
+See [`docs/csl-architecture.md`](../../docs/csl-architecture.md) for the
+pattern-lowered CSL model and the distinction between GPU backends and the
+Cerebras path.
 
 Build the WGSL-to-CSL smoke bundle emitter:
 

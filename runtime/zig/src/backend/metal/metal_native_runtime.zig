@@ -382,7 +382,7 @@ pub const NativeMetalRuntime = struct {
                     const ct0 = common_timing.now_ns();
                     var compute_warmed: u64 = 0;
                     for (compute_keys) |key| {
-                        if (resource_runtime.ensure_kernel_pipeline(self, key, null) catch null) |_| {
+                        if (resource_runtime.ensure_kernel_pipeline(self, cache, key, null) catch null) |_| {
                             compute_warmed +%= 1;
                         }
                     }
@@ -397,8 +397,14 @@ pub const NativeMetalRuntime = struct {
         cleanup.release_deferred(&self.deferred_releases);
     }
 
+    fn pipelineBinaryCache(self: *NativeMetalRuntime) ?*metal_pipeline_cache.MetalPipelineCache {
+        if (!HAS_PIPELINE_CACHE) return null;
+        const cache = self.pipeline_binary_cache orelse return null;
+        return @ptrCast(@alignCast(cache));
+    }
+
     pub fn ensure_kernel_pipeline(self: *NativeMetalRuntime, kernel: []const u8, entry_point: ?[]const u8) !?*anyopaque {
-        return resource_runtime.ensure_kernel_pipeline(self, kernel, entry_point);
+        return resource_runtime.ensure_kernel_pipeline(self, self.pipelineBinaryCache(), kernel, entry_point);
     }
 
     pub fn get_kernel_workgroup_size(self: *NativeMetalRuntime, kernel: []const u8, entry_point: ?[]const u8) ![3]u32 {
@@ -410,7 +416,7 @@ pub const NativeMetalRuntime = struct {
     }
 
     pub fn ensure_render_pipeline(self: *NativeMetalRuntime, fmt: u32) !void {
-        return resource_runtime.ensure_render_pipeline(self, fmt);
+        return resource_runtime.ensure_render_pipeline(self, self.pipelineBinaryCache(), fmt);
     }
 
     pub fn ensure_render_target(self: *NativeMetalRuntime, width: u32, height: u32, fmt: u32) !void {

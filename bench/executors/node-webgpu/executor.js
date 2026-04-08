@@ -1314,9 +1314,13 @@ async function executeSample(
         throw new Error(`dispatch plan mismatch at step ${index}`);
       }
       const opStartedAt = performance.now();
-      pass.setPipeline(state.pipeline);
-      pass.setBindGroup(0, state.bindGroup);
-      pass.dispatchWorkgroups(step.workgroups[0], step.workgroups[1], step.workgroups[2]);
+      if (typeof pass._dispatchBound === 'function') {
+        pass._dispatchBound(state.pipeline, state.bindGroup, step.workgroups[0], step.workgroups[1], step.workgroups[2]);
+      } else {
+        pass.setPipeline(state.pipeline);
+        pass.setBindGroup(0, state.bindGroup);
+        pass.dispatchWorkgroups(step.workgroups[0], step.workgroups[1], step.workgroups[2]);
+      }
       const opNs = nsDelta(opStartedAt);
       stepBreakdownNs.dispatchEncodeApiTotalNs += opNs;
       executionEncodeTotalNs += opNs;

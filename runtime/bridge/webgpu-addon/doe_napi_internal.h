@@ -459,6 +459,7 @@ DECL_PFN(WGPUCommandBuffer, wgpuCommandEncoderFinish, (WGPUCommandEncoder, const
 DECL_PFN(void, wgpuComputePassEncoderSetPipeline, (WGPUComputePassEncoder, WGPUComputePipeline));
 DECL_PFN(void, wgpuComputePassEncoderSetBindGroup, (WGPUComputePassEncoder, uint32_t, WGPUBindGroup, size_t, const uint32_t*));
 DECL_PFN(void, wgpuComputePassEncoderDispatchWorkgroups, (WGPUComputePassEncoder, uint32_t, uint32_t, uint32_t));
+DECL_PFN(void, doeNativeComputePassDispatchBound, (WGPUComputePassEncoder, WGPUComputePipeline, WGPUBindGroup, uint32_t, uint32_t, uint32_t));
 DECL_PFN(void, wgpuComputePassEncoderDispatchWorkgroupsIndirect, (WGPUComputePassEncoder, WGPUBuffer, uint64_t));
 DECL_PFN(void, doeNativeComputePassDispatchIndirect, (WGPUComputePassEncoder, WGPUBuffer, uint64_t));
 DECL_PFN(void, wgpuComputePassEncoderEnd, (WGPUComputePassEncoder));

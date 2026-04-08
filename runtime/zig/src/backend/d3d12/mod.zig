@@ -588,32 +588,6 @@ fn prewarm_upload_path(ctx: *anyopaque, max_upload_bytes: u64) anyerror!void {
     try rt.prewarm_upload_path(max_upload_bytes, self.upload_buffer_usage_mode);
 }
 
-pub fn run_contract_path_for_test(
-    command: model.Command,
-    queue_sync_mode: webgpu.QueueSyncMode,
-) !webgpu.NativeExecutionResult {
-    if (builtin.os.tag != .windows) {
-        return .{
-            .status = .unsupported,
-            .status_message = "d3d12-native-tests-require-windows",
-            .dispatch_count = if (command_info.is_dispatch(command)) command_info.operation_count(command) else 0,
-        };
-    }
-
-    const profile = model.DeviceProfile{
-        .vendor = "amd",
-        .api = .d3d12,
-        .device_family = "gfx11",
-        .driver_version = .{ .major = 24, .minor = 0, .patch = 0 },
-    };
-
-    const backend = try ZigD3D12Backend.init(std.testing.allocator, profile, null);
-    var iface = try backend.as_iface(std.testing.allocator, "d3d12_contract_test", "d3d12_contract_test_policy");
-    defer iface.deinit();
-    iface.set_queue_sync_mode(queue_sync_mode);
-    return try iface.execute_command(command);
-}
-
 fn prewarm_kernel_dispatch(ctx: *anyopaque, kernel: []const u8, bindings: ?[]const model.KernelBinding) anyerror!void {
     const self = cast(ctx);
     if (kernel.len == 0) return;

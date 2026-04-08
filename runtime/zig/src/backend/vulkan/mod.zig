@@ -698,40 +698,6 @@ fn execute_runtime_command(self: *ZigVulkanBackend, command: model.Command) !web
     return annotate_result(self, command, result);
 }
 
-pub fn run_contract_path_for_test(command: model.Command, queue_sync_mode: webgpu.QueueSyncMode) !webgpu.NativeExecutionResult {
-    var backend = ZigVulkanBackend{
-        .allocator = std.testing.allocator,
-        .kernel_root_owned = null,
-        .runtime = null,
-        .upload_path_policy = .allow_mapped_shortcuts,
-        .upload_buffer_usage_mode = .copy_dst_copy_src,
-        .upload_submit_every = UPLOAD_BATCH_LAZY,
-        .queue_wait_mode = .process_events,
-        .queue_sync_mode = queue_sync_mode,
-        .gpu_timestamp_mode = .off,
-        .pending_upload_commands = 0,
-        .capability_set = native_capability_set(),
-        .status_message_storage = [_]u8{0} ** STATUS_MESSAGE_BYTES,
-        .status_message_len = 0,
-    };
-    defer if (backend.runtime) |*runtime| runtime.deinit();
-
-    return execute_runtime_command(&backend, command) catch |err| {
-        const requirements = command_requirements.requirements(command);
-        return .{
-            .status = common_errors.map_error_status(err),
-            .status_message = write_status(&backend, "{s}", .{common_errors.error_code(err)}),
-            .setup_ns = 0,
-            .encode_ns = 0,
-            .submit_wait_ns = 0,
-            .dispatch_count = if (requirements.is_dispatch) requirements.operation_count else 0,
-            .gpu_timestamp_ns = 0,
-            .gpu_timestamp_attempted = false,
-            .gpu_timestamp_valid = false,
-        };
-    };
-}
-
 fn execute_command(ctx: *anyopaque, command: model.Command) anyerror!webgpu.NativeExecutionResult {
     const self = cast(ctx);
     const requirements = command_requirements.requirements(command);

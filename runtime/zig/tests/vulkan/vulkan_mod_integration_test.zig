@@ -3,6 +3,7 @@ const builtin = @import("builtin");
 const model = @import("../../src/model.zig");
 const webgpu = @import("../../src/webgpu_ffi.zig");
 const vulkan_mod = @import("../../src/backend/vulkan/mod.zig");
+const vulkan_test_support = @import("vulkan_mod_test_support.zig");
 
 fn test_profile() model.DeviceProfile {
     return .{
@@ -79,7 +80,7 @@ test "vulkan backend flush_queue submits upload cadence tail in per-command mode
 test "vulkan kernel_dispatch reports dispatch count" {
     if (builtin.os.tag == .macos) return;
 
-    const result = try vulkan_mod.run_contract_path_for_test(
+    const result = try vulkan_test_support.run_contract_path(
         model.Command{ .kernel_dispatch = .{
             .kernel = "bench/kernels/shader_compile_pipeline_stress.spv",
             .x = 1,
@@ -126,7 +127,7 @@ test "vulkan dispatch requires kernel_dispatch capability path" {
 test "vulkan async capability introspection executes natively" {
     if (builtin.os.tag == .macos) return;
 
-    const result = try vulkan_mod.run_contract_path_for_test(
+    const result = try vulkan_test_support.run_contract_path(
         model.Command{ .async_diagnostics = .{
             .mode = .capability_introspection,
             .iterations = 2,
@@ -141,7 +142,7 @@ test "vulkan async capability introspection executes natively" {
 test "vulkan async lifecycle refcount executes natively" {
     if (builtin.os.tag == .macos) return;
 
-    const result = try vulkan_mod.run_contract_path_for_test(
+    const result = try vulkan_test_support.run_contract_path(
         model.Command{ .async_diagnostics = .{
             .mode = .lifecycle_refcount,
             .iterations = 3,
@@ -156,7 +157,7 @@ test "vulkan async lifecycle refcount executes natively" {
 test "vulkan async pipeline diagnostics execute natively" {
     if (builtin.os.tag == .macos) return;
 
-    const result = try vulkan_mod.run_contract_path_for_test(
+    const result = try vulkan_test_support.run_contract_path(
         model.Command{ .async_diagnostics = .{
             .mode = .pipeline_async,
             .iterations = 1,
@@ -171,7 +172,7 @@ test "vulkan async pipeline diagnostics execute natively" {
 test "vulkan resource table immediates executes through explicit emulation policy" {
     if (builtin.os.tag == .macos) return;
 
-    const result = try vulkan_mod.run_contract_path_for_test(
+    const result = try vulkan_test_support.run_contract_path(
         model.Command{ .async_diagnostics = .{
             .mode = .resource_table_immediates,
             .iterations = 2,
@@ -187,7 +188,7 @@ test "vulkan resource table immediates executes through explicit emulation polic
 test "vulkan pixel local storage executes through explicit emulation policy" {
     if (builtin.os.tag == .macos) return;
 
-    const result = try vulkan_mod.run_contract_path_for_test(
+    const result = try vulkan_test_support.run_contract_path(
         model.Command{ .async_diagnostics = .{
             .mode = .pixel_local_storage,
             .iterations = 2,

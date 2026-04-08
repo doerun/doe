@@ -4,6 +4,7 @@ const model = @import("../../src/model.zig");
 const webgpu = @import("../../src/webgpu_ffi.zig");
 const vulkan_mod = @import("../../src/backend/vulkan/mod.zig");
 const vulkan_timing = @import("../../src/backend/vulkan/vulkan_timing.zig");
+const vulkan_test_support = @import("vulkan_mod_test_support.zig");
 
 fn test_profile() model.DeviceProfile {
     return .{
@@ -20,7 +21,7 @@ test "vulkan timing source query succeeds" {
 }
 
 test "vulkan dispatch timing separates encode and submit-wait buckets" {
-    const result = try vulkan_mod.run_contract_path_for_test(
+    const result = try vulkan_test_support.run_contract_path(
         model.Command{ .dispatch = .{ .x = 1, .y = 1, .z = 1 } },
         webgpu.QueueSyncMode.per_command,
     );
@@ -34,7 +35,7 @@ test "vulkan dispatch timing separates encode and submit-wait buckets" {
 }
 
 test "vulkan deferred sync records submit cost but not per-command wait cost" {
-    const result = try vulkan_mod.run_contract_path_for_test(
+    const result = try vulkan_test_support.run_contract_path(
         model.Command{ .dispatch = .{ .x = 1, .y = 1, .z = 1 } },
         webgpu.QueueSyncMode.deferred,
     );

@@ -105,6 +105,23 @@ function createEncoderClasses(backend) {
       backend.computePassDispatchWorkgroups(this, x, y, z);
     }
 
+    _dispatchBound(pipeline, bindGroup, x, y = 1, z = 1) {
+      this._assertOpen('GPUComputePassEncoder._dispatchBound');
+      assertIntegerInRange(x, 'GPUComputePassEncoder._dispatchBound', 'x', { min: 0, max: UINT32_MAX });
+      assertIntegerInRange(y, 'GPUComputePassEncoder._dispatchBound', 'y', { min: 0, max: UINT32_MAX });
+      assertIntegerInRange(z, 'GPUComputePassEncoder._dispatchBound', 'z', { min: 0, max: UINT32_MAX });
+      backend.computePassDispatchBound(
+        this,
+        assertLiveResource(pipeline, 'GPUComputePassEncoder._dispatchBound', 'GPUComputePipeline'),
+        bindGroup == null
+          ? null
+          : assertLiveResource(bindGroup, 'GPUComputePassEncoder._dispatchBound', 'GPUBindGroup'),
+        x,
+        y,
+        z,
+      );
+    }
+
     dispatchWorkgroupsIndirect(indirectBuffer, indirectOffset = 0) {
       this._assertOpen('GPUComputePassEncoder.dispatchWorkgroupsIndirect');
       assertIntegerInRange(indirectOffset, 'GPUComputePassEncoder.dispatchWorkgroupsIndirect', 'indirectOffset', { min: 0 });

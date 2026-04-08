@@ -673,6 +673,26 @@ const nodeEncoderBackend = {
       z,
     );
   },
+  computePassDispatchBound(pass, pipelineNative, bindGroupNative, x, y, z) {
+    if (pass._lazy) {
+      pass._pipeline = pipelineNative;
+      pass._bindGroups[0] = bindGroupNative;
+      pass._encoder._commands.push({ t: 0, p: pipelineNative, bg: [...pass._bindGroups], x, y, z, d: pass._descriptor ?? undefined });
+      return;
+    }
+    const nativePass = assertLiveResource(
+      pass,
+      'GPUComputePassEncoder._dispatchBound',
+      'GPUComputePassEncoder',
+    );
+    if (typeof addon.computePassDispatchBound === 'function') {
+      addon.computePassDispatchBound(nativePass, pipelineNative, bindGroupNative, x, y, z);
+      return;
+    }
+    addon.computePassSetPipeline(nativePass, pipelineNative);
+    addon.computePassSetBindGroup(nativePass, 0, bindGroupNative);
+    addon.computePassDispatchWorkgroups(nativePass, x, y, z);
+  },
   computePassDispatchWorkgroupsIndirect(pass, indirectBufferNative, indirectOffset) {
     materializeLazyComputePass(pass);
     const nativePass = assertLiveResource(
@@ -1326,8 +1346,9 @@ const fullSurfaceBackend = {
     });
     accumulateQueueSubmitBreakdown(queue, 'submitCommandPrepTotalNs', prepStartedAt);
     const addonStartedAt = performance.now();
-    addon.queueSubmit(queueNative, natives);
+    const addonBreakdown = addon.queueSubmit(queueNative, natives);
     accumulateQueueSubmitBreakdown(queue, 'submitAddonCallTotalNs', addonStartedAt);
+    accumulateAddonSubmitBreakdown(queue, addonBreakdown);
     const bookkeepingStartedAt = performance.now();
     consumeSubmittedCommandBuffers(buffers);
     presentPendingCanvasContexts(queue);

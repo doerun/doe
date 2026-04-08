@@ -917,4 +917,4 @@ fn clamp_texture_coords_scalar(
     function.expr_args.items[call_data.args.start + 1] = clamped_coord;
 }
 
-// Tests are in ir_transform_robustness_test.zig (split for line-limit policy).
+// Tests are in runtime/zig/tests/wgsl/ir_transform_robustness_test.zig.

@@ -569,11 +569,7 @@ test "parseReplayLine accepts valid row" {
         .opCode = "dispatch",
         .module = "doe-zig-runtime",
     };
-    const result = try replay.parseReplayLine(testing.allocator, "doe-zig-runtime", &row);
-    defer {
-        testing.allocator.free(result.command);
-        if (result.kernel) |k| testing.allocator.free(k);
-    }
+    const result = try replay.parseReplayLine("doe-zig-runtime", &row);
     try testing.expectEqual(@as(usize, 0), result.seq);
     try testing.expectEqualStrings("compute", result.command);
     try testing.expectEqualStrings("add_kernel", result.kernel.?);
@@ -589,7 +585,7 @@ test "parseReplayLine rejects mismatched module" {
         .previousHash = "00",
         .module = "wrong-module",
     };
-    try testing.expectError(replay.ReplayValidationError.ReplayArtifactModuleMismatch, replay.parseReplayLine(testing.allocator, "doe-zig-runtime", &row));
+    try testing.expectError(replay.ReplayValidationError.ReplayArtifactModuleMismatch, replay.parseReplayLine("doe-zig-runtime", &row));
 }
 
 test "parseReplayLine rejects mismatched opCode" {
@@ -600,27 +596,27 @@ test "parseReplayLine rejects mismatched opCode" {
         .previousHash = "00",
         .opCode = "render",
     };
-    try testing.expectError(replay.ReplayValidationError.ReplayArtifactOpCodeMismatch, replay.parseReplayLine(testing.allocator, "doe-zig-runtime", &row));
+    try testing.expectError(replay.ReplayValidationError.ReplayArtifactOpCodeMismatch, replay.parseReplayLine("doe-zig-runtime", &row));
 }
 
 test "parseReplayLine rejects missing command" {
     const row = replay.RawReplayRow{ .seq = 0, .hash = "aa", .previousHash = "00" };
-    try testing.expectError(replay.ReplayValidationError.ReplayCommandFieldMissing, replay.parseReplayLine(testing.allocator, "x", &row));
+    try testing.expectError(replay.ReplayValidationError.ReplayCommandFieldMissing, replay.parseReplayLine("x", &row));
 }
 
 test "parseReplayLine rejects missing hash" {
     const row = replay.RawReplayRow{ .seq = 0, .command = "c", .previousHash = "00" };
-    try testing.expectError(replay.ReplayValidationError.ReplayHashFieldMissing, replay.parseReplayLine(testing.allocator, "x", &row));
+    try testing.expectError(replay.ReplayValidationError.ReplayHashFieldMissing, replay.parseReplayLine("x", &row));
 }
 
 test "parseReplayLine rejects missing previousHash" {
     const row = replay.RawReplayRow{ .seq = 0, .command = "c", .hash = "aa" };
-    try testing.expectError(replay.ReplayValidationError.ReplayPreviousHashFieldMissing, replay.parseReplayLine(testing.allocator, "x", &row));
+    try testing.expectError(replay.ReplayValidationError.ReplayPreviousHashFieldMissing, replay.parseReplayLine("x", &row));
 }
 
 test "parseReplayLine rejects missing seq" {
     const row = replay.RawReplayRow{ .command = "c", .hash = "aa", .previousHash = "00" };
-    try testing.expectError(replay.ReplayValidationError.ReplaySeqFieldMissing, replay.parseReplayLine(testing.allocator, "x", &row));
+    try testing.expectError(replay.ReplayValidationError.ReplaySeqFieldMissing, replay.parseReplayLine("x", &row));
 }
 
 // ============================================================

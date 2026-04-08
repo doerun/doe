@@ -84,6 +84,7 @@ napi_value doe_compute_pass_set_pipeline(napi_env env, napi_callback_info info);
 napi_value doe_compute_pass_set_bind_group(napi_env env, napi_callback_info info);
 napi_value doe_compute_pass_set_immediates(napi_env env, napi_callback_info info);
 napi_value doe_compute_pass_dispatch(napi_env env, napi_callback_info info);
+napi_value doe_compute_pass_dispatch_bound(napi_env env, napi_callback_info info);
 napi_value doe_compute_pass_dispatch_indirect(napi_env env, napi_callback_info info);
 napi_value doe_compute_pass_push_debug_group(napi_env env, napi_callback_info info);
 napi_value doe_compute_pass_pop_debug_group(napi_env env, napi_callback_info info);
@@ -235,6 +236,7 @@ napi_value doe_module_init(napi_env env, napi_value exports) {
         EXPORT_FN("computePassSetBindGroup",                  doe_compute_pass_set_bind_group),
         EXPORT_FN("computePassSetImmediates",                 doe_compute_pass_set_immediates),
         EXPORT_FN("computePassDispatchWorkgroups",            doe_compute_pass_dispatch),
+        EXPORT_FN("computePassDispatchBound",                 doe_compute_pass_dispatch_bound),
         EXPORT_FN("computePassDispatchWorkgroupsIndirect",    doe_compute_pass_dispatch_indirect),
         EXPORT_FN("computePassPushDebugGroup",                doe_compute_pass_push_debug_group),
         EXPORT_FN("computePassPopDebugGroup",                 doe_compute_pass_pop_debug_group),

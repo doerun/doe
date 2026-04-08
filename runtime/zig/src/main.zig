@@ -359,13 +359,13 @@ pub fn main() !void {
         if (using_quarks_from_file) allocator.free(quirks_bytes);
         quirk.parser.freeQuirks(allocator, quirks);
     }
-    var replay_expectations: ?[]replay.ReplayExpectation = null;
+    var replay_expectations: ?replay.ReplayExpectationSet = null;
     if (replay_path) |path| {
         const replay_parse_start_ns = nowNs();
         replay_expectations = try replay.loadReplayExpectations(allocator, path);
         host_input_parse_total_ns += elapsedSince(replay_parse_start_ns);
     }
-    defer if (replay_expectations) |expectations| replay.freeReplayExpectations(allocator, expectations);
+    defer if (replay_expectations) |*expectations| expectations.deinit(allocator);
     var commands: []const model.Command = default_commands[0..];
     const default_metadata_start_ns = nowNs();
     var command_metadata: []command_stream.CommandMetadata = try command_stream.metadata_for_slice(allocator, commands);
@@ -694,7 +694,8 @@ pub fn main() !void {
                     metadata.semantic,
                     result,
                 );
-                if (replay_expectations) |expectations| {
+                if (replay_expectations) |expectation_set| {
+                    const expectations = expectation_set.expectations;
                     if (physical_command_index >= expectations.len) return replay.ReplayValidationError.ReplayMissingRow;
                     const expected = expectations[physical_command_index];
                     if (expected.seq != physical_command_index) return replay.ReplayValidationError.ReplaySeqMismatch;
@@ -853,7 +854,8 @@ pub fn main() !void {
     if (trace_meta_path) |path| {
         try trace.writeTraceMeta(path, trace_summary);
     }
-    if (replay_expectations) |expectations| {
+    if (replay_expectations) |expectation_set| {
+        const expectations = expectation_set.expectations;
         if (expectations.len != physical_command_count_usize) {
             return replay.ReplayValidationError.ReplayRowCountMismatch;
         }

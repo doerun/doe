@@ -91,7 +91,12 @@ const CompiledKernelLibrary = struct {
     workgroup_size: [3]u32 = .{ 0, 0, 0 },
 };
 
-pub fn ensure_kernel_pipeline(self: anytype, kernel: []const u8, entry_point: ?[]const u8) !?*anyopaque {
+pub fn ensure_kernel_pipeline(
+    self: anytype,
+    pipeline_cache: ?*metal_pipeline_cache.MetalPipelineCache,
+    kernel: []const u8,
+    entry_point: ?[]const u8,
+) !?*anyopaque {
     var key_buf: [MAX_PIPELINE_KEY_BYTES]u8 = undefined;
     const request = try parsePipelineRequest(kernel, entry_point, &key_buf);
     if (self.kernel_pipelines.get(request.cache_key)) |kp| return kp.pipeline;
@@ -108,7 +113,7 @@ pub fn ensure_kernel_pipeline(self: anytype, kernel: []const u8, entry_point: ?[
     const func = metal_bridge_library_new_function(compiled.library, function_name_z.ptr) orelse return error.ShaderCompileFailed;
     errdefer metal_bridge_release(func);
 
-    const pso = try resolve_compute_pso_for(self, func, &err_buf);
+    const pso = try resolve_compute_pso_for(self.device, pipeline_cache, func, &err_buf);
     metal_bridge_release(func);
 
     const key = try self.allocator.dupe(u8, request.cache_key);
@@ -121,14 +126,9 @@ pub fn ensure_kernel_pipeline(self: anytype, kernel: []const u8, entry_point: ?[
 
     // Register kernel name in the pipeline cache warmup manifest so
     // future sessions can pre-compile it on startup.
-    if (builtin.os.tag == .macos) {
-        if (HAS_PIPELINE_CACHE) {
-            if (@hasField(@TypeOf(self.*), "pipeline_binary_cache")) {
-                if (self.pipeline_binary_cache) |c| {
-                    const t: *metal_pipeline_cache.MetalPipelineCache = @ptrCast(@alignCast(c));
-                    t.register_compute_key(request.cache_key);
-                }
-            }
+    if (builtin.os.tag == .macos and HAS_PIPELINE_CACHE) {
+        if (pipeline_cache) |cache| {
+            cache.register_compute_key(request.cache_key);
         }
     }
     return pso;
@@ -313,7 +313,11 @@ test "get_kernel_workgroup_size returns cached metadata for normalized default e
     try std.testing.expectEqual(@as(u32, 1), wg[2]);
 }
 
-pub fn ensure_render_pipeline(self: anytype, fmt: u32) !void {
+pub fn ensure_render_pipeline(
+    self: anytype,
+    pipeline_cache: ?*metal_pipeline_cache.MetalPipelineCache,
+    fmt: u32,
+) !void {
     if (self.render_pipeline != null and self.render_pipeline_format == fmt) return;
     if (self.render_pipeline) |pipeline| metal_bridge_release(pipeline);
     if (self.cached_icb) |icb| {
@@ -321,7 +325,7 @@ pub fn ensure_render_pipeline(self: anytype, fmt: u32) !void {
         self.cached_icb = null;
     }
     var err_buf: [BRIDGE_ERROR_CAP]u8 = undefined;
-    self.render_pipeline = try resolve_render_pso_for(self, fmt, &err_buf);
+    self.render_pipeline = try resolve_render_pso_for(self.device, pipeline_cache, fmt, &err_buf);
     self.render_pipeline_format = fmt;
 }
 
@@ -382,31 +386,31 @@ pub fn ensure_icb(self: anytype, draw_count: u32, vertex_count: u32, instance_co
 // Resolve compute PSO: try archive (compile-or-serve), fall back to plain compile.
 // Phase 2: on archive hit, the ObjC bridge returns a pre-compiled binary without
 // calling newLibraryWithSource.  On miss, it compiles and primes the archive.
-fn resolve_compute_pso_for(self: anytype, func: ?*anyopaque, err_buf: *[BRIDGE_ERROR_CAP]u8) !?*anyopaque {
-    if (builtin.os.tag == .macos) {
-        if (HAS_PIPELINE_CACHE) {
-            if (@hasField(@TypeOf(self.*), "pipeline_binary_cache")) {
-                if (self.pipeline_binary_cache) |c| {
-                    const t: *metal_pipeline_cache.MetalPipelineCache = @ptrCast(@alignCast(c));
-                    if (t.compile_or_serve_compute(func)) |pso| return pso;
-                }
-            }
+fn resolve_compute_pso_for(
+    device: ?*anyopaque,
+    pipeline_cache: ?*metal_pipeline_cache.MetalPipelineCache,
+    func: ?*anyopaque,
+    err_buf: *[BRIDGE_ERROR_CAP]u8,
+) !?*anyopaque {
+    if (builtin.os.tag == .macos and HAS_PIPELINE_CACHE) {
+        if (pipeline_cache) |cache| {
+            if (cache.compile_or_serve_compute(func)) |pso| return pso;
         }
     }
-    return metal_bridge_device_new_compute_pipeline(self.device, func, err_buf, BRIDGE_ERROR_CAP) orelse error.ShaderCompileFailed;
+    return metal_bridge_device_new_compute_pipeline(device, func, err_buf, BRIDGE_ERROR_CAP) orelse error.ShaderCompileFailed;
 }
 
 // Resolve render PSO: try archive (compile-or-serve), fall back to plain compile.
-fn resolve_render_pso_for(self: anytype, fmt: u32, err_buf: *[BRIDGE_ERROR_CAP]u8) !?*anyopaque {
-    if (builtin.os.tag == .macos) {
-        if (HAS_PIPELINE_CACHE) {
-            if (@hasField(@TypeOf(self.*), "pipeline_binary_cache")) {
-                if (self.pipeline_binary_cache) |c| {
-                    const t: *metal_pipeline_cache.MetalPipelineCache = @ptrCast(@alignCast(c));
-                    if (t.compile_or_serve_render(fmt, 1)) |pso| return pso;
-                }
-            }
+fn resolve_render_pso_for(
+    device: ?*anyopaque,
+    pipeline_cache: ?*metal_pipeline_cache.MetalPipelineCache,
+    fmt: u32,
+    err_buf: *[BRIDGE_ERROR_CAP]u8,
+) !?*anyopaque {
+    if (builtin.os.tag == .macos and HAS_PIPELINE_CACHE) {
+        if (pipeline_cache) |cache| {
+            if (cache.compile_or_serve_render(fmt, 1)) |pso| return pso;
         }
     }
-    return metal_bridge_device_new_render_pipeline(self.device, fmt, 1, err_buf, BRIDGE_ERROR_CAP) orelse error.ShaderCompileFailed;
+    return metal_bridge_device_new_render_pipeline(device, fmt, 1, err_buf, BRIDGE_ERROR_CAP) orelse error.ShaderCompileFailed;
 }

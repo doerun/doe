@@ -76,6 +76,12 @@ pub fn flush_pending_work(q: *DoeQueue) void {
     queue_flush_breakdown.flushPendingWork(q);
 }
 
+fn deliverInternalError(dev: *native_types.DoeDevice, comptime fmt: []const u8, args: anytype) void {
+    var buf: [256]u8 = undefined;
+    const msg = std.fmt.bufPrint(&buf, fmt, args) catch "doe_queue_submit_internal_error";
+    dev.error_scopes.deliver(error_scope.ERROR_TYPE_INTERNAL, msg);
+}
+
 fn submittedBuffersHaveRecordedCommands(count: usize, cmd_bufs: [*]const ?*anyopaque) bool {
     for (cmd_bufs[0..count]) |raw| {
         const cb = cast(DoeCommandBuffer, raw) orelse continue;
@@ -483,7 +489,7 @@ pub export fn doeNativeQueueFlush(q_raw: ?*anyopaque) callconv(.c) void {
         if (comptime has_vulkan) {
             const rt = native_rt_helpers.device_vk_runtime(q.dev) orelse return;
             _ = rt.flush_queue() catch |err| {
-                std.debug.print("warn: doe_queue_submit: queue flush: {s}\n", .{@errorName(err)});
+                deliverInternalError(q.dev, "doe_queue_submit: queue flush: {s}", .{@errorName(err)});
             };
         }
         return;
@@ -583,7 +589,7 @@ fn copy_texture_for_browser_passthrough(
                 .height = copy_size.height,
                 .depth_or_layers = copy_size.depthOrArrayLayers,
             }) catch |err| {
-                std.debug.print("warn: doe_queue_submit: texture copy: {s}\n", .{@errorName(err)});
+                deliverInternalError(q.dev, "doe_queue_submit: texture copy: {s}", .{@errorName(err)});
             };
         }
         return;
@@ -646,7 +652,7 @@ pub export fn doeNativeQueueRelease(raw: ?*anyopaque) callconv(.c) void {
             if (comptime has_vulkan) {
                 if (native_rt_helpers.device_vk_runtime(q.dev)) |rt| {
                     _ = rt.flush_queue() catch |err| {
-                        std.debug.print("warn: doe_queue_submit: flush on queue release: {s}\n", .{@errorName(err)});
+                        deliverInternalError(q.dev, "doe_queue_submit: flush on queue release: {s}", .{@errorName(err)});
                     };
                 }
             }
@@ -677,7 +683,7 @@ fn flush_pending_work_dropin_sync(q: *DoeQueue) void {
         if (comptime has_vulkan) {
             if (native_rt_helpers.device_vk_runtime(q.dev)) |rt| {
                 _ = rt.flush_queue() catch |err| {
-                    std.debug.print("warn: doe_queue_submit: dropin sync flush: {s}\n", .{@errorName(err)});
+                    deliverInternalError(q.dev, "doe_queue_submit: dropin sync flush: {s}", .{@errorName(err)});
                 };
             }
         }

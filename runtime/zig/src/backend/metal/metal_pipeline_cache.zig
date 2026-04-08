@@ -63,6 +63,8 @@ const MAX_MANIFEST_BYTES: usize = 64 * 1024;
 /// Maximum length of a single compute kernel name stored in the manifest.
 const MAX_COMPUTE_KEY_LEN: usize = 256;
 
+const c_allocator = std.heap.c_allocator;
+
 // ============================================================
 // Bridge declarations (implemented in metal_bridge.m)
 
@@ -530,11 +532,8 @@ pub export fn doeNativeMetalPipelineCacheCreate(
     device: ?*anyopaque,
     cache_dir: ?[*:0]const u8,
 ) callconv(.c) ?*anyopaque {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    const allocator = gpa.allocator();
-
     const dir: []const u8 = if (cache_dir) |d| std.mem.span(d) else "";
-    const cache = MetalPipelineCache.init(allocator, device, dir) catch return null;
+    const cache = MetalPipelineCache.init(c_allocator, device, dir) catch return null;
     return @ptrCast(cache);
 }
 
@@ -661,4 +660,20 @@ fn cache_from_opaque(raw: ?*anyopaque) ?*MetalPipelineCache {
     const c: *MetalPipelineCache = @ptrCast(@alignCast(p));
     if (c.magic != MAGIC_METAL_CACHE) return null;
     return c;
+}
+
+test "doeNativeMetalPipelineCacheCreate survives repeated create use release cycles" {
+    const first_raw = doeNativeMetalPipelineCacheCreate(null, null);
+    try std.testing.expect(first_raw != null);
+    const first_cache = cache_from_opaque(first_raw);
+    try std.testing.expect(first_cache != null);
+    first_cache.?.register_compute_key("first-kernel");
+    doeNativeMetalPipelineCacheRelease(first_raw);
+
+    const second_raw = doeNativeMetalPipelineCacheCreate(null, null);
+    try std.testing.expect(second_raw != null);
+    const second_cache = cache_from_opaque(second_raw);
+    try std.testing.expect(second_cache != null);
+    second_cache.?.register_compute_key("second-kernel");
+    doeNativeMetalPipelineCacheRelease(second_raw);
 }

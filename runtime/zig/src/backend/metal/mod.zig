@@ -764,26 +764,6 @@ fn prewarm_upload_path(ctx: *anyopaque, max_upload_bytes: u64) anyerror!void {
     try rt.prewarm_upload_path(max_upload_bytes, self.upload_buffer_usage_mode);
 }
 
-pub fn run_contract_path_for_test(command: model.Command, queue_sync_mode: webgpu.QueueSyncMode) !void {
-    if (builtin.os.tag != .macos) return;
-    const profile = model.DeviceProfile{
-        .vendor = "apple",
-        .api = .metal,
-        .device_family = "m3",
-        .driver_version = .{ .major = 1, .minor = 0, .patch = 0 },
-    };
-
-    const backend = ZigMetalBackend.init(std.testing.allocator, profile, null) catch |err| {
-        if (is_runtime_unavailable_for_test(err)) return;
-        return err;
-    };
-    var iface = try backend.as_iface(std.testing.allocator, "test_metal_contract", "test_policy_hash");
-    defer iface.deinit();
-
-    iface.set_queue_sync_mode(queue_sync_mode);
-    _ = try iface.execute_command(command);
-}
-
 fn capture_buffer(ctx: *anyopaque, allocator: std.mem.Allocator, handle: u64, offset: u64, size: u64) anyerror![]u8 {
     const self = cast(ctx);
     const runtime = get_runtime(self);
@@ -793,23 +773,6 @@ fn capture_buffer(ctx: *anyopaque, allocator: std.mem.Allocator, handle: u64, of
     const mapped = metal_bridge_buffer_contents(buffer) orelse return error.InvalidState;
     const source = mapped[@intCast(offset)..@intCast(end)];
     return try allocator.dupe(u8, source);
-}
-
-fn is_runtime_unavailable_for_test(err: anyerror) bool {
-    return switch (err) {
-        error.LibraryOpenFailed,
-        error.SymbolMissing,
-        error.AdapterUnavailable,
-        error.AdapterRequestFailed,
-        error.AdapterRequestNoCallback,
-        error.DeviceRequestFailed,
-        error.DeviceRequestNoCallback,
-        error.NativeInstanceUnavailable,
-        error.NativeQueueUnavailable,
-        error.UnsupportedFeature,
-        => true,
-        else => false,
-    };
 }
 
 const VTABLE = backend_iface.BackendVTable{
