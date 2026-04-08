@@ -1,4 +1,31 @@
 # Doe status
+## AMD Vulkan Gemma270M package compute is now a real local claim surface on both Node and Bun, and the claim gate hash-link validator no longer crashes on claimable reports (2026-04-08 UTC)
+
+- package claim-surface contract:
+  - `bench/workloads/workloads.package.gemma270m.json` now marks
+    `inference_gemma3_270m_prefill_64tok_decode_64tok` as `claimEligible: true`
+  - `bench/native-compare/compare.config.amd.vulkan.gemma270m.node-package.ir.json`
+    and
+    `bench/native-compare/compare.config.amd.vulkan.gemma270m.bun-package.ir.json`
+    now run the same strict comparable workload under `claimability.mode=local`
+    with `iterations=16`, `warmup=1`, and `minTimedSamples=15`
+- fresh local claim receipts:
+  - Node/package:
+    `bench/out/amd-vulkan/20260408T214329Z/gemma270m.node-package.ir.compare.json`
+  - Bun/package:
+    `bench/out/amd-vulkan/20260408T214329Z/gemma270m.bun-package.ir.compare.json`
+  - both fresh reports are `comparisonStatus=comparable`,
+    `claimStatus=claimable`
+- explicit gate verification:
+  - `python3 bench/gates/claim_gate.py --report bench/out/amd-vulkan/20260408T214329Z/gemma270m.node-package.ir.compare.json --require-claimability-mode local --require-claim-status claimable --require-comparison-status comparable --require-min-timed-samples 15`
+  - `python3 bench/gates/claim_gate.py --report bench/out/amd-vulkan/20260408T214329Z/gemma270m.bun-package.ir.compare.json --require-claimability-mode local --require-claim-status claimable --require-comparison-status comparable --require-min-timed-samples 15`
+- gate hardening:
+  - `bench/lib/report_conformance.py` now validates claim-row
+    `baselineTraceMetaSha256` / `comparisonTraceMetaSha256` against the
+    extracted trace-meta hash lists without the stale undefined-variable crash
+  - `bench/tests/test_report_conformance.py` adds direct regression coverage
+    for the passing and mismatched trace-hash cases
+
 ## Backend contract-path test helpers now live under `runtime/zig/tests`, and the queue/Vulkan runtime paths no longer use raw debug prints for the audited warning sites (2026-04-08 UTC)
 
 - backend test-hygiene cleanup:

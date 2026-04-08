@@ -515,11 +515,11 @@ def validate_claim_row_hash_links(
             return False, (
                 f"{workload_id}: claimWorkloadHash.context.comparisonTraceMetaSha256 missing/invalid"
             )
-        if context_left_hashes != left_hashes:
+        if context_left_hashes != baseline_hashes:
             return False, (
                 f"{workload_id}: claimWorkloadHash.context.baselineTraceMetaSha256 mismatch"
             )
-        if context_right_hashes != right_hashes:
+        if context_right_hashes != comparison_hashes:
             return False, (
                 f"{workload_id}: claimWorkloadHash.context.comparisonTraceMetaSha256 mismatch"
             )

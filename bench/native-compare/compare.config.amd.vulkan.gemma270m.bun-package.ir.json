@@ -9,7 +9,7 @@
     "executorId": "bun_webgpu_package"
   },
   "run": {
-    "iterations": 8,
+    "iterations": 16,
     "warmup": 1,
     "out": "bench/out/amd-vulkan/gemma270m.bun-package.ir.compare.json",
     "workspace": "bench/out/amd-vulkan/gemma270m.bun-package.ir.workspace",
@@ -22,7 +22,8 @@
     "allowBaselineNoExecution": false
   },
   "claimability": {
-    "mode": "off"
+    "mode": "local",
+    "minTimedSamples": 15
   },
   "resource": {
     "probe": "none",

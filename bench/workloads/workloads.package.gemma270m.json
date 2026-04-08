@@ -10,7 +10,7 @@
       "comparabilityNotes": "Doe-owned apples-to-apples combined Gemma-3-270M-shaped inference sequence. Both sides execute one retained-kernel command stream containing a 64-token prefill phase followed by 64 single-token decode phases under the runtime compare harness.",
       "comparable": true,
       "benchmarkClass": "comparable",
-      "claimEligible": false,
+      "claimEligible": true,
       "default": false,
       "description": "Single-run Gemma-3-270M-shaped inference sequence with a 64-token prefill phase and 64 sequential single-token decode phases using Doe-owned retained inference kernels plus explicit buffer writes.",
       "domain": "compute",
