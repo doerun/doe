@@ -1149,6 +1149,7 @@ python3 bench/cli.py compare \
 - `--allow-baseline-no-execution`: opt out if baseline trace-meta has no `executionSuccessCount`/`executionRowCount`.
 - workload-level `allowBaselineNoExecution: true` provides the same opt-out per workload contract and still requires explicit unsupported/skipped execution evidence when no successful execution samples are present.
 - strict mode rejects samples with runtime execution failures (`executionErrorCount > 0`) on either side.
+- strict Dawn-vs-Doe package compares now reject submit-scope asymmetry when one side's `submit_wait` phase includes material retained replay/flush work (`packageStepBreakdownNs.submitAddon*`) that the peer side does not measure in the same phase.
 - Dawn adapter now fails fast when a gtest filter matches zero tests (`Running 0 tests` / filter no-match warning) so startup-only runs cannot be reported as comparable timings.
 - non-comparable workload mappings are excluded by default using `workloads.json` `comparable: false`.
 - use `--include-noncomparable-workloads` only for directional investigation runs.
@@ -1631,7 +1632,12 @@ Workloads can now control per-run command stream expansion:
 - `baselineUploadBufferUsage` / `comparisonUploadBufferUsage` (default `copy-dst-copy-src`, valid: `copy-dst-copy-src`, `copy-dst`)
 - `baselineUploadSubmitEvery` / `comparisonUploadSubmitEvery` (default `1`)
 
-When repeat is greater than `1`, `bench/cli.py compare` expands the workload command JSON array for that side before execution and runs the larger stream in a single sample. Use this with timing divisors to compare on the same unit:
+When repeat is greater than `1`, `bench/cli.py compare` still executes one
+logical workload unit with the configured repeat count, but Doe command-stream
+lanes now prefer structural repeat via `doe-zig-runtime --command-repeat N`
+instead of materializing giant repeated JSON arrays. Non-Doe lanes and plan
+surfaces still fall back to explicit expansion when required. Use repeat with
+timing divisors to compare on the same unit:
 
 - `baselineTimingDivisor`
 - `comparisonTimingDivisor`

@@ -34,8 +34,12 @@ pub const FailureContext = struct {
 
 var last_failure_context = FailureContext{};
 
-pub fn resetLastFailureContext() void { last_failure_context = .{}; }
-pub fn lastFailureContext() FailureContext { return last_failure_context; }
+pub fn resetLastFailureContext() void {
+    last_failure_context = .{};
+}
+pub fn lastFailureContext() FailureContext {
+    return last_failure_context;
+}
 pub fn analyze(allocator: std.mem.Allocator, tree: *const Ast) !SemanticModule {
     resetLastFailureContext();
     var module = SemanticModule{
@@ -439,16 +443,16 @@ const Analyzer = struct {
             .switch_case => try self.analyze_stmt(node.data.lhs, body),
             .discard_stmt => {},
             .expr_stmt => _ = try self.analyze_expr(node.data.lhs, body),
-        .assign_stmt => {
-            const lhs_node = self.module.tree.nodes.items[node.data.lhs];
-            if (lhs_node.tag == .ident_expr and std.mem.eql(u8, self.module.tree.tokenSlice(lhs_node.main_token), "_")) {
-                _ = try self.analyze_expr(node.data.rhs, body);
-                self.module.node_info.items[node_idx].ty = self.module.void_type;
-                return;
-            }
-            const lhs_ty = try self.analyze_expr(node.data.lhs, body);
-            const lhs_info = self.module.node_info.items[node.data.lhs];
-            if (lhs_info.category != .ref) return error.InvalidWgsl;
+            .assign_stmt => {
+                const lhs_node = self.module.tree.nodes.items[node.data.lhs];
+                if (lhs_node.tag == .ident_expr and std.mem.eql(u8, self.module.tree.tokenSlice(lhs_node.main_token), "_")) {
+                    _ = try self.analyze_expr(node.data.rhs, body);
+                    self.module.node_info.items[node_idx].ty = self.module.void_type;
+                    return;
+                }
+                const lhs_ty = try self.analyze_expr(node.data.lhs, body);
+                const lhs_info = self.module.node_info.items[node.data.lhs];
+                if (lhs_info.category != .ref) return error.InvalidWgsl;
                 const rhs_ty = try self.analyze_expr(node.data.rhs, body);
                 if (!self.type_compatible(lhs_ty, rhs_ty)) return error.TypeMismatch;
                 self.module.node_info.items[node_idx].ty = lhs_ty;

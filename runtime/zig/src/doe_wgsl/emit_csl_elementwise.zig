@@ -64,8 +64,14 @@ fn emitElementWiseBody(buf: []u8, pos: *usize, module: *const ir.Module, functio
             var i: u32 = 0;
             while (i < range.len) : (i += 1) {
                 const child_id = function.stmt_children.items[range.start + i];
-                if (isSizeGuard(function, child_id)) { i += 1; continue; }
-                if (isGidLetBinding(function, child_id)) { i += 1; continue; }
+                if (isSizeGuard(function, child_id)) {
+                    i += 1;
+                    continue;
+                }
+                if (isGidLetBinding(function, child_id)) {
+                    i += 1;
+                    continue;
+                }
                 try walk.stmt(buf, pos, module, function, child_id, 2);
             }
         },

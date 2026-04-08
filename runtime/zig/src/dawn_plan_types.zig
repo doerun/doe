@@ -199,12 +199,12 @@ fn parseU32Array(allocator: Allocator, value: Json.Value) PlanLoadError![]u32 {
 }
 
 fn parseBufferWrite(allocator: Allocator, object: Json.ObjectMap) PlanLoadError!BufferWriteCommand {
-    const handle = try expectU64(try requiredField(object, &.{"handle", "resource_handle", "resourceHandle"}));
-    const offset = if (fieldValue(object, &.{"offset", "buffer_offset", "bufferOffset"})) |value|
+    const handle = try expectU64(try requiredField(object, &.{ "handle", "resource_handle", "resourceHandle" }));
+    const offset = if (fieldValue(object, &.{ "offset", "buffer_offset", "bufferOffset" })) |value|
         try expectU64(value)
     else
         0;
-    const buffer_size = if (fieldValue(object, &.{"bufferSize", "buffer_size"})) |value|
+    const buffer_size = if (fieldValue(object, &.{ "bufferSize", "buffer_size" })) |value|
         try expectU64(value)
     else
         0;
@@ -218,19 +218,19 @@ fn parseBufferWrite(allocator: Allocator, object: Json.ObjectMap) PlanLoadError!
 }
 
 fn parseBufferLoad(allocator: Allocator, object: Json.ObjectMap) PlanLoadError!BufferLoadCommand {
-    const handle = try expectU64(try requiredField(object, &.{"handle", "resource_handle", "resourceHandle"}));
-    const offset = if (fieldValue(object, &.{"offset", "buffer_offset", "bufferOffset"})) |value|
+    const handle = try expectU64(try requiredField(object, &.{ "handle", "resource_handle", "resourceHandle" }));
+    const offset = if (fieldValue(object, &.{ "offset", "buffer_offset", "bufferOffset" })) |value|
         try expectU64(value)
     else
         0;
-    const byte_length = try expectU64(try requiredField(object, &.{"byteLength", "byte_length", "bufferSize", "buffer_size"}));
-    const buffer_size = if (fieldValue(object, &.{"bufferSize", "buffer_size"})) |value|
+    const byte_length = try expectU64(try requiredField(object, &.{ "byteLength", "byte_length", "bufferSize", "buffer_size" }));
+    const buffer_size = if (fieldValue(object, &.{ "bufferSize", "buffer_size" })) |value|
         try expectU64(value)
     else
         byte_length;
-    const cache_namespace = try allocator.dupe(u8, try expectString(try requiredField(object, &.{"cacheNamespace", "cache_namespace"})));
-    const cache_key = try allocator.dupe(u8, try expectString(try requiredField(object, &.{"cacheKey", "cache_key"})));
-    const asset_key = if (try optionalString(object, &.{"assetKey", "asset_key"})) |value|
+    const cache_namespace = try allocator.dupe(u8, try expectString(try requiredField(object, &.{ "cacheNamespace", "cache_namespace" })));
+    const cache_key = try allocator.dupe(u8, try expectString(try requiredField(object, &.{ "cacheKey", "cache_key" })));
+    const asset_key = if (try optionalString(object, &.{ "assetKey", "asset_key" })) |value|
         try allocator.dupe(u8, value)
     else
         null;
@@ -259,13 +259,13 @@ fn parseKernelBinding(value: Json.Value) PlanLoadError!KernelBinding {
     }
 
     const binding = try expectU32(try requiredField(object, &.{"binding"}));
-    const group = if (fieldValue(object, &.{"group", "group_index", "groupIndex"})) |group_value|
+    const group = if (fieldValue(object, &.{ "group", "group_index", "groupIndex" })) |group_value|
         try expectU32(group_value)
     else
         0;
-    const resource_handle = try expectU64(try requiredField(object, &.{"resource_handle", "resourceHandle", "handle"}));
-    const buffer_size = try expectU64(try requiredField(object, &.{"buffer_size", "bufferSize"}));
-    const buffer_type_text = try expectString(try requiredField(object, &.{"buffer_type", "bufferType"}));
+    const resource_handle = try expectU64(try requiredField(object, &.{ "resource_handle", "resourceHandle", "handle" }));
+    const buffer_size = try expectU64(try requiredField(object, &.{ "buffer_size", "bufferSize" }));
+    const buffer_type_text = try expectString(try requiredField(object, &.{ "buffer_type", "bufferType" }));
     const buffer_type = try parseBufferBindingType(buffer_type_text);
 
     return .{
@@ -278,38 +278,35 @@ fn parseKernelBinding(value: Json.Value) PlanLoadError!KernelBinding {
 }
 
 fn parseKernelDispatch(allocator: Allocator, object: Json.ObjectMap) PlanLoadError!KernelDispatchCommand {
-    const kernel = try allocator.dupe(u8, try expectString(try requiredField(object, &.{"kernel", "kernel_name", "kernelName"})));
-    const entry_point = if (fieldValue(object, &.{"entry_point", "entryPoint"})) |value|
+    const kernel = try allocator.dupe(u8, try expectString(try requiredField(object, &.{ "kernel", "kernel_name", "kernelName" })));
+    const entry_point = if (fieldValue(object, &.{ "entry_point", "entryPoint" })) |value|
         try allocator.dupe(u8, try expectString(value))
     else
         try allocator.dupe(u8, "main");
 
     const x = if (fieldValue(object, &.{"x"})) |value|
         try expectU32(value)
-    else if (fieldValue(object, &.{"workgroupCount", "workgroups"})) |value| blk: {
+    else if (fieldValue(object, &.{ "workgroupCount", "workgroups" })) |value| blk: {
         const array = try expectArray(value);
         if (array.items.len != 3) return error.InvalidPlan;
         break :blk try expectU32(array.items[0]);
-    } else
-        0;
+    } else 0;
     const y = if (fieldValue(object, &.{"y"})) |value|
         try expectU32(value)
-    else if (fieldValue(object, &.{"workgroupCount", "workgroups"})) |value| blk: {
+    else if (fieldValue(object, &.{ "workgroupCount", "workgroups" })) |value| blk: {
         const array = try expectArray(value);
         if (array.items.len != 3) return error.InvalidPlan;
         break :blk try expectU32(array.items[1]);
-    } else
-        0;
+    } else 0;
     const z = if (fieldValue(object, &.{"z"})) |value|
         try expectU32(value)
-    else if (fieldValue(object, &.{"workgroupCount", "workgroups"})) |value| blk: {
+    else if (fieldValue(object, &.{ "workgroupCount", "workgroups" })) |value| blk: {
         const array = try expectArray(value);
         if (array.items.len != 3) return error.InvalidPlan;
         break :blk try expectU32(array.items[2]);
-    } else
-        0;
+    } else 0;
 
-    const initialize_buffers_on_create = if (fieldValue(object, &.{"initialize_buffers_on_create", "initializeBuffersOnCreate"})) |value|
+    const initialize_buffers_on_create = if (fieldValue(object, &.{ "initialize_buffers_on_create", "initializeBuffersOnCreate" })) |value|
         try expectBool(value)
     else
         false;

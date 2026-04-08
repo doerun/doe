@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Sequence
 
 from bench.lib import output_paths
+from bench.tools import generate_backend_workloads as generate_backend_workloads_mod
 from native_compare_modules import artifact_benchmarking as artifact_benchmarking_mod
 from native_compare_modules import comparability as comparability_mod
 from native_compare_modules import compare_from_artifacts as compare_from_artifacts_mod
@@ -25,6 +26,28 @@ CATALOG_PATH = (
     / "metadata"
     / "backend-workload-catalog.json"
 )
+REPO_ROOT = Path(__file__).resolve().parents[2]
+
+
+def workloads_path_is_stale(workloads_path: Path) -> bool:
+    if not CATALOG_PATH.exists() or not workloads_path.exists():
+        return False
+    catalog_mtime = os.path.getmtime(CATALOG_PATH)
+    workloads_mtime = os.path.getmtime(workloads_path)
+    if catalog_mtime <= workloads_mtime:
+        return False
+    try:
+        relative_path = workloads_path.resolve().relative_to(REPO_ROOT).as_posix()
+    except ValueError:
+        return True
+    catalog = generate_backend_workloads_mod.load_json(CATALOG_PATH)
+    for lane_id, lane_entry in catalog.get("laneOutputs", {}).items():
+        if lane_entry.get("outputPath") != relative_path:
+            continue
+        expected_payload = generate_backend_workloads_mod.materialize_lane(catalog, lane_id)
+        current_payload = generate_backend_workloads_mod.load_json(workloads_path)
+        return current_payload != expected_payload
+    return True
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -69,17 +92,14 @@ def main(argv: Sequence[str] | None = None) -> int:
         args.benchmark_policy
     )
     workloads_path = Path(args.workloads)
-    if CATALOG_PATH.exists() and workloads_path.exists():
-        catalog_mtime = os.path.getmtime(CATALOG_PATH)
-        workloads_mtime = os.path.getmtime(workloads_path)
-        if catalog_mtime > workloads_mtime:
-            print(
-                f"WARNING: {workloads_path.name} may be stale — "
-                "workloads/metadata/backend-workload-catalog.json was modified "
-                "more recently. Run: python3 "
-                "bench/tools/generate_backend_workloads.py",
-                file=sys.stderr,
-            )
+    if workloads_path_is_stale(workloads_path):
+        print(
+            f"WARNING: {workloads_path.name} may be stale — "
+            "workloads/metadata/backend-workload-catalog.json was modified "
+            "more recently. Run: python3 "
+            "bench/tools/generate_backend_workloads.py",
+            file=sys.stderr,
+        )
 
     workloads = config_support_mod.load_workloads(
         workloads_path,

@@ -56,6 +56,11 @@ fn read_indirect_dispatch_counts(buffer: *const DoeBuffer, offset: u64) ?[3]u32 
     const byte_offset: usize = @intCast(offset);
     const counts_bytes = 3 * @sizeOf(u32);
     if (byte_offset + counts_bytes > buffer.size) return null;
+    if (buffer.vk_mapped_ptr) |mapped_ptr| {
+        const base = mapped_ptr + byte_offset;
+        const ints: *align(1) const [3]u32 = @ptrCast(base);
+        return ints.*;
+    }
     const contents = metal_bridge_buffer_contents(buffer.mtl) orelse return null;
     const base = contents + byte_offset;
     const ints: *align(1) const [3]u32 = @ptrCast(base);
@@ -125,14 +130,10 @@ pub export fn doeNativeComputePassSetBindGroup(pass_raw: ?*anyopaque, index: u32
 
 pub export fn doeNativeComputePassDispatch(pass_raw: ?*anyopaque, x: u32, y: u32, z: u32) callconv(.c) void {
     const pass = cast(DoeComputePass, pass_raw) orelse return;
-    if (pass.enc.dev.backend == .vulkan) {
-        const vk_compute = @import("doe_vulkan_compute_native.zig");
-        vk_compute.vulkan_compute_pass_dispatch(pass, x, y, z);
-        return;
-    }
     const pip = pass.pipeline orelse return;
     if (!validate_dispatch_preconditions(pass, pip, .{ x, y, z })) return;
     var cmd = RecordedCmd{ .dispatch = .{
+        .compute_pipeline = toOpaque(pip),
         .pso = pip.mtl_pso,
         .needs_sizes_buf = pip.needs_sizes_buf,
         .bufs = [_]?*anyopaque{null} ** MAX_FLAT_BIND,
@@ -233,11 +234,6 @@ pub export fn doeNativeComputePipelineGetBindGroupLayout(pip_raw: ?*anyopaque, g
 
 pub export fn doeNativeComputePassDispatchIndirect(pass_raw: ?*anyopaque, buf_raw: ?*anyopaque, offset: u64) callconv(.c) void {
     const pass = cast(DoeComputePass, pass_raw) orelse return;
-    if (pass.enc.dev.backend == .vulkan) {
-        const vk_compute = @import("doe_vulkan_compute_native.zig");
-        vk_compute.vulkan_compute_pass_dispatch_indirect(pass, buf_raw, offset);
-        return;
-    }
     const pip = pass.pipeline orelse return;
     const indirect_buf = cast(DoeBuffer, buf_raw) orelse return;
     if (pip.dispatch_preconditions.len > 0) {
@@ -248,6 +244,7 @@ pub export fn doeNativeComputePassDispatchIndirect(pass_raw: ?*anyopaque, buf_ra
         if (!validate_dispatch_preconditions(pass, pip, counts)) return;
     }
     var cmd = RecordedCmd{ .dispatch_indirect = .{
+        .compute_pipeline = toOpaque(pip),
         .pso = pip.mtl_pso,
         .needs_sizes_buf = pip.needs_sizes_buf,
         .bufs = [_]?*anyopaque{null} ** MAX_FLAT_BIND,

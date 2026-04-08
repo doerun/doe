@@ -7,6 +7,8 @@ const trace = @import("trace.zig");
 const ESTIMATED_TRACE_ROW_BYTES: usize = 768;
 const ESTIMATED_PLAN_TRACE_ROW_BYTES: usize = 384;
 const FILE_WRITE_BUFFER_BYTES: usize = 64 * 1024;
+const COMPACT_UPLOAD_TRACE_FORMAT = "compact-upload-repeat-v1";
+const COMPACT_UPLOAD_DURATION_ROWS_SUFFIX = ".execution-duration-rows.json";
 
 pub const WriteTiming = struct {
     serialize_ns: u64 = 0,
@@ -90,6 +92,86 @@ pub fn writeBufferedPlanTraceRows(
     const flush_start_ns = nowNs();
     try file_writer.end();
     timing.write_ns += elapsedSince(flush_start_ns);
+    return timing;
+}
+
+pub fn writeCompactUploadTraceRows(
+    allocator: std.mem.Allocator,
+    path: []const u8,
+    module_name: []const u8,
+    row_total_ns: []const u64,
+) !WriteTiming {
+    const duration_rows_path = try std.mem.concat(
+        allocator,
+        u8,
+        &.{ path, COMPACT_UPLOAD_DURATION_ROWS_SUFFIX },
+    );
+    defer allocator.free(duration_rows_path);
+
+    var timing = WriteTiming{};
+
+    var sidecar_buffer = try std.ArrayList(u8).initCapacity(
+        allocator,
+        @max(@as(usize, 2), row_total_ns.len * 12),
+    );
+    defer sidecar_buffer.deinit(allocator);
+    const sidecar_serialize_start_ns = nowNs();
+    try sidecar_buffer.append(allocator, '[');
+    for (row_total_ns, 0..) |duration_ns, index| {
+        if (index > 0) try sidecar_buffer.append(allocator, ',');
+        try sidecar_buffer.writer(allocator).print("{}", .{duration_ns});
+    }
+    try sidecar_buffer.appendSlice(allocator, "]\n");
+    timing.serialize_ns += elapsedSince(sidecar_serialize_start_ns);
+
+    const sidecar_file = try std.fs.cwd().createFile(duration_rows_path, .{ .truncate = true });
+    defer sidecar_file.close();
+    const sidecar_write_start_ns = nowNs();
+    try sidecar_file.writeAll(sidecar_buffer.items);
+    timing.write_ns += elapsedSince(sidecar_write_start_ns);
+
+    var row_total_sum_ns: u64 = 0;
+    var row_total_min_ns: u64 = 0;
+    var row_total_max_ns: u64 = 0;
+    if (row_total_ns.len > 0) {
+        row_total_min_ns = row_total_ns[0];
+        row_total_max_ns = row_total_ns[0];
+        for (row_total_ns) |duration_ns| {
+            row_total_sum_ns +|= duration_ns;
+            row_total_min_ns = @min(row_total_min_ns, duration_ns);
+            row_total_max_ns = @max(row_total_max_ns, duration_ns);
+        }
+    }
+
+    var summary_row = try std.ArrayList(u8).initCapacity(allocator, ESTIMATED_PLAN_TRACE_ROW_BYTES);
+    defer summary_row.deinit(allocator);
+    const summary_serialize_start_ns = nowNs();
+    const summary_writer = summary_row.writer(allocator);
+    try summary_writer.writeAll("{\"traceVersion\":1,\"module\":");
+    try trace.writeJsonString(summary_writer, module_name);
+    try summary_writer.writeAll(",\"traceFormat\":");
+    try trace.writeJsonString(summary_writer, COMPACT_UPLOAD_TRACE_FORMAT);
+    try summary_writer.writeAll(",\"opCode\":\"upload\",\"command\":\"upload\"");
+    try summary_writer.print(
+        ",\"rowCount\":{},\"executionDurationRowCount\":{},\"executionDurationTotalNs\":{},\"executionDurationMinNs\":{},\"executionDurationMaxNs\":{},\"executionDurationRowsPath\":",
+        .{
+            row_total_ns.len,
+            row_total_ns.len,
+            row_total_sum_ns,
+            row_total_min_ns,
+            row_total_max_ns,
+        },
+    );
+    try trace.writeJsonString(summary_writer, duration_rows_path);
+    try summary_writer.writeAll("}\n");
+    timing.serialize_ns += elapsedSince(summary_serialize_start_ns);
+
+    const summary_file = try std.fs.cwd().createFile(path, .{ .truncate = true });
+    defer summary_file.close();
+    const summary_write_start_ns = nowNs();
+    try summary_file.writeAll(summary_row.items);
+    timing.write_ns += elapsedSince(summary_write_start_ns);
+
     return timing;
 }
 

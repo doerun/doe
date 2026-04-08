@@ -87,21 +87,21 @@ pub fn parse_access(name: []const u8) !ir.AccessMode {
 }
 
 pub fn parse_storage_texture_format(name: []const u8) !ir.TextureFormat {
-    if (std.mem.eql(u8, name, "rgba8unorm"))  return .rgba8unorm;
-    if (std.mem.eql(u8, name, "rgba8snorm"))  return .rgba8snorm;
-    if (std.mem.eql(u8, name, "rgba8uint"))   return .rgba8uint;
-    if (std.mem.eql(u8, name, "rgba8sint"))   return .rgba8sint;
-    if (std.mem.eql(u8, name, "rgba16uint"))  return .rgba16uint;
-    if (std.mem.eql(u8, name, "rgba16sint"))  return .rgba16sint;
+    if (std.mem.eql(u8, name, "rgba8unorm")) return .rgba8unorm;
+    if (std.mem.eql(u8, name, "rgba8snorm")) return .rgba8snorm;
+    if (std.mem.eql(u8, name, "rgba8uint")) return .rgba8uint;
+    if (std.mem.eql(u8, name, "rgba8sint")) return .rgba8sint;
+    if (std.mem.eql(u8, name, "rgba16uint")) return .rgba16uint;
+    if (std.mem.eql(u8, name, "rgba16sint")) return .rgba16sint;
     if (std.mem.eql(u8, name, "rgba16float")) return .rgba16float;
-    if (std.mem.eql(u8, name, "r32uint"))     return .r32uint;
-    if (std.mem.eql(u8, name, "r32sint"))     return .r32sint;
-    if (std.mem.eql(u8, name, "r32float"))    return .r32float;
-    if (std.mem.eql(u8, name, "rg32uint"))    return .rg32uint;
-    if (std.mem.eql(u8, name, "rg32sint"))    return .rg32sint;
-    if (std.mem.eql(u8, name, "rg32float"))   return .rg32float;
-    if (std.mem.eql(u8, name, "rgba32uint"))  return .rgba32uint;
-    if (std.mem.eql(u8, name, "rgba32sint"))  return .rgba32sint;
+    if (std.mem.eql(u8, name, "r32uint")) return .r32uint;
+    if (std.mem.eql(u8, name, "r32sint")) return .r32sint;
+    if (std.mem.eql(u8, name, "r32float")) return .r32float;
+    if (std.mem.eql(u8, name, "rg32uint")) return .rg32uint;
+    if (std.mem.eql(u8, name, "rg32sint")) return .rg32sint;
+    if (std.mem.eql(u8, name, "rg32float")) return .rg32float;
+    if (std.mem.eql(u8, name, "rgba32uint")) return .rgba32uint;
+    if (std.mem.eql(u8, name, "rgba32sint")) return .rgba32sint;
     if (std.mem.eql(u8, name, "rgba32float")) return .rgba32float;
     return error.InvalidAttribute;
 }

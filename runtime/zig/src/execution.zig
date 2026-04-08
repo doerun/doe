@@ -600,6 +600,7 @@ pub fn backendLaneName(lane: backend_policy.BackendLane) []const u8 {
         .metal_doe_release => "metal_doe_release",
         .metal_dawn_release => "metal_dawn_release",
         .metal_webkit_release => "metal_webkit_release",
+        .metal_webkit_comparable => "metal_webkit_comparable",
         .vulkan_doe_app => "vulkan_doe_app",
         .vulkan_doe_comparable => "vulkan_doe_comparable",
         .vulkan_doe_release => "vulkan_doe_release",

@@ -1,35 +1,62 @@
 // doe_vulkan_compute_native.zig — Vulkan-specific compute operations for the Doe native C ABI.
-// Routes shader module creation and compute dispatch through NativeVulkanRuntime when the
-// device backend is .vulkan. Commands execute immediately (no deferred batching).
+// Routes shader module creation through NativeVulkanRuntime when the device backend is
+// .vulkan. Queue submit replays recorded compute dispatches with Vulkan-native deferred
+// submission semantics.
 
 const builtin = @import("builtin");
 const has_vulkan = (builtin.os.tag == .linux);
 const std = @import("std");
 const doe_wgsl = @import("doe_wgsl/mod.zig");
 const runtime_compile = @import("doe_wgsl/runtime_compile.zig");
-const compute_preconditions = @import("doe_compute_preconditions_native.zig");
 const native_types = @import("doe_native_object_types.zig");
 const native_shared = @import("doe_native_shared_types.zig");
 const native_helpers = @import("doe_native_object_helpers.zig");
-const native_rt_helpers = @import("doe_native_runtime_helpers.zig");
 const model_compute_types = @import("model_compute_types.zig");
-const model_texture_types = @import("model_texture_value_types.zig");
 const model_binding_types = @import("model_binding_value_types.zig");
+const shader_native = @import("doe_shader_native.zig");
+const webgpu = @import("backend/runtime_types.zig");
 
 const alloc = native_helpers.alloc;
 const cast = native_helpers.cast;
-const device_vk_runtime = native_rt_helpers.device_vk_runtime;
 const MAX_COMPUTE_BIND_GROUPS = native_shared.MAX_COMPUTE_BIND_GROUPS;
 const MAX_BIND = native_shared.MAX_BIND;
 
 const NativeVulkanRuntime = native_shared.NativeVulkanRuntime;
 const DoeShaderModule = native_types.DoeShaderModule;
 const DoeComputePipeline = native_types.DoeComputePipeline;
-const DoeComputePass = native_types.DoeComputePass;
 const DoeBuffer = native_types.DoeBuffer;
-
 // Maximum KernelBinding slots: groups × bindings per group.
 const MAX_KERNEL_BINDINGS: usize = MAX_COMPUTE_BIND_GROUPS * MAX_BIND;
+
+const BINDING_KIND_BUFFER: u32 = @intFromEnum(doe_wgsl.BindingKind.buffer);
+const ADDRESS_SPACE_STORAGE: u32 = @intFromEnum(doe_wgsl.ir.AddressSpace.storage);
+const ADDRESS_SPACE_UNIFORM: u32 = @intFromEnum(doe_wgsl.ir.AddressSpace.uniform);
+const ACCESS_READ: u32 = @intFromEnum(doe_wgsl.ir.AccessMode.read);
+const ACCESS_READ_WRITE: u32 = @intFromEnum(doe_wgsl.ir.AccessMode.read_write);
+
+fn shader_buffer_binding_type(
+    shader_module: ?*DoeShaderModule,
+    group: u32,
+    binding: u32,
+) u32 {
+    const sm = shader_module orelse return model_binding_types.WGPUBufferBindingType_Storage;
+    shader_native.ensureShaderBindings(sm);
+    const binding_count: usize = @min(
+        @as(usize, @intCast(sm.binding_count)),
+        native_shared.MAX_SHADER_BINDINGS,
+    );
+    for (sm.bindings[0..binding_count]) |meta| {
+        if (meta.group != group or meta.binding != binding) continue;
+        if (meta.kind != BINDING_KIND_BUFFER) break;
+        if (meta.addr_space == ADDRESS_SPACE_UNIFORM) return model_binding_types.WGPUBufferBindingType_Uniform;
+        if (meta.addr_space == ADDRESS_SPACE_STORAGE and
+            meta.access == ACCESS_READ) return model_binding_types.WGPUBufferBindingType_ReadOnlyStorage;
+        if (meta.addr_space == ADDRESS_SPACE_STORAGE and
+            meta.access == ACCESS_READ_WRITE) return model_binding_types.WGPUBufferBindingType_Storage;
+        return model_binding_types.WGPUBufferBindingType_Storage;
+    }
+    return model_binding_types.WGPUBufferBindingType_Storage;
+}
 
 // ============================================================
 // Shader module — WGSL → SPIR-V
@@ -102,71 +129,59 @@ pub fn vulkan_release_compute_pipeline(pip: *DoeComputePipeline) void {
 }
 
 // ============================================================
-// Compute dispatch — immediate execution through NativeVulkanRuntime
+// Compute dispatch — queue submit replay through NativeVulkanRuntime
 // ============================================================
 
-/// Build a KernelBinding slice from the pass bind groups for the given pipeline.
+/// Build a KernelBinding slice from recorded flat buffer bindings for the given pipeline.
 /// Returns the number of bindings populated in out_bindings.
-fn collect_bindings(
-    pass: *const DoeComputePass,
+fn collect_recorded_bindings(
+    pip: *const DoeComputePipeline,
+    bufs: []const ?*anyopaque,
+    buf_sizes: []const u64,
     out_bindings: []model_compute_types.KernelBinding,
 ) usize {
     var count: usize = 0;
-    for (pass.bind_groups, 0..) |maybe_bg, group_i| {
-        const bg = maybe_bg orelse continue;
-        for (0..bg.count) |slot_i| {
-            const raw_ptr = bg.buffers[slot_i] orelse continue;
-            const buf = cast(DoeBuffer, raw_ptr) orelse continue;
-            if (buf.vk_id == 0) continue; // not a Vulkan buffer
-            if (count >= out_bindings.len) break;
-            out_bindings[count] = .{
-                .group = @intCast(group_i),
-                .binding = @intCast(slot_i),
-                .resource_kind = .buffer,
-                .resource_handle = buf.vk_id,
-                .buffer_offset = 0,
-                .buffer_size = model_texture_types.WGPUWholeSize,
-                .buffer_type = model_binding_types.WGPUBufferBindingType_Storage,
-            };
-            count += 1;
-        }
+    const shader_module = pip.shader_module;
+    for (bufs, 0..) |maybe_raw, slot| {
+        const raw_ptr = maybe_raw orelse continue;
+        const buf = cast(DoeBuffer, raw_ptr) orelse continue;
+        if (buf.vk_id == 0) continue;
+        if (count >= out_bindings.len) break;
+        const group_u32: u32 = @intCast(slot / MAX_BIND);
+        const binding_u32: u32 = @intCast(slot % MAX_BIND);
+        out_bindings[count] = .{
+            .group = group_u32,
+            .binding = binding_u32,
+            .resource_kind = .buffer,
+            .resource_handle = buf.vk_id,
+            .buffer_offset = 0,
+            .buffer_size = buf_sizes[slot],
+            .buffer_type = shader_buffer_binding_type(shader_module, group_u32, binding_u32),
+        };
+        count += 1;
     }
     return count;
 }
 
-/// Immediate Vulkan compute dispatch via NativeVulkanRuntime.
-/// Called from doe_compute_ext_native.zig when pass.enc.dev.backend == .vulkan.
-pub fn vulkan_compute_pass_dispatch(pass: *DoeComputePass, x: u32, y: u32, z: u32) void {
-    if (comptime !has_vulkan) return;
-    if (x == 0 or y == 0 or z == 0) {
-        std.log.err("doe_vulkan_compute: dispatch called with zero dimension ({},{},{})", .{ x, y, z });
-        return;
-    }
-    const rt = device_vk_runtime(pass.enc.dev) orelse {
-        std.log.err("doe_vulkan_compute: dispatch failed: no VulkanRuntime on device", .{});
-        return;
-    };
-    const pip = pass.pipeline orelse {
-        std.log.err("doe_vulkan_compute: dispatch failed: no pipeline set on compute pass", .{});
-        return;
+/// Replay a recorded compute dispatch through NativeVulkanRuntime at queue-submit time.
+pub fn vulkan_prepare_recorded_dispatch(rt: *NativeVulkanRuntime, dispatch: anytype) bool {
+    if (comptime !has_vulkan) return false;
+    const pip = cast(DoeComputePipeline, dispatch.compute_pipeline) orelse {
+        std.log.err("doe_vulkan_compute: recorded dispatch missing compute pipeline", .{});
+        return false;
     };
     const spirv = pip.spirv_data orelse {
-        std.log.err("doe_vulkan_compute: dispatch failed: pipeline has no SPIR-V data", .{});
-        return;
-    };
-    compute_preconditions.validate_bind_groups(
-        pip.dispatch_preconditions,
-        pip.texture_dispatch_preconditions,
-        pass.bind_groups[0..],
-        .{ x, y, z },
-        .{ pip.wg_x, pip.wg_y, pip.wg_z },
-    ) catch {
-        std.log.err("doe_vulkan_compute: dispatch precondition failed for proof-elided shader", .{});
-        return;
+        std.log.err("doe_vulkan_compute: recorded dispatch missing SPIR-V data", .{});
+        return false;
     };
 
     var binding_storage: [MAX_KERNEL_BINDINGS]model_compute_types.KernelBinding = undefined;
-    const binding_count = collect_bindings(pass, &binding_storage);
+    const binding_count = collect_recorded_bindings(
+        pip,
+        dispatch.bufs[0..dispatch.buf_count],
+        dispatch.buf_sizes[0..dispatch.buf_count],
+        &binding_storage,
+    );
     const bindings: ?[]const model_compute_types.KernelBinding = if (binding_count > 0)
         binding_storage[0..binding_count]
     else
@@ -174,87 +189,60 @@ pub fn vulkan_compute_pass_dispatch(pass: *DoeComputePass, x: u32, y: u32, z: u3
 
     rt.set_compute_shader_spirv(spirv, null, bindings, false) catch |err| {
         std.log.err("doe_vulkan_compute: set_compute_shader_spirv failed: {s}", .{@errorName(err)});
-        return;
+        return false;
     };
+    return true;
+}
 
-    const webgpu = @import("backend/runtime_types.zig");
+pub fn vulkan_run_prepared_dispatch(rt: *NativeVulkanRuntime, dispatch: anytype) void {
+    if (comptime !has_vulkan) return;
     _ = rt.run_dispatch(
-        x,
-        y,
-        z,
-        webgpu.QueueSyncMode.per_command,
+        dispatch.x,
+        dispatch.y,
+        dispatch.z,
+        webgpu.QueueSyncMode.deferred,
         webgpu.QueueWaitMode.process_events,
         webgpu.GpuTimestampMode.off,
     ) catch |err| {
-        std.log.err("doe_vulkan_compute: run_dispatch({},{},{}) failed: {s}", .{ x, y, z, @errorName(err) });
+        std.log.err("doe_vulkan_compute: recorded run_dispatch({},{},{}) failed: {s}", .{
+            dispatch.x,
+            dispatch.y,
+            dispatch.z,
+            @errorName(err),
+        });
         return;
     };
 }
 
-/// Immediate Vulkan indirect compute dispatch.
-/// Falls back to a direct dispatch (1,1,1) when indirect VkBuffer lookup fails.
-/// Called from doe_compute_ext_native.zig when pass.enc.dev.backend == .vulkan.
-pub fn vulkan_compute_pass_dispatch_indirect(
-    pass: *DoeComputePass,
-    buf_raw: ?*anyopaque,
-    offset: u64,
-) void {
+pub fn vulkan_submit_recorded_dispatch(rt: *NativeVulkanRuntime, dispatch: anytype) void {
+    if (!vulkan_prepare_recorded_dispatch(rt, dispatch)) return;
+    vulkan_run_prepared_dispatch(rt, dispatch);
+}
+
+/// Replay a recorded indirect compute dispatch through NativeVulkanRuntime at queue-submit time.
+pub fn vulkan_run_prepared_dispatch_indirect(rt: *NativeVulkanRuntime, dispatch: anytype) void {
     if (comptime !has_vulkan) return;
-    const rt = device_vk_runtime(pass.enc.dev) orelse {
-        std.log.err("doe_vulkan_compute: dispatch_indirect failed: no VulkanRuntime on device", .{});
-        return;
-    };
-    const pip = pass.pipeline orelse {
-        std.log.err("doe_vulkan_compute: dispatch_indirect failed: no pipeline set", .{});
-        return;
-    };
-    const spirv = pip.spirv_data orelse {
-        std.log.err("doe_vulkan_compute: dispatch_indirect failed: pipeline has no SPIR-V data", .{});
-        return;
-    };
-
-    var binding_storage: [MAX_KERNEL_BINDINGS]model_compute_types.KernelBinding = undefined;
-    const binding_count = collect_bindings(pass, &binding_storage);
-    const bindings: ?[]const model_compute_types.KernelBinding = if (binding_count > 0)
-        binding_storage[0..binding_count]
-    else
-        null;
-
-    rt.set_compute_shader_spirv(spirv, null, bindings, false) catch |err| {
-        std.log.err("doe_vulkan_compute: dispatch_indirect set_compute_shader_spirv failed: {s}", .{@errorName(err)});
-        return;
-    };
-
-    // Attempt true indirect dispatch when the indirect buffer is resolvable.
-    const indirect_dims = resolve_indirect_dims(rt, buf_raw, offset);
+    const indirect_dims = resolve_indirect_dims(rt, dispatch.indirect_buf, dispatch.offset);
     const x = indirect_dims[0];
     const y = indirect_dims[1];
     const z = indirect_dims[2];
     const dispatch_x: u32 = if (x > 0) x else 1;
     const dispatch_y: u32 = if (y > 0) y else 1;
     const dispatch_z: u32 = if (z > 0) z else 1;
-    compute_preconditions.validate_bind_groups(
-        pip.dispatch_preconditions,
-        pip.texture_dispatch_preconditions,
-        pass.bind_groups[0..],
-        .{ dispatch_x, dispatch_y, dispatch_z },
-        .{ pip.wg_x, pip.wg_y, pip.wg_z },
-    ) catch {
-        std.log.err("doe_vulkan_compute: indirect dispatch precondition failed for proof-elided shader", .{});
-        return;
-    };
-
-    const webgpu = @import("backend/runtime_types.zig");
-    _ = rt.run_dispatch(
+    _ = rt.run_dispatch_indirect(
         dispatch_x,
         dispatch_y,
         dispatch_z,
-        webgpu.QueueSyncMode.per_command,
+        webgpu.QueueSyncMode.deferred,
         webgpu.QueueWaitMode.process_events,
-        webgpu.GpuTimestampMode.off,
     ) catch |err| {
-        std.log.err("doe_vulkan_compute: dispatch_indirect run_dispatch failed: {s}", .{@errorName(err)});
+        std.log.err("doe_vulkan_compute: recorded dispatch_indirect failed: {s}", .{@errorName(err)});
     };
+}
+
+pub fn vulkan_submit_recorded_dispatch_indirect(rt: *NativeVulkanRuntime, dispatch: anytype) void {
+    if (!vulkan_prepare_recorded_dispatch(rt, dispatch)) return;
+    vulkan_run_prepared_dispatch_indirect(rt, dispatch);
 }
 
 // ============================================================

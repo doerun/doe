@@ -408,9 +408,9 @@ const FunctionBuilder = struct {
             const arg_node = self.tree.extra_data.items[node.data.lhs + i];
             const param_is_ref = callee_fn != null and i < callee_fn.?.params.items.len and
                 switch (self.semantic.types.get(callee_fn.?.params.items[i].ty)) {
-                .ref => true,
-                else => false,
-            };
+                    .ref => true,
+                    else => false,
+                };
             if (!is_constructor and kind == .builtin and i == 0 and (std.mem.startsWith(u8, name, "atomic") or std.mem.eql(u8, name, "arrayLength"))) {
                 // arrayLength(&buf) and atomic builtins may write &ref — unwrap & to get the ref.
                 const ref_node = blk: {
@@ -437,7 +437,6 @@ const FunctionBuilder = struct {
         }
         return .{ .call = .{ .name = try ir.dup_string(self.allocator, name), .kind = kind, .args = range } };
     }
-
 
     fn lower_generic_call(self: *FunctionBuilder, _: u32, node: Node) !ir.Expr {
         const name = self.tree.tokenSlice(node.main_token);

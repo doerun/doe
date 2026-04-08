@@ -142,14 +142,14 @@ pub fn hlsl_renamed_builtin(name: []const u8) ?[]const u8 {
 
 pub fn hlsl_builtin_passthrough(name: []const u8) bool {
     const list = [_][]const u8{
-        "abs",         "acos",      "asin",      "atan",       "atan2",
-        "ceil",        "clamp",     "cos",       "cosh",       "cross",
-        "determinant", "distance",  "dot",       "exp",        "exp2",
-        "floor",       "fma",       "ldexp",     "length",     "log",
-        "log2",        "max",       "min",       "normalize",  "pow",
-        "reflect",     "refract",   "round",     "saturate",   "sign",
-        "sin",         "sinh",      "smoothstep", "sqrt",      "step",
-        "tan",         "tanh",      "transpose", "trunc",
+        "abs",         "acos",     "asin",       "atan",      "atan2",
+        "ceil",        "clamp",    "cos",        "cosh",      "cross",
+        "determinant", "distance", "dot",        "exp",       "exp2",
+        "floor",       "fma",      "ldexp",      "length",    "log",
+        "log2",        "max",      "min",        "normalize", "pow",
+        "reflect",     "refract",  "round",      "saturate",  "sign",
+        "sin",         "sinh",     "smoothstep", "sqrt",      "step",
+        "tan",         "tanh",     "transpose",  "trunc",
     };
     inline for (list) |candidate| {
         if (std.mem.eql(u8, name, candidate)) return true;

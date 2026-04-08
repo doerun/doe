@@ -42,7 +42,7 @@ DEFAULT_LANE_OUTPUTS = OrderedDict(
             "amd_vulkan",
             {
                 "outputPath": "bench/workloads/workloads.amd.vulkan.json",
-                "sourceLane": "amd_vulkan_superset",
+                "sourceLane": "amd_vulkan_superset_native_supported",
                 "profile": "amd_vulkan",
             },
         ),

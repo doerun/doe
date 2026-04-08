@@ -120,13 +120,10 @@ pub const QueueInstance = struct {
             .graphics => METAL_QUEUE_PRIORITY_HIGH,
         };
         // Fall back to standard queue if priority variant unavailable.
-        const mtl_queue = metal_bridge_device_new_command_queue_with_priority(device, priority)
-            orelse metal_bridge_device_new_command_queue(device)
-            orelse return error.QueueNotReady;
+        const mtl_queue = metal_bridge_device_new_command_queue_with_priority(device, priority) orelse metal_bridge_device_new_command_queue(device) orelse return error.QueueNotReady;
         errdefer metal_bridge_release(mtl_queue);
 
-        const shared_event = metal_bridge_device_new_shared_event(device)
-            orelse return error.QueueNotReady;
+        const shared_event = metal_bridge_device_new_shared_event(device) orelse return error.QueueNotReady;
 
         var self = QueueInstance{
             .mtl_queue = mtl_queue,
@@ -226,8 +223,7 @@ pub const MultiQueueDevice = struct {
         const q = self.get_queue(queue_id) catch return error.InvalidQueueId;
         const mtl_queue = q.mtl_queue orelse return error.QueueNotReady;
 
-        const cmd_buf = metal_bridge_create_command_buffer(mtl_queue)
-            orelse return error.CommandBufferFailed;
+        const cmd_buf = metal_bridge_create_command_buffer(mtl_queue) orelse return error.CommandBufferFailed;
         defer metal_bridge_release(cmd_buf);
 
         // Encode waits for all upstream fence points before GPU work proceeds.

@@ -133,21 +133,21 @@ fn emit_function_decls(w: *bc.Writer, b: *const Builder) EmitError!void {
         //                        prologuedata, dllstorageclass, comdat, prefixdata,
         //                        personality]
         try w.emit_record(spec.ModuleCode.FUNCTION, &.{
-            func.type_index,          // type
-            0,                        // calling convention (default=0)
+            func.type_index, // type
+            0, // calling convention (default=0)
             @intFromBool(!func.is_definition), // isproto
-            func.linkage,             // linkage
-            0,                        // paramattr
-            0,                        // alignment
-            0,                        // section
-            0,                        // visibility (default)
-            0,                        // gc
-            0,                        // unnamed_addr
-            0,                        // prologuedata
-            0,                        // dllstorageclass
-            0,                        // comdat
-            0,                        // prefixdata
-            0,                        // personality
+            func.linkage, // linkage
+            0, // paramattr
+            0, // alignment
+            0, // section
+            0, // visibility (default)
+            0, // gc
+            0, // unnamed_addr
+            0, // prologuedata
+            0, // dllstorageclass
+            0, // comdat
+            0, // prefixdata
+            0, // personality
         });
     }
 }

@@ -3,7 +3,7 @@
     "amd_vulkan": {
       "outputPath": "bench/workloads/workloads.amd.vulkan.json",
       "profile": "amd_vulkan",
-      "sourceLane": "amd_vulkan_superset_native_supported"
+      "sourceLane": "amd_vulkan_superset"
     },
     "amd_vulkan_smoke": {
       "outputPath": "bench/workloads/workloads.amd.vulkan.smoke.json",
@@ -2723,8 +2723,7 @@
           "family": "gfx11",
           "quirksPath": "examples/quirks/amd_radv_noop_list.json",
           "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (baseline/comparison divisors fixed to 1.0).",
-          "vendor": "amd",
-          "applesToApplesVetted": true
+          "vendor": "amd"
         },
         "amd_vulkan_superset_native_supported": {
           "commandsPath": "examples/surface_presentation_commands.json",

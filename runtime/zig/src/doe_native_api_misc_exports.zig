@@ -15,10 +15,17 @@ pub const doeNativeExternalTextureRefresh = external_texture_native.doeNativeExt
 pub const doeNativeExternalTextureSetLabel = external_texture_native.doeNativeExternalTextureSetLabel;
 
 const adapter_info = @import("doe_adapter_info_native.zig");
+const shader_compilation_info = @import("doe_shader_compilation_info_native.zig");
+
+// Force both modules into the build so their exports are linked.
+comptime {
+    _ = adapter_info;
+    _ = shader_compilation_info;
+}
+
 pub const doeNativeAdapterGetInfo = adapter_info.doeNativeAdapterGetInfo;
 pub const doeNativeAdapterFreeInfo = adapter_info.doeNativeAdapterFreeInfo;
 
-const shader_compilation_info = @import("doe_shader_compilation_info_native.zig");
 pub const doeNativeShaderModuleGetCompilationInfo = shader_compilation_info.doeNativeShaderModuleGetCompilationInfo;
 
 pub const label_store = @import("doe_label_store.zig");

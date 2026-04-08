@@ -17,12 +17,16 @@
     "baseline_comparison_timing_selection_policy_match",
     "queue_sync_mode_match_applies",
     "baseline_comparison_queue_sync_mode_match",
+    "submit_scope_match_applies",
+    "baseline_comparison_submit_scope_match",
     "timing_phase_match_applies",
     "baseline_comparison_timing_phase_match",
     "execution_shape_match_applies",
     "baseline_comparison_execution_shape_match",
     "hardware_path_match_applies",
     "baseline_comparison_hardware_path_match",
+    "explicit_native_shader_artifact_match_applies",
+    "baseline_comparison_explicit_native_shader_artifact_match",
     "operation_timing_class_required",
     "baseline_native_operation_timing_for_webgpu_ffi",
     "upload_domain",
@@ -117,6 +121,12 @@
       "passesWhen": { "fact": "baseline_comparison_queue_sync_mode_match" }
     },
     {
+      "id": "baseline_comparison_submit_scope_match",
+      "blocking": true,
+      "applicableWhen": { "fact": "submit_scope_match_applies" },
+      "passesWhen": { "fact": "baseline_comparison_submit_scope_match" }
+    },
+    {
       "id": "baseline_comparison_timing_phase_match",
       "blocking": true,
       "applicableWhen": { "fact": "timing_phase_match_applies" },
@@ -133,6 +143,12 @@
       "blocking": true,
       "applicableWhen": { "fact": "hardware_path_match_applies" },
       "passesWhen": { "fact": "baseline_comparison_hardware_path_match" }
+    },
+    {
+      "id": "baseline_comparison_explicit_native_shader_artifact_match",
+      "blocking": true,
+      "applicableWhen": { "fact": "explicit_native_shader_artifact_match_applies" },
+      "passesWhen": { "fact": "baseline_comparison_explicit_native_shader_artifact_match" }
     },
     {
       "id": "baseline_native_operation_timing_for_webgpu_ffi",

@@ -306,17 +306,17 @@ fn is_subgroup_value_op(name: []const u8) bool {
 /// Math/comparison builtins that return the same type as their first argument.
 fn is_passthrough_math(name: []const u8) bool {
     const ops = [_][]const u8{
-        "min",                "max",             "clamp",            "select",      "abs",
-        "sqrt",               "sin",             "cos",              "normalize",   "length",
-        "distance",           "fract",           "mix",              "inverseSqrt", "degrees",
-        "radians",            "atan2",           "ldexp",            "fma",         "smoothstep",
-        "sign",               "floor",           "ceil",             "round",       "trunc",
-        "exp",                "exp2",            "log",              "log2",        "pow",
-        "step",               "tan",             "asin",             "acos",        "atan",
-        "sinh",               "cosh",            "tanh",             "saturate",    "dot",
-        "cross",              "faceForward",     "reflect",          "refract",     "modf",        "frexp",
-        "countOneBits",       "reverseBits",     "extractBits",      "insertBits",  "countLeadingZeros",
-        "countTrailingZeros", "firstLeadingBit", "firstTrailingBit",
+        "min",               "max",                "clamp",           "select",           "abs",
+        "sqrt",              "sin",                "cos",             "normalize",        "length",
+        "distance",          "fract",              "mix",             "inverseSqrt",      "degrees",
+        "radians",           "atan2",              "ldexp",           "fma",              "smoothstep",
+        "sign",              "floor",              "ceil",            "round",            "trunc",
+        "exp",               "exp2",               "log",             "log2",             "pow",
+        "step",              "tan",                "asin",            "acos",             "atan",
+        "sinh",              "cosh",               "tanh",            "saturate",         "dot",
+        "cross",             "faceForward",        "reflect",         "refract",          "modf",
+        "frexp",             "countOneBits",       "reverseBits",     "extractBits",      "insertBits",
+        "countLeadingZeros", "countTrailingZeros", "firstLeadingBit", "firstTrailingBit",
     };
     for (ops) |op| {
         if (std.mem.eql(u8, name, op)) return true;
@@ -350,9 +350,9 @@ fn is_unpack_4_builtin(name: []const u8) bool {
 
 fn is_derivative_builtin(name: []const u8) bool {
     const ops = [_][]const u8{
-        "dpdx",       "dpdxCoarse", "dpdxFine",
-        "dpdy",       "dpdyCoarse", "dpdyFine",
-        "fwidth",     "fwidthCoarse", "fwidthFine",
+        "dpdx",   "dpdxCoarse",   "dpdxFine",
+        "dpdy",   "dpdyCoarse",   "dpdyFine",
+        "fwidth", "fwidthCoarse", "fwidthFine",
     };
     for (ops) |op| {
         if (std.mem.eql(u8, name, op)) return true;

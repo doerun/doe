@@ -188,6 +188,7 @@ Comparable workloads (`comparable=true`) in strict mode must satisfy both:
 - `baseline_comparison_trace_meta_source_match`
 - `baseline_comparison_timing_selection_policy_match`
 - `baseline_comparison_queue_sync_mode_match`
+- `baseline_comparison_submit_scope_match`
 - `baseline_comparison_timing_phase_match`
 - `baseline_comparison_execution_shape_match`
 - `baseline_comparison_hardware_path_match`
@@ -398,6 +399,7 @@ python3 bench/vulkan_timing_policy_gate.py --report bench/out/<timestamp>/vulkan
 - Reporting subset counts without stating the workload source file/config.
 - Claiming speed when one side reports 0 dispatches while the other dispatches (broken comparison, not a speed win).
 - Claiming speed from zero-phase asymmetry (baseline submit_wait=0 while comparison submit_wait=40ms means the baseline did not measure GPU submission, not that it was faster).
+- Claiming speed from submit-scope asymmetry in package lanes (one side's `submit_wait` is dominated by retained replay/flush work while the peer measures real queue wait).
 - Treating universally-zero setup_ns on one side as genuine zero cost when the other side reports material setup. This is an instrumentation gap.
 - Presenting hardware-path shortcuts (UMA memset vs staging+copy) as general speed claims without transferability caveats.
 - Accepting aggregate "N/N claimable" without per-workload timing-phase audit. The metadata can pass while the actual work performed is structurally different.

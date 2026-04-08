@@ -1,6 +1,6 @@
 import Doe.Core.Model
 
-def comparabilityContractSha256 : String := "853bfa69636f8a03b0aca9b218be928bd42b7c86af37d1e67a954fb4a6513612"
+def comparabilityContractSha256 : String := "b4c4327fc41f6845c4ce0edc044126d2578c9ba355364c1306ec4686eef40269"
 
 inductive ComparabilityObligationId where
   | workloadMarkedComparable
@@ -10,33 +10,35 @@ inductive ComparabilityObligationId where
   | rightSingleTimingClass
   | leftRequiredTimingClass
   | rightRequiredTimingClass
-  | leftRightTimingClassMatch
-  | leftRightTraceMetaSourceMatch
-  | leftRightTimingSelectionPolicyMatch
-  | leftRightQueueSyncModeMatch
-  | leftRightTimingPhaseMatch
-  | leftRightExecutionShapeMatch
-  | leftRightHardwarePathMatch
-  | leftNativeOperationTimingForWebgpuFfi
-  | leftUploadIgnoreFirstScopeConsistent
-  | rightUploadIgnoreFirstScopeConsistent
-  | leftRightUploadBufferUsageMatch
-  | leftRightUploadSubmitCadenceMatch
-  | leftExecutionEvidencePresent
-  | leftSuccessfulExecutionPresent
-  | leftSuccessOrUnsupportedOrSkipped
-  | leftExecutionErrorsAbsent
-  | rightExecutionErrorsAbsent
-  | leftRightTimingPlausibility
-  | leftResourceProbeAvailable
-  | rightResourceProbeAvailable
+  | baselineComparisonTimingClassMatch
+  | baselineComparisonTraceMetaSourceMatch
+  | baselineComparisonTimingSelectionPolicyMatch
+  | baselineComparisonQueueSyncModeMatch
+  | baselineComparisonSubmitScopeMatch
+  | baselineComparisonTimingPhaseMatch
+  | baselineComparisonExecutionShapeMatch
+  | baselineComparisonHardwarePathMatch
+  | baselineComparisonExplicitNativeShaderArtifactMatch
+  | baselineNativeOperationTimingForWebgpuFfi
+  | baselineUploadIgnoreFirstScopeConsistent
+  | comparisonUploadIgnoreFirstScopeConsistent
+  | baselineComparisonUploadBufferUsageMatch
+  | baselineComparisonUploadSubmitCadenceMatch
+  | baselineExecutionEvidencePresent
+  | baselineSuccessfulExecutionPresent
+  | baselineSuccessOrUnsupportedOrSkipped
+  | baselineExecutionErrorsAbsent
+  | comparisonExecutionErrorsAbsent
+  | baselineComparisonTimingPlausibility
+  | baselineResourceProbeAvailable
+  | comparisonResourceProbeAvailable
   | strictResourceSampleTargetPositive
-  | leftResourceSampleTargetMatch
-  | rightResourceSampleTargetMatch
-  | leftResourceSamplingNotTruncated
-  | rightResourceSamplingNotTruncated
-  | leftResourceSampleDensitySufficient
-  | rightResourceSampleDensitySufficient
+  | baselineResourceSampleTargetMatch
+  | comparisonResourceSampleTargetMatch
+  | baselineResourceSamplingNotTruncated
+  | comparisonResourceSamplingNotTruncated
+  | baselineResourceSampleDensitySufficient
+  | comparisonResourceSampleDensitySufficient
   deriving Repr, DecidableEq
 
 structure ComparabilityObligation where
@@ -65,44 +67,48 @@ structure ComparabilityFacts where
   leftRequiredTimingClass : Bool
   rightRequiredTimingClass : Bool
   timingClassMatchApplies : Bool
-  leftRightTimingClassMatch : Bool
+  baselineComparisonTimingClassMatch : Bool
   traceMetaSourceMatchApplies : Bool
-  leftRightTraceMetaSourceMatch : Bool
+  baselineComparisonTraceMetaSourceMatch : Bool
   timingSelectionPolicyMatchApplies : Bool
-  leftRightTimingSelectionPolicyMatch : Bool
+  baselineComparisonTimingSelectionPolicyMatch : Bool
   queueSyncModeMatchApplies : Bool
-  leftRightQueueSyncModeMatch : Bool
+  baselineComparisonQueueSyncModeMatch : Bool
+  submitScopeMatchApplies : Bool
+  baselineComparisonSubmitScopeMatch : Bool
   timingPhaseMatchApplies : Bool
-  leftRightTimingPhaseMatch : Bool
+  baselineComparisonTimingPhaseMatch : Bool
   executionShapeMatchApplies : Bool
-  leftRightExecutionShapeMatch : Bool
+  baselineComparisonExecutionShapeMatch : Bool
   hardwarePathMatchApplies : Bool
-  leftRightHardwarePathMatch : Bool
+  baselineComparisonHardwarePathMatch : Bool
+  explicitNativeShaderArtifactMatchApplies : Bool
+  baselineComparisonExplicitNativeShaderArtifactMatch : Bool
   operationTimingClassRequired : Bool
-  leftNativeOperationTimingForWebgpuFfi : Bool
+  baselineNativeOperationTimingForWebgpuFfi : Bool
   uploadDomain : Bool
-  leftUploadIgnoreFirstScopeConsistent : Bool
-  rightUploadIgnoreFirstScopeConsistent : Bool
-  leftRightUploadBufferUsageMatch : Bool
-  leftRightUploadSubmitCadenceMatch : Bool
-  allowLeftNoExecution : Bool
-  leftExecutionEvidencePresent : Bool
-  leftSuccessfulExecutionPresent : Bool
-  leftSuccessOrUnsupportedOrSkipped : Bool
-  leftExecutionErrorsAbsent : Bool
-  rightExecutionErrorsAbsent : Bool
-  leftRightTimingPlausibility : Bool
+  baselineUploadIgnoreFirstScopeConsistent : Bool
+  comparisonUploadIgnoreFirstScopeConsistent : Bool
+  baselineComparisonUploadBufferUsageMatch : Bool
+  baselineComparisonUploadSubmitCadenceMatch : Bool
+  allowBaselineNoExecution : Bool
+  baselineExecutionEvidencePresent : Bool
+  baselineSuccessfulExecutionPresent : Bool
+  baselineSuccessOrUnsupportedOrSkipped : Bool
+  baselineExecutionErrorsAbsent : Bool
+  comparisonExecutionErrorsAbsent : Bool
+  baselineComparisonTimingPlausibility : Bool
   resourceProbeEnabled : Bool
-  leftResourceProbeAvailable : Bool
-  rightResourceProbeAvailable : Bool
+  baselineResourceProbeAvailable : Bool
+  comparisonResourceProbeAvailable : Bool
   strictComparability : Bool
   resourceSampleTargetPositive : Bool
-  leftResourceSampleTargetMatch : Bool
-  rightResourceSampleTargetMatch : Bool
-  leftResourceSamplingNotTruncated : Bool
-  rightResourceSamplingNotTruncated : Bool
-  leftResourceSampleDensitySufficient : Bool
-  rightResourceSampleDensitySufficient : Bool
+  baselineResourceSampleTargetMatch : Bool
+  comparisonResourceSampleTargetMatch : Bool
+  baselineResourceSamplingNotTruncated : Bool
+  comparisonResourceSamplingNotTruncated : Bool
+  baselineResourceSampleDensitySufficient : Bool
+  comparisonResourceSampleDensitySufficient : Bool
   deriving Repr, DecidableEq
 
 def obligationsFromFacts (facts : ComparabilityFacts) : List ComparabilityObligation :=
@@ -135,114 +141,122 @@ def obligationsFromFacts (facts : ComparabilityFacts) : List ComparabilityObliga
       blocking := true
       applicable := facts.requiredTimingClassApplies
       passes := facts.rightRequiredTimingClass },
-    { id := .leftRightTimingClassMatch
+    { id := .baselineComparisonTimingClassMatch
       blocking := true
       applicable := facts.timingClassMatchApplies
-      passes := facts.leftRightTimingClassMatch },
-    { id := .leftRightTraceMetaSourceMatch
+      passes := facts.baselineComparisonTimingClassMatch },
+    { id := .baselineComparisonTraceMetaSourceMatch
       blocking := true
       applicable := facts.traceMetaSourceMatchApplies
-      passes := facts.leftRightTraceMetaSourceMatch },
-    { id := .leftRightTimingSelectionPolicyMatch
+      passes := facts.baselineComparisonTraceMetaSourceMatch },
+    { id := .baselineComparisonTimingSelectionPolicyMatch
       blocking := true
       applicable := facts.timingSelectionPolicyMatchApplies
-      passes := facts.leftRightTimingSelectionPolicyMatch },
-    { id := .leftRightQueueSyncModeMatch
+      passes := facts.baselineComparisonTimingSelectionPolicyMatch },
+    { id := .baselineComparisonQueueSyncModeMatch
       blocking := true
       applicable := facts.queueSyncModeMatchApplies
-      passes := facts.leftRightQueueSyncModeMatch },
-    { id := .leftRightTimingPhaseMatch
+      passes := facts.baselineComparisonQueueSyncModeMatch },
+    { id := .baselineComparisonSubmitScopeMatch
+      blocking := true
+      applicable := facts.submitScopeMatchApplies
+      passes := facts.baselineComparisonSubmitScopeMatch },
+    { id := .baselineComparisonTimingPhaseMatch
       blocking := true
       applicable := facts.timingPhaseMatchApplies
-      passes := facts.leftRightTimingPhaseMatch },
-    { id := .leftRightExecutionShapeMatch
+      passes := facts.baselineComparisonTimingPhaseMatch },
+    { id := .baselineComparisonExecutionShapeMatch
       blocking := true
       applicable := facts.executionShapeMatchApplies
-      passes := facts.leftRightExecutionShapeMatch },
-    { id := .leftRightHardwarePathMatch
+      passes := facts.baselineComparisonExecutionShapeMatch },
+    { id := .baselineComparisonHardwarePathMatch
       blocking := true
       applicable := facts.hardwarePathMatchApplies
-      passes := facts.leftRightHardwarePathMatch },
-    { id := .leftNativeOperationTimingForWebgpuFfi
+      passes := facts.baselineComparisonHardwarePathMatch },
+    { id := .baselineComparisonExplicitNativeShaderArtifactMatch
+      blocking := true
+      applicable := facts.explicitNativeShaderArtifactMatchApplies
+      passes := facts.baselineComparisonExplicitNativeShaderArtifactMatch },
+    { id := .baselineNativeOperationTimingForWebgpuFfi
       blocking := true
       applicable := facts.operationTimingClassRequired
-      passes := facts.leftNativeOperationTimingForWebgpuFfi },
-    { id := .leftUploadIgnoreFirstScopeConsistent
+      passes := facts.baselineNativeOperationTimingForWebgpuFfi },
+    { id := .baselineUploadIgnoreFirstScopeConsistent
       blocking := true
       applicable := facts.uploadDomain
-      passes := facts.leftUploadIgnoreFirstScopeConsistent },
-    { id := .rightUploadIgnoreFirstScopeConsistent
+      passes := facts.baselineUploadIgnoreFirstScopeConsistent },
+    { id := .comparisonUploadIgnoreFirstScopeConsistent
       blocking := true
       applicable := facts.uploadDomain
-      passes := facts.rightUploadIgnoreFirstScopeConsistent },
-    { id := .leftRightUploadBufferUsageMatch
+      passes := facts.comparisonUploadIgnoreFirstScopeConsistent },
+    { id := .baselineComparisonUploadBufferUsageMatch
       blocking := true
       applicable := facts.uploadDomain
-      passes := facts.leftRightUploadBufferUsageMatch },
-    { id := .leftRightUploadSubmitCadenceMatch
+      passes := facts.baselineComparisonUploadBufferUsageMatch },
+    { id := .baselineComparisonUploadSubmitCadenceMatch
       blocking := true
       applicable := facts.uploadDomain
-      passes := facts.leftRightUploadSubmitCadenceMatch },
-    { id := .leftExecutionEvidencePresent
+      passes := facts.baselineComparisonUploadSubmitCadenceMatch },
+    { id := .baselineExecutionEvidencePresent
       blocking := true
-      applicable := !(facts.allowLeftNoExecution)
-      passes := facts.leftExecutionEvidencePresent },
-    { id := .leftSuccessfulExecutionPresent
+      applicable := !(facts.allowBaselineNoExecution)
+      passes := facts.baselineExecutionEvidencePresent },
+    { id := .baselineSuccessfulExecutionPresent
       blocking := true
-      applicable := !(facts.allowLeftNoExecution)
-      passes := facts.leftSuccessfulExecutionPresent },
-    { id := .leftSuccessOrUnsupportedOrSkipped
+      applicable := !(facts.allowBaselineNoExecution)
+      passes := facts.baselineSuccessfulExecutionPresent },
+    { id := .baselineSuccessOrUnsupportedOrSkipped
       blocking := true
-      applicable := facts.allowLeftNoExecution
-      passes := facts.leftSuccessOrUnsupportedOrSkipped },
-    { id := .leftExecutionErrorsAbsent
+      applicable := facts.allowBaselineNoExecution
+      passes := facts.baselineSuccessOrUnsupportedOrSkipped },
+    { id := .baselineExecutionErrorsAbsent
       blocking := true
       applicable := true
-      passes := facts.leftExecutionErrorsAbsent },
-    { id := .rightExecutionErrorsAbsent
+      passes := facts.baselineExecutionErrorsAbsent },
+    { id := .comparisonExecutionErrorsAbsent
       blocking := true
       applicable := true
-      passes := facts.rightExecutionErrorsAbsent },
-    { id := .leftRightTimingPlausibility
+      passes := facts.comparisonExecutionErrorsAbsent },
+    { id := .baselineComparisonTimingPlausibility
       blocking := true
       applicable := true
-      passes := facts.leftRightTimingPlausibility },
-    { id := .leftResourceProbeAvailable
+      passes := facts.baselineComparisonTimingPlausibility },
+    { id := .baselineResourceProbeAvailable
       blocking := true
       applicable := facts.resourceProbeEnabled
-      passes := facts.leftResourceProbeAvailable },
-    { id := .rightResourceProbeAvailable
+      passes := facts.baselineResourceProbeAvailable },
+    { id := .comparisonResourceProbeAvailable
       blocking := true
       applicable := facts.resourceProbeEnabled
-      passes := facts.rightResourceProbeAvailable },
+      passes := facts.comparisonResourceProbeAvailable },
     { id := .strictResourceSampleTargetPositive
       blocking := true
       applicable := (facts.resourceProbeEnabled) && (facts.strictComparability)
       passes := facts.resourceSampleTargetPositive },
-    { id := .leftResourceSampleTargetMatch
+    { id := .baselineResourceSampleTargetMatch
       blocking := true
       applicable := (facts.resourceProbeEnabled) && (facts.strictComparability) && (facts.resourceSampleTargetPositive)
-      passes := facts.leftResourceSampleTargetMatch },
-    { id := .rightResourceSampleTargetMatch
+      passes := facts.baselineResourceSampleTargetMatch },
+    { id := .comparisonResourceSampleTargetMatch
       blocking := true
       applicable := (facts.resourceProbeEnabled) && (facts.strictComparability) && (facts.resourceSampleTargetPositive)
-      passes := facts.rightResourceSampleTargetMatch },
-    { id := .leftResourceSamplingNotTruncated
+      passes := facts.comparisonResourceSampleTargetMatch },
+    { id := .baselineResourceSamplingNotTruncated
       blocking := true
       applicable := (facts.resourceProbeEnabled) && (facts.strictComparability) && (facts.resourceSampleTargetPositive)
-      passes := facts.leftResourceSamplingNotTruncated },
-    { id := .rightResourceSamplingNotTruncated
+      passes := facts.baselineResourceSamplingNotTruncated },
+    { id := .comparisonResourceSamplingNotTruncated
       blocking := true
       applicable := (facts.resourceProbeEnabled) && (facts.strictComparability) && (facts.resourceSampleTargetPositive)
-      passes := facts.rightResourceSamplingNotTruncated },
-    { id := .leftResourceSampleDensitySufficient
+      passes := facts.comparisonResourceSamplingNotTruncated },
+    { id := .baselineResourceSampleDensitySufficient
       blocking := true
       applicable := (facts.resourceProbeEnabled) && (!(facts.strictComparability))
-      passes := facts.leftResourceSampleDensitySufficient },
-    { id := .rightResourceSampleDensitySufficient
+      passes := facts.baselineResourceSampleDensitySufficient },
+    { id := .comparisonResourceSampleDensitySufficient
       blocking := true
       applicable := (facts.resourceProbeEnabled) && (!(facts.strictComparability))
-      passes := facts.rightResourceSampleDensitySufficient }
+      passes := facts.comparisonResourceSampleDensitySufficient }
   ]
 
 def comparableFromFacts (facts : ComparabilityFacts) : Bool :=

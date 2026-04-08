@@ -30,7 +30,7 @@ const WGPU_POWER_PREF_HIGH_PERFORMANCE: u32 = 2;
 pub const AdapterType = enum(u32) {
     discrete_gpu = 0,
     integrated_gpu = 1,
-    cpu = 2,      // software renderer
+    cpu = 2, // software renderer
     unknown = 3,
 };
 
@@ -170,10 +170,10 @@ fn classify_adapter_type(is_low_power: bool, is_removable: bool) AdapterType {
 fn fill_vendor_from_name(info: *DoeAdapterInfo) void {
     const name_slice = info.name[0..info.name_len];
     const known_vendors = [_]struct { needle: []const u8, vendor: []const u8 }{
-        .{ .needle = "Apple",  .vendor = "apple"  },
-        .{ .needle = "AMD",    .vendor = "amd"    },
+        .{ .needle = "Apple", .vendor = "apple" },
+        .{ .needle = "AMD", .vendor = "amd" },
         .{ .needle = "NVIDIA", .vendor = "nvidia" },
-        .{ .needle = "Intel",  .vendor = "intel"  },
+        .{ .needle = "Intel", .vendor = "intel" },
     };
     for (known_vendors) |kv| {
         if (std.mem.containsAtLeast(u8, name_slice, 1, kv.needle)) {
@@ -218,10 +218,10 @@ pub fn select_adapter(list: *const DoeAdapterList, opts: AdapterOptions) ?usize 
     for (list.items[0..list.count], 0..) |*info, i| {
         var score: i32 = 0;
         switch (info.adapter_type) {
-            .discrete_gpu  => score += 100,
+            .discrete_gpu => score += 100,
             .integrated_gpu => score += 50,
-            .cpu            => score -= 50,
-            .unknown        => {},
+            .cpu => score -= 50,
+            .unknown => {},
         }
         // Removable GPUs (eGPUs) get a slight penalty to avoid selecting them by default.
         if (info.is_removable) score -= 10;

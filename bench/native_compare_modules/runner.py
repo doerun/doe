@@ -470,7 +470,11 @@ def command_for(
         "extra_args": shlex.join(extra_args),
     }
     resolved = template.format(**ctx)
-    return shlex.split(resolved)
+    command = shlex.split(resolved)
+    is_doe_runtime = any(part.endswith("doe-zig-runtime") for part in command)
+    if is_doe_runtime and "--trace-jsonl" in command and "--trace" in command:
+        command = [part for part in command if part != "--trace"]
+    return command
 
 def max_rss_time_prefix() -> tuple[str, ...]:
     gtime_bin = shutil.which("gtime")
@@ -676,11 +680,22 @@ def run_workload(
     emit_shell: bool,
 ) -> dict[str, Any]:
     out_dir.mkdir(parents=True, exist_ok=True)
-    commands_path = materialize_repeated_commands(
-        workload.commands_path,
-        repeat=command_repeat,
-        out_dir=out_dir,
-        side_name=name,
+    is_doe_runtime = "doe-zig-runtime" in template
+    use_structural_command_repeat = (
+        is_doe_runtime
+        and command_repeat > 1
+        and bool(workload.commands_path)
+        and not getattr(workload, "plan_path", "")
+    )
+    commands_path = (
+        workload.commands_path
+        if use_structural_command_repeat
+        else materialize_repeated_commands(
+            workload.commands_path,
+            repeat=command_repeat,
+            out_dir=out_dir,
+            side_name=name,
+        )
     )
     plan_path = materialize_repeated_plan(
         getattr(workload, "plan_path", ""),
@@ -695,6 +710,8 @@ def run_workload(
     sample_meta: dict[str, Any] = {}
     last_meta = {}
     effective_extra_args = list(workload.extra_args)
+    if use_structural_command_repeat:
+        effective_extra_args.extend(["--command-repeat", str(command_repeat)])
     if inject_upload_runtime_flags and workload.domain == "upload" and "doe-zig-runtime" in template:
         effective_extra_args.extend(
             [
@@ -708,7 +725,6 @@ def run_workload(
     for i, arg in enumerate(workload.extra_args):
         if arg == "--queue-sync-mode" and i + 1 < len(workload.extra_args):
             queue_sync_mode = workload.extra_args[i + 1]
-    is_doe_runtime = "doe-zig-runtime" in template
 
     strict_runtime_preflight = (
         (not emit_shell)

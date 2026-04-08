@@ -74,6 +74,8 @@ pub const NativeVulkanRuntime = struct {
     current_pipeline_hash: u64 = 0,
     current_layout_hash: u64 = 0,
     current_entry_point_owned: ?[:0]u8 = null,
+    retired_pipeline_states: std.ArrayListUnmanaged(vk_pipeline.RetiredPipelineState) = .{},
+    retired_descriptor_states: std.ArrayListUnmanaged(vk_pipeline.RetiredDescriptorState) = .{},
     fast_upload_buffer: c.VkBuffer = VK_NULL_U64,
     fast_upload_memory: c.VkDeviceMemory = VK_NULL_U64,
     fast_upload_capacity: u64 = 0,
@@ -111,6 +113,7 @@ pub const NativeVulkanRuntime = struct {
     has_descriptor_pool: bool = false,
     has_deferred_submissions: bool = false,
     has_depth_clip_enable_ext: bool = false,
+    recorded_submit_replay_active: bool = false,
     upload_recording_active: bool = false,
 
     pub fn init(allocator: std.mem.Allocator, kernel_root: ?[]const u8) !NativeVulkanRuntime {
@@ -122,8 +125,11 @@ pub const NativeVulkanRuntime = struct {
 
     pub fn deinit(self: *NativeVulkanRuntime) void {
         _ = self.flush_queue() catch {};
+        vk_pipeline.release_retired_states(self);
         vk_upload.release_pending_uploads(self);
         self.pending_uploads.deinit(self.allocator);
+        self.retired_pipeline_states.deinit(self.allocator);
+        self.retired_descriptor_states.deinit(self.allocator);
         surface_ops.release_all_surfaces(self);
         vk_upload.release_pool_entry(self.device, self.hot_src_pool_entry);
         vk_upload.release_pool_entry(self.device, self.hot_dst_pool_entry);
@@ -514,7 +520,9 @@ pub const NativeVulkanRuntime = struct {
     // --- Queue management ---
 
     pub fn flush_queue(self: *NativeVulkanRuntime) !u64 {
-        return vk_upload.flush_queue(self);
+        const waited_ns = try vk_upload.flush_queue(self);
+        vk_pipeline.release_retired_states(self);
+        return waited_ns;
     }
 
     // --- Streaming copy API ---
@@ -547,6 +555,26 @@ pub const NativeVulkanRuntime = struct {
             max_upload_bytes
         else
             @min(max_upload_bytes, vk_upload.MAX_UPLOAD_BYTES);
+        switch (vk_upload.classify_upload_path(upload_path_policy, mode, prewarm_bytes)) {
+            .fast_mapped => {
+                try vk_upload.ensure_fast_upload_buffer(self, prewarm_bytes);
+                if (self.fast_upload_mapped) |raw| {
+                    const fill_len = vk_upload.bounded_upload_fill_len(prewarm_bytes);
+                    @memset(@as([*]u8, @ptrCast(raw))[0..fill_len], 0);
+                }
+                return;
+            },
+            .direct_mapped => {
+                const dst_usage: u32 = switch (mode) {
+                    .copy_dst_copy_src => c.VK_BUFFER_USAGE_TRANSFER_DST_BIT | c.VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                    .copy_dst => c.VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                };
+                if (try vk_upload.try_direct_upload(self, prewarm_bytes, dst_usage)) {
+                    return;
+                }
+            },
+            .staged_copy => {},
+        }
         try self.upload_bytes(prewarm_bytes, mode, upload_path_policy);
         _ = try self.flush_queue();
     }

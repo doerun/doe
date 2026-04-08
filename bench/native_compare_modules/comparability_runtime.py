@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import statistics
 import subprocess
 from pathlib import Path
@@ -29,6 +30,24 @@ from native_compare_modules.comparability_upload_contract import (
 )
 from native_compare_modules.reporting import parse_int, safe_float, safe_int, valid_sync_mode
 from native_compare_modules.timing_selection import canonical_timing_source, classify_timing_source
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+_PACKAGE_EXECUTION_BACKENDS = frozenset({
+    "node_webgpu_package",
+    "doe_node_webgpu",
+    "bun_webgpu_package",
+    "doe_bun_package",
+})
+_NATIVE_VULKAN_EXECUTION_BACKENDS = frozenset({
+    "doe_vulkan",
+    "dawn_delegate",
+})
+_DEFAULT_COMPARE_KERNEL_ROOT = REPO_ROOT / "bench" / "kernels"
+_PACKAGE_SUBMIT_SCOPE_FIELDS: tuple[tuple[str, str], ...] = (
+    ("addonCommandReplay", "submitAddonCommandReplayTotalNs"),
+    ("addonFlush", "submitAddonFlushTotalNs"),
+    ("queueWait", "submitQueueWaitTotalNs"),
+)
 
 
 def _sample_normalized_wall_ms(sample: dict[str, Any]) -> float | None:
@@ -121,11 +140,208 @@ def assess_timing_phase_equivalence(
     return applies, len(mismatches) == 0, details, "; ".join(mismatches)
 
 
+def assess_submit_scope_equivalence(
+    *,
+    left_command_samples: list[dict[str, Any]],
+    right_command_samples: list[dict[str, Any]],
+) -> tuple[bool, bool, dict[str, Any], str]:
+    def collect_scope_fractions(
+        command_samples: list[dict[str, Any]],
+    ) -> tuple[dict[str, list[float]], int]:
+        fractions: dict[str, list[float]] = {
+            scope_key: [] for scope_key, _ in _PACKAGE_SUBMIT_SCOPE_FIELDS
+        }
+        sample_count = 0
+        for sample in command_samples:
+            if not isinstance(sample, dict):
+                continue
+            trace_meta = sample.get("traceMeta", {})
+            if not isinstance(trace_meta, dict):
+                continue
+            submit_wait_total = safe_int(trace_meta.get("executionSubmitWaitTotalNs"), default=0)
+            breakdown = trace_meta.get("packageStepBreakdownNs")
+            if submit_wait_total <= 0 or not isinstance(breakdown, dict):
+                continue
+            sample_count += 1
+            for scope_key, field_name in _PACKAGE_SUBMIT_SCOPE_FIELDS:
+                scope_total = safe_int(breakdown.get(field_name), default=0)
+                fractions[scope_key].append(max(0, scope_total) / submit_wait_total)
+        return fractions, sample_count
+
+    left_fractions, left_sample_count = collect_scope_fractions(left_command_samples)
+    right_fractions, right_sample_count = collect_scope_fractions(right_command_samples)
+    left_medians: dict[str, float | None] = {}
+    right_medians: dict[str, float | None] = {}
+    sample_counts: dict[str, dict[str, int]] = {}
+    mismatches: list[str] = []
+
+    for scope_key, field_name in _PACKAGE_SUBMIT_SCOPE_FIELDS:
+        left_values = left_fractions.get(scope_key, [])
+        right_values = right_fractions.get(scope_key, [])
+        left_median = float(statistics.median(left_values)) if left_values else None
+        right_median = float(statistics.median(right_values)) if right_values else None
+        left_medians[scope_key] = left_median
+        right_medians[scope_key] = right_median
+        sample_counts[scope_key] = {
+            "baseline": len(left_values),
+            "comparison": len(right_values),
+        }
+        if left_median is None or right_median is None:
+            continue
+        if left_median == 0.0 and right_median >= _PHASE_ASYMMETRY_THRESHOLD:
+            mismatches.append(
+                f"baseline submit_wait excludes material {field_name} "
+                f"while comparison spends {right_median:.1%} of submit_wait in that scope"
+            )
+        elif right_median == 0.0 and left_median >= _PHASE_ASYMMETRY_THRESHOLD:
+            mismatches.append(
+                f"comparison submit_wait excludes material {field_name} "
+                f"while baseline spends {left_median:.1%} of submit_wait in that scope"
+            )
+
+    applies = left_sample_count > 0 or right_sample_count > 0
+    if applies and left_sample_count == 0:
+        mismatches.append(
+            "baseline package submit breakdown telemetry is missing while comparison reports submit scopes"
+        )
+    if applies and right_sample_count == 0:
+        mismatches.append(
+            "comparison package submit breakdown telemetry is missing while baseline reports submit scopes"
+        )
+    details: dict[str, Any] = {
+        "phaseAsymmetryThreshold": _PHASE_ASYMMETRY_THRESHOLD,
+        "baselineMedianSubmitScopeFractions": left_medians,
+        "comparisonMedianSubmitScopeFractions": right_medians,
+        "submitScopeSampleCounts": sample_counts,
+        "baselineSubmitScopeSampleCount": left_sample_count,
+        "comparisonSubmitScopeSampleCount": right_sample_count,
+        "submitScopeMismatchCount": len(mismatches),
+        "submitScopeMismatches": mismatches,
+    }
+    return applies, len(mismatches) == 0, details, "; ".join(mismatches)
+
+
+def _resolve_repo_relative_path(path_text: str) -> Path:
+    path = Path(path_text)
+    if path.is_absolute():
+        return path
+    return REPO_ROOT / path
+
+
+def _load_kernel_dispatch_kernels(commands_path: str) -> tuple[list[str], dict[str, Any], str]:
+    resolved_commands_path = _resolve_repo_relative_path(commands_path)
+    details: dict[str, Any] = {
+        "commandsPath": commands_path,
+        "resolvedCommandsPath": str(resolved_commands_path),
+    }
+    if not resolved_commands_path.exists():
+        return [], details, f"commandsPath does not exist: {resolved_commands_path}"
+    try:
+        payload = json.loads(resolved_commands_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return [], details, f"failed to load commandsPath {resolved_commands_path}: {exc}"
+    if not isinstance(payload, list):
+        return [], details, f"commandsPath {resolved_commands_path} must decode to a list"
+
+    kernels: list[str] = []
+    seen: set[str] = set()
+    for index, command in enumerate(payload):
+        if not isinstance(command, dict):
+            continue
+        if str(command.get("kind", "")).strip() != "kernel_dispatch":
+            continue
+        kernel = str(command.get("kernel", "")).strip()
+        if not kernel:
+            return [], details, f"kernel_dispatch command at index {index} is missing kernel"
+        if kernel not in seen:
+            seen.add(kernel)
+            kernels.append(kernel)
+    details["kernelDispatchCount"] = len(kernels)
+    details["kernelDispatchKernels"] = kernels
+    return kernels, details, ""
+
+
+def _expected_spirv_artifact_path(kernel: str) -> Path:
+    kernel_path = Path(kernel)
+    if kernel_path.suffix == ".spv":
+        return _DEFAULT_COMPARE_KERNEL_ROOT / kernel_path
+    if kernel_path.suffix == ".wgsl":
+        return _DEFAULT_COMPARE_KERNEL_ROOT / kernel_path.with_suffix(".spv")
+    return _DEFAULT_COMPARE_KERNEL_ROOT / f"{kernel}.spv"
+
+
+def assess_native_shader_artifact_equivalence(
+    *,
+    workload_api: str,
+    workload_commands_path: str,
+    comparability_mode: str,
+    is_dawn_vs_doe: bool,
+    left_execution_backends: set[str],
+    right_execution_backends: set[str],
+) -> tuple[bool, bool, dict[str, Any], str]:
+    details: dict[str, Any] = {
+        "comparabilityMode": comparability_mode,
+        "isDawnVsDoe": is_dawn_vs_doe,
+        "workloadApi": workload_api,
+        "commandsPath": workload_commands_path,
+        "kernelRoot": str(_DEFAULT_COMPARE_KERNEL_ROOT),
+        "baselineExecutionBackends": sorted(left_execution_backends),
+        "comparisonExecutionBackends": sorted(right_execution_backends),
+    }
+    applies = (
+        comparability_mode == "strict"
+        and is_dawn_vs_doe
+        and workload_api == "vulkan"
+        and bool(left_execution_backends & _NATIVE_VULKAN_EXECUTION_BACKENDS)
+        and bool(right_execution_backends & _NATIVE_VULKAN_EXECUTION_BACKENDS)
+        and bool(workload_commands_path.strip())
+    )
+    if not applies:
+        return False, True, details, ""
+
+    kernels, command_details, command_failure = _load_kernel_dispatch_kernels(workload_commands_path)
+    details.update(command_details)
+    if command_failure:
+        return True, False, details, command_failure
+    if not kernels:
+        return False, True, details, ""
+
+    resolved_artifacts: list[dict[str, str]] = []
+    missing_artifacts: list[dict[str, str]] = []
+    for kernel in kernels:
+        artifact_path = _expected_spirv_artifact_path(kernel)
+        artifact_entry = {
+            "kernel": kernel,
+            "expectedSpirvPath": str(artifact_path),
+        }
+        if artifact_path.exists():
+            resolved_artifacts.append(artifact_entry)
+        else:
+            missing_artifacts.append(artifact_entry)
+    details["resolvedSpirvArtifacts"] = resolved_artifacts
+    details["missingSpirvArtifacts"] = missing_artifacts
+    details["nativeShaderArtifactMismatchCount"] = len(missing_artifacts)
+    if not missing_artifacts:
+        return True, True, details, ""
+    missing_summary = ", ".join(
+        f"{entry['kernel']} -> {entry['expectedSpirvPath']}" for entry in missing_artifacts
+    )
+    return (
+        True,
+        False,
+        details,
+        "strict native Vulkan compare requires explicit SPIR-V artifacts for kernel_dispatch workloads; "
+        f"missing {missing_summary}",
+    )
+
+
 def compare_assessment(
     *,
     workload_id: str,
     workload_comparable: bool,
     workload_domain: str,
+    workload_api: str,
+    workload_commands_path: str,
     workload_path_asymmetry: bool,
     workload_path_asymmetry_note: str,
     baseline_command_repeat: int,
@@ -272,15 +488,17 @@ def compare_assessment(
     is_left_dawn_delegate = (
         "dawn_delegate" in left_execution_backends
         or "node_webgpu_package" in left_execution_backends
+        or "bun_webgpu_package" in left_execution_backends
     )
     is_right_dawn_delegate = (
         "dawn_delegate" in right_execution_backends
         or "node_webgpu_package" in right_execution_backends
+        or "bun_webgpu_package" in right_execution_backends
     )
     is_left_dawn = is_left_dawn_delegate or is_left_dawn_direct or is_left_dawn_perf
     is_right_dawn = is_right_dawn_delegate or is_right_dawn_direct or is_right_dawn_perf
-    is_left_doe = "doe_metal" in left_execution_backends or "doe_vulkan" in left_execution_backends or "doe_d3d12" in left_execution_backends or "doe_node_webgpu" in left_execution_backends or "webgpu-ffi" in left_execution_backends or "native" in left_execution_backends
-    is_right_doe = "doe_metal" in right_execution_backends or "doe_vulkan" in right_execution_backends or "doe_d3d12" in right_execution_backends or "doe_node_webgpu" in right_execution_backends or "webgpu-ffi" in right_execution_backends or "native" in right_execution_backends
+    is_left_doe = "doe_metal" in left_execution_backends or "doe_vulkan" in left_execution_backends or "doe_d3d12" in left_execution_backends or "doe_node_webgpu" in left_execution_backends or "doe_bun_package" in left_execution_backends or "webgpu-ffi" in left_execution_backends or "native" in left_execution_backends
+    is_right_doe = "doe_metal" in right_execution_backends or "doe_vulkan" in right_execution_backends or "doe_d3d12" in right_execution_backends or "doe_node_webgpu" in right_execution_backends or "doe_bun_package" in right_execution_backends or "webgpu-ffi" in right_execution_backends or "native" in right_execution_backends
     is_dawn_vs_doe = (is_left_dawn and is_right_doe) or (is_left_doe and is_right_dawn)
 
     reasons: list[str] = []
@@ -469,6 +687,43 @@ def compare_assessment(
         },
     )
     (
+        submit_scope_match_applies,
+        submit_scope_match,
+        submit_scope_details,
+        submit_scope_failure_reason,
+    ) = assess_submit_scope_equivalence(
+        left_command_samples=left_samples,
+        right_command_samples=right_samples,
+    )
+    _record_obligation(
+        obligations,
+        reasons,
+        obligation_id="baseline_comparison_submit_scope_match",
+        blocking=True,
+        applicable=(
+            comparability_mode == "strict"
+            and is_dawn_vs_doe
+            and (
+                bool(left_execution_backends & _PACKAGE_EXECUTION_BACKENDS)
+                or bool(right_execution_backends & _PACKAGE_EXECUTION_BACKENDS)
+            )
+            and submit_scope_match_applies
+        ),
+        passes=submit_scope_match,
+        failure_reason=(
+            "baseline/comparison submit scope mismatch: " + submit_scope_failure_reason
+            if submit_scope_failure_reason
+            else ""
+        ),
+        details={
+            "comparabilityMode": comparability_mode,
+            "isDawnVsDoe": is_dawn_vs_doe,
+            "baselineExecutionBackends": sorted(left_execution_backends),
+            "comparisonExecutionBackends": sorted(right_execution_backends),
+            **submit_scope_details,
+        },
+    )
+    (
         timing_phase_match_applies,
         timing_phase_match,
         timing_phase_details,
@@ -617,6 +872,34 @@ def compare_assessment(
             "workloadPathAsymmetryNote": workload_path_asymmetry_note,
         },
     )
+    (
+        native_shader_artifact_match_applies,
+        native_shader_artifact_match,
+        native_shader_artifact_details,
+        native_shader_artifact_failure_reason,
+    ) = assess_native_shader_artifact_equivalence(
+        workload_api=str(workload_api).strip().lower(),
+        workload_commands_path=str(workload_commands_path),
+        comparability_mode=comparability_mode,
+        is_dawn_vs_doe=is_dawn_vs_doe,
+        left_execution_backends=left_execution_backends,
+        right_execution_backends=right_execution_backends,
+    )
+    _record_obligation(
+        obligations,
+        reasons,
+        obligation_id="baseline_comparison_explicit_native_shader_artifact_match",
+        blocking=True,
+        applicable=native_shader_artifact_match_applies,
+        passes=native_shader_artifact_match,
+        failure_reason=(
+            "baseline/comparison native shader artifact mismatch: "
+            + native_shader_artifact_failure_reason
+            if native_shader_artifact_failure_reason
+            else ""
+        ),
+        details=native_shader_artifact_details,
+    )
 
     invalid_native_execution_sources: set[str] = set()
     for sample in left_samples:
@@ -630,6 +913,8 @@ def compare_assessment(
             "dawn_direct_metal",
             "node_webgpu_package",
             "doe_node_webgpu",
+            "bun_webgpu_package",
+            "doe_bun_package",
             "doe_metal",
             "doe_vulkan",
             "doe_d3d12",

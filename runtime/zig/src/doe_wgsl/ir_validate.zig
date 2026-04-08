@@ -30,11 +30,11 @@ pub fn validate(module: *const ir.Module) ValidateError!void {
                         if (call.args.len != callee.params.items.len) return error.InvalidIr;
                         var i: u32 = 0;
                         while (i < call.args.len) : (i += 1) {
-                        const arg_id = function.expr_args.items[call.args.start + i];
-                        if (arg_id >= function.exprs.items.len) return error.InvalidIr;
-                        if (!type_compatible(module, callee.params.items[i].ty, function.exprs.items[arg_id].ty)) return error.InvalidIr;
+                            const arg_id = function.expr_args.items[call.args.start + i];
+                            if (arg_id >= function.exprs.items.len) return error.InvalidIr;
+                            if (!type_compatible(module, callee.params.items[i].ty, function.exprs.items[arg_id].ty)) return error.InvalidIr;
+                        }
                     }
-                }
                 },
                 .construct => |construct| {
                     if (construct.args.start + construct.args.len > function.expr_args.items.len) return error.InvalidIr;

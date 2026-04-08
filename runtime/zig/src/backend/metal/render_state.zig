@@ -11,58 +11,58 @@ const std = @import("std");
 // ============================================================
 
 // WebGPU blend operation values (wgpu.h-compatible)
-pub const BLEND_OP_ADD: u32             = 0;
-pub const BLEND_OP_SUBTRACT: u32        = 1;
+pub const BLEND_OP_ADD: u32 = 0;
+pub const BLEND_OP_SUBTRACT: u32 = 1;
 pub const BLEND_OP_REVERSE_SUBTRACT: u32 = 2;
-pub const BLEND_OP_MIN: u32             = 3;
-pub const BLEND_OP_MAX: u32             = 4;
+pub const BLEND_OP_MIN: u32 = 3;
+pub const BLEND_OP_MAX: u32 = 4;
 
 // WebGPU blend factor values
-pub const BLEND_FACTOR_ZERO: u32                  = 0;
-pub const BLEND_FACTOR_ONE: u32                   = 1;
-pub const BLEND_FACTOR_SRC: u32                   = 2;
-pub const BLEND_FACTOR_ONE_MINUS_SRC: u32         = 3;
-pub const BLEND_FACTOR_SRC_ALPHA: u32             = 4;
-pub const BLEND_FACTOR_ONE_MINUS_SRC_ALPHA: u32   = 5;
-pub const BLEND_FACTOR_DST: u32                   = 6;
-pub const BLEND_FACTOR_ONE_MINUS_DST: u32         = 7;
-pub const BLEND_FACTOR_DST_ALPHA: u32             = 8;
-pub const BLEND_FACTOR_ONE_MINUS_DST_ALPHA: u32   = 9;
-pub const BLEND_FACTOR_SRC_ALPHA_SATURATED: u32   = 10;
-pub const BLEND_FACTOR_CONSTANT: u32              = 11;
-pub const BLEND_FACTOR_ONE_MINUS_CONSTANT: u32    = 12;
-pub const BLEND_FACTOR_SRC1: u32                  = 13;
-pub const BLEND_FACTOR_ONE_MINUS_SRC1: u32        = 14;
-pub const BLEND_FACTOR_SRC1_ALPHA: u32            = 15;
-pub const BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA: u32  = 16;
+pub const BLEND_FACTOR_ZERO: u32 = 0;
+pub const BLEND_FACTOR_ONE: u32 = 1;
+pub const BLEND_FACTOR_SRC: u32 = 2;
+pub const BLEND_FACTOR_ONE_MINUS_SRC: u32 = 3;
+pub const BLEND_FACTOR_SRC_ALPHA: u32 = 4;
+pub const BLEND_FACTOR_ONE_MINUS_SRC_ALPHA: u32 = 5;
+pub const BLEND_FACTOR_DST: u32 = 6;
+pub const BLEND_FACTOR_ONE_MINUS_DST: u32 = 7;
+pub const BLEND_FACTOR_DST_ALPHA: u32 = 8;
+pub const BLEND_FACTOR_ONE_MINUS_DST_ALPHA: u32 = 9;
+pub const BLEND_FACTOR_SRC_ALPHA_SATURATED: u32 = 10;
+pub const BLEND_FACTOR_CONSTANT: u32 = 11;
+pub const BLEND_FACTOR_ONE_MINUS_CONSTANT: u32 = 12;
+pub const BLEND_FACTOR_SRC1: u32 = 13;
+pub const BLEND_FACTOR_ONE_MINUS_SRC1: u32 = 14;
+pub const BLEND_FACTOR_SRC1_ALPHA: u32 = 15;
+pub const BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA: u32 = 16;
 
 // WebGPU color write mask bits
-pub const COLOR_WRITE_RED: u32   = 0x1;
+pub const COLOR_WRITE_RED: u32 = 0x1;
 pub const COLOR_WRITE_GREEN: u32 = 0x2;
-pub const COLOR_WRITE_BLUE: u32  = 0x4;
+pub const COLOR_WRITE_BLUE: u32 = 0x4;
 pub const COLOR_WRITE_ALPHA: u32 = 0x8;
-pub const COLOR_WRITE_ALL: u32   = 0xF;
+pub const COLOR_WRITE_ALL: u32 = 0xF;
 
 // WebGPU compare function values
-pub const COMPARE_UNDEFINED: u32     = 0;
-pub const COMPARE_NEVER: u32         = 1;
-pub const COMPARE_LESS: u32          = 2;
-pub const COMPARE_EQUAL: u32         = 3;
-pub const COMPARE_LESS_EQUAL: u32    = 4;
-pub const COMPARE_GREATER: u32       = 5;
-pub const COMPARE_NOT_EQUAL: u32     = 6;
+pub const COMPARE_UNDEFINED: u32 = 0;
+pub const COMPARE_NEVER: u32 = 1;
+pub const COMPARE_LESS: u32 = 2;
+pub const COMPARE_EQUAL: u32 = 3;
+pub const COMPARE_LESS_EQUAL: u32 = 4;
+pub const COMPARE_GREATER: u32 = 5;
+pub const COMPARE_NOT_EQUAL: u32 = 6;
 pub const COMPARE_GREATER_EQUAL: u32 = 7;
-pub const COMPARE_ALWAYS: u32        = 8;
+pub const COMPARE_ALWAYS: u32 = 8;
 
 // WebGPU stencil operation values
-pub const STENCIL_OP_KEEP: u32             = 0;
-pub const STENCIL_OP_ZERO: u32             = 1;
-pub const STENCIL_OP_REPLACE: u32          = 2;
-pub const STENCIL_OP_INVERT: u32           = 3;
-pub const STENCIL_OP_INCREMENT_CLAMP: u32  = 4;
-pub const STENCIL_OP_DECREMENT_CLAMP: u32  = 5;
-pub const STENCIL_OP_INCREMENT_WRAP: u32   = 6;
-pub const STENCIL_OP_DECREMENT_WRAP: u32   = 7;
+pub const STENCIL_OP_KEEP: u32 = 0;
+pub const STENCIL_OP_ZERO: u32 = 1;
+pub const STENCIL_OP_REPLACE: u32 = 2;
+pub const STENCIL_OP_INVERT: u32 = 3;
+pub const STENCIL_OP_INCREMENT_CLAMP: u32 = 4;
+pub const STENCIL_OP_DECREMENT_CLAMP: u32 = 5;
+pub const STENCIL_OP_INCREMENT_WRAP: u32 = 6;
+pub const STENCIL_OP_DECREMENT_WRAP: u32 = 7;
 
 // Default stencil mask (all bits active)
 pub const STENCIL_MASK_ALL: u32 = 0xFFFFFFFF;
@@ -99,7 +99,7 @@ pub const StencilFaceState = struct {
 };
 
 pub const DepthStencilState = struct {
-    format: u32 = 0,               // WGPUTextureFormat; 0 = no attachment
+    format: u32 = 0, // WGPUTextureFormat; 0 = no attachment
     depth_write_enabled: bool = false,
     depth_compare: u32 = COMPARE_ALWAYS,
     stencil_front: StencilFaceState = .{},
@@ -135,13 +135,20 @@ pub const ScissorRect = struct {
 
 extern fn metal_render_state_set_viewport(
     encoder: ?*anyopaque,
-    x: f64, y: f64, width: f64, height: f64,
-    depth_min: f64, depth_max: f64,
+    x: f64,
+    y: f64,
+    width: f64,
+    height: f64,
+    depth_min: f64,
+    depth_max: f64,
 ) callconv(.c) void;
 
 extern fn metal_render_state_set_scissor_rect(
     encoder: ?*anyopaque,
-    x: u32, y: u32, width: u32, height: u32,
+    x: u32,
+    y: u32,
+    width: u32,
+    height: u32,
 ) callconv(.c) void;
 
 extern fn metal_render_state_set_stencil_reference(
@@ -151,7 +158,10 @@ extern fn metal_render_state_set_stencil_reference(
 
 extern fn metal_render_state_set_blend_color(
     encoder: ?*anyopaque,
-    r: f32, g: f32, b: f32, a: f32,
+    r: f32,
+    g: f32,
+    b: f32,
+    a: f32,
 ) callconv(.c) void;
 
 extern fn metal_render_state_new_pipeline(
@@ -248,32 +258,32 @@ const CDepthStencilConfig = extern struct {
 
 pub fn blend_to_c(blend: *const BlendState) CBlendAttachment {
     return .{
-        .color_operation  = blend.color.operation,
+        .color_operation = blend.color.operation,
         .color_src_factor = blend.color.src_factor,
         .color_dst_factor = blend.color.dst_factor,
-        .alpha_operation  = blend.alpha.operation,
+        .alpha_operation = blend.alpha.operation,
         .alpha_src_factor = blend.alpha.src_factor,
         .alpha_dst_factor = blend.alpha.dst_factor,
-        .write_mask       = blend.write_mask,
-        .blend_enabled    = if (blend.enabled) 1 else 0,
+        .write_mask = blend.write_mask,
+        .blend_enabled = if (blend.enabled) 1 else 0,
     };
 }
 
 pub fn depth_stencil_to_c(ds: *const DepthStencilState) CDepthStencilConfig {
     return .{
-        .depth_write_enabled      = if (ds.depth_write_enabled) 1 else 0,
-        .depth_compare            = ds.depth_compare,
-        .stencil_front_compare    = ds.stencil_front.compare,
-        .stencil_front_fail_op    = ds.stencil_front.fail_op,
+        .depth_write_enabled = if (ds.depth_write_enabled) 1 else 0,
+        .depth_compare = ds.depth_compare,
+        .stencil_front_compare = ds.stencil_front.compare,
+        .stencil_front_fail_op = ds.stencil_front.fail_op,
         .stencil_front_depth_fail = ds.stencil_front.depth_fail_op,
-        .stencil_front_pass_op    = ds.stencil_front.pass_op,
-        .stencil_back_compare     = ds.stencil_back.compare,
-        .stencil_back_fail_op     = ds.stencil_back.fail_op,
-        .stencil_back_depth_fail  = ds.stencil_back.depth_fail_op,
-        .stencil_back_pass_op     = ds.stencil_back.pass_op,
-        .stencil_read_mask        = ds.stencil_read_mask,
-        .stencil_write_mask       = ds.stencil_write_mask,
-        .depth_stencil_format     = ds.format,
+        .stencil_front_pass_op = ds.stencil_front.pass_op,
+        .stencil_back_compare = ds.stencil_back.compare,
+        .stencil_back_fail_op = ds.stencil_back.fail_op,
+        .stencil_back_depth_fail = ds.stencil_back.depth_fail_op,
+        .stencil_back_pass_op = ds.stencil_back.pass_op,
+        .stencil_read_mask = ds.stencil_read_mask,
+        .stencil_write_mask = ds.stencil_write_mask,
+        .depth_stencil_format = ds.format,
     };
 }
 
@@ -284,8 +294,12 @@ pub fn depth_stencil_to_c(ds: *const DepthStencilState) CDepthStencilConfig {
 pub fn set_viewport(encoder: ?*anyopaque, vp: ViewportRect) void {
     metal_render_state_set_viewport(
         encoder,
-        vp.x, vp.y, vp.width, vp.height,
-        vp.min_depth, vp.max_depth,
+        vp.x,
+        vp.y,
+        vp.width,
+        vp.height,
+        vp.min_depth,
+        vp.max_depth,
     );
 }
 
@@ -374,7 +388,10 @@ pub fn open_msaa_render_encoder(
     resolve_target: ?*anyopaque,
 ) ?*anyopaque {
     return metal_render_state_cmd_buf_msaa_render_encoder(
-        cmd_buf, pipeline, msaa_texture, resolve_target,
+        cmd_buf,
+        pipeline,
+        msaa_texture,
+        resolve_target,
     );
 }
 
@@ -470,41 +487,41 @@ pub export fn doeNativeDeviceCreateRenderPipelineFull(
 
     const blend_desc = BlendState{
         .color = .{
-            .operation  = blend_color_op,
+            .operation = blend_color_op,
             .src_factor = blend_color_src,
             .dst_factor = blend_color_dst,
         },
         .alpha = .{
-            .operation  = blend_alpha_op,
+            .operation = blend_alpha_op,
             .src_factor = blend_alpha_src,
             .dst_factor = blend_alpha_dst,
         },
         .write_mask = blend_write_mask,
-        .enabled    = blend_enabled != 0,
+        .enabled = blend_enabled != 0,
     };
 
     const ds_desc = DepthStencilState{
-        .format              = depth_stencil_format,
+        .format = depth_stencil_format,
         .depth_write_enabled = depth_write_enabled != 0,
-        .depth_compare       = depth_compare,
+        .depth_compare = depth_compare,
         .stencil_front = .{
-            .compare     = stencil_front_compare,
-            .fail_op     = stencil_front_fail,
+            .compare = stencil_front_compare,
+            .fail_op = stencil_front_fail,
             .depth_fail_op = stencil_front_depth_fail,
-            .pass_op     = stencil_front_pass,
+            .pass_op = stencil_front_pass,
         },
         .stencil_back = .{
-            .compare     = stencil_back_compare,
-            .fail_op     = stencil_back_fail,
+            .compare = stencil_back_compare,
+            .fail_op = stencil_back_fail,
             .depth_fail_op = stencil_back_depth_fail,
-            .pass_op     = stencil_back_pass,
+            .pass_op = stencil_back_pass,
         },
-        .stencil_read_mask  = stencil_read_mask,
+        .stencil_read_mask = stencil_read_mask,
         .stencil_write_mask = stencil_write_mask,
     };
 
     const msaa = MultisampleState{
-        .sample_count      = if (sample_count > 0) sample_count else MSAA_SAMPLE_COUNT_1,
+        .sample_count = if (sample_count > 0) sample_count else MSAA_SAMPLE_COUNT_1,
         .alpha_to_coverage = alpha_to_coverage != 0,
     };
 
@@ -542,22 +559,22 @@ pub export fn doeNativeDeviceCreateDepthStencilState(
     stencil_write_mask: u32,
 ) callconv(.c) ?*anyopaque {
     const ds = DepthStencilState{
-        .format              = format,
+        .format = format,
         .depth_write_enabled = depth_write_enabled != 0,
-        .depth_compare       = depth_compare,
+        .depth_compare = depth_compare,
         .stencil_front = .{
-            .compare       = stencil_front_compare,
-            .fail_op       = stencil_front_fail,
+            .compare = stencil_front_compare,
+            .fail_op = stencil_front_fail,
             .depth_fail_op = stencil_front_depth_fail,
-            .pass_op       = stencil_front_pass,
+            .pass_op = stencil_front_pass,
         },
         .stencil_back = .{
-            .compare       = stencil_back_compare,
-            .fail_op       = stencil_back_fail,
+            .compare = stencil_back_compare,
+            .fail_op = stencil_back_fail,
             .depth_fail_op = stencil_back_depth_fail,
-            .pass_op       = stencil_back_pass,
+            .pass_op = stencil_back_pass,
         },
-        .stencil_read_mask  = stencil_read_mask,
+        .stencil_read_mask = stencil_read_mask,
         .stencil_write_mask = stencil_write_mask,
     };
     return create_depth_stencil_state(device, &ds);

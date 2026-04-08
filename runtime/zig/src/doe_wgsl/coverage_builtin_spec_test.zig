@@ -307,16 +307,15 @@ test "builtins: passthrough surface coverage — every mapped name resolves" {
     // Verify the passthrough map handles all names it claims.
     const msl_maps = @import("emit_msl_maps.zig");
     const names = [_][]const u8{
-        "abs",               "acos",      "asin",       "atan",      "atan2",
-        "ceil",              "cos",       "cosh",       "cross",     "determinant",
-        "distance",          "dot",       "exp",        "exp2",      "fma",
-        "floor",             "fract",     "ldexp",      "length",    "log",
-        "log2",              "mix",       "normalize",  "pow",       "reflect",
-        "refract",           "round",     "saturate",   "sign",      "sin",
-        "sinh",              "smoothstep", "sqrt",      "step",      "tan",
-        "tanh",              "transpose", "trunc",      "faceForward",
-        "countOneBits",      "reverseBits",
-        "countLeadingZeros", "countTrailingZeros",
+        "abs",         "acos",              "asin",               "atan",        "atan2",
+        "ceil",        "cos",               "cosh",               "cross",       "determinant",
+        "distance",    "dot",               "exp",                "exp2",        "fma",
+        "floor",       "fract",             "ldexp",              "length",      "log",
+        "log2",        "mix",               "normalize",          "pow",         "reflect",
+        "refract",     "round",             "saturate",           "sign",        "sin",
+        "sinh",        "smoothstep",        "sqrt",               "step",        "tan",
+        "tanh",        "transpose",         "trunc",              "faceForward", "countOneBits",
+        "reverseBits", "countLeadingZeros", "countTrailingZeros",
     };
     for (names) |name| {
         try std.testing.expect(msl_maps.msl_builtin_passthrough_name(name) != null);

@@ -14,7 +14,7 @@ pub fn decide_symbol_route(
     switch (owner) {
         .dawn_delegate => return .{ .owner = .dawn_delegate, .fallback_used = false },
         .shared => return .{ .owner = .shared, .fallback_used = false },
-        else => {}
+        else => {},
     }
 
     // Strict policy never allows delegate fallback behavior.

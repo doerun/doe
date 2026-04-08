@@ -410,8 +410,15 @@ pub fn parseExprOrAssignStmt(self: anytype) @TypeOf(self.*).Error!u32 {
 
 fn isAssignOp(tag: Tag) bool {
     return switch (tag) {
-        .@"=", .plus_eq, .minus_eq, .star_eq, .slash_eq,
-        .percent_eq, .amp_eq, .pipe_eq, .caret_eq,
+        .@"=",
+        .plus_eq,
+        .minus_eq,
+        .star_eq,
+        .slash_eq,
+        .percent_eq,
+        .amp_eq,
+        .pipe_eq,
+        .caret_eq,
         => true,
         else => false,
     };

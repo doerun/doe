@@ -1,0 +1,44 @@
+{
+  "workloads": "bench/workloads/workloads.package.gemma270m.json",
+  "baseline": {
+    "name": "doe_gpu_node_package",
+    "executorId": "doe_node_webgpu"
+  },
+  "comparison": {
+    "name": "node_webgpu_package",
+    "executorId": "node_webgpu_package"
+  },
+  "run": {
+    "iterations": 8,
+    "warmup": 1,
+    "out": "bench/out/amd-vulkan/gemma270m.node-package.ir.compare.json",
+    "workspace": "bench/out/amd-vulkan/gemma270m.node-package.ir.workspace",
+    "workloadFilter": "",
+    "emitShell": false
+  },
+  "comparability": {
+    "mode": "strict",
+    "requireTimingClass": "operation",
+    "allowBaselineNoExecution": false
+  },
+  "claimability": {
+    "mode": "off"
+  },
+  "resource": {
+    "probe": "none",
+    "sampleMs": 100,
+    "sampleTargetCount": 0
+  },
+  "selector": {
+    "cohorts": [],
+    "benchmarkClass": [
+      "comparable"
+    ],
+    "claimEligibleOnly": false,
+    "domains": [],
+    "ids": [
+      "inference_gemma3_270m_prefill_64tok_decode_64tok"
+    ],
+    "excludeIds": []
+  }
+}

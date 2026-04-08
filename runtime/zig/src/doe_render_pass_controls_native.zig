@@ -53,12 +53,24 @@ pub export fn doeNativeRenderPassSetViewport(
 ) callconv(.c) void {
     if (builtin.os.tag == .macos) {
         render_state_native.doeNativeRenderPassEncoderSetViewport(
-            encoder_raw, x, y, width, height, min_depth, max_depth,
+            encoder_raw,
+            x,
+            y,
+            width,
+            height,
+            min_depth,
+            max_depth,
         );
         return;
     }
     doeNativeRenderPassRecordViewportState(
-        encoder_raw, x, y, width, height, min_depth, max_depth,
+        encoder_raw,
+        x,
+        y,
+        width,
+        height,
+        min_depth,
+        max_depth,
     );
 }
 
@@ -75,7 +87,11 @@ pub export fn doeNativeRenderPassSetScissorRect(
 ) callconv(.c) void {
     if (builtin.os.tag == .macos) {
         render_state_native.doeNativeRenderPassEncoderSetScissorRect(
-            encoder_raw, x, y, width, height,
+            encoder_raw,
+            x,
+            y,
+            width,
+            height,
         );
         return;
     }
@@ -95,7 +111,11 @@ pub export fn doeNativeRenderPassSetBlendConstant(
 ) callconv(.c) void {
     if (builtin.os.tag == .macos) {
         render_state_native.doeNativeRenderPassEncoderSetBlendConstant(
-            encoder_raw, r, g, b, a,
+            encoder_raw,
+            r,
+            g,
+            b,
+            a,
         );
         return;
     }
@@ -112,7 +132,8 @@ pub export fn doeNativeRenderPassSetStencilReference(
 ) callconv(.c) void {
     if (builtin.os.tag == .macos) {
         render_state_native.doeNativeRenderPassEncoderSetStencilReference(
-            encoder_raw, reference,
+            encoder_raw,
+            reference,
         );
         return;
     }
@@ -129,7 +150,9 @@ pub export fn doeNativeRenderPassPushDebugGroup(
     label_len: usize,
 ) callconv(.c) void {
     render_state_native.doeNativeRenderPassEncoderPushDebugGroup(
-        encoder_raw, label_ptr, label_len,
+        encoder_raw,
+        label_ptr,
+        label_len,
     );
 }
 
@@ -153,6 +176,8 @@ pub export fn doeNativeRenderPassInsertDebugMarker(
     label_len: usize,
 ) callconv(.c) void {
     render_state_native.doeNativeRenderPassEncoderInsertDebugMarker(
-        encoder_raw, label_ptr, label_len,
+        encoder_raw,
+        label_ptr,
+        label_len,
     );
 }

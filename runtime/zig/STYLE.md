@@ -135,6 +135,8 @@ const backend_ids = @import("backend/backend_ids.zig");
 - Variables and fields: `snake_case`
 - Compile-time constants: `UPPER_SNAKE_CASE`
 - File names: `snake_case.zig`
+- Doe runtime files stay `snake_case.zig` even when a file is centered on one
+  primary type; do not introduce `PascalCase.zig` files in `runtime/zig/src/`.
 
 ## Constants and magic numbers
 
@@ -169,6 +171,9 @@ pub const TIMESTAMP_BUFFER_SIZE: u64 = 16;
 - Route runtime observability through pipeline/trace/trace-meta contracts.
 - No ad-hoc `std.debug.print` in runtime paths; use structured trace output.
 - Guarded debug output (e.g. `DOE_WGPU_TIMESTAMP_DEBUG`) is acceptable for investigation aids, not for production paths.
+- When a parameter is required by an interface or callback but intentionally
+  unused, suppress it explicitly with `_ = param;` rather than relying on broad
+  placeholder naming.
 
 ## Comments
 
@@ -180,9 +185,20 @@ pub const TIMESTAMP_BUFFER_SIZE: u64 = 16;
 
 ## Memory
 
+- Functions that allocate must take an explicit allocator parameter unless the
+  allocator is already owned by the receiving struct/context.
 - Use explicit allocator ownership.
+- Structs that own heap-backed state should store the allocator needed to
+  release that state and provide an explicit `deinit` path.
 - Scope temporary allocations with `defer` cleanup.
+- Use `errdefer` for partial initialization rollback and multi-step allocation
+  or acquisition paths that can fail after earlier resources are acquired.
+- Place `defer`/`errdefer` immediately after the acquisition they clean up when
+  the pairing is not obvious from a tighter local scope.
 - Keep long-lived caches explicit in owning structs.
+- Prefer arena allocators only for clearly bounded lifetimes such as one parse,
+  one request, or one artifact build; do not use arenas to hide long-lived
+  ownership.
 
 ## FFI and C interop
 
@@ -193,6 +209,9 @@ pub const TIMESTAMP_BUFFER_SIZE: u64 = 16;
 - Check optional proc availability before call: `if (procs.someFn) |fn| fn(...) else return error.Unsupported`.
 - C callbacks use `callconv(.c)` and cast `?*anyopaque` userdata to known state structs via `@ptrCast(@alignCast(...))`.
 - Suppress unused callback parameters with `_ = param;`.
+- Keep `@cImport` isolated to support or backend-boundary modules when
+  unavoidable; do not spread ad-hoc C imports through general runtime logic
+  when an existing typed seam or ABI module already owns that contract.
 
 ```zig
 // Type alias
@@ -223,6 +242,8 @@ fn onQueueWorkDone(status: types.WGPUQueueWorkDoneStatus, userdata1: ?*anyopaque
 - Tests are inline `test` blocks in the source file they cover.
 - Test names are descriptive behavior strings: `test "vendor comparison ignores case"`.
 - Use `std.testing.expect` and `std.testing.expectEqual` for assertions.
+- Prefer `std.testing.allocator` for tests that exercise allocation-owning code
+  unless the allocator choice itself is part of the behavior under test.
 - Run `zig build test` for affected runtime modules.
 - Verify replay/trace gate compatibility for runtime-visible changes.
 - For WebGPU API-surface changes, update config coverage + benchmark contracts in the same change.

@@ -24,8 +24,8 @@ const DRIVER_VERSION_UNKNOWN: u64 = 0;
 const DiskHeader = extern struct {
     magic: u32 = 0xFAEC_ACED,
     format_version: u32 = CACHE_FORMAT_VERSION,
-    key_len: u32,   // bytes in key (hex string, KEY_HEX_LEN)
-    data_len: u32,  // bytes of payload following header
+    key_len: u32, // bytes in key (hex string, KEY_HEX_LEN)
+    data_len: u32, // bytes of payload following header
 };
 
 // ============================================================

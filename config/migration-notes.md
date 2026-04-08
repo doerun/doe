@@ -1,5 +1,149 @@
 # Config Migration Notes
 
+## 2026-04-08
+
+### Compare runner stale warnings now verify generated workload content before warning
+
+- `bench/native_compare_modules/config_compare_runner.py` no longer warns
+  solely on catalog-vs-output mtime drift when the generated workload file is
+  byte-for-byte current
+- it now materializes the matching lane from
+  `bench/workloads/metadata/backend-workload-catalog.json` and compares content
+  before emitting the "`workloads.* may be stale`" warning
+- refreshed smoke artifact after the warning fix:
+  - `/tmp/doe_amd_vulkan_smoke_after_warning_fix.20260408T144253Z.json`
+
+### AMD Vulkan governed strict compare is claimable again after package replay fairness fixes
+
+- refreshed governed comparable artifact:
+  - `/tmp/doe_amd_vulkan_compare_after_pkg_fairness.20260408T144007Z.json`
+- current result:
+  - `comparisonStatus=comparable`
+  - `claimStatus=claimable`
+  - the governed strict AMD Vulkan upload slice is claimable again
+
+### AMD Vulkan Node package now creates native command encoders eagerly instead of using lazy batched replay
+
+- `packages/doe-gpu/src/vendor/webgpu/index.js` now creates the native command
+  encoder when the Node package surface creates `GPUCommandEncoder`, instead of
+  starting from `_native = null` and replaying `_commands` through
+  `submitBatched(...)` at `GPUQueue.submit(...)`
+- this removes the remaining Node package addon replay bucket on the strict
+  comparable AMD Vulkan package lane; current artifact:
+  - `/tmp/doe_node_pkg_linux_compare_after_node_direct_encoder.20260408T143645Z.json`
+- measured result on the Gemma-270M workload:
+  - `submitAddonCommandReplayTotalNs` median drops to `0`
+  - `submitAddonQueueSubmitTotalNs` median drops to `0`
+  - strict Node package comparability is restored on AMD Vulkan
+
+### AMD Vulkan recorded submit replay now retires prior Vulkan state instead of forcing queue flush on every state change
+
+- `runtime/zig/src/backend/vulkan/vk_pipeline.zig` now retires prior Vulkan
+  pipeline, shader-module, pipeline-layout, descriptor-pool, and descriptor-set
+  layout state during recorded submit replay instead of calling `flush_queue()`
+  before each pipeline/binding change
+- `runtime/zig/src/backend/vulkan/native_runtime.zig` now stores retired replay
+  state and releases it after Vulkan queue drain/flush
+- `runtime/zig/src/doe_queue_submit_native.zig` now marks Vulkan recorded-submit
+  replay scope so the Vulkan pipeline path can defer destruction safely
+- current AMD Vulkan package artifacts after the retired-state change:
+  - `/tmp/doe_bun_pkg_linux_compare_after_vulkan_retired_state.20260408T142540Z.json`
+  - `/tmp/doe_node_pkg_linux_compare_after_vulkan_retired_state.20260408T142540Z.json`
+- measured result:
+  - Bun Doe package time drops by roughly half on the Gemma-270M workload
+  - Node Doe package time also drops materially, but strict comparability now
+    flags Doe Node addon replay as a submit-scope mismatch rather than a Vulkan
+    queue-submit mismatch
+
+### AMD Vulkan full-surface compute commands now replay from queue submit instead of executing during encode
+
+- `runtime/zig/src/doe_compute_ext_native.zig` now records Vulkan compute
+  dispatch and indirect-dispatch commands into `DoeCommandBuffer` instead of
+  executing them inline from the compute-pass encode path
+- `runtime/zig/src/doe_queue_submit_native.zig` now replays recorded Vulkan
+  compute commands from `doeNativeQueueSubmit`
+- `runtime/zig/src/doe_vulkan_compute_native.zig` now prepares recorded
+  dispatch state and replays it through deferred Vulkan queue submission, so
+  package timing scopes measure submit/readback instead of encode-time
+  execution
+- strict AMD Vulkan package compare remains comparable after the recorded-submit
+  change; see:
+  - `/tmp/doe_bun_pkg_linux_compare_after_vulkan_recorded_submit.20260408T141408Z.json`
+  - `/tmp/doe_node_pkg_linux_compare_after_vulkan_recorded_submit.20260408T141409Z.json`
+- a follow-up replay-state cache now avoids re-preparing identical consecutive
+  dispatch state during Vulkan submit replay; current artifacts:
+  - `/tmp/doe_bun_pkg_linux_compare_after_vulkan_replay_cache.20260408T141754Z.json`
+  - `/tmp/doe_node_pkg_linux_compare_after_vulkan_replay_cache.20260408T141754Z.json`
+
+### Doe upload microbenchmarks now use structural repeat and compact trace artifacts instead of expanded repeated command files
+
+- `bench/native_compare_modules/runner.py` now passes
+  `--command-repeat <N>` to `doe-zig-runtime` command-stream lanes when the
+  workload uses command-repeat without a plan surface, instead of always
+  materializing `*.commands.repeat<N>.json`
+- benchmark Doe runtime invocations with `--trace-jsonl` now suppress the
+  redundant stdout `--trace` flag so compact trace-jsonl modes can activate
+  without changing the artifact sink contract
+- `runtime/zig/src/main.zig` and `runtime/zig/src/main_usage.zig` now accept
+  `--command-repeat`; repeated command execution updates physical command
+  counts, replay row counts, and normalized emit output accordingly
+- repeated all-upload Doe traces now write one compact jsonl row plus a
+  sidecar duration list, and `bench/native_compare_modules/timing_selection.py`
+  now accepts both workspace-relative and trace-relative sidecar paths
+- strict AMD Vulkan upload compare is restored to claimable status with the
+  corrected structural repeat path; see:
+  - `/tmp/doe_native_vulkan_compare_after_structural_repeat_fix2.20260408T134738Z.json`
+
+### Package synthetic-asset writes now avoid the extra host-side copy; Bun Doe submit no longer destroys native command buffers inside submit
+
+- `bench/executors/node-webgpu/synthetic-assets.js` now returns a
+  zero-copy `Uint8Array` view over the file-backed payload instead of cloning
+  the entire synthetic asset into a second byte array before `queue.writeBuffer`
+- `packages/doe-gpu/src/vendor/webgpu/bun-ffi.js` no longer destroys native
+  command buffers in the direct submitted-command-buffer path inside
+  `GPUQueue.submit`; submitted buffers stay logically submitted and release via
+  normal object lifetime instead of charging native release cleanup to submit
+- on AMD Vulkan Bun package compare, the shared package executor’s
+  `writeMaterializeTotalNs` drops from about `1.65s` to about `26ms` on both
+  Doe and Bun surfaces; see:
+  - `/tmp/doe_bun_pkg_linux_compare_after_zero_copy_materialize.20260408T135137Z.json`
+- the Bun Doe package submit path still shows a large synchronous
+  `submitQueueSubmitTotalNs` even after the command-buffer release deferral
+  improvement; current artifact:
+  - `/tmp/doe_bun_pkg_linux_compare_after_submit_release_deferral.20260408T135609Z.json`
+
+### AMD Vulkan native strict compare now uses the native-supported lane and enforces explicit SPIR-V artifact presence for command-stream kernel workloads
+
+- `bench/workloads/metadata/backend-workload-catalog.json` now maps the
+  generated `amd_vulkan` output to `amd_vulkan_superset_native_supported`
+  instead of `amd_vulkan_superset`
+- `bench/tools/generate_backend_workloads.py` default lane outputs were updated
+  to keep bootstrap/default generation aligned with the canonical catalog
+- `config/comparability-obligations.json` now includes the blocking measured
+  obligation `baseline_comparison_explicit_native_shader_artifact_match`
+- strict Dawn-vs-Doe native Vulkan compares now fail comparability when a
+  command-stream workload dispatches kernels from `commandsPath` without an
+  explicit `.spv` artifact under `bench/kernels`
+- updated parity contract artifacts:
+  - `bench/fixtures/comparability_obligation_fixtures.json`
+  - `pipeline/lean/Doe/Generated/ComparabilityContract.lean`
+
+### Strict package comparability now rejects submit-scope asymmetry
+
+- `config/comparability-obligations.json` now includes the blocking measured
+  obligation `baseline_comparison_submit_scope_match`.
+- strict Dawn-vs-Doe package lanes now fail comparability when
+  `packageStepBreakdownNs` shows one side spending a material share of
+  `executionSubmitWaitTotalNs` in retained replay/flush scopes that the peer
+  side does not measure in the same phase.
+- Bun package execution backends are now classified into the same
+  Doe-vs-Dawn runtime-family checks as the existing Node package backends so
+  strict package obligations apply consistently across both runtime hosts.
+- updated parity contract artifacts:
+  - `config/comparability-obligation-fixtures.schema.json`
+  - `bench/fixtures/comparability_obligation_fixtures.json`
+  - `pipeline/lean/Doe/Generated/ComparabilityContract.lean`
+
 ## 2026-04-07
 
 ### Apple Node `node-webgpu` package execution on `mac.lan` is no longer policy-blocked

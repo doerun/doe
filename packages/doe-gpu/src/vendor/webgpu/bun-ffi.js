@@ -2033,10 +2033,9 @@ function readIndirectDispatchCounts(bufferNative, offset) {
 }
 
 const bunEncoderBackend = {
-    computePassInit(pass) {
+    computePassInit(pass, native) {
+        pass._native = native;
         pass._pipeline = null;
-        pass._bindGroups = [];
-        pass._immediates = [];
         pass._ended = false;
     },
     computePassAssertOpen(pass, path) {
@@ -2045,44 +2044,55 @@ const bunEncoderBackend = {
     },
     computePassSetPipeline(pass, pipelineNative) {
         pass._pipeline = pipelineNative;
+        wgpu.symbols.wgpuComputePassEncoderSetPipeline(
+            assertLiveResource(pass, "GPUComputePassEncoder.setPipeline", "GPUComputePassEncoder"),
+            pipelineNative,
+        );
     },
     computePassSetBindGroup(pass, index, bindGroupNative) {
-        pass._bindGroups[index] = bindGroupNative;
+        wgpu.symbols.wgpuComputePassEncoderSetBindGroup(
+            assertLiveResource(pass, "GPUComputePassEncoder.setBindGroup", "GPUComputePassEncoder"),
+            index,
+            bindGroupNative,
+            BigInt(0),
+            null,
+        );
     },
     computePassSetImmediates(pass, index, data) {
-        pass._immediates = pass._immediates.filter((entry) => entry.index !== index);
-        pass._immediates.push({ index, data: data.slice() });
+        wgpu.symbols.wgpuComputePassEncoderSetImmediates(
+            assertLiveResource(pass, "GPUComputePassEncoder.setImmediates", "GPUComputePassEncoder"),
+            index,
+            data,
+            BigInt(data.byteLength),
+        );
     },
     computePassDispatchWorkgroups(pass, x, y, z) {
         if (pass._pipeline == null) {
             failValidation("GPUComputePassEncoder.dispatchWorkgroups", "setPipeline() must be called before dispatch");
         }
-        pass._encoder._commands.push({
-            t: 0,
-            p: pass._pipeline,
-            bg: [...pass._bindGroups],
-            immediates: pass._immediates.map((entry) => ({ index: entry.index, data: entry.data.slice() })),
+        wgpu.symbols.wgpuComputePassEncoderDispatchWorkgroups(
+            assertLiveResource(pass, "GPUComputePassEncoder.dispatchWorkgroups", "GPUComputePassEncoder"),
             x,
             y,
             z,
-        });
+        );
     },
     computePassDispatchWorkgroupsIndirect(pass, indirectBufferNative, indirectOffset) {
         if (pass._pipeline == null) {
             failValidation("GPUComputePassEncoder.dispatchWorkgroupsIndirect", "setPipeline() must be called before dispatch");
         }
-        const counts = readIndirectDispatchCounts(indirectBufferNative, indirectOffset);
-        pass._encoder._commands.push({
-            t: 0,
-            p: pass._pipeline,
-            bg: [...pass._bindGroups],
-            immediates: pass._immediates.map((entry) => ({ index: entry.index, data: entry.data.slice() })),
-            x: counts.x,
-            y: counts.y,
-            z: counts.z,
-        });
+        wgpu.symbols.wgpuComputePassEncoderDispatchWorkgroupsIndirect(
+            assertLiveResource(pass, "GPUComputePassEncoder.dispatchWorkgroupsIndirect", "GPUComputePassEncoder"),
+            indirectBufferNative,
+            BigInt(indirectOffset),
+        );
     },
     computePassEnd(pass) {
+        wgpu.symbols.wgpuComputePassEncoderEnd(
+            assertLiveResource(pass, "GPUComputePassEncoder.end", "GPUComputePassEncoder"),
+        );
+        wgpu.symbols.wgpuComputePassEncoderRelease(pass._native);
+        pass._native = null;
         pass._ended = true;
     },
     renderPassInit(pass, native) {
@@ -2331,7 +2341,9 @@ const bunEncoderBackend = {
         if (encoder._finished) failValidation(path, "command encoder is already finished");
     },
     commandEncoderBeginComputePass(encoder, _descriptor, classes) {
-        return new classes.DoeGPUComputePassEncoder(null, encoder);
+        ensureBunCommandEncoderNative(encoder);
+        const native = wgpu.symbols.wgpuCommandEncoderBeginComputePass(encoder._native, null);
+        return new classes.DoeGPUComputePassEncoder(native, encoder);
     },
     commandEncoderBeginRenderPass(encoder, descriptor, classes) {
         ensureBunCommandEncoderNative(encoder);

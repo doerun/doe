@@ -33,6 +33,7 @@ pub const CmdTag = enum {
 
 pub const RecordedCmd = union(CmdTag) {
     dispatch: struct {
+        compute_pipeline: ?*anyopaque = null,
         pso: ?*anyopaque,
         needs_sizes_buf: bool,
         bufs: [shared.MAX_FLAT_BIND]?*anyopaque,
@@ -46,6 +47,7 @@ pub const RecordedCmd = union(CmdTag) {
         wg_z: u32,
     },
     dispatch_indirect: struct {
+        compute_pipeline: ?*anyopaque = null,
         pso: ?*anyopaque,
         needs_sizes_buf: bool,
         bufs: [shared.MAX_FLAT_BIND]?*anyopaque,

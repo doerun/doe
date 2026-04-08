@@ -60,6 +60,74 @@ pub const PendingDescriptorWrite = struct {
     info_index: usize,
 };
 
+pub const RetiredPipelineState = struct {
+    pipeline: c.VkPipeline = VK_NULL_U64,
+    shader_module: c.VkShaderModule = VK_NULL_U64,
+    entry_point_owned: ?[:0]u8 = null,
+};
+
+pub const RetiredDescriptorState = struct {
+    descriptor_pool: c.VkDescriptorPool = VK_NULL_U64,
+    descriptor_set_layouts: [c.MAX_DESCRIPTOR_SETS]c.VkDescriptorSetLayout = [_]c.VkDescriptorSetLayout{VK_NULL_U64} ** c.MAX_DESCRIPTOR_SETS,
+    pipeline_layout: c.VkPipelineLayout = VK_NULL_U64,
+};
+
+fn retire_pipeline_objects(self: anytype) void {
+    if (!self.has_pipeline and !self.has_shader_module and self.current_entry_point_owned == null) {
+        self.current_pipeline_hash = 0;
+        return;
+    }
+    self.retired_pipeline_states.append(self.allocator, .{
+        .pipeline = self.pipeline,
+        .shader_module = self.shader_module,
+        .entry_point_owned = self.current_entry_point_owned,
+    }) catch std.debug.panic("vk_pipeline: OOM retiring pipeline state", .{});
+    self.has_pipeline = false;
+    self.pipeline = VK_NULL_U64;
+    self.has_shader_module = false;
+    self.shader_module = VK_NULL_U64;
+    self.current_entry_point_owned = null;
+    self.current_pipeline_hash = 0;
+}
+
+fn retire_descriptor_state(self: anytype) void {
+    if (!self.has_descriptor_pool and !self.has_pipeline_layout) {
+        self.current_layout_hash = 0;
+        self.descriptor_set_count = 0;
+        return;
+    }
+    self.retired_descriptor_states.append(self.allocator, .{
+        .descriptor_pool = self.descriptor_pool,
+        .descriptor_set_layouts = self.descriptor_set_layouts,
+        .pipeline_layout = self.pipeline_layout,
+    }) catch std.debug.panic("vk_pipeline: OOM retiring descriptor state", .{});
+    self.has_descriptor_pool = false;
+    self.descriptor_pool = VK_NULL_U64;
+    self.descriptor_sets = [_]c.VkDescriptorSet{VK_NULL_U64} ** c.MAX_DESCRIPTOR_SETS;
+    self.descriptor_set_layouts = [_]c.VkDescriptorSetLayout{VK_NULL_U64} ** c.MAX_DESCRIPTOR_SETS;
+    self.descriptor_set_count = 0;
+    self.has_pipeline_layout = false;
+    self.pipeline_layout = VK_NULL_U64;
+    self.current_layout_hash = 0;
+}
+
+pub fn release_retired_states(self: anytype) void {
+    for (self.retired_pipeline_states.items) |retired| {
+        if (retired.pipeline != VK_NULL_U64) c.vkDestroyPipeline(self.device, retired.pipeline, null);
+        if (retired.shader_module != VK_NULL_U64) c.vkDestroyShaderModule(self.device, retired.shader_module, null);
+        if (retired.entry_point_owned) |entry_name| self.allocator.free(entry_name);
+    }
+    self.retired_pipeline_states.clearRetainingCapacity();
+    for (self.retired_descriptor_states.items) |retired| {
+        if (retired.descriptor_pool != VK_NULL_U64) c.vkDestroyDescriptorPool(self.device, retired.descriptor_pool, null);
+        for (retired.descriptor_set_layouts) |layout| {
+            if (layout != VK_NULL_U64) c.vkDestroyDescriptorSetLayout(self.device, layout, null);
+        }
+        if (retired.pipeline_layout != VK_NULL_U64) c.vkDestroyPipelineLayout(self.device, retired.pipeline_layout, null);
+    }
+    self.retired_descriptor_states.clearRetainingCapacity();
+}
+
 pub fn load_kernel_source(self: anytype, allocator: std.mem.Allocator, kernel_name: []const u8) ![]u8 {
     if (kernel_name.len == 0) return error.InvalidArgument;
     const path = try resolve_kernel_path(self, allocator, kernel_name);
@@ -102,6 +170,10 @@ pub fn set_compute_shader_spirv(
     initialize_buffers_on_create: bool,
 ) !void {
     if (words.len == 0 or words[0] != SPIRV_MAGIC) return error.ShaderCompileFailed;
+    if (self.recorded_submit_replay_active and self.has_deferred_submissions) {
+        retire_pipeline_objects(self);
+        retire_descriptor_state(self);
+    }
     const pipeline_hash = compute_pipeline_hash(words, entry_point, bindings);
     if (!self.has_pipeline or pipeline_hash != self.current_pipeline_hash) {
         try build_pipeline_for_words(self, words, pipeline_hash, entry_point, bindings);
@@ -122,7 +194,7 @@ pub fn build_pipeline_for_words(
     entry_point: ?[]const u8,
     bindings: ?[]const model_compute_types.KernelBinding,
 ) !void {
-    if (self.has_deferred_submissions or self.pending_uploads.items.len > 0) {
+    if (!self.recorded_submit_replay_active and (self.has_deferred_submissions or self.pending_uploads.items.len > 0)) {
         _ = try vk_upload.flush_queue(self);
     }
     // Guard: if no bindings were provided but SPIR-V declares descriptor bindings,
@@ -275,7 +347,7 @@ fn prepare_descriptor_sets(
     initialize_buffers_on_create: bool,
 ) !void {
     if (self.descriptor_set_count == 0) return;
-    if (self.has_deferred_submissions or self.pending_uploads.items.len > 0) {
+    if (!self.recorded_submit_replay_active and (self.has_deferred_submissions or self.pending_uploads.items.len > 0)) {
         _ = try vk_upload.flush_queue(self);
     }
     try ensure_descriptor_pool(self, bindings);

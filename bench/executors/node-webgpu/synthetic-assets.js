@@ -35,5 +35,5 @@ export function readSyntheticAssetData({ cacheNamespace, cacheKey, sizeBytes }) 
       `synthetic asset ${cacheNamespace}/${cacheKey} expected ${sizeBytes} bytes, got ${payload.byteLength}`,
     );
   }
-  return Uint8Array.from(payload);
+  return new Uint8Array(payload.buffer, payload.byteOffset, payload.byteLength);
 }

@@ -175,9 +175,18 @@ pub fn Emit(comptime cfg: WalkConfig) type {
                     try expr(buf, pos, module, function, eid);
                     try write(buf, pos, ";\n");
                 },
-                .break_ => { try writeIndent(buf, pos, indent); try write(buf, pos, "break;\n"); },
-                .continue_ => { try writeIndent(buf, pos, indent); try write(buf, pos, "continue;\n"); },
-                .switch_ => { try writeIndent(buf, pos, indent); try write(buf, pos, "// switch (unsupported)\n"); },
+                .break_ => {
+                    try writeIndent(buf, pos, indent);
+                    try write(buf, pos, "break;\n");
+                },
+                .continue_ => {
+                    try writeIndent(buf, pos, indent);
+                    try write(buf, pos, "continue;\n");
+                },
+                .switch_ => {
+                    try writeIndent(buf, pos, indent);
+                    try write(buf, pos, "// switch (unsupported)\n");
+                },
                 .discard_ => {},
             }
         }
@@ -186,11 +195,23 @@ pub fn Emit(comptime cfg: WalkConfig) type {
             if (expr_id >= function.exprs.items.len) return;
             switch (function.exprs.items[expr_id].data) {
                 .bool_lit => |v| try write(buf, pos, if (v) "true" else "false"),
-                .int_lit => |v| { var t: [20]u8 = undefined; try write(buf, pos, std.fmt.bufPrint(&t, "{d}", .{v}) catch return error.OutputTooLarge); },
-                .float_lit => |v| { var t: [32]u8 = undefined; try write(buf, pos, std.fmt.bufPrint(&t, "{d}", .{v}) catch return error.OutputTooLarge); },
-                .param_ref => |idx| { if (idx < function.params.items.len) try write(buf, pos, function.params.items[idx].name); },
-                .local_ref => |idx| { if (idx < function.locals.items.len) try write(buf, pos, function.locals.items[idx].name); },
-                .global_ref => |idx| { if (idx < module.globals.items.len) try write(buf, pos, module.globals.items[idx].name); },
+                .int_lit => |v| {
+                    var t: [20]u8 = undefined;
+                    try write(buf, pos, std.fmt.bufPrint(&t, "{d}", .{v}) catch return error.OutputTooLarge);
+                },
+                .float_lit => |v| {
+                    var t: [32]u8 = undefined;
+                    try write(buf, pos, std.fmt.bufPrint(&t, "{d}", .{v}) catch return error.OutputTooLarge);
+                },
+                .param_ref => |idx| {
+                    if (idx < function.params.items.len) try write(buf, pos, function.params.items[idx].name);
+                },
+                .local_ref => |idx| {
+                    if (idx < function.locals.items.len) try write(buf, pos, function.locals.items[idx].name);
+                },
+                .global_ref => |idx| {
+                    if (idx < module.globals.items.len) try write(buf, pos, module.globals.items[idx].name);
+                },
                 .load => |inner| try expr(buf, pos, module, function, inner),
                 .unary => |u| {
                     try write(buf, pos, maps.unaryOpText(u.op));
@@ -427,7 +448,10 @@ pub fn Emit(comptime cfg: WalkConfig) type {
             for (module.globals.items) |global| {
                 const space = global.addr_space orelse continue;
                 if (space != .workgroup) continue;
-                if (!has_wg) { try write(buf, pos, "// Workgroup shared → PE-local in single-PE mode.\n"); has_wg = true; }
+                if (!has_wg) {
+                    try write(buf, pos, "// Workgroup shared → PE-local in single-PE mode.\n");
+                    has_wg = true;
+                }
                 try write(buf, pos, "var ");
                 try write(buf, pos, global.name);
                 try write(buf, pos, ": ");

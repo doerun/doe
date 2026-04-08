@@ -663,7 +663,11 @@ const nodeEncoderBackend = {
       return;
     }
     addon.computePassDispatchWorkgroups(
-      assertLiveResource(pass, 'GPUComputePassEncoder.dispatchWorkgroups', 'GPUComputePassEncoder'),
+      assertLiveResource(
+        pass,
+        'GPUComputePassEncoder.dispatchWorkgroups',
+        'GPUComputePassEncoder',
+      ),
       x,
       y,
       z,
@@ -892,7 +896,10 @@ const nodeEncoderBackend = {
   },
   commandEncoderInit(encoder) {
     encoder._commands = [];
-    encoder._native = null;
+    encoder._native = addon.createCommandEncoder(
+      assertLiveResource(encoder._device, 'GPUCommandEncoder', 'GPUDevice'),
+      encoder.label || undefined,
+    );
     encoder._finished = false;
   },
   commandEncoderAssertOpen(encoder, path) {

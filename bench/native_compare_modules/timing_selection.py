@@ -45,6 +45,25 @@ def parse_trace_rows(path: Path) -> list[dict[str, Any]]:
 
 def parse_execution_row_total_ns_rows(path: Path) -> list[int]:
     rows = parse_trace_rows(path)
+    if len(rows) == 1 and rows[0].get("traceFormat") == "compact-upload-repeat-v1":
+        raw_duration_rows_path = rows[0].get("executionDurationRowsPath")
+        if isinstance(raw_duration_rows_path, str) and raw_duration_rows_path.strip():
+            raw_path = raw_duration_rows_path.strip()
+            duration_rows_path = Path(raw_path)
+            if not duration_rows_path.is_absolute() and not duration_rows_path.exists():
+                duration_rows_path = path.parent / raw_path
+            try:
+                payload = json.loads(duration_rows_path.read_text(encoding="utf-8"))
+            except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+                print(f"WARN: invalid compact upload duration rows in {duration_rows_path}: {exc}")
+                return []
+            if not isinstance(payload, list):
+                return []
+            durations: list[int] = []
+            for entry in payload:
+                if isinstance(entry, int) and entry >= 0:
+                    durations.append(entry)
+            return durations
     durations: list[int] = []
     for row in rows:
         duration_ns = safe_int(row.get("executionDurationNs"), default=-1)
