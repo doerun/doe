@@ -20,6 +20,9 @@ Read this file first. Use the shard files under
 
 ## Current status summary
 
+- Benchmark visualization now has a real timestamped bundle pipeline and a
+  stable `bench/out/visualization/latest/` landing page over the current AMD
+  Vulkan native plus package compare reports.
 - AMD Vulkan Gemma-270M package compute is now a claimable local compare
   surface on both Node and Bun package lanes.
 - Current status terminology now treats numeric stability as a `strategy`
