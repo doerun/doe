@@ -33,8 +33,9 @@ This module is self-contained and does not depend on external runtime code.
 
 `bench/cli.py` is the only canonical benchmark front door. Use:
 
-- `run` to execute one product and emit immutable run artifacts
-- `compare` to join run artifacts, run config-backed compare flows, or resolve promoted compare profiles
+- `run` to execute one product and emit immutable run receipts
+- `compare` to join run receipts, run config-backed compare flows, or resolve promoted compare profiles
+- `claim` to evaluate claim policy over an existing compare report
 - `list` to inspect executors, products, surfaces, or workload catalogs
 
 ```sh
@@ -50,6 +51,11 @@ python3 bench/cli.py compare \
 python3 bench/cli.py compare \
   --config bench/native-compare/compare.config.apple.metal.compare.json
 
+python3 bench/cli.py claim \
+  bench/out/sample.compare.json \
+  --mode local \
+  --benchmark-policy config/benchmark-methodology-thresholds.json
+
 python3 bench/cli.py compare --list-promoted
 python3 bench/cli.py compare --surface backend --backend apple-metal --preset compare
 python3 bench/cli.py compare --surface plan --backend apple-metal --workload gemma270m-literal
@@ -59,8 +65,9 @@ python3 bench/runners/exercise_runtime_numeric_stability.py
 python3 bench/runners/exercise_in_path_numeric_stability.py
 ```
 
-The compare config and promoted-profile modes warn if generated workload files
-are stale relative to the workload catalog.
+Generated workload manifests now carry explicit ownership plus advisory
+freshness metadata in the run receipt. Freshness no longer rejects `run` or
+`compare`; standalone manifests are never checked against the backend catalog.
 
 ## Numeric-stability promotion and runtime exercise
 
@@ -107,10 +114,14 @@ Use the benchmark taxonomy from `docs/benchmark-taxonomy.md`:
 - `executor`
   - the concrete runner for one product on one surface
 - `run artifact`
+  - legacy name for the per-product receipt artifact
+- `run receipt`
   - the output of running one product on one workload
 - `compare report`
-  - the output of joining isolated run artifacts for the same workload and
+  - the output of joining isolated run receipts for the same workload and
     surface
+- `claim report`
+  - the output of evaluating claim policy over a compare report
 
 Useful benchmark-specific clarifications:
 
@@ -131,8 +142,9 @@ Useful benchmark-specific clarifications:
 
 Two practical rules:
 
-- the benchmark primitive is always the isolated run artifact
+- the benchmark primitive is always the isolated run receipt
 - compare is post-hoc analysis, never the execution primitive
+- claim is a separate post-hoc policy pass over a compare report
 
 ## Performance Strategy (Read First)
 

@@ -31,6 +31,12 @@
 - run schema + correctness + trace gates (blocking in v0)
 - run verification + performance gates (advisory in v0)
 - run drop-in compatibility gate (blocking for drop-in artifact lanes)
+- canonical benchmark artifacts are now split into three layers:
+  `bench/cli.py run` writes `run-receipt`,
+  `bench/cli.py compare` writes `compare-report`, and
+  `bench/cli.py claim` writes `claim-report`
+- workload-manifest freshness is advisory receipt metadata only; it does not
+  block `run` or `compare`
 - current v0 CI does not execute Lean toolchain proofs as a blocking step.
 - run schema hard gate:
   `python3 bench/gates/schema_gate.py`
@@ -106,7 +112,8 @@
 6. Benchmark
 - run self-contained benchmark matrix
 - publish deltas against Dawn/wgpu baselines
-- generate post-benchmark visualization artifacts from comparison reports
+- generate post-benchmark visualization artifacts from compare reports, with
+  claim status supplied by sidecar claim reports when available
 - build/update tested-profile inventory + dashboard from comparison artifacts:
   `python3 bench/tools/build_test_inventory_dashboard.py --report-glob "bench/out/**/dawn-vs-doe*.json"`
   this maintains a canonical latest inventory file (`bench/out/test-inventory.latest.json`) plus dashboard (`bench/out/test-dashboard.latest.html`) and timestamped snapshots for audit.

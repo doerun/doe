@@ -1,113 +1,151 @@
-"""Tests for post-hoc comparison from run artifacts."""
+"""Tests for compare-only reports from run receipts."""
 
 from __future__ import annotations
 
 import json
 import tempfile
 import unittest
-from argparse import Namespace
 from pathlib import Path
 
 import sys
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from native_compare_modules.claim_report import build_claim_report
 from native_compare_modules.compare_from_artifacts import (
+    COMPARE_REPORT_KIND,
     COMPARE_REPORT_SCHEMA_VERSION,
     build_compare_report,
-    build_legacy_compare_report_from_artifacts,
     compare_workload_from_artifacts,
     group_run_artifacts_by_workload,
-    workload_from_artifact_pair,
+    receipt_run_view,
+    write_compare_report,
 )
+from native_compare_modules.run_artifact import load_run_artifact
 
 
-def _make_artifact(product: str, workload_id: str = "compute_test") -> dict:
+def _make_receipt(product: str, manifest_hash: str = "a" * 64) -> dict:
+    measured_ms = 8.0 if product == "doe" else 10.0
+    wall_ms = 9.0 if product == "doe" else 11.0
     return {
-        "schemaVersion": 2,
-        "artifactKind": "run",
-        "generatedAt": "2026-04-05T12:00:00+00:00",
+        "schemaVersion": 1,
+        "artifactKind": "run-receipt",
+        "generatedAt": "2026-04-09T12:00:00+00:00",
         "product": product,
         "executorId": f"{product}_direct_vulkan",
-        "workloadContract": {
-            "path": "bench/workloads/specialized/workloads.generic.json",
-            "sha256": "a" * 64,
+        "invocation": {
+            "command": ["runtime/zig/zig-out/bin/doe-zig-runtime"],
+            "iterations": 4,
+            "warmup": 0,
+            "resourceProbe": "none",
+            "resourceSampleMs": 100,
+            "resourceSampleTargetCount": 0,
         },
-        "benchmarkPolicy": {
-            "path": "config/benchmark-methodology-thresholds.json",
-            "schemaVersion": 1,
-            "sha256": "b" * 64,
+        "workloadManifest": {
+            "path": "bench/workloads/workloads.package.gemma270m.json",
+            "sha256": manifest_hash,
+            "ownership": "standalone",
+            "inputFreshness": "unknown",
+            "freshnessReason": "standalone manifest; no backend workload catalog freshness check applies",
         },
         "workload": {
-            "id": workload_id,
+            "id": "compute_test",
             "name": "test workload",
             "description": "unit test",
             "domain": "compute",
+            "commandsPath": "examples/test.json",
+            "quirksPath": "examples/quirks/noop.json",
+            "planPath": "",
+            "vendor": "amd",
+            "api": "metal",
+            "family": "gfx11",
+            "driver": "24.0.0",
             "comparable": True,
             "benchmarkClass": "comparable",
             "comparabilityNotes": "test",
             "directionalReason": "",
             "pathAsymmetry": False,
             "pathAsymmetryNote": "",
-            "includeByDefault": True,
-            "asyncDiagnosticsMode": "",
-            "strictNormalizationUnit": "",
-            "comparabilityCandidate": {
-                "enabled": False,
-                "tier": "",
-                "notes": "",
-            },
             "claimEligible": True,
-            "cohorts": ["governed"],
+            "strictNormalizationUnit": "",
         },
-        "runParameters": {
-            "iterations": 4,
-            "warmup": 0,
+        "normalization": {
             "commandRepeat": 1,
             "ignoreFirstOps": 0,
             "timingDivisor": 1.0,
-            "uploadBufferUsage": "copy-dst",
+            "uploadBufferUsage": "copy-dst-copy-src",
             "uploadSubmitEvery": 1,
-            "allowNoExecution": product == "doe",
             "timingNormalizationNote": "",
-            "comparabilityMode": "strict",
-            "requiredTimingClass": "operation",
+            "allowNoExecution": False,
         },
-        "host": {"os": "linux", "arch": "x86_64"},
-        "commandSamples": [
+        "runtimeIdentity": {
+            "runtimeHost": "native",
+            "binaryPath": "runtime/zig/zig-out/bin/doe-zig-runtime",
+            "binarySha256": "b" * 64,
+            "executionBackend": "doe_metal" if product == "doe" else "dawn_delegate",
+            "providerId": product,
+            "providerName": product,
+            "packageName": "",
+            "packageVersion": "",
+            "packageLockHash": "",
+        },
+        "hostIdentity": {
+            "hostname": "bench-host",
+            "os": "linux",
+            "kernel": "6.8.0",
+            "arch": "x86_64",
+            "api": "metal",
+            "driver": "24.0.0",
+            "adapter": {
+                "vendor": "amd",
+                "device": "gfx1100",
+                "architecture": "rdna3",
+                "description": "AMD Radeon Graphics",
+            },
+        },
+        "execution": {
+            "success": True,
+            "timedSampleCount": 4,
+            "returnCodes": [0],
+            "timingSources": ["doe-execution-total-ns"],
+            "timingClasses": ["operation"],
+        },
+        "samples": [
             {
-                "runIndex": i,
-                "elapsedMs": 10.0 + i * 0.5 + (0 if product == "doe" else 2.0),
-                "measuredMs": 8.0 + i * 0.3 + (0 if product == "doe" else 2.0),
+                "runIndex": index,
+                "command": ["runtime/zig/zig-out/bin/doe-zig-runtime"],
+                "wallMs": wall_ms + index * 0.1,
+                "measuredRawMs": measured_ms + index * 0.1,
+                "measuredMs": measured_ms + index * 0.1,
                 "timingSource": "doe-execution-total-ns",
-                "timing": {"traceMetaSource": "doe-execution-total-ns"},
+                "timingClass": "operation",
+                "traceArtifacts": {
+                    "jsonlPath": f"bench/out/{product}.{index}.ndjson",
+                    "metaPath": f"bench/out/{product}.{index}.meta.json",
+                },
+                "subphasesMs": {
+                    "executionMs": measured_ms + index * 0.1,
+                    "setupMs": 1.0,
+                    "encodeMs": 2.0,
+                    "submitWaitMs": 3.0,
+                    "gpuTimestampMs": None,
+                },
+                "resource": {},
+                "returnCode": 0,
+                "success": True,
                 "traceMeta": {
                     "executionDispatchCount": 1,
                     "executionRowCount": 1,
                     "executionSuccessCount": 1,
-                    "executionTotalNs": 10_000_000,
+                    "executionTotalNs": int((measured_ms + index * 0.1) * 1_000_000),
                     "executionSetupTotalNs": 1_000_000,
-                    "executionEncodeTotalNs": 3_000_000,
-                    "executionSubmitWaitTotalNs": 2_000_000,
+                    "executionEncodeTotalNs": 2_000_000,
+                    "executionSubmitWaitTotalNs": 3_000_000,
+                    "executionBackend": "doe_metal" if product == "doe" else "dawn_delegate",
                 },
             }
-            for i in range(4)
+            for index in range(4)
         ],
-        "stats": {
-            "count": 4,
-            "p10Ms": 8.0 + (0 if product == "doe" else 2.0),
-            "p50Ms": 8.5 + (0 if product == "doe" else 2.0),
-            "p95Ms": 9.0 + (0 if product == "doe" else 2.0),
-            "p99Ms": 9.0 + (0 if product == "doe" else 2.0),
-            "meanMs": 8.5 + (0 if product == "doe" else 2.0),
-            "minMs": 8.0 + (0 if product == "doe" else 2.0),
-            "maxMs": 9.0 + (0 if product == "doe" else 2.0),
-        },
-        "timingsMs": [
-            8.0 + i * 0.3 + (0 if product == "doe" else 2.0) for i in range(4)
-        ],
-        "timingSources": ["doe-execution-total-ns"],
-        "timingClasses": ["operation"],
-        "lastMeta": {"module": "doe-zig-runtime"},
     }
 
 
@@ -119,160 +157,93 @@ def _benchmark_policy() -> object:
             "source_path": "config/benchmark-methodology-thresholds.json",
             "min_dispatch_window_ns_without_encode": 1000,
             "min_dispatch_window_coverage_percent_without_encode": 0.5,
-            "local_claim_min_timed_samples": 7,
+            "local_claim_min_timed_samples": 3,
             "release_claim_min_timed_samples": 15,
+            "min_operation_wall_coverage_ratio": 0.0,
+            "max_operation_wall_coverage_asymmetry_ratio": 10.0,
+            "min_row_timing_floor_ns": 0,
         },
     )()
 
 
-def _legacy_args() -> Namespace:
-    return Namespace(
-        config="",
-        iterations=4,
-        warmup=0,
-        workload_cooldown_ms=0,
-        boundary="",
-        runtime_host="",
-        temperature="",
-        comparison_view="",
-        provider_set="",
-        baseline_name="doe",
-        baseline_provider_id="",
-        baseline_executor_id="doe_direct_vulkan",
-        comparison_name="dawn",
-        comparison_provider_id="",
-        comparison_executor_id="dawn_direct_vulkan",
-        comparability="strict",
-        require_timing_class="operation",
-        allow_baseline_no_execution=False,
-        resource_probe="none",
-        resource_sample_ms=100,
-        resource_sample_target_count=0,
-        workload_cohort="all",
-        selector={},
-        claimability="off",
-        claim_min_timed_samples=0,
-        emit_shell=False,
-    )
-
-
-class TestCompareWorkloadFromArtifacts(unittest.TestCase):
-    def test_basic_comparison(self) -> None:
-        baseline = _make_artifact("doe")
-        comparison = _make_artifact("dawn")
+class TestCompareFromArtifacts(unittest.TestCase):
+    def test_compare_entry_is_compare_only(self) -> None:
+        baseline = _make_receipt("doe")
+        comparison = _make_receipt("dawn")
         entry = compare_workload_from_artifacts(
             baseline=baseline,
             comparison=comparison,
         )
         self.assertEqual(entry["id"], "compute_test")
-        self.assertIn("baseline", entry["participants"])
-        self.assertIn("comparison", entry["participants"])
-        # delta should be positive (doe faster since lower timings)
         self.assertGreater(entry["deltaPercent"]["p50Percent"], 0)
         self.assertIn("comparability", entry)
-        self.assertIn("claimability", entry)
+        self.assertNotIn("claimability", entry)
 
-    def test_claimability_off_by_default(self) -> None:
+    def test_manifest_mismatch_is_reported_not_raised(self) -> None:
         entry = compare_workload_from_artifacts(
-            baseline=_make_artifact("doe"),
-            comparison=_make_artifact("dawn"),
+            baseline=_make_receipt("doe", manifest_hash="a" * 64),
+            comparison=_make_receipt("dawn", manifest_hash="b" * 64),
         )
-        self.assertFalse(entry["claimability"]["evaluated"])
+        self.assertFalse(entry["workloadMatching"]["matched"])
+        self.assertFalse(entry["comparability"]["comparable"])
+        self.assertTrue(
+            any("workload manifest hash mismatch" in reason for reason in entry["comparability"]["reasons"])
+        )
 
-
-class TestBuildCompareReport(unittest.TestCase):
-    def test_report_structure(self) -> None:
-        baseline = _make_artifact("doe")
-        comparison = _make_artifact("dawn")
-        entry = compare_workload_from_artifacts(
-            baseline=baseline,
-            comparison=comparison,
-        )
-        report = build_compare_report(
-            workload_entries=[entry],
-            baseline_artifact=baseline,
-            comparison_artifact=comparison,
-            comparability_mode="strict",
-            required_timing_class="operation",
-            claimability_mode="off",
-            claimability_min_timed_samples=0,
-            out_path="test.json",
-            run_artifact_paths=["a.run.json", "b.run.json"],
-        )
-        self.assertEqual(report["schemaVersion"], COMPARE_REPORT_SCHEMA_VERSION)
-        self.assertEqual(report["products"], ["doe", "dawn"])
-        self.assertIn("baseline", report["participants"])
-        self.assertIn("comparison", report["participants"])
-        self.assertEqual(len(report["workloads"]), 1)
-        self.assertEqual(len(report["runArtifactPaths"]), 2)
-
-    def test_report_writes_to_disk(self) -> None:
-        from native_compare_modules.compare_from_artifacts import write_compare_report
-
-        baseline = _make_artifact("doe")
-        comparison = _make_artifact("dawn")
-        entry = compare_workload_from_artifacts(
-            baseline=baseline, comparison=comparison,
-        )
-        report = build_compare_report(
-            workload_entries=[entry],
-            baseline_artifact=baseline,
-            comparison_artifact=comparison,
-            comparability_mode="strict",
-            required_timing_class="operation",
-            claimability_mode="off",
-            claimability_min_timed_samples=0,
-        )
+    def test_build_compare_report_and_claim_report(self) -> None:
+        baseline = _make_receipt("doe")
+        comparison = _make_receipt("dawn")
         with tempfile.TemporaryDirectory() as tmpdir:
-            path = Path(tmpdir) / "report.json"
-            write_compare_report(report, path)
-            loaded = json.loads(path.read_text(encoding="utf-8"))
-            self.assertEqual(loaded["schemaVersion"], COMPARE_REPORT_SCHEMA_VERSION)
+            baseline_path = Path(tmpdir) / "doe.run.json"
+            comparison_path = Path(tmpdir) / "dawn.run.json"
+            baseline_path.write_text(json.dumps(baseline), encoding="utf-8")
+            comparison_path.write_text(json.dumps(comparison), encoding="utf-8")
+            baseline_loaded = load_run_artifact(baseline_path)
+            comparison_loaded = load_run_artifact(comparison_path)
+            baseline_loaded["_receiptPath"] = str(baseline_path)
+            comparison_loaded["_receiptPath"] = str(comparison_path)
+            entry = compare_workload_from_artifacts(
+                baseline=baseline_loaded,
+                comparison=comparison_loaded,
+            )
+            report = build_compare_report(
+                workload_entries=[entry],
+                baseline_artifact=baseline_loaded,
+                comparison_artifact=comparison_loaded,
+                comparability_mode="strict",
+                required_timing_class="operation",
+                out_path=str(Path(tmpdir) / "sample.compare.json"),
+                run_artifact_paths=[str(baseline_path), str(comparison_path)],
+            )
+            self.assertEqual(report["schemaVersion"], COMPARE_REPORT_SCHEMA_VERSION)
+            self.assertEqual(report["artifactKind"], COMPARE_REPORT_KIND)
+            self.assertEqual(report["comparisonStatus"], "comparable")
+            self.assertNotIn("claimStatus", report)
 
+            compare_path = Path(tmpdir) / "sample.compare.json"
+            write_compare_report(report, compare_path)
+            claim_report = build_claim_report(
+                compare_report=report,
+                compare_report_path=compare_path,
+                benchmark_policy=_benchmark_policy(),
+                mode="local",
+                min_timed_samples=3,
+            )
+            self.assertEqual(claim_report["claimStatus"], "claimable")
+            self.assertTrue(claim_report["pass"])
 
-class TestLegacyCompareFromArtifacts(unittest.TestCase):
-    def test_groups_run_artifacts_by_workload(self) -> None:
+    def test_group_run_artifacts_by_workload(self) -> None:
         grouped = group_run_artifacts_by_workload(
-            [_make_artifact("doe"), _make_artifact("dawn")]
+            [_make_receipt("doe"), _make_receipt("dawn")]
         )
         self.assertEqual(sorted(grouped), ["compute_test"])
         self.assertIn("doe", grouped["compute_test"])
         self.assertIn("dawn", grouped["compute_test"])
 
-    def test_builds_workload_proxy_from_artifacts(self) -> None:
-        workload = workload_from_artifact_pair(
-            baseline_artifact=_make_artifact("doe"),
-            comparison_artifact=_make_artifact("dawn"),
-        )
-        self.assertEqual(workload.id, "compute_test")
-        self.assertEqual(workload.baseline_command_repeat, 1)
-        self.assertEqual(workload.comparison_command_repeat, 1)
-        self.assertTrue(workload.include_by_default)
-
-    def test_builds_legacy_report(self) -> None:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            out_path = Path(tmpdir) / "dawn-vs-doe.json"
-            workspace = Path(tmpdir) / "workspace"
-            report, comparability_failures, claimability_failures = (
-                build_legacy_compare_report_from_artifacts(
-                    args=_legacy_args(),
-                    artifacts=[_make_artifact("doe"), _make_artifact("dawn")],
-                    baseline_product="doe",
-                    comparison_product="dawn",
-                    benchmark_policy=_benchmark_policy(),
-                    output_timestamp="20260405T120000Z",
-                    out=out_path,
-                    workspace=workspace,
-                    run_artifact_paths=["doe.run.json", "dawn.run.json"],
-                )
-            )
-        self.assertEqual(report["schemaVersion"], 5)
-        self.assertEqual(report["comparisonStatus"], "comparable")
-        self.assertEqual(report["claimStatus"], "not-evaluated")
-        self.assertEqual(len(report["workloads"]), 1)
-        self.assertEqual(comparability_failures, [])
-        self.assertEqual(claimability_failures, [])
-        self.assertEqual(report["runArtifactPaths"], ["doe.run.json", "dawn.run.json"])
+    def test_receipt_run_view_exposes_legacy_stats(self) -> None:
+        view = receipt_run_view(_make_receipt("doe"))
+        self.assertEqual(view["stats"]["count"], 4)
+        self.assertEqual(view["timingClasses"], ["operation"])
 
 
 if __name__ == "__main__":

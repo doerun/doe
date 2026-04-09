@@ -1,0 +1,126 @@
+{
+  "artifactKind": "run-receipt",
+  "execution": {
+    "returnCodes": [
+      0
+    ],
+    "success": true,
+    "timedSampleCount": 1,
+    "timingClasses": [
+      "operation"
+    ],
+    "timingSources": [
+      "doe-execution-total-ns"
+    ]
+  },
+  "executorId": "doe_direct_vulkan",
+  "generatedAt": "2026-04-09T12:00:00+00:00",
+  "hostIdentity": {
+    "adapter": {
+      "architecture": "rdna3",
+      "description": "AMD Radeon Graphics",
+      "device": "gfx1100",
+      "vendor": "amd"
+    },
+    "api": "vulkan",
+    "arch": "x86_64",
+    "driver": "24.0.0",
+    "hostname": "bench-host",
+    "kernel": "6.8.0",
+    "os": "linux"
+  },
+  "invocation": {
+    "command": [
+      "runtime/zig/zig-out/bin/doe-zig-runtime",
+      "--backend",
+      "native"
+    ],
+    "iterations": 16,
+    "resourceProbe": "none",
+    "resourceSampleMs": 100,
+    "resourceSampleTargetCount": 0,
+    "warmup": 1
+  },
+  "normalization": {
+    "allowNoExecution": false,
+    "commandRepeat": 1,
+    "ignoreFirstOps": 0,
+    "timingDivisor": 1.0,
+    "timingNormalizationNote": "",
+    "uploadBufferUsage": "copy-dst-copy-src",
+    "uploadSubmitEvery": 1
+  },
+  "product": "doe",
+  "runtimeIdentity": {
+    "binaryPath": "runtime/zig/zig-out/bin/doe-zig-runtime",
+    "binarySha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "executionBackend": "doe_vulkan",
+    "packageLockHash": "",
+    "packageName": "",
+    "packageVersion": "",
+    "providerId": "doe",
+    "providerName": "doe-gpu",
+    "runtimeHost": "native"
+  },
+  "samples": [
+    {
+      "command": [
+        "runtime/zig/zig-out/bin/doe-zig-runtime",
+        "--backend",
+        "native"
+      ],
+      "measuredMs": 1.25,
+      "measuredRawMs": 1.25,
+      "resource": {},
+      "returnCode": 0,
+      "runIndex": 0,
+      "subphasesMs": {
+        "encodeMs": 0.2,
+        "executionMs": 1.25,
+        "gpuTimestampMs": null,
+        "setupMs": 0.1,
+        "submitWaitMs": 0.3
+      },
+      "success": true,
+      "timingClass": "operation",
+      "timingSource": "doe-execution-total-ns",
+      "traceArtifacts": {
+        "jsonlPath": "bench/out/sample.ndjson",
+        "metaPath": "bench/out/sample.meta.json"
+      },
+      "traceMeta": {
+        "executionBackend": "doe_vulkan"
+      },
+      "wallMs": 1.4
+    }
+  ],
+  "schemaVersion": 1,
+  "workload": {
+    "api": "vulkan",
+    "benchmarkClass": "comparable",
+    "claimEligible": true,
+    "commandsPath": "examples/test.json",
+    "comparable": true,
+    "comparabilityNotes": "sample comparable workload",
+    "description": "sample workload",
+    "directionalReason": "",
+    "domain": "compute",
+    "driver": "24.0.0",
+    "family": "gfx11",
+    "id": "compute_test",
+    "name": "compute test",
+    "pathAsymmetry": false,
+    "pathAsymmetryNote": "",
+    "planPath": "",
+    "quirksPath": "examples/quirks/noop.json",
+    "strictNormalizationUnit": "",
+    "vendor": "amd"
+  },
+  "workloadManifest": {
+    "freshnessReason": "standalone manifest; no backend workload catalog freshness check applies",
+    "inputFreshness": "unknown",
+    "ownership": "standalone",
+    "path": "bench/workloads/workloads.package.gemma270m.json",
+    "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  }
+}

@@ -1,10 +1,12 @@
 """Doe benchmark CLI.
 
-Product-based benchmark runner with isolated runs and post-hoc compare reports.
+Product-based benchmark runner with isolated runs, compare reports, and claim
+reports.
 
 Usage:
     python3 bench/cli.py run     --product doe --executor-id doe_direct_vulkan ...
-    python3 bench/cli.py compare <artifact1.run.json> <artifact2.run.json> ...
+    python3 bench/cli.py compare <receipt1.run.json> <receipt2.run.json> ...
+    python3 bench/cli.py claim   bench/out/foo.compare.json --mode local
     python3 bench/cli.py list    --products | --executors | --workloads FILE
 """
 
@@ -13,7 +15,6 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from argparse import Namespace
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -102,7 +103,6 @@ def _cmd_run(args: argparse.Namespace) -> int:
         required_timing_class=args.require_timing_class,
         comparability_mode=args.comparability_mode,
         benchmark_policy=benchmark_policy,
-        benchmark_policy_path=args.benchmark_policy,
         workload_cooldown_ms=0,
         emit_shell=False,
         timestamp=timestamp,
@@ -148,8 +148,6 @@ def _add_compare_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--warmup", type=int, default=1)
     parser.add_argument("--comparability", default="strict", choices=["strict", "warn", "off"])
     parser.add_argument("--require-timing-class", default="operation", choices=["any", "operation", "process-wall"])
-    parser.add_argument("--claimability", default="off", choices=["off", "local", "release"])
-    parser.add_argument("--claim-min-timed-samples", type=int, default=0)
     parser.add_argument("--resource-probe", default="none", choices=["none", "rocm-smi"])
     parser.add_argument("--resource-sample-ms", type=int, default=100)
     parser.add_argument("--resource-sample-target-count", type=int, default=0)
@@ -174,6 +172,15 @@ def _add_compare_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--out", default="bench/out/compare-report.json", help="Output report path")
 
 
+def _add_claim_args(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("report", help="Compare report JSON path")
+    parser.add_argument("--config", default="", help="Optional compare config for claim defaults")
+    parser.add_argument("--mode", default="", choices=["", "local", "release"], help="Claim mode override")
+    parser.add_argument("--min-timed-samples", type=int, default=0, help="Claim sample-floor override")
+    parser.add_argument("--benchmark-policy", default="", help="Benchmark methodology policy path override")
+    parser.add_argument("--out", default="", help="Output claim report path")
+
+
 def _ordered_products(artifacts: list[dict[str, Any]]) -> list[str]:
     products: list[str] = []
     for artifact in artifacts:
@@ -181,61 +188,6 @@ def _ordered_products(artifacts: list[dict[str, Any]]) -> list[str]:
         if product and product not in products:
             products.append(product)
     return products
-
-
-def _resolve_compare_policy_path(
-    *,
-    args: argparse.Namespace,
-    artifacts: list[dict[str, Any]],
-) -> str:
-    if args.benchmark_policy:
-        return args.benchmark_policy
-    for artifact in artifacts:
-        benchmark_policy = artifact.get("benchmarkPolicy")
-        if not isinstance(benchmark_policy, dict):
-            continue
-        path = str(benchmark_policy.get("path", "")).strip()
-        if path:
-            return path
-    return ""
-
-
-def _legacy_compare_args(
-    *,
-    args: argparse.Namespace,
-    baseline_product: str,
-    comparison_product: str,
-    baseline_executor_id: str,
-    comparison_executor_id: str,
-) -> Namespace:
-    return Namespace(
-        config="",
-        iterations=args.iterations,
-        warmup=args.warmup,
-        workload_cooldown_ms=0,
-        boundary="",
-        runtime_host="",
-        temperature="",
-        comparison_view="",
-        provider_set="",
-        baseline_name=baseline_product,
-        baseline_provider_id="",
-        baseline_executor_id=baseline_executor_id,
-        comparison_name=comparison_product,
-        comparison_provider_id="",
-        comparison_executor_id=comparison_executor_id,
-        comparability=args.comparability,
-        require_timing_class=args.require_timing_class,
-        allow_baseline_no_execution=False,
-        resource_probe=args.resource_probe,
-        resource_sample_ms=args.resource_sample_ms,
-        resource_sample_target_count=args.resource_sample_target_count,
-        workload_cohort="all",
-        selector={},
-        claimability=args.claimability,
-        claim_min_timed_samples=args.claim_min_timed_samples,
-        emit_shell=False,
-    )
 
 
 def _cmd_compare(
@@ -247,9 +199,9 @@ def _cmd_compare(
     raw_compare_argv = list(raw_compare_argv or [])
 
     if args.config:
-        from native_compare_modules import config_compare_runner as config_compare_runner_mod
+        from native_compare_modules import compare_from_config as compare_from_config_mod
 
-        return config_compare_runner_mod.main(raw_compare_argv)
+        return compare_from_config_mod.main(raw_compare_argv)
 
     if (
         args.list_promoted
@@ -320,11 +272,10 @@ def _cmd_compare(
         return result.returncode
 
     from native_compare_modules.compare_from_artifacts import (
-        build_legacy_compare_report_from_artifacts,
-    )
-    from native_compare_modules.config_support import load_benchmark_methodology_policy
-    from native_compare_modules.report_assembly import (
-        write_report_and_determine_status,
+        build_compare_report,
+        compare_workload_from_artifacts,
+        group_run_artifacts_by_workload,
+        write_compare_report,
     )
     from native_compare_modules.run_artifact import load_run_artifact
 
@@ -379,7 +330,11 @@ def _cmd_compare(
         print("error: compare requires at least 2 run artifact paths (or --products for inline mode)", file=sys.stderr)
         return 1
 
-    artifacts = [load_run_artifact(p) for p in artifact_paths]
+    artifacts: list[dict[str, Any]] = []
+    for path in artifact_paths:
+        artifact = load_run_artifact(path)
+        artifact["_receiptPath"] = path
+        artifacts.append(artifact)
     products_seen = _ordered_products(artifacts)
     if len(products_seen) != 2:
         print(
@@ -417,45 +372,60 @@ def _cmd_compare(
             file=sys.stderr,
         )
         return 1
-    benchmark_policy = load_benchmark_methodology_policy(
-        _resolve_compare_policy_path(args=args, artifacts=artifacts)
-    )
-    legacy_args = _legacy_compare_args(
-        args=args,
-        baseline_product=baseline_product,
-        comparison_product=comparison_product,
-        baseline_executor_id=str(baseline_artifact.get("executorId", "")),
-        comparison_executor_id=str(comparison_artifact.get("executorId", "")),
-    )
     out_path = Path(args.out)
-    workspace = out_path.parent / f"{out_path.stem}.workspace"
-    try:
-        report, comparability_failures, claimability_failures = (
-            build_legacy_compare_report_from_artifacts(
-                args=legacy_args,
-                artifacts=artifacts,
-                baseline_product=baseline_product,
-                comparison_product=comparison_product,
-                benchmark_policy=benchmark_policy,
-                output_timestamp=_utc_timestamp(),
-                out=out_path,
-                workspace=workspace,
-                run_artifact_paths=artifact_paths,
+    grouped = group_run_artifacts_by_workload(artifacts)
+    workload_entries: list[dict[str, Any]] = []
+    for workload_id in sorted(grouped):
+        workload_group = grouped[workload_id]
+        if baseline_product not in workload_group or comparison_product not in workload_group:
+            print(
+                "error: compare currently requires both selected products for each workload; "
+                f"missing side for {workload_id}",
+                file=sys.stderr,
+            )
+            return 1
+        workload_entries.append(
+            compare_workload_from_artifacts(
+                baseline=workload_group[baseline_product],
+                comparison=workload_group[comparison_product],
+                comparability_mode=args.comparability,
+                required_timing_class=args.require_timing_class,
+                resource_probe=args.resource_probe,
+                resource_sample_target_count=args.resource_sample_target_count,
+                primary_metric="measured_ms",
             )
         )
-    except ValueError as exc:
-        print(f"error: {exc}", file=sys.stderr)
-        return 1
-    print(f"\nCompare report: {out_path}")
-    return write_report_and_determine_status(
-        report=report,
-        out=out_path,
-        workspace=workspace,
-        args=legacy_args,
-        comparability_failures=comparability_failures,
-        claimability_failures=claimability_failures,
-        workload_count=len(report.get("workloads", [])),
+    report = build_compare_report(
+        workload_entries=workload_entries,
+        baseline_artifact=baseline_artifact,
+        comparison_artifact=comparison_artifact,
+        comparability_mode=args.comparability,
+        required_timing_class=args.require_timing_class,
+        primary_metric="measured_ms",
+        out_path=str(out_path),
+        run_artifact_paths=artifact_paths,
     )
+    write_compare_report(report, out_path)
+    print(f"\nCompare report: {out_path}")
+    return 0
+
+
+def _cmd_claim(args: argparse.Namespace) -> int:
+    _ensure_bench_imports()
+    from native_compare_modules import claim_from_config as claim_from_config_mod
+
+    argv = [args.report]
+    if args.config:
+        argv.extend(["--config", args.config])
+    if args.mode:
+        argv.extend(["--mode", args.mode])
+    if args.min_timed_samples > 0:
+        argv.extend(["--min-timed-samples", str(args.min_timed_samples)])
+    if args.benchmark_policy:
+        argv.extend(["--benchmark-policy", args.benchmark_policy])
+    if args.out:
+        argv.extend(["--out", args.out])
+    return claim_from_config_mod.main(argv)
 
 
 # ---------------------------------------------------------------------------
@@ -525,7 +495,7 @@ def main() -> int:
     argv = sys.argv[1:]
     parser = argparse.ArgumentParser(
         prog="doe-bench",
-        description="Doe benchmark CLI: run products independently, then build compare reports from run artifacts.",
+        description="Doe benchmark CLI: run products independently, build compare reports from run receipts, then evaluate separate claim reports.",
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
@@ -534,6 +504,9 @@ def main() -> int:
 
     compare_parser = subparsers.add_parser("compare", help="Compare run artifacts or run config-backed/promoted compare profiles")
     _add_compare_args(compare_parser)
+
+    claim_parser = subparsers.add_parser("claim", help="Evaluate claim policy from an existing compare report")
+    _add_claim_args(claim_parser)
 
     list_parser = subparsers.add_parser("list", help="List products, executors, workloads, or surfaces")
     _add_list_args(list_parser)
@@ -551,6 +524,10 @@ def main() -> int:
 
     if args.command == "run":
         return _cmd_run(args)
+    if args.command == "compare":
+        return _cmd_compare(args)
+    if args.command == "claim":
+        return _cmd_claim(args)
     if args.command == "list":
         return _cmd_list(args)
     return 1

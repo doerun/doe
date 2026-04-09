@@ -33,6 +33,11 @@ def parse_args() -> argparse.Namespace:
         help="Path to a compare-lane JSON report.",
     )
     parser.add_argument(
+        "--claim-report",
+        default="",
+        help="Optional sidecar claim-report JSON path. Defaults to sibling .claim.json when present.",
+    )
+    parser.add_argument(
         "--out",
         default="",
         help="Output HTML path (default: report path with .html suffix)",
@@ -66,6 +71,31 @@ def parse_args() -> argparse.Namespace:
         help="Max number of workloads to render ECDF overlays (0 = all)",
     )
     return parser.parse_args()
+
+
+def default_claim_report_path(report_path: Path) -> Path | None:
+    name = report_path.name
+    if name.endswith(".compare.json"):
+        candidate = report_path.with_name(name.replace(".compare.json", ".claim.json"))
+        if candidate.exists():
+            return candidate
+    return None
+
+
+def load_optional_claim_report(explicit_path: str, report_path: Path) -> dict[str, Any]:
+    candidate_path: Path | None = None
+    if explicit_path:
+        candidate_path = Path(explicit_path)
+    else:
+        candidate_path = default_claim_report_path(report_path)
+    if candidate_path is None or not candidate_path.exists():
+        return {}
+    payload = json.loads(candidate_path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise ValueError(f"invalid claim report object: {candidate_path}")
+    if payload.get("artifactKind") != "claim-report":
+        raise ValueError(f"expected claim-report at {candidate_path}")
+    return payload
 
 
 def safe_float(value: Any) -> float | None:
@@ -537,12 +567,16 @@ def metric_class(value: Any) -> str:
 
 def generate_html(
     report: dict[str, Any],
+    claim_report: dict[str, Any],
     analyses: list[dict[str, Any]],
     title: str,
     max_ecdf_workloads: int,
 ) -> str:
     comparison_status = report.get("comparisonStatus", "unknown")
-    claim_status = report.get("claimStatus", "not-evaluated")
+    claim_status = claim_report.get(
+        "claimStatus",
+        report.get("claimStatus", "not-evaluated"),
+    )
     comparability = report.get("comparabilitySummary", {})
     workload_count = comparability.get("workloadCount", 0)
     non_comparable_count = comparability.get("nonComparableCount", 0)
@@ -560,10 +594,10 @@ def generate_html(
         "<div class='table-shell'><table>"
         "<thead><tr><th>Metric</th><th>Delta</th></tr></thead>"
         "<tbody>"
-        f"<tr><td>selected p10</td><td class='{metric_class(overall_delta.get('p10Approx'))}'>{fmt_pct(overall_delta.get('p10Approx'))}</td></tr>"
-        f"<tr><td>selected p50</td><td class='{metric_class(overall_delta.get('p50Approx'))}'>{fmt_pct(overall_delta.get('p50Approx'))}</td></tr>"
-        f"<tr><td>selected p95</td><td class='{metric_class(overall_delta.get('p95Approx'))}'>{fmt_pct(overall_delta.get('p95Approx'))}</td></tr>"
-        f"<tr><td>selected p99</td><td class='{metric_class(overall_delta.get('p99Approx'))}'>{fmt_pct(overall_delta.get('p99Approx'))}</td></tr>"
+        f"<tr><td>selected p10</td><td class='{metric_class(overall_delta.get('p10Percent'))}'>{fmt_pct(overall_delta.get('p10Percent'))}</td></tr>"
+        f"<tr><td>selected p50</td><td class='{metric_class(overall_delta.get('p50Percent'))}'>{fmt_pct(overall_delta.get('p50Percent'))}</td></tr>"
+        f"<tr><td>selected p95</td><td class='{metric_class(overall_delta.get('p95Percent'))}'>{fmt_pct(overall_delta.get('p95Percent'))}</td></tr>"
+        f"<tr><td>selected p99</td><td class='{metric_class(overall_delta.get('p99Percent'))}'>{fmt_pct(overall_delta.get('p99Percent'))}</td></tr>"
         f"<tr><td>wall p50</td><td class='{metric_class(overall_wall_delta.get('p50Percent'))}'>{fmt_pct(overall_wall_delta.get('p50Percent'))}</td></tr>"
         f"<tr><td>wall p95</td><td class='{metric_class(overall_wall_delta.get('p95Percent'))}'>{fmt_pct(overall_wall_delta.get('p95Percent'))}</td></tr>"
         "</tbody></table>"
@@ -722,7 +756,7 @@ def generate_html(
                 "Claim",
                 str(claim_status),
                 tone=visual_report_theme.status_tone(str(claim_status), kind="claim"),
-                detail="Top-level claim outcome after policy evaluation.",
+                detail="Top-level claim outcome from a sidecar claim report when present.",
             ),
             visual_report_theme.stat_card(
                 "Workloads",
@@ -731,8 +765,8 @@ def generate_html(
             ),
             visual_report_theme.stat_card(
                 "Selected p50",
-                fmt_pct(overall_delta.get("p50Approx")),
-                tone=visual_report_theme.delta_tone(overall_delta.get("p50Approx")),
+                fmt_pct(overall_delta.get("p50Percent")),
+                tone=visual_report_theme.delta_tone(overall_delta.get("p50Percent")),
                 detail="Methodology-selected timing scope for this compare report.",
             ),
             visual_report_theme.stat_card(
@@ -749,8 +783,8 @@ def generate_html(
             ),
             visual_report_theme.stat_card(
                 "Selected p95",
-                fmt_pct(overall_delta.get("p95Approx")),
-                tone=visual_report_theme.delta_tone(overall_delta.get("p95Approx")),
+                fmt_pct(overall_delta.get("p95Percent")),
+                tone=visual_report_theme.delta_tone(overall_delta.get("p95Percent")),
                 detail="Selected timing tail behavior, which can be narrower than workload wall.",
             ),
             visual_report_theme.stat_card(
@@ -913,6 +947,7 @@ def main() -> int:
 
     out_path = Path(args.out) if args.out else report_path.with_suffix(".html")
     report = json.loads(report_path.read_text(encoding="utf-8"))
+    claim_report = load_optional_claim_report(args.claim_report, report_path)
     analyses = analyze_report(
         report,
         bootstrap_iterations=max(args.bootstrap_iterations, 0),
@@ -921,6 +956,7 @@ def main() -> int:
 
     html = generate_html(
         report,
+        claim_report,
         analyses,
         args.title,
         max_ecdf_workloads=args.max_ecdf_workloads,

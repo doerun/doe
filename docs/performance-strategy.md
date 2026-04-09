@@ -80,7 +80,9 @@ If any condition fails, classify the run as `diagnostic`.
 
 Harness support:
 
-- `bench/cli.py compare --claimability local|release` enforces this contract and emits `claimStatus`.
+- `bench/cli.py compare` produces the compare report used for comparability.
+- `bench/cli.py claim --mode local|release` evaluates claim policy separately
+  and emits `claimStatus` in a sidecar claim report.
 
 ## Delta sign convention
 

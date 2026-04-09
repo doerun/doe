@@ -1,5 +1,43 @@
 # Config Migration Notes
 
+## 2026-04-09
+
+### Bench artifacts now use an explicit run -> compare -> claim split
+
+- added three explicit artifact contracts:
+  - `config/run-receipt.schema.json`
+  - `config/compare-report.schema.json`
+  - `config/claim-report.schema.json`
+- `bench/cli.py` now exposes:
+  - `python3 bench/cli.py run ...`
+  - `python3 bench/cli.py compare ...`
+  - `python3 bench/cli.py claim ...`
+- `bench/native_compare_modules/config_compare_runner.py` is no longer the
+  workflow brain; it is now a thin compatibility wrapper over
+  `compare_from_config.py`
+- new thin config expanders now separate concerns:
+  - `run_from_config.py`
+  - `compare_from_config.py`
+  - `claim_from_config.py`
+- compare reports now carry only comparability plus delta data; claim status
+  moved into `claim-report`
+- standalone workload manifests are now explicitly marked
+  `ownership: "standalone"` and never freshness-checked against the backend
+  workload catalog
+- generated workload manifests now carry:
+  - `ownership: "generated"`
+  - `generatorId`
+  - `generatorInputHash`
+  - `generatedAt`
+- freshness is now advisory metadata only:
+  - `inputFreshness: fresh | stale | unknown`
+  - `freshnessReason`
+- validation and smoke:
+  - `python3 -m unittest bench.tests.test_run_artifact bench.tests.test_compare_from_artifacts bench.tests.test_artifact_benchmarking`
+  - `python3 bench/tools/generate_backend_workloads.py`
+  - `python3 bench/cli.py compare bench/out/amd-vulkan/compare/20260408T212313Z/runtime-comparisons.amd.vulkan.compare/run-artifacts/doe/doe-upload_write_buffer_1kb-20260408T212313Z.run.json bench/out/amd-vulkan/compare/20260408T212313Z/runtime-comparisons.amd.vulkan.compare/run-artifacts/dawn_delegate/dawn_delegate-upload_write_buffer_1kb-20260408T212313Z.run.json --baseline-product doe --comparison-product dawn_delegate --out /tmp/doe-compare-refactor-smoke.compare.json`
+  - `python3 bench/cli.py claim /tmp/doe-compare-refactor-smoke.compare.json --mode local --benchmark-policy config/benchmark-methodology-thresholds.json --out /tmp/doe-compare-refactor-smoke.claim.json`
+
 ## 2026-04-08
 
 ### Compare runner stale warnings now verify generated workload content before warning

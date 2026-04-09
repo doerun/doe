@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Doe benchmark visualization pipeline</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg-paper: #f6efe4;
+      --bg-mist: #eef4f7;
+      --bg-ink: #102033;
+      --panel: rgba(255, 252, 246, 0.86);
+      --panel-strong: rgba(255, 253, 249, 0.98);
+      --line: rgba(28, 53, 77, 0.14);
+      --line-strong: rgba(28, 53, 77, 0.22);
+      --ink: #132033;
+      --muted: #576578;
+      --accent: #0d7c76;
+      --accent-strong: #0a615d;
+      --good-bg: #d8f2e5;
+      --good-ink: #0d6c3d;
+      --warn-bg: #f7ebc8;
+      --warn-ink: #8e6110;
+      --bad-bg: #f6d8d2;
+      --bad-ink: #9c3b2d;
+      --neutral-bg: #e2e8ef;
+      --neutral-ink: #516273;
+      --shadow: 0 18px 54px rgba(15, 23, 42, 0.08);
+      --shadow-soft: 0 10px 28px rgba(15, 23, 42, 0.05);
+      --font-body: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+      --font-heading: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+      --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+    }
+    * {
+      box-sizing: border-box;
+    }
+    html {
+      scroll-behavior: smooth;
+    }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: var(--font-body);
+      background:
+        radial-gradient(circle at top left, rgba(13, 124, 118, 0.18), transparent 28%),
+        radial-gradient(circle at 88% 4%, rgba(208, 136, 29, 0.18), transparent 24%),
+        linear-gradient(180deg, var(--bg-paper) 0%, #f5f8fb 20%, var(--bg-mist) 100%);
+      min-height: 100vh;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(16, 32, 51, 0.015) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(16, 32, 51, 0.015) 1px, transparent 1px);
+      background-size: 28px 28px;
+      mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.45), transparent 82%);
+      pointer-events: none;
+    }
+    main {
+      position: relative;
+      max-width: 1460px;
+      margin: 0 auto;
+      padding: 28px 22px 72px;
+    }
+    a {
+      color: var(--accent-strong);
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+    code {
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+    .hero {
+      position: relative;
+      overflow: hidden;
+      padding: 28px;
+      border: 1px solid var(--line);
+      border-radius: 26px;
+      background:
+        linear-gradient(145deg, rgba(255, 250, 243, 0.96), rgba(245, 251, 255, 0.92)),
+        var(--panel);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+    }
+    .hero::after {
+      content: "";
+      position: absolute;
+      width: 420px;
+      height: 420px;
+      top: -180px;
+      right: -120px;
+      border-radius: 999px;
+      background: radial-gradient(circle, rgba(13, 124, 118, 0.18), transparent 70%);
+      pointer-events: none;
+    }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--accent-strong);
+    }
+    .eyebrow::before {
+      content: "";
+      display: inline-block;
+      width: 24px;
+      height: 1px;
+      background: currentColor;
+    }
+    h1 {
+      margin: 12px 0 10px;
+      font-family: var(--font-heading);
+      font-size: clamp(34px, 4vw, 58px);
+      line-height: 0.98;
+      letter-spacing: -0.03em;
+      max-width: 12ch;
+    }
+    .intro {
+      max-width: 76ch;
+      margin: 0;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.6;
+    }
+    .hero-meta {
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.7;
+    }
+    .hero-extra {
+      margin-top: 20px;
+    }
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 14px;
+      margin-top: 20px;
+    }
+    .stat-card {
+      padding: 16px;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: var(--panel-strong);
+      box-shadow: var(--shadow-soft);
+    }
+    .stat-card.good {
+      background: linear-gradient(180deg, rgba(216, 242, 229, 0.96), rgba(255, 253, 249, 0.98));
+    }
+    .stat-card.warn {
+      background: linear-gradient(180deg, rgba(247, 235, 200, 0.95), rgba(255, 253, 249, 0.98));
+    }
+    .stat-card.bad {
+      background: linear-gradient(180deg, rgba(246, 216, 210, 0.95), rgba(255, 253, 249, 0.98));
+    }
+    .card-label {
+      color: var(--muted);
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+    .card-value {
+      margin-top: 8px;
+      font-size: clamp(22px, 2.6vw, 34px);
+      line-height: 1;
+      font-weight: 700;
+    }
+    .card-detail {
+      margin-top: 8px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .section {
+      margin-top: 22px;
+      padding: 20px;
+      border-radius: 22px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      box-shadow: var(--shadow-soft);
+      backdrop-filter: blur(10px);
+    }
+    .section-head {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+    .section h2 {
+      margin: 0;
+      font-family: var(--font-heading);
+      font-size: 24px;
+      letter-spacing: -0.02em;
+    }
+    .section-copy {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.55;
+      max-width: 76ch;
+    }
+    .badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      background: var(--neutral-bg);
+      color: var(--neutral-ink);
+    }
+    .badge.good {
+      background: var(--good-bg);
+      color: var(--good-ink);
+    }
+    .badge.warn {
+      background: var(--warn-bg);
+      color: var(--warn-ink);
+    }
+    .badge.bad {
+      background: var(--bad-bg);
+      color: var(--bad-ink);
+    }
+    .badge.info {
+      background: rgba(183, 223, 244, 0.92);
+      color: #195580;
+    }
+    .badge.neutral {
+      background: var(--neutral-bg);
+      color: var(--neutral-ink);
+    }
+    .artifact-grid,
+    .tile-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 14px;
+    }
+    .tile {
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255, 253, 249, 0.92);
+    }
+    .tile h3 {
+      margin: 0 0 10px;
+      font-family: var(--font-heading);
+      font-size: 18px;
+    }
+    .tile p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.55;
+    }
+    .link-list {
+      display: grid;
+      gap: 8px;
+      margin-top: 14px;
+      font-size: 13px;
+    }
+    .link-list a code {
+      font-size: 12px;
+    }
+    .table-shell {
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.72);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 760px;
+    }
+    th,
+    td {
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(21, 38, 59, 0.08);
+      font-size: 13px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      position: sticky;
+      top: 0;
+      background: rgba(241, 246, 250, 0.98);
+      color: #31435a;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      z-index: 1;
+    }
+    tr:last-child td {
+      border-bottom: none;
+    }
+    .metric-positive {
+      color: var(--good-ink);
+      font-weight: 700;
+    }
+    .metric-negative {
+      color: var(--bad-ink);
+      font-weight: 700;
+    }
+    .metric-neutral {
+      color: var(--neutral-ink);
+      font-weight: 700;
+    }
+    .fine-print {
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    details {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(255, 253, 249, 0.9);
+      padding: 12px 14px;
+    }
+    details + details {
+      margin-top: 12px;
+    }
+    summary {
+      cursor: pointer;
+      font-weight: 700;
+      font-family: var(--font-heading);
+    }
+    @media (max-width: 900px) {
+      main {
+        padding: 16px 14px 44px;
+      }
+      .hero {
+        padding: 22px 18px;
+      }
+      .section {
+        padding: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="hero">
+      <div class="eyebrow">Doe visualization pipeline</div>
+      <h1>Performance bundle</h1>
+      <p class="intro">A timestamped landing page over compare receipts and dashboards, built to keep the interesting numbers visible without flattening the methodology caveats.</p>
+      <div class="hero-meta">generated: <code>2026-04-08T22:22:48.103649Z</code></div>
+      <div class="hero-extra"><div class='stat-grid'><article class='stat-card neutral'><div class='card-label'>Compare pages</div><div class='card-value'>3</div><div class='card-detail'>Per-report HTML pages generated in this bundle.</div></article><article class='stat-card good'><div class='card-label'>Claimable compares</div><div class='card-value'>3</div><div class='card-detail'>Top-level compare reports whose current claim status is claimable.</div></article><article class='stat-card warn'><div class='card-label'>Local claim lanes</div><div class='card-value'>3</div><div class='card-detail'>Reports operating under local claimability mode, not release mode.</div></article><article class='stat-card neutral'><div class='card-label'>Bundle timestamp</div><div class='card-value'>20260408T222247Z</div><div class='card-detail'>Shared run stamp for this visualization bundle.</div></article></div></div>
+    </section>
+    <section class='section'><div class='section-head'><div><h2>Bundle summary</h2><div class='section-copy'>This bundle is the pipeline output for one visualization run: compare pages, cube, inventory, and a stable landing page. It is designed to be shareable inside the repo without hiding the caveats that matter.</div></div></div><div class='stat-grid'><article class='stat-card neutral'><div class='card-label'>Compare pages</div><div class='card-value'>3</div><div class='card-detail'>Per-report HTML pages generated in this bundle.</div></article><article class='stat-card good'><div class='card-label'>Claimable compares</div><div class='card-value'>3</div><div class='card-detail'>Top-level compare reports whose current claim status is claimable.</div></article><article class='stat-card warn'><div class='card-label'>Local claim lanes</div><div class='card-value'>3</div><div class='card-detail'>Reports operating under local claimability mode, not release mode.</div></article><article class='stat-card neutral'><div class='card-label'>Bundle timestamp</div><div class='card-value'>20260408T222247Z</div><div class='card-detail'>Shared run stamp for this visualization bundle.</div></article></div></section><section class='section'><div class='section-head'><div><h2>Compare pages</h2><div class='section-copy'>Each compare tile surfaces both selected timing and workload-unit wall so fast-path diagnostics are visible without being confused for end-to-end claim numbers.</div></div></div><div class='tile-grid'><article class='tile'><h3>AMD Vulkan native</h3><div class='badge-row'><span class='badge good'>comparable</span><span class='badge good'>claimable</span><span class='badge info'>local</span></div><p>Selected timing and workload-unit wall are both surfaced here. Use wall as the conservative end-to-end read when it materially differs.</p><div class='table-shell' style='margin-top:14px; min-width:0;'><table style='min-width:0;'><thead><tr><th>Metric</th><th>Value</th></tr></thead><tbody><tr><td>Selected p50</td><td class='metric-positive'>+244.84%</td></tr><tr><td>Wall p50</td><td class='metric-positive'>+99.70%</td></tr><tr><td>Selected p95</td><td class='metric-positive'>+1441.76%</td></tr><tr><td>Wall p95</td><td class='metric-positive'>+216.62%</td></tr><tr><td>Workloads</td><td>4</td></tr><tr><td>Comparable rows</td><td>4</td></tr><tr><td>Operator diff</td><td><span class='badge warn'>missing_operator_manifests</span></td></tr></tbody></table></div><div class='link-list'><div>compare page: <a href='dawn-vs-doe-amd-vulkan-compare.html'><code>dawn-vs-doe-amd-vulkan-compare.html</code></a></div><div>analysis JSON: <a href='dawn-vs-doe-amd-vulkan-compare.analysis.json'><code>dawn-vs-doe-amd-vulkan-compare.analysis.json</code></a></div><div>source report: <a href='../../amd-vulkan/compare/20260408T212313Z/dawn-vs-doe.amd.vulkan.compare.json'><code>dawn-vs-doe.amd.vulkan.compare.json</code></a></div></div><div class='fine-print'>When timingInterpretation.selectedTiming.scopeClass is narrow-hot-path, deltaPercent remains a phase-specific diagnostic. Claimability evaluates timingInterpretation.workloadUnitWall.deltaPercent when that full metric is available.</div></article><article class='tile'><h3>AMD Vulkan Node package</h3><div class='badge-row'><span class='badge good'>comparable</span><span class='badge good'>claimable</span><span class='badge info'>local</span></div><p>Selected timing and workload-unit wall are both surfaced here. Use wall as the conservative end-to-end read when it materially differs.</p><div class='table-shell' style='margin-top:14px; min-width:0;'><table style='min-width:0;'><thead><tr><th>Metric</th><th>Value</th></tr></thead><tbody><tr><td>Selected p50</td><td class='metric-positive'>+170.40%</td></tr><tr><td>Wall p50</td><td class='metric-positive'>+15.95%</td></tr><tr><td>Selected p95</td><td class='metric-positive'>+222.31%</td></tr><tr><td>Wall p95</td><td class='metric-positive'>+25.68%</td></tr><tr><td>Workloads</td><td>1</td></tr><tr><td>Comparable rows</td><td>1</td></tr><tr><td>Operator diff</td><td><span class='badge warn'>missing_operator_manifests</span></td></tr></tbody></table></div><div class='link-list'><div>compare page: <a href='gemma270m-node-package-ir-compare.html'><code>gemma270m-node-package-ir-compare.html</code></a></div><div>analysis JSON: <a href='gemma270m-node-package-ir-compare.analysis.json'><code>gemma270m-node-package-ir-compare.analysis.json</code></a></div><div>source report: <a href='../../amd-vulkan/20260408T214329Z/gemma270m.node-package.ir.compare.json'><code>gemma270m.node-package.ir.compare.json</code></a></div></div><div class='fine-print'>When timingInterpretation.selectedTiming.scopeClass is narrow-hot-path, deltaPercent remains a phase-specific diagnostic. Claimability evaluates timingInterpretation.workloadUnitWall.deltaPercent when that full metric is available.</div></article><article class='tile'><h3>AMD Vulkan Bun package</h3><div class='badge-row'><span class='badge good'>comparable</span><span class='badge good'>claimable</span><span class='badge info'>local</span></div><p>Selected timing and workload-unit wall are both surfaced here. Use wall as the conservative end-to-end read when it materially differs.</p><div class='table-shell' style='margin-top:14px; min-width:0;'><table style='min-width:0;'><thead><tr><th>Metric</th><th>Value</th></tr></thead><tbody><tr><td>Selected p50</td><td class='metric-positive'>+180.87%</td></tr><tr><td>Wall p50</td><td class='metric-positive'>+21.21%</td></tr><tr><td>Selected p95</td><td class='metric-positive'>+243.39%</td></tr><tr><td>Wall p95</td><td class='metric-positive'>+36.95%</td></tr><tr><td>Workloads</td><td>1</td></tr><tr><td>Comparable rows</td><td>1</td></tr><tr><td>Operator diff</td><td><span class='badge warn'>missing_operator_manifests</span></td></tr></tbody></table></div><div class='link-list'><div>compare page: <a href='gemma270m-bun-package-ir-compare.html'><code>gemma270m-bun-package-ir-compare.html</code></a></div><div>analysis JSON: <a href='gemma270m-bun-package-ir-compare.analysis.json'><code>gemma270m-bun-package-ir-compare.analysis.json</code></a></div><div>source report: <a href='../../amd-vulkan/20260408T214329Z/gemma270m.bun-package.ir.compare.json'><code>gemma270m.bun-package.ir.compare.json</code></a></div></div><div class='fine-print'>When timingInterpretation.selectedTiming.scopeClass is narrow-hot-path, deltaPercent remains a phase-specific diagnostic. Claimability evaluates timingInterpretation.workloadUnitWall.deltaPercent when that full metric is available.</div></article></div></section><section class='section'><div class='section-head'><div><h2>Dashboards</h2><div class='section-copy'>The compare pages show individual receipts. The cube and inventory pages answer broader coverage questions across surfaces and matrices.</div></div></div><div class='tile-grid'><article class='tile'><h3>Benchmark cube</h3><p>Cross-surface matrix over native, Node, and Bun evidence with status cells, heatmaps, and normalized row summaries.</p><div class='link-list'><div>dashboard: <a href='cube.dashboard.html'><code>cube.dashboard.html</code></a></div><div>rows: <a href='cube.rows.json'><code>cube.rows.json</code></a></div><div>matrix: <a href='cube.matrix.md'><code>cube.matrix.md</code></a></div></div></article><article class='tile'><h3>Inventory dashboard</h3><p>Repository-wide index of comparable and claimable reports across matrices and tested hardware profiles.</p><div class='link-list'><div>dashboard: <a href='inventory.dashboard.html'><code>inventory.dashboard.html</code></a></div><div>inventory: <a href='inventory.json'><code>inventory.json</code></a></div></div></article></div></section><section class='section'><div class='section-head'><div><h2>Interpretation guardrails</h2><div class='section-copy'>These are the constraints the landing page keeps visible so the bundle stays honest under skeptical reading.</div></div></div><div class='tile-grid'><article class='tile'><h3>Selected timing is not the whole story</h3><p>Where a report records workload-unit wall, that end-to-end view is shown alongside the selected timing view instead of being silently replaced by a larger fast-path delta.</p></article><article class='tile'><h3>Local claimability stays labeled</h3><p>This bundle does not blur local claim receipts into release-grade evidence. Claimability mode is shown on every compare tile.</p></article><article class='tile'><h3>Operator-level diff gaps stay visible</h3><p>If a report is missing operator manifests, the bundle says so directly. Structural parity is still useful, but it does not become a stronger claim than the evidence supports.</p></article></div></section>
+  </main>
+</body>
+</html>

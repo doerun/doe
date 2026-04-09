@@ -1,0 +1,460 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Doe compare report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "generatedAt",
+    "outPath",
+    "comparisonStatus",
+    "primaryMetric",
+    "comparabilityPolicy",
+    "participants",
+    "workloadManifest",
+    "runReceiptPaths",
+    "comparabilitySummary",
+    "comparabilityFailures",
+    "overall",
+    "overallWorkloadUnitWall",
+    "workloads"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "artifactKind": {
+      "type": "string",
+      "const": "compare-report"
+    },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "outPath": {
+      "type": "string"
+    },
+    "comparisonStatus": {
+      "type": "string",
+      "enum": [
+        "comparable",
+        "unreliable"
+      ]
+    },
+    "primaryMetric": {
+      "type": "string",
+      "enum": [
+        "measured_ms",
+        "wall_ms"
+      ]
+    },
+    "comparabilityPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "requireTimingClass"
+      ],
+      "properties": {
+        "mode": {
+          "type": "string"
+        },
+        "requireTimingClass": {
+          "type": "string"
+        }
+      }
+    },
+    "participants": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "left",
+        "right"
+      ],
+      "properties": {
+        "left": {
+          "$ref": "#/$defs/participant"
+        },
+        "right": {
+          "$ref": "#/$defs/participant"
+        }
+      }
+    },
+    "workloadManifest": {
+      "$ref": "#/$defs/workloadManifest"
+    },
+    "runReceiptPaths": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "comparabilitySummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "workloadCount",
+        "nonComparableCount"
+      ],
+      "properties": {
+        "workloadCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "nonComparableCount": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "comparabilityFailures": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/comparabilityFailure"
+      }
+    },
+    "overall": {
+      "$ref": "#/$defs/aggregate"
+    },
+    "overallWorkloadUnitWall": {
+      "$ref": "#/$defs/aggregate"
+    },
+    "workloads": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/workloadEntry"
+      }
+    }
+  },
+  "$defs": {
+    "workloadManifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "sha256",
+        "ownership",
+        "inputFreshness",
+        "freshnessReason"
+      ],
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "sha256": {
+          "type": "string"
+        },
+        "ownership": {
+          "type": "string"
+        },
+        "inputFreshness": {
+          "type": "string"
+        },
+        "freshnessReason": {
+          "type": "string"
+        },
+        "generatorId": {
+          "type": "string"
+        },
+        "generatorInputHash": {
+          "type": "string"
+        },
+        "generatedAt": {
+          "type": "string"
+        }
+      }
+    },
+    "participant": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "product",
+        "executorId",
+        "runtimeIdentity",
+        "hostIdentity"
+      ],
+      "properties": {
+        "product": {
+          "type": "string"
+        },
+        "executorId": {
+          "type": "string"
+        },
+        "runtimeIdentity": {
+          "type": "object"
+        },
+        "hostIdentity": {
+          "type": "object"
+        }
+      }
+    },
+    "stats": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "count",
+        "minMs",
+        "maxMs",
+        "p10Ms",
+        "p50Ms",
+        "p95Ms",
+        "p99Ms",
+        "meanMs",
+        "stdevMs"
+      ],
+      "properties": {
+        "count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "minMs": {
+          "type": "number"
+        },
+        "maxMs": {
+          "type": "number"
+        },
+        "p10Ms": {
+          "type": "number"
+        },
+        "p50Ms": {
+          "type": "number"
+        },
+        "p95Ms": {
+          "type": "number"
+        },
+        "p99Ms": {
+          "type": "number"
+        },
+        "meanMs": {
+          "type": "number"
+        },
+        "stdevMs": {
+          "type": "number"
+        }
+      }
+    },
+    "deltaPercent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "p10Percent",
+        "p50Percent",
+        "p95Percent",
+        "p99Percent",
+        "meanPercent"
+      ],
+      "properties": {
+        "p10Percent": {
+          "type": "number"
+        },
+        "p50Percent": {
+          "type": "number"
+        },
+        "p95Percent": {
+          "type": "number"
+        },
+        "p99Percent": {
+          "type": "number"
+        },
+        "meanPercent": {
+          "type": "number"
+        }
+      }
+    },
+    "aggregate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "baselineStatsMs",
+        "comparisonStatsMs",
+        "deltaPercent"
+      ],
+      "properties": {
+        "baselineStatsMs": {
+          "$ref": "#/$defs/stats"
+        },
+        "comparisonStatsMs": {
+          "$ref": "#/$defs/stats"
+        },
+        "deltaPercent": {
+          "$ref": "#/$defs/deltaPercent"
+        }
+      }
+    },
+    "comparabilityFailure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "workloadId",
+        "reasons"
+      ],
+      "properties": {
+        "workloadId": {
+          "type": "string"
+        },
+        "reasons": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "receiptRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "product",
+        "sha256"
+      ],
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "product": {
+          "type": "string"
+        },
+        "sha256": {
+          "type": "string"
+        }
+      }
+    },
+    "workloadEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "description",
+        "domain",
+        "workloadComparable",
+        "benchmarkClass",
+        "claimEligible",
+        "pathAsymmetry",
+        "pathAsymmetryNote",
+        "receipts",
+        "workloadMatching",
+        "comparability",
+        "primaryMetric",
+        "normalization",
+        "baselineStatsMs",
+        "comparisonStatsMs",
+        "deltaPercent",
+        "workloadUnitWall",
+        "timingInterpretation"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "domain": {
+          "type": "string"
+        },
+        "workloadComparable": {
+          "type": "boolean"
+        },
+        "benchmarkClass": {
+          "type": "string"
+        },
+        "claimEligible": {
+          "type": "boolean"
+        },
+        "pathAsymmetry": {
+          "type": "boolean"
+        },
+        "pathAsymmetryNote": {
+          "type": "string"
+        },
+        "receipts": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "left",
+            "right"
+          ],
+          "properties": {
+            "left": {
+              "$ref": "#/$defs/receiptRef"
+            },
+            "right": {
+              "$ref": "#/$defs/receiptRef"
+            }
+          }
+        },
+        "workloadMatching": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "matched",
+            "reasons"
+          ],
+          "properties": {
+            "matched": {
+              "type": "boolean"
+            },
+            "reasons": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "comparability": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "comparable",
+            "reasons"
+          ],
+          "properties": {
+            "comparable": {
+              "type": "boolean"
+            },
+            "reasons": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "primaryMetric": {
+          "type": "string"
+        },
+        "normalization": {
+          "type": "string",
+          "enum": [
+            "repeat",
+            "per_op",
+            "none"
+          ]
+        },
+        "baselineStatsMs": {
+          "$ref": "#/$defs/stats"
+        },
+        "comparisonStatsMs": {
+          "$ref": "#/$defs/stats"
+        },
+        "deltaPercent": {
+          "$ref": "#/$defs/deltaPercent"
+        },
+        "workloadUnitWall": {
+          "$ref": "#/$defs/aggregate"
+        },
+        "timingInterpretation": {
+          "type": "object"
+        }
+      }
+    }
+  }
+}

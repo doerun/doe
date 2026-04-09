@@ -1,35 +1,257 @@
-"""Build and load standalone run artifacts for product-based benchmarking.
-
-A run artifact captures the result of running one product on one workload.
-It is the unit of input for post-hoc comparison.
-"""
+"""Build and load standalone run receipts for product-based benchmarking."""
 
 from __future__ import annotations
 
 import json
 import platform
+import shutil
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from native_compare_modules.workload_spec import ProductRunConfig, WorkloadSpec
+from native_compare_modules import reporting as reporting_mod
+from native_compare_modules import timing_selection as timing_selection_mod
 from native_compare_modules.runner import file_sha256
+from native_compare_modules.workload_provenance import workload_manifest_provenance
+from native_compare_modules.workload_spec import ProductRunConfig, WorkloadSpec
 
-RUN_ARTIFACT_SCHEMA_VERSION = 2
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+RUN_ARTIFACT_SCHEMA_VERSION = 1
 SUPPORTED_RUN_ARTIFACT_SCHEMA_VERSIONS = {1, 2}
+RUN_ARTIFACT_KIND = "run-receipt"
 
 
-def _contract_ref(path: str | Path | None) -> dict[str, Any] | None:
-    if path is None:
-        return None
-    if isinstance(path, str) and not path.strip():
-        return None
-    contract_path = Path(path)
-    if not contract_path.exists():
-        return None
+def _safe_float(value: Any) -> float | None:
+    return reporting_mod.safe_float(value)
+
+
+def _sample_command(sample: dict[str, Any]) -> list[str]:
+    command = sample.get("command", [])
+    if isinstance(command, list):
+        return [str(part) for part in command]
+    if isinstance(command, str):
+        return command.split()
+    return []
+
+
+def _timing_class(sample: dict[str, Any]) -> str:
+    timing_source = str(sample.get("timingSource", "")).strip()
+    if not timing_source:
+        return ""
+    return timing_selection_mod.classify_timing_source(timing_source)
+
+
+def _subphase_ms(trace_meta: dict[str, Any]) -> dict[str, float | None]:
+    execution_total_ns = _safe_float(trace_meta.get("executionTotalNs"))
+    setup_ns = _safe_float(trace_meta.get("executionSetupTotalNs"))
+    encode_ns = _safe_float(trace_meta.get("executionEncodeTotalNs"))
+    submit_wait_ns = _safe_float(trace_meta.get("executionSubmitWaitTotalNs"))
+    gpu_ns = _safe_float(trace_meta.get("gpuTimestampNs"))
     return {
-        "path": str(contract_path),
-        "sha256": file_sha256(contract_path),
+        "executionMs": (
+            execution_total_ns / 1_000_000.0 if execution_total_ns is not None else None
+        ),
+        "setupMs": setup_ns / 1_000_000.0 if setup_ns is not None else None,
+        "encodeMs": encode_ns / 1_000_000.0 if encode_ns is not None else None,
+        "submitWaitMs": (
+            submit_wait_ns / 1_000_000.0 if submit_wait_ns is not None else None
+        ),
+        "gpuTimestampMs": gpu_ns / 1_000_000.0 if gpu_ns is not None else None,
+    }
+
+
+def _sample_success(sample: dict[str, Any]) -> bool:
+    return int(sample.get("returnCode", 1)) == 0
+
+
+def _receipt_samples(run_result: dict[str, Any]) -> list[dict[str, Any]]:
+    samples: list[dict[str, Any]] = []
+    for sample in run_result.get("commandSamples", []):
+        if not isinstance(sample, dict):
+            continue
+        trace_meta = sample.get("traceMeta", {})
+        if not isinstance(trace_meta, dict):
+            trace_meta = {}
+        samples.append(
+            {
+                "runIndex": int(sample.get("runIndex", 0)),
+                "command": _sample_command(sample),
+                "wallMs": _safe_float(sample.get("elapsedMs")),
+                "measuredRawMs": _safe_float(sample.get("measuredRawMs")),
+                "measuredMs": _safe_float(sample.get("measuredMs")),
+                "timingSource": str(sample.get("timingSource", "")).strip(),
+                "timingClass": _timing_class(sample),
+                "traceArtifacts": {
+                    "jsonlPath": str(sample.get("traceJsonlPath", "")).strip(),
+                    "metaPath": str(sample.get("traceMetaPath", "")).strip(),
+                },
+                "subphasesMs": _subphase_ms(trace_meta),
+                "resource": sample.get("resource", {}),
+                "returnCode": int(sample.get("returnCode", 0)),
+                "success": _sample_success(sample),
+                "traceMeta": trace_meta,
+            }
+        )
+    return samples
+
+
+def _resolve_binary(command: list[str]) -> tuple[str, str]:
+    if not command:
+        return "", ""
+    raw_binary = command[0]
+    candidate = Path(raw_binary)
+    if candidate.exists():
+        return str(candidate), file_sha256(candidate)
+    resolved = shutil.which(raw_binary)
+    if not resolved:
+        return raw_binary, ""
+    resolved_path = Path(resolved)
+    return str(resolved_path), file_sha256(resolved_path)
+
+
+def _infer_runtime_host(
+    *,
+    executor_id: str,
+    samples: list[dict[str, Any]],
+) -> str:
+    for sample in samples:
+        trace_meta = sample.get("traceMeta", {})
+        if not isinstance(trace_meta, dict):
+            continue
+        runtime_host = str(trace_meta.get("runtimeHost", "")).strip().lower()
+        if runtime_host:
+            return runtime_host
+        execution_backend = str(trace_meta.get("executionBackend", "")).strip().lower()
+        if "node" in execution_backend:
+            return "node"
+        if "bun" in execution_backend:
+            return "bun"
+        if "deno" in execution_backend:
+            return "deno"
+    executor = executor_id.lower()
+    if "node" in executor:
+        return "node"
+    if "bun" in executor:
+        return "bun"
+    if "deno" in executor:
+        return "deno"
+    return "native"
+
+
+def _package_identity(provider_name: str) -> dict[str, str]:
+    package_name = provider_name.strip()
+    if not package_name:
+        return {
+            "packageName": "",
+            "packageVersion": "",
+            "packageLockHash": "",
+        }
+    if package_name == "doe-gpu":
+        package_path = REPO_ROOT / "packages" / "doe-gpu" / "package.json"
+        if package_path.exists():
+            payload = json.loads(package_path.read_text(encoding="utf-8"))
+            return {
+                "packageName": package_name,
+                "packageVersion": str(payload.get("version", "")).strip(),
+                "packageLockHash": file_sha256(package_path),
+            }
+    return {
+        "packageName": package_name,
+        "packageVersion": "",
+        "packageLockHash": "",
+    }
+
+
+def _runtime_identity(
+    *,
+    executor_id: str,
+    samples: list[dict[str, Any]],
+) -> dict[str, Any]:
+    first_sample = samples[0] if samples else {}
+    command = first_sample.get("command", [])
+    if not isinstance(command, list):
+        command = []
+    binary_path, binary_sha256 = _resolve_binary([str(part) for part in command])
+    trace_meta = first_sample.get("traceMeta", {})
+    if not isinstance(trace_meta, dict):
+        trace_meta = {}
+    provider_name = str(
+        trace_meta.get("executionProviderName")
+        or trace_meta.get("providerName")
+        or ""
+    ).strip()
+    payload = {
+        "runtimeHost": _infer_runtime_host(
+            executor_id=executor_id,
+            samples=samples,
+        ),
+        "binaryPath": binary_path,
+        "binarySha256": binary_sha256,
+        "executionBackend": str(trace_meta.get("executionBackend", "")).strip(),
+        "providerId": str(
+            trace_meta.get("executionProvider")
+            or trace_meta.get("provider")
+            or ""
+        ).strip(),
+        "providerName": provider_name,
+    }
+    payload.update(_package_identity(provider_name))
+    return payload
+
+
+def _host_identity(
+    *,
+    workload_spec: WorkloadSpec,
+    samples: list[dict[str, Any]],
+) -> dict[str, Any]:
+    trace_meta: dict[str, Any] = {}
+    if samples:
+        first_trace_meta = samples[0].get("traceMeta", {})
+        if isinstance(first_trace_meta, dict):
+            trace_meta = first_trace_meta
+    adapter_info = trace_meta.get("adapterInfo", {})
+    if not isinstance(adapter_info, dict):
+        adapter_info = {}
+    return {
+        "hostname": platform.node(),
+        "os": platform.system().lower(),
+        "kernel": platform.release(),
+        "arch": platform.machine(),
+        "api": workload_spec.api,
+        "driver": str(trace_meta.get("driver", "")).strip() or workload_spec.driver,
+        "adapter": {
+            "vendor": str(adapter_info.get("vendor", "")).strip() or workload_spec.vendor,
+            "device": str(adapter_info.get("device", "")).strip(),
+            "architecture": str(adapter_info.get("architecture", "")).strip(),
+            "description": str(adapter_info.get("description", "")).strip(),
+        },
+    }
+
+
+def _execution_summary(samples: list[dict[str, Any]]) -> dict[str, Any]:
+    timing_sources = sorted(
+        {
+            str(sample.get("timingSource", "")).strip()
+            for sample in samples
+            if str(sample.get("timingSource", "")).strip()
+        }
+    )
+    timing_classes = sorted(
+        {
+            str(sample.get("timingClass", "")).strip()
+            for sample in samples
+            if str(sample.get("timingClass", "")).strip()
+        }
+    )
+    return {
+        "success": bool(samples) and all(sample.get("success") is True for sample in samples),
+        "timedSampleCount": len(samples),
+        "returnCodes": sorted(
+            {int(sample.get("returnCode", 0)) for sample in samples}
+        ),
+        "timingSources": timing_sources,
+        "timingClasses": timing_classes,
     }
 
 
@@ -46,18 +268,31 @@ def build_run_artifact(
     resource_sample_ms: int = 100,
     resource_sample_target_count: int = 0,
     workload_contract_path: str | Path | None = None,
-    benchmark_policy_path: str | Path | None = None,
-    comparability_mode: str = "",
-    required_timing_class: str = "",
 ) -> dict[str, Any]:
-    """Wrap a run_workload result dict into a standalone run artifact."""
+    """Wrap a run result into a standalone run receipt."""
+    if workload_contract_path is None:
+        raise ValueError(
+            "run receipts require workload manifest metadata; pass "
+            "workload_contract_path when building the receipt"
+    )
+    samples = _receipt_samples(run_result)
+    invocation_command = samples[0]["command"] if samples else []
+    workload_manifest = workload_manifest_provenance(workload_contract_path).to_dict()
     artifact = {
         "schemaVersion": RUN_ARTIFACT_SCHEMA_VERSION,
-        "artifactKind": "run",
+        "artifactKind": RUN_ARTIFACT_KIND,
         "generatedAt": datetime.now(timezone.utc).isoformat(),
         "product": product,
         "executorId": executor_id,
-        "workloadContract": _contract_ref(workload_contract_path),
+        "invocation": {
+            "command": invocation_command,
+            "iterations": iterations,
+            "warmup": warmup,
+            "resourceProbe": resource_probe,
+            "resourceSampleMs": resource_sample_ms,
+            "resourceSampleTargetCount": resource_sample_target_count,
+        },
+        "workloadManifest": workload_manifest,
         "workload": {
             "id": workload_spec.id,
             "name": workload_spec.name,
@@ -65,6 +300,7 @@ def build_run_artifact(
             "domain": workload_spec.domain,
             "commandsPath": workload_spec.commands_path,
             "quirksPath": workload_spec.quirks_path,
+            "planPath": workload_spec.plan_path,
             "vendor": workload_spec.vendor,
             "api": workload_spec.api,
             "family": workload_spec.family,
@@ -75,68 +311,34 @@ def build_run_artifact(
             "directionalReason": workload_spec.directional_reason,
             "pathAsymmetry": workload_spec.path_asymmetry,
             "pathAsymmetryNote": workload_spec.path_asymmetry_note,
-            "includeByDefault": workload_spec.include_by_default,
-            "asyncDiagnosticsMode": workload_spec.async_diagnostics_mode,
-            "strictNormalizationUnit": workload_spec.strict_normalization_unit,
-            "comparabilityCandidate": {
-                "enabled": workload_spec.comparability_candidate_enabled,
-                "tier": workload_spec.comparability_candidate_tier,
-                "notes": workload_spec.comparability_candidate_notes,
-            },
             "claimEligible": workload_spec.claim_eligible,
-            "cohorts": list(workload_spec.cohorts),
+            "strictNormalizationUnit": workload_spec.strict_normalization_unit,
         },
-        "runParameters": {
-            "iterations": iterations,
-            "warmup": warmup,
+        "normalization": {
             "commandRepeat": run_config.command_repeat,
             "ignoreFirstOps": run_config.ignore_first_ops,
             "timingDivisor": run_config.timing_divisor,
             "uploadBufferUsage": run_config.upload_buffer_usage,
             "uploadSubmitEvery": run_config.upload_submit_every,
-            "allowNoExecution": run_config.allow_no_execution,
             "timingNormalizationNote": run_config.timing_normalization_note,
-            "resourceProbe": resource_probe,
-            "resourceSampleMs": resource_sample_ms,
-            "resourceSampleTargetCount": resource_sample_target_count,
-            "comparabilityMode": comparability_mode,
-            "requiredTimingClass": required_timing_class,
+            "allowNoExecution": run_config.allow_no_execution,
         },
-        "host": {
-            "os": platform.system().lower(),
-            "arch": platform.machine(),
-        },
-        "commandSamples": run_result.get("commandSamples", []),
-        "stats": run_result.get("stats", {}),
-        "timingsMs": run_result.get("timingsMs", []),
-        "timingSources": run_result.get("timingSources", []),
-        "timingClasses": run_result.get("timingClasses", []),
-        "lastMeta": run_result.get("lastMeta", {}),
-        "resourceStats": run_result.get("resourceStats", {}),
-        "timingMetricsRawStatsMs": run_result.get("timingMetricsRawStatsMs", {}),
-        "timingMetricsNormalizedStatsMs": run_result.get(
-            "timingMetricsNormalizedStatsMs", {}
+        "runtimeIdentity": _runtime_identity(
+            executor_id=executor_id,
+            samples=samples,
         ),
+        "hostIdentity": _host_identity(
+            workload_spec=workload_spec,
+            samples=samples,
+        ),
+        "execution": _execution_summary(samples),
+        "samples": samples,
     }
-    if artifact["workloadContract"] is None:
-        raise ValueError(
-            "run artifacts require workloadContract metadata; "
-            "pass workload_contract_path when building the artifact"
-        )
-    benchmark_policy_contract = _contract_ref(benchmark_policy_path)
-    if benchmark_policy_path and benchmark_policy_contract is None:
-        raise ValueError(
-            "run artifacts received a benchmark_policy_path that could not be "
-            f"resolved: {benchmark_policy_path}"
-        )
-    if benchmark_policy_contract is not None:
-        benchmark_policy_contract["schemaVersion"] = 1
-        artifact["benchmarkPolicy"] = benchmark_policy_contract
     return artifact
 
 
 def write_run_artifact(artifact: dict[str, Any], path: Path) -> Path:
-    """Write a run artifact to disk. Returns the written path."""
+    """Write a run receipt to disk."""
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
         json.dumps(artifact, indent=2, sort_keys=True) + "\n",
@@ -145,46 +347,182 @@ def write_run_artifact(artifact: dict[str, Any], path: Path) -> Path:
     return path
 
 
+def _legacy_workload_manifest(data: dict[str, Any]) -> dict[str, Any]:
+    contract = data.get("workloadContract")
+    if isinstance(contract, dict):
+        path = str(contract.get("path", "")).strip()
+        if path and Path(path).exists():
+            return workload_manifest_provenance(path).to_dict()
+        return {
+            "path": path,
+            "sha256": str(contract.get("sha256", "")).strip(),
+            "ownership": "unknown",
+            "inputFreshness": "unknown",
+            "freshnessReason": "legacy run artifact missing workload manifest provenance",
+        }
+    raise ValueError("legacy run artifact missing workloadContract metadata")
+
+
+def _legacy_samples(data: dict[str, Any]) -> list[dict[str, Any]]:
+    samples: list[dict[str, Any]] = []
+    for sample in data.get("commandSamples", []):
+        if not isinstance(sample, dict):
+            continue
+        trace_meta = sample.get("traceMeta", {})
+        if not isinstance(trace_meta, dict):
+            trace_meta = {}
+        samples.append(
+            {
+                "runIndex": int(sample.get("runIndex", 0)),
+                "command": _sample_command(sample),
+                "wallMs": _safe_float(sample.get("elapsedMs")),
+                "measuredRawMs": _safe_float(
+                    sample.get("measuredRawMs", sample.get("measuredMs"))
+                ),
+                "measuredMs": _safe_float(sample.get("measuredMs")),
+                "timingSource": str(sample.get("timingSource", "")).strip(),
+                "timingClass": _timing_class(sample),
+                "traceArtifacts": {
+                    "jsonlPath": str(sample.get("traceJsonlPath", "")).strip(),
+                    "metaPath": str(sample.get("traceMetaPath", "")).strip(),
+                },
+                "subphasesMs": _subphase_ms(trace_meta),
+                "resource": sample.get("resource", {}),
+                "returnCode": int(sample.get("returnCode", 0)),
+                "success": _sample_success(sample),
+                "traceMeta": trace_meta,
+            }
+        )
+    return samples
+
+
+def _normalize_legacy_artifact(data: dict[str, Any]) -> dict[str, Any]:
+    workload = data.get("workload", {})
+    if not isinstance(workload, dict):
+        raise ValueError("legacy run artifact missing workload object")
+    run_parameters = data.get("runParameters", {})
+    if not isinstance(run_parameters, dict):
+        run_parameters = {}
+    host = data.get("host", {})
+    if not isinstance(host, dict):
+        host = {}
+    samples = _legacy_samples(data)
+    execution = _execution_summary(samples)
+    return {
+        "schemaVersion": RUN_ARTIFACT_SCHEMA_VERSION,
+        "artifactKind": RUN_ARTIFACT_KIND,
+        "generatedAt": str(data.get("generatedAt", "")).strip(),
+        "product": str(data.get("product", "")).strip(),
+        "executorId": str(data.get("executorId", "")).strip(),
+        "invocation": {
+            "command": samples[0]["command"] if samples else [],
+            "iterations": int(run_parameters.get("iterations", len(samples))),
+            "warmup": int(run_parameters.get("warmup", 0)),
+            "resourceProbe": str(run_parameters.get("resourceProbe", "")).strip(),
+            "resourceSampleMs": int(run_parameters.get("resourceSampleMs", 0) or 0),
+            "resourceSampleTargetCount": int(
+                run_parameters.get("resourceSampleTargetCount", 0) or 0
+            ),
+        },
+        "workloadManifest": _legacy_workload_manifest(data),
+        "workload": {
+            "id": str(workload.get("id", "")).strip(),
+            "name": str(workload.get("name", "")).strip(),
+            "description": str(workload.get("description", "")).strip(),
+            "domain": str(workload.get("domain", "")).strip(),
+            "commandsPath": str(workload.get("commandsPath", "")).strip(),
+            "quirksPath": str(workload.get("quirksPath", "")).strip(),
+            "planPath": str(workload.get("planPath", "")).strip(),
+            "vendor": str(workload.get("vendor", "")).strip(),
+            "api": str(workload.get("api", "")).strip(),
+            "family": str(workload.get("family", "")).strip(),
+            "driver": str(workload.get("driver", "")).strip(),
+            "comparable": bool(workload.get("comparable", False)),
+            "benchmarkClass": str(workload.get("benchmarkClass", "")).strip(),
+            "comparabilityNotes": str(workload.get("comparabilityNotes", "")).strip(),
+            "directionalReason": str(workload.get("directionalReason", "")).strip(),
+            "pathAsymmetry": bool(workload.get("pathAsymmetry", False)),
+            "pathAsymmetryNote": str(workload.get("pathAsymmetryNote", "")).strip(),
+            "claimEligible": bool(workload.get("claimEligible", True)),
+            "strictNormalizationUnit": str(
+                workload.get("strictNormalizationUnit", "")
+            ).strip(),
+        },
+        "normalization": {
+            "commandRepeat": int(run_parameters.get("commandRepeat", 1) or 1),
+            "ignoreFirstOps": int(run_parameters.get("ignoreFirstOps", 0) or 0),
+            "timingDivisor": float(run_parameters.get("timingDivisor", 1.0) or 1.0),
+            "uploadBufferUsage": str(
+                run_parameters.get("uploadBufferUsage", "")
+            ).strip(),
+            "uploadSubmitEvery": int(run_parameters.get("uploadSubmitEvery", 1) or 1),
+            "timingNormalizationNote": str(
+                run_parameters.get("timingNormalizationNote", "")
+            ).strip(),
+            "allowNoExecution": bool(run_parameters.get("allowNoExecution", False)),
+        },
+        "runtimeIdentity": _runtime_identity(
+            executor_id=str(data.get("executorId", "")).strip(),
+            samples=samples,
+        ),
+        "hostIdentity": {
+            "hostname": platform.node(),
+            "os": str(host.get("os", "")).strip() or platform.system().lower(),
+            "kernel": platform.release(),
+            "arch": str(host.get("arch", "")).strip() or platform.machine(),
+            "api": str(workload.get("api", "")).strip(),
+            "driver": str(workload.get("driver", "")).strip(),
+            "adapter": {
+                "vendor": str(workload.get("vendor", "")).strip(),
+                "device": "",
+                "architecture": "",
+                "description": "",
+            },
+        },
+        "execution": execution,
+        "samples": samples,
+    }
+
+
 def load_run_artifact(path: str | Path) -> dict[str, Any]:
-    """Load and validate a run artifact from disk."""
+    """Load and normalize a run receipt from disk."""
     p = Path(path)
     if not p.exists():
-        raise FileNotFoundError(f"run artifact not found: {p}")
+        raise FileNotFoundError(f"run receipt not found: {p}")
     data = json.loads(p.read_text(encoding="utf-8"))
     if not isinstance(data, dict):
-        raise ValueError(f"run artifact must be a JSON object: {p}")
-    if data.get("artifactKind") != "run":
-        raise ValueError(
-            f"expected artifactKind=run, got {data.get('artifactKind')!r}: {p}"
-        )
+        raise ValueError(f"run receipt must be a JSON object: {p}")
     version = data.get("schemaVersion")
     if version not in SUPPORTED_RUN_ARTIFACT_SCHEMA_VERSIONS:
         raise ValueError(
-            f"unsupported run artifact schemaVersion={version}, "
+            f"unsupported run receipt schemaVersion={version}, "
             f"expected one of {sorted(SUPPORTED_RUN_ARTIFACT_SCHEMA_VERSIONS)}: {p}"
         )
-    for key in ("product", "executorId", "workload", "commandSamples", "stats"):
-        if key not in data:
-            raise ValueError(f"run artifact missing required field {key!r}: {p}")
-    if version == 1:
-        data.setdefault("workloadContract", None)
-        workload = data.setdefault("workload", {})
-        workload.setdefault("directionalReason", "")
-        workload.setdefault("includeByDefault", True)
-        workload.setdefault("asyncDiagnosticsMode", "")
-        workload.setdefault("strictNormalizationUnit", "")
-        workload.setdefault(
-            "comparabilityCandidate",
-            {"enabled": False, "tier": "", "notes": ""},
-        )
-        run_parameters = data.setdefault("runParameters", {})
-        run_parameters.setdefault("allowNoExecution", False)
-        run_parameters.setdefault("timingNormalizationNote", "")
-        run_parameters.setdefault("comparabilityMode", "")
-        run_parameters.setdefault("requiredTimingClass", "")
-    return data
+    artifact_kind = data.get("artifactKind")
+    if artifact_kind == RUN_ARTIFACT_KIND and version == RUN_ARTIFACT_SCHEMA_VERSION:
+        for key in (
+            "product",
+            "executorId",
+            "invocation",
+            "workloadManifest",
+            "workload",
+            "normalization",
+            "runtimeIdentity",
+            "hostIdentity",
+            "execution",
+            "samples",
+        ):
+            if key not in data:
+                raise ValueError(f"run receipt missing required field {key!r}: {p}")
+        return data
+    if artifact_kind == "run":
+        return _normalize_legacy_artifact(data)
+    raise ValueError(
+        f"expected artifactKind={RUN_ARTIFACT_KIND!r} or 'run', "
+        f"got {artifact_kind!r}: {p}"
+    )
 
 
 def artifact_filename(product: str, workload_id: str, timestamp: str) -> str:
-    """Generate a conventional run artifact filename."""
+    """Generate a conventional run receipt filename."""
     return f"{product}-{workload_id}-{timestamp}.run.json"

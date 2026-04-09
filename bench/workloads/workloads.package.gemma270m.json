@@ -1,5 +1,6 @@
 {
   "schemaVersion": 1,
+  "ownership": "standalone",
   "workloads": [
     {
       "id": "inference_gemma3_270m_prefill_64tok_decode_64tok",

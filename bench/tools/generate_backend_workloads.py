@@ -7,6 +7,7 @@ import argparse
 import json
 import sys
 from collections import OrderedDict
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -18,6 +19,7 @@ for _path_entry in (str(REPO_ROOT), str(REPO_ROOT / "bench")):
         sys.path.insert(0, _path_entry)
 
 from bench.lib import benchmark_ir as benchmark_ir_mod
+from native_compare_modules.runner import file_sha256
 
 
 CATALOG_PATH = REPO_ROOT / "bench" / "workloads" / "metadata" / "backend-workload-catalog.json"
@@ -525,6 +527,19 @@ def materialize_lane(catalog: dict[str, Any], lane_id: str) -> dict[str, Any]:
     return OrderedDict(
         [
             ("schemaVersion", 1),
+            ("ownership", "generated"),
+            (
+                "generatorId",
+                "bench.tools.generate_backend_workloads:materialize_lane",
+            ),
+            ("generatorInputHash", file_sha256(CATALOG_PATH)),
+            (
+                "generatedAt",
+                datetime.fromtimestamp(
+                    CATALOG_PATH.stat().st_mtime,
+                    timezone.utc,
+                ).isoformat(),
+            ),
             ("workloads", workloads),
         ]
     )

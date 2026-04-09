@@ -18,6 +18,18 @@
       "data": "config/claim-cycle.active.json"
     },
     {
+      "schema": "config/run-receipt.schema.json",
+      "data": "examples/run-receipt.sample.json"
+    },
+    {
+      "schema": "config/compare-report.schema.json",
+      "data": "examples/compare-report.sample.json"
+    },
+    {
+      "schema": "config/claim-report.schema.json",
+      "data": "examples/claim-report.sample.json"
+    },
+    {
       "schema": "config/webgpu-command-coverage-core.schema.json",
       "data": "config/webgpu-command-coverage-core.json"
     },

@@ -207,6 +207,25 @@ def load_json(path: Path) -> dict[str, Any]:
     return payload
 
 
+def default_claim_report_path(report_path: Path) -> Path | None:
+    name = report_path.name
+    if name.endswith(".compare.json"):
+        candidate = report_path.with_name(name.replace(".compare.json", ".claim.json"))
+        if candidate.exists():
+            return candidate
+    return None
+
+
+def load_optional_claim_report(report_path: Path) -> dict[str, Any]:
+    candidate = default_claim_report_path(report_path)
+    if candidate is None:
+        return {}
+    payload = load_json(candidate)
+    if payload.get("artifactKind") != "claim-report":
+        raise ValueError(f"expected claim-report at {candidate}")
+    return payload
+
+
 def summarize_report(
     *,
     label: str,
@@ -215,6 +234,7 @@ def summarize_report(
     analysis_path: Path,
 ) -> dict[str, Any]:
     payload = load_json(report_path)
+    claim_payload = load_optional_claim_report(report_path)
     comparability = payload.get("comparabilitySummary", {})
     operator_diff = payload.get("operatorDiffSummary", {})
     workloads = payload.get("workloads", [])
@@ -235,7 +255,7 @@ def summarize_report(
     timing_policy = payload.get("timingInterpretationPolicy", {})
     if not isinstance(timing_policy, dict):
         timing_policy = {}
-    claim_policy = payload.get("claimabilityPolicy", {})
+    claim_policy = claim_payload.get("claimPolicy", {})
     if not isinstance(claim_policy, dict):
         claim_policy = {}
     summary = (
@@ -246,15 +266,23 @@ def summarize_report(
         "label": label,
         "summary": summary,
         "reportPath": str(report_path),
+        "claimReportPath": (
+            str(default_claim_report_path(report_path))
+            if default_claim_report_path(report_path) is not None
+            else ""
+        ),
         "htmlPath": str(html_path),
         "analysisPath": str(analysis_path),
         "comparisonStatus": payload.get("comparisonStatus", "unknown"),
-        "claimStatus": payload.get("claimStatus", "not-evaluated"),
-        "claimabilityMode": claim_policy.get("mode", "unknown"),
+        "claimStatus": claim_payload.get(
+            "claimStatus",
+            payload.get("claimStatus", "not-evaluated"),
+        ),
+        "claimabilityMode": claim_policy.get("mode", "not-evaluated"),
         "workloadCount": len(workloads) if isinstance(workloads, list) else 0,
         "comparableCount": comparable_count,
-        "selectedP50DeltaPercent": payload.get("overall", {}).get("deltaPercent", {}).get("p50Approx"),
-        "selectedP95DeltaPercent": payload.get("overall", {}).get("deltaPercent", {}).get("p95Approx"),
+        "selectedP50DeltaPercent": payload.get("overall", {}).get("deltaPercent", {}).get("p50Percent"),
+        "selectedP95DeltaPercent": payload.get("overall", {}).get("deltaPercent", {}).get("p95Percent"),
         "wallP50DeltaPercent": payload.get("overallWorkloadUnitWall", {}).get("deltaPercent", {}).get("p50Percent"),
         "wallP95DeltaPercent": payload.get("overallWorkloadUnitWall", {}).get("deltaPercent", {}).get("p95Percent"),
         "timingGuidance": timing_policy.get("guidance", ""),
@@ -306,6 +334,7 @@ def main() -> int:
             html_out = run_dir / f"{slug}.html"
             analysis_out = run_dir / f"{slug}.analysis.json"
             title = f"Doe compare report | {lane_label(kind, report_path)}"
+            claim_report_path = default_claim_report_path(report_path)
             run_command(
                 [
                     sys.executable,
@@ -324,6 +353,11 @@ def main() -> int:
                     str(args.bootstrap_seed),
                     "--max-ecdf-workloads",
                     str(max(args.max_ecdf_workloads, 0)),
+                    *(
+                        ["--claim-report", str(claim_report_path)]
+                        if claim_report_path is not None
+                        else []
+                    ),
                 ]
             )
             copy_latest(html_out, latest_dir / html_out.name)

@@ -39,6 +39,11 @@ def report_tile(report: dict[str, Any], *, page_path: str | Path) -> str:
         f"<div>analysis JSON: {artifact_link(page_path=page_path, target_path=str(report.get('analysisPath', '')))}</div>",
         f"<div>source report: {artifact_link(page_path=page_path, target_path=str(report.get('reportPath', '')))}</div>",
     ]
+    claim_report_path = str(report.get("claimReportPath", ""))
+    if claim_report_path:
+        links.append(
+            f"<div>claim report: {artifact_link(page_path=page_path, target_path=claim_report_path)}</div>"
+        )
     return (
         "<article class='tile'>"
         f"<h3>{str(report.get('label', 'Compare report'))}</h3>"

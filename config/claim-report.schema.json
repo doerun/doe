@@ -1,0 +1,150 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Doe claim report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "generatedAt",
+    "compareReport",
+    "comparisonStatus",
+    "claimStatus",
+    "pass",
+    "claimPolicy",
+    "workloads",
+    "reasons"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "artifactKind": {
+      "type": "string",
+      "const": "claim-report"
+    },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "compareReport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "sha256"
+      ],
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "sha256": {
+          "type": "string"
+        }
+      }
+    },
+    "comparisonStatus": {
+      "type": "string"
+    },
+    "claimStatus": {
+      "type": "string",
+      "enum": [
+        "claimable",
+        "diagnostic"
+      ]
+    },
+    "pass": {
+      "type": "boolean"
+    },
+    "claimPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "minTimedSamples",
+        "benchmarkPolicy",
+        "policyHash"
+      ],
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": [
+            "local",
+            "release"
+          ]
+        },
+        "minTimedSamples": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "benchmarkPolicy": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path",
+            "sha256"
+          ],
+          "properties": {
+            "path": {
+              "type": "string"
+            },
+            "sha256": {
+              "type": "string"
+            }
+          }
+        },
+        "policyHash": {
+          "type": "string"
+        }
+      }
+    },
+    "workloads": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "workloadId",
+          "claimable",
+          "reasons",
+          "claimMetricField",
+          "claimMetricScope",
+          "requiredPositivePercentiles"
+        ],
+        "properties": {
+          "workloadId": {
+            "type": "string"
+          },
+          "claimable": {
+            "type": "boolean"
+          },
+          "reasons": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "claimMetricField": {
+            "type": "string"
+          },
+          "claimMetricScope": {
+            "type": "string"
+          },
+          "requiredPositivePercentiles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "reasons": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

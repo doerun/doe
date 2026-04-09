@@ -1,0 +1,229 @@
+{
+  "artifactKind": "compare-report",
+  "comparabilityFailures": [],
+  "comparabilityPolicy": {
+    "mode": "strict",
+    "requireTimingClass": "operation"
+  },
+  "comparabilitySummary": {
+    "nonComparableCount": 0,
+    "workloadCount": 1
+  },
+  "comparisonStatus": "comparable",
+  "generatedAt": "2026-04-09T12:05:00+00:00",
+  "outPath": "bench/out/sample.compare.json",
+  "overall": {
+    "baselineStatsMs": {
+      "count": 1,
+      "maxMs": 1.25,
+      "meanMs": 1.25,
+      "minMs": 1.25,
+      "p10Ms": 1.25,
+      "p50Ms": 1.25,
+      "p95Ms": 1.25,
+      "p99Ms": 1.25,
+      "stdevMs": 0.0
+    },
+    "comparisonStatsMs": {
+      "count": 1,
+      "maxMs": 1.5,
+      "meanMs": 1.5,
+      "minMs": 1.5,
+      "p10Ms": 1.5,
+      "p50Ms": 1.5,
+      "p95Ms": 1.5,
+      "p99Ms": 1.5,
+      "stdevMs": 0.0
+    },
+    "deltaPercent": {
+      "meanPercent": 16.6666666667,
+      "p10Percent": 16.6666666667,
+      "p50Percent": 16.6666666667,
+      "p95Percent": 16.6666666667,
+      "p99Percent": 16.6666666667
+    }
+  },
+  "overallWorkloadUnitWall": {
+    "baselineStatsMs": {
+      "count": 1,
+      "maxMs": 1.4,
+      "meanMs": 1.4,
+      "minMs": 1.4,
+      "p10Ms": 1.4,
+      "p50Ms": 1.4,
+      "p95Ms": 1.4,
+      "p99Ms": 1.4,
+      "stdevMs": 0.0
+    },
+    "comparisonStatsMs": {
+      "count": 1,
+      "maxMs": 1.7,
+      "meanMs": 1.7,
+      "minMs": 1.7,
+      "p10Ms": 1.7,
+      "p50Ms": 1.7,
+      "p95Ms": 1.7,
+      "p99Ms": 1.7,
+      "stdevMs": 0.0
+    },
+    "deltaPercent": {
+      "meanPercent": 17.6470588235,
+      "p10Percent": 17.6470588235,
+      "p50Percent": 17.6470588235,
+      "p95Percent": 17.6470588235,
+      "p99Percent": 17.6470588235
+    }
+  },
+  "participants": {
+    "left": {
+      "executorId": "doe_direct_vulkan",
+      "hostIdentity": {
+        "hostname": "bench-host"
+      },
+      "product": "doe",
+      "runtimeIdentity": {
+        "runtimeHost": "native"
+      }
+    },
+    "right": {
+      "executorId": "dawn_delegate_vulkan",
+      "hostIdentity": {
+        "hostname": "bench-host"
+      },
+      "product": "dawn",
+      "runtimeIdentity": {
+        "runtimeHost": "native"
+      }
+    }
+  },
+  "primaryMetric": "measured_ms",
+  "runReceiptPaths": [
+    "bench/out/doe.run.json",
+    "bench/out/dawn.run.json"
+  ],
+  "schemaVersion": 1,
+  "workloadManifest": {
+    "freshnessReason": "generated manifest matches generated lane amd_vulkan from backend workload catalog",
+    "generatedAt": "2026-04-09T12:00:00+00:00",
+    "generatorId": "bench.tools.generate_backend_workloads:materialize_lane",
+    "generatorInputHash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "inputFreshness": "fresh",
+    "ownership": "generated",
+    "path": "bench/workloads/workloads.amd.vulkan.json",
+    "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+  },
+  "workloads": [
+    {
+      "baselineStatsMs": {
+        "count": 1,
+        "maxMs": 1.25,
+        "meanMs": 1.25,
+        "minMs": 1.25,
+        "p10Ms": 1.25,
+        "p50Ms": 1.25,
+        "p95Ms": 1.25,
+        "p99Ms": 1.25,
+        "stdevMs": 0.0
+      },
+      "benchmarkClass": "comparable",
+      "claimEligible": true,
+      "comparability": {
+        "comparable": true,
+        "reasons": []
+      },
+      "comparisonStatsMs": {
+        "count": 1,
+        "maxMs": 1.5,
+        "meanMs": 1.5,
+        "minMs": 1.5,
+        "p10Ms": 1.5,
+        "p50Ms": 1.5,
+        "p95Ms": 1.5,
+        "p99Ms": 1.5,
+        "stdevMs": 0.0
+      },
+      "deltaPercent": {
+        "meanPercent": 16.6666666667,
+        "p10Percent": 16.6666666667,
+        "p50Percent": 16.6666666667,
+        "p95Percent": 16.6666666667,
+        "p99Percent": 16.6666666667
+      },
+      "description": "sample workload",
+      "domain": "compute",
+      "id": "compute_test",
+      "name": "compute test",
+      "normalization": "none",
+      "pathAsymmetry": false,
+      "pathAsymmetryNote": "",
+      "primaryMetric": "measured_ms",
+      "receipts": {
+        "left": {
+          "path": "bench/out/doe.run.json",
+          "product": "doe",
+          "sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        },
+        "right": {
+          "path": "bench/out/dawn.run.json",
+          "product": "dawn",
+          "sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+        }
+      },
+      "timingInterpretation": {
+        "selectedTiming": {
+          "scopeClass": "operation-total"
+        }
+      },
+      "workloadComparable": true,
+      "workloadMatching": {
+        "baselineManifest": {
+          "freshnessReason": "generated manifest matches generated lane amd_vulkan from backend workload catalog",
+          "inputFreshness": "fresh",
+          "ownership": "generated",
+          "path": "bench/workloads/workloads.amd.vulkan.json",
+          "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+        },
+        "comparisonManifest": {
+          "freshnessReason": "generated manifest matches generated lane amd_vulkan from backend workload catalog",
+          "inputFreshness": "fresh",
+          "ownership": "generated",
+          "path": "bench/workloads/workloads.amd.vulkan.json",
+          "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+        },
+        "matched": true,
+        "reasons": []
+      },
+      "workloadUnitWall": {
+        "baselineStatsMs": {
+          "count": 1,
+          "maxMs": 1.4,
+          "meanMs": 1.4,
+          "minMs": 1.4,
+          "p10Ms": 1.4,
+          "p50Ms": 1.4,
+          "p95Ms": 1.4,
+          "p99Ms": 1.4,
+          "stdevMs": 0.0
+        },
+        "comparisonStatsMs": {
+          "count": 1,
+          "maxMs": 1.7,
+          "meanMs": 1.7,
+          "minMs": 1.7,
+          "p10Ms": 1.7,
+          "p50Ms": 1.7,
+          "p95Ms": 1.7,
+          "p99Ms": 1.7,
+          "stdevMs": 0.0
+        },
+        "deltaPercent": {
+          "meanPercent": 17.6470588235,
+          "p10Percent": 17.6470588235,
+          "p50Percent": 17.6470588235,
+          "p95Percent": 17.6470588235,
+          "p99Percent": 17.6470588235
+        }
+      }
+    }
+  ]
+}

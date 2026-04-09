@@ -1,0 +1,512 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Doe run receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "generatedAt",
+    "product",
+    "executorId",
+    "invocation",
+    "workloadManifest",
+    "workload",
+    "normalization",
+    "runtimeIdentity",
+    "hostIdentity",
+    "execution",
+    "samples"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "artifactKind": {
+      "type": "string",
+      "const": "run-receipt"
+    },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "product": {
+      "type": "string",
+      "minLength": 1
+    },
+    "executorId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "invocation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "command",
+        "iterations",
+        "warmup",
+        "resourceProbe",
+        "resourceSampleMs",
+        "resourceSampleTargetCount"
+      ],
+      "properties": {
+        "command": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "iterations": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "warmup": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "resourceProbe": {
+          "type": "string"
+        },
+        "resourceSampleMs": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "resourceSampleTargetCount": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "workloadManifest": {
+      "$ref": "#/$defs/workloadManifest"
+    },
+    "workload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "description",
+        "domain",
+        "commandsPath",
+        "quirksPath",
+        "planPath",
+        "vendor",
+        "api",
+        "family",
+        "driver",
+        "comparable",
+        "benchmarkClass",
+        "comparabilityNotes",
+        "directionalReason",
+        "pathAsymmetry",
+        "pathAsymmetryNote",
+        "claimEligible",
+        "strictNormalizationUnit"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "domain": {
+          "type": "string",
+          "minLength": 1
+        },
+        "commandsPath": {
+          "type": "string"
+        },
+        "quirksPath": {
+          "type": "string"
+        },
+        "planPath": {
+          "type": "string"
+        },
+        "vendor": {
+          "type": "string"
+        },
+        "api": {
+          "type": "string"
+        },
+        "family": {
+          "type": "string"
+        },
+        "driver": {
+          "type": "string"
+        },
+        "comparable": {
+          "type": "boolean"
+        },
+        "benchmarkClass": {
+          "type": "string"
+        },
+        "comparabilityNotes": {
+          "type": "string"
+        },
+        "directionalReason": {
+          "type": "string"
+        },
+        "pathAsymmetry": {
+          "type": "boolean"
+        },
+        "pathAsymmetryNote": {
+          "type": "string"
+        },
+        "claimEligible": {
+          "type": "boolean"
+        },
+        "strictNormalizationUnit": {
+          "type": "string"
+        }
+      }
+    },
+    "normalization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "commandRepeat",
+        "ignoreFirstOps",
+        "timingDivisor",
+        "uploadBufferUsage",
+        "uploadSubmitEvery",
+        "timingNormalizationNote",
+        "allowNoExecution"
+      ],
+      "properties": {
+        "commandRepeat": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "ignoreFirstOps": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "timingDivisor": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "uploadBufferUsage": {
+          "type": "string"
+        },
+        "uploadSubmitEvery": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "timingNormalizationNote": {
+          "type": "string"
+        },
+        "allowNoExecution": {
+          "type": "boolean"
+        }
+      }
+    },
+    "runtimeIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "runtimeHost",
+        "binaryPath",
+        "binarySha256",
+        "executionBackend",
+        "providerId",
+        "providerName",
+        "packageName",
+        "packageVersion",
+        "packageLockHash"
+      ],
+      "properties": {
+        "runtimeHost": {
+          "type": "string"
+        },
+        "binaryPath": {
+          "type": "string"
+        },
+        "binarySha256": {
+          "type": "string"
+        },
+        "executionBackend": {
+          "type": "string"
+        },
+        "providerId": {
+          "type": "string"
+        },
+        "providerName": {
+          "type": "string"
+        },
+        "packageName": {
+          "type": "string"
+        },
+        "packageVersion": {
+          "type": "string"
+        },
+        "packageLockHash": {
+          "type": "string"
+        }
+      }
+    },
+    "hostIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "hostname",
+        "os",
+        "kernel",
+        "arch",
+        "api",
+        "driver",
+        "adapter"
+      ],
+      "properties": {
+        "hostname": {
+          "type": "string"
+        },
+        "os": {
+          "type": "string"
+        },
+        "kernel": {
+          "type": "string"
+        },
+        "arch": {
+          "type": "string"
+        },
+        "api": {
+          "type": "string"
+        },
+        "driver": {
+          "type": "string"
+        },
+        "adapter": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "vendor",
+            "device",
+            "architecture",
+            "description"
+          ],
+          "properties": {
+            "vendor": {
+              "type": "string"
+            },
+            "device": {
+              "type": "string"
+            },
+            "architecture": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "success",
+        "timedSampleCount",
+        "returnCodes",
+        "timingSources",
+        "timingClasses"
+      ],
+      "properties": {
+        "success": {
+          "type": "boolean"
+        },
+        "timedSampleCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "returnCodes": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "timingSources": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "timingClasses": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "samples": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/sample"
+      }
+    }
+  },
+  "$defs": {
+    "workloadManifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "sha256",
+        "ownership",
+        "inputFreshness",
+        "freshnessReason"
+      ],
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "sha256": {
+          "type": "string"
+        },
+        "ownership": {
+          "type": "string",
+          "enum": [
+            "standalone",
+            "generated"
+          ]
+        },
+        "inputFreshness": {
+          "type": "string",
+          "enum": [
+            "fresh",
+            "stale",
+            "unknown"
+          ]
+        },
+        "freshnessReason": {
+          "type": "string"
+        },
+        "generatorId": {
+          "type": "string"
+        },
+        "generatorInputHash": {
+          "type": "string"
+        },
+        "generatedAt": {
+          "type": "string"
+        }
+      }
+    },
+    "nullableNumber": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "sample": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "runIndex",
+        "command",
+        "wallMs",
+        "measuredRawMs",
+        "measuredMs",
+        "timingSource",
+        "timingClass",
+        "traceArtifacts",
+        "subphasesMs",
+        "resource",
+        "returnCode",
+        "success",
+        "traceMeta"
+      ],
+      "properties": {
+        "runIndex": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "command": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "wallMs": {
+          "$ref": "#/$defs/nullableNumber"
+        },
+        "measuredRawMs": {
+          "$ref": "#/$defs/nullableNumber"
+        },
+        "measuredMs": {
+          "$ref": "#/$defs/nullableNumber"
+        },
+        "timingSource": {
+          "type": "string"
+        },
+        "timingClass": {
+          "type": "string"
+        },
+        "traceArtifacts": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "jsonlPath",
+            "metaPath"
+          ],
+          "properties": {
+            "jsonlPath": {
+              "type": "string"
+            },
+            "metaPath": {
+              "type": "string"
+            }
+          }
+        },
+        "subphasesMs": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "executionMs",
+            "setupMs",
+            "encodeMs",
+            "submitWaitMs",
+            "gpuTimestampMs"
+          ],
+          "properties": {
+            "executionMs": {
+              "$ref": "#/$defs/nullableNumber"
+            },
+            "setupMs": {
+              "$ref": "#/$defs/nullableNumber"
+            },
+            "encodeMs": {
+              "$ref": "#/$defs/nullableNumber"
+            },
+            "submitWaitMs": {
+              "$ref": "#/$defs/nullableNumber"
+            },
+            "gpuTimestampMs": {
+              "$ref": "#/$defs/nullableNumber"
+            }
+          }
+        },
+        "resource": {
+          "type": "object"
+        },
+        "returnCode": {
+          "type": "integer"
+        },
+        "success": {
+          "type": "boolean"
+        },
+        "traceMeta": {
+          "type": "object"
+        }
+      }
+    }
+  }
+}

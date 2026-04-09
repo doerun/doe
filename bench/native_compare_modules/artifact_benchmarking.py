@@ -36,7 +36,6 @@ def run_product_bundle(
     required_timing_class: str,
     comparability_mode: str,
     benchmark_policy: Any,
-    benchmark_policy_path: str | Path | None,
     workload_cooldown_ms: int,
     emit_shell: bool,
     timestamp: str,
@@ -195,9 +194,6 @@ def run_product_bundle(
             resource_sample_ms=resource_sample_ms,
             resource_sample_target_count=resource_sample_target_count,
             workload_contract_path=workload_contract_path,
-            benchmark_policy_path=benchmark_policy_path,
-            comparability_mode=comparability_mode,
-            required_timing_class=required_timing_class,
         )
         artifact_path = write_run_artifact(
             artifact,
