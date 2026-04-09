@@ -135,6 +135,7 @@ Build:
 - `build.zig` — compile and run hooks, links libC and libdl.
 - `zig build dropin` — full drop-in shared library (`libwebgpu_doe.so`).
 - `zig build dropin-core` — core-only drop-in shared library (`libwebgpu_doe_core.so`).
+- `zig build runtime-compile-report` — repo-only CLI for WGSL runtime compile structural metrics (`doe-runtime-compile-report`).
 - `zig build module-core-runner` — explicit service runner for promoted Zig
   module contracts, including the v1 numeric-stability service.
 - `zig build csl-sim-runner` — explicit CSL simulator contract runner (`doe-csl-sim-runner`).

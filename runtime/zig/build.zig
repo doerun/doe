@@ -950,4 +950,26 @@ pub fn build(b: *std.Build) void {
     const compilation_bench_run_step = b.step("bench-compilation-run", "Build and run the WGSL compilation latency benchmark");
     compilation_bench_run_step.dependOn(&install_compilation_bench.step);
     compilation_bench_run_step.dependOn(&run_compilation_bench.step);
+
+    const runtime_compile_report_exe = b.addExecutable(.{
+        .name = "doe-runtime-compile-report",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/main_runtime_compile_report.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{
+                .{ .name = "build_options", .module = build_options_module },
+            },
+        }),
+    });
+    runtime_compile_report_exe.linkLibC();
+    const install_runtime_compile_report = b.addInstallArtifact(runtime_compile_report_exe, .{});
+    const runtime_compile_report_step = b.step("runtime-compile-report", "Build the WGSL runtime compile structural report CLI");
+    runtime_compile_report_step.dependOn(&install_runtime_compile_report.step);
+
+    const run_runtime_compile_report = b.addRunArtifact(runtime_compile_report_exe);
+    if (b.args) |args| run_runtime_compile_report.addArgs(args);
+    const runtime_compile_report_run_step = b.step("runtime-compile-report-run", "Build and run the WGSL runtime compile structural report CLI");
+    runtime_compile_report_run_step.dependOn(&install_runtime_compile_report.step);
+    runtime_compile_report_run_step.dependOn(&run_runtime_compile_report.step);
 }

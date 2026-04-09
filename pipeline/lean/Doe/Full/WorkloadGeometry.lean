@@ -23,7 +23,7 @@ def withExecutionShapeGeometry
     : ComparabilityFacts :=
   { facts with
     executionShapeMatchApplies := true
-    leftRightExecutionShapeMatch := structurallyEquivalentGeometry left right
+    baselineComparisonExecutionShapeMatch := structurallyEquivalentGeometry left right
   }
 
 theorem structurallyEquivalentGeometry_refl (geometry : WorkloadGeometry) :
@@ -49,5 +49,5 @@ theorem equalGeometrySetsExecutionShapeFacts
       { bufferBytes := bufferBytes
         dispatch := { x := dispatchX, y := dispatchY, z := dispatchZ } }
     (withExecutionShapeGeometry facts geometry geometry).executionShapeMatchApplies = true ∧
-      (withExecutionShapeGeometry facts geometry geometry).leftRightExecutionShapeMatch = true := by
+      (withExecutionShapeGeometry facts geometry geometry).baselineComparisonExecutionShapeMatch = true := by
   simp [withExecutionShapeGeometry, structurallyEquivalentGeometry]

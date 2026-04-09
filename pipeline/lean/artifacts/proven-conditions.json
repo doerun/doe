@@ -3,13 +3,13 @@
   "status": "verified",
   "provenance": {
     "leanToolchainRef": "leanprover/lean4:v4.16.0",
-    "extractProgramSha256": "f12b1b06ec3d6f8892e1897d3e6fb9f0c9f75b1a8fe2cde9546de6d605f96f2b",
-    "leanSourceTreeSha256": "40f5f4f510bdf1df1365b96413a9e1f3f1bebe0845073ef0e48e453300dec9f2",
-    "generatedComparabilityContractSha256": "69128a41659fa829567d6634cda96c18308e470feb9b80a7fe29ce4c17d8d911",
-    "proofPatternSpecSha256": "ffbdd2e4aae2b5032983c0fddcef16033641055062a7798a9d0f7b9cdbe30269"
+    "extractProgramSha256": "e1d1ffc179823bf4d42aed5238cd503da9c27861abc4d1cff8eb14f8d41be11d",
+    "leanSourceTreeSha256": "a260fa8b000a447c8e017f850b69a6f0950bbc96e23fbfb732af4bc1c7513877",
+    "generatedComparabilityContractSha256": "a5f14bae1ece1251c60181fd57be18e117da649e3059cb684a60560adc9376ea",
+    "proofPatternSpecSha256": "b9187d71c0588cb45a431f0fc639238920e892f3c25a69956bb0e122f17d4dfc"
   },
   "contractHashes": {
-    "comparabilityObligationsSha256": "853bfa69636f8a03b0aca9b218be928bd42b7c86af37d1e67a954fb4a6513612"
+    "comparabilityObligationsSha256": "b4c4327fc41f6845c4ce0edc044126d2578c9ba355364c1306ec4686eef40269"
   },
   "theorems": [
     { "name": "critical_is_max_rank", "module": "Doe.Core.Model", "category": "comptime_verified" },
@@ -97,7 +97,16 @@
     { "name": "gid_2d_inbounds", "module": "Doe.Shader.ComputeBounds", "category": "lean_required" },
     { "name": "flat_index_2d_inbounds", "module": "Doe.Shader.ComputeBounds", "category": "lean_required" },
     { "name": "flat_index_2d_plus_offset_inbounds", "module": "Doe.Shader.ComputeBounds", "category": "lean_required" },
+    { "name": "flat_index_3d_inbounds", "module": "Doe.Shader.ComputeBounds", "category": "lean_required" },
+    { "name": "flat_index_3d_plus_offset_inbounds", "module": "Doe.Shader.ComputeBounds", "category": "lean_required" },
+    { "name": "gid_texture_coord_1d_inbounds_when_dispatch_fits", "module": "Doe.Shader.TextureSampleBounds", "category": "lean_required" },
     { "name": "gid_texture_coords_2d_inbounds_when_dispatch_fits", "module": "Doe.Shader.ComputeBounds", "category": "lean_required" },
+    { "name": "gid_texture_coord_1d_affine_inbounds_when_dispatch_fits", "module": "Doe.Shader.TextureSampleBounds", "category": "lean_required" },
+    { "name": "gid_texture_coords_2d_affine_inbounds_when_dispatch_fits", "module": "Doe.Shader.TextureSampleBounds", "category": "lean_required" },
+    { "name": "gid_texture_coords_3d_affine_inbounds_when_dispatch_fits", "module": "Doe.Shader.TextureSampleBounds", "category": "lean_required" },
+    { "name": "gid_texture_coord_1d_tiled_inbounds_when_dispatch_fits", "module": "Doe.Shader.TextureSampleBounds", "category": "lean_required" },
+    { "name": "gid_texture_coords_2d_tiled_inbounds_when_dispatch_fits", "module": "Doe.Shader.TextureSampleBounds", "category": "lean_required" },
+    { "name": "gid_texture_coords_3d_tiled_inbounds_when_dispatch_fits", "module": "Doe.Shader.TextureSampleBounds", "category": "lean_required" },
     { "name": "guarded_gid_texture_coords_2d_inbounds", "module": "Doe.Shader.ComputeBounds", "category": "lean_required" },
     { "name": "gid_texture_coords_3d_inbounds_when_dispatch_fits", "module": "Doe.Shader.ComputeBounds", "category": "lean_required" },
     { "name": "guarded_gid_texture_coords_3d_inbounds", "module": "Doe.Shader.ComputeBounds", "category": "lean_required" }
@@ -198,6 +207,87 @@
       "precondition": "ws.x * nwg.x <= width AND ws.y * nwg.y <= height AND width * height + offset <= buffer_element_count",
       "eliminates": "min(flat_index + offset, arrayLength(&buf) - 1) -> flat_index + offset",
       "runtimePath": "runtime/zig/src/doe_wgsl/ir_transform_robustness.zig:clamp_runtime_sized"
+    },
+    {
+      "theorem": "flat_index_3d_inbounds",
+      "module": "Doe.Shader.ComputeBounds",
+      "category": "lean_required",
+      "pattern": "gid.z * (dispatch_height * dispatch_width) + gid.y * dispatch_width + gid.x indexes storage buffer",
+      "precondition": "ws.x * nwg.x <= width AND ws.y * nwg.y <= height AND ws.z * nwg.z <= depth AND width * height * depth <= buffer_element_count",
+      "eliminates": "min(flat_index_3d, arrayLength(&buf) - 1) -> flat_index_3d",
+      "runtimePath": "runtime/zig/src/doe_wgsl/ir_transform_robustness.zig:clamp_runtime_sized"
+    },
+    {
+      "theorem": "flat_index_3d_plus_offset_inbounds",
+      "module": "Doe.Shader.ComputeBounds",
+      "category": "lean_required",
+      "pattern": "gid.z * (dispatch_height * dispatch_width) + gid.y * dispatch_width + gid.x + constant indexes storage buffer",
+      "precondition": "ws.x * nwg.x <= width AND ws.y * nwg.y <= height AND ws.z * nwg.z <= depth AND width * height * depth + offset <= buffer_element_count",
+      "eliminates": "min(flat_index_3d + offset, arrayLength(&buf) - 1) -> flat_index_3d + offset",
+      "runtimePath": "runtime/zig/src/doe_wgsl/ir_transform_robustness.zig:clamp_runtime_sized"
+    },
+    {
+      "theorem": "gid_texture_coord_1d_inbounds_when_dispatch_fits",
+      "module": "Doe.Shader.TextureSampleBounds",
+      "category": "lean_required",
+      "pattern": "global_invocation_id.x scalar texture coord on a bound 1D texture",
+      "precondition": "workgroup_size.x * num_workgroups.x <= textureDimensions(tex[,level]).x",
+      "eliminates": "clamp(coord, 0, textureDimensions(tex[,level]).x - 1) -> coord",
+      "runtimePath": "runtime/zig/src/doe_wgsl/ir_transform_robustness.zig:clamp_texture_coords"
+    },
+    {
+      "theorem": "gid_texture_coord_1d_affine_inbounds_when_dispatch_fits",
+      "module": "Doe.Shader.TextureSampleBounds",
+      "category": "lean_required",
+      "pattern": "global_invocation_id.x * stride + offset scalar texture coord on a bound 1D texture",
+      "precondition": "workgroup_size.x * num_workgroups.x * stride + offset <= textureDimensions(tex[,level]).x",
+      "eliminates": "clamp(coord, 0, textureDimensions(tex[,level]).x - 1) -> coord",
+      "runtimePath": "runtime/zig/src/doe_wgsl/ir_transform_robustness.zig:clamp_texture_coords"
+    },
+    {
+      "theorem": "gid_texture_coords_2d_affine_inbounds_when_dispatch_fits",
+      "module": "Doe.Shader.TextureSampleBounds",
+      "category": "lean_required",
+      "pattern": "vec2(global_invocation_id.x * stride_x + offset_x, global_invocation_id.y * stride_y + offset_y) texture coords on a bound 2D texture",
+      "precondition": "ws.x * nwg.x * stride_x + offset_x <= textureDimensions(tex[,level]).x AND ws.y * nwg.y * stride_y + offset_y <= textureDimensions(tex[,level]).y",
+      "eliminates": "clamp(coords, vec(0), textureDimensions(tex[,level]) - 1) -> coords",
+      "runtimePath": "runtime/zig/src/doe_wgsl/ir_transform_robustness.zig:clamp_texture_coords"
+    },
+    {
+      "theorem": "gid_texture_coords_3d_affine_inbounds_when_dispatch_fits",
+      "module": "Doe.Shader.TextureSampleBounds",
+      "category": "lean_required",
+      "pattern": "vec3(global_invocation_id.x * stride_x + offset_x, global_invocation_id.y * stride_y + offset_y, global_invocation_id.z * stride_z + offset_z) texture coords on a bound 3D texture",
+      "precondition": "per-axis affine dispatch extents fit textureDimensions(tex[,level]).xyz",
+      "eliminates": "clamp(coords, vec(0), textureDimensions(tex[,level]) - 1) -> coords",
+      "runtimePath": "runtime/zig/src/doe_wgsl/ir_transform_robustness.zig:clamp_texture_coords"
+    },
+    {
+      "theorem": "gid_texture_coord_1d_tiled_inbounds_when_dispatch_fits",
+      "module": "Doe.Shader.TextureSampleBounds",
+      "category": "lean_required",
+      "pattern": "(global_invocation_id.x / tile_width) * tile_stride + (global_invocation_id.x % tile_width) + offset scalar texture coord on a bound 1D texture",
+      "precondition": "tile_width > 0 AND tile_width <= tile_stride AND tiled groups fit textureDimensions(tex[,level]).x",
+      "eliminates": "clamp(coord, 0, textureDimensions(tex[,level]).x - 1) -> coord",
+      "runtimePath": "runtime/zig/src/doe_wgsl/ir_transform_robustness.zig:clamp_texture_coords"
+    },
+    {
+      "theorem": "gid_texture_coords_2d_tiled_inbounds_when_dispatch_fits",
+      "module": "Doe.Shader.TextureSampleBounds",
+      "category": "lean_required",
+      "pattern": "vec2(tiled_gid_x + offset_x, tiled_gid_y + offset_y) texture coords on a bound 2D texture",
+      "precondition": "per-axis tiled groups fit textureDimensions(tex[,level]).xy",
+      "eliminates": "clamp(coords, vec(0), textureDimensions(tex[,level]) - 1) -> coords",
+      "runtimePath": "runtime/zig/src/doe_wgsl/ir_transform_robustness.zig:clamp_texture_coords"
+    },
+    {
+      "theorem": "gid_texture_coords_3d_tiled_inbounds_when_dispatch_fits",
+      "module": "Doe.Shader.TextureSampleBounds",
+      "category": "lean_required",
+      "pattern": "vec3(tiled_gid_x + offset_x, tiled_gid_y + offset_y, tiled_gid_z + offset_z) texture coords on a bound 3D texture",
+      "precondition": "per-axis tiled groups fit textureDimensions(tex[,level]).xyz",
+      "eliminates": "clamp(coords, vec(0), textureDimensions(tex[,level]) - 1) -> coords",
+      "runtimePath": "runtime/zig/src/doe_wgsl/ir_transform_robustness.zig:clamp_texture_coords"
     },
     {
       "theorem": "guarded_gid_texture_coords_2d_inbounds",

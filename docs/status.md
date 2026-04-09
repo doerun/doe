@@ -34,6 +34,9 @@ Read this file first. Use the shard files under
   surface rather than a `moat` surface.
 - Shader proof-backed robustness now covers additional 3D storage and texture
   coord families in the native Zig runtime path.
+- Lean artifact regeneration and `-Dlean-verified=true` WGSL builds are green
+  again after the comparability-contract drift and extractor build gaps were
+  repaired.
 - Apple `node-webgpu` package execution on `mac.lan` was restored after keeping
   the provider root alive through async completion.
 - Benchmark/package compare cleanup in early April moved more of the compare
@@ -41,8 +44,9 @@ Read this file first. Use the shard files under
 
 ## Current follow-up highlights
 
-- Lean artifact regeneration remains blocked by pre-existing comparability drift
-  outside the current shader-bounds proof expansion work.
+- Proof-backed shader metric collection currently lives in a scratch evidence
+  bundle rather than a promoted benchmark lane; see the current April shard for
+  the reporter entrypoint and artifact path.
 - Status history is now sharded; future follow-ups should go into the current
   shard instead of bloating this front door.
 
