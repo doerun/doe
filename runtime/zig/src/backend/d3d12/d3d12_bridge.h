@@ -304,7 +304,7 @@ D3D12Handle d3d12_bridge_device_create_texture_3d(D3D12Handle device, uint32_t w
                                                     uint32_t format, uint32_t usage_flags);
 
 /* Hardware capability queries for runtime feature detection.
- * TODO: On actual Windows hardware these should query:
+ * On actual Windows hardware these should query:
  *   - D3D12_FEATURE_DATA_D3D12_OPTIONS1 for WaveLaneCountMin/WaveLaneCountMax
  *   - D3D12_FEATURE_DATA_SHADER_MODEL for HighestShaderModel
  *   - D3D12_FEATURE_DATA_D3D12_OPTIONS4 for Native16BitShaderOpsSupported

@@ -1,0 +1,2883 @@
+{
+  "schemaVersion": 5,
+  "generatedAt": "2026-04-09T01:08:19.084415+00:00",
+  "outputTimestamp": "20260409T010816Z",
+  "outPath": "bench/out/apple-metal/compare/20260409T010816Z/dawn-vs-doe.apple.metal.compare.json",
+  "workspacePath": "bench/out/apple-metal/compare/20260409T010816Z/runtime-comparisons.apple.metal.compare",
+  "benchmarkIntent": "apples-to-apples",
+  "runParameters": {
+    "iterations": 5,
+    "warmup": 1,
+    "workloadCooldownMs": 0
+  },
+  "comparisonAxes": {
+    "boundary": null,
+    "runtimeHost": null,
+    "temperature": null,
+    "comparisonView": null,
+    "providerSet": null
+  },
+  "participants": {
+    "baseline": {
+      "name": "doe",
+      "id": null,
+      "executorId": null,
+      "role": "baseline"
+    },
+    "comparison": {
+      "name": "dawn_delegate",
+      "id": null,
+      "executorId": null,
+      "role": "comparison"
+    }
+  },
+  "deltaPercentConvention": {
+    "baseline": "baseline",
+    "formula": "((comparisonMs / baselineMs) - 1) * 100",
+    "positive": "baseline faster",
+    "negative": "baseline slower",
+    "zero": "parity"
+  },
+  "timingInterpretationPolicy": {
+    "selectedMetricField": "deltaPercent",
+    "selectedMetricUse": "methodology-selected apples-to-apples claim metric",
+    "workloadUnitWallMetricField": "timingInterpretation.workloadUnitWall.deltaPercent",
+    "workloadUnitWallMetricUse": "timed workload-unit wall end-to-end ranking metric",
+    "workloadUnitWallMetricScope": "workloadUnitWall",
+    "narrowSelectedScopeClass": "narrow-hot-path",
+    "narrowSelectedMetricEligibleForClaims": false,
+    "narrowHotPathClaimMetricField": "timingInterpretation.workloadUnitWall.deltaPercent",
+    "narrowHotPathClaimMetricScope": "workloadUnitWall",
+    "legacyAliases": {
+      "timingInterpretation.headlineProcessWall": "timingInterpretation.workloadUnitWall",
+      "overallHeadlineProcessWall": "overallWorkloadUnitWall"
+    },
+    "guidance": "When timingInterpretation.selectedTiming.scopeClass is narrow-hot-path, deltaPercent remains a phase-specific diagnostic. Claimability evaluates timingInterpretation.workloadUnitWall.deltaPercent when that full metric is available."
+  },
+  "comparabilityPolicy": {
+    "mode": "strict",
+    "requiredTimingClass": "operation",
+    "allowBaselineNoExecution": false,
+    "resourceProbe": "none",
+    "resourceSampleMs": 100,
+    "resourceSampleTargetCount": 0,
+    "workloadCooldownMs": 0,
+    "workloadCohort": "all",
+    "requireNativeExecutionTimingForBaselineOperation": true,
+    "obligationContract": {
+      "schemaVersion": 2,
+      "blockingFailureFailsComparability": true
+    },
+    "dispatchWindowSelectionThresholds": {
+      "minDispatchWindowNsWithoutEncode": 500000,
+      "minDispatchWindowCoveragePercentWithoutEncode": 1.0
+    }
+  },
+  "claimabilityPolicy": {
+    "mode": "local",
+    "minTimedSamples": 15,
+    "requiredPositivePercentiles": [
+      "p50Percent",
+      "p95Percent"
+    ],
+    "defaults": {
+      "localMinTimedSamples": 7,
+      "releaseMinTimedSamples": 15
+    }
+  },
+  "benchmarkPolicy": {
+    "path": "config/benchmark-methodology-thresholds.json",
+    "schemaVersion": 1,
+    "sha256": "32e0942cc8f4114210ee2010f524bcbd4c9548a123fc75d29bc699c698262355"
+  },
+  "workloadContract": {
+    "path": "bench/workloads/workloads.apple.metal.json",
+    "sha256": "243cfdba9193038488e0db70c212cc61405acdf6dba45435873df067b6546101"
+  },
+  "workloads": [
+    {
+      "id": "render_bundle_dynamic_pipeline_bindings_200k",
+      "name": "render bundle dynamic pipeline+bindings macro (200k draws)",
+      "description": "Apples-to-apples macro render-bundle workload with dynamic pipeline and dynamic bind-group updates over a 200k-draw command stream.",
+      "domain": "render-bundle",
+      "comparabilityNotes": "Apples-to-apples macro render-bundle contract. This 200k-draw bundle variant replaces the weaker repeated 2k-draw lane for governed Apple Metal compare evidence.",
+      "asyncDiagnosticsMode": null,
+      "timingNormalization": {
+        "baselineDivisor": 1.0,
+        "comparisonDivisor": 1.0,
+        "baselineCommandRepeat": 1,
+        "comparisonCommandRepeat": 1,
+        "baselineIgnoreFirstOps": 0,
+        "comparisonIgnoreFirstOps": 0,
+        "baselineUploadBufferUsage": "copy-dst-copy-src",
+        "comparisonUploadBufferUsage": "copy-dst-copy-src",
+        "baselineUploadSubmitEvery": 1,
+        "comparisonUploadSubmitEvery": 1,
+        "note": "Strict Dawn-vs-Doe operation comparability uses direct timing on the full 200k-draw bundle command (baseline/comparison divisors fixed to 1.0)."
+      },
+      "workloadComparable": true,
+      "benchmarkClass": "comparable",
+      "cohorts": [
+        "governed"
+      ],
+      "directionalReason": null,
+      "pathAsymmetry": false,
+      "pathAsymmetryNote": "",
+      "comparabilityCandidate": {
+        "enabled": false,
+        "tier": "",
+        "notes": ""
+      },
+      "workloadAllowBaselineNoExecution": false,
+      "workloadDefault": false,
+      "baseline": {
+        "commandSamples": [
+          {
+            "command": [
+              "runtime/zig/zig-out/bin/doe-zig-runtime",
+              "--commands",
+              "examples/draw_call_render_bundle_dynamic_pipeline_macro_commands.json",
+              "--quirks",
+              "examples/quirks/apple_m3_noop_list.json",
+              "--vendor",
+              "apple",
+              "--api",
+              "metal",
+              "--family",
+              "m3",
+              "--driver",
+              "1.0.0",
+              "--backend",
+              "native",
+              "--backend-lane",
+              "metal_doe_comparable",
+              "--execute",
+              "--queue-sync-mode",
+              "per-command",
+              "--upload-buffer-usage",
+              "copy-dst-copy-src",
+              "--upload-submit-every",
+              "1",
+              "--trace-jsonl",
+              "bench/out/apple-metal/compare/20260409T010816Z/runtime-comparisons.apple.metal.compare/isolated-runs/doe/render_bundle_dynamic_pipeline_bindings_200k/doe.run001.ndjson",
+              "--trace-meta",
+              "bench/out/apple-metal/compare/20260409T010816Z/runtime-comparisons.apple.metal.compare/isolated-runs/doe/render_bundle_dynamic_pipeline_bindings_200k/doe.run001.meta.json",
+              "--gpu-timestamp-mode",
+              "auto",
+              "--kernel-root",
+              "bench/kernels"
+            ],
+            "commandRepeat": 1,
+            "elapsedMs": 180.8085422962904,
+            "measuredMs": 132.631,
+            "measuredRawMs": 132.631,
+            "resource": {
+              "gpuMemoryProbe": "none",
+              "gpuMemoryProbeAvailable": false,
+              "processCpuMs": 127.52999999999997,
+              "processPeakRssKb": 0,
+              "processWallMs": 180.8085422962904,
+              "resourceSampleCount": 3,
+              "resourceSampleMs": 100,
+              "resourceSampleTargetCount": 0,
+              "resourceSamplingTruncated": false
+            },
+            "returnCode": 0,
+            "runIndex": 1,
+            "timing": {
+              "commandRepeat": 1,
+              "executionDispatchCount": 200000,
+              "executionRowCount": 1,
+              "executionSuccessCount": 1,
+              "repeatNormalized": false,
+              "source": "trace-meta",
+              "timingConfiguredDivisor": 1.0,
+              "timingNormalizationDivisor": 1.0,
+              "timingNormalizedMs": 132.631,
+              "timingRawMs": 132.631,
+              "traceMetaSource": "doe-execution-total-ns",
+              "traceMetaTimingMs": 132.631,
+              "uploadBufferUsage": "copy-dst-copy-src",
+              "uploadSubmitEvery": 1,
+              "wallTimeMs": 180.8085422962904
+            },
+            "timingMetricsNormalizedMs": {
+              "cpu_time": 127.52999999999997,
+              "gpu_time": null,
+              "wall_time": 180.8085422962904
+            },
+            "timingMetricsRawMs": {
+              "cpu_time": 127.52999999999997,
+              "gpu_time": null,
+              "wall_time": 180.8085422962904
+            },
+            "timingNormalizationDivisor": 1.0,
+            "timingSource": "doe-execution-total-ns",
+            "traceJsonlPath": "bench/out/apple-metal/compare/20260409T010816Z/runtime-comparisons.apple.metal.compare/isolated-runs/doe/render_bundle_dynamic_pipeline_bindings_200k/doe.run001.ndjson",
+            "traceMeta": {
+              "backendId": "doe_metal",
+              "backendLane": "metal_doe_comparable",
+              "backendSelectionReason": "apple_chip_prefers_doe_metal",
+              "blockingCount": 0,
+              "commandCount": 1,
+              "executionBackend": "doe_metal",
+              "executionDispatchCount": 200000,
+              "executionEncodeTotalNs": 17000,
+              "executionErrorCount": 0,
+              "executionGpuTimestampAttemptedCount": 0,
+              "executionGpuTimestampTotalNs": 0,
+              "executionGpuTimestampValidCount": 0,
+              "executionRowCount": 1,
+              "executionSetupTotalNs": 99290000,
+              "executionSkippedCount": 0,
+              "executionSubmitWaitTotalNs": 33319000,
+              "executionSuccessCount": 1,
+              "executionTotalNs": 132631000,
+              "executionUnsupportedCount": 0,
+              "fallbackUsed": false,
+              "hash": "0x509d940f0c58349f",
+              "hostArtifactFinalizeTotalNs": 90000,
+              "hostArtifactOperatorManifestFinalizeTotalNs": 13000,
+              "hostArtifactTraceJsonlSerializeTotalNs": 5000,
+              "hostArtifactTraceJsonlWriteTotalNs": 16000,
+              "hostCommandOrchestrationTotalNs": 196000,
+              "hostExecutorInitTotalNs": 28934000,
+              "hostInputParseTotalNs": 62000,
+              "hostInputReadTotalNs": 41000,
+              "hostKernelPrewarmTotalNs": 0,
+              "hostUploadPrewarmTotalNs": 0,
+              "hostWorkloadPrepareTotalNs": 2000,
+              "leanRequiredCount": 0,
+              "matchedCount": 0,
+              "module": "doe-zig-runtime",
+              "previousHash": "0x9e3779b97f4a7c15",
+              "profile": {
+                "api": "metal",
+                "deviceFamily": "m3",
+                "driver": "1.0.0",
+                "vendor": "apple"
+              },
+              "queueSyncMode": "per-command",
+              "quirkMode": "trace",
+              "requiresLeanCount": 0,
+              "rowCount": 1,
+              "selectionPolicyHash": "backend-runtime-policy-v3",
+              "semanticCaptureCount": 0,
+              "semanticOpRowCount": 0,
+              "semanticReproCount": 0,
+              "semanticTracingEnabled": false,
+              "seqMax": 0,
+              "shaderArtifactManifestHash": "0b1cd2b3c35d24a7e1064bd42941a44ad81f2f3de9910bf37bc452b4d02d8a1f",
+              "shaderArtifactManifestPath": "bench/out/shader-artifacts/metal_shader_artifact_2.json",
+              "traceVersion": 1,
+              "uploadBufferUsage": "copy-dst-copy-src",
+              "uploadSubmitEvery": 1
+            },
+            "traceMetaPath": "bench/out/apple-metal/compare/20260409T010816Z/runtime-comparisons.apple.metal.compare/isolated-runs/doe/render_bundle_dynamic_pipeline_bindings_200k/doe.run001.meta.json",
+            "uploadBufferUsage": "copy-dst-copy-src",
+            "uploadIgnoreFirstOps": 0,
+            "uploadSubmitEvery": 1
+          },
+          {
+            "command": [
+              "runtime/zig/zig-out/bin/doe-zig-runtime",
+              "--commands",
+              "examples/draw_call_render_bundle_dynamic_pipeline_macro_commands.json",
+              "--quirks",
+              "examples/quirks/apple_m3_noop_list.json",
+              "--vendor",
+              "apple",
+              "--api",
+              "metal",
+              "--family",
+              "m3",
+              "--driver",
+              "1.0.0",
+              "--backend",
+              "native",
+              "--backend-lane",
+              "metal_doe_comparable",
+              "--execute",
+              "--queue-sync-mode",
+              "per-command",
+              "--upload-buffer-usage",
+              "copy-dst-copy-src",
+              "--upload-submit-every",
+              "1",
+              "--trace-jsonl",
+              "bench/out/apple-metal/compare/20260409T010816Z/runtime-comparisons.apple.metal.compare/isolated-runs/doe/render_bundle_dynamic_pipeline_bindings_200k/doe.run002.ndjson",
+              "--trace-meta",
+              "bench/out/apple-metal/compare/20260409T010816Z/runtime-comparisons.apple.metal.compare/isolated-runs/doe/render_bundle_dynamic_pipeline_bindings_200k/doe.run002.meta.json",
+              "--gpu-timestamp-mode",
+              "auto",
+              "--kernel-root",
+              "bench/kernels"
+            ],
+            "commandRepeat": 1,
+            "elapsedMs": 174.99591689556837,
+            "measuredMs": 116.618,
+            "measuredRawMs": 116.618,
+            "resource": {
+              "gpuMemoryProbe": "none",
+              "gpuMemoryProbeAvailable": false,
+              "processCpuMs": 126.58400000000003,
+              "processPeakRssKb": 0,
+              "processWallMs": 174.99591689556837,
+              "resourceSampleCount": 3,
+              "resourceSampleMs": 100,
+              "resourceSampleTargetCount": 0,
+              "resourceSamplingTruncated": false
+            },
+            "returnCode": 0,
+            "runIndex": 2,
+            "timing": {
+              "commandRepeat": 1,
+              "executionDispatchCount": 200000,
+              "executionRowCount": 1,
+              "executionSuccessCount": 1,
+              "repeatNormalized": false,
+              "source": "trace-meta",
+              "timingConfiguredDivisor": 1.0,
+              "timingNormalizationDivisor": 1.0,
+              "timingNormalizedMs": 116.618,
+              "timingRawMs": 116.618,
+              "traceMetaSource": "doe-execution-total-ns",
+              "traceMetaTimingMs": 116.618,
+              "uploadBufferUsage": "copy-dst-copy-src",
+              "uploadSubmitEvery": 1,
+              "wallTimeMs": 174.99591689556837
+            },
+            "timingMetricsNormalizedMs": {
+              "cpu_time": 126.58400000000003,
+              "gpu_time": null,
+              "wall_time": 174.99591689556837
+            },
+            "timingMetricsRawMs": {
+              "cpu_time": 126.58400000000003,
+              "gpu_time": null,
+              "wall_time": 174.99591689556837
+            },
+            "timingNormalizationDivisor": 1.0,
+            "timingSource": "doe-execution-total-ns",
+            "traceJsonlPath": "bench/out/apple-metal/compare/20260409T010816Z/runtime-comparisons.apple.metal.compare/isolated-runs/doe/render_bundle_dynamic_pipeline_bindings_200k/doe.run002.ndjson",
+            "traceMeta": {
+              "backendId": "doe_metal",
+              "backendLane": "metal_doe_comparable",
+              "backendSelectionReason": "apple_chip_prefers_doe_metal",
+              "blockingCount": 0,
+              "commandCount": 1,
+              "executionBackend": "doe_metal",
+              "executionDispatchCount": 200000,
+              "executionEncodeTotalNs": 18000,
+              "executionErrorCount": 0,
+              "executionGpuTimestampAttemptedCount": 0,
+              "executionGpuTimestampTotalNs": 0,
+              "executionGpuTimestampValidCount": 0,
+              "executionRowCount": 1,
+              "executionSetupTotalNs": 98623000,
+              "executionSkippedCount": 0,
+              "executionSubmitWaitTotalNs": 17972000,
+              "executionSuccessCount": 1,
+              "executionTotalNs": 116618000,
+              "executionUnsupportedCount": 0,
+              "fallbackUsed": false,
+              "hash": "0x509d940f0c58349f",
+              "hostArtifactFinalizeTotalNs": 89000,
+              "hostArtifactOperatorManifestFinalizeTotalNs": 13000,
+              "hostArtifactTraceJsonlSerializeTotalNs": 5000,
+              "hostArtifactTraceJsonlWriteTotalNs": 15000,
+              "hostCommandOrchestrationTotalNs": 196000,
+              "hostExecutorInitTotalNs": 29823000,
+              "hostInputParseTotalNs": 53000,
+              "hostInputReadTotalNs": 37000,
+              "hostKernelPrewarmTotalNs": 0,
+              "hostUploadPrewarmTotalNs": 0,
+              "hostWorkloadPrepareTotalNs": 2000,
+              "leanRequiredCount": 0,
+              "matchedCount": 0,
+              "module": "doe-zig-runtime",
+              "previousHash": "0x9e3779b97f4a7c15",
+              "profile": {
+                "api": "metal",
+                "deviceFamily": "m3",
+                "driver": "1.0.0",
+                "vendor": "apple"
+              },
+              "queueSyncMode": "per-command",
+              "quirkMode": "trace",
+              "requiresLeanCount": 0,
+              "rowCount": 1,
+              "selectionPolicyHash": "backend-runtime-policy-v3",
+              "semanticCaptureCount": 0,
+              "semanticOpRowCount": 0,
+              "semanticReproCount": 0,
+              "semanticTracingEnabled": false,
+              "seqMax": 0,
+              "shaderArtifactManifestHash": "0b1cd2b3c35d24a7e1064bd42941a44ad81f2f3de9910bf37bc452b4d02d8a1f",
+              "shaderArtifactManifestPath": "bench/out/shader-artifacts/metal_shader_artifact_2.json",
+              "traceVersion": 1,
+              "uploadBufferUsage": "copy-dst-copy-src",
+              "uploadSubmitEvery": 1
+            },
+            "traceMetaPath": "bench/out/apple-metal/compare/20260409T010816Z/runtime-comparisons.apple.metal.compare/isolated-runs/doe/render_bundle_dynamic_pipeline_bindings_200k/doe.run002.meta.json",
+            "uploadBufferUsage": "copy-dst-copy-src",
+            "uploadIgnoreFirstOps": 0,
+            "uploadSubmitEvery": 1
+          },
+          {
+            "command": [
+              "runtime/zig/zig-out/bin/doe-zig-runtime",
+              "--commands",
+              "examples/draw_call_render_bundle_dynamic_pipeline_macro_commands.json",
+              "--quirks",
+              "examples/quirks/apple_m3_noop_list.json",
+              "--vendor",
+              "apple",
+              "--api",
+              "metal",
+              "--family",
+              "m3",
+              "--driver",
+              "1.0.0",
+              "--backend",
+              "native",
+              "--backend-lane",
+              "metal_doe_comparable",
+              "--execute",
+              "--queue-sync-mode",
+              "per-command",
+              "--upload-buffer-usage",
+              "copy-dst-copy-src",
+              "--upload-submit-every",
+              "1",
+              "--trace-jsonl",
+              "bench/out/apple-metal/compare/20260409T010816Z/runtime-comparisons.apple.metal.compare/isolated-runs/doe/render_bundle_dynamic_pipeline_bindings_200k/doe.run003.ndjson",
+              "--trace-meta",
+              "bench/out/apple-metal/compare/20260409T010816Z/runtime-comparisons.apple.metal.compare/isolated-runs/doe/render_bundle_dynamic_pipeline_bindings_200k/doe.run003.meta.json",
+              "--gpu-timestamp-mode",
+              "auto",
+              "--kernel-root",
+              "bench/kernels"
+            ],
+            "commandRepeat": 1,
+            "elapsedMs": 179.40591741353273,
+            "measuredMs": 120.222,
+            "measuredRawMs": 120.222,
+            "resource": {
+              "gpuMemoryProbe": "none",
+              "gpuMemoryProbeAvailable": false,
+              "processCpuMs": 126.00800000000001,
+              "processPeakRssKb": 0,
+              "processWallMs": 179.40591741353273,
+              "resourceSampleCount": 3,
+              "resourceSampleMs": 100,
+              "resourceSampleTargetCount": 0,
+              "resourceSamplingTruncated": false
+            },
+            "returnCode": 0,
+            "runIndex": 3,
+            "timing": {
+              "commandRepeat": 1,
+              "executionDispatchCount": 200000,
+              "executionRowCount": 1,
+              "executionSuccessCount": 1,
+              "repeatNormalized": false,
+              "source": "trace-meta",
+              "timingConfiguredDivisor": 1.0,
+              "timingNormalizationDivisor": 1.0,
+              "timingNormalizedMs": 120.222,
+              "timingRawMs": 120.222,
+              "traceMetaSource": "doe-execution-total-ns",
+              "traceMetaTimingMs": 120.222,
+              "uploadBufferUsage": "copy-dst-copy-src",
+              "uploadSubmitEvery": 1,
+              "wallTimeMs": 179.40591741353273
+            },
+            "timingMetricsNormalizedMs": {
+              "cpu_time": 126.00800000000001,
+              "gpu_time": null,
+              "wall_time": 179.40591741353273
+            },
+            "timingMetricsRawMs": {
+              "cpu_time": 126.00800000000001,
+              "gpu_time": null,
+              "wall_time": 179.40591741353273
+            },
+            "timingNormalizationDivisor": 1.0,
+            "timingSource": "doe-execution-total-ns",
+            "traceJsonlPath": "bench/out/apple-metal/compare/20260409T010816Z/runtime-comparisons.apple.metal.compare/isolated-runs/doe/render_bundle_dynamic_pipeline_bindings_200k/doe.run003.ndjson",
+            "traceMeta": {
+              "backendId": "doe_metal",
+              "backendLane": "metal_doe_comparable",
+              "backendSelectionReason": "apple_chip_prefers_doe_metal",
+              "blockingCount": 0,
+              "commandCount": 1,
+              "executionBackend": "doe_metal",
+              "executionDispatchCount": 200000,
+              "executionEncodeTotalNs": 18000,
+              "executionErrorCount": 0,
+              "executionGpuTimestampAttemptedCount": 0,
+              "executionGpuTimestampTotalNs": 0,
+              "executionGpuTimestampValidCount": 0,
+              "executionRowCount": 1,
+              "executionSetupTotalNs": 98947000,
+              "executionSkippedCount": 0,
+              "executionSubmitWaitTotalNs": 21254000,
+              "executionSuccessCount": 1,
+              "executionTotalNs": 120222000,
+              "executionUnsupportedCount": 0,
+              "fallbackUsed": false,
+              "hash": "0x509d940f0c58349f",
+              "hostArtifactFinalizeTotalNs": 84000,
+              "hostArtifactOperatorManifestFinalizeTotalNs": 11000,
+              "hostArtifactTraceJsonlSerializeTotalNs": 6000,
+              "hostArtifactTraceJsonlWriteTotalNs": 15000,
+              "hostCommandOrchestrationTotalNs": 168000,
+              "hostExecutorInitTotalNs": 28598000,
+              "hostInputParseTotalNs": 54000,
+              "hostInputReadTotalNs": 35000,
+              "hostKernelPrewarmTotalNs": 0,
+              "hostUploadPrewarmTotalNs": 0,
+              "hostWorkloadPrepareTotalNs": 1000,
+              "leanRequiredCount": 0,
+              "matchedCount": 0,
+              "module": "doe-zig-runtime",
+              "previousHash": "0x9e3779b97f4a7c15",
+              "profile": {
+                "api": "metal",
+                "deviceFamily": "m3",
+                "driver": "1.0.0",
+                "vendor": "apple"
+              },
+              "queueSyncMode": "per-command",
+              "quirkMode": "trace",
+              "requiresLeanCount": 0,
+              "rowCount": 1,
+              "selectionPolicyHash": "backend-runtime-policy-v3",
+              "semanticCaptureCount": 0,
+              "semanticOpRowCount": 0,
+              "semanticReproCount": 0,
+              "semanticTracingEnabled": false,
+              "seqMax": 0,
+              "shaderArtifactManifestHash": "0b1cd2b3c35d24a7e1064bd42941a44ad81f2f3de9910bf37bc452b4d02d8a1f",
+              "shaderArtifactManifestPath": "bench/out/shader-artifacts/metal_shader_artifact_2.json",
+              "traceVersion": 1,
+              "uploadBufferUsage": "copy-dst-copy-src",
+              "uploadSubmitEvery": 1
+            },
+            "traceMetaPath": "bench/out/apple-metal/compare/20260409T010816Z/runtime-comparisons.apple.metal.compare/isolated-runs/doe/render_bundle_dynamic_pipeline_bindings_200k/doe.run003.meta.json",
+            "uploadBufferUsage": "copy-dst-copy-src",
+            "uploadIgnoreFirstOps": 0,
+            "uploadSubmitEvery": 1
+          },
+          {
+            "command": [
+              "runtime/zig/zig-out/bin/doe-zig-runtime",
+              "--commands",
+              "examples/draw_call_render_bundle_dynamic_pipeline_macro_commands.json",
+              "--quirks",
+              "examples/quirks/apple_m3_noop_list.json",
+              "--vendor",
+              "apple",
+              "--api",
+              "metal",
+              "--family",
+              "m3",
+              "--driver",
+              "1.0.0",
+              "--backend",
+              "native",
+              "--backend-lane",
+              "metal_doe_comparable",
+              "--execute",
+              "--queue-sync-mode",
+              "per-command",
+              "--upload-buffer-usage",
+              "copy-dst-copy-src",
+              "--upload-submit-every",
+              "1",
+              "--trace-jsonl",
+              "bench/out/apple-metal/compare/20260409T010816Z/runtime-comparisons.apple.metal.compare/isolated-runs/doe/render_bundle_dynamic_pipeline_bindings_200k/doe.run004.ndjson",
+              "--trace-meta",
+              "bench/out/apple-metal/compare/20260409T010816Z/runtime-comparisons.apple.metal.compare/isolated-runs/doe/render_bundle_dynamic_pipeline_bindings_200k/doe.run004.meta.json",
+              "--gpu-timestamp-mode",
+              "auto",
+              "--kernel-root",
+              "bench/kernels"
+            ],
+            "commandRepeat": 1,
+            "elapsedMs": 182.53145925700665,
+            "measuredMs": 131.143,
+            "measuredRawMs": 131.143,
+            "resource": {
+              "gpuMemoryProbe": "none",
+              "gpuMemoryProbeAvailable": false,
+              "processCpuMs": 125.29099999999993,
+              "processPeakRssKb": 0,
+              "processWallMs": 182.53145925700665,
+              "resourceSampleCount": 3,
+              "resourceSampleMs": 100,
+              "resourceSampleTargetCount": 0,
+              "resourceSamplingTruncated": false
+            },
+            "returnCode": 0,
+            "runIndex": 4,
+            "timing": {
+              "commandRepeat": 1,
+              "executionDispatchCount": 200000,
+              "executionRowCount": 1,
+              "executionSuccessCount": 1,
+              "repeatNormalized": false,
+              "source": "trace-meta",
+              "timingConfiguredDivisor": 1.0,
+              "timingNormalizationDivisor": 1.0,
+              "timingNormalizedMs": 131.143,
+              "timingRawMs": 131.143,
+              "traceMetaSource": "doe-execution-total-ns",
+              "traceMetaTimingMs": 131.143,
+              "uploadBufferUsage": "copy-dst-copy-src",
+              "uploadSubmitEvery": 1,
+              "wallTimeMs": 182.53145925700665
+            },
+            "timingMetricsNormalizedMs": {
+              "cpu_time": 125.29099999999993,
+              "gpu_time": null,
+              "wall_time": 182.53145925700665
+            },
+            "timingMetricsRawMs": {
+              "cpu_time": 125.29099999999993,
+              "gpu_time": null,
+              "wall_time": 182.53145925700665
+            },
+            "timingNormalizationDivisor": 1.0,
+            "timingSource": "doe-execution-total-ns",
+            "traceJsonlPath": "bench/out/apple-metal/compare/20260409T010816Z/runtime-comparisons.apple.metal.compare/isolated-runs/doe/render_bundle_dynamic_pipeline_bindings_200k/doe.run004.ndjson",
+            "traceMeta": {
+              "backendId": "doe_metal",
+              "backendLane": "metal_doe_comparable",
+              "backendSelectionReason": "apple_chip_prefers_doe_metal",
+              "blockingCount": 0,
+              "commandCount": 1,
+              "executionBackend": "doe_metal",
+              "executionDispatchCount": 200000,
+              "executionEncodeTotalNs": 19000,
+              "executionErrorCount": 0,
+              "executionGpuTimestampAttemptedCount": 0,
+              "executionGpuTimestampTotalNs": 0,
+              "executionGpuTimestampValidCount": 0,
+              "executionRowCount": 1,
+              "executionSetupTotalNs": 98930000,
+              "executionSkippedCount": 0,
+              "executionSubmitWaitTotalNs": 32190000,
+              "executionSuccessCount": 1,
+              "executionTotalNs": 131143000,
+              "executionUnsupportedCount": 0,
+              "fallbackUsed": false,
+              "hash": "0x509d940f0c58349f",
+              "hostArtifactFinalizeTotalNs": 85000,
+              "hostArtifactOperatorManifestFinalizeTotalNs": 13000,
+              "hostArtifactTraceJsonlSerializeTotalNs": 6000,
+              "hostArtifactTraceJsonlWriteTotalNs": 15000,
+              "hostCommandOrchestrationTotalNs": 182000,
+              "hostExecutorInitTotalNs": 30859000,
+              "hostInputParseTotalNs": 55000,
+              "hostInputReadTotalNs": 39000,
+              "hostKernelPrewarmTotalNs": 0,
+              "hostUploadPrewarmTotalNs": 0,
+              "hostWorkloadPrepareTotalNs": 3000,
+              "leanRequiredCount": 0,
+              "matchedCount": 0,
+              "module": "doe-zig-runtime",
+              "previousHash": "0x9e3779b97f4a7c15",
+              "profile": {
+                "api": "metal",
+                "deviceFamily": "m3",
+                "driver": "1.0.0",
+                "vendor": "apple"
+              },
+              "queueSyncMode": "per-command",
+              "quirkMode": "trace",
+              "requiresLeanCount": 0,
+              "rowCount": 1,
+              "selectionPolicyHash": "backend-runtime-policy-v3",
+              "semanticCaptureCount": 0,
+              "semanticOpRowCount": 0,
+              "semanticReproCount": 0,
+              "semanticTracingEnabled": false,
+              "seqMax": 0,
+              "shaderArtifactManifestHash": "0b1cd2b3c35d24a7e1064bd42941a44ad81f2f3de9910bf37bc452b4d02d8a1f",
+              "shaderArtifactManifestPath": "bench/out/shader-artifacts/metal_shader_artifact_2.json",
+              "traceVersion": 1,
+              "uploadBufferUsage": "copy-dst-copy-src",
+              "uploadSubmitEvery": 1
+            },
+            "traceMetaPath": "bench/out/apple-metal/compare/20260409T010816Z/runtime-comparisons.apple.metal.compare/isolated-runs/doe/render_bundle_dynamic_pipeline_bindings_200k/doe.run004.meta.json",
+            "uploadBufferUsage": "copy-dst-copy-src",
+            "uploadIgnoreFirstOps": 0,
+            "uploadSubmitEvery": 1
+          }
+        ],
+        "stats": {
+          "count": 4,
+          "maxMs": 132.631,
+          "meanMs": 125.1535,
+          "minMs": 116.618,
+          "p10Ms": 116.618,
+          "p50Ms": 120.222,
+          "p95Ms": 131.143,
+          "p99Ms": 131.143,
+          "stdevMs": 6.873164645925488
+        },
+        "timingsMs": [
+          132.631,
+          116.618,
+          120.222,
+          131.143
+        ],
+        "timingSources": [
+          "doe-execution-total-ns"
+        ],
+        "timingClasses": [
+          "operation"
+        ],
+        "lastMeta": {
+          "backendId": "doe_metal",
+          "backendLane": "metal_doe_comparable",
+          "backendSelectionReason": "apple_chip_prefers_doe_metal",
+          "blockingCount": 0,
+          "commandCount": 1,
+          "executionBackend": "doe_metal",
+          "executionDispatchCount": 200000,
+          "executionEncodeTotalNs": 19000,
+          "executionErrorCount": 0,
+          "executionGpuTimestampAttemptedCount": 0,
+          "executionGpuTimestampTotalNs": 0,
+          "executionGpuTimestampValidCount": 0,
+          "executionRowCount": 1,
+          "executionSetupTotalNs": 98930000,
+          "executionSkippedCount": 0,
+          "executionSubmitWaitTotalNs": 32190000,
+          "executionSuccessCount": 1,
+          "executionTotalNs": 131143000,
+          "executionUnsupportedCount": 0,
+          "fallbackUsed": false,
+          "hash": "0x509d940f0c58349f",
+          "hostArtifactFinalizeTotalNs": 85000,
+          "hostArtifactOperatorManifestFinalizeTotalNs": 13000,
+          "hostArtifactTraceJsonlSerializeTotalNs": 6000,
+          "hostArtifactTraceJsonlWriteTotalNs": 15000,
+          "hostCommandOrchestrationTotalNs": 182000,
+          "hostExecutorInitTotalNs": 30859000,
+          "hostInputParseTotalNs": 55000,
+          "hostInputReadTotalNs": 39000,
+          "hostKernelPrewarmTotalNs": 0,
+          "hostUploadPrewarmTotalNs": 0,
+          "hostWorkloadPrepareTotalNs": 3000,
+          "leanRequiredCount": 0,
+          "matchedCount": 0,
+          "module": "doe-zig-runtime",
+          "previousHash": "0x9e3779b97f4a7c15",
+          "profile": {
+            "api": "metal",
+            "deviceFamily": "m3",
+            "driver": "1.0.0",
+            "vendor": "apple"
+          },
+          "queueSyncMode": "per-command",
+          "quirkMode": "trace",
+          "requiresLeanCount": 0,
+          "rowCount": 1,
+          "selectionPolicyHash": "backend-runtime-policy-v3",
+          "semanticCaptureCount": 0,
+          "semanticOpRowCount": 0,
+          "semanticReproCount": 0,
+          "semanticTracingEnabled": false,
+          "seqMax": 0,
+          "shaderArtifactManifestHash": "0b1cd2b3c35d24a7e1064bd42941a44ad81f2f3de9910bf37bc452b4d02d8a1f",
+          "shaderArtifactManifestPath": "bench/out/shader-artifacts/metal_shader_artifact_2.json",
+          "traceVersion": 1,
+          "uploadBufferUsage": "copy-dst-copy-src",
+          "uploadSubmitEvery": 1
+        },
+        "resourceStats": {
+          "gpuProbeAvailableCount": 0,
+          "gpuProbeModes": [
+            "none"
+          ],
+          "gpuVramDeltaPeakFromBeforeBytes": {
+            "count": 0,
+            "max": 0.0,
+            "mean": 0.0,
+            "min": 0.0,
+            "p10": 0.0,
+            "p50": 0.0,
+            "p95": 0.0,
+            "p99": 0.0,
+            "stdev": 0.0
+          },
+          "gpuVramUsedAfterBytes": {
+            "count": 0,
+            "max": 0.0,
+            "mean": 0.0,
+            "min": 0.0,
+            "p10": 0.0,
+            "p50": 0.0,
+            "p95": 0.0,
+            "p99": 0.0,
+            "stdev": 0.0
+          },
+          "gpuVramUsedBeforeBytes": {
+            "count": 0,
+            "max": 0.0,
+            "mean": 0.0,
+            "min": 0.0,
+            "p10": 0.0,
+            "p50": 0.0,
+            "p95": 0.0,
+            "p99": 0.0,
+            "stdev": 0.0
+          },
+          "gpuVramUsedPeakBytes": {
+            "count": 0,
+            "max": 0.0,
+            "mean": 0.0,
+            "min": 0.0,
+            "p10": 0.0,
+            "p50": 0.0,
+            "p95": 0.0,
+            "p99": 0.0,
+            "stdev": 0.0
+          },
+          "processPeakRssKb": {
+            "count": 4,
+            "max": 0.0,
+            "mean": 0.0,
+            "min": 0.0,
+            "p10": 0.0,
+            "p50": 0.0,
+            "p95": 0.0,
+            "p99": 0.0,
+            "stdev": 0.0
+          },
+          "samplingTruncatedCount": 0
+        },
+        "timingMetricsRawStatsMs": {
+          "cpu_time": {
+            "count": 4,
+            "maxMs": 127.52999999999997,
+            "meanMs": 126.35324999999999,
+            "minMs": 125.29099999999993,
+            "p10Ms": 125.29099999999993,
+            "p50Ms": 126.00800000000001,
+            "p95Ms": 126.58400000000003,
+            "p99Ms": 126.58400000000003,
+            "stdevMs": 0.8193837242098633
+          },
+          "gpu_time": {
+            "count": 0,
+            "maxMs": 0.0,
+            "meanMs": 0.0,
+            "minMs": 0.0,
+            "p10Ms": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "p99Ms": 0.0,
+            "stdevMs": 0.0
+          },
+          "wall_time": {
+            "count": 4,
+            "maxMs": 182.53145925700665,
+            "meanMs": 179.43545896559954,
+            "minMs": 174.99591689556837,
+            "p10Ms": 174.99591689556837,
+            "p50Ms": 179.40591741353273,
+            "p95Ms": 180.8085422962904,
+            "p99Ms": 180.8085422962904,
+            "stdevMs": 2.7919966928834787
+          }
+        },
+        "timingMetricsNormalizedStatsMs": {
+          "cpu_time": {
+            "count": 4,
+            "maxMs": 127.52999999999997,
+            "meanMs": 126.35324999999999,
+            "minMs": 125.29099999999993,
+            "p10Ms": 125.29099999999993,
+            "p50Ms": 126.00800000000001,
+            "p95Ms": 126.58400000000003,
+            "p99Ms": 126.58400000000003,
+            "stdevMs": 0.8193837242098633
+          },
+          "gpu_time": {
+            "count": 0,
+            "maxMs": 0.0,
+            "meanMs": 0.0,
+            "minMs": 0.0,
+            "p10Ms": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "p99Ms": 0.0,
+            "stdevMs": 0.0
+          },
+          "wall_time": {
+            "count": 4,
+            "maxMs": 182.53145925700665,
+            "meanMs": 179.43545896559954,
+            "minMs": 174.99591689556837,
+            "p10Ms": 174.99591689556837,
+            "p50Ms": 179.40591741353273,
+            "p95Ms": 180.8085422962904,
+            "p99Ms": 180.8085422962904,
+            "stdevMs": 2.7919966928834787
+          }
+        }
+      },
+      "comparison": {
+        "commandSamples": [
+          {
+            "command": [
+              "env",
+              "DYLD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$DYLD_LIBRARY_PATH",
+              "runtime/zig/zig-out/bin/doe-zig-runtime",
+              "--commands",
+              "examples/draw_call_render_bundle_dynamic_pipeline_macro_commands.json",
+              "--quirks",
+              "examples/quirks/apple_m3_noop_list.json",
+              "--vendor",
+              "apple",
+              "--api",
+              "metal",
+              "--family",
+              "m3",
+              "--driver",
+              "1.0.0",
+              "--backend",
+              "native",
+              "--backend-lane",
+              "metal_dawn_release",
+              "--execute",
+              "--queue-sync-mode",
+              "per-command",
+              "--upload-buffer-usage",
+              "copy-dst-copy-src",
+              "--upload-submit-every",
+              "1",
+              "--trace-jsonl",
+              "bench/out/apple-metal/compare/20260409T010816Z/runtime-comparisons.apple.metal.compare/isolated-runs/dawn_delegate/render_bundle_dynamic_pipeline_bindings_200k/dawn_delegate.run001.ndjson",
+              "--trace-meta",
+              "bench/out/apple-metal/compare/20260409T010816Z/runtime-comparisons.apple.metal.compare/isolated-runs/dawn_delegate/render_bundle_dynamic_pipeline_bindings_200k/dawn_delegate.run001.meta.json",
+              "--gpu-timestamp-mode",
+              "auto",
+              "--kernel-root",
+              "bench/kernels"
+            ],
+            "commandRepeat": 1,
+            "elapsedMs": 250.816332641989,
+            "measuredMs": 107.76,
+            "measuredRawMs": 107.76,
+            "resource": {
+              "gpuMemoryProbe": "none",
+              "gpuMemoryProbeAvailable": false,
+              "processCpuMs": 115.16799999999994,
+              "processPeakRssKb": 0,
+              "processWallMs": 250.816332641989,
+              "resourceSampleCount": 4,
+              "resourceSampleMs": 100,
+              "resourceSampleTargetCount": 0,
+              "resourceSamplingTruncated": false
+            },
+            "returnCode": 0,
+            "runIndex": 1,
+            "timing": {
+              "commandRepeat": 1,
+              "executionDispatchCount": 200000,
+              "executionRowCount": 1,
+              "executionSuccessCount": 1,
+              "repeatNormalized": false,
+              "source": "trace-meta",
+              "timingConfiguredDivisor": 1.0,
+              "timingNormalizationDivisor": 1.0,
+              "timingNormalizedMs": 107.76,
+              "timingRawMs": 107.76,
+              "traceMetaSource": "doe-execution-total-ns",
+              "traceMetaTimingMs": 107.76,
+              "uploadBufferUsage": "copy-dst-copy-src",
+              "uploadSubmitEvery": 1,
+              "wallTimeMs": 250.816332641989
+            },
+            "timingMetricsNormalizedMs": {
+              "cpu_time": 115.16799999999994,
+              "gpu_time": null,
+              "wall_time": 250.816332641989
+            },
+            "timingMetricsRawMs": {
+              "cpu_time": 115.16799999999994,
+              "gpu_time": null,
+              "wall_time": 250.816332641989
+            },
+            "timingNormalizationDivisor": 1.0,
+            "timingSource": "doe-execution-total-ns",
+            "traceJsonlPath": "bench/out/apple-metal/compare/20260409T010816Z/runtime-comparisons.apple.metal.compare/isolated-runs/dawn_delegate/render_bundle_dynamic_pipeline_bindings_200k/dawn_delegate.run001.ndjson",
+            "traceMeta": {
+              "backendId": "dawn_delegate",
+              "backendLane": "metal_dawn_release",
+              "backendSelectionReason": "policy_lane_prefers_dawn_delegate",
+              "blockingCount": 0,
+              "commandCount": 1,
+              "executionBackend": "dawn_delegate",
+              "executionDispatchCount": 200000,
+              "executionEncodeTotalNs": 18674000,
+              "executionErrorCount": 0,
+              "executionGpuTimestampAttemptedCount": 0,
+              "executionGpuTimestampTotalNs": 0,
+              "executionGpuTimestampValidCount": 0,
+              "executionRowCount": 1,
+              "executionSetupTotalNs": 3162000,
+              "executionSkippedCount": 0,
+              "executionSubmitWaitTotalNs": 83372000,
+              "executionSuccessCount": 1,
+              "executionTotalNs": 107760000,
+              "executionUnsupportedCount": 0,
+              "fallbackUsed": false,
+              "hash": "0x509d940f0c58349f",
+              "hostArtifactFinalizeTotalNs": 182000,
+              "hostArtifactOperatorManifestFinalizeTotalNs": 14000,
+              "hostArtifactTraceJsonlSerializeTotalNs": 8000,
+              "hostArtifactTraceJsonlWriteTotalNs": 34000,
+              "hostCommandOrchestrationTotalNs": 14000,
+              "hostExecutorInitTotalNs": 10102000,
+              "hostInputParseTotalNs": 54000,
+              "hostInputReadTotalNs": 36000,
+              "hostKernelPrewarmTotalNs": 0,
+              "hostUploadPrewarmTotalNs": 0,
+              "hostWorkloadPrepareTotalNs": 1000,
+              "leanRequiredCount": 0,
+              "matchedCount": 0,
+              "module": "doe-zig-runtime",
+              "previousHash": "0x9e3779b97f4a7c15",
+              "profile": {
+                "api": "metal",
+                "deviceFamily": "m3",
+                "driver": "1.0.0",
+                "vendor": "apple"
+              },
+              "queueSyncMode": "per-command",
+              "quirkMode": "trace",
+              "requiresLeanCount": 0,
+              "rowCount": 1,
+              "selectionPolicyHash": "backend-runtime-policy-v3",
+              "semanticCaptureCount": 0,
+              "semanticOpRowCount": 0,
+              "semanticReproCount": 0,
+              "semanticTracingEnabled": false,
+              "seqMax": 0,
+              "traceVersion": 1,
+              "uploadBufferUsage": "copy-dst-copy-src",
+              "uploadSubmitEvery": 1
+            },
+            "traceMetaPath": "bench/out/apple-metal/compare/20260409T010816Z/runtime-comparisons.apple.metal.compare/isolated-runs/dawn_delegate/render_bundle_dynamic_pipeline_bindings_200k/dawn_delegate.run001.meta.json",
+            "uploadBufferUsage": "copy-dst-copy-src",
+            "uploadIgnoreFirstOps": 0,
+            "uploadSubmitEvery": 1
+          },
+          {
+            "command": [
+              "env",
+              "DYLD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$DYLD_LIBRARY_PATH",
+              "runtime/zig/zig-out/bin/doe-zig-runtime",
+              "--commands",
+              "examples/draw_call_render_bundle_dynamic_pipeline_macro_commands.json",
+              "--quirks",
+              "examples/quirks/apple_m3_noop_list.json",
+              "--vendor",
+              "apple",
+              "--api",
+              "metal",
+              "--family",
+              "m3",
+              "--driver",
+              "1.0.0",
+              "--backend",
+              "native",
+              "--backend-lane",
+              "metal_dawn_release",
+              "--execute",
+              "--queue-sync-mode",
+              "per-command",
+              "--upload-buffer-usage",
+              "copy-dst-copy-src",
+              "--upload-submit-every",
+              "1",
+              "--trace-jsonl",
+              "bench/out/apple-metal/compare/20260409T010816Z/runtime-comparisons.apple.metal.compare/isolated-runs/dawn_delegate/render_bundle_dynamic_pipeline_bindings_200k/dawn_delegate.run002.ndjson",
+              "--trace-meta",
+              "bench/out/apple-metal/compare/20260409T010816Z/runtime-comparisons.apple.metal.compare/isolated-runs/dawn_delegate/render_bundle_dynamic_pipeline_bindings_200k/dawn_delegate.run002.meta.json",
+              "--gpu-timestamp-mode",
+              "auto",
+              "--kernel-root",
+              "bench/kernels"
+            ],
+            "commandRepeat": 1,
+            "elapsedMs": 244.68395859003067,
+            "measuredMs": 112.258,
+            "measuredRawMs": 112.258,
+            "resource": {
+              "gpuMemoryProbe": "none",
+              "gpuMemoryProbeAvailable": false,
+              "processCpuMs": 125.65099999999995,
+              "processPeakRssKb": 0,
+              "processWallMs": 244.68395859003067,
+              "resourceSampleCount": 4,
+              "resourceSampleMs": 100,
+              "resourceSampleTargetCount": 0,
+              "resourceSamplingTruncated": false
+            },
+            "returnCode": 0,
+            "runIndex": 2,
+            "timing": {
+              "commandRepeat": 1,
+              "executionDispatchCount": 200000,
+              "executionRowCount": 1,
+              "executionSuccessCount": 1,
+              "repeatNormalized": false,
+              "source": "trace-meta",
+              "timingConfiguredDivisor": 1.0,
+              "timingNormalizationDivisor": 1.0,
+              "timingNormalizedMs": 112.258,
+              "timingRawMs": 112.258,
+              "traceMetaSource": "doe-execution-total-ns",
+              "traceMetaTimingMs": 112.258,
+              "uploadBufferUsage": "copy-dst-copy-src",
+              "uploadSubmitEvery": 1,
+              "wallTimeMs": 244.68395859003067
+            },
+            "timingMetricsNormalizedMs": {
+              "cpu_time": 125.65099999999995,
+              "gpu_time": null,
+              "wall_time": 244.68395859003067
+            },
+            "timingMetricsRawMs": {
+              "cpu_time": 125.65099999999995,
+              "gpu_time": null,
+              "wall_time": 244.68395859003067
+            },
+            "timingNormalizationDivisor": 1.0,
+            "timingSource": "doe-execution-total-ns",
+            "traceJsonlPath": "bench/out/apple-metal/compare/20260409T010816Z/runtime-comparisons.apple.metal.compare/isolated-runs/dawn_delegate/render_bundle_dynamic_pipeline_bindings_200k/dawn_delegate.run002.ndjson",
+            "traceMeta": {
+              "backendId": "dawn_delegate",
+              "backendLane": "metal_dawn_release",
+              "backendSelectionReason": "policy_lane_prefers_dawn_delegate",
+              "blockingCount": 0,
+              "commandCount": 1,
+              "executionBackend": "dawn_delegate",
+              "executionDispatchCount": 200000,
+              "executionEncodeTotalNs": 20920000,
+              "executionErrorCount": 0,
+              "executionGpuTimestampAttemptedCount": 0,
+              "executionGpuTimestampTotalNs": 0,
+              "executionGpuTimestampValidCount": 0,
+              "executionRowCount": 1,
+              "executionSetupTotalNs": 3794000,
+              "executionSkippedCount": 0,
+              "executionSubmitWaitTotalNs": 84948000,
+              "executionSuccessCount": 1,
+              "executionTotalNs": 112258000,
+              "executionUnsupportedCount": 0,
+              "fallbackUsed": false,
+              "hash": "0x509d940f0c58349f",
+              "hostArtifactFinalizeTotalNs": 210000,
+              "hostArtifactOperatorManifestFinalizeTotalNs": 16000,
+              "hostArtifactTraceJsonlSerializeTotalNs": 8000,
+              "hostArtifactTraceJsonlWriteTotalNs": 39000,
+              "hostCommandOrchestrationTotalNs": 16000,
+              "hostExecutorInitTotalNs": 12001000,
+              "hostInputParseTotalNs": 82000,
+              "hostInputReadTotalNs": 50000,
+              "hostKernelPrewarmTotalNs": 0,
+              "hostUploadPrewarmTotalNs": 0,
+              "hostWorkloadPrepareTotalNs": 3000,
+              "leanRequiredCount": 0,
+              "matchedCount": 0,
+              "module": "doe-zig-runtime",
+              "previousHash": "0x9e3779b97f4a7c15",
+              "profile": {
+                "api": "metal",
+                "deviceFamily": "m3",
+                "driver": "1.0.0",
+                "vendor": "apple"
+              },
+              "queueSyncMode": "per-command",
+              "quirkMode": "trace",
+              "requiresLeanCount": 0,
+              "rowCount": 1,
+              "selectionPolicyHash": "backend-runtime-policy-v3",
+              "semanticCaptureCount": 0,
+              "semanticOpRowCount": 0,
+              "semanticReproCount": 0,
+              "semanticTracingEnabled": false,
+              "seqMax": 0,
+              "traceVersion": 1,
+              "uploadBufferUsage": "copy-dst-copy-src",
+              "uploadSubmitEvery": 1
+            },
+            "traceMetaPath": "bench/out/apple-metal/compare/20260409T010816Z/runtime-comparisons.apple.metal.compare/isolated-runs/dawn_delegate/render_bundle_dynamic_pipeline_bindings_200k/dawn_delegate.run002.meta.json",
+            "uploadBufferUsage": "copy-dst-copy-src",
+            "uploadIgnoreFirstOps": 0,
+            "uploadSubmitEvery": 1
+          },
+          {
+            "command": [
+              "env",
+              "DYLD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$DYLD_LIBRARY_PATH",
+              "runtime/zig/zig-out/bin/doe-zig-runtime",
+              "--commands",
+              "examples/draw_call_render_bundle_dynamic_pipeline_macro_commands.json",
+              "--quirks",
+              "examples/quirks/apple_m3_noop_list.json",
+              "--vendor",
+              "apple",
+              "--api",
+              "metal",
+              "--family",
+              "m3",
+              "--driver",
+              "1.0.0",
+              "--backend",
+              "native",
+              "--backend-lane",
+              "metal_dawn_release",
+              "--execute",
+              "--queue-sync-mode",
+              "per-command",
+              "--upload-buffer-usage",
+              "copy-dst-copy-src",
+              "--upload-submit-every",
+              "1",
+              "--trace-jsonl",
+              "bench/out/apple-metal/compare/20260409T010816Z/runtime-comparisons.apple.metal.compare/isolated-runs/dawn_delegate/render_bundle_dynamic_pipeline_bindings_200k/dawn_delegate.run003.ndjson",
+              "--trace-meta",
+              "bench/out/apple-metal/compare/20260409T010816Z/runtime-comparisons.apple.metal.compare/isolated-runs/dawn_delegate/render_bundle_dynamic_pipeline_bindings_200k/dawn_delegate.run003.meta.json",
+              "--gpu-timestamp-mode",
+              "auto",
+              "--kernel-root",
+              "bench/kernels"
+            ],
+            "commandRepeat": 1,
+            "elapsedMs": 174.85316609963775,
+            "measuredMs": 100.191,
+            "measuredRawMs": 100.191,
+            "resource": {
+              "gpuMemoryProbe": "none",
+              "gpuMemoryProbeAvailable": false,
+              "processCpuMs": 123.29400000000024,
+              "processPeakRssKb": 0,
+              "processWallMs": 174.85316609963775,
+              "resourceSampleCount": 3,
+              "resourceSampleMs": 100,
+              "resourceSampleTargetCount": 0,
+              "resourceSamplingTruncated": false
+            },
+            "returnCode": 0,
+            "runIndex": 3,
+            "timing": {
+              "commandRepeat": 1,
+              "executionDispatchCount": 200000,
+              "executionRowCount": 1,
+              "executionSuccessCount": 1,
+              "repeatNormalized": false,
+              "source": "trace-meta",
+              "timingConfiguredDivisor": 1.0,
+              "timingNormalizationDivisor": 1.0,
+              "timingNormalizedMs": 100.191,
+              "timingRawMs": 100.191,
+              "traceMetaSource": "doe-execution-total-ns",
+              "traceMetaTimingMs": 100.191,
+              "uploadBufferUsage": "copy-dst-copy-src",
+              "uploadSubmitEvery": 1,
+              "wallTimeMs": 174.85316609963775
+            },
+            "timingMetricsNormalizedMs": {
+              "cpu_time": 123.29400000000024,
+              "gpu_time": null,
+              "wall_time": 174.85316609963775
+            },
+            "timingMetricsRawMs": {
+              "cpu_time": 123.29400000000024,
+              "gpu_time": null,
+              "wall_time": 174.85316609963775
+            },
+            "timingNormalizationDivisor": 1.0,
+            "timingSource": "doe-execution-total-ns",
+            "traceJsonlPath": "bench/out/apple-metal/compare/20260409T010816Z/runtime-comparisons.apple.metal.compare/isolated-runs/dawn_delegate/render_bundle_dynamic_pipeline_bindings_200k/dawn_delegate.run003.ndjson",
+            "traceMeta": {
+              "backendId": "dawn_delegate",
+              "backendLane": "metal_dawn_release",
+              "backendSelectionReason": "policy_lane_prefers_dawn_delegate",
+              "blockingCount": 0,
+              "commandCount": 1,
+              "executionBackend": "dawn_delegate",
+              "executionDispatchCount": 200000,
+              "executionEncodeTotalNs": 19879000,
+              "executionErrorCount": 0,
+              "executionGpuTimestampAttemptedCount": 0,
+              "executionGpuTimestampTotalNs": 0,
+              "executionGpuTimestampValidCount": 0,
+              "executionRowCount": 1,
+              "executionSetupTotalNs": 4122000,
+              "executionSkippedCount": 0,
+              "executionSubmitWaitTotalNs": 73643000,
+              "executionSuccessCount": 1,
+              "executionTotalNs": 100191000,
+              "executionUnsupportedCount": 0,
+              "fallbackUsed": false,
+              "hash": "0x509d940f0c58349f",
+              "hostArtifactFinalizeTotalNs": 228000,
+              "hostArtifactOperatorManifestFinalizeTotalNs": 15000,
+              "hostArtifactTraceJsonlSerializeTotalNs": 13000,
+              "hostArtifactTraceJsonlWriteTotalNs": 43000,
+              "hostCommandOrchestrationTotalNs": 14000,
+              "hostExecutorInitTotalNs": 11405000,
+              "hostInputParseTotalNs": 71000,
+              "hostInputReadTotalNs": 53000,
+              "hostKernelPrewarmTotalNs": 0,
+              "hostUploadPrewarmTotalNs": 0,
+              "hostWorkloadPrepareTotalNs": 2000,
+              "leanRequiredCount": 0,
+              "matchedCount": 0,
+              "module": "doe-zig-runtime",
+              "previousHash": "0x9e3779b97f4a7c15",
+              "profile": {
+                "api": "metal",
+                "deviceFamily": "m3",
+                "driver": "1.0.0",
+                "vendor": "apple"
+              },
+              "queueSyncMode": "per-command",
+              "quirkMode": "trace",
+              "requiresLeanCount": 0,
+              "rowCount": 1,
+              "selectionPolicyHash": "backend-runtime-policy-v3",
+              "semanticCaptureCount": 0,
+              "semanticOpRowCount": 0,
+              "semanticReproCount": 0,
+              "semanticTracingEnabled": false,
+              "seqMax": 0,
+              "traceVersion": 1,
+              "uploadBufferUsage": "copy-dst-copy-src",
+              "uploadSubmitEvery": 1
+            },
+            "traceMetaPath": "bench/out/apple-metal/compare/20260409T010816Z/runtime-comparisons.apple.metal.compare/isolated-runs/dawn_delegate/render_bundle_dynamic_pipeline_bindings_200k/dawn_delegate.run003.meta.json",
+            "uploadBufferUsage": "copy-dst-copy-src",
+            "uploadIgnoreFirstOps": 0,
+            "uploadSubmitEvery": 1
+          },
+          {
+            "command": [
+              "env",
+              "DYLD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$DYLD_LIBRARY_PATH",
+              "runtime/zig/zig-out/bin/doe-zig-runtime",
+              "--commands",
+              "examples/draw_call_render_bundle_dynamic_pipeline_macro_commands.json",
+              "--quirks",
+              "examples/quirks/apple_m3_noop_list.json",
+              "--vendor",
+              "apple",
+              "--api",
+              "metal",
+              "--family",
+              "m3",
+              "--driver",
+              "1.0.0",
+              "--backend",
+              "native",
+              "--backend-lane",
+              "metal_dawn_release",
+              "--execute",
+              "--queue-sync-mode",
+              "per-command",
+              "--upload-buffer-usage",
+              "copy-dst-copy-src",
+              "--upload-submit-every",
+              "1",
+              "--trace-jsonl",
+              "bench/out/apple-metal/compare/20260409T010816Z/runtime-comparisons.apple.metal.compare/isolated-runs/dawn_delegate/render_bundle_dynamic_pipeline_bindings_200k/dawn_delegate.run004.ndjson",
+              "--trace-meta",
+              "bench/out/apple-metal/compare/20260409T010816Z/runtime-comparisons.apple.metal.compare/isolated-runs/dawn_delegate/render_bundle_dynamic_pipeline_bindings_200k/dawn_delegate.run004.meta.json",
+              "--gpu-timestamp-mode",
+              "auto",
+              "--kernel-root",
+              "bench/kernels"
+            ],
+            "commandRepeat": 1,
+            "elapsedMs": 170.8436249755323,
+            "measuredMs": 87.283,
+            "measuredRawMs": 87.283,
+            "resource": {
+              "gpuMemoryProbe": "none",
+              "gpuMemoryProbeAvailable": false,
+              "processCpuMs": 109.2869999999999,
+              "processPeakRssKb": 0,
+              "processWallMs": 170.8436249755323,
+              "resourceSampleCount": 3,
+              "resourceSampleMs": 100,
+              "resourceSampleTargetCount": 0,
+              "resourceSamplingTruncated": false
+            },
+            "returnCode": 0,
+            "runIndex": 4,
+            "timing": {
+              "commandRepeat": 1,
+              "executionDispatchCount": 200000,
+              "executionRowCount": 1,
+              "executionSuccessCount": 1,
+              "repeatNormalized": false,
+              "source": "trace-meta",
+              "timingConfiguredDivisor": 1.0,
+              "timingNormalizationDivisor": 1.0,
+              "timingNormalizedMs": 87.283,
+              "timingRawMs": 87.283,
+              "traceMetaSource": "doe-execution-total-ns",
+              "traceMetaTimingMs": 87.283,
+              "uploadBufferUsage": "copy-dst-copy-src",
+              "uploadSubmitEvery": 1,
+              "wallTimeMs": 170.8436249755323
+            },
+            "timingMetricsNormalizedMs": {
+              "cpu_time": 109.2869999999999,
+              "gpu_time": null,
+              "wall_time": 170.8436249755323
+            },
+            "timingMetricsRawMs": {
+              "cpu_time": 109.2869999999999,
+              "gpu_time": null,
+              "wall_time": 170.8436249755323
+            },
+            "timingNormalizationDivisor": 1.0,
+            "timingSource": "doe-execution-total-ns",
+            "traceJsonlPath": "bench/out/apple-metal/compare/20260409T010816Z/runtime-comparisons.apple.metal.compare/isolated-runs/dawn_delegate/render_bundle_dynamic_pipeline_bindings_200k/dawn_delegate.run004.ndjson",
+            "traceMeta": {
+              "backendId": "dawn_delegate",
+              "backendLane": "metal_dawn_release",
+              "backendSelectionReason": "policy_lane_prefers_dawn_delegate",
+              "blockingCount": 0,
+              "commandCount": 1,
+              "executionBackend": "dawn_delegate",
+              "executionDispatchCount": 200000,
+              "executionEncodeTotalNs": 18773000,
+              "executionErrorCount": 0,
+              "executionGpuTimestampAttemptedCount": 0,
+              "executionGpuTimestampTotalNs": 0,
+              "executionGpuTimestampValidCount": 0,
+              "executionRowCount": 1,
+              "executionSetupTotalNs": 3310000,
+              "executionSkippedCount": 0,
+              "executionSubmitWaitTotalNs": 62764000,
+              "executionSuccessCount": 1,
+              "executionTotalNs": 87283000,
+              "executionUnsupportedCount": 0,
+              "fallbackUsed": false,
+              "hash": "0x509d940f0c58349f",
+              "hostArtifactFinalizeTotalNs": 187000,
+              "hostArtifactOperatorManifestFinalizeTotalNs": 19000,
+              "hostArtifactTraceJsonlSerializeTotalNs": 7000,
+              "hostArtifactTraceJsonlWriteTotalNs": 34000,
+              "hostCommandOrchestrationTotalNs": 15000,
+              "hostExecutorInitTotalNs": 10429000,
+              "hostInputParseTotalNs": 61000,
+              "hostInputReadTotalNs": 41000,
+              "hostKernelPrewarmTotalNs": 0,
+              "hostUploadPrewarmTotalNs": 0,
+              "hostWorkloadPrepareTotalNs": 1000,
+              "leanRequiredCount": 0,
+              "matchedCount": 0,
+              "module": "doe-zig-runtime",
+              "previousHash": "0x9e3779b97f4a7c15",
+              "profile": {
+                "api": "metal",
+                "deviceFamily": "m3",
+                "driver": "1.0.0",
+                "vendor": "apple"
+              },
+              "queueSyncMode": "per-command",
+              "quirkMode": "trace",
+              "requiresLeanCount": 0,
+              "rowCount": 1,
+              "selectionPolicyHash": "backend-runtime-policy-v3",
+              "semanticCaptureCount": 0,
+              "semanticOpRowCount": 0,
+              "semanticReproCount": 0,
+              "semanticTracingEnabled": false,
+              "seqMax": 0,
+              "traceVersion": 1,
+              "uploadBufferUsage": "copy-dst-copy-src",
+              "uploadSubmitEvery": 1
+            },
+            "traceMetaPath": "bench/out/apple-metal/compare/20260409T010816Z/runtime-comparisons.apple.metal.compare/isolated-runs/dawn_delegate/render_bundle_dynamic_pipeline_bindings_200k/dawn_delegate.run004.meta.json",
+            "uploadBufferUsage": "copy-dst-copy-src",
+            "uploadIgnoreFirstOps": 0,
+            "uploadSubmitEvery": 1
+          }
+        ],
+        "stats": {
+          "count": 4,
+          "maxMs": 112.258,
+          "meanMs": 101.873,
+          "minMs": 87.283,
+          "p10Ms": 87.283,
+          "p50Ms": 100.191,
+          "p95Ms": 107.76,
+          "p99Ms": 107.76,
+          "stdevMs": 9.463115475360109
+        },
+        "timingsMs": [
+          107.76,
+          112.258,
+          100.191,
+          87.283
+        ],
+        "timingSources": [
+          "doe-execution-total-ns"
+        ],
+        "timingClasses": [
+          "operation"
+        ],
+        "lastMeta": {
+          "backendId": "dawn_delegate",
+          "backendLane": "metal_dawn_release",
+          "backendSelectionReason": "policy_lane_prefers_dawn_delegate",
+          "blockingCount": 0,
+          "commandCount": 1,
+          "executionBackend": "dawn_delegate",
+          "executionDispatchCount": 200000,
+          "executionEncodeTotalNs": 18773000,
+          "executionErrorCount": 0,
+          "executionGpuTimestampAttemptedCount": 0,
+          "executionGpuTimestampTotalNs": 0,
+          "executionGpuTimestampValidCount": 0,
+          "executionRowCount": 1,
+          "executionSetupTotalNs": 3310000,
+          "executionSkippedCount": 0,
+          "executionSubmitWaitTotalNs": 62764000,
+          "executionSuccessCount": 1,
+          "executionTotalNs": 87283000,
+          "executionUnsupportedCount": 0,
+          "fallbackUsed": false,
+          "hash": "0x509d940f0c58349f",
+          "hostArtifactFinalizeTotalNs": 187000,
+          "hostArtifactOperatorManifestFinalizeTotalNs": 19000,
+          "hostArtifactTraceJsonlSerializeTotalNs": 7000,
+          "hostArtifactTraceJsonlWriteTotalNs": 34000,
+          "hostCommandOrchestrationTotalNs": 15000,
+          "hostExecutorInitTotalNs": 10429000,
+          "hostInputParseTotalNs": 61000,
+          "hostInputReadTotalNs": 41000,
+          "hostKernelPrewarmTotalNs": 0,
+          "hostUploadPrewarmTotalNs": 0,
+          "hostWorkloadPrepareTotalNs": 1000,
+          "leanRequiredCount": 0,
+          "matchedCount": 0,
+          "module": "doe-zig-runtime",
+          "previousHash": "0x9e3779b97f4a7c15",
+          "profile": {
+            "api": "metal",
+            "deviceFamily": "m3",
+            "driver": "1.0.0",
+            "vendor": "apple"
+          },
+          "queueSyncMode": "per-command",
+          "quirkMode": "trace",
+          "requiresLeanCount": 0,
+          "rowCount": 1,
+          "selectionPolicyHash": "backend-runtime-policy-v3",
+          "semanticCaptureCount": 0,
+          "semanticOpRowCount": 0,
+          "semanticReproCount": 0,
+          "semanticTracingEnabled": false,
+          "seqMax": 0,
+          "traceVersion": 1,
+          "uploadBufferUsage": "copy-dst-copy-src",
+          "uploadSubmitEvery": 1
+        },
+        "resourceStats": {
+          "gpuProbeAvailableCount": 0,
+          "gpuProbeModes": [
+            "none"
+          ],
+          "gpuVramDeltaPeakFromBeforeBytes": {
+            "count": 0,
+            "max": 0.0,
+            "mean": 0.0,
+            "min": 0.0,
+            "p10": 0.0,
+            "p50": 0.0,
+            "p95": 0.0,
+            "p99": 0.0,
+            "stdev": 0.0
+          },
+          "gpuVramUsedAfterBytes": {
+            "count": 0,
+            "max": 0.0,
+            "mean": 0.0,
+            "min": 0.0,
+            "p10": 0.0,
+            "p50": 0.0,
+            "p95": 0.0,
+            "p99": 0.0,
+            "stdev": 0.0
+          },
+          "gpuVramUsedBeforeBytes": {
+            "count": 0,
+            "max": 0.0,
+            "mean": 0.0,
+            "min": 0.0,
+            "p10": 0.0,
+            "p50": 0.0,
+            "p95": 0.0,
+            "p99": 0.0,
+            "stdev": 0.0
+          },
+          "gpuVramUsedPeakBytes": {
+            "count": 0,
+            "max": 0.0,
+            "mean": 0.0,
+            "min": 0.0,
+            "p10": 0.0,
+            "p50": 0.0,
+            "p95": 0.0,
+            "p99": 0.0,
+            "stdev": 0.0
+          },
+          "processPeakRssKb": {
+            "count": 4,
+            "max": 0.0,
+            "mean": 0.0,
+            "min": 0.0,
+            "p10": 0.0,
+            "p50": 0.0,
+            "p95": 0.0,
+            "p99": 0.0,
+            "stdev": 0.0
+          },
+          "samplingTruncatedCount": 0
+        },
+        "timingMetricsRawStatsMs": {
+          "cpu_time": {
+            "count": 4,
+            "maxMs": 125.65099999999995,
+            "meanMs": 118.35000000000001,
+            "minMs": 109.2869999999999,
+            "p10Ms": 109.2869999999999,
+            "p50Ms": 115.16799999999994,
+            "p95Ms": 123.29400000000024,
+            "p99Ms": 123.29400000000024,
+            "stdevMs": 6.519410057666334
+          },
+          "gpu_time": {
+            "count": 0,
+            "maxMs": 0.0,
+            "meanMs": 0.0,
+            "minMs": 0.0,
+            "p10Ms": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "p99Ms": 0.0,
+            "stdevMs": 0.0
+          },
+          "wall_time": {
+            "count": 4,
+            "maxMs": 250.816332641989,
+            "meanMs": 210.29927057679743,
+            "minMs": 170.8436249755323,
+            "p10Ms": 170.8436249755323,
+            "p50Ms": 174.85316609963775,
+            "p95Ms": 244.68395859003067,
+            "p99Ms": 244.68395859003067,
+            "stdevMs": 37.54035622027421
+          }
+        },
+        "timingMetricsNormalizedStatsMs": {
+          "cpu_time": {
+            "count": 4,
+            "maxMs": 125.65099999999995,
+            "meanMs": 118.35000000000001,
+            "minMs": 109.2869999999999,
+            "p10Ms": 109.2869999999999,
+            "p50Ms": 115.16799999999994,
+            "p95Ms": 123.29400000000024,
+            "p99Ms": 123.29400000000024,
+            "stdevMs": 6.519410057666334
+          },
+          "gpu_time": {
+            "count": 0,
+            "maxMs": 0.0,
+            "meanMs": 0.0,
+            "minMs": 0.0,
+            "p10Ms": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "p99Ms": 0.0,
+            "stdevMs": 0.0
+          },
+          "wall_time": {
+            "count": 4,
+            "maxMs": 250.816332641989,
+            "meanMs": 210.29927057679743,
+            "minMs": 170.8436249755323,
+            "p10Ms": 170.8436249755323,
+            "p50Ms": 174.85316609963775,
+            "p95Ms": 244.68395859003067,
+            "p99Ms": 244.68395859003067,
+            "stdevMs": 37.54035622027421
+          }
+        }
+      },
+      "deltaPercent": {
+        "p10Percent": -25.154778850606252,
+        "p50Percent": -16.66167589958576,
+        "p95Percent": -17.830154869112334,
+        "p99Percent": -17.830154869112334,
+        "meanPercent": -18.60155728765076
+      },
+      "timingInterpretation": {
+        "selectedTiming": {
+          "baselineSources": [
+            "doe-execution-total-ns"
+          ],
+          "comparisonSources": [
+            "doe-execution-total-ns"
+          ],
+          "baselineClasses": [
+            "operation"
+          ],
+          "comparisonClasses": [
+            "operation"
+          ],
+          "canonicalSources": [
+            "doe-execution-total-ns"
+          ],
+          "timingClasses": [
+            "operation"
+          ],
+          "scope": "operation-total",
+          "scopeClass": "operation-total",
+          "isNarrowHotPath": false,
+          "note": "Selected timing measures the comparable operation scope. workloadUnitWall adds the full timed workload-unit wall interval for the command the harness ran."
+        },
+        "workloadUnitWall": {
+          "metric": "elapsedMs",
+          "scope": "timed-command-process-wall",
+          "scopeClass": "workload-unit-wall",
+          "available": true,
+          "baselineStatsMs": {
+            "count": 4,
+            "minMs": 174.99591689556837,
+            "maxMs": 182.53145925700665,
+            "p10Ms": 174.99591689556837,
+            "p50Ms": 179.40591741353273,
+            "p95Ms": 180.8085422962904,
+            "p99Ms": 180.8085422962904,
+            "meanMs": 179.43545896559954,
+            "stdevMs": 2.7919966928834787
+          },
+          "comparisonStatsMs": {
+            "count": 4,
+            "minMs": 170.8436249755323,
+            "maxMs": 250.816332641989,
+            "p10Ms": 170.8436249755323,
+            "p50Ms": 174.85316609963775,
+            "p95Ms": 244.68395859003067,
+            "p99Ms": 244.68395859003067,
+            "meanMs": 210.29927057679743,
+            "stdevMs": 37.54035622027421
+          },
+          "deltaPercent": {
+            "p10Percent": -2.372793602101031,
+            "p50Percent": -2.537681799759617,
+            "p95Percent": 35.32765403808622,
+            "p99Percent": 35.32765403808622,
+            "meanPercent": 17.200508633644663
+          },
+          "note": "Uses timed command process wall normalized by commandRepeat and timingNormalizationDivisor. This is the full timed workload-unit view for one comparable workload unit, not a warm-session-only metric."
+        },
+        "hostOverheadBreakdown": {
+          "metric": "traceMeta.host*TotalNs",
+          "scope": "selected-timing-gap-breakdown",
+          "scopeClass": "host-overhead-diagnostic",
+          "available": true,
+          "selectedGap": {
+            "baselineStatsMs": {
+              "count": 4,
+              "minMs": 48.1775422962904,
+              "maxMs": 59.18391741353274,
+              "p10Ms": 48.1775422962904,
+              "p50Ms": 51.388459257006645,
+              "p95Ms": 58.377916895568376,
+              "p99Ms": 58.377916895568376,
+              "meanMs": 54.28195896559954,
+              "stdevMs": 4.648717872314493
+            },
+            "comparisonStatsMs": {
+              "count": 4,
+              "minMs": 74.66216609963774,
+              "maxMs": 143.056332641989,
+              "p10Ms": 74.66216609963774,
+              "p50Ms": 83.56062497553229,
+              "p95Ms": 132.4259585900307,
+              "p99Ms": 132.4259585900307,
+              "meanMs": 108.42627057679744,
+              "stdevMs": 29.721798842279984
+            },
+            "deltaPercent": {
+              "p10Percent": 54.97296570353822,
+              "p50Percent": 62.605818862216765,
+              "p95Percent": 126.84255559670974,
+              "p99Percent": 126.84255559670974,
+              "meanPercent": 99.7464215422128
+            },
+            "note": "The normalized difference between workloadUnitWall and selected timing for each timed sample."
+          },
+          "attributedHostOverhead": {
+            "baselineStatsMs": {
+              "count": 4,
+              "minMs": 28.939999999999998,
+              "maxMs": 31.223000000000003,
+              "p10Ms": 28.939999999999998,
+              "p50Ms": 29.325000000000003,
+              "p95Ms": 30.2,
+              "p99Ms": 30.2,
+              "meanMs": 29.922,
+              "stdevMs": 0.879007679147345
+            },
+            "comparisonStatsMs": {
+              "count": 4,
+              "minMs": 10.389,
+              "maxMs": 12.362,
+              "p10Ms": 10.389,
+              "p50Ms": 10.734,
+              "p95Ms": 11.772999999999998,
+              "p99Ms": 11.772999999999998,
+              "meanMs": 11.314499999999999,
+              "stdevMs": 0.7907289358560239
+            },
+            "deltaPercent": {
+              "p10Percent": -64.10158949550795,
+              "p50Percent": -63.39641943734016,
+              "p95Percent": -61.016556291390735,
+              "p99Percent": -61.016556291390735,
+              "meanPercent": -62.186685381993186
+            },
+            "note": "Sum of coarse host-overhead buckets recorded outside the selected execution timing. These buckets are once-per-sample phase timers, not per-dispatch probes."
+          },
+          "unattributedGapRemainder": {
+            "baselineStatsMs": {
+              "count": 4,
+              "minMs": 18.852542296290395,
+              "maxMs": 30.243917413532742,
+              "p10Ms": 18.852542296290395,
+              "p50Ms": 20.165459257006642,
+              "p95Ms": 28.177916895568377,
+              "p99Ms": 28.177916895568377,
+              "meanMs": 24.35995896559954,
+              "stdevMs": 4.927556086610952
+            },
+            "comparisonStatsMs": {
+              "count": 4,
+              "minMs": 62.88916609963775,
+              "maxMs": 132.667332641989,
+              "p10Ms": 62.88916609963775,
+              "p50Ms": 72.8266249755323,
+              "p95Ms": 120.0639585900307,
+              "p99Ms": 120.0639585900307,
+              "meanMs": 97.11177057679743,
+              "stdevMs": 29.79914378988621
+            },
+            "deltaPercent": {
+              "p10Percent": 233.58453789021559,
+              "p50Percent": 261.14538254430346,
+              "p95Percent": 326.0923865841677,
+              "p99Percent": 326.0923865841677,
+              "meanPercent": 298.65326010579895
+            },
+            "note": "Selected-gap remainder after subtracting the coarse host-overhead buckets. This typically captures trace-meta emission, process teardown, and any uninstrumented sample overhead."
+          },
+          "buckets": {
+            "inputRead": {
+              "traceMetaField": "hostInputReadTotalNs",
+              "baselineStatsMs": {
+                "count": 4,
+                "minMs": 0.035,
+                "maxMs": 0.041,
+                "p10Ms": 0.035,
+                "p50Ms": 0.037,
+                "p95Ms": 0.039,
+                "p99Ms": 0.039,
+                "meanMs": 0.038,
+                "stdevMs": 0.0022360679774997894
+              },
+              "comparisonStatsMs": {
+                "count": 4,
+                "minMs": 0.036,
+                "maxMs": 0.053,
+                "p10Ms": 0.036,
+                "p50Ms": 0.041,
+                "p95Ms": 0.05,
+                "p99Ms": 0.05,
+                "meanMs": 0.045,
+                "stdevMs": 0.006819090848492929
+              },
+              "deltaPercent": {
+                "p10Percent": 2.857142857142847,
+                "p50Percent": 10.81081081081081,
+                "p95Percent": 28.205128205128215,
+                "p99Percent": 28.205128205128215,
+                "meanPercent": 18.421052631578938
+              },
+              "note": "Input/config file reads before selected execution timing begins."
+            },
+            "inputParse": {
+              "traceMetaField": "hostInputParseTotalNs",
+              "baselineStatsMs": {
+                "count": 4,
+                "minMs": 0.053,
+                "maxMs": 0.062,
+                "p10Ms": 0.053,
+                "p50Ms": 0.054,
+                "p95Ms": 0.055,
+                "p99Ms": 0.055,
+                "meanMs": 0.056,
+                "stdevMs": 0.0035355339059327377
+              },
+              "comparisonStatsMs": {
+                "count": 4,
+                "minMs": 0.054,
+                "maxMs": 0.082,
+                "p10Ms": 0.054,
+                "p50Ms": 0.061,
+                "p95Ms": 0.071,
+                "p99Ms": 0.071,
+                "meanMs": 0.067,
+                "stdevMs": 0.010559356040971439
+              },
+              "deltaPercent": {
+                "p10Percent": 1.8867924528301883,
+                "p50Percent": 12.962962962962955,
+                "p95Percent": 29.09090909090908,
+                "p99Percent": 29.09090909090908,
+                "meanPercent": 19.64285714285714
+              },
+              "note": "Command/plan parsing and input decoding before selected execution timing begins."
+            },
+            "workloadPrepare": {
+              "traceMetaField": "hostWorkloadPrepareTotalNs",
+              "baselineStatsMs": {
+                "count": 4,
+                "minMs": 0.001,
+                "maxMs": 0.003,
+                "p10Ms": 0.001,
+                "p50Ms": 0.002,
+                "p95Ms": 0.002,
+                "p99Ms": 0.002,
+                "meanMs": 0.002,
+                "stdevMs": 0.0007071067811865475
+              },
+              "comparisonStatsMs": {
+                "count": 4,
+                "minMs": 0.001,
+                "maxMs": 0.003,
+                "p10Ms": 0.001,
+                "p50Ms": 0.001,
+                "p95Ms": 0.002,
+                "p99Ms": 0.002,
+                "meanMs": 0.00175,
+                "stdevMs": 0.00082915619758885
+              },
+              "deltaPercent": {
+                "p10Percent": 0.0,
+                "p50Percent": -50.0,
+                "p95Percent": 0.0,
+                "p99Percent": 0.0,
+                "meanPercent": -12.5
+              },
+              "note": "Pre-execution workload preparation such as dispatch-context or buffer-spec setup."
+            },
+            "executorInit": {
+              "traceMetaField": "hostExecutorInitTotalNs",
+              "baselineStatsMs": {
+                "count": 4,
+                "minMs": 28.598,
+                "maxMs": 30.859,
+                "p10Ms": 28.598,
+                "p50Ms": 28.934,
+                "p95Ms": 29.823,
+                "p99Ms": 29.823,
+                "meanMs": 29.5535,
+                "stdevMs": 0.87660153433587
+              },
+              "comparisonStatsMs": {
+                "count": 4,
+                "minMs": 10.102,
+                "maxMs": 12.001,
+                "p10Ms": 10.102,
+                "p50Ms": 10.429,
+                "p95Ms": 11.405,
+                "p99Ms": 11.405,
+                "meanMs": 10.98425,
+                "stdevMs": 0.7578718146890009
+              },
+              "deltaPercent": {
+                "p10Percent": -64.67585145814392,
+                "p50Percent": -63.955899633649,
+                "p95Percent": -61.75770378566878,
+                "p99Percent": -61.75770378566878,
+                "meanPercent": -62.832659414282574
+              },
+              "note": "Executor/device/backend initialization outside the selected execution timing."
+            },
+            "uploadPrewarm": {
+              "traceMetaField": "hostUploadPrewarmTotalNs",
+              "baselineStatsMs": {
+                "count": 4,
+                "minMs": 0.0,
+                "maxMs": 0.0,
+                "p10Ms": 0.0,
+                "p50Ms": 0.0,
+                "p95Ms": 0.0,
+                "p99Ms": 0.0,
+                "meanMs": 0.0,
+                "stdevMs": 0.0
+              },
+              "comparisonStatsMs": {
+                "count": 4,
+                "minMs": 0.0,
+                "maxMs": 0.0,
+                "p10Ms": 0.0,
+                "p50Ms": 0.0,
+                "p95Ms": 0.0,
+                "p99Ms": 0.0,
+                "meanMs": 0.0,
+                "stdevMs": 0.0
+              },
+              "deltaPercent": {
+                "p10Percent": 0.0,
+                "p50Percent": 0.0,
+                "p95Percent": 0.0,
+                "p99Percent": 0.0,
+                "meanPercent": 0.0
+              },
+              "note": "Doe upload-path prewarm work outside the selected execution timing."
+            },
+            "kernelPrewarm": {
+              "traceMetaField": "hostKernelPrewarmTotalNs",
+              "baselineStatsMs": {
+                "count": 4,
+                "minMs": 0.0,
+                "maxMs": 0.0,
+                "p10Ms": 0.0,
+                "p50Ms": 0.0,
+                "p95Ms": 0.0,
+                "p99Ms": 0.0,
+                "meanMs": 0.0,
+                "stdevMs": 0.0
+              },
+              "comparisonStatsMs": {
+                "count": 4,
+                "minMs": 0.0,
+                "maxMs": 0.0,
+                "p10Ms": 0.0,
+                "p50Ms": 0.0,
+                "p95Ms": 0.0,
+                "p99Ms": 0.0,
+                "meanMs": 0.0,
+                "stdevMs": 0.0
+              },
+              "deltaPercent": {
+                "p10Percent": 0.0,
+                "p50Percent": 0.0,
+                "p95Percent": 0.0,
+                "p99Percent": 0.0,
+                "meanPercent": 0.0
+              },
+              "note": "Kernel/pipeline prewarm work outside the selected execution timing."
+            },
+            "commandOrchestration": {
+              "traceMetaField": "hostCommandOrchestrationTotalNs",
+              "baselineStatsMs": {
+                "count": 4,
+                "minMs": 0.168,
+                "maxMs": 0.196,
+                "p10Ms": 0.168,
+                "p50Ms": 0.182,
+                "p95Ms": 0.196,
+                "p99Ms": 0.196,
+                "meanMs": 0.1855,
+                "stdevMs": 0.0116081867662439
+              },
+              "comparisonStatsMs": {
+                "count": 4,
+                "minMs": 0.014,
+                "maxMs": 0.016,
+                "p10Ms": 0.014,
+                "p50Ms": 0.014,
+                "p95Ms": 0.015,
+                "p99Ms": 0.015,
+                "meanMs": 0.01475,
+                "stdevMs": 0.00082915619758885
+              },
+              "deltaPercent": {
+                "p10Percent": -91.66666666666666,
+                "p50Percent": -92.3076923076923,
+                "p95Percent": -92.3469387755102,
+                "p99Percent": -92.3469387755102,
+                "meanPercent": -92.04851752021564
+              },
+              "note": "Command-loop bookkeeping outside traced execution phase timing."
+            },
+            "artifactFinalize": {
+              "traceMetaField": "hostArtifactFinalizeTotalNs",
+              "baselineStatsMs": {
+                "count": 4,
+                "minMs": 0.084,
+                "maxMs": 0.09,
+                "p10Ms": 0.084,
+                "p50Ms": 0.085,
+                "p95Ms": 0.089,
+                "p99Ms": 0.089,
+                "meanMs": 0.087,
+                "stdevMs": 0.002549509756796388
+              },
+              "comparisonStatsMs": {
+                "count": 4,
+                "minMs": 0.182,
+                "maxMs": 0.228,
+                "p10Ms": 0.182,
+                "p50Ms": 0.187,
+                "p95Ms": 0.21,
+                "p99Ms": 0.21,
+                "meanMs": 0.20174999999999998,
+                "stdevMs": 0.018471261462065878
+              },
+              "deltaPercent": {
+                "p10Percent": 116.66666666666666,
+                "p50Percent": 119.99999999999997,
+                "p95Percent": 135.95505617977528,
+                "p99Percent": 135.95505617977528,
+                "meanPercent": 131.89655172413794
+              },
+              "note": "Post-execution artifact writing/finalization outside the selected execution timing."
+            }
+          },
+          "note": "Coarse host-overhead buckets are recorded around existing once-per-sample phase boundaries so they explain workloadUnitWall minus selected timing without inserting hot-path profiling probes."
+        },
+        "headlineProcessWall": {
+          "metric": "elapsedMs",
+          "scope": "timed-command-process-wall",
+          "scopeClass": "workload-unit-wall",
+          "available": true,
+          "baselineStatsMs": {
+            "count": 4,
+            "minMs": 174.99591689556837,
+            "maxMs": 182.53145925700665,
+            "p10Ms": 174.99591689556837,
+            "p50Ms": 179.40591741353273,
+            "p95Ms": 180.8085422962904,
+            "p99Ms": 180.8085422962904,
+            "meanMs": 179.43545896559954,
+            "stdevMs": 2.7919966928834787
+          },
+          "comparisonStatsMs": {
+            "count": 4,
+            "minMs": 170.8436249755323,
+            "maxMs": 250.816332641989,
+            "p10Ms": 170.8436249755323,
+            "p50Ms": 174.85316609963775,
+            "p95Ms": 244.68395859003067,
+            "p99Ms": 244.68395859003067,
+            "meanMs": 210.29927057679743,
+            "stdevMs": 37.54035622027421
+          },
+          "deltaPercent": {
+            "p10Percent": -2.372793602101031,
+            "p50Percent": -2.537681799759617,
+            "p95Percent": 35.32765403808622,
+            "p99Percent": 35.32765403808622,
+            "meanPercent": 17.200508633644663
+          },
+          "note": "Uses timed command process wall normalized by commandRepeat and timingNormalizationDivisor. This is the full timed workload-unit view for one comparable workload unit, not a warm-session-only metric.",
+          "deprecatedAliasFor": "workloadUnitWall"
+        }
+      },
+      "comparability": {
+        "comparable": true,
+        "requiredTimingClass": "operation",
+        "obligationSchemaVersion": 2,
+        "obligations": [
+          {
+            "id": "workload_marked_comparable",
+            "blocking": true,
+            "applicable": true,
+            "passes": true,
+            "details": {
+              "workloadComparable": true
+            }
+          },
+          {
+            "id": "left_samples_present",
+            "blocking": true,
+            "applicable": true,
+            "passes": true,
+            "details": {
+              "baselineSampleCount": 4
+            }
+          },
+          {
+            "id": "right_samples_present",
+            "blocking": true,
+            "applicable": true,
+            "passes": true,
+            "details": {
+              "comparisonSampleCount": 4
+            }
+          },
+          {
+            "id": "left_single_timing_class",
+            "blocking": true,
+            "applicable": true,
+            "passes": true,
+            "details": {
+              "baselineTimingClasses": [
+                "operation"
+              ]
+            }
+          },
+          {
+            "id": "right_single_timing_class",
+            "blocking": true,
+            "applicable": true,
+            "passes": true,
+            "details": {
+              "comparisonTimingClasses": [
+                "operation"
+              ]
+            }
+          },
+          {
+            "id": "left_required_timing_class",
+            "blocking": true,
+            "applicable": true,
+            "passes": true,
+            "details": {
+              "requiredTimingClass": "operation",
+              "baselineTimingClass": "operation"
+            }
+          },
+          {
+            "id": "right_required_timing_class",
+            "blocking": true,
+            "applicable": true,
+            "passes": true,
+            "details": {
+              "requiredTimingClass": "operation",
+              "comparisonTimingClass": "operation"
+            }
+          },
+          {
+            "id": "baseline_comparison_timing_class_match",
+            "blocking": true,
+            "applicable": true,
+            "passes": true,
+            "details": {
+              "baselineTimingClass": "operation",
+              "comparisonTimingClass": "operation"
+            }
+          },
+          {
+            "id": "baseline_comparison_trace_meta_source_match",
+            "blocking": true,
+            "applicable": true,
+            "passes": true,
+            "details": {
+              "baselineTraceMetaSources": [
+                "doe-execution-total-ns"
+              ],
+              "comparisonTraceMetaSources": [
+                "doe-execution-total-ns"
+              ],
+              "baselineSelectedSources": [
+                "doe-execution-total-ns"
+              ],
+              "comparisonSelectedSources": [
+                "doe-execution-total-ns"
+              ]
+            }
+          },
+          {
+            "id": "baseline_comparison_timing_selection_policy_match",
+            "blocking": true,
+            "applicable": true,
+            "passes": true,
+            "details": {
+              "baselineTimingSelectionPolicies": [
+                "<none>"
+              ],
+              "comparisonTimingSelectionPolicies": [
+                "<none>"
+              ]
+            }
+          },
+          {
+            "id": "baseline_comparison_queue_sync_mode_match",
+            "blocking": true,
+            "applicable": true,
+            "passes": true,
+            "details": {
+              "baselineQueueSyncModes": [
+                "per-command"
+              ],
+              "comparisonQueueSyncModes": [
+                "per-command"
+              ]
+            }
+          },
+          {
+            "id": "baseline_comparison_submit_scope_match",
+            "blocking": true,
+            "applicable": false,
+            "passes": true,
+            "details": {
+              "comparabilityMode": "strict",
+              "isDawnVsDoe": true,
+              "baselineExecutionBackends": [
+                "doe_metal"
+              ],
+              "comparisonExecutionBackends": [
+                "dawn_delegate"
+              ],
+              "phaseAsymmetryThreshold": 0.1,
+              "baselineMedianSubmitScopeFractions": {
+                "addonCommandReplay": null,
+                "addonFlush": null,
+                "queueWait": null
+              },
+              "comparisonMedianSubmitScopeFractions": {
+                "addonCommandReplay": null,
+                "addonFlush": null,
+                "queueWait": null
+              },
+              "submitScopeSampleCounts": {
+                "addonCommandReplay": {
+                  "baseline": 0,
+                  "comparison": 0
+                },
+                "addonFlush": {
+                  "baseline": 0,
+                  "comparison": 0
+                },
+                "queueWait": {
+                  "baseline": 0,
+                  "comparison": 0
+                }
+              },
+              "baselineSubmitScopeSampleCount": 0,
+              "comparisonSubmitScopeSampleCount": 0,
+              "submitScopeMismatchCount": 0,
+              "submitScopeMismatches": []
+            }
+          },
+          {
+            "id": "baseline_comparison_timing_phase_match",
+            "blocking": true,
+            "applicable": true,
+            "passes": true,
+            "details": {
+              "phaseAsymmetryThreshold": 0.1,
+              "baselineMedianPhaseFractions": {
+                "setup": 0.7887015436132971,
+                "encode": 0.00014730151444879017,
+                "submitWait": 0.2111234274265023
+              },
+              "comparisonMedianPhaseFractions": {
+                "setup": 0.03585988269271104,
+                "encode": 0.19238373193188646,
+                "submitWait": 0.7458736123505432
+              },
+              "phaseSampleCounts": {
+                "setup": {
+                  "baseline": 4,
+                  "comparison": 4
+                },
+                "encode": {
+                  "baseline": 4,
+                  "comparison": 4
+                },
+                "submitWait": {
+                  "baseline": 4,
+                  "comparison": 4
+                }
+              },
+              "phaseMismatchCount": 0,
+              "phaseMismatches": []
+            }
+          },
+          {
+            "id": "baseline_comparison_execution_shape_match",
+            "blocking": true,
+            "applicable": true,
+            "passes": true,
+            "details": {
+              "workloadDomain": "render-bundle",
+              "dispatchShapeDomain": true,
+              "baselineExecutionShapes": [
+                {
+                  "executionDispatchCount": 200000,
+                  "executionRowCount": 1,
+                  "executionSuccessCount": 1
+                }
+              ],
+              "comparisonExecutionShapes": [
+                {
+                  "executionDispatchCount": 200000,
+                  "executionRowCount": 1,
+                  "executionSuccessCount": 1
+                }
+              ],
+              "baselineNormalizedExecutionShapes": [
+                {
+                  "executionDispatchCount": 200000,
+                  "executionRowCount": 1,
+                  "executionSuccessCount": 1
+                }
+              ],
+              "comparisonNormalizedExecutionShapes": [
+                {
+                  "executionDispatchCount": 200000,
+                  "executionRowCount": 1,
+                  "executionSuccessCount": 1
+                }
+              ],
+              "baselineCommandRepeat": 1,
+              "comparisonCommandRepeat": 1,
+              "comparisonReason": ""
+            }
+          },
+          {
+            "id": "baseline_comparison_hardware_path_match",
+            "blocking": true,
+            "applicable": true,
+            "passes": true,
+            "details": {
+              "comparabilityMode": "strict",
+              "isDawnVsDoe": true,
+              "workloadPathAsymmetry": false,
+              "workloadPathAsymmetryNote": ""
+            }
+          },
+          {
+            "id": "baseline_comparison_explicit_native_shader_artifact_match",
+            "blocking": true,
+            "applicable": false,
+            "passes": true,
+            "details": {
+              "comparabilityMode": "strict",
+              "isDawnVsDoe": true,
+              "workloadApi": "metal",
+              "commandsPath": "examples/draw_call_render_bundle_dynamic_pipeline_macro_commands.json",
+              "kernelRoot": "/Users/xyz/deco/doe/bench/kernels",
+              "baselineExecutionBackends": [
+                "doe_metal"
+              ],
+              "comparisonExecutionBackends": [
+                "dawn_delegate"
+              ]
+            }
+          },
+          {
+            "id": "baseline_native_operation_timing_for_webgpu_ffi",
+            "blocking": true,
+            "applicable": true,
+            "passes": true,
+            "details": {
+              "invalidCanonicalSources": []
+            }
+          },
+          {
+            "id": "baseline_upload_ignore_first_scope_consistent",
+            "blocking": true,
+            "applicable": false,
+            "passes": true,
+            "details": {
+              "violationCount": 0
+            }
+          },
+          {
+            "id": "comparison_upload_ignore_first_scope_consistent",
+            "blocking": true,
+            "applicable": false,
+            "passes": true,
+            "details": {
+              "violationCount": 0
+            }
+          },
+          {
+            "id": "baseline_comparison_upload_buffer_usage_match",
+            "blocking": true,
+            "applicable": false,
+            "passes": true,
+            "details": {
+              "baselineUploadUsages": [
+                "copy-dst-copy-src"
+              ],
+              "comparisonUploadUsages": [
+                "copy-dst-copy-src"
+              ]
+            }
+          },
+          {
+            "id": "baseline_comparison_upload_submit_cadence_match",
+            "blocking": true,
+            "applicable": false,
+            "passes": true,
+            "details": {
+              "baselineUploadSubmitCadences": [
+                "1"
+              ],
+              "comparisonUploadSubmitCadences": [
+                "1"
+              ]
+            }
+          },
+          {
+            "id": "baseline_execution_evidence_present",
+            "blocking": true,
+            "applicable": true,
+            "passes": true,
+            "details": {
+              "allowBaselineNoExecution": false,
+              "baselineHasExecutionEvidence": true
+            }
+          },
+          {
+            "id": "baseline_successful_execution_present",
+            "blocking": true,
+            "applicable": true,
+            "passes": true,
+            "details": {
+              "baselineSuccessfulExecution": true
+            }
+          },
+          {
+            "id": "baseline_success_or_unsupported_or_skipped",
+            "blocking": true,
+            "applicable": false,
+            "passes": true,
+            "details": {
+              "baselineSuccessfulExecution": true,
+              "baselineHasUnsupportedOrSkippedEvidence": false
+            }
+          },
+          {
+            "id": "baseline_execution_errors_absent",
+            "blocking": true,
+            "applicable": true,
+            "passes": true,
+            "details": {
+              "baselineExecutionErrorSampleCount": 0,
+              "baselineSampleCount": 4
+            }
+          },
+          {
+            "id": "comparison_execution_errors_absent",
+            "blocking": true,
+            "applicable": true,
+            "passes": true,
+            "details": {
+              "comparisonExecutionErrorSampleCount": 0,
+              "comparisonSampleCount": 4
+            }
+          },
+          {
+            "id": "baseline_comparison_timing_plausibility",
+            "blocking": true,
+            "applicable": true,
+            "passes": true,
+            "details": {
+              "minWallRatio": 0.01,
+              "minWallMs": 5.0,
+              "baselineMedianTracedMs": 125.6825,
+              "baselineMedianWallMs": 180.10722985491157,
+              "baselineMedianProcessWallMs": 180.10722985491157,
+              "baselineMedianRatio": 0.6942898038365655,
+              "comparisonMedianTracedMs": 103.97550000000001,
+              "comparisonMedianWallMs": 209.7685623448342,
+              "comparisonMedianProcessWallMs": 209.7685623448342,
+              "comparisonMedianRatio": 0.4848409191659465
+            }
+          },
+          {
+            "id": "baseline_resource_probe_available",
+            "blocking": true,
+            "applicable": false,
+            "passes": true,
+            "details": {
+              "baselineResourceProbeAvailableCount": 0
+            }
+          },
+          {
+            "id": "comparison_resource_probe_available",
+            "blocking": true,
+            "applicable": false,
+            "passes": true,
+            "details": {
+              "comparisonResourceProbeAvailableCount": 0
+            }
+          }
+        ],
+        "blockingFailedObligations": [],
+        "advisoryFailedObligations": [],
+        "baselineTimingSources": [
+          "doe-execution-total-ns"
+        ],
+        "comparisonTimingSources": [
+          "doe-execution-total-ns"
+        ],
+        "baselineTraceMetaSources": [
+          "doe-execution-total-ns"
+        ],
+        "comparisonTraceMetaSources": [
+          "doe-execution-total-ns"
+        ],
+        "baselineTimingSelectionPolicies": [
+          "<none>"
+        ],
+        "comparisonTimingSelectionPolicies": [
+          "<none>"
+        ],
+        "baselineQueueSyncModes": [
+          "per-command"
+        ],
+        "comparisonQueueSyncModes": [
+          "per-command"
+        ],
+        "baselineExecutionShapes": [
+          {
+            "executionDispatchCount": 200000,
+            "executionRowCount": 1,
+            "executionSuccessCount": 1
+          }
+        ],
+        "comparisonExecutionShapes": [
+          {
+            "executionDispatchCount": 200000,
+            "executionRowCount": 1,
+            "executionSuccessCount": 1
+          }
+        ],
+        "baselineNormalizedExecutionShapes": [
+          {
+            "executionDispatchCount": 200000,
+            "executionRowCount": 1,
+            "executionSuccessCount": 1
+          }
+        ],
+        "comparisonNormalizedExecutionShapes": [
+          {
+            "executionDispatchCount": 200000,
+            "executionRowCount": 1,
+            "executionSuccessCount": 1
+          }
+        ],
+        "baselineCommandRepeat": 1,
+        "comparisonCommandRepeat": 1,
+        "workloadPathAsymmetry": false,
+        "workloadPathAsymmetryNote": "",
+        "baselineTimingClass": "operation",
+        "comparisonTimingClass": "operation",
+        "resourceProbe": "none",
+        "baselineResourceSampleMedian": 3,
+        "comparisonResourceSampleMedian": 3,
+        "baselineResourceProbeAvailableCount": 0,
+        "comparisonResourceProbeAvailableCount": 0,
+        "resourceSampleTargetCount": 0,
+        "baselineResourceSamplingTruncatedCount": 0,
+        "comparisonResourceSamplingTruncatedCount": 0,
+        "baselineExecutionErrorSampleCount": 0,
+        "comparisonExecutionErrorSampleCount": 0,
+        "resourceReasons": [],
+        "reasons": []
+      },
+      "claimability": {
+        "mode": "local",
+        "evaluated": true,
+        "claimable": false,
+        "minTimedSamples": 15,
+        "requiredPositivePercentiles": [
+          "p50Percent",
+          "p95Percent"
+        ],
+        "claimMetricField": "deltaPercent",
+        "claimMetricScope": "selectedTiming",
+        "baselineTimedSamples": 4,
+        "comparisonTimedSamples": 4,
+        "reasons": [
+          "baseline timed sample count 4 is below claim floor 15",
+          "comparison timed sample count 4 is below claim floor 15",
+          "p50Percent=-16.661676 is not positive (positive means baseline faster)",
+          "p95Percent=-17.830155 is not positive (positive means baseline faster)"
+        ]
+      },
+      "traceMetaHashes": {
+        "baseline": [
+          {
+            "path": "bench/out/apple-metal/compare/20260409T010816Z/runtime-comparisons.apple.metal.compare/isolated-runs/doe/render_bundle_dynamic_pipeline_bindings_200k/doe.run001.meta.json",
+            "sha256": "d24760a193cc1bc52f6e212f1f4942ac46991285f6fd2eae610636ad685ba58d"
+          },
+          {
+            "path": "bench/out/apple-metal/compare/20260409T010816Z/runtime-comparisons.apple.metal.compare/isolated-runs/doe/render_bundle_dynamic_pipeline_bindings_200k/doe.run002.meta.json",
+            "sha256": "a9e793134041518475a530f44e8d2e606aa101c4261f504950f18aee01bcdb09"
+          },
+          {
+            "path": "bench/out/apple-metal/compare/20260409T010816Z/runtime-comparisons.apple.metal.compare/isolated-runs/doe/render_bundle_dynamic_pipeline_bindings_200k/doe.run003.meta.json",
+            "sha256": "8058f886e5e85c7bad377ac67a8d358c44bfbb1a9ec1ab7f60d92728edbddd8a"
+          },
+          {
+            "path": "bench/out/apple-metal/compare/20260409T010816Z/runtime-comparisons.apple.metal.compare/isolated-runs/doe/render_bundle_dynamic_pipeline_bindings_200k/doe.run004.meta.json",
+            "sha256": "41bd48a7c9e1eab9473acf2a433af888466139340db2f32d71eda4688ce369bd"
+          }
+        ],
+        "comparison": [
+          {
+            "path": "bench/out/apple-metal/compare/20260409T010816Z/runtime-comparisons.apple.metal.compare/isolated-runs/dawn_delegate/render_bundle_dynamic_pipeline_bindings_200k/dawn_delegate.run001.meta.json",
+            "sha256": "e3167428e286fbbaa558b59c5892e90c7ffee0585850f525471206d7520bd4d3"
+          },
+          {
+            "path": "bench/out/apple-metal/compare/20260409T010816Z/runtime-comparisons.apple.metal.compare/isolated-runs/dawn_delegate/render_bundle_dynamic_pipeline_bindings_200k/dawn_delegate.run002.meta.json",
+            "sha256": "08e5916c68466b438de7f93e17e491f5705aef72b886549abf0c58c32a6a3603"
+          },
+          {
+            "path": "bench/out/apple-metal/compare/20260409T010816Z/runtime-comparisons.apple.metal.compare/isolated-runs/dawn_delegate/render_bundle_dynamic_pipeline_bindings_200k/dawn_delegate.run003.meta.json",
+            "sha256": "76989f33ea8cde102d61c84dbdfb06ad73d98cc3e9d5d3971730c3f8dd8fae81"
+          },
+          {
+            "path": "bench/out/apple-metal/compare/20260409T010816Z/runtime-comparisons.apple.metal.compare/isolated-runs/dawn_delegate/render_bundle_dynamic_pipeline_bindings_200k/dawn_delegate.run004.meta.json",
+            "sha256": "d8a3f808ca449ebe30937349cd52a671271945ac4f7398c833939f261eee51d7"
+          }
+        ]
+      },
+      "claimWorkloadHash": {
+        "algorithm": "sha256",
+        "previousHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "hash": "82ced5ab8a3fce8e0225d8c31bb1adc291a07911b4b7c82d7bf8f3df848be740",
+        "context": {
+          "workloadId": "render_bundle_dynamic_pipeline_bindings_200k",
+          "workloadContractSha256": "243cfdba9193038488e0db70c212cc61405acdf6dba45435873df067b6546101",
+          "configContractSha256": "3c71871873819e104f36111704398aebe61e20fd4ba03c9dab7c1ee7af7701a1",
+          "benchmarkPolicySha256": "32e0942cc8f4114210ee2010f524bcbd4c9548a123fc75d29bc699c698262355",
+          "baselineTraceMetaSha256": [
+            "d24760a193cc1bc52f6e212f1f4942ac46991285f6fd2eae610636ad685ba58d",
+            "a9e793134041518475a530f44e8d2e606aa101c4261f504950f18aee01bcdb09",
+            "8058f886e5e85c7bad377ac67a8d358c44bfbb1a9ec1ab7f60d92728edbddd8a",
+            "41bd48a7c9e1eab9473acf2a433af888466139340db2f32d71eda4688ce369bd"
+          ],
+          "comparisonTraceMetaSha256": [
+            "e3167428e286fbbaa558b59c5892e90c7ffee0585850f525471206d7520bd4d3",
+            "08e5916c68466b438de7f93e17e491f5705aef72b886549abf0c58c32a6a3603",
+            "76989f33ea8cde102d61c84dbdfb06ad73d98cc3e9d5d3971730c3f8dd8fae81",
+            "d8a3f808ca449ebe30937349cd52a671271945ac4f7398c833939f261eee51d7"
+          ],
+          "benchmarkClass": "comparable",
+          "directionalReason": "",
+          "workloadPathAsymmetry": false,
+          "workloadPathAsymmetryNote": "",
+          "deltaPercent": {
+            "p10Percent": -25.154778850606252,
+            "p50Percent": -16.66167589958576,
+            "p95Percent": -17.830154869112334,
+            "p99Percent": -17.830154869112334,
+            "meanPercent": -18.60155728765076
+          },
+          "comparability": {
+            "comparable": true,
+            "blockingFailedObligations": []
+          },
+          "claimability": {
+            "evaluated": true,
+            "claimable": false,
+            "reasons": [
+              "baseline timed sample count 4 is below claim floor 15",
+              "comparison timed sample count 4 is below claim floor 15",
+              "p50Percent=-16.661676 is not positive (positive means baseline faster)",
+              "p95Percent=-17.830155 is not positive (positive means baseline faster)"
+            ]
+          }
+        }
+      },
+      "operatorDiff": {
+        "available": false,
+        "status": "missing_operator_manifests",
+        "eligibleSamplePairCount": 0,
+        "comparedSamplePairCount": 0,
+        "firstDivergence": null
+      }
+    }
+  ],
+  "configPath": "/Users/xyz/deco/doe/bench/native-compare/compare.config.apple.metal.compare.json",
+  "configContract": {
+    "path": "/Users/xyz/deco/doe/bench/native-compare/compare.config.apple.metal.compare.json",
+    "sha256": "3c71871873819e104f36111704398aebe61e20fd4ba03c9dab7c1ee7af7701a1"
+  },
+  "runArtifactPaths": [
+    "bench/out/apple-metal/compare/20260409T010816Z/runtime-comparisons.apple.metal.compare/run-artifacts/doe/doe-render_bundle_dynamic_pipeline_bindings_200k-20260409T010816Z.run.json",
+    "bench/out/apple-metal/compare/20260409T010816Z/runtime-comparisons.apple.metal.compare/run-artifacts/dawn_delegate/dawn_delegate-render_bundle_dynamic_pipeline_bindings_200k-20260409T010816Z.run.json"
+  ],
+  "comparabilitySummary": {
+    "workloadCount": 1,
+    "benchmarkIntent": "apples-to-apples",
+    "benchmarkClassCounts": {
+      "comparable": 1
+    },
+    "directionalReasonCounts": {},
+    "nonComparableCount": 0,
+    "nonComparableWorkloads": [],
+    "failedBlockingObligationCounts": {}
+  },
+  "comparisonStatus": "comparable",
+  "claimabilitySummary": {
+    "workloadCount": 1,
+    "nonClaimableCount": 1,
+    "nonClaimableWorkloads": [
+      {
+        "workloadId": "render_bundle_dynamic_pipeline_bindings_200k",
+        "reasons": [
+          "baseline timed sample count 4 is below claim floor 15",
+          "comparison timed sample count 4 is below claim floor 15",
+          "p50Percent=-16.661676 is not positive (positive means baseline faster)",
+          "p95Percent=-17.830155 is not positive (positive means baseline faster)"
+        ]
+      }
+    ]
+  },
+  "operatorDiffSummary": {
+    "workloadCount": 1,
+    "availableCount": 0,
+    "matchedCount": 0,
+    "divergedCount": 0,
+    "missingCount": 1,
+    "workloads": [
+      {
+        "workloadId": "render_bundle_dynamic_pipeline_bindings_200k",
+        "status": "missing_operator_manifests",
+        "available": false,
+        "eligibleSamplePairCount": 0,
+        "comparedSamplePairCount": 0,
+        "firstDivergence": null
+      }
+    ]
+  },
+  "claimWorkloadHashChain": {
+    "algorithm": "sha256",
+    "count": 1,
+    "startPreviousHash": "0000000000000000000000000000000000000000000000000000000000000000",
+    "finalHash": "82ced5ab8a3fce8e0225d8c31bb1adc291a07911b4b7c82d7bf8f3df848be740"
+  },
+  "claimStatus": "diagnostic"
+}

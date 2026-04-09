@@ -1,5 +1,5 @@
-const builtin = @import("builtin");
 const std = @import("std");
+const builtin = @import("builtin");
 const bridge = @import("metal_bridge_decls.zig");
 const metal_buffer_pool = @import("metal_buffer_pool.zig");
 const metal_pipeline_cache = @import("metal_pipeline_cache.zig");

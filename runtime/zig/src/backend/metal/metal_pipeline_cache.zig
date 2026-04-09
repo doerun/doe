@@ -28,8 +28,8 @@
 // directory cannot be created, callers fall through to fresh compilation.
 // No runtime error is raised — the cache is best-effort.
 
-const builtin = @import("builtin");
 const std = @import("std");
+const builtin = @import("builtin");
 const common_timing = @import("../common/timing.zig");
 
 // ============================================================

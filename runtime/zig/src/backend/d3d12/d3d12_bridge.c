@@ -1948,7 +1948,7 @@ D3D12Handle d3d12_bridge_device_create_texture_3d(D3D12Handle device_h, uint32_t
 }
 
 /* --- Hardware capability queries ---
- * TODO: On actual Windows hardware, query the device for real values:
+ * On actual Windows hardware, query the device for real values:
  *   - CheckFeatureSupport(D3D12_FEATURE_SHADER_MODEL, ...) for HighestShaderModel
  *   - CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS1, ...) for WaveLaneCountMin/Max
  *   - CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS4, ...) for Native16BitShaderOpsSupported

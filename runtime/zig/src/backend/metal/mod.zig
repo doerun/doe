@@ -1,5 +1,5 @@
-const builtin = @import("builtin");
 const std = @import("std");
+const builtin = @import("builtin");
 const model_commands = @import("../../model_commands.zig");
 const model_profile = @import("../../model_profile.zig");
 const model_resource_types = @import("../../model_resource_types.zig");

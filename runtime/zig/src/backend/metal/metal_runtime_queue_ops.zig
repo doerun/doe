@@ -1,3 +1,4 @@
+const std = @import("std");
 const common_timing = @import("../common/timing.zig");
 const webgpu = @import("../runtime_types.zig");
 const metal_buffer_pool = @import("metal_buffer_pool.zig");
@@ -205,7 +206,7 @@ pub fn prewarm_upload_path(self: anytype, max_upload_bytes: u64, mode: webgpu.Up
 
 fn pool_push_or_release(
     pool: *metal_buffer_pool.BufferPool,
-    allocator: @import("std").mem.Allocator,
+    allocator: std.mem.Allocator,
     size: usize,
     buf: ?*anyopaque,
 ) void {

@@ -4,6 +4,7 @@
 // Vulkan backend. Other modules should import check_vk / map_vk_result
 // from here (or via vk_constants re-exports) instead of defining their own.
 
+const std = @import("std");
 const common_errors = @import("../common/errors.zig");
 const vk = @import("vulkan_types.zig");
 
@@ -70,8 +71,6 @@ pub fn vulkanResultName(result: VkResult) []const u8 {
         else => "VK_UNKNOWN",
     };
 }
-
-const std = @import("std");
 
 test "check_vk succeeds on VK_SUCCESS" {
     try check_vk(vk.VK_SUCCESS);

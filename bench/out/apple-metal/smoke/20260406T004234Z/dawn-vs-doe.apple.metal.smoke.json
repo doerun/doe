@@ -1,0 +1,4046 @@
+{
+  "schemaVersion": 5,
+  "generatedAt": "2026-04-06T00:42:34.469861+00:00",
+  "outputTimestamp": "20260406T004234Z",
+  "outPath": "bench/out/apple-metal/smoke/20260406T004234Z/dawn-vs-doe.apple.metal.smoke.json",
+  "workspacePath": "bench/out/apple-metal/smoke/20260406T004234Z/runtime-comparisons.apple.metal.smoke",
+  "benchmarkIntent": "mixed",
+  "runParameters": {
+    "iterations": 2,
+    "warmup": 0,
+    "workloadCooldownMs": 0
+  },
+  "comparisonAxes": {
+    "boundary": null,
+    "runtimeHost": null,
+    "temperature": null,
+    "comparisonView": null,
+    "providerSet": null
+  },
+  "participants": {
+    "left": {
+      "name": "doe",
+      "id": null,
+      "executorId": null,
+      "role": "baseline"
+    },
+    "right": {
+      "name": "dawn_delegate",
+      "id": null,
+      "executorId": null,
+      "role": "comparison"
+    }
+  },
+  "left": {
+    "name": "doe"
+  },
+  "right": {
+    "name": "dawn_delegate"
+  },
+  "deltaPercentConvention": {
+    "baseline": "left",
+    "formula": "((rightMs / leftMs) - 1) * 100",
+    "positive": "left faster",
+    "negative": "left slower",
+    "zero": "parity"
+  },
+  "timingInterpretationPolicy": {
+    "selectedMetricField": "deltaPercent",
+    "selectedMetricUse": "methodology-selected apples-to-apples claim metric",
+    "workloadUnitWallMetricField": "timingInterpretation.workloadUnitWall.deltaPercent",
+    "workloadUnitWallMetricUse": "timed workload-unit wall end-to-end ranking metric",
+    "workloadUnitWallMetricScope": "workloadUnitWall",
+    "narrowSelectedScopeClass": "narrow-hot-path",
+    "narrowSelectedMetricEligibleForClaims": false,
+    "narrowHotPathClaimMetricField": "timingInterpretation.workloadUnitWall.deltaPercent",
+    "narrowHotPathClaimMetricScope": "workloadUnitWall",
+    "legacyAliases": {
+      "timingInterpretation.headlineProcessWall": "timingInterpretation.workloadUnitWall",
+      "overallHeadlineProcessWall": "overallWorkloadUnitWall"
+    },
+    "guidance": "When timingInterpretation.selectedTiming.scopeClass is narrow-hot-path, deltaPercent remains a phase-specific diagnostic. Claimability evaluates timingInterpretation.workloadUnitWall.deltaPercent when that full metric is available."
+  },
+  "comparabilityPolicy": {
+    "mode": "warn",
+    "requiredTimingClass": "operation",
+    "allowLeftNoExecution": false,
+    "resourceProbe": "none",
+    "resourceSampleMs": 100,
+    "resourceSampleTargetCount": 0,
+    "workloadCooldownMs": 0,
+    "workloadCohort": "all",
+    "requireNativeExecutionTimingForLeftOperation": true,
+    "obligationContract": {
+      "schemaVersion": 2,
+      "blockingFailureFailsComparability": true
+    },
+    "dispatchWindowSelectionThresholds": {
+      "minDispatchWindowNsWithoutEncode": 500000,
+      "minDispatchWindowCoveragePercentWithoutEncode": 1.0
+    }
+  },
+  "claimabilityPolicy": {
+    "mode": "off",
+    "minTimedSamples": 0,
+    "requiredPositivePercentiles": [],
+    "defaults": {
+      "localMinTimedSamples": 7,
+      "releaseMinTimedSamples": 15
+    }
+  },
+  "benchmarkPolicy": {
+    "path": "config/benchmark-methodology-thresholds.json",
+    "schemaVersion": 1,
+    "sha256": "32e0942cc8f4114210ee2010f524bcbd4c9548a123fc75d29bc699c698262355"
+  },
+  "workloadContract": {
+    "path": "bench/workloads/workloads.apple.metal.smoke.json",
+    "sha256": "43112ef355508daea970e660c861101270b1c716fa7f1328300d2e698bcb880a"
+  },
+  "workloads": [
+    {
+      "id": "compute_workgroup_atomic_1024",
+      "name": "workgroup-atomic-smoke",
+      "description": "Local Metal compute smoke",
+      "domain": "compute",
+      "comparabilityNotes": "Local Metal compute smoke contract",
+      "asyncDiagnosticsMode": null,
+      "timingNormalization": {
+        "leftDivisor": 1.0,
+        "rightDivisor": 1.0,
+        "leftCommandRepeat": 1,
+        "rightCommandRepeat": 1,
+        "leftIgnoreFirstOps": 0,
+        "rightIgnoreFirstOps": 0,
+        "leftUploadBufferUsage": "copy-dst-copy-src",
+        "rightUploadBufferUsage": "copy-dst-copy-src",
+        "leftUploadSubmitEvery": 1,
+        "rightUploadSubmitEvery": 1,
+        "note": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+      },
+      "workloadComparable": true,
+      "benchmarkClass": "comparable",
+      "cohorts": [
+        "smoke",
+        "governed",
+        "regression"
+      ],
+      "directionalReason": null,
+      "pathAsymmetry": false,
+      "pathAsymmetryNote": "",
+      "comparabilityCandidate": {
+        "enabled": false,
+        "tier": "",
+        "notes": ""
+      },
+      "workloadAllowLeftNoExecution": false,
+      "workloadDefault": true,
+      "left": {
+        "commandSamples": [
+          {
+            "command": "env DYLD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$DYLD_LIBRARY_PATH runtime/zig/zig-out/bin/doe-zig-runtime --commands examples/workgroup_atomic_commands.json --quirks examples/quirks/intel_gen12_temp_buffer.json --vendor apple --api metal --family apple-gpu --driver 1.0.0 --backend native --backend-lane metal_doe_directional --execute --trace --queue-sync-mode per-command --upload-buffer-usage copy-dst-copy-src --upload-submit-every 1 --trace-jsonl bench/out/apple-metal/smoke/20260406T004234Z/runtime-comparisons.apple.metal.smoke/isolated-runs/doe/compute_workgroup_atomic_1024/doe.run000.ndjson --trace-meta bench/out/apple-metal/smoke/20260406T004234Z/runtime-comparisons.apple.metal.smoke/isolated-runs/doe/compute_workgroup_atomic_1024/doe.run000.meta.json --gpu-timestamp-mode auto --kernel-root bench/kernels --queue-sync-mode per-command --gpu-timestamp-mode off",
+            "commandRepeat": 1,
+            "runIndex": 0,
+            "timingNormalizationDivisor": 1.0,
+            "uploadBufferUsage": "copy-dst-copy-src",
+            "uploadIgnoreFirstOps": 0,
+            "uploadSubmitEvery": 1
+          },
+          {
+            "command": "env DYLD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$DYLD_LIBRARY_PATH runtime/zig/zig-out/bin/doe-zig-runtime --commands examples/workgroup_atomic_commands.json --quirks examples/quirks/intel_gen12_temp_buffer.json --vendor apple --api metal --family apple-gpu --driver 1.0.0 --backend native --backend-lane metal_doe_directional --execute --trace --queue-sync-mode per-command --upload-buffer-usage copy-dst-copy-src --upload-submit-every 1 --trace-jsonl bench/out/apple-metal/smoke/20260406T004234Z/runtime-comparisons.apple.metal.smoke/isolated-runs/doe/compute_workgroup_atomic_1024/doe.run001.ndjson --trace-meta bench/out/apple-metal/smoke/20260406T004234Z/runtime-comparisons.apple.metal.smoke/isolated-runs/doe/compute_workgroup_atomic_1024/doe.run001.meta.json --gpu-timestamp-mode auto --kernel-root bench/kernels --queue-sync-mode per-command --gpu-timestamp-mode off",
+            "commandRepeat": 1,
+            "runIndex": 1,
+            "timingNormalizationDivisor": 1.0,
+            "uploadBufferUsage": "copy-dst-copy-src",
+            "uploadIgnoreFirstOps": 0,
+            "uploadSubmitEvery": 1
+          }
+        ],
+        "stats": {
+          "count": 0,
+          "maxMs": 0.0,
+          "meanMs": 0.0,
+          "minMs": 0.0,
+          "p10Ms": 0.0,
+          "p50Ms": 0.0,
+          "p95Ms": 0.0,
+          "p99Ms": 0.0,
+          "stdevMs": 0.0
+        },
+        "timingsMs": [],
+        "timingSources": [],
+        "timingClasses": [],
+        "lastMeta": {},
+        "resourceStats": {
+          "gpuProbeAvailableCount": 0,
+          "gpuProbeModes": [],
+          "gpuVramDeltaPeakFromBeforeBytes": {
+            "count": 0,
+            "max": 0.0,
+            "mean": 0.0,
+            "min": 0.0,
+            "p10": 0.0,
+            "p50": 0.0,
+            "p95": 0.0,
+            "p99": 0.0,
+            "stdev": 0.0
+          },
+          "gpuVramUsedAfterBytes": {
+            "count": 0,
+            "max": 0.0,
+            "mean": 0.0,
+            "min": 0.0,
+            "p10": 0.0,
+            "p50": 0.0,
+            "p95": 0.0,
+            "p99": 0.0,
+            "stdev": 0.0
+          },
+          "gpuVramUsedBeforeBytes": {
+            "count": 0,
+            "max": 0.0,
+            "mean": 0.0,
+            "min": 0.0,
+            "p10": 0.0,
+            "p50": 0.0,
+            "p95": 0.0,
+            "p99": 0.0,
+            "stdev": 0.0
+          },
+          "gpuVramUsedPeakBytes": {
+            "count": 0,
+            "max": 0.0,
+            "mean": 0.0,
+            "min": 0.0,
+            "p10": 0.0,
+            "p50": 0.0,
+            "p95": 0.0,
+            "p99": 0.0,
+            "stdev": 0.0
+          },
+          "processPeakRssKb": {
+            "count": 0,
+            "max": 0.0,
+            "mean": 0.0,
+            "min": 0.0,
+            "p10": 0.0,
+            "p50": 0.0,
+            "p95": 0.0,
+            "p99": 0.0,
+            "stdev": 0.0
+          },
+          "samplingTruncatedCount": 0
+        },
+        "timingMetricsRawStatsMs": {
+          "cpu_time": {
+            "count": 0,
+            "maxMs": 0.0,
+            "meanMs": 0.0,
+            "minMs": 0.0,
+            "p10Ms": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "p99Ms": 0.0,
+            "stdevMs": 0.0
+          },
+          "gpu_time": {
+            "count": 0,
+            "maxMs": 0.0,
+            "meanMs": 0.0,
+            "minMs": 0.0,
+            "p10Ms": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "p99Ms": 0.0,
+            "stdevMs": 0.0
+          },
+          "wall_time": {
+            "count": 0,
+            "maxMs": 0.0,
+            "meanMs": 0.0,
+            "minMs": 0.0,
+            "p10Ms": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "p99Ms": 0.0,
+            "stdevMs": 0.0
+          }
+        },
+        "timingMetricsNormalizedStatsMs": {
+          "cpu_time": {
+            "count": 0,
+            "maxMs": 0.0,
+            "meanMs": 0.0,
+            "minMs": 0.0,
+            "p10Ms": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "p99Ms": 0.0,
+            "stdevMs": 0.0
+          },
+          "gpu_time": {
+            "count": 0,
+            "maxMs": 0.0,
+            "meanMs": 0.0,
+            "minMs": 0.0,
+            "p10Ms": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "p99Ms": 0.0,
+            "stdevMs": 0.0
+          },
+          "wall_time": {
+            "count": 0,
+            "maxMs": 0.0,
+            "meanMs": 0.0,
+            "minMs": 0.0,
+            "p10Ms": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "p99Ms": 0.0,
+            "stdevMs": 0.0
+          }
+        }
+      },
+      "right": {
+        "commandSamples": [
+          {
+            "command": "env DYLD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$DYLD_LIBRARY_PATH runtime/zig/zig-out/bin/doe-zig-runtime --commands examples/workgroup_atomic_commands.json --quirks examples/quirks/intel_gen12_temp_buffer.json --vendor apple --api metal --family apple-gpu --driver 1.0.0 --backend native --backend-lane metal_dawn_release --execute --trace --queue-sync-mode per-command --upload-buffer-usage copy-dst-copy-src --upload-submit-every 1 --trace-jsonl bench/out/apple-metal/smoke/20260406T004234Z/runtime-comparisons.apple.metal.smoke/isolated-runs/dawn_delegate/compute_workgroup_atomic_1024/dawn_delegate.run000.ndjson --trace-meta bench/out/apple-metal/smoke/20260406T004234Z/runtime-comparisons.apple.metal.smoke/isolated-runs/dawn_delegate/compute_workgroup_atomic_1024/dawn_delegate.run000.meta.json --gpu-timestamp-mode auto --kernel-root bench/kernels --queue-sync-mode per-command --gpu-timestamp-mode off",
+            "commandRepeat": 1,
+            "runIndex": 0,
+            "timingNormalizationDivisor": 1.0,
+            "uploadBufferUsage": "copy-dst-copy-src",
+            "uploadIgnoreFirstOps": 0,
+            "uploadSubmitEvery": 1
+          },
+          {
+            "command": "env DYLD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$DYLD_LIBRARY_PATH runtime/zig/zig-out/bin/doe-zig-runtime --commands examples/workgroup_atomic_commands.json --quirks examples/quirks/intel_gen12_temp_buffer.json --vendor apple --api metal --family apple-gpu --driver 1.0.0 --backend native --backend-lane metal_dawn_release --execute --trace --queue-sync-mode per-command --upload-buffer-usage copy-dst-copy-src --upload-submit-every 1 --trace-jsonl bench/out/apple-metal/smoke/20260406T004234Z/runtime-comparisons.apple.metal.smoke/isolated-runs/dawn_delegate/compute_workgroup_atomic_1024/dawn_delegate.run001.ndjson --trace-meta bench/out/apple-metal/smoke/20260406T004234Z/runtime-comparisons.apple.metal.smoke/isolated-runs/dawn_delegate/compute_workgroup_atomic_1024/dawn_delegate.run001.meta.json --gpu-timestamp-mode auto --kernel-root bench/kernels --queue-sync-mode per-command --gpu-timestamp-mode off",
+            "commandRepeat": 1,
+            "runIndex": 1,
+            "timingNormalizationDivisor": 1.0,
+            "uploadBufferUsage": "copy-dst-copy-src",
+            "uploadIgnoreFirstOps": 0,
+            "uploadSubmitEvery": 1
+          }
+        ],
+        "stats": {
+          "count": 0,
+          "maxMs": 0.0,
+          "meanMs": 0.0,
+          "minMs": 0.0,
+          "p10Ms": 0.0,
+          "p50Ms": 0.0,
+          "p95Ms": 0.0,
+          "p99Ms": 0.0,
+          "stdevMs": 0.0
+        },
+        "timingsMs": [],
+        "timingSources": [],
+        "timingClasses": [],
+        "lastMeta": {},
+        "resourceStats": {
+          "gpuProbeAvailableCount": 0,
+          "gpuProbeModes": [],
+          "gpuVramDeltaPeakFromBeforeBytes": {
+            "count": 0,
+            "max": 0.0,
+            "mean": 0.0,
+            "min": 0.0,
+            "p10": 0.0,
+            "p50": 0.0,
+            "p95": 0.0,
+            "p99": 0.0,
+            "stdev": 0.0
+          },
+          "gpuVramUsedAfterBytes": {
+            "count": 0,
+            "max": 0.0,
+            "mean": 0.0,
+            "min": 0.0,
+            "p10": 0.0,
+            "p50": 0.0,
+            "p95": 0.0,
+            "p99": 0.0,
+            "stdev": 0.0
+          },
+          "gpuVramUsedBeforeBytes": {
+            "count": 0,
+            "max": 0.0,
+            "mean": 0.0,
+            "min": 0.0,
+            "p10": 0.0,
+            "p50": 0.0,
+            "p95": 0.0,
+            "p99": 0.0,
+            "stdev": 0.0
+          },
+          "gpuVramUsedPeakBytes": {
+            "count": 0,
+            "max": 0.0,
+            "mean": 0.0,
+            "min": 0.0,
+            "p10": 0.0,
+            "p50": 0.0,
+            "p95": 0.0,
+            "p99": 0.0,
+            "stdev": 0.0
+          },
+          "processPeakRssKb": {
+            "count": 0,
+            "max": 0.0,
+            "mean": 0.0,
+            "min": 0.0,
+            "p10": 0.0,
+            "p50": 0.0,
+            "p95": 0.0,
+            "p99": 0.0,
+            "stdev": 0.0
+          },
+          "samplingTruncatedCount": 0
+        },
+        "timingMetricsRawStatsMs": {
+          "cpu_time": {
+            "count": 0,
+            "maxMs": 0.0,
+            "meanMs": 0.0,
+            "minMs": 0.0,
+            "p10Ms": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "p99Ms": 0.0,
+            "stdevMs": 0.0
+          },
+          "gpu_time": {
+            "count": 0,
+            "maxMs": 0.0,
+            "meanMs": 0.0,
+            "minMs": 0.0,
+            "p10Ms": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "p99Ms": 0.0,
+            "stdevMs": 0.0
+          },
+          "wall_time": {
+            "count": 0,
+            "maxMs": 0.0,
+            "meanMs": 0.0,
+            "minMs": 0.0,
+            "p10Ms": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "p99Ms": 0.0,
+            "stdevMs": 0.0
+          }
+        },
+        "timingMetricsNormalizedStatsMs": {
+          "cpu_time": {
+            "count": 0,
+            "maxMs": 0.0,
+            "meanMs": 0.0,
+            "minMs": 0.0,
+            "p10Ms": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "p99Ms": 0.0,
+            "stdevMs": 0.0
+          },
+          "gpu_time": {
+            "count": 0,
+            "maxMs": 0.0,
+            "meanMs": 0.0,
+            "minMs": 0.0,
+            "p10Ms": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "p99Ms": 0.0,
+            "stdevMs": 0.0
+          },
+          "wall_time": {
+            "count": 0,
+            "maxMs": 0.0,
+            "meanMs": 0.0,
+            "minMs": 0.0,
+            "p10Ms": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "p99Ms": 0.0,
+            "stdevMs": 0.0
+          }
+        }
+      },
+      "deltaPercent": {
+        "p10Percent": 0.0,
+        "p50Percent": 0.0,
+        "p95Percent": 0.0,
+        "p99Percent": 0.0,
+        "meanPercent": 0.0
+      },
+      "timingInterpretation": {
+        "selectedTiming": {
+          "leftSources": [],
+          "rightSources": [],
+          "leftClasses": [],
+          "rightClasses": [],
+          "canonicalSources": [],
+          "timingClasses": [],
+          "scope": "unknown",
+          "scopeClass": "unknown",
+          "isNarrowHotPath": false,
+          "note": "Selected timing scope could not be classified reliably from the timing metadata."
+        },
+        "workloadUnitWall": {
+          "metric": "elapsedMs",
+          "scope": "timed-command-process-wall",
+          "scopeClass": "workload-unit-wall",
+          "available": false,
+          "leftStatsMs": {
+            "count": 0,
+            "minMs": 0.0,
+            "maxMs": 0.0,
+            "p10Ms": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "p99Ms": 0.0,
+            "meanMs": 0.0,
+            "stdevMs": 0.0
+          },
+          "rightStatsMs": {
+            "count": 0,
+            "minMs": 0.0,
+            "maxMs": 0.0,
+            "p10Ms": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "p99Ms": 0.0,
+            "meanMs": 0.0,
+            "stdevMs": 0.0
+          },
+          "deltaPercent": {
+            "p10Percent": 0.0,
+            "p50Percent": 0.0,
+            "p95Percent": 0.0,
+            "p99Percent": 0.0,
+            "meanPercent": 0.0
+          },
+          "note": "Uses timed command process wall normalized by commandRepeat and timingNormalizationDivisor. This is the full timed workload-unit view for one comparable workload unit, not a warm-session-only metric."
+        },
+        "hostOverheadBreakdown": {
+          "metric": "traceMeta.host*TotalNs",
+          "scope": "selected-timing-gap-breakdown",
+          "scopeClass": "host-overhead-diagnostic",
+          "available": false,
+          "selectedGap": {
+            "leftStatsMs": {
+              "count": 0,
+              "minMs": 0.0,
+              "maxMs": 0.0,
+              "p10Ms": 0.0,
+              "p50Ms": 0.0,
+              "p95Ms": 0.0,
+              "p99Ms": 0.0,
+              "meanMs": 0.0,
+              "stdevMs": 0.0
+            },
+            "rightStatsMs": {
+              "count": 0,
+              "minMs": 0.0,
+              "maxMs": 0.0,
+              "p10Ms": 0.0,
+              "p50Ms": 0.0,
+              "p95Ms": 0.0,
+              "p99Ms": 0.0,
+              "meanMs": 0.0,
+              "stdevMs": 0.0
+            },
+            "deltaPercent": {
+              "p10Percent": 0.0,
+              "p50Percent": 0.0,
+              "p95Percent": 0.0,
+              "p99Percent": 0.0,
+              "meanPercent": 0.0
+            },
+            "note": "The normalized difference between workloadUnitWall and selected timing for each timed sample."
+          },
+          "attributedHostOverhead": {
+            "leftStatsMs": {
+              "count": 0,
+              "minMs": 0.0,
+              "maxMs": 0.0,
+              "p10Ms": 0.0,
+              "p50Ms": 0.0,
+              "p95Ms": 0.0,
+              "p99Ms": 0.0,
+              "meanMs": 0.0,
+              "stdevMs": 0.0
+            },
+            "rightStatsMs": {
+              "count": 0,
+              "minMs": 0.0,
+              "maxMs": 0.0,
+              "p10Ms": 0.0,
+              "p50Ms": 0.0,
+              "p95Ms": 0.0,
+              "p99Ms": 0.0,
+              "meanMs": 0.0,
+              "stdevMs": 0.0
+            },
+            "deltaPercent": {
+              "p10Percent": 0.0,
+              "p50Percent": 0.0,
+              "p95Percent": 0.0,
+              "p99Percent": 0.0,
+              "meanPercent": 0.0
+            },
+            "note": "Sum of coarse host-overhead buckets recorded outside the selected execution timing. These buckets are once-per-sample phase timers, not per-dispatch probes."
+          },
+          "unattributedGapRemainder": {
+            "leftStatsMs": {
+              "count": 0,
+              "minMs": 0.0,
+              "maxMs": 0.0,
+              "p10Ms": 0.0,
+              "p50Ms": 0.0,
+              "p95Ms": 0.0,
+              "p99Ms": 0.0,
+              "meanMs": 0.0,
+              "stdevMs": 0.0
+            },
+            "rightStatsMs": {
+              "count": 0,
+              "minMs": 0.0,
+              "maxMs": 0.0,
+              "p10Ms": 0.0,
+              "p50Ms": 0.0,
+              "p95Ms": 0.0,
+              "p99Ms": 0.0,
+              "meanMs": 0.0,
+              "stdevMs": 0.0
+            },
+            "deltaPercent": {
+              "p10Percent": 0.0,
+              "p50Percent": 0.0,
+              "p95Percent": 0.0,
+              "p99Percent": 0.0,
+              "meanPercent": 0.0
+            },
+            "note": "Selected-gap remainder after subtracting the coarse host-overhead buckets. This typically captures trace-meta emission, process teardown, and any uninstrumented sample overhead."
+          },
+          "buckets": {
+            "inputRead": {
+              "traceMetaField": "hostInputReadTotalNs",
+              "leftStatsMs": {
+                "count": 0,
+                "minMs": 0.0,
+                "maxMs": 0.0,
+                "p10Ms": 0.0,
+                "p50Ms": 0.0,
+                "p95Ms": 0.0,
+                "p99Ms": 0.0,
+                "meanMs": 0.0,
+                "stdevMs": 0.0
+              },
+              "rightStatsMs": {
+                "count": 0,
+                "minMs": 0.0,
+                "maxMs": 0.0,
+                "p10Ms": 0.0,
+                "p50Ms": 0.0,
+                "p95Ms": 0.0,
+                "p99Ms": 0.0,
+                "meanMs": 0.0,
+                "stdevMs": 0.0
+              },
+              "deltaPercent": {
+                "p10Percent": 0.0,
+                "p50Percent": 0.0,
+                "p95Percent": 0.0,
+                "p99Percent": 0.0,
+                "meanPercent": 0.0
+              },
+              "note": "Input/config file reads before selected execution timing begins."
+            },
+            "inputParse": {
+              "traceMetaField": "hostInputParseTotalNs",
+              "leftStatsMs": {
+                "count": 0,
+                "minMs": 0.0,
+                "maxMs": 0.0,
+                "p10Ms": 0.0,
+                "p50Ms": 0.0,
+                "p95Ms": 0.0,
+                "p99Ms": 0.0,
+                "meanMs": 0.0,
+                "stdevMs": 0.0
+              },
+              "rightStatsMs": {
+                "count": 0,
+                "minMs": 0.0,
+                "maxMs": 0.0,
+                "p10Ms": 0.0,
+                "p50Ms": 0.0,
+                "p95Ms": 0.0,
+                "p99Ms": 0.0,
+                "meanMs": 0.0,
+                "stdevMs": 0.0
+              },
+              "deltaPercent": {
+                "p10Percent": 0.0,
+                "p50Percent": 0.0,
+                "p95Percent": 0.0,
+                "p99Percent": 0.0,
+                "meanPercent": 0.0
+              },
+              "note": "Command/plan parsing and input decoding before selected execution timing begins."
+            },
+            "workloadPrepare": {
+              "traceMetaField": "hostWorkloadPrepareTotalNs",
+              "leftStatsMs": {
+                "count": 0,
+                "minMs": 0.0,
+                "maxMs": 0.0,
+                "p10Ms": 0.0,
+                "p50Ms": 0.0,
+                "p95Ms": 0.0,
+                "p99Ms": 0.0,
+                "meanMs": 0.0,
+                "stdevMs": 0.0
+              },
+              "rightStatsMs": {
+                "count": 0,
+                "minMs": 0.0,
+                "maxMs": 0.0,
+                "p10Ms": 0.0,
+                "p50Ms": 0.0,
+                "p95Ms": 0.0,
+                "p99Ms": 0.0,
+                "meanMs": 0.0,
+                "stdevMs": 0.0
+              },
+              "deltaPercent": {
+                "p10Percent": 0.0,
+                "p50Percent": 0.0,
+                "p95Percent": 0.0,
+                "p99Percent": 0.0,
+                "meanPercent": 0.0
+              },
+              "note": "Pre-execution workload preparation such as dispatch-context or buffer-spec setup."
+            },
+            "executorInit": {
+              "traceMetaField": "hostExecutorInitTotalNs",
+              "leftStatsMs": {
+                "count": 0,
+                "minMs": 0.0,
+                "maxMs": 0.0,
+                "p10Ms": 0.0,
+                "p50Ms": 0.0,
+                "p95Ms": 0.0,
+                "p99Ms": 0.0,
+                "meanMs": 0.0,
+                "stdevMs": 0.0
+              },
+              "rightStatsMs": {
+                "count": 0,
+                "minMs": 0.0,
+                "maxMs": 0.0,
+                "p10Ms": 0.0,
+                "p50Ms": 0.0,
+                "p95Ms": 0.0,
+                "p99Ms": 0.0,
+                "meanMs": 0.0,
+                "stdevMs": 0.0
+              },
+              "deltaPercent": {
+                "p10Percent": 0.0,
+                "p50Percent": 0.0,
+                "p95Percent": 0.0,
+                "p99Percent": 0.0,
+                "meanPercent": 0.0
+              },
+              "note": "Executor/device/backend initialization outside the selected execution timing."
+            },
+            "uploadPrewarm": {
+              "traceMetaField": "hostUploadPrewarmTotalNs",
+              "leftStatsMs": {
+                "count": 0,
+                "minMs": 0.0,
+                "maxMs": 0.0,
+                "p10Ms": 0.0,
+                "p50Ms": 0.0,
+                "p95Ms": 0.0,
+                "p99Ms": 0.0,
+                "meanMs": 0.0,
+                "stdevMs": 0.0
+              },
+              "rightStatsMs": {
+                "count": 0,
+                "minMs": 0.0,
+                "maxMs": 0.0,
+                "p10Ms": 0.0,
+                "p50Ms": 0.0,
+                "p95Ms": 0.0,
+                "p99Ms": 0.0,
+                "meanMs": 0.0,
+                "stdevMs": 0.0
+              },
+              "deltaPercent": {
+                "p10Percent": 0.0,
+                "p50Percent": 0.0,
+                "p95Percent": 0.0,
+                "p99Percent": 0.0,
+                "meanPercent": 0.0
+              },
+              "note": "Doe upload-path prewarm work outside the selected execution timing."
+            },
+            "kernelPrewarm": {
+              "traceMetaField": "hostKernelPrewarmTotalNs",
+              "leftStatsMs": {
+                "count": 0,
+                "minMs": 0.0,
+                "maxMs": 0.0,
+                "p10Ms": 0.0,
+                "p50Ms": 0.0,
+                "p95Ms": 0.0,
+                "p99Ms": 0.0,
+                "meanMs": 0.0,
+                "stdevMs": 0.0
+              },
+              "rightStatsMs": {
+                "count": 0,
+                "minMs": 0.0,
+                "maxMs": 0.0,
+                "p10Ms": 0.0,
+                "p50Ms": 0.0,
+                "p95Ms": 0.0,
+                "p99Ms": 0.0,
+                "meanMs": 0.0,
+                "stdevMs": 0.0
+              },
+              "deltaPercent": {
+                "p10Percent": 0.0,
+                "p50Percent": 0.0,
+                "p95Percent": 0.0,
+                "p99Percent": 0.0,
+                "meanPercent": 0.0
+              },
+              "note": "Kernel/pipeline prewarm work outside the selected execution timing."
+            },
+            "commandOrchestration": {
+              "traceMetaField": "hostCommandOrchestrationTotalNs",
+              "leftStatsMs": {
+                "count": 0,
+                "minMs": 0.0,
+                "maxMs": 0.0,
+                "p10Ms": 0.0,
+                "p50Ms": 0.0,
+                "p95Ms": 0.0,
+                "p99Ms": 0.0,
+                "meanMs": 0.0,
+                "stdevMs": 0.0
+              },
+              "rightStatsMs": {
+                "count": 0,
+                "minMs": 0.0,
+                "maxMs": 0.0,
+                "p10Ms": 0.0,
+                "p50Ms": 0.0,
+                "p95Ms": 0.0,
+                "p99Ms": 0.0,
+                "meanMs": 0.0,
+                "stdevMs": 0.0
+              },
+              "deltaPercent": {
+                "p10Percent": 0.0,
+                "p50Percent": 0.0,
+                "p95Percent": 0.0,
+                "p99Percent": 0.0,
+                "meanPercent": 0.0
+              },
+              "note": "Command-loop bookkeeping outside traced execution phase timing."
+            },
+            "artifactFinalize": {
+              "traceMetaField": "hostArtifactFinalizeTotalNs",
+              "leftStatsMs": {
+                "count": 0,
+                "minMs": 0.0,
+                "maxMs": 0.0,
+                "p10Ms": 0.0,
+                "p50Ms": 0.0,
+                "p95Ms": 0.0,
+                "p99Ms": 0.0,
+                "meanMs": 0.0,
+                "stdevMs": 0.0
+              },
+              "rightStatsMs": {
+                "count": 0,
+                "minMs": 0.0,
+                "maxMs": 0.0,
+                "p10Ms": 0.0,
+                "p50Ms": 0.0,
+                "p95Ms": 0.0,
+                "p99Ms": 0.0,
+                "meanMs": 0.0,
+                "stdevMs": 0.0
+              },
+              "deltaPercent": {
+                "p10Percent": 0.0,
+                "p50Percent": 0.0,
+                "p95Percent": 0.0,
+                "p99Percent": 0.0,
+                "meanPercent": 0.0
+              },
+              "note": "Post-execution artifact writing/finalization outside the selected execution timing."
+            }
+          },
+          "note": "Coarse host-overhead buckets are recorded around existing once-per-sample phase boundaries so they explain workloadUnitWall minus selected timing without inserting hot-path profiling probes."
+        },
+        "headlineProcessWall": {
+          "metric": "elapsedMs",
+          "scope": "timed-command-process-wall",
+          "scopeClass": "workload-unit-wall",
+          "available": false,
+          "leftStatsMs": {
+            "count": 0,
+            "minMs": 0.0,
+            "maxMs": 0.0,
+            "p10Ms": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "p99Ms": 0.0,
+            "meanMs": 0.0,
+            "stdevMs": 0.0
+          },
+          "rightStatsMs": {
+            "count": 0,
+            "minMs": 0.0,
+            "maxMs": 0.0,
+            "p10Ms": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "p99Ms": 0.0,
+            "meanMs": 0.0,
+            "stdevMs": 0.0
+          },
+          "deltaPercent": {
+            "p10Percent": 0.0,
+            "p50Percent": 0.0,
+            "p95Percent": 0.0,
+            "p99Percent": 0.0,
+            "meanPercent": 0.0
+          },
+          "note": "Uses timed command process wall normalized by commandRepeat and timingNormalizationDivisor. This is the full timed workload-unit view for one comparable workload unit, not a warm-session-only metric.",
+          "deprecatedAliasFor": "workloadUnitWall"
+        }
+      },
+      "comparability": {
+        "comparable": false,
+        "requiredTimingClass": "operation",
+        "obligationSchemaVersion": 2,
+        "obligations": [
+          {
+            "id": "workload_marked_comparable",
+            "blocking": true,
+            "applicable": true,
+            "passes": true,
+            "details": {
+              "workloadComparable": true
+            }
+          },
+          {
+            "id": "left_samples_present",
+            "blocking": true,
+            "applicable": true,
+            "passes": true,
+            "details": {
+              "leftSampleCount": 2
+            }
+          },
+          {
+            "id": "right_samples_present",
+            "blocking": true,
+            "applicable": true,
+            "passes": true,
+            "details": {
+              "rightSampleCount": 2
+            }
+          },
+          {
+            "id": "left_single_timing_class",
+            "blocking": true,
+            "applicable": true,
+            "passes": false,
+            "details": {
+              "leftTimingClasses": []
+            }
+          },
+          {
+            "id": "right_single_timing_class",
+            "blocking": true,
+            "applicable": true,
+            "passes": false,
+            "details": {
+              "rightTimingClasses": []
+            }
+          },
+          {
+            "id": "left_required_timing_class",
+            "blocking": true,
+            "applicable": true,
+            "passes": false,
+            "details": {
+              "requiredTimingClass": "operation",
+              "leftTimingClass": "mixed"
+            }
+          },
+          {
+            "id": "right_required_timing_class",
+            "blocking": true,
+            "applicable": true,
+            "passes": false,
+            "details": {
+              "requiredTimingClass": "operation",
+              "rightTimingClass": "mixed"
+            }
+          },
+          {
+            "id": "left_right_timing_class_match",
+            "blocking": true,
+            "applicable": false,
+            "passes": true,
+            "details": {
+              "leftTimingClass": "mixed",
+              "rightTimingClass": "mixed"
+            }
+          },
+          {
+            "id": "left_right_trace_meta_source_match",
+            "blocking": true,
+            "applicable": true,
+            "passes": false,
+            "details": {
+              "leftTraceMetaSources": [],
+              "rightTraceMetaSources": [],
+              "leftSelectedSources": [],
+              "rightSelectedSources": []
+            }
+          },
+          {
+            "id": "left_right_timing_selection_policy_match",
+            "blocking": true,
+            "applicable": true,
+            "passes": true,
+            "details": {
+              "leftTimingSelectionPolicies": [
+                "<none>"
+              ],
+              "rightTimingSelectionPolicies": [
+                "<none>"
+              ]
+            }
+          },
+          {
+            "id": "left_right_queue_sync_mode_match",
+            "blocking": true,
+            "applicable": true,
+            "passes": true,
+            "details": {
+              "leftQueueSyncModes": [],
+              "rightQueueSyncModes": []
+            }
+          },
+          {
+            "id": "left_right_timing_phase_match",
+            "blocking": true,
+            "applicable": false,
+            "passes": true,
+            "details": {
+              "phaseAsymmetryThreshold": 0.1,
+              "leftMedianPhaseFractions": {
+                "setup": null,
+                "encode": null,
+                "submitWait": null
+              },
+              "rightMedianPhaseFractions": {
+                "setup": null,
+                "encode": null,
+                "submitWait": null
+              },
+              "phaseSampleCounts": {
+                "setup": {
+                  "left": 0,
+                  "right": 0
+                },
+                "encode": {
+                  "left": 0,
+                  "right": 0
+                },
+                "submitWait": {
+                  "left": 0,
+                  "right": 0
+                }
+              },
+              "phaseMismatchCount": 0,
+              "phaseMismatches": []
+            }
+          },
+          {
+            "id": "left_right_execution_shape_match",
+            "blocking": true,
+            "applicable": false,
+            "passes": true,
+            "details": {
+              "workloadDomain": "compute",
+              "dispatchShapeDomain": true,
+              "leftExecutionShapes": [],
+              "rightExecutionShapes": [],
+              "leftNormalizedExecutionShapes": [],
+              "rightNormalizedExecutionShapes": [],
+              "leftCommandRepeat": 1,
+              "rightCommandRepeat": 1,
+              "comparisonReason": ""
+            }
+          },
+          {
+            "id": "left_right_hardware_path_match",
+            "blocking": true,
+            "applicable": false,
+            "passes": true,
+            "details": {
+              "comparabilityMode": "warn",
+              "isDawnVsDoe": false,
+              "workloadPathAsymmetry": false,
+              "workloadPathAsymmetryNote": ""
+            }
+          },
+          {
+            "id": "left_native_operation_timing_for_webgpu_ffi",
+            "blocking": true,
+            "applicable": true,
+            "passes": true,
+            "details": {
+              "invalidCanonicalSources": []
+            }
+          },
+          {
+            "id": "left_upload_ignore_first_scope_consistent",
+            "blocking": true,
+            "applicable": false,
+            "passes": true,
+            "details": {
+              "violationCount": 0
+            }
+          },
+          {
+            "id": "right_upload_ignore_first_scope_consistent",
+            "blocking": true,
+            "applicable": false,
+            "passes": true,
+            "details": {
+              "violationCount": 0
+            }
+          },
+          {
+            "id": "left_right_upload_buffer_usage_match",
+            "blocking": true,
+            "applicable": false,
+            "passes": true,
+            "details": {
+              "leftUploadUsages": [],
+              "rightUploadUsages": []
+            }
+          },
+          {
+            "id": "left_right_upload_submit_cadence_match",
+            "blocking": true,
+            "applicable": false,
+            "passes": true,
+            "details": {
+              "leftUploadSubmitCadences": [],
+              "rightUploadSubmitCadences": []
+            }
+          },
+          {
+            "id": "left_execution_evidence_present",
+            "blocking": true,
+            "applicable": true,
+            "passes": false,
+            "details": {
+              "allowLeftNoExecution": false,
+              "leftHasExecutionEvidence": false
+            }
+          },
+          {
+            "id": "left_successful_execution_present",
+            "blocking": true,
+            "applicable": true,
+            "passes": false,
+            "details": {
+              "leftSuccessfulExecution": false
+            }
+          },
+          {
+            "id": "left_success_or_unsupported_or_skipped",
+            "blocking": true,
+            "applicable": false,
+            "passes": true,
+            "details": {
+              "leftSuccessfulExecution": false,
+              "leftHasUnsupportedOrSkippedEvidence": false
+            }
+          },
+          {
+            "id": "left_execution_errors_absent",
+            "blocking": true,
+            "applicable": true,
+            "passes": true,
+            "details": {
+              "leftExecutionErrorSampleCount": 0,
+              "leftSampleCount": 2
+            }
+          },
+          {
+            "id": "right_execution_errors_absent",
+            "blocking": true,
+            "applicable": true,
+            "passes": true,
+            "details": {
+              "rightExecutionErrorSampleCount": 0,
+              "rightSampleCount": 2
+            }
+          },
+          {
+            "id": "left_right_timing_plausibility",
+            "blocking": true,
+            "applicable": false,
+            "passes": true,
+            "details": {
+              "minWallRatio": 0.01,
+              "minWallMs": 5.0,
+              "leftMedianTracedMs": null,
+              "leftMedianWallMs": null,
+              "leftMedianProcessWallMs": null,
+              "leftMedianRatio": null,
+              "rightMedianTracedMs": null,
+              "rightMedianWallMs": null,
+              "rightMedianProcessWallMs": null,
+              "rightMedianRatio": null
+            }
+          },
+          {
+            "id": "left_resource_probe_available",
+            "blocking": true,
+            "applicable": false,
+            "passes": true,
+            "details": {
+              "leftResourceProbeAvailableCount": 0
+            }
+          },
+          {
+            "id": "right_resource_probe_available",
+            "blocking": true,
+            "applicable": false,
+            "passes": true,
+            "details": {
+              "rightResourceProbeAvailableCount": 0
+            }
+          }
+        ],
+        "blockingFailedObligations": [
+          "left_single_timing_class",
+          "right_single_timing_class",
+          "left_required_timing_class",
+          "right_required_timing_class",
+          "left_right_trace_meta_source_match",
+          "left_execution_evidence_present",
+          "left_successful_execution_present"
+        ],
+        "advisoryFailedObligations": [],
+        "leftTimingSources": [
+          ""
+        ],
+        "rightTimingSources": [
+          ""
+        ],
+        "leftTraceMetaSources": [],
+        "rightTraceMetaSources": [],
+        "leftTimingSelectionPolicies": [
+          "<none>"
+        ],
+        "rightTimingSelectionPolicies": [
+          "<none>"
+        ],
+        "leftQueueSyncModes": [],
+        "rightQueueSyncModes": [],
+        "leftExecutionShapes": [],
+        "rightExecutionShapes": [],
+        "leftNormalizedExecutionShapes": [],
+        "rightNormalizedExecutionShapes": [],
+        "leftCommandRepeat": 1,
+        "rightCommandRepeat": 1,
+        "workloadPathAsymmetry": false,
+        "workloadPathAsymmetryNote": "",
+        "leftTimingClass": "mixed",
+        "rightTimingClass": "mixed",
+        "resourceProbe": "none",
+        "leftResourceSampleMedian": 0,
+        "rightResourceSampleMedian": 0,
+        "leftResourceProbeAvailableCount": 0,
+        "rightResourceProbeAvailableCount": 0,
+        "resourceSampleTargetCount": 0,
+        "leftResourceSamplingTruncatedCount": 0,
+        "rightResourceSamplingTruncatedCount": 0,
+        "leftExecutionErrorSampleCount": 0,
+        "rightExecutionErrorSampleCount": 0,
+        "resourceReasons": [],
+        "reasons": [
+          "left side uses mixed timing classes: []",
+          "right side uses mixed timing classes: []",
+          "left timing class is mixed, required operation",
+          "right timing class is mixed, required operation",
+          "left/right trace meta source mismatch or incompatible runtime families: [] vs []",
+          "left side has no execution evidence (executionSuccessCount/executionRowCount)",
+          "left side has no successful execution samples (executionSuccessCount=0)"
+        ]
+      },
+      "claimability": {
+        "mode": "off",
+        "evaluated": false,
+        "claimable": null,
+        "minTimedSamples": 0,
+        "requiredPositivePercentiles": [],
+        "reasons": []
+      },
+      "traceMetaHashes": {
+        "left": [],
+        "right": []
+      },
+      "claimRowHash": {
+        "algorithm": "sha256",
+        "previousHash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "hash": "a63d772f5e135e4efaef9b4563fec57411f52b03ed51e3868956420d54cba6a3",
+        "context": {
+          "workloadId": "compute_workgroup_atomic_1024",
+          "workloadContractSha256": "43112ef355508daea970e660c861101270b1c716fa7f1328300d2e698bcb880a",
+          "configContractSha256": "5cfa610e5a651da98efa4e2a96250065032e93235766247562b9f54246ce9bd0",
+          "benchmarkPolicySha256": "32e0942cc8f4114210ee2010f524bcbd4c9548a123fc75d29bc699c698262355",
+          "leftTraceMetaSha256": [],
+          "rightTraceMetaSha256": [],
+          "benchmarkClass": "comparable",
+          "directionalReason": "",
+          "workloadPathAsymmetry": false,
+          "workloadPathAsymmetryNote": "",
+          "deltaPercent": {
+            "p10Percent": 0.0,
+            "p50Percent": 0.0,
+            "p95Percent": 0.0,
+            "p99Percent": 0.0,
+            "meanPercent": 0.0
+          },
+          "comparability": {
+            "comparable": false,
+            "blockingFailedObligations": [
+              "left_single_timing_class",
+              "right_single_timing_class",
+              "left_required_timing_class",
+              "right_required_timing_class",
+              "left_right_trace_meta_source_match",
+              "left_execution_evidence_present",
+              "left_successful_execution_present"
+            ]
+          },
+          "claimability": {
+            "evaluated": false,
+            "claimable": null,
+            "reasons": []
+          }
+        }
+      },
+      "operatorDiff": {
+        "available": false,
+        "status": "missing_operator_manifests",
+        "eligibleSamplePairCount": 0,
+        "comparedSamplePairCount": 0,
+        "firstDivergence": null
+      }
+    },
+    {
+      "id": "render_draw_throughput_baseline",
+      "name": "render-draw-smoke",
+      "description": "Local Metal render smoke",
+      "domain": "render",
+      "comparabilityNotes": "Directional render proxy until strict parity is proven",
+      "asyncDiagnosticsMode": null,
+      "timingNormalization": {
+        "leftDivisor": 4.0,
+        "rightDivisor": 1.0,
+        "leftCommandRepeat": 1,
+        "rightCommandRepeat": 1,
+        "leftIgnoreFirstOps": 0,
+        "rightIgnoreFirstOps": 0,
+        "leftUploadBufferUsage": "copy-dst-copy-src",
+        "rightUploadBufferUsage": "copy-dst-copy-src",
+        "leftUploadSubmitEvery": 1,
+        "rightUploadSubmitEvery": 1,
+        "note": "Directional render proxy only"
+      },
+      "workloadComparable": false,
+      "benchmarkClass": "directional",
+      "cohorts": [
+        "smoke",
+        "exploration"
+      ],
+      "directionalReason": "other",
+      "pathAsymmetry": false,
+      "pathAsymmetryNote": "",
+      "comparabilityCandidate": {
+        "enabled": false,
+        "tier": "",
+        "notes": ""
+      },
+      "workloadAllowLeftNoExecution": false,
+      "workloadDefault": false,
+      "left": {
+        "commandSamples": [
+          {
+            "command": "env DYLD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$DYLD_LIBRARY_PATH runtime/zig/zig-out/bin/doe-zig-runtime --commands examples/draw_call_proxy_commands.json --quirks examples/quirks/intel_gen12_temp_buffer.json --vendor apple --api metal --family apple-gpu --driver 1.0.0 --backend native --backend-lane metal_doe_directional --execute --trace --queue-sync-mode per-command --upload-buffer-usage copy-dst-copy-src --upload-submit-every 1 --trace-jsonl bench/out/apple-metal/smoke/20260406T004234Z/runtime-comparisons.apple.metal.smoke/isolated-runs/doe/render_draw_throughput_baseline/doe.run000.ndjson --trace-meta bench/out/apple-metal/smoke/20260406T004234Z/runtime-comparisons.apple.metal.smoke/isolated-runs/doe/render_draw_throughput_baseline/doe.run000.meta.json --gpu-timestamp-mode auto --kernel-root bench/kernels",
+            "commandRepeat": 1,
+            "runIndex": 0,
+            "timingNormalizationDivisor": 1.0,
+            "uploadBufferUsage": "copy-dst-copy-src",
+            "uploadIgnoreFirstOps": 0,
+            "uploadSubmitEvery": 1
+          },
+          {
+            "command": "env DYLD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$DYLD_LIBRARY_PATH runtime/zig/zig-out/bin/doe-zig-runtime --commands examples/draw_call_proxy_commands.json --quirks examples/quirks/intel_gen12_temp_buffer.json --vendor apple --api metal --family apple-gpu --driver 1.0.0 --backend native --backend-lane metal_doe_directional --execute --trace --queue-sync-mode per-command --upload-buffer-usage copy-dst-copy-src --upload-submit-every 1 --trace-jsonl bench/out/apple-metal/smoke/20260406T004234Z/runtime-comparisons.apple.metal.smoke/isolated-runs/doe/render_draw_throughput_baseline/doe.run001.ndjson --trace-meta bench/out/apple-metal/smoke/20260406T004234Z/runtime-comparisons.apple.metal.smoke/isolated-runs/doe/render_draw_throughput_baseline/doe.run001.meta.json --gpu-timestamp-mode auto --kernel-root bench/kernels",
+            "commandRepeat": 1,
+            "runIndex": 1,
+            "timingNormalizationDivisor": 1.0,
+            "uploadBufferUsage": "copy-dst-copy-src",
+            "uploadIgnoreFirstOps": 0,
+            "uploadSubmitEvery": 1
+          }
+        ],
+        "stats": {
+          "count": 0,
+          "maxMs": 0.0,
+          "meanMs": 0.0,
+          "minMs": 0.0,
+          "p10Ms": 0.0,
+          "p50Ms": 0.0,
+          "p95Ms": 0.0,
+          "p99Ms": 0.0,
+          "stdevMs": 0.0
+        },
+        "timingsMs": [],
+        "timingSources": [],
+        "timingClasses": [],
+        "lastMeta": {},
+        "resourceStats": {
+          "gpuProbeAvailableCount": 0,
+          "gpuProbeModes": [],
+          "gpuVramDeltaPeakFromBeforeBytes": {
+            "count": 0,
+            "max": 0.0,
+            "mean": 0.0,
+            "min": 0.0,
+            "p10": 0.0,
+            "p50": 0.0,
+            "p95": 0.0,
+            "p99": 0.0,
+            "stdev": 0.0
+          },
+          "gpuVramUsedAfterBytes": {
+            "count": 0,
+            "max": 0.0,
+            "mean": 0.0,
+            "min": 0.0,
+            "p10": 0.0,
+            "p50": 0.0,
+            "p95": 0.0,
+            "p99": 0.0,
+            "stdev": 0.0
+          },
+          "gpuVramUsedBeforeBytes": {
+            "count": 0,
+            "max": 0.0,
+            "mean": 0.0,
+            "min": 0.0,
+            "p10": 0.0,
+            "p50": 0.0,
+            "p95": 0.0,
+            "p99": 0.0,
+            "stdev": 0.0
+          },
+          "gpuVramUsedPeakBytes": {
+            "count": 0,
+            "max": 0.0,
+            "mean": 0.0,
+            "min": 0.0,
+            "p10": 0.0,
+            "p50": 0.0,
+            "p95": 0.0,
+            "p99": 0.0,
+            "stdev": 0.0
+          },
+          "processPeakRssKb": {
+            "count": 0,
+            "max": 0.0,
+            "mean": 0.0,
+            "min": 0.0,
+            "p10": 0.0,
+            "p50": 0.0,
+            "p95": 0.0,
+            "p99": 0.0,
+            "stdev": 0.0
+          },
+          "samplingTruncatedCount": 0
+        },
+        "timingMetricsRawStatsMs": {
+          "cpu_time": {
+            "count": 0,
+            "maxMs": 0.0,
+            "meanMs": 0.0,
+            "minMs": 0.0,
+            "p10Ms": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "p99Ms": 0.0,
+            "stdevMs": 0.0
+          },
+          "gpu_time": {
+            "count": 0,
+            "maxMs": 0.0,
+            "meanMs": 0.0,
+            "minMs": 0.0,
+            "p10Ms": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "p99Ms": 0.0,
+            "stdevMs": 0.0
+          },
+          "wall_time": {
+            "count": 0,
+            "maxMs": 0.0,
+            "meanMs": 0.0,
+            "minMs": 0.0,
+            "p10Ms": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "p99Ms": 0.0,
+            "stdevMs": 0.0
+          }
+        },
+        "timingMetricsNormalizedStatsMs": {
+          "cpu_time": {
+            "count": 0,
+            "maxMs": 0.0,
+            "meanMs": 0.0,
+            "minMs": 0.0,
+            "p10Ms": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "p99Ms": 0.0,
+            "stdevMs": 0.0
+          },
+          "gpu_time": {
+            "count": 0,
+            "maxMs": 0.0,
+            "meanMs": 0.0,
+            "minMs": 0.0,
+            "p10Ms": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "p99Ms": 0.0,
+            "stdevMs": 0.0
+          },
+          "wall_time": {
+            "count": 0,
+            "maxMs": 0.0,
+            "meanMs": 0.0,
+            "minMs": 0.0,
+            "p10Ms": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "p99Ms": 0.0,
+            "stdevMs": 0.0
+          }
+        }
+      },
+      "right": {
+        "commandSamples": [
+          {
+            "command": "env DYLD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$DYLD_LIBRARY_PATH runtime/zig/zig-out/bin/doe-zig-runtime --commands examples/draw_call_proxy_commands.json --quirks examples/quirks/intel_gen12_temp_buffer.json --vendor apple --api metal --family apple-gpu --driver 1.0.0 --backend native --backend-lane metal_dawn_release --execute --trace --queue-sync-mode per-command --upload-buffer-usage copy-dst-copy-src --upload-submit-every 1 --trace-jsonl bench/out/apple-metal/smoke/20260406T004234Z/runtime-comparisons.apple.metal.smoke/isolated-runs/dawn_delegate/render_draw_throughput_baseline/dawn_delegate.run000.ndjson --trace-meta bench/out/apple-metal/smoke/20260406T004234Z/runtime-comparisons.apple.metal.smoke/isolated-runs/dawn_delegate/render_draw_throughput_baseline/dawn_delegate.run000.meta.json --gpu-timestamp-mode auto --kernel-root bench/kernels",
+            "commandRepeat": 1,
+            "runIndex": 0,
+            "timingNormalizationDivisor": 1.0,
+            "uploadBufferUsage": "copy-dst-copy-src",
+            "uploadIgnoreFirstOps": 0,
+            "uploadSubmitEvery": 1
+          },
+          {
+            "command": "env DYLD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$DYLD_LIBRARY_PATH runtime/zig/zig-out/bin/doe-zig-runtime --commands examples/draw_call_proxy_commands.json --quirks examples/quirks/intel_gen12_temp_buffer.json --vendor apple --api metal --family apple-gpu --driver 1.0.0 --backend native --backend-lane metal_dawn_release --execute --trace --queue-sync-mode per-command --upload-buffer-usage copy-dst-copy-src --upload-submit-every 1 --trace-jsonl bench/out/apple-metal/smoke/20260406T004234Z/runtime-comparisons.apple.metal.smoke/isolated-runs/dawn_delegate/render_draw_throughput_baseline/dawn_delegate.run001.ndjson --trace-meta bench/out/apple-metal/smoke/20260406T004234Z/runtime-comparisons.apple.metal.smoke/isolated-runs/dawn_delegate/render_draw_throughput_baseline/dawn_delegate.run001.meta.json --gpu-timestamp-mode auto --kernel-root bench/kernels",
+            "commandRepeat": 1,
+            "runIndex": 1,
+            "timingNormalizationDivisor": 1.0,
+            "uploadBufferUsage": "copy-dst-copy-src",
+            "uploadIgnoreFirstOps": 0,
+            "uploadSubmitEvery": 1
+          }
+        ],
+        "stats": {
+          "count": 0,
+          "maxMs": 0.0,
+          "meanMs": 0.0,
+          "minMs": 0.0,
+          "p10Ms": 0.0,
+          "p50Ms": 0.0,
+          "p95Ms": 0.0,
+          "p99Ms": 0.0,
+          "stdevMs": 0.0
+        },
+        "timingsMs": [],
+        "timingSources": [],
+        "timingClasses": [],
+        "lastMeta": {},
+        "resourceStats": {
+          "gpuProbeAvailableCount": 0,
+          "gpuProbeModes": [],
+          "gpuVramDeltaPeakFromBeforeBytes": {
+            "count": 0,
+            "max": 0.0,
+            "mean": 0.0,
+            "min": 0.0,
+            "p10": 0.0,
+            "p50": 0.0,
+            "p95": 0.0,
+            "p99": 0.0,
+            "stdev": 0.0
+          },
+          "gpuVramUsedAfterBytes": {
+            "count": 0,
+            "max": 0.0,
+            "mean": 0.0,
+            "min": 0.0,
+            "p10": 0.0,
+            "p50": 0.0,
+            "p95": 0.0,
+            "p99": 0.0,
+            "stdev": 0.0
+          },
+          "gpuVramUsedBeforeBytes": {
+            "count": 0,
+            "max": 0.0,
+            "mean": 0.0,
+            "min": 0.0,
+            "p10": 0.0,
+            "p50": 0.0,
+            "p95": 0.0,
+            "p99": 0.0,
+            "stdev": 0.0
+          },
+          "gpuVramUsedPeakBytes": {
+            "count": 0,
+            "max": 0.0,
+            "mean": 0.0,
+            "min": 0.0,
+            "p10": 0.0,
+            "p50": 0.0,
+            "p95": 0.0,
+            "p99": 0.0,
+            "stdev": 0.0
+          },
+          "processPeakRssKb": {
+            "count": 0,
+            "max": 0.0,
+            "mean": 0.0,
+            "min": 0.0,
+            "p10": 0.0,
+            "p50": 0.0,
+            "p95": 0.0,
+            "p99": 0.0,
+            "stdev": 0.0
+          },
+          "samplingTruncatedCount": 0
+        },
+        "timingMetricsRawStatsMs": {
+          "cpu_time": {
+            "count": 0,
+            "maxMs": 0.0,
+            "meanMs": 0.0,
+            "minMs": 0.0,
+            "p10Ms": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "p99Ms": 0.0,
+            "stdevMs": 0.0
+          },
+          "gpu_time": {
+            "count": 0,
+            "maxMs": 0.0,
+            "meanMs": 0.0,
+            "minMs": 0.0,
+            "p10Ms": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "p99Ms": 0.0,
+            "stdevMs": 0.0
+          },
+          "wall_time": {
+            "count": 0,
+            "maxMs": 0.0,
+            "meanMs": 0.0,
+            "minMs": 0.0,
+            "p10Ms": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "p99Ms": 0.0,
+            "stdevMs": 0.0
+          }
+        },
+        "timingMetricsNormalizedStatsMs": {
+          "cpu_time": {
+            "count": 0,
+            "maxMs": 0.0,
+            "meanMs": 0.0,
+            "minMs": 0.0,
+            "p10Ms": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "p99Ms": 0.0,
+            "stdevMs": 0.0
+          },
+          "gpu_time": {
+            "count": 0,
+            "maxMs": 0.0,
+            "meanMs": 0.0,
+            "minMs": 0.0,
+            "p10Ms": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "p99Ms": 0.0,
+            "stdevMs": 0.0
+          },
+          "wall_time": {
+            "count": 0,
+            "maxMs": 0.0,
+            "meanMs": 0.0,
+            "minMs": 0.0,
+            "p10Ms": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "p99Ms": 0.0,
+            "stdevMs": 0.0
+          }
+        }
+      },
+      "deltaPercent": {
+        "p10Percent": 0.0,
+        "p50Percent": 0.0,
+        "p95Percent": 0.0,
+        "p99Percent": 0.0,
+        "meanPercent": 0.0
+      },
+      "timingInterpretation": {
+        "selectedTiming": {
+          "leftSources": [],
+          "rightSources": [],
+          "leftClasses": [],
+          "rightClasses": [],
+          "canonicalSources": [],
+          "timingClasses": [],
+          "scope": "unknown",
+          "scopeClass": "unknown",
+          "isNarrowHotPath": false,
+          "note": "Selected timing scope could not be classified reliably from the timing metadata."
+        },
+        "workloadUnitWall": {
+          "metric": "elapsedMs",
+          "scope": "timed-command-process-wall",
+          "scopeClass": "workload-unit-wall",
+          "available": false,
+          "leftStatsMs": {
+            "count": 0,
+            "minMs": 0.0,
+            "maxMs": 0.0,
+            "p10Ms": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "p99Ms": 0.0,
+            "meanMs": 0.0,
+            "stdevMs": 0.0
+          },
+          "rightStatsMs": {
+            "count": 0,
+            "minMs": 0.0,
+            "maxMs": 0.0,
+            "p10Ms": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "p99Ms": 0.0,
+            "meanMs": 0.0,
+            "stdevMs": 0.0
+          },
+          "deltaPercent": {
+            "p10Percent": 0.0,
+            "p50Percent": 0.0,
+            "p95Percent": 0.0,
+            "p99Percent": 0.0,
+            "meanPercent": 0.0
+          },
+          "note": "Uses timed command process wall normalized by commandRepeat and timingNormalizationDivisor. This is the full timed workload-unit view for one comparable workload unit, not a warm-session-only metric."
+        },
+        "hostOverheadBreakdown": {
+          "metric": "traceMeta.host*TotalNs",
+          "scope": "selected-timing-gap-breakdown",
+          "scopeClass": "host-overhead-diagnostic",
+          "available": false,
+          "selectedGap": {
+            "leftStatsMs": {
+              "count": 0,
+              "minMs": 0.0,
+              "maxMs": 0.0,
+              "p10Ms": 0.0,
+              "p50Ms": 0.0,
+              "p95Ms": 0.0,
+              "p99Ms": 0.0,
+              "meanMs": 0.0,
+              "stdevMs": 0.0
+            },
+            "rightStatsMs": {
+              "count": 0,
+              "minMs": 0.0,
+              "maxMs": 0.0,
+              "p10Ms": 0.0,
+              "p50Ms": 0.0,
+              "p95Ms": 0.0,
+              "p99Ms": 0.0,
+              "meanMs": 0.0,
+              "stdevMs": 0.0
+            },
+            "deltaPercent": {
+              "p10Percent": 0.0,
+              "p50Percent": 0.0,
+              "p95Percent": 0.0,
+              "p99Percent": 0.0,
+              "meanPercent": 0.0
+            },
+            "note": "The normalized difference between workloadUnitWall and selected timing for each timed sample."
+          },
+          "attributedHostOverhead": {
+            "leftStatsMs": {
+              "count": 0,
+              "minMs": 0.0,
+              "maxMs": 0.0,
+              "p10Ms": 0.0,
+              "p50Ms": 0.0,
+              "p95Ms": 0.0,
+              "p99Ms": 0.0,
+              "meanMs": 0.0,
+              "stdevMs": 0.0
+            },
+            "rightStatsMs": {
+              "count": 0,
+              "minMs": 0.0,
+              "maxMs": 0.0,
+              "p10Ms": 0.0,
+              "p50Ms": 0.0,
+              "p95Ms": 0.0,
+              "p99Ms": 0.0,
+              "meanMs": 0.0,
+              "stdevMs": 0.0
+            },
+            "deltaPercent": {
+              "p10Percent": 0.0,
+              "p50Percent": 0.0,
+              "p95Percent": 0.0,
+              "p99Percent": 0.0,
+              "meanPercent": 0.0
+            },
+            "note": "Sum of coarse host-overhead buckets recorded outside the selected execution timing. These buckets are once-per-sample phase timers, not per-dispatch probes."
+          },
+          "unattributedGapRemainder": {
+            "leftStatsMs": {
+              "count": 0,
+              "minMs": 0.0,
+              "maxMs": 0.0,
+              "p10Ms": 0.0,
+              "p50Ms": 0.0,
+              "p95Ms": 0.0,
+              "p99Ms": 0.0,
+              "meanMs": 0.0,
+              "stdevMs": 0.0
+            },
+            "rightStatsMs": {
+              "count": 0,
+              "minMs": 0.0,
+              "maxMs": 0.0,
+              "p10Ms": 0.0,
+              "p50Ms": 0.0,
+              "p95Ms": 0.0,
+              "p99Ms": 0.0,
+              "meanMs": 0.0,
+              "stdevMs": 0.0
+            },
+            "deltaPercent": {
+              "p10Percent": 0.0,
+              "p50Percent": 0.0,
+              "p95Percent": 0.0,
+              "p99Percent": 0.0,
+              "meanPercent": 0.0
+            },
+            "note": "Selected-gap remainder after subtracting the coarse host-overhead buckets. This typically captures trace-meta emission, process teardown, and any uninstrumented sample overhead."
+          },
+          "buckets": {
+            "inputRead": {
+              "traceMetaField": "hostInputReadTotalNs",
+              "leftStatsMs": {
+                "count": 0,
+                "minMs": 0.0,
+                "maxMs": 0.0,
+                "p10Ms": 0.0,
+                "p50Ms": 0.0,
+                "p95Ms": 0.0,
+                "p99Ms": 0.0,
+                "meanMs": 0.0,
+                "stdevMs": 0.0
+              },
+              "rightStatsMs": {
+                "count": 0,
+                "minMs": 0.0,
+                "maxMs": 0.0,
+                "p10Ms": 0.0,
+                "p50Ms": 0.0,
+                "p95Ms": 0.0,
+                "p99Ms": 0.0,
+                "meanMs": 0.0,
+                "stdevMs": 0.0
+              },
+              "deltaPercent": {
+                "p10Percent": 0.0,
+                "p50Percent": 0.0,
+                "p95Percent": 0.0,
+                "p99Percent": 0.0,
+                "meanPercent": 0.0
+              },
+              "note": "Input/config file reads before selected execution timing begins."
+            },
+            "inputParse": {
+              "traceMetaField": "hostInputParseTotalNs",
+              "leftStatsMs": {
+                "count": 0,
+                "minMs": 0.0,
+                "maxMs": 0.0,
+                "p10Ms": 0.0,
+                "p50Ms": 0.0,
+                "p95Ms": 0.0,
+                "p99Ms": 0.0,
+                "meanMs": 0.0,
+                "stdevMs": 0.0
+              },
+              "rightStatsMs": {
+                "count": 0,
+                "minMs": 0.0,
+                "maxMs": 0.0,
+                "p10Ms": 0.0,
+                "p50Ms": 0.0,
+                "p95Ms": 0.0,
+                "p99Ms": 0.0,
+                "meanMs": 0.0,
+                "stdevMs": 0.0
+              },
+              "deltaPercent": {
+                "p10Percent": 0.0,
+                "p50Percent": 0.0,
+                "p95Percent": 0.0,
+                "p99Percent": 0.0,
+                "meanPercent": 0.0
+              },
+              "note": "Command/plan parsing and input decoding before selected execution timing begins."
+            },
+            "workloadPrepare": {
+              "traceMetaField": "hostWorkloadPrepareTotalNs",
+              "leftStatsMs": {
+                "count": 0,
+                "minMs": 0.0,
+                "maxMs": 0.0,
+                "p10Ms": 0.0,
+                "p50Ms": 0.0,
+                "p95Ms": 0.0,
+                "p99Ms": 0.0,
+                "meanMs": 0.0,
+                "stdevMs": 0.0
+              },
+              "rightStatsMs": {
+                "count": 0,
+                "minMs": 0.0,
+                "maxMs": 0.0,
+                "p10Ms": 0.0,
+                "p50Ms": 0.0,
+                "p95Ms": 0.0,
+                "p99Ms": 0.0,
+                "meanMs": 0.0,
+                "stdevMs": 0.0
+              },
+              "deltaPercent": {
+                "p10Percent": 0.0,
+                "p50Percent": 0.0,
+                "p95Percent": 0.0,
+                "p99Percent": 0.0,
+                "meanPercent": 0.0
+              },
+              "note": "Pre-execution workload preparation such as dispatch-context or buffer-spec setup."
+            },
+            "executorInit": {
+              "traceMetaField": "hostExecutorInitTotalNs",
+              "leftStatsMs": {
+                "count": 0,
+                "minMs": 0.0,
+                "maxMs": 0.0,
+                "p10Ms": 0.0,
+                "p50Ms": 0.0,
+                "p95Ms": 0.0,
+                "p99Ms": 0.0,
+                "meanMs": 0.0,
+                "stdevMs": 0.0
+              },
+              "rightStatsMs": {
+                "count": 0,
+                "minMs": 0.0,
+                "maxMs": 0.0,
+                "p10Ms": 0.0,
+                "p50Ms": 0.0,
+                "p95Ms": 0.0,
+                "p99Ms": 0.0,
+                "meanMs": 0.0,
+                "stdevMs": 0.0
+              },
+              "deltaPercent": {
+                "p10Percent": 0.0,
+                "p50Percent": 0.0,
+                "p95Percent": 0.0,
+                "p99Percent": 0.0,
+                "meanPercent": 0.0
+              },
+              "note": "Executor/device/backend initialization outside the selected execution timing."
+            },
+            "uploadPrewarm": {
+              "traceMetaField": "hostUploadPrewarmTotalNs",
+              "leftStatsMs": {
+                "count": 0,
+                "minMs": 0.0,
+                "maxMs": 0.0,
+                "p10Ms": 0.0,
+                "p50Ms": 0.0,
+                "p95Ms": 0.0,
+                "p99Ms": 0.0,
+                "meanMs": 0.0,
+                "stdevMs": 0.0
+              },
+              "rightStatsMs": {
+                "count": 0,
+                "minMs": 0.0,
+                "maxMs": 0.0,
+                "p10Ms": 0.0,
+                "p50Ms": 0.0,
+                "p95Ms": 0.0,
+                "p99Ms": 0.0,
+                "meanMs": 0.0,
+                "stdevMs": 0.0
+              },
+              "deltaPercent": {
+                "p10Percent": 0.0,
+                "p50Percent": 0.0,
+                "p95Percent": 0.0,
+                "p99Percent": 0.0,
+                "meanPercent": 0.0
+              },
+              "note": "Doe upload-path prewarm work outside the selected execution timing."
+            },
+            "kernelPrewarm": {
+              "traceMetaField": "hostKernelPrewarmTotalNs",
+              "leftStatsMs": {
+                "count": 0,
+                "minMs": 0.0,
+                "maxMs": 0.0,
+                "p10Ms": 0.0,
+                "p50Ms": 0.0,
+                "p95Ms": 0.0,
+                "p99Ms": 0.0,
+                "meanMs": 0.0,
+                "stdevMs": 0.0
+              },
+              "rightStatsMs": {
+                "count": 0,
+                "minMs": 0.0,
+                "maxMs": 0.0,
+                "p10Ms": 0.0,
+                "p50Ms": 0.0,
+                "p95Ms": 0.0,
+                "p99Ms": 0.0,
+                "meanMs": 0.0,
+                "stdevMs": 0.0
+              },
+              "deltaPercent": {
+                "p10Percent": 0.0,
+                "p50Percent": 0.0,
+                "p95Percent": 0.0,
+                "p99Percent": 0.0,
+                "meanPercent": 0.0
+              },
+              "note": "Kernel/pipeline prewarm work outside the selected execution timing."
+            },
+            "commandOrchestration": {
+              "traceMetaField": "hostCommandOrchestrationTotalNs",
+              "leftStatsMs": {
+                "count": 0,
+                "minMs": 0.0,
+                "maxMs": 0.0,
+                "p10Ms": 0.0,
+                "p50Ms": 0.0,
+                "p95Ms": 0.0,
+                "p99Ms": 0.0,
+                "meanMs": 0.0,
+                "stdevMs": 0.0
+              },
+              "rightStatsMs": {
+                "count": 0,
+                "minMs": 0.0,
+                "maxMs": 0.0,
+                "p10Ms": 0.0,
+                "p50Ms": 0.0,
+                "p95Ms": 0.0,
+                "p99Ms": 0.0,
+                "meanMs": 0.0,
+                "stdevMs": 0.0
+              },
+              "deltaPercent": {
+                "p10Percent": 0.0,
+                "p50Percent": 0.0,
+                "p95Percent": 0.0,
+                "p99Percent": 0.0,
+                "meanPercent": 0.0
+              },
+              "note": "Command-loop bookkeeping outside traced execution phase timing."
+            },
+            "artifactFinalize": {
+              "traceMetaField": "hostArtifactFinalizeTotalNs",
+              "leftStatsMs": {
+                "count": 0,
+                "minMs": 0.0,
+                "maxMs": 0.0,
+                "p10Ms": 0.0,
+                "p50Ms": 0.0,
+                "p95Ms": 0.0,
+                "p99Ms": 0.0,
+                "meanMs": 0.0,
+                "stdevMs": 0.0
+              },
+              "rightStatsMs": {
+                "count": 0,
+                "minMs": 0.0,
+                "maxMs": 0.0,
+                "p10Ms": 0.0,
+                "p50Ms": 0.0,
+                "p95Ms": 0.0,
+                "p99Ms": 0.0,
+                "meanMs": 0.0,
+                "stdevMs": 0.0
+              },
+              "deltaPercent": {
+                "p10Percent": 0.0,
+                "p50Percent": 0.0,
+                "p95Percent": 0.0,
+                "p99Percent": 0.0,
+                "meanPercent": 0.0
+              },
+              "note": "Post-execution artifact writing/finalization outside the selected execution timing."
+            }
+          },
+          "note": "Coarse host-overhead buckets are recorded around existing once-per-sample phase boundaries so they explain workloadUnitWall minus selected timing without inserting hot-path profiling probes."
+        },
+        "headlineProcessWall": {
+          "metric": "elapsedMs",
+          "scope": "timed-command-process-wall",
+          "scopeClass": "workload-unit-wall",
+          "available": false,
+          "leftStatsMs": {
+            "count": 0,
+            "minMs": 0.0,
+            "maxMs": 0.0,
+            "p10Ms": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "p99Ms": 0.0,
+            "meanMs": 0.0,
+            "stdevMs": 0.0
+          },
+          "rightStatsMs": {
+            "count": 0,
+            "minMs": 0.0,
+            "maxMs": 0.0,
+            "p10Ms": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "p99Ms": 0.0,
+            "meanMs": 0.0,
+            "stdevMs": 0.0
+          },
+          "deltaPercent": {
+            "p10Percent": 0.0,
+            "p50Percent": 0.0,
+            "p95Percent": 0.0,
+            "p99Percent": 0.0,
+            "meanPercent": 0.0
+          },
+          "note": "Uses timed command process wall normalized by commandRepeat and timingNormalizationDivisor. This is the full timed workload-unit view for one comparable workload unit, not a warm-session-only metric.",
+          "deprecatedAliasFor": "workloadUnitWall"
+        }
+      },
+      "comparability": {
+        "comparable": false,
+        "requiredTimingClass": "operation",
+        "obligationSchemaVersion": 2,
+        "obligations": [
+          {
+            "id": "workload_marked_comparable",
+            "blocking": true,
+            "applicable": true,
+            "passes": false,
+            "details": {
+              "workloadComparable": false
+            }
+          },
+          {
+            "id": "left_samples_present",
+            "blocking": true,
+            "applicable": true,
+            "passes": true,
+            "details": {
+              "leftSampleCount": 2
+            }
+          },
+          {
+            "id": "right_samples_present",
+            "blocking": true,
+            "applicable": true,
+            "passes": true,
+            "details": {
+              "rightSampleCount": 2
+            }
+          },
+          {
+            "id": "left_single_timing_class",
+            "blocking": true,
+            "applicable": true,
+            "passes": false,
+            "details": {
+              "leftTimingClasses": []
+            }
+          },
+          {
+            "id": "right_single_timing_class",
+            "blocking": true,
+            "applicable": true,
+            "passes": false,
+            "details": {
+              "rightTimingClasses": []
+            }
+          },
+          {
+            "id": "left_required_timing_class",
+            "blocking": true,
+            "applicable": true,
+            "passes": false,
+            "details": {
+              "requiredTimingClass": "operation",
+              "leftTimingClass": "mixed"
+            }
+          },
+          {
+            "id": "right_required_timing_class",
+            "blocking": true,
+            "applicable": true,
+            "passes": false,
+            "details": {
+              "requiredTimingClass": "operation",
+              "rightTimingClass": "mixed"
+            }
+          },
+          {
+            "id": "left_right_timing_class_match",
+            "blocking": true,
+            "applicable": false,
+            "passes": true,
+            "details": {
+              "leftTimingClass": "mixed",
+              "rightTimingClass": "mixed"
+            }
+          },
+          {
+            "id": "left_right_trace_meta_source_match",
+            "blocking": true,
+            "applicable": true,
+            "passes": false,
+            "details": {
+              "leftTraceMetaSources": [],
+              "rightTraceMetaSources": [],
+              "leftSelectedSources": [],
+              "rightSelectedSources": []
+            }
+          },
+          {
+            "id": "left_right_timing_selection_policy_match",
+            "blocking": true,
+            "applicable": true,
+            "passes": true,
+            "details": {
+              "leftTimingSelectionPolicies": [
+                "<none>"
+              ],
+              "rightTimingSelectionPolicies": [
+                "<none>"
+              ]
+            }
+          },
+          {
+            "id": "left_right_queue_sync_mode_match",
+            "blocking": true,
+            "applicable": true,
+            "passes": true,
+            "details": {
+              "leftQueueSyncModes": [],
+              "rightQueueSyncModes": []
+            }
+          },
+          {
+            "id": "left_right_timing_phase_match",
+            "blocking": true,
+            "applicable": false,
+            "passes": true,
+            "details": {
+              "phaseAsymmetryThreshold": 0.1,
+              "leftMedianPhaseFractions": {
+                "setup": null,
+                "encode": null,
+                "submitWait": null
+              },
+              "rightMedianPhaseFractions": {
+                "setup": null,
+                "encode": null,
+                "submitWait": null
+              },
+              "phaseSampleCounts": {
+                "setup": {
+                  "left": 0,
+                  "right": 0
+                },
+                "encode": {
+                  "left": 0,
+                  "right": 0
+                },
+                "submitWait": {
+                  "left": 0,
+                  "right": 0
+                }
+              },
+              "phaseMismatchCount": 0,
+              "phaseMismatches": []
+            }
+          },
+          {
+            "id": "left_right_execution_shape_match",
+            "blocking": true,
+            "applicable": false,
+            "passes": true,
+            "details": {
+              "workloadDomain": "render",
+              "dispatchShapeDomain": true,
+              "leftExecutionShapes": [],
+              "rightExecutionShapes": [],
+              "leftNormalizedExecutionShapes": [],
+              "rightNormalizedExecutionShapes": [],
+              "leftCommandRepeat": 1,
+              "rightCommandRepeat": 1,
+              "comparisonReason": ""
+            }
+          },
+          {
+            "id": "left_right_hardware_path_match",
+            "blocking": true,
+            "applicable": false,
+            "passes": true,
+            "details": {
+              "comparabilityMode": "warn",
+              "isDawnVsDoe": false,
+              "workloadPathAsymmetry": false,
+              "workloadPathAsymmetryNote": ""
+            }
+          },
+          {
+            "id": "left_native_operation_timing_for_webgpu_ffi",
+            "blocking": true,
+            "applicable": true,
+            "passes": true,
+            "details": {
+              "invalidCanonicalSources": []
+            }
+          },
+          {
+            "id": "left_upload_ignore_first_scope_consistent",
+            "blocking": true,
+            "applicable": false,
+            "passes": true,
+            "details": {
+              "violationCount": 0
+            }
+          },
+          {
+            "id": "right_upload_ignore_first_scope_consistent",
+            "blocking": true,
+            "applicable": false,
+            "passes": true,
+            "details": {
+              "violationCount": 0
+            }
+          },
+          {
+            "id": "left_right_upload_buffer_usage_match",
+            "blocking": true,
+            "applicable": false,
+            "passes": true,
+            "details": {
+              "leftUploadUsages": [],
+              "rightUploadUsages": []
+            }
+          },
+          {
+            "id": "left_right_upload_submit_cadence_match",
+            "blocking": true,
+            "applicable": false,
+            "passes": true,
+            "details": {
+              "leftUploadSubmitCadences": [],
+              "rightUploadSubmitCadences": []
+            }
+          },
+          {
+            "id": "left_execution_evidence_present",
+            "blocking": true,
+            "applicable": true,
+            "passes": false,
+            "details": {
+              "allowLeftNoExecution": false,
+              "leftHasExecutionEvidence": false
+            }
+          },
+          {
+            "id": "left_successful_execution_present",
+            "blocking": true,
+            "applicable": true,
+            "passes": false,
+            "details": {
+              "leftSuccessfulExecution": false
+            }
+          },
+          {
+            "id": "left_success_or_unsupported_or_skipped",
+            "blocking": true,
+            "applicable": false,
+            "passes": true,
+            "details": {
+              "leftSuccessfulExecution": false,
+              "leftHasUnsupportedOrSkippedEvidence": false
+            }
+          },
+          {
+            "id": "left_execution_errors_absent",
+            "blocking": true,
+            "applicable": true,
+            "passes": true,
+            "details": {
+              "leftExecutionErrorSampleCount": 0,
+              "leftSampleCount": 2
+            }
+          },
+          {
+            "id": "right_execution_errors_absent",
+            "blocking": true,
+            "applicable": true,
+            "passes": true,
+            "details": {
+              "rightExecutionErrorSampleCount": 0,
+              "rightSampleCount": 2
+            }
+          },
+          {
+            "id": "left_right_timing_plausibility",
+            "blocking": true,
+            "applicable": false,
+            "passes": true,
+            "details": {
+              "minWallRatio": 0.01,
+              "minWallMs": 5.0,
+              "leftMedianTracedMs": null,
+              "leftMedianWallMs": null,
+              "leftMedianProcessWallMs": null,
+              "leftMedianRatio": null,
+              "rightMedianTracedMs": null,
+              "rightMedianWallMs": null,
+              "rightMedianProcessWallMs": null,
+              "rightMedianRatio": null
+            }
+          },
+          {
+            "id": "left_resource_probe_available",
+            "blocking": true,
+            "applicable": false,
+            "passes": true,
+            "details": {
+              "leftResourceProbeAvailableCount": 0
+            }
+          },
+          {
+            "id": "right_resource_probe_available",
+            "blocking": true,
+            "applicable": false,
+            "passes": true,
+            "details": {
+              "rightResourceProbeAvailableCount": 0
+            }
+          }
+        ],
+        "blockingFailedObligations": [
+          "workload_marked_comparable",
+          "left_single_timing_class",
+          "right_single_timing_class",
+          "left_required_timing_class",
+          "right_required_timing_class",
+          "left_right_trace_meta_source_match",
+          "left_execution_evidence_present",
+          "left_successful_execution_present"
+        ],
+        "advisoryFailedObligations": [],
+        "leftTimingSources": [
+          ""
+        ],
+        "rightTimingSources": [
+          ""
+        ],
+        "leftTraceMetaSources": [],
+        "rightTraceMetaSources": [],
+        "leftTimingSelectionPolicies": [
+          "<none>"
+        ],
+        "rightTimingSelectionPolicies": [
+          "<none>"
+        ],
+        "leftQueueSyncModes": [],
+        "rightQueueSyncModes": [],
+        "leftExecutionShapes": [],
+        "rightExecutionShapes": [],
+        "leftNormalizedExecutionShapes": [],
+        "rightNormalizedExecutionShapes": [],
+        "leftCommandRepeat": 1,
+        "rightCommandRepeat": 1,
+        "workloadPathAsymmetry": false,
+        "workloadPathAsymmetryNote": "",
+        "leftTimingClass": "mixed",
+        "rightTimingClass": "mixed",
+        "resourceProbe": "none",
+        "leftResourceSampleMedian": 0,
+        "rightResourceSampleMedian": 0,
+        "leftResourceProbeAvailableCount": 0,
+        "rightResourceProbeAvailableCount": 0,
+        "resourceSampleTargetCount": 0,
+        "leftResourceSamplingTruncatedCount": 0,
+        "rightResourceSamplingTruncatedCount": 0,
+        "leftExecutionErrorSampleCount": 0,
+        "rightExecutionErrorSampleCount": 0,
+        "resourceReasons": [],
+        "reasons": [
+          "workload is marked non-comparable by workload contract",
+          "left side uses mixed timing classes: []",
+          "right side uses mixed timing classes: []",
+          "left timing class is mixed, required operation",
+          "right timing class is mixed, required operation",
+          "left/right trace meta source mismatch or incompatible runtime families: [] vs []",
+          "left side has no execution evidence (executionSuccessCount/executionRowCount)",
+          "left side has no successful execution samples (executionSuccessCount=0)"
+        ]
+      },
+      "claimability": {
+        "mode": "off",
+        "evaluated": false,
+        "claimable": null,
+        "minTimedSamples": 0,
+        "requiredPositivePercentiles": [],
+        "reasons": []
+      },
+      "traceMetaHashes": {
+        "left": [],
+        "right": []
+      },
+      "claimRowHash": {
+        "algorithm": "sha256",
+        "previousHash": "a63d772f5e135e4efaef9b4563fec57411f52b03ed51e3868956420d54cba6a3",
+        "hash": "85e4143ea1344eeabf3b10b2927012589539a734de6428feeeca6f861c891bd7",
+        "context": {
+          "workloadId": "render_draw_throughput_baseline",
+          "workloadContractSha256": "43112ef355508daea970e660c861101270b1c716fa7f1328300d2e698bcb880a",
+          "configContractSha256": "5cfa610e5a651da98efa4e2a96250065032e93235766247562b9f54246ce9bd0",
+          "benchmarkPolicySha256": "32e0942cc8f4114210ee2010f524bcbd4c9548a123fc75d29bc699c698262355",
+          "leftTraceMetaSha256": [],
+          "rightTraceMetaSha256": [],
+          "benchmarkClass": "directional",
+          "directionalReason": "other",
+          "workloadPathAsymmetry": false,
+          "workloadPathAsymmetryNote": "",
+          "deltaPercent": {
+            "p10Percent": 0.0,
+            "p50Percent": 0.0,
+            "p95Percent": 0.0,
+            "p99Percent": 0.0,
+            "meanPercent": 0.0
+          },
+          "comparability": {
+            "comparable": false,
+            "blockingFailedObligations": [
+              "workload_marked_comparable",
+              "left_single_timing_class",
+              "right_single_timing_class",
+              "left_required_timing_class",
+              "right_required_timing_class",
+              "left_right_trace_meta_source_match",
+              "left_execution_evidence_present",
+              "left_successful_execution_present"
+            ]
+          },
+          "claimability": {
+            "evaluated": false,
+            "claimable": null,
+            "reasons": []
+          }
+        }
+      },
+      "operatorDiff": {
+        "available": false,
+        "status": "missing_operator_manifests",
+        "eligibleSamplePairCount": 0,
+        "comparedSamplePairCount": 0,
+        "firstDivergence": null
+      }
+    },
+    {
+      "id": "upload_write_buffer_64kb",
+      "name": "upload-64kb-smoke",
+      "description": "Local Metal upload smoke",
+      "domain": "upload",
+      "comparabilityNotes": "Local Metal smoke upload contract with staged copy-dst uploads and matched submit cadence.",
+      "asyncDiagnosticsMode": null,
+      "timingNormalization": {
+        "leftDivisor": 1.0,
+        "rightDivisor": 1.0,
+        "leftCommandRepeat": 16,
+        "rightCommandRepeat": 16,
+        "leftIgnoreFirstOps": 1,
+        "rightIgnoreFirstOps": 1,
+        "leftUploadBufferUsage": "copy-dst",
+        "rightUploadBufferUsage": "copy-dst",
+        "leftUploadSubmitEvery": 1,
+        "rightUploadSubmitEvery": 1,
+        "note": "Strict Dawn-vs-Doe operation comparability uses direct timing (left/right divisors fixed to 1.0)."
+      },
+      "workloadComparable": true,
+      "benchmarkClass": "comparable",
+      "cohorts": [
+        "smoke",
+        "exploration"
+      ],
+      "directionalReason": null,
+      "pathAsymmetry": true,
+      "pathAsymmetryNote": "Apple Metal UMA may use shared-memory writes without staging-buffer GPU copy, while Dawn delegate performs staging+copy. This hardware-path advantage is non-transferable.",
+      "comparabilityCandidate": {
+        "enabled": false,
+        "tier": "",
+        "notes": ""
+      },
+      "workloadAllowLeftNoExecution": false,
+      "workloadDefault": true,
+      "left": {
+        "commandSamples": [
+          {
+            "command": "env DYLD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$DYLD_LIBRARY_PATH runtime/zig/zig-out/bin/doe-zig-runtime --commands bench/out/apple-metal/smoke/20260406T004234Z/runtime-comparisons.apple.metal.smoke/isolated-runs/doe/upload_write_buffer_64kb/doe.commands.repeat16.json --quirks examples/quirks/intel_gen12_temp_buffer.json --vendor apple --api metal --family apple-gpu --driver 1.0.0 --backend native --backend-lane metal_doe_directional --execute --trace --queue-sync-mode deferred --upload-buffer-usage copy-dst --upload-submit-every 1 --trace-jsonl bench/out/apple-metal/smoke/20260406T004234Z/runtime-comparisons.apple.metal.smoke/isolated-runs/doe/upload_write_buffer_64kb/doe.run000.ndjson --trace-meta bench/out/apple-metal/smoke/20260406T004234Z/runtime-comparisons.apple.metal.smoke/isolated-runs/doe/upload_write_buffer_64kb/doe.run000.meta.json --gpu-timestamp-mode auto --kernel-root bench/kernels --queue-sync-mode deferred --gpu-timestamp-mode off --upload-buffer-usage copy-dst --upload-submit-every 1",
+            "commandRepeat": 16,
+            "runIndex": 0,
+            "timingNormalizationDivisor": 1.0,
+            "uploadBufferUsage": "copy-dst",
+            "uploadIgnoreFirstOps": 1,
+            "uploadSubmitEvery": 1
+          },
+          {
+            "command": "env DYLD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$DYLD_LIBRARY_PATH runtime/zig/zig-out/bin/doe-zig-runtime --commands bench/out/apple-metal/smoke/20260406T004234Z/runtime-comparisons.apple.metal.smoke/isolated-runs/doe/upload_write_buffer_64kb/doe.commands.repeat16.json --quirks examples/quirks/intel_gen12_temp_buffer.json --vendor apple --api metal --family apple-gpu --driver 1.0.0 --backend native --backend-lane metal_doe_directional --execute --trace --queue-sync-mode deferred --upload-buffer-usage copy-dst --upload-submit-every 1 --trace-jsonl bench/out/apple-metal/smoke/20260406T004234Z/runtime-comparisons.apple.metal.smoke/isolated-runs/doe/upload_write_buffer_64kb/doe.run001.ndjson --trace-meta bench/out/apple-metal/smoke/20260406T004234Z/runtime-comparisons.apple.metal.smoke/isolated-runs/doe/upload_write_buffer_64kb/doe.run001.meta.json --gpu-timestamp-mode auto --kernel-root bench/kernels --queue-sync-mode deferred --gpu-timestamp-mode off --upload-buffer-usage copy-dst --upload-submit-every 1",
+            "commandRepeat": 16,
+            "runIndex": 1,
+            "timingNormalizationDivisor": 1.0,
+            "uploadBufferUsage": "copy-dst",
+            "uploadIgnoreFirstOps": 1,
+            "uploadSubmitEvery": 1
+          }
+        ],
+        "stats": {
+          "count": 0,
+          "maxMs": 0.0,
+          "meanMs": 0.0,
+          "minMs": 0.0,
+          "p10Ms": 0.0,
+          "p50Ms": 0.0,
+          "p95Ms": 0.0,
+          "p99Ms": 0.0,
+          "stdevMs": 0.0
+        },
+        "timingsMs": [],
+        "timingSources": [],
+        "timingClasses": [],
+        "lastMeta": {},
+        "resourceStats": {
+          "gpuProbeAvailableCount": 0,
+          "gpuProbeModes": [],
+          "gpuVramDeltaPeakFromBeforeBytes": {
+            "count": 0,
+            "max": 0.0,
+            "mean": 0.0,
+            "min": 0.0,
+            "p10": 0.0,
+            "p50": 0.0,
+            "p95": 0.0,
+            "p99": 0.0,
+            "stdev": 0.0
+          },
+          "gpuVramUsedAfterBytes": {
+            "count": 0,
+            "max": 0.0,
+            "mean": 0.0,
+            "min": 0.0,
+            "p10": 0.0,
+            "p50": 0.0,
+            "p95": 0.0,
+            "p99": 0.0,
+            "stdev": 0.0
+          },
+          "gpuVramUsedBeforeBytes": {
+            "count": 0,
+            "max": 0.0,
+            "mean": 0.0,
+            "min": 0.0,
+            "p10": 0.0,
+            "p50": 0.0,
+            "p95": 0.0,
+            "p99": 0.0,
+            "stdev": 0.0
+          },
+          "gpuVramUsedPeakBytes": {
+            "count": 0,
+            "max": 0.0,
+            "mean": 0.0,
+            "min": 0.0,
+            "p10": 0.0,
+            "p50": 0.0,
+            "p95": 0.0,
+            "p99": 0.0,
+            "stdev": 0.0
+          },
+          "processPeakRssKb": {
+            "count": 0,
+            "max": 0.0,
+            "mean": 0.0,
+            "min": 0.0,
+            "p10": 0.0,
+            "p50": 0.0,
+            "p95": 0.0,
+            "p99": 0.0,
+            "stdev": 0.0
+          },
+          "samplingTruncatedCount": 0
+        },
+        "timingMetricsRawStatsMs": {
+          "cpu_time": {
+            "count": 0,
+            "maxMs": 0.0,
+            "meanMs": 0.0,
+            "minMs": 0.0,
+            "p10Ms": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "p99Ms": 0.0,
+            "stdevMs": 0.0
+          },
+          "gpu_time": {
+            "count": 0,
+            "maxMs": 0.0,
+            "meanMs": 0.0,
+            "minMs": 0.0,
+            "p10Ms": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "p99Ms": 0.0,
+            "stdevMs": 0.0
+          },
+          "wall_time": {
+            "count": 0,
+            "maxMs": 0.0,
+            "meanMs": 0.0,
+            "minMs": 0.0,
+            "p10Ms": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "p99Ms": 0.0,
+            "stdevMs": 0.0
+          }
+        },
+        "timingMetricsNormalizedStatsMs": {
+          "cpu_time": {
+            "count": 0,
+            "maxMs": 0.0,
+            "meanMs": 0.0,
+            "minMs": 0.0,
+            "p10Ms": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "p99Ms": 0.0,
+            "stdevMs": 0.0
+          },
+          "gpu_time": {
+            "count": 0,
+            "maxMs": 0.0,
+            "meanMs": 0.0,
+            "minMs": 0.0,
+            "p10Ms": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "p99Ms": 0.0,
+            "stdevMs": 0.0
+          },
+          "wall_time": {
+            "count": 0,
+            "maxMs": 0.0,
+            "meanMs": 0.0,
+            "minMs": 0.0,
+            "p10Ms": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "p99Ms": 0.0,
+            "stdevMs": 0.0
+          }
+        }
+      },
+      "right": {
+        "commandSamples": [
+          {
+            "command": "env DYLD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$DYLD_LIBRARY_PATH runtime/zig/zig-out/bin/doe-zig-runtime --commands bench/out/apple-metal/smoke/20260406T004234Z/runtime-comparisons.apple.metal.smoke/isolated-runs/dawn_delegate/upload_write_buffer_64kb/dawn_delegate.commands.repeat16.json --quirks examples/quirks/intel_gen12_temp_buffer.json --vendor apple --api metal --family apple-gpu --driver 1.0.0 --backend native --backend-lane metal_dawn_release --execute --trace --queue-sync-mode deferred --upload-buffer-usage copy-dst --upload-submit-every 1 --trace-jsonl bench/out/apple-metal/smoke/20260406T004234Z/runtime-comparisons.apple.metal.smoke/isolated-runs/dawn_delegate/upload_write_buffer_64kb/dawn_delegate.run000.ndjson --trace-meta bench/out/apple-metal/smoke/20260406T004234Z/runtime-comparisons.apple.metal.smoke/isolated-runs/dawn_delegate/upload_write_buffer_64kb/dawn_delegate.run000.meta.json --gpu-timestamp-mode auto --kernel-root bench/kernels --queue-sync-mode deferred --gpu-timestamp-mode off --upload-buffer-usage copy-dst --upload-submit-every 1",
+            "commandRepeat": 16,
+            "runIndex": 0,
+            "timingNormalizationDivisor": 1.0,
+            "uploadBufferUsage": "copy-dst",
+            "uploadIgnoreFirstOps": 1,
+            "uploadSubmitEvery": 1
+          },
+          {
+            "command": "env DYLD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$DYLD_LIBRARY_PATH runtime/zig/zig-out/bin/doe-zig-runtime --commands bench/out/apple-metal/smoke/20260406T004234Z/runtime-comparisons.apple.metal.smoke/isolated-runs/dawn_delegate/upload_write_buffer_64kb/dawn_delegate.commands.repeat16.json --quirks examples/quirks/intel_gen12_temp_buffer.json --vendor apple --api metal --family apple-gpu --driver 1.0.0 --backend native --backend-lane metal_dawn_release --execute --trace --queue-sync-mode deferred --upload-buffer-usage copy-dst --upload-submit-every 1 --trace-jsonl bench/out/apple-metal/smoke/20260406T004234Z/runtime-comparisons.apple.metal.smoke/isolated-runs/dawn_delegate/upload_write_buffer_64kb/dawn_delegate.run001.ndjson --trace-meta bench/out/apple-metal/smoke/20260406T004234Z/runtime-comparisons.apple.metal.smoke/isolated-runs/dawn_delegate/upload_write_buffer_64kb/dawn_delegate.run001.meta.json --gpu-timestamp-mode auto --kernel-root bench/kernels --queue-sync-mode deferred --gpu-timestamp-mode off --upload-buffer-usage copy-dst --upload-submit-every 1",
+            "commandRepeat": 16,
+            "runIndex": 1,
+            "timingNormalizationDivisor": 1.0,
+            "uploadBufferUsage": "copy-dst",
+            "uploadIgnoreFirstOps": 1,
+            "uploadSubmitEvery": 1
+          }
+        ],
+        "stats": {
+          "count": 0,
+          "maxMs": 0.0,
+          "meanMs": 0.0,
+          "minMs": 0.0,
+          "p10Ms": 0.0,
+          "p50Ms": 0.0,
+          "p95Ms": 0.0,
+          "p99Ms": 0.0,
+          "stdevMs": 0.0
+        },
+        "timingsMs": [],
+        "timingSources": [],
+        "timingClasses": [],
+        "lastMeta": {},
+        "resourceStats": {
+          "gpuProbeAvailableCount": 0,
+          "gpuProbeModes": [],
+          "gpuVramDeltaPeakFromBeforeBytes": {
+            "count": 0,
+            "max": 0.0,
+            "mean": 0.0,
+            "min": 0.0,
+            "p10": 0.0,
+            "p50": 0.0,
+            "p95": 0.0,
+            "p99": 0.0,
+            "stdev": 0.0
+          },
+          "gpuVramUsedAfterBytes": {
+            "count": 0,
+            "max": 0.0,
+            "mean": 0.0,
+            "min": 0.0,
+            "p10": 0.0,
+            "p50": 0.0,
+            "p95": 0.0,
+            "p99": 0.0,
+            "stdev": 0.0
+          },
+          "gpuVramUsedBeforeBytes": {
+            "count": 0,
+            "max": 0.0,
+            "mean": 0.0,
+            "min": 0.0,
+            "p10": 0.0,
+            "p50": 0.0,
+            "p95": 0.0,
+            "p99": 0.0,
+            "stdev": 0.0
+          },
+          "gpuVramUsedPeakBytes": {
+            "count": 0,
+            "max": 0.0,
+            "mean": 0.0,
+            "min": 0.0,
+            "p10": 0.0,
+            "p50": 0.0,
+            "p95": 0.0,
+            "p99": 0.0,
+            "stdev": 0.0
+          },
+          "processPeakRssKb": {
+            "count": 0,
+            "max": 0.0,
+            "mean": 0.0,
+            "min": 0.0,
+            "p10": 0.0,
+            "p50": 0.0,
+            "p95": 0.0,
+            "p99": 0.0,
+            "stdev": 0.0
+          },
+          "samplingTruncatedCount": 0
+        },
+        "timingMetricsRawStatsMs": {
+          "cpu_time": {
+            "count": 0,
+            "maxMs": 0.0,
+            "meanMs": 0.0,
+            "minMs": 0.0,
+            "p10Ms": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "p99Ms": 0.0,
+            "stdevMs": 0.0
+          },
+          "gpu_time": {
+            "count": 0,
+            "maxMs": 0.0,
+            "meanMs": 0.0,
+            "minMs": 0.0,
+            "p10Ms": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "p99Ms": 0.0,
+            "stdevMs": 0.0
+          },
+          "wall_time": {
+            "count": 0,
+            "maxMs": 0.0,
+            "meanMs": 0.0,
+            "minMs": 0.0,
+            "p10Ms": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "p99Ms": 0.0,
+            "stdevMs": 0.0
+          }
+        },
+        "timingMetricsNormalizedStatsMs": {
+          "cpu_time": {
+            "count": 0,
+            "maxMs": 0.0,
+            "meanMs": 0.0,
+            "minMs": 0.0,
+            "p10Ms": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "p99Ms": 0.0,
+            "stdevMs": 0.0
+          },
+          "gpu_time": {
+            "count": 0,
+            "maxMs": 0.0,
+            "meanMs": 0.0,
+            "minMs": 0.0,
+            "p10Ms": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "p99Ms": 0.0,
+            "stdevMs": 0.0
+          },
+          "wall_time": {
+            "count": 0,
+            "maxMs": 0.0,
+            "meanMs": 0.0,
+            "minMs": 0.0,
+            "p10Ms": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "p99Ms": 0.0,
+            "stdevMs": 0.0
+          }
+        }
+      },
+      "deltaPercent": {
+        "p10Percent": 0.0,
+        "p50Percent": 0.0,
+        "p95Percent": 0.0,
+        "p99Percent": 0.0,
+        "meanPercent": 0.0
+      },
+      "timingInterpretation": {
+        "selectedTiming": {
+          "leftSources": [],
+          "rightSources": [],
+          "leftClasses": [],
+          "rightClasses": [],
+          "canonicalSources": [],
+          "timingClasses": [],
+          "scope": "unknown",
+          "scopeClass": "unknown",
+          "isNarrowHotPath": false,
+          "note": "Selected timing scope could not be classified reliably from the timing metadata."
+        },
+        "workloadUnitWall": {
+          "metric": "elapsedMs",
+          "scope": "timed-command-process-wall",
+          "scopeClass": "workload-unit-wall",
+          "available": false,
+          "leftStatsMs": {
+            "count": 0,
+            "minMs": 0.0,
+            "maxMs": 0.0,
+            "p10Ms": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "p99Ms": 0.0,
+            "meanMs": 0.0,
+            "stdevMs": 0.0
+          },
+          "rightStatsMs": {
+            "count": 0,
+            "minMs": 0.0,
+            "maxMs": 0.0,
+            "p10Ms": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "p99Ms": 0.0,
+            "meanMs": 0.0,
+            "stdevMs": 0.0
+          },
+          "deltaPercent": {
+            "p10Percent": 0.0,
+            "p50Percent": 0.0,
+            "p95Percent": 0.0,
+            "p99Percent": 0.0,
+            "meanPercent": 0.0
+          },
+          "note": "Uses timed command process wall normalized by commandRepeat and timingNormalizationDivisor. This is the full timed workload-unit view for one comparable workload unit, not a warm-session-only metric."
+        },
+        "hostOverheadBreakdown": {
+          "metric": "traceMeta.host*TotalNs",
+          "scope": "selected-timing-gap-breakdown",
+          "scopeClass": "host-overhead-diagnostic",
+          "available": false,
+          "selectedGap": {
+            "leftStatsMs": {
+              "count": 0,
+              "minMs": 0.0,
+              "maxMs": 0.0,
+              "p10Ms": 0.0,
+              "p50Ms": 0.0,
+              "p95Ms": 0.0,
+              "p99Ms": 0.0,
+              "meanMs": 0.0,
+              "stdevMs": 0.0
+            },
+            "rightStatsMs": {
+              "count": 0,
+              "minMs": 0.0,
+              "maxMs": 0.0,
+              "p10Ms": 0.0,
+              "p50Ms": 0.0,
+              "p95Ms": 0.0,
+              "p99Ms": 0.0,
+              "meanMs": 0.0,
+              "stdevMs": 0.0
+            },
+            "deltaPercent": {
+              "p10Percent": 0.0,
+              "p50Percent": 0.0,
+              "p95Percent": 0.0,
+              "p99Percent": 0.0,
+              "meanPercent": 0.0
+            },
+            "note": "The normalized difference between workloadUnitWall and selected timing for each timed sample."
+          },
+          "attributedHostOverhead": {
+            "leftStatsMs": {
+              "count": 0,
+              "minMs": 0.0,
+              "maxMs": 0.0,
+              "p10Ms": 0.0,
+              "p50Ms": 0.0,
+              "p95Ms": 0.0,
+              "p99Ms": 0.0,
+              "meanMs": 0.0,
+              "stdevMs": 0.0
+            },
+            "rightStatsMs": {
+              "count": 0,
+              "minMs": 0.0,
+              "maxMs": 0.0,
+              "p10Ms": 0.0,
+              "p50Ms": 0.0,
+              "p95Ms": 0.0,
+              "p99Ms": 0.0,
+              "meanMs": 0.0,
+              "stdevMs": 0.0
+            },
+            "deltaPercent": {
+              "p10Percent": 0.0,
+              "p50Percent": 0.0,
+              "p95Percent": 0.0,
+              "p99Percent": 0.0,
+              "meanPercent": 0.0
+            },
+            "note": "Sum of coarse host-overhead buckets recorded outside the selected execution timing. These buckets are once-per-sample phase timers, not per-dispatch probes."
+          },
+          "unattributedGapRemainder": {
+            "leftStatsMs": {
+              "count": 0,
+              "minMs": 0.0,
+              "maxMs": 0.0,
+              "p10Ms": 0.0,
+              "p50Ms": 0.0,
+              "p95Ms": 0.0,
+              "p99Ms": 0.0,
+              "meanMs": 0.0,
+              "stdevMs": 0.0
+            },
+            "rightStatsMs": {
+              "count": 0,
+              "minMs": 0.0,
+              "maxMs": 0.0,
+              "p10Ms": 0.0,
+              "p50Ms": 0.0,
+              "p95Ms": 0.0,
+              "p99Ms": 0.0,
+              "meanMs": 0.0,
+              "stdevMs": 0.0
+            },
+            "deltaPercent": {
+              "p10Percent": 0.0,
+              "p50Percent": 0.0,
+              "p95Percent": 0.0,
+              "p99Percent": 0.0,
+              "meanPercent": 0.0
+            },
+            "note": "Selected-gap remainder after subtracting the coarse host-overhead buckets. This typically captures trace-meta emission, process teardown, and any uninstrumented sample overhead."
+          },
+          "buckets": {
+            "inputRead": {
+              "traceMetaField": "hostInputReadTotalNs",
+              "leftStatsMs": {
+                "count": 0,
+                "minMs": 0.0,
+                "maxMs": 0.0,
+                "p10Ms": 0.0,
+                "p50Ms": 0.0,
+                "p95Ms": 0.0,
+                "p99Ms": 0.0,
+                "meanMs": 0.0,
+                "stdevMs": 0.0
+              },
+              "rightStatsMs": {
+                "count": 0,
+                "minMs": 0.0,
+                "maxMs": 0.0,
+                "p10Ms": 0.0,
+                "p50Ms": 0.0,
+                "p95Ms": 0.0,
+                "p99Ms": 0.0,
+                "meanMs": 0.0,
+                "stdevMs": 0.0
+              },
+              "deltaPercent": {
+                "p10Percent": 0.0,
+                "p50Percent": 0.0,
+                "p95Percent": 0.0,
+                "p99Percent": 0.0,
+                "meanPercent": 0.0
+              },
+              "note": "Input/config file reads before selected execution timing begins."
+            },
+            "inputParse": {
+              "traceMetaField": "hostInputParseTotalNs",
+              "leftStatsMs": {
+                "count": 0,
+                "minMs": 0.0,
+                "maxMs": 0.0,
+                "p10Ms": 0.0,
+                "p50Ms": 0.0,
+                "p95Ms": 0.0,
+                "p99Ms": 0.0,
+                "meanMs": 0.0,
+                "stdevMs": 0.0
+              },
+              "rightStatsMs": {
+                "count": 0,
+                "minMs": 0.0,
+                "maxMs": 0.0,
+                "p10Ms": 0.0,
+                "p50Ms": 0.0,
+                "p95Ms": 0.0,
+                "p99Ms": 0.0,
+                "meanMs": 0.0,
+                "stdevMs": 0.0
+              },
+              "deltaPercent": {
+                "p10Percent": 0.0,
+                "p50Percent": 0.0,
+                "p95Percent": 0.0,
+                "p99Percent": 0.0,
+                "meanPercent": 0.0
+              },
+              "note": "Command/plan parsing and input decoding before selected execution timing begins."
+            },
+            "workloadPrepare": {
+              "traceMetaField": "hostWorkloadPrepareTotalNs",
+              "leftStatsMs": {
+                "count": 0,
+                "minMs": 0.0,
+                "maxMs": 0.0,
+                "p10Ms": 0.0,
+                "p50Ms": 0.0,
+                "p95Ms": 0.0,
+                "p99Ms": 0.0,
+                "meanMs": 0.0,
+                "stdevMs": 0.0
+              },
+              "rightStatsMs": {
+                "count": 0,
+                "minMs": 0.0,
+                "maxMs": 0.0,
+                "p10Ms": 0.0,
+                "p50Ms": 0.0,
+                "p95Ms": 0.0,
+                "p99Ms": 0.0,
+                "meanMs": 0.0,
+                "stdevMs": 0.0
+              },
+              "deltaPercent": {
+                "p10Percent": 0.0,
+                "p50Percent": 0.0,
+                "p95Percent": 0.0,
+                "p99Percent": 0.0,
+                "meanPercent": 0.0
+              },
+              "note": "Pre-execution workload preparation such as dispatch-context or buffer-spec setup."
+            },
+            "executorInit": {
+              "traceMetaField": "hostExecutorInitTotalNs",
+              "leftStatsMs": {
+                "count": 0,
+                "minMs": 0.0,
+                "maxMs": 0.0,
+                "p10Ms": 0.0,
+                "p50Ms": 0.0,
+                "p95Ms": 0.0,
+                "p99Ms": 0.0,
+                "meanMs": 0.0,
+                "stdevMs": 0.0
+              },
+              "rightStatsMs": {
+                "count": 0,
+                "minMs": 0.0,
+                "maxMs": 0.0,
+                "p10Ms": 0.0,
+                "p50Ms": 0.0,
+                "p95Ms": 0.0,
+                "p99Ms": 0.0,
+                "meanMs": 0.0,
+                "stdevMs": 0.0
+              },
+              "deltaPercent": {
+                "p10Percent": 0.0,
+                "p50Percent": 0.0,
+                "p95Percent": 0.0,
+                "p99Percent": 0.0,
+                "meanPercent": 0.0
+              },
+              "note": "Executor/device/backend initialization outside the selected execution timing."
+            },
+            "uploadPrewarm": {
+              "traceMetaField": "hostUploadPrewarmTotalNs",
+              "leftStatsMs": {
+                "count": 0,
+                "minMs": 0.0,
+                "maxMs": 0.0,
+                "p10Ms": 0.0,
+                "p50Ms": 0.0,
+                "p95Ms": 0.0,
+                "p99Ms": 0.0,
+                "meanMs": 0.0,
+                "stdevMs": 0.0
+              },
+              "rightStatsMs": {
+                "count": 0,
+                "minMs": 0.0,
+                "maxMs": 0.0,
+                "p10Ms": 0.0,
+                "p50Ms": 0.0,
+                "p95Ms": 0.0,
+                "p99Ms": 0.0,
+                "meanMs": 0.0,
+                "stdevMs": 0.0
+              },
+              "deltaPercent": {
+                "p10Percent": 0.0,
+                "p50Percent": 0.0,
+                "p95Percent": 0.0,
+                "p99Percent": 0.0,
+                "meanPercent": 0.0
+              },
+              "note": "Doe upload-path prewarm work outside the selected execution timing."
+            },
+            "kernelPrewarm": {
+              "traceMetaField": "hostKernelPrewarmTotalNs",
+              "leftStatsMs": {
+                "count": 0,
+                "minMs": 0.0,
+                "maxMs": 0.0,
+                "p10Ms": 0.0,
+                "p50Ms": 0.0,
+                "p95Ms": 0.0,
+                "p99Ms": 0.0,
+                "meanMs": 0.0,
+                "stdevMs": 0.0
+              },
+              "rightStatsMs": {
+                "count": 0,
+                "minMs": 0.0,
+                "maxMs": 0.0,
+                "p10Ms": 0.0,
+                "p50Ms": 0.0,
+                "p95Ms": 0.0,
+                "p99Ms": 0.0,
+                "meanMs": 0.0,
+                "stdevMs": 0.0
+              },
+              "deltaPercent": {
+                "p10Percent": 0.0,
+                "p50Percent": 0.0,
+                "p95Percent": 0.0,
+                "p99Percent": 0.0,
+                "meanPercent": 0.0
+              },
+              "note": "Kernel/pipeline prewarm work outside the selected execution timing."
+            },
+            "commandOrchestration": {
+              "traceMetaField": "hostCommandOrchestrationTotalNs",
+              "leftStatsMs": {
+                "count": 0,
+                "minMs": 0.0,
+                "maxMs": 0.0,
+                "p10Ms": 0.0,
+                "p50Ms": 0.0,
+                "p95Ms": 0.0,
+                "p99Ms": 0.0,
+                "meanMs": 0.0,
+                "stdevMs": 0.0
+              },
+              "rightStatsMs": {
+                "count": 0,
+                "minMs": 0.0,
+                "maxMs": 0.0,
+                "p10Ms": 0.0,
+                "p50Ms": 0.0,
+                "p95Ms": 0.0,
+                "p99Ms": 0.0,
+                "meanMs": 0.0,
+                "stdevMs": 0.0
+              },
+              "deltaPercent": {
+                "p10Percent": 0.0,
+                "p50Percent": 0.0,
+                "p95Percent": 0.0,
+                "p99Percent": 0.0,
+                "meanPercent": 0.0
+              },
+              "note": "Command-loop bookkeeping outside traced execution phase timing."
+            },
+            "artifactFinalize": {
+              "traceMetaField": "hostArtifactFinalizeTotalNs",
+              "leftStatsMs": {
+                "count": 0,
+                "minMs": 0.0,
+                "maxMs": 0.0,
+                "p10Ms": 0.0,
+                "p50Ms": 0.0,
+                "p95Ms": 0.0,
+                "p99Ms": 0.0,
+                "meanMs": 0.0,
+                "stdevMs": 0.0
+              },
+              "rightStatsMs": {
+                "count": 0,
+                "minMs": 0.0,
+                "maxMs": 0.0,
+                "p10Ms": 0.0,
+                "p50Ms": 0.0,
+                "p95Ms": 0.0,
+                "p99Ms": 0.0,
+                "meanMs": 0.0,
+                "stdevMs": 0.0
+              },
+              "deltaPercent": {
+                "p10Percent": 0.0,
+                "p50Percent": 0.0,
+                "p95Percent": 0.0,
+                "p99Percent": 0.0,
+                "meanPercent": 0.0
+              },
+              "note": "Post-execution artifact writing/finalization outside the selected execution timing."
+            }
+          },
+          "note": "Coarse host-overhead buckets are recorded around existing once-per-sample phase boundaries so they explain workloadUnitWall minus selected timing without inserting hot-path profiling probes."
+        },
+        "headlineProcessWall": {
+          "metric": "elapsedMs",
+          "scope": "timed-command-process-wall",
+          "scopeClass": "workload-unit-wall",
+          "available": false,
+          "leftStatsMs": {
+            "count": 0,
+            "minMs": 0.0,
+            "maxMs": 0.0,
+            "p10Ms": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "p99Ms": 0.0,
+            "meanMs": 0.0,
+            "stdevMs": 0.0
+          },
+          "rightStatsMs": {
+            "count": 0,
+            "minMs": 0.0,
+            "maxMs": 0.0,
+            "p10Ms": 0.0,
+            "p50Ms": 0.0,
+            "p95Ms": 0.0,
+            "p99Ms": 0.0,
+            "meanMs": 0.0,
+            "stdevMs": 0.0
+          },
+          "deltaPercent": {
+            "p10Percent": 0.0,
+            "p50Percent": 0.0,
+            "p95Percent": 0.0,
+            "p99Percent": 0.0,
+            "meanPercent": 0.0
+          },
+          "note": "Uses timed command process wall normalized by commandRepeat and timingNormalizationDivisor. This is the full timed workload-unit view for one comparable workload unit, not a warm-session-only metric.",
+          "deprecatedAliasFor": "workloadUnitWall"
+        }
+      },
+      "comparability": {
+        "comparable": false,
+        "requiredTimingClass": "operation",
+        "obligationSchemaVersion": 2,
+        "obligations": [
+          {
+            "id": "workload_marked_comparable",
+            "blocking": true,
+            "applicable": true,
+            "passes": true,
+            "details": {
+              "workloadComparable": true
+            }
+          },
+          {
+            "id": "left_samples_present",
+            "blocking": true,
+            "applicable": true,
+            "passes": true,
+            "details": {
+              "leftSampleCount": 2
+            }
+          },
+          {
+            "id": "right_samples_present",
+            "blocking": true,
+            "applicable": true,
+            "passes": true,
+            "details": {
+              "rightSampleCount": 2
+            }
+          },
+          {
+            "id": "left_single_timing_class",
+            "blocking": true,
+            "applicable": true,
+            "passes": false,
+            "details": {
+              "leftTimingClasses": []
+            }
+          },
+          {
+            "id": "right_single_timing_class",
+            "blocking": true,
+            "applicable": true,
+            "passes": false,
+            "details": {
+              "rightTimingClasses": []
+            }
+          },
+          {
+            "id": "left_required_timing_class",
+            "blocking": true,
+            "applicable": true,
+            "passes": false,
+            "details": {
+              "requiredTimingClass": "operation",
+              "leftTimingClass": "mixed"
+            }
+          },
+          {
+            "id": "right_required_timing_class",
+            "blocking": true,
+            "applicable": true,
+            "passes": false,
+            "details": {
+              "requiredTimingClass": "operation",
+              "rightTimingClass": "mixed"
+            }
+          },
+          {
+            "id": "left_right_timing_class_match",
+            "blocking": true,
+            "applicable": false,
+            "passes": true,
+            "details": {
+              "leftTimingClass": "mixed",
+              "rightTimingClass": "mixed"
+            }
+          },
+          {
+            "id": "left_right_trace_meta_source_match",
+            "blocking": true,
+            "applicable": true,
+            "passes": false,
+            "details": {
+              "leftTraceMetaSources": [],
+              "rightTraceMetaSources": [],
+              "leftSelectedSources": [],
+              "rightSelectedSources": []
+            }
+          },
+          {
+            "id": "left_right_timing_selection_policy_match",
+            "blocking": true,
+            "applicable": true,
+            "passes": true,
+            "details": {
+              "leftTimingSelectionPolicies": [
+                "<none>"
+              ],
+              "rightTimingSelectionPolicies": [
+                "<none>"
+              ]
+            }
+          },
+          {
+            "id": "left_right_queue_sync_mode_match",
+            "blocking": true,
+            "applicable": true,
+            "passes": true,
+            "details": {
+              "leftQueueSyncModes": [],
+              "rightQueueSyncModes": []
+            }
+          },
+          {
+            "id": "left_right_timing_phase_match",
+            "blocking": true,
+            "applicable": false,
+            "passes": true,
+            "details": {
+              "phaseAsymmetryThreshold": 0.1,
+              "leftMedianPhaseFractions": {
+                "setup": null,
+                "encode": null,
+                "submitWait": null
+              },
+              "rightMedianPhaseFractions": {
+                "setup": null,
+                "encode": null,
+                "submitWait": null
+              },
+              "phaseSampleCounts": {
+                "setup": {
+                  "left": 0,
+                  "right": 0
+                },
+                "encode": {
+                  "left": 0,
+                  "right": 0
+                },
+                "submitWait": {
+                  "left": 0,
+                  "right": 0
+                }
+              },
+              "phaseMismatchCount": 0,
+              "phaseMismatches": []
+            }
+          },
+          {
+            "id": "left_right_execution_shape_match",
+            "blocking": true,
+            "applicable": false,
+            "passes": true,
+            "details": {
+              "workloadDomain": "upload",
+              "dispatchShapeDomain": true,
+              "leftExecutionShapes": [],
+              "rightExecutionShapes": [],
+              "leftNormalizedExecutionShapes": [],
+              "rightNormalizedExecutionShapes": [],
+              "leftCommandRepeat": 16,
+              "rightCommandRepeat": 16,
+              "comparisonReason": ""
+            }
+          },
+          {
+            "id": "left_right_hardware_path_match",
+            "blocking": true,
+            "applicable": false,
+            "passes": true,
+            "details": {
+              "comparabilityMode": "warn",
+              "isDawnVsDoe": false,
+              "workloadPathAsymmetry": true,
+              "workloadPathAsymmetryNote": "Apple Metal UMA may use shared-memory writes without staging-buffer GPU copy, while Dawn delegate performs staging+copy. This hardware-path advantage is non-transferable."
+            }
+          },
+          {
+            "id": "left_native_operation_timing_for_webgpu_ffi",
+            "blocking": true,
+            "applicable": true,
+            "passes": true,
+            "details": {
+              "invalidCanonicalSources": []
+            }
+          },
+          {
+            "id": "left_upload_ignore_first_scope_consistent",
+            "blocking": true,
+            "applicable": true,
+            "passes": true,
+            "details": {
+              "violationCount": 0
+            }
+          },
+          {
+            "id": "right_upload_ignore_first_scope_consistent",
+            "blocking": true,
+            "applicable": true,
+            "passes": true,
+            "details": {
+              "violationCount": 0
+            }
+          },
+          {
+            "id": "left_right_upload_buffer_usage_match",
+            "blocking": true,
+            "applicable": true,
+            "passes": true,
+            "details": {
+              "leftUploadUsages": [],
+              "rightUploadUsages": []
+            }
+          },
+          {
+            "id": "left_right_upload_submit_cadence_match",
+            "blocking": true,
+            "applicable": true,
+            "passes": true,
+            "details": {
+              "leftUploadSubmitCadences": [],
+              "rightUploadSubmitCadences": []
+            }
+          },
+          {
+            "id": "left_execution_evidence_present",
+            "blocking": true,
+            "applicable": true,
+            "passes": false,
+            "details": {
+              "allowLeftNoExecution": false,
+              "leftHasExecutionEvidence": false
+            }
+          },
+          {
+            "id": "left_successful_execution_present",
+            "blocking": true,
+            "applicable": true,
+            "passes": false,
+            "details": {
+              "leftSuccessfulExecution": false
+            }
+          },
+          {
+            "id": "left_success_or_unsupported_or_skipped",
+            "blocking": true,
+            "applicable": false,
+            "passes": true,
+            "details": {
+              "leftSuccessfulExecution": false,
+              "leftHasUnsupportedOrSkippedEvidence": false
+            }
+          },
+          {
+            "id": "left_execution_errors_absent",
+            "blocking": true,
+            "applicable": true,
+            "passes": true,
+            "details": {
+              "leftExecutionErrorSampleCount": 0,
+              "leftSampleCount": 2
+            }
+          },
+          {
+            "id": "right_execution_errors_absent",
+            "blocking": true,
+            "applicable": true,
+            "passes": true,
+            "details": {
+              "rightExecutionErrorSampleCount": 0,
+              "rightSampleCount": 2
+            }
+          },
+          {
+            "id": "left_right_timing_plausibility",
+            "blocking": true,
+            "applicable": false,
+            "passes": true,
+            "details": {
+              "minWallRatio": 0.01,
+              "minWallMs": 5.0,
+              "leftMedianTracedMs": null,
+              "leftMedianWallMs": null,
+              "leftMedianProcessWallMs": null,
+              "leftMedianRatio": null,
+              "rightMedianTracedMs": null,
+              "rightMedianWallMs": null,
+              "rightMedianProcessWallMs": null,
+              "rightMedianRatio": null
+            }
+          },
+          {
+            "id": "left_resource_probe_available",
+            "blocking": true,
+            "applicable": false,
+            "passes": true,
+            "details": {
+              "leftResourceProbeAvailableCount": 0
+            }
+          },
+          {
+            "id": "right_resource_probe_available",
+            "blocking": true,
+            "applicable": false,
+            "passes": true,
+            "details": {
+              "rightResourceProbeAvailableCount": 0
+            }
+          }
+        ],
+        "blockingFailedObligations": [
+          "left_single_timing_class",
+          "right_single_timing_class",
+          "left_required_timing_class",
+          "right_required_timing_class",
+          "left_right_trace_meta_source_match",
+          "left_execution_evidence_present",
+          "left_successful_execution_present"
+        ],
+        "advisoryFailedObligations": [],
+        "leftTimingSources": [
+          ""
+        ],
+        "rightTimingSources": [
+          ""
+        ],
+        "leftTraceMetaSources": [],
+        "rightTraceMetaSources": [],
+        "leftTimingSelectionPolicies": [
+          "<none>"
+        ],
+        "rightTimingSelectionPolicies": [
+          "<none>"
+        ],
+        "leftQueueSyncModes": [],
+        "rightQueueSyncModes": [],
+        "leftExecutionShapes": [],
+        "rightExecutionShapes": [],
+        "leftNormalizedExecutionShapes": [],
+        "rightNormalizedExecutionShapes": [],
+        "leftCommandRepeat": 16,
+        "rightCommandRepeat": 16,
+        "workloadPathAsymmetry": true,
+        "workloadPathAsymmetryNote": "Apple Metal UMA may use shared-memory writes without staging-buffer GPU copy, while Dawn delegate performs staging+copy. This hardware-path advantage is non-transferable.",
+        "leftTimingClass": "mixed",
+        "rightTimingClass": "mixed",
+        "resourceProbe": "none",
+        "leftResourceSampleMedian": 0,
+        "rightResourceSampleMedian": 0,
+        "leftResourceProbeAvailableCount": 0,
+        "rightResourceProbeAvailableCount": 0,
+        "resourceSampleTargetCount": 0,
+        "leftResourceSamplingTruncatedCount": 0,
+        "rightResourceSamplingTruncatedCount": 0,
+        "leftExecutionErrorSampleCount": 0,
+        "rightExecutionErrorSampleCount": 0,
+        "resourceReasons": [],
+        "reasons": [
+          "left side uses mixed timing classes: []",
+          "right side uses mixed timing classes: []",
+          "left timing class is mixed, required operation",
+          "right timing class is mixed, required operation",
+          "left/right trace meta source mismatch or incompatible runtime families: [] vs []",
+          "left side has no execution evidence (executionSuccessCount/executionRowCount)",
+          "left side has no successful execution samples (executionSuccessCount=0)"
+        ]
+      },
+      "claimability": {
+        "mode": "off",
+        "evaluated": false,
+        "claimable": null,
+        "minTimedSamples": 0,
+        "requiredPositivePercentiles": [],
+        "reasons": []
+      },
+      "traceMetaHashes": {
+        "left": [],
+        "right": []
+      },
+      "claimRowHash": {
+        "algorithm": "sha256",
+        "previousHash": "85e4143ea1344eeabf3b10b2927012589539a734de6428feeeca6f861c891bd7",
+        "hash": "1dba4327b1e5147f0bdfa53eddb25bd730e45cf0d97b5c33b42a108157bdc214",
+        "context": {
+          "workloadId": "upload_write_buffer_64kb",
+          "workloadContractSha256": "43112ef355508daea970e660c861101270b1c716fa7f1328300d2e698bcb880a",
+          "configContractSha256": "5cfa610e5a651da98efa4e2a96250065032e93235766247562b9f54246ce9bd0",
+          "benchmarkPolicySha256": "32e0942cc8f4114210ee2010f524bcbd4c9548a123fc75d29bc699c698262355",
+          "leftTraceMetaSha256": [],
+          "rightTraceMetaSha256": [],
+          "benchmarkClass": "comparable",
+          "directionalReason": "",
+          "workloadPathAsymmetry": true,
+          "workloadPathAsymmetryNote": "Apple Metal UMA may use shared-memory writes without staging-buffer GPU copy, while Dawn delegate performs staging+copy. This hardware-path advantage is non-transferable.",
+          "deltaPercent": {
+            "p10Percent": 0.0,
+            "p50Percent": 0.0,
+            "p95Percent": 0.0,
+            "p99Percent": 0.0,
+            "meanPercent": 0.0
+          },
+          "comparability": {
+            "comparable": false,
+            "blockingFailedObligations": [
+              "left_single_timing_class",
+              "right_single_timing_class",
+              "left_required_timing_class",
+              "right_required_timing_class",
+              "left_right_trace_meta_source_match",
+              "left_execution_evidence_present",
+              "left_successful_execution_present"
+            ]
+          },
+          "claimability": {
+            "evaluated": false,
+            "claimable": null,
+            "reasons": []
+          }
+        }
+      },
+      "operatorDiff": {
+        "available": false,
+        "status": "missing_operator_manifests",
+        "eligibleSamplePairCount": 0,
+        "comparedSamplePairCount": 0,
+        "firstDivergence": null
+      }
+    }
+  ],
+  "configPath": "/Users/xyz/deco/doe/bench/native-compare/compare_dawn_vs_doe.config.apple.metal.smoke.json",
+  "configContract": {
+    "path": "/Users/xyz/deco/doe/bench/native-compare/compare_dawn_vs_doe.config.apple.metal.smoke.json",
+    "sha256": "5cfa610e5a651da98efa4e2a96250065032e93235766247562b9f54246ce9bd0"
+  },
+  "runArtifactPaths": [
+    "bench/out/apple-metal/smoke/20260406T004234Z/runtime-comparisons.apple.metal.smoke/run-artifacts/doe/doe-compute_workgroup_atomic_1024-20260406T004234Z.run.json",
+    "bench/out/apple-metal/smoke/20260406T004234Z/runtime-comparisons.apple.metal.smoke/run-artifacts/doe/doe-render_draw_throughput_baseline-20260406T004234Z.run.json",
+    "bench/out/apple-metal/smoke/20260406T004234Z/runtime-comparisons.apple.metal.smoke/run-artifacts/doe/doe-upload_write_buffer_64kb-20260406T004234Z.run.json",
+    "bench/out/apple-metal/smoke/20260406T004234Z/runtime-comparisons.apple.metal.smoke/run-artifacts/dawn_delegate/dawn_delegate-compute_workgroup_atomic_1024-20260406T004234Z.run.json",
+    "bench/out/apple-metal/smoke/20260406T004234Z/runtime-comparisons.apple.metal.smoke/run-artifacts/dawn_delegate/dawn_delegate-render_draw_throughput_baseline-20260406T004234Z.run.json",
+    "bench/out/apple-metal/smoke/20260406T004234Z/runtime-comparisons.apple.metal.smoke/run-artifacts/dawn_delegate/dawn_delegate-upload_write_buffer_64kb-20260406T004234Z.run.json"
+  ],
+  "comparabilitySummary": {
+    "workloadCount": 3,
+    "benchmarkIntent": "mixed",
+    "benchmarkClassCounts": {
+      "comparable": 2,
+      "directional": 1
+    },
+    "directionalReasonCounts": {
+      "other": 1
+    },
+    "nonComparableCount": 3,
+    "nonComparableWorkloads": [
+      {
+        "workloadId": "compute_workgroup_atomic_1024",
+        "failedBlockingObligations": [
+          "left_single_timing_class",
+          "right_single_timing_class",
+          "left_required_timing_class",
+          "right_required_timing_class",
+          "left_right_trace_meta_source_match",
+          "left_execution_evidence_present",
+          "left_successful_execution_present"
+        ],
+        "reasons": [
+          "left side uses mixed timing classes: []",
+          "right side uses mixed timing classes: []",
+          "left timing class is mixed, required operation",
+          "right timing class is mixed, required operation",
+          "left/right trace meta source mismatch or incompatible runtime families: [] vs []",
+          "left side has no execution evidence (executionSuccessCount/executionRowCount)",
+          "left side has no successful execution samples (executionSuccessCount=0)"
+        ]
+      },
+      {
+        "workloadId": "render_draw_throughput_baseline",
+        "failedBlockingObligations": [
+          "workload_marked_comparable",
+          "left_single_timing_class",
+          "right_single_timing_class",
+          "left_required_timing_class",
+          "right_required_timing_class",
+          "left_right_trace_meta_source_match",
+          "left_execution_evidence_present",
+          "left_successful_execution_present"
+        ],
+        "reasons": [
+          "workload is marked non-comparable by workload contract",
+          "left side uses mixed timing classes: []",
+          "right side uses mixed timing classes: []",
+          "left timing class is mixed, required operation",
+          "right timing class is mixed, required operation",
+          "left/right trace meta source mismatch or incompatible runtime families: [] vs []",
+          "left side has no execution evidence (executionSuccessCount/executionRowCount)",
+          "left side has no successful execution samples (executionSuccessCount=0)"
+        ]
+      },
+      {
+        "workloadId": "upload_write_buffer_64kb",
+        "failedBlockingObligations": [
+          "left_single_timing_class",
+          "right_single_timing_class",
+          "left_required_timing_class",
+          "right_required_timing_class",
+          "left_right_trace_meta_source_match",
+          "left_execution_evidence_present",
+          "left_successful_execution_present"
+        ],
+        "reasons": [
+          "left side uses mixed timing classes: []",
+          "right side uses mixed timing classes: []",
+          "left timing class is mixed, required operation",
+          "right timing class is mixed, required operation",
+          "left/right trace meta source mismatch or incompatible runtime families: [] vs []",
+          "left side has no execution evidence (executionSuccessCount/executionRowCount)",
+          "left side has no successful execution samples (executionSuccessCount=0)"
+        ]
+      }
+    ],
+    "failedBlockingObligationCounts": {
+      "left_execution_evidence_present": 3,
+      "left_required_timing_class": 3,
+      "left_right_trace_meta_source_match": 3,
+      "left_single_timing_class": 3,
+      "left_successful_execution_present": 3,
+      "right_required_timing_class": 3,
+      "right_single_timing_class": 3,
+      "workload_marked_comparable": 1
+    }
+  },
+  "comparisonStatus": "unreliable",
+  "claimabilitySummary": {
+    "workloadCount": 3,
+    "nonClaimableCount": 0,
+    "nonClaimableWorkloads": []
+  },
+  "operatorDiffSummary": {
+    "workloadCount": 3,
+    "availableCount": 0,
+    "matchedCount": 0,
+    "divergedCount": 0,
+    "missingCount": 3,
+    "workloads": [
+      {
+        "workloadId": "compute_workgroup_atomic_1024",
+        "status": "missing_operator_manifests",
+        "available": false,
+        "eligibleSamplePairCount": 0,
+        "comparedSamplePairCount": 0,
+        "firstDivergence": null
+      },
+      {
+        "workloadId": "render_draw_throughput_baseline",
+        "status": "missing_operator_manifests",
+        "available": false,
+        "eligibleSamplePairCount": 0,
+        "comparedSamplePairCount": 0,
+        "firstDivergence": null
+      },
+      {
+        "workloadId": "upload_write_buffer_64kb",
+        "status": "missing_operator_manifests",
+        "available": false,
+        "eligibleSamplePairCount": 0,
+        "comparedSamplePairCount": 0,
+        "firstDivergence": null
+      }
+    ]
+  },
+  "claimRowHashChain": {
+    "algorithm": "sha256",
+    "count": 3,
+    "startPreviousHash": "0000000000000000000000000000000000000000000000000000000000000000",
+    "finalHash": "1dba4327b1e5147f0bdfa53eddb25bd730e45cf0d97b5c33b42a108157bdc214"
+  },
+  "claimStatus": "not-evaluated"
+}

@@ -1,5 +1,5 @@
-const common_timing = @import("../common/timing.zig");
 const std = @import("std");
+const common_timing = @import("../common/timing.zig");
 const webgpu = @import("../runtime_types.zig");
 const bridge = @import("metal_bridge_decls.zig");
 const metal_bridge_buffer_contents = bridge.metal_bridge_buffer_contents;

@@ -1,5 +1,5 @@
-const builtin = @import("builtin");
 const std = @import("std");
+const builtin = @import("builtin");
 const common_timing = @import("../common/timing.zig");
 const model_resource_types = @import("../../model_resource_types.zig");
 const model_compute_types = @import("../../model_compute_types.zig");

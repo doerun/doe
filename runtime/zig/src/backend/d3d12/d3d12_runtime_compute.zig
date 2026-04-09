@@ -1,5 +1,5 @@
-const builtin = @import("builtin");
 const std = @import("std");
+const builtin = @import("builtin");
 const common_timing = @import("../common/timing.zig");
 const path_utils = @import("../common/path_utils.zig");
 const doe_wgsl = @import("../../doe_wgsl/mod.zig");

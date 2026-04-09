@@ -5,8 +5,10 @@
 // Also maps WebGPU vertex format enum values to DXGI_FORMAT for vertex input.
 // Mirrors the structure of vk_formats.zig for the D3D12 backend.
 
+const std = @import("std");
 const model_gpu_types = @import("../../model_texture_value_types.zig");
 const compressed_formats = @import("../../core/abi/wgpu_type_texture_formats.zig");
+const testing = std.testing;
 
 // --- DXGI_FORMAT constants (Microsoft DXGI 1.0+ spec values) ---
 
@@ -475,9 +477,6 @@ pub fn wgpu_vertex_format_to_dxgi(format: u32) !u32 {
 }
 
 // --- Tests ---
-
-const std = @import("std");
-const testing = std.testing;
 
 test "wgpu_format_to_dxgi maps basic color formats" {
     try testing.expectEqual(DXGI_FORMAT_R8_UNORM, try wgpu_format_to_dxgi(model_gpu_types.WGPUTextureFormat_R8Unorm));

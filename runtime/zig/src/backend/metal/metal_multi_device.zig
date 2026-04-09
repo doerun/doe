@@ -4,8 +4,8 @@
 // The ObjC-side implementation is in metal_bridge.m (the new multi-device section).
 // This file provides typed Zig wrappers and the eGPU-removal notification hook.
 
-const builtin = @import("builtin");
 const std = @import("std");
+const builtin = @import("builtin");
 
 // ============================================================
 // Constants

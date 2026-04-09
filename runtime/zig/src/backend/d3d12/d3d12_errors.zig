@@ -10,6 +10,7 @@
 //   (a) bridge functions can be updated to propagate raw HRESULTs, and
 //   (b) Zig-side code has a single, tested mapping ready for that day.
 
+const std = @import("std");
 const common_errors = @import("../common/errors.zig");
 
 pub const D3D12Error = common_errors.BackendNativeError;
@@ -88,8 +89,6 @@ pub fn hresultName(hr: HRESULT) []const u8 {
         else => "HRESULT_UNKNOWN",
     };
 }
-
-const std = @import("std");
 
 // --- Tests ---
 
