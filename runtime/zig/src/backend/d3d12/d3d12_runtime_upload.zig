@@ -66,18 +66,24 @@ pub fn flushQueue(self: anytype) !u64 {
 
     if (self.streaming_copy_state.has_pending()) {
         _ = try self.streaming_copy_state.flush(self.queue, self.fence, &self.fence_value);
+        self.noteCompletedFenceWait();
     }
 
     for (self.pending_uploads.items) |item| {
         d3d12_bridge_queue_execute_command_list(self.queue, item.cmd_list);
     }
 
-    if (self.pending_uploads.items.len > 0 or self.has_deferred_submissions) {
+    const has_new_submissions = self.pending_uploads.items.len > 0 or self.has_deferred_submissions;
+    const has_outstanding_submissions = self.pending_submit_batches.items.len > 0;
+    if (has_new_submissions) {
         self.fence_value +|= 1;
         d3d12_bridge_queue_signal(self.queue, self.fence, self.fence_value);
-        d3d12_bridge_fence_wait(self.fence, self.fence_value);
-        self.has_deferred_submissions = false;
     }
+    if (has_new_submissions or has_outstanding_submissions) {
+        d3d12_bridge_fence_wait(self.fence, self.fence_value);
+        self.noteCompletedFenceWait();
+    }
+    self.has_deferred_submissions = false;
 
     releasePendingUploads(self);
     const end_ns = common_timing.now_ns();
@@ -86,7 +92,7 @@ pub fn flushQueue(self: anytype) !u64 {
 
 pub fn barrier(self: anytype) !u64 {
     const start_ns = common_timing.now_ns();
-    if (self.has_deferred_submissions or self.pending_uploads.items.len > 0) {
+    if (self.has_deferred_submissions or self.pending_uploads.items.len > 0 or self.pending_submit_batches.items.len > 0) {
         _ = try flushQueue(self);
     }
     const end_ns = common_timing.now_ns();

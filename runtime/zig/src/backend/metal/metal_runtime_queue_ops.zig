@@ -17,34 +17,77 @@ pub fn flush_queue(self: anytype) !u64 {
     return result.submit_wait_ns;
 }
 
+fn retire_outstanding_handle(self: anytype) void {
+    if (self.outstanding_cmd_buf) |cb| {
+        bridge.metal_bridge_release(cb);
+        self.outstanding_cmd_buf = null;
+    }
+}
+
+fn finalize_streaming_encoders(self: anytype) void {
+    if (self.streaming_render_encoder) |enc| {
+        bridge.metal_bridge_render_encoder_end(enc);
+        bridge.metal_bridge_release(enc);
+        self.streaming_render_encoder = null;
+    }
+    if (self.streaming_blit_encoder) |enc| {
+        bridge.metal_bridge_end_blit_encoding(enc);
+        self.streaming_blit_encoder = null;
+    }
+}
+
+fn encode_copy_queue_dependency(self: anytype, cmd_buf: ?*anyopaque) !void {
+    if (self.copy_fence_value == 0) return;
+    if (self.shared_event) |ev| {
+        bridge.metal_bridge_command_buffer_encode_wait_event(cmd_buf, ev, self.copy_fence_value);
+        return;
+    }
+    return error.UnsupportedFeature;
+}
+
+pub fn transition_streaming_submission_deferred(self: anytype) !void {
+    if (self.streaming_cmd_buf == null) return;
+    if (self.streaming_gpu_timestamps_active) {
+        _ = try flush_queue(self);
+        return;
+    }
+    if (self.has_pending_copies) self.flush_copy_queue();
+
+    finalize_streaming_encoders(self);
+    const cmd_buf = self.streaming_cmd_buf.?;
+    try encode_copy_queue_dependency(self, cmd_buf);
+
+    self.fence_value +%= 1;
+    if (self.shared_event) |ev| {
+        bridge.metal_bridge_command_buffer_encode_signal_event(cmd_buf, ev, self.fence_value);
+    }
+    bridge.metal_bridge_command_buffer_commit(cmd_buf);
+
+    // A later wait on the successor command buffer covers this committed work
+    // too because both buffers execute in-order on the same Metal queue.
+    retire_outstanding_handle(self);
+    self.outstanding_cmd_buf = cmd_buf;
+    self.has_deferred_submissions = true;
+    self.streaming_cmd_buf = null;
+    self.streaming_has_render = false;
+    self.streaming_has_copy = false;
+    self.streaming_max_upload_bytes = 0;
+    self.streaming_gpu_timestamps_active = false;
+}
+
 pub fn flush_queue_timed(self: anytype) !FlushResult {
     if (!self.has_device) return .{};
     const has_streaming = self.streaming_cmd_buf != null;
     if (!has_streaming and !self.has_deferred_submissions) return .{};
     const start_ns = common_timing.now_ns();
-    wait_outstanding(self);
     var gpu_timestamps_attempted = false;
     var gpu_elapsed_ns: u64 = 0;
     if (has_streaming) {
         if (self.has_pending_copies) self.flush_copy_queue();
-
-        if (self.streaming_render_encoder) |enc| {
-            bridge.metal_bridge_render_encoder_end(enc);
-            bridge.metal_bridge_release(enc);
-            self.streaming_render_encoder = null;
-        }
-        if (self.streaming_blit_encoder) |enc| {
-            bridge.metal_bridge_end_blit_encoding(enc);
-            self.streaming_blit_encoder = null;
-        }
+        finalize_streaming_encoders(self);
 
         const cmd_buf = self.streaming_cmd_buf.?;
-
-        if (self.copy_fence_value > 0) {
-            if (self.shared_event) |ev| {
-                bridge.metal_bridge_command_buffer_encode_wait_event(cmd_buf, ev, self.copy_fence_value);
-            }
-        }
+        try encode_copy_queue_dependency(self, cmd_buf);
 
         gpu_timestamps_attempted = self.streaming_gpu_timestamps_active;
         if (self.streaming_gpu_timestamps_active) {
@@ -70,6 +113,10 @@ pub fn flush_queue_timed(self: anytype) !FlushResult {
             bridge.metal_bridge_command_buffer_wait_completed(cmd_buf);
         }
 
+        // The current streaming submission's wait already implies completion of
+        // any prior main-queue work, so keep deferred mode CPU-light by
+        // dropping the older handle instead of waiting twice.
+        retire_outstanding_handle(self);
         if (gpu_timestamps_attempted) {
             gpu_elapsed_ns = self.timestamp_state.resolve_elapsed_ns();
         }

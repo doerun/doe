@@ -89,7 +89,7 @@ fn write_dispatch_indirect_args(buffer: ?*anyopaque, x: u32, y: u32, z: u32) !vo
 fn prepare_dispatch_submission(runtime: anytype, queue_sync_mode: webgpu.QueueSyncMode) !void {
     if (queue_sync_mode == .deferred) {
         if (runtime.streaming_cmd_buf != null) {
-            _ = try runtime.flush_queue();
+            try runtime.transition_streaming_submission_deferred();
         }
         if (runtime.outstanding_cmd_buf) |previous| {
             metal_bridge_release(previous);

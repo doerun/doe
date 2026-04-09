@@ -131,6 +131,7 @@ pub fn runDispatch(self: anytype, x: u32, y: u32, z: u32, repeat: u32) !Dispatch
     const submit_start = common_timing.now_ns();
     d3d12_bridge_fence_wait(self.fence, self.fence_value);
     const submit_wait_ns = common_timing.ns_delta(common_timing.now_ns(), submit_start);
+    self.noteCompletedFenceWait();
 
     return .{ .encode_ns = encode_ns, .submit_wait_ns = submit_wait_ns, .dispatch_count = run_count };
 }

@@ -118,21 +118,27 @@ fn read_indirect_dispatch_counts(buffer_raw: ?*anyopaque, offset: u64) ?struct {
 
 fn submit_d3d12_commands(q: *DoeQueue, count: usize, cmd_bufs: [*]const ?*anyopaque) void {
     const rt = native_rt_helpers.device_d3d12_runtime(q.dev) orelse return;
-    _ = rt.flush_queue() catch return;
+    rt.flush_before_dropin_submit_if_needed() catch |err| {
+        deliverInternalError(q.dev, "doe_queue_submit: d3d12 pre-submit flush: {s}", .{@errorName(err)});
+        return;
+    };
 
     const cmd_allocator = d3d12_bridge_device_create_command_allocator(rt.device) orelse return;
-    defer d3d12_bridge_release(cmd_allocator);
+    var owns_cmd_allocator = true;
+    defer if (owns_cmd_allocator) d3d12_bridge_release(cmd_allocator);
 
     const cmd_list = d3d12_bridge_device_create_command_list(rt.device, cmd_allocator) orelse return;
-    defer d3d12_bridge_release(cmd_list);
+    var owns_cmd_list = true;
+    defer if (owns_cmd_list) d3d12_bridge_release(cmd_list);
 
     var retained_handles: std.ArrayListUnmanaged(?*anyopaque) = .{};
-    defer {
+    var owns_retained_handles = true;
+    defer if (owns_retained_handles) {
         for (retained_handles.items) |maybe_handle| {
             if (maybe_handle) |handle| d3d12_bridge_release(handle);
         }
         retained_handles.deinit(alloc);
-    }
+    };
 
     var has_gpu_work = false;
     for (cmd_bufs[0..count]) |raw| {
@@ -163,7 +169,14 @@ fn submit_d3d12_commands(q: *DoeQueue, count: usize, cmd_bufs: [*]const ?*anyopa
     d3d12_bridge_queue_execute_command_list(rt.queue, cmd_list);
     rt.fence_value +|= 1;
     d3d12_bridge_queue_signal(rt.queue, rt.fence, rt.fence_value);
-    d3d12_bridge_fence_wait(rt.fence, rt.fence_value);
+    rt.trackDropinSubmission(cmd_allocator, cmd_list, &retained_handles) catch {
+        d3d12_bridge_fence_wait(rt.fence, rt.fence_value);
+        rt.noteCompletedFenceWait();
+        return;
+    };
+    owns_cmd_allocator = false;
+    owns_cmd_list = false;
+    owns_retained_handles = false;
 }
 
 pub fn try_schedule_deferred_copy(
@@ -512,6 +525,14 @@ pub export fn doeNativeQueueFlush(q_raw: ?*anyopaque) callconv(.c) void {
         }
         return;
     }
+    if (q.dev.backend == .d3d12) {
+        if (native_rt_helpers.device_d3d12_runtime(q.dev)) |rt| {
+            _ = rt.flush_queue() catch |err| {
+                deliverInternalError(q.dev, "doe_queue_submit: d3d12 queue flush: {s}", .{@errorName(err)});
+            };
+        }
+        return;
+    }
     flush_pending_work(q);
 }
 
@@ -530,6 +551,19 @@ pub export fn doeNativeQueueFlushBreakdown(
     if (q.dev.backend == .vulkan) {
         doeNativeQueueFlush(q_raw);
         wait_completed_ns_out.* = 0;
+        deferred_copy_ns_out.* = 0;
+        deferred_resolve_ns_out.* = 0;
+        return;
+    }
+    if (q.dev.backend == .d3d12) {
+        if (native_rt_helpers.device_d3d12_runtime(q.dev)) |rt| {
+            wait_completed_ns_out.* = rt.flush_queue() catch |err| blk: {
+                deliverInternalError(q.dev, "doe_queue_submit: d3d12 flush breakdown: {s}", .{@errorName(err)});
+                break :blk 0;
+            };
+        } else {
+            wait_completed_ns_out.* = 0;
+        }
         deferred_copy_ns_out.* = 0;
         deferred_resolve_ns_out.* = 0;
         return;
@@ -679,6 +713,17 @@ pub export fn doeNativeQueueRelease(raw: ?*anyopaque) callconv(.c) void {
             native_exports.doeNativeDeviceRelease(toOpaque(dev));
             return;
         }
+        if (q.dev.backend == .d3d12) {
+            if (native_rt_helpers.device_d3d12_runtime(q.dev)) |rt| {
+                _ = rt.flush_queue() catch |err| {
+                    deliverInternalError(q.dev, "doe_queue_submit: d3d12 flush on queue release: {s}", .{@errorName(err)});
+                };
+            }
+            const dev = q.dev;
+            alloc.destroy(q);
+            native_exports.doeNativeDeviceRelease(toOpaque(dev));
+            return;
+        }
         // Queue teardown is outside the measured package hot path. Prefer the
         // direct command-buffer completion wait here so native drop-in
         // consumers do not depend on the shared-event fast path during final
@@ -704,6 +749,14 @@ fn flush_pending_work_dropin_sync(q: *DoeQueue) void {
                     deliverInternalError(q.dev, "doe_queue_submit: dropin sync flush: {s}", .{@errorName(err)});
                 };
             }
+        }
+        return;
+    }
+    if (q.dev.backend == .d3d12) {
+        if (native_rt_helpers.device_d3d12_runtime(q.dev)) |rt| {
+            _ = rt.flush_queue() catch |err| {
+                deliverInternalError(q.dev, "doe_queue_submit: d3d12 dropin sync flush: {s}", .{@errorName(err)});
+            };
         }
         return;
     }

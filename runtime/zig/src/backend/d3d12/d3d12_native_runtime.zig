@@ -45,6 +45,28 @@ pub const PendingUpload = upload.PendingUpload;
 pub const PoolEntry = upload.PoolEntry;
 pub const DispatchMetrics = compute.DispatchMetrics;
 
+const PendingSubmitBatch = struct {
+    fence_value: u64,
+    cmd_allocator: ?*anyopaque,
+    cmd_list: ?*anyopaque,
+    retained_handles: std.ArrayListUnmanaged(?*anyopaque) = .{},
+
+    fn deinit(self: *PendingSubmitBatch, allocator: std.mem.Allocator) void {
+        for (self.retained_handles.items) |maybe_handle| {
+            if (maybe_handle) |handle| d3d12_bridge_release(handle);
+        }
+        self.retained_handles.deinit(allocator);
+        if (self.cmd_list) |cmd_list| d3d12_bridge_release(cmd_list);
+        if (self.cmd_allocator) |cmd_allocator| d3d12_bridge_release(cmd_allocator);
+        self.* = .{
+            .fence_value = 0,
+            .cmd_allocator = null,
+            .cmd_list = null,
+            .retained_handles = .{},
+        };
+    }
+};
+
 pub const NativeD3D12Runtime = struct {
     allocator: std.mem.Allocator,
     kernel_root: ?[]const u8 = null,
@@ -52,10 +74,12 @@ pub const NativeD3D12Runtime = struct {
     queue: ?*anyopaque = null,
     fence: ?*anyopaque = null,
     fence_value: u64 = 0,
+    completed_fence_value: u64 = 0,
 
     has_device: bool = false,
     pending_uploads: std.ArrayListUnmanaged(PendingUpload) = .{},
     has_deferred_submissions: bool = false,
+    pending_submit_batches: std.ArrayListUnmanaged(PendingSubmitBatch) = .{},
 
     upload_pool: upload.D3D12Pool = .{},
     default_pool: upload.D3D12Pool = .{},
@@ -95,6 +119,9 @@ pub const NativeD3D12Runtime = struct {
 
     pub fn deinit(self: *NativeD3D12Runtime) void {
         _ = self.flush_queue() catch {};
+        self.completed_fence_value = self.fence_value;
+        self.releaseCompletedSubmitBatches();
+        self.pending_submit_batches.deinit(self.allocator);
         upload.releasePendingUploads(self);
         self.pending_uploads.deinit(self.allocator);
         upload.d3d12ReleasePool(&self.upload_pool, self.allocator);
@@ -164,6 +191,35 @@ pub const NativeD3D12Runtime = struct {
         return compute.runDispatch(self, x, y, z, repeat);
     }
 
+    pub fn flush_before_dropin_submit_if_needed(self: *NativeD3D12Runtime) !void {
+        if (self.pending_uploads.items.len == 0 and !self.has_deferred_submissions and !self.streaming_copy_state.has_pending()) {
+            return;
+        }
+        _ = try self.flush_queue();
+    }
+
+    pub fn trackDropinSubmission(
+        self: *NativeD3D12Runtime,
+        cmd_allocator: ?*anyopaque,
+        cmd_list: ?*anyopaque,
+        retained_handles: *std.ArrayListUnmanaged(?*anyopaque),
+    ) !void {
+        var batch = PendingSubmitBatch{
+            .fence_value = self.fence_value,
+            .cmd_allocator = cmd_allocator,
+            .cmd_list = cmd_list,
+            .retained_handles = retained_handles.*,
+        };
+        errdefer batch.deinit(self.allocator);
+        try self.pending_submit_batches.append(self.allocator, batch);
+        retained_handles.* = .{};
+    }
+
+    pub fn noteCompletedFenceWait(self: *NativeD3D12Runtime) void {
+        self.completed_fence_value = self.fence_value;
+        self.releaseCompletedSubmitBatches();
+    }
+
     // --- Forwarding to sub-modules ---
 
     pub fn texture_write(self: *NativeD3D12Runtime, cmd: model_texture_types.TextureWriteCommand) !u64 {
@@ -187,11 +243,15 @@ pub const NativeD3D12Runtime = struct {
     }
 
     pub fn execute_compute_dispatch(self: *NativeD3D12Runtime, cmd: model_compute_types.DispatchCommand) !d3d12_dispatch.DispatchMetrics {
-        return self.dispatch_state.execute_dispatch(self.device, self.queue, self.fence, &self.fence_value, cmd);
+        const metrics = try self.dispatch_state.execute_dispatch(self.device, self.queue, self.fence, &self.fence_value, cmd);
+        if (metrics.submit_wait_ns != 0) self.noteCompletedFenceWait();
+        return metrics;
     }
 
     pub fn execute_dispatch_indirect(self: *NativeD3D12Runtime, cmd: model_compute_types.DispatchIndirectCommand) !d3d12_dispatch.DispatchMetrics {
-        return self.dispatch_state.execute_dispatch_indirect(self.device, self.queue, self.fence, &self.fence_value, cmd);
+        const metrics = try self.dispatch_state.execute_dispatch_indirect(self.device, self.queue, self.fence, &self.fence_value, cmd);
+        if (metrics.submit_wait_ns != 0) self.noteCompletedFenceWait();
+        return metrics;
     }
 
     pub fn execute_copy(self: *NativeD3D12Runtime, cmd: model_resource_types.CopyCommand, queue_sync_mode: webgpu.QueueSyncMode) !d3d12_streaming_copy.CopyMetrics {
@@ -200,12 +260,15 @@ pub const NativeD3D12Runtime = struct {
         if (queue_sync_mode == .per_command) {
             metrics.submit_wait_ns = try self.streaming_copy_state.flush(self.queue, self.fence, &self.fence_value);
             self.has_deferred_submissions = false;
+            if (metrics.submit_wait_ns != 0) self.noteCompletedFenceWait();
         }
         return metrics;
     }
 
     pub fn execute_render_draw(self: *NativeD3D12Runtime, cmd: model_render_types.RenderDrawCommand, is_indirect: bool, is_indexed_indirect: bool) !d3d12_render.RenderMetrics {
-        return self.render_state.execute_render_draw(self.device, self.queue, self.fence, &self.fence_value, cmd, is_indirect, is_indexed_indirect, &self.descriptor_state);
+        const metrics = try self.render_state.execute_render_draw(self.device, self.queue, self.fence, &self.fence_value, cmd, is_indirect, is_indexed_indirect, &self.descriptor_state);
+        if (metrics.submit_wait_ns != 0) self.noteCompletedFenceWait();
+        return metrics;
     }
 
     pub fn execute_render_bundles(
@@ -218,7 +281,9 @@ pub const NativeD3D12Runtime = struct {
     ) !d3d12_render.RenderMetrics {
         if (self.has_deferred_submissions or self.pending_uploads.items.len > 0)
             _ = try self.flush_queue();
-        return self.render_state.execute_render_bundles(self.device, self.queue, self.fence, &self.fence_value, bundles, target_width, target_height, color_format, sample_count);
+        const metrics = try self.render_state.execute_render_bundles(self.device, self.queue, self.fence, &self.fence_value, bundles, target_width, target_height, color_format, sample_count);
+        if (metrics.submit_wait_ns != 0) self.noteCompletedFenceWait();
+        return metrics;
     }
 
     pub fn surface_create(self: *NativeD3D12Runtime, cmd: model_surface_control_types.SurfaceCreateCommand) !u64 {
@@ -261,9 +326,9 @@ pub const NativeD3D12Runtime = struct {
         try self.timestamp_state.init_resources(self.device, self.queue);
     }
 
-    // Doe is synchronous — onSubmittedWorkDone completes immediately.
+    // Flush outstanding GPU work before reporting completion to the caller.
     pub fn on_submitted_work_done(self: *NativeD3D12Runtime) !u64 {
-        if (self.has_deferred_submissions or self.pending_uploads.items.len > 0) {
+        if (self.has_deferred_submissions or self.pending_uploads.items.len > 0 or self.pending_submit_batches.items.len > 0) {
             return try self.flush_queue();
         }
         return 0;
@@ -305,5 +370,17 @@ pub const NativeD3D12Runtime = struct {
         self.fence = d3d12_bridge_device_create_fence(self.device) orelse return error.InvalidState;
         self.has_device = true;
         self.device_caps = d3d12_device_caps.query_device_caps(self.device);
+    }
+
+    fn releaseCompletedSubmitBatches(self: *NativeD3D12Runtime) void {
+        var i: usize = 0;
+        while (i < self.pending_submit_batches.items.len) {
+            if (self.pending_submit_batches.items[i].fence_value <= self.completed_fence_value) {
+                var batch = self.pending_submit_batches.swapRemove(i);
+                batch.deinit(self.allocator);
+                continue;
+            }
+            i += 1;
+        }
     }
 };

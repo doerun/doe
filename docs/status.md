@@ -20,6 +20,10 @@ Read this file first. Use the shard files under
 
 ## Current status summary
 
+- D3D12 drop-in queue submit now retains submitted command lists behind the
+  runtime fence and drains them at explicit completion boundaries instead of
+  forcing a wait at every submit entry; the broader synchronous D3D12 runtime
+  model still remains for follow-up.
 - Apple Metal submit-entry serialization is now fixed for the shared-event queue
   path: `doeNativeQueueSubmit` no longer blocks every submit unless deferred CPU
   copies/resolves are pending or the shared-event fallback is unavailable. Fresh

@@ -216,8 +216,10 @@ test "d3d12: NativeD3D12Runtime default state is uninitialized" {
     try std.testing.expectEqual(@as(?*anyopaque, null), rt.queue);
     try std.testing.expectEqual(@as(?*anyopaque, null), rt.fence);
     try std.testing.expectEqual(@as(u64, 0), rt.fence_value);
+    try std.testing.expectEqual(@as(u64, 0), rt.completed_fence_value);
     try std.testing.expect(!rt.has_device);
     try std.testing.expect(!rt.has_deferred_submissions);
+    try std.testing.expectEqual(@as(usize, 0), rt.pending_submit_batches.items.len);
 }
 
 test "d3d12: NativeD3D12Runtime default compute state is uninitialized" {

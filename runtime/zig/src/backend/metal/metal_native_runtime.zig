@@ -220,6 +220,10 @@ pub const NativeMetalRuntime = struct {
         return queue_ops.flush_queue_timed(self);
     }
 
+    pub fn transition_streaming_submission_deferred(self: *NativeMetalRuntime) !void {
+        return queue_ops.transition_streaming_submission_deferred(self);
+    }
+
     pub fn barrier(self: *NativeMetalRuntime, queue_wait_mode: webgpu.QueueWaitMode, queue_sync_mode: webgpu.QueueSyncMode) !u64 {
         return queue_ops.barrier(self, queue_wait_mode, queue_sync_mode);
     }
