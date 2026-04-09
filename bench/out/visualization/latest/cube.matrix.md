@@ -1,8 +1,8 @@
 # Benchmark Cube
 
-Generated: `2026-04-08T22:31:16.973136Z`
+Generated: `2026-04-09T11:26:06.644874Z`
 
-Rows: `6`
+Rows: `33`
 
 ## Backend Native
 
@@ -10,12 +10,12 @@ Maturity: `primary`. Primary support: `backend`.
 
 | Workload Set | Apple Silicon macOS | AMD Linux Vulkan | Windows D3D12 |
 | --- | --- | --- | --- |
-| Full Comparable | unimplemented (contract exists, evidence missing) | claimable (4 rows) | unimplemented (contract exists, evidence missing) |
-| Uploads | unimplemented (contract exists, evidence missing) | claimable (4 rows) | unimplemented (contract exists, evidence missing) |
-| Compute | unimplemented (contract exists, evidence missing) | unimplemented (contract exists, evidence missing) | unimplemented (contract exists, evidence missing) |
-| Render | unimplemented (contract exists, evidence missing) | unimplemented (contract exists, evidence missing) | unimplemented (contract exists, evidence missing) |
-| Pipeline | unimplemented (contract exists, evidence missing) | unimplemented (contract exists, evidence missing) | unimplemented (contract exists, evidence missing) |
-| Texture | unimplemented (contract exists, evidence missing) | unimplemented (contract exists, evidence missing) | unimplemented (contract exists, evidence missing) |
+| Full Comparable | comparable (27 rows) | unimplemented (contract exists, evidence missing) | unimplemented (contract exists, evidence missing) |
+| Uploads | comparable (8 rows) | unimplemented (contract exists, evidence missing) | unimplemented (contract exists, evidence missing) |
+| Compute | claimable (6 rows) | unimplemented (contract exists, evidence missing) | unimplemented (contract exists, evidence missing) |
+| Render | comparable (6 rows) | unimplemented (contract exists, evidence missing) | unimplemented (contract exists, evidence missing) |
+| Pipeline | claimable (1 rows) | unimplemented (contract exists, evidence missing) | unimplemented (contract exists, evidence missing) |
+| Texture | claimable (3 rows) | unimplemented (contract exists, evidence missing) | unimplemented (contract exists, evidence missing) |
 | Contracts | unimplemented (contract exists, evidence missing) | unimplemented (contract exists, evidence missing) | unimplemented (contract exists, evidence missing) |
 
 - Strict Dawn-vs-Doe backend reports are the canonical claim lane.
@@ -29,9 +29,9 @@ Maturity: `primary`. Primary support: `node`.
 
 | Workload Set | Apple Silicon macOS | Linux x64 | Windows x64 |
 | --- | --- | --- | --- |
-| Full Comparable | unimplemented (contract exists, evidence missing) | claimable (1 rows) | unimplemented (contract exists, evidence missing) |
+| Full Comparable | claimable (1 rows) | comparable (1 rows) | unimplemented (contract exists, evidence missing) |
 | Uploads | unimplemented (contract exists, evidence missing) | unimplemented (contract exists, evidence missing) | unimplemented (contract exists, evidence missing) |
-| Compute | unimplemented (contract exists, evidence missing) | claimable (1 rows) | unimplemented (contract exists, evidence missing) |
+| Compute | claimable (1 rows) | comparable (1 rows) | unimplemented (contract exists, evidence missing) |
 | Dispatch Only | unimplemented (contract exists, evidence missing) | unimplemented (contract exists, evidence missing) | unimplemented (contract exists, evidence missing) |
 | Pipeline | unimplemented (contract exists, evidence missing) | unimplemented (contract exists, evidence missing) | unimplemented (contract exists, evidence missing) |
 | Overhead | unimplemented (contract exists, evidence missing) | unimplemented (contract exists, evidence missing) | unimplemented (contract exists, evidence missing) |
@@ -45,9 +45,9 @@ Maturity: `prototype`. Primary support: `bun`.
 
 | Workload Set | Apple Silicon macOS | Linux x64 | Windows x64 |
 | --- | --- | --- | --- |
-| Full Comparable | unimplemented (contract exists, evidence missing) | claimable (1 rows) | unimplemented (contract exists, evidence missing) |
+| Full Comparable | claimable (1 rows) | comparable (1 rows) | unimplemented (contract exists, evidence missing) |
 | Uploads | unimplemented (contract exists, evidence missing) | unimplemented (contract exists, evidence missing) | unimplemented (contract exists, evidence missing) |
-| Compute | unimplemented (contract exists, evidence missing) | claimable (1 rows) | unimplemented (contract exists, evidence missing) |
+| Compute | claimable (1 rows) | comparable (1 rows) | unimplemented (contract exists, evidence missing) |
 | Dispatch Only | unimplemented (contract exists, evidence missing) | unimplemented (contract exists, evidence missing) | unimplemented (contract exists, evidence missing) |
 | Pipeline | unimplemented (contract exists, evidence missing) | unimplemented (contract exists, evidence missing) | unimplemented (contract exists, evidence missing) |
 | Overhead | unimplemented (contract exists, evidence missing) | unimplemented (contract exists, evidence missing) | unimplemented (contract exists, evidence missing) |

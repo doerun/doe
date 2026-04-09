@@ -402,7 +402,7 @@ def detect_backend_host(payload: dict[str, Any], source_path: Path) -> dict[str,
     }
 
 
-def detect_package_host(payload: dict[str, Any]) -> dict[str, str]:
+def detect_package_host(payload: dict[str, Any], source_path: Path) -> dict[str, str]:
     platform = str(payload.get("platform") or "")
     arch = str(payload.get("arch") or "")
     if platform == "darwin" and arch == "arm64":
@@ -417,6 +417,52 @@ def detect_package_host(payload: dict[str, Any]) -> dict[str, str]:
             "os": "win32",
             "arch": arch or "x64",
         }
+    path_text = str(source_path).lower()
+    if "apple-metal" in path_text or ".metal" in source_path.name.lower():
+        return {
+            "profileId": "mac_apple_silicon",
+            "os": "darwin",
+            "arch": "arm64",
+        }
+    if "amd-vulkan" in path_text or ".vulkan" in source_path.name.lower():
+        return {
+            "profileId": "linux_x64",
+            "os": "linux",
+            "arch": "x64",
+        }
+    for workload in payload.get("workloads", []):
+        if not isinstance(workload, dict):
+            continue
+        for role in ("baseline", "comparison"):
+            role_payload = workload.get(role)
+            if not isinstance(role_payload, dict):
+                continue
+            command_samples = role_payload.get("commandSamples")
+            if not isinstance(command_samples, list):
+                continue
+            for sample in command_samples:
+                if not isinstance(sample, dict):
+                    continue
+                trace_meta = sample.get("traceMeta")
+                if not isinstance(trace_meta, dict):
+                    continue
+                adapter_info = trace_meta.get("adapterInfo")
+                if not isinstance(adapter_info, dict):
+                    continue
+                vendor = str(adapter_info.get("vendor") or "").lower()
+                architecture = str(adapter_info.get("architecture") or "").lower()
+                if vendor == "apple" or architecture.startswith("m"):
+                    return {
+                        "profileId": "mac_apple_silicon",
+                        "os": "darwin",
+                        "arch": "arm64",
+                    }
+                if vendor == "amd":
+                    return {
+                        "profileId": "linux_x64",
+                        "os": "linux",
+                        "arch": "x64",
+                    }
     return {
         "profileId": "linux_x64",
         "os": platform or "linux",
@@ -642,7 +688,7 @@ def normalize_package_report(
     provider_pair: str,
     source_report_type: str,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
-    host = detect_package_host(payload)
+    host = detect_package_host(payload, source_path)
     run_id = run_id_from_timestamp(generated_at)
     rows: list[dict[str, Any]] = []
     lane_id = canonical_lane_id(governed_lanes, payload.get("laneId"))

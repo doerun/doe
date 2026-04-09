@@ -3,29 +3,29 @@
     "claimStatus": "claimable",
     "comparisonStatus": "comparable",
     "comparisonView": "doe_vs_dawn",
-    "generatedAt": "2026-04-08T21:23:35.893068Z",
+    "generatedAt": "2026-04-09T01:06:42.371818Z",
     "governedLaneIds": [
-      "vulkan_doe_comparable",
-      "vulkan_dawn_release"
+      "metal_doe_comparable",
+      "metal_dawn_release"
     ],
     "host": {
-      "arch": "x64",
-      "backend": "vulkan",
-      "gpuVendor": "amd",
-      "os": "linux",
-      "profileId": "linux_amd_vulkan"
+      "arch": "arm64",
+      "backend": "metal",
+      "gpuVendor": "apple",
+      "os": "darwin",
+      "profileId": "mac_apple_silicon"
     },
     "maturity": "primary",
     "metrics": {
-      "baselineP50Ms": 0.0019486308926178525,
-      "baselineP95Ms": 0.002243090941818836,
-      "baselineP99Ms": 0.002243090941818836,
+      "baselineP50Ms": 34.064,
+      "baselineP95Ms": 34.458,
+      "baselineP99Ms": 34.458,
       "baselineSampleCount": 15,
-      "comparisonP50Ms": 0.008525453549070982,
-      "comparisonP95Ms": 0.009688974779495589,
-      "comparisonP99Ms": 0.009688974779495589,
+      "comparisonP50Ms": 42.153,
+      "comparisonP95Ms": 44.288,
+      "comparisonP99Ms": 44.288,
       "comparisonSampleCount": 15,
-      "deltaP50Percent": 337.50992460237643
+      "deltaP50Percent": 23.746477219351814
     },
     "providerPair": "doe_vs_dawn",
     "providerSet": "backend_native_providers",
@@ -33,45 +33,551 @@
       "doe",
       "dawn"
     ],
-    "runId": "20260408T212335Z",
+    "runId": "20260409T010642Z",
     "schemaVersion": 1,
     "sourceConformance": "canonical",
     "sourceConformanceReason": "",
-    "sourceReportPath": "/home/x/deco/doe/bench/out/amd-vulkan/compare/20260408T212313Z/dawn-vs-doe.amd.vulkan.compare.json",
+    "sourceReportPath": "/Users/xyz/deco/doe/bench/out/apple-metal/compare/20260409T010347Z/dawn-vs-doe.apple.metal.compare.json",
     "sourceReportType": "backend_compare_report",
-    "sourceWorkloadId": "upload_write_buffer_1kb",
+    "sourceWorkloadId": "compute_workgroup_atomic_1024",
+    "surface": "backend_native",
+    "workloadDomain": "compute",
+    "workloadId": "compute_workgroup_atomic_1024",
+    "workloadSet": "compute_e2e"
+  },
+  {
+    "claimStatus": "claimable",
+    "comparisonStatus": "comparable",
+    "comparisonView": "doe_vs_dawn",
+    "generatedAt": "2026-04-09T01:06:42.371818Z",
+    "governedLaneIds": [
+      "metal_doe_comparable",
+      "metal_dawn_release"
+    ],
+    "host": {
+      "arch": "arm64",
+      "backend": "metal",
+      "gpuVendor": "apple",
+      "os": "darwin",
+      "profileId": "mac_apple_silicon"
+    },
+    "maturity": "primary",
+    "metrics": {
+      "baselineP50Ms": 34.096,
+      "baselineP95Ms": 34.248,
+      "baselineP99Ms": 34.248,
+      "baselineSampleCount": 15,
+      "comparisonP50Ms": 47.762,
+      "comparisonP95Ms": 50.37,
+      "comparisonP99Ms": 50.37,
+      "comparisonSampleCount": 15,
+      "deltaP50Percent": 40.08094791177852
+    },
+    "providerPair": "doe_vs_dawn",
+    "providerSet": "backend_native_providers",
+    "providers": [
+      "doe",
+      "dawn"
+    ],
+    "runId": "20260409T010642Z",
+    "schemaVersion": 1,
+    "sourceConformance": "canonical",
+    "sourceConformanceReason": "",
+    "sourceReportPath": "/Users/xyz/deco/doe/bench/out/apple-metal/compare/20260409T010347Z/dawn-vs-doe.apple.metal.compare.json",
+    "sourceReportType": "backend_compare_report",
+    "sourceWorkloadId": "compute_workgroup_non_atomic_1024",
+    "surface": "backend_native",
+    "workloadDomain": "compute",
+    "workloadId": "compute_workgroup_non_atomic_1024",
+    "workloadSet": "compute_e2e"
+  },
+  {
+    "claimStatus": "claimable",
+    "comparisonStatus": "comparable",
+    "comparisonView": "doe_vs_dawn",
+    "generatedAt": "2026-04-09T01:06:42.371818Z",
+    "governedLaneIds": [
+      "metal_doe_comparable",
+      "metal_dawn_release"
+    ],
+    "host": {
+      "arch": "arm64",
+      "backend": "metal",
+      "gpuVendor": "apple",
+      "os": "darwin",
+      "profileId": "mac_apple_silicon"
+    },
+    "maturity": "primary",
+    "metrics": {
+      "baselineP50Ms": 27.841,
+      "baselineP95Ms": 39.588,
+      "baselineP99Ms": 39.588,
+      "baselineSampleCount": 15,
+      "comparisonP50Ms": 39.189,
+      "comparisonP95Ms": 48.552,
+      "comparisonP99Ms": 48.552,
+      "comparisonSampleCount": 15,
+      "deltaP50Percent": 40.76003017133005
+    },
+    "providerPair": "doe_vs_dawn",
+    "providerSet": "backend_native_providers",
+    "providers": [
+      "doe",
+      "dawn"
+    ],
+    "runId": "20260409T010642Z",
+    "schemaVersion": 1,
+    "sourceConformance": "canonical",
+    "sourceConformanceReason": "",
+    "sourceReportPath": "/Users/xyz/deco/doe/bench/out/apple-metal/compare/20260409T010347Z/dawn-vs-doe.apple.metal.compare.json",
+    "sourceReportType": "backend_compare_report",
+    "sourceWorkloadId": "pipeline_compile_stress",
+    "surface": "backend_native",
+    "workloadDomain": "pipeline",
+    "workloadId": "pipeline_compile_stress",
+    "workloadSet": "pipeline"
+  },
+  {
+    "claimStatus": "claimable",
+    "comparisonStatus": "comparable",
+    "comparisonView": "doe_vs_dawn",
+    "generatedAt": "2026-04-09T01:06:42.371818Z",
+    "governedLaneIds": [
+      "metal_doe_comparable",
+      "metal_dawn_release"
+    ],
+    "host": {
+      "arch": "arm64",
+      "backend": "metal",
+      "gpuVendor": "apple",
+      "os": "darwin",
+      "profileId": "mac_apple_silicon"
+    },
+    "maturity": "primary",
+    "metrics": {
+      "baselineP50Ms": 4.42,
+      "baselineP95Ms": 4.926,
+      "baselineP99Ms": 4.926,
+      "baselineSampleCount": 15,
+      "comparisonP50Ms": 8.208,
+      "comparisonP95Ms": 9.787,
+      "comparisonP99Ms": 9.787,
+      "comparisonSampleCount": 15,
+      "deltaP50Percent": 85.70135746606336
+    },
+    "providerPair": "doe_vs_dawn",
+    "providerSet": "backend_native_providers",
+    "providers": [
+      "doe",
+      "dawn"
+    ],
+    "runId": "20260409T010642Z",
+    "schemaVersion": 1,
+    "sourceConformance": "canonical",
+    "sourceConformanceReason": "",
+    "sourceReportPath": "/Users/xyz/deco/doe/bench/out/apple-metal/compare/20260409T010347Z/dawn-vs-doe.apple.metal.compare.json",
+    "sourceReportType": "backend_compare_report",
+    "sourceWorkloadId": "render_bundle_dynamic_bindings",
+    "surface": "backend_native",
+    "workloadDomain": "render-bundle",
+    "workloadId": "render_bundle_dynamic_bindings",
+    "workloadSet": "render"
+  },
+  {
+    "claimStatus": "diagnostic",
+    "comparisonStatus": "comparable",
+    "comparisonView": "doe_vs_dawn",
+    "generatedAt": "2026-04-09T01:06:42.371818Z",
+    "governedLaneIds": [
+      "metal_doe_comparable",
+      "metal_dawn_release"
+    ],
+    "host": {
+      "arch": "arm64",
+      "backend": "metal",
+      "gpuVendor": "apple",
+      "os": "darwin",
+      "profileId": "mac_apple_silicon"
+    },
+    "maturity": "primary",
+    "metrics": {
+      "baselineP50Ms": 129.282,
+      "baselineP95Ms": 132.341,
+      "baselineP99Ms": 132.341,
+      "baselineSampleCount": 15,
+      "comparisonP50Ms": 108.907,
+      "comparisonP95Ms": 114.511,
+      "comparisonP99Ms": 114.511,
+      "comparisonSampleCount": 15,
+      "deltaP50Percent": -15.760121285252405
+    },
+    "providerPair": "doe_vs_dawn",
+    "providerSet": "backend_native_providers",
+    "providers": [
+      "doe",
+      "dawn"
+    ],
+    "runId": "20260409T010642Z",
+    "schemaVersion": 1,
+    "sourceConformance": "canonical",
+    "sourceConformanceReason": "",
+    "sourceReportPath": "/Users/xyz/deco/doe/bench/out/apple-metal/compare/20260409T010347Z/dawn-vs-doe.apple.metal.compare.json",
+    "sourceReportType": "backend_compare_report",
+    "sourceWorkloadId": "render_bundle_dynamic_pipeline_bindings_200k",
+    "surface": "backend_native",
+    "workloadDomain": "render-bundle",
+    "workloadId": "render_bundle_dynamic_pipeline_bindings_200k",
+    "workloadSet": "render"
+  },
+  {
+    "claimStatus": "claimable",
+    "comparisonStatus": "comparable",
+    "comparisonView": "doe_vs_dawn",
+    "generatedAt": "2026-04-09T01:06:42.371818Z",
+    "governedLaneIds": [
+      "metal_doe_comparable",
+      "metal_dawn_release"
+    ],
+    "host": {
+      "arch": "arm64",
+      "backend": "metal",
+      "gpuVendor": "apple",
+      "os": "darwin",
+      "profileId": "mac_apple_silicon"
+    },
+    "maturity": "primary",
+    "metrics": {
+      "baselineP50Ms": 5.43,
+      "baselineP95Ms": 5.616,
+      "baselineP99Ms": 5.616,
+      "baselineSampleCount": 15,
+      "comparisonP50Ms": 20.841,
+      "comparisonP95Ms": 21.378,
+      "comparisonP99Ms": 21.378,
+      "comparisonSampleCount": 15,
+      "deltaP50Percent": 283.81215469613267
+    },
+    "providerPair": "doe_vs_dawn",
+    "providerSet": "backend_native_providers",
+    "providers": [
+      "doe",
+      "dawn"
+    ],
+    "runId": "20260409T010642Z",
+    "schemaVersion": 1,
+    "sourceConformance": "canonical",
+    "sourceConformanceReason": "",
+    "sourceReportPath": "/Users/xyz/deco/doe/bench/out/apple-metal/compare/20260409T010347Z/dawn-vs-doe.apple.metal.compare.json",
+    "sourceReportType": "backend_compare_report",
+    "sourceWorkloadId": "render_draw_redundant_pipeline_bindings_200k",
+    "surface": "backend_native",
+    "workloadDomain": "render",
+    "workloadId": "render_draw_redundant_pipeline_bindings_200k",
+    "workloadSet": "render"
+  },
+  {
+    "claimStatus": "claimable",
+    "comparisonStatus": "comparable",
+    "comparisonView": "doe_vs_dawn",
+    "generatedAt": "2026-04-09T01:06:42.371818Z",
+    "governedLaneIds": [
+      "metal_doe_comparable",
+      "metal_dawn_release"
+    ],
+    "host": {
+      "arch": "arm64",
+      "backend": "metal",
+      "gpuVendor": "apple",
+      "os": "darwin",
+      "profileId": "mac_apple_silicon"
+    },
+    "maturity": "primary",
+    "metrics": {
+      "baselineP50Ms": 3.416,
+      "baselineP95Ms": 3.89,
+      "baselineP99Ms": 3.89,
+      "baselineSampleCount": 15,
+      "comparisonP50Ms": 8.085,
+      "comparisonP95Ms": 8.813,
+      "comparisonP99Ms": 8.813,
+      "comparisonSampleCount": 15,
+      "deltaP50Percent": 136.68032786885246
+    },
+    "providerPair": "doe_vs_dawn",
+    "providerSet": "backend_native_providers",
+    "providers": [
+      "doe",
+      "dawn"
+    ],
+    "runId": "20260409T010642Z",
+    "schemaVersion": 1,
+    "sourceConformance": "canonical",
+    "sourceConformanceReason": "",
+    "sourceReportPath": "/Users/xyz/deco/doe/bench/out/apple-metal/compare/20260409T010347Z/dawn-vs-doe.apple.metal.compare.json",
+    "sourceReportType": "backend_compare_report",
+    "sourceWorkloadId": "render_draw_state_bindings",
+    "surface": "backend_native",
+    "workloadDomain": "render",
+    "workloadId": "render_draw_state_bindings",
+    "workloadSet": "render"
+  },
+  {
+    "claimStatus": "claimable",
+    "comparisonStatus": "comparable",
+    "comparisonView": "doe_vs_dawn",
+    "generatedAt": "2026-04-09T01:06:42.371818Z",
+    "governedLaneIds": [
+      "metal_doe_comparable",
+      "metal_dawn_release"
+    ],
+    "host": {
+      "arch": "arm64",
+      "backend": "metal",
+      "gpuVendor": "apple",
+      "os": "darwin",
+      "profileId": "mac_apple_silicon"
+    },
+    "maturity": "primary",
+    "metrics": {
+      "baselineP50Ms": 4.738,
+      "baselineP95Ms": 4.822,
+      "baselineP99Ms": 4.822,
+      "baselineSampleCount": 15,
+      "comparisonP50Ms": 3.299,
+      "comparisonP95Ms": 3.389,
+      "comparisonP99Ms": 3.389,
+      "comparisonSampleCount": 15,
+      "deltaP50Percent": -30.371464753060373
+    },
+    "providerPair": "doe_vs_dawn",
+    "providerSet": "backend_native_providers",
+    "providers": [
+      "doe",
+      "dawn"
+    ],
+    "runId": "20260409T010642Z",
+    "schemaVersion": 1,
+    "sourceConformance": "canonical",
+    "sourceConformanceReason": "",
+    "sourceReportPath": "/Users/xyz/deco/doe/bench/out/apple-metal/compare/20260409T010347Z/dawn-vs-doe.apple.metal.compare.json",
+    "sourceReportType": "backend_compare_report",
+    "sourceWorkloadId": "render_draw_throughput_200k",
+    "surface": "backend_native",
+    "workloadDomain": "render-macro",
+    "workloadId": "render_draw_throughput_200k",
+    "workloadSet": "render"
+  },
+  {
+    "claimStatus": "claimable",
+    "comparisonStatus": "comparable",
+    "comparisonView": "doe_vs_dawn",
+    "generatedAt": "2026-04-09T01:06:42.371818Z",
+    "governedLaneIds": [
+      "metal_doe_comparable",
+      "metal_dawn_release"
+    ],
+    "host": {
+      "arch": "arm64",
+      "backend": "metal",
+      "gpuVendor": "apple",
+      "os": "darwin",
+      "profileId": "mac_apple_silicon"
+    },
+    "maturity": "primary",
+    "metrics": {
+      "baselineP50Ms": 0.10900000000000001,
+      "baselineP95Ms": 0.11359999999999999,
+      "baselineP99Ms": 0.11359999999999999,
+      "baselineSampleCount": 15,
+      "comparisonP50Ms": 0.6476,
+      "comparisonP95Ms": 0.6871,
+      "comparisonP99Ms": 0.6871,
+      "comparisonSampleCount": 15,
+      "deltaP50Percent": 494.12844036697237
+    },
+    "providerPair": "doe_vs_dawn",
+    "providerSet": "backend_native_providers",
+    "providers": [
+      "doe",
+      "dawn"
+    ],
+    "runId": "20260409T010642Z",
+    "schemaVersion": 1,
+    "sourceConformance": "canonical",
+    "sourceConformanceReason": "",
+    "sourceReportPath": "/Users/xyz/deco/doe/bench/out/apple-metal/compare/20260409T010347Z/dawn-vs-doe.apple.metal.compare.json",
+    "sourceReportType": "backend_compare_report",
+    "sourceWorkloadId": "texture_sampler_write_query_destroy",
+    "surface": "backend_native",
+    "workloadDomain": "texture-contract",
+    "workloadId": "texture_sampler_write_query_destroy",
+    "workloadSet": "texture"
+  },
+  {
+    "claimStatus": "claimable",
+    "comparisonStatus": "comparable",
+    "comparisonView": "doe_vs_dawn",
+    "generatedAt": "2026-04-09T01:06:42.371818Z",
+    "governedLaneIds": [
+      "metal_doe_comparable",
+      "metal_dawn_release"
+    ],
+    "host": {
+      "arch": "arm64",
+      "backend": "metal",
+      "gpuVendor": "apple",
+      "os": "darwin",
+      "profileId": "mac_apple_silicon"
+    },
+    "maturity": "primary",
+    "metrics": {
+      "baselineP50Ms": 3.241,
+      "baselineP95Ms": 3.668,
+      "baselineP99Ms": 3.668,
+      "baselineSampleCount": 15,
+      "comparisonP50Ms": 7.352,
+      "comparisonP95Ms": 7.657,
+      "comparisonP99Ms": 7.657,
+      "comparisonSampleCount": 15,
+      "deltaP50Percent": 126.84356680037028
+    },
+    "providerPair": "doe_vs_dawn",
+    "providerSet": "backend_native_providers",
+    "providers": [
+      "doe",
+      "dawn"
+    ],
+    "runId": "20260409T010642Z",
+    "schemaVersion": 1,
+    "sourceConformance": "canonical",
+    "sourceConformanceReason": "",
+    "sourceReportPath": "/Users/xyz/deco/doe/bench/out/apple-metal/compare/20260409T010347Z/dawn-vs-doe.apple.metal.compare.json",
+    "sourceReportType": "backend_compare_report",
+    "sourceWorkloadId": "texture_sampler_write_query_destroy_500",
+    "surface": "backend_native",
+    "workloadDomain": "texture-macro",
+    "workloadId": "texture_sampler_write_query_destroy_500",
+    "workloadSet": "texture"
+  },
+  {
+    "claimStatus": "claimable",
+    "comparisonStatus": "comparable",
+    "comparisonView": "doe_vs_dawn",
+    "generatedAt": "2026-04-09T01:06:42.371818Z",
+    "governedLaneIds": [
+      "metal_doe_comparable",
+      "metal_dawn_release"
+    ],
+    "host": {
+      "arch": "arm64",
+      "backend": "metal",
+      "gpuVendor": "apple",
+      "os": "darwin",
+      "profileId": "mac_apple_silicon"
+    },
+    "maturity": "primary",
+    "metrics": {
+      "baselineP50Ms": 0.1089,
+      "baselineP95Ms": 0.11339999999999999,
+      "baselineP99Ms": 0.11339999999999999,
+      "baselineSampleCount": 15,
+      "comparisonP50Ms": 0.6418999999999999,
+      "comparisonP95Ms": 0.6552,
+      "comparisonP99Ms": 0.6552,
+      "comparisonSampleCount": 15,
+      "deltaP50Percent": 489.43985307621665
+    },
+    "providerPair": "doe_vs_dawn",
+    "providerSet": "backend_native_providers",
+    "providers": [
+      "doe",
+      "dawn"
+    ],
+    "runId": "20260409T010642Z",
+    "schemaVersion": 1,
+    "sourceConformance": "canonical",
+    "sourceConformanceReason": "",
+    "sourceReportPath": "/Users/xyz/deco/doe/bench/out/apple-metal/compare/20260409T010347Z/dawn-vs-doe.apple.metal.compare.json",
+    "sourceReportType": "backend_compare_report",
+    "sourceWorkloadId": "texture_sampler_write_query_destroy_mip8",
+    "surface": "backend_native",
+    "workloadDomain": "texture-contract",
+    "workloadId": "texture_sampler_write_query_destroy_mip8",
+    "workloadSet": "texture"
+  },
+  {
+    "claimStatus": "claimable",
+    "comparisonStatus": "comparable",
+    "comparisonView": "doe_vs_dawn",
+    "generatedAt": "2026-04-09T01:06:42.371818Z",
+    "governedLaneIds": [
+      "metal_doe_comparable",
+      "metal_dawn_release"
+    ],
+    "host": {
+      "arch": "arm64",
+      "backend": "metal",
+      "gpuVendor": "apple",
+      "os": "darwin",
+      "profileId": "mac_apple_silicon"
+    },
+    "maturity": "primary",
+    "metrics": {
+      "baselineP50Ms": 0.8453,
+      "baselineP95Ms": 0.855,
+      "baselineP99Ms": 0.855,
+      "baselineSampleCount": 15,
+      "comparisonP50Ms": 1.66556,
+      "comparisonP95Ms": 1.71474,
+      "comparisonP99Ms": 1.71474,
+      "comparisonSampleCount": 15,
+      "deltaP50Percent": 97.03773808115459
+    },
+    "providerPair": "doe_vs_dawn",
+    "providerSet": "backend_native_providers",
+    "providers": [
+      "doe",
+      "dawn"
+    ],
+    "runId": "20260409T010642Z",
+    "schemaVersion": 1,
+    "sourceConformance": "canonical",
+    "sourceConformanceReason": "",
+    "sourceReportPath": "/Users/xyz/deco/doe/bench/out/apple-metal/compare/20260409T010347Z/dawn-vs-doe.apple.metal.compare.json",
+    "sourceReportType": "backend_compare_report",
+    "sourceWorkloadId": "upload_write_buffer_16mb_staged",
     "surface": "backend_native",
     "workloadDomain": "upload",
-    "workloadId": "upload_write_buffer_1kb",
+    "workloadId": "upload_write_buffer_16mb_staged",
     "workloadSet": "uploads"
   },
   {
     "claimStatus": "claimable",
     "comparisonStatus": "comparable",
     "comparisonView": "doe_vs_dawn",
-    "generatedAt": "2026-04-08T21:23:35.893068Z",
+    "generatedAt": "2026-04-09T01:06:42.371818Z",
     "governedLaneIds": [
-      "vulkan_doe_comparable",
-      "vulkan_dawn_release"
+      "metal_doe_comparable",
+      "metal_dawn_release"
     ],
     "host": {
-      "arch": "x64",
-      "backend": "vulkan",
-      "gpuVendor": "amd",
-      "os": "linux",
-      "profileId": "linux_amd_vulkan"
+      "arch": "arm64",
+      "backend": "metal",
+      "gpuVendor": "apple",
+      "os": "darwin",
+      "profileId": "mac_apple_silicon"
     },
     "maturity": "primary",
     "metrics": {
-      "baselineP50Ms": 0.020230734693877553,
-      "baselineP95Ms": 0.020442163265306124,
-      "baselineP99Ms": 0.020442163265306124,
+      "baselineP50Ms": 53.806,
+      "baselineP95Ms": 56.778,
+      "baselineP99Ms": 56.778,
       "baselineSampleCount": 15,
-      "comparisonP50Ms": 0.03748473469387755,
-      "comparisonP95Ms": 0.04092963265306123,
-      "comparisonP99Ms": 0.04092963265306123,
+      "comparisonP50Ms": 104.588,
+      "comparisonP95Ms": 109.165,
+      "comparisonP99Ms": 109.165,
       "comparisonSampleCount": 15,
-      "deltaP50Percent": 85.28607715478367
+      "deltaP50Percent": 94.37980894324053
     },
     "providerPair": "doe_vs_dawn",
     "providerSet": "backend_native_providers",
@@ -79,45 +585,45 @@
       "doe",
       "dawn"
     ],
-    "runId": "20260408T212335Z",
+    "runId": "20260409T010642Z",
     "schemaVersion": 1,
     "sourceConformance": "canonical",
     "sourceConformanceReason": "",
-    "sourceReportPath": "/home/x/deco/doe/bench/out/amd-vulkan/compare/20260408T212313Z/dawn-vs-doe.amd.vulkan.compare.json",
+    "sourceReportPath": "/Users/xyz/deco/doe/bench/out/apple-metal/compare/20260409T010347Z/dawn-vs-doe.apple.metal.compare.json",
     "sourceReportType": "backend_compare_report",
-    "sourceWorkloadId": "upload_write_buffer_1mb",
+    "sourceWorkloadId": "upload_write_buffer_1gb_staged",
     "surface": "backend_native",
     "workloadDomain": "upload",
-    "workloadId": "upload_write_buffer_1mb",
+    "workloadId": "upload_write_buffer_1gb_staged",
     "workloadSet": "uploads"
   },
   {
     "claimStatus": "claimable",
     "comparisonStatus": "comparable",
     "comparisonView": "doe_vs_dawn",
-    "generatedAt": "2026-04-08T21:23:35.893068Z",
+    "generatedAt": "2026-04-09T01:06:42.371818Z",
     "governedLaneIds": [
-      "vulkan_doe_comparable",
-      "vulkan_dawn_release"
+      "metal_doe_comparable",
+      "metal_dawn_release"
     ],
     "host": {
-      "arch": "x64",
-      "backend": "vulkan",
-      "gpuVendor": "amd",
-      "os": "linux",
-      "profileId": "linux_amd_vulkan"
+      "arch": "arm64",
+      "backend": "metal",
+      "gpuVendor": "apple",
+      "os": "darwin",
+      "profileId": "mac_apple_silicon"
     },
     "maturity": "primary",
     "metrics": {
-      "baselineP50Ms": 0.03859493877551021,
-      "baselineP95Ms": 0.04506577551020408,
-      "baselineP99Ms": 0.04506577551020408,
+      "baselineP50Ms": 0.00023265999999999998,
+      "baselineP95Ms": 0.00023684000000000002,
+      "baselineP99Ms": 0.00023684000000000002,
       "baselineSampleCount": 15,
-      "comparisonP50Ms": 0.6252977959183673,
-      "comparisonP95Ms": 0.6411722653061225,
-      "comparisonP99Ms": 0.6411722653061225,
+      "comparisonP50Ms": 0.02225394,
+      "comparisonP95Ms": 0.02247164,
+      "comparisonP99Ms": 0.02247164,
       "comparisonSampleCount": 15,
-      "deltaP50Percent": 1520.154910869142
+      "deltaP50Percent": 9465.004727929167
     },
     "providerPair": "doe_vs_dawn",
     "providerSet": "backend_native_providers",
@@ -125,45 +631,91 @@
       "doe",
       "dawn"
     ],
-    "runId": "20260408T212335Z",
+    "runId": "20260409T010642Z",
     "schemaVersion": 1,
     "sourceConformance": "canonical",
     "sourceConformanceReason": "",
-    "sourceReportPath": "/home/x/deco/doe/bench/out/amd-vulkan/compare/20260408T212313Z/dawn-vs-doe.amd.vulkan.compare.json",
+    "sourceReportPath": "/Users/xyz/deco/doe/bench/out/apple-metal/compare/20260409T010347Z/dawn-vs-doe.apple.metal.compare.json",
     "sourceReportType": "backend_compare_report",
-    "sourceWorkloadId": "upload_write_buffer_4mb",
+    "sourceWorkloadId": "upload_write_buffer_1kb_staged",
     "surface": "backend_native",
     "workloadDomain": "upload",
-    "workloadId": "upload_write_buffer_4mb",
+    "workloadId": "upload_write_buffer_1kb_staged",
+    "workloadSet": "uploads"
+  },
+  {
+    "claimStatus": "diagnostic",
+    "comparisonStatus": "comparable",
+    "comparisonView": "doe_vs_dawn",
+    "generatedAt": "2026-04-09T01:06:42.371818Z",
+    "governedLaneIds": [
+      "metal_doe_comparable",
+      "metal_dawn_release"
+    ],
+    "host": {
+      "arch": "arm64",
+      "backend": "metal",
+      "gpuVendor": "apple",
+      "os": "darwin",
+      "profileId": "mac_apple_silicon"
+    },
+    "maturity": "primary",
+    "metrics": {
+      "baselineP50Ms": 0.00024,
+      "baselineP95Ms": 0.00028,
+      "baselineP99Ms": 0.00028,
+      "baselineSampleCount": 15,
+      "comparisonP50Ms": 0.09827,
+      "comparisonP95Ms": 0.10692,
+      "comparisonP99Ms": 0.10692,
+      "comparisonSampleCount": 15,
+      "deltaP50Percent": 40845.83333333333
+    },
+    "providerPair": "doe_vs_dawn",
+    "providerSet": "backend_native_providers",
+    "providers": [
+      "doe",
+      "dawn"
+    ],
+    "runId": "20260409T010642Z",
+    "schemaVersion": 1,
+    "sourceConformance": "canonical",
+    "sourceConformanceReason": "",
+    "sourceReportPath": "/Users/xyz/deco/doe/bench/out/apple-metal/compare/20260409T010347Z/dawn-vs-doe.apple.metal.compare.json",
+    "sourceReportType": "backend_compare_report",
+    "sourceWorkloadId": "upload_write_buffer_1mb_staged",
+    "surface": "backend_native",
+    "workloadDomain": "upload",
+    "workloadId": "upload_write_buffer_1mb_staged",
     "workloadSet": "uploads"
   },
   {
     "claimStatus": "claimable",
     "comparisonStatus": "comparable",
     "comparisonView": "doe_vs_dawn",
-    "generatedAt": "2026-04-08T21:23:35.893068Z",
+    "generatedAt": "2026-04-09T01:06:42.371818Z",
     "governedLaneIds": [
-      "vulkan_doe_comparable",
-      "vulkan_dawn_release"
+      "metal_doe_comparable",
+      "metal_dawn_release"
     ],
     "host": {
-      "arch": "x64",
-      "backend": "vulkan",
-      "gpuVendor": "amd",
-      "os": "linux",
-      "profileId": "linux_amd_vulkan"
+      "arch": "arm64",
+      "backend": "metal",
+      "gpuVendor": "apple",
+      "os": "darwin",
+      "profileId": "mac_apple_silicon"
     },
     "maturity": "primary",
     "metrics": {
-      "baselineP50Ms": 0.0036898727,
-      "baselineP95Ms": 0.0040082895,
-      "baselineP99Ms": 0.0040082895,
+      "baselineP50Ms": 13.511,
+      "baselineP95Ms": 13.97,
+      "baselineP99Ms": 13.97,
       "baselineSampleCount": 15,
-      "comparisonP50Ms": 0.0112646426,
-      "comparisonP95Ms": 0.0132025517,
-      "comparisonP99Ms": 0.0132025517,
+      "comparisonP50Ms": 27.21,
+      "comparisonP95Ms": 28.922,
+      "comparisonP99Ms": 28.922,
       "comparisonSampleCount": 15,
-      "deltaP50Percent": 205.2853991412766
+      "deltaP50Percent": 101.39145881133894
     },
     "providerPair": "doe_vs_dawn",
     "providerSet": "backend_native_providers",
@@ -171,23 +723,529 @@
       "doe",
       "dawn"
     ],
-    "runId": "20260408T212335Z",
+    "runId": "20260409T010642Z",
     "schemaVersion": 1,
     "sourceConformance": "canonical",
     "sourceConformanceReason": "",
-    "sourceReportPath": "/home/x/deco/doe/bench/out/amd-vulkan/compare/20260408T212313Z/dawn-vs-doe.amd.vulkan.compare.json",
+    "sourceReportPath": "/Users/xyz/deco/doe/bench/out/apple-metal/compare/20260409T010347Z/dawn-vs-doe.apple.metal.compare.json",
     "sourceReportType": "backend_compare_report",
-    "sourceWorkloadId": "upload_write_buffer_64kb",
+    "sourceWorkloadId": "upload_write_buffer_256mb_staged",
     "surface": "backend_native",
     "workloadDomain": "upload",
-    "workloadId": "upload_write_buffer_64kb",
+    "workloadId": "upload_write_buffer_256mb_staged",
     "workloadSet": "uploads"
   },
   {
     "claimStatus": "claimable",
+    "comparisonStatus": "comparable",
+    "comparisonView": "doe_vs_dawn",
+    "generatedAt": "2026-04-09T01:06:42.371818Z",
+    "governedLaneIds": [
+      "metal_doe_comparable",
+      "metal_dawn_release"
+    ],
+    "host": {
+      "arch": "arm64",
+      "backend": "metal",
+      "gpuVendor": "apple",
+      "os": "darwin",
+      "profileId": "mac_apple_silicon"
+    },
+    "maturity": "primary",
+    "metrics": {
+      "baselineP50Ms": 282.349,
+      "baselineP95Ms": 330.645,
+      "baselineP99Ms": 330.645,
+      "baselineSampleCount": 15,
+      "comparisonP50Ms": 435.515,
+      "comparisonP95Ms": 562.072,
+      "comparisonP99Ms": 562.072,
+      "comparisonSampleCount": 15,
+      "deltaP50Percent": 54.24704886505707
+    },
+    "providerPair": "doe_vs_dawn",
+    "providerSet": "backend_native_providers",
+    "providers": [
+      "doe",
+      "dawn"
+    ],
+    "runId": "20260409T010642Z",
+    "schemaVersion": 1,
+    "sourceConformance": "canonical",
+    "sourceConformanceReason": "",
+    "sourceReportPath": "/Users/xyz/deco/doe/bench/out/apple-metal/compare/20260409T010347Z/dawn-vs-doe.apple.metal.compare.json",
+    "sourceReportType": "backend_compare_report",
+    "sourceWorkloadId": "upload_write_buffer_4gb_staged",
+    "surface": "backend_native",
+    "workloadDomain": "upload",
+    "workloadId": "upload_write_buffer_4gb_staged",
+    "workloadSet": "uploads"
+  },
+  {
+    "claimStatus": "claimable",
+    "comparisonStatus": "comparable",
+    "comparisonView": "doe_vs_dawn",
+    "generatedAt": "2026-04-09T01:06:42.371818Z",
+    "governedLaneIds": [
+      "metal_doe_comparable",
+      "metal_dawn_release"
+    ],
+    "host": {
+      "arch": "arm64",
+      "backend": "metal",
+      "gpuVendor": "apple",
+      "os": "darwin",
+      "profileId": "mac_apple_silicon"
+    },
+    "maturity": "primary",
+    "metrics": {
+      "baselineP50Ms": 0.22048,
+      "baselineP95Ms": 0.25012,
+      "baselineP99Ms": 0.25012,
+      "baselineSampleCount": 15,
+      "comparisonP50Ms": 0.44578,
+      "comparisonP95Ms": 0.4693,
+      "comparisonP99Ms": 0.4693,
+      "comparisonSampleCount": 15,
+      "deltaP50Percent": 102.18613933236576
+    },
+    "providerPair": "doe_vs_dawn",
+    "providerSet": "backend_native_providers",
+    "providers": [
+      "doe",
+      "dawn"
+    ],
+    "runId": "20260409T010642Z",
+    "schemaVersion": 1,
+    "sourceConformance": "canonical",
+    "sourceConformanceReason": "",
+    "sourceReportPath": "/Users/xyz/deco/doe/bench/out/apple-metal/compare/20260409T010347Z/dawn-vs-doe.apple.metal.compare.json",
+    "sourceReportType": "backend_compare_report",
+    "sourceWorkloadId": "upload_write_buffer_4mb_staged",
+    "surface": "backend_native",
+    "workloadDomain": "upload",
+    "workloadId": "upload_write_buffer_4mb_staged",
+    "workloadSet": "uploads"
+  },
+  {
+    "claimStatus": "claimable",
+    "comparisonStatus": "comparable",
+    "comparisonView": "doe_vs_dawn",
+    "generatedAt": "2026-04-09T01:06:42.371818Z",
+    "governedLaneIds": [
+      "metal_doe_comparable",
+      "metal_dawn_release"
+    ],
+    "host": {
+      "arch": "arm64",
+      "backend": "metal",
+      "gpuVendor": "apple",
+      "os": "darwin",
+      "profileId": "mac_apple_silicon"
+    },
+    "maturity": "primary",
+    "metrics": {
+      "baselineP50Ms": 0.000236,
+      "baselineP95Ms": 0.0002431,
+      "baselineP99Ms": 0.0002431,
+      "baselineSampleCount": 15,
+      "comparisonP50Ms": 0.0446074,
+      "comparisonP95Ms": 0.0661295,
+      "comparisonP99Ms": 0.0661295,
+      "comparisonSampleCount": 15,
+      "deltaP50Percent": 18801.4406779661
+    },
+    "providerPair": "doe_vs_dawn",
+    "providerSet": "backend_native_providers",
+    "providers": [
+      "doe",
+      "dawn"
+    ],
+    "runId": "20260409T010642Z",
+    "schemaVersion": 1,
+    "sourceConformance": "canonical",
+    "sourceConformanceReason": "",
+    "sourceReportPath": "/Users/xyz/deco/doe/bench/out/apple-metal/compare/20260409T010347Z/dawn-vs-doe.apple.metal.compare.json",
+    "sourceReportType": "backend_compare_report",
+    "sourceWorkloadId": "upload_write_buffer_64kb_staged",
+    "surface": "backend_native",
+    "workloadDomain": "upload",
+    "workloadId": "upload_write_buffer_64kb_staged",
+    "workloadSet": "uploads"
+  },
+  {
+    "claimStatus": "claimable",
+    "comparisonStatus": "comparable",
+    "comparisonView": "doe_vs_dawn",
+    "generatedAt": "2026-04-09T01:06:42.371818Z",
+    "governedLaneIds": [
+      "metal_doe_comparable",
+      "metal_dawn_release"
+    ],
+    "host": {
+      "arch": "arm64",
+      "backend": "metal",
+      "gpuVendor": "apple",
+      "os": "darwin",
+      "profileId": "mac_apple_silicon"
+    },
+    "maturity": "primary",
+    "metrics": {
+      "baselineP50Ms": 59.748,
+      "baselineP95Ms": 59.882,
+      "baselineP99Ms": 59.882,
+      "baselineSampleCount": 15,
+      "comparisonP50Ms": 63.241,
+      "comparisonP95Ms": 63.621,
+      "comparisonP99Ms": 63.621,
+      "comparisonSampleCount": 15,
+      "deltaP50Percent": 5.846220794001478
+    },
+    "providerPair": "doe_vs_dawn",
+    "providerSet": "backend_native_providers",
+    "providers": [
+      "doe",
+      "dawn"
+    ],
+    "runId": "20260409T010642Z",
+    "schemaVersion": 1,
+    "sourceConformance": "canonical",
+    "sourceConformanceReason": "",
+    "sourceReportPath": "/Users/xyz/deco/doe/bench/out/apple-metal/compare/20260409T010347Z/dawn-vs-doe.apple.metal.compare.json",
+    "sourceReportType": "backend_compare_report",
+    "sourceWorkloadId": "compute_concurrent_execution_single",
+    "surface": "backend_native",
+    "workloadDomain": "compute",
+    "workloadId": "compute_concurrent_execution_single",
+    "workloadSet": "compute_e2e"
+  },
+  {
+    "claimStatus": "claimable",
+    "comparisonStatus": "comparable",
+    "comparisonView": "doe_vs_dawn",
+    "generatedAt": "2026-04-09T01:06:42.371818Z",
+    "governedLaneIds": [
+      "metal_doe_comparable",
+      "metal_dawn_release"
+    ],
+    "host": {
+      "arch": "arm64",
+      "backend": "metal",
+      "gpuVendor": "apple",
+      "os": "darwin",
+      "profileId": "mac_apple_silicon"
+    },
+    "maturity": "primary",
+    "metrics": {
+      "baselineP50Ms": 0.000266996,
+      "baselineP95Ms": 0.000278904,
+      "baselineP99Ms": 0.000278904,
+      "baselineSampleCount": 15,
+      "comparisonP50Ms": 0.0006999959999999999,
+      "comparisonP95Ms": 0.000712904,
+      "comparisonP99Ms": 0.000712904,
+      "comparisonSampleCount": 15,
+      "deltaP50Percent": 162.1747142279285
+    },
+    "providerPair": "doe_vs_dawn",
+    "providerSet": "backend_native_providers",
+    "providers": [
+      "doe",
+      "dawn"
+    ],
+    "runId": "20260409T010642Z",
+    "schemaVersion": 1,
+    "sourceConformance": "canonical",
+    "sourceConformanceReason": "",
+    "sourceReportPath": "/Users/xyz/deco/doe/bench/out/apple-metal/compare/20260409T010347Z/dawn-vs-doe.apple.metal.compare.json",
+    "sourceReportType": "backend_compare_report",
+    "sourceWorkloadId": "compute_dispatch_fallback",
+    "surface": "backend_native",
+    "workloadDomain": "compute",
+    "workloadId": "compute_dispatch_fallback",
+    "workloadSet": "compute_e2e"
+  },
+  {
+    "claimStatus": "claimable",
+    "comparisonStatus": "comparable",
+    "comparisonView": "doe_vs_dawn",
+    "generatedAt": "2026-04-09T01:06:42.371818Z",
+    "governedLaneIds": [
+      "metal_doe_comparable",
+      "metal_dawn_release"
+    ],
+    "host": {
+      "arch": "arm64",
+      "backend": "metal",
+      "gpuVendor": "apple",
+      "os": "darwin",
+      "profileId": "mac_apple_silicon"
+    },
+    "maturity": "primary",
+    "metrics": {
+      "baselineP50Ms": 0.00045695,
+      "baselineP95Ms": 0.00046740000000000003,
+      "baselineP99Ms": 0.00046740000000000003,
+      "baselineSampleCount": 15,
+      "comparisonP50Ms": 0.0014152055555555557,
+      "comparisonP95Ms": 0.0014224444444444445,
+      "comparisonP99Ms": 0.0014224444444444445,
+      "comparisonSampleCount": 15,
+      "deltaP50Percent": 209.7068728647676
+    },
+    "providerPair": "doe_vs_dawn",
+    "providerSet": "backend_native_providers",
+    "providers": [
+      "doe",
+      "dawn"
+    ],
+    "runId": "20260409T010642Z",
+    "schemaVersion": 1,
+    "sourceConformance": "canonical",
+    "sourceConformanceReason": "",
+    "sourceReportPath": "/Users/xyz/deco/doe/bench/out/apple-metal/compare/20260409T010347Z/dawn-vs-doe.apple.metal.compare.json",
+    "sourceReportType": "backend_compare_report",
+    "sourceWorkloadId": "compute_dispatch_grid",
+    "surface": "backend_native",
+    "workloadDomain": "compute",
+    "workloadId": "compute_dispatch_grid",
+    "workloadSet": "compute_e2e"
+  },
+  {
+    "claimStatus": "claimable",
+    "comparisonStatus": "comparable",
+    "comparisonView": "doe_vs_dawn",
+    "generatedAt": "2026-04-09T01:06:42.371818Z",
+    "governedLaneIds": [
+      "metal_doe_comparable",
+      "metal_dawn_release"
+    ],
+    "host": {
+      "arch": "arm64",
+      "backend": "metal",
+      "gpuVendor": "apple",
+      "os": "darwin",
+      "profileId": "mac_apple_silicon"
+    },
+    "maturity": "primary",
+    "metrics": {
+      "baselineP50Ms": 1.91,
+      "baselineP95Ms": 2.042,
+      "baselineP99Ms": 2.042,
+      "baselineSampleCount": 15,
+      "comparisonP50Ms": 7.18,
+      "comparisonP95Ms": 7.676,
+      "comparisonP99Ms": 7.676,
+      "comparisonSampleCount": 15,
+      "deltaP50Percent": 275.91623036649213
+    },
+    "providerPair": "doe_vs_dawn",
+    "providerSet": "backend_native_providers",
+    "providers": [
+      "doe",
+      "dawn"
+    ],
+    "runId": "20260409T010642Z",
+    "schemaVersion": 1,
+    "sourceConformance": "canonical",
+    "sourceConformanceReason": "",
+    "sourceReportPath": "/Users/xyz/deco/doe/bench/out/apple-metal/compare/20260409T010347Z/dawn-vs-doe.apple.metal.compare.json",
+    "sourceReportType": "backend_compare_report",
+    "sourceWorkloadId": "compute_zero_initialize_workgroup_memory_256",
+    "surface": "backend_native",
+    "workloadDomain": "compute",
+    "workloadId": "compute_zero_initialize_workgroup_memory_256",
+    "workloadSet": "compute_e2e"
+  },
+  {
+    "claimStatus": "diagnostic",
+    "comparisonStatus": "comparable",
+    "comparisonView": "doe_vs_dawn",
+    "generatedAt": "2026-04-09T01:06:42.371818Z",
+    "governedLaneIds": [
+      "metal_doe_comparable",
+      "metal_dawn_release"
+    ],
+    "host": {
+      "arch": "arm64",
+      "backend": "metal",
+      "gpuVendor": "apple",
+      "os": "darwin",
+      "profileId": "mac_apple_silicon"
+    },
+    "maturity": "primary",
+    "metrics": {
+      "baselineP50Ms": 0.00043324999999999993,
+      "baselineP95Ms": 0.000465725,
+      "baselineP99Ms": 0.000465725,
+      "baselineSampleCount": 15,
+      "comparisonP50Ms": 0.00044015624999999996,
+      "comparisonP95Ms": 0.00045161874999999997,
+      "comparisonP99Ms": 0.00045161874999999997,
+      "comparisonSampleCount": 15,
+      "deltaP50Percent": 1.59405654933642
+    },
+    "providerPair": "doe_vs_dawn",
+    "providerSet": "backend_native_providers",
+    "providers": [
+      "doe",
+      "dawn"
+    ],
+    "runId": "20260409T010642Z",
+    "schemaVersion": 1,
+    "sourceConformance": "canonical",
+    "sourceConformanceReason": "",
+    "sourceReportPath": "/Users/xyz/deco/doe/bench/out/apple-metal/compare/20260409T010347Z/dawn-vs-doe.apple.metal.compare.json",
+    "sourceReportType": "backend_compare_report",
+    "sourceWorkloadId": "copy_buffer_to_texture",
+    "surface": "backend_native",
+    "workloadDomain": "copy",
+    "workloadId": "copy_buffer_to_texture",
+    "workloadSet": "overhead"
+  },
+  {
+    "claimStatus": "claimable",
+    "comparisonStatus": "comparable",
+    "comparisonView": "doe_vs_dawn",
+    "generatedAt": "2026-04-09T01:06:42.371818Z",
+    "governedLaneIds": [
+      "metal_doe_comparable",
+      "metal_dawn_release"
+    ],
+    "host": {
+      "arch": "arm64",
+      "backend": "metal",
+      "gpuVendor": "apple",
+      "os": "darwin",
+      "profileId": "mac_apple_silicon"
+    },
+    "maturity": "primary",
+    "metrics": {
+      "baselineP50Ms": 0.0032553,
+      "baselineP95Ms": 0.0034465,
+      "baselineP99Ms": 0.0034465,
+      "baselineSampleCount": 15,
+      "comparisonP50Ms": 0.0097036,
+      "comparisonP95Ms": 0.009847400000000001,
+      "comparisonP99Ms": 0.009847400000000001,
+      "comparisonSampleCount": 15,
+      "deltaP50Percent": 198.08619789266734
+    },
+    "providerPair": "doe_vs_dawn",
+    "providerSet": "backend_native_providers",
+    "providers": [
+      "doe",
+      "dawn"
+    ],
+    "runId": "20260409T010642Z",
+    "schemaVersion": 1,
+    "sourceConformance": "canonical",
+    "sourceConformanceReason": "",
+    "sourceReportPath": "/Users/xyz/deco/doe/bench/out/apple-metal/compare/20260409T010347Z/dawn-vs-doe.apple.metal.compare.json",
+    "sourceReportType": "backend_compare_report",
+    "sourceWorkloadId": "copy_protocol",
+    "surface": "backend_native",
+    "workloadDomain": "copy",
+    "workloadId": "copy_protocol",
+    "workloadSet": "overhead"
+  },
+  {
+    "claimStatus": "diagnostic",
+    "comparisonStatus": "comparable",
+    "comparisonView": "doe_vs_dawn",
+    "generatedAt": "2026-04-09T01:06:42.371818Z",
+    "governedLaneIds": [
+      "metal_doe_comparable",
+      "metal_dawn_release"
+    ],
+    "host": {
+      "arch": "arm64",
+      "backend": "metal",
+      "gpuVendor": "apple",
+      "os": "darwin",
+      "profileId": "mac_apple_silicon"
+    },
+    "maturity": "primary",
+    "metrics": {
+      "baselineP50Ms": 0.00040615625000000005,
+      "baselineP95Ms": 0.00044726875,
+      "baselineP99Ms": 0.00044726875,
+      "baselineSampleCount": 15,
+      "comparisonP50Ms": 0.00039846875000000006,
+      "comparisonP95Ms": 0.0004158625,
+      "comparisonP99Ms": 0.0004158625,
+      "comparisonSampleCount": 15,
+      "deltaP50Percent": -1.8927444794952675
+    },
+    "providerPair": "doe_vs_dawn",
+    "providerSet": "backend_native_providers",
+    "providers": [
+      "doe",
+      "dawn"
+    ],
+    "runId": "20260409T010642Z",
+    "schemaVersion": 1,
+    "sourceConformance": "canonical",
+    "sourceConformanceReason": "",
+    "sourceReportPath": "/Users/xyz/deco/doe/bench/out/apple-metal/compare/20260409T010347Z/dawn-vs-doe.apple.metal.compare.json",
+    "sourceReportType": "backend_compare_report",
+    "sourceWorkloadId": "copy_texture_to_texture",
+    "surface": "backend_native",
+    "workloadDomain": "copy",
+    "workloadId": "copy_texture_to_texture",
+    "workloadSet": "overhead"
+  },
+  {
+    "claimStatus": "claimable",
+    "comparisonStatus": "comparable",
+    "comparisonView": "doe_vs_dawn",
+    "generatedAt": "2026-04-09T01:06:42.371818Z",
+    "governedLaneIds": [
+      "metal_doe_comparable",
+      "metal_dawn_release"
+    ],
+    "host": {
+      "arch": "arm64",
+      "backend": "metal",
+      "gpuVendor": "apple",
+      "os": "darwin",
+      "profileId": "mac_apple_silicon"
+    },
+    "maturity": "primary",
+    "metrics": {
+      "baselineP50Ms": 0.30022,
+      "baselineP95Ms": 0.32084,
+      "baselineP99Ms": 0.32084,
+      "baselineSampleCount": 15,
+      "comparisonP50Ms": 0.54372,
+      "comparisonP95Ms": 0.55914,
+      "comparisonP99Ms": 0.55914,
+      "comparisonSampleCount": 15,
+      "deltaP50Percent": 81.10718806208781
+    },
+    "providerPair": "doe_vs_dawn",
+    "providerSet": "backend_native_providers",
+    "providers": [
+      "doe",
+      "dawn"
+    ],
+    "runId": "20260409T010642Z",
+    "schemaVersion": 1,
+    "sourceConformance": "canonical",
+    "sourceConformanceReason": "",
+    "sourceReportPath": "/Users/xyz/deco/doe/bench/out/apple-metal/compare/20260409T010347Z/dawn-vs-doe.apple.metal.compare.json",
+    "sourceReportType": "backend_compare_report",
+    "sourceWorkloadId": "render_uniform_buffer_update_writebuffer_partial_single",
+    "surface": "backend_native",
+    "workloadDomain": "render",
+    "workloadId": "render_uniform_buffer_update_writebuffer_partial_single",
+    "workloadSet": "render"
+  },
+  {
+    "claimStatus": "diagnostic",
     "comparisonStatus": "comparable",
     "comparisonView": "doe_vs_node_webgpu_package",
-    "generatedAt": "2026-04-08T21:43:44.021169Z",
+    "generatedAt": "2026-04-08T23:56:17.517669Z",
     "governedLaneIds": [
       "node_package_compare"
     ],
@@ -198,15 +1256,15 @@
     },
     "maturity": "primary",
     "metrics": {
-      "baselineP50Ms": 61.298449,
-      "baselineP95Ms": 67.420678,
-      "baselineP99Ms": 67.420678,
+      "baselineP50Ms": 231.099567,
+      "baselineP95Ms": 256.598584,
+      "baselineP99Ms": 256.598584,
       "baselineSampleCount": 15,
-      "comparisonP50Ms": 165.748853,
-      "comparisonP95Ms": 217.30127,
-      "comparisonP99Ms": 217.30127,
+      "comparisonP50Ms": 151.359157,
+      "comparisonP95Ms": 156.08578,
+      "comparisonP99Ms": 156.08578,
       "comparisonSampleCount": 15,
-      "deltaP50Percent": 15.949637383972458
+      "deltaP50Percent": -25.388285656094954
     },
     "providerPair": "doe_vs_node_webgpu_package",
     "providerSet": "package_node_providers",
@@ -214,11 +1272,11 @@
       "doe",
       "node-webgpu"
     ],
-    "runId": "20260408T214344Z",
+    "runId": "20260408T235617Z",
     "schemaVersion": 1,
     "sourceConformance": "canonical",
     "sourceConformanceReason": "",
-    "sourceReportPath": "/home/x/deco/doe/bench/out/amd-vulkan/20260408T214329Z/gemma270m.node-package.ir.compare.json",
+    "sourceReportPath": "/Users/xyz/deco/doe/bench/out/amd-vulkan/20260408T235606Z/gemma270m.node-package.ir.compare.json",
     "sourceReportType": "node_package_compare_report",
     "sourceWorkloadId": "inference_gemma3_270m_prefill_64tok_decode_64tok",
     "surface": "node_package",
@@ -229,8 +1287,94 @@
   {
     "claimStatus": "claimable",
     "comparisonStatus": "comparable",
+    "comparisonView": "doe_vs_node_webgpu_package",
+    "generatedAt": "2026-04-09T03:03:11.208290Z",
+    "governedLaneIds": [
+      "node_package_compare"
+    ],
+    "host": {
+      "arch": "arm64",
+      "os": "darwin",
+      "profileId": "mac_apple_silicon"
+    },
+    "maturity": "primary",
+    "metrics": {
+      "baselineP50Ms": 163.238021,
+      "baselineP95Ms": 192.872978,
+      "baselineP99Ms": 192.872978,
+      "baselineSampleCount": 15,
+      "comparisonP50Ms": 183.313196,
+      "comparisonP95Ms": 214.495438,
+      "comparisonP99Ms": 214.495438,
+      "comparisonSampleCount": 15,
+      "deltaP50Percent": -8.08362295345818
+    },
+    "providerPair": "doe_vs_node_webgpu_package",
+    "providerSet": "package_node_providers",
+    "providers": [
+      "doe",
+      "node-webgpu"
+    ],
+    "runId": "20260409T030311Z",
+    "schemaVersion": 1,
+    "sourceConformance": "canonical",
+    "sourceConformanceReason": "",
+    "sourceReportPath": "/Users/xyz/deco/doe/bench/out/apple-metal/20260409T030259Z/gemma64.node-package.ir.compare.json",
+    "sourceReportType": "node_package_compare_report",
+    "sourceWorkloadId": "inference_gemma3_270m_prefill_64tok_decode_64tok",
+    "surface": "node_package",
+    "workloadDomain": "compute",
+    "workloadId": "inference_gemma3_270m_prefill_64tok_decode_64tok",
+    "workloadSet": "compute_e2e"
+  },
+  {
+    "claimStatus": "claimable",
+    "comparisonStatus": "comparable",
+    "comparisonView": "doe_vs_node_webgpu_package",
+    "generatedAt": "2026-04-09T03:02:14.984404Z",
+    "governedLaneIds": [
+      "node_package_compare"
+    ],
+    "host": {
+      "arch": "arm64",
+      "os": "darwin",
+      "profileId": "mac_apple_silicon"
+    },
+    "maturity": "primary",
+    "metrics": {
+      "baselineP50Ms": 156.198586,
+      "baselineP95Ms": 182.698766,
+      "baselineP99Ms": 182.698766,
+      "baselineSampleCount": 15,
+      "comparisonP50Ms": 197.651101,
+      "comparisonP95Ms": 203.326071,
+      "comparisonP99Ms": 203.326071,
+      "comparisonSampleCount": 15,
+      "deltaP50Percent": 21.162590393534785
+    },
+    "providerPair": "doe_vs_node_webgpu_package",
+    "providerSet": "package_node_providers",
+    "providers": [
+      "doe",
+      "node-webgpu"
+    ],
+    "runId": "20260409T030214Z",
+    "schemaVersion": 1,
+    "sourceConformance": "canonical",
+    "sourceConformanceReason": "",
+    "sourceReportPath": "/Users/xyz/deco/doe/bench/out/apple-metal/20260409T030203Z/gemma64.node-package.warm.ir.compare.json",
+    "sourceReportType": "node_package_compare_report",
+    "sourceWorkloadId": "inference_gemma3_270m_prefill_64tok_decode_64tok",
+    "surface": "node_package",
+    "workloadDomain": "compute",
+    "workloadId": "inference_gemma3_270m_prefill_64tok_decode_64tok",
+    "workloadSet": "compute_e2e"
+  },
+  {
+    "claimStatus": "diagnostic",
+    "comparisonStatus": "comparable",
     "comparisonView": "doe_vs_bun_webgpu_package",
-    "generatedAt": "2026-04-08T21:43:40.908676Z",
+    "generatedAt": "2026-04-08T23:56:32.704146Z",
     "governedLaneIds": [
       "bun_package_compare"
     ],
@@ -241,15 +1385,15 @@
     },
     "maturity": "prototype",
     "metrics": {
-      "baselineP50Ms": 58.746537,
-      "baselineP95Ms": 64.563825,
-      "baselineP99Ms": 64.563825,
+      "baselineP50Ms": 239.978207,
+      "baselineP95Ms": 251.739292,
+      "baselineP99Ms": 251.739292,
       "baselineSampleCount": 15,
-      "comparisonP50Ms": 165.000111,
-      "comparisonP95Ms": 221.705373,
-      "comparisonP99Ms": 221.705373,
+      "comparisonP50Ms": 162.973139,
+      "comparisonP95Ms": 165.813711,
+      "comparisonP99Ms": 165.813711,
       "comparisonSampleCount": 15,
-      "deltaP50Percent": 21.21043375197189
+      "deltaP50Percent": -18.156700411167282
     },
     "providerPair": "doe_vs_bun_webgpu_package",
     "providerSet": "package_bun_providers",
@@ -257,11 +1401,97 @@
       "doe",
       "bun-webgpu"
     ],
-    "runId": "20260408T214340Z",
+    "runId": "20260408T235632Z",
     "schemaVersion": 1,
     "sourceConformance": "canonical",
     "sourceConformanceReason": "",
-    "sourceReportPath": "/home/x/deco/doe/bench/out/amd-vulkan/20260408T214329Z/gemma270m.bun-package.ir.compare.json",
+    "sourceReportPath": "/Users/xyz/deco/doe/bench/out/amd-vulkan/20260408T235621Z/gemma270m.bun-package.ir.compare.json",
+    "sourceReportType": "bun_package_compare_report",
+    "sourceWorkloadId": "inference_gemma3_270m_prefill_64tok_decode_64tok",
+    "surface": "bun_package",
+    "workloadDomain": "compute",
+    "workloadId": "inference_gemma3_270m_prefill_64tok_decode_64tok",
+    "workloadSet": "compute_e2e"
+  },
+  {
+    "claimStatus": "claimable",
+    "comparisonStatus": "comparable",
+    "comparisonView": "doe_vs_bun_webgpu_package",
+    "generatedAt": "2026-04-09T03:03:10.970045Z",
+    "governedLaneIds": [
+      "bun_package_compare"
+    ],
+    "host": {
+      "arch": "arm64",
+      "os": "darwin",
+      "profileId": "mac_apple_silicon"
+    },
+    "maturity": "prototype",
+    "metrics": {
+      "baselineP50Ms": 168.722778,
+      "baselineP95Ms": 190.134067,
+      "baselineP99Ms": 190.134067,
+      "baselineSampleCount": 15,
+      "comparisonP50Ms": 188.470264,
+      "comparisonP95Ms": 225.040083,
+      "comparisonP99Ms": 225.040083,
+      "comparisonSampleCount": 15,
+      "deltaP50Percent": 8.378688899244423
+    },
+    "providerPair": "doe_vs_bun_webgpu_package",
+    "providerSet": "package_bun_providers",
+    "providers": [
+      "doe",
+      "bun-webgpu"
+    ],
+    "runId": "20260409T030310Z",
+    "schemaVersion": 1,
+    "sourceConformance": "canonical",
+    "sourceConformanceReason": "",
+    "sourceReportPath": "/Users/xyz/deco/doe/bench/out/apple-metal/20260409T030259Z/gemma64.bun-package.ir.compare.json",
+    "sourceReportType": "bun_package_compare_report",
+    "sourceWorkloadId": "inference_gemma3_270m_prefill_64tok_decode_64tok",
+    "surface": "bun_package",
+    "workloadDomain": "compute",
+    "workloadId": "inference_gemma3_270m_prefill_64tok_decode_64tok",
+    "workloadSet": "compute_e2e"
+  },
+  {
+    "claimStatus": "claimable",
+    "comparisonStatus": "comparable",
+    "comparisonView": "doe_vs_bun_webgpu_package",
+    "generatedAt": "2026-04-09T03:02:14.669958Z",
+    "governedLaneIds": [
+      "bun_package_compare"
+    ],
+    "host": {
+      "arch": "arm64",
+      "os": "darwin",
+      "profileId": "mac_apple_silicon"
+    },
+    "maturity": "prototype",
+    "metrics": {
+      "baselineP50Ms": 154.756884,
+      "baselineP95Ms": 185.337988,
+      "baselineP99Ms": 185.337988,
+      "baselineSampleCount": 15,
+      "comparisonP50Ms": 199.955493,
+      "comparisonP95Ms": 205.080847,
+      "comparisonP99Ms": 205.080847,
+      "comparisonSampleCount": 15,
+      "deltaP50Percent": 24.51798376170684
+    },
+    "providerPair": "doe_vs_bun_webgpu_package",
+    "providerSet": "package_bun_providers",
+    "providers": [
+      "doe",
+      "bun-webgpu"
+    ],
+    "runId": "20260409T030214Z",
+    "schemaVersion": 1,
+    "sourceConformance": "canonical",
+    "sourceConformanceReason": "",
+    "sourceReportPath": "/Users/xyz/deco/doe/bench/out/apple-metal/20260409T030203Z/gemma64.bun-package.warm.ir.compare.json",
     "sourceReportType": "bun_package_compare_report",
     "sourceWorkloadId": "inference_gemma3_270m_prefill_64tok_decode_64tok",
     "surface": "bun_package",

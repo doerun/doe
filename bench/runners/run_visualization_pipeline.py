@@ -179,8 +179,20 @@ def report_slug(path: Path) -> str:
     return slugify(path.stem)
 
 
+def surface_label(path: Path) -> str:
+    path_text = str(path).lower()
+    name_text = path.name.lower()
+    if "apple-metal" in path_text or ".metal" in name_text:
+        return "Apple Metal"
+    if "amd-vulkan" in path_text or ".vulkan" in name_text:
+        return "AMD Vulkan"
+    if "d3d12" in path_text or ".d3d12" in name_text:
+        return "Windows D3D12"
+    return "Benchmark"
+
+
 def lane_label(kind: str, path: Path) -> str:
-    surface = "AMD Vulkan" if "amd-vulkan" in str(path).lower() else "Benchmark"
+    surface = surface_label(path)
     if kind == "backend":
         return f"{surface} native"
     if kind == "node":
