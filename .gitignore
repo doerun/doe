@@ -32,12 +32,24 @@ bench/compare_dawn_vs_doe.config.local.*.json
 !bench/compare_dawn_vs_doe.config.local.vulkan.comparable.json
 !bench/compare_dawn_vs_doe.config.local.vulkan.release.json
 !bench/compare_dawn_vs_doe.config.local.vulkan.directional.json
-# Bench outputs — keep timestamped runs disposable, but allow the stable
-# visualization mirror to be tracked.
+# Bench outputs — keep bulky run workspaces disposable, but allow the stable
+# latest mirrors, summary compare receipts, and HTML reports to be tracked.
 bench/out/*
-!bench/out/visualization/
-bench/out/visualization/*
-!bench/out/visualization/latest/
+!bench/out/**/
+bench/out/**
+!bench/out/**/
+!bench/out/README.local.md
+!bench/out/*.compare.json
+!bench/out/**/*.compare.json
+!bench/out/*.compare-dev.json
+!bench/out/**/*.compare-dev.json
+!bench/out/*.release.json
+!bench/out/**/*.release.json
+!bench/out/*.smoke.json
+!bench/out/**/*.smoke.json
+!bench/out/*.html
+!bench/out/**/*.html
+!bench/out/cube/latest/**
 !bench/out/visualization/latest/**
 nursery/webgpu/out/node-smoke.meta.json
 nursery/webgpu/out/node-smoke.ndjson

@@ -389,6 +389,7 @@ resolves its entries against repo root.
   - normalizes backend compare reports plus package-surface compare reports into a single benchmark cube contract.
   - emits timestamped JSON cube-entry artifacts, JSON cube summary, and markdown matrix slices under `bench/out/cube/<timestamp>/`.
   - also writes stable latest outputs under `bench/out/cube/latest/`.
+  - `bench/out/cube/latest/` is the stable git-tracked mirror; timestamped cube runs remain disposable evidence artifacts under `bench/out/cube/<timestamp>/`.
   - preserves latest-history by default: it seeds the build with report paths referenced by the current `bench/out/cube/latest/cube.summary.json`, so explicit subset reruns cannot silently downgrade the latest mirror.
   - latest-cell selection now prefers broader evidence before newer evidence:
     canonical source conformance first, then larger cube-entry count, then better status, then newer timestamp.
@@ -922,6 +923,7 @@ resolves its entries against repo root.
   - builds a timestamped visualization bundle over explicit compare reports:
     per-report compare HTML + analysis JSON, inventory dashboard, benchmark cube dashboard, and a landing `index.html`.
   - writes a stable latest mirror under `bench/out/visualization/latest/` so there is one canonical local page to open after a run.
+  - `bench/out/visualization/latest/` remains the git-tracked latest bundle mirror for shareable compare pages and dashboards.
   - keeps selected timing, workload-unit wall, claimability mode, and operator-diff availability visible on the landing page so the bundle does not silently flatten methodology caveats.
 - `claim_gate.py`
   - validates a comparison report against required claim contract fields (`claimabilityPolicy.mode`, `comparisonStatus`, `claimStatus`, per-workload claimability, and comparability-obligation schema/blocking-pass state) for blocking release CI gates.
@@ -994,6 +996,10 @@ For performance/claim benchmarking, build `runtime/zig/zig-out/bin/doe-zig-runti
 Ad-hoc/manual artifact names (for example `*layoutcheck*`, `*contractcheck*`, `tmp.*`) are routed to `bench/out/scratch/<timestamp>/...` so canonical runs stay clean.
 
 Not every run folder contains HTML. Compare-report runs do (`dawn-vs-doe*.html`, default-on in release pipeline), while gate-only/trace-workspace runs may only contain JSON/NDJSON plus `run_manifest.json`.
+Repo tracking keeps the bulky run workspaces ignored by default, but allows
+stable `latest/` mirrors plus compare/release/smoke summary JSONs and HTML
+reports under `bench/out/` to be committed when you want shareable receipts
+without the NDJSON trace payloads.
 
 Benchmark cube output follows the same discipline:
 

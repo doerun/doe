@@ -29,9 +29,11 @@ Read this file first. Use the shard files under
   copies/resolves are pending or the shared-event fallback is unavailable. Fresh
   Metal package receipts are still pending; see `2026-04.md` for the diagnosis and
   implementation note.
-- Benchmark visualization now has a real timestamped bundle pipeline and a
-  stable `bench/out/visualization/latest/` landing page over the current AMD
-  Vulkan native plus package compare reports.
+- Benchmark visualization and cube reporting now have stable git-tracked
+  latest mirrors under `bench/out/visualization/latest/` and
+  `bench/out/cube/latest/`, and small compare/release/smoke summary JSONs plus
+  HTML reports under `bench/out/` are now commit-eligible without promoting
+  the bulky NDJSON run workspaces.
 - AMD Vulkan Gemma-270M package compute is now a claimable local compare
   surface on both Node and Bun package lanes.
 - Current status terminology now treats numeric stability as a `strategy`
