@@ -122,6 +122,44 @@ class BackendWorkloadCatalogTests(unittest.TestCase):
                     msg=f"{row['id']} must have benchmarkClass=comparable in the governed cohort for {lane_id}",
                 )
 
+    def test_amd_vulkan_governed_upload_rows_do_not_carry_path_asymmetry(self) -> None:
+        materialized = self.generator.materialize_lane(self.catalog, "amd_vulkan")
+        for row in materialized["workloads"]:
+            if row.get("domain") != "upload":
+                continue
+            if "governed" not in row.get("cohorts", []):
+                continue
+            if not row.get("comparable"):
+                continue
+            self.assertFalse(
+                row.get("pathAsymmetry", False),
+                msg=f"{row['id']} must not carry pathAsymmetry in the governed AMD Vulkan comparable cohort",
+            )
+
+    def test_amd_vulkan_non_vetted_non_app_domains_remain_directional(self) -> None:
+        materialized = self.generator.materialize_lane(self.catalog, "amd_vulkan")
+        non_apples_domains = {
+            "pipeline-async",
+            "p1-capability",
+            "p1-resource-table",
+            "p1-capability-macro",
+            "p2-lifecycle",
+            "p2-lifecycle-macro",
+            "p0-resource",
+            "p0-compute",
+            "p0-render",
+            "surface",
+        }
+        for row in materialized["workloads"]:
+            if row.get("domain") not in non_apples_domains:
+                continue
+            if row.get("applesToApplesVetted", False):
+                continue
+            self.assertFalse(
+                row.get("comparable", False),
+                msg=f"{row['id']} must stay directional in amd_vulkan until applesToApplesVetted=true",
+            )
+
     def test_d3d12_governed_rows_are_comparable(self) -> None:
         comparable = self.generator.materialize_lane(self.catalog, "local_d3d12")
         for row in comparable["workloads"]:

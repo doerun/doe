@@ -27,8 +27,6 @@ const surface_runtime = @import("metal_surface_runtime.zig");
 const kernel_dispatch = @import("metal_kernel_dispatch.zig");
 const bridge = @import("metal_bridge_decls.zig");
 const HAS_PIPELINE_CACHE = builtin.os.tag == .macos;
-const metal_bridge_command_buffer_commit = bridge.metal_bridge_command_buffer_commit;
-const metal_bridge_command_buffer_wait_completed = bridge.metal_bridge_command_buffer_wait_completed;
 const metal_bridge_create_default_device = bridge.metal_bridge_create_default_device;
 const metal_bridge_device_new_command_queue = bridge.metal_bridge_device_new_command_queue;
 const metal_bridge_device_new_command_queue_with_priority = bridge.metal_bridge_device_new_command_queue_with_priority;
@@ -229,7 +227,7 @@ pub const NativeMetalRuntime = struct {
     }
 
     pub fn prewarm_upload_path(self: *NativeMetalRuntime, max_upload_bytes: u64, mode: webgpu.UploadBufferUsageMode) !void {
-        return metal_upload.prewarm_upload_path(self, max_upload_bytes, mode);
+        return queue_ops.prewarm_upload_path(self, max_upload_bytes, mode);
     }
 
     pub const KernelDispatchResult = kernel_dispatch.KernelDispatchResult;

@@ -5,6 +5,9 @@ const common_timing = @import("../common/timing.zig");
 const vk_async_probes = @import("vk_async_probes.zig");
 const vk_resources = @import("vk_resources.zig");
 
+pub const AsyncProbeResult = vk_async_probes.AsyncProbeResult;
+pub const WGPUTextureFormat = model_gpu_types.WGPUTextureFormat;
+
 pub fn lifecycle_probe(self: anytype, iterations: u32) !u64 {
     const count = if (iterations > 0) iterations else 1;
     const start_ns = common_timing.now_ns();
