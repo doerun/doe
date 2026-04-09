@@ -402,3 +402,101 @@ test "spirv binding: Block decoration emitted for uniform buffer" {
     }
     try testing.expect(found_block);
 }
+
+test "spirv float comparison: f32 > emits OpFOrdGreaterThan (opcode 186)" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read> data: array<f32>;
+        \\@group(0) @binding(1) var<storage, read_write> result: array<u32>;
+        \\
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    if (data[0] > data[1]) {
+        \\        result[0] = 1u;
+        \\    }
+        \\}
+    ;
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(allocator, source, &out);
+    const binary = out[0..len];
+
+    // Scan for OpFOrdGreaterThan (opcode 186).
+    // Instruction encoding: (word_count << 16) | opcode.
+    var found_ford_gt = false;
+    const word_count = len / 4;
+    var i: usize = 5;
+    while (i < word_count) {
+        const w = read_u32_le(binary, i * 4);
+        const op = w & 0xFFFF;
+        const wc = w >> 16;
+        if (op == 186) { // OpFOrdGreaterThan
+            found_ford_gt = true;
+            break;
+        }
+        i += wc;
+    }
+    try testing.expect(found_ford_gt);
+}
+
+test "spirv float comparison: f32 < emits OpFOrdLessThan (opcode 184)" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read> data: array<f32>;
+        \\@group(0) @binding(1) var<storage, read_write> result: array<u32>;
+        \\
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    if (data[0] < data[1]) {
+        \\        result[0] = 1u;
+        \\    }
+        \\}
+    ;
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(allocator, source, &out);
+    const binary = out[0..len];
+
+    var found_ford_lt = false;
+    const word_count = len / 4;
+    var i: usize = 5;
+    while (i < word_count) {
+        const w = read_u32_le(binary, i * 4);
+        const op = w & 0xFFFF;
+        const wc = w >> 16;
+        if (op == 184) { // OpFOrdLessThan
+            found_ford_lt = true;
+            break;
+        }
+        i += wc;
+    }
+    try testing.expect(found_ford_lt);
+}
+
+test "spirv float comparison: f32 != emits OpFOrdNotEqual (opcode 182)" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read> data: array<f32>;
+        \\@group(0) @binding(1) var<storage, read_write> result: array<u32>;
+        \\
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    if (data[0] != data[1]) {
+        \\        result[0] = 1u;
+        \\    }
+        \\}
+    ;
+    var out: [MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try translateToSpirv(allocator, source, &out);
+    const binary = out[0..len];
+
+    var found_ford_ne = false;
+    const word_count = len / 4;
+    var i: usize = 5;
+    while (i < word_count) {
+        const w = read_u32_le(binary, i * 4);
+        const op = w & 0xFFFF;
+        const wc = w >> 16;
+        if (op == 182) { // OpFOrdNotEqual
+            found_ford_ne = true;
+            break;
+        }
+        i += wc;
+    }
+    try testing.expect(found_ford_ne);
+}

@@ -143,7 +143,11 @@ test "spec: arithmetic and comparison opcodes" {
     try testing.expectEqual(@as(u16, 148), spec.Opcode.Dot);
     try testing.expectEqual(@as(u16, 170), spec.Opcode.IEqual);
     try testing.expectEqual(@as(u16, 180), spec.Opcode.FOrdEqual);
-    try testing.expectEqual(@as(u16, 182), spec.Opcode.FOrdLessThan);
+    try testing.expectEqual(@as(u16, 182), spec.Opcode.FOrdNotEqual);
+    try testing.expectEqual(@as(u16, 184), spec.Opcode.FOrdLessThan);
+    try testing.expectEqual(@as(u16, 186), spec.Opcode.FOrdGreaterThan);
+    try testing.expectEqual(@as(u16, 188), spec.Opcode.FOrdLessThanEqual);
+    try testing.expectEqual(@as(u16, 190), spec.Opcode.FOrdGreaterThanEqual);
 }
 
 test "spec: atomic opcodes" {

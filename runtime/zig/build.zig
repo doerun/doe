@@ -530,6 +530,23 @@ pub fn build(b: *std.Build) void {
     emit_msl_step.dependOn(&install_emit_msl.step);
     b.getInstallStep().dependOn(emit_msl_step);
 
+    const emit_spirv_exe = b.addExecutable(.{
+        .name = "doe-emit-spirv",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/main_emit_spirv.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{
+                .{ .name = "build_options", .module = build_options_module },
+            },
+        }),
+    });
+    emit_spirv_exe.linkLibC();
+    const install_emit_spirv = b.addInstallArtifact(emit_spirv_exe, .{});
+    const emit_spirv_step = b.step("emit-spirv", "Build the WGSL-to-SPIR-V emitter tool");
+    emit_spirv_step.dependOn(&install_emit_spirv.step);
+    b.getInstallStep().dependOn(emit_spirv_step);
+
     const webgpu_plan_executor = b.addExecutable(.{
         .name = "webgpu-plan-executor",
         .root_module = b.createModule(.{

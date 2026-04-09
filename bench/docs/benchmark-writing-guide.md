@@ -43,6 +43,7 @@ Applies to:
 
 - Workload contracts:
   - `bench/workloads*.json`
+  - DOE-vs-Dawn comparable fullsuite contract: `bench/workloads/specialized/workloads.amd.vulkan.superset.comparable.json`
 - Compare harness:
   - `bench/cli.py compare`
   - `bench/native_compare_modules/comparability.py`
