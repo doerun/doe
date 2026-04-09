@@ -76,6 +76,21 @@ pub fn flush_pending_work(q: *DoeQueue) void {
     queue_flush_breakdown.flushPendingWork(q);
 }
 
+pub fn flush_before_submit_if_needed(q: *DoeQueue) void {
+    if (q.dev.backend != .metal or q.mtl_event == null or q.deferred_copy_count != 0 or q.deferred_resolve_count != 0) {
+        flush_pending_work(q);
+    }
+}
+
+pub fn finalize_submitted_metal_command_buffer(q: *DoeQueue, mtl_cmd: ?*anyopaque) void {
+    if (q.mtl_event != null) {
+        metal_bridge_release(mtl_cmd);
+        q.pending_cmd = null;
+        return;
+    }
+    q.pending_cmd = mtl_cmd;
+}
+
 fn deliverInternalError(dev: *native_types.DoeDevice, comptime fmt: []const u8, args: anytype) void {
     var buf: [256]u8 = undefined;
     const msg = std.fmt.bufPrint(&buf, fmt, args) catch "doe_queue_submit_internal_error";
@@ -200,8 +215,9 @@ pub export fn doeNativeQueueSubmit(q_raw: ?*anyopaque, count: usize, cmd_bufs: [
 
     const queue = q.dev.mtl_queue;
 
-    // Flush any prior pending GPU work before encoding new commands.
-    flush_pending_work(q);
+    // Only flush at submit entry when later work depends on deferred CPU-side
+    // copies/resolves or when the shared-event fast path is unavailable.
+    flush_before_submit_if_needed(q);
 
     if (!submittedBuffersHaveRecordedCommands(count, cmd_bufs)) {
         return;
@@ -469,9 +485,11 @@ pub export fn doeNativeQueueSubmit(q_raw: ?*anyopaque, count: usize, cmd_bufs: [
     if (has_gpu_work) {
         // Signal shared event after GPU work completes (direct GPU→CPU sync).
         q.event_counter += 1;
-        metal_bridge_command_buffer_encode_signal_event(mtl_cmd, q.mtl_event, q.event_counter);
+        if (q.mtl_event) |event| {
+            metal_bridge_command_buffer_encode_signal_event(mtl_cmd, event, q.event_counter);
+        }
         metal_bridge_command_buffer_commit(mtl_cmd);
-        q.pending_cmd = mtl_cmd;
+        finalize_submitted_metal_command_buffer(q, mtl_cmd);
     } else {
         metal_bridge_release(mtl_cmd);
         queue_flush_breakdown.executeDeferredCopies(q);
@@ -689,13 +707,7 @@ fn flush_pending_work_dropin_sync(q: *DoeQueue) void {
         }
         return;
     }
-    if (q.pending_cmd) |cmd| {
-        metal_bridge_command_buffer_wait_completed(cmd);
-        metal_bridge_release(cmd);
-        q.pending_cmd = null;
-    }
-    queue_flush_breakdown.executeDeferredCopies(q);
-    queue_flush_breakdown.executeDeferredResolves(q);
+    queue_flush_breakdown.flushPendingWork(q);
 }
 
 // ============================================================

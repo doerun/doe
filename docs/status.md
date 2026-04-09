@@ -20,6 +20,11 @@ Read this file first. Use the shard files under
 
 ## Current status summary
 
+- Apple Metal submit-entry serialization is now fixed for the shared-event queue
+  path: `doeNativeQueueSubmit` no longer blocks every submit unless deferred CPU
+  copies/resolves are pending or the shared-event fallback is unavailable. Fresh
+  Metal package receipts are still pending; see `2026-04.md` for the diagnosis and
+  implementation note.
 - Benchmark visualization now has a real timestamped bundle pipeline and a
   stable `bench/out/visualization/latest/` landing page over the current AMD
   Vulkan native plus package compare reports.

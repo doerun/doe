@@ -99,7 +99,7 @@ pub export fn doeNativeComputeDispatchFlush(
 ) callconv(.c) void {
     const q = native_helpers.cast(native_types.DoeQueue, q_raw) orelse return;
     const pipe = native_helpers.cast(native_types.DoeComputePipeline, pipe_raw) orelse return;
-    queue_submit.flush_pending_work(q);
+    queue_submit.flush_before_submit_if_needed(q);
 
     var bind_groups: [MAX_COMPUTE_BIND_GROUPS]?*native_types.DoeBindGroup = [_]?*native_types.DoeBindGroup{null} ** MAX_COMPUTE_BIND_GROUPS;
     for (0..@min(bg_count, MAX_COMPUTE_BIND_GROUPS)) |i| {
@@ -173,7 +173,7 @@ pub export fn doeNativeComputeDispatchFlush(
         q.mtl_event,
         q.event_counter,
     ) orelse return;
-    q.pending_cmd = mtl_cmd;
+    queue_submit.finalize_submitted_metal_command_buffer(q, mtl_cmd);
     if (copy_size > 0) {
         queue_submit.flush_pending_work(q);
     }
@@ -191,7 +191,7 @@ pub export fn doeNativeComputeDispatchBatchFlush(
     if (q.dev.backend != .metal) return;
     if (dispatch_count == 0) return;
 
-    queue_submit.flush_pending_work(q);
+    queue_submit.flush_before_submit_if_needed(q);
     const mtl_cmd = metal_bridge_create_command_buffer(q.dev.mtl_queue) orelse return;
     var has_gpu_work = false;
 
@@ -217,7 +217,9 @@ pub export fn doeNativeComputeDispatchBatchFlush(
     }
 
     q.event_counter += 1;
-    metal_bridge_command_buffer_encode_signal_event(mtl_cmd, q.mtl_event, q.event_counter);
+    if (q.mtl_event) |event| {
+        metal_bridge_command_buffer_encode_signal_event(mtl_cmd, event, q.event_counter);
+    }
     metal_bridge_command_buffer_commit(mtl_cmd);
-    q.pending_cmd = mtl_cmd;
+    queue_submit.finalize_submitted_metal_command_buffer(q, mtl_cmd);
 }

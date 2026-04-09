@@ -69,6 +69,7 @@ pub const DoeQueue = struct {
     pending_cmd: ?*anyopaque = null,
     mtl_event: ?*anyopaque = null,
     event_counter: u64 = 0,
+    completed_event_counter: u64 = 0,
     gpu_timeline: gpu_timeline.GpuTimeline = gpu_timeline.GpuTimeline.init(null),
     deferred_copies: [command_types.MAX_DEFERRED_COPIES]command_types.DeferredCopy = undefined,
     deferred_copy_count: u32 = 0,

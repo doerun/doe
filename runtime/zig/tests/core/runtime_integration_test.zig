@@ -352,6 +352,7 @@ test "queue: default deferred_copy_count is 0" {
 
 test "queue: event_counter starts at 0 by default" {
     try testing.expect(@hasField(native.DoeQueue, "event_counter"));
+    try testing.expect(@hasField(native.DoeQueue, "completed_event_counter"));
     try testing.expect(@hasField(native.DoeQueue, "pending_cmd"));
     try testing.expect(@hasField(native.DoeQueue, "mtl_event"));
 }

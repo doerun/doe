@@ -44,13 +44,18 @@ pub fn executeDeferredResolves(q: *DoeQueue) void {
 
 pub fn flushPendingWorkTimed(q: *DoeQueue) QueueFlushBreakdown {
     var out = QueueFlushBreakdown{};
-    if (q.pending_cmd) |cmd| {
+    if (q.mtl_event != null and q.event_counter > q.completed_event_counter) {
         const wait_started_ns = monotonicNowNs();
-        if (q.mtl_event != null and q.event_counter != 0) {
-            metal_bridge_shared_event_wait(q.mtl_event, q.event_counter);
-        } else {
-            metal_bridge_command_buffer_wait_completed(cmd);
+        metal_bridge_shared_event_wait(q.mtl_event, q.event_counter);
+        out.waitCompletedNs = monotonicNowNs() - wait_started_ns;
+        q.completed_event_counter = q.event_counter;
+        if (q.pending_cmd) |cmd| {
+            metal_bridge_release(cmd);
+            q.pending_cmd = null;
         }
+    } else if (q.pending_cmd) |cmd| {
+        const wait_started_ns = monotonicNowNs();
+        metal_bridge_command_buffer_wait_completed(cmd);
         out.waitCompletedNs = monotonicNowNs() - wait_started_ns;
         metal_bridge_release(cmd);
         q.pending_cmd = null;
