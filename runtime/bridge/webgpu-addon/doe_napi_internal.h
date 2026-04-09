@@ -503,6 +503,7 @@ DECL_PFN(uint32_t, doeNativeGetLastErrorColumn, (void));
 DECL_PFN(uint32_t, doeNativeCheckShaderSource, (const char*, size_t));
 DECL_PFN(size_t, doeNativeShaderModuleGetBindings, (WGPUShaderModule, DoeShaderBindingInfo*, size_t));
 DECL_PFN(WGPUFuture, doeNativeAdapterRequestDevice, (WGPUAdapter, const void*, WGPURequestDeviceCallbackInfo));
+DECL_PFN(WGPUAdapter, doeNativeInstanceCreateAdapter, (WGPUInstance, const void*));
 DECL_PFN(WGPUFuture, doeRequestAdapterFlat, (WGPUInstance, const void*, uint32_t, WGPURequestAdapterCallback, void*, void*));
 DECL_PFN(WGPUFuture, doeRequestDeviceFlat, (WGPUAdapter, const void*, uint32_t, WGPURequestDeviceCallback, void*, void*));
 DECL_PFN(void, doeNativeQueueFlush, (void*));

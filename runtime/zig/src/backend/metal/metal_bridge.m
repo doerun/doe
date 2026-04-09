@@ -330,18 +330,29 @@ static void ensure_headless_application_ready(void) {
 }
 
 static MetalHandle create_default_device_handle(void) {
-    ensure_headless_application_ready();
-    id<MTLDevice> device = MTLCreateSystemDefaultDevice();
 #if TARGET_OS_OSX
+    NSArray<id<MTLDevice>>* devices = MTLCopyAllDevices();
+    id<MTLDevice> device = devices.count > 0 ? devices.firstObject : nil;
     if (device == nil) {
-        NSArray<id<MTLDevice>>* devices = MTLCopyAllDevices();
-        if (devices.count > 0) {
-            device = devices.firstObject;
-        }
+        device = MTLCreateSystemDefaultDevice();
     }
+#else
+    id<MTLDevice> device = MTLCreateSystemDefaultDevice();
 #endif
     if (device == nil) return NULL;
     return (MetalHandle)CFBridgingRetain(device);
+}
+
+static MetalHandle retained_default_device_handle(void) {
+    static MetalHandle cached_default_device = NULL;
+    if (cached_default_device == NULL) {
+        cached_default_device = create_default_device_handle();
+        if (cached_default_device == NULL) {
+            return NULL;
+        }
+    }
+    CFRetain(cached_default_device);
+    return cached_default_device;
 }
 
 @interface MetalSurfaceHost : NSObject
@@ -406,15 +417,7 @@ static MetalHandle create_default_device_handle(void) {
 @end
 
 MetalHandle metal_bridge_create_default_device(void) {
-    if ([NSThread isMainThread]) {
-        return create_default_device_handle();
-    }
-
-    __block MetalHandle handle = NULL;
-    dispatch_sync(dispatch_get_main_queue(), ^{
-        handle = create_default_device_handle();
-    });
-    return handle;
+    return retained_default_device_handle();
 }
 
 MetalHandle metal_bridge_create_surface_host(MetalHandle* layer_out) {

@@ -295,6 +295,12 @@ WGPUAdapter native_direct_request_adapter_sync(napi_env env, WGPUInstance inst, 
         }
     }
 
+    if (pfn_doeNativeInstanceCreateAdapter) {
+        WGPUAdapter adapter = pfn_doeNativeInstanceCreateAdapter(inst, opts_ptr);
+        if (!adapter) NAPI_THROW(env, "requestAdapter failed");
+        return adapter;
+    }
+
     AdapterRequestResult result = {0};
     WGPUFuture future;
     if (pfn_doeRequestAdapterFlat) {

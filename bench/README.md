@@ -286,6 +286,8 @@ The package surface now has two explicit timing modes:
   - keeps `selectedTiming` on the repeated workload steps only
   - switches `workloadUnitWall` to trace-meta `processWallMs` via
     `workloadUnitWallSource=trace-meta-process-wall`
+  - records that warm wall boundary before executor artifact emission so the
+    wall metric stays on package execution rather than trace file writes
   - represents steady-state package execution without silently redefining the
     cold metric
 

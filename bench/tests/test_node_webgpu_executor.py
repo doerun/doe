@@ -680,7 +680,7 @@ console.log(JSON.stringify(boundaryScopedHostTotals({{
         self.assertEqual(totals["hostUploadPrewarmTotalNs"], 15)
         self.assertEqual(totals["hostKernelPrewarmTotalNs"], 16)
         self.assertEqual(totals["hostCommandOrchestrationTotalNs"], 17)
-        self.assertEqual(totals["hostArtifactFinalizeTotalNs"], 18)
+        self.assertEqual(totals["hostArtifactFinalizeTotalNs"], 0)
 
     def test_dry_run_emits_trace_meta_and_jsonl(self) -> None:
         with tempfile.TemporaryDirectory(prefix="doe-node-webgpu-executor-") as tmpdir:

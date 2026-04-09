@@ -141,7 +141,7 @@ function queueWaitScopeForRuntimeHost(runtimeHost) {
 }
 
 async function maybeYieldBeforeQueueWait(runtime) {
-  if (runtime.providerSpec.provider !== 'node-webgpu') {
+  if (runtime.queueWaitMode !== NODE_PACKAGE_QUEUE_WAIT_MODE) {
     return;
   }
   await new Promise((resolve) => setTimeout(resolve, 0));
@@ -305,7 +305,7 @@ export function boundaryScopedHostTotals({
     hostUploadPrewarmTotalNs,
     hostKernelPrewarmTotalNs,
     hostCommandOrchestrationTotalNs,
-    hostArtifactFinalizeTotalNs,
+    hostArtifactFinalizeTotalNs: preparedSession ? 0 : hostArtifactFinalizeTotalNs,
   };
 }
 
@@ -1757,6 +1757,7 @@ export async function executePlanFile({
       queueWaitScope,
       queueWaitSubmitCadence,
     });
+    const processWallMs = (performance.now() - timedEnvelopeStartedAt);
     const artifactFinalizeStartedAt = performance.now();
     if (traceJsonlPath) {
       debugLog('artifact.write.traceJsonl.start', {
@@ -1780,7 +1781,6 @@ export async function executePlanFile({
       hostCommandOrchestrationTotalNs: result.meta.hostCommandOrchestrationTotalNs,
       hostArtifactFinalizeTotalNs: nsDelta(artifactFinalizeStartedAt),
     }));
-    const processWallMs = (performance.now() - timedEnvelopeStartedAt);
     result.meta.elapsedMs = processWallMs;
     result.meta.processWallMs = processWallMs;
     if (preparedSession) {

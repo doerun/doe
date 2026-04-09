@@ -64,6 +64,7 @@ pub const doeNativeInstanceAddRef = m0.doeNativeInstanceAddRef;
 pub const doeNativeInstanceRelease = m0.doeNativeInstanceRelease;
 pub const doeNativeInstanceWaitAny = m0.doeNativeInstanceWaitAny;
 pub const doeNativeRequestAdapterFlat = m0.doeNativeRequestAdapterFlat;
+pub const doeNativeInstanceCreateAdapter = m0.doeNativeInstanceCreateAdapter;
 pub const doeNativeInstanceRequestAdapter = m0.doeNativeInstanceRequestAdapter;
 pub const doeNativeAdapterAddRef = m0.doeNativeAdapterAddRef;
 pub const doeNativeAdapterRequestDevice = m0.doeNativeAdapterRequestDevice;

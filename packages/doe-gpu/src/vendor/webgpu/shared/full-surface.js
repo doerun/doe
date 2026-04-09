@@ -796,6 +796,10 @@ function createFullSurfaceClasses({
     constructor(native, instance, inheritedLimits = null, inheritedFeatures = null) {
       this._native = native;
       this._instance = instance;
+      this._adapter = null;
+      this._adapterInfo = null;
+      this._features = inheritedFeatures ?? null;
+      this._limits = inheritedLimits ?? null;
       this._onuncapturederror = null;
       this._eventListeners = new Map();
       this.label = '';
@@ -804,8 +808,20 @@ function createFullSurfaceClasses({
         backend.initDeviceState(this);
       }
       this.queue = new DoeGPUQueue(backend.deviceGetQueue(native), instance, this);
-      this.limits = inheritedLimits ?? backend.deviceLimits(native);
-      this.features = inheritedFeatures ?? backend.deviceFeatures(native);
+    }
+
+    get limits() {
+      if (this._limits === null) {
+        this._limits = backend.deviceLimits(assertLiveResource(this, 'GPUDevice.limits', 'GPUDevice'));
+      }
+      return this._limits;
+    }
+
+    get features() {
+      if (this._features === null) {
+        this._features = backend.deviceFeatures(assertLiveResource(this, 'GPUDevice.features', 'GPUDevice'));
+      }
+      return this._features;
     }
 
     addEventListener(type, listener) {
@@ -825,11 +841,20 @@ function createFullSurfaceClasses({
     }
 
     get adapterInfo() {
+      if (this._adapterInfo != null) {
+        return this._adapterInfo;
+      }
+      if (this._adapter?.info) {
+        this._adapterInfo = this._adapter.info;
+        return this._adapterInfo;
+      }
       if (typeof backend.deviceGetAdapterInfo === 'function') {
         const native = assertLiveResource(this, 'GPUDevice.adapterInfo', 'GPUDevice');
-        return backend.deviceGetAdapterInfo(this, native);
+        this._adapterInfo = backend.deviceGetAdapterInfo(this, native);
+        return this._adapterInfo;
       }
-      return EMPTY_ADAPTER_INFO;
+      this._adapterInfo = EMPTY_ADAPTER_INFO;
+      return this._adapterInfo;
     }
 
     pushErrorScope(filter) {
@@ -1235,11 +1260,25 @@ function createFullSurfaceClasses({
       this._native = native;
       this._instance = instance;
       this._requestOptions = requestOptions;
+      this._features = null;
+      this._limits = null;
       this._info = null;
       this.label = '';
-      this.features = backend.adapterFeatures(native);
-      this.limits = backend.adapterLimits(native);
       initResource(this, 'GPUAdapter');
+    }
+
+    get features() {
+      if (this._features === null) {
+        this._features = backend.adapterFeatures(assertLiveResource(this, 'GPUAdapter.features', 'GPUAdapter'));
+      }
+      return this._features;
+    }
+
+    get limits() {
+      if (this._limits === null) {
+        this._limits = backend.adapterLimits(assertLiveResource(this, 'GPUAdapter.limits', 'GPUAdapter'));
+      }
+      return this._limits;
     }
 
     get info() {

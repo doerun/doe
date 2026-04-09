@@ -103,14 +103,33 @@ const TEXTURE_SWIZZLE_COMPONENT_MAP = Object.freeze({
 const NS_PER_MS = 1_000_000;
 const WHOLE_SIZE_SENTINEL = -1;
 
-const addon = loadAddon();
-const DOE_LIB_PATH = resolveDoeLibraryPath();
-const DOE_BUILD_METADATA = loadDoeBuildMetadata({
-  packageRoot: PACKAGE_ROOT,
-  libraryPath: DOE_LIB_PATH ?? '',
-});
+let addon;
+let doeLibraryPath;
+let doeBuildMetadata;
 let libraryLoaded = false;
 let nativeMetalCanvasBackend = null;
+let fullSurfaceClasses = null;
+let canvasSurfaceClasses = null;
+let DoeGPUComputePassEncoder;
+let DoeGPUCommandEncoder;
+let DoeGPURenderPassEncoder;
+let DoeGPURenderBundleEncoder;
+let DoeGPURenderBundle;
+let DoeGPUBuffer;
+let DoeGPUQueue;
+let DoeGPUTexture;
+let DoeGPUTextureView;
+let DoeGPUSampler;
+let DoeGPURenderPipeline;
+let DoeGPUShaderModule;
+let DoeGPUComputePipeline;
+let DoeGPUBindGroupLayout;
+let DoeGPUBindGroup;
+let DoeGPUPipelineLayout;
+let DoeGPUDevice;
+let DoeGPUAdapter;
+let DoeGPU;
+let DoeGPUCanvasContext;
 
 export {
   globals,
@@ -137,6 +156,13 @@ function loadAddon() {
   return null;
 }
 
+function currentAddon() {
+  if (addon === undefined) {
+    addon = loadAddon();
+  }
+  return addon;
+}
+
 function resolveDoeLibraryPath() {
   const ext = process.platform === 'darwin' ? 'dylib'
     : process.platform === 'win32' ? 'dll' : 'so';
@@ -157,19 +183,38 @@ function resolveDoeLibraryPath() {
   return null;
 }
 
+function currentDoeLibraryPath() {
+  if (doeLibraryPath === undefined) {
+    doeLibraryPath = resolveDoeLibraryPath();
+  }
+  return doeLibraryPath;
+}
+
+function currentDoeBuildMetadata() {
+  if (doeBuildMetadata === undefined) {
+    doeBuildMetadata = loadDoeBuildMetadata({
+      packageRoot: PACKAGE_ROOT,
+      libraryPath: currentDoeLibraryPath() ?? '',
+    });
+  }
+  return doeBuildMetadata;
+}
+
 function ensureLibrary() {
   if (libraryLoaded) return;
-  if (!addon) {
+  const nativeAddon = currentAddon();
+  if (!nativeAddon) {
     throw new Error(
       'doe-gpu: Native addon not found. Run `npm run build:addon` or `npx node-gyp rebuild`.'
     );
   }
-  if (!DOE_LIB_PATH) {
+  const libraryPath = currentDoeLibraryPath();
+  if (!libraryPath) {
     throw new Error(
       'doe-gpu: libwebgpu_doe not found. Build it with `cd runtime/zig && zig build dropin` or set DOE_WEBGPU_LIB.'
     );
   }
-  addon.loadLibrary(DOE_LIB_PATH);
+  nativeAddon.loadLibrary(libraryPath);
   libraryLoaded = true;
 }
 
@@ -190,19 +235,94 @@ function presentPendingCanvasContexts(queue) {
  * Returns null when the addon does not expose these functions.
  */
 function readLastErrorFields() {
-  if (typeof addon?.getLastErrorStage !== 'function' && typeof addon?.getLastErrorKind !== 'function') {
+  const nativeAddon = currentAddon();
+  if (typeof nativeAddon?.getLastErrorStage !== 'function' && typeof nativeAddon?.getLastErrorKind !== 'function') {
     return null;
   }
-  const stage = typeof addon?.getLastErrorStage === 'function' ? (addon.getLastErrorStage() ?? '') : '';
-  const kind = typeof addon?.getLastErrorKind === 'function' ? (addon.getLastErrorKind() ?? '') : '';
-  const line = typeof addon?.getLastErrorLine === 'function' ? Number(addon.getLastErrorLine()) : 0;
-  const column = typeof addon?.getLastErrorColumn === 'function' ? Number(addon.getLastErrorColumn()) : 0;
+  const stage = typeof nativeAddon?.getLastErrorStage === 'function' ? (nativeAddon.getLastErrorStage() ?? '') : '';
+  const kind = typeof nativeAddon?.getLastErrorKind === 'function' ? (nativeAddon.getLastErrorKind() ?? '') : '';
+  const line = typeof nativeAddon?.getLastErrorLine === 'function' ? Number(nativeAddon.getLastErrorLine()) : 0;
+  const column = typeof nativeAddon?.getLastErrorColumn === 'function' ? Number(nativeAddon.getLastErrorColumn()) : 0;
   return {
     stage: stage || undefined,
     kind: kind || undefined,
     line: line > 0 ? line : undefined,
     column: column > 0 ? column : undefined,
   };
+}
+
+function ensureEncoderClasses() {
+  if (DoeGPUCommandEncoder) {
+    return;
+  }
+  ({
+    DoeGPUComputePassEncoder,
+    DoeGPUCommandEncoder,
+    DoeGPURenderPassEncoder,
+    DoeGPURenderBundleEncoder,
+    DoeGPURenderBundle,
+  } = createEncoderClasses(nodeEncoderBackend));
+}
+
+function ensureFullSurfaceClasses() {
+  if (fullSurfaceClasses) {
+    return fullSurfaceClasses;
+  }
+  ensureEncoderClasses();
+  fullSurfaceClasses = createFullSurfaceClasses({
+    globals,
+    backend: fullSurfaceBackend,
+    encoderClasses: { DoeGPURenderBundleEncoder, DoeGPURenderBundle },
+  });
+  ({
+    DoeGPUBuffer,
+    DoeGPUQueue,
+    DoeGPUTexture,
+    DoeGPUTextureView,
+    DoeGPUSampler,
+    DoeGPURenderPipeline,
+    DoeGPUShaderModule,
+    DoeGPUComputePipeline,
+    DoeGPUBindGroupLayout,
+    DoeGPUBindGroup,
+    DoeGPUPipelineLayout,
+    DoeGPUDevice,
+    DoeGPUAdapter,
+    DoeGPU,
+  } = fullSurfaceClasses);
+  if (process.platform === 'darwin' && typeof DoeGPU?.prototype?.getPreferredCanvasFormat === 'function') {
+    DoeGPU.prototype.getPreferredCanvasFormat = function getPreferredCanvasFormat() {
+      return ensureNativeMetalCanvasBackend()?.getPreferredCanvasFormat?.() ?? 'bgra8unorm';
+    };
+  }
+  return fullSurfaceClasses;
+}
+
+function ensureNativeMetalCanvasBackend() {
+  if (process.platform !== 'darwin') {
+    return null;
+  }
+  if (nativeMetalCanvasBackend === null) {
+    nativeMetalCanvasBackend = createNativeMetalCanvasBackendImpl({ addon: currentAddon() });
+  }
+  return nativeMetalCanvasBackend;
+}
+
+function ensureCanvasSurfaceClasses() {
+  if (canvasSurfaceClasses) {
+    return canvasSurfaceClasses;
+  }
+  const classes = ensureFullSurfaceClasses();
+  const canvasBackend = ensureNativeMetalCanvasBackend();
+  if (!canvasBackend) {
+    return classes;
+  }
+  canvasSurfaceClasses = createBrowserSurfaceClasses({
+    canvasBackend,
+    fullClasses: classes,
+  });
+  DoeGPUCanvasContext = canvasSurfaceClasses.DoeGPUCanvasContext;
+  return canvasSurfaceClasses;
 }
 
 function adapterLimits(native) {
@@ -433,7 +553,6 @@ function installNodeDeviceCallbacks(device) {
       },
     },
   });
-  ensureNodeDeviceLostRegistration(device);
 }
 
 function nodeDevicePushErrorScope(filter) {
@@ -916,10 +1035,7 @@ const nodeEncoderBackend = {
   },
   commandEncoderInit(encoder) {
     encoder._commands = [];
-    encoder._native = addon.createCommandEncoder(
-      assertLiveResource(encoder._device, 'GPUCommandEncoder', 'GPUDevice'),
-      encoder.label || undefined,
-    );
+    encoder._native = null;
     encoder._finished = false;
   },
   commandEncoderAssertOpen(encoder, path) {
@@ -1084,16 +1200,19 @@ const nodeEncoderBackend = {
   },
   commandEncoderPushDebugGroup(encoder, label) {
     if (typeof addon.commandEncoderPushDebugGroup === 'function') {
+      ensureNodeCommandEncoderNative(encoder);
       addon.commandEncoderPushDebugGroup(encoder._native, label);
     }
   },
   commandEncoderPopDebugGroup(encoder) {
     if (typeof addon.commandEncoderPopDebugGroup === 'function') {
+      ensureNodeCommandEncoderNative(encoder);
       addon.commandEncoderPopDebugGroup(encoder._native);
     }
   },
   commandEncoderInsertDebugMarker(encoder, label) {
     if (typeof addon.commandEncoderInsertDebugMarker === 'function') {
+      ensureNodeCommandEncoderNative(encoder);
       addon.commandEncoderInsertDebugMarker(encoder._native, label);
     }
   },
@@ -1129,14 +1248,6 @@ const nodeEncoderBackend = {
     return { _native: cmd, _batched: false };
   },
 };
-
-const {
-  DoeGPUComputePassEncoder,
-  DoeGPUCommandEncoder,
-  DoeGPURenderPassEncoder,
-  DoeGPURenderBundleEncoder,
-  DoeGPURenderBundle,
-} = createEncoderClasses(nodeEncoderBackend);
 
 /**
  * Texture returned by `device.createTexture(...)`.
@@ -1662,17 +1773,12 @@ const fullSurfaceBackend = {
       adapter._native = addon.requestAdapter(adapter._instance, adapter._requestOptions ?? null);
       native = addon.requestDevice(adapter._instance, adapter._native, descriptor);
     }
-    const device = new classes.DoeGPUDevice(
-      native,
-      adapter._instance,
-      deviceLimits(native),
-      deviceFeatures(native),
-    );
+    const device = new classes.DoeGPUDevice(native, adapter._instance);
     device.label = descriptor?.label ?? '';
     if (device.queue) {
       device.queue.label = descriptor?.defaultQueue?.label ?? '';
     }
-    device._adapterInfo = adapter.info;
+    device._adapter = adapter;
     installNodeDeviceCallbacks(device);
     return device;
   },
@@ -1684,41 +1790,6 @@ const fullSurfaceBackend = {
     return new classes.DoeGPUAdapter(adapter, gpu._instance, options);
   },
 };
-
-nativeMetalCanvasBackend = process.platform === 'darwin'
-  ? createNativeMetalCanvasBackendImpl({ addon })
-  : null;
-
-const {
-  DoeGPUBuffer,
-  DoeGPUQueue,
-  DoeGPUTexture,
-  DoeGPUTextureView,
-  DoeGPUSampler,
-  DoeGPURenderPipeline,
-  DoeGPUShaderModule,
-  DoeGPUComputePipeline,
-  DoeGPUBindGroupLayout,
-  DoeGPUBindGroup,
-  DoeGPUPipelineLayout,
-  DoeGPUDevice,
-  DoeGPUAdapter,
-  DoeGPU,
-  DoeGPUCanvasContext,
-} = (nativeMetalCanvasBackend
-  ? createBrowserSurfaceClasses({
-    canvasBackend: nativeMetalCanvasBackend,
-    fullClasses: createFullSurfaceClasses({
-      globals,
-      backend: fullSurfaceBackend,
-      encoderClasses: { DoeGPURenderBundleEncoder, DoeGPURenderBundle },
-    }),
-  })
-  : createFullSurfaceClasses({
-    globals,
-    backend: fullSurfaceBackend,
-    encoderClasses: { DoeGPURenderBundleEncoder, DoeGPURenderBundle },
-  }));
 
 /**
  * Create a package-local `GPU` object backed by the Doe native runtime.
@@ -1740,7 +1811,8 @@ const {
  */
 export function create(createArgs = null) {
   ensureLibrary();
-  const instance = addon.createInstance();
+  ensureFullSurfaceClasses();
+  const instance = currentAddon().createInstance();
   return new DoeGPU(instance);
 }
 
@@ -1749,7 +1821,9 @@ export function createInstance(createArgs = null) {
 }
 
 export function createCanvasContext(canvas) {
-  if (!nativeMetalCanvasBackend || typeof DoeGPUCanvasContext !== 'function') {
+  ensureLibrary();
+  ensureCanvasSurfaceClasses();
+  if (!ensureNativeMetalCanvasBackend() || typeof DoeGPUCanvasContext !== 'function') {
     failValidation(
       'createCanvasContext',
       'native Metal GPUCanvasContext is unavailable on this host/runtime',
@@ -1855,18 +1929,21 @@ export async function requestDevice(options = {}) {
  * - `loaded: false` is still diagnostically useful before attempting `requestDevice()`.
  */
 export function providerInfo() {
-  const flavor = libraryFlavor(DOE_LIB_PATH);
+  const nativeAddon = currentAddon();
+  const libraryPath = currentDoeLibraryPath();
+  const buildMetadata = currentDoeBuildMetadata();
+  const flavor = libraryFlavor(libraryPath);
   return buildProviderInfo({
-    loaded: !!addon && !!DOE_LIB_PATH,
-    loadError: !addon ? 'native addon not found' : !DOE_LIB_PATH ? 'libwebgpu_doe not found' : '',
+    loaded: !!nativeAddon && !!libraryPath,
+    loadError: !nativeAddon ? 'native addon not found' : !libraryPath ? 'libwebgpu_doe not found' : '',
     defaultCreateArgs: [],
     doeNative: flavor === 'doe-dropin',
     libraryFlavor: flavor,
-    doeLibraryPath: DOE_LIB_PATH ?? '',
-    buildMetadataSource: DOE_BUILD_METADATA.source,
-    buildMetadataPath: DOE_BUILD_METADATA.path,
-    leanVerifiedBuild: DOE_BUILD_METADATA.leanVerifiedBuild,
-    proofArtifactSha256: DOE_BUILD_METADATA.proofArtifactSha256,
+    doeLibraryPath: libraryPath ?? '',
+    buildMetadataSource: buildMetadata.source,
+    buildMetadataPath: buildMetadata.path,
+    leanVerifiedBuild: buildMetadata.leanVerifiedBuild,
+    proofArtifactSha256: buildMetadata.proofArtifactSha256,
   });
 }
 

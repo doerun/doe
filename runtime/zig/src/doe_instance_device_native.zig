@@ -57,6 +57,13 @@ const RequestedBackend = enum {
     d3d12,
 };
 
+var cached_selected_backend: RequestedBackend = switch (builtin.os.tag) {
+    .macos => .metal,
+    .windows => .d3d12,
+    else => .vulkan,
+};
+var selected_backend_initialized = false;
+
 fn instance_add_ref(inst: *DoeInstance) void {
     inst.ref_count +|= 1;
 }
@@ -86,23 +93,33 @@ fn requested_backend_from_lane(raw: []const u8) ?RequestedBackend {
 }
 
 fn selected_backend() RequestedBackend {
-    const explicit_backend = std.process.getEnvVarOwned(alloc, "DOE_BACKEND") catch null;
-    if (explicit_backend) |raw_backend| {
-        defer alloc.free(raw_backend);
-        if (parse_requested_backend(raw_backend)) |backend| return backend;
+    if (selected_backend_initialized) {
+        return cached_selected_backend;
     }
 
-    const lane_value = std.process.getEnvVarOwned(alloc, "FAWN_BACKEND_LANE") catch null;
-    if (lane_value) |raw_lane| {
-        defer alloc.free(raw_lane);
-        if (requested_backend_from_lane(raw_lane)) |backend| return backend;
-    }
+    const backend = blk: {
+        const explicit_backend = std.process.getEnvVarOwned(alloc, "DOE_BACKEND") catch null;
+        if (explicit_backend) |raw_backend| {
+            defer alloc.free(raw_backend);
+            if (parse_requested_backend(raw_backend)) |parsed_backend| break :blk parsed_backend;
+        }
 
-    return switch (builtin.os.tag) {
-        .macos => .metal,
-        .windows => .d3d12,
-        else => .vulkan,
+        const lane_value = std.process.getEnvVarOwned(alloc, "FAWN_BACKEND_LANE") catch null;
+        if (lane_value) |raw_lane| {
+            defer alloc.free(raw_lane);
+            if (requested_backend_from_lane(raw_lane)) |parsed_backend| break :blk parsed_backend;
+        }
+
+        break :blk switch (builtin.os.tag) {
+            .macos => .metal,
+            .windows => .d3d12,
+            else => .vulkan,
+        };
     };
+
+    cached_selected_backend = backend;
+    selected_backend_initialized = true;
+    return backend;
 }
 
 fn probe_d3d12_adapter_caps() d3d12_device_caps.D3D12DeviceCaps {
@@ -162,6 +179,11 @@ const CreateDeviceError = error{
     D3D12RuntimeInitFailed,
 };
 
+const CreateAdapterError = error{
+    AdapterUnavailable,
+    AdapterAllocationFailed,
+};
+
 fn create_device_error_message(err: CreateDeviceError) abi_base.WGPUStringView {
     return switch (err) {
         error.QueueUnavailable => stringView(MSG_QUEUE_UNAVAILABLE),
@@ -169,6 +191,52 @@ fn create_device_error_message(err: CreateDeviceError) abi_base.WGPUStringView {
         error.VkRuntimeInitFailed => stringView(MSG_VK_RUNTIME_INIT_FAILED),
         error.D3D12RuntimeInitFailed => stringView(MSG_D3D12_RUNTIME_INIT_FAILED),
     };
+}
+
+fn create_adapter_error_message(err: CreateAdapterError) abi_base.WGPUStringView {
+    return switch (err) {
+        error.AdapterUnavailable => stringView(MSG_ADAPTER_UNAVAILABLE),
+        error.AdapterAllocationFailed => stringView(MSG_ADAPTER_ALLOCATION_FAILED),
+    };
+}
+
+fn create_adapter_for_instance(inst: ?*anyopaque) CreateAdapterError!*DoeAdapter {
+    const retained_instance = cast(DoeInstance, inst);
+
+    switch (selected_backend()) {
+        .d3d12 => {
+            const adapter = make(DoeAdapter) orelse return error.AdapterAllocationFailed;
+            if (retained_instance) |instance_ref| instance_add_ref(instance_ref);
+            adapter.* = .{ .backend = .d3d12, .instance = retained_instance };
+            d3d12_device_caps.set_adapter_caps(toOpaque(adapter), probe_d3d12_adapter_caps());
+            return adapter;
+        },
+        .vulkan => {
+            if (comptime has_vulkan) {
+                const feature_caps: vk_feature_caps.VulkanFeatureCaps =
+                    vk_feature_probe.probe_default_feature_caps(alloc) catch .{};
+                const hw_caps: vk_device_caps.VulkanDeviceCaps =
+                    vk_device_caps.probe_device_caps(alloc) catch probe_vulkan_device_caps_fallback();
+                const adapter = make(DoeAdapter) orelse return error.AdapterAllocationFailed;
+                if (retained_instance) |instance_ref| instance_add_ref(instance_ref);
+                adapter.* = .{ .backend = .vulkan, .instance = retained_instance };
+                vulkan_feature_cache.set_adapter(toOpaque(adapter), feature_caps);
+                vulkan_feature_cache.set_adapter_device_caps(toOpaque(adapter), hw_caps);
+                return adapter;
+            }
+        },
+        .metal => {},
+    }
+
+    const device = metal_bridge_create_default_device();
+    if (device == null) return error.AdapterUnavailable;
+    const adapter = make(DoeAdapter) orelse {
+        metal_bridge_release(device);
+        return error.AdapterAllocationFailed;
+    };
+    if (retained_instance) |instance_ref| instance_add_ref(instance_ref);
+    adapter.* = .{ .instance = retained_instance, .mtl_device = device };
+    return adapter;
 }
 
 fn create_device_for_adapter(adapter: *DoeAdapter, adapter_raw: ?*anyopaque) CreateDeviceError!*DoeDevice {
@@ -289,55 +357,25 @@ pub export fn doeNativeRequestAdapterFlat(
     userdata1: ?*anyopaque,
     userdata2: ?*anyopaque,
 ) callconv(.c) abi_base.WGPUFuture {
-    const retained_instance = cast(DoeInstance, inst);
-
-    switch (selected_backend()) {
-        .d3d12 => {
-            const adapter = make(DoeAdapter) orelse {
-                if (callback) |cb| cb(WGPU_REQUEST_STATUS_ERROR, null, stringView(MSG_ADAPTER_ALLOCATION_FAILED), userdata1, userdata2);
-                return .{ .id = 1 };
-            };
-            if (retained_instance) |instance_ref| instance_add_ref(instance_ref);
-            adapter.* = .{ .backend = .d3d12, .instance = retained_instance };
-            d3d12_device_caps.set_adapter_caps(toOpaque(adapter), probe_d3d12_adapter_caps());
-            if (callback) |cb| cb(WGPU_REQUEST_STATUS_SUCCESS, toOpaque(adapter), stringView(""), userdata1, userdata2);
-            return .{ .id = 1 };
-        },
-        .vulkan => {
-            if (comptime has_vulkan) {
-                const feature_caps: vk_feature_caps.VulkanFeatureCaps =
-                    vk_feature_probe.probe_default_feature_caps(alloc) catch .{};
-                const hw_caps: vk_device_caps.VulkanDeviceCaps =
-                    vk_device_caps.probe_device_caps(alloc) catch probe_vulkan_device_caps_fallback();
-                const adapter = make(DoeAdapter) orelse {
-                    if (callback) |cb| cb(WGPU_REQUEST_STATUS_ERROR, null, stringView(MSG_ADAPTER_ALLOCATION_FAILED), userdata1, userdata2);
-                    return .{ .id = 1 };
-                };
-                if (retained_instance) |instance_ref| instance_add_ref(instance_ref);
-                adapter.* = .{ .backend = .vulkan, .instance = retained_instance };
-                vulkan_feature_cache.set_adapter(toOpaque(adapter), feature_caps);
-                vulkan_feature_cache.set_adapter_device_caps(toOpaque(adapter), hw_caps);
-                if (callback) |cb| cb(WGPU_REQUEST_STATUS_SUCCESS, toOpaque(adapter), stringView(""), userdata1, userdata2);
-                return .{ .id = 1 };
-            }
-        },
-        .metal => {},
-    }
-
-    const device = metal_bridge_create_default_device();
-    if (device == null) {
-        if (callback) |cb| cb(WGPU_REQUEST_STATUS_UNAVAILABLE, null, stringView(MSG_ADAPTER_UNAVAILABLE), userdata1, userdata2);
-        return .{ .id = 1 };
-    }
-    const adapter = make(DoeAdapter) orelse {
-        metal_bridge_release(device);
-        if (callback) |cb| cb(WGPU_REQUEST_STATUS_ERROR, null, stringView(MSG_ADAPTER_ALLOCATION_FAILED), userdata1, userdata2);
+    const adapter = create_adapter_for_instance(inst) catch |err| {
+        const status: u32 = switch (err) {
+            error.AdapterUnavailable => WGPU_REQUEST_STATUS_UNAVAILABLE,
+            error.AdapterAllocationFailed => WGPU_REQUEST_STATUS_ERROR,
+        };
+        if (callback) |cb| cb(status, null, create_adapter_error_message(err), userdata1, userdata2);
         return .{ .id = 1 };
     };
-    if (retained_instance) |instance_ref| instance_add_ref(instance_ref);
-    adapter.* = .{ .instance = retained_instance, .mtl_device = device };
     if (callback) |cb| cb(WGPU_REQUEST_STATUS_SUCCESS, toOpaque(adapter), stringView(""), userdata1, userdata2);
     return .{ .id = 1 };
+}
+
+pub export fn doeNativeInstanceCreateAdapter(
+    inst: ?*anyopaque,
+    options: ?*const abi_callback.WGPURequestAdapterOptions,
+) callconv(.c) ?*anyopaque {
+    _ = options;
+    const adapter = create_adapter_for_instance(inst) catch return null;
+    return toOpaque(adapter);
 }
 
 // Standard-signature wrapper for routing layer compatibility.
@@ -347,53 +385,14 @@ pub export fn doeNativeInstanceRequestAdapter(
     info: abi_callback.WGPURequestAdapterCallbackInfo,
 ) callconv(.c) abi_base.WGPUFuture {
     _ = options;
-    const retained_instance = cast(DoeInstance, inst);
-
-    switch (selected_backend()) {
-        .d3d12 => {
-            const adapter = make(DoeAdapter) orelse {
-                call_request_adapter_callback(info, .@"error", null, stringView(MSG_ADAPTER_ALLOCATION_FAILED));
-                return .{ .id = 1 };
-            };
-            if (retained_instance) |instance_ref| instance_add_ref(instance_ref);
-            adapter.* = .{ .backend = .d3d12, .instance = retained_instance };
-            d3d12_device_caps.set_adapter_caps(toOpaque(adapter), probe_d3d12_adapter_caps());
-            call_request_adapter_callback(info, .success, toOpaque(adapter), stringView(""));
-            return .{ .id = 1 };
-        },
-        .vulkan => {
-            if (comptime has_vulkan) {
-                const feature_caps: vk_feature_caps.VulkanFeatureCaps =
-                    vk_feature_probe.probe_default_feature_caps(alloc) catch .{};
-                const hw_caps: vk_device_caps.VulkanDeviceCaps =
-                    vk_device_caps.probe_device_caps(alloc) catch probe_vulkan_device_caps_fallback();
-                const adapter = make(DoeAdapter) orelse {
-                    call_request_adapter_callback(info, .@"error", null, stringView(MSG_ADAPTER_ALLOCATION_FAILED));
-                    return .{ .id = 1 };
-                };
-                if (retained_instance) |instance_ref| instance_add_ref(instance_ref);
-                adapter.* = .{ .backend = .vulkan, .instance = retained_instance };
-                vulkan_feature_cache.set_adapter(toOpaque(adapter), feature_caps);
-                vulkan_feature_cache.set_adapter_device_caps(toOpaque(adapter), hw_caps);
-                call_request_adapter_callback(info, .success, toOpaque(adapter), stringView(""));
-                return .{ .id = 1 };
-            }
-        },
-        .metal => {},
-    }
-
-    const device = metal_bridge_create_default_device();
-    if (device == null) {
-        call_request_adapter_callback(info, .unavailable, null, stringView(MSG_ADAPTER_UNAVAILABLE));
-        return .{ .id = 1 };
-    }
-    const adapter = make(DoeAdapter) orelse {
-        metal_bridge_release(device);
-        call_request_adapter_callback(info, .@"error", null, stringView(MSG_ADAPTER_ALLOCATION_FAILED));
+    const adapter = create_adapter_for_instance(inst) catch |err| {
+        const status: abi_callback.WGPURequestAdapterStatus = switch (err) {
+            error.AdapterUnavailable => .unavailable,
+            error.AdapterAllocationFailed => .@"error",
+        };
+        call_request_adapter_callback(info, status, null, create_adapter_error_message(err));
         return .{ .id = 1 };
     };
-    if (retained_instance) |instance_ref| instance_add_ref(instance_ref);
-    adapter.* = .{ .instance = retained_instance, .mtl_device = device };
     call_request_adapter_callback(info, .success, toOpaque(adapter), stringView(""));
     return .{ .id = 1 };
 }
