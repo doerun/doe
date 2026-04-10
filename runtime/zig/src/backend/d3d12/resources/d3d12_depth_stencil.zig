@@ -1,5 +1,6 @@
 const std = @import("std");
 const dc = @import("../d3d12_constants.zig");
+const bridge = @import("../d3d12_bridge_decls.zig");
 
 // --- DXGI depth/stencil format values ---
 // These map directly to DXGI_FORMAT enum values for depth/stencil surfaces.
@@ -25,37 +26,6 @@ const DSV_HEAP_SIZE: u32 = 1;
 const RESOURCE_STATE_DEPTH_WRITE: c_int = 0x00000010;
 
 // --- Bridge extern declarations ---
-
-extern fn d3d12_bridge_device_create_texture_2d(
-    device: ?*anyopaque,
-    width: u32,
-    height: u32,
-    mip_levels: u32,
-    format: u32,
-    usage_flags: u32,
-) callconv(.c) ?*anyopaque;
-
-extern fn d3d12_bridge_release(obj: ?*anyopaque) callconv(.c) void;
-
-extern fn d3d12_bridge_device_create_dsv_heap(
-    device: ?*anyopaque,
-    num_descriptors: u32,
-) callconv(.c) ?*anyopaque;
-
-extern fn d3d12_bridge_device_create_dsv(
-    device: ?*anyopaque,
-    resource: ?*anyopaque,
-    dsv_heap: ?*anyopaque,
-    index: u32,
-    format: u32,
-) callconv(.c) void;
-
-extern fn d3d12_bridge_device_create_depth_texture(
-    device: ?*anyopaque,
-    width: u32,
-    height: u32,
-    format: u32,
-) callconv(.c) ?*anyopaque;
 
 // --- Format mapping ---
 
@@ -134,21 +104,21 @@ pub const DepthStencilState = struct {
         // Tear down previous resources before allocating new ones.
         self.release_resources();
 
-        const texture = d3d12_bridge_device_create_depth_texture(
+        const texture = bridge.c.d3d12_bridge_device_create_depth_texture(
             device,
             width,
             height,
             dxgi_format,
         ) orelse return error.InvalidState;
-        errdefer d3d12_bridge_release(texture);
+        errdefer bridge.c.d3d12_bridge_release(texture);
 
-        const heap = d3d12_bridge_device_create_dsv_heap(
+        const heap = bridge.c.d3d12_bridge_device_create_dsv_heap(
             device,
             DSV_HEAP_SIZE,
         ) orelse return error.InvalidState;
-        errdefer d3d12_bridge_release(heap);
+        errdefer bridge.c.d3d12_bridge_release(heap);
 
-        d3d12_bridge_device_create_dsv(device, texture, heap, 0, dxgi_format);
+        bridge.c.d3d12_bridge_device_create_dsv(device, texture, heap, 0, dxgi_format);
 
         self.depth_texture = texture;
         self.dsv_heap = heap;
@@ -172,11 +142,11 @@ pub const DepthStencilState = struct {
 
     fn release_resources(self: *DepthStencilState) void {
         if (self.depth_texture) |tex| {
-            d3d12_bridge_release(tex);
+            bridge.c.d3d12_bridge_release(tex);
             self.depth_texture = null;
         }
         if (self.dsv_heap) |heap| {
-            d3d12_bridge_release(heap);
+            bridge.c.d3d12_bridge_release(heap);
             self.dsv_heap = null;
         }
         self.cached_width = 0;

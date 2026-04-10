@@ -6,6 +6,7 @@
 
 const std = @import("std");
 const builtin = @import("builtin");
+const process_roots = @import("runtime/process_roots.zig");
 
 // Metal bridge declarations — resolved at link time from metal_bridge.m.
 extern fn metal_bridge_release(obj: ?*anyopaque) callconv(.c) void;
@@ -273,12 +274,10 @@ const MQDHandle = struct {
     mqd: MultiQueueDevice,
 };
 
-var gpa_mq = std.heap.GeneralPurposeAllocator(.{}){};
-const mq_alloc = gpa_mq.allocator();
-
 pub export fn doeNativeMultiQueueDeviceCreate(mtl_device: ?*anyopaque) callconv(.c) ?*anyopaque {
-    const h = mq_alloc.create(MQDHandle) catch return null;
-    h.* = .{ .mqd = MultiQueueDevice.init(mq_alloc, mtl_device) };
+    const allocator = process_roots.multiQueueAllocator();
+    const h = allocator.create(MQDHandle) catch return null;
+    h.* = .{ .mqd = MultiQueueDevice.init(allocator, mtl_device) };
     return @ptrCast(h);
 }
 
@@ -287,7 +286,7 @@ pub export fn doeNativeMultiQueueDeviceDestroy(raw: ?*anyopaque) callconv(.c) vo
     const h: *MQDHandle = @ptrCast(@alignCast(raw));
     if (h.magic != MAGIC_MQD) return;
     h.mqd.deinit();
-    mq_alloc.destroy(h);
+    process_roots.multiQueueAllocator().destroy(h);
 }
 
 pub export fn doeNativeDeviceCreateQueue(

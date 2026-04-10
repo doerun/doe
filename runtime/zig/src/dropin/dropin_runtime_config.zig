@@ -2,6 +2,7 @@ const std = @import("std");
 const abi_base = @import("../core/abi/wgpu_handle_types.zig");
 const backend_policy = @import("../backend/backend_policy.zig");
 const dropin_behavior_policy = @import("dropin_behavior_policy.zig");
+const dropin_proc_manifest = @import("dropin_proc_manifest.zig");
 const dropin_router = @import("dropin_router.zig");
 const dropin_symbol_ownership = @import("dropin_symbol_ownership.zig");
 
@@ -99,6 +100,16 @@ fn loadBehaviorConfig() ParsedDropinBehaviorConfig {
     };
 }
 
+fn validateSymbolOwnershipConfig(entries: []const dropin_symbol_ownership.SymbolOwnership) void {
+    for (entries) |entry| {
+        if (dropin_proc_manifest.manifestOwnerForSymbol(entry.symbol)) |owner| {
+            if (owner != entry.owner) {
+                @panic("drop-in symbol ownership config disagrees with the proc manifest");
+            }
+        }
+    }
+}
+
 pub fn activeBehaviorConfig() ParsedDropinBehaviorConfig {
     if (g_behavior_ready.load(.acquire) != 0) {
         return g_behavior_config;
@@ -140,11 +151,15 @@ pub fn activeSymbolOwnershipConfig() []const dropin_symbol_ownership.SymbolOwner
         std.heap.page_allocator,
         DROPIN_SYMBOL_OWNERSHIP_CONFIG_JSON,
     ) catch &.{};
+    validateSymbolOwnershipConfig(g_symbol_ownership_config);
     g_symbol_ownership_ready.store(1, .release);
     return g_symbol_ownership_config;
 }
 
 pub fn symbolOwnerForName(symbol: []const u8) dropin_symbol_ownership.SymbolOwner {
+    if (dropin_proc_manifest.manifestOwnerForSymbol(symbol)) |owner| {
+        return owner;
+    }
     if (dropin_symbol_ownership.find_symbol_ownership(activeSymbolOwnershipConfig(), symbol)) |entry| {
         return entry.owner;
     }

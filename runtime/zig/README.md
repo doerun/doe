@@ -66,7 +66,14 @@ Core:
 - `src/quirk/quirk_json.zig` — deterministic JSON parser for quirk records with strict schema checks.
 - `src/quirk/toggle_registry.zig` — toggle behavioral classification (`behavioral`/`informational`/`unhandled`) for known Dawn toggles.
 - `src/runtime.zig` — re-export shim for `quirk/runtime.zig` (backwards compatibility).
-- `src/main.zig` — CLI, arg parsing, dispatch loop, `--trace`/`--replay`/`--trace-meta` orchestration.
+- `src/main.zig` — thin runtime CLI wrapper over the split `src/cli/runtime_cli*.zig` modules.
+- `src/cli/runtime_cli.zig` — runtime CLI orchestration for execute/trace/replay flows.
+- `src/cli/runtime_cli_args.zig` — CLI arg parsing, mode selection, and trace option normalization.
+- `src/cli/runtime_cli_inputs.zig` — command/replay input loading and borrowed-slice command hydration.
+- `src/cli/runtime_cli_artifacts.zig` — trace/meta artifact emission and summary projection.
+- `src/cli/runtime_cli_samples.zig` — sample row assembly and per-command trace buffering helpers.
+- `src/doe_plan_executor.zig` — direct-plan executor library surface for Doe's plan artifacts without CLI parsing concerns.
+- `src/cli/doe_plan_executor_cli.zig` — contributor-facing CLI parsing and option normalization for `doe-plan-executor`.
 - `src/execution.zig` — execution mode switching (`trace` and `native`) and run result envelope.
 - `src/command_stream.zig` — command stream parser that preserves optional
   semantic operator metadata and targeted capture requests alongside
@@ -77,10 +84,18 @@ Core:
 
 Parsing:
 - `src/command_json.zig` — JSON command stream parser for replay-style inputs.
+- `src/command/command_parse_copy.zig`,
+  `src/command/command_parse_dispatch.zig`, and
+  `src/command/command_parse_render.zig` — dedicated command-family parser shards that keep copy, dispatch, and render decoding out of the root parser file.
 
 Trace and replay:
 - `src/trace.zig` — TraceState, hash functions, name helpers, trace row and meta output.
+- `src/trace_text.zig` — shared JSON-string escaping and execution-status normalization helpers reused by trace emitters and host-hotpath diagnostics.
 - `src/replay.zig` — replay expectation parsing and hash-chain validation.
+- `src/runtime/process_roots.zig` — named process-lifetime allocator roots for exported C-ABI handle/state owners and async drop-in registries.
+- `src/runtime/simd/byte_scan.zig` and
+  `src/runtime/simd/f32_ops.zig` — portable SIMD helper shards with scalar
+  reference fallbacks for trace, lexer, and numeric-stability host paths.
 
 Tooling allocation pattern:
 - CLI and tooling entrypoints should keep one explicit run-scoped owner for transient parse state.
@@ -93,6 +108,12 @@ WebGPU backend:
   callers that need backend-specific capability, resource, queue-submit,
   surface, render-state, or external-texture behavior without importing backend
   implementation directories directly.
+- `src/plan/webgpu_plan_executor_core.zig` — direct WebGPU plan executor core
+  that owns executor state, object lifecycle, and live plan command execution;
+  `src/webgpu_plan_executor.zig` remains the library-facing orchestration shell.
+- `src/dropin/dropin_proc_manifest.zig` — compile-time drop-in proc manifest
+  for linked Doe symbol resolution, duplicate coverage checks, and
+  manifest-covered ownership lookup used by routing diagnostics.
 - `src/webgpu_backend.zig` — WebGPUBackend assembly and compatibility surface over the split backend state/lifecycle/support modules plus prewarm/command delegation that still needs the concrete backend type.
 - `src/webgpu_backend_types.zig` — shared backend state structs: `ManagedSurface`, `CoreWebGPUBackend`, and `FullWebGPUBackendState`.
 - `src/webgpu_backend_lifecycle.zig` — backend bootstrap/lifecycle helpers: adapter/device request, limit capture, deinit, backend-type naming, and timestamp logging.
@@ -135,6 +156,8 @@ Build:
 - `build.zig` — compile and run hooks, links libC and libdl.
 - `zig build dropin` — full drop-in shared library (`libwebgpu_doe.so`).
 - `zig build dropin-core` — core-only drop-in shared library (`libwebgpu_doe_core.so`).
+- `zig build bench-host-hotpaths` — repo-only host hotpath scalar-vs-SIMD/data-layout benchmark build.
+- `zig build bench-host-hotpaths-run` — build and run the host hotpath benchmark, writing a JSON artifact when `--out` is supplied.
 - `zig build runtime-compile-report` — repo-only CLI for WGSL runtime compile structural metrics (`doe-runtime-compile-report`).
 - `zig build module-core-runner` — explicit service runner for promoted Zig
   module contracts, including the v1 numeric-stability service.
@@ -181,6 +204,11 @@ The v1 path is intentionally explicit:
   - `numeric-stability/prefer-stable-on-selected-token-disagreement-v1`
   - `numeric-stability/abstain-on-selected-token-disagreement-v1`
 - it remains the current public/package-facing numeric-stability helper
+- the service implementation is now split so:
+  - `runtime/zig/src/full/modules/services/numeric_stability.zig` stays on orchestration
+  - `runtime/zig/src/full/modules/services/numeric_stability_types.zig` owns request/receipt schema
+  - `runtime/zig/src/full/modules/services/numeric_stability_eval.zig` owns evaluation helpers
+  - `runtime/zig/src/full/modules/services/numeric_stability_io.zig` owns JSON/file emission
 
 ### In-path ordinary-execution numeric stability
 

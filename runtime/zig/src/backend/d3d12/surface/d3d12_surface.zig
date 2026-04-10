@@ -2,15 +2,7 @@ const std = @import("std");
 const model_gpu_types = @import("../../../model_texture_value_types.zig");
 const model_surface_control_types = @import("../../../model_surface_control_types.zig");
 const common_timing = @import("../../common/timing.zig");
-
-extern fn d3d12_bridge_create_swap_chain(queue: ?*anyopaque, width: u32, height: u32, format: u32, alpha_mode: u32, tone_mapping_mode: u32) callconv(.c) ?*anyopaque;
-extern fn d3d12_bridge_swap_chain_present(swap_chain: ?*anyopaque, sync_interval: u32) callconv(.c) c_int;
-extern fn d3d12_bridge_swap_chain_get_buffer(swap_chain: ?*anyopaque, index: u32) callconv(.c) ?*anyopaque;
-extern fn d3d12_bridge_swap_chain_resize(swap_chain: ?*anyopaque, width: u32, height: u32, format: u32) callconv(.c) c_int;
-extern fn d3d12_bridge_device_create_rtv_heap(device: ?*anyopaque, num_descriptors: u32) callconv(.c) ?*anyopaque;
-extern fn d3d12_bridge_device_create_rtv(device: ?*anyopaque, resource: ?*anyopaque, rtv_heap: ?*anyopaque, index: u32, format: u32) callconv(.c) void;
-extern fn d3d12_bridge_device_create_texture_2d(device: ?*anyopaque, width: u32, height: u32, mip_levels: u32, format: u32, usage_flags: u32) callconv(.c) ?*anyopaque;
-extern fn d3d12_bridge_release(obj: ?*anyopaque) callconv(.c) void;
+const bridge = @import("../d3d12_bridge_decls.zig");
 
 const SurfaceStatus = enum { created, configured, acquired };
 
@@ -61,29 +53,29 @@ pub const SurfaceState = struct {
         };
 
         if (entry.render_target) |rt| {
-            d3d12_bridge_release(rt);
+            bridge.c.d3d12_bridge_release(rt);
             entry.render_target = null;
         }
         if (entry.swap_chain) |sc| {
-            d3d12_bridge_release(sc);
+            bridge.c.d3d12_bridge_release(sc);
             entry.swap_chain = null;
         }
 
         const usage_render: u32 = @truncate(model_gpu_types.WGPUTextureUsage_RenderAttachment);
-        entry.render_target = d3d12_bridge_device_create_texture_2d(device, cmd.width, cmd.height, 1, cmd.format, usage_render) orelse return error.InvalidState;
+        entry.render_target = bridge.c.d3d12_bridge_device_create_texture_2d(device, cmd.width, cmd.height, 1, cmd.format, usage_render) orelse return error.InvalidState;
 
         if (entry.rtv_heap == null) {
-            entry.rtv_heap = d3d12_bridge_device_create_rtv_heap(device, 1) orelse {
-                d3d12_bridge_release(entry.render_target);
+            entry.rtv_heap = bridge.c.d3d12_bridge_device_create_rtv_heap(device, 1) orelse {
+                bridge.c.d3d12_bridge_release(entry.render_target);
                 entry.render_target = null;
                 return error.InvalidState;
             };
         }
-        d3d12_bridge_device_create_rtv(device, entry.render_target, entry.rtv_heap, 0, cmd.format);
+        bridge.c.d3d12_bridge_device_create_rtv(device, entry.render_target, entry.rtv_heap, 0, cmd.format);
 
-        entry.swap_chain = d3d12_bridge_create_swap_chain(queue, cmd.width, cmd.height, cmd.format, cmd.alpha_mode, cmd.tone_mapping_mode);
+        entry.swap_chain = bridge.c.d3d12_bridge_create_swap_chain(queue, cmd.width, cmd.height, cmd.format, cmd.alpha_mode, cmd.tone_mapping_mode);
         if (entry.swap_chain == null) {
-            d3d12_bridge_release(entry.render_target);
+            bridge.c.d3d12_bridge_release(entry.render_target);
             entry.render_target = null;
             return error.InvalidState;
         }
@@ -112,7 +104,7 @@ pub const SurfaceState = struct {
         const submit_start = common_timing.now_ns();
         const entry = self.map.getPtr(cmd.handle) orelse return error.InvalidState;
         if (entry.swap_chain) |sc| {
-            if (d3d12_bridge_swap_chain_present(sc, 0) != 0) return error.InvalidState;
+            if (bridge.c.d3d12_bridge_swap_chain_present(sc, 0) != 0) return error.InvalidState;
         } else {
             return error.InvalidState;
         }
@@ -124,15 +116,15 @@ pub const SurfaceState = struct {
         const encode_start = common_timing.now_ns();
         if (self.map.getPtr(cmd.handle)) |entry| {
             if (entry.render_target) |rt| {
-                d3d12_bridge_release(rt);
+                bridge.c.d3d12_bridge_release(rt);
                 entry.render_target = null;
             }
             if (entry.swap_chain) |sc| {
-                d3d12_bridge_release(sc);
+                bridge.c.d3d12_bridge_release(sc);
                 entry.swap_chain = null;
             }
             if (entry.rtv_heap) |heap| {
-                d3d12_bridge_release(heap);
+                bridge.c.d3d12_bridge_release(heap);
                 entry.rtv_heap = null;
             }
             entry.status = .created;
@@ -145,9 +137,9 @@ pub const SurfaceState = struct {
         const encode_start = common_timing.now_ns();
         if (self.map.fetchRemove(cmd.handle)) |kv| {
             var entry = kv.value;
-            if (entry.render_target) |rt| d3d12_bridge_release(rt);
-            if (entry.rtv_heap) |h| d3d12_bridge_release(h);
-            if (entry.swap_chain) |sc| d3d12_bridge_release(sc);
+            if (entry.render_target) |rt| bridge.c.d3d12_bridge_release(rt);
+            if (entry.rtv_heap) |h| bridge.c.d3d12_bridge_release(h);
+            if (entry.swap_chain) |sc| bridge.c.d3d12_bridge_release(sc);
             entry.render_target = null;
             entry.rtv_heap = null;
             entry.swap_chain = null;
@@ -158,9 +150,9 @@ pub const SurfaceState = struct {
     pub fn deinit(self: *SurfaceState, allocator: std.mem.Allocator) void {
         var it = self.map.valueIterator();
         while (it.next()) |entry| {
-            if (entry.render_target) |rt| d3d12_bridge_release(rt);
-            if (entry.rtv_heap) |h| d3d12_bridge_release(h);
-            if (entry.swap_chain) |sc| d3d12_bridge_release(sc);
+            if (entry.render_target) |rt| bridge.c.d3d12_bridge_release(rt);
+            if (entry.rtv_heap) |h| bridge.c.d3d12_bridge_release(h);
+            if (entry.swap_chain) |sc| bridge.c.d3d12_bridge_release(sc);
         }
         self.map.deinit(allocator);
     }

@@ -1,4 +1,5 @@
 const std = @import("std");
+const bridge = @import("d3d12_bridge_decls.zig");
 
 // --- D3D12 descriptor heap type constants ---
 // D3D12_DESCRIPTOR_HEAP_TYPE values from d3d12.h
@@ -28,95 +29,12 @@ const RANGE_TYPE_SAMPLER: u32 = 3;
 
 // --- Bridge extern declarations ---
 // Existing bridge functions
-extern fn d3d12_bridge_device_create_sampler_heap(device: ?*anyopaque, num_descriptors: u32) callconv(.c) ?*anyopaque;
-extern fn d3d12_bridge_release(obj: ?*anyopaque) callconv(.c) void;
 
 // New bridge functions — implementations will be added to d3d12_bridge.c
-extern fn d3d12_bridge_device_create_cbv_srv_uav_heap(device: ?*anyopaque, num_descriptors: u32) callconv(.c) ?*anyopaque;
-extern fn d3d12_bridge_device_create_root_signature_with_tables(
-    device: ?*anyopaque,
-    ranges: [*]const DescriptorRangeDesc,
-    range_count: u32,
-    flags: u32,
-) callconv(.c) ?*anyopaque;
-extern fn d3d12_bridge_command_list_set_descriptor_heaps(
-    cmd_list: ?*anyopaque,
-    cbv_srv_uav_heap: ?*anyopaque,
-    sampler_heap: ?*anyopaque,
-) callconv(.c) void;
-extern fn d3d12_bridge_device_create_cbv(
-    device: ?*anyopaque,
-    heap: ?*anyopaque,
-    heap_index: u32,
-    buffer: ?*anyopaque,
-    offset: u64,
-    size: u32,
-) callconv(.c) void;
-extern fn d3d12_bridge_device_create_srv_buffer(
-    device: ?*anyopaque,
-    heap: ?*anyopaque,
-    heap_index: u32,
-    buffer: ?*anyopaque,
-    num_elements: u32,
-    stride: u32,
-) callconv(.c) void;
-extern fn d3d12_bridge_device_create_uav_buffer(
-    device: ?*anyopaque,
-    heap: ?*anyopaque,
-    heap_index: u32,
-    buffer: ?*anyopaque,
-    num_elements: u32,
-    stride: u32,
-) callconv(.c) void;
-extern fn d3d12_bridge_device_create_srv_texture(
-    device: ?*anyopaque,
-    heap: ?*anyopaque,
-    heap_index: u32,
-    texture: ?*anyopaque,
-    format: u32,
-) callconv(.c) void;
-extern fn d3d12_bridge_command_list_set_compute_root_descriptor_table(
-    cmd_list: ?*anyopaque,
-    root_parameter_index: u32,
-    heap: ?*anyopaque,
-    base_descriptor_index: u32,
-) callconv(.c) void;
-extern fn d3d12_bridge_command_list_set_graphics_root_descriptor_table(
-    cmd_list: ?*anyopaque,
-    root_parameter_index: u32,
-    heap: ?*anyopaque,
-    base_descriptor_index: u32,
-) callconv(.c) void;
-extern fn d3d12_bridge_device_create_sampler_in_heap(
-    device: ?*anyopaque,
-    sampler_heap: ?*anyopaque,
-    heap_index: u32,
-    min_filter: u32,
-    mag_filter: u32,
-    mipmap_filter: u32,
-    address_mode_u: u32,
-    address_mode_v: u32,
-    address_mode_w: u32,
-    lod_min_clamp: f32,
-    lod_max_clamp: f32,
-    compare: u32,
-    max_anisotropy: u16,
-) callconv(.c) void;
-extern fn d3d12_bridge_command_list_set_graphics_root_sampler_table(
-    cmd_list: ?*anyopaque,
-    root_parameter_index: u32,
-    sampler_heap: ?*anyopaque,
-    base_descriptor_index: u32,
-) callconv(.c) void;
 
 /// Passed to the bridge to describe one descriptor range within a root parameter.
-/// Layout must match the C struct consumed by `d3d12_bridge_device_create_root_signature_with_tables`.
-pub const DescriptorRangeDesc = extern struct {
-    range_type: u32,
-    num_descriptors: u32,
-    base_shader_register: u32,
-    register_space: u32,
-};
+/// Layout matches the checked D3D12 bridge declaration surface.
+pub const DescriptorRangeDesc = bridge.D3D12DescriptorRangeDesc;
 
 /// Binding type taxonomy — mirrors WebGPU GPUBufferBindingType / GPUBindGroupLayoutEntry.
 pub const BindingType = enum(u8) {
@@ -164,14 +82,14 @@ pub const DescriptorHeapState = struct {
     /// Safe to call multiple times — no-ops if heaps already exist.
     pub fn ensure_heaps(self: *DescriptorHeapState, device: ?*anyopaque) !void {
         if (self.cbv_srv_uav_heap == null) {
-            self.cbv_srv_uav_heap = d3d12_bridge_device_create_cbv_srv_uav_heap(
+            self.cbv_srv_uav_heap = bridge.c.d3d12_bridge_device_create_cbv_srv_uav_heap(
                 device,
                 DEFAULT_CBV_SRV_UAV_HEAP_SIZE,
             ) orelse return error.InvalidState;
             self.cbv_srv_uav_capacity = DEFAULT_CBV_SRV_UAV_HEAP_SIZE;
         }
         if (self.sampler_heap == null) {
-            self.sampler_heap = d3d12_bridge_device_create_sampler_heap(
+            self.sampler_heap = bridge.c.d3d12_bridge_device_create_sampler_heap(
                 device,
                 DEFAULT_SAMPLER_HEAP_SIZE,
             ) orelse return error.InvalidState;
@@ -191,7 +109,7 @@ pub const DescriptorHeapState = struct {
         const index = try self.next_cbv_srv_uav_index();
         // CBV size must be 256-byte aligned per D3D12 spec
         const aligned_size = align_cbv_size(size);
-        d3d12_bridge_device_create_cbv(
+        bridge.c.d3d12_bridge_device_create_cbv(
             device,
             self.cbv_srv_uav_heap,
             index,
@@ -213,7 +131,7 @@ pub const DescriptorHeapState = struct {
     ) !u32 {
         try self.ensure_heaps(device);
         const index = try self.next_cbv_srv_uav_index();
-        d3d12_bridge_device_create_srv_buffer(
+        bridge.c.d3d12_bridge_device_create_srv_buffer(
             device,
             self.cbv_srv_uav_heap,
             index,
@@ -235,7 +153,7 @@ pub const DescriptorHeapState = struct {
     ) !u32 {
         try self.ensure_heaps(device);
         const index = try self.next_cbv_srv_uav_index();
-        d3d12_bridge_device_create_uav_buffer(
+        bridge.c.d3d12_bridge_device_create_uav_buffer(
             device,
             self.cbv_srv_uav_heap,
             index,
@@ -256,7 +174,7 @@ pub const DescriptorHeapState = struct {
     ) !u32 {
         try self.ensure_heaps(device);
         const index = try self.next_cbv_srv_uav_index();
-        d3d12_bridge_device_create_srv_texture(
+        bridge.c.d3d12_bridge_device_create_srv_texture(
             device,
             self.cbv_srv_uav_heap,
             index,
@@ -293,7 +211,7 @@ pub const DescriptorHeapState = struct {
         max_anisotropy: u16,
     ) !u32 {
         const index = try self.allocate_sampler(device);
-        d3d12_bridge_device_create_sampler_in_heap(
+        bridge.c.d3d12_bridge_device_create_sampler_in_heap(
             device,
             self.sampler_heap,
             index,
@@ -314,7 +232,7 @@ pub const DescriptorHeapState = struct {
     /// Bind both descriptor heaps to a command list. Must be called before
     /// setting root descriptor tables.
     pub fn bind_heaps(self: *DescriptorHeapState, cmd_list: ?*anyopaque) void {
-        d3d12_bridge_command_list_set_descriptor_heaps(
+        bridge.c.d3d12_bridge_command_list_set_descriptor_heaps(
             cmd_list,
             self.cbv_srv_uav_heap,
             self.sampler_heap,
@@ -332,10 +250,10 @@ pub const DescriptorHeapState = struct {
     /// and can be re-used by calling `ensure_heaps` again.
     pub fn deinit(self: *DescriptorHeapState) void {
         if (self.cbv_srv_uav_heap) |h| {
-            d3d12_bridge_release(h);
+            bridge.c.d3d12_bridge_release(h);
         }
         if (self.sampler_heap) |h| {
-            d3d12_bridge_release(h);
+            bridge.c.d3d12_bridge_release(h);
         }
         self.* = .{};
     }
@@ -444,7 +362,7 @@ pub fn create_root_signature_with_bindings(
         flags |= ROOT_SIG_FLAG_ALLOW_INPUT_ASSEMBLER;
     }
 
-    return d3d12_bridge_device_create_root_signature_with_tables(
+    return bridge.c.d3d12_bridge_device_create_root_signature_with_tables(
         device,
         &ranges,
         range_count,
@@ -460,7 +378,7 @@ pub fn set_compute_descriptor_table(
     heap: ?*anyopaque,
     base_descriptor_index: u32,
 ) void {
-    d3d12_bridge_command_list_set_compute_root_descriptor_table(
+    bridge.c.d3d12_bridge_command_list_set_compute_root_descriptor_table(
         cmd_list,
         root_parameter_index,
         heap,
@@ -476,7 +394,7 @@ pub fn set_graphics_descriptor_table(
     heap: ?*anyopaque,
     base_descriptor_index: u32,
 ) void {
-    d3d12_bridge_command_list_set_graphics_root_descriptor_table(
+    bridge.c.d3d12_bridge_command_list_set_graphics_root_descriptor_table(
         cmd_list,
         root_parameter_index,
         heap,
@@ -493,7 +411,7 @@ pub fn set_graphics_sampler_table(
     sampler_heap: ?*anyopaque,
     base_descriptor_index: u32,
 ) void {
-    d3d12_bridge_command_list_set_graphics_root_sampler_table(
+    bridge.c.d3d12_bridge_command_list_set_graphics_root_sampler_table(
         cmd_list,
         root_parameter_index,
         sampler_heap,

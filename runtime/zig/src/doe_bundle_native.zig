@@ -2,6 +2,7 @@
 // Sharded from doe_wgpu_native.zig to stay under the line-limit policy.
 
 const std = @import("std");
+const log = std.log.scoped(.doe_bundle_native);
 const abi_texture = @import("core/abi/wgpu_texture_base_types.zig");
 const native_types = @import("doe_native_object_types.zig");
 const native_shared = @import("doe_native_shared_types.zig");
@@ -352,7 +353,7 @@ pub export fn doeNativeRenderPassExecuteBundles(
     for (bundles[0..bundle_count]) |raw| {
         const b = bundle.cast_bundle(raw) orelse continue;
         if (b.sample_count != 0 and b.sample_count != pass_samples) {
-            std.debug.print("doe: executeBundles: sample count mismatch: bundle={} pass={}\n", .{
+            log.warn("executeBundles sample count mismatch: bundle={} pass={}", .{
                 b.sample_count,
                 pass_samples,
             });

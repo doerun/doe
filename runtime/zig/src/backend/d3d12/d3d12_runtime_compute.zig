@@ -6,6 +6,7 @@ const doe_wgsl = @import("../../doe_wgsl/mod.zig");
 const hlsl_dispatch_contract = @import("../../doe_wgsl/hlsl_dispatch_contract.zig");
 const d3d12_descriptors = @import("d3d12_descriptors.zig");
 const dc = @import("d3d12_constants.zig");
+const bridge = @import("d3d12_bridge_decls.zig");
 
 pub const MAX_KERNEL_SOURCE_BYTES: usize = 2 * 1024 * 1024;
 pub const DEFAULT_KERNEL_ROOT: []const u8 = "bench/kernels";
@@ -28,26 +29,6 @@ pub const DispatchMetrics = struct {
     submit_wait_ns: u64 = 0,
     dispatch_count: u32 = 0,
 };
-
-extern fn d3d12_bridge_release(obj: ?*anyopaque) callconv(.c) void;
-extern fn d3d12_bridge_device_create_buffer(device: ?*anyopaque, size: usize, heap_type: c_int) callconv(.c) ?*anyopaque;
-extern fn d3d12_bridge_queue_execute_command_list(queue: ?*anyopaque, cmd_list: ?*anyopaque) callconv(.c) void;
-extern fn d3d12_bridge_queue_signal(queue: ?*anyopaque, fence: ?*anyopaque, value: u64) callconv(.c) void;
-extern fn d3d12_bridge_fence_wait(fence: ?*anyopaque, value: u64) callconv(.c) void;
-extern fn d3d12_bridge_device_create_compute_pipeline(device: ?*anyopaque, root_sig: ?*anyopaque, bytecode: [*]const u8, bytecode_size: usize) callconv(.c) ?*anyopaque;
-extern fn d3d12_bridge_command_list_set_compute_root_signature(cmd_list: ?*anyopaque, root_sig: ?*anyopaque) callconv(.c) void;
-extern fn d3d12_bridge_command_list_set_pipeline_state(cmd_list: ?*anyopaque, pipeline: ?*anyopaque) callconv(.c) void;
-extern fn d3d12_bridge_command_list_dispatch(cmd_list: ?*anyopaque, x: u32, y: u32, z: u32) callconv(.c) void;
-extern fn d3d12_bridge_command_list_set_descriptor_heaps(cmd_list: ?*anyopaque, cbv_srv_uav_heap: ?*anyopaque, sampler_heap: ?*anyopaque) callconv(.c) void;
-extern fn d3d12_bridge_command_list_set_compute_root_descriptor_table(cmd_list: ?*anyopaque, root_parameter_index: u32, heap: ?*anyopaque, base_descriptor_index: u32) callconv(.c) void;
-extern fn d3d12_bridge_resource_map(resource: ?*anyopaque) callconv(.c) ?*anyopaque;
-extern fn d3d12_bridge_resource_unmap(resource: ?*anyopaque) callconv(.c) void;
-extern fn d3d12_bridge_device_create_root_signature_with_tables(device: ?*anyopaque, ranges: [*]const d3d12_descriptors.DescriptorRangeDesc, range_count: u32, flags: u32) callconv(.c) ?*anyopaque;
-extern fn d3d12_bridge_command_allocator_reset(allocator_h: ?*anyopaque) callconv(.c) c_int;
-extern fn d3d12_bridge_command_list_reset(cmd_list: ?*anyopaque, allocator_h: ?*anyopaque) callconv(.c) c_int;
-extern fn d3d12_bridge_device_create_command_allocator(device: ?*anyopaque) callconv(.c) ?*anyopaque;
-extern fn d3d12_bridge_device_create_command_list(device: ?*anyopaque, allocator_h: ?*anyopaque) callconv(.c) ?*anyopaque;
-extern fn d3d12_bridge_command_list_close(cmd_list: ?*anyopaque) callconv(.c) void;
 
 pub fn loadKernelCso(self: anytype, alloc: std.mem.Allocator, kernel_name: []const u8) ![]u8 {
     if (kernel_name.len == 0) return error.InvalidArgument;
@@ -111,25 +92,25 @@ pub fn runDispatch(self: anytype, x: u32, y: u32, z: u32, repeat: u32) !Dispatch
     const run_count: u32 = if (repeat == 0) 1 else repeat;
     const encode_start = common_timing.now_ns();
 
-    if (d3d12_bridge_command_allocator_reset(self.compute_allocator) != 0) return error.InvalidState;
-    if (d3d12_bridge_command_list_reset(self.compute_cmd_list, self.compute_allocator) != 0) return error.InvalidState;
+    if (bridge.c.d3d12_bridge_command_allocator_reset(self.compute_allocator) != 0) return error.InvalidState;
+    if (bridge.c.d3d12_bridge_command_list_reset(self.compute_cmd_list, self.compute_allocator) != 0) return error.InvalidState;
 
-    d3d12_bridge_command_list_set_compute_root_signature(self.compute_cmd_list, self.root_signature);
-    d3d12_bridge_command_list_set_pipeline_state(self.compute_cmd_list, self.compute_pipeline);
+    bridge.c.d3d12_bridge_command_list_set_compute_root_signature(self.compute_cmd_list, self.root_signature);
+    bridge.c.d3d12_bridge_command_list_set_pipeline_state(self.compute_cmd_list, self.compute_pipeline);
     try bindDispatchInfo(self, x, y, z);
 
     var i: u32 = 0;
     while (i < run_count) : (i += 1) {
-        d3d12_bridge_command_list_dispatch(self.compute_cmd_list, x, y, z);
+        bridge.c.d3d12_bridge_command_list_dispatch(self.compute_cmd_list, x, y, z);
     }
-    d3d12_bridge_command_list_close(self.compute_cmd_list);
+    bridge.c.d3d12_bridge_command_list_close(self.compute_cmd_list);
     const encode_ns = common_timing.ns_delta(common_timing.now_ns(), encode_start);
 
-    d3d12_bridge_queue_execute_command_list(self.queue, self.compute_cmd_list);
+    bridge.c.d3d12_bridge_queue_execute_command_list(self.queue, self.compute_cmd_list);
     self.fence_value +|= 1;
-    d3d12_bridge_queue_signal(self.queue, self.fence, self.fence_value);
+    bridge.c.d3d12_bridge_queue_signal(self.queue, self.fence, self.fence_value);
     const submit_start = common_timing.now_ns();
-    d3d12_bridge_fence_wait(self.fence, self.fence_value);
+    bridge.c.d3d12_bridge_fence_wait(self.fence, self.fence_value);
     const submit_wait_ns = common_timing.ns_delta(common_timing.now_ns(), submit_start);
     self.noteCompletedFenceWait();
 
@@ -138,19 +119,19 @@ pub fn runDispatch(self: anytype, x: u32, y: u32, z: u32, repeat: u32) !Dispatch
 
 pub fn destroyComputeObjects(self: anytype) void {
     if (self.has_compute_cmd) {
-        d3d12_bridge_release(self.compute_cmd_list);
-        d3d12_bridge_release(self.compute_allocator);
+        bridge.c.d3d12_bridge_release(self.compute_cmd_list);
+        bridge.c.d3d12_bridge_release(self.compute_allocator);
         self.compute_cmd_list = null;
         self.compute_allocator = null;
         self.has_compute_cmd = false;
     }
     if (self.has_compute_pipeline) {
-        d3d12_bridge_release(self.compute_pipeline);
+        bridge.c.d3d12_bridge_release(self.compute_pipeline);
         self.compute_pipeline = null;
         self.has_compute_pipeline = false;
     }
     if (self.has_root_signature) {
-        d3d12_bridge_release(self.root_signature);
+        bridge.c.d3d12_bridge_release(self.root_signature);
         self.root_signature = null;
         self.has_root_signature = false;
     }
@@ -201,17 +182,17 @@ fn buildComputePipeline(self: anytype, bytecode: []const u8, shader_hash: u64) !
             .base_shader_register = hlsl_dispatch_contract.DISPATCH_INFO_REGISTER_SLOT,
             .register_space = hlsl_dispatch_contract.DISPATCH_INFO_REGISTER_SPACE,
         };
-        self.root_signature = d3d12_bridge_device_create_root_signature_with_tables(self.device, @ptrCast(&range), 1, 0) orelse return error.InvalidState;
+        self.root_signature = bridge.c.d3d12_bridge_device_create_root_signature_with_tables(self.device, @ptrCast(&range), 1, 0) orelse return error.InvalidState;
         self.has_root_signature = true;
     }
 
     if (self.has_compute_pipeline) {
-        d3d12_bridge_release(self.compute_pipeline);
+        bridge.c.d3d12_bridge_release(self.compute_pipeline);
         self.compute_pipeline = null;
         self.has_compute_pipeline = false;
     }
 
-    self.compute_pipeline = d3d12_bridge_device_create_compute_pipeline(
+    self.compute_pipeline = bridge.c.d3d12_bridge_device_create_compute_pipeline(
         self.device,
         self.root_signature,
         bytecode.ptr,
@@ -221,26 +202,26 @@ fn buildComputePipeline(self: anytype, bytecode: []const u8, shader_hash: u64) !
     self.current_shader_hash = shader_hash;
 
     if (!self.has_compute_cmd) {
-        self.compute_allocator = d3d12_bridge_device_create_command_allocator(self.device) orelse return error.InvalidState;
-        self.compute_cmd_list = d3d12_bridge_device_create_command_list(self.device, self.compute_allocator) orelse return error.InvalidState;
-        d3d12_bridge_command_list_close(self.compute_cmd_list);
+        self.compute_allocator = bridge.c.d3d12_bridge_device_create_command_allocator(self.device) orelse return error.InvalidState;
+        self.compute_cmd_list = bridge.c.d3d12_bridge_device_create_command_list(self.device, self.compute_allocator) orelse return error.InvalidState;
+        bridge.c.d3d12_bridge_command_list_close(self.compute_cmd_list);
         self.has_compute_cmd = true;
     }
 }
 
 fn bindDispatchInfo(self: anytype, x: u32, y: u32, z: u32) !void {
     try ensureDispatchInfoCbv(self);
-    const mapped = d3d12_bridge_resource_map(self.dispatch_info_buffer) orelse return error.InvalidState;
+    const mapped = bridge.c.d3d12_bridge_resource_map(self.dispatch_info_buffer) orelse return error.InvalidState;
     const words: *DispatchInfoWords = @ptrCast(@alignCast(mapped));
     words.* = .{ .x = x, .y = y, .z = z, ._pad = 0 };
-    d3d12_bridge_resource_unmap(self.dispatch_info_buffer);
+    bridge.c.d3d12_bridge_resource_unmap(self.dispatch_info_buffer);
 
-    d3d12_bridge_command_list_set_descriptor_heaps(
+    bridge.c.d3d12_bridge_command_list_set_descriptor_heaps(
         self.compute_cmd_list,
         self.descriptor_state.cbv_srv_uav_heap,
         self.descriptor_state.sampler_heap,
     );
-    d3d12_bridge_command_list_set_compute_root_descriptor_table(
+    bridge.c.d3d12_bridge_command_list_set_compute_root_descriptor_table(
         self.compute_cmd_list,
         hlsl_dispatch_contract.DISPATCH_INFO_ROOT_PARAMETER_INDEX,
         self.descriptor_state.cbv_srv_uav_heap,
@@ -250,7 +231,7 @@ fn bindDispatchInfo(self: anytype, x: u32, y: u32, z: u32) !void {
 
 fn ensureDispatchInfoCbv(self: anytype) !void {
     if (self.dispatch_info_buffer == null) {
-        self.dispatch_info_buffer = d3d12_bridge_device_create_buffer(
+        self.dispatch_info_buffer = bridge.c.d3d12_bridge_device_create_buffer(
             self.device,
             @intCast(hlsl_dispatch_contract.DISPATCH_INFO_BUFFER_BYTES),
             dc.HEAP_TYPE_UPLOAD,

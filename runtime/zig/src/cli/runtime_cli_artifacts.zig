@@ -1,4 +1,5 @@
 const std = @import("std");
+const backend_policy = @import("../backend/backend_policy.zig");
 const execution = @import("../execution.zig");
 const model_profile = @import("../model_profile.zig");
 const numeric_stability_runtime = @import("../numeric_stability_runtime.zig");
@@ -40,7 +41,7 @@ pub fn initTraceSummary(
     profile_vendor: []const u8,
     profile_family: ?[]const u8,
     profile_driver: []const u8,
-    backend_lane: execution.BackendLane,
+    backend_lane: backend_policy.BackendLane,
     queue_sync_mode: execution.QueueSyncMode,
     quirk_mode: quirk.QuirkMode,
     execution_context: ?*execution.ExecutionContext,

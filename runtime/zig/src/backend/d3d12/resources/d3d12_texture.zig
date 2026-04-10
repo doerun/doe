@@ -3,21 +3,9 @@ const model_gpu_types = @import("../../../model_texture_value_types.zig");
 const model_texture_types = @import("../../../model_texture_types.zig");
 const common_timing = @import("../../common/timing.zig");
 const dc = @import("../d3d12_constants.zig");
+const bridge = @import("../d3d12_bridge_decls.zig");
 
 const MAX_TEXTURE_WRITE_BYTES: usize = 64 * 1024 * 1024;
-
-extern fn d3d12_bridge_device_create_texture_2d(device: ?*anyopaque, width: u32, height: u32, mip_levels: u32, format: u32, usage_flags: u32) callconv(.c) ?*anyopaque;
-extern fn d3d12_bridge_device_create_texture_2d_layered(device: ?*anyopaque, width: u32, height: u32, array_layers: u32, mip_levels: u32, sample_count: u32, format: u32, usage_flags: u32) callconv(.c) ?*anyopaque;
-extern fn d3d12_bridge_device_create_buffer(device: ?*anyopaque, size: usize, heap_type: c_int) callconv(.c) ?*anyopaque;
-extern fn d3d12_bridge_device_create_command_allocator(device: ?*anyopaque) callconv(.c) ?*anyopaque;
-extern fn d3d12_bridge_device_create_command_list(device: ?*anyopaque, allocator_h: ?*anyopaque) callconv(.c) ?*anyopaque;
-extern fn d3d12_bridge_command_list_copy_texture_region(cmd_list: ?*anyopaque, dst: ?*anyopaque, src: ?*anyopaque, src_offset: u64, width: u32, height: u32, bytes_per_row: u32, format: u32) callconv(.c) void;
-extern fn d3d12_bridge_command_list_copy_texture_region_subresource(cmd_list: ?*anyopaque, dst: ?*anyopaque, subresource_index: u32, src: ?*anyopaque, src_offset: u64, width: u32, height: u32, depth: u32, bytes_per_row: u32, format: u32) callconv(.c) void;
-extern fn d3d12_bridge_command_list_resource_barrier_transition(cmd_list: ?*anyopaque, resource: ?*anyopaque, state_before: c_int, state_after: c_int) callconv(.c) void;
-extern fn d3d12_bridge_command_list_close(cmd_list: ?*anyopaque) callconv(.c) void;
-extern fn d3d12_bridge_queue_execute_command_list(queue: ?*anyopaque, cmd_list: ?*anyopaque) callconv(.c) void;
-extern fn d3d12_bridge_release(obj: ?*anyopaque) callconv(.c) void;
-extern fn d3d12_bridge_device_create_texture_3d(device: ?*anyopaque, width: u32, height: u32, depth: u32, mip_levels: u32, format: u32, usage_flags: u32) callconv(.c) ?*anyopaque;
 
 pub const TextureEntry = struct {
     handle: u64,
@@ -62,7 +50,7 @@ pub fn texture_write(
     var entry = texture_map.get(tex_res.handle);
     if (entry == null) {
         const tex_handle = switch (tex_res.dimension) {
-            model_gpu_types.WGPUTextureDimension_3D => d3d12_bridge_device_create_texture_3d(
+            model_gpu_types.WGPUTextureDimension_3D => bridge.c.d3d12_bridge_device_create_texture_3d(
                 device,
                 width,
                 height,
@@ -71,7 +59,7 @@ pub fn texture_write(
                 format,
                 usage,
             ),
-            else => d3d12_bridge_device_create_texture_2d_layered(
+            else => bridge.c.d3d12_bridge_device_create_texture_2d_layered(
                 device,
                 width,
                 height,
@@ -95,25 +83,25 @@ pub fn texture_write(
             .mip_levels = if (tex_res.mip_level > 0) tex_res.mip_level + 1 else 1,
         };
         texture_map.put(allocator, tex_res.handle, new_entry) catch {
-            d3d12_bridge_release(tex_handle);
+            bridge.c.d3d12_bridge_release(tex_handle);
             return error.InvalidState;
         };
         entry = new_entry;
     }
 
-    const staging = d3d12_bridge_device_create_buffer(device, data.len, dc.HEAP_TYPE_UPLOAD) orelse return error.InvalidState;
-    defer d3d12_bridge_release(staging);
+    const staging = bridge.c.d3d12_bridge_device_create_buffer(device, data.len, dc.HEAP_TYPE_UPLOAD) orelse return error.InvalidState;
+    defer bridge.c.d3d12_bridge_release(staging);
 
-    const cmd_alloc = d3d12_bridge_device_create_command_allocator(device) orelse return error.InvalidState;
-    defer d3d12_bridge_release(cmd_alloc);
+    const cmd_alloc = bridge.c.d3d12_bridge_device_create_command_allocator(device) orelse return error.InvalidState;
+    defer bridge.c.d3d12_bridge_release(cmd_alloc);
 
-    const cmd_list = d3d12_bridge_device_create_command_list(device, cmd_alloc) orelse return error.InvalidState;
-    defer d3d12_bridge_release(cmd_list);
+    const cmd_list = bridge.c.d3d12_bridge_device_create_command_list(device, cmd_alloc) orelse return error.InvalidState;
+    defer bridge.c.d3d12_bridge_release(cmd_list);
 
     const bytes_per_row = if (tex_res.bytes_per_row > 0) tex_res.bytes_per_row else @as(u32, @intCast(data.len / @as(usize, rows_per_image * depth_or_layers)));
 
     if (tex_res.dimension == model_gpu_types.WGPUTextureDimension_3D) {
-        d3d12_bridge_command_list_copy_texture_region_subresource(
+        bridge.c.d3d12_bridge_command_list_copy_texture_region_subresource(
             cmd_list,
             entry.?.resource,
             tex_res.mip_level,
@@ -129,7 +117,7 @@ pub fn texture_write(
         const slice_stride = @as(u64, bytes_per_row) * rows_per_image;
         var layer_index: u32 = 0;
         while (layer_index < depth_or_layers) : (layer_index += 1) {
-            d3d12_bridge_command_list_copy_texture_region_subresource(
+            bridge.c.d3d12_bridge_command_list_copy_texture_region_subresource(
                 cmd_list,
                 entry.?.resource,
                 layer_index,
@@ -143,11 +131,11 @@ pub fn texture_write(
             );
         }
     } else {
-        d3d12_bridge_command_list_copy_texture_region(cmd_list, entry.?.resource, staging, 0, width, height, bytes_per_row, format);
+        bridge.c.d3d12_bridge_command_list_copy_texture_region(cmd_list, entry.?.resource, staging, 0, width, height, bytes_per_row, format);
     }
-    d3d12_bridge_command_list_resource_barrier_transition(cmd_list, entry.?.resource, dc.RESOURCE_STATE_COPY_DEST, dc.RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-    d3d12_bridge_command_list_close(cmd_list);
-    d3d12_bridge_queue_execute_command_list(queue, cmd_list);
+    bridge.c.d3d12_bridge_command_list_resource_barrier_transition(cmd_list, entry.?.resource, dc.RESOURCE_STATE_COPY_DEST, dc.RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+    bridge.c.d3d12_bridge_command_list_close(cmd_list);
+    bridge.c.d3d12_bridge_queue_execute_command_list(queue, cmd_list);
 
     return common_timing.ns_delta(common_timing.now_ns(), encode_start);
 }
@@ -187,7 +175,7 @@ pub fn texture_destroy(
 
     if (texture_map.fetchRemove(cmd.handle)) |kv| {
         if (kv.value.resource) |res| {
-            d3d12_bridge_release(res);
+            bridge.c.d3d12_bridge_release(res);
         }
     }
 
@@ -197,7 +185,7 @@ pub fn texture_destroy(
 pub fn release_all(texture_map: *TextureMap) void {
     var it = texture_map.valueIterator();
     while (it.next()) |entry| {
-        if (entry.resource) |res| d3d12_bridge_release(res);
+        if (entry.resource) |res| bridge.c.d3d12_bridge_release(res);
     }
     texture_map.clearAndFree(std.heap.page_allocator);
 }

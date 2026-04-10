@@ -1,4 +1,5 @@
 const std = @import("std");
+const log = std.log.scoped(.wgpu_async_diagnostics);
 const model_gpu_types = @import("../../model_texture_value_types.zig");
 const model_async_types = @import("../../model_async_types.zig");
 const proc_types = @import("../../core/abi/wgpu_proc_types.zig");
@@ -624,7 +625,7 @@ fn createRenderPipelineForDiagnostics(self: anytype, target_format: abi_base.WGP
     ) catch {
         inline for (0..3) |i| {
             _ = async_procs_mod.popErrorScopeAndWait(async_procs, self.core.instance.?, procs, self.core.device.?) catch |err|
-                std.debug.print("warn: wgpu_async_diagnostics: popErrorScope[{d}] cleanup: {s}\n", .{ i, @errorName(err) });
+                log.warn("popErrorScope[{d}] cleanup: {s}", .{ i, @errorName(err) });
         }
         return error.DiagnosticPipelineCreationFailed;
     };

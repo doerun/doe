@@ -1,5 +1,6 @@
 const std = @import("std");
 const builtin = @import("builtin");
+const log = std.log.scoped(.doe_vulkan_feature_cache);
 const has_vulkan = (builtin.os.tag == .linux);
 const backend_capabilities = @import("backend/dropin_capabilities.zig");
 const vk_feature_caps = if (has_vulkan) backend_capabilities.vk_feature_caps else struct {
@@ -26,7 +27,7 @@ fn cache_key(handle: ?*anyopaque) ?usize {
 pub fn set_adapter(handle: ?*anyopaque, caps: vk_feature_caps.VulkanFeatureCaps) void {
     const key = cache_key(handle) orelse return;
     adapter_caps.put(alloc, key, caps) catch |err| {
-        std.debug.print("warn: doe_vulkan_feature_cache: set_adapter: {s}\n", .{@errorName(err)});
+        log.warn("set_adapter: {s}", .{@errorName(err)});
     };
 }
 
@@ -44,7 +45,7 @@ pub fn remove_adapter(handle: ?*anyopaque) void {
 pub fn set_device(handle: ?*anyopaque, caps: vk_feature_caps.VulkanFeatureCaps) void {
     const key = cache_key(handle) orelse return;
     device_caps.put(alloc, key, caps) catch |err| {
-        std.debug.print("warn: doe_vulkan_feature_cache: set_device: {s}\n", .{@errorName(err)});
+        log.warn("set_device: {s}", .{@errorName(err)});
     };
 }
 
@@ -64,7 +65,7 @@ pub fn remove_device(handle: ?*anyopaque) void {
 pub fn set_adapter_device_caps(handle: ?*anyopaque, caps: vk_device_caps.VulkanDeviceCaps) void {
     const key = cache_key(handle) orelse return;
     adapter_device_caps.put(alloc, key, caps) catch |err| {
-        std.debug.print("warn: doe_vulkan_feature_cache: set_adapter_device_caps: {s}\n", .{@errorName(err)});
+        log.warn("set_adapter_device_caps: {s}", .{@errorName(err)});
     };
 }
 
@@ -76,7 +77,7 @@ pub fn get_adapter_device_caps(handle: ?*anyopaque) ?vk_device_caps.VulkanDevice
 pub fn set_device_device_caps(handle: ?*anyopaque, caps: vk_device_caps.VulkanDeviceCaps) void {
     const key = cache_key(handle) orelse return;
     device_device_caps.put(alloc, key, caps) catch |err| {
-        std.debug.print("warn: doe_vulkan_feature_cache: set_device_device_caps: {s}\n", .{@errorName(err)});
+        log.warn("set_device_device_caps: {s}", .{@errorName(err)});
     };
 }
 

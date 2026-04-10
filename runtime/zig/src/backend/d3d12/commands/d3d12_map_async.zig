@@ -2,14 +2,10 @@ const std = @import("std");
 const model_async_types = @import("../../../model_async_types.zig");
 const common_timing = @import("../../common/timing.zig");
 const dc = @import("../d3d12_constants.zig");
+const bridge = @import("../d3d12_bridge_decls.zig");
 
 const HEAP_TYPE_READBACK: c_int = 3;
 const MAX_MAP_BYTES: usize = 256 * 1024 * 1024;
-
-extern fn d3d12_bridge_device_create_buffer(device: ?*anyopaque, size: usize, heap_type: c_int) callconv(.c) ?*anyopaque;
-extern fn d3d12_bridge_resource_map(resource: ?*anyopaque) callconv(.c) ?*anyopaque;
-extern fn d3d12_bridge_resource_unmap(resource: ?*anyopaque) callconv(.c) void;
-extern fn d3d12_bridge_release(obj: ?*anyopaque) callconv(.c) void;
 
 pub fn execute_map_async(
     device: ?*anyopaque,
@@ -25,12 +21,12 @@ pub fn execute_map_async(
         .read => HEAP_TYPE_READBACK,
     };
 
-    const buffer = d3d12_bridge_device_create_buffer(device, cmd.bytes, heap_type) orelse return error.InvalidState;
-    defer d3d12_bridge_release(buffer);
+    const buffer = bridge.c.d3d12_bridge_device_create_buffer(device, cmd.bytes, heap_type) orelse return error.InvalidState;
+    defer bridge.c.d3d12_bridge_release(buffer);
 
-    const mapped = d3d12_bridge_resource_map(buffer) orelse return error.InvalidState;
+    const mapped = bridge.c.d3d12_bridge_resource_map(buffer) orelse return error.InvalidState;
     _ = mapped;
-    d3d12_bridge_resource_unmap(buffer);
+    bridge.c.d3d12_bridge_resource_unmap(buffer);
 
     return common_timing.ns_delta(common_timing.now_ns(), encode_start);
 }

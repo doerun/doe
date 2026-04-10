@@ -4,8 +4,11 @@ const model_commands = @import("../model_commands.zig");
 const model_quirks = @import("../model_quirks.zig");
 const quirk = @import("../quirk/mod.zig");
 const replay = @import("../replay.zig");
+const tooling_io_context = @import("../tooling_io_context.zig");
 const runtime_cli_args = @import("runtime_cli_args.zig");
 const samples = @import("runtime_cli_samples.zig");
+
+const MAX_INPUT_BYTES: usize = 16 * 1024 * 1024;
 
 pub const LoadTimings = struct {
     host_input_read_total_ns: u64 = 0,
@@ -49,21 +52,23 @@ fn elapsedSince(start_ns: u64) u64 {
     return nowNs() - start_ns;
 }
 
-fn readFileAlloc(allocator: std.mem.Allocator, path: []const u8) ![]const u8 {
-    const file = try std.fs.cwd().openFile(path, .{});
-    defer file.close();
-    return try file.readToEndAlloc(allocator, 16 * 1024 * 1024);
-}
-
 pub fn load(
     allocator: std.mem.Allocator,
+    options: runtime_cli_args.RunOptions,
+) !LoadResult {
+    return loadWithIo(allocator, tooling_io_context.IoContext.sync(), options);
+}
+
+pub fn loadWithIo(
+    allocator: std.mem.Allocator,
+    io_context: tooling_io_context.IoContext,
     options: runtime_cli_args.RunOptions,
 ) !LoadResult {
     var timings = LoadTimings{};
 
     const quirks_read_start_ns = nowNs();
     const quirks_bytes = if (options.quirk_mode.loadsQuirks())
-        (if (options.quirks_path) |path| try readFileAlloc(allocator, path) else samples.sample_quirks)
+        (if (options.quirks_path) |path| try io_context.readFileAlloc(allocator, path, MAX_INPUT_BYTES) else samples.sample_quirks)
     else
         "[]";
     timings.host_input_read_total_ns += elapsedSince(quirks_read_start_ns);
@@ -78,7 +83,7 @@ pub fn load(
 
     if (options.replay_path) |path| {
         const replay_parse_start_ns = nowNs();
-        replay_expectations = try replay.loadReplayExpectations(allocator, path);
+        replay_expectations = try replay.loadReplayExpectationsWithIo(allocator, io_context, path);
         timings.host_input_parse_total_ns += elapsedSince(replay_parse_start_ns);
     }
 
@@ -92,7 +97,7 @@ pub fn load(
 
     if (options.commands_path) |commands_path| {
         const commands_read_start_ns = nowNs();
-        const commands_bytes = try readFileAlloc(allocator, commands_path);
+        const commands_bytes = try io_context.readFileAlloc(allocator, commands_path, MAX_INPUT_BYTES);
         defer allocator.free(commands_bytes);
         timings.host_input_read_total_ns += elapsedSince(commands_read_start_ns);
 
@@ -120,4 +125,30 @@ pub fn load(
         .inputs = loaded,
         .timings = timings,
     };
+}
+
+test "loadWithIo supports cooperative same-thread mode for command streams" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+
+    try tmp.dir.writeFile(.{
+        .sub_path = "commands.json",
+        .data = "[{\"command\":\"barrier\",\"dependency_count\":2}]",
+    });
+
+    const path = try tmp.dir.realpathAlloc(std.testing.allocator, "commands.json");
+    defer std.testing.allocator.free(path);
+
+    var result = try loadWithIo(
+        std.testing.allocator,
+        tooling_io_context.IoContext.cooperativeSameThread(),
+        .{
+            .commands_path = path,
+            .quirk_mode = .off,
+        },
+    );
+    defer result.inputs.deinit(std.testing.allocator);
+
+    try std.testing.expectEqual(@as(usize, 1), result.inputs.commands.len);
+    try std.testing.expectEqual(@as(u32, 2), result.inputs.commands[0].barrier.dependency_count);
 }

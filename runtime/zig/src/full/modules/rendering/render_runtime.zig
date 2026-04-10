@@ -1,4 +1,5 @@
 const std = @import("std");
+const log = std.log.scoped(.render_runtime);
 const model_gpu_types = @import("../../../model_texture_value_types.zig");
 const model_render_types = @import("../../../model_render_types.zig");
 const runtime_types = @import("../../../backend/runtime_types.zig");
@@ -35,7 +36,7 @@ pub fn textureFormatFromString(value: []const u8) RenderRuntimeError!model_gpu_t
 
 pub fn execute(allocator: std.mem.Allocator, config: RenderExecutionConfig) !runtime_types.NativeExecutionResult {
     common.ensureLocalLibrarySearchPath(allocator) catch |err| {
-        std.debug.print("warn: render_runtime: library search path: {s}\n", .{@errorName(err)});
+        log.warn("library search path: {s}", .{@errorName(err)});
     };
     const profile = common.hostProfile() catch return RenderRuntimeError.RuntimeUnavailable;
 

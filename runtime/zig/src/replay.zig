@@ -1,4 +1,7 @@
 const std = @import("std");
+const tooling_io_context = @import("tooling_io_context.zig");
+
+const MAX_REPLAY_BYTES: usize = 16 * 1024 * 1024;
 
 pub const ReplayValidationError = error{
     InvalidReplayHash,
@@ -84,10 +87,18 @@ pub fn parseReplayLine(expected_module: []const u8, parsed: *const RawReplayRow)
 }
 
 pub fn loadReplayExpectations(allocator: std.mem.Allocator, path: []const u8) !ReplayExpectationSet {
+    return loadReplayExpectationsWithIo(allocator, tooling_io_context.IoContext.sync(), path);
+}
+
+pub fn loadReplayExpectationsWithIo(
+    allocator: std.mem.Allocator,
+    io_context: tooling_io_context.IoContext,
+    path: []const u8,
+) !ReplayExpectationSet {
     var arena = std.heap.ArenaAllocator.init(allocator);
     errdefer arena.deinit();
     const parse_allocator = arena.allocator();
-    const artifact_text = try readFileAlloc(allocator, path);
+    const artifact_text = try io_context.readFileAlloc(allocator, path, MAX_REPLAY_BYTES);
     errdefer allocator.free(artifact_text);
 
     var expectations = std.ArrayList(ReplayExpectation).empty;
@@ -121,12 +132,6 @@ pub fn matchOptionalText(lhs: ?[]const u8, rhs: ?[]const u8) bool {
     if (lhs == null and rhs == null) return true;
     if (lhs == null or rhs == null) return false;
     return std.mem.eql(u8, lhs.?, rhs.?);
-}
-
-fn readFileAlloc(allocator: std.mem.Allocator, path: []const u8) ![]const u8 {
-    const file = try std.fs.cwd().openFile(path, .{});
-    defer file.close();
-    return try file.readToEndAlloc(allocator, 16 * 1024 * 1024);
 }
 
 fn sliceWithinBuffer(buffer: []const u8, slice: []const u8) bool {
@@ -260,4 +265,30 @@ test "loadReplayExpectations keeps simple field slices inside the owned artifact
     try std.testing.expect(sliceWithinBuffer(loaded.artifact_text, loaded.expectations[0].command));
     try std.testing.expect(sliceWithinBuffer(loaded.artifact_text, loaded.expectations[0].kernel.?));
     try std.testing.expect(sliceWithinBuffer(loaded.artifact_text, loaded.expectations[1].command));
+}
+
+test "loadReplayExpectationsWithIo supports cooperative same-thread mode" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+
+    try tmp.dir.writeFile(.{
+        .sub_path = "replay.jsonl",
+        .data =
+            \\{"seq":0,"command":"dispatch","hash":"0x1","previousHash":"0x0","opCode":"dispatch","module":"doe-zig-runtime"}
+            \\
+        ,
+    });
+
+    const path = try tmp.dir.realpathAlloc(std.testing.allocator, "replay.jsonl");
+    defer std.testing.allocator.free(path);
+
+    var loaded = try loadReplayExpectationsWithIo(
+        std.testing.allocator,
+        tooling_io_context.IoContext.cooperativeSameThread(),
+        path,
+    );
+    defer loaded.deinit(std.testing.allocator);
+
+    try std.testing.expectEqual(@as(usize, 1), loaded.expectations.len);
+    try std.testing.expectEqual(@as(usize, 0), loaded.expectations[0].seq);
 }

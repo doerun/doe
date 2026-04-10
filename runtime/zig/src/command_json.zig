@@ -1,38 +1,21 @@
 const std = @import("std");
 const model_commands = @import("model_commands.zig");
-const model_resource_types = @import("model_resource_types.zig");
-const model_compute_types = @import("model_compute_types.zig");
-const model_texture_types = @import("model_texture_value_types.zig");
-const model_binding_types = @import("model_binding_value_types.zig");
-const model_render_types = @import("model_render_types.zig");
 const model_async_types = @import("model_async_types.zig");
 const command_kind = @import("command/command_kind.zig");
-const parse_helpers = @import("command_parse_helpers.zig");
+const command_parse_copy = @import("command/command_parse_copy.zig");
+const command_parse_dispatch = @import("command/command_parse_dispatch.zig");
+const command_parse_render = @import("command/command_parse_render.zig");
 const parse_extra = @import("command_json_extra.zig");
 
 const Allocator = std.mem.Allocator;
 
 const command_json_raw = @import("command_json_raw.zig");
 const RawCommand = command_json_raw.RawCommand;
-const RawKernelBinding = command_json_raw.RawKernelBinding;
 pub const ParseError = command_json_raw.ParseError;
 
 const model = struct {
     pub const Command = model_commands.Command;
-    pub const CopyDirection = model_resource_types.CopyDirection;
-    pub const CopyResourceKind = model_resource_types.CopyResourceKind;
-    pub const CopyTextureResource = model_resource_types.CopyTextureResource;
-    pub const DEFAULT_RENDER_TARGET_FORMAT = model_render_types.DEFAULT_RENDER_TARGET_FORMAT;
-    pub const DEFAULT_RENDER_TARGET_HANDLE = model_render_types.DEFAULT_RENDER_TARGET_HANDLE;
-    pub const DEFAULT_RENDER_TARGET_HEIGHT = model_render_types.DEFAULT_RENDER_TARGET_HEIGHT;
-    pub const DEFAULT_RENDER_TARGET_WIDTH = model_render_types.DEFAULT_RENDER_TARGET_WIDTH;
-    pub const DispatchCommand = model_compute_types.DispatchCommand;
-    pub const KernelBinding = model_compute_types.KernelBinding;
     pub const MapAsyncMode = model_async_types.MapAsyncMode;
-    pub const RenderDrawCommand = model_render_types.RenderDrawCommand;
-    pub const WGPUShaderStage_Compute = model_binding_types.WGPUShaderStage_Compute;
-    pub const WGPUTextureFormat_Undefined = model_texture_types.WGPUTextureFormat_Undefined;
-    pub const WGPUWholeSize = model_texture_types.WGPUWholeSize;
 };
 
 pub fn parseCommands(allocator: Allocator, text: []const u8) ![]model.Command {
@@ -95,170 +78,6 @@ fn freeCommandPayload(allocator: Allocator, command: model.Command) void {
     }
 }
 
-fn parseCopyResource(
-    side: []const u8,
-    raw: RawCommand,
-    _direction: model.CopyDirection,
-    default_kind: model.CopyResourceKind,
-    direction_default_to_texture: bool,
-) !model.CopyTextureResource {
-    _ = _direction;
-    const handle = if (std.mem.eql(u8, side, "src"))
-        (raw.src_handle orelse raw.srcHandle)
-    else
-        (raw.dst_handle orelse raw.dstHandle);
-
-    if (handle == null) return ParseError.InvalidCommandPayload;
-
-    const kind = parse_helpers.parseCopyResourceKind(if (std.mem.eql(u8, side, "src")) raw.src_kind orelse raw.srcKind else raw.dst_kind orelse raw.dstKind) orelse default_kind;
-
-    const width = if (std.mem.eql(u8, side, "src"))
-        (raw.src_width orelse raw.srcWidth orelse 1)
-    else
-        (raw.dst_width orelse raw.dstWidth orelse 1);
-    const height = if (std.mem.eql(u8, side, "src"))
-        (raw.src_height orelse raw.srcHeight orelse 1)
-    else
-        (raw.dst_height orelse raw.dstHeight orelse 1);
-    const depth = if (std.mem.eql(u8, side, "src"))
-        (raw.src_depth_or_array_layers orelse raw.srcDepthOrArrayLayers orelse raw.src_depth orelse 1)
-    else
-        (raw.dst_depth_or_array_layers orelse raw.dstDepthOrArrayLayers orelse raw.dst_depth orelse 1);
-    const format_raw = if (std.mem.eql(u8, side, "src"))
-        (raw.src_format orelse raw.srcFormat)
-    else
-        (raw.dst_format orelse raw.dstFormat);
-    const usage = if (std.mem.eql(u8, side, "src"))
-        (raw.src_usage orelse raw.srcUsage orelse 0)
-    else
-        (raw.dst_usage orelse raw.dstUsage orelse 0);
-    const dimension = if (std.mem.eql(u8, side, "src"))
-        parse_helpers.parseTextureDimension(raw.src_dimension orelse raw.srcDimension)
-    else
-        parse_helpers.parseTextureDimension(raw.dst_dimension orelse raw.dstDimension);
-    const view_dimension = if (std.mem.eql(u8, side, "src"))
-        parse_helpers.parseTextureViewDimension(raw.src_view_dimension orelse raw.srcViewDimension)
-    else
-        parse_helpers.parseTextureViewDimension(raw.dst_view_dimension orelse raw.dstViewDimension);
-    const mip_level = if (std.mem.eql(u8, side, "src"))
-        (raw.src_mip_level orelse raw.srcMipLevel orelse 0)
-    else
-        (raw.dst_mip_level orelse raw.dstMipLevel orelse 0);
-    const sample_count = if (std.mem.eql(u8, side, "src"))
-        (raw.src_sample_count orelse raw.srcSampleCount orelse 1)
-    else
-        (raw.dst_sample_count orelse raw.dstSampleCount orelse 1);
-    const aspect = if (std.mem.eql(u8, side, "src"))
-        parse_helpers.parseTextureAspect(raw.src_aspect orelse raw.srcAspect)
-    else
-        parse_helpers.parseTextureAspect(raw.dst_aspect orelse raw.dstAspect);
-    const bytes_per_row = if (std.mem.eql(u8, side, "src"))
-        (raw.src_bytes_per_row orelse raw.srcBytesPerRow orelse 0)
-    else
-        (raw.dst_bytes_per_row orelse raw.dstBytesPerRow orelse 0);
-    const rows_per_image = if (std.mem.eql(u8, side, "src"))
-        (raw.src_rows_per_image orelse raw.srcRowsPerImage orelse 0)
-    else
-        (raw.dst_rows_per_image orelse raw.dstRowsPerImage orelse 0);
-    const offset = if (std.mem.eql(u8, side, "src"))
-        (raw.src_offset orelse raw.srcOffset orelse 0)
-    else
-        (raw.dst_offset orelse raw.dstOffset orelse 0);
-
-    var effective_kind = kind;
-    if (kind == .buffer and direction_default_to_texture) {
-        effective_kind = .texture;
-    }
-
-    var texture_format: u32 = model.WGPUTextureFormat_Undefined;
-    if (format_raw) |raw_format| {
-        texture_format = parse_helpers.parseTextureFormat(raw_format) catch return ParseError.InvalidCommandPayload;
-    }
-
-    return .{
-        .handle = handle.?,
-        .kind = effective_kind,
-        .width = width,
-        .height = height,
-        .depth_or_array_layers = depth,
-        .format = texture_format,
-        .usage = usage,
-        .dimension = dimension,
-        .view_dimension = view_dimension,
-        .mip_level = mip_level,
-        .sample_count = sample_count,
-        .aspect = aspect,
-        .bytes_per_row = bytes_per_row,
-        .rows_per_image = rows_per_image,
-        .offset = offset,
-    };
-}
-
-fn parseDispatchDimensions(raw: RawCommand) !model.DispatchCommand {
-    var dims: [3]u32 = .{ 1, 1, 1 };
-
-    if (raw.workgroupCount) |group_count| {
-        dims[0] = group_count[0];
-        dims[1] = group_count[1];
-        dims[2] = group_count[2];
-    } else if (raw.workgroups) |group_count| {
-        dims[0] = group_count[0];
-        dims[1] = group_count[1];
-        dims[2] = group_count[2];
-    } else {
-        dims[0] = raw.x orelse 1;
-        dims[1] = raw.y orelse 1;
-        dims[2] = raw.z orelse 1;
-    }
-
-    if (dims[0] == 0 or dims[1] == 0 or dims[2] == 0) {
-        return ParseError.InvalidCommandPayload;
-    }
-
-    return .{
-        .x = dims[0],
-        .y = dims[1],
-        .z = dims[2],
-    };
-}
-
-fn parseKernelBindings(allocator: Allocator, raw_bindings: []const RawKernelBinding) ![]const model.KernelBinding {
-    var bindings = try std.ArrayList(model.KernelBinding).initCapacity(allocator, raw_bindings.len);
-    errdefer bindings.deinit(allocator);
-
-    for (raw_bindings) |raw_binding| {
-        const binding_index = raw_binding.binding orelse return ParseError.InvalidCommandPayload;
-        const group = raw_binding.group orelse raw_binding.groupIndex orelse raw_binding.group_index orelse 0;
-        const handle = raw_binding.handle orelse raw_binding.resource_handle orelse raw_binding.resourceHandle orelse return ParseError.InvalidCommandPayload;
-        const kind = parse_helpers.parseKernelBindingKind(raw_binding.kind orelse raw_binding.resource_kind orelse raw_binding.resourceKind) orelse return ParseError.InvalidCommandPayload;
-        const visibility = parse_helpers.parseShaderStage(raw_binding.visibility) orelse parse_helpers.parseWGPUBits(raw_binding.visibilityMask) orelse model.WGPUShaderStage_Compute;
-        const buffer_offset = raw_binding.buffer_offset orelse raw_binding.bufferOffset orelse 0;
-        const buffer_size = raw_binding.buffer_size orelse raw_binding.bufferSize orelse model.WGPUWholeSize;
-
-        try bindings.append(allocator, .{
-            .binding = binding_index,
-            .group = group,
-            .resource_kind = kind,
-            .resource_handle = handle,
-            .visibility = visibility,
-            .buffer_offset = buffer_offset,
-            .buffer_size = buffer_size,
-            .buffer_type = parse_helpers.parseBufferBindingType(raw_binding.buffer_type orelse raw_binding.bufferType),
-            .texture_sample_type = parse_helpers.parseTextureSampleType(raw_binding.texture_sample_type orelse raw_binding.textureSampleType),
-            .texture_view_dimension = parse_helpers.parseTextureViewDimension(raw_binding.texture_view_dimension orelse raw_binding.textureViewDimension),
-            .storage_texture_access = parse_helpers.parseStorageTextureAccess(raw_binding.storage_access orelse raw_binding.storageAccess),
-            .texture_aspect = parse_helpers.parseTextureAspect(raw_binding.texture_aspect orelse raw_binding.textureAspect),
-            .texture_format = if (raw_binding.texture_format orelse raw_binding.textureFormat) |raw_format|
-                parse_helpers.parseTextureFormat(raw_format) catch return ParseError.InvalidCommandPayload
-            else
-                model.WGPUTextureFormat_Undefined,
-            .texture_multisampled = raw_binding.multisampled orelse false,
-        });
-    }
-
-    return bindings.toOwnedSlice(allocator);
-}
-
 fn parseOne(allocator: Allocator, raw: RawCommand) !model.Command {
     const kind = try command_kind.parseKind(raw);
 
@@ -283,21 +102,7 @@ fn parseOne(allocator: Allocator, raw: RawCommand) !model.Command {
     }
 
     if (kind == .copy) {
-        const bytes = raw.bytes orelse return ParseError.InvalidCommandPayload;
-        const direction = parse_helpers.parseCopyDirection(raw.direction, command_kind.getCommandName(raw)) catch return ParseError.InvalidCommandPayload;
-        const default_src_kind: model.CopyResourceKind = switch (direction) {
-            .buffer_to_buffer, .buffer_to_texture => .buffer,
-            .texture_to_buffer, .texture_to_texture => .texture,
-        };
-        const default_dst_kind: model.CopyResourceKind = switch (direction) {
-            .buffer_to_buffer, .texture_to_buffer => .buffer,
-            .buffer_to_texture, .texture_to_texture => .texture,
-        };
-
-        const src = try parseCopyResource("src", raw, direction, default_src_kind, direction == .texture_to_buffer or direction == .texture_to_texture);
-        const dst = try parseCopyResource("dst", raw, direction, default_dst_kind, direction == .buffer_to_texture or direction == .texture_to_texture);
-
-        return .{ .copy_buffer_to_texture = .{ .direction = direction, .src = src, .dst = dst, .bytes = bytes } };
+        return command_parse_copy.parseCopyCommand(raw);
     }
 
     if (kind == .barrier) {
@@ -306,147 +111,11 @@ fn parseOne(allocator: Allocator, raw: RawCommand) !model.Command {
     }
 
     if (kind == .kernel_dispatch or kind == .dispatch or kind == .dispatch_indirect) {
-        const dispatch = try parseDispatchDimensions(raw);
-        if (kind == .kernel_dispatch) {
-            const repeat_count = raw.repeat orelse raw.dispatch_count orelse raw.dispatchCount orelse 1;
-            if (repeat_count == 0) return ParseError.InvalidCommandPayload;
-            const kernel_name = try allocator.dupe(u8, raw.kernel orelse raw.kernel_name orelse return ParseError.InvalidCommandPayload);
-            errdefer allocator.free(kernel_name);
-            const entry_point = if (raw.entry_point) |entry| try allocator.dupe(u8, entry) else if (raw.entryPoint) |entry| try allocator.dupe(u8, entry) else null;
-            errdefer if (entry_point) |entry| allocator.free(entry);
-            const kernel_bindings = if (raw.bindings) |raw_bindings| try parseKernelBindings(allocator, raw_bindings) else null;
-            errdefer if (kernel_bindings) |bindings| allocator.free(bindings);
-            return .{ .kernel_dispatch = .{
-                .kernel = kernel_name,
-                .entry_point = entry_point,
-                .x = dispatch.x,
-                .y = dispatch.y,
-                .z = dispatch.z,
-                .repeat = repeat_count,
-                .warmup_dispatch_count = raw.warmup_dispatch_count orelse raw.warmupDispatchCount orelse 0,
-                .initialize_buffers_on_create = raw.initialize_buffers_on_create orelse raw.initializeBuffersOnCreate orelse false,
-                .bindings = kernel_bindings,
-            } };
-        }
-        if (kind == .dispatch_indirect) {
-            return .{ .dispatch_indirect = dispatch };
-        }
-        return .{ .dispatch = dispatch };
+        return command_parse_dispatch.parseDispatchCommand(allocator, kind, raw);
     }
 
     if (kind == .render_draw or kind == .draw_indirect or kind == .draw_indexed_indirect or kind == .render_pass) {
-        const draw_count = raw.draw_count orelse raw.drawCount orelse return ParseError.InvalidCommandPayload;
-        const vertex_count = raw.vertex_count orelse raw.vertexCount orelse 3;
-        const instance_count = raw.instance_count orelse raw.instanceCount orelse 1;
-        const first_vertex = raw.first_vertex orelse raw.firstVertex orelse 0;
-        const first_instance = raw.first_instance orelse raw.firstInstance orelse 0;
-        const parsed_index_count = raw.index_count orelse raw.indexCount;
-        const is_draw_indexed = blk: {
-            const command_name = command_kind.getCommandName(raw) orelse break :blk false;
-            break :blk command_kind.commandKindEquals(command_name, "draw_indexed") or command_kind.commandKindEquals(command_name, "draw_indexed_indirect");
-        };
-        const raw_index_data = raw.index_data orelse raw.indexData orelse raw.indices;
-        const indexed_draw = is_draw_indexed or parsed_index_count != null or raw_index_data != null;
-        const requested_index_format = parse_helpers.parseRenderIndexFormat(raw.index_format orelse raw.indexFormat) catch return ParseError.InvalidCommandPayload;
-        const index_data = if (indexed_draw) blk: {
-            const provided = raw_index_data orelse return ParseError.InvalidCommandPayload;
-            if (provided.len == 0) return ParseError.InvalidCommandPayload;
-            break :blk parse_helpers.parseRenderIndexData(allocator, provided, requested_index_format) catch return ParseError.InvalidCommandPayload;
-        } else null;
-        errdefer if (index_data) |values| switch (values) {
-            .uint16 => |items| allocator.free(items),
-            .uint32 => |items| allocator.free(items),
-        };
-        const index_data_len_u32 = if (index_data) |values| switch (values) {
-            .uint16 => |items| std.math.cast(u32, items.len) orelse return ParseError.InvalidCommandPayload,
-            .uint32 => |items| std.math.cast(u32, items.len) orelse return ParseError.InvalidCommandPayload,
-        } else 0;
-        const index_count = if (parsed_index_count) |count| count else if (indexed_draw) index_data_len_u32 else null;
-        const first_index = raw.first_index orelse raw.firstIndex orelse 0;
-        const base_vertex = raw.base_vertex orelse raw.baseVertex orelse 0;
-        const target_handle = raw.target_handle orelse raw.targetHandle orelse model.DEFAULT_RENDER_TARGET_HANDLE;
-        const target_width = raw.target_width orelse raw.targetWidth orelse model.DEFAULT_RENDER_TARGET_WIDTH;
-        const target_height = raw.target_height orelse raw.targetHeight orelse model.DEFAULT_RENDER_TARGET_HEIGHT;
-        const target_format = if (raw.target_format orelse raw.targetFormat) |raw_format|
-            parse_helpers.parseTextureFormat(raw_format) catch return ParseError.InvalidCommandPayload
-        else
-            model.DEFAULT_RENDER_TARGET_FORMAT;
-        const pipeline_mode = parse_helpers.parseRenderDrawPipelineMode(raw.pipeline_mode orelse raw.pipelineMode) catch return ParseError.InvalidCommandPayload;
-        const bind_group_mode = parse_helpers.parseRenderDrawBindGroupMode(raw.bind_group_mode orelse raw.bindGroupMode) catch return ParseError.InvalidCommandPayload;
-        const encode_mode = parse_extra.parseRenderDrawEncodeMode(raw.encode_mode orelse raw.encodeMode) catch return ParseError.InvalidCommandPayload;
-        const viewport_x = raw.viewport_x orelse raw.viewportX orelse 0;
-        const viewport_y = raw.viewport_y orelse raw.viewportY orelse 0;
-        const viewport_width = raw.viewport_width orelse raw.viewportWidth;
-        const viewport_height = raw.viewport_height orelse raw.viewportHeight;
-        const viewport_min_depth = raw.viewport_min_depth orelse raw.viewportMinDepth orelse 0;
-        const viewport_max_depth = raw.viewport_max_depth orelse raw.viewportMaxDepth orelse 1;
-        const scissor_x = raw.scissor_x orelse raw.scissorX orelse 0;
-        const scissor_y = raw.scissor_y orelse raw.scissorY orelse 0;
-        const scissor_width = raw.scissor_width orelse raw.scissorWidth;
-        const scissor_height = raw.scissor_height orelse raw.scissorHeight;
-        const blend_r = raw.blend_r orelse raw.blendR orelse 0;
-        const blend_g = raw.blend_g orelse raw.blendG orelse 0;
-        const blend_b = raw.blend_b orelse raw.blendB orelse 0;
-        const blend_a = raw.blend_a orelse raw.blendA orelse 0;
-        const stencil_reference = raw.stencil_reference orelse raw.stencilReference orelse 0;
-        const dynamic_offsets = if (raw.bind_group_dynamic_offsets orelse raw.bindGroupDynamicOffsets) |offsets| blk: {
-            const copied = try allocator.alloc(u32, offsets.len);
-            errdefer allocator.free(copied);
-            @memcpy(copied, offsets);
-            break :blk copied;
-        } else null;
-        errdefer if (dynamic_offsets) |offsets| allocator.free(offsets);
-
-        if (draw_count == 0 or vertex_count == 0 or instance_count == 0 or target_width == 0 or target_height == 0) {
-            return ParseError.InvalidCommandPayload;
-        }
-        if (viewport_min_depth < 0 or viewport_min_depth > 1 or viewport_max_depth < 0 or viewport_max_depth > 1 or viewport_max_depth < viewport_min_depth) {
-            return ParseError.InvalidCommandPayload;
-        }
-        if (index_count != null and index_count.? == 0) return ParseError.InvalidCommandPayload;
-        if (index_count != null) {
-            const index_end = std.math.add(u32, first_index, index_count.?) catch return ParseError.InvalidCommandPayload;
-            if (index_end > index_data_len_u32) return ParseError.InvalidCommandPayload;
-        }
-
-        const render_command: model.RenderDrawCommand = .{
-            .draw_count = draw_count,
-            .vertex_count = vertex_count,
-            .instance_count = instance_count,
-            .first_vertex = first_vertex,
-            .first_instance = first_instance,
-            .index_count = index_count,
-            .first_index = first_index,
-            .base_vertex = base_vertex,
-            .index_data = index_data,
-            .target_handle = target_handle,
-            .target_width = target_width,
-            .target_height = target_height,
-            .target_format = target_format,
-            .pipeline_mode = pipeline_mode,
-            .bind_group_mode = bind_group_mode,
-            .encode_mode = encode_mode,
-            .viewport_x = viewport_x,
-            .viewport_y = viewport_y,
-            .viewport_width = viewport_width,
-            .viewport_height = viewport_height,
-            .viewport_min_depth = viewport_min_depth,
-            .viewport_max_depth = viewport_max_depth,
-            .scissor_x = scissor_x,
-            .scissor_y = scissor_y,
-            .scissor_width = scissor_width,
-            .scissor_height = scissor_height,
-            .blend_constant = .{ blend_r, blend_g, blend_b, blend_a },
-            .stencil_reference = stencil_reference,
-            .bind_group_dynamic_offsets = dynamic_offsets,
-        };
-        return switch (kind) {
-            .render_draw => .{ .render_draw = render_command },
-            .draw_indirect => .{ .draw_indirect = render_command },
-            .draw_indexed_indirect => .{ .draw_indexed_indirect = render_command },
-            .render_pass => .{ .render_pass = render_command },
-            else => unreachable,
-        };
+        return command_parse_render.parseRenderCommand(allocator, kind, raw);
     }
 
     if (kind == .sampler_create) return .{ .sampler_create = parse_extra.parseSamplerCreateCommand(raw) catch return ParseError.InvalidCommandPayload };

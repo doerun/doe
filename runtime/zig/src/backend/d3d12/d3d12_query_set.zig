@@ -1,4 +1,5 @@
 const std = @import("std");
+const bridge = @import("d3d12_bridge_decls.zig");
 
 const d3d12_constants = @import("d3d12_constants.zig");
 
@@ -19,26 +20,7 @@ const MAX_QUERY_SETS: u32 = 256;
 
 // --- Bridge externs (timestamp / shared) ---
 
-extern fn d3d12_bridge_device_create_timestamp_query_heap(device: ?*anyopaque, count: u32) callconv(.c) ?*anyopaque;
-extern fn d3d12_bridge_device_create_buffer(device: ?*anyopaque, size: usize, heap_type: c_int) callconv(.c) ?*anyopaque;
-extern fn d3d12_bridge_device_create_command_allocator(device: ?*anyopaque) callconv(.c) ?*anyopaque;
-extern fn d3d12_bridge_device_create_command_list(device: ?*anyopaque, allocator_h: ?*anyopaque) callconv(.c) ?*anyopaque;
-extern fn d3d12_bridge_command_list_end_query(cmd_list: ?*anyopaque, query_heap: ?*anyopaque, index: u32) callconv(.c) void;
-extern fn d3d12_bridge_command_list_resolve_query_data(cmd_list: ?*anyopaque, query_heap: ?*anyopaque, start_index: u32, count: u32, dst_buffer: ?*anyopaque, dst_offset: u64) callconv(.c) void;
-extern fn d3d12_bridge_command_list_close(cmd_list: ?*anyopaque) callconv(.c) void;
-extern fn d3d12_bridge_queue_execute_command_list(queue: ?*anyopaque, cmd_list: ?*anyopaque) callconv(.c) void;
-extern fn d3d12_bridge_queue_signal(queue: ?*anyopaque, fence: ?*anyopaque, value: u64) callconv(.c) void;
-extern fn d3d12_bridge_fence_wait(fence: ?*anyopaque, value: u64) callconv(.c) void;
-extern fn d3d12_bridge_queue_get_timestamp_frequency(queue: ?*anyopaque) callconv(.c) u64;
-extern fn d3d12_bridge_resource_map(resource: ?*anyopaque) callconv(.c) ?*anyopaque;
-extern fn d3d12_bridge_resource_unmap(resource: ?*anyopaque) callconv(.c) void;
-extern fn d3d12_bridge_release(obj: ?*anyopaque) callconv(.c) void;
-
 // --- Bridge externs (occlusion + pipeline statistics) ---
-
-extern fn d3d12_bridge_device_create_occlusion_query_heap(device: ?*anyopaque, count: u32) callconv(.c) ?*anyopaque;
-extern fn d3d12_bridge_device_create_pipeline_statistics_query_heap(device: ?*anyopaque, count: u32) callconv(.c) ?*anyopaque;
-extern fn d3d12_bridge_command_list_begin_query(cmd_list: ?*anyopaque, query_heap: ?*anyopaque, index: u32) callconv(.c) void;
 
 // --- Public types ---
 
@@ -84,32 +66,32 @@ pub const QuerySetState = struct {
             return error.UnsupportedFeature;
 
         const readback_size = readback_byte_count(query_type, count);
-        const readback_buffer = d3d12_bridge_device_create_buffer(
+        const readback_buffer = bridge.c.d3d12_bridge_device_create_buffer(
             device,
             readback_size,
             HEAP_TYPE_READBACK,
         ) orelse {
-            d3d12_bridge_release(query_heap);
+            bridge.c.d3d12_bridge_release(query_heap);
             return error.InvalidState;
         };
 
-        const cmd_allocator = d3d12_bridge_device_create_command_allocator(device) orelse {
-            d3d12_bridge_release(readback_buffer);
-            d3d12_bridge_release(query_heap);
+        const cmd_allocator = bridge.c.d3d12_bridge_device_create_command_allocator(device) orelse {
+            bridge.c.d3d12_bridge_release(readback_buffer);
+            bridge.c.d3d12_bridge_release(query_heap);
             return error.InvalidState;
         };
 
-        const cmd_list = d3d12_bridge_device_create_command_list(device, cmd_allocator) orelse {
-            d3d12_bridge_release(cmd_allocator);
-            d3d12_bridge_release(readback_buffer);
-            d3d12_bridge_release(query_heap);
+        const cmd_list = bridge.c.d3d12_bridge_device_create_command_list(device, cmd_allocator) orelse {
+            bridge.c.d3d12_bridge_release(cmd_allocator);
+            bridge.c.d3d12_bridge_release(readback_buffer);
+            bridge.c.d3d12_bridge_release(query_heap);
             return error.InvalidState;
         };
-        d3d12_bridge_command_list_close(cmd_list);
+        bridge.c.d3d12_bridge_command_list_close(cmd_list);
 
         var frequency: u64 = 0;
         if (query_type == .timestamp) {
-            frequency = d3d12_bridge_queue_get_timestamp_frequency(queue);
+            frequency = bridge.c.d3d12_bridge_queue_get_timestamp_frequency(queue);
             if (frequency == 0) frequency = 1;
         }
 
@@ -145,7 +127,7 @@ pub const QuerySetState = struct {
         switch (entry.query_type) {
             .timestamp => return error.InvalidState,
             .occlusion, .pipeline_statistics => {
-                d3d12_bridge_command_list_begin_query(
+                bridge.c.d3d12_bridge_command_list_begin_query(
                     cmd_list,
                     entry.query_heap,
                     index,
@@ -167,7 +149,7 @@ pub const QuerySetState = struct {
 
         if (index >= entry.count) return error.InvalidArgument;
 
-        d3d12_bridge_command_list_end_query(cmd_list, entry.query_heap, index);
+        bridge.c.d3d12_bridge_command_list_end_query(cmd_list, entry.query_heap, index);
     }
 
     /// Resolve all query results into the readback buffer, execute on the
@@ -194,7 +176,7 @@ pub const QuerySetState = struct {
         if (entry.query_heap == null or entry.readback_buffer == null) return error.InvalidState;
 
         // Resolve query data into the readback buffer
-        d3d12_bridge_command_list_resolve_query_data(
+        bridge.c.d3d12_bridge_command_list_resolve_query_data(
             entry.cmd_list,
             entry.query_heap,
             0,
@@ -202,16 +184,16 @@ pub const QuerySetState = struct {
             entry.readback_buffer,
             0,
         );
-        d3d12_bridge_command_list_close(entry.cmd_list);
+        bridge.c.d3d12_bridge_command_list_close(entry.cmd_list);
 
         // Execute and wait
-        d3d12_bridge_queue_execute_command_list(queue, entry.cmd_list);
+        bridge.c.d3d12_bridge_queue_execute_command_list(queue, entry.cmd_list);
         fence_value.* += 1;
-        d3d12_bridge_queue_signal(queue, fence, fence_value.*);
-        d3d12_bridge_fence_wait(fence, fence_value.*);
+        bridge.c.d3d12_bridge_queue_signal(queue, fence, fence_value.*);
+        bridge.c.d3d12_bridge_fence_wait(fence, fence_value.*);
 
         // Map and return results
-        const mapped = d3d12_bridge_resource_map(entry.readback_buffer) orelse
+        const mapped = bridge.c.d3d12_bridge_resource_map(entry.readback_buffer) orelse
             return error.InvalidState;
 
         const element_count = readback_u64_count(entry.query_type, entry.count);
@@ -225,7 +207,7 @@ pub const QuerySetState = struct {
     pub fn unmap_readback(self: *QuerySetState, handle: u64) void {
         const entry = self.map.getPtr(handle) orelse return;
         if (entry.readback_buffer) |buf| {
-            d3d12_bridge_resource_unmap(buf);
+            bridge.c.d3d12_bridge_resource_unmap(buf);
         }
     }
 
@@ -260,9 +242,9 @@ pub const QuerySetState = struct {
 
 fn create_query_heap(device: ?*anyopaque, query_type: QueryType, count: u32) ?*anyopaque {
     return switch (query_type) {
-        .timestamp => d3d12_bridge_device_create_timestamp_query_heap(device, count),
-        .occlusion => d3d12_bridge_device_create_occlusion_query_heap(device, count),
-        .pipeline_statistics => d3d12_bridge_device_create_pipeline_statistics_query_heap(device, count),
+        .timestamp => bridge.c.d3d12_bridge_device_create_timestamp_query_heap(device, count),
+        .occlusion => bridge.c.d3d12_bridge_device_create_occlusion_query_heap(device, count),
+        .pipeline_statistics => bridge.c.d3d12_bridge_device_create_pipeline_statistics_query_heap(device, count),
     };
 }
 
@@ -281,9 +263,9 @@ fn readback_u64_count(query_type: QueryType, count: u32) usize {
 
 fn release_entry_resources(entry: QuerySetEntry) void {
     if (entry.has_cmd) {
-        if (entry.cmd_list) |cl| d3d12_bridge_release(cl);
-        if (entry.cmd_allocator) |ca| d3d12_bridge_release(ca);
+        if (entry.cmd_list) |cl| bridge.c.d3d12_bridge_release(cl);
+        if (entry.cmd_allocator) |ca| bridge.c.d3d12_bridge_release(ca);
     }
-    if (entry.readback_buffer) |buf| d3d12_bridge_release(buf);
-    if (entry.query_heap) |heap| d3d12_bridge_release(heap);
+    if (entry.readback_buffer) |buf| bridge.c.d3d12_bridge_release(buf);
+    if (entry.query_heap) |heap| bridge.c.d3d12_bridge_release(heap);
 }

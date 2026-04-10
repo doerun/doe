@@ -8,6 +8,7 @@
 
 const builtin = @import("builtin");
 const std = @import("std");
+const process_roots = @import("runtime/process_roots.zig");
 
 // ============================================================
 // Constants
@@ -102,12 +103,6 @@ extern fn metal_bridge_device_is_low_power(device: ?*anyopaque) callconv(.c) u32
 extern fn metal_bridge_device_is_removable(device: ?*anyopaque) callconv(.c) u32;
 // Writes the device name as UTF-8 into `buf` (null-terminated, truncated to `cap`).
 extern fn metal_bridge_device_name(device: ?*anyopaque, buf: [*]u8, cap: usize) callconv(.c) void;
-
-// ============================================================
-// GPA for allocations in this module
-
-var global_gpa = std.heap.GeneralPurposeAllocator(.{}){};
-const alloc = global_gpa.allocator();
 
 // ============================================================
 // Enumeration
@@ -254,7 +249,7 @@ pub export fn doeNativeInstanceEnumerateAdapters(
     out_list: *?*anyopaque,
 ) callconv(.c) u32 {
     _ = _inst;
-    const list = enumerate_all(alloc) catch {
+    const list = enumerate_all(process_roots.adapterAllocator()) catch {
         out_list.* = null;
         return 0;
     };
@@ -355,7 +350,8 @@ pub export fn doeNativeDeviceRegisterLostCallback(
     // we fire the callback immediately with reason=destroyed on doeNativeDeviceRelease.
     // For eGPU hot-unplug, doeNativeDeviceNotifyLost is called from the ObjC removal
     // notification observer registered in metal_multi_device.m.
-    const reg = alloc.create(DeviceLostReg) catch return;
+    const allocator = process_roots.adapterAllocator();
+    const reg = allocator.create(DeviceLostReg) catch return;
     reg.* = .{
         .dev = _dev,
         .callback = callback,
@@ -402,7 +398,7 @@ fn device_lost_fire_and_remove(dev: ?*anyopaque, reason: u32, msg_ptr: ?[*]const
             } else {
                 lost_reg_head = node.next;
             }
-            alloc.destroy(node);
+            process_roots.adapterAllocator().destroy(node);
             return;
         }
         prev = node;

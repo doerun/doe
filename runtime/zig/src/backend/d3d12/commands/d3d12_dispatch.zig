@@ -2,24 +2,7 @@ const std = @import("std");
 const model_compute_types = @import("../../../model_compute_types.zig");
 const common_timing = @import("../../common/timing.zig");
 const dc = @import("../d3d12_constants.zig");
-
-extern fn d3d12_bridge_device_create_root_signature_empty(device: ?*anyopaque) callconv(.c) ?*anyopaque;
-extern fn d3d12_bridge_device_create_compute_pipeline(device: ?*anyopaque, root_sig: ?*anyopaque, bytecode: [*]const u8, bytecode_size: usize) callconv(.c) ?*anyopaque;
-extern fn d3d12_bridge_device_create_command_allocator(device: ?*anyopaque) callconv(.c) ?*anyopaque;
-extern fn d3d12_bridge_device_create_command_list(device: ?*anyopaque, allocator_h: ?*anyopaque) callconv(.c) ?*anyopaque;
-extern fn d3d12_bridge_device_create_buffer(device: ?*anyopaque, size: usize, heap_type: c_int) callconv(.c) ?*anyopaque;
-extern fn d3d12_bridge_device_create_command_signature_dispatch(device: ?*anyopaque, root_sig: ?*anyopaque) callconv(.c) ?*anyopaque;
-extern fn d3d12_bridge_command_list_set_compute_root_signature(cmd_list: ?*anyopaque, root_sig: ?*anyopaque) callconv(.c) void;
-extern fn d3d12_bridge_command_list_set_pipeline_state(cmd_list: ?*anyopaque, pipeline: ?*anyopaque) callconv(.c) void;
-extern fn d3d12_bridge_command_list_dispatch(cmd_list: ?*anyopaque, x: u32, y: u32, z: u32) callconv(.c) void;
-extern fn d3d12_bridge_command_list_execute_indirect(cmd_list: ?*anyopaque, command_sig: ?*anyopaque, max_count: u32, arg_buffer: ?*anyopaque, arg_offset: u64) callconv(.c) void;
-extern fn d3d12_bridge_command_list_close(cmd_list: ?*anyopaque) callconv(.c) void;
-extern fn d3d12_bridge_command_allocator_reset(allocator_h: ?*anyopaque) callconv(.c) c_int;
-extern fn d3d12_bridge_command_list_reset(cmd_list: ?*anyopaque, allocator_h: ?*anyopaque) callconv(.c) c_int;
-extern fn d3d12_bridge_queue_execute_command_list(queue: ?*anyopaque, cmd_list: ?*anyopaque) callconv(.c) void;
-extern fn d3d12_bridge_queue_signal(queue: ?*anyopaque, fence: ?*anyopaque, value: u64) callconv(.c) void;
-extern fn d3d12_bridge_fence_wait(fence: ?*anyopaque, value: u64) callconv(.c) void;
-extern fn d3d12_bridge_release(obj: ?*anyopaque) callconv(.c) void;
+const bridge = @import("../d3d12_bridge_decls.zig");
 
 const DISPATCH_INDIRECT_ARG_BYTES: usize = 12;
 
@@ -53,21 +36,21 @@ pub const DispatchState = struct {
 
         const encode_start = common_timing.now_ns();
 
-        if (d3d12_bridge_command_allocator_reset(self.cmd_allocator) != 0) return error.InvalidState;
-        if (d3d12_bridge_command_list_reset(self.cmd_list, self.cmd_allocator) != 0) return error.InvalidState;
+        if (bridge.c.d3d12_bridge_command_allocator_reset(self.cmd_allocator) != 0) return error.InvalidState;
+        if (bridge.c.d3d12_bridge_command_list_reset(self.cmd_list, self.cmd_allocator) != 0) return error.InvalidState;
 
-        d3d12_bridge_command_list_set_compute_root_signature(self.cmd_list, self.root_signature);
-        d3d12_bridge_command_list_set_pipeline_state(self.cmd_list, self.noop_pipeline);
-        d3d12_bridge_command_list_dispatch(self.cmd_list, cmd.x, cmd.y, cmd.z);
-        d3d12_bridge_command_list_close(self.cmd_list);
+        bridge.c.d3d12_bridge_command_list_set_compute_root_signature(self.cmd_list, self.root_signature);
+        bridge.c.d3d12_bridge_command_list_set_pipeline_state(self.cmd_list, self.noop_pipeline);
+        bridge.c.d3d12_bridge_command_list_dispatch(self.cmd_list, cmd.x, cmd.y, cmd.z);
+        bridge.c.d3d12_bridge_command_list_close(self.cmd_list);
 
         const encode_ns = common_timing.ns_delta(common_timing.now_ns(), encode_start);
 
-        d3d12_bridge_queue_execute_command_list(queue, self.cmd_list);
+        bridge.c.d3d12_bridge_queue_execute_command_list(queue, self.cmd_list);
         fence_value.* +|= 1;
-        d3d12_bridge_queue_signal(queue, fence, fence_value.*);
+        bridge.c.d3d12_bridge_queue_signal(queue, fence, fence_value.*);
         const submit_start = common_timing.now_ns();
-        d3d12_bridge_fence_wait(fence, fence_value.*);
+        bridge.c.d3d12_bridge_fence_wait(fence, fence_value.*);
         const submit_wait_ns = common_timing.ns_delta(common_timing.now_ns(), submit_start);
 
         return .{ .encode_ns = encode_ns, .submit_wait_ns = submit_wait_ns, .dispatch_count = 1 };
@@ -86,29 +69,29 @@ pub const DispatchState = struct {
         try self.ensure_cmd(device);
 
         if (self.dispatch_cmd_sig == null) {
-            self.dispatch_cmd_sig = d3d12_bridge_device_create_command_signature_dispatch(device, self.root_signature) orelse return error.InvalidState;
+            self.dispatch_cmd_sig = bridge.c.d3d12_bridge_device_create_command_signature_dispatch(device, self.root_signature) orelse return error.InvalidState;
         }
         if (self.indirect_arg_buffer == null) {
-            self.indirect_arg_buffer = d3d12_bridge_device_create_buffer(device, DISPATCH_INDIRECT_ARG_BYTES, dc.HEAP_TYPE_UPLOAD) orelse return error.InvalidState;
+            self.indirect_arg_buffer = bridge.c.d3d12_bridge_device_create_buffer(device, DISPATCH_INDIRECT_ARG_BYTES, dc.HEAP_TYPE_UPLOAD) orelse return error.InvalidState;
         }
 
         const encode_start = common_timing.now_ns();
 
-        if (d3d12_bridge_command_allocator_reset(self.cmd_allocator) != 0) return error.InvalidState;
-        if (d3d12_bridge_command_list_reset(self.cmd_list, self.cmd_allocator) != 0) return error.InvalidState;
+        if (bridge.c.d3d12_bridge_command_allocator_reset(self.cmd_allocator) != 0) return error.InvalidState;
+        if (bridge.c.d3d12_bridge_command_list_reset(self.cmd_list, self.cmd_allocator) != 0) return error.InvalidState;
 
-        d3d12_bridge_command_list_set_compute_root_signature(self.cmd_list, self.root_signature);
-        d3d12_bridge_command_list_set_pipeline_state(self.cmd_list, self.noop_pipeline);
-        d3d12_bridge_command_list_execute_indirect(self.cmd_list, self.dispatch_cmd_sig, 1, self.indirect_arg_buffer, 0);
-        d3d12_bridge_command_list_close(self.cmd_list);
+        bridge.c.d3d12_bridge_command_list_set_compute_root_signature(self.cmd_list, self.root_signature);
+        bridge.c.d3d12_bridge_command_list_set_pipeline_state(self.cmd_list, self.noop_pipeline);
+        bridge.c.d3d12_bridge_command_list_execute_indirect(self.cmd_list, self.dispatch_cmd_sig, 1, self.indirect_arg_buffer, 0);
+        bridge.c.d3d12_bridge_command_list_close(self.cmd_list);
 
         const encode_ns = common_timing.ns_delta(common_timing.now_ns(), encode_start);
 
-        d3d12_bridge_queue_execute_command_list(queue, self.cmd_list);
+        bridge.c.d3d12_bridge_queue_execute_command_list(queue, self.cmd_list);
         fence_value.* +|= 1;
-        d3d12_bridge_queue_signal(queue, fence, fence_value.*);
+        bridge.c.d3d12_bridge_queue_signal(queue, fence, fence_value.*);
         const submit_start = common_timing.now_ns();
-        d3d12_bridge_fence_wait(fence, fence_value.*);
+        bridge.c.d3d12_bridge_fence_wait(fence, fence_value.*);
         const submit_wait_ns = common_timing.ns_delta(common_timing.now_ns(), submit_start);
 
         return .{ .encode_ns = encode_ns, .submit_wait_ns = submit_wait_ns, .dispatch_count = 1 };
@@ -117,10 +100,10 @@ pub const DispatchState = struct {
     fn ensure_noop_pipeline(self: *DispatchState, device: ?*anyopaque) !void {
         if (self.noop_pipeline != null) return;
         if (self.root_signature == null) {
-            self.root_signature = d3d12_bridge_device_create_root_signature_empty(device) orelse return error.InvalidState;
+            self.root_signature = bridge.c.d3d12_bridge_device_create_root_signature_empty(device) orelse return error.InvalidState;
         }
         const noop_dxil = noop_compute_bytecode();
-        self.noop_pipeline = d3d12_bridge_device_create_compute_pipeline(
+        self.noop_pipeline = bridge.c.d3d12_bridge_device_create_compute_pipeline(
             device,
             self.root_signature,
             noop_dxil.ptr,
@@ -130,22 +113,22 @@ pub const DispatchState = struct {
 
     fn ensure_cmd(self: *DispatchState, device: ?*anyopaque) !void {
         if (self.has_cmd) return;
-        self.cmd_allocator = d3d12_bridge_device_create_command_allocator(device) orelse return error.InvalidState;
-        self.cmd_list = d3d12_bridge_device_create_command_list(device, self.cmd_allocator) orelse return error.InvalidState;
-        d3d12_bridge_command_list_close(self.cmd_list);
+        self.cmd_allocator = bridge.c.d3d12_bridge_device_create_command_allocator(device) orelse return error.InvalidState;
+        self.cmd_list = bridge.c.d3d12_bridge_device_create_command_list(device, self.cmd_allocator) orelse return error.InvalidState;
+        bridge.c.d3d12_bridge_command_list_close(self.cmd_list);
         self.has_cmd = true;
     }
 
     pub fn deinit(self: *DispatchState) void {
         if (self.has_cmd) {
-            d3d12_bridge_release(self.cmd_list);
-            d3d12_bridge_release(self.cmd_allocator);
+            bridge.c.d3d12_bridge_release(self.cmd_list);
+            bridge.c.d3d12_bridge_release(self.cmd_allocator);
             self.has_cmd = false;
         }
-        if (self.noop_pipeline) |p| d3d12_bridge_release(p);
-        if (self.root_signature) |r| d3d12_bridge_release(r);
-        if (self.dispatch_cmd_sig) |s| d3d12_bridge_release(s);
-        if (self.indirect_arg_buffer) |b| d3d12_bridge_release(b);
+        if (self.noop_pipeline) |p| bridge.c.d3d12_bridge_release(p);
+        if (self.root_signature) |r| bridge.c.d3d12_bridge_release(r);
+        if (self.dispatch_cmd_sig) |s| bridge.c.d3d12_bridge_release(s);
+        if (self.indirect_arg_buffer) |b| bridge.c.d3d12_bridge_release(b);
         self.* = .{};
     }
 };

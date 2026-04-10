@@ -1,4 +1,5 @@
 const std = @import("std");
+const log = std.log.scoped(.d3d12_render);
 const model_render_types = @import("../../../model_render_types.zig");
 const common_timing = @import("../../common/timing.zig");
 const dc = @import("../d3d12_constants.zig");
@@ -7,6 +8,7 @@ const d3d12_depth_stencil = @import("../resources/d3d12_depth_stencil.zig");
 const d3d12_descriptors = @import("../d3d12_descriptors.zig");
 const d3d12_render_vertex = @import("d3d12_render_vertex.zig");
 const render_bundle = @import("../../../render_bundle.zig");
+const bridge = @import("../d3d12_bridge_decls.zig");
 
 const PipelineKey = d3d12_render_vertex.PipelineKey;
 const build_pipeline_key = d3d12_render_vertex.build_pipeline_key;
@@ -23,96 +25,8 @@ const resolve_index_buffer_offset = d3d12_render_vertex.resolve_index_buffer_off
 const resolve_index_format = d3d12_render_vertex.resolve_index_format;
 const vertex_format_size = d3d12_render_vertex.vertex_format_size;
 
-extern fn d3d12_bridge_device_create_root_signature_empty(device: ?*anyopaque) callconv(.c) ?*anyopaque;
-const D3D12InputElementDesc = extern struct {
-    format: u32,
-    input_slot: u32,
-    aligned_byte_offset: u32,
-    semantic_index: u32,
-    input_slot_class: u32,
-    instance_data_step_rate: u32,
-};
-
-const D3D12GraphicsPipelineDesc = extern struct {
-    target_format: u32,
-    depth_stencil_format: u32,
-    sample_count: u32,
-    topology: u32,
-    topology_type: u32,
-    front_face: u32,
-    cull_mode: u32,
-    blend_enabled: u32,
-    color_operation: u32,
-    color_src_factor: u32,
-    color_dst_factor: u32,
-    alpha_operation: u32,
-    alpha_src_factor: u32,
-    alpha_dst_factor: u32,
-    color_write_mask: u32,
-    depth_compare: u32,
-    depth_write_enabled: u32,
-    stencil_front_compare: u32,
-    stencil_front_fail_op: u32,
-    stencil_front_depth_fail_op: u32,
-    stencil_front_pass_op: u32,
-    stencil_back_compare: u32,
-    stencil_back_fail_op: u32,
-    stencil_back_depth_fail_op: u32,
-    stencil_back_pass_op: u32,
-    stencil_read_mask: u32,
-    stencil_write_mask: u32,
-    depth_bias: i32,
-    depth_bias_slope_scale: f32,
-    depth_bias_clamp: f32,
-    unclipped_depth: u32,
-};
-
-extern fn d3d12_bridge_device_create_graphics_pipeline_hlsl(
-    device: ?*anyopaque,
-    root_sig: ?*anyopaque,
-    vs_source: [*:0]const u8,
-    vs_source_len: usize,
-    vs_entry: [*:0]const u8,
-    ps_source: [*:0]const u8,
-    ps_source_len: usize,
-    ps_entry: [*:0]const u8,
-    desc: *const D3D12GraphicsPipelineDesc,
-    input_elements: ?[*]const D3D12InputElementDesc,
-    input_element_count: u32,
-) callconv(.c) ?*anyopaque;
-extern fn d3d12_bridge_device_create_texture_2d(device: ?*anyopaque, width: u32, height: u32, mip_levels: u32, format: u32, usage_flags: u32) callconv(.c) ?*anyopaque;
-extern fn d3d12_bridge_device_create_rtv_heap(device: ?*anyopaque, num_descriptors: u32) callconv(.c) ?*anyopaque;
-extern fn d3d12_bridge_device_create_rtv(device: ?*anyopaque, resource: ?*anyopaque, rtv_heap: ?*anyopaque, index: u32, format: u32) callconv(.c) void;
-extern fn d3d12_bridge_device_create_command_allocator(device: ?*anyopaque) callconv(.c) ?*anyopaque;
-extern fn d3d12_bridge_device_create_command_list(device: ?*anyopaque, allocator_h: ?*anyopaque) callconv(.c) ?*anyopaque;
-extern fn d3d12_bridge_device_create_buffer(device: ?*anyopaque, size: usize, heap_type: c_int) callconv(.c) ?*anyopaque;
-extern fn d3d12_bridge_buffer_get_size(buffer: ?*anyopaque) callconv(.c) u64;
-extern fn d3d12_bridge_device_create_command_signature_draw(device: ?*anyopaque, root_sig: ?*anyopaque) callconv(.c) ?*anyopaque;
-extern fn d3d12_bridge_device_create_command_signature_draw_indexed(device: ?*anyopaque, root_sig: ?*anyopaque) callconv(.c) ?*anyopaque;
-extern fn d3d12_bridge_command_list_set_graphics_root_signature(cmd_list: ?*anyopaque, root_sig: ?*anyopaque) callconv(.c) void;
-extern fn d3d12_bridge_command_list_set_pipeline_state(cmd_list: ?*anyopaque, pipeline: ?*anyopaque) callconv(.c) void;
-extern fn d3d12_bridge_command_list_set_render_target(cmd_list: ?*anyopaque, rtv_heap: ?*anyopaque, index: u32) callconv(.c) void;
-extern fn d3d12_bridge_command_list_set_render_targets(cmd_list: ?*anyopaque, rtv_heap: ?*anyopaque, rtv_index: u32, dsv_heap: ?*anyopaque, dsv_index: u32) callconv(.c) void;
-extern fn d3d12_bridge_command_list_set_viewport(cmd_list: ?*anyopaque, x: f32, y: f32, w: f32, h: f32, min_depth: f32, max_depth: f32) callconv(.c) void;
-extern fn d3d12_bridge_command_list_set_scissor(cmd_list: ?*anyopaque, left: i32, top: i32, right: i32, bottom: i32) callconv(.c) void;
-extern fn d3d12_bridge_command_list_ia_set_primitive_topology(cmd_list: ?*anyopaque, topology: c_int) callconv(.c) void;
-extern fn d3d12_bridge_command_list_set_blend_factor(cmd_list: ?*anyopaque, rgba: *const [4]f32) callconv(.c) void;
-extern fn d3d12_bridge_command_list_set_stencil_ref(cmd_list: ?*anyopaque, reference: u32) callconv(.c) void;
-extern fn d3d12_bridge_command_list_ia_set_vertex_buffers(cmd_list: ?*anyopaque, start_slot: u32, num_views: u32, buffer: ?*anyopaque, size_in_bytes: u32, stride_in_bytes: u32, offset: u64) callconv(.c) void;
-extern fn d3d12_bridge_command_list_ia_set_index_buffer(cmd_list: ?*anyopaque, buffer: ?*anyopaque, format: u32, size_in_bytes: u32, offset: u64) callconv(.c) void;
-extern fn d3d12_bridge_command_list_draw_instanced(cmd_list: ?*anyopaque, vertex_count: u32, instance_count: u32, start_vertex: u32, start_instance: u32) callconv(.c) void;
-extern fn d3d12_bridge_command_list_draw_indexed_instanced(cmd_list: ?*anyopaque, index_count: u32, instance_count: u32, start_index: u32, base_vertex: i32, start_instance: u32) callconv(.c) void;
-extern fn d3d12_bridge_command_list_execute_indirect(cmd_list: ?*anyopaque, command_sig: ?*anyopaque, max_count: u32, arg_buffer: ?*anyopaque, arg_offset: u64) callconv(.c) void;
-extern fn d3d12_bridge_command_list_resource_barrier_transition(cmd_list: ?*anyopaque, resource: ?*anyopaque, state_before: c_int, state_after: c_int) callconv(.c) void;
-extern fn d3d12_bridge_command_list_close(cmd_list: ?*anyopaque) callconv(.c) void;
-extern fn d3d12_bridge_command_allocator_reset(allocator_h: ?*anyopaque) callconv(.c) c_int;
-extern fn d3d12_bridge_command_list_reset(cmd_list: ?*anyopaque, allocator_h: ?*anyopaque) callconv(.c) c_int;
-extern fn d3d12_bridge_queue_execute_command_list(queue: ?*anyopaque, cmd_list: ?*anyopaque) callconv(.c) void;
-extern fn d3d12_bridge_queue_signal(queue: ?*anyopaque, fence: ?*anyopaque, value: u64) callconv(.c) void;
-extern fn d3d12_bridge_fence_wait(fence: ?*anyopaque, value: u64) callconv(.c) void;
-extern fn d3d12_bridge_resource_map(resource: ?*anyopaque) callconv(.c) ?*anyopaque;
-extern fn d3d12_bridge_resource_unmap(resource: ?*anyopaque) callconv(.c) void;
-extern fn d3d12_bridge_release(obj: ?*anyopaque) callconv(.c) void;
+const D3D12InputElementDesc = bridge.D3D12InputElementDesc;
+const D3D12GraphicsPipelineDesc = bridge.D3D12GraphicsPipelineDesc;
 
 const RENDER_ATTACHMENT_USAGE: u32 = 0x00000010;
 const DRAW_INDIRECT_ARG_BYTES: usize = 16;
@@ -189,13 +103,13 @@ pub const RenderState = struct {
         const setup_ns = common_timing.ns_delta(common_timing.now_ns(), setup_start);
         const encode_start = common_timing.now_ns();
 
-        if (d3d12_bridge_command_allocator_reset(self.cmd_allocator) != 0) return error.InvalidState;
-        if (d3d12_bridge_command_list_reset(self.cmd_list, self.cmd_allocator) != 0) return error.InvalidState;
+        if (bridge.c.d3d12_bridge_command_allocator_reset(self.cmd_allocator) != 0) return error.InvalidState;
+        if (bridge.c.d3d12_bridge_command_list_reset(self.cmd_list, self.cmd_allocator) != 0) return error.InvalidState;
 
-        d3d12_bridge_command_list_resource_barrier_transition(self.cmd_list, self.render_target, dc.RESOURCE_STATE_PRESENT, dc.RESOURCE_STATE_RENDER_TARGET);
-        d3d12_bridge_command_list_set_graphics_root_signature(self.cmd_list, self.root_signature);
-        d3d12_bridge_command_list_set_pipeline_state(self.cmd_list, self.graphics_pipeline);
-        d3d12_bridge_command_list_set_render_targets(
+        bridge.c.d3d12_bridge_command_list_resource_barrier_transition(self.cmd_list, self.render_target, dc.RESOURCE_STATE_PRESENT, dc.RESOURCE_STATE_RENDER_TARGET);
+        bridge.c.d3d12_bridge_command_list_set_graphics_root_signature(self.cmd_list, self.root_signature);
+        bridge.c.d3d12_bridge_command_list_set_pipeline_state(self.cmd_list, self.graphics_pipeline);
+        bridge.c.d3d12_bridge_command_list_set_render_targets(
             self.cmd_list,
             self.rtv_heap,
             0,
@@ -210,17 +124,17 @@ pub const RenderState = struct {
 
         const vp_w: f32 = cmd.viewport_width orelse @floatFromInt(cmd.target_width);
         const vp_h: f32 = cmd.viewport_height orelse @floatFromInt(cmd.target_height);
-        d3d12_bridge_command_list_set_viewport(self.cmd_list, cmd.viewport_x, cmd.viewport_y, vp_w, vp_h, cmd.viewport_min_depth, cmd.viewport_max_depth);
+        bridge.c.d3d12_bridge_command_list_set_viewport(self.cmd_list, cmd.viewport_x, cmd.viewport_y, vp_w, vp_h, cmd.viewport_min_depth, cmd.viewport_max_depth);
 
         const sc_w: i32 = @intCast(cmd.scissor_width orelse cmd.target_width);
         const sc_h: i32 = @intCast(cmd.scissor_height orelse cmd.target_height);
         const sc_x: i32 = @intCast(cmd.scissor_x);
         const sc_y: i32 = @intCast(cmd.scissor_y);
-        d3d12_bridge_command_list_set_scissor(self.cmd_list, sc_x, sc_y, sc_x + sc_w, sc_y + sc_h);
+        bridge.c.d3d12_bridge_command_list_set_scissor(self.cmd_list, sc_x, sc_y, sc_x + sc_w, sc_y + sc_h);
 
-        d3d12_bridge_command_list_ia_set_primitive_topology(self.cmd_list, map_topology(cmd.topology));
-        d3d12_bridge_command_list_set_blend_factor(self.cmd_list, &cmd.blend_constant);
-        d3d12_bridge_command_list_set_stencil_ref(self.cmd_list, cmd.stencil_reference);
+        bridge.c.d3d12_bridge_command_list_ia_set_primitive_topology(self.cmd_list, map_topology(cmd.topology));
+        bridge.c.d3d12_bridge_command_list_set_blend_factor(self.cmd_list, &cmd.blend_constant);
+        bridge.c.d3d12_bridge_command_list_set_stencil_ref(self.cmd_list, cmd.stencil_reference);
         try self.bind_vertex_and_index_buffers(cmd);
 
         var draw_count: u32 = 0;
@@ -230,7 +144,7 @@ pub const RenderState = struct {
             try self.write_indirect_args(cmd, true);
             var i: u32 = 0;
             while (i < cmd.draw_count) : (i += 1) {
-                d3d12_bridge_command_list_execute_indirect(self.cmd_list, self.draw_indexed_cmd_sig, 1, self.indirect_arg_buffer, 0);
+                bridge.c.d3d12_bridge_command_list_execute_indirect(self.cmd_list, self.draw_indexed_cmd_sig, 1, self.indirect_arg_buffer, 0);
                 draw_count += 1;
             }
         } else if (is_indirect) {
@@ -238,31 +152,31 @@ pub const RenderState = struct {
             try self.write_indirect_args(cmd, false);
             var i: u32 = 0;
             while (i < cmd.draw_count) : (i += 1) {
-                d3d12_bridge_command_list_execute_indirect(self.cmd_list, self.draw_cmd_sig, 1, self.indirect_arg_buffer, 0);
+                bridge.c.d3d12_bridge_command_list_execute_indirect(self.cmd_list, self.draw_cmd_sig, 1, self.indirect_arg_buffer, 0);
                 draw_count += 1;
             }
         } else {
             var i: u32 = 0;
             while (i < cmd.draw_count) : (i += 1) {
                 if (cmd.index_count) |ic| {
-                    d3d12_bridge_command_list_draw_indexed_instanced(self.cmd_list, ic, cmd.instance_count, cmd.first_index, cmd.base_vertex, cmd.first_instance);
+                    bridge.c.d3d12_bridge_command_list_draw_indexed_instanced(self.cmd_list, ic, cmd.instance_count, cmd.first_index, cmd.base_vertex, cmd.first_instance);
                 } else {
-                    d3d12_bridge_command_list_draw_instanced(self.cmd_list, cmd.vertex_count, cmd.instance_count, cmd.first_vertex, cmd.first_instance);
+                    bridge.c.d3d12_bridge_command_list_draw_instanced(self.cmd_list, cmd.vertex_count, cmd.instance_count, cmd.first_vertex, cmd.first_instance);
                 }
                 draw_count += 1;
             }
         }
 
-        d3d12_bridge_command_list_resource_barrier_transition(self.cmd_list, self.render_target, dc.RESOURCE_STATE_RENDER_TARGET, dc.RESOURCE_STATE_PRESENT);
-        d3d12_bridge_command_list_close(self.cmd_list);
+        bridge.c.d3d12_bridge_command_list_resource_barrier_transition(self.cmd_list, self.render_target, dc.RESOURCE_STATE_RENDER_TARGET, dc.RESOURCE_STATE_PRESENT);
+        bridge.c.d3d12_bridge_command_list_close(self.cmd_list);
 
         const encode_ns = common_timing.ns_delta(common_timing.now_ns(), encode_start);
 
-        d3d12_bridge_queue_execute_command_list(queue, self.cmd_list);
+        bridge.c.d3d12_bridge_queue_execute_command_list(queue, self.cmd_list);
         fence_value.* +|= 1;
-        d3d12_bridge_queue_signal(queue, fence, fence_value.*);
+        bridge.c.d3d12_bridge_queue_signal(queue, fence, fence_value.*);
         const submit_start = common_timing.now_ns();
-        d3d12_bridge_fence_wait(fence, fence_value.*);
+        bridge.c.d3d12_bridge_fence_wait(fence, fence_value.*);
         const submit_wait_ns = common_timing.ns_delta(common_timing.now_ns(), submit_start);
 
         return .{ .setup_ns = setup_ns, .encode_ns = encode_ns, .submit_wait_ns = submit_wait_ns, .draw_count = draw_count };
@@ -280,7 +194,7 @@ pub const RenderState = struct {
             if (has_bind_groups) {
                 self.root_signature = try create_render_root_signature(device, cmd);
             } else {
-                self.root_signature = d3d12_bridge_device_create_root_signature_empty(device) orelse return error.InvalidState;
+                self.root_signature = bridge.c.d3d12_bridge_device_create_root_signature_empty(device) orelse return error.InvalidState;
             }
         }
 
@@ -293,8 +207,8 @@ pub const RenderState = struct {
             !std.meta.eql(self.cached_pipeline_key, key);
         if (!needs_rebuild) return;
 
-        if (self.graphics_pipeline) |old| d3d12_bridge_release(old);
-        if (self.render_target) |old| d3d12_bridge_release(old);
+        if (self.graphics_pipeline) |old| bridge.c.d3d12_bridge_release(old);
+        if (self.render_target) |old| bridge.c.d3d12_bridge_release(old);
 
         var input_elements: [model_render_types.MAX_VERTEX_ATTRIBUTES]D3D12InputElementDesc = [_]D3D12InputElementDesc{std.mem.zeroes(D3D12InputElementDesc)} ** model_render_types.MAX_VERTEX_ATTRIBUTES;
         const input_count = try build_input_elements(cmd, &input_elements);
@@ -331,7 +245,7 @@ pub const RenderState = struct {
             .depth_bias_clamp = key.depth_bias_clamp,
             .unclipped_depth = if (key.unclipped_depth) 1 else 0,
         };
-        self.graphics_pipeline = d3d12_bridge_device_create_graphics_pipeline_hlsl(
+        self.graphics_pipeline = bridge.c.d3d12_bridge_device_create_graphics_pipeline_hlsl(
             device,
             self.root_signature,
             passthrough_vs_source,
@@ -345,7 +259,7 @@ pub const RenderState = struct {
             input_count,
         ) orelse return error.ShaderCompileFailed;
 
-        self.render_target = d3d12_bridge_device_create_texture_2d(device, width, height, 1, format, RENDER_ATTACHMENT_USAGE) orelse return error.InvalidState;
+        self.render_target = bridge.c.d3d12_bridge_device_create_texture_2d(device, width, height, 1, format, RENDER_ATTACHMENT_USAGE) orelse return error.InvalidState;
         if (has_depth_attachment(cmd)) {
             try self.depth_stencil.ensure_depth_texture(device, width, height, cmd.depth_stencil_format);
         } else {
@@ -353,14 +267,14 @@ pub const RenderState = struct {
         }
 
         if (self.rtv_heap == null) {
-            self.rtv_heap = d3d12_bridge_device_create_rtv_heap(device, 1) orelse return error.InvalidState;
+            self.rtv_heap = bridge.c.d3d12_bridge_device_create_rtv_heap(device, 1) orelse return error.InvalidState;
         }
-        d3d12_bridge_device_create_rtv(device, self.render_target, self.rtv_heap, 0, format);
+        bridge.c.d3d12_bridge_device_create_rtv(device, self.render_target, self.rtv_heap, 0, format);
 
         if (!self.has_cmd) {
-            self.cmd_allocator = d3d12_bridge_device_create_command_allocator(device) orelse return error.InvalidState;
-            self.cmd_list = d3d12_bridge_device_create_command_list(device, self.cmd_allocator) orelse return error.InvalidState;
-            d3d12_bridge_command_list_close(self.cmd_list);
+            self.cmd_allocator = bridge.c.d3d12_bridge_device_create_command_allocator(device) orelse return error.InvalidState;
+            self.cmd_list = bridge.c.d3d12_bridge_device_create_command_list(device, self.cmd_allocator) orelse return error.InvalidState;
+            bridge.c.d3d12_bridge_command_list_close(self.cmd_list);
             self.has_cmd = true;
         }
 
@@ -373,23 +287,23 @@ pub const RenderState = struct {
 
     fn ensure_draw_indirect(self: *RenderState, device: ?*anyopaque) !void {
         if (self.draw_cmd_sig != null) return;
-        self.draw_cmd_sig = d3d12_bridge_device_create_command_signature_draw(device, self.root_signature) orelse return error.InvalidState;
+        self.draw_cmd_sig = bridge.c.d3d12_bridge_device_create_command_signature_draw(device, self.root_signature) orelse return error.InvalidState;
         if (self.indirect_arg_buffer == null) {
-            self.indirect_arg_buffer = d3d12_bridge_device_create_buffer(device, DRAW_INDIRECT_ARG_BYTES, dc.HEAP_TYPE_UPLOAD) orelse return error.InvalidState;
+            self.indirect_arg_buffer = bridge.c.d3d12_bridge_device_create_buffer(device, DRAW_INDIRECT_ARG_BYTES, dc.HEAP_TYPE_UPLOAD) orelse return error.InvalidState;
         }
     }
 
     fn ensure_indexed_indirect(self: *RenderState, device: ?*anyopaque) !void {
         if (self.draw_indexed_cmd_sig != null) return;
-        self.draw_indexed_cmd_sig = d3d12_bridge_device_create_command_signature_draw_indexed(device, self.root_signature) orelse return error.InvalidState;
+        self.draw_indexed_cmd_sig = bridge.c.d3d12_bridge_device_create_command_signature_draw_indexed(device, self.root_signature) orelse return error.InvalidState;
         if (self.indirect_arg_buffer == null) {
-            self.indirect_arg_buffer = d3d12_bridge_device_create_buffer(device, DRAW_INDEXED_INDIRECT_ARG_BYTES, dc.HEAP_TYPE_UPLOAD) orelse return error.InvalidState;
+            self.indirect_arg_buffer = bridge.c.d3d12_bridge_device_create_buffer(device, DRAW_INDEXED_INDIRECT_ARG_BYTES, dc.HEAP_TYPE_UPLOAD) orelse return error.InvalidState;
         }
     }
 
     fn write_indirect_args(self: *RenderState, cmd: model_render_types.RenderDrawCommand, indexed: bool) !void {
-        const ptr = d3d12_bridge_resource_map(self.indirect_arg_buffer) orelse return error.InvalidState;
-        defer d3d12_bridge_resource_unmap(self.indirect_arg_buffer);
+        const ptr = bridge.c.d3d12_bridge_resource_map(self.indirect_arg_buffer) orelse return error.InvalidState;
+        defer bridge.c.d3d12_bridge_resource_unmap(self.indirect_arg_buffer);
         if (indexed) {
             const args = @as(*[5]u32, @ptrCast(@alignCast(ptr)));
             args[0] = cmd.index_count orelse 0;
@@ -408,16 +322,16 @@ pub const RenderState = struct {
 
     pub fn deinit(self: *RenderState) void {
         if (self.has_cmd) {
-            d3d12_bridge_release(self.cmd_list);
-            d3d12_bridge_release(self.cmd_allocator);
+            bridge.c.d3d12_bridge_release(self.cmd_list);
+            bridge.c.d3d12_bridge_release(self.cmd_allocator);
         }
-        if (self.graphics_pipeline) |p| d3d12_bridge_release(p);
-        if (self.root_signature) |r| d3d12_bridge_release(r);
-        if (self.render_target) |t| d3d12_bridge_release(t);
-        if (self.rtv_heap) |h| d3d12_bridge_release(h);
-        if (self.draw_cmd_sig) |s| d3d12_bridge_release(s);
-        if (self.draw_indexed_cmd_sig) |s| d3d12_bridge_release(s);
-        if (self.indirect_arg_buffer) |b| d3d12_bridge_release(b);
+        if (self.graphics_pipeline) |p| bridge.c.d3d12_bridge_release(p);
+        if (self.root_signature) |r| bridge.c.d3d12_bridge_release(r);
+        if (self.render_target) |t| bridge.c.d3d12_bridge_release(t);
+        if (self.rtv_heap) |h| bridge.c.d3d12_bridge_release(h);
+        if (self.draw_cmd_sig) |s| bridge.c.d3d12_bridge_release(s);
+        if (self.draw_indexed_cmd_sig) |s| bridge.c.d3d12_bridge_release(s);
+        if (self.indirect_arg_buffer) |b| bridge.c.d3d12_bridge_release(b);
         self.depth_stencil.deinit();
         self.* = .{};
     }
@@ -428,10 +342,10 @@ pub const RenderState = struct {
         while (slot < vb_count and slot < @as(u32, model_render_types.MAX_VERTEX_BUFFERS)) : (slot += 1) {
             const buffer = resolve_vertex_buffer_handle(cmd, slot) orelse continue;
             const offset = resolve_vertex_buffer_offset(cmd, slot);
-            const total_size = d3d12_bridge_buffer_get_size(buffer);
+            const total_size = bridge.c.d3d12_bridge_buffer_get_size(buffer);
             if (total_size <= offset) continue;
             const stride = try resolve_vertex_buffer_stride(cmd, slot);
-            d3d12_bridge_command_list_ia_set_vertex_buffers(
+            bridge.c.d3d12_bridge_command_list_ia_set_vertex_buffers(
                 self.cmd_list,
                 slot,
                 1,
@@ -444,10 +358,10 @@ pub const RenderState = struct {
 
         const index_buffer = resolve_index_buffer_handle(cmd) orelse return;
         const index_offset = resolve_index_buffer_offset(cmd);
-        const total_size = d3d12_bridge_buffer_get_size(index_buffer);
+        const total_size = bridge.c.d3d12_bridge_buffer_get_size(index_buffer);
         if (total_size <= index_offset) return;
         const index_format = resolve_index_format(cmd) orelse return;
-        d3d12_bridge_command_list_ia_set_index_buffer(
+        bridge.c.d3d12_bridge_command_list_ia_set_index_buffer(
             self.cmd_list,
             index_buffer,
             index_format,
@@ -525,7 +439,7 @@ fn create_render_root_signature(device: ?*anyopaque, cmd: model_render_types.Ren
     }
 
     if (entry_count == 0) {
-        return d3d12_bridge_device_create_root_signature_empty(device);
+        return bridge.c.d3d12_bridge_device_create_root_signature_empty(device);
     }
 
     layout.groups[0] = .{ .entries = entries_buf[0..entry_count] };
@@ -636,38 +550,38 @@ pub fn execute_render_bundles(
     const setup_ns = common_timing.ns_delta(common_timing.now_ns(), setup_start);
 
     const encode_start = common_timing.now_ns();
-    if (d3d12_bridge_command_allocator_reset(self.cmd_allocator) != 0) return error.InvalidState;
-    if (d3d12_bridge_command_list_reset(self.cmd_list, self.cmd_allocator) != 0) return error.InvalidState;
+    if (bridge.c.d3d12_bridge_command_allocator_reset(self.cmd_allocator) != 0) return error.InvalidState;
+    if (bridge.c.d3d12_bridge_command_list_reset(self.cmd_list, self.cmd_allocator) != 0) return error.InvalidState;
 
-    d3d12_bridge_command_list_resource_barrier_transition(self.cmd_list, self.render_target, dc.RESOURCE_STATE_PRESENT, dc.RESOURCE_STATE_RENDER_TARGET);
-    d3d12_bridge_command_list_set_graphics_root_signature(self.cmd_list, self.root_signature);
-    d3d12_bridge_command_list_set_pipeline_state(self.cmd_list, self.graphics_pipeline);
-    d3d12_bridge_command_list_set_render_targets(self.cmd_list, self.rtv_heap, 0, null, 0);
+    bridge.c.d3d12_bridge_command_list_resource_barrier_transition(self.cmd_list, self.render_target, dc.RESOURCE_STATE_PRESENT, dc.RESOURCE_STATE_RENDER_TARGET);
+    bridge.c.d3d12_bridge_command_list_set_graphics_root_signature(self.cmd_list, self.root_signature);
+    bridge.c.d3d12_bridge_command_list_set_pipeline_state(self.cmd_list, self.graphics_pipeline);
+    bridge.c.d3d12_bridge_command_list_set_render_targets(self.cmd_list, self.rtv_heap, 0, null, 0);
 
     const vp_w: f32 = @floatFromInt(width);
     const vp_h: f32 = @floatFromInt(height);
-    d3d12_bridge_command_list_set_viewport(self.cmd_list, 0, 0, vp_w, vp_h, 0, 1);
-    d3d12_bridge_command_list_set_scissor(self.cmd_list, 0, 0, @intCast(width), @intCast(height));
-    d3d12_bridge_command_list_ia_set_primitive_topology(self.cmd_list, dc.D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    bridge.c.d3d12_bridge_command_list_set_viewport(self.cmd_list, 0, 0, vp_w, vp_h, 0, 1);
+    bridge.c.d3d12_bridge_command_list_set_scissor(self.cmd_list, 0, 0, @intCast(width), @intCast(height));
+    bridge.c.d3d12_bridge_command_list_ia_set_primitive_topology(self.cmd_list, dc.D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
     var draw_count: u32 = 0;
     for (bundles) |b| {
         render_bundle.replay_bundle_d3d12(b, self.cmd_list, color_format, pass_sample_count, self.draw_cmd_sig, self.draw_indexed_cmd_sig) catch |err| {
-            std.debug.print("d3d12_render: bundle replay failed: {}\n", .{err});
+            log.warn("bundle replay failed: {}", .{err});
             continue;
         };
         draw_count += 1;
     }
 
-    d3d12_bridge_command_list_resource_barrier_transition(self.cmd_list, self.render_target, dc.RESOURCE_STATE_RENDER_TARGET, dc.RESOURCE_STATE_PRESENT);
-    d3d12_bridge_command_list_close(self.cmd_list);
+    bridge.c.d3d12_bridge_command_list_resource_barrier_transition(self.cmd_list, self.render_target, dc.RESOURCE_STATE_RENDER_TARGET, dc.RESOURCE_STATE_PRESENT);
+    bridge.c.d3d12_bridge_command_list_close(self.cmd_list);
     const encode_ns = common_timing.ns_delta(common_timing.now_ns(), encode_start);
 
-    d3d12_bridge_queue_execute_command_list(queue, self.cmd_list);
+    bridge.c.d3d12_bridge_queue_execute_command_list(queue, self.cmd_list);
     fence_value.* +|= 1;
-    d3d12_bridge_queue_signal(queue, fence, fence_value.*);
+    bridge.c.d3d12_bridge_queue_signal(queue, fence, fence_value.*);
     const submit_start = common_timing.now_ns();
-    d3d12_bridge_fence_wait(fence, fence_value.*);
+    bridge.c.d3d12_bridge_fence_wait(fence, fence_value.*);
     const submit_wait_ns = common_timing.ns_delta(common_timing.now_ns(), submit_start);
 
     return .{ .setup_ns = setup_ns, .encode_ns = encode_ns, .submit_wait_ns = submit_wait_ns, .draw_count = draw_count };

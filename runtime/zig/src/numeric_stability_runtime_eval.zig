@@ -4,6 +4,7 @@ const numeric_stability_annotation = @import("numeric_stability_annotation.zig")
 const numeric_stability_service = @import("full/modules/services/numeric_stability.zig");
 const common = @import("full/modules/common.zig");
 const runtime_plan = @import("numeric_stability_runtime_plan.zig");
+const f32_ops = @import("runtime/simd/f32_ops.zig");
 
 const F32_BYTE_WIDTH: u64 = @sizeOf(f32);
 const U32_WORD_BYTES: usize = @sizeOf(u32);
@@ -432,6 +433,32 @@ const AttentionEvalMode = enum {
     serial_f64,
 };
 
+const AttentionScratch = struct {
+    allocator: std.mem.Allocator,
+    weighted: []f64 = &.{},
+
+    fn init(allocator: std.mem.Allocator) AttentionScratch {
+        return .{ .allocator = allocator };
+    }
+
+    fn deinit(self: *AttentionScratch) void {
+        if (self.weighted.len > 0) {
+            self.allocator.free(self.weighted);
+            self.weighted = &.{};
+        }
+    }
+
+    fn ensureWeighted(self: *AttentionScratch, len: usize) ![]f64 {
+        if (self.weighted.len < len) {
+            if (self.weighted.len > 0) {
+                self.allocator.free(self.weighted);
+            }
+            self.weighted = try self.allocator.alloc(f64, len);
+        }
+        return self.weighted[0..len];
+    }
+};
+
 fn evaluateAttention(
     allocator: std.mem.Allocator,
     q: []const f64,
@@ -447,18 +474,22 @@ fn evaluateAttention(
     if (k.len != @as(usize, seq_len) * @as(usize, head_dim)) return error.NumericStabilityInvalidAttentionShape;
     if (v.len % @as(usize, seq_len) != 0) return error.NumericStabilityInvalidAttentionShape;
     const value_dim = v.len / @as(usize, seq_len);
+    var scratch = AttentionScratch.init(allocator);
+    defer scratch.deinit();
     var scores = try allocator.alloc(f64, seq_len);
+    defer allocator.free(scores);
     var position: usize = 0;
     while (position < seq_len) : (position += 1) {
         const start = position * head_dim;
         const key_row = k[start .. start + head_dim];
         scores[position] = switch (mode) {
-            .pairwise_f32 => @as(f64, @floatCast(pairwiseDotF32(allocator, q, key_row) * @as(f32, @floatCast(scale)))),
+            .pairwise_f32 => @as(f64, @floatCast(pairwiseDotF32(q, key_row) * @as(f32, @floatCast(scale)))),
             .serial_f64 => serialDotF64(q, key_row) * scale,
         };
     }
     const row_max = maxValue(scores);
     var exps = try allocator.alloc(f64, seq_len);
+    defer allocator.free(exps);
     for (scores, 0..) |score, index| {
         const shifted = @max(@min(score - row_max, 30.0), -30.0);
         exps[index] = switch (mode) {
@@ -467,52 +498,33 @@ fn evaluateAttention(
         };
     }
     const total = switch (mode) {
-        .pairwise_f32 => @as(f64, @floatCast(pairwiseReduceF32(allocator, exps))),
+        .pairwise_f32 => @as(f64, @floatCast(pairwiseReduceF32(exps))),
         .serial_f64 => serialSumF64(exps),
     };
     var output = try allocator.alloc(f64, value_dim);
+    errdefer allocator.free(output);
     var value_index: usize = 0;
     while (value_index < value_dim) : (value_index += 1) {
-        var weighted = try allocator.alloc(f64, seq_len);
+        const weighted = try scratch.ensureWeighted(@as(usize, seq_len));
         for (exps, 0..) |value, seq_index| {
             const prob = value / total;
             weighted[seq_index] = prob * v[(seq_index * value_dim) + value_index];
         }
         output[value_index] = switch (mode) {
-            .pairwise_f32 => @as(f64, @floatCast(pairwiseReduceF32(allocator, weighted))),
+            .pairwise_f32 => @as(f64, @floatCast(pairwiseReduceF32(weighted))),
             .serial_f64 => serialSumF64(weighted),
         };
     }
     return output;
 }
 
-fn pairwiseDotF32(allocator: std.mem.Allocator, lhs: []const f64, rhs: []const f64) f32 {
-    var products = allocator.alloc(f64, lhs.len) catch return 0;
-    for (lhs, rhs, 0..) |left, right, index| {
-        products[index] = @as(f64, @floatCast(@as(f32, @floatCast(left)) * @as(f32, @floatCast(right))));
-    }
-    return pairwiseReduceF32(allocator, products);
+fn pairwiseDotF32(lhs: []const f64, rhs: []const f64) f32 {
+    return f32_ops.dotF64(lhs, rhs);
 }
 
-fn pairwiseReduceF32(allocator: std.mem.Allocator, values: []const f64) f32 {
+fn pairwiseReduceF32(values: []const f64) f32 {
     if (values.len == 0) return 0;
-    var current = allocator.alloc(f32, values.len) catch return 0;
-    for (values, 0..) |value, index| current[index] = @floatCast(value);
-    var len = values.len;
-    while (len > 1) {
-        const next_len = (len + 1) / 2;
-        var next = allocator.alloc(f32, next_len) catch return current[0];
-        var index: usize = 0;
-        while (index < next_len) : (index += 1) {
-            const left = current[index * 2];
-            const right_index = index * 2 + 1;
-            const right: f32 = if (right_index < len) current[right_index] else 0;
-            next[index] = left + right;
-        }
-        current = next;
-        len = next_len;
-    }
-    return current[0];
+    return f32_ops.sumF64(values);
 }
 
 fn serialDotF64(lhs: []const f64, rhs: []const f64) f64 {

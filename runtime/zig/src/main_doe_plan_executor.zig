@@ -1,5 +1,6 @@
-const doe_plan_executor = @import("doe_plan_executor.zig");
+const doe_plan_executor = @import("../doe_plan_executor.zig");
+const doe_plan_executor_cli = @import("doe_plan_executor_cli.zig");
 
 pub fn main() !void {
-    try doe_plan_executor.runCli();
+    try doe_plan_executor_cli.runCli(doe_plan_executor.runPlan);
 }

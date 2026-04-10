@@ -5,6 +5,7 @@
 //   - C ABI exports for all dynamic state setters and pipeline creation
 
 const std = @import("std");
+const bridge = @import("metal_render_state_bridge_decls.zig");
 
 // ============================================================
 // Constants
@@ -130,127 +131,15 @@ pub const ScissorRect = struct {
 };
 
 // ============================================================
-// C extern declarations (resolved from metal_render_state_bridge.m)
+// C extern declarations (resolved from bridge.metal_render_state_bridge.m)
 // ============================================================
 
-extern fn metal_render_state_set_viewport(
-    encoder: ?*anyopaque,
-    x: f64,
-    y: f64,
-    width: f64,
-    height: f64,
-    depth_min: f64,
-    depth_max: f64,
-) callconv(.c) void;
-
-extern fn metal_render_state_set_scissor_rect(
-    encoder: ?*anyopaque,
-    x: u32,
-    y: u32,
-    width: u32,
-    height: u32,
-) callconv(.c) void;
-
-extern fn metal_render_state_set_stencil_reference(
-    encoder: ?*anyopaque,
-    value: u32,
-) callconv(.c) void;
-
-extern fn metal_render_state_set_blend_color(
-    encoder: ?*anyopaque,
-    r: f32,
-    g: f32,
-    b: f32,
-    a: f32,
-) callconv(.c) void;
-
-extern fn metal_render_state_new_pipeline(
-    device: ?*anyopaque,
-    vertex_msl: ?[*:0]const u8,
-    fragment_msl: ?[*:0]const u8,
-    pixel_format: u32,
-    sample_count: u32,
-    alpha_to_coverage: c_int,
-    blend: ?*const CBlendAttachment,
-    depth_stencil: ?*const CDepthStencilConfig,
-    support_icb: c_int,
-    error_buf: ?[*]u8,
-    error_cap: usize,
-) callconv(.c) ?*anyopaque;
-
-extern fn metal_render_state_new_depth_stencil_state(
-    device: ?*anyopaque,
-    cfg: ?*const CDepthStencilConfig,
-) callconv(.c) ?*anyopaque;
-
-extern fn metal_render_state_set_depth_stencil_state(
-    encoder: ?*anyopaque,
-    ds_state: ?*anyopaque,
-) callconv(.c) void;
-
-extern fn metal_render_state_new_msaa_texture(
-    device: ?*anyopaque,
-    width: u32,
-    height: u32,
-    pixel_format: u32,
-    sample_count: u32,
-) callconv(.c) ?*anyopaque;
-
-extern fn metal_render_state_cmd_buf_msaa_render_encoder(
-    cmd_buf: ?*anyopaque,
-    pipeline: ?*anyopaque,
-    msaa_texture: ?*anyopaque,
-    resolve_target: ?*anyopaque,
-) callconv(.c) ?*anyopaque;
-
-extern fn metal_render_state_push_debug_group(
-    encoder: ?*anyopaque,
-    label: ?[*]const u8,
-    label_len: usize,
-) callconv(.c) void;
-
-extern fn metal_render_state_pop_debug_group(
-    encoder: ?*anyopaque,
-) callconv(.c) void;
-
-extern fn metal_render_state_insert_debug_marker(
-    encoder: ?*anyopaque,
-    label: ?[*]const u8,
-    label_len: usize,
-) callconv(.c) void;
-
 // ============================================================
-// C-layout structs matching metal_render_state_bridge.h
+// C-layout structs matching bridge.metal_render_state_bridge.h
 // ============================================================
 
-// Must match MetalBlendAttachment in metal_render_state_bridge.h exactly.
-const CBlendAttachment = extern struct {
-    color_operation: u32,
-    color_src_factor: u32,
-    color_dst_factor: u32,
-    alpha_operation: u32,
-    alpha_src_factor: u32,
-    alpha_dst_factor: u32,
-    write_mask: u32,
-    blend_enabled: c_int,
-};
-
-// Must match MetalDepthStencilConfig in metal_render_state_bridge.h exactly.
-const CDepthStencilConfig = extern struct {
-    depth_write_enabled: c_int,
-    depth_compare: u32,
-    stencil_front_compare: u32,
-    stencil_front_fail_op: u32,
-    stencil_front_depth_fail: u32,
-    stencil_front_pass_op: u32,
-    stencil_back_compare: u32,
-    stencil_back_fail_op: u32,
-    stencil_back_depth_fail: u32,
-    stencil_back_pass_op: u32,
-    stencil_read_mask: u32,
-    stencil_write_mask: u32,
-    depth_stencil_format: u32,
-};
+const CBlendAttachment = bridge.MetalBlendAttachment;
+const CDepthStencilConfig = bridge.MetalDepthStencilConfig;
 
 // ============================================================
 // Public helpers: convert Zig descriptors to C structs
@@ -292,7 +181,7 @@ pub fn depth_stencil_to_c(ds: *const DepthStencilState) CDepthStencilConfig {
 // ============================================================
 
 pub fn set_viewport(encoder: ?*anyopaque, vp: ViewportRect) void {
-    metal_render_state_set_viewport(
+    bridge.metal_render_state_set_viewport(
         encoder,
         vp.x,
         vp.y,
@@ -304,19 +193,19 @@ pub fn set_viewport(encoder: ?*anyopaque, vp: ViewportRect) void {
 }
 
 pub fn set_scissor_rect(encoder: ?*anyopaque, rect: ScissorRect) void {
-    metal_render_state_set_scissor_rect(encoder, rect.x, rect.y, rect.width, rect.height);
+    bridge.metal_render_state_set_scissor_rect(encoder, rect.x, rect.y, rect.width, rect.height);
 }
 
 pub fn set_stencil_reference(encoder: ?*anyopaque, value: u32) void {
-    metal_render_state_set_stencil_reference(encoder, value);
+    bridge.metal_render_state_set_stencil_reference(encoder, value);
 }
 
 pub fn set_blend_color(encoder: ?*anyopaque, r: f32, g: f32, b: f32, a: f32) void {
-    metal_render_state_set_blend_color(encoder, r, g, b, a);
+    bridge.metal_render_state_set_blend_color(encoder, r, g, b, a);
 }
 
 pub fn set_depth_stencil_state(encoder: ?*anyopaque, ds_state: ?*anyopaque) void {
-    metal_render_state_set_depth_stencil_state(encoder, ds_state);
+    bridge.metal_render_state_set_depth_stencil_state(encoder, ds_state);
 }
 
 // Create a render pipeline with full blend + MSAA + depth/stencil support.
@@ -343,7 +232,7 @@ pub fn create_pipeline(
         break :blk &c_ds;
     } else null;
 
-    return metal_render_state_new_pipeline(
+    return bridge.metal_render_state_new_pipeline(
         device,
         vertex_msl,
         fragment_msl,
@@ -365,7 +254,7 @@ pub fn create_depth_stencil_state(
     ds: *const DepthStencilState,
 ) ?*anyopaque {
     const c_ds = depth_stencil_to_c(ds);
-    return metal_render_state_new_depth_stencil_state(device, &c_ds);
+    return bridge.metal_render_state_new_depth_stencil_state(device, &c_ds);
 }
 
 // Create an MSAA render target texture.
@@ -376,7 +265,7 @@ pub fn create_msaa_texture(
     pixel_format: u32,
     sample_count: u32,
 ) ?*anyopaque {
-    return metal_render_state_new_msaa_texture(device, width, height, pixel_format, sample_count);
+    return bridge.metal_render_state_new_msaa_texture(device, width, height, pixel_format, sample_count);
 }
 
 // Open an MSAA render encoder that resolves into resolve_target.
@@ -387,7 +276,7 @@ pub fn open_msaa_render_encoder(
     msaa_texture: ?*anyopaque,
     resolve_target: ?*anyopaque,
 ) ?*anyopaque {
-    return metal_render_state_cmd_buf_msaa_render_encoder(
+    return bridge.metal_render_state_cmd_buf_msaa_render_encoder(
         cmd_buf,
         pipeline,
         msaa_texture,
@@ -409,7 +298,7 @@ pub export fn doeNativeRenderPassEncoderSetViewport(
     min_depth: f64,
     max_depth: f64,
 ) callconv(.c) void {
-    metal_render_state_set_viewport(encoder, x, y, width, height, min_depth, max_depth);
+    bridge.metal_render_state_set_viewport(encoder, x, y, width, height, min_depth, max_depth);
 }
 
 // Set scissor rect on an open render pass encoder.
@@ -420,7 +309,7 @@ pub export fn doeNativeRenderPassEncoderSetScissorRect(
     width: u32,
     height: u32,
 ) callconv(.c) void {
-    metal_render_state_set_scissor_rect(encoder, x, y, width, height);
+    bridge.metal_render_state_set_scissor_rect(encoder, x, y, width, height);
 }
 
 // Set stencil reference value on an open render pass encoder.
@@ -428,7 +317,7 @@ pub export fn doeNativeRenderPassEncoderSetStencilReference(
     encoder: ?*anyopaque,
     reference: u32,
 ) callconv(.c) void {
-    metal_render_state_set_stencil_reference(encoder, reference);
+    bridge.metal_render_state_set_stencil_reference(encoder, reference);
 }
 
 // Set blend constant color on an open render pass encoder.
@@ -440,7 +329,7 @@ pub export fn doeNativeRenderPassEncoderSetBlendConstant(
     a: f64,
 ) callconv(.c) void {
     // Metal expects f32; the WebGPU spec uses f64 for color values.
-    metal_render_state_set_blend_color(
+    bridge.metal_render_state_set_blend_color(
         encoder,
         @floatCast(r),
         @floatCast(g),
@@ -586,7 +475,7 @@ pub export fn doeNativeRenderPassEncoderSetDepthStencilState(
     ds_state: ?*anyopaque,
 ) callconv(.c) void {
     if (ds_state == null) return;
-    metal_render_state_set_depth_stencil_state(encoder, ds_state);
+    bridge.metal_render_state_set_depth_stencil_state(encoder, ds_state);
 }
 
 // Create an MSAA render target texture.
@@ -609,14 +498,14 @@ pub export fn doeNativeRenderPassEncoderPushDebugGroup(
     label_ptr: ?[*]const u8,
     label_len: usize,
 ) callconv(.c) void {
-    metal_render_state_push_debug_group(encoder, label_ptr, label_len);
+    bridge.metal_render_state_push_debug_group(encoder, label_ptr, label_len);
 }
 
 // Pop the most recently pushed debug group from an open render pass encoder.
 pub export fn doeNativeRenderPassEncoderPopDebugGroup(
     encoder: ?*anyopaque,
 ) callconv(.c) void {
-    metal_render_state_pop_debug_group(encoder);
+    bridge.metal_render_state_pop_debug_group(encoder);
 }
 
 // Insert a single-point debug marker on an open render pass encoder.
@@ -626,7 +515,7 @@ pub export fn doeNativeRenderPassEncoderInsertDebugMarker(
     label_ptr: ?[*]const u8,
     label_len: usize,
 ) callconv(.c) void {
-    metal_render_state_insert_debug_marker(encoder, label_ptr, label_len);
+    bridge.metal_render_state_insert_debug_marker(encoder, label_ptr, label_len);
 }
 
 // Open an MSAA render encoder that resolves into resolve_target.

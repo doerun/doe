@@ -1,4 +1,5 @@
 const std = @import("std");
+const log = std.log.scoped(.wgpu_render_commands);
 const model_resource_types = @import("../../model_resource_types.zig");
 const model_gpu_types = @import("../../model_texture_value_types.zig");
 const model_render_types = @import("../../model_render_types.zig");
@@ -338,13 +339,13 @@ pub fn executeRenderDraw(self: anytype, render: model_render_types.RenderDrawCom
             @ptrCast(&pipeline_desc),
         ) catch {
             _ = async_procs_mod.popErrorScopeAndWait(async_procs, self.core.instance.?, procs, self.core.device.?) catch |err| {
-                std.debug.print("warn: wgpu_render_commands: popErrorScope[0] cleanup: {s}\n", .{@errorName(err)});
+                log.warn("popErrorScope[0] cleanup: {s}", .{@errorName(err)});
             };
             _ = async_procs_mod.popErrorScopeAndWait(async_procs, self.core.instance.?, procs, self.core.device.?) catch |err| {
-                std.debug.print("warn: wgpu_render_commands: popErrorScope[1] cleanup: {s}\n", .{@errorName(err)});
+                log.warn("popErrorScope[1] cleanup: {s}", .{@errorName(err)});
             };
             _ = async_procs_mod.popErrorScopeAndWait(async_procs, self.core.instance.?, procs, self.core.device.?) catch |err| {
-                std.debug.print("warn: wgpu_render_commands: popErrorScope[2] cleanup: {s}\n", .{@errorName(err)});
+                log.warn("popErrorScope[2] cleanup: {s}", .{@errorName(err)});
             };
             procs.wgpuShaderModuleRelease(shader_module);
             return .{ .status = .@"error", .status_message = "render_draw async pipeline creation failed" };

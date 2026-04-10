@@ -4,6 +4,7 @@ const model_policy = @import("model_policy.zig");
 const model_quirks = @import("model_quirks.zig");
 const execution = @import("execution.zig");
 const semantic_trace = @import("semantic_trace.zig");
+const trace_text = @import("trace_text.zig");
 const trace_determinism = @import("trace_determinism.zig");
 const trace_numeric_stability = @import("trace_numeric_stability.zig");
 
@@ -90,64 +91,18 @@ pub const TraceRunSummary = struct {
     numeric_stability: ?trace_numeric_stability.TraceNumericStabilitySummary = null,
 };
 
-pub fn writef(writer: anytype, comptime format: []const u8, args: anytype) !void {
-    try writer.print(format, args);
-}
+pub const writef = trace_text.writef;
 
 pub fn writeJsonString(writer: anytype, value: []const u8) !void {
-    try writer.writeByte('"');
-    for (value) |byte| {
-        switch (byte) {
-            '"' => try writer.writeAll("\\\""),
-            '\\' => try writer.writeAll("\\\\"),
-            '\n' => try writer.writeAll("\\n"),
-            '\r' => try writer.writeAll("\\r"),
-            '\t' => try writer.writeAll("\\t"),
-            0...8, 11...12, 14...31 => {
-                try writef(writer, "\\u00{x:0>2}", .{byte});
-            },
-            else => try writer.writeByte(byte),
-        }
-    }
-    try writer.writeByte('"');
+    try trace_text.writeJsonString(writer, value);
 }
 
-fn normalizeExecutionStatusCode(
+pub fn normalizeExecutionStatusCode(
     message: []const u8,
     fallback: []const u8,
     buffer: *[160]u8,
 ) []const u8 {
-    const source = if (message.len > 0) message else fallback;
-    var out_len: usize = 0;
-    var last_was_separator = true;
-
-    for (source) |byte| {
-        const lower = std.ascii.toLower(byte);
-        const is_alnum = (lower >= 'a' and lower <= 'z') or (lower >= '0' and lower <= '9');
-        if (is_alnum) {
-            if (out_len >= buffer.len) break;
-            buffer[out_len] = lower;
-            out_len += 1;
-            last_was_separator = false;
-            continue;
-        }
-        if (last_was_separator) continue;
-        if (out_len >= buffer.len) break;
-        buffer[out_len] = '_';
-        out_len += 1;
-        last_was_separator = true;
-    }
-
-    while (out_len > 0 and buffer[out_len - 1] == '_') {
-        out_len -= 1;
-    }
-
-    if (out_len == 0) {
-        const fallback_len = @min(fallback.len, buffer.len);
-        std.mem.copyForwards(u8, buffer[0..fallback_len], fallback[0..fallback_len]);
-        return buffer[0..fallback_len];
-    }
-    return buffer[0..out_len];
+    return trace_text.normalizeExecutionStatusCode(message, fallback, buffer);
 }
 
 pub fn actionName(action: ?model.QuirkAction) []const u8 {

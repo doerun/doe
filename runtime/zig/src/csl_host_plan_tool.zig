@@ -1,5 +1,5 @@
 const std = @import("std");
-const wgsl = @import("doe_wgsl/mod.zig");
+const wgsl = @import("../doe_wgsl/mod.zig");
 const exec_v1 = wgsl.emit_csl_exec_v1;
 const host = wgsl.emit_csl_host;
 const host_plan = wgsl.emit_csl_host_plan;

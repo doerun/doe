@@ -95,6 +95,54 @@ pub extern fn metal_bridge_query_device_max_buffer_length() callconv(.c) u64;
 // Caller frees with metal_bridge_free_string.
 pub extern fn metal_bridge_adapter_get_info_string(device: ?*anyopaque) callconv(.c) ?[*]u8;
 pub extern fn metal_bridge_free_string(str: ?[*]u8) callconv(.c) void;
+pub extern fn metal_bridge_retain_device(device: ?*anyopaque) callconv(.c) void;
+pub extern fn metal_bridge_enumerate_devices(
+    out_devices: ?[*]?*anyopaque,
+    max_count: u32,
+    out_count: *u32,
+) callconv(.c) void;
+pub extern fn metal_bridge_device_is_low_power(device: ?*anyopaque) callconv(.c) u32;
+pub extern fn metal_bridge_device_is_removable(device: ?*anyopaque) callconv(.c) u32;
+pub extern fn metal_bridge_binary_archive_create(
+    device: ?*anyopaque,
+    path: ?[*]const u8,
+    error_buf: ?[*]u8,
+    error_cap: usize,
+) callconv(.c) ?*anyopaque;
+pub extern fn metal_bridge_binary_archive_add_compute(
+    archive: ?*anyopaque,
+    device: ?*anyopaque,
+    pipeline: ?*anyopaque,
+    error_buf: ?[*]u8,
+    error_cap: usize,
+) callconv(.c) u32;
+pub extern fn metal_bridge_binary_archive_add_render(
+    archive: ?*anyopaque,
+    device: ?*anyopaque,
+    pipeline: ?*anyopaque,
+    error_buf: ?[*]u8,
+    error_cap: usize,
+) callconv(.c) u32;
+pub extern fn metal_bridge_binary_archive_serialize(
+    archive: ?*anyopaque,
+    error_buf: ?[*]u8,
+    error_cap: usize,
+) callconv(.c) u32;
+pub extern fn metal_bridge_device_new_compute_pipeline_with_archive(
+    device: ?*anyopaque,
+    function: ?*anyopaque,
+    archive: ?*anyopaque,
+    error_buf: ?[*]u8,
+    error_cap: usize,
+) callconv(.c) ?*anyopaque;
+pub extern fn metal_bridge_device_new_render_pipeline_with_archive(
+    device: ?*anyopaque,
+    pixel_format: u32,
+    support_icb: c_int,
+    archive: ?*anyopaque,
+    error_buf: ?[*]u8,
+    error_cap: usize,
+) callconv(.c) ?*anyopaque;
 
 // Multi-queue support
 pub extern fn metal_bridge_device_new_command_queue_with_priority(device: ?*anyopaque, priority: u32) callconv(.c) ?*anyopaque;
@@ -118,6 +166,7 @@ pub extern fn doe_metal_iosurface_plane_size(iosurface: ?*anyopaque, plane: u32,
 // Device property queries (implemented in metal_bridge.m).
 pub extern fn metal_bridge_device_registry_id(device: ?*anyopaque) callconv(.c) u64;
 pub extern fn metal_bridge_device_name(device: ?*anyopaque, buf: [*]u8, cap: usize) callconv(.c) void;
+pub extern fn metal_bridge_device_max_buffer_length(device: ?*anyopaque) callconv(.c) u64;
 
 pub const MetalVertexBufferLayout = extern struct {
     array_stride: u64,

@@ -1,11 +1,7 @@
 const std = @import("std");
 const model_async_types = @import("../../../model_async_types.zig");
 const common_timing = @import("../../common/timing.zig");
-
-extern fn d3d12_bridge_device_create_root_signature_empty(device: ?*anyopaque) callconv(.c) ?*anyopaque;
-extern fn d3d12_bridge_device_create_graphics_pipeline(device: ?*anyopaque, root_sig: ?*anyopaque, vs_bytecode: [*]const u8, vs_size: usize, ps_bytecode: [*]const u8, ps_size: usize, target_format: u32) callconv(.c) ?*anyopaque;
-extern fn d3d12_bridge_device_create_compute_pipeline(device: ?*anyopaque, root_sig: ?*anyopaque, bytecode: [*]const u8, bytecode_size: usize) callconv(.c) ?*anyopaque;
-extern fn d3d12_bridge_release(obj: ?*anyopaque) callconv(.c) void;
+const bridge = @import("../d3d12_bridge_decls.zig");
 
 pub const AsyncDiagnosticsMetrics = struct {
     setup_ns: u64 = 0,
@@ -30,8 +26,8 @@ pub fn execute_async_diagnostics(
 
 fn execute_pipeline_async(device: ?*anyopaque, target_format: u32, iterations: u32) !AsyncDiagnosticsMetrics {
     const setup_start = common_timing.now_ns();
-    const root_sig = d3d12_bridge_device_create_root_signature_empty(device) orelse return error.InvalidState;
-    defer d3d12_bridge_release(root_sig);
+    const root_sig = bridge.c.d3d12_bridge_device_create_root_signature_empty(device) orelse return error.InvalidState;
+    defer bridge.c.d3d12_bridge_release(root_sig);
     const setup_ns = common_timing.ns_delta(common_timing.now_ns(), setup_start);
 
     const encode_start = common_timing.now_ns();
@@ -39,8 +35,8 @@ fn execute_pipeline_async(device: ?*anyopaque, target_format: u32, iterations: u
     while (i < iterations) : (i += 1) {
         const vs = noop_vs_bytecode();
         const ps = noop_ps_bytecode();
-        const pso = d3d12_bridge_device_create_graphics_pipeline(device, root_sig, vs.ptr, vs.len, ps.ptr, ps.len, target_format) orelse return error.ShaderCompileFailed;
-        d3d12_bridge_release(pso);
+        const pso = bridge.c.d3d12_bridge_device_create_graphics_pipeline(device, root_sig, vs.ptr, vs.len, ps.ptr, ps.len, target_format) orelse return error.ShaderCompileFailed;
+        bridge.c.d3d12_bridge_release(pso);
     }
     const encode_ns = common_timing.ns_delta(common_timing.now_ns(), encode_start);
     return .{ .setup_ns = setup_ns, .encode_ns = encode_ns };
@@ -68,8 +64,8 @@ fn execute_lifecycle_refcount(device: ?*anyopaque, iterations: u32) !AsyncDiagno
     const encode_start = common_timing.now_ns();
     var i: u32 = 0;
     while (i < iterations) : (i += 1) {
-        const root_sig = d3d12_bridge_device_create_root_signature_empty(device) orelse return error.InvalidState;
-        d3d12_bridge_release(root_sig);
+        const root_sig = bridge.c.d3d12_bridge_device_create_root_signature_empty(device) orelse return error.InvalidState;
+        bridge.c.d3d12_bridge_release(root_sig);
     }
     return .{ .encode_ns = common_timing.ns_delta(common_timing.now_ns(), encode_start) };
 }

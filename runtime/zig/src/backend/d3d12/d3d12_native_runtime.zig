@@ -8,6 +8,7 @@ const model_render_types = @import("../../model_render_types.zig");
 const model_texture_types = @import("../../model_texture_types.zig");
 const model_surface_control_types = @import("../../model_surface_control_types.zig");
 const model_async_types = @import("../../model_async_types.zig");
+const bridge = @import("d3d12_bridge_decls.zig");
 
 const d3d12_texture = @import("resources/d3d12_texture.zig");
 const d3d12_sampler = @import("resources/d3d12_sampler.zig");
@@ -37,10 +38,6 @@ pub const DXC_PROFILE: []const u8 = compute.DXC_PROFILE;
 pub const DXC_ENTRYPOINT: []const u8 = compute.DXC_ENTRYPOINT;
 pub const HEAP_TYPE_DEFAULT: c_int = 1;
 
-extern fn d3d12_bridge_create_device() callconv(.c) ?*anyopaque;
-extern fn d3d12_bridge_release(obj: ?*anyopaque) callconv(.c) void;
-extern fn d3d12_bridge_device_create_command_queue(device: ?*anyopaque) callconv(.c) ?*anyopaque;
-extern fn d3d12_bridge_device_create_fence(device: ?*anyopaque) callconv(.c) ?*anyopaque;
 pub const PendingUpload = upload.PendingUpload;
 pub const PoolEntry = upload.PoolEntry;
 pub const DispatchMetrics = compute.DispatchMetrics;
@@ -53,11 +50,11 @@ const PendingSubmitBatch = struct {
 
     fn deinit(self: *PendingSubmitBatch, allocator: std.mem.Allocator) void {
         for (self.retained_handles.items) |maybe_handle| {
-            if (maybe_handle) |handle| d3d12_bridge_release(handle);
+            if (maybe_handle) |handle| bridge.c.d3d12_bridge_release(handle);
         }
         self.retained_handles.deinit(allocator);
-        if (self.cmd_list) |cmd_list| d3d12_bridge_release(cmd_list);
-        if (self.cmd_allocator) |cmd_allocator| d3d12_bridge_release(cmd_allocator);
+        if (self.cmd_list) |cmd_list| bridge.c.d3d12_bridge_release(cmd_list);
+        if (self.cmd_allocator) |cmd_allocator| bridge.c.d3d12_bridge_release(cmd_allocator);
         self.* = .{
             .fence_value = 0,
             .cmd_allocator = null,
@@ -138,21 +135,21 @@ pub const NativeD3D12Runtime = struct {
         self.texture_view_state.deinit(self.allocator);
         self.descriptor_state.deinit();
         if (self.dispatch_info_buffer) |buffer| {
-            d3d12_bridge_release(buffer);
+            bridge.c.d3d12_bridge_release(buffer);
             self.dispatch_info_buffer = null;
             self.has_dispatch_info_cbv = false;
         }
         d3d12_texture.release_all(&self.texture_map);
         if (self.fence) |f| {
-            d3d12_bridge_release(f);
+            bridge.c.d3d12_bridge_release(f);
             self.fence = null;
         }
         if (self.queue) |q| {
-            d3d12_bridge_release(q);
+            bridge.c.d3d12_bridge_release(q);
             self.queue = null;
         }
         if (self.device) |d| {
-            d3d12_bridge_release(d);
+            bridge.c.d3d12_bridge_release(d);
             self.device = null;
             self.has_device = false;
         }
@@ -365,9 +362,9 @@ pub const NativeD3D12Runtime = struct {
     // --- Private ---
 
     fn bootstrap(self: *NativeD3D12Runtime) !void {
-        self.device = d3d12_bridge_create_device() orelse return error.UnsupportedFeature;
-        self.queue = d3d12_bridge_device_create_command_queue(self.device) orelse return error.InvalidState;
-        self.fence = d3d12_bridge_device_create_fence(self.device) orelse return error.InvalidState;
+        self.device = bridge.c.d3d12_bridge_create_device() orelse return error.UnsupportedFeature;
+        self.queue = bridge.c.d3d12_bridge_device_create_command_queue(self.device) orelse return error.InvalidState;
+        self.fence = bridge.c.d3d12_bridge_device_create_fence(self.device) orelse return error.InvalidState;
         self.has_device = true;
         self.device_caps = d3d12_device_caps.query_device_caps(self.device);
     }

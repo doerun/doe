@@ -2,6 +2,7 @@
 // for the Vulkan backend. Sharded from vk_render.zig.
 
 const std = @import("std");
+const log = std.log.scoped(.vk_render_pipeline);
 const c = @import("vk_constants.zig");
 const vk_formats = @import("vk_formats.zig");
 const vk_resources = @import("vk_resources.zig");
@@ -316,7 +317,7 @@ pub fn create_graphics_pipeline(
 
     const use_unclipped = cmd.unclipped_depth and self.has_depth_clip_enable_ext;
     if (cmd.unclipped_depth and !self.has_depth_clip_enable_ext) {
-        std.debug.print("vk_render: unclippedDepth requested but VK_EXT_depth_clip_enable unavailable; falling back to standard clipping\n", .{});
+        log.warn("unclippedDepth requested but VK_EXT_depth_clip_enable unavailable; falling back to standard clipping", .{});
     }
 
     var depth_clip_state = c.VkPipelineRasterizationDepthClipStateCreateInfoEXT{

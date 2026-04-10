@@ -1,14 +1,9 @@
 const std = @import("std");
 const model_gpu_types = @import("../../../model_texture_value_types.zig");
 const common_timing = @import("../../common/timing.zig");
+const bridge = @import("../d3d12_bridge_decls.zig");
 
 // --- Bridge externs ---
-
-extern fn d3d12_bridge_release(obj: ?*anyopaque) callconv(.c) void;
-extern fn d3d12_bridge_device_create_srv_texture_2d(device: ?*anyopaque, resource: ?*anyopaque, heap: ?*anyopaque, index: u32, format: u32, aspect: u32, base_mip: u32, mip_count: u32, base_array_layer: u32, array_layer_count: u32) callconv(.c) void;
-extern fn d3d12_bridge_device_create_srv_texture_cube(device: ?*anyopaque, resource: ?*anyopaque, heap: ?*anyopaque, index: u32, format: u32, aspect: u32, base_mip: u32, mip_count: u32, base_array_layer: u32, array_layer_count: u32) callconv(.c) void;
-extern fn d3d12_bridge_device_create_srv_texture_3d(device: ?*anyopaque, resource: ?*anyopaque, heap: ?*anyopaque, index: u32, format: u32, aspect: u32, base_mip: u32, mip_count: u32) callconv(.c) void;
-extern fn d3d12_bridge_device_create_uav_texture_2d(device: ?*anyopaque, resource: ?*anyopaque, heap: ?*anyopaque, index: u32, format: u32, mip_slice: u32) callconv(.c) void;
 
 // --- View dimension constants (WebGPU GPUTextureViewDimension) ---
 
@@ -120,7 +115,7 @@ pub const TextureViewState = struct {
             const normalized_aspect = normalize_aspect(aspect) orelse return error.UnsupportedFeature;
             if (normalized_aspect != TEXTURE_ASPECT_ALL) return error.UnsupportedFeature;
             if (dimension != VIEW_DIMENSION_2D) return error.UnsupportedFeature;
-            d3d12_bridge_device_create_uav_texture_2d(
+            bridge.c.d3d12_bridge_device_create_uav_texture_2d(
                 device,
                 texture_resource,
                 descriptor_heap,
@@ -130,7 +125,7 @@ pub const TextureViewState = struct {
             );
         } else switch (dimension) {
             VIEW_DIMENSION_1D, VIEW_DIMENSION_2D, VIEW_DIMENSION_2D_ARRAY => {
-                d3d12_bridge_device_create_srv_texture_2d(
+                bridge.c.d3d12_bridge_device_create_srv_texture_2d(
                     device,
                     texture_resource,
                     descriptor_heap,
@@ -145,7 +140,7 @@ pub const TextureViewState = struct {
             },
             VIEW_DIMENSION_CUBE, VIEW_DIMENSION_CUBE_ARRAY => {
                 if ((layer_count % 6) != 0) return error.UnsupportedFeature;
-                d3d12_bridge_device_create_srv_texture_cube(
+                bridge.c.d3d12_bridge_device_create_srv_texture_cube(
                     device,
                     texture_resource,
                     descriptor_heap,
@@ -159,7 +154,7 @@ pub const TextureViewState = struct {
                 );
             },
             VIEW_DIMENSION_3D => {
-                d3d12_bridge_device_create_srv_texture_3d(
+                bridge.c.d3d12_bridge_device_create_srv_texture_3d(
                     device,
                     texture_resource,
                     descriptor_heap,

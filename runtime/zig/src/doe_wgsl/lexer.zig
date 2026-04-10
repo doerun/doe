@@ -1,6 +1,7 @@
 // doe_wgsl/lexer.zig — WGSL tokenizer.
 
 const std = @import("std");
+const byte_scan = @import("../runtime/simd/byte_scan.zig");
 const token = @import("token.zig");
 const Token = token.Token;
 const Tag = token.Tag;
@@ -124,15 +125,19 @@ pub const Lexer = struct {
 
     fn skipWhitespaceAndComments(self: *Lexer) void {
         while (self.pos < self.source.len) {
-            const c = self.source[self.pos];
-            if (c == ' ' or c == '\t' or c == '\n' or c == '\r') {
-                self.pos += 1;
+            const whitespace_len = byte_scan.countLeadingWhitespace(self.source[self.pos..]);
+            if (whitespace_len > 0) {
+                self.pos += @intCast(whitespace_len);
                 continue;
             }
+            const c = self.source[self.pos];
             // Line comment.
             if (c == '/' and self.pos + 1 < self.source.len and self.source[self.pos + 1] == '/') {
-                while (self.pos < self.source.len and self.source[self.pos] != '\n') {
-                    self.pos += 1;
+                const remaining = self.source[self.pos + 2 ..];
+                if (byte_scan.findFirstByte(remaining, '\n')) |newline_offset| {
+                    self.pos += @intCast(2 + newline_offset);
+                } else {
+                    self.pos = @intCast(self.source.len);
                 }
                 continue;
             }
@@ -166,9 +171,7 @@ pub const Lexer = struct {
             (self.source[self.pos + 1] == 'x' or self.source[self.pos + 1] == 'X'))
         {
             self.pos += 2;
-            while (self.pos < self.source.len and isHexDigit(self.source[self.pos])) {
-                self.pos += 1;
-            }
+            self.pos += @intCast(byte_scan.countLeadingHexDigits(self.source[self.pos..]));
             // Hex float (0x...p...).
             if (self.pos < self.source.len and (self.source[self.pos] == 'p' or self.source[self.pos] == 'P')) {
                 is_float = true;
@@ -176,26 +179,20 @@ pub const Lexer = struct {
                 if (self.pos < self.source.len and (self.source[self.pos] == '+' or self.source[self.pos] == '-')) {
                     self.pos += 1;
                 }
-                while (self.pos < self.source.len and isDigit(self.source[self.pos])) {
-                    self.pos += 1;
-                }
+                self.pos += @intCast(byte_scan.countLeadingDigits(self.source[self.pos..]));
             }
             self.consumeNumericSuffix(&is_float, false);
             return .{ .tag = if (is_float) .float_literal else .int_literal, .loc = .{ .start = start, .end = self.pos } };
         }
 
         // Decimal.
-        while (self.pos < self.source.len and isDigit(self.source[self.pos])) {
-            self.pos += 1;
-        }
+        self.pos += @intCast(byte_scan.countLeadingDigits(self.source[self.pos..]));
         if (self.pos < self.source.len and self.source[self.pos] == '.') {
             // Check it's not a member access like array.len — only treat as float if followed by digit or end-of-number context.
             if (self.pos + 1 < self.source.len and isDigit(self.source[self.pos + 1])) {
                 is_float = true;
                 self.pos += 1;
-                while (self.pos < self.source.len and isDigit(self.source[self.pos])) {
-                    self.pos += 1;
-                }
+                self.pos += @intCast(byte_scan.countLeadingDigits(self.source[self.pos..]));
             } else if (self.pos + 1 >= self.source.len or !isIdentStart(self.source[self.pos + 1])) {
                 is_float = true;
                 self.pos += 1;
@@ -208,9 +205,7 @@ pub const Lexer = struct {
             if (self.pos < self.source.len and (self.source[self.pos] == '+' or self.source[self.pos] == '-')) {
                 self.pos += 1;
             }
-            while (self.pos < self.source.len and isDigit(self.source[self.pos])) {
-                self.pos += 1;
-            }
+            self.pos += @intCast(byte_scan.countLeadingDigits(self.source[self.pos..]));
         }
         self.consumeNumericSuffix(&is_float, true);
         return .{ .tag = if (is_float) .float_literal else .int_literal, .loc = .{ .start = start, .end = self.pos } };
@@ -231,9 +226,7 @@ pub const Lexer = struct {
 
     fn lexIdent(self: *Lexer) Token {
         const start = self.pos;
-        while (self.pos < self.source.len and isIdentContinue(self.source[self.pos])) {
-            self.pos += 1;
-        }
+        self.pos += @intCast(byte_scan.countLeadingIdentContinue(self.source[self.pos..]));
         const ident = self.source[start..self.pos];
         const tag = token.lookupIdent(ident);
         return .{ .tag = tag, .loc = .{ .start = start, .end = self.pos } };

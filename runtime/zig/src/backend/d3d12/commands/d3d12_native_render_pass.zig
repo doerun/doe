@@ -9,52 +9,11 @@ const d3d12_descriptors = @import("../d3d12_descriptors.zig");
 const d3d12_texture_view = @import("../resources/d3d12_texture_view.zig");
 const d3d12_sampler = @import("../resources/d3d12_sampler.zig");
 const d3d12_render_bind_groups = @import("d3d12_render_bind_groups.zig");
+const bridge = @import("../d3d12_bridge_decls.zig");
 
 const RecordedRenderPass = std.meta.TagPayload(native_cmds.RecordedCmd, .render_pass);
 const DoeTextureView = native_types.DoeTextureView;
 const DoeTexture = native_types.DoeTexture;
-
-extern fn d3d12_bridge_device_create_rtv_heap(device: ?*anyopaque, num_descriptors: u32) callconv(.c) ?*anyopaque;
-extern fn d3d12_bridge_device_create_dsv_heap(device: ?*anyopaque, num_descriptors: u32) callconv(.c) ?*anyopaque;
-extern fn d3d12_bridge_device_create_rtv_view(
-    device: ?*anyopaque,
-    resource: ?*anyopaque,
-    rtv_heap: ?*anyopaque,
-    index: u32,
-    format: u32,
-    dimension: u32,
-    base_mip_level: u32,
-    base_array_layer: u32,
-    array_layer_count: u32,
-    depth_slice: u32,
-) callconv(.c) void;
-extern fn d3d12_bridge_device_create_dsv_view(
-    device: ?*anyopaque,
-    resource: ?*anyopaque,
-    dsv_heap: ?*anyopaque,
-    index: u32,
-    format: u32,
-    dimension: u32,
-    base_mip_level: u32,
-    base_array_layer: u32,
-    array_layer_count: u32,
-    read_only_depth: u32,
-    read_only_stencil: u32,
-) callconv(.c) void;
-extern fn d3d12_bridge_command_list_set_graphics_root_signature(cmd_list: ?*anyopaque, root_sig: ?*anyopaque) callconv(.c) void;
-extern fn d3d12_bridge_command_list_set_pipeline_state(cmd_list: ?*anyopaque, pipeline: ?*anyopaque) callconv(.c) void;
-extern fn d3d12_bridge_command_list_set_render_targets(cmd_list: ?*anyopaque, rtv_heap: ?*anyopaque, rtv_index: u32, dsv_heap: ?*anyopaque, dsv_index: u32) callconv(.c) void;
-extern fn d3d12_bridge_command_list_set_viewport(cmd_list: ?*anyopaque, x: f32, y: f32, w: f32, h: f32, min_depth: f32, max_depth: f32) callconv(.c) void;
-extern fn d3d12_bridge_command_list_set_scissor(cmd_list: ?*anyopaque, left: i32, top: i32, right: i32, bottom: i32) callconv(.c) void;
-extern fn d3d12_bridge_command_list_ia_set_primitive_topology(cmd_list: ?*anyopaque, topology: c_int) callconv(.c) void;
-extern fn d3d12_bridge_command_list_set_blend_factor(cmd_list: ?*anyopaque, rgba: *const [4]f32) callconv(.c) void;
-extern fn d3d12_bridge_command_list_set_stencil_ref(cmd_list: ?*anyopaque, reference: u32) callconv(.c) void;
-extern fn d3d12_bridge_command_list_ia_set_vertex_buffers(cmd_list: ?*anyopaque, start_slot: u32, num_views: u32, buffer: ?*anyopaque, size_in_bytes: u32, stride_in_bytes: u32, offset: u64) callconv(.c) void;
-extern fn d3d12_bridge_command_list_ia_set_index_buffer(cmd_list: ?*anyopaque, buffer: ?*anyopaque, format: u32, size_in_bytes: u32, offset: u64) callconv(.c) void;
-extern fn d3d12_bridge_command_list_draw_instanced(cmd_list: ?*anyopaque, vertex_count: u32, instance_count: u32, start_vertex: u32, start_instance: u32) callconv(.c) void;
-extern fn d3d12_bridge_command_list_draw_indexed_instanced(cmd_list: ?*anyopaque, index_count: u32, instance_count: u32, start_index: u32, base_vertex: i32, start_instance: u32) callconv(.c) void;
-extern fn d3d12_bridge_command_list_resource_barrier_transition(cmd_list: ?*anyopaque, resource: ?*anyopaque, state_before: c_int, state_after: c_int) callconv(.c) void;
-extern fn d3d12_bridge_command_list_resolve_subresource(cmd_list: ?*anyopaque, dst_texture: ?*anyopaque, dst_subresource: u32, src_texture: ?*anyopaque, src_subresource: u32, format: u32) callconv(.c) void;
 
 pub fn record_render_pass_command(
     allocator: std.mem.Allocator,
@@ -70,9 +29,9 @@ pub fn record_render_pass_command(
     const target_texture = target_view.tex;
     const target_format = resolve_view_format(target_view, cmd.target_format);
     const target_dimension = resolve_render_view_dimension(target_view);
-    const rtv_heap = d3d12_bridge_device_create_rtv_heap(device, 1) orelse return error.InvalidState;
+    const rtv_heap = bridge.c.d3d12_bridge_device_create_rtv_heap(device, 1) orelse return error.InvalidState;
     try retained_handles.append(allocator, rtv_heap);
-    d3d12_bridge_device_create_rtv_view(
+    bridge.c.d3d12_bridge_device_create_rtv_view(
         device,
         cmd.target,
         rtv_heap,
@@ -88,9 +47,9 @@ pub fn record_render_pass_command(
     var dsv_heap: ?*anyopaque = null;
     if (cmd.depth_target != null) {
         const depth_view = texture_view_from_handle(cmd.depth_target_view_handle) orelse return error.InvalidArgument;
-        dsv_heap = d3d12_bridge_device_create_dsv_heap(device, 1) orelse return error.InvalidState;
+        dsv_heap = bridge.c.d3d12_bridge_device_create_dsv_heap(device, 1) orelse return error.InvalidState;
         try retained_handles.append(allocator, dsv_heap);
-        d3d12_bridge_device_create_dsv_view(
+        bridge.c.d3d12_bridge_device_create_dsv_view(
             device,
             cmd.depth_target,
             dsv_heap,
@@ -118,13 +77,13 @@ pub fn record_render_pass_command(
     // Use the bind group root signature if textures/samplers are bound,
     // otherwise fall back to the pipeline root signature.
     const active_root_sig = bind_result.root_signature orelse cmd.root_signature;
-    d3d12_bridge_command_list_set_graphics_root_signature(cmd_list, active_root_sig);
+    bridge.c.d3d12_bridge_command_list_set_graphics_root_signature(cmd_list, active_root_sig);
     if (bind_result.root_signature) |rs| {
         try retained_handles.append(allocator, rs);
     }
 
-    d3d12_bridge_command_list_set_pipeline_state(cmd_list, cmd.pso);
-    d3d12_bridge_command_list_set_render_targets(cmd_list, rtv_heap, 0, dsv_heap, 0);
+    bridge.c.d3d12_bridge_command_list_set_pipeline_state(cmd_list, cmd.pso);
+    bridge.c.d3d12_bridge_command_list_set_render_targets(cmd_list, rtv_heap, 0, dsv_heap, 0);
 
     // Set descriptor tables for texture/sampler bindings
     d3d12_render_bind_groups.set_render_pass_descriptor_tables(
@@ -135,17 +94,17 @@ pub fn record_render_pass_command(
 
     const vp_width: f32 = @floatFromInt(view_mip_extent(target_texture.width, target_view.base_mip_level));
     const vp_height: f32 = @floatFromInt(view_mip_extent(target_texture.height, target_view.base_mip_level));
-    d3d12_bridge_command_list_set_viewport(cmd_list, 0, 0, vp_width, vp_height, 0, 1);
-    d3d12_bridge_command_list_set_scissor(
+    bridge.c.d3d12_bridge_command_list_set_viewport(cmd_list, 0, 0, vp_width, vp_height, 0, 1);
+    bridge.c.d3d12_bridge_command_list_set_scissor(
         cmd_list,
         0,
         0,
         @intCast(view_mip_extent(target_texture.width, target_view.base_mip_level)),
         @intCast(view_mip_extent(target_texture.height, target_view.base_mip_level)),
     );
-    d3d12_bridge_command_list_ia_set_primitive_topology(cmd_list, map_topology(cmd.topology));
-    d3d12_bridge_command_list_set_blend_factor(cmd_list, &cmd.blend_constant);
-    d3d12_bridge_command_list_set_stencil_ref(cmd_list, cmd.stencil_reference);
+    bridge.c.d3d12_bridge_command_list_ia_set_primitive_topology(cmd_list, map_topology(cmd.topology));
+    bridge.c.d3d12_bridge_command_list_set_blend_factor(cmd_list, &cmd.blend_constant);
+    bridge.c.d3d12_bridge_command_list_set_stencil_ref(cmd_list, cmd.stencil_reference);
 
     bind_vertex_buffers(cmd_list, cmd);
     bind_index_buffer(cmd_list, cmd);
@@ -153,7 +112,7 @@ pub fn record_render_pass_command(
     var draw_i: u32 = 0;
     while (draw_i < cmd.draw_count) : (draw_i += 1) {
         if (cmd.indexed) {
-            d3d12_bridge_command_list_draw_indexed_instanced(
+            bridge.c.d3d12_bridge_command_list_draw_indexed_instanced(
                 cmd_list,
                 cmd.index_count,
                 cmd.instance_count,
@@ -162,7 +121,7 @@ pub fn record_render_pass_command(
                 cmd.first_instance,
             );
         } else {
-            d3d12_bridge_command_list_draw_instanced(
+            bridge.c.d3d12_bridge_command_list_draw_instanced(
                 cmd_list,
                 cmd.vertex_count,
                 cmd.instance_count,
@@ -213,9 +172,9 @@ fn maybe_record_resolve(
     while (layer < layer_count) : (layer += 1) {
         const src_subresource = texture_subresource_index(target_view, layer);
         const dst_subresource = texture_subresource_index(resolve_view, layer);
-        d3d12_bridge_command_list_resource_barrier_transition(cmd_list, cmd.target, dc.RESOURCE_STATE_RENDER_TARGET, dc.RESOURCE_STATE_RESOLVE_SOURCE);
-        d3d12_bridge_command_list_resource_barrier_transition(cmd_list, cmd.resolve_target, dc.RESOURCE_STATE_RENDER_TARGET, dc.RESOURCE_STATE_RESOLVE_DEST);
-        d3d12_bridge_command_list_resolve_subresource(
+        bridge.c.d3d12_bridge_command_list_resource_barrier_transition(cmd_list, cmd.target, dc.RESOURCE_STATE_RENDER_TARGET, dc.RESOURCE_STATE_RESOLVE_SOURCE);
+        bridge.c.d3d12_bridge_command_list_resource_barrier_transition(cmd_list, cmd.resolve_target, dc.RESOURCE_STATE_RENDER_TARGET, dc.RESOURCE_STATE_RESOLVE_DEST);
+        bridge.c.d3d12_bridge_command_list_resolve_subresource(
             cmd_list,
             cmd.resolve_target,
             dst_subresource,
@@ -223,15 +182,15 @@ fn maybe_record_resolve(
             src_subresource,
             resolve_view_format(target_view, cmd.target_format),
         );
-        d3d12_bridge_command_list_resource_barrier_transition(cmd_list, cmd.resolve_target, dc.RESOURCE_STATE_RESOLVE_DEST, dc.RESOURCE_STATE_RENDER_TARGET);
-        d3d12_bridge_command_list_resource_barrier_transition(cmd_list, cmd.target, dc.RESOURCE_STATE_RESOLVE_SOURCE, dc.RESOURCE_STATE_RENDER_TARGET);
+        bridge.c.d3d12_bridge_command_list_resource_barrier_transition(cmd_list, cmd.resolve_target, dc.RESOURCE_STATE_RESOLVE_DEST, dc.RESOURCE_STATE_RENDER_TARGET);
+        bridge.c.d3d12_bridge_command_list_resource_barrier_transition(cmd_list, cmd.target, dc.RESOURCE_STATE_RESOLVE_SOURCE, dc.RESOURCE_STATE_RENDER_TARGET);
     }
 }
 
 fn bind_vertex_buffers(cmd_list: ?*anyopaque, cmd: RecordedRenderPass) void {
     for (cmd.vertex_buffers, cmd.vertex_buffer_offsets, cmd.vertex_buffer_sizes, 0..) |maybe_buf, offset, size, slot| {
         if (maybe_buf == null or size == 0 or size > std.math.maxInt(u32)) continue;
-        d3d12_bridge_command_list_ia_set_vertex_buffers(
+        bridge.c.d3d12_bridge_command_list_ia_set_vertex_buffers(
             cmd_list,
             @intCast(slot),
             1,
@@ -246,7 +205,7 @@ fn bind_vertex_buffers(cmd_list: ?*anyopaque, cmd: RecordedRenderPass) void {
 fn bind_index_buffer(cmd_list: ?*anyopaque, cmd: RecordedRenderPass) void {
     if (!cmd.indexed) return;
     if (cmd.index_buffer == null or cmd.index_buffer_size == 0 or cmd.index_buffer_size > std.math.maxInt(u32)) return;
-    d3d12_bridge_command_list_ia_set_index_buffer(
+    bridge.c.d3d12_bridge_command_list_ia_set_index_buffer(
         cmd_list,
         cmd.index_buffer,
         cmd.index_format,

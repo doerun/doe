@@ -8,6 +8,7 @@ const numeric_stability_runtime = @import("../numeric_stability_runtime.zig");
 const operator_artifacts = @import("../operator_artifacts.zig");
 const quirk = @import("../quirk/mod.zig");
 const replay = @import("../replay.zig");
+const tooling_io_context = @import("../tooling_io_context.zig");
 const trace = @import("../trace.zig");
 const runtime_cli_args = @import("runtime_cli_args.zig");
 const runtime_cli_artifacts = @import("runtime_cli_artifacts.zig");
@@ -85,7 +86,7 @@ pub fn runCli() !void {
         .exit_requested => return,
     };
 
-    var load_result = try runtime_cli_inputs.load(allocator, options);
+    var load_result = try runtime_cli_inputs.loadWithIo(allocator, tooling_io_context.IoContext.sync(), options);
     defer load_result.inputs.deinit(allocator);
 
     const commands = load_result.inputs.commands;

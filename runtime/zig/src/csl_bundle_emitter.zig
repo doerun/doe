@@ -1,5 +1,5 @@
 const std = @import("std");
-const doe_wgsl = @import("doe_wgsl/mod.zig");
+const doe_wgsl = @import("../doe_wgsl/mod.zig");
 
 const LAYOUT_MARKER = "//--- layout.csl ---\n";
 const PE_PROGRAM_MARKER = "//--- pe_program.csl ---\n";

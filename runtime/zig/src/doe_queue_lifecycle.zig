@@ -1,0 +1,155 @@
+const builtin = @import("builtin");
+const abi_core = @import("core/abi/wgpu_core_base_types.zig");
+const abi_callback = @import("core/abi/wgpu_callback_descriptor_types.zig");
+const queue_submit_ops = @import("backend/dropin_queue_submit.zig");
+const native_types = @import("doe_native_object_types.zig");
+const native_helpers = @import("doe_native_object_helpers.zig");
+const native_rt_helpers = @import("doe_native_runtime_helpers.zig");
+const native_exports = @import("doe_native_exports.zig");
+const queue_flush_breakdown = @import("doe_queue_flush_breakdown.zig");
+const shared = @import("doe_queue_submit_shared.zig");
+
+const has_vulkan = (builtin.os.tag == .linux);
+const alloc = native_helpers.alloc;
+const cast = native_helpers.cast;
+const toOpaque = native_helpers.toOpaque;
+const DoeQueue = native_types.DoeQueue;
+const metal_bridge = queue_submit_ops.metal_bridge;
+
+pub fn doeNativeQueueFlush(q_raw: ?*anyopaque) void {
+    const q = cast(DoeQueue, q_raw) orelse return;
+    if (q.dev.backend == .vulkan) {
+        if (comptime has_vulkan) {
+            const rt = native_rt_helpers.device_vk_runtime(q.dev) orelse return;
+            _ = rt.flush_queue() catch |err| {
+                shared.deliverInternalError(q.dev, "doe_queue_submit: queue flush: {s}", .{@errorName(err)});
+            };
+        }
+        return;
+    }
+    if (q.dev.backend == .d3d12) {
+        if (native_rt_helpers.device_d3d12_runtime(q.dev)) |rt| {
+            _ = rt.flush_queue() catch |err| {
+                shared.deliverInternalError(q.dev, "doe_queue_submit: d3d12 queue flush: {s}", .{@errorName(err)});
+            };
+        }
+        return;
+    }
+    shared.flush_pending_work(q);
+}
+
+pub fn doeNativeQueueFlushBreakdown(
+    q_raw: ?*anyopaque,
+    wait_completed_ns_out: *u64,
+    deferred_copy_ns_out: *u64,
+    deferred_resolve_ns_out: *u64,
+) void {
+    const q = cast(DoeQueue, q_raw) orelse {
+        wait_completed_ns_out.* = 0;
+        deferred_copy_ns_out.* = 0;
+        deferred_resolve_ns_out.* = 0;
+        return;
+    };
+    if (q.dev.backend == .vulkan) {
+        doeNativeQueueFlush(q_raw);
+        wait_completed_ns_out.* = 0;
+        deferred_copy_ns_out.* = 0;
+        deferred_resolve_ns_out.* = 0;
+        return;
+    }
+    if (q.dev.backend == .d3d12) {
+        if (native_rt_helpers.device_d3d12_runtime(q.dev)) |rt| {
+            wait_completed_ns_out.* = rt.flush_queue() catch |err| blk: {
+                shared.deliverInternalError(q.dev, "doe_queue_submit: d3d12 flush breakdown: {s}", .{@errorName(err)});
+                break :blk 0;
+            };
+        } else {
+            wait_completed_ns_out.* = 0;
+        }
+        deferred_copy_ns_out.* = 0;
+        deferred_resolve_ns_out.* = 0;
+        return;
+    }
+    const breakdown = queue_flush_breakdown.flushPendingWorkTimed(q);
+    wait_completed_ns_out.* = breakdown.waitCompletedNs;
+    deferred_copy_ns_out.* = breakdown.deferredCopyNs;
+    deferred_resolve_ns_out.* = breakdown.deferredResolveNs;
+}
+
+pub fn doeNativeQueueRelease(raw: ?*anyopaque) void {
+    if (cast(DoeQueue, raw)) |q| {
+        if (q.ref_count > 1) {
+            q.ref_count -= 1;
+            return;
+        }
+        native_helpers.label_store.remove(raw);
+        if (q.dev.queue == q) {
+            q.dev.queue = null;
+        }
+        if (q.dev.backend == .vulkan) {
+            if (comptime has_vulkan) {
+                if (native_rt_helpers.device_vk_runtime(q.dev)) |rt| {
+                    _ = rt.flush_queue() catch |err| {
+                        shared.deliverInternalError(q.dev, "doe_queue_submit: flush on queue release: {s}", .{@errorName(err)});
+                    };
+                }
+            }
+            const dev = q.dev;
+            alloc.destroy(q);
+            native_exports.doeNativeDeviceRelease(toOpaque(dev));
+            return;
+        }
+        if (q.dev.backend == .d3d12) {
+            if (native_rt_helpers.device_d3d12_runtime(q.dev)) |rt| {
+                _ = rt.flush_queue() catch |err| {
+                    shared.deliverInternalError(q.dev, "doe_queue_submit: d3d12 flush on queue release: {s}", .{@errorName(err)});
+                };
+            }
+            const dev = q.dev;
+            alloc.destroy(q);
+            native_exports.doeNativeDeviceRelease(toOpaque(dev));
+            return;
+        }
+        shared.flush_pending_work_dropin_sync(q);
+        if (q.mtl_event) |ev| metal_bridge.metal_bridge_release(ev);
+        const dev = q.dev;
+        alloc.destroy(q);
+        native_exports.doeNativeDeviceRelease(toOpaque(dev));
+    }
+}
+
+pub fn doeNativeQueueAddRef(raw: ?*anyopaque) void {
+    const q = cast(DoeQueue, raw) orelse return;
+    q.ref_count +|= 1;
+}
+
+const MAX_GLOBAL_WORK_DONE: usize = 128;
+
+const WorkDoneEntry = struct {
+    cb: ?*const fn (abi_callback.WGPUQueueWorkDoneStatus, abi_core.WGPUStringView, ?*anyopaque, ?*anyopaque) callconv(.c) void,
+    userdata1: ?*anyopaque,
+    userdata2: ?*anyopaque,
+};
+
+var global_work_done_buf: [MAX_GLOBAL_WORK_DONE]WorkDoneEntry = undefined;
+var global_work_done_count: usize = 0;
+
+pub fn drain_global_work_done() void {
+    const n = global_work_done_count;
+    global_work_done_count = 0;
+    for (global_work_done_buf[0..n]) |entry| {
+        if (entry.cb) |f| {
+            f(.success, .{ .data = null, .length = 0 }, entry.userdata1, entry.userdata2);
+        }
+    }
+}
+
+pub fn doeNativeQueueOnSubmittedWorkDone(q_raw: ?*anyopaque, info: abi_callback.WGPUQueueWorkDoneCallbackInfo) abi_core.WGPUFuture {
+    if (cast(DoeQueue, q_raw)) |q| {
+        shared.flush_pending_work_dropin_sync(q);
+    }
+    if (info.callback) |cb| {
+        cb(.success, .{ .data = null, .length = 0 }, info.userdata1, info.userdata2);
+    }
+    return .{ .id = 4 };
+}

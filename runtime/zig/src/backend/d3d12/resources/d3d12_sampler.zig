@@ -1,9 +1,7 @@
 const std = @import("std");
 const model_render_types = @import("../../../model_render_types.zig");
 const common_timing = @import("../../common/timing.zig");
-
-extern fn d3d12_bridge_device_create_sampler_heap(device: ?*anyopaque, num_descriptors: u32) callconv(.c) ?*anyopaque;
-extern fn d3d12_bridge_release(obj: ?*anyopaque) callconv(.c) void;
+const bridge = @import("../d3d12_bridge_decls.zig");
 
 const MAX_SAMPLERS: u32 = 256;
 
@@ -38,7 +36,7 @@ pub const SamplerState = struct {
         const encode_start = common_timing.now_ns();
 
         if (self.heap == null) {
-            self.heap = d3d12_bridge_device_create_sampler_heap(device, MAX_SAMPLERS) orelse return error.InvalidState;
+            self.heap = bridge.c.d3d12_bridge_device_create_sampler_heap(device, MAX_SAMPLERS) orelse return error.InvalidState;
         }
 
         if (self.next_index >= MAX_SAMPLERS) return error.UnsupportedFeature;
@@ -76,7 +74,7 @@ pub const SamplerState = struct {
     pub fn deinit(self: *SamplerState, allocator: std.mem.Allocator) void {
         self.map.deinit(allocator);
         if (self.heap) |h| {
-            d3d12_bridge_release(h);
+            bridge.c.d3d12_bridge_release(h);
             self.heap = null;
         }
     }

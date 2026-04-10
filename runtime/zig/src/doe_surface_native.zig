@@ -10,6 +10,7 @@
 // and acquire fail explicitly until a real platform surface is attached.
 
 const std = @import("std");
+const log = std.log.scoped(.doe_surface_native);
 const builtin = @import("builtin");
 const has_vulkan = (builtin.os.tag == .linux);
 const backend_surface_ops = @import("backend/dropin_surface_ops.zig");
@@ -243,7 +244,7 @@ pub export fn doeNativeSurfaceRelease(surf_raw: ?*anyopaque) callconv(.c) void {
         if (surf.vk_runtime_ref) |rt_ptr| {
             const rt: *NativeVulkanRuntime = @ptrCast(@alignCast(rt_ptr));
             rt.release_surface(surf.handle) catch |err| {
-                std.debug.print("warn: doe_surface_native: surface release: {s}\n", .{@errorName(err)});
+                log.warn("surface release: {s}", .{@errorName(err)});
             };
         }
     }

@@ -32,6 +32,11 @@ fn addExistingIncludePaths(
     }
 }
 
+fn addBackendBridgeIncludePaths(artifact: *std.Build.Step.Compile, b: *std.Build) void {
+    artifact.addIncludePath(b.path("src/backend/d3d12"));
+    artifact.addIncludePath(b.path("src/backend/metal"));
+}
+
 fn sha256HexAlloc(allocator: std.mem.Allocator, input: []const u8) []u8 {
     var digest: [32]u8 = undefined;
     std.crypto.hash.sha2.Sha256.hash(input, &digest, .{});
@@ -165,6 +170,7 @@ fn addProofProvenanceOptions(options: *std.Build.Step.Options, provenance: Proof
 
 fn configure_non_windows_graphics(artifact: *std.Build.Step.Compile, b: *std.Build, target: std.Build.ResolvedTarget) void {
     artifact.linkSystemLibrary("dl");
+    addBackendBridgeIncludePaths(artifact, b);
     artifact.addCSourceFile(.{
         .file = b.path("src/backend/d3d12/d3d12_bridge_stubs.c"),
         .flags = &.{},
@@ -488,7 +494,7 @@ pub fn build(b: *std.Build) void {
     const module_runner = b.addExecutable(.{
         .name = "module-core-runner",
         .root_module = b.createModule(.{
-            .root_source_file = b.path("src/module_runner.zig"),
+            .root_source_file = b.path("src/cli/module_runner_main.zig"),
             .target = target,
             .optimize = optimize,
             .imports = &.{
@@ -516,7 +522,7 @@ pub fn build(b: *std.Build) void {
     const emit_msl_exe = b.addExecutable(.{
         .name = "doe-emit-msl",
         .root_module = b.createModule(.{
-            .root_source_file = b.path("src/main_emit_msl.zig"),
+            .root_source_file = b.path("src/cli/main_emit_msl.zig"),
             .target = target,
             .optimize = optimize,
             .imports = &.{
@@ -533,7 +539,7 @@ pub fn build(b: *std.Build) void {
     const emit_spirv_exe = b.addExecutable(.{
         .name = "doe-emit-spirv",
         .root_module = b.createModule(.{
-            .root_source_file = b.path("src/main_emit_spirv.zig"),
+            .root_source_file = b.path("src/cli/main_emit_spirv.zig"),
             .target = target,
             .optimize = optimize,
             .imports = &.{
@@ -550,7 +556,7 @@ pub fn build(b: *std.Build) void {
     const webgpu_plan_executor = b.addExecutable(.{
         .name = "webgpu-plan-executor",
         .root_module = b.createModule(.{
-            .root_source_file = b.path("src/main_webgpu_plan_executor.zig"),
+            .root_source_file = b.path("src/cli/main_webgpu_plan_executor.zig"),
             .target = target,
             .optimize = optimize,
         }),
@@ -578,7 +584,7 @@ pub fn build(b: *std.Build) void {
     const doe_plan_executor = b.addExecutable(.{
         .name = "doe-plan-executor",
         .root_module = b.createModule(.{
-            .root_source_file = b.path("src/main_doe_plan_executor.zig"),
+            .root_source_file = b.path("src/cli/main_doe_plan_executor.zig"),
             .target = target,
             .optimize = optimize,
             .imports = &.{
@@ -606,7 +612,7 @@ pub fn build(b: *std.Build) void {
     const csl_sim_runner = b.addExecutable(.{
         .name = "doe-csl-sim-runner",
         .root_module = b.createModule(.{
-            .root_source_file = b.path("src/csl_sim_runner.zig"),
+            .root_source_file = b.path("src/cli/csl_sim_runner.zig"),
             .target = target,
             .optimize = optimize,
         }),
@@ -620,7 +626,7 @@ pub fn build(b: *std.Build) void {
     const csl_bundle_emitter = b.addExecutable(.{
         .name = "doe-csl-bundle-emitter",
         .root_module = b.createModule(.{
-            .root_source_file = b.path("src/csl_bundle_emitter.zig"),
+            .root_source_file = b.path("src/cli/csl_bundle_emitter.zig"),
             .target = target,
             .optimize = optimize,
             .imports = &.{
@@ -636,7 +642,7 @@ pub fn build(b: *std.Build) void {
     const csl_host_plan_tool = b.addExecutable(.{
         .name = "doe-csl-host-plan-tool",
         .root_module = b.createModule(.{
-            .root_source_file = b.path("src/csl_host_plan_tool.zig"),
+            .root_source_file = b.path("src/cli/csl_host_plan_tool.zig"),
             .target = target,
             .optimize = optimize,
         }),
@@ -953,10 +959,32 @@ pub fn build(b: *std.Build) void {
     shader_bench_run_step.dependOn(&install_shader_bench.step);
     shader_bench_run_step.dependOn(&run_shader_bench.step);
 
+    const host_hotpath_bench_exe = b.addExecutable(.{
+        .name = "doe-host-hotpath-bench",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/cli/main_host_hotpath_bench.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{
+                .{ .name = "build_options", .module = build_options_module },
+            },
+        }),
+    });
+    host_hotpath_bench_exe.linkLibC();
+    const install_host_hotpath_bench = b.addInstallArtifact(host_hotpath_bench_exe, .{});
+    const host_hotpath_bench_step = b.step("bench-host-hotpaths", "Build the host hotpath scalar-vs-SIMD benchmark");
+    host_hotpath_bench_step.dependOn(&install_host_hotpath_bench.step);
+
+    const run_host_hotpath_bench = b.addRunArtifact(host_hotpath_bench_exe);
+    if (b.args) |args| run_host_hotpath_bench.addArgs(args);
+    const host_hotpath_bench_run_step = b.step("bench-host-hotpaths-run", "Build and run the host hotpath scalar-vs-SIMD benchmark");
+    host_hotpath_bench_run_step.dependOn(&install_host_hotpath_bench.step);
+    host_hotpath_bench_run_step.dependOn(&run_host_hotpath_bench.step);
+
     const compilation_bench_exe = b.addExecutable(.{
         .name = "doe-compilation-bench",
         .root_module = b.createModule(.{
-            .root_source_file = b.path("src/main_bench_compilation.zig"),
+            .root_source_file = b.path("src/cli/main_bench_compilation.zig"),
             .target = target,
             .optimize = optimize,
             .imports = &.{
@@ -978,7 +1006,7 @@ pub fn build(b: *std.Build) void {
     const runtime_compile_report_exe = b.addExecutable(.{
         .name = "doe-runtime-compile-report",
         .root_module = b.createModule(.{
-            .root_source_file = b.path("src/main_runtime_compile_report.zig"),
+            .root_source_file = b.path("src/cli/main_runtime_compile_report.zig"),
             .target = target,
             .optimize = optimize,
             .imports = &.{

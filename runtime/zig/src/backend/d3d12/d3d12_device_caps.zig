@@ -10,6 +10,7 @@ const builtin = @import("builtin");
 const abi_callback = @import("../../core/abi/wgpu_callback_descriptor_types.zig");
 const abi_feature = @import("../../core/abi/wgpu_feature_base_types.zig");
 const model_gpu_types = @import("../../model_texture_value_types.zig");
+const bridge = @import("d3d12_bridge_decls.zig");
 
 // D3D12 is only available on Windows.
 const D3D12_AVAILABLE = builtin.os.tag == .windows;
@@ -92,17 +93,6 @@ fn build_limits() abi_callback.WGPULimits {
 // ============================================================
 // Bridge extern declarations — resolved by d3d12_bridge.c at link time.
 // ============================================================
-
-extern fn d3d12_bridge_device_get_shader_model(device: ?*anyopaque) callconv(.c) c_int;
-extern fn d3d12_bridge_device_get_wave_lane_count_min(device: ?*anyopaque) callconv(.c) c_int;
-extern fn d3d12_bridge_device_get_wave_lane_count_max(device: ?*anyopaque) callconv(.c) c_int;
-extern fn d3d12_bridge_device_supports_native_16bit(device: ?*anyopaque) callconv(.c) c_int;
-extern fn d3d12_bridge_device_supports_color_attachment_blend(device: ?*anyopaque, format: u32) callconv(.c) c_int;
-extern fn d3d12_bridge_device_supports_storage_binding(device: ?*anyopaque, format: u32) callconv(.c) c_int;
-extern fn d3d12_bridge_device_supports_storage_read_write(device: ?*anyopaque, format: u32) callconv(.c) c_int;
-extern fn d3d12_bridge_device_supports_render_target(device: ?*anyopaque, format: u32) callconv(.c) c_int;
-extern fn d3d12_bridge_device_supports_texture_component_swizzle(device: ?*anyopaque) callconv(.c) c_int;
-extern fn d3d12_bridge_device_supports_bc_sliced_3d(device: ?*anyopaque) callconv(.c) c_int;
 
 // ============================================================
 // D3D12DeviceCaps — runtime-queried hardware capabilities.
@@ -194,21 +184,21 @@ const CACHE_ALLOCATOR = std.heap.page_allocator;
 
 fn supports_all_storage_formats(device: ?*anyopaque, formats: []const u32) bool {
     for (formats) |format| {
-        if (d3d12_bridge_device_supports_storage_binding(device, format) != 1) return false;
+        if (bridge.c.d3d12_bridge_device_supports_storage_binding(device, format) != 1) return false;
     }
     return true;
 }
 
 fn supports_all_storage_read_write_formats(device: ?*anyopaque, formats: []const u32) bool {
     for (formats) |format| {
-        if (d3d12_bridge_device_supports_storage_read_write(device, format) != 1) return false;
+        if (bridge.c.d3d12_bridge_device_supports_storage_read_write(device, format) != 1) return false;
     }
     return true;
 }
 
 fn supports_all_color_attachment_blend_formats(device: ?*anyopaque, formats: []const u32) bool {
     for (formats) |format| {
-        if (d3d12_bridge_device_supports_color_attachment_blend(device, format) != 1) return false;
+        if (bridge.c.d3d12_bridge_device_supports_color_attachment_blend(device, format) != 1) return false;
     }
     return true;
 }
@@ -217,10 +207,10 @@ pub fn query_device_caps(device: ?*anyopaque) D3D12DeviceCaps {
     if (device == null) return D3D12_CAPS_STATIC;
     if (!D3D12_AVAILABLE) return D3D12_CAPS_STATIC;
 
-    const sm = d3d12_bridge_device_get_shader_model(device);
-    const wl_min_raw = d3d12_bridge_device_get_wave_lane_count_min(device);
-    const wl_max_raw = d3d12_bridge_device_get_wave_lane_count_max(device);
-    const native_16 = d3d12_bridge_device_supports_native_16bit(device);
+    const sm = bridge.c.d3d12_bridge_device_get_shader_model(device);
+    const wl_min_raw = bridge.c.d3d12_bridge_device_get_wave_lane_count_min(device);
+    const wl_max_raw = bridge.c.d3d12_bridge_device_get_wave_lane_count_max(device);
+    const native_16 = bridge.c.d3d12_bridge_device_supports_native_16bit(device);
 
     const wl_min: u32 = if (wl_min_raw > 0) @intCast(wl_min_raw) else D3D12_DEFAULT_WAVE_SIZE;
     const wl_max: u32 = if (wl_max_raw > 0) @intCast(wl_max_raw) else D3D12_DEFAULT_WAVE_SIZE;
@@ -231,13 +221,13 @@ pub fn query_device_caps(device: ?*anyopaque) D3D12DeviceCaps {
     const shader_f16 = sm >= SM_6_2 and native_16 == 1;
     // SubgroupsF16 requires both ShaderF16 and Subgroups.
     const sub_f16 = subgroups and shader_f16;
-    const bc_sliced_3d = d3d12_bridge_device_supports_bc_sliced_3d(device) == 1;
+    const bc_sliced_3d = bridge.c.d3d12_bridge_device_supports_bc_sliced_3d(device) == 1;
     const float32_blendable = supports_all_color_attachment_blend_formats(device, &FLOAT32_BLENDABLE_FORMATS);
     const tier1 = supports_all_storage_formats(device, &TIER1_STORAGE_FORMATS);
     const tier2 = tier1 and
         supports_all_storage_read_write_formats(device, &TIER2_READ_WRITE_FORMATS) and
-        d3d12_bridge_device_supports_render_target(device, model_gpu_types.WGPUTextureFormat_RG11B10Ufloat) == 1;
-    const texture_component_swizzle = d3d12_bridge_device_supports_texture_component_swizzle(device) == 1;
+        bridge.c.d3d12_bridge_device_supports_render_target(device, model_gpu_types.WGPUTextureFormat_RG11B10Ufloat) == 1;
+    const texture_component_swizzle = bridge.c.d3d12_bridge_device_supports_texture_component_swizzle(device) == 1;
 
     return .{
         .shader_model = sm,

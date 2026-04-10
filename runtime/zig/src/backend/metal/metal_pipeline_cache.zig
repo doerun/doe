@@ -31,6 +31,8 @@
 const std = @import("std");
 const builtin = @import("builtin");
 const common_timing = @import("../common/timing.zig");
+const process_roots = @import("../../runtime/process_roots.zig");
+const bridge = @import("metal_bridge_decls.zig");
 
 // ============================================================
 // Constants
@@ -63,51 +65,17 @@ const MAX_MANIFEST_BYTES: usize = 64 * 1024;
 /// Maximum length of a single compute kernel name stored in the manifest.
 const MAX_COMPUTE_KEY_LEN: usize = 256;
 
-const c_allocator = std.heap.c_allocator;
-
 // ============================================================
 // Bridge declarations (implemented in metal_bridge.m)
-
-extern fn metal_bridge_release(obj: ?*anyopaque) callconv(.c) void;
-
-extern fn metal_bridge_binary_archive_create(
-    device: ?*anyopaque,
-    path: [*:0]const u8,
-    error_buf: ?[*]u8,
-    error_cap: usize,
-) callconv(.c) ?*anyopaque;
-
-extern fn metal_bridge_binary_archive_serialize(
-    archive: ?*anyopaque,
-    error_buf: ?[*]u8,
-    error_cap: usize,
-) callconv(.c) u32;
 
 // Compile-or-serve: creates a compute PSO using the archive as binary source.
 // On hit, returns pre-compiled binary (skips newLibraryWithSource).  On miss,
 // compiles fresh and records the result into the archive via
 // addComputePipelineFunctionsWithDescriptor.
-extern fn metal_bridge_device_new_compute_pipeline_with_archive(
-    device: ?*anyopaque,
-    function: ?*anyopaque,
-    archive: ?*anyopaque,
-    error_buf: ?[*]u8,
-    error_cap: usize,
-) callconv(.c) ?*anyopaque;
 
 // Compile-or-serve for render pipelines.  Same semantics as compute.
-extern fn metal_bridge_device_new_render_pipeline_with_archive(
-    device: ?*anyopaque,
-    pixel_format: u32,
-    support_icb: c_int,
-    archive: ?*anyopaque,
-    error_buf: ?[*]u8,
-    error_cap: usize,
-) callconv(.c) ?*anyopaque;
 
 // Device property queries for fingerprint computation.
-extern fn metal_bridge_device_registry_id(device: ?*anyopaque) callconv(.c) u64;
-extern fn metal_bridge_device_name(device: ?*anyopaque, buf: [*]u8, cap: usize) callconv(.c) void;
 
 // ============================================================
 // Telemetry
@@ -187,7 +155,7 @@ pub const MetalPipelineCache = struct {
         validate_or_discard_archive(allocator, device, resolved_dir);
 
         var err_buf: [BRIDGE_ERROR_CAP]u8 = undefined;
-        self.archive = metal_bridge_binary_archive_create(
+        self.archive = bridge.metal_bridge_binary_archive_create(
             device,
             @ptrCast(path.ptr),
             &err_buf,
@@ -207,7 +175,7 @@ pub const MetalPipelineCache = struct {
     pub fn deinit(self: *MetalPipelineCache) void {
         const allocator = self.allocator;
         if (self.dirty) self.flush_archive();
-        if (self.archive) |a| metal_bridge_release(a);
+        if (self.archive) |a| bridge.metal_bridge_release(a);
         if (self.archive_path) |p| allocator.free(p);
         for (self.manifest_compute_keys.items) |k| allocator.free(k);
         self.manifest_compute_keys.deinit(allocator);
@@ -232,7 +200,7 @@ pub const MetalPipelineCache = struct {
         const archive = self.archive orelse return null;
         const t0 = common_timing.now_ns();
         var err_buf: [BRIDGE_ERROR_CAP]u8 = undefined;
-        const pso = metal_bridge_device_new_compute_pipeline_with_archive(
+        const pso = bridge.metal_bridge_device_new_compute_pipeline_with_archive(
             self.device,
             function,
             archive,
@@ -266,7 +234,7 @@ pub const MetalPipelineCache = struct {
         const archive = self.archive orelse return null;
         const t0 = common_timing.now_ns();
         var err_buf: [BRIDGE_ERROR_CAP]u8 = undefined;
-        const pso = metal_bridge_device_new_render_pipeline_with_archive(
+        const pso = bridge.metal_bridge_device_new_render_pipeline_with_archive(
             self.device,
             pixel_format,
             support_icb,
@@ -315,7 +283,7 @@ pub const MetalPipelineCache = struct {
             const pso = self.compile_or_serve_render(fmt, 1);
             if (pso != null) {
                 // PSO is retained by the archive; release our extra ref.
-                metal_bridge_release(pso);
+                bridge.metal_bridge_release(pso);
                 warmed +%= 1;
             }
         }
@@ -351,7 +319,7 @@ pub const MetalPipelineCache = struct {
         const archive = self.archive orelse return;
         if (!self.dirty) return;
         var err_buf: [BRIDGE_ERROR_CAP]u8 = undefined;
-        const ok = metal_bridge_binary_archive_serialize(archive, &err_buf, BRIDGE_ERROR_CAP);
+        const ok = bridge.metal_bridge_binary_archive_serialize(archive, &err_buf, BRIDGE_ERROR_CAP);
         if (ok != 0) self.telemetry.serialize_count +%= 1;
         self.dirty = false;
         self.last_flush_ns = common_timing.now_ns();
@@ -390,9 +358,9 @@ pub const MetalPipelineCache = struct {
 fn build_device_fingerprint(allocator: std.mem.Allocator, device: ?*anyopaque) ![]u8 {
     var name_buf: [DEVICE_NAME_CAP]u8 = undefined;
     @memset(&name_buf, 0);
-    metal_bridge_device_name(device, &name_buf, DEVICE_NAME_CAP);
+    bridge.metal_bridge_device_name(device, &name_buf, DEVICE_NAME_CAP);
     const name_len = std.mem.indexOfScalar(u8, &name_buf, 0) orelse DEVICE_NAME_CAP;
-    const registry_id = metal_bridge_device_registry_id(device);
+    const registry_id = bridge.metal_bridge_device_registry_id(device);
     return try std.fmt.allocPrint(allocator, "{s}:{x}", .{ name_buf[0..name_len], registry_id });
 }
 
@@ -533,7 +501,7 @@ pub export fn doeNativeMetalPipelineCacheCreate(
     cache_dir: ?[*:0]const u8,
 ) callconv(.c) ?*anyopaque {
     const dir: []const u8 = if (cache_dir) |d| std.mem.span(d) else "";
-    const cache = MetalPipelineCache.init(c_allocator, device, dir) catch return null;
+    const cache = MetalPipelineCache.init(process_roots.metalPipelineCacheAllocator(), device, dir) catch return null;
     return @ptrCast(cache);
 }
 

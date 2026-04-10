@@ -1,4 +1,5 @@
 const core = @import("wgpu_dropin_ext_a_core.zig");
+const process_roots = @import("runtime/process_roots.zig");
 const std = core.std;
 const types = core.types;
 const p0 = core.p0;
@@ -121,8 +122,8 @@ pub const RenderPipelineDesc = extern struct {
 };
 
 pub var g_next_async_future_id = std.atomic.Value(u64).init(32);
-pub var g_compute_inflight = singleflight.Registry(ComputePipelineAsyncRequest){};
-pub var g_render_inflight = singleflight.Registry(RenderPipelineAsyncRequest){};
+pub var g_compute_inflight = singleflight.Registry(ComputePipelineAsyncRequest).init(process_roots.dropinAsyncPipelineAllocator());
+pub var g_render_inflight = singleflight.Registry(RenderPipelineAsyncRequest).init(process_roots.dropinAsyncPipelineAllocator());
 
 pub fn next_async_future_id() u64 {
     return g_next_async_future_id.fetchAdd(1, .monotonic);
@@ -447,7 +448,7 @@ pub fn set_render_pipeline_request_error(req: *RenderPipelineAsyncRequest, messa
 
 pub fn run_compute_pipeline_async(ctx_raw: ?*anyopaque) void {
     const entry: *ComputeInflightEntry = @ptrCast(@alignCast(ctx_raw orelse return));
-    const head = g_compute_inflight.take(std.heap.c_allocator, entry) orelse return;
+    const head = g_compute_inflight.take(entry) orelse return;
     const lead = head;
     lead.pipeline = native.doeNativeDeviceCreateComputePipeline(lead.device, &lead.descriptor);
     pipeline_cache_integration.recordComputePipelineCreation(if (lead.entry_point_bytes) |ep| ep else null);
@@ -476,7 +477,7 @@ pub fn run_compute_pipeline_async(ctx_raw: ?*anyopaque) void {
 
 pub fn run_render_pipeline_async(ctx_raw: ?*anyopaque) void {
     const entry: *RenderInflightEntry = @ptrCast(@alignCast(ctx_raw orelse return));
-    const head = g_render_inflight.take(std.heap.c_allocator, entry) orelse return;
+    const head = g_render_inflight.take(entry) orelse return;
     const lead = head;
     lead.pipeline = native.doeNativeDeviceCreateRenderPipeline(lead.device, @ptrCast(&lead.descriptor));
     pipeline_cache_integration.recordRenderPipelineCreation();

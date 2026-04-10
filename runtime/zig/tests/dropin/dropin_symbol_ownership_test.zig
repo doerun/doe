@@ -16,7 +16,7 @@ test "symbol ownership config parser owns symbol names" {
         std.testing.allocator.free(owned);
     }
 
-    try std.testing.expectEqual(@as(usize, 5), owned.len);
+    try std.testing.expectEqual(@as(usize, 18), owned.len);
     try std.testing.expect(std.mem.eql(u8, owned[0].symbol, "wgpuGetProcAddress"));
     try std.testing.expectEqual(ownership.SymbolOwner.shared, owned[0].owner);
 }

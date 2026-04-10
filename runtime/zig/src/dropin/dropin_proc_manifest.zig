@@ -1,6 +1,7 @@
 const std = @import("std");
 const dropin_ext_b = @import("../wgpu_dropin_ext_b.zig");
 const dropin_ext_c = @import("../wgpu_dropin_ext_c.zig");
+const dropin_symbol_ownership = @import("dropin_symbol_ownership.zig");
 
 const build_options = @import("build_options");
 const TIER = build_options.build_tier;
@@ -128,13 +129,36 @@ const FULL_PROC_ENTRIES = .{
     .{ .symbol = "wgpuSurfaceCapabilitiesFreeMembers", .proc = &N.doeNativeSurfaceCapabilitiesFreeMembers },
 };
 
+fn resolveEntryProc(comptime FnType: type, comptime entry: anytype) FnType {
+    if (@TypeOf(entry.proc) != FnType) {
+        @compileError(std.fmt.comptimePrint(
+            "drop-in proc manifest type mismatch for {s}: expected {s}, found {s}",
+            .{
+                entry.symbol,
+                @typeName(FnType),
+                @typeName(@TypeOf(entry.proc)),
+            },
+        ));
+    }
+    return entry.proc;
+}
+
 fn resolveFromEntries(comptime FnType: type, comptime symbol_name: [:0]const u8, comptime entries: anytype) ?FnType {
     inline for (entries) |entry| {
         if (comptime std.mem.eql(u8, symbol_name, entry.symbol)) {
-            return @ptrCast(entry.proc);
+            return resolveEntryProc(FnType, entry);
         }
     }
     return null;
+}
+
+fn hasSymbolInEntries(symbol_name: []const u8, comptime entries: anytype) bool {
+    inline for (entries) |entry| {
+        if (std.mem.eql(u8, symbol_name, entry.symbol)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 fn assertUniqueEntryGroups(comptime groups: anytype) void {
@@ -157,6 +181,7 @@ fn assertUniqueEntryGroups(comptime groups: anytype) void {
 }
 
 comptime {
+    @setEvalBranchQuota(100_000);
     const active_groups = switch (TIER) {
         .compute => .{CORE_PROC_ENTRIES},
         .headless => .{ CORE_PROC_ENTRIES, HEADLESS_PROC_ENTRIES },
@@ -180,4 +205,23 @@ pub fn resolveDoeNativeProc(comptime FnType: type, comptime symbol_name: [:0]con
         }
     }
     return null;
+}
+
+pub fn manifestOwnerForSymbol(symbol_name: []const u8) ?dropin_symbol_ownership.SymbolOwner {
+    if (hasSymbolInEntries(symbol_name, CORE_PROC_ENTRIES)) return .shared;
+    if (comptime TIER != .compute) {
+        if (hasSymbolInEntries(symbol_name, HEADLESS_PROC_ENTRIES)) return .shared;
+    }
+    if (comptime TIER == .full) {
+        if (hasSymbolInEntries(symbol_name, FULL_PROC_ENTRIES)) return .shared;
+    }
+    return null;
+}
+
+test "manifest owner reports shared ownership for mapped native procs" {
+    try std.testing.expectEqual(
+        dropin_symbol_ownership.SymbolOwner.shared,
+        manifestOwnerForSymbol("wgpuCreateInstance").?,
+    );
+    try std.testing.expect(manifestOwnerForSymbol("wgpuDefinitelyMissing") == null);
 }

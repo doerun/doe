@@ -1,6 +1,7 @@
 // Render pass creation, draw call execution, and render bundle replay.
 // Pipeline creation in vk_render_pipeline.zig.
 const std = @import("std");
+const log = std.log.scoped(.vk_render);
 const c = @import("vk_constants.zig");
 const vk_device = @import("vk_device.zig");
 const vk_sync = @import("vk_sync.zig");
@@ -776,7 +777,7 @@ pub fn execute_render_bundles(
     c.vkCmdSetScissor(self.primary_command_buffer, 0, 1, @ptrCast(&scissor));
     for (bundles) |b| {
         render_bundle.replay_bundle_vk(b, self.primary_command_buffer, color_format, pass_sample_count) catch |err| {
-            std.debug.print("vk_render: bundle replay failed: {}\n", .{err});
+            log.warn("bundle replay failed: {}", .{err});
             continue;
         };
     }

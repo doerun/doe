@@ -1,5 +1,6 @@
 const std = @import("std");
 const model_render_types = @import("../../../model_render_types.zig");
+const bridge = @import("../d3d12_bridge_decls.zig");
 
 pub const ResolvedVertexAttribute = struct {
     format: u32,

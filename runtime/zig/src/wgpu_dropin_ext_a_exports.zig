@@ -1,5 +1,6 @@
 const core = @import("wgpu_dropin_ext_a_core.zig");
 const pipeline = @import("wgpu_dropin_ext_a_pipeline.zig");
+const process_roots = @import("runtime/process_roots.zig");
 
 // Explicit aliases from core (replaces `usingnamespace core`)
 const std = core.std;
@@ -162,7 +163,7 @@ pub export fn wgpuDeviceCreateComputePipelineAsync(a0: types.WGPUDevice, a1: *co
         }
         return future;
     };
-    const joined = pipeline.g_compute_inflight.join_or_create(std.heap.c_allocator, compute_pipeline_request_key(req), req) catch {
+    const joined = pipeline.g_compute_inflight.join_or_create(compute_pipeline_request_key(req), req) catch {
         free_compute_pipeline_request(req);
         if (a2.callback) |cb| {
             const msg = "async pipeline single-flight allocation failed";
@@ -171,11 +172,11 @@ pub export fn wgpuDeviceCreateComputePipelineAsync(a0: types.WGPUDevice, a1: *co
         return future;
     };
     if (joined.leader) {
-        task_pool.submit(.{
+        task_pool.submitWithAllocator(process_roots.dropinAsyncPipelineAllocator(), .{
             .run = run_compute_pipeline_async,
             .ctx = joined.entry,
         }) catch {
-            _ = pipeline.g_compute_inflight.take(std.heap.c_allocator, joined.entry);
+            _ = pipeline.g_compute_inflight.take(joined.entry);
             free_compute_pipeline_request(req);
             if (a2.callback) |cb| {
                 const msg = "async pipeline worker submit failed";
@@ -199,7 +200,7 @@ pub export fn wgpuDeviceCreateRenderPipelineAsync(a0: types.WGPUDevice, a1: *con
         }
         return future;
     };
-    const joined = pipeline.g_render_inflight.join_or_create(std.heap.c_allocator, render_pipeline_request_key(req), req) catch {
+    const joined = pipeline.g_render_inflight.join_or_create(render_pipeline_request_key(req), req) catch {
         free_render_pipeline_request(req);
         if (a2.callback) |cb| {
             const msg = "async render single-flight allocation failed";
@@ -208,11 +209,11 @@ pub export fn wgpuDeviceCreateRenderPipelineAsync(a0: types.WGPUDevice, a1: *con
         return future;
     };
     if (joined.leader) {
-        task_pool.submit(.{
+        task_pool.submitWithAllocator(process_roots.dropinAsyncPipelineAllocator(), .{
             .run = run_render_pipeline_async,
             .ctx = joined.entry,
         }) catch {
-            _ = pipeline.g_render_inflight.take(std.heap.c_allocator, joined.entry);
+            _ = pipeline.g_render_inflight.take(joined.entry);
             free_render_pipeline_request(req);
             if (a2.callback) |cb| {
                 const msg = "async render worker submit failed";

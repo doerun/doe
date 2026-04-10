@@ -2,8 +2,7 @@
 // Sharded from metal_native_runtime.zig to stay under the line-limit policy.
 
 const std = @import("std");
-
-extern fn metal_bridge_release(obj: ?*anyopaque) callconv(.c) void;
+const bridge = @import("metal_bridge_decls.zig");
 
 pub const MAX_POOL_ENTRIES_PER_SIZE: usize = 8;
 pub const BufferPool = std.AutoHashMapUnmanaged(usize, std.ArrayListUnmanaged(?*anyopaque));
@@ -17,18 +16,18 @@ pub fn pool_pop(pool: *BufferPool, size: usize) ?*anyopaque {
 
 pub fn pool_push_or_release(pool: *BufferPool, allocator: std.mem.Allocator, size: usize, buf: ?*anyopaque) void {
     const entry = pool.getOrPut(allocator, size) catch {
-        metal_bridge_release(buf);
+        bridge.metal_bridge_release(buf);
         return;
     };
     if (!entry.found_existing) {
         entry.value_ptr.* = .{};
     }
     if (entry.value_ptr.items.len >= MAX_POOL_ENTRIES_PER_SIZE) {
-        metal_bridge_release(buf);
+        bridge.metal_bridge_release(buf);
         return;
     }
     entry.value_ptr.append(allocator, buf) catch {
-        metal_bridge_release(buf);
+        bridge.metal_bridge_release(buf);
     };
 }
 

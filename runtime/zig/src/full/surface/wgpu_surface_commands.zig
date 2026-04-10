@@ -1,4 +1,5 @@
 const std = @import("std");
+const log = std.log.scoped(.wgpu_surface_commands);
 const common_timing = @import("../../backend/common/timing.zig");
 const model_surface_control_types = @import("../../model_surface_control_types.zig");
 const abi_execution = @import("../../core/abi/wgpu_execution_types.zig");
@@ -156,7 +157,7 @@ pub fn executeSurfaceRelease(self: anytype, surface_cmd: model_surface_control_t
     }
     if (removed.value.configured) {
         _ = self.unconfigureSurface(removed.value.surface) catch |err| {
-            std.debug.print("warn: wgpu_surface_commands: surface unconfigure during release: {s}\n", .{@errorName(err)});
+            log.warn("surface unconfigure during release: {s}", .{@errorName(err)});
         };
     }
     self.releaseSurface(removed.value.surface);

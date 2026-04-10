@@ -2,6 +2,7 @@ const std = @import("std");
 const d3d12_descriptors = @import("../d3d12_descriptors.zig");
 const d3d12_texture_view = @import("../resources/d3d12_texture_view.zig");
 const d3d12_sampler = @import("../resources/d3d12_sampler.zig");
+const bridge = @import("../d3d12_bridge_decls.zig");
 
 // --- WebGPU binding limits ---
 const MAX_FLAT_BIND: usize = 64;

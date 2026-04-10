@@ -1,6 +1,6 @@
 const std = @import("std");
-const simulator = @import("doe_wgsl/emit_csl_simulator.zig");
-const spec = @import("doe_wgsl/csl_spec.zig");
+const simulator = @import("../doe_wgsl/emit_csl_simulator.zig");
+const spec = @import("../doe_wgsl/csl_spec.zig");
 
 const RunnerError = error{
     MissingValue,
