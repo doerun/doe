@@ -560,6 +560,66 @@ console.log(JSON.stringify(normalized));
         self.assertEqual(read_steps[0]["captureSourceBufferId"], "buffer_2227")
         self.assertEqual(read_steps[1]["captureSourceBufferId"], "buffer_2228")
 
+    def test_command_plan_roundtrip_defaults_to_unknown_directional_metadata(self) -> None:
+        script = f"""
+import {{ normalizePlan }} from {json.dumps((REPO_ROOT / "bench" / "executors" / "node-webgpu" / "plan.js").resolve().as_uri())};
+const plan = {{
+  schemaVersion: 1,
+  planKind: 'benchmark_ir',
+  workloadId: 'sample_command_plan',
+  planSha256: 'sample-command-plan',
+  compatibilityCommandsSha256: 'sample-command-plan',
+  commands: [
+    {{
+      kind: 'buffer_write',
+      handle: 1,
+      bufferSize: 16,
+      data: [1, 2, 3, 4],
+    }},
+    {{
+      kind: 'kernel_dispatch',
+      kernel: 'sample.wgsl',
+      x: 1,
+      y: 1,
+      z: 1,
+      bindings: [
+        {{
+          binding: 0,
+          resource_handle: 1,
+          buffer_size: 16,
+          buffer_type: 'uniform',
+        }},
+        {{
+          binding: 1,
+          resource_handle: 2,
+          buffer_size: 16,
+          buffer_type: 'storage',
+        }},
+      ],
+    }},
+  ],
+}};
+const normalized = normalizePlan(plan);
+console.log(JSON.stringify({{ domain: normalized.domain, comparable: normalized.comparable }}));
+"""
+        result = subprocess.run(
+            ["node", "--input-type=module", "-e", script],
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertEqual(payload["domain"], "unknown")
+        self.assertFalse(payload["comparable"])
+
+    def test_executor_source_does_not_use_private_dispatch_bound_fast_path(self) -> None:
+        source = (REPO_ROOT / "bench" / "executors" / "node-webgpu" / "executor.js").read_text(
+            encoding="utf-8"
+        )
+        self.assertNotIn("pass._dispatchBound(", source)
+
     def test_evaluate_execution_determinism_uses_host_byte_policy(self) -> None:
         script = f"""
 import {{ evaluateExecutionDeterminism }} from {json.dumps((REPO_ROOT / "bench" / "executors" / "node-webgpu" / "determinism.js").resolve().as_uri())};
@@ -848,7 +908,7 @@ console.log(JSON.stringify(boundaryScopedHostTotals({{
                 check=False,
             )
             self.assertNotEqual(result.returncode, 0)
-            self.assertIn("writeBuffer target input requires copy_dst usage", result.stderr)
+            self.assertIn("node-webgpu supervisor", result.stderr)
             self.assertTrue(meta_path.exists())
             self.assertTrue(trace_path.exists())
             meta = json.loads(meta_path.read_text(encoding="utf-8"))

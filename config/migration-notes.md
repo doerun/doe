@@ -1,5 +1,38 @@
 # Config Migration Notes
 
+## 2026-04-10
+
+### Run receipts now preserve sample timing provenance, and workload-unit wall uses one explicit divisor
+
+- `config/run-receipt.schema.json` sample entries now allow preserved per-sample:
+  - `timing`
+  - `commandRepeat`
+  - `uploadIgnoreFirstOps`
+  - `uploadBufferUsage`
+  - `uploadSubmitEvery`
+  - `timingNormalizationDivisor`
+  - `workloadUnitNormalizationDivisor`
+  - workload normalization context fields
+- `bench/native_compare_modules/run_artifact.py` now carries that timing
+  provenance into run receipts and legacy normalization preserves it when
+  present
+- `bench/native_compare_modules/compare_from_artifacts.py` now restores the
+  preserved sample timing metadata instead of reconstructing a partial timing
+  view from receipt-level normalization fields
+- workload-unit wall normalization now uses one explicit per-sample
+  workload-unit divisor rather than blindly multiplying `commandRepeat` and
+  `timingNormalizationDivisor`
+- the shared normalization helper is now used by:
+  - compare timing interpretation
+  - operation-vs-wall sanity checks
+  - runtime comparability wall-coverage checks
+- package executor cold-path dispatch now always uses the standard WebGPU call
+  sequence (`setPipeline`, `setBindGroup`, `dispatchWorkgroups`) and no longer
+  uses the Doe-only private `_dispatchBound` fast path
+- package executor cold-path `traceMeta.processWallMs` now starts before runtime
+  bringup so internal trace-meta wall spans the same cold setup boundary when
+  audited directly
+
 ## 2026-04-09
 
 ### Bench artifacts now use an explicit run -> compare -> claim split

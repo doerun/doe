@@ -88,6 +88,35 @@ def make_prepared_session_side() -> dict[str, object]:
     }
 
 
+def make_single_divisor_side() -> dict[str, object]:
+    return {
+        "timingSources": ["doe-execution-total-ns"],
+        "timingClasses": ["operation"],
+        "commandSamples": [
+            {
+                "elapsedMs": 1000.0,
+                "measuredMs": 8.0,
+                "commandRepeat": 100,
+                "timingNormalizationDivisor": 100.0,
+                "workloadUnitNormalizationDivisor": 100.0,
+                "traceMeta": {
+                    "hostInputReadTotalNs": 100_000_000,
+                },
+            },
+            {
+                "elapsedMs": 1200.0,
+                "measuredMs": 9.0,
+                "commandRepeat": 100,
+                "timingNormalizationDivisor": 100.0,
+                "workloadUnitNormalizationDivisor": 100.0,
+                "traceMeta": {
+                    "hostInputReadTotalNs": 100_000_000,
+                },
+            },
+        ],
+    }
+
+
 class TimingInterpretationNamingTests(unittest.TestCase):
     def test_emits_workload_unit_wall_with_legacy_alias(self) -> None:
         interpretation = build_timing_interpretation(
@@ -142,6 +171,19 @@ class TimingInterpretationNamingTests(unittest.TestCase):
         self.assertGreaterEqual(
             host_overhead["unattributedGapRemainder"]["baselineStatsMs"]["p50Ms"],
             0.0,
+        )
+
+    def test_workload_unit_wall_uses_single_explicit_divisor(self) -> None:
+        interpretation = build_timing_interpretation(
+            baseline=make_single_divisor_side(),
+            comparison=make_single_divisor_side(),
+        )
+
+        workload_unit_wall = interpretation["workloadUnitWall"]
+        self.assertAlmostEqual(workload_unit_wall["baselineStatsMs"]["p50Ms"], 10.0)
+        self.assertAlmostEqual(
+            interpretation["hostOverheadBreakdown"]["buckets"]["inputRead"]["baselineStatsMs"]["p50Ms"],
+            1.0,
         )
 
 

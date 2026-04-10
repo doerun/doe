@@ -269,6 +269,13 @@ Current selection priorities in compare harness:
 
 Strict Doe-native comparable workloads must also match canonical selected timing source and timing-selection policy across baseline/comparison. Mixed `encode` vs `total` source selection is a scope mismatch, not apples-to-apples evidence.
 
+Run-receipt reporting rule:
+- preserve the per-sample timing metadata needed to reconstruct selected timing
+  and workload-unit wall after a receipt roundtrip.
+- workload-unit wall must normalize through one explicit workload-unit divisor
+  per sample; do not blindly multiply `commandRepeat` and timing-divisor
+  metadata when they describe the same repeated workload unit.
+
 Benchmark intent split (required reporting separation):
 
 1. `apples-to-apples`:

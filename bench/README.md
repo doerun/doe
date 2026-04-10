@@ -292,6 +292,9 @@ The package surface now has two explicit timing modes:
 - cold package surface (`*.node-package.ir.json`, `*.bun-package.ir.json`)
   - keeps package setup inside `selectedTiming`
   - keeps `workloadUnitWall` on the compare harness subprocess wall
+  - starts cold-package `traceMeta.processWallMs` before runtime bringup so
+    direct trace-meta audits include the same cold setup boundary instead of a
+    warm-only execution window
   - represents first-use package cost from a JS caller point of view
 - prepared-session package surface (`*.node-package.warm.ir.json`, `*.bun-package.warm.ir.json`)
   - builds the package runtime and cached WebGPU objects before the timed sample
@@ -1196,7 +1199,7 @@ python3 bench/cli.py compare \
   `--claimability local|release` enforces sample-floor and positive-tail checks for claimable speed reports.
   use `--claim-min-timed-samples N` to override mode defaults loaded from `config/benchmark-methodology-thresholds.json` (`claimabilityDefaults.localMinTimedSamples`, `claimabilityDefaults.releaseMinTimedSamples`).
   claimability failures return non-zero exit status (`3`) and report `claimStatus=diagnostic`.
-  workloads whose selected timing scope is `narrow-hot-path` keep `deltaPercent` as an engineering diagnostic, but claimability now evaluates `timingInterpretation.workloadUnitWall.deltaPercent` when that full workload-unit metric is available. `workloadUnitWall` is normalized by `commandRepeat` and `timingNormalizationDivisor`, so repeat-asymmetric lanes still compare one workload unit to one workload unit.
+  workloads whose selected timing scope is `narrow-hot-path` keep `deltaPercent` as an engineering diagnostic, but claimability now evaluates `timingInterpretation.workloadUnitWall.deltaPercent` when that full workload-unit metric is available. `workloadUnitWall` is normalized by one explicit workload-unit divisor preserved in sample timing provenance, so repeated workload units are not double-counted when `commandRepeat` and timing-divisor metadata describe the same unit.
 - trace replay gate supports semantic parity lanes:
   `bench/gates/trace_gate.py --semantic-parity-mode auto|required`.
   use `required` only for runtime-to-runtime parity artifacts (for example Doe vs Dawn traces), because Dawn comparison traces are not semantic-envelope compatible.
@@ -1236,6 +1239,7 @@ Process-wall comparability policy:
 - if trace-meta also reports `timingSource=wall-time`, it is treated as auxiliary metadata and not as the primary timing value.
 - process/resource sampling avoids fixed sleep quantization for open-ended runs by waiting on process completion with timeout polling.
 - per-workload timing normalization divisors (`baselineTimingDivisor`/`comparisonTimingDivisor`) are only applied in non-process-wall timing modes; process-wall runs use a normalization divisor of `1.0`.
+- run receipts now preserve per-sample timing provenance needed to reconstruct selected timing and workload-unit wall after a run-artifact roundtrip.
 - strict comparable workloads can also declare `strictNormalizationUnit` when the comparable unit is not raw command-row count:
   - `dispatch`: divisor must match repeated dispatch count
   - `cycle`: divisor must match repeated full-workload cycles
@@ -1273,7 +1277,7 @@ Interpret VRAM deltas as device-level signals (global GPU usage), not isolated p
   when ignore-first is enabled and applied, source is reported as `doe-execution-workload-total-ns+ignore-first-ops`.
 - compare reports now also emit `timingInterpretation` per workload:
   - `selectedTiming` describes what `deltaPercent` actually measures (`operation-total`, `operation-encode`, `process-wall`, etc.).
-  - `workloadUnitWall` reports the timed-command process-wall view for the full workload unit, normalized to one workload unit via `commandRepeat` and `timingNormalizationDivisor`.
+  - `workloadUnitWall` reports the timed-command process-wall view for the full workload unit, normalized through the explicit per-sample workload-unit divisor carried in timing provenance instead of blindly multiplying `commandRepeat` and timing-divisor metadata.
   - when `selectedTiming.scopeClass=narrow-hot-path`, `deltaPercent` stays a phase-specific diagnostic while claimability uses `workloadUnitWall.deltaPercent` for full workload-unit evaluation when available.
 - per-workload timing normalization is config-driven via `baselineTimingDivisor` / `comparisonTimingDivisor`
   in `workloads.json` (matvec uses `baselineTimingDivisor=100` and `comparisonTimingDivisor=1` because Dawn already reports per-dispatch via `iterationsPerStep=100`).

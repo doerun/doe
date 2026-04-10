@@ -784,6 +784,8 @@ def run_workload(
                     "uploadBufferUsage": upload_buffer_usage,
                     "uploadSubmitEvery": upload_submit_every,
                     "timingNormalizationDivisor": timing_divisor,
+                    "workloadDomain": workload.domain,
+                    "strictNormalizationUnit": getattr(workload, "strict_normalization_unit", ""),
                 }
             )
             continue
@@ -911,6 +913,8 @@ def run_workload(
                 "uploadSubmitEvery": upload_submit_every,
                 "timingNormalizationDivisor": timing_divisor,
                 "workloadUnitNormalizationDivisor": workload_unit_divisor,
+                "workloadDomain": workload.domain,
+                "strictNormalizationUnit": getattr(workload, "strict_normalization_unit", ""),
             }
         )
         last_meta = sample_meta

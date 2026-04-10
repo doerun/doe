@@ -52,7 +52,7 @@ def _make_spec() -> WorkloadSpec:
 
 
 def _make_run_config() -> ProductRunConfig:
-    return ProductRunConfig(product="doe", command_repeat=1, timing_divisor=1.0)
+    return ProductRunConfig(product="doe", command_repeat=4, timing_divisor=2.0)
 
 
 def _make_run_result() -> dict:
@@ -69,10 +69,23 @@ def _make_run_result() -> dict:
                 "measuredRawMs": 8.0,
                 "measuredMs": 8.0,
                 "timingSource": "doe-execution-total-ns",
+                "timing": {
+                    "commandRepeat": 4,
+                    "timingNormalizationDivisor": 2.0,
+                    "timingConfiguredDivisor": 2.0,
+                    "workloadUnitNormalizationDivisor": 4.0,
+                    "traceMetaSource": "doe-execution-total-ns",
+                },
                 "returnCode": 0,
                 "traceJsonlPath": "bench/out/sample.ndjson",
                 "traceMetaPath": "bench/out/sample.meta.json",
                 "resource": {},
+                "commandRepeat": 4,
+                "uploadIgnoreFirstOps": 0,
+                "uploadBufferUsage": "copy-dst-copy-src",
+                "uploadSubmitEvery": 1,
+                "timingNormalizationDivisor": 2.0,
+                "workloadUnitNormalizationDivisor": 4.0,
                 "traceMeta": {
                     "executionBackend": "doe_vulkan",
                     "executionProvider": "doe",
@@ -141,6 +154,16 @@ class TestRunReceiptRoundTrip(unittest.TestCase):
             self.assertEqual(loaded["product"], "doe")
             self.assertEqual(loaded["workload"]["id"], "compute_test")
             self.assertEqual(len(loaded["samples"]), 1)
+            self.assertEqual(
+                loaded["samples"][0]["timing"]["traceMetaSource"],
+                "doe-execution-total-ns",
+            )
+            self.assertEqual(loaded["samples"][0]["commandRepeat"], 4)
+            self.assertEqual(loaded["samples"][0]["timingNormalizationDivisor"], 2.0)
+            self.assertEqual(
+                loaded["samples"][0]["workloadUnitNormalizationDivisor"],
+                4.0,
+            )
 
     def test_load_normalizes_legacy_run_artifact(self) -> None:
         legacy_payload = {

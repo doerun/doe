@@ -72,7 +72,7 @@ def _make_receipt(product: str, manifest_hash: str = "a" * 64) -> dict:
         "normalization": {
             "commandRepeat": 1,
             "ignoreFirstOps": 0,
-            "timingDivisor": 1.0,
+            "timingDivisor": 2.0,
             "uploadBufferUsage": "copy-dst-copy-src",
             "uploadSubmitEvery": 1,
             "timingNormalizationNote": "",
@@ -119,6 +119,13 @@ def _make_receipt(product: str, manifest_hash: str = "a" * 64) -> dict:
                 "measuredMs": measured_ms + index * 0.1,
                 "timingSource": "doe-execution-total-ns",
                 "timingClass": "operation",
+                "timing": {
+                    "commandRepeat": 1,
+                    "timingNormalizationDivisor": 2.0,
+                    "timingConfiguredDivisor": 2.0,
+                    "workloadUnitNormalizationDivisor": 2.0,
+                    "traceMetaSource": "doe-execution-total-ns",
+                },
                 "traceArtifacts": {
                     "jsonlPath": f"bench/out/{product}.{index}.ndjson",
                     "metaPath": f"bench/out/{product}.{index}.meta.json",
@@ -133,6 +140,12 @@ def _make_receipt(product: str, manifest_hash: str = "a" * 64) -> dict:
                 "resource": {},
                 "returnCode": 0,
                 "success": True,
+                "commandRepeat": 1,
+                "uploadIgnoreFirstOps": 0,
+                "uploadBufferUsage": "copy-dst-copy-src",
+                "uploadSubmitEvery": 1,
+                "timingNormalizationDivisor": 2.0,
+                "workloadUnitNormalizationDivisor": 2.0,
                 "traceMeta": {
                     "executionDispatchCount": 1,
                     "executionRowCount": 1,
@@ -219,6 +232,10 @@ class TestCompareFromArtifacts(unittest.TestCase):
             self.assertEqual(report["artifactKind"], COMPARE_REPORT_KIND)
             self.assertEqual(report["comparisonStatus"], "comparable")
             self.assertNotIn("claimStatus", report)
+            self.assertAlmostEqual(
+                report["overallWorkloadUnitWall"]["baselineStatsMs"]["p50Ms"],
+                4.55,
+            )
 
             compare_path = Path(tmpdir) / "sample.compare.json"
             write_compare_report(report, compare_path)
@@ -244,6 +261,11 @@ class TestCompareFromArtifacts(unittest.TestCase):
         view = receipt_run_view(_make_receipt("doe"))
         self.assertEqual(view["stats"]["count"], 4)
         self.assertEqual(view["timingClasses"], ["operation"])
+        self.assertEqual(
+            view["commandSamples"][0]["timing"]["workloadUnitNormalizationDivisor"],
+            2.0,
+        )
+        self.assertEqual(view["commandSamples"][0]["strictNormalizationUnit"], "")
 
 
 if __name__ == "__main__":
