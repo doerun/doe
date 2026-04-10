@@ -620,6 +620,14 @@ console.log(JSON.stringify({{ domain: normalized.domain, comparable: normalized.
         )
         self.assertNotIn("pass._dispatchBound(", source)
 
+    def test_node_doe_package_source_uses_eager_native_command_encoders(self) -> None:
+        source = (
+            REPO_ROOT / "packages" / "doe-gpu" / "src" / "vendor" / "webgpu" / "index.js"
+        ).read_text(encoding="utf-8")
+        self.assertIn("encoder._native = addon.createCommandEncoder(", source)
+        self.assertNotIn("return { _commands: cmds, _batched: true };", source)
+        self.assertNotIn("new classes.DoeGPUComputePassEncoder(null, encoder)", source)
+
     def test_evaluate_execution_determinism_uses_host_byte_policy(self) -> None:
         script = f"""
 import {{ evaluateExecutionDeterminism }} from {json.dumps((REPO_ROOT / "bench" / "executors" / "node-webgpu" / "determinism.js").resolve().as_uri())};
