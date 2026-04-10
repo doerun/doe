@@ -656,6 +656,10 @@ pub fn build(b: *std.Build) void {
     line_limit_step.dependOn(&line_limit_check.step);
     b.getInstallStep().dependOn(&line_limit_check.step);
 
+    const bridge_manifest_check = b.addSystemCommand(&.{ "python3", "tools/check_metal_bridge_manifest.py" });
+    const bridge_manifest_step = b.step("bridge-manifest", "Validate the Metal bridge manifest against Zig declarations and bridge sources");
+    bridge_manifest_step.dependOn(&bridge_manifest_check.step);
+
     const coverage_gate_check = b.addSystemCommand(&.{ "python3", "bench/gates/split_coverage_gate.py", "--surface", "both" });
     coverage_gate_check.setCwd(b.path("../.."));
     const coverage_gate_step = b.step("coverage-gate", "Validate split core/full coverage ledgers against Zig partitions");
@@ -812,6 +816,7 @@ pub fn build(b: *std.Build) void {
     const run_tests = b.addRunArtifact(test_exec);
     test_step.dependOn(&import_fence_check.step);
     test_step.dependOn(&line_limit_check.step);
+    test_step.dependOn(&bridge_manifest_check.step);
     test_step.dependOn(&run_tests.step);
 
     const core_test_step = b.step("test-core", "Run core-lane Zig unit tests");
@@ -840,6 +845,7 @@ pub fn build(b: *std.Build) void {
     const run_core_tests = b.addRunArtifact(core_test_exec);
     core_test_step.dependOn(&import_fence_check.step);
     core_test_step.dependOn(&line_limit_check.step);
+    core_test_step.dependOn(&bridge_manifest_check.step);
     core_test_step.dependOn(&run_core_tests.step);
 
     const full_test_step = b.step("test-full", "Run full-lane Zig unit tests");
@@ -868,6 +874,7 @@ pub fn build(b: *std.Build) void {
     const run_full_tests = b.addRunArtifact(full_test_exec);
     full_test_step.dependOn(&import_fence_check.step);
     full_test_step.dependOn(&line_limit_check.step);
+    full_test_step.dependOn(&bridge_manifest_check.step);
     full_test_step.dependOn(&run_full_tests.step);
 
     const d3d12_test_step = b.step("test-d3d12", "Run D3D12-focused Zig tests (no Metal test suite)");

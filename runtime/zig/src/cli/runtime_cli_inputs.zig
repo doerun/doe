@@ -1,0 +1,123 @@
+const std = @import("std");
+const command_stream = @import("../command_stream.zig");
+const model_commands = @import("../model_commands.zig");
+const model_quirks = @import("../model_quirks.zig");
+const quirk = @import("../quirk/mod.zig");
+const replay = @import("../replay.zig");
+const runtime_cli_args = @import("runtime_cli_args.zig");
+const samples = @import("runtime_cli_samples.zig");
+
+pub const LoadTimings = struct {
+    host_input_read_total_ns: u64 = 0,
+    host_input_parse_total_ns: u64 = 0,
+};
+
+pub const LoadedInputs = struct {
+    quirks: []model_quirks.Quirk,
+    replay_expectations: ?replay.ReplayExpectationSet = null,
+    commands: []const model_commands.Command,
+    command_metadata: []command_stream.CommandMetadata,
+    owned_stream: ?command_stream.ParsedCommandStream = null,
+    owned_quirks_bytes: ?[]const u8 = null,
+
+    pub fn deinit(self: *LoadedInputs, allocator: std.mem.Allocator) void {
+        defer quirk.parser.freeQuirks(allocator, self.quirks);
+        if (self.owned_quirks_bytes) |bytes| {
+            allocator.free(bytes);
+        }
+        if (self.replay_expectations) |*expectations| {
+            expectations.deinit(allocator);
+        }
+        if (self.owned_stream) |parsed_stream| {
+            parsed_stream.deinit(allocator);
+        } else {
+            allocator.free(self.command_metadata);
+        }
+    }
+};
+
+pub const LoadResult = struct {
+    inputs: LoadedInputs,
+    timings: LoadTimings,
+};
+
+fn nowNs() u64 {
+    return @as(u64, @intCast(std.time.nanoTimestamp()));
+}
+
+fn elapsedSince(start_ns: u64) u64 {
+    return nowNs() - start_ns;
+}
+
+fn readFileAlloc(allocator: std.mem.Allocator, path: []const u8) ![]const u8 {
+    const file = try std.fs.cwd().openFile(path, .{});
+    defer file.close();
+    return try file.readToEndAlloc(allocator, 16 * 1024 * 1024);
+}
+
+pub fn load(
+    allocator: std.mem.Allocator,
+    options: runtime_cli_args.RunOptions,
+) !LoadResult {
+    var timings = LoadTimings{};
+
+    const quirks_read_start_ns = nowNs();
+    const quirks_bytes = if (options.quirk_mode.loadsQuirks())
+        (if (options.quirks_path) |path| try readFileAlloc(allocator, path) else samples.sample_quirks)
+    else
+        "[]";
+    timings.host_input_read_total_ns += elapsedSince(quirks_read_start_ns);
+    const owns_quirks_bytes = options.quirks_path != null and options.quirk_mode.loadsQuirks();
+
+    const quirks_parse_start_ns = nowNs();
+    const quirks = try quirk.parser.parseQuirks(allocator, quirks_bytes);
+    timings.host_input_parse_total_ns += elapsedSince(quirks_parse_start_ns);
+
+    var replay_expectations: ?replay.ReplayExpectationSet = null;
+    errdefer if (replay_expectations) |*expectations| expectations.deinit(allocator);
+
+    if (options.replay_path) |path| {
+        const replay_parse_start_ns = nowNs();
+        replay_expectations = try replay.loadReplayExpectations(allocator, path);
+        timings.host_input_parse_total_ns += elapsedSince(replay_parse_start_ns);
+    }
+
+    const default_metadata_start_ns = nowNs();
+    var command_metadata = try command_stream.metadata_for_slice(allocator, samples.default_commands[0..]);
+    errdefer allocator.free(command_metadata);
+    timings.host_input_parse_total_ns += elapsedSince(default_metadata_start_ns);
+
+    var commands: []const model_commands.Command = samples.default_commands[0..];
+    var owned_stream: ?command_stream.ParsedCommandStream = null;
+
+    if (options.commands_path) |commands_path| {
+        const commands_read_start_ns = nowNs();
+        const commands_bytes = try readFileAlloc(allocator, commands_path);
+        defer allocator.free(commands_bytes);
+        timings.host_input_read_total_ns += elapsedSince(commands_read_start_ns);
+
+        const commands_parse_start_ns = nowNs();
+        const parsed_stream = try command_stream.parse_command_stream(allocator, commands_bytes);
+        timings.host_input_parse_total_ns += elapsedSince(commands_parse_start_ns);
+
+        allocator.free(command_metadata);
+        commands = parsed_stream.commands;
+        command_metadata = parsed_stream.metadata;
+        owned_stream = parsed_stream;
+    }
+
+    var loaded = LoadedInputs{
+        .quirks = quirks,
+        .replay_expectations = replay_expectations,
+        .commands = commands,
+        .command_metadata = command_metadata,
+        .owned_stream = owned_stream,
+        .owned_quirks_bytes = if (owns_quirks_bytes) quirks_bytes else null,
+    };
+    errdefer loaded.deinit(allocator);
+
+    return .{
+        .inputs = loaded,
+        .timings = timings,
+    };
+}

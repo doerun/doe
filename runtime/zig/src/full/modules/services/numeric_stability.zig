@@ -1,263 +1,39 @@
 const std = @import("std");
 const common = @import("../common.zig");
+const eval = @import("numeric_stability_eval.zig");
+const io = @import("numeric_stability_io.zig");
 const numeric_stability_policy = @import("../../../numeric_stability_policy.zig");
 const trace_numeric_stability = @import("../../../trace_numeric_stability.zig");
+const types = @import("numeric_stability_types.zig");
 
-pub const MODULE_ID = "doe_numeric_stability";
-pub const MATMUL_LOGITS_SLICE_SERVICE_ID = "matmul_logits_slice";
-pub const SUPPORTED_OPERATOR_FAMILY = "lm-head-slice";
-pub const SUPPORTED_SEMANTIC_OP_ID = "matmul.logits";
-pub const SUPPORTED_FAST_POLICY_ID = "lm-head-slice/forward-f16accum-v1";
-pub const SUPPORTED_STABLE_POLICY_ID = "lm-head-slice/forward-serial-v1";
-pub const REFERENCE_POLICY_ID = "lm-head-slice/cpu-f64-serial-v1";
-const ZERO_HASH = "sha256:0000000000000000000000000000000000000000000000000000000000000000";
-
-pub const CandidateInput = struct {
-    tokenId: u32,
-    label: ?[]const u8 = null,
-    weights: []const f64,
-    bias: ?f64 = null,
-};
-
-pub const Request = struct {
-    schemaVersion: u32,
-    moduleId: []const u8,
-    artifactKind: []const u8,
-    serviceId: []const u8,
-    operatorFamily: []const u8,
-    semanticOpId: []const u8,
-    semanticStage: []const u8,
-    semanticPhase: []const u8,
-    triggerPolicyId: []const u8,
-    routingPolicyId: []const u8,
-    fastPolicyId: []const u8,
-    stablePolicyId: []const u8,
-    candidates: []const CandidateInput,
-    hiddenState: []const f64,
-    receiptPath: ?[]const u8 = null,
-    traceMetaPath: ?[]const u8 = null,
-};
-
-pub const Policy = struct {
-    policyRegistryPath: []const u8,
-    registry: numeric_stability_policy.Registry,
-};
-
-pub const ParsedPolicy = struct {
-    parsed: std.json.Parsed(numeric_stability_policy.Registry),
-    policyRegistryPath: []u8,
-    value: Policy,
-
-    pub fn deinit(self: *ParsedPolicy, allocator: std.mem.Allocator) void {
-        self.parsed.deinit();
-        allocator.free(self.policyRegistryPath);
-    }
-};
-
-pub const ServiceResult = struct {
-    status: []const u8,
-};
-
-pub const ExecutionStats = struct {
-    dispatchCount: u64,
-    bytesMoved: u64,
-    candidateCount: u64,
-};
-
-pub const TimingStats = struct {
-    setupNs: u64,
-    encodeNs: u64,
-    submitNs: u64,
-    dispatchNs: u64,
-};
-
-pub const FailureDetails = struct {
-    code: []const u8,
-};
-
-pub const ReceiptCandidate = struct {
-    tokenId: u32,
-    label: ?[]const u8 = null,
-    fastLogit: f64,
-    stableLogit: f64,
-    referenceLogit: f64,
-};
-
-pub const FirstDivergence = struct {
-    semanticOpId: []const u8,
-    semanticStage: []const u8,
-    semanticPhase: []const u8,
-    fastDigest: []const u8,
-    stableDigest: []const u8,
-};
-
-pub const SelectedTokenReceipt = struct {
-    fast: u32,
-    stable: u32,
-    reference: u32,
-    fastMatchesReference: bool,
-    stableMatchesReference: bool,
-};
-
-pub const TriggerChecks = struct {
-    firstDivergencePresent: bool,
-    sensitiveOperatorMatched: bool,
-    selectedTokenDisagreement: bool,
-    stableMatchesExactReference: bool,
-    fastMissesExactReference: bool,
-};
-
-pub const TriggerReceipt = struct {
-    fired: bool,
-    checks: TriggerChecks,
-    proofLinks: []const numeric_stability_policy.ProofLink,
-};
-
-pub const RouteReceipt = struct {
-    decision: []const u8,
-    selectionMode: []const u8,
-    committedResultMode: []const u8,
-    downstreamAction: []const u8,
-    effectApplied: bool,
-    selectedPolicyId: ?[]const u8 = null,
-    selectedToken: ?u32 = null,
-    proofLinks: []const numeric_stability_policy.ProofLink,
-    selectionProofLinks: []const numeric_stability_policy.ProofLink,
-};
-
-pub const ExecutionIdentityReceipt = struct {
-    kernelPath: ?[]const u8 = null,
-    kernelBasename: ?[]const u8 = null,
-    layoutFingerprint: ?[]const u8 = null,
-    compiledPlanHash: ?[]const u8 = null,
-    backend: ?[]const u8 = null,
-    backendLane: ?[]const u8 = null,
-    adapterOrdinal: ?u32 = null,
-    queueFamilyIndex: ?u32 = null,
-    presentCapable: ?bool = null,
-    profileVendor: ?[]const u8 = null,
-    profileApi: ?[]const u8 = null,
-    profileFamily: ?[]const u8 = null,
-    profileDriver: ?[]const u8 = null,
-    selectionPolicyHash: ?[]const u8 = null,
-    hostPlanArtifactHash: ?[]const u8 = null,
-};
-
-pub const UpstreamReceiptLink = struct {
-    semanticOpId: []const u8,
-    semanticStage: []const u8,
-    semanticPhase: []const u8,
-    selectedPolicyId: ?[]const u8 = null,
-    decision: []const u8,
-};
-
-pub const DecodeBoundaryMetrics = struct {
-    fastTop1Margin: f64,
-    stableTop1Margin: f64,
-    referenceTop1Margin: f64,
-    topKBoundaryGap: ?f64 = null,
-    topPBoundaryGap: ?f64 = null,
-    cdfDistanceToDraw: ?f64 = null,
-    adjacentDecodePersistence: ?u32 = null,
-    actualSelectedTokenChanged: bool,
-    liveSelectedMatchesFast: bool,
-    liveSelectedMatchesStable: bool,
-    liveSelectedMatchesReference: bool,
-};
-
-pub const DecodeBoundaryReceipt = struct {
-    decodeMode: []const u8,
-    logitsCoverage: []const u8,
-    vocabSize: u32,
-    residualMassUpperBound: ?f64 = null,
-    temperature: ?f64 = null,
-    topK: ?u32 = null,
-    topP: ?f64 = null,
-    rngSeed: ?u64 = null,
-    rngDraw: ?f64 = null,
-    survivingTokenSetKind: []const u8,
-    survivingTokenIds: ?[]const u32 = null,
-    liveSelectedToken: u32,
-    liveSelectedMatchesCommittedSelection: bool,
-    metrics: DecodeBoundaryMetrics,
-    upstreamLinks: []const UpstreamReceiptLink,
-};
-
-pub const Receipt = struct {
-    schemaVersion: u32,
-    mode: []const u8,
-    operatorFamily: []const u8,
-    semanticOpId: []const u8,
-    semanticStage: []const u8,
-    semanticPhase: []const u8,
-    policyRegistryPath: []const u8,
-    policyRegistryVersion: []const u8,
-    routeTaxonomyVersion: []const u8,
-    proofArtifactPath: []const u8,
-    triggerPolicyId: []const u8,
-    routingPolicyId: []const u8,
-    fastPolicyId: []const u8,
-    stablePolicyId: []const u8,
-    referencePolicyId: []const u8,
-    candidates: []const ReceiptCandidate,
-    executionIdentity: ?ExecutionIdentityReceipt = null,
-    firstDivergence: ?FirstDivergence = null,
-    decodeBoundary: ?DecodeBoundaryReceipt = null,
-    selectedToken: SelectedTokenReceipt,
-    trigger: TriggerReceipt,
-    route: RouteReceipt,
-};
-
-pub const ResultNoTrace = struct {
-    schemaVersion: u32,
-    moduleId: []const u8,
-    artifactKind: []const u8,
-    serviceId: []const u8,
-    serviceResult: ServiceResult,
-    executionStats: ExecutionStats,
-    timingStats: TimingStats,
-    failureDetails: FailureDetails,
-    routeDecision: []const u8,
-    selectedToken: ?u32,
-    receiptPath: ?[]const u8 = null,
-    traceMetaPath: ?[]const u8 = null,
-    receipt: Receipt,
-};
-
-pub const Result = struct {
-    schemaVersion: u32,
-    moduleId: []const u8,
-    artifactKind: []const u8,
-    serviceId: []const u8,
-    serviceResult: ServiceResult,
-    executionStats: ExecutionStats,
-    timingStats: TimingStats,
-    failureDetails: FailureDetails,
-    routeDecision: []const u8,
-    selectedToken: ?u32,
-    receiptPath: ?[]const u8 = null,
-    traceMetaPath: ?[]const u8 = null,
-    receipt: Receipt,
-    traceLink: common.TraceLink,
-};
-
-const HashlessTraceMeta = struct {
-    traceVersion: u32,
-    module: []const u8,
-    seqMax: u32,
-    rowCount: u32,
-    numericStability: trace_numeric_stability.TraceNumericStabilitySummary,
-};
-
-const TraceMetaFile = struct {
-    traceVersion: u32,
-    module: []const u8,
-    seqMax: u32,
-    rowCount: u32,
-    hash: []const u8,
-    previousHash: []const u8,
-    numericStability: trace_numeric_stability.TraceNumericStabilitySummary,
-};
+pub const MODULE_ID = types.MODULE_ID;
+pub const MATMUL_LOGITS_SLICE_SERVICE_ID = types.MATMUL_LOGITS_SLICE_SERVICE_ID;
+pub const SUPPORTED_OPERATOR_FAMILY = types.SUPPORTED_OPERATOR_FAMILY;
+pub const SUPPORTED_SEMANTIC_OP_ID = types.SUPPORTED_SEMANTIC_OP_ID;
+pub const SUPPORTED_FAST_POLICY_ID = types.SUPPORTED_FAST_POLICY_ID;
+pub const SUPPORTED_STABLE_POLICY_ID = types.SUPPORTED_STABLE_POLICY_ID;
+pub const REFERENCE_POLICY_ID = types.REFERENCE_POLICY_ID;
+pub const CandidateInput = types.CandidateInput;
+pub const Request = types.Request;
+pub const Policy = types.Policy;
+pub const ParsedPolicy = types.ParsedPolicy;
+pub const ServiceResult = types.ServiceResult;
+pub const ExecutionStats = types.ExecutionStats;
+pub const TimingStats = types.TimingStats;
+pub const FailureDetails = types.FailureDetails;
+pub const ReceiptCandidate = types.ReceiptCandidate;
+pub const FirstDivergence = types.FirstDivergence;
+pub const SelectedTokenReceipt = types.SelectedTokenReceipt;
+pub const TriggerChecks = types.TriggerChecks;
+pub const TriggerReceipt = types.TriggerReceipt;
+pub const RouteReceipt = types.RouteReceipt;
+pub const ExecutionIdentityReceipt = types.ExecutionIdentityReceipt;
+pub const UpstreamReceiptLink = types.UpstreamReceiptLink;
+pub const DecodeBoundaryMetrics = types.DecodeBoundaryMetrics;
+pub const DecodeBoundaryReceipt = types.DecodeBoundaryReceipt;
+pub const Receipt = types.Receipt;
+pub const ResultNoTrace = types.ResultNoTrace;
+pub const Result = types.Result;
 
 pub fn parseRequest(allocator: std.mem.Allocator, bytes: []const u8) !std.json.Parsed(Request) {
     return try std.json.parseFromSlice(Request, allocator, bytes, .{
@@ -285,180 +61,16 @@ pub fn parsePolicy(
     };
 }
 
-fn ensureValidRequest(request: Request) !void {
-    if (!std.mem.eql(u8, request.moduleId, MODULE_ID)) return error.InvalidModuleId;
-    if (!std.mem.eql(u8, request.artifactKind, "request")) return error.InvalidArtifactKind;
-    if (!std.mem.eql(u8, request.serviceId, MATMUL_LOGITS_SLICE_SERVICE_ID)) return error.UnsupportedServiceId;
-    if (!std.mem.eql(u8, request.operatorFamily, SUPPORTED_OPERATOR_FAMILY)) return error.UnsupportedOperatorFamily;
-    if (!std.mem.eql(u8, request.semanticOpId, SUPPORTED_SEMANTIC_OP_ID)) return error.UnsupportedSemanticOpId;
-    if (!std.mem.eql(u8, request.fastPolicyId, SUPPORTED_FAST_POLICY_ID)) return error.UnsupportedFastPolicy;
-    if (!std.mem.eql(u8, request.stablePolicyId, SUPPORTED_STABLE_POLICY_ID)) return error.UnsupportedStablePolicy;
-    if (request.hiddenState.len == 0) return error.HiddenStateEmpty;
-    if (request.candidates.len < 2) return error.CandidateCountInvalid;
-    for (request.candidates) |candidate| {
-        if (candidate.weights.len != request.hiddenState.len) return error.CandidateLengthMismatch;
-    }
-}
-
-fn ensureValidPolicy(policy: Policy) !void {
-    try numeric_stability_policy.ensureValidRegistry(policy.registry);
-}
-
-fn containsString(values: []const []const u8, needle: []const u8) bool {
-    for (values) |value| {
-        if (std.mem.eql(u8, value, needle)) return true;
-    }
-    return false;
-}
-
-fn ensureParentPath(path: []const u8) !void {
-    if (std.fs.path.dirname(path)) |dir_name| {
-        if (dir_name.len == 0) return;
-        try std.fs.cwd().makePath(dir_name);
-    }
-}
-
-fn totalBytesMoved(request: Request) u64 {
-    var total: u64 = @as(u64, @intCast(request.hiddenState.len)) * @sizeOf(f64);
-    for (request.candidates) |candidate| {
-        total += @as(u64, @intCast(candidate.weights.len)) * @sizeOf(f64);
-        if (candidate.bias != null) total += @sizeOf(f64);
-    }
-    return total;
-}
-
-fn evaluateForwardF16(hidden_state: []const f64, weights: []const f64, bias: ?f64) f64 {
-    var acc: f16 = 0;
-    for (hidden_state, weights) |hidden_value, weight_value| {
-        const lhs: f16 = @floatCast(hidden_value);
-        const rhs: f16 = @floatCast(weight_value);
-        acc = acc + lhs * rhs;
-    }
-    var out: f64 = @floatCast(acc);
-    if (bias) |value| out += value;
-    return out;
-}
-
-fn evaluateForwardF32(hidden_state: []const f64, weights: []const f64, bias: ?f64) f64 {
-    var acc: f32 = 0;
-    for (hidden_state, weights) |hidden_value, weight_value| {
-        const lhs: f32 = @floatCast(hidden_value);
-        const rhs: f32 = @floatCast(weight_value);
-        acc = acc + lhs * rhs;
-    }
-    var out: f64 = @floatCast(acc);
-    if (bias) |value| out += value;
-    return out;
-}
-
-fn evaluateForwardF64(hidden_state: []const f64, weights: []const f64, bias: ?f64) f64 {
-    var acc: f64 = 0;
-    for (hidden_state, weights) |hidden_value, weight_value| {
-        acc += hidden_value * weight_value;
-    }
-    if (bias) |value| acc += value;
-    return acc;
-}
-
-fn selectedIndex(logits: []const f64) usize {
-    var best_index: usize = 0;
-    var best_value = logits[0];
-    for (logits[1..], 1..) |value, index| {
-        if (value > best_value) {
-            best_value = value;
-            best_index = index;
-        }
-    }
-    return best_index;
-}
-
-fn appendReceiptCandidates(
-    allocator: std.mem.Allocator,
-    request: Request,
-    fast_logits: []const f64,
-    stable_logits: []const f64,
-    reference_logits: []const f64,
-) ![]ReceiptCandidate {
-    var candidates = std.ArrayList(ReceiptCandidate).empty;
-    defer candidates.deinit(allocator);
-    for (request.candidates, 0..) |candidate, index| {
-        try candidates.append(allocator, .{
-            .tokenId = candidate.tokenId,
-            .label = candidate.label,
-            .fastLogit = fast_logits[index],
-            .stableLogit = stable_logits[index],
-            .referenceLogit = reference_logits[index],
-        });
-    }
-    return try candidates.toOwnedSlice(allocator);
-}
-
-fn buildDecisionCounts(route_decision: []const u8) trace_numeric_stability.TraceNumericStabilityDecisionCounts {
-    var counts = trace_numeric_stability.TraceNumericStabilityDecisionCounts{};
-    if (std.mem.eql(u8, route_decision, "accept-fast")) {
-        counts.accept_fast = 1;
-    } else if (std.mem.eql(u8, route_decision, "prefer-stable")) {
-        counts.prefer_stable = 1;
-    } else if (std.mem.eql(u8, route_decision, "abstain")) {
-        counts.abstain = 1;
-    }
-    return counts;
-}
-
-fn writeReceiptJsonl(allocator: std.mem.Allocator, receipt_path: []const u8, receipt: Receipt) !void {
-    try ensureParentPath(receipt_path);
-    const payload = try common.jsonStringifyAlloc(allocator, receipt);
-    defer allocator.free(payload);
-    const file = try std.fs.cwd().createFile(receipt_path, .{ .truncate = true });
-    defer file.close();
-    try file.writeAll(payload);
-    try file.writeAll("\n");
-}
-
-fn writeTraceMetaJson(
-    allocator: std.mem.Allocator,
-    trace_meta_path: []const u8,
-    summary: trace_numeric_stability.TraceNumericStabilitySummary,
-) !void {
-    const hashless = HashlessTraceMeta{
-        .traceVersion = 1,
-        .module = MODULE_ID,
-        .seqMax = 0,
-        .rowCount = 0,
-        .numericStability = summary,
-    };
-    const hash_hex = try common.stableHashJsonAlloc(allocator, hashless);
-    defer allocator.free(hash_hex);
-    const hash_value = try std.fmt.allocPrint(allocator, "sha256:{s}", .{hash_hex});
-    defer allocator.free(hash_value);
-    const meta = TraceMetaFile{
-        .traceVersion = hashless.traceVersion,
-        .module = hashless.module,
-        .seqMax = hashless.seqMax,
-        .rowCount = hashless.rowCount,
-        .hash = hash_value,
-        .previousHash = ZERO_HASH,
-        .numericStability = hashless.numericStability,
-    };
-    try ensureParentPath(trace_meta_path);
-    const payload = try common.jsonStringifyAlloc(allocator, meta);
-    defer allocator.free(payload);
-    const file = try std.fs.cwd().createFile(trace_meta_path, .{ .truncate = true });
-    defer file.close();
-    try file.writeAll(payload);
-    try file.writeAll("\n");
-}
-
 pub fn execute(allocator: std.mem.Allocator, request: Request, policy: Policy) !Result {
-    try ensureValidRequest(request);
-    try ensureValidPolicy(policy);
+    try eval.ensureValidRequest(request);
+    try eval.ensureValidPolicy(policy);
 
     const trigger_policy = try numeric_stability_policy.resolveTriggerPolicy(policy.registry, request.triggerPolicyId);
     const routing_policy = try numeric_stability_policy.resolveRoutingPolicy(policy.registry, request.routingPolicyId, request.triggerPolicyId);
-    if (!containsString(policy.registry.routeDecisions, routing_policy.triggeredDecision)) {
+    if (!eval.containsString(policy.registry.routeDecisions, routing_policy.triggeredDecision)) {
         return error.UnsupportedRouteDecision;
     }
-    if (!containsString(policy.registry.routeDecisions, routing_policy.fallbackDecision)) {
+    if (!eval.containsString(policy.registry.routeDecisions, routing_policy.fallbackDecision)) {
         return error.UnsupportedRouteDecision;
     }
 
@@ -471,9 +83,9 @@ pub fn execute(allocator: std.mem.Allocator, request: Request, policy: Policy) !
     defer allocator.free(reference_logits);
 
     for (request.candidates, 0..) |candidate, index| {
-        fast_logits[index] = evaluateForwardF16(request.hiddenState, candidate.weights, candidate.bias);
-        stable_logits[index] = evaluateForwardF32(request.hiddenState, candidate.weights, candidate.bias);
-        reference_logits[index] = evaluateForwardF64(request.hiddenState, candidate.weights, candidate.bias);
+        fast_logits[index] = eval.evaluateForwardF16(request.hiddenState, candidate.weights, candidate.bias);
+        stable_logits[index] = eval.evaluateForwardF32(request.hiddenState, candidate.weights, candidate.bias);
+        reference_logits[index] = eval.evaluateForwardF64(request.hiddenState, candidate.weights, candidate.bias);
     }
     const end_ns = std.time.nanoTimestamp();
     const elapsed_ns = @as(u64, @intCast(end_ns - start_ns));
@@ -485,9 +97,9 @@ pub fn execute(allocator: std.mem.Allocator, request: Request, policy: Policy) !
     var free_stable_digest = true;
     defer if (free_stable_digest) allocator.free(stable_digest);
 
-    const fast_index = selectedIndex(fast_logits);
-    const stable_index = selectedIndex(stable_logits);
-    const reference_index = selectedIndex(reference_logits);
+    const fast_index = eval.selectedIndex(fast_logits);
+    const stable_index = eval.selectedIndex(stable_logits);
+    const reference_index = eval.selectedIndex(reference_logits);
     const fast_token = request.candidates[fast_index].tokenId;
     const stable_token = request.candidates[stable_index].tokenId;
     const reference_token = request.candidates[reference_index].tokenId;
@@ -508,7 +120,7 @@ pub fn execute(allocator: std.mem.Allocator, request: Request, policy: Policy) !
 
     const trigger_checks = TriggerChecks{
         .firstDivergencePresent = first_divergence != null,
-        .sensitiveOperatorMatched = first_divergence != null and containsString(trigger_policy.allowedSensitiveOperators, request.semanticOpId),
+        .sensitiveOperatorMatched = first_divergence != null and eval.containsString(trigger_policy.allowedSensitiveOperators, request.semanticOpId),
         .selectedTokenDisagreement = fast_token != stable_token,
         .stableMatchesExactReference = stable_token == reference_token,
         .fastMissesExactReference = fast_token != reference_token,
@@ -536,7 +148,7 @@ pub fn execute(allocator: std.mem.Allocator, request: Request, policy: Policy) !
     else
         null;
 
-    const receipt_candidates = try appendReceiptCandidates(allocator, request, fast_logits, stable_logits, reference_logits);
+    const receipt_candidates = try eval.appendReceiptCandidates(allocator, request, fast_logits, stable_logits, reference_logits);
     errdefer allocator.free(receipt_candidates);
 
     const receipt = Receipt{
@@ -584,7 +196,7 @@ pub fn execute(allocator: std.mem.Allocator, request: Request, policy: Policy) !
     };
 
     if (request.receiptPath) |receipt_path| {
-        try writeReceiptJsonl(allocator, receipt_path, receipt);
+        try io.writeReceiptJsonl(allocator, receipt_path, receipt);
     }
 
     if (request.traceMetaPath) |trace_meta_path| {
@@ -594,14 +206,14 @@ pub fn execute(allocator: std.mem.Allocator, request: Request, policy: Policy) !
             .route_taxonomy_version = policy.registry.routeTaxonomyVersion,
             .receipt_path = request.receiptPath orelse "",
             .receipt_count = if (request.receiptPath != null) 1 else 0,
-            .decision_counts = buildDecisionCounts(route_decision),
+            .decision_counts = io.buildDecisionCounts(route_decision),
             .first_divergence_present_count = if (first_divergence != null) 1 else 0,
             .annotation_count = 0,
             .auto_detect_count = 0,
             .committed_stable_rewrite_count = 0,
             .downstream_stop_count = 0,
         };
-        try writeTraceMetaJson(allocator, trace_meta_path, summary);
+        try io.writeTraceMetaJson(allocator, trace_meta_path, summary);
     }
 
     const payload = ResultNoTrace{
@@ -612,7 +224,7 @@ pub fn execute(allocator: std.mem.Allocator, request: Request, policy: Policy) !
         .serviceResult = .{ .status = "ok" },
         .executionStats = .{
             .dispatchCount = 0,
-            .bytesMoved = totalBytesMoved(request),
+            .bytesMoved = eval.totalBytesMoved(request),
             .candidateCount = request.candidates.len,
         },
         .timingStats = .{
