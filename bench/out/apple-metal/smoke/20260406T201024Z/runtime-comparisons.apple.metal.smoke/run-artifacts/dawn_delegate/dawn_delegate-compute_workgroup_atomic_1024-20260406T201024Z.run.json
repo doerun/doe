@@ -1,0 +1,228 @@
+{
+  "artifactKind": "run",
+  "commandSamples": [
+    {
+      "command": "env DYLD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$DYLD_LIBRARY_PATH runtime/zig/zig-out/bin/doe-zig-runtime --commands examples/workgroup_atomic_commands.json --quirks examples/quirks/intel_gen12_temp_buffer.json --vendor apple --api metal --family apple-gpu --driver 1.0.0 --backend native --backend-lane metal_dawn_release --execute --trace --queue-sync-mode per-command --upload-buffer-usage copy-dst-copy-src --upload-submit-every 1 --trace-jsonl bench/out/apple-metal/smoke/20260406T201024Z/runtime-comparisons.apple.metal.smoke/isolated-runs/dawn_delegate/compute_workgroup_atomic_1024/dawn_delegate.run000.ndjson --trace-meta bench/out/apple-metal/smoke/20260406T201024Z/runtime-comparisons.apple.metal.smoke/isolated-runs/dawn_delegate/compute_workgroup_atomic_1024/dawn_delegate.run000.meta.json --gpu-timestamp-mode auto --kernel-root bench/kernels --queue-sync-mode per-command --gpu-timestamp-mode off",
+      "commandRepeat": 1,
+      "runIndex": 0,
+      "timingNormalizationDivisor": 1.0,
+      "uploadBufferUsage": "copy-dst-copy-src",
+      "uploadIgnoreFirstOps": 0,
+      "uploadSubmitEvery": 1
+    },
+    {
+      "command": "env DYLD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$DYLD_LIBRARY_PATH runtime/zig/zig-out/bin/doe-zig-runtime --commands examples/workgroup_atomic_commands.json --quirks examples/quirks/intel_gen12_temp_buffer.json --vendor apple --api metal --family apple-gpu --driver 1.0.0 --backend native --backend-lane metal_dawn_release --execute --trace --queue-sync-mode per-command --upload-buffer-usage copy-dst-copy-src --upload-submit-every 1 --trace-jsonl bench/out/apple-metal/smoke/20260406T201024Z/runtime-comparisons.apple.metal.smoke/isolated-runs/dawn_delegate/compute_workgroup_atomic_1024/dawn_delegate.run001.ndjson --trace-meta bench/out/apple-metal/smoke/20260406T201024Z/runtime-comparisons.apple.metal.smoke/isolated-runs/dawn_delegate/compute_workgroup_atomic_1024/dawn_delegate.run001.meta.json --gpu-timestamp-mode auto --kernel-root bench/kernels --queue-sync-mode per-command --gpu-timestamp-mode off",
+      "commandRepeat": 1,
+      "runIndex": 1,
+      "timingNormalizationDivisor": 1.0,
+      "uploadBufferUsage": "copy-dst-copy-src",
+      "uploadIgnoreFirstOps": 0,
+      "uploadSubmitEvery": 1
+    }
+  ],
+  "executorId": "dawn_delegate",
+  "generatedAt": "2026-04-06T20:10:24.342900+00:00",
+  "host": {
+    "arch": "arm64",
+    "os": "darwin"
+  },
+  "lastMeta": {},
+  "product": "dawn_delegate",
+  "resourceStats": {
+    "gpuProbeAvailableCount": 0,
+    "gpuProbeModes": [],
+    "gpuVramDeltaPeakFromBeforeBytes": {
+      "count": 0,
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "p10": 0.0,
+      "p50": 0.0,
+      "p95": 0.0,
+      "p99": 0.0,
+      "stdev": 0.0
+    },
+    "gpuVramUsedAfterBytes": {
+      "count": 0,
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "p10": 0.0,
+      "p50": 0.0,
+      "p95": 0.0,
+      "p99": 0.0,
+      "stdev": 0.0
+    },
+    "gpuVramUsedBeforeBytes": {
+      "count": 0,
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "p10": 0.0,
+      "p50": 0.0,
+      "p95": 0.0,
+      "p99": 0.0,
+      "stdev": 0.0
+    },
+    "gpuVramUsedPeakBytes": {
+      "count": 0,
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "p10": 0.0,
+      "p50": 0.0,
+      "p95": 0.0,
+      "p99": 0.0,
+      "stdev": 0.0
+    },
+    "processPeakRssKb": {
+      "count": 0,
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "p10": 0.0,
+      "p50": 0.0,
+      "p95": 0.0,
+      "p99": 0.0,
+      "stdev": 0.0
+    },
+    "samplingTruncatedCount": 0
+  },
+  "runParameters": {
+    "allowNoExecution": false,
+    "commandRepeat": 1,
+    "comparabilityMode": "warn",
+    "ignoreFirstOps": 0,
+    "iterations": 2,
+    "requiredTimingClass": "operation",
+    "resourceProbe": "none",
+    "resourceSampleMs": 100,
+    "resourceSampleTargetCount": 0,
+    "timingDivisor": 1.0,
+    "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (baseline/comparison divisors fixed to 1.0).",
+    "uploadBufferUsage": "copy-dst-copy-src",
+    "uploadSubmitEvery": 1,
+    "warmup": 0
+  },
+  "schemaVersion": 2,
+  "stats": {
+    "count": 0,
+    "maxMs": 0.0,
+    "meanMs": 0.0,
+    "minMs": 0.0,
+    "p10Ms": 0.0,
+    "p50Ms": 0.0,
+    "p95Ms": 0.0,
+    "p99Ms": 0.0,
+    "stdevMs": 0.0
+  },
+  "timingClasses": [],
+  "timingMetricsNormalizedStatsMs": {
+    "cpu_time": {
+      "count": 0,
+      "maxMs": 0.0,
+      "meanMs": 0.0,
+      "minMs": 0.0,
+      "p10Ms": 0.0,
+      "p50Ms": 0.0,
+      "p95Ms": 0.0,
+      "p99Ms": 0.0,
+      "stdevMs": 0.0
+    },
+    "gpu_time": {
+      "count": 0,
+      "maxMs": 0.0,
+      "meanMs": 0.0,
+      "minMs": 0.0,
+      "p10Ms": 0.0,
+      "p50Ms": 0.0,
+      "p95Ms": 0.0,
+      "p99Ms": 0.0,
+      "stdevMs": 0.0
+    },
+    "wall_time": {
+      "count": 0,
+      "maxMs": 0.0,
+      "meanMs": 0.0,
+      "minMs": 0.0,
+      "p10Ms": 0.0,
+      "p50Ms": 0.0,
+      "p95Ms": 0.0,
+      "p99Ms": 0.0,
+      "stdevMs": 0.0
+    }
+  },
+  "timingMetricsRawStatsMs": {
+    "cpu_time": {
+      "count": 0,
+      "maxMs": 0.0,
+      "meanMs": 0.0,
+      "minMs": 0.0,
+      "p10Ms": 0.0,
+      "p50Ms": 0.0,
+      "p95Ms": 0.0,
+      "p99Ms": 0.0,
+      "stdevMs": 0.0
+    },
+    "gpu_time": {
+      "count": 0,
+      "maxMs": 0.0,
+      "meanMs": 0.0,
+      "minMs": 0.0,
+      "p10Ms": 0.0,
+      "p50Ms": 0.0,
+      "p95Ms": 0.0,
+      "p99Ms": 0.0,
+      "stdevMs": 0.0
+    },
+    "wall_time": {
+      "count": 0,
+      "maxMs": 0.0,
+      "meanMs": 0.0,
+      "minMs": 0.0,
+      "p10Ms": 0.0,
+      "p50Ms": 0.0,
+      "p95Ms": 0.0,
+      "p99Ms": 0.0,
+      "stdevMs": 0.0
+    }
+  },
+  "timingSources": [],
+  "timingsMs": [],
+  "workload": {
+    "api": "metal",
+    "asyncDiagnosticsMode": "",
+    "benchmarkClass": "comparable",
+    "claimEligible": true,
+    "cohorts": [
+      "smoke",
+      "governed",
+      "regression"
+    ],
+    "commandsPath": "examples/workgroup_atomic_commands.json",
+    "comparabilityCandidate": {
+      "enabled": false,
+      "notes": "",
+      "tier": ""
+    },
+    "comparabilityNotes": "Local Metal compute smoke contract",
+    "comparable": true,
+    "description": "Local Metal compute smoke",
+    "directionalReason": "",
+    "domain": "compute",
+    "driver": "1.0.0",
+    "family": "apple-gpu",
+    "id": "compute_workgroup_atomic_1024",
+    "includeByDefault": true,
+    "name": "workgroup-atomic-smoke",
+    "pathAsymmetry": false,
+    "pathAsymmetryNote": "",
+    "quirksPath": "examples/quirks/intel_gen12_temp_buffer.json",
+    "strictNormalizationUnit": "",
+    "vendor": "apple"
+  },
+  "workloadContract": {
+    "path": "bench/workloads/workloads.apple.metal.smoke.json",
+    "sha256": "383d0940b4346da1c778a9a6542a643f1260b443a2f58cb51c6bb43be77afd8f"
+  }
+}
