@@ -282,13 +282,18 @@ function commandPlanToNeutralPlan(plan) {
     }
   });
 
+  const comparable = typeof plan.comparable === 'boolean' ? plan.comparable : false;
+  const domain = typeof plan.domain === 'string' && plan.domain.length > 0
+    ? plan.domain
+    : 'unknown';
+
   return {
     schemaVersion: 1,
     planId: plan.planSha256 ?? plan.compatibilityCommandsSha256 ?? plan.workloadId,
     executorId: 'node_webgpu_package',
     workloadId: typeof plan.workloadId === 'string' ? plan.workloadId : 'generated_command_plan',
-    domain: 'compute',
-    comparable: true,
+    domain,
+    comparable,
     description: typeof plan.description === 'string' ? plan.description : '',
     ...(plan.determinism && typeof plan.determinism === 'object' && !Array.isArray(plan.determinism)
       ? { determinism: plan.determinism }

@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from native_compare_modules.normalization import sample_normalized_elapsed_ms
 from native_compare_modules import reporting as reporting_mod
 from native_compare_modules.runner import file_sha256
 
@@ -29,6 +30,12 @@ def _dedupe_reasons(reasons: list[str]) -> list[str]:
 def receipt_run_view(receipt: dict[str, Any]) -> dict[str, Any]:
     command_samples: list[dict[str, Any]] = []
     timings: list[float] = []
+    normalization = receipt.get("normalization", {})
+    if not isinstance(normalization, dict):
+        normalization = {}
+    workload = receipt.get("workload", {})
+    if not isinstance(workload, dict):
+        workload = {}
     for sample in receipt.get("samples", []):
         if not isinstance(sample, dict):
             continue
@@ -38,6 +45,60 @@ def receipt_run_view(receipt: dict[str, Any]) -> dict[str, Any]:
         trace_artifacts = sample.get("traceArtifacts", {})
         if not isinstance(trace_artifacts, dict):
             trace_artifacts = {}
+        trace_meta = sample.get("traceMeta", {})
+        if not isinstance(trace_meta, dict):
+            trace_meta = {}
+        timing = sample.get("timing", {})
+        if not isinstance(timing, dict):
+            timing = {}
+        restored_timing = dict(timing)
+        if "commandRepeat" not in restored_timing:
+            restored_timing["commandRepeat"] = int(
+                sample.get("commandRepeat", normalization.get("commandRepeat", 1)) or 1
+            )
+        if "timingNormalizationDivisor" not in restored_timing:
+            restored_timing["timingNormalizationDivisor"] = (
+                reporting_mod.safe_float(
+                    sample.get(
+                        "timingNormalizationDivisor",
+                        normalization.get("timingDivisor", 1.0),
+                    )
+                )
+                or 1.0
+            )
+        if "timingConfiguredDivisor" not in restored_timing:
+            restored_timing["timingConfiguredDivisor"] = (
+                reporting_mod.safe_float(normalization.get("timingDivisor", 1.0))
+                or 1.0
+            )
+        if "traceMetaSource" not in restored_timing:
+            restored_timing["traceMetaSource"] = str(sample.get("timingSource", "")).strip()
+        if "timingSelectionPolicy" not in restored_timing:
+            restored_timing["timingSelectionPolicy"] = (
+                str(trace_meta.get("timingSelectionPolicy", "")).strip()
+                or "<none>"
+            )
+        if "uploadBufferUsage" not in restored_timing:
+            restored_timing["uploadBufferUsage"] = str(
+                sample.get(
+                    "uploadBufferUsage",
+                    normalization.get("uploadBufferUsage", ""),
+                )
+            ).strip()
+        if "uploadSubmitEvery" not in restored_timing:
+            restored_timing["uploadSubmitEvery"] = int(
+                sample.get(
+                    "uploadSubmitEvery",
+                    normalization.get("uploadSubmitEvery", 1),
+                )
+                or 1
+            )
+        if "workloadUnitNormalizationDivisor" not in restored_timing:
+            workload_unit_divisor = reporting_mod.safe_float(
+                sample.get("workloadUnitNormalizationDivisor")
+            )
+            if workload_unit_divisor is not None and workload_unit_divisor > 0.0:
+                restored_timing["workloadUnitNormalizationDivisor"] = workload_unit_divisor
         command_samples.append(
             {
                 "runIndex": int(sample.get("runIndex", 0)),
@@ -46,30 +107,49 @@ def receipt_run_view(receipt: dict[str, Any]) -> dict[str, Any]:
                 "measuredRawMs": reporting_mod.safe_float(sample.get("measuredRawMs")),
                 "measuredMs": measured_ms,
                 "timingSource": str(sample.get("timingSource", "")).strip(),
-                "timing": {
-                    "timingNormalizationDivisor": receipt.get("normalization", {}).get(
-                        "timingDivisor",
-                        1.0,
-                    ),
-                    "traceMetaSource": str(sample.get("timingSource", "")).strip(),
-                    "timingSelectionPolicy": str(
-                        sample.get("traceMeta", {}).get("timingSelectionPolicy", "")
-                    ).strip()
-                    or "<none>",
-                    "uploadBufferUsage": receipt.get("normalization", {}).get(
-                        "uploadBufferUsage",
-                        "",
-                    ),
-                    "uploadSubmitEvery": receipt.get("normalization", {}).get(
-                        "uploadSubmitEvery",
-                        1,
-                    ),
-                },
+                "timing": restored_timing,
                 "traceJsonlPath": str(trace_artifacts.get("jsonlPath", "")).strip(),
                 "traceMetaPath": str(trace_artifacts.get("metaPath", "")).strip(),
                 "returnCode": int(sample.get("returnCode", 0)),
                 "resource": sample.get("resource", {}),
-                "traceMeta": sample.get("traceMeta", {}),
+                "traceMeta": trace_meta,
+                "commandRepeat": int(
+                    sample.get("commandRepeat", normalization.get("commandRepeat", 1)) or 1
+                ),
+                "uploadIgnoreFirstOps": int(
+                    sample.get("uploadIgnoreFirstOps", normalization.get("ignoreFirstOps", 0))
+                    or 0
+                ),
+                "uploadBufferUsage": str(
+                    sample.get("uploadBufferUsage", normalization.get("uploadBufferUsage", ""))
+                ).strip(),
+                "uploadSubmitEvery": int(
+                    sample.get("uploadSubmitEvery", normalization.get("uploadSubmitEvery", 1))
+                    or 1
+                ),
+                "timingNormalizationDivisor": (
+                    reporting_mod.safe_float(
+                        sample.get("timingNormalizationDivisor")
+                    )
+                    or reporting_mod.safe_float(normalization.get("timingDivisor", 1.0))
+                    or 1.0
+                ),
+                "workloadDomain": str(workload.get("domain", "")).strip(),
+                "strictNormalizationUnit": str(
+                    workload.get("strictNormalizationUnit", "")
+                ).strip(),
+                **(
+                    {
+                        "workloadUnitNormalizationDivisor": reporting_mod.safe_float(
+                            sample.get("workloadUnitNormalizationDivisor")
+                        )
+                    }
+                    if (
+                        reporting_mod.safe_float(sample.get("workloadUnitNormalizationDivisor"))
+                        is not None
+                    )
+                    else {}
+                ),
             }
         )
     execution = receipt.get("execution", {})
@@ -277,10 +357,11 @@ def _delta_percent_from_stats(
 
 def _wall_values(receipt: dict[str, Any]) -> list[float]:
     values: list[float] = []
-    for sample in receipt.get("samples", []):
+    run_view = receipt_run_view(receipt)
+    for sample in run_view.get("commandSamples", []):
         if not isinstance(sample, dict):
             continue
-        value = reporting_mod.safe_float(sample.get("wallMs"))
+        value = sample_normalized_elapsed_ms(sample)
         if value is not None:
             values.append(value)
     return values

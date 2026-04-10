@@ -12,6 +12,10 @@ from typing import Any
 
 from native_compare_modules import compilation_runner as compilation_runner_mod
 from bench.lib import synthetic_assets as synthetic_assets_mod
+from native_compare_modules.normalization import (
+    derive_counter_derived_divisor,
+    derive_workload_unit_normalization_divisor,
+)
 from native_compare_modules.reporting import (
     NS_PER_MS,
     parse_int,
@@ -270,35 +274,6 @@ def ensure_doe_runtime_trace_meta_fields(
         sample_meta["uploadSubmitEvery"] = upload_submit_every
         patched = True
     return patched
-
-
-def derive_counter_derived_divisor(
-    *,
-    workload_domain: str,
-    strict_normalization_unit: str,
-    trace_meta: dict[str, Any],
-    command_repeat: int,
-) -> tuple[float, int, int, int]:
-    trace_row_count = parse_int(trace_meta.get("executionRowCount", 0)) or 0
-    trace_dispatch_count = parse_int(trace_meta.get("executionDispatchCount", 0)) or 0
-    trace_success_count = parse_int(trace_meta.get("executionSuccessCount", 0)) or 0
-    trace_submit_every = parse_int(trace_meta.get("uploadSubmitEvery", 0)) or 0
-    derived_divisor = 0.0
-
-    if strict_normalization_unit == "cycle" and command_repeat > 0:
-        derived_divisor = float(command_repeat)
-    elif strict_normalization_unit == "dispatch" and trace_dispatch_count > 0:
-        derived_divisor = float(trace_dispatch_count)
-    elif workload_domain == "surface" and command_repeat > 0:
-        derived_divisor = float(command_repeat)
-    elif workload_domain == "upload" and trace_submit_every > 0:
-        derived_divisor = float(trace_row_count)
-    elif trace_dispatch_count > 0:
-        derived_divisor = float(trace_dispatch_count)
-    elif trace_success_count > 0 or trace_row_count > 0:
-        derived_divisor = float(max(trace_success_count, trace_row_count))
-
-    return derived_divisor, trace_success_count, trace_row_count, trace_dispatch_count
 
 
 def enforce_strict_counter_derived_normalization(
@@ -895,8 +870,18 @@ def run_workload(
             timing_metrics_raw_ms,
             effective_timing_divisor,
         )
+        workload_unit_divisor, workload_unit_divisor_source = derive_workload_unit_normalization_divisor(
+            workload_domain=workload.domain,
+            strict_normalization_unit=getattr(workload, "strict_normalization_unit", ""),
+            trace_meta=sample_meta,
+            command_repeat=command_repeat,
+            configured_timing_divisor=timing_divisor,
+            required_timing_class=required_timing_class,
+        )
         measured_meta["timingNormalizationDivisor"] = effective_timing_divisor
         measured_meta["timingConfiguredDivisor"] = timing_divisor
+        measured_meta["workloadUnitNormalizationDivisor"] = workload_unit_divisor
+        measured_meta["workloadUnitNormalizationSource"] = workload_unit_divisor_source
         measured_meta["timingRawMs"] = measured_raw_ms
         measured_meta["timingNormalizedMs"] = measured_ms
         measured_meta["uploadBufferUsage"] = upload_buffer_usage
@@ -925,6 +910,7 @@ def run_workload(
                 "uploadBufferUsage": upload_buffer_usage,
                 "uploadSubmitEvery": upload_submit_every,
                 "timingNormalizationDivisor": timing_divisor,
+                "workloadUnitNormalizationDivisor": workload_unit_divisor,
             }
         )
         last_meta = sample_meta

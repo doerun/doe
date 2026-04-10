@@ -1314,13 +1314,9 @@ async function executeSample(
         throw new Error(`dispatch plan mismatch at step ${index}`);
       }
       const opStartedAt = performance.now();
-      if (typeof pass._dispatchBound === 'function') {
-        pass._dispatchBound(state.pipeline, state.bindGroup, step.workgroups[0], step.workgroups[1], step.workgroups[2]);
-      } else {
-        pass.setPipeline(state.pipeline);
-        pass.setBindGroup(0, state.bindGroup);
-        pass.dispatchWorkgroups(step.workgroups[0], step.workgroups[1], step.workgroups[2]);
-      }
+      pass.setPipeline(state.pipeline);
+      pass.setBindGroup(0, state.bindGroup);
+      pass.dispatchWorkgroups(step.workgroups[0], step.workgroups[1], step.workgroups[2]);
       const opNs = nsDelta(opStartedAt);
       stepBreakdownNs.dispatchEncodeApiTotalNs += opNs;
       executionEncodeTotalNs += opNs;
@@ -1748,16 +1744,17 @@ export async function executePlanFile({
   });
   let runtime = null;
   try {
+    const timedEnvelopeStartedAt = performance.now();
     runtime = await createRuntime(normalizedPlan, webgpu, spec, { debugLog, runtimeHost });
     runtime.hostExecutorInitTotalNs += providerModuleResolveTotalNs;
-    const timedEnvelopeStartedAt = performance.now();
+    const executionStartedAt = preparedSession ? performance.now() : timedEnvelopeStartedAt;
     const result = await executeSample(normalizedPlan, runtime, {
       includeSetupInSelectedTiming: !preparedSession,
       debugLog,
       queueWaitScope,
       queueWaitSubmitCadence,
     });
-    const processWallMs = (performance.now() - timedEnvelopeStartedAt);
+    const processWallMs = (performance.now() - executionStartedAt);
     const artifactFinalizeStartedAt = performance.now();
     if (traceJsonlPath) {
       debugLog('artifact.write.traceJsonl.start', {

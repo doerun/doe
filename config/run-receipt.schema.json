@@ -450,6 +450,9 @@
         "timingClass": {
           "type": "string"
         },
+        "timing": {
+          "type": "object"
+        },
         "traceArtifacts": {
           "type": "object",
           "additionalProperties": false,
@@ -496,6 +499,35 @@
         },
         "resource": {
           "type": "object"
+        },
+        "commandRepeat": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "uploadIgnoreFirstOps": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "uploadBufferUsage": {
+          "type": "string"
+        },
+        "uploadSubmitEvery": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "timingNormalizationDivisor": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "workloadUnitNormalizationDivisor": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "workloadDomain": {
+          "type": "string"
+        },
+        "strictNormalizationUnit": {
+          "type": "string"
         },
         "returnCode": {
           "type": "integer"

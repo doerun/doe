@@ -65,6 +65,44 @@ def _sample_success(sample: dict[str, Any]) -> bool:
     return int(sample.get("returnCode", 1)) == 0
 
 
+def _sample_timing(sample: dict[str, Any]) -> dict[str, Any]:
+    timing = sample.get("timing", {})
+    return timing if isinstance(timing, dict) else {}
+
+
+def _copy_optional_sample_fields(sample: dict[str, Any]) -> dict[str, Any]:
+    copied: dict[str, Any] = {}
+    timing = _sample_timing(sample)
+    if timing:
+        copied["timing"] = timing
+    int_fields = (
+        "commandRepeat",
+        "uploadIgnoreFirstOps",
+        "uploadSubmitEvery",
+    )
+    for field_name in int_fields:
+        value = reporting_mod.safe_float(sample.get(field_name))
+        if value is not None:
+            copied[field_name] = int(value)
+    float_fields = (
+        "timingNormalizationDivisor",
+        "workloadUnitNormalizationDivisor",
+    )
+    for field_name in float_fields:
+        value = _safe_float(sample.get(field_name))
+        if value is not None:
+            copied[field_name] = value
+    string_fields = (
+        "uploadBufferUsage",
+        "workloadDomain",
+        "strictNormalizationUnit",
+    )
+    for field_name in string_fields:
+        if field_name in sample:
+            copied[field_name] = str(sample.get(field_name, "")).strip()
+    return copied
+
+
 def _receipt_samples(run_result: dict[str, Any]) -> list[dict[str, Any]]:
     samples: list[dict[str, Any]] = []
     for sample in run_result.get("commandSamples", []):
@@ -91,6 +129,7 @@ def _receipt_samples(run_result: dict[str, Any]) -> list[dict[str, Any]]:
                 "returnCode": int(sample.get("returnCode", 0)),
                 "success": _sample_success(sample),
                 "traceMeta": trace_meta,
+                **_copy_optional_sample_fields(sample),
             }
         )
     return samples
@@ -274,7 +313,7 @@ def build_run_artifact(
         raise ValueError(
             "run receipts require workload manifest metadata; pass "
             "workload_contract_path when building the receipt"
-    )
+        )
     samples = _receipt_samples(run_result)
     invocation_command = samples[0]["command"] if samples else []
     workload_manifest = workload_manifest_provenance(workload_contract_path).to_dict()
@@ -391,6 +430,7 @@ def _legacy_samples(data: dict[str, Any]) -> list[dict[str, Any]]:
                 "returnCode": int(sample.get("returnCode", 0)),
                 "success": _sample_success(sample),
                 "traceMeta": trace_meta,
+                **_copy_optional_sample_fields(sample),
             }
         )
     return samples

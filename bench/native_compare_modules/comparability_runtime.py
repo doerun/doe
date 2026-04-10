@@ -28,6 +28,7 @@ from native_compare_modules.comparability_upload_contract import (
     validate_upload_apples_to_apples,
     verify_fawn_upload_runtime_contract,
 )
+from native_compare_modules.normalization import sample_normalized_elapsed_ms
 from native_compare_modules.reporting import parse_int, safe_float, safe_int, valid_sync_mode
 from native_compare_modules.timing_selection import canonical_timing_source, classify_timing_source
 
@@ -51,24 +52,10 @@ _PACKAGE_SUBMIT_SCOPE_FIELDS: tuple[tuple[str, str], ...] = (
 
 
 def _sample_normalized_wall_ms(sample: dict[str, Any]) -> float | None:
-    elapsed_ms = safe_float(sample.get("elapsedMs"))
+    elapsed_ms = sample_normalized_elapsed_ms(sample)
     if elapsed_ms is None or elapsed_ms <= 0.0:
         return None
-    timing = sample.get("timing", {})
-    command_repeat = None
-    timing_divisor = None
-    if isinstance(timing, dict):
-        command_repeat = safe_float(timing.get("commandRepeat"))
-        timing_divisor = safe_float(timing.get("timingNormalizationDivisor"))
-    if command_repeat is None or command_repeat <= 0.0:
-        command_repeat = safe_float(sample.get("commandRepeat"))
-    if timing_divisor is None or timing_divisor <= 0.0:
-        timing_divisor = safe_float(sample.get("timingNormalizationDivisor"))
-    if command_repeat is None or command_repeat <= 0.0:
-        command_repeat = 1.0
-    if timing_divisor is None or timing_divisor <= 0.0:
-        timing_divisor = 1.0
-    return elapsed_ms / (command_repeat * timing_divisor)
+    return elapsed_ms
 
 
 def _median_phase_fractions(

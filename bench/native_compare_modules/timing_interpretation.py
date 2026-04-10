@@ -6,6 +6,10 @@ from typing import Any
 
 from native_compare_modules import reporting as reporting_mod
 from native_compare_modules import timing_selection as timing_selection_mod
+from native_compare_modules.normalization import (
+    sample_normalized_elapsed_ms,
+    sample_workload_unit_normalization_divisor,
+)
 from native_compare_modules.reporting import safe_float
 
 
@@ -66,40 +70,13 @@ def command_sample_field_values_ms(
         if parsed is None or parsed < 0.0:
             continue
         if field == "elapsedMs":
-            command_repeat = safe_float(sample.get("commandRepeat")) or 1.0
-            if command_repeat <= 0.0:
-                command_repeat = 1.0
-            timing_divisor = safe_float(sample.get("timingNormalizationDivisor"))
-            if timing_divisor is None or timing_divisor <= 0.0:
-                timing_meta = sample.get("timing", {})
-                if isinstance(timing_meta, dict):
-                    timing_divisor = safe_float(timing_meta.get("timingNormalizationDivisor"))
-            if timing_divisor is None or timing_divisor <= 0.0:
-                timing_divisor = 1.0
-            parsed /= command_repeat * timing_divisor
+            parsed /= sample_workload_unit_normalization_divisor(sample)
         values.append(parsed)
     return values
 
 
-def _sample_normalization_factor(sample: dict[str, Any]) -> float:
-    command_repeat = safe_float(sample.get("commandRepeat")) or 1.0
-    if command_repeat <= 0.0:
-        command_repeat = 1.0
-    timing_divisor = safe_float(sample.get("timingNormalizationDivisor"))
-    if timing_divisor is None or timing_divisor <= 0.0:
-        timing_meta = sample.get("timing", {})
-        if isinstance(timing_meta, dict):
-            timing_divisor = safe_float(timing_meta.get("timingNormalizationDivisor"))
-    if timing_divisor is None or timing_divisor <= 0.0:
-        timing_divisor = 1.0
-    return command_repeat * timing_divisor
-
-
 def _normalized_elapsed_ms(sample: dict[str, Any]) -> float | None:
-    elapsed_ms = safe_float(sample.get("elapsedMs"))
-    if elapsed_ms is None or elapsed_ms < 0.0:
-        return None
-    return elapsed_ms / _sample_normalization_factor(sample)
+    return sample_normalized_elapsed_ms(sample)
 
 
 def _normalized_trace_meta_total_ms(sample: dict[str, Any], field: str) -> float | None:
@@ -109,7 +86,7 @@ def _normalized_trace_meta_total_ms(sample: dict[str, Any], field: str) -> float
     raw_ns = safe_float(trace_meta.get(field))
     if raw_ns is None or raw_ns < 0.0:
         return None
-    return (raw_ns / reporting_mod.NS_PER_MS) / _sample_normalization_factor(sample)
+    return (raw_ns / reporting_mod.NS_PER_MS) / sample_workload_unit_normalization_divisor(sample)
 
 
 def trace_meta_field_values_ms(
@@ -399,9 +376,10 @@ def build_timing_interpretation(
             comparison_workload_unit_stats,
         ),
         "note": (
-            "Uses timed command process wall normalized by commandRepeat and "
-            "timingNormalizationDivisor. This is the full timed workload-unit view for one "
-            "comparable workload unit, not a warm-session-only metric."
+            "Uses timed command process wall normalized by one workload-unit divisor "
+            "preserved in sample timing provenance. This avoids double-counting "
+            "commandRepeat and timing-divisor metadata when they describe the same "
+            "workload unit."
         ),
     }
     legacy_workload_unit_wall = dict(workload_unit_wall)

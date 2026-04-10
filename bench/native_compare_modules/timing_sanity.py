@@ -5,6 +5,7 @@ from __future__ import annotations
 import statistics
 from typing import Any
 
+from native_compare_modules.normalization import sample_normalized_elapsed_ms
 from native_compare_modules.reporting import NS_PER_MS, safe_float
 from native_compare_modules.timing_selection import canonical_timing_source
 
@@ -57,24 +58,10 @@ def _raw_operation_total_ms(sample: dict[str, Any]) -> float | None:
 
 
 def _normalized_process_wall_ms(sample: dict[str, Any]) -> float | None:
-    elapsed_ms = safe_float(sample.get("elapsedMs"))
+    elapsed_ms = sample_normalized_elapsed_ms(sample)
     if elapsed_ms is None or elapsed_ms <= 0.0:
         return None
-    timing = sample.get("timing")
-    timing_divisor = None
-    command_repeat = None
-    if isinstance(timing, dict):
-        timing_divisor = safe_float(timing.get("timingNormalizationDivisor"))
-        command_repeat = safe_float(timing.get("commandRepeat"))
-    if timing_divisor is None or timing_divisor <= 0.0:
-        timing_divisor = safe_float(sample.get("timingNormalizationDivisor"))
-    if timing_divisor is None or timing_divisor <= 0.0:
-        timing_divisor = 1.0
-    if command_repeat is None or command_repeat <= 0.0:
-        command_repeat = safe_float(sample.get("commandRepeat"))
-    if command_repeat is None or command_repeat <= 0.0:
-        command_repeat = 1.0
-    return elapsed_ms / (command_repeat * timing_divisor)
+    return elapsed_ms
 
 
 def sample_operation_wall_coverage_ratio(sample: dict[str, Any]) -> float | None:
