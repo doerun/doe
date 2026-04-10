@@ -1,34 +1,21 @@
-const immediates_external = @import("doe_immediates_external_native.zig");
-pub const doeNativeBindingCommandsSetImmediates = immediates_external.doeNativeBindingCommandsSetImmediates;
-pub const doeNativeComputePassSetImmediates = immediates_external.doeNativeComputePassSetImmediates;
-pub const doeNativeRenderPassSetImmediates = immediates_external.doeNativeRenderPassSetImmediates;
-pub const doeNativeRenderBundleEncoderSetImmediates = immediates_external.doeNativeRenderBundleEncoderSetImmediates;
+const facade = @import("native/doe_native_api_misc_exports.zig");
 
-const external_texture_native = @import("doe_external_texture_native.zig");
-pub const doeNativeDeviceImportExternalTexture = external_texture_native.doeNativeDeviceImportExternalTexture;
-pub const doeNativeDeviceCreateExternalTexture = external_texture_native.doeNativeDeviceCreateExternalTexture;
-pub const doeNativeExternalTextureAddRef = external_texture_native.doeNativeExternalTextureAddRef;
-pub const doeNativeExternalTextureRelease = external_texture_native.doeNativeExternalTextureRelease;
-pub const doeNativeExternalTextureDestroy = external_texture_native.doeNativeExternalTextureDestroy;
-pub const doeNativeExternalTextureExpire = external_texture_native.doeNativeExternalTextureExpire;
-pub const doeNativeExternalTextureRefresh = external_texture_native.doeNativeExternalTextureRefresh;
-pub const doeNativeExternalTextureSetLabel = external_texture_native.doeNativeExternalTextureSetLabel;
-
-const adapter_info = @import("doe_adapter_info_native.zig");
-const shader_compilation_info = @import("doe_shader_compilation_info_native.zig");
-
-// Force both modules into the build so their exports are linked.
-comptime {
-    _ = adapter_info;
-    _ = shader_compilation_info;
-}
-
-pub const doeNativeAdapterGetInfo = adapter_info.doeNativeAdapterGetInfo;
-pub const doeNativeAdapterFreeInfo = adapter_info.doeNativeAdapterFreeInfo;
-
-pub const doeNativeShaderModuleGetCompilationInfo = shader_compilation_info.doeNativeShaderModuleGetCompilationInfo;
-
-pub const label_store = @import("doe_label_store.zig");
-pub const doeNativeObjectSetLabel = label_store.doeNativeObjectSetLabel;
-pub const doeNativeObjectGetLabel = label_store.doeNativeObjectGetLabel;
-pub const doeNativeObjectRemoveLabel = label_store.doeNativeObjectRemoveLabel;
+pub const doeNativeBindingCommandsSetImmediates = facade.doeNativeBindingCommandsSetImmediates;
+pub const doeNativeComputePassSetImmediates = facade.doeNativeComputePassSetImmediates;
+pub const doeNativeRenderPassSetImmediates = facade.doeNativeRenderPassSetImmediates;
+pub const doeNativeRenderBundleEncoderSetImmediates = facade.doeNativeRenderBundleEncoderSetImmediates;
+pub const doeNativeDeviceImportExternalTexture = facade.doeNativeDeviceImportExternalTexture;
+pub const doeNativeDeviceCreateExternalTexture = facade.doeNativeDeviceCreateExternalTexture;
+pub const doeNativeExternalTextureAddRef = facade.doeNativeExternalTextureAddRef;
+pub const doeNativeExternalTextureRelease = facade.doeNativeExternalTextureRelease;
+pub const doeNativeExternalTextureDestroy = facade.doeNativeExternalTextureDestroy;
+pub const doeNativeExternalTextureExpire = facade.doeNativeExternalTextureExpire;
+pub const doeNativeExternalTextureRefresh = facade.doeNativeExternalTextureRefresh;
+pub const doeNativeExternalTextureSetLabel = facade.doeNativeExternalTextureSetLabel;
+pub const doeNativeAdapterGetInfo = facade.doeNativeAdapterGetInfo;
+pub const doeNativeAdapterFreeInfo = facade.doeNativeAdapterFreeInfo;
+pub const doeNativeShaderModuleGetCompilationInfo = facade.doeNativeShaderModuleGetCompilationInfo;
+pub const label_store = facade.label_store;
+pub const doeNativeObjectSetLabel = facade.doeNativeObjectSetLabel;
+pub const doeNativeObjectGetLabel = facade.doeNativeObjectGetLabel;
+pub const doeNativeObjectRemoveLabel = facade.doeNativeObjectRemoveLabel;

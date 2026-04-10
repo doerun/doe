@@ -50,6 +50,13 @@ Core:
 - `src/doe_native_types.zig` — compatibility barrel over `doe_native_object_types.zig`, `doe_native_shared_types.zig`, and `doe_native_command_types.zig`; implementation code should import the specific shard it needs instead.
 - `src/doe_native_helpers.zig` — compatibility barrel over `doe_native_object_helpers.zig` and `doe_native_runtime_helpers.zig`; implementation code should import the specific helper shard it needs instead.
 - `src/doe_native_exports.zig` — cross-shard native C ABI declarations used by implementation shards that need to call sibling exports without importing a facade.
+- `src/native/doe_native_api_core_exports.zig`,
+  `src/native/doe_native_api_misc_exports.zig`, and
+  `src/native/doe_native_api_render_exports.zig` — grouped native ABI export
+  shards; `src/doe_wgpu_native.zig` remains the stable root export facade over
+  those submodules.
+- `src/native/doe_cache_adapter_native.zig` — grouped multi-adapter and
+  pipeline-cache native export shard kept out of the root namespace.
 - `src/backend/dropin_capabilities.zig` and
   `src/backend/dropin_lifecycle.zig` — backend-owned seams for capability
   probes, runtime aliases, and native lifecycle helpers used by the drop-in
@@ -92,6 +99,9 @@ Trace and replay:
 - `src/trace.zig` — TraceState, hash functions, name helpers, trace row and meta output.
 - `src/trace_text.zig` — shared JSON-string escaping and execution-status normalization helpers reused by trace emitters and host-hotpath diagnostics.
 - `src/replay.zig` — replay expectation parsing and hash-chain validation.
+- `src/tooling_io_context.zig` — explicit tooling/orchestration I/O seam with
+  sync, cooperative same-thread, and threaded-parallel modes; tooling may use
+  it, but GPU runtime execution stays on the runtime threading contract.
 - `src/runtime/process_roots.zig` — named process-lifetime allocator roots for exported C-ABI handle/state owners and async drop-in registries.
 - `src/runtime/simd/byte_scan.zig` and
   `src/runtime/simd/f32_ops.zig` — portable SIMD helper shards with scalar

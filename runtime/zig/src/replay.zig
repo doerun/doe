@@ -2,6 +2,7 @@ const std = @import("std");
 const tooling_io_context = @import("tooling_io_context.zig");
 
 const MAX_REPLAY_BYTES: usize = 16 * 1024 * 1024;
+var next_test_file_id = std.atomic.Value(u64).init(0);
 
 pub const ReplayValidationError = error{
     InvalidReplayHash,
@@ -142,6 +143,15 @@ fn sliceWithinBuffer(buffer: []const u8, slice: []const u8) bool {
     return slice_start >= buffer_start and slice_end <= buffer_end;
 }
 
+fn allocTestPath(allocator: std.mem.Allocator, stem: []const u8) ![]u8 {
+    const unique_id = next_test_file_id.fetchAdd(1, .monotonic);
+    return std.fmt.allocPrint(
+        allocator,
+        ".tmp-{s}-{d}-{d}.jsonl",
+        .{ stem, unique_id, std.time.nanoTimestamp() },
+    );
+}
+
 test "parseTraceHash parses plain hex string" {
     const result = try parseTraceHash("deadbeef");
     try std.testing.expectEqual(@as(u64, 0xdeadbeef), result);
@@ -243,20 +253,16 @@ test "parseReplayLine returns error for missing required fields" {
 }
 
 test "loadReplayExpectations keeps simple field slices inside the owned artifact buffer" {
-    var tmp = std.testing.tmpDir(.{});
-    defer tmp.cleanup();
+    const path = try allocTestPath(std.testing.allocator, "replay-owned-buffer");
+    defer std.testing.allocator.free(path);
+    defer std.fs.cwd().deleteFile(path) catch {};
 
-    const path = "replay.ndjson";
     const contents =
         \\{"seq":0,"command":"buffer_upload","kernel":"main","hash":"0x1","previousHash":"0x0","opCode":"dispatch","module":"doe-zig-runtime"}
         \\{"seq":1,"command":"dispatch","hash":"0x2","previousHash":"0x1","opCode":"dispatch","module":"doe-zig-runtime"}
         \\
     ;
-    try tmp.dir.writeFile(.{ .sub_path = path, .data = contents });
-
-    const cwd = std.fs.cwd();
-    try tmp.dir.setAsCwd();
-    defer cwd.setAsCwd() catch {};
+    try std.fs.cwd().writeFile(.{ .sub_path = path, .data = contents });
 
     var loaded = try loadReplayExpectations(std.testing.allocator, path);
     defer loaded.deinit(std.testing.allocator);
@@ -268,19 +274,17 @@ test "loadReplayExpectations keeps simple field slices inside the owned artifact
 }
 
 test "loadReplayExpectationsWithIo supports cooperative same-thread mode" {
-    var tmp = std.testing.tmpDir(.{});
-    defer tmp.cleanup();
+    const path = try allocTestPath(std.testing.allocator, "replay-cooperative-io");
+    defer std.testing.allocator.free(path);
+    defer std.fs.cwd().deleteFile(path) catch {};
 
-    try tmp.dir.writeFile(.{
-        .sub_path = "replay.jsonl",
+    try std.fs.cwd().writeFile(.{
+        .sub_path = path,
         .data =
             \\{"seq":0,"command":"dispatch","hash":"0x1","previousHash":"0x0","opCode":"dispatch","module":"doe-zig-runtime"}
             \\
         ,
     });
-
-    const path = try tmp.dir.realpathAlloc(std.testing.allocator, "replay.jsonl");
-    defer std.testing.allocator.free(path);
 
     var loaded = try loadReplayExpectationsWithIo(
         std.testing.allocator,

@@ -9,6 +9,7 @@ const runtime_cli_args = @import("runtime_cli_args.zig");
 const samples = @import("runtime_cli_samples.zig");
 
 const MAX_INPUT_BYTES: usize = 16 * 1024 * 1024;
+var next_test_file_id = std.atomic.Value(u64).init(0);
 
 pub const LoadTimings = struct {
     host_input_read_total_ns: u64 = 0,
@@ -50,6 +51,15 @@ fn nowNs() u64 {
 
 fn elapsedSince(start_ns: u64) u64 {
     return nowNs() - start_ns;
+}
+
+fn allocTestPath(allocator: std.mem.Allocator, stem: []const u8) ![]u8 {
+    const unique_id = next_test_file_id.fetchAdd(1, .monotonic);
+    return std.fmt.allocPrint(
+        allocator,
+        ".tmp-{s}-{d}-{d}.json",
+        .{ stem, unique_id, std.time.nanoTimestamp() },
+    );
 }
 
 pub fn load(
@@ -128,16 +138,14 @@ pub fn loadWithIo(
 }
 
 test "loadWithIo supports cooperative same-thread mode for command streams" {
-    var tmp = std.testing.tmpDir(.{});
-    defer tmp.cleanup();
+    const path = try allocTestPath(std.testing.allocator, "runtime-cli-inputs");
+    defer std.testing.allocator.free(path);
+    defer std.fs.cwd().deleteFile(path) catch {};
 
-    try tmp.dir.writeFile(.{
-        .sub_path = "commands.json",
+    try std.fs.cwd().writeFile(.{
+        .sub_path = path,
         .data = "[{\"command\":\"barrier\",\"dependency_count\":2}]",
     });
-
-    const path = try tmp.dir.realpathAlloc(std.testing.allocator, "commands.json");
-    defer std.testing.allocator.free(path);
 
     var result = try loadWithIo(
         std.testing.allocator,

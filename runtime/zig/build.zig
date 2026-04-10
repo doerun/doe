@@ -494,7 +494,7 @@ pub fn build(b: *std.Build) void {
     const module_runner = b.addExecutable(.{
         .name = "module-core-runner",
         .root_module = b.createModule(.{
-            .root_source_file = b.path("src/cli/module_runner_main.zig"),
+            .root_source_file = b.path("src/module_runner.zig"),
             .target = target,
             .optimize = optimize,
             .imports = &.{
@@ -522,7 +522,7 @@ pub fn build(b: *std.Build) void {
     const emit_msl_exe = b.addExecutable(.{
         .name = "doe-emit-msl",
         .root_module = b.createModule(.{
-            .root_source_file = b.path("src/cli/main_emit_msl.zig"),
+            .root_source_file = b.path("src/main_emit_msl.zig"),
             .target = target,
             .optimize = optimize,
             .imports = &.{
@@ -539,7 +539,7 @@ pub fn build(b: *std.Build) void {
     const emit_spirv_exe = b.addExecutable(.{
         .name = "doe-emit-spirv",
         .root_module = b.createModule(.{
-            .root_source_file = b.path("src/cli/main_emit_spirv.zig"),
+            .root_source_file = b.path("src/main_emit_spirv.zig"),
             .target = target,
             .optimize = optimize,
             .imports = &.{
@@ -556,7 +556,7 @@ pub fn build(b: *std.Build) void {
     const webgpu_plan_executor = b.addExecutable(.{
         .name = "webgpu-plan-executor",
         .root_module = b.createModule(.{
-            .root_source_file = b.path("src/cli/main_webgpu_plan_executor.zig"),
+            .root_source_file = b.path("src/main_webgpu_plan_executor.zig"),
             .target = target,
             .optimize = optimize,
         }),
@@ -584,7 +584,7 @@ pub fn build(b: *std.Build) void {
     const doe_plan_executor = b.addExecutable(.{
         .name = "doe-plan-executor",
         .root_module = b.createModule(.{
-            .root_source_file = b.path("src/cli/main_doe_plan_executor.zig"),
+            .root_source_file = b.path("src/main_doe_plan_executor.zig"),
             .target = target,
             .optimize = optimize,
             .imports = &.{
@@ -612,7 +612,7 @@ pub fn build(b: *std.Build) void {
     const csl_sim_runner = b.addExecutable(.{
         .name = "doe-csl-sim-runner",
         .root_module = b.createModule(.{
-            .root_source_file = b.path("src/cli/csl_sim_runner.zig"),
+            .root_source_file = b.path("src/csl_sim_runner.zig"),
             .target = target,
             .optimize = optimize,
         }),
@@ -626,7 +626,7 @@ pub fn build(b: *std.Build) void {
     const csl_bundle_emitter = b.addExecutable(.{
         .name = "doe-csl-bundle-emitter",
         .root_module = b.createModule(.{
-            .root_source_file = b.path("src/cli/csl_bundle_emitter.zig"),
+            .root_source_file = b.path("src/csl_bundle_emitter.zig"),
             .target = target,
             .optimize = optimize,
             .imports = &.{
@@ -642,7 +642,7 @@ pub fn build(b: *std.Build) void {
     const csl_host_plan_tool = b.addExecutable(.{
         .name = "doe-csl-host-plan-tool",
         .root_module = b.createModule(.{
-            .root_source_file = b.path("src/cli/csl_host_plan_tool.zig"),
+            .root_source_file = b.path("src/csl_host_plan_tool.zig"),
             .target = target,
             .optimize = optimize,
         }),
@@ -962,7 +962,7 @@ pub fn build(b: *std.Build) void {
     const host_hotpath_bench_exe = b.addExecutable(.{
         .name = "doe-host-hotpath-bench",
         .root_module = b.createModule(.{
-            .root_source_file = b.path("src/cli/main_host_hotpath_bench.zig"),
+            .root_source_file = b.path("src/main_host_hotpath_bench.zig"),
             .target = target,
             .optimize = optimize,
             .imports = &.{
@@ -984,7 +984,7 @@ pub fn build(b: *std.Build) void {
     const compilation_bench_exe = b.addExecutable(.{
         .name = "doe-compilation-bench",
         .root_module = b.createModule(.{
-            .root_source_file = b.path("src/cli/main_bench_compilation.zig"),
+            .root_source_file = b.path("src/main_bench_compilation.zig"),
             .target = target,
             .optimize = optimize,
             .imports = &.{
@@ -1006,7 +1006,7 @@ pub fn build(b: *std.Build) void {
     const runtime_compile_report_exe = b.addExecutable(.{
         .name = "doe-runtime-compile-report",
         .root_module = b.createModule(.{
-            .root_source_file = b.path("src/cli/main_runtime_compile_report.zig"),
+            .root_source_file = b.path("src/main_runtime_compile_report.zig"),
             .target = target,
             .optimize = optimize,
             .imports = &.{

@@ -1,5 +1,5 @@
 const std = @import("std");
-const wgsl = @import("../doe_wgsl/mod.zig");
+const wgsl = @import("doe_wgsl/mod.zig");
 
 const MAX_SOURCE_BYTES: usize = 2 * 1024 * 1024;
 

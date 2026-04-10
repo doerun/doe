@@ -25,6 +25,20 @@ The runtime should converge on:
 
 The contract source is [threading_contract.zig](/Users/xyz/deco/doe/runtime/zig/src/runtime/threading_contract.zig).
 
+## Tooling I/O contexts
+
+Tooling and orchestration paths now have a separate explicit I/O seam in
+`runtime/zig/src/tooling_io_context.zig`:
+
+1. `sync` for ordinary blocking CLI/tool runs
+2. `cooperative_same_thread` for future same-thread cooperative orchestration
+3. `threaded_parallel` for future fan-out work that should use OS threads
+
+This I/O context is for replay loading, CLI input loading, and related
+artifact/tooling flows. It is not a replacement for the runtime object
+threading contract above, and GPU device/queue execution should remain on the
+explicit runtime threading model unless a separate architecture row changes it.
+
 ## Phase 1 delivered here
 
 1. bounded worker pool for CPU-side background jobs

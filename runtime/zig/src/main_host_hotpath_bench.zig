@@ -1,6 +1,6 @@
 const std = @import("std");
-const support = @import("../bench/host_hotpath_bench_support.zig");
-const cases = @import("../bench/host_hotpath_bench_cases.zig");
+const support = @import("bench/host_hotpath_bench_support.zig");
+const cases = @import("bench/host_hotpath_bench_cases.zig");
 
 pub fn main() !void {
     var arena_impl = std.heap.ArenaAllocator.init(std.heap.page_allocator);
