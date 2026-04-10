@@ -74,6 +74,12 @@ lean/artifacts/
 *.tmp
 nohup.out
 *.log
+doe_pipeline_archive.fingerprint
+doe_pipeline_archive.manifest
+doe_pipeline_archive.metallib
+tmp_head.json
+tmp_node_unsupported.meta.json
+tmp_node_unsupported.ndjson
 
 # Compiled Zig artifacts (not part of source)
 zig/*.a

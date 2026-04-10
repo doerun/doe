@@ -1,3 +1,0 @@
-C:bench/inference-pipeline/kernels/matmul_logits_forward_f16accum
-C:bench/inference-pipeline/kernels/matmul-gemv
-C:bench/inference-pipeline/kernels/sample
