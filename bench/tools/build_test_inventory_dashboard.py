@@ -23,6 +23,7 @@ from glob import glob
 from pathlib import Path
 from typing import Any
 
+from bench.lib import compare_claim_artifacts as artifacts_mod
 from bench.lib import inventory_dashboard_html
 from bench.lib import output_paths
 from bench.lib import report_conformance
@@ -64,8 +65,8 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--dashboard-out",
-        default="bench/out/test-dashboard.html",
-        help="Output HTML dashboard path.",
+        default="",
+        help="Optional HTML dashboard path. Leave empty to emit JSON only.",
     )
     parser.add_argument(
         "--latest-inventory",
@@ -74,8 +75,8 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--latest-dashboard",
-        default="bench/out/test-dashboard.latest.html",
-        help="Stable latest dashboard HTML path (always overwritten).",
+        default="",
+        help="Optional stable latest dashboard HTML path. Leave empty to skip HTML output.",
     )
     parser.add_argument(
         "--max-recent-reports",
@@ -197,9 +198,13 @@ def should_include_report(
 
 
 def side_name(payload: dict[str, Any], side: str) -> str:
-    side_payload = payload.get(side)
+    participants = payload.get("participants")
+    if not isinstance(participants, dict):
+        return side
+    participant_key = "left" if side == "baseline" else "right"
+    side_payload = participants.get(participant_key)
     if isinstance(side_payload, dict):
-        name = side_payload.get("name")
+        name = side_payload.get("product")
         if isinstance(name, str) and name.strip():
             return name.strip()
     return side
@@ -231,7 +236,8 @@ def read_trace_meta(sample: dict[str, Any], cache: dict[str, dict[str, Any] | No
 def extract_side_profiles(
     payload: dict[str, Any],
     side: str,
-    meta_cache: dict[str, dict[str, Any] | None],
+    report_path: Path,
+    receipt_cache: dict[str, dict[str, Any]],
 ) -> tuple[list[SideProfile], int]:
     workloads = payload.get("workloads")
     if not isinstance(workloads, list):
@@ -242,10 +248,16 @@ def extract_side_profiles(
     for workload in workloads:
         if not isinstance(workload, dict):
             continue
-        side_payload = workload.get(side)
-        if not isinstance(side_payload, dict):
+        try:
+            left_receipt, right_receipt = artifacts_mod.load_workload_receipts(
+                workload,
+                report_path,
+                cache=receipt_cache,
+            )
+        except (FileNotFoundError, ValueError):
             continue
-        samples = side_payload.get("commandSamples")
+        receipt = left_receipt if side == "baseline" else right_receipt
+        samples = receipt.get("samples")
         if not isinstance(samples, list):
             continue
         for sample in samples:
@@ -254,7 +266,7 @@ def extract_side_profiles(
             return_code = sample.get("returnCode")
             if not isinstance(return_code, int) or return_code != 0:
                 continue
-            trace_meta = read_trace_meta(sample, meta_cache)
+            trace_meta = sample.get("traceMeta")
             if not isinstance(trace_meta, dict):
                 continue
             profile = trace_meta.get("profile")
@@ -289,18 +301,10 @@ def derive_overall_delta_p50(payload: dict[str, Any]) -> float | None:
         return None
     delta = overall.get("deltaPercent")
     if isinstance(delta, dict):
-        parsed = safe_float(delta.get("p50Approx"))
+        parsed = safe_float(delta.get("p50Percent"))
         if parsed is not None:
             return parsed
-    baseline = overall.get("baseline")
-    comparison = overall.get("comparison")
-    if not isinstance(baseline, dict) or not isinstance(comparison, dict):
-        return None
-    baseline_p50 = safe_float(baseline.get("p50Ms"))
-    comparison_p50 = safe_float(comparison.get("p50Ms"))
-    if baseline_p50 is None or comparison_p50 is None or comparison_p50 <= 0.0:
-        return None
-    return ((comparison_p50 - baseline_p50) / comparison_p50) * 100.0
+    return None
 
 
 def get_count(summary: Any, key: str) -> int:
@@ -329,21 +333,7 @@ def count_non_comparable(payload: dict[str, Any]) -> int:
 
 
 def count_non_claimable(payload: dict[str, Any]) -> int:
-    claimability_summary = payload.get("claimabilitySummary")
-    from_summary = get_count(claimability_summary, "nonClaimableCount")
-    if from_summary > 0:
-        return from_summary
-    workloads = payload.get("workloads")
-    if not isinstance(workloads, list):
-        return 0
-    count = 0
-    for workload in workloads:
-        if not isinstance(workload, dict):
-            continue
-        claimability = workload.get("claimability")
-        if isinstance(claimability, dict) and claimability.get("claimable") is False:
-            count += 1
-    return count
+    return 0
 
 
 def write_json(path: Path, payload: dict[str, Any]) -> None:
@@ -414,6 +404,7 @@ def main() -> int:
         return 1
 
     meta_cache: dict[str, dict[str, Any] | None] = {}
+    receipt_cache: dict[str, dict[str, Any]] = {}
     skipped_files: list[dict[str, str]] = []
     report_entries: list[dict[str, Any]] = []
 
@@ -454,21 +445,35 @@ def main() -> int:
             )
             continue
 
+        claim_report, _claim_report_path = artifacts_mod.load_optional_claim_report(
+            source_path
+        )
+
         generated_at = parse_report_timestamp(payload, source_path)
         generated_at_utc = iso_utc(generated_at)
         matrix_id = normalize_matrix_id(payload, source_path)
         workloads = payload.get("workloads")
         workload_count = len(workloads) if isinstance(workloads, list) else 0
         comparison_status = str(payload.get("comparisonStatus", "unknown"))
-        claim_status = str(payload.get("claimStatus", "unknown"))
+        claim_status = artifacts_mod.claim_status(payload, claim_report)
         overall_p50_delta = derive_overall_delta_p50(payload)
         non_comparable_count = count_non_comparable(payload)
-        non_claimable_count = count_non_claimable(payload)
+        non_claimable_count = artifacts_mod.non_claimable_count(payload, claim_report)
         baseline_name = side_name(payload, "baseline")
         comparison_name = side_name(payload, "comparison")
 
-        baseline_profiles, baseline_samples = extract_side_profiles(payload, "baseline", meta_cache)
-        comparison_profiles, comparison_samples = extract_side_profiles(payload, "comparison", meta_cache)
+        baseline_profiles, baseline_samples = extract_side_profiles(
+            payload,
+            "baseline",
+            source_path,
+            receipt_cache,
+        )
+        comparison_profiles, comparison_samples = extract_side_profiles(
+            payload,
+            "comparison",
+            source_path,
+            receipt_cache,
+        )
 
         if baseline_profiles and comparison_profiles:
             baseline_apis = {profile.api for profile in baseline_profiles}
@@ -638,13 +643,17 @@ def main() -> int:
         output_timestamp,
         enabled=args.timestamp_output,
     )
-    dashboard_out = output_paths.with_timestamp(
-        args.dashboard_out,
-        output_timestamp,
-        enabled=args.timestamp_output,
+    dashboard_out = (
+        output_paths.with_timestamp(
+            args.dashboard_out,
+            output_timestamp,
+            enabled=args.timestamp_output,
+        )
+        if args.dashboard_out.strip()
+        else None
     )
     latest_inventory = Path(args.latest_inventory)
-    latest_dashboard = Path(args.latest_dashboard)
+    latest_dashboard = Path(args.latest_dashboard) if args.latest_dashboard.strip() else None
 
     inventory_payload = {
         "schemaVersion": 1,
@@ -661,18 +670,23 @@ def main() -> int:
         "reports": report_entries,
         "skippedFiles": skipped_files,
     }
-    dashboard_html = inventory_dashboard_html.build_dashboard_html(
-        inventory_payload,
-        max_recent_reports=args.max_recent_reports,
-        dashboard_path=dashboard_out,
-    )
-
     write_json(inventory_out, inventory_payload)
-    write_text(dashboard_out, dashboard_html)
     write_json(latest_inventory, inventory_payload)
-    write_text(latest_dashboard, dashboard_html)
+    if dashboard_out is not None or latest_dashboard is not None:
+        dashboard_html = inventory_dashboard_html.build_dashboard_html(
+            inventory_payload,
+            max_recent_reports=args.max_recent_reports,
+            dashboard_path=dashboard_out or latest_dashboard or inventory_out,
+        )
+        if dashboard_out is not None:
+            write_text(dashboard_out, dashboard_html)
+        if latest_dashboard is not None:
+            write_text(latest_dashboard, dashboard_html)
+    emitted_outputs = [inventory_out]
+    if dashboard_out is not None:
+        emitted_outputs.append(dashboard_out)
     output_paths.write_run_manifest_for_outputs(
-        [inventory_out, dashboard_out],
+        emitted_outputs,
         {
             "runType": "inventory_dashboard",
             "config": {
@@ -683,16 +697,18 @@ def main() -> int:
             "claimGateRan": False,
             "dropinGateRan": False,
             "inventoryPath": str(inventory_out),
-            "dashboardPath": str(dashboard_out),
+            "dashboardPath": str(dashboard_out) if dashboard_out is not None else "",
             "status": "passed",
         },
     )
 
-    print("PASS: built test inventory + dashboard")
+    print("PASS: built test inventory")
     print(f"inventory: {inventory_out}")
-    print(f"dashboard: {dashboard_out}")
     print(f"latest inventory: {latest_inventory}")
-    print(f"latest dashboard: {latest_dashboard}")
+    if dashboard_out is not None:
+        print(f"dashboard: {dashboard_out}")
+    if latest_dashboard is not None:
+        print(f"latest dashboard: {latest_dashboard}")
     return 0
 
 

@@ -20,6 +20,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from bench.lib import compare_claim_artifacts as artifacts_mod
 from bench.lib import output_paths
 
 
@@ -190,19 +191,28 @@ def extract_profile_from_meta(meta: dict[str, Any]) -> str | None:
     return "|".join([vendor.strip(), api.strip(), family_value, driver.strip()])
 
 
-def extract_baseline_profile_ids(report_payload: dict[str, Any]) -> set[str]:
+def extract_baseline_profile_ids(
+    report_payload: dict[str, Any],
+    report_path: Path,
+) -> set[str]:
     profile_ids: set[str] = set()
     workloads = report_payload.get("workloads")
     if not isinstance(workloads, list):
         return profile_ids
 
+    receipt_cache: dict[str, dict[str, Any]] = {}
     for workload in workloads:
         if not isinstance(workload, dict):
             continue
-        baseline = workload.get("baseline")
-        if not isinstance(baseline, dict):
+        try:
+            baseline_receipt, _comparison_receipt = artifacts_mod.load_workload_receipts(
+                workload,
+                report_path,
+                cache=receipt_cache,
+            )
+        except (FileNotFoundError, ValueError):
             continue
-        samples = baseline.get("commandSamples")
+        samples = baseline_receipt.get("samples")
         if not isinstance(samples, list):
             continue
         for sample in samples:
@@ -288,7 +298,10 @@ def main() -> int:
             continue
 
         comparison_status = report_payload.get("comparisonStatus")
-        claim_status = report_payload.get("claimStatus")
+        claim_report, _claim_report_path = artifacts_mod.load_optional_claim_report(
+            report_path
+        )
+        claim_status = artifacts_mod.claim_status(report_payload, claim_report)
         status_pass = (
             comparison_status == policy.required_comparison_status
             and claim_status == policy.required_claim_status
@@ -296,7 +309,7 @@ def main() -> int:
         if status_pass:
             qualifying_reports += 1
 
-        baseline_profiles = extract_baseline_profile_ids(report_payload)
+        baseline_profiles = extract_baseline_profile_ids(report_payload, report_path)
         aggregated_baseline_profiles.update(baseline_profiles)
         report_summaries.append(
             {

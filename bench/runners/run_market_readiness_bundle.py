@@ -25,6 +25,11 @@ def parse_args() -> argparse.Namespace:
         help="Compare report path. Defaults to run.out from --config.",
     )
     parser.add_argument(
+        "--claim-report",
+        default="",
+        help="Optional explicit claim report path passed to build_claim_scope_report.py.",
+    )
+    parser.add_argument(
         "--skip-release-pipeline",
         action="store_true",
         help="Skip running run_release_pipeline.py.",
@@ -93,7 +98,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--claim-scope-required-claimability-mode",
         default="release",
-        help="Required claimabilityPolicy.mode passed to build_claim_scope_report.py.",
+        help="Required claimPolicy.mode passed to build_claim_scope_report.py.",
     )
     parser.add_argument(
         "--out-prefix",
@@ -210,6 +215,8 @@ def main() -> int:
             "--require-claimability-mode",
             args.claim_scope_required_claimability_mode,
         ]
+        if args.claim_report.strip():
+            claim_cmd.extend(["--claim-report", args.claim_report])
         step = run_command("claim-scope", claim_cmd, dry_run=args.dry_run)
         steps.append(step)
         if step["exitCode"] != 0:

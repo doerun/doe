@@ -13,6 +13,8 @@ import sqlite3
 import sys
 from pathlib import Path
 
+from bench.lib import compare_claim_artifacts as artifacts_mod
+
 def parse_args():
     parser = argparse.ArgumentParser(description="Ingest Fawn Benchmark JSON into SQLite")
     parser.add_argument("--db", default="bench/out/fawn_benchmarks.sqlite", help="Path to SQLite database")
@@ -56,6 +58,8 @@ def ingest_report(conn: sqlite3.Connection, report_path: Path):
     except json.JSONDecodeError as exc:
         logging.error(f"Failed to parse report JSON: {exc}")
         return False
+    claim_report, _claim_path = artifacts_mod.load_optional_claim_report(report_path)
+    claim_rows = artifacts_mod.claim_workloads_by_id(claim_report)
 
     cursor = conn.cursor()
     
@@ -66,8 +70,8 @@ def ingest_report(conn: sqlite3.Connection, report_path: Path):
     ''', (
         data.get("generatedAt", ""),
         data.get("schemaVersion", 0),
-        data.get("workloadContract", {}).get("sha256", ""),
-        data.get("claimStatus", "unknown")
+        data.get("workloadManifest", {}).get("sha256", ""),
+        artifacts_mod.claim_status(data, claim_report)
     ))
     
     run_id = cursor.lastrowid
@@ -75,10 +79,11 @@ def ingest_report(conn: sqlite3.Connection, report_path: Path):
     # Insert workloads
     workloads = data.get("workloads", [])
     for workload in workloads:
-        left_stats = workload.get("baseline", {}).get("stats", {})
-        right_stats = workload.get("comparison", {}).get("stats", {})
+        left_stats = workload.get("baselineStatsMs", {})
+        right_stats = workload.get("comparisonStatsMs", {})
         delta = workload.get("deltaPercent", {})
-        
+        claimability = claim_rows.get(workload.get("id", ""), {})
+
         cursor.execute('''
             INSERT INTO workloads (
                 run_id, workload_id, left_p50_ms, right_p50_ms, 
@@ -91,7 +96,7 @@ def ingest_report(conn: sqlite3.Connection, report_path: Path):
             right_stats.get("p50Ms"),
             delta.get("p50Percent"),
             workload.get("comparability", {}).get("comparable", False),
-            workload.get("claimability", {}).get("claimable", False)
+            claimability.get("claimable", False)
         ))
         
     conn.commit()

@@ -213,10 +213,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--compare-html-output",
         action=argparse.BooleanOptionalAction,
-        default=True,
+        default=False,
         help=(
             "Generate Dawn-vs-Doe visualization HTML from the compare report. "
-            "Enabled by default."
+            "Disabled by default; prefer the static bench JSON viewer."
         ),
     )
     parser.add_argument(
@@ -876,6 +876,8 @@ def main() -> int:
                         args.claim_require_claimability_mode,
                         "--claim-require-min-timed-samples",
                         str(args.claim_require_min_timed_samples),
+                        "--claim-config",
+                        str(config_path),
                         "--claim-expected-workload-contract",
                         str(workloads_contract_path),
                         "--claim-require-workload-contract-hash",

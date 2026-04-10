@@ -12,6 +12,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from bench.lib import compare_claim_artifacts as artifacts_mod
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
@@ -114,14 +116,15 @@ def main() -> int:
 
         if out_path.exists():
             payload = json.loads(out_path.read_text(encoding="utf-8"))
+            claim_payload, _claim_path = artifacts_mod.load_optional_claim_report(out_path)
             workloads = payload.get("workloads", [])
             if isinstance(workloads, list) and workloads:
                 workload_row = workloads[0]
                 if isinstance(workload_row, dict):
                     delta = workload_row.get("deltaPercent", {})
-                    baseline_stats = workload_row.get("baseline", {}).get("stats", {})
-                    comparison_stats = workload_row.get("comparison", {}).get("stats", {})
-                    row["claimStatus"] = str(payload.get("claimStatus", ""))
+                    baseline_stats = workload_row.get("baselineStatsMs", {})
+                    comparison_stats = workload_row.get("comparisonStatsMs", {})
+                    row["claimStatus"] = artifacts_mod.claim_status(payload, claim_payload)
                     row["comparisonStatus"] = str(payload.get("comparisonStatus", ""))
                     row["deltaP50Percent"] = safe_float(delta.get("p50Percent"))
                     row["deltaP95Percent"] = safe_float(delta.get("p95Percent"))

@@ -3,19 +3,34 @@
 
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+BENCH_ROOT = REPO_ROOT / "bench"
+for _path_entry in (str(REPO_ROOT), str(BENCH_ROOT)):
+    if _path_entry not in sys.path:
+        sys.path.insert(0, _path_entry)
+
 import argparse
 import json
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Any
+
+from bench.lib import compare_claim_artifacts as artifacts_mod
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--report",
-        default="bench/out/dawn-vs-doe.json",
-        help="Comparison report produced by the compare lane.",
+        default="bench/out/dawn-vs-doe.compare.json",
+        help="Compare report produced by the compare lane.",
+    )
+    parser.add_argument(
+        "--claim-report",
+        default="",
+        help="Optional explicit claim report path. Defaults to sibling .claim.json.",
     )
     parser.add_argument(
         "--out-json",
@@ -40,7 +55,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--require-claimability-mode",
         default="release",
-        help="Required claimabilityPolicy.mode.",
+        help="Required claimPolicy.mode.",
     )
     return parser.parse_args()
 
@@ -65,13 +80,6 @@ def parse_string_list(value: Any) -> list[str]:
         if isinstance(item, str) and item:
             out.append(item)
     return out
-
-
-def load_json(path: Path) -> dict[str, Any]:
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(payload, dict):
-        raise ValueError(f"invalid JSON object: {path}")
-    return payload
 
 
 def unique_paths(paths: list[str]) -> list[str]:
@@ -169,13 +177,9 @@ def claim_scope_rows(report: dict[str, Any]) -> list[dict[str, Any]]:
         selected_timing = timing_interpretation.get("selectedTiming")
         if not isinstance(selected_timing, dict):
             selected_timing = {}
-        workload_unit_wall = timing_interpretation.get("workloadUnitWall")
+        workload_unit_wall = workload.get("workloadUnitWall")
         if not isinstance(workload_unit_wall, dict):
             workload_unit_wall = {}
-        if not workload_unit_wall:
-            legacy_workload_unit_wall = timing_interpretation.get("headlineProcessWall")
-            if isinstance(legacy_workload_unit_wall, dict):
-                workload_unit_wall = legacy_workload_unit_wall
         delta = workload.get("deltaPercent")
         if not isinstance(delta, dict):
             delta = {}
@@ -205,7 +209,7 @@ def claim_scope_rows(report: dict[str, Any]) -> list[dict[str, Any]]:
 
         citation = (
             f"{workload_id}: comparisonStatus={top_comparison_status}, claimStatus={top_claim_status}, "
-            f"workloadComparable={bool(workload.get('workloadComparable'))}, "
+            f"workloadComparableContract={bool(workload.get('workloadComparable'))}, "
             f"workloadComparableNow={comparability.get('comparable')}, "
             f"workloadClaimableNow={claimability.get('claimable')}, "
             f"delta(p50/p95/p99)={delta_p50}/{delta_p95}/{delta_p99}, "
@@ -278,6 +282,7 @@ def markdown(payload: dict[str, Any]) -> str:
     lines.append("")
     lines.append(f"- Generated: `{payload.get('generatedAtUtc', '')}`")
     lines.append(f"- Report: `{payload.get('reportPath', '')}`")
+    lines.append(f"- Claim report: `{payload.get('claimReportPath', '')}`")
     lines.append(f"- Comparison status: `{payload.get('comparisonStatus', '')}`")
     lines.append(f"- Claim status: `{payload.get('claimStatus', '')}`")
     lines.append(f"- Claimability mode: `{payload.get('claimabilityMode', '')}`")
@@ -335,19 +340,25 @@ def main() -> int:
         return 1
 
     try:
-        report = load_json(report_path)
-    except (OSError, json.JSONDecodeError, ValueError) as exc:
+        compare_report, claim_report, claim_report_path = artifacts_mod.load_compare_bundle(
+            report_path,
+            explicit_claim_path=args.claim_report,
+            require_claim=True,
+        )
+    except (OSError, json.JSONDecodeError, ValueError, FileNotFoundError) as exc:
         print(f"FAIL: {exc}")
         return 1
+    assert claim_report is not None
+    assert claim_report_path is not None
 
-    comparison_status = report.get("comparisonStatus")
-    claim_status = report.get("claimStatus")
-    claimability_policy = report.get("claimabilityPolicy")
-    claimability_mode = (
-        claimability_policy.get("mode")
-        if isinstance(claimability_policy, dict)
-        else None
+    projected = artifacts_mod.projected_compare_report(
+        compare_report,
+        report_path,
+        claim_report=claim_report,
     )
+    comparison_status = projected.get("comparisonStatus")
+    claim_status = projected.get("claimStatus")
+    claimability_mode = projected.get("claimabilityPolicy", {}).get("mode")
 
     failures: list[str] = []
     if comparison_status != args.require_comparison_status:
@@ -360,18 +371,19 @@ def main() -> int:
         )
     if claimability_mode != args.require_claimability_mode:
         failures.append(
-            f"claimabilityPolicy.mode mismatch: expected {args.require_claimability_mode}, got {claimability_mode!r}"
+            f"claimability mode mismatch: expected {args.require_claimability_mode}, got {claimability_mode!r}"
         )
     if failures:
         for failure in failures:
             print(f"FAIL: {failure}")
         return 1
 
-    rows = claim_scope_rows(report)
+    rows = claim_scope_rows(projected)
     payload = {
         "schemaVersion": 1,
         "generatedAtUtc": utc_now(),
         "reportPath": str(report_path),
+        "claimReportPath": str(claim_report_path),
         "comparisonStatus": comparison_status,
         "claimStatus": claim_status,
         "claimabilityMode": claimability_mode,

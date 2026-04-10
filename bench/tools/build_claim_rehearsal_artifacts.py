@@ -21,6 +21,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from bench.lib import compare_claim_artifacts as artifacts_mod
 from bench.lib import report_conformance
 
 
@@ -28,8 +29,13 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--report",
-        default="bench/out/dawn-vs-doe.json",
+        default="bench/out/dawn-vs-doe.compare.json",
         help="Comparison report produced by the compare lane.",
+    )
+    parser.add_argument(
+        "--claim-report",
+        default="",
+        help="Optional explicit claim report path. Defaults to sibling .claim.json.",
     )
     parser.add_argument(
         "--out-prefix",
@@ -77,14 +83,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--require-workload-contract-hash",
         action=argparse.BooleanOptionalAction,
-        default=True,
-        help="Forward --require-workload-contract-hash to claim_gate.py (default: on).",
+        default=False,
+        help="Forward --require-workload-contract-hash to claim_gate.py (default: off).",
     )
     parser.add_argument(
         "--require-workload-id-set-match",
         action=argparse.BooleanOptionalAction,
-        default=True,
-        help="Forward --require-workload-id-set-match to claim_gate.py (default: on).",
+        default=False,
+        help="Forward --require-workload-id-set-match to claim_gate.py (default: off).",
     )
     parser.add_argument(
         "--dry-run",
@@ -371,11 +377,15 @@ def timing_invariant_audit(report: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def contract_hash_manifest(report: dict[str, Any], report_path: Path) -> dict[str, Any]:
+def contract_hash_manifest(
+    report: dict[str, Any],
+    report_path: Path,
+    *,
+    claim_report: dict[str, Any],
+    claim_report_path: Path,
+) -> dict[str, Any]:
     workload_contract = report.get("workloadContract")
     benchmark_policy = report.get("benchmarkPolicy")
-    config_contract = report.get("configContract")
-    claim_workload_hash_chain = report.get("claimWorkloadHashChain")
     run_parameters = report.get("runParameters")
     claimability_policy = report.get("claimabilityPolicy")
     comparability_policy = report.get("comparabilityPolicy")
@@ -387,10 +397,6 @@ def contract_hash_manifest(report: dict[str, Any], report_path: Path) -> dict[st
         workload_contract = {}
     if not isinstance(benchmark_policy, dict):
         benchmark_policy = {}
-    if not isinstance(config_contract, dict):
-        config_contract = {}
-    if not isinstance(claim_workload_hash_chain, dict):
-        claim_workload_hash_chain = {}
     if not isinstance(run_parameters, dict):
         run_parameters = {}
     if not isinstance(claimability_policy, dict):
@@ -399,7 +405,7 @@ def contract_hash_manifest(report: dict[str, Any], report_path: Path) -> dict[st
         comparability_policy = {}
 
     trace_hashes: list[dict[str, Any]] = []
-    claim_workload_hashes: list[dict[str, Any]] = []
+    receipt_refs: list[dict[str, Any]] = []
     for workload in workloads:
         if not isinstance(workload, dict):
             continue
@@ -407,11 +413,11 @@ def contract_hash_manifest(report: dict[str, Any], report_path: Path) -> dict[st
         if not isinstance(workload_id, str) or not workload_id:
             workload_id = "unknown"
         trace_meta_hashes = workload.get("traceMetaHashes")
-        claim_workload_hash = workload.get("claimWorkloadHash")
+        receipts = workload.get("receipts")
         if not isinstance(trace_meta_hashes, dict):
             trace_meta_hashes = {}
-        if not isinstance(claim_workload_hash, dict):
-            claim_workload_hash = {}
+        if not isinstance(receipts, dict):
+            receipts = {}
         baseline_trace_hashes = list_strings(
             [
                 row.get("sha256")
@@ -437,19 +443,19 @@ def contract_hash_manifest(report: dict[str, Any], report_path: Path) -> dict[st
                 "comparisonTraceMetaSha256": comparison_trace_hashes,
             }
         )
-        claim_workload_hashes.append(
+        receipt_refs.append(
             {
                 "workloadId": workload_id,
-                "previousHash": claim_workload_hash.get("previousHash", ""),
-                "hash": claim_workload_hash.get("hash", ""),
+                "left": receipts.get("left", {}),
+                "right": receipts.get("right", {}),
             }
         )
 
     active_contract_hash = report_conformance.json_sha256(
         {
             "workloadContractSha256": workload_contract.get("sha256", ""),
-            "configContractSha256": config_contract.get("sha256", ""),
             "benchmarkPolicySha256": benchmark_policy.get("sha256", ""),
+            "claimReportSha256": report_conformance.file_sha256(claim_report_path),
             "runParameters": {
                 "iterations": run_parameters.get("iterations"),
                 "warmup": run_parameters.get("warmup"),
@@ -478,26 +484,22 @@ def contract_hash_manifest(report: dict[str, Any], report_path: Path) -> dict[st
             "path": workload_contract.get("path", ""),
             "sha256": workload_contract.get("sha256", ""),
         },
-        "configContract": {
-            "path": config_contract.get("path", ""),
-            "sha256": config_contract.get("sha256", ""),
-        },
         "benchmarkPolicy": {
             "path": benchmark_policy.get("path", ""),
             "sha256": benchmark_policy.get("sha256", ""),
+        },
+        "claimReport": {
+            "path": str(claim_report_path),
+            "sha256": report_conformance.file_sha256(claim_report_path),
+            "claimStatus": claim_report.get("claimStatus", ""),
+            "mode": claimability_policy.get("mode", ""),
         },
         "runParameters": {
             "iterations": run_parameters.get("iterations"),
             "warmup": run_parameters.get("warmup"),
         },
-        "claimWorkloadHashChain": {
-            "algorithm": claim_workload_hash_chain.get("algorithm", ""),
-            "count": claim_workload_hash_chain.get("count", 0),
-            "startPreviousHash": claim_workload_hash_chain.get("startPreviousHash", ""),
-            "finalHash": claim_workload_hash_chain.get("finalHash", ""),
-        },
         "workloadTraceMetaHashes": trace_hashes,
-        "workloadClaimWorkloadHashes": claim_workload_hashes,
+        "workloadReceipts": receipt_refs,
     }
 
 
@@ -505,6 +507,7 @@ def run_claim_gate(
     *,
     args: argparse.Namespace,
     report_path: Path,
+    claim_report_path: Path,
 ) -> dict[str, Any]:
     if args.skip_claim_gate_run:
         return {
@@ -524,6 +527,8 @@ def run_claim_gate(
         str(claim_gate_script),
         "--report",
         str(report_path),
+        "--claim-report",
+        str(claim_report_path),
         "--require-comparison-status",
         args.require_comparison_status,
         "--require-claim-status",
@@ -579,6 +584,10 @@ def main() -> int:
 
     if args.dry_run:
         print(f"[dry-run] report: {report_path}")
+        print(
+            "[dry-run] claim report: "
+            f"{args.claim_report or artifacts_mod.claim_report_candidate_path(report_path)}"
+        )
         print(f"[dry-run] claim gate result: {claim_gate_result_path}")
         print(f"[dry-run] tail health: {tail_health_path}")
         print(f"[dry-run] timing invariant audit: {timing_audit_path}")
@@ -587,15 +596,35 @@ def main() -> int:
         return 0
 
     try:
-        report = load_json(report_path)
-    except (OSError, UnicodeError, json.JSONDecodeError, ValueError) as exc:
+        compare_report, claim_report, claim_report_path = artifacts_mod.load_compare_bundle(
+            report_path,
+            explicit_claim_path=args.claim_report,
+            require_claim=True,
+        )
+        report = artifacts_mod.projected_compare_report(
+            compare_report,
+            report_path,
+            claim_report=claim_report,
+        )
+    except (OSError, UnicodeError, json.JSONDecodeError, ValueError, FileNotFoundError) as exc:
         print(f"FAIL: {exc}")
         return 1
+    assert claim_report is not None
+    assert claim_report_path is not None
 
     tail_health_payload = tail_health_table(report)
     timing_audit_payload = timing_invariant_audit(report)
-    contract_manifest_payload = contract_hash_manifest(report, report_path)
-    claim_gate_result_payload = run_claim_gate(args=args, report_path=report_path)
+    contract_manifest_payload = contract_hash_manifest(
+        report,
+        report_path,
+        claim_report=claim_report,
+        claim_report_path=claim_report_path,
+    )
+    claim_gate_result_payload = run_claim_gate(
+        args=args,
+        report_path=report_path,
+        claim_report_path=claim_report_path,
+    )
 
     write_json(tail_health_path, tail_health_payload)
     write_json(timing_audit_path, timing_audit_payload)
@@ -606,6 +635,7 @@ def main() -> int:
         "schemaVersion": 1,
         "generatedAtUtc": utc_now(),
         "reportPath": str(report_path),
+        "claimReportPath": str(claim_report_path),
         "strictComparableReportPath": str(report_path),
         "claimGateResultPath": str(claim_gate_result_path),
         "tailHealthPath": str(tail_health_path),

@@ -318,7 +318,7 @@ This flow is additive and does not replace blocking v0 runtime gates. Its role i
 - run `bench/tools/build_claim_scope_report.py` and require:
   - `comparisonStatus=comparable`
   - `claimStatus=claimable`
-  - `claimabilityPolicy.mode=release` (or lane-appropriate mode)
+  - `claimPolicy.mode=release` (or lane-appropriate mode)
 - every external statement must cite workload/domain + timing source/class + backend profile + artifact path.
 
 3. publish runtime footprint evidence

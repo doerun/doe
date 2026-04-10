@@ -18,6 +18,7 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
+from bench.lib import compare_claim_artifacts as artifacts_mod
 from bench.lib import output_paths
 
 
@@ -340,13 +341,23 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--claim-require-claimability-mode",
         default="release",
-        help="Required claimabilityPolicy.mode when --with-claim-gate is set.",
+        help="Required claimPolicy.mode when --with-claim-gate is set.",
     )
     parser.add_argument(
         "--claim-require-min-timed-samples",
         type=int,
         default=15,
-        help="Required claimabilityPolicy.minTimedSamples lower bound when --with-claim-gate is set.",
+        help="Required claimPolicy.minTimedSamples lower bound when --with-claim-gate is set.",
+    )
+    parser.add_argument(
+        "--claim-config",
+        default="",
+        help="Optional compare config forwarded to `bench/cli.py claim` before claim gate evaluation.",
+    )
+    parser.add_argument(
+        "--claim-benchmark-policy",
+        default="config/benchmark-methodology-thresholds.json",
+        help="Benchmark policy path forwarded to `bench/cli.py claim`.",
     )
     parser.add_argument(
         "--claim-expected-workload-contract",
@@ -412,6 +423,11 @@ def main() -> int:
             f"{args.dropin_e2e_iterations} expected >= 0"
         )
         return 1
+    if args.with_claim_gate:
+        claim_benchmark_policy_path = Path(args.claim_benchmark_policy)
+        if not claim_benchmark_policy_path.exists():
+            print(f"FAIL: missing --claim-benchmark-policy: {claim_benchmark_policy_path}")
+            return 1
 
     output_timestamp = (
         output_paths.resolve_timestamp(args.timestamp)
@@ -452,6 +468,7 @@ def main() -> int:
     cts_baseline_compare = tools_dir / "cts_baseline_compare.py"
     csl_governed_lane_gate = gates_dir / "csl_governed_lane_gate.py"
     claim_gate = gates_dir / "claim_gate.py"
+    bench_cli = BENCH_ROOT / "cli.py"
 
     if not args.with_claim_gate:
         print(
@@ -859,11 +876,38 @@ def main() -> int:
             run_gate("cts-baseline", cts_compare_command)
 
         if args.with_claim_gate:
+            claim_report_path = artifacts_mod.claim_report_candidate_path(report_path)
+            claim_build_command = [
+                sys.executable,
+                str(bench_cli),
+                "claim",
+                str(report_path),
+                "--mode",
+                args.claim_require_claimability_mode,
+                "--min-timed-samples",
+                str(args.claim_require_min_timed_samples),
+                "--benchmark-policy",
+                args.claim_benchmark_policy,
+                "--out",
+                str(claim_report_path),
+            ]
+            if args.claim_config.strip():
+                claim_build_command.extend(["--config", args.claim_config.strip()])
+            print(f"[gate] claim-report: {' '.join(claim_build_command)}", flush=True)
+            claim_build_proc = subprocess.run(claim_build_command, check=False)
+            if claim_build_proc.returncode not in (0, 2) or not claim_report_path.exists():
+                raise subprocess.CalledProcessError(
+                    claim_build_proc.returncode,
+                    claim_build_command,
+                )
+
             claim_command = [
                 sys.executable,
                 str(claim_gate),
                 "--report",
                 str(report_path),
+                "--claim-report",
+                str(claim_report_path),
                 "--require-comparison-status",
                 args.claim_require_comparison_status,
                 "--require-claim-status",

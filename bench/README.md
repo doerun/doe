@@ -387,21 +387,22 @@ resolves its entries against repo root.
 - `build_test_inventory_dashboard.py`
   - scans Dawn-vs-Doe compare reports and emits:
     - canonical tested-profile inventory JSON (`vendor/api/deviceFamily/driver` coverage, matrix status history, report-level status rollups)
-    - simple HTML dashboard for matrix status + performance delta vs Dawn
-  - only includes conformant compare reports (`schemaVersion=5`, canonical comparability-obligation IDs, and valid `workloadContract.path/sha256` hash match).
+    - optional HTML dashboard for matrix status + performance delta vs Dawn when explicit HTML output paths are provided
+  - only includes conformant compare reports (`artifactKind=compare-report`, `schemaVersion=1`, canonical comparability-obligation IDs, and valid `workloadManifest.path/sha256` hash match).
   - profile combos are sourced from per-sample `traceMeta.profile` fields; sides without profile metadata are tracked as report status only (not hardware-profile coverage).
-  - also writes stable latest paths (`bench/out/test-inventory.latest.json`, `bench/out/test-dashboard.latest.html`) for a single canonical source of truth.
+  - always writes stable latest JSON at `bench/out/test-inventory.latest.json`; HTML latest output is optional and off by default.
   - excludes `bench/out/scratch/**` from canonical inventory aggregation.
 - `build_baseline_dataset.py`
   - builds a canonical baseline trend package from historical comparison artifacts.
-  - only includes conformant compare reports (`schemaVersion=5`, canonical comparability-obligation IDs, and valid `workloadContract.path/sha256` hash match).
+  - only includes conformant compare reports (`artifactKind=compare-report`, `schemaVersion=1`, canonical comparability-obligation IDs, and valid `workloadManifest.path/sha256` hash match).
   - emits timestamped JSON trend dataset + markdown summary plus stable latest outputs.
   - groups history by matrix/runtime pair and tracks latest/best/worst p50 delta snapshots.
 - `build_benchmark_cube.py`
   - normalizes backend compare reports plus package-surface compare reports into a single benchmark cube contract.
-  - emits timestamped JSON cube-entry artifacts, JSON cube summary, and markdown matrix slices under `bench/out/cube/<timestamp>/`.
-  - also writes stable latest outputs under `bench/out/cube/latest/`.
-  - `bench/out/cube/latest/` is the stable git-tracked mirror; timestamped cube runs remain disposable evidence artifacts under `bench/out/cube/<timestamp>/`.
+  - emits timestamped JSON cube-entry artifacts plus JSON cube summary under `bench/out/cube/<timestamp>/`.
+  - markdown matrix and HTML dashboard outputs are optional and off by default.
+  - also writes stable latest JSON outputs under `bench/out/cube/latest/`.
+  - `bench/out/cube/latest/` is the stable git-tracked JSON mirror; timestamped cube runs remain disposable evidence artifacts under `bench/out/cube/<timestamp>/`.
   - preserves latest-history by default: it seeds the build with report paths referenced by the current `bench/out/cube/latest/cube.summary.json`, so explicit subset reruns cannot silently downgrade the latest mirror.
   - latest-cell selection now prefers broader evidence before newer evidence:
     canonical source conformance first, then larger cube-entry count, then better status, then newer timestamp.
@@ -929,18 +930,21 @@ resolves its entries against repo root.
 - `list_out_runs.py`
   - prints a concise chronological index of timestamp folders (`timestamp`, `scope`, `runType`, `status`, summary) using `run_manifest.json`.
 - `visualize_dawn_vs_doe.py`
-  - reads a compare report and writes a self-contained HTML visualization plus optional analysis JSON.
+  - reads a compare report and writes an ad-hoc local HTML visualization plus optional analysis JSON.
+  - this is now a local diagnostic helper, not the default tracked/shareable bench surface.
   - includes ECDF overlays, workload×percentile delta heatmap, KS statistic/p-value, Wasserstein distance, probability of superiority `P(baseline<comparison)`, and bootstrap CIs for delta `p50`/`p95`/`p99`.
+- `bench/viewers/bench_out_viewer.html`
+  - single static repo-tracked viewer for `bench/out` JSON artifacts.
+  - loads compare/claim/cube/inventory/pipeline summary JSON files from local disk via file input and charts the current portable artifact surface without generating new HTML bundles.
 - `run_visualization_pipeline.py`
-  - builds a timestamped visualization bundle over explicit compare reports:
-    per-report compare HTML + analysis JSON, inventory dashboard, benchmark cube dashboard, and a landing `index.html`.
-  - writes a stable latest mirror under `bench/out/visualization/latest/` so there is one canonical local page to open after a run.
-  - `bench/out/visualization/latest/` remains the git-tracked latest bundle mirror for shareable compare pages and dashboards.
-  - keeps selected timing, workload-unit wall, claimability mode, and operator-diff availability visible on the landing page so the bundle does not silently flatten methodology caveats.
+  - builds a timestamped JSON bundle over explicit compare reports:
+    pipeline summary JSON plus refreshed cube/inventory JSON surfaces.
+  - writes a stable latest summary mirror under `bench/out/visualization/latest/pipeline.summary.json`.
+  - the canonical local viewer for these JSON artifacts is `bench/viewers/bench_out_viewer.html`.
 - `claim_gate.py`
-  - validates a comparison report against required claim contract fields (`claimabilityPolicy.mode`, `comparisonStatus`, `claimStatus`, per-workload claimability, and comparability-obligation schema/blocking-pass state) for blocking release CI gates.
+  - validates a compare report plus claim sidecar against required claim contract fields (`claimPolicy.mode`, `comparisonStatus`, `claimStatus`, per-workload claimability, and comparability-obligation schema/blocking-pass state) for blocking release CI gates.
   - validates comparability obligation IDs against the canonical contract in `config/comparability-obligations.json`.
-  - validates serialized claim-hash linkage (`claimWorkloadHash` + `claimWorkloadHashChain`) across workload contract hash, config hash, benchmark policy hash, and trace-meta hash lists.
+  - validates compare-report and claim-report linkage via compare-report SHA, workload manifest path/hash, benchmark policy hash, and receipt/trace-meta references.
   - for claimable compare reports, independently enforces positive required tail deltas (`p50`/`p95`/`p99` in release mode) and timed-sample floors per workload.
 - `build_claim_rehearsal_artifacts.py`
   - builds machine-readable claim rehearsal artifacts from a compare report:
@@ -1007,11 +1011,8 @@ For performance/claim benchmarking, build `runtime/zig/zig-out/bin/doe-zig-runti
 
 Ad-hoc/manual artifact names (for example `*layoutcheck*`, `*contractcheck*`, `tmp.*`) are routed to `bench/out/scratch/<timestamp>/...` so canonical runs stay clean.
 
-Not every run folder contains HTML. Compare-report runs do (`dawn-vs-doe*.html`, default-on in release pipeline), while gate-only/trace-workspace runs may only contain JSON/NDJSON plus `run_manifest.json`.
-Repo tracking keeps the bulky run workspaces ignored by default, but allows
-stable `latest/` mirrors plus compare/release/smoke summary JSONs and HTML
-reports under `bench/out/` to be committed when you want shareable receipts
-without the NDJSON trace payloads.
+Generated HTML is no longer the default bench surface. Release compare HTML is optional and off by default, while the portable tracked/shareable surface is JSON plus the single static viewer at `bench/viewers/bench_out_viewer.html`.
+Repo tracking keeps the bulky run workspaces ignored by default, but allows the JSON artifact surfaces needed by the current run/compare/claim stack to be committed under `bench/out/` without the NDJSON trace payloads.
 
 Benchmark cube output follows the same discipline:
 
@@ -1020,8 +1021,8 @@ Benchmark cube output follows the same discipline:
 - current artifacts:
   - `cube.rows.json`
   - `cube.summary.json`
-  - `cube.matrix.md`
-  - `cube.dashboard.html` (HTML dashboard with inline SVG heatmaps)
+  - `cube.matrix.md` only when explicitly requested
+  - `cube.dashboard.html` only when explicitly requested
 
 ## Artifact cleanup
 
@@ -1735,25 +1736,24 @@ Interpretation examples:
 - `+400%` => baseline is `5x` faster
 - `-50%` => baseline is `2x` slower
 
-`bench/cli.py compare` emits `deltaPercentConvention` in reports and now writes `schemaVersion: 5`.
+`bench/cli.py compare` now writes `artifactKind: compare-report` with `schemaVersion: 1`.
+`bench/cli.py claim` writes a separate sibling `artifactKind: claim-report` with `schemaVersion: 1`.
 
-`schemaVersion: 5` percentile summaries include fast-end, median, tail metrics, and the clearer `workloadUnitWall` timing name:
+Canonical compare reports include fast-end, median, tail metrics plus the clearer `workloadUnitWall` timing view:
 
 - workload stats include `p10Ms`, `p50Ms`, `p95Ms`, `p99Ms`
 - workload deltas include `p10Percent`, `p50Percent`, `p95Percent`, `p99Percent`
-- overall delta summary includes `p10Approx`, `p50Approx`, `p95Approx`, `p99Approx`
+- overall delta summary includes `overall.deltaPercent` and `overallWorkloadUnitWall.deltaPercent`
 - workload timing interpretation includes selected-scope metadata and a workload-unit wall view (`timingInterpretation.selectedTiming`, `timingInterpretation.workloadUnitWall`)
 - reports may also include `overallWorkloadUnitWall` for end-to-end process-wall aggregation across comparable workloads
 - legacy aliases remain during migration: `timingInterpretation.headlineProcessWall` and `overallHeadlineProcessWall`
 - HTML visualization emphasizes `p10/p50/p95/p99`
-- claimability metadata fields are included:
-  `claimabilityPolicy`, workload `claimability`, `claimabilitySummary`, `claimStatus`
+- claimability now lives in the sidecar claim report:
+  `claimPolicy`, workload claim rows, top-level `claimStatus`, and `reasons`
 
 Historical note:
 
-- `schemaVersion: 3` used p5-oriented floor fields and is superseded.
-- `schemaVersion: 2` uses the same sign convention but does not include the full percentile summary fields above.
-- `schemaVersion: 1` used the inverse sign convention.
+- older compare payloads predate the `compare-report` / `claim-report` split and remain historical only.
 
 ## Local Metal strict lanes
 

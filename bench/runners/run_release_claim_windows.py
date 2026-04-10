@@ -21,6 +21,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
+from bench.lib import compare_claim_artifacts as artifacts_mod
 from bench.lib import output_paths
 
 
@@ -224,10 +225,12 @@ def summarize_report(report_path: Path) -> dict[str, Any]:
         }
 
     payload = load_json(report_path)
+    claim_payload, claim_path = artifacts_mod.load_optional_claim_report(report_path)
     workloads = payload.get("workloads")
     if not isinstance(workloads, list):
         workloads = []
 
+    claim_rows = artifacts_mod.claim_workloads_by_id(claim_payload)
     non_claimable_ids: list[str] = []
     non_comparable_ids: list[str] = []
     for workload in workloads:
@@ -235,8 +238,8 @@ def summarize_report(report_path: Path) -> dict[str, Any]:
             continue
         workload_id = workload.get("id")
         workload_label = workload_id if isinstance(workload_id, str) and workload_id else "unknown"
-        claimability = workload.get("claimability")
         comparability = workload.get("comparability")
+        claimability = claim_rows.get(str(workload_id), {})
         if isinstance(claimability, dict) and claimability.get("claimable") is False:
             non_claimable_ids.append(workload_label)
         if isinstance(comparability, dict) and comparability.get("comparable") is False:
@@ -245,10 +248,14 @@ def summarize_report(report_path: Path) -> dict[str, Any]:
     summary = {
         "reportFound": True,
         "reportPath": str(report_path),
+        "claimReportPath": str(claim_path) if claim_path is not None else "",
         "comparisonStatus": payload.get("comparisonStatus"),
-        "claimStatus": payload.get("claimStatus"),
+        "claimStatus": artifacts_mod.claim_status(payload, claim_payload),
         "comparabilitySummary": payload.get("comparabilitySummary"),
-        "claimabilitySummary": payload.get("claimabilitySummary"),
+        "claimabilitySummary": {
+            "workloadCount": len(workloads),
+            "nonClaimableCount": artifacts_mod.non_claimable_count(payload, claim_payload),
+        },
         "workloadCount": len(workloads),
         "nonClaimableWorkloadIds": non_claimable_ids,
         "nonComparableWorkloadIds": non_comparable_ids,

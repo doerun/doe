@@ -1,0 +1,535 @@
+{
+  "artifactKind": "run",
+  "commandSamples": [
+    {
+      "command": [
+        "node",
+        "bench/executors/run-node-webgpu-plan.js",
+        "--provider",
+        "node-webgpu",
+        "--plan",
+        "bench/plans/generated/inference_gemma3_270m_decode_1tok.plan.json",
+        "--trace-jsonl",
+        "bench/out/runs/20260407T170227Z/isolated-runs/node_webgpu_package/inference_gemma3_270m_decode_1tok/node_webgpu_package.run000.ndjson",
+        "--trace-meta",
+        "bench/out/runs/20260407T170227Z/isolated-runs/node_webgpu_package/inference_gemma3_270m_decode_1tok/node_webgpu_package.run000.meta.json",
+        "--workload",
+        "inference_gemma3_270m_decode_1tok"
+      ],
+      "commandRepeat": 1,
+      "elapsedMs": 401.66408200457226,
+      "measuredMs": 140.720937,
+      "measuredRawMs": 140.720937,
+      "resource": {
+        "gpuMemoryProbe": "none",
+        "gpuMemoryProbeAvailable": false,
+        "processCpuMs": 624.2199999999998,
+        "processPeakRssKb": 326100,
+        "processWallMs": 401.66408200457226,
+        "resourceSampleCount": 5,
+        "resourceSampleMs": 100,
+        "resourceSampleTargetCount": 0,
+        "resourceSamplingTruncated": false
+      },
+      "returnCode": 0,
+      "runIndex": 0,
+      "timing": {
+        "commandRepeat": 1,
+        "repeatNormalized": false,
+        "source": "trace-meta",
+        "timingConfiguredDivisor": 1.0,
+        "timingNormalizationDivisor": 1.0,
+        "timingNormalizedMs": 140.720937,
+        "timingRawMs": 140.720937,
+        "traceMetaSource": "doe-execution-total-ns",
+        "traceMetaTimingMs": 140.720937,
+        "uploadBufferUsage": "copy-dst-copy-src",
+        "uploadSubmitEvery": 1,
+        "wallTimeMs": 401.66408200457226
+      },
+      "timingMetricsNormalizedMs": {
+        "cpu_time": 624.2199999999998,
+        "gpu_time": null,
+        "wall_time": 401.66408200457226
+      },
+      "timingMetricsRawMs": {
+        "cpu_time": 624.2199999999998,
+        "gpu_time": null,
+        "wall_time": 401.66408200457226
+      },
+      "timingNormalizationDivisor": 1.0,
+      "timingSource": "doe-execution-total-ns",
+      "traceJsonlPath": "bench/out/runs/20260407T170227Z/isolated-runs/node_webgpu_package/inference_gemma3_270m_decode_1tok/node_webgpu_package.run000.ndjson",
+      "traceMeta": {
+        "adapterInfo": {
+          "subgroupMatrixConfigs": []
+        },
+        "adapterLimits": {},
+        "artifactHash": "e50cc16b9793d64edbf907b63cef9075b25bf5d061601fb0500905b5acf292cc",
+        "canonicalWorkloadId": "inference_gemma3_270m_decode_1tok",
+        "elapsedMs": 113.072709,
+        "executionBackend": "node_webgpu_package",
+        "executionDispatchCount": 18,
+        "executionEncodeTotalNs": 242847,
+        "executionErrorCount": 0,
+        "executionProvider": "node-webgpu",
+        "executionProviderName": "node-webgpu",
+        "executionQueueSyncMode": "per-command",
+        "executionQueueWaitMode": "sync-readback.mapAsync",
+        "executionQueueWaitScope": "terminal-or-readback",
+        "executionQueueWaitSubmitCadence": 0,
+        "executionRowCount": 37,
+        "executionSetupTotalNs": 79794736,
+        "executionShape": {
+          "bufferCount": 35,
+          "copyBufferToBufferCount": 0,
+          "dispatchCount": 18,
+          "moduleCount": 7,
+          "readBufferCount": 0,
+          "stepCount": 37,
+          "writeBufferCount": 19
+        },
+        "executionSkippedCount": 0,
+        "executionSubmitWaitTotalNs": 60683354,
+        "executionSuccessCount": 37,
+        "executionTotalNs": 140720937,
+        "executionUnsupportedCount": 0,
+        "hostArtifactFinalizeTotalNs": 458834,
+        "hostCommandOrchestrationTotalNs": 1462958,
+        "hostExecutorInitTotalNs": 44991973,
+        "hostInputParseTotalNs": 73659,
+        "hostInputReadTotalNs": 676564,
+        "hostKernelPrewarmTotalNs": 0,
+        "hostUploadPrewarmTotalNs": 0,
+        "hostWorkloadPrepareTotalNs": 4049997,
+        "kind": "trace_meta",
+        "packagePreparedSession": false,
+        "packageSetupBreakdownNs": {
+          "bindGroupCreateTotalNs": 2911404,
+          "bindGroupLayoutCreateTotalNs": 204956,
+          "bufferCreateTotalNs": 323227,
+          "initialDataWriteTotalNs": 0,
+          "pipelineCreateTotalNs": 21378893,
+          "pipelineLayoutCreateTotalNs": 73307,
+          "shaderModuleCreateTotalNs": 5349967
+        },
+        "packageSetupIncludedInSelectedTiming": true,
+        "packageSetupTotalNs": 31772357,
+        "packageStepBreakdownNs": {
+          "copyEncodeApiTotalNs": 0,
+          "dispatchEncodeApiTotalNs": 242847,
+          "readbackTotalNs": 0,
+          "submitAddonCallTotalNs": 0,
+          "submitAddonCommandReplayTotalNs": 0,
+          "submitAddonFlushTotalNs": 0,
+          "submitAddonQueueSubmitTotalNs": 0,
+          "submitCommandEncoderFinishTotalNs": 351011,
+          "submitCommandPrepTotalNs": 0,
+          "submitPostSubmitBookkeepingTotalNs": 0,
+          "submitQueueFlushDeferredCopyTotalNs": 0,
+          "submitQueueFlushDeferredResolveTotalNs": 0,
+          "submitQueueFlushTotalNs": 0,
+          "submitQueueFlushWaitCompletedTotalNs": 0,
+          "submitQueueSubmitTotalNs": 506201,
+          "submitQueueWaitBookkeepingTotalNs": 0,
+          "submitQueueWaitTotalNs": 59731042,
+          "writeMaterializeTotalNs": 30065199,
+          "writeQueueWriteTotalNs": 17957180
+        },
+        "planHash": "49a70c3e91f3ea9cbb01264c86ff829a3fdef16e628cb4ff9c2e902dc225a54d",
+        "planId": "83ec012a9ff4a2f489aed5d68f505e45ea896d6d77bf3770dfd21fcf5f87dcc4",
+        "planSummary": {
+          "comparable": true,
+          "domain": "compute",
+          "executionShape": {
+            "bufferCount": 35,
+            "copyBufferToBufferCount": 0,
+            "dispatchCount": 18,
+            "moduleCount": 7,
+            "readBufferCount": 0,
+            "stepCount": 37,
+            "writeBufferCount": 19
+          },
+          "executorId": "node_webgpu_package",
+          "planHash": "49a70c3e91f3ea9cbb01264c86ff829a3fdef16e628cb4ff9c2e902dc225a54d",
+          "planId": "83ec012a9ff4a2f489aed5d68f505e45ea896d6d77bf3770dfd21fcf5f87dcc4",
+          "schemaVersion": 1,
+          "timing": {
+            "iterations": 1,
+            "timingClass": "operation",
+            "timingSource": "doe-execution-total-ns",
+            "warmup": 0
+          },
+          "workloadId": "inference_gemma3_270m_decode_1tok"
+        },
+        "processWallMs": 113.072709,
+        "provider": "node-webgpu",
+        "providerName": "node-webgpu",
+        "queueSyncMode": "per-command",
+        "queueWaitMode": "sync-readback.mapAsync",
+        "queueWaitScope": "terminal-or-readback",
+        "queueWaitSubmitCadence": 0,
+        "samplesMs": [
+          140.720937
+        ],
+        "schemaVersion": 1,
+        "stats": {
+          "count": 1,
+          "max": 140.720937,
+          "mean": 140.720937,
+          "median": 140.720937,
+          "min": 140.720937,
+          "p95": 140.720937,
+          "p99": 140.720937,
+          "stdev": 0
+        },
+        "timingClass": "operation",
+        "timingMs": 140.720937,
+        "timingSource": "doe-execution-total-ns",
+        "workload": "inference_gemma3_270m_decode_1tok"
+      },
+      "traceMetaPath": "bench/out/runs/20260407T170227Z/isolated-runs/node_webgpu_package/inference_gemma3_270m_decode_1tok/node_webgpu_package.run000.meta.json",
+      "uploadBufferUsage": "copy-dst-copy-src",
+      "uploadIgnoreFirstOps": 0,
+      "uploadSubmitEvery": 1
+    }
+  ],
+  "executorId": "node_webgpu_package",
+  "generatedAt": "2026-04-07T17:02:29.430796+00:00",
+  "host": {
+    "arch": "x86_64",
+    "os": "linux"
+  },
+  "lastMeta": {
+    "adapterInfo": {
+      "subgroupMatrixConfigs": []
+    },
+    "adapterLimits": {},
+    "artifactHash": "e50cc16b9793d64edbf907b63cef9075b25bf5d061601fb0500905b5acf292cc",
+    "canonicalWorkloadId": "inference_gemma3_270m_decode_1tok",
+    "elapsedMs": 113.072709,
+    "executionBackend": "node_webgpu_package",
+    "executionDispatchCount": 18,
+    "executionEncodeTotalNs": 242847,
+    "executionErrorCount": 0,
+    "executionProvider": "node-webgpu",
+    "executionProviderName": "node-webgpu",
+    "executionQueueSyncMode": "per-command",
+    "executionQueueWaitMode": "sync-readback.mapAsync",
+    "executionQueueWaitScope": "terminal-or-readback",
+    "executionQueueWaitSubmitCadence": 0,
+    "executionRowCount": 37,
+    "executionSetupTotalNs": 79794736,
+    "executionShape": {
+      "bufferCount": 35,
+      "copyBufferToBufferCount": 0,
+      "dispatchCount": 18,
+      "moduleCount": 7,
+      "readBufferCount": 0,
+      "stepCount": 37,
+      "writeBufferCount": 19
+    },
+    "executionSkippedCount": 0,
+    "executionSubmitWaitTotalNs": 60683354,
+    "executionSuccessCount": 37,
+    "executionTotalNs": 140720937,
+    "executionUnsupportedCount": 0,
+    "hostArtifactFinalizeTotalNs": 458834,
+    "hostCommandOrchestrationTotalNs": 1462958,
+    "hostExecutorInitTotalNs": 44991973,
+    "hostInputParseTotalNs": 73659,
+    "hostInputReadTotalNs": 676564,
+    "hostKernelPrewarmTotalNs": 0,
+    "hostUploadPrewarmTotalNs": 0,
+    "hostWorkloadPrepareTotalNs": 4049997,
+    "kind": "trace_meta",
+    "packagePreparedSession": false,
+    "packageSetupBreakdownNs": {
+      "bindGroupCreateTotalNs": 2911404,
+      "bindGroupLayoutCreateTotalNs": 204956,
+      "bufferCreateTotalNs": 323227,
+      "initialDataWriteTotalNs": 0,
+      "pipelineCreateTotalNs": 21378893,
+      "pipelineLayoutCreateTotalNs": 73307,
+      "shaderModuleCreateTotalNs": 5349967
+    },
+    "packageSetupIncludedInSelectedTiming": true,
+    "packageSetupTotalNs": 31772357,
+    "packageStepBreakdownNs": {
+      "copyEncodeApiTotalNs": 0,
+      "dispatchEncodeApiTotalNs": 242847,
+      "readbackTotalNs": 0,
+      "submitAddonCallTotalNs": 0,
+      "submitAddonCommandReplayTotalNs": 0,
+      "submitAddonFlushTotalNs": 0,
+      "submitAddonQueueSubmitTotalNs": 0,
+      "submitCommandEncoderFinishTotalNs": 351011,
+      "submitCommandPrepTotalNs": 0,
+      "submitPostSubmitBookkeepingTotalNs": 0,
+      "submitQueueFlushDeferredCopyTotalNs": 0,
+      "submitQueueFlushDeferredResolveTotalNs": 0,
+      "submitQueueFlushTotalNs": 0,
+      "submitQueueFlushWaitCompletedTotalNs": 0,
+      "submitQueueSubmitTotalNs": 506201,
+      "submitQueueWaitBookkeepingTotalNs": 0,
+      "submitQueueWaitTotalNs": 59731042,
+      "writeMaterializeTotalNs": 30065199,
+      "writeQueueWriteTotalNs": 17957180
+    },
+    "planHash": "49a70c3e91f3ea9cbb01264c86ff829a3fdef16e628cb4ff9c2e902dc225a54d",
+    "planId": "83ec012a9ff4a2f489aed5d68f505e45ea896d6d77bf3770dfd21fcf5f87dcc4",
+    "planSummary": {
+      "comparable": true,
+      "domain": "compute",
+      "executionShape": {
+        "bufferCount": 35,
+        "copyBufferToBufferCount": 0,
+        "dispatchCount": 18,
+        "moduleCount": 7,
+        "readBufferCount": 0,
+        "stepCount": 37,
+        "writeBufferCount": 19
+      },
+      "executorId": "node_webgpu_package",
+      "planHash": "49a70c3e91f3ea9cbb01264c86ff829a3fdef16e628cb4ff9c2e902dc225a54d",
+      "planId": "83ec012a9ff4a2f489aed5d68f505e45ea896d6d77bf3770dfd21fcf5f87dcc4",
+      "schemaVersion": 1,
+      "timing": {
+        "iterations": 1,
+        "timingClass": "operation",
+        "timingSource": "doe-execution-total-ns",
+        "warmup": 0
+      },
+      "workloadId": "inference_gemma3_270m_decode_1tok"
+    },
+    "processWallMs": 113.072709,
+    "provider": "node-webgpu",
+    "providerName": "node-webgpu",
+    "queueSyncMode": "per-command",
+    "queueWaitMode": "sync-readback.mapAsync",
+    "queueWaitScope": "terminal-or-readback",
+    "queueWaitSubmitCadence": 0,
+    "samplesMs": [
+      140.720937
+    ],
+    "schemaVersion": 1,
+    "stats": {
+      "count": 1,
+      "max": 140.720937,
+      "mean": 140.720937,
+      "median": 140.720937,
+      "min": 140.720937,
+      "p95": 140.720937,
+      "p99": 140.720937,
+      "stdev": 0
+    },
+    "timingClass": "operation",
+    "timingMs": 140.720937,
+    "timingSource": "doe-execution-total-ns",
+    "workload": "inference_gemma3_270m_decode_1tok"
+  },
+  "product": "node_webgpu_package",
+  "resourceStats": {
+    "gpuProbeAvailableCount": 0,
+    "gpuProbeModes": [
+      "none"
+    ],
+    "gpuVramDeltaPeakFromBeforeBytes": {
+      "count": 0,
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "p10": 0.0,
+      "p50": 0.0,
+      "p95": 0.0,
+      "p99": 0.0,
+      "stdev": 0.0
+    },
+    "gpuVramUsedAfterBytes": {
+      "count": 0,
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "p10": 0.0,
+      "p50": 0.0,
+      "p95": 0.0,
+      "p99": 0.0,
+      "stdev": 0.0
+    },
+    "gpuVramUsedBeforeBytes": {
+      "count": 0,
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "p10": 0.0,
+      "p50": 0.0,
+      "p95": 0.0,
+      "p99": 0.0,
+      "stdev": 0.0
+    },
+    "gpuVramUsedPeakBytes": {
+      "count": 0,
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "p10": 0.0,
+      "p50": 0.0,
+      "p95": 0.0,
+      "p99": 0.0,
+      "stdev": 0.0
+    },
+    "processPeakRssKb": {
+      "count": 1,
+      "max": 326100.0,
+      "mean": 326100.0,
+      "min": 326100.0,
+      "p10": 326100.0,
+      "p50": 326100.0,
+      "p95": 326100.0,
+      "p99": 326100.0,
+      "stdev": 0.0
+    },
+    "samplingTruncatedCount": 0
+  },
+  "runParameters": {
+    "allowNoExecution": false,
+    "commandRepeat": 1,
+    "comparabilityMode": "warn",
+    "ignoreFirstOps": 0,
+    "iterations": 1,
+    "requiredTimingClass": "any",
+    "resourceProbe": "none",
+    "resourceSampleMs": 100,
+    "resourceSampleTargetCount": 0,
+    "timingDivisor": 1.0,
+    "timingNormalizationNote": "",
+    "uploadBufferUsage": "copy-dst-copy-src",
+    "uploadSubmitEvery": 1,
+    "warmup": 0
+  },
+  "schemaVersion": 2,
+  "stats": {
+    "count": 1,
+    "maxMs": 140.720937,
+    "meanMs": 140.720937,
+    "minMs": 140.720937,
+    "p10Ms": 140.720937,
+    "p50Ms": 140.720937,
+    "p95Ms": 140.720937,
+    "p99Ms": 140.720937,
+    "stdevMs": 0.0
+  },
+  "timingClasses": [
+    "operation"
+  ],
+  "timingMetricsNormalizedStatsMs": {
+    "cpu_time": {
+      "count": 1,
+      "maxMs": 624.2199999999998,
+      "meanMs": 624.2199999999998,
+      "minMs": 624.2199999999998,
+      "p10Ms": 624.2199999999998,
+      "p50Ms": 624.2199999999998,
+      "p95Ms": 624.2199999999998,
+      "p99Ms": 624.2199999999998,
+      "stdevMs": 0.0
+    },
+    "gpu_time": {
+      "count": 0,
+      "maxMs": 0.0,
+      "meanMs": 0.0,
+      "minMs": 0.0,
+      "p10Ms": 0.0,
+      "p50Ms": 0.0,
+      "p95Ms": 0.0,
+      "p99Ms": 0.0,
+      "stdevMs": 0.0
+    },
+    "wall_time": {
+      "count": 1,
+      "maxMs": 401.66408200457226,
+      "meanMs": 401.66408200457226,
+      "minMs": 401.66408200457226,
+      "p10Ms": 401.66408200457226,
+      "p50Ms": 401.66408200457226,
+      "p95Ms": 401.66408200457226,
+      "p99Ms": 401.66408200457226,
+      "stdevMs": 0.0
+    }
+  },
+  "timingMetricsRawStatsMs": {
+    "cpu_time": {
+      "count": 1,
+      "maxMs": 624.2199999999998,
+      "meanMs": 624.2199999999998,
+      "minMs": 624.2199999999998,
+      "p10Ms": 624.2199999999998,
+      "p50Ms": 624.2199999999998,
+      "p95Ms": 624.2199999999998,
+      "p99Ms": 624.2199999999998,
+      "stdevMs": 0.0
+    },
+    "gpu_time": {
+      "count": 0,
+      "maxMs": 0.0,
+      "meanMs": 0.0,
+      "minMs": 0.0,
+      "p10Ms": 0.0,
+      "p50Ms": 0.0,
+      "p95Ms": 0.0,
+      "p99Ms": 0.0,
+      "stdevMs": 0.0
+    },
+    "wall_time": {
+      "count": 1,
+      "maxMs": 401.66408200457226,
+      "meanMs": 401.66408200457226,
+      "minMs": 401.66408200457226,
+      "p10Ms": 401.66408200457226,
+      "p50Ms": 401.66408200457226,
+      "p95Ms": 401.66408200457226,
+      "p99Ms": 401.66408200457226,
+      "stdevMs": 0.0
+    }
+  },
+  "timingSources": [
+    "doe-execution-total-ns"
+  ],
+  "timingsMs": [
+    140.720937
+  ],
+  "workload": {
+    "api": "vulkan",
+    "asyncDiagnosticsMode": "",
+    "benchmarkClass": "comparable",
+    "claimEligible": true,
+    "cohorts": [
+      "governed"
+    ],
+    "commandsPath": "bench/plans/generated/compat/inference_gemma3_270m_decode_1tok_commands.json",
+    "comparabilityCandidate": {
+      "enabled": false,
+      "notes": "",
+      "tier": ""
+    },
+    "comparabilityNotes": "Doe-owned apples-to-apples single-block Gemma-3-270M-shaped decode step. Both sides execute the same retained inference kernels and identical buffer-write + dispatch command stream under the runtime compare harness.",
+    "comparable": true,
+    "description": "Single-token Gemma-3-270M-shaped decode step using Doe-owned retained inference kernels plus explicit cache/position uniform writes.",
+    "directionalReason": "",
+    "domain": "compute",
+    "driver": "24.0.0",
+    "family": "gfx11",
+    "id": "inference_gemma3_270m_decode_1tok",
+    "includeByDefault": false,
+    "name": "gemma-3 270m shaped decode 1tok",
+    "pathAsymmetry": false,
+    "pathAsymmetryNote": "",
+    "quirksPath": "examples/quirks/amd_radv_noop_list.json",
+    "strictNormalizationUnit": "",
+    "vendor": "amd"
+  },
+  "workloadContract": {
+    "path": "/tmp/workloads.amd.vulkan.inference.json",
+    "sha256": "4aa69fa80e7a5053de17d7835115e08b19713630b4e46a9f2a5ce17b27c26c07"
+  }
+}

@@ -22,6 +22,7 @@ from glob import glob
 from pathlib import Path
 from typing import Any
 
+from bench.lib import compare_claim_artifacts as artifacts_mod
 from bench.lib import output_paths
 from bench.lib import report_conformance
 
@@ -169,7 +170,7 @@ def derive_overall_p50_delta(payload: dict[str, Any]) -> float | None:
         return None
     delta = overall.get("deltaPercent")
     if isinstance(delta, dict):
-        parsed = safe_float(delta.get("p50Approx"))
+        parsed = safe_float(delta.get("p50Percent"))
         if parsed is not None:
             return parsed
     return None
@@ -355,9 +356,12 @@ def main() -> int:
                 }
             )
             continue
+        claim_report, _claim_report_path = artifacts_mod.load_optional_claim_report(
+            source_path
+        )
         workloads = payload.get("workloads")
         comparison_status = payload.get("comparisonStatus")
-        claim_status = payload.get("claimStatus")
+        claim_status = artifacts_mod.claim_status(payload, claim_report)
         if not isinstance(workloads, list):
             skipped_files.append({"path": str(source_path), "reason": "missing workloads list"})
             continue
@@ -371,8 +375,17 @@ def main() -> int:
         generated_at = parse_report_timestamp(payload, source_path)
         generated_at_utc = iso_utc(generated_at)
         matrix_id = normalize_matrix_id(payload, source_path)
-        baseline_name = str((payload.get("baseline") or {}).get("name", "baseline"))
-        comparison_name = str((payload.get("comparison") or {}).get("name", "comparison"))
+        participants = payload.get("participants")
+        if not isinstance(participants, dict):
+            participants = {}
+        left = participants.get("left")
+        right = participants.get("right")
+        if not isinstance(left, dict):
+            left = {}
+        if not isinstance(right, dict):
+            right = {}
+        baseline_name = str(left.get("product", "baseline"))
+        comparison_name = str(right.get("product", "comparison"))
         runtime_pair = f"{baseline_name}→{comparison_name}"
         entry = {
             "sourcePath": str(source_path),
@@ -385,7 +398,7 @@ def main() -> int:
             "claimStatus": claim_status,
             "workloadCount": len(workloads),
             "nonComparableCount": count_non_comparable(payload),
-            "nonClaimableCount": count_non_claimable(payload),
+            "nonClaimableCount": artifacts_mod.non_claimable_count(payload, claim_report),
             "overallP50DeltaPercent": derive_overall_p50_delta(payload),
             "outputTimestamp": payload.get("outputTimestamp", ""),
         }

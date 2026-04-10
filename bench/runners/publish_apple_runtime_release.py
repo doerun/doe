@@ -25,6 +25,7 @@ for _path_entry in (str(REPO_ROOT), str(BENCH_ROOT)):
         sys.path.insert(0, _path_entry)
 
 from bench.lib import output_paths
+from bench.lib import compare_claim_artifacts as artifacts_mod
 
 
 def utc_now() -> str:
@@ -119,10 +120,13 @@ def ensure_compare_step_acceptable(step: dict[str, Any], report_path: Path) -> N
     if int(step.get("returnCode", 1)) != 3 or not report_path.exists():
         raise RuntimeError(f"{step.get('label', 'step')} failed")
     report = load_json(report_path)
+    claim_report, _claim_path = artifacts_mod.load_optional_claim_report(report_path)
     if report.get("comparisonStatus") != "comparable":
         raise RuntimeError(f"{step.get('label', 'step')} failed")
     step["pass"] = True
-    step["acceptedDiagnosticClaimStatus"] = bool(report.get("claimStatus") == "diagnostic")
+    step["acceptedDiagnosticClaimStatus"] = bool(
+        artifacts_mod.claim_status(report, claim_report) == "diagnostic"
+    )
 
 
 def sha256_path(path: Path) -> str:

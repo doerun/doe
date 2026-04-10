@@ -21,6 +21,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+from bench.lib import compare_claim_artifacts as artifacts_mod
 from bench.lib import report_conformance
 
 
@@ -61,6 +62,11 @@ def main() -> int:
     )
     parser.add_argument("--report", required=True, help="Path to compare report JSON.")
     parser.add_argument(
+        "--claim-report",
+        default="",
+        help="Optional explicit claim report path. Defaults to sibling .claim.json.",
+    )
+    parser.add_argument(
         "--expected-workloads",
         type=int,
         default=0,
@@ -98,7 +104,16 @@ def main() -> int:
     args = parser.parse_args()
 
     report_path = Path(args.report)
-    payload = json.loads(report_path.read_text(encoding="utf-8"))
+    compare_payload, claim_payload, _claim_path = artifacts_mod.load_compare_bundle(
+        report_path,
+        explicit_claim_path=args.claim_report,
+        require_claim=False,
+    )
+    payload = artifacts_mod.projected_compare_report(
+        compare_payload,
+        report_path,
+        claim_report=claim_payload,
+    )
     repo_root = REPO_ROOT
     obligations_path = Path(args.comparability_obligations)
     if not obligations_path.is_absolute():

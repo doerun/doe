@@ -32,13 +32,16 @@ bench/compare_dawn_vs_doe.config.local.*.json
 !bench/compare_dawn_vs_doe.config.local.vulkan.comparable.json
 !bench/compare_dawn_vs_doe.config.local.vulkan.release.json
 !bench/compare_dawn_vs_doe.config.local.vulkan.directional.json
-# Bench outputs — keep bulky run workspaces disposable, but allow the stable
-# latest mirrors, summary compare receipts, and HTML reports to be tracked.
+# Bench outputs — keep bulky run workspaces disposable, but allow only the
+# portable JSON artifact surfaces needed by the run/compare/claim stack and the
+# static bench viewer.
 bench/out/*
 !bench/out/**/
 bench/out/**
 !bench/out/**/
 !bench/out/README.local.md
+!bench/out/*.run.json
+!bench/out/**/*.run.json
 !bench/out/*.compare.json
 !bench/out/**/*.compare.json
 !bench/out/*.compare-dev.json
@@ -47,10 +50,15 @@ bench/out/**
 !bench/out/**/*.release.json
 !bench/out/*.smoke.json
 !bench/out/**/*.smoke.json
-!bench/out/*.html
-!bench/out/**/*.html
-!bench/out/cube/latest/**
-!bench/out/visualization/latest/**
+!bench/out/*.claim.json
+!bench/out/**/*.claim.json
+!bench/out/test-inventory*.json
+!bench/out/cube/latest/cube.summary.json
+!bench/out/cube/latest/cube.rows.json
+!bench/out/visualization/latest/inventory.json
+!bench/out/visualization/latest/pipeline.summary.json
+!bench/out/visualization/latest/cube.summary.json
+!bench/out/visualization/latest/cube.rows.json
 nursery/webgpu/out/node-smoke.meta.json
 nursery/webgpu/out/node-smoke.ndjson
 

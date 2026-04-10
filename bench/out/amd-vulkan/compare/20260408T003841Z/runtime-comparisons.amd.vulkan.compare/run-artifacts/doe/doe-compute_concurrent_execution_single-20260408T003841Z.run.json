@@ -1,0 +1,352 @@
+{
+  "artifactKind": "run",
+  "commandSamples": [
+    {
+      "command": "env LD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$LD_LIBRARY_PATH runtime/zig/zig-out/bin/doe-zig-runtime --commands examples/concurrent_execution_single_commands.json --quirks examples/quirks/amd_radv_noop_list.json --vendor amd --api vulkan --family gfx11 --driver 24.0.0 --backend native --backend-lane vulkan_doe_comparable --execute --trace --queue-sync-mode per-command --upload-buffer-usage copy-dst-copy-src --upload-submit-every 1 --trace-jsonl bench/out/amd-vulkan/compare/20260408T003841Z/runtime-comparisons.amd.vulkan.compare/isolated-runs/doe/compute_concurrent_execution_single/doe.run000.ndjson --trace-meta bench/out/amd-vulkan/compare/20260408T003841Z/runtime-comparisons.amd.vulkan.compare/isolated-runs/doe/compute_concurrent_execution_single/doe.run000.meta.json --kernel-root bench/kernels --kernel-root bench/kernels",
+      "commandRepeat": 1,
+      "runIndex": 0,
+      "timingNormalizationDivisor": 1.0,
+      "uploadBufferUsage": "copy-dst-copy-src",
+      "uploadIgnoreFirstOps": 0,
+      "uploadSubmitEvery": 1
+    },
+    {
+      "command": "env LD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$LD_LIBRARY_PATH runtime/zig/zig-out/bin/doe-zig-runtime --commands examples/concurrent_execution_single_commands.json --quirks examples/quirks/amd_radv_noop_list.json --vendor amd --api vulkan --family gfx11 --driver 24.0.0 --backend native --backend-lane vulkan_doe_comparable --execute --trace --queue-sync-mode per-command --upload-buffer-usage copy-dst-copy-src --upload-submit-every 1 --trace-jsonl bench/out/amd-vulkan/compare/20260408T003841Z/runtime-comparisons.amd.vulkan.compare/isolated-runs/doe/compute_concurrent_execution_single/doe.run001.ndjson --trace-meta bench/out/amd-vulkan/compare/20260408T003841Z/runtime-comparisons.amd.vulkan.compare/isolated-runs/doe/compute_concurrent_execution_single/doe.run001.meta.json --kernel-root bench/kernels --kernel-root bench/kernels",
+      "commandRepeat": 1,
+      "runIndex": 1,
+      "timingNormalizationDivisor": 1.0,
+      "uploadBufferUsage": "copy-dst-copy-src",
+      "uploadIgnoreFirstOps": 0,
+      "uploadSubmitEvery": 1
+    },
+    {
+      "command": "env LD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$LD_LIBRARY_PATH runtime/zig/zig-out/bin/doe-zig-runtime --commands examples/concurrent_execution_single_commands.json --quirks examples/quirks/amd_radv_noop_list.json --vendor amd --api vulkan --family gfx11 --driver 24.0.0 --backend native --backend-lane vulkan_doe_comparable --execute --trace --queue-sync-mode per-command --upload-buffer-usage copy-dst-copy-src --upload-submit-every 1 --trace-jsonl bench/out/amd-vulkan/compare/20260408T003841Z/runtime-comparisons.amd.vulkan.compare/isolated-runs/doe/compute_concurrent_execution_single/doe.run002.ndjson --trace-meta bench/out/amd-vulkan/compare/20260408T003841Z/runtime-comparisons.amd.vulkan.compare/isolated-runs/doe/compute_concurrent_execution_single/doe.run002.meta.json --kernel-root bench/kernels --kernel-root bench/kernels",
+      "commandRepeat": 1,
+      "runIndex": 2,
+      "timingNormalizationDivisor": 1.0,
+      "uploadBufferUsage": "copy-dst-copy-src",
+      "uploadIgnoreFirstOps": 0,
+      "uploadSubmitEvery": 1
+    },
+    {
+      "command": "env LD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$LD_LIBRARY_PATH runtime/zig/zig-out/bin/doe-zig-runtime --commands examples/concurrent_execution_single_commands.json --quirks examples/quirks/amd_radv_noop_list.json --vendor amd --api vulkan --family gfx11 --driver 24.0.0 --backend native --backend-lane vulkan_doe_comparable --execute --trace --queue-sync-mode per-command --upload-buffer-usage copy-dst-copy-src --upload-submit-every 1 --trace-jsonl bench/out/amd-vulkan/compare/20260408T003841Z/runtime-comparisons.amd.vulkan.compare/isolated-runs/doe/compute_concurrent_execution_single/doe.run003.ndjson --trace-meta bench/out/amd-vulkan/compare/20260408T003841Z/runtime-comparisons.amd.vulkan.compare/isolated-runs/doe/compute_concurrent_execution_single/doe.run003.meta.json --kernel-root bench/kernels --kernel-root bench/kernels",
+      "commandRepeat": 1,
+      "runIndex": 3,
+      "timingNormalizationDivisor": 1.0,
+      "uploadBufferUsage": "copy-dst-copy-src",
+      "uploadIgnoreFirstOps": 0,
+      "uploadSubmitEvery": 1
+    },
+    {
+      "command": "env LD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$LD_LIBRARY_PATH runtime/zig/zig-out/bin/doe-zig-runtime --commands examples/concurrent_execution_single_commands.json --quirks examples/quirks/amd_radv_noop_list.json --vendor amd --api vulkan --family gfx11 --driver 24.0.0 --backend native --backend-lane vulkan_doe_comparable --execute --trace --queue-sync-mode per-command --upload-buffer-usage copy-dst-copy-src --upload-submit-every 1 --trace-jsonl bench/out/amd-vulkan/compare/20260408T003841Z/runtime-comparisons.amd.vulkan.compare/isolated-runs/doe/compute_concurrent_execution_single/doe.run004.ndjson --trace-meta bench/out/amd-vulkan/compare/20260408T003841Z/runtime-comparisons.amd.vulkan.compare/isolated-runs/doe/compute_concurrent_execution_single/doe.run004.meta.json --kernel-root bench/kernels --kernel-root bench/kernels",
+      "commandRepeat": 1,
+      "runIndex": 4,
+      "timingNormalizationDivisor": 1.0,
+      "uploadBufferUsage": "copy-dst-copy-src",
+      "uploadIgnoreFirstOps": 0,
+      "uploadSubmitEvery": 1
+    },
+    {
+      "command": "env LD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$LD_LIBRARY_PATH runtime/zig/zig-out/bin/doe-zig-runtime --commands examples/concurrent_execution_single_commands.json --quirks examples/quirks/amd_radv_noop_list.json --vendor amd --api vulkan --family gfx11 --driver 24.0.0 --backend native --backend-lane vulkan_doe_comparable --execute --trace --queue-sync-mode per-command --upload-buffer-usage copy-dst-copy-src --upload-submit-every 1 --trace-jsonl bench/out/amd-vulkan/compare/20260408T003841Z/runtime-comparisons.amd.vulkan.compare/isolated-runs/doe/compute_concurrent_execution_single/doe.run005.ndjson --trace-meta bench/out/amd-vulkan/compare/20260408T003841Z/runtime-comparisons.amd.vulkan.compare/isolated-runs/doe/compute_concurrent_execution_single/doe.run005.meta.json --kernel-root bench/kernels --kernel-root bench/kernels",
+      "commandRepeat": 1,
+      "runIndex": 5,
+      "timingNormalizationDivisor": 1.0,
+      "uploadBufferUsage": "copy-dst-copy-src",
+      "uploadIgnoreFirstOps": 0,
+      "uploadSubmitEvery": 1
+    },
+    {
+      "command": "env LD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$LD_LIBRARY_PATH runtime/zig/zig-out/bin/doe-zig-runtime --commands examples/concurrent_execution_single_commands.json --quirks examples/quirks/amd_radv_noop_list.json --vendor amd --api vulkan --family gfx11 --driver 24.0.0 --backend native --backend-lane vulkan_doe_comparable --execute --trace --queue-sync-mode per-command --upload-buffer-usage copy-dst-copy-src --upload-submit-every 1 --trace-jsonl bench/out/amd-vulkan/compare/20260408T003841Z/runtime-comparisons.amd.vulkan.compare/isolated-runs/doe/compute_concurrent_execution_single/doe.run006.ndjson --trace-meta bench/out/amd-vulkan/compare/20260408T003841Z/runtime-comparisons.amd.vulkan.compare/isolated-runs/doe/compute_concurrent_execution_single/doe.run006.meta.json --kernel-root bench/kernels --kernel-root bench/kernels",
+      "commandRepeat": 1,
+      "runIndex": 6,
+      "timingNormalizationDivisor": 1.0,
+      "uploadBufferUsage": "copy-dst-copy-src",
+      "uploadIgnoreFirstOps": 0,
+      "uploadSubmitEvery": 1
+    },
+    {
+      "command": "env LD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$LD_LIBRARY_PATH runtime/zig/zig-out/bin/doe-zig-runtime --commands examples/concurrent_execution_single_commands.json --quirks examples/quirks/amd_radv_noop_list.json --vendor amd --api vulkan --family gfx11 --driver 24.0.0 --backend native --backend-lane vulkan_doe_comparable --execute --trace --queue-sync-mode per-command --upload-buffer-usage copy-dst-copy-src --upload-submit-every 1 --trace-jsonl bench/out/amd-vulkan/compare/20260408T003841Z/runtime-comparisons.amd.vulkan.compare/isolated-runs/doe/compute_concurrent_execution_single/doe.run007.ndjson --trace-meta bench/out/amd-vulkan/compare/20260408T003841Z/runtime-comparisons.amd.vulkan.compare/isolated-runs/doe/compute_concurrent_execution_single/doe.run007.meta.json --kernel-root bench/kernels --kernel-root bench/kernels",
+      "commandRepeat": 1,
+      "runIndex": 7,
+      "timingNormalizationDivisor": 1.0,
+      "uploadBufferUsage": "copy-dst-copy-src",
+      "uploadIgnoreFirstOps": 0,
+      "uploadSubmitEvery": 1
+    },
+    {
+      "command": "env LD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$LD_LIBRARY_PATH runtime/zig/zig-out/bin/doe-zig-runtime --commands examples/concurrent_execution_single_commands.json --quirks examples/quirks/amd_radv_noop_list.json --vendor amd --api vulkan --family gfx11 --driver 24.0.0 --backend native --backend-lane vulkan_doe_comparable --execute --trace --queue-sync-mode per-command --upload-buffer-usage copy-dst-copy-src --upload-submit-every 1 --trace-jsonl bench/out/amd-vulkan/compare/20260408T003841Z/runtime-comparisons.amd.vulkan.compare/isolated-runs/doe/compute_concurrent_execution_single/doe.run008.ndjson --trace-meta bench/out/amd-vulkan/compare/20260408T003841Z/runtime-comparisons.amd.vulkan.compare/isolated-runs/doe/compute_concurrent_execution_single/doe.run008.meta.json --kernel-root bench/kernels --kernel-root bench/kernels",
+      "commandRepeat": 1,
+      "runIndex": 8,
+      "timingNormalizationDivisor": 1.0,
+      "uploadBufferUsage": "copy-dst-copy-src",
+      "uploadIgnoreFirstOps": 0,
+      "uploadSubmitEvery": 1
+    },
+    {
+      "command": "env LD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$LD_LIBRARY_PATH runtime/zig/zig-out/bin/doe-zig-runtime --commands examples/concurrent_execution_single_commands.json --quirks examples/quirks/amd_radv_noop_list.json --vendor amd --api vulkan --family gfx11 --driver 24.0.0 --backend native --backend-lane vulkan_doe_comparable --execute --trace --queue-sync-mode per-command --upload-buffer-usage copy-dst-copy-src --upload-submit-every 1 --trace-jsonl bench/out/amd-vulkan/compare/20260408T003841Z/runtime-comparisons.amd.vulkan.compare/isolated-runs/doe/compute_concurrent_execution_single/doe.run009.ndjson --trace-meta bench/out/amd-vulkan/compare/20260408T003841Z/runtime-comparisons.amd.vulkan.compare/isolated-runs/doe/compute_concurrent_execution_single/doe.run009.meta.json --kernel-root bench/kernels --kernel-root bench/kernels",
+      "commandRepeat": 1,
+      "runIndex": 9,
+      "timingNormalizationDivisor": 1.0,
+      "uploadBufferUsage": "copy-dst-copy-src",
+      "uploadIgnoreFirstOps": 0,
+      "uploadSubmitEvery": 1
+    },
+    {
+      "command": "env LD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$LD_LIBRARY_PATH runtime/zig/zig-out/bin/doe-zig-runtime --commands examples/concurrent_execution_single_commands.json --quirks examples/quirks/amd_radv_noop_list.json --vendor amd --api vulkan --family gfx11 --driver 24.0.0 --backend native --backend-lane vulkan_doe_comparable --execute --trace --queue-sync-mode per-command --upload-buffer-usage copy-dst-copy-src --upload-submit-every 1 --trace-jsonl bench/out/amd-vulkan/compare/20260408T003841Z/runtime-comparisons.amd.vulkan.compare/isolated-runs/doe/compute_concurrent_execution_single/doe.run010.ndjson --trace-meta bench/out/amd-vulkan/compare/20260408T003841Z/runtime-comparisons.amd.vulkan.compare/isolated-runs/doe/compute_concurrent_execution_single/doe.run010.meta.json --kernel-root bench/kernels --kernel-root bench/kernels",
+      "commandRepeat": 1,
+      "runIndex": 10,
+      "timingNormalizationDivisor": 1.0,
+      "uploadBufferUsage": "copy-dst-copy-src",
+      "uploadIgnoreFirstOps": 0,
+      "uploadSubmitEvery": 1
+    },
+    {
+      "command": "env LD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$LD_LIBRARY_PATH runtime/zig/zig-out/bin/doe-zig-runtime --commands examples/concurrent_execution_single_commands.json --quirks examples/quirks/amd_radv_noop_list.json --vendor amd --api vulkan --family gfx11 --driver 24.0.0 --backend native --backend-lane vulkan_doe_comparable --execute --trace --queue-sync-mode per-command --upload-buffer-usage copy-dst-copy-src --upload-submit-every 1 --trace-jsonl bench/out/amd-vulkan/compare/20260408T003841Z/runtime-comparisons.amd.vulkan.compare/isolated-runs/doe/compute_concurrent_execution_single/doe.run011.ndjson --trace-meta bench/out/amd-vulkan/compare/20260408T003841Z/runtime-comparisons.amd.vulkan.compare/isolated-runs/doe/compute_concurrent_execution_single/doe.run011.meta.json --kernel-root bench/kernels --kernel-root bench/kernels",
+      "commandRepeat": 1,
+      "runIndex": 11,
+      "timingNormalizationDivisor": 1.0,
+      "uploadBufferUsage": "copy-dst-copy-src",
+      "uploadIgnoreFirstOps": 0,
+      "uploadSubmitEvery": 1
+    },
+    {
+      "command": "env LD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$LD_LIBRARY_PATH runtime/zig/zig-out/bin/doe-zig-runtime --commands examples/concurrent_execution_single_commands.json --quirks examples/quirks/amd_radv_noop_list.json --vendor amd --api vulkan --family gfx11 --driver 24.0.0 --backend native --backend-lane vulkan_doe_comparable --execute --trace --queue-sync-mode per-command --upload-buffer-usage copy-dst-copy-src --upload-submit-every 1 --trace-jsonl bench/out/amd-vulkan/compare/20260408T003841Z/runtime-comparisons.amd.vulkan.compare/isolated-runs/doe/compute_concurrent_execution_single/doe.run012.ndjson --trace-meta bench/out/amd-vulkan/compare/20260408T003841Z/runtime-comparisons.amd.vulkan.compare/isolated-runs/doe/compute_concurrent_execution_single/doe.run012.meta.json --kernel-root bench/kernels --kernel-root bench/kernels",
+      "commandRepeat": 1,
+      "runIndex": 12,
+      "timingNormalizationDivisor": 1.0,
+      "uploadBufferUsage": "copy-dst-copy-src",
+      "uploadIgnoreFirstOps": 0,
+      "uploadSubmitEvery": 1
+    },
+    {
+      "command": "env LD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$LD_LIBRARY_PATH runtime/zig/zig-out/bin/doe-zig-runtime --commands examples/concurrent_execution_single_commands.json --quirks examples/quirks/amd_radv_noop_list.json --vendor amd --api vulkan --family gfx11 --driver 24.0.0 --backend native --backend-lane vulkan_doe_comparable --execute --trace --queue-sync-mode per-command --upload-buffer-usage copy-dst-copy-src --upload-submit-every 1 --trace-jsonl bench/out/amd-vulkan/compare/20260408T003841Z/runtime-comparisons.amd.vulkan.compare/isolated-runs/doe/compute_concurrent_execution_single/doe.run013.ndjson --trace-meta bench/out/amd-vulkan/compare/20260408T003841Z/runtime-comparisons.amd.vulkan.compare/isolated-runs/doe/compute_concurrent_execution_single/doe.run013.meta.json --kernel-root bench/kernels --kernel-root bench/kernels",
+      "commandRepeat": 1,
+      "runIndex": 13,
+      "timingNormalizationDivisor": 1.0,
+      "uploadBufferUsage": "copy-dst-copy-src",
+      "uploadIgnoreFirstOps": 0,
+      "uploadSubmitEvery": 1
+    },
+    {
+      "command": "env LD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$LD_LIBRARY_PATH runtime/zig/zig-out/bin/doe-zig-runtime --commands examples/concurrent_execution_single_commands.json --quirks examples/quirks/amd_radv_noop_list.json --vendor amd --api vulkan --family gfx11 --driver 24.0.0 --backend native --backend-lane vulkan_doe_comparable --execute --trace --queue-sync-mode per-command --upload-buffer-usage copy-dst-copy-src --upload-submit-every 1 --trace-jsonl bench/out/amd-vulkan/compare/20260408T003841Z/runtime-comparisons.amd.vulkan.compare/isolated-runs/doe/compute_concurrent_execution_single/doe.run014.ndjson --trace-meta bench/out/amd-vulkan/compare/20260408T003841Z/runtime-comparisons.amd.vulkan.compare/isolated-runs/doe/compute_concurrent_execution_single/doe.run014.meta.json --kernel-root bench/kernels --kernel-root bench/kernels",
+      "commandRepeat": 1,
+      "runIndex": 14,
+      "timingNormalizationDivisor": 1.0,
+      "uploadBufferUsage": "copy-dst-copy-src",
+      "uploadIgnoreFirstOps": 0,
+      "uploadSubmitEvery": 1
+    },
+    {
+      "command": "env LD_LIBRARY_PATH=bench/vendor/dawn/out/Release:$LD_LIBRARY_PATH runtime/zig/zig-out/bin/doe-zig-runtime --commands examples/concurrent_execution_single_commands.json --quirks examples/quirks/amd_radv_noop_list.json --vendor amd --api vulkan --family gfx11 --driver 24.0.0 --backend native --backend-lane vulkan_doe_comparable --execute --trace --queue-sync-mode per-command --upload-buffer-usage copy-dst-copy-src --upload-submit-every 1 --trace-jsonl bench/out/amd-vulkan/compare/20260408T003841Z/runtime-comparisons.amd.vulkan.compare/isolated-runs/doe/compute_concurrent_execution_single/doe.run015.ndjson --trace-meta bench/out/amd-vulkan/compare/20260408T003841Z/runtime-comparisons.amd.vulkan.compare/isolated-runs/doe/compute_concurrent_execution_single/doe.run015.meta.json --kernel-root bench/kernels --kernel-root bench/kernels",
+      "commandRepeat": 1,
+      "runIndex": 15,
+      "timingNormalizationDivisor": 1.0,
+      "uploadBufferUsage": "copy-dst-copy-src",
+      "uploadIgnoreFirstOps": 0,
+      "uploadSubmitEvery": 1
+    }
+  ],
+  "executorId": "doe",
+  "generatedAt": "2026-04-08T00:38:41.706946+00:00",
+  "host": {
+    "arch": "x86_64",
+    "os": "linux"
+  },
+  "lastMeta": {},
+  "product": "doe",
+  "resourceStats": {
+    "gpuProbeAvailableCount": 0,
+    "gpuProbeModes": [],
+    "gpuVramDeltaPeakFromBeforeBytes": {
+      "count": 0,
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "p10": 0.0,
+      "p50": 0.0,
+      "p95": 0.0,
+      "p99": 0.0,
+      "stdev": 0.0
+    },
+    "gpuVramUsedAfterBytes": {
+      "count": 0,
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "p10": 0.0,
+      "p50": 0.0,
+      "p95": 0.0,
+      "p99": 0.0,
+      "stdev": 0.0
+    },
+    "gpuVramUsedBeforeBytes": {
+      "count": 0,
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "p10": 0.0,
+      "p50": 0.0,
+      "p95": 0.0,
+      "p99": 0.0,
+      "stdev": 0.0
+    },
+    "gpuVramUsedPeakBytes": {
+      "count": 0,
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "p10": 0.0,
+      "p50": 0.0,
+      "p95": 0.0,
+      "p99": 0.0,
+      "stdev": 0.0
+    },
+    "processPeakRssKb": {
+      "count": 0,
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "p10": 0.0,
+      "p50": 0.0,
+      "p95": 0.0,
+      "p99": 0.0,
+      "stdev": 0.0
+    },
+    "samplingTruncatedCount": 0
+  },
+  "runParameters": {
+    "allowNoExecution": false,
+    "commandRepeat": 1,
+    "comparabilityMode": "strict",
+    "ignoreFirstOps": 0,
+    "iterations": 16,
+    "requiredTimingClass": "operation",
+    "resourceProbe": "none",
+    "resourceSampleMs": 100,
+    "resourceSampleTargetCount": 0,
+    "timingDivisor": 1.0,
+    "timingNormalizationNote": "Strict Dawn-vs-Doe operation comparability uses direct timing (baseline/comparison divisors fixed to 1.0).",
+    "uploadBufferUsage": "copy-dst-copy-src",
+    "uploadSubmitEvery": 1,
+    "warmup": 1
+  },
+  "schemaVersion": 2,
+  "stats": {
+    "count": 0,
+    "maxMs": 0.0,
+    "meanMs": 0.0,
+    "minMs": 0.0,
+    "p10Ms": 0.0,
+    "p50Ms": 0.0,
+    "p95Ms": 0.0,
+    "p99Ms": 0.0,
+    "stdevMs": 0.0
+  },
+  "timingClasses": [],
+  "timingMetricsNormalizedStatsMs": {
+    "cpu_time": {
+      "count": 0,
+      "maxMs": 0.0,
+      "meanMs": 0.0,
+      "minMs": 0.0,
+      "p10Ms": 0.0,
+      "p50Ms": 0.0,
+      "p95Ms": 0.0,
+      "p99Ms": 0.0,
+      "stdevMs": 0.0
+    },
+    "gpu_time": {
+      "count": 0,
+      "maxMs": 0.0,
+      "meanMs": 0.0,
+      "minMs": 0.0,
+      "p10Ms": 0.0,
+      "p50Ms": 0.0,
+      "p95Ms": 0.0,
+      "p99Ms": 0.0,
+      "stdevMs": 0.0
+    },
+    "wall_time": {
+      "count": 0,
+      "maxMs": 0.0,
+      "meanMs": 0.0,
+      "minMs": 0.0,
+      "p10Ms": 0.0,
+      "p50Ms": 0.0,
+      "p95Ms": 0.0,
+      "p99Ms": 0.0,
+      "stdevMs": 0.0
+    }
+  },
+  "timingMetricsRawStatsMs": {
+    "cpu_time": {
+      "count": 0,
+      "maxMs": 0.0,
+      "meanMs": 0.0,
+      "minMs": 0.0,
+      "p10Ms": 0.0,
+      "p50Ms": 0.0,
+      "p95Ms": 0.0,
+      "p99Ms": 0.0,
+      "stdevMs": 0.0
+    },
+    "gpu_time": {
+      "count": 0,
+      "maxMs": 0.0,
+      "meanMs": 0.0,
+      "minMs": 0.0,
+      "p10Ms": 0.0,
+      "p50Ms": 0.0,
+      "p95Ms": 0.0,
+      "p99Ms": 0.0,
+      "stdevMs": 0.0
+    },
+    "wall_time": {
+      "count": 0,
+      "maxMs": 0.0,
+      "meanMs": 0.0,
+      "minMs": 0.0,
+      "p10Ms": 0.0,
+      "p50Ms": 0.0,
+      "p95Ms": 0.0,
+      "p99Ms": 0.0,
+      "stdevMs": 0.0
+    }
+  },
+  "timingSources": [],
+  "timingsMs": [],
+  "workload": {
+    "api": "vulkan",
+    "asyncDiagnosticsMode": "",
+    "benchmarkClass": "comparable",
+    "claimEligible": true,
+    "cohorts": [
+      "governed"
+    ],
+    "commandsPath": "examples/concurrent_execution_single_commands.json",
+    "comparabilityCandidate": {
+      "enabled": false,
+      "notes": "",
+      "tier": ""
+    },
+    "comparabilityNotes": "Apples-to-apples contract: command shape and Dawn filter mapping both exercise one long-running compute dispatch per benchmark step.",
+    "comparable": true,
+    "description": "Compute contract aligned to Dawn ConcurrentExecutionTest RunSingle with a single heavy compute dispatch.",
+    "directionalReason": "",
+    "domain": "compute",
+    "driver": "24.0.0",
+    "family": "gfx11",
+    "id": "compute_concurrent_execution_single",
+    "includeByDefault": false,
+    "name": "concurrent execution single-dispatch contract",
+    "pathAsymmetry": false,
+    "pathAsymmetryNote": "",
+    "quirksPath": "examples/quirks/amd_radv_noop_list.json",
+    "strictNormalizationUnit": "",
+    "vendor": "amd"
+  },
+  "workloadContract": {
+    "path": "bench/workloads/workloads.amd.vulkan.json",
+    "sha256": "2e77fbe38e3b02e227466a07ba3250c09859c3127bbf7819282437f8d92924ec"
+  }
+}

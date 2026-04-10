@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Shared conformance checks for compare_dawn_vs_doe report artifacts."""
+"""Shared conformance checks for compare and claim artifacts."""
 
 from __future__ import annotations
 
@@ -8,9 +8,11 @@ import json
 from pathlib import Path
 from typing import Any
 
+from bench.lib import compare_claim_artifacts as artifacts_mod
 
-REPORT_SCHEMA_VERSION = 5
-ACCEPTED_REPORT_SCHEMA_VERSIONS = {5, 6}
+
+REPORT_SCHEMA_VERSION = 1
+ACCEPTED_REPORT_SCHEMA_VERSIONS = {1}
 SHA256_HEX_LENGTH = 64
 SHA256_ZERO = "0" * SHA256_HEX_LENGTH
 
@@ -132,10 +134,6 @@ def resolve_contract_path(
     return repo_relative
 
 
-def load_contract_workload_ids(path: Path) -> set[str]:
-    return set(load_contract_workloads_by_id(path))
-
-
 def load_contract_workloads_by_id(path: Path) -> dict[str, dict[str, Any]]:
     payload = load_json_object(path)
     raw_workloads = payload.get("workloads")
@@ -153,6 +151,10 @@ def load_contract_workloads_by_id(path: Path) -> dict[str, dict[str, Any]]:
     return rows_by_id
 
 
+def load_contract_workload_ids(path: Path) -> set[str]:
+    return set(load_contract_workloads_by_id(path))
+
+
 def validate_report_conformance(
     *,
     payload: dict[str, Any],
@@ -161,6 +163,8 @@ def validate_report_conformance(
     expected_obligation_schema_version: int,
     expected_obligation_ids: set[str],
 ) -> tuple[bool, str]:
+    if payload.get("artifactKind") != "compare-report":
+        return False, "artifactKind must be 'compare-report'"
     schema_version = parse_int(payload.get("schemaVersion"))
     if schema_version != REPORT_SCHEMA_VERSION:
         return (
@@ -173,35 +177,30 @@ def validate_report_conformance(
         return False, "missing or empty workloads list"
 
     comparison_status = payload.get("comparisonStatus")
-    if not isinstance(comparison_status, str) or not comparison_status:
-        return False, "missing comparisonStatus"
+    if comparison_status not in {"comparable", "unreliable"}:
+        return False, "missing or invalid comparisonStatus"
 
-    claim_status = payload.get("claimStatus")
-    if not isinstance(claim_status, str) or not claim_status:
-        return False, "missing claimStatus"
+    participants = payload.get("participants")
+    if not isinstance(participants, dict):
+        return False, "missing participants object"
+    for side_name in ("left", "right"):
+        side = participants.get(side_name)
+        if not isinstance(side, dict):
+            return False, f"participants.{side_name} missing/invalid"
+        if not isinstance(side.get("product"), str) or not str(side.get("product")).strip():
+            return False, f"participants.{side_name}.product missing/invalid"
+        if not isinstance(side.get("executorId"), str) or not str(side.get("executorId")).strip():
+            return False, f"participants.{side_name}.executorId missing/invalid"
 
-    comparability_policy = payload.get("comparabilityPolicy")
-    if not isinstance(comparability_policy, dict):
-        return False, "missing comparabilityPolicy"
-    obligation_contract = comparability_policy.get("obligationContract")
-    if not isinstance(obligation_contract, dict):
-        return False, "missing comparabilityPolicy.obligationContract"
-    if parse_int(obligation_contract.get("schemaVersion")) != expected_obligation_schema_version:
-        return (
-            False,
-            "comparabilityPolicy.obligationContract.schemaVersion mismatch",
-        )
-
-    workload_contract = payload.get("workloadContract")
-    if not isinstance(workload_contract, dict):
-        return False, "missing workloadContract object"
-
-    raw_contract_path = workload_contract.get("path")
+    workload_manifest = payload.get("workloadManifest")
+    if not isinstance(workload_manifest, dict):
+        return False, "missing workloadManifest object"
+    raw_contract_path = workload_manifest.get("path")
     if not isinstance(raw_contract_path, str) or not raw_contract_path.strip():
-        return False, "workloadContract.path missing or invalid"
-    report_contract_hash = workload_contract.get("sha256")
+        return False, "workloadManifest.path missing or invalid"
+    report_contract_hash = workload_manifest.get("sha256")
     if not isinstance(report_contract_hash, str) or not report_contract_hash.strip():
-        return False, "workloadContract.sha256 missing or invalid"
+        return False, "workloadManifest.sha256 missing or invalid"
 
     resolved_contract_path = resolve_contract_path(
         report_path=report_path,
@@ -209,12 +208,12 @@ def validate_report_conformance(
         raw_contract_path=raw_contract_path,
     )
     if not resolved_contract_path.exists():
-        return False, f"workload contract path does not exist: {resolved_contract_path}"
+        return False, f"workload manifest path does not exist: {resolved_contract_path}"
     expected_contract_hash = file_sha256(resolved_contract_path)
     if report_contract_hash != expected_contract_hash:
         return (
             False,
-            "workloadContract.sha256 mismatch "
+            "workloadManifest.sha256 mismatch "
             f"(report={report_contract_hash} expected={expected_contract_hash})",
         )
 
@@ -224,7 +223,18 @@ def validate_report_conformance(
         return False, str(exc)
     contract_workload_ids = set(contract_workload_rows)
 
+    comparability_summary = payload.get("comparabilitySummary")
+    if not isinstance(comparability_summary, dict):
+        return False, "missing comparabilitySummary object"
+    workload_count = parse_int(comparability_summary.get("workloadCount"))
+    non_comparable_count = parse_int(comparability_summary.get("nonComparableCount"))
+    if workload_count != len(workloads):
+        return False, "comparabilitySummary.workloadCount mismatch"
+    if non_comparable_count is None:
+        return False, "comparabilitySummary.nonComparableCount missing/invalid"
+
     seen_workload_ids: set[str] = set()
+    observed_non_comparable = 0
     for workload_index, workload in enumerate(workloads):
         if not isinstance(workload, dict):
             return False, f"workloads[{workload_index}] must be an object"
@@ -237,6 +247,7 @@ def validate_report_conformance(
         if workload_id not in contract_workload_ids:
             return False, f"workload id not present in workload contract: {workload_id}"
         contract_row = contract_workload_rows[workload_id]
+
         workload_path_asymmetry = workload.get("pathAsymmetry")
         if workload_path_asymmetry is not None and not isinstance(workload_path_asymmetry, bool):
             return False, f"{workload_id}: pathAsymmetry must be bool when present"
@@ -263,327 +274,207 @@ def validate_report_conformance(
                 f"{workload_id}: pathAsymmetryNote does not match workload contract"
             )
 
+        workload_matching = workload.get("workloadMatching")
+        if not isinstance(workload_matching, dict):
+            return False, f"{workload_id}: missing workloadMatching object"
+        if not isinstance(workload_matching.get("matched"), bool):
+            return False, f"{workload_id}: workloadMatching.matched must be bool"
+        matching_reasons = workload_matching.get("reasons")
+        if not isinstance(matching_reasons, list) or any(
+            not isinstance(item, str) for item in matching_reasons
+        ):
+            return False, f"{workload_id}: workloadMatching.reasons must be a string list"
+
         comparability = workload.get("comparability")
         if not isinstance(comparability, dict):
             return False, f"{workload_id}: missing comparability object"
-        if (
-            parse_int(comparability.get("obligationSchemaVersion"))
-            != expected_obligation_schema_version
-        ):
-            return (
-                False,
-                f"{workload_id}: comparability.obligationSchemaVersion mismatch",
-            )
+        comparable = comparability.get("comparable")
+        if not isinstance(comparable, bool):
+            return False, f"{workload_id}: comparability.comparable must be bool"
+        reasons = comparability.get("reasons")
+        if not isinstance(reasons, list) or any(not isinstance(item, str) for item in reasons):
+            return False, f"{workload_id}: comparability.reasons must be a string list"
+        if not comparable:
+            observed_non_comparable += 1
 
-        obligations = comparability.get("obligations")
-        if not isinstance(obligations, list) or not obligations:
-            return False, f"{workload_id}: comparability.obligations must be a non-empty list"
-        for obligation_index, obligation in enumerate(obligations):
-            if not isinstance(obligation, dict):
+        obligation_schema_version = comparability.get("obligationSchemaVersion")
+        if obligation_schema_version is not None:
+            if parse_int(obligation_schema_version) != expected_obligation_schema_version:
                 return (
                     False,
-                    f"{workload_id}: comparability.obligations[{obligation_index}] must be object",
+                    f"{workload_id}: comparability.obligationSchemaVersion mismatch",
                 )
-            obligation_id = obligation.get("id")
-            if not isinstance(obligation_id, str) or not obligation_id:
-                return (
-                    False,
-                    f"{workload_id}: comparability.obligations[{obligation_index}].id invalid",
-                )
-            if obligation_id not in expected_obligation_ids:
-                return (
-                    False,
-                    f"{workload_id}: obligation id not in canonical contract: {obligation_id}",
-                )
-            for field_name in ("blocking", "applicable", "passes"):
-                if not isinstance(obligation.get(field_name), bool):
+            obligations = comparability.get("obligations")
+            if not isinstance(obligations, list) or not obligations:
+                return False, f"{workload_id}: comparability.obligations must be a non-empty list"
+            for obligation_index, obligation in enumerate(obligations):
+                if not isinstance(obligation, dict):
                     return (
                         False,
-                        f"{workload_id}: comparability.obligations[{obligation_index}].{field_name} must be bool",
+                        f"{workload_id}: comparability.obligations[{obligation_index}] must be object",
                     )
-
-        blocking_failed = comparability.get("blockingFailedObligations")
-        if not isinstance(blocking_failed, list):
-            return False, f"{workload_id}: comparability.blockingFailedObligations must be list"
-        for failed_index, failed in enumerate(blocking_failed):
-            if not isinstance(failed, str) or not failed:
+                obligation_id = obligation.get("id")
+                if not isinstance(obligation_id, str) or not obligation_id:
+                    return (
+                        False,
+                        f"{workload_id}: comparability.obligations[{obligation_index}].id invalid",
+                    )
+                if obligation_id not in expected_obligation_ids:
+                    return (
+                        False,
+                        f"{workload_id}: obligation id not in canonical contract: {obligation_id}",
+                    )
+                for field_name in ("blocking", "applicable", "passes"):
+                    if not isinstance(obligation.get(field_name), bool):
+                        return (
+                            False,
+                            f"{workload_id}: comparability.obligations[{obligation_index}].{field_name} must be bool",
+                        )
+            blocking_failed = comparability.get("blockingFailedObligations")
+            if not isinstance(blocking_failed, list):
+                return False, f"{workload_id}: comparability.blockingFailedObligations must be list"
+            for failed_index, failed in enumerate(blocking_failed):
+                if not isinstance(failed, str) or not failed:
+                    return (
+                        False,
+                        f"{workload_id}: comparability.blockingFailedObligations[{failed_index}] invalid",
+                    )
+                if failed not in expected_obligation_ids:
+                    return (
+                        False,
+                        f"{workload_id}: unknown blocking failed obligation id {failed}",
+                    )
+            if comparable and blocking_failed:
                 return (
                     False,
-                    f"{workload_id}: comparability.blockingFailedObligations[{failed_index}] invalid",
+                    f"{workload_id}: comparable workload must not include blockingFailedObligations",
                 )
-            if failed not in expected_obligation_ids:
-                return (
-                    False,
-                    f"{workload_id}: unknown blocking failed obligation id {failed}",
-                )
-        if comparability.get("comparable") is True and blocking_failed:
-            return (
-                False,
-                f"{workload_id}: comparable workload must not include blockingFailedObligations",
-            )
 
+    if observed_non_comparable != non_comparable_count:
+        return False, "comparabilitySummary.nonComparableCount mismatch"
     return True, ""
 
 
-def _extract_trace_meta_hashes(
+def validate_claim_report_conformance(
     *,
-    workload_id: str,
-    side_name: str,
-    trace_meta_hashes: Any,
-) -> tuple[bool, list[str], str]:
-    if not isinstance(trace_meta_hashes, list):
-        return False, [], f"{workload_id}: traceMetaHashes.{side_name} must be a list"
-    hashes: list[str] = []
-    seen_paths: set[str] = set()
-    for index, row in enumerate(trace_meta_hashes):
-        if not isinstance(row, dict):
-            return (
-                False,
-                [],
-                f"{workload_id}: traceMetaHashes.{side_name}[{index}] must be an object",
-            )
-        path = row.get("path")
-        sha256 = row.get("sha256")
-        if not isinstance(path, str) or not path.strip():
-            return (
-                False,
-                [],
-                f"{workload_id}: traceMetaHashes.{side_name}[{index}].path missing/invalid",
-            )
-        if path in seen_paths:
-            return (
-                False,
-                [],
-                f"{workload_id}: duplicate traceMetaHashes.{side_name} path {path!r}",
-            )
-        seen_paths.add(path)
-        if not is_sha256_hex(sha256):
-            return (
-                False,
-                [],
-                f"{workload_id}: traceMetaHashes.{side_name}[{index}].sha256 invalid",
-            )
-        hashes.append(str(sha256))
-    return True, hashes, ""
-
-
-def validate_claim_row_hash_links(
-    *,
-    payload: dict[str, Any],
-    require_config_contract: bool,
-    require_non_empty_trace_hashes: bool,
+    compare_payload: dict[str, Any],
+    compare_report_path: Path,
+    claim_payload: dict[str, Any],
+    claim_report_path: Path,
 ) -> tuple[bool, str]:
-    workloads = payload.get("workloads")
-    if not isinstance(workloads, list) or not workloads:
-        return False, "missing or empty workloads list"
+    if claim_payload.get("artifactKind") != "claim-report":
+        return False, "artifactKind must be 'claim-report'"
+    if parse_int(claim_payload.get("schemaVersion")) != 1:
+        return False, "claim report schemaVersion must be 1"
 
-    workload_contract = payload.get("workloadContract")
-    if not isinstance(workload_contract, dict):
-        return False, "missing workloadContract object"
-    workload_contract_sha = workload_contract.get("sha256")
-    if not is_sha256_hex(workload_contract_sha):
-        return False, "workloadContract.sha256 missing/invalid"
+    compare_ref = claim_payload.get("compareReport")
+    if not isinstance(compare_ref, dict):
+        return False, "claim report missing compareReport object"
+    compare_sha = compare_ref.get("sha256")
+    if not is_sha256_hex(compare_sha):
+        return False, "claim report compareReport.sha256 missing/invalid"
+    actual_compare_sha = file_sha256(compare_report_path)
+    if compare_sha != actual_compare_sha:
+        return False, "claim report compareReport.sha256 mismatch"
 
-    benchmark_policy = payload.get("benchmarkPolicy")
+    comparison_status = claim_payload.get("comparisonStatus")
+    if comparison_status != compare_payload.get("comparisonStatus"):
+        return False, "claim report comparisonStatus mismatch with compare report"
+
+    claim_status = claim_payload.get("claimStatus")
+    if claim_status not in {"claimable", "diagnostic"}:
+        return False, "claim report claimStatus missing/invalid"
+    pass_flag = claim_payload.get("pass")
+    if not isinstance(pass_flag, bool):
+        return False, "claim report pass missing/invalid"
+    if pass_flag != (claim_status == "claimable"):
+        return False, "claim report pass does not match claimStatus"
+
+    claim_policy = claim_payload.get("claimPolicy")
+    if not isinstance(claim_policy, dict):
+        return False, "claim report missing claimPolicy object"
+    mode = claim_policy.get("mode")
+    if mode not in {"local", "release"}:
+        return False, "claim report claimPolicy.mode missing/invalid"
+    min_timed_samples = parse_int(claim_policy.get("minTimedSamples"))
+    if min_timed_samples is None or min_timed_samples < 0:
+        return False, "claim report claimPolicy.minTimedSamples missing/invalid"
+    policy_hash = claim_policy.get("policyHash")
+    if not is_sha256_hex(policy_hash):
+        return False, "claim report claimPolicy.policyHash missing/invalid"
+    benchmark_policy = claim_policy.get("benchmarkPolicy")
     if not isinstance(benchmark_policy, dict):
-        return False, "missing benchmarkPolicy object"
+        return False, "claim report claimPolicy.benchmarkPolicy missing/invalid"
+    benchmark_policy_path = benchmark_policy.get("path")
     benchmark_policy_sha = benchmark_policy.get("sha256")
-    if not is_sha256_hex(benchmark_policy_sha):
-        return False, "benchmarkPolicy.sha256 missing/invalid"
-
-    config_contract = payload.get("configContract")
-    config_contract_sha = ""
-    if isinstance(config_contract, dict):
-        config_sha_candidate = config_contract.get("sha256")
-        if not is_sha256_hex(config_sha_candidate):
-            return False, "configContract.sha256 invalid"
-        config_contract_sha = str(config_sha_candidate)
-    elif require_config_contract:
-        return False, "missing configContract object"
-
-    hash_chain = payload.get("claimWorkloadHashChain")
-    if not isinstance(hash_chain, dict):
-        return False, "missing claimWorkloadHashChain object"
-    if hash_chain.get("algorithm") != "sha256":
-        return False, "claimWorkloadHashChain.algorithm must be 'sha256'"
-    chain_count = parse_int(hash_chain.get("count"))
-    if chain_count is None:
-        return False, "claimWorkloadHashChain.count missing/invalid"
-    if chain_count != len(workloads):
-        return (
-            False,
-            "claimWorkloadHashChain.count mismatch "
-            f"(chain={chain_count} workloads={len(workloads)})",
+    if not isinstance(benchmark_policy_path, str):
+        return False, "claim report claimPolicy.benchmarkPolicy.path missing/invalid"
+    if not isinstance(benchmark_policy_sha, str):
+        return False, "claim report claimPolicy.benchmarkPolicy.sha256 missing/invalid"
+    if benchmark_policy_path.strip():
+        resolved = artifacts_mod.resolve_artifact_path(
+            claim_report_path,
+            benchmark_policy_path.strip(),
         )
-    start_previous_hash = hash_chain.get("startPreviousHash")
-    if not is_sha256_hex(start_previous_hash):
-        return False, "claimWorkloadHashChain.startPreviousHash missing/invalid"
-    if str(start_previous_hash) != SHA256_ZERO:
-        return False, "claimWorkloadHashChain.startPreviousHash must be 64 zeroes"
-    final_hash = hash_chain.get("finalHash")
-    if workloads:
-        if not is_sha256_hex(final_hash):
-            return False, "claimWorkloadHashChain.finalHash missing/invalid"
-    elif final_hash not in ("", None):
-        return False, "claimWorkloadHashChain.finalHash must be empty for zero workloads"
+        if not resolved.exists():
+            return False, f"claim benchmark policy path does not exist: {resolved}"
+        actual_benchmark_sha = file_sha256(resolved)
+        if benchmark_policy_sha != actual_benchmark_sha:
+            return False, "claim report benchmark policy sha mismatch"
 
-    previous_hash = str(start_previous_hash)
-    for index, workload in enumerate(workloads):
+    compare_workloads = compare_payload.get("workloads")
+    if not isinstance(compare_workloads, list) or not compare_workloads:
+        return False, "compare report missing workloads for claim validation"
+    compare_workload_ids = {
+        workload.get("id")
+        for workload in compare_workloads
+        if isinstance(workload, dict) and isinstance(workload.get("id"), str)
+    }
+
+    claim_workloads = claim_payload.get("workloads")
+    if not isinstance(claim_workloads, list) or not claim_workloads:
+        return False, "claim report workloads missing/invalid"
+    seen_ids: set[str] = set()
+    observed_failures = 0
+    for index, workload in enumerate(claim_workloads):
         if not isinstance(workload, dict):
-            return False, f"workloads[{index}] must be an object"
-        workload_id = workload.get("id")
+            return False, f"claim report workloads[{index}] must be object"
+        workload_id = workload.get("workloadId")
         if not isinstance(workload_id, str) or not workload_id:
-            return False, f"workloads[{index}].id missing/invalid"
-
-        trace_meta_hashes = workload.get("traceMetaHashes")
-        if not isinstance(trace_meta_hashes, dict):
-            return False, f"{workload_id}: missing traceMetaHashes object"
-        baseline_ok, baseline_hashes, baseline_error = _extract_trace_meta_hashes(
-            workload_id=workload_id,
-            side_name="baseline",
-            trace_meta_hashes=trace_meta_hashes.get("baseline"),
-        )
-        if not baseline_ok:
-            return False, baseline_error
-        comparison_ok, comparison_hashes, comparison_error = _extract_trace_meta_hashes(
-            workload_id=workload_id,
-            side_name="comparison",
-            trace_meta_hashes=trace_meta_hashes.get("comparison"),
-        )
-        if not comparison_ok:
-            return False, comparison_error
-        if require_non_empty_trace_hashes and (not baseline_hashes or not comparison_hashes):
-            return (
-                False,
-                f"{workload_id}: claimable rows require non-empty traceMetaHashes baseline/comparison",
-            )
-
-        claim_row_hash = workload.get("claimWorkloadHash")
-        if not isinstance(claim_row_hash, dict):
-            return False, f"{workload_id}: missing claimWorkloadHash object"
-        if claim_row_hash.get("algorithm") != "sha256":
-            return False, f"{workload_id}: claimWorkloadHash.algorithm must be 'sha256'"
-        row_previous_hash = claim_row_hash.get("previousHash")
-        if not is_sha256_hex(row_previous_hash):
-            return False, f"{workload_id}: claimWorkloadHash.previousHash missing/invalid"
-        if str(row_previous_hash) != previous_hash:
-            return (
-                False,
-                f"{workload_id}: claimWorkloadHash.previousHash mismatch "
-                f"(row={row_previous_hash} expected={previous_hash})",
-            )
-        row_hash_value = claim_row_hash.get("hash")
-        if not is_sha256_hex(row_hash_value):
-            return False, f"{workload_id}: claimWorkloadHash.hash missing/invalid"
-        context = claim_row_hash.get("context")
-        if not isinstance(context, dict):
-            return False, f"{workload_id}: claimWorkloadHash.context missing/invalid"
-        if context.get("workloadId") != workload_id:
-            return False, f"{workload_id}: claimWorkloadHash.context.workloadId mismatch"
-        if context.get("workloadContractSha256") != workload_contract_sha:
-            return False, (
-                f"{workload_id}: claimWorkloadHash.context.workloadContractSha256 mismatch"
-            )
-        if context.get("benchmarkPolicySha256") != benchmark_policy_sha:
-            return False, (
-                f"{workload_id}: claimWorkloadHash.context.benchmarkPolicySha256 mismatch"
-            )
-        expected_config_sha = config_contract_sha
-        context_config_sha = context.get("configContractSha256")
-        if not isinstance(context_config_sha, str):
-            return False, (
-                f"{workload_id}: claimWorkloadHash.context.configContractSha256 missing/invalid"
-            )
-        if context_config_sha != expected_config_sha:
-            return False, (
-                f"{workload_id}: claimWorkloadHash.context.configContractSha256 mismatch"
-            )
-
-        context_left_hashes = context.get("baselineTraceMetaSha256")
-        context_right_hashes = context.get("comparisonTraceMetaSha256")
-        if (
-            not isinstance(context_left_hashes, list)
-            or any(not is_sha256_hex(item) for item in context_left_hashes)
+            return False, f"claim report workloads[{index}].workloadId missing/invalid"
+        if workload_id in seen_ids:
+            return False, f"duplicate claim workloadId in claim report: {workload_id}"
+        seen_ids.add(workload_id)
+        if workload_id not in compare_workload_ids:
+            return False, f"claim workloadId not present in compare report: {workload_id}"
+        if not isinstance(workload.get("claimable"), bool):
+            return False, f"{workload_id}: claimable must be bool"
+        reasons = workload.get("reasons")
+        if not isinstance(reasons, list) or any(not isinstance(item, str) for item in reasons):
+            return False, f"{workload_id}: reasons must be a string list"
+        if workload.get("claimable") is not True:
+            observed_failures += 1
+        for key in ("claimMetricField", "claimMetricScope"):
+            value = workload.get(key)
+            if not isinstance(value, str):
+                return False, f"{workload_id}: {key} missing/invalid"
+        required_positive = workload.get("requiredPositivePercentiles")
+        if not isinstance(required_positive, list) or any(
+            not isinstance(item, str) for item in required_positive
         ):
-            return False, (
-                f"{workload_id}: claimWorkloadHash.context.baselineTraceMetaSha256 missing/invalid"
-            )
-        if (
-            not isinstance(context_right_hashes, list)
-            or any(not is_sha256_hex(item) for item in context_right_hashes)
-        ):
-            return False, (
-                f"{workload_id}: claimWorkloadHash.context.comparisonTraceMetaSha256 missing/invalid"
-            )
-        if context_left_hashes != baseline_hashes:
-            return False, (
-                f"{workload_id}: claimWorkloadHash.context.baselineTraceMetaSha256 mismatch"
-            )
-        if context_right_hashes != comparison_hashes:
-            return False, (
-                f"{workload_id}: claimWorkloadHash.context.comparisonTraceMetaSha256 mismatch"
-            )
+            return False, f"{workload_id}: requiredPositivePercentiles missing/invalid"
 
-        if context.get("deltaPercent") != workload.get("deltaPercent"):
-            return False, f"{workload_id}: claimWorkloadHash.context.deltaPercent mismatch"
-        if "workloadPathAsymmetry" in context and context.get("workloadPathAsymmetry") != workload.get(
-            "pathAsymmetry"
-        ):
-            return False, f"{workload_id}: claimWorkloadHash.context.workloadPathAsymmetry mismatch"
-        if "workloadPathAsymmetryNote" in context and context.get(
-            "workloadPathAsymmetryNote"
-        ) != workload.get("pathAsymmetryNote"):
-            return False, f"{workload_id}: claimWorkloadHash.context.workloadPathAsymmetryNote mismatch"
+    if seen_ids != compare_workload_ids:
+        missing = sorted(compare_workload_ids - seen_ids)
+        extra = sorted(seen_ids - compare_workload_ids)
+        return False, f"claim report workload set mismatch: missing={missing} extra={extra}"
 
-        comparability = workload.get("comparability")
-        context_comparability = context.get("comparability")
-        if not isinstance(comparability, dict) or not isinstance(context_comparability, dict):
-            return False, f"{workload_id}: comparability snapshot missing/invalid"
-        if context_comparability.get("comparable") != comparability.get("comparable"):
-            return False, (
-                f"{workload_id}: claimWorkloadHash.context.comparability.comparable mismatch"
-            )
-        if context_comparability.get("blockingFailedObligations", []) != comparability.get(
-            "blockingFailedObligations", []
-        ):
-            return False, (
-                f"{workload_id}: claimWorkloadHash.context.comparability.blockingFailedObligations mismatch"
-            )
-
-        claimability = workload.get("claimability")
-        context_claimability = context.get("claimability")
-        if not isinstance(claimability, dict) or not isinstance(context_claimability, dict):
-            return False, f"{workload_id}: claimability snapshot missing/invalid"
-        if context_claimability.get("evaluated") != claimability.get("evaluated"):
-            return False, (
-                f"{workload_id}: claimWorkloadHash.context.claimability.evaluated mismatch"
-            )
-        if context_claimability.get("claimable") != claimability.get("claimable"):
-            return False, (
-                f"{workload_id}: claimWorkloadHash.context.claimability.claimable mismatch"
-            )
-        if context_claimability.get("reasons", []) != claimability.get("reasons", []):
-            return False, (
-                f"{workload_id}: claimWorkloadHash.context.claimability.reasons mismatch"
-            )
-
-        recomputed_hash = json_sha256(
-            {
-                "previousHash": str(row_previous_hash),
-                "context": context,
-            }
-        )
-        if recomputed_hash != row_hash_value:
-            return False, (
-                f"{workload_id}: claimWorkloadHash.hash mismatch "
-                f"(report={row_hash_value} recomputed={recomputed_hash})"
-            )
-        previous_hash = str(row_hash_value)
-
-    if workloads and str(final_hash) != previous_hash:
-        return (
-            False,
-            "claimWorkloadHashChain.finalHash mismatch "
-            f"(chain={final_hash} expected={previous_hash})",
-        )
+    top_reasons = claim_payload.get("reasons")
+    if not isinstance(top_reasons, list) or any(not isinstance(item, str) for item in top_reasons):
+        return False, "claim report reasons missing/invalid"
+    if claim_status == "claimable" and observed_failures != 0:
+        return False, "claimable claim report cannot contain non-claimable workloads"
+    if claim_status == "diagnostic" and observed_failures == 0:
+        return False, "diagnostic claim report must contain at least one non-claimable workload"
     return True, ""
+

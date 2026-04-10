@@ -22,6 +22,7 @@ from pathlib import Path
 from statistics import median
 from typing import Any
 
+from bench.lib import compare_claim_artifacts as artifacts_mod
 from bench.lib import benchmark_cube_reports as cube_reports_mod
 from bench.lib import compare_axes as compare_axes_mod
 from bench.lib import benchmark_cube_dashboard_html
@@ -135,13 +136,13 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--matrix-md-out",
-        default="bench/out/cube/cube.matrix.md",
-        help="Output markdown matrix path.",
+        default="",
+        help="Optional markdown matrix path. Leave empty to emit JSON only.",
     )
     parser.add_argument(
         "--dashboard-html-out",
-        default="bench/out/cube/cube.dashboard.html",
-        help="Output HTML dashboard path.",
+        default="",
+        help="Optional HTML dashboard path. Leave empty to emit JSON only.",
     )
     parser.add_argument(
         "--latest-summary",
@@ -155,13 +156,13 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--latest-matrix-md",
-        default="bench/out/cube/latest/cube.matrix.md",
-        help="Stable latest markdown matrix path.",
+        default="",
+        help="Optional stable latest markdown matrix path.",
     )
     parser.add_argument(
         "--latest-dashboard-html",
-        default="bench/out/cube/latest/cube.dashboard.html",
-        help="Stable latest HTML dashboard path.",
+        default="",
+        help="Optional stable latest HTML dashboard path.",
     )
     parser.add_argument(
         "--timestamp",
@@ -704,6 +705,7 @@ def main() -> None:
 
     rows: list[dict[str, Any]] = []
     reports: list[dict[str, Any]] = []
+    receipt_cache: dict[str, dict[str, Any]] = {}
     source_counts = {
         "backendReports": {
             "discovered": len(backend_paths),
@@ -737,22 +739,38 @@ def main() -> None:
         except (OSError, UnicodeError, json.JSONDecodeError, ValueError):
             source_counts["backendReports"]["skipped"] += 1
             continue
-        include, reason = validate_backend_report_shape(payload, report_label=str(path))
+        normalize_payload = payload
+        if payload.get("artifactKind") == "compare-report":
+            try:
+                claim_report, _claim_report_path = artifacts_mod.load_optional_claim_report(path)
+                normalize_payload = artifacts_mod.projected_compare_report(
+                    payload,
+                    path,
+                    claim_report=claim_report,
+                    cache=receipt_cache,
+                )
+            except (FileNotFoundError, ValueError):
+                source_counts["backendReports"]["skipped"] += 1
+                continue
+        include, reason = validate_backend_report_shape(normalize_payload, report_label=str(path))
         if not include:
             source_counts["backendReports"]["skipped"] += 1
             continue
-        is_canonical, canonical_reason = report_conformance.validate_report_conformance(
-            payload=payload,
-            report_path=path,
-            repo_root=repo_root,
-            expected_obligation_schema_version=obligation_schema_version,
-            expected_obligation_ids=obligation_ids,
-        )
+        if payload.get("artifactKind") == "compare-report":
+            is_canonical, canonical_reason = report_conformance.validate_report_conformance(
+                payload=payload,
+                report_path=path,
+                repo_root=repo_root,
+                expected_obligation_schema_version=obligation_schema_version,
+                expected_obligation_ids=obligation_ids,
+            )
+        else:
+            is_canonical, canonical_reason = False, "legacy compare payload"
         generated_at = parse_report_timestamp(payload, path)
         surface_policy = policy["surfaces"]["backend_native"]
         try:
             normalized_rows, report_info = normalize_backend_report(
-                payload=payload,
+                payload=normalize_payload,
                 source_path=path,
                 generated_at=generated_at,
                 policy=policy,
@@ -783,7 +801,20 @@ def main() -> None:
         except (OSError, UnicodeError, json.JSONDecodeError, ValueError):
             source_counts["nodeReports"]["skipped"] += 1
             continue
-        include, _reason = validate_package_report(payload, report_label=str(path))
+        normalize_payload = payload
+        if payload.get("artifactKind") == "compare-report":
+            try:
+                claim_report, _claim_report_path = artifacts_mod.load_optional_claim_report(path)
+                normalize_payload = artifacts_mod.projected_compare_report(
+                    payload,
+                    path,
+                    claim_report=claim_report,
+                    cache=receipt_cache,
+                )
+            except (FileNotFoundError, ValueError):
+                source_counts["nodeReports"]["skipped"] += 1
+                continue
+        include, _reason = validate_package_report(normalize_payload, report_label=str(path))
         if not include:
             source_counts["nodeReports"]["skipped"] += 1
             continue
@@ -791,7 +822,7 @@ def main() -> None:
         surface_policy = policy["surfaces"]["node_package"]
         try:
             normalized_rows, report_info = normalize_package_report(
-                payload=payload,
+                payload=normalize_payload,
                 source_path=path,
                 generated_at=generated_at,
                 policy=policy,
@@ -819,7 +850,20 @@ def main() -> None:
         except (OSError, UnicodeError, json.JSONDecodeError, ValueError):
             source_counts["bunReports"]["skipped"] += 1
             continue
-        include, _reason = validate_package_report(payload, report_label=str(path))
+        normalize_payload = payload
+        if payload.get("artifactKind") == "compare-report":
+            try:
+                claim_report, _claim_report_path = artifacts_mod.load_optional_claim_report(path)
+                normalize_payload = artifacts_mod.projected_compare_report(
+                    payload,
+                    path,
+                    claim_report=claim_report,
+                    cache=receipt_cache,
+                )
+            except (FileNotFoundError, ValueError):
+                source_counts["bunReports"]["skipped"] += 1
+                continue
+        include, _reason = validate_package_report(normalize_payload, report_label=str(path))
         if not include:
             source_counts["bunReports"]["skipped"] += 1
             continue
@@ -827,7 +871,7 @@ def main() -> None:
         surface_policy = policy["surfaces"]["bun_package"]
         try:
             normalized_rows, report_info = normalize_package_report(
-                payload=payload,
+                payload=normalize_payload,
                 source_path=path,
                 generated_at=generated_at,
                 policy=policy,
@@ -862,17 +906,29 @@ def main() -> None:
         enabled=args.timestamp_output,
         group="cube",
     )
-    matrix_md_out = output_paths.with_timestamp(
-        args.matrix_md_out,
-        timestamp,
-        enabled=args.timestamp_output,
-        group="cube",
+    matrix_md_out = (
+        output_paths.with_timestamp(
+            args.matrix_md_out,
+            timestamp,
+            enabled=args.timestamp_output,
+            group="cube",
+        )
+        if args.matrix_md_out.strip()
+        else None
     )
-    dashboard_html_out = output_paths.with_timestamp(
-        args.dashboard_html_out,
-        timestamp,
-        enabled=args.timestamp_output,
-        group="cube",
+    dashboard_html_out = (
+        output_paths.with_timestamp(
+            args.dashboard_html_out,
+            timestamp,
+            enabled=args.timestamp_output,
+            group="cube",
+        )
+        if args.dashboard_html_out.strip()
+        else None
+    )
+    latest_matrix_md = Path(args.latest_matrix_md) if args.latest_matrix_md.strip() else None
+    latest_dashboard_html = (
+        Path(args.latest_dashboard_html) if args.latest_dashboard_html.strip() else None
     )
 
     cells = build_cells(policy=policy, governed_lanes=governed_lanes, rows=rows, reports=reports)
@@ -889,8 +945,10 @@ def main() -> None:
         },
         "artifacts": {
             "rowsPath": str(rows_out),
-            "matrixMarkdownPath": str(matrix_md_out),
-            "dashboardHtmlPath": str(dashboard_html_out),
+            "matrixMarkdownPath": str(matrix_md_out) if matrix_md_out is not None else "",
+            "dashboardHtmlPath": (
+                str(dashboard_html_out) if dashboard_html_out is not None else ""
+            ),
         },
         "sourceCounts": source_counts,
         "rowCount": len(rows),
@@ -899,31 +957,44 @@ def main() -> None:
     }
     validate_schema(repo_root / "config" / "benchmark-cube.schema.json", summary_payload)
 
-    matrix_markdown = render_matrix_markdown(summary_payload, policy)
-    dashboard_html = benchmark_cube_dashboard_html.build_dashboard_html(
-        summary_payload,
-        policy,
-        dashboard_path=dashboard_html_out,
-    )
     write_json(rows_out, rows)
     write_json(summary_out, summary_payload)
-    write_text(matrix_md_out, matrix_markdown + "\n")
-    write_text(dashboard_html_out, dashboard_html + "\n")
     write_json(Path(args.latest_rows), rows)
     write_json(Path(args.latest_summary), summary_payload)
-    write_text(Path(args.latest_matrix_md), matrix_markdown + "\n")
-    write_text(Path(args.latest_dashboard_html), dashboard_html + "\n")
+    if matrix_md_out is not None or latest_matrix_md is not None:
+        matrix_markdown = render_matrix_markdown(summary_payload, policy)
+        if matrix_md_out is not None:
+            write_text(matrix_md_out, matrix_markdown + "\n")
+        if latest_matrix_md is not None:
+            write_text(latest_matrix_md, matrix_markdown + "\n")
+    if dashboard_html_out is not None or latest_dashboard_html is not None:
+        dashboard_html = benchmark_cube_dashboard_html.build_dashboard_html(
+            summary_payload,
+            policy,
+            dashboard_path=dashboard_html_out or latest_dashboard_html or summary_out,
+        )
+        if dashboard_html_out is not None:
+            write_text(dashboard_html_out, dashboard_html + "\n")
+        if latest_dashboard_html is not None:
+            write_text(latest_dashboard_html, dashboard_html + "\n")
 
+    emitted_outputs = [rows_out, summary_out]
+    if matrix_md_out is not None:
+        emitted_outputs.append(matrix_md_out)
+    if dashboard_html_out is not None:
+        emitted_outputs.append(dashboard_html_out)
     output_paths.write_run_manifest_for_outputs(
-        [rows_out, summary_out, matrix_md_out, dashboard_html_out],
+        emitted_outputs,
         {
             "runType": "benchmark-cube",
             "config": str(policy_path.relative_to(repo_root)),
             "status": "ok",
             "summaryPath": str(summary_out),
             "rowsPath": str(rows_out),
-            "matrixMarkdownPath": str(matrix_md_out),
-            "dashboardHtmlPath": str(dashboard_html_out),
+            "matrixMarkdownPath": str(matrix_md_out) if matrix_md_out is not None else "",
+            "dashboardHtmlPath": (
+                str(dashboard_html_out) if dashboard_html_out is not None else ""
+            ),
         },
     )
 

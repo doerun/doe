@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
-"""Build a timestamped Doe benchmark visualization bundle."""
+"""Build a timestamped Doe benchmark JSON bundle."""
 
 from __future__ import annotations
 
 import argparse
 import json
 import re
-import shutil
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -21,9 +20,10 @@ for _path_entry in (str(REPO_ROOT), str(BENCH_ROOT)):
         sys.path.insert(0, _path_entry)
 
 from bench.lib import output_paths
-from bench.lib import visualization_pipeline_html
 
 NO_MATCH_GLOB = "bench/out/__visualization_pipeline_no_match__/*.json"
+TIMESTAMP_SUFFIX_RE = re.compile(r"\d{8}T\d{6}Z$")
+STATIC_VIEWER = (BENCH_ROOT / "viewers" / "bench_out_viewer.html").resolve()
 
 
 def parse_args() -> argparse.Namespace:
@@ -65,19 +65,9 @@ def parse_args() -> argparse.Namespace:
         help="Explicit Bun package compare report path. May be repeated.",
     )
     parser.add_argument(
-        "--index-out",
-        default="bench/out/visualization/index.html",
-        help="Landing HTML path for the timestamped bundle.",
-    )
-    parser.add_argument(
         "--summary-out",
         default="bench/out/visualization/pipeline.summary.json",
         help="Summary JSON path for the timestamped bundle.",
-    )
-    parser.add_argument(
-        "--latest-index",
-        default="bench/out/visualization/latest/index.html",
-        help="Stable latest landing HTML path.",
     )
     parser.add_argument(
         "--latest-summary",
@@ -86,8 +76,8 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--title",
-        default="Doe benchmark visualization pipeline",
-        help="Landing page title.",
+        default="Doe benchmark JSON bundle",
+        help="Summary title.",
     )
     parser.add_argument(
         "--timestamp",
@@ -101,28 +91,10 @@ def parse_args() -> argparse.Namespace:
         help="Stamp the primary outputs into a timestamped run folder.",
     )
     parser.add_argument(
-        "--bootstrap-iterations",
-        type=int,
-        default=1000,
-        help="Bootstrap iterations forwarded to compare visualization.",
-    )
-    parser.add_argument(
-        "--bootstrap-seed",
-        type=int,
-        default=1337,
-        help="Bootstrap seed forwarded to compare visualization.",
-    )
-    parser.add_argument(
-        "--max-ecdf-workloads",
-        type=int,
-        default=12,
-        help="Max workloads rendered as ECDF overlays per compare page.",
-    )
-    parser.add_argument(
         "--inventory-max-recent-reports",
         type=int,
         default=30,
-        help="Max recent reports shown in the inventory dashboard.",
+        help="Max recent reports retained in the generated inventory JSON.",
     )
     return parser.parse_args()
 
@@ -164,19 +136,10 @@ def run_command(argv: list[str]) -> None:
     )
 
 
-def copy_latest(source: Path, target: Path) -> None:
-    target.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(source, target)
-
-
 def slugify(value: str) -> str:
     cleaned = re.sub(r"[^A-Za-z0-9]+", "-", value.strip().lower())
     cleaned = re.sub(r"-{2,}", "-", cleaned).strip("-")
     return cleaned or "artifact"
-
-
-def report_slug(path: Path) -> str:
-    return slugify(path.stem)
 
 
 def surface_label(path: Path) -> str:
@@ -226,18 +189,56 @@ def load_optional_claim_report(report_path: Path) -> dict[str, Any]:
     return payload
 
 
-def summarize_report(
-    *,
-    label: str,
-    report_path: Path,
-    html_path: Path,
-    analysis_path: Path,
-) -> dict[str, Any]:
+def parse_utc_iso(value: Any) -> datetime | None:
+    if not isinstance(value, str) or not value.strip():
+        return None
+    candidate = value.strip()
+    if candidate.endswith("Z"):
+        candidate = candidate[:-1] + "+00:00"
+    try:
+        parsed = datetime.fromisoformat(candidate)
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def parse_report_timestamp(payload: dict[str, Any], source_path: Path) -> str:
+    generated = parse_utc_iso(payload.get("generatedAt"))
+    if generated is not None:
+        return generated.isoformat().replace("+00:00", "Z")
+    output_timestamp = payload.get("outputTimestamp")
+    if isinstance(output_timestamp, str) and output_timestamp:
+        return output_timestamp
+    stem = source_path.stem
+    parts = stem.split(".")
+    if parts and TIMESTAMP_SUFFIX_RE.fullmatch(parts[-1]):
+        return parts[-1]
+    return ""
+
+
+def as_float(value: Any) -> float | None:
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, (int, float)):
+        return float(value)
+    return None
+
+
+def nested_delta(payload: dict[str, Any], *path: str) -> float | None:
+    current: Any = payload
+    for part in path:
+        if not isinstance(current, dict):
+            return None
+        current = current.get(part)
+    return as_float(current)
+
+
+def summarize_report(*, label: str, report_path: Path) -> dict[str, Any]:
     payload = load_json(report_path)
     claim_payload = load_optional_claim_report(report_path)
     comparability = payload.get("comparabilitySummary", {})
-    operator_diff = payload.get("operatorDiffSummary", {})
-    workloads = payload.get("workloads", [])
     comparable_count = 0
     if isinstance(comparability, dict):
         comparable_count = max(
@@ -245,48 +246,52 @@ def summarize_report(
             - int(comparability.get("nonComparableCount", 0)),
             0,
         )
-    operator_status = "unknown"
-    if isinstance(operator_diff, dict):
-        operator_workloads = operator_diff.get("workloads", [])
-        if isinstance(operator_workloads, list) and operator_workloads:
-            first = operator_workloads[0]
-            if isinstance(first, dict):
-                operator_status = str(first.get("status", "unknown"))
-    timing_policy = payload.get("timingInterpretationPolicy", {})
-    if not isinstance(timing_policy, dict):
-        timing_policy = {}
     claim_policy = claim_payload.get("claimPolicy", {})
     if not isinstance(claim_policy, dict):
         claim_policy = {}
-    summary = (
-        "Selected timing and workload-unit wall are both surfaced here. "
-        "Use wall as the conservative end-to-end read when it materially differs."
-    )
+    claim_report_path = default_claim_report_path(report_path)
     return {
         "label": label,
-        "summary": summary,
         "reportPath": str(report_path),
-        "claimReportPath": (
-            str(default_claim_report_path(report_path))
-            if default_claim_report_path(report_path) is not None
-            else ""
-        ),
-        "htmlPath": str(html_path),
-        "analysisPath": str(analysis_path),
+        "claimReportPath": str(claim_report_path) if claim_report_path is not None else "",
+        "reportTimestamp": parse_report_timestamp(payload, report_path),
         "comparisonStatus": payload.get("comparisonStatus", "unknown"),
         "claimStatus": claim_payload.get(
             "claimStatus",
             payload.get("claimStatus", "not-evaluated"),
         ),
-        "claimabilityMode": claim_policy.get("mode", "not-evaluated"),
-        "workloadCount": len(workloads) if isinstance(workloads, list) else 0,
+        "claimabilityMode": claim_policy.get(
+            "mode",
+            payload.get("claimabilityPolicy", {}).get("mode", "not-evaluated"),
+            ),
+        "workloadCount": len(payload.get("workloads", []))
+        if isinstance(payload.get("workloads"), list)
+        else 0,
         "comparableCount": comparable_count,
-        "selectedP50DeltaPercent": payload.get("overall", {}).get("deltaPercent", {}).get("p50Percent"),
-        "selectedP95DeltaPercent": payload.get("overall", {}).get("deltaPercent", {}).get("p95Percent"),
-        "wallP50DeltaPercent": payload.get("overallWorkloadUnitWall", {}).get("deltaPercent", {}).get("p50Percent"),
-        "wallP95DeltaPercent": payload.get("overallWorkloadUnitWall", {}).get("deltaPercent", {}).get("p95Percent"),
-        "timingGuidance": timing_policy.get("guidance", ""),
-        "operatorDiffStatus": operator_status,
+        "selectedP50DeltaPercent": nested_delta(
+            payload,
+            "overall",
+            "deltaPercent",
+            "p50Percent",
+        ),
+        "selectedP95DeltaPercent": nested_delta(
+            payload,
+            "overall",
+            "deltaPercent",
+            "p95Percent",
+        ),
+        "wallP50DeltaPercent": nested_delta(
+            payload,
+            "overallWorkloadUnitWall",
+            "deltaPercent",
+            "p50Percent",
+        ),
+        "wallP95DeltaPercent": nested_delta(
+            payload,
+            "overallWorkloadUnitWall",
+            "deltaPercent",
+            "p95Percent",
+        ),
     }
 
 
@@ -304,22 +309,15 @@ def main() -> int:
         if args.timestamp_output
         else ""
     )
-    index_out = output_paths.with_timestamp(
-        args.index_out,
-        timestamp,
-        enabled=args.timestamp_output,
-        group="visualization",
-    ).resolve()
     summary_out = output_paths.with_timestamp(
         args.summary_out,
         timestamp,
         enabled=args.timestamp_output,
         group="visualization",
     ).resolve()
-    run_dir = index_out.parent
-    latest_index = Path(args.latest_index).resolve()
     latest_summary = Path(args.latest_summary).resolve()
-    latest_dir = latest_index.parent
+    run_dir = summary_out.parent
+    latest_dir = latest_summary.parent
     run_dir.mkdir(parents=True, exist_ok=True)
     latest_dir.mkdir(parents=True, exist_ok=True)
 
@@ -330,51 +328,16 @@ def main() -> int:
         ("bun", bun_reports),
     ):
         for report_path in reports:
-            slug = report_slug(report_path)
-            html_out = run_dir / f"{slug}.html"
-            analysis_out = run_dir / f"{slug}.analysis.json"
-            title = f"Doe compare report | {lane_label(kind, report_path)}"
-            claim_report_path = default_claim_report_path(report_path)
-            run_command(
-                [
-                    sys.executable,
-                    "bench/native-compare/visualize_dawn_vs_doe.py",
-                    "--report",
-                    str(report_path),
-                    "--out",
-                    str(html_out),
-                    "--analysis-out",
-                    str(analysis_out),
-                    "--title",
-                    title,
-                    "--bootstrap-iterations",
-                    str(max(args.bootstrap_iterations, 0)),
-                    "--bootstrap-seed",
-                    str(args.bootstrap_seed),
-                    "--max-ecdf-workloads",
-                    str(max(args.max_ecdf_workloads, 0)),
-                    *(
-                        ["--claim-report", str(claim_report_path)]
-                        if claim_report_path is not None
-                        else []
-                    ),
-                ]
-            )
-            copy_latest(html_out, latest_dir / html_out.name)
-            copy_latest(analysis_out, latest_dir / analysis_out.name)
             report_entries.append(
                 summarize_report(
                     label=lane_label(kind, report_path),
                     report_path=report_path,
-                    html_path=html_out,
-                    analysis_path=analysis_out,
                 )
             )
+    report_entries.sort(key=lambda item: (item.get("label", ""), item.get("reportTimestamp", "")))
 
     inventory_json = run_dir / "inventory.json"
-    inventory_html = run_dir / "inventory.dashboard.html"
     latest_inventory_json = latest_dir / "inventory.json"
-    latest_inventory_html = latest_dir / "inventory.dashboard.html"
     inventory_args = [
         sys.executable,
         "bench/tools/build_test_inventory_dashboard.py",
@@ -383,12 +346,8 @@ def main() -> int:
         NO_MATCH_GLOB,
         "--inventory-out",
         str(inventory_json),
-        "--dashboard-out",
-        str(inventory_html),
         "--latest-inventory",
         str(latest_inventory_json),
-        "--latest-dashboard",
-        str(latest_inventory_html),
         "--max-recent-reports",
         str(max(args.inventory_max_recent_reports, 0)),
     ]
@@ -398,12 +357,8 @@ def main() -> int:
 
     cube_summary = run_dir / "cube.summary.json"
     cube_rows = run_dir / "cube.rows.json"
-    cube_matrix = run_dir / "cube.matrix.md"
-    cube_html = run_dir / "cube.dashboard.html"
     latest_cube_summary = latest_dir / "cube.summary.json"
     latest_cube_rows = latest_dir / "cube.rows.json"
-    latest_cube_matrix = latest_dir / "cube.matrix.md"
-    latest_cube_html = latest_dir / "cube.dashboard.html"
     cube_args = [
         sys.executable,
         "bench/tools/build_benchmark_cube.py",
@@ -418,18 +373,10 @@ def main() -> int:
         str(cube_summary),
         "--rows-out",
         str(cube_rows),
-        "--matrix-md-out",
-        str(cube_matrix),
-        "--dashboard-html-out",
-        str(cube_html),
         "--latest-summary",
         str(latest_cube_summary),
         "--latest-rows",
         str(latest_cube_rows),
-        "--latest-matrix-md",
-        str(latest_cube_matrix),
-        "--latest-dashboard-html",
-        str(latest_cube_html),
         "--no-preserve-latest",
     ]
     for report_path in backend_reports:
@@ -445,55 +392,42 @@ def main() -> int:
         "generatedAtUtc": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "outputTimestamp": timestamp,
         "title": args.title,
+        "viewerPath": str(STATIC_VIEWER),
         "reports": report_entries,
-        "dashboards": {
+        "artifacts": {
             "cube": {
                 "summaryPath": str(cube_summary),
                 "rowsPath": str(cube_rows),
-                "matrixMarkdownPath": str(cube_matrix),
-                "dashboardHtmlPath": str(cube_html),
             },
             "inventory": {
                 "inventoryPath": str(inventory_json),
-                "dashboardHtmlPath": str(inventory_html),
             },
         },
     }
-    index_html = visualization_pipeline_html.build_index_html(
-        summary_payload,
-        page_path=index_out,
-    )
-    index_out.write_text(index_html, encoding="utf-8")
     write_json(summary_out, summary_payload)
-    copy_latest(index_out, latest_index)
-    copy_latest(summary_out, latest_summary)
+    write_json(latest_summary, summary_payload)
 
     output_paths.write_run_manifest_for_outputs(
         [
-            index_out,
             summary_out,
             inventory_json,
-            inventory_html,
             cube_summary,
             cube_rows,
-            cube_matrix,
-            cube_html,
         ],
         {
             "runType": "visualization-pipeline",
             "title": args.title,
             "status": "passed",
-            "indexPath": str(index_out),
             "summaryPath": str(summary_out),
             "compareReportCount": len(report_entries),
+            "viewerPath": str(STATIC_VIEWER),
         },
     )
 
-    print("PASS: built visualization bundle")
-    print(f"index: {index_out}")
+    print("PASS: built visualization JSON bundle")
     print(f"summary: {summary_out}")
-    print(f"latest index: {latest_index}")
     print(f"latest summary: {latest_summary}")
+    print(f"viewer: {STATIC_VIEWER}")
     return 0
 
 

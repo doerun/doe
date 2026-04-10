@@ -19,6 +19,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from bench.lib import compare_claim_artifacts as artifacts_mod
 from bench.lib import output_paths
 from bench.lib import report_conformance
 from bench.lib.config_validation import load_validated_config
@@ -477,13 +478,23 @@ def evaluate_report(
         "tailNonPositiveWorkloads": 0,
     }
 
-    payload = load_json(report_path)
+    compare_payload, claim_payload, claim_report_path = artifacts_mod.load_compare_bundle(
+        report_path,
+        require_claim=True,
+    )
+    assert claim_payload is not None
+    assert claim_report_path is not None
+    payload = artifacts_mod.projected_compare_report(
+        compare_payload,
+        report_path,
+        claim_report=claim_payload,
+    )
 
     expected_obligation_schema_version, expected_obligation_ids = report_conformance.load_obligation_contract(
         obligations_path
     )
     conformant, reason = report_conformance.validate_report_conformance(
-        payload=payload,
+        payload=compare_payload,
         report_path=report_path,
         repo_root=repo_root,
         expected_obligation_schema_version=expected_obligation_schema_version,
@@ -491,11 +502,18 @@ def evaluate_report(
     )
     if not conformant:
         failures.append(f"report conformance failed: {reason}")
+    claim_conformant, claim_reason = report_conformance.validate_claim_report_conformance(
+        compare_payload=compare_payload,
+        compare_report_path=report_path,
+        claim_payload=claim_payload,
+        claim_report_path=claim_report_path,
+    )
+    if not claim_conformant:
+        failures.append(f"claim report conformance failed: {claim_reason}")
 
     cycle_contracts = cycle_payload.get("contracts")
     workload_contract = cycle_contracts.get("workloadContract") if isinstance(cycle_contracts, dict) else {}
     benchmark_policy = cycle_contracts.get("benchmarkPolicy") if isinstance(cycle_contracts, dict) else {}
-    compare_config = cycle_contracts.get("compareConfig") if isinstance(cycle_contracts, dict) else {}
 
     report_workload_contract = payload.get("workloadContract")
     if not isinstance(report_workload_contract, dict):
@@ -518,18 +536,6 @@ def evaluate_report(
         if expected_sha != actual_sha:
             failures.append(
                 "report benchmarkPolicy.sha256 mismatch with cycle: "
-                f"expected={expected_sha!r} actual={actual_sha!r}"
-            )
-
-    report_config_contract = payload.get("configContract")
-    if not isinstance(report_config_contract, dict):
-        failures.append("report missing configContract object")
-    else:
-        expected_sha = compare_config.get("sha256")
-        actual_sha = report_config_contract.get("sha256")
-        if expected_sha != actual_sha:
-            failures.append(
-                "report configContract.sha256 mismatch with cycle compareConfig: "
                 f"expected={expected_sha!r} actual={actual_sha!r}"
             )
 
@@ -628,6 +634,7 @@ def evaluate_report(
         "nonClaimableCount": non_claimable_count,
         "workloadCount": len(workloads),
         "workloadIdCount": len(report_ids),
+        "claimReportPath": str(claim_report_path),
     }
 
     return payload, failures, warnings, {"summary": report_summary, "rollbackMetrics": rollback_metrics}

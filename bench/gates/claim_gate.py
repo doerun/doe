@@ -1,9 +1,5 @@
 #!/usr/bin/env python3
-"""
-Release hard-gate for claimability and comparability status.
-
-Validates that a compare-lane report is explicitly release-claimable.
-"""
+"""Release hard-gate for compare reports plus claim sidecars."""
 
 from __future__ import annotations
 
@@ -22,12 +18,13 @@ import json
 from pathlib import Path
 from typing import Any
 
+from bench.lib import compare_claim_artifacts as artifacts_mod
 from bench.lib import report_conformance
 
 
-VALID_STATUSES = {"comparable", "unreliable"}
-VALID_CLAIM_STATUSES = {"claimable", "diagnostic", "not-evaluated"}
-VALID_CLAIMABILITY_MODES = {"off", "local", "release"}
+VALID_COMPARISON_STATUSES = {"comparable", "unreliable"}
+VALID_CLAIM_STATUSES = {"claimable", "diagnostic"}
+VALID_CLAIMABILITY_MODES = {"local", "release"}
 VALID_BENCHMARK_CLASSES = {"comparable", "directional"}
 RELEASE_REQUIRED_POSITIVE_PERCENTILES = ["p50Percent", "p95Percent", "p99Percent"]
 LOCAL_REQUIRED_POSITIVE_PERCENTILES = ["p50Percent", "p95Percent"]
@@ -37,56 +34,58 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--report",
-        default="bench/out/dawn-vs-doe.json",
+        default="bench/out/dawn-vs-doe.compare.json",
         help="Comparison report produced by the compare lane.",
+    )
+    parser.add_argument(
+        "--claim-report",
+        default="",
+        help="Optional explicit claim report path. Defaults to sibling .claim.json.",
     )
     parser.add_argument(
         "--require-comparison-status",
         default="comparable",
-        help="Required top-level comparisonStatus value",
+        help="Required top-level comparisonStatus value.",
     )
     parser.add_argument(
         "--require-claim-status",
         default="claimable",
-        help="Required top-level claimStatus value",
+        help="Required top-level claimStatus value.",
     )
     parser.add_argument(
         "--require-claimability-mode",
         default="release",
-        help="Required claimabilityPolicy.mode value",
+        help="Required claimPolicy.mode value.",
     )
     parser.add_argument(
         "--require-min-timed-samples",
         type=int,
         default=15,
-        help="Minimum claimabilityPolicy.minTimedSamples value",
+        help="Minimum claimPolicy.minTimedSamples value.",
     )
     parser.add_argument(
         "--comparability-obligations",
         default="config/comparability-obligations.json",
-        help="Canonical comparability obligation contract path.",
+        help="Canonical comparability-obligation contract path.",
     )
     parser.add_argument(
         "--expected-workload-contract",
         default="",
         help=(
-            "Optional workload contract JSON (for example bench/workloads/workloads.amd.vulkan.json). "
-            "When provided with hash/id checks, gate validates report workload contract hash and "
-            "expected comparable workload ID set."
+            "Optional workload contract JSON. When provided with hash/id checks, "
+            "gate validates compare workload manifest hash and expected comparable workload IDs."
         ),
     )
     parser.add_argument(
         "--require-workload-contract-hash",
         action="store_true",
-        help=(
-            "Require report workloadContract.path/sha256 and verify it matches --expected-workload-contract."
-        ),
+        help="Require compare workload manifest path/sha256 to match --expected-workload-contract.",
     )
     parser.add_argument(
         "--require-workload-id-set-match",
         action="store_true",
         help=(
-            "Require report workload IDs to exactly match comparable workload IDs from "
+            "Require compare workload IDs to exactly match comparable workload IDs from "
             "--expected-workload-contract."
         ),
     )
@@ -98,10 +97,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--expected-backend-id",
         default="",
-        help=(
-            "Expected baseline-side backendId for successful samples when "
-            "--require-backend-telemetry is set."
-        ),
+        help="Expected baseline-side backendId for successful samples when telemetry is required.",
     )
     return parser.parse_args()
 
@@ -231,13 +227,6 @@ def workload_is_dawn_vs_doe(workload: dict[str, Any]) -> bool:
     return (baseline_dawn and comparison_doe) or (baseline_doe and comparison_dawn)
 
 
-def load_report(path: Path) -> dict[str, Any]:
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(payload, dict):
-        raise ValueError(f"invalid report format: expected object in {path}")
-    return payload
-
-
 def load_expected_comparable_workload_ids(path: Path) -> set[str]:
     raw_workloads = load_workload_contract_rows(path).values()
     workload_ids: set[str] = set()
@@ -307,10 +296,10 @@ def main() -> int:
         fail(f"missing expected workload contract: {expected_workload_contract_path}")
         return 1
 
-    if args.require_comparison_status not in VALID_STATUSES:
+    if args.require_comparison_status not in VALID_COMPARISON_STATUSES:
         fail(
             "invalid --require-comparison-status="
-            f"{args.require_comparison_status} expected one of {sorted(VALID_STATUSES)}"
+            f"{args.require_comparison_status} expected one of {sorted(VALID_COMPARISON_STATUSES)}"
         )
         return 1
     if args.require_claim_status not in VALID_CLAIM_STATUSES:
@@ -333,10 +322,21 @@ def main() -> int:
         return 1
 
     try:
-        report = load_report(report_path)
-    except (OSError, json.JSONDecodeError, ValueError) as exc:
+        (
+            compare_report,
+            claim_report,
+            claim_report_path,
+        ) = artifacts_mod.load_compare_bundle(
+            report_path,
+            explicit_claim_path=args.claim_report,
+            require_claim=True,
+        )
+    except (OSError, json.JSONDecodeError, ValueError, FileNotFoundError) as exc:
         fail(str(exc))
         return 1
+    assert claim_report is not None
+    assert claim_report_path is not None
+
     try:
         (
             expected_obligation_schema_version,
@@ -345,6 +345,28 @@ def main() -> int:
     except (OSError, json.JSONDecodeError, ValueError) as exc:
         fail(str(exc))
         return 1
+
+    compare_ok, compare_error = report_conformance.validate_report_conformance(
+        payload=compare_report,
+        report_path=report_path,
+        repo_root=repo_root,
+        expected_obligation_schema_version=expected_obligation_schema_version,
+        expected_obligation_ids=expected_obligation_ids,
+    )
+    if not compare_ok:
+        fail(f"compare report conformance failed: {compare_error}")
+        return 1
+
+    claim_ok, claim_error = report_conformance.validate_claim_report_conformance(
+        compare_payload=compare_report,
+        compare_report_path=report_path,
+        claim_payload=claim_report,
+        claim_report_path=claim_report_path,
+    )
+    if not claim_ok:
+        fail(f"claim report conformance failed: {claim_error}")
+        return 1
+
     expected_workload_hash = ""
     expected_workload_ids: set[str] = set()
     expected_workload_rows: dict[str, dict[str, Any]] = {}
@@ -359,21 +381,70 @@ def main() -> int:
             fail(str(exc))
             return 1
 
+    receipt_cache: dict[str, dict[str, Any]] = {}
+    report = artifacts_mod.projected_compare_report(
+        compare_report,
+        report_path,
+        claim_report=claim_report,
+        cache=receipt_cache,
+    )
+
     failures: list[str] = []
 
-    comparison_status = report.get("comparisonStatus")
-    claim_status = report.get("claimStatus")
-    claimability_policy = report.get("claimabilityPolicy")
-    claimability_summary = report.get("claimabilitySummary")
+    comparison_status = compare_report.get("comparisonStatus")
+    claim_status = claim_report.get("claimStatus")
+    claim_policy = claim_report.get("claimPolicy")
+    if not isinstance(claim_policy, dict):
+        claim_policy = {}
+    claim_mode = claim_policy.get("mode")
+    min_samples = parse_int(claim_policy.get("minTimedSamples"))
+    benchmark_policy = claim_policy.get("benchmarkPolicy")
+    if not isinstance(benchmark_policy, dict):
+        benchmark_policy = {}
     workloads = report.get("workloads")
-    workload_contract = report.get("workloadContract")
-    benchmark_policy = report.get("benchmarkPolicy")
-    config_contract = report.get("configContract")
-    run_parameters = report.get("runParameters")
-    report_workload_rows: dict[str, dict[str, Any]] = {}
-    policy_required_positive_percentiles: list[str] = []
-    policy_min_timed_samples: int | None = None
+    if not isinstance(workloads, list):
+        workloads = []
 
+    if comparison_status != args.require_comparison_status:
+        failures.append(
+            "comparisonStatus mismatch: expected "
+            f"{args.require_comparison_status}, got {comparison_status!r}"
+        )
+    if claim_status != args.require_claim_status:
+        failures.append(
+            f"claimStatus mismatch: expected {args.require_claim_status}, got {claim_status!r}"
+        )
+    if claim_mode != args.require_claimability_mode:
+        failures.append(
+            "claimPolicy.mode mismatch: expected "
+            f"{args.require_claimability_mode}, got {claim_mode!r}"
+        )
+    if min_samples is None:
+        failures.append("claimPolicy.minTimedSamples missing or invalid")
+    elif min_samples < args.require_min_timed_samples:
+        failures.append(
+            "claimPolicy.minTimedSamples below requirement: "
+            f"required >= {args.require_min_timed_samples}, got {min_samples}"
+        )
+
+    benchmark_policy_path = benchmark_policy.get("path")
+    benchmark_policy_sha = benchmark_policy.get("sha256")
+    if not isinstance(benchmark_policy_path, str) or not benchmark_policy_path.strip():
+        failures.append("claimPolicy.benchmarkPolicy.path missing or invalid")
+    if not report_conformance.is_sha256_hex(benchmark_policy_sha):
+        failures.append("claimPolicy.benchmarkPolicy.sha256 missing or invalid")
+
+    non_claimable_count = artifacts_mod.non_claimable_count(compare_report, claim_report)
+    if args.require_claim_status == "claimable" and non_claimable_count != 0:
+        failures.append(
+            "claimable reports require zero non-claimable workloads "
+            f"(found {non_claimable_count})"
+        )
+    if args.require_claim_status == "diagnostic" and non_claimable_count == 0:
+        failures.append("diagnostic reports must contain at least one non-claimable workload")
+
+    report_workload_rows: dict[str, dict[str, Any]] = {}
+    workload_contract = report.get("workloadContract")
     if isinstance(workload_contract, dict):
         report_contract_path = workload_contract.get("path")
         if isinstance(report_contract_path, str) and report_contract_path.strip():
@@ -390,355 +461,242 @@ def main() -> int:
             except (OSError, UnicodeError, json.JSONDecodeError, ValueError) as exc:
                 failures.append(str(exc))
 
-    if comparison_status != args.require_comparison_status:
-        failures.append(
-            "comparisonStatus mismatch: expected "
-            f"{args.require_comparison_status}, got {comparison_status!r}"
+    for index, workload in enumerate(workloads):
+        if not isinstance(workload, dict):
+            failures.append(f"workloads[{index}] is not an object")
+            continue
+        workload_id = workload.get("id", f"workload[{index}]")
+        report_row_path_asymmetry = workload.get("pathAsymmetry")
+        if report_row_path_asymmetry is not None and not isinstance(
+            report_row_path_asymmetry, bool
+        ):
+            failures.append(f"{workload_id}: pathAsymmetry must be bool when present")
+        report_row_path_asymmetry_note = workload.get("pathAsymmetryNote")
+        if report_row_path_asymmetry_note is not None and not isinstance(
+            report_row_path_asymmetry_note, str
+        ):
+            failures.append(f"{workload_id}: pathAsymmetryNote must be string when present")
+        report_contract_row = report_workload_rows.get(str(workload_id), {})
+        expected_contract_row = expected_workload_rows.get(str(workload_id), {})
+        report_contract_path_asymmetry = bool(report_contract_row.get("pathAsymmetry", False))
+        expected_contract_path_asymmetry = bool(
+            expected_contract_row.get("pathAsymmetry", False)
         )
-    if claim_status != args.require_claim_status:
-        failures.append(
-            f"claimStatus mismatch: expected {args.require_claim_status}, got {claim_status!r}"
-        )
-
-    if not isinstance(benchmark_policy, dict):
-        failures.append("missing or invalid benchmarkPolicy object")
-    else:
-        benchmark_policy_path = benchmark_policy.get("path")
-        benchmark_policy_sha = benchmark_policy.get("sha256")
-        if not isinstance(benchmark_policy_path, str) or not benchmark_policy_path.strip():
-            failures.append("benchmarkPolicy.path missing or invalid")
-        if not report_conformance.is_sha256_hex(benchmark_policy_sha):
-            failures.append("benchmarkPolicy.sha256 missing or invalid")
-
-    if args.require_claimability_mode == "release":
-        if not isinstance(config_contract, dict):
-            failures.append(
-                "missing configContract object (release claim lanes require config-backed methodology)"
-            )
-        else:
-            config_path = config_contract.get("path")
-            config_sha = config_contract.get("sha256")
-            if not isinstance(config_path, str) or not config_path.strip():
-                failures.append("configContract.path missing or invalid")
-            if not report_conformance.is_sha256_hex(config_sha):
-                failures.append("configContract.sha256 missing or invalid")
-
-    if not isinstance(run_parameters, dict):
-        failures.append("missing or invalid runParameters object")
-    else:
-        iterations = parse_int(run_parameters.get("iterations"))
-        warmup = parse_int(run_parameters.get("warmup"))
-        if iterations is None or iterations < 0:
-            failures.append("runParameters.iterations missing or invalid")
-        if warmup is None or warmup < 0:
-            failures.append("runParameters.warmup missing or invalid")
+        path_asymmetry_applies = workload_is_dawn_vs_doe(workload)
         if (
-            iterations is not None
-            and warmup is not None
-            and iterations - warmup < args.require_min_timed_samples
+            isinstance(report_row_path_asymmetry, bool)
+            and report_contract_row
+            and report_row_path_asymmetry != report_contract_path_asymmetry
         ):
             failures.append(
-                "runParameters timed sample budget below requirement: "
-                f"iterations-warmup={iterations - warmup}, required >= {args.require_min_timed_samples}"
+                f"{workload_id}: report pathAsymmetry does not match workload contract "
+                f"({report_row_path_asymmetry} vs {report_contract_path_asymmetry})"
             )
-
-    if not isinstance(claimability_policy, dict):
-        failures.append("missing or invalid claimabilityPolicy object")
-    else:
-        mode = claimability_policy.get("mode")
-        if mode != args.require_claimability_mode:
+        if (
+            isinstance(report_row_path_asymmetry_note, str)
+            and report_contract_row
+            and report_row_path_asymmetry_note
+            != str(report_contract_row.get("pathAsymmetryNote", ""))
+        ):
             failures.append(
-                "claimabilityPolicy.mode mismatch: expected "
-                f"{args.require_claimability_mode}, got {mode!r}"
+                f"{workload_id}: report pathAsymmetryNote does not match workload contract"
             )
-
-        min_samples = parse_int(claimability_policy.get("minTimedSamples"))
-        if min_samples is None:
-            failures.append("claimabilityPolicy.minTimedSamples missing or invalid")
-        elif min_samples < args.require_min_timed_samples:
-            failures.append(
-                "claimabilityPolicy.minTimedSamples below requirement: "
-                f"required >= {args.require_min_timed_samples}, got {min_samples}"
-            )
-        policy_min_timed_samples = min_samples
-
-        required_positive = parse_string_list(
-            claimability_policy.get("requiredPositivePercentiles")
-        )
-        if required_positive is None:
-            failures.append(
-                "claimabilityPolicy.requiredPositivePercentiles missing or invalid"
-            )
-        else:
-            expected_required = expected_positive_percentiles_for_mode(args.require_claimability_mode)
-            if required_positive != expected_required:
-                failures.append(
-                    "claimabilityPolicy.requiredPositivePercentiles mismatch: "
-                    f"expected {expected_required}, got {required_positive}"
-                )
-            policy_required_positive_percentiles = required_positive
-
-    if not isinstance(claimability_summary, dict):
-        failures.append("missing or invalid claimabilitySummary object")
-    else:
-        non_claimable_count = parse_int(claimability_summary.get("nonClaimableCount"))
-        if non_claimable_count is None:
-            failures.append("claimabilitySummary.nonClaimableCount missing or invalid")
-        elif args.require_claim_status == "claimable" and non_claimable_count != 0:
-            failures.append(
-                "claimabilitySummary.nonClaimableCount must be 0 for claimable reports "
-                f"(got {non_claimable_count})"
-            )
-        elif args.require_claim_status == "diagnostic" and non_claimable_count == 0:
-            failures.append(
-                "claimabilitySummary.nonClaimableCount must be > 0 for diagnostic reports"
-            )
-
-    if not isinstance(workloads, list):
-        failures.append("missing or invalid workloads list")
-    elif not workloads:
-        failures.append("workloads list is empty")
-    else:
-        for index, workload in enumerate(workloads):
-            if not isinstance(workload, dict):
-                failures.append(f"workloads[{index}] is not an object")
-                continue
-            workload_id = workload.get("id", f"workload[{index}]")
-            report_row_path_asymmetry = workload.get("pathAsymmetry")
-            if report_row_path_asymmetry is not None and not isinstance(
-                report_row_path_asymmetry, bool
-            ):
-                failures.append(f"{workload_id}: pathAsymmetry must be bool when present")
-            report_row_path_asymmetry_note = workload.get("pathAsymmetryNote")
-            if report_row_path_asymmetry_note is not None and not isinstance(
-                report_row_path_asymmetry_note, str
-            ):
-                failures.append(f"{workload_id}: pathAsymmetryNote must be string when present")
-            report_contract_row = report_workload_rows.get(str(workload_id), {})
-            expected_contract_row = expected_workload_rows.get(str(workload_id), {})
-            report_contract_path_asymmetry = bool(report_contract_row.get("pathAsymmetry", False))
-            expected_contract_path_asymmetry = bool(
-                expected_contract_row.get("pathAsymmetry", False)
-            )
-            path_asymmetry_applies = workload_is_dawn_vs_doe(workload)
-            if (
-                isinstance(report_row_path_asymmetry, bool)
-                and report_contract_row
-                and report_row_path_asymmetry != report_contract_path_asymmetry
-            ):
-                failures.append(
-                    f"{workload_id}: report pathAsymmetry does not match workload contract "
-                    f"({report_row_path_asymmetry} vs {report_contract_path_asymmetry})"
-                )
-            if (
-                isinstance(report_row_path_asymmetry_note, str)
-                and report_contract_row
-                and report_row_path_asymmetry_note
-                != str(report_contract_row.get("pathAsymmetryNote", ""))
-            ):
-                failures.append(
-                    f"{workload_id}: report pathAsymmetryNote does not match workload contract"
-                )
-            if (
-                path_asymmetry_applies
-                and (
+        if (
+            path_asymmetry_applies
+            and (
                 args.require_comparison_status == "comparable"
                 or args.require_claim_status == "claimable"
-                )
-            ):
-                if report_row_path_asymmetry is True:
-                    failures.append(
-                        f"{workload_id}: comparable/claimable reports cannot include pathAsymmetry=true"
-                    )
-                if report_contract_path_asymmetry:
-                    failures.append(
-                        f"{workload_id}: workload contract marks pathAsymmetry=true; "
-                        "comparable/claimable reports are invalid until structural equivalence is restored"
-                    )
-                elif expected_contract_path_asymmetry:
-                    failures.append(
-                        f"{workload_id}: expected workload contract marks pathAsymmetry=true; "
-                        "comparable/claimable reports are invalid until structural equivalence is restored"
-                    )
-            workload_contract_comparable = workload.get("workloadComparable")
-            if workload_contract_comparable not in (True, False):
-                failures.append(
-                    f"{workload_id}: workloadComparable must be true/false in report workload row"
-                )
-            elif (
-                args.require_claim_status == "claimable"
-                and workload_contract_comparable is not True
-            ):
-                failures.append(
-                    f"{workload_id}: claimable reports require workloadComparable=true"
-                )
-            workload_claimability = workload.get("claimability")
-            if not isinstance(workload_claimability, dict):
-                failures.append(f"{workload_id}: missing claimability object")
-                continue
-            evaluated = workload_claimability.get("evaluated")
-            claimable = workload_claimability.get("claimable")
-            if args.require_claim_status == "claimable":
-                if evaluated is not True:
-                    failures.append(f"{workload_id}: claimability.evaluated must be true")
-                if claimable is not True:
-                    failures.append(f"{workload_id}: claimability.claimable must be true")
-                left_count = parse_int(
-                    workload.get("baseline", {}).get("stats", {}).get("count")
-                    if isinstance(workload.get("baseline"), dict)
-                    else None
-                )
-                right_count = parse_int(
-                    workload.get("comparison", {}).get("stats", {}).get("count")
-                    if isinstance(workload.get("comparison"), dict)
-                    else None
-                )
-                effective_min_timed_samples = (
-                    policy_min_timed_samples
-                    if policy_min_timed_samples is not None
-                    else args.require_min_timed_samples
-                )
-                if left_count is None or left_count < effective_min_timed_samples:
-                    failures.append(
-                        f"{workload_id}: baseline.stats.count must be >= {effective_min_timed_samples}"
-                    )
-                if right_count is None or right_count < effective_min_timed_samples:
-                    failures.append(
-                        f"{workload_id}: comparison.stats.count must be >= {effective_min_timed_samples}"
-                    )
-                delta = workload.get("deltaPercent")
-                if not isinstance(delta, dict):
-                    failures.append(f"{workload_id}: missing deltaPercent object")
-                else:
-                    for percentile in policy_required_positive_percentiles:
-                        value = parse_float(delta.get(percentile))
-                        if value is None:
-                            failures.append(
-                                f"{workload_id}: deltaPercent.{percentile} missing or invalid"
-                            )
-                        elif value <= 0.0:
-                            failures.append(
-                                f"{workload_id}: deltaPercent.{percentile} must be > 0 "
-                                "(positive means baseline faster)"
-                            )
-            elif args.require_claim_status == "diagnostic":
-                if evaluated is not True:
-                    failures.append(f"{workload_id}: claimability.evaluated must be true")
-                if claimable is not False:
-                    failures.append(f"{workload_id}: claimability.claimable must be false")
-            elif args.require_claim_status == "not-evaluated":
-                if evaluated is not False:
-                    failures.append(f"{workload_id}: claimability.evaluated must be false")
-                if claimable is not None:
-                    failures.append(f"{workload_id}: claimability.claimable must be null")
-
-            workload_comparability = workload.get("comparability")
-            if not isinstance(workload_comparability, dict):
-                failures.append(f"{workload_id}: missing comparability object")
-                continue
-            comparable_flag = workload_comparability.get("comparable")
-            if args.require_comparison_status == "comparable" and comparable_flag is not True:
-                failures.append(f"{workload_id}: comparability.comparable must be true")
-            if args.require_comparison_status == "unreliable" and comparable_flag is not False:
-                failures.append(f"{workload_id}: comparability.comparable must be false")
-
-            obligation_schema_version = parse_int(
-                workload_comparability.get("obligationSchemaVersion")
             )
-            if obligation_schema_version != expected_obligation_schema_version:
+        ):
+            if report_row_path_asymmetry is True:
                 failures.append(
-                    f"{workload_id}: comparability.obligationSchemaVersion must be "
-                    f"{expected_obligation_schema_version}"
+                    f"{workload_id}: comparable/claimable reports cannot include pathAsymmetry=true"
+                )
+            if report_contract_path_asymmetry:
+                failures.append(
+                    f"{workload_id}: workload contract marks pathAsymmetry=true; "
+                    "comparable/claimable reports are invalid until structural equivalence is restored"
+                )
+            elif expected_contract_path_asymmetry:
+                failures.append(
+                    f"{workload_id}: expected workload contract marks pathAsymmetry=true; "
+                    "comparable/claimable reports are invalid until structural equivalence is restored"
                 )
 
-            obligations = workload_comparability.get("obligations")
-            if not isinstance(obligations, list) or not obligations:
-                failures.append(f"{workload_id}: comparability.obligations must be a non-empty list")
-            else:
-                for obligation_idx, obligation in enumerate(obligations):
-                    if not isinstance(obligation, dict):
-                        failures.append(
-                            f"{workload_id}: comparability.obligations[{obligation_idx}] must be an object"
-                        )
-                        continue
-                    obligation_id = obligation.get("id")
-                    if not isinstance(obligation_id, str) or not obligation_id:
-                        failures.append(
-                            f"{workload_id}: comparability.obligations[{obligation_idx}].id must be a non-empty string"
-                        )
-                    elif obligation_id not in expected_obligation_ids:
-                        failures.append(
-                            f"{workload_id}: comparability.obligations[{obligation_idx}].id "
-                            f"{obligation_id!r} is not in canonical obligation contract"
-                        )
-                    for field_name in ("blocking", "applicable", "passes"):
-                        if not isinstance(obligation.get(field_name), bool):
-                            failures.append(
-                                f"{workload_id}: comparability.obligations[{obligation_idx}].{field_name} must be bool"
-                            )
+        workload_contract_comparable = workload.get("workloadComparable")
+        if workload_contract_comparable not in (True, False):
+            failures.append(
+                f"{workload_id}: workloadComparable must be true/false in report workload row"
+            )
+        elif args.require_claim_status == "claimable" and workload_contract_comparable is not True:
+            failures.append(f"{workload_id}: claimable reports require workloadComparable=true")
 
-            blocking_failed = workload_comparability.get("blockingFailedObligations")
-            if not isinstance(blocking_failed, list):
-                failures.append(f"{workload_id}: comparability.blockingFailedObligations must be a list")
+        workload_claimability = workload.get("claimability")
+        if not isinstance(workload_claimability, dict):
+            failures.append(f"{workload_id}: missing claimability object")
+            continue
+        evaluated = workload_claimability.get("evaluated")
+        claimable = workload_claimability.get("claimable")
+        required_positive = parse_string_list(
+            workload_claimability.get("requiredPositivePercentiles")
+        )
+        expected_required = expected_positive_percentiles_for_mode(
+            args.require_claimability_mode
+        )
+        if required_positive is None:
+            failures.append(f"{workload_id}: claimability.requiredPositivePercentiles missing/invalid")
+        elif required_positive != expected_required:
+            failures.append(
+                f"{workload_id}: claimability.requiredPositivePercentiles mismatch: "
+                f"expected {expected_required}, got {required_positive}"
+            )
+        if evaluated is not True:
+            failures.append(f"{workload_id}: claimability.evaluated must be true")
+        if args.require_claim_status == "claimable" and claimable is not True:
+            failures.append(f"{workload_id}: claimability.claimable must be true")
+        if args.require_claim_status == "diagnostic" and claimable is not False:
+            failures.append(f"{workload_id}: claimability.claimable must be false")
+
+        if args.require_claim_status == "claimable":
+            left_count = parse_int(workload.get("baselineStatsMs", {}).get("count"))
+            right_count = parse_int(workload.get("comparisonStatsMs", {}).get("count"))
+            effective_min_timed_samples = (
+                min_samples
+                if min_samples is not None
+                else args.require_min_timed_samples
+            )
+            if left_count is None or left_count < effective_min_timed_samples:
+                failures.append(
+                    f"{workload_id}: baselineStatsMs.count must be >= {effective_min_timed_samples}"
+                )
+            if right_count is None or right_count < effective_min_timed_samples:
+                failures.append(
+                    f"{workload_id}: comparisonStatsMs.count must be >= {effective_min_timed_samples}"
+                )
+            delta = workload.get("deltaPercent")
+            if not isinstance(delta, dict):
+                failures.append(f"{workload_id}: missing deltaPercent object")
             else:
-                for failed_idx, failed_obligation in enumerate(blocking_failed):
-                    if not isinstance(failed_obligation, str) or not failed_obligation:
+                for percentile in expected_required:
+                    value = parse_float(delta.get(percentile))
+                    if value is None:
                         failures.append(
-                            f"{workload_id}: comparability.blockingFailedObligations[{failed_idx}] "
-                            "must be a non-empty string"
+                            f"{workload_id}: deltaPercent.{percentile} missing or invalid"
                         )
-                    elif failed_obligation not in expected_obligation_ids:
+                    elif value <= 0.0:
                         failures.append(
-                            f"{workload_id}: comparability.blockingFailedObligations[{failed_idx}] "
-                            f"{failed_obligation!r} is not in canonical obligation contract"
+                            f"{workload_id}: deltaPercent.{percentile} must be > 0 "
+                            "(positive means baseline faster)"
                         )
-                if comparable_flag is True and blocking_failed:
+
+        workload_comparability = workload.get("comparability")
+        if not isinstance(workload_comparability, dict):
+            failures.append(f"{workload_id}: missing comparability object")
+            continue
+        comparable_flag = workload_comparability.get("comparable")
+        if args.require_comparison_status == "comparable" and comparable_flag is not True:
+            failures.append(f"{workload_id}: comparability.comparable must be true")
+        if args.require_comparison_status == "unreliable" and comparable_flag is not False:
+            failures.append(f"{workload_id}: comparability.comparable must be false")
+
+        obligation_schema_version = parse_int(
+            workload_comparability.get("obligationSchemaVersion")
+        )
+        if obligation_schema_version != expected_obligation_schema_version:
+            failures.append(
+                f"{workload_id}: comparability.obligationSchemaVersion must be "
+                f"{expected_obligation_schema_version}"
+            )
+
+        obligations = workload_comparability.get("obligations")
+        if not isinstance(obligations, list) or not obligations:
+            failures.append(f"{workload_id}: comparability.obligations must be a non-empty list")
+        else:
+            for obligation_idx, obligation in enumerate(obligations):
+                if not isinstance(obligation, dict):
                     failures.append(
-                        f"{workload_id}: comparable workload must not have blockingFailedObligations"
+                        f"{workload_id}: comparability.obligations[{obligation_idx}] must be an object"
                     )
-            if args.require_backend_telemetry and args.require_claim_status == "claimable":
-                left_payload = workload.get("baseline")
-                if not isinstance(left_payload, dict):
-                    failures.append(f"{workload_id}: missing baseline payload for backend telemetry checks")
                     continue
-                command_samples = left_payload.get("commandSamples")
-                if not isinstance(command_samples, list) or not command_samples:
-                    failures.append(f"{workload_id}: missing baseline.commandSamples for backend telemetry checks")
+                obligation_id = obligation.get("id")
+                if not isinstance(obligation_id, str) or not obligation_id:
+                    failures.append(
+                        f"{workload_id}: comparability.obligations[{obligation_idx}].id must be a non-empty string"
+                    )
+                elif obligation_id not in expected_obligation_ids:
+                    failures.append(
+                        f"{workload_id}: comparability.obligations[{obligation_idx}].id "
+                        f"{obligation_id!r} is not in canonical obligation contract"
+                    )
+                for field_name in ("blocking", "applicable", "passes"):
+                    if not isinstance(obligation.get(field_name), bool):
+                        failures.append(
+                            f"{workload_id}: comparability.obligations[{obligation_idx}].{field_name} must be bool"
+                        )
+
+        blocking_failed = workload_comparability.get("blockingFailedObligations")
+        if not isinstance(blocking_failed, list):
+            failures.append(f"{workload_id}: comparability.blockingFailedObligations must be a list")
+        else:
+            for failed_idx, failed_obligation in enumerate(blocking_failed):
+                if not isinstance(failed_obligation, str) or not failed_obligation:
+                    failures.append(
+                        f"{workload_id}: comparability.blockingFailedObligations[{failed_idx}] "
+                        "must be a non-empty string"
+                    )
+                elif failed_obligation not in expected_obligation_ids:
+                    failures.append(
+                        f"{workload_id}: comparability.blockingFailedObligations[{failed_idx}] "
+                        f"{failed_obligation!r} is not in canonical obligation contract"
+                    )
+            if comparable_flag is True and blocking_failed:
+                failures.append(
+                    f"{workload_id}: comparable workload must not have blockingFailedObligations"
+                )
+
+        if args.require_backend_telemetry and args.require_claim_status == "claimable":
+            left_payload = workload.get("baseline")
+            if not isinstance(left_payload, dict):
+                failures.append(f"{workload_id}: missing baseline payload for backend telemetry checks")
+                continue
+            command_samples = left_payload.get("commandSamples")
+            if not isinstance(command_samples, list) or not command_samples:
+                failures.append(f"{workload_id}: missing baseline.commandSamples for backend telemetry checks")
+                continue
+            for sample_idx, sample in enumerate(command_samples):
+                if not isinstance(sample, dict):
                     continue
-                for sample_idx, sample in enumerate(command_samples):
-                    if not isinstance(sample, dict):
-                        continue
-                    if sample.get("returnCode") != 0:
-                        continue
-                    trace_meta = sample.get("traceMeta")
-                    if not isinstance(trace_meta, dict):
-                        failures.append(
-                            f"{workload_id}: sample {sample_idx} missing traceMeta for backend telemetry checks"
-                        )
-                        continue
-                    backend_id = trace_meta.get("backendId")
-                    if not isinstance(backend_id, str) or not backend_id:
-                        failures.append(f"{workload_id}: sample {sample_idx} missing backendId")
-                    elif args.expected_backend_id and backend_id != args.expected_backend_id:
-                        failures.append(
-                            f"{workload_id}: sample {sample_idx} backendId mismatch "
-                            f"expected={args.expected_backend_id} got={backend_id}"
-                        )
-                    selection_reason = trace_meta.get("backendSelectionReason")
-                    if not isinstance(selection_reason, str) or not selection_reason:
-                        failures.append(
-                            f"{workload_id}: sample {sample_idx} missing backendSelectionReason"
-                        )
-                    selection_policy_hash = trace_meta.get("selectionPolicyHash")
-                    if not isinstance(selection_policy_hash, str) or not selection_policy_hash:
-                        failures.append(
-                            f"{workload_id}: sample {sample_idx} missing selectionPolicyHash"
-                        )
-                    fallback_used = trace_meta.get("fallbackUsed")
-                    if not isinstance(fallback_used, bool):
-                        failures.append(
-                            f"{workload_id}: sample {sample_idx} missing fallbackUsed bool"
-                        )
+                if sample.get("returnCode") != 0:
+                    continue
+                trace_meta = sample.get("traceMeta")
+                if not isinstance(trace_meta, dict):
+                    failures.append(
+                        f"{workload_id}: sample {sample_idx} missing traceMeta for backend telemetry checks"
+                    )
+                    continue
+                backend_id = trace_meta.get("backendId")
+                if not isinstance(backend_id, str) or not backend_id:
+                    failures.append(f"{workload_id}: sample {sample_idx} missing backendId")
+                elif args.expected_backend_id and backend_id != args.expected_backend_id:
+                    failures.append(
+                        f"{workload_id}: sample {sample_idx} backendId mismatch "
+                        f"expected={args.expected_backend_id} got={backend_id}"
+                    )
+                selection_reason = trace_meta.get("backendSelectionReason")
+                if not isinstance(selection_reason, str) or not selection_reason:
+                    failures.append(
+                        f"{workload_id}: sample {sample_idx} missing backendSelectionReason"
+                    )
+                selection_policy_hash = trace_meta.get("selectionPolicyHash")
+                if not isinstance(selection_policy_hash, str) or not selection_policy_hash:
+                    failures.append(
+                        f"{workload_id}: sample {sample_idx} missing selectionPolicyHash"
+                    )
+                fallback_used = trace_meta.get("fallbackUsed")
+                if not isinstance(fallback_used, bool):
+                    failures.append(
+                        f"{workload_id}: sample {sample_idx} missing fallbackUsed bool"
+                    )
 
     if args.require_workload_contract_hash:
         if not isinstance(workload_contract, dict):
@@ -746,15 +704,9 @@ def main() -> int:
         else:
             report_contract_path = workload_contract.get("path")
             report_contract_hash = workload_contract.get("sha256")
-            if (
-                not isinstance(report_contract_path, str)
-                or not report_contract_path.strip()
-            ):
+            if not isinstance(report_contract_path, str) or not report_contract_path.strip():
                 failures.append("workloadContract.path missing or invalid")
-            if (
-                not isinstance(report_contract_hash, str)
-                or not report_contract_hash.strip()
-            ):
+            if not isinstance(report_contract_hash, str) or not report_contract_hash.strip():
                 failures.append("workloadContract.sha256 missing or invalid")
             elif report_contract_hash != expected_workload_hash:
                 failures.append(
@@ -773,20 +725,12 @@ def main() -> int:
                         f"report={resolved_report_path} expected={expected_workload_contract_path}"
                     )
 
-    claim_row_hashes_ok, claim_row_hashes_error = report_conformance.validate_claim_row_hash_links(
-        payload=report,
-        require_config_contract=(args.require_claimability_mode == "release"),
-        require_non_empty_trace_hashes=(args.require_claim_status == "claimable"),
-    )
-    if not claim_row_hashes_ok:
-        failures.append(f"claim row hash-link validation failed: {claim_row_hashes_error}")
-
     if args.require_workload_id_set_match:
         report_workload_ids = {
             str(workload.get("id"))
             for workload in workloads
             if isinstance(workload, dict) and isinstance(workload.get("id"), str)
-        } if isinstance(workloads, list) else set()
+        }
         missing_ids = sorted(expected_workload_ids - report_workload_ids)
         unexpected_ids = sorted(report_workload_ids - expected_workload_ids)
         if missing_ids:
@@ -802,11 +746,7 @@ def main() -> int:
         fail("claim gate failed")
         for item in failures:
             print(item)
-        if (
-            args.require_claim_status == "claimable"
-            and isinstance(workloads, list)
-            and workloads
-        ):
+        if args.require_claim_status == "claimable" and workloads:
             print("non-claimable runtime details:")
             printed = False
             for workload in workloads:
@@ -833,3 +773,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
