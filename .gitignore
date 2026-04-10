@@ -59,6 +59,8 @@ bench/out/**
 !bench/out/visualization/latest/pipeline.summary.json
 !bench/out/visualization/latest/cube.summary.json
 !bench/out/visualization/latest/cube.rows.json
+!bench/out/proof-metrics/latest/proof_metrics_summary.json
+!bench/out/proof-metrics/latest/proof_metrics_summary.md
 nursery/webgpu/out/node-smoke.meta.json
 nursery/webgpu/out/node-smoke.ndjson
 
