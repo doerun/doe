@@ -1,6 +1,8 @@
 const std = @import("std");
 const bench_synthetic_assets = @import("bench_synthetic_assets.zig");
 const dawn_plan_types = @import("dawn_plan_types.zig");
+const plan_config = @import("plan/webgpu_plan_executor_config.zig");
+const plan_emit = @import("plan/webgpu_plan_executor_emit.zig");
 const support = @import("webgpu_plan_executor_support.zig");
 
 const Allocator = std.mem.Allocator;
@@ -13,16 +15,15 @@ const DEFAULT_SEMANTIC_STAGE = "webgpu_plan";
 const DEFAULT_QUEUE_SYNC_MODE = "per-command";
 const DEFAULT_SCHEMA = "webgpu_plan_executor";
 
-const RunOptions = struct {
-    plan_path: []const u8,
-    trace_meta_path: []const u8,
-    trace_jsonl_path: []const u8,
-    workload_id: []const u8,
-    dry_run: bool = false,
-    backend_id_override: ?[]const u8 = null,
+const TRACE_EMIT_DEFAULTS = plan_emit.TraceEmitDefaults{
+    .backend_selection_reason = DEFAULT_BACKEND_SELECTION_REASON,
+    .timing_source = DEFAULT_TIMING_SOURCE,
+    .timing_class = DEFAULT_TIMING_CLASS,
+    .queue_sync_mode = DEFAULT_QUEUE_SYNC_MODE,
+    .schema = DEFAULT_SCHEMA,
 };
 
-pub const Config = RunOptions;
+pub const Config = plan_config.RunOptions;
 pub const executePlan = runPlan;
 
 const Executor = struct {
@@ -489,7 +490,7 @@ const Executor = struct {
     }
 };
 
-pub fn runPlan(allocator: Allocator, options: RunOptions) !void {
+pub fn runPlan(allocator: Allocator, options: plan_config.RunOptions) !void {
     const start_ns = support.nowNs();
     const plan_read_start_ns = support.nowNs();
     const plan_bytes = try dawn_plan_types.readPlanBytes(allocator, options.plan_path);
@@ -546,10 +547,17 @@ pub fn runPlan(allocator: Allocator, options: RunOptions) !void {
     const artifact_finalize_start_ns = support.nowNs();
     try support.ensureParentDir(options.trace_meta_path);
     try support.ensureParentDir(options.trace_jsonl_path);
-    try writeTraceJsonl(options.trace_jsonl_path, results);
+    try plan_emit.writeTraceJsonl(options.trace_jsonl_path, results);
     summary.host_artifact_finalize_total_ns = support.elapsedSince(artifact_finalize_start_ns);
     summary.process_wall_ns = support.elapsedSince(start_ns);
-    try writeTraceMeta(options.trace_meta_path, loaded.plan, summary, options.plan_path, resolved_identity);
+    try plan_emit.writeTraceMeta(
+        options.trace_meta_path,
+        loaded.plan,
+        summary,
+        options.plan_path,
+        resolved_identity,
+        TRACE_EMIT_DEFAULTS,
+    );
 }
 
 fn validatePlanCounts(plan: dawn_plan_types.Plan) !void {
@@ -665,180 +673,4 @@ fn summarize(results: []const support.StepResult) support.RunSummary {
         }
     }
     return summary;
-}
-
-fn writeTraceMeta(path: []const u8, plan: dawn_plan_types.Plan, summary: support.RunSummary, plan_path: []const u8, identity: support.BackendIdentity) !void {
-    const file = try std.fs.cwd().createFile(path, .{ .truncate = true });
-    defer file.close();
-    var writer = file.deprecatedWriter();
-    const timing_ms = @as(f64, @floatFromInt(summary.total_ns)) / 1_000_000.0;
-    const elapsed_ms = @as(f64, @floatFromInt(summary.process_wall_ns)) / 1_000_000.0;
-    try writer.writeAll("{\"traceVersion\":1,\"module\":");
-    try support.writeJsonString(&writer, support.DEFAULT_MODULE_NAME);
-    try writer.print(",\"seqMax\":{},\"rowCount\":{},\"commandCount\":{},\"matchedCount\":0,\"blockingCount\":0,\"requiresLeanCount\":0,\"leanRequiredCount\":0,\"executionRowCount\":{},\"executionSuccessCount\":{},\"executionErrorCount\":{},\"executionSkippedCount\":{},\"executionUnsupportedCount\":{},\"executionTotalNs\":{},\"executionSetupTotalNs\":{},\"executionEncodeTotalNs\":{},\"executionSubmitWaitTotalNs\":{},\"executionDispatchCount\":{},\"hostInputReadTotalNs\":{},\"hostInputParseTotalNs\":{},\"hostWorkloadPrepareTotalNs\":{},\"hostExecutorInitTotalNs\":{},\"hostUploadPrewarmTotalNs\":{},\"hostKernelPrewarmTotalNs\":{},\"hostCommandOrchestrationTotalNs\":{},\"hostArtifactFinalizeTotalNs\":{},\"executionGpuTimestampTotalNs\":0,\"executionGpuTimestampAttemptedCount\":0,\"executionGpuTimestampValidCount\":0,\"semanticTracingEnabled\":false,\"semanticOpRowCount\":0,\"semanticCaptureCount\":0,\"semanticReproCount\":0,\"hash\":\"0x{x}\",\"previousHash\":\"0x{x}\",", .{
-        summary.seq_max,
-        summary.row_count,
-        plan.command_count,
-        summary.row_count,
-        summary.success_count,
-        summary.error_count,
-        summary.skipped_count,
-        summary.unsupported_count,
-        summary.total_ns,
-        summary.setup_total_ns,
-        summary.encode_total_ns,
-        summary.submit_wait_total_ns,
-        summary.dispatch_count,
-        summary.host_input_read_total_ns,
-        summary.host_input_parse_total_ns,
-        summary.host_workload_prepare_total_ns,
-        summary.host_executor_init_total_ns,
-        summary.host_upload_prewarm_total_ns,
-        summary.host_kernel_prewarm_total_ns,
-        summary.host_command_orchestration_total_ns,
-        summary.host_artifact_finalize_total_ns,
-        summary.final_hash,
-        summary.previous_hash,
-    });
-    try writer.writeAll("\"executionBackend\":");
-    try support.writeJsonString(&writer, identity.execution_backend);
-    try writer.writeAll(",\"backendId\":");
-    try support.writeJsonString(&writer, identity.backend_id);
-    try writer.writeAll(",\"backendLane\":");
-    try support.writeJsonString(&writer, identity.backend_lane);
-    try writer.writeAll(",\"backendSelectionReason\":");
-    try support.writeJsonString(&writer, DEFAULT_BACKEND_SELECTION_REASON);
-    try writer.writeAll(",\"queueSyncMode\":");
-    try support.writeJsonString(&writer, DEFAULT_QUEUE_SYNC_MODE);
-    try writer.writeAll(",\"hostPlanArtifactPath\":");
-    try support.writeJsonString(&writer, plan_path);
-    try writer.writeAll(",\"hostPlanArtifactHash\":");
-    try support.writeJsonString(&writer, plan.plan_sha256);
-    try writer.writeAll(",\"timingSource\":");
-    try support.writeJsonString(&writer, DEFAULT_TIMING_SOURCE);
-    try writer.writeAll(",\"timingClass\":");
-    try support.writeJsonString(&writer, DEFAULT_TIMING_CLASS);
-    try writer.print(",\"timingMs\":{d},\"elapsedMs\":{d},\"processWallMs\":{d},\"schema\":", .{ timing_ms, elapsed_ms, elapsed_ms });
-    try support.writeJsonString(&writer, DEFAULT_SCHEMA);
-    try writer.writeAll(",\"workload\":");
-    try support.writeJsonString(&writer, plan.workload_id);
-    try writer.writeAll(",\"profile\":{\"vendor\":");
-    try support.writeJsonString(&writer, support.DEFAULT_PROFILE_VENDOR);
-    try writer.writeAll(",\"api\":");
-    try support.writeJsonString(&writer, support.DEFAULT_PROFILE_API);
-    try writer.writeAll(",\"deviceFamily\":null,\"driver\":");
-    try support.writeJsonString(&writer, identity.profile_driver);
-    try writer.writeAll("}}\n");
-}
-
-fn writeTraceJsonl(path: []const u8, results: []const support.StepResult) !void {
-    const file = try std.fs.cwd().createFile(path, .{ .truncate = true });
-    defer file.close();
-    var writer = file.deprecatedWriter();
-    var previous_hash = support.HASH_SEED;
-    for (results) |result| {
-        const hash = support.rowHash(previous_hash, result);
-        var semantic_buf: [32]u8 = undefined;
-        const semantic_op_id = support.semanticOpId(result.seq, &semantic_buf);
-        try writer.writeAll("{\"traceVersion\":1,\"module\":");
-        try support.writeJsonString(&writer, support.DEFAULT_MODULE_NAME);
-        try writer.print(",\"opCode\":", .{});
-        try support.writeJsonString(&writer, result.command_kind);
-        try writer.print(",\"seq\":{},\"timestampMonoNs\":{},\"hash\":\"0x{x}\",\"previousHash\":\"0x{x}\",\"command\":", .{ result.seq, result.timestamp_mono_ns, hash, previous_hash });
-        try support.writeJsonString(&writer, result.command_kind);
-        try writer.print(",\"semanticOpId\":", .{});
-        try support.writeJsonString(&writer, semantic_op_id);
-        try writer.print(",\"semanticStage\":", .{});
-        try support.writeJsonString(&writer, result.semantic_stage);
-        try writer.print(",\"semanticPhase\":", .{});
-        try support.writeJsonString(&writer, result.semantic_phase);
-        try writer.print(",\"semanticExecutionPlanHash\":", .{});
-        try support.writeJsonString(&writer, result.plan_hash);
-        if (result.kernel) |kernel| {
-            try writer.print(",\"kernel\":", .{});
-            try support.writeJsonString(&writer, kernel);
-        }
-        try writer.print(",\"executionBackend\":", .{});
-        try support.writeJsonString(&writer, result.execution_backend);
-        try writer.print(",\"backendId\":", .{});
-        try support.writeJsonString(&writer, result.backend_id);
-        try writer.print(",\"executionStatus\":", .{});
-        try support.writeJsonString(&writer, result.status);
-        try writer.print(",\"executionStatusCode\":", .{});
-        try support.writeJsonString(&writer, result.status_code);
-        try writer.print(",\"executionStatusMessage\":", .{});
-        try support.writeJsonString(&writer, result.status_message);
-        try writer.print(",\"executionBackendLane\":", .{});
-        try support.writeJsonString(&writer, result.backend_lane);
-        try writer.print(",\"executionDurationNs\":{},\"executionSetupNs\":{},\"executionEncodeNs\":{},\"executionSubmitWaitNs\":{},\"executionDispatchCount\":{},\"executionGpuTimestampNs\":0,\"executionGpuTimestampAttempted\":false,\"executionGpuTimestampValid\":false}}\n", .{
-            result.duration_ns,
-            result.setup_ns,
-            result.encode_ns,
-            result.submit_wait_ns,
-            result.dispatch_count,
-        });
-        previous_hash = hash;
-    }
-}
-
-fn parseArgs(allocator: Allocator) !RunOptions {
-    const argv = try std.process.argsAlloc(allocator);
-    defer std.process.argsFree(allocator, argv);
-
-    var plan_path: ?[]const u8 = null;
-    var trace_meta_path: ?[]const u8 = null;
-    var trace_jsonl_path: ?[]const u8 = null;
-    var workload_id: ?[]const u8 = null;
-    var dry_run = false;
-    var backend_id_override: ?[]const u8 = null;
-
-    var i: usize = 1;
-    while (i < argv.len) : (i += 1) {
-        const arg = argv[i];
-        if (std.mem.eql(u8, arg, "--dry-run")) {
-            dry_run = true;
-            continue;
-        }
-        if (std.mem.eql(u8, arg, "--plan") and i + 1 < argv.len) {
-            i += 1;
-            plan_path = try allocator.dupe(u8, argv[i]);
-            continue;
-        }
-        if (std.mem.eql(u8, arg, "--trace-meta") and i + 1 < argv.len) {
-            i += 1;
-            trace_meta_path = try allocator.dupe(u8, argv[i]);
-            continue;
-        }
-        if (std.mem.eql(u8, arg, "--trace-jsonl") and i + 1 < argv.len) {
-            i += 1;
-            trace_jsonl_path = try allocator.dupe(u8, argv[i]);
-            continue;
-        }
-        if (std.mem.eql(u8, arg, "--workload") and i + 1 < argv.len) {
-            i += 1;
-            workload_id = try allocator.dupe(u8, argv[i]);
-            continue;
-        }
-        if (std.mem.eql(u8, arg, "--backend-id") and i + 1 < argv.len) {
-            i += 1;
-            backend_id_override = try allocator.dupe(u8, argv[i]);
-            continue;
-        }
-        return error.InvalidCommandLine;
-    }
-
-    return .{
-        .plan_path = plan_path orelse return error.MissingField,
-        .trace_meta_path = trace_meta_path orelse return error.MissingField,
-        .trace_jsonl_path = trace_jsonl_path orelse return error.MissingField,
-        .workload_id = workload_id orelse return error.MissingField,
-        .dry_run = dry_run,
-        .backend_id_override = backend_id_override,
-    };
-}
-
-pub fn runCli() !void {
-    const allocator = std.heap.page_allocator;
-    const options = try parseArgs(allocator);
-    try runPlan(allocator, options);
 }

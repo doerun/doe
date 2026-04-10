@@ -1,10 +1,14 @@
 const std = @import("std");
+const command_kind = @import("../../src/command/command_kind.zig");
 const command_json = @import("../../src/command_json.zig");
+const command_json_raw = @import("../../src/command_json_raw.zig");
 const model = @import("../../src/model.zig");
 
 const parseCommands = command_json.parseCommands;
 const freeCommands = command_json.freeCommands;
 const ParseError = command_json.ParseError;
+const RawCommand = command_json_raw.RawCommand;
+const NormalizedKind = command_kind.NormalizedKind;
 
 fn testArena() std.heap.ArenaAllocator {
     return std.heap.ArenaAllocator.init(std.testing.allocator);
@@ -24,6 +28,16 @@ test "parse upload command with explicit bytes and default alignment" {
     try std.testing.expectEqual(@as(u32, 4), cmds[0].upload.align_bytes);
 }
 
+test "parseCommands returns empty slice for empty JSON array" {
+    const result = try parseCommands(std.testing.allocator, "[]");
+    try std.testing.expectEqual(@as(usize, 0), result.len);
+}
+
+test "parseCommands returns empty slice for whitespace-padded empty array" {
+    const result = try parseCommands(std.testing.allocator, "  [  ]  \n");
+    try std.testing.expectEqual(@as(usize, 0), result.len);
+}
+
 test "parse upload command with custom alignment" {
     var arena = testArena();
     defer arena.deinit();
@@ -31,6 +45,70 @@ test "parse upload command with custom alignment" {
         \\[{"command": "upload", "bytes": 512, "alignBytes": 16}]
     );
     try std.testing.expectEqual(@as(u32, 16), cmds[0].upload.align_bytes);
+}
+
+test "parseKind resolves command field" {
+    const raw = RawCommand{ .command = "barrier" };
+    try std.testing.expectEqual(NormalizedKind.barrier, try command_kind.parseKind(raw));
+}
+
+test "parseKind resolves kind field" {
+    const raw = RawCommand{ .kind = "upload" };
+    try std.testing.expectEqual(NormalizedKind.upload, try command_kind.parseKind(raw));
+}
+
+test "parseKind resolves command_kind field" {
+    const raw = RawCommand{ .command_kind = "dispatch" };
+    try std.testing.expectEqual(NormalizedKind.dispatch, try command_kind.parseKind(raw));
+}
+
+test "parseKind is case-insensitive" {
+    const raw = RawCommand{ .command = "UPLOAD" };
+    try std.testing.expectEqual(NormalizedKind.upload, try command_kind.parseKind(raw));
+}
+
+test "parseKind recognizes upload aliases" {
+    const raw_upload = RawCommand{ .command = "upload" };
+    const raw_buffer_upload = RawCommand{ .command = "buffer_upload" };
+    try std.testing.expectEqual(NormalizedKind.upload, try command_kind.parseKind(raw_upload));
+    try std.testing.expectEqual(NormalizedKind.upload, try command_kind.parseKind(raw_buffer_upload));
+}
+
+test "parseKind recognizes render_draw aliases" {
+    const aliases = [_][]const u8{ "render_draw", "draw", "draw_call", "draw_indexed" };
+    for (aliases) |alias| {
+        const raw = RawCommand{ .command = alias };
+        try std.testing.expectEqual(NormalizedKind.render_draw, try command_kind.parseKind(raw));
+    }
+}
+
+test "parseKind recognizes copy aliases" {
+    const aliases = [_][]const u8{
+        "copy_buffer_to_texture",
+        "copy_texture",
+        "texture_copy",
+        "copy_texture_to_buffer",
+        "copy_buffer_to_buffer",
+        "buffer_copy",
+        "copyBufferToTexture",
+        "copyTextureToBuffer",
+        "copyBufferToBuffer",
+        "copy_texture_to_texture",
+    };
+    for (aliases) |alias| {
+        const raw = RawCommand{ .command = alias };
+        try std.testing.expectEqual(NormalizedKind.copy, try command_kind.parseKind(raw));
+    }
+}
+
+test "parseKind returns error for missing command kind" {
+    const raw = RawCommand{};
+    try std.testing.expectError(ParseError.MissingCommandKind, command_kind.parseKind(raw));
+}
+
+test "parseKind returns error for unknown command kind" {
+    const raw = RawCommand{ .command = "nonexistent_command" };
+    try std.testing.expectError(ParseError.UnknownCommandKind, command_kind.parseKind(raw));
 }
 
 test "parse barrier command with default dependency count" {

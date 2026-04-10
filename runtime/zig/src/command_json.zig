@@ -6,6 +6,7 @@ const model_texture_types = @import("model_texture_value_types.zig");
 const model_binding_types = @import("model_binding_value_types.zig");
 const model_render_types = @import("model_render_types.zig");
 const model_async_types = @import("model_async_types.zig");
+const command_kind = @import("command/command_kind.zig");
 const parse_helpers = @import("command_parse_helpers.zig");
 const parse_extra = @import("command_json_extra.zig");
 
@@ -92,149 +93,6 @@ fn freeCommandPayload(allocator: Allocator, command: model.Command) void {
         .texture_write => |write_texture| allocator.free(write_texture.data),
         else => {},
     }
-}
-
-fn commandKindEquals(raw_kind: []const u8, kind: []const u8) bool {
-    return std.ascii.eqlIgnoreCase(raw_kind, kind);
-}
-
-fn getCommandName(raw: RawCommand) ?[]const u8 {
-    if (raw.map_async != null) return "map_async";
-    return raw.command orelse raw.kind orelse raw.command_kind;
-}
-
-const NormalizedKind = enum {
-    upload,
-    buffer_write,
-    copy,
-    barrier,
-    dispatch,
-    dispatch_indirect,
-    kernel_dispatch,
-    render_draw,
-    draw_indirect,
-    draw_indexed_indirect,
-    render_pass,
-    sampler_create,
-    sampler_destroy,
-    texture_write,
-    texture_query,
-    texture_destroy,
-    surface_create,
-    surface_capabilities,
-    surface_configure,
-    surface_acquire,
-    surface_present,
-    surface_unconfigure,
-    surface_release,
-    async_diagnostics,
-    map_async,
-};
-
-fn parseKind(raw: RawCommand) !NormalizedKind {
-    const kind = getCommandName(raw) orelse return ParseError.MissingCommandKind;
-
-    if (commandKindEquals(kind, "upload") or commandKindEquals(kind, "buffer_upload")) {
-        return .upload;
-    }
-    if (commandKindEquals(kind, "buffer_write") or
-        commandKindEquals(kind, "write_buffer") or
-        commandKindEquals(kind, "queue_write_buffer"))
-    {
-        return .buffer_write;
-    }
-
-    if (commandKindEquals(kind, "copy_buffer_to_texture") or
-        commandKindEquals(kind, "copy_texture") or
-        commandKindEquals(kind, "texture_copy") or
-        commandKindEquals(kind, "copy_texture_to_buffer") or
-        commandKindEquals(kind, "copy_buffer_to_buffer") or
-        commandKindEquals(kind, "buffer_copy") or
-        commandKindEquals(kind, "copyBufferToTexture") or
-        commandKindEquals(kind, "copyTextureToBuffer") or
-        commandKindEquals(kind, "copyBufferToBuffer") or
-        commandKindEquals(kind, "copy_texture_to_texture"))
-    {
-        return .copy;
-    }
-
-    if (commandKindEquals(kind, "barrier")) {
-        return .barrier;
-    }
-
-    if (commandKindEquals(kind, "dispatch") or
-        commandKindEquals(kind, "dispatch_workgroups") or
-        commandKindEquals(kind, "dispatch_invocations"))
-    {
-        return .dispatch;
-    }
-    if (commandKindEquals(kind, "dispatch_indirect")) {
-        return .dispatch_indirect;
-    }
-
-    if (commandKindEquals(kind, "kernel_dispatch")) {
-        return .kernel_dispatch;
-    }
-    if (commandKindEquals(kind, "draw_indirect")) {
-        return .draw_indirect;
-    }
-    if (commandKindEquals(kind, "draw_indexed_indirect")) {
-        return .draw_indexed_indirect;
-    }
-    if (commandKindEquals(kind, "render_pass")) {
-        return .render_pass;
-    }
-    if (commandKindEquals(kind, "render_draw") or
-        commandKindEquals(kind, "draw") or
-        commandKindEquals(kind, "draw_call") or
-        commandKindEquals(kind, "draw_indexed"))
-    {
-        return .render_draw;
-    }
-    if (commandKindEquals(kind, "sampler_create") or commandKindEquals(kind, "create_sampler")) {
-        return .sampler_create;
-    }
-    if (commandKindEquals(kind, "sampler_destroy") or commandKindEquals(kind, "destroy_sampler")) {
-        return .sampler_destroy;
-    }
-    if (commandKindEquals(kind, "texture_write") or commandKindEquals(kind, "write_texture") or commandKindEquals(kind, "queue_write_texture")) {
-        return .texture_write;
-    }
-    if (commandKindEquals(kind, "texture_query") or commandKindEquals(kind, "query_texture")) {
-        return .texture_query;
-    }
-    if (commandKindEquals(kind, "texture_destroy") or commandKindEquals(kind, "destroy_texture")) {
-        return .texture_destroy;
-    }
-    if (commandKindEquals(kind, "surface_create") or commandKindEquals(kind, "create_surface")) {
-        return .surface_create;
-    }
-    if (commandKindEquals(kind, "surface_capabilities") or commandKindEquals(kind, "surface_get_capabilities")) {
-        return .surface_capabilities;
-    }
-    if (commandKindEquals(kind, "surface_configure") or commandKindEquals(kind, "configure_surface")) {
-        return .surface_configure;
-    }
-    if (commandKindEquals(kind, "surface_acquire") or commandKindEquals(kind, "surface_get_current_texture") or commandKindEquals(kind, "surface_current_texture")) {
-        return .surface_acquire;
-    }
-    if (commandKindEquals(kind, "surface_present") or commandKindEquals(kind, "present_surface")) {
-        return .surface_present;
-    }
-    if (commandKindEquals(kind, "surface_unconfigure") or commandKindEquals(kind, "unconfigure_surface")) {
-        return .surface_unconfigure;
-    }
-    if (commandKindEquals(kind, "surface_release") or commandKindEquals(kind, "release_surface")) {
-        return .surface_release;
-    }
-    if (commandKindEquals(kind, "async_diagnostics") or commandKindEquals(kind, "pipeline_async_diagnostics")) {
-        return .async_diagnostics;
-    }
-    if (commandKindEquals(kind, "map_async") or commandKindEquals(kind, "buffer_map_async")) {
-        return .map_async;
-    }
-
-    return ParseError.UnknownCommandKind;
 }
 
 fn parseCopyResource(
@@ -402,7 +260,7 @@ fn parseKernelBindings(allocator: Allocator, raw_bindings: []const RawKernelBind
 }
 
 fn parseOne(allocator: Allocator, raw: RawCommand) !model.Command {
-    const kind = try parseKind(raw);
+    const kind = try command_kind.parseKind(raw);
 
     if (kind == .upload) {
         const bytes = raw.bytes orelse return ParseError.InvalidCommandPayload;
@@ -426,7 +284,7 @@ fn parseOne(allocator: Allocator, raw: RawCommand) !model.Command {
 
     if (kind == .copy) {
         const bytes = raw.bytes orelse return ParseError.InvalidCommandPayload;
-        const direction = parse_helpers.parseCopyDirection(raw.direction, getCommandName(raw)) catch return ParseError.InvalidCommandPayload;
+        const direction = parse_helpers.parseCopyDirection(raw.direction, command_kind.getCommandName(raw)) catch return ParseError.InvalidCommandPayload;
         const default_src_kind: model.CopyResourceKind = switch (direction) {
             .buffer_to_buffer, .buffer_to_texture => .buffer,
             .texture_to_buffer, .texture_to_texture => .texture,
@@ -484,8 +342,8 @@ fn parseOne(allocator: Allocator, raw: RawCommand) !model.Command {
         const first_instance = raw.first_instance orelse raw.firstInstance orelse 0;
         const parsed_index_count = raw.index_count orelse raw.indexCount;
         const is_draw_indexed = blk: {
-            const command_name = getCommandName(raw) orelse break :blk false;
-            break :blk commandKindEquals(command_name, "draw_indexed") or commandKindEquals(command_name, "draw_indexed_indirect");
+            const command_name = command_kind.getCommandName(raw) orelse break :blk false;
+            break :blk command_kind.commandKindEquals(command_name, "draw_indexed") or command_kind.commandKindEquals(command_name, "draw_indexed_indirect");
         };
         const raw_index_data = raw.index_data orelse raw.indexData orelse raw.indices;
         const indexed_draw = is_draw_indexed or parsed_index_count != null or raw_index_data != null;
@@ -617,173 +475,3 @@ fn parseOne(allocator: Allocator, raw: RawCommand) !model.Command {
 }
 
 // --- inline tests ---
-
-fn testArena() std.heap.ArenaAllocator {
-    return std.heap.ArenaAllocator.init(std.testing.allocator);
-}
-
-test "parseCommands returns empty slice for empty JSON array" {
-    const result = try parseCommands(std.testing.allocator, "[]");
-    try std.testing.expectEqual(@as(usize, 0), result.len);
-}
-
-test "parseCommands returns empty slice for whitespace-padded empty array" {
-    const result = try parseCommands(std.testing.allocator, "  [  ]  \n");
-    try std.testing.expectEqual(@as(usize, 0), result.len);
-}
-
-test "parseCommands parses upload command with defaults" {
-    var arena = testArena();
-    defer arena.deinit();
-    const alloc = arena.allocator();
-    const cmds = try parseCommands(alloc,
-        \\[{"command": "upload", "bytes": 1024}]
-    );
-    try std.testing.expectEqual(@as(usize, 1), cmds.len);
-    try std.testing.expectEqual(@as(usize, 1024), cmds[0].upload.bytes);
-    try std.testing.expectEqual(@as(u32, 4), cmds[0].upload.align_bytes);
-}
-
-test "parseCommands recognizes buffer_upload alias for upload" {
-    var arena = testArena();
-    defer arena.deinit();
-    const cmds = try parseCommands(arena.allocator(),
-        \\[{"command": "buffer_upload", "bytes": 512}]
-    );
-    try std.testing.expectEqual(@as(usize, 512), cmds[0].upload.bytes);
-}
-
-test "parseKind resolves command field" {
-    const raw = RawCommand{ .command = "barrier" };
-    try std.testing.expectEqual(NormalizedKind.barrier, try parseKind(raw));
-}
-
-test "parseKind resolves kind field" {
-    const raw = RawCommand{ .kind = "upload" };
-    try std.testing.expectEqual(NormalizedKind.upload, try parseKind(raw));
-}
-
-test "parseKind resolves command_kind field" {
-    const raw = RawCommand{ .command_kind = "dispatch" };
-    try std.testing.expectEqual(NormalizedKind.dispatch, try parseKind(raw));
-}
-
-test "parseKind is case-insensitive" {
-    const raw = RawCommand{ .command = "UPLOAD" };
-    try std.testing.expectEqual(NormalizedKind.upload, try parseKind(raw));
-}
-
-test "parseKind recognizes upload aliases" {
-    const raw_upload = RawCommand{ .command = "upload" };
-    const raw_buffer_upload = RawCommand{ .command = "buffer_upload" };
-    try std.testing.expectEqual(NormalizedKind.upload, try parseKind(raw_upload));
-    try std.testing.expectEqual(NormalizedKind.upload, try parseKind(raw_buffer_upload));
-}
-
-test "parseKind recognizes render_draw aliases" {
-    const aliases = [_][]const u8{ "render_draw", "draw", "draw_call", "draw_indexed" };
-    for (aliases) |alias| {
-        const raw = RawCommand{ .command = alias };
-        try std.testing.expectEqual(NormalizedKind.render_draw, try parseKind(raw));
-    }
-}
-
-test "parseKind recognizes copy aliases" {
-    const aliases = [_][]const u8{
-        "copy_buffer_to_texture",  "copy_texture",          "texture_copy",
-        "copy_texture_to_buffer",  "copy_buffer_to_buffer", "buffer_copy",
-        "copyBufferToTexture",     "copyTextureToBuffer",   "copyBufferToBuffer",
-        "copy_texture_to_texture",
-    };
-    for (aliases) |alias| {
-        const raw = RawCommand{ .command = alias };
-        try std.testing.expectEqual(NormalizedKind.copy, try parseKind(raw));
-    }
-}
-
-test "parseKind returns error for missing command kind" {
-    const raw = RawCommand{};
-    try std.testing.expectError(ParseError.MissingCommandKind, parseKind(raw));
-}
-
-test "parseKind returns error for unknown command kind" {
-    const raw = RawCommand{ .command = "nonexistent_command" };
-    try std.testing.expectError(ParseError.UnknownCommandKind, parseKind(raw));
-}
-
-test "parseCommands returns error for upload without bytes" {
-    var arena = testArena();
-    defer arena.deinit();
-    const result = parseCommands(arena.allocator(),
-        \\[{"command": "upload"}]
-    );
-    try std.testing.expectError(ParseError.InvalidCommandPayload, result);
-}
-
-test "parseCommands parses dispatch with workgroupCount array" {
-    var arena = testArena();
-    defer arena.deinit();
-    const cmds = try parseCommands(arena.allocator(),
-        \\[{"command": "dispatch", "workgroupCount": [8, 4, 2]}]
-    );
-    try std.testing.expectEqual(@as(u32, 8), cmds[0].dispatch.x);
-    try std.testing.expectEqual(@as(u32, 4), cmds[0].dispatch.y);
-    try std.testing.expectEqual(@as(u32, 2), cmds[0].dispatch.z);
-}
-
-test "parseCommands dispatch defaults to 1,1,1 when no dimensions given" {
-    var arena = testArena();
-    defer arena.deinit();
-    const cmds = try parseCommands(arena.allocator(),
-        \\[{"command": "dispatch"}]
-    );
-    try std.testing.expectEqual(@as(u32, 1), cmds[0].dispatch.x);
-    try std.testing.expectEqual(@as(u32, 1), cmds[0].dispatch.y);
-    try std.testing.expectEqual(@as(u32, 1), cmds[0].dispatch.z);
-}
-
-test "parseCommands parses map_async with default write mode" {
-    var arena = testArena();
-    defer arena.deinit();
-    const cmds = try parseCommands(arena.allocator(),
-        \\[{"command": "map_async", "bytes": 4096}]
-    );
-    try std.testing.expectEqual(@as(usize, 4096), cmds[0].map_async.bytes);
-    try std.testing.expectEqual(model.MapAsyncMode.write, cmds[0].map_async.mode);
-}
-
-test "parseCommands parses buffer_write" {
-    const allocator = std.testing.allocator;
-    const json =
-        \\[
-        \\  {
-        \\    "command": "write_buffer",
-        \\    "handle": 17,
-        \\    "offset": 16,
-        \\    "bufferSize": 64,
-        \\    "data": [1, 2, 3, 4]
-        \\  }
-        \\]
-    ;
-    const cmds = try parseCommands(allocator, json);
-    defer freeCommands(allocator, cmds);
-    try std.testing.expectEqual(@as(usize, 1), cmds.len);
-    try std.testing.expectEqual(@as(u64, 17), cmds[0].buffer_write.handle);
-    try std.testing.expectEqual(@as(u64, 16), cmds[0].buffer_write.offset);
-    try std.testing.expectEqual(@as(u64, 64), cmds[0].buffer_write.buffer_size);
-    try std.testing.expectEqual(@as(usize, 4), cmds[0].buffer_write.data.len);
-}
-
-test "parseCommands parses multiple heterogeneous commands" {
-    var arena = testArena();
-    defer arena.deinit();
-    const cmds = try parseCommands(arena.allocator(),
-        \\[{"command": "upload", "bytes": 100},
-        \\ {"command": "barrier"},
-        \\ {"command": "dispatch", "x": 2}]
-    );
-    try std.testing.expectEqual(@as(usize, 3), cmds.len);
-    try std.testing.expectEqual(@as(usize, 100), cmds[0].upload.bytes);
-    try std.testing.expectEqual(@as(u32, 0), cmds[1].barrier.dependency_count);
-    try std.testing.expectEqual(@as(u32, 2), cmds[2].dispatch.x);
-}

@@ -38,19 +38,22 @@ fn getOptionValue(args: [][:0]u8, index: *usize) ![]const u8 {
     return args[index.*];
 }
 
-fn runSimpleModule(
-    comptime Module: type,
-    allocator: Allocator,
-    request_bytes: []const u8,
-    _: []const u8,
-    policy_bytes: []const u8,
-) ![]u8 {
-    var parsed_request = try Module.parseRequest(allocator, request_bytes);
-    defer parsed_request.deinit();
-    var parsed_policy = try Module.parsePolicy(allocator, policy_bytes);
-    defer parsed_policy.deinit();
-    const result = try Module.execute(allocator, parsed_request.value, parsed_policy.value);
-    return try common.jsonStringifyAlloc(allocator, result);
+fn simpleModuleRunner(comptime Module: type) ModuleRunFn {
+    return struct {
+        fn run(
+            allocator: Allocator,
+            request_bytes: []const u8,
+            _: []const u8,
+            policy_bytes: []const u8,
+        ) ![]u8 {
+            var parsed_request = try Module.parseRequest(allocator, request_bytes);
+            defer parsed_request.deinit();
+            var parsed_policy = try Module.parsePolicy(allocator, policy_bytes);
+            defer parsed_policy.deinit();
+            const result = try Module.execute(allocator, parsed_request.value, parsed_policy.value);
+            return try common.jsonStringifyAlloc(allocator, result);
+        }
+    }.run;
 }
 
 fn runNumericStabilityModule(
@@ -68,12 +71,12 @@ fn runNumericStabilityModule(
 }
 
 const MODULE_ADAPTERS = [_]ModuleAdapter{
-    .{ .module_id = compute_services.MODULE_ID, .run = runSimpleModule(compute_services) },
+    .{ .module_id = compute_services.MODULE_ID, .run = simpleModuleRunner(compute_services) },
     .{ .module_id = numeric_stability.MODULE_ID, .run = runNumericStabilityModule },
-    .{ .module_id = effects_pipeline.MODULE_ID, .run = runSimpleModule(effects_pipeline) },
-    .{ .module_id = path_engine.MODULE_ID, .run = runSimpleModule(path_engine) },
-    .{ .module_id = resource_scheduler.MODULE_ID, .run = runSimpleModule(resource_scheduler) },
-    .{ .module_id = sdf_renderer.MODULE_ID, .run = runSimpleModule(sdf_renderer) },
+    .{ .module_id = effects_pipeline.MODULE_ID, .run = simpleModuleRunner(effects_pipeline) },
+    .{ .module_id = path_engine.MODULE_ID, .run = simpleModuleRunner(path_engine) },
+    .{ .module_id = resource_scheduler.MODULE_ID, .run = simpleModuleRunner(resource_scheduler) },
+    .{ .module_id = sdf_renderer.MODULE_ID, .run = simpleModuleRunner(sdf_renderer) },
 };
 
 fn parseArgs(allocator: Allocator) !RunOptions {
