@@ -121,6 +121,10 @@ fn execute_buffer_write_bytes(self: anytype, setup_ns: u64, handle: u64, offset:
     };
 }
 
+fn use_explicit_submit_boundaries(self: anytype) bool {
+    return self.queue_sync_mode == .per_command and self.gpu_timestamp_mode != .require;
+}
+
 fn execute_dispatch_command(
     self: anytype,
     setup_ns: u64,
@@ -131,6 +135,12 @@ fn execute_dispatch_command(
     warmup_dispatch_count: u32,
 ) !webgpu.NativeExecutionResult {
     const runtime = try self.ensure_runtime_bootstrapped();
+    const explicit_submit_boundaries = use_explicit_submit_boundaries(self);
+    const dispatch_sync_mode: webgpu.QueueSyncMode = if (explicit_submit_boundaries) .deferred else self.queue_sync_mode;
+    const dispatch_gpu_timestamp_mode: webgpu.GpuTimestampMode = if (explicit_submit_boundaries) .off else self.gpu_timestamp_mode;
+    const previous_replay_state = runtime.recorded_submit_replay_active;
+    runtime.recorded_submit_replay_active = explicit_submit_boundaries;
+    defer runtime.recorded_submit_replay_active = previous_replay_state;
 
     if (!runtime.has_pipeline) {
         const noop_words = try runtime.load_kernel_spirv(self.allocator, "dispatch_noop.wgsl");
@@ -140,7 +150,17 @@ fn execute_dispatch_command(
 
     var warmup_index: u32 = 0;
     while (warmup_index < warmup_dispatch_count) : (warmup_index += 1) {
-        _ = try runtime.run_dispatch(x, y, z, .per_command, self.queue_wait_mode, .off);
+        _ = try runtime.run_dispatch(
+            x,
+            y,
+            z,
+            if (explicit_submit_boundaries) .deferred else .per_command,
+            self.queue_wait_mode,
+            .off,
+        );
+    }
+    if (explicit_submit_boundaries and warmup_dispatch_count > 0) {
+        _ = try runtime.flush_queue();
     }
 
     const dispatch_count = if (repeat > 0) repeat else 1;
@@ -157,9 +177,9 @@ fn execute_dispatch_command(
             x,
             y,
             z,
-            self.queue_sync_mode,
+            dispatch_sync_mode,
             self.queue_wait_mode,
-            self.gpu_timestamp_mode,
+            dispatch_gpu_timestamp_mode,
         );
 
         encode_ns +|= metrics.encode_ns;
@@ -195,6 +215,10 @@ fn execute_dispatch_indirect_command(
     z: u32,
 ) !webgpu.NativeExecutionResult {
     const runtime = try self.ensure_runtime_bootstrapped();
+    const explicit_submit_boundaries = use_explicit_submit_boundaries(self);
+    const previous_replay_state = runtime.recorded_submit_replay_active;
+    runtime.recorded_submit_replay_active = explicit_submit_boundaries;
+    defer runtime.recorded_submit_replay_active = previous_replay_state;
 
     if (!runtime.has_pipeline) {
         const noop_words = try runtime.load_kernel_spirv(self.allocator, "dispatch_noop.wgsl");
@@ -206,7 +230,7 @@ fn execute_dispatch_indirect_command(
         x,
         y,
         z,
-        self.queue_sync_mode,
+        if (explicit_submit_boundaries) .deferred else self.queue_sync_mode,
         self.queue_wait_mode,
     );
 
@@ -225,6 +249,9 @@ fn execute_dispatch_indirect_command(
 
 fn execute_kernel_dispatch(self: anytype, setup_ns: u64, kernel_dispatch: model.KernelDispatchCommand) !webgpu.NativeExecutionResult {
     const runtime = try self.ensure_runtime_bootstrapped();
+    const previous_replay_state = runtime.recorded_submit_replay_active;
+    runtime.recorded_submit_replay_active = use_explicit_submit_boundaries(self);
+    defer runtime.recorded_submit_replay_active = previous_replay_state;
     const spirv_words = runtime.load_kernel_spirv(self.allocator, kernel_dispatch.kernel) catch |err| {
         if (err == error.UnsupportedFeature and std.mem.endsWith(u8, kernel_dispatch.kernel, ".wgsl")) {
             return .{
@@ -480,6 +507,9 @@ pub fn prewarm_kernel_dispatch(self: anytype, kernel: []const u8, bindings: ?[]c
 
 pub fn capture_buffer(self: anytype, allocator: std.mem.Allocator, handle: u64, offset: u64, size: u64) anyerror![]u8 {
     const runtime = try self.ensure_runtime_bootstrapped();
+    if (runtime.has_deferred_submissions or runtime.hot_pending_upload != null or runtime.pending_uploads.items.len > 0) {
+        _ = try runtime.flush_queue();
+    }
     if (size == 0) return error.InvalidArgument;
     const buffer = runtime.compute_buffers.get(handle) orelse return error.InvalidArgument;
     const end = std.math.add(u64, offset, size) catch return error.InvalidArgument;

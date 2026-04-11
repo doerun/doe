@@ -115,6 +115,66 @@ fn retire_descriptor_state(self: anytype) void {
     self.has_descriptor_bindings_hash = false;
 }
 
+fn retire_descriptor_pool_only(self: anytype) void {
+    if (!self.has_descriptor_pool) {
+        self.descriptor_sets = [_]c.VkDescriptorSet{VK_NULL_U64} ** c.MAX_DESCRIPTOR_SETS;
+        self.current_descriptor_bindings_hash = 0;
+        self.has_descriptor_bindings_hash = false;
+        return;
+    }
+    self.retired_descriptor_states.append(self.allocator, .{
+        .descriptor_pool = self.descriptor_pool,
+        .descriptor_set_layouts = [_]c.VkDescriptorSetLayout{VK_NULL_U64} ** c.MAX_DESCRIPTOR_SETS,
+        .pipeline_layout = VK_NULL_U64,
+    }) catch std.debug.panic("vk_pipeline: OOM retiring descriptor pool", .{});
+    self.has_descriptor_pool = false;
+    self.descriptor_pool = VK_NULL_U64;
+    self.descriptor_sets = [_]c.VkDescriptorSet{VK_NULL_U64} ** c.MAX_DESCRIPTOR_SETS;
+    self.current_descriptor_bindings_hash = 0;
+    self.has_descriptor_bindings_hash = false;
+}
+
+fn maybe_retire_replay_state(
+    self: anytype,
+    pipeline_hash: u64,
+    bindings: ?[]const model_compute_types.KernelBinding,
+) void {
+    if (!self.recorded_submit_replay_active or !self.has_deferred_submissions) return;
+
+    const layout_hash = compute_layout_hash(bindings);
+    const pipeline_changed = !self.has_pipeline or pipeline_hash != self.current_pipeline_hash;
+    const layout_changed = !self.has_pipeline_layout or layout_hash != self.current_layout_hash;
+    const descriptor_bindings_hash = if (bindings) |bs|
+        if (bs.len > 0) compute_descriptor_bindings_hash(bs) else null
+    else
+        null;
+    const descriptor_changed = if (self.descriptor_set_count == 0)
+        false
+    else if (descriptor_bindings_hash) |hash|
+        !self.has_descriptor_pool or !self.has_descriptor_bindings_hash or hash != self.current_descriptor_bindings_hash
+    else
+        self.has_descriptor_pool or self.has_descriptor_bindings_hash;
+
+    if (pipeline_changed) {
+        retire_pipeline_objects(self);
+        if (layout_changed) {
+            retire_descriptor_state(self);
+        } else if (descriptor_changed) {
+            retire_descriptor_pool_only(self);
+        }
+        return;
+    }
+
+    if (layout_changed) {
+        retire_descriptor_state(self);
+        return;
+    }
+
+    if (descriptor_changed) {
+        retire_descriptor_pool_only(self);
+    }
+}
+
 pub fn release_retired_states(self: anytype) void {
     for (self.retired_pipeline_states.items) |retired| {
         if (retired.pipeline != VK_NULL_U64) c.vkDestroyPipeline(self.device, retired.pipeline, null);
@@ -174,11 +234,8 @@ pub fn set_compute_shader_spirv(
     initialize_buffers_on_create: bool,
 ) !void {
     if (words.len == 0 or words[0] != SPIRV_MAGIC) return error.ShaderCompileFailed;
-    if (self.recorded_submit_replay_active and self.has_deferred_submissions) {
-        retire_pipeline_objects(self);
-        retire_descriptor_state(self);
-    }
     const pipeline_hash = compute_pipeline_hash(words, entry_point, bindings);
+    maybe_retire_replay_state(self, pipeline_hash, bindings);
     if (!self.has_pipeline or pipeline_hash != self.current_pipeline_hash) {
         try build_pipeline_for_words(self, words, pipeline_hash, entry_point, bindings);
     }
