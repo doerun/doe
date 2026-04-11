@@ -306,16 +306,10 @@ pub const NativeVulkanRuntime = struct {
         if (queue_sync_mode == .per_command) {
             if (self.has_deferred_submissions) _ = try self.flush_queue();
             try c.check_vk(c.vkResetCommandPool(self.device, self.command_pool, 0));
+            self.deferred_command_buffer_index = 0;
             command_buffer = self.primary_command_buffer;
         } else {
-            var alloc_info = c.VkCommandBufferAllocateInfo{
-                .sType = c.VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-                .pNext = null,
-                .commandPool = self.command_pool,
-                .level = c.VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-                .commandBufferCount = 1,
-            };
-            try c.check_vk(c.vkAllocateCommandBuffers(self.device, &alloc_info, @ptrCast(&command_buffer)));
+            command_buffer = try acquire_deferred_command_buffer(self);
         }
 
         var begin_info = c.VkCommandBufferBeginInfo{
@@ -434,16 +428,10 @@ pub const NativeVulkanRuntime = struct {
         if (queue_sync_mode == .per_command) {
             if (self.has_deferred_submissions) _ = try self.flush_queue();
             try c.check_vk(c.vkResetCommandPool(self.device, self.command_pool, 0));
+            self.deferred_command_buffer_index = 0;
             command_buffer = self.primary_command_buffer;
         } else {
-            var alloc_info = c.VkCommandBufferAllocateInfo{
-                .sType = c.VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-                .pNext = null,
-                .commandPool = self.command_pool,
-                .level = c.VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-                .commandBufferCount = 1,
-            };
-            try c.check_vk(c.vkAllocateCommandBuffers(self.device, &alloc_info, @ptrCast(&command_buffer)));
+            command_buffer = try acquire_deferred_command_buffer(self);
         }
 
         var begin_info = c.VkCommandBufferBeginInfo{
@@ -531,8 +519,13 @@ pub const NativeVulkanRuntime = struct {
 
     pub fn flush_queue(self: *NativeVulkanRuntime) !u64 {
         const waited_ns = try vk_upload.flush_queue(self);
+        const cleanup_start = common_timing.now_ns();
         vk_pipeline.release_retired_states(self);
-        return waited_ns;
+        if (!self.streaming_copy_active and self.deferred_command_buffer_index > 0) {
+            try c.check_vk(c.vkResetCommandPool(self.device, self.command_pool, 0));
+            self.deferred_command_buffer_index = 0;
+        }
+        return waited_ns +| common_timing.ns_delta(common_timing.now_ns(), cleanup_start);
     }
 
     // --- Streaming copy API ---
@@ -728,4 +721,25 @@ fn write_dispatch_indirect_args(buffer: vk_resources.ComputeBuffer, x: u32, y: u
     const dispatch_args = [3]u32{ x, y, z };
     const dispatch_arg_bytes = std.mem.asBytes(&dispatch_args);
     @memcpy(@as([*]u8, @ptrCast(mapped))[0..dispatch_arg_bytes.len], dispatch_arg_bytes);
+}
+
+fn acquire_deferred_command_buffer(self: *NativeVulkanRuntime) !c.VkCommandBuffer {
+    if (self.deferred_command_buffer_index < self.deferred_command_buffers.items.len) {
+        const command_buffer = self.deferred_command_buffers.items[self.deferred_command_buffer_index];
+        self.deferred_command_buffer_index += 1;
+        return command_buffer;
+    }
+
+    var command_buffer: c.VkCommandBuffer = null;
+    var alloc_info = c.VkCommandBufferAllocateInfo{
+        .sType = c.VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+        .pNext = null,
+        .commandPool = self.command_pool,
+        .level = c.VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+        .commandBufferCount = 1,
+    };
+    try c.check_vk(c.vkAllocateCommandBuffers(self.device, &alloc_info, @ptrCast(&command_buffer)));
+    try self.deferred_command_buffers.append(self.allocator, command_buffer);
+    self.deferred_command_buffer_index += 1;
+    return command_buffer;
 }

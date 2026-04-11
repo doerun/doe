@@ -212,6 +212,27 @@ pub fn load_kernel_spirv(self: anytype, allocator: std.mem.Allocator, kernel_nam
     return try words_from_spirv_bytes(allocator, bytes);
 }
 
+pub fn load_kernel_spirv_cached(self: anytype, kernel_name: []const u8) ![]const u32 {
+    if (kernel_name.len == 0) return error.InvalidArgument;
+    if (self.kernel_spirv_cache.get(kernel_name)) |cached_words| return cached_words;
+
+    const owned_key = try self.allocator.dupe(u8, kernel_name);
+    errdefer self.allocator.free(owned_key);
+    const words = try load_kernel_spirv(self, self.allocator, kernel_name);
+    errdefer self.allocator.free(words);
+    try self.kernel_spirv_cache.put(self.allocator, owned_key, words);
+    return self.kernel_spirv_cache.get(kernel_name).?;
+}
+
+pub fn release_kernel_spirv_cache(self: anytype) void {
+    var it = self.kernel_spirv_cache.iterator();
+    while (it.next()) |entry| {
+        self.allocator.free(entry.key_ptr.*);
+        self.allocator.free(entry.value_ptr.*);
+    }
+    self.kernel_spirv_cache.deinit(self.allocator);
+}
+
 fn compile_kernel_wgsl_to_spirv(self: anytype, allocator: std.mem.Allocator, kernel_name: []const u8) ![]u32 {
     const source_path = try resolve_kernel_path(self, allocator, kernel_name);
     defer allocator.free(source_path);

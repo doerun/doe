@@ -143,8 +143,7 @@ fn execute_dispatch_command(
     defer runtime.recorded_submit_replay_active = previous_replay_state;
 
     if (!runtime.has_pipeline) {
-        const noop_words = try runtime.load_kernel_spirv(self.allocator, "dispatch_noop.wgsl");
-        defer self.allocator.free(noop_words);
+        const noop_words = try runtime.load_kernel_spirv_cached("dispatch_noop.wgsl");
         try runtime.set_compute_shader_spirv(noop_words, null, null, false);
     }
 
@@ -221,8 +220,7 @@ fn execute_dispatch_indirect_command(
     defer runtime.recorded_submit_replay_active = previous_replay_state;
 
     if (!runtime.has_pipeline) {
-        const noop_words = try runtime.load_kernel_spirv(self.allocator, "dispatch_noop.wgsl");
-        defer self.allocator.free(noop_words);
+        const noop_words = try runtime.load_kernel_spirv_cached("dispatch_noop.wgsl");
         try runtime.set_compute_shader_spirv(noop_words, null, null, false);
     }
 
@@ -252,7 +250,7 @@ fn execute_kernel_dispatch(self: anytype, setup_ns: u64, kernel_dispatch: model.
     const previous_replay_state = runtime.recorded_submit_replay_active;
     runtime.recorded_submit_replay_active = use_explicit_submit_boundaries(self);
     defer runtime.recorded_submit_replay_active = previous_replay_state;
-    const spirv_words = runtime.load_kernel_spirv(self.allocator, kernel_dispatch.kernel) catch |err| {
+    const spirv_words = runtime.load_kernel_spirv_cached(kernel_dispatch.kernel) catch |err| {
         if (err == error.UnsupportedFeature and std.mem.endsWith(u8, kernel_dispatch.kernel, ".wgsl")) {
             return .{
                 .status = .unsupported,
@@ -266,7 +264,6 @@ fn execute_kernel_dispatch(self: anytype, setup_ns: u64, kernel_dispatch: model.
         }
         return err;
     };
-    defer self.allocator.free(spirv_words);
     try runtime.set_compute_shader_spirv(
         spirv_words,
         kernel_dispatch.entry_point,
@@ -500,8 +497,7 @@ pub fn prewarm_upload_path(self: anytype, max_upload_bytes: u64) anyerror!void {
 
 pub fn prewarm_kernel_dispatch(self: anytype, kernel: []const u8, bindings: ?[]const model.KernelBinding) anyerror!void {
     const runtime = try self.ensure_runtime_bootstrapped();
-    const spirv_words = try runtime.load_kernel_spirv(self.allocator, kernel);
-    defer self.allocator.free(spirv_words);
+    const spirv_words = try runtime.load_kernel_spirv_cached(kernel);
     try runtime.set_compute_shader_spirv(spirv_words, null, bindings, false);
 }
 
