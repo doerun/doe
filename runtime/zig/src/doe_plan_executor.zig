@@ -497,7 +497,10 @@ pub fn runPlan(allocator: Allocator, options: RunOptions) !void {
     }
 
     if (execution_context) |*ctx| {
-        if (options.queue_sync_mode == .deferred or options.upload_submit_every > 1) {
+        const needs_explicit_drain = options.queue_sync_mode == .deferred or
+            options.upload_submit_every > 1 or
+            std.mem.eql(u8, trace_summary.execution_backend, "doe_vulkan");
+        if (needs_explicit_drain) {
             const flush_start_ns = nowNs();
             const flush_ns = try ctx.flushQueue();
             trace_summary.execution_submit_wait_total_ns += flush_ns;
