@@ -207,8 +207,12 @@ pub const NativeD3D12Runtime = struct {
             .cmd_list = cmd_list,
             .retained_handles = retained_handles.*,
         };
-        errdefer batch.deinit(self.allocator);
-        try self.pending_submit_batches.append(self.allocator, batch);
+        self.pending_submit_batches.append(self.allocator, batch) catch |err| {
+            bridge.c.d3d12_bridge_fence_wait(self.fence, self.fence_value);
+            self.noteCompletedFenceWait();
+            batch.deinit(self.allocator);
+            return err;
+        };
         retained_handles.* = .{};
     }
 

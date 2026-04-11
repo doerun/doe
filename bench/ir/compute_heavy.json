@@ -1,0 +1,589 @@
+{
+  "schemaVersion": 1,
+  "kind": "compute_heavy",
+  "description": "Neutral benchmark IR for Doe-owned compute-heavy workloads: a fixed-sample Monte Carlo path integrator plus a deterministic multistage stable-fluids solver.",
+  "shared": {
+    "kernelRoot": "bench/kernels",
+    "timingScope": "operation"
+  },
+  "scenarios": [
+    {
+      "id": "compute_monte_carlo_fixed_samples_131072paths_256samples_8bounces",
+      "description": "Fixed-shape Monte Carlo compute workload with 131072 path threads, 256 samples per path, 8 bounces per sample, and deterministic tree reduction over the accumulated path radiance.",
+      "planPath": "bench/plans/generated/compute_monte_carlo_fixed_samples_131072paths_256samples_8bounces.plan.json",
+      "commandsPath": "bench/plans/generated/compat/compute_monte_carlo_fixed_samples_131072paths_256samples_8bounces_commands.json",
+      "timingScope": "operation",
+      "commands": [
+        {
+          "kind": "buffer_write",
+          "handle": 4101,
+          "bufferSize": 16,
+          "data": [
+            131072,
+            256,
+            8,
+            1337
+          ]
+        },
+        {
+          "kind": "buffer_write",
+          "handle": 4102,
+          "bufferSize": 16,
+          "data": [
+            131072,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "kind": "buffer_write",
+          "handle": 4103,
+          "bufferSize": 16,
+          "data": [
+            2048,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "kind": "buffer_write",
+          "handle": 4104,
+          "bufferSize": 16,
+          "data": [
+            32,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "kind": "kernel_dispatch",
+          "kernel": "monte_carlo_paths_fixed_samples.wgsl",
+          "x": 2048,
+          "y": 1,
+          "z": 1,
+          "initialize_buffers_on_create": true,
+          "bindings": [
+            {
+              "binding": 0,
+              "group": 0,
+              "kind": "buffer",
+              "buffer_type": "uniform",
+              "resource_handle": 4101,
+              "buffer_size": 16,
+              "visibility": "compute"
+            },
+            {
+              "binding": 1,
+              "group": 0,
+              "kind": "buffer",
+              "buffer_type": "storage",
+              "resource_handle": 4201,
+              "buffer_size": 2097152,
+              "visibility": "compute"
+            }
+          ]
+        },
+        {
+          "kind": "kernel_dispatch",
+          "kernel": "monte_carlo_reduce_vec4.wgsl",
+          "x": 2048,
+          "y": 1,
+          "z": 1,
+          "initialize_buffers_on_create": true,
+          "bindings": [
+            {
+              "binding": 0,
+              "group": 0,
+              "kind": "buffer",
+              "buffer_type": "uniform",
+              "resource_handle": 4102,
+              "buffer_size": 16,
+              "visibility": "compute"
+            },
+            {
+              "binding": 1,
+              "group": 0,
+              "kind": "buffer",
+              "buffer_type": "readonly",
+              "resource_handle": 4201,
+              "buffer_size": 2097152,
+              "visibility": "compute"
+            },
+            {
+              "binding": 2,
+              "group": 0,
+              "kind": "buffer",
+              "buffer_type": "storage",
+              "resource_handle": 4202,
+              "buffer_size": 32768,
+              "visibility": "compute"
+            }
+          ]
+        },
+        {
+          "kind": "kernel_dispatch",
+          "kernel": "monte_carlo_reduce_vec4.wgsl",
+          "x": 32,
+          "y": 1,
+          "z": 1,
+          "initialize_buffers_on_create": true,
+          "bindings": [
+            {
+              "binding": 0,
+              "group": 0,
+              "kind": "buffer",
+              "buffer_type": "uniform",
+              "resource_handle": 4103,
+              "buffer_size": 16,
+              "visibility": "compute"
+            },
+            {
+              "binding": 1,
+              "group": 0,
+              "kind": "buffer",
+              "buffer_type": "readonly",
+              "resource_handle": 4202,
+              "buffer_size": 32768,
+              "visibility": "compute"
+            },
+            {
+              "binding": 2,
+              "group": 0,
+              "kind": "buffer",
+              "buffer_type": "storage",
+              "resource_handle": 4203,
+              "buffer_size": 512,
+              "visibility": "compute"
+            }
+          ]
+        },
+        {
+          "kind": "kernel_dispatch",
+          "kernel": "monte_carlo_reduce_vec4.wgsl",
+          "x": 1,
+          "y": 1,
+          "z": 1,
+          "initialize_buffers_on_create": true,
+          "bindings": [
+            {
+              "binding": 0,
+              "group": 0,
+              "kind": "buffer",
+              "buffer_type": "uniform",
+              "resource_handle": 4104,
+              "buffer_size": 16,
+              "visibility": "compute"
+            },
+            {
+              "binding": 1,
+              "group": 0,
+              "kind": "buffer",
+              "buffer_type": "readonly",
+              "resource_handle": 4203,
+              "buffer_size": 512,
+              "visibility": "compute"
+            },
+            {
+              "binding": 2,
+              "group": 0,
+              "kind": "buffer",
+              "buffer_type": "storage",
+              "resource_handle": 4204,
+              "buffer_size": 16,
+              "visibility": "compute"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "compute_stable_fluids_multistage_256grid_18pressure_4steps",
+      "description": "Deterministic multistage stable-fluids workload with a 256x256 grid, 18 Jacobi pressure iterations per simulation step, and 4 full solver steps over velocity and dye fields.",
+      "planPath": "bench/plans/generated/compute_stable_fluids_multistage_256grid_18pressure_4steps.plan.json",
+      "commandsPath": "bench/plans/generated/compat/compute_stable_fluids_multistage_256grid_18pressure_4steps_commands.json",
+      "timingScope": "operation",
+      "commands": [
+        {
+          "kind": "buffer_write",
+          "handle": 5101,
+          "bufferSize": 32,
+          "data": [
+            256,
+            256,
+            1337,
+            0,
+            1036831949,
+            1065294496,
+            1065227387,
+            1051931443
+          ]
+        },
+        {
+          "kind": "kernel_dispatch",
+          "kernel": "stable_fluids_seed.wgsl",
+          "x": 32,
+          "y": 32,
+          "z": 1,
+          "initialize_buffers_on_create": true,
+          "bindings": [
+            {
+              "binding": 0,
+              "group": 0,
+              "kind": "buffer",
+              "buffer_type": "uniform",
+              "resource_handle": 5101,
+              "buffer_size": 32,
+              "visibility": "compute"
+            },
+            {
+              "binding": 1,
+              "group": 0,
+              "kind": "buffer",
+              "buffer_type": "storage",
+              "resource_handle": 5201,
+              "buffer_size": 524288,
+              "visibility": "compute"
+            },
+            {
+              "binding": 2,
+              "group": 0,
+              "kind": "buffer",
+              "buffer_type": "storage",
+              "resource_handle": 5206,
+              "buffer_size": 262144,
+              "visibility": "compute"
+            },
+            {
+              "binding": 3,
+              "group": 0,
+              "kind": "buffer",
+              "buffer_type": "storage",
+              "resource_handle": 5204,
+              "buffer_size": 262144,
+              "visibility": "compute"
+            },
+            {
+              "binding": 4,
+              "group": 0,
+              "kind": "buffer",
+              "buffer_type": "storage",
+              "resource_handle": 5205,
+              "buffer_size": 262144,
+              "visibility": "compute"
+            }
+          ]
+        },
+        {
+          "kind": "repeat",
+          "count": 4,
+          "commands": [
+            {
+              "kind": "kernel_dispatch",
+              "kernel": "stable_fluids_advect_velocity.wgsl",
+              "x": 32,
+              "y": 32,
+              "z": 1,
+              "initialize_buffers_on_create": true,
+              "bindings": [
+                {
+                  "binding": 0,
+                  "group": 0,
+                  "kind": "buffer",
+                  "buffer_type": "uniform",
+                  "resource_handle": 5101,
+                  "buffer_size": 32,
+                  "visibility": "compute"
+                },
+                {
+                  "binding": 1,
+                  "group": 0,
+                  "kind": "buffer",
+                  "buffer_type": "readonly",
+                  "resource_handle": 5201,
+                  "buffer_size": 524288,
+                  "visibility": "compute"
+                },
+                {
+                  "binding": 2,
+                  "group": 0,
+                  "kind": "buffer",
+                  "buffer_type": "storage",
+                  "resource_handle": 5202,
+                  "buffer_size": 524288,
+                  "visibility": "compute"
+                }
+              ]
+            },
+            {
+              "kind": "kernel_dispatch",
+              "kernel": "stable_fluids_divergence.wgsl",
+              "x": 32,
+              "y": 32,
+              "z": 1,
+              "initialize_buffers_on_create": true,
+              "bindings": [
+                {
+                  "binding": 0,
+                  "group": 0,
+                  "kind": "buffer",
+                  "buffer_type": "uniform",
+                  "resource_handle": 5101,
+                  "buffer_size": 32,
+                  "visibility": "compute"
+                },
+                {
+                  "binding": 1,
+                  "group": 0,
+                  "kind": "buffer",
+                  "buffer_type": "readonly",
+                  "resource_handle": 5202,
+                  "buffer_size": 524288,
+                  "visibility": "compute"
+                },
+                {
+                  "binding": 2,
+                  "group": 0,
+                  "kind": "buffer",
+                  "buffer_type": "storage",
+                  "resource_handle": 5203,
+                  "buffer_size": 262144,
+                  "visibility": "compute"
+                }
+              ]
+            },
+            {
+              "kind": "repeat",
+              "count": 9,
+              "commands": [
+                {
+                  "kind": "kernel_dispatch",
+                  "kernel": "stable_fluids_pressure.wgsl",
+                  "x": 32,
+                  "y": 32,
+                  "z": 1,
+                  "initialize_buffers_on_create": true,
+                  "bindings": [
+                    {
+                      "binding": 0,
+                      "group": 0,
+                      "kind": "buffer",
+                      "buffer_type": "uniform",
+                      "resource_handle": 5101,
+                      "buffer_size": 32,
+                      "visibility": "compute"
+                    },
+                    {
+                      "binding": 1,
+                      "group": 0,
+                      "kind": "buffer",
+                      "buffer_type": "readonly",
+                      "resource_handle": 5203,
+                      "buffer_size": 262144,
+                      "visibility": "compute"
+                    },
+                    {
+                      "binding": 2,
+                      "group": 0,
+                      "kind": "buffer",
+                      "buffer_type": "readonly",
+                      "resource_handle": 5204,
+                      "buffer_size": 262144,
+                      "visibility": "compute"
+                    },
+                    {
+                      "binding": 3,
+                      "group": 0,
+                      "kind": "buffer",
+                      "buffer_type": "storage",
+                      "resource_handle": 5205,
+                      "buffer_size": 262144,
+                      "visibility": "compute"
+                    }
+                  ]
+                },
+                {
+                  "kind": "kernel_dispatch",
+                  "kernel": "stable_fluids_pressure.wgsl",
+                  "x": 32,
+                  "y": 32,
+                  "z": 1,
+                  "initialize_buffers_on_create": true,
+                  "bindings": [
+                    {
+                      "binding": 0,
+                      "group": 0,
+                      "kind": "buffer",
+                      "buffer_type": "uniform",
+                      "resource_handle": 5101,
+                      "buffer_size": 32,
+                      "visibility": "compute"
+                    },
+                    {
+                      "binding": 1,
+                      "group": 0,
+                      "kind": "buffer",
+                      "buffer_type": "readonly",
+                      "resource_handle": 5203,
+                      "buffer_size": 262144,
+                      "visibility": "compute"
+                    },
+                    {
+                      "binding": 2,
+                      "group": 0,
+                      "kind": "buffer",
+                      "buffer_type": "readonly",
+                      "resource_handle": 5205,
+                      "buffer_size": 262144,
+                      "visibility": "compute"
+                    },
+                    {
+                      "binding": 3,
+                      "group": 0,
+                      "kind": "buffer",
+                      "buffer_type": "storage",
+                      "resource_handle": 5204,
+                      "buffer_size": 262144,
+                      "visibility": "compute"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "kind": "kernel_dispatch",
+              "kernel": "stable_fluids_project.wgsl",
+              "x": 32,
+              "y": 32,
+              "z": 1,
+              "initialize_buffers_on_create": true,
+              "bindings": [
+                {
+                  "binding": 0,
+                  "group": 0,
+                  "kind": "buffer",
+                  "buffer_type": "uniform",
+                  "resource_handle": 5101,
+                  "buffer_size": 32,
+                  "visibility": "compute"
+                },
+                {
+                  "binding": 1,
+                  "group": 0,
+                  "kind": "buffer",
+                  "buffer_type": "readonly",
+                  "resource_handle": 5202,
+                  "buffer_size": 524288,
+                  "visibility": "compute"
+                },
+                {
+                  "binding": 2,
+                  "group": 0,
+                  "kind": "buffer",
+                  "buffer_type": "readonly",
+                  "resource_handle": 5204,
+                  "buffer_size": 262144,
+                  "visibility": "compute"
+                },
+                {
+                  "binding": 3,
+                  "group": 0,
+                  "kind": "buffer",
+                  "buffer_type": "storage",
+                  "resource_handle": 5201,
+                  "buffer_size": 524288,
+                  "visibility": "compute"
+                }
+              ]
+            },
+            {
+              "kind": "kernel_dispatch",
+              "kernel": "stable_fluids_advect_dye.wgsl",
+              "x": 32,
+              "y": 32,
+              "z": 1,
+              "initialize_buffers_on_create": true,
+              "bindings": [
+                {
+                  "binding": 0,
+                  "group": 0,
+                  "kind": "buffer",
+                  "buffer_type": "uniform",
+                  "resource_handle": 5101,
+                  "buffer_size": 32,
+                  "visibility": "compute"
+                },
+                {
+                  "binding": 1,
+                  "group": 0,
+                  "kind": "buffer",
+                  "buffer_type": "readonly",
+                  "resource_handle": 5206,
+                  "buffer_size": 262144,
+                  "visibility": "compute"
+                },
+                {
+                  "binding": 2,
+                  "group": 0,
+                  "kind": "buffer",
+                  "buffer_type": "readonly",
+                  "resource_handle": 5201,
+                  "buffer_size": 524288,
+                  "visibility": "compute"
+                },
+                {
+                  "binding": 3,
+                  "group": 0,
+                  "kind": "buffer",
+                  "buffer_type": "storage",
+                  "resource_handle": 5207,
+                  "buffer_size": 262144,
+                  "visibility": "compute"
+                }
+              ]
+            },
+            {
+              "kind": "kernel_dispatch",
+              "kernel": "stable_fluids_copy_scalar.wgsl",
+              "x": 32,
+              "y": 32,
+              "z": 1,
+              "initialize_buffers_on_create": true,
+              "bindings": [
+                {
+                  "binding": 0,
+                  "group": 0,
+                  "kind": "buffer",
+                  "buffer_type": "uniform",
+                  "resource_handle": 5101,
+                  "buffer_size": 32,
+                  "visibility": "compute"
+                },
+                {
+                  "binding": 1,
+                  "group": 0,
+                  "kind": "buffer",
+                  "buffer_type": "readonly",
+                  "resource_handle": 5207,
+                  "buffer_size": 262144,
+                  "visibility": "compute"
+                },
+                {
+                  "binding": 2,
+                  "group": 0,
+                  "kind": "buffer",
+                  "buffer_type": "storage",
+                  "resource_handle": 5206,
+                  "buffer_size": 262144,
+                  "visibility": "compute"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

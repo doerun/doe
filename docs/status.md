@@ -24,8 +24,9 @@ Read this file first. Use the shard files under
   runtime fence and drains them at explicit completion boundaries instead of
   forcing a wait at every submit entry, and the native compute/render runtime
   paths now also retain deferred command lists behind explicit drain points
-  instead of fence-waiting inside every hot submission. Upload/query drain work
-  still remains for follow-up.
+  instead of fence-waiting inside every hot submission. Deferred compute no
+  longer forces a pre-dispatch flush just to protect the shared dispatch-info
+  CBV path; upload/query drain work still remains for follow-up.
 - Apple Metal submit-entry serialization is now fixed for the shared-event queue
   path: `doeNativeQueueSubmit` no longer blocks every submit unless deferred CPU
   copies/resolves are pending or the shared-event fallback is unavailable. Fresh

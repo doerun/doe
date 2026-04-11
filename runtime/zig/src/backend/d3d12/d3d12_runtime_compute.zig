@@ -88,11 +88,17 @@ pub fn runDispatch(self: anytype, x: u32, y: u32, z: u32, repeat: u32, queue_syn
     if (x == 0 or y == 0 or z == 0) return error.InvalidArgument;
     if (!self.has_compute_pipeline) return error.Unsupported;
 
-    if (self.has_deferred_submissions) _ = try self.flush_queue();
-
     const run_count: u32 = if (repeat == 0) 1 else repeat;
     var compute_allocator = self.compute_allocator;
     var compute_cmd_list = self.compute_cmd_list;
+    var retained_handles: std.ArrayListUnmanaged(?*anyopaque) = .{};
+    var owns_retained_handles = true;
+    defer if (owns_retained_handles) {
+        for (retained_handles.items) |maybe_handle| {
+            if (maybe_handle) |handle| bridge.c.d3d12_bridge_release(handle);
+        }
+        retained_handles.deinit(self.allocator);
+    };
     if (queue_sync_mode != .per_command) {
         compute_allocator = bridge.c.d3d12_bridge_device_create_command_allocator(self.device) orelse return error.InvalidState;
         errdefer bridge.c.d3d12_bridge_release(compute_allocator);
@@ -107,7 +113,7 @@ pub fn runDispatch(self: anytype, x: u32, y: u32, z: u32, repeat: u32, queue_syn
 
     bridge.c.d3d12_bridge_command_list_set_compute_root_signature(compute_cmd_list, self.root_signature);
     bridge.c.d3d12_bridge_command_list_set_pipeline_state(compute_cmd_list, self.compute_pipeline);
-    try bindDispatchInfo(self, compute_cmd_list, x, y, z);
+    try bindDispatchInfo(self, compute_cmd_list, x, y, z, queue_sync_mode, &retained_handles);
 
     var i: u32 = 0;
     while (i < run_count) : (i += 1) {
@@ -127,7 +133,8 @@ pub fn runDispatch(self: anytype, x: u32, y: u32, z: u32, repeat: u32, queue_syn
         return .{ .encode_ns = encode_ns, .submit_wait_ns = submit_wait_ns, .dispatch_count = run_count };
     }
 
-    try self.trackDeferredCommandBatch(compute_allocator, compute_cmd_list);
+    try self.trackDropinSubmission(compute_allocator, compute_cmd_list, &retained_handles);
+    owns_retained_handles = false;
 
     return .{ .encode_ns = encode_ns, .submit_wait_ns = 0, .dispatch_count = run_count };
 }
@@ -224,27 +231,40 @@ fn buildComputePipeline(self: anytype, bytecode: []const u8, shader_hash: u64) !
     }
 }
 
-fn bindDispatchInfo(self: anytype, cmd_list: ?*anyopaque, x: u32, y: u32, z: u32) !void {
-    try ensureDispatchInfoCbv(self);
-    const mapped = bridge.c.d3d12_bridge_resource_map(self.dispatch_info_buffer) orelse return error.InvalidState;
-    const words: *DispatchInfoWords = @ptrCast(@alignCast(mapped));
-    words.* = .{ .x = x, .y = y, .z = z, ._pad = 0 };
-    bridge.c.d3d12_bridge_resource_unmap(self.dispatch_info_buffer);
+const TransientDispatchInfoBinding = struct {
+    buffer: ?*anyopaque,
+    heap: ?*anyopaque,
+    descriptor_index: u32,
+};
+
+fn bindDispatchInfo(
+    self: anytype,
+    cmd_list: ?*anyopaque,
+    x: u32,
+    y: u32,
+    z: u32,
+    queue_sync_mode: webgpu.QueueSyncMode,
+    retained_handles: *std.ArrayListUnmanaged(?*anyopaque),
+) !void {
+    const binding = if (queue_sync_mode == .per_command)
+        try ensureSharedDispatchInfoBinding(self, x, y, z)
+    else
+        try createTransientDispatchInfoBinding(self, x, y, z, retained_handles);
 
     bridge.c.d3d12_bridge_command_list_set_descriptor_heaps(
         cmd_list,
-        self.descriptor_state.cbv_srv_uav_heap,
+        binding.heap,
         self.descriptor_state.sampler_heap,
     );
     bridge.c.d3d12_bridge_command_list_set_compute_root_descriptor_table(
         cmd_list,
         hlsl_dispatch_contract.DISPATCH_INFO_ROOT_PARAMETER_INDEX,
-        self.descriptor_state.cbv_srv_uav_heap,
-        self.dispatch_info_cbv_index,
+        binding.heap,
+        binding.descriptor_index,
     );
 }
 
-fn ensureDispatchInfoCbv(self: anytype) !void {
+fn ensureSharedDispatchInfoBinding(self: anytype, x: u32, y: u32, z: u32) !TransientDispatchInfoBinding {
     if (self.dispatch_info_buffer == null) {
         self.dispatch_info_buffer = bridge.c.d3d12_bridge_device_create_buffer(
             self.device,
@@ -260,6 +280,54 @@ fn ensureDispatchInfoCbv(self: anytype) !void {
         );
         self.has_dispatch_info_cbv = true;
     }
+    try writeDispatchInfoWords(self.dispatch_info_buffer, x, y, z);
+    return .{
+        .buffer = self.dispatch_info_buffer,
+        .heap = self.descriptor_state.cbv_srv_uav_heap,
+        .descriptor_index = self.dispatch_info_cbv_index,
+    };
+}
+
+fn createTransientDispatchInfoBinding(
+    self: anytype,
+    x: u32,
+    y: u32,
+    z: u32,
+    retained_handles: *std.ArrayListUnmanaged(?*anyopaque),
+) !TransientDispatchInfoBinding {
+    const buffer = bridge.c.d3d12_bridge_device_create_buffer(
+        self.device,
+        @intCast(hlsl_dispatch_contract.DISPATCH_INFO_BUFFER_BYTES),
+        dc.HEAP_TYPE_UPLOAD,
+    ) orelse return error.InvalidState;
+    errdefer bridge.c.d3d12_bridge_release(buffer);
+
+    const heap = bridge.c.d3d12_bridge_device_create_cbv_srv_uav_heap(self.device, 1) orelse return error.InvalidState;
+    errdefer bridge.c.d3d12_bridge_release(heap);
+
+    try writeDispatchInfoWords(buffer, x, y, z);
+    bridge.c.d3d12_bridge_device_create_cbv(
+        self.device,
+        heap,
+        0,
+        buffer,
+        0,
+        @intCast(hlsl_dispatch_contract.DISPATCH_INFO_BUFFER_BYTES),
+    );
+    try retained_handles.append(self.allocator, buffer);
+    try retained_handles.append(self.allocator, heap);
+    return .{
+        .buffer = buffer,
+        .heap = heap,
+        .descriptor_index = 0,
+    };
+}
+
+fn writeDispatchInfoWords(buffer: ?*anyopaque, x: u32, y: u32, z: u32) !void {
+    const mapped = bridge.c.d3d12_bridge_resource_map(buffer) orelse return error.InvalidState;
+    const words: *DispatchInfoWords = @ptrCast(@alignCast(mapped));
+    words.* = .{ .x = x, .y = y, .z = z, ._pad = 0 };
+    bridge.c.d3d12_bridge_resource_unmap(buffer);
 }
 
 pub fn stripExtension(name: []const u8) []const u8 {

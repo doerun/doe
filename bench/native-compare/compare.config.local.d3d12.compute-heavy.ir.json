@@ -1,0 +1,46 @@
+{
+  "workloads": "bench/workloads/workloads.local.d3d12.json",
+  "baseline": {
+    "name": "doe",
+    "commandTemplate": "runtime/zig/zig-out/bin/doe-zig-runtime.exe --commands {commands} --quirks {quirks} --vendor {vendor} --api {api} --family {family} --driver {driver} --backend native --backend-lane d3d12_doe_comparable --execute --trace --queue-sync-mode {queue_sync_mode} --upload-buffer-usage {upload_buffer_usage} --upload-submit-every {upload_submit_every} --trace-jsonl {trace_jsonl} --trace-meta {trace_meta} {extra_args}"
+  },
+  "comparison": {
+    "name": "dawn_delegate",
+    "commandTemplate": "runtime/zig/zig-out/bin/doe-zig-runtime.exe --commands {commands} --quirks {quirks} --vendor {vendor} --api {api} --family {family} --driver {driver} --backend native --backend-lane d3d12_dawn_release --execute --trace --queue-sync-mode {queue_sync_mode} --upload-buffer-usage {upload_buffer_usage} --upload-submit-every {upload_submit_every} --trace-jsonl {trace_jsonl} --trace-meta {trace_meta} {extra_args}"
+  },
+  "run": {
+    "iterations": 16,
+    "warmup": 1,
+    "out": "bench/out/local-d3d12/compute-heavy.ir.compare.json",
+    "workspace": "bench/out/local-d3d12/compute-heavy.ir.workspace",
+    "workloadFilter": "",
+    "emitShell": false
+  },
+  "comparability": {
+    "mode": "strict",
+    "requireTimingClass": "operation",
+    "allowBaselineNoExecution": false
+  },
+  "claimability": {
+    "mode": "local",
+    "minTimedSamples": 15
+  },
+  "resource": {
+    "probe": "none",
+    "sampleMs": 100,
+    "sampleTargetCount": 0
+  },
+  "selector": {
+    "cohorts": [],
+    "benchmarkClass": [
+      "comparable"
+    ],
+    "claimEligibleOnly": false,
+    "domains": [],
+    "ids": [
+      "compute_monte_carlo_fixed_samples_131072paths_256samples_8bounces",
+      "compute_stable_fluids_multistage_256grid_18pressure_4steps"
+    ],
+    "excludeIds": []
+  }
+}
