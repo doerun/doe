@@ -599,6 +599,22 @@ function accumulateQueueSubmitBreakdown(queue, field, startedAtMs) {
     queue._submitBreakdownNs[field] += elapsedNsSince(startedAtMs);
 }
 
+function updatePassPipelineState(pass, pipelineNative) {
+    if (pass._pipeline === pipelineNative) {
+        return false;
+    }
+    pass._pipeline = pipelineNative;
+    return true;
+}
+
+function updatePassBindGroupState(pass, index, bindGroupNative) {
+    if ((pass._bindGroups[index] ?? null) === bindGroupNative) {
+        return false;
+    }
+    pass._bindGroups[index] = bindGroupNative;
+    return true;
+}
+
 function ensureSubmitPtrScratch(queue, count) {
     if (count <= 1) {
         return queue._singleSubmitPtrArray;
@@ -2072,6 +2088,7 @@ const bunEncoderBackend = {
     computePassInit(pass, native) {
         pass._native = native;
         pass._pipeline = null;
+        pass._bindGroups = [];
         pass._ended = false;
     },
     computePassAssertOpen(pass, path) {
@@ -2079,13 +2096,18 @@ const bunEncoderBackend = {
         if (pass._encoder._finished) failValidation(path, "command encoder is already finished");
     },
     computePassSetPipeline(pass, pipelineNative) {
-        pass._pipeline = pipelineNative;
+        if (!updatePassPipelineState(pass, pipelineNative)) {
+            return;
+        }
         wgpu.symbols.wgpuComputePassEncoderSetPipeline(
             assertLiveResource(pass, "GPUComputePassEncoder.setPipeline", "GPUComputePassEncoder"),
             pipelineNative,
         );
     },
     computePassSetBindGroup(pass, index, bindGroupNative) {
+        if (!updatePassBindGroupState(pass, index, bindGroupNative)) {
+            return;
+        }
         wgpu.symbols.wgpuComputePassEncoderSetBindGroup(
             assertLiveResource(pass, "GPUComputePassEncoder.setBindGroup", "GPUComputePassEncoder"),
             index,
@@ -2151,6 +2173,8 @@ const bunEncoderBackend = {
     },
     renderPassInit(pass, native) {
         pass._native = native;
+        pass._pipeline = null;
+        pass._bindGroups = [];
         pass._ended = false;
     },
     renderPassAssertOpen(pass, path) {
@@ -2158,12 +2182,18 @@ const bunEncoderBackend = {
         if (pass._encoder._finished) failValidation(path, "command encoder is already finished");
     },
     renderPassSetPipeline(pass, pipelineNative) {
+        if (!updatePassPipelineState(pass, pipelineNative)) {
+            return;
+        }
         wgpu.symbols.wgpuRenderPassEncoderSetPipeline(
             assertLiveResource(pass, "GPURenderPassEncoder.setPipeline", "GPURenderPassEncoder"),
             pipelineNative,
         );
     },
     renderPassSetBindGroup(pass, index, bindGroupNative) {
+        if (!updatePassBindGroupState(pass, index, bindGroupNative)) {
+            return;
+        }
         wgpu.symbols.wgpuRenderPassEncoderSetBindGroup(
             assertLiveResource(pass, "GPURenderPassEncoder.setBindGroup", "GPURenderPassEncoder"),
             index,
@@ -2284,15 +2314,23 @@ const bunEncoderBackend = {
     },
     renderBundleEncoderInit(encoder, native) {
         encoder._native = native;
+        encoder._pipeline = null;
+        encoder._bindGroups = [];
         encoder._finished = false;
     },
     renderBundleEncoderSetPipeline(encoder, pipelineNative) {
+        if (!updatePassPipelineState(encoder, pipelineNative)) {
+            return;
+        }
         wgpu.symbols.wgpuRenderBundleEncoderSetPipeline(
             assertLiveResource(encoder, "GPURenderBundleEncoder.setPipeline", "GPURenderBundleEncoder"),
             pipelineNative,
         );
     },
     renderBundleEncoderSetBindGroup(encoder, index, bindGroupNative) {
+        if (!updatePassBindGroupState(encoder, index, bindGroupNative)) {
+            return;
+        }
         wgpu.symbols.wgpuRenderBundleEncoderSetBindGroup(
             assertLiveResource(encoder, "GPURenderBundleEncoder.setBindGroup", "GPURenderBundleEncoder"),
             index,
@@ -2949,66 +2987,18 @@ const fullSurfaceBackend = {
             assertLiveResource(adapter, "GPUAdapter.requestDevice", "GPUAdapter"),
             descriptor,
         );
-        const device = {
-            _destroyed: false,
-            _resourceLabel: "GPUDevice",
-            _resourceOwner: null,
-            createBuffer: classes.DoeGPUDevice.prototype.createBuffer,
-            createShaderModule: classes.DoeGPUDevice.prototype.createShaderModule,
-            createComputePipeline: classes.DoeGPUDevice.prototype.createComputePipeline,
-            createComputePipelineAsync: classes.DoeGPUDevice.prototype.createComputePipelineAsync,
-            createBindGroupLayout: classes.DoeGPUDevice.prototype.createBindGroupLayout,
-            createBindGroup: classes.DoeGPUDevice.prototype.createBindGroup,
-            createPipelineLayout: classes.DoeGPUDevice.prototype.createPipelineLayout,
-            createTexture: classes.DoeGPUDevice.prototype.createTexture,
-            createSampler: classes.DoeGPUDevice.prototype.createSampler,
-            createRenderPipeline: classes.DoeGPUDevice.prototype.createRenderPipeline,
-            createRenderPipelineAsync: classes.DoeGPUDevice.prototype.createRenderPipelineAsync,
-            createRenderBundleEncoder: classes.DoeGPUDevice.prototype.createRenderBundleEncoder,
-            createQuerySet: classes.DoeGPUDevice.prototype.createQuerySet,
-            createCommandEncoder: classes.DoeGPUDevice.prototype.createCommandEncoder,
-            addEventListener: classes.DoeGPUDevice.prototype.addEventListener,
-            removeEventListener: classes.DoeGPUDevice.prototype.removeEventListener,
-            pushErrorScope: classes.DoeGPUDevice.prototype.pushErrorScope,
-            popErrorScope: classes.DoeGPUDevice.prototype.popErrorScope,
-            destroy: classes.DoeGPUDevice.prototype.destroy,
-        };
-        device._native = native;
-        device._instance = adapter._instance;
-        device._adapterInfo = adapter.info;
+        const device = new classes.DoeGPUDevice(native, adapter._instance);
+        device._adapter = adapter;
         device._lost = null;
         device._lostSupported = false;
         device._lostRegistrationAttempted = false;
         device._lostCallback = null;
         device._errorScopes = [];
-        device._eventListeners = new Map();
-        device._onuncapturederror = null;
         device._uncapturedErrorCallback = null;
-        device.limits = deviceLimits(native);
-        device.features = deviceFeatures(native);
         device.label = descriptor?.label ?? "";
-        Object.defineProperties(device, {
-            lost: Object.getOwnPropertyDescriptor(classes.DoeGPUDevice.prototype, "lost"),
-            adapterInfo: Object.getOwnPropertyDescriptor(classes.DoeGPUDevice.prototype, "adapterInfo"),
-            onuncapturederror: Object.getOwnPropertyDescriptor(classes.DoeGPUDevice.prototype, "onuncapturederror"),
-        });
-        const queue = {
-            _destroyed: false,
-            _resourceLabel: "GPUQueue",
-            _resourceOwner: device,
-            hasPendingSubmissions: classes.DoeGPUQueue.prototype.hasPendingSubmissions,
-            markSubmittedWorkDone: classes.DoeGPUQueue.prototype.markSubmittedWorkDone,
-            submit: classes.DoeGPUQueue.prototype.submit,
-            writeBuffer: classes.DoeGPUQueue.prototype.writeBuffer,
-            writeTexture: classes.DoeGPUQueue.prototype.writeTexture,
-            onSubmittedWorkDone: classes.DoeGPUQueue.prototype.onSubmittedWorkDone,
-        };
-        queue._native = this.deviceGetQueue(native);
-        queue._instance = adapter._instance;
-        queue._device = device;
-        queue.label = descriptor?.defaultQueue?.label ?? "";
-        this.initQueueState(queue);
-        device.queue = queue;
+        if (device.queue) {
+            device.queue.label = descriptor?.defaultQueue?.label ?? "";
+        }
         return device;
     },
     adapterDestroy(native) {

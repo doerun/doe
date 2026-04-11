@@ -14,6 +14,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 CLI_PATH = REPO_ROOT / "bench" / "executors" / "run-node-webgpu-plan.js"
 EXECUTOR_MODULE_URL = (REPO_ROOT / "bench" / "executors" / "node-webgpu" / "executor.js").resolve().as_uri()
+PACKAGE_INDEX_PATH = REPO_ROOT / "packages" / "doe-gpu" / "src" / "vendor" / "webgpu" / "index.js"
 
 
 def write_plan(path: Path, *, valid: bool = True) -> None:
@@ -227,6 +228,14 @@ def write_buffer_load_command_plan(path: Path) -> None:
 
 
 class NodeWebGPUExecutorTests(unittest.TestCase):
+    def test_node_package_encoder_backend_elides_duplicate_pipeline_and_bind_group_sets(self) -> None:
+        source = PACKAGE_INDEX_PATH.read_text(encoding="utf-8")
+
+        self.assertIn("function updatePassPipelineState(pass, pipelineNative)", source)
+        self.assertIn("function updatePassBindGroupState(pass, index, bindGroupNative)", source)
+        self.assertIn("if (!updatePassPipelineState(pass, pipelineNative)) {", source)
+        self.assertIn("if (!updatePassBindGroupState(pass, index, bindGroupNative)) {", source)
+
     def test_classify_bringup_unsupported_recognizes_unavailable_errors(self) -> None:
         script = f"""
 import {{ classifyBringupUnsupported }} from {json.dumps(EXECUTOR_MODULE_URL)};

@@ -13,6 +13,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 CLI_PATH = REPO_ROOT / "bench" / "executors" / "run-bun-webgpu-plan.js"
+BUN_FFI_PATH = REPO_ROOT / "packages" / "doe-gpu" / "src" / "vendor" / "webgpu" / "bun-ffi.js"
 BUN = shutil.which("bun")
 
 
@@ -119,6 +120,26 @@ def write_plan(path: Path) -> None:
 
 @unittest.skipUnless(BUN, "bun is required for Bun executor tests")
 class BunWebGPUExecutorTests(unittest.TestCase):
+    def test_bun_adapter_request_device_keeps_capability_queries_lazy(self) -> None:
+        source = BUN_FFI_PATH.read_text(encoding="utf-8")
+        start = source.index("adapterRequestDevice(adapter, _descriptor, classes) {")
+        end = source.index("\n    },\n    adapterDestroy(native) {", start)
+        block = source[start:end]
+
+        self.assertIn("const device = new classes.DoeGPUDevice(native, adapter._instance);", block)
+        self.assertIn("device._adapter = adapter;", block)
+        self.assertNotIn("device.limits = deviceLimits(native);", block)
+        self.assertNotIn("device.features = deviceFeatures(native);", block)
+        self.assertNotIn("device._adapterInfo = adapter.info;", block)
+
+    def test_bun_encoder_backend_elides_duplicate_pipeline_and_bind_group_sets(self) -> None:
+        source = BUN_FFI_PATH.read_text(encoding="utf-8")
+
+        self.assertIn("function updatePassPipelineState(pass, pipelineNative)", source)
+        self.assertIn("function updatePassBindGroupState(pass, index, bindGroupNative)", source)
+        self.assertIn("if (!updatePassPipelineState(pass, pipelineNative)) {", source)
+        self.assertIn("if (!updatePassBindGroupState(pass, index, bindGroupNative)) {", source)
+
     def test_dry_run_emits_bun_webgpu_metadata(self) -> None:
         with tempfile.TemporaryDirectory(prefix="doe-bun-webgpu-executor-") as tmpdir:
             tmp = Path(tmpdir)

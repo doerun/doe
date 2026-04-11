@@ -9,16 +9,22 @@ const PipelineCacheKey = pipeline_cache.PipelineCacheKey;
 const TranslationInfo = wgsl_runtime_compile.TranslationInfo;
 
 const CACHE_MAGIC: u32 = 0xD0E5_CACE;
-const CACHE_VERSION: u32 = 1;
+const CACHE_VERSION: u32 = 2;
 const FLAG_NEEDS_SIZES_BUF: u32 = 1 << 0;
 const FLAG_BOUNDS_ELISION: u32 = 1 << 1;
 const FLAG_TEXTURE_BOUNDS_ELISION: u32 = 1 << 2;
 const DEFAULT_CACHE_DIR_SUFFIX = "doe/shader_translation_cache";
 
+const PayloadKind = enum(u32) {
+    msl = 1,
+    spirv = 2,
+};
+
 const Header = extern struct {
     magic: u32,
     version: u32,
     flags: u32,
+    payload_kind: u32,
     workgroup_x: u32,
     workgroup_y: u32,
     workgroup_z: u32,
@@ -26,7 +32,7 @@ const Header = extern struct {
     texture_dispatch_count: u32,
     dispatch_stride: u32,
     texture_dispatch_stride: u32,
-    msl_len: u32,
+    payload_len: u32,
 };
 
 pub const CachedTranslation = struct {
@@ -40,6 +46,28 @@ pub const CachedTranslation = struct {
     }
 };
 
+pub const CachedSpirvTranslation = struct {
+    spirv: []u8,
+    info: TranslationInfo,
+
+    pub fn deinit(self: *CachedSpirvTranslation, allocator: std.mem.Allocator) void {
+        allocator.free(self.spirv);
+        self.info.deinit(allocator);
+        self.* = undefined;
+    }
+};
+
+const CachedPayload = struct {
+    payload: []u8,
+    info: TranslationInfo,
+
+    pub fn deinit(self: *CachedPayload, allocator: std.mem.Allocator) void {
+        allocator.free(self.payload);
+        self.info.deinit(allocator);
+        self.* = undefined;
+    }
+};
+
 var global_cache: ?*PipelineCache = null;
 var init_attempted: bool = false;
 
@@ -47,9 +75,11 @@ pub fn lookupComputeTranslation(
     allocator: std.mem.Allocator,
     wgsl_source: []const u8,
 ) ?CachedTranslation {
-    const cache = ensureGlobalCache() orelse return null;
-    const payload = cache.lookup(&buildComputeKey(wgsl_source)) orelse return null;
-    return decodePayload(allocator, payload);
+    const cached = lookupComputePayload(allocator, wgsl_source, .msl) orelse return null;
+    return .{
+        .msl = cached.payload,
+        .info = cached.info,
+    };
 }
 
 pub fn storeComputeTranslation(
@@ -58,8 +88,48 @@ pub fn storeComputeTranslation(
     msl_source: []const u8,
     info: *const TranslationInfo,
 ) void {
+    storeComputePayload(allocator, wgsl_source, msl_source, info, .msl);
+}
+
+pub fn lookupComputeSpirvTranslation(
+    allocator: std.mem.Allocator,
+    wgsl_source: []const u8,
+) ?CachedSpirvTranslation {
+    const cached = lookupComputePayload(allocator, wgsl_source, .spirv) orelse return null;
+    return .{
+        .spirv = cached.payload,
+        .info = cached.info,
+    };
+}
+
+pub fn storeComputeSpirvTranslation(
+    allocator: std.mem.Allocator,
+    wgsl_source: []const u8,
+    spirv_bytes: []const u8,
+    info: *const TranslationInfo,
+) void {
+    storeComputePayload(allocator, wgsl_source, spirv_bytes, info, .spirv);
+}
+
+fn lookupComputePayload(
+    allocator: std.mem.Allocator,
+    wgsl_source: []const u8,
+    expected_kind: PayloadKind,
+) ?CachedPayload {
+    const cache = ensureGlobalCache() orelse return null;
+    const payload = cache.lookup(&buildComputeKey(wgsl_source)) orelse return null;
+    return decodePayload(allocator, payload, expected_kind);
+}
+
+fn storeComputePayload(
+    allocator: std.mem.Allocator,
+    wgsl_source: []const u8,
+    payload_source: []const u8,
+    info: *const TranslationInfo,
+    payload_kind: PayloadKind,
+) void {
     const cache = ensureGlobalCache() orelse return;
-    const payload = encodePayload(allocator, msl_source, info) catch return;
+    const payload = encodePayload(allocator, payload_source, info, payload_kind) catch return;
     defer allocator.free(payload);
     cache.store(&buildComputeKey(wgsl_source), payload);
 }
@@ -111,14 +181,15 @@ fn compilerModeFlags() u32 {
 
 fn encodePayload(
     allocator: std.mem.Allocator,
-    msl_source: []const u8,
+    payload_source: []const u8,
     info: *const TranslationInfo,
+    payload_kind: PayloadKind,
 ) ![]u8 {
     const dispatch_bytes_len = info.dispatch_preconditions.len * @sizeOf(ir.DispatchPrecondition);
     const texture_bytes_len = info.texture_dispatch_preconditions.len * @sizeOf(ir.TextureDispatchPrecondition);
     const total_len =
         @sizeOf(Header) +
-        msl_source.len +
+        payload_source.len +
         dispatch_bytes_len +
         texture_bytes_len;
     const payload = try allocator.alloc(u8, total_len);
@@ -127,6 +198,7 @@ fn encodePayload(
         .magic = CACHE_MAGIC,
         .version = CACHE_VERSION,
         .flags = currentFlags(info),
+        .payload_kind = @intFromEnum(payload_kind),
         .workgroup_x = info.workgroup_size[0],
         .workgroup_y = info.workgroup_size[1],
         .workgroup_z = info.workgroup_size[2],
@@ -134,10 +206,10 @@ fn encodePayload(
         .texture_dispatch_count = @intCast(info.texture_dispatch_preconditions.len),
         .dispatch_stride = @sizeOf(ir.DispatchPrecondition),
         .texture_dispatch_stride = @sizeOf(ir.TextureDispatchPrecondition),
-        .msl_len = @intCast(msl_source.len),
+        .payload_len = @intCast(payload_source.len),
     };
     writeBytes(payload, &offset, std.mem.asBytes(&header));
-    writeBytes(payload, &offset, msl_source);
+    writeBytes(payload, &offset, payload_source);
     writeStructSlice(ir.DispatchPrecondition, payload, &offset, info.dispatch_preconditions);
     writeStructSlice(ir.TextureDispatchPrecondition, payload, &offset, info.texture_dispatch_preconditions);
     return payload;
@@ -146,25 +218,27 @@ fn encodePayload(
 fn decodePayload(
     allocator: std.mem.Allocator,
     payload: []const u8,
-) ?CachedTranslation {
+    expected_kind: PayloadKind,
+) ?CachedPayload {
     if (payload.len < @sizeOf(Header)) return null;
     var offset: usize = 0;
     const header = readHeader(payload, &offset) orelse return null;
     if (header.magic != CACHE_MAGIC or header.version != CACHE_VERSION) return null;
+    if (header.payload_kind != @intFromEnum(expected_kind)) return null;
     if (header.flags & ~FLAG_NEEDS_SIZES_BUF != compilerModeFlags()) return null;
 
-    const msl_len: usize = @intCast(header.msl_len);
+    const payload_len: usize = @intCast(header.payload_len);
     const dispatch_count: usize = @intCast(header.dispatch_count);
     const texture_dispatch_count: usize = @intCast(header.texture_dispatch_count);
     if (header.dispatch_stride != @sizeOf(ir.DispatchPrecondition)) return null;
     if (header.texture_dispatch_stride != @sizeOf(ir.TextureDispatchPrecondition)) return null;
     const dispatch_bytes_len = dispatch_count * @sizeOf(ir.DispatchPrecondition);
     const texture_bytes_len = texture_dispatch_count * @sizeOf(ir.TextureDispatchPrecondition);
-    if (offset + msl_len + dispatch_bytes_len + texture_bytes_len != payload.len) return null;
+    if (offset + payload_len + dispatch_bytes_len + texture_bytes_len != payload.len) return null;
 
-    const msl_source = allocator.dupe(u8, payload[offset .. offset + msl_len]) catch return null;
-    offset += msl_len;
-    errdefer allocator.free(msl_source);
+    const payload_copy = allocator.dupe(u8, payload[offset .. offset + payload_len]) catch return null;
+    offset += payload_len;
+    errdefer allocator.free(payload_copy);
 
     const dispatch_preconditions = duplicateStructSlice(
         allocator,
@@ -183,7 +257,7 @@ fn decodePayload(
     ) orelse return null;
 
     return .{
-        .msl = msl_source,
+        .payload = payload_copy,
         .info = .{
             .workgroup_size = .{ header.workgroup_x, header.workgroup_y, header.workgroup_z },
             .needs_sizes_buf = (header.flags & FLAG_NEEDS_SIZES_BUF) != 0,
@@ -245,15 +319,36 @@ test "shader translation cache payload roundtrips" {
         .dispatch_preconditions = dispatch[0..],
         .texture_dispatch_preconditions = texture[0..],
     };
-    const payload = try encodePayload(std.testing.allocator, "kernel msl", &info);
+    const payload = try encodePayload(std.testing.allocator, "kernel msl", &info, .msl);
     defer std.testing.allocator.free(payload);
 
-    var decoded = decodePayload(std.testing.allocator, payload) orelse return error.TestExpectedEqual;
+    var decoded = decodePayload(std.testing.allocator, payload, .msl) orelse return error.TestExpectedEqual;
     defer decoded.deinit(std.testing.allocator);
 
-    try std.testing.expectEqualStrings("kernel msl", decoded.msl);
+    try std.testing.expectEqualStrings("kernel msl", decoded.payload);
     try std.testing.expect(decoded.info.needs_sizes_buf);
     try std.testing.expectEqual(@as(u32, 8), decoded.info.workgroup_size[0]);
     try std.testing.expectEqual(@as(usize, 1), decoded.info.dispatch_preconditions.len);
     try std.testing.expectEqual(@as(usize, 1), decoded.info.texture_dispatch_preconditions.len);
+}
+
+test "shader translation cache spirv payload roundtrips" {
+    const spirv_bytes = [_]u8{
+        0x03, 0x02, 0x23, 0x07,
+        0x00, 0x00, 0x01, 0x00,
+    };
+    const info = TranslationInfo{
+        .workgroup_size = .{ 16, 1, 1 },
+        .needs_sizes_buf = false,
+    };
+    const payload = try encodePayload(std.testing.allocator, &spirv_bytes, &info, .spirv);
+    defer std.testing.allocator.free(payload);
+
+    var decoded = decodePayload(std.testing.allocator, payload, .spirv) orelse return error.TestExpectedEqual;
+    defer decoded.deinit(std.testing.allocator);
+
+    try std.testing.expectEqualSlices(u8, &spirv_bytes, decoded.payload);
+    try std.testing.expectEqual(@as(u32, 16), decoded.info.workgroup_size[0]);
+    try std.testing.expectEqual(@as(usize, 0), decoded.info.dispatch_preconditions.len);
+    try std.testing.expectEqual(@as(usize, 0), decoded.info.texture_dispatch_preconditions.len);
 }

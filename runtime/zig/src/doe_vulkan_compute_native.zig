@@ -8,6 +8,7 @@ const has_vulkan = (builtin.os.tag == .linux);
 const std = @import("std");
 const doe_wgsl = @import("doe_wgsl/mod.zig");
 const runtime_compile = @import("doe_wgsl/runtime_compile.zig");
+const shader_translation_cache = @import("doe_shader_translation_cache.zig");
 const native_types = @import("doe_native_object_types.zig");
 const native_shared = @import("doe_native_shared_types.zig");
 const native_helpers = @import("doe_native_object_helpers.zig");
@@ -69,6 +70,15 @@ pub fn vulkan_create_shader_module(
     shader: *DoeShaderModule,
     wgsl: []const u8,
 ) error{ OutOfMemory, ShaderCompileFailed }!void {
+    var cached_translation = shader_translation_cache.lookupComputeSpirvTranslation(alloc, wgsl);
+    defer if (cached_translation) |*cached| cached.deinit(alloc);
+
+    if (cached_translation) |*cached| {
+        moveTranslationInfoToShader(shader, &cached.info);
+        try assignSpirvWords(shader, cached.spirv);
+        return;
+    }
+
     var spirv_buf = alloc.alloc(u8, doe_wgsl.MAX_SPIRV_OUTPUT) catch return error.OutOfMemory;
     defer alloc.free(spirv_buf);
 
@@ -77,32 +87,20 @@ pub fn vulkan_create_shader_module(
         return error.ShaderCompileFailed;
     };
     errdefer translation.info.deinit(alloc);
-    shader.needs_sizes_buf = translation.info.needs_sizes_buf;
-    shader.dispatch_preconditions = translation.info.dispatch_preconditions;
-    shader.texture_dispatch_preconditions = translation.info.texture_dispatch_preconditions;
-    translation.info.dispatch_preconditions = &.{};
-    translation.info.texture_dispatch_preconditions = &.{};
-    shader.wg_x = translation.info.workgroup_size[0];
-    shader.wg_y = translation.info.workgroup_size[1];
-    shader.wg_z = translation.info.workgroup_size[2];
 
     if (translation.len == 0 or (translation.len % 4) != 0) {
         std.log.err("doe_vulkan_compute: SPIR-V output length invalid: {}", .{translation.len});
         return error.ShaderCompileFailed;
     }
 
-    const word_count = translation.len / 4;
-    const words = alloc.alloc(u32, word_count) catch return error.OutOfMemory;
-    errdefer alloc.free(words);
-
-    // Reinterpret byte buffer as u32 words (SPIR-V is little-endian u32 stream).
-    for (words, 0..) |*w, i| {
-        const offset = i * 4;
-        const chunk: *const [4]u8 = @ptrCast(spirv_buf[offset .. offset + 4].ptr);
-        w.* = std.mem.readInt(u32, chunk, .little);
-    }
-
-    shader.spirv_data = words;
+    shader_translation_cache.storeComputeSpirvTranslation(
+        alloc,
+        wgsl,
+        spirv_buf[0..translation.len],
+        &translation.info,
+    );
+    moveTranslationInfoToShader(shader, &translation.info);
+    try assignSpirvWords(shader, spirv_buf[0..translation.len]);
 }
 
 // ============================================================
@@ -267,4 +265,36 @@ fn resolve_indirect_dims(
     if (offset + DISPATCH_STRUCT_SIZE > cb.size) return NULL_DIMS;
     const dims_ptr: *const [3]u32 = @ptrCast(@alignCast(base + offset));
     return dims_ptr.*;
+}
+
+fn moveTranslationInfoToShader(
+    shader: *DoeShaderModule,
+    info: *runtime_compile.TranslationInfo,
+) void {
+    shader.needs_sizes_buf = info.needs_sizes_buf;
+    shader.dispatch_preconditions = info.dispatch_preconditions;
+    shader.texture_dispatch_preconditions = info.texture_dispatch_preconditions;
+    shader.wg_x = info.workgroup_size[0];
+    shader.wg_y = info.workgroup_size[1];
+    shader.wg_z = info.workgroup_size[2];
+    info.dispatch_preconditions = &.{};
+    info.texture_dispatch_preconditions = &.{};
+}
+
+fn assignSpirvWords(
+    shader: *DoeShaderModule,
+    spirv_bytes: []const u8,
+) error{ OutOfMemory, ShaderCompileFailed }!void {
+    if (spirv_bytes.len == 0 or (spirv_bytes.len % 4) != 0) {
+        return error.ShaderCompileFailed;
+    }
+    const word_count = spirv_bytes.len / 4;
+    const words = alloc.alloc(u32, word_count) catch return error.OutOfMemory;
+    errdefer alloc.free(words);
+    for (words, 0..) |*word, index| {
+        const offset = index * 4;
+        const chunk: *const [4]u8 = @ptrCast(spirv_bytes[offset .. offset + 4].ptr);
+        word.* = std.mem.readInt(u32, chunk, .little);
+    }
+    shader.spirv_data = words;
 }

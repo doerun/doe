@@ -705,12 +705,28 @@ function accumulateQueueFlushBreakdown(queue, flushBreakdown) {
   queue._submitBreakdownNs.submitQueueFlushDeferredResolveTotalNs += Number(flushBreakdown.deferredResolveNs ?? 0);
 }
 
+function updatePassPipelineState(pass, pipelineNative) {
+  if (pass._pipeline === pipelineNative) {
+    return false;
+  }
+  pass._pipeline = pipelineNative;
+  return true;
+}
+
+function updatePassBindGroupState(pass, index, bindGroupNative) {
+  if ((pass._bindGroups[index] ?? null) === bindGroupNative) {
+    return false;
+  }
+  pass._bindGroups[index] = bindGroupNative;
+  return true;
+}
+
 const nodeEncoderBackend = {
   computePassInit(pass, native) {
+    pass._pipeline = null;
+    pass._bindGroups = [];
     if (native === null) {
       pass._native = null;
-      pass._pipeline = null;
-      pass._bindGroups = [];
       pass._lazy = true;
     } else {
       pass._native = native;
@@ -728,8 +744,10 @@ const nodeEncoderBackend = {
     }
   },
   computePassSetPipeline(pass, pipelineNative) {
+    if (!updatePassPipelineState(pass, pipelineNative)) {
+      return;
+    }
     if (pass._lazy) {
-      pass._pipeline = pipelineNative;
       return;
     }
     addon.computePassSetPipeline(
@@ -738,8 +756,10 @@ const nodeEncoderBackend = {
     );
   },
   computePassSetBindGroup(pass, index, bindGroupNative) {
+    if (!updatePassBindGroupState(pass, index, bindGroupNative)) {
+      return;
+    }
     if (pass._lazy) {
-      pass._bindGroups[index] = bindGroupNative;
       return;
     }
     addon.computePassSetBindGroup(
@@ -818,6 +838,8 @@ const nodeEncoderBackend = {
   },
   renderPassInit(pass, native) {
     pass._native = native;
+    pass._pipeline = null;
+    pass._bindGroups = [];
     pass._ended = false;
   },
   renderPassAssertOpen(pass, path) {
@@ -829,12 +851,18 @@ const nodeEncoderBackend = {
     }
   },
   renderPassSetPipeline(pass, pipelineNative) {
+    if (!updatePassPipelineState(pass, pipelineNative)) {
+      return;
+    }
     addon.renderPassSetPipeline(
       assertLiveResource(pass, 'GPURenderPassEncoder.setPipeline', 'GPURenderPassEncoder'),
       pipelineNative,
     );
   },
   renderPassSetBindGroup(pass, index, bindGroupNative) {
+    if (!updatePassBindGroupState(pass, index, bindGroupNative)) {
+      return;
+    }
     addon.renderPassSetBindGroup(
       assertLiveResource(pass, 'GPURenderPassEncoder.setBindGroup', 'GPURenderPassEncoder'),
       index,
@@ -947,12 +975,20 @@ const nodeEncoderBackend = {
   },
   renderBundleEncoderInit(enc, state) {
     enc._native = state;
+    enc._pipeline = null;
+    enc._bindGroups = [];
     enc._ended = false;
   },
   renderBundleEncoderSetPipeline(enc, pipelineNative) {
+    if (!updatePassPipelineState(enc, pipelineNative)) {
+      return;
+    }
     addon.renderBundleEncoderSetPipeline(enc._native, pipelineNative);
   },
   renderBundleEncoderSetBindGroup(enc, index, bindGroupNative) {
+    if (!updatePassBindGroupState(enc, index, bindGroupNative)) {
+      return;
+    }
     addon.renderBundleEncoderSetBindGroup(enc._native, index, bindGroupNative);
   },
   renderBundleEncoderSetImmediates(enc, index, data) {
