@@ -59,7 +59,7 @@ python3 bench/cli.py claim \
 python3 bench/cli.py compare --list-promoted
 python3 bench/cli.py compare --surface backend --backend apple-metal --preset compare
 python3 bench/cli.py compare --surface plan --backend apple-metal --workload gemma270m-literal
-python3 bench/cli.py compare --surface package --backend apple-metal --workload gemma64 --mode warm
+python3 bench/cli.py compare --surface package --backend apple-metal --workload gemma64 --runtime-host node --temperature warm
 python3 bench/runners/publish_apple_runtime_release.py --timestamp <YYYYMMDDTHHMMSSZ>
 python3 bench/runners/exercise_runtime_numeric_stability.py
 python3 bench/runners/exercise_in_path_numeric_stability.py
@@ -68,6 +68,29 @@ python3 bench/runners/exercise_in_path_numeric_stability.py
 Generated workload manifests now carry explicit ownership plus advisory
 freshness metadata in the run receipt. Freshness no longer rejects `run` or
 `compare`; standalone manifests are never checked against the backend catalog.
+
+## First benchmark matrix
+
+If you are starting from zero, use this matrix instead of inferring coverage
+from scattered configs:
+
+| Goal | Current status | Canonical entrypoint |
+|---|---|---|
+| Apple Metal native Doe vs Dawn | promoted | `python3 bench/cli.py compare --surface backend --backend apple-metal --preset compare` |
+| AMD Vulkan native Doe vs Dawn | promoted | `python3 bench/cli.py compare --surface backend --backend amd-vulkan --preset compare` |
+| Local D3D12 native Doe vs Dawn | promoted contract, Windows host required | `python3 bench/cli.py compare --surface backend --backend local-d3d12 --preset compare` |
+| Apple Metal plan Doe vs Dawn direct WebGPU | promoted | `python3 bench/cli.py compare --surface plan --backend apple-metal --workload gemma64` |
+| Apple Metal package Doe vs `node-webgpu` | promoted | `python3 bench/cli.py compare --surface package --backend apple-metal --workload gemma64 --runtime-host node --temperature warm` |
+| Apple Metal package Doe vs `bun-webgpu` | promoted | `python3 bench/cli.py compare --surface package --backend apple-metal --workload gemma64 --runtime-host bun --temperature warm` |
+| AMD Vulkan package Doe vs Node/Bun packages | config-backed, not promoted | `python3 bench/cli.py compare --config bench/native-compare/compare.config.amd.vulkan.gemma270m.node-package.ir.json` and `python3 bench/cli.py compare --config bench/native-compare/compare.config.amd.vulkan.gemma270m.bun-package.ir.json` |
+| Local D3D12 package Doe vs Node/Bun packages | not front-doored today | do not assume a supported matrix; add an explicit config/contract first |
+
+Two rules for first-time operators:
+
+- Start with `python3 bench/cli.py compare --list-promoted` when you want the
+  currently promoted matrix.
+- Do not infer that every taxonomy tuple is runnable or promoted. The backend
+  matrix is broader than the current plan/package matrix.
 
 ## Numeric-stability promotion and runtime exercise
 
@@ -275,6 +298,12 @@ Package-surface configs now exist alongside the plan-surface configs:
 - `bench/native-compare/compare.config.apple.metal.gemma64.bun-package.warm.ir.json`
 - `bench/native-compare/compare.config.apple.metal.gemma1b.bun-package.warm.ir.json`
 
+AMD Vulkan package compare configs also exist, but they are explicit
+config-backed lanes rather than promoted `--surface package` profiles:
+
+- `bench/native-compare/compare.config.amd.vulkan.gemma270m.node-package.ir.json`
+- `bench/native-compare/compare.config.amd.vulkan.gemma270m.bun-package.ir.json`
+
 These compare public package providers over the same normalized plan:
 
 - Node package workloads
@@ -328,19 +357,25 @@ And the front door is:
 - `python3 bench/cli.py compare --surface plan --backend apple-metal --workload gemma64`
 - `python3 bench/cli.py compare --surface plan --backend apple-metal --workload gemma1b`
 - `python3 bench/cli.py compare --surface plan --backend apple-metal --workload gemma270m-literal`
-- `python3 bench/cli.py compare --surface package --backend apple-metal --workload gemma64`
-- `python3 bench/cli.py compare --surface package --backend apple-metal --workload gemma64 --mode warm`
-- `python3 bench/cli.py compare --surface package --backend apple-metal --workload gemma64 --package-runtime bun`
-- `python3 bench/cli.py compare --surface package --backend apple-metal --workload gemma64 --mode warm --package-runtime bun`
+- `python3 bench/cli.py compare --surface package --backend apple-metal --workload gemma64 --runtime-host node --temperature cold`
+- `python3 bench/cli.py compare --surface package --backend apple-metal --workload gemma64 --runtime-host node --temperature warm`
+- `python3 bench/cli.py compare --surface package --backend apple-metal --workload gemma64 --runtime-host bun --temperature cold`
+- `python3 bench/cli.py compare --surface package --backend apple-metal --workload gemma64 --runtime-host bun --temperature warm`
+- `python3 bench/cli.py compare --config bench/native-compare/compare.config.amd.vulkan.gemma270m.node-package.ir.json`
+- `python3 bench/cli.py compare --config bench/native-compare/compare.config.amd.vulkan.gemma270m.bun-package.ir.json`
 
 The promoted matrix is explicit in config:
 
 - `surface=backend`
   - backend command/delegate preset configs on Metal, Vulkan, and D3D12
 - `surface=plan`
-  - standalone Doe-plan vs standalone Dawn-plan compare workloads
+  - promoted on Apple Metal only (`gemma64`, `gemma1b`, `gemma270m-literal`)
 - `surface=package`
-  - package compare workloads for `packageRuntime=node` or `packageRuntime=bun`, with `mode=cold` or `mode=warm`
+  - promoted on Apple Metal only, for `runtimeHost=node` or `runtimeHost=bun`,
+    with `temperature=cold` or `temperature=warm`
+  - AMD Vulkan package compares exist as explicit config-backed lanes, not
+    promoted surface profiles
+  - local D3D12 does not currently expose a front-doored package compare matrix
 
 The canonical axis vocabulary underneath those front doors is defined in
 `config/compare-taxonomy.json`. The generated expansion in

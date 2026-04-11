@@ -256,6 +256,26 @@ editing code in that surface:
   across all workloads while the other side reports material values, flag as instrumentation gap
   and classify all affected workloads as diagnostic until audited.
 
+## Benchmark front doors
+
+- first-time benchmark execution instructions live in `bench/README.md` under
+  `First benchmark matrix`; use that matrix instead of inferring support from
+  scattered config filenames
+- prefer `python3 bench/cli.py compare` with promoted profiles when available;
+  verify the current promoted matrix with `python3 bench/cli.py compare --list-promoted`
+- current front-doored coverage is narrower than the full taxonomy:
+  - backend native Doe-vs-Dawn is front-doored on `apple-metal`,
+    `amd-vulkan`, and `local-d3d12`
+  - plan compare is currently front-doored on `apple-metal` only
+  - package compare is currently front-doored on `apple-metal` only, for
+    Node/Bun cold and warm package lanes
+  - AMD Vulkan Node/Bun package compares exist as explicit config-backed files,
+    not promoted `--surface package` profiles
+  - local D3D12 does not currently have a front-doored Node/Bun package compare matrix
+- do not assume every `platform x surface x runtimeHost` tuple named in the
+  taxonomy is promoted or evidenced; check the promoted list or an explicit
+  compare config path before benchmarking
+
 ## Completion checklist
 
 For each change set, verify:
