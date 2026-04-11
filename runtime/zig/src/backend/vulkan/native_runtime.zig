@@ -67,6 +67,7 @@ pub const NativeVulkanRuntime = struct {
     pipeline_layout: c.VkPipelineLayout = VK_NULL_U64,
     pipeline: c.VkPipeline = VK_NULL_U64,
     descriptor_pool: c.VkDescriptorPool = VK_NULL_U64,
+    kernel_spirv_cache: std.StringHashMapUnmanaged([]u32) = .{},
     descriptor_set_layouts: [c.MAX_DESCRIPTOR_SETS]c.VkDescriptorSetLayout = [_]c.VkDescriptorSetLayout{VK_NULL_U64} ** c.MAX_DESCRIPTOR_SETS,
     descriptor_sets: [c.MAX_DESCRIPTOR_SETS]c.VkDescriptorSet = [_]c.VkDescriptorSet{VK_NULL_U64} ** c.MAX_DESCRIPTOR_SETS,
     descriptor_set_count: u32 = 0,
@@ -116,6 +117,8 @@ pub const NativeVulkanRuntime = struct {
     has_depth_clip_enable_ext: bool = false,
     recorded_submit_replay_active: bool = false,
     upload_recording_active: bool = false,
+    deferred_command_buffers: std.ArrayListUnmanaged(c.VkCommandBuffer) = .{},
+    deferred_command_buffer_index: usize = 0,
 
     pub fn init(allocator: std.mem.Allocator, kernel_root: ?[]const u8) !NativeVulkanRuntime {
         var self = NativeVulkanRuntime{ .allocator = allocator, .kernel_root = kernel_root };
@@ -131,6 +134,8 @@ pub const NativeVulkanRuntime = struct {
         self.pending_uploads.deinit(self.allocator);
         self.retired_pipeline_states.deinit(self.allocator);
         self.retired_descriptor_states.deinit(self.allocator);
+        vk_pipeline.release_kernel_spirv_cache(self);
+        self.deferred_command_buffers.deinit(self.allocator);
         surface_ops.release_all_surfaces(self);
         vk_upload.release_pool_entry(self.device, self.hot_src_pool_entry);
         vk_upload.release_pool_entry(self.device, self.hot_dst_pool_entry);
@@ -195,6 +200,10 @@ pub const NativeVulkanRuntime = struct {
 
     pub fn load_kernel_spirv(self: *const NativeVulkanRuntime, allocator: std.mem.Allocator, kernel_name: []const u8) ![]u32 {
         return vk_pipeline.load_kernel_spirv(self, allocator, kernel_name);
+    }
+
+    pub fn load_kernel_spirv_cached(self: *NativeVulkanRuntime, kernel_name: []const u8) ![]const u32 {
+        return vk_pipeline.load_kernel_spirv_cached(self, kernel_name);
     }
 
     pub fn set_compute_shader_spirv(

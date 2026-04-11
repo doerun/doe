@@ -125,8 +125,7 @@ canvas {
       <div class="eyebrow">Heavy WebGPU Demo</div>
       <h1>Particle Storm</h1>
       <div class="subtle">
-        This page is modeled on the load shape in Party’s heavier playground demos: many particles, repeated simulation work, and persistent rendering.
-        It is not the Party engine, but it does the same broad kind of work inside one static file-backed page.
+        Heavy particle simulation with persistent GPU trails.
       </div>
     </div>
     <div class="actions">
@@ -145,10 +144,18 @@ canvas {
           <option value="2">2</option>
           <option value="4" selected>4</option>
           <option value="6">6</option>
+          <option value="8">8</option>
         </select>
       </label>
       <button id="restart">Restart</button>
       <a class="back" href="./fawn-start.html">Back to welcome</a>
+    </div>
+  </div>
+
+  <div class="stage">
+    <canvas id="view"></canvas>
+    <div class="note">
+      Move the pointer to perturb the field. Hold down to add a stronger pulse. Trails and additive instancing keep the render path busy even when the simulation settles.
     </div>
   </div>
 
@@ -168,13 +175,6 @@ canvas {
     <div class="panel">
       <div class="label">Workload</div>
       <div class="value" id="workload">--</div>
-    </div>
-  </div>
-
-  <div class="stage">
-    <canvas id="view"></canvas>
-    <div class="note">
-      Move the pointer to perturb the field. Hold down to add a stronger pulse. Trails and additive instancing keep the render path busy even when the simulation settles.
     </div>
   </div>
 </main>
@@ -219,11 +219,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let pos = p.pos;
   let vel = p.vel;
   let t = u.time * 0.35 + f32(i) * 0.000021;
+  let phase = fract(f32(i) * 0.6180339);
+  let phase2 = fract(f32(i) * 0.3819660);
 
   var field = vec2<f32>(
     sin(pos.y * 8.7 + t * 3.1) + cos(pos.x * 12.3 - t * 1.9),
     cos(pos.x * 9.4 - t * 2.7) - sin(pos.y * 13.1 + t * 1.3)
   ) * 0.085;
+
+  field += vec2<f32>(
+    sin((pos.x + pos.y) * 7.0 - t * 2.2 + phase * 6.28318),
+    cos((pos.x - pos.y) * 6.3 + t * 1.8 + phase2 * 6.28318)
+  ) * 0.055;
 
   let tangent = safeNormalize(vec2<f32>(-pos.y, pos.x));
   let radius = length(pos / vec2<f32>(u.aspect, 1.0));
@@ -236,14 +243,29 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   field += safeNormalize(vec2<f32>(-offA.y, offA.x)) * (0.018 / max(dot(offA, offA), 0.025));
   field -= safeNormalize(vec2<f32>(-offB.y, offB.x)) * (0.020 / max(dot(offB, offB), 0.032));
 
-  let mouseDelta = pos - u.mouse;
-  field += safeNormalize(mouseDelta) * (u.mouseForce / max(dot(mouseDelta, mouseDelta), 0.020)) * 0.0012;
-  field += -pos * 0.022;
+  let attractorA = vec2<f32>(sin(t * 1.3 + phase * 9.0) * u.aspect * 0.62, cos(t * 1.1 + phase2 * 7.0) * 0.62);
+  let attractorB = vec2<f32>(cos(t * 0.9 + phase * 5.0 + 1.7) * u.aspect * 0.40, sin(t * 1.4 + phase2 * 6.0 + 2.1) * 0.40);
+  let repeller = vec2<f32>(sin(t * 1.8 + phase * 4.0) * u.aspect * 0.24, cos(t * 1.6 + phase2 * 5.0) * 0.24);
+  let pullA = attractorA - pos;
+  let pullB = attractorB - pos;
+  let push = pos - repeller;
+  field += safeNormalize(pullA) * (0.016 / max(dot(pullA, pullA), 0.030));
+  field += safeNormalize(pullB) * (0.012 / max(dot(pullB, pullB), 0.018));
+  field += safeNormalize(push) * (0.020 / max(dot(push, push), 0.016));
 
-  var nextVel = vel * 0.985 + field * (u.dt * 60.0);
+  let ringRadius = 0.18 + 0.30 * (0.5 + 0.5 * sin(t * 2.4 + phase * 6.28318));
+  let ringBand = smoothstep(0.090, 0.0, abs(radius - ringRadius));
+  field += safeNormalize(pos + vec2<f32>(0.0001, 0.0)) * ringBand * (0.030 + phase * 0.020);
+
+  let mouseDelta = pos - u.mouse;
+  field += safeNormalize(mouseDelta) * (u.mouseForce / max(dot(mouseDelta, mouseDelta), 0.020)) * 0.0015;
+  field += safeNormalize(vec2<f32>(-mouseDelta.y, mouseDelta.x)) * (u.mouseForce / max(dot(mouseDelta, mouseDelta), 0.030)) * 0.0007;
+  field += -pos * 0.016;
+
+  var nextVel = vel * 0.982 + field * (u.dt * 60.0);
   let speed = length(nextVel);
-  if (speed > 1.4) {
-    nextVel = nextVel * (1.4 / speed);
+  if (speed > 1.75) {
+    nextVel = nextVel * (1.75 / speed);
   }
 
   var nextPos = pos + nextVel * u.dt;
@@ -259,7 +281,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   p.pos = nextPos;
   p.vel = nextVel;
-  p.color.w = clamp(0.0035 + speed * 0.0045, 0.0035, 0.0105);
+  p.color.w = clamp(0.0032 + speed * 0.0058, 0.0032, 0.0125);
   dstParticles[i] = p;
 }
 `;

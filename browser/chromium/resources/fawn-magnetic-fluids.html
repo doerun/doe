@@ -130,25 +130,35 @@ canvas {
       <label>
         <span class="eyebrow">Grid</span><br>
         <select id="grid-select">
-          <option value="256" selected>256 × 256</option>
+          <option value="256">256 × 256</option>
           <option value="320">320 × 320</option>
           <option value="384">384 × 384</option>
           <option value="448">448 × 448</option>
           <option value="512">512 × 512</option>
           <option value="640">640 × 640</option>
           <option value="768">768 × 768</option>
+          <option value="1024" selected>1024 × 1024</option>
         </select>
       </label>
       <label>
         <span class="eyebrow">Substeps</span><br>
         <select id="steps-select">
           <option value="2">2</option>
-          <option value="4" selected>4</option>
-          <option value="6">6</option>
+          <option value="4">4</option>
+          <option value="6" selected>6</option>
+          <option value="8">8</option>
+          <option value="10">10</option>
         </select>
       </label>
       <button id="restart">Restart</button>
       <a class="back" href="./fawn-start.html">Back to welcome</a>
+    </div>
+  </div>
+
+  <div class="stage">
+    <canvas id="view"></canvas>
+    <div class="note">
+      The magnets are procedural. Bubble pulses and moving wells interact continuously, and the pointer drags a dominant local field through the surface.
     </div>
   </div>
 
@@ -168,13 +178,6 @@ canvas {
     <div class="panel">
       <div class="label">Surface Load</div>
       <div class="value" id="load">--</div>
-    </div>
-  </div>
-
-  <div class="stage">
-    <canvas id="view"></canvas>
-    <div class="note">
-      The magnets are procedural. The pointer adds a dominant local field; the shader then turns the resulting height and slope into highly chromatic metallic highlights.
     </div>
   </div>
 </main>
@@ -208,13 +211,30 @@ fn magnetic_field(uv: vec2<f32>, time: f32) -> f32 {
   let m0 = vec2<f32>(0.50 + sin(time * 0.52) * 0.18, 0.45 + cos(time * 0.61) * 0.14);
   let m1 = vec2<f32>(0.28 + cos(time * 0.43 + 1.9) * 0.16, 0.62 + sin(time * 0.49 + 0.8) * 0.12);
   let m2 = vec2<f32>(0.72 + sin(time * 0.38 + 2.6) * 0.12, 0.30 + cos(time * 0.57 + 1.4) * 0.17);
+  let m3 = vec2<f32>(0.18 + sin(time * 0.29 + 0.4) * 0.10, 0.26 + cos(time * 0.47 + 2.1) * 0.11);
+  let m4 = vec2<f32>(0.82 + cos(time * 0.33 + 1.2) * 0.09, 0.76 + sin(time * 0.41 + 2.7) * 0.10);
   let d0 = max(dot(uv - m0, uv - m0), 0.0006);
   let d1 = max(dot(uv - m1, uv - m1), 0.0008);
   let d2 = max(dot(uv - m2, uv - m2), 0.0008);
-  var field = 0.16 / d0 + 0.11 / d1 + 0.13 / d2;
+  let d3 = max(dot(uv - m3, uv - m3), 0.0009);
+  let d4 = max(dot(uv - m4, uv - m4), 0.0010);
+  var field = 0.15 / d0 + 0.10 / d1 + 0.12 / d2 + 0.08 / d3 + 0.07 / d4;
   let md = max(dot(uv - u.mouse.xy, uv - u.mouse.xy), 0.00045);
   field += u.mouse.z * 0.24 / md;
   return field;
+}
+
+fn bubble_field(uv: vec2<f32>, time: f32) -> f32 {
+  let b0 = vec2<f32>(0.40 + sin(time * 0.22) * 0.20, 0.50 + cos(time * 0.19) * 0.18);
+  let b1 = vec2<f32>(0.66 + cos(time * 0.17 + 1.6) * 0.18, 0.40 + sin(time * 0.21 + 0.8) * 0.16);
+  let b2 = vec2<f32>(0.22 + sin(time * 0.27 + 2.1) * 0.12, 0.76 + cos(time * 0.23 + 2.7) * 0.10);
+  let r0 = abs(length(uv - b0) - (0.06 + 0.05 * (0.5 + 0.5 * sin(time * 1.3))));
+  let r1 = abs(length(uv - b1) - (0.08 + 0.04 * (0.5 + 0.5 * cos(time * 1.1 + 0.7))));
+  let r2 = abs(length(uv - b2) - (0.05 + 0.06 * (0.5 + 0.5 * sin(time * 1.7 + 1.3))));
+  let ring0 = smoothstep(0.030, 0.0, r0);
+  let ring1 = smoothstep(0.032, 0.0, r1);
+  let ring2 = smoothstep(0.028, 0.0, r2);
+  return ring0 * 0.70 + ring1 * 0.55 + ring2 * 0.60;
 }
 
 @compute @workgroup_size(${WORKGROUP_SIZE}, ${WORKGROUP_SIZE})
@@ -241,14 +261,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let time = u.sim.y;
   let field = magnetic_field(uv, time);
-  let spikes = pow(clamp(field * 0.09, 0.0, 1.8), 2.4);
-  let targetHeight = spikes * 0.85;
+  let bubbles = bubble_field(uv, time);
+  let spikes = pow(clamp(field * 0.085, 0.0, 1.7), 2.3);
+  let targetHeight = spikes * 0.72 + bubbles * 0.34;
 
-  var nextV = v + (lap * 0.34 + (targetHeight - h) * 0.82 - v * 0.18) * u.sim.x * 60.0;
-  var nextH = h + nextV * u.sim.x * 2.4;
-  nextH = mix(nextH, targetHeight, 0.05);
-  nextH = clamp(nextH, -0.2, 1.5);
-  dst[i] = vec4<f32>(nextH, nextV, spikes, field);
+  var nextV = v + (lap * 0.30 + (targetHeight - h) * 0.74 + bubbles * 0.16 - v * 0.16) * u.sim.x * 60.0;
+  var nextH = h + nextV * u.sim.x * 2.1;
+  nextH = mix(nextH, targetHeight, 0.035);
+  nextH = clamp(nextH, -0.2, 1.6);
+  dst[i] = vec4<f32>(nextH, nextV, max(spikes, bubbles), field + bubbles * 3.0);
 }
 `;
 
@@ -309,15 +330,22 @@ fn fs(in: VSOut) -> @location(0) vec4<f32> {
   let grad = vec2<f32>((r - l) * 0.5, (t - b) * 0.5);
   let normal = normalize(vec3<f32>(-grad.x * 2.3, -grad.y * 2.3, 1.0));
   let view = normalize(vec3<f32>(0.0, 0.0, 1.0));
+  let slope = length(grad);
   let fresnel = pow(1.0 - max(dot(normal, view), 0.0), 3.0);
   let spec = pow(max(dot(reflect(vec3<f32>(0.18, 0.22, -1.0), normal), view), 0.0), 26.0);
-  let prism = spectral(c.x * 0.38 + c.z * 0.42 + fresnel * 0.25 + u.sim.y * 0.03);
-  let secondary = spectral(c.w * 0.04 + normal.x * 0.18 - normal.y * 0.12);
+  let prism = spectral(c.x * 0.34 + c.z * 0.50 + fresnel * 0.25 + u.sim.y * 0.03);
+  let secondary = spectral(c.w * 0.035 + normal.x * 0.18 - normal.y * 0.12);
   let base = mix(vec3<f32>(0.08, 0.06, 0.12), prism, 0.78);
   let metallic = base + secondary * fresnel * 0.45 + vec3<f32>(1.0, 0.94, 0.92) * spec * 0.65;
-  let glow = prism * smoothstep(0.15, 1.0, c.z) * 0.18;
+  let glow = prism * smoothstep(0.08, 1.0, c.z) * 0.24;
   let vignette = 1.0 - smoothstep(0.18, 0.95, length(in.uv * 2.0 - 1.0));
-  let bg = vec3<f32>(0.03, 0.025, 0.05) + vignette * vec3<f32>(0.03, 0.018, 0.06);
+  let contour = pow(1.0 - abs(sin(c.w * 0.055 + slope * 10.0 + dot(in.uv * 2.0 - 1.0, vec2<f32>(4.0, -6.0)) - u.sim.y * 0.22)), 18.0);
+  let contourGlow = spectral(c.w * 0.012 + u.sim.y * 0.02 + slope * 0.8) * contour * (0.10 + slope * 0.24);
+  let slopeWash = spectral(slope * 0.75 + u.sim.y * 0.012) * smoothstep(0.02, 0.35, slope) * 0.10;
+  let bg = vec3<f32>(0.020, 0.018, 0.034)
+    + vignette * vec3<f32>(0.035, 0.020, 0.070)
+    + contourGlow
+    + slopeWash;
   return vec4<f32>(max(bg, metallic + glow), 1.0);
 }
 `;
@@ -351,7 +379,7 @@ fn fs(in: VSOut) -> @location(0) vec4<f32> {
 
   function updateLoadLabel() {
     const cells = currentGrid * currentGrid;
-    loadEl.textContent = `${currentGrid}² cells · ${substeps} substeps/frame · ${(cells * substeps).toLocaleString()} magnetic updates/frame`;
+    loadEl.textContent = `${currentGrid}² cells · ${substeps} substeps/frame · ${(cells * substeps).toLocaleString()} surface updates/frame`;
   }
 
   function resizeCanvas() {
