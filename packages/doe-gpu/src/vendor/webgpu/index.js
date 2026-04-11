@@ -721,10 +721,61 @@ function updatePassBindGroupState(pass, index, bindGroupNative) {
   return true;
 }
 
+function immediateBytesEqual(currentData, nextData) {
+  if (!currentData || currentData.byteLength !== nextData.byteLength) {
+    return false;
+  }
+  for (let index = 0; index < currentData.byteLength; index += 1) {
+    if (currentData[index] !== nextData[index]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function updatePassImmediateState(pass, index, data) {
+  const currentData = pass._immediates[index];
+  if (immediateBytesEqual(currentData, data)) {
+    return false;
+  }
+  pass._immediates[index] = data.slice();
+  return true;
+}
+
+function updatePassVertexBufferState(pass, slot, bufferNative, offset, size) {
+  const current = pass._vertexBuffers[slot];
+  if (
+    current
+    && current.buffer === bufferNative
+    && current.offset === offset
+    && current.size === size
+  ) {
+    return false;
+  }
+  pass._vertexBuffers[slot] = { buffer: bufferNative, offset, size };
+  return true;
+}
+
+function updatePassIndexBufferState(pass, bufferNative, format, offset, size) {
+  const current = pass._indexBuffer;
+  if (
+    current
+    && current.buffer === bufferNative
+    && current.format === format
+    && current.offset === offset
+    && current.size === size
+  ) {
+    return false;
+  }
+  pass._indexBuffer = { buffer: bufferNative, format, offset, size };
+  return true;
+}
+
 const nodeEncoderBackend = {
   computePassInit(pass, native) {
     pass._pipeline = null;
     pass._bindGroups = [];
+    pass._immediates = [];
     if (native === null) {
       pass._native = null;
       pass._lazy = true;
@@ -769,6 +820,9 @@ const nodeEncoderBackend = {
     );
   },
   computePassSetImmediates(pass, index, data) {
+    if (!updatePassImmediateState(pass, index, data)) {
+      return;
+    }
     materializeLazyComputePass(pass);
     addon.computePassSetImmediates(
       assertLiveResource(pass, 'GPUComputePassEncoder.setImmediates', 'GPUComputePassEncoder'),
@@ -840,6 +894,9 @@ const nodeEncoderBackend = {
     pass._native = native;
     pass._pipeline = null;
     pass._bindGroups = [];
+    pass._immediates = [];
+    pass._vertexBuffers = [];
+    pass._indexBuffer = null;
     pass._ended = false;
   },
   renderPassAssertOpen(pass, path) {
@@ -870,6 +927,9 @@ const nodeEncoderBackend = {
     );
   },
   renderPassSetImmediates(pass, index, data) {
+    if (!updatePassImmediateState(pass, index, data)) {
+      return;
+    }
     addon.renderPassSetImmediates(
       assertLiveResource(pass, 'GPURenderPassEncoder.setImmediates', 'GPURenderPassEncoder'),
       index,
@@ -877,6 +937,9 @@ const nodeEncoderBackend = {
     );
   },
   renderPassSetVertexBuffer(pass, slot, bufferNative, offset, size) {
+    if (!updatePassVertexBufferState(pass, slot, bufferNative, offset, size)) {
+      return;
+    }
     addon.renderPassSetVertexBuffer(
       assertLiveResource(pass, 'GPURenderPassEncoder.setVertexBuffer', 'GPURenderPassEncoder'),
       slot,
@@ -886,6 +949,9 @@ const nodeEncoderBackend = {
     );
   },
   renderPassSetIndexBuffer(pass, bufferNative, format, offset, size) {
+    if (!updatePassIndexBufferState(pass, bufferNative, format, offset, size)) {
+      return;
+    }
     addon.renderPassSetIndexBuffer(
       assertLiveResource(pass, 'GPURenderPassEncoder.setIndexBuffer', 'GPURenderPassEncoder'),
       bufferNative,
@@ -977,6 +1043,9 @@ const nodeEncoderBackend = {
     enc._native = state;
     enc._pipeline = null;
     enc._bindGroups = [];
+    enc._immediates = [];
+    enc._vertexBuffers = [];
+    enc._indexBuffer = null;
     enc._ended = false;
   },
   renderBundleEncoderSetPipeline(enc, pipelineNative) {
@@ -992,6 +1061,9 @@ const nodeEncoderBackend = {
     addon.renderBundleEncoderSetBindGroup(enc._native, index, bindGroupNative);
   },
   renderBundleEncoderSetImmediates(enc, index, data) {
+    if (!updatePassImmediateState(enc, index, data)) {
+      return;
+    }
     addon.renderBundleEncoderSetImmediates(
       assertLiveResource(enc, 'GPURenderBundleEncoder.setImmediates', 'GPURenderBundleEncoder'),
       index,
@@ -999,9 +1071,15 @@ const nodeEncoderBackend = {
     );
   },
   renderBundleEncoderSetVertexBuffer(enc, slot, bufferNative, offset, size) {
+    if (!updatePassVertexBufferState(enc, slot, bufferNative, offset, size)) {
+      return;
+    }
     addon.renderBundleEncoderSetVertexBuffer(enc._native, slot, bufferNative, offset, size ?? WHOLE_SIZE_SENTINEL);
   },
   renderBundleEncoderSetIndexBuffer(enc, bufferNative, format, offset, size) {
+    if (!updatePassIndexBufferState(enc, bufferNative, format, offset, size)) {
+      return;
+    }
     addon.renderBundleEncoderSetIndexBuffer(enc._native, bufferNative, format, offset, size ?? WHOLE_SIZE_SENTINEL);
   },
   renderBundleEncoderDraw(enc, vertexCount, instanceCount, firstVertex, firstInstance) {

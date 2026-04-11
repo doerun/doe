@@ -258,6 +258,7 @@ Current browser integration layer structure:
    - lane-local helpers (`scripts/bootstrap-host-tools.sh`, `scripts/env.sh`,
      `scripts/preflight.sh`, `scripts/bringup-linux.sh`,
      `scripts/run-smoke.sh`, `scripts/run-bench.sh`,
+     `scripts/refresh-doe-app.sh`,
      `scripts/check-browser-milestones.py`).
 7. `assets/`
    - brand assets, logo source, and compiled macOS/Linux logo artifacts.
@@ -316,9 +317,13 @@ Lane setup for both macOS and Linux:
    - or for fresh pull: `./scripts/bringup-linux.sh --mode release`
 4. Build/rebuild external release artifacts:
    - `./scripts/build-release-external.sh`
+   - on macOS this also reapplies the Doe app wrapper to the built bundle
 5. Run browser checks with lane defaults:
    - `./scripts/run-smoke.sh --mode both`
    - `./scripts/run-bench.sh --mode both`
+6. If only Doe runtime code changed on macOS:
+   - `./scripts/refresh-doe-app.sh`
+   - rebuilds `libwebgpu_doe.dylib` and reapplies the app-bundle Doe wrapper
 
 Notes:
 - Lane-local env file is `.external-lane.env` (mac helper also writes legacy `.external-macos.env` for compatibility).

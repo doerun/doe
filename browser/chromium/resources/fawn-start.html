@@ -43,6 +43,41 @@ h1 {
   font-size: 11px; color: #777; max-width: 420px; text-align: center;
   line-height: 1.6; letter-spacing: 0.08em; text-transform: uppercase;
 }
+.demo-nav {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 220px));
+  gap: 10px;
+  margin-top: 8px;
+}
+.demo-link {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border: 1px solid rgba(120, 170, 140, 0.18);
+  border-radius: 14px;
+  background: rgba(8, 16, 12, 0.58);
+  color: #d7e8dc;
+  text-decoration: none;
+  backdrop-filter: blur(8px);
+  transition: border-color 120ms ease, transform 120ms ease, background 120ms ease;
+}
+.demo-link:hover {
+  border-color: rgba(150, 220, 180, 0.42);
+  background: rgba(10, 22, 16, 0.78);
+  transform: translateY(-1px);
+}
+.demo-link strong {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+}
+.demo-link span {
+  font-size: 10px;
+  line-height: 1.5;
+  color: #7d9184;
+}
 .status-bar {
   position: fixed; bottom: 24px;
   display: flex; flex-direction: column; align-items: center; gap: 8px;
@@ -55,6 +90,10 @@ h1 {
 #gpu-overlay {
   position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
   pointer-events: none; z-index: 0;
+}
+@media (max-width: 760px) {
+  .hero { width: min(100%, calc(100vw - 32px)); }
+  .demo-nav { grid-template-columns: 1fr; width: 100%; }
 }
 </style>
 </head>
@@ -77,6 +116,20 @@ h1 {
 <h1>Fawn</h1>
 <hr class="divider">
 <p class="tagline">Chromium with Doe — a Zig WebGPU runtime</p>
+<div class="demo-nav">
+  <a class="demo-link" href="./fawn-mini-compute.html">
+    <strong>Stable Fluids</strong>
+    <span>Pressure projection, dye advection, and live force injection in a serious GPU fluid lab.</span>
+  </a>
+  <a class="demo-link" href="./fawn-magnetic-fluids.html">
+    <strong>Magnetic Fluids</strong>
+    <span>Prismatic ferrofluid-like spikes and pooling driven by compute-updated magnetic fields.</span>
+  </a>
+  <a class="demo-link" href="./fawn-heavy-particles.html">
+    <strong>Particle Storm</strong>
+    <span>Heavy compute plus instanced trails, built to push browser WebGPU harder.</span>
+  </a>
+</div>
 </div>
 <div class="status-bar">
   <div class="status-row"><span class="dot" id="gpu-dot"></span><span id="gpu-status">checking WebGPU...</span></div>
@@ -126,19 +179,33 @@ fn hexGrid(uv: vec2<f32>, scale: f32) -> HexCell {
   );
 }
 
-struct FlipResult { foreshorten: f32, glitter: f32, tilt: f32, }
+struct FlipResult {
+  scaleX: f32,
+  scaleY: f32,
+  tiltX: f32,
+  tiltY: f32,
+  glow: f32,
+}
 
-fn calcFlip(click: vec4<f32>) -> FlipResult {
-  if (click.w < 0.5) { return FlipResult(1.0, 0.0, 0.0); }
-  let t = clamp(click.z / 0.8, 0.0, 1.0);
-  let e = t * (2.0 - t);
-  let ang = e * 3.14159;
-  let rawFS = cos(ang);
-  let fs = max(abs(rawFS), 0.12);
-  let tilt = sin(ang);
-  let env = 4.0 * t * (1.0 - t);
-  let gl = env * pow(1.0 - abs(rawFS), 1.5);
-  return FlipResult(fs, gl, tilt);
+fn calcFlip(click: vec4<f32>, center: vec2<f32>, aspect: f32) -> FlipResult {
+  if (click.w < 0.5) { return FlipResult(1.0, 1.0, 0.0, 0.0, 0.0); }
+  let origin = vec2<f32>((click.x - 0.5) * aspect, click.y - 0.5);
+  let delta = center - origin;
+  let dist = length(delta);
+  let dir = select(vec2<f32>(0.0, 1.0), delta / max(dist, 0.0001), dist > 0.0001);
+  let t = click.z;
+  let waveFront = t * 0.44;
+  let band = smoothstep(0.24, 0.0, abs(dist - waveFront));
+  let rise = smoothstep(0.0, 0.10, t);
+  let decay = 1.0 - smoothstep(0.35, 2.35, t);
+  let distanceFade = 1.0 - smoothstep(0.18, 1.55, waveFront + dist * 0.65);
+  let pulse = band * rise * decay * distanceFade;
+  let tiltX = dir.y * pulse * 1.05;
+  let tiltY = -dir.x * pulse * 1.05;
+  let scaleX = 1.0 - abs(tiltY) * 0.28;
+  let scaleY = 1.0 - abs(tiltX) * 0.28;
+  let glow = pulse * (0.28 + 0.72 * smoothstep(0.20, 0.0, abs(dist - waveFront)));
+  return FlipResult(scaleX, scaleY, tiltX, tiltY, glow);
 }
 
 @vertex
@@ -154,30 +221,27 @@ fn fs(@builtin(position) fc: vec4<f32>) -> @location(0) vec4<f32> {
   let asp = u.resolution.x / u.resolution.y;
   let co = vec2<f32>((uv.x - 0.5) * asp, uv.y - 0.5);
 
-  let cell = hexGrid(co, 12.0);
+  let gridScale = 12.0;
+  let cell = hexGrid(co, gridScale);
   let id = cell.id;
   var g = cell.local;
+  let cellCenter = co - cell.local / gridScale;
 
   let r1 = hash(id);
   let r2 = hash(id + vec2<f32>(71.0, 137.0));
   let r3 = hash(id + vec2<f32>(213.0, 47.0));
 
-  // Accumulate 3D flip from all active clicks
-  let f0 = calcFlip(u.c0);
-  let f1 = calcFlip(u.c1);
-  let f2 = calcFlip(u.c2);
-  let f3 = calcFlip(u.c3);
-  let totalFS = f0.foreshorten * f1.foreshorten * f2.foreshorten * f3.foreshorten;
-  let glitter = max(max(f0.glitter, f1.glitter), max(f2.glitter, f3.glitter));
-  let totalTilt = max(max(f0.tilt, f1.tilt), max(f2.tilt, f3.tilt));
+  let f0 = calcFlip(u.c0, cellCenter, asp);
+  let f1 = calcFlip(u.c1, cellCenter, asp);
+  let f2 = calcFlip(u.c2, cellCenter, asp);
+  let f3 = calcFlip(u.c3, cellCenter, asp);
+  let totalScaleX = f0.scaleX * f1.scaleX * f2.scaleX * f3.scaleX;
+  let totalScaleY = f0.scaleY * f1.scaleY * f2.scaleY * f3.scaleY;
+  let totalTiltX = clamp(f0.tiltX + f1.tiltX + f2.tiltX + f3.tiltX, -1.0, 1.0);
+  let totalTiltY = clamp(f0.tiltY + f1.tiltY + f2.tiltY + f3.tiltY, -1.0, 1.0);
+  let waveGlow = max(max(f0.glow, f1.glow), max(f2.glow, f3.glow));
 
-  // Apply 3D foreshortening along per-cell random axis
-  let axisA = r3 * 3.14159;
-  let ca = cos(axisA);
-  let sa = sin(axisA);
-  let aligned = vec2<f32>(g.x * ca + g.y * sa, -g.x * sa + g.y * ca);
-  let flipped = vec2<f32>(aligned.x * totalFS, aligned.y);
-  g = vec2<f32>(flipped.x * ca - flipped.y * sa, flipped.x * sa + flipped.y * ca);
+  g = vec2<f32>(g.x * totalScaleX, g.y * totalScaleY);
 
   // Smooth radius noise — organic wobble instead of perfect hexagons
   let angle = atan2(g.y, g.x);
@@ -187,32 +251,29 @@ fn fs(@builtin(position) fc: vec4<f32>) -> @location(0) vec4<f32> {
   let d = hexSDF(g) + wobble;
   let cl = length(g);
 
-  // Edge shimmer — slow per-cell twinkle, visible at ambient
-  let shimmer = sin(u.time * (0.35 + r1 * 0.5) + r1 * 6.28);
-  let pulse = 1.0 + shimmer * 0.45;
-  let flipBoost = 1.0 + glitter * 1.5;
-  let edgeWidth = 0.04 + glitter * 0.04;
-  let edgeGlow = smoothstep(edgeWidth, -0.02, d) * pulse * flipBoost;
+  // Ambient boundary shimmer so the lattice reads faintly at rest
+  let edgeBand = smoothstep(0.095, 0.0, abs(d));
+  let ambientWave = 0.5 + 0.5 * sin(u.time * (0.42 + r1 * 0.34) + r2 * 6.28);
+  let edgeGlow = edgeBand * (0.36 + ambientWave * 0.22 + waveGlow * 0.24);
   let edgeCol = mix(
-    vec3<f32>(0.15, 0.55, 0.30),
-    mix(vec3<f32>(0.20, 0.65, 0.40), vec3<f32>(0.6, 0.9, 0.7), glitter),
+    vec3<f32>(0.22, 0.64, 0.39),
+    mix(vec3<f32>(0.24, 0.72, 0.46), vec3<f32>(0.72, 0.92, 0.80), waveGlow),
     r1
   );
 
-  // Cell interior — flashes during flip
-  let fillBase = smoothstep(0.0, -0.25, d) * 0.15;
-  let fill = fillBase + glitter * 0.25;
+  // Cell interior stays faintly present, then brightens along the wave
+  let fillBase = smoothstep(0.03, -0.25, d) * 0.13;
+  let fill = fillBase + waveGlow * 0.08;
   let fillCol = mix(
-    mix(vec3<f32>(0.04, 0.12, 0.06), vec3<f32>(0.15, 0.3, 0.2), glitter),
-    mix(vec3<f32>(0.06, 0.18, 0.09), vec3<f32>(0.2, 0.35, 0.25), glitter),
+    mix(vec3<f32>(0.05, 0.13, 0.07), vec3<f32>(0.14, 0.28, 0.18), waveGlow),
+    mix(vec3<f32>(0.07, 0.18, 0.10), vec3<f32>(0.20, 0.36, 0.24), waveGlow),
     r1
   );
 
-  // Glitter color — gold-white flash at peak
-  let glitterCol = mix(
-    vec3<f32>(0.75, 0.62, 0.30),
-    vec3<f32>(0.95, 0.92, 0.75),
-    glitter
+  let waveCol = mix(
+    vec3<f32>(0.70, 0.64, 0.38),
+    vec3<f32>(0.92, 0.93, 0.78),
+    waveGlow
   );
 
   // Firefly sparkle — very slow, smooth
@@ -225,19 +286,20 @@ fn fs(@builtin(position) fc: vec4<f32>) -> @location(0) vec4<f32> {
   );
   let sr = smoothstep(0.22, 0.0, cl);
 
-  // 3D tilt lighting — gradient across hex simulates light on tilted surface
-  let tiltShade = 1.0 + aligned.x * 2.0 * totalTilt * 0.35;
+  // Two-axis lighting makes the ripple read like a softer x/y flip
+  let tiltShade = 1.0 + g.y * totalTiltX * 1.25 + g.x * totalTiltY * 1.25;
+  let specular = pow(max(0.0, 1.0 - abs(d) * 5.5), 3.0) * (abs(totalTiltX) + abs(totalTiltY)) * 0.22;
 
   // Compose
   var col = fillCol * fill;
-  col = col + edgeCol * edgeGlow * 0.35;
+  col = col + edgeCol * edgeGlow * 0.56;
   col = col + sparkleCol * sparkle * sr * 0.8;
-  col = col + glitterCol * glitter * 0.3;
+  col = col + waveCol * waveGlow * 0.16;
+  col = col + vec3<f32>(0.96, 0.94, 0.84) * specular;
   col = col * tiltShade;
 
-  // Local phase — only area near wave gets brighter, not the whole page
-  let localPhase = u.phase + glitter * (1.0 - u.phase);
-  let a = (edgeGlow * 0.3 + fill * 0.5 + sparkle * sr * 0.9 + glitter * 0.4) * localPhase;
+  let localPhase = u.phase + waveGlow * (1.0 - u.phase);
+  let a = (edgeGlow * 0.56 + fill * 0.46 + sparkle * sr * 0.8 + waveGlow * 0.12 + specular * 0.7) * localPhase;
   return vec4<f32>(col * a, a);
 }
 `;
@@ -256,7 +318,7 @@ fn fs(@builtin(position) fc: vec4<f32>) -> @location(0) vec4<f32> {
 
   try {
     if (!navigator.gpu) throw new Error('WebGPU not available');
-    var adapter = await navigator.gpu.requestAdapter();
+    var adapter = await navigator.gpu.requestAdapter({ powerPreference: 'high-performance' });
     if (!adapter) throw new Error('No adapter');
     device = await adapter.requestDevice();
 
@@ -293,8 +355,13 @@ fn fs(@builtin(position) fc: vec4<f32>) -> @location(0) vec4<f32> {
       entries: [{ binding: 0, resource: { buffer: uniformBuf } }],
     });
 
-    document.body.addEventListener('click', function(e) {
+    document.body.addEventListener('pointerdown', function(e) {
+      var rect = overlay.getBoundingClientRect();
+      var x = rect.width > 0 ? (e.clientX - rect.left) / rect.width : 0.5;
+      var y = rect.height > 0 ? (e.clientY - rect.top) / rect.height : 0.5;
       clicks.push({
+        x: Math.max(0, Math.min(1, x)),
+        y: Math.max(0, Math.min(1, y)),
         t: performance.now() * 0.001
       });
       if (clicks.length > MAX_CLICKS) clicks.shift();
@@ -335,12 +402,12 @@ fn fs(@builtin(position) fc: vec4<f32>) -> @location(0) vec4<f32> {
     data[1] = overlay.height;
     data[2] = elapsed;
     data[3] = phase;
-    // c0..c3 at offsets 4,8,12,16 — each is (reserved, reserved, elapsed_since_click, active)
+    // c0..c3 at offsets 4,8,12,16 — each is (x, y, elapsed_since_click, active)
     for (var i = 0; i < 4; i++) {
       var base = 4 + i * 4;
       if (i < clicks.length) {
-        data[base]     = 0.0;
-        data[base + 1] = 0.0;
+        data[base]     = clicks[i].x;
+        data[base + 1] = clicks[i].y;
         data[base + 2] = now - clicks[i].t;
         data[base + 3] = 1.0;
       } else {

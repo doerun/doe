@@ -296,9 +296,12 @@ else
   fi
 fi
 
-FAWN_START_SRC="${LANE_ROOT}/resources/fawn-start.html"
-if [[ -f "${FAWN_START_SRC}" && -d "${RESOURCES_DIR}" ]]; then
-  cp -f "${FAWN_START_SRC}" "${RESOURCES_DIR}/fawn-start.html"
+if [[ -d "${RESOURCES_DIR}" ]]; then
+  for RESOURCE_SRC in "${LANE_ROOT}"/resources/fawn-*.html; do
+    if [[ -f "${RESOURCE_SRC}" ]]; then
+      cp -f "${RESOURCE_SRC}" "${RESOURCES_DIR}/$(basename "${RESOURCE_SRC}")"
+    fi
+  done
 fi
 
 echo "patched app bundle: ${APP_PATH}"

@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fawn Magnetic Fluids</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: radial-gradient(circle at top, #1a141f 0%, #0d0d13 42%, #050507 100%);
+  color: #eef0ff;
+}
+.shell {
+  width: min(1180px, calc(100vw - 32px));
+  margin: 28px auto;
+  display: grid;
+  gap: 18px;
+}
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 18px;
+}
+.eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #bba7e4;
+}
+h1 {
+  margin: 4px 0 8px;
+  font-size: 30px;
+  font-weight: 520;
+}
+.subtle {
+  max-width: 760px;
+  color: #a9a0c8;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.back, button, select {
+  color: #ece9ff;
+  text-decoration: none;
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(187, 167, 228, 0.28);
+  background: rgba(18, 15, 27, 0.78);
+  font: inherit;
+}
+button { cursor: pointer; }
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+.panel {
+  background: rgba(18, 15, 27, 0.82);
+  border: 1px solid rgba(187, 167, 228, 0.18);
+  border-radius: 20px;
+  padding: 18px;
+  backdrop-filter: blur(8px);
+}
+.label {
+  font-size: 11px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: #baaedd;
+}
+.value {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #f4f0ff;
+  line-height: 1.6;
+}
+.stage {
+  position: relative;
+  border-radius: 22px;
+  overflow: hidden;
+  border: 1px solid rgba(187, 167, 228, 0.20);
+  background: #050509;
+}
+canvas {
+  display: block;
+  width: 100%;
+  height: min(68vh, 760px);
+}
+.note {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(12, 10, 18, 0.68);
+  color: #bcaee0;
+  font-size: 11px;
+  line-height: 1.5;
+  max-width: 320px;
+}
+@media (max-width: 980px) {
+  .topbar { flex-direction: column; }
+  .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 640px) {
+  .grid { grid-template-columns: 1fr; }
+  canvas { height: 58vh; }
+}
+</style>
+</head>
+<body>
+<main class="shell">
+  <div class="topbar">
+    <div>
+      <div class="eyebrow">Stylized Magnetic Demo</div>
+      <h1>Magnetic Fluids</h1>
+      <div class="subtle">
+        Not sold as strict ferrofluid physics. This is a compute-updated height field driven by moving magnetic wells and rendered with prismatic,
+        high-dispersion shading so the surface feels metallic, unstable, and alive. Move or hold the pointer to drag a stronger magnet through it.
+      </div>
+    </div>
+    <div class="actions">
+      <label>
+        <span class="eyebrow">Grid</span><br>
+        <select id="grid-select">
+          <option value="256" selected>256 × 256</option>
+          <option value="320">320 × 320</option>
+          <option value="384">384 × 384</option>
+          <option value="448">448 × 448</option>
+          <option value="512">512 × 512</option>
+        </select>
+      </label>
+      <label>
+        <span class="eyebrow">Substeps</span><br>
+        <select id="steps-select">
+          <option value="2">2</option>
+          <option value="4" selected>4</option>
+          <option value="6">6</option>
+        </select>
+      </label>
+      <button id="restart">Restart</button>
+      <a class="back" href="./fawn-start.html">Back to welcome</a>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="panel">
+      <div class="label">Status</div>
+      <div class="value" id="status">Initializing WebGPU...</div>
+    </div>
+    <div class="panel">
+      <div class="label">Adapter</div>
+      <div class="value" id="adapter">Waiting</div>
+    </div>
+    <div class="panel">
+      <div class="label">Frame</div>
+      <div class="value" id="frame">-- ms · -- fps</div>
+    </div>
+    <div class="panel">
+      <div class="label">Surface Load</div>
+      <div class="value" id="load">--</div>
+    </div>
+  </div>
+
+  <div class="stage">
+    <canvas id="view"></canvas>
+    <div class="note">
+      The magnets are procedural. The pointer adds a dominant local field; the shader then turns the resulting height and slope into highly chromatic metallic highlights.
+    </div>
+  </div>
+</main>
+<script>
+const WORKGROUP_SIZE = 16;
+
+const COMPUTE_WGSL = `
+struct Params {
+  grid: vec4<f32>,
+  mouse: vec4<f32>,
+  sim: vec4<f32>,
+}
+
+@group(0) @binding(0) var<uniform> u: Params;
+@group(0) @binding(1) var<storage, read> src: array<vec4<f32>>;
+@group(0) @binding(2) var<storage, read_write> dst: array<vec4<f32>>;
+
+fn idx_at(x: i32, y: i32) -> u32 {
+  let w = i32(u.grid.x);
+  let h = i32(u.grid.y);
+  let cx = clamp(x, 0, w - 1);
+  let cy = clamp(y, 0, h - 1);
+  return u32(cy * w + cx);
+}
+
+fn sample_height(x: i32, y: i32) -> f32 {
+  return src[idx_at(x, y)].x;
+}
+
+fn magnetic_field(uv: vec2<f32>, time: f32) -> f32 {
+  let m0 = vec2<f32>(0.50 + sin(time * 0.52) * 0.18, 0.45 + cos(time * 0.61) * 0.14);
+  let m1 = vec2<f32>(0.28 + cos(time * 0.43 + 1.9) * 0.16, 0.62 + sin(time * 0.49 + 0.8) * 0.12);
+  let m2 = vec2<f32>(0.72 + sin(time * 0.38 + 2.6) * 0.12, 0.30 + cos(time * 0.57 + 1.4) * 0.17);
+  let d0 = max(dot(uv - m0, uv - m0), 0.0006);
+  let d1 = max(dot(uv - m1, uv - m1), 0.0008);
+  let d2 = max(dot(uv - m2, uv - m2), 0.0008);
+  var field = 0.16 / d0 + 0.11 / d1 + 0.13 / d2;
+  let md = max(dot(uv - u.mouse.xy, uv - u.mouse.xy), 0.00045);
+  field += u.mouse.z * 0.24 / md;
+  return field;
+}
+
+@compute @workgroup_size(${WORKGROUP_SIZE}, ${WORKGROUP_SIZE})
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let width = u32(u.grid.x);
+  let height = u32(u.grid.y);
+  if (gid.x >= width || gid.y >= height) {
+    return;
+  }
+
+  let x = i32(gid.x);
+  let y = i32(gid.y);
+  let i = idx_at(x, y);
+  let state = src[i];
+  let h = state.x;
+  let v = state.y;
+  let uv = (vec2<f32>(gid.xy) + 0.5) * u.grid.zw;
+
+  let l = sample_height(x - 1, y);
+  let r = sample_height(x + 1, y);
+  let b = sample_height(x, y - 1);
+  let t = sample_height(x, y + 1);
+  let lap = (l + r + b + t - 4.0 * h);
+
+  let time = u.sim.y;
+  let field = magnetic_field(uv, time);
+  let spikes = pow(clamp(field * 0.09, 0.0, 1.8), 2.4);
+  let targetHeight = spikes * 0.85;
+
+  var nextV = v + (lap * 0.34 + (targetHeight - h) * 0.82 - v * 0.18) * u.sim.x * 60.0;
+  var nextH = h + nextV * u.sim.x * 2.4;
+  nextH = mix(nextH, targetHeight, 0.05);
+  nextH = clamp(nextH, -0.2, 1.5);
+  dst[i] = vec4<f32>(nextH, nextV, spikes, field);
+}
+`;
+
+const RENDER_WGSL = `
+struct Params {
+  grid: vec4<f32>,
+  mouse: vec4<f32>,
+  sim: vec4<f32>,
+}
+
+struct VSOut {
+  @builtin(position) position: vec4<f32>,
+  @location(0) uv: vec2<f32>,
+}
+
+@group(0) @binding(0) var<uniform> u: Params;
+@group(0) @binding(1) var<storage, read> fieldBuf: array<vec4<f32>>;
+
+fn idx_at(x: i32, y: i32) -> u32 {
+  let w = i32(u.grid.x);
+  let h = i32(u.grid.y);
+  let cx = clamp(x, 0, w - 1);
+  let cy = clamp(y, 0, h - 1);
+  return u32(cy * w + cx);
+}
+
+fn height_at(x: i32, y: i32) -> vec4<f32> {
+  return fieldBuf[idx_at(x, y)];
+}
+
+fn spectral(t: f32) -> vec3<f32> {
+  return 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.0, 4.0) + t * 6.28318);
+}
+
+@vertex
+fn vs(@builtin(vertex_index) vertexIndex: u32) -> VSOut {
+  var positions = array<vec2<f32>, 3>(
+    vec2<f32>(-1.0, -3.0),
+    vec2<f32>(-1.0,  1.0),
+    vec2<f32>( 3.0,  1.0)
+  );
+  let pos = positions[vertexIndex];
+  var out: VSOut;
+  out.position = vec4<f32>(pos, 0.0, 1.0);
+  out.uv = pos * 0.5 + vec2<f32>(0.5, 0.5);
+  return out;
+}
+
+@fragment
+fn fs(in: VSOut) -> @location(0) vec4<f32> {
+  let gx = i32(in.uv.x * u.grid.x);
+  let gy = i32(in.uv.y * u.grid.y);
+  let c = height_at(gx, gy);
+  let l = height_at(gx - 1, gy).x;
+  let r = height_at(gx + 1, gy).x;
+  let b = height_at(gx, gy - 1).x;
+  let t = height_at(gx, gy + 1).x;
+  let grad = vec2<f32>((r - l) * 0.5, (t - b) * 0.5);
+  let normal = normalize(vec3<f32>(-grad.x * 2.3, -grad.y * 2.3, 1.0));
+  let view = normalize(vec3<f32>(0.0, 0.0, 1.0));
+  let fresnel = pow(1.0 - max(dot(normal, view), 0.0), 3.0);
+  let spec = pow(max(dot(reflect(vec3<f32>(0.18, 0.22, -1.0), normal), view), 0.0), 26.0);
+  let prism = spectral(c.x * 0.38 + c.z * 0.42 + fresnel * 0.25 + u.sim.y * 0.03);
+  let secondary = spectral(c.w * 0.04 + normal.x * 0.18 - normal.y * 0.12);
+  let base = mix(vec3<f32>(0.08, 0.06, 0.12), prism, 0.78);
+  let metallic = base + secondary * fresnel * 0.45 + vec3<f32>(1.0, 0.94, 0.92) * spec * 0.65;
+  let glow = prism * smoothstep(0.15, 1.0, c.z) * 0.18;
+  let vignette = 1.0 - smoothstep(0.18, 0.95, length(in.uv * 2.0 - 1.0));
+  let bg = vec3<f32>(0.03, 0.025, 0.05) + vignette * vec3<f32>(0.03, 0.018, 0.06);
+  return vec4<f32>(max(bg, metallic + glow), 1.0);
+}
+`;
+
+(async () => {
+  const statusEl = document.getElementById('status');
+  const adapterEl = document.getElementById('adapter');
+  const frameEl = document.getElementById('frame');
+  const loadEl = document.getElementById('load');
+  const gridSelect = document.getElementById('grid-select');
+  const stepsSelect = document.getElementById('steps-select');
+  const restartButton = document.getElementById('restart');
+  const canvas = document.getElementById('view');
+
+  let device = null;
+  let adapter = null;
+  let context = null;
+  let format = null;
+  let uniformBuffer = null;
+  let computePipeline = null;
+  let renderPipeline = null;
+  let currentGrid = parseInt(gridSelect.value, 10);
+  let substeps = parseInt(stepsSelect.value, 10);
+  let stateBuffers = [];
+  let bindGroups = [];
+  let renderBindGroups = [];
+  let currentState = 0;
+  let lastFrameTime = performance.now();
+  let running = false;
+  const pointer = { x: 0.5, y: 0.5, hover: false, down: false };
+
+  function updateLoadLabel() {
+    const cells = currentGrid * currentGrid;
+    loadEl.textContent = `${currentGrid}² cells · ${substeps} substeps/frame · ${(cells * substeps).toLocaleString()} magnetic updates/frame`;
+  }
+
+  function resizeCanvas() {
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.max(1, Math.floor(canvas.clientWidth * dpr));
+    canvas.height = Math.max(1, Math.floor(canvas.clientHeight * dpr));
+    context.configure({ device, format, alphaMode: 'opaque' });
+  }
+
+  function rebuildBuffers() {
+    stateBuffers.forEach((buffer) => buffer.destroy());
+    const byteLength = currentGrid * currentGrid * 16;
+    stateBuffers = [
+      device.createBuffer({ size: byteLength, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST }),
+      device.createBuffer({ size: byteLength, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST }),
+    ];
+    const seed = new Float32Array(currentGrid * currentGrid * 4);
+    device.queue.writeBuffer(stateBuffers[0], 0, seed);
+    device.queue.writeBuffer(stateBuffers[1], 0, seed);
+    bindGroups = [
+      device.createBindGroup({
+        layout: computePipeline.getBindGroupLayout(0),
+        entries: [
+          { binding: 0, resource: { buffer: uniformBuffer } },
+          { binding: 1, resource: { buffer: stateBuffers[0] } },
+          { binding: 2, resource: { buffer: stateBuffers[1] } },
+        ],
+      }),
+      device.createBindGroup({
+        layout: computePipeline.getBindGroupLayout(0),
+        entries: [
+          { binding: 0, resource: { buffer: uniformBuffer } },
+          { binding: 1, resource: { buffer: stateBuffers[1] } },
+          { binding: 2, resource: { buffer: stateBuffers[0] } },
+        ],
+      }),
+    ];
+    renderBindGroups = [
+      device.createBindGroup({
+        layout: renderPipeline.getBindGroupLayout(0),
+        entries: [
+          { binding: 0, resource: { buffer: uniformBuffer } },
+          { binding: 1, resource: { buffer: stateBuffers[0] } },
+        ],
+      }),
+      device.createBindGroup({
+        layout: renderPipeline.getBindGroupLayout(0),
+        entries: [
+          { binding: 0, resource: { buffer: uniformBuffer } },
+          { binding: 1, resource: { buffer: stateBuffers[1] } },
+        ],
+      }),
+    ];
+    currentState = 0;
+    updateLoadLabel();
+  }
+
+  function updatePointer(event) {
+    const rect = canvas.getBoundingClientRect();
+    pointer.x = rect.width > 0 ? (event.clientX - rect.left) / rect.width : 0.5;
+    pointer.y = rect.height > 0 ? (event.clientY - rect.top) / rect.height : 0.5;
+  }
+
+  async function init() {
+    if (!navigator.gpu) throw new Error('WebGPU unavailable');
+    adapter = await navigator.gpu.requestAdapter({ powerPreference: 'high-performance' });
+    if (!adapter) throw new Error('No adapter');
+    device = await adapter.requestDevice();
+    context = canvas.getContext('webgpu');
+    format = navigator.gpu.getPreferredCanvasFormat();
+
+    uniformBuffer = device.createBuffer({
+      size: 48,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+    computePipeline = device.createComputePipeline({
+      layout: 'auto',
+      compute: { module: device.createShaderModule({ code: COMPUTE_WGSL }), entryPoint: 'main' },
+    });
+    renderPipeline = device.createRenderPipeline({
+      layout: 'auto',
+      vertex: { module: device.createShaderModule({ code: RENDER_WGSL }), entryPoint: 'vs' },
+      fragment: { module: device.createShaderModule({ code: RENDER_WGSL }), entryPoint: 'fs', targets: [{ format }] },
+      primitive: { topology: 'triangle-list' },
+    });
+
+    const info = adapter.info || {};
+    const parts = [];
+    if (info.vendor) parts.push(info.vendor);
+    if (info.architecture) parts.push(info.architecture);
+    if (info.device) parts.push(info.device);
+    adapterEl.textContent = parts.join(' · ') || 'Adapter acquired';
+
+    resizeCanvas();
+    rebuildBuffers();
+    statusEl.textContent = 'Running magnetic surface solver';
+    running = true;
+  }
+
+  function frame(now) {
+    if (!running) return;
+    const dtMs = Math.min(33, now - lastFrameTime);
+    lastFrameTime = now;
+    const dt = dtMs / 1000;
+    const mouseStrength = pointer.hover ? (pointer.down ? 1.0 : 0.55) : 0.0;
+    const uniformData = new Float32Array([
+      currentGrid, currentGrid, 1 / currentGrid, 1 / currentGrid,
+      pointer.x, pointer.y, mouseStrength, 0.0,
+      dt * 1.1, now * 0.001, 0.0, 0.0,
+    ]);
+    device.queue.writeBuffer(uniformBuffer, 0, uniformData);
+
+    const encoder = device.createCommandEncoder();
+    for (let i = 0; i < substeps; i++) {
+      const pass = encoder.beginComputePass();
+      pass.setPipeline(computePipeline);
+      pass.setBindGroup(0, bindGroups[currentState]);
+      pass.dispatchWorkgroups(Math.ceil(currentGrid / WORKGROUP_SIZE), Math.ceil(currentGrid / WORKGROUP_SIZE));
+      pass.end();
+      currentState = 1 - currentState;
+    }
+
+    const renderPass = encoder.beginRenderPass({
+      colorAttachments: [{
+        view: context.getCurrentTexture().createView(),
+        clearValue: { r: 0.03, g: 0.026, b: 0.05, a: 1.0 },
+        loadOp: 'clear',
+        storeOp: 'store',
+      }],
+    });
+    renderPass.setPipeline(renderPipeline);
+    renderPass.setBindGroup(0, renderBindGroups[currentState]);
+    renderPass.draw(3);
+    renderPass.end();
+
+    device.queue.submit([encoder.finish()]);
+    frameEl.textContent = `${dtMs.toFixed(2)} ms · ${(1000 / Math.max(dtMs, 0.001)).toFixed(1)} fps`;
+    requestAnimationFrame(frame);
+  }
+
+  gridSelect.addEventListener('change', () => {
+    currentGrid = parseInt(gridSelect.value, 10);
+    rebuildBuffers();
+  });
+  stepsSelect.addEventListener('change', () => {
+    substeps = parseInt(stepsSelect.value, 10);
+    updateLoadLabel();
+  });
+  restartButton.addEventListener('click', () => rebuildBuffers());
+  canvas.addEventListener('pointerenter', () => { pointer.hover = true; });
+  canvas.addEventListener('pointerleave', () => { pointer.hover = false; pointer.down = false; });
+  canvas.addEventListener('pointermove', (event) => updatePointer(event));
+  canvas.addEventListener('pointerdown', (event) => { updatePointer(event); pointer.hover = true; pointer.down = true; });
+  addEventListener('pointerup', () => { pointer.down = false; });
+  addEventListener('resize', () => resizeCanvas());
+
+  try {
+    await init();
+    requestAnimationFrame((now) => {
+      lastFrameTime = now;
+      requestAnimationFrame(frame);
+    });
+  } catch (error) {
+    statusEl.textContent = `Error: ${error.message}`;
+  }
+})();
+</script>
+</body>
+</html>

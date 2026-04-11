@@ -103,6 +103,14 @@ cd browser/chromium
 ./scripts/build-release-external.sh
 ```
 
+If you changed only Doe runtime code on macOS and want the current Fawn app
+bundle to launch with the newest Doe library without rebuilding Chromium:
+
+```bash
+cd browser/chromium
+./scripts/refresh-doe-app.sh
+```
+
 ## Linux external volume workflow (ext4/xfs)
 
 When local disk is constrained, keep the Chromium checkout and caches on an
@@ -206,6 +214,9 @@ Use wrappers under `browser/chromium/scripts` to avoid hardcoded paths:
    - runs Playwright smoke harness with resolved `--chrome` and `--doe-lib`.
 4. `scripts/run-bench.sh`
    - runs layered superset orchestrator with resolved `--chrome` and `--doe-lib`.
+5. `scripts/refresh-doe-app.sh`
+   - macOS-only helper that rebuilds Doe drop-in and reapplies the app-bundle
+     Doe runtime wrapper after local runtime changes.
 
 ## Browser smoke harness
 

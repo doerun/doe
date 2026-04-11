@@ -94,6 +94,8 @@ fn retire_descriptor_state(self: anytype) void {
     if (!self.has_descriptor_pool and !self.has_pipeline_layout) {
         self.current_layout_hash = 0;
         self.descriptor_set_count = 0;
+        self.current_descriptor_bindings_hash = 0;
+        self.has_descriptor_bindings_hash = false;
         return;
     }
     self.retired_descriptor_states.append(self.allocator, .{
@@ -109,6 +111,8 @@ fn retire_descriptor_state(self: anytype) void {
     self.has_pipeline_layout = false;
     self.pipeline_layout = VK_NULL_U64;
     self.current_layout_hash = 0;
+    self.current_descriptor_bindings_hash = 0;
+    self.has_descriptor_bindings_hash = false;
 }
 
 pub fn release_retired_states(self: anytype) void {
@@ -347,12 +351,15 @@ fn prepare_descriptor_sets(
     initialize_buffers_on_create: bool,
 ) !void {
     if (self.descriptor_set_count == 0) return;
+    const bs = bindings orelse return error.InvalidArgument;
+    const descriptor_bindings_hash = compute_descriptor_bindings_hash(bs);
+    if (self.has_descriptor_pool and self.has_descriptor_bindings_hash and descriptor_bindings_hash == self.current_descriptor_bindings_hash) {
+        return;
+    }
     if (!self.recorded_submit_replay_active and (self.has_deferred_submissions or self.pending_uploads.items.len > 0)) {
         _ = try vk_upload.flush_queue(self);
     }
     try ensure_descriptor_pool(self, bindings);
-
-    const bs = bindings orelse return error.InvalidArgument;
     var buffer_infos = std.ArrayListUnmanaged(c.VkDescriptorBufferInfo){};
     defer buffer_infos.deinit(self.allocator);
     var image_infos = std.ArrayListUnmanaged(c.VkDescriptorImageInfo){};
@@ -439,6 +446,8 @@ fn prepare_descriptor_sets(
     if (writes.items.len > 0) {
         c.vkUpdateDescriptorSets(self.device, @intCast(writes.items.len), writes.items.ptr, 0, null);
     }
+    self.current_descriptor_bindings_hash = descriptor_bindings_hash;
+    self.has_descriptor_bindings_hash = true;
 }
 
 fn ensure_descriptor_pool(self: anytype, bindings: ?[]const model_compute_types.KernelBinding) !void {
@@ -604,6 +613,27 @@ pub fn compute_layout_hash(bindings: ?[]const model_compute_types.KernelBinding)
             hasher.update(std.mem.asBytes(&binding.texture_format));
             hasher.update(std.mem.asBytes(&binding.texture_multisampled));
         }
+    }
+    return hasher.final();
+}
+
+pub fn compute_descriptor_bindings_hash(bindings: []const model_compute_types.KernelBinding) u64 {
+    var hasher = std.hash.Wyhash.init(0);
+    for (bindings) |binding| {
+        hasher.update(std.mem.asBytes(&binding.group));
+        hasher.update(std.mem.asBytes(&binding.binding));
+        hasher.update(std.mem.asBytes(&binding.resource_kind));
+        hasher.update(std.mem.asBytes(&binding.resource_handle));
+        hasher.update(std.mem.asBytes(&binding.visibility));
+        hasher.update(std.mem.asBytes(&binding.buffer_offset));
+        hasher.update(std.mem.asBytes(&binding.buffer_size));
+        hasher.update(std.mem.asBytes(&binding.buffer_type));
+        hasher.update(std.mem.asBytes(&binding.texture_sample_type));
+        hasher.update(std.mem.asBytes(&binding.texture_view_dimension));
+        hasher.update(std.mem.asBytes(&binding.storage_texture_access));
+        hasher.update(std.mem.asBytes(&binding.texture_aspect));
+        hasher.update(std.mem.asBytes(&binding.texture_format));
+        hasher.update(std.mem.asBytes(&binding.texture_multisampled));
     }
     return hasher.final();
 }

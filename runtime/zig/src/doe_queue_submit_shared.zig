@@ -1,3 +1,4 @@
+const builtin = @import("builtin");
 const std = @import("std");
 const queue_submit_ops = @import("backend/dropin_queue_submit.zig");
 const native_types = @import("doe_native_object_types.zig");
@@ -13,6 +14,7 @@ const DoeDevice = native_types.DoeDevice;
 const DoeQueue = native_types.DoeQueue;
 const MAX_DEFERRED_COPIES = native_cmds.MAX_DEFERRED_COPIES;
 const bridge = queue_submit_ops.metal_bridge;
+const has_vulkan = (builtin.os.tag == .linux);
 
 pub fn flush_pending_work(q: *DoeQueue) void {
     queue_flush_breakdown.flushPendingWork(q);
@@ -68,10 +70,12 @@ pub fn try_schedule_deferred_copy(
 pub fn flush_pending_work_dropin_sync(q: *DoeQueue) void {
     switch (q.dev.backend) {
         .vulkan => {
-            if (native_rt_helpers.device_vk_runtime(q.dev)) |rt| {
-                _ = rt.flush_queue() catch |err| {
-                    deliverInternalError(q.dev, "doe_queue_submit: dropin sync flush: {s}", .{@errorName(err)});
-                };
+            if (comptime has_vulkan) {
+                if (native_rt_helpers.device_vk_runtime(q.dev)) |rt| {
+                    _ = rt.flush_queue() catch |err| {
+                        deliverInternalError(q.dev, "doe_queue_submit: dropin sync flush: {s}", .{@errorName(err)});
+                    };
+                }
             }
         },
         .d3d12 => {

@@ -615,6 +615,56 @@ function updatePassBindGroupState(pass, index, bindGroupNative) {
     return true;
 }
 
+function immediateBytesEqual(currentData, nextData) {
+    if (!currentData || currentData.byteLength !== nextData.byteLength) {
+        return false;
+    }
+    for (let index = 0; index < currentData.byteLength; index += 1) {
+        if (currentData[index] !== nextData[index]) {
+            return false;
+        }
+    }
+    return true;
+}
+
+function updatePassImmediateState(pass, index, data) {
+    const currentData = pass._immediates[index];
+    if (immediateBytesEqual(currentData, data)) {
+        return false;
+    }
+    pass._immediates[index] = data.slice();
+    return true;
+}
+
+function updatePassVertexBufferState(pass, slot, bufferNative, offset, size) {
+    const current = pass._vertexBuffers[slot];
+    if (
+        current
+        && current.buffer === bufferNative
+        && current.offset === offset
+        && current.size === size
+    ) {
+        return false;
+    }
+    pass._vertexBuffers[slot] = { buffer: bufferNative, offset, size };
+    return true;
+}
+
+function updatePassIndexBufferState(pass, bufferNative, format, offset, size) {
+    const current = pass._indexBuffer;
+    if (
+        current
+        && current.buffer === bufferNative
+        && current.format === format
+        && current.offset === offset
+        && current.size === size
+    ) {
+        return false;
+    }
+    pass._indexBuffer = { buffer: bufferNative, format, offset, size };
+    return true;
+}
+
 function ensureSubmitPtrScratch(queue, count) {
     if (count <= 1) {
         return queue._singleSubmitPtrArray;
@@ -2089,6 +2139,7 @@ const bunEncoderBackend = {
         pass._native = native;
         pass._pipeline = null;
         pass._bindGroups = [];
+        pass._immediates = [];
         pass._ended = false;
     },
     computePassAssertOpen(pass, path) {
@@ -2117,6 +2168,9 @@ const bunEncoderBackend = {
         );
     },
     computePassSetImmediates(pass, index, data) {
+        if (!updatePassImmediateState(pass, index, data)) {
+            return;
+        }
         wgpu.symbols.wgpuComputePassEncoderSetImmediates(
             assertLiveResource(pass, "GPUComputePassEncoder.setImmediates", "GPUComputePassEncoder"),
             index,
@@ -2175,6 +2229,9 @@ const bunEncoderBackend = {
         pass._native = native;
         pass._pipeline = null;
         pass._bindGroups = [];
+        pass._immediates = [];
+        pass._vertexBuffers = [];
+        pass._indexBuffer = null;
         pass._ended = false;
     },
     renderPassAssertOpen(pass, path) {
@@ -2203,6 +2260,9 @@ const bunEncoderBackend = {
         );
     },
     renderPassSetVertexBuffer(pass, slot, bufferNative, offset, size) {
+        if (!updatePassVertexBufferState(pass, slot, bufferNative, offset, size)) {
+            return;
+        }
         wgpu.symbols.wgpuRenderPassEncoderSetVertexBuffer(
             assertLiveResource(pass, "GPURenderPassEncoder.setVertexBuffer", "GPURenderPassEncoder"),
             slot,
@@ -2212,6 +2272,9 @@ const bunEncoderBackend = {
         );
     },
     renderPassSetIndexBuffer(pass, bufferNative, format, offset, size) {
+        if (!updatePassIndexBufferState(pass, bufferNative, format, offset, size)) {
+            return;
+        }
         wgpu.symbols.wgpuRenderPassEncoderSetIndexBuffer(
             assertLiveResource(pass, "GPURenderPassEncoder.setIndexBuffer", "GPURenderPassEncoder"),
             bufferNative,
@@ -2253,6 +2316,9 @@ const bunEncoderBackend = {
         );
     },
     renderPassSetImmediates(pass, index, data) {
+        if (!updatePassImmediateState(pass, index, data)) {
+            return;
+        }
         wgpu.symbols.wgpuRenderPassEncoderSetImmediates(
             assertLiveResource(pass, "GPURenderPassEncoder.setImmediates", "GPURenderPassEncoder"),
             index,
@@ -2316,6 +2382,9 @@ const bunEncoderBackend = {
         encoder._native = native;
         encoder._pipeline = null;
         encoder._bindGroups = [];
+        encoder._immediates = [];
+        encoder._vertexBuffers = [];
+        encoder._indexBuffer = null;
         encoder._finished = false;
     },
     renderBundleEncoderSetPipeline(encoder, pipelineNative) {
@@ -2340,6 +2409,9 @@ const bunEncoderBackend = {
         );
     },
     renderBundleEncoderSetImmediates(encoder, index, data) {
+        if (!updatePassImmediateState(encoder, index, data)) {
+            return;
+        }
         wgpu.symbols.wgpuRenderBundleEncoderSetImmediates(
             assertLiveResource(encoder, "GPURenderBundleEncoder.setImmediates", "GPURenderBundleEncoder"),
             index,
@@ -2348,6 +2420,9 @@ const bunEncoderBackend = {
         );
     },
     renderBundleEncoderSetVertexBuffer(encoder, slot, bufferNative, offset, size) {
+        if (!updatePassVertexBufferState(encoder, slot, bufferNative, offset, size)) {
+            return;
+        }
         wgpu.symbols.wgpuRenderBundleEncoderSetVertexBuffer(
             assertLiveResource(encoder, "GPURenderBundleEncoder.setVertexBuffer", "GPURenderBundleEncoder"),
             slot,
@@ -2357,6 +2432,9 @@ const bunEncoderBackend = {
         );
     },
     renderBundleEncoderSetIndexBuffer(encoder, bufferNative, format, offset, size) {
+        if (!updatePassIndexBufferState(encoder, bufferNative, format, offset, size)) {
+            return;
+        }
         wgpu.symbols.wgpuRenderBundleEncoderSetIndexBuffer(
             assertLiveResource(encoder, "GPURenderBundleEncoder.setIndexBuffer", "GPURenderBundleEncoder"),
             bufferNative,

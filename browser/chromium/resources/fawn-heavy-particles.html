@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fawn Particle Storm</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: radial-gradient(circle at top, #13231b 0%, #0a110f 42%, #050606 100%);
+  color: #e7f0ea;
+}
+.shell {
+  width: min(1200px, calc(100vw - 32px));
+  margin: 28px auto;
+  display: grid;
+  gap: 18px;
+}
+.topbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+.eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #8fb09a;
+}
+h1 {
+  margin: 4px 0 8px;
+  font-size: 30px;
+  font-weight: 520;
+}
+.subtle {
+  max-width: 720px;
+  color: #8ca398;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.back,
+button,
+select {
+  color: #dce8e0;
+  text-decoration: none;
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(145, 188, 161, 0.24);
+  background: rgba(10, 19, 15, 0.76);
+  font: inherit;
+}
+button { cursor: pointer; }
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+.panel {
+  background: rgba(9, 17, 14, 0.80);
+  border: 1px solid rgba(145, 188, 161, 0.15);
+  border-radius: 20px;
+  padding: 16px 18px;
+  backdrop-filter: blur(8px);
+}
+.label {
+  font-size: 11px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: #91aa9c;
+}
+.value {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #edf8f1;
+  line-height: 1.6;
+}
+.stage {
+  position: relative;
+  border-radius: 24px;
+  overflow: hidden;
+  border: 1px solid rgba(145, 188, 161, 0.18);
+  background: #020404;
+  min-height: 68vh;
+}
+canvas {
+  display: block;
+  width: 100%;
+  height: 68vh;
+}
+.note {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(7, 14, 11, 0.66);
+  color: #8aa193;
+  font-size: 11px;
+  line-height: 1.5;
+  max-width: 280px;
+}
+@media (max-width: 980px) {
+  .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .topbar { flex-direction: column; }
+}
+@media (max-width: 640px) {
+  .grid { grid-template-columns: 1fr; }
+  canvas { height: 58vh; }
+}
+</style>
+</head>
+<body>
+<main class="shell">
+  <div class="topbar">
+    <div>
+      <div class="eyebrow">Heavy WebGPU Demo</div>
+      <h1>Particle Storm</h1>
+      <div class="subtle">
+        This page is modeled on the load shape in Party’s heavier playground demos: many particles, repeated simulation work, and persistent rendering.
+        It is not the Party engine, but it does the same broad kind of work inside one static file-backed page.
+      </div>
+    </div>
+    <div class="actions">
+      <label>
+        <span class="eyebrow">Particles</span><br>
+        <select id="count-select">
+          <option value="32768">32,768</option>
+          <option value="65536" selected>65,536</option>
+          <option value="98304">98,304</option>
+          <option value="131072">131,072</option>
+        </select>
+      </label>
+      <label>
+        <span class="eyebrow">Steps</span><br>
+        <select id="steps-select">
+          <option value="2">2</option>
+          <option value="4" selected>4</option>
+          <option value="6">6</option>
+        </select>
+      </label>
+      <button id="restart">Restart</button>
+      <a class="back" href="./fawn-start.html">Back to welcome</a>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="panel">
+      <div class="label">Status</div>
+      <div class="value" id="status">Initializing WebGPU...</div>
+    </div>
+    <div class="panel">
+      <div class="label">Adapter</div>
+      <div class="value" id="adapter">Waiting</div>
+    </div>
+    <div class="panel">
+      <div class="label">Frame</div>
+      <div class="value" id="frame">-- ms · -- fps</div>
+    </div>
+    <div class="panel">
+      <div class="label">Workload</div>
+      <div class="value" id="workload">--</div>
+    </div>
+  </div>
+
+  <div class="stage">
+    <canvas id="view"></canvas>
+    <div class="note">
+      Move the pointer to perturb the field. Hold down to add a stronger pulse. Trails and additive instancing keep the render path busy even when the simulation settles.
+    </div>
+  </div>
+</main>
+<script>
+const WORKGROUP_SIZE = 128;
+const SIM_UNIFORM_FLOATS = 8;
+const PARTICLE_STRIDE_FLOATS = 8;
+
+const COMPUTE_WGSL = `
+struct Params {
+  dt: f32,
+  time: f32,
+  aspect: f32,
+  mouseForce: f32,
+  mouse: vec2<f32>,
+  pad: vec2<f32>,
+}
+
+struct Particle {
+  pos: vec2<f32>,
+  vel: vec2<f32>,
+  color: vec4<f32>,
+}
+
+@group(0) @binding(0) var<uniform> u: Params;
+@group(0) @binding(1) var<storage, read> srcParticles: array<Particle>;
+@group(0) @binding(2) var<storage, read_write> dstParticles: array<Particle>;
+
+fn safeNormalize(v: vec2<f32>) -> vec2<f32> {
+  let lenSq = max(dot(v, v), 1e-6);
+  return v * inverseSqrt(lenSq);
+}
+
+@compute @workgroup_size(${WORKGROUP_SIZE})
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let i = gid.x;
+  if (i >= arrayLength(&srcParticles)) {
+    return;
+  }
+
+  var p = srcParticles[i];
+  let pos = p.pos;
+  let vel = p.vel;
+  let t = u.time * 0.35 + f32(i) * 0.000021;
+
+  var field = vec2<f32>(
+    sin(pos.y * 8.7 + t * 3.1) + cos(pos.x * 12.3 - t * 1.9),
+    cos(pos.x * 9.4 - t * 2.7) - sin(pos.y * 13.1 + t * 1.3)
+  ) * 0.085;
+
+  let tangent = safeNormalize(vec2<f32>(-pos.y, pos.x));
+  let radius = length(pos / vec2<f32>(u.aspect, 1.0));
+  field += tangent * (0.018 + 0.040 * (1.0 - smoothstep(0.18, 1.08, radius)));
+
+  let vortexA = vec2<f32>(sin(t * 0.9) * u.aspect * 0.48, cos(t * 1.1) * 0.48);
+  let vortexB = vec2<f32>(cos(t * 0.7 + 2.2) * u.aspect * 0.55, sin(t * 0.8 + 1.6) * 0.55);
+  let offA = pos - vortexA;
+  let offB = pos - vortexB;
+  field += safeNormalize(vec2<f32>(-offA.y, offA.x)) * (0.018 / max(dot(offA, offA), 0.025));
+  field -= safeNormalize(vec2<f32>(-offB.y, offB.x)) * (0.020 / max(dot(offB, offB), 0.032));
+
+  let mouseDelta = pos - u.mouse;
+  field += safeNormalize(mouseDelta) * (u.mouseForce / max(dot(mouseDelta, mouseDelta), 0.020)) * 0.0012;
+  field += -pos * 0.022;
+
+  var nextVel = vel * 0.985 + field * (u.dt * 60.0);
+  let speed = length(nextVel);
+  if (speed > 1.4) {
+    nextVel = nextVel * (1.4 / speed);
+  }
+
+  var nextPos = pos + nextVel * u.dt;
+  let maxX = u.aspect * 1.02;
+  if (nextPos.x < -maxX || nextPos.x > maxX) {
+    nextPos.x = clamp(nextPos.x, -maxX, maxX);
+    nextVel.x = -nextVel.x * 0.92;
+  }
+  if (nextPos.y < -1.02 || nextPos.y > 1.02) {
+    nextPos.y = clamp(nextPos.y, -1.02, 1.02);
+    nextVel.y = -nextVel.y * 0.92;
+  }
+
+  p.pos = nextPos;
+  p.vel = nextVel;
+  p.color.w = clamp(0.0035 + speed * 0.0045, 0.0035, 0.0105);
+  dstParticles[i] = p;
+}
+`;
+
+const PARTICLE_WGSL = `
+struct Params {
+  dt: f32,
+  time: f32,
+  aspect: f32,
+  mouseForce: f32,
+  mouse: vec2<f32>,
+  pad: vec2<f32>,
+}
+
+struct Particle {
+  pos: vec2<f32>,
+  vel: vec2<f32>,
+  color: vec4<f32>,
+}
+
+struct VSOut {
+  @builtin(position) position: vec4<f32>,
+  @location(0) local: vec2<f32>,
+  @location(1) color: vec3<f32>,
+  @location(2) energy: f32,
+}
+
+@group(0) @binding(0) var<uniform> u: Params;
+@group(0) @binding(1) var<storage, read> particles: array<Particle>;
+
+@vertex
+fn vs(@builtin(vertex_index) vertexIndex: u32, @builtin(instance_index) instanceIndex: u32) -> VSOut {
+  var quad = array<vec2<f32>, 6>(
+    vec2<f32>(-1.0, -1.0),
+    vec2<f32>( 1.0, -1.0),
+    vec2<f32>( 1.0,  1.0),
+    vec2<f32>(-1.0, -1.0),
+    vec2<f32>( 1.0,  1.0),
+    vec2<f32>(-1.0,  1.0)
+  );
+
+  let p = particles[instanceIndex];
+  let local = quad[vertexIndex];
+  let size = p.color.w;
+  let world = p.pos + local * size;
+
+  var out: VSOut;
+  out.position = vec4<f32>(world.x / u.aspect, world.y, 0.0, 1.0);
+  out.local = local;
+  out.color = p.color.xyz;
+  out.energy = clamp(length(p.vel) * 0.85, 0.0, 1.0);
+  return out;
+}
+
+@fragment
+fn fs(in: VSOut) -> @location(0) vec4<f32> {
+  let d = length(in.local);
+  if (d > 1.0) {
+    discard;
+  }
+  let core = smoothstep(1.0, 0.0, d);
+  let halo = pow(max(0.0, 1.0 - d), 3.0);
+  let color = mix(in.color * 0.55, vec3<f32>(0.98, 0.97, 0.86), in.energy * 0.35);
+  let alpha = core * 0.06 + halo * (0.18 + in.energy * 0.08);
+  return vec4<f32>(color * alpha, alpha);
+}
+`;
+
+const FADE_WGSL = `
+struct VSOut {
+  @builtin(position) position: vec4<f32>,
+  @location(0) uv: vec2<f32>,
+}
+
+@group(0) @binding(0) var linearSampler: sampler;
+@group(0) @binding(1) var historyTex: texture_2d<f32>;
+
+@vertex
+fn vs(@builtin(vertex_index) vertexIndex: u32) -> VSOut {
+  var positions = array<vec2<f32>, 3>(
+    vec2<f32>(-1.0, -3.0),
+    vec2<f32>(-1.0,  1.0),
+    vec2<f32>( 3.0,  1.0)
+  );
+  let pos = positions[vertexIndex];
+  var out: VSOut;
+  out.position = vec4<f32>(pos, 0.0, 1.0);
+  out.uv = pos * 0.5 + vec2<f32>(0.5, 0.5);
+  return out;
+}
+
+@fragment
+fn fs(in: VSOut) -> @location(0) vec4<f32> {
+  let prev = textureSample(historyTex, linearSampler, in.uv);
+  let uv = in.uv * 2.0 - 1.0;
+  let vignette = 1.0 - smoothstep(0.15, 1.2, length(uv));
+  let background = vec3<f32>(0.010, 0.016, 0.013) + vignette * vec3<f32>(0.008, 0.020, 0.012);
+  let faded = prev.rgb * 0.972;
+  return vec4<f32>(max(faded, background), 1.0);
+}
+`;
+
+const COMPOSITE_WGSL = `
+struct VSOut {
+  @builtin(position) position: vec4<f32>,
+  @location(0) uv: vec2<f32>,
+}
+
+@group(0) @binding(0) var linearSampler: sampler;
+@group(0) @binding(1) var sourceTex: texture_2d<f32>;
+
+@vertex
+fn vs(@builtin(vertex_index) vertexIndex: u32) -> VSOut {
+  var positions = array<vec2<f32>, 3>(
+    vec2<f32>(-1.0, -3.0),
+    vec2<f32>(-1.0,  1.0),
+    vec2<f32>( 3.0,  1.0)
+  );
+  let pos = positions[vertexIndex];
+  var out: VSOut;
+  out.position = vec4<f32>(pos, 0.0, 1.0);
+  out.uv = pos * 0.5 + vec2<f32>(0.5, 0.5);
+  return out;
+}
+
+@fragment
+fn fs(in: VSOut) -> @location(0) vec4<f32> {
+  let color = textureSample(sourceTex, linearSampler, in.uv).rgb;
+  return vec4<f32>(color, 1.0);
+}
+`;
+
+function hslToRgb(h, s, l) {
+  const hue2rgb = (p, q, t) => {
+    if (t < 0) t += 1;
+    if (t > 1) t -= 1;
+    if (t < 1 / 6) return p + (q - p) * 6 * t;
+    if (t < 1 / 2) return q;
+    if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+    return p;
+  };
+  if (s === 0) return [l, l, l];
+  const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+  const p = 2 * l - q;
+  return [
+    hue2rgb(p, q, h + 1 / 3),
+    hue2rgb(p, q, h),
+    hue2rgb(p, q, h - 1 / 3),
+  ];
+}
+
+(async () => {
+  const statusEl = document.getElementById('status');
+  const adapterEl = document.getElementById('adapter');
+  const frameEl = document.getElementById('frame');
+  const workloadEl = document.getElementById('workload');
+  const countSelect = document.getElementById('count-select');
+  const stepsSelect = document.getElementById('steps-select');
+  const restartButton = document.getElementById('restart');
+  const canvas = document.getElementById('view');
+
+  let adapter = null;
+  let device = null;
+  let context = null;
+  let format = null;
+  let sampler = null;
+
+  let computePipeline = null;
+  let particlePipeline = null;
+  let fadePipeline = null;
+  let compositePipeline = null;
+  let simUniformBuffer = null;
+
+  let particleBuffers = [];
+  let computeBindGroups = [];
+  let renderBindGroups = [];
+  let currentParticleIndex = 0;
+  let particleCount = parseInt(countSelect.value, 10);
+  let stepsPerFrame = parseInt(stepsSelect.value, 10);
+
+  let trailTextures = [];
+  let trailViews = [];
+  let fadeBindGroups = [];
+  let compositeBindGroups = [];
+  let currentTrailIndex = 0;
+
+  let pointer = { x: 0, y: 0, active: false, force: 0.0 };
+  let running = false;
+  let frameCounter = 0;
+  let lastFrameTime = performance.now();
+
+  function updateWorkloadLabel() {
+    workloadEl.textContent = `${particleCount.toLocaleString()} particles · ${stepsPerFrame} compute steps/frame · ping-pong trails`;
+  }
+
+  function createParticleData(count, aspect) {
+    const data = new Float32Array(count * PARTICLE_STRIDE_FLOATS);
+    const goldenAngle = Math.PI * (3 - Math.sqrt(5));
+    for (let i = 0; i < count; i++) {
+      const t = i / count;
+      const radius = Math.sqrt(t) * 0.92;
+      const angle = i * goldenAngle;
+      const x = Math.cos(angle) * radius * aspect * 0.92;
+      const y = Math.sin(angle) * radius * 0.92;
+      const tangentX = -Math.sin(angle);
+      const tangentY = Math.cos(angle);
+      const [r, g, b] = hslToRgb((0.42 + t * 0.25) % 1, 0.58, 0.60);
+      const base = i * PARTICLE_STRIDE_FLOATS;
+      data[base + 0] = x;
+      data[base + 1] = y;
+      data[base + 2] = tangentX * (0.05 + Math.sin(i * 0.13) * 0.015);
+      data[base + 3] = tangentY * (0.05 + Math.cos(i * 0.17) * 0.015);
+      data[base + 4] = r;
+      data[base + 5] = g;
+      data[base + 6] = b;
+      data[base + 7] = 0.0045 + (i % 11) * 0.00018;
+    }
+    return data;
+  }
+
+  function createParticleBuffers() {
+    const byteLength = particleCount * PARTICLE_STRIDE_FLOATS * 4;
+    particleBuffers = [
+      device.createBuffer({
+        size: byteLength,
+        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+      }),
+      device.createBuffer({
+        size: byteLength,
+        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+      }),
+    ];
+  }
+
+  function createTrailTargets() {
+    const width = Math.max(1, canvas.width);
+    const height = Math.max(1, canvas.height);
+    trailTextures.forEach((texture) => texture.destroy());
+    trailTextures = [];
+    trailViews = [];
+    currentTrailIndex = 0;
+    for (let i = 0; i < 2; i++) {
+      const texture = device.createTexture({
+        size: { width, height },
+        format,
+        usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
+      });
+      trailTextures.push(texture);
+      trailViews.push(texture.createView());
+    }
+
+    fadeBindGroups = [
+      device.createBindGroup({
+        layout: fadePipeline.getBindGroupLayout(0),
+        entries: [
+          { binding: 0, resource: sampler },
+          { binding: 1, resource: trailViews[0] },
+        ],
+      }),
+      device.createBindGroup({
+        layout: fadePipeline.getBindGroupLayout(0),
+        entries: [
+          { binding: 0, resource: sampler },
+          { binding: 1, resource: trailViews[1] },
+        ],
+      }),
+    ];
+
+    compositeBindGroups = [
+      device.createBindGroup({
+        layout: compositePipeline.getBindGroupLayout(0),
+        entries: [
+          { binding: 0, resource: sampler },
+          { binding: 1, resource: trailViews[0] },
+        ],
+      }),
+      device.createBindGroup({
+        layout: compositePipeline.getBindGroupLayout(0),
+        entries: [
+          { binding: 0, resource: sampler },
+          { binding: 1, resource: trailViews[1] },
+        ],
+      }),
+    ];
+  }
+
+  function recreateBindGroups() {
+    computeBindGroups = [
+      device.createBindGroup({
+        layout: computePipeline.getBindGroupLayout(0),
+        entries: [
+          { binding: 0, resource: { buffer: simUniformBuffer } },
+          { binding: 1, resource: { buffer: particleBuffers[0] } },
+          { binding: 2, resource: { buffer: particleBuffers[1] } },
+        ],
+      }),
+      device.createBindGroup({
+        layout: computePipeline.getBindGroupLayout(0),
+        entries: [
+          { binding: 0, resource: { buffer: simUniformBuffer } },
+          { binding: 1, resource: { buffer: particleBuffers[1] } },
+          { binding: 2, resource: { buffer: particleBuffers[0] } },
+        ],
+      }),
+    ];
+
+    renderBindGroups = [
+      device.createBindGroup({
+        layout: particlePipeline.getBindGroupLayout(0),
+        entries: [
+          { binding: 0, resource: { buffer: simUniformBuffer } },
+          { binding: 1, resource: { buffer: particleBuffers[0] } },
+        ],
+      }),
+      device.createBindGroup({
+        layout: particlePipeline.getBindGroupLayout(0),
+        entries: [
+          { binding: 0, resource: { buffer: simUniformBuffer } },
+          { binding: 1, resource: { buffer: particleBuffers[1] } },
+        ],
+      }),
+    ];
+  }
+
+  function resizeCanvas() {
+    const dpr = window.devicePixelRatio || 1;
+    const width = Math.max(1, Math.floor(canvas.clientWidth * dpr));
+    const height = Math.max(1, Math.floor(canvas.clientHeight * dpr));
+    if (canvas.width === width && canvas.height === height) return;
+    canvas.width = width;
+    canvas.height = height;
+    context.configure({ device, format, alphaMode: 'opaque' });
+    createTrailTargets();
+  }
+
+  function resetSimulation() {
+    particleCount = parseInt(countSelect.value, 10);
+    stepsPerFrame = parseInt(stepsSelect.value, 10);
+    updateWorkloadLabel();
+
+    particleBuffers.forEach((buffer) => buffer.destroy());
+    createParticleBuffers();
+    recreateBindGroups();
+
+    const aspect = canvas.width > 0 && canvas.height > 0 ? canvas.width / canvas.height : 1;
+    const data = createParticleData(particleCount, aspect);
+    device.queue.writeBuffer(particleBuffers[0], 0, data);
+    device.queue.writeBuffer(particleBuffers[1], 0, data);
+    currentParticleIndex = 0;
+    statusEl.textContent = 'Running heavy compute/render loop';
+  }
+
+  async function initialize() {
+    if (!navigator.gpu) throw new Error('WebGPU unavailable');
+    adapter = await navigator.gpu.requestAdapter({ powerPreference: 'high-performance' });
+    if (!adapter) throw new Error('No adapter');
+    device = await adapter.requestDevice();
+    context = canvas.getContext('webgpu');
+    format = navigator.gpu.getPreferredCanvasFormat();
+    sampler = device.createSampler({
+      magFilter: 'linear',
+      minFilter: 'linear',
+    });
+
+    simUniformBuffer = device.createBuffer({
+      size: SIM_UNIFORM_FLOATS * 4,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+
+    computePipeline = device.createComputePipeline({
+      layout: 'auto',
+      compute: {
+        module: device.createShaderModule({ code: COMPUTE_WGSL }),
+        entryPoint: 'main',
+      },
+    });
+
+    particlePipeline = device.createRenderPipeline({
+      layout: 'auto',
+      vertex: {
+        module: device.createShaderModule({ code: PARTICLE_WGSL }),
+        entryPoint: 'vs',
+      },
+      fragment: {
+        module: device.createShaderModule({ code: PARTICLE_WGSL }),
+        entryPoint: 'fs',
+        targets: [{
+          format,
+          blend: {
+            color: { srcFactor: 'one', dstFactor: 'one', operation: 'add' },
+            alpha: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add' },
+          },
+        }],
+      },
+      primitive: { topology: 'triangle-list' },
+    });
+
+    fadePipeline = device.createRenderPipeline({
+      layout: 'auto',
+      vertex: {
+        module: device.createShaderModule({ code: FADE_WGSL }),
+        entryPoint: 'vs',
+      },
+      fragment: {
+        module: device.createShaderModule({ code: FADE_WGSL }),
+        entryPoint: 'fs',
+        targets: [{ format }],
+      },
+      primitive: { topology: 'triangle-list' },
+    });
+
+    compositePipeline = device.createRenderPipeline({
+      layout: 'auto',
+      vertex: {
+        module: device.createShaderModule({ code: COMPOSITE_WGSL }),
+        entryPoint: 'vs',
+      },
+      fragment: {
+        module: device.createShaderModule({ code: COMPOSITE_WGSL }),
+        entryPoint: 'fs',
+        targets: [{ format }],
+      },
+      primitive: { topology: 'triangle-list' },
+    });
+
+    const adapterInfo = adapter.info || {};
+    const parts = [];
+    if (adapterInfo.vendor) parts.push(adapterInfo.vendor);
+    if (adapterInfo.architecture) parts.push(adapterInfo.architecture);
+    if (adapterInfo.device) parts.push(adapterInfo.device);
+    adapterEl.textContent = parts.join(' · ') || 'Adapter acquired';
+
+    resizeCanvas();
+    createParticleBuffers();
+    recreateBindGroups();
+    resetSimulation();
+    running = true;
+  }
+
+  function updatePointerFromEvent(event) {
+    const rect = canvas.getBoundingClientRect();
+    const aspect = canvas.width > 0 && canvas.height > 0 ? canvas.width / canvas.height : 1;
+    const x = rect.width > 0 ? (event.clientX - rect.left) / rect.width : 0.5;
+    const y = rect.height > 0 ? (event.clientY - rect.top) / rect.height : 0.5;
+    pointer.x = (x * 2 - 1) * aspect;
+    pointer.y = -(y * 2 - 1);
+  }
+
+  function frame(now) {
+    if (!running) return;
+    resizeCanvas();
+
+    const dtMs = Math.min(32, now - lastFrameTime);
+    lastFrameTime = now;
+    const dt = dtMs / 1000;
+    const aspect = canvas.width > 0 && canvas.height > 0 ? canvas.width / canvas.height : 1;
+
+    const pulse = pointer.active ? 1.0 : 0.0;
+    pointer.force = pointer.force * 0.92 + pulse * 55.0;
+    const uniformData = new Float32Array([
+      dt,
+      now * 0.001,
+      aspect,
+      pointer.force,
+      pointer.x,
+      pointer.y,
+      0,
+      0,
+    ]);
+    device.queue.writeBuffer(simUniformBuffer, 0, uniformData);
+
+    const encoder = device.createCommandEncoder();
+
+    for (let step = 0; step < stepsPerFrame; step++) {
+      const pass = encoder.beginComputePass();
+      pass.setPipeline(computePipeline);
+      pass.setBindGroup(0, computeBindGroups[currentParticleIndex]);
+      pass.dispatchWorkgroups(Math.ceil(particleCount / WORKGROUP_SIZE));
+      pass.end();
+      currentParticleIndex = 1 - currentParticleIndex;
+    }
+
+    const dstTrailIndex = 1 - currentTrailIndex;
+    {
+      const pass = encoder.beginRenderPass({
+        colorAttachments: [{
+          view: trailViews[dstTrailIndex],
+          clearValue: { r: 0.01, g: 0.016, b: 0.013, a: 1 },
+          loadOp: 'clear',
+          storeOp: 'store',
+        }],
+      });
+      pass.setPipeline(fadePipeline);
+      pass.setBindGroup(0, fadeBindGroups[currentTrailIndex]);
+      pass.draw(3);
+      pass.end();
+    }
+
+    {
+      const pass = encoder.beginRenderPass({
+        colorAttachments: [{
+          view: trailViews[dstTrailIndex],
+          loadOp: 'load',
+          storeOp: 'store',
+        }],
+      });
+      pass.setPipeline(particlePipeline);
+      pass.setBindGroup(0, renderBindGroups[currentParticleIndex]);
+      pass.draw(6, particleCount);
+      pass.end();
+    }
+
+    {
+      const pass = encoder.beginRenderPass({
+        colorAttachments: [{
+          view: context.getCurrentTexture().createView(),
+          clearValue: { r: 0.01, g: 0.016, b: 0.013, a: 1 },
+          loadOp: 'clear',
+          storeOp: 'store',
+        }],
+      });
+      pass.setPipeline(compositePipeline);
+      pass.setBindGroup(0, compositeBindGroups[dstTrailIndex]);
+      pass.draw(3);
+      pass.end();
+    }
+
+    device.queue.submit([encoder.finish()]);
+    currentTrailIndex = dstTrailIndex;
+
+    frameCounter += 1;
+    const fps = 1000 / Math.max(dtMs, 0.001);
+    frameEl.textContent = `${dtMs.toFixed(2)} ms · ${fps.toFixed(1)} fps`;
+
+    requestAnimationFrame(frame);
+  }
+
+  countSelect.addEventListener('change', () => resetSimulation());
+  stepsSelect.addEventListener('change', () => {
+    stepsPerFrame = parseInt(stepsSelect.value, 10);
+    updateWorkloadLabel();
+  });
+  restartButton.addEventListener('click', () => resetSimulation());
+  canvas.addEventListener('pointermove', (event) => updatePointerFromEvent(event));
+  canvas.addEventListener('pointerdown', (event) => {
+    updatePointerFromEvent(event);
+    pointer.active = true;
+  });
+  addEventListener('pointerup', () => {
+    pointer.active = false;
+  });
+  addEventListener('pointerleave', () => {
+    pointer.active = false;
+  });
+  addEventListener('resize', () => resizeCanvas());
+
+  try {
+    updateWorkloadLabel();
+    await initialize();
+    requestAnimationFrame((now) => {
+      lastFrameTime = now;
+      requestAnimationFrame(frame);
+    });
+  } catch (error) {
+    statusEl.textContent = `Error: ${error.message}`;
+    frameEl.textContent = '--';
+  }
+})();
+</script>
+</body>
+</html>
