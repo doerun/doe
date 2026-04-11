@@ -2,6 +2,7 @@ const std = @import("std");
 const builtin = @import("builtin");
 const common_timing = @import("../common/timing.zig");
 const path_utils = @import("../common/path_utils.zig");
+const webgpu = @import("../runtime_types.zig");
 const doe_wgsl = @import("../../doe_wgsl/mod.zig");
 const hlsl_dispatch_contract = @import("../../doe_wgsl/hlsl_dispatch_contract.zig");
 const d3d12_descriptors = @import("d3d12_descriptors.zig");
@@ -83,38 +84,52 @@ pub fn setComputeShader(self: anytype, bytecode: []const u8) !void {
     try buildComputePipeline(self, bytecode, hash);
 }
 
-pub fn runDispatch(self: anytype, x: u32, y: u32, z: u32, repeat: u32) !DispatchMetrics {
+pub fn runDispatch(self: anytype, x: u32, y: u32, z: u32, repeat: u32, queue_sync_mode: webgpu.QueueSyncMode) !DispatchMetrics {
     if (x == 0 or y == 0 or z == 0) return error.InvalidArgument;
     if (!self.has_compute_pipeline) return error.Unsupported;
 
     if (self.has_deferred_submissions) _ = try self.flush_queue();
 
     const run_count: u32 = if (repeat == 0) 1 else repeat;
+    var compute_allocator = self.compute_allocator;
+    var compute_cmd_list = self.compute_cmd_list;
+    if (queue_sync_mode != .per_command) {
+        compute_allocator = bridge.c.d3d12_bridge_device_create_command_allocator(self.device) orelse return error.InvalidState;
+        errdefer bridge.c.d3d12_bridge_release(compute_allocator);
+        compute_cmd_list = bridge.c.d3d12_bridge_device_create_command_list(self.device, compute_allocator) orelse return error.InvalidState;
+        errdefer bridge.c.d3d12_bridge_release(compute_cmd_list);
+        bridge.c.d3d12_bridge_command_list_close(compute_cmd_list);
+    }
     const encode_start = common_timing.now_ns();
 
-    if (bridge.c.d3d12_bridge_command_allocator_reset(self.compute_allocator) != 0) return error.InvalidState;
-    if (bridge.c.d3d12_bridge_command_list_reset(self.compute_cmd_list, self.compute_allocator) != 0) return error.InvalidState;
+    if (bridge.c.d3d12_bridge_command_allocator_reset(compute_allocator) != 0) return error.InvalidState;
+    if (bridge.c.d3d12_bridge_command_list_reset(compute_cmd_list, compute_allocator) != 0) return error.InvalidState;
 
-    bridge.c.d3d12_bridge_command_list_set_compute_root_signature(self.compute_cmd_list, self.root_signature);
-    bridge.c.d3d12_bridge_command_list_set_pipeline_state(self.compute_cmd_list, self.compute_pipeline);
-    try bindDispatchInfo(self, x, y, z);
+    bridge.c.d3d12_bridge_command_list_set_compute_root_signature(compute_cmd_list, self.root_signature);
+    bridge.c.d3d12_bridge_command_list_set_pipeline_state(compute_cmd_list, self.compute_pipeline);
+    try bindDispatchInfo(self, compute_cmd_list, x, y, z);
 
     var i: u32 = 0;
     while (i < run_count) : (i += 1) {
-        bridge.c.d3d12_bridge_command_list_dispatch(self.compute_cmd_list, x, y, z);
+        bridge.c.d3d12_bridge_command_list_dispatch(compute_cmd_list, x, y, z);
     }
-    bridge.c.d3d12_bridge_command_list_close(self.compute_cmd_list);
+    bridge.c.d3d12_bridge_command_list_close(compute_cmd_list);
     const encode_ns = common_timing.ns_delta(common_timing.now_ns(), encode_start);
 
-    bridge.c.d3d12_bridge_queue_execute_command_list(self.queue, self.compute_cmd_list);
+    bridge.c.d3d12_bridge_queue_execute_command_list(self.queue, compute_cmd_list);
     self.fence_value +|= 1;
     bridge.c.d3d12_bridge_queue_signal(self.queue, self.fence, self.fence_value);
-    const submit_start = common_timing.now_ns();
-    bridge.c.d3d12_bridge_fence_wait(self.fence, self.fence_value);
-    const submit_wait_ns = common_timing.ns_delta(common_timing.now_ns(), submit_start);
-    self.noteCompletedFenceWait();
+    if (queue_sync_mode == .per_command) {
+        const submit_start = common_timing.now_ns();
+        bridge.c.d3d12_bridge_fence_wait(self.fence, self.fence_value);
+        const submit_wait_ns = common_timing.ns_delta(common_timing.now_ns(), submit_start);
+        self.noteCompletedFenceWait();
+        return .{ .encode_ns = encode_ns, .submit_wait_ns = submit_wait_ns, .dispatch_count = run_count };
+    }
 
-    return .{ .encode_ns = encode_ns, .submit_wait_ns = submit_wait_ns, .dispatch_count = run_count };
+    try self.trackDeferredCommandBatch(compute_allocator, compute_cmd_list);
+
+    return .{ .encode_ns = encode_ns, .submit_wait_ns = 0, .dispatch_count = run_count };
 }
 
 pub fn destroyComputeObjects(self: anytype) void {
@@ -209,7 +224,7 @@ fn buildComputePipeline(self: anytype, bytecode: []const u8, shader_hash: u64) !
     }
 }
 
-fn bindDispatchInfo(self: anytype, x: u32, y: u32, z: u32) !void {
+fn bindDispatchInfo(self: anytype, cmd_list: ?*anyopaque, x: u32, y: u32, z: u32) !void {
     try ensureDispatchInfoCbv(self);
     const mapped = bridge.c.d3d12_bridge_resource_map(self.dispatch_info_buffer) orelse return error.InvalidState;
     const words: *DispatchInfoWords = @ptrCast(@alignCast(mapped));
@@ -217,12 +232,12 @@ fn bindDispatchInfo(self: anytype, x: u32, y: u32, z: u32) !void {
     bridge.c.d3d12_bridge_resource_unmap(self.dispatch_info_buffer);
 
     bridge.c.d3d12_bridge_command_list_set_descriptor_heaps(
-        self.compute_cmd_list,
+        cmd_list,
         self.descriptor_state.cbv_srv_uav_heap,
         self.descriptor_state.sampler_heap,
     );
     bridge.c.d3d12_bridge_command_list_set_compute_root_descriptor_table(
-        self.compute_cmd_list,
+        cmd_list,
         hlsl_dispatch_contract.DISPATCH_INFO_ROOT_PARAMETER_INDEX,
         self.descriptor_state.cbv_srv_uav_heap,
         self.dispatch_info_cbv_index,

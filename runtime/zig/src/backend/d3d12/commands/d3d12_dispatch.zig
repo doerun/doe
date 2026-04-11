@@ -1,6 +1,7 @@
 const std = @import("std");
 const model_compute_types = @import("../../../model_compute_types.zig");
 const common_timing = @import("../../common/timing.zig");
+const webgpu = @import("../../runtime_types.zig");
 const dc = @import("../d3d12_constants.zig");
 const bridge = @import("../d3d12_bridge_decls.zig");
 
@@ -10,6 +11,12 @@ pub const DispatchMetrics = struct {
     encode_ns: u64 = 0,
     submit_wait_ns: u64 = 0,
     dispatch_count: u32 = 0,
+};
+
+pub const DispatchSubmission = struct {
+    metrics: DispatchMetrics = .{},
+    cmd_allocator: ?*anyopaque = null,
+    cmd_list: ?*anyopaque = null,
 };
 
 pub const DispatchState = struct {
@@ -28,32 +35,52 @@ pub const DispatchState = struct {
         fence: ?*anyopaque,
         fence_value: *u64,
         cmd: model_compute_types.DispatchCommand,
-    ) !DispatchMetrics {
+        queue_sync_mode: webgpu.QueueSyncMode,
+    ) !DispatchSubmission {
         if (cmd.x == 0 or cmd.y == 0 or cmd.z == 0) return error.InvalidArgument;
 
         try self.ensure_noop_pipeline(device);
-        try self.ensure_cmd(device);
+        if (queue_sync_mode == .per_command) {
+            try self.ensure_cmd(device);
+        }
+
+        var cmd_allocator = self.cmd_allocator;
+        var cmd_list = self.cmd_list;
+        if (queue_sync_mode != .per_command) {
+            cmd_allocator = bridge.c.d3d12_bridge_device_create_command_allocator(device) orelse return error.InvalidState;
+            errdefer bridge.c.d3d12_bridge_release(cmd_allocator);
+            cmd_list = bridge.c.d3d12_bridge_device_create_command_list(device, cmd_allocator) orelse return error.InvalidState;
+            errdefer bridge.c.d3d12_bridge_release(cmd_list);
+            bridge.c.d3d12_bridge_command_list_close(cmd_list);
+        }
 
         const encode_start = common_timing.now_ns();
 
-        if (bridge.c.d3d12_bridge_command_allocator_reset(self.cmd_allocator) != 0) return error.InvalidState;
-        if (bridge.c.d3d12_bridge_command_list_reset(self.cmd_list, self.cmd_allocator) != 0) return error.InvalidState;
+        if (bridge.c.d3d12_bridge_command_allocator_reset(cmd_allocator) != 0) return error.InvalidState;
+        if (bridge.c.d3d12_bridge_command_list_reset(cmd_list, cmd_allocator) != 0) return error.InvalidState;
 
-        bridge.c.d3d12_bridge_command_list_set_compute_root_signature(self.cmd_list, self.root_signature);
-        bridge.c.d3d12_bridge_command_list_set_pipeline_state(self.cmd_list, self.noop_pipeline);
-        bridge.c.d3d12_bridge_command_list_dispatch(self.cmd_list, cmd.x, cmd.y, cmd.z);
-        bridge.c.d3d12_bridge_command_list_close(self.cmd_list);
+        bridge.c.d3d12_bridge_command_list_set_compute_root_signature(cmd_list, self.root_signature);
+        bridge.c.d3d12_bridge_command_list_set_pipeline_state(cmd_list, self.noop_pipeline);
+        bridge.c.d3d12_bridge_command_list_dispatch(cmd_list, cmd.x, cmd.y, cmd.z);
+        bridge.c.d3d12_bridge_command_list_close(cmd_list);
 
         const encode_ns = common_timing.ns_delta(common_timing.now_ns(), encode_start);
 
-        bridge.c.d3d12_bridge_queue_execute_command_list(queue, self.cmd_list);
+        bridge.c.d3d12_bridge_queue_execute_command_list(queue, cmd_list);
         fence_value.* +|= 1;
         bridge.c.d3d12_bridge_queue_signal(queue, fence, fence_value.*);
-        const submit_start = common_timing.now_ns();
-        bridge.c.d3d12_bridge_fence_wait(fence, fence_value.*);
-        const submit_wait_ns = common_timing.ns_delta(common_timing.now_ns(), submit_start);
+        if (queue_sync_mode == .per_command) {
+            const submit_start = common_timing.now_ns();
+            bridge.c.d3d12_bridge_fence_wait(fence, fence_value.*);
+            const submit_wait_ns = common_timing.ns_delta(common_timing.now_ns(), submit_start);
+            return .{ .metrics = .{ .encode_ns = encode_ns, .submit_wait_ns = submit_wait_ns, .dispatch_count = 1 } };
+        }
 
-        return .{ .encode_ns = encode_ns, .submit_wait_ns = submit_wait_ns, .dispatch_count = 1 };
+        return .{
+            .metrics = .{ .encode_ns = encode_ns, .submit_wait_ns = 0, .dispatch_count = 1 },
+            .cmd_allocator = cmd_allocator,
+            .cmd_list = cmd_list,
+        };
     }
 
     pub fn execute_dispatch_indirect(
@@ -63,10 +90,13 @@ pub const DispatchState = struct {
         fence: ?*anyopaque,
         fence_value: *u64,
         cmd: model_compute_types.DispatchIndirectCommand,
-    ) !DispatchMetrics {
+        queue_sync_mode: webgpu.QueueSyncMode,
+    ) !DispatchSubmission {
         _ = cmd;
         try self.ensure_noop_pipeline(device);
-        try self.ensure_cmd(device);
+        if (queue_sync_mode == .per_command) {
+            try self.ensure_cmd(device);
+        }
 
         if (self.dispatch_cmd_sig == null) {
             self.dispatch_cmd_sig = bridge.c.d3d12_bridge_device_create_command_signature_dispatch(device, self.root_signature) orelse return error.InvalidState;
@@ -75,26 +105,43 @@ pub const DispatchState = struct {
             self.indirect_arg_buffer = bridge.c.d3d12_bridge_device_create_buffer(device, DISPATCH_INDIRECT_ARG_BYTES, dc.HEAP_TYPE_UPLOAD) orelse return error.InvalidState;
         }
 
+        var cmd_allocator = self.cmd_allocator;
+        var cmd_list = self.cmd_list;
+        if (queue_sync_mode != .per_command) {
+            cmd_allocator = bridge.c.d3d12_bridge_device_create_command_allocator(device) orelse return error.InvalidState;
+            errdefer bridge.c.d3d12_bridge_release(cmd_allocator);
+            cmd_list = bridge.c.d3d12_bridge_device_create_command_list(device, cmd_allocator) orelse return error.InvalidState;
+            errdefer bridge.c.d3d12_bridge_release(cmd_list);
+            bridge.c.d3d12_bridge_command_list_close(cmd_list);
+        }
+
         const encode_start = common_timing.now_ns();
 
-        if (bridge.c.d3d12_bridge_command_allocator_reset(self.cmd_allocator) != 0) return error.InvalidState;
-        if (bridge.c.d3d12_bridge_command_list_reset(self.cmd_list, self.cmd_allocator) != 0) return error.InvalidState;
+        if (bridge.c.d3d12_bridge_command_allocator_reset(cmd_allocator) != 0) return error.InvalidState;
+        if (bridge.c.d3d12_bridge_command_list_reset(cmd_list, cmd_allocator) != 0) return error.InvalidState;
 
-        bridge.c.d3d12_bridge_command_list_set_compute_root_signature(self.cmd_list, self.root_signature);
-        bridge.c.d3d12_bridge_command_list_set_pipeline_state(self.cmd_list, self.noop_pipeline);
-        bridge.c.d3d12_bridge_command_list_execute_indirect(self.cmd_list, self.dispatch_cmd_sig, 1, self.indirect_arg_buffer, 0);
-        bridge.c.d3d12_bridge_command_list_close(self.cmd_list);
+        bridge.c.d3d12_bridge_command_list_set_compute_root_signature(cmd_list, self.root_signature);
+        bridge.c.d3d12_bridge_command_list_set_pipeline_state(cmd_list, self.noop_pipeline);
+        bridge.c.d3d12_bridge_command_list_execute_indirect(cmd_list, self.dispatch_cmd_sig, 1, self.indirect_arg_buffer, 0);
+        bridge.c.d3d12_bridge_command_list_close(cmd_list);
 
         const encode_ns = common_timing.ns_delta(common_timing.now_ns(), encode_start);
 
-        bridge.c.d3d12_bridge_queue_execute_command_list(queue, self.cmd_list);
+        bridge.c.d3d12_bridge_queue_execute_command_list(queue, cmd_list);
         fence_value.* +|= 1;
         bridge.c.d3d12_bridge_queue_signal(queue, fence, fence_value.*);
-        const submit_start = common_timing.now_ns();
-        bridge.c.d3d12_bridge_fence_wait(fence, fence_value.*);
-        const submit_wait_ns = common_timing.ns_delta(common_timing.now_ns(), submit_start);
+        if (queue_sync_mode == .per_command) {
+            const submit_start = common_timing.now_ns();
+            bridge.c.d3d12_bridge_fence_wait(fence, fence_value.*);
+            const submit_wait_ns = common_timing.ns_delta(common_timing.now_ns(), submit_start);
+            return .{ .metrics = .{ .encode_ns = encode_ns, .submit_wait_ns = submit_wait_ns, .dispatch_count = 1 } };
+        }
 
-        return .{ .encode_ns = encode_ns, .submit_wait_ns = submit_wait_ns, .dispatch_count = 1 };
+        return .{
+            .metrics = .{ .encode_ns = encode_ns, .submit_wait_ns = 0, .dispatch_count = 1 },
+            .cmd_allocator = cmd_allocator,
+            .cmd_list = cmd_list,
+        };
     }
 
     fn ensure_noop_pipeline(self: *DispatchState, device: ?*anyopaque) !void {

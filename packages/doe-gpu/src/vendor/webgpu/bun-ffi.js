@@ -144,6 +144,7 @@ const STORAGE_TEXTURE_ACCESS = Object.freeze({
     "read-only": 3,
     "read-write": 4,
 });
+const MAX_COMPUTE_BIND_GROUPS = 4;
 
 // Struct layout constants for 64-bit platforms (LP64 / LLP64).
 const PTR_SIZE = 8;
@@ -412,6 +413,17 @@ function openLibrary(path) {
                 FFIType.ptr,  // copyDst
                 FFIType.u64,  // copyDstOff
                 FFIType.u64,  // copySize
+            ],
+            returns: FFIType.void,
+        };
+        symbols.doeNativeComputeDispatchBatchFlush = {
+            args: [
+                FFIType.ptr,  // queue
+                FFIType.u64,  // dispatchCount
+                FFIType.ptr,  // pipelines
+                FFIType.ptr,  // bindGroups
+                FFIType.ptr,  // bindGroupCounts
+                FFIType.ptr,  // dispatchDims
             ],
             returns: FFIType.void,
         };
@@ -2734,6 +2746,48 @@ const fullSurfaceBackend = {
         if (buffers.every((cb) => cb?._batched && Array.isArray(cb._commands))) {
             const allCommands = [];
             for (const cb of buffers) allCommands.push(...cb._commands);
+            const dispatchBatchFlush = wgpu.symbols.doeNativeComputeDispatchBatchFlush;
+            if (process.platform === "darwin" && dispatchBatchFlush && allCommands.length > 0) {
+                let allDispatch = true;
+                for (const cmd of allCommands) {
+                    if (cmd?.t !== 0 || (cmd.immediates?.length ?? 0) !== 0) {
+                        allDispatch = false;
+                        break;
+                    }
+                }
+                if (allDispatch) {
+                    const dispatchCount = allCommands.length;
+                    const pipelines = new BigUint64Array(dispatchCount);
+                    const bindGroups = new BigUint64Array(dispatchCount * MAX_COMPUTE_BIND_GROUPS);
+                    const bindGroupCounts = new Uint32Array(dispatchCount);
+                    const dispatchDims = new Uint32Array(dispatchCount * 3);
+                    for (let i = 0; i < dispatchCount; i += 1) {
+                        const cmd = allCommands[i];
+                        pipelines[i] = BigInt(cmd.p ?? 0);
+                        const bgCount = Math.min(cmd.bg?.length ?? 0, MAX_COMPUTE_BIND_GROUPS);
+                        bindGroupCounts[i] = bgCount;
+                        for (let j = 0; j < bgCount; j += 1) {
+                            bindGroups[(i * MAX_COMPUTE_BIND_GROUPS) + j] = BigInt(cmd.bg[j] ?? 0);
+                        }
+                        dispatchDims[(i * 3)] = cmd.x;
+                        dispatchDims[(i * 3) + 1] = cmd.y;
+                        dispatchDims[(i * 3) + 2] = cmd.z;
+                    }
+                    dispatchBatchFlush(
+                        queueNative,
+                        BigInt(dispatchCount),
+                        pipelines,
+                        bindGroups,
+                        bindGroupCounts,
+                        dispatchDims,
+                    );
+                    for (const commandBuffer of buffers) {
+                        commandBuffer._submitted = true;
+                        commandBuffer.destroy?.();
+                    }
+                    return;
+                }
+            }
             const encoder = wgpu.symbols.wgpuDeviceCreateCommandEncoder(deviceNative, null);
             for (const cmd of allCommands) {
                 if (cmd.t === 0) {

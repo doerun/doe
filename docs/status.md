@@ -22,12 +22,16 @@ Read this file first. Use the shard files under
 
 - D3D12 drop-in queue submit now retains submitted command lists behind the
   runtime fence and drains them at explicit completion boundaries instead of
-  forcing a wait at every submit entry; the broader synchronous D3D12 runtime
-  model still remains for follow-up.
+  forcing a wait at every submit entry, and the native compute/render runtime
+  paths now also retain deferred command lists behind explicit drain points
+  instead of fence-waiting inside every hot submission. Upload/query drain work
+  still remains for follow-up.
 - Apple Metal submit-entry serialization is now fixed for the shared-event queue
   path: `doeNativeQueueSubmit` no longer blocks every submit unless deferred CPU
   copies/resolves are pending or the shared-event fallback is unavailable. Fresh
-  Metal package receipts are still pending; see `2026-04.md` for the diagnosis and
+  Metal package receipts are still pending, and the Bun package surface now also
+  routes pure compute-dispatch batches through the native Metal batch flush path
+  instead of JS command replay; see `2026-04.md` for the diagnosis and
   implementation note.
 - Benchmark reporting now treats `bench/out` as a portable JSON surface:
   compare/claim/run receipts plus cube/inventory/pipeline summary JSONs are

@@ -318,10 +318,10 @@ fn execute_kernel_dispatch(self: *ZigD3D12Backend, setup_ns: u64, kd: model.Kern
 
     var warmup_index: u32 = 0;
     while (warmup_index < kd.warmup_dispatch_count) : (warmup_index += 1) {
-        _ = try runtime.run_dispatch(kd.x, kd.y, kd.z, 1);
+        _ = try runtime.run_dispatch(kd.x, kd.y, kd.z, 1, .per_command);
     }
 
-    const metrics = try runtime.run_dispatch(kd.x, kd.y, kd.z, kd.repeat);
+    const metrics = try runtime.run_dispatch(kd.x, kd.y, kd.z, kd.repeat, self.queue_sync_mode);
     return .{
         .status = .ok,
         .status_message = "",
@@ -337,7 +337,7 @@ fn execute_kernel_dispatch(self: *ZigD3D12Backend, setup_ns: u64, kd: model.Kern
 
 fn execute_compute_dispatch_cmd(self: *ZigD3D12Backend, setup_ns: u64, cmd: model.DispatchCommand) !webgpu.NativeExecutionResult {
     const rt = try ensure_runtime_bootstrapped(self);
-    const metrics = try rt.execute_compute_dispatch(cmd);
+    const metrics = try rt.execute_compute_dispatch(cmd, self.queue_sync_mode);
     return .{
         .status = .ok,
         .status_message = "",
@@ -350,7 +350,7 @@ fn execute_compute_dispatch_cmd(self: *ZigD3D12Backend, setup_ns: u64, cmd: mode
 
 fn execute_dispatch_indirect_cmd(self: *ZigD3D12Backend, setup_ns: u64, cmd: model.DispatchIndirectCommand) !webgpu.NativeExecutionResult {
     const rt = try ensure_runtime_bootstrapped(self);
-    const metrics = try rt.execute_dispatch_indirect(cmd);
+    const metrics = try rt.execute_dispatch_indirect(cmd, self.queue_sync_mode);
     return .{
         .status = .ok,
         .status_message = "",
@@ -405,7 +405,7 @@ fn execute_sampler_destroy_cmd(self: *ZigD3D12Backend, setup_ns: u64, cmd: model
 
 fn execute_render_draw_cmd(self: *ZigD3D12Backend, setup_ns: u64, cmd: model.RenderDrawCommand, is_indirect: bool, is_indexed_indirect: bool) !webgpu.NativeExecutionResult {
     const rt = try ensure_runtime_bootstrapped(self);
-    const metrics = try rt.execute_render_draw(cmd, is_indirect, is_indexed_indirect);
+    const metrics = try rt.execute_render_draw(cmd, is_indirect, is_indexed_indirect, self.queue_sync_mode);
     return .{
         .status = .ok,
         .status_message = "",
