@@ -89,6 +89,11 @@ _REGISTRY: dict[str, ExecutorSpec] = {
         command_template=_DOE_PLAN_PREFIX + " --backend-lane metal_doe_comparable",
         execution_boundary="plan",
     ),
+    "doe_direct_plan_vulkan": ExecutorSpec(
+        executor_id="doe_direct_plan_vulkan",
+        command_template=_DOE_PLAN_PREFIX + " --backend-lane vulkan_doe_comparable",
+        execution_boundary="plan",
+    ),
     "dawn_delegate_metal": ExecutorSpec(
         executor_id="dawn_delegate_metal",
         command_template=_DOE_RUNTIME_PREFIX.replace(
@@ -112,6 +117,11 @@ _REGISTRY: dict[str, ExecutorSpec] = {
             "--backend native --backend-lane vulkan_dawn_release --execute",
         ),
         execution_boundary="commands",
+    ),
+    "dawn_delegate_plan_vulkan": ExecutorSpec(
+        executor_id="dawn_delegate_plan_vulkan",
+        command_template=_DOE_PLAN_PREFIX + " --backend-lane vulkan_dawn_release",
+        execution_boundary="plan",
     ),
     "dawn_delegate_d3d12": ExecutorSpec(
         executor_id="dawn_delegate_d3d12",

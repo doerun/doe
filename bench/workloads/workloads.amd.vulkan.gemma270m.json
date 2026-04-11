@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "ownership": "standalone",
+  "workloads": [
+    {
+      "id": "inference_gemma3_270m_prefill_64tok_decode_64tok",
+      "api": "vulkan",
+      "runnerType": "zig-runtime",
+      "irPath": "bench/ir/gemma3_270m.json",
+      "irScenario": "inference_gemma3_270m_prefill_64tok_decode_64tok",
+      "comparabilityNotes": "Apples-to-apples AMD Vulkan Gemma-3-270M-shaped inference contract for native Doe vs Dawn delegate comparison. Both sides execute the same retained-kernel plan with a 64-token prefill phase followed by 64 single-token decode phases under the plan executor harness.",
+      "comparable": true,
+      "benchmarkClass": "comparable",
+      "claimEligible": true,
+      "default": false,
+      "description": "Single-run Gemma-3-270M-shaped inference sequence with a 64-token prefill phase and 64 sequential single-token decode phases using Doe-owned retained inference kernels plus explicit buffer writes on AMD Vulkan.",
+      "domain": "compute",
+      "vendor": "amd",
+      "family": "gfx11",
+      "driver": "24.0.0",
+      "workloadOrigin": "doe_contract_with_dawn_mapping",
+      "planPath": "bench/plans/generated/inference_gemma3_270m_prefill_64tok_decode_64tok.plan.json",
+      "planSchemaVersion": 1,
+      "planHash": "f5a31776257d1c9e8e9aa544427fa40a2304573ba6434dc63466dc8b67ad1766",
+      "planCommandCount": 1583,
+      "planDispatchCount": 1170,
+      "planBufferWriteCount": 391,
+      "planBufferLoadCount": 22,
+      "compatibilityCommandHash": "17269c457340728f87cf69f091e31b7c942569edfba6f714cb0f203f772a101f",
+      "sourceIrSha256": "dbc451744890fdef290ae6466ac3228a5c026c6795276f439167651311209880",
+      "commandsPath": "bench/plans/generated/compat/inference_gemma3_270m_prefill_64tok_decode_64tok_commands.json",
+      "quirksPath": "examples/quirks/amd_radv_noop_list.json",
+      "extraArgs": [
+        "--kernel-root",
+        "bench/inference-pipeline/kernels"
+      ],
+      "cohorts": [
+        "exploration"
+      ]
+    }
+  ]
+}

@@ -87,6 +87,7 @@ pub fn execute_render_draw(
     if (self.has_deferred_submissions or self.pending_uploads.items.len > 0) {
         _ = try vk_upload.flush_queue(self);
     }
+    try vk_device.ensure_submission_state(self);
 
     var render_state = RenderState{};
     defer release_render_state(self.device, &render_state);
@@ -736,6 +737,7 @@ pub fn execute_render_bundles(
     if (bundles.len == 0) return .{};
     if (self.has_deferred_submissions or self.pending_uploads.items.len > 0)
         _ = try vk_upload.flush_queue(self);
+    try vk_device.ensure_submission_state(self);
     const width = if (target_width > 0) target_width else model_render_types.DEFAULT_RENDER_TARGET_WIDTH;
     const height = if (target_height > 0) target_height else model_render_types.DEFAULT_RENDER_TARGET_HEIGHT;
     const vk_format = try vk_resources.texture_format_to_vk(color_format);

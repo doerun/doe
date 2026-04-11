@@ -31,7 +31,6 @@ const d3d12_device_caps = backend_capabilities.d3d12_device_caps;
 const vk_feature_caps = if (has_vulkan) backend_capabilities.vk_feature_caps else struct {};
 const vk_device_caps = if (has_vulkan) backend_capabilities.vk_device_caps else struct {};
 const vulkan_feature_cache = if (has_vulkan) @import("doe_vulkan_feature_cache.zig") else struct {};
-const vk_feature_probe = if (has_vulkan) backend_capabilities.vk_feature_probe else struct {};
 const backend_policy = @import("backend/backend_policy.zig");
 
 const metal_bridge_create_default_device = backend_lifecycle.metal_bridge_create_default_device;
@@ -128,26 +127,6 @@ fn probe_d3d12_adapter_caps() d3d12_device_caps.D3D12DeviceCaps {
     return rt.device_caps;
 }
 
-// Conservative static fallback when Vulkan probe fails (no GPU, driver error).
-fn probe_vulkan_device_caps_fallback() if (has_vulkan) vk_device_caps.VulkanDeviceCaps else void {
-    if (comptime !has_vulkan) return {};
-    return .{
-        .limits = vulkan_limits_static_fallback(),
-        .has_depth_clip_control = false,
-        .has_texture_compression_bc = false,
-        .has_texture_compression_etc2 = false,
-        .has_texture_compression_astc = false,
-        .has_draw_indirect_first_instance = false,
-        .has_float32_filterable = false,
-        .has_timestamp_query = false,
-    };
-}
-
-fn vulkan_limits_static_fallback() abi_callback.WGPULimits {
-    const doe_device_caps = @import("doe_device_caps.zig");
-    return doe_device_caps.VULKAN_LIMITS_STATIC;
-}
-
 fn stringView(comptime message: []const u8) abi_base.WGPUStringView {
     return .{ .data = message.ptr, .length = message.len };
 }
@@ -213,15 +192,9 @@ fn create_adapter_for_instance(inst: ?*anyopaque) CreateAdapterError!*DoeAdapter
         },
         .vulkan => {
             if (comptime has_vulkan) {
-                const feature_caps: vk_feature_caps.VulkanFeatureCaps =
-                    vk_feature_probe.probe_default_feature_caps(alloc) catch .{};
-                const hw_caps: vk_device_caps.VulkanDeviceCaps =
-                    vk_device_caps.probe_device_caps(alloc) catch probe_vulkan_device_caps_fallback();
                 const adapter = make(DoeAdapter) orelse return error.AdapterAllocationFailed;
                 if (retained_instance) |instance_ref| instance_add_ref(instance_ref);
                 adapter.* = .{ .backend = .vulkan, .instance = retained_instance };
-                vulkan_feature_cache.set_adapter(toOpaque(adapter), feature_caps);
-                vulkan_feature_cache.set_adapter_device_caps(toOpaque(adapter), hw_caps);
                 return adapter;
             }
         },
@@ -242,8 +215,6 @@ fn create_adapter_for_instance(inst: ?*anyopaque) CreateAdapterError!*DoeAdapter
 fn create_device_for_adapter(adapter: *DoeAdapter, adapter_raw: ?*anyopaque) CreateDeviceError!*DoeDevice {
     if (comptime has_vulkan) {
         if (adapter.backend == .vulkan) {
-            const feature_caps: vk_feature_caps.VulkanFeatureCaps =
-                vulkan_feature_cache.get_adapter(adapter_raw) orelse .{};
             const dev = make(DoeDevice) orelse return error.DeviceAllocationFailed;
             const rt = alloc.create(NativeVulkanRuntime) catch {
                 alloc.destroy(dev);
@@ -256,6 +227,12 @@ fn create_device_for_adapter(adapter: *DoeAdapter, adapter_raw: ?*anyopaque) Cre
             };
             adapter_add_ref(adapter);
             dev.* = .{ .backend = .vulkan, .adapter = adapter, .vk_runtime = @ptrCast(rt) };
+            const feature_caps: vk_feature_caps.VulkanFeatureCaps = blk: {
+                if (vulkan_feature_cache.get_adapter(adapter_raw)) |cached| break :blk cached;
+                const queried = vk_feature_caps.query(rt.physical_device).caps;
+                vulkan_feature_cache.set_adapter(adapter_raw, queried);
+                break :blk queried;
+            };
             vulkan_feature_cache.set_device(toOpaque(dev), feature_caps);
             // Propagate hardware-queried device caps from adapter, or re-query from runtime.
             if (vulkan_feature_cache.get_adapter_device_caps(adapter_raw)) |adapter_hw_caps| {
@@ -265,6 +242,7 @@ fn create_device_for_adapter(adapter: *DoeAdapter, adapter_raw: ?*anyopaque) Cre
                     rt.physical_device,
                     if (rt.timestamp_query_supported_value) 36 else 0,
                 );
+                vulkan_feature_cache.set_adapter_device_caps(adapter_raw, runtime_caps);
                 vulkan_feature_cache.set_device_device_caps(toOpaque(dev), runtime_caps);
             }
             return dev;

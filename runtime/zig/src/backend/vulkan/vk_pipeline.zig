@@ -72,6 +72,129 @@ pub const RetiredDescriptorState = struct {
     pipeline_layout: c.VkPipelineLayout = VK_NULL_U64,
 };
 
+pub const CachedComputeState = struct {
+    shader_module: c.VkShaderModule = VK_NULL_U64,
+    pipeline_layout: c.VkPipelineLayout = VK_NULL_U64,
+    pipeline: c.VkPipeline = VK_NULL_U64,
+    descriptor_pool: c.VkDescriptorPool = VK_NULL_U64,
+    descriptor_set_layouts: [c.MAX_DESCRIPTOR_SETS]c.VkDescriptorSetLayout = [_]c.VkDescriptorSetLayout{VK_NULL_U64} ** c.MAX_DESCRIPTOR_SETS,
+    descriptor_sets: [c.MAX_DESCRIPTOR_SETS]c.VkDescriptorSet = [_]c.VkDescriptorSet{VK_NULL_U64} ** c.MAX_DESCRIPTOR_SETS,
+    descriptor_set_count: u32 = 0,
+    current_pipeline_hash: u64 = 0,
+    current_layout_hash: u64 = 0,
+    current_descriptor_bindings_hash: u64 = 0,
+    current_entry_point_owned: ?[:0]u8 = null,
+    has_shader_module: bool = false,
+    has_pipeline_layout: bool = false,
+    has_pipeline: bool = false,
+    has_descriptor_pool: bool = false,
+    has_current_descriptor_bindings_hash: bool = false,
+};
+
+fn has_active_compute_state(self: anytype) bool {
+    return self.has_shader_module or
+        self.has_pipeline_layout or
+        self.has_pipeline or
+        self.has_descriptor_pool or
+        self.current_pipeline_hash != 0 or
+        self.current_layout_hash != 0 or
+        self.current_entry_point_owned != null;
+}
+
+fn clear_active_compute_state(self: anytype) void {
+    self.shader_module = VK_NULL_U64;
+    self.pipeline_layout = VK_NULL_U64;
+    self.pipeline = VK_NULL_U64;
+    self.descriptor_pool = VK_NULL_U64;
+    self.descriptor_set_layouts = [_]c.VkDescriptorSetLayout{VK_NULL_U64} ** c.MAX_DESCRIPTOR_SETS;
+    self.descriptor_sets = [_]c.VkDescriptorSet{VK_NULL_U64} ** c.MAX_DESCRIPTOR_SETS;
+    self.descriptor_set_count = 0;
+    self.current_pipeline_hash = 0;
+    self.current_layout_hash = 0;
+    self.current_descriptor_bindings_hash = 0;
+    self.current_entry_point_owned = null;
+    self.has_shader_module = false;
+    self.has_pipeline_layout = false;
+    self.has_pipeline = false;
+    self.has_descriptor_pool = false;
+    self.has_current_descriptor_bindings_hash = false;
+}
+
+fn capture_active_compute_state(self: anytype) CachedComputeState {
+    return .{
+        .shader_module = self.shader_module,
+        .pipeline_layout = self.pipeline_layout,
+        .pipeline = self.pipeline,
+        .descriptor_pool = self.descriptor_pool,
+        .descriptor_set_layouts = self.descriptor_set_layouts,
+        .descriptor_sets = self.descriptor_sets,
+        .descriptor_set_count = self.descriptor_set_count,
+        .current_pipeline_hash = self.current_pipeline_hash,
+        .current_layout_hash = self.current_layout_hash,
+        .current_descriptor_bindings_hash = self.current_descriptor_bindings_hash,
+        .current_entry_point_owned = self.current_entry_point_owned,
+        .has_shader_module = self.has_shader_module,
+        .has_pipeline_layout = self.has_pipeline_layout,
+        .has_pipeline = self.has_pipeline,
+        .has_descriptor_pool = self.has_descriptor_pool,
+        .has_current_descriptor_bindings_hash = self.has_current_descriptor_bindings_hash,
+    };
+}
+
+fn restore_active_compute_state(self: anytype, cached: CachedComputeState) void {
+    self.shader_module = cached.shader_module;
+    self.pipeline_layout = cached.pipeline_layout;
+    self.pipeline = cached.pipeline;
+    self.descriptor_pool = cached.descriptor_pool;
+    self.descriptor_set_layouts = cached.descriptor_set_layouts;
+    self.descriptor_sets = cached.descriptor_sets;
+    self.descriptor_set_count = cached.descriptor_set_count;
+    self.current_pipeline_hash = cached.current_pipeline_hash;
+    self.current_layout_hash = cached.current_layout_hash;
+    self.current_descriptor_bindings_hash = cached.current_descriptor_bindings_hash;
+    self.current_entry_point_owned = cached.current_entry_point_owned;
+    self.has_shader_module = cached.has_shader_module;
+    self.has_pipeline_layout = cached.has_pipeline_layout;
+    self.has_pipeline = cached.has_pipeline;
+    self.has_descriptor_pool = cached.has_descriptor_pool;
+    self.has_current_descriptor_bindings_hash = cached.has_current_descriptor_bindings_hash;
+}
+
+fn destroy_cached_compute_state(self: anytype, cached: CachedComputeState) void {
+    if (cached.pipeline != VK_NULL_U64) c.vkDestroyPipeline(self.device, cached.pipeline, null);
+    if (cached.shader_module != VK_NULL_U64) c.vkDestroyShaderModule(self.device, cached.shader_module, null);
+    if (cached.descriptor_pool != VK_NULL_U64) c.vkDestroyDescriptorPool(self.device, cached.descriptor_pool, null);
+    for (cached.descriptor_set_layouts) |layout| {
+        if (layout != VK_NULL_U64) c.vkDestroyDescriptorSetLayout(self.device, layout, null);
+    }
+    if (cached.pipeline_layout != VK_NULL_U64) c.vkDestroyPipelineLayout(self.device, cached.pipeline_layout, null);
+    if (cached.current_entry_point_owned) |entry_name| self.allocator.free(entry_name);
+}
+
+pub fn release_cached_compute_states(self: anytype) void {
+    var it = self.cached_compute_states.valueIterator();
+    while (it.next()) |cached| destroy_cached_compute_state(self, cached.*);
+    self.cached_compute_states.deinit(self.allocator);
+}
+
+fn stash_active_compute_state(self: anytype) !void {
+    if (!has_active_compute_state(self)) return;
+    const cache_key = self.current_pipeline_hash;
+    if (cache_key == 0) return;
+    const cached = capture_active_compute_state(self);
+    clear_active_compute_state(self);
+    if (self.cached_compute_states.fetchRemove(cache_key)) |removed| {
+        destroy_cached_compute_state(self, removed.value);
+    }
+    try self.cached_compute_states.put(self.allocator, cache_key, cached);
+}
+
+fn activate_cached_compute_state(self: anytype, pipeline_hash: u64) bool {
+    const removed = self.cached_compute_states.fetchRemove(pipeline_hash) orelse return false;
+    restore_active_compute_state(self, removed.value);
+    return true;
+}
+
 fn retire_pipeline_objects(self: anytype) void {
     if (!self.has_pipeline and !self.has_shader_module and self.current_entry_point_owned == null) {
         self.current_pipeline_hash = 0;
@@ -95,7 +218,7 @@ fn retire_descriptor_state(self: anytype) void {
         self.current_layout_hash = 0;
         self.descriptor_set_count = 0;
         self.current_descriptor_bindings_hash = 0;
-        self.has_descriptor_bindings_hash = false;
+        self.has_current_descriptor_bindings_hash = false;
         return;
     }
     self.retired_descriptor_states.append(self.allocator, .{
@@ -112,14 +235,14 @@ fn retire_descriptor_state(self: anytype) void {
     self.pipeline_layout = VK_NULL_U64;
     self.current_layout_hash = 0;
     self.current_descriptor_bindings_hash = 0;
-    self.has_descriptor_bindings_hash = false;
+    self.has_current_descriptor_bindings_hash = false;
 }
 
 fn retire_descriptor_pool_only(self: anytype) void {
     if (!self.has_descriptor_pool) {
         self.descriptor_sets = [_]c.VkDescriptorSet{VK_NULL_U64} ** c.MAX_DESCRIPTOR_SETS;
         self.current_descriptor_bindings_hash = 0;
-        self.has_descriptor_bindings_hash = false;
+        self.has_current_descriptor_bindings_hash = false;
         return;
     }
     self.retired_descriptor_states.append(self.allocator, .{
@@ -131,7 +254,7 @@ fn retire_descriptor_pool_only(self: anytype) void {
     self.descriptor_pool = VK_NULL_U64;
     self.descriptor_sets = [_]c.VkDescriptorSet{VK_NULL_U64} ** c.MAX_DESCRIPTOR_SETS;
     self.current_descriptor_bindings_hash = 0;
-    self.has_descriptor_bindings_hash = false;
+    self.has_current_descriptor_bindings_hash = false;
 }
 
 fn maybe_retire_replay_state(
@@ -151,9 +274,9 @@ fn maybe_retire_replay_state(
     const descriptor_changed = if (self.descriptor_set_count == 0)
         false
     else if (descriptor_bindings_hash) |hash|
-        !self.has_descriptor_pool or !self.has_descriptor_bindings_hash or hash != self.current_descriptor_bindings_hash
+        !self.has_descriptor_pool or !self.has_current_descriptor_bindings_hash or hash != self.current_descriptor_bindings_hash
     else
-        self.has_descriptor_pool or self.has_descriptor_bindings_hash;
+        self.has_descriptor_pool or self.has_current_descriptor_bindings_hash;
 
     if (pipeline_changed) {
         retire_pipeline_objects(self);
@@ -200,6 +323,29 @@ pub fn load_kernel_source(self: anytype, allocator: std.mem.Allocator, kernel_na
 }
 
 pub fn load_kernel_spirv(self: anytype, allocator: std.mem.Allocator, kernel_name: []const u8) ![]u32 {
+    return try load_kernel_spirv_uncached(self, allocator, kernel_name);
+}
+
+pub fn ensure_kernel_spirv_cached(self: anytype, kernel_name: []const u8) ![]const u32 {
+    if (kernel_name.len == 0) return error.InvalidArgument;
+    if (self.kernel_spirv_cache.get(kernel_name)) |cached| return cached;
+    const words = try load_kernel_spirv_uncached(self, self.allocator, kernel_name);
+    const owned_kernel_name = try self.allocator.dupe(u8, kernel_name);
+    errdefer self.allocator.free(owned_kernel_name);
+    try self.kernel_spirv_cache.put(self.allocator, owned_kernel_name, words);
+    return words;
+}
+
+pub fn release_kernel_spirv_cache(self: anytype) void {
+    var it = self.kernel_spirv_cache.iterator();
+    while (it.next()) |entry| {
+        self.allocator.free(entry.key_ptr.*);
+        self.allocator.free(entry.value_ptr.*);
+    }
+    self.kernel_spirv_cache.deinit(self.allocator);
+}
+
+fn load_kernel_spirv_uncached(self: anytype, allocator: std.mem.Allocator, kernel_name: []const u8) ![]u32 {
     if (kernel_name.len == 0) return error.InvalidArgument;
     const path = resolve_kernel_spirv_path(self, allocator, kernel_name) catch |err| switch (err) {
         error.UnsupportedFeature => return try compile_kernel_wgsl_to_spirv(self, allocator, kernel_name),
@@ -213,24 +359,7 @@ pub fn load_kernel_spirv(self: anytype, allocator: std.mem.Allocator, kernel_nam
 }
 
 pub fn load_kernel_spirv_cached(self: anytype, kernel_name: []const u8) ![]const u32 {
-    if (kernel_name.len == 0) return error.InvalidArgument;
-    if (self.kernel_spirv_cache.get(kernel_name)) |cached_words| return cached_words;
-
-    const owned_key = try self.allocator.dupe(u8, kernel_name);
-    errdefer self.allocator.free(owned_key);
-    const words = try load_kernel_spirv(self, self.allocator, kernel_name);
-    errdefer self.allocator.free(words);
-    try self.kernel_spirv_cache.put(self.allocator, owned_key, words);
-    return self.kernel_spirv_cache.get(kernel_name).?;
-}
-
-pub fn release_kernel_spirv_cache(self: anytype) void {
-    var it = self.kernel_spirv_cache.iterator();
-    while (it.next()) |entry| {
-        self.allocator.free(entry.key_ptr.*);
-        self.allocator.free(entry.value_ptr.*);
-    }
-    self.kernel_spirv_cache.deinit(self.allocator);
+    return ensure_kernel_spirv_cached(self, kernel_name);
 }
 
 fn compile_kernel_wgsl_to_spirv(self: anytype, allocator: std.mem.Allocator, kernel_name: []const u8) ![]u32 {
@@ -257,7 +386,19 @@ pub fn set_compute_shader_spirv(
     if (words.len == 0 or words[0] != SPIRV_MAGIC) return error.ShaderCompileFailed;
     const pipeline_hash = compute_pipeline_hash(words, entry_point, bindings);
     maybe_retire_replay_state(self, pipeline_hash, bindings);
-    if (!self.has_pipeline or pipeline_hash != self.current_pipeline_hash) {
+    if (!self.recorded_submit_replay_active and pipeline_hash != self.current_pipeline_hash) {
+        const previous_pipeline_hash = self.current_pipeline_hash;
+        const had_active_state = has_active_compute_state(self);
+        if (had_active_state) {
+            try stash_active_compute_state(self);
+        }
+        errdefer if (had_active_state and self.current_pipeline_hash == 0) {
+            _ = activate_cached_compute_state(self, previous_pipeline_hash);
+        };
+        if (!activate_cached_compute_state(self, pipeline_hash)) {
+            try build_pipeline_for_words(self, words, pipeline_hash, entry_point, bindings);
+        }
+    } else if (!self.has_pipeline or pipeline_hash != self.current_pipeline_hash) {
         try build_pipeline_for_words(self, words, pipeline_hash, entry_point, bindings);
     }
     try prepare_descriptor_sets(self, bindings, initialize_buffers_on_create);
@@ -431,7 +572,7 @@ fn prepare_descriptor_sets(
     if (self.descriptor_set_count == 0) return;
     const bs = bindings orelse return error.InvalidArgument;
     const descriptor_bindings_hash = compute_descriptor_bindings_hash(bs);
-    if (self.has_descriptor_pool and self.has_descriptor_bindings_hash and descriptor_bindings_hash == self.current_descriptor_bindings_hash) {
+    if (self.has_descriptor_pool and self.has_current_descriptor_bindings_hash and descriptor_bindings_hash == self.current_descriptor_bindings_hash) {
         return;
     }
     if (!self.recorded_submit_replay_active and (self.has_deferred_submissions or self.pending_uploads.items.len > 0)) {
@@ -442,6 +583,13 @@ fn prepare_descriptor_sets(
     defer buffer_infos.deinit(self.allocator);
     var image_infos = std.ArrayListUnmanaged(c.VkDescriptorImageInfo){};
     defer image_infos.deinit(self.allocator);
+    var retired_promoted_buffers = std.ArrayListUnmanaged(vk_resources.ComputeBuffer){};
+    defer {
+        for (retired_promoted_buffers.items) |buffer| {
+            vk_resources.release_compute_buffer(self, buffer);
+        }
+        retired_promoted_buffers.deinit(self.allocator);
+    }
     var pending_writes = std.ArrayListUnmanaged(PendingDescriptorWrite){};
     defer pending_writes.deinit(self.allocator);
     var writes = std.ArrayListUnmanaged(c.VkWriteDescriptorSet){};
@@ -451,13 +599,15 @@ fn prepare_descriptor_sets(
         const descriptor_type = try descriptor_type_for_binding(binding);
         switch (binding.resource_kind) {
             .buffer => {
-                const required_size = try vk_resources.required_compute_buffer_size(self, binding);
-                const compute_buffer = try vk_resources.ensure_compute_buffer(
+                const promotion = try vk_resources.ensure_compute_buffer_for_binding(
                     self,
-                    binding.resource_handle,
-                    required_size,
+                    binding,
                     initialize_buffers_on_create,
                 );
+                if (promotion.retired_source) |retired_source| {
+                    try retired_promoted_buffers.append(self.allocator, retired_source);
+                }
+                const compute_buffer = promotion.buffer;
                 try buffer_infos.append(self.allocator, .{
                     .buffer = compute_buffer.buffer,
                     .offset = binding.buffer_offset,
@@ -525,7 +675,7 @@ fn prepare_descriptor_sets(
         c.vkUpdateDescriptorSets(self.device, @intCast(writes.items.len), writes.items.ptr, 0, null);
     }
     self.current_descriptor_bindings_hash = descriptor_bindings_hash;
-    self.has_descriptor_bindings_hash = true;
+    self.has_current_descriptor_bindings_hash = true;
 }
 
 fn ensure_descriptor_pool(self: anytype, bindings: ?[]const model_compute_types.KernelBinding) !void {

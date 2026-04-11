@@ -8,6 +8,7 @@ const c = @import("vk_constants.zig");
 const vk_device = @import("vk_device.zig");
 const vk_upload = @import("vk_upload.zig");
 const vk_formats = @import("vk_formats.zig");
+const model_binding_types = @import("../../model_binding_value_types.zig");
 const model_resource_types = @import("../../model_resource_types.zig");
 const model_compute_types = @import("../../model_compute_types.zig");
 const model_gpu_types = @import("../../model_texture_value_types.zig");
@@ -28,11 +29,22 @@ pub const DEFAULT_RUNTIME_TEXTURE_USAGE: model_gpu_types.WGPUFlags =
     model_gpu_types.WGPUTextureUsage_CopyDst;
 pub const REQUIRED_TEXTURE_UPLOAD_USAGE: model_gpu_types.WGPUFlags = model_gpu_types.WGPUTextureUsage_CopyDst;
 
+pub const ComputeBufferMemoryKind = enum {
+    host_visible,
+    device_local,
+};
+
 pub const ComputeBuffer = struct {
     buffer: VkBuffer,
     memory: VkDeviceMemory,
     mapped: ?*anyopaque,
     size: u64,
+    memory_kind: ComputeBufferMemoryKind,
+};
+
+pub const ComputeBufferPromotion = struct {
+    buffer: ComputeBuffer,
+    retired_source: ?ComputeBuffer = null,
 };
 
 pub const TextureResource = struct {
@@ -141,13 +153,39 @@ pub fn ensure_compute_buffer(
         if (existing.size >= required_size) return existing.*;
         if (self.has_deferred_submissions) _ = try vk_upload.flush_queue(self);
         release_compute_buffer(self, existing.*);
-        existing.* = try create_compute_buffer(self, required_size, initialize_buffers_on_create);
+        existing.* = try create_compute_buffer_with_kind(
+            self,
+            required_size,
+            initialize_buffers_on_create,
+            existing.memory_kind,
+        );
         return existing.*;
     }
 
     const compute_buffer = try create_compute_buffer(self, required_size, initialize_buffers_on_create);
     try self.compute_buffers.put(self.allocator, handle, compute_buffer);
     return self.compute_buffers.get(handle).?;
+}
+
+pub fn ensure_compute_buffer_for_binding(
+    self: anytype,
+    binding: model_compute_types.KernelBinding,
+    initialize_buffers_on_create: bool,
+) !ComputeBufferPromotion {
+    if (binding.resource_kind != .buffer) return error.UnsupportedFeature;
+    const required_size = try required_compute_buffer_size(self, binding);
+    const compute_buffer = try ensure_compute_buffer(
+        self,
+        binding.resource_handle,
+        required_size,
+        initialize_buffers_on_create,
+    );
+    if (compute_buffer_memory_kind_for_binding(binding) != .device_local or
+        compute_buffer.memory_kind == .device_local)
+    {
+        return .{ .buffer = compute_buffer };
+    }
+    return try promote_compute_buffer_to_device_local(self, binding.resource_handle);
 }
 
 pub fn required_compute_buffer_size(
@@ -168,6 +206,15 @@ pub fn create_compute_buffer(
     self: anytype,
     bytes: u64,
     initialize_buffers_on_create: bool,
+) !ComputeBuffer {
+    return create_compute_buffer_with_kind(self, bytes, initialize_buffers_on_create, .host_visible);
+}
+
+fn create_compute_buffer_with_kind(
+    self: anytype,
+    bytes: u64,
+    initialize_buffers_on_create: bool,
+    memory_kind: ComputeBufferMemoryKind,
 ) !ComputeBuffer {
     var buffer: VkBuffer = VK_NULL_U64;
     var memory: VkDeviceMemory = VK_NULL_U64;
@@ -191,10 +238,14 @@ pub fn create_compute_buffer(
 
     var requirements = std.mem.zeroes(c.VkMemoryRequirements);
     c.vkGetBufferMemoryRequirements(self.device, buffer, &requirements);
+    const memory_properties = switch (memory_kind) {
+        .host_visible => c.VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | c.VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        .device_local => c.VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+    };
     const memory_index = try vk_device.find_memory_type_index(
         self,
         requirements.memoryTypeBits,
-        c.VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | c.VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        memory_properties,
     );
     var alloc_info = c.VkMemoryAllocateInfo{
         .sType = c.VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
@@ -206,11 +257,19 @@ pub fn create_compute_buffer(
     errdefer if (memory != VK_NULL_U64) c.vkFreeMemory(self.device, memory, null);
 
     try c.check_vk(c.vkBindBufferMemory(self.device, buffer, memory, 0));
-    try c.check_vk(c.vkMapMemory(self.device, memory, 0, bytes, 0, &mapped));
-    errdefer if (mapped != null) c.vkUnmapMemory(self.device, memory);
+    if (memory_kind == .host_visible) {
+        try c.check_vk(c.vkMapMemory(self.device, memory, 0, bytes, 0, &mapped));
+        errdefer if (mapped != null) c.vkUnmapMemory(self.device, memory);
 
-    if (initialize_buffers_on_create and mapped != null) {
-        @memset(@as([*]u8, @ptrCast(mapped.?))[0..@intCast(bytes)], 0);
+        if (initialize_buffers_on_create and mapped != null) {
+            @memset(@as([*]u8, @ptrCast(mapped.?))[0..@intCast(bytes)], 0);
+        }
+    } else if (initialize_buffers_on_create) {
+        const zero_fill = try create_host_visible_buffer(self, bytes, c.VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+        defer destroy_host_visible_buffer(self, zero_fill);
+        const fill = zero_fill.mapped orelse return error.InvalidState;
+        @memset(@as([*]u8, @ptrCast(fill))[0..@intCast(bytes)], 0);
+        try vk_upload.copy_buffer_region_and_wait(self, zero_fill.buffer, 0, buffer, 0, bytes);
     }
 
     return .{
@@ -218,7 +277,99 @@ pub fn create_compute_buffer(
         .memory = memory,
         .mapped = mapped,
         .size = bytes,
+        .memory_kind = memory_kind,
     };
+}
+
+fn compute_buffer_memory_kind_for_binding(binding: model_compute_types.KernelBinding) ComputeBufferMemoryKind {
+    return switch (binding.buffer_type) {
+        model_binding_types.WGPUBufferBindingType_Storage,
+        model_binding_types.WGPUBufferBindingType_ReadOnlyStorage,
+        => .device_local,
+        else => .host_visible,
+    };
+}
+
+pub fn promote_compute_buffer_to_device_local(
+    self: anytype,
+    handle: u64,
+) !ComputeBufferPromotion {
+    const existing = self.compute_buffers.getPtr(handle) orelse return error.InvalidArgument;
+    if (existing.memory_kind == .device_local) {
+        return .{ .buffer = existing.* };
+    }
+
+    const promoted = try create_compute_buffer_with_kind(self, existing.size, false, .device_local);
+    errdefer release_compute_buffer(self, promoted);
+    try vk_upload.copy_buffer_region_and_wait(self, existing.buffer, 0, promoted.buffer, 0, existing.size);
+
+    const retired_source = existing.*;
+    existing.* = promoted;
+    return .{
+        .buffer = promoted,
+        .retired_source = retired_source,
+    };
+}
+
+pub fn stage_compute_buffer_write(
+    self: anytype,
+    compute_buffer: ComputeBuffer,
+    offset: u64,
+    data_bytes: []const u8,
+) !void {
+    if (data_bytes.len == 0) return error.InvalidArgument;
+    const end = std.math.add(u64, offset, data_bytes.len) catch return error.InvalidArgument;
+    if (end > compute_buffer.size) return error.InvalidArgument;
+
+    if (compute_buffer.memory_kind == .host_visible) {
+        const mapped = compute_buffer.mapped orelse return error.InvalidState;
+        const dst: [*]u8 = @ptrCast(mapped);
+        @memcpy(dst[@intCast(offset)..][0..data_bytes.len], data_bytes);
+        return;
+    }
+
+    const staging = try create_host_visible_buffer(self, data_bytes.len, c.VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+    defer destroy_host_visible_buffer(self, staging);
+    const mapped = staging.mapped orelse return error.InvalidState;
+    @memcpy(@as([*]u8, @ptrCast(mapped))[0..data_bytes.len], data_bytes);
+    try vk_upload.copy_buffer_region_and_wait(
+        self,
+        staging.buffer,
+        0,
+        compute_buffer.buffer,
+        offset,
+        data_bytes.len,
+    );
+}
+
+pub fn capture_compute_buffer(
+    self: anytype,
+    allocator: std.mem.Allocator,
+    compute_buffer: ComputeBuffer,
+    offset: u64,
+    size: u64,
+) ![]u8 {
+    const end = std.math.add(u64, offset, size) catch return error.InvalidArgument;
+    if (size == 0 or end > compute_buffer.size) return error.InvalidArgument;
+
+    if (compute_buffer.memory_kind == .host_visible) {
+        const mapped = compute_buffer.mapped orelse return error.InvalidState;
+        const source = @as([*]u8, @ptrCast(mapped))[@intCast(offset)..@intCast(end)];
+        return try allocator.dupe(u8, source);
+    }
+
+    const readback = try create_host_visible_buffer(self, size, c.VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+    defer destroy_host_visible_buffer(self, readback);
+    try vk_upload.copy_buffer_region_and_wait(
+        self,
+        compute_buffer.buffer,
+        offset,
+        readback.buffer,
+        0,
+        size,
+    );
+    const mapped = readback.mapped orelse return error.InvalidState;
+    return try allocator.dupe(u8, @as([*]u8, @ptrCast(mapped))[0..@intCast(size)]);
 }
 
 pub fn release_compute_buffer(self: anytype, compute_buffer: ComputeBuffer) void {
@@ -280,6 +431,7 @@ pub fn create_host_visible_buffer(self: anytype, bytes: u64, usage: u32) !Comput
         .memory = memory,
         .mapped = mapped,
         .size = bytes,
+        .memory_kind = .host_visible,
     };
 }
 
@@ -356,6 +508,7 @@ pub fn ensure_texture_shader_layout(self: anytype, texture: *TextureResource) !v
     if (self.has_deferred_submissions or self.pending_uploads.items.len > 0) {
         _ = try vk_upload.flush_queue(self);
     }
+    try vk_device.ensure_submission_state(self);
 
     try c.check_vk(c.vkResetCommandPool(self.device, self.command_pool, 0));
     var begin_info = c.VkCommandBufferBeginInfo{

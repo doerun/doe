@@ -1,0 +1,45 @@
+{
+  "workloads": "bench/workloads/workloads.amd.vulkan.gemma270m.json",
+  "baseline": {
+    "name": "doe_direct_backend",
+    "executorId": "doe_direct_plan_vulkan"
+  },
+  "comparison": {
+    "name": "dawn_delegate",
+    "executorId": "dawn_delegate_plan_vulkan"
+  },
+  "run": {
+    "iterations": 16,
+    "warmup": 1,
+    "out": "bench/out/amd-vulkan/gemma270m.ir.compare.json",
+    "workspace": "bench/out/amd-vulkan/gemma270m.ir.workspace",
+    "workloadFilter": "",
+    "emitShell": false
+  },
+  "comparability": {
+    "mode": "strict",
+    "requireTimingClass": "operation",
+    "allowBaselineNoExecution": false
+  },
+  "claimability": {
+    "mode": "local",
+    "minTimedSamples": 15
+  },
+  "resource": {
+    "probe": "none",
+    "sampleMs": 100,
+    "sampleTargetCount": 0
+  },
+  "selector": {
+    "cohorts": [],
+    "benchmarkClass": [
+      "comparable"
+    ],
+    "claimEligibleOnly": false,
+    "domains": [],
+    "ids": [
+      "inference_gemma3_270m_prefill_64tok_decode_64tok"
+    ],
+    "excludeIds": []
+  }
+}

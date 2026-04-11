@@ -144,23 +144,38 @@ pub fn executeUpload(self: anytype, upload: model_transfer_types.UploadCommand) 
 }
 
 pub fn executeBufferWrite(self: anytype, command: model_transfer_types.BufferWriteCommand) !abi_execution.NativeExecutionResult {
-    const setup_start_ns = std.time.nanoTimestamp();
-    if (command.data.len == 0) return error.InvalidArgument;
+    return executeBufferWriteBytes(
+        self,
+        command.handle,
+        command.offset,
+        command.buffer_size,
+        std.mem.sliceAsBytes(command.data),
+    );
+}
 
-    const data_bytes = std.mem.sliceAsBytes(command.data);
-    const required_size = if (command.buffer_size > 0)
-        @max(command.buffer_size, try resources.requiredBytes(data_bytes.len, command.offset))
+pub fn executeBufferWriteBytes(
+    self: anytype,
+    handle: u64,
+    offset: u64,
+    buffer_size: u64,
+    data_bytes: []const u8,
+) !abi_execution.NativeExecutionResult {
+    const setup_start_ns = std.time.nanoTimestamp();
+    if (data_bytes.len == 0) return error.InvalidArgument;
+
+    const required_size = if (buffer_size > 0)
+        @max(buffer_size, try resources.requiredBytes(data_bytes.len, offset))
     else
-        try resources.requiredBytes(data_bytes.len, command.offset);
+        try resources.requiredBytes(data_bytes.len, offset);
     const usage = abi_base.WGPUBufferUsage_Storage |
         abi_base.WGPUBufferUsage_Uniform |
         abi_base.WGPUBufferUsage_CopyDst |
         abi_base.WGPUBufferUsage_CopySrc;
-    const buffer = try resources.getOrCreateBuffer(self, command.handle, required_size, usage);
+    const buffer = try resources.getOrCreateBuffer(self, handle, required_size, usage);
     self.core.procs.?.wgpuQueueWriteBuffer(
         self.core.queue.?,
         buffer,
-        command.offset,
+        offset,
         @ptrCast(data_bytes.ptr),
         data_bytes.len,
     );

@@ -1,0 +1,45 @@
+{
+  "workloads": "bench/workloads/workloads.package.inference.json",
+  "baseline": {
+    "name": "doe_gpu_bun_package",
+    "executorId": "doe_bun_package"
+  },
+  "comparison": {
+    "name": "bun_webgpu_package",
+    "executorId": "bun_webgpu_package"
+  },
+  "run": {
+    "iterations": 16,
+    "warmup": 1,
+    "out": "bench/out/local-d3d12/gemma1b.bun-package.ir.compare.json",
+    "workspace": "bench/out/local-d3d12/gemma1b.bun-package.ir.workspace",
+    "workloadFilter": "",
+    "emitShell": false
+  },
+  "comparability": {
+    "mode": "strict",
+    "requireTimingClass": "operation",
+    "allowBaselineNoExecution": false
+  },
+  "claimability": {
+    "mode": "local",
+    "minTimedSamples": 15
+  },
+  "resource": {
+    "probe": "none",
+    "sampleMs": 100,
+    "sampleTargetCount": 0
+  },
+  "selector": {
+    "cohorts": [],
+    "benchmarkClass": [
+      "comparable"
+    ],
+    "claimEligibleOnly": false,
+    "domains": [],
+    "ids": [
+      "inference_gemma3_1b_prefill_64tok_decode_64tok"
+    ],
+    "excludeIds": []
+  }
+}

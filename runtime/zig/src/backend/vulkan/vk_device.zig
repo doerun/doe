@@ -10,6 +10,7 @@ const vk_sync = @import("vk_sync.zig");
 const vulkan_surface = @import("vulkan_surface.zig");
 
 const VkPhysicalDevice = c.VkPhysicalDevice;
+const VK_NULL_U64 = c.VK_NULL_U64;
 
 const APP_NAME: [*:0]const u8 = "doe-zig-runtime";
 const ENGINE_NAME: [*:0]const u8 = "doe-vulkan-runtime";
@@ -31,11 +32,9 @@ pub fn bootstrap(self: anytype) !void {
     try create_instance(self);
     try select_physical_device(self);
     try create_device_and_queue(self);
-    try create_command_pool_and_primary_buffer(self);
-    try create_fence(self);
-    try create_fence_pool(self);
-    create_timeline_semaphore(self);
-    try create_timestamp_query_pool(self);
+    // Device-request latency matters for package cold-start benchmarks.
+    // Defer submission scaffolding until the first path that actually records
+    // or submits GPU work.
 }
 
 pub fn create_instance(self: anytype) !void {
@@ -284,6 +283,28 @@ pub fn create_timestamp_query_pool(self: anytype) !void {
         .pipelineStatistics = 0,
     };
     try c.check_vk(c.vkCreateQueryPool(self.device, &create_info, null, &self.timestamp_query_pool));
+}
+
+pub fn ensure_submission_state(self: anytype) !void {
+    if (!self.has_command_pool) {
+        try create_command_pool_and_primary_buffer(self);
+    }
+    if (!self.has_fence) {
+        try create_fence(self);
+    }
+    if (!self.has_fence_pool) {
+        try create_fence_pool(self);
+    }
+    if (!self.has_timeline_semaphore) {
+        create_timeline_semaphore(self);
+    }
+}
+
+pub fn ensure_timestamp_query_pool(self: anytype) !void {
+    if (!self.timestamp_query_supported_value or self.timestamp_query_pool != VK_NULL_U64) {
+        return;
+    }
+    try create_timestamp_query_pool(self);
 }
 
 const MAX_DEVICE_EXTENSIONS: u32 = 512;

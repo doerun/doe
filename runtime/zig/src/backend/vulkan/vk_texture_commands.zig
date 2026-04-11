@@ -6,6 +6,7 @@ const model_gpu_types = @import("../../model_texture_value_types.zig");
 const model_render_types = @import("../../model_render_types.zig");
 const model_texture_types = @import("../../model_texture_types.zig");
 const c = @import("vk_constants.zig");
+const vk_device = @import("vk_device.zig");
 const vk_sync = @import("vk_sync.zig");
 const vk_upload = @import("vk_upload.zig");
 const vk_resources = @import("vk_resources.zig");
@@ -20,6 +21,7 @@ pub fn texture_write(self: anytype, cmd_arg: model_texture_types.TextureWriteCom
     if (self.has_deferred_submissions or self.pending_uploads.items.len > 0) {
         _ = try self.flush_queue();
     }
+    try vk_device.ensure_submission_state(self);
     const staging = try vk_resources.create_host_visible_buffer(self, @intCast(cmd_arg.data.len), c.VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
     defer vk_resources.destroy_host_visible_buffer(self, staging);
     if (staging.mapped) |raw| {
@@ -94,6 +96,7 @@ pub fn texture_read(self: anytype, args: struct {
     if (self.has_deferred_submissions or self.pending_uploads.items.len > 0) {
         _ = try self.flush_queue();
     }
+    try vk_device.ensure_submission_state(self);
     const rows = if (args.dst_rows_per_image > 0) args.dst_rows_per_image else args.height;
     const bpp = vk_resources.bytes_per_pixel_for_texture_format(args.format);
     const byte_count: u64 = @as(u64, args.dst_bytes_per_row) * rows;
@@ -177,6 +180,7 @@ pub fn texture_copy(self: anytype, args: struct {
     if (self.has_deferred_submissions or self.pending_uploads.items.len > 0) {
         _ = try self.flush_queue();
     }
+    try vk_device.ensure_submission_state(self);
     try c.check_vk(c.vkResetCommandPool(self.device, self.command_pool, 0));
     var begin_info = c.VkCommandBufferBeginInfo{
         .sType = c.VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,

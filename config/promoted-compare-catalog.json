@@ -968,6 +968,518 @@
       "runtimeHost": "none",
       "surface": "backend",
       "temperature": "default"
+    },
+    {
+      "backend": "amd-vulkan",
+      "benchmarkClass": "package-runtime-workload",
+      "boundary": "package_surface",
+      "comparisonView": "doe_vs_node_webgpu_package",
+      "configPath": "bench/native-compare/compare.config.amd.vulkan.gemma64.node-package.ir.json",
+      "description": "Cold package-surface compare for doe-gpu vs node-webgpu on the Gemma64 shaped workload.",
+      "id": "amd-vulkan-gemma64-cold",
+      "baselineExecutorId": "doe_node_webgpu",
+      "mode": "cold",
+      "packageRuntime": "node",
+      "products": {
+        "baseline": {
+          "executorId": "doe_node_webgpu",
+          "product": "doe"
+        },
+        "comparison": {
+          "executorId": "node_webgpu_package",
+          "product": "node_webgpu_package"
+        }
+      },
+      "providerSet": "package_node_providers",
+      "providers": [
+        "doe",
+        "node-webgpu"
+      ],
+      "comparisonExecutorId": "node_webgpu_package",
+      "runtimeHost": "node",
+      "surface": "package",
+      "temperature": "cold",
+      "workload": "gemma64"
+    },
+    {
+      "backend": "amd-vulkan",
+      "benchmarkClass": "package-runtime-workload",
+      "boundary": "package_surface",
+      "comparisonView": "doe_vs_node_webgpu_package",
+      "configPath": "bench/native-compare/compare.config.amd.vulkan.gemma64.node-package.warm.ir.json",
+      "description": "Prepared-session package-surface compare for doe-gpu vs node-webgpu on the Gemma64 shaped workload.",
+      "id": "amd-vulkan-gemma64-warm",
+      "baselineExecutorId": "doe_node_webgpu_prepared",
+      "mode": "warm",
+      "packageRuntime": "node",
+      "products": {
+        "baseline": {
+          "executorId": "doe_node_webgpu_prepared",
+          "product": "doe"
+        },
+        "comparison": {
+          "executorId": "node_webgpu_package_prepared",
+          "product": "node_webgpu_package"
+        }
+      },
+      "providerSet": "package_node_providers",
+      "providers": [
+        "doe",
+        "node-webgpu"
+      ],
+      "comparisonExecutorId": "node_webgpu_package_prepared",
+      "runtimeHost": "node",
+      "surface": "package",
+      "temperature": "warm",
+      "workload": "gemma64"
+    },
+    {
+      "backend": "amd-vulkan",
+      "benchmarkClass": "package-runtime-workload",
+      "boundary": "package_surface",
+      "comparisonView": "doe_vs_node_webgpu_package",
+      "configPath": "bench/native-compare/compare.config.amd.vulkan.gemma1b.node-package.ir.json",
+      "description": "Cold package-surface compare for doe-gpu vs node-webgpu on the Gemma1B shaped workload.",
+      "id": "amd-vulkan-gemma1b-cold",
+      "baselineExecutorId": "doe_node_webgpu",
+      "mode": "cold",
+      "packageRuntime": "node",
+      "products": {
+        "baseline": {
+          "executorId": "doe_node_webgpu",
+          "product": "doe"
+        },
+        "comparison": {
+          "executorId": "node_webgpu_package",
+          "product": "node_webgpu_package"
+        }
+      },
+      "providerSet": "package_node_providers",
+      "providers": [
+        "doe",
+        "node-webgpu"
+      ],
+      "comparisonExecutorId": "node_webgpu_package",
+      "runtimeHost": "node",
+      "surface": "package",
+      "temperature": "cold",
+      "workload": "gemma1b"
+    },
+    {
+      "backend": "amd-vulkan",
+      "benchmarkClass": "package-runtime-workload",
+      "boundary": "package_surface",
+      "comparisonView": "doe_vs_node_webgpu_package",
+      "configPath": "bench/native-compare/compare.config.amd.vulkan.gemma1b.node-package.warm.ir.json",
+      "description": "Prepared-session package-surface compare for doe-gpu vs node-webgpu on the Gemma1B shaped workload.",
+      "id": "amd-vulkan-gemma1b-warm",
+      "baselineExecutorId": "doe_node_webgpu_prepared",
+      "mode": "warm",
+      "packageRuntime": "node",
+      "products": {
+        "baseline": {
+          "executorId": "doe_node_webgpu_prepared",
+          "product": "doe"
+        },
+        "comparison": {
+          "executorId": "node_webgpu_package_prepared",
+          "product": "node_webgpu_package"
+        }
+      },
+      "providerSet": "package_node_providers",
+      "providers": [
+        "doe",
+        "node-webgpu"
+      ],
+      "comparisonExecutorId": "node_webgpu_package_prepared",
+      "runtimeHost": "node",
+      "surface": "package",
+      "temperature": "warm",
+      "workload": "gemma1b"
+    },
+    {
+      "backend": "amd-vulkan",
+      "benchmarkClass": "package-runtime-workload",
+      "boundary": "package_surface",
+      "comparisonView": "doe_vs_bun_webgpu_package",
+      "configPath": "bench/native-compare/compare.config.amd.vulkan.gemma64.bun-package.ir.json",
+      "description": "Cold package-surface compare for doe-gpu vs bun-webgpu on the Gemma64 shaped workload.",
+      "id": "amd-vulkan-gemma64-bun-package-cold",
+      "baselineExecutorId": "doe_bun_package",
+      "mode": "cold",
+      "packageRuntime": "bun",
+      "products": {
+        "baseline": {
+          "executorId": "doe_bun_package",
+          "product": "doe"
+        },
+        "comparison": {
+          "executorId": "bun_webgpu_package",
+          "product": "bun_webgpu_package"
+        }
+      },
+      "providerSet": "package_bun_providers",
+      "providers": [
+        "doe",
+        "bun-webgpu"
+      ],
+      "comparisonExecutorId": "bun_webgpu_package",
+      "runtimeHost": "bun",
+      "surface": "package",
+      "temperature": "cold",
+      "workload": "gemma64"
+    },
+    {
+      "backend": "amd-vulkan",
+      "benchmarkClass": "package-runtime-workload",
+      "boundary": "package_surface",
+      "comparisonView": "doe_vs_bun_webgpu_package",
+      "configPath": "bench/native-compare/compare.config.amd.vulkan.gemma64.bun-package.warm.ir.json",
+      "description": "Prepared-session package-surface compare for doe-gpu vs bun-webgpu on the Gemma64 shaped workload.",
+      "id": "amd-vulkan-gemma64-bun-package-warm",
+      "baselineExecutorId": "doe_bun_package_prepared",
+      "mode": "warm",
+      "packageRuntime": "bun",
+      "products": {
+        "baseline": {
+          "executorId": "doe_bun_package_prepared",
+          "product": "doe"
+        },
+        "comparison": {
+          "executorId": "bun_webgpu_package_prepared",
+          "product": "bun_webgpu_package"
+        }
+      },
+      "providerSet": "package_bun_providers",
+      "providers": [
+        "doe",
+        "bun-webgpu"
+      ],
+      "comparisonExecutorId": "bun_webgpu_package_prepared",
+      "runtimeHost": "bun",
+      "surface": "package",
+      "temperature": "warm",
+      "workload": "gemma64"
+    },
+    {
+      "backend": "amd-vulkan",
+      "benchmarkClass": "package-runtime-workload",
+      "boundary": "package_surface",
+      "comparisonView": "doe_vs_bun_webgpu_package",
+      "configPath": "bench/native-compare/compare.config.amd.vulkan.gemma1b.bun-package.ir.json",
+      "description": "Cold package-surface compare for doe-gpu vs bun-webgpu on the Gemma1B shaped workload.",
+      "id": "amd-vulkan-gemma1b-bun-package-cold",
+      "baselineExecutorId": "doe_bun_package",
+      "mode": "cold",
+      "packageRuntime": "bun",
+      "products": {
+        "baseline": {
+          "executorId": "doe_bun_package",
+          "product": "doe"
+        },
+        "comparison": {
+          "executorId": "bun_webgpu_package",
+          "product": "bun_webgpu_package"
+        }
+      },
+      "providerSet": "package_bun_providers",
+      "providers": [
+        "doe",
+        "bun-webgpu"
+      ],
+      "comparisonExecutorId": "bun_webgpu_package",
+      "runtimeHost": "bun",
+      "surface": "package",
+      "temperature": "cold",
+      "workload": "gemma1b"
+    },
+    {
+      "backend": "amd-vulkan",
+      "benchmarkClass": "package-runtime-workload",
+      "boundary": "package_surface",
+      "comparisonView": "doe_vs_bun_webgpu_package",
+      "configPath": "bench/native-compare/compare.config.amd.vulkan.gemma1b.bun-package.warm.ir.json",
+      "description": "Prepared-session package-surface compare for doe-gpu vs bun-webgpu on the Gemma1B shaped workload.",
+      "id": "amd-vulkan-gemma1b-bun-package-warm",
+      "baselineExecutorId": "doe_bun_package_prepared",
+      "mode": "warm",
+      "packageRuntime": "bun",
+      "products": {
+        "baseline": {
+          "executorId": "doe_bun_package_prepared",
+          "product": "doe"
+        },
+        "comparison": {
+          "executorId": "bun_webgpu_package_prepared",
+          "product": "bun_webgpu_package"
+        }
+      },
+      "providerSet": "package_bun_providers",
+      "providers": [
+        "doe",
+        "bun-webgpu"
+      ],
+      "comparisonExecutorId": "bun_webgpu_package_prepared",
+      "runtimeHost": "bun",
+      "surface": "package",
+      "temperature": "warm",
+      "workload": "gemma1b"
+    },
+    {
+      "backend": "local-d3d12",
+      "benchmarkClass": "package-runtime-workload",
+      "boundary": "package_surface",
+      "comparisonView": "doe_vs_node_webgpu_package",
+      "configPath": "bench/native-compare/compare.config.local.d3d12.gemma64.node-package.ir.json",
+      "description": "Cold package-surface compare for doe-gpu vs node-webgpu on the Gemma64 shaped workload.",
+      "id": "local-d3d12-gemma64-cold",
+      "baselineExecutorId": "doe_node_webgpu",
+      "mode": "cold",
+      "packageRuntime": "node",
+      "products": {
+        "baseline": {
+          "executorId": "doe_node_webgpu",
+          "product": "doe"
+        },
+        "comparison": {
+          "executorId": "node_webgpu_package",
+          "product": "node_webgpu_package"
+        }
+      },
+      "providerSet": "package_node_providers",
+      "providers": [
+        "doe",
+        "node-webgpu"
+      ],
+      "comparisonExecutorId": "node_webgpu_package",
+      "runtimeHost": "node",
+      "surface": "package",
+      "temperature": "cold",
+      "workload": "gemma64"
+    },
+    {
+      "backend": "local-d3d12",
+      "benchmarkClass": "package-runtime-workload",
+      "boundary": "package_surface",
+      "comparisonView": "doe_vs_node_webgpu_package",
+      "configPath": "bench/native-compare/compare.config.local.d3d12.gemma64.node-package.warm.ir.json",
+      "description": "Prepared-session package-surface compare for doe-gpu vs node-webgpu on the Gemma64 shaped workload.",
+      "id": "local-d3d12-gemma64-warm",
+      "baselineExecutorId": "doe_node_webgpu_prepared",
+      "mode": "warm",
+      "packageRuntime": "node",
+      "products": {
+        "baseline": {
+          "executorId": "doe_node_webgpu_prepared",
+          "product": "doe"
+        },
+        "comparison": {
+          "executorId": "node_webgpu_package_prepared",
+          "product": "node_webgpu_package"
+        }
+      },
+      "providerSet": "package_node_providers",
+      "providers": [
+        "doe",
+        "node-webgpu"
+      ],
+      "comparisonExecutorId": "node_webgpu_package_prepared",
+      "runtimeHost": "node",
+      "surface": "package",
+      "temperature": "warm",
+      "workload": "gemma64"
+    },
+    {
+      "backend": "local-d3d12",
+      "benchmarkClass": "package-runtime-workload",
+      "boundary": "package_surface",
+      "comparisonView": "doe_vs_node_webgpu_package",
+      "configPath": "bench/native-compare/compare.config.local.d3d12.gemma1b.node-package.ir.json",
+      "description": "Cold package-surface compare for doe-gpu vs node-webgpu on the Gemma1B shaped workload.",
+      "id": "local-d3d12-gemma1b-cold",
+      "baselineExecutorId": "doe_node_webgpu",
+      "mode": "cold",
+      "packageRuntime": "node",
+      "products": {
+        "baseline": {
+          "executorId": "doe_node_webgpu",
+          "product": "doe"
+        },
+        "comparison": {
+          "executorId": "node_webgpu_package",
+          "product": "node_webgpu_package"
+        }
+      },
+      "providerSet": "package_node_providers",
+      "providers": [
+        "doe",
+        "node-webgpu"
+      ],
+      "comparisonExecutorId": "node_webgpu_package",
+      "runtimeHost": "node",
+      "surface": "package",
+      "temperature": "cold",
+      "workload": "gemma1b"
+    },
+    {
+      "backend": "local-d3d12",
+      "benchmarkClass": "package-runtime-workload",
+      "boundary": "package_surface",
+      "comparisonView": "doe_vs_node_webgpu_package",
+      "configPath": "bench/native-compare/compare.config.local.d3d12.gemma1b.node-package.warm.ir.json",
+      "description": "Prepared-session package-surface compare for doe-gpu vs node-webgpu on the Gemma1B shaped workload.",
+      "id": "local-d3d12-gemma1b-warm",
+      "baselineExecutorId": "doe_node_webgpu_prepared",
+      "mode": "warm",
+      "packageRuntime": "node",
+      "products": {
+        "baseline": {
+          "executorId": "doe_node_webgpu_prepared",
+          "product": "doe"
+        },
+        "comparison": {
+          "executorId": "node_webgpu_package_prepared",
+          "product": "node_webgpu_package"
+        }
+      },
+      "providerSet": "package_node_providers",
+      "providers": [
+        "doe",
+        "node-webgpu"
+      ],
+      "comparisonExecutorId": "node_webgpu_package_prepared",
+      "runtimeHost": "node",
+      "surface": "package",
+      "temperature": "warm",
+      "workload": "gemma1b"
+    },
+    {
+      "backend": "local-d3d12",
+      "benchmarkClass": "package-runtime-workload",
+      "boundary": "package_surface",
+      "comparisonView": "doe_vs_bun_webgpu_package",
+      "configPath": "bench/native-compare/compare.config.local.d3d12.gemma64.bun-package.ir.json",
+      "description": "Cold package-surface compare for doe-gpu vs bun-webgpu on the Gemma64 shaped workload.",
+      "id": "local-d3d12-gemma64-bun-package-cold",
+      "baselineExecutorId": "doe_bun_package",
+      "mode": "cold",
+      "packageRuntime": "bun",
+      "products": {
+        "baseline": {
+          "executorId": "doe_bun_package",
+          "product": "doe"
+        },
+        "comparison": {
+          "executorId": "bun_webgpu_package",
+          "product": "bun_webgpu_package"
+        }
+      },
+      "providerSet": "package_bun_providers",
+      "providers": [
+        "doe",
+        "bun-webgpu"
+      ],
+      "comparisonExecutorId": "bun_webgpu_package",
+      "runtimeHost": "bun",
+      "surface": "package",
+      "temperature": "cold",
+      "workload": "gemma64"
+    },
+    {
+      "backend": "local-d3d12",
+      "benchmarkClass": "package-runtime-workload",
+      "boundary": "package_surface",
+      "comparisonView": "doe_vs_bun_webgpu_package",
+      "configPath": "bench/native-compare/compare.config.local.d3d12.gemma64.bun-package.warm.ir.json",
+      "description": "Prepared-session package-surface compare for doe-gpu vs bun-webgpu on the Gemma64 shaped workload.",
+      "id": "local-d3d12-gemma64-bun-package-warm",
+      "baselineExecutorId": "doe_bun_package_prepared",
+      "mode": "warm",
+      "packageRuntime": "bun",
+      "products": {
+        "baseline": {
+          "executorId": "doe_bun_package_prepared",
+          "product": "doe"
+        },
+        "comparison": {
+          "executorId": "bun_webgpu_package_prepared",
+          "product": "bun_webgpu_package"
+        }
+      },
+      "providerSet": "package_bun_providers",
+      "providers": [
+        "doe",
+        "bun-webgpu"
+      ],
+      "comparisonExecutorId": "bun_webgpu_package_prepared",
+      "runtimeHost": "bun",
+      "surface": "package",
+      "temperature": "warm",
+      "workload": "gemma64"
+    },
+    {
+      "backend": "local-d3d12",
+      "benchmarkClass": "package-runtime-workload",
+      "boundary": "package_surface",
+      "comparisonView": "doe_vs_bun_webgpu_package",
+      "configPath": "bench/native-compare/compare.config.local.d3d12.gemma1b.bun-package.ir.json",
+      "description": "Cold package-surface compare for doe-gpu vs bun-webgpu on the Gemma1B shaped workload.",
+      "id": "local-d3d12-gemma1b-bun-package-cold",
+      "baselineExecutorId": "doe_bun_package",
+      "mode": "cold",
+      "packageRuntime": "bun",
+      "products": {
+        "baseline": {
+          "executorId": "doe_bun_package",
+          "product": "doe"
+        },
+        "comparison": {
+          "executorId": "bun_webgpu_package",
+          "product": "bun_webgpu_package"
+        }
+      },
+      "providerSet": "package_bun_providers",
+      "providers": [
+        "doe",
+        "bun-webgpu"
+      ],
+      "comparisonExecutorId": "bun_webgpu_package",
+      "runtimeHost": "bun",
+      "surface": "package",
+      "temperature": "cold",
+      "workload": "gemma1b"
+    },
+    {
+      "backend": "local-d3d12",
+      "benchmarkClass": "package-runtime-workload",
+      "boundary": "package_surface",
+      "comparisonView": "doe_vs_bun_webgpu_package",
+      "configPath": "bench/native-compare/compare.config.local.d3d12.gemma1b.bun-package.warm.ir.json",
+      "description": "Prepared-session package-surface compare for doe-gpu vs bun-webgpu on the Gemma1B shaped workload.",
+      "id": "local-d3d12-gemma1b-bun-package-warm",
+      "baselineExecutorId": "doe_bun_package_prepared",
+      "mode": "warm",
+      "packageRuntime": "bun",
+      "products": {
+        "baseline": {
+          "executorId": "doe_bun_package_prepared",
+          "product": "doe"
+        },
+        "comparison": {
+          "executorId": "bun_webgpu_package_prepared",
+          "product": "bun_webgpu_package"
+        }
+      },
+      "providerSet": "package_bun_providers",
+      "providers": [
+        "doe",
+        "bun-webgpu"
+      ],
+      "comparisonExecutorId": "bun_webgpu_package_prepared",
+      "runtimeHost": "bun",
+      "surface": "package",
+      "temperature": "warm",
+      "workload": "gemma1b"
     }
   ],
   "schemaVersion": 4

@@ -73,12 +73,8 @@ fn execute_command(ctx: *anyopaque, command: model.Command) anyerror!webgpu.Nati
 }
 
 fn execute_buffer_write_bytes(ctx: *anyopaque, handle: u64, offset: u64, buffer_size: u64, data: []const u8) anyerror!webgpu.NativeExecutionResult {
-    _ = ctx;
-    _ = handle;
-    _ = offset;
-    _ = buffer_size;
-    _ = data;
-    return error.UnsupportedFeature;
+    const self = cast(ctx);
+    return try self.inner.executeBufferWriteBytes(handle, offset, buffer_size, data);
 }
 
 fn set_upload_behavior(ctx: *anyopaque, mode: webgpu.UploadBufferUsageMode, submit_every: u32) void {

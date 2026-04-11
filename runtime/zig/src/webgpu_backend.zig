@@ -16,6 +16,7 @@ const p1_capability_procs_mod = @import("wgpu_p1_capability_procs.zig");
 const p1_resource_table_procs_mod = @import("wgpu_p1_resource_table_procs.zig");
 const p2_lifecycle_procs_mod = @import("wgpu_p2_lifecycle_procs.zig");
 const commands = @import("wgpu_commands.zig");
+const copy_commands = @import("core/resource/wgpu_commands_copy.zig");
 const env_flags = @import("env_flags.zig");
 
 const model = struct {
@@ -130,6 +131,44 @@ pub const WebGPUBackend = struct {
 
     pub fn executeCommand(self: *Self, command: model.Command) !NativeExecutionResult {
         return commands.executeCommand(self, command);
+    }
+
+    pub fn executeBufferWriteBytes(
+        self: *Self,
+        handle: u64,
+        offset: u64,
+        buffer_size: u64,
+        data: []const u8,
+    ) !NativeExecutionResult {
+        if (!self.backendAvailable()) {
+            return .{
+                .status = .@"error",
+                .status_message = "backend-not-initialized",
+            };
+        }
+
+        self.clearUncapturedError();
+        const result = try copy_commands.executeBufferWriteBytes(
+            self,
+            handle,
+            offset,
+            buffer_size,
+            data,
+        );
+        if (self.takeUncapturedError()) |error_type| {
+            return .{
+                .status = .@"error",
+                .status_message = support.uncapturedErrorStatusMessage(error_type),
+                .setup_ns = result.setup_ns,
+                .encode_ns = result.encode_ns,
+                .submit_wait_ns = result.submit_wait_ns,
+                .dispatch_count = result.dispatch_count,
+                .gpu_timestamp_ns = result.gpu_timestamp_ns,
+                .gpu_timestamp_attempted = result.gpu_timestamp_attempted,
+                .gpu_timestamp_valid = result.gpu_timestamp_valid,
+            };
+        }
+        return result;
     }
 
     pub fn runCapabilityIntrospection(self: *Self) !void {

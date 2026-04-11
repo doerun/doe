@@ -34,6 +34,13 @@ class ExecutorRegistryTests(unittest.TestCase):
         self.assertIn("--backend-lane metal_doe_comparable", template)
         self.assertEqual(resolve_executor_boundary("doe_direct_plan_metal"), "plan")
 
+    def test_resolves_doe_direct_plan_vulkan_executor(self) -> None:
+        template = resolve_executor_command_template("doe_direct_plan_vulkan")
+        self.assertIn("doe-plan-executor", template)
+        self.assertIn("--plan {plan}", template)
+        self.assertIn("--backend-lane vulkan_doe_comparable", template)
+        self.assertEqual(resolve_executor_boundary("doe_direct_plan_vulkan"), "plan")
+
     def test_resolves_node_webgpu_executor(self) -> None:
         template = resolve_executor_command_template("node_webgpu_package")
         self.assertIn("run-node-webgpu-plan.js", template)
@@ -84,6 +91,13 @@ class ExecutorRegistryTests(unittest.TestCase):
         self.assertIn("--plan {plan}", template)
         self.assertIn("--trace-meta {trace_meta}", template)
         self.assertEqual(resolve_executor_boundary("dawn_direct_metal"), "plan")
+
+    def test_resolves_dawn_delegate_plan_vulkan_executor(self) -> None:
+        template = resolve_executor_command_template("dawn_delegate_plan_vulkan")
+        self.assertIn("doe-plan-executor", template)
+        self.assertIn("--plan {plan}", template)
+        self.assertIn("--backend-lane vulkan_dawn_release", template)
+        self.assertEqual(resolve_executor_boundary("dawn_delegate_plan_vulkan"), "plan")
 
     def test_rejects_unknown_executor(self) -> None:
         with self.assertRaises(ValueError):

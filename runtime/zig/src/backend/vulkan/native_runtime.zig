@@ -67,17 +67,17 @@ pub const NativeVulkanRuntime = struct {
     pipeline_layout: c.VkPipelineLayout = VK_NULL_U64,
     pipeline: c.VkPipeline = VK_NULL_U64,
     descriptor_pool: c.VkDescriptorPool = VK_NULL_U64,
-    kernel_spirv_cache: std.StringHashMapUnmanaged([]u32) = .{},
     descriptor_set_layouts: [c.MAX_DESCRIPTOR_SETS]c.VkDescriptorSetLayout = [_]c.VkDescriptorSetLayout{VK_NULL_U64} ** c.MAX_DESCRIPTOR_SETS,
     descriptor_sets: [c.MAX_DESCRIPTOR_SETS]c.VkDescriptorSet = [_]c.VkDescriptorSet{VK_NULL_U64} ** c.MAX_DESCRIPTOR_SETS,
     descriptor_set_count: u32 = 0,
     current_pipeline_hash: u64 = 0,
     current_layout_hash: u64 = 0,
     current_descriptor_bindings_hash: u64 = 0,
-    has_descriptor_bindings_hash: bool = false,
     current_entry_point_owned: ?[:0]u8 = null,
     retired_pipeline_states: std.ArrayListUnmanaged(vk_pipeline.RetiredPipelineState) = .{},
     retired_descriptor_states: std.ArrayListUnmanaged(vk_pipeline.RetiredDescriptorState) = .{},
+    cached_compute_states: std.AutoHashMapUnmanaged(u64, vk_pipeline.CachedComputeState) = .{},
+    kernel_spirv_cache: std.StringHashMapUnmanaged([]const u32) = .{},
     fast_upload_buffer: c.VkBuffer = VK_NULL_U64,
     fast_upload_memory: c.VkDeviceMemory = VK_NULL_U64,
     fast_upload_capacity: u64 = 0,
@@ -113,6 +113,7 @@ pub const NativeVulkanRuntime = struct {
     has_pipeline_layout: bool = false,
     has_pipeline: bool = false,
     has_descriptor_pool: bool = false,
+    has_current_descriptor_bindings_hash: bool = false,
     has_deferred_submissions: bool = false,
     has_depth_clip_enable_ext: bool = false,
     recorded_submit_replay_active: bool = false,
@@ -134,7 +135,6 @@ pub const NativeVulkanRuntime = struct {
         self.pending_uploads.deinit(self.allocator);
         self.retired_pipeline_states.deinit(self.allocator);
         self.retired_descriptor_states.deinit(self.allocator);
-        vk_pipeline.release_kernel_spirv_cache(self);
         self.deferred_command_buffers.deinit(self.allocator);
         surface_ops.release_all_surfaces(self);
         vk_upload.release_pool_entry(self.device, self.hot_src_pool_entry);
@@ -149,6 +149,8 @@ pub const NativeVulkanRuntime = struct {
             vk_resources.destroy_host_visible_buffer(self, buffer);
             self.dispatch_indirect_args_buffer = null;
         }
+        vk_pipeline.release_cached_compute_states(self);
+        vk_pipeline.release_kernel_spirv_cache(self);
         vk_pipeline.destroy_pipeline_objects(self);
         vk_pipeline.destroy_descriptor_state(self);
         vk_resources.release_compute_buffers(self);
@@ -203,7 +205,11 @@ pub const NativeVulkanRuntime = struct {
     }
 
     pub fn load_kernel_spirv_cached(self: *NativeVulkanRuntime, kernel_name: []const u8) ![]const u32 {
-        return vk_pipeline.load_kernel_spirv_cached(self, kernel_name);
+        return vk_pipeline.ensure_kernel_spirv_cached(self, kernel_name);
+    }
+
+    pub fn ensure_kernel_spirv_cached(self: *NativeVulkanRuntime, kernel_name: []const u8) ![]const u32 {
+        return vk_pipeline.ensure_kernel_spirv_cached(self, kernel_name);
     }
 
     pub fn set_compute_shader_spirv(
@@ -294,6 +300,10 @@ pub const NativeVulkanRuntime = struct {
     ) !DispatchMetrics {
         if (x == 0 or y == 0 or z == 0) return error.InvalidArgument;
         if (!self.has_pipeline) return error.Unsupported;
+        try vk_device.ensure_submission_state(self);
+        if (gpu_timestamp_mode != .off and queue_sync_mode == .per_command) {
+            try vk_device.ensure_timestamp_query_pool(self);
+        }
 
         const want_timestamps = gpu_timestamp_mode != .off and
             queue_sync_mode == .per_command and
@@ -419,6 +429,7 @@ pub const NativeVulkanRuntime = struct {
     ) !DispatchMetrics {
         if (x == 0 or y == 0 or z == 0) return error.InvalidArgument;
         if (!self.has_pipeline) return error.Unsupported;
+        try vk_device.ensure_submission_state(self);
 
         const indirect_args = try ensure_dispatch_indirect_args_buffer(self);
         const encode_start = common_timing.now_ns();

@@ -287,16 +287,16 @@ That workload compares:
 
 over the same normalized `prefill64 + decode64` Gemma-shaped workload.
 
-Package-surface configs now exist alongside the plan-surface configs:
+Package-surface configs now exist alongside the plan-surface configs across the
+three governed native lanes, and they all select from the shared package
+inference manifest `bench/workloads/workloads.package.inference.json`.
+
+Representative config paths are:
 
 - `bench/native-compare/compare.config.apple.metal.gemma64.node-package.ir.json`
-- `bench/native-compare/compare.config.apple.metal.gemma1b.node-package.ir.json`
-- `bench/native-compare/compare.config.apple.metal.gemma64.node-package.warm.ir.json`
-- `bench/native-compare/compare.config.apple.metal.gemma1b.node-package.warm.ir.json`
-- `bench/native-compare/compare.config.apple.metal.gemma64.bun-package.ir.json`
-- `bench/native-compare/compare.config.apple.metal.gemma1b.bun-package.ir.json`
-- `bench/native-compare/compare.config.apple.metal.gemma64.bun-package.warm.ir.json`
-- `bench/native-compare/compare.config.apple.metal.gemma1b.bun-package.warm.ir.json`
+- `bench/native-compare/compare.config.amd.vulkan.gemma64.node-package.ir.json`
+- `bench/native-compare/compare.config.local.d3d12.gemma64.node-package.ir.json`
+- matching `gemma1b`, `bun-package`, and `.warm` variants on each lane
 
 AMD Vulkan package compare configs also exist, but they are explicit
 config-backed lanes rather than promoted `--surface package` profiles:

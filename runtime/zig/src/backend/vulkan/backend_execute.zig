@@ -101,16 +101,17 @@ fn execute_buffer_write_bytes(self: anytype, setup_ns: u64, handle: u64, offset:
 
     const vk_resources = @import("vk_resources.zig");
     const compute_buffer = try vk_resources.ensure_compute_buffer(runtime, handle, required_size, false);
-
-    const mapped = compute_buffer.mapped orelse return error.InvalidArgument;
-    const dst: [*]u8 = @ptrCast(mapped);
-    @memcpy(dst[@intCast(offset)..][0..data_bytes.len], data_bytes);
+    try vk_resources.stage_compute_buffer_write(runtime, compute_buffer, offset, data_bytes);
 
     const write_ns = common_timing.ns_delta(common_timing.now_ns(), write_start);
+    const status_message = switch (compute_buffer.memory_kind) {
+        .host_visible => "buffer seeded via host-visible memcpy",
+        .device_local => "buffer uploaded via staged copy",
+    };
 
     return .{
         .status = .ok,
-        .status_message = "buffer seeded via host-visible memcpy",
+        .status_message = status_message,
         .setup_ns = setup_ns +| write_ns,
         .encode_ns = 0,
         .submit_wait_ns = 0,
@@ -250,7 +251,7 @@ fn execute_kernel_dispatch(self: anytype, setup_ns: u64, kernel_dispatch: model.
     const previous_replay_state = runtime.recorded_submit_replay_active;
     runtime.recorded_submit_replay_active = use_explicit_submit_boundaries(self);
     defer runtime.recorded_submit_replay_active = previous_replay_state;
-    const spirv_words = runtime.load_kernel_spirv_cached(kernel_dispatch.kernel) catch |err| {
+    const spirv_words = runtime.ensure_kernel_spirv_cached(kernel_dispatch.kernel) catch |err| {
         if (err == error.UnsupportedFeature and std.mem.endsWith(u8, kernel_dispatch.kernel, ".wgsl")) {
             return .{
                 .status = .unsupported,
@@ -497,7 +498,7 @@ pub fn prewarm_upload_path(self: anytype, max_upload_bytes: u64) anyerror!void {
 
 pub fn prewarm_kernel_dispatch(self: anytype, kernel: []const u8, bindings: ?[]const model.KernelBinding) anyerror!void {
     const runtime = try self.ensure_runtime_bootstrapped();
-    const spirv_words = try runtime.load_kernel_spirv_cached(kernel);
+    const spirv_words = try runtime.ensure_kernel_spirv_cached(kernel);
     try runtime.set_compute_shader_spirv(spirv_words, null, bindings, false);
 }
 
@@ -508,9 +509,6 @@ pub fn capture_buffer(self: anytype, allocator: std.mem.Allocator, handle: u64, 
     }
     if (size == 0) return error.InvalidArgument;
     const buffer = runtime.compute_buffers.get(handle) orelse return error.InvalidArgument;
-    const end = std.math.add(u64, offset, size) catch return error.InvalidArgument;
-    if (end > buffer.size) return error.InvalidArgument;
-    const mapped = buffer.mapped orelse return error.InvalidState;
-    const source = @as([*]u8, @ptrCast(mapped))[@intCast(offset)..@intCast(end)];
-    return try allocator.dupe(u8, source);
+    const vk_resources = @import("vk_resources.zig");
+    return try vk_resources.capture_compute_buffer(runtime, allocator, buffer, offset, size);
 }

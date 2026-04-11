@@ -1,5 +1,5 @@
 {
-  "workloads": "bench/workloads/workloads.apple.metal.json",
+  "workloads": "bench/workloads/workloads.package.inference.json",
   "baseline": {
     "name": "doe_gpu_node_package",
     "executorId": "doe_node_webgpu"

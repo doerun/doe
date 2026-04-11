@@ -576,8 +576,40 @@
       ]
     },
     {
+      "familyId": "doe_package_node_cold",
+      "platformLane": "amd-vulkan",
+      "targetIds": [
+        "gemma64",
+        "gemma1b"
+      ]
+    },
+    {
+      "familyId": "doe_package_node_cold",
+      "platformLane": "local-d3d12",
+      "targetIds": [
+        "gemma64",
+        "gemma1b"
+      ]
+    },
+    {
       "familyId": "doe_package_node_warm",
       "platformLane": "apple-metal",
+      "targetIds": [
+        "gemma64",
+        "gemma1b"
+      ]
+    },
+    {
+      "familyId": "doe_package_node_warm",
+      "platformLane": "amd-vulkan",
+      "targetIds": [
+        "gemma64",
+        "gemma1b"
+      ]
+    },
+    {
+      "familyId": "doe_package_node_warm",
+      "platformLane": "local-d3d12",
       "targetIds": [
         "gemma64",
         "gemma1b"
@@ -592,8 +624,40 @@
       ]
     },
     {
+      "familyId": "dawn_node_webgpu_node_cold",
+      "platformLane": "amd-vulkan",
+      "targetIds": [
+        "gemma64",
+        "gemma1b"
+      ]
+    },
+    {
+      "familyId": "dawn_node_webgpu_node_cold",
+      "platformLane": "local-d3d12",
+      "targetIds": [
+        "gemma64",
+        "gemma1b"
+      ]
+    },
+    {
       "familyId": "dawn_node_webgpu_node_warm",
       "platformLane": "apple-metal",
+      "targetIds": [
+        "gemma64",
+        "gemma1b"
+      ]
+    },
+    {
+      "familyId": "dawn_node_webgpu_node_warm",
+      "platformLane": "amd-vulkan",
+      "targetIds": [
+        "gemma64",
+        "gemma1b"
+      ]
+    },
+    {
+      "familyId": "dawn_node_webgpu_node_warm",
+      "platformLane": "local-d3d12",
       "targetIds": [
         "gemma64",
         "gemma1b"
@@ -608,8 +672,40 @@
       ]
     },
     {
+      "familyId": "doe_package_bun_cold",
+      "platformLane": "amd-vulkan",
+      "targetIds": [
+        "gemma64",
+        "gemma1b"
+      ]
+    },
+    {
+      "familyId": "doe_package_bun_cold",
+      "platformLane": "local-d3d12",
+      "targetIds": [
+        "gemma64",
+        "gemma1b"
+      ]
+    },
+    {
       "familyId": "doe_package_bun_warm",
       "platformLane": "apple-metal",
+      "targetIds": [
+        "gemma64",
+        "gemma1b"
+      ]
+    },
+    {
+      "familyId": "doe_package_bun_warm",
+      "platformLane": "amd-vulkan",
+      "targetIds": [
+        "gemma64",
+        "gemma1b"
+      ]
+    },
+    {
+      "familyId": "doe_package_bun_warm",
+      "platformLane": "local-d3d12",
       "targetIds": [
         "gemma64",
         "gemma1b"
@@ -624,8 +720,40 @@
       ]
     },
     {
+      "familyId": "bun_webgpu_package_bun_cold",
+      "platformLane": "amd-vulkan",
+      "targetIds": [
+        "gemma64",
+        "gemma1b"
+      ]
+    },
+    {
+      "familyId": "bun_webgpu_package_bun_cold",
+      "platformLane": "local-d3d12",
+      "targetIds": [
+        "gemma64",
+        "gemma1b"
+      ]
+    },
+    {
       "familyId": "bun_webgpu_package_bun_warm",
       "platformLane": "apple-metal",
+      "targetIds": [
+        "gemma64",
+        "gemma1b"
+      ]
+    },
+    {
+      "familyId": "bun_webgpu_package_bun_warm",
+      "platformLane": "amd-vulkan",
+      "targetIds": [
+        "gemma64",
+        "gemma1b"
+      ]
+    },
+    {
+      "familyId": "bun_webgpu_package_bun_warm",
+      "platformLane": "local-d3d12",
       "targetIds": [
         "gemma64",
         "gemma1b"

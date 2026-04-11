@@ -1,5 +1,5 @@
 {
-  "workloads": "bench/workloads/workloads.package.gemma270m.json",
+  "workloads": "bench/workloads/workloads.package.inference.json",
   "baseline": {
     "name": "doe_gpu_bun_package",
     "executorId": "doe_bun_package"

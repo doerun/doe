@@ -57,6 +57,7 @@ pub fn flush_queue(self: anytype) !u64 {
     const start_ns = common_timing.now_ns();
     const has_pending = self.hot_pending_upload != null or self.pending_uploads.items.len > 0;
     if (has_pending) {
+        try vk_device.ensure_submission_state(self);
         try finish_pending_upload_recording(self);
         var upload_command_buffer = self.primary_command_buffer;
         var submit = c.VkSubmitInfo{
@@ -273,6 +274,7 @@ fn record_direct_upload(self: anytype, bytes: u64, dst_usage: u32) !void {
 
 pub fn ensure_upload_recording(self: anytype) !void {
     if (self.upload_recording_active) return;
+    try vk_device.ensure_submission_state(self);
     // The command pool was created with VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
     // so vkBeginCommandBuffer implicitly resets the buffer from executable/invalid state.
     // No explicit vkResetCommandBuffer is needed.
@@ -506,11 +508,41 @@ pub fn begin_streaming_copy(self: anytype) !void {
 }
 
 /// Record a buffer-to-buffer copy into the streaming command buffer.
-pub fn streaming_copy_buffer_to_buffer(self: anytype, src: c.VkBuffer, dst: c.VkBuffer, size: u64) !void {
+pub fn streaming_copy_buffer_region(self: anytype, src: c.VkBuffer, src_offset: u64, dst: c.VkBuffer, dst_offset: u64, size: u64) !void {
     if (!self.streaming_copy_active) try begin_streaming_copy(self);
-    var region = c.VkBufferCopy{ .srcOffset = 0, .dstOffset = 0, .size = size };
+    var region = c.VkBufferCopy{
+        .srcOffset = src_offset,
+        .dstOffset = dst_offset,
+        .size = size,
+    };
     c.vkCmdCopyBuffer(self.streaming_copy_buffer, src, dst, 1, @ptrCast(&region));
     self.streaming_copy_count += 1;
+}
+
+/// Record a whole-buffer copy into the streaming command buffer.
+pub fn streaming_copy_buffer_to_buffer(self: anytype, src: c.VkBuffer, dst: c.VkBuffer, size: u64) !void {
+    try streaming_copy_buffer_region(self, src, 0, dst, 0, size);
+}
+
+/// Submit a single copy region and wait for completion.
+pub fn copy_buffer_region_and_wait(
+    self: anytype,
+    src: c.VkBuffer,
+    src_offset: u64,
+    dst: c.VkBuffer,
+    dst_offset: u64,
+    size: u64,
+) !void {
+    if (size == 0) return;
+    if (self.hot_pending_upload != null or self.pending_uploads.items.len > 0 or self.has_deferred_submissions) {
+        _ = try flush_queue(self);
+    }
+    try vk_device.ensure_submission_state(self);
+    if (self.streaming_copy_active) {
+        try flush_streaming_copy(self, true);
+    }
+    try streaming_copy_buffer_region(self, src, src_offset, dst, dst_offset, size);
+    try flush_streaming_copy(self, true);
 }
 
 /// Finish recording and submit the streaming copy command buffer.

@@ -14,6 +14,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 BUILD_DIR = REPO_ROOT / "runtime" / "zig"
 EXECUTOR_PATH = BUILD_DIR / "zig-out" / "bin" / "webgpu-plan-executor"
 PLAN_PATH = REPO_ROOT / "bench" / "plans" / "generated" / "inference_gemma3_270m_prefill_32tok.plan.json"
+DAWN_DELEGATE_BACKEND_PATH = REPO_ROOT / "runtime" / "zig" / "src" / "backend" / "dawn_delegate_backend.zig"
 
 
 def _build_webgpu_plan_executor_or_skip() -> None:
@@ -34,6 +35,13 @@ def _build_webgpu_plan_executor_or_skip() -> None:
 
 
 class DawnDirectPlanExecutorTests(unittest.TestCase):
+    def test_dawn_delegate_backend_supports_buffer_write_bytes(self) -> None:
+        source = DAWN_DELEGATE_BACKEND_PATH.read_text(encoding="utf-8")
+        self.assertIn(
+            "return try self.inner.executeBufferWriteBytes(handle, offset, buffer_size, data);",
+            source,
+        )
+
     def test_dry_run_emits_trace_artifacts(self) -> None:
         _build_webgpu_plan_executor_or_skip()
 
