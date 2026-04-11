@@ -1,0 +1,185 @@
+[
+  {
+    "kind": "buffer_write",
+    "handle": 4101,
+    "bufferSize": 16,
+    "data": [
+      131072,
+      256,
+      8,
+      1337
+    ]
+  },
+  {
+    "kind": "buffer_write",
+    "handle": 4102,
+    "bufferSize": 16,
+    "data": [
+      131072,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "kind": "buffer_write",
+    "handle": 4103,
+    "bufferSize": 16,
+    "data": [
+      2048,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "kind": "buffer_write",
+    "handle": 4104,
+    "bufferSize": 16,
+    "data": [
+      32,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "monte_carlo_paths_fixed_samples.wgsl",
+    "x": 2048,
+    "y": 1,
+    "z": 1,
+    "initialize_buffers_on_create": true,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "uniform",
+        "resource_handle": 4101,
+        "buffer_size": 16,
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "storage",
+        "resource_handle": 4201,
+        "buffer_size": 2097152,
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "monte_carlo_reduce_vec4.wgsl",
+    "x": 2048,
+    "y": 1,
+    "z": 1,
+    "initialize_buffers_on_create": true,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "uniform",
+        "resource_handle": 4102,
+        "buffer_size": 16,
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "readonly",
+        "resource_handle": 4201,
+        "buffer_size": 2097152,
+        "visibility": "compute"
+      },
+      {
+        "binding": 2,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "storage",
+        "resource_handle": 4202,
+        "buffer_size": 32768,
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "monte_carlo_reduce_vec4.wgsl",
+    "x": 32,
+    "y": 1,
+    "z": 1,
+    "initialize_buffers_on_create": true,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "uniform",
+        "resource_handle": 4103,
+        "buffer_size": 16,
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "readonly",
+        "resource_handle": 4202,
+        "buffer_size": 32768,
+        "visibility": "compute"
+      },
+      {
+        "binding": 2,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "storage",
+        "resource_handle": 4203,
+        "buffer_size": 512,
+        "visibility": "compute"
+      }
+    ]
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "monte_carlo_reduce_vec4.wgsl",
+    "x": 1,
+    "y": 1,
+    "z": 1,
+    "initialize_buffers_on_create": true,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "uniform",
+        "resource_handle": 4104,
+        "buffer_size": 16,
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "readonly",
+        "resource_handle": 4203,
+        "buffer_size": 512,
+        "visibility": "compute"
+      },
+      {
+        "binding": 2,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "storage",
+        "resource_handle": 4204,
+        "buffer_size": 16,
+        "visibility": "compute"
+      }
+    ]
+  }
+]

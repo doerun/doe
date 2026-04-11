@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Fawn Stable Fluids</title>
+<title>Fawn Prismatic Fluids</title>
 <style>
 *, *::before, *::after { box-sizing: border-box; }
 html, body { margin: 0; min-height: 100%; }
@@ -120,10 +120,10 @@ canvas {
   <div class="topbar">
     <div>
       <div class="eyebrow">Fluid Dynamics Demo</div>
-      <h1>Stable Fluids</h1>
+      <h1>Prismatic Fluids</h1>
       <div class="subtle">
-        A WebGPU implementation shaped around Stam’s stable-fluid structure: semi-Lagrangian advection, divergence measurement,
-        pressure solve, projection, and dye transport. Move through the field to inject force and color; hold down for stronger flow.
+        A denser WebGPU fluid field that keeps the stable-fluid backbone but merges it with magnetic wells and prismatic metallic rendering.
+        Pointer motion injects force and color, while autonomous magnetic attractors keep the box alive even when you stop touching it.
       </div>
     </div>
     <div class="actions">
@@ -131,20 +131,22 @@ canvas {
         <span class="eyebrow">Grid</span><br>
         <select id="grid-select">
           <option value="192">192 × 192</option>
-          <option value="256" selected>256 × 256</option>
+          <option value="256">256 × 256</option>
           <option value="320">320 × 320</option>
-          <option value="384">384 × 384</option>
+          <option value="384" selected>384 × 384</option>
           <option value="448">448 × 448</option>
           <option value="512">512 × 512</option>
+          <option value="640">640 × 640</option>
+          <option value="768">768 × 768</option>
         </select>
       </label>
       <label>
         <span class="eyebrow">Pressure</span><br>
         <select id="pressure-select">
-          <option value="18">18 iters</option>
-          <option value="24" selected>24 iters</option>
-          <option value="32">32 iters</option>
-          <option value="40">40 iters</option>
+          <option value="20">20 iters</option>
+          <option value="28" selected>28 iters</option>
+          <option value="36">36 iters</option>
+          <option value="48">48 iters</option>
         </select>
       </label>
       <button id="restart">Restart</button>
@@ -174,7 +176,7 @@ canvas {
   <div class="stage">
     <canvas id="view"></canvas>
     <div class="note">
-      The field is a bounded box, not a wraparound texture. Pointer motion injects force and dye; stronger pressure iterations preserve clearer vortices.
+      This stays a bounded box, not a wraparound texture. Magnetic wells keep the flow active, pointer motion injects stronger force and dye, and the render stage turns curl and density into a metallic prismatic surface.
     </div>
   </div>
 </main>
@@ -199,6 +201,38 @@ fn idx_at(x: i32, y: i32) -> u32 {
 
 fn uv_to_grid(uv: vec2<f32>) -> vec2<f32> {
   return uv * u.grid.xy - vec2<f32>(0.5, 0.5);
+}
+
+fn safe_norm(v: vec2<f32>) -> vec2<f32> {
+  return v / max(length(v), 1e-5);
+}
+
+fn magnetic_flow(uv: vec2<f32>, time: f32) -> vec2<f32> {
+  let m0 = vec2<f32>(0.50 + sin(time * 0.46) * 0.17, 0.44 + cos(time * 0.63) * 0.15);
+  let m1 = vec2<f32>(0.28 + cos(time * 0.37 + 1.9) * 0.15, 0.70 + sin(time * 0.42 + 0.8) * 0.12);
+  let m2 = vec2<f32>(0.75 + sin(time * 0.31 + 2.2) * 0.11, 0.30 + cos(time * 0.54 + 1.3) * 0.18);
+
+  let d0 = uv - m0;
+  let d1 = uv - m1;
+  let d2 = uv - m2;
+  let p = uv - u.mouse.xy;
+
+  let dir0 = safe_norm(d0);
+  let dir1 = safe_norm(d1);
+  let dir2 = safe_norm(d2);
+  let dirP = safe_norm(p);
+
+  let inv0 = min(1.0 / max(dot(d0, d0), 0.0012), 52.0);
+  let inv1 = min(1.0 / max(dot(d1, d1), 0.0012), 52.0);
+  let inv2 = min(1.0 / max(dot(d2, d2), 0.0012), 52.0);
+  let invP = min(1.0 / max(dot(p, p), 0.0008), 70.0);
+
+  var flow = vec2<f32>(0.0, 0.0);
+  flow += (-dir0 * 0.030 + vec2<f32>(-dir0.y, dir0.x) * 0.048) * inv0;
+  flow += (-dir1 * 0.024 + vec2<f32>(-dir1.y, dir1.x) * 0.040) * inv1;
+  flow += (-dir2 * 0.028 + vec2<f32>(-dir2.y, dir2.x) * 0.045) * inv2;
+  flow += (-dirP * 0.040 + vec2<f32>(-dirP.y, dirP.x) * 0.062) * invP * u.mouse.z;
+  return flow;
 }
 `;
 
@@ -246,7 +280,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let dragDir = drag / dragLen;
   let swirl = vec2<f32>(-delta.y, delta.x);
   let swirlLen = max(length(swirl), 1e-5);
-  vel += (dragDir * dragLen * 2.2 + (swirl / swirlLen) * 0.10) * falloff * u.sim.x;
+  let magnetic = magnetic_flow(uv, u.sim.y);
+  vel += magnetic * u.sim.w * u.sim.x * 0.22;
+  vel += (dragDir * dragLen * 2.4 + (swirl / swirlLen) * 0.14) * falloff * u.sim.x;
 
   if (gid.x <= 1u || gid.y <= 1u || gid.x >= width - 2u || gid.y >= height - 2u) {
     vel *= 0.0;
@@ -424,11 +460,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let delta = uv - u.mouse.xy;
   let dist = length(delta);
   let falloff = smoothstep(u.mouse.w * 0.85, 0.0, dist) * u.mouse.z;
+  let magnetic = length(magnetic_flow(uv, u.sim.y));
   let tint = 0.5 + 0.5 * cos(
     vec3<f32>(0.0, 2.1, 4.2)
-    + vec3<f32>(u.sim.y * 0.28 + uv.x * 8.0, u.sim.y * 0.23 + uv.y * 7.0, u.sim.y * 0.19 + (uv.x + uv.y) * 5.0)
+    + vec3<f32>(
+      u.sim.y * 0.28 + uv.x * 8.0 + magnetic * 1.6,
+      u.sim.y * 0.23 + uv.y * 7.0 + magnetic * 1.1,
+      u.sim.y * 0.19 + (uv.x + uv.y) * 5.0 + magnetic * 1.9
+    )
   );
-  dye += tint * falloff * 0.055;
+  dye += tint * (falloff * 0.060 + magnetic * 0.0018);
+  dye *= 0.997 - min(magnetic * 0.0006, 0.003);
   dyeDst[idx_at(i32(gid.x), i32(gid.y))] = vec4<f32>(dye, 1.0);
 }
 `;
@@ -466,6 +508,31 @@ fn sample_curl_nearest(uv: vec2<f32>) -> f32 {
   return divCurl[idx_at(x, y)].y;
 }
 
+fn dye_at(x: i32, y: i32) -> vec3<f32> {
+  return dyeBuf[idx_at(x, y)].xyz;
+}
+
+fn vel_at(x: i32, y: i32) -> vec2<f32> {
+  return velBuf[idx_at(x, y)].xy;
+}
+
+fn curl_at(x: i32, y: i32) -> f32 {
+  return divCurl[idx_at(x, y)].y;
+}
+
+fn scalar_height(x: i32, y: i32) -> f32 {
+  let uv = (vec2<f32>(f32(x), f32(y)) + 0.5) * u.grid.zw;
+  let dye = dye_at(x, y);
+  let vel = vel_at(x, y);
+  let curl = curl_at(x, y);
+  let magnetic = length(magnetic_flow(uv, u.sim.y));
+  return clamp(length(dye) * 0.90 + abs(curl) * 0.028 + length(vel) * 0.17 + magnetic * 0.20, 0.0, 1.7);
+}
+
+fn spectral(t: f32) -> vec3<f32> {
+  return 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.0, 4.0) + t * 6.28318);
+}
+
 @vertex
 fn vs(@builtin(vertex_index) vertexIndex: u32) -> VSOut {
   var positions = array<vec2<f32>, 3>(
@@ -482,15 +549,33 @@ fn vs(@builtin(vertex_index) vertexIndex: u32) -> VSOut {
 
 @fragment
 fn fs(in: VSOut) -> @location(0) vec4<f32> {
-  let dye = sample_dye_nearest(in.uv);
-  let vel = sample_vel_nearest(in.uv);
-  let curl = sample_curl_nearest(in.uv);
+  let gridPos = uv_to_grid(clamp(in.uv, u.grid.zw * 0.5, vec2<f32>(1.0) - u.grid.zw * 0.5));
+  let gx = i32(round(gridPos.x));
+  let gy = i32(round(gridPos.y));
+  let dye = dye_at(gx, gy);
+  let vel = vel_at(gx, gy);
+  let curl = curl_at(gx, gy);
   let speed = length(vel);
-  let shimmer = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.0, 4.0) + curl * 1.4 + speed * 11.0 + u.sim.y * 0.25);
-  let prismatic = shimmer * abs(curl) * 0.035;
-  let base = dye * 1.55 + vec3<f32>(speed * 0.08, speed * 0.05, speed * 0.11) + prismatic;
+  let magnetic = length(magnetic_flow(in.uv, u.sim.y));
+  let hc = scalar_height(gx, gy);
+  let hl = scalar_height(gx - 1, gy);
+  let hr = scalar_height(gx + 1, gy);
+  let hb = scalar_height(gx, gy - 1);
+  let ht = scalar_height(gx, gy + 1);
+  let grad = vec2<f32>(hr - hl, ht - hb) * 0.5;
+  let normal = normalize(vec3<f32>(-grad.x * 2.0, -grad.y * 2.0, 1.0));
+  let view = normalize(vec3<f32>(0.0, 0.0, 1.0));
+  let fresnel = pow(1.0 - max(dot(normal, view), 0.0), 3.0);
+  let prism = spectral(hc * 0.26 + abs(curl) * 0.55 + u.sim.y * 0.026 + magnetic * 0.11);
+  let secondary = spectral(speed * 0.55 + magnetic * 0.18 + normal.x * 0.22 - normal.y * 0.12);
+  let glint = pow(max(dot(reflect(normalize(vec3<f32>(0.22, -0.18, -1.0)), normal), view), 0.0), 28.0);
+  let fluidGlow = dye * (1.25 + speed * 0.50) + prism * abs(curl) * 0.085;
+  let metallic = mix(vec3<f32>(0.05, 0.06, 0.08), prism, 0.72)
+    + secondary * fresnel * 0.40
+    + vec3<f32>(1.0, 0.96, 0.93) * glint * 0.72;
+  let base = fluidGlow + metallic * (0.44 + hc * 0.25);
   let vignette = 1.0 - smoothstep(0.15, 0.92, length(in.uv * 2.0 - 1.0));
-  let bg = vec3<f32>(0.02, 0.03, 0.028) + vignette * vec3<f32>(0.012, 0.028, 0.016);
+  let bg = vec3<f32>(0.018, 0.024, 0.030) + vignette * vec3<f32>(0.020, 0.032, 0.040);
   return vec4<f32>(max(base, bg), 1.0);
 }
 `;
@@ -749,7 +834,7 @@ fn fs(in: VSOut) -> @location(0) vec4<f32> {
 
     resizeCanvas();
     rebuildSimulationBuffers();
-    statusEl.textContent = 'Running stable-fluid solver';
+    statusEl.textContent = 'Running prismatic fluid reactor';
     running = true;
   }
 
@@ -770,8 +855,8 @@ fn fs(in: VSOut) -> @location(0) vec4<f32> {
     uniformData[7] = 0.10;
     uniformData[8] = dt * 1.15;
     uniformData[9] = now * 0.001;
-    uniformData[10] = 2.8;
-    uniformData[11] = 0.0;
+    uniformData[10] = 3.2;
+    uniformData[11] = 1.75;
     uniformData[12] = pointer.dx;
     uniformData[13] = pointer.dy;
     uniformData[14] = 0.0;

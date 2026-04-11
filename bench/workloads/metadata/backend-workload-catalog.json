@@ -10267,6 +10267,7 @@
         "irScenario": "compute_monte_carlo_fixed_samples_131072paths_256samples_8bounces",
         "name": "monte carlo fixed samples 131072 paths 256 samples 8 bounces",
         "runnerType": "zig-runtime",
+        "workloadOrigin": "doe_contract_with_dawn_mapping",
         "suiteTags": [
           "extended"
         ]
@@ -10332,6 +10333,7 @@
         "irScenario": "compute_stable_fluids_multistage_256grid_18pressure_4steps",
         "name": "stable fluids multistage 256 grid 18 pressure 4 steps",
         "runnerType": "zig-runtime",
+        "workloadOrigin": "doe_contract_with_dawn_mapping",
         "suiteTags": [
           "extended"
         ]

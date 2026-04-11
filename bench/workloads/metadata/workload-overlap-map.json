@@ -22,19 +22,12 @@
     },
     "coverage": {
       "across_all_three_backends": [
-        "compute_concurrent_execution_single",
-        "compute_workgroup_atomic_1024",
-        "compute_workgroup_non_atomic_1024",
-        "pipeline_compile_stress"
+        "compute_monte_carlo_fixed_samples_131072paths_256samples_8bounces",
+        "compute_stable_fluids_multistage_256grid_18pressure_4steps"
       ],
       "only_vulkan": [
-        "compute_matvec_32768x2048_f32",
-        "compute_matvec_32768x2048_f32_swizzle1",
-        "compute_matvec_32768x2048_f32_workgroupshared_swizzle1",
-        "surface_presentation",
         "upload_write_buffer_1gb",
-        "upload_write_buffer_256mb",
-        "upload_write_buffer_4gb"
+        "upload_write_buffer_256mb"
       ],
       "only_metal": [
         "compute_dispatch_fallback",
@@ -74,7 +67,11 @@
       ],
       "vulkan_and_metal_only": [],
       "metal_and_d3d12_only": [
-        "compute_zero_initialize_workgroup_memory_256"
+        "compute_concurrent_execution_single",
+        "compute_workgroup_atomic_1024",
+        "compute_workgroup_non_atomic_1024",
+        "compute_zero_initialize_workgroup_memory_256",
+        "pipeline_compile_stress"
       ],
       "vulkan_and_d3d12_only": [
         "upload_write_buffer_16mb",
@@ -85,17 +82,17 @@
       ]
     },
     "counts": {
-      "across_all_three_backends": 4,
-      "only_vulkan": 7,
+      "across_all_three_backends": 2,
+      "only_vulkan": 2,
       "only_metal": 31,
       "only_d3d12": 1,
       "vulkan_and_metal_only": 0,
-      "metal_and_d3d12_only": 1,
+      "metal_and_d3d12_only": 5,
       "vulkan_and_d3d12_only": 5,
       "distinctComparable": {
-        "metal": 36,
-        "vulkan": 16,
-        "d3d12": 11
+        "metal": 38,
+        "vulkan": 9,
+        "d3d12": 13
       }
     }
   },
@@ -107,17 +104,8 @@
     },
     "reason": "Derived from current governed comparable workload cohorts across Metal/Vulkan/D3D12 sources.",
     "coverage": {
-      "across_all_three_backends": [
-        "compute_concurrent_execution_single",
-        "compute_workgroup_atomic_1024",
-        "compute_workgroup_non_atomic_1024",
-        "pipeline_compile_stress"
-      ],
-      "only_vulkan": [
-        "compute_matvec_32768x2048_f32",
-        "compute_matvec_32768x2048_f32_swizzle1",
-        "compute_matvec_32768x2048_f32_workgroupshared_swizzle1"
-      ],
+      "across_all_three_backends": [],
+      "only_vulkan": [],
       "only_metal": [
         "compute_dispatch_fallback",
         "compute_dispatch_grid",
@@ -148,7 +136,11 @@
       ],
       "vulkan_and_metal_only": [],
       "metal_and_d3d12_only": [
-        "compute_zero_initialize_workgroup_memory_256"
+        "compute_concurrent_execution_single",
+        "compute_workgroup_atomic_1024",
+        "compute_workgroup_non_atomic_1024",
+        "compute_zero_initialize_workgroup_memory_256",
+        "pipeline_compile_stress"
       ],
       "vulkan_and_d3d12_only": [
         "upload_write_buffer_1kb",
@@ -158,16 +150,16 @@
       ]
     },
     "counts": {
-      "across_all_three_backends": 4,
-      "only_vulkan": 3,
+      "across_all_three_backends": 0,
+      "only_vulkan": 0,
       "only_metal": 22,
       "only_d3d12": 2,
       "vulkan_and_metal_only": 0,
-      "metal_and_d3d12_only": 1,
+      "metal_and_d3d12_only": 5,
       "vulkan_and_d3d12_only": 4,
       "distinctComparable": {
         "metal": 27,
-        "vulkan": 11,
+        "vulkan": 4,
         "d3d12": 11
       }
     }

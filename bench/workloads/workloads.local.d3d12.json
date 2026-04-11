@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "ownership": "generated",
   "generatorId": "bench.tools.generate_backend_workloads:materialize_lane",
-  "generatorInputHash": "00724779bc2a031518e8ae7c7cc3126f0cadb24cc5f38fef6dc116b1bb703b57",
-  "generatedAt": "2026-04-09T01:07:40.463440+00:00",
+  "generatorInputHash": "2797ebb1e9bc9aa3580d8cb51d5e0a4bfa9cc94f48ed6570b3b1bf706a15ae87",
+  "generatedAt": "2026-04-11T19:05:45.792861+00:00",
   "workloads": [
     {
       "id": "compute_matvec_32768x2048_f32",
@@ -1520,6 +1520,80 @@
       "vendor": "generic",
       "claimEligible": false,
       "workloadOrigin": "dawn_autodiscovered",
+      "cohorts": [
+        "exploration"
+      ]
+    },
+    {
+      "id": "compute_monte_carlo_fixed_samples_131072paths_256samples_8bounces",
+      "api": "d3d12",
+      "runnerType": "zig-runtime",
+      "irPath": "bench/ir/compute_heavy.json",
+      "irScenario": "compute_monte_carlo_fixed_samples_131072paths_256samples_8bounces",
+      "comparabilityNotes": "Doe-owned apples-to-apples Monte Carlo compute contract. Both sides execute the same deterministic fixed-sample path-tracing command stream and identical reduction passes under the runtime compare harness.",
+      "comparable": true,
+      "benchmarkClass": "comparable",
+      "claimEligible": true,
+      "default": false,
+      "description": "Fixed-shape Monte Carlo compute workload with 131072 path threads, 256 samples per path, 8 bounces per sample, and a deterministic reduction over accumulated path radiance.",
+      "domain": "compute",
+      "driver": "1.0.0",
+      "extraArgs": [
+        "--kernel-root",
+        "bench/kernels"
+      ],
+      "family": "d3d12",
+      "name": "monte carlo fixed samples 131072 paths 256 samples 8 bounces",
+      "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
+      "vendor": "generic",
+      "workloadOrigin": "doe_contract_with_dawn_mapping",
+      "planPath": "bench/plans/generated/compute_monte_carlo_fixed_samples_131072paths_256samples_8bounces.plan.json",
+      "planSchemaVersion": 1,
+      "planHash": "cdb0ea7071e057821d48076c6717258e64a27385f502cc18eec7b33dc221ac1b",
+      "planCommandCount": 8,
+      "planDispatchCount": 4,
+      "planBufferWriteCount": 4,
+      "planBufferLoadCount": 0,
+      "compatibilityCommandHash": "d64baccb3e9463203ee2645119d11b5a3f27d627f5672bbe5da46f11ac90cb5e",
+      "sourceIrSha256": "3e9657ce96b86d4f21d138eab798d1fc28c1b1c098d1f8322193461b61b07046",
+      "commandsPath": "bench/plans/generated/compat/compute_monte_carlo_fixed_samples_131072paths_256samples_8bounces_commands.json",
+      "cohorts": [
+        "exploration"
+      ]
+    },
+    {
+      "id": "compute_stable_fluids_multistage_256grid_18pressure_4steps",
+      "api": "d3d12",
+      "runnerType": "zig-runtime",
+      "irPath": "bench/ir/compute_heavy.json",
+      "irScenario": "compute_stable_fluids_multistage_256grid_18pressure_4steps",
+      "comparabilityNotes": "Doe-owned apples-to-apples multistage stable-fluids compute contract. Both sides execute the same deterministic seed, advection, divergence, Jacobi pressure, projection, and dye update command stream under the runtime compare harness.",
+      "comparable": true,
+      "benchmarkClass": "comparable",
+      "claimEligible": true,
+      "default": false,
+      "description": "Deterministic multistage stable-fluids workload with a 256x256 grid, 18 Jacobi pressure iterations per simulation step, and 4 full solver steps over velocity and dye fields.",
+      "domain": "compute",
+      "driver": "1.0.0",
+      "extraArgs": [
+        "--kernel-root",
+        "bench/kernels"
+      ],
+      "family": "d3d12",
+      "name": "stable fluids multistage 256 grid 18 pressure 4 steps",
+      "quirksPath": "examples/quirks/windows_d3d12_noop_list.json",
+      "vendor": "generic",
+      "workloadOrigin": "doe_contract_with_dawn_mapping",
+      "planPath": "bench/plans/generated/compute_stable_fluids_multistage_256grid_18pressure_4steps.plan.json",
+      "planSchemaVersion": 1,
+      "planHash": "dac4e56fe43fe3e4abfb60e0fbf86232e25dc06b79d78a9cf9514382631aee91",
+      "planCommandCount": 94,
+      "planDispatchCount": 93,
+      "planBufferWriteCount": 1,
+      "planBufferLoadCount": 0,
+      "compatibilityCommandHash": "e0b20c474d91f892dfdca7318e9b8ff8bb8fdc98ef98dc7440ed135c799241e4",
+      "sourceIrSha256": "3e9657ce96b86d4f21d138eab798d1fc28c1b1c098d1f8322193461b61b07046",
+      "commandsPath": "bench/plans/generated/compat/compute_stable_fluids_multistage_256grid_18pressure_4steps_commands.json",
       "cohorts": [
         "exploration"
       ]

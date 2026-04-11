@@ -4,7 +4,7 @@
   "counts": {
     "dawn_benchmark": 35,
     "dawn_autodiscovered": 7,
-    "doe_contract_with_dawn_mapping": 13,
+    "doe_contract_with_dawn_mapping": 15,
     "doe_specific": 27,
     "hybrid": 43
   },
@@ -1173,6 +1173,24 @@
       "effectiveOrigin": "doe_contract_with_dawn_mapping",
       "laneOrigins": {
         "apple_metal_extended": "doe_contract_with_dawn_mapping"
+      }
+    },
+    {
+      "id": "compute_monte_carlo_fixed_samples_131072paths_256samples_8bounces",
+      "effectiveOrigin": "doe_contract_with_dawn_mapping",
+      "laneOrigins": {
+        "amd_vulkan_superset_native_supported": "doe_contract_with_dawn_mapping",
+        "apple_metal_extended": "doe_contract_with_dawn_mapping",
+        "local_d3d12_extended": "doe_contract_with_dawn_mapping"
+      }
+    },
+    {
+      "id": "compute_stable_fluids_multistage_256grid_18pressure_4steps",
+      "effectiveOrigin": "doe_contract_with_dawn_mapping",
+      "laneOrigins": {
+        "amd_vulkan_superset_native_supported": "doe_contract_with_dawn_mapping",
+        "apple_metal_extended": "doe_contract_with_dawn_mapping",
+        "local_d3d12_extended": "doe_contract_with_dawn_mapping"
       }
     },
     {

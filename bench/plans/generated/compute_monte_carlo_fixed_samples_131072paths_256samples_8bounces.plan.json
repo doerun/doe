@@ -1,0 +1,202 @@
+{
+  "schemaVersion": 1,
+  "planKind": "compute_heavy",
+  "workloadId": "compute_monte_carlo_fixed_samples_131072paths_256samples_8bounces",
+  "irPath": "bench/ir/compute_heavy.json",
+  "irScenario": "compute_monte_carlo_fixed_samples_131072paths_256samples_8bounces",
+  "description": "Fixed-shape Monte Carlo compute workload with 131072 path threads, 256 samples per path, 8 bounces per sample, and deterministic tree reduction over the accumulated path radiance.",
+  "planPath": "bench/plans/generated/compute_monte_carlo_fixed_samples_131072paths_256samples_8bounces.plan.json",
+  "commandsPath": "bench/plans/generated/compat/compute_monte_carlo_fixed_samples_131072paths_256samples_8bounces_commands.json",
+  "commandCount": 8,
+  "bufferWriteCount": 4,
+  "bufferLoadCount": 0,
+  "dispatchCount": 4,
+  "sourceIrSha256": "3e9657ce96b86d4f21d138eab798d1fc28c1b1c098d1f8322193461b61b07046",
+  "compatibilityCommandsSha256": "d64baccb3e9463203ee2645119d11b5a3f27d627f5672bbe5da46f11ac90cb5e",
+  "commands": [
+    {
+      "kind": "buffer_write",
+      "handle": 4101,
+      "bufferSize": 16,
+      "data": [
+        131072,
+        256,
+        8,
+        1337
+      ]
+    },
+    {
+      "kind": "buffer_write",
+      "handle": 4102,
+      "bufferSize": 16,
+      "data": [
+        131072,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "kind": "buffer_write",
+      "handle": 4103,
+      "bufferSize": 16,
+      "data": [
+        2048,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "kind": "buffer_write",
+      "handle": 4104,
+      "bufferSize": 16,
+      "data": [
+        32,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "monte_carlo_paths_fixed_samples.wgsl",
+      "x": 2048,
+      "y": 1,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 4101,
+          "buffer_size": 16,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 4201,
+          "buffer_size": 2097152,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "monte_carlo_reduce_vec4.wgsl",
+      "x": 2048,
+      "y": 1,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 4102,
+          "buffer_size": 16,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 4201,
+          "buffer_size": 2097152,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 4202,
+          "buffer_size": 32768,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "monte_carlo_reduce_vec4.wgsl",
+      "x": 32,
+      "y": 1,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 4103,
+          "buffer_size": 16,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 4202,
+          "buffer_size": 32768,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 4203,
+          "buffer_size": 512,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "monte_carlo_reduce_vec4.wgsl",
+      "x": 1,
+      "y": 1,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 4104,
+          "buffer_size": 16,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 4203,
+          "buffer_size": 512,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 4204,
+          "buffer_size": 16,
+          "visibility": "compute"
+        }
+      ]
+    }
+  ],
+  "planSha256": "cdb0ea7071e057821d48076c6717258e64a27385f502cc18eec7b33dc221ac1b"
+}

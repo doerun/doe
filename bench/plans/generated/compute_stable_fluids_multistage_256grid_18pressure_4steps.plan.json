@@ -1,0 +1,4213 @@
+{
+  "schemaVersion": 1,
+  "planKind": "compute_heavy",
+  "workloadId": "compute_stable_fluids_multistage_256grid_18pressure_4steps",
+  "irPath": "bench/ir/compute_heavy.json",
+  "irScenario": "compute_stable_fluids_multistage_256grid_18pressure_4steps",
+  "description": "Deterministic multistage stable-fluids workload with a 256x256 grid, 18 Jacobi pressure iterations per simulation step, and 4 full solver steps over velocity and dye fields.",
+  "planPath": "bench/plans/generated/compute_stable_fluids_multistage_256grid_18pressure_4steps.plan.json",
+  "commandsPath": "bench/plans/generated/compat/compute_stable_fluids_multistage_256grid_18pressure_4steps_commands.json",
+  "commandCount": 94,
+  "bufferWriteCount": 1,
+  "bufferLoadCount": 0,
+  "dispatchCount": 93,
+  "sourceIrSha256": "3e9657ce96b86d4f21d138eab798d1fc28c1b1c098d1f8322193461b61b07046",
+  "compatibilityCommandsSha256": "e0b20c474d91f892dfdca7318e9b8ff8bb8fdc98ef98dc7440ed135c799241e4",
+  "commands": [
+    {
+      "kind": "buffer_write",
+      "handle": 5101,
+      "bufferSize": 32,
+      "data": [
+        256,
+        256,
+        1337,
+        0,
+        1036831949,
+        1065294496,
+        1065227387,
+        1051931443
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_seed.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5201,
+          "buffer_size": 524288,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5206,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 4,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_advect_velocity.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5201,
+          "buffer_size": 524288,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5202,
+          "buffer_size": 524288,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_divergence.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5202,
+          "buffer_size": 524288,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_project.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5202,
+          "buffer_size": 524288,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5201,
+          "buffer_size": 524288,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_advect_dye.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5206,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5201,
+          "buffer_size": 524288,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5207,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_copy_scalar.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5207,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5206,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_advect_velocity.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5201,
+          "buffer_size": 524288,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5202,
+          "buffer_size": 524288,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_divergence.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5202,
+          "buffer_size": 524288,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_project.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5202,
+          "buffer_size": 524288,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5201,
+          "buffer_size": 524288,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_advect_dye.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5206,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5201,
+          "buffer_size": 524288,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5207,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_copy_scalar.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5207,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5206,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_advect_velocity.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5201,
+          "buffer_size": 524288,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5202,
+          "buffer_size": 524288,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_divergence.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5202,
+          "buffer_size": 524288,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_project.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5202,
+          "buffer_size": 524288,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5201,
+          "buffer_size": 524288,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_advect_dye.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5206,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5201,
+          "buffer_size": 524288,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5207,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_copy_scalar.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5207,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5206,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_advect_velocity.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5201,
+          "buffer_size": 524288,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5202,
+          "buffer_size": 524288,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_divergence.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5202,
+          "buffer_size": 524288,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_pressure.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5203,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5205,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_project.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5202,
+          "buffer_size": 524288,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5204,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5201,
+          "buffer_size": 524288,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_advect_dye.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5206,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5201,
+          "buffer_size": 524288,
+          "visibility": "compute"
+        },
+        {
+          "binding": 3,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5207,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    },
+    {
+      "kind": "kernel_dispatch",
+      "kernel": "stable_fluids_copy_scalar.wgsl",
+      "x": 32,
+      "y": 32,
+      "z": 1,
+      "initialize_buffers_on_create": true,
+      "bindings": [
+        {
+          "binding": 0,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "uniform",
+          "resource_handle": 5101,
+          "buffer_size": 32,
+          "visibility": "compute"
+        },
+        {
+          "binding": 1,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "readonly",
+          "resource_handle": 5207,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        },
+        {
+          "binding": 2,
+          "group": 0,
+          "kind": "buffer",
+          "buffer_type": "storage",
+          "resource_handle": 5206,
+          "buffer_size": 262144,
+          "visibility": "compute"
+        }
+      ]
+    }
+  ],
+  "planSha256": "dac4e56fe43fe3e4abfb60e0fbf86232e25dc06b79d78a9cf9514382631aee91"
+}
