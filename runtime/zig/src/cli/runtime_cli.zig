@@ -463,7 +463,7 @@ pub fn runCli() !void {
     if (execution_context) |*ctx| {
         const needs_explicit_drain = options.queue_sync_mode == .deferred or
             options.upload_submit_every > 1 or
-            std.mem.eql(u8, trace_summary.execution_backend, "doe_vulkan");
+            std.mem.eql(u8, trace_summary.execution_backend orelse "", "doe_vulkan");
         if (needs_explicit_drain) {
             const flush_start_ns = nowNs();
             const flush_ns = try ctx.flushQueue();
