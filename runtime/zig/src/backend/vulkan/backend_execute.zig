@@ -378,6 +378,19 @@ fn flush_pending_uploads_if_required(self: anytype, command: model.Command) !u64
     return try runtime.flush_queue();
 }
 
+fn flush_pending_buffer_writes_if_required(self: anytype, command: model.Command) !u64 {
+    switch (command) {
+        .buffer_write => return 0,
+        else => {},
+    }
+    if (self.runtime == null) return 0;
+    const runtime = try self.ensure_runtime_bootstrapped();
+    if (!runtime.streaming_copy_active) return 0;
+    const submit_start = common_timing.now_ns();
+    try runtime.flush_streaming_copy(true);
+    return common_timing.ns_delta(common_timing.now_ns(), submit_start);
+}
+
 fn execute_runtime_command(self: anytype, command: model.Command) !webgpu.NativeExecutionResult {
     const requirements = command_requirements.requirements(command);
     if (self.capability_set.missing(requirements.required_capabilities)) |missing| {
@@ -394,8 +407,9 @@ fn execute_runtime_command(self: anytype, command: model.Command) !webgpu.Native
 
     const flush_start = common_timing.now_ns();
     const pending_submit_wait_ns = try flush_pending_uploads_if_required(self, command);
+    const pending_buffer_write_submit_wait_ns = try flush_pending_buffer_writes_if_required(self, command);
     const flush_setup_ns =
-        common_timing.ns_delta(common_timing.now_ns(), flush_start) -| pending_submit_wait_ns;
+        common_timing.ns_delta(common_timing.now_ns(), flush_start) -| pending_submit_wait_ns -| pending_buffer_write_submit_wait_ns;
 
     var result = switch (command) {
         .upload => |upload| try execute_upload(self, setup_ns, upload),
@@ -426,6 +440,7 @@ fn execute_runtime_command(self: anytype, command: model.Command) !webgpu.Native
     };
     result.setup_ns +|= flush_setup_ns;
     result.submit_wait_ns +|= pending_submit_wait_ns;
+    result.submit_wait_ns +|= pending_buffer_write_submit_wait_ns;
 
     return self.annotate_result(command, result);
 }
@@ -504,7 +519,7 @@ pub fn prewarm_kernel_dispatch(self: anytype, kernel: []const u8, bindings: ?[]c
 
 pub fn capture_buffer(self: anytype, allocator: std.mem.Allocator, handle: u64, offset: u64, size: u64) anyerror![]u8 {
     const runtime = try self.ensure_runtime_bootstrapped();
-    if (runtime.has_deferred_submissions or runtime.hot_pending_upload != null or runtime.pending_uploads.items.len > 0) {
+    if (runtime.streaming_copy_active or runtime.has_deferred_submissions or runtime.hot_pending_upload != null or runtime.pending_uploads.items.len > 0) {
         _ = try runtime.flush_queue();
     }
     if (size == 0) return error.InvalidArgument;

@@ -1,7 +1,5 @@
 // Buffer, texture, and sampler resource management for the Vulkan backend.
-//
-// Handles compute buffer lifecycle, texture creation/destroy/layout
-// transitions, sampler lifecycle, and format helpers.
+// Handles compute buffer lifecycle, texture creation/destroy/layout transitions, sampler lifecycle, and format helpers.
 
 const std = @import("std");
 const c = @import("vk_constants.zig");
@@ -23,16 +21,11 @@ const VkImageView = c.VkImageView;
 const VK_NULL_U64 = c.VK_NULL_U64;
 const VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT: u32 = 0x00000020;
 
-pub const DEFAULT_RUNTIME_TEXTURE_USAGE: model_gpu_types.WGPUFlags =
-    model_gpu_types.WGPUTextureUsage_TextureBinding |
-    model_gpu_types.WGPUTextureUsage_StorageBinding |
-    model_gpu_types.WGPUTextureUsage_CopyDst;
+pub const DEFAULT_RUNTIME_TEXTURE_USAGE: model_gpu_types.WGPUFlags = model_gpu_types.WGPUTextureUsage_TextureBinding | model_gpu_types.WGPUTextureUsage_StorageBinding | model_gpu_types.WGPUTextureUsage_CopyDst;
 pub const REQUIRED_TEXTURE_UPLOAD_USAGE: model_gpu_types.WGPUFlags = model_gpu_types.WGPUTextureUsage_CopyDst;
+const DEVICE_LOCAL_STORAGE_PROMOTION_MIN_BYTES: u64 = 16 * 1024;
 
-pub const ComputeBufferMemoryKind = enum {
-    host_visible,
-    device_local,
-};
+pub const ComputeBufferMemoryKind = enum { host_visible, device_local };
 
 pub const ComputeBuffer = struct {
     buffer: VkBuffer,
@@ -174,13 +167,13 @@ pub fn ensure_compute_buffer_for_binding(
 ) !ComputeBufferPromotion {
     if (binding.resource_kind != .buffer) return error.UnsupportedFeature;
     const required_size = try required_compute_buffer_size(self, binding);
-    const compute_buffer = try ensure_compute_buffer(
-        self,
-        binding.resource_handle,
-        required_size,
-        initialize_buffers_on_create,
-    );
-    if (compute_buffer_memory_kind_for_binding(binding) != .device_local or
+    const desired_memory_kind = compute_buffer_memory_kind_for_binding(binding, required_size);
+    const compute_buffer = if (self.compute_buffers.get(binding.resource_handle) == null and desired_memory_kind == .device_local) blk: {
+        const created = try create_compute_buffer_with_kind(self, required_size, initialize_buffers_on_create, .device_local);
+        try self.compute_buffers.put(self.allocator, binding.resource_handle, created);
+        break :blk created;
+    } else try ensure_compute_buffer(self, binding.resource_handle, required_size, initialize_buffers_on_create);
+    if (compute_buffer_memory_kind_for_binding(binding, required_size) != .device_local or
         compute_buffer.memory_kind == .device_local)
     {
         return .{ .buffer = compute_buffer };
@@ -265,11 +258,11 @@ fn create_compute_buffer_with_kind(
             @memset(@as([*]u8, @ptrCast(mapped.?))[0..@intCast(bytes)], 0);
         }
     } else if (initialize_buffers_on_create) {
-        const zero_fill = try create_host_visible_buffer(self, bytes, c.VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
-        defer destroy_host_visible_buffer(self, zero_fill);
-        const fill = zero_fill.mapped orelse return error.InvalidState;
-        @memset(@as([*]u8, @ptrCast(fill))[0..@intCast(bytes)], 0);
-        try vk_upload.copy_buffer_region_and_wait(self, zero_fill.buffer, 0, buffer, 0, bytes);
+        if (self.has_deferred_submissions or self.hot_pending_upload != null or self.pending_uploads.items.len > 0) {
+            _ = try vk_upload.flush_queue(self);
+        }
+        try vk_device.ensure_submission_state(self);
+        try vk_upload.streaming_fill_buffer(self, buffer, 0, bytes, 0);
     }
 
     return .{
@@ -281,11 +274,14 @@ fn create_compute_buffer_with_kind(
     };
 }
 
-fn compute_buffer_memory_kind_for_binding(binding: model_compute_types.KernelBinding) ComputeBufferMemoryKind {
+fn compute_buffer_memory_kind_for_binding(
+    binding: model_compute_types.KernelBinding,
+    required_size: u64,
+) ComputeBufferMemoryKind {
     return switch (binding.buffer_type) {
         model_binding_types.WGPUBufferBindingType_Storage,
         model_binding_types.WGPUBufferBindingType_ReadOnlyStorage,
-        => .device_local,
+        => if (required_size < DEVICE_LOCAL_STORAGE_PROMOTION_MIN_BYTES) .host_visible else .device_local,
         else => .host_visible,
     };
 }
@@ -295,9 +291,7 @@ pub fn promote_compute_buffer_to_device_local(
     handle: u64,
 ) !ComputeBufferPromotion {
     const existing = self.compute_buffers.getPtr(handle) orelse return error.InvalidArgument;
-    if (existing.memory_kind == .device_local) {
-        return .{ .buffer = existing.* };
-    }
+    if (existing.memory_kind == .device_local) return .{ .buffer = existing.* };
 
     const promoted = try create_compute_buffer_with_kind(self, existing.size, false, .device_local);
     errdefer release_compute_buffer(self, promoted);
@@ -305,10 +299,7 @@ pub fn promote_compute_buffer_to_device_local(
 
     const retired_source = existing.*;
     existing.* = promoted;
-    return .{
-        .buffer = promoted,
-        .retired_source = retired_source,
-    };
+    return .{ .buffer = promoted, .retired_source = retired_source };
 }
 
 pub fn stage_compute_buffer_write(
@@ -328,18 +319,32 @@ pub fn stage_compute_buffer_write(
         return;
     }
 
-    const staging = try create_host_visible_buffer(self, data_bytes.len, c.VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
-    defer destroy_host_visible_buffer(self, staging);
+    if (self.has_deferred_submissions or self.hot_pending_upload != null or self.pending_uploads.items.len > 0) {
+        _ = try vk_upload.flush_queue(self);
+    }
+    const staging_offset = self.buffer_write_staging_offset;
+    const staging = try ensure_buffer_write_staging_buffer(self, staging_offset + data_bytes.len);
     const mapped = staging.mapped orelse return error.InvalidState;
-    @memcpy(@as([*]u8, @ptrCast(mapped))[0..data_bytes.len], data_bytes);
-    try vk_upload.copy_buffer_region_and_wait(
-        self,
-        staging.buffer,
-        0,
-        compute_buffer.buffer,
-        offset,
-        data_bytes.len,
-    );
+    @memcpy(@as([*]u8, @ptrCast(mapped))[@intCast(staging_offset)..][0..data_bytes.len], data_bytes);
+    try vk_upload.streaming_copy_buffer_region(self, staging.buffer, staging_offset, compute_buffer.buffer, offset, data_bytes.len);
+    self.buffer_write_staging_offset = staging_offset + data_bytes.len;
+}
+
+fn ensure_buffer_write_staging_buffer(self: anytype, required_bytes: u64) !ComputeBuffer {
+    if (required_bytes == 0) return error.InvalidArgument;
+    if (self.buffer_write_staging_buffer) |buffer| {
+        if (self.buffer_write_staging_capacity >= required_bytes) return buffer;
+        if (self.streaming_copy_active) try self.flush_streaming_copy(true);
+        destroy_host_visible_buffer(self, buffer);
+        self.buffer_write_staging_buffer = null;
+        self.buffer_write_staging_capacity = 0;
+    }
+    const capacity = std.math.ceilPowerOfTwo(u64, required_bytes) catch required_bytes;
+    const staging = try create_host_visible_buffer(self, capacity, c.VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+    self.buffer_write_staging_buffer = staging;
+    self.buffer_write_staging_capacity = capacity;
+    self.buffer_write_staging_offset = 0;
+    return staging;
 }
 
 pub fn capture_compute_buffer(

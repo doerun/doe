@@ -7,6 +7,7 @@ const std = @import("std");
 const c = @import("vk_constants.zig");
 const vk_device = @import("vk_device.zig");
 const vk_formats = @import("vk_formats.zig");
+const vk_pipeline_cache = @import("vk_pipeline_cache.zig");
 const vk_upload = @import("vk_upload.zig");
 const vk_resources = @import("vk_resources.zig");
 const model_compute_types = @import("../../model_compute_types.zig");
@@ -72,128 +73,16 @@ pub const RetiredDescriptorState = struct {
     pipeline_layout: c.VkPipelineLayout = VK_NULL_U64,
 };
 
-pub const CachedComputeState = struct {
-    shader_module: c.VkShaderModule = VK_NULL_U64,
-    pipeline_layout: c.VkPipelineLayout = VK_NULL_U64,
-    pipeline: c.VkPipeline = VK_NULL_U64,
-    descriptor_pool: c.VkDescriptorPool = VK_NULL_U64,
-    descriptor_set_layouts: [c.MAX_DESCRIPTOR_SETS]c.VkDescriptorSetLayout = [_]c.VkDescriptorSetLayout{VK_NULL_U64} ** c.MAX_DESCRIPTOR_SETS,
-    descriptor_sets: [c.MAX_DESCRIPTOR_SETS]c.VkDescriptorSet = [_]c.VkDescriptorSet{VK_NULL_U64} ** c.MAX_DESCRIPTOR_SETS,
-    descriptor_set_count: u32 = 0,
-    current_pipeline_hash: u64 = 0,
-    current_layout_hash: u64 = 0,
-    current_descriptor_bindings_hash: u64 = 0,
-    current_entry_point_owned: ?[:0]u8 = null,
-    has_shader_module: bool = false,
-    has_pipeline_layout: bool = false,
-    has_pipeline: bool = false,
-    has_descriptor_pool: bool = false,
-    has_current_descriptor_bindings_hash: bool = false,
-};
+pub const CachedDescriptorState = vk_pipeline_cache.CachedDescriptorState;
+pub const CachedComputeState = vk_pipeline_cache.CachedComputeState;
 
-fn has_active_compute_state(self: anytype) bool {
-    return self.has_shader_module or
-        self.has_pipeline_layout or
-        self.has_pipeline or
-        self.has_descriptor_pool or
-        self.current_pipeline_hash != 0 or
-        self.current_layout_hash != 0 or
-        self.current_entry_point_owned != null;
-}
-
-fn clear_active_compute_state(self: anytype) void {
-    self.shader_module = VK_NULL_U64;
-    self.pipeline_layout = VK_NULL_U64;
-    self.pipeline = VK_NULL_U64;
-    self.descriptor_pool = VK_NULL_U64;
-    self.descriptor_set_layouts = [_]c.VkDescriptorSetLayout{VK_NULL_U64} ** c.MAX_DESCRIPTOR_SETS;
-    self.descriptor_sets = [_]c.VkDescriptorSet{VK_NULL_U64} ** c.MAX_DESCRIPTOR_SETS;
-    self.descriptor_set_count = 0;
-    self.current_pipeline_hash = 0;
-    self.current_layout_hash = 0;
-    self.current_descriptor_bindings_hash = 0;
-    self.current_entry_point_owned = null;
-    self.has_shader_module = false;
-    self.has_pipeline_layout = false;
-    self.has_pipeline = false;
-    self.has_descriptor_pool = false;
-    self.has_current_descriptor_bindings_hash = false;
-}
-
-fn capture_active_compute_state(self: anytype) CachedComputeState {
-    return .{
-        .shader_module = self.shader_module,
-        .pipeline_layout = self.pipeline_layout,
-        .pipeline = self.pipeline,
-        .descriptor_pool = self.descriptor_pool,
-        .descriptor_set_layouts = self.descriptor_set_layouts,
-        .descriptor_sets = self.descriptor_sets,
-        .descriptor_set_count = self.descriptor_set_count,
-        .current_pipeline_hash = self.current_pipeline_hash,
-        .current_layout_hash = self.current_layout_hash,
-        .current_descriptor_bindings_hash = self.current_descriptor_bindings_hash,
-        .current_entry_point_owned = self.current_entry_point_owned,
-        .has_shader_module = self.has_shader_module,
-        .has_pipeline_layout = self.has_pipeline_layout,
-        .has_pipeline = self.has_pipeline,
-        .has_descriptor_pool = self.has_descriptor_pool,
-        .has_current_descriptor_bindings_hash = self.has_current_descriptor_bindings_hash,
-    };
-}
-
-fn restore_active_compute_state(self: anytype, cached: CachedComputeState) void {
-    self.shader_module = cached.shader_module;
-    self.pipeline_layout = cached.pipeline_layout;
-    self.pipeline = cached.pipeline;
-    self.descriptor_pool = cached.descriptor_pool;
-    self.descriptor_set_layouts = cached.descriptor_set_layouts;
-    self.descriptor_sets = cached.descriptor_sets;
-    self.descriptor_set_count = cached.descriptor_set_count;
-    self.current_pipeline_hash = cached.current_pipeline_hash;
-    self.current_layout_hash = cached.current_layout_hash;
-    self.current_descriptor_bindings_hash = cached.current_descriptor_bindings_hash;
-    self.current_entry_point_owned = cached.current_entry_point_owned;
-    self.has_shader_module = cached.has_shader_module;
-    self.has_pipeline_layout = cached.has_pipeline_layout;
-    self.has_pipeline = cached.has_pipeline;
-    self.has_descriptor_pool = cached.has_descriptor_pool;
-    self.has_current_descriptor_bindings_hash = cached.has_current_descriptor_bindings_hash;
-}
-
-fn destroy_cached_compute_state(self: anytype, cached: CachedComputeState) void {
-    if (cached.pipeline != VK_NULL_U64) c.vkDestroyPipeline(self.device, cached.pipeline, null);
-    if (cached.shader_module != VK_NULL_U64) c.vkDestroyShaderModule(self.device, cached.shader_module, null);
-    if (cached.descriptor_pool != VK_NULL_U64) c.vkDestroyDescriptorPool(self.device, cached.descriptor_pool, null);
-    for (cached.descriptor_set_layouts) |layout| {
-        if (layout != VK_NULL_U64) c.vkDestroyDescriptorSetLayout(self.device, layout, null);
-    }
-    if (cached.pipeline_layout != VK_NULL_U64) c.vkDestroyPipelineLayout(self.device, cached.pipeline_layout, null);
-    if (cached.current_entry_point_owned) |entry_name| self.allocator.free(entry_name);
-}
-
-pub fn release_cached_compute_states(self: anytype) void {
-    var it = self.cached_compute_states.valueIterator();
-    while (it.next()) |cached| destroy_cached_compute_state(self, cached.*);
-    self.cached_compute_states.deinit(self.allocator);
-}
-
-fn stash_active_compute_state(self: anytype) !void {
-    if (!has_active_compute_state(self)) return;
-    const cache_key = self.current_pipeline_hash;
-    if (cache_key == 0) return;
-    const cached = capture_active_compute_state(self);
-    clear_active_compute_state(self);
-    if (self.cached_compute_states.fetchRemove(cache_key)) |removed| {
-        destroy_cached_compute_state(self, removed.value);
-    }
-    try self.cached_compute_states.put(self.allocator, cache_key, cached);
-}
-
-fn activate_cached_compute_state(self: anytype, pipeline_hash: u64) bool {
-    const removed = self.cached_compute_states.fetchRemove(pipeline_hash) orelse return false;
-    restore_active_compute_state(self, removed.value);
-    return true;
-}
+const activate_cached_compute_state = vk_pipeline_cache.activate_cached_compute_state;
+const activate_cached_descriptor_state = vk_pipeline_cache.activate_cached_descriptor_state;
+const has_active_compute_state = vk_pipeline_cache.has_active_compute_state;
+pub const release_cached_compute_states = vk_pipeline_cache.release_cached_compute_states;
+pub const release_descriptor_state_cache = vk_pipeline_cache.release_descriptor_state_cache;
+const stash_active_compute_state = vk_pipeline_cache.stash_active_compute_state;
+const stash_active_descriptor_state = vk_pipeline_cache.stash_active_descriptor_state;
 
 fn retire_pipeline_objects(self: anytype) void {
     if (!self.has_pipeline and !self.has_shader_module and self.current_entry_point_owned == null) {
@@ -215,12 +104,14 @@ fn retire_pipeline_objects(self: anytype) void {
 
 fn retire_descriptor_state(self: anytype) void {
     if (!self.has_descriptor_pool and !self.has_pipeline_layout) {
+        release_descriptor_state_cache(self);
         self.current_layout_hash = 0;
         self.descriptor_set_count = 0;
         self.current_descriptor_bindings_hash = 0;
         self.has_current_descriptor_bindings_hash = false;
         return;
     }
+    release_descriptor_state_cache(self);
     self.retired_descriptor_states.append(self.allocator, .{
         .descriptor_pool = self.descriptor_pool,
         .descriptor_set_layouts = self.descriptor_set_layouts,
@@ -240,11 +131,13 @@ fn retire_descriptor_state(self: anytype) void {
 
 fn retire_descriptor_pool_only(self: anytype) void {
     if (!self.has_descriptor_pool) {
+        release_descriptor_state_cache(self);
         self.descriptor_sets = [_]c.VkDescriptorSet{VK_NULL_U64} ** c.MAX_DESCRIPTOR_SETS;
         self.current_descriptor_bindings_hash = 0;
         self.has_current_descriptor_bindings_hash = false;
         return;
     }
+    release_descriptor_state_cache(self);
     self.retired_descriptor_states.append(self.allocator, .{
         .descriptor_pool = self.descriptor_pool,
         .descriptor_set_layouts = [_]c.VkDescriptorSetLayout{VK_NULL_U64} ** c.MAX_DESCRIPTOR_SETS,
@@ -465,6 +358,7 @@ pub fn destroy_pipeline_objects(self: anytype) void {
 }
 
 pub fn destroy_descriptor_state(self: anytype) void {
+    release_descriptor_state_cache(self);
     if (self.has_descriptor_pool) {
         c.vkDestroyDescriptorPool(self.device, self.descriptor_pool, null);
         self.has_descriptor_pool = false;
@@ -574,6 +468,12 @@ fn prepare_descriptor_sets(
     const descriptor_bindings_hash = compute_descriptor_bindings_hash(bs);
     if (self.has_descriptor_pool and self.has_current_descriptor_bindings_hash and descriptor_bindings_hash == self.current_descriptor_bindings_hash) {
         return;
+    }
+    if (!self.recorded_submit_replay_active and self.has_descriptor_pool and self.has_current_descriptor_bindings_hash) {
+        try stash_active_descriptor_state(self);
+        if (activate_cached_descriptor_state(self, descriptor_bindings_hash)) {
+            return;
+        }
     }
     if (!self.recorded_submit_replay_active and (self.has_deferred_submissions or self.pending_uploads.items.len > 0)) {
         _ = try vk_upload.flush_queue(self);

@@ -55,6 +55,9 @@ pub const VkPool = std.AutoHashMapUnmanaged(u64, std.ArrayListUnmanaged(VkPoolEn
 pub fn flush_queue(self: anytype) !u64 {
     if (!self.has_device) return 0;
     const start_ns = common_timing.now_ns();
+    if (self.replay_recording_active) {
+        try finalize_recorded_submit_replay(self);
+    }
     const has_pending = self.hot_pending_upload != null or self.pending_uploads.items.len > 0;
     if (has_pending) {
         try vk_device.ensure_submission_state(self);
@@ -101,6 +104,41 @@ pub fn flush_queue(self: anytype) !u64 {
     release_pending_uploads(self);
     const end_ns = common_timing.now_ns();
     return common_timing.ns_delta(end_ns, start_ns);
+}
+
+fn finalize_recorded_submit_replay(self: anytype) !void {
+    if (!self.replay_recording_active) return;
+    try c.check_vk(c.vkEndCommandBuffer(self.replay_command_buffer));
+
+    var submit_info = c.VkSubmitInfo{
+        .sType = c.VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        .pNext = null,
+        .waitSemaphoreCount = 0,
+        .pWaitSemaphores = null,
+        .pWaitDstStageMask = null,
+        .commandBufferCount = 1,
+        .pCommandBuffers = @ptrCast(&self.replay_command_buffer),
+        .signalSemaphoreCount = 0,
+        .pSignalSemaphores = null,
+    };
+
+    if (self.has_timeline_semaphore) {
+        var tsi = vk_sync.TimelineSubmitHelper.prepare(&self.timeline_semaphore);
+        tsi.patch();
+        submit_info.pNext = @ptrCast(&tsi.timeline_info);
+        submit_info.signalSemaphoreCount = 1;
+        submit_info.pSignalSemaphores = @ptrCast(&tsi.semaphore);
+        try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), VK_NULL_U64));
+    } else {
+        const deferred_fence = if (self.has_fence_pool)
+            try self.fence_pool_state.acquire(self.device)
+        else
+            VK_NULL_U64;
+        try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), deferred_fence));
+    }
+    self.replay_recording_active = false;
+    self.replay_command_buffer = null;
+    self.has_deferred_submissions = true;
 }
 
 pub fn record_upload_copy(self: anytype, bytes: u64, dst_usage: u32) !PendingUpload {
@@ -522,6 +560,13 @@ pub fn streaming_copy_buffer_region(self: anytype, src: c.VkBuffer, src_offset: 
 /// Record a whole-buffer copy into the streaming command buffer.
 pub fn streaming_copy_buffer_to_buffer(self: anytype, src: c.VkBuffer, dst: c.VkBuffer, size: u64) !void {
     try streaming_copy_buffer_region(self, src, 0, dst, 0, size);
+}
+
+pub fn streaming_fill_buffer(self: anytype, dst: c.VkBuffer, dst_offset: u64, size: u64, data: u32) !void {
+    if (size == 0) return;
+    if (!self.streaming_copy_active) try begin_streaming_copy(self);
+    c.vkCmdFillBuffer(self.streaming_copy_buffer, dst, dst_offset, size, data);
+    self.streaming_copy_count += 1;
 }
 
 /// Submit a single copy region and wait for completion.

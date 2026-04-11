@@ -145,6 +145,7 @@ pub const vkCmdBindPipeline = functions.vkCmdBindPipeline;
 pub const vkCmdDispatch = functions.vkCmdDispatch;
 pub const vkCmdDispatchIndirect = functions.vkCmdDispatchIndirect;
 pub const vkCmdCopyBuffer = functions.vkCmdCopyBuffer;
+pub const vkCmdFillBuffer = functions.vkCmdFillBuffer;
 pub const vkCmdCopyBufferToImage = functions.vkCmdCopyBufferToImage;
 pub const vkCmdCopyImageToBuffer = functions.vkCmdCopyImageToBuffer;
 pub const vkCmdCopyImage = functions.vkCmdCopyImage;
