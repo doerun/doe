@@ -5,6 +5,7 @@ reports.
 
 Usage:
     python3 bench/cli.py run     --product doe --executor-id doe_direct_vulkan ...
+    python3 bench/cli.py run-config --config bench/native-compare/foo.json --side baseline
     python3 bench/cli.py compare <receipt1.run.json> <receipt2.run.json> ...
     python3 bench/cli.py claim   bench/out/foo.compare.json --mode local
     python3 bench/cli.py list    --products | --executors | --workloads FILE
@@ -14,6 +15,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import shlex
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -126,7 +128,15 @@ def _cmd_run(args: argparse.Namespace) -> int:
 
 def _add_compare_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("artifacts", nargs="*", help="Run artifact JSON paths")
-    parser.add_argument("--config", default="", help="Config-backed compare JSON path")
+    parser.add_argument(
+        "--config",
+        default="",
+        help=(
+            "Deprecated inline compare config path. Use "
+            "`bench/cli.py run-config --config ... --side baseline|comparison` "
+            "and compare the emitted receipts."
+        ),
+    )
     parser.add_argument("--catalog", default="config/promoted-compare-catalog.json", help="Promoted compare catalog path")
     parser.add_argument("--profile", default="", help="Exact promoted compare profile id")
     parser.add_argument("--backend", default="", help="Promoted backend id, e.g. apple-metal")
@@ -139,10 +149,14 @@ def _add_compare_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--temperature", default="", choices=["default", "cold", "warm"], help="Promoted temperature selector")
     parser.add_argument("--mode", default="", choices=["default", "cold", "warm"], help="Temperature alias for promoted compare resolution")
     parser.add_argument("--list-promoted", action="store_true", help="List promoted compare profiles and exit")
-    parser.add_argument("--dry-run", action="store_true", help="Print the resolved compare command and exit")
-    parser.add_argument("--products", default="", help="Comma-separated product pair for inline run + compare report (e.g. doe,dawn)")
-    parser.add_argument("--executor-ids", default="", help="Comma-separated executor IDs matching --products")
-    parser.add_argument("--workloads", default="", help="Workload contract JSON for inline run + compare report")
+    parser.add_argument("--dry-run", action="store_true", help="Print the resolved receipt-first run commands and exit")
+    parser.add_argument(
+        "--products",
+        default="",
+        help="Removed inline shortcut. Run each product separately with `bench/cli.py run`.",
+    )
+    parser.add_argument("--executor-ids", default="", help="Legacy inline-compare option; no longer executed.")
+    parser.add_argument("--workloads", default="", help="Legacy inline-compare option; no longer executed.")
     parser.add_argument("--workload-id", default="", help="Single workload ID filter")
     parser.add_argument("--iterations", type=int, default=10)
     parser.add_argument("--warmup", type=int, default=1)
@@ -154,12 +168,12 @@ def _add_compare_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--benchmark-policy", default="", help="Benchmark methodology policy path")
     parser.add_argument("--baseline-product", default="", help="Explicit baseline product id")
     parser.add_argument("--comparison-product", default="", help="Explicit comparison product id")
-    parser.add_argument("--workspace", default="", help="Workspace path override for config-backed compare")
+    parser.add_argument("--workspace", default="", help="Workspace path override for config-backed receipt expansion")
     parser.add_argument("--workload-filter", default="", help="Config-backed workload filter override")
-    parser.add_argument("--emit-shell", action="store_true", help="Print commands instead of executing them in config-backed compare")
+    parser.add_argument("--emit-shell", action="store_true", help="Print commands instead of executing them in `run-config`")
     parser.add_argument("--no-timestamp-output", action="store_true", help="Disable timestamped config compare outputs")
-    parser.add_argument("--include-noncomparable-workloads", action="store_true", help="Include non-comparable workloads in config-backed compare")
-    parser.add_argument("--include-extended-workloads", action="store_true", help="Include extended workloads in config-backed compare")
+    parser.add_argument("--include-noncomparable-workloads", action="store_true", help="Include non-comparable workloads in config-backed receipt expansion")
+    parser.add_argument("--include-extended-workloads", action="store_true", help="Include extended workloads in config-backed receipt expansion")
     parser.add_argument("--workload-cohort", default="", help="Config-backed workload cohort filter")
     parser.add_argument("--baseline-provider-id", default="", help="Config-backed baseline provider id")
     parser.add_argument("--comparison-provider-id", default="", help="Config-backed comparison provider id")
@@ -188,6 +202,11 @@ def _ordered_products(artifacts: list[dict[str, Any]]) -> list[str]:
         if product and product not in products:
             products.append(product)
     return products
+
+
+def _print_receipt_first_commands(commands: list[list[str]], *, stream: Any) -> None:
+    for command in commands:
+        print(shlex.join(command), file=stream)
 
 
 def _cmd_compare(
@@ -256,7 +275,7 @@ def _cmd_compare(
             mode=args.mode,
             package_runtime=args.package_runtime,
         )
-        argv_out = promoted_compare_mod.build_compare_argv(
+        argv_out = promoted_compare_mod.build_run_config_argvs(
             entry,
             catalog_path=catalog_path,
             passthrough=promoted_compare_mod.filter_selection_passthrough(
@@ -264,12 +283,21 @@ def _cmd_compare(
             ),
         )
         if args.dry_run:
-            print(" ".join(argv_out))
+            _print_receipt_first_commands(argv_out, stream=sys.stdout)
+            print("# then compare the emitted .run.json receipts with `python3 bench/cli.py compare ...`", file=sys.stdout)
             return 0
-        import subprocess
-
-        result = subprocess.run(argv_out, check=False)
-        return result.returncode
+        print(
+            "error: promoted compare execution is receipt-first only now; "
+            "run each side independently with these commands:",
+            file=sys.stderr,
+        )
+        _print_receipt_first_commands(argv_out, stream=sys.stderr)
+        print(
+            "Then compare the emitted .run.json receipts with "
+            f"`{sys.executable} bench/cli.py compare ...`",
+            file=sys.stderr,
+        )
+        return 1
 
     from native_compare_modules.compare_from_artifacts import (
         build_compare_report,
@@ -281,53 +309,17 @@ def _cmd_compare(
 
     artifact_paths = list(args.artifacts)
 
-    # Inline run+compare mode: --products doe,dawn --executor-ids X,Y --workloads FILE
     if args.products and not artifact_paths:
-        products = [p.strip() for p in args.products.split(",")]
-        executor_ids = [e.strip() for e in args.executor_ids.split(",")]
-        if len(products) != 2 or len(executor_ids) != 2:
-            print("error: --products and --executor-ids must each have exactly 2 comma-separated values", file=sys.stderr)
-            return 1
-        if not args.workloads:
-            print("error: --workloads is required for inline run+compare", file=sys.stderr)
-            return 1
-
-        # Run both products, collect artifact paths
-        import subprocess
-        timestamp = _utc_timestamp()
-        run_dir = Path("bench/out/runs") / timestamp
-        for product, executor_id in zip(products, executor_ids):
-            cmd = [
-                sys.executable, str(Path(__file__)),
-                "run",
-                "--product", product,
-                "--executor-id", executor_id,
-                "--workloads", args.workloads,
-                "--iterations", str(args.iterations),
-                "--warmup", str(args.warmup),
-                "--comparability-mode", args.comparability,
-                "--require-timing-class", args.require_timing_class,
-                "--resource-probe", args.resource_probe,
-                "--resource-sample-ms", str(args.resource_sample_ms),
-                "--resource-sample-target-count", str(args.resource_sample_target_count),
-                "--benchmark-policy", args.benchmark_policy,
-                "--out", str(run_dir),
-            ]
-            if args.workload_id:
-                cmd.extend(["--workload-id", args.workload_id])
-            print(f"Running {product}...")
-            result = subprocess.run(cmd, check=False)
-            if result.returncode != 0:
-                print(f"error: run for {product} failed with exit code {result.returncode}", file=sys.stderr)
-                return 1
-
-        artifact_paths = sorted(str(p) for p in run_dir.rglob("*.run.json"))
-        if len(artifact_paths) < 2:
-            print(f"error: expected at least 2 run artifacts, found {len(artifact_paths)}", file=sys.stderr)
-            return 1
+        print(
+            "error: inline run+compare has been removed; run each product "
+            "independently with `bench/cli.py run`, then compare the emitted "
+            "receipts post-hoc.",
+            file=sys.stderr,
+        )
+        return 1
 
     if len(artifact_paths) < 2:
-        print("error: compare requires at least 2 run artifact paths (or --products for inline mode)", file=sys.stderr)
+        print("error: compare requires at least 2 run artifact paths", file=sys.stderr)
         return 1
 
     artifacts: list[dict[str, Any]] = []
@@ -408,6 +400,13 @@ def _cmd_compare(
     write_compare_report(report, out_path)
     print(f"\nCompare report: {out_path}")
     return 0
+
+
+def _cmd_run_config(raw_run_config_argv: list[str] | None = None) -> int:
+    _ensure_bench_imports()
+    from native_compare_modules import run_receipts_from_config as run_receipts_from_config_mod
+
+    return run_receipts_from_config_mod.main(raw_run_config_argv)
 
 
 def _cmd_claim(args: argparse.Namespace) -> int:
@@ -502,7 +501,15 @@ def main() -> int:
     run_parser = subparsers.add_parser("run", help="Run one product on workload(s)")
     _add_run_args(run_parser)
 
-    compare_parser = subparsers.add_parser("compare", help="Compare run artifacts or run config-backed/promoted compare profiles")
+    subparsers.add_parser(
+        "run-config",
+        help="Expand a compare config into one-side run receipts (`--side baseline|comparison`)",
+    )
+
+    compare_parser = subparsers.add_parser(
+        "compare",
+        help="Compare existing run artifacts; config/profile shortcuts are now receipt-first resolvers only",
+    )
     _add_compare_args(compare_parser)
 
     claim_parser = subparsers.add_parser("claim", help="Evaluate claim policy from an existing compare report")
@@ -514,16 +521,21 @@ def main() -> int:
     if argv and argv[0] == "compare":
         compare_parser = argparse.ArgumentParser(
             prog="doe-bench compare",
-            description="Compare run artifacts or resolve config-backed/promoted compare profiles.",
+            description="Compare run artifacts or resolve receipt-first commands from config/promoted profiles.",
         )
         _add_compare_args(compare_parser)
         compare_args, _ = compare_parser.parse_known_args(argv[1:])
         return _cmd_compare(compare_args, raw_compare_argv=argv[1:])
 
+    if argv and argv[0] == "run-config":
+        return _cmd_run_config(raw_run_config_argv=argv[1:])
+
     args = parser.parse_args(argv)
 
     if args.command == "run":
         return _cmd_run(args)
+    if args.command == "run-config":
+        return _cmd_run_config([])
     if args.command == "compare":
         return _cmd_compare(args)
     if args.command == "claim":

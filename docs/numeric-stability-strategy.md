@@ -70,6 +70,9 @@ Why it is not yet part of the strategy:
 1. this is evidence work
 2. it can be replicated outside Doe
 
+Doppler should stay independently valuable at this level as an evidence and
+debugging surface, not only as a proof point for Doe.
+
 ## Level B: explicit runtime service
 
 Behavior:

@@ -56,3 +56,18 @@ dawn_delegate paths link against Dawn as a separate binary.
 wgpu is referenced as a baseline comparison target. No wgpu source is vendored or
 linked. If wgpu source is vendored in the future, its license (MIT/Apache 2.0) must
 be retained and the same attribution discipline applied.
+
+## ONNX Runtime plugin EP headers (MIT)
+
+Doe vendors ONNX Runtime public plugin-EP headers under:
+
+- `runtime/bridge/onnxruntime-ep/vendor/onnxruntime/include/onnxruntime_c_api.h`
+- `runtime/bridge/onnxruntime-ep/vendor/onnxruntime/include/onnxruntime_ep_c_api.h`
+
+The upstream ONNX Runtime license is retained at:
+
+- `runtime/bridge/onnxruntime-ep/vendor/onnxruntime/LICENSE`
+
+These headers are used only for the repo-only ONNX Runtime plugin EP bridge
+surface. They do not make ONNX Runtime a Doe runtime dependency, and they do
+not change the public `doe-gpu` package contract.

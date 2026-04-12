@@ -5,12 +5,16 @@
 </p>
 
 Doe is a Zig-first WebGPU runtime built as an explicit, performance-oriented
-alternative to Dawn.
+challenger to Dawn.
 
 This repo contains the runtime, the `doe-gpu` package surface, benchmarking and
-gate tooling, proof artifacts, trace/replay tooling, and the Chromium browser
-lane. If you want the published package surface, start with
+gate tooling, proof artifacts, trace/replay tooling, and an experimental
+Chromium browser lane. If you want the published package surface, start with
 [`packages/doe-gpu/README.md`](packages/doe-gpu/README.md).
+
+Dawn remains the incumbent browser runtime in Chromium today. Doe's immediate
+competitive ground is narrower: package, embedded, native, and server-side
+JavaScript lanes where shipping Dawn is undesirable or too costly.
 
 ## Start here
 
@@ -88,8 +92,10 @@ at the transport boundary:
   code written against `doe-gpu` can run in a browser without modification.
 
 Neither path is related to the Chromium integration lane
-(`browser/chromium/`), which is a separate future effort to embed the Doe Zig
-runtime inside Chromium itself as a Dawn replacement.
+(`browser/chromium/`), which is a separate future effort to test whether the
+Doe Zig runtime could replace Dawn inside Chromium. That browser lane is not
+the current product center and should not be confused with the present package
+or native runtime surfaces.
 
 ## Zig runtime dependency graph
 

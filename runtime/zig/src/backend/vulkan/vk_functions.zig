@@ -19,6 +19,7 @@ pub extern fn vkResetCommandPool(device: vk.VkDevice, commandPool: vk.VkCommandP
 pub extern fn vkCreateFence(device: vk.VkDevice, pCreateInfo: *const structs.VkFenceCreateInfo, pAllocator: ?*const vk.VkAllocationCallbacks, pFence: *vk.VkFence) callconv(.c) vk.VkResult;
 pub extern fn vkDestroyFence(device: vk.VkDevice, fence: vk.VkFence, pAllocator: ?*const vk.VkAllocationCallbacks) callconv(.c) void;
 pub extern fn vkResetFences(device: vk.VkDevice, fenceCount: u32, pFences: [*]const vk.VkFence) callconv(.c) vk.VkResult;
+pub extern fn vkGetFenceStatus(device: vk.VkDevice, fence: vk.VkFence) callconv(.c) vk.VkResult;
 pub extern fn vkWaitForFences(device: vk.VkDevice, fenceCount: u32, pFences: [*]const vk.VkFence, waitAll: vk.VkBool32, timeout: u64) callconv(.c) vk.VkResult;
 pub extern fn vkQueueSubmit(queue: vk.VkQueue, submitCount: u32, pSubmits: [*]const structs.VkSubmitInfo, fence: vk.VkFence) callconv(.c) vk.VkResult;
 pub extern fn vkQueueWaitIdle(queue: vk.VkQueue) callconv(.c) vk.VkResult;

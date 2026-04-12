@@ -15,6 +15,34 @@ var<workgroup> scores: array<f32, 2048>;
 var<workgroup> s_max: array<f32, 64>;
 var<workgroup> s_sum: array<f32, 64>;
 
+fn dot_qk(head: u32, token: u32) -> f32 {
+    let q_off = head * u.head_dim;
+    let kv_off = head * u.head_dim * u.kv_len + token * u.head_dim;
+    let vec_dim = u.head_dim & ~3u;
+
+    var acc: f32 = 0.0;
+    for (var d: u32 = 0u; d < vec_dim; d = d + 4u) {
+        acc += dot(
+            vec4<f32>(
+                q[q_off + d + 0u],
+                q[q_off + d + 1u],
+                q[q_off + d + 2u],
+                q[q_off + d + 3u],
+            ),
+            vec4<f32>(
+                k_cache[kv_off + d + 0u],
+                k_cache[kv_off + d + 1u],
+                k_cache[kv_off + d + 2u],
+                k_cache[kv_off + d + 3u],
+            ),
+        );
+    }
+    for (var d: u32 = vec_dim; d < u.head_dim; d = d + 1u) {
+        acc += q[q_off + d] * k_cache[kv_off + d];
+    }
+    return acc;
+}
+
 @compute @workgroup_size(64)
 fn main(
     @builtin(local_invocation_id) lid: vec3u,
@@ -30,11 +58,7 @@ fn main(
     var t = tid;
     loop {
         if (t >= u.kv_len) { break; }
-        var dot: f32 = 0.0;
-        for (var d: u32 = 0u; d < u.head_dim; d = d + 1u) {
-            dot = dot + q[q_off + d] * k_cache[head * kv_stride + t * u.head_dim + d];
-        }
-        scores[t] = dot * u.scale;
+        scores[t] = dot_qk(head, t) * u.scale;
         t = t + 64u;
     }
     workgroupBarrier();
@@ -89,14 +113,24 @@ fn main(
     }
     workgroupBarrier();
 
-    var d2 = tid;
+    var d2 = tid * 2u;
     loop {
         if (d2 >= u.head_dim) { break; }
-        var acc: f32 = 0.0;
+        let d3 = d2 + 1u;
+        var acc0: f32 = 0.0;
+        var acc1: f32 = 0.0;
         for (var t2: u32 = 0u; t2 < u.kv_len; t2 = t2 + 1u) {
-            acc = acc + scores[t2] * v_cache[head * kv_stride + t2 * u.head_dim + d2];
+            let value_base = head * kv_stride + t2 * u.head_dim + d2;
+            let weight = scores[t2];
+            acc0 += weight * v_cache[value_base];
+            if (d3 < u.head_dim) {
+                acc1 += weight * v_cache[value_base + 1u];
+            }
         }
-        output[head * u.head_dim + d2] = acc;
-        d2 = d2 + 64u;
+        output[head * u.head_dim + d2] = acc0;
+        if (d3 < u.head_dim) {
+            output[head * u.head_dim + d3] = acc1;
+        }
+        d2 = d2 + 128u;
     }
 }

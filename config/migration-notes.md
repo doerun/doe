@@ -1,5 +1,35 @@
 # Config Migration Notes
 
+Historical benchmark note:
+
+- benchmark migration entries below are chronological record, not current
+  operator instructions
+- older entries may reference retired front doors such as
+  `bench/native-compare/compare_dawn_vs_doe.py`, `bench/run_compare.py`, or
+  pre-receipt-first `bench/cli.py compare --config ...`
+- current benchmark front door is:
+  - `python3 bench/cli.py run ...`
+  - `python3 bench/cli.py run-config --config <compare-config.json> --side baseline`
+  - `python3 bench/cli.py run-config --config <compare-config.json> --side comparison`
+  - `python3 bench/cli.py compare <baseline.run.json> <comparison.run.json>`
+
+## 2026-04-11
+
+### Config-backed inline compare is removed; compare is receipt-only
+
+- `bench/cli.py compare --config ...` no longer runs both sides inline
+- `bench/cli.py compare --products ... --executor-ids ...` no longer performs
+  inline run+compare
+- `bench/native_compare_modules/compare_from_config.py` and
+  `bench/native_compare_modules/config_compare_runner.py` now fail fast with
+  receipt-first guidance instead of executing a hidden two-side compare flow
+- the explicit config expansion front door is now:
+  - `bench/cli.py run-config --config <compare-config.json> --side baseline`
+  - `bench/cli.py run-config --config <compare-config.json> --side comparison`
+- promoted compare resolution still lists and resolves profiles, but execution
+  now emits explicit `run-config` commands rather than running a hidden compare
+  step
+
 ## 2026-04-10
 
 ### Run receipts now preserve sample timing provenance, and workload-unit wall uses one explicit divisor
@@ -460,7 +490,7 @@
 
 ## 2026-04-05
 
-### `bench/run_compare.py` replaces `bench/native-compare/compare_dawn_vs_doe.py` as the only live config-backed compare front door
+### `bench/run_compare.py` replaces `bench/native-compare/compare_dawn_vs_doe.py` as the then-live config-backed compare front door (later superseded by the 2026-04-11 receipt-first CLI)
 
 - `bench/native-compare/compare_dawn_vs_doe.py`
   - removed from the active repo surface

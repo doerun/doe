@@ -70,6 +70,8 @@ pub fn FunctionState(comptime EmitterT: type) type {
                             current,
                             value_id,
                             self.function.exprs.items[assign.lhs].ty,
+                            self.function.exprs.items[assign.rhs].ty,
+                            self.function.exprs.items[assign.lhs].ty,
                             self.function.exprs.items[assign.lhs].ty,
                         );
                     }
@@ -252,6 +254,8 @@ pub fn FunctionState(comptime EmitterT: type) type {
                     try self.emit_value_expr(binary.lhs),
                     try self.emit_value_expr(binary.rhs),
                     self.function.exprs.items[binary.lhs].ty,
+                    self.function.exprs.items[binary.rhs].ty,
+                    self.function.exprs.items[binary.lhs].ty,
                     expr.ty,
                 ),
                 .call => |call| try self.emit_call(call, expr.ty),
@@ -350,7 +354,18 @@ pub fn FunctionState(comptime EmitterT: type) type {
             return try self.emit_result_inst(opcode, try self.emitter.lower_type(result_ty), &.{operand_id});
         }
 
-        fn emit_binary(self: *@This(), op: ir.BinaryOp, lhs_id: u32, rhs_id: u32, operand_ty: ir.TypeId, result_ty: ir.TypeId) EmitError!u32 {
+        fn emit_binary(
+            self: *@This(),
+            op: ir.BinaryOp,
+            lhs_id: u32,
+            rhs_id: u32,
+            lhs_ty: ir.TypeId,
+            rhs_ty: ir.TypeId,
+            operand_ty: ir.TypeId,
+            result_ty: ir.TypeId,
+        ) EmitError!u32 {
+            const coerced_lhs = try self.coerce_binary_operand(lhs_id, lhs_ty, operand_ty);
+            const coerced_rhs = try self.coerce_binary_operand(rhs_id, rhs_ty, operand_ty);
             const opcode: u16 = switch (op) {
                 .add => switch (self.scalar_kind(operand_ty)) {
                     .float => spirv.Opcode.FAdd,
@@ -384,16 +399,16 @@ pub fn FunctionState(comptime EmitterT: type) type {
                     .unsigned => spirv.Opcode.ShiftRightLogical,
                     else => spirv.Opcode.ShiftRightArithmetic,
                 },
-                .equal => return try self.emit_compare(op, lhs_id, rhs_id, operand_ty),
-                .not_equal => return try self.emit_compare(op, lhs_id, rhs_id, operand_ty),
-                .less => return try self.emit_compare(op, lhs_id, rhs_id, operand_ty),
-                .less_equal => return try self.emit_compare(op, lhs_id, rhs_id, operand_ty),
-                .greater => return try self.emit_compare(op, lhs_id, rhs_id, operand_ty),
-                .greater_equal => return try self.emit_compare(op, lhs_id, rhs_id, operand_ty),
+                .equal => return try self.emit_compare(op, coerced_lhs, coerced_rhs, operand_ty),
+                .not_equal => return try self.emit_compare(op, coerced_lhs, coerced_rhs, operand_ty),
+                .less => return try self.emit_compare(op, coerced_lhs, coerced_rhs, operand_ty),
+                .less_equal => return try self.emit_compare(op, coerced_lhs, coerced_rhs, operand_ty),
+                .greater => return try self.emit_compare(op, coerced_lhs, coerced_rhs, operand_ty),
+                .greater_equal => return try self.emit_compare(op, coerced_lhs, coerced_rhs, operand_ty),
                 .logical_and => spirv.Opcode.LogicalAnd,
                 .logical_or => spirv.Opcode.LogicalOr,
             };
-            return try self.emit_result_inst(opcode, try self.emitter.lower_type(result_ty), &.{ lhs_id, rhs_id });
+            return try self.emit_result_inst(opcode, try self.emitter.lower_type(result_ty), &.{ coerced_lhs, coerced_rhs });
         }
 
         fn emit_compare(self: *@This(), op: ir.BinaryOp, lhs_id: u32, rhs_id: u32, operand_ty: ir.TypeId) EmitError!u32 {
@@ -491,6 +506,44 @@ pub fn FunctionState(comptime EmitterT: type) type {
 
         fn emit_scalar_construct(self: *@This(), target_ty: ir.TypeId, source_expr_id: ir.ExprId, source_id: u32) EmitError!u32 {
             return try self.emit_scalar_construct_from_type(target_ty, self.function.exprs.items[source_expr_id].ty, source_id);
+        }
+
+        fn coerce_binary_operand(self: *@This(), value_id: u32, source_ty: ir.TypeId, target_ty: ir.TypeId) EmitError!u32 {
+            if (source_ty == target_ty or try self.emitter.lower_type(source_ty) == try self.emitter.lower_type(target_ty)) {
+                return value_id;
+            }
+
+            switch (self.emitter.module.types.get(target_ty)) {
+                .scalar => return try self.emit_scalar_construct_from_type(target_ty, source_ty, value_id),
+                .vector => |target_vec| switch (self.emitter.module.types.get(source_ty)) {
+                    .scalar => {
+                        const scalar_id = try self.emit_scalar_construct_from_type(target_vec.elem, source_ty, value_id);
+                        var components = std.ArrayListUnmanaged(u32){};
+                        defer components.deinit(self.emitter.alloc);
+                        var component_index: u32 = 0;
+                        while (component_index < target_vec.len) : (component_index += 1) {
+                            try components.append(self.emitter.alloc, scalar_id);
+                        }
+                        return try self.emit_construct_from_operands(target_ty, components.items);
+                    },
+                    .vector => |source_vec| {
+                        if (source_vec.len != target_vec.len) return error.UnsupportedConstruct;
+                        var components = std.ArrayListUnmanaged(u32){};
+                        defer components.deinit(self.emitter.alloc);
+                        var component_index: u32 = 0;
+                        while (component_index < source_vec.len) : (component_index += 1) {
+                            const component_id = try self.emit_composite_extract(value_id, source_vec.elem, component_index);
+                            try components.append(
+                                self.emitter.alloc,
+                                try self.emit_scalar_construct_from_type(target_vec.elem, source_vec.elem, component_id),
+                            );
+                        }
+                        return try self.emit_construct_from_operands(target_ty, components.items);
+                    },
+                    else => return error.UnsupportedConstruct,
+                },
+                else => return error.UnsupportedConstruct,
+            }
         }
 
         fn emit_scalar_construct_from_type(self: *@This(), target_ty: ir.TypeId, source_ty: ir.TypeId, source_id: u32) EmitError!u32 {

@@ -135,6 +135,7 @@ pub const vkResetCommandPool = functions.vkResetCommandPool;
 pub const vkCreateFence = functions.vkCreateFence;
 pub const vkDestroyFence = functions.vkDestroyFence;
 pub const vkResetFences = functions.vkResetFences;
+pub const vkGetFenceStatus = functions.vkGetFenceStatus;
 pub const vkWaitForFences = functions.vkWaitForFences;
 pub const vkQueueSubmit = functions.vkQueueSubmit;
 pub const vkQueueWaitIdle = functions.vkQueueWaitIdle;
@@ -215,6 +216,7 @@ pub const check_vk = functions.check_vk;
 pub const map_vk_result = functions.map_vk_result;
 
 pub const VK_SUCCESS = vk.VK_SUCCESS;
+pub const VK_NOT_READY = vk.VK_NOT_READY;
 pub const VK_TRUE = vk.VK_TRUE;
 pub const VK_FALSE = vk.VK_FALSE;
 pub const VK_API_VERSION_1_0: u32 = 0x00400000;

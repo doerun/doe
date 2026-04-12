@@ -232,13 +232,11 @@ def resolve_entry(
     )
 
 
-def build_compare_argv(
+def _resolve_config_path(
     entry: PromotedCompareEntry,
     *,
     catalog_path: Path = DEFAULT_CATALOG_PATH,
-    compare_cli: Path = DEFAULT_COMPARE_CLI,
-    passthrough: Sequence[str] = (),
-) -> list[str]:
+) -> Path:
     raw_config_path = Path(entry.config_path)
     if raw_config_path.is_absolute():
         resolved_config_path = raw_config_path
@@ -253,10 +251,21 @@ def build_compare_argv(
             resolved_config_path = repo_relative
         else:
             resolved_config_path = catalog_relative
-    return [
+    return resolved_config_path
+
+
+def build_run_config_argvs(
+    entry: PromotedCompareEntry,
+    *,
+    catalog_path: Path = DEFAULT_CATALOG_PATH,
+    compare_cli: Path = DEFAULT_COMPARE_CLI,
+    passthrough: Sequence[str] = (),
+) -> list[list[str]]:
+    resolved_config_path = _resolve_config_path(entry, catalog_path=catalog_path)
+    base_argv = [
         sys.executable,
         str(compare_cli),
-        "compare",
+        "run-config",
         "--config",
         str(resolved_config_path),
         "--boundary",
@@ -274,6 +283,10 @@ def build_compare_argv(
         "--comparison-provider-id",
         entry.providers[1],
         *passthrough,
+    ]
+    return [
+        [*base_argv, "--side", "baseline"],
+        [*base_argv, "--side", "comparison"],
     ]
 
 

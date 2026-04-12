@@ -354,6 +354,11 @@ import { gpu } from 'doe-gpu/browser';   // browser shim
 The browser subpath is a browser-oriented JS shim. The default package and
 `/compute` subpath are the native-runtime package surfaces.
 
+That distinction matters. `doe-gpu/browser` does not mean Doe has replaced the
+browser runtime. It wraps the browser's incumbent WebGPU implementation
+surface. Doe's direct competitive surface today is the native-runtime package
+path for Node.js, Bun, Deno, and embedded use cases.
+
 ## Advanced helpers
 
 `createDoeRuntime()` and `runDawnVsDoeCompare()` remain available for

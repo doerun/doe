@@ -330,7 +330,6 @@ pub const NativeVulkanRuntime = struct {
 
         if (queue_sync_mode == .per_command) {
             if (self.has_deferred_submissions) _ = try self.flush_queue();
-            try c.check_vk(c.vkResetCommandPool(self.device, self.command_pool, 0));
             self.deferred_command_buffer_index = 0;
             command_buffer = self.primary_command_buffer;
         } else if (replay_deferred) {
@@ -386,30 +385,29 @@ pub const NativeVulkanRuntime = struct {
         };
 
         const submit_start = common_timing.now_ns();
-        if (self.has_timeline_semaphore) {
-            var tsi = vk_sync.TimelineSubmitHelper.prepare(&self.timeline_semaphore);
-            tsi.patch();
-            submit_info.pNext = @ptrCast(&tsi.timeline_info);
-            submit_info.signalSemaphoreCount = 1;
-            submit_info.pSignalSemaphores = @ptrCast(&tsi.semaphore);
-            try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), VK_NULL_U64));
-            if (queue_sync_mode == .per_command) {
-                try self.timeline_semaphore.wait(self.device, tsi.signal_value);
-            } else {
-                self.has_deferred_submissions = true;
-            }
-        } else if (queue_sync_mode == .per_command) {
+        if (queue_sync_mode == .per_command) {
+            _ = queue_wait_mode;
             try c.check_vk(c.vkResetFences(self.device, 1, @ptrCast(&self.fence)));
             try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), self.fence));
-            const wait_all: c.VkBool32 = if (queue_wait_mode == .wait_any) c.VK_FALSE else c.VK_TRUE;
-            try c.check_vk(c.vkWaitForFences(self.device, 1, @ptrCast(&self.fence), wait_all, vk_upload.WAIT_TIMEOUT_NS));
+            try vk_upload.wait_for_fence_fast(self, self.fence);
         } else {
-            const deferred_fence = if (self.has_fence_pool)
-                try self.fence_pool_state.acquire(self.device)
-            else
-                VK_NULL_U64;
-            try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), deferred_fence));
-            self.has_deferred_submissions = true;
+            try vk_device.ensure_deferred_submission_state(self);
+            if (self.has_timeline_semaphore) {
+                var tsi = vk_sync.TimelineSubmitHelper.prepare(&self.timeline_semaphore);
+                tsi.patch();
+                submit_info.pNext = @ptrCast(&tsi.timeline_info);
+                submit_info.signalSemaphoreCount = 1;
+                submit_info.pSignalSemaphores = @ptrCast(&tsi.semaphore);
+                try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), VK_NULL_U64));
+                self.has_deferred_submissions = true;
+            } else {
+                const deferred_fence = if (self.has_fence_pool)
+                    try self.fence_pool_state.acquire(self.device)
+                else
+                    VK_NULL_U64;
+                try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), deferred_fence));
+                self.has_deferred_submissions = true;
+            }
         }
         const submit_end = common_timing.now_ns();
 
@@ -469,7 +467,6 @@ pub const NativeVulkanRuntime = struct {
         const replay_deferred = queue_sync_mode == .deferred and self.recorded_submit_replay_active;
         if (queue_sync_mode == .per_command) {
             if (self.has_deferred_submissions) _ = try self.flush_queue();
-            try c.check_vk(c.vkResetCommandPool(self.device, self.command_pool, 0));
             self.deferred_command_buffer_index = 0;
             command_buffer = self.primary_command_buffer;
         } else if (replay_deferred) {
@@ -518,30 +515,29 @@ pub const NativeVulkanRuntime = struct {
         };
 
         const submit_start = common_timing.now_ns();
-        if (self.has_timeline_semaphore) {
-            var tsi = vk_sync.TimelineSubmitHelper.prepare(&self.timeline_semaphore);
-            tsi.patch();
-            submit_info.pNext = @ptrCast(&tsi.timeline_info);
-            submit_info.signalSemaphoreCount = 1;
-            submit_info.pSignalSemaphores = @ptrCast(&tsi.semaphore);
-            try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), VK_NULL_U64));
-            if (queue_sync_mode == .per_command) {
-                try self.timeline_semaphore.wait(self.device, tsi.signal_value);
-            } else {
-                self.has_deferred_submissions = true;
-            }
-        } else if (queue_sync_mode == .per_command) {
+        if (queue_sync_mode == .per_command) {
+            _ = queue_wait_mode;
             try c.check_vk(c.vkResetFences(self.device, 1, @ptrCast(&self.fence)));
             try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), self.fence));
-            const wait_all: c.VkBool32 = if (queue_wait_mode == .wait_any) c.VK_FALSE else c.VK_TRUE;
-            try c.check_vk(c.vkWaitForFences(self.device, 1, @ptrCast(&self.fence), wait_all, vk_upload.WAIT_TIMEOUT_NS));
+            try vk_upload.wait_for_fence_fast(self, self.fence);
         } else {
-            const deferred_fence = if (self.has_fence_pool)
-                try self.fence_pool_state.acquire(self.device)
-            else
-                VK_NULL_U64;
-            try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), deferred_fence));
-            self.has_deferred_submissions = true;
+            try vk_device.ensure_deferred_submission_state(self);
+            if (self.has_timeline_semaphore) {
+                var tsi = vk_sync.TimelineSubmitHelper.prepare(&self.timeline_semaphore);
+                tsi.patch();
+                submit_info.pNext = @ptrCast(&tsi.timeline_info);
+                submit_info.signalSemaphoreCount = 1;
+                submit_info.pSignalSemaphores = @ptrCast(&tsi.semaphore);
+                try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), VK_NULL_U64));
+                self.has_deferred_submissions = true;
+            } else {
+                const deferred_fence = if (self.has_fence_pool)
+                    try self.fence_pool_state.acquire(self.device)
+                else
+                    VK_NULL_U64;
+                try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), deferred_fence));
+                self.has_deferred_submissions = true;
+            }
         }
         const submit_end = common_timing.now_ns();
 
@@ -638,10 +634,25 @@ pub const NativeVulkanRuntime = struct {
                     return;
                 }
             },
-            .staged_copy => {},
+            .staged_copy => {
+                const dst_usage: u32 = switch (mode) {
+                    .copy_dst_copy_src => c.VK_BUFFER_USAGE_TRANSFER_DST_BIT | c.VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                    .copy_dst => c.VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                };
+                try vk_upload.prewarm_staged_upload_pool(self, prewarm_bytes, dst_usage);
+                return;
+            },
         }
-        try self.upload_bytes(prewarm_bytes, mode, upload_path_policy);
-        _ = try self.flush_queue();
+    }
+
+    pub fn prewarm_execution_bootstrap(
+        self: *NativeVulkanRuntime,
+        gpu_timestamp_mode: webgpu.GpuTimestampMode,
+    ) !void {
+        try vk_device.ensure_submission_state(self);
+        if (gpu_timestamp_mode != .off) {
+            try vk_device.ensure_timestamp_query_pool(self);
+        }
     }
 
     // --- Async diagnostics probes ---

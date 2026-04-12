@@ -20,15 +20,29 @@ Doe has three user-facing/runtime-adjacent surfaces and two supporting layers.
 
 These surfaces are related, but they are not interchangeable.
 
+They also do not all carry the same strategic weight. In practice, Dawn
+remains the incumbent WebGPU runtime in Chromium and much of the browser
+ecosystem. Doe is the challenger runtime. The present product center is the
+runtime/package/native boundary, while the Chromium lane remains a future
+integration track.
+
 ## Product boundary rules
 
 The important boundary distinctions are:
 
 - `runtime/zig` is the real runtime implementation
+- `runtime/bridge/onnxruntime-ep` is a repo-only integration seam for a future Doe-backed ONNX Runtime plugin EP
 - `doe-gpu` is the package surface over that runtime
 - `doe-gpu/browser` is a browser wrapper, not the Doe runtime running inside the browser
 - `browser/chromium` is the future browser-runtime lane, not the current package wrapper
 - `bench` measures surfaces; it is not itself a product surface
+
+Current competitive framing:
+
+- Dawn is the incumbent runtime baseline
+- Doe competes directly in Node.js, Bun, Deno, drop-in, and embedded/native lanes
+- a Doe-backed ONNX Runtime plugin EP is a concrete challenger seam, but it is repo-only and experimental today
+- browser `navigator.gpu` replacement is an explicit future lane, not the current package claim
 
 That separation is deliberate. It keeps package ergonomics, runtime behavior,
 and browser integration from getting blurred together in docs or benchmarks.
@@ -100,6 +114,10 @@ There are two distinct browser-related paths:
 
 Those paths answer different questions and should not be described as the same
 thing.
+
+They also sit at different maturity levels. The browser shim is a present
+compatibility surface. The Chromium lane is a future challenger lane against an
+incumbent runtime that still belongs to Dawn today.
 
 ## Build and evidence outputs
 

@@ -1,4 +1,4 @@
-"""Compatibility wrapper for the thin config-backed compare flow."""
+"""Compatibility wrapper for removed config-backed inline compare."""
 
 from __future__ import annotations
 

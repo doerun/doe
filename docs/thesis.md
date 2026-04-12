@@ -5,6 +5,17 @@
 Doe is a Zig-first WebGPU runtime for cases where you want a direct, explicit
 runtime instead of shipping Dawn.
 
+In practice, Dawn is the incumbent WebGPU runtime standard, especially in
+Chromium and browser-shaped deployments. Doe is the challenger runtime. Its
+near-term goal is not to claim that Doe already replaces browser WebGPU. Its
+near-term goal is to beat Dawn in the lanes Doe can actually contest today:
+package, embedded, native, and server-side JavaScript runtimes such as Node.js
+and Bun.
+
+One concrete challenger seam for that thesis is a Doe-backed ONNX Runtime
+plugin EP. That is a native ML-host integration lane, not a claim that Doe has
+already displaced Chromium's runtime stack.
+
 The project goal is not "rewrite WebGPU in Zig" for its own sake. The goal is
 to reduce hot-path CPU cost, keep runtime behavior explainable from config and
 artifacts, and make correctness/performance claims reproducible.
@@ -22,6 +33,12 @@ That gives Doe two intended advantages over incumbent stacks:
 
 - less recurring runtime work on hot paths
 - smaller, more auditable implementation boundaries
+
+The important competitive boundary is:
+
+- Dawn is the incumbent baseline
+- Doe is the challenger runtime
+- Chromium/browser replacement is a future lane, not the current proof point
 
 ## Why this exists
 
@@ -49,6 +66,11 @@ Current Lean theorem inventory is tracked in
 describes the proof categories and integration boundary.
 
 Dawn and wgpu are comparison baselines, not runtime dependencies.
+
+That matters for how Doe should be evaluated. The immediate question is not
+"has Doe replaced the browser runtime?" The immediate question is whether Doe
+can provide a better runtime boundary than Dawn in the package, native, and
+embedded shapes it targets directly.
 
 ## Verification stance
 
@@ -100,6 +122,7 @@ For v0, success is trend-based rather than slogan-based:
 Doe is not trying to:
 
 - replace browser/process sandbox policy with theorem proving
+- claim Doe is already the browser runtime standard
 - treat package wrappers, browser shims, and native runtime lanes as one surface
 - claim wins from non-comparable benchmark runs
 - hide policy or fallback behavior in undocumented runtime branches

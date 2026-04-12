@@ -12,8 +12,9 @@ path selected by `FAWN_CHROMIUM_LANE_DIR` for external-volume setups.
 
 This integration layer is used for:
 
-1. A Dawn replacement path for `navigator.gpu` in Chromium.
-2. An optional execution substrate for selected Chromium-internal GPU modules.
+1. An experimental future challenger path to replace Dawn behind
+   `navigator.gpu` in Chromium.
+2. Planning, contracts, and diagnostics for Chromium-facing Doe bring-up.
 
 This layer is intentionally process-heavy and contract-first. It exists to
 prevent architectural drift and comparability debt before implementation.
@@ -88,7 +89,7 @@ Terminology used in this directory:
 
 ## Program shape
 
-Track A (browser): Dawn replacement path for `navigator.gpu` via Doe.
+Track A (browser): experimental challenger path for `navigator.gpu` via Doe.
 
 Track B (modules) was archived 2026-03-19. See "Track B" section below.
 
@@ -96,7 +97,8 @@ Track B (modules) was archived 2026-03-19. See "Track B" section below.
 
 ### Objective
 
-Swap the runtime implementation seam while keeping browser behavior and process topology stable.
+Prove that Doe could swap the runtime implementation seam while keeping browser
+behavior and process topology stable.
 
 ### Design constraints
 
@@ -131,7 +133,7 @@ through Doe for internal browser GPU work.
 
 This was superseded by the infrastructure dominance strategy: Chromium is
 already routing Skia Graphite, WebGL, and compositor through WebGPU on its own
-timeline. When Track A lands (Doe replaces Dawn), those subsystems
+timeline. If Track A ever lands and Doe replaces Dawn, those subsystems
 automatically run on Doe without any Doe-side plumbing. Building parallel
 replacements duplicates work Google has 100+ GPU engineers doing and creates
 fork divergence on every Chromium update.

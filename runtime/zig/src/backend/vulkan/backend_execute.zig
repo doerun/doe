@@ -123,7 +123,12 @@ fn execute_buffer_write_bytes(self: anytype, setup_ns: u64, handle: u64, offset:
 }
 
 fn use_explicit_submit_boundaries(self: anytype) bool {
-    return self.queue_sync_mode == .per_command and self.gpu_timestamp_mode != .require;
+    _ = self;
+    // Recorded-submit replay reduced row-local submit cost, but on long
+    // dependent compute streams it regressed real wall time badly by pushing
+    // the work into one large deferred drain. Keep native Vulkan on the true
+    // per-command path until replay can prove a wall-time win.
+    return false;
 }
 
 fn execute_dispatch_command(
@@ -508,6 +513,7 @@ pub fn flush_queue(self: anytype) anyerror!u64 {
 
 pub fn prewarm_upload_path(self: anytype, max_upload_bytes: u64) anyerror!void {
     const runtime = try self.ensure_runtime_bootstrapped();
+    try runtime.prewarm_execution_bootstrap(self.gpu_timestamp_mode);
     try runtime.prewarm_upload_path(max_upload_bytes, self.upload_buffer_usage_mode, self.upload_path_policy);
 }
 

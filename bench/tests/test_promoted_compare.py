@@ -21,7 +21,7 @@ from bench.native_compare_modules.promoted_compare import (  # noqa: E402
     default_mode_for_surface,
     load_catalog,
     resolve_entry,
-    build_compare_argv,
+    build_run_config_argvs,
 )
 
 
@@ -106,30 +106,34 @@ class PromotedCompareTests(unittest.TestCase):
         self.assertEqual(entry.surface, "backend")
         self.assertEqual(entry.preset, "release")
 
-    def test_build_compare_argv_uses_canonical_cli(self) -> None:
+    def test_build_run_config_argvs_use_canonical_cli(self) -> None:
         entries = load_catalog(REPO_ROOT / "config" / "promoted-compare-catalog.json")
         entry = resolve_entry(entries, profile_id="apple-metal-gemma64-package-cold")
-        argv = build_compare_argv(entry, passthrough=["--iterations", "20"])
-        self.assertEqual(argv[0], sys.executable)
-        self.assertEqual(argv[1], str(DEFAULT_COMPARE_CLI))
-        self.assertEqual(argv[2], "compare")
-        self.assertIn("--config", argv)
-        self.assertIn("--boundary", argv)
-        self.assertIn("package_surface", argv)
-        self.assertIn("--runtime-host", argv)
-        self.assertIn("node", argv)
-        self.assertIn("--temperature", argv)
-        self.assertIn("cold", argv)
-        self.assertIn("--comparison-view", argv)
-        self.assertIn("doe_vs_node_webgpu_package", argv)
-        self.assertIn("--iterations", argv)
-        self.assertIn("20", argv)
-        self.assertIn(
-            str(REPO_ROOT / "bench/native-compare/compare.config.apple.metal.gemma64.node-package.ir.json"),
-            argv,
-        )
+        argvs = build_run_config_argvs(entry, passthrough=["--iterations", "20"])
+        self.assertEqual(len(argvs), 2)
+        for argv in argvs:
+            self.assertEqual(argv[0], sys.executable)
+            self.assertEqual(argv[1], str(DEFAULT_COMPARE_CLI))
+            self.assertEqual(argv[2], "run-config")
+            self.assertIn("--config", argv)
+            self.assertIn("--boundary", argv)
+            self.assertIn("package_surface", argv)
+            self.assertIn("--runtime-host", argv)
+            self.assertIn("node", argv)
+            self.assertIn("--temperature", argv)
+            self.assertIn("cold", argv)
+            self.assertIn("--comparison-view", argv)
+            self.assertIn("doe_vs_node_webgpu_package", argv)
+            self.assertIn("--iterations", argv)
+            self.assertIn("20", argv)
+            self.assertIn(
+                str(REPO_ROOT / "bench/native-compare/compare.config.apple.metal.gemma64.node-package.ir.json"),
+                argv,
+            )
+        self.assertEqual(argvs[0][-2:], ["--side", "baseline"])
+        self.assertEqual(argvs[1][-2:], ["--side", "comparison"])
 
-    def test_build_compare_argv_resolves_config_relative_to_custom_catalog(self) -> None:
+    def test_build_run_config_argvs_resolve_config_relative_to_custom_catalog(self) -> None:
         with tempfile.TemporaryDirectory(prefix="doe-promoted-compare-") as tmpdir:
             tmp = Path(tmpdir)
             catalog_path = tmp / "catalog.json"
@@ -157,8 +161,8 @@ class PromotedCompareTests(unittest.TestCase):
             )
             entries = load_catalog(catalog_path)
             entry = resolve_entry(entries, profile_id="custom-backend-compare")
-            argv = build_compare_argv(entry, catalog_path=catalog_path)
-            self.assertEqual(Path(argv[4]).resolve(), config_path.resolve())
+            argvs = build_run_config_argvs(entry, catalog_path=catalog_path)
+            self.assertEqual(Path(argvs[0][4]).resolve(), config_path.resolve())
 
     def test_missing_workload_raises_clear_error(self) -> None:
         entries = load_catalog(REPO_ROOT / "config" / "promoted-compare-catalog.json")

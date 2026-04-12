@@ -36,6 +36,7 @@ pub const Emitter = struct {
     function_ids: []u32,
     entry_wrapper_ids: []u32,
     decorated_array_types: std.AutoHashMapUnmanaged(u32, void) = .{},
+    decorated_block_types: std.AutoHashMapUnmanaged(u32, void) = .{},
     decorated_struct_types: std.AutoHashMapUnmanaged(u32, void) = .{},
     sampled_image_types: std.AutoHashMapUnmanaged(u32, u32) = .{},
     sampler_type: u32 = 0,
@@ -77,6 +78,7 @@ pub const Emitter = struct {
     fn deinit(self: *Emitter) void {
         self.sampled_image_types.deinit(self.alloc);
         self.decorated_struct_types.deinit(self.alloc);
+        self.decorated_block_types.deinit(self.alloc);
         self.decorated_array_types.deinit(self.alloc);
         self.alloc.free(self.entry_wrapper_ids);
         self.alloc.free(self.function_ids);
@@ -179,8 +181,11 @@ pub const Emitter = struct {
         _ = try self.decorate_memory_type(global.ty, addr_space);
         const block_member_type = try self.lower_type(global.ty);
         const block_type = try self.builder.type_struct(&.{block_member_type});
-        try self.builder.emit_block_decoration(block_type);
-        try self.builder.emit_member_offset_decoration(block_type, 0, 0);
+        const block_gop = try self.decorated_block_types.getOrPut(self.alloc, block_type);
+        if (!block_gop.found_existing) {
+            try self.builder.emit_block_decoration(block_type);
+            try self.builder.emit_member_offset_decoration(block_type, 0, 0);
+        }
 
         const storage_class = try self.global_storage_class(global);
         const ptr_type = try self.builder.type_pointer(storage_class, block_type);

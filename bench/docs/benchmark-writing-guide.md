@@ -393,7 +393,9 @@ Coverage updates are separate from claimability. A covered feature is not automa
 Useful strict run pattern:
 
 ```bash
-python3 bench/cli.py compare --config bench/native-compare/compare.config.amd.vulkan.doe-vs-dawn.fullsuite.json
+python3 bench/cli.py run-config --config bench/native-compare/compare.config.amd.vulkan.doe-vs-dawn.fullsuite.json --side baseline
+python3 bench/cli.py run-config --config bench/native-compare/compare.config.amd.vulkan.doe-vs-dawn.fullsuite.json --side comparison
+# then join the emitted .run.json receipts with `python3 bench/cli.py compare ...`
 python3 bench/vulkan_timing_policy_gate.py --report bench/out/<timestamp>/vulkan.strict.doe_vs_dawn.fullsuite.apples.json
 ```
 

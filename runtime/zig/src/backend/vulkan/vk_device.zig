@@ -292,6 +292,9 @@ pub fn ensure_submission_state(self: anytype) !void {
     if (!self.has_fence) {
         try create_fence(self);
     }
+}
+
+pub fn ensure_deferred_submission_state(self: anytype) !void {
     if (!self.has_fence_pool) {
         try create_fence_pool(self);
     }

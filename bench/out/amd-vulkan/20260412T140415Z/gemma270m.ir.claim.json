@@ -1,0 +1,40 @@
+{
+  "artifactKind": "claim-report",
+  "claimPolicy": {
+    "benchmarkPolicy": {
+      "path": "config/benchmark-methodology-thresholds.json",
+      "sha256": "32e0942cc8f4114210ee2010f524bcbd4c9548a123fc75d29bc699c698262355"
+    },
+    "minTimedSamples": 15,
+    "mode": "local",
+    "policyHash": "a778521af5d2234dcda352757fe2d7f0fbb93be9bae59a0c7351a7739d2ff133"
+  },
+  "claimStatus": "diagnostic",
+  "compareReport": {
+    "path": "bench/out/amd-vulkan/20260412T140415Z/gemma270m.ir.compare.json",
+    "sha256": "dc6e686e831feed387e88df2428da7b41ffc1a530b8ea2f857c7535871893bc8"
+  },
+  "comparisonStatus": "comparable",
+  "generatedAt": "2026-04-12T14:04:49.562754+00:00",
+  "pass": false,
+  "reasons": [
+    "inference_gemma3_270m_prefill_64tok_decode_64tok: p50Percent=-5.674043 is not positive (positive means baseline faster) | p95Percent=-9.436007 is not positive (positive means baseline faster)"
+  ],
+  "schemaVersion": 1,
+  "workloads": [
+    {
+      "claimMetricField": "deltaPercent",
+      "claimMetricScope": "selectedTiming",
+      "claimable": false,
+      "reasons": [
+        "p50Percent=-5.674043 is not positive (positive means baseline faster)",
+        "p95Percent=-9.436007 is not positive (positive means baseline faster)"
+      ],
+      "requiredPositivePercentiles": [
+        "p50Percent",
+        "p95Percent"
+      ],
+      "workloadId": "inference_gemma3_270m_prefill_64tok_decode_64tok"
+    }
+  ]
+}

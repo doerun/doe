@@ -1,5 +1,15 @@
 # Doe status archive: 2026-02 and legacy early-2026 backfills
 
+Historical benchmark note:
+
+- benchmark command examples and harness names in this archive are
+  point-in-time record only
+- this shard predates the current receipt-first benchmark CLI and may mention
+  retired scripts such as `bench/native-compare/compare_dawn_vs_doe.py`
+- current benchmark front door is `bench/cli.py run`,
+  `bench/cli.py run-config --side baseline|comparison`, then
+  `bench/cli.py compare ...`
+
 This shard contains the February 2026 status entries plus preserved older early-2026 backfilled sections that were still present in the original `docs/status.md` order.
 The entries remain in original top-to-bottom order.
 

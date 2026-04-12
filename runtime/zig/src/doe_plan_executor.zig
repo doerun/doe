@@ -270,6 +270,14 @@ fn executeBufferLoadWithSemantic(
     return result;
 }
 
+fn prewarmNativeExecutionBootstrap(ctx: *execution.ExecutionContext) !u64 {
+    const prewarm_start_ns = nowNs();
+    // Force backend/runtime submission bootstrap before the timed loop
+    // without hoisting plan transfer work out of the measured row stream.
+    try ctx.prewarmUploadPath(0);
+    return elapsedSince(prewarm_start_ns);
+}
+
 pub fn runPlan(allocator: Allocator, options: RunOptions) !void {
     const plan_read_start_ns = nowNs();
     const plan_bytes = try dawn_plan_types.readPlanBytes(allocator, options.plan_path);
@@ -382,6 +390,7 @@ pub fn runPlan(allocator: Allocator, options: RunOptions) !void {
             ctx.configureGpuTimestampMode(options.gpu_timestamp_mode);
             ctx.configureQueueWaitMode(options.queue_wait_mode);
             ctx.configureQueueSyncMode(options.queue_sync_mode);
+            trace_summary.host_upload_prewarm_total_ns += try prewarmNativeExecutionBootstrap(ctx);
             if (ctx.telemetry()) |selection| {
                 trace_summary.execution_backend = execution.backend_id_name(selection.backend_id);
                 trace_summary.backend_selection_reason = selection.backend_selection_reason;
@@ -497,14 +506,20 @@ pub fn runPlan(allocator: Allocator, options: RunOptions) !void {
     }
 
     if (execution_context) |*ctx| {
-        const needs_explicit_drain = options.queue_sync_mode == .deferred or
-            options.upload_submit_every > 1 or
-            std.mem.eql(u8, trace_summary.execution_backend orelse "", "doe_vulkan");
-        if (needs_explicit_drain) {
-            const flush_start_ns = nowNs();
-            const flush_ns = try ctx.flushQueue();
+        const flush_start_ns = nowNs();
+        const flush_ns = try ctx.flushQueue();
+        const flush_elapsed_ns = elapsedSince(flush_start_ns);
+        if (flush_ns > 0 and trace_rows.items.len > 0) {
+            const last_row = &trace_rows.items[trace_rows.items.len - 1];
+            if (last_row.execution_result) |*exec| {
+                exec.submit_wait_ns += flush_ns;
+                exec.duration_ns += flush_ns;
+            }
             trace_summary.execution_submit_wait_total_ns += flush_ns;
-            trace_summary.host_command_orchestration_total_ns += elapsedSince(flush_start_ns);
+            trace_summary.execution_total_ns += flush_ns;
+        }
+        if (flush_elapsed_ns > flush_ns) {
+            trace_summary.host_command_orchestration_total_ns += flush_elapsed_ns - flush_ns;
         }
     }
 

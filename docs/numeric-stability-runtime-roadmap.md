@@ -128,6 +128,10 @@ The following can happen outside Doe:
 
 That work is still useful. It seeds the evidence base.
 
+Doppler in particular should remain independently useful here as an evidence
+and debugging surface. Doe benefits from that work, but Doppler should not be
+described merely as a Doe demo.
+
 ### Doe-only strategy work
 
 The following must land in Doe to become defensible:
@@ -142,7 +146,7 @@ The following must land in Doe to become defensible:
 
 The clean rule is:
 
-**Use other tooling to discover cases. Use Doe to govern them.**
+**Use other tooling such as Doppler to discover cases. Use Doe to govern them.**
 
 ## Current repo gap
 

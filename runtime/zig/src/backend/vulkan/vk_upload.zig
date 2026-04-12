@@ -26,6 +26,7 @@ pub const DIRECT_UPLOAD_REUSE_SKIP_ZERO_FILL_MIN_BYTES: u64 = 4 * 1024 * 1024 * 
 pub const HOT_UPLOAD_POOL_CACHE_MAX_BYTES: u64 = 64 * 1024;
 pub const WAIT_TIMEOUT_NS: u64 = std.math.maxInt(u64);
 pub const MAX_POOL_ENTRIES_PER_SIZE: usize = 8;
+pub const IMMEDIATE_FENCE_POLL_SPINS: usize = 2048;
 
 pub const PendingUpload = struct {
     src_buffer: VkBuffer,
@@ -51,6 +52,17 @@ pub const UploadPathKind = enum {
 };
 
 pub const VkPool = std.AutoHashMapUnmanaged(u64, std.ArrayListUnmanaged(VkPoolEntry));
+
+pub fn wait_for_fence_fast(self: anytype, fence: c.VkFence) !void {
+    var spin: usize = 0;
+    while (spin < IMMEDIATE_FENCE_POLL_SPINS) : (spin += 1) {
+        const status = c.vkGetFenceStatus(self.device, fence);
+        if (status == c.VK_SUCCESS) return;
+        if (status != c.VK_NOT_READY) return c.check_vk(status);
+        std.atomic.spinLoopHint();
+    }
+    try c.check_vk(c.vkWaitForFences(self.device, 1, @ptrCast(&fence), c.VK_TRUE, WAIT_TIMEOUT_NS));
+}
 
 pub fn flush_queue(self: anytype) !u64 {
     if (!self.has_device) return 0;
@@ -82,7 +94,7 @@ pub fn flush_queue(self: anytype) !u64 {
         // fast path for immediate upload flushes.
         try c.check_vk(c.vkResetFences(self.device, 1, @ptrCast(&self.fence)));
         try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit), self.fence));
-        try c.check_vk(c.vkWaitForFences(self.device, 1, @ptrCast(&self.fence), c.VK_TRUE, WAIT_TIMEOUT_NS));
+        try wait_for_fence_fast(self, self.fence);
         self.has_deferred_submissions = false;
     } else if (self.has_deferred_submissions) {
         // No pending uploads but earlier deferred work exists; drain via
@@ -122,6 +134,7 @@ fn finalize_recorded_submit_replay(self: anytype) !void {
         .pSignalSemaphores = null,
     };
 
+    try vk_device.ensure_deferred_submission_state(self);
     if (self.has_timeline_semaphore) {
         var tsi = vk_sync.TimelineSubmitHelper.prepare(&self.timeline_semaphore);
         tsi.patch();
@@ -143,6 +156,17 @@ fn finalize_recorded_submit_replay(self: anytype) !void {
 
 pub fn record_upload_copy(self: anytype, bytes: u64, dst_usage: u32) !PendingUpload {
     try ensure_upload_recording(self);
+    const upload = try allocate_staged_upload(self, bytes, dst_usage);
+    errdefer release_upload(self, upload);
+
+    var region = c.VkBufferCopy{ .srcOffset = 0, .dstOffset = 0, .size = bytes };
+    c.vkCmdCopyBuffer(self.primary_command_buffer, upload.src_buffer, upload.dst_buffer, 1, @ptrCast(&region));
+
+    return upload;
+}
+
+fn allocate_staged_upload(self: anytype, bytes: u64, dst_usage: u32) !PendingUpload {
+    try vk_device.ensure_submission_state(self);
 
     var src_buffer: VkBuffer = VK_NULL_U64;
     var dst_buffer: VkBuffer = VK_NULL_U64;
@@ -210,9 +234,6 @@ pub fn record_upload_copy(self: anytype, bytes: u64, dst_usage: u32) !PendingUpl
         src_mapped = mapped;
     }
 
-    var region = c.VkBufferCopy{ .srcOffset = 0, .dstOffset = 0, .size = bytes };
-    c.vkCmdCopyBuffer(self.primary_command_buffer, src_buffer, dst_buffer, 1, @ptrCast(&region));
-
     return .{
         .src_buffer = src_buffer,
         .src_memory = src_memory,
@@ -221,6 +242,12 @@ pub fn record_upload_copy(self: anytype, bytes: u64, dst_usage: u32) !PendingUpl
         .byte_count = bytes,
         .src_mapped = src_mapped,
     };
+}
+
+pub fn prewarm_staged_upload_pool(self: anytype, bytes: u64, dst_usage: u32) !void {
+    if (bytes == 0) return;
+    const upload = try allocate_staged_upload(self, bytes, dst_usage);
+    release_upload(self, upload);
 }
 
 pub fn try_direct_upload(self: anytype, bytes: u64, dst_usage: u32) !bool {
@@ -629,7 +656,7 @@ pub fn flush_streaming_copy(self: anytype, wait: bool) !void {
     } else if (wait) {
         try c.check_vk(c.vkResetFences(self.device, 1, @ptrCast(&self.fence)));
         try c.check_vk(c.vkQueueSubmit(self.queue, 1, @ptrCast(&submit_info), self.fence));
-        try c.check_vk(c.vkWaitForFences(self.device, 1, @ptrCast(&self.fence), c.VK_TRUE, WAIT_TIMEOUT_NS));
+        try wait_for_fence_fast(self, self.fence);
     } else {
         const VK_NULL_FENCE = c.VK_NULL_U64;
         const deferred_fence = if (self.has_fence_pool)

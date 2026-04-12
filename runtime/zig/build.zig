@@ -376,6 +376,113 @@ pub fn build(b: *std.Build) void {
     }
     b.getInstallStep().dependOn(dropin_step);
 
+    const ort_plugin_ep = b.addLibrary(.{
+        .name = "onnxruntime_doe_ep",
+        .linkage = .dynamic,
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/ort_ep_anchor.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    ort_plugin_ep.linkLibC();
+    ort_plugin_ep.linkLibCpp();
+    ort_plugin_ep.addIncludePath(b.path("../bridge/onnxruntime-ep/vendor/onnxruntime/include"));
+    ort_plugin_ep.addIncludePath(b.path("../bridge/onnxruntime-ep/src"));
+    ort_plugin_ep.addCSourceFile(.{
+        .file = b.path("../bridge/onnxruntime-ep/src/doe_ort_ep_factory.cc"),
+        .flags = &.{"-std=c++20"},
+    });
+    ort_plugin_ep.addCSourceFile(.{
+        .file = b.path("../bridge/onnxruntime-ep/src/doe_ort_ep.cc"),
+        .flags = &.{"-std=c++20"},
+    });
+    ort_plugin_ep.addCSourceFile(.{
+        .file = b.path("../bridge/onnxruntime-ep/src/doe_ort_ep_exports.cc"),
+        .flags = &.{"-std=c++20"},
+    });
+    const install_ort_plugin_ep = b.addInstallArtifact(ort_plugin_ep, .{});
+    const ort_plugin_ep_step = b.step(
+        "ort-plugin-ep",
+        "Build the repo-only ONNX Runtime plugin EP scaffold shared library",
+    );
+    ort_plugin_ep_step.dependOn(&install_ort_plugin_ep.step);
+    b.getInstallStep().dependOn(&install_ort_plugin_ep.step);
+
+    const ort_plugin_ep_smoke = b.addExecutable(.{
+        .name = "doe-ort-ep-smoke",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/ort_ep_smoke_anchor.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    ort_plugin_ep_smoke.linkLibC();
+    ort_plugin_ep_smoke.linkLibCpp();
+    ort_plugin_ep_smoke.addIncludePath(b.path("../bridge/onnxruntime-ep/vendor/onnxruntime/include"));
+    ort_plugin_ep_smoke.addIncludePath(b.path("../bridge/onnxruntime-ep/src"));
+    ort_plugin_ep_smoke.addCSourceFile(.{
+        .file = b.path("../bridge/onnxruntime-ep/src/doe_ort_ep_smoke.cc"),
+        .flags = &.{"-std=c++20"},
+    });
+    if (target.result.os.tag == .linux) {
+        ort_plugin_ep_smoke.linkSystemLibrary("dl");
+    }
+    const install_ort_plugin_ep_smoke = b.addInstallArtifact(ort_plugin_ep_smoke, .{});
+    const ort_plugin_ep_smoke_step = b.step(
+        "ort-plugin-ep-smoke",
+        "Build the repo-only ONNX Runtime plugin EP smoke runner",
+    );
+    ort_plugin_ep_smoke_step.dependOn(&install_ort_plugin_ep_smoke.step);
+    b.getInstallStep().dependOn(&install_ort_plugin_ep_smoke.step);
+
+    const run_ort_plugin_ep_smoke = b.addRunArtifact(ort_plugin_ep_smoke);
+    if (b.args) |args| run_ort_plugin_ep_smoke.addArgs(args);
+    const ort_plugin_ep_smoke_run_step = b.step(
+        "ort-plugin-ep-smoke-run",
+        "Build and run the repo-only ONNX Runtime plugin EP smoke runner",
+    );
+    ort_plugin_ep_smoke_run_step.dependOn(&install_ort_plugin_ep.step);
+    ort_plugin_ep_smoke_run_step.dependOn(&install_ort_plugin_ep_smoke.step);
+    ort_plugin_ep_smoke_run_step.dependOn(&run_ort_plugin_ep_smoke.step);
+
+    const ort_plugin_ep_session_smoke = b.addExecutable(.{
+        .name = "doe-ort-ep-session-smoke",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/ort_ep_session_smoke_anchor.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    ort_plugin_ep_session_smoke.linkLibC();
+    ort_plugin_ep_session_smoke.linkLibCpp();
+    ort_plugin_ep_session_smoke.addIncludePath(b.path("../bridge/onnxruntime-ep/vendor/onnxruntime/include"));
+    ort_plugin_ep_session_smoke.addIncludePath(b.path("../bridge/onnxruntime-ep/src"));
+    ort_plugin_ep_session_smoke.addCSourceFile(.{
+        .file = b.path("../bridge/onnxruntime-ep/src/doe_ort_ep_session_smoke.cc"),
+        .flags = &.{"-std=c++20"},
+    });
+    if (target.result.os.tag == .linux) {
+        ort_plugin_ep_session_smoke.linkSystemLibrary("dl");
+    }
+    const install_ort_plugin_ep_session_smoke = b.addInstallArtifact(ort_plugin_ep_session_smoke, .{});
+    const ort_plugin_ep_session_smoke_step = b.step(
+        "ort-plugin-ep-session-smoke",
+        "Build the repo-only ONNX Runtime plugin EP session smoke runner",
+    );
+    ort_plugin_ep_session_smoke_step.dependOn(&install_ort_plugin_ep_session_smoke.step);
+    b.getInstallStep().dependOn(&install_ort_plugin_ep_session_smoke.step);
+
+    const run_ort_plugin_ep_session_smoke = b.addRunArtifact(ort_plugin_ep_session_smoke);
+    if (b.args) |args| run_ort_plugin_ep_session_smoke.addArgs(args);
+    const ort_plugin_ep_session_smoke_run_step = b.step(
+        "ort-plugin-ep-session-smoke-run",
+        "Build and run the repo-only ONNX Runtime plugin EP session smoke runner",
+    );
+    ort_plugin_ep_session_smoke_run_step.dependOn(&install_ort_plugin_ep.step);
+    ort_plugin_ep_session_smoke_run_step.dependOn(&install_ort_plugin_ep_session_smoke.step);
+    ort_plugin_ep_session_smoke_run_step.dependOn(&run_ort_plugin_ep_session_smoke.step);
+
     const exe = b.addExecutable(.{
         .name = "doe-zig-runtime",
         .root_module = b.createModule(.{

@@ -155,7 +155,12 @@ pub fn ensure_compute_buffer(
         return existing.*;
     }
 
-    const compute_buffer = try create_compute_buffer(self, required_size, initialize_buffers_on_create);
+    const compute_buffer = try create_compute_buffer_with_kind(
+        self,
+        required_size,
+        initialize_buffers_on_create,
+        .host_visible,
+    );
     try self.compute_buffers.put(self.allocator, handle, compute_buffer);
     return self.compute_buffers.get(handle).?;
 }

@@ -15,7 +15,7 @@ _DOE_RUNTIME_PREFIX = (
     "--vendor {vendor} --api {api} --family {family} --driver {driver} "
     "--backend native --execute --trace --queue-sync-mode {queue_sync_mode} "
     "--upload-buffer-usage {upload_buffer_usage} --upload-submit-every {upload_submit_every} "
-    "--trace-jsonl {trace_jsonl} --trace-meta {trace_meta} --gpu-timestamp-mode auto "
+    "--trace-jsonl {trace_jsonl} --trace-meta {trace_meta} --gpu-timestamp-mode off "
     "--kernel-root bench/kernels {extra_args}"
 )
 
@@ -25,7 +25,7 @@ _DOE_PLAN_PREFIX = (
     "--trace-jsonl {trace_jsonl} --trace-meta {trace_meta} --workload {workload} "
     "--vendor {vendor} --api {api} --family {family} --driver {driver} "
     "--queue-sync-mode {queue_sync_mode} --upload-buffer-usage {upload_buffer_usage} "
-    "--upload-submit-every {upload_submit_every} --gpu-timestamp-mode auto {extra_args}"
+    "--upload-submit-every {upload_submit_every} --gpu-timestamp-mode off {extra_args}"
 )
 
 _DAWN_DIRECT_PREFIX = (
@@ -47,7 +47,7 @@ _WEBKIT_RUNTIME_PREFIX = (
     "--vendor {vendor} --api {api} --family {family} --driver {driver} "
     "--backend native --execute --trace --queue-sync-mode {queue_sync_mode} "
     "--upload-buffer-usage {upload_buffer_usage} --upload-submit-every {upload_submit_every} "
-    "--trace-jsonl {trace_jsonl} --trace-meta {trace_meta} --gpu-timestamp-mode auto "
+    "--trace-jsonl {trace_jsonl} --trace-meta {trace_meta} --gpu-timestamp-mode off "
     "--kernel-root bench/kernels {extra_args}"
 )
 

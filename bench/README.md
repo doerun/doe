@@ -34,7 +34,8 @@ This module is self-contained and does not depend on external runtime code.
 `bench/cli.py` is the only canonical benchmark front door. Use:
 
 - `run` to execute one product and emit immutable run receipts
-- `compare` to join run receipts, run config-backed compare flows, or resolve promoted compare profiles
+- `run-config` to expand one side of a compare config into standalone run receipts
+- `compare` to join existing run receipts
 - `claim` to evaluate claim policy over an existing compare report
 - `list` to inspect executors, products, surfaces, or workload catalogs
 
@@ -48,8 +49,13 @@ python3 bench/cli.py compare \
   bench/out/runs/<ts>/run-artifacts/doe/<artifact>.run.json \
   bench/out/runs/<ts>/run-artifacts/dawn/<artifact>.run.json
 
-python3 bench/cli.py compare \
-  --config bench/native-compare/compare.config.apple.metal.compare.json
+python3 bench/cli.py run-config \
+  --config bench/native-compare/compare.config.apple.metal.compare.json \
+  --side baseline
+
+python3 bench/cli.py run-config \
+  --config bench/native-compare/compare.config.apple.metal.compare.json \
+  --side comparison
 
 python3 bench/cli.py claim \
   bench/out/sample.compare.json \
@@ -57,9 +63,9 @@ python3 bench/cli.py claim \
   --benchmark-policy config/benchmark-methodology-thresholds.json
 
 python3 bench/cli.py compare --list-promoted
-python3 bench/cli.py compare --surface backend --backend apple-metal --preset compare
-python3 bench/cli.py compare --surface plan --backend apple-metal --workload gemma270m-literal
-python3 bench/cli.py compare --surface package --backend apple-metal --workload gemma64 --runtime-host node --temperature warm
+python3 bench/cli.py compare --surface backend --backend apple-metal --preset compare --dry-run
+python3 bench/cli.py compare --surface plan --backend apple-metal --workload gemma270m-literal --dry-run
+python3 bench/cli.py compare --surface package --backend apple-metal --workload gemma64 --runtime-host node --temperature warm --dry-run
 python3 bench/runners/publish_apple_runtime_release.py --timestamp <YYYYMMDDTHHMMSSZ>
 python3 bench/runners/exercise_runtime_numeric_stability.py
 python3 bench/runners/exercise_in_path_numeric_stability.py
@@ -76,21 +82,52 @@ from scattered configs:
 
 | Goal | Current status | Canonical entrypoint |
 |---|---|---|
-| Apple Metal native Doe vs Dawn | promoted | `python3 bench/cli.py compare --surface backend --backend apple-metal --preset compare` |
-| AMD Vulkan native Doe vs Dawn | promoted | `python3 bench/cli.py compare --surface backend --backend amd-vulkan --preset compare` |
-| Local D3D12 native Doe vs Dawn | promoted contract, Windows host required | `python3 bench/cli.py compare --surface backend --backend local-d3d12 --preset compare` |
-| Apple Metal plan Doe vs Dawn direct WebGPU | promoted | `python3 bench/cli.py compare --surface plan --backend apple-metal --workload gemma64` |
-| Apple Metal package Doe vs `node-webgpu` | promoted | `python3 bench/cli.py compare --surface package --backend apple-metal --workload gemma64 --runtime-host node --temperature warm` |
-| Apple Metal package Doe vs `bun-webgpu` | promoted | `python3 bench/cli.py compare --surface package --backend apple-metal --workload gemma64 --runtime-host bun --temperature warm` |
-| AMD Vulkan package Doe vs Node/Bun packages | config-backed, not promoted | `python3 bench/cli.py compare --config bench/native-compare/compare.config.amd.vulkan.gemma270m.node-package.ir.json` and `python3 bench/cli.py compare --config bench/native-compare/compare.config.amd.vulkan.gemma270m.bun-package.ir.json` |
+| Apple Metal native Doe vs Dawn | promoted | `python3 bench/cli.py compare --surface backend --backend apple-metal --preset compare --dry-run` |
+| AMD Vulkan native Doe vs Dawn | promoted | `python3 bench/cli.py compare --surface backend --backend amd-vulkan --preset compare --dry-run` |
+| Local D3D12 native Doe vs Dawn | promoted contract, Windows host required | `python3 bench/cli.py compare --surface backend --backend local-d3d12 --preset compare --dry-run` |
+| Apple Metal plan Doe vs Dawn direct WebGPU | promoted | `python3 bench/cli.py compare --surface plan --backend apple-metal --workload gemma64 --dry-run` |
+| Apple Metal package Doe vs `node-webgpu` | promoted | `python3 bench/cli.py compare --surface package --backend apple-metal --workload gemma64 --runtime-host node --temperature warm --dry-run` |
+| Apple Metal package Doe vs `bun-webgpu` | promoted | `python3 bench/cli.py compare --surface package --backend apple-metal --workload gemma64 --runtime-host bun --temperature warm --dry-run` |
+| AMD Vulkan package Doe vs Node/Bun packages | config-backed, not promoted | `python3 bench/cli.py run-config --config bench/native-compare/compare.config.amd.vulkan.gemma270m.node-package.ir.json --side baseline`, then `--side comparison`, then compare the emitted receipts |
 | Local D3D12 package Doe vs Node/Bun packages | not front-doored today | do not assume a supported matrix; add an explicit config/contract first |
 
 Two rules for first-time operators:
 
 - Start with `python3 bench/cli.py compare --list-promoted` when you want the
   currently promoted matrix.
+- Add `--dry-run` to a promoted compare selection when you want the exact
+  explicit per-side `run-config` commands.
 - Do not infer that every taxonomy tuple is runnable or promoted. The backend
   matrix is broader than the current plan/package matrix.
+
+## ONNX Runtime plugin EP lane
+
+Doe now has a repo-only ONNX Runtime plugin EP scaffold under
+`runtime/bridge/onnxruntime-ep/`.
+
+What that means today:
+
+- the shared library exports the official plugin-EP factory entrypoints
+- the repo now has a repo-only smoke runner for load/factory/unsupported-path
+  validation:
+  `zig build ort-plugin-ep-smoke-run -- --plugin-path <plugin> --ort-lib-path <ort-shared-lib>`
+- the repo now also has a repo-only session smoke runner:
+  `zig build ort-plugin-ep-session-smoke-run -- --plugin-path <plugin> --ort-lib-path <ort-shared-lib>`
+- the plugin now creates real `OrtEpDevice` and no-op `OrtEp` instances, but
+  still claims zero graph nodes and does not execute model work yet
+- the scaffold is a runtime integration seam, not a promoted benchmark lane
+
+What it does not mean yet:
+
+- there is no promoted `bench/` executor for `ORT + Doe`
+- there is no claimable `ORT + Dawn` vs `ORT + Doe` compare surface today
+- a real Doe-backed graph execution bridge still has to land before that
+  benchmark lane exists
+- there is now a browser-side diagnostic harness at
+  `browser/chromium/scripts/webgpu-playwright-ort-bench.mjs` for ORT WebGPU
+  under Dawn-vs-Doe browser runtime selection, but it is not a `bench/`
+  claim lane and requires a Doe-enabled Chromium binary for meaningful
+  `doe` mode results
 
 ## Numeric-stability promotion and runtime exercise
 
@@ -340,7 +377,7 @@ including input read/parse, workload prepare, executor init, command
 orchestration, artifact finalize, and package setup breakdowns such as shader
 module creation and bind-group/pipeline creation.
 
-Config-backed compare wrappers now sit above those raw configs. The catalog lives in:
+Config-backed receipt resolvers now sit above those raw configs. The catalog lives in:
 
 - `config/promoted-compare-catalog.json`
 
@@ -351,18 +388,18 @@ That catalog is front-door wiring only. The single taxonomy source of truth is:
 And the front door is:
 
 - `python3 bench/cli.py compare --list-promoted`
-- `python3 bench/cli.py compare --surface backend --backend amd-vulkan --preset compare`
-- `python3 bench/cli.py compare --surface backend --backend apple-metal --preset release`
-- `python3 bench/cli.py compare --surface backend --backend local-d3d12 --preset smoke`
-- `python3 bench/cli.py compare --surface plan --backend apple-metal --workload gemma64`
-- `python3 bench/cli.py compare --surface plan --backend apple-metal --workload gemma1b`
-- `python3 bench/cli.py compare --surface plan --backend apple-metal --workload gemma270m-literal`
-- `python3 bench/cli.py compare --surface package --backend apple-metal --workload gemma64 --runtime-host node --temperature cold`
-- `python3 bench/cli.py compare --surface package --backend apple-metal --workload gemma64 --runtime-host node --temperature warm`
-- `python3 bench/cli.py compare --surface package --backend apple-metal --workload gemma64 --runtime-host bun --temperature cold`
-- `python3 bench/cli.py compare --surface package --backend apple-metal --workload gemma64 --runtime-host bun --temperature warm`
-- `python3 bench/cli.py compare --config bench/native-compare/compare.config.amd.vulkan.gemma270m.node-package.ir.json`
-- `python3 bench/cli.py compare --config bench/native-compare/compare.config.amd.vulkan.gemma270m.bun-package.ir.json`
+- `python3 bench/cli.py compare --surface backend --backend amd-vulkan --preset compare --dry-run`
+- `python3 bench/cli.py compare --surface backend --backend apple-metal --preset release --dry-run`
+- `python3 bench/cli.py compare --surface backend --backend local-d3d12 --preset smoke --dry-run`
+- `python3 bench/cli.py compare --surface plan --backend apple-metal --workload gemma64 --dry-run`
+- `python3 bench/cli.py compare --surface plan --backend apple-metal --workload gemma1b --dry-run`
+- `python3 bench/cli.py compare --surface plan --backend apple-metal --workload gemma270m-literal --dry-run`
+- `python3 bench/cli.py compare --surface package --backend apple-metal --workload gemma64 --runtime-host node --temperature cold --dry-run`
+- `python3 bench/cli.py compare --surface package --backend apple-metal --workload gemma64 --runtime-host node --temperature warm --dry-run`
+- `python3 bench/cli.py compare --surface package --backend apple-metal --workload gemma64 --runtime-host bun --temperature cold --dry-run`
+- `python3 bench/cli.py compare --surface package --backend apple-metal --workload gemma64 --runtime-host bun --temperature warm --dry-run`
+- `python3 bench/cli.py run-config --config bench/native-compare/compare.config.amd.vulkan.gemma270m.node-package.ir.json --side baseline`
+- `python3 bench/cli.py run-config --config bench/native-compare/compare.config.amd.vulkan.gemma270m.bun-package.ir.json --side baseline`
 
 The promoted matrix is explicit in config:
 
@@ -1563,14 +1600,26 @@ Adapter exits non-zero when any of the following occur:
 
 These failures are intentional and indicate the run is not comparable.
 
-## Config-first runner (recommended)
+## Config-first run expansion (recommended)
 
-`bench/cli.py compare` supports a JSON config so you do not need to pass long placeholder-heavy templates inline.
+`bench/cli.py run-config` expands one side of a compare config into standalone
+run receipts so you do not need to pass long placeholder-heavy templates
+inline.
 
 Use:
 
 ```bash
-python3 bench/cli.py compare --config bench/native-compare/compare.config.example.json
+python3 bench/cli.py run-config \
+  --config bench/native-compare/compare.config.example.json \
+  --side baseline
+
+python3 bench/cli.py run-config \
+  --config bench/native-compare/compare.config.example.json \
+  --side comparison
+
+python3 bench/cli.py compare \
+  <baseline.run.json> \
+  <comparison.run.json>
 ```
 
 Config fields (CLI-compatible, config-first):
@@ -1608,9 +1657,10 @@ Config fields (CLI-compatible, config-first):
 
 Notes:
 
-- `comparison.commandTemplate` is required (either via CLI or config).
+- `comparison.commandTemplate` is required in the compare config.
 - CLI flags still work and keep precedence when explicitly provided.
-- When `--config` is present, missing CLI fields are filled from config.
+- When `run-config --config` is present, missing CLI fields are filled from
+  config.
 
 ## AMD + Vulkan preset (config-driven)
 
@@ -1642,29 +1692,37 @@ Preset behavior:
   `baselineCommandRepeat`/`baselineTimingDivisor`/`baselineUploadSubmitEvery` values in
   `bench/workloads/workloads.amd.vulkan.json`.
 
-Run from `` directory:
+Run from `` directory with a shared timestamp so both sides land under the same
+artifact suffix:
 
 ```bash
-python3 bench/cli.py compare --config bench/native-compare/compare.config.amd.vulkan.compare.json
+TS=20260411T000000Z
+python3 bench/cli.py run-config --config bench/native-compare/compare.config.amd.vulkan.compare.json --side baseline --timestamp "$TS"
+python3 bench/cli.py run-config --config bench/native-compare/compare.config.amd.vulkan.compare.json --side comparison --timestamp "$TS"
 ```
 
 Additional AMD Vulkan runs:
 
 ```bash
 # diagnostic smoke sanity
-python3 bench/cli.py compare --config bench/native-compare/compare.config.amd.vulkan.smoke.json
+python3 bench/cli.py run-config --config bench/native-compare/compare.config.amd.vulkan.smoke.json --side baseline
+python3 bench/cli.py run-config --config bench/native-compare/compare.config.amd.vulkan.smoke.json --side comparison
 
 # governed release claim matrix (15 timed samples)
-python3 bench/cli.py compare --config bench/native-compare/compare.config.amd.vulkan.release.json
+python3 bench/cli.py run-config --config bench/native-compare/compare.config.amd.vulkan.release.json --side baseline
+python3 bench/cli.py run-config --config bench/native-compare/compare.config.amd.vulkan.release.json --side comparison
 
 # all comparable workloads from the main catalog, including non-governed frontier workloads
-python3 bench/cli.py compare --config bench/native-compare/compare.config.amd.vulkan.frontier.json
+python3 bench/cli.py run-config --config bench/native-compare/compare.config.amd.vulkan.frontier.json --side baseline
+python3 bench/cli.py run-config --config bench/native-compare/compare.config.amd.vulkan.frontier.json --side comparison
 
 # mixed comparable/directional engineering space
-python3 bench/cli.py compare --config bench/native-compare/compare.config.amd.vulkan.explore.json
+python3 bench/cli.py run-config --config bench/native-compare/compare.config.amd.vulkan.explore.json --side baseline
+python3 bench/cli.py run-config --config bench/native-compare/compare.config.amd.vulkan.explore.json --side comparison
 
 # focused engineering slice from the explore preset
-python3 bench/cli.py compare --config bench/native-compare/compare.config.amd.vulkan.explore.json --workload-filter render_draw_throughput_baseline,texture_sampling_raster_baseline
+python3 bench/cli.py run-config --config bench/native-compare/compare.config.amd.vulkan.explore.json --side baseline --workload-filter render_draw_throughput_baseline,texture_sampling_raster_baseline
+python3 bench/cli.py run-config --config bench/native-compare/compare.config.amd.vulkan.explore.json --side comparison --workload-filter render_draw_throughput_baseline,texture_sampling_raster_baseline
 
 # canonical one-command variants:
 python3 bench/runners/run_release_pipeline.py --config bench/native-compare/compare.config.amd.vulkan.release.json --strict-amd-vulkan --with-claim-gate

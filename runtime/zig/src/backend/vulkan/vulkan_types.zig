@@ -39,5 +39,6 @@ pub const VkSwapchainKHR = u64;
 pub const VK_NULL_U64: u64 = 0;
 
 pub const VK_SUCCESS: i32 = 0;
+pub const VK_NOT_READY: i32 = 1;
 pub const VK_TRUE: u32 = 1;
 pub const VK_FALSE: u32 = 0;

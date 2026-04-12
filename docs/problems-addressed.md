@@ -6,6 +6,12 @@ This document describes specific practitioner pain points in current WebGPU
 stacks and how Doe addresses them. Each section names the problem, explains
 what incumbent stacks (Dawn, browser WebGPU) do, and describes Doe's approach.
 
+The important framing is competitive, not rhetorical: Dawn is the incumbent.
+Doe is the challenger runtime. The immediate target is not "replace Chromium."
+The immediate target is to win the native, embedded, and package/runtime lanes
+where browser process overhead and general-purpose incumbent layering are most
+expensive.
+
 See also:
 
 - [`thesis.md`](./thesis.md) for project rationale

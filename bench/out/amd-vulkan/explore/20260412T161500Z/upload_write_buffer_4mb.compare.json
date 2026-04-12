@@ -1,0 +1,1233 @@
+{
+  "artifactKind": "compare-report",
+  "comparabilityFailures": [],
+  "comparabilityPolicy": {
+    "mode": "strict",
+    "requireTimingClass": "operation"
+  },
+  "comparabilitySummary": {
+    "nonComparableCount": 0,
+    "workloadCount": 1
+  },
+  "comparisonStatus": "comparable",
+  "generatedAt": "2026-04-12T14:35:27.058790+00:00",
+  "outPath": "bench/out/amd-vulkan/explore/20260412T161500Z/upload_write_buffer_4mb.compare.json",
+  "overall": {
+    "baselineStatsMs": {
+      "count": 7,
+      "maxMs": 0.10246208163265307,
+      "meanMs": 0.08134163848396501,
+      "minMs": 0.07047679591836735,
+      "p10Ms": 0.07047679591836735,
+      "p50Ms": 0.07456038775510204,
+      "p95Ms": 0.09868485714285714,
+      "p99Ms": 0.09868485714285714,
+      "stdevMs": 0.01265450227294664
+    },
+    "comparisonStatsMs": {
+      "count": 7,
+      "maxMs": 0.6264922653061225,
+      "meanMs": 0.6071062478134112,
+      "minMs": 0.589883224489796,
+      "p10Ms": 0.589883224489796,
+      "p50Ms": 0.6057508775510203,
+      "p95Ms": 0.6179914285714285,
+      "p99Ms": 0.6179914285714285,
+      "stdevMs": 0.011299394702157416
+    },
+    "deltaPercent": {
+      "meanPercent": 86.6017457772952,
+      "p10Percent": 88.05241563203897,
+      "p50Percent": 87.6912456063554,
+      "p95Percent": 84.03135503497506,
+      "p99Percent": 84.03135503497506
+    }
+  },
+  "overallWorkloadUnitWall": {
+    "baselineStatsMs": {
+      "count": 7,
+      "maxMs": 1.2780428200494498,
+      "meanMs": 0.9099761830709342,
+      "minMs": 0.6316712603438646,
+      "p10Ms": 0.6316712603438646,
+      "p50Ms": 0.6374477408826351,
+      "p95Ms": 1.2774178409017622,
+      "p99Ms": 1.2774178409017622,
+      "stdevMs": 0.31798732795136075
+    },
+    "comparisonStatsMs": {
+      "count": 7,
+      "maxMs": 1.2766818806994706,
+      "meanMs": 1.273915411438793,
+      "minMs": 1.271006780443713,
+      "p10Ms": 1.271006780443713,
+      "p50Ms": 1.2744767393451184,
+      "p95Ms": 1.27573550096713,
+      "p99Ms": 1.27573550096713,
+      "stdevMs": 0.0018853267534347771
+    },
+    "deltaPercent": {
+      "meanPercent": 28.568555266696745,
+      "p10Percent": 50.30150349604383,
+      "p50Percent": 49.98357198655634,
+      "p95Percent": -0.13187215793217377,
+      "p99Percent": -0.13187215793217377
+    }
+  },
+  "participants": {
+    "left": {
+      "executorId": "doe",
+      "hostIdentity": {
+        "adapter": {
+          "architecture": "",
+          "description": "",
+          "device": "",
+          "vendor": "amd"
+        },
+        "api": "vulkan",
+        "arch": "x86_64",
+        "driver": "24.0.0",
+        "hostname": "128",
+        "kernel": "7.0.0-10-generic",
+        "os": "linux"
+      },
+      "product": "doe",
+      "runtimeIdentity": {
+        "binaryPath": "/usr/bin/env",
+        "binarySha256": "9b11a2d9509fe3c7a88b3dc18e794a5fb4756758eb9bce157897f63a27c55bab",
+        "executionBackend": "doe_vulkan",
+        "packageLockHash": "",
+        "packageName": "",
+        "packageVersion": "",
+        "providerId": "",
+        "providerName": "",
+        "runtimeHost": "native"
+      }
+    },
+    "right": {
+      "executorId": "dawn_delegate",
+      "hostIdentity": {
+        "adapter": {
+          "architecture": "",
+          "description": "",
+          "device": "",
+          "vendor": "amd"
+        },
+        "api": "vulkan",
+        "arch": "x86_64",
+        "driver": "24.0.0",
+        "hostname": "128",
+        "kernel": "7.0.0-10-generic",
+        "os": "linux"
+      },
+      "product": "dawn_delegate",
+      "runtimeIdentity": {
+        "binaryPath": "/usr/bin/env",
+        "binarySha256": "9b11a2d9509fe3c7a88b3dc18e794a5fb4756758eb9bce157897f63a27c55bab",
+        "executionBackend": "dawn_delegate",
+        "packageLockHash": "",
+        "packageName": "",
+        "packageVersion": "",
+        "providerId": "",
+        "providerName": "",
+        "runtimeHost": "native"
+      }
+    }
+  },
+  "primaryMetric": "measured_ms",
+  "runReceiptPaths": [
+    "bench/out/amd-vulkan/explore/20260412T161500Z/runtime-comparisons.amd.vulkan.explore/run-artifacts/doe/doe-upload_write_buffer_4mb-20260412T161500Z.run.json",
+    "bench/out/amd-vulkan/explore/20260412T161500Z/runtime-comparisons.amd.vulkan.explore/run-artifacts/dawn_delegate/dawn_delegate-upload_write_buffer_4mb-20260412T161500Z.run.json"
+  ],
+  "schemaVersion": 1,
+  "workloadManifest": {
+    "freshnessReason": "manifest differs from generated lane amd_vulkan in backend workload catalog",
+    "generatedAt": "2026-04-11T19:05:45.792861+00:00",
+    "generatorId": "bench.tools.generate_backend_workloads:materialize_lane",
+    "generatorInputHash": "2797ebb1e9bc9aa3580d8cb51d5e0a4bfa9cc94f48ed6570b3b1bf706a15ae87",
+    "inputFreshness": "stale",
+    "ownership": "generated",
+    "path": "bench/workloads/workloads.amd.vulkan.json",
+    "sha256": "503f82bac9b37fdb711630c384c7e7e102b3972ce3150b95f68abd979c4f7261"
+  },
+  "workloads": [
+    {
+      "baselineStatsMs": {
+        "count": 7,
+        "maxMs": 0.10246208163265307,
+        "meanMs": 0.08134163848396501,
+        "minMs": 0.07047679591836735,
+        "p10Ms": 0.07047679591836735,
+        "p50Ms": 0.07456038775510204,
+        "p95Ms": 0.09868485714285714,
+        "p99Ms": 0.09868485714285714,
+        "stdevMs": 0.01265450227294664
+      },
+      "benchmarkClass": "comparable",
+      "claimEligible": true,
+      "comparability": {
+        "advisoryFailedObligations": [],
+        "baselineCommandRepeat": 50,
+        "baselineExecutionErrorSampleCount": 0,
+        "baselineExecutionShapes": [
+          {
+            "executionDispatchCount": 0,
+            "executionRowCount": 50,
+            "executionSuccessCount": 50
+          }
+        ],
+        "baselineNormalizedExecutionShapes": [
+          {
+            "executionDispatchCount": 0,
+            "executionRowCount": 1,
+            "executionSuccessCount": 1
+          }
+        ],
+        "baselineQueueSyncModes": [
+          "deferred"
+        ],
+        "baselineResourceProbeAvailableCount": 0,
+        "baselineResourceSampleMedian": 2,
+        "baselineResourceSamplingTruncatedCount": 0,
+        "baselineTimingClass": "operation",
+        "baselineTimingSelectionPolicies": [
+          "upload-workload-total-preferred"
+        ],
+        "baselineTimingSources": [
+          "doe-execution-workload-total-ns+ignore-first-ops"
+        ],
+        "baselineTraceMetaSources": [
+          "doe-execution-workload-total-ns"
+        ],
+        "blockingFailedObligations": [],
+        "comparable": true,
+        "comparisonCommandRepeat": 50,
+        "comparisonExecutionErrorSampleCount": 0,
+        "comparisonExecutionShapes": [
+          {
+            "executionDispatchCount": 0,
+            "executionRowCount": 50,
+            "executionSuccessCount": 50
+          }
+        ],
+        "comparisonNormalizedExecutionShapes": [
+          {
+            "executionDispatchCount": 0,
+            "executionRowCount": 1,
+            "executionSuccessCount": 1
+          }
+        ],
+        "comparisonQueueSyncModes": [
+          "deferred"
+        ],
+        "comparisonResourceProbeAvailableCount": 0,
+        "comparisonResourceSampleMedian": 2,
+        "comparisonResourceSamplingTruncatedCount": 0,
+        "comparisonTimingClass": "operation",
+        "comparisonTimingSelectionPolicies": [
+          "upload-workload-total-preferred"
+        ],
+        "comparisonTimingSources": [
+          "doe-execution-workload-total-ns+ignore-first-ops"
+        ],
+        "comparisonTraceMetaSources": [
+          "doe-execution-workload-total-ns"
+        ],
+        "obligationSchemaVersion": 2,
+        "obligations": [
+          {
+            "applicable": true,
+            "blocking": true,
+            "details": {
+              "workloadComparable": true
+            },
+            "id": "workload_marked_comparable",
+            "passes": true
+          },
+          {
+            "applicable": true,
+            "blocking": true,
+            "details": {
+              "baselineSampleCount": 7
+            },
+            "id": "left_samples_present",
+            "passes": true
+          },
+          {
+            "applicable": true,
+            "blocking": true,
+            "details": {
+              "comparisonSampleCount": 7
+            },
+            "id": "right_samples_present",
+            "passes": true
+          },
+          {
+            "applicable": true,
+            "blocking": true,
+            "details": {
+              "baselineTimingClasses": [
+                "operation"
+              ]
+            },
+            "id": "left_single_timing_class",
+            "passes": true
+          },
+          {
+            "applicable": true,
+            "blocking": true,
+            "details": {
+              "comparisonTimingClasses": [
+                "operation"
+              ]
+            },
+            "id": "right_single_timing_class",
+            "passes": true
+          },
+          {
+            "applicable": true,
+            "blocking": true,
+            "details": {
+              "baselineTimingClass": "operation",
+              "requiredTimingClass": "operation"
+            },
+            "id": "left_required_timing_class",
+            "passes": true
+          },
+          {
+            "applicable": true,
+            "blocking": true,
+            "details": {
+              "comparisonTimingClass": "operation",
+              "requiredTimingClass": "operation"
+            },
+            "id": "right_required_timing_class",
+            "passes": true
+          },
+          {
+            "applicable": true,
+            "blocking": true,
+            "details": {
+              "baselineTimingClass": "operation",
+              "comparisonTimingClass": "operation"
+            },
+            "id": "baseline_comparison_timing_class_match",
+            "passes": true
+          },
+          {
+            "applicable": true,
+            "blocking": true,
+            "details": {
+              "baselineSelectedSources": [
+                "doe-execution-workload-total-ns"
+              ],
+              "baselineTraceMetaSources": [
+                "doe-execution-workload-total-ns"
+              ],
+              "comparisonSelectedSources": [
+                "doe-execution-workload-total-ns"
+              ],
+              "comparisonTraceMetaSources": [
+                "doe-execution-workload-total-ns"
+              ]
+            },
+            "id": "baseline_comparison_trace_meta_source_match",
+            "passes": true
+          },
+          {
+            "applicable": true,
+            "blocking": true,
+            "details": {
+              "baselineTimingSelectionPolicies": [
+                "upload-workload-total-preferred"
+              ],
+              "comparisonTimingSelectionPolicies": [
+                "upload-workload-total-preferred"
+              ]
+            },
+            "id": "baseline_comparison_timing_selection_policy_match",
+            "passes": true
+          },
+          {
+            "applicable": true,
+            "blocking": true,
+            "details": {
+              "baselineQueueSyncModes": [
+                "deferred"
+              ],
+              "comparisonQueueSyncModes": [
+                "deferred"
+              ]
+            },
+            "id": "baseline_comparison_queue_sync_mode_match",
+            "passes": true
+          },
+          {
+            "applicable": false,
+            "blocking": true,
+            "details": {
+              "baselineExecutionBackends": [
+                "doe_vulkan"
+              ],
+              "baselineMedianSubmitScopeFractions": {
+                "addonCommandReplay": null,
+                "addonFlush": null,
+                "queueWait": null
+              },
+              "baselineSubmitScopeSampleCount": 0,
+              "comparabilityMode": "strict",
+              "comparisonExecutionBackends": [
+                "dawn_delegate"
+              ],
+              "comparisonMedianSubmitScopeFractions": {
+                "addonCommandReplay": null,
+                "addonFlush": null,
+                "queueWait": null
+              },
+              "comparisonSubmitScopeSampleCount": 0,
+              "isDawnVsDoe": true,
+              "phaseAsymmetryThreshold": 0.1,
+              "submitScopeMismatchCount": 0,
+              "submitScopeMismatches": [],
+              "submitScopeSampleCounts": {
+                "addonCommandReplay": {
+                  "baseline": 0,
+                  "comparison": 0
+                },
+                "addonFlush": {
+                  "baseline": 0,
+                  "comparison": 0
+                },
+                "queueWait": {
+                  "baseline": 0,
+                  "comparison": 0
+                }
+              }
+            },
+            "id": "baseline_comparison_submit_scope_match",
+            "passes": true
+          },
+          {
+            "applicable": true,
+            "blocking": true,
+            "details": {
+              "baselineMedianPhaseFractions": {
+                "encode": 0.0,
+                "setup": 0.9969234391516576,
+                "submitWait": 0.0003788658360414336
+              },
+              "comparisonMedianPhaseFractions": {
+                "encode": 0.0,
+                "setup": 0.9180384110087116,
+                "submitWait": 0.08414107705840711
+              },
+              "phaseAsymmetryThreshold": 0.1,
+              "phaseMismatchCount": 0,
+              "phaseMismatches": [],
+              "phaseSampleCounts": {
+                "encode": {
+                  "baseline": 7,
+                  "comparison": 7
+                },
+                "setup": {
+                  "baseline": 7,
+                  "comparison": 7
+                },
+                "submitWait": {
+                  "baseline": 7,
+                  "comparison": 7
+                }
+              }
+            },
+            "id": "baseline_comparison_timing_phase_match",
+            "passes": true
+          },
+          {
+            "applicable": true,
+            "blocking": true,
+            "details": {
+              "baselineCommandRepeat": 50,
+              "baselineExecutionShapes": [
+                {
+                  "executionDispatchCount": 0,
+                  "executionRowCount": 50,
+                  "executionSuccessCount": 50
+                }
+              ],
+              "baselineNormalizedExecutionShapes": [
+                {
+                  "executionDispatchCount": 0,
+                  "executionRowCount": 1,
+                  "executionSuccessCount": 1
+                }
+              ],
+              "comparisonCommandRepeat": 50,
+              "comparisonExecutionShapes": [
+                {
+                  "executionDispatchCount": 0,
+                  "executionRowCount": 50,
+                  "executionSuccessCount": 50
+                }
+              ],
+              "comparisonNormalizedExecutionShapes": [
+                {
+                  "executionDispatchCount": 0,
+                  "executionRowCount": 1,
+                  "executionSuccessCount": 1
+                }
+              ],
+              "comparisonReason": "",
+              "dispatchShapeDomain": true,
+              "workloadDomain": "upload"
+            },
+            "id": "baseline_comparison_execution_shape_match",
+            "passes": true
+          },
+          {
+            "applicable": true,
+            "blocking": true,
+            "details": {
+              "comparabilityMode": "strict",
+              "isDawnVsDoe": true,
+              "workloadPathAsymmetry": false,
+              "workloadPathAsymmetryNote": ""
+            },
+            "id": "baseline_comparison_hardware_path_match",
+            "passes": true
+          },
+          {
+            "applicable": false,
+            "blocking": true,
+            "details": {
+              "baselineExecutionBackends": [
+                "doe_vulkan"
+              ],
+              "commandsPath": "examples/upload_4mb_commands.json",
+              "comparabilityMode": "strict",
+              "comparisonExecutionBackends": [
+                "dawn_delegate"
+              ],
+              "isDawnVsDoe": true,
+              "kernelDispatchCount": 0,
+              "kernelDispatchKernels": [],
+              "kernelRoot": "/home/x/deco/doe/bench/kernels",
+              "resolvedCommandsPath": "/home/x/deco/doe/examples/upload_4mb_commands.json",
+              "workloadApi": "vulkan"
+            },
+            "id": "baseline_comparison_explicit_native_shader_artifact_match",
+            "passes": true
+          },
+          {
+            "applicable": true,
+            "blocking": true,
+            "details": {
+              "invalidCanonicalSources": []
+            },
+            "id": "baseline_native_operation_timing_for_webgpu_ffi",
+            "passes": true
+          },
+          {
+            "applicable": true,
+            "blocking": true,
+            "details": {
+              "violationCount": 0
+            },
+            "id": "baseline_upload_ignore_first_scope_consistent",
+            "passes": true
+          },
+          {
+            "applicable": true,
+            "blocking": true,
+            "details": {
+              "violationCount": 0
+            },
+            "id": "comparison_upload_ignore_first_scope_consistent",
+            "passes": true
+          },
+          {
+            "applicable": true,
+            "blocking": true,
+            "details": {
+              "baselineUploadUsages": [
+                "copy-dst"
+              ],
+              "comparisonUploadUsages": [
+                "copy-dst"
+              ]
+            },
+            "id": "baseline_comparison_upload_buffer_usage_match",
+            "passes": true
+          },
+          {
+            "applicable": true,
+            "blocking": true,
+            "details": {
+              "baselineUploadSubmitCadences": [
+                "1"
+              ],
+              "comparisonUploadSubmitCadences": [
+                "1"
+              ]
+            },
+            "id": "baseline_comparison_upload_submit_cadence_match",
+            "passes": true
+          },
+          {
+            "applicable": true,
+            "blocking": true,
+            "details": {
+              "allowBaselineNoExecution": false,
+              "baselineHasExecutionEvidence": true
+            },
+            "id": "baseline_execution_evidence_present",
+            "passes": true
+          },
+          {
+            "applicable": true,
+            "blocking": true,
+            "details": {
+              "baselineSuccessfulExecution": true
+            },
+            "id": "baseline_successful_execution_present",
+            "passes": true
+          },
+          {
+            "applicable": false,
+            "blocking": true,
+            "details": {
+              "baselineHasUnsupportedOrSkippedEvidence": false,
+              "baselineSuccessfulExecution": true
+            },
+            "id": "baseline_success_or_unsupported_or_skipped",
+            "passes": true
+          },
+          {
+            "applicable": true,
+            "blocking": true,
+            "details": {
+              "baselineExecutionErrorSampleCount": 0,
+              "baselineSampleCount": 7
+            },
+            "id": "baseline_execution_errors_absent",
+            "passes": true
+          },
+          {
+            "applicable": true,
+            "blocking": true,
+            "details": {
+              "comparisonExecutionErrorSampleCount": 0,
+              "comparisonSampleCount": 7
+            },
+            "id": "comparison_execution_errors_absent",
+            "passes": true
+          },
+          {
+            "applicable": false,
+            "blocking": true,
+            "details": {
+              "baselineMedianProcessWallMs": 31.872387044131756,
+              "baselineMedianRatio": 0.11085605021937134,
+              "baselineMedianTracedMs": 0.07456038775510204,
+              "baselineMedianWallMs": 0.6374477408826351,
+              "comparisonMedianProcessWallMs": 63.72383696725592,
+              "comparisonMedianRatio": 0.47522101801466365,
+              "comparisonMedianTracedMs": 0.6057508775510203,
+              "comparisonMedianWallMs": 1.2744767393451184,
+              "minWallMs": 5.0,
+              "minWallRatio": 0.01
+            },
+            "id": "baseline_comparison_timing_plausibility",
+            "passes": true
+          },
+          {
+            "applicable": false,
+            "blocking": true,
+            "details": {
+              "baselineResourceProbeAvailableCount": 0
+            },
+            "id": "baseline_resource_probe_available",
+            "passes": true
+          },
+          {
+            "applicable": false,
+            "blocking": true,
+            "details": {
+              "comparisonResourceProbeAvailableCount": 0
+            },
+            "id": "comparison_resource_probe_available",
+            "passes": true
+          }
+        ],
+        "reasons": [],
+        "requiredTimingClass": "operation",
+        "resourceProbe": "none",
+        "resourceReasons": [],
+        "resourceSampleTargetCount": 0,
+        "workloadPathAsymmetry": false,
+        "workloadPathAsymmetryNote": ""
+      },
+      "comparisonStatsMs": {
+        "count": 7,
+        "maxMs": 0.6264922653061225,
+        "meanMs": 0.6071062478134112,
+        "minMs": 0.589883224489796,
+        "p10Ms": 0.589883224489796,
+        "p50Ms": 0.6057508775510203,
+        "p95Ms": 0.6179914285714285,
+        "p99Ms": 0.6179914285714285,
+        "stdevMs": 0.011299394702157416
+      },
+      "deltaPercent": {
+        "meanPercent": 86.6017457772952,
+        "p10Percent": 88.05241563203897,
+        "p50Percent": 87.6912456063554,
+        "p95Percent": 84.03135503497506,
+        "p99Percent": 84.03135503497506
+      },
+      "description": "Single upload command aligned with Dawn BufferUploadPerf WriteBuffer 4MB.",
+      "domain": "upload",
+      "id": "upload_write_buffer_4mb",
+      "name": "buffer-upload 4MB",
+      "normalization": "repeat",
+      "pathAsymmetry": false,
+      "pathAsymmetryNote": "",
+      "primaryMetric": "measured_ms",
+      "receipts": {
+        "left": {
+          "path": "bench/out/amd-vulkan/explore/20260412T161500Z/runtime-comparisons.amd.vulkan.explore/run-artifacts/doe/doe-upload_write_buffer_4mb-20260412T161500Z.run.json",
+          "product": "doe",
+          "sha256": "7b49eebdd0749cb2a12f3c9f718a0441ce1f05ab276772f4b1a8dd7cfc89751b"
+        },
+        "right": {
+          "path": "bench/out/amd-vulkan/explore/20260412T161500Z/runtime-comparisons.amd.vulkan.explore/run-artifacts/dawn_delegate/dawn_delegate-upload_write_buffer_4mb-20260412T161500Z.run.json",
+          "product": "dawn_delegate",
+          "sha256": "5a16492e682558fadb37cc2810d3498912f4d403d956c98789fbcf4dccfe92b3"
+        }
+      },
+      "timingInterpretation": {
+        "headlineProcessWall": {
+          "available": true,
+          "baselineStatsMs": {
+            "count": 7,
+            "maxMs": 1.2780428200494498,
+            "meanMs": 0.9099761830709342,
+            "minMs": 0.6316712603438646,
+            "p10Ms": 0.6316712603438646,
+            "p50Ms": 0.6374477408826351,
+            "p95Ms": 1.2774178409017622,
+            "p99Ms": 1.2774178409017622,
+            "stdevMs": 0.31798732795136075
+          },
+          "comparisonStatsMs": {
+            "count": 7,
+            "maxMs": 1.2766818806994706,
+            "meanMs": 1.273915411438793,
+            "minMs": 1.271006780443713,
+            "p10Ms": 1.271006780443713,
+            "p50Ms": 1.2744767393451184,
+            "p95Ms": 1.27573550096713,
+            "p99Ms": 1.27573550096713,
+            "stdevMs": 0.0018853267534347771
+          },
+          "deltaPercent": {
+            "meanPercent": 39.99436854925784,
+            "p10Percent": 101.21333045163583,
+            "p50Percent": 99.93430952950402,
+            "p95Percent": -0.1316984842989699,
+            "p99Percent": -0.1316984842989699
+          },
+          "deprecatedAliasFor": "workloadUnitWall",
+          "metric": "elapsedMs",
+          "note": "Uses timed command process wall normalized by one workload-unit divisor preserved in sample timing provenance. This avoids double-counting commandRepeat and timing-divisor metadata when they describe the same workload unit.",
+          "scope": "timed-command-process-wall",
+          "scopeClass": "workload-unit-wall"
+        },
+        "hostOverheadBreakdown": {
+          "attributedHostOverhead": {
+            "baselineStatsMs": {
+              "count": 7,
+              "maxMs": 0.63609248,
+              "meanMs": 0.4391526457142857,
+              "minMs": 0.35587614,
+              "p10Ms": 0.35587614,
+              "p50Ms": 0.42253568,
+              "p95Ms": 0.45103488,
+              "p99Ms": 0.45103488,
+              "stdevMs": 0.08585044863541362
+            },
+            "comparisonStatsMs": {
+              "count": 7,
+              "maxMs": 0.4597685799999999,
+              "meanMs": 0.43607527142857144,
+              "minMs": 0.41615614000000006,
+              "p10Ms": 0.41615614000000006,
+              "p50Ms": 0.43894565999999996,
+              "p95Ms": 0.4457057,
+              "p99Ms": 0.4457057,
+              "stdevMs": 0.014383107641562804
+            },
+            "deltaPercent": {
+              "meanPercent": -0.7007527600588315,
+              "p10Percent": 16.938477527602736,
+              "p50Percent": 3.8836909583588097,
+              "p95Percent": -1.1815449838380676,
+              "p99Percent": -1.1815449838380676
+            },
+            "note": "Sum of coarse host-overhead buckets recorded outside the selected execution timing. These buckets are once-per-sample phase timers, not per-dispatch probes."
+          },
+          "available": true,
+          "buckets": {
+            "artifactFinalize": {
+              "baselineStatsMs": {
+                "count": 7,
+                "maxMs": 0.00152728,
+                "meanMs": 0.0011826,
+                "minMs": 0.0008848599999999999,
+                "p10Ms": 0.0008848599999999999,
+                "p50Ms": 0.0011776,
+                "p95Ms": 0.00152508,
+                "p99Ms": 0.00152508,
+                "stdevMs": 0.0002543840293729149
+              },
+              "comparisonStatsMs": {
+                "count": 7,
+                "maxMs": 0.0047305,
+                "meanMs": 0.003922037142857143,
+                "minMs": 0.00184908,
+                "p10Ms": 0.00184908,
+                "p50Ms": 0.00449866,
+                "p95Ms": 0.00464634,
+                "p99Ms": 0.00464634,
+                "stdevMs": 0.001080433410782309
+              },
+              "deltaPercent": {
+                "meanPercent": 231.64528520692906,
+                "p10Percent": 108.96865040797414,
+                "p50Percent": 282.01936141304344,
+                "p95Percent": 204.66205051538276,
+                "p99Percent": 204.66205051538276
+              },
+              "note": "Post-execution artifact writing/finalization outside the selected execution timing.",
+              "traceMetaField": "hostArtifactFinalizeTotalNs"
+            },
+            "commandOrchestration": {
+              "baselineStatsMs": {
+                "count": 7,
+                "maxMs": 0.00026924,
+                "meanMs": 0.0002406857142857143,
+                "minMs": 0.000211,
+                "p10Ms": 0.000211,
+                "p50Ms": 0.00023826,
+                "p95Ms": 0.00026692,
+                "p99Ms": 0.00026692,
+                "stdevMs": 2.3185144786597963e-05
+              },
+              "comparisonStatsMs": {
+                "count": 7,
+                "maxMs": 0.00523226,
+                "meanMs": 0.00357798,
+                "minMs": 0.0013961599999999998,
+                "p10Ms": 0.0013961599999999998,
+                "p50Ms": 0.00460012,
+                "p95Ms": 0.00519022,
+                "p99Ms": 0.00519022,
+                "stdevMs": 0.00165426147116211
+              },
+              "deltaPercent": {
+                "meanPercent": 1386.5776353276353,
+                "p10Percent": 561.6872037914691,
+                "p50Percent": 1830.7143456727943,
+                "p95Percent": 1844.485239022928,
+                "p99Percent": 1844.485239022928
+              },
+              "note": "Command-loop bookkeeping outside traced execution phase timing.",
+              "traceMetaField": "hostCommandOrchestrationTotalNs"
+            },
+            "executorInit": {
+              "baselineStatsMs": {
+                "count": 7,
+                "maxMs": 0.00359196,
+                "meanMs": 0.0026746114285714287,
+                "minMs": 0.00197352,
+                "p10Ms": 0.00197352,
+                "p50Ms": 0.0023829,
+                "p95Ms": 0.00342546,
+                "p99Ms": 0.00342546,
+                "stdevMs": 0.0006323699223765554
+              },
+              "comparisonStatsMs": {
+                "count": 7,
+                "maxMs": 0.43086082,
+                "meanMs": 0.40587351714285713,
+                "minMs": 0.37932172000000003,
+                "p10Ms": 0.37932172000000003,
+                "p50Ms": 0.40454886,
+                "p95Ms": 0.42053818,
+                "p99Ms": 0.42053818,
+                "stdevMs": 0.016876400186537497
+              },
+              "deltaPercent": {
+                "meanPercent": 15075.046094813237,
+                "p10Percent": 19120.566297782643,
+                "p50Percent": 16877.164799194263,
+                "p95Percent": 12176.838147285327,
+                "p99Percent": 12176.838147285327
+              },
+              "note": "Executor/device/backend initialization outside the selected execution timing.",
+              "traceMetaField": "hostExecutorInitTotalNs"
+            },
+            "inputParse": {
+              "baselineStatsMs": {
+                "count": 7,
+                "maxMs": 0.0016469,
+                "meanMs": 0.0008845742857142857,
+                "minMs": 0.00061496,
+                "p10Ms": 0.00061496,
+                "p50Ms": 0.00080972,
+                "p95Ms": 0.00088388,
+                "p99Ms": 0.00088388,
+                "stdevMs": 0.00032555658305023863
+              },
+              "comparisonStatsMs": {
+                "count": 7,
+                "maxMs": 0.0016164600000000001,
+                "meanMs": 0.0008848742857142857,
+                "minMs": 0.00069814,
+                "p10Ms": 0.00069814,
+                "p50Ms": 0.0007457999999999999,
+                "p95Ms": 0.0009191199999999999,
+                "p99Ms": 0.0009191199999999999,
+                "stdevMs": 0.00030642663288098107
+              },
+              "deltaPercent": {
+                "meanPercent": 0.033914619138819546,
+                "p10Percent": 13.52608299726812,
+                "p50Percent": -7.8940868448352575,
+                "p95Percent": 3.9869665565461343,
+                "p99Percent": 3.9869665565461343
+              },
+              "note": "Command/plan parsing and input decoding before selected execution timing begins.",
+              "traceMetaField": "hostInputParseTotalNs"
+            },
+            "inputRead": {
+              "baselineStatsMs": {
+                "count": 7,
+                "maxMs": 0.00103676,
+                "meanMs": 0.0005715371428571429,
+                "minMs": 0.00041098,
+                "p10Ms": 0.00041098,
+                "p50Ms": 0.00050754,
+                "p95Ms": 0.00059092,
+                "p99Ms": 0.00059092,
+                "stdevMs": 0.00020085270720564545
+              },
+              "comparisonStatsMs": {
+                "count": 7,
+                "maxMs": 0.0013044600000000001,
+                "meanMs": 0.0005873885714285714,
+                "minMs": 0.00044966,
+                "p10Ms": 0.00044966,
+                "p50Ms": 0.00046968000000000004,
+                "p95Ms": 0.00048672,
+                "p99Ms": 0.00048672,
+                "stdevMs": 0.0002929535354395482
+              },
+              "deltaPercent": {
+                "meanPercent": 2.773473040122365,
+                "p10Percent": 9.41165020195629,
+                "p50Percent": -7.45951058044686,
+                "p95Percent": -17.633520611927167,
+                "p99Percent": -17.633520611927167
+              },
+              "note": "Input/config file reads before selected execution timing begins.",
+              "traceMetaField": "hostInputReadTotalNs"
+            },
+            "kernelPrewarm": {
+              "baselineStatsMs": {
+                "count": 7,
+                "maxMs": 7.82e-06,
+                "meanMs": 6.094285714285714e-06,
+                "minMs": 4.8e-06,
+                "p10Ms": 4.8e-06,
+                "p50Ms": 5.8e-06,
+                "p95Ms": 6.82e-06,
+                "p99Ms": 6.82e-06,
+                "stdevMs": 9.060882508714848e-07
+              },
+              "comparisonStatsMs": {
+                "count": 7,
+                "maxMs": 4.2000000000000004e-06,
+                "meanMs": 2.3742857142857143e-06,
+                "minMs": 1.6000000000000001e-06,
+                "p10Ms": 1.6000000000000001e-06,
+                "p50Ms": 2.2e-06,
+                "p95Ms": 2.4e-06,
+                "p99Ms": 2.4e-06,
+                "stdevMs": 7.808211271815469e-07
+              },
+              "deltaPercent": {
+                "meanPercent": -61.04078762306611,
+                "p10Percent": -66.66666666666666,
+                "p50Percent": -62.06896551724138,
+                "p95Percent": -64.80938416422288,
+                "p99Percent": -64.80938416422288
+              },
+              "note": "Kernel/pipeline prewarm work outside the selected execution timing.",
+              "traceMetaField": "hostKernelPrewarmTotalNs"
+            },
+            "uploadPrewarm": {
+              "baselineStatsMs": {
+                "count": 7,
+                "maxMs": 0.62945408,
+                "meanMs": 0.43352996857142856,
+                "minMs": 0.35136786000000003,
+                "p10Ms": 0.35136786000000003,
+                "p50Ms": 0.41792662,
+                "p95Ms": 0.44495674,
+                "p99Ms": 0.44495674,
+                "stdevMs": 0.08526687311911324
+              },
+              "comparisonStatsMs": {
+                "count": 7,
+                "maxMs": 0.02605206,
+                "meanMs": 0.021166617142857145,
+                "minMs": 0.016521920000000002,
+                "p10Ms": 0.016521920000000002,
+                "p50Ms": 0.01860366,
+                "p95Ms": 0.025442140000000002,
+                "p99Ms": 0.025442140000000002,
+                "stdevMs": 0.003927565133877347
+              },
+              "deltaPercent": {
+                "meanPercent": -95.11761154307152,
+                "p10Percent": -95.29782832157728,
+                "p50Percent": -95.54858218890196,
+                "p95Percent": -94.28210931246934,
+                "p99Percent": -94.28210931246934
+              },
+              "note": "Doe upload-path prewarm work outside the selected execution timing.",
+              "traceMetaField": "hostUploadPrewarmTotalNs"
+            },
+            "workloadPrepare": {
+              "baselineStatsMs": {
+                "count": 7,
+                "maxMs": 0.00010282,
+                "meanMs": 6.257428571428571e-05,
+                "minMs": 4.608e-05,
+                "p10Ms": 4.608e-05,
+                "p50Ms": 5.9319999999999994e-05,
+                "p95Ms": 7.014e-05,
+                "p99Ms": 7.014e-05,
+                "stdevMs": 1.8209773558757517e-05
+              },
+              "comparisonStatsMs": {
+                "count": 7,
+                "maxMs": 0.00011804,
+                "meanMs": 6.048285714285714e-05,
+                "minMs": 4.3480000000000004e-05,
+                "p10Ms": 4.3480000000000004e-05,
+                "p50Ms": 4.9880000000000004e-05,
+                "p95Ms": 6.152000000000001e-05,
+                "p99Ms": 6.152000000000001e-05,
+                "stdevMs": 2.4061336926569095e-05
+              },
+              "deltaPercent": {
+                "meanPercent": -3.3423131363864655,
+                "p10Percent": -5.642361111111105,
+                "p50Percent": -15.91368846931893,
+                "p95Percent": -12.289706301682346,
+                "p99Percent": -12.289706301682346
+              },
+              "note": "Pre-execution workload preparation such as dispatch-context or buffer-spec setup.",
+              "traceMetaField": "hostWorkloadPrepareTotalNs"
+            }
+          },
+          "metric": "traceMeta.host*TotalNs",
+          "note": "Coarse host-overhead buckets are recorded around existing once-per-sample phase boundaries so they explain workloadUnitWall minus selected timing without inserting hot-path profiling probes.",
+          "scope": "selected-timing-gap-breakdown",
+          "scopeClass": "host-overhead-diagnostic",
+          "selectedGap": {
+            "baselineStatsMs": {
+              "count": 7,
+              "maxMs": 1.1964214939629867,
+              "meanMs": 0.8286345445869693,
+              "minMs": 0.5599059311241745,
+              "p10Ms": 0.5599059311241745,
+              "p50Ms": 0.566782802107125,
+              "p95Ms": 1.1793579629065927,
+              "p99Ms": 1.1793579629065927,
+              "stdevMs": 0.30705137743939187
+            },
+            "comparisonStatsMs": {
+              "count": 7,
+              "maxMs": 0.681123555953917,
+              "meanMs": 0.6668091636253818,
+              "minMs": 0.6457247944346742,
+              "p10Ms": 0.6457247944346742,
+              "p50Ms": 0.668921021603762,
+              "p95Ms": 0.6792030031484503,
+              "p99Ms": 0.6792030031484503,
+              "stdevMs": 0.011815039202746219
+            },
+            "deltaPercent": {
+              "meanPercent": -19.529161802233208,
+              "p10Percent": 15.327371713707926,
+              "p50Percent": 18.020698425731773,
+              "p95Percent": -42.40908829118201,
+              "p99Percent": -42.40908829118201
+            },
+            "note": "The normalized difference between workloadUnitWall and selected timing for each timed sample."
+          },
+          "unattributedGapRemainder": {
+            "baselineStatsMs": {
+              "count": 7,
+              "maxMs": 0.7568222829065927,
+              "meanMs": 0.3894818988726835,
+              "minMs": 0.1088710511241745,
+              "p10Ms": 0.1088710511241745,
+              "p50Ms": 0.20531832442549725,
+              "p95Ms": 0.7394284383425238,
+              "p99Ms": 0.7394284383425238,
+              "stdevMs": 0.2642716380820901
+            },
+            "comparisonStatsMs": {
+              "count": 7,
+              "maxMs": 0.2574306631484502,
+              "meanMs": 0.23073389219681045,
+              "minMs": 0.2010838744346743,
+              "p10Ms": 0.2010838744346743,
+              "p50Ms": 0.2277053242430776,
+              "p95Ms": 0.25558599595391707,
+              "p99Ms": 0.25558599595391707,
+              "stdevMs": 0.019890803295611884
+            },
+            "deltaPercent": {
+              "meanPercent": -40.75876366407613,
+              "p10Percent": 84.69912098609673,
+              "p50Percent": 10.903556650494583,
+              "p95Percent": -65.43465429503503,
+              "p99Percent": -65.43465429503503
+            },
+            "note": "Selected-gap remainder after subtracting the coarse host-overhead buckets. This typically captures trace-meta emission, process teardown, and any uninstrumented sample overhead."
+          }
+        },
+        "selectedTiming": {
+          "baselineClasses": [
+            "operation"
+          ],
+          "baselineSources": [
+            "doe-execution-workload-total-ns+ignore-first-ops"
+          ],
+          "canonicalSources": [
+            "doe-execution-workload-total-ns"
+          ],
+          "comparisonClasses": [
+            "operation"
+          ],
+          "comparisonSources": [
+            "doe-execution-workload-total-ns+ignore-first-ops"
+          ],
+          "isNarrowHotPath": false,
+          "note": "Selected timing measures the comparable operation scope. workloadUnitWall adds the full timed workload-unit wall interval for the command the harness ran.",
+          "scope": "operation-total",
+          "scopeClass": "operation-total",
+          "timingClasses": [
+            "operation"
+          ]
+        },
+        "workloadUnitWall": {
+          "available": true,
+          "baselineStatsMs": {
+            "count": 7,
+            "maxMs": 1.2780428200494498,
+            "meanMs": 0.9099761830709342,
+            "minMs": 0.6316712603438646,
+            "p10Ms": 0.6316712603438646,
+            "p50Ms": 0.6374477408826351,
+            "p95Ms": 1.2774178409017622,
+            "p99Ms": 1.2774178409017622,
+            "stdevMs": 0.31798732795136075
+          },
+          "comparisonStatsMs": {
+            "count": 7,
+            "maxMs": 1.2766818806994706,
+            "meanMs": 1.273915411438793,
+            "minMs": 1.271006780443713,
+            "p10Ms": 1.271006780443713,
+            "p50Ms": 1.2744767393451184,
+            "p95Ms": 1.27573550096713,
+            "p99Ms": 1.27573550096713,
+            "stdevMs": 0.0018853267534347771
+          },
+          "deltaPercent": {
+            "meanPercent": 39.99436854925784,
+            "p10Percent": 101.21333045163583,
+            "p50Percent": 99.93430952950402,
+            "p95Percent": -0.1316984842989699,
+            "p99Percent": -0.1316984842989699
+          },
+          "metric": "elapsedMs",
+          "note": "Uses timed command process wall normalized by one workload-unit divisor preserved in sample timing provenance. This avoids double-counting commandRepeat and timing-divisor metadata when they describe the same workload unit.",
+          "scope": "timed-command-process-wall",
+          "scopeClass": "workload-unit-wall"
+        }
+      },
+      "workloadComparable": true,
+      "workloadMatching": {
+        "baselineManifest": {
+          "freshnessReason": "manifest differs from generated lane amd_vulkan in backend workload catalog",
+          "generatedAt": "2026-04-11T19:05:45.792861+00:00",
+          "generatorId": "bench.tools.generate_backend_workloads:materialize_lane",
+          "generatorInputHash": "2797ebb1e9bc9aa3580d8cb51d5e0a4bfa9cc94f48ed6570b3b1bf706a15ae87",
+          "inputFreshness": "stale",
+          "ownership": "generated",
+          "path": "bench/workloads/workloads.amd.vulkan.json",
+          "sha256": "503f82bac9b37fdb711630c384c7e7e102b3972ce3150b95f68abd979c4f7261"
+        },
+        "comparisonManifest": {
+          "freshnessReason": "manifest differs from generated lane amd_vulkan in backend workload catalog",
+          "generatedAt": "2026-04-11T19:05:45.792861+00:00",
+          "generatorId": "bench.tools.generate_backend_workloads:materialize_lane",
+          "generatorInputHash": "2797ebb1e9bc9aa3580d8cb51d5e0a4bfa9cc94f48ed6570b3b1bf706a15ae87",
+          "inputFreshness": "stale",
+          "ownership": "generated",
+          "path": "bench/workloads/workloads.amd.vulkan.json",
+          "sha256": "503f82bac9b37fdb711630c384c7e7e102b3972ce3150b95f68abd979c4f7261"
+        },
+        "matched": true,
+        "reasons": []
+      },
+      "workloadUnitWall": {
+        "baselineStatsMs": {
+          "count": 7,
+          "maxMs": 1.2780428200494498,
+          "meanMs": 0.9099761830709342,
+          "minMs": 0.6316712603438646,
+          "p10Ms": 0.6316712603438646,
+          "p50Ms": 0.6374477408826351,
+          "p95Ms": 1.2774178409017622,
+          "p99Ms": 1.2774178409017622,
+          "stdevMs": 0.31798732795136075
+        },
+        "comparisonStatsMs": {
+          "count": 7,
+          "maxMs": 1.2766818806994706,
+          "meanMs": 1.273915411438793,
+          "minMs": 1.271006780443713,
+          "p10Ms": 1.271006780443713,
+          "p50Ms": 1.2744767393451184,
+          "p95Ms": 1.27573550096713,
+          "p99Ms": 1.27573550096713,
+          "stdevMs": 0.0018853267534347771
+        },
+        "deltaPercent": {
+          "meanPercent": 28.568555266696745,
+          "p10Percent": 50.30150349604383,
+          "p50Percent": 49.98357198655634,
+          "p95Percent": -0.13187215793217377,
+          "p99Percent": -0.13187215793217377
+        }
+      }
+    }
+  ]
+}
