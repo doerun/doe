@@ -83,6 +83,14 @@ button { cursor: pointer; }
   color: #edf8f1;
   line-height: 1.6;
 }
+.fps-graph {
+  display: block;
+  width: 100%;
+  height: 32px;
+  margin-top: 6px;
+  border-radius: 6px;
+  background: rgba(12, 20, 16, 0.72);
+}
 .stage {
   position: relative;
   border-radius: 24px;
@@ -91,7 +99,7 @@ button { cursor: pointer; }
   background: #020404;
   min-height: 68vh;
 }
-canvas {
+.stage > canvas {
   display: block;
   width: 100%;
   height: 68vh;
@@ -114,7 +122,7 @@ canvas {
 }
 @media (max-width: 640px) {
   .grid { grid-template-columns: 1fr; }
-  canvas { height: 58vh; }
+  .stage > canvas { height: 58vh; }
 }
 </style>
 </head>
@@ -171,6 +179,7 @@ canvas {
     <div class="panel">
       <div class="label">Frame</div>
       <div class="value" id="frame">-- ms · -- fps</div>
+      <canvas class="fps-graph" id="fps-graph"></canvas>
     </div>
     <div class="panel">
       <div class="label">Workload</div>
@@ -251,7 +260,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   p.pos = nextPos;
   p.vel = nextVel;
-  p.color.w = clamp(0.0038 + speed * 0.0042, 0.0038, 0.0095);
+  p.color.w = clamp(0.0016 + speed * 0.0018, 0.0016, 0.0040);
   dstParticles[i] = p;
 }
 `;
@@ -295,7 +304,7 @@ fn vs(@builtin(vertex_index) vertexIndex: u32, @builtin(instance_index) instance
 
   let p = particles[instanceIndex];
   let local = quad[vertexIndex];
-  let size = p.color.w;
+  let size = p.color.w * max(u.pad.x, 0.1);
   let world = p.pos + local * size;
 
   var out: VSOut;
@@ -407,11 +416,14 @@ function hslToRgb(h, s, l) {
   const statusEl = document.getElementById('status');
   const adapterEl = document.getElementById('adapter');
   const frameEl = document.getElementById('frame');
+  const graphCanvas = document.getElementById('fps-graph');
   const workloadEl = document.getElementById('workload');
   const countSelect = document.getElementById('count-select');
   const stepsSelect = document.getElementById('steps-select');
   const restartButton = document.getElementById('restart');
   const canvas = document.getElementById('view');
+  const graphCtx = graphCanvas.getContext('2d');
+  const fpsHistory = [];
 
   let adapter = null;
   let device = null;
@@ -443,6 +455,51 @@ function hslToRgb(h, s, l) {
   let frameCounter = 0;
   let lastFrameTime = performance.now();
 
+  function resizeGraphCanvas() {
+    const dpr = window.devicePixelRatio || 1;
+    const width = Math.max(1, Math.floor(graphCanvas.clientWidth * dpr));
+    const height = Math.max(1, Math.floor(graphCanvas.clientHeight * dpr));
+    if (graphCanvas.width === width && graphCanvas.height === height) return;
+    graphCanvas.width = width;
+    graphCanvas.height = height;
+  }
+
+  function drawFpsGraph() {
+    resizeGraphCanvas();
+    const width = graphCanvas.width;
+    const height = graphCanvas.height;
+    graphCtx.clearRect(0, 0, width, height);
+    graphCtx.fillStyle = 'rgba(11, 19, 15, 0.90)';
+    graphCtx.fillRect(0, 0, width, height);
+    if (fpsHistory.length < 2) return;
+
+    const minFps = Math.max(0, Math.min(...fpsHistory) * 0.96);
+    const maxFps = Math.max(minFps + 1, Math.max(...fpsHistory) * 1.04);
+    const range = maxFps - minFps;
+
+    graphCtx.beginPath();
+    fpsHistory.forEach((fps, index) => {
+      const x = fpsHistory.length === 1 ? 0 : (index / (fpsHistory.length - 1)) * width;
+      const y = height - 1 - ((fps - minFps) / range) * Math.max(1, height - 2);
+      if (index === 0) {
+        graphCtx.moveTo(x, y);
+      } else {
+        graphCtx.lineTo(x, y);
+      }
+    });
+    graphCtx.lineJoin = 'round';
+    graphCtx.lineCap = 'round';
+    graphCtx.lineWidth = Math.max(1.5, (window.devicePixelRatio || 1) * 1.1);
+    graphCtx.strokeStyle = '#a9dbc0';
+    graphCtx.stroke();
+  }
+
+  function recordFrameSample(dtMs) {
+    fpsHistory.push(1000 / Math.max(dtMs, 0.001));
+    if (fpsHistory.length > 120) fpsHistory.shift();
+    drawFpsGraph();
+  }
+
   function updateWorkloadLabel() {
     workloadEl.textContent = `${particleCount.toLocaleString()} particles · ${stepsPerFrame} compute steps/frame · persistent trails`;
   }
@@ -467,7 +524,7 @@ function hslToRgb(h, s, l) {
       data[base + 4] = r;
       data[base + 5] = g;
       data[base + 6] = b;
-      data[base + 7] = 0.0038 + t * 0.0014;
+      data[base + 7] = 0.0016 + t * 0.0006;
     }
     return data;
   }
@@ -585,6 +642,7 @@ function hslToRgb(h, s, l) {
     canvas.height = height;
     context.configure({ device, format, alphaMode: 'opaque' });
     createTrailTargets();
+    drawFpsGraph();
   }
 
   function resetSimulation() {
@@ -708,6 +766,7 @@ function hslToRgb(h, s, l) {
     lastFrameTime = now;
     const dt = dtMs / 1000;
     const aspect = canvas.width > 0 && canvas.height > 0 ? canvas.width / canvas.height : 1;
+    const resolutionScale = Math.max(0.55, Math.min(1.0, Math.sqrt(900 / Math.max(canvas.height, 1))));
 
     const pulse = pointer.active ? 1.0 : 0.0;
     pointer.force = pointer.force * 0.92 + pulse * 55.0;
@@ -718,7 +777,7 @@ function hslToRgb(h, s, l) {
       pointer.force,
       pointer.x,
       pointer.y,
-      0,
+      resolutionScale,
       0,
     ]);
     device.queue.writeBuffer(simUniformBuffer, 0, uniformData);
@@ -785,6 +844,7 @@ function hslToRgb(h, s, l) {
     frameCounter += 1;
     const fps = 1000 / Math.max(dtMs, 0.001);
     frameEl.textContent = `${dtMs.toFixed(2)} ms · ${fps.toFixed(1)} fps`;
+    recordFrameSample(dtMs);
 
     requestAnimationFrame(frame);
   }
@@ -811,6 +871,7 @@ function hslToRgb(h, s, l) {
   try {
     updateWorkloadLabel();
     await initialize();
+    drawFpsGraph();
     requestAnimationFrame((now) => {
       lastFrameTime = now;
       requestAnimationFrame(frame);

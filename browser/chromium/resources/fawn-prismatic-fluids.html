@@ -81,6 +81,14 @@ button { cursor: pointer; }
   color: #eef8f1;
   line-height: 1.6;
 }
+.fps-graph {
+  display: block;
+  width: 100%;
+  height: 32px;
+  margin-top: 6px;
+  border-radius: 6px;
+  background: rgba(12, 21, 17, 0.72);
+}
 .stage {
   position: relative;
   border-radius: 22px;
@@ -88,7 +96,7 @@ button { cursor: pointer; }
   border: 1px solid rgba(139, 169, 154, 0.18);
   background: #020404;
 }
-canvas {
+.stage > canvas {
   display: block;
   width: 100%;
   height: min(68vh, 760px);
@@ -111,7 +119,7 @@ canvas {
 }
 @media (max-width: 640px) {
   .grid { grid-template-columns: 1fr; }
-  canvas { height: 58vh; }
+  .stage > canvas { height: 58vh; }
 }
 </style>
 </head>
@@ -175,6 +183,7 @@ canvas {
     <div class="panel">
       <div class="label">Frame</div>
       <div class="value" id="frame">-- ms · -- fps</div>
+      <canvas class="fps-graph" id="fps-graph"></canvas>
     </div>
     <div class="panel">
       <div class="label">Solver Load</div>
@@ -555,11 +564,14 @@ fn fs(in: VSOut) -> @location(0) vec4<f32> {
   const statusEl = document.getElementById('status');
   const adapterEl = document.getElementById('adapter');
   const frameEl = document.getElementById('frame');
+  const graphCanvas = document.getElementById('fps-graph');
   const loadEl = document.getElementById('load');
   const gridSelect = document.getElementById('grid-select');
   const pressureSelect = document.getElementById('pressure-select');
   const restartButton = document.getElementById('restart');
   const canvas = document.getElementById('view');
+  const graphCtx = graphCanvas.getContext('2d');
+  const fpsHistory = [];
 
   let device = null;
   let adapter = null;
@@ -594,6 +606,51 @@ fn fs(in: VSOut) -> @location(0) vec4<f32> {
   const pointer = { x: 0.5, y: 0.5, hover: false, down: false, dx: 0.0, dy: 0.0 };
   const simGrid = () => Math.max(96, Math.floor(currentGrid * SIM_DENSITY_SCALE));
 
+  function resizeGraphCanvas() {
+    const dpr = window.devicePixelRatio || 1;
+    const width = Math.max(1, Math.floor(graphCanvas.clientWidth * dpr));
+    const height = Math.max(1, Math.floor(graphCanvas.clientHeight * dpr));
+    if (graphCanvas.width === width && graphCanvas.height === height) return;
+    graphCanvas.width = width;
+    graphCanvas.height = height;
+  }
+
+  function drawFpsGraph() {
+    resizeGraphCanvas();
+    const width = graphCanvas.width;
+    const height = graphCanvas.height;
+    graphCtx.clearRect(0, 0, width, height);
+    graphCtx.fillStyle = 'rgba(10, 19, 15, 0.90)';
+    graphCtx.fillRect(0, 0, width, height);
+    if (fpsHistory.length < 2) return;
+
+    const minFps = Math.max(0, Math.min(...fpsHistory) * 0.96);
+    const maxFps = Math.max(minFps + 1, Math.max(...fpsHistory) * 1.04);
+    const range = maxFps - minFps;
+
+    graphCtx.beginPath();
+    fpsHistory.forEach((fps, index) => {
+      const x = fpsHistory.length === 1 ? 0 : (index / (fpsHistory.length - 1)) * width;
+      const y = height - 1 - ((fps - minFps) / range) * Math.max(1, height - 2);
+      if (index === 0) {
+        graphCtx.moveTo(x, y);
+      } else {
+        graphCtx.lineTo(x, y);
+      }
+    });
+    graphCtx.lineJoin = 'round';
+    graphCtx.lineCap = 'round';
+    graphCtx.lineWidth = Math.max(1.5, (window.devicePixelRatio || 1) * 1.1);
+    graphCtx.strokeStyle = '#b8e0c9';
+    graphCtx.stroke();
+  }
+
+  function recordFrameSample(dtMs) {
+    fpsHistory.push(1000 / Math.max(dtMs, 0.001));
+    if (fpsHistory.length > 120) fpsHistory.shift();
+    drawFpsGraph();
+  }
+
   function updateLoadLabel() {
     const effectiveGrid = simGrid();
     const cells = effectiveGrid * effectiveGrid;
@@ -610,6 +667,7 @@ fn fs(in: VSOut) -> @location(0) vec4<f32> {
     canvas.width = Math.max(1, Math.floor(canvas.clientWidth * dpr));
     canvas.height = Math.max(1, Math.floor(canvas.clientHeight * dpr));
     context.configure({ device, format, alphaMode: 'opaque' });
+    drawFpsGraph();
   }
 
   function seedDye(grid) {
@@ -895,6 +953,7 @@ fn fs(in: VSOut) -> @location(0) vec4<f32> {
 
     device.queue.submit([encoder.finish()]);
     frameEl.textContent = `${dtMs.toFixed(2)} ms · ${(1000 / Math.max(dtMs, 0.001)).toFixed(1)} fps`;
+    recordFrameSample(dtMs);
     requestAnimationFrame(frame);
   }
 
@@ -916,6 +975,7 @@ fn fs(in: VSOut) -> @location(0) vec4<f32> {
 
   try {
     await init();
+    drawFpsGraph();
     requestAnimationFrame((now) => {
       lastFrameTime = now;
       requestAnimationFrame(frame);

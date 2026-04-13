@@ -87,6 +87,19 @@ h1 {
 .status-row { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #555; }
 .dot { width: 5px; height: 5px; border-radius: 50%; background: #4a9; }
 .gpu-info { font-size: 10px; color: #444; font-family: "SF Mono", Menlo, monospace; }
+.frame-info {
+  color: #6b786f;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.fps-graph {
+  display: block;
+  width: min(280px, calc(100vw - 48px));
+  height: 40px;
+  border-radius: 10px;
+  background: rgba(10, 18, 14, 0.58);
+  border: 1px solid rgba(120, 170, 140, 0.12);
+}
 #gpu-overlay {
   position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
   pointer-events: none; z-index: 0;
@@ -134,6 +147,8 @@ h1 {
 <div class="status-bar">
   <div class="status-row"><span class="dot" id="gpu-dot"></span><span id="gpu-status">checking WebGPU...</span></div>
   <div class="gpu-info" id="gpu-info"></div>
+  <div class="gpu-info frame-info" id="frame">-- ms · -- fps</div>
+  <canvas class="fps-graph" id="fps-graph"></canvas>
 </div>
 <script>
 const WGSL_OVERLAY = `
@@ -308,13 +323,63 @@ fn fs(@builtin(position) fc: vec4<f32>) -> @location(0) vec4<f32> {
   const dot = document.getElementById('gpu-dot');
   const status = document.getElementById('gpu-status');
   const info = document.getElementById('gpu-info');
+  const frame = document.getElementById('frame');
+  const fpsGraph = document.getElementById('fps-graph');
+  const fpsGraphCtx = fpsGraph.getContext('2d');
   const overlay = document.getElementById('gpu-overlay');
 
   var device = null, pipeline = null, uniformBuf = null, bindGroup = null, gpuCtx = null;
   var pageStart = performance.now() * 0.001;
+  var lastFrameMs = performance.now();
   var clicks = [];
   var MAX_CLICKS = 4;
   var AMBIENT = 0.45;
+  var fpsHistory = [];
+
+  function resizeGraphCanvas() {
+    var dpr = window.devicePixelRatio || 1;
+    var width = Math.max(1, Math.floor(fpsGraph.clientWidth * dpr));
+    var height = Math.max(1, Math.floor(fpsGraph.clientHeight * dpr));
+    if (fpsGraph.width === width && fpsGraph.height === height) return;
+    fpsGraph.width = width;
+    fpsGraph.height = height;
+  }
+
+  function drawFpsGraph() {
+    resizeGraphCanvas();
+    var width = fpsGraph.width;
+    var height = fpsGraph.height;
+    fpsGraphCtx.clearRect(0, 0, width, height);
+    fpsGraphCtx.fillStyle = 'rgba(10, 18, 14, 0.88)';
+    fpsGraphCtx.fillRect(0, 0, width, height);
+    if (fpsHistory.length < 2) return;
+
+    var minFps = Math.max(0, Math.min.apply(null, fpsHistory) * 0.96);
+    var maxFps = Math.max(minFps + 1, Math.max.apply(null, fpsHistory) * 1.04);
+    var range = maxFps - minFps;
+
+    fpsGraphCtx.beginPath();
+    for (var i = 0; i < fpsHistory.length; i++) {
+      var x = fpsHistory.length === 1 ? 0 : (i / (fpsHistory.length - 1)) * width;
+      var y = height - 1 - ((fpsHistory[i] - minFps) / range) * Math.max(1, height - 2);
+      if (i === 0) {
+        fpsGraphCtx.moveTo(x, y);
+      } else {
+        fpsGraphCtx.lineTo(x, y);
+      }
+    }
+    fpsGraphCtx.lineJoin = 'round';
+    fpsGraphCtx.lineCap = 'round';
+    fpsGraphCtx.lineWidth = Math.max(1.5, (window.devicePixelRatio || 1) * 1.1);
+    fpsGraphCtx.strokeStyle = '#a9dbc0';
+    fpsGraphCtx.stroke();
+  }
+
+  function recordFrameSample(dtMs) {
+    fpsHistory.push(1000 / Math.max(dtMs, 0.001));
+    if (fpsHistory.length > 120) fpsHistory.shift();
+    drawFpsGraph();
+  }
 
   try {
     if (!navigator.gpu) throw new Error('WebGPU not available');
@@ -354,6 +419,7 @@ fn fs(@builtin(position) fc: vec4<f32>) -> @location(0) vec4<f32> {
       layout: pipeline.getBindGroupLayout(0),
       entries: [{ binding: 0, resource: { buffer: uniformBuf } }],
     });
+    drawFpsGraph();
 
     document.body.addEventListener('pointerdown', function(e) {
       var rect = overlay.getBoundingClientRect();
@@ -376,6 +442,9 @@ fn fs(@builtin(position) fc: vec4<f32>) -> @location(0) vec4<f32> {
   }
 
   function renderFrame() {
+    var nowMs = performance.now();
+    var dtMs = Math.min(64, nowMs - lastFrameMs);
+    lastFrameMs = nowMs;
     var dpr = window.devicePixelRatio || 1;
     var w = window.innerWidth * dpr;
     var h = window.innerHeight * dpr;
@@ -385,7 +454,7 @@ fn fs(@builtin(position) fc: vec4<f32>) -> @location(0) vec4<f32> {
       gpuCtx.configure({ device, format, alphaMode: 'premultiplied' });
     }
 
-    var now = performance.now() * 0.001;
+    var now = nowMs * 0.001;
     var elapsed = now - pageStart;
     var phase = AMBIENT;
 
@@ -430,6 +499,8 @@ fn fs(@builtin(position) fc: vec4<f32>) -> @location(0) vec4<f32> {
     pass.draw(3);
     pass.end();
     device.queue.submit([encoder.finish()]);
+    frame.textContent = dtMs.toFixed(2) + ' ms · ' + (1000 / Math.max(dtMs, 0.001)).toFixed(1) + ' fps';
+    recordFrameSample(dtMs);
     requestAnimationFrame(renderFrame);
   }
 })();
