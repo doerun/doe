@@ -27,21 +27,25 @@ What is implemented today:
   unsupported contract without pretending there is a working execution bridge
 - a repo-only session smoke runner that registers the Doe plugin with ORT,
   discovers Doe `OrtEpDevice` instances, appends Doe to session options, and
-  builds/runs a tiny in-memory identity model
+  builds/runs tiny in-memory elementwise models
 - a Doe-owned `OrtEpFactory` implementation with explicit metadata and explicit
   narrow behavior for the still-missing graph-execution bridge
 - a real but intentionally narrow `OrtEpDevice` / `OrtEp` path:
   - `GetSupportedDevices` creates `OrtEpDevice` instances when ORT provides
     hardware devices
   - `CreateEp` creates a real `OrtEp`
-  - `GetCapability` claims one-node ONNX `Identity` graphs
-  - `Compile` installs a tiny compiled compute path for that `Identity` slice
+  - `GetCapability` claims same-shape float32 ONNX-domain `Identity`, `Add`,
+    and `Relu` nodes plus the exact two-node `Add -> Relu` slice
+  - `Compile` installs tiny compiled compute paths for single-node
+    `Identity`/`Add`/`Relu` groups and the exact two-node `Add -> Relu` group
   - the session smoke now proves `Compute()` ran by reading plugin debug
-    counters from the shared library
+    counters from the shared library and checking expected outputs for
+    `Add`, `Relu`, and `Add -> Relu`
 
 What is not implemented yet:
 
-- a general Doe-backed graph execution path beyond the identity-only slice
+ - a general Doe-backed graph execution path beyond the current narrow
+   elementwise slice
 - allocator, stream, external-resource, or custom-op support
 - any promoted benchmark lane in `bench/`
 
@@ -52,13 +56,16 @@ Current behavior is intentionally narrow:
 - when ORT provides hardware devices, Doe creates `OrtEpDevice` instances for
   them
 - `CreateEp` returns a real `OrtEp` instance
-- `GetCapability` claims supported one-node ONNX `Identity` graphs
-- `Compile` creates a real `OrtNodeComputeInfo` that copies fixed-width tensor
-  data for that identity slice
-- the repo-only session smoke proves Doe executed that path via the debug
-  counters in
-  `artifacts/20260413T003832Z/doe-ort-ep-session-smoke.json`
-- anything beyond that identity-only slice still returns explicit unsupported
+- `GetCapability` only claims supported dense same-rank same-shape float32
+  ONNX-domain `Identity`, `Add`, and `Relu` nodes, plus the exact two-node
+  `Add -> Relu` slice
+- `Compile` creates a real `OrtNodeComputeInfo` for those narrow groups
+- `Compute` executes that slice with boring explicit float32 kernels:
+  copy, elementwise add, `Relu`, and fused `Add -> Relu`
+- the repo-only session smoke proves Doe executed the non-trivial slice and
+  matched expected outputs via
+  `artifacts/20260413T151032Z/doe-ort-ep-session-smoke.json`
+- anything beyond that narrow slice still returns explicit unsupported
   behavior rather than pretending a broader graph-execution bridge exists
 
 Build:
@@ -115,12 +122,13 @@ Current session smoke scope:
 - verifies that ORT surfaces Doe `OrtEpDevice` instances after registration
 - appends a Doe `OrtEpDevice` to session options with
   `SessionOptionsAppendExecutionProvider_V2`
-- builds a tiny in-memory identity model via ORT's Model Editor API
-- creates a session and runs the identity model successfully
-- verifies that Doe claimed, compiled, and executed the identity graph by
-  reading plugin debug counters from the loaded shared library
+- builds tiny in-memory `Add`, `Relu`, and `Add -> Relu` models via ORT's
+  Model Editor API
+- creates a session for each case and runs the model successfully
+- verifies expected output values and the Doe claim/compile/compute counter
+  deltas for each case
 - current evidence is
-  `artifacts/20260413T003832Z/doe-ort-ep-session-smoke.json`
+  `artifacts/20260413T151032Z/doe-ort-ep-session-smoke.json`
 
 Compatibility note:
 
@@ -138,5 +146,6 @@ repository and remain under the upstream MIT license in
 `vendor/onnxruntime/LICENSE`.
 
 The next honest milestone is not "benchmark victory." It is extending this from
-an identity-only proof slice into a real Doe-backed graph execution bridge that
-can run non-trivial ORT-assigned work and support a benchmark lane.
+a narrow elementwise proof slice into a broader Doe-backed graph execution
+bridge that can run more non-trivial ORT-assigned work and support a benchmark
+lane.

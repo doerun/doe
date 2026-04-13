@@ -1285,7 +1285,13 @@ int RunSessionSmoke(const CliOptions& options, SessionSmokeReport* report) {
         &case_result);
     report->cases.push_back(std::move(case_result));
     if (!case_ok) {
-      report->failure_reason = "Smoke case '" + spec.case_name + "' failed.";
+      report->failure_reason = "Smoke case '" + spec.case_name + "' failed";
+      if (!report->cases.back().failure_reason.empty()) {
+        report->failure_reason += ": ";
+        report->failure_reason += report->cases.back().failure_reason;
+      } else {
+        report->failure_reason += '.';
+      }
       break;
     }
   }

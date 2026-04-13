@@ -90,6 +90,7 @@ from scattered configs:
 | Apple Metal package Doe vs `bun-webgpu` | promoted | `python3 bench/cli.py compare --surface package --backend apple-metal --workload gemma64 --runtime-host bun --temperature warm --dry-run` |
 | AMD Vulkan package Doe vs Node/Bun packages | config-backed, not promoted | `python3 bench/cli.py run-config --config bench/native-compare/compare.config.amd.vulkan.gemma270m.node-package.ir.json --side baseline`, then `--side comparison`, then compare the emitted receipts |
 | Node ORT WebGPU Doe vs `node-webgpu` package | repo-only strict comparable local claim surface | `python3 bench/cli.py run-config --config bench/native-compare/compare.config.node.ort-webgpu-provider.gemma270m.json --side baseline`, then `--side comparison`, then compare the emitted receipts with `--comparability strict --require-timing-class process-wall`, then run `bench/cli.py claim --config ... bench/out/compare-report.json` |
+| Bun ORT WebGPU Doe vs `bun-webgpu` package | repo-only strict comparable local claim surface | `python3 bench/cli.py run-config --config bench/native-compare/compare.config.bun.ort-webgpu-provider.gemma270m.prefill32.decode1.json --side baseline`, then `--side comparison`, then compare the emitted receipts with `--comparability strict --require-timing-class process-wall`, then run `bench/cli.py claim --config ... bench/out/bun-ort-webgpu-provider-compare/gemma270m-prefill32-decode1.compare.json` |
 | Node ORT WebGPU Doe vs `node-webgpu` package breadth matrix | repo-only strict comparable exploration surface | `python3 bench/cli.py run-config --config bench/native-compare/compare.config.node.ort-webgpu-provider.breadth.json --side baseline`, then `--side comparison`, then compare the emitted receipts with `--comparability strict --require-timing-class process-wall` |
 | Browser ORT WebGPU Doe vs Dawn | repo-only same-stack browser surface | `node browser/chromium/scripts/webgpu-playwright-ort-bench.mjs --mode both --headless true --timed-iters 5 --warmup-iters 2` |
 | Node ORT WebGPU vs Doppler on Doe provider | repo-only directional, not claimable | `python3 bench/cli.py run-config --config bench/native-compare/compare.config.node.ort-vs-doppler.gemma270m.json --side baseline`, then `--side comparison`, then compare the emitted receipts |
@@ -117,10 +118,11 @@ What that means today:
   `zig build ort-plugin-ep-smoke-run -- --plugin-path <plugin> --ort-lib-path <ort-shared-lib>`
 - the repo now also has a repo-only session smoke runner:
   `zig build ort-plugin-ep-session-smoke-run -- --plugin-path <plugin> --ort-lib-path <ort-shared-lib>`
-- the plugin now creates real `OrtEpDevice` instances and a tiny compiled
-  `OrtEp` execution slice for one-node ONNX `Identity` graphs; see
-  `runtime/bridge/onnxruntime-ep/artifacts/20260413T003832Z/doe-ort-ep-session-smoke.json`
-  for the current proof that Doe claimed, compiled, and executed that path
+- the plugin now creates real `OrtEpDevice` instances and a narrow native
+  `OrtEp` execution slice for `Identity`, `Add`, `Relu`, and exact two-node
+  `Add -> Relu`; see
+  `runtime/bridge/onnxruntime-ep/artifacts/20260413T151032Z/doe-ort-ep-session-smoke.json`
+  for the current proof that Doe claimed, compiled, and executed that slice
 - the scaffold is a runtime integration seam, not a promoted benchmark lane
 
 What it does not mean yet:
@@ -146,6 +148,14 @@ What it does not mean yet:
   - `bench/out/node-ort-webgpu-provider-breadth/20260413T013823Z/breadth.claim.json`
   - the current four-shape breadth matrix is mixed, so it does not support a
     blanket Doe-over-Dawn ORT package claim on this host
+- there is now also a repo-only same-stack Bun ORT WebGPU provider-compare
+  lane at
+  `bench/native-compare/compare.config.bun.ort-webgpu-provider.gemma270m.prefill32.decode1.json`;
+  the fresh Bun compare and claim artifacts live at:
+  - `bench/out/bun-ort-webgpu-provider-compare/gemma270m-prefill32-decode1.compare.json`
+  - `bench/out/bun-ort-webgpu-provider-compare/gemma270m-prefill32-decode1.claim.json`
+  - the current local Bun claim artifact records a claimable Doe advantage for
+    this exact Bun host / Gemma-3 270M / `prefill 32` + `decode 1` contract
 - there is now a repo-only Node directional lane at
   `bench/native-compare/compare.config.node.ort-vs-doppler.gemma270m.json`
   comparing Transformers.js plus `onnxruntime-node` WebGPU against Doppler on
@@ -159,9 +169,10 @@ What it does not mean yet:
 - there is no Bun ORT-vs-Doppler lane today; Doppler exposes a Node command
   runner (`src/tooling/node-command-runner.js`), but no parallel Bun tooling
   surface that Doe can benchmark honestly here
-- there is no claimable `ORT + Dawn` vs `ORT + Doe` compare surface today
-- a real Doe-backed graph execution bridge beyond the current identity-only
-  proof slice still has to land before that benchmark lane exists
+- there is no claimable native `ORT + Dawn` vs `ORT + Doe` graph-execution
+  compare surface today
+- a broader Doe-backed graph execution bridge beyond the current narrow
+  elementwise proof slice still has to land before that benchmark lane exists
 - the browser ORT Playwright harness now exists, but it is still a browser-local
   repo script rather than a `bench/cli.py` executor or claim-gated matrix cell
 

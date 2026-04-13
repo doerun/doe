@@ -79,6 +79,8 @@ Current ORT evidence to read alongside the table below:
 
 - Node ORT provider compare artifact:
   `bench/out/node-ort-webgpu-provider-compare/20260413T011722Z/gemma270m.claim.json`
+- Bun ORT provider compare artifact:
+  `bench/out/bun-ort-webgpu-provider-compare/gemma270m-prefill32-decode1.claim.json`
 - Browser ORT Playwright artifact:
   `browser/chromium/artifacts/20260413T023500Z/dawn-vs-doe.browser-ort-bench.diagnostic.json`
 - Native ORT EP proof slice:
@@ -89,7 +91,7 @@ Current ORT evidence to read alongside the table below:
 | Host / platform | Doe surface | Reference surface | Kind | Current state | Value / note |
 |------|------|------|------|------|------|
 | Node | `doe-gpu` | `webgpu` (Dawn) | product + governed compare lane | `diagnostic` | Public package surface exists and governed Node package lanes exist. ORT evidence now also exists in-repo through the same-stack provider compare lane; read current Node ORT results artifact-by-artifact because the broader Vulkan-host ORT matrix is mixed. |
-| Bun | `doe-gpu` | `bun-webgpu` (Dawn) | product + governed compare lane | `verified` | Main Bun package niche for package-plan benchmarking. This row is about the package surface, not a completed ORT compare cell. |
+| Bun | `doe-gpu` | `bun-webgpu` (Dawn) | product + governed compare lane | `verified` | Main Bun package niche for package-plan benchmarking, and the repo now also has a same-stack Bun ORT WebGPU provider-compare lane with a fresh local Gemma-3 270M claim artifact. |
 | Deno | `doe-gpu` via `packages/doe-gpu/src/deno.js` | built-in Deno WebGPU (`navigator.gpu`, wgpu-backed) | product + governed compare lane | `verified` | Deno package lane now exists in-repo and is registered as `deno_package_compare`; still newer than Node/Bun and should be read lane-specifically. |
 | Node / Bun / Deno | `createDoeRuntime()`, `runDawnVsDoeCompare()` | no package-surface incumbent | advanced helper surface | `supported` | Public helper exports exist, but compare/release operator CLIs live in-repo under `bench/` and are not npm-shipped tools. |
 | Node | historical `native-direct` helper shape | raw competitor device surfaces in ad hoc four-way compares | diagnostic subpath | `diagnostic` | Useful for stripping wrapper noise out of Node package attribution. Not a public replacement promise by itself. |

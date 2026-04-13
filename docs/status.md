@@ -20,6 +20,13 @@ Read this file first. Use the shard files under
 
 ## Current status summary
 
+- A repo-only same-stack Bun ORT WebGPU provider-compare lane now exists at
+  `bench/native-compare/compare.config.bun.ort-webgpu-provider.gemma270m.prefill32.decode1.json`.
+  The current local Bun host artifacts at
+  `bench/out/bun-ort-webgpu-provider-compare/gemma270m-prefill32-decode1.compare.json`
+  and `bench/out/bun-ort-webgpu-provider-compare/gemma270m-prefill32-decode1.claim.json`
+  record a strict comparable local Doe-advantage claim against the `bun-webgpu`
+  package surface on Gemma-3 270M `prefill 32 / decode 1`.
 - A repo-only same-stack Node ORT WebGPU provider-compare lane now exists at
   `bench/native-compare/compare.config.node.ort-webgpu-provider.gemma270m.json`.
   The current AMD RADV host artifacts at
@@ -39,9 +46,10 @@ Read this file first. Use the shard files under
   prefill-heavy, decode-heavy, and 1B shapes, so the broader matrix does not
   support a blanket Doe-over-Dawn ORT package claim today.
 - The repo-only ONNX Runtime plugin EP now crosses the line from pure scaffold
-  to a tiny real execution slice: Doe claims, compiles, and executes one-node
-  ONNX `Identity` graphs in the session smoke, with proof recorded in
-  `runtime/bridge/onnxruntime-ep/artifacts/20260413T003832Z/doe-ort-ep-session-smoke.json`.
+  to a narrow non-trivial native slice: Doe claims, compiles, and executes
+  same-shape float32 ONNX `Identity`, `Add`, `Relu`, and exact two-node
+  `Add -> Relu` session-smoke cases, with proof recorded in
+  `runtime/bridge/onnxruntime-ep/artifacts/20260413T151032Z/doe-ort-ep-session-smoke.json`.
   This is still not a benchmark lane or a claimable `ORT + Doe` surface.
 - D3D12 drop-in queue submit now retains submitted command lists behind the
   runtime fence and drains them at explicit completion boundaries instead of

@@ -112,12 +112,6 @@ OrtStatus* MakeNotImplementedStatus(const OrtApi* api, const std::string& messag
   return MakeStatus(api, ORT_NOT_IMPLEMENTED, message.c_str());
 }
 
-void ReleaseTypeInfo(const OrtApi* api, const OrtTypeInfo* type_info) {
-  if (api != nullptr && type_info != nullptr) {
-    api->ReleaseTypeInfo(const_cast<OrtTypeInfo*>(type_info));
-  }
-}
-
 const char* CompiledOpKindName(const CompiledOpKind kind) {
   switch (kind) {
     case CompiledOpKind::kIdentity:
@@ -310,39 +304,32 @@ OrtStatus* DescribeSupportedTensorValue(
   ONNXType onnx_type = ONNX_TYPE_UNKNOWN;
   status = api->GetOnnxTypeFromTypeInfo(type_info, &onnx_type);
   if (status != nullptr) {
-    ReleaseTypeInfo(api, type_info);
     return status;
   }
   if (onnx_type != ONNX_TYPE_TENSOR) {
-    ReleaseTypeInfo(api, type_info);
     return nullptr;
   }
 
   const OrtTensorTypeAndShapeInfo* tensor_info = nullptr;
   status = api->CastTypeInfoToTensorInfo(type_info, &tensor_info);
   if (status != nullptr) {
-    ReleaseTypeInfo(api, type_info);
     return status;
   }
   if (tensor_info == nullptr) {
-    ReleaseTypeInfo(api, type_info);
     return nullptr;
   }
 
   status = api->GetTensorElementType(tensor_info, &descriptor_out->element_type);
   if (status != nullptr) {
-    ReleaseTypeInfo(api, type_info);
     return status;
   }
   if (descriptor_out->element_type != kSupportedElementType) {
-    ReleaseTypeInfo(api, type_info);
     return nullptr;
   }
 
   size_t rank = 0;
   status = api->GetDimensionsCount(tensor_info, &rank);
   if (status != nullptr) {
-    ReleaseTypeInfo(api, type_info);
     return status;
   }
 
@@ -350,20 +337,17 @@ OrtStatus* DescribeSupportedTensorValue(
   if (rank != 0) {
     status = api->GetDimensions(tensor_info, descriptor_out->dims.data(), descriptor_out->dims.size());
     if (status != nullptr) {
-      ReleaseTypeInfo(api, type_info);
       return status;
     }
   }
 
   for (const int64_t dim : descriptor_out->dims) {
     if (dim < 0) {
-      ReleaseTypeInfo(api, type_info);
       return nullptr;
     }
   }
 
   status = api->GetTensorShapeElementCount(tensor_info, &descriptor_out->element_count);
-  ReleaseTypeInfo(api, type_info);
   if (status != nullptr) return status;
 
   *is_supported = true;
