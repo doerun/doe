@@ -150,6 +150,31 @@
       "cohorts": [
         "exploration"
       ]
+    },
+    {
+      "id": "inference_ort_doe_ep_matmul_add_relu_float32_rank2_exactshape",
+      "name": "Native Doe ORT EP MatMul -> Add -> Relu smoke",
+      "description": "Repo-only single-runtime native ORT Doe plugin EP exact fused rank-2 MatMul -> Add -> Relu smoke workload.",
+      "domain": "inference",
+      "runnerType": "zig-runtime",
+      "commandsPath": "bench/vendor-native/ort_doe_ep_matmul_add_relu_commands.json",
+      "quirksPath": "examples/quirks/noop.json",
+      "vendor": "doe",
+      "api": "ort-native",
+      "family": "plugin-ep",
+      "driver": "host-ort",
+      "extraArgs": [],
+      "dawnFilter": "",
+      "comparable": false,
+      "benchmarkClass": "directional",
+      "comparabilityNotes": "Single-runtime Doe-native ORT plugin EP surface only; no incumbent native ORT peer is wired into bench for this lane.",
+      "directionalReason": "implementation_gap",
+      "pathAsymmetry": false,
+      "pathAsymmetryNote": "",
+      "claimEligible": false,
+      "cohorts": [
+        "exploration"
+      ]
     }
   ]
 }

@@ -139,6 +139,16 @@ class ExecutorRegistryTests(unittest.TestCase):
         self.assertIn('--scenario {commands}', template)
         self.assertEqual(resolve_executor_boundary('tjs_ort_bun_webgpu_package'), 'commands')
 
+    def test_resolves_browser_ort_webgpu_executors(self) -> None:
+        dawn_template = resolve_executor_command_template("browser_ort_webgpu_dawn")
+        doe_template = resolve_executor_command_template("browser_ort_webgpu_doe")
+        self.assertIn("run-browser-ort-bench.py", dawn_template)
+        self.assertIn("run-browser-ort-bench.py", doe_template)
+        self.assertIn("--mode dawn", dawn_template)
+        self.assertIn("--mode doe", doe_template)
+        self.assertEqual(resolve_executor_boundary("browser_ort_webgpu_dawn"), "commands")
+        self.assertEqual(resolve_executor_boundary("browser_ort_webgpu_doe"), "commands")
+
     def test_resolves_doppler_node_doe_executor(self) -> None:
         template = resolve_executor_command_template('doppler_node_doe')
         self.assertIn('run-node-doppler-ort-bench.js', template)

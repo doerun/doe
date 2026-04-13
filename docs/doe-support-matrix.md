@@ -78,17 +78,22 @@ Subpath reminder:
 Current ORT evidence to read alongside the table below:
 
 - Node ORT provider compare artifact:
-  `bench/out/node-ort-webgpu-provider-compare/20260413T011722Z/gemma270m.claim.json`
+  `bench/out/node-ort-webgpu-provider-compare/20260413T191817Z/gemma270m.claim.json`
+- Node ORT provider breadth artifact:
+  `bench/out/node-ort-webgpu-provider-breadth/20260413T192150Z/breadth.compare.json`
 - Bun ORT provider compare artifact:
   `bench/out/bun-ort-webgpu-provider-compare/gemma270m-prefill32-decode1.claim.json`
-- Browser ORT Playwright artifact:
-  `browser/chromium/artifacts/20260413T023500Z/dawn-vs-doe.browser-ort-bench.diagnostic.json`
+- Bun ORT provider breadth artifact:
+  `bench/out/bun-ort-webgpu-provider-breadth/20260413T181619Z/breadth.compare.json`
+- Browser ORT canonical compare artifact:
+  `bench/out/browser-ort-webgpu-compare/20260413T193605Z/browser.compare.json`
 - Native ORT EP proof slice:
-  `runtime/bridge/onnxruntime-ep/artifacts/20260413T161858Z/doe-ort-ep-session-smoke.json`
+  `runtime/bridge/onnxruntime-ep/artifacts/20260413T172955Z/doe-ort-ep-session-smoke.json`
 - Native ORT EP bench reports:
-  `bench/out/native-ort-doe-ep/add.report.json`,
-  `bench/out/native-ort-doe-ep/relu.report.json`, and
-  `bench/out/native-ort-doe-ep/add_relu.report.json`
+  `bench/out/native-ort-doe-ep/matmul.report.json`,
+  `bench/out/native-ort-doe-ep/matmul_add.report.json`,
+  `bench/out/native-ort-doe-ep/matmul_add_relu.report.json`, and
+  `bench/out/native-ort-webgpu-provider/20260413T175708Z/basic-ops.claim.json`
 
 ### Runtime package family: `doe-gpu`
 

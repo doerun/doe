@@ -48,11 +48,14 @@ This module implements a layered browser benchmark superset for Chromium Track A
 3. `scripts/webgpu-playwright-ort-bench.mjs`
    - runs a repo-only same-stack browser ORT WebGPU Dawn-vs-Doe benchmark
      against the local Chromium-vendored DistilBERT sentiment model.
-4. `scripts/check-browser-benchmark-superset.py`
+   - currently supports `--task sentiment` and `--task sentiment_longform`.
+4. `../../bench/native-compare/compare.config.browser.ort-webgpu.json`
+   - canonical `bench/` compare config for the same browser ORT tasks.
+5. `scripts/check-browser-benchmark-superset.py`
    - validates projection completeness/hash sync, optional report coverage, and optional promotion approvals.
-5. `scripts/run-browser-benchmark-superset.py`
+6. `scripts/run-browser-benchmark-superset.py`
    - one-command orchestration (generate -> run -> check -> summary + checker artifact).
-6. `scripts/check-browser-milestones.py`
+7. `scripts/check-browser-milestones.py`
    - validates milestone state and required local evidence for M0-M6.
 
 ## Quick Start
@@ -84,14 +87,15 @@ Repo-only browser ORT WebGPU evidence uses:
 ```bash
 node browser/chromium/scripts/webgpu-playwright-ort-bench.mjs \
   --mode both \
+  --task sentiment \
   --headless true \
   --timed-iters 5 \
   --warmup-iters 2
 ```
 
-The current local evidence artifact is:
+The current canonical compare artifact is:
 
-- `browser/chromium/artifacts/20260413T023500Z/dawn-vs-doe.browser-ort-bench.diagnostic.json`
+- `bench/out/browser-ort-webgpu-compare/20260413T193605Z/browser.compare.json`
 
 If you intentionally need `bench/out`, pass `--allow-bench-out` explicitly.
 Diagnostic outputs under `bench/out` are restricted to `bench/out/scratch`.

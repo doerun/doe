@@ -1,0 +1,46 @@
+{
+  "workloads": "bench/workloads/workloads.bun.ort-webgpu-provider-compare.json",
+  "baseline": {
+    "name": "tjs_ort_bun_doe",
+    "executorId": "tjs_ort_bun_doe"
+  },
+  "comparison": {
+    "name": "tjs_ort_bun_webgpu_package",
+    "executorId": "tjs_ort_bun_webgpu_package"
+  },
+  "run": {
+    "iterations": 3,
+    "warmup": 1,
+    "out": "bench/out/bun-ort-webgpu-provider-breadth/breadth.compare.json",
+    "workspace": "bench/out/bun-ort-webgpu-provider-breadth/breadth.workspace",
+    "workloadFilter": "",
+    "emitShell": false
+  },
+  "comparability": {
+    "mode": "strict",
+    "requireTimingClass": "process-wall",
+    "allowBaselineNoExecution": false
+  },
+  "claimability": {
+    "mode": "off",
+    "minTimedSamples": 0
+  },
+  "resource": {
+    "probe": "none",
+    "sampleMs": 100,
+    "sampleTargetCount": 0
+  },
+  "selector": {
+    "cohorts": [],
+    "benchmarkClass": [
+      "comparable"
+    ],
+    "claimEligibleOnly": false,
+    "domains": [],
+    "ids": [
+      "bun_ort_webgpu_provider_compare_gemma3_270m_prefill_32tok_decode_1tok",
+      "bun_ort_webgpu_provider_compare_gemma3_270m_prefill_256tok_decode_1tok"
+    ],
+    "excludeIds": []
+  }
+}

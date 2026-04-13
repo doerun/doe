@@ -25,7 +25,9 @@ RUNNER_PATH = REPO_ROOT / "bench" / "executors" / "run-native-ort-incumbent-benc
 WORKLOADS_PATH = REPO_ROOT / "bench" / "workloads" / "workloads.native.ort-webgpu-provider-compare.basic-ops.json"
 COMPARE_CONFIG_PATH = REPO_ROOT / "bench" / "native-compare" / "compare.config.native.ort-webgpu-provider.basic-ops.json"
 WORKLOAD_ID = "inference_ort_native_compare_add_relu_float32_exactshape"
+MATMUL_ADD_RELU_WORKLOAD_ID = "inference_ort_native_compare_matmul_add_relu_float32_rank2_exactshape"
 SCENARIO_PATH = REPO_ROOT / "bench" / "vendor-native" / "ort_native_compare_add_relu_commands.json"
+MATMUL_ADD_RELU_SCENARIO_PATH = REPO_ROOT / "bench" / "vendor-native" / "ort_native_compare_matmul_add_relu_commands.json"
 
 
 def _write_fake_smoke(path: Path, *, success: bool) -> None:
@@ -103,26 +105,50 @@ class NativeOrtWebGpuIncumbentLaneTests(unittest.TestCase):
         self.assertEqual(workload.id, WORKLOAD_ID)
         self.assertTrue(workload.comparable)
         self.assertEqual(workload.benchmark_class, "comparable")
-        self.assertFalse(workload.claim_eligible)
+        self.assertTrue(workload.claim_eligible)
         self.assertEqual(
             workload.commands_path,
             "bench/vendor-native/ort_native_compare_add_relu_commands.json",
         )
         self.assertTrue((REPO_ROOT / workload.commands_path).exists())
 
-    def test_compare_config_is_strict_process_wall_nonclaimable(self) -> None:
+    def test_matmul_add_relu_workload_manifest_loads_strict_native_compare_lane(self) -> None:
+        workloads = config_support.load_workloads(
+            WORKLOADS_PATH,
+            "",
+            include_noncomparable=True,
+            include_extended=False,
+            workload_cohort="all",
+            selector={"ids": [MATMUL_ADD_RELU_WORKLOAD_ID]},
+        )
+        self.assertEqual(len(workloads), 1)
+        workload = workloads[0]
+        self.assertEqual(workload.id, MATMUL_ADD_RELU_WORKLOAD_ID)
+        self.assertTrue(workload.comparable)
+        self.assertEqual(workload.benchmark_class, "comparable")
+        self.assertTrue(workload.claim_eligible)
+        self.assertEqual(
+            workload.commands_path,
+            "bench/vendor-native/ort_native_compare_matmul_add_relu_commands.json",
+        )
+        self.assertTrue((REPO_ROOT / workload.commands_path).exists())
+
+    def test_compare_config_is_strict_process_wall_local_claimable(self) -> None:
         payload = json.loads(COMPARE_CONFIG_PATH.read_text(encoding="utf-8"))
         self.assertEqual(payload["baseline"]["executorId"], "ort_native_doe_ep")
         self.assertEqual(payload["comparison"]["executorId"], "ort_native_webgpu_incumbent")
         self.assertEqual(payload["comparability"]["mode"], "strict")
         self.assertEqual(payload["comparability"]["requireTimingClass"], "process-wall")
-        self.assertEqual(payload["claimability"]["mode"], "off")
+        self.assertEqual(payload["claimability"]["mode"], "local")
+        self.assertEqual(payload["claimability"]["minTimedSamples"], 3)
         self.assertEqual(
             payload["selector"]["ids"],
             [
                 "inference_ort_native_compare_add_float32_exactshape",
                 "inference_ort_native_compare_relu_float32_exactshape",
                 "inference_ort_native_compare_matmul_float32_rank2_exactshape",
+                "inference_ort_native_compare_matmul_add_float32_rank2_exactshape",
+                "inference_ort_native_compare_matmul_add_relu_float32_rank2_exactshape",
                 "inference_ort_native_compare_add_relu_float32_exactshape",
             ],
         )
@@ -135,6 +161,17 @@ class NativeOrtWebGpuIncumbentLaneTests(unittest.TestCase):
         self.assertEqual(scenario["schemaVersion"], 1)
         self.assertEqual(scenario["scenarioId"], WORKLOAD_ID)
         self.assertEqual(scenario["caseName"], "add_relu")
+        self.assertEqual(scenario["providerName"], "WebGPU")
+        self.assertTrue(str(scenario["ortLibPath"]).endswith("libonnxruntime.so.1"))
+
+    def test_matmul_add_relu_scenario_payload_matches_incumbent_compare_contract(self) -> None:
+        payload = json.loads(MATMUL_ADD_RELU_SCENARIO_PATH.read_text(encoding="utf-8"))
+        self.assertEqual(len(payload), 1)
+        scenario = payload[0]
+        self.assertEqual(scenario["kind"], "vendor-native-benchmark-scenario")
+        self.assertEqual(scenario["schemaVersion"], 1)
+        self.assertEqual(scenario["scenarioId"], MATMUL_ADD_RELU_WORKLOAD_ID)
+        self.assertEqual(scenario["caseName"], "matmul_add_relu")
         self.assertEqual(scenario["providerName"], "WebGPU")
         self.assertTrue(str(scenario["ortLibPath"]).endswith("libonnxruntime.so.1"))
 

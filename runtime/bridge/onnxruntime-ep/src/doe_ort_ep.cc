@@ -17,25 +17,39 @@ namespace doe::ort_ep {
 
 namespace {
 
-constexpr const char* kCompatibilityInfo = "doe-ort-basic-ops-ep-v3";
+constexpr const char* kCompatibilityInfo = "doe-ort-basic-ops-ep-v5";
 constexpr const char* kIdentityOperatorType = "Identity";
 constexpr const char* kAddOperatorType = "Add";
 constexpr const char* kReluOperatorType = "Relu";
 constexpr const char* kMatMulOperatorType = "MatMul";
+constexpr const char* kGemmOperatorType = "Gemm";
 constexpr const char* kOnnxDomain = "";
 constexpr const char* kOnnxAiDomain = "ai.onnx";
+constexpr const char* kGemmAlphaAttribute = "alpha";
+constexpr const char* kGemmBetaAttribute = "beta";
+constexpr const char* kGemmTransAAttribute = "transA";
+constexpr const char* kGemmTransBAttribute = "transB";
 constexpr ONNXTensorElementDataType kSupportedElementType = ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT;
 constexpr size_t kUnaryInputCount = 1;
 constexpr size_t kBinaryInputCount = 2;
+constexpr size_t kTernaryInputCount = 3;
+constexpr size_t kQuinaryInputCount = 5;
 constexpr size_t kSingleOutputCount = 1;
 constexpr size_t kMatrixRank = 2;
+constexpr float kSupportedGemmAlpha = 1.0f;
+constexpr float kSupportedGemmBeta = 1.0f;
+constexpr int64_t kSupportedGemmTransA = 0;
+constexpr int64_t kSupportedGemmTransB = 0;
 
 enum class CompiledOpKind : uint8_t {
   kIdentity,
   kAdd,
   kRelu,
   kMatMul,
+  kGemm,
+  kGemmReluGemm,
   kMatMulAdd,
+  kMatMulAddRelu,
   kAddRelu,
 };
 
@@ -45,12 +59,16 @@ std::atomic<uint64_t> g_claimed_identity_nodes{0};
 std::atomic<uint64_t> g_claimed_add_nodes{0};
 std::atomic<uint64_t> g_claimed_relu_nodes{0};
 std::atomic<uint64_t> g_claimed_matmul_nodes{0};
+std::atomic<uint64_t> g_claimed_gemm_nodes{0};
 std::atomic<uint64_t> g_compile_calls{0};
 std::atomic<uint64_t> g_compiled_identity_groups{0};
 std::atomic<uint64_t> g_compiled_add_groups{0};
 std::atomic<uint64_t> g_compiled_relu_groups{0};
 std::atomic<uint64_t> g_compiled_matmul_groups{0};
+std::atomic<uint64_t> g_compiled_gemm_groups{0};
+std::atomic<uint64_t> g_compiled_gemm_relu_gemm_groups{0};
 std::atomic<uint64_t> g_compiled_matmul_add_groups{0};
+std::atomic<uint64_t> g_compiled_matmul_add_relu_groups{0};
 std::atomic<uint64_t> g_compiled_add_relu_groups{0};
 std::atomic<uint64_t> g_create_state_calls{0};
 std::atomic<uint64_t> g_compute_calls{0};
@@ -58,7 +76,10 @@ std::atomic<uint64_t> g_compute_identity_calls{0};
 std::atomic<uint64_t> g_compute_add_calls{0};
 std::atomic<uint64_t> g_compute_relu_calls{0};
 std::atomic<uint64_t> g_compute_matmul_calls{0};
+std::atomic<uint64_t> g_compute_gemm_calls{0};
+std::atomic<uint64_t> g_compute_gemm_relu_gemm_calls{0};
 std::atomic<uint64_t> g_compute_matmul_add_calls{0};
+std::atomic<uint64_t> g_compute_matmul_add_relu_calls{0};
 std::atomic<uint64_t> g_compute_add_relu_calls{0};
 std::atomic<uint64_t> g_release_state_calls{0};
 
@@ -95,7 +116,7 @@ struct CompiledNodeComputeInfo {
   ApiBindings bindings{};
   std::string node_name;
   CompiledOpKind op_kind = CompiledOpKind::kIdentity;
-  std::array<size_t, 3> input_binding_indices{0, 1, 2};
+  std::array<size_t, kQuinaryInputCount> input_binding_indices{0, 1, 2, 3, 4};
   size_t input_binding_count = 0;
 };
 
@@ -135,8 +156,14 @@ const char* CompiledOpKindName(const CompiledOpKind kind) {
       return kReluOperatorType;
     case CompiledOpKind::kMatMul:
       return kMatMulOperatorType;
+    case CompiledOpKind::kGemm:
+      return kGemmOperatorType;
+    case CompiledOpKind::kGemmReluGemm:
+      return "Gemm->Relu->Gemm";
     case CompiledOpKind::kMatMulAdd:
       return "MatMul->Add";
+    case CompiledOpKind::kMatMulAddRelu:
+      return "MatMul->Add->Relu";
     case CompiledOpKind::kAddRelu:
       return "Add->Relu";
   }
@@ -144,7 +171,22 @@ const char* CompiledOpKindName(const CompiledOpKind kind) {
 }
 
 size_t ClaimedNodeCountForKind(const CompiledOpKind kind) {
-  return kind == CompiledOpKind::kAddRelu || kind == CompiledOpKind::kMatMulAdd ? 2 : 1;
+  switch (kind) {
+    case CompiledOpKind::kGemmReluGemm:
+      return 3;
+    case CompiledOpKind::kMatMulAddRelu:
+      return 3;
+    case CompiledOpKind::kMatMulAdd:
+    case CompiledOpKind::kAddRelu:
+      return 2;
+    case CompiledOpKind::kIdentity:
+    case CompiledOpKind::kAdd:
+    case CompiledOpKind::kRelu:
+    case CompiledOpKind::kMatMul:
+    case CompiledOpKind::kGemm:
+      return 1;
+  }
+  return 0;
 }
 
 size_t ExpectedInputCountForKind(const CompiledOpKind kind) {
@@ -156,8 +198,12 @@ size_t ExpectedInputCountForKind(const CompiledOpKind kind) {
     case CompiledOpKind::kMatMul:
     case CompiledOpKind::kAddRelu:
       return kBinaryInputCount;
+    case CompiledOpKind::kGemmReluGemm:
+      return kQuinaryInputCount;
+    case CompiledOpKind::kGemm:
     case CompiledOpKind::kMatMulAdd:
-      return 3;
+    case CompiledOpKind::kMatMulAddRelu:
+      return kTernaryInputCount;
   }
   return 0;
 }
@@ -185,9 +231,21 @@ void IncrementClaimCounters(const CompiledOpKind kind) {
     case CompiledOpKind::kMatMul:
       g_claimed_matmul_nodes.fetch_add(1, std::memory_order_relaxed);
       break;
+    case CompiledOpKind::kGemm:
+      g_claimed_gemm_nodes.fetch_add(1, std::memory_order_relaxed);
+      break;
+    case CompiledOpKind::kGemmReluGemm:
+      g_claimed_gemm_nodes.fetch_add(2, std::memory_order_relaxed);
+      g_claimed_relu_nodes.fetch_add(1, std::memory_order_relaxed);
+      break;
     case CompiledOpKind::kMatMulAdd:
       g_claimed_matmul_nodes.fetch_add(1, std::memory_order_relaxed);
       g_claimed_add_nodes.fetch_add(1, std::memory_order_relaxed);
+      break;
+    case CompiledOpKind::kMatMulAddRelu:
+      g_claimed_matmul_nodes.fetch_add(1, std::memory_order_relaxed);
+      g_claimed_add_nodes.fetch_add(1, std::memory_order_relaxed);
+      g_claimed_relu_nodes.fetch_add(1, std::memory_order_relaxed);
       break;
     case CompiledOpKind::kAddRelu:
       g_claimed_add_nodes.fetch_add(1, std::memory_order_relaxed);
@@ -210,8 +268,17 @@ void IncrementCompiledGroupCounters(const CompiledOpKind kind) {
     case CompiledOpKind::kMatMul:
       g_compiled_matmul_groups.fetch_add(1, std::memory_order_relaxed);
       break;
+    case CompiledOpKind::kGemm:
+      g_compiled_gemm_groups.fetch_add(1, std::memory_order_relaxed);
+      break;
+    case CompiledOpKind::kGemmReluGemm:
+      g_compiled_gemm_relu_gemm_groups.fetch_add(1, std::memory_order_relaxed);
+      break;
     case CompiledOpKind::kMatMulAdd:
       g_compiled_matmul_add_groups.fetch_add(1, std::memory_order_relaxed);
+      break;
+    case CompiledOpKind::kMatMulAddRelu:
+      g_compiled_matmul_add_relu_groups.fetch_add(1, std::memory_order_relaxed);
       break;
     case CompiledOpKind::kAddRelu:
       g_compiled_add_relu_groups.fetch_add(1, std::memory_order_relaxed);
@@ -233,8 +300,17 @@ void IncrementComputeCounters(const CompiledOpKind kind) {
     case CompiledOpKind::kMatMul:
       g_compute_matmul_calls.fetch_add(1, std::memory_order_relaxed);
       break;
+    case CompiledOpKind::kGemm:
+      g_compute_gemm_calls.fetch_add(1, std::memory_order_relaxed);
+      break;
+    case CompiledOpKind::kGemmReluGemm:
+      g_compute_gemm_relu_gemm_calls.fetch_add(1, std::memory_order_relaxed);
+      break;
     case CompiledOpKind::kMatMulAdd:
       g_compute_matmul_add_calls.fetch_add(1, std::memory_order_relaxed);
+      break;
+    case CompiledOpKind::kMatMulAddRelu:
+      g_compute_matmul_add_relu_calls.fetch_add(1, std::memory_order_relaxed);
       break;
     case CompiledOpKind::kAddRelu:
       g_compute_add_relu_calls.fetch_add(1, std::memory_order_relaxed);
@@ -302,6 +378,112 @@ bool InferStaticMatMulOutput(
   output_out->dims = {lhs.dims[0], rhs.dims[1]};
   output_out->element_count = static_cast<size_t>(lhs.dims[0] * rhs.dims[1]);
   return true;
+}
+
+OrtStatus* ReadOptionalFloatAttribute(
+    const OrtApi* api,
+    const OrtNode* node,
+    const char* attribute_name,
+    const float default_value,
+    float* value_out) {
+  if (value_out == nullptr) {
+    return MakeInvalidArgumentStatus(
+        api,
+        "Doe ORT plugin EP requires a value_out pointer when reading float node attributes.");
+  }
+  *value_out = default_value;
+
+  const OrtOpAttr* attribute = nullptr;
+  OrtStatus* status = api->Node_GetAttributeByName(node, attribute_name, &attribute);
+  if (status != nullptr) return status;
+  if (attribute == nullptr) {
+    return nullptr;
+  }
+
+  OrtOpAttrType attribute_type = ORT_OP_ATTR_UNDEFINED;
+  status = api->OpAttr_GetType(attribute, &attribute_type);
+  if (status != nullptr) return status;
+  if (attribute_type != ORT_OP_ATTR_FLOAT) {
+    std::ostringstream message;
+    message << "Doe ORT plugin EP Gemm slice expected float attribute '" << attribute_name << "'.";
+    return MakeInvalidGraphStatus(api, message.str());
+  }
+
+  size_t values_read = 0;
+  status = api->ReadOpAttr(attribute, ORT_OP_ATTR_FLOAT, value_out, sizeof(*value_out), &values_read);
+  if (status != nullptr) return status;
+  if (values_read == 0) {
+    std::ostringstream message;
+    message << "Doe ORT plugin EP Gemm slice could not read float attribute '" << attribute_name << "'.";
+    return MakeInvalidGraphStatus(api, message.str());
+  }
+  return nullptr;
+}
+
+OrtStatus* ReadOptionalIntAttribute(
+    const OrtApi* api,
+    const OrtNode* node,
+    const char* attribute_name,
+    const int64_t default_value,
+    int64_t* value_out) {
+  if (value_out == nullptr) {
+    return MakeInvalidArgumentStatus(
+        api,
+        "Doe ORT plugin EP requires a value_out pointer when reading int node attributes.");
+  }
+  *value_out = default_value;
+
+  const OrtOpAttr* attribute = nullptr;
+  OrtStatus* status = api->Node_GetAttributeByName(node, attribute_name, &attribute);
+  if (status != nullptr) return status;
+  if (attribute == nullptr) {
+    return nullptr;
+  }
+
+  OrtOpAttrType attribute_type = ORT_OP_ATTR_UNDEFINED;
+  status = api->OpAttr_GetType(attribute, &attribute_type);
+  if (status != nullptr) return status;
+  if (attribute_type != ORT_OP_ATTR_INT) {
+    std::ostringstream message;
+    message << "Doe ORT plugin EP Gemm slice expected int attribute '" << attribute_name << "'.";
+    return MakeInvalidGraphStatus(api, message.str());
+  }
+
+  size_t values_read = 0;
+  status = api->ReadOpAttr(attribute, ORT_OP_ATTR_INT, value_out, sizeof(*value_out), &values_read);
+  if (status != nullptr) return status;
+  if (values_read == 0) {
+    std::ostringstream message;
+    message << "Doe ORT plugin EP Gemm slice could not read int attribute '" << attribute_name << "'.";
+    return MakeInvalidGraphStatus(api, message.str());
+  }
+  return nullptr;
+}
+
+OrtStatus* HasSupportedGemmAttributes(const OrtApi* api, const OrtNode* node, bool* is_supported) {
+  if (is_supported == nullptr) {
+    return MakeInvalidArgumentStatus(
+        api,
+        "Doe ORT plugin EP requires an is_supported output pointer when validating Gemm attributes.");
+  }
+  *is_supported = false;
+
+  float alpha = kSupportedGemmAlpha;
+  float beta = kSupportedGemmBeta;
+  int64_t trans_a = kSupportedGemmTransA;
+  int64_t trans_b = kSupportedGemmTransB;
+  OrtStatus* status = ReadOptionalFloatAttribute(api, node, kGemmAlphaAttribute, kSupportedGemmAlpha, &alpha);
+  if (status != nullptr) return status;
+  status = ReadOptionalFloatAttribute(api, node, kGemmBetaAttribute, kSupportedGemmBeta, &beta);
+  if (status != nullptr) return status;
+  status = ReadOptionalIntAttribute(api, node, kGemmTransAAttribute, kSupportedGemmTransA, &trans_a);
+  if (status != nullptr) return status;
+  status = ReadOptionalIntAttribute(api, node, kGemmTransBAttribute, kSupportedGemmTransB, &trans_b);
+  if (status != nullptr) return status;
+
+  *is_supported = alpha == kSupportedGemmAlpha && beta == kSupportedGemmBeta && trans_a == kSupportedGemmTransA &&
+                  trans_b == kSupportedGemmTransB;
+  return nullptr;
 }
 
 OrtStatus* GetGraphNodes(const OrtApi* api, const OrtGraph* graph, std::vector<const OrtNode*>* nodes_out) {
@@ -515,6 +697,9 @@ OrtStatus* GetSupportedNodeSpec(
   } else if (std::string_view(operator_type) == kMatMulOperatorType) {
     spec_out->kind = CompiledOpKind::kMatMul;
     expected_inputs = kBinaryInputCount;
+  } else if (std::string_view(operator_type) == kGemmOperatorType) {
+    spec_out->kind = CompiledOpKind::kGemm;
+    expected_inputs = kTernaryInputCount;
   } else {
     return nullptr;
   }
@@ -552,7 +737,7 @@ OrtStatus* GetSupportedNodeSpec(
     status = DescribeSupportedTensorValue(api, output_info, &descriptor, &tensor_supported);
     if (status != nullptr) return status;
     if (!tensor_supported) {
-      if (spec_out->kind != CompiledOpKind::kMatMul) {
+      if (spec_out->kind != CompiledOpKind::kMatMul && spec_out->kind != CompiledOpKind::kGemm) {
         return nullptr;
       }
     }
@@ -590,7 +775,36 @@ OrtStatus* GetSupportedNodeSpec(
         }
       }
       break;
+    case CompiledOpKind::kGemm:
+      {
+        bool gemm_attributes_supported = false;
+        status = HasSupportedGemmAttributes(api, node, &gemm_attributes_supported);
+        if (status != nullptr) return status;
+        if (!gemm_attributes_supported) {
+          return nullptr;
+        }
+
+        TensorValueDescriptor inferred_output;
+        if (!InferStaticMatMulOutput(spec_out->inputs[0], spec_out->inputs[1], &inferred_output)) {
+          return nullptr;
+        }
+        if (!SameTypeAndShape(inferred_output, spec_out->inputs[2])) {
+          return nullptr;
+        }
+        const bool output_has_supported_shape =
+            spec_out->outputs[0].element_type == kSupportedElementType && IsRank2Matrix(spec_out->outputs[0]);
+        if (output_has_supported_shape && !SameTypeAndShape(inferred_output, spec_out->outputs[0])) {
+          return nullptr;
+        }
+        if (!output_has_supported_shape) {
+          spec_out->outputs[0].element_type = inferred_output.element_type;
+          spec_out->outputs[0].dims = inferred_output.dims;
+          spec_out->outputs[0].element_count = inferred_output.element_count;
+        }
+      }
+      break;
     case CompiledOpKind::kMatMulAdd:
+    case CompiledOpKind::kMatMulAddRelu:
     case CompiledOpKind::kAddRelu:
       return MakeInvalidArgumentStatus(
           api,
@@ -603,31 +817,32 @@ OrtStatus* GetSupportedNodeSpec(
 
 OrtStatus* FindSupportedReluConsumer(
     const OrtApi* api,
-    const SupportedNodeSpec& add_spec,
+    const SupportedNodeSpec& producer_spec,
     const std::unordered_set<const OrtNode*>& already_claimed,
     SupportedNodeSpec* relu_spec_out,
     bool* found) {
   if (relu_spec_out == nullptr || found == nullptr) {
     return MakeInvalidArgumentStatus(
         api,
-        "Doe ORT plugin EP requires relu_spec_out and found output pointers when searching for Add->Relu fusion.");
+        "Doe ORT plugin EP requires relu_spec_out and found output pointers when searching for Relu fusion.");
   }
   *relu_spec_out = SupportedNodeSpec{};
   *found = false;
 
-  if (add_spec.kind != CompiledOpKind::kAdd || add_spec.outputs.size() != 1 || add_spec.outputs[0].value_info == nullptr) {
+  if ((producer_spec.kind != CompiledOpKind::kAdd && producer_spec.kind != CompiledOpKind::kGemm) ||
+      producer_spec.outputs.size() != 1 || producer_spec.outputs[0].value_info == nullptr) {
     return nullptr;
   }
 
   bool is_graph_output = false;
-  OrtStatus* status = api->ValueInfo_IsGraphOutput(add_spec.outputs[0].value_info, &is_graph_output);
+  OrtStatus* status = api->ValueInfo_IsGraphOutput(producer_spec.outputs[0].value_info, &is_graph_output);
   if (status != nullptr) return status;
   if (is_graph_output) {
     return nullptr;
   }
 
   size_t num_consumers = 0;
-  status = api->ValueInfo_GetValueNumConsumers(add_spec.outputs[0].value_info, &num_consumers);
+  status = api->ValueInfo_GetValueNumConsumers(producer_spec.outputs[0].value_info, &num_consumers);
   if (status != nullptr) return status;
   if (num_consumers != 1) {
     return nullptr;
@@ -636,7 +851,7 @@ OrtStatus* FindSupportedReluConsumer(
   std::vector<const OrtNode*> consumer_nodes(num_consumers, nullptr);
   std::vector<int64_t> consumer_input_indices(num_consumers, -1);
   status = api->ValueInfo_GetValueConsumers(
-      add_spec.outputs[0].value_info,
+      producer_spec.outputs[0].value_info,
       consumer_nodes.data(),
       consumer_input_indices.data(),
       consumer_nodes.size());
@@ -794,11 +1009,210 @@ OrtStatus* FindSupportedAddConsumer(
   return nullptr;
 }
 
+size_t AddendInputIndex(const size_t matmul_output_input_index) {
+  return matmul_output_input_index == 0 ? 1 : 0;
+}
+
+SupportedGraphSpec BuildAddReluGraphSpec(const SupportedNodeSpec& add_spec, const SupportedNodeSpec& relu_spec) {
+  SupportedGraphSpec graph_spec;
+  graph_spec.kind = CompiledOpKind::kAddRelu;
+  graph_spec.default_node_name = "doe_add_relu";
+  graph_spec.fused_nodes = {add_spec.node, relu_spec.node};
+  graph_spec.logical_input_names = {add_spec.inputs[0].name, add_spec.inputs[1].name};
+  return graph_spec;
+}
+
+SupportedGraphSpec BuildMatMulAddGraphSpec(
+    const SupportedNodeSpec& matmul_spec,
+    const SupportedNodeSpec& add_spec,
+    const size_t matmul_output_input_index) {
+  const size_t addend_input_index = AddendInputIndex(matmul_output_input_index);
+  SupportedGraphSpec graph_spec;
+  graph_spec.kind = CompiledOpKind::kMatMulAdd;
+  graph_spec.default_node_name = "doe_matmul_add";
+  graph_spec.fused_nodes = {matmul_spec.node, add_spec.node};
+  graph_spec.logical_input_names = {
+      matmul_spec.inputs[0].name,
+      matmul_spec.inputs[1].name,
+      add_spec.inputs[addend_input_index].name};
+  return graph_spec;
+}
+
+SupportedGraphSpec BuildMatMulAddReluGraphSpec(
+    const SupportedNodeSpec& matmul_spec,
+    const SupportedNodeSpec& add_spec,
+    const size_t matmul_output_input_index,
+    const SupportedNodeSpec& relu_spec) {
+  SupportedGraphSpec graph_spec = BuildMatMulAddGraphSpec(matmul_spec, add_spec, matmul_output_input_index);
+  graph_spec.kind = CompiledOpKind::kMatMulAddRelu;
+  graph_spec.default_node_name = "doe_matmul_add_relu";
+  graph_spec.fused_nodes = {matmul_spec.node, add_spec.node, relu_spec.node};
+  return graph_spec;
+}
+
+OrtStatus* FindSupportedGemmConsumer(
+    const OrtApi* api,
+    const SupportedNodeSpec& relu_spec,
+    const std::unordered_set<const OrtNode*>& already_claimed,
+    SupportedNodeSpec* gemm_spec_out,
+    bool* found) {
+  if (gemm_spec_out == nullptr || found == nullptr) {
+    return MakeInvalidArgumentStatus(
+        api,
+        "Doe ORT plugin EP requires gemm_spec_out and found output pointers when searching for Gemm->Relu->Gemm fusion.");
+  }
+  *gemm_spec_out = SupportedNodeSpec{};
+  *found = false;
+
+  if (relu_spec.kind != CompiledOpKind::kRelu || relu_spec.outputs.size() != 1 || relu_spec.outputs[0].value_info == nullptr) {
+    return nullptr;
+  }
+
+  bool is_graph_output = false;
+  OrtStatus* status = api->ValueInfo_IsGraphOutput(relu_spec.outputs[0].value_info, &is_graph_output);
+  if (status != nullptr) return status;
+  if (is_graph_output) {
+    return nullptr;
+  }
+
+  size_t num_consumers = 0;
+  status = api->ValueInfo_GetValueNumConsumers(relu_spec.outputs[0].value_info, &num_consumers);
+  if (status != nullptr) return status;
+  if (num_consumers != 1) {
+    return nullptr;
+  }
+
+  std::vector<const OrtNode*> consumer_nodes(num_consumers, nullptr);
+  std::vector<int64_t> consumer_input_indices(num_consumers, -1);
+  status = api->ValueInfo_GetValueConsumers(
+      relu_spec.outputs[0].value_info,
+      consumer_nodes.data(),
+      consumer_input_indices.data(),
+      consumer_nodes.size());
+  if (status != nullptr) return status;
+  if (consumer_nodes[0] == nullptr || consumer_input_indices[0] != 0 ||
+      already_claimed.find(consumer_nodes[0]) != already_claimed.end()) {
+    return nullptr;
+  }
+
+  SupportedNodeSpec gemm_spec;
+  gemm_spec.node = consumer_nodes[0];
+  gemm_spec.kind = CompiledOpKind::kGemm;
+
+  const char* node_name = nullptr;
+  status = api->Node_GetName(gemm_spec.node, &node_name);
+  if (status != nullptr) return status;
+  gemm_spec.node_name = node_name != nullptr ? node_name : "";
+
+  const char* operator_type = nullptr;
+  status = api->Node_GetOperatorType(gemm_spec.node, &operator_type);
+  if (status != nullptr) return status;
+  if (operator_type == nullptr || std::string_view(operator_type) != kGemmOperatorType) {
+    return nullptr;
+  }
+
+  const char* domain = nullptr;
+  status = api->Node_GetDomain(gemm_spec.node, &domain);
+  if (status != nullptr) return status;
+  if (!IsSupportedOnnxDomain(domain)) {
+    return nullptr;
+  }
+
+  bool gemm_attributes_supported = false;
+  status = HasSupportedGemmAttributes(api, gemm_spec.node, &gemm_attributes_supported);
+  if (status != nullptr) return status;
+  if (!gemm_attributes_supported) {
+    return nullptr;
+  }
+
+  std::vector<const OrtValueInfo*> inputs;
+  status = GetNodeValueInfos(api, gemm_spec.node, true, &inputs);
+  if (status != nullptr) return status;
+  if (inputs.size() != kTernaryInputCount) {
+    return nullptr;
+  }
+
+  std::vector<const OrtValueInfo*> outputs;
+  status = GetNodeValueInfos(api, gemm_spec.node, false, &outputs);
+  if (status != nullptr) return status;
+  if (outputs.size() != kSingleOutputCount) {
+    return nullptr;
+  }
+
+  gemm_spec.inputs.reserve(inputs.size());
+  for (size_t input_index = 0; input_index < inputs.size(); ++input_index) {
+    TensorValueDescriptor descriptor;
+    bool tensor_supported = false;
+    status = DescribeSupportedTensorValue(api, inputs[input_index], &descriptor, &tensor_supported);
+    if (status != nullptr) return status;
+    if (!tensor_supported) {
+      if (input_index != 0) {
+        return nullptr;
+      }
+      descriptor = relu_spec.outputs[0];
+    } else if (input_index == 0 && !SameTypeAndShape(descriptor, relu_spec.outputs[0])) {
+      return nullptr;
+    }
+    gemm_spec.inputs.push_back(std::move(descriptor));
+  }
+
+  gemm_spec.outputs.reserve(outputs.size());
+  for (const OrtValueInfo* output_info : outputs) {
+    TensorValueDescriptor descriptor;
+    bool tensor_supported = false;
+    status = DescribeSupportedTensorValue(api, output_info, &descriptor, &tensor_supported);
+    if (status != nullptr) return status;
+    if (!tensor_supported) {
+      // Allow ORT to omit concrete output shape info and infer it from Gemm inputs.
+    }
+    gemm_spec.outputs.push_back(std::move(descriptor));
+  }
+
+  TensorValueDescriptor inferred_output;
+  if (!InferStaticMatMulOutput(gemm_spec.inputs[0], gemm_spec.inputs[1], &inferred_output)) {
+    return nullptr;
+  }
+  if (!SameTypeAndShape(inferred_output, gemm_spec.inputs[2])) {
+    return nullptr;
+  }
+  const bool output_has_supported_shape =
+      gemm_spec.outputs[0].element_type == kSupportedElementType && IsRank2Matrix(gemm_spec.outputs[0]);
+  if (output_has_supported_shape && !SameTypeAndShape(inferred_output, gemm_spec.outputs[0])) {
+    return nullptr;
+  }
+  if (!output_has_supported_shape) {
+    gemm_spec.outputs[0].element_type = inferred_output.element_type;
+    gemm_spec.outputs[0].dims = inferred_output.dims;
+    gemm_spec.outputs[0].element_count = inferred_output.element_count;
+  }
+
+  *gemm_spec_out = std::move(gemm_spec);
+  *found = true;
+  return nullptr;
+}
+
+SupportedGraphSpec BuildGemmReluGemmGraphSpec(
+    const SupportedNodeSpec& first_gemm_spec,
+    const SupportedNodeSpec& relu_spec,
+    const SupportedNodeSpec& second_gemm_spec) {
+  SupportedGraphSpec graph_spec;
+  graph_spec.kind = CompiledOpKind::kGemmReluGemm;
+  graph_spec.default_node_name = "doe_gemm_relu_gemm";
+  graph_spec.fused_nodes = {first_gemm_spec.node, relu_spec.node, second_gemm_spec.node};
+  graph_spec.logical_input_names = {
+      first_gemm_spec.inputs[0].name,
+      first_gemm_spec.inputs[1].name,
+      first_gemm_spec.inputs[2].name,
+      second_gemm_spec.inputs[1].name,
+      second_gemm_spec.inputs[2].name};
+  return graph_spec;
+}
+
 OrtStatus* ResolveGraphInputBindings(
     const OrtApi* api,
     const OrtGraph* graph,
     const SupportedGraphSpec& graph_spec,
-    std::array<size_t, 3>* indices_out,
+    std::array<size_t, kQuinaryInputCount>* indices_out,
     size_t* input_count_out) {
   if (indices_out == nullptr || input_count_out == nullptr) {
     return MakeInvalidArgumentStatus(
@@ -916,10 +1330,7 @@ OrtStatus* AnalyzeSupportedGraph(
       status = FindSupportedReluConsumer(api, *add_spec, {}, &fused_relu_spec, &fused);
       if (status != nullptr) return status;
       if (fused && fused_relu_spec.node == relu_spec->node) {
-        spec_out->kind = CompiledOpKind::kAddRelu;
-        spec_out->default_node_name = "doe_add_relu";
-        spec_out->fused_nodes = {add_spec->node, relu_spec->node};
-        spec_out->logical_input_names = {add_spec->inputs[0].name, add_spec->inputs[1].name};
+        *spec_out = BuildAddReluGraphSpec(*add_spec, fused_relu_spec);
         *is_supported = true;
         return nullptr;
       }
@@ -948,19 +1359,123 @@ OrtStatus* AnalyzeSupportedGraph(
           &fused);
       if (status != nullptr) return status;
       if (fused && fused_add_spec.node == add_spec->node) {
-        const size_t addend_input_index = matmul_output_input_index == 0 ? 1 : 0;
-        spec_out->kind = CompiledOpKind::kMatMulAdd;
-        spec_out->default_node_name = "doe_matmul_add";
-        spec_out->fused_nodes = {matmul_spec->node, add_spec->node};
-        spec_out->logical_input_names = {
-            matmul_spec->inputs[0].name,
-            matmul_spec->inputs[1].name,
-            add_spec->inputs[addend_input_index].name};
+        *spec_out = BuildMatMulAddGraphSpec(*matmul_spec, fused_add_spec, matmul_output_input_index);
         *is_supported = true;
         return nullptr;
       }
     }
 
+    return nullptr;
+  }
+
+  if (nodes.size() == 3) {
+    std::vector<SupportedNodeSpec> supported_specs(nodes.size());
+    size_t matmul_index = nodes.size();
+    size_t first_gemm_index = nodes.size();
+    size_t second_gemm_index = nodes.size();
+    size_t add_index = nodes.size();
+    size_t relu_index = nodes.size();
+    for (size_t index = 0; index < nodes.size(); ++index) {
+      bool node_supported = false;
+      status = GetSupportedNodeSpec(api, nodes[index], &supported_specs[index], &node_supported);
+      if (status != nullptr) return status;
+      if (!node_supported) {
+        return nullptr;
+      }
+      switch (supported_specs[index].kind) {
+        case CompiledOpKind::kMatMul:
+          if (matmul_index != nodes.size()) return nullptr;
+          matmul_index = index;
+          break;
+        case CompiledOpKind::kGemm:
+          if (first_gemm_index == nodes.size()) {
+            first_gemm_index = index;
+          } else if (second_gemm_index == nodes.size()) {
+            second_gemm_index = index;
+          } else {
+            return nullptr;
+          }
+          break;
+        case CompiledOpKind::kAdd:
+          if (add_index != nodes.size()) return nullptr;
+          add_index = index;
+          break;
+        case CompiledOpKind::kRelu:
+          if (relu_index != nodes.size()) return nullptr;
+          relu_index = index;
+          break;
+        case CompiledOpKind::kIdentity:
+        case CompiledOpKind::kMatMulAdd:
+        case CompiledOpKind::kMatMulAddRelu:
+        case CompiledOpKind::kAddRelu:
+          return nullptr;
+      }
+    }
+
+    if (first_gemm_index != nodes.size() && second_gemm_index != nodes.size() && relu_index != nodes.size() &&
+        matmul_index == nodes.size() && add_index == nodes.size()) {
+      const SupportedNodeSpec& relu_spec = supported_specs[relu_index];
+
+      const SupportedNodeSpec* first_gemm_spec = nullptr;
+      const SupportedNodeSpec* second_gemm_spec = nullptr;
+      for (const size_t gemm_index : {first_gemm_index, second_gemm_index}) {
+        const SupportedNodeSpec& candidate = supported_specs[gemm_index];
+        SupportedNodeSpec fused_relu_spec;
+        bool fused_relu = false;
+        status = FindSupportedReluConsumer(api, candidate, {}, &fused_relu_spec, &fused_relu);
+        if (status != nullptr) return status;
+        if (fused_relu && fused_relu_spec.node == relu_spec.node) {
+          first_gemm_spec = &candidate;
+          const size_t other_gemm_index = gemm_index == first_gemm_index ? second_gemm_index : first_gemm_index;
+          second_gemm_spec = &supported_specs[other_gemm_index];
+          break;
+        }
+      }
+      if (first_gemm_spec == nullptr || second_gemm_spec == nullptr) {
+        return nullptr;
+      }
+
+      SupportedNodeSpec fused_second_gemm_spec;
+      bool fused_second_gemm = false;
+      status = FindSupportedGemmConsumer(api, relu_spec, {}, &fused_second_gemm_spec, &fused_second_gemm);
+      if (status != nullptr) return status;
+      if (!fused_second_gemm || fused_second_gemm_spec.node != second_gemm_spec->node) {
+        return nullptr;
+      }
+
+      *spec_out = BuildGemmReluGemmGraphSpec(*first_gemm_spec, relu_spec, fused_second_gemm_spec);
+      *is_supported = true;
+      return nullptr;
+    }
+
+    if (matmul_index == nodes.size() || add_index == nodes.size() || relu_index == nodes.size() ||
+        first_gemm_index != nodes.size() || second_gemm_index != nodes.size()) {
+      return nullptr;
+    }
+
+    const SupportedNodeSpec& matmul_spec = supported_specs[matmul_index];
+    const SupportedNodeSpec& add_spec = supported_specs[add_index];
+    const SupportedNodeSpec& relu_spec = supported_specs[relu_index];
+
+    SupportedNodeSpec fused_add_spec;
+    size_t matmul_output_input_index = 0;
+    bool fused_add = false;
+    status = FindSupportedAddConsumer(api, matmul_spec, {}, &fused_add_spec, &matmul_output_input_index, &fused_add);
+    if (status != nullptr) return status;
+    if (!fused_add || fused_add_spec.node != add_spec.node) {
+      return nullptr;
+    }
+
+    SupportedNodeSpec fused_relu_spec;
+    bool fused_relu = false;
+    status = FindSupportedReluConsumer(api, fused_add_spec, {}, &fused_relu_spec, &fused_relu);
+    if (status != nullptr) return status;
+    if (!fused_relu || fused_relu_spec.node != relu_spec.node) {
+      return nullptr;
+    }
+
+    *spec_out = BuildMatMulAddReluGraphSpec(matmul_spec, fused_add_spec, matmul_output_input_index, fused_relu_spec);
+    *is_supported = true;
     return nullptr;
   }
 
@@ -1195,6 +1710,10 @@ OrtStatus* ValidateRuntimeMatMulShape(
   return nullptr;
 }
 
+float ReluValue(const float value) {
+  return value < 0.0f ? 0.0f : value;
+}
+
 OrtStatus* ExecuteIdentity(const CompiledNodeComputeInfo& info, OrtKernelContext* kernel_context) {
   RuntimeTensorDescriptor input_descriptor;
   const float* input_data = nullptr;
@@ -1242,8 +1761,7 @@ OrtStatus* ExecuteRelu(const CompiledNodeComputeInfo& info, OrtKernelContext* ke
   if (status != nullptr) return status;
 
   for (size_t index = 0; index < input_descriptor.element_count; ++index) {
-    const float value = input_data[index];
-    output_data[index] = value < 0.0f ? 0.0f : value;
+    output_data[index] = ReluValue(input_data[index]);
   }
   return nullptr;
 }
@@ -1275,6 +1793,111 @@ OrtStatus* ExecuteMatMul(const CompiledNodeComputeInfo& info, OrtKernelContext* 
         sum += lhs_data[row * k_dim + k_index] * rhs_data[k_index * n_dim + col];
       }
       output_data[row * n_dim + col] = sum;
+    }
+  }
+  return nullptr;
+}
+
+OrtStatus* ExecuteGemm(const CompiledNodeComputeInfo& info, OrtKernelContext* kernel_context) {
+  RuntimeTensorDescriptor lhs_descriptor;
+  RuntimeTensorDescriptor rhs_descriptor;
+  RuntimeTensorDescriptor addend_descriptor;
+  RuntimeTensorDescriptor output_descriptor;
+  const float* lhs_data = nullptr;
+  const float* rhs_data = nullptr;
+  const float* addend_data = nullptr;
+  OrtStatus* status = GetKernelInputDataMapped(info, kernel_context, 0, &lhs_descriptor, &lhs_data);
+  if (status != nullptr) return status;
+  status = GetKernelInputDataMapped(info, kernel_context, 1, &rhs_descriptor, &rhs_data);
+  if (status != nullptr) return status;
+  status = GetKernelInputDataMapped(info, kernel_context, 2, &addend_descriptor, &addend_data);
+  if (status != nullptr) return status;
+  status = ValidateRuntimeMatMulShape(info, lhs_descriptor, rhs_descriptor, &output_descriptor);
+  if (status != nullptr) return status;
+  status = ValidateSameRuntimeShape(info, "matmul_output", output_descriptor, "gemm_bias", addend_descriptor);
+  if (status != nullptr) return status;
+
+  float* output_data = nullptr;
+  status = CreateKernelOutput(info, kernel_context, output_descriptor, &output_data);
+  if (status != nullptr) return status;
+
+  const size_t m_dim = static_cast<size_t>(lhs_descriptor.dims[0]);
+  const size_t k_dim = static_cast<size_t>(lhs_descriptor.dims[1]);
+  const size_t n_dim = static_cast<size_t>(rhs_descriptor.dims[1]);
+  for (size_t row = 0; row < m_dim; ++row) {
+    for (size_t col = 0; col < n_dim; ++col) {
+      float sum = 0.0f;
+      for (size_t k_index = 0; k_index < k_dim; ++k_index) {
+        sum += lhs_data[row * k_dim + k_index] * rhs_data[k_index * n_dim + col];
+      }
+      const size_t output_index = row * n_dim + col;
+      output_data[output_index] = sum + addend_data[output_index];
+    }
+  }
+  return nullptr;
+}
+
+OrtStatus* ExecuteGemmReluGemm(const CompiledNodeComputeInfo& info, OrtKernelContext* kernel_context) {
+  RuntimeTensorDescriptor input_descriptor;
+  RuntimeTensorDescriptor hidden_weight_descriptor;
+  RuntimeTensorDescriptor hidden_bias_descriptor;
+  RuntimeTensorDescriptor output_weight_descriptor;
+  RuntimeTensorDescriptor output_bias_descriptor;
+  RuntimeTensorDescriptor hidden_descriptor;
+  RuntimeTensorDescriptor output_descriptor;
+  const float* input_data = nullptr;
+  const float* hidden_weight_data = nullptr;
+  const float* hidden_bias_data = nullptr;
+  const float* output_weight_data = nullptr;
+  const float* output_bias_data = nullptr;
+  OrtStatus* status = GetKernelInputDataMapped(info, kernel_context, 0, &input_descriptor, &input_data);
+  if (status != nullptr) return status;
+  status = GetKernelInputDataMapped(info, kernel_context, 1, &hidden_weight_descriptor, &hidden_weight_data);
+  if (status != nullptr) return status;
+  status = GetKernelInputDataMapped(info, kernel_context, 2, &hidden_bias_descriptor, &hidden_bias_data);
+  if (status != nullptr) return status;
+  status = GetKernelInputDataMapped(info, kernel_context, 3, &output_weight_descriptor, &output_weight_data);
+  if (status != nullptr) return status;
+  status = GetKernelInputDataMapped(info, kernel_context, 4, &output_bias_descriptor, &output_bias_data);
+  if (status != nullptr) return status;
+
+  status = ValidateRuntimeMatMulShape(info, input_descriptor, hidden_weight_descriptor, &hidden_descriptor);
+  if (status != nullptr) return status;
+  status = ValidateSameRuntimeShape(info, "hidden_gemm_output", hidden_descriptor, "hidden_bias", hidden_bias_descriptor);
+  if (status != nullptr) return status;
+  status = ValidateRuntimeMatMulShape(info, hidden_descriptor, output_weight_descriptor, &output_descriptor);
+  if (status != nullptr) return status;
+  status = ValidateSameRuntimeShape(info, "output_gemm_output", output_descriptor, "output_bias", output_bias_descriptor);
+  if (status != nullptr) return status;
+
+  std::vector<float> hidden_activations(hidden_descriptor.element_count, 0.0f);
+  const size_t batch_dim = static_cast<size_t>(input_descriptor.dims[0]);
+  const size_t input_dim = static_cast<size_t>(input_descriptor.dims[1]);
+  const size_t hidden_dim = static_cast<size_t>(hidden_weight_descriptor.dims[1]);
+  for (size_t row = 0; row < batch_dim; ++row) {
+    for (size_t col = 0; col < hidden_dim; ++col) {
+      float sum = 0.0f;
+      for (size_t k_index = 0; k_index < input_dim; ++k_index) {
+        sum += input_data[row * input_dim + k_index] * hidden_weight_data[k_index * hidden_dim + col];
+      }
+      const size_t hidden_index = row * hidden_dim + col;
+      hidden_activations[hidden_index] = ReluValue(sum + hidden_bias_data[hidden_index]);
+    }
+  }
+
+  float* output_data = nullptr;
+  status = CreateKernelOutput(info, kernel_context, output_descriptor, &output_data);
+  if (status != nullptr) return status;
+
+  const size_t output_dim = static_cast<size_t>(output_weight_descriptor.dims[1]);
+  for (size_t row = 0; row < batch_dim; ++row) {
+    for (size_t col = 0; col < output_dim; ++col) {
+      float sum = 0.0f;
+      for (size_t k_index = 0; k_index < hidden_dim; ++k_index) {
+        sum += hidden_activations[row * hidden_dim + k_index] * output_weight_data[k_index * output_dim + col];
+      }
+      const size_t output_index = row * output_dim + col;
+      output_data[output_index] = sum + output_bias_data[output_index];
     }
   }
   return nullptr;
@@ -1319,6 +1942,45 @@ OrtStatus* ExecuteMatMulAdd(const CompiledNodeComputeInfo& info, OrtKernelContex
   return nullptr;
 }
 
+OrtStatus* ExecuteMatMulAddRelu(const CompiledNodeComputeInfo& info, OrtKernelContext* kernel_context) {
+  RuntimeTensorDescriptor lhs_descriptor;
+  RuntimeTensorDescriptor rhs_descriptor;
+  RuntimeTensorDescriptor addend_descriptor;
+  RuntimeTensorDescriptor output_descriptor;
+  const float* lhs_data = nullptr;
+  const float* rhs_data = nullptr;
+  const float* addend_data = nullptr;
+  OrtStatus* status = GetKernelInputDataMapped(info, kernel_context, 0, &lhs_descriptor, &lhs_data);
+  if (status != nullptr) return status;
+  status = GetKernelInputDataMapped(info, kernel_context, 1, &rhs_descriptor, &rhs_data);
+  if (status != nullptr) return status;
+  status = GetKernelInputDataMapped(info, kernel_context, 2, &addend_descriptor, &addend_data);
+  if (status != nullptr) return status;
+  status = ValidateRuntimeMatMulShape(info, lhs_descriptor, rhs_descriptor, &output_descriptor);
+  if (status != nullptr) return status;
+  status = ValidateSameRuntimeShape(info, "matmul_output", output_descriptor, "add_input", addend_descriptor);
+  if (status != nullptr) return status;
+
+  float* output_data = nullptr;
+  status = CreateKernelOutput(info, kernel_context, output_descriptor, &output_data);
+  if (status != nullptr) return status;
+
+  const size_t m_dim = static_cast<size_t>(lhs_descriptor.dims[0]);
+  const size_t k_dim = static_cast<size_t>(lhs_descriptor.dims[1]);
+  const size_t n_dim = static_cast<size_t>(rhs_descriptor.dims[1]);
+  for (size_t row = 0; row < m_dim; ++row) {
+    for (size_t col = 0; col < n_dim; ++col) {
+      float sum = 0.0f;
+      for (size_t k_index = 0; k_index < k_dim; ++k_index) {
+        sum += lhs_data[row * k_dim + k_index] * rhs_data[k_index * n_dim + col];
+      }
+      const size_t output_index = row * n_dim + col;
+      output_data[output_index] = ReluValue(sum + addend_data[output_index]);
+    }
+  }
+  return nullptr;
+}
+
 OrtStatus* ExecuteAddRelu(const CompiledNodeComputeInfo& info, OrtKernelContext* kernel_context) {
   RuntimeTensorDescriptor lhs_descriptor;
   RuntimeTensorDescriptor rhs_descriptor;
@@ -1337,7 +1999,7 @@ OrtStatus* ExecuteAddRelu(const CompiledNodeComputeInfo& info, OrtKernelContext*
 
   for (size_t index = 0; index < lhs_descriptor.element_count; ++index) {
     const float sum = lhs_data[index] + rhs_data[index];
-    output_data[index] = sum < 0.0f ? 0.0f : sum;
+    output_data[index] = ReluValue(sum);
   }
   return nullptr;
 }
@@ -1390,8 +2052,14 @@ OrtStatus* ORT_API_CALL ComputeImpl(
       return ExecuteRelu(info, kernel_context);
     case CompiledOpKind::kMatMul:
       return ExecuteMatMul(info, kernel_context);
+    case CompiledOpKind::kGemm:
+      return ExecuteGemm(info, kernel_context);
+    case CompiledOpKind::kGemmReluGemm:
+      return ExecuteGemmReluGemm(info, kernel_context);
     case CompiledOpKind::kMatMulAdd:
       return ExecuteMatMulAdd(info, kernel_context);
+    case CompiledOpKind::kMatMulAddRelu:
+      return ExecuteMatMulAddRelu(info, kernel_context);
     case CompiledOpKind::kAddRelu:
       return ExecuteAddRelu(info, kernel_context);
   }
@@ -1441,12 +2109,16 @@ void ResetDebugCounters() NO_EXCEPTION {
   g_claimed_add_nodes.store(0, std::memory_order_relaxed);
   g_claimed_relu_nodes.store(0, std::memory_order_relaxed);
   g_claimed_matmul_nodes.store(0, std::memory_order_relaxed);
+  g_claimed_gemm_nodes.store(0, std::memory_order_relaxed);
   g_compile_calls.store(0, std::memory_order_relaxed);
   g_compiled_identity_groups.store(0, std::memory_order_relaxed);
   g_compiled_add_groups.store(0, std::memory_order_relaxed);
   g_compiled_relu_groups.store(0, std::memory_order_relaxed);
   g_compiled_matmul_groups.store(0, std::memory_order_relaxed);
+  g_compiled_gemm_groups.store(0, std::memory_order_relaxed);
+  g_compiled_gemm_relu_gemm_groups.store(0, std::memory_order_relaxed);
   g_compiled_matmul_add_groups.store(0, std::memory_order_relaxed);
+  g_compiled_matmul_add_relu_groups.store(0, std::memory_order_relaxed);
   g_compiled_add_relu_groups.store(0, std::memory_order_relaxed);
   g_create_state_calls.store(0, std::memory_order_relaxed);
   g_compute_calls.store(0, std::memory_order_relaxed);
@@ -1454,7 +2126,10 @@ void ResetDebugCounters() NO_EXCEPTION {
   g_compute_add_calls.store(0, std::memory_order_relaxed);
   g_compute_relu_calls.store(0, std::memory_order_relaxed);
   g_compute_matmul_calls.store(0, std::memory_order_relaxed);
+  g_compute_gemm_calls.store(0, std::memory_order_relaxed);
+  g_compute_gemm_relu_gemm_calls.store(0, std::memory_order_relaxed);
   g_compute_matmul_add_calls.store(0, std::memory_order_relaxed);
+  g_compute_matmul_add_relu_calls.store(0, std::memory_order_relaxed);
   g_compute_add_relu_calls.store(0, std::memory_order_relaxed);
   g_release_state_calls.store(0, std::memory_order_relaxed);
 }
@@ -1467,12 +2142,16 @@ DoeOrtEpDebugCounters SnapshotDebugCounters() NO_EXCEPTION {
       .claimed_add_nodes = g_claimed_add_nodes.load(std::memory_order_relaxed),
       .claimed_relu_nodes = g_claimed_relu_nodes.load(std::memory_order_relaxed),
       .claimed_matmul_nodes = g_claimed_matmul_nodes.load(std::memory_order_relaxed),
+      .claimed_gemm_nodes = g_claimed_gemm_nodes.load(std::memory_order_relaxed),
       .compile_calls = g_compile_calls.load(std::memory_order_relaxed),
       .compiled_identity_groups = g_compiled_identity_groups.load(std::memory_order_relaxed),
       .compiled_add_groups = g_compiled_add_groups.load(std::memory_order_relaxed),
       .compiled_relu_groups = g_compiled_relu_groups.load(std::memory_order_relaxed),
       .compiled_matmul_groups = g_compiled_matmul_groups.load(std::memory_order_relaxed),
+      .compiled_gemm_groups = g_compiled_gemm_groups.load(std::memory_order_relaxed),
+      .compiled_gemm_relu_gemm_groups = g_compiled_gemm_relu_gemm_groups.load(std::memory_order_relaxed),
       .compiled_matmul_add_groups = g_compiled_matmul_add_groups.load(std::memory_order_relaxed),
+      .compiled_matmul_add_relu_groups = g_compiled_matmul_add_relu_groups.load(std::memory_order_relaxed),
       .compiled_add_relu_groups = g_compiled_add_relu_groups.load(std::memory_order_relaxed),
       .create_state_calls = g_create_state_calls.load(std::memory_order_relaxed),
       .compute_calls = g_compute_calls.load(std::memory_order_relaxed),
@@ -1480,7 +2159,10 @@ DoeOrtEpDebugCounters SnapshotDebugCounters() NO_EXCEPTION {
       .compute_add_calls = g_compute_add_calls.load(std::memory_order_relaxed),
       .compute_relu_calls = g_compute_relu_calls.load(std::memory_order_relaxed),
       .compute_matmul_calls = g_compute_matmul_calls.load(std::memory_order_relaxed),
+      .compute_gemm_calls = g_compute_gemm_calls.load(std::memory_order_relaxed),
+      .compute_gemm_relu_gemm_calls = g_compute_gemm_relu_gemm_calls.load(std::memory_order_relaxed),
       .compute_matmul_add_calls = g_compute_matmul_add_calls.load(std::memory_order_relaxed),
+      .compute_matmul_add_relu_calls = g_compute_matmul_add_relu_calls.load(std::memory_order_relaxed),
       .compute_add_relu_calls = g_compute_add_relu_calls.load(std::memory_order_relaxed),
       .release_state_calls = g_release_state_calls.load(std::memory_order_relaxed),
   };
@@ -1539,10 +2221,30 @@ OrtStatus* ORT_API_CALL DoeOrtEp::GetCapabilityImpl(
           &found_add);
       if (status != nullptr) return status;
       if (found_add) {
-        (void)matmul_output_input_index;
-        graph_spec.kind = CompiledOpKind::kMatMulAdd;
-        graph_spec.default_node_name = "doe_matmul_add";
-        graph_spec.fused_nodes = {node, add_spec.node};
+        SupportedNodeSpec relu_spec;
+        bool found_relu = false;
+        status = FindSupportedReluConsumer(self.bindings_.api, add_spec, claimed_nodes, &relu_spec, &found_relu);
+        if (status != nullptr) return status;
+        if (found_relu) {
+          graph_spec = BuildMatMulAddReluGraphSpec(node_spec, add_spec, matmul_output_input_index, relu_spec);
+        } else {
+          graph_spec = BuildMatMulAddGraphSpec(node_spec, add_spec, matmul_output_input_index);
+        }
+      }
+    } else if (node_spec.kind == CompiledOpKind::kGemm) {
+      SupportedNodeSpec relu_spec;
+      bool found_relu = false;
+      status = FindSupportedReluConsumer(self.bindings_.api, node_spec, claimed_nodes, &relu_spec, &found_relu);
+      if (status != nullptr) return status;
+      if (found_relu) {
+        SupportedNodeSpec second_gemm_spec;
+        bool found_second_gemm = false;
+        status =
+            FindSupportedGemmConsumer(self.bindings_.api, relu_spec, claimed_nodes, &second_gemm_spec, &found_second_gemm);
+        if (status != nullptr) return status;
+        if (found_second_gemm) {
+          graph_spec = BuildGemmReluGemmGraphSpec(node_spec, relu_spec, second_gemm_spec);
+        }
       }
     } else if (node_spec.kind == CompiledOpKind::kAdd) {
       SupportedNodeSpec relu_spec;
@@ -1550,9 +2252,7 @@ OrtStatus* ORT_API_CALL DoeOrtEp::GetCapabilityImpl(
       status = FindSupportedReluConsumer(self.bindings_.api, node_spec, claimed_nodes, &relu_spec, &found_relu);
       if (status != nullptr) return status;
       if (found_relu) {
-        graph_spec.kind = CompiledOpKind::kAddRelu;
-        graph_spec.default_node_name = "doe_add_relu";
-        graph_spec.fused_nodes = {node, relu_spec.node};
+        graph_spec = BuildAddReluGraphSpec(node_spec, relu_spec);
       }
     }
 
@@ -1615,7 +2315,7 @@ OrtStatus* ORT_API_CALL DoeOrtEp::CompileImpl(
       return MakeStatus(
           self.bindings_.api,
           ORT_NOT_IMPLEMENTED,
-          "Doe ORT plugin EP was asked to compile a graph outside its narrow float32 Identity/Add/Relu/MatMul/MatMul->Add slice.");
+          "Doe ORT plugin EP was asked to compile a graph outside its narrow float32 Identity/Add/Relu/MatMul/Gemm/Gemm->Relu->Gemm/MatMul->Add/MatMul->Add->Relu/Add->Relu slice.");
     }
 
     auto info = std::make_unique<CompiledNodeComputeInfo>();

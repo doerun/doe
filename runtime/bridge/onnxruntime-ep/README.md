@@ -36,13 +36,15 @@ What is implemented today:
   - `CreateEp` creates a real `OrtEp`
   - `GetCapability` claims narrow float32 ONNX-domain `Identity`, `Add`,
     `Relu`, and rank-2 `MatMul` nodes plus the exact two-node
-    `MatMul -> Add` and `Add -> Relu` slices
+    `MatMul -> Add` / `Add -> Relu` slices and the exact three-node
+    `MatMul -> Add -> Relu` slice
   - `Compile` installs tiny compiled compute paths for single-node
-    `Identity`/`Add`/`Relu`/`MatMul` groups and the exact two-node
-    `MatMul -> Add` and `Add -> Relu` groups
+    `Identity`/`Add`/`Relu`/`MatMul` groups and the exact fused
+    `MatMul -> Add`, `MatMul -> Add -> Relu`, and `Add -> Relu` groups
   - the session smoke now proves `Compute()` ran by reading plugin debug
     counters from the shared library and checking expected outputs for
-    `Add`, `Relu`, `MatMul`, `MatMul -> Add`, and `Add -> Relu`
+    `Add`, `Relu`, `MatMul`, `MatMul -> Add`, `MatMul -> Add -> Relu`, and
+    `Add -> Relu`
 
 What is not implemented yet:
 
@@ -61,13 +63,14 @@ Current behavior is intentionally narrow:
 - `GetCapability` only claims supported dense float32 ONNX-domain nodes:
   same-rank same-shape `Identity`, `Add`, and `Relu`; rank-2 exact-shape
   `MatMul`; plus the exact two-node `MatMul -> Add` and `Add -> Relu` slices
+  and the exact three-node `MatMul -> Add -> Relu` slice
 - `Compile` creates a real `OrtNodeComputeInfo` for those narrow groups
 - `Compute` executes that slice with boring explicit float32 kernels:
   copy, elementwise add, `Relu`, rank-2 `MatMul`, and fused
-  `MatMul -> Add` / `Add -> Relu`
+  `MatMul -> Add` / `MatMul -> Add -> Relu` / `Add -> Relu`
 - the repo-only session smoke proves Doe executed the non-trivial slice and
   matched expected outputs via
-  `artifacts/20260413T170900Z/doe-ort-ep-session-smoke.json`
+  `artifacts/20260413T172955Z/doe-ort-ep-session-smoke.json`
 - anything beyond that narrow slice still returns explicit unsupported
   behavior rather than pretending a broader graph-execution bridge exists
 
@@ -115,7 +118,7 @@ cd runtime/zig
 ./zig-out/bin/doe-ort-ep-session-smoke \
   --plugin-path ./zig-out/lib/libonnxruntime_doe_ep.so \
   --ort-lib-path <path-to-libonnxruntime-shared-library> \
-  --case add|relu|matmul|matmul_add|add_relu|all \
+  --case add|relu|matmul|matmul_add|matmul_add_relu|add_relu|all \
   --output /tmp/doe-ort-ep-session-smoke.json
 ```
 
@@ -128,27 +131,27 @@ Current session smoke scope:
   `SessionOptionsAppendExecutionProvider_V2`
 - disables ORT graph optimizations so the proof models stay structurally
   explicit
-- builds tiny in-memory `Add`, `Relu`, `MatMul`, `MatMul -> Add`, and
-  `Add -> Relu` models via ORT's Model Editor API, plus a one-node `Identity`
-  proof case
+- builds tiny in-memory `Add`, `Relu`, `MatMul`, `MatMul -> Add`,
+  `MatMul -> Add -> Relu`, and `Add -> Relu` models via ORT's Model Editor
+  API, plus a one-node `Identity` proof case
 - creates a session for each selected case and runs the model successfully
 - verifies expected output values and the Doe claim/compile/compute counter
   deltas for each case
 - current evidence is
-  `artifacts/20260413T170900Z/doe-ort-ep-session-smoke.json`
+  `artifacts/20260413T172955Z/doe-ort-ep-session-smoke.json`
 
 Repo-only bench surface:
 
 ```sh
 python3 bench/single-runtime/run_bench.py \
   --workloads bench/workloads/workloads.native.ort-doe-ep-smoke.json \
-  --workload-id inference_ort_doe_ep_matmul_add_float32_rank2_exactshape \
+  --workload-id inference_ort_doe_ep_matmul_add_relu_float32_rank2_exactshape \
   --executor-id ort_native_doe_ep \
   --iterations 3 \
   --warmup 1 \
-  --out-dir bench/out/native-ort-doe-ep/matmul_add \
-  --out-report bench/out/native-ort-doe-ep/matmul_add.report.json \
-  --out-metadata bench/out/native-ort-doe-ep/matmul_add.metadata.json \
+  --out-dir bench/out/native-ort-doe-ep/matmul_add_relu \
+  --out-report bench/out/native-ort-doe-ep/matmul_add_relu.report.json \
+  --out-metadata bench/out/native-ort-doe-ep/matmul_add_relu.metadata.json \
   --no-timestamp-output
 ```
 
@@ -159,7 +162,23 @@ Current repo-local bench evidence for the executor-backed narrow slice lives at:
 - `bench/out/native-ort-doe-ep/relu.report.json`
 - `bench/out/native-ort-doe-ep/matmul.report.json`
 - `bench/out/native-ort-doe-ep/matmul_add.report.json`
+- `bench/out/native-ort-doe-ep/matmul_add_relu.report.json`
 - `bench/out/native-ort-doe-ep/add_relu.report.json`
+
+Repo-only incumbent compare + claim scaffold:
+
+- incumbent runner:
+  `bench/executors/run-native-ort-incumbent-bench.py`
+- incumbent executor id:
+  `ort_native_webgpu_incumbent`
+- shared compare workload contract:
+  `bench/workloads/workloads.native.ort-webgpu-provider-compare.basic-ops.json`
+- shared compare config:
+  `bench/native-compare/compare.config.native.ort-webgpu-provider.basic-ops.json`
+- current strict compare artifact:
+  `bench/out/native-ort-webgpu-provider/20260413T175708Z/basic-ops.compare.json`
+- current local claim artifact:
+  `bench/out/native-ort-webgpu-provider/20260413T175708Z/basic-ops.claim.json`
 
 Compatibility note:
 
@@ -176,7 +195,5 @@ The vendored ORT headers and license are copied from the public ONNX Runtime
 repository and remain under the upstream MIT license in
 `vendor/onnxruntime/LICENSE`.
 
-The next honest milestone is not "benchmark victory." It is extending this from
-a narrow basic-ops proof slice into a broader Doe-backed graph execution
-bridge that can run more non-trivial ORT-assigned work and support a benchmark
-lane.
+The next honest milestone is extending the strict native compare from this
+basic-ops scaffold into broader Doe-backed graph execution slices.

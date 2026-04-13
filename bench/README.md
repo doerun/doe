@@ -91,9 +91,11 @@ from scattered configs:
 | AMD Vulkan package Doe vs Node/Bun packages | config-backed, not promoted | `python3 bench/cli.py run-config --config bench/native-compare/compare.config.amd.vulkan.gemma270m.node-package.ir.json --side baseline`, then `--side comparison`, then compare the emitted receipts |
 | Node ORT WebGPU Doe vs `node-webgpu` package | repo-only strict comparable local claim surface | `python3 bench/cli.py run-config --config bench/native-compare/compare.config.node.ort-webgpu-provider.gemma270m.json --side baseline`, then `--side comparison`, then compare the emitted receipts with `--comparability strict --require-timing-class process-wall`, then run `bench/cli.py claim --config ... bench/out/compare-report.json` |
 | Bun ORT WebGPU Doe vs `bun-webgpu` package | repo-only strict comparable local claim surface | `python3 bench/cli.py run-config --config bench/native-compare/compare.config.bun.ort-webgpu-provider.gemma270m.prefill32.decode1.json --side baseline`, then `--side comparison`, then compare the emitted receipts with `--comparability strict --require-timing-class process-wall`, then run `bench/cli.py claim --config ... bench/out/bun-ort-webgpu-provider-compare/gemma270m-prefill32-decode1.compare.json` |
+| Bun ORT WebGPU Doe vs `bun-webgpu` package breadth matrix | repo-only strict comparable exploration surface | `python3 bench/cli.py run-config --config bench/native-compare/compare.config.bun.ort-webgpu-provider.breadth.json --side baseline`, then `--side comparison`, then compare the emitted receipts with `--comparability strict --require-timing-class process-wall` |
 | Node ORT WebGPU Doe vs `node-webgpu` package breadth matrix | repo-only strict comparable exploration surface | `python3 bench/cli.py run-config --config bench/native-compare/compare.config.node.ort-webgpu-provider.breadth.json --side baseline`, then `--side comparison`, then compare the emitted receipts with `--comparability strict --require-timing-class process-wall` |
-| Browser ORT WebGPU Doe vs Dawn | repo-only same-stack browser surface | `node browser/chromium/scripts/webgpu-playwright-ort-bench.mjs --mode both --headless true --timed-iters 5 --warmup-iters 2` |
-| Native ORT Doe EP narrow basic-ops slice | repo-only single-runtime bench surface | `python3 bench/single-runtime/run_bench.py --workloads bench/workloads/workloads.native.ort-doe-ep-smoke.json --workload-id inference_ort_doe_ep_matmul_add_float32_rank2_exactshape --executor-id ort_native_doe_ep --iterations 3 --warmup 1 --out-dir bench/out/native-ort-doe-ep/matmul_add --out-report bench/out/native-ort-doe-ep/matmul_add.report.json --out-metadata bench/out/native-ort-doe-ep/matmul_add.metadata.json --no-timestamp-output` |
+| Browser ORT WebGPU Doe vs Dawn | repo-only strict comparable browser surface | `python3 bench/cli.py run-config --config bench/native-compare/compare.config.browser.ort-webgpu.json --side baseline`, then `--side comparison`, then compare the emitted receipts with `--comparability strict --require-timing-class process-wall` |
+| Native ORT Doe EP narrow basic-ops slice | repo-only single-runtime bench surface | `python3 bench/single-runtime/run_bench.py --workloads bench/workloads/workloads.native.ort-doe-ep-smoke.json --workload-id inference_ort_doe_ep_matmul_add_relu_float32_rank2_exactshape --executor-id ort_native_doe_ep --iterations 3 --warmup 1 --out-dir bench/out/native-ort-doe-ep/matmul_add_relu --out-report bench/out/native-ort-doe-ep/matmul_add_relu.report.json --out-metadata bench/out/native-ort-doe-ep/matmul_add_relu.metadata.json --no-timestamp-output` |
+| Native ORT incumbent WebGPU vs Doe EP basic-ops compare | repo-only strict comparable local claim surface | `python3 bench/cli.py run-config --config bench/native-compare/compare.config.native.ort-webgpu-provider.basic-ops.json --side baseline`, then `--side comparison`, then compare the emitted receipts with `--comparability strict --require-timing-class process-wall`, then run `bench/cli.py claim --config ... bench/out/native-ort-webgpu-provider/20260413T175708Z/basic-ops.compare.json` |
 | Node ORT WebGPU vs Doppler on Doe provider | repo-only directional, not claimable | `python3 bench/cli.py run-config --config bench/native-compare/compare.config.node.ort-vs-doppler.gemma270m.json --side baseline`, then `--side comparison`, then compare the emitted receipts |
 | Local D3D12 package Doe vs Node/Bun packages | not front-doored today | do not assume a supported matrix; add an explicit config/contract first |
 
@@ -118,15 +120,16 @@ What that means today:
   validation:
   `zig build ort-plugin-ep-smoke-run -- --plugin-path <plugin> --ort-lib-path <ort-shared-lib>`
 - the repo now also has a repo-only session smoke runner:
-  `zig build ort-plugin-ep-session-smoke-run -- --plugin-path <plugin> --ort-lib-path <ort-shared-lib> --case identity|add|relu|matmul|matmul_add|add_relu|all`
+  `zig build ort-plugin-ep-session-smoke-run -- --plugin-path <plugin> --ort-lib-path <ort-shared-lib> --case identity|add|relu|matmul|matmul_add|matmul_add_relu|add_relu|all`
 - the plugin now creates real `OrtEpDevice` instances and a narrow native
   `OrtEp` execution slice for `Identity`, `Add`, `Relu`, rank-2 `MatMul`, and
-  exact two-node `MatMul -> Add` / `Add -> Relu`; see
-  `runtime/bridge/onnxruntime-ep/artifacts/20260413T170900Z/doe-ort-ep-session-smoke.json`
+  exact `MatMul -> Add` / `MatMul -> Add -> Relu` / `Add -> Relu` fused
+  groups; see
+  `runtime/bridge/onnxruntime-ep/artifacts/20260413T172955Z/doe-ort-ep-session-smoke.json`
   for the current proof that Doe claimed, compiled, and executed that slice
 - the repo now also has a repo-only single-runtime `bench/` surface for the
   current `Identity`, `Add`, `Relu`, rank-2 `MatMul`, and exact
-  `MatMul -> Add` / `Add -> Relu` slice:
+  `MatMul -> Add` / `MatMul -> Add -> Relu` / `Add -> Relu` slice:
   - workload contract:
     `bench/workloads/workloads.native.ort-doe-ep-smoke.json`
   - executor id:
@@ -137,31 +140,54 @@ What that means today:
     - `bench/out/native-ort-doe-ep/relu.report.json`
     - `bench/out/native-ort-doe-ep/matmul.report.json`
     - `bench/out/native-ort-doe-ep/matmul_add.report.json`
+    - `bench/out/native-ort-doe-ep/matmul_add_relu.report.json`
     - `bench/out/native-ort-doe-ep/add_relu.report.json`
+- the repo now also has a repo-only strict native compare and local-claim
+  surface for the current shared `Add`, `Relu`, rank-2 `MatMul`, exact
+  `MatMul -> Add`, exact `MatMul -> Add -> Relu`, and exact `Add -> Relu`
+  slice:
+  - workload contract:
+    `bench/workloads/workloads.native.ort-webgpu-provider-compare.basic-ops.json`
+  - compare config:
+    `bench/native-compare/compare.config.native.ort-webgpu-provider.basic-ops.json`
+  - executors:
+    `ort_native_doe_ep`
+    `ort_native_webgpu_incumbent`
+  - current strict compare artifact:
+    `bench/out/native-ort-webgpu-provider/20260413T175708Z/basic-ops.compare.json`
+  - current local claim artifact:
+    `bench/out/native-ort-webgpu-provider/20260413T175708Z/basic-ops.claim.json`
 
 What it does not mean yet:
 
-- there is no strict native `ORT + incumbent` vs `ORT + Doe` compare lane today
 - there is now a repo-only same-stack Node ORT WebGPU provider-compare lane at
   `bench/native-compare/compare.config.node.ort-webgpu-provider.gemma270m.json`;
   the fresh strict compare and local claim artifacts for the current AMD RADV
   host live at:
-  - `bench/out/node-ort-webgpu-provider-compare/20260413T011722Z/gemma270m.compare.json`
-  - `bench/out/node-ort-webgpu-provider-compare/20260413T011722Z/gemma270m.claim.json`
+  - `bench/out/node-ort-webgpu-provider-compare/20260413T191817Z/gemma270m.compare.json`
+  - `bench/out/node-ort-webgpu-provider-compare/20260413T191817Z/gemma270m.claim.json`
+  - the current Node provider-compare scenarios now use the same local
+    Transformers cache root as the Bun lanes so the package/provider compare
+    contract no longer mixes model-id resolution on Node with local-model
+    resolution on Bun
 - there is now also a repo-only same-stack browser ORT WebGPU Playwright lane
   at `browser/chromium/scripts/webgpu-playwright-ort-bench.mjs`; the current
-  browser-local artifact on this Linux host lives at:
-  - `browser/chromium/artifacts/20260413T023500Z/dawn-vs-doe.browser-ort-bench.diagnostic.json`
-  - that browser evidence is a local same-stack Dawn-vs-Doe `onnxruntime-web`
-    sentiment-analysis run, not a canonical `bench/cli.py` claim lane
+  strict comparable `bench/` surface lives at
+  `bench/native-compare/compare.config.browser.ort-webgpu.json`
+  and the current canonical compare artifact on this Linux host lives at:
+  - `bench/out/browser-ort-webgpu-compare/20260413T193605Z/browser.compare.json`
+  - the browser harness now supports both the short `sentiment` task and the
+    longer `sentiment_longform` task on the same vendored DistilBERT ORT model
+  - the canonical browser compare surface is strict/comparable but still not a
+    local-claim lane
 - there is also a broader repo-only package matrix at
   `bench/native-compare/compare.config.node.ort-webgpu-provider.breadth.json`;
   the current breadth artifacts live at:
-  - `bench/out/node-ort-webgpu-provider-breadth/20260413T013823Z/breadth.compare.json`
-  - `bench/out/node-ort-webgpu-provider-breadth/20260413T013823Z/breadth.workspace/`
-  - `bench/out/node-ort-webgpu-provider-breadth/20260413T013823Z/breadth.claim.json`
-  - the current four-shape breadth matrix is mixed, so it does not support a
-    blanket Doe-over-Dawn ORT package claim on this host
+  - `bench/out/node-ort-webgpu-provider-breadth/20260413T192150Z/breadth.compare.json`
+  - `bench/out/node-ort-webgpu-provider-breadth/20260413T192150Z/breadth.workspace/`
+  - the current five-shape breadth matrix now has a positive overall mean on
+    this AMD RADV host, but it is still mixed workload-by-workload, so it does
+    not support a blanket Doe-over-Dawn ORT package claim on this host
 - there is now also a repo-only same-stack Bun ORT WebGPU provider-compare
   lane at
   `bench/native-compare/compare.config.bun.ort-webgpu-provider.gemma270m.prefill32.decode1.json`;
@@ -170,6 +196,12 @@ What it does not mean yet:
   - `bench/out/bun-ort-webgpu-provider-compare/gemma270m-prefill32-decode1.claim.json`
   - the current local Bun claim artifact records a claimable Doe advantage for
     this exact Bun host / Gemma-3 270M / `prefill 32` + `decode 1` contract
+  - the broader two-shape Bun exploration matrix now also lives at
+    `bench/native-compare/compare.config.bun.ort-webgpu-provider.breadth.json`
+    with the fresh compare artifact at
+    `bench/out/bun-ort-webgpu-provider-breadth/20260413T181619Z/breadth.compare.json`
+  - that broader Bun matrix is mixed, so it does not support a blanket
+    Doe-over-Dawn ORT package claim on this host
 - there is now a repo-only Node directional lane at
   `bench/native-compare/compare.config.node.ort-vs-doppler.gemma270m.json`
   comparing Transformers.js plus `onnxruntime-node` WebGPU against Doppler on

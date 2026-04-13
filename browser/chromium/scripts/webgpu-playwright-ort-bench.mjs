@@ -50,6 +50,18 @@ const TASKS = Object.freeze({
       "I love deterministic benchmark surfaces.",
       "Benchmark drift is frustrating.",
     ]),
+    expectedLabels: Object.freeze(["POSITIVE", "NEGATIVE"]),
+  }),
+  sentiment_longform: Object.freeze({
+    taskId: "sentiment_longform",
+    pipelineTask: "sentiment-analysis",
+    modelId: "Xenova/distilbert-base-uncased-finetuned-sst-2-english",
+    dtype: "uint8",
+    inputPayload: Object.freeze([
+      "I love deterministic benchmark surfaces because they let me compare the same ORT stack across Doe and Dawn without hand-waving away the runtime differences.",
+      "Benchmark drift gets frustrating when the browser lane looks healthy but the package and native lanes still disagree on what work was actually measured.",
+    ]),
+    expectedLabels: Object.freeze(["POSITIVE", "NEGATIVE"]),
   }),
 });
 
@@ -124,7 +136,8 @@ Options:
   --out PATH                JSON report output path (default: browser/chromium/artifacts/<timestamp>/${DEFAULT_OUT_FILE})
   --allow-bench-out         Allow writing this report under bench/out/scratch
   --headless true|false     Launch headless (default: true)
-  --task sentiment          Browser ORT task to run (default: ${DEFAULT_TASK})
+  --task sentiment|sentiment_longform
+                            Browser ORT task to run (default: ${DEFAULT_TASK})
   --timed-iters N           Timed inference iterations per mode (default: ${DEFAULT_TIMED_ITERS})
   --warmup-iters N          Warmup iterations per mode (default: ${DEFAULT_WARMUP_ITERS})
   --suite-timeout-ms N      Max time for one mode suite run (default: ${DEFAULT_SUITE_TIMEOUT_MS})
@@ -689,14 +702,20 @@ async function runMode(chromium, mode, args, localUrl, localPort) {
             timedIterationsMs.push(performance.now() - iterationStarted);
           }
 
-          if (!Array.isArray(finalOutput) || finalOutput.length !== 2) {
-            throw new Error(`expected 2 outputs, got ${JSON.stringify(finalOutput)}`);
+          const expectedLabels = Array.isArray(taskConfig.expectedLabels)
+            ? taskConfig.expectedLabels
+            : null;
+          if (!Array.isArray(finalOutput) || !expectedLabels || finalOutput.length !== expectedLabels.length) {
+            throw new Error(
+              `expected ${expectedLabels?.length ?? "configured"} outputs, got ${JSON.stringify(finalOutput)}`,
+            );
           }
-          if (finalOutput[0]?.label !== "POSITIVE") {
-            throw new Error(`unexpected first output ${JSON.stringify(finalOutput[0])}`);
-          }
-          if (finalOutput[1]?.label !== "NEGATIVE") {
-            throw new Error(`unexpected second output ${JSON.stringify(finalOutput[1])}`);
+          for (let index = 0; index < expectedLabels.length; index += 1) {
+            if (finalOutput[index]?.label !== expectedLabels[index]) {
+              throw new Error(
+                `unexpected output ${index}: ${JSON.stringify(finalOutput[index])}`,
+              );
+            }
           }
 
           return {

@@ -89,6 +89,10 @@ class NodeOrtWebGpuProviderCompareLaneTests(unittest.TestCase):
             scenario['doppler']['modelPath'],
             '../../../doppler/models/local/gemma-3-270m-it-q4k-ehf16-af32',
         )
+        self.assertEqual(
+            scenario['tjs']['localModelPath'],
+            '../../../doppler/node_modules/@huggingface/transformers/.cache',
+        )
 
     def test_node_scenario_loader_resolves_provider_compare_fields(self) -> None:
         script = f"""
@@ -115,7 +119,7 @@ console.log(JSON.stringify({{
         self.assertEqual(payload['cacheMode'], 'warm')
         self.assertEqual(payload['loadMode'], 'http')
         self.assertTrue(payload['dopplerRoot'].endswith('/doppler'))
-        self.assertIsNone(payload['tjsLocalModelPath'])
+        self.assertTrue(payload['tjsLocalModelPath'].endswith('/doppler/node_modules/@huggingface/transformers/.cache'))
 
     def test_trace_artifact_writer_emits_custom_provider_compare_metadata(self) -> None:
         with tempfile.TemporaryDirectory(prefix='doe-node-ort-webgpu-provider-compare-') as tmpdir:

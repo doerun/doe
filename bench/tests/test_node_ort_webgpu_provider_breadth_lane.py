@@ -26,6 +26,7 @@ COMPARE_CONFIG_PATH = (
 )
 
 EXPECTED_IDS = [
+    'node_ort_webgpu_provider_compare_gemma3_270m_prefill_64tok_decode_64tok',
     'node_ort_webgpu_provider_compare_gemma3_270m_prefill_32tok_decode_1tok',
     'node_ort_webgpu_provider_compare_gemma3_270m_prefill_256tok_decode_1tok',
     'node_ort_webgpu_provider_compare_gemma3_270m_prefill_32tok_decode_128tok',

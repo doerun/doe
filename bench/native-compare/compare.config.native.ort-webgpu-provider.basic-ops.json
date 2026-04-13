@@ -22,8 +22,8 @@
     "allowBaselineNoExecution": false
   },
   "claimability": {
-    "mode": "off",
-    "minTimedSamples": 0
+    "mode": "local",
+    "minTimedSamples": 3
   },
   "resource": {
     "probe": "none",
@@ -41,6 +41,8 @@
       "inference_ort_native_compare_add_float32_exactshape",
       "inference_ort_native_compare_relu_float32_exactshape",
       "inference_ort_native_compare_matmul_float32_rank2_exactshape",
+      "inference_ort_native_compare_matmul_add_float32_rank2_exactshape",
+      "inference_ort_native_compare_matmul_add_relu_float32_rank2_exactshape",
       "inference_ort_native_compare_add_relu_float32_exactshape"
     ],
     "excludeIds": []

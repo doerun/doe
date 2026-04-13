@@ -27,35 +27,58 @@ Read this file first. Use the shard files under
   and `bench/out/bun-ort-webgpu-provider-compare/gemma270m-prefill32-decode1.claim.json`
   record a strict comparable local Doe-advantage claim against the `bun-webgpu`
   package surface on Gemma-3 270M `prefill 32 / decode 1`.
+- A broader two-shape repo-only Bun ORT WebGPU package matrix now also exists
+  at `bench/native-compare/compare.config.bun.ort-webgpu-provider.breadth.json`.
+  Its current local artifact at
+  `bench/out/bun-ort-webgpu-provider-breadth/20260413T181619Z/breadth.compare.json`
+  is still mixed across the short and prefill-heavy Gemma-3 270M shapes.
 - A repo-only same-stack Node ORT WebGPU provider-compare lane now exists at
   `bench/native-compare/compare.config.node.ort-webgpu-provider.gemma270m.json`.
   The current AMD RADV host artifacts at
-  `bench/out/node-ort-webgpu-provider-compare/20260413T011722Z/gemma270m.compare.json`
-  and `bench/out/node-ort-webgpu-provider-compare/20260413T011722Z/gemma270m.claim.json`
+  `bench/out/node-ort-webgpu-provider-compare/20260413T191817Z/gemma270m.compare.json`
+  and `bench/out/node-ort-webgpu-provider-compare/20260413T191817Z/gemma270m.claim.json`
   record a strict comparable local Doe-advantage claim against the hardware-pinned
-  `node-webgpu` package surface.
+  `node-webgpu` package surface. The current Node provider-compare scenarios now
+  also use the local Transformers cache root, matching the Bun contract instead
+  of mixing model-id lookup on Node with local-model lookup on Bun.
 - A repo-only same-stack browser ORT WebGPU Playwright surface now exists at
-  `browser/chromium/scripts/webgpu-playwright-ort-bench.mjs`. The current local
-  Chromium artifact at
-  `browser/chromium/artifacts/20260413T023500Z/dawn-vs-doe.browser-ort-bench.diagnostic.json`
-  records a Doe-faster result on the vendored DistilBERT sentiment workload on
-  this Linux host.
-- A broader four-shape repo-only Node ORT WebGPU package matrix now also exists
+  `browser/chromium/scripts/webgpu-playwright-ort-bench.mjs`, and it now also
+  has a repo-only strict comparable `bench/` surface at
+  `bench/native-compare/compare.config.browser.ort-webgpu.json`. The browser
+  harness supports the vendored DistilBERT `sentiment` and
+  `sentiment_longform` workloads on this Linux host. The current canonical
+  browser compare artifact at
+  `bench/out/browser-ort-webgpu-compare/20260413T193605Z/browser.compare.json`
+  is strict/comparable and slightly positive overall on this host.
+- A broader five-shape repo-only Node ORT WebGPU package matrix now also exists
   at `bench/native-compare/compare.config.node.ort-webgpu-provider.breadth.json`.
-  Its current AMD RADV host artifacts show mixed results across short,
-  prefill-heavy, decode-heavy, and 1B shapes, so the broader matrix does not
-  support a blanket Doe-over-Dawn ORT package claim today.
+  Its current AMD RADV host artifact at
+  `bench/out/node-ort-webgpu-provider-breadth/20260413T192150Z/breadth.compare.json`
+  has a positive overall mean after the Node local-model contract normalization,
+  but it is still mixed across the current `64/64`, short, prefill-heavy,
+  decode-heavy, and 1B shapes, so the broader matrix still does not support a
+  blanket Doe-over-Dawn ORT package claim today.
 - The repo-only ONNX Runtime plugin EP now crosses the line from pure scaffold
   to a narrow non-trivial native slice: Doe claims, compiles, and executes
   same-shape float32 ONNX `Identity`, `Add`, `Relu`, rank-2 `MatMul`, and
-  exact two-node `MatMul -> Add` / `Add -> Relu` session-smoke cases, with
+  exact two-node `MatMul -> Add` / `Add -> Relu` plus exact three-node
+  `MatMul -> Add -> Relu` session-smoke cases, with
   proof recorded in
-  `runtime/bridge/onnxruntime-ep/artifacts/20260413T170900Z/doe-ort-ep-session-smoke.json`.
+  `runtime/bridge/onnxruntime-ep/artifacts/20260413T172955Z/doe-ort-ep-session-smoke.json`.
 - The repo now also has a repo-only single-runtime native ORT EP bench surface
   for the current `Identity`, `Add`, `Relu`, rank-2 `MatMul`, and exact
-  `MatMul -> Add` / `Add -> Relu` slice under
+  `MatMul -> Add` / `MatMul -> Add -> Relu` / `Add -> Relu` slice under
   `bench/workloads/workloads.native.ort-doe-ep-smoke.json`, with current local
   reports in `bench/out/native-ort-doe-ep/`.
+- The repo now also has a repo-only strict native ORT compare and local-claim
+  surface for the shared `Add`, `Relu`, rank-2 `MatMul`, exact
+  `MatMul -> Add`, exact `MatMul -> Add -> Relu`, and exact `Add -> Relu`
+  slice under
+  `bench/native-compare/compare.config.native.ort-webgpu-provider.basic-ops.json`,
+  with the current strict compare artifact at
+  `bench/out/native-ort-webgpu-provider/20260413T175708Z/basic-ops.compare.json`
+  and the current local claim artifact at
+  `bench/out/native-ort-webgpu-provider/20260413T175708Z/basic-ops.claim.json`.
 - D3D12 drop-in queue submit now retains submitted command lists behind the
   runtime fence and drains them at explicit completion boundaries instead of
   forcing a wait at every submit entry, and the native compute/render runtime

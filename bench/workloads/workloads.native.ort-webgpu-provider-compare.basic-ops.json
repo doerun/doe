@@ -21,7 +21,7 @@
       "directionalReason": "",
       "pathAsymmetry": false,
       "pathAsymmetryNote": "",
-      "claimEligible": false,
+      "claimEligible": true,
       "cohorts": [
         "exploration"
       ]
@@ -46,7 +46,7 @@
       "directionalReason": "",
       "pathAsymmetry": false,
       "pathAsymmetryNote": "",
-      "claimEligible": false,
+      "claimEligible": true,
       "cohorts": [
         "exploration"
       ]
@@ -71,7 +71,7 @@
       "directionalReason": "",
       "pathAsymmetry": false,
       "pathAsymmetryNote": "",
-      "claimEligible": false,
+      "claimEligible": true,
       "cohorts": [
         "exploration"
       ]
@@ -96,7 +96,57 @@
       "directionalReason": "",
       "pathAsymmetry": false,
       "pathAsymmetryNote": "",
-      "claimEligible": false,
+      "claimEligible": true,
+      "cohorts": [
+        "exploration"
+      ]
+    },
+    {
+      "id": "inference_ort_native_compare_matmul_add_float32_rank2_exactshape",
+      "name": "Native ORT MatMul -> Add basic-ops compare",
+      "description": "Repo-only strict comparable native ORT exact fused rank-2 MatMul -> Add compare between Doe EP and incumbent WebGPU provider.",
+      "domain": "inference",
+      "runnerType": "zig-runtime",
+      "commandsPath": "bench/vendor-native/ort_native_compare_matmul_add_commands.json",
+      "quirksPath": "examples/quirks/noop.json",
+      "vendor": "doe",
+      "api": "ort-native",
+      "family": "webgpu-provider-compare",
+      "driver": "host-ort",
+      "extraArgs": [],
+      "dawnFilter": "",
+      "comparable": true,
+      "benchmarkClass": "comparable",
+      "comparabilityNotes": "Same-stack native ORT compare between Doe plugin EP and incumbent WebGPU provider on the shared float32 exact-shape rank-2 MatMul -> Add slice.",
+      "directionalReason": "",
+      "pathAsymmetry": false,
+      "pathAsymmetryNote": "",
+      "claimEligible": true,
+      "cohorts": [
+        "exploration"
+      ]
+    },
+    {
+      "id": "inference_ort_native_compare_matmul_add_relu_float32_rank2_exactshape",
+      "name": "Native ORT MatMul -> Add -> Relu basic-ops compare",
+      "description": "Repo-only strict comparable native ORT exact fused rank-2 MatMul -> Add -> Relu compare between Doe EP and incumbent WebGPU provider.",
+      "domain": "inference",
+      "runnerType": "zig-runtime",
+      "commandsPath": "bench/vendor-native/ort_native_compare_matmul_add_relu_commands.json",
+      "quirksPath": "examples/quirks/noop.json",
+      "vendor": "doe",
+      "api": "ort-native",
+      "family": "webgpu-provider-compare",
+      "driver": "host-ort",
+      "extraArgs": [],
+      "dawnFilter": "",
+      "comparable": true,
+      "benchmarkClass": "comparable",
+      "comparabilityNotes": "Same-stack native ORT compare between Doe plugin EP and incumbent WebGPU provider on the shared float32 exact-shape rank-2 MatMul -> Add -> Relu slice.",
+      "directionalReason": "",
+      "pathAsymmetry": false,
+      "pathAsymmetryNote": "",
+      "claimEligible": true,
       "cohorts": [
         "exploration"
       ]

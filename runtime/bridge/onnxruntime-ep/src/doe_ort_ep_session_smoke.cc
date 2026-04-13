@@ -35,7 +35,10 @@ enum class SmokeModelKind : uint8_t {
   kAdd,
   kRelu,
   kMatMul,
+  kGemm,
+  kGemmReluGemm,
   kMatMulAdd,
+  kMatMulAddRelu,
   kAddRelu,
 };
 
@@ -274,8 +277,14 @@ const char* SmokeModelKindName(const SmokeModelKind kind) {
       return "Relu";
     case SmokeModelKind::kMatMul:
       return "MatMul";
+    case SmokeModelKind::kGemm:
+      return "Gemm";
+    case SmokeModelKind::kGemmReluGemm:
+      return "Gemm->Relu->Gemm";
     case SmokeModelKind::kMatMulAdd:
       return "MatMul->Add";
+    case SmokeModelKind::kMatMulAddRelu:
+      return "MatMul->Add->Relu";
     case SmokeModelKind::kAddRelu:
       return "Add->Relu";
   }
@@ -291,14 +300,34 @@ size_t ExpectedInputCount(const SmokeModelKind kind) {
     case SmokeModelKind::kMatMul:
     case SmokeModelKind::kAddRelu:
       return 2;
+    case SmokeModelKind::kGemm:
+      return 3;
+    case SmokeModelKind::kGemmReluGemm:
+      return 5;
     case SmokeModelKind::kMatMulAdd:
+    case SmokeModelKind::kMatMulAddRelu:
       return 3;
   }
   return 0;
 }
 
 uint64_t ExpectedClaimedNodes(const SmokeModelKind kind) {
-  return kind == SmokeModelKind::kAddRelu || kind == SmokeModelKind::kMatMulAdd ? 2 : 1;
+  switch (kind) {
+    case SmokeModelKind::kGemmReluGemm:
+      return 3;
+    case SmokeModelKind::kMatMulAddRelu:
+      return 3;
+    case SmokeModelKind::kMatMulAdd:
+    case SmokeModelKind::kAddRelu:
+      return 2;
+    case SmokeModelKind::kIdentity:
+    case SmokeModelKind::kAdd:
+    case SmokeModelKind::kRelu:
+    case SmokeModelKind::kMatMul:
+    case SmokeModelKind::kGemm:
+      return 1;
+  }
+  return 0;
 }
 
 std::vector<const char*> InputNamesForKind(const SmokeModelKind kind) {
@@ -309,8 +338,12 @@ std::vector<const char*> InputNamesForKind(const SmokeModelKind kind) {
     case SmokeModelKind::kMatMul:
     case SmokeModelKind::kAddRelu:
       return {"lhs", "rhs"};
+    case SmokeModelKind::kGemm:
     case SmokeModelKind::kMatMulAdd:
+    case SmokeModelKind::kMatMulAddRelu:
       return {"lhs", "rhs", "bias"};
+    case SmokeModelKind::kGemmReluGemm:
+      return {"input", "hidden_w", "hidden_bias", "output_w", "output_bias"};
     case SmokeModelKind::kRelu:
       return {"input"};
   }
@@ -371,7 +404,7 @@ std::optional<CliOptions> ParseArgs(const int argc, char** argv, std::string* er
     } else if (argument == "--help" || argument == "-h") {
       std::cout
           << "Usage: doe-ort-ep-session-smoke --plugin-path <path> [--ort-lib-path <path>] "
-          << "[--registration-name <name>] [--case identity|add|relu|matmul|matmul_add|add_relu|all] [--output <path>]\n";
+          << "[--registration-name <name>] [--case identity|add|relu|matmul|gemm|gemm_relu_gemm|matmul_add|matmul_add_relu|add_relu|all] [--output <path>]\n";
       std::exit(0);
     } else {
       if (error_out != nullptr) {
@@ -411,12 +444,15 @@ std::optional<CliOptions> ParseArgs(const int argc, char** argv, std::string* er
       options.case_selector == "add" ||
       options.case_selector == "relu" ||
       options.case_selector == "matmul" ||
+      options.case_selector == "gemm" ||
+      options.case_selector == "gemm_relu_gemm" ||
       options.case_selector == "matmul_add" ||
+      options.case_selector == "matmul_add_relu" ||
       options.case_selector == "add_relu";
   if (!valid_case_selector) {
     if (error_out != nullptr) {
       *error_out = "unsupported --case value '" + options.case_selector +
-                   "'; expected identity, add, relu, matmul, matmul_add, add_relu, or all.";
+                   "'; expected identity, add, relu, matmul, gemm, gemm_relu_gemm, matmul_add, matmul_add_relu, add_relu, or all.";
     }
     return std::nullopt;
   }
@@ -452,12 +488,18 @@ doe::ort_ep::DoeOrtEpDebugCounters CounterDelta(
       .claimed_add_nodes = after.claimed_add_nodes - before.claimed_add_nodes,
       .claimed_relu_nodes = after.claimed_relu_nodes - before.claimed_relu_nodes,
       .claimed_matmul_nodes = after.claimed_matmul_nodes - before.claimed_matmul_nodes,
+      .claimed_gemm_nodes = after.claimed_gemm_nodes - before.claimed_gemm_nodes,
       .compile_calls = after.compile_calls - before.compile_calls,
       .compiled_identity_groups = after.compiled_identity_groups - before.compiled_identity_groups,
       .compiled_add_groups = after.compiled_add_groups - before.compiled_add_groups,
       .compiled_relu_groups = after.compiled_relu_groups - before.compiled_relu_groups,
       .compiled_matmul_groups = after.compiled_matmul_groups - before.compiled_matmul_groups,
+      .compiled_gemm_groups = after.compiled_gemm_groups - before.compiled_gemm_groups,
+      .compiled_gemm_relu_gemm_groups =
+          after.compiled_gemm_relu_gemm_groups - before.compiled_gemm_relu_gemm_groups,
       .compiled_matmul_add_groups = after.compiled_matmul_add_groups - before.compiled_matmul_add_groups,
+      .compiled_matmul_add_relu_groups =
+          after.compiled_matmul_add_relu_groups - before.compiled_matmul_add_relu_groups,
       .compiled_add_relu_groups = after.compiled_add_relu_groups - before.compiled_add_relu_groups,
       .create_state_calls = after.create_state_calls - before.create_state_calls,
       .compute_calls = after.compute_calls - before.compute_calls,
@@ -465,7 +507,11 @@ doe::ort_ep::DoeOrtEpDebugCounters CounterDelta(
       .compute_add_calls = after.compute_add_calls - before.compute_add_calls,
       .compute_relu_calls = after.compute_relu_calls - before.compute_relu_calls,
       .compute_matmul_calls = after.compute_matmul_calls - before.compute_matmul_calls,
+      .compute_gemm_calls = after.compute_gemm_calls - before.compute_gemm_calls,
+      .compute_gemm_relu_gemm_calls =
+          after.compute_gemm_relu_gemm_calls - before.compute_gemm_relu_gemm_calls,
       .compute_matmul_add_calls = after.compute_matmul_add_calls - before.compute_matmul_add_calls,
+      .compute_matmul_add_relu_calls = after.compute_matmul_add_relu_calls - before.compute_matmul_add_relu_calls,
       .compute_add_relu_calls = after.compute_add_relu_calls - before.compute_add_relu_calls,
       .release_state_calls = after.release_state_calls - before.release_state_calls,
   };
@@ -524,12 +570,16 @@ std::string RenderCountersJson(const doe::ort_ep::DoeOrtEpDebugCounters& counter
   json << child_indent << "\"claimedAddNodes\": " << counters.claimed_add_nodes << ",\n";
   json << child_indent << "\"claimedReluNodes\": " << counters.claimed_relu_nodes << ",\n";
   json << child_indent << "\"claimedMatMulNodes\": " << counters.claimed_matmul_nodes << ",\n";
+  json << child_indent << "\"claimedGemmNodes\": " << counters.claimed_gemm_nodes << ",\n";
   json << child_indent << "\"compileCalls\": " << counters.compile_calls << ",\n";
   json << child_indent << "\"compiledIdentityGroups\": " << counters.compiled_identity_groups << ",\n";
   json << child_indent << "\"compiledAddGroups\": " << counters.compiled_add_groups << ",\n";
   json << child_indent << "\"compiledReluGroups\": " << counters.compiled_relu_groups << ",\n";
   json << child_indent << "\"compiledMatMulGroups\": " << counters.compiled_matmul_groups << ",\n";
+  json << child_indent << "\"compiledGemmGroups\": " << counters.compiled_gemm_groups << ",\n";
+  json << child_indent << "\"compiledGemmReluGemmGroups\": " << counters.compiled_gemm_relu_gemm_groups << ",\n";
   json << child_indent << "\"compiledMatMulAddGroups\": " << counters.compiled_matmul_add_groups << ",\n";
+  json << child_indent << "\"compiledMatMulAddReluGroups\": " << counters.compiled_matmul_add_relu_groups << ",\n";
   json << child_indent << "\"compiledAddReluGroups\": " << counters.compiled_add_relu_groups << ",\n";
   json << child_indent << "\"createStateCalls\": " << counters.create_state_calls << ",\n";
   json << child_indent << "\"computeCalls\": " << counters.compute_calls << ",\n";
@@ -537,7 +587,10 @@ std::string RenderCountersJson(const doe::ort_ep::DoeOrtEpDebugCounters& counter
   json << child_indent << "\"computeAddCalls\": " << counters.compute_add_calls << ",\n";
   json << child_indent << "\"computeReluCalls\": " << counters.compute_relu_calls << ",\n";
   json << child_indent << "\"computeMatMulCalls\": " << counters.compute_matmul_calls << ",\n";
+  json << child_indent << "\"computeGemmCalls\": " << counters.compute_gemm_calls << ",\n";
+  json << child_indent << "\"computeGemmReluGemmCalls\": " << counters.compute_gemm_relu_gemm_calls << ",\n";
   json << child_indent << "\"computeMatMulAddCalls\": " << counters.compute_matmul_add_calls << ",\n";
+  json << child_indent << "\"computeMatMulAddReluCalls\": " << counters.compute_matmul_add_relu_calls << ",\n";
   json << child_indent << "\"computeAddReluCalls\": " << counters.compute_add_relu_calls << ",\n";
   json << child_indent << "\"releaseStateCalls\": " << counters.release_state_calls << '\n';
   json << indent << '}';
@@ -699,6 +752,30 @@ std::vector<SmokeCaseSpec> BuildSmokeCases() {
           .expected_output = {58.0f, 64.0f, 139.0f, 154.0f},
       },
       SmokeCaseSpec{
+          .case_name = "gemm",
+          .model_kind = SmokeModelKind::kGemm,
+          .input_dims = {{2, 3}, {3, 2}, {2, 2}},
+          .output_dims = {2, 2},
+          .inputs = {
+              {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f},
+              {7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f},
+              {1.0f, -2.0f, 3.0f, -4.0f}},
+          .expected_output = {59.0f, 62.0f, 142.0f, 150.0f},
+      },
+      SmokeCaseSpec{
+          .case_name = "gemm_relu_gemm",
+          .model_kind = SmokeModelKind::kGemmReluGemm,
+          .input_dims = {{1, 2}, {2, 3}, {1, 3}, {3, 2}, {1, 2}},
+          .output_dims = {1, 2},
+          .inputs = {
+              {1.0f, 2.0f},
+              {1.0f, 0.0f, -1.0f, 2.0f, 1.0f, 1.0f},
+              {-4.0f, 1.0f, -2.0f},
+              {1.0f, 2.0f, 0.0f, 1.0f, 3.0f, -1.0f},
+              {4.0f, -6.0f}},
+          .expected_output = {5.0f, -1.0f},
+      },
+      SmokeCaseSpec{
           .case_name = "matmul_add",
           .model_kind = SmokeModelKind::kMatMulAdd,
           .input_dims = {{2, 3}, {3, 2}, {2, 2}},
@@ -708,6 +785,17 @@ std::vector<SmokeCaseSpec> BuildSmokeCases() {
               {7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f},
               {1.0f, -2.0f, 3.0f, -4.0f}},
           .expected_output = {59.0f, 62.0f, 142.0f, 150.0f},
+      },
+      SmokeCaseSpec{
+          .case_name = "matmul_add_relu",
+          .model_kind = SmokeModelKind::kMatMulAddRelu,
+          .input_dims = {{2, 2}, {2, 2}, {2, 2}},
+          .output_dims = {2, 2},
+          .inputs = {
+              {1.0f, 2.0f, 3.0f, 4.0f},
+              {5.0f, 6.0f, 7.0f, 8.0f},
+              {-20.0f, -30.0f, 10.0f, -60.0f}},
+          .expected_output = {0.0f, 0.0f, 53.0f, 0.0f},
       },
       SmokeCaseSpec{
           .case_name = "add_relu",
@@ -1078,6 +1166,176 @@ cleanup:
   return status;
 }
 
+OrtStatus* CreateGemmModel(
+    const OrtApi* api,
+    const OrtModelEditorApi* model_editor_api,
+    const std::vector<int64_t>& lhs_dims,
+    const std::vector<int64_t>& rhs_dims,
+    const std::vector<int64_t>& bias_dims,
+    const std::vector<int64_t>& output_dims,
+    OrtModel** out_model) {
+  OrtModel* model = nullptr;
+  OrtGraph* graph = nullptr;
+  OrtValueInfo* lhs = nullptr;
+  OrtValueInfo* rhs = nullptr;
+  OrtValueInfo* bias = nullptr;
+  OrtValueInfo* output = nullptr;
+  OrtNode* gemm_node = nullptr;
+  OrtStatus* status = CreateModelShell(model_editor_api, &model, &graph);
+  if (status != nullptr) goto cleanup;
+
+  status = CreateFloatValueInfo(api, model_editor_api, "lhs", lhs_dims, &lhs);
+  if (status != nullptr) goto cleanup;
+  status = CreateFloatValueInfo(api, model_editor_api, "rhs", rhs_dims, &rhs);
+  if (status != nullptr) goto cleanup;
+  status = CreateFloatValueInfo(api, model_editor_api, "bias", bias_dims, &bias);
+  if (status != nullptr) goto cleanup;
+  status = CreateFloatValueInfo(api, model_editor_api, "output", output_dims, &output);
+  if (status != nullptr) goto cleanup;
+
+  {
+    OrtValueInfo* inputs[] = {lhs, rhs, bias};
+    status = model_editor_api->SetGraphInputs(graph, inputs, 3);
+    if (status != nullptr) goto cleanup;
+    lhs = nullptr;
+    rhs = nullptr;
+    bias = nullptr;
+  }
+  {
+    OrtValueInfo* outputs[] = {output};
+    status = model_editor_api->SetGraphOutputs(graph, outputs, 1);
+    if (status != nullptr) goto cleanup;
+    output = nullptr;
+  }
+  {
+    const char* const input_names[] = {"lhs", "rhs", "bias"};
+    const char* const output_names[] = {"output"};
+    status = model_editor_api->CreateNode("Gemm", "", "gemm0", input_names, 3, output_names, 1, nullptr, 0, &gemm_node);
+    if (status != nullptr) goto cleanup;
+  }
+  status = model_editor_api->AddNodeToGraph(graph, gemm_node);
+  if (status != nullptr) goto cleanup;
+  gemm_node = nullptr;
+  status = model_editor_api->AddGraphToModel(model, graph);
+  if (status != nullptr) goto cleanup;
+  graph = nullptr;
+  *out_model = model;
+  model = nullptr;
+
+cleanup:
+  if (gemm_node != nullptr) api->ReleaseNode(gemm_node);
+  if (lhs != nullptr) api->ReleaseValueInfo(lhs);
+  if (rhs != nullptr) api->ReleaseValueInfo(rhs);
+  if (bias != nullptr) api->ReleaseValueInfo(bias);
+  if (output != nullptr) api->ReleaseValueInfo(output);
+  if (graph != nullptr) api->ReleaseGraph(graph);
+  if (model != nullptr) api->ReleaseModel(model);
+  return status;
+}
+
+OrtStatus* CreateGemmReluGemmModel(
+    const OrtApi* api,
+    const OrtModelEditorApi* model_editor_api,
+    const std::vector<int64_t>& input_dims,
+    const std::vector<int64_t>& hidden_weight_dims,
+    const std::vector<int64_t>& hidden_bias_dims,
+    const std::vector<int64_t>& output_weight_dims,
+    const std::vector<int64_t>& output_bias_dims,
+    const std::vector<int64_t>& output_dims,
+    OrtModel** out_model) {
+  OrtModel* model = nullptr;
+  OrtGraph* graph = nullptr;
+  OrtValueInfo* input = nullptr;
+  OrtValueInfo* hidden_weight = nullptr;
+  OrtValueInfo* hidden_bias = nullptr;
+  OrtValueInfo* output_weight = nullptr;
+  OrtValueInfo* output_bias = nullptr;
+  OrtValueInfo* output = nullptr;
+  OrtNode* hidden_gemm_node = nullptr;
+  OrtNode* relu_node = nullptr;
+  OrtNode* output_gemm_node = nullptr;
+  OrtStatus* status = CreateModelShell(model_editor_api, &model, &graph);
+  if (status != nullptr) goto cleanup;
+
+  status = CreateFloatValueInfo(api, model_editor_api, "input", input_dims, &input);
+  if (status != nullptr) goto cleanup;
+  status = CreateFloatValueInfo(api, model_editor_api, "hidden_w", hidden_weight_dims, &hidden_weight);
+  if (status != nullptr) goto cleanup;
+  status = CreateFloatValueInfo(api, model_editor_api, "hidden_bias", hidden_bias_dims, &hidden_bias);
+  if (status != nullptr) goto cleanup;
+  status = CreateFloatValueInfo(api, model_editor_api, "output_w", output_weight_dims, &output_weight);
+  if (status != nullptr) goto cleanup;
+  status = CreateFloatValueInfo(api, model_editor_api, "output_bias", output_bias_dims, &output_bias);
+  if (status != nullptr) goto cleanup;
+  status = CreateFloatValueInfo(api, model_editor_api, "output", output_dims, &output);
+  if (status != nullptr) goto cleanup;
+
+  {
+    OrtValueInfo* inputs[] = {input, hidden_weight, hidden_bias, output_weight, output_bias};
+    status = model_editor_api->SetGraphInputs(graph, inputs, 5);
+    if (status != nullptr) goto cleanup;
+    input = nullptr;
+    hidden_weight = nullptr;
+    hidden_bias = nullptr;
+    output_weight = nullptr;
+    output_bias = nullptr;
+  }
+  {
+    OrtValueInfo* outputs[] = {output};
+    status = model_editor_api->SetGraphOutputs(graph, outputs, 1);
+    if (status != nullptr) goto cleanup;
+    output = nullptr;
+  }
+  {
+    const char* const input_names[] = {"input", "hidden_w", "hidden_bias"};
+    const char* const output_names[] = {"hidden_linear"};
+    status =
+        model_editor_api->CreateNode("Gemm", "", "hidden_gemm0", input_names, 3, output_names, 1, nullptr, 0, &hidden_gemm_node);
+    if (status != nullptr) goto cleanup;
+  }
+  status = model_editor_api->AddNodeToGraph(graph, hidden_gemm_node);
+  if (status != nullptr) goto cleanup;
+  hidden_gemm_node = nullptr;
+  {
+    const char* const input_names[] = {"hidden_linear"};
+    const char* const output_names[] = {"hidden_relu"};
+    status = model_editor_api->CreateNode("Relu", "", "relu0", input_names, 1, output_names, 1, nullptr, 0, &relu_node);
+    if (status != nullptr) goto cleanup;
+  }
+  status = model_editor_api->AddNodeToGraph(graph, relu_node);
+  if (status != nullptr) goto cleanup;
+  relu_node = nullptr;
+  {
+    const char* const input_names[] = {"hidden_relu", "output_w", "output_bias"};
+    const char* const output_names[] = {"output"};
+    status =
+        model_editor_api->CreateNode("Gemm", "", "output_gemm0", input_names, 3, output_names, 1, nullptr, 0, &output_gemm_node);
+    if (status != nullptr) goto cleanup;
+  }
+  status = model_editor_api->AddNodeToGraph(graph, output_gemm_node);
+  if (status != nullptr) goto cleanup;
+  output_gemm_node = nullptr;
+  status = model_editor_api->AddGraphToModel(model, graph);
+  if (status != nullptr) goto cleanup;
+  graph = nullptr;
+  *out_model = model;
+  model = nullptr;
+
+cleanup:
+  if (hidden_gemm_node != nullptr) api->ReleaseNode(hidden_gemm_node);
+  if (relu_node != nullptr) api->ReleaseNode(relu_node);
+  if (output_gemm_node != nullptr) api->ReleaseNode(output_gemm_node);
+  if (input != nullptr) api->ReleaseValueInfo(input);
+  if (hidden_weight != nullptr) api->ReleaseValueInfo(hidden_weight);
+  if (hidden_bias != nullptr) api->ReleaseValueInfo(hidden_bias);
+  if (output_weight != nullptr) api->ReleaseValueInfo(output_weight);
+  if (output_bias != nullptr) api->ReleaseValueInfo(output_bias);
+  if (output != nullptr) api->ReleaseValueInfo(output);
+  if (graph != nullptr) api->ReleaseGraph(graph);
+  if (model != nullptr) api->ReleaseModel(model);
+  return status;
+}
+
 OrtStatus* CreateMatMulAddModel(
     const OrtApi* api,
     const OrtModelEditorApi* model_editor_api,
@@ -1157,6 +1415,96 @@ cleanup:
   return status;
 }
 
+OrtStatus* CreateMatMulAddReluModel(
+    const OrtApi* api,
+    const OrtModelEditorApi* model_editor_api,
+    const std::vector<int64_t>& lhs_dims,
+    const std::vector<int64_t>& rhs_dims,
+    const std::vector<int64_t>& bias_dims,
+    const std::vector<int64_t>& output_dims,
+    OrtModel** out_model) {
+  OrtModel* model = nullptr;
+  OrtGraph* graph = nullptr;
+  OrtValueInfo* lhs = nullptr;
+  OrtValueInfo* rhs = nullptr;
+  OrtValueInfo* bias = nullptr;
+  OrtValueInfo* output = nullptr;
+  OrtNode* matmul_node = nullptr;
+  OrtNode* add_node = nullptr;
+  OrtNode* relu_node = nullptr;
+  OrtStatus* status = CreateModelShell(model_editor_api, &model, &graph);
+  if (status != nullptr) goto cleanup;
+
+  status = CreateFloatValueInfo(api, model_editor_api, "lhs", lhs_dims, &lhs);
+  if (status != nullptr) goto cleanup;
+  status = CreateFloatValueInfo(api, model_editor_api, "rhs", rhs_dims, &rhs);
+  if (status != nullptr) goto cleanup;
+  status = CreateFloatValueInfo(api, model_editor_api, "bias", bias_dims, &bias);
+  if (status != nullptr) goto cleanup;
+  status = CreateFloatValueInfo(api, model_editor_api, "output", output_dims, &output);
+  if (status != nullptr) goto cleanup;
+
+  {
+    OrtValueInfo* inputs[] = {lhs, rhs, bias};
+    status = model_editor_api->SetGraphInputs(graph, inputs, 3);
+    if (status != nullptr) goto cleanup;
+    lhs = nullptr;
+    rhs = nullptr;
+    bias = nullptr;
+  }
+  {
+    OrtValueInfo* outputs[] = {output};
+    status = model_editor_api->SetGraphOutputs(graph, outputs, 1);
+    if (status != nullptr) goto cleanup;
+    output = nullptr;
+  }
+  {
+    const char* const input_names[] = {"lhs", "rhs"};
+    const char* const output_names[] = {"product"};
+    status =
+        model_editor_api->CreateNode("MatMul", "", "matmul0", input_names, 2, output_names, 1, nullptr, 0, &matmul_node);
+    if (status != nullptr) goto cleanup;
+  }
+  status = model_editor_api->AddNodeToGraph(graph, matmul_node);
+  if (status != nullptr) goto cleanup;
+  matmul_node = nullptr;
+  {
+    const char* const input_names[] = {"product", "bias"};
+    const char* const output_names[] = {"sum"};
+    status = model_editor_api->CreateNode("Add", "", "add0", input_names, 2, output_names, 1, nullptr, 0, &add_node);
+    if (status != nullptr) goto cleanup;
+  }
+  status = model_editor_api->AddNodeToGraph(graph, add_node);
+  if (status != nullptr) goto cleanup;
+  add_node = nullptr;
+  {
+    const char* const input_names[] = {"sum"};
+    const char* const output_names[] = {"output"};
+    status = model_editor_api->CreateNode("Relu", "", "relu0", input_names, 1, output_names, 1, nullptr, 0, &relu_node);
+    if (status != nullptr) goto cleanup;
+  }
+  status = model_editor_api->AddNodeToGraph(graph, relu_node);
+  if (status != nullptr) goto cleanup;
+  relu_node = nullptr;
+  status = model_editor_api->AddGraphToModel(model, graph);
+  if (status != nullptr) goto cleanup;
+  graph = nullptr;
+  *out_model = model;
+  model = nullptr;
+
+cleanup:
+  if (matmul_node != nullptr) api->ReleaseNode(matmul_node);
+  if (add_node != nullptr) api->ReleaseNode(add_node);
+  if (relu_node != nullptr) api->ReleaseNode(relu_node);
+  if (lhs != nullptr) api->ReleaseValueInfo(lhs);
+  if (rhs != nullptr) api->ReleaseValueInfo(rhs);
+  if (bias != nullptr) api->ReleaseValueInfo(bias);
+  if (output != nullptr) api->ReleaseValueInfo(output);
+  if (graph != nullptr) api->ReleaseGraph(graph);
+  if (model != nullptr) api->ReleaseModel(model);
+  return status;
+}
+
 OrtStatus* CreateSmokeModel(
     const OrtApi* api,
     const OrtModelEditorApi* model_editor_api,
@@ -1171,8 +1519,37 @@ OrtStatus* CreateSmokeModel(
       return CreateReluModel(api, model_editor_api, spec.input_dims[0], spec.output_dims, out_model);
     case SmokeModelKind::kMatMul:
       return CreateMatMulModel(api, model_editor_api, spec.input_dims[0], spec.input_dims[1], spec.output_dims, out_model);
+    case SmokeModelKind::kGemm:
+      return CreateGemmModel(
+          api,
+          model_editor_api,
+          spec.input_dims[0],
+          spec.input_dims[1],
+          spec.input_dims[2],
+          spec.output_dims,
+          out_model);
+    case SmokeModelKind::kGemmReluGemm:
+      return CreateGemmReluGemmModel(
+          api,
+          model_editor_api,
+          spec.input_dims[0],
+          spec.input_dims[1],
+          spec.input_dims[2],
+          spec.input_dims[3],
+          spec.input_dims[4],
+          spec.output_dims,
+          out_model);
     case SmokeModelKind::kMatMulAdd:
       return CreateMatMulAddModel(
+          api,
+          model_editor_api,
+          spec.input_dims[0],
+          spec.input_dims[1],
+          spec.input_dims[2],
+          spec.output_dims,
+          out_model);
+    case SmokeModelKind::kMatMulAddRelu:
+      return CreateMatMulAddReluModel(
           api,
           model_editor_api,
           spec.input_dims[0],
@@ -1297,10 +1674,27 @@ bool ValidateCaseRouting(
         return fail("MatMul case did not report MatMul-specific claim/compile/compute counters.");
       }
       break;
+    case SmokeModelKind::kGemm:
+      if (delta.claimed_gemm_nodes == 0 || delta.compiled_gemm_groups == 0 || delta.compute_gemm_calls == 0) {
+        return fail("Gemm case did not report Gemm-specific claim/compile/compute counters.");
+      }
+      break;
+    case SmokeModelKind::kGemmReluGemm:
+      if (delta.claimed_gemm_nodes != 2 || delta.claimed_relu_nodes == 0 ||
+          delta.compiled_gemm_relu_gemm_groups == 0 || delta.compute_gemm_relu_gemm_calls == 0) {
+        return fail("Gemm->Relu->Gemm case did not report fused Gemm/Relu/Gemm claim/compile/compute counters.");
+      }
+      break;
     case SmokeModelKind::kMatMulAdd:
       if (delta.claimed_matmul_nodes == 0 || delta.claimed_add_nodes == 0 || delta.compiled_matmul_add_groups == 0 ||
           delta.compute_matmul_add_calls == 0) {
         return fail("MatMul->Add case did not report fused MatMul/Add claim/compile/compute counters.");
+      }
+      break;
+    case SmokeModelKind::kMatMulAddRelu:
+      if (delta.claimed_matmul_nodes == 0 || delta.claimed_add_nodes == 0 || delta.claimed_relu_nodes == 0 ||
+          delta.compiled_matmul_add_relu_groups == 0 || delta.compute_matmul_add_relu_calls == 0) {
+        return fail("MatMul->Add->Relu case did not report fused MatMul/Add/Relu claim/compile/compute counters.");
       }
       break;
     case SmokeModelKind::kAddRelu:

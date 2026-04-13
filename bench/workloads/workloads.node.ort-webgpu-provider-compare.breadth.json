@@ -3,6 +3,26 @@
   "ownership": "standalone",
   "workloads": [
     {
+      "id": "node_ort_webgpu_provider_compare_gemma3_270m_prefill_64tok_decode_64tok",
+      "name": "Node ORT WebGPU provider compare Gemma-3 270M prefill 64 decode 64",
+      "description": "Repo-only same-stack Node ORT WebGPU compare for the current claimable Gemma-3 270M mixed prefill/decode shape using the same Transformers.js plus onnxruntime-node workload on both sides.",
+      "domain": "compute",
+      "comparabilityNotes": "Strict process-wall provider compare. Same model, same ORT WebGPU stack, same tokenizer-accurate prompt synthesis, and same host. The only intended difference is Doe versus node-webgpu as the WebGPU provider.",
+      "commandsPath": "bench/vendor-node/ort_webgpu_provider_compare_gemma270m_commands.json",
+      "quirksPath": "examples/quirks/amd_radv_noop_list.json",
+      "vendor": "amd",
+      "api": "webgpu",
+      "family": "gfx11",
+      "driver": "24.0.0",
+      "extraArgs": [],
+      "dawnFilter": "",
+      "comparable": true,
+      "benchmarkClass": "comparable",
+      "claimEligible": true,
+      "default": false,
+      "cohorts": ["exploration"]
+    },
+    {
       "id": "node_ort_webgpu_provider_compare_gemma3_270m_prefill_32tok_decode_1tok",
       "name": "Node ORT WebGPU provider compare Gemma-3 270M prefill 32 decode 1",
       "description": "Repo-only same-stack Node ORT WebGPU compare for a short interactive Gemma-3 270M shape using the same Transformers.js plus onnxruntime-node workload on both sides.",

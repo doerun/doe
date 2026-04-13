@@ -17,7 +17,7 @@
     "tjs": {
       "modelId": "onnx-community/gemma-3-1b-it-ONNX-GQA",
       "dtype": "fp16",
-      "localModelPath": ""
+      "localModelPath": "../../../doppler/node_modules/@huggingface/transformers/.cache"
     },
     "doppler": {
       "modelId": "gemma-3-1b-it-q4k-ehf16-af32",

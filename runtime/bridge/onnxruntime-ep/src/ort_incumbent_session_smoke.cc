@@ -31,6 +31,8 @@ enum class SmokeModelKind : uint8_t {
   kAdd,
   kRelu,
   kMatMul,
+  kMatMulAdd,
+  kMatMulAddRelu,
   kAddRelu,
 };
 
@@ -50,8 +52,7 @@ struct StatusInfo {
 struct SmokeCaseSpec {
   std::string case_name;
   SmokeModelKind model_kind = SmokeModelKind::kAdd;
-  std::vector<int64_t> input_dims_a;
-  std::vector<int64_t> input_dims_b;
+  std::vector<std::vector<int64_t>> input_dims;
   std::vector<int64_t> output_dims;
   std::vector<std::vector<float>> inputs;
   std::vector<float> expected_output;
@@ -243,6 +244,10 @@ const char* SmokeModelKindName(const SmokeModelKind kind) {
       return "Relu";
     case SmokeModelKind::kMatMul:
       return "MatMul";
+    case SmokeModelKind::kMatMulAdd:
+      return "MatMul->Add";
+    case SmokeModelKind::kMatMulAddRelu:
+      return "MatMul->Add->Relu";
     case SmokeModelKind::kAddRelu:
       return "Add->Relu";
   }
@@ -255,6 +260,9 @@ size_t ExpectedInputCount(const SmokeModelKind kind) {
     case SmokeModelKind::kMatMul:
     case SmokeModelKind::kAddRelu:
       return 2;
+    case SmokeModelKind::kMatMulAdd:
+    case SmokeModelKind::kMatMulAddRelu:
+      return 3;
     case SmokeModelKind::kRelu:
       return 1;
   }
@@ -265,6 +273,11 @@ std::vector<const char*> InputNamesForKind(const SmokeModelKind kind) {
   switch (kind) {
     case SmokeModelKind::kAdd:
     case SmokeModelKind::kMatMul:
+      return {"lhs", "rhs"};
+    case SmokeModelKind::kMatMulAdd:
+      return {"lhs", "rhs", "bias"};
+    case SmokeModelKind::kMatMulAddRelu:
+      return {"lhs", "rhs", "bias"};
     case SmokeModelKind::kAddRelu:
       return {"lhs", "rhs"};
     case SmokeModelKind::kRelu:
@@ -324,7 +337,7 @@ std::optional<CliOptions> ParseArgs(const int argc, char** argv, std::string* er
     } else if (argument == "--help" || argument == "-h") {
       std::cout
           << "Usage: doe-ort-incumbent-session-smoke [--ort-lib-path <path>] "
-          << "[--provider-name WebGPU] [--case add|relu|matmul|add_relu|all] [--output <path>]\n";
+          << "[--provider-name WebGPU] [--case add|relu|matmul|matmul_add|matmul_add_relu|add_relu|all] [--output <path>]\n";
       std::exit(0);
     } else {
       if (error_out != nullptr) {
@@ -356,10 +369,12 @@ std::optional<CliOptions> ParseArgs(const int argc, char** argv, std::string* er
       options.case_selector == "add" ||
       options.case_selector == "relu" ||
       options.case_selector == "matmul" ||
+      options.case_selector == "matmul_add" ||
+      options.case_selector == "matmul_add_relu" ||
       options.case_selector == "add_relu";
   if (!valid_case_selector) {
     if (error_out != nullptr) {
-      *error_out = "unsupported --case value '" + options.case_selector + "'; expected add, relu, matmul, add_relu, or all.";
+      *error_out = "unsupported --case value '" + options.case_selector + "'; expected add, relu, matmul, matmul_add, matmul_add_relu, add_relu, or all.";
     }
     return std::nullopt;
   }
@@ -523,8 +538,7 @@ std::vector<SmokeCaseSpec> BuildSmokeCases() {
       SmokeCaseSpec{
           .case_name = "add",
           .model_kind = SmokeModelKind::kAdd,
-          .input_dims_a = {1, 4},
-          .input_dims_b = {1, 4},
+          .input_dims = {{1, 4}, {1, 4}},
           .output_dims = {1, 4},
           .inputs = {{1.0f, 2.0f, 3.0f, 4.0f}, {10.0f, 20.0f, 30.0f, 40.0f}},
           .expected_output = {11.0f, 22.0f, 33.0f, 44.0f},
@@ -532,7 +546,7 @@ std::vector<SmokeCaseSpec> BuildSmokeCases() {
       SmokeCaseSpec{
           .case_name = "relu",
           .model_kind = SmokeModelKind::kRelu,
-          .input_dims_a = {1, 4},
+          .input_dims = {{1, 4}},
           .output_dims = {1, 4},
           .inputs = {{-2.0f, -1.0f, 0.0f, 3.0f}},
           .expected_output = {0.0f, 0.0f, 0.0f, 3.0f},
@@ -540,17 +554,39 @@ std::vector<SmokeCaseSpec> BuildSmokeCases() {
       SmokeCaseSpec{
           .case_name = "matmul",
           .model_kind = SmokeModelKind::kMatMul,
-          .input_dims_a = {2, 3},
-          .input_dims_b = {3, 2},
+          .input_dims = {{2, 3}, {3, 2}},
           .output_dims = {2, 2},
           .inputs = {{1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f}, {7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f}},
           .expected_output = {58.0f, 64.0f, 139.0f, 154.0f},
       },
       SmokeCaseSpec{
+          .case_name = "matmul_add",
+          .model_kind = SmokeModelKind::kMatMulAdd,
+          .input_dims = {{2, 3}, {3, 2}, {2, 2}},
+          .output_dims = {2, 2},
+          .inputs = {
+              {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f},
+              {7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f},
+              {1.0f, -2.0f, 3.0f, -4.0f},
+          },
+          .expected_output = {59.0f, 62.0f, 142.0f, 150.0f},
+      },
+      SmokeCaseSpec{
+          .case_name = "matmul_add_relu",
+          .model_kind = SmokeModelKind::kMatMulAddRelu,
+          .input_dims = {{2, 2}, {2, 2}, {2, 2}},
+          .output_dims = {2, 2},
+          .inputs = {
+              {1.0f, 2.0f, 3.0f, 4.0f},
+              {5.0f, 6.0f, 7.0f, 8.0f},
+              {-20.0f, -30.0f, 10.0f, -60.0f},
+          },
+          .expected_output = {0.0f, 0.0f, 53.0f, 0.0f},
+      },
+      SmokeCaseSpec{
           .case_name = "add_relu",
           .model_kind = SmokeModelKind::kAddRelu,
-          .input_dims_a = {1, 4},
-          .input_dims_b = {1, 4},
+          .input_dims = {{1, 4}, {1, 4}},
           .output_dims = {1, 4},
           .inputs = {{-5.0f, 1.0f, -2.0f, 7.0f}, {3.0f, -4.0f, 5.0f, -1.0f}},
           .expected_output = {0.0f, 0.0f, 3.0f, 6.0f},
@@ -618,9 +654,10 @@ OrtStatus* CreateAddModel(const OrtApi* api, const OrtModelEditorApi* model_edit
   OrtStatus* status = CreateModelShell(model_editor_api, &model, &graph);
   if (status != nullptr) goto cleanup;
 
-  status = CreateFloatValueInfo(api, model_editor_api, "lhs", spec.input_dims_a, &lhs);
+  status = CreateFloatValueInfo(api, model_editor_api, "lhs", spec.input_dims[0], &lhs);
+  status = CreateFloatValueInfo(api, model_editor_api, "lhs", spec.input_dims[0], &lhs);
   if (status != nullptr) goto cleanup;
-  status = CreateFloatValueInfo(api, model_editor_api, "rhs", spec.input_dims_b, &rhs);
+  status = CreateFloatValueInfo(api, model_editor_api, "rhs", spec.input_dims[1], &rhs);
   if (status != nullptr) goto cleanup;
   status = CreateFloatValueInfo(api, model_editor_api, "output", spec.output_dims, &output);
   if (status != nullptr) goto cleanup;
@@ -672,7 +709,7 @@ OrtStatus* CreateReluModel(const OrtApi* api, const OrtModelEditorApi* model_edi
   OrtStatus* status = CreateModelShell(model_editor_api, &model, &graph);
   if (status != nullptr) goto cleanup;
 
-  status = CreateFloatValueInfo(api, model_editor_api, "input", spec.input_dims_a, &input);
+  status = CreateFloatValueInfo(api, model_editor_api, "input", spec.input_dims[0], &input);
   if (status != nullptr) goto cleanup;
   status = CreateFloatValueInfo(api, model_editor_api, "output", spec.output_dims, &output);
   if (status != nullptr) goto cleanup;
@@ -723,9 +760,9 @@ OrtStatus* CreateMatMulModel(const OrtApi* api, const OrtModelEditorApi* model_e
   OrtStatus* status = CreateModelShell(model_editor_api, &model, &graph);
   if (status != nullptr) goto cleanup;
 
-  status = CreateFloatValueInfo(api, model_editor_api, "lhs", spec.input_dims_a, &lhs);
+  status = CreateFloatValueInfo(api, model_editor_api, "lhs", spec.input_dims[0], &lhs);
   if (status != nullptr) goto cleanup;
-  status = CreateFloatValueInfo(api, model_editor_api, "rhs", spec.input_dims_b, &rhs);
+  status = CreateFloatValueInfo(api, model_editor_api, "rhs", spec.input_dims[1], &rhs);
   if (status != nullptr) goto cleanup;
   status = CreateFloatValueInfo(api, model_editor_api, "output", spec.output_dims, &output);
   if (status != nullptr) goto cleanup;
@@ -779,9 +816,9 @@ OrtStatus* CreateAddReluModel(const OrtApi* api, const OrtModelEditorApi* model_
   OrtStatus* status = CreateModelShell(model_editor_api, &model, &graph);
   if (status != nullptr) goto cleanup;
 
-  status = CreateFloatValueInfo(api, model_editor_api, "lhs", spec.input_dims_a, &lhs);
+  status = CreateFloatValueInfo(api, model_editor_api, "lhs", spec.input_dims[0], &lhs);
   if (status != nullptr) goto cleanup;
-  status = CreateFloatValueInfo(api, model_editor_api, "rhs", spec.input_dims_b, &rhs);
+  status = CreateFloatValueInfo(api, model_editor_api, "rhs", spec.input_dims[1], &rhs);
   if (status != nullptr) goto cleanup;
   status = CreateFloatValueInfo(api, model_editor_api, "output", spec.output_dims, &output);
   if (status != nullptr) goto cleanup;
@@ -834,6 +871,159 @@ cleanup:
   return status;
 }
 
+OrtStatus* CreateMatMulAddModel(const OrtApi* api, const OrtModelEditorApi* model_editor_api, const SmokeCaseSpec& spec, OrtModel** out_model) {
+  OrtModel* model = nullptr;
+  OrtGraph* graph = nullptr;
+  OrtValueInfo* lhs = nullptr;
+  OrtValueInfo* rhs = nullptr;
+  OrtValueInfo* bias = nullptr;
+  OrtValueInfo* output = nullptr;
+  OrtNode* matmul_node = nullptr;
+  OrtNode* add_node = nullptr;
+  OrtStatus* status = CreateModelShell(model_editor_api, &model, &graph);
+  if (status != nullptr) goto cleanup;
+
+  status = CreateFloatValueInfo(api, model_editor_api, "lhs", spec.input_dims[0], &lhs);
+  if (status != nullptr) goto cleanup;
+  status = CreateFloatValueInfo(api, model_editor_api, "rhs", spec.input_dims[1], &rhs);
+  if (status != nullptr) goto cleanup;
+  status = CreateFloatValueInfo(api, model_editor_api, "bias", spec.input_dims[2], &bias);
+  if (status != nullptr) goto cleanup;
+  status = CreateFloatValueInfo(api, model_editor_api, "output", spec.output_dims, &output);
+  if (status != nullptr) goto cleanup;
+
+  {
+    OrtValueInfo* inputs[] = {lhs, rhs, bias};
+    status = model_editor_api->SetGraphInputs(graph, inputs, 3);
+    if (status != nullptr) goto cleanup;
+    lhs = nullptr;
+    rhs = nullptr;
+    bias = nullptr;
+  }
+  {
+    OrtValueInfo* outputs[] = {output};
+    status = model_editor_api->SetGraphOutputs(graph, outputs, 1);
+    if (status != nullptr) goto cleanup;
+    output = nullptr;
+  }
+  {
+    const char* const input_names[] = {"lhs", "rhs"};
+    const char* const output_names[] = {"product"};
+    status = model_editor_api->CreateNode("MatMul", "", "matmul0", input_names, 2, output_names, 1, nullptr, 0, &matmul_node);
+    if (status != nullptr) goto cleanup;
+  }
+  status = model_editor_api->AddNodeToGraph(graph, matmul_node);
+  if (status != nullptr) goto cleanup;
+  matmul_node = nullptr;
+  {
+    const char* const input_names[] = {"product", "bias"};
+    const char* const output_names[] = {"output"};
+    status = model_editor_api->CreateNode("Add", "", "add0", input_names, 2, output_names, 1, nullptr, 0, &add_node);
+    if (status != nullptr) goto cleanup;
+  }
+  status = model_editor_api->AddNodeToGraph(graph, add_node);
+  if (status != nullptr) goto cleanup;
+  add_node = nullptr;
+  status = model_editor_api->AddGraphToModel(model, graph);
+  if (status != nullptr) goto cleanup;
+  graph = nullptr;
+  *out_model = model;
+  model = nullptr;
+
+cleanup:
+  if (matmul_node != nullptr) api->ReleaseNode(matmul_node);
+  if (add_node != nullptr) api->ReleaseNode(add_node);
+  if (lhs != nullptr) api->ReleaseValueInfo(lhs);
+  if (rhs != nullptr) api->ReleaseValueInfo(rhs);
+  if (bias != nullptr) api->ReleaseValueInfo(bias);
+  if (output != nullptr) api->ReleaseValueInfo(output);
+  if (graph != nullptr) api->ReleaseGraph(graph);
+  if (model != nullptr) api->ReleaseModel(model);
+  return status;
+}
+
+OrtStatus* CreateMatMulAddReluModel(const OrtApi* api, const OrtModelEditorApi* model_editor_api, const SmokeCaseSpec& spec, OrtModel** out_model) {
+  OrtModel* model = nullptr;
+  OrtGraph* graph = nullptr;
+  OrtValueInfo* lhs = nullptr;
+  OrtValueInfo* rhs = nullptr;
+  OrtValueInfo* bias = nullptr;
+  OrtValueInfo* output = nullptr;
+  OrtNode* matmul_node = nullptr;
+  OrtNode* add_node = nullptr;
+  OrtNode* relu_node = nullptr;
+  OrtStatus* status = CreateModelShell(model_editor_api, &model, &graph);
+  if (status != nullptr) goto cleanup;
+
+  status = CreateFloatValueInfo(api, model_editor_api, "lhs", spec.input_dims[0], &lhs);
+  if (status != nullptr) goto cleanup;
+  status = CreateFloatValueInfo(api, model_editor_api, "rhs", spec.input_dims[1], &rhs);
+  if (status != nullptr) goto cleanup;
+  status = CreateFloatValueInfo(api, model_editor_api, "bias", spec.input_dims[2], &bias);
+  if (status != nullptr) goto cleanup;
+  status = CreateFloatValueInfo(api, model_editor_api, "output", spec.output_dims, &output);
+  if (status != nullptr) goto cleanup;
+
+  {
+    OrtValueInfo* inputs[] = {lhs, rhs, bias};
+    status = model_editor_api->SetGraphInputs(graph, inputs, 3);
+    if (status != nullptr) goto cleanup;
+    lhs = nullptr;
+    rhs = nullptr;
+    bias = nullptr;
+  }
+  {
+    OrtValueInfo* outputs[] = {output};
+    status = model_editor_api->SetGraphOutputs(graph, outputs, 1);
+    if (status != nullptr) goto cleanup;
+    output = nullptr;
+  }
+  {
+    const char* const input_names[] = {"lhs", "rhs"};
+    const char* const output_names[] = {"product"};
+    status = model_editor_api->CreateNode("MatMul", "", "matmul0", input_names, 2, output_names, 1, nullptr, 0, &matmul_node);
+    if (status != nullptr) goto cleanup;
+  }
+  status = model_editor_api->AddNodeToGraph(graph, matmul_node);
+  if (status != nullptr) goto cleanup;
+  matmul_node = nullptr;
+  {
+    const char* const input_names[] = {"product", "bias"};
+    const char* const output_names[] = {"sum"};
+    status = model_editor_api->CreateNode("Add", "", "add0", input_names, 2, output_names, 1, nullptr, 0, &add_node);
+    if (status != nullptr) goto cleanup;
+  }
+  status = model_editor_api->AddNodeToGraph(graph, add_node);
+  if (status != nullptr) goto cleanup;
+  add_node = nullptr;
+  {
+    const char* const input_names[] = {"sum"};
+    const char* const output_names[] = {"output"};
+    status = model_editor_api->CreateNode("Relu", "", "relu0", input_names, 1, output_names, 1, nullptr, 0, &relu_node);
+    if (status != nullptr) goto cleanup;
+  }
+  status = model_editor_api->AddNodeToGraph(graph, relu_node);
+  if (status != nullptr) goto cleanup;
+  relu_node = nullptr;
+  status = model_editor_api->AddGraphToModel(model, graph);
+  if (status != nullptr) goto cleanup;
+  graph = nullptr;
+  *out_model = model;
+  model = nullptr;
+
+cleanup:
+  if (matmul_node != nullptr) api->ReleaseNode(matmul_node);
+  if (add_node != nullptr) api->ReleaseNode(add_node);
+  if (relu_node != nullptr) api->ReleaseNode(relu_node);
+  if (lhs != nullptr) api->ReleaseValueInfo(lhs);
+  if (rhs != nullptr) api->ReleaseValueInfo(rhs);
+  if (bias != nullptr) api->ReleaseValueInfo(bias);
+  if (output != nullptr) api->ReleaseValueInfo(output);
+  if (graph != nullptr) api->ReleaseGraph(graph);
+  if (model != nullptr) api->ReleaseModel(model);
+  return status;
+}
+
 OrtStatus* CreateSmokeModel(const OrtApi* api, const OrtModelEditorApi* model_editor_api, const SmokeCaseSpec& spec, OrtModel** out_model) {
   switch (spec.model_kind) {
     case SmokeModelKind::kAdd:
@@ -842,6 +1032,10 @@ OrtStatus* CreateSmokeModel(const OrtApi* api, const OrtModelEditorApi* model_ed
       return CreateReluModel(api, model_editor_api, spec, out_model);
     case SmokeModelKind::kMatMul:
       return CreateMatMulModel(api, model_editor_api, spec, out_model);
+    case SmokeModelKind::kMatMulAdd:
+      return CreateMatMulAddModel(api, model_editor_api, spec, out_model);
+    case SmokeModelKind::kMatMulAddRelu:
+      return CreateMatMulAddReluModel(api, model_editor_api, spec, out_model);
     case SmokeModelKind::kAddRelu:
       return CreateAddReluModel(api, model_editor_api, spec, out_model);
   }
@@ -942,7 +1136,7 @@ bool RunSmokeCase(
     }
 
     for (size_t index = 0; index < inputs.size(); ++index) {
-      const std::vector<int64_t>& dims = index == 0 ? spec.input_dims_a : spec.input_dims_b;
+      const std::vector<int64_t>& dims = spec.input_dims[index];
       status = api->CreateTensorAsOrtValue(
           allocator,
           dims.empty() ? nullptr : dims.data(),

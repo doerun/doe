@@ -271,6 +271,24 @@ _REGISTRY: dict[str, ExecutorSpec] = {
         ),
         execution_boundary='commands',
     ),
+    "browser_ort_webgpu_dawn": ExecutorSpec(
+        executor_id="browser_ort_webgpu_dawn",
+        command_template=(
+            "python3 bench/executors/run-browser-ort-bench.py "
+            "--mode dawn --scenario {commands} --trace-jsonl {trace_jsonl} "
+            "--trace-meta {trace_meta} --workload {workload}"
+        ),
+        execution_boundary="commands",
+    ),
+    "browser_ort_webgpu_doe": ExecutorSpec(
+        executor_id="browser_ort_webgpu_doe",
+        command_template=(
+            "python3 bench/executors/run-browser-ort-bench.py "
+            "--mode doe --scenario {commands} --trace-jsonl {trace_jsonl} "
+            "--trace-meta {trace_meta} --workload {workload}"
+        ),
+        execution_boundary="commands",
+    ),
     'doppler_node_doe': ExecutorSpec(
         executor_id='doppler_node_doe',
         command_template=(
