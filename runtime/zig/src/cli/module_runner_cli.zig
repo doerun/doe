@@ -29,7 +29,13 @@ const RunOptions = struct {
 };
 
 fn readFileAlloc(allocator: Allocator, path: []const u8) ![]u8 {
-    return try std.fs.cwd().readFileAlloc(allocator, path, 16 * 1024 * 1024);
+    const max_bytes = 16 * 1024 * 1024;
+    if (std.fs.path.isAbsolute(path)) {
+        const file = try std.fs.openFileAbsolute(path, .{});
+        defer file.close();
+        return try file.readToEndAlloc(allocator, max_bytes);
+    }
+    return try std.fs.cwd().readFileAlloc(allocator, path, max_bytes);
 }
 
 fn getOptionValue(args: [][:0]u8, index: *usize) ![]const u8 {
