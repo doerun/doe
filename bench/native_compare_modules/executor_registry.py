@@ -233,6 +233,26 @@ _REGISTRY: dict[str, ExecutorSpec] = {
         ),
         execution_boundary='commands',
     ),
+    'tjs_ort_bun_doe': ExecutorSpec(
+        executor_id='tjs_ort_bun_doe',
+        command_template=(
+            'bun bench/executors/run-bun-tjs-ort-webgpu.js '
+            '--provider doe '
+            '--scenario {commands} --trace-jsonl {trace_jsonl} '
+            '--trace-meta {trace_meta} --workload {workload}'
+        ),
+        execution_boundary='commands',
+    ),
+    'tjs_ort_bun_webgpu_package': ExecutorSpec(
+        executor_id='tjs_ort_bun_webgpu_package',
+        command_template=(
+            'bun bench/executors/run-bun-tjs-ort-webgpu.js '
+            '--provider bun-webgpu '
+            '--scenario {commands} --trace-jsonl {trace_jsonl} '
+            '--trace-meta {trace_meta} --workload {workload}'
+        ),
+        execution_boundary='commands',
+    ),
     'doppler_node_doe': ExecutorSpec(
         executor_id='doppler_node_doe',
         command_template=(

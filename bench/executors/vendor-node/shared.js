@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, readdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { performance } from 'node:perf_hooks';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -7,8 +7,10 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const THIS_DIR = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(THIS_DIR, '..', '..', '..');
 const DOE_COMPUTE_MODULE_PATH = resolve(REPO_ROOT, 'packages/doe-gpu/src/compute.js');
+const DOE_BUN_MODULE_PATH = resolve(REPO_ROOT, 'packages/doe-gpu/src/bun.js');
 const NODE_WEBGPU_PACKAGE_PATH = resolve(REPO_ROOT, 'bench/vendor/node-webgpu-package/index.js');
 const NODE_WEBGPU_ADAPTER_LIST_SENTINEL = '__doe_list_adapters__';
+const BUN_WEBGPU_VULKAN_BACKEND_TYPE = 6;
 const SOFTWARE_ADAPTER_PATTERNS = Object.freeze([
   'llvmpipe',
   'lavapipe',
@@ -94,6 +96,28 @@ try {
   }
 }
 
+function resolveInstalledBunWebGpuModulePath() {
+  const homeDir = normalizeString(process.env.HOME);
+  if (!homeDir) {
+    return null;
+  }
+  const cacheRoot = resolve(homeDir, '.bun', 'install', 'cache');
+  if (!existsSync(cacheRoot)) {
+    return null;
+  }
+  const entries = readdirSync(cacheRoot, { withFileTypes: true });
+  for (const entry of entries) {
+    if (!entry.isDirectory() || !entry.name.startsWith('bun-webgpu@')) {
+      continue;
+    }
+    const candidate = resolve(cacheRoot, entry.name, 'index.js');
+    if (existsSync(candidate)) {
+      return candidate;
+    }
+  }
+  return null;
+}
+
 export function resolvePreferredNodeWebGpuAdapterName() {
   if (
     typeof process.env.DOE_NODE_WEBGPU_ADAPTER === 'string'
@@ -104,52 +128,129 @@ export function resolvePreferredNodeWebGpuAdapterName() {
   return discoverNodeWebGpuHardwareAdapterName();
 }
 
-export async function installNodeWebGpuProvider(provider = 'doe') {
+function defaultAdapterRequestOptions() {
+  return {
+    powerPreference: 'high-performance',
+  };
+}
+
+function bunWebGpuAdapterRequestOptions() {
+  return {
+    powerPreference: 'high-performance',
+    forceFallbackAdapter: false,
+    backendType: BUN_WEBGPU_VULKAN_BACKEND_TYPE,
+  };
+}
+
+export async function installTjsOrtWebGpuProvider(provider = 'doe', runtimeHost = 'node') {
   const normalized = typeof provider === 'string' ? provider.trim().toLowerCase() : '';
-  if (normalized === 'doe') {
-    const compute = await importFromPath(DOE_COMPUTE_MODULE_PATH);
-    if (typeof compute.setupGlobals !== 'function' || typeof compute.requestAdapter !== 'function') {
-      throw new Error('doe-gpu compute surface does not expose setupGlobals/requestAdapter');
+  const normalizedRuntimeHost = typeof runtimeHost === 'string'
+    ? runtimeHost.trim().toLowerCase()
+    : '';
+  if (normalizedRuntimeHost === 'node') {
+    if (normalized === 'doe') {
+      const compute = await importFromPath(DOE_COMPUTE_MODULE_PATH);
+      if (typeof compute.setupGlobals !== 'function' || typeof compute.requestAdapter !== 'function') {
+        throw new Error('doe-gpu compute surface does not expose setupGlobals/requestAdapter');
+      }
+      compute.setupGlobals(globalThis);
+      return {
+        provider: normalized,
+        providerName: 'doe-gpu',
+        executionBackend: 'tjs_ort_node_webgpu',
+        compute,
+        gpu: null,
+        requestedAdapterName: null,
+        adapterRequestOptions: defaultAdapterRequestOptions(),
+      };
     }
-    compute.setupGlobals(globalThis);
-    return {
-      provider: normalized,
-      providerName: 'doe-gpu',
-      executionBackend: 'tjs_ort_node_webgpu',
-      compute,
-      gpu: null,
-      requestedAdapterName: null,
-    };
+    if (normalized === 'node-webgpu') {
+      let mod;
+      try {
+        mod = await importFromPath(NODE_WEBGPU_PACKAGE_PATH);
+      } catch (_error) {
+        mod = await import('webgpu');
+      }
+      if (typeof mod.create !== 'function') {
+        throw new Error('node-webgpu package does not expose create()');
+      }
+      installGlobals(mod.globals);
+      const requestedAdapter = resolvePreferredNodeWebGpuAdapterName();
+      const createOptions = requestedAdapter ? [`adapter=${requestedAdapter}`] : [];
+      return {
+        provider: normalized,
+        providerName: 'node-webgpu',
+        executionBackend: 'tjs_ort_node_webgpu_package',
+        compute: null,
+        gpu: mod.create(createOptions),
+        requestedAdapterName: requestedAdapter,
+        adapterRequestOptions: defaultAdapterRequestOptions(),
+      };
+    }
+    throw new Error('unsupported ORT WebGPU provider for node (expected doe or node-webgpu)');
   }
-  if (normalized === 'node-webgpu') {
-    let mod;
-    try {
-      mod = await importFromPath(NODE_WEBGPU_PACKAGE_PATH);
-    } catch (_error) {
-      mod = await import('webgpu');
+  if (normalizedRuntimeHost === 'bun') {
+    if (normalized === 'doe') {
+      const doe = await importFromPath(DOE_BUN_MODULE_PATH);
+      if (typeof doe.setupGlobals !== 'function') {
+        throw new Error('doe-gpu Bun surface does not expose setupGlobals()');
+      }
+      await doe.setupGlobals(globalThis);
+      if (typeof navigator === 'undefined' || !navigator.gpu) {
+        throw new Error('doe-gpu Bun surface did not install navigator.gpu');
+      }
+      return {
+        provider: normalized,
+        providerName: 'doe-gpu',
+        executionBackend: 'tjs_ort_bun_webgpu',
+        compute: null,
+        gpu: navigator.gpu,
+        requestedAdapterName: null,
+        adapterRequestOptions: defaultAdapterRequestOptions(),
+      };
     }
-    if (typeof mod.create !== 'function') {
-      throw new Error('node-webgpu package does not expose create()');
+    if (normalized === 'bun-webgpu') {
+      let mod;
+      try {
+        mod = await import('bun-webgpu');
+      } catch (_error) {
+        const fallbackPath = resolveInstalledBunWebGpuModulePath();
+        if (!fallbackPath) {
+          throw _error;
+        }
+        mod = await importFromPath(fallbackPath);
+      }
+      if (typeof mod.setupGlobals !== 'function') {
+        throw new Error('bun-webgpu does not export setupGlobals()');
+      }
+      await mod.setupGlobals();
+      if (typeof navigator === 'undefined' || !navigator.gpu) {
+        throw new Error('bun-webgpu did not install navigator.gpu');
+      }
+      return {
+        provider: normalized,
+        providerName: 'bun-webgpu',
+        executionBackend: 'tjs_ort_bun_webgpu_package',
+        compute: null,
+        gpu: navigator.gpu,
+        requestedAdapterName: null,
+        adapterRequestOptions: bunWebGpuAdapterRequestOptions(),
+      };
     }
-    installGlobals(mod.globals);
-    const requestedAdapter = resolvePreferredNodeWebGpuAdapterName();
-    const createOptions = requestedAdapter ? [`adapter=${requestedAdapter}`] : [];
-    return {
-      provider: normalized,
-      providerName: 'node-webgpu',
-      executionBackend: 'tjs_ort_node_webgpu_package',
-      compute: null,
-      gpu: mod.create(createOptions),
-      requestedAdapterName: requestedAdapter,
-    };
+    throw new Error('unsupported ORT WebGPU provider for bun (expected doe or bun-webgpu)');
   }
-  throw new Error(`unsupported ORT WebGPU provider ${provider} (expected doe or node-webgpu)`);
+  throw new Error(`unsupported ORT WebGPU runtime host ${runtimeHost} (expected node or bun)`);
+}
+
+export async function installNodeWebGpuProvider(provider = 'doe') {
+  return installTjsOrtWebGpuProvider(provider, 'node');
 }
 
 export async function requestAdapterAndDevice(providerRuntime) {
+  const requestOptions = providerRuntime.adapterRequestOptions ?? defaultAdapterRequestOptions();
   const adapter = providerRuntime.compute
-    ? await providerRuntime.compute.requestAdapter({ powerPreference: 'high-performance' })
-    : await providerRuntime.gpu?.requestAdapter({ powerPreference: 'high-performance' });
+    ? await providerRuntime.compute.requestAdapter(requestOptions)
+    : await providerRuntime.gpu?.requestAdapter(requestOptions);
   if (!adapter) {
     throw new Error(`${providerRuntime.providerName} returned no WebGPU adapter`);
   }
