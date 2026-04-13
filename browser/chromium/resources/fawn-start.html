@@ -146,6 +146,7 @@ h1 {
 </div>
 <div class="status-bar">
   <div class="status-row"><span class="dot" id="gpu-dot"></span><span id="gpu-status">checking WebGPU...</span></div>
+  <div class="gpu-info" id="gpu-backend">backend: detecting...</div>
   <div class="gpu-info" id="gpu-info"></div>
   <div class="gpu-info frame-info" id="frame">-- ms · -- fps</div>
   <canvas class="fps-graph" id="fps-graph"></canvas>
@@ -322,6 +323,7 @@ fn fs(@builtin(position) fc: vec4<f32>) -> @location(0) vec4<f32> {
 (async () => {
   const dot = document.getElementById('gpu-dot');
   const status = document.getElementById('gpu-status');
+  const backendInfo = document.getElementById('gpu-backend');
   const info = document.getElementById('gpu-info');
   const frame = document.getElementById('frame');
   const fpsGraph = document.getElementById('fps-graph');
@@ -335,6 +337,32 @@ fn fs(@builtin(position) fc: vec4<f32>) -> @location(0) vec4<f32> {
   var MAX_CLICKS = 4;
   var AMBIENT = 0.45;
   var fpsHistory = [];
+
+  function detectRuntimeBackend() {
+    var brands = [];
+    if (navigator.userAgentData && Array.isArray(navigator.userAgentData.brands)) {
+      brands = navigator.userAgentData.brands.map(function(entry) {
+        return entry && entry.brand ? String(entry.brand) : '';
+      });
+    }
+    var fingerprint = [
+      navigator.userAgent || '',
+      navigator.vendor || '',
+      brands.join(' '),
+    ].join(' ').toLowerCase();
+
+    if (fingerprint.indexOf('fawn') !== -1 || fingerprint.indexOf('doe') !== -1) {
+      return 'backend: Doe (inferred from browser fingerprint)';
+    }
+    if (
+      fingerprint.indexOf('chrome') !== -1 ||
+      fingerprint.indexOf('chromium') !== -1 ||
+      fingerprint.indexOf('headlesschrome') !== -1
+    ) {
+      return 'backend: Dawn (inferred from Chromium fingerprint)';
+    }
+    return 'backend: unspecified (WebGPU does not expose this directly)';
+  }
 
   function resizeGraphCanvas() {
     var dpr = window.devicePixelRatio || 1;
@@ -390,6 +418,7 @@ fn fs(@builtin(position) fc: vec4<f32>) -> @location(0) vec4<f32> {
     var ai = adapter.info || {};
     dot.style.background = '#4a9';
     status.textContent = 'WebGPU active';
+    backendInfo.textContent = detectRuntimeBackend();
     var parts = [];
     if (ai.vendor) parts.push(ai.vendor);
     if (ai.architecture) parts.push(ai.architecture);
@@ -438,6 +467,7 @@ fn fs(@builtin(position) fc: vec4<f32>) -> @location(0) vec4<f32> {
   } catch (e) {
     dot.style.background = '#a33';
     status.textContent = 'WebGPU: ' + e.message;
+    backendInfo.textContent = 'backend: unavailable';
     return;
   }
 

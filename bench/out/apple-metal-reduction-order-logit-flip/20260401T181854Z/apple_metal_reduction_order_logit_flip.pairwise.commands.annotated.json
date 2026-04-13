@@ -1,0 +1,160 @@
+[
+  {
+    "kind": "buffer_write",
+    "handle": 4201,
+    "bufferSize": 16,
+    "data": [
+      2,
+      8,
+      0,
+      0
+    ]
+  },
+  {
+    "kind": "buffer_write",
+    "handle": 4202,
+    "bufferSize": 32,
+    "data": [
+      1065353216,
+      1065353216,
+      1065353216,
+      1065353216,
+      1065353216,
+      1065353216,
+      1065353216,
+      1065353216
+    ]
+  },
+  {
+    "kind": "buffer_write",
+    "handle": 4203,
+    "bufferSize": 64,
+    "data": [
+      1287568416,
+      3435052064,
+      1065353216,
+      1065353216,
+      1065353216,
+      1065353216,
+      1065353216,
+      1065353216,
+      1287568416,
+      1078523331,
+      3435052064,
+      1076719780,
+      1065353216,
+      1065353216,
+      1065353216,
+      1065353216
+    ]
+  },
+  {
+    "kind": "buffer_write",
+    "handle": 4210,
+    "bufferSize": 16,
+    "data": [
+      2,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "matmul_logits_pairwise_f32.wgsl",
+    "x": 2,
+    "y": 1,
+    "z": 1,
+    "initialize_buffers_on_create": true,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "uniform",
+        "resource_handle": 4201,
+        "buffer_size": 16,
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "readonly",
+        "resource_handle": 4202,
+        "buffer_size": 32,
+        "visibility": "compute"
+      },
+      {
+        "binding": 2,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "readonly",
+        "resource_handle": 4203,
+        "buffer_size": 64,
+        "visibility": "compute"
+      },
+      {
+        "binding": 3,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "storage",
+        "resource_handle": 4204,
+        "buffer_size": 8,
+        "visibility": "compute"
+      }
+    ],
+    "semanticOpId": "matmul.logits",
+    "semanticStage": "micro_matmul_logits",
+    "semanticPhase": "logits",
+    "semanticExecutionPlanHash": "73492f07901323a776870f93b072a695a531ad081063110e0b789a3002c6fd2d",
+    "captureBufferHandle": 4204,
+    "captureOffset": 0,
+    "captureSize": 8
+  },
+  {
+    "kind": "kernel_dispatch",
+    "kernel": "sample.wgsl",
+    "x": 1,
+    "y": 1,
+    "z": 1,
+    "initialize_buffers_on_create": true,
+    "bindings": [
+      {
+        "binding": 0,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "uniform",
+        "resource_handle": 4210,
+        "buffer_size": 16,
+        "visibility": "compute"
+      },
+      {
+        "binding": 1,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "readonly",
+        "resource_handle": 4204,
+        "buffer_size": 8,
+        "visibility": "compute"
+      },
+      {
+        "binding": 2,
+        "group": 0,
+        "kind": "buffer",
+        "buffer_type": "storage",
+        "resource_handle": 4205,
+        "buffer_size": 4,
+        "visibility": "compute"
+      }
+    ],
+    "semanticOpId": "sample.token",
+    "semanticStage": "micro_matmul_logits",
+    "semanticPhase": "sample_token",
+    "semanticExecutionPlanHash": "73492f07901323a776870f93b072a695a531ad081063110e0b789a3002c6fd2d",
+    "captureBufferHandle": 4205,
+    "captureOffset": 0,
+    "captureSize": 4,
+    "decode": "u32le"
+  }
+]
