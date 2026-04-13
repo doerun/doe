@@ -1,0 +1,568 @@
+{
+  "mode": "bench",
+  "workload": "inference",
+  "suite": "bench",
+  "modelId": "gemma-3-270m-it-q4k-ehf16-af32",
+  "runtimeProfile": null,
+  "deviceInfo": {
+    "hasSubgroups": false,
+    "hasSubgroupsF16": false,
+    "hasF16": false,
+    "hasTimestampQuery": true,
+    "maxBufferSize": 4294967295,
+    "maxWorkgroupSize": 1024,
+    "maxWorkgroupStorageSize": 65536,
+    "adapterInfo": {
+      "vendor": "unknown",
+      "architecture": "unknown",
+      "device": "unknown",
+      "description": ""
+    },
+    "submitProbeMs": 0.669791000000032
+  },
+  "results": [
+    {
+      "name": "benchmark",
+      "passed": true,
+      "duration": 2296.720626999999
+    }
+  ],
+  "durationMs": 14072.5364,
+  "timestamp": "2026-04-13T00:18:27.441Z",
+  "metrics": {
+    "warmupRuns": 2,
+    "timedRuns": 3,
+    "prompt": "the system should allow review when policy is clear and block unsafe changes only if evidence supports it user request must stay safe true false yes no a the system should allow review when policy is clear and block unsafe changes only if evidence supports it user request must stay safe true false yes no a the system should allow review when policy",
+    "maxTokens": 128,
+    "decodeTokensPerSec": 0,
+    "avgTokensGenerated": 1,
+    "avgPrefillTokens": 72,
+    "avgDecodeTokens": 1,
+    "medianPrefillTokensPerSec": 94.62,
+    "avgPrefillTokensPerSec": 94.46,
+    "medianPrefillTokensPerSecTtft": 94.49,
+    "avgPrefillTokensPerSecTtft": 94.12,
+    "avgDecodeTokensPerSec": 0,
+    "firstTokenMs": 761.97,
+    "firstResponseMs": 11026.42,
+    "prefillMs": 760.9,
+    "decodeMs": 0,
+    "totalRunMs": 762.45,
+    "decodeMsPerTokenP50": 0,
+    "decodeMsPerTokenP95": 0,
+    "decodeMsPerTokenP99": 0,
+    "avgPrefillMs": 762.3,
+    "modelLoadMs": 10264.45,
+    "throughput": {
+      "tokensPerSec": {
+        "mean": 1.3063662409612833,
+        "median": 1.311553301481579,
+        "min": 1.2869250122642673,
+        "max": 1.3206204091380036,
+        "p95": 1.3197136983723612,
+        "p99": 1.3204390669848751,
+        "stdDev": 0.017436288029582393,
+        "ci95": 0.030200536762641735,
+        "samples": 3,
+        "samplesAfterOutlierRemoval": 3,
+        "outliersRemoved": 0
+      },
+      "prefillTokensPerSec": {
+        "mean": 94.45742441914096,
+        "median": 94.62486403721257,
+        "min": 93.44849196931496,
+        "max": 95.29891725089536,
+        "p95": 95.23151192952707,
+        "p99": 95.2854361866217,
+        "stdDev": 0.9365070474657148,
+        "ci95": 1.6220777878569363,
+        "samples": 3,
+        "samplesAfterOutlierRemoval": 3,
+        "outliersRemoved": 0
+      },
+      "prefillTokensPerSecTtft": {
+        "mean": 94.12218095445188,
+        "median": 94.49155099072236,
+        "min": 92.73057260792446,
+        "max": 95.14441926470879,
+        "p95": 95.07913243731015,
+        "p99": 95.13136189922906,
+        "stdDev": 1.2485950457967023,
+        "ci95": 2.162630057398678,
+        "samples": 3,
+        "samplesAfterOutlierRemoval": 3,
+        "outliersRemoved": 0
+      },
+      "decodeTokensPerSec": {
+        "mean": 0,
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "p95": 0,
+        "p99": 0,
+        "stdDev": 0,
+        "ci95": 0,
+        "samples": 3,
+        "samplesAfterOutlierRemoval": 3,
+        "outliersRemoved": 0
+      }
+    },
+    "latency": {
+      "totalMs": {
+        "mean": 765.573542333333,
+        "median": 762.4547160000002,
+        "min": 757.2198589999989,
+        "max": 777.0460519999997,
+        "p95": 775.5869183999997,
+        "p99": 776.7542252799997,
+        "stdDev": 10.274472759778835,
+        "ci95": 17.795908840919363,
+        "samples": 3,
+        "samplesAfterOutlierRemoval": 3,
+        "outliersRemoved": 0
+      },
+      "prefillMs": {
+        "mean": 762.2982673333336,
+        "median": 760.8993760000012,
+        "min": 755.5175029999991,
+        "max": 770.4779230000004,
+        "p95": 769.5200683000005,
+        "p99": 770.2863520600004,
+        "stdDev": 7.5776786924468915,
+        "ci95": 13.124924498750113,
+        "samples": 3,
+        "samplesAfterOutlierRemoval": 3,
+        "outliersRemoved": 0
+      },
+      "decodeMs": {
+        "mean": 0,
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "p95": 0,
+        "p99": 0,
+        "stdDev": 0,
+        "ci95": 0,
+        "samples": 3,
+        "samplesAfterOutlierRemoval": 3,
+        "outliersRemoved": 0
+      },
+      "firstTokenMs": {
+        "mean": 765.0533923333332,
+        "median": 761.9728880000002,
+        "min": 756.7443320000002,
+        "max": 776.4429569999993,
+        "p95": 774.9959500999994,
+        "p99": 776.1535556199993,
+        "stdDev": 10.20421907513798,
+        "ci95": 17.67422588970248,
+        "samples": 3,
+        "samplesAfterOutlierRemoval": 3,
+        "outliersRemoved": 0
+      }
+    },
+    "tokens": {
+      "generated": {
+        "mean": 1,
+        "median": 1,
+        "min": 1,
+        "max": 1,
+        "p95": 1,
+        "p99": 1,
+        "stdDev": 0,
+        "ci95": 0,
+        "samples": 3,
+        "samplesAfterOutlierRemoval": 3,
+        "outliersRemoved": 0
+      },
+      "prefill": {
+        "mean": 72,
+        "median": 72,
+        "min": 72,
+        "max": 72,
+        "p95": 72,
+        "p99": 72,
+        "stdDev": 0,
+        "ci95": 0,
+        "samples": 3,
+        "samplesAfterOutlierRemoval": 3,
+        "outliersRemoved": 0
+      },
+      "decode": {
+        "mean": 1,
+        "median": 1,
+        "min": 1,
+        "max": 1,
+        "p95": 1,
+        "p99": 1,
+        "stdDev": 0,
+        "ci95": 0,
+        "samples": 3,
+        "samplesAfterOutlierRemoval": 3,
+        "outliersRemoved": 0
+      }
+    },
+    "gpu": {
+      "prefillMs": {
+        "mean": 0,
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "p95": 0,
+        "p99": 0,
+        "stdDev": 0,
+        "ci95": 0,
+        "samples": 0,
+        "samplesAfterOutlierRemoval": 0,
+        "outliersRemoved": 0
+      },
+      "decodeMs": {
+        "mean": 0,
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "p95": 0,
+        "p99": 0,
+        "stdDev": 0,
+        "ci95": 0,
+        "samples": 0,
+        "samplesAfterOutlierRemoval": 0,
+        "outliersRemoved": 0
+      },
+      "decodeRecordMs": {
+        "mean": 0,
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "p95": 0,
+        "p99": 0,
+        "stdDev": 0,
+        "ci95": 0,
+        "samples": 3,
+        "samplesAfterOutlierRemoval": 3,
+        "outliersRemoved": 0
+      },
+      "decodeSubmitWaitMs": {
+        "mean": 0,
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "p95": 0,
+        "p99": 0,
+        "stdDev": 0,
+        "ci95": 0,
+        "samples": 3,
+        "samplesAfterOutlierRemoval": 3,
+        "outliersRemoved": 0
+      },
+      "decodeReadbackWaitMs": {
+        "mean": 0,
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "p95": 0,
+        "p99": 0,
+        "stdDev": 0,
+        "ci95": 0,
+        "samples": 3,
+        "samplesAfterOutlierRemoval": 3,
+        "outliersRemoved": 0
+      },
+      "singleTokenSubmitWaitMs": {
+        "mean": 0,
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "p95": 0,
+        "p99": 0,
+        "stdDev": 0,
+        "ci95": 0,
+        "samples": 3,
+        "samplesAfterOutlierRemoval": 3,
+        "outliersRemoved": 0
+      },
+      "singleTokenReadbackWaitMs": {
+        "mean": 0,
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "p95": 0,
+        "p99": 0,
+        "stdDev": 0,
+        "ci95": 0,
+        "samples": 3,
+        "samplesAfterOutlierRemoval": 3,
+        "outliersRemoved": 0
+      },
+      "singleTokenOrchestrationMs": {
+        "mean": 0,
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "p95": 0,
+        "p99": 0,
+        "stdDev": 0,
+        "ci95": 0,
+        "samples": 3,
+        "samplesAfterOutlierRemoval": 3,
+        "outliersRemoved": 0
+      }
+    },
+    "batching": {
+      "batchedForwardCalls": {
+        "mean": 0,
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "p95": 0,
+        "p99": 0,
+        "stdDev": 0,
+        "ci95": 0,
+        "samples": 3,
+        "samplesAfterOutlierRemoval": 3,
+        "outliersRemoved": 0
+      },
+      "unbatchedForwardCalls": {
+        "mean": 0,
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "p95": 0,
+        "p99": 0,
+        "stdDev": 0,
+        "ci95": 0,
+        "samples": 3,
+        "samplesAfterOutlierRemoval": 3,
+        "outliersRemoved": 0
+      },
+      "totalBatchedTimeMs": {
+        "mean": 0,
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "p95": 0,
+        "p99": 0,
+        "stdDev": 0,
+        "ci95": 0,
+        "samples": 3,
+        "samplesAfterOutlierRemoval": 3,
+        "outliersRemoved": 0
+      },
+      "totalUnbatchedTimeMs": {
+        "mean": 0,
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "p95": 0,
+        "p99": 0,
+        "stdDev": 0,
+        "ci95": 0,
+        "samples": 3,
+        "samplesAfterOutlierRemoval": 3,
+        "outliersRemoved": 0
+      },
+      "gpuSubmissions": {
+        "mean": 0,
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "p95": 0,
+        "p99": 0,
+        "stdDev": 0,
+        "ci95": 0,
+        "samples": 3,
+        "samplesAfterOutlierRemoval": 3,
+        "outliersRemoved": 0
+      }
+    },
+    "plePreparedTokenCache": {
+      "hits": {
+        "mean": 0,
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "p95": 0,
+        "p99": 0,
+        "stdDev": 0,
+        "ci95": 0,
+        "samples": 3,
+        "samplesAfterOutlierRemoval": 3,
+        "outliersRemoved": 0
+      },
+      "misses": {
+        "mean": 0,
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "p95": 0,
+        "p99": 0,
+        "stdDev": 0,
+        "ci95": 0,
+        "samples": 3,
+        "samplesAfterOutlierRemoval": 3,
+        "outliersRemoved": 0
+      },
+      "entries": {
+        "mean": 0,
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "p95": 0,
+        "p99": 0,
+        "stdDev": 0,
+        "ci95": 0,
+        "samples": 3,
+        "samplesAfterOutlierRemoval": 3,
+        "outliersRemoved": 0
+      },
+      "bytes": {
+        "mean": 0,
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "p95": 0,
+        "p99": 0,
+        "stdDev": 0,
+        "ci95": 0,
+        "samples": 3,
+        "samplesAfterOutlierRemoval": 3,
+        "outliersRemoved": 0
+      }
+    },
+    "decodeMode": null,
+    "batchGuardReason": null,
+    "generatedText": "",
+    "promptInput": "the system should allow review when policy is clear and block unsafe changes only if evidence supports it user request must stay safe true false yes no a the system should allow review when policy is clear and block unsafe changes only if evidence supports it user request must stay safe true false yes no a the system should allow review when policy",
+    "schemaVersion": 1,
+    "source": "doppler",
+    "suite": "bench",
+    "executionContractArtifact": {
+      "schemaVersion": 1,
+      "source": "doppler",
+      "ok": true,
+      "checks": [
+        {
+          "id": "gemma-3-270m-it-q4k-ehf16-af32.steps",
+          "ok": true
+        },
+        {
+          "id": "gemma-3-270m-it-q4k-ehf16-af32.session",
+          "ok": true
+        }
+      ],
+      "errors": [],
+      "session": {
+        "layout": "contiguous",
+        "disableCommandBatching": false,
+        "decodeBatchSize": 1,
+        "headDim": 256,
+        "kvLen": 32768,
+        "coldQuantMode": "none",
+        "contiguousQuantMode": "none"
+      },
+      "steps": {
+        "total": 35,
+        "attention": 2,
+        "attentionPhases": {
+          "prefill": 1,
+          "decode": 1,
+          "both": 0
+        }
+      }
+    },
+    "layerPatternContractArtifact": {
+      "schemaVersion": 1,
+      "source": "doppler",
+      "ok": true,
+      "checks": [
+        {
+          "id": "inference.layerPattern.patternKind.shape",
+          "ok": true
+        },
+        {
+          "id": "inference.layerPattern.patternKind.semantics",
+          "ok": true
+        },
+        {
+          "id": "inference.layerPattern.layerType.shape",
+          "ok": true
+        },
+        {
+          "id": "inference.layerPattern.layerType.semantics",
+          "ok": true
+        },
+        {
+          "id": "inference.layerPattern.computeGlobalLayers.even",
+          "ok": true
+        },
+        {
+          "id": "inference.layerPattern.computeGlobalLayers.odd",
+          "ok": true
+        },
+        {
+          "id": "inference.layerPattern.computeGlobalLayers.every_n_offset",
+          "ok": true
+        },
+        {
+          "id": "inference.layerPattern.computeGlobalLayers.every_n_negative_offset",
+          "ok": true
+        }
+      ],
+      "errors": [],
+      "stats": {
+        "patternKindRules": 4,
+        "layerTypeRules": 6,
+        "patternKindContexts": 16,
+        "layerTypeContexts": 12
+      }
+    },
+    "requiredInferenceFieldsArtifact": {
+      "schemaVersion": 1,
+      "source": "doppler",
+      "scope": "manifest",
+      "label": "gemma-3-270m-it-q4k-ehf16-af32.inference",
+      "ok": true,
+      "checks": [
+        {
+          "id": "gemma-3-270m-it-q4k-ehf16-af32.inference.requiredInferenceFields",
+          "ok": true
+        }
+      ],
+      "errors": [],
+      "stats": {
+        "fieldCases": 44,
+        "nullableCases": 23,
+        "nonNullableCases": 21
+      }
+    }
+  },
+  "output": null,
+  "memory": {
+    "used": 1714767360,
+    "pool": {
+      "allocations": 632,
+      "reuses": 982,
+      "totalBytesAllocated": 1739408896,
+      "peakBytesAllocated": 1572685312,
+      "currentBytesAllocated": 1563772416,
+      "totalBytesRequested": 1416958976,
+      "peakBytesRequested": 1290979840,
+      "currentBytesRequested": 468412928,
+      "activeBuffers": 239,
+      "pooledBuffers": 43,
+      "budgetMaxBytes": 0,
+      "budgetUtilization": 0,
+      "hitRate": "60.8%"
+    },
+    "kvCache": {
+      "theoretical": 150994944,
+      "allocated": 150994944,
+      "used": 2654208,
+      "efficiency": 0.017578125,
+      "seqLen": 72,
+      "maxSeqLen": 4096,
+      "layout": "contiguous"
+    }
+  },
+  "debugSnapshot": null
+}

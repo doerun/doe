@@ -64,7 +64,8 @@
             }
           },
           "largeWeights": {
-            "enabled": false
+            "enabled": false,
+            "safetyRatio": 0.9
           }
         }
       },

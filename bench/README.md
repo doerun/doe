@@ -126,10 +126,11 @@ What it does not mean yet:
   comparing Transformers.js plus `onnxruntime-node` WebGPU against Doppler on
   the same Doe provider; it is process-wall only and non-claimable because the
   model/runtime stacks differ
-- current local reruns still stop on the Doppler side with
-  `[Embed] GPU embeddings required for gather path.`, so the lane exists in
-  the canonical `bench/` shape but is not yet a healthy compare surface on
-  this host
+- fresh local reruns on this host now succeed on both sides; see
+  `bench/out/node-ort-vs-doppler/20260413T001826Z/gemma270m.workspace/run-artifacts/doppler_node_doe/doppler_node_doe-node_ort_vs_doppler_gemma3_270m_prefill_64tok_decode_64tok-20260413T001826Z.run.json`
+  for the current Doppler-side receipt and `bench/out/compare-report.json` for
+  the current strict compare report, which still marks the lane non-comparable
+  because it is directional/process-wall only
 - there is no Bun ORT-vs-Doppler lane today; Doppler exposes a Node command
   runner (`src/tooling/node-command-runner.js`), but no parallel Bun tooling
   surface that Doe can benchmark honestly here
