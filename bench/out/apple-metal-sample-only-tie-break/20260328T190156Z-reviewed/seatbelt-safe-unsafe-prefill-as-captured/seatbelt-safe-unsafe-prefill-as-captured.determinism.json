@@ -1,0 +1,713 @@
+{
+  "schemaVersion": 1,
+  "source": "doe-sample-only-tie-break-case",
+  "caseId": "seatbelt-safe-unsafe-prefill-as-captured",
+  "determinismMode": "stable-token",
+  "sourceCandidate": {
+    "promptId": "seatbelt-safe-unsafe",
+    "promptText": "Driving without a seatbelt is safe or unsafe. It is",
+    "stepLabel": "prefill",
+    "phase": "prefill",
+    "stepIndex": 0,
+    "sourceLogitsArtifactPath": "bench/out/apple-metal-real-logit-hunt/20260328T182007Z/logits/seatbelt-safe-unsafe.run000.prefill.logits.bin",
+    "sourceLogitsSha256": "16551f609e62e6147fe32acfc6bb6eaae3a67bb404ea569481d7613bd033c73a",
+    "sourceTop2Gap": 1.4560737609863281
+  },
+  "mutation": {
+    "id": "as-captured",
+    "kind": "identity",
+    "top1Token": 496,
+    "top1Logit": 21.390544891357422,
+    "top2Token": 711,
+    "top2Logit": 19.934471130371094
+  },
+  "inputLogits": {
+    "path": "bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/input.logits.bin",
+    "sha256": "16551f609e62e6147fe32acfc6bb6eaae3a67bb404ea569481d7613bd033c73a",
+    "vocabSize": 262144,
+    "expectedGreedyToken": 496,
+    "exactMaxTieCount": 1,
+    "top2Gap": 1.4560737609863281,
+    "topCandidates": [
+      {
+        "token": 496,
+        "logit": 21.390544891357422
+      },
+      {
+        "token": 711,
+        "logit": 19.934471130371094
+      },
+      {
+        "token": 992,
+        "logit": 19.14216423034668
+      },
+      {
+        "token": 506,
+        "logit": 19.070335388183594
+      },
+      {
+        "token": 8573,
+        "logit": 18.95747947692871
+      }
+    ]
+  },
+  "commandsPath": "bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/sample_only.commands.annotated.json",
+  "commandsSha256": "5a0688d4eb5640c8741dcc52aa37d7d0cff3e9f8a5f92f8a7c03f74a41b33fb2",
+  "captures": [
+    {
+      "commandIndex": 2,
+      "semanticOpId": "sample.output_token",
+      "semanticStage": "sample_only",
+      "semanticPhase": "output_token",
+      "semanticTokenIndex": 0,
+      "captureBufferHandle": 2228,
+      "captureOffset": 0,
+      "captureSize": 4,
+      "decode": "u32le"
+    }
+  ],
+  "lanes": {
+    "doe": {
+      "stableAcrossRuns": true,
+      "operators": {
+        "sample.output_token": {
+          "stableAcrossRuns": true,
+          "runCount": 10,
+          "captureSize": 4,
+          "statusCounts": {
+            "ok": 10
+          },
+          "uniqueDigestCount": 1,
+          "sameByteRate": 1.0,
+          "dominantDigest": "af220e86f3b743c3e7bb9a223a6b251b8f0a1fc94feedd6bde0e976e1cc9f44d",
+          "digestCounts": {
+            "af220e86f3b743c3e7bb9a223a6b251b8f0a1fc94feedd6bde0e976e1cc9f44d": 10
+          },
+          "artifacts": [
+            {
+              "runIndex": 0,
+              "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/doe/run000.meta.json.op0002.capture.bin",
+              "captureSha256": "af220e86f3b743c3e7bb9a223a6b251b8f0a1fc94feedd6bde0e976e1cc9f44d"
+            },
+            {
+              "runIndex": 1,
+              "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/doe/run001.meta.json.op0002.capture.bin",
+              "captureSha256": "af220e86f3b743c3e7bb9a223a6b251b8f0a1fc94feedd6bde0e976e1cc9f44d"
+            },
+            {
+              "runIndex": 2,
+              "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/doe/run002.meta.json.op0002.capture.bin",
+              "captureSha256": "af220e86f3b743c3e7bb9a223a6b251b8f0a1fc94feedd6bde0e976e1cc9f44d"
+            },
+            {
+              "runIndex": 3,
+              "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/doe/run003.meta.json.op0002.capture.bin",
+              "captureSha256": "af220e86f3b743c3e7bb9a223a6b251b8f0a1fc94feedd6bde0e976e1cc9f44d"
+            },
+            {
+              "runIndex": 4,
+              "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/doe/run004.meta.json.op0002.capture.bin",
+              "captureSha256": "af220e86f3b743c3e7bb9a223a6b251b8f0a1fc94feedd6bde0e976e1cc9f44d"
+            },
+            {
+              "runIndex": 5,
+              "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/doe/run005.meta.json.op0002.capture.bin",
+              "captureSha256": "af220e86f3b743c3e7bb9a223a6b251b8f0a1fc94feedd6bde0e976e1cc9f44d"
+            },
+            {
+              "runIndex": 6,
+              "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/doe/run006.meta.json.op0002.capture.bin",
+              "captureSha256": "af220e86f3b743c3e7bb9a223a6b251b8f0a1fc94feedd6bde0e976e1cc9f44d"
+            },
+            {
+              "runIndex": 7,
+              "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/doe/run007.meta.json.op0002.capture.bin",
+              "captureSha256": "af220e86f3b743c3e7bb9a223a6b251b8f0a1fc94feedd6bde0e976e1cc9f44d"
+            },
+            {
+              "runIndex": 8,
+              "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/doe/run008.meta.json.op0002.capture.bin",
+              "captureSha256": "af220e86f3b743c3e7bb9a223a6b251b8f0a1fc94feedd6bde0e976e1cc9f44d"
+            },
+            {
+              "runIndex": 9,
+              "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/doe/run009.meta.json.op0002.capture.bin",
+              "captureSha256": "af220e86f3b743c3e7bb9a223a6b251b8f0a1fc94feedd6bde0e976e1cc9f44d"
+            }
+          ],
+          "firstDivergenceRunIndex": null,
+          "decodedValueCounts": {
+            "496": 10
+          },
+          "dominantDecodedValue": 496,
+          "decodedValueStableAcrossRuns": true,
+          "decodedValueRate": 1.0
+        }
+      },
+      "id": "doe",
+      "backendLane": "metal_doe_comparable",
+      "runs": [
+        {
+          "runIndex": 0,
+          "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/doe/run000.meta.json",
+          "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/doe/run000.trace.jsonl",
+          "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/doe/run000.meta.json.operators.json"
+        },
+        {
+          "runIndex": 1,
+          "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/doe/run001.meta.json",
+          "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/doe/run001.trace.jsonl",
+          "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/doe/run001.meta.json.operators.json"
+        },
+        {
+          "runIndex": 2,
+          "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/doe/run002.meta.json",
+          "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/doe/run002.trace.jsonl",
+          "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/doe/run002.meta.json.operators.json"
+        },
+        {
+          "runIndex": 3,
+          "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/doe/run003.meta.json",
+          "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/doe/run003.trace.jsonl",
+          "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/doe/run003.meta.json.operators.json"
+        },
+        {
+          "runIndex": 4,
+          "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/doe/run004.meta.json",
+          "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/doe/run004.trace.jsonl",
+          "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/doe/run004.meta.json.operators.json"
+        },
+        {
+          "runIndex": 5,
+          "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/doe/run005.meta.json",
+          "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/doe/run005.trace.jsonl",
+          "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/doe/run005.meta.json.operators.json"
+        },
+        {
+          "runIndex": 6,
+          "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/doe/run006.meta.json",
+          "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/doe/run006.trace.jsonl",
+          "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/doe/run006.meta.json.operators.json"
+        },
+        {
+          "runIndex": 7,
+          "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/doe/run007.meta.json",
+          "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/doe/run007.trace.jsonl",
+          "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/doe/run007.meta.json.operators.json"
+        },
+        {
+          "runIndex": 8,
+          "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/doe/run008.meta.json",
+          "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/doe/run008.trace.jsonl",
+          "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/doe/run008.meta.json.operators.json"
+        },
+        {
+          "runIndex": 9,
+          "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/doe/run009.meta.json",
+          "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/doe/run009.trace.jsonl",
+          "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/doe/run009.meta.json.operators.json"
+        }
+      ]
+    },
+    "dawn": {
+      "stableAcrossRuns": true,
+      "operators": {
+        "sample.output_token": {
+          "stableAcrossRuns": true,
+          "runCount": 10,
+          "captureSize": 4,
+          "statusCounts": {
+            "ok": 10
+          },
+          "uniqueDigestCount": 1,
+          "sameByteRate": 1.0,
+          "dominantDigest": "af220e86f3b743c3e7bb9a223a6b251b8f0a1fc94feedd6bde0e976e1cc9f44d",
+          "digestCounts": {
+            "af220e86f3b743c3e7bb9a223a6b251b8f0a1fc94feedd6bde0e976e1cc9f44d": 10
+          },
+          "artifacts": [
+            {
+              "runIndex": 0,
+              "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/dawn/run000.meta.json.op0002.capture.bin",
+              "captureSha256": "af220e86f3b743c3e7bb9a223a6b251b8f0a1fc94feedd6bde0e976e1cc9f44d"
+            },
+            {
+              "runIndex": 1,
+              "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/dawn/run001.meta.json.op0002.capture.bin",
+              "captureSha256": "af220e86f3b743c3e7bb9a223a6b251b8f0a1fc94feedd6bde0e976e1cc9f44d"
+            },
+            {
+              "runIndex": 2,
+              "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/dawn/run002.meta.json.op0002.capture.bin",
+              "captureSha256": "af220e86f3b743c3e7bb9a223a6b251b8f0a1fc94feedd6bde0e976e1cc9f44d"
+            },
+            {
+              "runIndex": 3,
+              "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/dawn/run003.meta.json.op0002.capture.bin",
+              "captureSha256": "af220e86f3b743c3e7bb9a223a6b251b8f0a1fc94feedd6bde0e976e1cc9f44d"
+            },
+            {
+              "runIndex": 4,
+              "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/dawn/run004.meta.json.op0002.capture.bin",
+              "captureSha256": "af220e86f3b743c3e7bb9a223a6b251b8f0a1fc94feedd6bde0e976e1cc9f44d"
+            },
+            {
+              "runIndex": 5,
+              "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/dawn/run005.meta.json.op0002.capture.bin",
+              "captureSha256": "af220e86f3b743c3e7bb9a223a6b251b8f0a1fc94feedd6bde0e976e1cc9f44d"
+            },
+            {
+              "runIndex": 6,
+              "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/dawn/run006.meta.json.op0002.capture.bin",
+              "captureSha256": "af220e86f3b743c3e7bb9a223a6b251b8f0a1fc94feedd6bde0e976e1cc9f44d"
+            },
+            {
+              "runIndex": 7,
+              "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/dawn/run007.meta.json.op0002.capture.bin",
+              "captureSha256": "af220e86f3b743c3e7bb9a223a6b251b8f0a1fc94feedd6bde0e976e1cc9f44d"
+            },
+            {
+              "runIndex": 8,
+              "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/dawn/run008.meta.json.op0002.capture.bin",
+              "captureSha256": "af220e86f3b743c3e7bb9a223a6b251b8f0a1fc94feedd6bde0e976e1cc9f44d"
+            },
+            {
+              "runIndex": 9,
+              "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/dawn/run009.meta.json.op0002.capture.bin",
+              "captureSha256": "af220e86f3b743c3e7bb9a223a6b251b8f0a1fc94feedd6bde0e976e1cc9f44d"
+            }
+          ],
+          "firstDivergenceRunIndex": null,
+          "decodedValueCounts": {
+            "496": 10
+          },
+          "dominantDecodedValue": 496,
+          "decodedValueStableAcrossRuns": true,
+          "decodedValueRate": 1.0
+        }
+      },
+      "id": "dawn",
+      "backendLane": "metal_dawn_release",
+      "runs": [
+        {
+          "runIndex": 0,
+          "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/dawn/run000.meta.json",
+          "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/dawn/run000.trace.jsonl",
+          "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/dawn/run000.meta.json.operators.json"
+        },
+        {
+          "runIndex": 1,
+          "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/dawn/run001.meta.json",
+          "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/dawn/run001.trace.jsonl",
+          "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/dawn/run001.meta.json.operators.json"
+        },
+        {
+          "runIndex": 2,
+          "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/dawn/run002.meta.json",
+          "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/dawn/run002.trace.jsonl",
+          "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/dawn/run002.meta.json.operators.json"
+        },
+        {
+          "runIndex": 3,
+          "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/dawn/run003.meta.json",
+          "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/dawn/run003.trace.jsonl",
+          "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/dawn/run003.meta.json.operators.json"
+        },
+        {
+          "runIndex": 4,
+          "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/dawn/run004.meta.json",
+          "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/dawn/run004.trace.jsonl",
+          "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/dawn/run004.meta.json.operators.json"
+        },
+        {
+          "runIndex": 5,
+          "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/dawn/run005.meta.json",
+          "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/dawn/run005.trace.jsonl",
+          "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/dawn/run005.meta.json.operators.json"
+        },
+        {
+          "runIndex": 6,
+          "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/dawn/run006.meta.json",
+          "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/dawn/run006.trace.jsonl",
+          "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/dawn/run006.meta.json.operators.json"
+        },
+        {
+          "runIndex": 7,
+          "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/dawn/run007.meta.json",
+          "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/dawn/run007.trace.jsonl",
+          "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/dawn/run007.meta.json.operators.json"
+        },
+        {
+          "runIndex": 8,
+          "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/dawn/run008.meta.json",
+          "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/dawn/run008.trace.jsonl",
+          "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/dawn/run008.meta.json.operators.json"
+        },
+        {
+          "runIndex": 9,
+          "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/dawn/run009.meta.json",
+          "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/dawn/run009.trace.jsonl",
+          "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/dawn/run009.meta.json.operators.json"
+        }
+      ]
+    }
+  },
+  "crossLane": {
+    "operators": {
+      "sample.output_token": {
+        "sameAcrossLanes": true,
+        "laneDominantDigests": {
+          "doe": "af220e86f3b743c3e7bb9a223a6b251b8f0a1fc94feedd6bde0e976e1cc9f44d",
+          "dawn": "af220e86f3b743c3e7bb9a223a6b251b8f0a1fc94feedd6bde0e976e1cc9f44d"
+        },
+        "sameDecodedValueAcrossLanes": true,
+        "laneDominantDecodedValues": {
+          "doe": 496,
+          "dawn": 496
+        }
+      }
+    }
+  },
+  "tieBreakAudit": {
+    "source": "explicit_input_logits",
+    "lanes": {
+      "doe": {
+        "available": true,
+        "expectedGreedyToken": 496,
+        "actualSampledToken": 496,
+        "matchesExpectedGreedyToken": true,
+        "exactMaxTieCount": 1
+      },
+      "dawn": {
+        "available": true,
+        "expectedGreedyToken": 496,
+        "actualSampledToken": 496,
+        "matchesExpectedGreedyToken": true,
+        "exactMaxTieCount": 1
+      }
+    },
+    "crossLane": {
+      "sample.output_token": {
+        "expectedGreedyToken": 496,
+        "actualSampledTokenByLane": {
+          "doe": 496,
+          "dawn": 496
+        },
+        "sameActualSampledTokenAcrossLanes": true,
+        "allLanesMatchExpectedGreedyToken": true
+      }
+    }
+  },
+  "doeStableToken": {
+    "mode": "buffer-readback",
+    "reportPath": "bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/doe.stable-token.json",
+    "token": 496,
+    "receipt": {
+      "mode": "stable-token",
+      "comparator": "scalar-f32-greedy",
+      "tieBreakRule": "lowest-index-among-max",
+      "sourceKind": "buffer-readback",
+      "vocabSize": 262144,
+      "bytesRead": 1048576,
+      "logitsSha256": "16551f609e62e6147fe32acfc6bb6eaae3a67bb404ea569481d7613bd033c73a",
+      "token": 496,
+      "maxLogit": 21.390544891357422,
+      "tiedMaxCount": 1,
+      "tiedMaxIndicesPrefix": [
+        496
+      ],
+      "tiedMaxIndicesOmittedCount": 0,
+      "topCandidates": [
+        {
+          "index": 496,
+          "logit": 21.390544891357422
+        },
+        {
+          "index": 711,
+          "logit": 19.934471130371094
+        },
+        {
+          "index": 992,
+          "logit": 19.14216423034668
+        },
+        {
+          "index": 506,
+          "logit": 19.070335388183594
+        },
+        {
+          "index": 8573,
+          "logit": 18.95747947692871
+        }
+      ],
+      "proofLinks": [
+        {
+          "theorem": "stableTokenChoose_mem_tiedMaxIndices",
+          "module": "Doe.Core.DeterminismPolicy",
+          "category": "lean_verified",
+          "relation": "stable-token-tie-break-membership",
+          "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+        },
+        {
+          "theorem": "stableTokenChoose_le_all_tiedMaxIndices",
+          "module": "Doe.Core.DeterminismPolicy",
+          "category": "lean_verified",
+          "relation": "stable-token-lowest-index-among-max",
+          "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+        }
+      ]
+    },
+    "matchesExpectedGreedyToken": true
+  },
+  "doeStableChoice": {
+    "mode": "buffer-readback",
+    "reportPath": "bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/doe.stable-choice.json",
+    "token": 496,
+    "receipt": {
+      "mode": "stable-choice",
+      "comparator": "scalar-f32-greedy",
+      "baseRuleId": "stable-token/lowest-index-among-max",
+      "evaluatorKind": "fixed-priority",
+      "policyId": "seatbelt/not-safe-first",
+      "triggerPolicyId": "candidate-margin-band-v1",
+      "candidateSetId": "safety.not_safe",
+      "candidateSetSource": "source-report-resolved",
+      "sourceKind": "buffer-readback",
+      "vocabSize": 262144,
+      "bytesRead": 1048576,
+      "logitsSha256": "16551f609e62e6147fe32acfc6bb6eaae3a67bb404ea569481d7613bd033c73a",
+      "token": 496,
+      "stableTokenToken": 496,
+      "stableTokenTiedMaxCount": 1,
+      "stableTokenTiedMaxIndicesPrefix": [
+        496
+      ],
+      "stableTokenTiedMaxIndicesOmittedCount": 0,
+      "ambiguityTrigger": {
+        "mode": "candidate-margin-band",
+        "epsilon": 0.05
+      },
+      "ambiguityTriggered": false,
+      "ambiguityTopGap": 7.820305824279785,
+      "selectedBy": "stable-token-fallback",
+      "candidateSet": [
+        {
+          "token": 711,
+          "label": "not",
+          "priority": 0,
+          "logit": 19.934471130371094
+        },
+        {
+          "token": 6338,
+          "label": "safe",
+          "priority": 1,
+          "logit": 12.114165306091309
+        }
+      ],
+      "ambiguousCandidateCount": 1,
+      "ambiguousCandidateIndicesPrefix": [
+        711
+      ],
+      "ambiguousCandidateIndicesOmittedCount": 0,
+      "topCandidates": [
+        {
+          "index": 496,
+          "logit": 21.390544891357422
+        },
+        {
+          "index": 711,
+          "logit": 19.934471130371094
+        },
+        {
+          "index": 992,
+          "logit": 19.14216423034668
+        },
+        {
+          "index": 506,
+          "logit": 19.070335388183594
+        },
+        {
+          "index": 8573,
+          "logit": 18.95747947692871
+        }
+      ],
+      "proofLinks": [
+        {
+          "theorem": "stableTokenChoose_mem_tiedMaxIndices",
+          "module": "Doe.Core.DeterminismPolicy",
+          "category": "lean_verified",
+          "relation": "stable-token-tie-break-membership",
+          "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+        },
+        {
+          "theorem": "stableTokenChoose_le_all_tiedMaxIndices",
+          "module": "Doe.Core.DeterminismPolicy",
+          "category": "lean_verified",
+          "relation": "stable-token-lowest-index-among-max",
+          "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+        },
+        {
+          "theorem": "candidateMarginBandTriggered_iff_gap_within_epsilon",
+          "module": "Doe.Core.DeterminismPolicy",
+          "category": "lean_verified",
+          "relation": "stable-choice-candidate-margin-band-trigger",
+          "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+        },
+        {
+          "theorem": "fixedPriorityBetter_true_implies_lexicographic_preference",
+          "module": "Doe.Core.DeterminismPolicy",
+          "category": "lean_verified",
+          "relation": "stable-choice-fixed-priority-evaluator",
+          "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+        }
+      ]
+    }
+  },
+  "doeReviewedChoice": {
+    "mode": "buffer-readback",
+    "reportPath": "bench/out/apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/seatbelt-safe-unsafe-prefill-as-captured/doe.reviewed-choice.json",
+    "token": 496,
+    "receipt": {
+      "mode": "reviewed-choice",
+      "comparator": "scalar-f32-greedy",
+      "baseRuleId": "stable-token/lowest-index-among-max",
+      "evaluatorKind": "explicit-review-decision",
+      "reviewPolicyId": "seatbelt/reviewer-v1",
+      "triggerPolicyId": "candidate-margin-band-v1",
+      "candidateSetId": "safety.not_safe",
+      "candidateSetSource": "source-report-resolved",
+      "sourceKind": "buffer-readback",
+      "vocabSize": 262144,
+      "bytesRead": 1048576,
+      "logitsSha256": "16551f609e62e6147fe32acfc6bb6eaae3a67bb404ea569481d7613bd033c73a",
+      "token": 496,
+      "stableTokenToken": 496,
+      "stableTokenTiedMaxCount": 1,
+      "stableTokenTiedMaxIndicesPrefix": [
+        496
+      ],
+      "stableTokenTiedMaxIndicesOmittedCount": 0,
+      "ambiguityTrigger": {
+        "mode": "candidate-margin-band",
+        "epsilon": 0.05
+      },
+      "ambiguityTriggered": false,
+      "ambiguityTopGap": 7.820305824279785,
+      "selectedBy": "stable-token-fallback",
+      "decision": {
+        "token": 6338,
+        "label": "safe",
+        "reviewerId": "seatbelt/reviewer-v1",
+        "decisionId": "seatbelt-review-001",
+        "decisionRef": "receipt://seatbelt-review-001",
+        "signature": "sha256:seatbelt-review-001"
+      },
+      "decisionAccepted": false,
+      "decisionAcceptanceReason": "stable-token-fallback/not-triggered",
+      "candidateSet": [
+        {
+          "token": 711,
+          "label": "not",
+          "priority": 0,
+          "logit": 19.934471130371094
+        },
+        {
+          "token": 6338,
+          "label": "safe",
+          "priority": 1,
+          "logit": 12.114165306091309
+        }
+      ],
+      "ambiguousCandidateCount": 1,
+      "ambiguousCandidateIndicesPrefix": [
+        711
+      ],
+      "ambiguousCandidateIndicesOmittedCount": 0,
+      "topCandidates": [
+        {
+          "index": 496,
+          "logit": 21.390544891357422
+        },
+        {
+          "index": 711,
+          "logit": 19.934471130371094
+        },
+        {
+          "index": 992,
+          "logit": 19.14216423034668
+        },
+        {
+          "index": 506,
+          "logit": 19.070335388183594
+        },
+        {
+          "index": 8573,
+          "logit": 18.95747947692871
+        }
+      ],
+      "proofLinks": [
+        {
+          "theorem": "stableTokenChoose_mem_tiedMaxIndices",
+          "module": "Doe.Core.DeterminismPolicy",
+          "category": "lean_verified",
+          "relation": "stable-token-tie-break-membership",
+          "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+        },
+        {
+          "theorem": "stableTokenChoose_le_all_tiedMaxIndices",
+          "module": "Doe.Core.DeterminismPolicy",
+          "category": "lean_verified",
+          "relation": "stable-token-lowest-index-among-max",
+          "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+        },
+        {
+          "theorem": "candidateMarginBandTriggered_iff_gap_within_epsilon",
+          "module": "Doe.Core.DeterminismPolicy",
+          "category": "lean_verified",
+          "relation": "stable-choice-candidate-margin-band-trigger",
+          "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+        },
+        {
+          "theorem": "reviewedChoiceSelect_uses_review_token_when_present",
+          "module": "Doe.Core.DeterminismPolicy",
+          "category": "lean_verified",
+          "relation": "reviewed-choice-decision-evaluator",
+          "artifactPath": "pipeline/lean/artifacts/proven-conditions.json"
+        }
+      ]
+    }
+  },
+  "claim": {
+    "mode": "reviewed-choice",
+    "doeStableAcrossRuns": true,
+    "dawnStableAcrossRuns": true,
+    "sameAcrossLanes": true,
+    "sameDecodedValueAcrossLanes": true,
+    "allLanesMatchExpectedGreedyToken": true,
+    "doeRawMatchesExpectedGreedyToken": true,
+    "doeStableTokenMatchesExpectedGreedyToken": true,
+    "doeStableTokenDiffersFromDoeRawToken": false,
+    "doeStableTokenDifferentiator": false,
+    "doeMoreDeterministicThanDawn": false,
+    "claimableDemoStability": {
+      "requirementId": "claimable-demo-v1",
+      "doeFinalTokenStable": true,
+      "dawnFinalTokenStable": true,
+      "receiptReplayStable": true,
+      "passed": true
+    },
+    "doeStableChoiceConfigured": true,
+    "doeStableChoiceTriggered": false,
+    "doeStableChoiceSelectedBy": "stable-token-fallback",
+    "doeStableChoiceDiffersFromDoeRawToken": false,
+    "doeStableChoiceDiffersFromDoeStableToken": false,
+    "doeStableChoiceDifferentiator": false,
+    "doeReviewedChoiceConfigured": true,
+    "doeReviewedChoiceTriggered": false,
+    "doeReviewedChoiceSelectedBy": "stable-token-fallback",
+    "doeReviewedChoiceDecisionAccepted": false,
+    "doeReviewedChoiceDiffersFromDoeRawToken": false,
+    "doeReviewedChoiceDiffersFromDoeStableToken": false,
+    "doeReviewedChoiceDiffersFromDoeStableChoice": false,
+    "doeReviewedChoiceDifferentiator": false
+  }
+}

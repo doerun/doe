@@ -11,6 +11,10 @@ Layout
 
 - `apple-metal-full-greedy-16step/`
   Mirrored archive copy from `models2`. Treat as read-only.
+- `apple-metal-sample-only-tie-break/20260328T190156Z-reviewed/`
+  Historical Apple Metal seatbelt determinism evidence bundle with Doe
+  `stable-token`, `stable-choice`, and `reviewed-choice` receipts plus paired
+  Doe/Dawn sample-only replay artifacts.
 - `apple-metal-dawn-full-greedy-16step/`
   Mirrored archive copy from `models2`. Treat as read-only.
 - `apple-metal-webkit-full-greedy-16step/`
