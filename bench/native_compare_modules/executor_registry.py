@@ -150,6 +150,15 @@ _REGISTRY: dict[str, ExecutorSpec] = {
         ),
         execution_boundary="commands",
     ),
+    "ort_native_webgpu_incumbent": ExecutorSpec(
+        executor_id="ort_native_webgpu_incumbent",
+        command_template=(
+            "python3 bench/executors/run-native-ort-incumbent-bench.py "
+            "--scenario {commands} --trace-jsonl {trace_jsonl} "
+            "--trace-meta {trace_meta} --workload {workload}"
+        ),
+        execution_boundary="commands",
+    ),
     "node_webgpu_package": ExecutorSpec(
         executor_id="node_webgpu_package",
         command_template=(

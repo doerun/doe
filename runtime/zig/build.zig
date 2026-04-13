@@ -483,6 +483,42 @@ pub fn build(b: *std.Build) void {
     ort_plugin_ep_session_smoke_run_step.dependOn(&install_ort_plugin_ep_session_smoke.step);
     ort_plugin_ep_session_smoke_run_step.dependOn(&run_ort_plugin_ep_session_smoke.step);
 
+    const ort_incumbent_session_smoke = b.addExecutable(.{
+        .name = "doe-ort-incumbent-session-smoke",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/ort_incumbent_session_smoke_anchor.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    ort_incumbent_session_smoke.linkLibC();
+    ort_incumbent_session_smoke.linkLibCpp();
+    ort_incumbent_session_smoke.addIncludePath(b.path("../bridge/onnxruntime-ep/vendor/onnxruntime/include"));
+    ort_incumbent_session_smoke.addIncludePath(b.path("../bridge/onnxruntime-ep/src"));
+    ort_incumbent_session_smoke.addCSourceFile(.{
+        .file = b.path("../bridge/onnxruntime-ep/src/ort_incumbent_session_smoke.cc"),
+        .flags = &.{"-std=c++20"},
+    });
+    if (target.result.os.tag == .linux) {
+        ort_incumbent_session_smoke.linkSystemLibrary("dl");
+    }
+    const install_ort_incumbent_session_smoke = b.addInstallArtifact(ort_incumbent_session_smoke, .{});
+    const ort_incumbent_session_smoke_step = b.step(
+        "ort-incumbent-session-smoke",
+        "Build the repo-only incumbent ONNX Runtime WebGPU session smoke runner",
+    );
+    ort_incumbent_session_smoke_step.dependOn(&install_ort_incumbent_session_smoke.step);
+    b.getInstallStep().dependOn(&install_ort_incumbent_session_smoke.step);
+
+    const run_ort_incumbent_session_smoke = b.addRunArtifact(ort_incumbent_session_smoke);
+    if (b.args) |args| run_ort_incumbent_session_smoke.addArgs(args);
+    const ort_incumbent_session_smoke_run_step = b.step(
+        "ort-incumbent-session-smoke-run",
+        "Build and run the repo-only incumbent ONNX Runtime WebGPU session smoke runner",
+    );
+    ort_incumbent_session_smoke_run_step.dependOn(&install_ort_incumbent_session_smoke.step);
+    ort_incumbent_session_smoke_run_step.dependOn(&run_ort_incumbent_session_smoke.step);
+
     const exe = b.addExecutable(.{
         .name = "doe-zig-runtime",
         .root_module = b.createModule(.{

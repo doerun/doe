@@ -93,7 +93,7 @@ from scattered configs:
 | Bun ORT WebGPU Doe vs `bun-webgpu` package | repo-only strict comparable local claim surface | `python3 bench/cli.py run-config --config bench/native-compare/compare.config.bun.ort-webgpu-provider.gemma270m.prefill32.decode1.json --side baseline`, then `--side comparison`, then compare the emitted receipts with `--comparability strict --require-timing-class process-wall`, then run `bench/cli.py claim --config ... bench/out/bun-ort-webgpu-provider-compare/gemma270m-prefill32-decode1.compare.json` |
 | Node ORT WebGPU Doe vs `node-webgpu` package breadth matrix | repo-only strict comparable exploration surface | `python3 bench/cli.py run-config --config bench/native-compare/compare.config.node.ort-webgpu-provider.breadth.json --side baseline`, then `--side comparison`, then compare the emitted receipts with `--comparability strict --require-timing-class process-wall` |
 | Browser ORT WebGPU Doe vs Dawn | repo-only same-stack browser surface | `node browser/chromium/scripts/webgpu-playwright-ort-bench.mjs --mode both --headless true --timed-iters 5 --warmup-iters 2` |
-| Native ORT Doe EP narrow basic-ops slice | repo-only single-runtime bench surface | `python3 bench/single-runtime/run_bench.py --workloads bench/workloads/workloads.native.ort-doe-ep-smoke.json --workload-id inference_ort_doe_ep_add_relu_float32_exactshape --executor-id ort_native_doe_ep --iterations 3 --warmup 1 --out-dir bench/out/native-ort-doe-ep/add_relu --out-report bench/out/native-ort-doe-ep/add_relu.report.json --out-metadata bench/out/native-ort-doe-ep/add_relu.metadata.json --no-timestamp-output` |
+| Native ORT Doe EP narrow basic-ops slice | repo-only single-runtime bench surface | `python3 bench/single-runtime/run_bench.py --workloads bench/workloads/workloads.native.ort-doe-ep-smoke.json --workload-id inference_ort_doe_ep_matmul_add_float32_rank2_exactshape --executor-id ort_native_doe_ep --iterations 3 --warmup 1 --out-dir bench/out/native-ort-doe-ep/matmul_add --out-report bench/out/native-ort-doe-ep/matmul_add.report.json --out-metadata bench/out/native-ort-doe-ep/matmul_add.metadata.json --no-timestamp-output` |
 | Node ORT WebGPU vs Doppler on Doe provider | repo-only directional, not claimable | `python3 bench/cli.py run-config --config bench/native-compare/compare.config.node.ort-vs-doppler.gemma270m.json --side baseline`, then `--side comparison`, then compare the emitted receipts |
 | Local D3D12 package Doe vs Node/Bun packages | not front-doored today | do not assume a supported matrix; add an explicit config/contract first |
 
@@ -118,15 +118,15 @@ What that means today:
   validation:
   `zig build ort-plugin-ep-smoke-run -- --plugin-path <plugin> --ort-lib-path <ort-shared-lib>`
 - the repo now also has a repo-only session smoke runner:
-  `zig build ort-plugin-ep-session-smoke-run -- --plugin-path <plugin> --ort-lib-path <ort-shared-lib> --case identity|add|relu|matmul|add_relu|all`
+  `zig build ort-plugin-ep-session-smoke-run -- --plugin-path <plugin> --ort-lib-path <ort-shared-lib> --case identity|add|relu|matmul|matmul_add|add_relu|all`
 - the plugin now creates real `OrtEpDevice` instances and a narrow native
   `OrtEp` execution slice for `Identity`, `Add`, `Relu`, rank-2 `MatMul`, and
-  exact two-node `Add -> Relu`; see
-  `runtime/bridge/onnxruntime-ep/artifacts/20260413T163356Z/doe-ort-ep-session-smoke.json`
+  exact two-node `MatMul -> Add` / `Add -> Relu`; see
+  `runtime/bridge/onnxruntime-ep/artifacts/20260413T170900Z/doe-ort-ep-session-smoke.json`
   for the current proof that Doe claimed, compiled, and executed that slice
 - the repo now also has a repo-only single-runtime `bench/` surface for the
-  current `Identity`, `Add`, `Relu`, rank-2 `MatMul`, and exact `Add -> Relu`
-  slice:
+  current `Identity`, `Add`, `Relu`, rank-2 `MatMul`, and exact
+  `MatMul -> Add` / `Add -> Relu` slice:
   - workload contract:
     `bench/workloads/workloads.native.ort-doe-ep-smoke.json`
   - executor id:
@@ -136,6 +136,7 @@ What that means today:
     - `bench/out/native-ort-doe-ep/add.report.json`
     - `bench/out/native-ort-doe-ep/relu.report.json`
     - `bench/out/native-ort-doe-ep/matmul.report.json`
+    - `bench/out/native-ort-doe-ep/matmul_add.report.json`
     - `bench/out/native-ort-doe-ep/add_relu.report.json`
 
 What it does not mean yet:

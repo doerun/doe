@@ -105,6 +105,12 @@ class ExecutorRegistryTests(unittest.TestCase):
         self.assertIn("--scenario {commands}", template)
         self.assertEqual(resolve_executor_boundary("ort_native_doe_ep"), "commands")
 
+    def test_resolves_native_ort_webgpu_incumbent_executor(self) -> None:
+        template = resolve_executor_command_template("ort_native_webgpu_incumbent")
+        self.assertIn("run-native-ort-incumbent-bench.py", template)
+        self.assertIn("--scenario {commands}", template)
+        self.assertEqual(resolve_executor_boundary("ort_native_webgpu_incumbent"), "commands")
+
     def test_resolves_tjs_ort_node_doe_executor(self) -> None:
         template = resolve_executor_command_template('tjs_ort_node_doe')
         self.assertIn('run-node-tjs-ort-webgpu.js', template)

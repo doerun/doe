@@ -1,0 +1,457 @@
+{
+  "artifactKind": "run-receipt",
+  "execution": {
+    "returnCodes": [
+      1
+    ],
+    "success": false,
+    "timedSampleCount": 3,
+    "timingClasses": [
+      "process-wall"
+    ],
+    "timingSources": [
+      "wall-time"
+    ]
+  },
+  "executorId": "ort_native_webgpu_incumbent",
+  "generatedAt": "2026-04-13T17:20:37.440978+00:00",
+  "hostIdentity": {
+    "adapter": {
+      "architecture": "",
+      "description": "WebGPU",
+      "device": "",
+      "vendor": "doe"
+    },
+    "api": "ort-native",
+    "arch": "x86_64",
+    "driver": "host-ort",
+    "hostname": "128",
+    "kernel": "7.0.0-10-generic",
+    "os": "linux"
+  },
+  "invocation": {
+    "command": [
+      "python3",
+      "bench/executors/run-native-ort-incumbent-bench.py",
+      "--scenario",
+      "bench/vendor-native/ort_native_compare_matmul_commands.json",
+      "--trace-jsonl",
+      "bench/out/native-ort-webgpu-provider/20260413T172036Z/basic-ops.workspace/isolated-runs/ort_native_webgpu_incumbent/inference_ort_native_compare_matmul_float32_rank2_exactshape/ort_native_webgpu_incumbent.run001.ndjson",
+      "--trace-meta",
+      "bench/out/native-ort-webgpu-provider/20260413T172036Z/basic-ops.workspace/isolated-runs/ort_native_webgpu_incumbent/inference_ort_native_compare_matmul_float32_rank2_exactshape/ort_native_webgpu_incumbent.run001.meta.json",
+      "--workload",
+      "inference_ort_native_compare_matmul_float32_rank2_exactshape"
+    ],
+    "iterations": 4,
+    "resourceProbe": "none",
+    "resourceSampleMs": 100,
+    "resourceSampleTargetCount": 0,
+    "warmup": 1
+  },
+  "normalization": {
+    "allowNoExecution": false,
+    "commandRepeat": 1,
+    "ignoreFirstOps": 0,
+    "timingDivisor": 1.0,
+    "timingNormalizationNote": "",
+    "uploadBufferUsage": "copy-dst-copy-src",
+    "uploadSubmitEvery": 1
+  },
+  "product": "ort_native_webgpu_incumbent",
+  "runtimeIdentity": {
+    "binaryPath": "/usr/bin/python3",
+    "binarySha256": "fa9796cd3a30878e11a2f40372f773d3fcd913fff35e5bee8dd9a036e22e93ab",
+    "executionBackend": "ort_native_webgpu_incumbent",
+    "packageLockHash": "",
+    "packageName": "WebGpuExecutionProvider",
+    "packageVersion": "",
+    "providerId": "webgpu",
+    "providerName": "WebGpuExecutionProvider",
+    "runtimeHost": "native"
+  },
+  "samples": [
+    {
+      "command": [
+        "python3",
+        "bench/executors/run-native-ort-incumbent-bench.py",
+        "--scenario",
+        "bench/vendor-native/ort_native_compare_matmul_commands.json",
+        "--trace-jsonl",
+        "bench/out/native-ort-webgpu-provider/20260413T172036Z/basic-ops.workspace/isolated-runs/ort_native_webgpu_incumbent/inference_ort_native_compare_matmul_float32_rank2_exactshape/ort_native_webgpu_incumbent.run001.ndjson",
+        "--trace-meta",
+        "bench/out/native-ort-webgpu-provider/20260413T172036Z/basic-ops.workspace/isolated-runs/ort_native_webgpu_incumbent/inference_ort_native_compare_matmul_float32_rank2_exactshape/ort_native_webgpu_incumbent.run001.meta.json",
+        "--workload",
+        "inference_ort_native_compare_matmul_float32_rank2_exactshape"
+      ],
+      "commandRepeat": 1,
+      "measuredMs": 100.83352390211076,
+      "measuredRawMs": 100.83352390211076,
+      "resource": {
+        "gpuMemoryProbe": "none",
+        "gpuMemoryProbeAvailable": false,
+        "processCpuMs": 45.99399999999998,
+        "processPeakRssKb": 17868,
+        "processWallMs": 100.83352390211076,
+        "resourceSampleCount": 2,
+        "resourceSampleMs": 100,
+        "resourceSampleTargetCount": 0,
+        "resourceSamplingTruncated": false,
+        "subprocessFailureCapturedByTraceMeta": true,
+        "subprocessReturnCode": 1,
+        "subprocessStderr": "dlopen failed for '/home/x/deco/doe/doppler/node_modules/onnxruntime-node/bin/napi-v6/linux/x64/libonnxruntime.so.1': /home/x/deco/doe/doppler/node_modules/onnxruntime-node/bin/napi-v6/linux/x64/libonnxruntime.so.1: cannot open shared object file: No such file or directory\\nCommand exited with non-zero status 1"
+      },
+      "returnCode": 1,
+      "runIndex": 1,
+      "strictNormalizationUnit": "",
+      "subphasesMs": {
+        "encodeMs": null,
+        "executionMs": null,
+        "gpuTimestampMs": null,
+        "setupMs": null,
+        "submitWaitMs": null
+      },
+      "success": false,
+      "timing": {
+        "source": "wall-time",
+        "timingConfiguredDivisor": 1.0,
+        "timingNormalizationDivisor": 1.0,
+        "timingNormalizedMs": 100.83352390211076,
+        "timingRawMs": 100.83352390211076,
+        "timingSelectionPolicy": "forced-process-wall",
+        "uploadBufferUsage": "copy-dst-copy-src",
+        "uploadSubmitEvery": 1,
+        "wallTimeMs": 100.83352390211076,
+        "workloadUnitNormalizationDivisor": 1.0,
+        "workloadUnitNormalizationSource": "selected-process-wall"
+      },
+      "timingClass": "process-wall",
+      "timingNormalizationDivisor": 1.0,
+      "timingSource": "wall-time",
+      "traceArtifacts": {
+        "jsonlPath": "bench/out/native-ort-webgpu-provider/20260413T172036Z/basic-ops.workspace/isolated-runs/ort_native_webgpu_incumbent/inference_ort_native_compare_matmul_float32_rank2_exactshape/ort_native_webgpu_incumbent.run001.ndjson",
+        "metaPath": "bench/out/native-ort-webgpu-provider/20260413T172036Z/basic-ops.workspace/isolated-runs/ort_native_webgpu_incumbent/inference_ort_native_compare_matmul_float32_rank2_exactshape/ort_native_webgpu_incumbent.run001.meta.json"
+      },
+      "traceMeta": {
+        "adapterInfo": {
+          "architecture": "",
+          "description": "WebGPU",
+          "device": "",
+          "vendor": ""
+        },
+        "benchmarkLane": "native-ort-webgpu-incumbent-smoke",
+        "executionBackend": "ort_native_webgpu_incumbent",
+        "executionErrorCount": 1,
+        "executionLabel": "Native ONNX Runtime incumbent WebGPU session smoke",
+        "executionProvider": "webgpu",
+        "executionProviderName": "WebGpuExecutionProvider",
+        "executionRowCount": 0,
+        "executionSkippedCount": 0,
+        "executionSuccessCount": 0,
+        "executionUnsupportedCount": 0,
+        "failureMessage": "dlopen failed for '/home/x/deco/doe/doppler/node_modules/onnxruntime-node/bin/napi-v6/linux/x64/libonnxruntime.so.1': /home/x/deco/doe/doppler/node_modules/onnxruntime-node/bin/napi-v6/linux/x64/libonnxruntime.so.1: cannot open shared object file: No such file or directory",
+        "nativeOrtApiVersionRequested": 23,
+        "nativeOrtAvailableProviders": [],
+        "nativeOrtCaseName": "matmul",
+        "nativeOrtLibraryPath": "/home/x/deco/doe/doppler/node_modules/onnxruntime-node/bin/napi-v6/linux/x64/libonnxruntime.so.1",
+        "nativeOrtProviderName": "WebGPU",
+        "nativeOrtRuntimeVersion": "",
+        "processWallMs": 3.221501945517957,
+        "runtimeHost": "native",
+        "scenarioId": "inference_ort_native_compare_matmul_float32_rank2_exactshape",
+        "smokeOperations": {
+          "appendProvider": {
+            "code": "ORT_OK",
+            "message": "",
+            "ok": true
+          },
+          "createEnv": {
+            "code": "ORT_OK",
+            "message": "",
+            "ok": true
+          },
+          "createSessionOptions": {
+            "code": "ORT_OK",
+            "message": "",
+            "ok": true
+          }
+        },
+        "terminalFailureCaptured": true,
+        "timingMs": 3.221501945517957,
+        "timingSource": "wall-time",
+        "traceMetaVersion": 1,
+        "workloadId": "inference_ort_native_compare_matmul_float32_rank2_exactshape"
+      },
+      "uploadBufferUsage": "copy-dst-copy-src",
+      "uploadIgnoreFirstOps": 0,
+      "uploadSubmitEvery": 1,
+      "wallMs": 100.83352390211076,
+      "workloadDomain": "inference",
+      "workloadUnitNormalizationDivisor": 1.0
+    },
+    {
+      "command": [
+        "python3",
+        "bench/executors/run-native-ort-incumbent-bench.py",
+        "--scenario",
+        "bench/vendor-native/ort_native_compare_matmul_commands.json",
+        "--trace-jsonl",
+        "bench/out/native-ort-webgpu-provider/20260413T172036Z/basic-ops.workspace/isolated-runs/ort_native_webgpu_incumbent/inference_ort_native_compare_matmul_float32_rank2_exactshape/ort_native_webgpu_incumbent.run002.ndjson",
+        "--trace-meta",
+        "bench/out/native-ort-webgpu-provider/20260413T172036Z/basic-ops.workspace/isolated-runs/ort_native_webgpu_incumbent/inference_ort_native_compare_matmul_float32_rank2_exactshape/ort_native_webgpu_incumbent.run002.meta.json",
+        "--workload",
+        "inference_ort_native_compare_matmul_float32_rank2_exactshape"
+      ],
+      "commandRepeat": 1,
+      "measuredMs": 101.53617803007364,
+      "measuredRawMs": 101.53617803007364,
+      "resource": {
+        "gpuMemoryProbe": "none",
+        "gpuMemoryProbeAvailable": false,
+        "processCpuMs": 44.945000000000014,
+        "processPeakRssKb": 17892,
+        "processWallMs": 101.53617803007364,
+        "resourceSampleCount": 2,
+        "resourceSampleMs": 100,
+        "resourceSampleTargetCount": 0,
+        "resourceSamplingTruncated": false,
+        "subprocessFailureCapturedByTraceMeta": true,
+        "subprocessReturnCode": 1,
+        "subprocessStderr": "dlopen failed for '/home/x/deco/doe/doppler/node_modules/onnxruntime-node/bin/napi-v6/linux/x64/libonnxruntime.so.1': /home/x/deco/doe/doppler/node_modules/onnxruntime-node/bin/napi-v6/linux/x64/libonnxruntime.so.1: cannot open shared object file: No such file or directory\\nCommand exited with non-zero status 1"
+      },
+      "returnCode": 1,
+      "runIndex": 2,
+      "strictNormalizationUnit": "",
+      "subphasesMs": {
+        "encodeMs": null,
+        "executionMs": null,
+        "gpuTimestampMs": null,
+        "setupMs": null,
+        "submitWaitMs": null
+      },
+      "success": false,
+      "timing": {
+        "source": "wall-time",
+        "timingConfiguredDivisor": 1.0,
+        "timingNormalizationDivisor": 1.0,
+        "timingNormalizedMs": 101.53617803007364,
+        "timingRawMs": 101.53617803007364,
+        "timingSelectionPolicy": "forced-process-wall",
+        "uploadBufferUsage": "copy-dst-copy-src",
+        "uploadSubmitEvery": 1,
+        "wallTimeMs": 101.53617803007364,
+        "workloadUnitNormalizationDivisor": 1.0,
+        "workloadUnitNormalizationSource": "selected-process-wall"
+      },
+      "timingClass": "process-wall",
+      "timingNormalizationDivisor": 1.0,
+      "timingSource": "wall-time",
+      "traceArtifacts": {
+        "jsonlPath": "bench/out/native-ort-webgpu-provider/20260413T172036Z/basic-ops.workspace/isolated-runs/ort_native_webgpu_incumbent/inference_ort_native_compare_matmul_float32_rank2_exactshape/ort_native_webgpu_incumbent.run002.ndjson",
+        "metaPath": "bench/out/native-ort-webgpu-provider/20260413T172036Z/basic-ops.workspace/isolated-runs/ort_native_webgpu_incumbent/inference_ort_native_compare_matmul_float32_rank2_exactshape/ort_native_webgpu_incumbent.run002.meta.json"
+      },
+      "traceMeta": {
+        "adapterInfo": {
+          "architecture": "",
+          "description": "WebGPU",
+          "device": "",
+          "vendor": ""
+        },
+        "benchmarkLane": "native-ort-webgpu-incumbent-smoke",
+        "executionBackend": "ort_native_webgpu_incumbent",
+        "executionErrorCount": 1,
+        "executionLabel": "Native ONNX Runtime incumbent WebGPU session smoke",
+        "executionProvider": "webgpu",
+        "executionProviderName": "WebGpuExecutionProvider",
+        "executionRowCount": 0,
+        "executionSkippedCount": 0,
+        "executionSuccessCount": 0,
+        "executionUnsupportedCount": 0,
+        "failureMessage": "dlopen failed for '/home/x/deco/doe/doppler/node_modules/onnxruntime-node/bin/napi-v6/linux/x64/libonnxruntime.so.1': /home/x/deco/doe/doppler/node_modules/onnxruntime-node/bin/napi-v6/linux/x64/libonnxruntime.so.1: cannot open shared object file: No such file or directory",
+        "nativeOrtApiVersionRequested": 23,
+        "nativeOrtAvailableProviders": [],
+        "nativeOrtCaseName": "matmul",
+        "nativeOrtLibraryPath": "/home/x/deco/doe/doppler/node_modules/onnxruntime-node/bin/napi-v6/linux/x64/libonnxruntime.so.1",
+        "nativeOrtProviderName": "WebGPU",
+        "nativeOrtRuntimeVersion": "",
+        "processWallMs": 1.882137032225728,
+        "runtimeHost": "native",
+        "scenarioId": "inference_ort_native_compare_matmul_float32_rank2_exactshape",
+        "smokeOperations": {
+          "appendProvider": {
+            "code": "ORT_OK",
+            "message": "",
+            "ok": true
+          },
+          "createEnv": {
+            "code": "ORT_OK",
+            "message": "",
+            "ok": true
+          },
+          "createSessionOptions": {
+            "code": "ORT_OK",
+            "message": "",
+            "ok": true
+          }
+        },
+        "terminalFailureCaptured": true,
+        "timingMs": 1.882137032225728,
+        "timingSource": "wall-time",
+        "traceMetaVersion": 1,
+        "workloadId": "inference_ort_native_compare_matmul_float32_rank2_exactshape"
+      },
+      "uploadBufferUsage": "copy-dst-copy-src",
+      "uploadIgnoreFirstOps": 0,
+      "uploadSubmitEvery": 1,
+      "wallMs": 101.53617803007364,
+      "workloadDomain": "inference",
+      "workloadUnitNormalizationDivisor": 1.0
+    },
+    {
+      "command": [
+        "python3",
+        "bench/executors/run-native-ort-incumbent-bench.py",
+        "--scenario",
+        "bench/vendor-native/ort_native_compare_matmul_commands.json",
+        "--trace-jsonl",
+        "bench/out/native-ort-webgpu-provider/20260413T172036Z/basic-ops.workspace/isolated-runs/ort_native_webgpu_incumbent/inference_ort_native_compare_matmul_float32_rank2_exactshape/ort_native_webgpu_incumbent.run003.ndjson",
+        "--trace-meta",
+        "bench/out/native-ort-webgpu-provider/20260413T172036Z/basic-ops.workspace/isolated-runs/ort_native_webgpu_incumbent/inference_ort_native_compare_matmul_float32_rank2_exactshape/ort_native_webgpu_incumbent.run003.meta.json",
+        "--workload",
+        "inference_ort_native_compare_matmul_float32_rank2_exactshape"
+      ],
+      "commandRepeat": 1,
+      "measuredMs": 101.42900608479977,
+      "measuredRawMs": 101.42900608479977,
+      "resource": {
+        "gpuMemoryProbe": "none",
+        "gpuMemoryProbeAvailable": false,
+        "processCpuMs": 46.84900000000003,
+        "processPeakRssKb": 17908,
+        "processWallMs": 101.42900608479977,
+        "resourceSampleCount": 2,
+        "resourceSampleMs": 100,
+        "resourceSampleTargetCount": 0,
+        "resourceSamplingTruncated": false,
+        "subprocessFailureCapturedByTraceMeta": true,
+        "subprocessReturnCode": 1,
+        "subprocessStderr": "dlopen failed for '/home/x/deco/doe/doppler/node_modules/onnxruntime-node/bin/napi-v6/linux/x64/libonnxruntime.so.1': /home/x/deco/doe/doppler/node_modules/onnxruntime-node/bin/napi-v6/linux/x64/libonnxruntime.so.1: cannot open shared object file: No such file or directory\\nCommand exited with non-zero status 1"
+      },
+      "returnCode": 1,
+      "runIndex": 3,
+      "strictNormalizationUnit": "",
+      "subphasesMs": {
+        "encodeMs": null,
+        "executionMs": null,
+        "gpuTimestampMs": null,
+        "setupMs": null,
+        "submitWaitMs": null
+      },
+      "success": false,
+      "timing": {
+        "source": "wall-time",
+        "timingConfiguredDivisor": 1.0,
+        "timingNormalizationDivisor": 1.0,
+        "timingNormalizedMs": 101.42900608479977,
+        "timingRawMs": 101.42900608479977,
+        "timingSelectionPolicy": "forced-process-wall",
+        "uploadBufferUsage": "copy-dst-copy-src",
+        "uploadSubmitEvery": 1,
+        "wallTimeMs": 101.42900608479977,
+        "workloadUnitNormalizationDivisor": 1.0,
+        "workloadUnitNormalizationSource": "selected-process-wall"
+      },
+      "timingClass": "process-wall",
+      "timingNormalizationDivisor": 1.0,
+      "timingSource": "wall-time",
+      "traceArtifacts": {
+        "jsonlPath": "bench/out/native-ort-webgpu-provider/20260413T172036Z/basic-ops.workspace/isolated-runs/ort_native_webgpu_incumbent/inference_ort_native_compare_matmul_float32_rank2_exactshape/ort_native_webgpu_incumbent.run003.ndjson",
+        "metaPath": "bench/out/native-ort-webgpu-provider/20260413T172036Z/basic-ops.workspace/isolated-runs/ort_native_webgpu_incumbent/inference_ort_native_compare_matmul_float32_rank2_exactshape/ort_native_webgpu_incumbent.run003.meta.json"
+      },
+      "traceMeta": {
+        "adapterInfo": {
+          "architecture": "",
+          "description": "WebGPU",
+          "device": "",
+          "vendor": ""
+        },
+        "benchmarkLane": "native-ort-webgpu-incumbent-smoke",
+        "executionBackend": "ort_native_webgpu_incumbent",
+        "executionErrorCount": 1,
+        "executionLabel": "Native ONNX Runtime incumbent WebGPU session smoke",
+        "executionProvider": "webgpu",
+        "executionProviderName": "WebGpuExecutionProvider",
+        "executionRowCount": 0,
+        "executionSkippedCount": 0,
+        "executionSuccessCount": 0,
+        "executionUnsupportedCount": 0,
+        "failureMessage": "dlopen failed for '/home/x/deco/doe/doppler/node_modules/onnxruntime-node/bin/napi-v6/linux/x64/libonnxruntime.so.1': /home/x/deco/doe/doppler/node_modules/onnxruntime-node/bin/napi-v6/linux/x64/libonnxruntime.so.1: cannot open shared object file: No such file or directory",
+        "nativeOrtApiVersionRequested": 23,
+        "nativeOrtAvailableProviders": [],
+        "nativeOrtCaseName": "matmul",
+        "nativeOrtLibraryPath": "/home/x/deco/doe/doppler/node_modules/onnxruntime-node/bin/napi-v6/linux/x64/libonnxruntime.so.1",
+        "nativeOrtProviderName": "WebGPU",
+        "nativeOrtRuntimeVersion": "",
+        "processWallMs": 4.172735032625496,
+        "runtimeHost": "native",
+        "scenarioId": "inference_ort_native_compare_matmul_float32_rank2_exactshape",
+        "smokeOperations": {
+          "appendProvider": {
+            "code": "ORT_OK",
+            "message": "",
+            "ok": true
+          },
+          "createEnv": {
+            "code": "ORT_OK",
+            "message": "",
+            "ok": true
+          },
+          "createSessionOptions": {
+            "code": "ORT_OK",
+            "message": "",
+            "ok": true
+          }
+        },
+        "terminalFailureCaptured": true,
+        "timingMs": 4.172735032625496,
+        "timingSource": "wall-time",
+        "traceMetaVersion": 1,
+        "workloadId": "inference_ort_native_compare_matmul_float32_rank2_exactshape"
+      },
+      "uploadBufferUsage": "copy-dst-copy-src",
+      "uploadIgnoreFirstOps": 0,
+      "uploadSubmitEvery": 1,
+      "wallMs": 101.42900608479977,
+      "workloadDomain": "inference",
+      "workloadUnitNormalizationDivisor": 1.0
+    }
+  ],
+  "schemaVersion": 1,
+  "workload": {
+    "api": "ort-native",
+    "benchmarkClass": "comparable",
+    "claimEligible": false,
+    "commandsPath": "bench/vendor-native/ort_native_compare_matmul_commands.json",
+    "comparabilityNotes": "Same-stack native ORT compare between Doe plugin EP and incumbent WebGPU provider on the shared float32 exact-shape rank-2 MatMul slice.",
+    "comparable": true,
+    "description": "Repo-only strict comparable native ORT rank-2 MatMul compare between Doe EP and incumbent WebGPU provider.",
+    "directionalReason": "",
+    "domain": "inference",
+    "driver": "host-ort",
+    "family": "webgpu-provider-compare",
+    "id": "inference_ort_native_compare_matmul_float32_rank2_exactshape",
+    "name": "Native ORT MatMul basic-ops compare",
+    "pathAsymmetry": false,
+    "pathAsymmetryNote": "",
+    "planPath": "",
+    "quirksPath": "examples/quirks/noop.json",
+    "strictNormalizationUnit": "",
+    "vendor": "doe"
+  },
+  "workloadManifest": {
+    "freshnessReason": "standalone manifest; no backend workload catalog freshness check applies",
+    "inputFreshness": "unknown",
+    "ownership": "standalone",
+    "path": "bench/workloads/workloads.native.ort-webgpu-provider-compare.basic-ops.json",
+    "sha256": "93253975f98b9628d95f835eedf1a78529f49a324cbb6f323e5e21d5a6fa3ed0"
+  }
+}

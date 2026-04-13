@@ -1,0 +1,11 @@
+[
+  {
+    "kind": "vendor-native-benchmark-scenario",
+    "schemaVersion": 1,
+    "scenarioId": "inference_ort_native_compare_add_float32_exactshape",
+    "caseName": "add",
+    "ortLibPath": "../../../doppler/node_modules/onnxruntime-node/bin/napi-v6/linux/x64/libonnxruntime.so.1",
+    "providerName": "WebGPU",
+    "notes": "Repo-only native ORT compare Add slice shared between Doe EP and incumbent WebGPU provider."
+  }
+]

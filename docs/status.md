@@ -48,11 +48,12 @@ Read this file first. Use the shard files under
 - The repo-only ONNX Runtime plugin EP now crosses the line from pure scaffold
   to a narrow non-trivial native slice: Doe claims, compiles, and executes
   same-shape float32 ONNX `Identity`, `Add`, `Relu`, rank-2 `MatMul`, and
-  exact two-node `Add -> Relu` session-smoke cases, with proof recorded in
-  `runtime/bridge/onnxruntime-ep/artifacts/20260413T163356Z/doe-ort-ep-session-smoke.json`.
+  exact two-node `MatMul -> Add` / `Add -> Relu` session-smoke cases, with
+  proof recorded in
+  `runtime/bridge/onnxruntime-ep/artifacts/20260413T170900Z/doe-ort-ep-session-smoke.json`.
 - The repo now also has a repo-only single-runtime native ORT EP bench surface
   for the current `Identity`, `Add`, `Relu`, rank-2 `MatMul`, and exact
-  `Add -> Relu` slice under
+  `MatMul -> Add` / `Add -> Relu` slice under
   `bench/workloads/workloads.native.ort-doe-ep-smoke.json`, with current local
   reports in `bench/out/native-ort-doe-ep/`.
 - D3D12 drop-in queue submit now retains submitted command lists behind the

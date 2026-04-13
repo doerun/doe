@@ -1,0 +1,227 @@
+{
+  "schemaVersion": 1,
+  "scenarioId": "g1b_decode",
+  "description": "g1b_decode",
+  "fixturePath": "/var/folders/85/l5dptg296tlfx03cd_k7h0l80000gn/T/doe-det-fixture-277a7zi2/fixture.json",
+  "timestamp": "20260328T18150Z",
+  "runCount": 1,
+  "profile": {
+    "vendor": "apple",
+    "api": "metal",
+    "family": "m3",
+    "driver": "1.0.0"
+  },
+  "baseCommandsPath": "/Users/xyz/deco/doe/bench/plans/generated/compat/inference_gemma3_1b_decode_1tok_commands.json",
+  "baseCommandsSha256": "f107772b576d213946cb3c7ed0d3a49ac5aec7d9db021e0c8c5eb663d10edcd7",
+  "annotatedCommandsPath": "/Users/xyz/deco/doe/bench/out/apple-metal-determinism/20260328T18150Z/g1b_decode.commands.annotated.json",
+  "annotatedCommandsSha256": "50c7e8ae5bb9be249b873e481828776d16fd8655cfdf65dfc0ded31438c949d9",
+  "determinismMode": "stable-decode-step",
+  "capturePlan": {
+    "kind": "inferred",
+    "determinismMode": "stable-decode-step",
+    "semanticStage": "gemma3_decode",
+    "captureCount": 2
+  },
+  "captures": [
+    {
+      "commandIndex": 22,
+      "semanticOpId": "decode.final_logits",
+      "semanticStage": "gemma3_decode",
+      "semanticPhase": "final_logits",
+      "semanticTokenIndex": 0,
+      "captureBufferHandle": 2227,
+      "captureOffset": 0,
+      "captureSize": 32768
+    },
+    {
+      "commandIndex": 23,
+      "semanticOpId": "decode.sample_token",
+      "semanticStage": "gemma3_decode",
+      "semanticPhase": "sample_token",
+      "semanticTokenIndex": 0,
+      "captureBufferHandle": 2228,
+      "captureOffset": 0,
+      "captureSize": 4,
+      "decode": "u32le"
+    }
+  ],
+  "lanes": {
+    "doe": {
+      "stableAcrossRuns": true,
+      "operators": {
+        "decode.final_logits": {
+          "stableAcrossRuns": true,
+          "runCount": 1,
+          "captureSize": 32768,
+          "statusCounts": {
+            "ok": 1
+          },
+          "uniqueDigestCount": 1,
+          "sameByteRate": 1.0,
+          "dominantDigest": "c35020473aed1b4642cd726cad727b63fff2824ad68cedd7ffb73c7cbd890479",
+          "digestCounts": {
+            "c35020473aed1b4642cd726cad727b63fff2824ad68cedd7ffb73c7cbd890479": 1
+          },
+          "artifacts": [
+            {
+              "runIndex": 0,
+              "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-determinism/20260328T18150Z/doe/run000.meta.json.op0022.capture.bin",
+              "captureSha256": "c35020473aed1b4642cd726cad727b63fff2824ad68cedd7ffb73c7cbd890479"
+            }
+          ],
+          "firstDivergenceRunIndex": null
+        },
+        "decode.sample_token": {
+          "stableAcrossRuns": true,
+          "runCount": 1,
+          "captureSize": 4,
+          "statusCounts": {
+            "ok": 1
+          },
+          "uniqueDigestCount": 1,
+          "sameByteRate": 1.0,
+          "dominantDigest": "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119",
+          "digestCounts": {
+            "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119": 1
+          },
+          "artifacts": [
+            {
+              "runIndex": 0,
+              "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-determinism/20260328T18150Z/doe/run000.meta.json.op0023.capture.bin",
+              "captureSha256": "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119"
+            }
+          ],
+          "firstDivergenceRunIndex": null,
+          "decodedValueCounts": {
+            "0": 1
+          },
+          "dominantDecodedValue": 0,
+          "decodedValueStableAcrossRuns": true,
+          "decodedValueRate": 1.0
+        }
+      },
+      "id": "doe",
+      "backendLane": "metal_doe_comparable",
+      "runs": [
+        {
+          "runIndex": 0,
+          "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-determinism/20260328T18150Z/doe/run000.meta.json",
+          "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-determinism/20260328T18150Z/doe/run000.trace.jsonl",
+          "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-determinism/20260328T18150Z/doe/run000.meta.json.operators.json"
+        }
+      ]
+    },
+    "dawn": {
+      "stableAcrossRuns": true,
+      "operators": {
+        "decode.final_logits": {
+          "stableAcrossRuns": true,
+          "runCount": 1,
+          "captureSize": 32768,
+          "statusCounts": {
+            "ok": 1
+          },
+          "uniqueDigestCount": 1,
+          "sameByteRate": 1.0,
+          "dominantDigest": "c35020473aed1b4642cd726cad727b63fff2824ad68cedd7ffb73c7cbd890479",
+          "digestCounts": {
+            "c35020473aed1b4642cd726cad727b63fff2824ad68cedd7ffb73c7cbd890479": 1
+          },
+          "artifacts": [
+            {
+              "runIndex": 0,
+              "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-determinism/20260328T18150Z/dawn/run000.meta.json.op0022.capture.bin",
+              "captureSha256": "c35020473aed1b4642cd726cad727b63fff2824ad68cedd7ffb73c7cbd890479"
+            }
+          ],
+          "firstDivergenceRunIndex": null
+        },
+        "decode.sample_token": {
+          "stableAcrossRuns": true,
+          "runCount": 1,
+          "captureSize": 4,
+          "statusCounts": {
+            "ok": 1
+          },
+          "uniqueDigestCount": 1,
+          "sameByteRate": 1.0,
+          "dominantDigest": "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119",
+          "digestCounts": {
+            "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119": 1
+          },
+          "artifacts": [
+            {
+              "runIndex": 0,
+              "capturePath": "/Users/xyz/deco/doe/bench/out/apple-metal-determinism/20260328T18150Z/dawn/run000.meta.json.op0023.capture.bin",
+              "captureSha256": "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119"
+            }
+          ],
+          "firstDivergenceRunIndex": null,
+          "decodedValueCounts": {
+            "0": 1
+          },
+          "dominantDecodedValue": 0,
+          "decodedValueStableAcrossRuns": true,
+          "decodedValueRate": 1.0
+        }
+      },
+      "id": "dawn",
+      "backendLane": "metal_dawn_release",
+      "runs": [
+        {
+          "runIndex": 0,
+          "traceMetaPath": "/Users/xyz/deco/doe/bench/out/apple-metal-determinism/20260328T18150Z/dawn/run000.meta.json",
+          "traceJsonlPath": "/Users/xyz/deco/doe/bench/out/apple-metal-determinism/20260328T18150Z/dawn/run000.trace.jsonl",
+          "operatorManifestPath": "/Users/xyz/deco/doe/bench/out/apple-metal-determinism/20260328T18150Z/dawn/run000.meta.json.operators.json"
+        }
+      ]
+    }
+  },
+  "crossLane": {
+    "operators": {
+      "decode.final_logits": {
+        "sameAcrossLanes": true,
+        "laneDominantDigests": {
+          "doe": "c35020473aed1b4642cd726cad727b63fff2824ad68cedd7ffb73c7cbd890479",
+          "dawn": "c35020473aed1b4642cd726cad727b63fff2824ad68cedd7ffb73c7cbd890479"
+        }
+      },
+      "decode.sample_token": {
+        "sameAcrossLanes": true,
+        "laneDominantDigests": {
+          "doe": "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119",
+          "dawn": "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119"
+        },
+        "sameDecodedValueAcrossLanes": true,
+        "laneDominantDecodedValues": {
+          "doe": 0,
+          "dawn": 0
+        }
+      }
+    }
+  },
+  "claim": {
+    "mode": "stable-decode-step",
+    "doeReceiptAvailable": true,
+    "dawnReceiptAvailable": true,
+    "doeStableAcrossRuns": true,
+    "dawnStableAcrossRuns": true,
+    "doeMoreDeterministicThanDawn": false,
+    "crossLaneSameBytes": true,
+    "perOperator": {
+      "decode.final_logits": {
+        "doeStableAcrossRuns": true,
+        "dawnStableAcrossRuns": true,
+        "sameAcrossLanes": true
+      },
+      "decode.sample_token": {
+        "doeStableAcrossRuns": true,
+        "dawnStableAcrossRuns": true,
+        "sameAcrossLanes": true,
+        "doeDecodedValue": 0,
+        "dawnDecodedValue": 0,
+        "sameDecodedValueAcrossLanes": true
+      }
+    }
+  }
+}

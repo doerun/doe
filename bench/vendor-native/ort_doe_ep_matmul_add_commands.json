@@ -1,0 +1,9 @@
+[
+  {
+    "kind": "vendor-native-benchmark-scenario",
+    "schemaVersion": 1,
+    "scenarioId": "inference_ort_doe_ep_matmul_add_float32_rank2_exactshape",
+    "caseName": "matmul_add",
+    "notes": "Repo-only native Doe ORT plugin EP exact fused rank-2 MatMul -> Add slice."
+  }
+]

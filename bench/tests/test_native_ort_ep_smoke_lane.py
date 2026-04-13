@@ -26,9 +26,11 @@ WORKLOADS_PATH = REPO_ROOT / "bench" / "workloads" / "workloads.native.ort-doe-e
 IDENTITY_WORKLOAD_ID = "inference_ort_doe_ep_identity_float32_exactshape"
 WORKLOAD_ID = "inference_ort_doe_ep_add_relu_float32_exactshape"
 MATMUL_WORKLOAD_ID = "inference_ort_doe_ep_matmul_float32_rank2_exactshape"
+MATMUL_ADD_WORKLOAD_ID = "inference_ort_doe_ep_matmul_add_float32_rank2_exactshape"
 IDENTITY_SCENARIO_PATH = REPO_ROOT / "bench" / "vendor-native" / "ort_doe_ep_identity_commands.json"
 SCENARIO_PATH = REPO_ROOT / "bench" / "vendor-native" / "ort_doe_ep_add_relu_commands.json"
 MATMUL_SCENARIO_PATH = REPO_ROOT / "bench" / "vendor-native" / "ort_doe_ep_matmul_commands.json"
+MATMUL_ADD_SCENARIO_PATH = REPO_ROOT / "bench" / "vendor-native" / "ort_doe_ep_matmul_add_commands.json"
 
 
 def _write_fake_smoke(path: Path, *, success: bool) -> None:
@@ -61,6 +63,7 @@ def _write_fake_smoke(path: Path, *, success: bool) -> None:
                 "compiledAddGroups": 0,
                 "compiledReluGroups": 0,
                 "compiledMatMulGroups": 0,
+                "compiledMatMulAddGroups": 0,
                 "compiledAddReluGroups": 1,
                 "createStateCalls": 1,
                 "computeCalls": 1,
@@ -68,6 +71,7 @@ def _write_fake_smoke(path: Path, *, success: bool) -> None:
                 "computeAddCalls": 0,
                 "computeReluCalls": 0,
                 "computeMatMulCalls": 0,
+                "computeMatMulAddCalls": 0,
                 "computeAddReluCalls": 1,
                 "releaseStateCalls": 1,
             },
@@ -228,6 +232,36 @@ class NativeOrtEpSmokeLaneTests(unittest.TestCase):
         self.assertEqual(scenario["schemaVersion"], 1)
         self.assertEqual(scenario["scenarioId"], MATMUL_WORKLOAD_ID)
         self.assertEqual(scenario["caseName"], "matmul")
+
+    def test_matmul_add_workload_manifest_loads_native_smoke_lane(self) -> None:
+        workloads = config_support.load_workloads(
+            WORKLOADS_PATH,
+            "",
+            include_noncomparable=True,
+            include_extended=False,
+            workload_cohort="all",
+            selector={"ids": [MATMUL_ADD_WORKLOAD_ID]},
+        )
+        self.assertEqual(len(workloads), 1)
+        workload = workloads[0]
+        self.assertEqual(workload.id, MATMUL_ADD_WORKLOAD_ID)
+        self.assertFalse(workload.comparable)
+        self.assertEqual(workload.benchmark_class, "directional")
+        self.assertFalse(workload.claim_eligible)
+        self.assertEqual(
+            workload.commands_path,
+            "bench/vendor-native/ort_doe_ep_matmul_add_commands.json",
+        )
+        self.assertTrue((REPO_ROOT / workload.commands_path).exists())
+
+    def test_matmul_add_scenario_payload_matches_native_smoke_contract(self) -> None:
+        payload = json.loads(MATMUL_ADD_SCENARIO_PATH.read_text(encoding="utf-8"))
+        self.assertEqual(len(payload), 1)
+        scenario = payload[0]
+        self.assertEqual(scenario["kind"], "vendor-native-benchmark-scenario")
+        self.assertEqual(scenario["schemaVersion"], 1)
+        self.assertEqual(scenario["scenarioId"], MATMUL_ADD_WORKLOAD_ID)
+        self.assertEqual(scenario["caseName"], "matmul_add")
 
     def test_runner_emits_success_trace_for_native_smoke(self) -> None:
         with tempfile.TemporaryDirectory(prefix="doe-native-ort-ep-success-") as tmpdir:

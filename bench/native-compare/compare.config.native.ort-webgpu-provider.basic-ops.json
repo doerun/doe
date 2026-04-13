@@ -1,0 +1,48 @@
+{
+  "workloads": "bench/workloads/workloads.native.ort-webgpu-provider-compare.basic-ops.json",
+  "baseline": {
+    "name": "ort_native_doe_ep",
+    "executorId": "ort_native_doe_ep"
+  },
+  "comparison": {
+    "name": "ort_native_webgpu_incumbent",
+    "executorId": "ort_native_webgpu_incumbent"
+  },
+  "run": {
+    "iterations": 4,
+    "warmup": 1,
+    "out": "bench/out/native-ort-webgpu-provider/basic-ops.compare.json",
+    "workspace": "bench/out/native-ort-webgpu-provider/basic-ops.workspace",
+    "workloadFilter": "",
+    "emitShell": false
+  },
+  "comparability": {
+    "mode": "strict",
+    "requireTimingClass": "process-wall",
+    "allowBaselineNoExecution": false
+  },
+  "claimability": {
+    "mode": "off",
+    "minTimedSamples": 0
+  },
+  "resource": {
+    "probe": "none",
+    "sampleMs": 100,
+    "sampleTargetCount": 0
+  },
+  "selector": {
+    "cohorts": [],
+    "benchmarkClass": [
+      "comparable"
+    ],
+    "claimEligibleOnly": false,
+    "domains": [],
+    "ids": [
+      "inference_ort_native_compare_add_float32_exactshape",
+      "inference_ort_native_compare_relu_float32_exactshape",
+      "inference_ort_native_compare_matmul_float32_rank2_exactshape",
+      "inference_ort_native_compare_add_relu_float32_exactshape"
+    ],
+    "excludeIds": []
+  }
+}

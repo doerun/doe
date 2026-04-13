@@ -35,14 +35,14 @@ What is implemented today:
     hardware devices
   - `CreateEp` creates a real `OrtEp`
   - `GetCapability` claims narrow float32 ONNX-domain `Identity`, `Add`,
-    `Relu`, and rank-2 `MatMul` nodes plus the exact two-node `Add -> Relu`
-    slice
+    `Relu`, and rank-2 `MatMul` nodes plus the exact two-node
+    `MatMul -> Add` and `Add -> Relu` slices
   - `Compile` installs tiny compiled compute paths for single-node
     `Identity`/`Add`/`Relu`/`MatMul` groups and the exact two-node
-    `Add -> Relu` group
+    `MatMul -> Add` and `Add -> Relu` groups
   - the session smoke now proves `Compute()` ran by reading plugin debug
     counters from the shared library and checking expected outputs for
-    `Add`, `Relu`, `MatMul`, and `Add -> Relu`
+    `Add`, `Relu`, `MatMul`, `MatMul -> Add`, and `Add -> Relu`
 
 What is not implemented yet:
 
@@ -60,13 +60,14 @@ Current behavior is intentionally narrow:
 - `CreateEp` returns a real `OrtEp` instance
 - `GetCapability` only claims supported dense float32 ONNX-domain nodes:
   same-rank same-shape `Identity`, `Add`, and `Relu`; rank-2 exact-shape
-  `MatMul`; plus the exact two-node `Add -> Relu` slice
+  `MatMul`; plus the exact two-node `MatMul -> Add` and `Add -> Relu` slices
 - `Compile` creates a real `OrtNodeComputeInfo` for those narrow groups
 - `Compute` executes that slice with boring explicit float32 kernels:
-  copy, elementwise add, `Relu`, rank-2 `MatMul`, and fused `Add -> Relu`
+  copy, elementwise add, `Relu`, rank-2 `MatMul`, and fused
+  `MatMul -> Add` / `Add -> Relu`
 - the repo-only session smoke proves Doe executed the non-trivial slice and
   matched expected outputs via
-  `artifacts/20260413T163356Z/doe-ort-ep-session-smoke.json`
+  `artifacts/20260413T170900Z/doe-ort-ep-session-smoke.json`
 - anything beyond that narrow slice still returns explicit unsupported
   behavior rather than pretending a broader graph-execution bridge exists
 
@@ -114,7 +115,7 @@ cd runtime/zig
 ./zig-out/bin/doe-ort-ep-session-smoke \
   --plugin-path ./zig-out/lib/libonnxruntime_doe_ep.so \
   --ort-lib-path <path-to-libonnxruntime-shared-library> \
-  --case add|relu|matmul|add_relu|all \
+  --case add|relu|matmul|matmul_add|add_relu|all \
   --output /tmp/doe-ort-ep-session-smoke.json
 ```
 
@@ -125,26 +126,29 @@ Current session smoke scope:
 - verifies that ORT surfaces Doe `OrtEpDevice` instances after registration
 - appends a Doe `OrtEpDevice` to session options with
   `SessionOptionsAppendExecutionProvider_V2`
-- builds tiny in-memory `Add`, `Relu`, `MatMul`, and `Add -> Relu` models via
-  ORT's Model Editor API, plus a one-node `Identity` proof case
+- disables ORT graph optimizations so the proof models stay structurally
+  explicit
+- builds tiny in-memory `Add`, `Relu`, `MatMul`, `MatMul -> Add`, and
+  `Add -> Relu` models via ORT's Model Editor API, plus a one-node `Identity`
+  proof case
 - creates a session for each selected case and runs the model successfully
 - verifies expected output values and the Doe claim/compile/compute counter
   deltas for each case
 - current evidence is
-  `artifacts/20260413T163356Z/doe-ort-ep-session-smoke.json`
+  `artifacts/20260413T170900Z/doe-ort-ep-session-smoke.json`
 
 Repo-only bench surface:
 
 ```sh
 python3 bench/single-runtime/run_bench.py \
   --workloads bench/workloads/workloads.native.ort-doe-ep-smoke.json \
-  --workload-id inference_ort_doe_ep_add_relu_float32_exactshape \
+  --workload-id inference_ort_doe_ep_matmul_add_float32_rank2_exactshape \
   --executor-id ort_native_doe_ep \
   --iterations 3 \
   --warmup 1 \
-  --out-dir bench/out/native-ort-doe-ep/add_relu \
-  --out-report bench/out/native-ort-doe-ep/add_relu.report.json \
-  --out-metadata bench/out/native-ort-doe-ep/add_relu.metadata.json \
+  --out-dir bench/out/native-ort-doe-ep/matmul_add \
+  --out-report bench/out/native-ort-doe-ep/matmul_add.report.json \
+  --out-metadata bench/out/native-ort-doe-ep/matmul_add.metadata.json \
   --no-timestamp-output
 ```
 
@@ -154,6 +158,7 @@ Current repo-local bench evidence for the executor-backed narrow slice lives at:
 - `bench/out/native-ort-doe-ep/add.report.json`
 - `bench/out/native-ort-doe-ep/relu.report.json`
 - `bench/out/native-ort-doe-ep/matmul.report.json`
+- `bench/out/native-ort-doe-ep/matmul_add.report.json`
 - `bench/out/native-ort-doe-ep/add_relu.report.json`
 
 Compatibility note:
