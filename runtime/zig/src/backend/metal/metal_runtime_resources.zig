@@ -344,6 +344,10 @@ pub fn ensure_render_target(self: anytype, width: u32, height: u32, fmt: u32) !v
 pub fn ensure_streaming_render_encoder(self: anytype) !void {
     if (self.streaming_render_encoder != null) return;
 
+    if (self.streaming_compute_encoder) |encoder| {
+        bridge.metal_bridge_end_compute_encoding(encoder);
+        self.streaming_compute_encoder = null;
+    }
     if (self.streaming_blit_encoder) |encoder| {
         metal_bridge_end_blit_encoding(encoder);
         self.streaming_blit_encoder = null;

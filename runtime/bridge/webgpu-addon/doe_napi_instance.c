@@ -111,12 +111,6 @@ napi_value doe_request_adapter(napi_env env, napi_callback_info info) {
         }
     }
 
-    if (pfn_doeNativeInstanceCreateAdapter) {
-        WGPUAdapter adapter = pfn_doeNativeInstanceCreateAdapter(inst, opts_ptr);
-        if (!adapter) NAPI_THROW(env, "requestAdapter failed");
-        return wrap_ptr(env, adapter);
-    }
-
     AdapterRequestResult result = {0};
     WGPUFuture future;
     if (pfn_doeRequestAdapterFlat) {

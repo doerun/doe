@@ -26,6 +26,10 @@ fn retire_outstanding_handle(self: anytype) void {
 }
 
 fn finalize_streaming_encoders(self: anytype) void {
+    if (self.streaming_compute_encoder) |enc| {
+        bridge.metal_bridge_end_compute_encoding(enc);
+        self.streaming_compute_encoder = null;
+    }
     if (self.streaming_render_encoder) |enc| {
         bridge.metal_bridge_render_encoder_end(enc);
         bridge.metal_bridge_release(enc);
@@ -70,6 +74,7 @@ pub fn transition_streaming_submission_deferred(self: anytype) !void {
     self.outstanding_cmd_buf = cmd_buf;
     self.has_deferred_submissions = true;
     self.streaming_cmd_buf = null;
+    self.streaming_compute_dispatch_count = 0;
     self.streaming_has_render = false;
     self.streaming_has_copy = false;
     self.streaming_max_upload_bytes = 0;
@@ -124,6 +129,7 @@ pub fn flush_queue_timed(self: anytype) !FlushResult {
 
         bridge.metal_bridge_release(cmd_buf);
         self.streaming_cmd_buf = null;
+        self.streaming_compute_dispatch_count = 0;
         self.streaming_has_render = false;
         self.streaming_has_copy = false;
         self.streaming_max_upload_bytes = 0;

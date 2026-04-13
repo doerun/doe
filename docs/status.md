@@ -20,6 +20,14 @@ Read this file first. Use the shard files under
 
 ## Current status summary
 
+- Apple Metal package compute now has narrow claimable warm package surfaces on
+  `mac.lan` for both Node and Bun. The current Node artifacts are
+  `bench/out/apple-metal/20260413T214410Z/gemma64.node-package.warm.ir.compare.json`
+  and `bench/out/apple-metal/20260413T214410Z/gemma64.node-package.warm.ir.claim.json`.
+  The current Bun artifacts are
+  `bench/out/apple-metal/20260413T214446Z/gemma64.bun-package.warm.ir.compare.json`
+  and `bench/out/apple-metal/20260413T214446Z/gemma64.bun-package.warm.ir.claim.json`.
+  These are still narrow Apple Metal package lanes, not a blanket Metal claim.
 - A repo-only same-stack Bun ORT WebGPU provider-compare lane now exists at
   `bench/native-compare/compare.config.bun.ort-webgpu-provider.gemma270m.prefill32.decode1.json`.
   The current local Bun host artifacts at
@@ -88,17 +96,19 @@ Read this file first. Use the shard files under
   CBV path; upload/query drain work still remains for follow-up.
 - Apple Metal submit-entry serialization is now fixed for the shared-event queue
   path: `doeNativeQueueSubmit` no longer blocks every submit unless deferred CPU
-  copies/resolves are pending or the shared-event fallback is unavailable. Fresh
-  Metal package receipts are still pending, and the Bun package surface now also
-  routes pure compute-dispatch batches through the native Metal batch flush path
-  instead of JS command replay; see `2026-04.md` for the diagnosis and
-  implementation note.
+  copies/resolves are pending or the shared-event fallback is unavailable. The
+  warm Node/Bun package lanes are now strict/comparable and claimable on
+  `mac.lan`; broader Metal coverage still remains follow-up work. See
+  `docs/status/2026-04.md` for the diagnosis and implementation notes.
 - Benchmark reporting now treats `bench/out` as a portable JSON surface:
   compare/claim/run receipts plus cube/inventory/pipeline summary JSONs are
   commit-eligible, generated HTML is no longer the default path, and the single
   tracked local viewer is `bench/viewers/bench_out_viewer.html`.
 - AMD Vulkan Gemma-270M package compute is now a claimable local compare
-  surface on both Node and Bun package lanes.
+  surface on both Node and Bun package lanes, with current compare artifacts at
+  `bench/out/amd-vulkan/20260410T235522Z/gemma270m.node-package.ir.compare.json`
+  and
+  `bench/out/amd-vulkan/20260410T235541Z/gemma270m.bun-package.ir.compare.json`.
 - Current status terminology now treats numeric stability as a `strategy`
   surface rather than a `moat` surface.
 - Shader proof-backed robustness now covers additional 3D storage and texture

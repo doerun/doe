@@ -191,6 +191,10 @@ fn ensure_texture(self: anytype, resource: model_resource_types.CopyTextureResou
 }
 
 fn ensure_blit_encoder(self: anytype) !void {
+    if (self.streaming_compute_encoder) |enc| {
+        bridge.metal_bridge_end_compute_encoding(enc);
+        self.streaming_compute_encoder = null;
+    }
     if (self.streaming_render_encoder) |enc| {
         metal_bridge_render_encoder_end(enc);
         metal_bridge_release(enc);

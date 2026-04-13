@@ -169,6 +169,7 @@ fn execute_kernel_dispatch(self: anytype, kd: model.KernelDispatchCommand) !webg
         kd.warmup_dispatch_count,
         kd.initialize_buffers_on_create,
         kd.bindings,
+        self.queue_sync_mode,
         want_ts,
     );
     var r = self.ok_result(result.metrics.setup_ns, result.metrics.encode_ns, result.metrics.submit_wait_ns, result.metrics.dispatch_count);
@@ -308,14 +309,24 @@ fn execute_map_async(self: anytype, cmd: model.MapAsyncCommand) !webgpu.NativeEx
 }
 
 fn flush_pending_uploads_if_required(self: anytype, command: model.Command) !u64 {
+    const rt = self.get_runtime();
+    var submit_wait_ns: u64 = 0;
+    const requires_compute_boundary = switch (command) {
+        .dispatch, .dispatch_indirect, .kernel_dispatch => false,
+        else => true,
+    };
+    if (requires_compute_boundary and rt.streaming_compute_encoder != null) {
+        submit_wait_ns +|= try rt.flush_queue();
+        self.pending_upload_commands = 0;
+    }
     switch (command) {
-        .upload, .barrier, .render_draw, .draw_indirect, .draw_indexed_indirect, .render_pass => return 0,
+        .upload, .barrier, .render_draw, .draw_indirect, .draw_indexed_indirect, .render_pass => return submit_wait_ns,
         else => {},
     }
-    if (self.pending_upload_commands == 0) return 0;
-    const rt = self.get_runtime();
+    if (self.pending_upload_commands == 0) return submit_wait_ns;
     self.pending_upload_commands = 0;
-    return try rt.flush_queue();
+    submit_wait_ns +|= try rt.flush_queue();
+    return submit_wait_ns;
 }
 
 fn execute_native_command(self: anytype, command: model.Command) !webgpu.NativeExecutionResult {

@@ -346,7 +346,12 @@ pub fn emit_call(self: anytype, function: ir.Function, result_ty: ir.TypeId, cal
     }
     try self.write(call.name);
     try self.write("(");
-    try self.emit_expr_list(function, call.args);
+    var need_comma = false;
+    if (call.args.len > 0) {
+        try self.emit_expr_list(function, call.args);
+        need_comma = true;
+    }
+    try self.emit_helper_capture_args(&need_comma);
     try self.write(")");
 }
 

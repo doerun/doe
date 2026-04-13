@@ -222,6 +222,9 @@ const Emitter = struct {
             try self.emit_param(param);
             need_comma = true;
         }
+        if (stage == null) {
+            try self.emit_helper_capture_params(&need_comma);
+        }
         try self.write(") {\n");
         self.indent += 4;
         if (stage != null and stage.? == .compute) {
@@ -230,6 +233,36 @@ const Emitter = struct {
         try self.emit_stmt(function, function.root_stmt);
         self.indent -= 4;
         try self.write("}\n");
+    }
+
+    fn emit_helper_capture_params(self: *Emitter, need_comma: *bool) EmitError!void {
+        for (self.module.globals.items) |global| {
+            if (global.binding == null) continue;
+            if (need_comma.*) try self.write(", ");
+            try self.emit_bound_global_param(global);
+            need_comma.* = true;
+        }
+        if (self.module_needs_sizes_param()) {
+            if (need_comma.*) try self.write(", ");
+            try self.write("constant uint* _doe_sizes [[buffer(");
+            try self.write_u32(MSL_SIZES_SLOT);
+            try self.write(")]]");
+            need_comma.* = true;
+        }
+    }
+
+    pub fn emit_helper_capture_args(self: *Emitter, need_comma: *bool) EmitError!void {
+        for (self.module.globals.items) |global| {
+            if (global.binding == null) continue;
+            if (need_comma.*) try self.write(", ");
+            try self.write(global.name);
+            need_comma.* = true;
+        }
+        if (self.module_needs_sizes_param()) {
+            if (need_comma.*) try self.write(", ");
+            try self.write("_doe_sizes");
+            need_comma.* = true;
+        }
     }
 
     pub fn emit_bound_global_param(self: *Emitter, global: ir.Global) EmitError!void {
@@ -425,6 +458,12 @@ const Emitter = struct {
                 }
             },
             .loop_ => |loop_stmt| {
+                const scope_for_init = loop_stmt.init != null and loop_stmt.kind == .for_loop;
+                if (scope_for_init) {
+                    try self.write_indent();
+                    try self.write("{\n");
+                    self.indent += 4;
+                }
                 if (loop_stmt.init) |init_stmt| try self.emit_stmt(function, init_stmt);
                 try self.write_indent();
                 switch (loop_stmt.kind) {
@@ -445,6 +484,11 @@ const Emitter = struct {
                 self.indent -= 4;
                 try self.write_indent();
                 try self.write("}\n");
+                if (scope_for_init) {
+                    self.indent -= 4;
+                    try self.write_indent();
+                    try self.write("}\n");
+                }
             },
             .switch_ => |switch_stmt| {
                 try self.write_indent();

@@ -113,6 +113,34 @@ test "pointer param: helper with ptr<storage, f32> MSL" {
     try std.testing.expect(contains(msl, "device"));
 }
 
+test "helper function: bound globals are threaded through MSL calls" {
+    const source =
+        \\struct Uniforms {
+        \\    scale: f32,
+        \\};
+        \\
+        \\@group(0) @binding(0) var<uniform> u: Uniforms;
+        \\@group(0) @binding(1) var<storage, read> src: array<f32>;
+        \\@group(0) @binding(2) var<storage, read_write> dst: array<f32>;
+        \\
+        \\fn helper(idx: u32) {
+        \\    dst[idx] = src[idx] * u.scale;
+        \\}
+        \\
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    helper(id.x);
+        \\}
+    ;
+
+    var out: [MAX_OUTPUT]u8 = undefined;
+    const len = try translateToMsl(std.testing.allocator, source, &out);
+    try std.testing.expect(len > 0);
+    const msl = out[0..len];
+    try std.testing.expect(contains(msl, "void helper(uint idx, constant Uniforms& u [[buffer(0)]], const device float* src [[buffer(1)]], device float* dst [[buffer(2)]], constant uint* _doe_sizes [[buffer(30)]])"));
+    try std.testing.expect(contains(msl, "helper(id.x, u, src, dst, _doe_sizes)"));
+}
+
 test "pointer param: helper with ptr<storage, f32> HLSL" {
     const source =
         \\@group(0) @binding(0) var<storage, read_write> val: f32;

@@ -12,6 +12,7 @@ const metal_bridge_cmd_buf_blit_encoder = bridge.metal_bridge_cmd_buf_blit_encod
 const metal_bridge_device_new_buffer_private = bridge.metal_bridge_device_new_buffer_private;
 const metal_bridge_device_new_buffer_shared = bridge.metal_bridge_device_new_buffer_shared;
 const metal_bridge_end_blit_encoding = bridge.metal_bridge_end_blit_encoding;
+const metal_bridge_end_compute_encoding = bridge.metal_bridge_end_compute_encoding;
 const metal_bridge_release = bridge.metal_bridge_release;
 const metal_bridge_render_encoder_end = bridge.metal_bridge_render_encoder_end;
 
@@ -71,6 +72,10 @@ pub fn upload_bytes(self: anytype, bytes: u64, mode: webgpu.UploadBufferUsageMod
         metal_bridge_blit_encoder_copy(self.copy_blit_encoder, src, dst, len);
         self.has_pending_copies = true;
     } else {
+        if (self.streaming_compute_encoder) |enc| {
+            metal_bridge_end_compute_encoding(enc);
+            self.streaming_compute_encoder = null;
+        }
         if (self.streaming_render_encoder) |enc| {
             metal_bridge_render_encoder_end(enc);
             metal_bridge_release(enc);
@@ -123,6 +128,10 @@ pub fn stage_buffer_write_bytes(
     };
     @memcpy(src_ptr[0..len], data_bytes);
 
+    if (self.streaming_compute_encoder) |enc| {
+        metal_bridge_end_compute_encoding(enc);
+        self.streaming_compute_encoder = null;
+    }
     if (self.streaming_render_encoder) |enc| {
         metal_bridge_render_encoder_end(enc);
         metal_bridge_release(enc);

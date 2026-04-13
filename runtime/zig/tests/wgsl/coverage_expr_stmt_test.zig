@@ -138,6 +138,31 @@ test "statements: for loop through MSL" {
     try std.testing.expect(contains(msl, "for") or contains(msl, "while"));
 }
 
+test "statements: repeated for-loop induction vars stay scoped in MSL" {
+    const source =
+        \\@group(0) @binding(0) var<storage, read_write> data: array<u32>;
+        \\
+        \\@compute @workgroup_size(1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    var sum = 0u;
+        \\    for (var i = 0u; i < 4u; i = i + 1u) {
+        \\        sum = sum + i;
+        \\    }
+        \\    for (var i = 4u; i < 8u; i = i + 1u) {
+        \\        sum = sum + i;
+        \\    }
+        \\    data[id.x] = sum;
+        \\}
+    ;
+
+    var out: [MAX_OUTPUT]u8 = undefined;
+    const len = try translateToMsl(std.testing.allocator, source, &out);
+    try std.testing.expect(len > 0);
+    const msl = out[0..len];
+    try std.testing.expect(contains(msl, "{\n        uint i = 0;"));
+    try std.testing.expect(contains(msl, "    }\n    {\n        uint i = 4;"));
+}
+
 test "statements: while loop through MSL" {
     const source =
         \\@group(0) @binding(0) var<storage, read_write> data: array<f32>;

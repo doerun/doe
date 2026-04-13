@@ -9,7 +9,7 @@ const PipelineCacheKey = pipeline_cache.PipelineCacheKey;
 const TranslationInfo = wgsl_runtime_compile.TranslationInfo;
 
 const CACHE_MAGIC: u32 = 0xD0E5_CACE;
-const CACHE_VERSION: u32 = 2;
+const CACHE_VERSION: u32 = 4;
 const FLAG_NEEDS_SIZES_BUF: u32 = 1 << 0;
 const FLAG_BOUNDS_ELISION: u32 = 1 << 1;
 const FLAG_TEXTURE_BOUNDS_ELISION: u32 = 1 << 2;

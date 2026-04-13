@@ -748,6 +748,18 @@ MetalHandle metal_bridge_cmd_buf_blit_encoder(MetalHandle cmd_buf_h) {
     return (__bridge MetalHandle)encoder; // unretained — lifetime tied to cmd_buf
 }
 
+MetalHandle metal_bridge_cmd_buf_compute_encoder(MetalHandle cmd_buf_h) {
+    id<MTLCommandBuffer> cmd_buf = (__bridge id<MTLCommandBuffer>)cmd_buf_h;
+    id<MTLComputeCommandEncoder> encoder = [cmd_buf computeCommandEncoder];
+    if (encoder == nil) return NULL;
+    return (__bridge MetalHandle)encoder; // unretained — lifetime tied to cmd_buf
+}
+
+void metal_bridge_end_compute_encoding(MetalHandle encoder_h) {
+    id<MTLComputeCommandEncoder> encoder = (__bridge id<MTLComputeCommandEncoder>)encoder_h;
+    [encoder endEncoding];
+}
+
 void metal_bridge_cmd_buf_encode_render_pass(
     MetalHandle cmd_buf_h,
     MetalHandle pipeline_h,
@@ -1222,9 +1234,36 @@ void metal_bridge_cmd_buf_encode_compute_dispatch(
     uint32_t     wg_z)
 {
     id<MTLCommandBuffer>         cmd_buf  = (__bridge id<MTLCommandBuffer>)cmd_buf_h;
+    id<MTLComputeCommandEncoder> encoder = [cmd_buf computeCommandEncoder];
+    metal_bridge_compute_encoder_encode_dispatch(
+        (__bridge MetalHandle)encoder,
+        pipeline_h,
+        buffers,
+        buffer_count,
+        x,
+        y,
+        z,
+        wg_x,
+        wg_y,
+        wg_z);
+    [encoder endEncoding];
+}
+
+void metal_bridge_compute_encoder_encode_dispatch(
+    MetalHandle  encoder_h,
+    MetalHandle  pipeline_h,
+    MetalHandle* buffers,
+    uint32_t     buffer_count,
+    uint32_t     x,
+    uint32_t     y,
+    uint32_t     z,
+    uint32_t     wg_x,
+    uint32_t     wg_y,
+    uint32_t     wg_z)
+{
+    id<MTLComputeCommandEncoder> encoder = (__bridge id<MTLComputeCommandEncoder>)encoder_h;
     id<MTLComputePipelineState>  pipeline = (__bridge id<MTLComputePipelineState>)pipeline_h;
 
-    id<MTLComputeCommandEncoder> encoder = [cmd_buf computeCommandEncoder];
     [encoder setComputePipelineState:pipeline];
 
     for (uint32_t i = 0; i < buffer_count; i++) {
@@ -1234,7 +1273,6 @@ void metal_bridge_cmd_buf_encode_compute_dispatch(
         }
     }
 
-    // Use shader-declared workgroup size when available; fall back to pipeline max.
     MTLSize tg_size;
     if (wg_x > 0) {
         tg_size = MTLSizeMake(wg_x, wg_y > 0 ? wg_y : 1, wg_z > 0 ? wg_z : 1);
@@ -1245,7 +1283,6 @@ void metal_bridge_cmd_buf_encode_compute_dispatch(
     }
     MTLSize grid_size = MTLSizeMake(x, y, z);
     [encoder dispatchThreadgroups:grid_size threadsPerThreadgroup:tg_size];
-    [encoder endEncoding];
 }
 
 void metal_bridge_cmd_buf_encode_compute_dispatch_indirect(

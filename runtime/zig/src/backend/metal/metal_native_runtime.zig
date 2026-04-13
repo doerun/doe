@@ -100,6 +100,8 @@ pub const NativeMetalRuntime = struct {
 
     streaming_cmd_buf: ?*anyopaque = null,
     streaming_blit_encoder: ?*anyopaque = null,
+    streaming_compute_encoder: ?*anyopaque = null,
+    streaming_compute_dispatch_count: u32 = 0,
     streaming_render_encoder: ?*anyopaque = null,
     streaming_has_render: bool = false,
     streaming_has_copy: bool = false,
@@ -155,6 +157,10 @@ pub const NativeMetalRuntime = struct {
             metal_bridge_release(item.dst_buffer);
         }
         self.streaming_uploads.deinit(self.allocator);
+        if (self.streaming_compute_encoder) |enc| {
+            bridge.metal_bridge_end_compute_encoding(enc);
+            self.streaming_compute_encoder = null;
+        }
         if (self.streaming_render_encoder) |enc| {
             metal_bridge_render_encoder_end(enc);
             metal_bridge_release(enc);
@@ -258,9 +264,10 @@ pub const NativeMetalRuntime = struct {
         warmup: u32,
         initialize_buffers_on_create: bool,
         bindings: ?[]const model_compute_types.KernelBinding,
+        queue_sync_mode: webgpu.QueueSyncMode,
         record_timestamps: bool,
     ) !KernelDispatchResult {
-        return kernel_dispatch.run_kernel_dispatch_timed(self, kernel, entry_point, x, y, z, repeat, warmup, initialize_buffers_on_create, bindings, record_timestamps);
+        return kernel_dispatch.run_kernel_dispatch_timed(self, kernel, entry_point, x, y, z, repeat, warmup, initialize_buffers_on_create, bindings, queue_sync_mode, record_timestamps);
     }
 
     pub fn run_dispatch(self: *NativeMetalRuntime, x: u32, y: u32, z: u32, queue_sync_mode: webgpu.QueueSyncMode) !DispatchMetrics {

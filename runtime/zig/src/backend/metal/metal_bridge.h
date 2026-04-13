@@ -120,6 +120,10 @@ void metal_bridge_end_blit_encoding(MetalHandle encoder);
 MetalHandle metal_bridge_create_command_buffer(MetalHandle queue);
 // Open a blit encoder on an existing command buffer. Returns unretained encoder.
 MetalHandle metal_bridge_cmd_buf_blit_encoder(MetalHandle cmd_buf);
+// Open a compute encoder on an existing command buffer. Returns unretained encoder.
+MetalHandle metal_bridge_cmd_buf_compute_encoder(MetalHandle cmd_buf);
+// End the current compute encoder. Call before commit or before starting a new encoder.
+void metal_bridge_end_compute_encoding(MetalHandle encoder);
 // Encode a render pass on an existing command buffer (no commit).
 void metal_bridge_cmd_buf_encode_render_pass(
     MetalHandle cmd_buf,
@@ -259,6 +263,19 @@ void metal_bridge_cmd_buf_encode_blit_copy(
 // wg_x/wg_y/wg_z: shader workgroup size (0 = fallback to pipeline max).
 void metal_bridge_cmd_buf_encode_compute_dispatch(
     MetalHandle  cmd_buf,
+    MetalHandle  pipeline,
+    MetalHandle* buffers,
+    uint32_t     buffer_count,
+    uint32_t     x,
+    uint32_t     y,
+    uint32_t     z,
+    uint32_t     wg_x,
+    uint32_t     wg_y,
+    uint32_t     wg_z);
+
+// Encode a compute dispatch on an already-open compute encoder.
+void metal_bridge_compute_encoder_encode_dispatch(
+    MetalHandle  encoder,
     MetalHandle  pipeline,
     MetalHandle* buffers,
     uint32_t     buffer_count,

@@ -10,7 +10,9 @@ pub extern fn metal_bridge_begin_blit_encoding(queue: ?*anyopaque, encoder_out: 
 pub extern fn metal_bridge_blit_encoder_copy(encoder: ?*anyopaque, src: ?*anyopaque, dst: ?*anyopaque, byte_count: usize) callconv(.c) void;
 pub extern fn metal_bridge_create_command_buffer(queue: ?*anyopaque) callconv(.c) ?*anyopaque;
 pub extern fn metal_bridge_cmd_buf_blit_encoder(cmd_buf: ?*anyopaque) callconv(.c) ?*anyopaque;
+pub extern fn metal_bridge_cmd_buf_compute_encoder(cmd_buf: ?*anyopaque) callconv(.c) ?*anyopaque;
 pub extern fn metal_bridge_end_blit_encoding(encoder: ?*anyopaque) callconv(.c) void;
+pub extern fn metal_bridge_end_compute_encoding(encoder: ?*anyopaque) callconv(.c) void;
 pub extern fn metal_bridge_command_buffer_commit(cmd_buf: ?*anyopaque) callconv(.c) void;
 pub extern fn metal_bridge_command_buffer_wait_completed(cmd_buf: ?*anyopaque) callconv(.c) void;
 pub extern fn metal_bridge_command_buffer_setup_fast_wait(cmd_buf: ?*anyopaque) callconv(.c) void;
@@ -42,6 +44,7 @@ pub extern fn metal_bridge_device_new_compute_pipeline(device: ?*anyopaque, func
 pub extern fn metal_bridge_encode_compute_dispatch(queue: ?*anyopaque, pipeline: ?*anyopaque, buffers: ?[*]?*anyopaque, buffer_count: u32, x: u32, y: u32, z: u32) callconv(.c) ?*anyopaque;
 pub extern fn metal_bridge_encode_compute_dispatch_batch(queue: ?*anyopaque, pipeline: ?*anyopaque, buffers: ?[*]?*anyopaque, buffer_count: u32, x: u32, y: u32, z: u32, repeat_count: u32, wg_x: u32, wg_y: u32, wg_z: u32) callconv(.c) ?*anyopaque;
 pub extern fn metal_bridge_cmd_buf_encode_compute_dispatch(cmd_buf: ?*anyopaque, pipeline: ?*anyopaque, bufs: ?[*]?*anyopaque, buf_count: u32, x: u32, y: u32, z: u32, wg_x: u32, wg_y: u32, wg_z: u32) callconv(.c) void;
+pub extern fn metal_bridge_compute_encoder_encode_dispatch(encoder: ?*anyopaque, pipeline: ?*anyopaque, bufs: ?[*]?*anyopaque, buf_count: u32, x: u32, y: u32, z: u32, wg_x: u32, wg_y: u32, wg_z: u32) callconv(.c) void;
 pub extern fn metal_bridge_cmd_buf_encode_compute_dispatch_indirect(cmd_buf: ?*anyopaque, pipeline: ?*anyopaque, bufs: ?[*]?*anyopaque, buf_count: u32, indirect_buf: ?*anyopaque, indirect_offset: u64, wg_x: u32, wg_y: u32, wg_z: u32) callconv(.c) void;
 pub extern fn metal_bridge_device_new_texture(device: ?*anyopaque, width: u32, height: u32, depth_or_array_layers: u32, mip_levels: u32, sample_count: u32, pixel_format: u32, usage: u32, dimension: u32) callconv(.c) ?*anyopaque;
 pub extern fn metal_bridge_texture_replace_region(texture: ?*anyopaque, width: u32, height: u32, depth_or_array_layers: u32, data: *const anyopaque, bytes_per_row: u32, bytes_per_image: u32, mip_level: u32) callconv(.c) void;

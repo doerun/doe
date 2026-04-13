@@ -137,6 +137,11 @@ MetalHandle metal_bridge_cmd_buf_blit_encoder(MetalHandle cmd_buf) {
     (void)cmd_buf;
     return NULL;
 }
+MetalHandle metal_bridge_cmd_buf_compute_encoder(MetalHandle cmd_buf) {
+    (void)cmd_buf;
+    return NULL;
+}
+void metal_bridge_end_compute_encoding(MetalHandle encoder) { (void)encoder; }
 void metal_bridge_command_buffer_commit(MetalHandle cmd_buf) { (void)cmd_buf; }
 void metal_bridge_command_buffer_wait_completed(MetalHandle cmd_buf) { (void)cmd_buf; }
 void metal_bridge_command_buffer_setup_fast_wait(MetalHandle cmd_buf) { (void)cmd_buf; }
@@ -352,6 +357,18 @@ MetalHandle metal_bridge_encode_compute_dispatch_batch(MetalHandle queue, MetalH
 }
 void metal_bridge_cmd_buf_encode_compute_dispatch(MetalHandle cmd_buf, MetalHandle pipeline, MetalHandle* buffers, uint32_t buffer_count, uint32_t x, uint32_t y, uint32_t z, uint32_t wg_x, uint32_t wg_y, uint32_t wg_z) {
     (void)cmd_buf;
+    (void)pipeline;
+    (void)buffers;
+    (void)buffer_count;
+    (void)x;
+    (void)y;
+    (void)z;
+    (void)wg_x;
+    (void)wg_y;
+    (void)wg_z;
+}
+void metal_bridge_compute_encoder_encode_dispatch(MetalHandle encoder, MetalHandle pipeline, MetalHandle* buffers, uint32_t buffer_count, uint32_t x, uint32_t y, uint32_t z, uint32_t wg_x, uint32_t wg_y, uint32_t wg_z) {
+    (void)encoder;
     (void)pipeline;
     (void)buffers;
     (void)buffer_count;

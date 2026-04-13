@@ -25,6 +25,24 @@ npm install doe-gpu
 - Browser shim available when you want API compatibility rather than runtime
   replacement
 
+## What we can claim today
+
+Ready to claim means strict apples-to-apples evidence that is safe to cite.
+
+| What | Platform | Status | Result | Proof |
+| --- | --- | --- | --- | --- |
+| Node package | AMD Vulkan | Ready to claim | Doe faster | [artifact](https://github.com/doe-gpu/doe/blob/main/bench/out/amd-vulkan/20260410T235522Z/gemma270m.node-package.ir.compare.json) |
+| Bun package | AMD Vulkan | Ready to claim | Doe faster | [artifact](https://github.com/doe-gpu/doe/blob/main/bench/out/amd-vulkan/20260410T235541Z/gemma270m.bun-package.ir.compare.json) |
+| Node package | Apple Metal | Ready to claim | Doe faster | [compare](https://github.com/doe-gpu/doe/blob/main/bench/out/apple-metal/20260413T214410Z/gemma64.node-package.warm.ir.compare.json) / [claim](https://github.com/doe-gpu/doe/blob/main/bench/out/apple-metal/20260413T214410Z/gemma64.node-package.warm.ir.claim.json) |
+| Bun package | Apple Metal | Ready to claim | Doe faster | [compare](https://github.com/doe-gpu/doe/blob/main/bench/out/apple-metal/20260413T214446Z/gemma64.bun-package.warm.ir.compare.json) / [claim](https://github.com/doe-gpu/doe/blob/main/bench/out/apple-metal/20260413T214446Z/gemma64.bun-package.warm.ir.claim.json) |
+
+## What is still experimental
+
+The Doe repo also has governed ORT benchmarks and broader Apple Metal follow-up
+work, but those belong in the repo status page rather than the package promise. Read
+[`docs/status.md`](https://github.com/doe-gpu/doe/blob/main/docs/status.md)
+for the current scope and artifacts.
+
 ## Usage
 
 ```js

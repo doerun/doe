@@ -1,18 +1,24 @@
 const common_timing = @import("../common/timing.zig");
 const model_transfer_types = @import("../../model_compute_types.zig");
+const webgpu = @import("../runtime_types.zig");
 const bridge = @import("metal_bridge_decls.zig");
 
+const metal_bridge_cmd_buf_compute_encoder = bridge.metal_bridge_cmd_buf_compute_encoder;
 const metal_bridge_command_buffer_commit = bridge.metal_bridge_command_buffer_commit;
 const metal_bridge_command_buffer_wait_completed = bridge.metal_bridge_command_buffer_wait_completed;
 const metal_bridge_create_command_buffer = bridge.metal_bridge_create_command_buffer;
+const metal_bridge_compute_encoder_encode_dispatch = bridge.metal_bridge_compute_encoder_encode_dispatch;
 const metal_bridge_encode_compute_dispatch_batch = bridge.metal_bridge_encode_compute_dispatch_batch;
+const metal_bridge_end_blit_encoding = bridge.metal_bridge_end_blit_encoding;
 const metal_bridge_release = bridge.metal_bridge_release;
+const metal_bridge_render_encoder_end = bridge.metal_bridge_render_encoder_end;
 
 const model = struct {
     pub const KernelBinding = model_transfer_types.KernelBinding;
 };
 
 pub const MAX_BINDING_SLOTS: usize = 32;
+const MAX_STREAMING_COMPUTE_DISPATCHES_BEFORE_COMMIT: u32 = 256;
 
 pub const DispatchMetrics = struct {
     setup_ns: u64,
@@ -40,7 +46,7 @@ pub fn run_kernel_dispatch(
     initialize_buffers_on_create: bool,
     bindings: ?[]const model.KernelBinding,
 ) !DispatchMetrics {
-    const result = try run_kernel_dispatch_timed(runtime, kernel, entry_point, x, y, z, repeat, warmup, initialize_buffers_on_create, bindings, false);
+    const result = try run_kernel_dispatch_timed(runtime, kernel, entry_point, x, y, z, repeat, warmup, initialize_buffers_on_create, bindings, .per_command, false);
     return result.metrics;
 }
 
@@ -55,6 +61,7 @@ pub fn run_kernel_dispatch_timed(
     warmup: u32,
     initialize_buffers_on_create: bool,
     bindings: ?[]const model.KernelBinding,
+    queue_sync_mode: webgpu.QueueSyncMode,
     record_timestamps: bool,
 ) !KernelDispatchResult {
     // Setup: pipeline compile, buffer allocation, warmup dispatches.
@@ -97,6 +104,45 @@ pub fn run_kernel_dispatch_timed(
     const setup_ns = common_timing.ns_delta(common_timing.now_ns(), setup_start);
 
     const want_ts = record_timestamps and runtime.timestamp_state.supported;
+
+    if (!want_ts and queue_sync_mode == .per_command) {
+        const encode_start = common_timing.now_ns();
+        try ensure_streaming_compute_encoder(runtime);
+        var i: u32 = 0;
+        while (i < run_count) : (i += 1) {
+            metal_bridge_compute_encoder_encode_dispatch(
+                runtime.streaming_compute_encoder,
+                pipeline,
+                buf_ptr,
+                slot_count,
+                x,
+                y,
+                z,
+                workgroup_size[0],
+                workgroup_size[1],
+                workgroup_size[2],
+            );
+        }
+        var encode_ns = common_timing.ns_delta(common_timing.now_ns(), encode_start);
+        runtime.streaming_compute_dispatch_count +|= run_count;
+        runtime.has_deferred_submissions = true;
+        if (runtime.streaming_compute_dispatch_count >= MAX_STREAMING_COMPUTE_DISPATCHES_BEFORE_COMMIT) {
+            const rollover_start = common_timing.now_ns();
+            try runtime.transition_streaming_submission_deferred();
+            encode_ns +|= common_timing.ns_delta(common_timing.now_ns(), rollover_start);
+        }
+        return .{
+            .metrics = .{
+                .setup_ns = setup_ns,
+                .encode_ns = encode_ns,
+                .submit_wait_ns = 0,
+                .dispatch_count = run_count,
+            },
+            .gpu_elapsed_ns = 0,
+            .gpu_timestamps_attempted = false,
+            .gpu_timestamps_valid = false,
+        };
+    }
 
     // Timed run: batch all repeat dispatches into one command buffer.
     const t_enc_start = common_timing.now_ns();
@@ -169,4 +215,22 @@ pub fn run_kernel_dispatch_timed(
 fn commitAndWait(cmd_buf: ?*anyopaque) void {
     metal_bridge_command_buffer_commit(cmd_buf);
     metal_bridge_command_buffer_wait_completed(cmd_buf);
+}
+
+fn ensure_streaming_compute_encoder(runtime: anytype) !void {
+    if (runtime.streaming_compute_encoder != null) return;
+
+    if (runtime.streaming_render_encoder) |enc| {
+        metal_bridge_render_encoder_end(enc);
+        metal_bridge_release(enc);
+        runtime.streaming_render_encoder = null;
+    }
+    if (runtime.streaming_blit_encoder) |enc| {
+        metal_bridge_end_blit_encoding(enc);
+        runtime.streaming_blit_encoder = null;
+    }
+    if (runtime.streaming_cmd_buf == null) {
+        runtime.streaming_cmd_buf = metal_bridge_create_command_buffer(runtime.queue) orelse return error.InvalidState;
+    }
+    runtime.streaming_compute_encoder = metal_bridge_cmd_buf_compute_encoder(runtime.streaming_cmd_buf) orelse return error.InvalidState;
 }
