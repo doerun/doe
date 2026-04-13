@@ -3,9 +3,33 @@
 #include "doe_ort_ep_api_version.h"
 #include "doe_ort_ep_factory.h"
 
+#include <cstdint>
 #include <string>
 
 namespace doe::ort_ep {
+
+struct DoeOrtEpDebugCounters {
+  uint64_t get_capability_calls = 0;
+  uint64_t claimed_nodes = 0;
+  uint64_t claimed_identity_nodes = 0;
+  uint64_t claimed_add_nodes = 0;
+  uint64_t claimed_relu_nodes = 0;
+  uint64_t compile_calls = 0;
+  uint64_t compiled_identity_groups = 0;
+  uint64_t compiled_add_groups = 0;
+  uint64_t compiled_relu_groups = 0;
+  uint64_t compiled_add_relu_groups = 0;
+  uint64_t create_state_calls = 0;
+  uint64_t compute_calls = 0;
+  uint64_t compute_identity_calls = 0;
+  uint64_t compute_add_calls = 0;
+  uint64_t compute_relu_calls = 0;
+  uint64_t compute_add_relu_calls = 0;
+  uint64_t release_state_calls = 0;
+};
+
+void ResetDebugCounters() NO_EXCEPTION;
+DoeOrtEpDebugCounters SnapshotDebugCounters() NO_EXCEPTION;
 
 class DoeOrtEp final : public OrtEp {
  public:

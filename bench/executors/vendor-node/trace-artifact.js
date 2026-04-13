@@ -17,6 +17,10 @@ async function writeNdjson(path, rows) {
 }
 
 function createBaseTraceMeta({
+  runtimeHost = 'node',
+  benchmarkLane,
+  executionProvider,
+  executionProviderName,
   workloadId,
   scenarioId,
   executionBackend,
@@ -27,14 +31,14 @@ function createBaseTraceMeta({
 }) {
   return {
     traceMetaVersion: 1,
-    runtimeHost: 'node',
-    benchmarkLane: 'node-ort-vs-doppler',
+    runtimeHost,
+    benchmarkLane,
     workloadId,
     scenarioId,
     executionBackend,
     executionLabel,
-    executionProvider: 'doe',
-    executionProviderName: 'doe-gpu',
+    executionProvider,
+    executionProviderName,
     processWallMs,
     timingMs: processWallMs,
     timingSource: 'wall-time',
@@ -44,6 +48,10 @@ function createBaseTraceMeta({
 }
 
 export async function writeVendorNodeSuccessTrace({
+  runtimeHost = 'node',
+  benchmarkLane = 'node-ort-vs-doppler',
+  executionProvider = 'doe',
+  executionProviderName = 'doe-gpu',
   traceMetaPath,
   traceJsonlPath,
   workloadId,
@@ -58,6 +66,10 @@ export async function writeVendorNodeSuccessTrace({
   extraMeta = {},
 }) {
   const traceMeta = createBaseTraceMeta({
+    runtimeHost,
+    benchmarkLane,
+    executionProvider,
+    executionProviderName,
     workloadId,
     scenarioId,
     executionBackend,
@@ -92,6 +104,10 @@ export async function writeVendorNodeSuccessTrace({
 }
 
 export async function writeVendorNodeFailureTrace({
+  runtimeHost = 'node',
+  benchmarkLane = 'node-ort-vs-doppler',
+  executionProvider = 'doe',
+  executionProviderName = 'doe-gpu',
   traceMetaPath,
   traceJsonlPath,
   workloadId,
@@ -103,6 +119,10 @@ export async function writeVendorNodeFailureTrace({
   extraMeta = {},
 }) {
   const traceMeta = createBaseTraceMeta({
+    runtimeHost,
+    benchmarkLane,
+    executionProvider,
+    executionProviderName,
     workloadId,
     scenarioId,
     executionBackend,

@@ -1,0 +1,849 @@
+#!/usr/bin/env node
+import http from "node:http";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, extname, resolve } from "node:path";
+import process from "node:process";
+import { fileURLToPath } from "node:url";
+
+const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
+const ROOT = resolve(SCRIPT_DIR, "..", "..", "..");
+const BENCH_OUT_ROOT = resolve(ROOT, "bench/out");
+const BENCH_OUT_SCRATCH_ROOT = resolve(ROOT, "bench/out/scratch");
+const JETSTREAM_BUILD_ROOT = resolve(
+  ROOT,
+  "browser/chromium/src/third_party/jetstream/main/transformersjs/build",
+);
+const ORT_BROWSER_DIST_ROOT = resolve(
+  ROOT,
+  "bench/node_modules/onnxruntime-web/dist",
+);
+const ORT_BROWSER_WEBGPU_MODULE_PATH = resolve(
+  ORT_BROWSER_DIST_ROOT,
+  "ort.webgpu.min.mjs",
+);
+const REPORT_KIND = "chromium-webgpu-playwright-ort-bench";
+const REPORT_SCHEMA_VERSION = 1;
+const DEFAULT_OUT_FILE = "dawn-vs-doe.browser-ort-bench.diagnostic.json";
+const DEFAULT_TASK = "sentiment";
+const DEFAULT_TIMED_ITERS = 5;
+const DEFAULT_WARMUP_ITERS = 1;
+const DEFAULT_SUITE_TIMEOUT_MS = 240000;
+const DEFAULT_OPERATION_TIMEOUT_MS = 120000;
+const DEFAULT_BROWSER_CLOSE_TIMEOUT_MS = 10000;
+const CONTENT_TYPE_BY_EXTENSION = Object.freeze({
+  ".html": "text/html; charset=utf-8",
+  ".js": "text/javascript; charset=utf-8",
+  ".json": "application/json; charset=utf-8",
+  ".mjs": "text/javascript; charset=utf-8",
+  ".onnx": "application/octet-stream",
+  ".raw": "application/octet-stream",
+  ".txt": "text/plain; charset=utf-8",
+  ".wasm": "application/wasm",
+});
+const TASKS = Object.freeze({
+  sentiment: Object.freeze({
+    taskId: "sentiment",
+    pipelineTask: "sentiment-analysis",
+    modelId: "Xenova/distilbert-base-uncased-finetuned-sst-2-english",
+    dtype: "uint8",
+    inputPayload: Object.freeze([
+      "I love deterministic benchmark surfaces.",
+      "Benchmark drift is frustrating.",
+    ]),
+  }),
+});
+
+function defaultChromePath() {
+  const releaseLocalOut =
+    process.env.FAWN_CHROMIUM_RELEASE_LOCAL_OUT ??
+    resolve(ROOT, "browser/chromium/out/fawn_release_local");
+  const chromiumLaneOut = resolve(ROOT, "browser/chromium_webgpu_lane/out/fawn_release_local");
+  const hostFawnApp = resolve(process.env.HOME ?? "", "Applications/Fawn.app/Contents/MacOS/Chromium");
+  const envChrome = process.env.FAWN_CHROME_BIN;
+  const candidates = [
+    envChrome,
+    resolve(releaseLocalOut, "chrome"),
+    resolve(releaseLocalOut, "Fawn.app/Contents/MacOS/Chromium"),
+    resolve(releaseLocalOut, "Chromium.app/Contents/MacOS/Chromium"),
+    resolve(chromiumLaneOut, "chrome"),
+    resolve(chromiumLaneOut, "Fawn.app/Contents/MacOS/Chromium"),
+    resolve(chromiumLaneOut, "Chromium.app/Contents/MacOS/Chromium"),
+    hostFawnApp,
+    "/usr/bin/google-chrome-stable",
+    "/usr/bin/google-chrome",
+    "/usr/bin/chromium",
+    "/usr/bin/chromium-browser",
+    resolve(ROOT, "browser/chromium/src/out/fawn_release/chrome"),
+    resolve(ROOT, "browser/chromium/src/out/fawn_release/Fawn.app/Contents/MacOS/Chromium"),
+    resolve(ROOT, "browser/chromium/src/out/fawn_release/Chromium.app/Contents/MacOS/Chromium"),
+    resolve(ROOT, "browser/chromium_webgpu_lane/src/out/fawn_release/chrome"),
+    resolve(ROOT, "browser/chromium_webgpu_lane/src/out/fawn_release/Fawn.app/Contents/MacOS/Chromium"),
+    resolve(ROOT, "browser/chromium_webgpu_lane/src/out/fawn_release/Chromium.app/Contents/MacOS/Chromium"),
+    resolve(ROOT, "browser/chromium/src/out/fawn_debug/chrome"),
+    resolve(ROOT, "browser/chromium/src/out/fawn_debug/Fawn.app/Contents/MacOS/Chromium"),
+    resolve(ROOT, "browser/chromium/src/out/fawn_debug/Chromium.app/Contents/MacOS/Chromium"),
+    resolve(ROOT, "browser/chromium_webgpu_lane/src/out/fawn_debug/chrome"),
+    resolve(ROOT, "browser/chromium_webgpu_lane/src/out/fawn_debug/Fawn.app/Contents/MacOS/Chromium"),
+    resolve(ROOT, "browser/chromium_webgpu_lane/src/out/fawn_debug/Chromium.app/Contents/MacOS/Chromium"),
+  ].filter((value) => typeof value === "string" && value.length > 0);
+
+  for (const candidate of candidates) {
+    if (existsSync(candidate)) {
+      return candidate;
+    }
+  }
+  return candidates[0];
+}
+
+function defaultDoeLibPath() {
+  const preferredExt = process.platform === "darwin" ? "dylib" : "so";
+  const envDoeLib = process.env.FAWN_DOE_LIB;
+  const candidates = [
+    envDoeLib,
+    resolve(ROOT, `runtime/zig/zig-out/lib/libwebgpu_doe.${preferredExt}`),
+    resolve(ROOT, "runtime/zig/zig-out/lib/libwebgpu_doe.so"),
+    resolve(ROOT, "runtime/zig/zig-out/lib/libwebgpu_doe.dylib"),
+  ].filter((value) => typeof value === "string" && value.length > 0);
+
+  for (const candidate of candidates) {
+    if (existsSync(candidate)) {
+      return candidate;
+    }
+  }
+  return candidates[0];
+}
+
+function usage() {
+  console.log(`Usage:
+  node browser/chromium/scripts/webgpu-playwright-ort-bench.mjs [options]
+
+Options:
+  --mode dawn|doe|both      Runtime mode to run (default: both)
+  --chrome PATH             Chrome binary path
+  --doe-lib PATH            libwebgpu_doe.{so,dylib} path (for doe mode)
+  --out PATH                JSON report output path (default: browser/chromium/artifacts/<timestamp>/${DEFAULT_OUT_FILE})
+  --allow-bench-out         Allow writing this report under bench/out/scratch
+  --headless true|false     Launch headless (default: true)
+  --task sentiment          Browser ORT task to run (default: ${DEFAULT_TASK})
+  --timed-iters N           Timed inference iterations per mode (default: ${DEFAULT_TIMED_ITERS})
+  --warmup-iters N          Warmup iterations per mode (default: ${DEFAULT_WARMUP_ITERS})
+  --suite-timeout-ms N      Max time for one mode suite run (default: ${DEFAULT_SUITE_TIMEOUT_MS})
+  --op-timeout-ms N         Max time for one async browser op (default: ${DEFAULT_OPERATION_TIMEOUT_MS})
+  --chrome-arg ARG          Extra Chromium arg (repeatable)
+  --strict                  Exit non-zero if any mode fails
+  --help                    Show this message
+`);
+}
+
+function timestampId() {
+  return new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
+}
+
+function defaultOutPath() {
+  return resolve(
+    ROOT,
+    "browser/chromium/artifacts",
+    timestampId(),
+    DEFAULT_OUT_FILE,
+  );
+}
+
+function readOptionValue(argv, optionIndex, flag) {
+  const value = argv[optionIndex + 1];
+  if (typeof value !== "string" || value.length === 0) {
+    throw new Error(`${flag} requires a value`);
+  }
+  return value;
+}
+
+function parseBool(text, flag) {
+  if (text === "true") return true;
+  if (text === "false") return false;
+  throw new Error(`${flag} must be true or false`);
+}
+
+function parsePositiveInt(text, flag) {
+  const value = Number.parseInt(text, 10);
+  if (!Number.isFinite(value) || value <= 0) {
+    throw new Error(`${flag} must be a positive integer`);
+  }
+  return value;
+}
+
+function pathWithin(pathValue, rootPath) {
+  const absolutePath = resolve(pathValue);
+  const absoluteRoot = resolve(rootPath);
+  return absolutePath === absoluteRoot || absolutePath.startsWith(`${absoluteRoot}/`);
+}
+
+function ensureAllowedOutPath(outPath, allowBenchOut) {
+  if (!pathWithin(outPath, BENCH_OUT_ROOT)) {
+    return;
+  }
+  if (!allowBenchOut) {
+    throw new Error(
+      `refusing to write browser ORT output to ${BENCH_OUT_ROOT}; write under browser/chromium/artifacts or pass --allow-bench-out explicitly`,
+    );
+  }
+  if (!pathWithin(outPath, BENCH_OUT_SCRATCH_ROOT)) {
+    throw new Error(
+      `browser ORT output under bench/out must be in ${BENCH_OUT_SCRATCH_ROOT}`,
+    );
+  }
+}
+
+function parseArgs(argv) {
+  const args = {
+    mode: "both",
+    chromePath: defaultChromePath(),
+    doeLibPath: defaultDoeLibPath(),
+    outPath: defaultOutPath(),
+    allowBenchOut: false,
+    headless: true,
+    task: DEFAULT_TASK,
+    timedIters: DEFAULT_TIMED_ITERS,
+    warmupIters: DEFAULT_WARMUP_ITERS,
+    suiteTimeoutMs: DEFAULT_SUITE_TIMEOUT_MS,
+    opTimeoutMs: DEFAULT_OPERATION_TIMEOUT_MS,
+    chromeArgs: [],
+    strict: false,
+  };
+
+  for (let i = 2; i < argv.length; i += 1) {
+    const token = argv[i];
+    if (token === "--help" || token === "-h") {
+      usage();
+      process.exit(0);
+    } else if (token === "--strict") {
+      args.strict = true;
+    } else if (token === "--allow-bench-out") {
+      args.allowBenchOut = true;
+    } else if (token === "--mode") {
+      args.mode = readOptionValue(argv, i, "--mode");
+      i += 1;
+    } else if (token === "--chrome") {
+      args.chromePath = readOptionValue(argv, i, "--chrome");
+      i += 1;
+    } else if (token === "--doe-lib") {
+      args.doeLibPath = readOptionValue(argv, i, "--doe-lib");
+      i += 1;
+    } else if (token === "--out") {
+      args.outPath = readOptionValue(argv, i, "--out");
+      i += 1;
+    } else if (token === "--headless") {
+      args.headless = parseBool(readOptionValue(argv, i, "--headless"), "--headless");
+      i += 1;
+    } else if (token === "--task") {
+      args.task = readOptionValue(argv, i, "--task");
+      i += 1;
+    } else if (token === "--timed-iters") {
+      args.timedIters = parsePositiveInt(readOptionValue(argv, i, "--timed-iters"), "--timed-iters");
+      i += 1;
+    } else if (token === "--warmup-iters") {
+      args.warmupIters = parsePositiveInt(readOptionValue(argv, i, "--warmup-iters"), "--warmup-iters");
+      i += 1;
+    } else if (token === "--suite-timeout-ms") {
+      args.suiteTimeoutMs = parsePositiveInt(readOptionValue(argv, i, "--suite-timeout-ms"), "--suite-timeout-ms");
+      i += 1;
+    } else if (token === "--op-timeout-ms") {
+      args.opTimeoutMs = parsePositiveInt(readOptionValue(argv, i, "--op-timeout-ms"), "--op-timeout-ms");
+      i += 1;
+    } else if (token === "--chrome-arg") {
+      args.chromeArgs.push(readOptionValue(argv, i, "--chrome-arg"));
+      i += 1;
+    } else {
+      throw new Error(`unknown option: ${token}`);
+    }
+  }
+
+  if (!["dawn", "doe", "both"].includes(args.mode)) {
+    throw new Error("--mode must be one of dawn, doe, both");
+  }
+  if (!Object.hasOwn(TASKS, args.task)) {
+    throw new Error(`--task must be one of ${Object.keys(TASKS).join(", ")}`);
+  }
+  if (!existsSync(args.chromePath)) {
+    throw new Error(`chrome binary not found: ${args.chromePath}`);
+  }
+  if (args.mode !== "dawn" && !existsSync(args.doeLibPath)) {
+    throw new Error(`doe runtime library not found: ${args.doeLibPath}`);
+  }
+  if (!existsSync(JETSTREAM_BUILD_ROOT)) {
+    throw new Error(`Transformers.js browser build not found: ${JETSTREAM_BUILD_ROOT}`);
+  }
+  if (!existsSync(ORT_BROWSER_WEBGPU_MODULE_PATH)) {
+    throw new Error(`onnxruntime-web WebGPU module not found: ${ORT_BROWSER_WEBGPU_MODULE_PATH}`);
+  }
+  ensureAllowedOutPath(args.outPath, args.allowBenchOut);
+  return args;
+}
+
+async function loadChromiumDriver() {
+  try {
+    const mod = await import("playwright");
+    return mod.chromium;
+  } catch {
+    // continue
+  }
+
+  try {
+    const mod = await import("playwright-core");
+    return mod.chromium;
+  } catch {
+    // continue
+  }
+
+  throw new Error(
+    "Playwright not found. Install with: npm install --prefix browser/chromium playwright-core",
+  );
+}
+
+function contentTypeFor(path) {
+  return CONTENT_TYPE_BY_EXTENSION[extname(path).toLowerCase()] ?? "application/octet-stream";
+}
+
+function htmlPage() {
+  return "<!doctype html><meta charset='utf-8'><title>doe-webgpu-ort-bench</title>";
+}
+
+function aliasPathForRequest(requestPath) {
+  return resolve(ROOT, requestPath.replace(/^\/+/, ""));
+}
+
+function startLocalServer() {
+  const server = http.createServer((req, res) => {
+    const requestPath = new URL(req.url ?? "/", "http://127.0.0.1").pathname;
+    const headers = {
+      "Cross-Origin-Embedder-Policy": "require-corp",
+      "Cross-Origin-Opener-Policy": "same-origin",
+      "Cross-Origin-Resource-Policy": "same-origin",
+      "Cache-Control": "no-store",
+    };
+    if (requestPath !== "/") {
+      const absolutePath = aliasPathForRequest(requestPath);
+      if (!pathWithin(absolutePath, ROOT)) {
+        res.writeHead(404, headers);
+        res.end("not found");
+        return;
+      }
+      if (!existsSync(absolutePath)) {
+        res.writeHead(404, headers);
+        res.end("not found");
+        return;
+      }
+      res.writeHead(200, {
+        ...headers,
+        "content-type": contentTypeFor(absolutePath),
+      });
+      res.end(readFileSync(absolutePath));
+      return;
+    }
+    res.writeHead(200, {
+      ...headers,
+      "content-type": "text/html; charset=utf-8",
+    });
+    res.end(htmlPage());
+  });
+
+  return new Promise((resolveServer, rejectServer) => {
+    server.on("error", rejectServer);
+    server.listen(0, "127.0.0.1", () => {
+      const address = server.address();
+      if (!address || typeof address === "string") {
+        rejectServer(new Error("failed to resolve local server address"));
+        return;
+      }
+      resolveServer({
+        port: address.port,
+        server,
+        url: `http://127.0.0.1:${address.port}/`,
+      });
+    });
+  });
+}
+
+function baseLaunchArgs(port) {
+  const args = [
+    "--no-sandbox",
+    "--disable-setuid-sandbox",
+    "--disable-dev-shm-usage",
+    "--ignore-gpu-blocklist",
+    "--enable-unsafe-webgpu",
+    `--unsafely-treat-insecure-origin-as-secure=http://127.0.0.1:${port}`,
+  ];
+  if (process.platform === "linux") {
+    args.push("--use-angle=vulkan");
+  }
+  return args;
+}
+
+function runtimeArgs(mode, doeLibPath) {
+  if (mode === "dawn") {
+    return ["--use-webgpu-runtime=dawn"];
+  }
+  return [
+    "--use-webgpu-runtime=doe",
+    `--doe-webgpu-library-path=${doeLibPath}`,
+  ];
+}
+
+function timeoutError(label, timeoutMs) {
+  return new Error(`${label} timed out after ${timeoutMs}ms`);
+}
+
+async function withTimeout(promise, timeoutMs, label) {
+  let timeoutId = null;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise((_, reject) => {
+        timeoutId = setTimeout(() => reject(timeoutError(label, timeoutMs)), timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timeoutId !== null) {
+      clearTimeout(timeoutId);
+    }
+  }
+}
+
+function percentile(values, fraction) {
+  if (!Array.isArray(values) || values.length === 0) {
+    return null;
+  }
+  const ordered = [...values].sort((left, right) => left - right);
+  const index = Math.min(
+    ordered.length - 1,
+    Math.max(0, Math.floor((ordered.length - 1) * fraction)),
+  );
+  return ordered[index];
+}
+
+function mean(values) {
+  if (!Array.isArray(values) || values.length === 0) {
+    return null;
+  }
+  return values.reduce((sum, value) => sum + value, 0) / values.length;
+}
+
+function safeDeltaPercent(dawnValue, doeValue) {
+  if (!Number.isFinite(dawnValue) || !Number.isFinite(doeValue) || dawnValue === 0) {
+    return null;
+  }
+  return ((dawnValue - doeValue) / dawnValue) * 100;
+}
+
+function taskDefinition(taskId) {
+  return TASKS[taskId];
+}
+
+function modelBaseUrl(baseUrl) {
+  return new URL(
+    "/browser/chromium/src/third_party/jetstream/main/transformersjs/build/models/",
+    baseUrl,
+  ).href;
+}
+
+function transformersModuleUrl(baseUrl) {
+  return new URL(
+    "/browser/chromium/src/third_party/jetstream/main/transformersjs/build/transformers.js",
+    baseUrl,
+  ).href;
+}
+
+function ortWebGpuModuleUrl(baseUrl) {
+  return new URL(
+    "/bench/node_modules/onnxruntime-web/dist/ort.webgpu.min.mjs",
+    baseUrl,
+  ).href;
+}
+
+function ortDistBaseUrl(baseUrl) {
+  return new URL(
+    "/bench/node_modules/onnxruntime-web/dist/",
+    baseUrl,
+  ).href;
+}
+
+function modeReportOnError(mode, args, launchArgs, browserVersion, startedMs, error) {
+  const errorText = String(error?.stack ?? error);
+  return {
+    success: false,
+    mode,
+    task: args.task,
+    headless: args.headless,
+    launchArgs,
+    browserVersion,
+    elapsedMs: Date.now() - startedMs,
+    timingClass: "process-wall",
+    error: errorText,
+  };
+}
+
+async function runMode(chromium, mode, args, localUrl, localPort) {
+  const launchArgs = [
+    ...baseLaunchArgs(localPort),
+    ...args.chromeArgs,
+    ...runtimeArgs(mode, args.doeLibPath),
+  ];
+  const startedMs = Date.now();
+  let browser = null;
+  let browserVersion = null;
+
+  try {
+    browser = await chromium.launch({
+      executablePath: args.chromePath,
+      headless: args.headless,
+      args: launchArgs,
+      timeout: 120000,
+    });
+    browserVersion = browser.version();
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    await page.goto(localUrl, { waitUntil: "load", timeout: 120000 });
+
+    const result = await withTimeout(
+      page.evaluate(
+        async ({
+          modelBaseUrlValue,
+          operationTimeoutMs,
+          ortDistBaseUrlValue,
+          ortWebGpuModuleUrlValue,
+          taskConfig,
+          timedIters,
+          transformersModuleUrlValue,
+          warmupIters,
+        }) => {
+          const withOpTimeout = async (label, promiseFactory) => {
+            let timeoutId = null;
+            try {
+              return await Promise.race([
+                promiseFactory(),
+                new Promise((_, reject) => {
+                  timeoutId = setTimeout(
+                    () => reject(new Error(`${label} timed out after ${operationTimeoutMs}ms`)),
+                    operationTimeoutMs,
+                  );
+                }),
+              ]);
+            } finally {
+              if (timeoutId !== null) {
+                clearTimeout(timeoutId);
+              }
+            }
+          };
+
+          const summarizeAdapter = (adapter) => {
+            if (!adapter) {
+              return null;
+            }
+            const info = adapter.info ?? {};
+            return {
+              description: info.description ?? null,
+              architecture: info.architecture ?? null,
+              device: info.device ?? null,
+              vendor: info.vendor ?? null,
+              isFallbackAdapter: adapter.isFallbackAdapter ?? null,
+              features: Array.from(adapter.features ?? []),
+            };
+          };
+
+          const summarizeOutputs = (outputs) => {
+            if (!Array.isArray(outputs)) {
+              return { kind: typeof outputs, length: null };
+            }
+            return {
+              kind: "array",
+              length: outputs.length,
+              labels: outputs.map((entry) => entry?.label ?? null),
+              scores: outputs.map((entry) =>
+                typeof entry?.score === "number" ? Number(entry.score) : null),
+            };
+          };
+          const normalizeTokenizerInput = (value, sessionInputType) => {
+            if (Array.isArray(value) && value.length > 0 && Array.isArray(value[0])) {
+              const dims = [value.length, value[0].length];
+              if (sessionInputType === "int64") {
+                return {
+                  dims,
+                  tensor: new ort.Tensor(
+                    "int64",
+                    BigInt64Array.from(value.flat().map((entry) => BigInt(entry))),
+                    dims,
+                  ),
+                };
+              }
+              return {
+                dims,
+                tensor: new ort.Tensor(
+                  "int32",
+                  Int32Array.from(value.flat().map((entry) => Number(entry))),
+                  dims,
+                ),
+              };
+            }
+            if (value?.dims && value?.data) {
+              const dims = Array.from(value.dims);
+              if (sessionInputType === "int64") {
+                const data = value.data instanceof BigInt64Array
+                  ? value.data
+                  : BigInt64Array.from(Array.from(value.data, (entry) => BigInt(entry)));
+                return {
+                  dims,
+                  tensor: new ort.Tensor("int64", data, dims),
+                };
+              }
+              const data = value.data instanceof Int32Array
+                ? value.data
+                : Int32Array.from(Array.from(value.data, (entry) => Number(entry)));
+              return {
+                dims,
+                tensor: new ort.Tensor("int32", data, dims),
+              };
+            }
+            throw new Error("unexpected tokenizer input_ids shape");
+          };
+
+          const taskInput = structuredClone(taskConfig.inputPayload);
+          const adapter = await withOpTimeout(
+            "navigator.gpu.requestAdapter",
+            () => navigator.gpu.requestAdapter(),
+          );
+          if (!adapter) {
+            throw new Error("navigator.gpu.requestAdapter returned null");
+          }
+          const ort = await import(ortWebGpuModuleUrlValue);
+          const { AutoTokenizer, env } = await import(transformersModuleUrlValue);
+          env.allowRemoteModels = false;
+          env.allowLocalModels = true;
+          env.localModelPath = modelBaseUrlValue;
+          ort.env.wasm.proxy = false;
+          ort.env.wasm.numThreads = 1;
+          ort.env.wasm.wasmPaths = ortDistBaseUrlValue;
+
+          const tokenizer = await withOpTimeout(
+            "AutoTokenizer.from_pretrained",
+            () => AutoTokenizer.from_pretrained(taskConfig.modelId, { local_files_only: true }),
+          );
+          const modelPath = new URL(
+            `/browser/chromium/src/third_party/jetstream/main/transformersjs/build/models/${taskConfig.modelId}/onnx/model_uint8.onnx`,
+            modelBaseUrlValue,
+          ).href;
+          const loadStarted = performance.now();
+          const session = await withOpTimeout(
+            "ort.InferenceSession.create",
+            () => ort.InferenceSession.create(
+              modelPath,
+              {
+                executionProviders: ["webgpu"],
+                graphOptimizationLevel: "all",
+              },
+            ),
+          );
+          const loadEnded = performance.now();
+          const encoded = await withOpTimeout(
+            "tokenizer",
+            () => tokenizer(taskInput, { padding: true, truncation: true }),
+          );
+          const sessionInputNames = Array.isArray(session.inputNames) ? session.inputNames : ["input_ids"];
+          const feeds = {};
+          let dims = null;
+          for (const inputName of sessionInputNames) {
+            const sessionInputType = session.inputMetadata?.[inputName]?.type ?? "int64";
+            const normalizedInput = normalizeTokenizerInput(encoded?.[inputName], sessionInputType);
+            dims = dims ?? normalizedInput.dims;
+            feeds[inputName] = normalizedInput.tensor;
+          }
+
+          const runTask = async () => {
+            const outputs = await withOpTimeout(
+              "ort session.run",
+              () => session.run(feeds),
+            );
+            const logits = outputs.logits;
+            if (!logits || !Array.isArray(logits.dims) || logits.dims.length !== 2) {
+              throw new Error(`unexpected logits output ${JSON.stringify(logits)}`);
+            }
+            const labels = ["NEGATIVE", "POSITIVE"];
+            const predictions = [];
+            for (let row = 0; row < logits.dims[0]; row += 1) {
+              const left = Number(logits.data[row * logits.dims[1]]);
+              const right = Number(logits.data[row * logits.dims[1] + 1]);
+              predictions.push({
+                label: labels[right >= left ? 1 : 0],
+                scores: [left, right],
+              });
+            }
+            return predictions;
+          };
+
+          for (let index = 0; index < warmupIters; index += 1) {
+            await runTask();
+          }
+
+          const timedIterationsMs = [];
+          let finalOutput = null;
+          for (let index = 0; index < timedIters; index += 1) {
+            const iterationStarted = performance.now();
+            finalOutput = await runTask();
+            timedIterationsMs.push(performance.now() - iterationStarted);
+          }
+
+          if (!Array.isArray(finalOutput) || finalOutput.length !== 2) {
+            throw new Error(`expected 2 outputs, got ${JSON.stringify(finalOutput)}`);
+          }
+          if (finalOutput[0]?.label !== "POSITIVE") {
+            throw new Error(`unexpected first output ${JSON.stringify(finalOutput[0])}`);
+          }
+          if (finalOutput[1]?.label !== "NEGATIVE") {
+            throw new Error(`unexpected second output ${JSON.stringify(finalOutput[1])}`);
+          }
+
+          return {
+            adapterSummary: summarizeAdapter(adapter),
+            loadMs: loadEnded - loadStarted,
+            outputSummary: summarizeOutputs(finalOutput),
+            sequenceLength: Array.isArray(dims) ? dims[1] : null,
+            sessionInputNames,
+            timedIterationsMs,
+            webgpuAvailable: typeof navigator.gpu !== "undefined",
+          };
+        },
+        {
+          modelBaseUrlValue: modelBaseUrl(localUrl),
+          operationTimeoutMs: args.opTimeoutMs,
+          ortDistBaseUrlValue: ortDistBaseUrl(localUrl),
+          ortWebGpuModuleUrlValue: ortWebGpuModuleUrl(localUrl),
+          taskConfig: taskDefinition(args.task),
+          timedIters: args.timedIters,
+          transformersModuleUrlValue: transformersModuleUrl(localUrl),
+          warmupIters: args.warmupIters,
+        },
+      ),
+      args.suiteTimeoutMs,
+      `${mode} suite`,
+    );
+
+    await withTimeout(browser.close(), DEFAULT_BROWSER_CLOSE_TIMEOUT_MS, `${mode} browser close`);
+    browser = null;
+
+    return {
+      success: true,
+      mode,
+      task: args.task,
+      headless: args.headless,
+      browserVersion,
+      elapsedMs: Date.now() - startedMs,
+      launchArgs,
+      timingClass: "process-wall",
+      pipelineLoadMs: result.loadMs,
+      sequenceLength: result.sequenceLength,
+      sessionInputNames: result.sessionInputNames,
+      timedIterationsMs: result.timedIterationsMs,
+      timedMeanMs: mean(result.timedIterationsMs),
+      timedP50Ms: percentile(result.timedIterationsMs, 0.5),
+      timedP95Ms: percentile(result.timedIterationsMs, 0.95),
+      adapterSummary: result.adapterSummary,
+      outputSummary: result.outputSummary,
+      webgpuAvailable: result.webgpuAvailable,
+    };
+  } catch (error) {
+    if (browser) {
+      try {
+        await withTimeout(browser.close(), DEFAULT_BROWSER_CLOSE_TIMEOUT_MS, `${mode} browser close`);
+      } catch {
+        // ignore close failure on the error path
+      }
+    }
+    return modeReportOnError(mode, args, launchArgs, browserVersion, startedMs, error);
+  }
+}
+
+function extractModeResult(modeResults, mode) {
+  return modeResults.find((entry) => entry.mode === mode) ?? null;
+}
+
+function comparisonFor(modeResults) {
+  const dawn = extractModeResult(modeResults, "dawn");
+  const doe = extractModeResult(modeResults, "doe");
+  if (!dawn?.success || !doe?.success) {
+    return null;
+  }
+  return {
+    timedMeanDeltaPercent: safeDeltaPercent(dawn.timedMeanMs, doe.timedMeanMs),
+    timedP50DeltaPercent: safeDeltaPercent(dawn.timedP50Ms, doe.timedP50Ms),
+    timedP95DeltaPercent: safeDeltaPercent(dawn.timedP95Ms, doe.timedP95Ms),
+    pipelineLoadDeltaPercent: safeDeltaPercent(dawn.pipelineLoadMs, doe.pipelineLoadMs),
+  };
+}
+
+function buildReport(args, serverInfo, modeResults) {
+  return {
+    schemaVersion: REPORT_SCHEMA_VERSION,
+    reportKind: REPORT_KIND,
+    benchmarkClass: "directional",
+    claimEligible: false,
+    comparability: "same-stack-same-model-browser-process-wall",
+    generatedAt: new Date().toISOString(),
+    task: args.task,
+    taskConfig: taskDefinition(args.task),
+    headless: args.headless,
+    chromePath: args.chromePath,
+    doeLibPath: args.mode === "dawn" ? null : args.doeLibPath,
+    localServerUrl: serverInfo.url,
+    timingClass: "process-wall",
+    modeResults,
+    comparison: comparisonFor(modeResults),
+  };
+}
+
+function printSummary(report) {
+  process.stdout.write(`${report.reportKind}\n`);
+  for (const modeResult of report.modeResults) {
+    if (!modeResult.success) {
+      process.stdout.write(`  ${modeResult.mode}: failed: ${modeResult.error}\n`);
+      continue;
+    }
+    process.stdout.write(
+      `  ${modeResult.mode}: load=${modeResult.pipelineLoadMs.toFixed(2)}ms mean=${modeResult.timedMeanMs.toFixed(2)}ms p50=${modeResult.timedP50Ms?.toFixed(2) ?? "n/a"}ms p95=${modeResult.timedP95Ms?.toFixed(2) ?? "n/a"}ms\n`,
+    );
+  }
+  if (report.comparison) {
+    process.stdout.write(
+      `  delta (positive=doe faster): mean=${report.comparison.timedMeanDeltaPercent?.toFixed(2) ?? "n/a"}% p50=${report.comparison.timedP50DeltaPercent?.toFixed(2) ?? "n/a"}% p95=${report.comparison.timedP95DeltaPercent?.toFixed(2) ?? "n/a"}% load=${report.comparison.pipelineLoadDeltaPercent?.toFixed(2) ?? "n/a"}%\n`,
+    );
+  }
+}
+
+async function main() {
+  const args = parseArgs(process.argv);
+  const chromium = await loadChromiumDriver();
+  const serverInfo = await startLocalServer();
+  try {
+    const modes = args.mode === "both" ? ["dawn", "doe"] : [args.mode];
+    const modeResults = [];
+    for (const mode of modes) {
+      modeResults.push(await runMode(chromium, mode, args, serverInfo.url, serverInfo.port));
+    }
+    const report = buildReport(args, serverInfo, modeResults);
+    mkdirSync(dirname(args.outPath), { recursive: true });
+    writeFileSync(args.outPath, `${JSON.stringify(report, null, 2)}\n`);
+    printSummary(report);
+    process.stdout.write(`  report: ${args.outPath}\n`);
+    if (args.strict && modeResults.some((entry) => !entry.success)) {
+      process.exitCode = 1;
+    }
+  } finally {
+    await new Promise((resolveClose, rejectClose) => {
+      serverInfo.server.close((error) => {
+        if (error) {
+          rejectClose(error);
+          return;
+        }
+        resolveClose();
+      });
+    });
+  }
+}
+
+await main();

@@ -669,17 +669,10 @@ pub fn build(b: *std.Build) void {
         }),
     });
     webgpu_plan_executor.linkLibC();
-    const dawn_webgpu_include = firstExistingPath(&.{
-        "../../bench/vendor/dawn/third_party/webgpu-headers/src",
-        "../../browser/chromium_webgpu_lane/.local_volume/chromium_webgpu_lane/src/third_party/dawn/include/webgpu",
-        "/Volumes/MACOS/fawn-browser/src/third_party/dawn/include/webgpu",
-    });
+    const dawn_webgpu_include = "../../bench/vendor/dawn/third_party/webgpu-headers/src";
     const dawn_shared_include_candidates = [_][]const u8{
         "../../bench/vendor/dawn/third_party/webgpu-headers/src",
-        "../../browser/chromium_webgpu_lane/.local_volume/chromium_webgpu_lane/src/third_party/dawn/include",
-        "../../browser/chromium_webgpu_lane/.local_volume/chromium_webgpu_lane/src/out/fawn_release/gen/third_party/dawn/include",
-        "/Volumes/MACOS/fawn-browser/src/third_party/dawn/include",
-        "/Volumes/MACOS/fawn-browser/src/out/fawn_release/gen/third_party/dawn/include",
+        "../../bench/vendor/dawn/out/Release/gen/include",
     };
     webgpu_plan_executor.addIncludePath(b.path(dawn_webgpu_include));
     addExistingIncludePaths(webgpu_plan_executor, b, &dawn_shared_include_candidates);

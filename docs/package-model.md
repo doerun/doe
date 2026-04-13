@@ -1,33 +1,59 @@
 # Doe package model
 
-## Package families
+## Public package
 
-Doe has two package families (both deprecated in favor of `doe-gpu`):
+Doe has one public npm package family today:
 
-- `@simulatte/webgpu` *(deprecated — use `doe-gpu`)*
-  - the main runtime package family
-- `@simulatte/webgpu-doe` *(deprecated — merged into `doe-gpu`)*
-  - the helper-only package family
+- `doe-gpu`
 
-## `@simulatte/webgpu` *(deprecated)*
+Its package contract is defined by:
 
-Treat these as subpath entrypoints into one package family, not separate
-products. All `@simulatte/webgpu` entrypoints are deprecated; use `doe-gpu`.
+- [`packages/doe-gpu/package.json`](../packages/doe-gpu/package.json)
+- [`packages/doe-gpu/README.md`](../packages/doe-gpu/README.md)
+- [`docs/internal-tooling.md`](./internal-tooling.md)
 
-- runtime entrypoints
-  - `@simulatte/webgpu`
-  - `@simulatte/webgpu/node`
-  - `@simulatte/webgpu/bun`
-- API-shape entrypoints
-  - `@simulatte/webgpu/compute`
-  - `@simulatte/webgpu/full`
-- advanced diagnostic entrypoint
-  - `@simulatte/webgpu/native-direct`
+Repo-only benchmark, browser, and release tooling is not part of the npm
+package surface.
 
-## `@simulatte/webgpu-doe` *(deprecated)*
+## Exported entrypoints
 
-`@simulatte/webgpu-doe` is transport-free. It does not ship the Doe native
-runtime. It binds onto any compatible WebGPU surface, including
-`@simulatte/webgpu` and browser-provided `GPUDevice` objects.
+The current public `doe-gpu` exports are:
 
-This package is deprecated and has been merged into `doe-gpu`.
+- `doe-gpu`
+  - host-aware default surface
+  - Node uses `src/index.js`
+  - Bun uses `src/bun.js`
+  - Deno uses `src/deno.js`
+- `doe-gpu/compute`
+  - narrower compute-oriented surface
+- `doe-gpu/browser`
+  - browser-facing entrypoint
+- `doe-gpu/hybrid`
+  - browser/host hybrid integration entrypoint
+
+These are subpath entrypoints inside one package family, not separate products.
+
+## Package boundary
+
+`doe-gpu` is the public runtime package.
+
+It does not ship:
+
+- `bench/` compare or claim CLIs
+- browser benchmark harnesses under `browser/chromium/`
+- release pipeline tooling
+- repo-only operator scripts
+
+Advanced helper exports such as `createDoeRuntime()` and
+`runDawnVsDoeCompare()` are still part of the package API, but they are helper
+surfaces, not the canonical operator front doors.
+
+## Legacy names
+
+The old npm names are compatibility history only:
+
+- `@simulatte/webgpu`
+- `@simulatte/webgpu-doe`
+
+They should be treated as redirects/history in docs and migration notes, not as
+separate current package families.

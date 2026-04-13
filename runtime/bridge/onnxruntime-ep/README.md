@@ -30,16 +30,18 @@ What is implemented today:
   builds/runs a tiny in-memory identity model
 - a Doe-owned `OrtEpFactory` implementation with explicit metadata and explicit
   narrow behavior for the still-missing graph-execution bridge
-- a real but intentionally no-op `OrtEpDevice` / `OrtEp` path:
+- a real but intentionally narrow `OrtEpDevice` / `OrtEp` path:
   - `GetSupportedDevices` creates `OrtEpDevice` instances when ORT provides
     hardware devices
   - `CreateEp` creates a real `OrtEp`
-  - `GetCapability` claims zero nodes
-  - `Compile` fails fast if ORT ever tries to hand Doe compiled graph work
+  - `GetCapability` claims one-node ONNX `Identity` graphs
+  - `Compile` installs a tiny compiled compute path for that `Identity` slice
+  - the session smoke now proves `Compute()` ran by reading plugin debug
+    counters from the shared library
 
 What is not implemented yet:
 
-- a real Doe-backed graph execution path
+- a general Doe-backed graph execution path beyond the identity-only slice
 - allocator, stream, external-resource, or custom-op support
 - any promoted benchmark lane in `bench/`
 
@@ -50,13 +52,14 @@ Current behavior is intentionally narrow:
 - when ORT provides hardware devices, Doe creates `OrtEpDevice` instances for
   them
 - `CreateEp` returns a real `OrtEp` instance
-- `GetCapability` claims zero graph nodes, so Doe does not execute model nodes
-  yet
-- the repo-only session smoke can create and run an identity model with Doe
-  appended to session options, but that is not evidence that Doe executes the
-  graph
-- if ORT ever tries to compile non-zero assigned nodes for Doe, the EP returns
-  explicit `ORT_NOT_IMPLEMENTED`
+- `GetCapability` claims supported one-node ONNX `Identity` graphs
+- `Compile` creates a real `OrtNodeComputeInfo` that copies fixed-width tensor
+  data for that identity slice
+- the repo-only session smoke proves Doe executed that path via the debug
+  counters in
+  `artifacts/20260413T003832Z/doe-ort-ep-session-smoke.json`
+- anything beyond that identity-only slice still returns explicit unsupported
+  behavior rather than pretending a broader graph-execution bridge exists
 
 Build:
 
@@ -114,8 +117,10 @@ Current session smoke scope:
   `SessionOptionsAppendExecutionProvider_V2`
 - builds a tiny in-memory identity model via ORT's Model Editor API
 - creates a session and runs the identity model successfully
-- still does not prove Doe executes graph nodes, because Doe claims zero nodes
-  in `GetCapability`
+- verifies that Doe claimed, compiled, and executed the identity graph by
+  reading plugin debug counters from the loaded shared library
+- current evidence is
+  `artifacts/20260413T003832Z/doe-ort-ep-session-smoke.json`
 
 Compatibility note:
 
@@ -132,6 +137,6 @@ The vendored ORT headers and license are copied from the public ONNX Runtime
 repository and remain under the upstream MIT license in
 `vendor/onnxruntime/LICENSE`.
 
-The next honest milestone is not "benchmark victory." It is a real Doe-backed
-graph execution bridge so `GetCapability` can claim nodes and a benchmark lane
-can measure `ORT + Doe` execution instead of just registration/session smoke.
+The next honest milestone is not "benchmark victory." It is extending this from
+an identity-only proof slice into a real Doe-backed graph execution bridge that
+can run non-trivial ORT-assigned work and support a benchmark lane.

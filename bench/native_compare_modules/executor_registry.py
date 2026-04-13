@@ -217,6 +217,17 @@ _REGISTRY: dict[str, ExecutorSpec] = {
         executor_id='tjs_ort_node_doe',
         command_template=(
             'node bench/executors/run-node-tjs-ort-webgpu.js '
+            '--provider doe '
+            '--scenario {commands} --trace-jsonl {trace_jsonl} '
+            '--trace-meta {trace_meta} --workload {workload}'
+        ),
+        execution_boundary='commands',
+    ),
+    'tjs_ort_node_webgpu_package': ExecutorSpec(
+        executor_id='tjs_ort_node_webgpu_package',
+        command_template=(
+            'node bench/executors/run-node-tjs-ort-webgpu.js '
+            '--provider node-webgpu '
             '--scenario {commands} --trace-jsonl {trace_jsonl} '
             '--trace-meta {trace_meta} --workload {workload}'
         ),

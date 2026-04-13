@@ -45,11 +45,14 @@ This module implements a layered browser benchmark superset for Chromium Track A
    - emits generated manifest from core workload source.
 2. `scripts/webgpu-playwright-layered-bench.mjs`
    - runs `L1` and `L2` browser benchmark layers for dawn/doe.
-3. `scripts/check-browser-benchmark-superset.py`
+3. `scripts/webgpu-playwright-ort-bench.mjs`
+   - runs a repo-only same-stack browser ORT WebGPU Dawn-vs-Doe benchmark
+     against the local Chromium-vendored DistilBERT sentiment model.
+4. `scripts/check-browser-benchmark-superset.py`
    - validates projection completeness/hash sync, optional report coverage, and optional promotion approvals.
-4. `scripts/run-browser-benchmark-superset.py`
+5. `scripts/run-browser-benchmark-superset.py`
    - one-command orchestration (generate -> run -> check -> summary + checker artifact).
-5. `scripts/check-browser-milestones.py`
+6. `scripts/check-browser-milestones.py`
    - validates milestone state and required local evidence for M0-M6.
 
 ## Quick Start
@@ -75,6 +78,20 @@ Default outputs are lane-local diagnostic artifacts under:
 - `browser/chromium/artifacts/<timestamp>/dawn-vs-doe.browser-layered.superset.diagnostic.json`
 - `browser/chromium/artifacts/<timestamp>/dawn-vs-doe.browser-layered.superset.check.json`
 - `browser/chromium/artifacts/<timestamp>/dawn-vs-doe.browser-layered.superset.summary.json`
+
+Repo-only browser ORT WebGPU evidence uses:
+
+```bash
+node browser/chromium/scripts/webgpu-playwright-ort-bench.mjs \
+  --mode both \
+  --headless true \
+  --timed-iters 5 \
+  --warmup-iters 2
+```
+
+The current local evidence artifact is:
+
+- `browser/chromium/artifacts/20260413T023500Z/dawn-vs-doe.browser-ort-bench.diagnostic.json`
 
 If you intentionally need `bench/out`, pass `--allow-bench-out` explicitly.
 Diagnostic outputs under `bench/out` are restricted to `bench/out/scratch`.

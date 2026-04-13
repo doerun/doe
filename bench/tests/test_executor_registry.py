@@ -102,8 +102,16 @@ class ExecutorRegistryTests(unittest.TestCase):
     def test_resolves_tjs_ort_node_doe_executor(self) -> None:
         template = resolve_executor_command_template('tjs_ort_node_doe')
         self.assertIn('run-node-tjs-ort-webgpu.js', template)
+        self.assertIn('--provider doe', template)
         self.assertIn('--scenario {commands}', template)
         self.assertEqual(resolve_executor_boundary('tjs_ort_node_doe'), 'commands')
+
+    def test_resolves_tjs_ort_node_webgpu_package_executor(self) -> None:
+        template = resolve_executor_command_template('tjs_ort_node_webgpu_package')
+        self.assertIn('run-node-tjs-ort-webgpu.js', template)
+        self.assertIn('--provider node-webgpu', template)
+        self.assertIn('--scenario {commands}', template)
+        self.assertEqual(resolve_executor_boundary('tjs_ort_node_webgpu_package'), 'commands')
 
     def test_resolves_doppler_node_doe_executor(self) -> None:
         template = resolve_executor_command_template('doppler_node_doe')

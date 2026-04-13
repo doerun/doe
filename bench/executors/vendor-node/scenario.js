@@ -64,6 +64,7 @@ function resolveOptionalString(value) {
 export function parseVendorNodeCliArgs(usageCommand) {
   const args = parseArgs({
     options: {
+      provider: { type: 'string', default: 'doe' },
       scenario: { type: 'string', default: '' },
       'trace-meta': { type: 'string', default: '' },
       'trace-jsonl': { type: 'string', default: '' },
@@ -77,6 +78,7 @@ export function parseVendorNodeCliArgs(usageCommand) {
     );
   }
   return {
+    provider: asNonEmptyString(args.provider, 'provider').toLowerCase(),
     scenarioPath: args.scenario,
     traceMetaPath: args['trace-meta'],
     traceJsonlPath: args['trace-jsonl'],

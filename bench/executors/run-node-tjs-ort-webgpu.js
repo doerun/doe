@@ -6,9 +6,10 @@ import {
   destroyDevice,
   disposeTjsPipeline,
   importTransformersNodeModule,
-  installDoeNodeWebGpu,
+  installNodeWebGpuProvider,
   nowMs,
-  requestDoeAdapterAndDevice,
+  requestAdapterAndDevice,
+  resolvePreferredNodeWebGpuAdapterName,
   resolvePrompt,
   resolveTjsModelLocator,
   summarizeAdapterInfo,
@@ -20,9 +21,14 @@ import {
   writeVendorNodeSuccessTrace,
 } from './vendor-node/trace-artifact.js';
 
-const EXECUTION_BACKEND = 'tjs_ort_node_webgpu';
-const EXECUTION_LABEL = 'transformers.js ORT node WebGPU on Doe provider';
 const USAGE_COMMAND = 'node bench/executors/run-node-tjs-ort-webgpu.js';
+const DOE_PROVIDER = 'doe';
+const PROVIDER_LABELS = Object.freeze({
+  doe: 'doe-gpu',
+  'node-webgpu': 'node-webgpu',
+});
+const BENCHMARK_LANE = 'node-ort-webgpu-provider-compare';
+const RUNTIME_HOST = typeof Bun !== 'undefined' ? 'bun' : 'node';
 
 function requireMatchingWorkloadId(scenarioId, workloadId) {
   if (scenarioId !== workloadId) {
@@ -38,14 +44,31 @@ async function main() {
   let scenarioId = args.workloadId;
   let device = null;
   let pipeline = null;
+  let executionBackend = 'tjs_ort_node_webgpu';
+  let executionLabel = 'transformers.js ORT node WebGPU';
+  let executionProvider = DOE_PROVIDER;
+  let executionProviderName = PROVIDER_LABELS[DOE_PROVIDER];
+  let requestedAdapterName = null;
 
   try {
     const scenario = await loadVendorNodeScenario(args.scenarioPath);
     scenarioId = scenario.scenarioId;
     requireMatchingWorkloadId(scenario.scenarioId, args.workloadId);
 
-    const compute = await installDoeNodeWebGpu();
-    const adapterDevice = await requestDoeAdapterAndDevice(compute);
+    if (args.provider === 'node-webgpu' && !process.env.DOE_NODE_WEBGPU_ADAPTER) {
+      requestedAdapterName = resolvePreferredNodeWebGpuAdapterName();
+      if (requestedAdapterName) {
+        process.env.DOE_NODE_WEBGPU_ADAPTER = requestedAdapterName;
+      }
+    }
+
+    const providerRuntime = await installNodeWebGpuProvider(args.provider);
+    executionBackend = providerRuntime.executionBackend;
+    executionProvider = providerRuntime.provider;
+    executionProviderName = providerRuntime.providerName;
+    requestedAdapterName = providerRuntime.requestedAdapterName ?? requestedAdapterName;
+    executionLabel = `transformers.js ORT node WebGPU on ${executionProviderName}`;
+    const adapterDevice = await requestAdapterAndDevice(providerRuntime);
     const adapter = adapterDevice.adapter;
     device = adapterDevice.device;
     const adapterInfo = summarizeAdapterInfo(adapter, device);
@@ -109,12 +132,16 @@ async function main() {
     };
 
     await writeVendorNodeSuccessTrace({
+      runtimeHost: RUNTIME_HOST,
       traceMetaPath: args.traceMetaPath,
       traceJsonlPath: args.traceJsonlPath,
+      benchmarkLane: BENCHMARK_LANE,
       workloadId: args.workloadId,
       scenarioId,
-      executionBackend: EXECUTION_BACKEND,
-      executionLabel: EXECUTION_LABEL,
+      executionBackend,
+      executionLabel,
+      executionProvider,
+      executionProviderName,
       processWallMs,
       adapterInfo,
       phaseTimingsMs,
@@ -124,17 +151,22 @@ async function main() {
         vendorStack: 'transformers.js+onnxruntime-node',
         cacheMode: scenario.cacheMode,
         loadMode: scenario.loadMode,
+        requestedAdapterName,
       },
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     await writeVendorNodeFailureTrace({
+      runtimeHost: RUNTIME_HOST,
       traceMetaPath: args.traceMetaPath,
       traceJsonlPath: args.traceJsonlPath,
+      benchmarkLane: BENCHMARK_LANE,
       workloadId: args.workloadId,
       scenarioId,
-      executionBackend: EXECUTION_BACKEND,
-      executionLabel: EXECUTION_LABEL,
+      executionBackend,
+      executionLabel,
+      executionProvider,
+      executionProviderName,
       processWallMs: nowMs() - startedMs,
       errorMessage: message,
     });

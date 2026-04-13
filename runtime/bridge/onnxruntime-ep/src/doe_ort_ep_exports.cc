@@ -1,4 +1,4 @@
-#include "doe_ort_ep_factory.h"
+#include "doe_ort_ep.h"
 
 #include <new>
 
@@ -50,6 +50,17 @@ DOE_ORT_EP_EXPORT OrtStatus* CreateEpFactories(
 DOE_ORT_EP_EXPORT OrtStatus* ReleaseEpFactory(OrtEpFactory* factory) {
   delete static_cast<doe::ort_ep::DoeOrtEpFactory*>(factory);
   return nullptr;
+}
+
+DOE_ORT_EP_EXPORT void DoeOrtEpResetDebugCounters() {
+  doe::ort_ep::ResetDebugCounters();
+}
+
+DOE_ORT_EP_EXPORT void DoeOrtEpGetDebugCounters(doe::ort_ep::DoeOrtEpDebugCounters* out) {
+  if (out == nullptr) {
+    return;
+  }
+  *out = doe::ort_ep::SnapshotDebugCounters();
 }
 
 }  // extern "C"

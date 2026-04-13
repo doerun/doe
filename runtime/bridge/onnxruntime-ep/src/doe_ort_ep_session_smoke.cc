@@ -1,8 +1,11 @@
 #include "../vendor/onnxruntime/include/onnxruntime_c_api.h"
+#include "doe_ort_ep.h"
 #include "doe_ort_ep_api_version.h"
 
 #include <cstddef>
+#include <cstdint>
 #include <cstdlib>
+#include <cstring>
 #include <fstream>
 #include <iostream>
 #include <optional>
@@ -20,87 +23,18 @@
 namespace {
 
 constexpr const char* kDefaultRegistrationName = "DoeExecutionProvider";
+constexpr ONNXTensorElementDataType kSmokeElementType = ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT;
+constexpr size_t kSingleOutputCount = 1;
 
 using OrtGetApiBaseFn = const OrtApiBase* (*)();
+using DoeOrtEpResetDebugCountersFn = void (*)();
+using DoeOrtEpGetDebugCountersFn = void (*)(doe::ort_ep::DoeOrtEpDebugCounters*);
 
-std::string JsonEscape(const std::string& value) {
-  std::string escaped;
-  escaped.reserve(value.size() + 8);
-  for (const char ch : value) {
-    switch (ch) {
-      case '\\':
-        escaped += "\\\\";
-        break;
-      case '"':
-        escaped += "\\\"";
-        break;
-      case '\n':
-        escaped += "\\n";
-        break;
-      case '\r':
-        escaped += "\\r";
-        break;
-      case '\t':
-        escaped += "\\t";
-        break;
-      default:
-        if (static_cast<unsigned char>(ch) < 0x20) {
-          const char digits[] = "0123456789abcdef";
-          escaped += "\\u00";
-          escaped += digits[(ch >> 4) & 0x0f];
-          escaped += digits[ch & 0x0f];
-        } else {
-          escaped += ch;
-        }
-        break;
-    }
-  }
-  return escaped;
-}
-
-const char* ErrorCodeName(const OrtErrorCode code) {
-  switch (code) {
-    case ORT_OK:
-      return "ORT_OK";
-    case ORT_FAIL:
-      return "ORT_FAIL";
-    case ORT_INVALID_ARGUMENT:
-      return "ORT_INVALID_ARGUMENT";
-    case ORT_NO_SUCHFILE:
-      return "ORT_NO_SUCHFILE";
-    case ORT_NO_MODEL:
-      return "ORT_NO_MODEL";
-    case ORT_ENGINE_ERROR:
-      return "ORT_ENGINE_ERROR";
-    case ORT_RUNTIME_EXCEPTION:
-      return "ORT_RUNTIME_EXCEPTION";
-    case ORT_INVALID_PROTOBUF:
-      return "ORT_INVALID_PROTOBUF";
-    case ORT_MODEL_LOADED:
-      return "ORT_MODEL_LOADED";
-    case ORT_NOT_IMPLEMENTED:
-      return "ORT_NOT_IMPLEMENTED";
-    case ORT_INVALID_GRAPH:
-      return "ORT_INVALID_GRAPH";
-    case ORT_EP_FAIL:
-      return "ORT_EP_FAIL";
-    default:
-      return "ORT_ERROR_UNKNOWN";
-  }
-}
-
-const char* HardwareDeviceTypeName(const OrtHardwareDeviceType device_type) {
-  switch (device_type) {
-    case OrtHardwareDeviceType_CPU:
-      return "OrtHardwareDeviceType_CPU";
-    case OrtHardwareDeviceType_GPU:
-      return "OrtHardwareDeviceType_GPU";
-    case OrtHardwareDeviceType_NPU:
-      return "OrtHardwareDeviceType_NPU";
-    default:
-      return "OrtHardwareDeviceType_UNKNOWN";
-  }
-}
+enum class SmokeModelKind : uint8_t {
+  kAdd,
+  kRelu,
+  kAddRelu,
+};
 
 struct CliOptions {
   std::string plugin_path;
@@ -111,8 +45,37 @@ struct CliOptions {
 
 struct StatusInfo {
   bool ok = true;
-  std::string code = ErrorCodeName(ORT_OK);
+  std::string code = "ORT_OK";
   std::string message;
+};
+
+struct SmokeCaseSpec {
+  std::string case_name;
+  SmokeModelKind model_kind = SmokeModelKind::kAdd;
+  std::vector<int64_t> dims;
+  std::vector<std::vector<float>> inputs;
+  std::vector<float> expected_output;
+};
+
+struct SmokeCaseResult {
+  std::string case_name;
+  std::string model_kind;
+  bool success = false;
+  std::string failure_reason;
+  bool session_inputs_have_ep_device = false;
+  bool outputs_match = false;
+  bool routed_through_doe = false;
+  uint64_t expected_claimed_nodes = 0;
+  std::vector<int64_t> expected_output_shape;
+  std::vector<int64_t> actual_output_shape;
+  std::vector<float> expected_output;
+  std::vector<float> actual_output;
+  doe::ort_ep::DoeOrtEpDebugCounters debug_counters_before{};
+  doe::ort_ep::DoeOrtEpDebugCounters debug_counters_after{};
+  doe::ort_ep::DoeOrtEpDebugCounters debug_counters_delta{};
+  StatusInfo create_model_status;
+  StatusInfo create_session_status;
+  StatusInfo run_status;
 };
 
 struct SessionSmokeReport {
@@ -127,15 +90,12 @@ struct SessionSmokeReport {
   std::string selected_ep_name;
   std::string selected_ep_vendor;
   std::string selected_hardware_device_type;
-  bool session_input_has_ep_device = false;
-  float input_value = 0.0f;
-  float output_value = 0.0f;
+  bool debug_symbols_loaded = false;
+  doe::ort_ep::DoeOrtEpDebugCounters debug_counters{};
   StatusInfo register_library_status;
   StatusInfo get_ep_devices_status;
   StatusInfo append_ep_status;
-  StatusInfo create_model_status;
-  StatusInfo create_session_status;
-  StatusInfo run_status;
+  std::vector<SmokeCaseResult> cases;
 };
 
 class DynamicLibrary {
@@ -214,6 +174,127 @@ class DynamicLibrary {
   void* handle_ = nullptr;
 #endif
 };
+
+std::string JsonEscape(const std::string& value) {
+  std::string escaped;
+  escaped.reserve(value.size() + 8);
+  for (const char ch : value) {
+    switch (ch) {
+      case '\\':
+        escaped += "\\\\";
+        break;
+      case '"':
+        escaped += "\\\"";
+        break;
+      case '\n':
+        escaped += "\\n";
+        break;
+      case '\r':
+        escaped += "\\r";
+        break;
+      case '\t':
+        escaped += "\\t";
+        break;
+      default:
+        if (static_cast<unsigned char>(ch) < 0x20) {
+          const char digits[] = "0123456789abcdef";
+          escaped += "\\u00";
+          escaped += digits[(ch >> 4) & 0x0f];
+          escaped += digits[ch & 0x0f];
+        } else {
+          escaped += ch;
+        }
+        break;
+    }
+  }
+  return escaped;
+}
+
+std::string Indent(const int spaces) {
+  return std::string(static_cast<size_t>(spaces), ' ');
+}
+
+const char* ErrorCodeName(const OrtErrorCode code) {
+  switch (code) {
+    case ORT_OK:
+      return "ORT_OK";
+    case ORT_FAIL:
+      return "ORT_FAIL";
+    case ORT_INVALID_ARGUMENT:
+      return "ORT_INVALID_ARGUMENT";
+    case ORT_NO_SUCHFILE:
+      return "ORT_NO_SUCHFILE";
+    case ORT_NO_MODEL:
+      return "ORT_NO_MODEL";
+    case ORT_ENGINE_ERROR:
+      return "ORT_ENGINE_ERROR";
+    case ORT_RUNTIME_EXCEPTION:
+      return "ORT_RUNTIME_EXCEPTION";
+    case ORT_INVALID_PROTOBUF:
+      return "ORT_INVALID_PROTOBUF";
+    case ORT_MODEL_LOADED:
+      return "ORT_MODEL_LOADED";
+    case ORT_NOT_IMPLEMENTED:
+      return "ORT_NOT_IMPLEMENTED";
+    case ORT_INVALID_GRAPH:
+      return "ORT_INVALID_GRAPH";
+    case ORT_EP_FAIL:
+      return "ORT_EP_FAIL";
+    default:
+      return "ORT_ERROR_UNKNOWN";
+  }
+}
+
+const char* HardwareDeviceTypeName(const OrtHardwareDeviceType device_type) {
+  switch (device_type) {
+    case OrtHardwareDeviceType_CPU:
+      return "OrtHardwareDeviceType_CPU";
+    case OrtHardwareDeviceType_GPU:
+      return "OrtHardwareDeviceType_GPU";
+    case OrtHardwareDeviceType_NPU:
+      return "OrtHardwareDeviceType_NPU";
+    default:
+      return "OrtHardwareDeviceType_UNKNOWN";
+  }
+}
+
+const char* SmokeModelKindName(const SmokeModelKind kind) {
+  switch (kind) {
+    case SmokeModelKind::kAdd:
+      return "Add";
+    case SmokeModelKind::kRelu:
+      return "Relu";
+    case SmokeModelKind::kAddRelu:
+      return "Add->Relu";
+  }
+  return "Unknown";
+}
+
+size_t ExpectedInputCount(const SmokeModelKind kind) {
+  switch (kind) {
+    case SmokeModelKind::kAdd:
+    case SmokeModelKind::kAddRelu:
+      return 2;
+    case SmokeModelKind::kRelu:
+      return 1;
+  }
+  return 0;
+}
+
+uint64_t ExpectedClaimedNodes(const SmokeModelKind kind) {
+  return kind == SmokeModelKind::kAddRelu ? 2 : 1;
+}
+
+std::vector<const char*> InputNamesForKind(const SmokeModelKind kind) {
+  switch (kind) {
+    case SmokeModelKind::kAdd:
+    case SmokeModelKind::kAddRelu:
+      return {"lhs", "rhs"};
+    case SmokeModelKind::kRelu:
+      return {"input"};
+  }
+  return {};
+}
 
 std::vector<std::string> DefaultOrtLibraryCandidates() {
 #ifdef _WIN32
@@ -319,6 +400,132 @@ StatusInfo CaptureStatus(const OrtApi* api, OrtStatus* status) {
   return info;
 }
 
+doe::ort_ep::DoeOrtEpDebugCounters CounterDelta(
+    const doe::ort_ep::DoeOrtEpDebugCounters& before,
+    const doe::ort_ep::DoeOrtEpDebugCounters& after) {
+  return doe::ort_ep::DoeOrtEpDebugCounters{
+      .get_capability_calls = after.get_capability_calls - before.get_capability_calls,
+      .claimed_nodes = after.claimed_nodes - before.claimed_nodes,
+      .claimed_identity_nodes = after.claimed_identity_nodes - before.claimed_identity_nodes,
+      .claimed_add_nodes = after.claimed_add_nodes - before.claimed_add_nodes,
+      .claimed_relu_nodes = after.claimed_relu_nodes - before.claimed_relu_nodes,
+      .compile_calls = after.compile_calls - before.compile_calls,
+      .compiled_identity_groups = after.compiled_identity_groups - before.compiled_identity_groups,
+      .compiled_add_groups = after.compiled_add_groups - before.compiled_add_groups,
+      .compiled_relu_groups = after.compiled_relu_groups - before.compiled_relu_groups,
+      .compiled_add_relu_groups = after.compiled_add_relu_groups - before.compiled_add_relu_groups,
+      .create_state_calls = after.create_state_calls - before.create_state_calls,
+      .compute_calls = after.compute_calls - before.compute_calls,
+      .compute_identity_calls = after.compute_identity_calls - before.compute_identity_calls,
+      .compute_add_calls = after.compute_add_calls - before.compute_add_calls,
+      .compute_relu_calls = after.compute_relu_calls - before.compute_relu_calls,
+      .compute_add_relu_calls = after.compute_add_relu_calls - before.compute_add_relu_calls,
+      .release_state_calls = after.release_state_calls - before.release_state_calls,
+  };
+}
+
+bool FloatVectorsEqual(const std::vector<float>& lhs, const std::vector<float>& rhs) {
+  return lhs == rhs;
+}
+
+std::string RenderFloatArrayJson(const std::vector<float>& values) {
+  std::ostringstream json;
+  json << '[';
+  for (size_t index = 0; index < values.size(); ++index) {
+    if (index != 0) {
+      json << ", ";
+    }
+    json << values[index];
+  }
+  json << ']';
+  return json.str();
+}
+
+std::string RenderInt64ArrayJson(const std::vector<int64_t>& values) {
+  std::ostringstream json;
+  json << '[';
+  for (size_t index = 0; index < values.size(); ++index) {
+    if (index != 0) {
+      json << ", ";
+    }
+    json << values[index];
+  }
+  json << ']';
+  return json.str();
+}
+
+std::string RenderStatusJson(const StatusInfo& status, const int indent_spaces) {
+  const std::string indent = Indent(indent_spaces);
+  const std::string child_indent = Indent(indent_spaces + 2);
+  std::ostringstream json;
+  json << "{\n";
+  json << child_indent << "\"ok\": " << (status.ok ? "true" : "false") << ",\n";
+  json << child_indent << "\"code\": \"" << JsonEscape(status.code) << "\",\n";
+  json << child_indent << "\"message\": \"" << JsonEscape(status.message) << "\"\n";
+  json << indent << '}';
+  return json.str();
+}
+
+std::string RenderCountersJson(const doe::ort_ep::DoeOrtEpDebugCounters& counters, const int indent_spaces) {
+  const std::string indent = Indent(indent_spaces);
+  const std::string child_indent = Indent(indent_spaces + 2);
+  std::ostringstream json;
+  json << "{\n";
+  json << child_indent << "\"getCapabilityCalls\": " << counters.get_capability_calls << ",\n";
+  json << child_indent << "\"claimedNodes\": " << counters.claimed_nodes << ",\n";
+  json << child_indent << "\"claimedIdentityNodes\": " << counters.claimed_identity_nodes << ",\n";
+  json << child_indent << "\"claimedAddNodes\": " << counters.claimed_add_nodes << ",\n";
+  json << child_indent << "\"claimedReluNodes\": " << counters.claimed_relu_nodes << ",\n";
+  json << child_indent << "\"compileCalls\": " << counters.compile_calls << ",\n";
+  json << child_indent << "\"compiledIdentityGroups\": " << counters.compiled_identity_groups << ",\n";
+  json << child_indent << "\"compiledAddGroups\": " << counters.compiled_add_groups << ",\n";
+  json << child_indent << "\"compiledReluGroups\": " << counters.compiled_relu_groups << ",\n";
+  json << child_indent << "\"compiledAddReluGroups\": " << counters.compiled_add_relu_groups << ",\n";
+  json << child_indent << "\"createStateCalls\": " << counters.create_state_calls << ",\n";
+  json << child_indent << "\"computeCalls\": " << counters.compute_calls << ",\n";
+  json << child_indent << "\"computeIdentityCalls\": " << counters.compute_identity_calls << ",\n";
+  json << child_indent << "\"computeAddCalls\": " << counters.compute_add_calls << ",\n";
+  json << child_indent << "\"computeReluCalls\": " << counters.compute_relu_calls << ",\n";
+  json << child_indent << "\"computeAddReluCalls\": " << counters.compute_add_relu_calls << ",\n";
+  json << child_indent << "\"releaseStateCalls\": " << counters.release_state_calls << '\n';
+  json << indent << '}';
+  return json.str();
+}
+
+std::string RenderCaseJson(const SmokeCaseResult& result, const int indent_spaces) {
+  const std::string indent = Indent(indent_spaces);
+  const std::string child_indent = Indent(indent_spaces + 2);
+  std::ostringstream json;
+  json << "{\n";
+  json << child_indent << "\"caseName\": \"" << JsonEscape(result.case_name) << "\",\n";
+  json << child_indent << "\"modelKind\": \"" << JsonEscape(result.model_kind) << "\",\n";
+  json << child_indent << "\"success\": " << (result.success ? "true" : "false") << ",\n";
+  json << child_indent << "\"failureReason\": \"" << JsonEscape(result.failure_reason) << "\",\n";
+  json << child_indent << "\"sessionInputsHaveEpDevice\": "
+       << (result.session_inputs_have_ep_device ? "true" : "false") << ",\n";
+  json << child_indent << "\"outputsMatch\": " << (result.outputs_match ? "true" : "false") << ",\n";
+  json << child_indent << "\"routedThroughDoe\": " << (result.routed_through_doe ? "true" : "false") << ",\n";
+  json << child_indent << "\"expectedClaimedNodes\": " << result.expected_claimed_nodes << ",\n";
+  json << child_indent << "\"expectedOutputShape\": " << RenderInt64ArrayJson(result.expected_output_shape) << ",\n";
+  json << child_indent << "\"actualOutputShape\": " << RenderInt64ArrayJson(result.actual_output_shape) << ",\n";
+  json << child_indent << "\"expectedOutput\": " << RenderFloatArrayJson(result.expected_output) << ",\n";
+  json << child_indent << "\"actualOutput\": " << RenderFloatArrayJson(result.actual_output) << ",\n";
+  json << child_indent << "\"debugCountersBefore\": " << RenderCountersJson(result.debug_counters_before, indent_spaces + 2)
+       << ",\n";
+  json << child_indent << "\"debugCountersAfter\": " << RenderCountersJson(result.debug_counters_after, indent_spaces + 2)
+       << ",\n";
+  json << child_indent << "\"debugCountersDelta\": " << RenderCountersJson(result.debug_counters_delta, indent_spaces + 2)
+       << ",\n";
+  json << child_indent << "\"operations\": {\n";
+  json << child_indent << "  \"createModel\": " << RenderStatusJson(result.create_model_status, indent_spaces + 4) << ",\n";
+  json << child_indent << "  \"createSessionFromModel\": "
+       << RenderStatusJson(result.create_session_status, indent_spaces + 4) << ",\n";
+  json << child_indent << "  \"run\": " << RenderStatusJson(result.run_status, indent_spaces + 4) << '\n';
+  json << child_indent << "}\n";
+  json << indent << '}';
+  return json.str();
+}
+
 std::string RenderReportJson(const SessionSmokeReport& report) {
   std::ostringstream json;
   json << "{\n";
@@ -335,32 +542,24 @@ std::string RenderReportJson(const SessionSmokeReport& report) {
   json << "    \"vendor\": \"" << JsonEscape(report.selected_ep_vendor) << "\",\n";
   json << "    \"hardwareDeviceType\": \"" << JsonEscape(report.selected_hardware_device_type) << "\"\n";
   json << "  },\n";
-  json << "  \"session\": {\n";
-  json << "    \"inputHasEpDevice\": " << (report.session_input_has_ep_device ? "true" : "false") << ",\n";
-  json << "    \"inputValue\": " << std::to_string(report.input_value) << ",\n";
-  json << "    \"outputValue\": " << std::to_string(report.output_value) << "\n";
+  json << "  \"pluginDebug\": {\n";
+  json << "    \"symbolsLoaded\": " << (report.debug_symbols_loaded ? "true" : "false") << ",\n";
+  json << "    \"finalCounters\": " << RenderCountersJson(report.debug_counters, 4) << '\n';
   json << "  },\n";
   json << "  \"operations\": {\n";
-  auto render_status = [&](const char* label, const StatusInfo& status) {
-    json << "    \"" << label << "\": {\n";
-    json << "      \"ok\": " << (status.ok ? "true" : "false") << ",\n";
-    json << "      \"code\": \"" << JsonEscape(status.code) << "\",\n";
-    json << "      \"message\": \"" << JsonEscape(status.message) << "\"\n";
-    json << "    }";
-  };
-  render_status("registerExecutionProviderLibrary", report.register_library_status);
-  json << ",\n";
-  render_status("getEpDevices", report.get_ep_devices_status);
-  json << ",\n";
-  render_status("appendExecutionProviderV2", report.append_ep_status);
-  json << ",\n";
-  render_status("createIdentityModel", report.create_model_status);
-  json << ",\n";
-  render_status("createSessionFromModel", report.create_session_status);
-  json << ",\n";
-  render_status("runIdentitySession", report.run_status);
-  json << "\n";
-  json << "  }\n";
+  json << "    \"registerExecutionProviderLibrary\": " << RenderStatusJson(report.register_library_status, 4) << ",\n";
+  json << "    \"getEpDevices\": " << RenderStatusJson(report.get_ep_devices_status, 4) << ",\n";
+  json << "    \"appendExecutionProviderV2\": " << RenderStatusJson(report.append_ep_status, 4) << '\n';
+  json << "  },\n";
+  json << "  \"cases\": [\n";
+  for (size_t index = 0; index < report.cases.size(); ++index) {
+    json << "    " << RenderCaseJson(report.cases[index], 4);
+    if (index + 1 != report.cases.size()) {
+      json << ',';
+    }
+    json << '\n';
+  }
+  json << "  ]\n";
   json << "}\n";
   return json.str();
 }
@@ -401,56 +600,111 @@ std::wstring Utf8ToWide(const std::string& value) {
 }
 #endif
 
-OrtStatus* CreateIdentityModel(const OrtApi* api, const OrtModelEditorApi* model_editor_api, OrtModel** out_model) {
-  const char* const domains[] = {""};
-  const int opsets[] = {13};
-  OrtModel* model = nullptr;
-  OrtGraph* graph = nullptr;
+std::vector<SmokeCaseSpec> BuildSmokeCases() {
+  return {
+      SmokeCaseSpec{
+          .case_name = "add",
+          .model_kind = SmokeModelKind::kAdd,
+          .dims = {1, 4},
+          .inputs = {{1.0f, 2.0f, 3.0f, 4.0f}, {10.0f, 20.0f, 30.0f, 40.0f}},
+          .expected_output = {11.0f, 22.0f, 33.0f, 44.0f},
+      },
+      SmokeCaseSpec{
+          .case_name = "relu",
+          .model_kind = SmokeModelKind::kRelu,
+          .dims = {1, 4},
+          .inputs = {{-2.0f, -1.0f, 0.0f, 3.0f}},
+          .expected_output = {0.0f, 0.0f, 0.0f, 3.0f},
+      },
+      SmokeCaseSpec{
+          .case_name = "add_relu",
+          .model_kind = SmokeModelKind::kAddRelu,
+          .dims = {1, 4},
+          .inputs = {{-5.0f, 1.0f, -2.0f, 7.0f}, {3.0f, -4.0f, 5.0f, -1.0f}},
+          .expected_output = {0.0f, 0.0f, 3.0f, 6.0f},
+      },
+  };
+}
+
+OrtStatus* CreateFloatValueInfo(
+    const OrtApi* api,
+    const OrtModelEditorApi* model_editor_api,
+    const char* name,
+    const std::vector<int64_t>& dims,
+    OrtValueInfo** value_info_out) {
+  if (value_info_out == nullptr) {
+    return api->CreateStatus(ORT_INVALID_ARGUMENT, "Doe ORT plugin EP smoke requires a value_info_out pointer.");
+  }
+
   OrtTensorTypeAndShapeInfo* tensor_info = nullptr;
   OrtTypeInfo* type_info = nullptr;
-  OrtValueInfo* input_info = nullptr;
-  OrtValueInfo* output_info = nullptr;
-  OrtNode* node = nullptr;
-  OrtStatus* status = nullptr;
-
-  const int64_t dims[] = {1};
-  status = model_editor_api->CreateModel(domains, opsets, 1, &model);
+  OrtStatus* status = api->CreateTensorTypeAndShapeInfo(&tensor_info);
   if (status != nullptr) goto cleanup;
-  status = model_editor_api->CreateGraph(&graph);
+  status = api->SetTensorElementType(tensor_info, kSmokeElementType);
   if (status != nullptr) goto cleanup;
-  status = api->CreateTensorTypeAndShapeInfo(&tensor_info);
-  if (status != nullptr) goto cleanup;
-  status = api->SetTensorElementType(tensor_info, ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT);
-  if (status != nullptr) goto cleanup;
-  status = api->SetDimensions(tensor_info, dims, 1);
+  status = api->SetDimensions(tensor_info, dims.empty() ? nullptr : dims.data(), dims.size());
   if (status != nullptr) goto cleanup;
   status = model_editor_api->CreateTensorTypeInfo(tensor_info, &type_info);
   if (status != nullptr) goto cleanup;
-  status = model_editor_api->CreateValueInfo("input", type_info, &input_info);
+  status = model_editor_api->CreateValueInfo(name, type_info, value_info_out);
+
+cleanup:
+  if (type_info != nullptr) api->ReleaseTypeInfo(type_info);
+  if (tensor_info != nullptr) api->ReleaseTensorTypeAndShapeInfo(tensor_info);
+  return status;
+}
+
+OrtStatus* CreateModelShell(const OrtModelEditorApi* model_editor_api, OrtModel** model_out, OrtGraph** graph_out) {
+  const char* const domains[] = {""};
+  const int opsets[] = {13};
+  OrtStatus* status = model_editor_api->CreateModel(domains, opsets, 1, model_out);
+  if (status != nullptr) return status;
+  return model_editor_api->CreateGraph(graph_out);
+}
+
+OrtStatus* CreateAddModel(
+    const OrtApi* api,
+    const OrtModelEditorApi* model_editor_api,
+    const std::vector<int64_t>& dims,
+    OrtModel** out_model) {
+  OrtModel* model = nullptr;
+  OrtGraph* graph = nullptr;
+  OrtValueInfo* lhs = nullptr;
+  OrtValueInfo* rhs = nullptr;
+  OrtValueInfo* output = nullptr;
+  OrtNode* add_node = nullptr;
+  OrtStatus* status = CreateModelShell(model_editor_api, &model, &graph);
   if (status != nullptr) goto cleanup;
-  status = model_editor_api->CreateValueInfo("output", type_info, &output_info);
+
+  status = CreateFloatValueInfo(api, model_editor_api, "lhs", dims, &lhs);
   if (status != nullptr) goto cleanup;
+  status = CreateFloatValueInfo(api, model_editor_api, "rhs", dims, &rhs);
+  if (status != nullptr) goto cleanup;
+  status = CreateFloatValueInfo(api, model_editor_api, "output", dims, &output);
+  if (status != nullptr) goto cleanup;
+
   {
-    OrtValueInfo* inputs[] = {input_info};
-    status = model_editor_api->SetGraphInputs(graph, inputs, 1);
+    OrtValueInfo* inputs[] = {lhs, rhs};
+    status = model_editor_api->SetGraphInputs(graph, inputs, 2);
     if (status != nullptr) goto cleanup;
+    lhs = nullptr;
+    rhs = nullptr;
   }
-  input_info = nullptr;
   {
-    OrtValueInfo* outputs[] = {output_info};
+    OrtValueInfo* outputs[] = {output};
     status = model_editor_api->SetGraphOutputs(graph, outputs, 1);
     if (status != nullptr) goto cleanup;
+    output = nullptr;
   }
-  output_info = nullptr;
   {
-    const char* const input_names[] = {"input"};
+    const char* const input_names[] = {"lhs", "rhs"};
     const char* const output_names[] = {"output"};
-    status = model_editor_api->CreateNode("Identity", "", "identity0", input_names, 1, output_names, 1, nullptr, 0, &node);
+    status = model_editor_api->CreateNode("Add", "", "add0", input_names, 2, output_names, 1, nullptr, 0, &add_node);
     if (status != nullptr) goto cleanup;
   }
-  status = model_editor_api->AddNodeToGraph(graph, node);
+  status = model_editor_api->AddNodeToGraph(graph, add_node);
   if (status != nullptr) goto cleanup;
-  node = nullptr;
+  add_node = nullptr;
   status = model_editor_api->AddGraphToModel(model, graph);
   if (status != nullptr) goto cleanup;
   graph = nullptr;
@@ -458,14 +712,439 @@ OrtStatus* CreateIdentityModel(const OrtApi* api, const OrtModelEditorApi* model
   model = nullptr;
 
 cleanup:
-  if (node != nullptr) api->ReleaseNode(node);
-  if (input_info != nullptr) api->ReleaseValueInfo(input_info);
-  if (output_info != nullptr) api->ReleaseValueInfo(output_info);
-  if (type_info != nullptr) api->ReleaseTypeInfo(type_info);
-  if (tensor_info != nullptr) api->ReleaseTensorTypeAndShapeInfo(tensor_info);
+  if (add_node != nullptr) api->ReleaseNode(add_node);
+  if (lhs != nullptr) api->ReleaseValueInfo(lhs);
+  if (rhs != nullptr) api->ReleaseValueInfo(rhs);
+  if (output != nullptr) api->ReleaseValueInfo(output);
   if (graph != nullptr) api->ReleaseGraph(graph);
   if (model != nullptr) api->ReleaseModel(model);
   return status;
+}
+
+OrtStatus* CreateReluModel(
+    const OrtApi* api,
+    const OrtModelEditorApi* model_editor_api,
+    const std::vector<int64_t>& dims,
+    OrtModel** out_model) {
+  OrtModel* model = nullptr;
+  OrtGraph* graph = nullptr;
+  OrtValueInfo* input = nullptr;
+  OrtValueInfo* output = nullptr;
+  OrtNode* relu_node = nullptr;
+  OrtStatus* status = CreateModelShell(model_editor_api, &model, &graph);
+  if (status != nullptr) goto cleanup;
+
+  status = CreateFloatValueInfo(api, model_editor_api, "input", dims, &input);
+  if (status != nullptr) goto cleanup;
+  status = CreateFloatValueInfo(api, model_editor_api, "output", dims, &output);
+  if (status != nullptr) goto cleanup;
+
+  {
+    OrtValueInfo* inputs[] = {input};
+    status = model_editor_api->SetGraphInputs(graph, inputs, 1);
+    if (status != nullptr) goto cleanup;
+    input = nullptr;
+  }
+  {
+    OrtValueInfo* outputs[] = {output};
+    status = model_editor_api->SetGraphOutputs(graph, outputs, 1);
+    if (status != nullptr) goto cleanup;
+    output = nullptr;
+  }
+  {
+    const char* const input_names[] = {"input"};
+    const char* const output_names[] = {"output"};
+    status = model_editor_api->CreateNode("Relu", "", "relu0", input_names, 1, output_names, 1, nullptr, 0, &relu_node);
+    if (status != nullptr) goto cleanup;
+  }
+  status = model_editor_api->AddNodeToGraph(graph, relu_node);
+  if (status != nullptr) goto cleanup;
+  relu_node = nullptr;
+  status = model_editor_api->AddGraphToModel(model, graph);
+  if (status != nullptr) goto cleanup;
+  graph = nullptr;
+  *out_model = model;
+  model = nullptr;
+
+cleanup:
+  if (relu_node != nullptr) api->ReleaseNode(relu_node);
+  if (input != nullptr) api->ReleaseValueInfo(input);
+  if (output != nullptr) api->ReleaseValueInfo(output);
+  if (graph != nullptr) api->ReleaseGraph(graph);
+  if (model != nullptr) api->ReleaseModel(model);
+  return status;
+}
+
+OrtStatus* CreateAddReluModel(
+    const OrtApi* api,
+    const OrtModelEditorApi* model_editor_api,
+    const std::vector<int64_t>& dims,
+    OrtModel** out_model) {
+  OrtModel* model = nullptr;
+  OrtGraph* graph = nullptr;
+  OrtValueInfo* lhs = nullptr;
+  OrtValueInfo* rhs = nullptr;
+  OrtValueInfo* output = nullptr;
+  OrtNode* add_node = nullptr;
+  OrtNode* relu_node = nullptr;
+  OrtStatus* status = CreateModelShell(model_editor_api, &model, &graph);
+  if (status != nullptr) goto cleanup;
+
+  status = CreateFloatValueInfo(api, model_editor_api, "lhs", dims, &lhs);
+  if (status != nullptr) goto cleanup;
+  status = CreateFloatValueInfo(api, model_editor_api, "rhs", dims, &rhs);
+  if (status != nullptr) goto cleanup;
+  status = CreateFloatValueInfo(api, model_editor_api, "output", dims, &output);
+  if (status != nullptr) goto cleanup;
+
+  {
+    OrtValueInfo* inputs[] = {lhs, rhs};
+    status = model_editor_api->SetGraphInputs(graph, inputs, 2);
+    if (status != nullptr) goto cleanup;
+    lhs = nullptr;
+    rhs = nullptr;
+  }
+  {
+    OrtValueInfo* outputs[] = {output};
+    status = model_editor_api->SetGraphOutputs(graph, outputs, 1);
+    if (status != nullptr) goto cleanup;
+    output = nullptr;
+  }
+  {
+    const char* const input_names[] = {"lhs", "rhs"};
+    const char* const output_names[] = {"sum"};
+    status = model_editor_api->CreateNode("Add", "", "add0", input_names, 2, output_names, 1, nullptr, 0, &add_node);
+    if (status != nullptr) goto cleanup;
+  }
+  status = model_editor_api->AddNodeToGraph(graph, add_node);
+  if (status != nullptr) goto cleanup;
+  add_node = nullptr;
+  {
+    const char* const input_names[] = {"sum"};
+    const char* const output_names[] = {"output"};
+    status = model_editor_api->CreateNode("Relu", "", "relu0", input_names, 1, output_names, 1, nullptr, 0, &relu_node);
+    if (status != nullptr) goto cleanup;
+  }
+  status = model_editor_api->AddNodeToGraph(graph, relu_node);
+  if (status != nullptr) goto cleanup;
+  relu_node = nullptr;
+  status = model_editor_api->AddGraphToModel(model, graph);
+  if (status != nullptr) goto cleanup;
+  graph = nullptr;
+  *out_model = model;
+  model = nullptr;
+
+cleanup:
+  if (add_node != nullptr) api->ReleaseNode(add_node);
+  if (relu_node != nullptr) api->ReleaseNode(relu_node);
+  if (lhs != nullptr) api->ReleaseValueInfo(lhs);
+  if (rhs != nullptr) api->ReleaseValueInfo(rhs);
+  if (output != nullptr) api->ReleaseValueInfo(output);
+  if (graph != nullptr) api->ReleaseGraph(graph);
+  if (model != nullptr) api->ReleaseModel(model);
+  return status;
+}
+
+OrtStatus* CreateSmokeModel(
+    const OrtApi* api,
+    const OrtModelEditorApi* model_editor_api,
+    const SmokeCaseSpec& spec,
+    OrtModel** out_model) {
+  switch (spec.model_kind) {
+    case SmokeModelKind::kAdd:
+      return CreateAddModel(api, model_editor_api, spec.dims, out_model);
+    case SmokeModelKind::kRelu:
+      return CreateReluModel(api, model_editor_api, spec.dims, out_model);
+    case SmokeModelKind::kAddRelu:
+      return CreateAddReluModel(api, model_editor_api, spec.dims, out_model);
+  }
+  return api->CreateStatus(ORT_FAIL, "Doe ORT plugin EP smoke reached an unknown model kind.");
+}
+
+OrtStatus* ReadFloatTensor(
+    const OrtApi* api,
+    const OrtValue* value,
+    std::vector<int64_t>* dims_out,
+    std::vector<float>* values_out) {
+  if (dims_out == nullptr || values_out == nullptr) {
+    return api->CreateStatus(ORT_INVALID_ARGUMENT, "Doe ORT plugin EP smoke requires dims_out and values_out pointers.");
+  }
+
+  OrtTensorTypeAndShapeInfo* tensor_info = nullptr;
+  OrtStatus* status = api->GetTensorTypeAndShape(value, &tensor_info);
+  if (status != nullptr) return status;
+
+  ONNXTensorElementDataType element_type = ONNX_TENSOR_ELEMENT_DATA_TYPE_UNDEFINED;
+  status = api->GetTensorElementType(tensor_info, &element_type);
+  if (status != nullptr) {
+    api->ReleaseTensorTypeAndShapeInfo(tensor_info);
+    return status;
+  }
+  if (element_type != kSmokeElementType) {
+    api->ReleaseTensorTypeAndShapeInfo(tensor_info);
+    return api->CreateStatus(ORT_NOT_IMPLEMENTED, "Doe ORT plugin EP smoke expects float32 outputs.");
+  }
+
+  size_t rank = 0;
+  status = api->GetDimensionsCount(tensor_info, &rank);
+  if (status != nullptr) {
+    api->ReleaseTensorTypeAndShapeInfo(tensor_info);
+    return status;
+  }
+
+  dims_out->assign(rank, 0);
+  if (rank != 0) {
+    status = api->GetDimensions(tensor_info, dims_out->data(), dims_out->size());
+    if (status != nullptr) {
+      api->ReleaseTensorTypeAndShapeInfo(tensor_info);
+      return status;
+    }
+  }
+
+  size_t element_count = 0;
+  status = api->GetTensorShapeElementCount(tensor_info, &element_count);
+  api->ReleaseTensorTypeAndShapeInfo(tensor_info);
+  if (status != nullptr) return status;
+
+  const void* data = nullptr;
+  status = api->GetTensorData(value, &data);
+  if (status != nullptr) return status;
+  if (data == nullptr) {
+    return api->CreateStatus(ORT_FAIL, "Doe ORT plugin EP smoke received null output data.");
+  }
+
+  const auto* floats = static_cast<const float*>(data);
+  values_out->assign(floats, floats + element_count);
+  return nullptr;
+}
+
+bool ValidateCaseRouting(
+    const SmokeCaseSpec& spec,
+    const doe::ort_ep::DoeOrtEpDebugCounters& delta,
+    std::string* error_out) {
+  auto fail = [&](const std::string& message) {
+    if (error_out != nullptr) {
+      *error_out = message;
+    }
+    return false;
+  };
+
+  if (delta.get_capability_calls == 0) {
+    return fail("GetCapability did not run for the case.");
+  }
+  if (delta.claimed_nodes != ExpectedClaimedNodes(spec.model_kind)) {
+    std::ostringstream message;
+    message << "expected claimedNodes=" << ExpectedClaimedNodes(spec.model_kind) << " but observed "
+            << delta.claimed_nodes << '.';
+    return fail(message.str());
+  }
+  if (delta.compile_calls == 0) {
+    return fail("Compile did not run for the case.");
+  }
+  if (delta.create_state_calls == 0) {
+    return fail("CreateState did not run for the case.");
+  }
+  if (delta.compute_calls == 0) {
+    return fail("Compute did not run for the case.");
+  }
+  if (delta.release_state_calls == 0) {
+    return fail("ReleaseState did not run for the case.");
+  }
+
+  switch (spec.model_kind) {
+    case SmokeModelKind::kAdd:
+      if (delta.claimed_add_nodes == 0 || delta.compiled_add_groups == 0 || delta.compute_add_calls == 0) {
+        return fail("Add case did not report Add-specific claim/compile/compute counters.");
+      }
+      break;
+    case SmokeModelKind::kRelu:
+      if (delta.claimed_relu_nodes == 0 || delta.compiled_relu_groups == 0 || delta.compute_relu_calls == 0) {
+        return fail("Relu case did not report Relu-specific claim/compile/compute counters.");
+      }
+      break;
+    case SmokeModelKind::kAddRelu:
+      if (delta.claimed_add_nodes == 0 || delta.claimed_relu_nodes == 0 || delta.compiled_add_relu_groups == 0 ||
+          delta.compute_add_relu_calls == 0) {
+        return fail("Add->Relu case did not report fused Add/Relu claim/compile/compute counters.");
+      }
+      break;
+  }
+
+  return true;
+}
+
+bool RunSmokeCase(
+    const OrtApi* api,
+    const OrtModelEditorApi* model_editor_api,
+    OrtEnv* env,
+    OrtSessionOptions* session_options,
+    DoeOrtEpGetDebugCountersFn get_debug_counters,
+    const SmokeCaseSpec& spec,
+    SmokeCaseResult* result) {
+  result->case_name = spec.case_name;
+  result->model_kind = SmokeModelKindName(spec.model_kind);
+  result->expected_output_shape = spec.dims;
+  result->expected_output = spec.expected_output;
+  result->expected_claimed_nodes = ExpectedClaimedNodes(spec.model_kind);
+
+  get_debug_counters(&result->debug_counters_before);
+
+  OrtModel* model = nullptr;
+  OrtSession* session = nullptr;
+  std::vector<OrtValue*> inputs(ExpectedInputCount(spec.model_kind), nullptr);
+  std::vector<OrtValue*> outputs(kSingleOutputCount, nullptr);
+
+  OrtStatus* status = CreateSmokeModel(api, model_editor_api, spec, &model);
+  result->create_model_status = CaptureStatus(api, status);
+  if (!result->create_model_status.ok) {
+    result->failure_reason = "CreateSmokeModel failed.";
+    goto cleanup;
+  }
+
+  status = model_editor_api->CreateSessionFromModel(env, model, session_options, &session);
+  result->create_session_status = CaptureStatus(api, status);
+  if (!result->create_session_status.ok) {
+    result->failure_reason = "CreateSessionFromModel failed.";
+    goto cleanup;
+  }
+
+  {
+    std::vector<const OrtEpDevice*> input_ep_devices(inputs.size(), nullptr);
+    status = api->SessionGetEpDeviceForInputs(session, input_ep_devices.data(), input_ep_devices.size());
+    if (status == nullptr) {
+      result->session_inputs_have_ep_device = true;
+      for (const OrtEpDevice* ep_device : input_ep_devices) {
+        if (ep_device == nullptr) {
+          result->session_inputs_have_ep_device = false;
+          break;
+        }
+      }
+    } else {
+      api->ReleaseStatus(status);
+    }
+  }
+
+  {
+    OrtAllocator* allocator = nullptr;
+    status = api->GetAllocatorWithDefaultOptions(&allocator);
+    result->run_status = CaptureStatus(api, status);
+    if (!result->run_status.ok) {
+      result->failure_reason = "GetAllocatorWithDefaultOptions failed.";
+      goto cleanup;
+    }
+
+    for (size_t index = 0; index < inputs.size(); ++index) {
+      status = api->CreateTensorAsOrtValue(
+          allocator,
+          spec.dims.empty() ? nullptr : spec.dims.data(),
+          spec.dims.size(),
+          kSmokeElementType,
+          &inputs[index]);
+      result->run_status = CaptureStatus(api, status);
+      if (!result->run_status.ok) {
+        result->failure_reason = "CreateTensorAsOrtValue failed for an input.";
+        goto cleanup;
+      }
+
+      void* input_data = nullptr;
+      status = api->GetTensorMutableData(inputs[index], &input_data);
+      result->run_status = CaptureStatus(api, status);
+      if (!result->run_status.ok) {
+        result->failure_reason = "GetTensorMutableData failed for an input.";
+        goto cleanup;
+      }
+      if (input_data == nullptr) {
+        result->failure_reason = "Input tensor data pointer was null.";
+        goto cleanup;
+      }
+
+      if (spec.inputs[index].size() != spec.expected_output.size()) {
+        result->failure_reason = "Smoke case input element count did not match the declared shape.";
+        goto cleanup;
+      }
+
+      std::memcpy(
+          input_data,
+          spec.inputs[index].data(),
+          spec.inputs[index].size() * sizeof(float));
+    }
+
+    const std::vector<const char*> input_names = InputNamesForKind(spec.model_kind);
+    std::vector<const OrtValue*> input_ptrs(inputs.size(), nullptr);
+    for (size_t index = 0; index < inputs.size(); ++index) {
+      input_ptrs[index] = inputs[index];
+    }
+    const char* const output_names[] = {"output"};
+    status = api->Run(
+        session,
+        nullptr,
+        input_names.data(),
+        input_ptrs.data(),
+        input_ptrs.size(),
+        output_names,
+        1,
+        outputs.data());
+    result->run_status = CaptureStatus(api, status);
+    if (!result->run_status.ok) {
+      result->failure_reason = "Run failed.";
+      goto cleanup;
+    }
+  }
+
+  if (outputs[0] == nullptr) {
+    result->failure_reason = "Run returned a null output OrtValue.";
+    goto cleanup;
+  }
+
+  status = ReadFloatTensor(api, outputs[0], &result->actual_output_shape, &result->actual_output);
+  result->run_status = CaptureStatus(api, status);
+  if (!result->run_status.ok) {
+    result->failure_reason = "ReadFloatTensor failed for the output.";
+    goto cleanup;
+  }
+
+  result->outputs_match =
+      result->actual_output_shape == result->expected_output_shape &&
+      FloatVectorsEqual(result->actual_output, result->expected_output);
+  if (!result->outputs_match) {
+    result->failure_reason = "Actual output did not match the expected smoke output.";
+  }
+
+cleanup:
+  for (OrtValue*& output : outputs) {
+    if (output != nullptr) {
+      api->ReleaseValue(output);
+      output = nullptr;
+    }
+  }
+  for (OrtValue*& input : inputs) {
+    if (input != nullptr) {
+      api->ReleaseValue(input);
+      input = nullptr;
+    }
+  }
+  if (session != nullptr) {
+    api->ReleaseSession(session);
+    session = nullptr;
+  }
+  if (model != nullptr) {
+    api->ReleaseModel(model);
+    model = nullptr;
+  }
+
+  get_debug_counters(&result->debug_counters_after);
+  result->debug_counters_delta = CounterDelta(result->debug_counters_before, result->debug_counters_after);
+
+  if (result->failure_reason.empty()) {
+    std::string routing_error;
+    result->routed_through_doe = ValidateCaseRouting(spec, result->debug_counters_delta, &routing_error);
+    if (!result->routed_through_doe) {
+      result->failure_reason = routing_error;
+    }
+  }
+
+  result->success = result->failure_reason.empty();
+  return result->success;
 }
 
 int RunSessionSmoke(const CliOptions& options, SessionSmokeReport* report) {
@@ -498,12 +1177,28 @@ int RunSessionSmoke(const CliOptions& options, SessionSmokeReport* report) {
     return 1;
   }
 
+  DynamicLibrary plugin_debug_library(options.plugin_path, &loader_error);
+  if (!plugin_debug_library.IsOpen()) {
+    report->failure_reason = loader_error;
+    return 1;
+  }
+  DoeOrtEpResetDebugCountersFn reset_debug_counters =
+      plugin_debug_library.LoadSymbol<DoeOrtEpResetDebugCountersFn>("DoeOrtEpResetDebugCounters", &loader_error);
+  if (reset_debug_counters == nullptr) {
+    report->failure_reason = loader_error;
+    return 1;
+  }
+  DoeOrtEpGetDebugCountersFn get_debug_counters =
+      plugin_debug_library.LoadSymbol<DoeOrtEpGetDebugCountersFn>("DoeOrtEpGetDebugCounters", &loader_error);
+  if (get_debug_counters == nullptr) {
+    report->failure_reason = loader_error;
+    return 1;
+  }
+  report->debug_symbols_loaded = true;
+  reset_debug_counters();
+
   OrtEnv* env = nullptr;
   OrtSessionOptions* session_options = nullptr;
-  OrtModel* model = nullptr;
-  OrtSession* session = nullptr;
-  OrtValue* input = nullptr;
-  OrtValue* outputs[] = {nullptr};
   const OrtModelEditorApi* model_editor_api = nullptr;
 
   OrtStatus* status = api->CreateEnv(ORT_LOGGING_LEVEL_WARNING, "doe-ort-ep-session-smoke", &env);
@@ -572,108 +1267,41 @@ int RunSessionSmoke(const CliOptions& options, SessionSmokeReport* report) {
     }
   }
 
-  {
-    model_editor_api = api->GetModelEditorApi();
-    if (model_editor_api == nullptr) {
-      report->failure_reason = "GetModelEditorApi returned null; host ORT build cannot create the in-memory session smoke model.";
-      goto cleanup;
-    }
-    status = CreateIdentityModel(api, model_editor_api, &model);
-    report->create_model_status = CaptureStatus(api, status);
-    if (!report->create_model_status.ok) {
-      report->failure_reason = "CreateIdentityModel failed.";
-      goto cleanup;
-    }
-  }
-
-  status = model_editor_api->CreateSessionFromModel(env, model, session_options, &session);
-  report->create_session_status = CaptureStatus(api, status);
-  if (!report->create_session_status.ok) {
-    report->failure_reason = "CreateSessionFromModel failed.";
+  model_editor_api = api->GetModelEditorApi();
+  if (model_editor_api == nullptr) {
+    report->failure_reason = "GetModelEditorApi returned null; host ORT build cannot create the in-memory session smoke models.";
     goto cleanup;
   }
 
-  {
-    const OrtEpDevice* input_ep_devices[] = {nullptr};
-    status = api->SessionGetEpDeviceForInputs(session, input_ep_devices, 1);
-    if (status == nullptr && input_ep_devices[0] != nullptr) {
-      report->session_input_has_ep_device = true;
-    } else if (status != nullptr) {
-      api->ReleaseStatus(status);
+  for (const SmokeCaseSpec& spec : BuildSmokeCases()) {
+    SmokeCaseResult case_result{};
+    const bool case_ok = RunSmokeCase(
+        api,
+        model_editor_api,
+        env,
+        session_options,
+        get_debug_counters,
+        spec,
+        &case_result);
+    report->cases.push_back(std::move(case_result));
+    if (!case_ok) {
+      report->failure_reason = "Smoke case '" + spec.case_name + "' failed.";
+      break;
     }
   }
-
-  {
-    OrtAllocator* allocator = nullptr;
-    status = api->GetAllocatorWithDefaultOptions(&allocator);
-    report->run_status = CaptureStatus(api, status);
-    if (!report->run_status.ok) {
-      report->failure_reason = "GetAllocatorWithDefaultOptions failed.";
-      goto cleanup;
-    }
-
-    const int64_t dims[] = {1};
-    status = api->CreateTensorAsOrtValue(allocator, dims, 1, ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT, &input);
-    report->run_status = CaptureStatus(api, status);
-    if (!report->run_status.ok) {
-      report->failure_reason = "CreateTensorAsOrtValue failed.";
-      goto cleanup;
-    }
-
-    void* input_data = nullptr;
-    status = api->GetTensorMutableData(input, &input_data);
-    report->run_status = CaptureStatus(api, status);
-    if (!report->run_status.ok) {
-      report->failure_reason = "GetTensorMutableData failed for input.";
-      goto cleanup;
-    }
-
-    report->input_value = 3.5f;
-    static_cast<float*>(input_data)[0] = report->input_value;
-
-    const char* const input_names[] = {"input"};
-    const OrtValue* const inputs[] = {input};
-    const char* const output_names[] = {"output"};
-    status = api->Run(session, nullptr, input_names, inputs, 1, output_names, 1, outputs);
-    report->run_status = CaptureStatus(api, status);
-    if (!report->run_status.ok) {
-      report->failure_reason = "Run failed.";
-      goto cleanup;
-    }
-  }
-
-  if (outputs[0] == nullptr) {
-    report->failure_reason = "Run returned a null output OrtValue.";
-    goto cleanup;
-  }
-
-  {
-    void* output_data = nullptr;
-    status = api->GetTensorMutableData(outputs[0], &output_data);
-    report->run_status = CaptureStatus(api, status);
-    if (!report->run_status.ok) {
-      report->failure_reason = "GetTensorMutableData failed for output.";
-      goto cleanup;
-    }
-    report->output_value = static_cast<float*>(output_data)[0];
-    if (report->output_value != report->input_value) {
-      report->failure_reason = "Session smoke output did not match the identity-model input.";
-      goto cleanup;
-    }
-  }
-
-  report->success = true;
 
 cleanup:
-  if (outputs[0] != nullptr) api->ReleaseValue(outputs[0]);
-  if (input != nullptr) api->ReleaseValue(input);
-  if (session != nullptr) api->ReleaseSession(session);
-  if (model != nullptr) api->ReleaseModel(model);
-  if (session_options != nullptr) api->ReleaseSessionOptions(session_options);
+  if (session_options != nullptr) {
+    api->ReleaseSessionOptions(session_options);
+    session_options = nullptr;
+  }
   if (env != nullptr) {
     (void)api->UnregisterExecutionProviderLibrary(env, options.registration_name.c_str());
     api->ReleaseEnv(env);
+    env = nullptr;
   }
+  get_debug_counters(&report->debug_counters);
+  report->success = report->failure_reason.empty();
   return report->success ? 0 : 1;
 }
 

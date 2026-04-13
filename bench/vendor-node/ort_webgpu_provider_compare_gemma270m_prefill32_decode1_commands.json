@@ -1,0 +1,30 @@
+[
+  {
+    "kind": "vendor-node-benchmark-scenario",
+    "schemaVersion": 1,
+    "scenarioId": "node_ort_webgpu_provider_compare_gemma3_270m_prefill_32tok_decode_1tok",
+    "dopplerRoot": "../../../doppler",
+    "cacheMode": "warm",
+    "loadMode": "http",
+    "useChatTemplate": false,
+    "promptWorkload": {
+      "prefillTokens": 32,
+      "decodeTokens": 1,
+      "temperature": 0,
+      "topK": 1,
+      "topP": 1
+    },
+    "tjs": {
+      "modelId": "onnx-community/gemma-3-270m-it-ONNX",
+      "dtype": "fp16",
+      "localModelPath": ""
+    },
+    "doppler": {
+      "modelId": "gemma-3-270m-it-q4k-ehf16-af32",
+      "runtimeProfile": null,
+      "runtimeConfig": null,
+      "loadMode": "http",
+      "modelPath": "../../../doppler/models/local/gemma-3-270m-it-q4k-ehf16-af32"
+    }
+  }
+]

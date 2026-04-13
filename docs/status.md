@@ -20,6 +20,29 @@ Read this file first. Use the shard files under
 
 ## Current status summary
 
+- A repo-only same-stack Node ORT WebGPU provider-compare lane now exists at
+  `bench/native-compare/compare.config.node.ort-webgpu-provider.gemma270m.json`.
+  The current AMD RADV host artifacts at
+  `bench/out/node-ort-webgpu-provider-compare/20260413T011722Z/gemma270m.compare.json`
+  and `bench/out/node-ort-webgpu-provider-compare/20260413T011722Z/gemma270m.claim.json`
+  record a strict comparable local Doe-advantage claim against the hardware-pinned
+  `node-webgpu` package surface.
+- A repo-only same-stack browser ORT WebGPU Playwright surface now exists at
+  `browser/chromium/scripts/webgpu-playwright-ort-bench.mjs`. The current local
+  Chromium artifact at
+  `browser/chromium/artifacts/20260413T023500Z/dawn-vs-doe.browser-ort-bench.diagnostic.json`
+  records a Doe-faster result on the vendored DistilBERT sentiment workload on
+  this Linux host.
+- A broader four-shape repo-only Node ORT WebGPU package matrix now also exists
+  at `bench/native-compare/compare.config.node.ort-webgpu-provider.breadth.json`.
+  Its current AMD RADV host artifacts show mixed results across short,
+  prefill-heavy, decode-heavy, and 1B shapes, so the broader matrix does not
+  support a blanket Doe-over-Dawn ORT package claim today.
+- The repo-only ONNX Runtime plugin EP now crosses the line from pure scaffold
+  to a tiny real execution slice: Doe claims, compiles, and executes one-node
+  ONNX `Identity` graphs in the session smoke, with proof recorded in
+  `runtime/bridge/onnxruntime-ep/artifacts/20260413T003832Z/doe-ort-ep-session-smoke.json`.
+  This is still not a benchmark lane or a claimable `ORT + Doe` surface.
 - D3D12 drop-in queue submit now retains submitted command lists behind the
   runtime fence and drains them at explicit completion boundaries instead of
   forcing a wait at every submit entry, and the native compute/render runtime

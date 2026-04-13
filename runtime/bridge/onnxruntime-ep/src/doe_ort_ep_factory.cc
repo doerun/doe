@@ -11,7 +11,7 @@ namespace {
 
 constexpr const char* kDefaultRegistrationName = "DoeExecutionProvider";
 constexpr const char* kVendorName = "Doe";
-constexpr const char* kVersion = "0.0.1-scaffold";
+constexpr const char* kVersion = "0.0.2-elementwise";
 constexpr uint32_t kVendorId = 0;
 
 std::string BuildUnsupportedMessage(const DoeOrtEpFactory& factory, const char* operation) {

@@ -89,6 +89,9 @@ from scattered configs:
 | Apple Metal package Doe vs `node-webgpu` | promoted | `python3 bench/cli.py compare --surface package --backend apple-metal --workload gemma64 --runtime-host node --temperature warm --dry-run` |
 | Apple Metal package Doe vs `bun-webgpu` | promoted | `python3 bench/cli.py compare --surface package --backend apple-metal --workload gemma64 --runtime-host bun --temperature warm --dry-run` |
 | AMD Vulkan package Doe vs Node/Bun packages | config-backed, not promoted | `python3 bench/cli.py run-config --config bench/native-compare/compare.config.amd.vulkan.gemma270m.node-package.ir.json --side baseline`, then `--side comparison`, then compare the emitted receipts |
+| Node ORT WebGPU Doe vs `node-webgpu` package | repo-only strict comparable local claim surface | `python3 bench/cli.py run-config --config bench/native-compare/compare.config.node.ort-webgpu-provider.gemma270m.json --side baseline`, then `--side comparison`, then compare the emitted receipts with `--comparability strict --require-timing-class process-wall`, then run `bench/cli.py claim --config ... bench/out/compare-report.json` |
+| Node ORT WebGPU Doe vs `node-webgpu` package breadth matrix | repo-only strict comparable exploration surface | `python3 bench/cli.py run-config --config bench/native-compare/compare.config.node.ort-webgpu-provider.breadth.json --side baseline`, then `--side comparison`, then compare the emitted receipts with `--comparability strict --require-timing-class process-wall` |
+| Browser ORT WebGPU Doe vs Dawn | repo-only same-stack browser surface | `node browser/chromium/scripts/webgpu-playwright-ort-bench.mjs --mode both --headless true --timed-iters 5 --warmup-iters 2` |
 | Node ORT WebGPU vs Doppler on Doe provider | repo-only directional, not claimable | `python3 bench/cli.py run-config --config bench/native-compare/compare.config.node.ort-vs-doppler.gemma270m.json --side baseline`, then `--side comparison`, then compare the emitted receipts |
 | Local D3D12 package Doe vs Node/Bun packages | not front-doored today | do not assume a supported matrix; add an explicit config/contract first |
 
@@ -114,13 +117,35 @@ What that means today:
   `zig build ort-plugin-ep-smoke-run -- --plugin-path <plugin> --ort-lib-path <ort-shared-lib>`
 - the repo now also has a repo-only session smoke runner:
   `zig build ort-plugin-ep-session-smoke-run -- --plugin-path <plugin> --ort-lib-path <ort-shared-lib>`
-- the plugin now creates real `OrtEpDevice` and no-op `OrtEp` instances, but
-  still claims zero graph nodes and does not execute model work yet
+- the plugin now creates real `OrtEpDevice` instances and a tiny compiled
+  `OrtEp` execution slice for one-node ONNX `Identity` graphs; see
+  `runtime/bridge/onnxruntime-ep/artifacts/20260413T003832Z/doe-ort-ep-session-smoke.json`
+  for the current proof that Doe claimed, compiled, and executed that path
 - the scaffold is a runtime integration seam, not a promoted benchmark lane
 
 What it does not mean yet:
 
 - there is no promoted `bench/` executor for native `ORT + Doe` graph execution today
+- there is now a repo-only same-stack Node ORT WebGPU provider-compare lane at
+  `bench/native-compare/compare.config.node.ort-webgpu-provider.gemma270m.json`;
+  the fresh strict compare and local claim artifacts for the current AMD RADV
+  host live at:
+  - `bench/out/node-ort-webgpu-provider-compare/20260413T011722Z/gemma270m.compare.json`
+  - `bench/out/node-ort-webgpu-provider-compare/20260413T011722Z/gemma270m.claim.json`
+- there is now also a repo-only same-stack browser ORT WebGPU Playwright lane
+  at `browser/chromium/scripts/webgpu-playwright-ort-bench.mjs`; the current
+  browser-local artifact on this Linux host lives at:
+  - `browser/chromium/artifacts/20260413T023500Z/dawn-vs-doe.browser-ort-bench.diagnostic.json`
+  - that browser evidence is a local same-stack Dawn-vs-Doe `onnxruntime-web`
+    sentiment-analysis run, not a canonical `bench/cli.py` claim lane
+- there is also a broader repo-only package matrix at
+  `bench/native-compare/compare.config.node.ort-webgpu-provider.breadth.json`;
+  the current breadth artifacts live at:
+  - `bench/out/node-ort-webgpu-provider-breadth/20260413T013823Z/breadth.compare.json`
+  - `bench/out/node-ort-webgpu-provider-breadth/20260413T013823Z/breadth.workspace/`
+  - `bench/out/node-ort-webgpu-provider-breadth/20260413T013823Z/breadth.claim.json`
+  - the current four-shape breadth matrix is mixed, so it does not support a
+    blanket Doe-over-Dawn ORT package claim on this host
 - there is now a repo-only Node directional lane at
   `bench/native-compare/compare.config.node.ort-vs-doppler.gemma270m.json`
   comparing Transformers.js plus `onnxruntime-node` WebGPU against Doppler on
@@ -135,11 +160,10 @@ What it does not mean yet:
   runner (`src/tooling/node-command-runner.js`), but no parallel Bun tooling
   surface that Doe can benchmark honestly here
 - there is no claimable `ORT + Dawn` vs `ORT + Doe` compare surface today
-- a real Doe-backed graph execution bridge still has to land before that
-  benchmark lane exists
-- the repo does not currently ship `browser/chromium/scripts/webgpu-playwright-ort-bench.mjs`;
-  any browser ORT work remains outside the canonical `bench/` lane matrix until
-  an actual script and contract land
+- a real Doe-backed graph execution bridge beyond the current identity-only
+  proof slice still has to land before that benchmark lane exists
+- the browser ORT Playwright harness now exists, but it is still a browser-local
+  repo script rather than a `bench/cli.py` executor or claim-gated matrix cell
 
 ## Numeric-stability promotion and runtime exercise
 

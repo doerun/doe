@@ -45,7 +45,7 @@ The detailed file-level breakdown lives in `examples/README.md`.
 
 ---
 
-## Surface and competitor matrix snapshot (2026-03-17)
+## Surface and competitor matrix snapshot (2026-04-13)
 
 The tier table above answers "what can Doe honestly claim today?".
 This section answers the adjacent product question:
@@ -65,34 +65,49 @@ Status vocabulary used below:
   governed today
 - `not meaningful`: not a product cell we should try to fill
 
-Subpath reminder (the `@simulatte/*` scope is deprecated; use `doe-gpu`):
+Subpath reminder:
 
-- `compute`, `full`, `node`, and `bun` are subpath entrypoints of
-  `@simulatte/webgpu`, not separate products
-- `native-direct` is also a subpath of `@simulatte/webgpu`, but it is distinct
-  enough to list separately because it creates a diagnostic comparison mode
-- `@simulatte/webgpu-doe` is a helper package family, not a second runtime
+- `doe-gpu` is the public npm package surface
+- `doe-gpu/compute`, `doe-gpu/browser`, and `doe-gpu/hybrid` are exported
+  subpaths inside that one package family
+- repo-only benchmark, browser, and release tooling under `bench/` and
+  `browser/chromium/` is not part of the npm package contract
+- legacy `@simulatte/*` names are compatibility history, not primary product
+  framing
 
-### Runtime package family: `@simulatte/webgpu` *(deprecated — use `doe-gpu`)*
+Current ORT evidence to read alongside the table below:
+
+- Node ORT provider compare artifact:
+  `bench/out/node-ort-webgpu-provider-compare/20260413T011722Z/gemma270m.claim.json`
+- Browser ORT Playwright artifact:
+  `browser/chromium/artifacts/20260413T023500Z/dawn-vs-doe.browser-ort-bench.diagnostic.json`
+- Native ORT EP proof slice:
+  `runtime/bridge/onnxruntime-ep/artifacts/20260413T003832Z/doe-ort-ep-session-smoke.json`
+
+### Runtime package family: `doe-gpu`
 
 | Host / platform | Doe surface | Reference surface | Kind | Current state | Value / note |
 |------|------|------|------|------|------|
-| Node | `@simulatte/webgpu` / `@simulatte/webgpu/node` | `webgpu` (Dawn) | product + governed compare lane | `diagnostic` | Node package lane exists, but the current Apple Metal Gemma64/Gemma1B Node/Dawn rows are explicitly unsupported on `mac.lan` in `docs/status.md`; read Node package evidence lane- and host-specifically. |
-| Bun | `@simulatte/webgpu` / `@simulatte/webgpu/bun` | `bun-webgpu` (Dawn) | product + governed compare lane | `verified` | Main Bun package niche. The current Apple Metal package headline rows in `docs/status.md` are Bun Gemma64 and Bun Gemma1B cold/warm claimable receipts. |
+| Node | `doe-gpu` | `webgpu` (Dawn) | product + governed compare lane | `diagnostic` | Public package surface exists and governed Node package lanes exist. ORT evidence now also exists in-repo through the same-stack provider compare lane; read current Node ORT results artifact-by-artifact because the broader Vulkan-host ORT matrix is mixed. |
+| Bun | `doe-gpu` | `bun-webgpu` (Dawn) | product + governed compare lane | `verified` | Main Bun package niche for package-plan benchmarking. This row is about the package surface, not a completed ORT compare cell. |
 | Deno | `doe-gpu` via `packages/doe-gpu/src/deno.js` | built-in Deno WebGPU (`navigator.gpu`, wgpu-backed) | product + governed compare lane | `verified` | Deno package lane now exists in-repo and is registered as `deno_package_compare`; still newer than Node/Bun and should be read lane-specifically. |
 | Node / Bun / Deno | `createDoeRuntime()`, `runDawnVsDoeCompare()` | no package-surface incumbent | advanced helper surface | `supported` | Public helper exports exist, but compare/release operator CLIs live in-repo under `bench/` and are not npm-shipped tools. |
-| Node | `@simulatte/webgpu/native-direct` | raw competitor device surfaces in ad hoc four-way compares | diagnostic subpath | `diagnostic` | Useful for stripping wrapper noise out of Node package attribution. Not a public replacement promise by itself. |
-| Browser | `@simulatte/webgpu` package family | browser `navigator.gpu` | package cell | `not meaningful` | Browser ownership lives in `chromium`, not in the npm runtime package family. |
+| Node | historical `native-direct` helper shape | raw competitor device surfaces in ad hoc four-way compares | diagnostic subpath | `diagnostic` | Useful for stripping wrapper noise out of Node package attribution. Not a public replacement promise by itself. |
+| Browser | `doe-gpu/browser` | browser `navigator.gpu` | package helper surface | `supported` | Public browser package entrypoint exists, but governed browser comparison/evidence lives under `browser/chromium/`, not under the npm package family by itself. |
 
-### Helper package family: `@simulatte/webgpu-doe` *(deprecated — merged into `doe-gpu`)*
+### Legacy helper compatibility note
 
-| Host / platform | Doe surface | Reference surface | Kind | Current state | Value / note |
+Legacy `@simulatte/webgpu-doe` usage is historical compatibility surface, not a
+second current package family. The transport-free helper idea still matters,
+but the product framing should stay on `doe-gpu`.
+
+| Host / platform | Legacy helper binding | Reference surface | Kind | Current state | Value / note |
 |------|------|------|------|------|------|
-| Node / Bun / Deno | `@simulatte/webgpu-doe` bound onto `@simulatte/webgpu` device objects | same underlying Doe runtime | product helper surface | `supported` | Canonical ergonomic helper layer. Valuable because it keeps helper ergonomics separate from transport/runtime selection. |
-| Node | `@simulatte/webgpu-doe` bound onto `webgpu` raw devices | Dawn-backed Node runtime | attribution / compatibility cell | `diagnostic` | Explicitly useful today in Node four-way attribution compares; not a separate marketed runtime. |
-| Bun | `@simulatte/webgpu-doe` bound onto `bun-webgpu` raw devices | Dawn-backed Bun runtime | compatibility cell | `possible` | Allowed by the transport-free helper contract when the surface is compatible, but not a governed lane today. |
-| Deno | `@simulatte/webgpu-doe` bound onto built-in Deno WebGPU devices | wgpu-backed Deno runtime | compatibility cell | `possible` | Contractually plausible, but not yet a documented governed helper-comparison lane. |
-| Browser | `@simulatte/webgpu-doe` bound onto browser-provided `GPUDevice` objects | stock browser WebGPU surfaces | product helper surface | `supported` | This is the portable helper niche: bring Doe API ergonomics to any compatible browser/device without shipping Doe runtime itself. |
+| Node / Bun / Deno | `@simulatte/webgpu-doe` bound onto Doe runtime objects | same underlying Doe runtime | helper compatibility surface | `supported` | Historical helper shape retained for compatibility/migration context only. |
+| Node | `@simulatte/webgpu-doe` bound onto `webgpu` raw devices | Dawn-backed Node runtime | attribution / compatibility cell | `diagnostic` | Still relevant for old attribution experiments, but not a primary product surface. |
+| Bun | `@simulatte/webgpu-doe` bound onto `bun-webgpu` raw devices | Dawn-backed Bun runtime | compatibility cell | `possible` | Technically within the old helper contract, but not a promoted current package story. |
+| Deno | `@simulatte/webgpu-doe` bound onto built-in Deno WebGPU devices | wgpu-backed Deno runtime | compatibility cell | `possible` | Allowed by the old transport-free helper model; not the preferred framing anymore. |
+| Browser | `@simulatte/webgpu-doe` bound onto browser-provided `GPUDevice` objects | stock browser WebGPU surfaces | helper compatibility surface | `supported` | Useful for legacy browser-helper framing, but still not a Doe runtime replacement claim. |
 | Any host | `@simulatte/webgpu-doe` treated as a standalone WebGPU runtime | runtime incumbents | product cell | `not meaningful` | The helper package does not ship Doe's direct backend implementation path and should not be described as a runtime replacement. |
 
 ### Runtime, ABI, and browser cells
@@ -121,12 +136,12 @@ exist in the repo today:
 
 Cells not listed separately are intentionally folded into one of those rows:
 
-- `@simulatte/webgpu/compute` and `@simulatte/webgpu/full` are API-shape
-  entrypoints inside the same runtime package family (deprecated; use `doe-gpu`),
-  not separate competitive surfaces
-- `@simulatte/webgpu/node` and `@simulatte/webgpu/bun` are host-specific
-  subpaths of the same package family (deprecated; use `doe-gpu`) and inherit
-  the same lane status as their parent Node/Bun rows
+- `doe-gpu/compute`, `doe-gpu/browser`, and `doe-gpu/hybrid` are API-shape
+  entrypoints inside the same runtime package family, not separate competitive
+  surfaces
+- legacy `@simulatte/webgpu/node` and `@simulatte/webgpu/bun` names are
+  host-specific history aliases of the same package family and inherit the same
+  lane status as their current `doe-gpu` parent rows
 - browser competitors are represented at the browser tier, not duplicated under
   the npm package family
 
@@ -149,14 +164,14 @@ Headless compute, benchmarking, and evidence infrastructure via Node/Bun/CLI.
 
 ### Deployment surface
 
-- `@simulatte/webgpu` *(deprecated — use `doe-gpu`)* (Node runtime, Bun FFI, CLI)
+- `doe-gpu` (Node runtime, Bun FFI, Deno, CLI-adjacent helper surface)
 - `doe-zig-runtime` CLI binary
 - `libwebgpu_doe.{dylib,so,dll}` via FFI (compute-focused paths)
 - browser/runtime replacement packaging beyond the headless package name belongs to the `doe-runtime` tier, not a separate public package name today
 
 ### Supported API
 
-From `@simulatte/webgpu` (now `doe-gpu`) API contract v1:
+From the `doe-gpu` API contract v1:
 
 | API | Status | Notes |
 |-----|--------|-------|
@@ -205,7 +220,7 @@ Package boundary:
 
 - Artifact reproducibility: any published benchmark artifact must be reproducible from the same inputs, config, and runtime version.
 - Gate stability: blocking gates must not regress (pass→fail) without a tracked config or code change.
-- API stability: `@simulatte/webgpu` (now `doe-gpu`) API contract v1 surface is stable; breaking changes require version bump.
+- API stability: the `doe-gpu` API contract v1 surface is stable; breaking changes require version bump.
 - No uptime/availability SLA (headless tooling, not a service).
 
 ### Allowed marketing claims
