@@ -9,6 +9,13 @@ import {
 } from './runtime-cli.js';
 import { loadDoeBuildMetadata } from './build-metadata.js';
 import {
+  PACKAGE_ROOT,
+  WORKSPACE_ROOT,
+  libraryBasenamesForPlatform,
+  resolvePlatformPackageAddonPath,
+  resolvePlatformPackageLibraryPath,
+} from './platform-package.js';
+import {
   UINT32_MAX,
   failValidation,
   describeResourceLabel,
@@ -71,8 +78,6 @@ import {
 } from './shared/native-metal-canvas-backend.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const PACKAGE_ROOT = resolve(__dirname, '..', '..', '..');
-const WORKSPACE_ROOT = resolve(PACKAGE_ROOT, '..', '..');
 const require = createRequire(import.meta.url);
 const TEXTURE_DIMENSION_MAP = Object.freeze({
   '1d': 1,
@@ -139,11 +144,16 @@ export {
 
 
 function loadAddon() {
+  const packagedAddonPath = resolvePlatformPackageAddonPath({
+    requireFn: require,
+    workspaceRoot: WORKSPACE_ROOT,
+  });
   const candidates = [
     resolve(PACKAGE_ROOT, 'build', 'Release', 'doe_napi.node'),
     resolve(PACKAGE_ROOT, 'build', 'Debug', 'doe_napi.node'),
     resolve(__dirname, '..', 'build', 'Release', 'doe_napi.node'),
     resolve(__dirname, '..', 'build', 'Debug', 'doe_napi.node'),
+    packagedAddonPath,
     resolve(PACKAGE_ROOT, 'prebuilds', `${process.platform}-${process.arch}`, 'doe_napi.node'),
   ];
   for (const candidate of candidates) {
@@ -164,17 +174,21 @@ function currentAddon() {
 }
 
 function resolveDoeLibraryPath() {
-  const ext = process.platform === 'darwin' ? 'dylib'
-    : process.platform === 'win32' ? 'dll' : 'so';
+  const workspaceLibraryNames = libraryBasenamesForPlatform();
+  const packagedLibraryPath = resolvePlatformPackageLibraryPath({
+    requireFn: require,
+    workspaceRoot: WORKSPACE_ROOT,
+  });
 
   const candidates = [
     process.env.DOE_WEBGPU_LIB,
     process.env.DOE_LIB,
-    resolve(WORKSPACE_ROOT, 'runtime', 'zig', 'zig-out', 'lib', `libwebgpu_doe.${ext}`),
-    resolve(WORKSPACE_ROOT, 'zig', 'zig-out', 'lib', `libwebgpu_doe.${ext}`),
-    resolve(PACKAGE_ROOT, 'prebuilds', `${process.platform}-${process.arch}`, `libwebgpu_doe.${ext}`),
-    resolve(process.cwd(), 'runtime', 'zig', 'zig-out', 'lib', `libwebgpu_doe.${ext}`),
-    resolve(process.cwd(), 'zig', 'zig-out', 'lib', `libwebgpu_doe.${ext}`),
+    ...workspaceLibraryNames.map((name) => resolve(WORKSPACE_ROOT, 'runtime', 'zig', 'zig-out', 'lib', name)),
+    ...workspaceLibraryNames.map((name) => resolve(WORKSPACE_ROOT, 'zig', 'zig-out', 'lib', name)),
+    packagedLibraryPath,
+    ...workspaceLibraryNames.map((name) => resolve(PACKAGE_ROOT, 'prebuilds', `${process.platform}-${process.arch}`, name)),
+    ...workspaceLibraryNames.map((name) => resolve(process.cwd(), 'runtime', 'zig', 'zig-out', 'lib', name)),
+    ...workspaceLibraryNames.map((name) => resolve(process.cwd(), 'zig', 'zig-out', 'lib', name)),
   ];
 
   for (const candidate of candidates) {
@@ -205,13 +219,13 @@ function ensureLibrary() {
   const nativeAddon = currentAddon();
   if (!nativeAddon) {
     throw new Error(
-      'doe-gpu: Native addon not found. Run `npm run build:addon` or `npx node-gyp rebuild`.'
+      'doe-gpu: Native addon not found. Install the matching doe-gpu optional platform package, or run `npm run build:addon` / `npx node-gyp rebuild` in a built workspace.'
     );
   }
   const libraryPath = currentDoeLibraryPath();
   if (!libraryPath) {
     throw new Error(
-      'doe-gpu: libwebgpu_doe not found. Build it with `cd runtime/zig && zig build dropin` or set DOE_WEBGPU_LIB.'
+      'doe-gpu: libwebgpu_doe not found. Install the matching doe-gpu optional platform package, or build it with `cd runtime/zig && zig build dropin`, or set DOE_WEBGPU_LIB.'
     );
   }
   nativeAddon.loadLibrary(libraryPath);

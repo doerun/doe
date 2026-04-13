@@ -52,11 +52,41 @@ const result = await device.compute({
 ## Runtime requirements
 
 - Node.js 18+ for the default package surface
-- a built or preinstalled Doe native library for native runtime use
+- a matching optional platform package or a built/preinstalled Doe native library
 - Bun and Deno are supported through the package entrypoints in `exports`
+
+The `doe-gpu` package is the JS front door. Native artifacts are expected to
+arrive through one of these paths:
+
+- npm-installed optional platform packages such as `doe-gpu-darwin-arm64`
+- a local workspace build under `runtime/zig/zig-out/`
+- explicit `DOE_WEBGPU_LIB` / `DOE_LIB` overrides
+- local debug prebuilds under `packages/doe-gpu/prebuilds/<platform-arch>/`
 
 If the native addon or shared library is missing, the package fails explicitly
 instead of silently falling back to another runtime.
+
+## Publish packaging
+
+Cross-platform npm install support is package-based, not host-magic:
+
+- `doe-gpu` publishes the JS wrapper and declares optional platform packages
+- `doe-gpu-<platform>-<arch>` publishes the native `bin/` payload for that host
+
+The platform package bin payload includes:
+
+- `doe_napi.node`
+- `libwebgpu_doe.<dylib|so>` or `webgpu_doe.dll`
+- `doe-build-metadata.json`
+- `metadata.json`
+
+Before publishing a platform package, stage its `bin/` directory from a built
+workspace:
+
+```bash
+cd packages/doe-gpu-darwin-arm64
+npm run stage
+```
 
 ## Important distinction
 

@@ -20,6 +20,8 @@ zig/zig-out/
 runtime/zig/.zig-cache/
 runtime/zig/zig-out/
 packages/doe-gpu/build/
+packages/doe-gpu/prebuilds/
+packages/doe-gpu-*/bin/
 
 # Python cache artifacts
 bench/__pycache__/

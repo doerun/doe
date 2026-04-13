@@ -37,6 +37,19 @@ These are subpath entrypoints inside one package family, not separate products.
 
 `doe-gpu` is the public runtime package.
 
+`doe-gpu` is the JS/package contract. Cross-platform native install support is
+provided through optional platform packages:
+
+- `doe-gpu-darwin-arm64`
+- `doe-gpu-darwin-x64`
+- `doe-gpu-linux-arm64`
+- `doe-gpu-linux-x64`
+- `doe-gpu-win32-x64`
+
+Repo-local debug fallback prebuilds may still exist under
+`packages/doe-gpu/prebuilds/<platform-arch>/`, but those are not the primary
+cross-platform npm distribution mechanism.
+
 It does not ship:
 
 - `bench/` compare or claim CLIs

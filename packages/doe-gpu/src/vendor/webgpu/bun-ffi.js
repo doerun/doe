@@ -1,9 +1,16 @@
+import { createRequire } from 'node:module';
 import { dlopen, FFIType, JSCallback, ptr as bunPtr, toArrayBuffer } from "bun:ffi";
 import { existsSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createDoeRuntime, runDawnVsDoeCompare } from "./runtime-cli.js";
 import { loadDoeBuildMetadata } from "./build-metadata.js";
+import {
+    PACKAGE_ROOT,
+    WORKSPACE_ROOT,
+    libraryBasenamesForPlatform,
+    resolvePlatformPackageLibraryPath,
+} from "./platform-package.js";
 import { globals } from "./webgpu-constants.js";
 import {
   UINT32_MAX,
@@ -68,7 +75,7 @@ import {
 } from "./shared/browser-native-canvas-backend.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const PACKAGE_ROOT = resolve(__dirname, "..");
+const require = createRequire(import.meta.url);
 
 export { globals };
 
@@ -174,17 +181,21 @@ const WGPU_RENDER_PASS_DEPTH_STENCIL_ATTACHMENT_SIZE = 48;
 // Library resolution
 // ---------------------------------------------------------------------------
 
-const LIB_EXT = { darwin: "dylib", linux: "so", win32: "dll" };
-
 function resolveDoeLibraryPath() {
-    const ext = LIB_EXT[process.platform] ?? "so";
+    const packagedLibraryPath = resolvePlatformPackageLibraryPath({
+        requireFn: require,
+        workspaceRoot: WORKSPACE_ROOT,
+    });
+    const libraryNames = libraryBasenamesForPlatform();
     const candidates = [
         process.env.DOE_WEBGPU_LIB,
-        resolve(PACKAGE_ROOT, "..", "..", "runtime", "zig", "zig-out", "lib", `libwebgpu_doe.${ext}`),
-        resolve(PACKAGE_ROOT, "..", "..", "zig", "zig-out", "lib", `libwebgpu_doe.${ext}`),
-        resolve(PACKAGE_ROOT, "prebuilds", `${process.platform}-${process.arch}`, `libwebgpu_doe.${ext}`),
-        resolve(process.cwd(), "runtime", "zig", "zig-out", "lib", `libwebgpu_doe.${ext}`),
-        resolve(process.cwd(), "zig", "zig-out", "lib", `libwebgpu_doe.${ext}`),
+        process.env.DOE_LIB,
+        ...libraryNames.map((name) => resolve(WORKSPACE_ROOT, "runtime", "zig", "zig-out", "lib", name)),
+        ...libraryNames.map((name) => resolve(WORKSPACE_ROOT, "zig", "zig-out", "lib", name)),
+        packagedLibraryPath,
+        ...libraryNames.map((name) => resolve(PACKAGE_ROOT, "prebuilds", `${process.platform}-${process.arch}`, name)),
+        ...libraryNames.map((name) => resolve(process.cwd(), "runtime", "zig", "zig-out", "lib", name)),
+        ...libraryNames.map((name) => resolve(process.cwd(), "zig", "zig-out", "lib", name)),
     ];
     for (const c of candidates) {
         if (c && existsSync(c)) return c;
@@ -3173,7 +3184,7 @@ function ensureLibrary() {
     if (libraryLoaded) return;
     if (!DOE_LIB_PATH) {
         throw new Error(
-            "doe-gpu: libwebgpu_doe not found. Build it with `cd runtime/zig && zig build dropin` or set DOE_WEBGPU_LIB."
+            "doe-gpu: libwebgpu_doe not found. Install the matching doe-gpu optional platform package, or build it with `cd runtime/zig && zig build dropin`, or set DOE_WEBGPU_LIB."
         );
     }
     wgpu = openLibrary(DOE_LIB_PATH);

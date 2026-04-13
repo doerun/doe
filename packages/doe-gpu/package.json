@@ -30,18 +30,27 @@
   },
   "files": [
     "src/",
+    "!src/vendor/build/",
     "scripts/",
     "binding.gyp",
     "README.md"
   ],
   "scripts": {
     "build:addon": "node scripts/build-addon.js",
+    "stage:prebuilds": "node scripts/stage-prebuilds.js",
     "test": "npm run test:smoke && npm run test:integration",
     "test:smoke": "node test/smoke/test-smoke-load.js",
     "test:integration": "node test/integration/run-integration.js --runtime node",
     "test:integration:bun": "bun test/integration/run-integration.js --runtime bun",
     "test:integration:deno": "deno run --allow-all test/integration/run-integration.js --runtime deno",
     "sync-vendor": "node scripts/sync-vendor.js"
+  },
+  "optionalDependencies": {
+    "doe-gpu-darwin-arm64": "0.4.0",
+    "doe-gpu-darwin-x64": "0.4.0",
+    "doe-gpu-linux-arm64": "0.4.0",
+    "doe-gpu-linux-x64": "0.4.0",
+    "doe-gpu-win32-x64": "0.4.0"
   },
   "keywords": [
     "webgpu",
