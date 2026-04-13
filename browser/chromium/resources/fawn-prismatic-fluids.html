@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fawn Prismatic Fluids</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: radial-gradient(circle at top, #12221b 0%, #0a110e 44%, #050606 100%);
+  color: #e8f0eb;
+}
+.shell {
+  width: min(1180px, calc(100vw - 32px));
+  margin: 28px auto;
+  display: grid;
+  gap: 18px;
+}
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 18px;
+}
+.eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #8ba99a;
+}
+h1 {
+  margin: 4px 0 8px;
+  font-size: 30px;
+  font-weight: 520;
+}
+.subtle {
+  max-width: 760px;
+  color: #8aa094;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.back, button, select {
+  color: #dce8e0;
+  text-decoration: none;
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(139, 169, 154, 0.26);
+  background: rgba(10, 18, 15, 0.75);
+  font: inherit;
+}
+button { cursor: pointer; }
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+.panel {
+  background: rgba(10, 18, 15, 0.82);
+  border: 1px solid rgba(139, 169, 154, 0.16);
+  border-radius: 20px;
+  padding: 18px;
+  backdrop-filter: blur(8px);
+}
+.label {
+  font-size: 11px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: #8fa59a;
+}
+.value {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #eef8f1;
+  line-height: 1.6;
+}
+.stage {
+  position: relative;
+  border-radius: 22px;
+  overflow: hidden;
+  border: 1px solid rgba(139, 169, 154, 0.18);
+  background: #020404;
+}
+canvas {
+  display: block;
+  width: 100%;
+  height: min(68vh, 760px);
+}
+.note {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(7, 14, 11, 0.66);
+  color: #88a095;
+  font-size: 11px;
+  line-height: 1.5;
+  max-width: 320px;
+}
+@media (max-width: 980px) {
+  .topbar { flex-direction: column; }
+  .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 640px) {
+  .grid { grid-template-columns: 1fr; }
+  canvas { height: 58vh; }
+}
+</style>
+</head>
+<body>
+<main class="shell">
+  <div class="topbar">
+    <div>
+      <div class="eyebrow">Fluid Dynamics Demo</div>
+      <h1>Prismatic Fluids</h1>
+      <div class="subtle">
+        A denser WebGPU fluid field that keeps the stable-fluid backbone and renders it with prismatic metallic shading.
+        Pointer motion injects force and color inside a bounded box without any autonomous magnetic field.
+      </div>
+    </div>
+    <div class="actions">
+      <label>
+        <span class="eyebrow">Grid</span><br>
+        <select id="grid-select">
+          <option value="192">192 × 192</option>
+          <option value="256">256 × 256</option>
+          <option value="320">320 × 320</option>
+          <option value="384">384 × 384</option>
+          <option value="448">448 × 448</option>
+          <option value="512">512 × 512</option>
+          <option value="640">640 × 640</option>
+          <option value="768">768 × 768</option>
+          <option value="1024" selected>1024 × 1024</option>
+        </select>
+      </label>
+      <label>
+        <span class="eyebrow">Pressure</span><br>
+        <select id="pressure-select">
+          <option value="20">20 iters</option>
+          <option value="24" selected>24 iters</option>
+          <option value="32">32 iters</option>
+          <option value="36">36 iters</option>
+          <option value="48">48 iters</option>
+        </select>
+      </label>
+      <button id="restart">Restart</button>
+      <a class="back" href="./fawn-start.html">Back to welcome</a>
+    </div>
+  </div>
+
+  <div class="stage">
+    <canvas id="view"></canvas>
+    <div class="note">
+      This stays a bounded box, not a wraparound texture. Pointer motion injects stronger force and dye, and the render stage turns curl and density into a metallic prismatic surface.
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="panel">
+      <div class="label">Status</div>
+      <div class="value" id="status">Initializing WebGPU...</div>
+    </div>
+    <div class="panel">
+      <div class="label">Adapter</div>
+      <div class="value" id="adapter">Waiting</div>
+    </div>
+    <div class="panel">
+      <div class="label">Frame</div>
+      <div class="value" id="frame">-- ms · -- fps</div>
+    </div>
+    <div class="panel">
+      <div class="label">Solver Load</div>
+      <div class="value" id="load">--</div>
+    </div>
+  </div>
+</main>
+<script>
+const WORKGROUP_SIZE = 16;
+const SIM_DENSITY_SCALE = 0.5;
+
+const SHARED_HELPERS = `
+struct Params {
+  grid: vec4<f32>,
+  mouse: vec4<f32>,
+  sim: vec4<f32>,
+  pointerDelta: vec4<f32>,
+}
+
+fn idx_at(x: i32, y: i32) -> u32 {
+  let w = i32(u.grid.x);
+  let h = i32(u.grid.y);
+  let cx = clamp(x, 0, w - 1);
+  let cy = clamp(y, 0, h - 1);
+  return u32(cy * w + cx);
+}
+
+fn uv_to_grid(uv: vec2<f32>) -> vec2<f32> {
+  return uv * u.grid.xy - vec2<f32>(0.5, 0.5);
+}
+
+fn safe_norm(v: vec2<f32>) -> vec2<f32> {
+  return v / max(length(v), 1e-5);
+}
+
+`;
+
+const ADVECT_VEL_WGSL = `
+${SHARED_HELPERS}
+@group(0) @binding(0) var<uniform> u: Params;
+@group(0) @binding(1) var<storage, read> velSrc: array<vec4<f32>>;
+@group(0) @binding(2) var<storage, read_write> velDst: array<vec4<f32>>;
+
+fn sample_vel(uv: vec2<f32>) -> vec2<f32> {
+  let gridPos = uv_to_grid(clamp(uv, u.grid.zw * 0.5, vec2<f32>(1.0) - u.grid.zw * 0.5));
+  let base = floor(gridPos);
+  let frac = gridPos - base;
+  let x0 = i32(base.x);
+  let y0 = i32(base.y);
+  let x1 = x0 + 1;
+  let y1 = y0 + 1;
+  let v00 = velSrc[idx_at(x0, y0)].xy;
+  let v10 = velSrc[idx_at(x1, y0)].xy;
+  let v01 = velSrc[idx_at(x0, y1)].xy;
+  let v11 = velSrc[idx_at(x1, y1)].xy;
+  let vx0 = mix(v00, v10, frac.x);
+  let vx1 = mix(v01, v11, frac.x);
+  return mix(vx0, vx1, frac.y);
+}
+
+@compute @workgroup_size(${WORKGROUP_SIZE}, ${WORKGROUP_SIZE})
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let width = u32(u.grid.x);
+  let height = u32(u.grid.y);
+  if (gid.x >= width || gid.y >= height) {
+    return;
+  }
+
+  let uv = (vec2<f32>(gid.xy) + 0.5) * u.grid.zw;
+  let currentVel = sample_vel(uv);
+  let prevUv = clamp(uv - currentVel * u.sim.x, u.grid.zw * 0.5, vec2<f32>(1.0) - u.grid.zw * 0.5);
+  var vel = sample_vel(prevUv) * 0.989;
+
+  let delta = uv - u.mouse.xy;
+  let dist = length(delta);
+  let falloff = smoothstep(u.mouse.w, 0.0, dist) * u.mouse.z;
+  let drag = u.pointerDelta.xy;
+  let dragLen = max(length(drag), 1e-5);
+  let dragDir = drag / dragLen;
+  let swirl = vec2<f32>(-delta.y, delta.x);
+  let swirlLen = max(length(swirl), 1e-5);
+  vel += (dragDir * dragLen * 1.55 + (swirl / swirlLen) * 0.08) * falloff * u.sim.x;
+
+  if (gid.x <= 1u || gid.y <= 1u || gid.x >= width - 2u || gid.y >= height - 2u) {
+    vel *= 0.0;
+  }
+  velDst[idx_at(i32(gid.x), i32(gid.y))] = vec4<f32>(vel, 0.0, 0.0);
+}
+`;
+
+const DIV_CURL_WGSL = `
+${SHARED_HELPERS}
+@group(0) @binding(0) var<uniform> u: Params;
+@group(0) @binding(1) var<storage, read> velSrc: array<vec4<f32>>;
+@group(0) @binding(2) var<storage, read_write> divCurl: array<vec4<f32>>;
+
+fn vel_at(x: i32, y: i32) -> vec2<f32> {
+  return velSrc[idx_at(x, y)].xy;
+}
+
+@compute @workgroup_size(${WORKGROUP_SIZE}, ${WORKGROUP_SIZE})
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let width = u32(u.grid.x);
+  let height = u32(u.grid.y);
+  if (gid.x >= width || gid.y >= height) {
+    return;
+  }
+
+  let x = i32(gid.x);
+  let y = i32(gid.y);
+  let l = vel_at(x - 1, y);
+  let r = vel_at(x + 1, y);
+  let b = vel_at(x, y - 1);
+  let t = vel_at(x, y + 1);
+
+  let div = 0.5 * ((r.x - l.x) / u.grid.z + (t.y - b.y) / u.grid.w);
+  let curl = 0.5 * ((r.y - l.y) / u.grid.z - (t.x - b.x) / u.grid.w);
+  divCurl[idx_at(x, y)] = vec4<f32>(div, curl, abs(curl), 0.0);
+}
+`;
+
+const PRESSURE_WGSL = `
+${SHARED_HELPERS}
+@group(0) @binding(0) var<uniform> u: Params;
+@group(0) @binding(1) var<storage, read> pressureSrc: array<vec4<f32>>;
+@group(0) @binding(2) var<storage, read> divCurl: array<vec4<f32>>;
+@group(0) @binding(3) var<storage, read_write> pressureDst: array<vec4<f32>>;
+
+fn pressure_at(x: i32, y: i32) -> f32 {
+  return pressureSrc[idx_at(x, y)].x;
+}
+
+@compute @workgroup_size(${WORKGROUP_SIZE}, ${WORKGROUP_SIZE})
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let width = u32(u.grid.x);
+  let height = u32(u.grid.y);
+  if (gid.x >= width || gid.y >= height) {
+    return;
+  }
+  let x = i32(gid.x);
+  let y = i32(gid.y);
+  let div = divCurl[idx_at(x, y)].x;
+  let l = pressure_at(x - 1, y);
+  let r = pressure_at(x + 1, y);
+  let b = pressure_at(x, y - 1);
+  let t = pressure_at(x, y + 1);
+  let p = (l + r + b + t - div * 0.85) * 0.25;
+  pressureDst[idx_at(x, y)] = vec4<f32>(p, 0.0, 0.0, 0.0);
+}
+`;
+
+const PROJECT_WGSL = `
+${SHARED_HELPERS}
+@group(0) @binding(0) var<uniform> u: Params;
+@group(0) @binding(1) var<storage, read> velSrc: array<vec4<f32>>;
+@group(0) @binding(2) var<storage, read> pressure: array<vec4<f32>>;
+@group(0) @binding(3) var<storage, read> divCurl: array<vec4<f32>>;
+@group(0) @binding(4) var<storage, read_write> velDst: array<vec4<f32>>;
+
+fn pressure_at(x: i32, y: i32) -> f32 {
+  return pressure[idx_at(x, y)].x;
+}
+
+fn curl_at(x: i32, y: i32) -> f32 {
+  return divCurl[idx_at(x, y)].y;
+}
+
+@compute @workgroup_size(${WORKGROUP_SIZE}, ${WORKGROUP_SIZE})
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let width = u32(u.grid.x);
+  let height = u32(u.grid.y);
+  if (gid.x >= width || gid.y >= height) {
+    return;
+  }
+
+  let x = i32(gid.x);
+  let y = i32(gid.y);
+  let i = idx_at(x, y);
+  var vel = velSrc[i].xy;
+  let grad = vec2<f32>(
+    pressure_at(x + 1, y) - pressure_at(x - 1, y),
+    pressure_at(x, y + 1) - pressure_at(x, y - 1)
+  ) * 0.5;
+  vel -= grad * vec2<f32>(u.grid.z, u.grid.w);
+
+  let curl = curl_at(x, y);
+  let gradCurl = vec2<f32>(
+    abs(curl_at(x + 1, y)) - abs(curl_at(x - 1, y)),
+    abs(curl_at(x, y + 1)) - abs(curl_at(x, y - 1))
+  );
+  let curlLen = max(length(gradCurl), 1e-5);
+  let n = gradCurl / curlLen;
+  let vorticity = vec2<f32>(n.y, -n.x) * curl * u.sim.z * u.sim.x * 0.026;
+  vel += vorticity;
+
+  if (gid.x <= 1u || gid.y <= 1u || gid.x >= width - 2u || gid.y >= height - 2u) {
+    vel *= 0.0;
+  }
+  velDst[i] = vec4<f32>(vel, 0.0, 0.0);
+}
+`;
+
+const ADVECT_DYE_WGSL = `
+${SHARED_HELPERS}
+@group(0) @binding(0) var<uniform> u: Params;
+@group(0) @binding(1) var<storage, read> dyeSrc: array<vec4<f32>>;
+@group(0) @binding(2) var<storage, read> velSrc: array<vec4<f32>>;
+@group(0) @binding(3) var<storage, read_write> dyeDst: array<vec4<f32>>;
+
+fn sample_vel(uv: vec2<f32>) -> vec2<f32> {
+  let gridPos = uv_to_grid(clamp(uv, u.grid.zw * 0.5, vec2<f32>(1.0) - u.grid.zw * 0.5));
+  let base = floor(gridPos);
+  let frac = gridPos - base;
+  let x0 = i32(base.x);
+  let y0 = i32(base.y);
+  let x1 = x0 + 1;
+  let y1 = y0 + 1;
+  let v00 = velSrc[idx_at(x0, y0)].xy;
+  let v10 = velSrc[idx_at(x1, y0)].xy;
+  let v01 = velSrc[idx_at(x0, y1)].xy;
+  let v11 = velSrc[idx_at(x1, y1)].xy;
+  let vx0 = mix(v00, v10, frac.x);
+  let vx1 = mix(v01, v11, frac.x);
+  return mix(vx0, vx1, frac.y);
+}
+
+fn sample_dye(uv: vec2<f32>) -> vec3<f32> {
+  let gridPos = uv_to_grid(clamp(uv, u.grid.zw * 0.5, vec2<f32>(1.0) - u.grid.zw * 0.5));
+  let base = floor(gridPos);
+  let frac = gridPos - base;
+  let x0 = i32(base.x);
+  let y0 = i32(base.y);
+  let x1 = x0 + 1;
+  let y1 = y0 + 1;
+  let d00 = dyeSrc[idx_at(x0, y0)].xyz;
+  let d10 = dyeSrc[idx_at(x1, y0)].xyz;
+  let d01 = dyeSrc[idx_at(x0, y1)].xyz;
+  let d11 = dyeSrc[idx_at(x1, y1)].xyz;
+  let dx0 = mix(d00, d10, frac.x);
+  let dx1 = mix(d01, d11, frac.x);
+  return mix(dx0, dx1, frac.y);
+}
+
+@compute @workgroup_size(${WORKGROUP_SIZE}, ${WORKGROUP_SIZE})
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let width = u32(u.grid.x);
+  let height = u32(u.grid.y);
+  if (gid.x >= width || gid.y >= height) {
+    return;
+  }
+
+  let uv = (vec2<f32>(gid.xy) + 0.5) * u.grid.zw;
+  let vel = sample_vel(uv);
+  let prevUv = clamp(uv - vel * u.sim.x, u.grid.zw * 0.5, vec2<f32>(1.0) - u.grid.zw * 0.5);
+  var dye = sample_dye(prevUv) * 0.992;
+
+  let delta = uv - u.mouse.xy;
+  let dist = length(delta);
+  let falloff = smoothstep(u.mouse.w * 0.85, 0.0, dist) * u.mouse.z;
+  let tint = 0.5 + 0.5 * cos(
+    vec3<f32>(0.0, 2.1, 4.2)
+    + vec3<f32>(
+      u.sim.y * 0.28 + uv.x * 8.0,
+      u.sim.y * 0.23 + uv.y * 7.0,
+      u.sim.y * 0.19 + (uv.x + uv.y) * 5.0
+    )
+  );
+  dye += tint * (falloff * 0.036);
+  dye *= 0.996;
+  dyeDst[idx_at(i32(gid.x), i32(gid.y))] = vec4<f32>(dye, 1.0);
+}
+`;
+
+const RENDER_WGSL = `
+${SHARED_HELPERS}
+struct VSOut {
+  @builtin(position) position: vec4<f32>,
+  @location(0) uv: vec2<f32>,
+}
+
+@group(0) @binding(0) var<uniform> u: Params;
+@group(0) @binding(1) var<storage, read> dyeBuf: array<vec4<f32>>;
+@group(0) @binding(2) var<storage, read> velBuf: array<vec4<f32>>;
+@group(0) @binding(3) var<storage, read> divCurl: array<vec4<f32>>;
+
+fn sample_dye_nearest(uv: vec2<f32>) -> vec3<f32> {
+  let gridPos = uv_to_grid(clamp(uv, u.grid.zw * 0.5, vec2<f32>(1.0) - u.grid.zw * 0.5));
+  let x = i32(round(gridPos.x));
+  let y = i32(round(gridPos.y));
+  return dyeBuf[idx_at(x, y)].xyz;
+}
+
+fn sample_vel_nearest(uv: vec2<f32>) -> vec2<f32> {
+  let gridPos = uv_to_grid(clamp(uv, u.grid.zw * 0.5, vec2<f32>(1.0) - u.grid.zw * 0.5));
+  let x = i32(round(gridPos.x));
+  let y = i32(round(gridPos.y));
+  return velBuf[idx_at(x, y)].xy;
+}
+
+fn sample_curl_nearest(uv: vec2<f32>) -> f32 {
+  let gridPos = uv_to_grid(clamp(uv, u.grid.zw * 0.5, vec2<f32>(1.0) - u.grid.zw * 0.5));
+  let x = i32(round(gridPos.x));
+  let y = i32(round(gridPos.y));
+  return divCurl[idx_at(x, y)].y;
+}
+
+fn dye_at(x: i32, y: i32) -> vec3<f32> {
+  return dyeBuf[idx_at(x, y)].xyz;
+}
+
+fn vel_at(x: i32, y: i32) -> vec2<f32> {
+  return velBuf[idx_at(x, y)].xy;
+}
+
+fn curl_at(x: i32, y: i32) -> f32 {
+  return divCurl[idx_at(x, y)].y;
+}
+
+fn scalar_height(x: i32, y: i32) -> f32 {
+  let uv = (vec2<f32>(f32(x), f32(y)) + 0.5) * u.grid.zw;
+  let dye = dye_at(x, y);
+  let vel = vel_at(x, y);
+  let curl = curl_at(x, y);
+  return clamp(length(dye) * 0.64 + abs(curl) * 0.016 + length(vel) * 0.10, 0.0, 1.3);
+}
+
+fn spectral(t: f32) -> vec3<f32> {
+  return 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.0, 4.0) + t * 6.28318);
+}
+
+@vertex
+fn vs(@builtin(vertex_index) vertexIndex: u32) -> VSOut {
+  var positions = array<vec2<f32>, 3>(
+    vec2<f32>(-1.0, -3.0),
+    vec2<f32>(-1.0,  1.0),
+    vec2<f32>( 3.0,  1.0)
+  );
+  let pos = positions[vertexIndex];
+  var out: VSOut;
+  out.position = vec4<f32>(pos, 0.0, 1.0);
+  out.uv = pos * 0.5 + vec2<f32>(0.5, 0.5);
+  return out;
+}
+
+@fragment
+fn fs(in: VSOut) -> @location(0) vec4<f32> {
+  let gridPos = uv_to_grid(clamp(in.uv, u.grid.zw * 0.5, vec2<f32>(1.0) - u.grid.zw * 0.5));
+  let gx = i32(round(gridPos.x));
+  let gy = i32(round(gridPos.y));
+  let dye = dye_at(gx, gy);
+  let vel = vel_at(gx, gy);
+  let curl = curl_at(gx, gy);
+  let speed = length(vel);
+  let hc = scalar_height(gx, gy);
+  let hl = scalar_height(gx - 1, gy);
+  let hr = scalar_height(gx + 1, gy);
+  let hb = scalar_height(gx, gy - 1);
+  let ht = scalar_height(gx, gy + 1);
+  let grad = vec2<f32>(hr - hl, ht - hb) * 0.5;
+  let normal = normalize(vec3<f32>(-grad.x * 1.25, -grad.y * 1.25, 1.0));
+  let view = normalize(vec3<f32>(0.0, 0.0, 1.0));
+  let fresnel = pow(1.0 - max(dot(normal, view), 0.0), 3.0);
+  let prism = spectral(hc * 0.22 + abs(curl) * 0.36 + u.sim.y * 0.020);
+  let secondary = spectral(speed * 0.30 + normal.x * 0.15 - normal.y * 0.08);
+  let glint = pow(max(dot(reflect(normalize(vec3<f32>(0.20, -0.16, -1.0)), normal), view), 0.0), 20.0);
+  let fluidGlow = dye * (0.92 + speed * 0.24) + prism * abs(curl) * 0.030;
+  let metallic = mix(vec3<f32>(0.05, 0.06, 0.08), prism, 0.52)
+    + secondary * fresnel * 0.22
+    + vec3<f32>(1.0, 0.96, 0.93) * glint * 0.34;
+  let base = fluidGlow + metallic * (0.22 + hc * 0.14);
+  let vignette = 1.0 - smoothstep(0.15, 0.92, length(in.uv * 2.0 - 1.0));
+  let bg = vec3<f32>(0.018, 0.024, 0.030) + vignette * vec3<f32>(0.020, 0.032, 0.040);
+  return vec4<f32>(max(base, bg), 1.0);
+}
+`;
+
+(async () => {
+  const statusEl = document.getElementById('status');
+  const adapterEl = document.getElementById('adapter');
+  const frameEl = document.getElementById('frame');
+  const loadEl = document.getElementById('load');
+  const gridSelect = document.getElementById('grid-select');
+  const pressureSelect = document.getElementById('pressure-select');
+  const restartButton = document.getElementById('restart');
+  const canvas = document.getElementById('view');
+
+  let device = null;
+  let adapter = null;
+  let context = null;
+  let format = null;
+  let uniformBuffer = null;
+  let currentGrid = parseInt(gridSelect.value, 10);
+  let pressureIterations = parseInt(pressureSelect.value, 10);
+  let running = false;
+  let lastFrameTime = performance.now();
+
+  let velocityBuffers = [];
+  let dyeBuffers = [];
+  let pressureBuffers = [];
+  let divCurlBuffer = null;
+  let currentDyeIndex = 0;
+
+  let advectVelPipeline = null;
+  let divCurlPipeline = null;
+  let pressurePipeline = null;
+  let projectPipeline = null;
+  let advectDyePipeline = null;
+  let renderPipeline = null;
+
+  let advectVelBindGroup = null;
+  let divCurlBindGroup = null;
+  let pressureBindGroups = [];
+  let projectBindGroup = null;
+  let advectDyeBindGroups = [];
+  let renderBindGroups = [];
+
+  const pointer = { x: 0.5, y: 0.5, hover: false, down: false, dx: 0.0, dy: 0.0 };
+  const simGrid = () => Math.max(96, Math.floor(currentGrid * SIM_DENSITY_SCALE));
+
+  function updateLoadLabel() {
+    const effectiveGrid = simGrid();
+    const cells = effectiveGrid * effectiveGrid;
+    const passes = pressureIterations + 4;
+    loadEl.textContent = `${currentGrid}² selected · ${effectiveGrid}² sim · ${pressureIterations} pressure iterations`;
+  }
+
+  function createBuffer(byteLength, usage) {
+    return device.createBuffer({ size: byteLength, usage });
+  }
+
+  function resizeCanvas() {
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.max(1, Math.floor(canvas.clientWidth * dpr));
+    canvas.height = Math.max(1, Math.floor(canvas.clientHeight * dpr));
+    context.configure({ device, format, alphaMode: 'opaque' });
+  }
+
+  function seedDye(grid) {
+    const data = new Float32Array(grid * grid * 4);
+    for (let y = 0; y < grid; y++) {
+      for (let x = 0; x < grid; x++) {
+        const i = (y * grid + x) * 4;
+        const nx = x / grid - 0.5;
+        const ny = y / grid - 0.5;
+        const r = Math.sqrt(nx * nx + ny * ny);
+        const ring = Math.max(0, 0.18 - Math.abs(r - 0.22));
+        data[i + 0] = ring * 0.22;
+        data[i + 1] = ring * 0.14;
+        data[i + 2] = ring * 0.26;
+        data[i + 3] = 1.0;
+      }
+    }
+    return data;
+  }
+
+  function rebuildSimulationBuffers() {
+    const effectiveGrid = simGrid();
+    [...velocityBuffers, ...dyeBuffers, ...pressureBuffers].forEach((buffer) => buffer.destroy());
+    if (divCurlBuffer) divCurlBuffer.destroy();
+
+    const byteLength = effectiveGrid * effectiveGrid * 16;
+    velocityBuffers = [
+      createBuffer(byteLength, GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST),
+      createBuffer(byteLength, GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST),
+    ];
+    dyeBuffers = [
+      createBuffer(byteLength, GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST),
+      createBuffer(byteLength, GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST),
+    ];
+    pressureBuffers = [
+      createBuffer(byteLength, GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST),
+      createBuffer(byteLength, GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST),
+    ];
+    divCurlBuffer = createBuffer(byteLength, GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST);
+
+    const zero = new Float32Array(effectiveGrid * effectiveGrid * 4);
+    const dye = seedDye(effectiveGrid);
+    velocityBuffers.forEach((buffer) => device.queue.writeBuffer(buffer, 0, zero));
+    pressureBuffers.forEach((buffer) => device.queue.writeBuffer(buffer, 0, zero));
+    device.queue.writeBuffer(divCurlBuffer, 0, zero);
+    device.queue.writeBuffer(dyeBuffers[0], 0, dye);
+    device.queue.writeBuffer(dyeBuffers[1], 0, dye);
+    currentDyeIndex = 0;
+
+    advectVelBindGroup = device.createBindGroup({
+      layout: advectVelPipeline.getBindGroupLayout(0),
+      entries: [
+        { binding: 0, resource: { buffer: uniformBuffer } },
+        { binding: 1, resource: { buffer: velocityBuffers[0] } },
+        { binding: 2, resource: { buffer: velocityBuffers[1] } },
+      ],
+    });
+    divCurlBindGroup = device.createBindGroup({
+      layout: divCurlPipeline.getBindGroupLayout(0),
+      entries: [
+        { binding: 0, resource: { buffer: uniformBuffer } },
+        { binding: 1, resource: { buffer: velocityBuffers[1] } },
+        { binding: 2, resource: { buffer: divCurlBuffer } },
+      ],
+    });
+    pressureBindGroups = [
+      device.createBindGroup({
+        layout: pressurePipeline.getBindGroupLayout(0),
+        entries: [
+          { binding: 0, resource: { buffer: uniformBuffer } },
+          { binding: 1, resource: { buffer: pressureBuffers[0] } },
+          { binding: 2, resource: { buffer: divCurlBuffer } },
+          { binding: 3, resource: { buffer: pressureBuffers[1] } },
+        ],
+      }),
+      device.createBindGroup({
+        layout: pressurePipeline.getBindGroupLayout(0),
+        entries: [
+          { binding: 0, resource: { buffer: uniformBuffer } },
+          { binding: 1, resource: { buffer: pressureBuffers[1] } },
+          { binding: 2, resource: { buffer: divCurlBuffer } },
+          { binding: 3, resource: { buffer: pressureBuffers[0] } },
+        ],
+      }),
+    ];
+    projectBindGroup = device.createBindGroup({
+      layout: projectPipeline.getBindGroupLayout(0),
+      entries: [
+        { binding: 0, resource: { buffer: uniformBuffer } },
+        { binding: 1, resource: { buffer: velocityBuffers[1] } },
+        { binding: 2, resource: { buffer: pressureBuffers[0] } },
+        { binding: 3, resource: { buffer: divCurlBuffer } },
+        { binding: 4, resource: { buffer: velocityBuffers[0] } },
+      ],
+    });
+    advectDyeBindGroups = [
+      device.createBindGroup({
+        layout: advectDyePipeline.getBindGroupLayout(0),
+        entries: [
+          { binding: 0, resource: { buffer: uniformBuffer } },
+          { binding: 1, resource: { buffer: dyeBuffers[0] } },
+          { binding: 2, resource: { buffer: velocityBuffers[0] } },
+          { binding: 3, resource: { buffer: dyeBuffers[1] } },
+        ],
+      }),
+      device.createBindGroup({
+        layout: advectDyePipeline.getBindGroupLayout(0),
+        entries: [
+          { binding: 0, resource: { buffer: uniformBuffer } },
+          { binding: 1, resource: { buffer: dyeBuffers[1] } },
+          { binding: 2, resource: { buffer: velocityBuffers[0] } },
+          { binding: 3, resource: { buffer: dyeBuffers[0] } },
+        ],
+      }),
+    ];
+    renderBindGroups = [
+      device.createBindGroup({
+        layout: renderPipeline.getBindGroupLayout(0),
+        entries: [
+          { binding: 0, resource: { buffer: uniformBuffer } },
+          { binding: 1, resource: { buffer: dyeBuffers[0] } },
+          { binding: 2, resource: { buffer: velocityBuffers[0] } },
+          { binding: 3, resource: { buffer: divCurlBuffer } },
+        ],
+      }),
+      device.createBindGroup({
+        layout: renderPipeline.getBindGroupLayout(0),
+        entries: [
+          { binding: 0, resource: { buffer: uniformBuffer } },
+          { binding: 1, resource: { buffer: dyeBuffers[1] } },
+          { binding: 2, resource: { buffer: velocityBuffers[0] } },
+          { binding: 3, resource: { buffer: divCurlBuffer } },
+        ],
+      }),
+    ];
+
+    updateLoadLabel();
+  }
+
+  function updatePointer(event) {
+    const rect = canvas.getBoundingClientRect();
+    const nextX = rect.width > 0 ? (event.clientX - rect.left) / rect.width : 0.5;
+    const nextY = rect.height > 0 ? 1.0 - (event.clientY - rect.top) / rect.height : 0.5;
+    pointer.dx += nextX - pointer.x;
+    pointer.dy += nextY - pointer.y;
+    pointer.x = nextX;
+    pointer.y = nextY;
+  }
+
+  async function init() {
+    if (!navigator.gpu) throw new Error('WebGPU unavailable');
+    adapter = await navigator.gpu.requestAdapter({ powerPreference: 'high-performance' });
+    if (!adapter) throw new Error('No adapter');
+    device = await adapter.requestDevice();
+    context = canvas.getContext('webgpu');
+    format = navigator.gpu.getPreferredCanvasFormat();
+
+    uniformBuffer = device.createBuffer({
+      size: 64,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+
+    advectVelPipeline = device.createComputePipeline({
+      layout: 'auto',
+      compute: { module: device.createShaderModule({ code: ADVECT_VEL_WGSL }), entryPoint: 'main' },
+    });
+    divCurlPipeline = device.createComputePipeline({
+      layout: 'auto',
+      compute: { module: device.createShaderModule({ code: DIV_CURL_WGSL }), entryPoint: 'main' },
+    });
+    pressurePipeline = device.createComputePipeline({
+      layout: 'auto',
+      compute: { module: device.createShaderModule({ code: PRESSURE_WGSL }), entryPoint: 'main' },
+    });
+    projectPipeline = device.createComputePipeline({
+      layout: 'auto',
+      compute: { module: device.createShaderModule({ code: PROJECT_WGSL }), entryPoint: 'main' },
+    });
+    advectDyePipeline = device.createComputePipeline({
+      layout: 'auto',
+      compute: { module: device.createShaderModule({ code: ADVECT_DYE_WGSL }), entryPoint: 'main' },
+    });
+    renderPipeline = device.createRenderPipeline({
+      layout: 'auto',
+      vertex: { module: device.createShaderModule({ code: RENDER_WGSL }), entryPoint: 'vs' },
+      fragment: { module: device.createShaderModule({ code: RENDER_WGSL }), entryPoint: 'fs', targets: [{ format }] },
+      primitive: { topology: 'triangle-list' },
+    });
+
+    const info = adapter.info || {};
+    const parts = [];
+    if (info.vendor) parts.push(info.vendor);
+    if (info.architecture) parts.push(info.architecture);
+    if (info.device) parts.push(info.device);
+    adapterEl.textContent = parts.join(' · ') || 'Adapter acquired';
+
+    resizeCanvas();
+    rebuildSimulationBuffers();
+    statusEl.textContent = 'Running prismatic fluid reactor';
+    running = true;
+  }
+
+  function frame(now) {
+    if (!running) return;
+    const effectiveGrid = simGrid();
+    const dtMs = Math.min(33, now - lastFrameTime);
+    lastFrameTime = now;
+    const dt = dtMs / 1000;
+    const mouseForce = pointer.hover ? (pointer.down ? 0.82 : 0.28) : 0.0;
+    let uniformData = new Float32Array(16);
+    uniformData[0] = effectiveGrid;
+    uniformData[1] = effectiveGrid;
+    uniformData[2] = 1 / effectiveGrid;
+    uniformData[3] = 1 / effectiveGrid;
+    uniformData[4] = pointer.x;
+    uniformData[5] = pointer.y;
+    uniformData[6] = mouseForce;
+    uniformData[7] = 0.10;
+    uniformData[8] = dt * 0.82;
+    uniformData[9] = now * 0.001;
+    uniformData[10] = 2.0;
+    uniformData[11] = 0.95;
+    uniformData[12] = pointer.dx;
+    uniformData[13] = pointer.dy;
+    uniformData[14] = 0.0;
+    uniformData[15] = 0.0;
+    device.queue.writeBuffer(uniformBuffer, 0, uniformData);
+    pointer.dx *= 0.72;
+    pointer.dy *= 0.72;
+
+    const encoder = device.createCommandEncoder();
+    {
+      const pass = encoder.beginComputePass();
+      pass.setPipeline(advectVelPipeline);
+      pass.setBindGroup(0, advectVelBindGroup);
+      pass.dispatchWorkgroups(Math.ceil(effectiveGrid / WORKGROUP_SIZE), Math.ceil(effectiveGrid / WORKGROUP_SIZE));
+      pass.end();
+    }
+    {
+      const pass = encoder.beginComputePass();
+      pass.setPipeline(divCurlPipeline);
+      pass.setBindGroup(0, divCurlBindGroup);
+      pass.dispatchWorkgroups(Math.ceil(effectiveGrid / WORKGROUP_SIZE), Math.ceil(effectiveGrid / WORKGROUP_SIZE));
+      pass.end();
+    }
+    let pressureIndex = 0;
+    for (let i = 0; i < pressureIterations; i++) {
+      const pass = encoder.beginComputePass();
+      pass.setPipeline(pressurePipeline);
+      pass.setBindGroup(0, pressureBindGroups[pressureIndex]);
+      pass.dispatchWorkgroups(Math.ceil(effectiveGrid / WORKGROUP_SIZE), Math.ceil(effectiveGrid / WORKGROUP_SIZE));
+      pass.end();
+      pressureIndex = 1 - pressureIndex;
+    }
+    {
+      const pass = encoder.beginComputePass();
+      pass.setPipeline(projectPipeline);
+      pass.setBindGroup(0, projectBindGroup);
+      pass.dispatchWorkgroups(Math.ceil(effectiveGrid / WORKGROUP_SIZE), Math.ceil(effectiveGrid / WORKGROUP_SIZE));
+      pass.end();
+    }
+    {
+      const pass = encoder.beginComputePass();
+      pass.setPipeline(advectDyePipeline);
+      pass.setBindGroup(0, advectDyeBindGroups[currentDyeIndex]);
+      pass.dispatchWorkgroups(Math.ceil(effectiveGrid / WORKGROUP_SIZE), Math.ceil(effectiveGrid / WORKGROUP_SIZE));
+      pass.end();
+    }
+    currentDyeIndex = 1 - currentDyeIndex;
+
+    const renderPass = encoder.beginRenderPass({
+      colorAttachments: [{
+        view: context.getCurrentTexture().createView(),
+        clearValue: { r: 0.02, g: 0.03, b: 0.028, a: 1.0 },
+        loadOp: 'clear',
+        storeOp: 'store',
+      }],
+    });
+    renderPass.setPipeline(renderPipeline);
+    renderPass.setBindGroup(0, renderBindGroups[currentDyeIndex]);
+    renderPass.draw(3);
+    renderPass.end();
+
+    device.queue.submit([encoder.finish()]);
+    frameEl.textContent = `${dtMs.toFixed(2)} ms · ${(1000 / Math.max(dtMs, 0.001)).toFixed(1)} fps`;
+    requestAnimationFrame(frame);
+  }
+
+  gridSelect.addEventListener('change', () => {
+    currentGrid = parseInt(gridSelect.value, 10);
+    rebuildSimulationBuffers();
+  });
+  pressureSelect.addEventListener('change', () => {
+    pressureIterations = parseInt(pressureSelect.value, 10);
+    updateLoadLabel();
+  });
+  restartButton.addEventListener('click', () => rebuildSimulationBuffers());
+  canvas.addEventListener('pointerenter', () => { pointer.hover = true; });
+  canvas.addEventListener('pointerleave', () => { pointer.hover = false; pointer.down = false; });
+  canvas.addEventListener('pointermove', (event) => updatePointer(event));
+  canvas.addEventListener('pointerdown', (event) => { updatePointer(event); pointer.down = true; pointer.hover = true; });
+  addEventListener('pointerup', () => { pointer.down = false; });
+  addEventListener('resize', () => resizeCanvas());
+
+  try {
+    await init();
+    requestAnimationFrame((now) => {
+      lastFrameTime = now;
+      requestAnimationFrame(frame);
+    });
+  } catch (error) {
+    statusEl.textContent = `Error: ${error.message}`;
+  }
+})();
+</script>
+</body>
+</html>

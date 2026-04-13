@@ -122,6 +122,22 @@ test "translateToMslWithOverrides emits overridden constant values" {
     try std.testing.expect(std.mem.indexOf(u8, msl_overridden, "constant uint BLOCK_SIZE = 64") == null);
 }
 
+test "translateToSpirv accepts override-backed workgroup size defaults" {
+    const source =
+        \\override WORKGROUP_SIZE: u32 = 256u;
+        \\@group(0) @binding(0) var<storage, read_write> data: array<f32>;
+        \\
+        \\@compute @workgroup_size(WORKGROUP_SIZE, 1, 1)
+        \\fn main(@builtin(global_invocation_id) id: vec3u) {
+        \\    data[id.x] = 1.0;
+        \\}
+    ;
+
+    var out: [mod.MAX_SPIRV_OUTPUT]u8 = undefined;
+    const len = try mod.translateToSpirv(std.testing.allocator, source, &out);
+    try std.testing.expect(len > 0);
+}
+
 test "translateToHlslWithOverrides emits overridden render-stage constant values" {
     const source =
         \\@id(0) override SCALE: f32 = 1.0;

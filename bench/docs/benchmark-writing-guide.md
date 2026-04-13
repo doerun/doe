@@ -143,6 +143,18 @@ Strict Dawn-vs-Doe operation comparability rule:
 - when `comparability=strict` and `requireTimingClass=operation`, comparable workloads must use direct timing:
   `baselineTimingDivisor=1.0` and `comparisonTimingDivisor=1.0`.
 
+### 3.3 Repo-only vendor and external command lanes
+
+Some repo-only directional lanes use `commandsPath` as a JSON-array scenario
+payload consumed by an explicit executor instead of a Doe command stream. That
+is allowed only when all of these hold:
+
+- the executor is explicit in `executor_registry.py`; do not hide custom runner behavior behind generic product names
+- the scenario file is still a JSON array so receipt-first command-boundary tooling can load it consistently
+- the workload is `benchmarkClass: directional`, `comparable: false`, and `claimEligible: false` when model artifacts or runtime stacks differ
+- compare configs for those lanes must use `requireTimingClass: process-wall` unless both sides expose symmetric operation-scope timing and structural parity
+- do not fabricate sibling host/runtime cells when the underlying tooling surface is missing; if a vendor lane is Node-only, document the absent Bun/native/browser cells explicitly instead of implying parity
+
 Parser-level field constraints:
 - `id` must be non-empty and unique per file.
 - `baseline/comparisonCommandRepeat >= 1`

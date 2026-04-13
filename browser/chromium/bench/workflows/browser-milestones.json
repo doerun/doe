@@ -658,14 +658,6 @@
           "mustExist": true
         },
         {
-          "id": "migration_notes",
-          "kind": "doc",
-          "path": "config/migration-notes.md",
-          "description": "Migration notes for promoted Track B (modules).",
-          "required": true,
-          "mustExist": true
-        },
-        {
           "id": "status_doc",
           "kind": "doc",
           "path": "docs/status.md",

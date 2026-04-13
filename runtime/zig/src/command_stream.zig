@@ -2,7 +2,7 @@ const std = @import("std");
 const model = @import("model_commands.zig");
 const command_json = @import("command_json.zig");
 const command_json_raw = @import("command_json_raw.zig");
-const numeric_stability_annotation = @import("numeric_stability_annotation.zig");
+const numeric_stability = @import("experimental/numeric_stability/mod.zig");
 const semantic_trace = @import("semantic_trace.zig");
 
 const RawCommand = command_json_raw.RawCommand;
@@ -10,7 +10,7 @@ const RawCommand = command_json_raw.RawCommand;
 pub const CommandMetadata = struct {
     semantic: semantic_trace.SemanticContext = .{},
     capture: ?semantic_trace.CaptureRequest = null,
-    numeric_stability: ?numeric_stability_annotation.Annotation = null,
+    numeric_stability: ?numeric_stability.annotation.Annotation = null,
 };
 
 pub const ParsedCommandStream = struct {
@@ -94,7 +94,7 @@ fn parse_capture(raw: RawCommand) ?semantic_trace.CaptureRequest {
     };
 }
 
-fn parse_vector_capture(raw: command_json_raw.RawNumericStabilityVectorCapture) !numeric_stability_annotation.VectorCapture {
+fn parse_vector_capture(raw: command_json_raw.RawNumericStabilityVectorCapture) !numeric_stability.annotation.VectorCapture {
     const buffer_handle = raw.buffer_handle orelse raw.bufferHandle orelse return error.InvalidCommandStream;
     const element_count = raw.element_count orelse raw.elementCount orelse return error.InvalidCommandStream;
     if (element_count == 0) return error.InvalidCommandStream;
@@ -105,7 +105,7 @@ fn parse_vector_capture(raw: command_json_raw.RawNumericStabilityVectorCapture) 
     };
 }
 
-fn parse_weights_capture(raw: command_json_raw.RawNumericStabilityWeightsCapture) !numeric_stability_annotation.WeightsCapture {
+fn parse_weights_capture(raw: command_json_raw.RawNumericStabilityWeightsCapture) !numeric_stability.annotation.WeightsCapture {
     const buffer_handle = raw.buffer_handle orelse raw.bufferHandle orelse return error.InvalidCommandStream;
     const row_stride_elements = raw.row_stride_elements orelse raw.rowStrideElements orelse return error.InvalidCommandStream;
     if (row_stride_elements == 0) return error.InvalidCommandStream;
@@ -116,7 +116,7 @@ fn parse_weights_capture(raw: command_json_raw.RawNumericStabilityWeightsCapture
     };
 }
 
-fn parse_numeric_stability_candidate(raw: command_json_raw.RawNumericStabilityCandidate) !numeric_stability_annotation.Candidate {
+fn parse_numeric_stability_candidate(raw: command_json_raw.RawNumericStabilityCandidate) !numeric_stability.annotation.Candidate {
     const token_id = raw.token_id orelse raw.tokenId orelse return error.InvalidCommandStream;
     const row_index = raw.row_index orelse raw.rowIndex orelse return error.InvalidCommandStream;
     return .{
@@ -130,24 +130,24 @@ fn parse_numeric_stability_candidate(raw: command_json_raw.RawNumericStabilityCa
 fn parse_numeric_stability(
     allocator: std.mem.Allocator,
     raw: RawCommand,
-) !?numeric_stability_annotation.Annotation {
+) !?numeric_stability.annotation.Annotation {
     const payload = raw.numeric_stability orelse raw.numericStability orelse return null;
     const hidden_state = try parse_vector_capture(payload.hidden_state orelse payload.hiddenState orelse return error.InvalidCommandStream);
     const logits = try parse_vector_capture(payload.logits orelse return error.InvalidCommandStream);
     const weights = try parse_weights_capture(payload.weights orelse return error.InvalidCommandStream);
     const raw_candidates = payload.candidates orelse return error.InvalidCommandStream;
     if (raw_candidates.len < 2) return error.InvalidCommandStream;
-    const candidates = try allocator.alloc(numeric_stability_annotation.Candidate, raw_candidates.len);
+    const candidates = try allocator.alloc(numeric_stability.annotation.Candidate, raw_candidates.len);
     errdefer allocator.free(candidates);
     for (raw_candidates, 0..) |candidate, index| {
         candidates[index] = try parse_numeric_stability_candidate(candidate);
     }
     return .{
-        .operator_family = payload.operator_family orelse payload.operatorFamily orelse numeric_stability_annotation.DEFAULT_OPERATOR_FAMILY,
-        .trigger_policy_id = payload.trigger_policy_id orelse payload.triggerPolicyId orelse numeric_stability_annotation.DEFAULT_TRIGGER_POLICY_ID,
-        .routing_policy_id = payload.routing_policy_id orelse payload.routingPolicyId orelse numeric_stability_annotation.DEFAULT_ROUTING_POLICY_ID,
-        .fast_policy_id = payload.fast_policy_id orelse payload.fastPolicyId orelse numeric_stability_annotation.DEFAULT_FAST_POLICY_ID,
-        .stable_policy_id = payload.stable_policy_id orelse payload.stablePolicyId orelse numeric_stability_annotation.DEFAULT_STABLE_POLICY_ID,
+        .operator_family = payload.operator_family orelse payload.operatorFamily orelse numeric_stability.annotation.DEFAULT_OPERATOR_FAMILY,
+        .trigger_policy_id = payload.trigger_policy_id orelse payload.triggerPolicyId orelse numeric_stability.annotation.DEFAULT_TRIGGER_POLICY_ID,
+        .routing_policy_id = payload.routing_policy_id orelse payload.routingPolicyId orelse numeric_stability.annotation.DEFAULT_ROUTING_POLICY_ID,
+        .fast_policy_id = payload.fast_policy_id orelse payload.fastPolicyId orelse numeric_stability.annotation.DEFAULT_FAST_POLICY_ID,
+        .stable_policy_id = payload.stable_policy_id orelse payload.stablePolicyId orelse numeric_stability.annotation.DEFAULT_STABLE_POLICY_ID,
         .hidden_state = hidden_state,
         .logits = logits,
         .weights = weights,

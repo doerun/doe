@@ -50,10 +50,15 @@ fn resolve_attr_u32_const(self: anytype, node_idx: u32, depth: u8) AnalyzeError!
 fn resolve_named_attr_u32_const(self: anytype, name: []const u8, depth: u8) AnalyzeError!u32 {
     const global_index = self.module.global_map.get(name) orelse return error.InvalidAttribute;
     const global_info = self.module.globals.items[global_index];
-    if (global_info.class != .const_) return error.InvalidAttribute;
+    if (global_info.class != .const_ and global_info.class != .override_) return error.InvalidAttribute;
     const global_node = self.module.tree.nodes.items[global_info.node_idx];
-    if (global_node.tag != .const_decl or global_node.data.rhs == ast_mod.NULL_NODE) return error.InvalidAttribute;
-    return resolve_attr_u32_const(self, global_node.data.rhs, depth);
+    const init_node = switch (global_node.tag) {
+        .const_decl => global_node.data.rhs,
+        .override_decl => self.module.tree.extra_data.items[global_node.data.lhs + 2],
+        else => ast_mod.NULL_NODE,
+    };
+    if (init_node == ast_mod.NULL_NODE) return error.InvalidAttribute;
+    return resolve_attr_u32_const(self, init_node, depth);
 }
 
 fn resolve_attr_u32_binary(self: anytype, node: ast_mod.Node, depth: u8) AnalyzeError!u32 {

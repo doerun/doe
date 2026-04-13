@@ -184,8 +184,8 @@ Future implementation promoted from this layer must use config-as-code:
 
 1. Config files in `config/*.json`.
 2. Schema files in `config/*schema*.json`.
-3. Migration notes in `config/migration-notes.md` for runtime-visible changes.
-4. Status tracking updates in `docs/status.md` for temporary placeholders or staged methods.
+3. Status tracking updates in `docs/status.md` for runtime-visible changes,
+   temporary placeholders, or staged methods.
 
 ## Gate policy alignment
 

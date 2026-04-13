@@ -213,6 +213,24 @@ _REGISTRY: dict[str, ExecutorSpec] = {
         ),
         execution_boundary="plan",
     ),
+    'tjs_ort_node_doe': ExecutorSpec(
+        executor_id='tjs_ort_node_doe',
+        command_template=(
+            'node bench/executors/run-node-tjs-ort-webgpu.js '
+            '--scenario {commands} --trace-jsonl {trace_jsonl} '
+            '--trace-meta {trace_meta} --workload {workload}'
+        ),
+        execution_boundary='commands',
+    ),
+    'doppler_node_doe': ExecutorSpec(
+        executor_id='doppler_node_doe',
+        command_template=(
+            'node bench/executors/run-node-doppler-ort-bench.js '
+            '--scenario {commands} --trace-jsonl {trace_jsonl} '
+            '--trace-meta {trace_meta} --workload {workload}'
+        ),
+        execution_boundary='commands',
+    ),
 }
 
 

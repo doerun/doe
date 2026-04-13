@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "ownership": "standalone",
+  "workloads": [
+    {
+      "id": "node_ort_vs_doppler_gemma3_270m_prefill_64tok_decode_64tok",
+      "name": "Node ORT WebGPU vs Doppler Gemma-3 270M",
+      "description": "Repo-only Node end-to-end Gemma-3 270M directional benchmark comparing Transformers.js plus onnxruntime-node WebGPU against Doppler on the same Doe provider with a tokenizer-accurate 64-token prompt and a 64-token decode target.",
+      "domain": "compute",
+      "comparabilityNotes": "Directional-only Node receipt-first lane. Both sides reuse the same tokenizer-accurate prompt budget and the same Doe WebGPU provider, but the model artifacts and runtime stacks differ: ONNX Runtime plus Transformers.js versus Doppler RDRR. Use process-wall timing only and do not present this lane as claimable apples-to-apples evidence.",
+      "commandsPath": "bench/vendor-node/ort_doe_vs_doppler_gemma270m_commands.json",
+      "quirksPath": "examples/quirks/amd_radv_noop_list.json",
+      "vendor": "amd",
+      "api": "webgpu",
+      "family": "gfx11",
+      "driver": "24.0.0",
+      "extraArgs": [],
+      "dawnFilter": "",
+      "comparable": false,
+      "benchmarkClass": "directional",
+      "directionalReason": "methodology_gap",
+      "claimEligible": false,
+      "default": false,
+      "cohorts": [
+        "exploration"
+      ]
+    }
+  ]
+}

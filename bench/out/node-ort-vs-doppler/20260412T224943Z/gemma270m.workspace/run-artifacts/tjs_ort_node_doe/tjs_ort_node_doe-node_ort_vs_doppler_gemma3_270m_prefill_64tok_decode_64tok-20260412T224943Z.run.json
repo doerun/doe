@@ -1,0 +1,225 @@
+{
+  "artifactKind": "run-receipt",
+  "execution": {
+    "returnCodes": [
+      0
+    ],
+    "success": false,
+    "timedSampleCount": 3,
+    "timingClasses": [],
+    "timingSources": []
+  },
+  "executorId": "tjs_ort_node_doe",
+  "generatedAt": "2026-04-12T22:49:43.036887+00:00",
+  "hostIdentity": {
+    "adapter": {
+      "architecture": "",
+      "description": "",
+      "device": "",
+      "vendor": "amd"
+    },
+    "api": "webgpu",
+    "arch": "x86_64",
+    "driver": "24.0.0",
+    "hostname": "128",
+    "kernel": "7.0.0-10-generic",
+    "os": "linux"
+  },
+  "invocation": {
+    "command": [
+      "node",
+      "bench/executors/run-node-tjs-ort-webgpu.js",
+      "--scenario",
+      "bench/vendor-node/ort_doe_vs_doppler_gemma270m_commands.json",
+      "--trace-jsonl",
+      "bench/out/node-ort-vs-doppler/20260412T224943Z/gemma270m.workspace/isolated-runs/tjs_ort_node_doe/node_ort_vs_doppler_gemma3_270m_prefill_64tok_decode_64tok/tjs_ort_node_doe.run000.ndjson",
+      "--trace-meta",
+      "bench/out/node-ort-vs-doppler/20260412T224943Z/gemma270m.workspace/isolated-runs/tjs_ort_node_doe/node_ort_vs_doppler_gemma3_270m_prefill_64tok_decode_64tok/tjs_ort_node_doe.run000.meta.json",
+      "--workload",
+      "node_ort_vs_doppler_gemma3_270m_prefill_64tok_decode_64tok"
+    ],
+    "iterations": 3,
+    "resourceProbe": "none",
+    "resourceSampleMs": 100,
+    "resourceSampleTargetCount": 0,
+    "warmup": 1
+  },
+  "normalization": {
+    "allowNoExecution": false,
+    "commandRepeat": 1,
+    "ignoreFirstOps": 0,
+    "timingDivisor": 1.0,
+    "timingNormalizationNote": "",
+    "uploadBufferUsage": "copy-dst-copy-src",
+    "uploadSubmitEvery": 1
+  },
+  "product": "tjs_ort_node_doe",
+  "runtimeIdentity": {
+    "binaryPath": "/usr/bin/node",
+    "binarySha256": "d0efb6fcb9d023ba4e2b160ec2384dc28fe4f17732141ef47f676828fa960505",
+    "executionBackend": "",
+    "packageLockHash": "",
+    "packageName": "",
+    "packageVersion": "",
+    "providerId": "",
+    "providerName": "",
+    "runtimeHost": "node"
+  },
+  "samples": [
+    {
+      "command": [
+        "node",
+        "bench/executors/run-node-tjs-ort-webgpu.js",
+        "--scenario",
+        "bench/vendor-node/ort_doe_vs_doppler_gemma270m_commands.json",
+        "--trace-jsonl",
+        "bench/out/node-ort-vs-doppler/20260412T224943Z/gemma270m.workspace/isolated-runs/tjs_ort_node_doe/node_ort_vs_doppler_gemma3_270m_prefill_64tok_decode_64tok/tjs_ort_node_doe.run000.ndjson",
+        "--trace-meta",
+        "bench/out/node-ort-vs-doppler/20260412T224943Z/gemma270m.workspace/isolated-runs/tjs_ort_node_doe/node_ort_vs_doppler_gemma3_270m_prefill_64tok_decode_64tok/tjs_ort_node_doe.run000.meta.json",
+        "--workload",
+        "node_ort_vs_doppler_gemma3_270m_prefill_64tok_decode_64tok"
+      ],
+      "commandRepeat": 1,
+      "measuredMs": null,
+      "measuredRawMs": null,
+      "resource": {},
+      "returnCode": 0,
+      "runIndex": 0,
+      "strictNormalizationUnit": "",
+      "subphasesMs": {
+        "encodeMs": null,
+        "executionMs": null,
+        "gpuTimestampMs": null,
+        "setupMs": null,
+        "submitWaitMs": null
+      },
+      "success": false,
+      "timingClass": "",
+      "timingNormalizationDivisor": 1.0,
+      "timingSource": "",
+      "traceArtifacts": {
+        "jsonlPath": "",
+        "metaPath": ""
+      },
+      "traceMeta": {},
+      "uploadBufferUsage": "copy-dst-copy-src",
+      "uploadIgnoreFirstOps": 0,
+      "uploadSubmitEvery": 1,
+      "wallMs": null,
+      "workloadDomain": "compute"
+    },
+    {
+      "command": [
+        "node",
+        "bench/executors/run-node-tjs-ort-webgpu.js",
+        "--scenario",
+        "bench/vendor-node/ort_doe_vs_doppler_gemma270m_commands.json",
+        "--trace-jsonl",
+        "bench/out/node-ort-vs-doppler/20260412T224943Z/gemma270m.workspace/isolated-runs/tjs_ort_node_doe/node_ort_vs_doppler_gemma3_270m_prefill_64tok_decode_64tok/tjs_ort_node_doe.run001.ndjson",
+        "--trace-meta",
+        "bench/out/node-ort-vs-doppler/20260412T224943Z/gemma270m.workspace/isolated-runs/tjs_ort_node_doe/node_ort_vs_doppler_gemma3_270m_prefill_64tok_decode_64tok/tjs_ort_node_doe.run001.meta.json",
+        "--workload",
+        "node_ort_vs_doppler_gemma3_270m_prefill_64tok_decode_64tok"
+      ],
+      "commandRepeat": 1,
+      "measuredMs": null,
+      "measuredRawMs": null,
+      "resource": {},
+      "returnCode": 0,
+      "runIndex": 1,
+      "strictNormalizationUnit": "",
+      "subphasesMs": {
+        "encodeMs": null,
+        "executionMs": null,
+        "gpuTimestampMs": null,
+        "setupMs": null,
+        "submitWaitMs": null
+      },
+      "success": false,
+      "timingClass": "",
+      "timingNormalizationDivisor": 1.0,
+      "timingSource": "",
+      "traceArtifacts": {
+        "jsonlPath": "",
+        "metaPath": ""
+      },
+      "traceMeta": {},
+      "uploadBufferUsage": "copy-dst-copy-src",
+      "uploadIgnoreFirstOps": 0,
+      "uploadSubmitEvery": 1,
+      "wallMs": null,
+      "workloadDomain": "compute"
+    },
+    {
+      "command": [
+        "node",
+        "bench/executors/run-node-tjs-ort-webgpu.js",
+        "--scenario",
+        "bench/vendor-node/ort_doe_vs_doppler_gemma270m_commands.json",
+        "--trace-jsonl",
+        "bench/out/node-ort-vs-doppler/20260412T224943Z/gemma270m.workspace/isolated-runs/tjs_ort_node_doe/node_ort_vs_doppler_gemma3_270m_prefill_64tok_decode_64tok/tjs_ort_node_doe.run002.ndjson",
+        "--trace-meta",
+        "bench/out/node-ort-vs-doppler/20260412T224943Z/gemma270m.workspace/isolated-runs/tjs_ort_node_doe/node_ort_vs_doppler_gemma3_270m_prefill_64tok_decode_64tok/tjs_ort_node_doe.run002.meta.json",
+        "--workload",
+        "node_ort_vs_doppler_gemma3_270m_prefill_64tok_decode_64tok"
+      ],
+      "commandRepeat": 1,
+      "measuredMs": null,
+      "measuredRawMs": null,
+      "resource": {},
+      "returnCode": 0,
+      "runIndex": 2,
+      "strictNormalizationUnit": "",
+      "subphasesMs": {
+        "encodeMs": null,
+        "executionMs": null,
+        "gpuTimestampMs": null,
+        "setupMs": null,
+        "submitWaitMs": null
+      },
+      "success": false,
+      "timingClass": "",
+      "timingNormalizationDivisor": 1.0,
+      "timingSource": "",
+      "traceArtifacts": {
+        "jsonlPath": "",
+        "metaPath": ""
+      },
+      "traceMeta": {},
+      "uploadBufferUsage": "copy-dst-copy-src",
+      "uploadIgnoreFirstOps": 0,
+      "uploadSubmitEvery": 1,
+      "wallMs": null,
+      "workloadDomain": "compute"
+    }
+  ],
+  "schemaVersion": 1,
+  "workload": {
+    "api": "webgpu",
+    "benchmarkClass": "directional",
+    "claimEligible": false,
+    "commandsPath": "bench/vendor-node/ort_doe_vs_doppler_gemma270m_commands.json",
+    "comparabilityNotes": "Directional-only Node receipt-first lane. Both sides reuse the same tokenizer-accurate prompt budget and the same Doe WebGPU provider, but the model artifacts and runtime stacks differ: ONNX Runtime plus Transformers.js versus Doppler RDRR. Use process-wall timing only and do not present this lane as claimable apples-to-apples evidence.",
+    "comparable": false,
+    "description": "Repo-only Node end-to-end Gemma-3 270M directional benchmark comparing Transformers.js plus onnxruntime-node WebGPU against Doppler on the same Doe provider with a tokenizer-accurate 64-token prompt and a 64-token decode target.",
+    "directionalReason": "methodology_gap",
+    "domain": "compute",
+    "driver": "24.0.0",
+    "family": "gfx11",
+    "id": "node_ort_vs_doppler_gemma3_270m_prefill_64tok_decode_64tok",
+    "name": "Node ORT WebGPU vs Doppler Gemma-3 270M",
+    "pathAsymmetry": false,
+    "pathAsymmetryNote": "",
+    "planPath": "",
+    "quirksPath": "examples/quirks/amd_radv_noop_list.json",
+    "strictNormalizationUnit": "",
+    "vendor": "amd"
+  },
+  "workloadManifest": {
+    "freshnessReason": "standalone manifest; no backend workload catalog freshness check applies",
+    "inputFreshness": "unknown",
+    "ownership": "standalone",
+    "path": "bench/workloads/workloads.node.ort-vs-doppler.json",
+    "sha256": "05166c0c059b2e72c913707c83c733bd79a5059ddf12c9091d3d80f7047cf87f"
+  }
+}

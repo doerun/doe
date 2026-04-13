@@ -186,6 +186,10 @@ in `model_commands.zig` and by an import fence
 - [`packages/doe-gpu`](packages/doe-gpu/README.md): npm package surface
 - [`bench`](bench/README.md): compare harnesses, gates, and evidence workflows
 - [`browser/chromium`](browser/chromium/README.md): Chromium integration docs, probes, and lane scripts
+- [`cts`](cts/README.md): repo-only CTS provider shims used by conformance runners
+- [`examples`](examples/README.md): repo-only command examples and sample artifacts
+- [`scripts`](scripts): contributor maintenance and spec-index scripts
+- [`demos`](demos/README.md): experimental demos and diagnostic sample hosts
 - [`pipeline`](pipeline/README.md): quirk mining, proofs, trace, and supporting pipeline modules
 
 ## Quick start

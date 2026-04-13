@@ -99,6 +99,18 @@ class ExecutorRegistryTests(unittest.TestCase):
         self.assertIn("--backend-lane vulkan_dawn_release", template)
         self.assertEqual(resolve_executor_boundary("dawn_delegate_plan_vulkan"), "plan")
 
+    def test_resolves_tjs_ort_node_doe_executor(self) -> None:
+        template = resolve_executor_command_template('tjs_ort_node_doe')
+        self.assertIn('run-node-tjs-ort-webgpu.js', template)
+        self.assertIn('--scenario {commands}', template)
+        self.assertEqual(resolve_executor_boundary('tjs_ort_node_doe'), 'commands')
+
+    def test_resolves_doppler_node_doe_executor(self) -> None:
+        template = resolve_executor_command_template('doppler_node_doe')
+        self.assertIn('run-node-doppler-ort-bench.js', template)
+        self.assertIn('--scenario {commands}', template)
+        self.assertEqual(resolve_executor_boundary('doppler_node_doe'), 'commands')
+
     def test_rejects_unknown_executor(self) -> None:
         with self.assertRaises(ValueError):
             resolve_executor_command_template("unknown_executor")

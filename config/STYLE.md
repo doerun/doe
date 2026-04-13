@@ -129,9 +129,9 @@ Two versioning dimensions, never conflated:
 
 ## Migration
 
-- Schema changes require a migration note in `config/migration-notes.md`.
 - Bump `schemaVersion` in both the data file and the schema `"const"`.
 - Update all consumers in the same change.
+- Record contract-impacting changes in the appropriate `docs/status/*.md` shard.
 
 ## Validation
 

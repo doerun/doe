@@ -38,8 +38,8 @@ Repo-only directories should not be treated as public product commitments unless
 
 In practice:
 
-- `bench/`, `browser/chromium/`, `pipeline/`, and top-level `scripts/` are
-  internal
+- `bench/`, `browser/chromium/`, `cts/`, `examples/`, `pipeline/`, top-level
+  `scripts/`, and `demos/` are internal
 - `packages/doe-gpu/` is the public npm surface
 - overlapping helpers are allowed, but repo workflows are still owned by the
   repo tooling, not by the npm package
@@ -52,6 +52,9 @@ as active public product surfaces:
 - legacy npm names `@simulatte/webgpu` and `@simulatte/webgpu-doe`
 - `dawn-research/`
 - `nursery/`
+
+Experimental demo applications stay under `demos/`, but they are still
+repo-only/internal unless the surface manifest explicitly marks them public.
 
 When a question is about public package behavior, ignore archive and repo-only
 tooling unless the user explicitly asks about them.

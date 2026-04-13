@@ -440,7 +440,7 @@ fn fs(in: VSOut) -> @location(0) vec4<f32> {
   function updatePointer(event) {
     const rect = canvas.getBoundingClientRect();
     pointer.x = rect.width > 0 ? (event.clientX - rect.left) / rect.width : 0.5;
-    pointer.y = rect.height > 0 ? (event.clientY - rect.top) / rect.height : 0.5;
+    pointer.y = rect.height > 0 ? 1.0 - (event.clientY - rect.top) / rect.height : 0.5;
   }
 
   async function init() {

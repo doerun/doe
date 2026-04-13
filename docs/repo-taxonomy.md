@@ -34,6 +34,20 @@ products.
 - `browser/chromium_webgpu_lane`
   - the Chromium checkout/build workspace when kept in-tree
 
+### Conformance and examples
+
+- `cts`
+  - repo-only CTS provider shims and related execution glue
+- `examples`
+  - command examples, sample receipts, and checked sample artifacts
+
+### Demos and scripts
+
+- `demos`
+  - experimental demos and diagnostic sample hosts
+- `scripts`
+  - contributor maintenance and report-generation scripts
+
 ### Benchmarking
 
 - `bench/single-runtime`

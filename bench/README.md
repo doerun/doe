@@ -89,6 +89,7 @@ from scattered configs:
 | Apple Metal package Doe vs `node-webgpu` | promoted | `python3 bench/cli.py compare --surface package --backend apple-metal --workload gemma64 --runtime-host node --temperature warm --dry-run` |
 | Apple Metal package Doe vs `bun-webgpu` | promoted | `python3 bench/cli.py compare --surface package --backend apple-metal --workload gemma64 --runtime-host bun --temperature warm --dry-run` |
 | AMD Vulkan package Doe vs Node/Bun packages | config-backed, not promoted | `python3 bench/cli.py run-config --config bench/native-compare/compare.config.amd.vulkan.gemma270m.node-package.ir.json --side baseline`, then `--side comparison`, then compare the emitted receipts |
+| Node ORT WebGPU vs Doppler on Doe provider | repo-only directional, not claimable | `python3 bench/cli.py run-config --config bench/native-compare/compare.config.node.ort-vs-doppler.gemma270m.json --side baseline`, then `--side comparison`, then compare the emitted receipts |
 | Local D3D12 package Doe vs Node/Bun packages | not front-doored today | do not assume a supported matrix; add an explicit config/contract first |
 
 Two rules for first-time operators:
@@ -119,15 +120,25 @@ What that means today:
 
 What it does not mean yet:
 
-- there is no promoted `bench/` executor for `ORT + Doe`
+- there is no promoted `bench/` executor for native `ORT + Doe` graph execution today
+- there is now a repo-only Node directional lane at
+  `bench/native-compare/compare.config.node.ort-vs-doppler.gemma270m.json`
+  comparing Transformers.js plus `onnxruntime-node` WebGPU against Doppler on
+  the same Doe provider; it is process-wall only and non-claimable because the
+  model/runtime stacks differ
+- current local reruns still stop on the Doppler side with
+  `[Embed] GPU embeddings required for gather path.`, so the lane exists in
+  the canonical `bench/` shape but is not yet a healthy compare surface on
+  this host
+- there is no Bun ORT-vs-Doppler lane today; Doppler exposes a Node command
+  runner (`src/tooling/node-command-runner.js`), but no parallel Bun tooling
+  surface that Doe can benchmark honestly here
 - there is no claimable `ORT + Dawn` vs `ORT + Doe` compare surface today
 - a real Doe-backed graph execution bridge still has to land before that
   benchmark lane exists
-- there is now a browser-side diagnostic harness at
-  `browser/chromium/scripts/webgpu-playwright-ort-bench.mjs` for ORT WebGPU
-  under Dawn-vs-Doe browser runtime selection, but it is not a `bench/`
-  claim lane and requires a Doe-enabled Chromium binary for meaningful
-  `doe` mode results
+- the repo does not currently ship `browser/chromium/scripts/webgpu-playwright-ort-bench.mjs`;
+  any browser ORT work remains outside the canonical `bench/` lane matrix until
+  an actual script and contract land
 
 ## Numeric-stability promotion and runtime exercise
 

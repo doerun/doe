@@ -31,29 +31,36 @@ import {
 } from './compiler-errors.js';
 
 function validateWriteBufferInput(data, dataOffset, size, path) {
+  const isSharedArrayBuffer = typeof SharedArrayBuffer !== 'undefined' && data instanceof SharedArrayBuffer;
   assertIntegerInRange(dataOffset, path, 'dataOffset', { min: 0 });
   if (
     !ArrayBuffer.isView(data)
     && !(data instanceof ArrayBuffer)
+    && !isSharedArrayBuffer
     && !Buffer.isBuffer(data)
   ) {
-    failValidation(path, 'data must be a TypedArray, DataView, ArrayBuffer, or Buffer');
-  }
-  if (dataOffset === 0 && size === undefined) {
-    return data;
-  }
-  if (!ArrayBuffer.isView(data)) {
-    failValidation(path, 'dataOffset and size slicing require a TypedArray or DataView input');
+    failValidation(path, 'data must be a TypedArray, DataView, ArrayBuffer, SharedArrayBuffer, or Buffer');
   }
   if (size !== undefined) {
     assertIntegerInRange(size, path, 'size', { min: 0 });
   }
-  const elementSize = data.BYTES_PER_ELEMENT || 1;
-  const byteOffset = data.byteOffset + dataOffset * elementSize;
-  const byteLength = size !== undefined
-    ? size * elementSize
-    : data.byteLength - dataOffset * elementSize;
-  return new Uint8Array(data.buffer, byteOffset, byteLength);
+  const byteSource = ArrayBuffer.isView(data)
+    ? new Uint8Array(data.buffer, data.byteOffset, data.byteLength)
+    : new Uint8Array(data);
+  if (dataOffset === 0 && size === undefined) {
+    return byteSource;
+  }
+  const elementSize = ArrayBuffer.isView(data) && typeof data.BYTES_PER_ELEMENT === 'number'
+    ? data.BYTES_PER_ELEMENT
+    : 1;
+  const start = dataOffset * elementSize;
+  const end = size !== undefined
+    ? start + size * elementSize
+    : byteSource.byteLength;
+  if (end > byteSource.byteLength) {
+    failValidation(path, `data range ${dataOffset}+${size ?? ((byteSource.byteLength - start) / elementSize)} exceeds source byteLength ${byteSource.byteLength}`);
+  }
+  return byteSource.subarray(start, end);
 }
 
 function escapeRegexLiteral(value) {

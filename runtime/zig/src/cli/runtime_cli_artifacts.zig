@@ -2,7 +2,7 @@ const std = @import("std");
 const backend_policy = @import("../backend/backend_policy.zig");
 const execution = @import("../execution.zig");
 const model_profile = @import("../model_profile.zig");
-const numeric_stability_runtime = @import("../numeric_stability_runtime.zig");
+const numeric_stability = @import("../experimental/numeric_stability/mod.zig");
 const operator_artifacts = @import("../operator_artifacts.zig");
 const quirk = @import("../quirk/mod.zig");
 const trace = @import("../trace.zig");
@@ -131,7 +131,7 @@ pub fn finalizeArtifacts(
     compact_upload_trace_row_totals: ?*std.ArrayList(u64),
     buffered_trace_rows: ?*std.ArrayList(BufferedTraceRow),
     artifact_recorder: *operator_artifacts.Recorder,
-    numeric_stability_recorder: *numeric_stability_runtime.Recorder,
+    numeric_stability_recorder: *numeric_stability.runtime.Recorder,
     trace_summary: *trace.TraceRunSummary,
 ) !ArtifactFinalizeTotals {
     const artifact_finalize_start_ns = nowNs();

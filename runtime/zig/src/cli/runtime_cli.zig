@@ -4,7 +4,7 @@ const main_print = @import("../main_print.zig");
 const model_commands = @import("../model_commands.zig");
 const model_policy = @import("../model_policy.zig");
 const model_profile = @import("../model_profile.zig");
-const numeric_stability_runtime = @import("../numeric_stability_runtime.zig");
+const numeric_stability = @import("../experimental/numeric_stability/mod.zig");
 const operator_artifacts = @import("../operator_artifacts.zig");
 const quirk = @import("../quirk/mod.zig");
 const replay = @import("../replay.zig");
@@ -245,7 +245,7 @@ pub fn runCli() !void {
         operatorArtifactAnchor(options.trace_meta_path, options.emit_trace_jsonl),
     );
     defer artifact_recorder.deinit();
-    var numeric_stability_recorder = try numeric_stability_runtime.Recorder.init(
+    var numeric_stability_recorder = try numeric_stability.runtime.Recorder.init(
         allocator,
         options.trace_meta_path,
         options.numeric_stability_policy_path,

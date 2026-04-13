@@ -103,6 +103,85 @@
       ]
     },
     {
+      "id": "cts-provider-tooling",
+      "audience": "internal",
+      "kind": "operator_cli",
+      "stability": "experimental",
+      "shipped": false,
+      "summary": "Repo-only CTS provider shims used by Doe benchmark and conformance workflows.",
+      "rootPaths": [
+        "cts"
+      ],
+      "entrypoints": [
+        "cts/fawn-node-gpu-provider.js",
+        "cts/fawn-node-gpu-provider.cjs"
+      ],
+      "docs": [
+        "cts/README.md",
+        "bench/README.md",
+        "docs/internal-tooling.md"
+      ]
+    },
+    {
+      "id": "examples-and-sample-artifacts",
+      "audience": "internal",
+      "kind": "example_corpus",
+      "stability": "repo_only",
+      "shipped": false,
+      "summary": "Repo-only command-stream examples and sample receipts used for docs, tests, and operator workflows.",
+      "rootPaths": [
+        "examples"
+      ],
+      "entrypoints": [
+        "examples/README.md",
+        "examples/compare-report.sample.json",
+        "examples/doe-wgsl-host-plan.sample.json"
+      ],
+      "docs": [
+        "examples/README.md",
+        "docs/internal-tooling.md"
+      ]
+    },
+    {
+      "id": "repo-scripts",
+      "audience": "internal",
+      "kind": "contributor_guide",
+      "stability": "repo_only",
+      "shipped": false,
+      "summary": "Repo-only contributor scripts for health checks, spec index refresh, and maintenance tasks.",
+      "rootPaths": [
+        "scripts"
+      ],
+      "entrypoints": [
+        "scripts/check-health.py",
+        "scripts/check_zig_line_limit.py",
+        "scripts/update_browser_spec_index.py"
+      ],
+      "docs": [
+        "docs/internal-tooling.md"
+      ]
+    },
+    {
+      "id": "repo-demos",
+      "audience": "internal",
+      "kind": "demo",
+      "stability": "experimental",
+      "shipped": false,
+      "summary": "Experimental demonstration apps and diagnostic sample hosts. Not product or package contracts.",
+      "rootPaths": [
+        "demos"
+      ],
+      "entrypoints": [
+        "demos/README.md",
+        "demos/volume-render/package.json",
+        "demos/service-worker-compute/index.html"
+      ],
+      "docs": [
+        "demos/README.md",
+        "docs/internal-tooling.md"
+      ]
+    },
+    {
       "id": "pipeline-tooling",
       "audience": "internal",
       "kind": "contributor_guide",

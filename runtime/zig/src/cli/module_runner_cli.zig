@@ -1,7 +1,7 @@
 const std = @import("std");
 const compute_services = @import("../full/modules/services/compute_services.zig");
 const effects_pipeline = @import("../full/modules/rendering/effects_pipeline.zig");
-const numeric_stability = @import("../full/modules/services/numeric_stability.zig");
+const numeric_stability = @import("../experimental/numeric_stability/mod.zig");
 const path_engine = @import("../full/modules/rendering/path_engine.zig");
 const resource_scheduler = @import("../full/modules/services/resource_scheduler.zig");
 const sdf_renderer = @import("../full/modules/rendering/sdf_renderer.zig");
@@ -62,17 +62,17 @@ fn runNumericStabilityModule(
     policy_path: []const u8,
     policy_bytes: []const u8,
 ) ![]u8 {
-    var parsed_request = try numeric_stability.parseRequest(allocator, request_bytes);
+    var parsed_request = try numeric_stability.service.parseRequest(allocator, request_bytes);
     defer parsed_request.deinit();
-    var parsed_policy = try numeric_stability.parsePolicy(allocator, policy_path, policy_bytes);
+    var parsed_policy = try numeric_stability.service.parsePolicy(allocator, policy_path, policy_bytes);
     defer parsed_policy.deinit(allocator);
-    const result = try numeric_stability.execute(allocator, parsed_request.value, parsed_policy.value);
+    const result = try numeric_stability.service.execute(allocator, parsed_request.value, parsed_policy.value);
     return try common.jsonStringifyAlloc(allocator, result);
 }
 
 const MODULE_ADAPTERS = [_]ModuleAdapter{
     .{ .module_id = compute_services.MODULE_ID, .run = simpleModuleRunner(compute_services) },
-    .{ .module_id = numeric_stability.MODULE_ID, .run = runNumericStabilityModule },
+    .{ .module_id = numeric_stability.service.MODULE_ID, .run = runNumericStabilityModule },
     .{ .module_id = effects_pipeline.MODULE_ID, .run = simpleModuleRunner(effects_pipeline) },
     .{ .module_id = path_engine.MODULE_ID, .run = simpleModuleRunner(path_engine) },
     .{ .module_id = resource_scheduler.MODULE_ID, .run = simpleModuleRunner(resource_scheduler) },

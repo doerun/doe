@@ -40,7 +40,6 @@ because the archived schemas and fixtures still use those ids.
    - promotion criteria.
 2. Any runtime-visible field promoted from these drafts must gain:
    - schema entries under `config/*schema*.json`,
-   - migration notes under `config/migration-notes.md`,
    - status/process updates when behavior changes.
 3. No draft in this directory may silently alter core runtime behavior.
 
