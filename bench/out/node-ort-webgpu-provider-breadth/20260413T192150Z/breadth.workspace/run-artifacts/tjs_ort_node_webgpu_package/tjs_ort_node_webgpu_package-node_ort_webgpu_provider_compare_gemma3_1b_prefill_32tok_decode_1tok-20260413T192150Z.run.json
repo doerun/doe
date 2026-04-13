@@ -1,0 +1,347 @@
+{
+  "artifactKind": "run-receipt",
+  "execution": {
+    "returnCodes": [
+      0
+    ],
+    "success": true,
+    "timedSampleCount": 2,
+    "timingClasses": [
+      "process-wall"
+    ],
+    "timingSources": [
+      "wall-time"
+    ]
+  },
+  "executorId": "tjs_ort_node_webgpu_package",
+  "generatedAt": "2026-04-13T19:24:22.168581+00:00",
+  "hostIdentity": {
+    "adapter": {
+      "architecture": "rdna-3",
+      "description": "radv: Mesa 26.0.3-1ubuntu1",
+      "device": "radeon-8060s-graphics-radv-strix-halo-",
+      "vendor": "amd"
+    },
+    "api": "webgpu",
+    "arch": "x86_64",
+    "driver": "24.0.0",
+    "hostname": "128",
+    "kernel": "7.0.0-10-generic",
+    "os": "linux"
+  },
+  "invocation": {
+    "command": [
+      "env",
+      "DOE_NODE_WEBGPU_ADAPTER=Radeon 8060S Graphics (RADV STRIX_HALO)",
+      "node",
+      "bench/executors/run-node-tjs-ort-webgpu.js",
+      "--provider",
+      "node-webgpu",
+      "--scenario",
+      "bench/vendor-node/ort_webgpu_provider_compare_gemma1b_prefill32_decode1_commands.json",
+      "--trace-jsonl",
+      "bench/out/node-ort-webgpu-provider-breadth/20260413T192150Z/breadth.workspace/isolated-runs/tjs_ort_node_webgpu_package/node_ort_webgpu_provider_compare_gemma3_1b_prefill_32tok_decode_1tok/tjs_ort_node_webgpu_package.run001.ndjson",
+      "--trace-meta",
+      "bench/out/node-ort-webgpu-provider-breadth/20260413T192150Z/breadth.workspace/isolated-runs/tjs_ort_node_webgpu_package/node_ort_webgpu_provider_compare_gemma3_1b_prefill_32tok_decode_1tok/tjs_ort_node_webgpu_package.run001.meta.json",
+      "--workload",
+      "node_ort_webgpu_provider_compare_gemma3_1b_prefill_32tok_decode_1tok"
+    ],
+    "iterations": 3,
+    "resourceProbe": "none",
+    "resourceSampleMs": 100,
+    "resourceSampleTargetCount": 0,
+    "warmup": 1
+  },
+  "normalization": {
+    "allowNoExecution": false,
+    "commandRepeat": 1,
+    "ignoreFirstOps": 0,
+    "timingDivisor": 1.0,
+    "timingNormalizationNote": "",
+    "uploadBufferUsage": "copy-dst-copy-src",
+    "uploadSubmitEvery": 1
+  },
+  "product": "tjs_ort_node_webgpu_package",
+  "runtimeIdentity": {
+    "binaryPath": "/usr/bin/env",
+    "binarySha256": "9b11a2d9509fe3c7a88b3dc18e794a5fb4756758eb9bce157897f63a27c55bab",
+    "executionBackend": "tjs_ort_node_webgpu_package",
+    "packageLockHash": "",
+    "packageName": "node-webgpu",
+    "packageVersion": "",
+    "providerId": "node-webgpu",
+    "providerName": "node-webgpu",
+    "runtimeHost": "node"
+  },
+  "samples": [
+    {
+      "command": [
+        "env",
+        "DOE_NODE_WEBGPU_ADAPTER=Radeon 8060S Graphics (RADV STRIX_HALO)",
+        "node",
+        "bench/executors/run-node-tjs-ort-webgpu.js",
+        "--provider",
+        "node-webgpu",
+        "--scenario",
+        "bench/vendor-node/ort_webgpu_provider_compare_gemma1b_prefill32_decode1_commands.json",
+        "--trace-jsonl",
+        "bench/out/node-ort-webgpu-provider-breadth/20260413T192150Z/breadth.workspace/isolated-runs/tjs_ort_node_webgpu_package/node_ort_webgpu_provider_compare_gemma3_1b_prefill_32tok_decode_1tok/tjs_ort_node_webgpu_package.run001.ndjson",
+        "--trace-meta",
+        "bench/out/node-ort-webgpu-provider-breadth/20260413T192150Z/breadth.workspace/isolated-runs/tjs_ort_node_webgpu_package/node_ort_webgpu_provider_compare_gemma3_1b_prefill_32tok_decode_1tok/tjs_ort_node_webgpu_package.run001.meta.json",
+        "--workload",
+        "node_ort_webgpu_provider_compare_gemma3_1b_prefill_32tok_decode_1tok"
+      ],
+      "commandRepeat": 1,
+      "measuredMs": 11734.469473012723,
+      "measuredRawMs": 11734.469473012723,
+      "resource": {
+        "gpuMemoryProbe": "none",
+        "gpuMemoryProbeAvailable": false,
+        "processCpuMs": 7092.029999999994,
+        "processPeakRssKb": 2391332,
+        "processWallMs": 11734.469473012723,
+        "resourceSampleCount": 118,
+        "resourceSampleMs": 100,
+        "resourceSampleTargetCount": 0,
+        "resourceSamplingTruncated": false
+      },
+      "returnCode": 0,
+      "runIndex": 1,
+      "strictNormalizationUnit": "",
+      "subphasesMs": {
+        "encodeMs": null,
+        "executionMs": null,
+        "gpuTimestampMs": null,
+        "setupMs": null,
+        "submitWaitMs": null
+      },
+      "success": true,
+      "timing": {
+        "source": "wall-time",
+        "timingConfiguredDivisor": 1.0,
+        "timingNormalizationDivisor": 1.0,
+        "timingNormalizedMs": 11734.469473012723,
+        "timingRawMs": 11734.469473012723,
+        "timingSelectionPolicy": "forced-process-wall",
+        "uploadBufferUsage": "copy-dst-copy-src",
+        "uploadSubmitEvery": 1,
+        "wallTimeMs": 11734.469473012723,
+        "workloadUnitNormalizationDivisor": 1.0,
+        "workloadUnitNormalizationSource": "selected-process-wall"
+      },
+      "timingClass": "process-wall",
+      "timingNormalizationDivisor": 1.0,
+      "timingSource": "wall-time",
+      "traceArtifacts": {
+        "jsonlPath": "bench/out/node-ort-webgpu-provider-breadth/20260413T192150Z/breadth.workspace/isolated-runs/tjs_ort_node_webgpu_package/node_ort_webgpu_provider_compare_gemma3_1b_prefill_32tok_decode_1tok/tjs_ort_node_webgpu_package.run001.ndjson",
+        "metaPath": "bench/out/node-ort-webgpu-provider-breadth/20260413T192150Z/breadth.workspace/isolated-runs/tjs_ort_node_webgpu_package/node_ort_webgpu_provider_compare_gemma3_1b_prefill_32tok_decode_1tok/tjs_ort_node_webgpu_package.run001.meta.json"
+      },
+      "traceMeta": {
+        "adapterInfo": {
+          "architecture": "rdna-3",
+          "description": "radv: Mesa 26.0.3-1ubuntu1",
+          "device": "radeon-8060s-graphics-radv-strix-halo-",
+          "subgroupMaxSize": 64,
+          "subgroupMinSize": 32,
+          "vendor": "amd"
+        },
+        "benchmarkLane": "node-ort-webgpu-provider-compare",
+        "cacheMode": "warm",
+        "executionBackend": "tjs_ort_node_webgpu_package",
+        "executionErrorCount": 0,
+        "executionLabel": "transformers.js ORT node WebGPU on node-webgpu",
+        "executionProvider": "node-webgpu",
+        "executionProviderName": "node-webgpu",
+        "executionRowCount": 1,
+        "executionSuccessCount": 1,
+        "loadMode": "http",
+        "phaseTimingsMs": {
+          "generationMs": 457.7576079999999,
+          "pipelineLoadMs": 2413.2241,
+          "promptSynthesisMs": 1597.3352679999998
+        },
+        "processWallMs": 4565.139182,
+        "promptSummary": {
+          "decodeTokens": 1,
+          "prefillTokens": 32,
+          "promptLength": 171,
+          "promptSource": "tokenizer-accurate-synthetic",
+          "tokenizerLocator": "/home/x/deco/doppler/node_modules/@huggingface/transformers/.cache/onnx-community/gemma-3-1b-it-ONNX-GQA",
+          "tokenizerResolutionSource": "local-model-root",
+          "useChatTemplate": false
+        },
+        "requestedAdapterName": "Radeon 8060S Graphics (RADV STRIX_HALO)",
+        "resultSummary": {
+          "dtype": "fp16",
+          "generatedTextLength": 2,
+          "generatedTextPreview": "be",
+          "modelId": "onnx-community/gemma-3-1b-it-ONNX-GQA",
+          "modelLocator": "/home/x/deco/doppler/node_modules/@huggingface/transformers/.cache/onnx-community/gemma-3-1b-it-ONNX-GQA",
+          "outputKind": "array"
+        },
+        "runtimeHost": "node",
+        "scenarioId": "node_ort_webgpu_provider_compare_gemma3_1b_prefill_32tok_decode_1tok",
+        "timingMs": 4565.139182,
+        "timingSource": "wall-time",
+        "traceMetaVersion": 1,
+        "vendorStack": "transformers.js+onnxruntime-node",
+        "workloadId": "node_ort_webgpu_provider_compare_gemma3_1b_prefill_32tok_decode_1tok"
+      },
+      "uploadBufferUsage": "copy-dst-copy-src",
+      "uploadIgnoreFirstOps": 0,
+      "uploadSubmitEvery": 1,
+      "wallMs": 11734.469473012723,
+      "workloadDomain": "compute",
+      "workloadUnitNormalizationDivisor": 1.0
+    },
+    {
+      "command": [
+        "env",
+        "DOE_NODE_WEBGPU_ADAPTER=Radeon 8060S Graphics (RADV STRIX_HALO)",
+        "node",
+        "bench/executors/run-node-tjs-ort-webgpu.js",
+        "--provider",
+        "node-webgpu",
+        "--scenario",
+        "bench/vendor-node/ort_webgpu_provider_compare_gemma1b_prefill32_decode1_commands.json",
+        "--trace-jsonl",
+        "bench/out/node-ort-webgpu-provider-breadth/20260413T192150Z/breadth.workspace/isolated-runs/tjs_ort_node_webgpu_package/node_ort_webgpu_provider_compare_gemma3_1b_prefill_32tok_decode_1tok/tjs_ort_node_webgpu_package.run002.ndjson",
+        "--trace-meta",
+        "bench/out/node-ort-webgpu-provider-breadth/20260413T192150Z/breadth.workspace/isolated-runs/tjs_ort_node_webgpu_package/node_ort_webgpu_provider_compare_gemma3_1b_prefill_32tok_decode_1tok/tjs_ort_node_webgpu_package.run002.meta.json",
+        "--workload",
+        "node_ort_webgpu_provider_compare_gemma3_1b_prefill_32tok_decode_1tok"
+      ],
+      "commandRepeat": 1,
+      "measuredMs": 9824.825981981121,
+      "measuredRawMs": 9824.825981981121,
+      "resource": {
+        "gpuMemoryProbe": "none",
+        "gpuMemoryProbeAvailable": false,
+        "processCpuMs": 7017.132000000018,
+        "processPeakRssKb": 2400912,
+        "processWallMs": 9824.825981981121,
+        "resourceSampleCount": 100,
+        "resourceSampleMs": 100,
+        "resourceSampleTargetCount": 0,
+        "resourceSamplingTruncated": false
+      },
+      "returnCode": 0,
+      "runIndex": 2,
+      "strictNormalizationUnit": "",
+      "subphasesMs": {
+        "encodeMs": null,
+        "executionMs": null,
+        "gpuTimestampMs": null,
+        "setupMs": null,
+        "submitWaitMs": null
+      },
+      "success": true,
+      "timing": {
+        "source": "wall-time",
+        "timingConfiguredDivisor": 1.0,
+        "timingNormalizationDivisor": 1.0,
+        "timingNormalizedMs": 9824.825981981121,
+        "timingRawMs": 9824.825981981121,
+        "timingSelectionPolicy": "forced-process-wall",
+        "uploadBufferUsage": "copy-dst-copy-src",
+        "uploadSubmitEvery": 1,
+        "wallTimeMs": 9824.825981981121,
+        "workloadUnitNormalizationDivisor": 1.0,
+        "workloadUnitNormalizationSource": "selected-process-wall"
+      },
+      "timingClass": "process-wall",
+      "timingNormalizationDivisor": 1.0,
+      "timingSource": "wall-time",
+      "traceArtifacts": {
+        "jsonlPath": "bench/out/node-ort-webgpu-provider-breadth/20260413T192150Z/breadth.workspace/isolated-runs/tjs_ort_node_webgpu_package/node_ort_webgpu_provider_compare_gemma3_1b_prefill_32tok_decode_1tok/tjs_ort_node_webgpu_package.run002.ndjson",
+        "metaPath": "bench/out/node-ort-webgpu-provider-breadth/20260413T192150Z/breadth.workspace/isolated-runs/tjs_ort_node_webgpu_package/node_ort_webgpu_provider_compare_gemma3_1b_prefill_32tok_decode_1tok/tjs_ort_node_webgpu_package.run002.meta.json"
+      },
+      "traceMeta": {
+        "adapterInfo": {
+          "architecture": "rdna-3",
+          "description": "radv: Mesa 26.0.3-1ubuntu1",
+          "device": "radeon-8060s-graphics-radv-strix-halo-",
+          "subgroupMaxSize": 64,
+          "subgroupMinSize": 32,
+          "vendor": "amd"
+        },
+        "benchmarkLane": "node-ort-webgpu-provider-compare",
+        "cacheMode": "warm",
+        "executionBackend": "tjs_ort_node_webgpu_package",
+        "executionErrorCount": 0,
+        "executionLabel": "transformers.js ORT node WebGPU on node-webgpu",
+        "executionProvider": "node-webgpu",
+        "executionProviderName": "node-webgpu",
+        "executionRowCount": 1,
+        "executionSuccessCount": 1,
+        "loadMode": "http",
+        "phaseTimingsMs": {
+          "generationMs": 392.12212999999974,
+          "pipelineLoadMs": 2314.369625,
+          "promptSynthesisMs": 2136.547807
+        },
+        "processWallMs": 4932.651356,
+        "promptSummary": {
+          "decodeTokens": 1,
+          "prefillTokens": 32,
+          "promptLength": 171,
+          "promptSource": "tokenizer-accurate-synthetic",
+          "tokenizerLocator": "/home/x/deco/doppler/node_modules/@huggingface/transformers/.cache/onnx-community/gemma-3-1b-it-ONNX-GQA",
+          "tokenizerResolutionSource": "local-model-root",
+          "useChatTemplate": false
+        },
+        "requestedAdapterName": "Radeon 8060S Graphics (RADV STRIX_HALO)",
+        "resultSummary": {
+          "dtype": "fp16",
+          "generatedTextLength": 2,
+          "generatedTextPreview": "be",
+          "modelId": "onnx-community/gemma-3-1b-it-ONNX-GQA",
+          "modelLocator": "/home/x/deco/doppler/node_modules/@huggingface/transformers/.cache/onnx-community/gemma-3-1b-it-ONNX-GQA",
+          "outputKind": "array"
+        },
+        "runtimeHost": "node",
+        "scenarioId": "node_ort_webgpu_provider_compare_gemma3_1b_prefill_32tok_decode_1tok",
+        "timingMs": 4932.651356,
+        "timingSource": "wall-time",
+        "traceMetaVersion": 1,
+        "vendorStack": "transformers.js+onnxruntime-node",
+        "workloadId": "node_ort_webgpu_provider_compare_gemma3_1b_prefill_32tok_decode_1tok"
+      },
+      "uploadBufferUsage": "copy-dst-copy-src",
+      "uploadIgnoreFirstOps": 0,
+      "uploadSubmitEvery": 1,
+      "wallMs": 9824.825981981121,
+      "workloadDomain": "compute",
+      "workloadUnitNormalizationDivisor": 1.0
+    }
+  ],
+  "schemaVersion": 1,
+  "workload": {
+    "api": "webgpu",
+    "benchmarkClass": "comparable",
+    "claimEligible": true,
+    "commandsPath": "bench/vendor-node/ort_webgpu_provider_compare_gemma1b_prefill32_decode1_commands.json",
+    "comparabilityNotes": "Strict process-wall provider compare. Same model, same ORT WebGPU stack, same tokenizer-accurate prompt synthesis, and same host. The only intended difference is Doe versus node-webgpu as the WebGPU provider.",
+    "comparable": true,
+    "description": "Repo-only same-stack Node ORT WebGPU compare for a larger Gemma-3 1B shape using the same Transformers.js plus onnxruntime-node workload on both sides.",
+    "directionalReason": "",
+    "domain": "compute",
+    "driver": "24.0.0",
+    "family": "gfx11",
+    "id": "node_ort_webgpu_provider_compare_gemma3_1b_prefill_32tok_decode_1tok",
+    "name": "Node ORT WebGPU provider compare Gemma-3 1B prefill 32 decode 1",
+    "pathAsymmetry": false,
+    "pathAsymmetryNote": "",
+    "planPath": "",
+    "quirksPath": "examples/quirks/amd_radv_noop_list.json",
+    "strictNormalizationUnit": "",
+    "vendor": "amd"
+  },
+  "workloadManifest": {
+    "freshnessReason": "standalone manifest; no backend workload catalog freshness check applies",
+    "inputFreshness": "unknown",
+    "ownership": "standalone",
+    "path": "bench/workloads/workloads.node.ort-webgpu-provider-compare.breadth.json",
+    "sha256": "ff9cb8f2d85e2f208f84fd18a4a9a0d25eeef16403adccfbbba640c73dc47035"
+  }
+}

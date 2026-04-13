@@ -1,0 +1,425 @@
+{
+  "artifactKind": "run-receipt",
+  "execution": {
+    "returnCodes": [
+      0
+    ],
+    "success": true,
+    "timedSampleCount": 2,
+    "timingClasses": [
+      "process-wall"
+    ],
+    "timingSources": [
+      "wall-time"
+    ]
+  },
+  "executorId": "browser_ort_webgpu_dawn",
+  "generatedAt": "2026-04-13T19:34:39.170731+00:00",
+  "hostIdentity": {
+    "adapter": {
+      "architecture": "rdna-3",
+      "description": "",
+      "device": "",
+      "vendor": "amd"
+    },
+    "api": "webgpu",
+    "arch": "x86_64",
+    "driver": "24.0.0",
+    "hostname": "128",
+    "kernel": "7.0.0-10-generic",
+    "os": "linux"
+  },
+  "invocation": {
+    "command": [
+      "python3",
+      "bench/executors/run-browser-ort-bench.py",
+      "--mode",
+      "dawn",
+      "--scenario",
+      "bench/vendor-browser/ort_browser_sentiment_longform_commands.json",
+      "--trace-jsonl",
+      "bench/out/browser-ort-webgpu-compare/20260413T193423Z/browser.workspace/isolated-runs/browser_ort_webgpu_dawn/browser_ort_webgpu_compare_sentiment_longform/browser_ort_webgpu_dawn.run001.ndjson",
+      "--trace-meta",
+      "bench/out/browser-ort-webgpu-compare/20260413T193423Z/browser.workspace/isolated-runs/browser_ort_webgpu_dawn/browser_ort_webgpu_compare_sentiment_longform/browser_ort_webgpu_dawn.run001.meta.json",
+      "--workload",
+      "browser_ort_webgpu_compare_sentiment_longform"
+    ],
+    "iterations": 3,
+    "resourceProbe": "none",
+    "resourceSampleMs": 100,
+    "resourceSampleTargetCount": 0,
+    "warmup": 1
+  },
+  "normalization": {
+    "allowNoExecution": false,
+    "commandRepeat": 1,
+    "ignoreFirstOps": 0,
+    "timingDivisor": 1.0,
+    "timingNormalizationNote": "",
+    "uploadBufferUsage": "copy-dst-copy-src",
+    "uploadSubmitEvery": 1
+  },
+  "product": "browser_ort_webgpu_dawn",
+  "runtimeIdentity": {
+    "binaryPath": "/usr/bin/python3",
+    "binarySha256": "fa9796cd3a30878e11a2f40372f773d3fcd913fff35e5bee8dd9a036e22e93ab",
+    "executionBackend": "browser_ort_webgpu_dawn",
+    "packageLockHash": "",
+    "packageName": "dawn",
+    "packageVersion": "",
+    "providerId": "dawn",
+    "providerName": "dawn",
+    "runtimeHost": "browser"
+  },
+  "samples": [
+    {
+      "command": [
+        "python3",
+        "bench/executors/run-browser-ort-bench.py",
+        "--mode",
+        "dawn",
+        "--scenario",
+        "bench/vendor-browser/ort_browser_sentiment_longform_commands.json",
+        "--trace-jsonl",
+        "bench/out/browser-ort-webgpu-compare/20260413T193423Z/browser.workspace/isolated-runs/browser_ort_webgpu_dawn/browser_ort_webgpu_compare_sentiment_longform/browser_ort_webgpu_dawn.run001.ndjson",
+        "--trace-meta",
+        "bench/out/browser-ort-webgpu-compare/20260413T193423Z/browser.workspace/isolated-runs/browser_ort_webgpu_dawn/browser_ort_webgpu_compare_sentiment_longform/browser_ort_webgpu_dawn.run001.meta.json",
+        "--workload",
+        "browser_ort_webgpu_compare_sentiment_longform"
+      ],
+      "commandRepeat": 1,
+      "measuredMs": 2872.891751001589,
+      "measuredRawMs": 2872.891751001589,
+      "resource": {
+        "gpuMemoryProbe": "none",
+        "gpuMemoryProbeAvailable": false,
+        "processCpuMs": 1101.1799999999994,
+        "processPeakRssKb": 220056,
+        "processWallMs": 2872.891751001589,
+        "resourceSampleCount": 30,
+        "resourceSampleMs": 100,
+        "resourceSampleTargetCount": 0,
+        "resourceSamplingTruncated": false
+      },
+      "returnCode": 0,
+      "runIndex": 1,
+      "strictNormalizationUnit": "",
+      "subphasesMs": {
+        "encodeMs": null,
+        "executionMs": null,
+        "gpuTimestampMs": null,
+        "setupMs": null,
+        "submitWaitMs": null
+      },
+      "success": true,
+      "timing": {
+        "source": "wall-time",
+        "timingConfiguredDivisor": 1.0,
+        "timingNormalizationDivisor": 1.0,
+        "timingNormalizedMs": 2872.891751001589,
+        "timingRawMs": 2872.891751001589,
+        "timingSelectionPolicy": "forced-process-wall",
+        "uploadBufferUsage": "copy-dst-copy-src",
+        "uploadSubmitEvery": 1,
+        "wallTimeMs": 2872.891751001589,
+        "workloadUnitNormalizationDivisor": 1.0,
+        "workloadUnitNormalizationSource": "selected-process-wall"
+      },
+      "timingClass": "process-wall",
+      "timingNormalizationDivisor": 1.0,
+      "timingSource": "wall-time",
+      "traceArtifacts": {
+        "jsonlPath": "bench/out/browser-ort-webgpu-compare/20260413T193423Z/browser.workspace/isolated-runs/browser_ort_webgpu_dawn/browser_ort_webgpu_compare_sentiment_longform/browser_ort_webgpu_dawn.run001.ndjson",
+        "metaPath": "bench/out/browser-ort-webgpu-compare/20260413T193423Z/browser.workspace/isolated-runs/browser_ort_webgpu_dawn/browser_ort_webgpu_compare_sentiment_longform/browser_ort_webgpu_dawn.run001.meta.json"
+      },
+      "traceMeta": {
+        "adapterInfo": {
+          "architecture": "rdna-3",
+          "description": "",
+          "device": "",
+          "features": [
+            "depth32float-stencil8",
+            "chromium-experimental-subgroup-matrix",
+            "rg11b10ufloat-renderable",
+            "texture-formats-tier1",
+            "bgra8unorm-storage",
+            "chromium-experimental-multi-draw-indirect",
+            "texture-compression-bc",
+            "dual-source-blending",
+            "core-features-and-limits",
+            "chromium-experimental-timestamp-query-inside-passes",
+            "float32-filterable",
+            "indirect-first-instance",
+            "float32-blendable",
+            "depth-clip-control",
+            "texture-compression-bc-sliced-3d",
+            "shader-f16",
+            "timestamp-query",
+            "texture-formats-tier2",
+            "clip-distances",
+            "primitive-index",
+            "texture-component-swizzle",
+            "subgroups"
+          ],
+          "isFallbackAdapter": null,
+          "vendor": "amd"
+        },
+        "benchmarkLane": "browser-ort-webgpu-compare",
+        "browserLaunchArgs": [
+          "--no-sandbox",
+          "--disable-setuid-sandbox",
+          "--disable-dev-shm-usage",
+          "--ignore-gpu-blocklist",
+          "--enable-unsafe-webgpu",
+          "--unsafely-treat-insecure-origin-as-secure=http://127.0.0.1:34637",
+          "--use-angle=vulkan",
+          "--use-webgpu-runtime=dawn"
+        ],
+        "browserTask": "sentiment_longform",
+        "browserTaskConfig": {
+          "dtype": "uint8",
+          "expectedLabels": [
+            "POSITIVE",
+            "NEGATIVE"
+          ],
+          "inputPayload": [
+            "I love deterministic benchmark surfaces because they let me compare the same ORT stack across Doe and Dawn without hand-waving away the runtime differences.",
+            "Benchmark drift gets frustrating when the browser lane looks healthy but the package and native lanes still disagree on what work was actually measured."
+          ],
+          "modelId": "Xenova/distilbert-base-uncased-finetuned-sst-2-english",
+          "pipelineTask": "sentiment-analysis",
+          "taskId": "sentiment_longform"
+        },
+        "browserVersion": "146.0.7680.177",
+        "executionBackend": "browser_ort_webgpu_dawn",
+        "executionErrorCount": 0,
+        "executionLabel": "Chromium Playwright ORT WebGPU dawn",
+        "executionProvider": "dawn",
+        "executionProviderName": "dawn",
+        "executionRowCount": 1,
+        "executionSuccessCount": 1,
+        "phaseTimingsMs": {
+          "pipelineLoadMs": 662.1200000047684,
+          "timedMeanMs": 164.98900001049043,
+          "timedP50Ms": 165.36000001430511,
+          "timedP95Ms": 166.49000000953674
+        },
+        "processWallMs": 2381,
+        "resultSummary": {
+          "kind": "array",
+          "labels": [
+            "POSITIVE",
+            "NEGATIVE"
+          ],
+          "length": 2,
+          "scores": [
+            null,
+            null
+          ]
+        },
+        "runtimeHost": "browser",
+        "scenarioId": "browser_ort_webgpu_compare_sentiment_longform",
+        "timingClass": "process-wall",
+        "timingMs": 2381,
+        "timingSource": "wall-time",
+        "traceMetaVersion": 1,
+        "workloadId": "browser_ort_webgpu_compare_sentiment_longform"
+      },
+      "uploadBufferUsage": "copy-dst-copy-src",
+      "uploadIgnoreFirstOps": 0,
+      "uploadSubmitEvery": 1,
+      "wallMs": 2872.891751001589,
+      "workloadDomain": "compute",
+      "workloadUnitNormalizationDivisor": 1.0
+    },
+    {
+      "command": [
+        "python3",
+        "bench/executors/run-browser-ort-bench.py",
+        "--mode",
+        "dawn",
+        "--scenario",
+        "bench/vendor-browser/ort_browser_sentiment_longform_commands.json",
+        "--trace-jsonl",
+        "bench/out/browser-ort-webgpu-compare/20260413T193423Z/browser.workspace/isolated-runs/browser_ort_webgpu_dawn/browser_ort_webgpu_compare_sentiment_longform/browser_ort_webgpu_dawn.run002.ndjson",
+        "--trace-meta",
+        "bench/out/browser-ort-webgpu-compare/20260413T193423Z/browser.workspace/isolated-runs/browser_ort_webgpu_dawn/browser_ort_webgpu_compare_sentiment_longform/browser_ort_webgpu_dawn.run002.meta.json",
+        "--workload",
+        "browser_ort_webgpu_compare_sentiment_longform"
+      ],
+      "commandRepeat": 1,
+      "measuredMs": 2839.37647100538,
+      "measuredRawMs": 2839.37647100538,
+      "resource": {
+        "gpuMemoryProbe": "none",
+        "gpuMemoryProbeAvailable": false,
+        "processCpuMs": 1076.9849999999997,
+        "processPeakRssKb": 220632,
+        "processWallMs": 2839.37647100538,
+        "resourceSampleCount": 30,
+        "resourceSampleMs": 100,
+        "resourceSampleTargetCount": 0,
+        "resourceSamplingTruncated": false
+      },
+      "returnCode": 0,
+      "runIndex": 2,
+      "strictNormalizationUnit": "",
+      "subphasesMs": {
+        "encodeMs": null,
+        "executionMs": null,
+        "gpuTimestampMs": null,
+        "setupMs": null,
+        "submitWaitMs": null
+      },
+      "success": true,
+      "timing": {
+        "source": "wall-time",
+        "timingConfiguredDivisor": 1.0,
+        "timingNormalizationDivisor": 1.0,
+        "timingNormalizedMs": 2839.37647100538,
+        "timingRawMs": 2839.37647100538,
+        "timingSelectionPolicy": "forced-process-wall",
+        "uploadBufferUsage": "copy-dst-copy-src",
+        "uploadSubmitEvery": 1,
+        "wallTimeMs": 2839.37647100538,
+        "workloadUnitNormalizationDivisor": 1.0,
+        "workloadUnitNormalizationSource": "selected-process-wall"
+      },
+      "timingClass": "process-wall",
+      "timingNormalizationDivisor": 1.0,
+      "timingSource": "wall-time",
+      "traceArtifacts": {
+        "jsonlPath": "bench/out/browser-ort-webgpu-compare/20260413T193423Z/browser.workspace/isolated-runs/browser_ort_webgpu_dawn/browser_ort_webgpu_compare_sentiment_longform/browser_ort_webgpu_dawn.run002.ndjson",
+        "metaPath": "bench/out/browser-ort-webgpu-compare/20260413T193423Z/browser.workspace/isolated-runs/browser_ort_webgpu_dawn/browser_ort_webgpu_compare_sentiment_longform/browser_ort_webgpu_dawn.run002.meta.json"
+      },
+      "traceMeta": {
+        "adapterInfo": {
+          "architecture": "rdna-3",
+          "description": "",
+          "device": "",
+          "features": [
+            "depth32float-stencil8",
+            "chromium-experimental-subgroup-matrix",
+            "rg11b10ufloat-renderable",
+            "texture-formats-tier1",
+            "bgra8unorm-storage",
+            "chromium-experimental-multi-draw-indirect",
+            "texture-compression-bc",
+            "dual-source-blending",
+            "core-features-and-limits",
+            "chromium-experimental-timestamp-query-inside-passes",
+            "float32-filterable",
+            "indirect-first-instance",
+            "float32-blendable",
+            "depth-clip-control",
+            "texture-compression-bc-sliced-3d",
+            "clip-distances",
+            "shader-f16",
+            "timestamp-query",
+            "texture-formats-tier2",
+            "primitive-index",
+            "texture-component-swizzle",
+            "subgroups"
+          ],
+          "isFallbackAdapter": null,
+          "vendor": "amd"
+        },
+        "benchmarkLane": "browser-ort-webgpu-compare",
+        "browserLaunchArgs": [
+          "--no-sandbox",
+          "--disable-setuid-sandbox",
+          "--disable-dev-shm-usage",
+          "--ignore-gpu-blocklist",
+          "--enable-unsafe-webgpu",
+          "--unsafely-treat-insecure-origin-as-secure=http://127.0.0.1:45007",
+          "--use-angle=vulkan",
+          "--use-webgpu-runtime=dawn"
+        ],
+        "browserTask": "sentiment_longform",
+        "browserTaskConfig": {
+          "dtype": "uint8",
+          "expectedLabels": [
+            "POSITIVE",
+            "NEGATIVE"
+          ],
+          "inputPayload": [
+            "I love deterministic benchmark surfaces because they let me compare the same ORT stack across Doe and Dawn without hand-waving away the runtime differences.",
+            "Benchmark drift gets frustrating when the browser lane looks healthy but the package and native lanes still disagree on what work was actually measured."
+          ],
+          "modelId": "Xenova/distilbert-base-uncased-finetuned-sst-2-english",
+          "pipelineTask": "sentiment-analysis",
+          "taskId": "sentiment_longform"
+        },
+        "browserVersion": "146.0.7680.177",
+        "executionBackend": "browser_ort_webgpu_dawn",
+        "executionErrorCount": 0,
+        "executionLabel": "Chromium Playwright ORT WebGPU dawn",
+        "executionProvider": "dawn",
+        "executionProviderName": "dawn",
+        "executionRowCount": 1,
+        "executionSuccessCount": 1,
+        "phaseTimingsMs": {
+          "pipelineLoadMs": 659.8049999475479,
+          "timedMeanMs": 161.29900000095367,
+          "timedP50Ms": 161.375,
+          "timedP95Ms": 164.15000009536743
+        },
+        "processWallMs": 2359,
+        "resultSummary": {
+          "kind": "array",
+          "labels": [
+            "POSITIVE",
+            "NEGATIVE"
+          ],
+          "length": 2,
+          "scores": [
+            null,
+            null
+          ]
+        },
+        "runtimeHost": "browser",
+        "scenarioId": "browser_ort_webgpu_compare_sentiment_longform",
+        "timingClass": "process-wall",
+        "timingMs": 2359,
+        "timingSource": "wall-time",
+        "traceMetaVersion": 1,
+        "workloadId": "browser_ort_webgpu_compare_sentiment_longform"
+      },
+      "uploadBufferUsage": "copy-dst-copy-src",
+      "uploadIgnoreFirstOps": 0,
+      "uploadSubmitEvery": 1,
+      "wallMs": 2839.37647100538,
+      "workloadDomain": "compute",
+      "workloadUnitNormalizationDivisor": 1.0
+    }
+  ],
+  "schemaVersion": 1,
+  "workload": {
+    "api": "webgpu",
+    "benchmarkClass": "comparable",
+    "claimEligible": false,
+    "commandsPath": "bench/vendor-browser/ort_browser_sentiment_longform_commands.json",
+    "comparabilityNotes": "Strict same-stack browser ORT compare. Both sides run the same vendored Chromium task, same ONNX model, same browser build family, and same host. The intended difference is Doe versus Dawn WebGPU runtime selection.",
+    "comparable": true,
+    "description": "Repo-only same-stack Chromium Playwright ORT WebGPU compare for the longer-form vendored DistilBERT sentiment workload.",
+    "directionalReason": "",
+    "domain": "compute",
+    "driver": "24.0.0",
+    "family": "gfx11",
+    "id": "browser_ort_webgpu_compare_sentiment_longform",
+    "name": "Browser ORT WebGPU compare sentiment longform",
+    "pathAsymmetry": false,
+    "pathAsymmetryNote": "",
+    "planPath": "",
+    "quirksPath": "examples/quirks/amd_radv_noop_list.json",
+    "strictNormalizationUnit": "",
+    "vendor": "amd"
+  },
+  "workloadManifest": {
+    "freshnessReason": "standalone manifest; no backend workload catalog freshness check applies",
+    "inputFreshness": "unknown",
+    "ownership": "standalone",
+    "path": "bench/workloads/workloads.browser.ort-webgpu-compare.json",
+    "sha256": "caca43c35d1f358cb0789e6c5f37ab175a5c96f3026e16ca9cc5a1de62b88b80"
+  }
+}

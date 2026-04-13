@@ -1,0 +1,589 @@
+{
+  "artifactKind": "run-receipt",
+  "execution": {
+    "returnCodes": [
+      0
+    ],
+    "success": true,
+    "timedSampleCount": 3,
+    "timingClasses": [
+      "process-wall"
+    ],
+    "timingSources": [
+      "wall-time"
+    ]
+  },
+  "executorId": "ort_native_webgpu_incumbent",
+  "generatedAt": "2026-04-13T17:56:19.750087+00:00",
+  "hostIdentity": {
+    "adapter": {
+      "architecture": "",
+      "description": "WebGPU",
+      "device": "",
+      "vendor": "doe"
+    },
+    "api": "ort-native",
+    "arch": "x86_64",
+    "driver": "host-ort",
+    "hostname": "128",
+    "kernel": "7.0.0-10-generic",
+    "os": "linux"
+  },
+  "invocation": {
+    "command": [
+      "python3",
+      "bench/executors/run-native-ort-incumbent-bench.py",
+      "--scenario",
+      "bench/vendor-native/ort_native_compare_matmul_add_relu_commands.json",
+      "--trace-jsonl",
+      "bench/out/native-ort-webgpu-provider/20260413T175616Z/basic-ops.workspace/isolated-runs/ort_native_webgpu_incumbent/inference_ort_native_compare_matmul_add_relu_float32_rank2_exactshape/ort_native_webgpu_incumbent.run001.ndjson",
+      "--trace-meta",
+      "bench/out/native-ort-webgpu-provider/20260413T175616Z/basic-ops.workspace/isolated-runs/ort_native_webgpu_incumbent/inference_ort_native_compare_matmul_add_relu_float32_rank2_exactshape/ort_native_webgpu_incumbent.run001.meta.json",
+      "--workload",
+      "inference_ort_native_compare_matmul_add_relu_float32_rank2_exactshape"
+    ],
+    "iterations": 4,
+    "resourceProbe": "none",
+    "resourceSampleMs": 100,
+    "resourceSampleTargetCount": 0,
+    "warmup": 1
+  },
+  "normalization": {
+    "allowNoExecution": false,
+    "commandRepeat": 1,
+    "ignoreFirstOps": 0,
+    "timingDivisor": 1.0,
+    "timingNormalizationNote": "",
+    "uploadBufferUsage": "copy-dst-copy-src",
+    "uploadSubmitEvery": 1
+  },
+  "product": "ort_native_webgpu_incumbent",
+  "runtimeIdentity": {
+    "binaryPath": "/usr/bin/python3",
+    "binarySha256": "fa9796cd3a30878e11a2f40372f773d3fcd913fff35e5bee8dd9a036e22e93ab",
+    "executionBackend": "ort_native_webgpu_incumbent",
+    "packageLockHash": "",
+    "packageName": "WebGpuExecutionProvider",
+    "packageVersion": "",
+    "providerId": "webgpu",
+    "providerName": "WebGpuExecutionProvider",
+    "runtimeHost": "native"
+  },
+  "samples": [
+    {
+      "command": [
+        "python3",
+        "bench/executors/run-native-ort-incumbent-bench.py",
+        "--scenario",
+        "bench/vendor-native/ort_native_compare_matmul_add_relu_commands.json",
+        "--trace-jsonl",
+        "bench/out/native-ort-webgpu-provider/20260413T175616Z/basic-ops.workspace/isolated-runs/ort_native_webgpu_incumbent/inference_ort_native_compare_matmul_add_relu_float32_rank2_exactshape/ort_native_webgpu_incumbent.run001.ndjson",
+        "--trace-meta",
+        "bench/out/native-ort-webgpu-provider/20260413T175616Z/basic-ops.workspace/isolated-runs/ort_native_webgpu_incumbent/inference_ort_native_compare_matmul_add_relu_float32_rank2_exactshape/ort_native_webgpu_incumbent.run001.meta.json",
+        "--workload",
+        "inference_ort_native_compare_matmul_add_relu_float32_rank2_exactshape"
+      ],
+      "commandRepeat": 1,
+      "measuredMs": 131.9404219975695,
+      "measuredRawMs": 131.9404219975695,
+      "resource": {
+        "gpuMemoryProbe": "none",
+        "gpuMemoryProbeAvailable": false,
+        "processCpuMs": 474.07600000000014,
+        "processPeakRssKb": 95856,
+        "processWallMs": 131.9404219975695,
+        "resourceSampleCount": 3,
+        "resourceSampleMs": 100,
+        "resourceSampleTargetCount": 0,
+        "resourceSamplingTruncated": false
+      },
+      "returnCode": 0,
+      "runIndex": 1,
+      "strictNormalizationUnit": "",
+      "subphasesMs": {
+        "encodeMs": null,
+        "executionMs": null,
+        "gpuTimestampMs": null,
+        "setupMs": null,
+        "submitWaitMs": null
+      },
+      "success": true,
+      "timing": {
+        "source": "wall-time",
+        "timingConfiguredDivisor": 1.0,
+        "timingNormalizationDivisor": 1.0,
+        "timingNormalizedMs": 131.9404219975695,
+        "timingRawMs": 131.9404219975695,
+        "timingSelectionPolicy": "forced-process-wall",
+        "uploadBufferUsage": "copy-dst-copy-src",
+        "uploadSubmitEvery": 1,
+        "wallTimeMs": 131.9404219975695,
+        "workloadUnitNormalizationDivisor": 1.0,
+        "workloadUnitNormalizationSource": "selected-process-wall"
+      },
+      "timingClass": "process-wall",
+      "timingNormalizationDivisor": 1.0,
+      "timingSource": "wall-time",
+      "traceArtifacts": {
+        "jsonlPath": "bench/out/native-ort-webgpu-provider/20260413T175616Z/basic-ops.workspace/isolated-runs/ort_native_webgpu_incumbent/inference_ort_native_compare_matmul_add_relu_float32_rank2_exactshape/ort_native_webgpu_incumbent.run001.ndjson",
+        "metaPath": "bench/out/native-ort-webgpu-provider/20260413T175616Z/basic-ops.workspace/isolated-runs/ort_native_webgpu_incumbent/inference_ort_native_compare_matmul_add_relu_float32_rank2_exactshape/ort_native_webgpu_incumbent.run001.meta.json"
+      },
+      "traceMeta": {
+        "adapterInfo": {
+          "architecture": "",
+          "description": "WebGPU",
+          "device": "",
+          "vendor": ""
+        },
+        "benchmarkLane": "native-ort-webgpu-incumbent-smoke",
+        "executionBackend": "ort_native_webgpu_incumbent",
+        "executionErrorCount": 0,
+        "executionLabel": "Native ONNX Runtime incumbent WebGPU session smoke",
+        "executionProvider": "webgpu",
+        "executionProviderName": "WebGpuExecutionProvider",
+        "executionRowCount": 1,
+        "executionSkippedCount": 0,
+        "executionSuccessCount": 1,
+        "executionUnsupportedCount": 0,
+        "nativeOrtApiVersionRequested": 23,
+        "nativeOrtAvailableProviders": [
+          "TensorrtExecutionProvider",
+          "CUDAExecutionProvider",
+          "WebGpuExecutionProvider",
+          "CPUExecutionProvider"
+        ],
+        "nativeOrtCase": {
+          "actualOutput": [
+            0,
+            0,
+            53,
+            0
+          ],
+          "actualOutputShape": [
+            2,
+            2
+          ],
+          "caseName": "matmul_add_relu",
+          "expectedOutput": [
+            0,
+            0,
+            53,
+            0
+          ],
+          "expectedOutputShape": [
+            2,
+            2
+          ],
+          "failureReason": "",
+          "modelKind": "MatMul->Add->Relu",
+          "operations": {
+            "createModel": {
+              "code": "ORT_OK",
+              "message": "",
+              "ok": true
+            },
+            "createSessionFromModel": {
+              "code": "ORT_OK",
+              "message": "",
+              "ok": true
+            },
+            "run": {
+              "code": "ORT_OK",
+              "message": "",
+              "ok": true
+            }
+          },
+          "outputsMatch": true,
+          "success": true
+        },
+        "nativeOrtCaseName": "matmul_add_relu",
+        "nativeOrtLibraryPath": "/home/x/deco/doppler/node_modules/onnxruntime-node/bin/napi-v6/linux/x64/libonnxruntime.so.1",
+        "nativeOrtProviderName": "WebGPU",
+        "nativeOrtRuntimeVersion": "1.24.3",
+        "processWallMs": 87.4844630016014,
+        "runtimeHost": "native",
+        "scenarioId": "inference_ort_native_compare_matmul_add_relu_float32_rank2_exactshape",
+        "smokeOperations": {
+          "appendProvider": {
+            "code": "ORT_OK",
+            "message": "",
+            "ok": true
+          },
+          "createEnv": {
+            "code": "ORT_OK",
+            "message": "",
+            "ok": true
+          },
+          "createSessionOptions": {
+            "code": "ORT_OK",
+            "message": "",
+            "ok": true
+          }
+        },
+        "timingMs": 87.4844630016014,
+        "timingSource": "wall-time",
+        "traceMetaVersion": 1,
+        "workloadId": "inference_ort_native_compare_matmul_add_relu_float32_rank2_exactshape"
+      },
+      "uploadBufferUsage": "copy-dst-copy-src",
+      "uploadIgnoreFirstOps": 0,
+      "uploadSubmitEvery": 1,
+      "wallMs": 131.9404219975695,
+      "workloadDomain": "inference",
+      "workloadUnitNormalizationDivisor": 1.0
+    },
+    {
+      "command": [
+        "python3",
+        "bench/executors/run-native-ort-incumbent-bench.py",
+        "--scenario",
+        "bench/vendor-native/ort_native_compare_matmul_add_relu_commands.json",
+        "--trace-jsonl",
+        "bench/out/native-ort-webgpu-provider/20260413T175616Z/basic-ops.workspace/isolated-runs/ort_native_webgpu_incumbent/inference_ort_native_compare_matmul_add_relu_float32_rank2_exactshape/ort_native_webgpu_incumbent.run002.ndjson",
+        "--trace-meta",
+        "bench/out/native-ort-webgpu-provider/20260413T175616Z/basic-ops.workspace/isolated-runs/ort_native_webgpu_incumbent/inference_ort_native_compare_matmul_add_relu_float32_rank2_exactshape/ort_native_webgpu_incumbent.run002.meta.json",
+        "--workload",
+        "inference_ort_native_compare_matmul_add_relu_float32_rank2_exactshape"
+      ],
+      "commandRepeat": 1,
+      "measuredMs": 166.76199296489358,
+      "measuredRawMs": 166.76199296489358,
+      "resource": {
+        "gpuMemoryProbe": "none",
+        "gpuMemoryProbeAvailable": false,
+        "processCpuMs": 540.3870000000009,
+        "processPeakRssKb": 95424,
+        "processWallMs": 166.76199296489358,
+        "resourceSampleCount": 3,
+        "resourceSampleMs": 100,
+        "resourceSampleTargetCount": 0,
+        "resourceSamplingTruncated": false
+      },
+      "returnCode": 0,
+      "runIndex": 2,
+      "strictNormalizationUnit": "",
+      "subphasesMs": {
+        "encodeMs": null,
+        "executionMs": null,
+        "gpuTimestampMs": null,
+        "setupMs": null,
+        "submitWaitMs": null
+      },
+      "success": true,
+      "timing": {
+        "source": "wall-time",
+        "timingConfiguredDivisor": 1.0,
+        "timingNormalizationDivisor": 1.0,
+        "timingNormalizedMs": 166.76199296489358,
+        "timingRawMs": 166.76199296489358,
+        "timingSelectionPolicy": "forced-process-wall",
+        "uploadBufferUsage": "copy-dst-copy-src",
+        "uploadSubmitEvery": 1,
+        "wallTimeMs": 166.76199296489358,
+        "workloadUnitNormalizationDivisor": 1.0,
+        "workloadUnitNormalizationSource": "selected-process-wall"
+      },
+      "timingClass": "process-wall",
+      "timingNormalizationDivisor": 1.0,
+      "timingSource": "wall-time",
+      "traceArtifacts": {
+        "jsonlPath": "bench/out/native-ort-webgpu-provider/20260413T175616Z/basic-ops.workspace/isolated-runs/ort_native_webgpu_incumbent/inference_ort_native_compare_matmul_add_relu_float32_rank2_exactshape/ort_native_webgpu_incumbent.run002.ndjson",
+        "metaPath": "bench/out/native-ort-webgpu-provider/20260413T175616Z/basic-ops.workspace/isolated-runs/ort_native_webgpu_incumbent/inference_ort_native_compare_matmul_add_relu_float32_rank2_exactshape/ort_native_webgpu_incumbent.run002.meta.json"
+      },
+      "traceMeta": {
+        "adapterInfo": {
+          "architecture": "",
+          "description": "WebGPU",
+          "device": "",
+          "vendor": ""
+        },
+        "benchmarkLane": "native-ort-webgpu-incumbent-smoke",
+        "executionBackend": "ort_native_webgpu_incumbent",
+        "executionErrorCount": 0,
+        "executionLabel": "Native ONNX Runtime incumbent WebGPU session smoke",
+        "executionProvider": "webgpu",
+        "executionProviderName": "WebGpuExecutionProvider",
+        "executionRowCount": 1,
+        "executionSkippedCount": 0,
+        "executionSuccessCount": 1,
+        "executionUnsupportedCount": 0,
+        "nativeOrtApiVersionRequested": 23,
+        "nativeOrtAvailableProviders": [
+          "TensorrtExecutionProvider",
+          "CUDAExecutionProvider",
+          "WebGpuExecutionProvider",
+          "CPUExecutionProvider"
+        ],
+        "nativeOrtCase": {
+          "actualOutput": [
+            0,
+            0,
+            53,
+            0
+          ],
+          "actualOutputShape": [
+            2,
+            2
+          ],
+          "caseName": "matmul_add_relu",
+          "expectedOutput": [
+            0,
+            0,
+            53,
+            0
+          ],
+          "expectedOutputShape": [
+            2,
+            2
+          ],
+          "failureReason": "",
+          "modelKind": "MatMul->Add->Relu",
+          "operations": {
+            "createModel": {
+              "code": "ORT_OK",
+              "message": "",
+              "ok": true
+            },
+            "createSessionFromModel": {
+              "code": "ORT_OK",
+              "message": "",
+              "ok": true
+            },
+            "run": {
+              "code": "ORT_OK",
+              "message": "",
+              "ok": true
+            }
+          },
+          "outputsMatch": true,
+          "success": true
+        },
+        "nativeOrtCaseName": "matmul_add_relu",
+        "nativeOrtLibraryPath": "/home/x/deco/doppler/node_modules/onnxruntime-node/bin/napi-v6/linux/x64/libonnxruntime.so.1",
+        "nativeOrtProviderName": "WebGPU",
+        "nativeOrtRuntimeVersion": "1.24.3",
+        "processWallMs": 93.83387700654566,
+        "runtimeHost": "native",
+        "scenarioId": "inference_ort_native_compare_matmul_add_relu_float32_rank2_exactshape",
+        "smokeOperations": {
+          "appendProvider": {
+            "code": "ORT_OK",
+            "message": "",
+            "ok": true
+          },
+          "createEnv": {
+            "code": "ORT_OK",
+            "message": "",
+            "ok": true
+          },
+          "createSessionOptions": {
+            "code": "ORT_OK",
+            "message": "",
+            "ok": true
+          }
+        },
+        "timingMs": 93.83387700654566,
+        "timingSource": "wall-time",
+        "traceMetaVersion": 1,
+        "workloadId": "inference_ort_native_compare_matmul_add_relu_float32_rank2_exactshape"
+      },
+      "uploadBufferUsage": "copy-dst-copy-src",
+      "uploadIgnoreFirstOps": 0,
+      "uploadSubmitEvery": 1,
+      "wallMs": 166.76199296489358,
+      "workloadDomain": "inference",
+      "workloadUnitNormalizationDivisor": 1.0
+    },
+    {
+      "command": [
+        "python3",
+        "bench/executors/run-native-ort-incumbent-bench.py",
+        "--scenario",
+        "bench/vendor-native/ort_native_compare_matmul_add_relu_commands.json",
+        "--trace-jsonl",
+        "bench/out/native-ort-webgpu-provider/20260413T175616Z/basic-ops.workspace/isolated-runs/ort_native_webgpu_incumbent/inference_ort_native_compare_matmul_add_relu_float32_rank2_exactshape/ort_native_webgpu_incumbent.run003.ndjson",
+        "--trace-meta",
+        "bench/out/native-ort-webgpu-provider/20260413T175616Z/basic-ops.workspace/isolated-runs/ort_native_webgpu_incumbent/inference_ort_native_compare_matmul_add_relu_float32_rank2_exactshape/ort_native_webgpu_incumbent.run003.meta.json",
+        "--workload",
+        "inference_ort_native_compare_matmul_add_relu_float32_rank2_exactshape"
+      ],
+      "commandRepeat": 1,
+      "measuredMs": 167.3929219832644,
+      "measuredRawMs": 167.3929219832644,
+      "resource": {
+        "gpuMemoryProbe": "none",
+        "gpuMemoryProbeAvailable": false,
+        "processCpuMs": 458.1009999999992,
+        "processPeakRssKb": 95904,
+        "processWallMs": 167.3929219832644,
+        "resourceSampleCount": 3,
+        "resourceSampleMs": 100,
+        "resourceSampleTargetCount": 0,
+        "resourceSamplingTruncated": false
+      },
+      "returnCode": 0,
+      "runIndex": 3,
+      "strictNormalizationUnit": "",
+      "subphasesMs": {
+        "encodeMs": null,
+        "executionMs": null,
+        "gpuTimestampMs": null,
+        "setupMs": null,
+        "submitWaitMs": null
+      },
+      "success": true,
+      "timing": {
+        "source": "wall-time",
+        "timingConfiguredDivisor": 1.0,
+        "timingNormalizationDivisor": 1.0,
+        "timingNormalizedMs": 167.3929219832644,
+        "timingRawMs": 167.3929219832644,
+        "timingSelectionPolicy": "forced-process-wall",
+        "uploadBufferUsage": "copy-dst-copy-src",
+        "uploadSubmitEvery": 1,
+        "wallTimeMs": 167.3929219832644,
+        "workloadUnitNormalizationDivisor": 1.0,
+        "workloadUnitNormalizationSource": "selected-process-wall"
+      },
+      "timingClass": "process-wall",
+      "timingNormalizationDivisor": 1.0,
+      "timingSource": "wall-time",
+      "traceArtifacts": {
+        "jsonlPath": "bench/out/native-ort-webgpu-provider/20260413T175616Z/basic-ops.workspace/isolated-runs/ort_native_webgpu_incumbent/inference_ort_native_compare_matmul_add_relu_float32_rank2_exactshape/ort_native_webgpu_incumbent.run003.ndjson",
+        "metaPath": "bench/out/native-ort-webgpu-provider/20260413T175616Z/basic-ops.workspace/isolated-runs/ort_native_webgpu_incumbent/inference_ort_native_compare_matmul_add_relu_float32_rank2_exactshape/ort_native_webgpu_incumbent.run003.meta.json"
+      },
+      "traceMeta": {
+        "adapterInfo": {
+          "architecture": "",
+          "description": "WebGPU",
+          "device": "",
+          "vendor": ""
+        },
+        "benchmarkLane": "native-ort-webgpu-incumbent-smoke",
+        "executionBackend": "ort_native_webgpu_incumbent",
+        "executionErrorCount": 0,
+        "executionLabel": "Native ONNX Runtime incumbent WebGPU session smoke",
+        "executionProvider": "webgpu",
+        "executionProviderName": "WebGpuExecutionProvider",
+        "executionRowCount": 1,
+        "executionSkippedCount": 0,
+        "executionSuccessCount": 1,
+        "executionUnsupportedCount": 0,
+        "nativeOrtApiVersionRequested": 23,
+        "nativeOrtAvailableProviders": [
+          "TensorrtExecutionProvider",
+          "CUDAExecutionProvider",
+          "WebGpuExecutionProvider",
+          "CPUExecutionProvider"
+        ],
+        "nativeOrtCase": {
+          "actualOutput": [
+            0,
+            0,
+            53,
+            0
+          ],
+          "actualOutputShape": [
+            2,
+            2
+          ],
+          "caseName": "matmul_add_relu",
+          "expectedOutput": [
+            0,
+            0,
+            53,
+            0
+          ],
+          "expectedOutputShape": [
+            2,
+            2
+          ],
+          "failureReason": "",
+          "modelKind": "MatMul->Add->Relu",
+          "operations": {
+            "createModel": {
+              "code": "ORT_OK",
+              "message": "",
+              "ok": true
+            },
+            "createSessionFromModel": {
+              "code": "ORT_OK",
+              "message": "",
+              "ok": true
+            },
+            "run": {
+              "code": "ORT_OK",
+              "message": "",
+              "ok": true
+            }
+          },
+          "outputsMatch": true,
+          "success": true
+        },
+        "nativeOrtCaseName": "matmul_add_relu",
+        "nativeOrtLibraryPath": "/home/x/deco/doppler/node_modules/onnxruntime-node/bin/napi-v6/linux/x64/libonnxruntime.so.1",
+        "nativeOrtProviderName": "WebGPU",
+        "nativeOrtRuntimeVersion": "1.24.3",
+        "processWallMs": 89.4546490162611,
+        "runtimeHost": "native",
+        "scenarioId": "inference_ort_native_compare_matmul_add_relu_float32_rank2_exactshape",
+        "smokeOperations": {
+          "appendProvider": {
+            "code": "ORT_OK",
+            "message": "",
+            "ok": true
+          },
+          "createEnv": {
+            "code": "ORT_OK",
+            "message": "",
+            "ok": true
+          },
+          "createSessionOptions": {
+            "code": "ORT_OK",
+            "message": "",
+            "ok": true
+          }
+        },
+        "timingMs": 89.4546490162611,
+        "timingSource": "wall-time",
+        "traceMetaVersion": 1,
+        "workloadId": "inference_ort_native_compare_matmul_add_relu_float32_rank2_exactshape"
+      },
+      "uploadBufferUsage": "copy-dst-copy-src",
+      "uploadIgnoreFirstOps": 0,
+      "uploadSubmitEvery": 1,
+      "wallMs": 167.3929219832644,
+      "workloadDomain": "inference",
+      "workloadUnitNormalizationDivisor": 1.0
+    }
+  ],
+  "schemaVersion": 1,
+  "workload": {
+    "api": "ort-native",
+    "benchmarkClass": "comparable",
+    "claimEligible": true,
+    "commandsPath": "bench/vendor-native/ort_native_compare_matmul_add_relu_commands.json",
+    "comparabilityNotes": "Same-stack native ORT compare between Doe plugin EP and incumbent WebGPU provider on the shared float32 exact-shape rank-2 MatMul -> Add -> Relu slice.",
+    "comparable": true,
+    "description": "Repo-only strict comparable native ORT exact fused rank-2 MatMul -> Add -> Relu compare between Doe EP and incumbent WebGPU provider.",
+    "directionalReason": "",
+    "domain": "inference",
+    "driver": "host-ort",
+    "family": "webgpu-provider-compare",
+    "id": "inference_ort_native_compare_matmul_add_relu_float32_rank2_exactshape",
+    "name": "Native ORT MatMul -> Add -> Relu basic-ops compare",
+    "pathAsymmetry": false,
+    "pathAsymmetryNote": "",
+    "planPath": "",
+    "quirksPath": "examples/quirks/noop.json",
+    "strictNormalizationUnit": "",
+    "vendor": "doe"
+  },
+  "workloadManifest": {
+    "freshnessReason": "standalone manifest; no backend workload catalog freshness check applies",
+    "inputFreshness": "unknown",
+    "ownership": "standalone",
+    "path": "bench/workloads/workloads.native.ort-webgpu-provider-compare.basic-ops.json",
+    "sha256": "95588228011fcf642e73996ff41918c68b027af3bd2786abe2266eed19e38b0c"
+  }
+}
