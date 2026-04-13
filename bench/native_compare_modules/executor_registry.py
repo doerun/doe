@@ -141,6 +141,15 @@ _REGISTRY: dict[str, ExecutorSpec] = {
         command_template=_APPLE_WEBKIT_DIRECT_PREFIX,
         execution_boundary="plan",
     ),
+    "ort_native_doe_ep": ExecutorSpec(
+        executor_id="ort_native_doe_ep",
+        command_template=(
+            "python3 bench/executors/run-native-ort-ep-bench.py "
+            "--scenario {commands} --trace-jsonl {trace_jsonl} "
+            "--trace-meta {trace_meta} --workload {workload}"
+        ),
+        execution_boundary="commands",
+    ),
     "node_webgpu_package": ExecutorSpec(
         executor_id="node_webgpu_package",
         command_template=(

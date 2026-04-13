@@ -27,27 +27,29 @@ What is implemented today:
   unsupported contract without pretending there is a working execution bridge
 - a repo-only session smoke runner that registers the Doe plugin with ORT,
   discovers Doe `OrtEpDevice` instances, appends Doe to session options, and
-  builds/runs tiny in-memory elementwise models
+  builds/runs tiny in-memory proof models
 - a Doe-owned `OrtEpFactory` implementation with explicit metadata and explicit
   narrow behavior for the still-missing graph-execution bridge
 - a real but intentionally narrow `OrtEpDevice` / `OrtEp` path:
   - `GetSupportedDevices` creates `OrtEpDevice` instances when ORT provides
     hardware devices
   - `CreateEp` creates a real `OrtEp`
-  - `GetCapability` claims same-shape float32 ONNX-domain `Identity`, `Add`,
-    and `Relu` nodes plus the exact two-node `Add -> Relu` slice
+  - `GetCapability` claims narrow float32 ONNX-domain `Identity`, `Add`,
+    `Relu`, and rank-2 `MatMul` nodes plus the exact two-node `Add -> Relu`
+    slice
   - `Compile` installs tiny compiled compute paths for single-node
-    `Identity`/`Add`/`Relu` groups and the exact two-node `Add -> Relu` group
+    `Identity`/`Add`/`Relu`/`MatMul` groups and the exact two-node
+    `Add -> Relu` group
   - the session smoke now proves `Compute()` ran by reading plugin debug
     counters from the shared library and checking expected outputs for
-    `Add`, `Relu`, and `Add -> Relu`
+    `Add`, `Relu`, `MatMul`, and `Add -> Relu`
 
 What is not implemented yet:
 
  - a general Doe-backed graph execution path beyond the current narrow
-   elementwise slice
+   basic-ops slice
 - allocator, stream, external-resource, or custom-op support
-- any promoted benchmark lane in `bench/`
+- any strict native compare lane against an incumbent ORT peer in `bench/`
 
 Current behavior is intentionally narrow:
 
@@ -56,15 +58,15 @@ Current behavior is intentionally narrow:
 - when ORT provides hardware devices, Doe creates `OrtEpDevice` instances for
   them
 - `CreateEp` returns a real `OrtEp` instance
-- `GetCapability` only claims supported dense same-rank same-shape float32
-  ONNX-domain `Identity`, `Add`, and `Relu` nodes, plus the exact two-node
-  `Add -> Relu` slice
+- `GetCapability` only claims supported dense float32 ONNX-domain nodes:
+  same-rank same-shape `Identity`, `Add`, and `Relu`; rank-2 exact-shape
+  `MatMul`; plus the exact two-node `Add -> Relu` slice
 - `Compile` creates a real `OrtNodeComputeInfo` for those narrow groups
 - `Compute` executes that slice with boring explicit float32 kernels:
-  copy, elementwise add, `Relu`, and fused `Add -> Relu`
+  copy, elementwise add, `Relu`, rank-2 `MatMul`, and fused `Add -> Relu`
 - the repo-only session smoke proves Doe executed the non-trivial slice and
   matched expected outputs via
-  `artifacts/20260413T151032Z/doe-ort-ep-session-smoke.json`
+  `artifacts/20260413T163356Z/doe-ort-ep-session-smoke.json`
 - anything beyond that narrow slice still returns explicit unsupported
   behavior rather than pretending a broader graph-execution bridge exists
 
@@ -112,6 +114,7 @@ cd runtime/zig
 ./zig-out/bin/doe-ort-ep-session-smoke \
   --plugin-path ./zig-out/lib/libonnxruntime_doe_ep.so \
   --ort-lib-path <path-to-libonnxruntime-shared-library> \
+  --case add|relu|matmul|add_relu|all \
   --output /tmp/doe-ort-ep-session-smoke.json
 ```
 
@@ -122,13 +125,36 @@ Current session smoke scope:
 - verifies that ORT surfaces Doe `OrtEpDevice` instances after registration
 - appends a Doe `OrtEpDevice` to session options with
   `SessionOptionsAppendExecutionProvider_V2`
-- builds tiny in-memory `Add`, `Relu`, and `Add -> Relu` models via ORT's
-  Model Editor API
-- creates a session for each case and runs the model successfully
+- builds tiny in-memory `Add`, `Relu`, `MatMul`, and `Add -> Relu` models via
+  ORT's Model Editor API, plus a one-node `Identity` proof case
+- creates a session for each selected case and runs the model successfully
 - verifies expected output values and the Doe claim/compile/compute counter
   deltas for each case
 - current evidence is
-  `artifacts/20260413T151032Z/doe-ort-ep-session-smoke.json`
+  `artifacts/20260413T163356Z/doe-ort-ep-session-smoke.json`
+
+Repo-only bench surface:
+
+```sh
+python3 bench/single-runtime/run_bench.py \
+  --workloads bench/workloads/workloads.native.ort-doe-ep-smoke.json \
+  --workload-id inference_ort_doe_ep_add_relu_float32_exactshape \
+  --executor-id ort_native_doe_ep \
+  --iterations 3 \
+  --warmup 1 \
+  --out-dir bench/out/native-ort-doe-ep/add_relu \
+  --out-report bench/out/native-ort-doe-ep/add_relu.report.json \
+  --out-metadata bench/out/native-ort-doe-ep/add_relu.metadata.json \
+  --no-timestamp-output
+```
+
+Current repo-local bench evidence for the executor-backed narrow slice lives at:
+
+- `bench/out/native-ort-doe-ep/identity.report.json`
+- `bench/out/native-ort-doe-ep/add.report.json`
+- `bench/out/native-ort-doe-ep/relu.report.json`
+- `bench/out/native-ort-doe-ep/matmul.report.json`
+- `bench/out/native-ort-doe-ep/add_relu.report.json`
 
 Compatibility note:
 
@@ -146,6 +172,6 @@ repository and remain under the upstream MIT license in
 `vendor/onnxruntime/LICENSE`.
 
 The next honest milestone is not "benchmark victory." It is extending this from
-a narrow elementwise proof slice into a broader Doe-backed graph execution
+a narrow basic-ops proof slice into a broader Doe-backed graph execution
 bridge that can run more non-trivial ORT-assigned work and support a benchmark
 lane.

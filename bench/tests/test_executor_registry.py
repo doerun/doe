@@ -99,6 +99,12 @@ class ExecutorRegistryTests(unittest.TestCase):
         self.assertIn("--backend-lane vulkan_dawn_release", template)
         self.assertEqual(resolve_executor_boundary("dawn_delegate_plan_vulkan"), "plan")
 
+    def test_resolves_native_ort_doe_ep_executor(self) -> None:
+        template = resolve_executor_command_template("ort_native_doe_ep")
+        self.assertIn("run-native-ort-ep-bench.py", template)
+        self.assertIn("--scenario {commands}", template)
+        self.assertEqual(resolve_executor_boundary("ort_native_doe_ep"), "commands")
+
     def test_resolves_tjs_ort_node_doe_executor(self) -> None:
         template = resolve_executor_command_template('tjs_ort_node_doe')
         self.assertIn('run-node-tjs-ort-webgpu.js', template)

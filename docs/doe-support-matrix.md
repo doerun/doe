@@ -84,7 +84,11 @@ Current ORT evidence to read alongside the table below:
 - Browser ORT Playwright artifact:
   `browser/chromium/artifacts/20260413T023500Z/dawn-vs-doe.browser-ort-bench.diagnostic.json`
 - Native ORT EP proof slice:
-  `runtime/bridge/onnxruntime-ep/artifacts/20260413T003832Z/doe-ort-ep-session-smoke.json`
+  `runtime/bridge/onnxruntime-ep/artifacts/20260413T161858Z/doe-ort-ep-session-smoke.json`
+- Native ORT EP bench reports:
+  `bench/out/native-ort-doe-ep/add.report.json`,
+  `bench/out/native-ort-doe-ep/relu.report.json`, and
+  `bench/out/native-ort-doe-ep/add_relu.report.json`
 
 ### Runtime package family: `doe-gpu`
 

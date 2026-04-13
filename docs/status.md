@@ -47,10 +47,14 @@ Read this file first. Use the shard files under
   support a blanket Doe-over-Dawn ORT package claim today.
 - The repo-only ONNX Runtime plugin EP now crosses the line from pure scaffold
   to a narrow non-trivial native slice: Doe claims, compiles, and executes
-  same-shape float32 ONNX `Identity`, `Add`, `Relu`, and exact two-node
-  `Add -> Relu` session-smoke cases, with proof recorded in
-  `runtime/bridge/onnxruntime-ep/artifacts/20260413T151032Z/doe-ort-ep-session-smoke.json`.
-  This is still not a benchmark lane or a claimable `ORT + Doe` surface.
+  same-shape float32 ONNX `Identity`, `Add`, `Relu`, rank-2 `MatMul`, and
+  exact two-node `Add -> Relu` session-smoke cases, with proof recorded in
+  `runtime/bridge/onnxruntime-ep/artifacts/20260413T163356Z/doe-ort-ep-session-smoke.json`.
+- The repo now also has a repo-only single-runtime native ORT EP bench surface
+  for the current `Identity`, `Add`, `Relu`, rank-2 `MatMul`, and exact
+  `Add -> Relu` slice under
+  `bench/workloads/workloads.native.ort-doe-ep-smoke.json`, with current local
+  reports in `bench/out/native-ort-doe-ep/`.
 - D3D12 drop-in queue submit now retains submitted command lists behind the
   runtime fence and drains them at explicit completion boundaries instead of
   forcing a wait at every submit entry, and the native compute/render runtime

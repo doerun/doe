@@ -16,21 +16,24 @@ namespace doe::ort_ep {
 
 namespace {
 
-constexpr const char* kCompatibilityInfo = "doe-ort-elementwise-ep-v1";
+constexpr const char* kCompatibilityInfo = "doe-ort-basic-ops-ep-v2";
 constexpr const char* kIdentityOperatorType = "Identity";
 constexpr const char* kAddOperatorType = "Add";
 constexpr const char* kReluOperatorType = "Relu";
+constexpr const char* kMatMulOperatorType = "MatMul";
 constexpr const char* kOnnxDomain = "";
 constexpr const char* kOnnxAiDomain = "ai.onnx";
 constexpr ONNXTensorElementDataType kSupportedElementType = ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT;
 constexpr size_t kUnaryInputCount = 1;
 constexpr size_t kBinaryInputCount = 2;
 constexpr size_t kSingleOutputCount = 1;
+constexpr size_t kMatrixRank = 2;
 
 enum class CompiledOpKind : uint8_t {
   kIdentity,
   kAdd,
   kRelu,
+  kMatMul,
   kAddRelu,
 };
 
@@ -39,16 +42,19 @@ std::atomic<uint64_t> g_claimed_nodes{0};
 std::atomic<uint64_t> g_claimed_identity_nodes{0};
 std::atomic<uint64_t> g_claimed_add_nodes{0};
 std::atomic<uint64_t> g_claimed_relu_nodes{0};
+std::atomic<uint64_t> g_claimed_matmul_nodes{0};
 std::atomic<uint64_t> g_compile_calls{0};
 std::atomic<uint64_t> g_compiled_identity_groups{0};
 std::atomic<uint64_t> g_compiled_add_groups{0};
 std::atomic<uint64_t> g_compiled_relu_groups{0};
+std::atomic<uint64_t> g_compiled_matmul_groups{0};
 std::atomic<uint64_t> g_compiled_add_relu_groups{0};
 std::atomic<uint64_t> g_create_state_calls{0};
 std::atomic<uint64_t> g_compute_calls{0};
 std::atomic<uint64_t> g_compute_identity_calls{0};
 std::atomic<uint64_t> g_compute_add_calls{0};
 std::atomic<uint64_t> g_compute_relu_calls{0};
+std::atomic<uint64_t> g_compute_matmul_calls{0};
 std::atomic<uint64_t> g_compute_add_relu_calls{0};
 std::atomic<uint64_t> g_release_state_calls{0};
 
@@ -120,6 +126,8 @@ const char* CompiledOpKindName(const CompiledOpKind kind) {
       return kAddOperatorType;
     case CompiledOpKind::kRelu:
       return kReluOperatorType;
+    case CompiledOpKind::kMatMul:
+      return kMatMulOperatorType;
     case CompiledOpKind::kAddRelu:
       return "Add->Relu";
   }
@@ -136,6 +144,7 @@ size_t ExpectedInputCountForKind(const CompiledOpKind kind) {
     case CompiledOpKind::kRelu:
       return kUnaryInputCount;
     case CompiledOpKind::kAdd:
+    case CompiledOpKind::kMatMul:
     case CompiledOpKind::kAddRelu:
       return kBinaryInputCount;
   }
@@ -162,6 +171,9 @@ void IncrementClaimCounters(const CompiledOpKind kind) {
     case CompiledOpKind::kRelu:
       g_claimed_relu_nodes.fetch_add(1, std::memory_order_relaxed);
       break;
+    case CompiledOpKind::kMatMul:
+      g_claimed_matmul_nodes.fetch_add(1, std::memory_order_relaxed);
+      break;
     case CompiledOpKind::kAddRelu:
       g_claimed_add_nodes.fetch_add(1, std::memory_order_relaxed);
       g_claimed_relu_nodes.fetch_add(1, std::memory_order_relaxed);
@@ -180,6 +192,9 @@ void IncrementCompiledGroupCounters(const CompiledOpKind kind) {
     case CompiledOpKind::kRelu:
       g_compiled_relu_groups.fetch_add(1, std::memory_order_relaxed);
       break;
+    case CompiledOpKind::kMatMul:
+      g_compiled_matmul_groups.fetch_add(1, std::memory_order_relaxed);
+      break;
     case CompiledOpKind::kAddRelu:
       g_compiled_add_relu_groups.fetch_add(1, std::memory_order_relaxed);
       break;
@@ -196,6 +211,9 @@ void IncrementComputeCounters(const CompiledOpKind kind) {
       break;
     case CompiledOpKind::kRelu:
       g_compute_relu_calls.fetch_add(1, std::memory_order_relaxed);
+      break;
+    case CompiledOpKind::kMatMul:
+      g_compute_matmul_calls.fetch_add(1, std::memory_order_relaxed);
       break;
     case CompiledOpKind::kAddRelu:
       g_compute_add_relu_calls.fetch_add(1, std::memory_order_relaxed);
@@ -224,6 +242,28 @@ bool SameShape(const TensorDescriptor& lhs, const TensorDescriptor& rhs) {
 template <typename TensorDescriptor>
 bool SameTypeAndShape(const TensorDescriptor& lhs, const TensorDescriptor& rhs) {
   return lhs.element_type == rhs.element_type && SameShape(lhs, rhs);
+}
+
+template <typename TensorDescriptor>
+bool IsRank2Matrix(const TensorDescriptor& descriptor) {
+  return descriptor.dims.size() == kMatrixRank;
+}
+
+template <typename TensorDescriptor>
+bool IsStaticMatMulShape(
+    const TensorDescriptor& lhs,
+    const TensorDescriptor& rhs,
+    const TensorDescriptor& output) {
+  if (!IsRank2Matrix(lhs) || !IsRank2Matrix(rhs) || !IsRank2Matrix(output)) {
+    return false;
+  }
+  if (lhs.element_type != rhs.element_type || lhs.element_type != output.element_type) {
+    return false;
+  }
+  if (lhs.dims[1] != rhs.dims[0]) {
+    return false;
+  }
+  return output.dims[0] == lhs.dims[0] && output.dims[1] == rhs.dims[1];
 }
 
 OrtStatus* GetGraphNodes(const OrtApi* api, const OrtGraph* graph, std::vector<const OrtNode*>* nodes_out) {
@@ -401,6 +441,9 @@ OrtStatus* GetSupportedNodeSpec(
   } else if (std::string_view(operator_type) == kReluOperatorType) {
     spec_out->kind = CompiledOpKind::kRelu;
     expected_inputs = kUnaryInputCount;
+  } else if (std::string_view(operator_type) == kMatMulOperatorType) {
+    spec_out->kind = CompiledOpKind::kMatMul;
+    expected_inputs = kBinaryInputCount;
   } else {
     return nullptr;
   }
@@ -453,6 +496,11 @@ OrtStatus* GetSupportedNodeSpec(
     case CompiledOpKind::kAdd:
       if (!SameTypeAndShape(spec_out->inputs[0], spec_out->inputs[1]) ||
           !SameTypeAndShape(spec_out->inputs[0], spec_out->outputs[0])) {
+        return nullptr;
+      }
+      break;
+    case CompiledOpKind::kMatMul:
+      if (!IsStaticMatMulShape(spec_out->inputs[0], spec_out->inputs[1], spec_out->outputs[0])) {
         return nullptr;
       }
       break;
@@ -623,7 +671,7 @@ OrtStatus* GetRuntimeTensorDescriptor(
   }
   if (descriptor_out->element_type != kSupportedElementType) {
     api->ReleaseTensorTypeAndShapeInfo(tensor_info);
-    return MakeNotImplementedStatus(api, "Doe ORT plugin EP elementwise slice currently supports float32 tensors only.");
+    return MakeNotImplementedStatus(api, "Doe ORT plugin EP currently supports float32 tensors only.");
   }
 
   size_t rank = 0;
@@ -645,7 +693,7 @@ OrtStatus* GetRuntimeTensorDescriptor(
   for (const int64_t dim : descriptor_out->dims) {
     if (dim < 0) {
       api->ReleaseTensorTypeAndShapeInfo(tensor_info);
-      return MakeInvalidGraphStatus(api, "Doe ORT plugin EP elementwise slice requires concrete runtime tensor shapes.");
+      return MakeInvalidGraphStatus(api, "Doe ORT plugin EP requires concrete runtime tensor shapes.");
     }
   }
 
@@ -768,6 +816,41 @@ OrtStatus* ValidateSameRuntimeShape(
   return MakeInvalidGraphStatus(info.bindings.api, message.str());
 }
 
+OrtStatus* ValidateRuntimeMatMulShape(
+    const CompiledNodeComputeInfo& info,
+    const RuntimeTensorDescriptor& lhs,
+    const RuntimeTensorDescriptor& rhs,
+    RuntimeTensorDescriptor* output_descriptor_out) {
+  if (output_descriptor_out == nullptr) {
+    return MakeInvalidArgumentStatus(
+        info.bindings.api,
+        "Doe ORT plugin EP requires an output_descriptor_out pointer when validating MatMul.");
+  }
+
+  if (!IsRank2Matrix(lhs) || !IsRank2Matrix(rhs)) {
+    std::ostringstream message;
+    message << "Doe ORT plugin EP MatMul slice requires rank-2 float32 inputs; input0 has shape "
+            << ShapeString(lhs.dims) << " and input1 has shape " << ShapeString(rhs.dims) << '.';
+    return MakeInvalidGraphStatus(info.bindings.api, message.str());
+  }
+  if (lhs.element_type != rhs.element_type) {
+    return MakeInvalidGraphStatus(info.bindings.api, "Doe ORT plugin EP MatMul slice requires matching float32 inputs.");
+  }
+  if (lhs.dims[1] != rhs.dims[0]) {
+    std::ostringstream message;
+    message << "Doe ORT plugin EP MatMul slice requires exact matrix inner dimensions; input0 has shape "
+            << ShapeString(lhs.dims) << " and input1 has shape " << ShapeString(rhs.dims) << '.';
+    return MakeInvalidGraphStatus(info.bindings.api, message.str());
+  }
+
+  *output_descriptor_out = RuntimeTensorDescriptor{
+      .element_type = lhs.element_type,
+      .dims = {lhs.dims[0], rhs.dims[1]},
+      .element_count = static_cast<size_t>(lhs.dims[0] * rhs.dims[1]),
+  };
+  return nullptr;
+}
+
 OrtStatus* ExecuteIdentity(const CompiledNodeComputeInfo& info, OrtKernelContext* kernel_context) {
   RuntimeTensorDescriptor input_descriptor;
   const float* input_data = nullptr;
@@ -817,6 +900,38 @@ OrtStatus* ExecuteRelu(const CompiledNodeComputeInfo& info, OrtKernelContext* ke
   for (size_t index = 0; index < input_descriptor.element_count; ++index) {
     const float value = input_data[index];
     output_data[index] = value < 0.0f ? 0.0f : value;
+  }
+  return nullptr;
+}
+
+OrtStatus* ExecuteMatMul(const CompiledNodeComputeInfo& info, OrtKernelContext* kernel_context) {
+  RuntimeTensorDescriptor lhs_descriptor;
+  RuntimeTensorDescriptor rhs_descriptor;
+  RuntimeTensorDescriptor output_descriptor;
+  const float* lhs_data = nullptr;
+  const float* rhs_data = nullptr;
+  OrtStatus* status = GetKernelInputData(info, kernel_context, 0, &lhs_descriptor, &lhs_data);
+  if (status != nullptr) return status;
+  status = GetKernelInputData(info, kernel_context, 1, &rhs_descriptor, &rhs_data);
+  if (status != nullptr) return status;
+  status = ValidateRuntimeMatMulShape(info, lhs_descriptor, rhs_descriptor, &output_descriptor);
+  if (status != nullptr) return status;
+
+  float* output_data = nullptr;
+  status = CreateKernelOutput(info, kernel_context, output_descriptor, &output_data);
+  if (status != nullptr) return status;
+
+  const size_t m_dim = static_cast<size_t>(lhs_descriptor.dims[0]);
+  const size_t k_dim = static_cast<size_t>(lhs_descriptor.dims[1]);
+  const size_t n_dim = static_cast<size_t>(rhs_descriptor.dims[1]);
+  for (size_t row = 0; row < m_dim; ++row) {
+    for (size_t col = 0; col < n_dim; ++col) {
+      float sum = 0.0f;
+      for (size_t k_index = 0; k_index < k_dim; ++k_index) {
+        sum += lhs_data[row * k_dim + k_index] * rhs_data[k_index * n_dim + col];
+      }
+      output_data[row * n_dim + col] = sum;
+    }
   }
   return nullptr;
 }
@@ -890,6 +1005,8 @@ OrtStatus* ORT_API_CALL ComputeImpl(
       return ExecuteAdd(info, kernel_context);
     case CompiledOpKind::kRelu:
       return ExecuteRelu(info, kernel_context);
+    case CompiledOpKind::kMatMul:
+      return ExecuteMatMul(info, kernel_context);
     case CompiledOpKind::kAddRelu:
       return ExecuteAddRelu(info, kernel_context);
   }
@@ -938,16 +1055,19 @@ void ResetDebugCounters() NO_EXCEPTION {
   g_claimed_identity_nodes.store(0, std::memory_order_relaxed);
   g_claimed_add_nodes.store(0, std::memory_order_relaxed);
   g_claimed_relu_nodes.store(0, std::memory_order_relaxed);
+  g_claimed_matmul_nodes.store(0, std::memory_order_relaxed);
   g_compile_calls.store(0, std::memory_order_relaxed);
   g_compiled_identity_groups.store(0, std::memory_order_relaxed);
   g_compiled_add_groups.store(0, std::memory_order_relaxed);
   g_compiled_relu_groups.store(0, std::memory_order_relaxed);
+  g_compiled_matmul_groups.store(0, std::memory_order_relaxed);
   g_compiled_add_relu_groups.store(0, std::memory_order_relaxed);
   g_create_state_calls.store(0, std::memory_order_relaxed);
   g_compute_calls.store(0, std::memory_order_relaxed);
   g_compute_identity_calls.store(0, std::memory_order_relaxed);
   g_compute_add_calls.store(0, std::memory_order_relaxed);
   g_compute_relu_calls.store(0, std::memory_order_relaxed);
+  g_compute_matmul_calls.store(0, std::memory_order_relaxed);
   g_compute_add_relu_calls.store(0, std::memory_order_relaxed);
   g_release_state_calls.store(0, std::memory_order_relaxed);
 }
@@ -959,16 +1079,19 @@ DoeOrtEpDebugCounters SnapshotDebugCounters() NO_EXCEPTION {
       .claimed_identity_nodes = g_claimed_identity_nodes.load(std::memory_order_relaxed),
       .claimed_add_nodes = g_claimed_add_nodes.load(std::memory_order_relaxed),
       .claimed_relu_nodes = g_claimed_relu_nodes.load(std::memory_order_relaxed),
+      .claimed_matmul_nodes = g_claimed_matmul_nodes.load(std::memory_order_relaxed),
       .compile_calls = g_compile_calls.load(std::memory_order_relaxed),
       .compiled_identity_groups = g_compiled_identity_groups.load(std::memory_order_relaxed),
       .compiled_add_groups = g_compiled_add_groups.load(std::memory_order_relaxed),
       .compiled_relu_groups = g_compiled_relu_groups.load(std::memory_order_relaxed),
+      .compiled_matmul_groups = g_compiled_matmul_groups.load(std::memory_order_relaxed),
       .compiled_add_relu_groups = g_compiled_add_relu_groups.load(std::memory_order_relaxed),
       .create_state_calls = g_create_state_calls.load(std::memory_order_relaxed),
       .compute_calls = g_compute_calls.load(std::memory_order_relaxed),
       .compute_identity_calls = g_compute_identity_calls.load(std::memory_order_relaxed),
       .compute_add_calls = g_compute_add_calls.load(std::memory_order_relaxed),
       .compute_relu_calls = g_compute_relu_calls.load(std::memory_order_relaxed),
+      .compute_matmul_calls = g_compute_matmul_calls.load(std::memory_order_relaxed),
       .compute_add_relu_calls = g_compute_add_relu_calls.load(std::memory_order_relaxed),
       .release_state_calls = g_release_state_calls.load(std::memory_order_relaxed),
   };
@@ -1085,7 +1208,7 @@ OrtStatus* ORT_API_CALL DoeOrtEp::CompileImpl(
       return MakeStatus(
           self.bindings_.api,
           ORT_NOT_IMPLEMENTED,
-          "Doe ORT plugin EP was asked to compile a graph outside its narrow float32 Identity/Add/Relu elementwise slice.");
+          "Doe ORT plugin EP was asked to compile a graph outside its narrow float32 Identity/Add/Relu/MatMul slice.");
     }
 
     auto info = std::make_unique<CompiledNodeComputeInfo>();

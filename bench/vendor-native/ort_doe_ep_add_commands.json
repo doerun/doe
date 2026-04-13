@@ -1,0 +1,9 @@
+[
+  {
+    "kind": "vendor-native-benchmark-scenario",
+    "schemaVersion": 1,
+    "scenarioId": "inference_ort_doe_ep_add_float32_exactshape",
+    "caseName": "add",
+    "notes": "Repo-only native Doe ORT plugin EP narrow elementwise Add slice."
+  }
+]

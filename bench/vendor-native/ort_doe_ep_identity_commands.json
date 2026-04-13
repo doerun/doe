@@ -1,0 +1,9 @@
+[
+  {
+    "kind": "vendor-native-benchmark-scenario",
+    "schemaVersion": 1,
+    "scenarioId": "inference_ort_doe_ep_identity_float32_exactshape",
+    "caseName": "identity",
+    "notes": "Repo-only native Doe ORT plugin EP narrow Identity slice."
+  }
+]

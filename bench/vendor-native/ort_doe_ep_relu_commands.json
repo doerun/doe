@@ -1,0 +1,9 @@
+[
+  {
+    "kind": "vendor-native-benchmark-scenario",
+    "schemaVersion": 1,
+    "scenarioId": "inference_ort_doe_ep_relu_float32_exactshape",
+    "caseName": "relu",
+    "notes": "Repo-only native Doe ORT plugin EP narrow elementwise Relu slice."
+  }
+]
