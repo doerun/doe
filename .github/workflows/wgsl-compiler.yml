@@ -1,8 +1,8 @@
 name: wgsl-compiler
 
-# Runs the doe_wgsl unit tests on all supported platforms.
-# The DXIL lane additionally verifies DXC toolchain discovery and, on
-# windows-latest, exercises end-to-end DXIL emission via the bundled DXC.
+# Runs the doe_wgsl unit tests on the currently unblocked CI platforms.
+# The Windows lanes are temporarily disabled because tracked bench/out artifact
+# paths exceed the hosted runner checkout path limit before Zig setup runs.
 
 on:
   pull_request:
@@ -14,12 +14,13 @@ on:
 
 jobs:
   # ── Core compiler tests (lexer / parser / emitter / IR) ─────────────────────
-  # These tests have no external toolchain dependencies and run everywhere.
+  # These tests have no external toolchain dependencies and run on the
+  # currently unblocked hosted runners.
   wgsl-core-tests:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -34,12 +35,13 @@ jobs:
 
   # ── DXIL toolchain-config tests (no DXC binary required) ───────────────────
   # Validates DXC discovery parsing and error messages in isolation.
-  # Runs on all platforms because the discovery logic is platform-neutral.
+  # Runs on the currently unblocked hosted runners because the discovery logic
+  # is platform-neutral.
   dxil-toolchain-config:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -60,6 +62,7 @@ jobs:
   # On non-Windows CI the emitter returns ShaderToolchainUnavailable by design;
   # that behaviour is verified by the dxil-toolchain-config job above instead.
   dxil-emit-windows:
+    if: ${{ false }}
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
