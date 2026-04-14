@@ -27,7 +27,7 @@ jobs:
       - name: Install Zig
         uses: mlugg/setup-zig@v1
         with:
-          version: "0.15.0"
+          version: "0.15.2"
       - name: Run WGSL compiler unit tests
         run: |
           cd zig
@@ -48,7 +48,7 @@ jobs:
       - name: Install Zig
         uses: mlugg/setup-zig@v1
         with:
-          version: "0.15.0"
+          version: "0.15.2"
       - name: Run DXIL toolchain-config unit tests
         # DOE_WGSL_DXC is deliberately unset so tests exercise the
         # ShaderToolchainUnavailable path and env-parsing logic.
@@ -69,7 +69,7 @@ jobs:
       - name: Install Zig
         uses: mlugg/setup-zig@v1
         with:
-          version: "0.15.0"
+          version: "0.15.2"
       - name: Locate DXC from Windows SDK
         # Visual Studio ships DXC under the Windows SDK binary directory.
         # Expose it via DOE_WGSL_DXC so the emitter uses the exact path.
