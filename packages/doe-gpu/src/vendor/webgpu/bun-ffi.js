@@ -638,6 +638,50 @@ function updatePassBindGroupState(pass, index, bindGroupNative) {
     return true;
 }
 
+function initPendingComputeState(pass) {
+    pass._pipelineDirty = false;
+    pass._bindGroupDirty = [];
+}
+
+function markPassPipelineDirty(pass) {
+    pass._pipelineDirty = true;
+}
+
+function markPassBindGroupDirty(pass, index) {
+    pass._bindGroupDirty[index] = true;
+}
+
+function clearPendingBoundDispatchState(pass) {
+    pass._pipelineDirty = false;
+    pass._bindGroupDirty[0] = false;
+}
+
+function hasPendingNonZeroBindGroups(pass) {
+    for (let index = 1; index < pass._bindGroupDirty.length; index += 1) {
+        if (pass._bindGroupDirty[index]) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function materializeBunPendingComputeState(pass, nativePass) {
+    if (pass._pipelineDirty && pass._pipeline != null) {
+        wgpu.symbols.wgpuComputePassEncoderSetPipeline(nativePass, pass._pipeline);
+        pass._pipelineDirty = false;
+    }
+    for (let index = 0; index < pass._bindGroupDirty.length; index += 1) {
+        if (!pass._bindGroupDirty[index]) {
+            continue;
+        }
+        const bindGroupNative = pass._bindGroups[index] ?? null;
+        if (bindGroupNative != null) {
+            wgpu.symbols.wgpuComputePassEncoderSetBindGroup(nativePass, index, bindGroupNative, BigInt(0), null);
+        }
+        pass._bindGroupDirty[index] = false;
+    }
+}
+
 function immediateBytesEqual(currentData, nextData) {
     if (!currentData || currentData.byteLength !== nextData.byteLength) {
         return false;
@@ -2163,6 +2207,7 @@ const bunEncoderBackend = {
         pass._pipeline = null;
         pass._bindGroups = [];
         pass._immediates = [];
+        initPendingComputeState(pass);
         pass._ended = false;
     },
     computePassAssertOpen(pass, path) {
@@ -2173,22 +2218,13 @@ const bunEncoderBackend = {
         if (!updatePassPipelineState(pass, pipelineNative)) {
             return;
         }
-        wgpu.symbols.wgpuComputePassEncoderSetPipeline(
-            assertLiveResource(pass, "GPUComputePassEncoder.setPipeline", "GPUComputePassEncoder"),
-            pipelineNative,
-        );
+        markPassPipelineDirty(pass);
     },
     computePassSetBindGroup(pass, index, bindGroupNative) {
         if (!updatePassBindGroupState(pass, index, bindGroupNative)) {
             return;
         }
-        wgpu.symbols.wgpuComputePassEncoderSetBindGroup(
-            assertLiveResource(pass, "GPUComputePassEncoder.setBindGroup", "GPUComputePassEncoder"),
-            index,
-            bindGroupNative,
-            BigInt(0),
-            null,
-        );
+        markPassBindGroupDirty(pass, index);
     },
     computePassSetImmediates(pass, index, data) {
         if (!updatePassImmediateState(pass, index, data)) {
@@ -2205,12 +2241,25 @@ const bunEncoderBackend = {
         if (pass._pipeline == null) {
             failValidation("GPUComputePassEncoder.dispatchWorkgroups", "setPipeline() must be called before dispatch");
         }
-        wgpu.symbols.wgpuComputePassEncoderDispatchWorkgroups(
-            assertLiveResource(pass, "GPUComputePassEncoder.dispatchWorkgroups", "GPUComputePassEncoder"),
-            x,
-            y,
-            z,
-        );
+        const nativePass = assertLiveResource(pass, "GPUComputePassEncoder.dispatchWorkgroups", "GPUComputePassEncoder");
+        if (
+            typeof wgpu.symbols.doeNativeComputePassDispatchBound === "function"
+            && (pass._pipelineDirty || pass._bindGroupDirty[0] === true)
+            && !hasPendingNonZeroBindGroups(pass)
+        ) {
+            wgpu.symbols.doeNativeComputePassDispatchBound(
+                nativePass,
+                pass._pipeline,
+                pass._bindGroups[0] ?? null,
+                x,
+                y,
+                z,
+            );
+            clearPendingBoundDispatchState(pass);
+            return;
+        }
+        materializeBunPendingComputeState(pass, nativePass);
+        wgpu.symbols.wgpuComputePassEncoderDispatchWorkgroups(nativePass, x, y, z);
     },
     computePassDispatchBound(pass, pipelineNative, bindGroupNative, x, y, z) {
         pass._pipeline = pipelineNative;
@@ -2224,18 +2273,22 @@ const bunEncoderBackend = {
                 y,
                 z,
             );
+            clearPendingBoundDispatchState(pass);
             return;
         }
         wgpu.symbols.wgpuComputePassEncoderSetPipeline(nativePass, pipelineNative);
         wgpu.symbols.wgpuComputePassEncoderSetBindGroup(nativePass, 0, bindGroupNative, BigInt(0), null);
         wgpu.symbols.wgpuComputePassEncoderDispatchWorkgroups(nativePass, x, y, z);
+        clearPendingBoundDispatchState(pass);
     },
     computePassDispatchWorkgroupsIndirect(pass, indirectBufferNative, indirectOffset) {
         if (pass._pipeline == null) {
             failValidation("GPUComputePassEncoder.dispatchWorkgroupsIndirect", "setPipeline() must be called before dispatch");
         }
+        const nativePass = assertLiveResource(pass, "GPUComputePassEncoder.dispatchWorkgroupsIndirect", "GPUComputePassEncoder");
+        materializeBunPendingComputeState(pass, nativePass);
         wgpu.symbols.wgpuComputePassEncoderDispatchWorkgroupsIndirect(
-            assertLiveResource(pass, "GPUComputePassEncoder.dispatchWorkgroupsIndirect", "GPUComputePassEncoder"),
+            nativePass,
             indirectBufferNative,
             BigInt(indirectOffset),
         );

@@ -91,15 +91,25 @@ const CompiledKernelLibrary = struct {
     workgroup_size: [3]u32 = .{ 0, 0, 0 },
 };
 
-pub fn ensure_kernel_pipeline(
+pub const KernelPipelineInfo = struct {
+    pipeline: ?*anyopaque,
+    workgroup_size: [3]u32,
+};
+
+pub fn ensure_kernel_pipeline_info(
     self: anytype,
     pipeline_cache: ?*metal_pipeline_cache.MetalPipelineCache,
     kernel: []const u8,
     entry_point: ?[]const u8,
-) !?*anyopaque {
+) !KernelPipelineInfo {
     var key_buf: [MAX_PIPELINE_KEY_BYTES]u8 = undefined;
     const request = try parsePipelineRequest(kernel, entry_point, &key_buf);
-    if (self.kernel_pipelines.get(request.cache_key)) |kp| return kp.pipeline;
+    if (self.kernel_pipelines.get(request.cache_key)) |kp| {
+        return .{
+            .pipeline = kp.pipeline,
+            .workgroup_size = kp.workgroup_size,
+        };
+    }
 
     const root = self.kernel_root orelse DEFAULT_KERNEL_ROOT;
     var err_buf: [BRIDGE_ERROR_CAP]u8 = undefined;
@@ -124,14 +134,26 @@ pub fn ensure_kernel_pipeline(
         .workgroup_size = compiled.workgroup_size,
     });
 
-    // Register kernel name in the pipeline cache warmup manifest so
-    // future sessions can pre-compile it on startup.
     if (builtin.os.tag == .macos and HAS_PIPELINE_CACHE) {
         if (pipeline_cache) |cache| {
             cache.register_compute_key(request.cache_key);
         }
     }
-    return pso;
+
+    return .{
+        .pipeline = pso,
+        .workgroup_size = compiled.workgroup_size,
+    };
+}
+
+pub fn ensure_kernel_pipeline(
+    self: anytype,
+    pipeline_cache: ?*metal_pipeline_cache.MetalPipelineCache,
+    kernel: []const u8,
+    entry_point: ?[]const u8,
+) !?*anyopaque {
+    const info = try ensure_kernel_pipeline_info(self, pipeline_cache, kernel, entry_point);
+    return info.pipeline;
 }
 
 pub fn get_kernel_workgroup_size(self: anytype, kernel: []const u8, entry_point: ?[]const u8) ![3]u32 {

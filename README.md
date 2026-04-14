@@ -31,8 +31,8 @@ Front-door evidence only. Positive percentages mean Doe is faster.
 | --- | --- | --- | --- |
 | Node package, AMD Vulkan | +59.9% | +56.7% | [benchmark output](bench/out/amd-vulkan/20260410T235522Z/gemma270m.node-package.ir.compare.json) |
 | Bun package, AMD Vulkan | +66.2% | +60.6% | [benchmark output](bench/out/amd-vulkan/20260410T235541Z/gemma270m.bun-package.ir.compare.json) |
-| Node package, Apple Metal | +9.0% | +10.3% | [benchmark output](bench/out/apple-metal/20260413T214410Z/gemma64.node-package.warm.ir.compare.json) |
-| Bun package, Apple Metal | +9.1% | +9.9% | [benchmark output](bench/out/apple-metal/20260413T214446Z/gemma64.bun-package.warm.ir.compare.json) |
+| Node package, Apple Metal | +20.8% | +13.0% | [benchmark output](bench/out/apple-metal/20260414T010826Z/gemma64.node-package.warm.ir.compare.json) |
+| Bun package, Apple Metal | +14.1% | +17.1% | [benchmark output](bench/out/apple-metal/20260414T010736Z/gemma64.bun-package.warm.ir.compare.json) |
 
 ## Additional benchmark outputs
 

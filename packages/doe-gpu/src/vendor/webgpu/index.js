@@ -735,6 +735,50 @@ function updatePassBindGroupState(pass, index, bindGroupNative) {
   return true;
 }
 
+function initPendingComputeState(pass) {
+  pass._pipelineDirty = false;
+  pass._bindGroupDirty = [];
+}
+
+function markPassPipelineDirty(pass) {
+  pass._pipelineDirty = true;
+}
+
+function markPassBindGroupDirty(pass, index) {
+  pass._bindGroupDirty[index] = true;
+}
+
+function clearPendingBoundDispatchState(pass) {
+  pass._pipelineDirty = false;
+  pass._bindGroupDirty[0] = false;
+}
+
+function hasPendingNonZeroBindGroups(pass) {
+  for (let index = 1; index < pass._bindGroupDirty.length; index += 1) {
+    if (pass._bindGroupDirty[index]) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function materializeNodePendingComputeState(pass, nativePass) {
+  if (pass._pipelineDirty && pass._pipeline != null) {
+    addon.computePassSetPipeline(nativePass, pass._pipeline);
+    pass._pipelineDirty = false;
+  }
+  for (let index = 0; index < pass._bindGroupDirty.length; index += 1) {
+    if (!pass._bindGroupDirty[index]) {
+      continue;
+    }
+    const bindGroupNative = pass._bindGroups[index] ?? null;
+    if (bindGroupNative != null) {
+      addon.computePassSetBindGroup(nativePass, index, bindGroupNative);
+    }
+    pass._bindGroupDirty[index] = false;
+  }
+}
+
 function immediateBytesEqual(currentData, nextData) {
   if (!currentData || currentData.byteLength !== nextData.byteLength) {
     return false;
@@ -790,6 +834,7 @@ const nodeEncoderBackend = {
     pass._pipeline = null;
     pass._bindGroups = [];
     pass._immediates = [];
+    initPendingComputeState(pass);
     if (native === null) {
       pass._native = null;
       pass._lazy = true;
@@ -815,10 +860,7 @@ const nodeEncoderBackend = {
     if (pass._lazy) {
       return;
     }
-    addon.computePassSetPipeline(
-      assertLiveResource(pass, 'GPUComputePassEncoder.setPipeline', 'GPUComputePassEncoder'),
-      pipelineNative,
-    );
+    markPassPipelineDirty(pass);
   },
   computePassSetBindGroup(pass, index, bindGroupNative) {
     if (!updatePassBindGroupState(pass, index, bindGroupNative)) {
@@ -827,11 +869,7 @@ const nodeEncoderBackend = {
     if (pass._lazy) {
       return;
     }
-    addon.computePassSetBindGroup(
-      assertLiveResource(pass, 'GPUComputePassEncoder.setBindGroup', 'GPUComputePassEncoder'),
-      index,
-      bindGroupNative,
-    );
+    markPassBindGroupDirty(pass, index);
   },
   computePassSetImmediates(pass, index, data) {
     if (!updatePassImmediateState(pass, index, data)) {
@@ -852,16 +890,29 @@ const nodeEncoderBackend = {
       pass._encoder._commands.push({ t: 0, p: pass._pipeline, bg: [...pass._bindGroups], x, y, z, d: pass._descriptor ?? undefined });
       return;
     }
-    addon.computePassDispatchWorkgroups(
-      assertLiveResource(
-        pass,
-        'GPUComputePassEncoder.dispatchWorkgroups',
-        'GPUComputePassEncoder',
-      ),
-      x,
-      y,
-      z,
+    const nativePass = assertLiveResource(
+      pass,
+      'GPUComputePassEncoder.dispatchWorkgroups',
+      'GPUComputePassEncoder',
     );
+    if (
+      typeof addon.computePassDispatchBound === 'function'
+      && (pass._pipelineDirty || pass._bindGroupDirty[0] === true)
+      && !hasPendingNonZeroBindGroups(pass)
+    ) {
+      addon.computePassDispatchBound(
+        nativePass,
+        pass._pipeline,
+        pass._bindGroups[0] ?? null,
+        x,
+        y,
+        z,
+      );
+      clearPendingBoundDispatchState(pass);
+      return;
+    }
+    materializeNodePendingComputeState(pass, nativePass);
+    addon.computePassDispatchWorkgroups(nativePass, x, y, z);
   },
   computePassDispatchBound(pass, pipelineNative, bindGroupNative, x, y, z) {
     if (pass._lazy) {
@@ -877,11 +928,13 @@ const nodeEncoderBackend = {
     );
     if (typeof addon.computePassDispatchBound === 'function') {
       addon.computePassDispatchBound(nativePass, pipelineNative, bindGroupNative, x, y, z);
+      clearPendingBoundDispatchState(pass);
       return;
     }
     addon.computePassSetPipeline(nativePass, pipelineNative);
     addon.computePassSetBindGroup(nativePass, 0, bindGroupNative);
     addon.computePassDispatchWorkgroups(nativePass, x, y, z);
+    clearPendingBoundDispatchState(pass);
   },
   computePassDispatchWorkgroupsIndirect(pass, indirectBufferNative, indirectOffset) {
     materializeLazyComputePass(pass);
@@ -890,6 +943,7 @@ const nodeEncoderBackend = {
       'GPUComputePassEncoder.dispatchWorkgroupsIndirect',
       'GPUComputePassEncoder',
     );
+    materializeNodePendingComputeState(pass, nativePass);
     addon.computePassDispatchWorkgroupsIndirect(nativePass, indirectBufferNative, indirectOffset);
   },
   computePassEnd(pass) {
