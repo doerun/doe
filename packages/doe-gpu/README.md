@@ -20,33 +20,33 @@ npm install doe-gpu
 ## Why use it
 
 - Small JS layer over the native Doe runtime
+- Faster on modern consumer hardware
 - Explicit failure instead of silent fallback
 - One package surface across Node.js, Bun, and Deno
 - Browser shim available when you want API compatibility rather than runtime
   replacement
 
-## What we can claim today
+## Current evidence
 
-Ready to claim means strict apples-to-apples evidence that is safe to cite.
+End to end Gemma 3 inference. Positive percentages mean Doe is faster vs Dawn via Node `webgpu` and Bun `bun-webgpu` packages.
 
-| What | Platform | Status | Result | Proof |
-| --- | --- | --- | --- | --- |
-| Node package | AMD Vulkan | Ready to claim | Doe faster | [artifact](https://github.com/doe-gpu/doe/blob/main/bench/out/amd-vulkan/20260410T235522Z/gemma270m.node-package.ir.compare.json) |
-| Bun package | AMD Vulkan | Ready to claim | Doe faster | [artifact](https://github.com/doe-gpu/doe/blob/main/bench/out/amd-vulkan/20260410T235541Z/gemma270m.bun-package.ir.compare.json) |
-| Node package | Apple Metal | Ready to claim | Doe faster | [compare](https://github.com/doe-gpu/doe/blob/main/bench/out/apple-metal/20260413T214410Z/gemma64.node-package.warm.ir.compare.json) / [claim](https://github.com/doe-gpu/doe/blob/main/bench/out/apple-metal/20260413T214410Z/gemma64.node-package.warm.ir.claim.json) |
-| Bun package | Apple Metal | Ready to claim | Doe faster | [compare](https://github.com/doe-gpu/doe/blob/main/bench/out/apple-metal/20260413T214446Z/gemma64.bun-package.warm.ir.compare.json) / [claim](https://github.com/doe-gpu/doe/blob/main/bench/out/apple-metal/20260413T214446Z/gemma64.bun-package.warm.ir.claim.json) |
+| Lane                      | p50    | p95    | Output                                                                                                                                        |
+| ------------------------- | ------ | ------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| Node package, AMD Vulkan  | +59.9% | +56.7% | [benchmark output](https://github.com/doe-gpu/doe/blob/main/bench/out/amd-vulkan/20260410T235522Z/gemma270m.node-package.ir.compare.json)     |
+| Bun package, AMD Vulkan   | +66.2% | +60.6% | [benchmark output](https://github.com/doe-gpu/doe/blob/main/bench/out/amd-vulkan/20260410T235541Z/gemma270m.bun-package.ir.compare.json)      |
+| Node package, Apple Metal | +20.8% | +13.0% | [benchmark output](https://github.com/doe-gpu/doe/blob/main/bench/out/apple-metal/20260414T010826Z/gemma64.node-package.warm.ir.compare.json) |
+| Bun package, Apple Metal  | +14.1% | +17.1% | [benchmark output](https://github.com/doe-gpu/doe/blob/main/bench/out/apple-metal/20260414T010736Z/gemma64.bun-package.warm.ir.compare.json)  |
 
-## What is still experimental
+## Additional benchmark outputs
 
-The Doe repo also has governed ORT benchmarks and broader Apple Metal follow-up
-work, but those belong in the repo status page rather than the package promise. Read
+ORT lanes and broader follow-up work live in the repo status page. Read
 [`docs/status.md`](https://github.com/doe-gpu/doe/blob/main/docs/status.md)
 for the current scope and artifacts.
 
 ## Usage
 
 ```js
-import { gpu } from 'doe-gpu';
+import { gpu } from "doe-gpu";
 
 const device = await gpu.requestDevice();
 const result = await device.compute({

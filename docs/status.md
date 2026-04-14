@@ -22,11 +22,11 @@ Read this file first. Use the shard files under
 
 - Apple Metal package compute now has narrow claimable warm package surfaces on
   `mac.lan` for both Node and Bun. The current Node artifacts are
-  `bench/out/apple-metal/20260413T214410Z/gemma64.node-package.warm.ir.compare.json`
-  and `bench/out/apple-metal/20260413T214410Z/gemma64.node-package.warm.ir.claim.json`.
+  `bench/out/apple-metal/20260414T010826Z/gemma64.node-package.warm.ir.compare.json`
+  and `bench/out/apple-metal/20260414T010826Z/gemma64.node-package.warm.ir.claim.json`.
   The current Bun artifacts are
-  `bench/out/apple-metal/20260413T214446Z/gemma64.bun-package.warm.ir.compare.json`
-  and `bench/out/apple-metal/20260413T214446Z/gemma64.bun-package.warm.ir.claim.json`.
+  `bench/out/apple-metal/20260414T010736Z/gemma64.bun-package.warm.ir.compare.json`
+  and `bench/out/apple-metal/20260414T010736Z/gemma64.bun-package.warm.ir.claim.json`.
   These are still narrow Apple Metal package lanes, not a blanket Metal claim.
 - A repo-only same-stack Bun ORT WebGPU provider-compare lane now exists at
   `bench/native-compare/compare.config.bun.ort-webgpu-provider.gemma270m.prefill32.decode1.json`.

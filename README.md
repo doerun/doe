@@ -23,40 +23,27 @@ If you want the published npm surface, start with
 - Performance work with receipts: current results live in
   [`docs/status.md`](docs/status.md) and `bench/out/*`, not in prose.
 
-## What we can claim today
+## Current evidence
 
-Ready to claim means strict apples-to-apples evidence that is safe to cite.
+Front-door evidence only. Positive percentages mean Doe is faster.
 
-| What | Platform | Status | Result | Proof |
-| --- | --- | --- | --- | --- |
-| Node package | AMD Vulkan | Ready to claim | Doe faster | [artifact](bench/out/amd-vulkan/20260410T235522Z/gemma270m.node-package.ir.compare.json) |
-| Bun package | AMD Vulkan | Ready to claim | Doe faster | [artifact](bench/out/amd-vulkan/20260410T235541Z/gemma270m.bun-package.ir.compare.json) |
-| Node package | Apple Metal | Ready to claim | Doe faster | [compare](bench/out/apple-metal/20260413T214410Z/gemma64.node-package.warm.ir.compare.json) / [claim](bench/out/apple-metal/20260413T214410Z/gemma64.node-package.warm.ir.claim.json) |
-| Bun package | Apple Metal | Ready to claim | Doe faster | [compare](bench/out/apple-metal/20260413T214446Z/gemma64.bun-package.warm.ir.compare.json) / [claim](bench/out/apple-metal/20260413T214446Z/gemma64.bun-package.warm.ir.claim.json) |
+| Lane | p50 | p95 | Output |
+| --- | --- | --- | --- |
+| Node package, AMD Vulkan | +59.9% | +56.7% | [benchmark output](bench/out/amd-vulkan/20260410T235522Z/gemma270m.node-package.ir.compare.json) |
+| Bun package, AMD Vulkan | +66.2% | +60.6% | [benchmark output](bench/out/amd-vulkan/20260410T235541Z/gemma270m.bun-package.ir.compare.json) |
+| Node package, Apple Metal | +20.8% | +13.0% | [benchmark output](bench/out/apple-metal/20260414T010826Z/gemma64.node-package.warm.ir.compare.json) |
+| Bun package, Apple Metal | +14.1% | +17.1% | [benchmark output](bench/out/apple-metal/20260414T010736Z/gemma64.bun-package.warm.ir.compare.json) |
 
-## What is still experimental
+## Additional benchmark outputs
 
-Mixed results means real evidence exists, but not a broad win. Internal
-benchmark means the evidence is useful and governed, but it is not a package
-promise.
+Additional benchmark outputs also exist for ORT and broader compare surfaces.
 
-| What | Platform | Status | Result | Proof |
-| --- | --- | --- | --- | --- |
-| Native ORT | AMD Vulkan | Internal benchmark | Doe faster | [compare](bench/out/native-ort-webgpu-provider/20260413T175708Z/basic-ops.compare.json) / [claim](bench/out/native-ort-webgpu-provider/20260413T175708Z/basic-ops.claim.json) |
-| Node ORT | AMD Vulkan | Internal benchmark | Doe faster | [compare](bench/out/node-ort-webgpu-provider-compare/20260413T191817Z/gemma270m.compare.json) / [claim](bench/out/node-ort-webgpu-provider-compare/20260413T191817Z/gemma270m.claim.json) |
-| Bun ORT | AMD Vulkan | Internal benchmark | Doe faster | [compare](bench/out/bun-ort-webgpu-provider-compare/gemma270m-prefill32-decode1.compare.json) / [claim](bench/out/bun-ort-webgpu-provider-compare/gemma270m-prefill32-decode1.claim.json) |
-| Browser ORT | Linux browser | Mixed results | Mixed | [artifact](bench/out/browser-ort-webgpu-compare/20260413T193605Z/browser.compare.json) |
-
-Coverage snapshot:
-
-| What | AMD Vulkan | Apple Metal |
-| --- | --- | --- |
-| Node package | Claimable win | Claimable win |
-| Bun package | Claimable win | Claimable win |
-| Native ORT | Internal benchmark | Not front-doored |
-| Node ORT | Internal benchmark | Not front-doored |
-| Bun ORT | Internal benchmark | Not front-doored |
-| Browser ORT | Mixed | Not front-doored |
+| Lane | p50 | p95 | Output |
+| --- | --- | --- | --- |
+| Native ORT, AMD Vulkan | +39.1% | +38.1% | [benchmark output](bench/out/native-ort-webgpu-provider/20260413T175708Z/basic-ops.compare.json) / [benchmark output](bench/out/native-ort-webgpu-provider/20260413T175708Z/basic-ops.claim.json) |
+| Node ORT, AMD Vulkan | +8.9% | +8.9% | [benchmark output](bench/out/node-ort-webgpu-provider-compare/20260413T191817Z/gemma270m.compare.json) / [benchmark output](bench/out/node-ort-webgpu-provider-compare/20260413T191817Z/gemma270m.claim.json) |
+| Bun ORT, AMD Vulkan | +4.0% | +4.0% | [benchmark output](bench/out/bun-ort-webgpu-provider-compare/gemma270m-prefill32-decode1.compare.json) / [benchmark output](bench/out/bun-ort-webgpu-provider-compare/gemma270m-prefill32-decode1.claim.json) |
+| Browser ORT, Linux browser | Mixed | Mixed | [benchmark output](bench/out/browser-ort-webgpu-compare/20260413T193605Z/browser.compare.json) |
 
 ## Current product surface
 

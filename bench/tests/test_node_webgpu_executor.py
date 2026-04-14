@@ -236,6 +236,14 @@ class NodeWebGPUExecutorTests(unittest.TestCase):
         self.assertIn("if (!updatePassPipelineState(pass, pipelineNative)) {", source)
         self.assertIn("if (!updatePassBindGroupState(pass, index, bindGroupNative)) {", source)
 
+    def test_node_package_encoder_backend_uses_dispatch_bound_fast_path_for_pending_state(self) -> None:
+        source = PACKAGE_INDEX_PATH.read_text(encoding="utf-8")
+
+        self.assertIn("function materializeNodePendingComputeState(pass, nativePass)", source)
+        self.assertIn("typeof addon.computePassDispatchBound === 'function'", source)
+        self.assertIn("clearPendingBoundDispatchState(pass);", source)
+        self.assertIn("materializeNodePendingComputeState(pass, nativePass);", source)
+
     def test_classify_bringup_unsupported_recognizes_unavailable_errors(self) -> None:
         script = f"""
 import {{ classifyBringupUnsupported }} from {json.dumps(EXECUTOR_MODULE_URL)};

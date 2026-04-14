@@ -43,6 +43,7 @@ pub const MAX_POOL_ENTRIES_PER_SIZE: usize = metal_buffer_pool.MAX_POOL_ENTRIES_
 pub const DispatchMetrics = kernel_dispatch.DispatchMetrics;
 pub const FlushResult = queue_ops.FlushResult;
 pub const RenderMetrics = render_ops.RenderMetrics;
+pub const KernelPipelineInfo = resource_runtime.KernelPipelineInfo;
 
 pub const PendingUpload = struct {
     src_buffer: ?*anyopaque,
@@ -414,6 +415,10 @@ pub const NativeMetalRuntime = struct {
 
     pub fn ensure_kernel_pipeline(self: *NativeMetalRuntime, kernel: []const u8, entry_point: ?[]const u8) !?*anyopaque {
         return resource_runtime.ensure_kernel_pipeline(self, self.pipelineBinaryCache(), kernel, entry_point);
+    }
+
+    pub fn ensure_kernel_pipeline_info(self: *NativeMetalRuntime, kernel: []const u8, entry_point: ?[]const u8) !KernelPipelineInfo {
+        return resource_runtime.ensure_kernel_pipeline_info(self, self.pipelineBinaryCache(), kernel, entry_point);
     }
 
     pub fn get_kernel_workgroup_size(self: *NativeMetalRuntime, kernel: []const u8, entry_point: ?[]const u8) ![3]u32 {

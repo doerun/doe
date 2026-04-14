@@ -66,8 +66,9 @@ pub fn run_kernel_dispatch_timed(
 ) !KernelDispatchResult {
     // Setup: pipeline compile, buffer allocation, warmup dispatches.
     const setup_start = common_timing.now_ns();
-    const pipeline = try runtime.ensure_kernel_pipeline(kernel, entry_point);
-    const workgroup_size = try runtime.get_kernel_workgroup_size(kernel, entry_point);
+    const pipeline_info = try runtime.ensure_kernel_pipeline_info(kernel, entry_point);
+    const pipeline = pipeline_info.pipeline;
+    const workgroup_size = pipeline_info.workgroup_size;
 
     var buf_slots: [MAX_BINDING_SLOTS]?*anyopaque = [_]?*anyopaque{null} ** MAX_BINDING_SLOTS;
     var slot_count: u32 = 0;
