@@ -1,57 +1,64 @@
 {
   "packageClaims": {
     "title": "Published package compare lanes",
-    "subtitle": "Positive percentages mean Doe is faster vs Dawn on current front-door package lanes.",
+    "subtitle": "Bars show artifact-backed Doe and incumbent timings plus sample counts; the green pill summarizes the faster delta.",
     "caption": "Package compare claims",
     "rows": [
       {
         "label": "Node package",
         "platform": "AMD Vulkan",
-        "p50": 59.9,
-        "p95": 56.7
+        "baselineLabel": "Doe",
+        "comparisonLabel": "Dawn",
+        "artifactPath": "bench/out/amd-vulkan/20260410T235522Z/gemma270m.node-package.ir.compare.json"
       },
       {
         "label": "Bun package",
         "platform": "AMD Vulkan",
-        "p50": 66.2,
-        "p95": 60.6
+        "baselineLabel": "Doe",
+        "comparisonLabel": "Dawn",
+        "artifactPath": "bench/out/amd-vulkan/20260410T235541Z/gemma270m.bun-package.ir.compare.json"
       },
       {
         "label": "Node package",
         "platform": "Apple Metal",
-        "p50": 20.8,
-        "p95": 13.0
+        "baselineLabel": "Doe",
+        "comparisonLabel": "Dawn",
+        "artifactPath": "bench/out/apple-metal/20260414T010826Z/gemma64.node-package.warm.ir.compare.json"
       },
       {
         "label": "Bun package",
         "platform": "Apple Metal",
-        "p50": 14.1,
-        "p95": 17.1
+        "baselineLabel": "Doe",
+        "comparisonLabel": "Dawn",
+        "artifactPath": "bench/out/apple-metal/20260414T010736Z/gemma64.bun-package.warm.ir.compare.json"
       }
     ]
   },
   "ortClaims": {
     "title": "Additional ORT compare lanes",
-    "subtitle": "Claimed ORT deltas stay artifact-backed; browser results remain mixed.",
+    "subtitle": "Bars show artifact-backed Doe and ORT WebGPU timings plus sample counts; browser results remain mixed.",
     "caption": "ORT compare claims",
     "rows": [
       {
         "label": "Native ORT",
         "platform": "AMD Vulkan",
-        "p50": 39.1,
-        "p95": 38.1
+        "baselineLabel": "Doe",
+        "comparisonLabel": "ORT WebGPU",
+        "artifactPath": "bench/out/native-ort-webgpu-provider/20260413T175708Z/basic-ops.compare.json"
       },
       {
         "label": "Node ORT",
         "platform": "AMD Vulkan",
-        "p50": 8.9,
-        "p95": 8.9
+        "baselineLabel": "Doe",
+        "comparisonLabel": "ORT WebGPU",
+        "artifactPath": "bench/out/node-ort-webgpu-provider-compare/20260413T191817Z/gemma270m.compare.json"
       },
       {
         "label": "Bun ORT",
         "platform": "AMD Vulkan",
-        "p50": 4.0,
-        "p95": 4.0
+        "baselineLabel": "Doe",
+        "comparisonLabel": "ORT WebGPU",
+        "artifactPath": "bench/out/bun-ort-webgpu-provider-compare/gemma270m-prefill32-decode1.compare.json"
       },
       {
         "label": "Browser ORT",
