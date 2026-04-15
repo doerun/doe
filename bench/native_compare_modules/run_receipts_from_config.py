@@ -7,9 +7,9 @@ from pathlib import Path
 from typing import Sequence
 
 from bench.lib import output_paths
+from native_compare_modules import artifact_benchmarking as artifact_benchmarking_mod
 from native_compare_modules import config_support as config_support_mod
 from native_compare_modules import executor_registry as executor_registry_mod
-from native_compare_modules import run_from_config as run_from_config_mod
 
 
 def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
@@ -78,17 +78,35 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     timestamp = output_timestamp or output_paths.utc_timestamp_now()
     product, executor_id, template = _resolve_side_details(args)
-    written = run_from_config_mod.run_product_from_prepared_args(
+    written = artifact_benchmarking_mod.run_product_bundle(
         product=product,
-        executor_id=executor_id,
         display_name=product,
+        executor_id=executor_id,
         template=template,
         workloads=workloads,
-        args=args,
+        iterations=args.iterations,
+        warmup=args.warmup,
         workspace=workspace,
-        workloads_path=workloads_path,
+        workload_contract_path=workloads_path,
+        gpu_memory_probe=args.resource_probe,
+        resource_sample_ms=args.resource_sample_ms,
+        resource_sample_target_count=args.resource_sample_target_count,
+        required_timing_class=args.require_timing_class,
+        comparability_mode=args.comparability,
         benchmark_policy=benchmark_policy,
+        workload_cooldown_ms=args.workload_cooldown_ms,
+        emit_shell=args.emit_shell,
         timestamp=timestamp,
+        doe_compilation_bin=getattr(
+            args,
+            "doe_compilation_bin",
+            "runtime/zig/zig-out/bin/doe-compilation-bench",
+        ),
+        tint_bin=getattr(
+            args,
+            "tint_bin",
+            "bench/vendor/dawn/out/Release/tint",
+        ),
         run_role=args.side,
     )
     for artifact_path in written:

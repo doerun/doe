@@ -2,7 +2,7 @@ const std = @import("std");
 const testing = std.testing;
 
 const capability_runtime = @import("../../src/wgpu_capability_runtime.zig");
-const types = @import("../../src/core/abi/wgpu_types.zig");
+const types = @import("../../src/core/abi/wgpu_runtime_abi.zig");
 const p1_procs = @import("../../src/wgpu_p1_capability_procs.zig");
 
 // ============================================================

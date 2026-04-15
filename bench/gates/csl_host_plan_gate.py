@@ -18,7 +18,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from native_compare_modules import host_plan_contract
+from native_compare_modules import contracts
 
 
 def parse_args() -> argparse.Namespace:
@@ -51,7 +51,7 @@ def main() -> int:
     args = parse_args()
     report_path = Path(args.report)
     report = load_json(report_path)
-    schema = host_plan_contract.load_schema(Path(args.schema))
+    schema = contracts.load_schema(Path(args.schema))
 
     failures: list[str] = []
     validated = 0
@@ -98,7 +98,7 @@ def main() -> int:
                 continue
 
             artifact_path = resolve_relative_path(report_path.parent, artifact_path_raw)
-            errors = host_plan_contract.validate_artifact(
+            errors = contracts.validate_artifact(
                 artifact_path,
                 schema,
                 expected_hash=artifact_hash_raw,

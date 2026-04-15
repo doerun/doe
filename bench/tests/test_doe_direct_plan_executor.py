@@ -3,70 +3,54 @@
 
 from __future__ import annotations
 
-import json
 import subprocess
 import tempfile
 import unittest
 from pathlib import Path
 
+from bench.tests._plan_executor_support import (
+    EXPECTED_PLAN_SHA256,
+    PLAN_PATH,
+    RUNTIME_DIR,
+    build_target,
+    executor_bin,
+    read_trace_artifacts,
+    run_plan_executor,
+)
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
-RUNTIME_DIR = REPO_ROOT / "runtime" / "zig"
-BIN_PATH = RUNTIME_DIR / "zig-out" / "bin" / "doe-plan-executor"
-PLAN_PATH = REPO_ROOT / "bench" / "plans" / "generated" / "inference_gemma3_270m_prefill_32tok.plan.json"
-EXPECTED_PLAN_SHA256 = "47fd52b0ca02a3f3245a80f52143b4230a769b86049f1b1871fe24fde106514b"
+
+_DOE_BACKEND_ARGS = (
+    "--vendor", "apple",
+    "--api", "metal",
+    "--family", "m3",
+    "--driver", "1.0.0",
+    "--backend-lane", "metal_doe_comparable",
+)
 
 
 class DoeDirectPlanExecutorTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        subprocess.run(
-            ["zig", "build", "doe-plan-executor"],
-            cwd=RUNTIME_DIR,
-            capture_output=True,
-            text=True,
-            check=True,
-        )
+        result = build_target("doe-plan-executor")
+        if result.returncode != 0:
+            raise AssertionError(result.stderr)
 
-    def run_executor(self, *, workload: str, dry_run: bool = True, tmpdir: Path) -> subprocess.CompletedProcess[str]:
-        meta_path = tmpdir / "trace-meta.json"
-        trace_path = tmpdir / "trace.jsonl"
-        args = [
-            str(BIN_PATH),
-            "--plan",
-            str(PLAN_PATH),
-            "--trace-meta",
-            str(meta_path),
-            "--trace-jsonl",
-            str(trace_path),
-            "--workload",
-            workload,
-            "--vendor",
-            "apple",
-            "--api",
-            "metal",
-            "--family",
-            "m3",
-            "--driver",
-            "1.0.0",
-            "--backend-lane",
-            "metal_doe_comparable",
-        ]
-        if dry_run:
-            args.append("--dry-run")
-        return subprocess.run(args, cwd=REPO_ROOT, capture_output=True, text=True, check=False)
+    def _run(self, *, workload: str, tmpdir: Path) -> subprocess.CompletedProcess[str]:
+        return run_plan_executor(
+            executor_bin("doe-plan-executor"),
+            tmpdir=tmpdir,
+            workload=workload,
+            extra_args=_DOE_BACKEND_ARGS,
+        )
 
     def test_dry_run_emits_compare_ready_trace_artifacts(self) -> None:
         with tempfile.TemporaryDirectory(prefix="doe-direct-plan-executor-") as tmpdir:
             tmp = Path(tmpdir)
-            result = self.run_executor(workload="inference_gemma3_270m_prefill_32tok", dry_run=True, tmpdir=tmp)
-            meta_path = tmp / "trace-meta.json"
-            trace_path = tmp / "trace.jsonl"
+            result = self._run(workload="inference_gemma3_270m_prefill_32tok", tmpdir=tmp)
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertEqual(result.stderr, "")
 
-            meta = json.loads(meta_path.read_text(encoding="utf-8"))
-            rows = [json.loads(line) for line in trace_path.read_text(encoding="utf-8").splitlines() if line.strip()]
+            meta, rows = read_trace_artifacts(tmp)
 
             self.assertEqual(meta["module"], "doe-plan-executor")
             self.assertEqual(meta["queueSyncMode"], "per-command")
@@ -87,7 +71,7 @@ class DoeDirectPlanExecutorTests(unittest.TestCase):
 
     def test_workload_mismatch_is_rejected(self) -> None:
         with tempfile.TemporaryDirectory(prefix="doe-direct-plan-executor-") as tmpdir:
-            result = self.run_executor(workload="wrong_workload", dry_run=True, tmpdir=Path(tmpdir))
+            result = self._run(workload="wrong_workload", tmpdir=Path(tmpdir))
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("WorkloadMismatch", result.stderr)
 

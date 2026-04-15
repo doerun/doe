@@ -218,9 +218,26 @@ def _cmd_compare(
     raw_compare_argv = list(raw_compare_argv or [])
 
     if args.config:
-        from native_compare_modules import compare_from_config as compare_from_config_mod
-
-        return compare_from_config_mod.main(raw_compare_argv)
+        print(
+            "error: config-backed inline compare has been removed; "
+            "run each side independently and compare receipts post-hoc.",
+            file=sys.stderr,
+        )
+        print("\nRun each side explicitly:", file=sys.stderr)
+        print(
+            f"  {sys.executable} bench/cli.py run-config --config {args.config} --side baseline",
+            file=sys.stderr,
+        )
+        print(
+            f"  {sys.executable} bench/cli.py run-config --config {args.config} --side comparison",
+            file=sys.stderr,
+        )
+        print(
+            "\nThen compare the emitted .run.json receipts with:\n"
+            f"  {sys.executable} bench/cli.py compare <baseline.run.json> <comparison.run.json>",
+            file=sys.stderr,
+        )
+        return 1
 
     if (
         args.list_promoted

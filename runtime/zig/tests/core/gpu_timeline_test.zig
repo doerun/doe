@@ -75,7 +75,7 @@ test "register_map fires callback immediately when shared_event is null" {
     var called: bool = false;
 
     const S = struct {
-        fn cb(_: u32, _: @import("../../src/core/abi/wgpu_types.zig").WGPUStringView, ud1: ?*anyopaque, _: ?*anyopaque) callconv(.c) void {
+        fn cb(_: u32, _: @import("../../src/core/abi/wgpu_runtime_abi.zig").WGPUStringView, ud1: ?*anyopaque, _: ?*anyopaque) callconv(.c) void {
             const ptr: *bool = @ptrCast(@alignCast(ud1));
             ptr.* = true;
         }
@@ -131,7 +131,7 @@ test "register_work_done fires callback immediately when shared_event is null" {
     var called: bool = false;
 
     const S = struct {
-        fn cb(_: @import("../../src/core/abi/wgpu_types.zig").WGPUQueueWorkDoneStatus, _: @import("../../src/core/abi/wgpu_types.zig").WGPUStringView, ud1: ?*anyopaque, _: ?*anyopaque) callconv(.c) void {
+        fn cb(_: @import("../../src/core/abi/wgpu_runtime_abi.zig").WGPUQueueWorkDoneStatus, _: @import("../../src/core/abi/wgpu_runtime_abi.zig").WGPUStringView, ud1: ?*anyopaque, _: ?*anyopaque) callconv(.c) void {
             const ptr: *bool = @ptrCast(@alignCast(ud1));
             ptr.* = true;
         }
@@ -149,7 +149,7 @@ test "register_work_done fires immediately when submit_counter is zero" {
     var called: bool = false;
 
     const S = struct {
-        fn cb(_: @import("../../src/core/abi/wgpu_types.zig").WGPUQueueWorkDoneStatus, _: @import("../../src/core/abi/wgpu_types.zig").WGPUStringView, ud1: ?*anyopaque, _: ?*anyopaque) callconv(.c) void {
+        fn cb(_: @import("../../src/core/abi/wgpu_runtime_abi.zig").WGPUQueueWorkDoneStatus, _: @import("../../src/core/abi/wgpu_runtime_abi.zig").WGPUStringView, ud1: ?*anyopaque, _: ?*anyopaque) callconv(.c) void {
             const ptr: *bool = @ptrCast(@alignCast(ud1));
             ptr.* = true;
         }

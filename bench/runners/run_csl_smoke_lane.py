@@ -22,7 +22,7 @@ from pathlib import Path
 from typing import Any
 
 from bench.lib import output_paths
-from native_compare_modules import csl_simulator_contract as contract
+from native_compare_modules import contracts as contract
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 RUNTIME_ZIG_DIR = REPO_ROOT / "runtime" / "zig"
@@ -270,7 +270,7 @@ def main() -> int:
                     phases["parity"] = phase("failed", "; ".join(trace_errors))
                 else:
                     trace_payload = load_json(trace_path)
-                    parity_errors = contract.evaluate_trace_parity(trace_payload, dict(config["expectedTrace"]))
+                    parity_errors = contract.evaluate_csl_trace_parity(trace_payload, dict(config["expectedTrace"]))
                     if parity_errors:
                         phases["parity"] = phase("failed", "; ".join(parity_errors))
                     else:

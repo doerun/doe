@@ -611,7 +611,7 @@ test "caps: D3D12DeviceCaps can be constructed with custom fields" {
 }
 
 test "caps: D3D12 limits static values match spec minimums" {
-    var limits: @import("../../src/core/abi/wgpu_types.zig").WGPULimits = undefined;
+    var limits: @import("../../src/core/abi/wgpu_runtime_abi.zig").WGPULimits = undefined;
     device_caps.d3d12_device_get_limits(&limits);
     try testing.expectEqual(@as(u32, 16384), limits.maxTextureDimension1D);
     try testing.expectEqual(@as(u32, 16384), limits.maxTextureDimension2D);
@@ -647,8 +647,8 @@ test "caps: D3D12 limits static values match spec minimums" {
 }
 
 test "caps: adapter_get_limits matches device_get_limits" {
-    var dev_limits: @import("../../src/core/abi/wgpu_types.zig").WGPULimits = undefined;
-    var adapter_limits: @import("../../src/core/abi/wgpu_types.zig").WGPULimits = undefined;
+    var dev_limits: @import("../../src/core/abi/wgpu_runtime_abi.zig").WGPULimits = undefined;
+    var adapter_limits: @import("../../src/core/abi/wgpu_runtime_abi.zig").WGPULimits = undefined;
     device_caps.d3d12_device_get_limits(&dev_limits);
     device_caps.d3d12_adapter_get_limits(&adapter_limits);
     try testing.expectEqual(dev_limits.maxTextureDimension1D, adapter_limits.maxTextureDimension1D);

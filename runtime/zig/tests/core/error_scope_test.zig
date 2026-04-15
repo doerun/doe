@@ -1,6 +1,6 @@
 const std = @import("std");
 const es = @import("../../src/error_scope.zig");
-const wgpu_types = @import("../../src/core/abi/wgpu_types.zig");
+const wgpu_types = @import("../../src/core/abi/wgpu_runtime_abi.zig");
 
 // ============================================================
 // Helpers

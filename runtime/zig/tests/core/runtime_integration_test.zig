@@ -6,7 +6,7 @@ const std = @import("std");
 const testing = std.testing;
 
 const native = @import("../../src/doe_wgpu_native.zig");
-const types = @import("../../src/core/abi/wgpu_types.zig");
+const types = @import("../../src/core/abi/wgpu_runtime_abi.zig");
 const dispatch_preconditions = @import("../../src/dispatch_preconditions.zig");
 const compute_fast = @import("../../src/doe_compute_fast.zig");
 

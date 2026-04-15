@@ -18,7 +18,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from native_compare_modules import metal_sync_contract
+from native_compare_modules import contracts
 
 
 def parse_args() -> argparse.Namespace:
@@ -77,7 +77,7 @@ def main() -> int:
             if not isinstance(trace_meta, dict):
                 continue
             validated_samples += 1
-            for err in metal_sync_contract.evaluate_sync_meta(trace_meta, expected):
+            for err in contracts.evaluate_metal_sync_meta(trace_meta, expected):
                 failures.append(f"{workload_id}: {err}")
         if validated_samples == 0:
             failures.append(

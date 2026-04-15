@@ -7,7 +7,7 @@ const builtin = @import("builtin");
 
 const native = @import("../../src/doe_wgpu_native.zig");
 const shader = @import("../../src/doe_shader_native.zig");
-const types = @import("../../src/core/abi/wgpu_types.zig");
+const types = @import("../../src/core/abi/wgpu_runtime_abi.zig");
 
 // ============================================================
 // 1. sType constants — values are distinct and correctly assigned

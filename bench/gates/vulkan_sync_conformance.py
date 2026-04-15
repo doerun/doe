@@ -18,7 +18,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from native_compare_modules import vulkan_sync_contract
+from native_compare_modules import contracts
 
 
 def parse_args() -> argparse.Namespace:
@@ -81,7 +81,7 @@ def main() -> int:
                 continue
             if sample.get("returnCode") != 0:
                 continue
-            for err in vulkan_sync_contract.evaluate_sync_meta(
+            for err in contracts.evaluate_vulkan_sync_meta(
                 sample,
                 expected,
                 required_timing_class=required_timing_class,

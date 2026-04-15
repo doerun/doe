@@ -19,7 +19,7 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
-from native_compare_modules import shader_contract
+from native_compare_modules import contracts
 
 
 def parse_args() -> argparse.Namespace:

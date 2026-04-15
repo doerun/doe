@@ -7,7 +7,7 @@ const builtin = @import("builtin");
 
 const native = @import("../../src/doe_wgpu_native.zig");
 const caps = @import("../../src/doe_device_caps.zig");
-const types = @import("../../src/core/abi/wgpu_types.zig");
+const types = @import("../../src/core/abi/wgpu_runtime_abi.zig");
 
 // ============================================================
 // 1. doe_wgpu_native.zig — Export existence via comptime @hasDecl

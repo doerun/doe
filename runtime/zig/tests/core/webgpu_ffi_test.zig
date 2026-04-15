@@ -14,7 +14,7 @@
 // 7. Null-safe defaults — zero-init and default behavior
 
 const std = @import("std");
-const types = @import("../../src/core/abi/wgpu_types.zig");
+const types = @import("../../src/core/abi/wgpu_runtime_abi.zig");
 const ffi = @import("../../src/webgpu_ffi.zig");
 const model = @import("../../src/model.zig");
 

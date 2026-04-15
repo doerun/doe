@@ -18,7 +18,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from native_compare_modules import backend_contract
+from native_compare_modules import contracts
 
 
 def parse_args() -> argparse.Namespace:
@@ -172,7 +172,7 @@ def main() -> int:
             if not isinstance(trace_meta, dict):
                 failures.append(f"{workload_id}: missing traceMeta")
                 continue
-            errors = backend_contract.backend_telemetry_errors(trace_meta)
+            errors = contracts.backend_telemetry_errors(trace_meta)
             for err in errors:
                 failures.append(f"{workload_id}: {err}")
             backend_id = trace_meta.get("backendId")

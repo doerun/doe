@@ -8,7 +8,7 @@ const testing = std.testing;
 
 const resources = @import("../../src/core/resource/wgpu_resources.zig");
 const model = @import("../../src/model.zig");
-const types = @import("../../src/core/abi/wgpu_types.zig");
+const types = @import("../../src/core/abi/wgpu_runtime_abi.zig");
 const normalizers = @import("../../src/core/resource/wgpu_resource_normalizers.zig");
 const loader = @import("../../src/core/abi/wgpu_loader.zig");
 
