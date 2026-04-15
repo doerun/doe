@@ -41,10 +41,7 @@ These are subpath entrypoints inside one package family, not separate products.
 provided through optional platform packages:
 
 - `doe-gpu-darwin-arm64`
-- `doe-gpu-darwin-x64`
-- `doe-gpu-linux-arm64`
 - `doe-gpu-linux-x64`
-- `doe-gpu-win32-x64`
 
 Repo-local debug fallback prebuilds may still exist under
 `packages/doe-gpu/prebuilds/<platform-arch>/`, but those are not the primary
@@ -74,8 +71,7 @@ The intended release sequence is:
 4. Verify `packages/doe-gpu` with `npm run test:smoke`,
    `npm run test:integration`, and `npm pack --dry-run`.
 5. Publish platform packages first. On Apple, publish
-   `doe-gpu-darwin-arm64` or `doe-gpu-darwin-x64` after Linux is already
-   published.
+   `doe-gpu-darwin-arm64` after Linux is already published.
 6. Publish `doe-gpu` only after every platform package version referenced in
    `packages/doe-gpu/package.json` already exists on npm.
 

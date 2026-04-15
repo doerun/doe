@@ -78,6 +78,7 @@ The `doe-gpu` package is the JS front door. Native artifacts are expected to
 arrive through one of these paths:
 
 - npm-installed optional platform packages such as `doe-gpu-darwin-arm64`
+  and `doe-gpu-linux-x64`
 - a local workspace build under `runtime/zig/zig-out/`
 - explicit `DOE_WEBGPU_LIB` / `DOE_LIB` overrides
 - local debug prebuilds under `packages/doe-gpu/prebuilds/<platform-arch>/`
@@ -115,8 +116,7 @@ Release order matters:
 4. Verify `packages/doe-gpu` with `npm run test:smoke`,
    `npm run test:integration`, and `npm pack --dry-run`.
 5. Publish the platform package versions first. On Apple, publish
-   `doe-gpu-darwin-arm64` or `doe-gpu-darwin-x64` only after Linux is already
-   published.
+   `doe-gpu-darwin-arm64` only after Linux is already published.
 6. Publish `doe-gpu` only after every platform package version referenced in
    its `optionalDependencies` is already live on npm.
 

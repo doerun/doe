@@ -47,10 +47,7 @@
   },
   "optionalDependencies": {
     "doe-gpu-darwin-arm64": "0.4.1",
-    "doe-gpu-darwin-x64": "0.4.1",
-    "doe-gpu-linux-arm64": "0.4.1",
-    "doe-gpu-linux-x64": "0.4.2",
-    "doe-gpu-win32-x64": "0.4.1"
+    "doe-gpu-linux-x64": "0.4.2"
   },
   "keywords": [
     "webgpu",
