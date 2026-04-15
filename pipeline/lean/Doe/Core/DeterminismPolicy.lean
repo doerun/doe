@@ -1,3 +1,14 @@
+-- Doe/Core/DeterminismPolicy.lean
+--
+-- Stable-token selection policy: prove that tie-breaking by lowest index
+-- yields a deterministic, replay-stable choice over tied-max candidates.
+-- Proof-first design — no direct Zig mirror today; the determinism policy
+-- boundary is consumed via trace-meta (`determinism` block) rather than an
+-- in-runtime implementation module. Any runtime adopter must preserve
+-- the lowest-index-among-max invariant proven here.
+--
+-- Classification: lean_verified (induction over unbounded candidate lists).
+
 structure ChoiceCandidate where
   token : Nat
   priority : Nat

@@ -390,7 +390,7 @@ def compare_workload_from_artifacts(
 ) -> dict[str, Any]:
     """Compare two run receipts for the same workload."""
     import native_compare_modules.comparability  # noqa: F401
-    import native_compare_modules.comparability_runtime as comparability_runtime_mod
+    import native_compare_modules.compare_assessment as compare_assessment_mod
     import native_compare_modules.timing_interpretation as timing_interpretation_mod
 
     baseline_workload = baseline.get("workload", {})
@@ -410,7 +410,7 @@ def compare_workload_from_artifacts(
     if not isinstance(comparison_normalization, dict):
         comparison_normalization = {}
 
-    comparability = comparability_runtime_mod.compare_assessment(
+    comparability = compare_assessment_mod.compare_assessment(
         workload_id=str(baseline_workload.get("id", "")).strip(),
         workload_comparable=bool(baseline_workload.get("comparable", False)),
         workload_domain=str(baseline_workload.get("domain", "")).strip(),

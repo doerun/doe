@@ -429,8 +429,8 @@ def evaluate_comparability_from_facts(
 
 from native_compare_modules.comparability_runtime import (
     assess_timing_phase_equivalence,
-    compare_assessment,
 )
+from native_compare_modules.compare_assessment import compare_assessment
 from native_compare_modules.comparability_upload_contract import (
     assert_runtime_not_stale,
     find_fawn_runtime_index,

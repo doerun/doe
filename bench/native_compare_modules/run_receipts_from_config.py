@@ -9,6 +9,7 @@ from typing import Sequence
 from bench.lib import output_paths
 from native_compare_modules import artifact_benchmarking as artifact_benchmarking_mod
 from native_compare_modules import config_support as config_support_mod
+from native_compare_modules import config_support_defaults
 from native_compare_modules import executor_registry as executor_registry_mod
 
 
@@ -48,7 +49,7 @@ def _resolve_side_details(args: argparse.Namespace) -> tuple[str, str, str]:
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = _parse_args(argv)
-    args = config_support_mod.apply_config_defaults(args)
+    args = config_support_defaults.apply_config_defaults(args)
     benchmark_policy = config_support_mod.load_benchmark_methodology_policy(
         args.benchmark_policy
     )

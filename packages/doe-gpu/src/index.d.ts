@@ -1,8 +1,24 @@
 import type {
   BoundDoeNamespace,
-  DoeKernelDispatchOptions,
   DoeKernelCreateOptions,
+  DoeKernelDispatchOptions,
+  DoeMatmulLogitsSliceOptions,
   DoeNamespace,
+  DoeNumericStabilityReceipt,
+  DoeNumericStabilityRouteDecision,
+} from "./vendor/doe-namespace.js";
+
+export type {
+  BoundDoeNamespace,
+  DoeKernelCreateOptions,
+  DoeKernelDispatchOptions,
+  DoeMatmulLogitsSliceOptions,
+  DoeNamespace,
+  DoeNumericStabilityReceipt,
+  DoeNumericStabilityRouteDecision,
+};
+
+export type {
   DoeBufferUsage,
   DoeWorkgroups,
   DoeBindingAccess,
@@ -19,14 +35,11 @@ import type {
   DoeNumericStabilityCandidateInput,
   DoeNumericStabilityFirstDivergence,
   DoeNumericStabilityExecutionIdentity,
-  DoeNumericStabilityReceipt,
   DoeNumericStabilityReceiptCandidate,
-  DoeNumericStabilityRouteDecision,
   DoeOrdinaryExecutionOptions,
   DoeOrdinaryExecutionResult,
   DoeNumericStabilityOrdinaryExecutionOptions,
   DoeNumericStabilityOrdinaryExecutionResult,
-  DoeMatmulLogitsSliceOptions,
   DoeMatmulLogitsSliceResult,
   DoeReviewedChoiceOptions,
   DoeReviewedChoiceReceipt,
@@ -38,47 +51,6 @@ import type {
   DoeComputePass,
   DoeCommandEncoder,
 } from "./vendor/doe-namespace.js";
-
-export type {
-  BoundDoeNamespace,
-  DoeKernelDispatchOptions,
-  DoeKernelCreateOptions,
-  DoeNamespace,
-  DoeBufferUsage,
-  DoeWorkgroups,
-  DoeBindingAccess,
-  DoeCreateBufferOptions,
-  DoeReadBufferOptions,
-  DoeReadBufferSubrangeOptions,
-  DoeStableTokenOptions,
-  DoeStableTokenReceipt,
-  DoeStableTokenResult,
-  DoeStableTokenTieBreakRule,
-  DoeStableChoiceOptions,
-  DoeStableChoiceReceipt,
-  DoeStableChoiceResult,
-  DoeNumericStabilityCandidateInput,
-  DoeNumericStabilityFirstDivergence,
-  DoeNumericStabilityExecutionIdentity,
-  DoeNumericStabilityReceipt,
-  DoeNumericStabilityReceiptCandidate,
-  DoeNumericStabilityRouteDecision,
-  DoeOrdinaryExecutionOptions,
-  DoeOrdinaryExecutionResult,
-  DoeNumericStabilityOrdinaryExecutionOptions,
-  DoeNumericStabilityOrdinaryExecutionResult,
-  DoeMatmulLogitsSliceOptions,
-  DoeMatmulLogitsSliceResult,
-  DoeReviewedChoiceOptions,
-  DoeReviewedChoiceReceipt,
-  DoeReviewedChoiceResult,
-  DoeDeterminismProofLink,
-  DoeComputeOptions,
-  DoeKernel,
-  DoeComputeBatch,
-  DoeComputePass,
-  DoeCommandEncoder,
-};
 
 export interface ProviderInfo {
   module: string;

@@ -445,7 +445,9 @@ def main() -> int:
             "metal-sync-conformance",
             [
                 sys.executable,
-                "bench/gates/metal_sync_conformance.py",
+                "bench/gates/sync_conformance_gate.py",
+                "--backend",
+                "metal",
                 "--report",
                 str(compare_report),
             ],
@@ -460,7 +462,9 @@ def main() -> int:
             "metal-timing-policy",
             [
                 sys.executable,
-                "bench/gates/metal_timing_policy_gate.py",
+                "bench/gates/timing_policy_gate.py",
+                "--backend",
+                "metal",
                 "--report",
                 str(compare_report),
             ],

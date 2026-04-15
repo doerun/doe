@@ -1,5 +1,16 @@
 import type {
   BoundDoeNamespace,
+  DoeKernelCreateOptions,
+  DoeKernelDispatchOptions,
+  DoeNamespace,
+} from "./vendor/doe-namespace.js";
+import type {
+  DoeRuntime,
+  DoeRuntimeRunResult,
+  ProviderInfo,
+} from "./index.js";
+
+export type {
   DoeDeterminismProofLink,
   DoeMatmulLogitsSliceOptions,
   DoeMatmulLogitsSliceResult,
@@ -20,15 +31,7 @@ import type {
   DoeStableTokenReceipt,
   DoeStableTokenResult,
   DoeStableTokenTieBreakRule,
-  DoeKernelDispatchOptions,
-  DoeKernelCreateOptions,
-  DoeNamespace,
 } from "./vendor/doe-namespace.js";
-import type {
-  DoeRuntime,
-  DoeRuntimeRunResult,
-  ProviderInfo,
-} from "./index.js";
 
 export interface ComputeGPUBuffer {
   readonly size: number;
@@ -150,29 +153,6 @@ export interface ComputeDoeNamespace
     ComputeBoundDoeNamespace,
     RequestDeviceOptions
   > {}
-
-export type {
-  DoeDeterminismProofLink,
-  DoeMatmulLogitsSliceOptions,
-  DoeMatmulLogitsSliceResult,
-  DoeOrdinaryExecutionOptions,
-  DoeOrdinaryExecutionResult,
-  DoeNumericStabilityCandidateInput,
-  DoeNumericStabilityFirstDivergence,
-  DoeNumericStabilityReceipt,
-  DoeNumericStabilityReceiptCandidate,
-  DoeNumericStabilityRouteDecision,
-  DoeReviewedChoiceOptions,
-  DoeReviewedChoiceReceipt,
-  DoeReviewedChoiceResult,
-  DoeStableChoiceOptions,
-  DoeStableChoiceReceipt,
-  DoeStableChoiceResult,
-  DoeStableTokenOptions,
-  DoeStableTokenReceipt,
-  DoeStableTokenResult,
-  DoeStableTokenTieBreakRule,
-};
 
 export const globals: Record<string, unknown>;
 export function create(createArgs?: string[] | null): ComputeGPU;

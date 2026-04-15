@@ -452,10 +452,8 @@ def main() -> int:
     shader_artifact_gate = gates_dir / "shader_artifact_gate.py"
     spirv_val_gate = gates_dir / "spirv_val_gate.py"
     dxil_validate_gate = gates_dir / "dxil_validate_gate.py"
-    metal_sync_conformance = gates_dir / "metal_sync_conformance.py"
-    metal_timing_policy_gate = gates_dir / "metal_timing_policy_gate.py"
-    vulkan_sync_conformance = gates_dir / "vulkan_sync_conformance.py"
-    vulkan_timing_policy_gate = gates_dir / "vulkan_timing_policy_gate.py"
+    sync_conformance_gate = gates_dir / "sync_conformance_gate.py"
+    timing_policy_gate = gates_dir / "timing_policy_gate.py"
     comparable_runtime_invariants_gate = (
         gates_dir / "comparable_runtime_invariants_gate.py"
     )
@@ -685,16 +683,24 @@ def main() -> int:
                 dxil_validate_command.append("--skip-zig-tests")
             run_gate("dxil-validate", dxil_validate_command)
 
-        if args.with_metal_sync_conformance_gate:
+        sync_gate_runs = (
+            ("metal-sync", "metal", args.with_metal_sync_conformance_gate),
+            ("vulkan-sync", "vulkan", args.with_vulkan_sync_conformance_gate),
+        )
+        for label, backend, enabled in sync_gate_runs:
+            if not enabled:
+                continue
             timing_policy_path = Path(args.backend_timing_policy)
             if not timing_policy_path.exists():
                 print(f"FAIL: missing --backend-timing-policy: {timing_policy_path}")
                 return 1
             run_gate(
-                "metal-sync",
+                label,
                 [
                     sys.executable,
-                    str(metal_sync_conformance),
+                    str(sync_conformance_gate),
+                    "--backend",
+                    backend,
                     "--report",
                     str(report_path),
                     "--timing-policy",
@@ -702,50 +708,24 @@ def main() -> int:
                 ],
             )
 
-        if args.with_metal_timing_policy_gate:
+        timing_gate_runs = (
+            ("metal-timing-policy", "metal", args.with_metal_timing_policy_gate),
+            ("vulkan-timing-policy", "vulkan", args.with_vulkan_timing_policy_gate),
+        )
+        for label, backend, enabled in timing_gate_runs:
+            if not enabled:
+                continue
             timing_policy_path = Path(args.backend_timing_policy)
             if not timing_policy_path.exists():
                 print(f"FAIL: missing --backend-timing-policy: {timing_policy_path}")
                 return 1
             run_gate(
-                "metal-timing-policy",
+                label,
                 [
                     sys.executable,
-                    str(metal_timing_policy_gate),
-                    "--report",
-                    str(report_path),
-                    "--timing-policy",
-                    str(timing_policy_path),
-                ],
-            )
-
-        if args.with_vulkan_sync_conformance_gate:
-            timing_policy_path = Path(args.backend_timing_policy)
-            if not timing_policy_path.exists():
-                print(f"FAIL: missing --backend-timing-policy: {timing_policy_path}")
-                return 1
-            run_gate(
-                "vulkan-sync",
-                [
-                    sys.executable,
-                    str(vulkan_sync_conformance),
-                    "--report",
-                    str(report_path),
-                    "--timing-policy",
-                    str(timing_policy_path),
-                ],
-            )
-
-        if args.with_vulkan_timing_policy_gate:
-            timing_policy_path = Path(args.backend_timing_policy)
-            if not timing_policy_path.exists():
-                print(f"FAIL: missing --backend-timing-policy: {timing_policy_path}")
-                return 1
-            run_gate(
-                "vulkan-timing-policy",
-                [
-                    sys.executable,
-                    str(vulkan_timing_policy_gate),
+                    str(timing_policy_gate),
+                    "--backend",
+                    backend,
                     "--report",
                     str(report_path),
                     "--timing-policy",

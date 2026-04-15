@@ -53,7 +53,7 @@ Applies to:
   - `pipeline/lean/Doe/Comparability.lean`
 - Timing policy contract:
   - `config/backend-timing-policy.json`
-  - `bench/vulkan_timing_policy_gate.py`
+  - `bench/gates/timing_policy_gate.py --backend vulkan`
 - Coverage artifacts:
   - `config/webgpu-capability-inventory.json`
   - `config/dropin_abi.symbols.txt`
@@ -62,7 +62,7 @@ Required checkpoints for benchmark contract changes:
 - `python3 bench/comparability_obligation_parity_gate.py`
 - `python3 bench/gates/schema_gate.py`
 - targeted compare run for the modified workload set / surface config
-- timing policy gate on that report (`bench/vulkan_timing_policy_gate.py` for Vulkan timing-policy-bound benchmark surfaces)
+- timing policy gate on that report (`bench/gates/timing_policy_gate.py --backend vulkan` for Vulkan timing-policy-bound benchmark surfaces)
 
 ## 3) Workload contract format (`bench/workloads*.json`)
 
@@ -408,7 +408,7 @@ Useful strict run pattern:
 python3 bench/cli.py run-config --config bench/native-compare/compare.config.amd.vulkan.doe-vs-dawn.fullsuite.json --side baseline
 python3 bench/cli.py run-config --config bench/native-compare/compare.config.amd.vulkan.doe-vs-dawn.fullsuite.json --side comparison
 # then join the emitted .run.json receipts with `python3 bench/cli.py compare ...`
-python3 bench/vulkan_timing_policy_gate.py --report bench/out/<timestamp>/vulkan.strict.doe_vs_dawn.fullsuite.apples.json
+python3 bench/gates/timing_policy_gate.py --backend vulkan --report bench/out/<timestamp>/vulkan.strict.doe_vs_dawn.fullsuite.apples.json
 ```
 
 ## 12) Anti-patterns

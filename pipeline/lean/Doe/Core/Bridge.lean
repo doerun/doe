@@ -1,7 +1,17 @@
+-- Doe/Core/Bridge.lean
+--
+-- Single-source Lean gate check for a selected quirk: combines verification
+-- mode, safety class, and proof-level precedence to produce the required
+-- proof-level decision the runtime consults at gate time.
+--
+-- Mirrors: runtime/zig/src/quirk/runtime.zig (finalizeBucket / is_blocking)
+--          runtime/zig/src/model_policy.zig  (ProofLevel precedence rules)
+-- Classification: comptime_verified (finite enum exhaustion over SafetyClass,
+-- VerificationMode, ProofLevel).
+
 import Doe.Core.Model
 import Doe.Core.Runtime
 
--- A single-source Lean gate check for a selected quirk.
 def SafetyProofOverride := SafetyClass → Option ProofLevel
 
 def defaultSafetyProofOverride : SafetyProofOverride := fun _ => Option.none

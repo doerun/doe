@@ -1,3 +1,8 @@
+-- Doe/Full/WorkloadGeometry.lean
+--
+-- Structural equivalence of workload geometry (dispatch extent and buffer bytes).
+-- Feeds the comparability execution-shape obligation via withExecutionShapeGeometry.
+
 import Doe.Full.Comparability
 
 structure DispatchGeometry where
@@ -26,6 +31,7 @@ def withExecutionShapeGeometry
     baselineComparisonExecutionShapeMatch := structurallyEquivalentGeometry left right
   }
 
+-- Classification: lean_verified (quantified over unbounded Nat record fields).
 theorem structurallyEquivalentGeometry_refl (geometry : WorkloadGeometry) :
     structurallyEquivalentGeometry geometry geometry = true := by
   cases geometry with
@@ -34,6 +40,7 @@ theorem structurallyEquivalentGeometry_refl (geometry : WorkloadGeometry) :
       | mk x y z =>
           simp [structurallyEquivalentGeometry]
 
+-- Classification: lean_verified (quantified over unbounded Nat component values).
 theorem structurallyEquivalentGeometry_forall_components
     (bufferBytes dispatchX dispatchY dispatchZ : Nat) :
     let geometry : WorkloadGeometry :=
@@ -42,6 +49,7 @@ theorem structurallyEquivalentGeometry_forall_components
     structurallyEquivalentGeometry geometry geometry = true := by
   simp [structurallyEquivalentGeometry]
 
+-- Classification: lean_verified (quantified over unbounded ComparabilityFacts + Nat fields).
 theorem equalGeometrySetsExecutionShapeFacts
     (facts : ComparabilityFacts)
     (bufferBytes dispatchX dispatchY dispatchZ : Nat) :

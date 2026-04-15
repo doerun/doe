@@ -39,10 +39,6 @@ LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \
 LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \
   "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Doe/Core/Bridge.olean" "${ROOT_DIR}/pipeline/lean/Doe/Core/Bridge.lean"
 LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \
-  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Doe/NumericStabilityPolicy.olean" "${ROOT_DIR}/pipeline/lean/Doe/NumericStabilityPolicy.lean"
-LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \
-  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Doe/Bridge.olean" "${ROOT_DIR}/pipeline/lean/Doe/Bridge.lean"
-LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \
   "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Doe/Core/BindGroupSlot.olean" "${ROOT_DIR}/pipeline/lean/Doe/Core/BindGroupSlot.lean"
 LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \
   "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Doe/Core/BufferLifecycle.olean" "${ROOT_DIR}/pipeline/lean/Doe/Core/BufferLifecycle.lean"
@@ -75,16 +71,6 @@ LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \
 LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \
   "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Doe/Shader/TextureSampleBounds.olean" "${ROOT_DIR}/pipeline/lean/Doe/Shader/TextureSampleBounds.lean"
 
-# Re-export shims (backward compatibility).
+# Legacy compat shell (Doe/Model.lean re-exports Doe.Core.Model plus enum constructors).
 LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \
   "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Doe/Model.olean" "${ROOT_DIR}/pipeline/lean/Doe/Model.lean"
-LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \
-  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Doe/Runtime.olean" "${ROOT_DIR}/pipeline/lean/Doe/Runtime.lean"
-LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \
-  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Doe/Dispatch.olean" "${ROOT_DIR}/pipeline/lean/Doe/Dispatch.lean"
-LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \
-  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Doe/DeterminismPolicy.olean" "${ROOT_DIR}/pipeline/lean/Doe/DeterminismPolicy.lean"
-LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \
-  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Doe/Comparability.olean" "${ROOT_DIR}/pipeline/lean/Doe/Comparability.lean"
-LEAN_PATH="${BUILD_DIR}:${ROOT_DIR}/pipeline/lean" \
-  "${LEAN_BIN}" "+${TOOLCHAIN_REF}" -o "${BUILD_DIR}/Doe/ComparabilityFixtures.olean" "${ROOT_DIR}/pipeline/lean/Doe/ComparabilityFixtures.lean"

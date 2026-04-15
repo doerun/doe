@@ -1,3 +1,14 @@
+-- Doe/Core/Runtime.lean
+--
+-- Runtime dispatch and quirk-matching contract.
+-- Models device profile, match specs, and the deterministic matcher/selector
+-- that the Zig runtime uses at dispatch time.
+--
+-- Mirrors: runtime/zig/src/quirk/runtime.zig (matcher, selector, bucketing)
+--          runtime/zig/src/model_profile.zig (DeviceProfile construction)
+--          runtime/zig/src/quirk/quirk_json.zig (quirk record schema)
+-- Classification: lean_verified (quantified over unbounded quirk lists).
+
 import Doe.Core.Model
 
 structure DeviceProfile where
