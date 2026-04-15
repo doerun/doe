@@ -1,7 +1,7 @@
 {
   "packageClaims": {
     "title": "Published package compare lanes",
-    "subtitle": "Bars show artifact-backed Doe and incumbent timings plus sample counts; the green pill summarizes the faster delta.",
+    "subtitle": "Current public package compare lanes, shown as artifact-backed Doe versus Dawn timings.",
     "caption": "Package compare claims",
     "rows": [
       {
@@ -36,7 +36,7 @@
   },
   "ortClaims": {
     "title": "Additional ORT compare lanes",
-    "subtitle": "Bars show artifact-backed Doe and ORT WebGPU timings plus sample counts; browser results remain mixed.",
+    "subtitle": "Current ORT compare lanes, shown as artifact-backed Doe versus ORT WebGPU timings.",
     "caption": "ORT compare claims",
     "rows": [
       {
@@ -61,9 +61,18 @@
         "artifactPath": "bench/out/bun-ort-webgpu-provider-compare/gemma270m-prefill32-decode1.compare.json"
       },
       {
-        "label": "Browser ORT",
-        "platform": "Linux browser",
-        "status": "mixed"
+        "label": "Node ORT",
+        "platform": "Apple Metal",
+        "baselineLabel": "Doe",
+        "comparisonLabel": "ORT WebGPU",
+        "artifactPath": "bench/out/apple-metal-ort-node/20260415T005827Z/gemma270m.compare.json"
+      },
+      {
+        "label": "Bun ORT",
+        "platform": "Apple Metal",
+        "baselineLabel": "Doe",
+        "comparisonLabel": "ORT WebGPU",
+        "artifactPath": "bench/out/apple-metal-ort-bun/20260415T005827Z/gemma270m-prefill32-decode1.compare.json"
       }
     ]
   }

@@ -40,7 +40,7 @@ Outputs:
 
 ## Additional benchmark outputs
 
-ORT lanes and broader follow-up work live in the repo status page. Read
+ONNX Runtime (ORT) lanes and broader follow-up work live in the repo status page. Read
 [`docs/status.md`](https://github.com/doe-gpu/doe/blob/main/docs/status.md)
 for the current scope and artifacts.
 
@@ -106,6 +106,19 @@ workspace:
 cd packages/doe-gpu-darwin-arm64
 npm run stage
 ```
+
+Release order matters:
+
+1. Build the native artifacts on the target host for each platform package.
+2. Bump `doe-gpu-<platform>-<arch>` to the release version it will publish.
+3. Run `npm run stage` in that platform package.
+4. Verify `packages/doe-gpu` with `npm run test:smoke`,
+   `npm run test:integration`, and `npm pack --dry-run`.
+5. Publish the platform package versions first. On Apple, publish
+   `doe-gpu-darwin-arm64` or `doe-gpu-darwin-x64` only after Linux is already
+   published.
+6. Publish `doe-gpu` only after every platform package version referenced in
+   its `optionalDependencies` is already live on npm.
 
 ## Important distinction
 

@@ -22,7 +22,7 @@ const SVG_THEME = Object.freeze({
     grid: '#1f2937',
     accent: '#7c3aed',
     doe: '#9d4edd',
-    incumbent: '#3b82f6',
+    incumbent: '#dc2626',
     mixed: '#f59e0b',
     positive: '#22c55e',
     panelTop: '#081121',
@@ -73,8 +73,7 @@ const BAR_HEIGHT = 12;
 const BAR_GAP = 6;
 const METRIC_GROUPS = Object.freeze([
   { key: 'p50', label: 'p50 ms', yOffset: 26, field: 'P50Ms', scale: 'time' },
-  { key: 'p95', label: 'p95 ms', yOffset: 78, field: 'P95Ms', scale: 'time' },
-  { key: 'count', label: 'samples', yOffset: 130, field: 'Count', scale: 'count' }
+  { key: 'p95', label: 'p95 ms', yOffset: 78, field: 'P95Ms', scale: 'time' }
 ]);
 
 function escapeXml(value) {
@@ -155,7 +154,7 @@ function renderDefs() {
     <stop offset="100%" stop-color="${SVG_THEME.palette.doe}" />
   </linearGradient>
   <linearGradient id="readme-incumbent-grad" x1="0%" y1="0%" x2="100%" y2="0%">
-    <stop offset="0%" stop-color="#60a5fa" />
+    <stop offset="0%" stop-color="#f87171" />
     <stop offset="100%" stop-color="${SVG_THEME.palette.incumbent}" />
   </linearGradient>
   <linearGradient id="readme-chip-grad" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -238,24 +237,23 @@ function getRowScaleState(row) {
 
 function renderHeader(title, subtitle, width) {
   return `<rect x="${CANVAS_PADDING}" y="${CANVAS_PADDING}" width="${width - (CANVAS_PADDING * 2)}" height="${HEADER_HEIGHT - 12}" fill="url(#readme-canvas-glow)" stroke="none" />
-<text x="36" y="48" fill="${SVG_THEME.palette.accent}" font-family="${FONT_UI}" font-size="12" font-weight="bold" letter-spacing="1.2" stroke="none">BENCHMARK EVIDENCE</text>
-<text x="36" y="86" fill="${SVG_THEME.palette.text}" font-family="${FONT_UI}" font-size="30" font-weight="bold" stroke="none">${escapeXml(title)}</text>
-<text x="36" y="110" fill="${SVG_THEME.palette.muted}" font-family="${FONT_UI}" font-size="13" stroke="none">${escapeXml(subtitle)}</text>
+<text x="36" y="70" fill="${SVG_THEME.palette.text}" font-family="${FONT_UI}" font-size="30" font-weight="bold" stroke="none">${escapeXml(title)}</text>
+<text x="36" y="102" fill="${SVG_THEME.palette.muted}" font-family="${FONT_UI}" font-size="13" stroke="none">${escapeXml(subtitle)}</text>
 <rect x="${HEADER_PILL_X}" y="34" width="${HEADER_PILL_WIDTH}" height="38" rx="19" fill="url(#readme-pill-grad)" stroke="${SVG_THEME.palette.incumbent}" stroke-width="1.1" />
-<text x="${HEADER_PILL_X + (HEADER_PILL_WIDTH / 2)}" y="58" text-anchor="middle" fill="${SVG_THEME.palette.text}" font-family="${FONT_UI}" font-size="12" font-weight="bold" stroke="none">BARS = MEASURED MS AND N, PILL = DELTA</text>`;
+<text x="${HEADER_PILL_X + (HEADER_PILL_WIDTH / 2)}" y="58" text-anchor="middle" fill="${SVG_THEME.palette.text}" font-family="${FONT_UI}" font-size="12" font-weight="bold" stroke="none">BARS ARE IN MS, LOWER IS BETTER</text>`;
 }
 
 function renderLegend(y) {
   return `<rect x="36" y="${y}" width="18" height="18" rx="6" fill="url(#readme-doe-grad)" />
-<text x="64" y="${y + 13}" fill="${SVG_THEME.palette.text}" font-family="${FONT_UI}" font-size="13" stroke="none">Doe timing and sample bars</text>
+<text x="64" y="${y + 13}" fill="${SVG_THEME.palette.text}" font-family="${FONT_UI}" font-size="13" stroke="none">Doe timing bars</text>
 <rect x="250" y="${y}" width="18" height="18" rx="6" fill="url(#readme-incumbent-grad)" />
-<text x="278" y="${y + 13}" fill="${SVG_THEME.palette.text}" font-family="${FONT_UI}" font-size="13" stroke="none">incumbent timing and sample bars</text>
+<text x="278" y="${y + 13}" fill="${SVG_THEME.palette.text}" font-family="${FONT_UI}" font-size="13" stroke="none">comparison timing bars</text>
 <rect x="540" y="${y}" width="18" height="18" rx="6" fill="${SVG_THEME.palette.positive}" />
 <text x="568" y="${y + 13}" fill="${SVG_THEME.palette.text}" font-family="${FONT_UI}" font-size="13" stroke="none">green pill = p50 and p95 faster summary</text>`;
 }
 
 function renderScaleNote(y) {
-  return `<text x="${TRACK_X}" y="${y}" fill="${SVG_THEME.palette.muted}" font-family="${FONT_UI}" font-size="11" font-weight="bold" letter-spacing="0.7" stroke="none">EACH LANE SCALES ITS OWN BARS; EXACT MS AND N ARE PRINTED AT RIGHT.</text>`;
+  return `<text x="${TRACK_X}" y="${y}" fill="${SVG_THEME.palette.muted}" font-family="${FONT_UI}" font-size="11" font-weight="bold" letter-spacing="0.7" stroke="none">EACH LANE SCALES ITS OWN BARS; EXACT MS AND SAMPLE COUNTS ARE PRINTED ON THE ROW.</text>`;
 }
 
 function getMetricValue(metrics, seriesKey, field) {
@@ -301,11 +299,15 @@ function renderMeasuredRow(row, rowIndex) {
   const y = HEADER_HEIGHT + 30 + (rowIndex * (ROW_HEIGHT + ROW_GAP));
   const panelHeight = ROW_HEIGHT;
   const scaleState = getRowScaleState(row);
+  const baselineSamples = formatCount(row.metrics.baselineCount);
+  const comparisonSamples = formatCount(row.metrics.comparisonCount);
   return `<rect x="${PANEL_X}" y="${y}" width="${PANEL_WIDTH}" height="${panelHeight}" rx="24" fill="url(#readme-panel-fill)" stroke="url(#readme-panel-stroke)" stroke-width="1.4" />
 <text x="${LABEL_X}" y="${y + 38}" fill="${SVG_THEME.palette.text}" font-family="${FONT_UI}" font-size="22" font-weight="bold" stroke="none">${escapeXml(row.label)}</text>
 <rect x="${LABEL_X}" y="${y + 52}" width="176" height="30" rx="15" fill="url(#readme-chip-grad)" stroke="${SVG_THEME.palette.accent}" stroke-width="1.2" />
 <text x="${LABEL_X + 16}" y="${y + 72}" fill="${SVG_THEME.palette.muted}" font-family="${FONT_UI}" font-size="13" font-weight="bold" stroke="none">${escapeXml(row.platform)}</text>
 ${METRIC_GROUPS.map((group) => renderMetricBlock(row, group, y, scaleState)).join('\n')}
+<text x="${TRACK_X}" y="${y + 152}" fill="${SVG_THEME.palette.muted}" font-family="${FONT_UI}" font-size="12" font-weight="bold" stroke="none">${escapeXml(`${row.baselineLabel} ${baselineSamples}`)}</text>
+<text x="${TRACK_X + 148}" y="${y + 152}" fill="${SVG_THEME.palette.muted}" font-family="${FONT_UI}" font-size="12" font-weight="bold" stroke="none">${escapeXml(`${row.comparisonLabel} ${comparisonSamples}`)}</text>
 <rect x="${VALUE_PILL_X}" y="${y + 22}" width="${VALUE_PILL_WIDTH}" height="40" rx="20" fill="${SVG_THEME.palette.positive}" />
 <text x="${VALUE_PILL_X + (VALUE_PILL_WIDTH / 2)}" y="${y + 48}" text-anchor="middle" fill="${SVG_THEME.palette.text}" font-family="${FONT_UI}" font-size="18" font-weight="bold" stroke="none">${escapeXml(formatDelta(row.metrics.deltaP50Percent))}</text>
 <rect x="${VALUE_PILL_X}" y="${y + 72}" width="${VALUE_PILL_WIDTH}" height="34" rx="17" fill="url(#readme-pill-grad)" stroke="#ffffff1f" stroke-width="1" />

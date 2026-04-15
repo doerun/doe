@@ -61,6 +61,24 @@ Advanced helper exports such as `createDoeRuntime()` and
 `runDawnVsDoeCompare()` are still part of the package API, but they are helper
 surfaces, not the canonical operator front doors.
 
+## Release order
+
+Platform packages must be published before the wrapper package version that
+references them.
+
+The intended release sequence is:
+
+1. Build native artifacts on the target host for each platform package.
+2. Bump `doe-gpu-<platform>-<arch>` to the release version it will publish.
+3. Run `npm run stage` in that platform package.
+4. Verify `packages/doe-gpu` with `npm run test:smoke`,
+   `npm run test:integration`, and `npm pack --dry-run`.
+5. Publish platform packages first. On Apple, publish
+   `doe-gpu-darwin-arm64` or `doe-gpu-darwin-x64` after Linux is already
+   published.
+6. Publish `doe-gpu` only after every platform package version referenced in
+   `packages/doe-gpu/package.json` already exists on npm.
+
 ## Legacy names
 
 The old npm names are compatibility history only:
