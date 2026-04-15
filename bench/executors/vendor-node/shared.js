@@ -14,6 +14,7 @@ const DOE_COMPUTE_MODULE_PATH = resolve(REPO_ROOT, 'packages/doe-gpu/src/compute
 const DOE_BUN_MODULE_PATH = resolve(REPO_ROOT, 'packages/doe-gpu/src/bun.js');
 const NODE_WEBGPU_PACKAGE_PATH = resolve(REPO_ROOT, 'bench/vendor/node-webgpu-package/index.js');
 const NODE_WEBGPU_ADAPTER_LIST_SENTINEL = '__doe_list_adapters__';
+const BUN_WEBGPU_BACKEND_TYPE_ENV = 'DOE_BUN_WEBGPU_BACKEND_TYPE';
 const BUN_WEBGPU_VULKAN_BACKEND_TYPE = 6;
 const SOFTWARE_ADAPTER_PATTERNS = Object.freeze([
   'llvmpipe',
@@ -138,12 +139,37 @@ function defaultAdapterRequestOptions() {
   };
 }
 
+function resolveBunWebGpuBackendType() {
+  const override = normalizeString(process.env[BUN_WEBGPU_BACKEND_TYPE_ENV]);
+  if (override) {
+    const normalized = override.toLowerCase();
+    if (normalized === 'auto' || normalized === 'default' || normalized === 'none') {
+      return null;
+    }
+    const parsed = Number.parseInt(override, 10);
+    if (!Number.isInteger(parsed) || parsed < 0) {
+      throw new Error(
+        `${BUN_WEBGPU_BACKEND_TYPE_ENV} must be a non-negative integer or one of auto/default/none`,
+      );
+    }
+    return parsed;
+  }
+  if (process.platform === 'darwin') {
+    return null;
+  }
+  return BUN_WEBGPU_VULKAN_BACKEND_TYPE;
+}
+
 function bunWebGpuAdapterRequestOptions() {
-  return {
+  const backendType = resolveBunWebGpuBackendType();
+  const options = {
     powerPreference: 'high-performance',
     forceFallbackAdapter: false,
-    backendType: BUN_WEBGPU_VULKAN_BACKEND_TYPE,
   };
+  if (backendType !== null) {
+    options.backendType = backendType;
+  }
+  return options;
 }
 
 export async function installTjsOrtWebGpuProvider(provider = 'doe', runtimeHost = 'node') {

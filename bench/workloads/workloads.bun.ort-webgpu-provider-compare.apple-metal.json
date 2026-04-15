@@ -8,7 +8,7 @@
       "description": "Repo-only same-stack Bun ORT WebGPU compare for Gemma-3 270M on Apple Metal using the same Transformers.js plus onnxruntime-node workload on both sides, with Doe and bun-webgpu as the only varying WebGPU providers.",
       "domain": "compute",
       "comparabilityNotes": "Strict process-wall provider compare on Apple Metal Bun. Both sides use the same Transformers.js plus onnxruntime-node WebGPU stack, the same ONNX model, the same tokenizer-accurate 32-token prompt budget, and the same 1-token decode target on the same Apple Metal host. The only intended execution difference is the WebGPU provider: Doe versus bun-webgpu (Dawn-backed package).",
-      "commandsPath": "bench/vendor-bun/ort_webgpu_provider_compare_gemma270m_prefill32_decode1_commands.json",
+      "commandsPath": "bench/vendor-bun/ort_webgpu_provider_compare_gemma270m_prefill32_decode1_apple_metal_commands.json",
       "quirksPath": "examples/quirks/apple_m3_noop_list.json",
       "vendor": "apple",
       "api": "webgpu",

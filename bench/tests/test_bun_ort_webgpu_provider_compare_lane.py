@@ -131,7 +131,12 @@ console.log(JSON.stringify({{
   bunBackend: bunProvider.executionBackend,
   doeProviderName: doeProvider.providerName,
   bunProviderName: bunProvider.providerName,
-  bunBackendType: bunProvider.adapterRequestOptions.backendType,
+  platform: process.platform,
+  bunBackendType: bunProvider.adapterRequestOptions.backendType ?? null,
+  hasBunBackendType: Object.prototype.hasOwnProperty.call(
+    bunProvider.adapterRequestOptions,
+    'backendType',
+  ),
   bunForceFallbackAdapter: bunProvider.adapterRequestOptions.forceFallbackAdapter,
   hasDoeGpu: !!doeProvider.gpu,
   hasBunGpu: !!bunProvider.gpu,
@@ -155,10 +160,43 @@ console.log(JSON.stringify({{
         self.assertEqual(payload['bunBackend'], 'tjs_ort_bun_webgpu_package')
         self.assertEqual(payload['doeProviderName'], 'doe-gpu')
         self.assertEqual(payload['bunProviderName'], 'bun-webgpu')
-        self.assertEqual(payload['bunBackendType'], 6)
+        expected_backend_type = None if payload['platform'] == 'darwin' else 6
+        self.assertEqual(payload['bunBackendType'], expected_backend_type)
+        self.assertEqual(payload['hasBunBackendType'], expected_backend_type is not None)
         self.assertFalse(payload['bunForceFallbackAdapter'])
         self.assertTrue(payload['hasDoeGpu'])
         self.assertTrue(payload['hasBunGpu'])
+
+    @unittest.skipUnless(BUN, 'bun is required for Bun ORT provider helper tests')
+    def test_bun_provider_helper_allows_backend_type_override_to_default(self) -> None:
+        script = f"""
+import {{ installTjsOrtWebGpuProvider }} from {json.dumps(SHARED_MODULE_URL)};
+const bunProvider = await installTjsOrtWebGpuProvider('bun-webgpu', 'bun');
+console.log(JSON.stringify({{
+  hasBackendType: Object.prototype.hasOwnProperty.call(
+    bunProvider.adapterRequestOptions,
+    'backendType',
+  ),
+  backendType: bunProvider.adapterRequestOptions.backendType ?? null,
+}}));
+"""
+        env = dict(os.environ)
+        env['DOE_WEBGPU_LIB'] = str(
+            REPO_ROOT / 'runtime' / 'zig' / 'zig-out' / 'lib' / 'libwebgpu_doe.so'
+        )
+        env['DOE_BUN_WEBGPU_BACKEND_TYPE'] = 'default'
+        result = subprocess.run(
+            [BUN, '--eval', script],
+            cwd=REPO_ROOT,
+            env=env,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertFalse(payload['hasBackendType'])
+        self.assertIsNone(payload['backendType'])
 
 
 if __name__ == '__main__':
