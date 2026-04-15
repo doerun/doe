@@ -42,6 +42,12 @@ test "backend lane parser handles metal_doe_app and local metal lanes" {
         backend_policy.parse_lane("metal_dawn_release") == .metal_dawn_release,
     );
     try std.testing.expect(
+        backend_policy.parse_lane("metal_webkit_comparable") == .metal_webkit_comparable,
+    );
+    try std.testing.expect(
+        backend_policy.parse_lane("metal-webkit-comparable") == .metal_webkit_comparable,
+    );
+    try std.testing.expect(
         backend_policy.parse_lane("d3d12_doe_release") == .d3d12_doe_release,
     );
     try std.testing.expect(

@@ -196,6 +196,7 @@ test "metal backend kernel_dispatch executes deterministic compute and capture_b
     } });
     try std.testing.expect(dispatch_result.status == .ok);
     try std.testing.expectEqual(@as(u32, 1), dispatch_result.dispatch_count);
+    try std.testing.expect(dispatch_result.submit_wait_ns > 0);
 
     const captured = try iface.capture_buffer(std.testing.allocator, TEST_COMPUTE_BUFFER_HANDLE, 0, TEST_COMPUTE_BUFFER_BYTES);
     defer std.testing.allocator.free(captured);

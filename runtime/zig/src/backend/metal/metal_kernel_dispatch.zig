@@ -106,7 +106,7 @@ pub fn run_kernel_dispatch_timed(
 
     const want_ts = record_timestamps and runtime.timestamp_state.supported;
 
-    if (!want_ts and queue_sync_mode == .per_command) {
+    if (!want_ts and queue_sync_mode == .deferred) {
         const encode_start = common_timing.now_ns();
         try ensure_streaming_compute_encoder(runtime);
         var i: u32 = 0;

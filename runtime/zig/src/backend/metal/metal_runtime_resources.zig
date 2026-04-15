@@ -27,6 +27,7 @@ const PIPELINE_KEY_SEPARATOR: []const u8 = "#";
 const BRIDGE_ERROR_CAP: usize = 512;
 const MAX_KERNEL_SOURCE_BYTES: usize = 2 * 1024 * 1024;
 const MAX_PIPELINE_KEY_BYTES: usize = 512;
+const SINGLE_THREADGROUP_ANNOTATION = "[[max_total_threads_per_threadgroup(1)]]";
 
 const PipelineRequest = struct {
     base: []const u8,
@@ -84,6 +85,13 @@ fn parsePipelineRequest(
 
 fn resolveMslComputeFunctionName(requested_entry_point: []const u8) []const u8 {
     return emit_msl_maps.msl_function_name(requested_entry_point, .compute);
+}
+
+fn workgroupSizeForRawMetalSource(source: []const u8) [3]u32 {
+    if (std.mem.indexOf(u8, source, SINGLE_THREADGROUP_ANNOTATION) != null) {
+        return .{ 1, 1, 1 };
+    }
+    return .{ 0, 0, 0 };
 }
 
 const CompiledKernelLibrary = struct {
@@ -187,7 +195,7 @@ fn compile_kernel_library(
         ) orelse return error.ShaderCompileFailed;
         return .{
             .library = library,
-            .workgroup_size = .{ 0, 0, 0 },
+            .workgroup_size = workgroupSizeForRawMetalSource(source),
         };
     }
 
@@ -305,6 +313,23 @@ test "parsePipelineRequest keys non-default compute entrypoints separately" {
 test "resolveMslComputeFunctionName maps main to main_kernel" {
     try std.testing.expectEqualStrings("main_kernel", resolveMslComputeFunctionName("main"));
     try std.testing.expectEqualStrings("main_vec4", resolveMslComputeFunctionName("main_vec4"));
+}
+
+test "workgroupSizeForRawMetalSource preserves explicit single-threadgroup kernels" {
+    try std.testing.expectEqualDeep(
+        @as([3]u32, .{ 1, 1, 1 }),
+        workgroupSizeForRawMetalSource(
+            \\[[max_total_threads_per_threadgroup(1)]]
+            \\kernel void main_kernel(device uint* data [[buffer(0)]]) {}
+        ),
+    );
+    try std.testing.expectEqualDeep(
+        @as([3]u32, .{ 0, 0, 0 }),
+        workgroupSizeForRawMetalSource(
+            \\[[max_total_threads_per_threadgroup(64)]]
+            \\kernel void main_kernel(uint gid [[thread_position_in_grid]]) {}
+        ),
+    );
 }
 
 test "get_kernel_workgroup_size returns cached metadata for normalized default entrypoint" {

@@ -549,39 +549,7 @@ pub fn parseBackend(raw: []const u8) ?BackendMode {
 }
 
 pub fn parseBackendLane(raw: []const u8) ?backend_policy.BackendLane {
-    if (std.ascii.eqlIgnoreCase(raw, "metal_doe_app") or std.ascii.eqlIgnoreCase(raw, "metal-doe-app") or std.ascii.eqlIgnoreCase(raw, "metal_doe_app") or std.ascii.eqlIgnoreCase(raw, "metal-doe-app"))
-        return .metal_doe_app;
-    if (std.ascii.eqlIgnoreCase(raw, "metal_doe_directional") or std.ascii.eqlIgnoreCase(raw, "metal-doe-directional") or std.ascii.eqlIgnoreCase(raw, "metal_doe_directional") or std.ascii.eqlIgnoreCase(raw, "metal-doe-directional"))
-        return .metal_doe_directional;
-    if (std.ascii.eqlIgnoreCase(raw, "metal_doe_comparable") or std.ascii.eqlIgnoreCase(raw, "metal-doe-comparable") or std.ascii.eqlIgnoreCase(raw, "metal_doe_comparable") or std.ascii.eqlIgnoreCase(raw, "metal-doe-comparable"))
-        return .metal_doe_comparable;
-    if (std.ascii.eqlIgnoreCase(raw, "metal_doe_release") or std.ascii.eqlIgnoreCase(raw, "metal-doe-release") or std.ascii.eqlIgnoreCase(raw, "metal_doe_release") or std.ascii.eqlIgnoreCase(raw, "metal-doe-release"))
-        return .metal_doe_release;
-    if (std.ascii.eqlIgnoreCase(raw, "metal_dawn_release") or std.ascii.eqlIgnoreCase(raw, "metal-dawn-release"))
-        return .metal_dawn_release;
-    if (std.ascii.eqlIgnoreCase(raw, "metal_webkit_release") or std.ascii.eqlIgnoreCase(raw, "metal-webkit-release"))
-        return .metal_webkit_release;
-    if (std.ascii.eqlIgnoreCase(raw, "vulkan_doe_app") or std.ascii.eqlIgnoreCase(raw, "vulkan-doe-app") or std.ascii.eqlIgnoreCase(raw, "vulkan_doe_app") or std.ascii.eqlIgnoreCase(raw, "vulkan-doe-app"))
-        return .vulkan_doe_app;
-    if (std.ascii.eqlIgnoreCase(raw, "vulkan_doe_comparable") or std.ascii.eqlIgnoreCase(raw, "vulkan-doe-comparable") or std.ascii.eqlIgnoreCase(raw, "vulkan_doe_comparable") or std.ascii.eqlIgnoreCase(raw, "vulkan-doe-comparable"))
-        return .vulkan_doe_comparable;
-    if (std.ascii.eqlIgnoreCase(raw, "vulkan_doe_release") or std.ascii.eqlIgnoreCase(raw, "vulkan-doe-release") or std.ascii.eqlIgnoreCase(raw, "vulkan_doe_release") or std.ascii.eqlIgnoreCase(raw, "vulkan-doe-release"))
-        return .vulkan_doe_release;
-    if (std.ascii.eqlIgnoreCase(raw, "vulkan_dawn_release") or std.ascii.eqlIgnoreCase(raw, "vulkan-dawn-release") or std.ascii.eqlIgnoreCase(raw, "vulkan_dawn_release") or std.ascii.eqlIgnoreCase(raw, "vulkan-dawn-release"))
-        return .vulkan_dawn_release;
-    if (std.ascii.eqlIgnoreCase(raw, "vulkan_dawn_directional") or std.ascii.eqlIgnoreCase(raw, "vulkan-dawn-directional") or std.ascii.eqlIgnoreCase(raw, "vulkan_dawn_directional") or std.ascii.eqlIgnoreCase(raw, "vulkan-dawn-directional"))
-        return .vulkan_dawn_release;
-    if (std.ascii.eqlIgnoreCase(raw, "d3d12_doe_app") or std.ascii.eqlIgnoreCase(raw, "d3d12-doe-app") or std.ascii.eqlIgnoreCase(raw, "d3d12_doe_app") or std.ascii.eqlIgnoreCase(raw, "d3d12-doe-app"))
-        return .d3d12_doe_app;
-    if (std.ascii.eqlIgnoreCase(raw, "d3d12_doe_directional") or std.ascii.eqlIgnoreCase(raw, "d3d12-doe-directional") or std.ascii.eqlIgnoreCase(raw, "d3d12_doe_directional") or std.ascii.eqlIgnoreCase(raw, "d3d12-doe-directional"))
-        return .d3d12_doe_directional;
-    if (std.ascii.eqlIgnoreCase(raw, "d3d12_doe_comparable") or std.ascii.eqlIgnoreCase(raw, "d3d12-doe-comparable") or std.ascii.eqlIgnoreCase(raw, "d3d12_doe_comparable") or std.ascii.eqlIgnoreCase(raw, "d3d12-doe-comparable"))
-        return .d3d12_doe_comparable;
-    if (std.ascii.eqlIgnoreCase(raw, "d3d12_doe_release") or std.ascii.eqlIgnoreCase(raw, "d3d12-doe-release") or std.ascii.eqlIgnoreCase(raw, "d3d12_doe_release") or std.ascii.eqlIgnoreCase(raw, "d3d12-doe-release"))
-        return .d3d12_doe_release;
-    if (std.ascii.eqlIgnoreCase(raw, "d3d12_dawn_release") or std.ascii.eqlIgnoreCase(raw, "d3d12-dawn-release"))
-        return .d3d12_dawn_release;
-    return null;
+    return backend_policy.parse_lane(raw);
 }
 
 pub fn defaultBackendLane(profile: model.DeviceProfile) backend_policy.BackendLane {
@@ -593,24 +561,7 @@ pub fn defaultBackendLane(profile: model.DeviceProfile) backend_policy.BackendLa
 }
 
 pub fn backendLaneName(lane: backend_policy.BackendLane) []const u8 {
-    return switch (lane) {
-        .metal_doe_app => "metal_doe_app",
-        .metal_doe_directional => "metal_doe_directional",
-        .metal_doe_comparable => "metal_doe_comparable",
-        .metal_doe_release => "metal_doe_release",
-        .metal_dawn_release => "metal_dawn_release",
-        .metal_webkit_release => "metal_webkit_release",
-        .metal_webkit_comparable => "metal_webkit_comparable",
-        .vulkan_doe_app => "vulkan_doe_app",
-        .vulkan_doe_comparable => "vulkan_doe_comparable",
-        .vulkan_doe_release => "vulkan_doe_release",
-        .vulkan_dawn_release => "vulkan_dawn_release",
-        .d3d12_doe_app => "d3d12_doe_app",
-        .d3d12_doe_directional => "d3d12_doe_directional",
-        .d3d12_doe_comparable => "d3d12_doe_comparable",
-        .d3d12_doe_release => "d3d12_doe_release",
-        .d3d12_dawn_release => "d3d12_dawn_release",
-    };
+    return backend_policy.lane_name(lane);
 }
 
 pub fn backend_id_name(id: backend_ids.BackendId) []const u8 {
@@ -706,6 +657,8 @@ test "parseBackendLane accepts snake_case and kebab-case variants" {
     try testing.expectEqual(backend_policy.BackendLane.metal_doe_app, parseBackendLane("metal-doe-app").?);
     try testing.expectEqual(backend_policy.BackendLane.metal_dawn_release, parseBackendLane("metal-dawn-release").?);
     try testing.expectEqual(backend_policy.BackendLane.metal_doe_comparable, parseBackendLane("metal_doe_comparable").?);
+    try testing.expectEqual(backend_policy.BackendLane.metal_webkit_comparable, parseBackendLane("metal_webkit_comparable").?);
+    try testing.expectEqual(backend_policy.BackendLane.metal_webkit_comparable, parseBackendLane("metal-webkit-comparable").?);
     // vulkan lanes
     try testing.expectEqual(backend_policy.BackendLane.vulkan_doe_app, parseBackendLane("vulkan-doe-app").?);
     try testing.expectEqual(backend_policy.BackendLane.vulkan_dawn_release, parseBackendLane("vulkan-dawn-release").?);
@@ -724,6 +677,8 @@ test "backendLaneName round-trips with parseBackendLane for all lanes" {
         .metal_doe_comparable,
         .metal_doe_release,
         .metal_dawn_release,
+        .metal_webkit_release,
+        .metal_webkit_comparable,
         .vulkan_doe_app,
         .vulkan_doe_comparable,
         .vulkan_doe_release,

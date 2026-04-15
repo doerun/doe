@@ -152,6 +152,7 @@ test "parseBackendLane parses metal lanes in snake_case" {
 test "parseBackendLane parses metal lanes in kebab-case" {
     try testing.expectEqual(backend_policy.BackendLane.metal_doe_app, execution.parseBackendLane("metal-doe-app").?);
     try testing.expectEqual(backend_policy.BackendLane.metal_dawn_release, execution.parseBackendLane("metal-dawn-release").?);
+    try testing.expectEqual(backend_policy.BackendLane.metal_webkit_comparable, execution.parseBackendLane("metal-webkit-comparable").?);
 }
 
 test "parseBackendLane parses vulkan lanes" {
@@ -187,6 +188,8 @@ test "backendLaneName returns correct string for all lanes" {
     try testing.expectEqualStrings("metal_doe_comparable", execution.backendLaneName(.metal_doe_comparable));
     try testing.expectEqualStrings("metal_doe_release", execution.backendLaneName(.metal_doe_release));
     try testing.expectEqualStrings("metal_dawn_release", execution.backendLaneName(.metal_dawn_release));
+    try testing.expectEqualStrings("metal_webkit_release", execution.backendLaneName(.metal_webkit_release));
+    try testing.expectEqualStrings("metal_webkit_comparable", execution.backendLaneName(.metal_webkit_comparable));
     try testing.expectEqualStrings("vulkan_doe_app", execution.backendLaneName(.vulkan_doe_app));
     try testing.expectEqualStrings("vulkan_doe_comparable", execution.backendLaneName(.vulkan_doe_comparable));
     try testing.expectEqualStrings("vulkan_doe_release", execution.backendLaneName(.vulkan_doe_release));
@@ -205,6 +208,8 @@ test "backendLaneName round-trips through parseBackendLane for every lane" {
         .metal_doe_comparable,
         .metal_doe_release,
         .metal_dawn_release,
+        .metal_webkit_release,
+        .metal_webkit_comparable,
         .vulkan_doe_app,
         .vulkan_doe_comparable,
         .vulkan_doe_release,
@@ -400,9 +405,7 @@ test "sourceContainsComputeStage rejects vertex-only shader" {
 }
 
 test "sourceContainsComputeStage detects @compute anywhere in source" {
-    try testing.expect(compute_commands.sourceContainsComputeStage(
-        "// some comment\n// more\n@compute\nfn dispatch() {}"
-    ));
+    try testing.expect(compute_commands.sourceContainsComputeStage("// some comment\n// more\n@compute\nfn dispatch() {}"));
 }
 
 // ============================================================

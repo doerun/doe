@@ -49,45 +49,72 @@ pub const PolicyLoadError = error{
     InvalidRuntimePolicy,
 };
 
+const LaneSpec = struct {
+    lane: BackendLane,
+    name: []const u8,
+    aliases: []const []const u8 = &.{},
+};
+
+const LANE_SPECS = [_]LaneSpec{
+    .{ .lane = .metal_doe_app, .name = "metal_doe_app" },
+    .{ .lane = .metal_doe_directional, .name = "metal_doe_directional" },
+    .{ .lane = .metal_doe_comparable, .name = "metal_doe_comparable" },
+    .{ .lane = .metal_doe_release, .name = "metal_doe_release" },
+    .{ .lane = .metal_dawn_release, .name = "metal_dawn_release" },
+    .{ .lane = .metal_webkit_release, .name = "metal_webkit_release" },
+    .{ .lane = .metal_webkit_comparable, .name = "metal_webkit_comparable" },
+    .{ .lane = .vulkan_doe_app, .name = "vulkan_doe_app" },
+    .{ .lane = .vulkan_doe_comparable, .name = "vulkan_doe_comparable" },
+    .{ .lane = .vulkan_doe_release, .name = "vulkan_doe_release" },
+    .{
+        .lane = .vulkan_dawn_release,
+        .name = "vulkan_dawn_release",
+        .aliases = &.{"vulkan_dawn_directional"},
+    },
+    .{ .lane = .d3d12_doe_app, .name = "d3d12_doe_app" },
+    .{ .lane = .d3d12_doe_directional, .name = "d3d12_doe_directional" },
+    .{ .lane = .d3d12_doe_comparable, .name = "d3d12_doe_comparable" },
+    .{ .lane = .d3d12_doe_release, .name = "d3d12_doe_release" },
+    .{ .lane = .d3d12_dawn_release, .name = "d3d12_dawn_release" },
+};
+
+const MAX_LANE_NAME_BYTES = blk: {
+    var max_len: usize = 0;
+    for (LANE_SPECS) |spec| {
+        if (spec.name.len > max_len) max_len = spec.name.len;
+        for (spec.aliases) |alias| {
+            if (alias.len > max_len) max_len = alias.len;
+        }
+    }
+    break :blk max_len;
+};
+
+fn normalizedLaneToken(raw: []const u8, buffer: *[MAX_LANE_NAME_BYTES]u8) ?[]const u8 {
+    if (raw.len == 0 or raw.len > buffer.len) return null;
+    for (raw, 0..) |char, index| {
+        const normalized_char = if (char == '-') '_' else std.ascii.toLower(char);
+        buffer[index] = normalized_char;
+    }
+    return buffer[0..raw.len];
+}
+
 pub fn lane_name(lane: BackendLane) []const u8 {
-    return switch (lane) {
-        .metal_doe_app => "metal_doe_app",
-        .metal_doe_directional => "metal_doe_directional",
-        .metal_doe_comparable => "metal_doe_comparable",
-        .metal_doe_release => "metal_doe_release",
-        .metal_dawn_release => "metal_dawn_release",
-        .metal_webkit_release => "metal_webkit_release",
-        .metal_webkit_comparable => "metal_webkit_comparable",
-        .vulkan_doe_app => "vulkan_doe_app",
-        .vulkan_doe_comparable => "vulkan_doe_comparable",
-        .vulkan_doe_release => "vulkan_doe_release",
-        .vulkan_dawn_release => "vulkan_dawn_release",
-        .d3d12_doe_app => "d3d12_doe_app",
-        .d3d12_doe_directional => "d3d12_doe_directional",
-        .d3d12_doe_comparable => "d3d12_doe_comparable",
-        .d3d12_doe_release => "d3d12_doe_release",
-        .d3d12_dawn_release => "d3d12_dawn_release",
-    };
+    inline for (LANE_SPECS) |spec| {
+        if (spec.lane == lane) return spec.name;
+    }
+    unreachable;
 }
 
 pub fn parse_lane(raw: []const u8) ?BackendLane {
-    if (std.ascii.eqlIgnoreCase(raw, "metal_doe_app") or std.ascii.eqlIgnoreCase(raw, "metal_doe_app")) return .metal_doe_app;
-    if (std.ascii.eqlIgnoreCase(raw, "metal_doe_directional") or std.ascii.eqlIgnoreCase(raw, "metal_doe_directional")) return .metal_doe_directional;
-    if (std.ascii.eqlIgnoreCase(raw, "metal_doe_comparable") or std.ascii.eqlIgnoreCase(raw, "metal_doe_comparable")) return .metal_doe_comparable;
-    if (std.ascii.eqlIgnoreCase(raw, "metal_doe_release") or std.ascii.eqlIgnoreCase(raw, "metal_doe_release")) return .metal_doe_release;
-    if (std.ascii.eqlIgnoreCase(raw, "metal_dawn_release")) return .metal_dawn_release;
-    if (std.ascii.eqlIgnoreCase(raw, "metal_webkit_release")) return .metal_webkit_release;
-    if (std.ascii.eqlIgnoreCase(raw, "metal_webkit_comparable")) return .metal_webkit_comparable;
-    if (std.ascii.eqlIgnoreCase(raw, "vulkan_doe_app") or std.ascii.eqlIgnoreCase(raw, "vulkan_doe_app")) return .vulkan_doe_app;
-    if (std.ascii.eqlIgnoreCase(raw, "vulkan_doe_comparable") or std.ascii.eqlIgnoreCase(raw, "vulkan_doe_comparable")) return .vulkan_doe_comparable;
-    if (std.ascii.eqlIgnoreCase(raw, "vulkan_doe_release") or std.ascii.eqlIgnoreCase(raw, "vulkan_doe_release")) return .vulkan_doe_release;
-    if (std.ascii.eqlIgnoreCase(raw, "vulkan_dawn_release") or std.ascii.eqlIgnoreCase(raw, "vulkan_dawn_release")) return .vulkan_dawn_release;
-    if (std.ascii.eqlIgnoreCase(raw, "vulkan_dawn_directional") or std.ascii.eqlIgnoreCase(raw, "vulkan_dawn_directional")) return .vulkan_dawn_release;
-    if (std.ascii.eqlIgnoreCase(raw, "d3d12_doe_app") or std.ascii.eqlIgnoreCase(raw, "d3d12_doe_app")) return .d3d12_doe_app;
-    if (std.ascii.eqlIgnoreCase(raw, "d3d12_doe_directional") or std.ascii.eqlIgnoreCase(raw, "d3d12_doe_directional")) return .d3d12_doe_directional;
-    if (std.ascii.eqlIgnoreCase(raw, "d3d12_doe_comparable") or std.ascii.eqlIgnoreCase(raw, "d3d12_doe_comparable")) return .d3d12_doe_comparable;
-    if (std.ascii.eqlIgnoreCase(raw, "d3d12_doe_release") or std.ascii.eqlIgnoreCase(raw, "d3d12_doe_release")) return .d3d12_doe_release;
-    if (std.ascii.eqlIgnoreCase(raw, "d3d12_dawn_release")) return .d3d12_dawn_release;
+    var normalized_buffer: [MAX_LANE_NAME_BYTES]u8 = undefined;
+    const normalized = normalizedLaneToken(raw, &normalized_buffer) orelse return null;
+
+    inline for (LANE_SPECS) |spec| {
+        if (std.mem.eql(u8, normalized, spec.name)) return spec.lane;
+        inline for (spec.aliases) |alias| {
+            if (std.mem.eql(u8, normalized, alias)) return spec.lane;
+        }
+    }
     return null;
 }
 
@@ -338,4 +365,13 @@ fn strict_staged_upload_policy_required(lane: BackendLane) bool {
         => true,
         else => false,
     };
+}
+
+const testing = std.testing;
+
+test "lane table round-trips canonical and alias names" {
+    try testing.expectEqualStrings("metal_webkit_comparable", lane_name(.metal_webkit_comparable));
+    try testing.expectEqual(@as(?BackendLane, .metal_webkit_comparable), parse_lane("metal_webkit_comparable"));
+    try testing.expectEqual(@as(?BackendLane, .metal_webkit_comparable), parse_lane("metal-webkit-comparable"));
+    try testing.expectEqual(@as(?BackendLane, .vulkan_dawn_release), parse_lane("vulkan_dawn_directional"));
 }
