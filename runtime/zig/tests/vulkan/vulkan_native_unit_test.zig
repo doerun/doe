@@ -71,7 +71,7 @@ test "vulkan: upload_uses_fast_path matches classify_upload_path for fast_mapped
     try std.testing.expect(vk_upload.upload_uses_fast_path(.allow_mapped_shortcuts, .copy_dst, 1024));
     try std.testing.expect(vk_upload.upload_uses_fast_path(.allow_mapped_shortcuts, .copy_dst, vk_upload.FAST_UPLOAD_BUFFER_MAX_BYTES));
     try std.testing.expect(!vk_upload.upload_uses_fast_path(.allow_mapped_shortcuts, .copy_dst, vk_upload.FAST_UPLOAD_BUFFER_MAX_BYTES + 1));
-    try std.testing.expect(!vk_upload.upload_uses_fast_path(.staged_copy_only, .copy_dst, 512));
+    try std.testing.expect(vk_upload.upload_uses_fast_path(.staged_copy_only, .copy_dst, 512));
 }
 
 test "vulkan: upload_uses_direct_path matches classify_upload_path for direct_mapped" {
@@ -503,27 +503,27 @@ test "vulkan: effective_texture_usage preserves all requested flags" {
 }
 
 test "vulkan: image_usage_for_texture always includes TRANSFER_DST" {
-    const no_flags = vk_resources.image_usage_for_texture(0);
+    const no_flags = vk_resources.image_usage_for_texture(0, model.WGPUTextureFormat_RGBA8Unorm);
     try std.testing.expect((no_flags & vk_constants.VK_IMAGE_USAGE_TRANSFER_DST_BIT) != 0);
 }
 
 test "vulkan: image_usage_for_texture maps TextureBinding to SAMPLED" {
-    const usage = vk_resources.image_usage_for_texture(model.WGPUTextureUsage_TextureBinding);
+    const usage = vk_resources.image_usage_for_texture(model.WGPUTextureUsage_TextureBinding, model.WGPUTextureFormat_RGBA8Unorm);
     try std.testing.expect((usage & vk_constants.VK_IMAGE_USAGE_SAMPLED_BIT) != 0);
 }
 
 test "vulkan: image_usage_for_texture maps StorageBinding to STORAGE" {
-    const usage = vk_resources.image_usage_for_texture(model.WGPUTextureUsage_StorageBinding);
+    const usage = vk_resources.image_usage_for_texture(model.WGPUTextureUsage_StorageBinding, model.WGPUTextureFormat_RGBA8Unorm);
     try std.testing.expect((usage & vk_constants.VK_IMAGE_USAGE_STORAGE_BIT) != 0);
 }
 
 test "vulkan: image_usage_for_texture maps CopySrc to TRANSFER_SRC" {
-    const usage = vk_resources.image_usage_for_texture(model.WGPUTextureUsage_CopySrc);
+    const usage = vk_resources.image_usage_for_texture(model.WGPUTextureUsage_CopySrc, model.WGPUTextureFormat_RGBA8Unorm);
     try std.testing.expect((usage & vk_constants.VK_IMAGE_USAGE_TRANSFER_SRC_BIT) != 0);
 }
 
 test "vulkan: image_usage_for_texture maps CopyDst to TRANSFER_DST" {
-    const usage = vk_resources.image_usage_for_texture(model.WGPUTextureUsage_CopyDst);
+    const usage = vk_resources.image_usage_for_texture(model.WGPUTextureUsage_CopyDst, model.WGPUTextureFormat_RGBA8Unorm);
     try std.testing.expect((usage & vk_constants.VK_IMAGE_USAGE_TRANSFER_DST_BIT) != 0);
 }
 

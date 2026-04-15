@@ -5,6 +5,7 @@ const metal_resources_test = @import("tests/metal/metal_resources_test.zig");
 const metal_timing_semantics_test = @import("tests/metal/metal_timing_semantics_test.zig");
 const vulkan_mod_integration_test = if (builtin.os.tag == .linux) @import("tests/vulkan/vulkan_mod_integration_test.zig") else struct {};
 const vulkan_native_runtime_test = if (builtin.os.tag == .linux) @import("tests/vulkan/vulkan_native_runtime_test.zig") else struct {};
+const vulkan_native_unit_test = if (builtin.os.tag == .linux) @import("tests/vulkan/vulkan_native_unit_test.zig") else struct {};
 const vulkan_render_pipeline_test = if (builtin.os.tag == .linux) @import("tests/vulkan/vulkan_render_pipeline_test.zig") else struct {};
 const vulkan_timing_semantics_test = if (builtin.os.tag == .linux) @import("tests/vulkan/vulkan_timing_semantics_test.zig") else struct {};
 const common_artifact_meta_test = @import("tests/backend/common_artifact_meta_test.zig");
@@ -64,6 +65,7 @@ comptime {
     _ = metal_native_unit_test;
     _ = vulkan_mod_integration_test;
     _ = vulkan_native_runtime_test;
+    _ = vulkan_native_unit_test;
     _ = vulkan_render_pipeline_test;
     _ = vulkan_timing_semantics_test;
     _ = common_artifact_meta_test;
