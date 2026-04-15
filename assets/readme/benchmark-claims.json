@@ -1,0 +1,63 @@
+{
+  "packageClaims": {
+    "title": "Published package compare lanes",
+    "subtitle": "Positive percentages mean Doe is faster vs Dawn on current front-door package lanes.",
+    "caption": "Package compare claims",
+    "rows": [
+      {
+        "label": "Node package",
+        "platform": "AMD Vulkan",
+        "p50": 59.9,
+        "p95": 56.7
+      },
+      {
+        "label": "Bun package",
+        "platform": "AMD Vulkan",
+        "p50": 66.2,
+        "p95": 60.6
+      },
+      {
+        "label": "Node package",
+        "platform": "Apple Metal",
+        "p50": 20.8,
+        "p95": 13.0
+      },
+      {
+        "label": "Bun package",
+        "platform": "Apple Metal",
+        "p50": 14.1,
+        "p95": 17.1
+      }
+    ]
+  },
+  "ortClaims": {
+    "title": "Additional ORT compare lanes",
+    "subtitle": "Claimed ORT deltas stay artifact-backed; browser results remain mixed.",
+    "caption": "ORT compare claims",
+    "rows": [
+      {
+        "label": "Native ORT",
+        "platform": "AMD Vulkan",
+        "p50": 39.1,
+        "p95": 38.1
+      },
+      {
+        "label": "Node ORT",
+        "platform": "AMD Vulkan",
+        "p50": 8.9,
+        "p95": 8.9
+      },
+      {
+        "label": "Bun ORT",
+        "platform": "AMD Vulkan",
+        "p50": 4.0,
+        "p95": 4.0
+      },
+      {
+        "label": "Browser ORT",
+        "platform": "Linux browser",
+        "status": "mixed"
+      }
+    ]
+  }
+}

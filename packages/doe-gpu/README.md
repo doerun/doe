@@ -30,12 +30,13 @@ npm install doe-gpu
 
 End to end Gemma 3 inference. Positive percentages mean Doe is faster vs Dawn via Node `webgpu` and Bun `bun-webgpu` packages.
 
-| Lane                      | p50    | p95    | Output                                                                                                                                        |
-| ------------------------- | ------ | ------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| Node package, AMD Vulkan  | +59.9% | +56.7% | [benchmark output](https://github.com/doe-gpu/doe/blob/main/bench/out/amd-vulkan/20260410T235522Z/gemma270m.node-package.ir.compare.json)     |
-| Bun package, AMD Vulkan   | +66.2% | +60.6% | [benchmark output](https://github.com/doe-gpu/doe/blob/main/bench/out/amd-vulkan/20260410T235541Z/gemma270m.bun-package.ir.compare.json)      |
-| Node package, Apple Metal | +20.8% | +13.0% | [benchmark output](https://github.com/doe-gpu/doe/blob/main/bench/out/apple-metal/20260414T010826Z/gemma64.node-package.warm.ir.compare.json) |
-| Bun package, Apple Metal  | +14.1% | +17.1% | [benchmark output](https://github.com/doe-gpu/doe/blob/main/bench/out/apple-metal/20260414T010736Z/gemma64.bun-package.warm.ir.compare.json)  |
+![doe-gpu benchmark claims](https://raw.githubusercontent.com/doe-gpu/doe/main/assets/readme/package-claims.svg)
+
+Outputs:
+- Node package, AMD Vulkan: [benchmark output](https://github.com/doe-gpu/doe/blob/main/bench/out/amd-vulkan/20260410T235522Z/gemma270m.node-package.ir.compare.json)
+- Bun package, AMD Vulkan: [benchmark output](https://github.com/doe-gpu/doe/blob/main/bench/out/amd-vulkan/20260410T235541Z/gemma270m.bun-package.ir.compare.json)
+- Node package, Apple Metal: [benchmark output](https://github.com/doe-gpu/doe/blob/main/bench/out/apple-metal/20260414T010826Z/gemma64.node-package.warm.ir.compare.json)
+- Bun package, Apple Metal: [benchmark output](https://github.com/doe-gpu/doe/blob/main/bench/out/apple-metal/20260414T010736Z/gemma64.bun-package.warm.ir.compare.json)
 
 ## Additional benchmark outputs
 

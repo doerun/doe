@@ -1,0 +1,123 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="642" viewBox="0 0 1200 642" role="img" aria-labelledby="chart-title chart-desc">
+  <title id="chart-title">Additional ORT compare lanes</title>
+  <desc id="chart-desc">ORT compare claims</desc>
+  <defs><style>
+  text { paint-order: stroke fill; stroke: #000000; stroke-width: 2px; stroke-linejoin: round; }
+</style></defs>
+  <rect x="0" y="0" width="1200" height="642" fill="#020617" />
+  <rect x="14" y="14" width="1172" height="614" fill="#020817" fill-opacity="0.50" stroke="none" />
+  <defs>
+  <linearGradient id="readme-canvas-glow" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" stop-color="#7c3aed18" />
+    <stop offset="45%" stop-color="#ef444410" />
+    <stop offset="100%" stop-color="#2563eb12" />
+  </linearGradient>
+  <linearGradient id="readme-panel-fill" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" stop-color="#081121" />
+    <stop offset="55%" stop-color="#0b1325" />
+    <stop offset="100%" stop-color="#0c1630" />
+  </linearGradient>
+  <linearGradient id="readme-panel-stroke" x1="0%" y1="0%" x2="100%" y2="0%">
+    <stop offset="0%" stop-color="#ef4444" />
+    <stop offset="48%" stop-color="#7c3aed" />
+    <stop offset="100%" stop-color="#2563eb" />
+  </linearGradient>
+  <linearGradient id="readme-track-fill" x1="0%" y1="0%" x2="100%" y2="0%">
+    <stop offset="0%" stop-color="#0c1528" />
+    <stop offset="100%" stop-color="#111b31" />
+  </linearGradient>
+  <linearGradient id="readme-track-stroke" x1="0%" y1="0%" x2="100%" y2="0%">
+    <stop offset="0%" stop-color="#ffffff1d" />
+    <stop offset="100%" stop-color="#ffffff08" />
+  </linearGradient>
+  <linearGradient id="readme-p50-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+    <stop offset="0%" stop-color="#c77dff" />
+    <stop offset="100%" stop-color="#9d4edd" />
+  </linearGradient>
+  <linearGradient id="readme-p95-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+    <stop offset="0%" stop-color="#60a5fa" />
+    <stop offset="100%" stop-color="#3b82f6" />
+  </linearGradient>
+  <linearGradient id="readme-chip-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+    <stop offset="0%" stop-color="#7c3aed22" />
+    <stop offset="100%" stop-color="#2563eb22" />
+  </linearGradient>
+  <linearGradient id="readme-pill-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" stop-color="#0f172a" />
+    <stop offset="100%" stop-color="#172554" />
+  </linearGradient>
+  </defs>
+<rect x="14" y="14" width="1172" height="110" fill="url(#readme-canvas-glow)" stroke="none" />
+<text x="36" y="48" fill="#7c3aed" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="bold" letter-spacing="1.2" stroke="none">BENCHMARK EVIDENCE</text>
+<text x="36" y="86" fill="#ffffff" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="30" font-weight="bold" stroke="none">Additional ORT compare lanes</text>
+<text x="36" y="110" fill="#cbd5e1" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="13" stroke="none">Claimed ORT deltas stay artifact-backed; browser results remain mixed.</text>
+<rect x="935" y="36" width="229" height="34" rx="17" fill="url(#readme-pill-grad)" stroke="#3b82f6" stroke-width="1.1" />
+<text x="1049.5" y="57" text-anchor="middle" fill="#ffffff" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="bold" stroke="none">LONGER BAR = LARGER CLAIM</text>
+<line x1="378" y1="136" x2="378" y2="148" stroke="#ffffff18" stroke-width="1" />
+<text x="378" y="130" text-anchor="start" fill="#cbd5e1" font-family="SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="10" stroke="none">+0.0%</text>
+<line x1="528" y1="136" x2="528" y2="148" stroke="#ffffff18" stroke-width="1" />
+<text x="528" y="130" text-anchor="middle" fill="#cbd5e1" font-family="SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="10" stroke="none">+10.6%</text>
+<line x1="678" y1="136" x2="678" y2="148" stroke="#ffffff18" stroke-width="1" />
+<text x="678" y="130" text-anchor="middle" fill="#cbd5e1" font-family="SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="10" stroke="none">+21.1%</text>
+<line x1="828" y1="136" x2="828" y2="148" stroke="#ffffff18" stroke-width="1" />
+<text x="828" y="130" text-anchor="middle" fill="#cbd5e1" font-family="SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="10" stroke="none">+31.7%</text>
+<line x1="978" y1="136" x2="978" y2="148" stroke="#ffffff18" stroke-width="1" />
+<text x="978" y="130" text-anchor="end" fill="#cbd5e1" font-family="SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="10" stroke="none">+42.2%</text>
+<rect x="24" y="148" width="1152" height="98" rx="24" fill="url(#readme-panel-fill)" stroke="url(#readme-panel-stroke)" stroke-width="1.4" />
+<text x="48" y="182" fill="#ffffff" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="20" font-weight="bold" stroke="none">Native ORT</text>
+<rect x="48" y="196" width="164" height="28" rx="14" fill="url(#readme-chip-grad)" stroke="#7c3aed" stroke-width="1.2" />
+<text x="64" y="215" fill="#cbd5e1" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="bold" stroke="none">AMD Vulkan</text>
+<rect x="378" y="166" width="600" height="24" rx="12" fill="url(#readme-track-fill)" stroke="url(#readme-track-stroke)" stroke-width="1.1" />
+<rect x="380" y="168" width="551.5555555555555" height="20" rx="10" fill="url(#readme-p50-grad)" />
+<text x="390" y="183" fill="#ffffff" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="bold">p50 +39.1%</text>
+<rect x="378" y="200" width="600" height="24" rx="12" fill="url(#readme-track-fill)" stroke="url(#readme-track-stroke)" stroke-width="1.1" />
+<rect x="380" y="202" width="537.3469735720375" height="20" rx="10" fill="url(#readme-p95-grad)" />
+<text x="390" y="217" fill="#ffffff" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="bold">p95 +38.1%</text>
+<rect x="1002" y="162" width="150" height="30" rx="15" fill="#22c55e" />
+<text x="1077" y="182" text-anchor="middle" fill="#ffffff" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="16" font-weight="bold" stroke="none">+39.1%</text>
+<rect x="1002" y="198" width="150" height="24" rx="12" fill="url(#readme-pill-grad)" stroke="#ffffff1f" stroke-width="1" />
+<text x="1077" y="214" text-anchor="middle" fill="#cbd5e1" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="bold" stroke="none">p95 +38.1%</text>
+<rect x="24" y="262" width="1152" height="98" rx="24" fill="url(#readme-panel-fill)" stroke="url(#readme-panel-stroke)" stroke-width="1.4" />
+<text x="48" y="296" fill="#ffffff" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="20" font-weight="bold" stroke="none">Node ORT</text>
+<rect x="48" y="310" width="164" height="28" rx="14" fill="url(#readme-chip-grad)" stroke="#7c3aed" stroke-width="1.2" />
+<text x="64" y="329" fill="#cbd5e1" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="bold" stroke="none">AMD Vulkan</text>
+<rect x="378" y="280" width="600" height="24" rx="12" fill="url(#readme-track-fill)" stroke="url(#readme-track-stroke)" stroke-width="1.1" />
+<rect x="380" y="282" width="122.45637965331059" height="20" rx="10" fill="url(#readme-p50-grad)" />
+<text x="390" y="297" fill="#ffffff" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="bold">p50 +8.9%</text>
+<rect x="378" y="314" width="600" height="24" rx="12" fill="url(#readme-track-fill)" stroke="url(#readme-track-stroke)" stroke-width="1.1" />
+<rect x="380" y="316" width="122.45637965331059" height="20" rx="10" fill="url(#readme-p95-grad)" />
+<text x="390" y="331" fill="#ffffff" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="bold">p95 +8.9%</text>
+<rect x="1002" y="276" width="150" height="30" rx="15" fill="#22c55e" />
+<text x="1077" y="296" text-anchor="middle" fill="#ffffff" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="16" font-weight="bold" stroke="none">+8.9%</text>
+<rect x="1002" y="312" width="150" height="24" rx="12" fill="url(#readme-pill-grad)" stroke="#ffffff1f" stroke-width="1" />
+<text x="1077" y="328" text-anchor="middle" fill="#cbd5e1" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="bold" stroke="none">p95 +8.9%</text>
+<rect x="24" y="376" width="1152" height="98" rx="24" fill="url(#readme-panel-fill)" stroke="url(#readme-panel-stroke)" stroke-width="1.4" />
+<text x="48" y="410" fill="#ffffff" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="20" font-weight="bold" stroke="none">Bun ORT</text>
+<rect x="48" y="424" width="164" height="28" rx="14" fill="url(#readme-chip-grad)" stroke="#7c3aed" stroke-width="1.2" />
+<text x="64" y="443" fill="#cbd5e1" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="bold" stroke="none">AMD Vulkan</text>
+<rect x="378" y="394" width="600" height="24" rx="12" fill="url(#readme-track-fill)" stroke="url(#readme-track-stroke)" stroke-width="1.1" />
+<rect x="380" y="396" width="52.83432793407218" height="20" rx="10" fill="url(#readme-p50-grad)" />
+<text x="390" y="411" fill="#ffffff" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="bold">p50 +4.0%</text>
+<rect x="378" y="428" width="600" height="24" rx="12" fill="url(#readme-track-fill)" stroke="url(#readme-track-stroke)" stroke-width="1.1" />
+<rect x="380" y="430" width="52.83432793407218" height="20" rx="10" fill="url(#readme-p95-grad)" />
+<text x="390" y="445" fill="#ffffff" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="bold">p95 +4.0%</text>
+<rect x="1002" y="390" width="150" height="30" rx="15" fill="#22c55e" />
+<text x="1077" y="410" text-anchor="middle" fill="#ffffff" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="16" font-weight="bold" stroke="none">+4.0%</text>
+<rect x="1002" y="426" width="150" height="24" rx="12" fill="url(#readme-pill-grad)" stroke="#ffffff1f" stroke-width="1" />
+<text x="1077" y="442" text-anchor="middle" fill="#cbd5e1" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="bold" stroke="none">p95 +4.0%</text>
+<rect x="24" y="490" width="1152" height="98" rx="24" fill="url(#readme-panel-fill)" stroke="url(#readme-panel-stroke)" stroke-width="1.4" />
+<text x="48" y="524" fill="#ffffff" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="20" font-weight="bold" stroke="none">Browser ORT</text>
+<rect x="48" y="538" width="164" height="28" rx="14" fill="url(#readme-chip-grad)" stroke="#7c3aed" stroke-width="1.2" />
+<text x="64" y="557" fill="#cbd5e1" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="bold" stroke="none">Linux browser</text>
+<rect x="378" y="508" width="600" height="58" rx="18" fill="url(#readme-track-fill)" stroke="url(#readme-track-stroke)" stroke-width="1.1" />
+<text x="402" y="534" fill="#ffffff" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="16" font-weight="bold" stroke="none">Mixed evidence</text>
+<text x="402" y="554" fill="#cbd5e1" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="12" stroke="none">Current browser ORT results are not summarized as a single faster/slower claim.</text>
+<rect x="1002" y="514" width="150" height="44" rx="22" fill="#f59e0b" />
+<text x="1077" y="541" text-anchor="middle" fill="#ffffff" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="16" font-weight="bold" stroke="none">MIXED</text>
+<rect x="36" y="606" width="18" height="18" rx="6" fill="url(#readme-p50-grad)" />
+<text x="64" y="619" fill="#ffffff" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="13" stroke="none">p50 delta</text>
+<rect x="200" y="606" width="18" height="18" rx="6" fill="url(#readme-p95-grad)" />
+<text x="228" y="619" fill="#ffffff" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="13" stroke="none">p95 delta</text>
+<rect x="384" y="606" width="18" height="18" rx="6" fill="url(#readme-chip-grad)" stroke="#7c3aed" stroke-width="1" />
+<text x="412" y="619" fill="#ffffff" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="13" stroke="none">platform lane</text>
+</svg>
