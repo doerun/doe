@@ -4,6 +4,10 @@ import { dirname, resolve } from 'node:path';
 import { performance } from 'node:perf_hooks';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
+import {
+  describeUnusableAdapterInfo,
+} from '../adapter_health.js';
+
 const THIS_DIR = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(THIS_DIR, '..', '..', '..');
 const DOE_COMPUTE_MODULE_PATH = resolve(REPO_ROOT, 'packages/doe-gpu/src/compute.js');
@@ -254,9 +258,23 @@ export async function requestAdapterAndDevice(providerRuntime) {
   if (!adapter) {
     throw new Error(`${providerRuntime.providerName} returned no WebGPU adapter`);
   }
+  const adapterIssue = describeUnusableAdapterInfo(
+    adapter?.info ?? null,
+    providerRuntime.providerName,
+  );
+  if (adapterIssue) {
+    throw new Error(adapterIssue);
+  }
   const device = await adapter.requestDevice();
   if (!device) {
     throw new Error(`${providerRuntime.providerName} returned no WebGPU device`);
+  }
+  const deviceIssue = describeUnusableAdapterInfo(
+    device?.adapterInfo ?? adapter?.info ?? null,
+    providerRuntime.providerName,
+  );
+  if (deviceIssue) {
+    throw new Error(deviceIssue);
   }
   return { adapter, device };
 }

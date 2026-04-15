@@ -15,6 +15,9 @@ import {
 import {
   evaluateExecutionDeterminism,
 } from './determinism.js';
+import {
+  describeUnusableAdapterInfo,
+} from '../adapter_health.js';
 
 const REPO_ROOT = resolve(fileURLToPath(new URL('../../..', import.meta.url)));
 const FALLBACK_WEBGPU_PATH = join(
@@ -882,6 +885,15 @@ async function createRuntime(normalizedPlan, webgpu, spec, { debugLog, runtimeHo
       hostExecutorInitTotalNs: nsDelta(executorInitStartedAt),
     });
   }
+  const adapterIssue = describeUnusableAdapterInfo(adapter?.info ?? null, spec.providerName);
+  if (adapterIssue) {
+    throw makeUnsupportedNodeWebGpuError({
+      unsupportedCode: 'adapter_unavailable',
+      message: `node-webgpu adapter unavailable for provider ${spec.provider}`,
+      detail: adapterIssue,
+      hostExecutorInitTotalNs: nsDelta(executorInitStartedAt),
+    });
+  }
 
   const requiredFeatures = normalizedPlan.adapter?.requiredFeatures ?? [];
   const requiredLimits = normalizedPlan.adapter?.requiredLimits ?? {};
@@ -906,6 +918,18 @@ async function createRuntime(normalizedPlan, webgpu, spec, { debugLog, runtimeHo
     });
   }
   debugLog('runtime.requestDevice.done', {});
+  const deviceIssue = describeUnusableAdapterInfo(
+    device?.adapterInfo ?? adapter?.info ?? null,
+    spec.providerName,
+  );
+  if (deviceIssue) {
+    throw makeUnsupportedNodeWebGpuError({
+      unsupportedCode: 'device_unavailable',
+      message: `node-webgpu device unavailable for provider ${spec.provider}`,
+      detail: deviceIssue,
+      hostExecutorInitTotalNs: nsDelta(executorInitStartedAt),
+    });
+  }
   const hostExecutorInitTotalNs = nsDelta(executorInitStartedAt);
   const queue = device.queue;
   const queueWaitMode = queueWaitModeForRuntimeHost(runtimeHost);
